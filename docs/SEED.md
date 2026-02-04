@@ -1,3 +1,4 @@
+
 # Guia de Seed (MVP)
 
 Para testar o sistema, execute os seguintes passos no SQL Editor do Supabase:

@@ -1,21 +1,13 @@
 import { NavLink } from "react-router-dom";
 import { 
-  Home, 
-  Beef, 
-  Layers, 
-  Map, 
-  Calendar, 
-  PlusCircle, 
-  History, 
-  DollarSign, 
-  LayoutDashboard, 
-  Users,
-  Settings
+  Home, Beef, Layers, Map, Calendar, PlusCircle, 
+  History, DollarSign, LayoutDashboard, Users, Settings, AlertCircle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { icon: Home, label: "Início", path: "/home" },
+  { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
   { icon: Beef, label: "Animais", path: "/animais" },
   { icon: Layers, label: "Lotes", path: "/lotes" },
   { icon: Map, label: "Pastos", path: "/pastos" },
@@ -23,7 +15,7 @@ const navItems = [
   { icon: PlusCircle, label: "Registrar", path: "/registrar" },
   { icon: History, label: "Eventos", path: "/eventos" },
   { icon: DollarSign, label: "Financeiro", path: "/financeiro" },
-  { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
+  { icon: AlertCircle, label: "Reconciliação", path: "/reconciliacao" },
   { icon: Users, label: "Membros", path: "/admin/membros" },
 ];
 
@@ -48,12 +40,8 @@ export const SideNav = () => {
         ))}
       </div>
       <div className="p-4 border-t">
-        <NavLink
-          to="/perfil"
-          className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
-        >
-          <Settings className="h-4 w-4" />
-          Configurações
+        <NavLink to="/perfil" className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground">
+          <Settings className="h-4 w-4" /> Configurações
         </NavLink>
       </div>
     </nav>
