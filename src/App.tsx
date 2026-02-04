@@ -8,9 +8,13 @@ import { AppShell } from "./components/layout/AppShell";
 
 // Pages
 import Home from "./pages/Home";
+import Animais from "./pages/Animais";
+import AnimalDetalhe from "./pages/AnimalDetalhe";
+import Registrar from "./pages/Registrar";
+import Dashboard from "./pages/Dashboard";
+import Reconciliacao from "./pages/Reconciliacao";
 import Placeholder from "./pages/Placeholder";
 import NotFound from "./pages/NotFound";
-import Reconciliacao from "./pages/Reconciliacao";
 
 const queryClient = new QueryClient();
 
@@ -26,20 +30,19 @@ const App = () => (
           <Route element={<AuthGate><AppShell /></AuthGate>}>
             <Route path="/" element={<Navigate to="/home" replace />} />
             <Route path="/home" element={<Home />} />
-            <Route path="/select-fazenda" element={<Placeholder />} />
-            <Route path="/animais" element={<Placeholder />} />
-            <Route path="/animais/:id" element={<Placeholder />} />
+            <Route path="/animais" element={<Animais />} />
+            <Route path="/animais/:id" element={<AnimalDetalhe />} />
+            <Route path="/registrar" element={<Registrar />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/reconciliacao" element={<Reconciliacao />} />
+            
+            {/* Placeholders para o resto */}
             <Route path="/lotes" element={<Placeholder />} />
-            <Route path="/lotes/:id" element={<Placeholder />} />
             <Route path="/pastos" element={<Placeholder />} />
-            <Route path="/pastos/:id" element={<Placeholder />} />
             <Route path="/agenda" element={<Placeholder />} />
-            <Route path="/registrar" element={<Placeholder />} />
             <Route path="/eventos" element={<Placeholder />} />
             <Route path="/financeiro" element={<Placeholder />} />
-            <Route path="/dashboard" element={<Placeholder />} />
             <Route path="/perfil" element={<Placeholder />} />
-            <Route path="/reconciliacao" element={<Reconciliacao />} />
             <Route path="/admin/membros" element={<Placeholder />} />
           </Route>
 

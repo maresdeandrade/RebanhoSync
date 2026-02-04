@@ -1,0 +1,290 @@
+import { useState, useEffect } from "react";
+import { useLiveQuery } from "dexie-react-hooks";
+import { db } from "@/lib/offline/db";
+import { createGesture } from "@/lib/offline/ops";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { showSuccess, showError } from "@/utils/toast";
+import { useNavigate } from "react-router-dom";
+import { Beef, Scale, Move, Syringe, ChevronRight, ChevronLeft, Check } from "lucide-react";
+
+const Registrar = () => {
+  const navigate = useNavigate();
+  const [step, setStep] = useState(1);
+  const [tipoManejo, setTipoManejo] = useState<"sanitario" | "pesagem" | "movimentacao" | null>(null);
+  const [selectedLoteId, setSelectedLoteId] = useState<string>("");
+  const [selectedAnimais, setSelectedAnimais] = useState<string[]>([]);
+  
+  // Form states
+  const [sanitarioData, setSanitarioData] = useState({ tipo: "vacinacao", produto: "", dose: "" });
+  const [pesagemData, setPesagemData] = useState<Record<string, string>>({});
+  const [movimentacaoData, setMovimentacaoData] = useState({ toLoteId: "" });
+
+  const lotes = useLiveQuery(() => db.state_lotes.toArray());
+  const animaisNoLote = useLiveQuery(() => 
+    selectedLoteId ? db.state_animais.where('lote_id').equals(selectedLoteId).toArray() : []
+  , [selectedLoteId]);
+
+  const handleFinalize = async () => {
+    if (!tipoManejo || selectedAnimais.length === 0) return;
+
+    const fazenda_id = lotes?.[0]?.fazenda_id; // Simplificado para MVP
+    if (!fazenda_id) return;
+
+    const ops: any[] = [];
+    const now = new Date().toISOString();
+
+    for (const animalId of selectedAnimais) {
+      const animal = await db.state_animais.get(animalId);
+      const evento_id = crypto.randomUUID();
+
+      // 1. Evento Base
+      ops.push({
+        table: 'eventos',
+        action: 'INSERT',
+        record: {
+          id: evento_id,
+          fazenda_id,
+          dominio: tipoManejo,
+          occurred_at: now,
+          animal_id: animalId,
+          lote_id: animal.lote_id
+        }
+      });
+
+      // 2. Detalhes específicos
+      if (tipoManejo === 'sanitario') {
+        ops.push({
+          table: 'eventos_sanitario',
+          action: 'INSERT',
+          record: {
+            evento_id,
+            fazenda_id,
+            tipo: sanitarioData.tipo,
+            produto: sanitarioData.produto,
+            dose: sanitarioData.dose
+          }
+        });
+      } else if (tipoManejo === 'pesagem') {
+        ops.push({
+          table: 'eventos_pesagem',
+          action: 'INSERT',
+          record: {
+            evento_id,
+            fazenda_id,
+            peso_kg: parseFloat(pesagemData[animalId] || "0")
+          }
+        });
+      } else if (tipoManejo === 'movimentacao') {
+        ops.push({
+          table: 'eventos_movimentacao',
+          action: 'INSERT',
+          record: {
+            evento_id,
+            fazenda_id,
+            from_lote_id: animal.lote_id,
+            to_lote_id: movimentacaoData.toLoteId
+          }
+        });
+        // Regra Anti-Teleporte: Update no estado do animal no mesmo batch
+        ops.push({
+          table: 'animais',
+          action: 'UPDATE',
+          record: {
+            id: animalId,
+            lote_id: movimentacaoData.toLoteId
+          }
+        });
+      }
+    }
+
+    try {
+      await createGesture(fazenda_id, ops);
+      showSuccess("Manejo registrado localmente!");
+      navigate("/home");
+    } catch (e) {
+      showError("Erro ao registrar manejo.");
+    }
+  };
+
+  return (
+    <div className="max-w-2xl mx-auto space-y-6">
+      <div className="flex items-center justify-between mb-8">
+        <h1 className="text-2xl font-bold">Registrar Manejo</h1>
+        <div className="flex gap-1">
+          {[1, 2, 3].map((s) => (
+            <div key={s} className={`h-2 w-8 rounded-full ${step >= s ? 'bg-primary' : 'bg-muted'}`} />
+          ))}
+        </div>
+      </div>
+
+      {step === 1 && (
+        <Card>
+          <CardHeader><CardTitle>1. Selecionar Alvo</CardTitle></CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label>Lote</Label>
+              <Select onValueChange={setSelectedLoteId} value={selectedLoteId}>
+                <SelectTrigger><SelectValue placeholder="Selecione o lote" /></SelectTrigger>
+                <SelectContent>
+                  {lotes?.map(l => <SelectItem key={l.id} value={l.id}>{l.nome}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {selectedLoteId && (
+              <div className="border rounded-lg divide-y max-h-64 overflow-y-auto">
+                {animaisNoLote?.map(a => (
+                  <div key={a.id} className="flex items-center p-3 gap-3">
+                    <Checkbox 
+                      checked={selectedAnimais.includes(a.id)}
+                      onCheckedChange={(checked) => {
+                        setSelectedAnimais(prev => checked ? [...prev, a.id] : prev.filter(id => id !== a.id));
+                      }}
+                    />
+                    <span className="font-medium">{a.identificacao}</span>
+                    <span className="text-xs text-muted-foreground">{a.sexo === 'M' ? 'Macho' : 'Fêmea'}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            
+            <Button 
+              className="w-full" 
+              disabled={selectedAnimais.length === 0}
+              onClick={() => setStep(2)}
+            >
+              Próximo <ChevronRight className="ml-2 h-4 w-4" />
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {step === 2 && (
+        <Card>
+          <CardHeader><CardTitle>2. Escolher Ação</CardTitle></CardHeader>
+          <CardContent className="space-y-6">
+            <div className="grid grid-cols-3 gap-4">
+              <Button 
+                variant={tipoManejo === 'sanitario' ? 'default' : 'outline'}
+                className="flex-col h-24 gap-2"
+                onClick={() => setTipoManejo('sanitario')}
+              >
+                <Syringe className="h-6 w-6" /> Sanitário
+              </Button>
+              <Button 
+                variant={tipoManejo === 'pesagem' ? 'default' : 'outline'}
+                className="flex-col h-24 gap-2"
+                onClick={() => setTipoManejo('pesagem')}
+              >
+                <Scale className="h-6 w-6" /> Pesagem
+              </Button>
+              <Button 
+                variant={tipoManejo === 'movimentacao' ? 'default' : 'outline'}
+                className="flex-col h-24 gap-2"
+                onClick={() => setTipoManejo('movimentacao')}
+              >
+                <Move className="h-6 w-6" /> Mover
+              </Button>
+            </div>
+
+            {tipoManejo === 'sanitario' && (
+              <div className="space-y-4 border-t pt-4">
+                <div className="space-y-2">
+                  <Label>Tipo</Label>
+                  <Select onValueChange={(v) => setSanitarioData(d => ({...d, tipo: v}))} value={sanitarioData.tipo}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="vacinacao">Vacinação</SelectItem>
+                      <SelectItem value="vermifugacao">Vermifugação</SelectItem>
+                      <SelectItem value="medicamento">Medicamento</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Produto</Label>
+                  <Input value={sanitarioData.produto} onChange={e => setSanitarioData(d => ({...d, produto: e.target.value}))} />
+                </div>
+              </div>
+            )}
+
+            {tipoManejo === 'pesagem' && (
+              <div className="space-y-4 border-t pt-4 max-h-64 overflow-y-auto">
+                {selectedAnimais.map(id => {
+                  const animal = animaisNoLote?.find(a => a.id === id);
+                  return (
+                    <div key={id} className="flex items-center justify-between gap-4">
+                      <Label className="w-24">{animal?.identificacao}</Label>
+                      <Input 
+                        type="number" 
+                        placeholder="Peso (kg)" 
+                        value={pesagemData[id] || ""}
+                        onChange={e => setPesagemData(prev => ({...prev, [id]: e.target.value}))}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {tipoManejo === 'movimentacao' && (
+              <div className="space-y-4 border-t pt-4">
+                <Label>Lote Destino</Label>
+                <Select onValueChange={(v) => setMovimentacaoData({toLoteId: v})} value={movimentacaoData.toLoteId}>
+                  <SelectTrigger><SelectValue placeholder="Selecione o destino" /></SelectTrigger>
+                  <SelectContent>
+                    {lotes?.filter(l => l.id !== selectedLoteId).map(l => (
+                      <SelectItem key={l.id} value={l.id}>{l.nome}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            <div className="flex gap-3">
+              <Button variant="outline" onClick={() => setStep(1)}><ChevronLeft className="mr-2 h-4 w-4" /> Voltar</Button>
+              <Button className="flex-1" disabled={!tipoManejo} onClick={() => setStep(3)}>Próximo <ChevronRight className="ml-2 h-4 w-4" /></Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {step === 3 && (
+        <Card>
+          <CardHeader><CardTitle>3. Confirmar Registro</CardTitle></CardHeader>
+          <CardContent className="space-y-6">
+            <div className="bg-muted p-4 rounded-lg space-y-2">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Manejo:</span>
+                <span className="font-bold capitalize">{tipoManejo}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Animais:</span>
+                <span className="font-bold">{selectedAnimais.length}</span>
+              </div>
+              {tipoManejo === 'movimentacao' && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Destino:</span>
+                  <span className="font-bold">{lotes?.find(l => l.id === movimentacaoData.toLoteId)?.nome}</span>
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-3">
+              <Button variant="outline" onClick={() => setStep(2)}><ChevronLeft className="mr-2 h-4 w-4" /> Voltar</Button>
+              <Button className="flex-1 bg-emerald-600 hover:bg-emerald-700" onClick={handleFinalize}>
+                <Check className="mr-2 h-4 w-4" /> Confirmar e Salvar
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+};
+
+export default Registrar;
