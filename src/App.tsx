@@ -14,15 +14,16 @@ import Dashboard from "./pages/Dashboard";
 import Reconciliacao from "./pages/Reconciliacao";
 import Placeholder from "./pages/Placeholder";
 import NotFound from "./pages/NotFound";
+import Index from "./pages/Index";
 
 const App = () => (
   <BrowserRouter>
     <Routes>
+      <Route path="/" element={<Index />} />
       <Route path="/login" element={<Placeholder />} />
       <Route path="/select-fazenda" element={<Placeholder />} />
       
       <Route element={<AuthGate><AppShell /></AuthGate>}>
-        <Route path="/" element={<Navigate to="/home" replace />} />
         <Route path="/home" element={<Home />} />
         
         <Route path="/animais" element={<Animais />} />
