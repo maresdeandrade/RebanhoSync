@@ -1,14 +1,36 @@
-import { Cloud, CloudOff, RefreshCw, User, Menu } from "lucide-react";
+import { Cloud, CloudOff, RefreshCw, User, Menu, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useLiveQuery } from "dexie-react-hooks";
+import { db } from "@/lib/offline/db";
+import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
 
 interface TopBarProps {
   onMenuClick?: () => void;
-  isOffline?: boolean;
-  pendingChanges?: number;
 }
 
-export const TopBar = ({ onMenuClick, isOffline = false, pendingChanges = 0 }: TopBarProps) => {
+export const TopBar = ({ onMenuClick }: TopBarProps) => {
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  
+  const pendingCount = useLiveQuery(() => 
+    db.queue_gestures.where('status').equals('PENDING').count()
+  ) || 0;
+
+  const rejectionCount = useLiveQuery(() => 
+    db.queue_rejections.count()
+  ) || 0;
+
+  useEffect(() => {
+    const handleStatus = () => setIsOnline(navigator.onLine);
+    window.addEventListener('online', handleStatus);
+    window.addEventListener('offline', handleStatus);
+    return () => {
+      window.removeEventListener('online', handleStatus);
+      window.removeEventListener('offline', handleStatus);
+    };
+  }, []);
+
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between px-4">
@@ -20,7 +42,7 @@ export const TopBar = ({ onMenuClick, isOffline = false, pendingChanges = 0 }: T
         </div>
 
         <div className="flex items-center gap-3">
-          {isOffline ? (
+          {!isOnline ? (
             <Badge variant="destructive" className="gap-1">
               <CloudOff className="h-3 w-3" /> Offline
             </Badge>
@@ -30,10 +52,19 @@ export const TopBar = ({ onMenuClick, isOffline = false, pendingChanges = 0 }: T
             </Badge>
           )}
           
-          {pendingChanges > 0 && (
+          {rejectionCount > 0 && (
+            <Link to="/reconciliacao">
+              <Button variant="ghost" size="sm" className="gap-2 text-destructive animate-pulse">
+                <AlertTriangle className="h-4 w-4" />
+                <span className="hidden sm:inline">{rejectionCount} erros</span>
+              </Button>
+            </Link>
+          )}
+
+          {pendingCount > 0 && (
             <Button variant="ghost" size="sm" className="gap-2 text-amber-600">
               <RefreshCw className="h-4 w-4 animate-spin-slow" />
-              <span className="hidden sm:inline">{pendingChanges} pendentes</span>
+              <span className="hidden sm:inline">{pendingCount} pendentes</span>
             </Button>
           )}
 

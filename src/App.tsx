@@ -10,6 +10,7 @@ import { AppShell } from "./components/layout/AppShell";
 import Home from "./pages/Home";
 import Placeholder from "./pages/Placeholder";
 import NotFound from "./pages/NotFound";
+import Reconciliacao from "./pages/Reconciliacao";
 
 const queryClient = new QueryClient();
 
@@ -20,10 +21,8 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          {/* Rotas Públicas */}
           <Route path="/login" element={<Placeholder />} />
           
-          {/* Rotas Protegidas */}
           <Route element={<AuthGate><AppShell /></AuthGate>}>
             <Route path="/" element={<Navigate to="/home" replace />} />
             <Route path="/home" element={<Home />} />
@@ -40,7 +39,7 @@ const App = () => (
             <Route path="/financeiro" element={<Placeholder />} />
             <Route path="/dashboard" element={<Placeholder />} />
             <Route path="/perfil" element={<Placeholder />} />
-            <Route path="/reconciliacao" element={<Placeholder />} />
+            <Route path="/reconciliacao" element={<Reconciliacao />} />
             <Route path="/admin/membros" element={<Placeholder />} />
           </Route>
 
