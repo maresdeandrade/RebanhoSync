@@ -38,7 +38,7 @@ const Animais = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-4">
         <h1 className="text-2xl font-bold">Animais</h1>
-        <Link to="/registrar">
+        <Link to="/animais/novo">
           <Button size="sm"><Plus className="h-4 w-4 mr-2" /> Novo</Button>
         </Link>
       </div>

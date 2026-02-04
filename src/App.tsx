@@ -5,6 +5,7 @@ import { AppShell } from "./components/layout/AppShell";
 // Pages
 import Home from "./pages/Home";
 import Animais from "./pages/Animais";
+import AnimalNovo from "./pages/AnimalNovo";
 import AnimalDetalhe from "./pages/AnimalDetalhe";
 import Lotes from "./pages/Lotes";
 import Pastos from "./pages/Pastos";
@@ -27,6 +28,7 @@ const App = () => (
         <Route path="/home" element={<Home />} />
         
         <Route path="/animais" element={<Animais />} />
+        <Route path="/animais/novo" element={<AnimalNovo />} />
         <Route path="/animais/:id" element={<AnimalDetalhe />} />
         
         <Route path="/lotes" element={<Lotes />} />
