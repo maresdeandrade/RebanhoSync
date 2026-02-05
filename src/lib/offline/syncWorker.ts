@@ -2,6 +2,7 @@ import { db } from "./db";
 import { env } from "@/lib/env";
 import type { Gesture } from "./types";
 import { getRemoteTableName } from "./tableMap";
+import { rollbackOpLocal, getAffectedStores } from "./ops";
 
 // Usando o tipo de retorno do setInterval do navegador
 let intervalId: ReturnType<typeof setInterval> | null = null;
@@ -48,9 +49,20 @@ async function processGesture(gesture: Gesture) {
     .toArray();
 
   try {
+    // ✅ Get current session for JWT
+    const { supabase } = await import("@/lib/supabase");
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    
+    if (sessionError || !session) {
+      throw new Error("Não autenticado - sessão expirada");
+    }
+
     const response = await fetch(`${env.supabaseFunctionsUrl}/sync-batch`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${session.access_token}`, // ✅ JWT
+      },
       body: JSON.stringify({
         client_id: gesture.client_id,
         fazenda_id: gesture.fazenda_id,
@@ -96,7 +108,15 @@ async function processGesture(gesture: Gesture) {
         }
       }
 
-      console.warn(`[sync-worker] TX ${gesture.client_tx_id} had rejections`);
+      // ✅ ROLLBACK local (reverts state_*/event_* to maintain UI integrity)
+      await db.transaction("rw", [...getAffectedStores(ops)], async () => {
+        // Rollback in reverse order to handle dependencies (e.g., INSERT evento → INSERT detalhe → UPDATE animal)
+        for (const op of [...ops].reverse()) {
+          await rollbackOpLocal(op);
+        }
+      });
+
+      console.warn(`[sync-worker] TX ${gesture.client_tx_id} had rejections (rolled back locally)`);
     }
   } catch (e: unknown) {
     const error = e instanceof Error ? e : new Error(String(e));

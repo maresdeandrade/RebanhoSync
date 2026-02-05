@@ -20,19 +20,30 @@ const AnimalDetalhe = () => {
     db.state_agenda_itens.where('animal_id').equals(id!).toArray()
   , [id]);
 
-  // Query latest weight from pesagem events
-  const ultimoPeso = useLiveQuery(async () => {
+  // Query latest weight from pesagem events (robust, without reverse+sortBy)
+  const ultimoPeso = useLiveQuery(async () =>{
     if (!id) return null;
-    const eventoPesagem = await db.event_eventos
-      .where('animal_id').equals(id)
-      .and(e => e.dominio === 'pesagem')
-      .reverse()
-      .sortBy('occurred_at');
     
-    if (!eventoPesagem || eventoPesagem.length === 0) return null;
+    const eventos = await db.event_eventos
+      .where('animal_id')
+      .equals(id)
+      .filter(e => e.dominio === 'pesagem')
+      .toArray();
     
-    const detalhes = await db.event_eventos_pesagem.get(eventoPesagem[0].id);
-    return detalhes?.peso_kg || null;
+    if (!eventos.length) return null;
+    
+    // Find latest event manually (robust approach)
+    const ultimo = eventos.reduce((best, cur) => {
+      const bestT = new Date(best.server_received_at ?? best.occurred_at).getTime();
+      const curT = new Date(cur.server_received_at ?? cur.occurred_at).getTime();
+      return curT > bestT ? cur : best;
+    }, eventos[0]);
+    
+    const det = await db.event_eventos_pesagem.get(ultimo.id);
+    
+    return det?.peso_kg
+      ? { peso_kg: det.peso_kg, data: ultimo.server_received_at || ultimo.occurred_at }
+      : null;
   }, [id]);
 
   // Query next agenda item
@@ -73,10 +84,22 @@ const AnimalDetalhe = () => {
         <Card className="bg-primary/5 border-none shadow-none">
           <CardHeader className="pb-2"><CardTitle className="text-xs uppercase tracking-wider text-muted-foreground">Peso Atual</CardTitle></CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold flex items-center gap-2">
-              <Scale className="h-5 w-5 text-primary" />
-              {ultimoPeso !== null ? `${ultimoPeso} kg` : 'Sem pesagem'}
-            </div>
+            {ultimoPeso ? (
+              <div>
+                <div className="text-2xl font-bold flex items-center gap-2">
+                  <Scale className="h-5 w-5 text-primary" />
+                  {ultimoPeso.peso_kg} kg
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {new Date(ultimoPeso.data).toLocaleDateString()}
+                </p>
+              </div>
+            ) : (
+              <div className="text-2xl font-bold flex items-center gap-2 text-muted-foreground">
+                <Scale className="h-5 w-5" />
+                Sem pesagem
+              </div>
+            )}
           </CardContent>
         </Card>
         <Card className="bg-primary/5 border-none shadow-none">

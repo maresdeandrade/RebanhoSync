@@ -2,10 +2,19 @@ import { db } from "./db";
 import { Operation, Gesture, OperationInput } from "./types";
 import { getLocalStoreName } from "./tableMap";
 
+const getClientId = () => {
+  const key = "gestao_agro_client_id";
+  const existing = localStorage.getItem(key);
+  if (existing) return existing;
+  const next = `browser:${crypto.randomUUID()}`;
+  localStorage.setItem(key, next);
+  return next;
+};
+
 export const createGesture = async (fazenda_id: string, ops_input: OperationInput[]) => {
   const client_tx_id = crypto.randomUUID();
   const client_recorded_at = new Date().toISOString();
-  const client_id = "browser-client";
+  const client_id = getClientId();
 
   const gesture: Gesture = {
     client_tx_id,
@@ -92,7 +101,7 @@ export const rollbackOpLocal = async (op: Operation) => {
   }
 };
 
-function getAffectedStores(ops: Operation[]) {
+export function getAffectedStores(ops: Operation[]) {
   const tableNames = new Set(ops.map((op) => getLocalStoreName(op.table)));
   return Array.from(tableNames)
     .map((t) => (db as any)[t])

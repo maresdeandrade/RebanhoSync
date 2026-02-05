@@ -29,7 +29,9 @@ const Registrar = () => {
   const [selectedAnimais, setSelectedAnimais] = useState<string[]>([]);
   
   // Form states
-  const [sanitarioData, setSanitarioData] = useState({ tipo: "vacinacao", produto: "", dose: "" });
+  const [sanitarioData, setSanitarioData] = useState({ tipo: "vacinacao", produto: "" });
+  const [protocoloId, setProtocoloId] = useState<string>("");
+  const [protocoloItemId, setProtocoloItemId] = useState<string>("");
   const [pesagemData, setPesagemData] = useState<Record<string, string>>({});
   const [movimentacaoData, setMovimentacaoData] = useState({ toLoteId: "" });
 
@@ -38,6 +40,21 @@ const lotes = useLotes();
   const animaisNoLote = useLiveQuery(() => 
     selectedLoteId ? db.state_animais.where('lote_id').equals(selectedLoteId).toArray() : []
   , [selectedLoteId]);
+
+  const protocolos = useLiveQuery(() => {
+    const fazenda_id = lotes?.[0]?.fazenda_id;
+    return fazenda_id ? db.state_protocolos_sanitarios.where('fazenda_id').equals(fazenda_id).toArray() : [];
+  }, [lotes]);
+
+  const protocoloItens = useLiveQuery(() => {
+    return protocoloId
+      ? db.state_protocolos_sanitarios_itens
+          .where('protocolo_id')
+          .equals(protocoloId)
+          .filter(i => i.tipo === sanitarioData.tipo)
+          .toArray()
+      : [];
+  }, [protocoloId, sanitarioData.tipo]);
 
   const handleFinalize = async () => {
     if (!tipoManejo || selectedAnimais.length === 0) return;
@@ -77,9 +94,43 @@ const lotes = useLotes();
             fazenda_id,
             tipo: sanitarioData.tipo,
             produto: sanitarioData.produto,
-            dose: sanitarioData.dose
+            payload: {}
           }
         });
+
+        // 3. Agenda automática (se protocolo selecionado)
+        if (protocoloItemId) {
+          const protocoloItem = await db.state_protocolos_sanitarios_itens.get(protocoloItemId);
+          
+          if (protocoloItem?.gera_agenda) {
+            const versionId = protocoloItem.id;
+            const doseNum = protocoloItem.dose_num ?? 1;
+            const reforcoDate = new Date(now);
+            reforcoDate.setDate(reforcoDate.getDate() + protocoloItem.intervalo_dias);
+
+            const dedupKey = `${fazenda_id}|animal:${animalId}|piv:${versionId}|dose:${doseNum}`;
+
+            ops.push({
+              table: 'agenda_itens',
+              action: 'INSERT',
+              record: {
+                id: crypto.randomUUID(),
+                fazenda_id,
+                dominio: 'sanitario',
+                tipo: 'reforco',
+                status: 'agendado',
+                data_prevista: reforcoDate.toISOString().split('T')[0],
+                animal_id: animalId,
+                lote_id: animal?.lote_id ?? null,
+                source_kind: 'automatico',
+                source_evento_id: evento_id,
+                protocol_item_version_id: versionId,
+                interval_days_applied: protocoloItem.intervalo_dias,
+                dedup_key: dedupKey
+              }
+            });
+          }
+        }
       } else if (tipoManejo === 'pesagem') {
         ops.push({
           table: 'eventos_pesagem',
@@ -114,9 +165,9 @@ const lotes = useLotes();
     }
 
     try {
-      await createGesture(fazenda_id, ops);
-      showSuccess("Manejo registrado localmente!");
-      navigate("/home");
+      const txId = await createGesture(fazenda_id, ops);
+      showSuccess(`Manejo registrado! TX: ${txId.slice(0, 8)}`);
+      navigate("/home", { state: { syncPending: true } });
     } catch (e) {
       showError("Erro ao registrar manejo.");
     }
@@ -220,6 +271,33 @@ const lotes = useLotes();
                   <Label>Produto</Label>
                   <Input value={sanitarioData.produto} onChange={e => setSanitarioData(d => ({...d, produto: e.target.value}))} />
                 </div>
+                <div className="space-y-2">
+                  <Label>Protocolo (opcional)</Label>
+                  <Select onValueChange={setProtocoloId} value={protocoloId}>
+                    <SelectTrigger><SelectValue placeholder="Sem protocolo" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Sem protocolo</SelectItem>
+                      {protocolos?.map(p => (
+                        <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {protocoloId && protocoloItens && protocoloItens.length > 0 && (
+                  <div className="space-y-2">
+                    <Label>Item do Protocolo</Label>
+                    <Select onValueChange={setProtocoloItemId} value={protocoloItemId}>
+                      <SelectTrigger><SelectValue placeholder="Selecione o item" /></SelectTrigger>
+                      <SelectContent>
+                        {protocoloItens.map(item => (
+                          <SelectItem key={item.id} value={item.id}>
+                            Dose {item.dose_num} {item.gera_agenda && `(+${item.intervalo_dias}d)`}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
               </div>
             )}
 

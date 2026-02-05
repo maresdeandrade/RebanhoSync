@@ -1,5 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthGate } from "./components/auth/AuthGate";
+import { RequireAuth } from "./components/auth/RequireAuth";
+import { RequireFarm } from "./components/auth/RequireFarm";
 import { AppShell } from "./components/layout/AppShell";
 
 // Pages
@@ -17,6 +19,7 @@ import Placeholder from "./pages/Placeholder";
 import NotFound from "./pages/NotFound";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
+import SignUp from "./pages/SignUp";
 import SelectFazenda from "./pages/SelectFazenda";
 import AdminMembros from "./pages/AdminMembros";
 
@@ -25,10 +28,23 @@ const App = () => (
     <Routes>
       <Route path="/" element={<Index />} />
       <Route path="/login" element={<Login />} />
-      <Route path="/select-fazenda" element={<SelectFazenda />} />
+      <Route path="/signup" element={<SignUp />} />
       
-      {/* Rotas protegidas pelo AuthGate */}
-      <Route element={<AuthGate><AppShell /></AuthGate>}>
+      {/* Protegido: requer auth mas não requer fazenda */}
+      <Route path="/select-fazenda" element={
+        <RequireAuth>
+          <SelectFazenda />
+        </RequireAuth>
+      } />
+      
+      {/* Rotas protegidas: requer auth + fazenda ativa */}
+      <Route element={
+        <RequireAuth>
+          <RequireFarm>
+            <AppShell />
+          </RequireFarm>
+        </RequireAuth>
+      }>
         <Route path="/home" element={<Home />} />
         <Route path="/animais" element={<Animais />} />
         <Route path="/animais/novo" element={<AnimalNovo />} />
