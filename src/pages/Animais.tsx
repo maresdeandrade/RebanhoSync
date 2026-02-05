@@ -1,17 +1,19 @@
 import { useState, useMemo } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "@/lib/offline/db";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Search, Plus, ChevronRight, FilterX } from "lucide-react";
+import { Search, Plus, ChevronRight, FilterX, PawPrint } from "lucide-react";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { useLotes } from "@/hooks/useLotes";
+import { EmptyState } from "@/components/EmptyState";
 
 const Animais = () => {
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [loteFilter, setLoteFilter] = useState<string>("all");
   
@@ -46,9 +48,34 @@ const Animais = () => {
     return results;
   }, [debouncedSearch, loteFilter]);
 
+  const hasFilters = search || loteFilter !== "all";
+
+  // Show empty state if no animals and no filters
+  if (!animais || (animais.length === 0 && !hasFilters)) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between gap-4">
+          <h1 className="text-2xl font-bold">Animais</h1>
+          <Link to="/animais/novo">
+            <Button size="sm"><Plus className="h-4 w-4 mr-2" /> Novo</Button>
+          </Link>
+        </div>
+        <EmptyState
+          icon={PawPrint}
+          title="Nenhum animal cadastrado"
+          description="Comece cadastrando os primeiros animais da sua fazenda para acompanhar seu rebanho."
+          action={{
+            label: "Cadastrar Primeiro Animal",
+            onClick: () => navigate("/animais/novo")
+          }}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex items-center just ify-between gap-4">
         <h1 className="text-2xl font-bold">Animais</h1>
         <Link to="/animais/novo">
           <Button size="sm"><Plus className="h-4 w-4 mr-2" /> Novo</Button>
@@ -78,7 +105,7 @@ const Animais = () => {
               ))}
             </SelectContent>
           </Select>
-          {(search || loteFilter !== "all") && (
+          {hasFilters && (
             <Button variant="ghost" size="icon" onClick={() => { setSearch(""); setLoteFilter("all"); }}>
               <FilterX className="h-4 w-4" />
             </Button>
@@ -126,10 +153,10 @@ const Animais = () => {
                   </TableCell>
                 </TableRow>
               ))}
-              {animais?.length === 0 && (
+              {animais?.length === 0 && hasFilters && (
                 <TableRow>
                   <TableCell colSpan={5} className="h-32 text-center text-muted-foreground">
-                    Nenhum animal encontrado.
+                    Nenhum animal encontrado com os filtros aplicados.
                   </TableCell>
                 </TableRow>
               )}

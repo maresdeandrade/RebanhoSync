@@ -18,7 +18,7 @@ interface UserFazenda {
 }
 
 const SelectFazenda = () => {
-  const { user, signOut } = useAuth();
+  const { user, signOut, setActiveFarm } = useAuth();
   const [loading, setLoading] = useState(false);
 
   const fazendas = useLiveQuery(async () => {
@@ -32,7 +32,12 @@ const SelectFazenda = () => {
 
   const handleSelect = async (fazenda_id: string) => {
     setLoading(true);
-    localStorage.setItem('gestao_agro_active_fazenda_id', fazenda_id);
+    
+    // ✅ POLÍTICA DE ESCRITA: usa setActiveFarm do useAuth
+    // Isso persiste em localStorage + user_settings + carrega role
+    await setActiveFarm(fazenda_id);
+    
+    // Redireciona para home (fazenda já está ativa)
     window.location.href = '/home';
   };
 
@@ -61,10 +66,15 @@ const SelectFazenda = () => {
               </CardContent>
             </Card>
           ) : (
-            // TYPE FIX: Use proper UserFazenda type instead of any
-            fazendas.map((f: UserFazenda) => {
-              const fazenda = f.fazendas?.[0]; // Supabase returns array
-              if (!fazenda) return null;
+            // ✅ DEFENSIVO: Supabase nested select retorna OBJETO para many-to-one
+            fazendas.map((uf: UserFazenda) => {
+              // Normaliza: pode ser array ou objeto direto
+              const fazendaRaw = uf.fazendas;
+              const fazenda: FazendaData | null = Array.isArray(fazendaRaw) 
+                ? fazendaRaw[0] 
+                : fazendaRaw;
+              
+              if (!fazenda || !fazenda.id) return null;
               
               return (
                 <Card 

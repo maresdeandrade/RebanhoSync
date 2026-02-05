@@ -6,9 +6,15 @@ import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 const Login = () => {
-  const { session } = useAuth();
+  const { session, activeFarmId } = useAuth();
 
-  if (session) return <Navigate to="/select-fazenda" replace />;
+  // ✅ Melhora UX: redireciona direto para /home se já tiver fazenda ativa
+  if (session) {
+    if (activeFarmId) {
+      return <Navigate to="/home" replace />;
+    }
+    return <Navigate to="/select-fazenda" replace />;
+  }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted/30 p-4">
