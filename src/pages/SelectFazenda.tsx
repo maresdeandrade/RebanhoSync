@@ -1,62 +1,58 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { useLiveQuery } from "dexie-react-hooks";
 import { useAuth } from "@/hooks/useAuth";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { supabase } from "@/lib/supabase";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { MapPin, ChevronRight, LogOut } from "lucide-react";
-import { showSuccess, showError } from "@/utils/toast";
+import { useState } from "react";
+
+// TYPE FIX: Define proper interface for user_fazendas query result
+// Supabase nested select returns array: fazendas: [{id, nome}]
+interface FazendaData {
+  id: string;
+  nome: string;
+}
+
+interface UserFazenda {
+  fazendas: FazendaData[];
+}
 
 const SelectFazenda = () => {
-  const { user, refreshSettings, signOut } = useAuth();
-  const [fazendas, setFazendas] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
+  const { user, signOut } = useAuth();
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    const loadFazendas = async () => {
-      if (!user) return;
-      const { data, error } = await supabase
-        .from('user_fazendas')
-        .select('role, fazendas(id, nome, municipio)')
-        .eq('user_id', user.id)
-        .is('deleted_at', null);
-
-      if (error) showError("Erro ao carregar fazendas");
-      else setFazendas(data || []);
-      setLoading(false);
-    };
-    loadFazendas();
+  const fazendas = useLiveQuery(async () => {
+    if (!user) return [];
+    const { data } = await supabase
+      .from('user_fazendas')
+      .select('fazendas(id, nome)')
+      .eq('user_id', user.id);
+    return data || [];
   }, [user]);
 
-  const handleSelect = async (fazendaId: string) => {
-    const { error } = await supabase
-      .from('user_settings')
-      .upsert({ 
-        user_id: user?.id, 
-        active_fazenda_id: fazendaId,
-        updated_at: new Date().toISOString()
-      });
-
-    if (error) showError("Erro ao definir fazenda ativa");
-    else {
-      await refreshSettings();
-      showSuccess("Fazenda selecionada!");
-      navigate("/home");
-    }
+  const handleSelect = async (fazenda_id: string) => {
+    setLoading(true);
+    localStorage.setItem('gestao_agro_active_fazenda_id', fazenda_id);
+    window.location.href = '/home';
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-muted/30 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-muted/30 p-4">
       <div className="w-full max-w-md space-y-6">
         <div className="text-center">
-          <h1 className="text-3xl font-bold">Suas Fazendas</h1>
-          <p className="text-muted-foreground">Selecione a fazenda para trabalhar hoje</p>
+          <h1 className="text-3xl font-bold mb-2">Selecionar Fazenda</h1>
+          <p className="text-muted-foreground">
+            {user?.email}
+          </p>
         </div>
 
-        <div className="grid gap-3">
-          {loading ? (
-            <p className="text-center py-8">Carregando...</p>
+        <div className="space-y-3">
+          {!fazendas ? (
+            <Card>
+              <CardContent className="p-8 text-center">
+                <p className="text-muted-foreground">Carregando...</p>
+              </CardContent>
+            </Card>
           ) : fazendas.length === 0 ? (
             <Card>
               <CardContent className="p-8 text-center">
@@ -65,26 +61,31 @@ const SelectFazenda = () => {
               </CardContent>
             </Card>
           ) : (
-            fazendas.map((f: any) => (
-              <Card 
-                key={f.fazendas.id} 
-                className="cursor-pointer hover:border-primary transition-colors"
-                onClick={() => handleSelect(f.fazendas.id)}
-              >
-                <CardContent className="flex items-center justify-between p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-primary/10 rounded-lg">
-                      <MapPin className="h-5 w-5 text-primary" />
+            // TYPE FIX: Use proper UserFazenda type instead of any
+            fazendas.map((f: UserFazenda) => {
+              const fazenda = f.fazendas?.[0]; // Supabase returns array
+              if (!fazenda) return null;
+              
+              return (
+                <Card 
+                  key={fazenda.id} 
+                  className="cursor-pointer hover:border-primary transition-colors"
+                  onClick={() => handleSelect(fazenda.id)}
+                >
+                  <CardContent className="flex items-center justify-between p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-primary/10 rounded-lg">
+                        <MapPin className="h-5 w-5 text-primary" />
+                      </div>
+                      <div>
+                        <p className="font-bold">{fazenda.nome}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-bold">{f.fazendas.nome}</p>
-                      <p className="text-xs text-muted-foreground">{f.fazendas.municipio} • {f.role}</p>
-                    </div>
-                  </div>
-                  <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                </CardContent>
-              </Card>
-            ))
+                    <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                  </CardContent>
+                </Card>
+              );
+            })
           )}
         </div>
 

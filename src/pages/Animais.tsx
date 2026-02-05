@@ -1,25 +1,37 @@
+import { useState, useMemo } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "@/lib/offline/db";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Link } from "react-router-dom";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 import { Search, Plus, ChevronRight, FilterX } from "lucide-react";
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import { useLotes } from "@/hooks/useLotes";
 
 const Animais = () => {
   const [search, setSearch] = useState("");
   const [loteFilter, setLoteFilter] = useState<string>("all");
   
-  const lotes = useLiveQuery(() => db.state_lotes.toArray());
+  // P1.2 FIX: Debounce search to avoid query on every keystroke
+  const debouncedSearch = useDebouncedValue(search, 300);
+  
+  // P2.4 FIX: Use centralized useLotes hook
+  const lotes = useLotes();
+
+  // P1.1 FIX: Pre-compute Map for O(n) lookup instead of O(n²)
+  const lotesMap = useMemo(() => 
+    new Map(lotes?.map(l => [l.id, l])),
+    [lotes]
+  );
 
   const animais = useLiveQuery(async () => {
     let collection = db.state_animais.toCollection();
     
-    if (search) {
-      const searchLower = search.toLowerCase();
+    if (debouncedSearch) {
+      const searchLower = debouncedSearch.toLowerCase();
       collection = collection.filter(a => a.identificacao.toLowerCase().includes(searchLower));
     }
 
@@ -32,7 +44,7 @@ const Animais = () => {
     }
 
     return results;
-  }, [search, loteFilter]);
+  }, [debouncedSearch, loteFilter]);
 
   return (
     <div className="space-y-6">
@@ -93,7 +105,7 @@ const Animais = () => {
                   <TableCell>
                     {animal.lote_id ? (
                       <Badge variant="secondary" className="font-normal">
-                        {lotes?.find(l => l.id === animal.lote_id)?.nome || '...'}
+                        {lotesMap.get(animal.lote_id)?.nome || '...'}
                       </Badge>
                     ) : (
                       <span className="text-muted-foreground italic text-xs">Sem lote</span>

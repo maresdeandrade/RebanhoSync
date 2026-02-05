@@ -9,20 +9,41 @@ const Dashboard = () => {
   const pendenciasAgenda = useLiveQuery(() => db.state_agenda_itens.where('status').equals('agendado').count()) || 0;
   const gestosPendentes = useLiveQuery(() => db.queue_gestures.where('status').equals('PENDING').count()) || 0;
 
-  // Mock de dados para gráficos (derivados de eventos em produção)
-  const pesagemData = [
-    { data: '01/05', media: 420 },
-    { data: '05/05', media: 425 },
-    { data: '10/05', media: 422 },
-    { data: '15/05', media: 430 },
-    { data: '20/05', media: 435 },
-  ];
+  // Query real peso data from pesagem events
+  const pesagemData = useLiveQuery(async () => {
+    const eventos = await db.event_eventos
+      .where('dominio').equals('pesagem')
+      .reverse()
+      .limit(10)
+      .toArray();
+    
+    // Get peso details for each event
+    const data = await Promise.all(
+      eventos.map(async (evt) => {
+        const detalhes = await db.event_eventos_pesagem.get(evt.id);
+        return {
+          data: new Date(evt.occurred_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+          media: detalhes?.peso_kg || 0
+        };
+      })
+    );
+    
+    return data.reverse(); // Oldest first for chart
+  }) || [];
 
-  const agendaData = [
-    { nome: 'Vacina', qtd: 45 },
-    { nome: 'Vermífugo', qtd: 120 },
-    { nome: 'Pesagem', qtd: 80 },
-  ];
+  // Query agenda data grouped by type
+  const agendaData = useLiveQuery(async () => {
+    const itens = await db.state_agenda_itens.where('status').equals('agendado').toArray();
+    
+    // Group by tipo and count
+    const grouped = itens.reduce((acc: Record<string, number>, item) => {
+      const tipo = item.tipo || 'Outros';
+      acc[tipo] = (acc[tipo] || 0) + 1;
+      return acc;
+    }, {});
+    
+    return Object.entries(grouped).map(([nome, qtd]) => ({ nome, qtd }));
+  }) || [];
 
   return (
     <div className="space-y-6">

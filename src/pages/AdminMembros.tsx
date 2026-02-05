@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { useEffect, useState, useCallback } from "react";
+import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -9,12 +9,23 @@ import { Badge } from "@/components/ui/badge";
 import { UserMinus, Shield } from "lucide-react";
 import { showSuccess, showError } from "@/utils/toast";
 
+interface UserProfile {
+  display_name: string;
+  phone: string;
+}
+
+interface UserMembro {
+  user_id: string;
+  role: string;
+  user_profiles: UserProfile[];
+}
+
 const AdminMembros = () => {
   const { activeFarmId, user: currentUser } = useAuth();
-  const [membros, setMembros] = useState<any[]>([]);
+  const [membros, setMembros] = useState<UserMembro[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const loadMembros = async () => {
+  const loadMembros = useCallback(async () => {
     if (!activeFarmId) return;
     const { data, error } = await supabase
       .from('user_fazendas')
@@ -23,13 +34,13 @@ const AdminMembros = () => {
       .is('deleted_at', null);
 
     if (error) showError("Erro ao carregar membros");
-    else setMembros(data || []);
+    else setMembros(data as UserMembro[] || []);
     setLoading(false);
-  };
+  }, [activeFarmId]);
 
   useEffect(() => {
     loadMembros();
-  }, [activeFarmId]);
+  }, [loadMembros]);
 
   const handleUpdateRole = async (userId: string, newRole: string) => {
     const { error } = await supabase.rpc('admin_set_member_role', {

@@ -20,6 +20,32 @@ const AnimalDetalhe = () => {
     db.state_agenda_itens.where('animal_id').equals(id!).toArray()
   , [id]);
 
+  // Query latest weight from pesagem events
+  const ultimoPeso = useLiveQuery(async () => {
+    if (!id) return null;
+    const eventoPesagem = await db.event_eventos
+      .where('animal_id').equals(id)
+      .and(e => e.dominio === 'pesagem')
+      .reverse()
+      .sortBy('occurred_at');
+    
+    if (!eventoPesagem || eventoPesagem.length === 0) return null;
+    
+    const detalhes = await db.event_eventos_pesagem.get(eventoPesagem[0].id);
+    return detalhes?.peso_kg || null;
+  }, [id]);
+
+  // Query next agenda item
+  const proximaAgenda = useLiveQuery(async () => {
+    if (!id) return null;
+    const agendados = await db.state_agenda_itens
+      .where('animal_id').equals(id)
+      .and(item => item.status === 'agendado')
+      .sortBy('data_prevista');
+    
+    return agendados && agendados.length > 0 ? agendados[0] : null;
+  }, [id]);
+
   if (!animal) return <div className="p-12 text-center text-muted-foreground">Carregando animal...</div>;
 
   return (
@@ -49,7 +75,7 @@ const AnimalDetalhe = () => {
           <CardContent>
             <div className="text-2xl font-bold flex items-center gap-2">
               <Scale className="h-5 w-5 text-primary" />
-              435 kg
+              {ultimoPeso !== null ? `${ultimoPeso} kg` : 'Sem pesagem'}
             </div>
           </CardContent>
         </Card>
@@ -62,7 +88,9 @@ const AnimalDetalhe = () => {
         <Card className="bg-primary/5 border-none shadow-none">
           <CardHeader className="pb-2"><CardTitle className="text-xs uppercase tracking-wider text-muted-foreground">Próximo Manejo</CardTitle></CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-amber-600">15/06</div>
+            <div className="text-2xl font-bold text-amber-600">
+              {proximaAgenda ? new Date(proximaAgenda.data_prevista).toLocaleDateString() : 'Sem agenda'}
+            </div>
           </CardContent>
         </Card>
       </div>

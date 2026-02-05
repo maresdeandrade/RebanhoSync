@@ -4,13 +4,18 @@ import { TopBar } from "./TopBar";
 import { SideNav } from "./SideNav";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { SideNav as MobileNavContent } from "./SideNav";
-import { startSyncWorker } from "@/lib/offline/syncWorker";
+import { startSyncWorker, stopSyncWorker } from "@/lib/offline/syncWorker";
 
 export const AppShell = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     startSyncWorker();
+    
+    // Cleanup: stop worker when component unmounts
+    return () => {
+      stopSyncWorker();
+    };
   }, []);
 
   return (

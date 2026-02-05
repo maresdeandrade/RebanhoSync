@@ -16,38 +16,37 @@ import Reconciliacao from "./pages/Reconciliacao";
 import Placeholder from "./pages/Placeholder";
 import NotFound from "./pages/NotFound";
 import Index from "./pages/Index";
+import Login from "./pages/Login";
+import SelectFazenda from "./pages/SelectFazenda";
+import AdminMembros from "./pages/AdminMembros";
 
 const App = () => (
   <BrowserRouter>
     <Routes>
       <Route path="/" element={<Index />} />
-      <Route path="/login" element={<Placeholder />} />
-      <Route path="/select-fazenda" element={<Placeholder />} />
+      <Route path="/login" element={<Login />} />
+      <Route path="/select-fazenda" element={<SelectFazenda />} />
       
+      {/* Rotas protegidas pelo AuthGate */}
       <Route element={<AuthGate><AppShell /></AuthGate>}>
         <Route path="/home" element={<Home />} />
-        
         <Route path="/animais" element={<Animais />} />
         <Route path="/animais/novo" element={<AnimalNovo />} />
         <Route path="/animais/:id" element={<AnimalDetalhe />} />
-        
         <Route path="/lotes" element={<Lotes />} />
         <Route path="/lotes/:id" element={<Placeholder />} />
-        
         <Route path="/pastos" element={<Pastos />} />
         <Route path="/pastos/:id" element={<Placeholder />} />
-        
         <Route path="/agenda" element={<Agenda />} />
         <Route path="/registrar" element={<Registrar />} />
-        
         <Route path="/eventos" element={<Placeholder />} />
         <Route path="/financeiro" element={<Placeholder />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/perfil" element={<Placeholder />} />
         <Route path="/reconciliacao" element={<Reconciliacao />} />
-        <Route path="/admin/membros" element={<Placeholder />} />
+        <Route path="/admin/membros" element={<AdminMembros />} />
       </Route>
-
+      
       <Route path="*" element={<NotFound />} />
     </Routes>
   </BrowserRouter>

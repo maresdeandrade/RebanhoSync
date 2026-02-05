@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "@/lib/offline/db";
 import { createGesture } from "@/lib/offline/ops";
+import type { OperationInput } from "@/lib/offline/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,10 +12,18 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { showSuccess, showError } from "@/utils/toast";
 import { useNavigate } from "react-router-dom";
 import { Beef, Scale, Move, Syringe, ChevronRight, ChevronLeft, Check } from "lucide-react";
+import { useLotes } from "@/hooks/useLotes";
+
+// P2.2 FIX: Magic numbers to enum for better readability
+enum RegistrationStep {
+  SELECT_ANIMALS = 1,
+  CHOOSE_ACTION = 2,
+  CONFIRM = 3,
+}
 
 const Registrar = () => {
   const navigate = useNavigate();
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState<RegistrationStep>(RegistrationStep.SELECT_ANIMALS);
   const [tipoManejo, setTipoManejo] = useState<"sanitario" | "pesagem" | "movimentacao" | null>(null);
   const [selectedLoteId, setSelectedLoteId] = useState<string>("");
   const [selectedAnimais, setSelectedAnimais] = useState<string[]>([]);
@@ -24,7 +33,8 @@ const Registrar = () => {
   const [pesagemData, setPesagemData] = useState<Record<string, string>>({});
   const [movimentacaoData, setMovimentacaoData] = useState({ toLoteId: "" });
 
-  const lotes = useLiveQuery(() => db.state_lotes.toArray());
+  // P2.4 FIX: Use centralized useLotes hook
+const lotes = useLotes();
   const animaisNoLote = useLiveQuery(() => 
     selectedLoteId ? db.state_animais.where('lote_id').equals(selectedLoteId).toArray() : []
   , [selectedLoteId]);
@@ -35,7 +45,8 @@ const Registrar = () => {
     const fazenda_id = lotes?.[0]?.fazenda_id; // Simplificado para MVP
     if (!fazenda_id) return;
 
-    const ops: any[] = [];
+    // TYPE FIX: Use OperationInput[] (fields auto-added by createGesture)
+    const ops: OperationInput[] = [];
     const now = new Date().toISOString();
 
     for (const animalId of selectedAnimais) {
@@ -122,7 +133,7 @@ const Registrar = () => {
         </div>
       </div>
 
-      {step === 1 && (
+      {step === RegistrationStep.SELECT_ANIMALS && (
         <Card>
           <CardHeader><CardTitle>1. Selecionar Alvo</CardTitle></CardHeader>
           <CardContent className="space-y-4">
@@ -156,7 +167,7 @@ const Registrar = () => {
             <Button 
               className="w-full" 
               disabled={selectedAnimais.length === 0}
-              onClick={() => setStep(2)}
+              onClick={() => setStep(RegistrationStep.CHOOSE_ACTION)}
             >
               Próximo <ChevronRight className="ml-2 h-4 w-4" />
             </Button>
@@ -164,7 +175,7 @@ const Registrar = () => {
         </Card>
       )}
 
-      {step === 2 && (
+      {step === RegistrationStep.CHOOSE_ACTION && (
         <Card>
           <CardHeader><CardTitle>2. Escolher Ação</CardTitle></CardHeader>
           <CardContent className="space-y-6">
@@ -246,14 +257,14 @@ const Registrar = () => {
             )}
 
             <div className="flex gap-3">
-              <Button variant="outline" onClick={() => setStep(1)}><ChevronLeft className="mr-2 h-4 w-4" /> Voltar</Button>
-              <Button className="flex-1" disabled={!tipoManejo} onClick={() => setStep(3)}>Próximo <ChevronRight className="ml-2 h-4 w-4" /></Button>
+              <Button variant="outline" onClick={() => setStep(RegistrationStep.SELECT_ANIMALS)}><ChevronLeft className="mr-2 h-4 w-4" /> Voltar</Button>
+              <Button className="flex-1" disabled={!tipoManejo} onClick={() => setStep(RegistrationStep.CONFIRM)}>Próximo <ChevronRight className="ml-2 h-4 w-4" /></Button>
             </div>
           </CardContent>
         </Card>
       )}
 
-      {step === 3 && (
+      {step === RegistrationStep.CONFIRM && (
         <Card>
           <CardHeader><CardTitle>3. Confirmar Registro</CardTitle></CardHeader>
           <CardContent className="space-y-6">
@@ -275,7 +286,7 @@ const Registrar = () => {
             </div>
 
             <div className="flex gap-3">
-              <Button variant="outline" onClick={() => setStep(2)}><ChevronLeft className="mr-2 h-4 w-4" /> Voltar</Button>
+              <Button variant="outline" onClick={() => setStep(RegistrationStep.CHOOSE_ACTION)}><ChevronLeft className="mr-2 h-4 w-4" /> Voltar</Button>
               <Button className="flex-1 bg-emerald-600 hover:bg-emerald-700" onClick={handleFinalize}>
                 <Check className="mr-2 h-4 w-4" /> Confirmar e Salvar
               </Button>

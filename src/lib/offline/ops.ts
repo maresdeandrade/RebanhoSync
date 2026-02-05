@@ -1,7 +1,7 @@
 import { db } from './db';
-import { Operation, Gesture, OpAction } from './types';
+import { Operation, Gesture, OpAction, OperationInput } from './types';
 
-export const createGesture = async (fazenda_id: string, ops_input: Omit<Operation, 'client_tx_id' | 'client_op_id' | 'created_at'>[]) => {
+export const createGesture = async (fazenda_id: string, ops_input: OperationInput[]) => {
   const client_tx_id = crypto.randomUUID();
   const created_at = new Date().toISOString();
   const client_id = 'browser-client'; // Idealmente viria de um config
@@ -35,6 +35,9 @@ export const createGesture = async (fazenda_id: string, ops_input: Omit<Operatio
 };
 
 export const applyOpLocal = async (op: Operation) => {
+  // NOTE: Dexie requires dynamic table access via string key.
+  // Type-safe alternative would require exhaustive switch statement for all tables.
+  // eslint-disable-next-line  @typescript-eslint/no-explicit-any
   const store = (db as any)[op.table];
   if (!store) return;
 
@@ -56,6 +59,10 @@ export const applyOpLocal = async (op: Operation) => {
 };
 
 export const rollbackOpLocal = async (op: Operation) => {
+  if (!op.before_snapshot) return;
+  
+  // NOTE: Dexie requires dynamic table access via string key.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const store = (db as any)[op.table];
   if (!store) return;
 
@@ -70,5 +77,7 @@ export const rollbackOpLocal = async (op: Operation) => {
 
 function getAffectedStores(ops: Operation[]) {
   const tables = new Set(ops.map(op => op.table));
+  // NOTE: Dexie dynamic table lookup - no type-safe alternative
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return Array.from(tables).map(t => (db as any)[t]);
 }
