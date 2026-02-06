@@ -54,19 +54,10 @@ const SignUp = () => {
       // 2. ✅ Verificar se veio sessão (depende de Confirm Email config)
       if (authData.session) {
         // Confirm Email = OFF → já autenticado
-        console.log('[signup] Session criada - criando fazenda inicial');
+        console.log('[signup] Session criada - redirecionando para seleção de fazenda');
         
-        // Criar fazenda inicial via RPC
-        const { error: fazendaError } = await supabase
-          .rpc('create_fazenda', { _nome: 'Minha Fazenda' });
-
-        if (fazendaError) {
-          console.error('[signup] Erro ao criar fazenda:', fazendaError);
-          // Não bloqueia - usuário pode criar depois
-        }
-
-        // Redirecionar para home
-        navigate('/home');
+        // Redirecionar para seleção de fazenda (não cria fazenda automaticamente)
+        navigate('/select-fazenda');
       } else {
         // Confirm Email = ON → precisa confirmar email
         setSuccess(

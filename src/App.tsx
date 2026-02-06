@@ -22,13 +22,18 @@ import Login from "./pages/Login";
 import SignUp from "./pages/SignUp";
 import SelectFazenda from "./pages/SelectFazenda";
 import AdminMembros from "./pages/AdminMembros";
+import AcceptInvite from "./pages/AcceptInvite";
+import Perfil from "./pages/Perfil";
 
 const App = () => (
-  <BrowserRouter>
+  <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
     <Routes>
       <Route path="/" element={<Index />} />
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<SignUp />} />
+      
+      {/* Public/semi-public routes */}
+      <Route path="/invites/:token" element={<AcceptInvite />} />
       
       {/* Protegido: requer auth mas não requer fazenda */}
       <Route path="/select-fazenda" element={
@@ -58,7 +63,7 @@ const App = () => (
         <Route path="/eventos" element={<Placeholder />} />
         <Route path="/financeiro" element={<Placeholder />} />
         <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/perfil" element={<Placeholder />} />
+        <Route path="/perfil" element={<Perfil />} />
         <Route path="/reconciliacao" element={<Reconciliacao />} />
         <Route path="/admin/membros" element={<AdminMembros />} />
       </Route>
