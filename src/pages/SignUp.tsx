@@ -1,12 +1,12 @@
-import { supabase } from '@/lib/supabase';
-import { Navigate, Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '@/hooks/useAuth';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { useForm } from 'react-hook-form';
-import { useState } from 'react';
+import { supabase } from "@/lib/supabase";
+import { Navigate, Link, useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useForm } from "react-hook-form";
+import { useState } from "react";
 
 type SignUpForm = {
   email: string;
@@ -22,9 +22,14 @@ const SignUp = () => {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  
-  const { register, handleSubmit, formState: { errors }, watch } = useForm<SignUpForm>();
-  const password = watch('password');
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    watch,
+  } = useForm<SignUpForm>();
+  const password = watch("password");
 
   if (session) {
     return <Navigate to="/home" replace />;
@@ -37,38 +42,42 @@ const SignUp = () => {
 
     try {
       // 1. Signup no Supabase Auth (trigger criará user_profiles/user_settings)
-      const { data: authData, error: signUpError } = await supabase.auth.signUp({
-        email: data.email,
-        password: data.password,
-        options: {
-          data: {
-            display_name: data.displayName,
-            phone: data.phone,
+      const { data: authData, error: signUpError } = await supabase.auth.signUp(
+        {
+          email: data.email,
+          password: data.password,
+          options: {
+            data: {
+              display_name: data.displayName,
+              phone: data.phone,
+            },
           },
         },
-      });
+      );
 
       if (signUpError) throw signUpError;
-      if (!authData.user) throw new Error('Falha ao criar usuário');
+      if (!authData.user) throw new Error("Falha ao criar usuário");
 
-      // 2. ✅ Verificar se veio sessão (depende de Confirm Email config)
+      // ✅ Verificar se veio sessão (depende de Confirm Email config)
       if (authData.session) {
         // Confirm Email = OFF → já autenticado
-        console.log('[signup] Session criada - redirecionando para seleção de fazenda');
-        
-        // Redirecionar para seleção de fazenda (não cria fazenda automaticamente)
-        navigate('/select-fazenda');
+        console.log(
+          "[signup] Session criada - redirecionando para seleção de fazenda",
+        );
+
+        // ✅ MUDANÇA: não criar fazenda automaticamente
+        // Usuário deve ser convidado ou ter permissão explícita via can_create_farm
+        navigate("/select-fazenda");
       } else {
         // Confirm Email = ON → precisa confirmar email
         setSuccess(
-          'Conta criada com sucesso! Verifique seu email para confirmar o cadastro e depois faça login.'
+          "Conta criada com sucesso! Verifique seu email para confirmar o cadastro e depois faça login.",
         );
         setIsLoading(false);
       }
-      
     } catch (e: unknown) {
       const error = e instanceof Error ? e : new Error(String(e));
-      setError(error.message || 'Erro ao cadastrar usuário');
+      setError(error.message || "Erro ao cadastrar usuário");
       setIsLoading(false);
     }
   };
@@ -77,8 +86,12 @@ const SignUp = () => {
     <div className="flex min-h-screen items-center justify-center bg-muted/30 p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold">Cadastro - Gestão Pecuária</CardTitle>
-          <p className="text-sm text-muted-foreground">Crie sua conta gratuitamente</p>
+          <CardTitle className="text-2xl font-bold">
+            Cadastro - RebanhoSync
+          </CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Crie sua conta gratuitamente
+          </p>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -87,11 +100,13 @@ const SignUp = () => {
               <Input
                 id="displayName"
                 placeholder="Seu nome completo"
-                {...register('displayName', { required: 'Nome é obrigatório' })}
+                {...register("displayName", { required: "Nome é obrigatório" })}
                 disabled={isLoading}
               />
               {errors.displayName && (
-                <p className="text-sm text-destructive">{errors.displayName.message}</p>
+                <p className="text-sm text-destructive">
+                  {errors.displayName.message}
+                </p>
               )}
             </div>
 
@@ -101,17 +116,19 @@ const SignUp = () => {
                 id="email"
                 type="email"
                 placeholder="seu@email.com"
-                {...register('email', { 
-                  required: 'E-mail é obrigatório',
+                {...register("email", {
+                  required: "E-mail é obrigatório",
                   pattern: {
                     value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                    message: 'E-mail inválido'
-                  }
+                    message: "E-mail inválido",
+                  },
                 })}
                 disabled={isLoading}
               />
               {errors.email && (
-                <p className="text-sm text-destructive">{errors.email.message}</p>
+                <p className="text-sm text-destructive">
+                  {errors.email.message}
+                </p>
               )}
             </div>
 
@@ -121,17 +138,19 @@ const SignUp = () => {
                 id="phone"
                 type="tel"
                 placeholder="+55 11 98765-4321"
-                {...register('phone', { 
-                  required: 'Telefone é obrigatório',
+                {...register("phone", {
+                  required: "Telefone é obrigatório",
                   pattern: {
                     value: /^\+?[1-9]\d{1,14}$/,
-                    message: 'Telefone inválido'
-                  }
+                    message: "Telefone inválido",
+                  },
                 })}
                 disabled={isLoading}
               />
               {errors.phone && (
-                <p className="text-sm text-destructive">{errors.phone.message}</p>
+                <p className="text-sm text-destructive">
+                  {errors.phone.message}
+                </p>
               )}
             </div>
 
@@ -141,17 +160,19 @@ const SignUp = () => {
                 id="password"
                 type="password"
                 placeholder="Mínimo 6 caracteres"
-                {...register('password', { 
-                  required: 'Senha é obrigatória',
+                {...register("password", {
+                  required: "Senha é obrigatória",
                   minLength: {
                     value: 6,
-                    message: 'Senha deve ter pelo menos 6 caracteres'
-                  }
+                    message: "Senha deve ter pelo menos 6 caracteres",
+                  },
                 })}
                 disabled={isLoading}
               />
               {errors.password && (
-                <p className="text-sm text-destructive">{errors.password.message}</p>
+                <p className="text-sm text-destructive">
+                  {errors.password.message}
+                </p>
               )}
             </div>
 
@@ -161,14 +182,17 @@ const SignUp = () => {
                 id="confirmPassword"
                 type="password"
                 placeholder="Digite a senha novamente"
-                {...register('confirmPassword', { 
-                  required: 'Confirmação é obrigatória',
-                  validate: value => value === password || 'As senhas não correspondem'
+                {...register("confirmPassword", {
+                  required: "Confirmação é obrigatória",
+                  validate: (value) =>
+                    value === password || "As senhas não correspondem",
                 })}
                 disabled={isLoading}
               />
               {errors.confirmPassword && (
-                <p className="text-sm text-destructive">{errors.confirmPassword.message}</p>
+                <p className="text-sm text-destructive">
+                  {errors.confirmPassword.message}
+                </p>
               )}
             </div>
 
@@ -185,11 +209,11 @@ const SignUp = () => {
             )}
 
             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? 'Criando conta...' : 'Criar Conta'}
+              {isLoading ? "Criando conta..." : "Criar Conta"}
             </Button>
 
             <div className="text-center text-sm">
-              Já tem uma conta?{' '}
+              Já tem uma conta?{" "}
               <Link to="/login" className="text-primary hover:underline">
                 Faça login aqui
               </Link>

@@ -1,11 +1,18 @@
-import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { useToast } from '@/hooks/use-toast';
-import { Copy, X, Check } from 'lucide-react';
+import { useState, useEffect } from "react";
+import { supabase } from "@/lib/supabase";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
+import { Copy, X, Check } from "lucide-react";
 
 interface PendingInvite {
   id: string;
@@ -22,7 +29,10 @@ interface PendingInvitesProps {
   onUpdate: () => void;
 }
 
-export const PendingInvites = ({ fazendaId, onUpdate }: PendingInvitesProps) => {
+export const PendingInvites = ({
+  fazendaId,
+  onUpdate,
+}: PendingInvitesProps) => {
   const [invites, setInvites] = useState<PendingInvite[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -32,21 +42,21 @@ export const PendingInvites = ({ fazendaId, onUpdate }: PendingInvitesProps) => 
     try {
       setIsLoading(true);
       const { data, error } = await supabase
-        .from('farm_invites')
-        .select('id, email, phone, role, token, expires_at, created_at')
-        .eq('fazenda_id', fazendaId)
-        .eq('status', 'pending')
-        .is('deleted_at', null)
-        .order('created_at', { ascending: false });
+        .from("farm_invites")
+        .select("id, email, phone, role, token, expires_at, created_at")
+        .eq("fazenda_id", fazendaId)
+        .eq("status", "pending")
+        .is("deleted_at", null)
+        .order("created_at", { ascending: false });
 
       if (error) throw error;
       setInvites(data || []);
     } catch (error: unknown) {
       const err = error instanceof Error ? error : new Error(String(error));
       toast({
-        title: 'Error loading invites',
+        title: "Error loading invites",
         description: err.message,
-        variant: 'destructive'
+        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
@@ -55,19 +65,20 @@ export const PendingInvites = ({ fazendaId, onUpdate }: PendingInvitesProps) => 
 
   useEffect(() => {
     fetchInvites();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fazendaId]);
 
   const handleCancelInvite = async (inviteId: string) => {
     try {
-      const { error } = await supabase.rpc('cancel_invite', {
-        _invite_id: inviteId
+      const { error } = await supabase.rpc("cancel_invite", {
+        _invite_id: inviteId,
       });
 
       if (error) throw error;
 
       toast({
-        title: 'Success',
-        description: 'Invite cancelled'
+        title: "Success",
+        description: "Invite cancelled",
       });
 
       fetchInvites();
@@ -75,35 +86,35 @@ export const PendingInvites = ({ fazendaId, onUpdate }: PendingInvitesProps) => 
     } catch (error: unknown) {
       const err = error instanceof Error ? error : new Error(String(error));
       toast({
-        title: 'Error',
+        title: "Error",
         description: err.message,
-        variant: 'destructive'
+        variant: "destructive",
       });
     }
   };
 
   const handleCopyLink = async (token: string, id: string) => {
     const link = `${window.location.origin}/invites/${token}`;
-    
+
     try {
       await navigator.clipboard.writeText(link);
       setCopiedId(id);
       toast({
-        title: 'Copied!',
-        description: 'Invite link copied to clipboard'
+        title: "Copied!",
+        description: "Invite link copied to clipboard",
       });
       setTimeout(() => setCopiedId(null), 2000);
     } catch (error) {
       toast({
-        title: 'Error',
-        description: 'Failed to copy link',
-        variant: 'destructive'
+        title: "Error",
+        description: "Failed to copy link",
+        variant: "destructive",
       });
     }
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('pt-BR');
+    return new Date(dateString).toLocaleDateString("pt-BR");
   };
 
   const isExpired = (expiresAt: string) => {
@@ -111,7 +122,11 @@ export const PendingInvites = ({ fazendaId, onUpdate }: PendingInvitesProps) => 
   };
 
   if (isLoading) {
-    return <p className="text-sm text-muted-foreground">Loading pending invites...</p>;
+    return (
+      <p className="text-sm text-muted-foreground">
+        Loading pending invites...
+      </p>
+    );
   }
 
   if (invites.length === 0) {
@@ -139,7 +154,9 @@ export const PendingInvites = ({ fazendaId, onUpdate }: PendingInvitesProps) => 
                 <TableCell>
                   {invite.email || invite.phone}
                   {isExpired(invite.expires_at) && (
-                    <Badge variant="destructive" className="ml-2">Expired</Badge>
+                    <Badge variant="destructive" className="ml-2">
+                      Expired
+                    </Badge>
                   )}
                 </TableCell>
                 <TableCell className="capitalize">{invite.role}</TableCell>

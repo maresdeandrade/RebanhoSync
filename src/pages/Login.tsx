@@ -1,12 +1,12 @@
-import { supabase } from '@/lib/supabase';
-import { Navigate, Link } from 'react-router-dom';
-import { useAuth } from '@/hooks/useAuth';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { useForm } from 'react-hook-form';
-import { useState } from 'react';
+import { supabase } from "@/lib/supabase";
+import { Navigate, Link } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useForm } from "react-hook-form";
+import { useState } from "react";
 
 type LoginForm = {
   email: string;
@@ -17,8 +17,12 @@ const Login = () => {
   const { session, activeFarmId } = useAuth();
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  
-  const { register, handleSubmit, formState: { errors } } = useForm<LoginForm>();
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginForm>();
 
   // ✅ Melhora UX: redireciona direto para /home se já tiver fazenda ativa
   if (session) {
@@ -48,8 +52,10 @@ const Login = () => {
     <div className="flex min-h-screen items-center justify-center bg-muted/30 p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold">Gestão Pecuária</CardTitle>
-          <p className="text-sm text-muted-foreground">Entre para gerenciar sua fazenda</p>
+          <CardTitle className="text-2xl font-bold">RebanhoSync</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Entre para gerenciar sua fazenda
+          </p>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -59,17 +65,19 @@ const Login = () => {
                 id="email"
                 type="email"
                 placeholder="Seu e-mail"
-                {...register('email', { 
-                  required: 'E-mail é obrigatório',
+                {...register("email", {
+                  required: "E-mail é obrigatório",
                   pattern: {
                     value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                    message: 'E-mail inválido'
-                  }
+                    message: "E-mail inválido",
+                  },
                 })}
                 disabled={isLoading}
               />
               {errors.email && (
-                <p className="text-sm text-destructive">{errors.email.message}</p>
+                <p className="text-sm text-destructive">
+                  {errors.email.message}
+                </p>
               )}
             </div>
 
@@ -79,17 +87,19 @@ const Login = () => {
                 id="password"
                 type="password"
                 placeholder="Sua senha"
-                {...register('password', { 
-                  required: 'Senha é obrigatória',
+                {...register("password", {
+                  required: "Senha é obrigatória",
                   minLength: {
                     value: 6,
-                    message: 'Senha deve ter pelo menos 6 caracteres'
-                  }
+                    message: "Senha deve ter pelo menos 6 caracteres",
+                  },
                 })}
                 disabled={isLoading}
               />
               {errors.password && (
-                <p className="text-sm text-destructive">{errors.password.message}</p>
+                <p className="text-sm text-destructive">
+                  {errors.password.message}
+                </p>
               )}
             </div>
 
@@ -100,11 +110,11 @@ const Login = () => {
             )}
 
             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? 'Entrando...' : 'Entrar'}
+              {isLoading ? "Entrando..." : "Entrar"}
             </Button>
 
             <div className="text-center text-sm">
-              Não tem uma conta?{' '}
+              Não tem uma conta?{" "}
               <Link to="/signup" className="text-primary hover:underline">
                 Cadastre-se aqui
               </Link>

@@ -1,11 +1,17 @@
-import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { supabase } from '@/lib/supabase';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { useToast } from '@/hooks/use-toast';
-import { CheckCircle, XCircle, Loader2 } from 'lucide-react';
+import { useEffect, useState, useCallback } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { supabase } from "@/lib/supabase";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
+import { CheckCircle, XCircle, Loader2 } from "lucide-react";
 
 interface InvitePreview {
   fazenda_nome: string;
@@ -25,28 +31,24 @@ export const AcceptInvite = () => {
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
-  useEffect(() => {
+  const loadInvite = useCallback(async () => {
     if (!token) {
-      setError('Invalid invite link');
+      setError("Invalid invite link");
       setIsLoading(false);
       return;
     }
 
-    loadInvite();
-  }, [token]);
-
-  const loadInvite = async () => {
     try {
       setIsLoading(true);
-      const { data, error } = await supabase.rpc('get_invite_preview', {
-        _token: token
+      const { data, error } = await supabase.rpc("get_invite_preview", {
+        _token: token,
       });
 
       if (error) throw error;
 
       // RPC returns null if invite not found
       if (!data) {
-        throw new Error('Invite not found');
+        throw new Error("Invite not found");
       }
 
       setInvite(data);
@@ -56,16 +58,22 @@ export const AcceptInvite = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [token]);
+
+  useEffect(() => {
+    loadInvite();
+  }, [loadInvite]);
 
   const handleAccept = async () => {
     // Check if user is authenticated
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) {
       toast({
-        title: 'Authentication required',
-        description: 'Please login to accept this invite',
-        variant: 'destructive'
+        title: "Autenticação necessária",
+        description: "Por favor faça login para aceitar este convite",
+        variant: "destructive",
       });
       // Redirect to login with return URL
       navigate(`/login?redirect=/invites/${token}`);
@@ -74,25 +82,53 @@ export const AcceptInvite = () => {
 
     setIsProcessing(true);
     try {
-      const { data: fazendaId, error } = await supabase.rpc('accept_invite', {
-        _token: token
+      console.log("[AcceptInvite] Accepting invite:", token);
+      const { data: fazendaId, error } = await supabase.rpc("accept_invite", {
+        _token: token,
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error("[AcceptInvite] Error accepting invite:", error);
+
+        // ✅ P0: User-friendly error messages for common cases
+        if (error.message?.toLowerCase().includes("email does not match")) {
+          throw new Error(
+            "Este convite é para outro email. Por favor, saia e entre com o email correto do convite.",
+          );
+        }
+
+        if (error.message?.toLowerCase().includes("phone does not match")) {
+          throw new Error(
+            "Seu telefone não corresponde ao telefone do convite. Atualize seu telefone no Perfil ou entre em contato com quem enviou o convite.",
+          );
+        }
+
+        if (error.message?.toLowerCase().includes("already a member")) {
+          throw new Error("Você já é membro desta fazenda.");
+        }
+
+        if (error.message?.toLowerCase().includes("expired")) {
+          throw new Error("Este convite expirou. Solicite um novo convite.");
+        }
+
+        throw error;
+      }
+
+      console.log("[AcceptInvite] Invite accepted, fazenda:", fazendaId);
 
       toast({
-        title: 'Success!',
-        description: 'You have joined the farm'
+        title: "Sucesso!",
+        description: "Você entrou na fazenda",
       });
 
       // Redirect to home
-      navigate('/home');
+      navigate("/home");
     } catch (error: unknown) {
       const err = error instanceof Error ? error : new Error(String(error));
       toast({
-        title: 'Error',
+        title: "Error",
         description: err.message,
-        variant: 'destructive'
+        variant: "destructive",
       });
     } finally {
       setIsProcessing(false);
@@ -102,25 +138,25 @@ export const AcceptInvite = () => {
   const handleReject = async () => {
     setIsProcessing(true);
     try {
-      const { error } = await supabase.rpc('reject_invite', {
-        _token: token
+      const { error } = await supabase.rpc("reject_invite", {
+        _token: token,
       });
 
       if (error) throw error;
 
       toast({
-        title: 'Invite rejected',
-        description: 'You have declined this invitation'
+        title: "Convite rejeitado",
+        description: "Você recusou este convite",
       });
 
       // Redirect to home or index
-      navigate('/');
+      navigate("/");
     } catch (error: unknown) {
       const err = error instanceof Error ? error : new Error(String(error));
       toast({
-        title: 'Error',
+        title: "Error",
         description: err.message,
-        variant: 'destructive'
+        variant: "destructive",
       });
     } finally {
       setIsProcessing(false);
@@ -128,10 +164,10 @@ export const AcceptInvite = () => {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('pt-BR', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
+    return new Date(dateString).toLocaleDateString("pt-BR", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
     });
   };
 
@@ -148,12 +184,16 @@ export const AcceptInvite = () => {
       <div className="min-h-screen flex items-center justify-center p-4">
         <Card className="max-w-md w-full">
           <CardHeader>
-            <CardTitle className="text-destructive">Invite Not Found</CardTitle>
-            <CardDescription>{error || 'This invite link is invalid'}</CardDescription>
+            <CardTitle className="text-destructive">
+              Convite Não Encontrado
+            </CardTitle>
+            <CardDescription>
+              {error || "Este link de convite é inválido"}
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button onClick={() => navigate('/')} className="w-full">
-              Go to Home
+            <Button onClick={() => navigate("/")} className="w-full">
+              Ir para Início
             </Button>
           </CardContent>
         </Card>
@@ -166,17 +206,21 @@ export const AcceptInvite = () => {
       <div className="min-h-screen flex items-center justify-center p-4">
         <Card className="max-w-md w-full">
           <CardHeader>
-            <CardTitle className="text-destructive">Invite Expired</CardTitle>
+            <CardTitle className="text-destructive">Convite Expirado</CardTitle>
             <CardDescription>
-              This invitation has expired or has already been used.
+              Este convite expirou ou já foi utilizado.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-2 text-sm">
-              <p><strong>Farm:</strong> {invite.fazenda_nome}</p>
-              <p><strong>Status:</strong> <Badge>{invite.status}</Badge></p>
+              <p>
+                <strong>Fazenda:</strong> {invite.fazenda_nome}
+              </p>
+              <p>
+                <strong>Status:</strong> <Badge>{invite.status}</Badge>
+              </p>
             </div>
-            <Button onClick={() => navigate('/')} className="w-full mt-4">
+            <Button onClick={() => navigate("/")} className="w-full mt-4">
               Go to Home
             </Button>
           </CardContent>
@@ -189,27 +233,35 @@ export const AcceptInvite = () => {
     <div className="min-h-screen flex items-center justify-center p-4">
       <Card className="max-w-md w-full">
         <CardHeader>
-          <CardTitle>You've Been Invited!</CardTitle>
+          <CardTitle>Você Foi Convidado!</CardTitle>
           <CardDescription>
-            You have been invited to join a farm on Gestão Agro
+            Você foi convidado para entrar em uma fazenda no RebanhoSync
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="space-y-3">
             <div className="flex items-center justify-between py-2 border-b">
-              <span className="text-sm font-medium text-muted-foreground">Farm</span>
+              <span className="text-sm font-medium text-muted-foreground">
+                Fazenda
+              </span>
               <span className="font-semibold">{invite.fazenda_nome}</span>
             </div>
             <div className="flex items-center justify-between py-2 border-b">
-              <span className="text-sm font-medium text-muted-foreground">Role</span>
+              <span className="text-sm font-medium text-muted-foreground">
+                Função
+              </span>
               <Badge className="capitalize">{invite.role}</Badge>
             </div>
             <div className="flex items-center justify-between py-2 border-b">
-              <span className="text-sm font-medium text-muted-foreground">Invited by</span>
+              <span className="text-sm font-medium text-muted-foreground">
+                Convidado por
+              </span>
               <span>{invite.inviter_nome}</span>
             </div>
             <div className="flex items-center justify-between py-2">
-              <span className="text-sm font-medium text-muted-foreground">Expires</span>
+              <span className="text-sm font-medium text-muted-foreground">
+                Expira
+              </span>
               <span className="text-sm">{formatDate(invite.expires_at)}</span>
             </div>
           </div>
@@ -223,12 +275,12 @@ export const AcceptInvite = () => {
               {isProcessing ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Processing...
+                  Processando...
                 </>
               ) : (
                 <>
                   <CheckCircle className="h-4 w-4 mr-2" />
-                  Accept
+                  Aceitar
                 </>
               )}
             </Button>
@@ -246,7 +298,7 @@ export const AcceptInvite = () => {
               ) : (
                 <>
                   <XCircle className="h-4 w-4 mr-2" />
-                  Reject
+                  Recusar
                 </>
               )}
             </Button>

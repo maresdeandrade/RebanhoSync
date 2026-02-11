@@ -10,14 +10,14 @@ export function LoadingScreen() {
       <div className="w-full max-w-md space-y-6">
         {/* App title skeleton */}
         <Skeleton className="h-12 w-48 mx-auto" />
-        
+
         {/* Content cards skeleton */}
         <div className="space-y-3">
           <Skeleton className="h-20 w-full rounded-lg" />
           <Skeleton className="h-20 w-full rounded-lg" />
           <Skeleton className="h-20 w-full rounded-lg" />
         </div>
-        
+
         {/* Footer skeleton */}
         <Skeleton className="h-10 w-32 mx-auto" />
       </div>

@@ -1,17 +1,24 @@
-import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Button } from '@/components/ui/button';
-import { useToast } from '@/hooks/use-toast';
-import { RoleBadge } from '@/components/members/RoleBadge';
-import { MemberRoleDialog } from '@/components/members/MemberRoleDialog';
-import { RemoveMemberDialog } from '@/components/members/RemoveMemberDialog';
-import { InviteMemberDialog } from '@/components/members/InviteMemberDialog';
-import { PendingInvites } from '@/components/members/PendingInvites';
-import { Settings, UserMinus, UserPlus } from 'lucide-react';
+import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+import { RoleBadge } from "@/components/members/RoleBadge";
+import { MemberRoleDialog } from "@/components/members/MemberRoleDialog";
+import { RemoveMemberDialog } from "@/components/members/RemoveMemberDialog";
+import { InviteMemberDialog } from "@/components/members/InviteMemberDialog";
+import { PendingInvites } from "@/components/members/PendingInvites";
+import { Settings, UserMinus, UserPlus } from "lucide-react";
 
-type Role = 'owner' | 'manager' | 'cowboy';
+type Role = "owner" | "manager" | "cowboy";
 
 interface Member {
   user_id: string;
@@ -20,13 +27,14 @@ interface Member {
   user_profiles: {
     display_name: string;
     phone: string | null;
-  } | null;
+  }[];
 }
 
 export const AdminMembros = () => {
   const [members, setMembers] = useState<Member[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeFarmId, setActiveFarmId] = useState<string | null>(null);
+  const [farmName, setFarmName] = useState<string | null>(null);
   const [currentUserRole, setCurrentUserRole] = useState<Role | null>(null);
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   const [roleDialogOpen, setRoleDialogOpen] = useState(false);
@@ -39,36 +47,51 @@ export const AdminMembros = () => {
       setIsLoading(true);
 
       // Get active farm from user_settings
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) throw new Error("Não autenticado");
 
       const { data: settings } = await supabase
-        .from('user_settings')
-        .select('active_fazenda_id')
-        .eq('user_id', user.id)
+        .from("user_settings")
+        .select("active_fazenda_id")
+        .eq("user_id", user.id)
         .single();
 
       if (!settings?.active_fazenda_id) {
-        throw new Error('No active farm selected');
+        throw new Error("Nenhuma fazenda ativa selecionada");
       }
 
       setActiveFarmId(settings.active_fazenda_id);
 
-      // Get current user's role
-      const { data: myMembership } = await supabase
-        .from('user_fazendas')
-        .select('role')
-        .eq('user_id', user.id)
-        .eq('fazenda_id', settings.active_fazenda_id)
-        .is('deleted_at', null)
+      // ✅ Fetch farm name
+      const { data: farmData } = await supabase
+        .from("fazendas")
+        .select("nome")
+        .eq("id", settings.active_fazenda_id)
+        .is("deleted_at", null)
         .single();
 
-      setCurrentUserRole(myMembership?.role as Role || null);
+      if (farmData) {
+        setFarmName(farmData.nome);
+      }
+
+      // Get current user's role
+      const { data: myMembership } = await supabase
+        .from("user_fazendas")
+        .select("role")
+        .eq("user_id", user.id)
+        .eq("fazenda_id", settings.active_fazenda_id)
+        .is("deleted_at", null)
+        .single();
+
+      setCurrentUserRole((myMembership?.role as Role) || null);
 
       // Fetch all members of the farm
       const { data, error } = await supabase
-        .from('user_fazendas')
-        .select(`
+        .from("user_fazendas")
+        .select(
+          `
           user_id,
           role,
           accepted_at,
@@ -76,20 +99,26 @@ export const AdminMembros = () => {
             display_name,
             phone
           )
-        `)
-        .eq('fazenda_id', settings.active_fazenda_id)
-        .is('deleted_at', null)
-        .order('accepted_at', { ascending: true });
+        `,
+        )
+        .eq("fazenda_id", settings.active_fazenda_id)
+        .is("deleted_at", null)
+        .order("accepted_at", { ascending: true });
 
       if (error) throw error;
 
-      setMembers(data as Member[]);
+      setMembers(
+        (data || []).map((m) => ({
+          ...m,
+          user_profiles: m.user_profiles || [],
+        }))
+      );
     } catch (error: unknown) {
       const err = error instanceof Error ? error : new Error(String(error));
       toast({
-        title: 'Error loading members',
+        title: "Erro ao carregar membros",
         description: err.message,
-        variant: 'destructive'
+        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
@@ -98,10 +127,12 @@ export const AdminMembros = () => {
 
   useEffect(() => {
     fetchMembers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const canManage = currentUserRole === 'owner' || currentUserRole === 'manager';
-  const canRemove = currentUserRole === 'owner';
+  const canManage =
+    currentUserRole === "owner" || currentUserRole === "manager";
+  const canRemove = currentUserRole === "owner";
 
   const handleOpenRoleDialog = (member: Member) => {
     setSelectedMember(member);
@@ -114,14 +145,14 @@ export const AdminMembros = () => {
   };
 
   const formatDate = (dateString: string | null) => {
-    if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString('pt-BR');
+    if (!dateString) return "N/A";
+    return new Date(dateString).toLocaleDateString("pt-BR");
   };
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <p className="text-muted-foreground">Loading members...</p>
+        <p className="text-muted-foreground">Carregando membros...</p>
       </div>
     );
   }
@@ -131,11 +162,16 @@ export const AdminMembros = () => {
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>Farm Members</CardTitle>
+            <div>
+              <CardTitle>Membros da Fazenda</CardTitle>
+              {farmName && (
+                <p className="text-sm text-muted-foreground mt-1">{farmName}</p>
+              )}
+            </div>
             {canManage && (
               <Button onClick={() => setInviteDialogOpen(true)}>
                 <UserPlus className="h-4 w-4 mr-2" />
-                Invite Member
+                Convidar Membro
               </Button>
             )}
           </div>
@@ -144,27 +180,34 @@ export const AdminMembros = () => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Phone</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Joined</TableHead>
-                {canManage && <TableHead className="text-right">Actions</TableHead>}
+                <TableHead>Nome</TableHead>
+                <TableHead>Telefone</TableHead>
+                <TableHead>Função</TableHead>
+                <TableHead>Entrou em</TableHead>
+                {canManage && (
+                  <TableHead className="text-right">Ações</TableHead>
+                )}
               </TableRow>
             </TableHeader>
             <TableBody>
               {members.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={canManage ? 5 : 4} className="text-center text-muted-foreground">
-                    No members found
+                  <TableCell
+                    colSpan={canManage ? 5 : 4}
+                    className="text-center text-muted-foreground"
+                  >
+                    Nenhum membro encontrado
                   </TableCell>
                 </TableRow>
               ) : (
                 members.map((member) => (
                   <TableRow key={member.user_id}>
                     <TableCell className="font-medium">
-                      {member.user_profiles?.display_name || 'Unknown'}
+                      {member.user_profiles?.[0]?.display_name || "Desconhecido"}
                     </TableCell>
-                    <TableCell>{member.user_profiles?.phone || 'N/A'}</TableCell>
+                    <TableCell>
+                      {member.user_profiles?.[0]?.phone || "N/D"}
+                    </TableCell>
                     <TableCell>
                       <RoleBadge role={member.role} />
                     </TableCell>
@@ -177,7 +220,7 @@ export const AdminMembros = () => {
                           onClick={() => handleOpenRoleDialog(member)}
                         >
                           <Settings className="h-4 w-4 mr-1" />
-                          Change Role
+                          Alterar Função
                         </Button>
                         {canRemove && (
                           <Button
@@ -186,7 +229,7 @@ export const AdminMembros = () => {
                             onClick={() => handleOpenRemoveDialog(member)}
                           >
                             <UserMinus className="h-4 w-4 mr-1" />
-                            Remove
+                            Remover
                           </Button>
                         )}
                       </TableCell>
@@ -212,8 +255,9 @@ export const AdminMembros = () => {
               selectedMember
                 ? {
                     user_id: selectedMember.user_id,
-                    display_name: selectedMember.user_profiles?.display_name || 'Unknown',
-                    role: selectedMember.role
+                    display_name:
+                      selectedMember.user_profiles?.[0]?.display_name || "Unknown",
+                    role: selectedMember.role,
                   }
                 : null
             }
@@ -229,7 +273,8 @@ export const AdminMembros = () => {
               selectedMember
                 ? {
                     user_id: selectedMember.user_id,
-                    display_name: selectedMember.user_profiles?.display_name || 'Unknown'
+                    display_name:
+                      selectedMember.user_profiles?.[0]?.display_name || "Unknown",
                   }
                 : null
             }

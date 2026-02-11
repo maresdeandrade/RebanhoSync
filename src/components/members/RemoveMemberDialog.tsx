@@ -1,7 +1,16 @@
-import { useState } from 'react';
-import { supabase } from '@/lib/supabase';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { useToast } from '@/hooks/use-toast';
+import { useState } from "react";
+import { supabase } from "@/lib/supabase";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useToast } from "@/hooks/use-toast";
 
 interface Member {
   user_id: string;
@@ -16,12 +25,12 @@ interface RemoveMemberDialogProps {
   onSuccess: () => void;
 }
 
-export const RemoveMemberDialog = ({ 
-  member, 
-  open, 
-  onOpenChange, 
+export const RemoveMemberDialog = ({
+  member,
+  open,
+  onOpenChange,
   fazendaId,
-  onSuccess 
+  onSuccess,
 }: RemoveMemberDialogProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
@@ -31,16 +40,16 @@ export const RemoveMemberDialog = ({
 
     setIsLoading(true);
     try {
-      const { error } = await supabase.rpc('admin_remove_member', {
+      const { error } = await supabase.rpc("admin_remove_member", {
         _fazenda_id: fazendaId,
-        _target_user_id: member.user_id
+        _target_user_id: member.user_id,
       });
 
       if (error) throw error;
 
       toast({
-        title: 'Success',
-        description: `${member.display_name} has been removed`
+        title: "Success",
+        description: `${member.display_name} has been removed`,
       });
 
       onSuccess();
@@ -48,9 +57,9 @@ export const RemoveMemberDialog = ({
     } catch (error: unknown) {
       const err = error instanceof Error ? error : new Error(String(error));
       toast({
-        title: 'Error',
+        title: "Error",
         description: err.message,
-        variant: 'destructive'
+        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
@@ -63,13 +72,18 @@ export const RemoveMemberDialog = ({
         <AlertDialogHeader>
           <AlertDialogTitle>Remove {member?.display_name}?</AlertDialogTitle>
           <AlertDialogDescription>
-            This will remove their access to this farm. This action cannot be undone.
+            This will remove their access to this farm. This action cannot be
+            undone.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel disabled={isLoading}>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={handleRemove} disabled={isLoading} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-            {isLoading ? 'Removing...' : 'Remove'}
+          <AlertDialogAction
+            onClick={handleRemove}
+            disabled={isLoading}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          >
+            {isLoading ? "Removing..." : "Remove"}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

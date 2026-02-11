@@ -11,7 +11,10 @@ const getClientId = () => {
   return next;
 };
 
-export const createGesture = async (fazenda_id: string, ops_input: OperationInput[]) => {
+export const createGesture = async (
+  fazenda_id: string,
+  ops_input: OperationInput[],
+) => {
   const client_tx_id = crypto.randomUUID();
   const client_recorded_at = new Date().toISOString();
   const client_id = getClientId();

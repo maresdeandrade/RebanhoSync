@@ -31,12 +31,16 @@ export const pullInitialData = async (fazenda_id: string) => {
     const store = (db as any)[localStore];
 
     if (!store) {
-      console.error(`[pull] Store ${localStore} not found for table ${remoteTable}`);
+      console.error(
+        `[pull] Store ${localStore} not found for table ${remoteTable}`,
+      );
       continue;
     }
 
     await store.clear();
     await store.bulkPut(rows); // ✅ idempotente
-    console.log(`[pull] Synced ${rows.length} records for ${remoteTable} → ${localStore}`);
+    console.log(
+      `[pull] Synced ${rows.length} records for ${remoteTable} → ${localStore}`,
+    );
   }
 };

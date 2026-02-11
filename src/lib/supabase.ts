@@ -1,5 +1,5 @@
-import { createClient } from '@supabase/supabase-js';
-import { env, validateEnv } from './env';
+import { createClient } from "@supabase/supabase-js";
+import { env, validateEnv } from "./env";
 
 // Validar envs no momento da importação para falha rápida
 validateEnv();

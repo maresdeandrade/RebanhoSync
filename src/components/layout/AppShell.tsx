@@ -11,7 +11,7 @@ export const AppShell = () => {
 
   useEffect(() => {
     startSyncWorker();
-    
+
     // Cleanup: stop worker when component unmounts
     return () => {
       stopSyncWorker();
@@ -21,10 +21,10 @@ export const AppShell = () => {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <TopBar onMenuClick={() => setIsMobileMenuOpen(true)} />
-      
+
       <div className="flex flex-1">
         <SideNav />
-        
+
         <main className="flex-1 p-4 md:p-8 overflow-x-hidden">
           <div className="max-w-7xl mx-auto">
             <Outlet />
@@ -36,7 +36,9 @@ export const AppShell = () => {
         <SheetContent side="left" className="p-0 w-72">
           <div className="h-full flex flex-col">
             <div className="p-6 border-b">
-              <span className="text-xl font-bold text-primary">Gestão Pecuária</span>
+              <span className="text-xl font-bold text-primary">
+                Gestão Pecuária
+              </span>
             </div>
             <div className="flex-1 overflow-y-auto">
               <div className="py-4 px-4 space-y-1">

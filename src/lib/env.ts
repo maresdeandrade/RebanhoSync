@@ -5,15 +5,17 @@ export const env = {
 };
 
 const requiredEnvVars = [
-  'VITE_SUPABASE_URL',
-  'VITE_SUPABASE_ANON_KEY',
-  'VITE_SUPABASE_FUNCTIONS_URL',
+  "VITE_SUPABASE_URL",
+  "VITE_SUPABASE_ANON_KEY",
+  "VITE_SUPABASE_FUNCTIONS_URL",
 ] as const;
 
 export function validateEnv() {
   for (const key of requiredEnvVars) {
     if (!import.meta.env[key]) {
-      throw new Error(`Missing environment variable: ${key}. Please check your .env file.`);
+      throw new Error(
+        `Missing environment variable: ${key}. Please check your .env file.`,
+      );
     }
   }
 }

@@ -8,6 +8,8 @@ export const TABLE_MAP: Record<string, string> = {
   pastos: "state_pastos",
   agenda_itens: "state_agenda_itens",
   contrapartes: "state_contrapartes",
+  animais_sociedade: "state_animais_sociedade", // FASE 2.2
+  categorias_zootecnicas: "state_categorias_zootecnicas", // FASE 2.3
   protocolos_sanitarios: "state_protocolos_sanitarios",
   protocolos_sanitarios_itens: "state_protocolos_sanitarios_itens",
 
@@ -57,7 +59,10 @@ export const getRemoteTableName = (storeOrRemote: string): string => {
   const remote = REVERSE_TABLE_MAP[storeOrRemote];
   if (remote) return remote;
 
-  if (storeOrRemote.startsWith("state_") || storeOrRemote.startsWith("event_")) {
+  if (
+    storeOrRemote.startsWith("state_") ||
+    storeOrRemote.startsWith("event_")
+  ) {
     console.warn(
       `[table-map] No remote table found for local store: ${storeOrRemote}. Using as-is.`,
     );

@@ -6,5 +6,5 @@ import { AuthProvider } from "@/hooks/useAuth";
 createRoot(document.getElementById("root")!).render(
   <AuthProvider>
     <App />
-  </AuthProvider>
+  </AuthProvider>,
 );
