@@ -2,6 +2,13 @@ import { db } from "./db";
 import { Operation, Gesture, OperationInput } from "./types";
 import { getLocalStoreName } from "./tableMap";
 
+function getRecordKey(record: Record<string, unknown>): string | null {
+  if (typeof record.id === "string") return record.id;
+  if (typeof record.evento_id === "string") return record.evento_id;
+  if (typeof record.user_id === "string") return record.user_id;
+  return null;
+}
+
 const getClientId = () => {
   const key = "gestao_agro_client_id";
   const existing = localStorage.getItem(key);
@@ -27,15 +34,16 @@ export const createGesture = async (
     created_at: client_recorded_at,
   };
 
-  const ops: Operation[] = ops_input.map((op) => {
+  const ops: Operation[] = ops_input.map((op, index) => {
     const client_op_id = crypto.randomUUID();
 
     return {
       ...op,
       client_tx_id,
       client_op_id,
+      op_order: index,
       created_at: client_recorded_at,
-      // ✅ Injeta SyncMeta NO RECORD (e não manda created_at/updated_at)
+      // Injeta SyncMeta no record (sem created_at/updated_at de negocio)
       record: {
         ...op.record,
         fazenda_id,
@@ -65,26 +73,52 @@ export const createGesture = async (
 
 export const applyOpLocal = async (op: Operation) => {
   const localStoreName = getLocalStoreName(op.table);
-  const store = (db as any)[localStoreName];
+  const store = db.table(localStoreName);
 
   if (!store) {
     console.error(`[ops] Store ${localStoreName} not found in database.`);
     return;
   }
 
-  if (op.action === "INSERT" || op.action === "UPDATE") {
-    if (op.action === "UPDATE" && !op.before_snapshot) {
-      // ⚠️ mantém o comportamento atual (assume PK=record.id para UPDATE)
-      const existing = await store.get(op.record.id);
+  if (op.action === "INSERT") {
+    await store.put(op.record);
+    return;
+  }
+
+  if (op.action === "UPDATE") {
+    const recordKey = getRecordKey(op.record);
+    if (!recordKey) {
+      console.error(
+        `[ops] UPDATE skipped for ${op.table}: missing primary key in record`,
+      );
+      return;
+    }
+
+    const existing = await store.get(recordKey);
+    if (!op.before_snapshot) {
       op.before_snapshot = existing;
       await db.queue_ops.update(op.client_op_id, { before_snapshot: existing });
     }
-    await store.put(op.record);
-  } else if (op.action === "DELETE") {
-    const existing = await store.get(op.record.id);
+
+    // UPDATE local deve ser patch parcial, nunca replace completo.
+    const mergedRecord = existing ? { ...existing, ...op.record } : op.record;
+    await store.put(mergedRecord);
+    return;
+  }
+
+  if (op.action === "DELETE") {
+    const recordKey = getRecordKey(op.record);
+    if (!recordKey) {
+      console.error(
+        `[ops] DELETE skipped for ${op.table}: missing primary key in record`,
+      );
+      return;
+    }
+
+    const existing = await store.get(recordKey);
     op.before_snapshot = existing;
     await db.queue_ops.update(op.client_op_id, { before_snapshot: existing });
-    await store.update(op.record.id, { deleted_at: new Date().toISOString() });
+    await store.update(recordKey, { deleted_at: new Date().toISOString() });
   }
 };
 
@@ -92,11 +126,13 @@ export const rollbackOpLocal = async (op: Operation) => {
   if (!op.before_snapshot && op.action !== "INSERT") return;
 
   const localStoreName = getLocalStoreName(op.table);
-  const store = (db as any)[localStoreName];
+  const store = db.table(localStoreName);
   if (!store) return;
 
   if (op.action === "INSERT") {
-    await store.delete(op.record.id);
+    const recordKey = getRecordKey(op.record);
+    if (!recordKey) return;
+    await store.delete(recordKey);
   } else if (op.action === "UPDATE" || op.action === "DELETE") {
     if (op.before_snapshot) {
       await store.put(op.before_snapshot);
@@ -107,6 +143,6 @@ export const rollbackOpLocal = async (op: Operation) => {
 export function getAffectedStores(ops: Operation[]) {
   const tableNames = new Set(ops.map((op) => getLocalStoreName(op.table)));
   return Array.from(tableNames)
-    .map((t) => (db as any)[t])
+    .map((t) => db.table(t))
     .filter(Boolean);
 }

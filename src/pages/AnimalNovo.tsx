@@ -4,6 +4,8 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "@/lib/offline/db";
 import { createGesture } from "@/lib/offline/ops";
 import type { OperationInput } from "@/lib/offline/types";
+import { buildEventGesture } from "@/lib/events/buildEventGesture";
+import { EventValidationError } from "@/lib/events/validators";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,9 +26,11 @@ import {
 } from "@/components/ui/accordion";
 import { showSuccess, showError } from "@/utils/toast";
 import { ChevronLeft, Save } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 const AnimalNovo = () => {
   const navigate = useNavigate();
+  const { activeFarmId } = useAuth();
 
   // Estados básicos
   const [identificacao, setIdentificacao] = useState("");
@@ -52,9 +56,15 @@ const AnimalNovo = () => {
   const [raca, setRaca] = useState("");
 
   // Estados da Fase 2.2: Sociedade (quando origem='sociedade')
-  const [contraparteId, setContraparteId] = useState<string>("null");
+  const [sociedadeContraparteId, setSociedadeContraparteId] =
+    useState<string>("null");
   const [percentualSociedade, setPercentualSociedade] = useState("");
   const [inicioSociedade, setInicioSociedade] = useState("");
+
+  // Vinculo financeiro para origem='compra'
+  const [compraValorTotal, setCompraValorTotal] = useState("");
+  const [compraContraparteId, setCompraContraparteId] = useState<string>("null");
+  const [compraObservacoes, setCompraObservacoes] = useState("");
 
   // Estados específicos para machos
   const [papelMacho, setPapelMacho] = useState<
@@ -62,24 +72,44 @@ const AnimalNovo = () => {
   >("null");
   const [habilitadoMonta, setHabilitadoMonta] = useState(false);
 
-  const lotes = useLiveQuery(() => db.state_lotes.toArray());
+  const lotes = useLiveQuery(() => {
+    if (!activeFarmId) return [];
+    return db.state_lotes
+      .where("fazenda_id")
+      .equals(activeFarmId)
+      .filter((l) => !l.deleted_at)
+      .toArray();
+  }, [activeFarmId]);
 
   // Query para machos (potenciais pais)
-  const machos = useLiveQuery(() =>
-    db.state_animais
+  const machos = useLiveQuery(() => {
+    if (!activeFarmId) return [];
+    return db.state_animais
+      .where("fazenda_id")
+      .equals(activeFarmId)
       .filter((a) => a.sexo === "M" && (!a.deleted_at || a.deleted_at === null))
-      .toArray(),
-  );
+      .toArray();
+  }, [activeFarmId]);
 
   // Query para fêmeas (potenciais mães)
-  const femeas = useLiveQuery(() =>
-    db.state_animais
+  const femeas = useLiveQuery(() => {
+    if (!activeFarmId) return [];
+    return db.state_animais
+      .where("fazenda_id")
+      .equals(activeFarmId)
       .filter((a) => a.sexo === "F" && (!a.deleted_at || a.deleted_at === null))
-      .toArray(),
-  );
+      .toArray();
+  }, [activeFarmId]);
 
   // Query para contrapartes (para sociedade)
-  const contrapartes = useLiveQuery(() => db.state_contrapartes.toArray());
+  const contrapartes = useLiveQuery(() => {
+    if (!activeFarmId) return [];
+    return db.state_contrapartes
+      .where("fazenda_id")
+      .equals(activeFarmId)
+      .filter((c) => !c.deleted_at)
+      .toArray();
+  }, [activeFarmId]);
 
   const handleSave = async () => {
     if (!identificacao) {
@@ -100,16 +130,24 @@ const AnimalNovo = () => {
 
     // Validação específica para origem='sociedade'
     if (origem === "sociedade") {
-      if (!contraparteId || contraparteId === "null") {
+      if (!sociedadeContraparteId || sociedadeContraparteId === "null") {
         showError("Contraparte é obrigatória para animais em sociedade.");
         return;
       }
     }
 
-    const fazenda_id =
-      lotes?.[0]?.fazenda_id ||
-      localStorage.getItem("gestao_agro_active_fazenda_id") ||
-      "";
+    const parseNumeric = (value: string): number =>
+      Number.parseFloat(value.replace(',', '.'));
+
+    if (origem === 'compra') {
+      const valor = parseNumeric(compraValorTotal);
+      if (!Number.isFinite(valor) || valor <= 0) {
+        showError('Informe um valor de compra maior que zero.');
+        return;
+      }
+    }
+
+    const fazenda_id = activeFarmId;
 
     if (!fazenda_id) {
       showError("Fazenda não identificada.");
@@ -169,7 +207,7 @@ const AnimalNovo = () => {
           id: crypto.randomUUID(),
           fazenda_id,
           animal_id,
-          contraparte_id: contraparteId,
+          contraparte_id: sociedadeContraparteId,
           percentual: percentualSociedade ? parseFloat(percentualSociedade) : null,
           inicio: inicioSociedade || dataEntrada || new Date().toISOString().split("T")[0],
           fim: null,
@@ -181,15 +219,47 @@ const AnimalNovo = () => {
       ops.push(opSociedade);
     }
 
+    // 3. Se origem='compra', registrar evento financeiro no mesmo gesto
+    if (origem === "compra") {
+      const valorCompra = parseNumeric(compraValorTotal);
+      const occurredAt = dataEntrada
+        ? `${dataEntrada}T12:00:00.000Z`
+        : now;
+      const built = buildEventGesture({
+        dominio: "financeiro",
+        fazendaId: fazenda_id,
+        occurredAt,
+        animalId: animal_id,
+        loteId: loteId === "null" ? null : loteId,
+        tipo: "compra",
+        valorTotal: valorCompra,
+        contraparteId:
+          compraContraparteId !== "null" ? compraContraparteId : null,
+        observacoes: compraObservacoes || "Compra vinculada ao cadastro do animal",
+        payload: {
+          kind: "compra_animal",
+          animal_id,
+          origem: "cadastro_animal",
+        },
+      });
+      ops.push(...built.ops);
+    }
+
     try {
       await createGesture(fazenda_id, ops);
       showSuccess(
         origem === "sociedade"
           ? "Animal e sociedade cadastrados localmente!"
-          : "Animal cadastrado localmente!"
+          : origem === "compra"
+            ? "Animal e compra financeira cadastrados localmente!"
+            : "Animal cadastrado localmente!"
       );
       navigate("/animais");
-    } catch (e) {
+    } catch (e: unknown) {
+      if (e instanceof EventValidationError) {
+        showError(e.issues[0]?.message ?? "Dados invalidos para cadastro.");
+        return;
+      }
       showError("Erro ao cadastrar animal.");
     }
   };
@@ -323,7 +393,10 @@ const AnimalNovo = () => {
               <Label>
                 Contraparte <span className="text-red-500">*</span>
               </Label>
-              <Select value={contraparteId} onValueChange={setContraparteId}>
+              <Select
+                value={sociedadeContraparteId}
+                onValueChange={setSociedadeContraparteId}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione a contraparte" />
                 </SelectTrigger>
@@ -367,6 +440,59 @@ const AnimalNovo = () => {
               <p className="text-xs text-muted-foreground">
                 Se não informado, usa a data de entrada ou data atual
               </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Card condicional: Detalhes da Compra */}
+      {origem === "compra" && (
+        <Card className="border-emerald-200 bg-emerald-50/40">
+          <CardHeader>
+            <CardTitle className="text-emerald-900">Detalhes da Compra</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label>
+                Valor Total (R$) <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                type="number"
+                min="0.01"
+                step="0.01"
+                value={compraValorTotal}
+                onChange={(e) => setCompraValorTotal(e.target.value)}
+                placeholder="Ex: 4500.00"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Contraparte (Opcional)</Label>
+              <Select
+                value={compraContraparteId}
+                onValueChange={setCompraContraparteId}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione a contraparte" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="null">Sem contraparte</SelectItem>
+                  {contrapartes?.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.nome}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Observacoes da Compra</Label>
+              <Input
+                value={compraObservacoes}
+                onChange={(e) => setCompraObservacoes(e.target.value)}
+                placeholder="Ex: Compra em leilao regional"
+              />
             </div>
           </CardContent>
         </Card>

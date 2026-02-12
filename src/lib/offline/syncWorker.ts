@@ -4,6 +4,8 @@ import { env } from "@/lib/env";
 import type { Gesture } from "./types";
 import { getRemoteTableName } from "./tableMap";
 import { rollbackOpLocal, getAffectedStores } from "./ops";
+import { sortOpsForSync } from "./syncOrder";
+import { pullDataForFarm } from "./pull";
 
 let intervalId: ReturnType<typeof setInterval> | null = null;
 let isTickRunning = false;
@@ -168,10 +170,11 @@ async function sendBatchRequest(
 async function processGesture(gesture: Gesture) {
   await db.queue_gestures.update(gesture.client_tx_id, { status: "SYNCING" });
 
-  const ops = await db.queue_ops
+  const queuedOps = await db.queue_ops
     .where("client_tx_id")
     .equals(gesture.client_tx_id)
     .toArray();
+  const ops = sortOpsForSync(queuedOps);
 
   try {
     const { supabase, session } = await getValidSession();
@@ -240,18 +243,55 @@ async function processGesture(gesture: Gesture) {
     const hasRejected = result.results.some((r) => r.status === "REJECTED");
 
     if (allApplied) {
+      const remoteTablesTouched = new Set(mappedOps.map((op) => op.table));
+      const refreshTables = new Set<string>();
+
+      // Agenda pode ser gerada automaticamente por trigger ao inserir/atualizar animais.
+      if (remoteTablesTouched.has("animais")) {
+        refreshTables.add("agenda_itens");
+      }
+      // Conclusao de pendencia sanitária altera evento e agenda no servidor.
+      if (
+        remoteTablesTouched.has("eventos") ||
+        remoteTablesTouched.has("eventos_sanitario") ||
+        remoteTablesTouched.has("agenda_itens")
+      ) {
+        refreshTables.add("agenda_itens");
+        refreshTables.add("eventos");
+        refreshTables.add("eventos_sanitario");
+      }
+
+      if (refreshTables.size > 0) {
+        try {
+          await pullDataForFarm(gesture.fazenda_id, Array.from(refreshTables));
+        } catch (refreshError) {
+          console.warn(
+            `[sync-worker] post-sync pull failed for TX ${gesture.client_tx_id}:`,
+            refreshError,
+          );
+        }
+      }
+
       await db.queue_gestures.update(gesture.client_tx_id, {
         status: "DONE",
         last_error: undefined,
       });
       await db.queue_ops.where("client_tx_id").equals(gesture.client_tx_id).delete();
+
       console.log(`[sync-worker] TX ${gesture.client_tx_id} synced successfully`);
       return;
     }
 
     if (hasRejected) {
-      await db.queue_gestures.update(gesture.client_tx_id, { status: "REJECTED" });
       const rejectedResults = result.results.filter((r) => r.status === "REJECTED");
+      const rejectionSummary = rejectedResults
+        .map((r) => `${r.reason_code ?? "UNKNOWN"}: ${r.reason_message ?? "-"}`)
+        .join(" | ");
+
+      await db.queue_gestures.update(gesture.client_tx_id, {
+        status: "REJECTED",
+        last_error: rejectionSummary || "TX rejected by sync-batch",
+      });
       console.warn(
         `[sync-worker] TX ${gesture.client_tx_id} rejected:`,
         rejectedResults.map((r) => ({
@@ -259,6 +299,11 @@ async function processGesture(gesture: Gesture) {
           reason_code: r.reason_code,
           reason_message: r.reason_message,
         })),
+      );
+      console.warn(
+        `[sync-worker] TX ${gesture.client_tx_id} rejected (json): ${JSON.stringify(
+          rejectedResults,
+        )}`,
       );
 
       for (const res of rejectedResults) {

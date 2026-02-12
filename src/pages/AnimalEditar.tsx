@@ -4,6 +4,8 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "@/lib/offline/db";
 import { createGesture } from "@/lib/offline/ops";
 import type { OperationInput } from "@/lib/offline/types";
+import { buildEventGesture } from "@/lib/events/buildEventGesture";
+import { EventValidationError } from "@/lib/events/validators";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -58,34 +60,49 @@ const AnimalEditar = () => {
   >("null");
   const [habilitadoMonta, setHabilitadoMonta] = useState(false);
 
-  const lotes = useLiveQuery(() => db.state_lotes.toArray());
+  const lotes = useLiveQuery(() => {
+    if (!animal?.fazenda_id) return [];
+    return db.state_lotes
+      .where("fazenda_id")
+      .equals(animal.fazenda_id)
+      .filter((l) => !l.deleted_at)
+      .toArray();
+  }, [animal?.fazenda_id]);
 
   // Query para machos (potenciais pais) - excluir o próprio animal se for macho
   const machos = useLiveQuery(
-    () =>
-      db.state_animais
+    () => {
+      if (!animal?.fazenda_id) return [];
+      return db.state_animais
+        .where("fazenda_id")
+        .equals(animal.fazenda_id)
         .filter(
           (a) =>
             a.sexo === "M" &&
             (!a.deleted_at || a.deleted_at === null) &&
             a.id !== id,
         )
-        .toArray(),
-    [id],
+        .toArray();
+    },
+    [animal?.fazenda_id, id],
   );
 
   // Query para fêmeas (potenciais mães) - excluir o próprio animal se for fêmea
   const femeas = useLiveQuery(
-    () =>
-      db.state_animais
+    () => {
+      if (!animal?.fazenda_id) return [];
+      return db.state_animais
+        .where("fazenda_id")
+        .equals(animal.fazenda_id)
         .filter(
           (a) =>
             a.sexo === "F" &&
             (!a.deleted_at || a.deleted_at === null) &&
             a.id !== id,
         )
-        .toArray(),
-    [id],
+        .toArray();
+    },
+    [animal?.fazenda_id, id],
   );
 
   // Preencher formul ário quando animal carregar
@@ -137,6 +154,11 @@ const AnimalEditar = () => {
     const loteAtualId = animal.lote_id ?? null;
     const loteChanged = novoLoteId !== loteAtualId;
 
+    if (loteChanged && novoLoteId === null) {
+      showError("Movimentacao exige lote de destino.");
+      return;
+    }
+
     const animalUpdateRecord: Record<string, unknown> = {
       id: id,
       identificacao,
@@ -169,30 +191,18 @@ const AnimalEditar = () => {
     const ops: OperationInput[] = [];
 
     if (loteChanged) {
-      const eventoId = crypto.randomUUID();
-      ops.push(
-        {
-          table: "eventos",
-          action: "INSERT",
-          record: {
-            id: eventoId,
-            dominio: "movimentacao",
-            occurred_at: now,
-            animal_id: id,
-            lote_id: loteAtualId,
-            observacoes: "Movimentacao de lote via edicao de cadastro",
-          },
-        },
-        {
-          table: "eventos_movimentacao",
-          action: "INSERT",
-          record: {
-            evento_id: eventoId,
-            from_lote_id: loteAtualId,
-            to_lote_id: novoLoteId,
-          },
-        },
-      );
+      const built = buildEventGesture({
+        dominio: "movimentacao",
+        fazendaId: animal.fazenda_id,
+        occurredAt: now,
+        animalId: id,
+        loteId: loteAtualId,
+        fromLoteId: loteAtualId,
+        toLoteId: novoLoteId,
+        applyAnimalStateUpdate: false,
+        observacoes: "Movimentacao de lote via edicao de cadastro",
+      });
+      ops.push(...built.ops);
       animalUpdateRecord.lote_id = novoLoteId;
     }
 
@@ -206,7 +216,11 @@ const AnimalEditar = () => {
       await createGesture(animal.fazenda_id, ops);
       showSuccess("Animal atualizado localmente!");
       navigate(`/animais/${id}`);
-    } catch (e) {
+    } catch (e: unknown) {
+      if (e instanceof EventValidationError) {
+        showError(e.issues[0]?.message ?? "Dados invalidos para movimentacao.");
+        return;
+      }
       showError("Erro ao atualizar animal.");
     }
   };

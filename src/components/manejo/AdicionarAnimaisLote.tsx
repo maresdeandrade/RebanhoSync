@@ -3,6 +3,8 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "@/lib/offline/db";
 import { createGesture } from "@/lib/offline/ops";
 import type { OperationInput } from "@/lib/offline/types";
+import { buildEventGesture } from "@/lib/events/buildEventGesture";
+import { EventValidationError } from "@/lib/events/validators";
 import {
   Dialog,
   DialogContent,
@@ -86,39 +88,18 @@ export function AdicionarAnimaisLote({
       const animal = animaisPorId.get(animalId) ?? (await db.state_animais.get(animalId));
       if (!animal || animal.lote_id === lote.id) continue;
 
-      const eventoId = crypto.randomUUID();
-      ops.push(
-        {
-          table: "eventos",
-          action: "INSERT",
-          record: {
-            id: eventoId,
-            dominio: "movimentacao",
-            occurred_at: now,
-            animal_id: animalId,
-            lote_id: animal.lote_id ?? null,
-            observacoes: "Movimentacao de lote em massa",
-          },
-        },
-        {
-          table: "eventos_movimentacao",
-          action: "INSERT",
-          record: {
-            evento_id: eventoId,
-            from_lote_id: animal.lote_id ?? null,
-            to_lote_id: lote.id,
-          },
-        },
-        {
-          table: "animais",
-          action: "UPDATE",
-          record: {
-            id: animalId,
-            lote_id: lote.id,
-            updated_at: now,
-          },
-        },
-      );
+      const built = buildEventGesture({
+        dominio: "movimentacao",
+        fazendaId: lote.fazenda_id,
+        occurredAt: now,
+        animalId,
+        loteId: animal.lote_id ?? null,
+        fromLoteId: animal.lote_id ?? null,
+        toLoteId: lote.id,
+        observacoes: "Movimentacao de lote em massa",
+      });
+
+      ops.push(...built.ops);
     }
 
     if (ops.length === 0) {
@@ -136,7 +117,11 @@ export function AdicionarAnimaisLote({
       setSearch("");
       onSuccess();
       onOpenChange(false);
-    } catch (e) {
+    } catch (e: unknown) {
+      if (e instanceof EventValidationError) {
+        showError(e.issues[0]?.message ?? "Dados invalidos para movimentacao.");
+        return;
+      }
       showError("Erro ao adicionar animais ao lote.");
     } finally {
       setIsSubmitting(false);

@@ -4,10 +4,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { useForm } from "react-hook-form";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Loader2, Save } from "lucide-react";
+import {
+  resolveEventosRolloutFlags,
+  withEventosRolloutFlags,
+} from "@/lib/events/featureFlags";
 
 type EditarFazendaForm = {
   nome: string;
@@ -21,11 +26,14 @@ type EditarFazendaForm = {
 };
 
 const EditarFazenda = () => {
-  const { activeFarmId, role } = useAuth();
+  const { activeFarmId, role, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
+  const [farmMetadata, setFarmMetadata] = useState<Record<string, unknown>>({});
+  const [strictRulesEnabled, setStrictRulesEnabled] = useState(true);
+  const [strictAntiTeleportEnabled, setStrictAntiTeleportEnabled] = useState(true);
 
   const {
     register,
@@ -33,10 +41,15 @@ const EditarFazenda = () => {
     formState: { errors },
     reset,
   } = useForm<EditarFazendaForm>();
+  const canManageRolloutFlags = role === "owner";
 
   // ✅ Verificar permissão e carregar dados
   useEffect(() => {
     const loadFazenda = async () => {
+      if (authLoading) {
+        return;
+      }
+
       if (!activeFarmId) {
         console.log("[EditarFazenda] No active farm, redirecting");
         navigate("/select-fazenda");
@@ -55,7 +68,7 @@ const EditarFazenda = () => {
         const { data, error: fetchError } = await supabase
           .from("fazendas")
           .select(
-            "nome, codigo, municipio, estado, cep, area_total_ha, tipo_producao, sistema_manejo",
+            "nome, codigo, municipio, estado, cep, area_total_ha, tipo_producao, sistema_manejo, metadata",
           )
           .eq("id", activeFarmId)
           .single();
@@ -68,6 +81,12 @@ const EditarFazenda = () => {
         }
 
         if (data) {
+          const metadata =
+            data.metadata && typeof data.metadata === "object"
+              ? (data.metadata as Record<string, unknown>)
+              : {};
+          const rollout = resolveEventosRolloutFlags(metadata);
+
           reset({
             nome: data.nome,
             codigo: data.codigo || "",
@@ -78,6 +97,9 @@ const EditarFazenda = () => {
             tipo_producao: data.tipo_producao || undefined,
             sistema_manejo: data.sistema_manejo || undefined,
           });
+          setFarmMetadata(metadata);
+          setStrictRulesEnabled(rollout.strict_rules_enabled);
+          setStrictAntiTeleportEnabled(rollout.strict_anti_teleporte);
         }
 
         setLoadingData(false);
@@ -89,7 +111,7 @@ const EditarFazenda = () => {
     };
 
     loadFazenda();
-  }, [activeFarmId, role, navigate, reset]);
+  }, [activeFarmId, role, authLoading, navigate, reset]);
 
   const onSubmit = async (data: EditarFazendaForm) => {
     if (!activeFarmId) return;
@@ -111,6 +133,10 @@ const EditarFazenda = () => {
           area_total_ha: data.area_total_ha || null,
           tipo_producao: data.tipo_producao || null,
           sistema_manejo: data.sistema_manejo || null,
+          metadata: withEventosRolloutFlags(farmMetadata, {
+            strict_rules_enabled: strictRulesEnabled,
+            strict_anti_teleporte: strictRulesEnabled && strictAntiTeleportEnabled,
+          }),
           // benfeitorias: reserved for future use (will be managed via pastos)
         })
         .eq("id", activeFarmId);
@@ -329,6 +355,58 @@ const EditarFazenda = () => {
                 <option value="semi_confinamento">Semi-Confinamento</option>
                 <option value="pastagem">Pastagem</option>
               </select>
+            </div>
+
+            <div className="space-y-3 rounded-md border p-4">
+              <div>
+                <Label className="text-sm font-semibold">Rollout de Eventos (Fase 4)</Label>
+                <p className="text-xs text-muted-foreground">
+                  Controle por fazenda para regras estritas do pipeline de eventos.
+                </p>
+              </div>
+
+              <div className="flex items-center justify-between gap-3">
+                <div className="space-y-1">
+                  <p className="text-sm font-medium">Regras estritas</p>
+                  <p className="text-xs text-muted-foreground">
+                    Liga/desliga validacoes estritas da unificacao de eventos.
+                  </p>
+                </div>
+                <Switch
+                  checked={strictRulesEnabled}
+                  onCheckedChange={(checked) => {
+                    setStrictRulesEnabled(checked);
+                    if (!checked) {
+                      setStrictAntiTeleportEnabled(false);
+                    }
+                  }}
+                  disabled={isLoading || !canManageRolloutFlags}
+                />
+              </div>
+
+              <div className="flex items-center justify-between gap-3">
+                <div className="space-y-1">
+                  <p className="text-sm font-medium">Anti-teleporte estrito</p>
+                  <p className="text-xs text-muted-foreground">
+                    Exige evento de movimentacao no mesmo gesto para atualizar lote/pasto.
+                  </p>
+                </div>
+                <Switch
+                  checked={strictRulesEnabled && strictAntiTeleportEnabled}
+                  onCheckedChange={setStrictAntiTeleportEnabled}
+                  disabled={
+                    isLoading ||
+                    !canManageRolloutFlags ||
+                    !strictRulesEnabled
+                  }
+                />
+              </div>
+
+              {!canManageRolloutFlags && (
+                <p className="text-xs text-muted-foreground">
+                  Apenas owner pode alterar flags de rollout da fazenda.
+                </p>
+              )}
             </div>
 
             {error && (

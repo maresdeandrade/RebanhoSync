@@ -650,6 +650,86 @@ Validar que RPC `create_fazenda` cria fazenda, membership owner, e define como a
 
 ---
 
+## Fluxo 6: Hardening de Eventos (Fase 2)
+
+### Objetivo
+
+Validar constraints e reason codes padronizados apos migracoes 0023 a 0026.
+
+### Passos
+
+1. **Financeiro com valor invalido**
+   - Enviar `eventos_financeiro.valor_total <= 0`.
+   - Esperado: `REJECTED` com `reason_code = VALIDATION_FINANCEIRO_VALOR_TOTAL`.
+
+2. **Nutricao com quantidade invalida**
+   - Enviar `eventos_nutricao.quantidade_kg <= 0` quando preenchida.
+   - Esperado: `REJECTED` com `reason_code = VALIDATION_NUTRICAO_QUANTIDADE`.
+
+3. **Movimentacao sem destino**
+   - Enviar `eventos_movimentacao` sem `to_lote_id` e sem `to_pasto_id`.
+   - Esperado: `REJECTED` com `reason_code = VALIDATION_MOVIMENTACAO_DESTINO`.
+
+4. **Movimentacao com origem igual destino**
+   - Enviar `from_lote_id = to_lote_id` (ou `from_pasto_id = to_pasto_id`).
+   - Esperado: `REJECTED` com `reason_code = VALIDATION_MOVIMENTACAO_ORIGEM_DESTINO`.
+
+5. **Financeiro com contraparte de outra fazenda**
+   - Enviar `eventos_financeiro` com `contraparte_id` de tenant diferente.
+   - Esperado: `REJECTED` com `reason_code = VALIDATION_FINANCEIRO_CONTRAPARTE`.
+
+6. **PK ausente em UPDATE/DELETE**
+   - Enviar operacao de `UPDATE` ou `DELETE` sem `id`/`evento_id`.
+   - Esperado: `REJECTED` com `reason_code = VALIDATION_MISSING_PRIMARY_KEY`.
+
+### Validacoes
+
+- Todas as rejeicoes retornam `op_id`, `reason_code`, `reason_message`.
+- Fluxos validos continuam com `APPLIED` ou `APPLIED_ALTERED`.
+
+---
+
+## Fluxo 7: Rollout Operacional (Fase 4)
+
+### Objetivo
+
+Validar feature flags por fazenda e monitoracao operacional no dashboard.
+
+### Passos
+
+1. **Abrir `/editar-fazenda` como owner**
+   - Alterar `Regras estritas` e `Anti-teleporte estrito`.
+   - Salvar.
+
+2. **Validar persistencia das flags**
+   ```sql
+   select id, metadata -> 'eventos_rollout' as eventos_rollout
+   from public.fazendas
+   where id = :fazenda_id;
+   ```
+   - Esperado: flags salvas no JSON `metadata.eventos_rollout`.
+
+3. **Executar um gesto que seria bloqueado por anti-teleporte**
+   - Com `strict_anti_teleporte=true`: esperado `REJECTED` com `ANTI_TELEPORTE`.
+   - Com `strict_anti_teleporte=false`: esperado sem rejeicao de prevalidacao.
+
+4. **Abrir `/dashboard`**
+   - Validar cards operacionais:
+     - taxa de sucesso do sync
+     - backlog de sync
+     - taxa global de rejeicao
+   - Validar visualizacoes:
+     - rejeicoes por dominio
+     - rejeicoes por regra
+
+### Validacoes
+
+1. Feature flag altera comportamento do `sync-batch` por fazenda.
+2. Dashboard reflete dados de `queue_gestures` e `queue_rejections`.
+3. Operacao consegue identificar rapidamente degradacao e acionar rollback.
+
+---
+
 ## Notas Gerais
 
 ### Ferramentas para Validação
@@ -659,9 +739,13 @@ Validar que RPC `create_fazenda` cria fazenda, membership owner, e define como a
 - **Network Tab**: Monitorar requisições sync-batch (payload, response, headers)
 - **Console Logs**: `[sync-worker]` logs mostram status de sync
 
-### Cenários Não Cobertos (Pendências)
+### Cenários Cobertos Recentemente
 
-- **Invite System**: Adicionar membro por email (não implementado ainda, usar RPC direto)
-- **Trocar Fazenda Ativa**: UI para selecionar outra fazenda da lista
-- **Perfil do Usuário**: Editar display_name, avatar, preferências
-- **Logoff**: Limpar sessão e localStorage -**Reconciliação Manual**: Tela `/reconciliacao` para resolver conflitos de sync
+- **Invite System**: Implementado com fluxo de convite e aceite em `/invites/:token`.
+- **Trocar Fazenda Ativa**: UI implementada em `/select-fazenda`.
+- **Perfil do Usuário e Preferências**: Implementado em `/perfil` (dados de perfil e settings).
+- **Logoff**: Implementado com limpeza de sessão/localStorage no fluxo de autenticação.
+
+### Cenários Ainda Não Cobertos (Pendências)
+
+- **Reconciliação Manual**: Expandir cobertura E2E da tela `/reconciliacao` para resolução assistida de conflitos.

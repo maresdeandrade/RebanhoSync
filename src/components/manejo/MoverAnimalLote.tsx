@@ -2,7 +2,8 @@ import { useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "@/lib/offline/db";
 import { createGesture } from "@/lib/offline/ops";
-import type { OperationInput } from "@/lib/offline/types";
+import { buildEventGesture } from "@/lib/events/buildEventGesture";
+import { EventValidationError } from "@/lib/events/validators";
 import {
   Dialog,
   DialogContent,
@@ -40,7 +41,7 @@ export function MoverAnimalLote({
   onOpenChange,
   onSuccess,
 }: MoverAnimalLoteProps) {
-  const [novoLoteId, setNovoLoteId] = useState<string>("null");
+  const [novoLoteId, setNovoLoteId] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Buscar lotes disponíveis
@@ -63,55 +64,38 @@ export function MoverAnimalLote({
   );
 
   const handleConfirm = async () => {
+    if (!novoLoteId) {
+      showError("Selecione o lote de destino.");
+      return;
+    }
+
     setIsSubmitting(true);
     const now = new Date().toISOString();
-    const novoLote = novoLoteId === "null" ? null : novoLoteId;
-    const eventoId = crypto.randomUUID();
-
-    const ops: OperationInput[] = [
-      {
-        table: "eventos",
-        action: "INSERT",
-        record: {
-          id: eventoId,
-          dominio: "movimentacao",
-          occurred_at: now,
-          animal_id: animal.id,
-          lote_id: animal.lote_id ?? null,
-          observacoes: "Movimentacao de lote",
-        },
-      },
-      {
-        table: "eventos_movimentacao",
-        action: "INSERT",
-        record: {
-          evento_id: eventoId,
-          from_lote_id: animal.lote_id ?? null,
-          to_lote_id: novoLote,
-        },
-      },
-      {
-        table: "animais",
-        action: "UPDATE",
-        record: {
-          id: animal.id,
-          lote_id: novoLote,
-          updated_at: now,
-        },
-      },
-    ];
+    const novoLote = novoLoteId;
 
     try {
+      const { ops } = buildEventGesture({
+        dominio: "movimentacao",
+        fazendaId: animal.fazenda_id,
+        occurredAt: now,
+        animalId: animal.id,
+        loteId: animal.lote_id ?? null,
+        fromLoteId: animal.lote_id ?? null,
+        toLoteId: novoLote,
+        observacoes: "Movimentacao de lote",
+      });
+
       await createGesture(animal.fazenda_id, ops);
-      const msg =
-        novoLoteId === "null"
-          ? `Animal ${animal.identificacao} removido do lote!`
-          : `Animal ${animal.identificacao} movido para novo lote!`;
+      const msg = `Animal ${animal.identificacao} movido para novo lote!`;
       showSuccess(msg);
-      setNovoLoteId("null");
+      setNovoLoteId("");
       onSuccess();
       onOpenChange(false);
-    } catch (e) {
+    } catch (e: unknown) {
+      if (e instanceof EventValidationError) {
+        showError(e.issues[0]?.message ?? "Dados invalidos para movimentacao.");
+        return;
+      }
       showError("Erro ao mover animal.");
     } finally {
       setIsSubmitting(false);
@@ -143,7 +127,6 @@ export function MoverAnimalLote({
                 <SelectValue placeholder="Selecione o lote" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="null">Nenhum (remover do lote)</SelectItem>
                 {lotes?.map((l) => (
                   <SelectItem key={l.id} value={l.id}>
                     {l.nome}
@@ -164,7 +147,7 @@ export function MoverAnimalLote({
           </Button>
           <Button
             onClick={handleConfirm}
-            disabled={isSubmitting || novoLoteId === animal.lote_id}
+            disabled={isSubmitting || !novoLoteId || novoLoteId === animal.lote_id}
           >
             {isSubmitting ? "Movendo..." : "Confirmar"}
           </Button>

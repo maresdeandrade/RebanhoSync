@@ -1,7 +1,10 @@
 import { useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "@/lib/offline/db";
+import type { Evento, EventoReproducao } from "@/lib/offline/types";
+
+type EnrichedEvent = Evento & { details?: EventoReproducao; machoIdentificacao?: string };
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -23,6 +26,7 @@ import { classificarAnimal, getLabelCategoria } from "@/lib/domain/categorias";
 
 const AnimalDetalhe = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [showMoverLote, setShowMoverLote] = useState(false);
 
   const animal = useLiveQuery(() => db.state_animais.get(id!), [id]);
@@ -31,15 +35,29 @@ const AnimalDetalhe = () => {
     [animal],
   );
 
-  const eventos = useLiveQuery(
-    () =>
-      db.event_eventos
-        .where("animal_id")
-        .equals(id!)
-        .reverse()
-        .sortBy("occurred_at"),
-    [id],
-  );
+  const eventos = useLiveQuery<EnrichedEvent[]>(async () => {
+    if (!id) return [];
+    const evts = await db.event_eventos
+      .where("animal_id")
+      .equals(id)
+      .reverse()
+      .sortBy("occurred_at");
+
+    return Promise.all(
+      evts.map(async (evt) => {
+        if (evt.dominio === "reproducao") {
+          const details = await db.event_eventos_reproducao.get(evt.id);
+          let machoIdentificacao = undefined;
+          if (details?.macho_id) {
+             const macho = await db.state_animais.get(details.macho_id);
+             machoIdentificacao = macho?.identificacao;
+          }
+          return { ...evt, details, machoIdentificacao } as EnrichedEvent;
+        }
+        return evt as EnrichedEvent;
+      }),
+    );
+  }, [id]);
 
   const agenda = useLiveQuery(
     () => db.state_agenda_itens.where("animal_id").equals(id!).toArray(),
@@ -162,6 +180,20 @@ const AnimalDetalhe = () => {
           </p>
         </div>
         <div className="flex gap-2">
+          <Button
+            size="sm"
+            onClick={() => {
+              const params = new URLSearchParams();
+              params.set("dominio", "financeiro");
+              params.set("animalId", animal.id);
+              if (animal.lote_id) {
+                params.set("loteId", animal.lote_id);
+              }
+              navigate(`/registrar?${params.toString()}`);
+            }}
+          >
+            Registrar Venda
+          </Button>
           <Button
             variant="outline"
             size="sm"
@@ -360,12 +392,16 @@ const AnimalDetalhe = () => {
                         ? "bg-blue-500"
                         : evt.dominio === "pesagem"
                           ? "bg-emerald-500"
-                          : "bg-slate-500"
+                          : evt.dominio === "reproducao"
+                            ? "bg-rose-500"
+                            : "bg-slate-500"
                     }`}
                   />
                   <div className="flex justify-between items-start mb-1">
                     <h4 className="font-bold capitalize text-sm">
-                      {evt.dominio}
+                      {evt.dominio === "reproducao" && evt.details
+                        ? `Reprodução: ${evt.details.tipo}`
+                        : evt.dominio}
                     </h4>
                     <span className="text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded">
                       {new Date(evt.occurred_at).toLocaleDateString()}
@@ -374,6 +410,17 @@ const AnimalDetalhe = () => {
                   <p className="text-xs text-muted-foreground">
                     {evt.observacoes || "Manejo realizado no campo."}
                   </p>
+                  {evt.dominio === "reproducao" && evt.details && (
+                     <div className="mt-1 text-xs bg-rose-50/50 p-2 rounded border border-rose-100">
+                        {evt.details.macho_id && <p>Reprodutor: {evt.machoIdentificacao || evt.details.macho_id}</p>}
+                        {evt.details.payload?.diagnostico_resultado && (
+                           <p>Diagnóstico: {String(evt.details.payload.diagnostico_resultado)}</p>
+                        )}
+                        {evt.details.payload?.numero_crias && (
+                           <p>Crias: {Number(evt.details.payload.numero_crias)}</p>
+                        )}
+                     </div>
+                  )}
                 </div>
               ))
             )}

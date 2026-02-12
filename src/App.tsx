@@ -20,9 +20,11 @@ import PastoEditar from "./pages/PastoEditar";
 import PastoDetalhe from "./pages/PastoDetalhe";
 import Agenda from "./pages/Agenda";
 import Registrar from "./pages/Registrar";
+import Eventos from "./pages/Eventos";
+import Financeiro from "./pages/Financeiro";
+import Contrapartes from "./pages/Contrapartes";
 import Dashboard from "./pages/Dashboard";
 import Reconciliacao from "./pages/Reconciliacao";
-import Placeholder from "./pages/Placeholder";
 import NotFound from "./pages/NotFound";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
@@ -36,6 +38,7 @@ import Perfil from "./pages/Perfil";
 import Membros from "./pages/Membros";
 import Categorias from "./pages/Categorias";
 import CategoriaNova from "./pages/CategoriaNova";
+import ProtocolosSanitarios from "./pages/ProtocolosSanitarios";
 
 const App = () => (
   <BrowserRouter
@@ -94,8 +97,9 @@ const App = () => (
         <Route path="/pastos/:id" element={<PastoDetalhe />} />
         <Route path="/agenda" element={<Agenda />} />
         <Route path="/registrar" element={<Registrar />} />
-        <Route path="/eventos" element={<Placeholder />} />
-        <Route path="/financeiro" element={<Placeholder />} />
+        <Route path="/eventos" element={<Eventos />} />
+        <Route path="/financeiro" element={<Financeiro />} />
+        <Route path="/contrapartes" element={<Contrapartes />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/perfil" element={<Perfil />} />
         <Route path="/membros" element={<Membros />} />
@@ -104,6 +108,7 @@ const App = () => (
         <Route path="/editar-fazenda" element={<EditarFazenda />} />
         <Route path="/categorias" element={<Categorias />} />
         <Route path="/categorias/novo" element={<CategoriaNova />} />
+        <Route path="/protocolos-sanitarios" element={<ProtocolosSanitarios />} />
       </Route>
 
       <Route path="*" element={<NotFound />} />

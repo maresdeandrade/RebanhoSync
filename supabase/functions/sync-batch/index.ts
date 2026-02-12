@@ -1,20 +1,18 @@
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0'
-
-// Operation type for sync batch
-interface Operation {
-  client_op_id: string;
-  table: string;
-  action: 'INSERT' | 'UPDATE' | 'DELETE';
-  record: Record<string, unknown>;
-}
+import { createClient } from '@supabase/supabase-js'
+import {
+  type Operation,
+  buildMutationMatch,
+  normalizeDbError,
+  prevalidateAntiTeleport,
+} from './rules.ts'
+import { resolveEventFeatureFlags } from './flags.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-serve(async (req) => {
+Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
@@ -89,7 +87,8 @@ serve(async (req) => {
     
     console.log('[sync-batch] Supabase client created');
 
-    const { client_id, fazenda_id, client_tx_id, ops } = await req.json();
+    const { client_id, fazenda_id, client_tx_id, ops: rawOps } = await req.json();
+    const ops: Operation[] = Array.isArray(rawOps) ? rawOps : [];
     console.log(`[sync-batch] Processing TX ${client_tx_id} for farm ${fazenda_id}`);
 
     // P0: Verify user has membership in this fazenda (using user client)
@@ -111,80 +110,43 @@ serve(async (req) => {
 
     console.log(`[sync-batch] User has role: ${membership.role}`);
 
-    // PRE-VALIDATION: Anti-Teleport (BEFORE applying any ops)
-    function prevalidateAntiTeleport(ops: Operation[]) {
-      // map animalId -> eventoId do evento base de movimentacao
-      const movBaseByAnimal = new Map<string, string>();
+    const { data: fazendaConfig, error: fazendaConfigError } = await supabase
+      .from('fazendas')
+      .select('metadata')
+      .eq('id', fazenda_id)
+      .maybeSingle();
 
-      for (const o of ops) {
-        if (
-          o.table === "eventos" &&
-          o.action === "INSERT" &&
-          o.record?.dominio === "movimentacao" &&
-          o.record?.animal_id &&
-          o.record?.id
-        ) {
-          movBaseByAnimal.set(o.record.animal_id as string, o.record.id as string);
-        }
-      }
-
-      const movDetalhesEventoIds = new Set<string>();
-      for (const o of ops) {
-        if (
-          o.table === "eventos_movimentacao" &&
-          o.action === "INSERT" &&
-          o.record?.evento_id
-        ) {
-          movDetalhesEventoIds.add(o.record.evento_id as string);
-        }
-      }
-
-      for (const o of ops) {
-        if (
-          o.table === "animais" &&
-          o.action === "UPDATE" &&
-          o.record?.id &&
-          Object.prototype.hasOwnProperty.call(o.record, "lote_id")
-        ) {
-          const animalId = o.record.id as string;
-          const eventoId = movBaseByAnimal.get(animalId);
-
-          if (!eventoId) {
-            return {
-              ok: false,
-              op_id: o.client_op_id,
-              reason_code: "ANTI_TELEPORTE",
-              reason_message: "UPDATE animais.lote_id sem evento base de movimentacao no mesmo tx",
-            };
-          }
-
-          if (!movDetalhesEventoIds.has(eventoId)) {
-            return {
-              ok: false,
-              op_id: o.client_op_id,
-              reason_code: "ANTI_TELEPORTE",
-              reason_message: "Evento de movimentacao sem detalhe correlato (evento_id mismatch) no mesmo tx",
-            };
-          }
-        }
-      }
-
-      return { ok: true };
+    if (fazendaConfigError) {
+      console.warn(
+        `[sync-batch] Could not load fazenda.metadata for ${fazenda_id}. Falling back to strict defaults.`,
+        fazendaConfigError.message,
+      );
     }
 
-    const anti = prevalidateAntiTeleport(ops);
-    if (!anti.ok) {
-      // Abort entire batch (atomicity: reject all ops if anti-teleport fails)
-      return new Response(
-        JSON.stringify({
-          results: ops.map((o: Operation) => ({
-            op_id: o.client_op_id,
-            status: "REJECTED",
-            reason_code: anti.reason_code,
-            reason_message: anti.reason_message,
-          })),
-        }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 },
+    const featureFlags = resolveEventFeatureFlags(fazendaConfig?.metadata);
+    console.log(
+      `[sync-batch] Feature flags strict_rules_enabled=${featureFlags.strictRulesEnabled} strict_anti_teleporte=${featureFlags.strictAntiTeleport}`,
+    );
+
+    if (featureFlags.strictAntiTeleport) {
+      const anti = prevalidateAntiTeleport(ops);
+      if (!anti.ok) {
+        // Abort entire batch (atomicity: reject all ops if anti-teleport fails)
+        return new Response(
+          JSON.stringify({
+            results: ops.map((o: Operation) => ({
+              op_id: o.client_op_id,
+              status: "REJECTED",
+              reason_code: anti.reason_code,
+              reason_message: anti.reason_message,
+            })),
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 },
+        );
+      }
+    } else {
+      console.warn(
+        `[sync-batch] strict_anti_teleporte disabled for farm ${fazenda_id} - skipping anti-teleport prevalidation`,
       );
     }
 
@@ -213,7 +175,7 @@ serve(async (req) => {
           results.push({
             op_id: op.client_op_id,
             status: 'REJECTED',
-            reason_code: 'BLOCKED_TABLE',
+            reason_code: 'SECURITY_BLOCKED_TABLE',
             reason_message: `Table ${op.table} cannot be modified via sync`
           });
           continue;
@@ -223,6 +185,19 @@ serve(async (req) => {
         const record = { ...op.record };
         if (TABLES_WITH_FAZENDA.has(op.table)) {
           record.fazenda_id = fazenda_id; // Always use request fazenda_id
+        }
+        
+        // P1: Validate Reproduction Events
+        if (op.table === 'eventos_reproducao' && op.action === 'INSERT') {
+          if ((record.tipo === 'cobertura' || record.tipo === 'IA') && !record.macho_id) {
+            results.push({
+              op_id: op.client_op_id,
+              status: 'REJECTED',
+              reason_code: 'VALIDATION_ERROR',
+              reason_message: 'Macho_id is required for Cobertura/IA'
+            });
+            continue;
+          }
         }
 
         // P0: Execute with user client (RLS enforced)
@@ -238,28 +213,56 @@ serve(async (req) => {
             })
             .select(); // Request representation to avoid PGRST204
         } else if (op.action === 'UPDATE') {
+          const match = buildMutationMatch(op, fazenda_id);
+          if (!match) {
+            results.push({
+              op_id: op.client_op_id,
+              status: 'REJECTED',
+              reason_code: 'VALIDATION_MISSING_PRIMARY_KEY',
+              reason_message: `Operation UPDATE on ${op.table} missing id/evento_id/user_id`,
+            });
+            continue;
+          }
           query = supabase.from(op.table)
             .update(record)
-            .match({ id: op.record.id, fazenda_id })
+            .match(match)
             .select(); // Request representation to avoid PGRST204
         } else if (op.action === 'DELETE') {
+          const match = buildMutationMatch(op, fazenda_id);
+          if (!match) {
+            results.push({
+              op_id: op.client_op_id,
+              status: 'REJECTED',
+              reason_code: 'VALIDATION_MISSING_PRIMARY_KEY',
+              reason_message: `Operation DELETE on ${op.table} missing id/evento_id/user_id`,
+            });
+            continue;
+          }
           query = supabase.from(op.table)
             .update({ deleted_at: new Date().toISOString() })
-            .match({ id: op.record.id, fazenda_id })
+            .match(match)
             .select(); // Request representation to avoid PGRST204
         }
 
-        const { error, data } = await query!;
+        const { error } = await query!;
 
         if (error) {
-          // Tratamento de Dedup Agenda (Unique Constraint)
-          if (error.code === '23505' && op.table === 'agenda_itens') {
-            results.push({ op_id: op.client_op_id, status: 'APPLIED_ALTERED', altered: { dedup: 'collision_noop' } });
-          } else if (error.code === '23505') {
-            // Idempotencia: se ja existe o client_op_id, consideramos aplicado
+          const normalized = normalizeDbError(error, op);
+          if (normalized.status === 'APPLIED_ALTERED') {
+            results.push({
+              op_id: op.client_op_id,
+              status: 'APPLIED_ALTERED',
+              altered: normalized.altered,
+            });
+          } else if (normalized.status === 'APPLIED') {
             results.push({ op_id: op.client_op_id, status: 'APPLIED' });
           } else {
-            results.push({ op_id: op.client_op_id, status: 'REJECTED', reason_code: error.code, reason_message: error.message });
+            results.push({
+              op_id: op.client_op_id,
+              status: 'REJECTED',
+              reason_code: normalized.reason_code,
+              reason_message: normalized.reason_message,
+            });
           }
         } else {
           results.push({ op_id: op.client_op_id, status: 'APPLIED' });

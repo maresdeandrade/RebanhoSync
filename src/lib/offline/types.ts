@@ -277,6 +277,7 @@ export interface CategoriaZootecnica {
 export interface Operation {
   client_op_id: string;
   client_tx_id: string;
+  op_order?: number;
   table: string;
   action: OpAction;
   /**
@@ -427,7 +428,6 @@ export interface AgendaItem {
   protocol_item_version_id: string | null;
   interval_days_applied: number | null;
 
-  observacoes: string | null;
   payload: Record<string, unknown>;
 
   // Campos de sistema
@@ -450,7 +450,6 @@ export interface Contraparte {
   telefone: string | null;
   email: string | null;
   endereco: string | null;
-  observacoes: string | null;
   payload: Record<string, unknown>;
 
   // Campos de sistema
@@ -515,9 +514,12 @@ export interface Evento {
   fazenda_id: string;
   dominio: DominioEnum;
   occurred_at: string;
+  occurred_on?: string;
   animal_id: string | null;
   lote_id: string | null;
   source_task_id: string | null;
+  source_tx_id: string | null;
+  source_client_op_id: string | null;
   corrige_evento_id: string | null;
   observacoes: string | null;
   payload: Record<string, unknown>;
@@ -637,6 +639,7 @@ export interface EventoFinanceiro {
   client_op_id: string;
   client_tx_id: string | null;
   client_recorded_at: string;
+  server_received_at: string;
   created_at: string;
   updated_at: string;
   deleted_at: string | null;

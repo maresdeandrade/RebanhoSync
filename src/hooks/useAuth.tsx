@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { Session, User } from "@supabase/supabase-js";
 import { z } from "zod";
@@ -14,6 +14,7 @@ interface AuthContextType {
   loading: boolean;
   activeFarmId: string | null;
   role: UserRole | null;
+  loadRoleForFarm: (userId: string, farmId: string) => Promise<void>;
   setActiveFarm: (farmId: string) => Promise<void>;
   refreshSettings: () => Promise<void>;
   signOut: () => Promise<void>;
@@ -49,7 +50,47 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  const refreshSettings = async () => {
+  const loadRoleForFarm = useCallback(async (userId: string, farmId: string) => {
+    const { data: membership, error } = await supabase
+      .from("user_fazendas")
+      .select("role")
+      .eq("user_id", userId)
+      .eq("fazenda_id", farmId)
+      .is("deleted_at", null)
+      .maybeSingle();
+
+    if (error) {
+      console.warn("[useAuth] Error fetching role:", error);
+      setRole(null);
+      return;
+    }
+
+    const roleResult = RoleSchema.safeParse(membership?.role);
+    setRole(roleResult.success ? roleResult.data : null);
+
+    if (!roleResult.success) {
+      console.warn("[useAuth] Invalid role from database:", membership?.role);
+    }
+  }, []);
+
+  const persistActiveFarmToRemote = useCallback(async (userId: string, farmId: string) => {
+    const { error } = await supabase.from("user_settings").upsert(
+      {
+        user_id: userId,
+        active_fazenda_id: farmId,
+        updated_at: new Date().toISOString(),
+      },
+      {
+        onConflict: "user_id",
+      },
+    );
+
+    if (error) {
+      console.warn("[useAuth] Failed to persist farm to remote:", error);
+    }
+  }, []);
+
+  const refreshSettings = useCallback(async () => {
     try {
       const {
         data: { user },
@@ -112,47 +153,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     } catch (e) {
       console.error("[useAuth] Error in refreshSettings:", e);
     }
-  };
-
-  const loadRoleForFarm = async (userId: string, farmId: string) => {
-    const { data: membership, error } = await supabase
-      .from("user_fazendas")
-      .select("role")
-      .eq("user_id", userId)
-      .eq("fazenda_id", farmId)
-      .is("deleted_at", null)
-      .maybeSingle();
-
-    if (error) {
-      console.warn("[useAuth] Error fetching role:", error);
-      setRole(null);
-      return;
-    }
-
-    const roleResult = RoleSchema.safeParse(membership?.role);
-    setRole(roleResult.success ? roleResult.data : null);
-
-    if (!roleResult.success) {
-      console.warn("[useAuth] Invalid role from database:", membership?.role);
-    }
-  };
-
-  const persistActiveFarmToRemote = async (userId: string, farmId: string) => {
-    const { error } = await supabase.from("user_settings").upsert(
-      {
-        user_id: userId,
-        active_fazenda_id: farmId,
-        updated_at: new Date().toISOString(),
-      },
-      {
-        onConflict: "user_id",
-      },
-    );
-
-    if (error) {
-      console.warn("[useAuth] Failed to persist farm to remote:", error);
-    }
-  };
+  }, [loadRoleForFarm, persistActiveFarmToRemote]);
 
   const setActiveFarm = async (farmId: string) => {
     const {
@@ -214,7 +215,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return () => {
       subscription.unsubscribe();
     };
-  }, []);
+  }, [refreshSettings]);
 
   const signOut = async () => {
     try {
@@ -240,6 +241,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         activeFarmId,
         role,
         setActiveFarm,
+        loadRoleForFarm,
         refreshSettings,
         signOut,
       }}
@@ -249,6 +251,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 import {
   Home,
   Beef,
@@ -9,11 +9,13 @@ import {
   PlusCircle,
   History,
   DollarSign,
+  Handshake,
   LayoutDashboard,
   Users,
   Settings,
   AlertCircle,
   LayoutList,
+  Syringe,
   ChevronDown,
   ChevronRight,
   User,
@@ -33,7 +35,7 @@ type NavItem = {
 };
 
 const navItems: NavItem[] = [
-  { icon: Home, label: "Início", path: "/home" },
+  { icon: Home, label: "Inicio", path: "/home" },
   { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
   { icon: Beef, label: "Animais", path: "/animais" },
   { icon: Layers, label: "Lotes", path: "/lotes" },
@@ -41,27 +43,37 @@ const navItems: NavItem[] = [
   { icon: Calendar, label: "Agenda", path: "/agenda" },
   { icon: PlusCircle, label: "Registrar", path: "/registrar" },
   { icon: History, label: "Eventos", path: "/eventos" },
-  { icon: DollarSign, label: "Financeiro", path: "/financeiro" },
+  {
+    icon: DollarSign,
+    label: "Financeiro",
+    children: [
+      { icon: DollarSign, label: "Lancamentos", path: "/financeiro" },
+      { icon: Handshake, label: "Parceiros", path: "/contrapartes" },
+    ],
+  },
   { icon: Users, label: "Equipe", path: "/membros" },
   {
     icon: Settings,
-    label: "Configurações",
+    label: "Configuracoes",
     children: [
+      { icon: Syringe, label: "Protocolos", path: "/protocolos-sanitarios" },
       { icon: LayoutList, label: "Categorias", path: "/categorias" },
-      { icon: AlertCircle, label: "Reconciliação", path: "/reconciliacao" },
+      { icon: AlertCircle, label: "Reconciliacao", path: "/reconciliacao" },
     ],
   },
 ];
 
 export const SideNav = () => {
-  const location = useLocation();
-  const [expandedGroups, setExpandedGroups] = useState<string[]>(["Configurações"]);
+  const [expandedGroups, setExpandedGroups] = useState<string[]>([
+    "Financeiro",
+    "Configuracoes",
+  ]);
 
   const toggleGroup = (label: string) => {
     setExpandedGroups((prev) =>
       prev.includes(label)
-        ? prev.filter((l) => l !== label)
-        : [...prev, label]
+        ? prev.filter((value) => value !== label)
+        : [...prev, label],
     );
   };
 
@@ -76,7 +88,7 @@ export const SideNav = () => {
                   onClick={() => toggleGroup(item.label)}
                   className={cn(
                     "flex w-full items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors hover:bg-muted hover:text-foreground text-muted-foreground",
-                    expandedGroups.includes(item.label) && "text-foreground"
+                    expandedGroups.includes(item.label) && "text-foreground",
                   )}
                 >
                   <div className="flex items-center gap-3">
@@ -100,7 +112,7 @@ export const SideNav = () => {
                             "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
                             isActive
                               ? "bg-primary/10 text-primary"
-                              : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                              : "text-muted-foreground hover:bg-muted hover:text-foreground",
                           )
                         }
                       >
@@ -119,7 +131,7 @@ export const SideNav = () => {
                     "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
                     isActive
                       ? "bg-primary text-primary-foreground"
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground",
                   )
                 }
               >

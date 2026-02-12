@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/useAuth";
 import {
@@ -64,13 +64,7 @@ export default function Membros() {
     return "active";
   };
 
-  useEffect(() => {
-    if (activeFarmId) {
-      loadMembers();
-    }
-  }, [activeFarmId]);
-
-  const loadMembers = async () => {
+  const loadMembers = React.useCallback(async () => {
     if (!activeFarmId) return;
 
     // Carregar membros usando colunas existentes: accepted_at e deleted_at
@@ -140,7 +134,13 @@ export default function Membros() {
 
     setMembers(transformedMembers);
     setIsLoading(false);
-  };
+  }, [activeFarmId, toast]);
+
+  useEffect(() => {
+    if (activeFarmId) {
+      loadMembers();
+    }
+  }, [activeFarmId, loadMembers]);
 
   const getInitials = (name: string | null) => {
     if (!name) return "?";
