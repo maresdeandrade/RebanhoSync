@@ -12,11 +12,22 @@ const Categorias = () => {
 
   const categorias = useLiveQuery(async () => {
     if (!fazendaId) return [];
-    return await db.state_categorias_zootecnicas
+    const list = await db.state_categorias_zootecnicas
       .where("fazenda_id")
       .equals(fazendaId)
       .filter((c) => !c.deleted_at)
       .toArray();
+
+    // Ordenação visual (igual à lógica de classificação)
+    return list.sort((a, b) => {
+        if (a.ativa !== b.ativa) return a.ativa ? -1 : 1;
+        const orderA = (a.payload as any)?.order ?? 9999;
+        const orderB = (b.payload as any)?.order ?? 9999;
+        if (orderA !== orderB) return orderA - orderB;
+        const minA = a.idade_min_dias ?? 0;
+        const minB = b.idade_min_dias ?? 0;
+        return minA - minB;
+    });
   }, [fazendaId]);
 
   return (
@@ -40,9 +51,16 @@ const Categorias = () => {
             <CardHeader className="pb-2">
               <div className="flex justify-between items-start">
                 <CardTitle className="text-lg">{cat.nome}</CardTitle>
-                <Badge variant={cat.ativa ? "default" : "secondary"}>
-                  {cat.ativa ? "Ativa" : "Inativa"}
-                </Badge>
+                <div className="flex flex-col items-end gap-1">
+                    <Badge variant={cat.ativa ? "default" : "secondary"}>
+                    {cat.ativa ? "Ativa" : "Inativa"}
+                    </Badge>
+                    {(cat.payload as any)?.order && (
+                        <span className="text-[10px] text-muted-foreground">
+                            Ordem: {(cat.payload as any).order}
+                        </span>
+                    )}
+                </div>
               </div>
             </CardHeader>
             <CardContent className="text-sm text-muted-foreground space-y-1">
@@ -63,6 +81,15 @@ const Categorias = () => {
                   {cat.idade_max_dias ? `${cat.idade_max_dias} dias` : "∞"}
                 </span>
               </p>
+               {/* Exibir critérios especiais se houver */}
+               {(cat.payload as any)?.criteria && (
+                  <div className="mt-2 pt-2 border-t text-xs">
+                    <p className="font-semibold mb-1">Critérios:</p>
+                    <pre className="bg-muted p-1 rounded">
+                      {JSON.stringify((cat.payload as any).criteria, null, 2)}
+                    </pre>
+                  </div>
+               )}
             </CardContent>
           </Card>
         ))}
