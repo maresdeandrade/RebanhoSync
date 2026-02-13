@@ -24,9 +24,8 @@ import { Search, Plus, ChevronRight, FilterX, PawPrint } from "lucide-react";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { useLotes } from "@/hooks/useLotes";
 import { EmptyState } from "@/components/EmptyState";
-import { calcularStatusReprodutivo, StatusReprodutivo } from "@/lib/domain/reproducao";
-import { classificarAnimal } from "@/lib/domain/categorias";
-import { Animal, CategoriaZootecnica } from "@/lib/offline/types";
+import { calcularStatusReprodutivo } from "@/lib/domain/reproducao";
+import { classificarAnimal, sortCategorias } from "@/lib/domain/categorias";
 
 const Animais = () => {
   const navigate = useNavigate();
@@ -36,7 +35,7 @@ const Animais = () => {
   const [sexoFilter, setSexoFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [reproStatusFilter, setReproStatusFilter] = useState<string>("all");
-  const [categoriaFilter, setCategoriaFilter] = useState<string>("all"); // Added Category Filter
+  const [categoriaFilter, setCategoriaFilter] = useState<string>("all");
 
   // P1.2 FIX: Debounce search to avoid query on every keystroke
   const debouncedSearch = useDebouncedValue(search, 300);
@@ -59,16 +58,7 @@ const Animais = () => {
       .filter((c) => !c.deleted_at)
       .toArray();
 
-     // Ordenação (copiada de Categorias.tsx/categorias.ts)
-    return list.sort((a, b) => {
-        if (a.ativa !== b.ativa) return a.ativa ? -1 : 1;
-        const orderA = (a.payload as any)?.order ?? 9999;
-        const orderB = (b.payload as any)?.order ?? 9999;
-        if (orderA !== orderB) return orderA - orderB;
-        const minA = a.idade_min_dias ?? 0;
-        const minB = b.idade_min_dias ?? 0;
-        return minA - minB;
-    });
+    return sortCategorias(list);
   }, [fazendaId]);
 
   // Função para calcular idade

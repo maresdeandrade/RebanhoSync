@@ -1,5 +1,49 @@
 import { differenceInDays, parseISO } from "date-fns";
-import { Animal, CategoriaZootecnica } from "@/lib/offline/types";
+import { Animal, CategoriaZootecnica, PapelMachoEnum } from "@/lib/offline/types";
+
+export interface CategoriaPayload {
+  order?: number;
+  criteria?: {
+    papel_macho?: PapelMachoEnum;
+    habilitado_monta?: boolean;
+  };
+}
+
+/**
+ * Ordena categorias zootécnicas de forma determinística.
+ * Critérios:
+ * 1. Ativa primeiro
+ * 2. Order (payload.order) ASC
+ * 3. Idade Minima ASC
+ * 4. Especificidade (aplica_ambos=false primeiro)
+ * 5. Nome ASC
+ */
+export function sortCategorias(
+    categorias: CategoriaZootecnica[]
+): CategoriaZootecnica[] {
+    return [...categorias].sort((a, b) => {
+        // 1. Ativa primeiro
+        if (a.ativa !== b.ativa) return a.ativa ? -1 : 1;
+
+        // 2. Order (payload.order) ASC
+        const payloadA = a.payload as CategoriaPayload;
+        const payloadB = b.payload as CategoriaPayload;
+        const orderA = payloadA?.order ?? 9999;
+        const orderB = payloadB?.order ?? 9999;
+        if (orderA !== orderB) return orderA - orderB;
+
+        // 3. Idade Minima ASC
+        const minA = a.idade_min_dias ?? 0;
+        const minB = b.idade_min_dias ?? 0;
+        if (minA !== minB) return minA - minB;
+
+        // 4. Especificidade (aplica_ambos=false primeiro)
+        if (a.aplica_ambos !== b.aplica_ambos) return a.aplica_ambos ? 1 : -1;
+
+        // 5. Nome ASC
+        return a.nome.localeCompare(b.nome);
+    });
+}
 
 /**
  * Classifica um animal em uma categoria zootécnica baseada em sua idade e sexo.
@@ -16,26 +60,7 @@ export function classificarAnimal(
   const idadeDias = differenceInDays(hoje, dataNascimento);
 
   // Ordenação determinística antes da classificação
-  const categoriasOrdenadas = [...categorias].sort((a, b) => {
-    // 1. Ativa primeiro
-    if (a.ativa !== b.ativa) return a.ativa ? -1 : 1;
-
-    // 2. Order (payload.order) ASC
-    const orderA = (a.payload as any)?.order ?? 9999;
-    const orderB = (b.payload as any)?.order ?? 9999;
-    if (orderA !== orderB) return orderA - orderB;
-
-    // 3. Idade Minima ASC
-    const minA = a.idade_min_dias ?? 0;
-    const minB = b.idade_min_dias ?? 0;
-    if (minA !== minB) return minA - minB;
-
-    // 4. Especificidade (aplica_ambos=false primeiro)
-    if (a.aplica_ambos !== b.aplica_ambos) return a.aplica_ambos ? 1 : -1;
-
-    // 5. Nome ASC
-    return a.nome.localeCompare(b.nome);
-  });
+  const categoriasOrdenadas = sortCategorias(categorias);
   
   return (
     categoriasOrdenadas.find((cat) => {
@@ -56,8 +81,8 @@ export function classificarAnimal(
       if (!idadeMatch || !statusMatch) return false;
 
       // 4. Verifica Critérios Especiais (Payload)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const criteria = (cat.payload as any)?.criteria;
+      const payload = cat.payload as CategoriaPayload;
+      const criteria = payload?.criteria;
       if (criteria) {
         if (criteria.papel_macho && animal.papel_macho !== criteria.papel_macho) {
           return false;

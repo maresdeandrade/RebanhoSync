@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Plus, LayoutList } from "lucide-react";
+import { CategoriaPayload } from "@/lib/domain/categorias";
 
 const Categorias = () => {
   const navigate = useNavigate();
@@ -21,8 +22,10 @@ const Categorias = () => {
     // Ordenação visual (igual à lógica de classificação)
     return list.sort((a, b) => {
         if (a.ativa !== b.ativa) return a.ativa ? -1 : 1;
-        const orderA = (a.payload as any)?.order ?? 9999;
-        const orderB = (b.payload as any)?.order ?? 9999;
+        const payloadA = a.payload as CategoriaPayload;
+        const payloadB = b.payload as CategoriaPayload;
+        const orderA = payloadA?.order ?? 9999;
+        const orderB = payloadB?.order ?? 9999;
         if (orderA !== orderB) return orderA - orderB;
         const minA = a.idade_min_dias ?? 0;
         const minB = b.idade_min_dias ?? 0;
@@ -46,53 +49,56 @@ const Categorias = () => {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {categorias?.map((cat) => (
-          <Card key={cat.id} className="hover:border-primary transition-colors">
-            <CardHeader className="pb-2">
-              <div className="flex justify-between items-start">
-                <CardTitle className="text-lg">{cat.nome}</CardTitle>
-                <div className="flex flex-col items-end gap-1">
-                    <Badge variant={cat.ativa ? "default" : "secondary"}>
-                    {cat.ativa ? "Ativa" : "Inativa"}
-                    </Badge>
-                    {(cat.payload as any)?.order && (
-                        <span className="text-[10px] text-muted-foreground">
-                            Ordem: {(cat.payload as any).order}
-                        </span>
-                    )}
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="text-sm text-muted-foreground space-y-1">
-              <p>
-                Sexo:{" "}
-                <span className="font-medium text-foreground">
-                  {cat.aplica_ambos
-                    ? "Ambos"
-                    : cat.sexo === "M"
-                    ? "Machos"
-                    : "Fêmeas"}
-                </span>
-              </p>
-              <p>
-                Idade:{" "}
-                <span className="font-medium text-foreground">
-                  {cat.idade_min_dias ?? 0} a{" "}
-                  {cat.idade_max_dias ? `${cat.idade_max_dias} dias` : "∞"}
-                </span>
-              </p>
-               {/* Exibir critérios especiais se houver */}
-               {(cat.payload as any)?.criteria && (
-                  <div className="mt-2 pt-2 border-t text-xs">
-                    <p className="font-semibold mb-1">Critérios:</p>
-                    <pre className="bg-muted p-1 rounded">
-                      {JSON.stringify((cat.payload as any).criteria, null, 2)}
-                    </pre>
+        {categorias?.map((cat) => {
+          const payload = cat.payload as CategoriaPayload;
+          return (
+            <Card key={cat.id} className="hover:border-primary transition-colors">
+              <CardHeader className="pb-2">
+                <div className="flex justify-between items-start">
+                  <CardTitle className="text-lg">{cat.nome}</CardTitle>
+                  <div className="flex flex-col items-end gap-1">
+                      <Badge variant={cat.ativa ? "default" : "secondary"}>
+                      {cat.ativa ? "Ativa" : "Inativa"}
+                      </Badge>
+                      {payload?.order && (
+                          <span className="text-[10px] text-muted-foreground">
+                              Ordem: {payload.order}
+                          </span>
+                      )}
                   </div>
-               )}
-            </CardContent>
-          </Card>
-        ))}
+                </div>
+              </CardHeader>
+              <CardContent className="text-sm text-muted-foreground space-y-1">
+                <p>
+                  Sexo:{" "}
+                  <span className="font-medium text-foreground">
+                    {cat.aplica_ambos
+                      ? "Ambos"
+                      : cat.sexo === "M"
+                      ? "Machos"
+                      : "Fêmeas"}
+                  </span>
+                </p>
+                <p>
+                  Idade:{" "}
+                  <span className="font-medium text-foreground">
+                    {cat.idade_min_dias ?? 0} a{" "}
+                    {cat.idade_max_dias ? `${cat.idade_max_dias} dias` : "∞"}
+                  </span>
+                </p>
+                {/* Exibir critérios especiais se houver */}
+                {payload?.criteria && (
+                    <div className="mt-2 pt-2 border-t text-xs">
+                      <p className="font-semibold mb-1">Critérios:</p>
+                      <pre className="bg-muted p-1 rounded">
+                        {JSON.stringify(payload.criteria, null, 2)}
+                      </pre>
+                    </div>
+                )}
+              </CardContent>
+            </Card>
+          );
+        })}
         {categorias?.length === 0 && (
             <div className="col-span-full text-center py-10 text-muted-foreground">
                 Nenhuma categoria cadastrada.

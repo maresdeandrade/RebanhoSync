@@ -4,7 +4,6 @@ import {
   Evento,
   EventoReproducao,
   AgendaItem,
-  ReproTipoEnum,
 } from "@/lib/offline/types";
 
 export type StatusReprodutivo =
@@ -19,7 +18,14 @@ export type StatusReprodutivo =
 export const PUERPERIO_DIAS = 45;
 export const DESMAME_DIAS = 210;
 
-type EventoReprodutivo = Evento & { details_reproducao?: EventoReproducao };
+// Tipos para Payloads de Eventos Reprodutivos
+interface DiagnosticoPayload {
+    resultado?: "positivo" | "negativo";
+}
+
+interface AgendaPayload {
+    tipo_manejo?: string;
+}
 
 /**
  * Calcula o Status Reprodutivo de um animal baseado em seu histórico de eventos.
@@ -46,9 +52,7 @@ export function calcularStatusReprodutivo(
       (e) =>
         e.animal_id === animal.id &&
         e.dominio === "reproducao" &&
-        !e.corrige_evento_id // Ignora eventos que corrigem outros (o 'corretor' deve ser considerado, mas aqui assumimos que corrige_evento_id aponta para o corrigido, e o corrigido deve ser ignorado se tiver flag de corrigido? Não, o padrão é: se A corrige B, B é ignorado. Mas aqui estamos simplificando: eventos ativos.)
-        // TODO: Implementar lógica robusta de correção se necessário (ex: verificar se este evento foi corrigido por outro).
-        // Por hora, assumimos que a lista já vem limpa ou que eventos corrigidos não atrapalham a lógica cronológica inversa.
+        !e.corrige_evento_id // Ignora eventos que corrigem outros
     )
     .sort((a, b) => {
         const dateA = new Date(a.occurred_at).getTime();
@@ -72,17 +76,15 @@ export function calcularStatusReprodutivo(
     }
 
     // DESMAME PENDENTE (Agenda)
-    // Verifica se existe item de agenda pendente/agendado para desmame deste animal
-    // Assumindo que 'tipo' ou 'dominio' identifica desmame. Ajustar conforme implementação real da Agenda.
-    // Aqui usamos uma heurística genérica ou verificamos se passou do tempo de desmame sem evento de desmame.
-    // Mas a regra solicitada foi: "se tiver pendência de desmame ativa"
     const temDesmamePendente = agendaItens.some(
-      (item) =>
-        item.animal_id === animal.id &&
-        item.status === "agendado" &&
-        item.dominio === "reproducao" && // ou manejo
-        (item.tipo?.toLowerCase().includes("desmame") ||
-         item.payload?.tipo_manejo === "desmame")
+      (item) => {
+          const payload = item.payload as AgendaPayload;
+          return item.animal_id === animal.id &&
+                 item.status === "agendado" &&
+                 item.dominio === "reproducao" && // ou manejo
+                 (item.tipo?.toLowerCase().includes("desmame") ||
+                  payload?.tipo_manejo === "desmame");
+      }
     );
 
     if (temDesmamePendente) {
@@ -91,16 +93,6 @@ export function calcularStatusReprodutivo(
 
     // LACTANTE
     if (diasPosParto <= DESMAME_DIAS) {
-        // Se não tem diagnóstico positivo nem serviço recente que mude o status,
-        // ela continua lactante até o desmame.
-        // Mas ela pode estar Prenha E Lactante.
-        // A especificação diz: "senão → continua avaliando serviços/diagnósticos"
-        // Se cair aqui, retorna LACTANTE? Ou verifica prenhez?
-        // Regra solicitada: "senão, se hoje <= parto+210 → LACTANTE"
-        // E DEPOIS "senão → continua avaliando".
-        // Isso implica que LACTANTE tem precedência sobre PRENHA/SERVIDA na visualização?
-        // Geralmente sim: "Vaca Lactante (Prenha)" é comum, mas o status principal é o ciclo produtivo.
-        // Vamos seguir a regra estrita: retorna LACTANTE.
         return "LACTANTE";
     }
   }
@@ -118,8 +110,8 @@ export function calcularStatusReprodutivo(
 
   // PRENHA
   if (ultimoDiagnostico) {
-      const resultado = (ultimoDiagnostico.details_reproducao?.payload as any)?.resultado; // 'positivo' | 'negativo'
-      if (resultado === "positivo") {
+      const payload = ultimoDiagnostico.details_reproducao?.payload as DiagnosticoPayload;
+      if (payload?.resultado === "positivo") {
           return "PRENHA";
       }
       // Se negativo, continua para verificar serviços posteriores ou cai em VAZIA/REPETIDORA
@@ -142,11 +134,11 @@ export function calcularStatusReprodutivo(
   let diagnosticosNegativosConsecutivos = 0;
   for (const e of eventosPosParto) {
       if (e.details_reproducao?.tipo === "diagnostico") {
-          const resultado = (e.details_reproducao?.payload as any)?.resultado;
-          if (resultado === "negativo") {
+          const payload = e.details_reproducao?.payload as DiagnosticoPayload;
+          if (payload?.resultado === "negativo") {
               diagnosticosNegativosConsecutivos++;
-          } else if (resultado === "positivo") {
-              break; // Parar se achar um positivo (embora logicamente não deveria chegar aqui se fosse o último)
+          } else if (payload?.resultado === "positivo") {
+              break; // Parar se achar um positivo
           }
       }
   }
