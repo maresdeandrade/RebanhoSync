@@ -19,11 +19,11 @@ A classificação é baseada na entidade `CategoriaZootecnica` (definida em `@/s
 | `idade_min_dias` | `number` \| `null` | Idade mínima em dias para enquadramento. `null` = 0. |
 | `idade_max_dias` | `number` \| `null` | Idade máxima em dias para enquadramento. `null` = Infinito. |
 | `ativa` | `boolean` | Status da categoria. Apenas categorias ativas são consideradas na classificação automática. |
-| `payload` | `Record<string, unknown>` | Metadados flexíveis (JSON). |
+| `payload` | `Record<string, unknown>` | Metadados flexíveis (JSON). Usado para critérios específicos (ex: `papel_macho`). |
 
 ## 2. Atributos Classificatórios
 
-A classificação de um animal em uma categoria depende da combinação de três atributos principais: **Sexo**, **Idade** e **Status**.
+A classificação de um animal em uma categoria depende da combinação de atributos principais: **Sexo**, **Idade**, **Status** e **Critérios Específicos** (definidos no payload).
 
 ### 2.1. Sexo (`sexo` e `aplica_ambos`)
 
@@ -37,7 +37,7 @@ O sistema suporta três variações de classificação por sexo:
 2.  **Apenas Machos:**
     -   `aplica_ambos`: `false`
     -   `sexo`: `'M'`
-    -   *Exemplo:* "Garrote", "Touro".
+    -   *Exemplo:* "Garrote", "Touro", "Boi".
 
 3.  **Apenas Fêmeas:**
     -   `aplica_ambos`: `false`
@@ -57,6 +57,13 @@ A idade do animal é calculada em dias (`differenceInDays(hoje, data_nascimento)
 -   **Ativa (`true`):** A categoria é utilizada na classificação automática e aparece nas listagens principais.
 -   **Inativa (`false`):** A categoria é ignorada na classificação automática. Visualmente diferenciada na listagem (`Badge` variant "secondary").
 
+### 2.4. Critérios Específicos (via `payload`)
+
+Algumas categorias podem exigir condições adicionais definidas no campo `payload.criteria`.
+
+-   **Papel do Macho (`papel_macho`):** Exige que o animal tenha um papel específico (ex: "reprodutor").
+-   **Habilitado Monta (`habilitado_monta`):** Exige que o animal esteja habilitado para monta (`true` ou `false`).
+
 ## 3. Lógica de Classificação Automática
 
 A função `classificarAnimal(animal, categorias)` em `@/src/lib/domain/categorias.ts` implementa a seguinte lógica sequencial para determinar a categoria de um animal:
@@ -66,21 +73,25 @@ A função `classificarAnimal(animal, categorias)` em `@/src/lib/domain/categori
 3.  **Iteração:** Percorre a lista de categorias (a ordem do array é importante, pois retorna a primeira correspondência - *First Match*).
 4.  **Critérios de Correspondência (Match):**
     -   **Sexo:** O animal corresponde se a categoria aceita ambos (`aplica_ambos`) OU se o sexo do animal é igual ao `sexo` da categoria.
-    -   **Idade:** A idade do animal em dias deve estar dentro do intervalo [min, max] da categoria (tratando `null` como 0 e Infinito, respectivamente).
+    -   **Idade:** A idade do animal em dias deve estar dentro do intervalo [min, max] da categoria.
     -   **Status:** A categoria deve estar `ativa`.
+    -   **Critérios Especiais (Payload):** Se definidos, o animal deve corresponder aos valores exigidos (ex: `papel_macho`, `habilitado_monta`).
 5.  **Resultado:** Retorna a **primeira** categoria que satisfaz todos os critérios, ou `null` se nenhuma corresponder.
 
 ## 4. Categorias Padrão (`CATEGORIAS_PADRAO`)
 
 O sistema define um conjunto inicial de categorias para novas fazendas:
 
-| Nome | Sexo | Idade (Dias) | Idade Aprox. |
-| :--- | :--- | :--- | :--- |
-| **Bezerro(a)** | Ambos | 0 a 240 | 0 a 8 meses |
-| **Garrote** | Macho | 241 a 730 | 8 a 24 meses |
-| **Novilha** | Fêmea | 241 a 900 | 8 a 30 meses |
-| **Touro** | Macho | > 731 | > 24 meses |
-| **Vaca** | Fêmea | > 901 | > 30 meses |
+| Nome | Sexo | Idade (Dias) | Idade Aprox. | Critérios Adicionais |
+| :--- | :--- | :--- | :--- | :--- |
+| **Bezerro(a)** | Ambos | 0 a 240 | 0 a 8 meses | - |
+| **Garrote** | Macho | 241 a 730 | 8 a 24 meses | - |
+| **Novilha** | Fêmea | 241 a 900 | 8 a 30 meses | - |
+| **Touro** | Macho | > 731 | > 24 meses | `papel_macho` = 'reprodutor' E `habilitado_monta` = true |
+| **Boi** | Macho | > 731 | > 24 meses | - (Categoria padrão para machos adultos) |
+| **Vaca** | Fêmea | > 901 | > 30 meses | - |
+
+> **Nota:** A categoria "Touro" é verificada antes de "Boi" devido à ordem de precedência. Animais que não atendem aos critérios de "Touro" caem na categoria "Boi".
 
 ## 5. Interface de Usuário (UI)
 

@@ -34,7 +34,21 @@ export function classificarAnimal(
       // 3. Verifica Status
       const statusMatch = cat.ativa;
 
-      return idadeMatch && statusMatch;
+      if (!idadeMatch || !statusMatch) return false;
+
+      // 4. Verifica Critérios Especiais (Payload)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const criteria = (cat.payload as any)?.criteria;
+      if (criteria) {
+        if (criteria.papel_macho && animal.papel_macho !== criteria.papel_macho) {
+          return false;
+        }
+        if (criteria.habilitado_monta !== undefined && animal.habilitado_monta !== criteria.habilitado_monta) {
+          return false;
+        }
+      }
+
+      return true;
     }) || null
   );
 }
@@ -84,6 +98,20 @@ export const CATEGORIAS_PADRAO: Omit<
   },
   {
     nome: "Touro",
+    sexo: "M",
+    aplica_ambos: false,
+    idade_min_dias: 731,
+    idade_max_dias: null,
+    ativa: true,
+    payload: {
+      criteria: {
+        papel_macho: "reprodutor",
+        habilitado_monta: true
+      }
+    },
+  },
+  {
+    nome: "Boi",
     sexo: "M",
     aplica_ambos: false,
     idade_min_dias: 731,
