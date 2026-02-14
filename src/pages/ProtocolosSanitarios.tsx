@@ -1,70 +1,371 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "@/lib/offline/db";
 import { createGesture } from "@/lib/offline/ops";
 import { pullDataForFarm } from "@/lib/offline/pull";
 import { useAuth } from "@/hooks/useAuth";
-import type { ProtocoloSanitarioItem, SanitarioTipoEnum } from "@/lib/offline/types";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { showError, showSuccess } from "@/utils/toast";
-import { ShieldPlus, Syringe } from "lucide-react";
+import {
+  Syringe,
+  ShieldCheck,
+  Pill,
+  Bug,
+  CheckCircle2,
+  AlertTriangle,
+  Info,
+  CalendarDays,
+} from "lucide-react";
+import type { SanitarioTipoEnum } from "@/lib/offline/types";
 
-const sanitizeInteger = (value: string): number | null => {
-  const parsed = Number.parseInt(value, 10);
-  if (!Number.isFinite(parsed)) return null;
-  return parsed;
-};
+// ============================================================================
+// DEFINIÇÃO DOS PROTOCOLOS PADRÃO (MAPA & SBMV)
+// ============================================================================
 
-const readString = (
-  record: Record<string, unknown> | null | undefined,
-  key: string,
-): string | null => {
-  const value = record?.[key];
-  return typeof value === "string" && value.trim().length > 0
-    ? value.trim()
-    : null;
-};
+interface StandardProtocolItem {
+  tipo: SanitarioTipoEnum;
+  produto: string;
+  intervalo_dias: number;
+  dose_num: number;
+  gera_agenda: boolean;
+  indicacao: string;
+  sexo_alvo?: "M" | "F" | "todos";
+  idade_min_dias?: number;
+  idade_max_dias?: number;
+  observacoes?: string;
+  dedup_template?: string;
+}
+
+interface StandardProtocol {
+  id: string; // ID estático para referência
+  nome: string;
+  descricao: string;
+  categoria: "vacinas" | "vermifugacao" | "medicamentos";
+  obrigatorio?: boolean;
+  referencia?: string; // Fonte da recomendação (MAPA, SBMV, Embrapa)
+  itens: StandardProtocolItem[];
+}
+
+const STANDARD_PROTOCOLS: StandardProtocol[] = [
+  // --------------------------------------------------------------------------
+  // VACINAS (Imunização)
+  // --------------------------------------------------------------------------
+  {
+    id: "vac-aftosa",
+    nome: "Febre Aftosa (Obrigatória)",
+    descricao:
+      "Protocolo oficial de erradicação da Febre Aftosa conforme calendário nacional do MAPA.",
+    categoria: "vacinas",
+    obrigatorio: true,
+    referencia: "MAPA - PNEFA",
+    itens: [
+      {
+        tipo: "vacinacao",
+        produto: "Vacina Febre Aftosa (Bivalente/Trivalente)",
+        intervalo_dias: 180, // Semestral (Maio e Novembro geralmente)
+        dose_num: 1,
+        gera_agenda: true,
+        indicacao:
+          "Todo o rebanho ou conforme calendário estadual (ex: jovens em Maio, todos em Novembro).",
+        sexo_alvo: "todos",
+        observacoes:
+          "Verificar calendário específico do estado. Dose padrão: 2ml subcutânea. Manter refrigerada (2-8°C).",
+        dedup_template: "vacina:aftosa:{ano}:{mes}",
+      },
+    ],
+  },
+  {
+    id: "vac-brucelose",
+    nome: "Brucelose (Obrigatória - Fêmeas)",
+    descricao:
+      "Vacinação obrigatória de fêmeas entre 3 e 8 meses de idade com vacina B19. Zoonose grave.",
+    categoria: "vacinas",
+    obrigatorio: true,
+    referencia: "MAPA - PNCEBT",
+    itens: [
+      {
+        tipo: "vacinacao",
+        produto: "Vacina Brucelose B19 (Viva)",
+        intervalo_dias: 0, // Dose única
+        dose_num: 1,
+        gera_agenda: true,
+        indicacao:
+          "Fêmeas (bezerras) entre 3 e 8 meses de idade. Obrigatória marcação com ferro candente (V + algarismo final do ano) ou tatuagem.",
+        sexo_alvo: "F",
+        idade_min_dias: 90, // 3 meses
+        idade_max_dias: 240, // 8 meses
+        observacoes:
+          "APENAS Médico Veterinário ou vacinador auxiliar cadastrado pode aplicar. Vacina viva (CUIDADO).",
+        dedup_template: "vacina:brucelose:{animal_id}",
+      },
+    ],
+  },
+  {
+    id: "vac-raiva",
+    nome: "Raiva dos Herbívoros",
+    descricao:
+      "Vacinação contra Raiva. Obrigatória em regiões endêmicas e recomendada em todo o território nacional.",
+    categoria: "vacinas",
+    obrigatorio: false, // Depende da região, mas marcamos como recomendada
+    referencia: "MAPA - PNCRH",
+    itens: [
+      {
+        tipo: "vacinacao",
+        produto: "Vacina Antirrábica",
+        intervalo_dias: 365, // Anual
+        dose_num: 1,
+        gera_agenda: true,
+        indicacao:
+          "Todo o rebanho a partir de 3 meses. Primovacinação requer reforço após 30 dias.",
+        sexo_alvo: "todos",
+        idade_min_dias: 90,
+        observacoes:
+          "Em áreas de foco, revacinação pode ser semestral ou conforme determinação da defesa sanitária.",
+        dedup_template: "vacina:raiva:{ano}",
+      },
+    ],
+  },
+  {
+    id: "vac-clostridioses",
+    nome: "Clostridioses (Manqueira/Polivalente)",
+    descricao:
+      "Prevenção contra Carbúnculo Sintomático, Gangrena Gasosa, Enterotoxemias e Botulismo.",
+    categoria: "vacinas",
+    obrigatorio: false,
+    referencia: "SBMV / Embrapa",
+    itens: [
+      {
+        tipo: "vacinacao",
+        produto: "Vacina Polivalente Clostridioses",
+        intervalo_dias: 365, // Anual
+        dose_num: 1,
+        gera_agenda: true,
+        indicacao:
+          "Todo o rebanho. Animais jovens: primovacinação aos 3-4 meses + reforço 4 semanas depois.",
+        sexo_alvo: "todos",
+        observacoes:
+          "Essencial em sistemas intensivos e regiões com histórico da doença.",
+        dedup_template: "vacina:clostridio:{ano}",
+      },
+    ],
+  },
+  {
+    id: "vac-reprodutiva",
+    nome: "Reprodutiva (IBR/BVD/Leptospirose)",
+    descricao:
+      "Prevenção de perdas gestacionais e infertilidade causadas por vírus e bactérias.",
+    categoria: "vacinas",
+    obrigatorio: false,
+    referencia: "SBMV / Embrapa",
+    itens: [
+      {
+        tipo: "vacinacao",
+        produto: "Vacina Reprodutiva (IBR/BVD/Lepto)",
+        intervalo_dias: 365, // Anual (pré-estação)
+        dose_num: 1,
+        gera_agenda: true,
+        indicacao:
+          "Fêmeas em idade reprodutiva e touros. Aplicar 30 dias antes da estação de monta.",
+        sexo_alvo: "todos", // Touros também vacinam
+        observacoes: "Primovacinação requer reforço.",
+        dedup_template: "vacina:reprodutiva:{ano}",
+      },
+    ],
+  },
+
+  // --------------------------------------------------------------------------
+  // VERMIFUGAÇÃO (Controle Parasitário)
+  // --------------------------------------------------------------------------
+  {
+    id: "vermi-estrategica-seca",
+    nome: "Controle Estratégico (5-7-9)",
+    descricao:
+      "Esquema clássico de vermifugação estratégica no início, meio e fim da seca (Maio, Julho, Setembro).",
+    categoria: "vermifugacao",
+    referencia: "Embrapa Gado de Corte",
+    itens: [
+      {
+        tipo: "vermifugacao",
+        produto: "Vermífugo (Base Avermectina 1%)",
+        intervalo_dias: 60,
+        dose_num: 1,
+        gera_agenda: true,
+        indicacao:
+          "Mês 5 (Maio) - Início da seca. Reduzir carga parasitária nos animais e pastagens.",
+        dedup_template: "vermi:579:maio:{ano}",
+      },
+      {
+        tipo: "vermifugacao",
+        produto: "Vermífugo (Base Levamisol/Albendazol)",
+        intervalo_dias: 60,
+        dose_num: 2,
+        gera_agenda: true,
+        indicacao:
+          "Mês 7 (Julho) - Meio da seca. Rotação de princípio ativo para evitar resistência.",
+        dedup_template: "vermi:579:julho:{ano}",
+      },
+      {
+        tipo: "vermifugacao",
+        produto: "Vermífugo (Base Moxidectina/Avermectina)",
+        intervalo_dias: 60,
+        dose_num: 3,
+        gera_agenda: true,
+        indicacao:
+          "Mês 9 (Setembro) - Fim da seca / Início das chuvas. Preparação para época das águas.",
+        dedup_template: "vermi:579:setembro:{ano}",
+      },
+    ],
+  },
+  {
+    id: "vermi-desmama",
+    nome: "Vermifugação à Desmama",
+    descricao:
+      "Controle parasitário em bezerros no momento da desmama (fase de alto estresse e suscetibilidade).",
+    categoria: "vermifugacao",
+    referencia: "Prática Zootécnica Padrão",
+    itens: [
+      {
+        tipo: "vermifugacao",
+        produto: "Vermífugo (Endectocida)",
+        intervalo_dias: 0,
+        dose_num: 1,
+        gera_agenda: true,
+        indicacao: "Bezerros(as) na desmama (6-8 meses).",
+        idade_min_dias: 180,
+        idade_max_dias: 270,
+        dedup_template: "vermi:desmama:{animal_id}",
+      },
+    ],
+  },
+
+  // --------------------------------------------------------------------------
+  // MEDICAMENTOS (Terapêuticos e Preventivos)
+  // --------------------------------------------------------------------------
+  {
+    id: "med-cura-umbigo",
+    nome: "Cura de Umbigo (Recém-Nascidos)",
+    descricao:
+      "Protocolo essencial para prevenção de onfaloflebites, miíases e infecções sistêmicas.",
+    categoria: "medicamentos",
+    referencia: "Boas Práticas de Manejo (BPM)",
+    itens: [
+      {
+        tipo: "medicamento",
+        produto: "Iodo 10% (tintura) + Repelente spray",
+        intervalo_dias: 1,
+        dose_num: 1,
+        gera_agenda: false, // É diário/imediato, não agenda futura distante
+        indicacao:
+          "Imediatamente após o nascimento. Cortar umbigo se necessário (2 dedos). Mergulhar no iodo.",
+        idade_min_dias: 0,
+        idade_max_dias: 30,
+        observacoes: "Repetir diariamente até a secagem completa (3-5 dias).",
+        dedup_template: "med:umbigo:{animal_id}",
+      },
+    ],
+  },
+  {
+    id: "med-tpb",
+    nome: "Tratamento Tristeza Parasitária (TPB)",
+    descricao:
+      "Protocolo terapêutico para casos de Babesiose e Anaplasmose (Carrapato).",
+    categoria: "medicamentos",
+    referencia: "Protocolo Clínico Veterinário",
+    itens: [
+      {
+        tipo: "medicamento",
+        produto: "Diminazeno (Ganaseg/Outros)",
+        intervalo_dias: 0,
+        dose_num: 1,
+        gera_agenda: false,
+        indicacao: "Combate à Babesia. Aplicar intramuscular profunda conforme bula.",
+        observacoes: "Dose geralmente 3,5mg/kg.",
+      },
+      {
+        tipo: "medicamento",
+        produto: "Oxitetraciclina L.A.",
+        intervalo_dias: 0,
+        dose_num: 1,
+        gera_agenda: false,
+        indicacao: "Combate à Anaplasma. Aplicar intramuscular profunda.",
+        observacoes: "Dose geralmente 20mg/kg.",
+      },
+      {
+        tipo: "medicamento",
+        produto: "Antitérmico/Anti-inflamatório (Dipirona/Melo)",
+        intervalo_dias: 0,
+        dose_num: 1,
+        gera_agenda: false,
+        indicacao: "Controle da febre e dor. Suporte.",
+      },
+    ],
+  },
+  {
+    id: "med-mastite-seca",
+    nome: "Terapia de Vaca Seca (Mastite)",
+    descricao:
+      "Prevenção e cura de mastite no período seco em vacas leiteiras ou corte com alta produção.",
+    categoria: "medicamentos",
+    referencia: "SBMV - Qualidade do Leite",
+    itens: [
+      {
+        tipo: "medicamento",
+        produto: "Antibiótico Intramamário (Vaca Seca)",
+        intervalo_dias: 0,
+        dose_num: 1,
+        gera_agenda: true,
+        indicacao:
+          "Vacas no encerramento da lactação (60 dias antes do parto previsto).",
+        sexo_alvo: "F",
+        observacoes:
+          "Aplicar em todos os quartos após a última ordenha. Usar selante de teto se possível.",
+        dedup_template: "med:secagem:{animal_id}",
+      },
+    ],
+  },
+];
 
 const ProtocolosSanitarios = () => {
   const { activeFarmId } = useAuth();
-  const [nomeProtocolo, setNomeProtocolo] = useState("");
-  const [descricaoProtocolo, setDescricaoProtocolo] = useState("");
-  const [protocoloAtivo, setProtocoloAtivo] = useState(true);
+  const [activeTab, setActiveTab] = useState<string>("vacinas");
 
-  const [itemProtocoloId, setItemProtocoloId] = useState("");
-  const [itemTipo, setItemTipo] = useState<SanitarioTipoEnum>("vacinacao");
-  const [itemProduto, setItemProduto] = useState("");
-  const [itemIntervaloDias, setItemIntervaloDias] = useState("30");
-  const [itemDoseNum, setItemDoseNum] = useState("1");
-  const [itemGeraAgenda, setItemGeraAgenda] = useState(true);
-  const [itemDedupTemplate, setItemDedupTemplate] = useState("");
-  const [itemSexoAlvo, setItemSexoAlvo] = useState<"todos" | "M" | "F">("todos");
-  const [itemIdadeMinDias, setItemIdadeMinDias] = useState("");
-  const [itemIdadeMaxDias, setItemIdadeMaxDias] = useState("");
-  const [itemIndicacao, setItemIndicacao] = useState("");
+  // --------------------------------------------------------------------------
+  // HOOKS E CONSULTAS
+  // --------------------------------------------------------------------------
 
+  // Garante que os dados da fazenda estejam atualizados localmente ao montar o componente
   useEffect(() => {
     if (!activeFarmId) return;
-    pullDataForFarm(activeFarmId, ["protocolos_sanitarios", "protocolos_sanitarios_itens"], { mode: "merge" }).catch(
-      (error) => {
-        console.warn("[protocolos-sanitarios] failed to refresh protocols", error);
-      },
-    );
+    pullDataForFarm(
+      activeFarmId,
+      ["protocolos_sanitarios", "protocolos_sanitarios_itens"],
+      { mode: "merge" }
+    ).catch((error) => {
+      console.warn(
+        "[protocolos-sanitarios] failed to refresh protocols",
+        error
+      );
+    });
   }, [activeFarmId]);
-
-  const protocolos = useLiveQuery(() => {
+  
+  // Consulta protocolos JÁ CADASTRADOS na fazenda ativa para indicar status visualmente
+  // Isso evita que o usuário adicione o mesmo protocolo padrão múltiplas vezes sem necessidade
+  const protocolosExistentes = useLiveQuery(() => {
     if (!activeFarmId) return [];
     return db.state_protocolos_sanitarios
       .where("fazenda_id")
@@ -73,445 +374,305 @@ const ProtocolosSanitarios = () => {
       .toArray();
   }, [activeFarmId]);
 
-  const itens = useLiveQuery(() => {
-    if (!activeFarmId) return [];
-    return db.state_protocolos_sanitarios_itens
-      .where("fazenda_id")
-      .equals(activeFarmId)
-      .filter((item) => !item.deleted_at)
-      .toArray();
-  }, [activeFarmId]);
-
-  const itensByProtocolo = useMemo(() => {
-    const grouped = new Map<string, ProtocoloSanitarioItem[]>();
-    for (const item of itens ?? []) {
-      const current = grouped.get(item.protocolo_id);
-      if (current) {
-        current.push(item);
-      } else {
-        grouped.set(item.protocolo_id, [item]);
-      }
-    }
-    for (const values of grouped.values()) {
-      values.sort((a, b) => (a.dose_num ?? 1) - (b.dose_num ?? 1));
-    }
-    return grouped;
-  }, [itens]);
-
-  const handleCriarProtocolo = async () => {
-    if (!activeFarmId) {
-      showError("Fazenda ativa nao identificada.");
-      return;
-    }
-    if (!nomeProtocolo.trim()) {
-      showError("Informe o nome do protocolo.");
-      return;
-    }
-
-    try {
-      await createGesture(activeFarmId, [
-        {
-          table: "protocolos_sanitarios",
-          action: "INSERT",
-          record: {
-            id: crypto.randomUUID(),
-            nome: nomeProtocolo.trim(),
-            descricao: descricaoProtocolo.trim() || null,
-            ativo: protocoloAtivo,
-            payload: {
-              origem: "config_protocolos_sanitarios",
-            },
-          },
-        },
-      ]);
-      setNomeProtocolo("");
-      setDescricaoProtocolo("");
-      setProtocoloAtivo(true);
-      showSuccess("Protocolo cadastrado localmente.");
-    } catch (error) {
-      console.error(error);
-      showError("Erro ao cadastrar protocolo.");
-    }
+  // Helper para verificar se um protocolo específico já existe na lista
+  const isProtocoloAdicionado = (nomeProtocolo: string) => {
+    return protocolosExistentes?.some(
+      (p) => p.nome === nomeProtocolo && p.ativo
+    );
   };
 
-  const handleCriarItem = async () => {
+  // --------------------------------------------------------------------------
+  // AÇÕES
+  // --------------------------------------------------------------------------
+
+  /**
+   * Adiciona um protocolo padrão à fazenda ativa.
+   * Utiliza o sistema de "Gestures" (createGesture) para garantir sincronização offline-first.
+   * Cria tanto o registro do protocolo (cabeçalho) quanto seus itens (etapas).
+   */
+  const handleAdicionarProtocolo = async (protocolo: StandardProtocol) => {
     if (!activeFarmId) {
-      showError("Fazenda ativa nao identificada.");
+      showError("Nenhuma fazenda ativa selecionada.");
       return;
     }
-    if (!itemProtocoloId) {
-      showError("Selecione um protocolo.");
-      return;
-    }
-    if (!itemProduto.trim()) {
-      showError("Informe o nome da vacina/produto.");
-      return;
-    }
-
-    const intervaloDias = sanitizeInteger(itemIntervaloDias);
-    if (!intervaloDias || intervaloDias <= 0) {
-      showError("Intervalo em dias deve ser maior que zero.");
-      return;
-    }
-
-    const doseNum = sanitizeInteger(itemDoseNum);
-    if (!doseNum || doseNum <= 0) {
-      showError("Dose deve ser maior que zero.");
-      return;
-    }
-
-    const idadeMin = itemIdadeMinDias ? sanitizeInteger(itemIdadeMinDias) : null;
-    const idadeMax = itemIdadeMaxDias ? sanitizeInteger(itemIdadeMaxDias) : null;
-
-    if ((idadeMin !== null && idadeMin < 0) || (idadeMax !== null && idadeMax < 0)) {
-      showError("Idades de restricao devem ser positivas.");
-      return;
-    }
-    if (idadeMin !== null && idadeMax !== null && idadeMax < idadeMin) {
-      showError("Idade maxima deve ser maior ou igual a idade minima.");
-      return;
-    }
-
-    const payload: Record<string, unknown> = {
-      origem: "config_protocolos_sanitarios",
-      indicacao: itemIndicacao.trim() || null,
-    };
-    if (itemSexoAlvo !== "todos") payload.sexo_alvo = itemSexoAlvo;
-    if (idadeMin !== null) payload.idade_minima_dias = idadeMin;
-    if (idadeMax !== null) payload.idade_maxima_dias = idadeMax;
 
     try {
-      await createGesture(activeFarmId, [
-        {
+      const protocoloId = crypto.randomUUID();
+
+      // 1. Preparar operação para criar o protocolo (cabeçalho)
+      // O payload armazena metadados da origem para rastreabilidade futura
+      const opProtocolo = {
+        table: "protocolos_sanitarios",
+        action: "INSERT",
+        record: {
+          id: protocoloId,
+          nome: protocolo.nome,
+          descricao: protocolo.descricao,
+          ativo: true,
+          payload: {
+            origem: "template_padrao",
+            referencia: protocolo.referencia,
+            standard_id: protocolo.id,
+          },
+        },
+      };
+
+      // 2. Preparar operações para criar os itens do protocolo
+      // Mapeia cada etapa do padrão para um registro na tabela protocolos_sanitarios_itens
+      const opsItens = protocolo.itens.map((item) => {
+        // Schema exige intervalo_dias > 0; para dose unica/imediato usamos valor tecnico = 1.
+        const intervaloDiasNormalizado =
+          Number.isFinite(item.intervalo_dias) && item.intervalo_dias > 0
+            ? Math.trunc(item.intervalo_dias)
+            : 1;
+
+        return {
           table: "protocolos_sanitarios_itens",
           action: "INSERT",
           record: {
             id: crypto.randomUUID(),
-            protocolo_id: itemProtocoloId,
+            protocolo_id: protocoloId,
             protocol_item_id: crypto.randomUUID(),
             version: 1,
-            tipo: itemTipo,
-            produto: itemProduto.trim(),
-            intervalo_dias: intervaloDias,
-            dose_num: doseNum,
-            gera_agenda: itemGeraAgenda,
-            dedup_template: itemDedupTemplate.trim() || null,
-            payload,
+            tipo: item.tipo,
+            produto: item.produto,
+            intervalo_dias: intervaloDiasNormalizado,
+            dose_num: item.dose_num,
+            gera_agenda: item.gera_agenda,
+            dedup_template: item.dedup_template || null,
+            payload: {
+              indicacao: item.indicacao,
+              sexo_alvo: item.sexo_alvo || null,
+              idade_min_dias: item.idade_min_dias || null,
+              idade_max_dias: item.idade_max_dias || null,
+              observacoes: item.observacoes || null,
+            },
           },
-        },
-      ]);
+        };
+      });
 
-      setItemProduto("");
-      setItemIntervaloDias("30");
-      setItemDoseNum("1");
-      setItemGeraAgenda(true);
-      setItemDedupTemplate("");
-      setItemSexoAlvo("todos");
-      setItemIdadeMinDias("");
-      setItemIdadeMaxDias("");
-      setItemIndicacao("");
-      showSuccess("Item sanitario cadastrado localmente.");
+      // Executa todas as operações em uma única transação (Gesture)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await createGesture(activeFarmId, [opProtocolo, ...opsItens] as any);
+
+      showSuccess(
+        `Protocolo "${protocolo.nome}" adicionado à fazenda com sucesso!`
+      );
     } catch (error) {
-      console.error(error);
-      showError("Erro ao cadastrar item sanitario.");
+      console.error("Erro ao adicionar protocolo:", error);
+      showError("Erro ao adicionar o protocolo. Tente novamente.");
     }
   };
 
-  const toggleProtocoloAtivo = async (id: string, ativoAtual: boolean) => {
-    if (!activeFarmId) return;
-    try {
-      await createGesture(activeFarmId, [
-        {
-          table: "protocolos_sanitarios",
-          action: "UPDATE",
-          record: {
-            id,
-            ativo: !ativoAtual,
-          },
-        },
-      ]);
-      showSuccess(!ativoAtual ? "Protocolo ativado." : "Protocolo inativado.");
-    } catch (error) {
-      console.error(error);
-      showError("Erro ao atualizar status do protocolo.");
-    }
-  };
+  const renderProtocoloCard = (protocolo: StandardProtocol) => {
+    const adicionado = isProtocoloAdicionado(protocolo.nome);
 
-  const toggleItemAgenda = async (item: ProtocoloSanitarioItem) => {
-    if (!activeFarmId) return;
-    try {
-      await createGesture(activeFarmId, [
-        {
-          table: "protocolos_sanitarios_itens",
-          action: "UPDATE",
-          record: {
-            id: item.id,
-            gera_agenda: !item.gera_agenda,
-          },
-        },
-      ]);
-      showSuccess(!item.gera_agenda ? "Item marcado para gerar agenda." : "Item removido da agenda automatica.");
-    } catch (error) {
-      console.error(error);
-      showError("Erro ao atualizar item do protocolo.");
-    }
+    return (
+      <Card key={protocolo.id} className="mb-4 border-l-4 border-l-primary">
+        <CardHeader>
+          <div className="flex justify-between items-start gap-4">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <CardTitle className="text-lg font-bold text-primary">
+                  {protocolo.nome}
+                </CardTitle>
+                {protocolo.obrigatorio && (
+                  <Badge variant="destructive" className="gap-1">
+                    <AlertTriangle className="h-3 w-3" /> Obrigatório
+                  </Badge>
+                )}
+                {adicionado && (
+                  <Badge
+                    variant="secondary"
+                    className="gap-1 bg-green-100 text-green-800 hover:bg-green-100"
+                  >
+                    <CheckCircle2 className="h-3 w-3" /> Ativo na Fazenda
+                  </Badge>
+                )}
+              </div>
+              <CardDescription className="text-base">
+                {protocolo.descricao}
+              </CardDescription>
+              {protocolo.referencia && (
+                <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                  <Info className="h-3 w-3" /> Fonte: {protocolo.referencia}
+                </p>
+              )}
+            </div>
+            <Button
+              variant={adicionado ? "outline" : "default"}
+              size="sm"
+              onClick={() => handleAdicionarProtocolo(protocolo)}
+              disabled={adicionado}
+            >
+              {adicionado ? "Já Adicionado" : "Adicionar à Fazenda"}
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <Accordion type="single" collapsible className="w-full">
+            <AccordionItem value="itens">
+              <AccordionTrigger>
+                Ver Detalhes do Protocolo ({protocolo.itens.length} etapas)
+              </AccordionTrigger>
+              <AccordionContent>
+                <div className="space-y-4 pt-2">
+                  {protocolo.itens.map((item, index) => (
+                    <div
+                      key={index}
+                      className="flex flex-col gap-2 p-3 bg-muted/30 rounded-lg border"
+                    >
+                      <div className="flex items-center justify-between font-medium">
+                        <span className="flex items-center gap-2">
+                          <span className="bg-primary/10 text-primary px-2 py-0.5 rounded text-xs font-bold">
+                            {item.dose_num}ª Etapa
+                          </span>
+                          {item.produto}
+                        </span>
+                        <Badge variant="outline">{item.tipo}</Badge>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-muted-foreground">
+                        <div className="flex items-center gap-2">
+                          <CalendarDays className="h-4 w-4" />
+                          <span>
+                            Periodicidade:{" "}
+                            {item.intervalo_dias > 0
+                              ? `${item.intervalo_dias} dias`
+                              : "Dose Única / Imediato"}
+                          </span>
+                        </div>
+                        <div>
+                          <strong>Indicação:</strong> {item.indicacao}
+                        </div>
+                        {(item.sexo_alvo ||
+                          item.idade_min_dias !== undefined) && (
+                          <div className="col-span-1 md:col-span-2">
+                            <strong>Alvo:</strong>{" "}
+                            {item.sexo_alvo === "M"
+                              ? "Machos"
+                              : item.sexo_alvo === "F"
+                              ? "Fêmeas"
+                              : "Todos"}
+                            {item.idade_min_dias !== undefined
+                              ? ` | ${item.idade_min_dias} a ${
+                                  item.idade_max_dias || "sem limite"
+                                } dias`
+                              : ""}
+                          </div>
+                        )}
+                        {item.observacoes && (
+                          <div className="col-span-1 md:col-span-2 italic bg-yellow-50/50 p-2 rounded text-yellow-800 dark:text-yellow-200 dark:bg-yellow-900/20 border border-yellow-100 dark:border-yellow-900/50">
+                            Nota: {item.observacoes}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+        </CardContent>
+      </Card>
+    );
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-2">
-        <Syringe className="h-6 w-6 text-primary" />
-        <h1 className="text-2xl font-bold">Protocolos Sanitarios</h1>
+    <div className="space-y-6 container mx-auto pb-10">
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center gap-3">
+          <ShieldCheck className="h-8 w-8 text-primary" />
+          <h1 className="text-3xl font-bold tracking-tight">
+            Protocolos Sanitários Oficiais
+          </h1>
+        </div>
+        <p className="text-muted-foreground max-w-2xl">
+          Biblioteca de protocolos sanitários baseada nas recomendações do
+          Ministério da Agricultura (MAPA) e Sociedade Brasileira de Medicina
+          Veterinária (SBMV). Selecione e adicione os protocolos recomendados
+          para garantir a conformidade legal e a saúde do seu rebanho.
+        </p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Novo Protocolo</CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-4 md:grid-cols-2">
-          <div className="space-y-2 md:col-span-2">
-            <Label>Nome</Label>
-            <Input
-              value={nomeProtocolo}
-              onChange={(e) => setNomeProtocolo(e.target.value)}
-              placeholder="Ex.: Vacinacao de bezerras"
-            />
-          </div>
-          <div className="space-y-2 md:col-span-2">
-            <Label>Descricao</Label>
-            <Textarea
-              value={descricaoProtocolo}
-              onChange={(e) => setDescricaoProtocolo(e.target.value)}
-              placeholder="Descricao do protocolo"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>Status inicial</Label>
-            <Select
-              value={protocoloAtivo ? "ativo" : "inativo"}
-              onValueChange={(v) => setProtocoloAtivo(v === "ativo")}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ativo">Ativo</SelectItem>
-                <SelectItem value="inativo">Inativo</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex items-end">
-            <Button className="w-full" onClick={handleCriarProtocolo}>
-              <ShieldPlus className="h-4 w-4 mr-2" /> Criar Protocolo
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      <Tabs
+        defaultValue="vacinas"
+        value={activeTab}
+        onValueChange={setActiveTab}
+        className="w-full"
+      >
+        <TabsList className="grid w-full grid-cols-3 lg:w-[600px]">
+          <TabsTrigger value="vacinas" className="flex items-center gap-2">
+            <Syringe className="h-4 w-4" /> Vacinas
+          </TabsTrigger>
+          <TabsTrigger value="vermifugacao" className="flex items-center gap-2">
+            <Bug className="h-4 w-4" /> Vermifugação
+          </TabsTrigger>
+          <TabsTrigger value="medicamentos" className="flex items-center gap-2">
+            <Pill className="h-4 w-4" /> Medicamentos
+          </TabsTrigger>
+        </TabsList>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Novo Item Sanitario</CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-4 md:grid-cols-3">
-          <div className="space-y-2 md:col-span-2">
-            <Label>Protocolo</Label>
-            <Select value={itemProtocoloId} onValueChange={setItemProtocoloId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione o protocolo" />
-              </SelectTrigger>
-              <SelectContent>
-                {(protocolos ?? []).map((protocolo) => (
-                  <SelectItem key={protocolo.id} value={protocolo.id}>
-                    {protocolo.nome}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        <TabsContent
+          value="vacinas"
+          className="mt-6 animate-in fade-in-50 duration-500"
+        >
+          <div className="grid gap-6">
+            <div className="bg-blue-50 dark:bg-blue-950/30 p-4 rounded-lg border border-blue-100 dark:border-blue-900 flex gap-3 items-start text-sm text-blue-800 dark:text-blue-200">
+              <Info className="h-5 w-5 flex-shrink-0 mt-0.5" />
+              <div>
+                <strong>Atenção:</strong> O calendário de vacinação contra Febre
+                Aftosa varia conforme o estado. Consulte sempre o órgão de
+                defesa sanitária da sua região para datas exatas e
+                obrigatoriedade.
+              </div>
+            </div>
+            {STANDARD_PROTOCOLS.filter((p) => p.categoria === "vacinas").map(
+              renderProtocoloCard
+            )}
           </div>
-          <div className="space-y-2">
-            <Label>Tipo</Label>
-            <Select value={itemTipo} onValueChange={(v) => setItemTipo(v as SanitarioTipoEnum)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="vacinacao">Vacinacao</SelectItem>
-                <SelectItem value="vermifugacao">Vermifugacao</SelectItem>
-                <SelectItem value="medicamento">Medicamento</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2 md:col-span-2">
-            <Label>Produto / Vacina</Label>
-            <Input
-              value={itemProduto}
-              onChange={(e) => setItemProduto(e.target.value)}
-              placeholder="Nome do produto"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>Periodicidade (dias)</Label>
-            <Input
-              type="number"
-              min={1}
-              value={itemIntervaloDias}
-              onChange={(e) => setItemIntervaloDias(e.target.value)}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>Dose</Label>
-            <Input
-              type="number"
-              min={1}
-              value={itemDoseNum}
-              onChange={(e) => setItemDoseNum(e.target.value)}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>Sexo alvo</Label>
-            <Select value={itemSexoAlvo} onValueChange={(v) => setItemSexoAlvo(v as "todos" | "M" | "F")}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todos</SelectItem>
-                <SelectItem value="F">Femeas</SelectItem>
-                <SelectItem value="M">Machos</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2">
-            <Label>Idade minima (dias)</Label>
-            <Input
-              type="number"
-              min={0}
-              value={itemIdadeMinDias}
-              onChange={(e) => setItemIdadeMinDias(e.target.value)}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>Idade maxima (dias)</Label>
-            <Input
-              type="number"
-              min={0}
-              value={itemIdadeMaxDias}
-              onChange={(e) => setItemIdadeMaxDias(e.target.value)}
-            />
-          </div>
-          <div className="space-y-2 md:col-span-2">
-            <Label>Dedup template</Label>
-            <Input
-              value={itemDedupTemplate}
-              onChange={(e) => setItemDedupTemplate(e.target.value)}
-              placeholder="Ex.: vacina:{animal_id}:dose:{dose_num}"
-            />
-          </div>
-          <div className="space-y-2 md:col-span-3">
-            <Label>Indicacao</Label>
-            <Textarea
-              value={itemIndicacao}
-              onChange={(e) => setItemIndicacao(e.target.value)}
-              placeholder="Ex.: bezerras de 3 a 8 meses"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>Geracao automatica na agenda</Label>
-            <Select
-              value={itemGeraAgenda ? "sim" : "nao"}
-              onValueChange={(v) => setItemGeraAgenda(v === "sim")}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="sim">Sim</SelectItem>
-                <SelectItem value="nao">Nao</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex items-end md:col-span-2">
-            <Button className="w-full" onClick={handleCriarItem}>
-              <ShieldPlus className="h-4 w-4 mr-2" /> Criar Item
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+        </TabsContent>
 
-      <div className="space-y-4">
-        {(protocolos ?? []).map((protocolo) => {
-          const items = itensByProtocolo.get(protocolo.id) ?? [];
+        <TabsContent
+          value="vermifugacao"
+          className="mt-6 animate-in fade-in-50 duration-500"
+        >
+          <div className="grid gap-6">
+            <div className="bg-green-50 dark:bg-green-950/30 p-4 rounded-lg border border-green-100 dark:border-green-900 flex gap-3 items-start text-sm text-green-800 dark:text-green-200">
+              <Info className="h-5 w-5 flex-shrink-0 mt-0.5" />
+              <div>
+                <strong>Dica de Manejo:</strong> A rotação de princípios ativos
+                (bases químicas) é fundamental para evitar a resistência
+                parasitária. O protocolo 5-7-9 é uma estratégia consagrada para
+                otimizar o controle durante a seca.
+              </div>
+            </div>
+            {STANDARD_PROTOCOLS.filter(
+              (p) => p.categoria === "vermifugacao"
+            ).map(renderProtocoloCard)}
+          </div>
+        </TabsContent>
 
-          return (
-            <Card key={protocolo.id}>
-              <CardHeader className="pb-3">
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div>
-                    <CardTitle className="text-base">{protocolo.nome}</CardTitle>
-                    <p className="text-sm text-muted-foreground">
-                      {protocolo.descricao || "Sem descricao"} | {items.length} item(ns)
-                    </p>
-                  </div>
-                  <div className="flex gap-2">
-                    <Badge variant={protocolo.ativo ? "default" : "secondary"}>
-                      {protocolo.ativo ? "Ativo" : "Inativo"}
-                    </Badge>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => toggleProtocoloAtivo(protocolo.id, protocolo.ativo)}
-                    >
-                      {protocolo.ativo ? "Inativar" : "Ativar"}
-                    </Button>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                {items.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">Sem itens neste protocolo.</p>
-                ) : (
-                  items.map((item) => {
-                    const indicacao = readString(item.payload, "indicacao") || "Sem indicacao";
-                    const idadeMin = sanitizeInteger(String(item.payload?.idade_minima_dias ?? ""));
-                    const idadeMax = sanitizeInteger(String(item.payload?.idade_maxima_dias ?? ""));
-                    const sexoAlvo = readString(item.payload, "sexo_alvo");
-
-                    return (
-                      <div key={item.id} className="rounded-md border p-3 space-y-2">
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                          <p className="font-medium">
-                            Dose {item.dose_num ?? 1}: {item.produto}
-                          </p>
-                          <div className="flex gap-2">
-                            <Badge variant="outline">{item.tipo}</Badge>
-                            <Badge variant={item.gera_agenda ? "default" : "secondary"}>
-                              {item.gera_agenda ? "Gera agenda" : "Manual"}
-                            </Badge>
-                            <Button size="sm" variant="outline" onClick={() => toggleItemAgenda(item)}>
-                              {item.gera_agenda ? "Desativar agenda" : "Ativar agenda"}
-                            </Button>
-                          </div>
-                        </div>
-                        <p className="text-sm text-muted-foreground">
-                          Periodicidade: {item.intervalo_dias} dia(s) | Sexo: {sexoAlvo || "Todos"} | Idade:{" "}
-                          {idadeMin ?? 0} a {idadeMax ?? "sem limite"} dias
-                        </p>
-                        <p className="text-sm text-muted-foreground">Indicacao: {indicacao}</p>
-                      </div>
-                    );
-                  })
-                )}
-              </CardContent>
-            </Card>
-          );
-        })}
-        {(protocolos ?? []).length === 0 && (
-          <Card>
-            <CardContent className="p-6 text-sm text-muted-foreground">
-              Nenhum protocolo encontrado para a fazenda ativa.
-            </CardContent>
-          </Card>
-        )}
-      </div>
+        <TabsContent
+          value="medicamentos"
+          className="mt-6 animate-in fade-in-50 duration-500"
+        >
+          <div className="grid gap-6">
+            <div className="bg-amber-50 dark:bg-amber-950/30 p-4 rounded-lg border border-amber-100 dark:border-amber-900 flex gap-3 items-start text-sm text-amber-800 dark:text-amber-200">
+              <Info className="h-5 w-5 flex-shrink-0 mt-0.5" />
+              <div>
+                <strong>Uso Responsável:</strong> Medicamentos como antibióticos
+                devem ser utilizados sob orientação veterinária e respeitando
+                rigorosamente os períodos de carência (abate e leite) descritos
+                na bula.
+              </div>
+            </div>
+            {STANDARD_PROTOCOLS.filter(
+              (p) => p.categoria === "medicamentos"
+            ).map(renderProtocoloCard)}
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

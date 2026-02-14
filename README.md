@@ -14,11 +14,64 @@ Aplicação **offline-first** para gestão pecuária com **multi-tenant por faze
 
 ---
 
-## Estado do Projeto
+## Changelog Completo
 
-### ✅ Implementado (MVP Completo)
+### Versão Atual (Fevereiro 2026)
 
-#### Autenticação e Multi-Tenant
+#### ✅ Implementado Recente
+
+##### 1. Hardening de Dados e Validadores (Migrations 0023-0026)
+- **Financeiro**: Constraint `valor_total > 0`
+- **Nutrição**: Constraint `quantidade_kg > 0` (quando informado)
+- **Movimentação**: Constraint de destino obrigatório (`to_lote_id` ou `to_pasto_id`) e origem != destino
+- **Financeiro/Contrapartes**: FK tenant-safe composta (`contraparte_id`, `fazenda_id`)
+
+##### 2. Motor de Agenda Sanitária (Migration 0028)
+- Função `sanitario_recompute_agenda` para recomputar agenda de vacinação
+- Trigger `trg_eventos_sanitario_recompute_agenda` para atualizar agenda ao salvar evento sanitário
+- Trigger `trg_animais_atualiza_protocolo_data` para atualizar data do último protocolo ao editar animal
+- Motor completo de geração de agenda automática com regras de idade, dose e protocolo
+
+##### 3. Seed de Protocolos MAPA/SBMV (Migration 0027)
+- Função `seed_default_sanitary_protocols` para semear protocolos padrão
+- Trigger em `fazendas` para semear protocolos em novas fazendas
+- Protocolos padrão:
+  - Brucelose femeas 3-8 meses (B19/RB51)
+  - Raiva herbivoros - primovacinacao (areas de risco)
+  - Raiva herbivoros - revacinacao anual (areas de risco)
+  - Vermifugacao estrategica com base em risco
+  - Medicacao terapeutica com uso prudente
+
+##### 4. Hotfixes Sanitário (Migrations 0029-0034)
+- **Resiliência do Trigger**: Migration 0029 - Melhora resiliência do trigger de recomputação
+- **Payload do Protocolo**: Migration 0030 - Fix para referência a payload inválido
+- **Idade Default D1**: Migration 0031 - Define idade mínima para dose D1 como 0 dias
+- **Recompute Core**: Migration 0033 - Hard replace da função core de recomputação
+- **Vaccine Only**: Migration 0034 - Restringe agenda automática a vacinações apenas
+
+##### 5. Timeline Reprodução (Migration 0032)
+- View `vw_animais_timeline_reproducao` para consulta simplificada de eventos reprodutivos
+- Suporta visualização de histórico reprodutivo por animal
+
+##### 6. Motor de Events Unificado (src/lib/events/)
+- `types.ts`: Tipos canônicos para todos os domínios
+- `validators/`: Validadores por domínio com regras específicas
+- `buildEventGesture.ts`: Builder unificado para criar gestos de evento
+- Suporta eventos compostos (movimentação + update de animal)
+
+##### 7. Serviço Sanitario (src/lib/sanitario/)
+- `service.ts`: Funções para completar tarefas sanitárias
+- Recupera eventos pendentes, históricos e próximos do protocolo
+
+##### 8. UI Agenda (src/pages/Agenda.tsx)
+- Visualização de agenda com filtros por domínio, status e período
+- Exibe tarefas do dia, semana ou mês
+- Integração com eventos sanitários e reprodução
+- Suporta completar tarefas e visualizar detalhes
+
+#### ✅ Implementado Anteriormente
+
+##### Autenticação e Multi-Tenant
 - Login/logout com Supabase Auth
 - Seleção de fazenda ativa (multi-device)
   - Cache local em `localStorage`
@@ -26,13 +79,13 @@ Aplicação **offline-first** para gestão pecuária com **multi-tenant por faze
 - Onboarding invite-first com `can_create_farm`
 - RBAC client-side (UI) + RLS server-side
 
-#### Gestão do Rebanho
+##### Gestão do Rebanho
 - Cadastro de animais (identificação, sexo, status)
 - Cadastro de lotes (nome, status, touro)
 - Cadastro de pastos (nome, área em hectares)
 - Cadastro de contrapartes (pessoas/empresas)
 
-#### Eventos (Two Rails - Append-Only)
+##### Eventos (Two Rails - Append-Only)
 - Eventos sanitários (vacinação, vermifugação, medicamento)
 - Eventos de pesagem (peso em kg)
 - Eventos de movimentação (entre lotes/pastos)
@@ -40,39 +93,39 @@ Aplicação **offline-first** para gestão pecuária com **multi-tenant por faze
 - Eventos financeiros (compra, venda)
 - Timeline de eventos por animal
 
-#### Agenda
+##### Agenda
 - Tarefas agendadas (mutáveis)
 - Status: agendado, concluido, cancelado
 - Deduplicação automática via `dedup_key`
 - source_kind: manual, automatico
 
-#### Protocolos Sanitários
+##### Protocolos Sanitários
 - Templates de protocolos
 - Itens de protocolo (tipo, produto, intervalo_dias, dose_num)
 - Geração automática de agenda
 - Deduplicação via `dedup_template`
 
-#### Fluxos Offline → Sync
+##### Fluxos Offline → Sync
 - Criação de gestos (`createGesture`)
 - Aplicação otimista no Dexie
 - Sync worker (a cada 5 segundos)
 - Anti-teleport (validação server-side)
 - Rollback determinístico com `before_snapshot`
 
-#### Segurança
+##### Segurança
 - JWT obrigatório no sync-batch
 - RLS policies por tenant
 - Membership verification
 - Tabelas bloqueadas (user_fazendas, user_profiles, user_settings)
 - RPCs security definer para operações críticas
 
-#### Campos de Fazenda (Migração 0016)
+##### Campos de Fazenda (Migração 0016)
 - nome, codigo, municipio
 - **NOVO**: estado (UF), cep, area_total_ha
 - **NOVO**: tipo_producao (corte/leite/mista)
 - **NOVO**: sistema_manejo (confinamento/semi/pastagem)
 
-#### Performance (Migração 0018)
+##### Performance (Migração 0018)
 - idx_animais_status
 - idx_animais_lote
 - idx_animais_sexo
@@ -80,24 +133,6 @@ Aplicação **offline-first** para gestão pecuária com **multi-tenant por faze
 - idx_eventos_fazenda_animal_occurred
 - idx_agenda_fazenda_data
 - idx_agenda_fazenda_status
-
-### 🔄 Em Desenvolvimento
-
-- Dashboard com métricas (implementação parcial visível na UI)
-- Página de eventos (link na home, estrutura criada)
-- Página financeiro (link na home, estrutura criada)
-
-### ⏳ Planejado (Ver ROADMAP.md)
-
-Consulte o documento [`docs/ROADMAP.md`](docs/ROADMAP.md) para funcionalidades planejadas:
-
-- Campos adicionais em animais (origem, brinco, raça, pelagem)
-- Sistema de sociedade de animais
-- Categorias zootécnicas automáticas
-- Catálogo de produtos veterinários
-- Controle de estoque
-- Relatórios e dashboards avançados
-- Integração GTA/Sisbov
 
 ---
 

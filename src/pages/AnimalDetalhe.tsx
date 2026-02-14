@@ -18,6 +18,7 @@ import {
   Calendar,
   ChevronLeft,
   ArrowLeftRight,
+  Link as IconLink,
 } from "lucide-react";
 import { MoverAnimalLote } from "@/components/manejo/MoverAnimalLote";
 import { createGesture } from "@/lib/offline/ops";
@@ -400,8 +401,8 @@ const AnimalDetalhe = () => {
                   <div className="flex justify-between items-start mb-1">
                     <h4 className="font-bold capitalize text-sm">
                       {evt.dominio === "reproducao" && evt.details
-                        ? `Reprodução: ${evt.details.tipo}`
-                        : evt.dominio}
+                        ? evt.details.tipo.toUpperCase()
+                        : evt.dominio.toUpperCase()}
                     </h4>
                     <span className="text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded">
                       {new Date(evt.occurred_at).toLocaleDateString()}
@@ -411,13 +412,43 @@ const AnimalDetalhe = () => {
                     {evt.observacoes || "Manejo realizado no campo."}
                   </p>
                   {evt.dominio === "reproducao" && evt.details && (
-                     <div className="mt-1 text-xs bg-rose-50/50 p-2 rounded border border-rose-100">
-                        {evt.details.macho_id && <p>Reprodutor: {evt.machoIdentificacao || evt.details.macho_id}</p>}
-                        {evt.details.payload?.diagnostico_resultado && (
-                           <p>Diagnóstico: {String(evt.details.payload.diagnostico_resultado)}</p>
+                     <div className="mt-1 text-xs bg-rose-50/50 p-2 rounded border border-rose-100 space-y-1">
+                        {/* Cobertura/IA specific */}
+                        {(evt.details.tipo === 'cobertura' || evt.details.tipo === 'IA') && (
+                            <>
+                                <p>Reprodutor: {evt.machoIdentificacao || evt.details.macho_id || 'N/A'}</p>
+                                {(evt.details.payload as any).tecnica_livre && <p>Técnica: {(evt.details.payload as any).tecnica_livre}</p>}
+                                {(evt.details.payload as any).lote_semen && <p>Sêmen: {(evt.details.payload as any).lote_semen}</p>}
+                            </>
                         )}
-                        {evt.details.payload?.numero_crias && (
-                           <p>Crias: {Number(evt.details.payload.numero_crias)}</p>
+
+                        {/* Diagnostico specific */}
+                        {evt.details.tipo === 'diagnostico' && (
+                            <>
+                                <p>Resultado: <span className={
+                                   ((evt.details.payload as any).resultado === 'positivo' || (evt.details.payload as any).diagnostico_resultado === 'positivo') 
+                                   ? "text-green-600 font-bold" 
+                                   : "text-red-600"
+                                }>
+                                    {((evt.details.payload as any).resultado || (evt.details.payload as any).diagnostico_resultado || 'Pendente').toUpperCase()}
+                                </span></p>
+                                {(evt.details.payload as any).data_prevista_parto && <p>Prev. Parto: {new Date((evt.details.payload as any).data_prevista_parto).toLocaleDateString()}</p>}
+                            </>
+                        )}
+
+                        {/* Parto specific */}
+                        {evt.details.tipo === 'parto' && (
+                            <>
+                                <p>Crias: {(evt.details.payload as any).numero_crias || 1}</p>
+                            </>
+                        )}
+                        
+                        {/* Link Info */}
+                        {(evt.details.payload as any).episode_evento_id && (
+                            <p className="text-[10px] text-muted-foreground mt-1 flex items-center gap-1">
+                                <IconLink className="h-3 w-3" />
+                                Vínculo: ...{(evt.details.payload as any).episode_evento_id.slice(0,6)}
+                            </p>
                         )}
                      </div>
                   )}

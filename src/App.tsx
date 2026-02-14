@@ -39,6 +39,7 @@ import Membros from "./pages/Membros";
 import Categorias from "./pages/Categorias";
 import CategoriaNova from "./pages/CategoriaNova";
 import ProtocolosSanitarios from "./pages/ProtocolosSanitarios";
+import ReproductionDashboard from "./pages/ReproductionDashboard";
 
 const App = () => (
   <BrowserRouter
@@ -109,6 +110,7 @@ const App = () => (
         <Route path="/categorias" element={<Categorias />} />
         <Route path="/categorias/novo" element={<CategoriaNova />} />
         <Route path="/protocolos-sanitarios" element={<ProtocolosSanitarios />} />
+        <Route path="/reproducao" element={<ReproductionDashboard />} />
       </Route>
 
       <Route path="*" element={<NotFound />} />

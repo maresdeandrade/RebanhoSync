@@ -10,6 +10,7 @@ import {
   Calendar,
   AlertCircle,
   Users,
+  Baby,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -49,6 +50,12 @@ const modules = [
     path: "/admin/membros",
     color: "bg-cyan-600",
   },
+  {
+    icon: Baby,
+    label: "Reprodução",
+    path: "/reproducao",
+    color: "bg-pink-500",
+  }
 ];
 
 const Home = () => {

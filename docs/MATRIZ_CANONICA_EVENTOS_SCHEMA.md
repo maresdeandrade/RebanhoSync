@@ -97,7 +97,7 @@ Regras:
 | `evento_id` | uuid | Nao | PK |
 | `fazenda_id` | uuid | Nao | - |
 | `alimento_nome` | text | Sim | - |
-| `quantidade_kg` | numeric(12,3) | Sim | - |
+| `quantidade_kg` | numeric(12,3) | Sim | `check (quantidade_kg > 0)` (quando nao nulo) |
 | `payload` | jsonb | Nao | `'{}'::jsonb` |
 | `client_id` | text | Nao | - |
 | `client_op_id` | uuid | Nao | - |
@@ -128,6 +128,11 @@ Regras:
 | `created_at` | timestamptz | Nao | `now()` |
 | `updated_at` | timestamptz | Nao | `now()` |
 
+**Constraints**:
+- `to_lote_id` OR `to_pasto_id` obrigatório
+- `from_lote_id != to_lote_id` (se ambos preenchidos)
+- `from_pasto_id != to_pasto_id` (se ambos preenchidos)
+
 ### 3.5 `eventos_reproducao`
 
 | Campo | Tipo | Null | Default/Regra |
@@ -146,6 +151,12 @@ Regras:
 | `created_at` | timestamptz | Nao | `now()` |
 | `updated_at` | timestamptz | Nao | `now()` |
 
+**Constraints e Validações (Sync-Batch)**:
+- `payload.schema_version` deve ser 1
+- `macho_id` obrigatório para `tipo = 'cobertura'` ou `tipo = 'IA'`
+- `tipo = 'parto'` deve ter `payload.episode_evento_id` referenciando evento de cobertura ou IA
+- `tipo = 'diagnostico'` aceita `episode_evento_id` nulo (marcado como 'unlinked')
+
 ### 3.6 `eventos_financeiro`
 
 | Campo | Tipo | Null | Default/Regra |
@@ -153,8 +164,8 @@ Regras:
 | `evento_id` | uuid | Nao | PK |
 | `fazenda_id` | uuid | Nao | - |
 | `tipo` | `financeiro_tipo_enum` | Nao | enum |
-| `valor_total` | numeric(14,2) | Nao | sem check atualmente |
-| `contraparte_id` | uuid | Sim | sem FK dedicada atualmente |
+| `valor_total` | numeric(14,2) | Nao | `check (valor_total > 0)` |
+| `contraparte_id` | uuid | Sim | FK composta `contrapartes(id,fazenda_id)` |
 | `payload` | jsonb | Nao | `'{}'::jsonb` |
 | `client_id` | text | Nao | - |
 | `client_op_id` | uuid | Nao | - |

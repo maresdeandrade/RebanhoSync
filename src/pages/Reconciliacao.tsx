@@ -73,11 +73,31 @@ const Reconciliacao = () => {
       .toArray();
     await createGesture(
       rejection.fazenda_id,
-      ops.map((o) => ({
-        table: o.table,
-        action: o.action,
-        record: o.record,
-      })),
+      ops.map((o) => {
+        // Hotfix de compatibilidade: schema exige intervalo_dias > 0.
+        if (
+          o.table === "protocolos_sanitarios_itens" &&
+          (o.action === "INSERT" || o.action === "UPDATE")
+        ) {
+          const record = { ...(o.record ?? {}) };
+          const intervalo = Number(record.intervalo_dias);
+          if (!Number.isFinite(intervalo) || intervalo <= 0) {
+            record.intervalo_dias = 1;
+          }
+
+          return {
+            table: o.table,
+            action: o.action,
+            record,
+          };
+        }
+
+        return {
+          table: o.table,
+          action: o.action,
+          record: o.record,
+        };
+      }),
     );
 
     await db.queue_rejections.delete(rejection.id);

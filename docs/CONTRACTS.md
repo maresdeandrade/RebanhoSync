@@ -198,7 +198,161 @@ Falha na regra de negócio. **Requer rollback local** pelo cliente.
 - `ANTI_TELEPORTE`: Movimentação sem evento correlato
 - `BLOCKED_TABLE`: Tentativa de modificar tabela bloqueada
 - `23505`: Unique constraint violation (idempotência ou dedup)
+- `VALIDATION_FINANCEIRO_VALOR_TOTAL`: Valor total do evento financeiro deve ser positivo (> 0)
+- `VALIDATION_NUTRICAO_QUANTIDADE`: Quantidade de alimento deve ser positiva (> 0) quando informada
+- `VALIDATION_MOVIMENTACAO_DESTINO`: Evento de movimentação deve ter destino (`to_lote_id` ou `to_pasto_id`)
+- `VALIDATION_MOVIMENTACAO_ORIGEM_DESTINO`: Origem e destino da movimentação não podem ser iguais
+- `VALIDATION_FINANCEIRO_CONTRAPARTE`: Contraparte não pertence à mesma fazenda
+- `VALIDATION_MISSING_PRIMARY_KEY`: Operação de UPDATE/DELETE sem campo id/evento_id obrigatório
 - Outros códigos de erro do Postgres
+
+---
+
+## Regras de Validação por Domínio
+
+### Validações de Eventos Financeiro
+
+| Campo | Regra | Motivo da Validação |
+|-------|-------|---------------------|
+| `valor_total` | Deve ser maior que zero (`valor_total > 0`) | Previne registros com valores inválidos ou negativos |
+| `contraparte_id` | Se informado, deve pertencer à mesma fazenda | Garante integridade referencial tenant-safe |
+
+**Constraint SQL**:
+```sql
+ALTER TABLE eventos_financeiro
+  ADD CONSTRAINT ck_eventos_financeiro_valor_positivo
+  CHECK (valor_total > 0);
+```
+
+**Exemplo de Rejeição**:
+```json
+{
+  "op_id": "uuid",
+  "status": "REJECTED",
+  "reason_code": "VALIDATION_FINANCEIRO_VALOR_TOTAL",
+  "reason_message": "valor_total deve ser maior que zero"
+}
+```
+
+---
+
+### Validações de Eventos Nutrição
+
+| Campo | Regra | Motivo da Validação |
+|-------|-------|---------------------|
+| `quantidade_kg` | Se informado, deve ser maior que zero | Previne registros com quantidades inválidas |
+
+**Constraint SQL**:
+```sql
+ALTER TABLE eventos_nutricao
+  ADD CONSTRAINT ck_eventos_nutricao_quantidade_positiva
+  CHECK (quantidade_kg IS NULL OR quantidade_kg > 0);
+```
+
+**Exemplo de Rejeição**:
+```json
+{
+  "op_id": "uuid",
+  "status": "REJECTED",
+  "reason_code": "VALIDATION_NUTRICAO_QUANTIDADE",
+  "reason_message": "quantidade_kg deve ser maior que zero quando informada"
+}
+```
+
+---
+
+### Validações de Eventos Movimentação
+
+| Campo | Regra | Motivo da Validação |
+|-------|-------|---------------------|
+| `to_lote_id` ou `to_pasto_id` | Pelo menos um destino deve ser informado | Garante que a movimentação tem destino válido |
+| `from_lote_id` vs `to_lote_id` | Não podem ser iguais (se ambos informados) | Previne movimentações circulares sem sentido |
+| `from_pasto_id` vs `to_pasto_id` | Não podem ser iguais (se ambos informados) | Previne movimentações circulares sem sentido |
+
+**Constraints SQL**:
+```sql
+-- Destino obrigatório
+ALTER TABLE eventos_movimentacao
+  ADD CONSTRAINT ck_eventos_movimentacao_destino
+  CHECK (to_lote_id IS NOT NULL OR to_pasto_id IS NOT NULL);
+
+-- Origem diferente de destino (lote)
+ALTER TABLE eventos_movimentacao
+  ADD CONSTRAINT ck_eventos_movimentacao_lote_origem_destino
+  CHECK (from_lote_id IS NULL OR to_lote_id IS NULL OR from_lote_id <> to_lote_id);
+
+-- Origem diferente de destino (pasto)
+ALTER TABLE eventos_movimentacao
+  ADD CONSTRAINT ck_eventos_movimentacao_pasto_origem_destino
+  CHECK (from_pasto_id IS NULL OR to_pasto_id IS NULL OR from_pasto_id <> to_pasto_id);
+```
+
+**Exemplos de Rejeição**:
+```json
+{
+  "op_id": "uuid",
+  "status": "REJECTED",
+  "reason_code": "VALIDATION_MOVIMENTACAO_DESTINO",
+  "reason_message": "Evento de movimentação deve ter destino (to_lote_id ou to_pasto_id)"
+}
+```
+
+```json
+{
+  "op_id": "uuid",
+  "status": "REJECTED",
+  "reason_code": "VALIDATION_MOVIMENTACAO_ORIGEM_DESTINO",
+  "reason_message": "Origem e destino da movimentação não podem ser iguais"
+}
+```
+
+---
+
+### Validações de Eventos Pesagem
+
+| Campo | Regra | Motivo da Validação |
+|-------|-------|---------------------|
+| `peso_kg` | Deve ser maior que zero | Previne registros com pesos inválidos |
+
+**Constraint SQL** (já existente):
+```sql
+ALTER TABLE eventos_pesagem
+  ADD CONSTRAINT ck_eventos_pesagem_peso_positivo
+  CHECK (peso_kg > 0);
+```
+
+---
+
+### Validações de Eventos Sanitário
+
+| Campo | Regra | Motivo da Validação |
+|-------|-------|---------------------|
+| `tipo` | Obrigatório, deve ser enum válido (`vacinacao`, `vermifugacao`, `medicamento`) | Categorização correta do evento |
+| `produto` | Obrigatório | Rastreabilidade do produto aplicado |
+
+**Nota**: Validações de `tipo` e `produto` são garantidas pelo schema (NOT NULL + ENUM).
+
+---
+
+### Validações de Chave Primária
+
+| Operação | Campos Obrigatórios | Reason Code |
+|----------|---------------------|-------------|
+| UPDATE em `animais` | `id` | `VALIDATION_MISSING_PRIMARY_KEY` |
+| UPDATE em `eventos` | `id` | `VALIDATION_MISSING_PRIMARY_KEY` |
+| UPDATE em `eventos_*` | `evento_id` | `VALIDATION_MISSING_PRIMARY_KEY` |
+| UPDATE em `agenda_itens` | `id` | `VALIDATION_MISSING_PRIMARY_KEY` |
+| DELETE em qualquer tabela | `id` ou `evento_id` | `VALIDATION_MISSING_PRIMARY_KEY` |
+
+**Exemplo de Rejeição**:
+```json
+{
+  "op_id": "uuid",
+  "status": "REJECTED",
+  "reason_code": "VALIDATION_MISSING_PRIMARY_KEY",
+  "reason_message": "Operação UPDATE requer campo 'id' no record"
+}
+```
 
 ---
 

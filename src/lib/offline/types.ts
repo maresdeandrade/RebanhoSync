@@ -599,7 +599,6 @@ export interface EventoMovimentacao {
 
   // Campos de sistema
   client_id: string;
-  client_op_id: string;
   client_tx_id: string | null;
   client_recorded_at: string;
   server_received_at: string;
@@ -608,12 +607,45 @@ export interface EventoMovimentacao {
   deleted_at: string | null;
 }
 
+// ---------------------------------------------------------
+// REPRODUÇÃO - PAYLOAD V1 CONTRACT
+// ---------------------------------------------------------
+
+export interface ReproductionEventPayloadV1 {
+  schema_version: 1;
+  
+  // Episode Linking
+  episode_evento_id?: string; // UUID do evento de serviço (cobertura/IA)
+  episode_link_method?: 'manual' | 'auto_last_open_service' | 'unlinked';
+
+  // Common Fields
+  observacoes_estruturadas?: Record<string, unknown>;
+
+  // Specific Fields per Type
+  // Cobertura
+  tecnica_livre?: string;
+  reprodutor_tag?: string;
+
+  // IA
+  lote_semen?: string;
+  dose_semen_ref?: string;
+
+  // Diagnostico
+  resultado?: 'positivo' | 'negativo' | 'inconclusivo';
+  metodo_livre?: string;
+  data_prevista_parto?: string; // YYYY-MM-DD
+
+  // Parto
+  data_parto_real?: string; // YYYY-MM-DD
+  numero_crias?: number;
+}
+
 export interface EventoReproducao {
   evento_id: string;
   fazenda_id: string;
   tipo: ReproTipoEnum;
   macho_id: string | null;
-  payload: Record<string, unknown>;
+  payload: ReproductionEventPayloadV1 | Record<string, unknown>;
 
   // Campos de sistema
   client_id: string;
@@ -723,3 +755,25 @@ export interface EventoWithDetails extends Evento {
   details_reproducao?: EventoReproducao;
   details_financeiro?: EventoFinanceiro;
 }
+
+// =========================================================
+// VALIDATION HELPERS (Payload v1)
+// =========================================================
+
+export const ensureSchemaVersion = (payload: unknown): 1 => {
+  return 1;
+};
+
+export const normalizeDateToISO = (dateStr: string | undefined | null): string | undefined => {
+  if (!dateStr) return undefined;
+  // Simple regex check for YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
+  
+  // Try to parse if it's a valid date object or other format
+  const d = new Date(dateStr);
+  if (!isNaN(d.getTime())) {
+     return d.toISOString().split('T')[0];
+  }
+  return undefined;
+};
+
