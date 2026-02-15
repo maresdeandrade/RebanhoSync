@@ -73,9 +73,15 @@ const Login = () => {
                   },
                 })}
                 disabled={isLoading}
+                aria-invalid={!!errors.email}
+                aria-describedby={errors.email ? "email-error" : undefined}
               />
               {errors.email && (
-                <p className="text-sm text-destructive">
+                <p
+                  id="email-error"
+                  role="alert"
+                  className="text-sm text-destructive"
+                >
                   {errors.email.message}
                 </p>
               )}
@@ -95,16 +101,25 @@ const Login = () => {
                   },
                 })}
                 disabled={isLoading}
+                aria-invalid={!!errors.password}
+                aria-describedby={errors.password ? "password-error" : undefined}
               />
               {errors.password && (
-                <p className="text-sm text-destructive">
+                <p
+                  id="password-error"
+                  role="alert"
+                  className="text-sm text-destructive"
+                >
                   {errors.password.message}
                 </p>
               )}
             </div>
 
             {error && (
-              <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+              <div
+                role="alert"
+                className="rounded-md bg-destructive/10 p-3 text-sm text-destructive"
+              >
                 {error}
               </div>
             )}

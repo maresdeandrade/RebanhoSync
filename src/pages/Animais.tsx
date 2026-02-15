@@ -1,6 +1,8 @@
 import { useState, useMemo } from "react";
+import { type Collection } from "dexie";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "@/lib/offline/db";
+import { type Animal } from "@/lib/offline/types";
 import { Link, useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -25,6 +27,23 @@ import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { useLotes } from "@/hooks/useLotes";
 import { EmptyState } from "@/components/EmptyState";
 
+// Moved outside component to avoid re-creation on render
+const calcularIdade = (
+  dataNascimento: string | null | undefined,
+): string | null => {
+  if (!dataNascimento) return null;
+  const hoje = new Date();
+  const nasc = new Date(dataNascimento);
+  const diffTime = hoje.getTime() - nasc.getTime();
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  const meses = Math.floor(diffDays / 30);
+  const anos = Math.floor(meses / 12);
+
+  if (anos > 0) return `${anos} ano${anos > 1 ? "s" : ""}`;
+  if (meses > 0) return `${meses} mes${meses !== 1 ? "es" : ""}`;
+  return `${diffDays} dia${diffDays !== 1 ? "s" : ""}`;
+};
+
 const Animais = () => {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
@@ -44,25 +63,15 @@ const Animais = () => {
     [lotes],
   );
 
-  // Função para calcular idade
-  const calcularIdade = (
-    dataNascimento: string | null | undefined,
-  ): string | null => {
-    if (!dataNascimento) return null;
-    const hoje = new Date();
-    const nasc = new Date(dataNascimento);
-    const diffTime = hoje.getTime() - nasc.getTime();
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-    const meses = Math.floor(diffDays / 30);
-    const anos = Math.floor(meses / 12);
-
-    if (anos > 0) return `${anos} ano${anos > 1 ? "s" : ""}`;
-    if (meses > 0) return `${meses} mes${meses !== 1 ? "es" : ""}`;
-    return `${diffDays} dia${diffDays !== 1 ? "s" : ""}`;
-  };
-
   const animais = useLiveQuery(async () => {
-    let collection = db.state_animais.toCollection();
+    let collection: Collection<Animal, string>;
+
+    // ⚡ Bolt: Use index for specific lote filter (O(1) vs O(N))
+    if (loteFilter !== "all" && loteFilter !== "none") {
+      collection = db.state_animais.where("lote_id").equals(loteFilter);
+    } else {
+      collection = db.state_animais.toCollection();
+    }
 
     if (debouncedSearch) {
       const searchLower = debouncedSearch.toLowerCase();
@@ -71,26 +80,18 @@ const Animais = () => {
       );
     }
 
-    let results = await collection.toArray();
-
-    // Filtro por lote
+    // Apply other filters in DB chain
     if (loteFilter === "none") {
-      results = results.filter((a) => !a.lote_id);
-    } else if (loteFilter !== "all") {
-      results = results.filter((a) => a.lote_id === loteFilter);
+      collection = collection.filter((a) => !a.lote_id);
     }
-
-    // Filtro por sexo
     if (sexoFilter !== "all") {
-      results = results.filter((a) => a.sexo === sexoFilter);
+      collection = collection.filter((a) => a.sexo === sexoFilter);
     }
-
-    // Filtro por status
     if (statusFilter !== "all") {
-      results = results.filter((a) => a.status === statusFilter);
+      collection = collection.filter((a) => a.status === statusFilter);
     }
 
-    return results;
+    return await collection.toArray();
   }, [debouncedSearch, loteFilter, sexoFilter, statusFilter]);
 
   const hasFilters =
@@ -139,6 +140,7 @@ const Animais = () => {
         <div className="relative flex-1">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
+            aria-label="Buscar animais por identificação"
             placeholder="Buscar por identificação..."
             className="pl-9"
             value={search}
@@ -186,6 +188,7 @@ const Animais = () => {
 
           {hasFilters && (
             <Button
+              aria-label="Limpar filtros"
               variant="ghost"
               size="icon"
               onClick={() => {
@@ -255,6 +258,7 @@ const Animais = () => {
                   <TableCell className="text-right">
                     <Link to={`/animais/${animal.id}`}>
                       <Button
+                        aria-label={`Ver detalhes do animal ${animal.identificacao}`}
                         variant="ghost"
                         size="icon"
                         className="rounded-full"
