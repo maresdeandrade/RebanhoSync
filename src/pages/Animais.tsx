@@ -139,6 +139,7 @@ const Animais = () => {
         <div className="relative flex-1">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
+            aria-label="Buscar animais por identificação"
             placeholder="Buscar por identificação..."
             className="pl-9"
             value={search}
@@ -186,6 +187,7 @@ const Animais = () => {
 
           {hasFilters && (
             <Button
+              aria-label="Limpar filtros"
               variant="ghost"
               size="icon"
               onClick={() => {
@@ -255,6 +257,7 @@ const Animais = () => {
                   <TableCell className="text-right">
                     <Link to={`/animais/${animal.id}`}>
                       <Button
+                        aria-label={`Ver detalhes do animal ${animal.identificacao}`}
                         variant="ghost"
                         size="icon"
                         className="rounded-full"
