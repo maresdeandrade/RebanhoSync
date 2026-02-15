@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Layers, Plus, ChevronRight, MapPin, Beef } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { EmptyState } from "@/components/EmptyState";
+import { useLotes } from "@/hooks/useLotes";
 
 // Componente para card individual de lote
 const LoteCard = ({ lote }: { lote: Lote }) => {
@@ -79,7 +80,8 @@ const LoteCard = ({ lote }: { lote: Lote }) => {
 
 const Lotes = () => {
   const navigate = useNavigate();
-  const lotes = useLiveQuery(() => db.state_lotes.toArray());
+  // P2.4 FIX: Use centralized useLotes hook (filtered by fazenda_id + deleted_at)
+  const lotes = useLotes();
 
   // Show empty state if no lotes
   if (!lotes || lotes.length === 0) {
