@@ -1,5 +1,6 @@
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "@/lib/offline/db";
+import { useLotes } from "@/hooks/useLotes";
 import { type Lote, type Pasto } from "@/lib/offline/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -79,7 +80,7 @@ const LoteCard = ({ lote }: { lote: Lote }) => {
 
 const Lotes = () => {
   const navigate = useNavigate();
-  const lotes = useLiveQuery(() => db.state_lotes.toArray());
+  const lotes = useLotes();
 
   // Show empty state if no lotes
   if (!lotes || lotes.length === 0) {
