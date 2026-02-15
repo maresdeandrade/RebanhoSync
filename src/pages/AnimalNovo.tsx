@@ -27,6 +27,7 @@ import {
 import { showSuccess, showError } from "@/utils/toast";
 import { ChevronLeft, Save } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useLotes } from "@/hooks/useLotes";
 
 const AnimalNovo = () => {
   const navigate = useNavigate();
@@ -72,14 +73,7 @@ const AnimalNovo = () => {
   >("null");
   const [habilitadoMonta, setHabilitadoMonta] = useState(false);
 
-  const lotes = useLiveQuery(() => {
-    if (!activeFarmId) return [];
-    return db.state_lotes
-      .where("fazenda_id")
-      .equals(activeFarmId)
-      .filter((l) => !l.deleted_at)
-      .toArray();
-  }, [activeFarmId]);
+  const lotes = useLotes();
 
   // Query para machos (potenciais pais)
   const machos = useLiveQuery(() => {

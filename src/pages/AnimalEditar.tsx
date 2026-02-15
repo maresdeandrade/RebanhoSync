@@ -20,6 +20,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { showSuccess, showError } from "@/utils/toast";
 import { ChevronLeft, Save } from "lucide-react";
+import { useLotes } from "@/hooks/useLotes";
 
 const AnimalEditar = () => {
   const { id } = useParams<{ id: string }>();
@@ -60,14 +61,7 @@ const AnimalEditar = () => {
   >("null");
   const [habilitadoMonta, setHabilitadoMonta] = useState(false);
 
-  const lotes = useLiveQuery(() => {
-    if (!animal?.fazenda_id) return [];
-    return db.state_lotes
-      .where("fazenda_id")
-      .equals(animal.fazenda_id)
-      .filter((l) => !l.deleted_at)
-      .toArray();
-  }, [animal?.fazenda_id]);
+  const lotes = useLotes(animal?.fazenda_id);
 
   // Query para machos (potenciais pais) - excluir o próprio animal se for macho
   const machos = useLiveQuery(
