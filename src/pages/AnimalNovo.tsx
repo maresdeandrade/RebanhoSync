@@ -25,12 +25,15 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { showSuccess, showError } from "@/utils/toast";
-import { ChevronLeft, Save } from "lucide-react";
+import { ChevronLeft, Save, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useLotes } from "@/hooks/useLotes";
 
 const AnimalNovo = () => {
   const navigate = useNavigate();
   const { activeFarmId } = useAuth();
+
+  const [isSaving, setIsSaving] = useState(false);
 
   // Estados básicos
   const [identificacao, setIdentificacao] = useState("");
@@ -72,14 +75,7 @@ const AnimalNovo = () => {
   >("null");
   const [habilitadoMonta, setHabilitadoMonta] = useState(false);
 
-  const lotes = useLiveQuery(() => {
-    if (!activeFarmId) return [];
-    return db.state_lotes
-      .where("fazenda_id")
-      .equals(activeFarmId)
-      .filter((l) => !l.deleted_at)
-      .toArray();
-  }, [activeFarmId]);
+  const lotes = useLotes();
 
   // Query para machos (potenciais pais)
   const machos = useLiveQuery(() => {
@@ -153,6 +149,8 @@ const AnimalNovo = () => {
       showError("Fazenda não identificada.");
       return;
     }
+
+    setIsSaving(true);
 
     const animal_id = crypto.randomUUID();
     const now = new Date().toISOString();
@@ -256,6 +254,7 @@ const AnimalNovo = () => {
       );
       navigate("/animais");
     } catch (e: unknown) {
+      setIsSaving(false);
       if (e instanceof EventValidationError) {
         showError(e.issues[0]?.message ?? "Dados invalidos para cadastro.");
         return;
@@ -638,8 +637,13 @@ const AnimalNovo = () => {
         </AccordionItem>
       </Accordion>
 
-      <Button className="w-full" onClick={handleSave}>
-        <Save className="mr-2 h-4 w-4" /> Salvar Animal
+      <Button className="w-full" onClick={handleSave} disabled={isSaving}>
+        {isSaving ? (
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        ) : (
+          <Save className="mr-2 h-4 w-4" />
+        )}
+        {isSaving ? "Salvando..." : "Salvar Animal"}
       </Button>
     </div>
   );
