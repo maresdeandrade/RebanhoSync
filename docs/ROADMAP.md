@@ -1,7 +1,7 @@
 # ROADMAP - Funcionalidades Planejadas
 
 > **Status:** Derivado (Planejamento)
-> **Fonte de Verdade:** Visão de Produto e `000_MANIFESTO.md`
+> **Fonte de Verdade:** Visão de Produto e `00_MANIFESTO.md`
 > **Última Atualização:** 2026-02-15
 
 Este documento registra funcionalidades, melhorias e expansões planejadas para o projeto RebanhoSync.
@@ -346,130 +346,6 @@ function classificarAnimal(
 | -------------- | ---------- | --------------------------------- |
 | Sync Sisbov    | Baixa      | Sincronização com sistema oficial |
 | QR Code/Brinco | Média      | Consulta por QR code              |
-
----
-
-## Funcionalidades de UI Planejadas
-
-### 6.1 Melhorias de Navegação
-
-| Funcionalidade         | Prioridade | Status |
-| ---------------------- | ---------- | ------ |
-| Filtros Avançados      | Alta       | ⏳     |
-| Busca por RFID         | Média      | ⏳     |
-| Timeline por Animal    | Alta       | ⏳     |
-| Visualização em Mapa   | Baixa      | ⏳     |
-| Modo Offline Indicator | Alta       | ⏳     |
-
-### 6.2 Exportação
-
-| Funcionalidade | Prioridade | Formato |
-| -------------- | ---------- | ------- |
-| Relatório PDF  | Média      | PDF     |
-| Exportação CSV | Média      | CSV     |
-| Relatório GTA  | Alta       | PDF     |
-
----
-
-## Dependências entre Fases
-
-```mermaid
-graph TD
-    A[Fase 1 - Core Melhorias] --> B[Fase 2 - Novos Módulos]
-    B --> C[Fase 3 - Pós-MVP]
-    A --> D[Fase 4 - Eventos Expandidos]
-    D --> E[Fase 5 - Relatórios]
-    C --> E
-    E --> F[Fase 6 - Integrações]
-```
-
----
-
-## Matriz de Esforço x Impacto
-
-### Alta Prioridade (Implementar Primeiro)
-
-| Funcionalidade              | Impacto | Esforço | Dependências       |
-| --------------------------- | ------- | ------- | ------------------ |
-| Campos origem/numero_brinco | Alto    | Baixo   | Migration          |
-| Status vacinal dashboard    | Alto    | Médio   | Eventos existentes |
-| Filtros avançados           | Alto    | Médio   | UI                 |
-| Integração GTA              | Alto    | Alto    | API externa        |
-
-### Média Prioridade
-
-| Funcionalidade         | Impacto | Esforço | Dependências       |
-| ---------------------- | ------- | ------- | ------------------ |
-| Sistema sociedade      | Médio   | Alto    | Módulo completo    |
-| Categorias zootécnicas | Médio   | Médio   | UI + Lógica        |
-| Relatório consumo      | Médio   | Médio   | Eventos existentes |
-| Exportação CSV         | Médio   | Baixo   | UI                 |
-
-### Baixa Prioridade (Nice to Have)
-
-| Funcionalidade    | Impacto | Esforço | Dependências  |
-| ----------------- | ------- | ------- | ------------- |
-| Geolocalização    | Baixo   | Alto    | APIs externas |
-| QR Code lookup    | Baixo   | Médio   | UI + API      |
-| Integração Sisbov | Baixo   | Alto    | API externa   |
-
----
-
-## Critérios de Priorização
-
-### MVP Necessário (Must-Have)
-
-1. **Campos obrigatórios de identificação**: origem, número de brinco
-2. **Status vacinal visível**: dashboard ou relatório
-3. **Filtros avançados**: buscar por status, lote, sexo
-4. **Exportação básica**: CSV de animais
-
-### Diferencial Competidor (Should-Have)
-
-1. **Sistema de sociedade**: gestão de animais de terceiros
-2. **Categorias automáticas**: classificação por idade/sexo
-3. **Relatórios de consumo**: produtos utilizados
-4. **Agenda conectada**: lembretes automáticos
-
-### Nice to Have (Could-Have)
-
-1. **Geolocalização**: mapas de pastos
-2. **Integração Sisbov**: rastreabilidade premium
-3. **QR Code**: lookup offline
-4. **Assinatura digital**: validação de eventos
-
----
-
-## Notas de Implementação
-
-### Ordem Recomendada
-
-1. **Quick Wins de UI** (menor esforço, maior impacto visual)
-   - Adicionar campos existentes nos formulários
-   - Exibir badges de status
-
-2. **Índices de Performance** (já planejados na migração 0018)
-   - Verificar se todos os índices foram criados
-
-3. **Campos Essenciais** (migration + UI)
-   - origem, numero_brinco, raca
-
-4. **Sistema de Sociedade** (módulo completo)
-   - Tabela + RLS + UI + Offline
-
-5. **Categorias Zootécnicas** (módulo completo)
-   - Tabela + UI + Lógica de classificação
-
-### Migrações Necessárias
-
-| #    | Nome                            | Descrição                                    | Status |
-| ---- | ------------------------------- | -------------------------------------------- | ------ |
-| 0019 | `add_animal_traceability`       | Campos: origem, numero_brinco, raca, pelagem | ⏳     |
-| 0020 | `add_pasto_tipo`                | Campo tipo_pasto enum                        | ⏳     |
-| 0021 | `create_animais_sociedade`      | Tabela de sociedade                          | ⏳     |
-| 0022 | `create_categorias_zootecnicas` | Tabela de categorias                         | ⏳     |
-| 0023 | `create_produtos_catalog`       | Catálogo de produtos                         | ⏳     |
-| 0024 | `add_sanitario_details`         | Campos expandidos eventos sanitários         | ⏳     |
 
 ---
 

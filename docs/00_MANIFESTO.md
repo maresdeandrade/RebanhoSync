@@ -1,4 +1,4 @@
-# Manifesto do Produto (Gestão Agro)
+# Manifesto do Produto (RebanhoSync)
 
 > **Status:** STABLE
 > **Fonte de Verdade:** Este Documento
@@ -6,7 +6,7 @@
 
 ## 1. Visão do Produto
 
-O **Gestão Agro** é uma plataforma de gestão pecuária projetada para a realidade do campo: **Offline-First**, **Multi-Tenant** e focada na integridade dos dados.
+O **RebanhoSync** é uma plataforma de gestão pecuária projetada para a realidade do campo: **Offline-First**, **Multi-Tenant** e focada na integridade dos dados.
 
 O sistema permite que produtores rurais (Owners) gerenciem múltiplas fazendas, delegando acesso a gerentes (Managers) e peões (Cowboys) através de um controle de acesso baseado em funções (RBAC). A operação continua fluida mesmo sem internet, sincronizando dados automaticamente quando a conexão é restabelecida.
 
