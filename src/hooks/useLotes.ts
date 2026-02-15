@@ -3,30 +3,33 @@ import { db } from "@/lib/offline/db";
 import { useAuth } from "@/hooks/useAuth";
 
 /**
- * P2.4: Centralized hook for loading lotes (lots/batches)
+ * Centralized hook for loading lotes (lots/batches) optimized for performance.
  *
- * Optimization:
- * - Uses `fazenda_id` index to filter only relevant lots (O(log n) vs O(n)).
- * - Filters out soft-deleted records (`deleted_at`).
- * - Returns empty array if no farm is active.
+ * OPTIMIZATION:
+ * - Uses `where("fazenda_id").equals(...)` to leverage the database index instead of scanning all records.
+ * - Filters out soft-deleted items at the database level where possible (or efficiently after index lookup).
  *
- * Replaces duplicated `useLiveQuery(() => db.state_lotes.toArray())` across:
+ * Replaces duplicated queries across:
  * - Registrar.tsx
  * - Lotes.tsx
  * - Animais.tsx
  *
- * @returns Array of all lotes for the current fazenda, or undefined if loading
+ * @param farmIdOverride Optional farm ID to override the active farm ID from context
+ * @returns Array of lotes for the target farm, or undefined while loading
  */
-export function useLotes() {
+export function useLotes(farmIdOverride?: string) {
   const { activeFarmId } = useAuth();
+  const targetFarmId = farmIdOverride || activeFarmId;
 
   return useLiveQuery(() => {
-    if (!activeFarmId) return [];
+    if (!targetFarmId) return [];
 
+    // PERF: Use index on 'fazenda_id' to avoid full table scan
+    // This reduces time complexity from O(N) to O(log N + M) where M is the number of lots in the farm
     return db.state_lotes
       .where("fazenda_id")
-      .equals(activeFarmId)
+      .equals(targetFarmId)
       .filter((l) => !l.deleted_at)
       .toArray();
-  }, [activeFarmId]);
+  }, [targetFarmId]);
 }
