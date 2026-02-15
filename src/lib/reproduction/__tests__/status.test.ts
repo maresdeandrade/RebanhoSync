@@ -84,7 +84,7 @@ describe("Repro Status Calculation", () => {
       createEvent(oldDate.toISOString(), 'parto')
     ];
     const status = computeReproStatus(events);
-    expect(status.status).toBe('VAZIA');
+    expect(status.status).toBe('PARIDA_ABERTA');
   });
 
   it("should return PRENHA even if older service exists", () => {

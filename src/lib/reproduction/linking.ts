@@ -2,11 +2,6 @@
 import { isPayloadV1, ReproLinkMethod } from "./types";
 import type { ReproEventJoined } from "./selectors";
 
-interface LegacyReproPayload {
-  diagnostico_resultado?: string;
-  [key: string]: unknown;
-}
-
 /**
  * ALGORITHM A: Find Candidate Service for Diagnostic
  * Logic: Latest service (Cobertura/IA) occurred on or before diagnostic date.
@@ -23,28 +18,10 @@ export function findLinkedServiceForDiagnostic(
     e.occurred_at <= diagnosticDate
   );
 
-  // Filter out services that are already "taken" by a Parto occurring BEFORE this diagnostic.
-  // (If Parto was AFTER, it might be the outcome of this diagnostic, so we keep the service as candidate).
-  // Strategy: Find all Partos before DiagnosticDate. Collect their linked Service IDs. Exclude those.
-  const priorPartos = history.filter(p => 
-      p.details?.tipo === 'parto' && 
-      p.occurred_at < diagnosticDate // Strict less than. If same day, dubious, but let's assume prior.
-  );
-  
-  const closedServiceIds = new Set<string>();
-  priorPartos.forEach(p => {
-      const pay = p.details?.payload;
-      if (isPayloadV1(pay) && pay.episode_evento_id) {
-          closedServiceIds.add(pay.episode_evento_id);
-      }
-  });
-
-  const validCandidates = candidates.filter(c => !closedServiceIds.has(c.id));
-  
   // Sort DESC (newest first)
-  validCandidates.sort((a, b) => b.occurred_at.localeCompare(a.occurred_at));
+  candidates.sort((a, b) => b.occurred_at.localeCompare(a.occurred_at));
 
-  return validCandidates[0] || null;
+  return candidates[0] || null;
 }
 
 /**
@@ -59,28 +36,27 @@ export function findLinkedServiceForParto(
   partoDate: string
 ): { event: ReproEventJoined | null, method: ReproLinkMethod } {
   
-  // 1. Try via Positive Diagnostic (Strict V1 Link)
-  // Find most recent Positive Diag before Parto
+  // 1. Try via Positive Diagnostic
+  // Find Positive Diags before Parto
   const positiveDiags = history.filter(e => 
     e.details?.tipo === 'diagnostico' &&
     e.occurred_at <= partoDate &&
     isPositiveDiag(e)
   ).sort((a, b) => b.occurred_at.localeCompare(a.occurred_at)); // Newest first
 
-  // Check if the best diag has a link to a service
-  const bestDiag = positiveDiags[0];
-  if (bestDiag) {
-      const payload = bestDiag.details?.payload;
-      if (isPayloadV1(payload) && payload.episode_evento_id) {
-          const linkedService = history.find(e => e.id === payload.episode_evento_id);
-          // Sanity check: Service must be before Parto (should be, if Diag was before Parto)
-          if (linkedService && linkedService.occurred_at <= partoDate) {
-             return { event: linkedService, method: 'auto_B' };
-          }
-      }
-      // If legacy or no link, we fall through to finding Open Service.
-      // But having a Positive Diag is a strong signal that an Open Service exists 
-      // (or the diag itself is the "proxy" for the cycle, but our model requires Service root).
+  if (positiveDiags.length > 0) {
+    const bestDiag = positiveDiags[0];
+    const payload = bestDiag.details?.payload;
+    
+    // Check if Diag has a link (V1)
+    if (isPayloadV1(payload) && payload.episode_evento_id) {
+       const linkedService = history.find(e => e.id === payload.episode_evento_id);
+       if (linkedService) {
+         return { event: linkedService, method: 'auto_B' };
+       }
+    }
+    // Legacy Diag (might not have link). We could infer, but let's stick to strict V1 path or fallback to Strategy 2.
+    // If we have a positive diagnostic close to creation, it's a strong hint.
   }
 
   // 2. Fallback: Open Service
@@ -120,6 +96,5 @@ function isPositiveDiag(e: ReproEventJoined): boolean {
     return p.resultado === 'positivo';
   }
   // Legacy fallback
-  const legacy = p as LegacyReproPayload | undefined;
-  return legacy?.diagnostico_resultado === 'positivo';
+  return (p as any).diagnostico_resultado === 'positivo';
 }

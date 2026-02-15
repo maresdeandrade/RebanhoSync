@@ -19,13 +19,11 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { showSuccess, showError } from "@/utils/toast";
-import { ChevronLeft, Save, Loader2 } from "lucide-react";
-import { useLotes } from "@/hooks/useLotes";
+import { ChevronLeft, Save } from "lucide-react";
 
 const AnimalEditar = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [isSaving, setIsSaving] = useState(false);
 
   // Carregar animal
   const animal = useLiveQuery(
@@ -62,7 +60,14 @@ const AnimalEditar = () => {
   >("null");
   const [habilitadoMonta, setHabilitadoMonta] = useState(false);
 
-  const lotes = useLotes(animal?.fazenda_id);
+  const lotes = useLiveQuery(() => {
+    if (!animal?.fazenda_id) return [];
+    return db.state_lotes
+      .where("fazenda_id")
+      .equals(animal.fazenda_id)
+      .filter((l) => !l.deleted_at)
+      .toArray();
+  }, [animal?.fazenda_id]);
 
   // Query para machos (potenciais pais) - excluir o próprio animal se for macho
   const machos = useLiveQuery(
@@ -154,8 +159,6 @@ const AnimalEditar = () => {
       return;
     }
 
-    setIsSaving(true);
-
     const animalUpdateRecord: Record<string, unknown> = {
       id: id,
       identificacao,
@@ -214,7 +217,6 @@ const AnimalEditar = () => {
       showSuccess("Animal atualizado localmente!");
       navigate(`/animais/${id}`);
     } catch (e: unknown) {
-      setIsSaving(false);
       if (e instanceof EventValidationError) {
         showError(e.issues[0]?.message ?? "Dados invalidos para movimentacao.");
         return;
@@ -495,13 +497,9 @@ const AnimalEditar = () => {
           </Card>
         )}
 
-      <Button onClick={handleSave} className="w-full" disabled={isSaving}>
-        {isSaving ? (
-          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-        ) : (
-          <Save className="h-4 w-4 mr-2" />
-        )}
-        {isSaving ? "Salvando..." : "Salvar Alterações"}
+      <Button onClick={handleSave} className="w-full">
+        <Save className="h-4 w-4 mr-2" />
+        Salvar Alterações
       </Button>
     </div>
   );

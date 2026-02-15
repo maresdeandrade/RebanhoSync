@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "@/lib/offline/db";
-import { useLotes } from "@/hooks/useLotes";
 import { createGesture } from "@/lib/offline/ops";
 import { buildEventGesture } from "@/lib/events/buildEventGesture";
 import { EventValidationError } from "@/lib/events/validators";
@@ -46,7 +45,17 @@ export function MoverAnimalLote({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Buscar lotes disponíveis
-  const lotes = useLotes(animal.fazenda_id);
+  const lotes = useLiveQuery(
+    () =>
+      db.state_lotes
+        .filter(
+          (l) =>
+            l.fazenda_id === animal.fazenda_id &&
+            (!l.deleted_at || l.deleted_at === null),
+        )
+        .toArray(),
+    [animal.fazenda_id],
+  );
 
   // Buscar lote atual
   const loteAtual = useLiveQuery(

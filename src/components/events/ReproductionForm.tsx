@@ -30,7 +30,7 @@ export interface ReproductionEventData {
   // IA (New)
   loteSemen?: string;
   doseSemenRef?: string;
-  // Episode Linking
+  // Episode Linking (New)
   episodeEventoId?: string | null;
   episodeLinkMethod?: 'manual' | 'auto_last_open_service' | 'unlinked';
 }
@@ -64,7 +64,6 @@ export function ReproductionForm({
 
   // Fetch candidate service events for linking (Episode)
   const candidateEpisodes = useLiveQuery(async () => {
-    // Only fetching if we have an animal and it's a type that needs linking
     if (!animalId || (data.tipo !== 'diagnostico' && data.tipo !== 'parto')) return [];
     
     // Find recent services (Cobertura/IA)
@@ -125,16 +124,10 @@ export function ReproductionForm({
       {/* EPISODE LINKING for Diagnostico/Parto */}
       {(data.tipo === "diagnostico" || data.tipo === "parto") && (
          <div className="p-3 bg-muted/30 rounded-md border border-muted">
-            <Label className="text-xs text-muted-foreground uppercase tracking-wide">
-               {data.tipo === "parto" ? "Vínculo Obrigatório (Serviço)" : "Vínculo com Serviço (Episódio)"}
-            </Label>
+            <Label className="text-xs text-muted-foreground uppercase tracking-wide">Vínculo com Serviço (Episódio)</Label>
             <div className="mt-2">
                <Select
-                  value={
-                     data.episodeLinkMethod === "unlinked" ? "unlinked" :
-                     data.episodeLinkMethod === "manual" && data.episodeEventoId ? data.episodeEventoId : 
-                     "auto"
-                  }
+                  value={data.episodeEventoId || "auto"}
                   onValueChange={(val) => {
                      if (val === "auto") {
                         updateField("episodeEventoId", null);
@@ -149,27 +142,20 @@ export function ReproductionForm({
                   }}
                >
                   <SelectTrigger className="w-full">
-                     <SelectValue placeholder="Automático" />
+                     <SelectValue placeholder="Automático (Último serviço aberto)" />
                   </SelectTrigger>
                   <SelectContent>
-                     <SelectItem value="auto">✨ Automático (Inteligente)</SelectItem>
-                     {candidateEpisodes?.map((evt) => (
+                     <SelectItem value="auto">✨ Automático (Último serviço aberto)</SelectItem>
+                     {candidateEpisodes?.map((evt: { id: string; occurred_at: string; details: { tipo: string } }) => (
                         <SelectItem key={evt.id} value={evt.id}>
                            {new Date(evt.occurred_at).toLocaleDateString()} - {evt.details.tipo.toUpperCase()}
                         </SelectItem>
                      ))}
-                     {/* Strict V1: Orphan Parto is blocked by Registrar logic, but we might hide it here or show with warning */}
-                     {/* Only allow 'unlinked' for Diagnostico/Legacy/Recovery. STRICT V1: Parto must link. */}
-                     {data.tipo !== 'parto' && (
-                        <SelectItem value="unlinked">⚠️ Sem Vínculo (Novo Episódio/Legacy)</SelectItem>
-                      )
-                     }
+                     <SelectItem value="unlinked">⚠️ Sem vínculo (Órfão)</SelectItem>
                   </SelectContent>
                </Select>
                <p className="text-[10px] text-muted-foreground mt-1">
-                  {data.tipo === "parto" 
-                     ? "O parto deve ser vinculado a um serviço anterior (Cobertura/IA)."
-                     : "Vincular o diagnóstico ao serviço ajuda a calcular a data provável de parto."}
+                  Selecione "Automático" para que o sistema vincule ao serviço mais recente.
                </p>
             </div>
          </div>
@@ -202,45 +188,13 @@ export function ReproductionForm({
             </Select>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-             {data.tipo === "IA" && (
-               <>
-                 <div className="space-y-2">
-                   <Label>Lote do Sêmen</Label>
-                   <Input 
-                      value={data.loteSemen || ""}
-                      onChange={(e) => updateField("loteSemen", e.target.value)}
-                      placeholder="Ex: ABC-123"
-                   />
-                 </div>
-                 <div className="space-y-2">
-                   <Label>Ref. Dose</Label>
-                   <Input 
-                      value={data.doseSemenRef || ""}
-                      onChange={(e) => updateField("doseSemenRef", e.target.value)}
-                      placeholder="Ex: Palheta 1"
-                   />
-                 </div>
-               </>
-             )}
-             
-             <div className="space-y-2 col-span-2">
-               <Label>Técnica / Tag Visual</Label>
-               <div className="flex gap-2">
-                  <Input 
-                     className="flex-1"
-                     placeholder={data.tipo === "IA" ? "IATF / Convencional" : "Monta Natural / Controlada"}
-                     value={data.tecnicaLivre || ""}
-                     onChange={(e) => updateField("tecnicaLivre", e.target.value)}
-                  />
-                  <Input 
-                     className="w-1/3"
-                     placeholder="Tag Reprodutor"
-                     value={data.reprodutorTag || ""}
-                     onChange={(e) => updateField("reprodutorTag", e.target.value)}
-                  />
-               </div>
-             </div>
+          <div className="space-y-2">
+            <Label>Técnica / Tag Reprodutor (Opcional)</Label>
+            <Input 
+               placeholder={data.tipo === "IA" ? "Lote do Sêmen / Dose" : "Monta Natural / IATF"}
+               value={data.tecnicaLivre || ""}
+               onChange={(e) => updateField("tecnicaLivre", e.target.value)}
+            />
           </div>
         </div>
       )}

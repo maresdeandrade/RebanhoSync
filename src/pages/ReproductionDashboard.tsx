@@ -2,10 +2,8 @@ import { useEffect, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "@/lib/offline/db";
 import { useAuth } from "@/hooks/useAuth";
-import { Animal } from "@/lib/offline/types";
-import { computeReproStatus, AnimalReproStatus } from "@/lib/reproduction/status";
-import { getReproductionEventsJoined } from "@/lib/reproduction/selectors";
-import { ReproStatus } from "@/lib/reproduction/types";
+import { Animal, Evento, EventoReproducao } from "@/lib/offline/types";
+import { deriveReproductiveStatus, ReproStatus, AnimalReproStatus } from "@/lib/reproduction/status";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -32,27 +30,43 @@ export default function ReproductionDashboard() {
     const animals = await db.state_animais
       .where("fazenda_id")
       .equals(fazendaId)
-      .filter((a) => a.sexo === "F" && a.status === "ativo")
+      .and((a) => a.sexo === "F" && a.status === "ativo")
       .toArray();
 
-    // 2. Fetch All Reproduction Events (Joined)
-    const allEvents = await getReproductionEventsJoined(fazendaId);
+    // 2. Fetch All Reproduction Events
+    const events = await db.event_eventos
+      .where("[fazenda_id+dominio]")
+      .between([fazendaId, "reproducao"], [fazendaId, "reproducao"], true, true)
+      .toArray();
+
+    // 3. Fetch Details
+    const details = await db.event_eventos_reproducao
+      .where("fazenda_id")
+      .equals(fazendaId)
+      .toArray();
+
+    const detailsMap = new Map<string, EventoReproducao>();
+    details.forEach((d) => detailsMap.set(d.evento_id, d));
+
+    // 4. Group Events by Animal
+    const eventsByAnimal = new Map<string, Array<Evento & { details?: EventoReproducao }>>();
     
-    // 3. Group Events by Animal
-    const eventsByAnimal = new Map<string, typeof allEvents>();
-    
-    allEvents.forEach((evt) => {
+    events.forEach((evt) => {
       if (!evt.animal_id) return;
+      
+      const enrichedEvent = { ...evt, details: detailsMap.get(evt.id) };
+      if (!enrichedEvent.details) return; // Should satisfy the type for deriveReproductiveStatus
+
       if (!eventsByAnimal.has(evt.animal_id)) {
         eventsByAnimal.set(evt.animal_id, []);
       }
-      eventsByAnimal.get(evt.animal_id)?.push(evt);
+      eventsByAnimal.get(evt.animal_id)?.push(enrichedEvent);
     });
 
-    // 4. Derive Status for each Animal
+    // 5. Derive Status for each Animal
     const result: DashboardAnimal[] = animals.map((animal) => {
       const animalEvents = eventsByAnimal.get(animal.id) || [];
-      const status = computeReproStatus(animalEvents);
+      const status = deriveReproductiveStatus(animalEvents);
       return { ...animal, reproStatus: status };
     });
 
@@ -68,8 +82,9 @@ export default function ReproductionDashboard() {
     total: dashboardData.length,
     servidas: dashboardData.filter(a => a.reproStatus.status === 'SERVIDA').length,
     prenhas: dashboardData.filter(a => a.reproStatus.status === 'PRENHA').length,
-    paridas: dashboardData.filter(a => a.reproStatus.status === 'PARIDA_PUERPERIO').length,
-    abertas: dashboardData.filter(a => a.reproStatus.status === 'VAZIA').length,
+    paridas: dashboardData.filter(a => a.reproStatus.status === 'PARIDA').length,
+    lactantes: dashboardData.filter(a => a.reproStatus.status === 'LACTANTE').length,
+    abertas: dashboardData.filter(a => a.reproStatus.status === 'ABERTA' || a.reproStatus.status === 'DIAGNOSTICO_PENDENTE').length,
   };
 
   // Filter Data based on Tab and Search
@@ -80,44 +95,31 @@ export default function ReproductionDashboard() {
     }
 
     // Tab Filter
-    const s = animal.reproStatus.status;
-    const days = animal.reproStatus.daysSinceEvent || 0;
-    const lastType = animal.reproStatus.lastEventType;
-
     switch (activeTab) {
       case 'active':
-        return ['SERVIDA', 'PRENHA', 'PARIDA_PUERPERIO'].includes(s); 
+        return ['SERVIDA', 'PRENHA', 'PARIDA'].includes(animal.reproStatus.status);
       case 'servida':
-        return s === 'SERVIDA';
+        return animal.reproStatus.status === 'SERVIDA';
       case 'prenha':
-        return s === 'PRENHA';
+        return animal.reproStatus.status === 'PRENHA';
       case 'parida':
-        // Parida = Puerperio OR "Parida Aberta" hint (Vazia w/ Parto 61-240 days ago)
-        if (s === 'PARIDA_PUERPERIO') return true;
-        if (s === 'VAZIA' && lastType === 'parto' && days >= 61 && days <= 240) return true;
-        return false;
+        return ['PARIDA', 'LACTANTE'].includes(animal.reproStatus.status);
       case 'aberta':
-        // Aberta = Vazia. (Exclude Puerperio).
-        // Optionally exclude "Parida Aberta" from here if we want strict separation, 
-        // but physically they are Open, so keeping them in 'aberta' is also correct.
-        // User request: "Parida (Aberta)" is a visual hint, base status is VAZIA.
-        return s === 'VAZIA';
+        return ['ABERTA', 'DIAGNOSTICO_PENDENTE'].includes(animal.reproStatus.status);
       default:
         return true;
     }
   });
 
-  const getStatusBadge = (status: ReproStatus, lastType: string | null, days: number | null) => {
+  const getStatusBadge = (status: ReproStatus) => {
     switch (status) {
       case 'PRENHA': return <Badge className="bg-green-600">Prenha</Badge>;
       case 'SERVIDA': return <Badge className="bg-yellow-600">Servida</Badge>;
-      case 'PARIDA_PUERPERIO': return <Badge className="bg-purple-600">Parida (Puerpério)</Badge>;
-      case 'VAZIA': 
-        if (lastType === 'parto' && days !== null && days >= 61 && days <= 240) {
-             return <Badge className="bg-purple-400">Parida (Aberta)</Badge>;
-        }
-        return <Badge variant="outline">Vazia</Badge>;
-      default: return <Badge variant="outline">Unknown</Badge>;
+      case 'PARIDA': return <Badge className="bg-purple-600">Parida (Puerpério)</Badge>;
+      case 'LACTANTE': return <Badge className="bg-purple-400">Lactante</Badge>;
+      case 'ABERTA': return <Badge variant="outline">Aberta</Badge>;
+      case 'DIAGNOSTICO_PENDENTE': return <Badge variant="secondary">Diag. Pendente</Badge>;
+      default: return <Badge variant="outline">{status}</Badge>;
     }
   };
 
@@ -126,7 +128,7 @@ export default function ReproductionDashboard() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Reprodução</h1>
-          <p className="text-muted-foreground">Monitoramento do ciclo reprodutivo (V1)</p>
+          <p className="text-muted-foreground">Monitoramento do ciclo reprodutivo</p>
         </div>
         <Link to="/registrar">
             <Button>Nova Ocorrência</Button>
@@ -157,22 +159,22 @@ export default function ReproductionDashboard() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Paridas</CardTitle>
+            <CardTitle className="text-sm font-medium">Paridas/Lact.</CardTitle>
             <Baby className="h-4 w-4 text-purple-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{kpis.paridas}</div>
-            <p className="text-xs text-muted-foreground">Com cria</p>
+            <div className="text-2xl font-bold">{kpis.paridas + kpis.lactantes}</div>
+            <p className="text-xs text-muted-foreground">Crias ao pé</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Vazias/Abertas</CardTitle>
+            <CardTitle className="text-sm font-medium">Abertas</CardTitle>
             <AlertCircle className="h-4 w-4 text-slate-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{kpis.abertas}</div>
-            <p className="text-xs text-muted-foreground">Disponíveis Repro.</p>
+            <p className="text-xs text-muted-foreground">Disponíveis</p>
           </CardContent>
         </Card>
       </div>
@@ -229,7 +231,7 @@ export default function ReproductionDashboard() {
                           <span className="text-xs text-muted-foreground">{animal.lote_id ?? '-'}</span>
                        </div>
                     </TableCell>
-                    <TableCell>{getStatusBadge(animal.reproStatus.status, animal.reproStatus.lastEventType, animal.reproStatus.daysSinceEvent)}</TableCell>
+                    <TableCell>{getStatusBadge(animal.reproStatus.status)}</TableCell>
                     <TableCell>
                        <div className="flex flex-col">
                           <span>{animal.reproStatus.lastEventType?.toUpperCase() ?? '-'}</span>
@@ -239,7 +241,8 @@ export default function ReproductionDashboard() {
                        </div>
                     </TableCell>
                     <TableCell>
-                       {animal.reproStatus.daysSinceEvent !== null ? `${animal.reproStatus.daysSinceEvent} dias` : '-'}
+                       {animal.reproStatus.daysSinceServico ? `${animal.reproStatus.daysSinceServico} dias (Serv)` :
+                        animal.reproStatus.daysSinceParto ? `${animal.reproStatus.daysSinceParto} dias (Parto)` : '-'}
                     </TableCell>
                     <TableCell>
                         {animal.reproStatus.predictionDate ? (

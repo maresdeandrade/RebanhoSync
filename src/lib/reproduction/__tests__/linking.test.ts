@@ -107,48 +107,4 @@ describe("Repro Linking Algorithm B (Parto)", () => {
     const result = findLinkedServiceForParto(events, '2024-08-01');
     expect(result.event?.id).toBe('s2');
   });
-
-  it("should prioritize LINKED positive diagnostic over date-based match (Algo B)", () => {
-    const service1 = createEvent('s1', '2023-01-01', 'IA');
-    const service2 = createEvent('s2', '2023-02-01', 'IA');
-    
-    // Diag linked to Service 1 (Older), but occurred later? 
-    // Scenario: Cow was inseminated Jan 1, Diag Pos on Mar 1.
-    // Then Inseminated Feb 1 (Mistake?), Diag Neg on Mar 2.
-    // Let's test: Parto on Oct 1.
-    // We have a Positive Diag linked to Service 1.
-    // We have an Open Service 2 (newer).
-    // Algo B should pick Service 1 because of the Positive Diag link.
-    
-    const diagPos = createEvent('d1', '2023-03-01', 'diagnostico', {
-        schema_version: 1,
-        resultado: 'positivo',
-        episode_evento_id: service1.id // Link to Service 1
-    });
-
-    const events: ReproEventJoined[] = [service1, service2, diagPos];
-    
-    // Parto on Oct 1
-    const match = findLinkedServiceForParto(events, '2023-10-01');
-    
-    expect(match.event?.id).toBe(service1.id);
-    expect(match.method).toBe('auto_B'); 
-  });
-
-  it("should exclude services already linked to a prior parto (Algo A)", () => {
-      // Service 1 -> Parto 1.
-      // Diag 2 -> Should NOT link to Service 1.
-      const service1 = createEvent('s1', '2023-01-01', 'IA');
-      const parto1 = createEvent('p1', '2023-10-01', 'parto', {
-          schema_version: 1,
-          episode_evento_id: service1.id
-      });
-      
-      const diag2 = createEvent('d2', '2023-11-01', 'diagnostico');
-      
-      const events: ReproEventJoined[] = [service1, parto1];
-      
-      const match = findLinkedServiceForDiagnostic(events, '2023-11-01');
-      expect(match).toBeNull(); // Service 1 is taken.
-  });
 });

@@ -17,7 +17,7 @@ export interface AnimalReproStatus {
  * Logic (Sequential Dominance):
  * 1. Sort events DESC (Newest first).
  * 2. Iterate to find the first "Status Defining" event.
- *    - PARTO: Sets status to PARIDA_PUERPERIO (if <= 60d) or VAZIA (if > 60d).
+ *    - PARTO: Sets status to PARIDA_PUERPERIO (if <= 60d) or PARIDA_ABERTA (if > 60d).
  *    - DIAGNOSTICO POSITIVO: Sets status to PRENHA.
  *    - DIAGNOSTICO NEGATIVO: Sets status to VAZIA (Clears previous service).
  *    - COBERTURA/IA: Sets status to SERVIDA.
@@ -51,9 +51,9 @@ export function computeReproStatus(events: ReproEventJoined[]): AnimalReproStatu
       if (diffDays <= PUERPERIO_DAYS) {
         return createStatus('PARIDA_PUERPERIO', evt, diffDays, calculateWeaningDate(date));
       } else {
-        // PARIDA > 60 days -> VAZIA (Open)
-        // But we keep the event reference to show "Parida" context in UI if needed.
-        return createStatus('VAZIA', evt, diffDays, null); 
+        return createStatus('PARIDA_ABERTA', evt, diffDays, null); 
+        // PARIDA_ABERTA implies "Empty/Vazia" but carrying the history of a recent birth.
+        // Conceptually similar to VAZIA but useful for filtering "Cows to Breed".
       }
     }
 
@@ -66,12 +66,15 @@ export function computeReproStatus(events: ReproEventJoined[]): AnimalReproStatu
       }
       if (isNeg) {
          // Negative Diag -> VAZIA.
-         // STRICT DOMINANCE: If we found a service AFTER this diag (newer),
-         // we would have already returned 'SERVIDA' in the loop above.
-         // Reaching here means this Negative Diag is the most recent status-defining event.
-         // Therefore, the animal is empty.
+         // We continue? No, a negative diag defines the status as Empty AT THAT POINT.
+         // Since we are iterating DESC, this is the latest information.
          return createStatus('VAZIA', evt, diffDays, null);
       }
+      // If inconclusive, ignore and continue to look for previous events?
+      // Or return Inconclusive? Usually implies "SERVIDA" (waiting for re-test).
+      // Let's treat Inconclusive as "Keep looking" or "Stay Servida"? 
+      // Safest: Treat as "Status Unknown" -> fallback to previous Service?
+      // For simplified logic: Inconclusive doesn't change status, so we skip it.
       continue;
     }
 
@@ -104,19 +107,17 @@ function createStatus(
   };
 }
 
-function isPositive(payload: unknown): boolean {
+function isPositive(payload: any): boolean {
   if (isPayloadV1(payload)) return payload.resultado === 'positivo';
-  const legacy = payload as Record<string, unknown> | undefined;
-  return legacy?.diagnostico_resultado === 'positivo';
+  return payload.diagnostico_resultado === 'positivo';
 }
 
-function isNegative(payload: unknown): boolean {
+function isNegative(payload: any): boolean {
   if (isPayloadV1(payload)) return payload.resultado === 'negativo';
-  const legacy = payload as Record<string, unknown> | undefined;
-  return legacy?.diagnostico_resultado === 'negativo';
+  return payload.diagnostico_resultado === 'negativo';
 }
 
-function extractPredictionDate(payload: unknown): string | undefined {
+function extractPredictionDate(payload: any): string | undefined {
   if (isPayloadV1(payload)) return payload.data_prevista_parto;
   return undefined;
 }

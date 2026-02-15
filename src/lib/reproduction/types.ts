@@ -16,7 +16,8 @@ export type ReproStatus =
   | 'VAZIA'             // Open / Empty (Default)
   | 'SERVIDA'           // Inseminated / Mated (Waiting for diagnosis)
   | 'PRENHA'            // Pregnant (Confirmed)
-  | 'PARIDA_PUERPERIO';  // Calved recently (< 60 days)
+  | 'PARIDA_PUERPERIO'  // Calved recently (< 60 days)
+  | 'PARIDA_ABERTA';    // Calved > 60 days (waiting for service)
 
 export const PUERPERIO_DAYS = 60;
 

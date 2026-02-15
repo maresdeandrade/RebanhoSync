@@ -1,14 +1,6 @@
 import { differenceInDays, parseISO } from "date-fns";
 import { Animal, CategoriaZootecnica } from "@/lib/offline/types";
 
-export interface CategoriaPayload {
-  order?: number;
-  criteria?: {
-    papel_macho?: 'reprodutor' | 'rufião' | 'corte';
-    habilitado_monta?: boolean;
-  };
-}
-
 /**
  * Classifica um animal em uma categoria zootécnica baseada em sua idade e sexo.
  * Retorna a primeira categoria que der match, respeitando a ordem do array passado.
@@ -29,8 +21,8 @@ export function classificarAnimal(
     if (a.ativa !== b.ativa) return a.ativa ? -1 : 1;
 
     // 2. Order (payload.order) ASC
-    const orderA = (a.payload as CategoriaPayload | undefined)?.order ?? 9999;
-    const orderB = (b.payload as CategoriaPayload | undefined)?.order ?? 9999;
+    const orderA = (a.payload as any)?.order ?? 9999;
+    const orderB = (b.payload as any)?.order ?? 9999;
     if (orderA !== orderB) return orderA - orderB;
 
     // 3. Idade Minima ASC
@@ -64,8 +56,8 @@ export function classificarAnimal(
       if (!idadeMatch || !statusMatch) return false;
 
       // 4. Verifica Critérios Especiais (Payload)
-      const payload = cat.payload as CategoriaPayload | undefined;
-      const criteria = payload?.criteria;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const criteria = (cat.payload as any)?.criteria;
       if (criteria) {
         if (criteria.papel_macho && animal.papel_macho !== criteria.papel_macho) {
           return false;

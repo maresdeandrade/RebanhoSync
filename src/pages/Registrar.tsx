@@ -44,9 +44,6 @@ import {
 } from "lucide-react";
 import { useLotes } from "@/hooks/useLotes";
 import { useAuth } from "@/hooks/useAuth";
-import { findLinkedServiceForDiagnostic, findLinkedServiceForParto } from "@/lib/reproduction/linking";
-import { getAnimalReproHistory } from "@/lib/reproduction/selectors";
-import type { ReproductionEventPayloadV1 } from "@/lib/reproduction/types";
 
 // P2.2 FIX: Magic numbers to enum for better readability
 enum RegistrationStep {
@@ -733,98 +730,53 @@ const Registrar = () => {
           // Block orphan parto if validation failed or user selected 'unlinked'
           // Actually, we should check if we found a candidate if mode is auto.
           // But strict server rules say: REJECT if parto is unlinked.
-            if (reproducaoData.tipo === "parto") {
-               // Strict V1: Block orphan/unlinked
-               // We will validate this after trying auto-link below
-            }
- 
-            if (
-               (reproducaoData.tipo === "cobertura" || reproducaoData.tipo === "IA") &&
-               !reproducaoData.machoId
-            ) {
-               showError("Macho e obrigatorio para Cobertura/IA.");
-               return;
-            }
+          if (reproducaoData.tipo === "parto") {
+             if (reproducaoData.episodeLinkMethod === 'unlinked') {
+                showError("Parto exige vínculo com evento anterior (Cobertura/IA). Selecione um episódio.");
+                return;
+             }
+             // If manual and no ID
+             if (reproducaoData.episodeLinkMethod === 'manual' && !reproducaoData.episodeEventoId) {
+                showError("Selecione o evento de serviço para vincular o parto.");
+                return;
+             }
+          }
 
-            // AUTO-LINKING LOGIC
-            let episodeEventoId = reproducaoData.episodeEventoId || undefined;
-            // Map UI method to Domain method
-            let episodeLinkMethod: any = reproducaoData.episodeLinkMethod;
+          if (
+             (reproducaoData.tipo === "cobertura" || reproducaoData.tipo === "IA") &&
+             !reproducaoData.machoId
+          ) {
+             showError("Macho e obrigatorio para Cobertura/IA.");
+             return;
+          }
 
-            if (reproducaoData.episodeLinkMethod === 'auto_last_open_service') {
-               // Default if not found
-               episodeLinkMethod = undefined; 
-               if (animalId) {
-                  try {
-                     const history = await getAnimalReproHistory(animalId);
-                     
-                     if (reproducaoData.tipo === 'diagnostico') {
-                        const linked = findLinkedServiceForDiagnostic(history, now);
-                        if (linked) {
-                           episodeEventoId = linked.id;
-                           episodeLinkMethod = 'auto_A';
-                        }
-                     } else if (reproducaoData.tipo === 'parto') {
-                        const res = findLinkedServiceForParto(history, now);
-                        if (res.event) {
-                           episodeEventoId = res.event.id;
-                           episodeLinkMethod = res.method;
-                        }
-                     }
-                  } catch (err) {
-                     console.error("Failed to auto-link reproduction event", err);
-                  }
-               }
-            } else if (reproducaoData.episodeLinkMethod === 'unlinked') {
-               episodeLinkMethod = 'orphan';
-            }
-
-            // STRICT VALIDATION FOR PARTO
-            if (reproducaoData.tipo === 'parto') {
-               if (!episodeEventoId) {
-                  // V1 STRICT: Parto MUST be linked. No orphan allowed.
-                  if (reproducaoData.episodeLinkMethod === 'auto_last_open_service') {
-                     showError(`Não foi possível encontrar serviço para vincular o parto. Selecione manualmente.`);
-                  } else {
-                     showError("Parto exige vínculo com evento anterior (Cobertura/IA). Selecione um episódio.");
-                  }
-                  return;
-               }
-            }
-
-            const payloadV1: ReproductionEventPayloadV1 = {
-               schema_version: 1,
-               episode_evento_id: episodeEventoId,
-               episode_link_method: episodeLinkMethod,
-               
-               // Cobertura/IA
-               tecnica_livre: reproducaoData.tecnicaLivre,
-               reprodutor_tag: reproducaoData.reprodutorTag,
-               lote_semen: reproducaoData.loteSemen,
-               dose_semen_ref: reproducaoData.doseSemenRef,
-               
-               // Diagnostico
-               resultado: reproducaoData.resultadoDiagnostico as any,
-               data_prevista_parto: reproducaoData.dataPrevistaParto,
-               
-               // Parto
-               data_parto_real: reproducaoData.dataParto,
-               numero_crias: reproducaoData.numeroCrias,
-               
-               observacoes_estruturadas: reproducaoData.observacoes ? { texto: reproducaoData.observacoes } : undefined
-            };
- 
-            eventInput = {
-              dominio: "reproducao",
-              fazendaId: fazenda_id,
-              occurredAt: now,
-              sourceTaskId: sourceTaskId || null,
-              animalId: animalId ?? null,
-              tipo: reproducaoData.tipo,
-              machoId: reproducaoData.machoId,
-              observacoes: reproducaoData.observacoes,
-              payloadData: payloadV1,
-            };
+          eventInput = {
+            dominio: "reproducao",
+            fazendaId: fazenda_id,
+            occurredAt: now,
+            sourceTaskId: sourceTaskId || null,
+            animalId: animalId ?? null,
+            tipo: reproducaoData.tipo,
+            machoId: reproducaoData.machoId,
+            observacoes: reproducaoData.observacoes,
+            payloadData: {
+              schema_version: 1,
+              // Linking
+              episode_evento_id: reproducaoData.episodeEventoId || undefined,
+              episode_link_method: reproducaoData.episodeLinkMethod || undefined,
+              
+              // Fields
+              tecnica_livre: reproducaoData.tecnicaLivre,
+              reprodutor_tag: reproducaoData.reprodutorTag,
+              resultado: reproducaoData.resultadoDiagnostico, // v1 uses 'resultado'
+              data_prevista_parto: reproducaoData.dataPrevistaParto,
+              data_parto_real: reproducaoData.dataParto, // v1 uses data_parto_real
+              numero_crias: reproducaoData.numeroCrias,
+              
+              // Legacy support (optional, but keep it clean if v1 is enough)
+              // diagnostico_resultado: reproducaoData.resultadoDiagnostico, 
+            },
+          };
         } else {
            continue; 
         }
