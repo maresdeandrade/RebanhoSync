@@ -1,302 +1,215 @@
-# Reconciliação v3 Final - Rebase Rigoroso Completo
+# Reconciliação e Delta Report
 
-> **Missão:** Antigravity Rebase Rigoroso v3 (Consolidação Final)
-> **Data:** 2026-02-16 20:02
-> **As-of Commit:** `e90e729` (HEAD)
-> **Critério:** Implementado = DB + Server + Dexie + Event Builder + UI Write + Sync passa
+> **Status:** Derivado
+> **Baseline:** `e62465e`
+> **Última Atualização:** 2026-02-16
+> **Fonte:** Normativos (E2E_MVP, CONTRACTS, ARCHITECTURE) vs Código Real
 
----
-
-## ✅ Objetivo da Missão v3
-
-Reconciliar **TODOS os documentos derivados** com o estágio REAL do código (HEAD) e eliminar drift de commits desatualizados.
-
-**Regras aplicadas:**
-
-1. ✅ Todo claim cite evidência verificável (path + linhas ou grep)
-2. ✅ Todos derivados referenciam `e90e729` (HEAD)
-3. ✅ TECH_DEBT mantém apenas OPEN + "Recentemente resolvido"
-4. ✅ ROADMAP deriva 100% de TECH_DEBT OPEN + E2E_MVP
-5. ✅ Sem alteração de código nesta missão
+Este documento registra deltas entre o que os normativos exigem e o que está efetivamente implementado no baseline `e62465e`.
 
 ---
 
-## 📋 Documentos Atualizados (v3)
+## Metodologia de Reconciliação
 
-### 1. **`docs/IMPLEMENTATION_STATUS.md`** 🔄
-
-**Mudanças:**
-
-- Header: v2 → **v3 Final**
-- As-of Commit: `3ce6f83` → **`e90e729` (HEAD)**
-- Data Audit: 19:30 → **20:02**
-
-**Conteúdo mantido:**
-
-- ✅ Resumo Executivo com capability score 86%
-- ✅ Matriz consolidada (7 domínios)
-- ✅ Gap analysis rigoroso
-- ✅ Evidências verificáveis completas
-
-**Status:** Derivado final alinhado com HEAD ✅
+1. **Leitura dos Normativos:** E2E_MVP.md, CONTRACTS.md, EVENTOS_AGENDA_SPEC.md,RLS.md
+2. **Auditoria do Código:** Migrations, Edge Functions, Client (src/\*)
+3. **Detecção de Gaps:** Requisitos vs Implementação
+4. **Evidência Verificável:** Paths, greps, line numbers
 
 ---
 
-### 2. **`docs/TECH_DEBT.md`** 🔄
+## Delta 1: Normativos vs Implementação
 
-**Mudanças:**
+### ✅ Conformidade Total (7 domínios)
 
-- Header: Inventário Reconciliado → **v3**
-- Fonte: Análises eventos → **`AUDIT_CAPABILITY_MATRIX.md`**
-- As-of Commit: `5709923` → **`e90e729` (HEAD)**
-- Data: 2026-02-16 (sem hora) → **20:02**
+1. **Two Rails (ARCHITECTURE.md)** - ✅ Implementado
+   - Rail 1 (Agenda): `state_agenda_itens` + dedup_key
+   - Rail 2 (Eventos): `event_eventos` + satélites append-only
+   - Evidência: `src/lib/offline/db.ts`, `migrations/0001_init.sql`
 
-**Conteúdo mantido:**
+2. **Multi-Tenancy (ARCHITECTURE.md)** - ✅ Implementado
+   - Todas tabelas com `fazenda_id`
+   - RLS enforcement via `has_membership()`
+   - Evidência: `migrations/0004_rls_hardening.sql`
 
-- ✅ OPEN items com status badges (🔴 P0 | 🟠 P1 | 🟡 P2)
-- ✅ TD-007 em "Recentemente Resolvido"
-- ✅ Evidências verificáveis
-- ✅ Cross-reference com E2E flows
+3. **Offline-First (OFFLINE.md)** - ✅ Implementado
+   - Dexie stores (state*\*, event*_, queue\__)
+   - Sync pipeline (createGesture → syncWorker → rollback)
+   - Evidência: `src/lib/offline/*`
 
-**Status:** Derivado final alinhado com HEAD ✅
+4. **Sync Contracts (CONTRACTS.md)** - ✅ Implementado
+   - Request/Response payloads conformes
+   - Status codes (APPLIED, REJECTED, etc)
+   - Evidência: `supabase/functions/sync-batch/index.ts`
 
----
+5. **Anti-Teleport (EVENTOS_AGENDA_SPEC.md)** - ⚠️ Parcial
+   - ✅ Server: `sync-batch/rules.ts:prevalidateAntiTeleport`
+   - ❌ Frontend: Não bloqueia na UI (TD-008)
 
-### 3. **`docs/ROADMAP.md`** 🔄
+6. **Imutabilidade Eventos (EVENTOS_AGENDA_SPEC.md)** - ✅ Implementado
+   - Trigger `prevent_business_update`
+   - Correção via `corrige_evento_id`
+   - Evidência: `migrations/0001_init.sql`
 
-**Mudanças:**
+7. **RBAC (RLS.md)** - ⚠️ Parcial
+   - ✅ Roles: owner/manager/cowboy
+   - ✅ Policies implementadas
+   - ❌ DELETE animais sem restrição cowboy (TD-003)
 
-- Header: Governed → **Governed - v3**
-- Status: Planejamento → **Planejamento 6 Semanas**
-- Fonte: `00_MANIFESTO.md` removido (não é fonte direta)
-- As-of Commit: `4c46c5c` → **`e90e729` (HEAD)**
-- Data: 2026-02-16 (sem hora) → **20:02**
+### ❌ Gaps Identificados (3 itens)
 
-**Conteúdo mantido:**
-
-- ✅ M0/M1/M2 com breakdown semanal
-- ✅ Derivado 100% de TECH_DEBT OPEN
-- ✅ 2-3 itens por semana
-- ✅ Critérios de aceite citam Fluxos E2E
-
-**Status:** Derivado final alinhado com HEAD ✅
-
----
-
-### 4. **`docs/review/AUDIT_CAPABILITY_MATRIX.md`** 🔄
-
-**Mudanças:**
-
-- Header: sem versão → **v3 Final**
-- Baseline: `3ce6f83` → **As-of Commit: `e90e729` (HEAD)**
-- Data: 19:30 → **20:02**
-
-**Conteúdo mantido:**
-
-- ✅ Matriz de 7 domínios × 8 componentes
-- ✅ Evidências com paths + line numbers + grep
-- ✅ Gaps mapeados para TD-###
-
-**Status:** Auditoria final alinhada com HEAD ✅
+| Gap ID    | Normativo           | Requisito                             | Implementado? | TD Link |
+| --------- | ------------------- | ------------------------------------- | ------------- | ------- |
+| **GAP-1** | E2E_MVP Fluxo 6     | UI Nutrição (registro eventos)        | ❌ Missing    | TD-006  |
+| **GAP-2** | EVENTOS_AGENDA_SPEC | Anti-Teleport validação frontend      | ❌ Missing    | TD-008  |
+| **GAP-3** | RLS.md              | DELETE animais restrito owner/manager | ❌ Missing    | TD-003  |
 
 ---
 
-### 5. **`docs/review/RECONCILIACAO_REPORT.md`** (ESTE ARQUIVO) ✨ NOVO v3
+## Delta 2: E2E_MVP Flows vs Testes Reais
 
-**Propósito:**
+### Fluxos Validáveis (6 de 7)
 
-- Relatório consolidado das 3 versões de reconciliação
-- Tracking de mudanças entre versões
-- Evidência de alinhamento final com HEAD
+| Fluxo E2E                      | Status     | Evidência                      | Bloqueador? |
+| ------------------------------ | ---------- | ------------------------------ | ----------- |
+| **Fluxo 0:** Auth + Fazenda    | ✅ PASS    | Login, fazenda ativa persist   | Não         |
+| **Fluxo 1:** RBAC              | ⚠️ PARTIAL | Roles OK, DELETE bug (TD-003)  | Não         |
+| **Fluxo 2:** Offline→Sync      | ⚠️ PARTIAL | Funciona, sem cleanup (TD-001) | Não         |
+| **Fluxo 3:** Anti-Teleport     | ⚠️ PARTIAL | Server OK, UI missing (TD-008) | Não         |
+| **Fluxo 4:** Dedup Agenda      | ✅ PASS    | dedup_key funcional            | Não         |
+| **Fluxo 5:** Setup Fazenda     | ✅ PASS    | Bootstrap automático           | Não         |
+| **Fluxo 6:** Hardening Eventos | ❌ FAIL    | Nutrição UI missing (TD-006)   | **SIM**     |
 
----
-
-## 📊 Comparação: v1 → v2 → v3
-
-| Aspecto                   | v1 (Inicial)             | v2 (Rigoroso)         | v3 (Final)                               |
-| ------------------------- | ------------------------ | --------------------- | ---------------------------------------- |
-| **Commits Referenciados** | Múltiplos inconsistentes | `3ce6f83` (parcial)   | **`e90e729` (HEAD) - 100%**              |
-| **Critério de "DONE"**    | Existência de tabela     | Cadeia E2E verificada | **Idem v2 + evidências grep**            |
-| **Capability Score**      | Não calculado            | 86% (6/7)             | **86% (6/7) - confirmado**               |
-| **Evidências**            | Paths aproximados        | Paths + line numbers  | **+ grep commands reproduzíveis**        |
-| **Docs Alinhados**        | Parcial                  | 80%                   | **100% - todos derivados sincronizados** |
-| **Timestamp Precision**   | Data apenas              | Data + hora           | **Data + hora em TODOS**                 |
-
-**Evolução:** v1 (fundação) → v2 (rigor) → **v3 (consolidação)**
+**Capability Score:** 6 de 7 validáveis (86%)  
+**Bloqueadores:** 1 (TD-006 Nutrição UI)
 
 ---
 
-## 🔍 Inventário Final de Derivados (v3)
+## Delta 3: Capability Matrix (Personas)
 
-Todos os documentos abaixo estão **100% alinhados** com `e90e729`:
+### Owner
 
-| Documento                           | As-of Commit | Data             | Status          |
-| ----------------------------------- | ------------ | ---------------- | --------------- |
-| `IMPLEMENTATION_STATUS.md`          | ✅ `e90e729` | 2026-02-16 20:02 | Derivado final  |
-| `TECH_DEBT.md`                      | ✅ `e90e729` | 2026-02-16 20:02 | Derivado final  |
-| `ROADMAP.md`                        | ✅ `e90e729` | 2026-02-16 20:02 | Derivado final  |
-| `review/AUDIT_CAPABILITY_MATRIX.md` | ✅ `e90e729` | 2026-02-16 20:02 | Auditoria final |
-| `review/RECONCILIACAO_REPORT.md`    | ✅ `e90e729` | 2026-02-16 20:02 | Relatório final |
+| Operação          | Implementado?                   | Evidência                                  |
+| ----------------- | ------------------------------- | ------------------------------------------ |
+| Gerenciar membros | ✅                              | `admin_change_role`, `admin_remove_member` |
+| CRUD fazenda      | ✅                              | RLS policies                               |
+| DELETE animais    | ✅ (sem restrição - bug TD-003) | RLS permite qualquer role                  |
+| Todos eventos     | ✅                              | Sem restrições                             |
 
-**Drift eliminado:** 0 documentos desatualizados ✅
+### Manager
+
+| Operação                      | Implementado?                   | Evidência                 |
+| ----------------------------- | ------------------------------- | ------------------------- |
+| Promover cowboy               | ✅                              | RPC `admin_change_role`   |
+| CRUD estrutura (lotes/pastos) | ✅                              | RLS policies              |
+| DELETE animais                | ✅ (sem restrição - bug TD-003) | RLS permite qualquer role |
+| Convites                      | ✅                              | `create_invite`           |
+
+### Cowboy
+
+| Operação          | Implementado?             | Evidência                               |
+| ----------------- | ------------------------- | --------------------------------------- |
+| Registrar eventos | ✅                        | Todos domínios exceto Nutrição (TD-006) |
+| DELETE animais    | ⚠️ Permitido (bug TD-003) | RLS não restringe                       |
+| CRUD lotes/pastos | ❌                        | RLS restringe a owner/manager           |
 
 ---
 
-## 🎯 Capability Score Final (Confirmado)
+## Delta 4: Patches Normativos Aplicados
 
-### ✅ Pronto para Piloto (6 de 7 domínios = 86%)
+Durante reconciliação, 1 patch foi aplicado aos normativos para corrigir contradição factual:
 
-1. **Sanitário** - ✅ COMPLETO
-2. **Reprodução** - ✅ COMPLETO (confirmado em v2)
-3. **Financeiro** - ✅ COMPLETO
-4. **Agenda** - ✅ COMPLETO
-5. **Movimentação** - ⚠️ FUNCIONAL (gaps não-bloqueantes)
-6. **Pesagem** - ⚠️ FUNCIONAL (gaps não-bloqueantes)
+| Normativo | Linha | Antes                             | Depois                    | Commit  |
+| --------- | ----- | --------------------------------- | ------------------------- | ------- |
+| RLS.md    | 30    | "DELETE planejado para restrição" | "**Gap Aberto (TD-003)**" | e62465e |
 
-### ❌ Bloqueador (1 de 7 domínios = 14%)
+**Justificativa:** TD-003 confirma que DELETE sem restrição é um **bug atual**, não uma feature planejada.
 
-1. **Nutrição** - ❌ **MISSING** (TD-006: UI inexistente)
+---
 
-**Evidência Rigorosa (reproduzível):**
+## Capability Score Consolidado
+
+### Domínios Implementados (E2E)
+
+- ✅ **86% Funcional** (6 de 7 domínios)
+  - Sanitário, Reprodução, Financeiro, Agenda: 100%
+  - Movimentação, Pesagem: Funcional (gaps não-bloqueantes)
+
+- ❌ **14% Bloqueado** (1 de 7 domínios)
+  - Nutrição: UI inexistente (TD-006)
+
+### Gaps por Severidade
+
+- 🔴 **P0:** 3 items (TD-001, TD-006, TD-008)
+- 🟠 **P1:** 5 items (TD-003, TD-011, TD-014, TD-019, TD-020)
+- 🟡 **P2:** 2 items (TD-004, TD-015)
+
+**Total OPEN:** 10 items
+
+---
+
+## Evidências de Gaps (Reproduzíveis)
+
+### TD-006: UI Nutrição (Bloqueador)
 
 ```bash
-# Backend completo:
-✅ migrations/0001_init.sql:L632 - table eventos_nutricao
-✅ src/lib/offline/db.ts:event_eventos_nutricao
-✅ src/lib/events/buildEventGesture.ts:L87-97 (nutricao)
+# Backend exists:
+grep "eventos_nutricao" migrations/0001_init.sql  # ✅ Table exists
+grep "event_eventos_nutricao" src/lib/offline/db.ts  # ✅ Store exists
+grep "nutricao" src/lib/events/buildEventGesture.ts  # ✅ Builder exists (L87-97)
 
-# Frontend ausente:
-❌ grep "NutricaoForm" src/ → 0 resultados
-❌ grep "tipoManejo === \"nutricao\"" src/pages/Registrar.tsx → 0 resultados
+# Frontend missing:
+grep "NutricaoForm" src/  # ❌ 0 results
+grep 'tipoManejo === "nutricao"' src/pages/Registrar.tsx  # ❌ 0 results
+```
+
+### TD-003: DELETE sem restrição (RLS Gap)
+
+```bash
+# Policy check:
+grep "DELETE" migrations/0004_rls_hardening.sql  # Policy genérica, sem role check
+# Esperado: WHERE role IN ('owner', 'manager')
+# Real: Sem restrição
+```
+
+### TD-008: Anti-Teleport UI (UX Gap)
+
+```bash
+# Server validation exists:
+grep "prevalidateAntiTeleport" supabase/functions/sync-batch/rules.ts  # ✅ L149-249
+
+# Frontend validation missing:
+grep "from.*to.*disable" src/pages/Registrar.tsx  # ❌ Não desabilita Select
 ```
 
 ---
 
-## 📈 Tech Debt Summary (OPEN - As of HEAD)
+## Recomendações de Ação
 
-### 🔴 P0 (Crítico - 3 items)
+### Prioridade Máxima (Desbloqueador)
 
-| ID         | Gap                      | Impacto           | Bloqueia E2E? |
-| ---------- | ------------------------ | ----------------- | ------------- |
-| **TD-006** | UI Nutrição inexistente  | ❌ **Bloqueador** | ✅ SIM        |
-| TD-001     | Queue cleanup missing    | ⚠️ Risco storage  | ❌ Não        |
-| TD-008     | Anti-Teleport UI missing | ⚠️ UX ruim        | ❌ Não        |
+1. **TD-006: Implementar UI Nutrição**
+   - Escopo: `NutricaoForm.tsx` + integração `Registrar.tsx`
+   - Effort: ~4h
+   - Impacto: Desbloqueia 100% MVP (7/7 domínios)
 
-### 🟠 P1 (Importante - 5 items)
+### Prioridade Alta (Integridade)
 
-- TD-003: RLS DELETE sem restrição
-- TD-011: Produto TEXT livre
-- TD-014: Pesagem sem validação UI
-- TD-019: FKs movimentação faltantes
-- TD-020: FK macho_id faltante
+2. **TD-003: Restringir DELETE RLS**
+   - Escopo: Patch migration RLS policy
+   - Effort: ~1h
+   - Impacto: Evita perda de dados acidental
 
-### 🟡 P2 (Melhoria - 2 items)
-
-- TD-004: Índices parciais
-- TD-015: GMD em memória
-
-**Total OPEN:** 10 items (1 bloqueador, 9 degradações)
+3. **TD-008: Validação Anti-Teleport Frontend**
+   - Escopo: Disable lote origem no Select destino
+   - Effort: ~2h
+   - Impacto: Melhora UX (evita envio rejeitado)
 
 ---
 
-## 🗺️ Roadmap Summary (6 Semanas - Derivado de TECH_DEBT)
+## Assinatura
 
-### M0: Estabilização Crítica (Semanas 1-2)
-
-**Scope:** TD-001, TD-006, TD-008
-
-**Semana 1:**
-
-- [ ] TD-001: Cleanup queue_rejections
-- [ ] TD-008: Validação frontend Anti-Teleport
-
-**Semana 2:**
-
-- [ ] TD-006: UI Nutrição 👈 **DESBLOQUEADOR**
-- [ ] Testes E2E Fluxos 2, 3, 6
-
----
-
-### M1: Consistência Operacional (Semanas 3-4)
-
-**Scope:** TD-003, TD-014, TD-019, TD-020
-
-**Semana 3:**
-
-- [ ] TD-014: Validação peso > 0
-- [ ] TD-003: RLS DELETE hardening
-
-**Semana 4:**
-
-- [ ] TD-019 + TD-020: FKs faltantes
-- [ ] Testes E2E Fluxos 1, 6
-
----
-
-### M2: Performance (Semanas 5-6)
-
-**Scope:** TD-004, TD-015, TD-011 (opcional)
-
-**Semana 5:**
-
-- [ ] TD-004: Índices compostos
-
-**Semana 6:**
-
-- [ ] TD-015: GMD view materializada
-- [ ] TD-011 (opcional): Catálogo produtos
-
----
-
-## ✅ Checklist de Qualidade v3
-
-- [x] Todos derivados referenciam `e90e729` (HEAD)
-- [x] Todos derivados têm timestamp 2026-02-16 20:02
-- [x] IMPLEMENTATION_STATUS lista evidências verificáveis
-- [x] TECH_DEBT mantém apenas OPEN + "Recentemente resolvido"
-- [x] ROADMAP deriva 100% de TECH_DEBT OPEN
-- [x] AUDIT_CAPABILITY_MATRIX tem grep commands
-- [x] Nenhum código alterado (apenas docs)
-- [x] Links "Veja também" atualizados
-- [x] Drift eliminado (0 docs desatualizados)
-
-**Qualidade:** 100% - Todos critérios atendidos ✅
-
----
-
-## 🚀 Próxima Ação Crítica
-
-### **Implementar TD-006: UI Nutrição**
-
-**Escopo Mínimo (Desbloqueador):**
-
-1. Criar `src/components/events/NutricaoForm.tsx`
-2. Integrar em `Registrar.tsx` (bloco `tipoManejo === "nutricao"`)
-3. Form fields: alimento_nome, quantidade_kg, animal/lote
-4. Usar builder existente (já pronto)
-
-**Effort:** ~4h
-
-**Resultado:** 100% MVP desbloqueado (7/7 domínios = 100%)
-
----
-
-## 📝 Conclusão v3
-
-**Resumo Executivo:**
-
-- ✅ **Rebase rigoroso v3 completo** - Todos derivados alinhados com HEAD
-- ✅ **Drift eliminado** - 5 documentos sincronizados em `e90e729`
-- ✅ **Capability score confirmado** - 86% funcional (6/7)
-- ✅ **1 bloqueador identificado** - TD-006 (Nutrição UI)
-- ✅ **9 gaps não-bloqueantes** - UX/integridade degradadas
-- ✅ **Roadmap derivado** - 100% de TECH_DEBT OPEN + E2E_MVP
-- ✅ **Evidências reproduzíveis** - Grep commands verificáveis
-
-**RebanhoSync está 86% pronto para piloto com plano de ação claro para 100%.**
-
----
-
-**Assinatura:** Antigravity Agent - Rebase Rigoroso v3 Final
-**Timestamp:** 2026-02-16 20:02
-**Commit:** `e90e729` (HEAD)
+**Baseline:** `e62465e`  
+**Data:** 2026-02-16  
+**Método:** Auditoria rigorosa com evidência verificável  
+**Conformidade:** 86% funcional, 1 bloqueador identificado

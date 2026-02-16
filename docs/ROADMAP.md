@@ -1,9 +1,9 @@
-# Roadmap do Produto (Governed)
+# Roadmap do Produto (6 Semanas)
 
-> **Status:** Derivado (Planejamento)
-> **Fonte de Verdade:** `00_MANIFESTO.md`, `TECH_DEBT.md` (OPEN), `IMPLEMENTATION_STATUS.md`, `E2E_MVP.md`
+> **Status:** Derivado
+> **Baseline:** `e62465e`
 > **Última Atualização:** 2026-02-16
-> **Baseline Commit:** 4c46c5c
+> **Fonte:** `TECH_DEBT.md` (OPEN), `E2E_MVP.md`, `IMPLEMENTATION_STATUS.md`
 
 Este roadmap define as etapas para estabilização e lançamento do RebanhoSync, priorizando a resolução de dívidas técnicas **OPEN** críticas e a conformidade com o Manifesto do Produto.
 

@@ -1,9 +1,8 @@
-# Implementation Status Matrix (Rebase Rigoroso)
+# Implementation Status Matrix (Baseline Unificado)
 
-> **Status:** Derivado (Audit Rigoroso - Rebase v2)
-> **Fonte de Verdade:** Código Fonte (DB migrations, Edge Functions, Client code) - Auditoria Completa
-> **As-of Commit:** `3ce6f83`
-> **Data Audit:** 2026-02-16 19:30
+> **Status:** Derivado
+> **Baseline:** `e62465e`
+> **Última Atualização:** 2026-02-16
 > **Critério RIGOROSO:** Implementado = (DB + Edge Rules + Dexie + Event Builder + UI Write + Sync passa)
 
 Este documento é a **matriz única de verdade** sobre o que existe efetivamente implementado no RebanhoSync. **Critério mais rigoroso que v1**: não basta existir schema de DB, é preciso toda a cadeia funcional end-to-end.

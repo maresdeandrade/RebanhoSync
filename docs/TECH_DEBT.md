@@ -1,9 +1,9 @@
 # Dívida Técnica (Tech Debt)
 
-> **Status:** Derivado (Inventário Reconciliado)
-> **Fonte de Verdade:** `IMPLEMENTATION_STATUS.md`, Análises de Eventos (`docs/analysis/*`), Código
+> **Status:** Derivado
+> **Baseline:** `e62465e`
 > **Última Atualização:** 2026-02-16
-> **Última Reconciliação:** 2026-02-16 (commit 5709923)
+> **Fonte:** `IMPLEMENTATION_STATUS.md`, `AUDIT_CAPABILITY_MATRIX.md`, Código
 
 Lista consolidada de débitos técnicos OPEN, gaps de funcionalidade e riscos do projeto RebanhoSync. Itens marcados como DONE são mantidos por histórico.
 

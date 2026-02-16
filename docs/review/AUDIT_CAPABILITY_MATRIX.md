@@ -1,8 +1,8 @@
 # Auditoria de Capacidades - RebanhoSync
 
-> **Data:** 2026-02-16 19:30
-> **Baseline:** Commit 3ce6f83
-> **Critério RIGOROSO:** Implementado = (DB + Edge Rules + Dexie + UI Write + Sync funcional)
+> **Status:** Derivado
+> **Baseline:** `e62465e`
+> **Última Atualização:** 2026-02-16
 
 ---
 
@@ -179,7 +179,7 @@
 - ✅ `migrations/0001_init.sql:table eventos_reproducao`
 - ✅ `migrations/0035_reproducao_hardening_v1.sql` (validações + linking)
 - ✅ `migrations/0036_reproducao_views_v1.sql` (reporting views)
-- ❌ **GAP:** FK macho_id → animais.id faltante (TD-020) _mas não bloqueia uso_
+- ❌ **GAP:** FK macho*id → animais.id faltante (TD-020) \_mas não bloqueia uso*
 
 **Edge Rules:**
 
