@@ -1,10 +1,11 @@
 # Roadmap do Produto (Governed)
 
 > **Status:** Derivado (Planejamento)
-> **Fonte de Verdade:** `00_MANIFESTO.md`, `TECH_DEBT.md`, `E2E_MVP.md`
-> **Última Atualização:** 2026-02-15
+> **Fonte de Verdade:** `00_MANIFESTO.md`, `TECH_DEBT.md` (OPEN), `IMPLEMENTATION_STATUS.md`, `E2E_MVP.md`
+> **Última Atualização:** 2026-02-16
+> **Baseline Commit:** 4c46c5c
 
-Este roadmap define as etapas para estabilização e lançamento do RebanhoSync, priorizando a resolução de dívidas técnicas críticas e a conformidade com o Manifesto do Produto.
+Este roadmap define as etapas para estabilização e lançamento do RebanhoSync, priorizando a resolução de dívidas técnicas **OPEN** críticas e a conformidade com o Manifesto do Produto.
 
 ---
 
@@ -13,22 +14,32 @@ Este roadmap define as etapas para estabilização e lançamento do RebanhoSync,
 1.  **Integridade Primeiro:** Nenhuma feature nova é iniciada enquanto houver Gaps P0 (Críticos) de integridade ou segurança.
 2.  **Offline-First:** Funcionalidades só são consideradas "Prontas" se funcionarem 100% sem internet.
 3.  **Qualidade E2E:** Cada milestone exige aprovação nos fluxos definidos em `E2E_MVP.md`.
+4.  **Evidência Obrigatória:** Cada claim deve ter evidência verificável (path de arquivo/migration).
 
 ---
 
-## 2. Milestones
+## 2. Milestones (6 Semanas)
 
-### M0: Estabilização do Piloto (Foco Atual)
+### M0: Estabilização Crítica (Semanas 1-2)
 
-**Objetivo:** Garantir que o app não quebre, não corrompa dados e permita operações básicas de todos os domínios do MVP.
+**Objetivo:** Resolver P0 bloqueantes e garantir integridade básica.
 
-- **Scope (Tech Debt P0/P1):**
+- **Scope (Tech Debt P0 - OPEN):**
   - `TD-001`: Implementar limpeza automática de `queue_rejections` (evitar estouro de storage).
+    - **Fluxo E2E:** Offline→Online→Sync (Fluxo 2)
   - `TD-006`: Implementar UI de Nutrição (feature existente no backend, inacessível no app).
-  - `TD-007`: Implementar UI de Reprodução (feature existente no backend, inacessível no app).
+    - **Fluxo E2E:** Hardening de Eventos (Fluxo 6)
   - `TD-008`: Bloquear movimentação para mesmo lote (Anti-Teleport Frontend).
-  - `TD-014`: Bloquear entrada de peso inválido/vazio (Validação Frontend).
-  - `TD-003`: Restringir `DELETE` de animais apenas para Owners (Segurança).
+    - **Fluxo E2E:** Anti-Teleporte (Fluxo 3)
+
+- **Semana 1:**
+  - [ ] TD-001: Rotina de limpeza de rejections (Job no syncWorker + UI em Reconciliacao.tsx)
+  - [ ] TD-008: Validação frontend em Registrar.tsx (desabilitar lote origem no Select destino)
+
+- **Semana 2:**
+  - [ ] TD-006: Criar NutricaoForm component + integração em Registrar.tsx
+  - [ ] Testar Fluxo 2 (Sync interrompido) com queue cleanup
+  - [ ] Testar Fluxo 3 (Anti-Teleporte) com validação frontend
 
 * **Dependencies:**
   - Nenhuma externa. Apenas refatoração interna.
@@ -39,16 +50,34 @@ Este roadmap define as etapas para estabilização e lançamento do RebanhoSync,
     - Após kill do app, `queue_gestures` e `client_tx_id` permanecem em Dexie.
     - Gesto termina em `DONE` ou `REJECTED` com registro em `queue_rejections`.
     - `state_*` consistente após pull (sem duplicação/falta de registros).
+    - Rejections antigas (>7 dias) são limpas automaticamente.
   - [ ] Todas as tabelas do MVP possuem interfaces de escrita funcionais (`/registrar`).
+  - [ ] Movimentação com origem==destino bloqueada no frontend.
 
-### M1: Consistência Operacional (Próximo)
+### M1: Consistência Operacional (Semanas 3-4)
 
 **Objetivo:** Refinar a validade dos dados e a usabilidade para evitar erros de operação.
 
-- **Scope (Tech Debt P1/P2):**
-  - `TD-011`: Criar catálogo básico de Produtos Veterinários (normalizar inputs de texto livre).
+- **Scope (Tech Debt P1 - OPEN):**
+  - `TD-014`: Bloquear entrada de peso inválido/vazio (Validação Frontend).
+    - **Fluxo E2E:** Hardening de Eventos (Fluxo 6)
+  - `TD-003`: Restringir `DELETE` de animais apenas para Owners (Segurança).
+    - **Fluxo E2E:** RBAC (Fluxo 1)
   - `TD-019`: Adicionar FKs faltantes em `eventos_movimentacao` (Integridade Referencial).
-  - `TD-020`: Adicionar FK faltante em `eventos_reproducao` (Integridade Referencial).
+    - **Fluxo E2E:** Anti-Teleporte (Fluxo 3)
+  - `TD-020`: Adicionar FK faltante em `eventos_reproducao.macho_id` (Integridade Referencial).
+    - **Fluxo E2E:** Hardening de Eventos (Fluxo 6)
+
+- **Semana 3:**
+  - [ ] TD-014: Validação de peso > 0 em Registrar.tsx (PesagemForm)
+  - [ ] TD-003: Migration RLS para restringir DELETE de animais (owner/manager only)
+  - [ ] Testar Fluxo 1 (RBAC) com restrição de DELETE
+
+- **Semana 4:**
+  - [ ] TD-019: Migration para criar FKs (from_lote_id, to_lote_id → lotes.id)
+  - [ ] TD-020: Migration para criar FK (macho_id → animais.id)
+  - [ ] Testar Fluxo 3 (Anti-Teleporte) com FK constraints
+  - [ ] Testar Fluxo 6 (Hardening) com todas validações
 
 * **Dependencies:**
   - M0 concluído.
@@ -56,14 +85,35 @@ Este roadmap define as etapas para estabilização e lançamento do RebanhoSync,
 - **Critérios de Aceite:**
   - [ ] Fluxos **Deduplicação de Agenda**, **Setup de Fazenda** e **Hardening de Eventos** (`E2E_MVP.md`) aprovados.
   - [ ] Impossível inserir eventos com IDs inválidos (Foreign Key violada).
+  - [ ] Cowboy não consegue deletar animais.
+  - [ ] Pesagem com peso <= 0 bloqueada antes do envio.
 
-### M2: Performance e Hardening Final
+### M2: Performance e Hardening Final (Semanas 5-6)
 
 **Objetivo:** Otimizar performance e fechar todos os fluxos E2E.
 
-- **Scope (Tech Debt P2 + E2E Coverage):**
+- **Scope (Tech Debt P2 - OPEN + P1 Opcional):**
   - `TD-004`: Índices de performance completos para escala.
+    - **Fluxo E2E:** Operacional (Fluxo 7)
   - `TD-015`: Otimizar cálculo de GMD (View ou Materialização).
+    - **Fluxo E2E:** Operacional (Fluxo 7)
+  - `TD-011`: _(Opcional - Nice to Have)_ Criar catálogo básico de Produtos Veterinários.
+    - **Fluxo E2E:** Hardening de Eventos (Fluxo 6)
+
+- **Semana 5:**
+  - [ ] TD-004: Migration para criar índices compostos otimizados
+    - [ ] `idx_eventos_fazenda_occurred` on `(fazenda_id, occurred_at)`
+    - [ ] `idx_eventos_animal_occurred` on `(animal_id, occurred_at)`
+    - [ ] `idx_eventos_fazenda_dominio` on `(fazenda_id, dominio)`
+  - [ ] Medir performance com dataset de teste (5000 animais)
+  - [ ] Validar via `EXPLAIN ANALYZE` em queries do Dashboard
+
+- **Semana 6:**
+  - [ ] TD-015: Criar view materializada `vw_gmd_dashboard` ou campo calculado
+  - [ ] Atualizar Dashboard.tsx para usar view otimizada
+  - [ ] Testar Fluxo 7 (Operacional) completo
+  - [ ] _(Se tempo permitir)_ TD-011: Criar tabela `produtos_veterinarios` e migrar UI
+
 - **Dependencies:**
   - M0 e M1 concluídos.
 - **Critérios de Aceite:**
@@ -73,6 +123,7 @@ Este roadmap define as etapas para estabilização e lançamento do RebanhoSync,
     - Dataset de teste documentado (ex: 5000 animais, histórico representativo).
     - Medição com `performance.now()` reportada no PR de implementação.
     - `EXPLAIN ANALYZE` valida uso de índices em queries do Dashboard.
+    - Dashboard carrega em < 2s com 5000 animais.
 
 ---
 
