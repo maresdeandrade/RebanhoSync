@@ -51,7 +51,7 @@ Este documento define os fluxos críticos de validação do sistema.
 ## Fluxo 7: Operacional
 
 - Feature flags de fazenda.
-- Dashboard de monitoramento de rejeições.
+- Dashboard de monitoramento de rejeições (Planejado - M2).
 
 ---
 

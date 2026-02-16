@@ -55,7 +55,7 @@ Pessoas ou empresas (compradores, vendedores).
 
 - **Dados:** `tipo`, `documento`, `telefone`.
 
-### `categorias_zootecnicas`
+### `categorias_zootecnicas` (Planejado - Fase 2)
 
 Regras de classificação automática (Idade/Sexo).
 
@@ -84,7 +84,7 @@ Cabeças de gado.
 - **FK:** `lote_id`, `pai_id`, `mae_id`.
 - **Dados:** `identificacao`, `sexo`, `status` (ativo/vendido/morto), `origem`.
 
-### `animais_sociedade`
+### `animais_sociedade` (Planejado - Fase 2)
 
 Rastreio de propriedade de terceiros.
 

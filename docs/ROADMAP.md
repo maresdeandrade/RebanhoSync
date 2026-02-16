@@ -35,7 +35,10 @@ Este roadmap define as etapas para estabilização e lançamento do RebanhoSync,
 
 - **Critérios de Aceite:**
   - [ ] Fluxos **Autenticação e Fazenda**, **RBAC**, **Offline→Online→Sync** e **Anti-Teleporte** (`E2E_MVP.md`) aprovados.
-  - [ ] Zero perda de dados em testes de sync interrompido.
+  - [ ] Sync interrompido (Fluxo 2):
+    - Após kill do app, `queue_gestures` e `client_tx_id` permanecem em Dexie.
+    - Gesto termina em `DONE` ou `REJECTED` com registro em `queue_rejections`.
+    - `state_*` consistente após pull (sem duplicação/falta de registros).
   - [ ] Todas as tabelas do MVP possuem interfaces de escrita funcionais (`/registrar`).
 
 ### M1: Consistência Operacional (Próximo)
@@ -66,7 +69,10 @@ Este roadmap define as etapas para estabilização e lançamento do RebanhoSync,
 - **Critérios de Aceite:**
   - [ ] Fluxo **Operacional** (`E2E_MVP.md`) aprovado.
   - [ ] Todo o roteiro `E2E_MVP.md` aprovado com sucesso.
-  - [ ] Queries do Dashboard respondem em < 2s com 5000 animais.
+  - [ ] Performance validada (TD-004, TD-015):
+    - Dataset de teste documentado (ex: 5000 animais, histórico representativo).
+    - Medição com `performance.now()` reportada no PR de implementação.
+    - `EXPLAIN ANALYZE` valida uso de índices em queries do Dashboard.
 
 ---
 

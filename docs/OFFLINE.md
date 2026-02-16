@@ -22,7 +22,8 @@ Active Record mutável. Tabela `state_*`.
 
 Log append-only. Tabela `event_*`.
 
-- Ex: `event_eventos`, `event_eventos_sanitario`.
+- `event_eventos` (Header)
+- `event_eventos_sanitario`, `event_eventos_pesagem`, `event_eventos_nutricao`, `event_eventos_movimentacao`, `event_eventos_reproducao`, `event_eventos_financeiro`
 
 ### Queue Stores
 

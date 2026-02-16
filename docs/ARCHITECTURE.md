@@ -25,7 +25,7 @@ Para detalhes de versões, bibliotecas e estrutura de arquivos, consulte os docu
 
 O sistema adota o padrão **Two Rails** para desacoplar o planejamento (Agenda) da execução (Eventos).
 
-### Rail 1: Agenda (Mutável)
+### Rail 1 (Agenda) - Mutável
 
 - **Propósito:** Planejamento e intenção futura.
 - **Tabela:** `agenda_itens`.
@@ -34,7 +34,7 @@ O sistema adota o padrão **Two Rails** para desacoplar o planejamento (Agenda) 
   - Deduplicação via `dedup_key`.
 - **Stores Locais:** `state_agenda_itens`.
 
-### Rail 2: Eventos (Append-Only)
+### Rail 2 (Eventos) - Append-Only
 
 - **Propósito:** Registro histórico de fatos (Source of Truth).
 - **Tabela:** `eventos` + Tabelas Satélites (`eventos_sanitario`, etc).

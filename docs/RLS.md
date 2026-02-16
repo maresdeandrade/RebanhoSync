@@ -27,7 +27,7 @@ Este documento define as regras de Row Level Security (RLS) e Controle de Acesso
 | **Animais**   | CRUD           |  ✅   |   ✅    |   ✅   |
 | **Operação**  | Eventos/Agenda |  ✅   |   ✅    |   ✅   |
 
-> **Nota:** A escrita em `animais` é permitida para Cowboys para agilidade, mas o `DELETE` pode ser restrito futuramente.
+> **Nota:** A escrita em `animais` é permitida para Cowboys para agilidade. O `DELETE` está planejado para restrição a Owner/Manager (ver [TD-003](./TECH_DEBT.md)).
 
 ---
 
