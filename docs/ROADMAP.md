@@ -27,11 +27,14 @@ Este roadmap define as etapas para estabilização e lançamento do RebanhoSync,
   - `TD-006`: Implementar UI de Nutrição (feature existente no backend, inacessível no app).
   - `TD-007`: Implementar UI de Reprodução (feature existente no backend, inacessível no app).
   - `TD-008`: Bloquear movimentação para mesmo lote (Anti-Teleport Frontend).
+  - `TD-014`: Bloquear entrada de peso inválido/vazio (Validação Frontend).
   - `TD-003`: Restringir `DELETE` de animais apenas para Owners (Segurança).
-- **Dependencies:**
+
+* **Dependencies:**
   - Nenhuma externa. Apenas refatoração interna.
+
 - **Critérios de Aceite:**
-  - [ ] Fluxos E2E 0, 1, 2 e 3 (`E2E_MVP.md`) aprovados.
+  - [ ] Fluxos **Autenticação e Fazenda**, **RBAC**, **Offline→Online→Sync** e **Anti-Teleporte** (`E2E_MVP.md`) aprovados.
   - [ ] Zero perda de dados em testes de sync interrompido.
   - [ ] Todas as tabelas do MVP possuem interfaces de escrita funcionais (`/registrar`).
 
@@ -41,28 +44,29 @@ Este roadmap define as etapas para estabilização e lançamento do RebanhoSync,
 
 - **Scope (Tech Debt P1/P2):**
   - `TD-011`: Criar catálogo básico de Produtos Veterinários (normalizar inputs de texto livre).
-  - `TD-014`: Bloquear entrada de peso inválido/vazio.
   - `TD-019`: Adicionar FKs faltantes em `eventos_movimentacao` (Integridade Referencial).
   - `TD-020`: Adicionar FK faltante em `eventos_reproducao` (Integridade Referencial).
-  - `TD-015`: Otimizar performance de cálculo de GMD (View ou Materialização).
-- **Dependencies:**
+
+* **Dependencies:**
   - M0 concluído.
+
 - **Critérios de Aceite:**
-  - [ ] Fluxos E2E 4, 5 e 6 (`E2E_MVP.md`) aprovados.
+  - [ ] Fluxos **Deduplicação de Agenda**, **Setup de Fazenda** e **Hardening de Eventos** (`E2E_MVP.md`) aprovados.
   - [ ] Impossível inserir eventos com IDs inválidos (Foreign Key violada).
-  - [ ] Relatórios básicos gerados sem timeout.
 
-### M2: V1 Release Candidates
+### M2: Performance e Hardening Final
 
-**Objetivo:** Polimento final para lançamento amplo.
+**Objetivo:** Otimizar performance e fechar todos os fluxos E2E.
 
-- **Scope (Feature Completion):**
-  - Dashboard Operacional completo (consolidando dados de todos os domínios).
-  - Relatórios de Auditoria para Managers (visualizar logs de sync).
+- **Scope (Tech Debt P2 + E2E Coverage):**
   - `TD-004`: Índices de performance completos para escala.
+  - `TD-015`: Otimizar cálculo de GMD (View ou Materialização).
+- **Dependencies:**
+  - M0 e M1 concluídos.
 - **Critérios de Aceite:**
-  - [ ] Todo o `E2E_MVP.md` aprovado com sucesso.
-  - [ ] Performance aceitável (>90 score Lighthouse) em 3G.
+  - [ ] Fluxo **Operacional** (`E2E_MVP.md`) aprovado.
+  - [ ] Todo o roteiro `E2E_MVP.md` aprovado com sucesso.
+  - [ ] Queries do Dashboard respondem em < 2s com 5000 animais.
 
 ---
 
