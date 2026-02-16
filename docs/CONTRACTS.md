@@ -2,7 +2,7 @@
 
 > **Status:** Normativo
 > **Fonte de Verdade:** Edge Function `sync-batch`
-> **Última Atualização:** 2026-02-15
+> **Última Atualização:** 2026-02-16
 
 Este documento define os contratos da API de Sincronização e códigos de retorno.
 

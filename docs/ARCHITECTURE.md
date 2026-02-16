@@ -2,7 +2,7 @@
 
 > **Status:** Normativo
 > **Fonte de Verdade:** Código Fonte (Implementação Two Rails)
-> **Última Atualização:** 2026-02-15
+> **Última Atualização:** 2026-02-16
 
 Este documento é a **Fonte de Verdade** arquitetural do sistema RebanhoSync. Ele consolida os princípios de Two Rails, Offline-First, Multi-Tenancy e Segurança.
 

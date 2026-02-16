@@ -2,7 +2,7 @@
 
 > **Status:** Normativo
 > **Fonte de Verdade:** Implementação `src/lib/offline/`
-> **Última Atualização:** 2026-02-15
+> **Última Atualização:** 2026-02-16
 
 Este documento define a implementação técnica da persistência local (Dexie.js) e sincronização.
 

@@ -2,7 +2,7 @@
 
 > **Status:** Normativo
 > **Fonte de Verdade:** SQL Policies (PostgreSQL)
-> **Última Atualização:** 2026-02-15
+> **Última Atualização:** 2026-02-16
 
 Este documento define as regras de Row Level Security (RLS) e Controle de Acesso (RBAC).
 
@@ -27,7 +27,7 @@ Este documento define as regras de Row Level Security (RLS) e Controle de Acesso
 | **Animais**   | CRUD           |  ✅   |   ✅    |   ✅   |
 | **Operação**  | Eventos/Agenda |  ✅   |   ✅    |   ✅   |
 
-> **Nota:** A escrita em `animais` é permitida para Cowboys para agilidade. O `DELETE` está planejado para restrição a Owner/Manager (ver [TD-003](./TECH_DEBT.md)).
+> **Nota:** A escrita em `animais` é permitida para Cowboys para agilidade operacional. **Gap Aberto ([TD-003](./TECH_DEBT.md)):** `DELETE` de animais não está restrito a Owner/Manager (permite Cowboy inadvertidamente).
 
 ---
 

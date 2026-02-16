@@ -2,7 +2,7 @@
 
 > **Status:** Normativo
 > **Fonte de Verdade:** Código Fonte (`sync-batch`, Migrations)
-> **Última Atualização:** 2026-02-15
+> **Última Atualização:** 2026-02-16
 
 Este documento define regras de domínio, invariantes e validações para os módulos de Eventos e Agenda.
 

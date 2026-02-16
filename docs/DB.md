@@ -2,7 +2,7 @@
 
 > **Status:** Normativo
 > **Fonte de Verdade:** Migrations PostgreSQL (Supabase)
-> **Última Atualização:** 2026-02-15
+> **Última Atualização:** 2026-02-16
 
 Este documento define o schema lógico do banco de dados, alinhado às migrações aplicadas.
 
