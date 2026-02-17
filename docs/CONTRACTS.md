@@ -2,7 +2,9 @@
 
 ## Endpoint: `/functions/v1/sync-batch`
 
-Edge Function que recebe batches de operações do cliente e as aplica transacionalmente no banco de dados.
+Edge Function que recebe batches de operações do cliente e as aplica **sequencialmente** no banco de dados.
+
+> **Nota sobre Atomicidade**: O batch **NÃO** é executado em uma transação única de banco de dados (exceto pela validação de Anti-Teleport que rejeita tudo antes da execução). Se uma operação falhar no meio do batch, as anteriores **permanecem aplicadas**. O cliente é responsável por lidar com falhas parciais (rollback local) e eventual consistência.
 
 ---
 
@@ -20,17 +22,18 @@ Authorization: Bearer <access_token>
 2. Extrai `session.access_token`
 3. Envia no header Authorization
 4. Servidor valida JWT via `supabase.auth.getUser(jwt)`
+5. Servidor valida membership em `user_fazendas` (role e deleted_at)
 
 ### Respostas de Autenticação
 
-- **401 Unauthorized**: JWT ausente ou inválido
+- **401 Unauthorized**: JWT ausente, malformado ou inválido (expirado/revogado)
 
   ```json
   { "error": "Unauthorized - missing JWT" }
   { "error": "Unauthorized - invalid JWT" }
   ```
 
-- **403 Forbidden**: JWT válido mas usuário não tem membership na `fazenda_id`
+- **403 Forbidden**: JWT válido mas usuário não tem membership ativo na `fazenda_id`
   ```json
   { "error": "Forbidden - no access to this farm" }
   ```
@@ -60,32 +63,15 @@ Authorization: Bearer <access_token>
     },
     {
       "client_op_id": "uuid2",
-      "table": "eventos",
-      "action": "INSERT",
-      "record": {
-        "id": "uuid",
-        "dominio": "movimentacao",
-        "occurred_at": "2026-02-05T22:00:00Z",
-        "animal_id": "uuid"
-      }
-    },
-    {
-      "client_op_id": "uuid3",
-      "table": "eventos_movimentacao",
+      "table": "eventos_reproducao",
       "action": "INSERT",
       "record": {
         "evento_id": "uuid",
-        "from_lote_id": "uuid-old",
-        "to_lote_id": "uuid-new"
-      }
-    },
-    {
-      "client_op_id": "uuid4",
-      "table": "animais",
-      "action": "UPDATE",
-      "record": {
-        "id": "uuid",
-        "lote_id": "uuid-new"
+        "tipo": "cobertura",
+        "macho_id": "uuid-touro",
+        "payload": {
+          "schema_version": 1
+        }
       }
     }
   ]
@@ -96,7 +82,7 @@ Authorization: Bearer <access_token>
 
 #### Nível de Batch
 
-- **`client_id`** (string): Identificador do cliente (ex: `browser:uuid`, gerado 1x e salvo em localStorage)
+- **`client_id`** (string): Identificador do cliente (ex: `browser:uuid`)
 - **`fazenda_id`** (uuid): Fazenda alvo da operação (servidor valida membership)
 - **`client_tx_id`** (uuid): ID único da transação/gesto (agrupa operações relacionadas)
 - **`ops`** (array): Lista de operações a serem aplicadas (ordem importa!)
@@ -104,22 +90,21 @@ Authorization: Bearer <access_token>
 #### Nível de Operação
 
 - **`client_op_id`** (uuid): ID único da operação (idempotência - duplicata retorna APPLIED)
-- **`table`** (string): Nome da tabela remota (ex: `animais`, `eventos`, `eventos_sanitario`)
+- **`table`** (string): Nome da tabela remota (ex: `animais`, `eventos`, `eventos_reproducao`)
 - **`action`** (string): `INSERT | UPDATE | DELETE`
 - **`record`** (object): Dados da operação
-  - Para INSERT: payload completo (exceto fazenda_id, client_id, client_op_id, client_tx_id - servidor injeta)
-  - Para UPDATE: campos a atualizar + `id` obrigatório
-  - Para DELETE: apenas `id` obrigatório (soft delete - servidor seta deleted_at)
+  - Para INSERT: payload completo (exceto metadados injetados pelo servidor)
+  - Para UPDATE: campos a atualizar + `id` (ou PK) obrigatório
+  - Para DELETE: `id` (ou PK) obrigatório (soft delete - servidor seta `deleted_at`)
 
 ### Metadata de Sync (Injetada pelo Servidor)
 
-O servidor **sempre injeta** nos records:
+O servidor **sempre injeta/sobrescreve** nos records para tabelas com tenant (`TABLES_WITH_FAZENDA`):
 
 - `fazenda_id`: Valor do request (servidor é autoritativo - ignora valor do cliente)
 - `client_id`: Valor do request
 - `client_op_id`: Valor da operação
 - `client_tx_id`: Valor do request
-- `client_recorded_at`: Timestamp não é enviado pelo cliente no record - servidor usa client_recorded_at do gesto local, mas não sobrescreve se vier
 
 ---
 
@@ -138,13 +123,7 @@ O servidor **sempre injeta** nos records:
       "op_id": "uuid3",
       "status": "REJECTED",
       "reason_code": "ANTI_TELEPORTE",
-      "reason_message": "UPDATE animais.lote_id sem evento base de movimentação no mesmo tx"
-    },
-    {
-      "op_id": "uuid4",
-      "status": "REJECTED",
-      "reason_code": "ANTI_TELEPORTE",
-      "reason_message": "..."
+      "reason_message": "UPDATE animais.lote_id sem evento base de movimentacao no mesmo tx"
     }
   ]
 }
@@ -152,7 +131,7 @@ O servidor **sempre injeta** nos records:
 
 ### Campos
 
-- **`server_tx_id`** (string): ID gerado pelo servidor (padrão: `srv-<8 primeiros chars do client_tx_id>`)
+- **`server_tx_id`** (string): ID gerado pelo servidor (`srv-` + 8 primeiros chars do `client_tx_id`)
 - **`client_tx_id`** (uuid): Echo do client_tx_id do request
 - **`results`** (array): Status de cada operação (mesma ordem do request)
 
@@ -160,7 +139,7 @@ O servidor **sempre injeta** nos records:
 
 #### APPLIED
 
-Sucesso total. Operação aplicada com sucesso ou replay idempotente (client_op_id duplicado).
+Sucesso total. Operação aplicada com sucesso ou replay idempotente (client_op_id duplicado - código `23505`).
 
 ```json
 { "op_id": "uuid", "status": "APPLIED" }
@@ -168,7 +147,7 @@ Sucesso total. Operação aplicada com sucesso ou replay idempotente (client_op_
 
 #### APPLIED_ALTERED
 
-Sucesso com modificação. Usado quando o servidor aplica a operação mas com ajustes (ex: dedup de agenda).
+Sucesso com modificação. Usado especificamente para `agenda_itens` quando ocorre colisão de `dedup_key` (código `23505` específico).
 
 ```json
 {
@@ -178,337 +157,131 @@ Sucesso com modificação. Usado quando o servidor aplica a operação mas com a
 }
 ```
 
-**Caso de uso**: Agenda com `dedup_key` duplicado. O servidor NÃO cria nova tarefa, mas retorna sucesso alterado (cliente entende que a tarefa já existe).
+**Significado**: A tarefa já existe. O cliente deve tratar como sucesso (noop).
 
 #### REJECTED
 
-Falha na regra de negócio. **Requer rollback local** pelo cliente.
+Falha na regra de negócio ou erro de banco. **Requer rollback local** pelo cliente.
 
 ```json
 {
   "op_id": "uuid",
   "status": "REJECTED",
   "reason_code": "ANTI_TELEPORTE",
-  "reason_message": "UPDATE animais.lote_id sem evento base de movimentação no mesmo tx"
+  "reason_message": "UPDATE animais.lote_id sem evento base de movimentacao no mesmo tx"
 }
 ```
 
-**Reason Codes**:
+---
 
-- `ANTI_TELEPORTE`: Movimentação sem evento correlato
-- `BLOCKED_TABLE`: Tentativa de modificar tabela bloqueada
-- `23505`: Unique constraint violation (idempotência ou dedup)
-- `VALIDATION_FINANCEIRO_VALOR_TOTAL`: Valor total do evento financeiro deve ser positivo (> 0)
-- `VALIDATION_NUTRICAO_QUANTIDADE`: Quantidade de alimento deve ser positiva (> 0) quando informada
-- `VALIDATION_MOVIMENTACAO_DESTINO`: Evento de movimentação deve ter destino (`to_lote_id` ou `to_pasto_id`)
-- `VALIDATION_MOVIMENTACAO_ORIGEM_DESTINO`: Origem e destino da movimentação não podem ser iguais
-- `VALIDATION_FINANCEIRO_CONTRAPARTE`: Contraparte não pertence à mesma fazenda
-- `VALIDATION_MISSING_PRIMARY_KEY`: Operação de UPDATE/DELETE sem campo id/evento_id obrigatório
-- Outros códigos de erro do Postgres
+## Reason Codes (Mapeamento Autoritativo)
+
+O servidor normaliza erros do banco e validações de negócio para os seguintes códigos:
+
+### Validações de Negócio (Pré-Insert)
+
+| Código | Descrição |
+| :--- | :--- |
+| `SECURITY_BLOCKED_TABLE` | Tentativa de modificar tabela bloqueada (`user_fazendas`, `user_profiles`, `user_settings`) |
+| `ANTI_TELEPORTE` | Falha na validação estrita de movimentação (ver regras abaixo) |
+| `PAYLOAD_SCHEMA_VERSION_REQUIRED` | `eventos_reproducao` requer `payload.schema_version: 1` |
+| `VALIDATION_ERROR` | Erro genérico de validação (ex: Macho ID obrigatório em Cobertura/IA) |
+| `INVALID_EPISODE_REFERENCE` | `episode_evento_id` inválido ou não encontrado em `eventos_reproducao` |
+| `EPISODE_LINK_REQUIRED_FOR_PARTO` | Parto requer vínculo com evento de serviço anterior |
+| `VALIDATION_MISSING_PRIMARY_KEY` | UPDATE/DELETE sem ID ou PK |
+
+### Erros de Banco (Pós-Insert)
+
+Mapeamento de exceções do Postgres (`normalizeDbError`):
+
+| Código | Origem (Constraint/Erro) | Descrição |
+| :--- | :--- | :--- |
+| `VALIDATION_FINANCEIRO_VALOR_TOTAL` | `ck_evt_fin_valor_total_pos` | Valor total deve ser positivo |
+| `VALIDATION_NUTRICAO_QUANTIDADE` | `ck_evt_nutricao_quantidade_pos_nullable` | Quantidade deve ser positiva |
+| `VALIDATION_MOVIMENTACAO_DESTINO` | `ck_evt_mov_destino_required` | Destino (lote ou pasto) obrigatório |
+| `VALIDATION_MOVIMENTACAO_ORIGEM_DESTINO` | `ck_evt_mov_from_to_diff` | Origem e destino devem ser diferentes |
+| `VALIDATION_FINANCEIRO_CONTRAPARTE` | `fk_evt_fin_contraparte_fazenda` | Contraparte deve pertencer à mesma fazenda |
+| `CHECK_CONSTRAINT_VIOLATION` | Outros `23514` | Violação de check constraint genérica |
+| `FOREIGN_KEY_VIOLATION` | Outros `23503` | Violação de chave estrangeira genérica |
+| `NOT_NULL_VIOLATION` | `23502` | Campo obrigatório nulo |
+| `INVALID_INPUT_SYNTAX` | `22P02` | Erro de sintaxe (ex: UUID inválido) |
+| `PERMISSION_DENIED` | `42501` | Permissão negada (RLS) |
+| `DB_<code>` | Outros | Fallback para código do Postgres (ex: `DB_23505` se não tratado) |
+| `INTERNAL_ERROR` | Exception | Erro não tratado no servidor |
 
 ---
 
-## Regras de Validação
+## Regras de Validação Específicas
 
 ### 1. Anti-Teleport (Movimentação)
 
-**Regra**: `UPDATE animais.lote_id` **REQUER** evento base + detalhe de movimentação no **mesmo batch**.
+**Escopo**: Batch inteiro. Se falhar, **todo o batch retorna REJECTED** (atomicidade simulada na validação).
 
-**Validação Pré-Aplicação** (antes de executar qualquer operação):
+**Ativação**: Depende de Feature Flag `strict_anti_teleport` (configurável em `fazendas.metadata`).
 
-1. Servidor mapeia `animal_id` → `evento_id` para todas ops com `table=eventos`, `action=INSERT`, `dominio=movimentacao`
-2. Servidor mapeia `evento_id` de todas ops com `table=eventos_movimentacao`, `action=INSERT`
-3. Para cada `UPDATE animais` com `lote_id` alterado:
-   - Verifica se existe evento base para este `animal_id`
-   - Verifica se existe detalhe `eventos_movimentacao` com este `evento_id`
-   - Se **qualquer** validação falhar → **REJEITA TODO O BATCH**
+**Regra**: `UPDATE animais` alterando `lote_id` ou `pasto_id` **REQUER**:
+1. Evento base (`eventos`) com `dominio='movimentacao'` no mesmo batch.
+2. Detalhe (`eventos_movimentacao`) vinculado ao evento base no mesmo batch.
+3. Exceção: Venda (`eventos` financeiro + `eventos_financeiro` tipo venda) permite saída do lote/pasto (setar null).
 
-**Atomicidade**: Se anti-teleport falhar, **todas as operações do batch retornam REJECTED** (previne estado inconsistente).
+**Erro**:
+- `reason_code`: `ANTI_TELEPORTE`
+- `reason_message`: "UPDATE animais.lote_id/pasto_id sem evento base de movimentacao no mesmo tx" ou "Evento de movimentacao sem detalhe correlato..."
 
-**Exemplo de Batch Válido**:
+### 2. Eventos de Reprodução (Hardening)
 
-```json
-{
-  "ops": [
-    {
-      "table": "eventos",
-      "action": "INSERT",
-      "record": { "id": "evt1", "dominio": "movimentacao", "animal_id": "a1" }
-    },
-    {
-      "table": "eventos_movimentacao",
-      "action": "INSERT",
-      "record": {
-        "evento_id": "evt1",
-        "from_lote_id": "l1",
-        "to_lote_id": "l2"
-      }
-    },
-    {
-      "table": "animais",
-      "action": "UPDATE",
-      "record": { "id": "a1", "lote_id": "l2" }
-    }
-  ]
-}
-```
+**Regra 1**: Payload Versioning
+- Todo INSERT em `eventos_reproducao` deve ter `record.payload.schema_version = 1`.
+- Erro: `PAYLOAD_SCHEMA_VERSION_REQUIRED`.
 
-**Exemplo de Batch Inválido**:
+**Regra 2**: Macho Obrigatório
+- Tipos `cobertura` e `IA` exigem `macho_id`.
+- Erro: `VALIDATION_ERROR`.
 
-```json
-{
-  "ops": [
-    {
-      "table": "animais",
-      "action": "UPDATE",
-      "record": { "id": "a1", "lote_id": "l2" }
-    }
-  ]
-}
-// REJECTED: UPDATE lote_id sem evento correlato
-```
+**Regra 3**: Episode Linking (Parto/Diagnóstico)
+- Se `episode_evento_id` for fornecido: Servidor valida existência e tipo (deve ser Cobertura/IA).
+- Se `tipo='parto'` e link não fornecido: Erro `EPISODE_LINK_REQUIRED_FOR_PARTO`.
+- Se `tipo='diagnostico'` e link não fornecido: Aceita (pode ser "unlinked" se configurado).
+
+### 3. Blocked Tables
+
+**Regra**: Tabelas sensíveis de sistema não podem ser modificadas via sync.
+- `user_fazendas`
+- `user_profiles`
+- `user_settings`
+
+**Erro**: `SECURITY_BLOCKED_TABLE`.
+
+### 4. Tenant Consistency
+
+**Regra**: O `fazenda_id` do **request** sobrescreve qualquer `fazenda_id` enviado nos records das tabelas tenant-scoped.
+- Isso previne injeção de dados em outros tenants.
 
 ---
 
-### 2. Blocked Tables
+## Ordem de Execução
 
-**Regra**: Tabelas sensíveis **não podem** ser modificadas via `sync-batch`.
-
-**Tabelas Bloqueadas**:
-
-- `user_fazendas` (membership só via RPC)
-- `user_profiles` (self-only via RLS)
-- `user_settings` (self-only via RLS)
-
-**Resposta**:
-
-```json
-{
-  "op_id": "uuid",
-  "status": "REJECTED",
-  "reason_code": "BLOCKED_TABLE",
-  "reason_message": "Table user_fazendas cannot be modified via sync"
-}
-```
+As operações são executadas **sequencialmente** na ordem do array `ops`.
+- O servidor **NÃO** reordena operações.
+- O cliente é responsável por enviar dependências antes de dependentes (ex: INSERT Animal antes de INSERT Evento).
 
 ---
 
-### 3. Tenant Consistency (Server Authoritative)
+## Compatibilidade com Cliente
 
-**Regra**: O `fazenda_id` do **request** é sempre autoritativo. Servidor **ignora** `fazenda_id` nos records individuais.
+### Tratamento de Rejeições
 
-**Código do servidor**:
+O cliente deve monitorar `results` por `status: REJECTED`.
+- Se houver **qualquer** rejeição, o cliente deve realizar **rollback local** das operações otimistas.
+- A rejeição deve ser registrada em `queue_rejections` para feedback ao usuário.
+- O Gesto (transação) deve ser marcado como `REJECTED` e não retentado automaticamente.
 
-```typescript
-const record = { ...op.record };
-if (TABLES_WITH_FAZENDA.has(op.table)) {
-  record.fazenda_id = fazenda_id; // Force request fazenda_id
-}
-```
+### Tratamento de Idempotência
 
-**Motivo**: Previne ataques onde cliente tenta inserir dados em outra fazenda.
+- `APPLIED` em operação já existente (replay) é considerado sucesso.
+- O cliente não precisa fazer nada.
 
----
+### Tratamento de Dedup (Agenda)
 
-### 4. Deduplicação de Agenda
-
-**Regra**: `agenda_itens` com mesmo `dedup_key` e `status=agendado` na mesma fazenda **não duplicam**.
-
-**Índice**:
-
-```sql
-CREATE UNIQUE INDEX ux_agenda_dedup_active
-  ON agenda_itens(fazenda_id, dedup_key)
-  WHERE status = 'agendado' AND deleted_at IS NULL AND dedup_key IS NOT NULL;
-```
-
-**Resposta em Colisão**:
-
-```json
-{
-  "op_id": "uuid",
-  "status": "APPLIED_ALTERED",
-  "altered": { "dedup": "collision_noop" }
-}
-```
-
-Cliente interpreta como: "Tarefa já existe, não é erro".
-
----
-
-### 5. Idempotência (client_op_id)
-
-**Regra**: Operações com `client_op_id` duplicado retornam `APPLIED` sem executar novamente.
-
-**Índice**:
-
-```sql
-CREATE UNIQUE INDEX ux_fazendas_op
-  ON fazendas(client_op_id)
-  WHERE deleted_at IS NULL;
-```
-
-**Cenário**:
-
-1. Cliente envia op com `client_op_id=abc123`
-2. Servidor aplica com sucesso
-3. Cliente perde conexão antes de receber resposta
-4. Cliente re-envia mesma op (`client_op_id=abc123`)
-5. Postgres rejeita com `23505: unique_violation`
-6. Servidor interpreta como idempotência e retorna `APPLIED`
-
-**Código do servidor**:
-
-```typescript
-if (error.code === "23505") {
-  // Idempotência: já aplicado
-  results.push({ op_id: op.client_op_id, status: "APPLIED" });
-}
-```
-
----
-
-## HTTP Status Codes
-
-### 200 OK
-
-Batch processado. **Não significa sucesso total** - verificar `results[].status` individual.
-
-```json
-{
-  "server_tx_id": "srv-abc123de",
-  "client_tx_id": "uuid",
-  "results": [
-    { "op_id": "uuid1", "status": "APPLIED" },
-    { "op_id": "uuid2", "status": "REJECTED", "reason_code": "..." }
-  ]
-}
-```
-
-### 401 Unauthorized
-
-JWT ausente ou inválido.
-
-```json
-{ "error": "Unauthorized - missing JWT" }
-{ "error": "Unauthorized - invalid JWT" }
-```
-
-### 403 Forbidden
-
-JWT válido mas usuário não tem membership na `fazenda_id`.
-
-```json
-{ "error": "Forbidden - no access to this farm" }
-```
-
-### 500 Internal Server Error
-
-Erro fatal no servidor (não relacionado a regras de negócio).
-
-```json
-{ "error": "Error message" }
-```
-
----
-
-## Ordem de Execução (Importante!)
-
-Operações são aplicadas **na ordem do array `ops`**. Cliente deve ordenar dependências corretamente:
-
-### Exemplo: Criar Animal + Evento Sanitário
-
-```json
-{
-  "ops": [
-    { "table": "animais", "action": "INSERT", "record": { "id": "a1", ... } },
-    { "table": "eventos", "action": "INSERT", "record": { "id": "e1", "animal_id": "a1", ... } },
-    { "table": "eventos_sanitario", "action": "INSERT", "record": { "evento_id": "e1", ... } }
-  ]
-}
-```
-
-**Ordem correta**: Animal → Evento → Detalhe
-
-**Ordem incorreta** (ERRO):
-
-```json
-{
-  "ops": [
-    { "table": "eventos", "action": "INSERT", "record": { "id": "e1", "animal_id": "a1", ... } },
-    { "table": "animais", "action": "INSERT", "record": { "id": "a1", ... } }
-  ]
-}
-// REJECTED: foreign key constraint (animal_id não existe ainda)
-```
-
----
-
-## Tratamento de Rejeições (Cliente)
-
-### Fluxo do Cliente após REJECTED
-
-1. Servidor retorna `results` com pelo menos uma op `REJECTED`
-2. Cliente marca gesto como `status=REJECTED` em `queue_gestures`
-3. Cliente executa **rollback determinístico**:
-   ```typescript
-   await db.transaction("rw", [...getAffectedStores(ops)], async () => {
-     for (const op of [...ops].reverse()) {
-       await rollbackOpLocal(op);
-     }
-   });
-   ```
-4. Cliente salva rejection em `queue_rejections` para notificar usuário:
-   ```typescript
-   await db.queue_rejections.add({
-     client_tx_id,
-     client_op_id,
-     fazenda_id,
-     table: op.table,
-     action: op.action,
-     reason_code,
-     reason_message,
-     created_at: new Date().toISOString(),
-   });
-   ```
-
-### Rollback em Ordem Reversa
-
-Necessário para dependências (ex: evento → detalhe → atualização de animal):
-
-```typescript
-// Ordem de aplicação otimista:
-// 1. INSERT evento
-// 2. INSERT detalhe
-// 3. UPDATE animal
-
-// Ordem de rollback (reversa):
-// 1. Reverte UPDATE animal (restaura before_snapshot)
-// 2. DELETE detalhe (INSERT revertido)
-// 3. DELETE evento (INSERT revertido)
-```
-
----
-
-## Retry e Persistência
-
-### Retry (falhas de rede)
-
-- Cliente retenta até **3 vezes** (retry_count < 3)
-- Após 3 falhas, gesto vai para `status=ERROR`
-- Cliente **NÃO** retenta gestos `REJECTED` (são erros de negócio, não de rede)
-
-### GestureStatus State Machine
-
-```
-PENDING → SYNCING → DONE (sucesso)
-                  → REJECTED (rollback feito)
-                  → PENDING (retry < 3)
-                  → ERROR (retry >= 3)
-```
-
-### Persistência de Erros
-
-- `queue_rejections`: Erros de negócio (REJECTED)
-- `queue_gestures.last_error`: Erros de rede/sistema
-- Ambos permitem que UI mostre feedback ao usuário
+- `APPLIED_ALTERED` com `altered.dedup = 'collision_noop'` é considerado sucesso.
+- O cliente deve manter o item de agenda local como "sincronizado".
