@@ -1,84 +1,152 @@
-# Mapa do Sistema: REBANHOSYNC
+# System Map & Risk Assessment
 
-Este documento apresenta o resultado de uma revisão exploratória do repositório para mapear a arquitetura, stack e riscos técnicos do projeto.
+**Status:** Derivado (Generated from code analysis)  
+**Baseline:** `0bb8829`  
+**Data:** 2025-02-17
 
-## 1. Stack Tecnológico
+## 1. System Overview
 
-### Frontend (Web/Mobile PWA)
-- **Core:** React 19, Vite 6, TypeScript.
-- **UI:** TailwindCSS, Shadcn/UI (Radix Primitives), Lucide React.
-- **State/Cache:** `@tanstack/react-query` (server state), `dexie-react-hooks` (local DB).
-- **Forms:** `react-hook-form` + `zod`.
-- **Utils:** `date-fns`.
+RebanhoSync is an **Offline-First**, **Multi-Tenant** Livestock Management System. It uses a **Two-Rails Architecture** (State vs. Events) to handle local data mutations optimistically while ensuring server-side consistency via a synchronization queue.
 
-### Camada Offline & Dados
-- **Local DB:** Dexie.js (IndexedDB wrapper).
-  - Schema versionado (v6 atual).
-  - Estratégia "Two Rails": Tabelas de Estado (`state_*`) vs Tabelas de Eventos (`event_*`).
-- **Sync Engine:** Customizado (`src/lib/offline/`).
-  - **Outbox Pattern:** Gestures (`queue_gestures`) + Operations (`queue_ops`).
-  - **Worker:** `syncWorker.ts` (intervalo de 5s).
-  - **Identificadores:** `client_tx_id` (transação lógica), `client_op_id` (operação atômica).
+- **Frontend:** React 19 + Vite 6 (Single Page App).
+- **Offline Strategy:** IndexedDB (Dexie.js) stores all data locally.
+- **Sync Strategy:** "Gestures" (Queued Operations) -> Background Worker -> Edge Function (`sync-batch`).
+- **Backend:** Supabase (Postgres + Auth + Edge Functions).
+- **Security:** RLS (Row Level Security) + Custom RPCs for sensitive operations.
 
-### Backend (Supabase)
-- **Database:** PostgreSQL com extensions (`pgcrypto`).
-- **Auth:** Supabase Auth (JWT).
-- **Security:** RLS (Row Level Security) estrito.
-  - Acesso de leitura via `public.has_membership(fazenda_id)`.
-  - Acesso de escrita bloqueado diretamente em tabelas críticas (`user_fazendas`), forçando uso de RPCs.
-- **Logic:**
-  - **Append-Only:** Tabelas de eventos (`eventos_*`) proibidas de update/delete de negócio via Triggers.
-  - **Derived State:** Views complexas (`vw_repro_episodios`, `vw_repro_status_animal`) para calcular estado reprodutivo.
-- **Edge Functions:** `sync-batch` (recebe pacote de operações do cliente).
+### Architecture Diagram
 
----
+```mermaid
+graph TD
+    subgraph Client [Browser / App]
+        UI[React UI Components]
+        Dexie[(Dexie.js IndexedDB)]
+        Worker[Sync Worker]
+        
+        UI -->|Reads (useLiveQuery)| Dexie
+        UI -->|Writes (createGesture)| Dexie
+        Dexie -->|Queue (Pending)| Worker
+    end
 
-## 2. Arquitetura de Sincronização
+    subgraph Cloud [Supabase]
+        Edge[Edge Function: sync-batch]
+        Auth[GoTrue Auth]
+        DB[(Postgres DB)]
+        
+        Worker -->|Push (POST /sync-batch)| Edge
+        Worker -->|Pull (GET Tables)| DB
+        Edge -->|Validate & Apply| DB
+        Edge -->|Auth Check| Auth
+    end
 
-O fluxo de dados segue um modelo **Optimistic UI + Event Sourcing Híbrido**:
+    Dexie -- Replaces Local Store --> Worker
+```
 
-1.  **Ação do Usuário:** O usuário realiza uma ação (ex: "Registrar Parto").
-2.  **Gravação Local (Optimistic):**
-    - `buildEventGesture.ts` gera operações (INSERT evento, UPDATE animal).
-    - `ops.ts` aplica as operações diretamente nas tabelas `state_*` (UI atualiza instantaneamente).
-    - As operações são gravadas na `queue_ops` e o gesto na `queue_gestures` (Status: `PENDING`).
-3.  **Sync Worker (Push):**
-    - Lê gestos `PENDING`.
-    - Envia para Supabase Edge Function `sync-batch`.
-4.  **Processamento Server-Side:**
-    - O servidor processa o lote (transacionalmente, presume-se).
-    - Retorna status `APPLIED` ou `REJECTED`.
-5.  **Confirmação/Rollback:**
-    - Se `APPLIED`: Marca gesto como `DONE`. Remove da fila.
-    - Se `REJECTED`: Executa `rollbackOpLocal` para reverter as mudanças nas tabelas `state_*`.
-6.  **Pull (Refresh):**
-    - Se o sync afetou tabelas críticas, o worker dispara `pullDataForFarm`.
-    - `pull.ts` baixa **todos** os dados da tabela (estratégia `replace` ou `merge`) e atualiza o Dexie.
+## 2. Stack & Repo Map
 
----
+| Component | Technology | Path | Responsibility |
+|-----------|------------|------|----------------|
+| **Frontend** | React 19, Vite 6, Tailwind, Shadcn/UI | `src/` | UI, Routing, Local Logic |
+| **State Mgmt** | React Context + Dexie Hooks | `src/hooks/` | Global State (Auth, Theme) |
+| **Offline DB** | Dexie.js (IndexedDB wrapper) | `src/lib/offline/db.ts` | Local persistence (Schema v6) |
+| **Sync Engine** | Custom "Gesture" Queue | `src/lib/offline/syncWorker.ts` | Push/Pull logic, Retry, Error handling |
+| **Backend API** | Supabase Edge Functions | `supabase/functions/` | Server-side logic (`sync-batch`) |
+| **Database** | Postgres (Supabase) | `supabase/migrations/` | Schema, RLS, Triggers, RPCs |
 
-## 3. Riscos Técnicos e Bugs Prováveis
+## 3. Offline Layer
 
-Lista priorizada por impacto (Severidade: Alta/Média/Baixa).
+The local database (`OfflineDB`) uses a **Schema Versioning** strategy (currently v6). Stores are categorized into:
 
-| Prioridade | Risco / Bug | Causa Provável | Impacto | Como Reproduzir | Sugestão de Correção |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **1 (Alta)** | **Flicker de Dados (Race Condition)** | `pull.ts` sobrescreve cegamente as tabelas `state_*`. Se houver um gesto `PENDING` (não syncado) e ocorrer um Pull (ex: background refresh), a mudança local é apagada até o próximo sync. | **UX Ruim / Confusão:** O usuário vê o dado sumir e reaparecer. | 1. Desligar rede (offline). <br> 2. Criar evento (muda UI local). <br> 3. Ligar rede e forçar reload/pull antes do worker rodar. <br> 4. Observar dado sumir. | O `pull.ts` deve re-aplicar operações pendentes da `queue_ops` após atualizar a tabela `state_*` (Rebase local). |
-| **2 (Alta)** | **Performance do Pull (Escalabilidade)** | `pull.ts` faz `select *` sem filtros de paginação ou `updated_at` (delta sync). | **Travamento:** Em fazendas com >5k animais ou >10k eventos, o app vai ficar lento ou estourar memória no mobile. | 1. Popular DB com 10k registros em `eventos`. <br> 2. Rodar sync/pull no mobile. <br> 3. Monitorar memória e tempo de resposta. | Implementar "Delta Sync": Enviar `last_pulled_at` e baixar apenas modificados. Usar paginação. |
-| **3 (Alta)** | **Duplicação de Lógica de Negócio** | O status reprodutivo é calculado no Frontend (memória) e no Backend (`vw_repro_status_animal`). | **Inconsistência:** Relatórios (SQL) podem mostrar dados diferentes da Tela (JS) se as regras divergirem. | 1. Identificar animal com histórico complexo. <br> 2. Comparar status na tela vs resultado da view SQL. | Centralizar a lógica. Idealmente, o Frontend deve consumir o status calculado pelo Backend ("Smart Server, Dumb Client") ou usar a mesma lib (WASM/Shared JS). |
-| **4 (Média)** | **Segurança RLS (Granularidade)** | Policies como `eventos_insert_by_membership` permitem que qualquer membro insira eventos. | **Segurança:** Um usuário com role `cowboy` pode inserir eventos `financeiro` ou `sanitario` complexos indevidamente. | 1. Autenticar com usuário `cowboy`. <br> 2. Usar console JS para invocar `supabase.from('eventos_financeiro').insert(...)`. | Refinar RLS: `check (public.role_in_fazenda(fazenda_id) in ('owner', 'manager'))` para domínios sensíveis. |
-| **5 (Média)** | **Gerenciamento de Erros de Sync** | Se o `sync-batch` falhar parcialmente (ex: timeout no meio do lote), o estado local pode ficar inconsistente. | **Corrupção de Dados Local:** O cliente pode achar que falhou e tentar de novo (duplicando) ou achar que sucesso e perder dados. | 1. Criar gesto com 10 operações. <br> 2. Simular falha de rede após a 5ª operação no servidor (via proxy/mock). | Garantir idempotência no servidor (`client_tx_id`) e transacionalidade atômica no `sync-batch`. |
-| **6 (Média)** | **Limpeza de Dados (Soft Delete)** | O `pull.ts` baixa registros com `deleted_at` (tombstones) e salva no Dexie. | **Bloat:** O banco local cresce indefinidamente com lixo. | 1. Deletar 100 animais no servidor. <br> 2. Fazer pull total. <br> 3. Verificar count em `state_animais` no Dexie. | O `pull` deve baixar tombstones para processar deletes, mas depois removê-los fisicamente do Dexie após confirmação. |
-| **7 (Baixa)** | **Token Refresh Loop** | O `syncWorker` tenta refresh do token. Se falhar, o loop continua tentando com backoff? | **Bateria/Rede:** Loop infinito de tentativas de auth falhas pode drenar recursos. | 1. Invalidar token (revoke) no server. <br> 2. Observar console logs do worker tentando refresh. | Implementar "Kill Switch" no worker após N falhas de Auth consecutivas (exigir re-login manual). |
-| **8 (Baixa)** | **Hardcoded Table List** | A lista de tabelas no `pull.ts` (`DEFAULT_REMOTE_TABLES`) é hardcoded. | **Manutenção:** Adicionar uma nova tabela no backend exige mudar o código do frontend, ou o sync não funcionará para ela. | 1. Criar tabela `teste_nova` no backend. <br> 2. Tentar usar no sync sem alterar `pull.ts`. | Tornar a lista dinâmica ou baseada em configuração centralizada (`tableMap.ts`). |
-| **9 (Baixa)** | **Schema Versioning Dexie** | Mudanças no schema local exigem incremento de versão e migração manual no `db.ts`. | **Crash na Atualização:** Se a migração falhar (ex: dados incompatíveis), o app não abre. | 1. Alterar `db.ts` incrementando versão com store incompatível. <br> 2. Recarregar app com dados antigos. | Testes rigorosos de migração de schema Dexie. Considerar reset automático em caso de erro fatal de schema (com aviso). |
-| **10 (Baixa)** | **Observabilidade** | Logs são apenas `console.log`. | **Debug:** Impossível diagnosticar problemas de sync em produção (dispositivos de usuários). | 1. Simular bug no sync em dispositivo móvel. <br> 2. Tentar acessar logs remotamente. | Implementar log estruturado local que é enviado ao servidor periodicamente ou em caso de erro (Telemetry). |
+1.  **State Stores (`state_*`)**: Mutable snapshots of entities (e.g., `state_animais`, `state_lotes`). Used for UI reading.
+2.  **Event Stores (`event_*`)**: Immutable append-only logs of domain events (e.g., `event_eventos_sanitario`).
+3.  **Queue Stores (`queue_*`)**: Outbox for synchronization.
+    - `queue_gestures`: Tracks transaction groups (`client_tx_id`).
+    - `queue_ops`: Individual operations within a gesture.
 
-## 4. Referências de Arquivos
+**Key File:** `src/lib/offline/db.ts`
 
-- **Configuração DB:** `src/lib/offline/db.ts`
-- **Sync Worker:** `src/lib/offline/syncWorker.ts`
-- **Lógica de Pull:** `src/lib/offline/pull.ts`
-- **Operações Locais:** `src/lib/offline/ops.ts`
-- **Construção de Eventos:** `src/lib/events/buildEventGesture.ts`
-- **Backend Schema:** `supabase/migrations/` (Principalmente `0001_init.sql`, `0004_rls_hardening.sql`)
+## 4. Sync Model
+
+The synchronization model follows a **"Push-Pull"** strategy with **Optimistic UI**.
+
+-   **Push (Outbox):**
+    -   User actions create a `Gesture` containing multiple `Operations`.
+    -   Gestures are queued in `queue_gestures` with status `PENDING`.
+    -   `syncWorker` runs every 5s, picks pending gestures, and sends them to `sync-batch`.
+    -   **Idempotency:** Enforced via `client_tx_id` and `client_op_id`.
+    -   **Ordering:** Serial processing of gestures by `created_at`.
+
+-   **Pull (Reconciliation):**
+    -   Triggered after successful sync or manual refresh.
+    -   **Strategy:** `replace` (Clear Store -> Write All).
+    -   **Risk:** Clears local store, potentially wiping pending optimistic updates if not carefully managed.
+
+**Key Files:** `src/lib/offline/syncWorker.ts`, `src/lib/offline/pull.ts`
+
+## 5. Supabase & Security
+
+-   **RLS (Row Level Security):** Strict isolation by `fazenda_id`.
+    -   `user_fazendas` is SELECT-only (membership managed via RPCs).
+    -   Most tables use `public.has_membership(fazenda_id)`.
+-   **Edge Functions:**
+    -   `sync-batch`: Authoritative endpoint for processing offline operations.
+    -   Validates JWT, checks membership, enforces "Anti-Teleport" rules, and applies changes.
+-   **RPCs:** Used for complex logic (e.g., `get_user_emails`, `create_fazenda`).
+
+**Key Files:** `supabase/migrations/0004_rls_hardening.sql`, `supabase/functions/sync-batch/index.ts`
+
+## 6. Main Flows
+
+### 1. Register Offline Event
+1.  User submits form.
+2.  `createGesture` is called with `fazenda_id` and operations.
+3.  `queue_gestures` + `queue_ops` records created.
+4.  `applyOpLocal` updates `state_*` / `event_*` immediately (Optimistic).
+
+### 2. Synchronization (Push)
+1.  `syncWorker` wakes up, finds `PENDING` gesture.
+2.  Reads ops, resolves table names (local -> remote).
+3.  POSTs to `/sync-batch` with JWT.
+4.  Server validates, applies (or rejects), returns status.
+5.  Worker updates gesture to `DONE` or `REJECTED` (triggers rollback).
+
+### 3. Readback (Pull)
+1.  Worker calls `pullDataForFarm` for affected tables.
+2.  Fetches data from Supabase (`select *`).
+3.  **Clears local store** (`store.clear()`).
+4.  Inserts fresh data (`store.bulkPut()`).
+
+## 7. Top 10 Technical Risks
+
+| Priority | Category | Risk | Impact | Evidence | Suggestion |
+|----------|----------|------|--------|----------|------------|
+| **P0** | **Security** | **PII Enumeration via RPC** | Any user can list emails of any other user ID via `get_user_emails`. | `supabase/migrations/0015_get_user_emails_rpc.sql` | Restrict RPC to only return emails of members in the same farm. |
+| **P0** | **Data Loss** | **Sync Race Condition** | `pullDataForFarm` clears local store (`mode='replace'`). If pending optimistic updates exist, they are wiped before being synced. | `src/lib/offline/pull.ts:54` (`store.clear()`) | Change default to `merge` or ensure `pull` never runs if `queue_gestures` is not empty. |
+| **P1** | **Privacy** | **Local Data Leak** | `useLotes` and `Animais.tsx` query all local data without `fazenda_id` filter. Switching farms or multi-farm users see mixed data. | `src/hooks/useLotes.ts:15`, `src/pages/Animais.tsx:63` | Update `useLiveQuery` to always filter `.where('fazenda_id').equals(currentFarmId)`. |
+| **P1** | **UX/Data** | **Soft Deleted Items Visible** | UI (`Animais.tsx`) and `pull.ts` do not filter `deleted_at`. Deleted items persist in lists. | `src/pages/Animais.tsx` (no filter), `src/lib/offline/pull.ts` (select *) | Add `deleted_at IS NULL` filter in RLS/Pull or in Dexie hooks. |
+| **P2** | **Consistency** | **Partial Sync Failure** | `sync-batch` applies ops sequentially. If Op 2 fails, Op 1 remains committed. Client rolls back *all*, causing desync. | `supabase/functions/sync-batch/index.ts` (loop) | Implement transactional batching in Edge Function or server-side rollback. |
+| **P2** | **Performance** | **Inefficient Local Querying** | `useLiveQuery` loads full collections (`toArray`) into memory before filtering. Slows down with large datasets. | `src/pages/Animais.tsx:63` | Use Dexie indices: `db.state_animais.where('fazenda_id').equals(fid).and(...)`. |
+| **P3** | **Security** | **Cowboy Write Access** | RLS policy `animais_write_by_membership` allows Cowboys to delete/edit animals. Might violate business rules. | `supabase/migrations/0004_rls_hardening.sql:109` | Restrict `DELETE/UPDATE` to Owner/Manager in RLS if strictly required. |
+| **P3** | **Observability** | **Silent Sync Failures** | Sync errors are logged to console/DB but not surfaced to user. Stuck `ERROR` gestures block queue indefinitely. | `src/lib/offline/syncWorker.ts:52` | Add UI indicator for Sync Status (Error/Retry) and manual retry button. |
+| **P4** | **Code Quality** | **Type Safety Gaps** | `any` usage in some catch blocks and lack of strict null checks in `useLotes` return. | `src/hooks/useLotes.ts` | Improve typing and error handling patterns. |
+| **P4** | **Tech Debt** | **Hardcoded Sync Interval** | `WORKER_INTERVAL_MS = 5000` is hardcoded. Drains battery on mobile if no changes. | `src/lib/offline/syncWorker.ts:13` | Use adaptive interval or `navigator.onLine` / visibility events. |
+
+## 8. Reproducible Commands
+Used to generate this report:
+
+```bash
+# Baseline
+git rev-parse --short HEAD
+
+# Verify Offline DB Schema
+rg "class .* extends Dexie" src/lib/offline/db.ts
+
+# Check Pull Strategy (Risk P0)
+rg "store.clear" src/lib/offline/pull.ts
+
+# Check Local Query Filtering (Risk P1)
+rg "state_lotes.toArray" src/hooks/useLotes.ts
+
+# Check RPC Security (Risk P0)
+rg "create or replace function public.get_user_emails" supabase/migrations/
+```
