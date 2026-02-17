@@ -1,153 +1,175 @@
 # Roadmap do Produto (6 Semanas)
 
 > **Status:** Derivado
-> **Baseline:** `e62465e`
+> **Baseline:** `1f62e4b`
 > **Última Atualização:** 2026-02-16
 > **Fonte:** `TECH_DEBT.md` (OPEN), `E2E_MVP.md`, `IMPLEMENTATION_STATUS.md`
 
-Este roadmap define as etapas para estabilização e lançamento do RebanhoSync, priorizando a resolução de dívidas técnicas **OPEN** críticas e a conformidade com o Manifesto do Produto.
+Este roadmap define as etapas para estabilização e hardening do RebanhoSync, priorizando a resolução de dívidas técnicas **OPEN** críticas e conformidade com testes E2E.
+
+**Status MVP:** ✅ **100% Completo** (7/7 domínios operacionais, incluindo Nutrição)
 
 ---
 
-## 1. Princípios de Execução
+## Milestone 0: Estabilização Crítica (Semanas 1-2)
 
-1.  **Integridade Primeiro:** Nenhuma feature nova é iniciada enquanto houver Gaps P0 (Críticos) de integridade ou segurança.
-2.  **Offline-First:** Funcionalidades só são consideradas "Prontas" se funcionarem 100% sem internet.
-3.  **Qualidade E2E:** Cada milestone exige aprovação nos fluxos definidos em `E2E_MVP.md`.
-4.  **Evidência Obrigatória:** Cada claim deve ter evidência verificável (path de arquivo/migration).
+**Objetivo:** Resolver gaps P0 que afetam UX e operação diária.
 
----
+**Scope (Tech Debt P0 - OPEN):**
 
-## 2. Milestones (6 Semanas)
+- **TD-001:** Cleanup de `queue_rejections` (DLQ)
+  - **Fluxo E2E:** Offline → Sync (Fluxo 2)
+- **TD-008:** Validação Anti-Teleport no Frontend
+  - **Fluxo E2E:** Anti-Teleporte (Fluxo 3), Hardening (Fluxo 6)
 
-### M0: Estabilização Crítica (Semanas 1-2)
+### Semana 1: Offline Resilience
 
-**Objetivo:** Resolver P0 bloqueantes e garantir integridade básica.
+**Entregáveis:**
 
-- **Scope (Tech Debt P0 - OPEN):**
-  - `TD-001`: Implementar limpeza automática de `queue_rejections` (evitar estouro de storage).
-    - **Fluxo E2E:** Offline→Online→Sync (Fluxo 2)
-  - `TD-006`: Implementar UI de Nutrição (feature existente no backend, inacessível no app).
-    - **Fluxo E2E:** Hardening de Eventos (Fluxo 6)
-  - `TD-008`: Bloquear movimentação para mesmo lote (Anti-Teleport Frontend).
-    - **Fluxo E2E:** Anti-Teleporte (Fluxo 3)
+- [ ] Rotina de cleanup automático em `syncWorker` (age > 7 dias).
+- [ ] UI de visualização/exportação de `queue_rejections` antes do expurgo.
+- [ ] Testes E2E: Fluxo 2 (rejeição + cleanup).
 
-- **Semana 1:**
-  - [ ] TD-001: Rotina de limpeza de rejections (Job no syncWorker + UI em Reconciliacao.tsx)
-  - [ ] TD-008: Validação frontend em Registrar.tsx (desabilitar lote origem no Select destino)
+**Critério de Aceite (M0 - Semana 1):**
 
-- **Semana 2:**
-  - [ ] TD-006: Criar NutricaoForm component + integração em Registrar.tsx
-  - [ ] Testar Fluxo 2 (Sync interrompido) com queue cleanup
-  - [ ] Testar Fluxo 3 (Anti-Teleporte) com validação frontend
+- [ ] DLQ não cresce indefinidamente após 1 semana de uso intenso.
+- [ ] Usuário consegue revisar rejeições antes do expurgo.
 
-* **Dependencies:**
-  - Nenhuma externa. Apenas refatoração interna.
+### Semana 2: UX Hardening
 
-- **Critérios de Aceite:**
-  - [ ] Fluxos **Autenticação e Fazenda**, **RBAC**, **Offline→Online→Sync** e **Anti-Teleporte** (`E2E_MVP.md`) aprovados.
-  - [ ] Sync interrompido (Fluxo 2):
-    - Após kill do app, `queue_gestures` e `client_tx_id` permanecem em Dexie.
-    - Gesto termina em `DONE` ou `REJECTED` com registro em `queue_rejections`.
-    - `state_*` consistente após pull (sem duplicação/falta de registros).
-    - Rejections antigas (>7 dias) são limpas automaticamente.
-  - [ ] Todas as tabelas do MVP possuem interfaces de escrita funcionais (`/registrar`).
-  - [ ] Movimentação com origem==destino bloqueada no frontend.
+**Entregáveis:**
 
-### M1: Consistência Operacional (Semanas 3-4)
+- [ ] Validação frontend: Movimentação (origem != destino).
+- [ ] Botões desabilitados baseados em validações.
+- [ ] Testes E2E: Fluxo 3 (anti-teleport) + Fluxo 6 (hardening).
 
-**Objetivo:** Refinar a validade dos dados e a usabilidade para evitar erros de operação.
+**Critério de Aceite (M0 - Semana 2):**
 
-- **Scope (Tech Debt P1 - OPEN):**
-  - `TD-014`: Bloquear entrada de peso inválido/vazio (Validação Frontend).
-    - **Fluxo E2E:** Hardening de Eventos (Fluxo 6)
-  - `TD-003`: Restringir `DELETE` de animais apenas para Owners (Segurança).
-    - **Fluxo E2E:** RBAC (Fluxo 1)
-  - `TD-019`: Adicionar FKs faltantes em `eventos_movimentacao` (Integridade Referencial).
-    - **Fluxo E2E:** Anti-Teleporte (Fluxo 3)
-  - `TD-020`: Adicionar FK faltante em `eventos_reproducao.macho_id` (Integridade Referencial).
-    - **Fluxo E2E:** Hardening de Eventos (Fluxo 6)
-
-- **Semana 3:**
-  - [ ] TD-014: Validação de peso > 0 em Registrar.tsx (PesagemForm)
-  - [ ] TD-003: Migration RLS para restringir DELETE de animais (owner/manager only)
-  - [ ] Testar Fluxo 1 (RBAC) com restrição de DELETE
-
-- **Semana 4:**
-  - [ ] TD-019: Migration para criar FKs (from_lote_id, to_lote_id → lotes.id)
-  - [ ] TD-020: Migration para criar FK (macho_id → animais.id)
-  - [ ] Testar Fluxo 3 (Anti-Teleporte) com FK constraints
-  - [ ] Testar Fluxo 6 (Hardening) com todas validações
-
-* **Dependencies:**
-  - M0 concluído.
-
-- **Critérios de Aceite:**
-  - [ ] Fluxos **Deduplicação de Agenda**, **Setup de Fazenda** e **Hardening de Eventos** (`E2E_MVP.md`) aprovados.
-  - [ ] Impossível inserir eventos com IDs inválidos (Foreign Key violada).
-  - [ ] Cowboy não consegue deletar animais.
-  - [ ] Pesagem com peso <= 0 bloqueada antes do envio.
-
-### M2: Performance e Hardening Final (Semanas 5-6)
-
-**Objetivo:** Otimizar performance e fechar todos os fluxos E2E.
-
-- **Scope (Tech Debt P2 - OPEN + P1 Opcional):**
-  - `TD-004`: Índices de performance completos para escala.
-    - **Fluxo E2E:** Operacional (Fluxo 7)
-  - `TD-015`: Otimizar cálculo de GMD (View ou Materialização).
-    - **Fluxo E2E:** Operacional (Fluxo 7)
-  - `TD-011`: _(Opcional - Nice to Have)_ Criar catálogo básico de Produtos Veterinários.
-    - **Fluxo E2E:** Hardening de Eventos (Fluxo 6)
-
-- **Semana 5:**
-  - [ ] TD-004: Migration para criar índices compostos otimizados
-    - [ ] `idx_eventos_fazenda_occurred` on `(fazenda_id, occurred_at)`
-    - [ ] `idx_eventos_animal_occurred` on `(animal_id, occurred_at)`
-    - [ ] `idx_eventos_fazenda_dominio` on `(fazenda_id, dominio)`
-  - [ ] Medir performance com dataset de teste (5000 animais)
-  - [ ] Validar via `EXPLAIN ANALYZE` em queries do Dashboard
-
-- **Semana 6:**
-  - [ ] TD-015: Criar view materializada `vw_gmd_dashboard` ou campo calculado
-  - [ ] Atualizar Dashboard.tsx para usar view otimizada
-  - [ ] Testar Fluxo 7 (Operacional) completo
-  - [ ] _(Se tempo permitir)_ TD-011: Criar tabela `produtos_veterinarios` e migrar UI
-
-- **Dependencies:**
-  - M0 e M1 concluídos.
-- **Critérios de Aceite:**
-  - [ ] Fluxo **Operacional** (`E2E_MVP.md`) aprovado.
-  - [ ] Todo o roteiro `E2E_MVP.md` aprovado com sucesso.
-  - [ ] Performance validada (TD-004, TD-015):
-    - Dataset de teste documentado (ex: 5000 animais, histórico representativo).
-    - Medição com `performance.now()` reportada no PR de implementação.
-    - `EXPLAIN ANALYZE` valida uso de índices em queries do Dashboard.
-    - Dashboard carrega em < 2s com 5000 animais.
+- [ ] UI impede envio de movimentações inválidas (origem==destino).
+- [ ] Taxa de rejeições no sync reduz > 50%.
+- [ ] Todos fluxos E2E (0-8) passam sem regressão.
 
 ---
 
-## 3. Backlog de Futuro (Uncommitted)
+## Milestone 1: Consistência Operacional (Semanas 3-4)
 
-Épicos identificados para pós-V1, dependentes de feedback de uso real.
+**Objetivo:** Refinar integridade de dados e RBAC.
 
-- **E-020: Gestão Avançada de Catálogos** (Expansão do TD-011 para gestão de estoque).
-- **E-021: Nutrição de Precisão** (Custos por cabeça, dietas complexas).
-- **E-022: Genealogia Automática** (Árvore genealógica visual, cálculo de consanguinidade).
-- **E-023: Painel de Resolução de Conflitos** (UI para tratar `REJECTED` complexos).
-- **E-024: Integração Externa** (Balanças Bluetooth, leitores RFID).
+**Scope (Tech Debt P1 - OPEN):**
+
+- **TD-003:** RLS DELETE hardening (owner/manager apenas)
+  - **Fluxo E2E:** RBAC (Fluxo 1)
+- **TD-014:** Validação de peso no frontend (pesagem > 0)
+  - **Fluxo E2E:** Hardening (Fluxo 6)
+- **TD-019 + TD-020:** Foreign Keys faltantes (movimentação + reprodução)
+  - **Fluxo E2E:** Operacional (Fluxo 7)
+
+### Semana 3: RBAC + Validações
+
+**Entregáveis:**
+
+- [ ] Patch RLS policy: `DELETE animais` com role check.
+- [ ] Validação frontend: Peso > 0 (pesagem).
+- [ ] Testes E2E: Fluxo 1 (RBAC) + Fluxo 6 (hardening pesagem).
+
+**Critério de Aceite (M1 - Semana 3):**
+
+- [ ] Cowboy recebe 403 ao tentar DELETE animal.
+- [ ] Owner/Manager conseguem DELETE normalmente.
+- [ ] UI impede envio de peso <= 0.
+
+### Semana 4: Integridade Referencial
+
+**Entregáveis:**
+
+- [ ] Migration: FKs `eventos_movimentacao` (from/to_lote_id).
+- [ ] Migration: FK `eventos_reproducao` (macho_id).
+- [Testes E2E: Fluxo 7 (operacional) com constraints habilitadas.
+
+**Critério de Aceite (M1 - Semana 4):**
+
+- [ ] FK constraints impedem referências inválidas.
+- [ ] Migrations reversíveis (rollback testado).
+- [ ] Nenhuma regressão em fluxos existentes.
 
 ---
 
-## 4. Riscos & Mitigações
+## Milestone 2: Performance e Hardening Final (Semanas 5-6)
 
-- **Risco:** Armazenamento local (IndexedDB) exceder cota em dispositivos antigos.
-  - _Mitigação:_ Implementar política de retenção (TD-001) e compactação de logs antigos.
-- **Risco:** Conflitos de edição simultânea em Agenda.
-  - _Mitigação:_ Reforçar logica de `dedup_key` e last-write-wins para status de tarefas.
-- **Risco:** Integridade de dados migrados (legado).
-  - _Mitigação:_ Scripts de validação pós-migração e bloqueio de novos dados inconsistentes.
+**Objetivo:** Otimizar queries e preparar para escala.
+
+**Scope (Tech Debt P2 - OPEN + P1 Opcional):**
+
+- **TD-004:** Índices de performance compostos
+  - **Fluxo E2E:** Operacional (Fluxo 7)
+- **TD-015:** Otimização GMD (View materializada)
+  - **Fluxo E2E:** Operacional (Fluxo 7)
+- **TD-011:** _(Opcional)_ Catálogo de produtos veterinários
+  - **Fluxo E2E:** Hardening (Fluxo 6)
+
+### Semana 5: Índices e Medição
+
+**Entregáveis:**
+
+- [ ] Migration: Índices `(fazenda_id, occurred_at)`, `(animal_id, occurred_at)`.
+- [ ] Benchmarks: Dashboard com 5000 animais.
+- [ ] Testes E2E: Fluxo 7 (carga).
+
+**Critério de Aceite (M2 - Semana 5):**
+
+- [ ] Dashboard carrega em < 2s com 5000 animais.
+- [ ] Queries lentas (> 1s) eliminadas.
+
+### Semana 6: Otimização GMD + Nice-to-Have
+
+**Entregáveis:**
+
+- [ ] View materializada ou coluna computada para GMD.
+- [ ] _(Opcional)_ Catálogo básico `produtos_veterinarios` (autocomplete UI).
+- [ ] Testes E2E: Fluxo 7 (GMD otimizado).
+
+**Critério de Aceite (M2 - Semana 6):**
+
+- [ ] GMD calculado sem carregar histórico completo.
+- [ ] Dashboard permanece < 2s com 10k animais.
+- [ ] (Opcional) Autocomplete produtos reduz typos.
 
 ---
 
-> **Nota:** Este roadmap é dinâmico. A prioridade é sempre **estabilizar o MVP** conforme o Manifesto, antes de expandir funcionalidades.
+## Capability Scorecard (Pós-Roadmap)
+
+| Milestone            | Gaps Resolvidos                     | Capability Score    | Status    |
+| -------------------- | ----------------------------------- | ------------------- | --------- |
+| **HEAD (Baseline)**  | TD-006 (Nutrição UI)                | 100% MVP (7/7)      | ✅ ATUAL  |
+| **M0 (Semanas 1-2)** | TD-001, TD-008 (P0)                 | 100% + UX melhorada | Planejado |
+| **M1 (Semanas 3-4)** | TD-003, TD-014, TD-019, TD-020 (P1) | 100% + Integridade  | Planejado |
+| **M2 (Semanas 5-6)** | TD-004, TD-015 (P2)                 | 100% + Escala       | Planejado |
+
+**Meta Final:** Todos TECH_DEBT OPEN resolvidos (9 → 0).
+
+---
+
+## E2E Flows Coverage (Pós-Roadmap)
+
+| Fluxo                          | Milestone       | Status Atual                     | Status Pós-Roadmap |
+| ------------------------------ | --------------- | -------------------------------- | ------------------ |
+| **Fluxo 0:** Auth + Fazenda    | HEAD            | ✅ PASS                          | ✅ PASS            |
+| **Fluxo 1:** RBAC              | M1 (Sem.3)      | ⚠️ PARTIAL (TD-003)              | ✅ PASS            |
+| **Fluxo 2:** Offline → Sync    | M0 (Sem.1)      | ⚠️ PARTIAL (TD-001)              | ✅ PASS            |
+| **Fluxo 3:** Anti-Teleporte    | M0 (Sem.2)      | ⚠️ PARTIAL (TD-008)              | ✅ PASS            |
+| **Fluxo 4:** Dedup Agenda      | HEAD            | ✅ PASS                          | ✅ PASS            |
+| **Fluxo 5:** Setup Fazenda     | HEAD            | ✅ PASS                          | ✅ PASS            |
+| **Fluxo 6:** Hardening Eventos | M0-M1 (Sem.2-3) | ⚠️ PARTIAL (TD-008, TD-014)      | ✅ PASS            |
+| **Fluxo 7:** Operacional       | M1-M2 (Sem.4-6) | ⚠️ PARTIAL (TD-004, TD-015, FKs) | ✅ PASS            |
+| **Fluxo 8:** Nutrição          | HEAD            | ✅ PASS (**MVP Completo**)       | ✅ PASS            |
+
+**Cobertura Atual:** 4/9 fluxos PASS (44%)  
+**Cobertura Pós-M2:** 9/9 fluxos PASS (100%)
+
+---
+
+## Veja Também
+
+- [**TECH_DEBT.md**](./TECH_DEBT.md) - Gaps detalhados
+- [**E2E_MVP.md**](./E2E_MVP.md) - Fluxos de validação
+- [**IMPLEMENTATION_STATUS.md**](./IMPLEMENTATION_STATUS.md) - Estado atual

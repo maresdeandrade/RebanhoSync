@@ -53,6 +53,38 @@ Este documento define os fluxos críticos de validação do sistema.
 - Feature flags de fazenda.
 - Dashboard de monitoramento de rejeições (Planejado - M2).
 
+## Fluxo 8: Nutrição (Registro Offline→Sync→Histórico)
+
+**Escopo MVP:** Registro operacional de eventos de nutrição (alimento fornecido) para animais e/ou lotes. **Não inclui** gestão de estoque, inventário ou compras.
+
+**Requisitos:**
+
+1. **Registro Offline:**
+   - Formulário de Nutrição permite registrar evento offline (animal ou lote, alimento_nome, quantidade_kg).
+   - Grava em `state_eventos` (rail mutável) e `event_eventos_nutricao` (rail append-only).
+   - Cria gesture em `queue_gestures` + `queue_ops` para sync futuro.
+
+2. **Sincronização:**
+   - Ao recuperar conexão, sync-batch processa gesture e aplica evento no servidor.
+   - Server valida schema (alimento_nome, quantidade_kg > 0) e constraints de tenant.
+   - Retorna `APPLIED` ou `REJECTED` com motivo.
+
+3. **Rollback Local:**
+   - Em caso de rejeição, syncWorker reverte alterações locais (state*\* + event*\*).
+
+4. **Histórico:**
+   - UI de histórico de eventos mostra eventos de nutrição sincronizados.
+   - Filtro por domínio "Nutrição" funcional.
+
+**Validação de Aceite:**
+
+- [ ] Formulário Nutrição renderiza em `/registrar` (tipoManejo === "nutricao").
+- [ ] Evento criado offline aparece em `state_eventos` e `event_eventos_nutricao`.
+- [ ] Gesture criado com status `PENDING`.
+- [ ] Sync aplica evento no servidor (200 OK, status `APPLIED`).
+- [ ] Histórico mostra evento de nutrição após sync.
+- [ ] Rejeição (ex: quantidade_kg <= 0) aciona rollback local.
+
 ---
 
 ## Veja Também
