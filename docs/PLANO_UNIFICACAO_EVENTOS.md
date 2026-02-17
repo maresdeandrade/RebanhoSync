@@ -1,6 +1,10 @@
-   # Plano Tecnico de Unificacao e Implantacao dos Fluxos de Eventos
+# Plano Tecnico de Unificacao e Implantacao dos Fluxos de Eventos
 
-Data: 2026-02-11
+Status: Normativo
+Baseline: 0bb8829
+Última Atualização: 2026-02-12
+Derivado por: Antigravity Docs Update — Rev D
+
 Escopo: dominios `sanitario`, `pesagem`, `movimentacao`, `nutricao`, `financeiro` e `agenda`.
 
 ## 1. Objetivo
@@ -16,18 +20,16 @@ Unificar o modelo de eventos para:
 
 Fontes principais:
 
-1. `docs/ANALISE_EVENTOS_FINANCEIRO.md`
-2. `docs/ANALISE_EVENTOS_SANITARIOS.md`
-3. `docs/ANALISE_EVENTOS_PESAGEM.md`
-4. `docs/ANALISE_EVENTOS_MOVIMENTACAO.md`
-5. `docs/ANALISE_EVENTOS_NUTRICAO.md`
-6. `docs/EVENTOS_AGENDA_SPEC.md`
-7. `supabase/migrations/0001_init.sql`
-8. `supabase/migrations/0004_rls_hardening.sql`
-9. `supabase/functions/sync-batch/index.ts`
-10. `src/lib/offline/types.ts`
-11. `src/lib/offline/tableMap.ts`
-12. `src/lib/offline/syncWorker.ts`
+1. `supabase/migrations/0001_init.sql`
+2. `supabase/migrations/0004_rls_hardening.sql`
+3. `supabase/migrations/0023_hardening_eventos_financeiro.sql`
+4. `supabase/migrations/0024_hardening_eventos_nutricao.sql`
+5. `supabase/migrations/0025_hardening_eventos_movimentacao.sql`
+6. `supabase/migrations/0026_fk_eventos_financeiro_contrapartes.sql`
+7. `supabase/functions/sync-batch/index.ts`
+8. `src/lib/offline/types.ts`
+9. `src/lib/offline/tableMap.ts`
+10. `src/lib/offline/syncWorker.ts`
 
 ## 3. Mapeamento completo atual
 
@@ -87,8 +89,6 @@ Todos os detalhes possuem:
 | `payload` | jsonb | Sim | default `{}` | extensao de dominio |
 | metadados sync/sistema | diversos | Sim/Opcional | padrao | - |
 
-Observacao: os documentos de analise citam campos extras (fabricante, dose, via, lote etc.) que hoje nao estao tipados no schema principal e devem ser tratados via `payload` ate padronizacao v2.
-
 #### 3.2.2 Pesagem - `eventos_pesagem`
 
 | Campo | Tipo | Obrigatorio | Validacao atual | Relacionamento |
@@ -105,16 +105,12 @@ Observacao: os documentos de analise citam campos extras (fabricante, dose, via,
 |---|---|---|---|---|
 | `evento_id` | uuid | Sim | PK | FK `eventos(id,fazenda_id)` |
 | `fazenda_id` | uuid | Sim | not null | tenant |
-| `from_lote_id` | uuid | Nao | sem check | sem FK dedicada na tabela de detalhe |
-| `to_lote_id` | uuid | Nao | sem check | sem FK dedicada na tabela de detalhe |
-| `from_pasto_id` | uuid | Nao | sem check | sem FK dedicada na tabela de detalhe |
-| `to_pasto_id` | uuid | Nao | sem check | sem FK dedicada na tabela de detalhe |
+| `from_lote_id` | uuid | Nao | check from!=to (NOT VALID) | sem FK dedicada na tabela de detalhe |
+| `to_lote_id` | uuid | Nao | check required destination (NOT VALID) | sem FK dedicada na tabela de detalhe |
+| `from_pasto_id` | uuid | Nao | check from!=to (NOT VALID) | sem FK dedicada na tabela de detalhe |
+| `to_pasto_id` | uuid | Nao | check required destination (NOT VALID) | sem FK dedicada na tabela de detalhe |
 | `payload` | jsonb | Sim | default `{}` | extensao de dominio |
 | metadados sync/sistema | diversos | Sim/Opcional | padrao | - |
-
-Regra de integridade relevante:
-
-1. `sync-batch` aplica pre-validacao anti-teleporte: `UPDATE animais.lote_id` so e aceito quando existe `eventos` de `movimentacao` + `eventos_movimentacao` correlato no mesmo `client_tx_id`.
 
 #### 3.2.4 Nutricao - `eventos_nutricao`
 
@@ -123,7 +119,7 @@ Regra de integridade relevante:
 | `evento_id` | uuid | Sim | PK | FK `eventos(id,fazenda_id)` |
 | `fazenda_id` | uuid | Sim | not null | tenant |
 | `alimento_nome` | text | Nao | sem check | - |
-| `quantidade_kg` | numeric(12,3) | Nao | sem check | - |
+| `quantidade_kg` | numeric(12,3) | Nao | `check > 0` (NOT VALID) | - |
 | `payload` | jsonb | Sim | default `{}` | extensao de dominio |
 | metadados sync/sistema | diversos | Sim/Opcional | padrao | - |
 
@@ -134,8 +130,8 @@ Regra de integridade relevante:
 | `evento_id` | uuid | Sim | PK | FK `eventos(id,fazenda_id)` |
 | `fazenda_id` | uuid | Sim | not null | tenant |
 | `tipo` | `financeiro_tipo_enum` | Sim | enum (`compra`,`venda`) | - |
-| `valor_total` | numeric(14,2) | Sim | not null, sem `check > 0` | - |
-| `contraparte_id` | uuid | Nao | opcional | sem FK explicita no detalhe |
+| `valor_total` | numeric(14,2) | Sim | `check > 0` (NOT VALID) | - |
+| `contraparte_id` | uuid | Nao | FK composta (NOT VALID) | sem FK explicita no detalhe |
 | `payload` | jsonb | Sim | default `{}` | extensao de dominio |
 | metadados sync/sistema | diversos | Sim/Opcional | padrao | - |
 
@@ -177,8 +173,8 @@ Regra de integridade relevante:
 ### 4.2 Divergencias e lacunas
 
 1. Cobertura de UI desigual: `sanitario/pesagem/movimentacao` ativos; `nutricao/financeiro` sem fluxo completo em tela.
-2. Validacoes assimetricas: `peso_kg > 0` existe; `valor_total`, `quantidade_kg` e campos de movimentacao sem checks equivalentes.
-3. Integridade referencial incompleta: `contraparte_id` e campos de origem/destino de movimentacao sem FK dedicada no detalhe.
+2. Validacoes de Integridade: checks de `valor_total`, `quantidade_kg` e `movimentacao_destino` foram criados mas estão em estado `NOT VALID`. (Status: Mitigado Parcialmente)
+3. Integridade referencial incompleta: `contraparte_id` possui FK tenant-safe (`NOT VALID`); campos de origem/destino de movimentacao ainda sem FK dedicada no detalhe.
 4. Heterogeneidade semantica: parte dos atributos sanitarios aparece nos documentos, mas no schema atual esta concentrada no `payload`.
 5. Contratos de tipos com drift: `src/lib/offline/types.ts` nao reflete 100% das colunas de `eventos` (ex.: `source_tx_id`, `source_client_op_id`) e omite `server_received_at` em `EventoFinanceiro`.
 6. Nomenclatura de papeis inconsistente na documentacao (`admin` vs `manager`).
@@ -211,9 +207,9 @@ Regra de integridade relevante:
 |---|---|
 | `sanitario` | `tipo`, `produto` obrigatorios; `payload` com schema versionado para dose, via, lote e validade |
 | `pesagem` | manter `peso_kg > 0`; incluir faixa plausivel por categoria no backend |
-| `movimentacao` | exigir `to_lote_id` ou `to_pasto_id`; bloquear origem=destino; manter anti-teleporte |
-| `nutricao` | exigir `alimento_nome` e `quantidade_kg > 0`; unidade padrao em payload (`kg`,`g`,`l`) |
-| `financeiro` | exigir `valor_total > 0`; `contraparte_id` obrigatoria quando `tipo in ('compra','venda')` |
+| `movimentacao` | VALIDATE constraints de `to_lote_id`/`to_pasto_id` e bloqueio de origem=destino |
+| `nutricao` | VALIDATE constraint `quantidade_kg > 0`; unidade padrao em payload (`kg`,`g`,`l`) |
+| `financeiro` | VALIDATE constraint `valor_total > 0`; `contraparte_id` obrigatoria quando `tipo in ('compra','venda')` |
 
 #### 5.2.3 Eventos compostos
 
@@ -285,8 +281,7 @@ Manter `agendado`, `concluido`, `cancelado`, com guardas:
 #### Fase A - Expandir
 
 1. Adicionar colunas novas (`tipo`,`schema_version`,`correlation_id`, etc.) nullable.
-2. Criar constraints novas como `NOT VALID`.
-3. Criar `eventos_outbox` e `eventos_pipeline`.
+2. Criar `eventos_outbox` e `eventos_pipeline`.
 
 #### Fase B - Migrar
 
@@ -298,7 +293,7 @@ Manter `agendado`, `concluido`, `cancelado`, com guardas:
 
 #### Fase C - Contrair
 
-1. Tornar constraints obrigatorias (`VALIDATE CONSTRAINT` + `NOT NULL`).
+1. Tornar constraints `NOT VALID` em `VALIDATE CONSTRAINT` + `NOT NULL`.
 2. Trocar leituras para `vw_eventos_unificados`.
 3. Remover caminhos legados do cliente quando adocao > 95%.
 
@@ -352,7 +347,7 @@ Manter `agendado`, `concluido`, `cancelado`, com guardas:
 
 ## 10. Cronograma de implantacao em fases
 
-### Fase 0 - Planejamento detalhado (Semana 1)
+### Fase 0 - Planejamento detalhado (Concluído)
 
 1. Fechar ADRs de modelo unificado.
 2. Definir schemas JSON por dominio.
@@ -364,8 +359,9 @@ Aceite:
 
 ### Fase 1 - Fundacao de dados (Semanas 2-3)
 
-1. Migrations de expansao (`eventos` v2, outbox, pipeline, constraints `NOT VALID`).
-2. Ajustes em `sync-batch` para v2 com compatibilidade v1.
+1. Migrations de expansao (Iniciado: constraints `NOT VALID` criadas).
+2. Completar: `eventos` v2, outbox, pipeline.
+3. Ajustes em `sync-batch` para v2 com compatibilidade v1.
 
 Aceite:
 
@@ -395,7 +391,7 @@ Aceite:
 ### Fase 4 - Migracao e backfill (Semanas 8-9)
 
 1. Executar backfill historico.
-2. Corrigir dados invalidos mapeados no diagnostico.
+2. Corrigir dados invalidos mapeados no diagnostico (validar constraints).
 
 Aceite:
 
@@ -443,7 +439,7 @@ Aceite:
 
 ## 13. Decisoes imediatas recomendadas (P0)
 
-1. Adicionar checks de negocio faltantes: `eventos_financeiro.valor_total > 0`, `eventos_nutricao.quantidade_kg > 0` (quando preenchido).
-2. Tornar obrigatoria a validacao de destino em movimentacao (`to_lote_id` ou `to_pasto_id`).
-3. Corrigir drift de tipos em `src/lib/offline/types.ts` para espelhar schema atual.
-4. Definir contrato minimo de `payload` por dominio com `schema_version`.
+1. Adicionar checks de negocio faltantes (CONCLUÍDO - Status `NOT VALID`): `eventos_financeiro.valor_total > 0`, `eventos_nutricao.quantidade_kg > 0`.
+2. Tornar obrigatoria a validacao de destino em movimentacao (CONCLUÍDO - Status `NOT VALID`).
+3. Corrigir drift de tipos em `src/lib/offline/types.ts` para espelhar schema atual (Pendente).
+4. Definir contrato minimo de `payload` por dominio com `schema_version` (Pendente).

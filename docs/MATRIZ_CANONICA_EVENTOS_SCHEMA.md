@@ -1,8 +1,9 @@
 # Matriz Canonica de Campos - Eventos e Agenda
 
-Data: 2026-02-11
-Status: baseline oficial da Fase 0
-Fonte de verdade: `supabase/migrations/0001_init.sql` (sem alteracoes dessas tabelas nas migrations `0002` a `0022`).
+Status: Normativo
+Baseline: 0bb8829
+Última Atualização: 2026-02-12
+Derivado por: Antigravity Docs Update — Rev D
 
 ## 1. Escopo da matriz
 
@@ -19,6 +20,8 @@ Tabelas cobertas:
 9. `contrapartes`
 10. `protocolos_sanitarios`
 11. `protocolos_sanitarios_itens`
+
+Fonte de verdade: `supabase/migrations/0001_init.sql` a `0036`.
 
 ## 2. Envelope de eventos
 
@@ -97,7 +100,7 @@ Regras:
 | `evento_id` | uuid | Nao | PK |
 | `fazenda_id` | uuid | Nao | - |
 | `alimento_nome` | text | Sim | - |
-| `quantidade_kg` | numeric(12,3) | Sim | `check (quantidade_kg > 0)` (quando nao nulo) |
+| `quantidade_kg` | numeric(12,3) | Sim | `check (quantidade_kg > 0)` (quando nao nulo) (NOT VALID) |
 | `payload` | jsonb | Nao | `'{}'::jsonb` |
 | `client_id` | text | Nao | - |
 | `client_op_id` | uuid | Nao | - |
@@ -129,9 +132,9 @@ Regras:
 | `updated_at` | timestamptz | Nao | `now()` |
 
 **Constraints**:
-- `to_lote_id` OR `to_pasto_id` obrigatório
-- `from_lote_id != to_lote_id` (se ambos preenchidos)
-- `from_pasto_id != to_pasto_id` (se ambos preenchidos)
+- `to_lote_id` OR `to_pasto_id` obrigatório (NOT VALID)
+- `from_lote_id != to_lote_id` (se ambos preenchidos) (NOT VALID)
+- `from_pasto_id != to_pasto_id` (se ambos preenchidos) (NOT VALID)
 
 ### 3.5 `eventos_reproducao`
 
@@ -151,11 +154,15 @@ Regras:
 | `created_at` | timestamptz | Nao | `now()` |
 | `updated_at` | timestamptz | Nao | `now()` |
 
-**Constraints e Validações (Sync-Batch)**:
+**Constraints e Validações**:
 - `payload.schema_version` deve ser 1
 - `macho_id` obrigatório para `tipo = 'cobertura'` ou `tipo = 'IA'`
 - `tipo = 'parto'` deve ter `payload.episode_evento_id` referenciando evento de cobertura ou IA
 - `tipo = 'diagnostico'` aceita `episode_evento_id` nulo (marcado como 'unlinked')
+
+**Views Auxiliares**:
+- `vw_repro_episodios`: Agrega eventos em episódios (Cobertura -> Diagnóstico -> Parto).
+- `vw_repro_status_animal`: Infere status reprodutivo atual (PRENHA, SERVIDA, etc.) e categoria produtiva (VACA/NOVILHA).
 
 ### 3.6 `eventos_financeiro`
 
@@ -164,8 +171,8 @@ Regras:
 | `evento_id` | uuid | Nao | PK |
 | `fazenda_id` | uuid | Nao | - |
 | `tipo` | `financeiro_tipo_enum` | Nao | enum |
-| `valor_total` | numeric(14,2) | Nao | `check (valor_total > 0)` |
-| `contraparte_id` | uuid | Sim | FK composta `contrapartes(id,fazenda_id)` |
+| `valor_total` | numeric(14,2) | Nao | `check (valor_total > 0)` (NOT VALID) |
+| `contraparte_id` | uuid | Sim | FK composta `contrapartes(id,fazenda_id)` (NOT VALID) |
 | `payload` | jsonb | Nao | `'{}'::jsonb` |
 | `client_id` | text | Nao | - |
 | `client_op_id` | uuid | Nao | - |
@@ -282,3 +289,24 @@ Constraints:
 | `created_at` | timestamptz | Nao | `now()` |
 | `updated_at` | timestamptz | Nao | `now()` |
 
+## 6. Constraints & Invariants (consolidado)
+
+1. **Append-only**: triggers `prevent_business_update` e `prevent_business_delete` em todas as tabelas de eventos.
+2. **Multi-tenancy**: RLS mandatória via `has_membership(fazenda_id)`.
+3. **Integridade**: Todas as tabelas filhas possuem FK composta `(parent_id, fazenda_id)` para garantir isolamento.
+4. **Hardening (v1.1)**: Constraints de valor e consistência (`valor_total`, `quantidade`, `movimentacao_destino`) aplicadas (status `NOT VALID` no baseline).
+
+## 7. Evidence Index
+
+| Objeto | PM Evidence |
+|---|---|
+| `eventos` | `PM: supabase/migrations/0001_init.sql` |
+| `eventos_sanitario` | `PM: supabase/migrations/0001_init.sql` |
+| `eventos_pesagem` | `PM: supabase/migrations/0001_init.sql` |
+| `eventos_nutricao` | `PM: supabase/migrations/0024_hardening_eventos_nutricao.sql` |
+| `eventos_movimentacao` | `PM: supabase/migrations/0025_hardening_eventos_movimentacao.sql` |
+| `eventos_reproducao` | `PM: supabase/migrations/0035_reproducao_hardening_v1.sql` |
+| `eventos_financeiro` | `PM: supabase/migrations/0023_hardening_eventos_financeiro.sql` |
+| `agenda_itens` | `PM: supabase/migrations/0001_init.sql` |
+| `protocolos_sanitarios` | `PM: supabase/migrations/0001_init.sql` |
+| `contrapartes` | `PM: supabase/migrations/0026_fk_eventos_financeiro_contrapartes.sql` |
