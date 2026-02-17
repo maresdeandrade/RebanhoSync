@@ -1,286 +1,396 @@
-   # Plano Tecnico de Unificacao e Implantacao dos Fluxos de Eventos
+# Plano Técnico de Unificação e Implantação dos Fluxos de Eventos
 
-Data: 2026-02-11
-Escopo: dominios `sanitario`, `pesagem`, `movimentacao`, `nutricao`, `financeiro` e `agenda`.
+**Status:** Normativo (Plano Técnico)  
+**Baseline:** ef123ac  
+**Última Atualização:** 2026-02-17  
+**Derivado por:** Antigravity Docs Update — Rev D
+
+---
 
 ## 1. Objetivo
 
 Unificar o modelo de eventos para:
 
-1. Padronizar contratos de dados, validacoes e tipagens.
-2. Fechar lacunas de integridade entre os dominios.
-3. Implantar fluxo consistente de captura, sincronizacao, processamento e propagacao.
-4. Garantir rastreabilidade auditavel ponta a ponta.
+1. Padronizar contratos de dados, validações e tipagens.
+2. Fechar lacunas de integridade entre os domínios.
+3. Implantar fluxo consistente de captura, sincronização, processamento e propagação.
+4. Garantir rastreabilidade auditável ponta a ponta.
 
-## 2. Baseline analisada
+**Escopo:** Domínios `sanitario`, `pesagem`, `nutricao`, `movimentacao`, `reproducao`, `financeiro` e `agenda`.
 
-Fontes principais:
+---
 
-1. `docs/ANALISE_EVENTOS_FINANCEIRO.md`
-2. `docs/ANALISE_EVENTOS_SANITARIOS.md`
-3. `docs/ANALISE_EVENTOS_PESAGEM.md`
-4. `docs/ANALISE_EVENTOS_MOVIMENTACAO.md`
-5. `docs/ANALISE_EVENTOS_NUTRICAO.md`
-6. `docs/EVENTOS_AGENDA_SPEC.md`
-7. `supabase/migrations/0001_init.sql`
-8. `supabase/migrations/0004_rls_hardening.sql`
-9. `supabase/functions/sync-batch/index.ts`
-10. `src/lib/offline/types.ts`
-11. `src/lib/offline/tableMap.ts`
-12. `src/lib/offline/syncWorker.ts`
+## 2. Baseline Analisada
 
-## 3. Mapeamento completo atual
+### 2.1 Fontes Principais
 
-### 3.1 Estrutura comum (envelope) - `eventos`
+Análise baseada em:
 
-Todos os tipos de evento herdam esta estrutura.
+1. **Documentação normativa:**
+   - `docs/ARCHITECTURE.md`
+   - `docs/DB.md`
+   - `docs/CONTRACTS.md`
+   - `docs/OFFLINE.md`
+   - `docs/EVENTOS_AGENDA_SPEC.md`
+   - `docs/E2E_MVP.md`
+   - `docs/RLS.md`
 
-| Campo | Tipo | Obrigatorio | Validacao atual | Relacionamento |
-|---|---|---|---|---|
-| `id` | uuid | Sim | PK | - |
-| `fazenda_id` | uuid | Sim | not null | FK `fazendas(id)` |
-| `dominio` | `dominio_enum` | Sim | enum | - |
-| `occurred_at` | timestamptz | Sim | not null | - |
-| `occurred_on` | date (generated) | Sim | derivado de `occurred_at` | - |
-| `animal_id` | uuid | Nao | opcional | FK composta `animais(id,fazenda_id)` |
-| `lote_id` | uuid | Nao | opcional | FK composta `lotes(id,fazenda_id)` |
-| `source_task_id` | uuid | Nao | opcional | referencia agenda |
-| `source_tx_id` | uuid | Nao | opcional | rastreabilidade tecnica |
-| `source_client_op_id` | uuid | Nao | opcional | rastreabilidade tecnica |
-| `corrige_evento_id` | uuid | Nao | opcional | self-FK logica |
-| `observacoes` | text | Nao | opcional | - |
-| `payload` | jsonb | Sim | default `{}` | - |
-| `client_id` | text | Sim | not null | id origem |
-| `client_op_id` | uuid | Sim | idempotencia | chave tecnica |
-| `client_tx_id` | uuid | Nao | agrupador transacao | chave tecnica |
-| `client_recorded_at` | timestamptz | Sim | not null | - |
-| `server_received_at` | timestamptz | Sim | default `now()` | - |
-| `deleted_at` | timestamptz | Nao | soft delete | - |
-| `created_at` | timestamptz | Sim | default `now()` | - |
-| `updated_at` | timestamptz | Sim | default `now()` | - |
+2. **Migrations (schema):**
+   - `supabase/migrations/0001_init.sql` (estrutura inicial)
+   - `supabase/migrations/0004_rls_hardening.sql` (RLS)
+   - `supabase/migrations/0023_hardening_eventos_financeiro.sql` (checks financeiro)
+   - `supabase/migrations/0024_hardening_eventos_nutricao.sql` (checks nutrição)
+   - `supabase/migrations/0025_hardening_eventos_movimentacao.sql` (constraints movimentação)
+   - `supabase/migrations/0026_fk_eventos_financeiro_contrapartes.sql` (FK contrapartes)
+   - `supabase/migrations/0028_sanitario_agenda_engine.sql` (agenda automática sanitária)
+   - `supabase/migrations/0035_reproducao_hardening_v1.sql` (reprodução v1)
+   - `supabase/migrations/0037_security_hardening_review.sql` (security review)
 
-Regras globais:
+3. **Edge Functions:**
+   - `supabase/functions/sync-batch/index.ts`
 
-1. Trigger `prevent_business_update` (append-only de negocio).
-2. RLS por `has_membership(fazenda_id)` para leitura e insercao.
-3. Correcao por novo evento (`corrige_evento_id`), sem update de negocio.
+4. **Cliente (Offline):**
+   - `src/lib/offline/types.ts`
+   - `src/lib/offline/tableMap.ts`
+   - `src/lib/offline/syncWorker.ts`
 
-### 3.2 Estruturas por dominio (tabelas de detalhe 1:1)
+**Janela de análise:** Migrations `0001` a `0037` (baseline ef123ac).
+
+---
+
+## 3. Estado Atual
+
+### 3.1 Two Rails (Eventos Append-Only + Agenda Mutável)
+
+O sistema implementa o padrão Two Rails conforme especificado em `ARCHITECTURE.md` e `EVENTOS_AGENDA_SPEC.md`:
+
+**Rail 1 (Eventos):**
+
+- Tabela `eventos` (envelope) + Tabelas satélites 1:1 por domínio (`eventos_sanitario`, etc.)
+- **Append-only**: Trigger `prevent_business_update` bloqueia UPDATE de campos de negócio (PM: `0001_init.sql:81-95`)
+- **Correção histórica**: Via novo evento com `corrige_evento_id`
+- **RLS**: Membership-based (PM: `0001_init.sql:718-747`, `0004_rls_hardening.sql`)
+
+**Rail 2 (Agenda):**
+
+- Tabela `agenda_itens` (mutável)
+- **Estados**: `agendado` → `concluido` | `cancelado`
+- **Dedup**: Unique parcial em (`fazenda_id`, `dedup_key`) para `status='agendado'` (PM: `0001_init.sql:522-524`)
+- **Agenda automática sanitária**: Implementada via `0028_sanitario_agenda_engine.sql`
+
+**PM:** `docs/ARCHITECTURE.md:24-49`, `docs/EVENTOS_AGENDA_SPEC.md:11-51`
+
+### 3.2 Estrutura Comum (Envelope) — `eventos`
+
+Todos os tipos de evento herdam esta estrutura (PM: `0001_init.sql:541-595`):
+
+| Campo                 | Tipo             | Obrigatório | Validação Atual           | Relacionamento                       |
+| --------------------- | ---------------- | ----------- | ------------------------- | ------------------------------------ |
+| `id`                  | uuid             | Sim         | PK                        | -                                    |
+| `fazenda_id`          | uuid             | Sim         | not null                  | FK `fazendas(id)`                    |
+| `dominio`             | `dominio_enum`   | Sim         | enum                      | -                                    |
+| `occurred_at`         | timestamptz      | Sim         | not null                  | -                                    |
+| `occurred_on`         | date (generated) | Sim         | derivado de `occurred_at` | -                                    |
+| `animal_id`           | uuid             | Não         | opcional                  | FK composta `animais(id,fazenda_id)` |
+| `lote_id`             | uuid             | Não         | opcional                  | FK composta `lotes(id,fazenda_id)`   |
+| `source_task_id`      | uuid             | Não         | opcional                  | referência agenda                    |
+| `source_tx_id`        | uuid             | Não         | opcional                  | rastreabilidade técnica              |
+| `source_client_op_id` | uuid             | Não         | opcional                  | rastreabilidade técnica              |
+| `corrige_evento_id`   | uuid             | Não         | opcional                  | self-FK lógica                       |
+| `observacoes`         | text             | Não         | opcional                  | -                                    |
+| `payload`             | jsonb            | Sim         | default `{}`              | -                                    |
+| `client_id`           | text             | Sim         | not null                  | id origem                            |
+| `client_op_id`        | uuid             | Sim         | idempotência              | chave técnica                        |
+| `client_tx_id`        | uuid             | Não         | agrupador transação       | chave técnica                        |
+| `client_recorded_at`  | timestamptz      | Sim         | not null                  | -                                    |
+| `server_received_at`  | timestamptz      | Sim         | default `now()`           | -                                    |
+| `deleted_at`          | timestamptz      | Não         | soft delete               | -                                    |
+| `created_at`          | timestamptz      | Sim         | default `now()`           | -                                    |
+| `updated_at`          | timestamptz      | Sim         | default `now()`           | -                                    |
+
+**Regras globais:**
+
+1. Trigger `prevent_business_update` (append-only de negócio) — PM: `0001_init.sql:577-579`
+2. RLS por `has_membership(fazenda_id)` para leitura e inserção — PM: `0001_init.sql:741`, `0004_rls_hardening.sql`
+3. Correção por novo evento (`corrige_evento_id`), sem update de negócio — PM: `docs/EVENTOS_AGENDA_SPEC.md:20-27`
+
+### 3.3 Estruturas por Domínio (Tabelas de Detalhe 1:1)
 
 Todos os detalhes possuem:
 
-1. `evento_id` (PK, FK para `eventos(id,fazenda_id)`).
-2. `fazenda_id`.
-3. `payload`.
-4. metadados de sync (`client_*`, `server_received_at`).
-5. `deleted_at`, `created_at`, `updated_at`.
-6. trigger append-only.
+1. `evento_id` (PK, FK para `eventos(id,fazenda_id)`)
+2. `fazenda_id`
+3. `payload`
+4. metadados de sync (`client_*`, `server_received_at`)
+5. `deleted_at`, `created_at`, `updated_at`
+6. trigger append-only
 
-#### 3.2.1 Sanitario - `eventos_sanitario`
+#### 3.3.1 Sanitário — `eventos_sanitario`
 
-| Campo | Tipo | Obrigatorio | Validacao atual | Relacionamento |
-|---|---|---|---|---|
-| `evento_id` | uuid | Sim | PK | FK `eventos(id,fazenda_id)` |
-| `fazenda_id` | uuid | Sim | not null | tenant |
-| `tipo` | `sanitario_tipo_enum` | Sim | enum (`vacinacao`,`vermifugacao`,`medicamento`) | - |
-| `produto` | text | Sim | not null | - |
-| `payload` | jsonb | Sim | default `{}` | extensao de dominio |
-| metadados sync/sistema | diversos | Sim/Opcional | padrao | - |
+| Campo        | Tipo                  | Obrigatório | Validação Atual                                 | Relacionamento              |
+| ------------ | --------------------- | ----------- | ----------------------------------------------- | --------------------------- |
+| `evento_id`  | uuid                  | Sim         | PK                                              | FK `eventos(id,fazenda_id)` |
+| `fazenda_id` | uuid                  | Sim         | not null                                        | tenant                      |
+| `tipo`       | `sanitario_tipo_enum` | Sim         | enum (`vacinacao`,`vermifugacao`,`medicamento`) | -                           |
+| `produto`    | text                  | Sim         | not null                                        | -                           |
+| `payload`    | jsonb                 | Sim         | default `{}`                                    | extensão de domínio         |
 
-Observacao: os documentos de analise citam campos extras (fabricante, dose, via, lote etc.) que hoje nao estao tipados no schema principal e devem ser tratados via `payload` ate padronizacao v2.
+**PM:** `0001_init.sql:597-614`
 
-#### 3.2.2 Pesagem - `eventos_pesagem`
+**Observação:** Campos extras (fabricante, dose, via, lote) não estão tipados no schema principal e devem ser tratados via `payload` até padronização v2.
 
-| Campo | Tipo | Obrigatorio | Validacao atual | Relacionamento |
-|---|---|---|---|---|
-| `evento_id` | uuid | Sim | PK | FK `eventos(id,fazenda_id)` |
-| `fazenda_id` | uuid | Sim | not null | tenant |
-| `peso_kg` | numeric(10,2) | Sim | `check (peso_kg > 0)` | - |
-| `payload` | jsonb | Sim | default `{}` | extensao de dominio |
-| metadados sync/sistema | diversos | Sim/Opcional | padrao | - |
+#### 3.3.2 Pesagem — `eventos_pesagem`
 
-#### 3.2.3 Movimentacao - `eventos_movimentacao`
+| Campo        | Tipo          | Obrigatório | Validação Atual       |
+| ------------ | ------------- | ----------- | --------------------- |
+| `evento_id`  | uuid          | Sim         | PK                    |
+| `fazenda_id` | uuid          | Sim         | not null              |
+| `peso_kg`    | numeric(10,2) | Sim         | `check (peso_kg > 0)` |
+| `payload`    | jsonb         | Sim         | default `{}`          |
 
-| Campo | Tipo | Obrigatorio | Validacao atual | Relacionamento |
-|---|---|---|---|---|
-| `evento_id` | uuid | Sim | PK | FK `eventos(id,fazenda_id)` |
-| `fazenda_id` | uuid | Sim | not null | tenant |
-| `from_lote_id` | uuid | Nao | sem check | sem FK dedicada na tabela de detalhe |
-| `to_lote_id` | uuid | Nao | sem check | sem FK dedicada na tabela de detalhe |
-| `from_pasto_id` | uuid | Nao | sem check | sem FK dedicada na tabela de detalhe |
-| `to_pasto_id` | uuid | Nao | sem check | sem FK dedicada na tabela de detalhe |
-| `payload` | jsonb | Sim | default `{}` | extensao de dominio |
-| metadados sync/sistema | diversos | Sim/Opcional | padrao | - |
+**PM:** `0001_init.sql:615-631`
 
-Regra de integridade relevante:
+#### 3.3.3 Movimentação — `eventos_movimentacao`
 
-1. `sync-batch` aplica pre-validacao anti-teleporte: `UPDATE animais.lote_id` so e aceito quando existe `eventos` de `movimentacao` + `eventos_movimentacao` correlato no mesmo `client_tx_id`.
+| Campo           | Tipo  | Obrigatório | Validação Atual                       | Relacionamento                       |
+| --------------- | ----- | ----------- | ------------------------------------- | ------------------------------------ |
+| `evento_id`     | uuid  | Sim         | PK                                    | FK `eventos(id,fazenda_id)`          |
+| `fazenda_id`    | uuid  | Sim         | not null                              | tenant                               |
+| `from_lote_id`  | uuid  | Não         | sem check                             | sem FK dedicada na tabela de detalhe |
+| `to_lote_id`    | uuid  | Não         | constraint destino obrigatório (0025) | sem FK dedicada na tabela de detalhe |
+| `from_pasto_id` | uuid  | Não         | sem check                             | sem FK dedicada na tabela de detalhe |
+| `to_pasto_id`   | uuid  | Não         | constraint destino obrigatório (0025) | sem FK dedicada na tabela de detalhe |
+| `payload`       | jsonb | Sim         | default `{}`                          | extensão de domínio                  |
 
-#### 3.2.4 Nutricao - `eventos_nutricao`
+**Regra de integridade relevante:**
 
-| Campo | Tipo | Obrigatorio | Validacao atual | Relacionamento |
-|---|---|---|---|---|
-| `evento_id` | uuid | Sim | PK | FK `eventos(id,fazenda_id)` |
-| `fazenda_id` | uuid | Sim | not null | tenant |
-| `alimento_nome` | text | Nao | sem check | - |
-| `quantidade_kg` | numeric(12,3) | Nao | sem check | - |
-| `payload` | jsonb | Sim | default `{}` | extensao de dominio |
-| metadados sync/sistema | diversos | Sim/Opcional | padrao | - |
+1. `sync-batch` aplica pré-validação anti-teleporte: `UPDATE animais.lote_id` só é aceito quando existe `eventos` de `movimentacao` + `eventos_movimentacao` correlato no mesmo `client_tx_id`.
+2. **✅ IMPLEMENTADO (0025):** Constraints de destino obrigatório e origem ≠ destino adicionados.
 
-#### 3.2.5 Financeiro - `eventos_financeiro`
+**PM (tabela):** `0001_init.sql:650-669`  
+**PM (constraints):** `0025_hardening_eventos_movimentacao.sql:6-10`  
+**PM (anti-teleport):** `docs/EVENTOS_AGENDA_SPEC.md:53-68`, `docs/CONTRACTS.md:71`
 
-| Campo | Tipo | Obrigatorio | Validacao atual | Relacionamento |
-|---|---|---|---|---|
-| `evento_id` | uuid | Sim | PK | FK `eventos(id,fazenda_id)` |
-| `fazenda_id` | uuid | Sim | not null | tenant |
-| `tipo` | `financeiro_tipo_enum` | Sim | enum (`compra`,`venda`) | - |
-| `valor_total` | numeric(14,2) | Sim | not null, sem `check > 0` | - |
-| `contraparte_id` | uuid | Nao | opcional | sem FK explicita no detalhe |
-| `payload` | jsonb | Sim | default `{}` | extensao de dominio |
-| metadados sync/sistema | diversos | Sim/Opcional | padrao | - |
+#### 3.3.4 Nutrição — `eventos_nutricao`
 
-### 3.3 Estrutura de agenda e protocolos (rail mutavel)
+| Campo           | Tipo          | Obrigatório | Validação Atual                                                |
+| --------------- | ------------- | ----------- | -------------------------------------------------------------- |
+| `evento_id`     | uuid          | Sim         | PK                                                             |
+| `fazenda_id`    | uuid          | Sim         | not null                                                       |
+| `alimento_nome` | text          | Não         | sem check                                                      |
+| `quantidade_kg` | numeric(12,3) | Não         | ✅ `check (quantidade_kg is null or quantidade_kg > 0)` (0024) |
+| `payload`       | jsonb         | Sim         | default `{}`                                                   |
 
-#### 3.3.1 Agenda - `agenda_itens`
+**PM (tabela):** `0001_init.sql:632-649`  
+**PM (check):** `0024_hardening_eventos_nutricao.sql:12`
 
-| Campo | Tipo | Obrigatorio | Validacao atual | Relacionamento |
-|---|---|---|---|---|
-| `id` | uuid | Sim | PK | - |
-| `fazenda_id` | uuid | Sim | not null | FK `fazendas(id)` |
-| `dominio` | `dominio_enum` | Sim | enum | - |
-| `tipo` | text | Sim | not null | - |
-| `status` | `agenda_status_enum` | Sim | default `agendado` | - |
-| `data_prevista` | date | Sim | not null | - |
-| `animal_id` | uuid | Nao | `ck_agenda_alvo` | FK composta `animais(id,fazenda_id)` |
-| `lote_id` | uuid | Nao | `ck_agenda_alvo` | FK composta `lotes(id,fazenda_id)` |
-| `dedup_key` | text | Nao | obrigatoria quando `source_kind=automatico` | unique parcial ativo |
-| `source_kind` | `agenda_source_kind_enum` | Sim | default `manual` | - |
-| `source_ref` | jsonb | Nao | opcional | - |
-| `source_client_op_id` | uuid | Nao | opcional | trilha tecnica |
-| `source_tx_id` | uuid | Nao | opcional | trilha tecnica |
-| `source_evento_id` | uuid | Nao | opcional | referencia evento de conclusao |
-| `protocol_item_version_id` | uuid | Nao | opcional | referencia protocolo/versao |
-| `interval_days_applied` | int | Nao | opcional | agenda automatica |
-| `payload` | jsonb | Sim | default `{}` | extensao |
-| metadados sync/sistema | diversos | Sim/Opcional | padrao | - |
+#### 3.3.5 Financeiro — `eventos_financeiro`
 
-## 4. Padroes comuns e divergencias
+| Campo            | Tipo                   | Obrigatório | Validação Atual                     | Relacionamento              |
+| ---------------- | ---------------------- | ----------- | ----------------------------------- | --------------------------- |
+| `evento_id`      | uuid                   | Sim         | PK                                  | FK `eventos(id,fazenda_id)` |
+| `fazenda_id`     | uuid                   | Sim         | not null                            | tenant                      |
+| `tipo`           | `financeiro_tipo_enum` | Sim         | enum (`compra`,`venda`)             | -                           |
+| `valor_total`    | numeric(14,2)          | Sim         | ✅ `check (valor_total > 0)` (0023) | -                           |
+| `contraparte_id` | uuid                   | Não         | opcional                            | ✅ FK composta (0026)       |
+| `payload`        | jsonb                  | Sim         | default `{}`                        | extensão de domínio         |
 
-### 4.1 Padroes comuns identificados
+**PM (tabela):** `0001_init.sql:688-706`  
+**PM (check):** `0023_hardening_eventos_financeiro.sql:13`  
+**PM (FK):** `0026_fk_eventos_financeiro_contrapartes.sql`
 
-1. Two Rails: `eventos` append-only + `agenda_itens` mutavel.
-2. Modelo de detalhe 1:1 por dominio.
-3. Metadados de sync em todas as tabelas (`client_*`, `server_received_at`).
-4. Multi-tenant por `fazenda_id` + RLS por membership.
-5. Correcao historica por novo evento, sem sobrescrita.
+#### 3.3.6 Reprodução — `eventos_reproducao`
 
-### 4.2 Divergencias e lacunas
+| Campo        | Tipo              | Obrigatório | Validação Atual                                  |
+| ------------ | ----------------- | ----------- | ------------------------------------------------ |
+| `evento_id`  | uuid              | Sim         | PK                                               |
+| `fazenda_id` | uuid              | Sim         | not null                                         |
+| `tipo`       | `repro_tipo_enum` | Sim         | enum (`cobertura`,`IA`,`diagnostico`,`parto`)    |
+| `macho_id`   | uuid              | Não         | validação sync-batch para cobertura/IA           |
+| `payload`    | jsonb             | Sim         | default `{}` (schema_version, episode_evento_id) |
 
-1. Cobertura de UI desigual: `sanitario/pesagem/movimentacao` ativos; `nutricao/financeiro` sem fluxo completo em tela.
-2. Validacoes assimetricas: `peso_kg > 0` existe; `valor_total`, `quantidade_kg` e campos de movimentacao sem checks equivalentes.
-3. Integridade referencial incompleta: `contraparte_id` e campos de origem/destino de movimentacao sem FK dedicada no detalhe.
-4. Heterogeneidade semantica: parte dos atributos sanitarios aparece nos documentos, mas no schema atual esta concentrada no `payload`.
-5. Contratos de tipos com drift: `src/lib/offline/types.ts` nao reflete 100% das colunas de `eventos` (ex.: `source_tx_id`, `source_client_op_id`) e omite `server_received_at` em `EventoFinanceiro`.
-6. Nomenclatura de papeis inconsistente na documentacao (`admin` vs `manager`).
+**PM (tabela):** `0001_init.sql:670-687`  
+**PM (hardening):** `0035_reproducao_hardening_v1.sql`
 
-## 5. Modelo unificado v2 (proposta)
+**Constraints e Validações (Sync-Batch):**
 
-### 5.1 Principios
+- `payload.schema_version` deve ser 1 (PM: `docs/CONTRACTS.md:72`)
+- `macho_id` obrigatório para `tipo = 'cobertura'` ou `tipo = 'IA'` (validação em sync-batch)
+- `tipo = 'parto'` deve ter `payload.episode_evento_id` referenciando evento de cobertura ou IA
+- `tipo = 'diagnostico'` aceita `episode_evento_id` nulo (marcado como 'unlinked')
 
-1. Preservar append-only e idempotencia.
+### 3.4 Estrutura de Agenda e Protocolos (Rail Mutável)
+
+#### 3.4.1 Agenda — `agenda_itens`
+
+| Campo                      | Tipo                      | Obrigatório | Validação Atual                             | Relacionamento                       |
+| -------------------------- | ------------------------- | ----------- | ------------------------------------------- | ------------------------------------ |
+| `id`                       | uuid                      | Sim         | PK                                          | -                                    |
+| `fazenda_id`               | uuid                      | Sim         | not null                                    | FK `fazendas(id)`                    |
+| `dominio`                  | `dominio_enum`            | Sim         | enum                                        | -                                    |
+| `tipo`                     | text                      | Sim         | not null                                    | -                                    |
+| `status`                   | `agenda_status_enum`      | Sim         | default `agendado`                          | -                                    |
+| `data_prevista`            | date                      | Sim         | not null                                    | -                                    |
+| `animal_id`                | uuid                      | Não         | `ck_agenda_alvo`                            | FK composta `animais(id,fazenda_id)` |
+| `lote_id`                  | uuid                      | Não         | `ck_agenda_alvo`                            | FK composta `lotes(id,fazenda_id)`   |
+| `dedup_key`                | text                      | Não         | obrigatória quando `source_kind=automatico` | unique parcial ativo                 |
+| `source_kind`              | `agenda_source_kind_enum` | Sim         | default `manual`                            | -                                    |
+| `source_ref`               | jsonb                     | Não         | opcional                                    | -                                    |
+| `source_client_op_id`      | uuid                      | Não         | opcional                                    | trilha técnica                       |
+| `source_tx_id`             | uuid                      | Não         | opcional                                    | trilha técnica                       |
+| `source_evento_id`         | uuid                      | Não         | opcional                                    | referência evento de conclusão       |
+| `protocol_item_version_id` | uuid                      | Não         | opcional                                    | referência protocolo/versão          |
+| `interval_days_applied`    | int                       | Não         | opcional                                    | agenda automática                    |
+| `payload`                  | jsonb                     | Sim         | default `{}`                                | extensão                             |
+
+**PM:** `0001_init.sql:476-537`  
+**PM (agenda engine):** `0028_sanitario_agenda_engine.sql`
+
+---
+
+## 4. Padrões Comuns e Divergências
+
+### 4.1 Padrões Comuns Identificados
+
+1. **Two Rails:** `eventos` append-only + `agenda_itens` mutável.
+2. **Modelo de detalhe 1:1** por domínio.
+3. **Metadados de sync** em todas as tabelas (`client_*`, `server_received_at`).
+4. **Multi-tenant** por `fazenda_id` + RLS por membership.
+5. **Correção histórica** por novo evento, sem sobrescrita.
+
+### 4.2 Divergências e Lacunas
+
+#### ✅ RESOLVIDAS (Baseline ef123ac):
+
+1. **Validações assimétricas**: `peso_kg > 0` existia; `valor_total`, `quantidade_kg` AGORA têm checks equivalentes (0023, 0024).
+2. **Integridade referencial (contrapartes)**: `contraparte_id` AGORA tem FK composta (0026).
+3. **Validação movimentação**: Destino obrigatório e origem ≠ destino AGORA têm constraints (0025).
+
+#### 🔄 PENDENTES (Para v2):
+
+1. **Cobertura de UI desigual**: `sanitario/pesagem/movimentacao` ativos; `nutricao/financeiro` sem fluxo completo em tela.
+2. **Heterogeneidade semântica**: Parte dos atributos sanitários aparece nos documentos, mas no schema atual está concentrada no `payload`.
+3. **Contratos de tipos com drift**: `src/lib/offline/types.ts` não reflete 100% das colunas de `eventos` (ex.: `source_tx_id`, `source_client_op_id`) e omite `server_received_at` em `EventoFinanceiro`.
+4. **Nomenclatura de papéis inconsistente na documentação**: `admin` vs `manager` (docs vs código usa `owner`/`manager`/`cowboy`).
+
+---
+
+## 5. Modelo Unificado v2 (Proposta)
+
+### 5.1 Princípios
+
+1. Preservar append-only e idempotência.
 2. Padronizar contratos sem quebrar sync offline existente.
-3. Tipar campos de alto valor analitico/auditoria; manter extensoes em `payload`.
-4. Migrar por estrategia expand-migrate-contract.
+3. Tipar campos de alto valor analítico/auditoria; manter extensões em `payload`.
+4. Migrar por estratégia expand-migrate-contract.
 
-### 5.2 Evolucao de schema proposta
+### 5.2 Evolução de Schema Proposta
 
-#### 5.2.1 Campos novos no envelope `eventos`
+#### 5.2.1 Campos Novos no Envelope `eventos`
 
-| Campo novo | Tipo | Objetivo |
-|---|---|---|
-| `tipo` | text | subtipo canonico dentro do dominio |
-| `schema_version` | int | versao do contrato (v1, v2...) |
-| `correlation_id` | uuid | rastrear fluxo de negocio ponta a ponta |
-| `causation_id` | uuid | evento/acao que originou o atual |
-| `composite_root_id` | uuid | encadear eventos compostos |
-| `producer` | text | origem (`ui`, `import`, `integration`) |
+| Campo Novo          | Tipo | Objetivo                                |
+| ------------------- | ---- | --------------------------------------- |
+| `tipo`              | text | subtipo canônico dentro do domínio      |
+| `schema_version`    | int  | versão do contrato (v1, v2...)          |
+| `correlation_id`    | uuid | rastrear fluxo de negócio ponta a ponta |
+| `causation_id`      | uuid | evento/ação que originou o atual        |
+| `composite_root_id` | uuid | encadear eventos compostos              |
+| `producer`          | text | origem (`ui`, `import`, `integration`)  |
 
-#### 5.2.2 Regras minimas por dominio (v2)
+#### 5.2.2 Regras Mínimas por Domínio (v2)
 
-| Dominio | Regras obrigatorias v2 |
-|---|---|
-| `sanitario` | `tipo`, `produto` obrigatorios; `payload` com schema versionado para dose, via, lote e validade |
-| `pesagem` | manter `peso_kg > 0`; incluir faixa plausivel por categoria no backend |
-| `movimentacao` | exigir `to_lote_id` ou `to_pasto_id`; bloquear origem=destino; manter anti-teleporte |
-| `nutricao` | exigir `alimento_nome` e `quantidade_kg > 0`; unidade padrao em payload (`kg`,`g`,`l`) |
-| `financeiro` | exigir `valor_total > 0`; `contraparte_id` obrigatoria quando `tipo in ('compra','venda')` |
+| Domínio        | Regras Obrigatórias v2                                                                                                                 |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `sanitario`    | `tipo`, `produto` obrigatórios; `payload` com schema versionado para dose, via, lote e validade                                        |
+| `pesagem`      | manter `peso_kg > 0`; incluir faixa plausível por categoria no backend                                                                 |
+| `movimentacao` | ✅ exigir `to_lote_id` ou `to_pasto_id` (JÁ IMPLEMENTADO 0025); bloquear origem=destino; manter anti-teleporte                         |
+| `nutricao`     | ✅ exigir `quantidade_kg > 0` quando não null (JÁ IMPLEMENTADO 0024); exigir `alimento_nome`; unidade padrão em payload (`kg`,`g`,`l`) |
+| `financeiro`   | ✅ exigir `valor_total > 0` (JÁ IMPLEMENTADO 0023); `contraparte_id` obrigatória quando `tipo in ('compra','venda')`                   |
 
-#### 5.2.3 Eventos compostos
+#### 5.2.3 Eventos Compostos
 
-Padrao: um `composite_root_id` por operacao multi-entidade.
+Padrão: um `composite_root_id` por operação multi-entidade.
 
 1. `movimentacao_com_estado`: `eventos` + `eventos_movimentacao` + `UPDATE animais`.
-2. `execucao_agenda`: mudanca `agenda_itens.status` + evento(s) de execucao vinculados.
-3. `sanitario_com_custo`: evento sanitario + evento financeiro associado por `correlation_id`.
-4. `nutricao_com_custo`: evento nutricao + evento financeiro associado por `correlation_id`.
+2. `execucao_agenda`: mudança `agenda_itens.status` + evento(s) de execução vinculados.
+3. `sanitario_com_custo`: evento sanitário + evento financeiro associado por `correlation_id`.
+4. `nutricao_com_custo`: evento nutrição + evento financeiro associado por `correlation_id`.
 
-### 5.3 Estados e transicoes
+### 5.3 Estados e Transições
 
-#### 5.3.1 Estados de evento (processamento)
+#### 5.3.1 Estados de Evento (Processamento)
 
-Implementar em tabela tecnica `eventos_pipeline` (nao no evento de negocio):
+Implementar em tabela técnica `eventos_pipeline` (não no evento de negócio):
 
-1. `capturado` -> `validado` -> `persistido` -> `publicado`.
-2. `capturado` -> `rejeitado` (erro de regra ou contrato).
-3. `persistido` -> `corrigido` (quando houver evento com `corrige_evento_id`).
+1. `capturado` → `validado` → `persistido` → `publicado`.
+2. `capturado` → `rejeitado` (erro de regra ou contrato).
+3. `persistido` → `corrigido` (quando houver evento com `corrige_evento_id`).
 
-#### 5.3.2 Estados de agenda
+#### 5.3.2 Estados de Agenda
 
 Manter `agendado`, `concluido`, `cancelado`, com guardas:
 
-1. `agendado -> concluido`: requer `source_evento_id` ou justificativa tecnica.
-2. `agendado -> cancelado`: requer justificativa em `observacoes`.
-3. Bloquear reabertura sem evento de replanejamento explicito.
+1. `agendado → concluido`: requer `source_evento_id` ou justificativa técnica.
+2. `agendado → cancelado`: requer justificativa em `observacoes`.
+3. Bloquear reabertura sem evento de replanejamento explícito.
 
-## 6. Arquitetura de integracao
+---
 
-### 6.1 Fluxo alvo
+## 6. Arquitetura de Integração
 
-1. Captura (UI/importacao/API) -> `queue_gestures` / `queue_ops` (offline-first).
-2. Ingestao (`sync-batch`) com validacao:
+### 6.1 Fluxo Alvo
+
+```mermaid
+graph LR
+    A[UI/Importação] --> B[queue_gestures]
+    B --> C[Sync Worker]
+    C --> D[sync-batch
+    <br/>Validação]
+    D --> E[Persistência
+    <br/>Eventos + Agenda]
+    E --> F[Outbox]
+    F --> G[Dispatcher]
+    G --> H[Projeções]
+    G --> I[Webhooks]
+```
+
+1. **Captura** (UI/importação/API) → `queue_gestures` / `queue_ops` (offline-first).
+2. **Ingestão** (`sync-batch`) com validação:
    1. membership/RLS
-   2. contrato por dominio
+   2. contrato por domínio
    3. anti-teleporte e dedup
-3. Persistencia atomica no rail de eventos/agenda.
-4. Escrita em outbox (`eventos_outbox`) no mesmo commit.
-5. Dispatcher assincro publica para:
-   1. projections internas (timeline, dashboards, relatorios)
-   2. integracoes externas (ERP, BI, webhooks)
-6. Consumo idempotente por `event_id` + `schema_version`.
+3. **Persistência atomica** no rail de eventos/agenda.
+4. **Escrita em outbox** (`eventos_outbox`) no mesmo commit.
+5. **Dispatcher assíncrono** publica para:
+   1. Projeções internas (timeline, dashboards, relatórios)
+   2. Integrações externas (ERP, BI, webhooks)
+6. **Consumo idempotente** por `event_id` + `schema_version`.
 
-### 6.2 Componentes tecnicos
+### 6.2 Componentes Técnicos
 
-1. `sync-batch` v2 com validadores por dominio.
+1. `sync-batch` v2 com validadores por domínio.
 2. `eventos_outbox` com status (`pending`,`sent`,`failed`) e retry exponencial.
-3. `vw_eventos_unificados` para leitura padronizada cross-dominio.
-4. `schema registry` simples (JSON Schema versionado em repositorio).
-5. Projecoes denormalizadas para consulta operacional (`timeline`, `agenda`, `financeiro`).
+3. `vw_eventos_unificados` para leitura padronizada cross-domínio.
+4. `schema registry` simples (JSON Schema versionado em repositório).
+5. Projeções denormalizadas para consulta operacional (`timeline`, `agenda`, `financeiro`).
 
-### 6.3 Propagacao entre sistemas
+### 6.3 Propagação entre Sistemas
 
-1. Interno: leitura direta no Postgres + views/materialized views.
-2. Externo: webhook assinado/HMAC e lote por janela temporal.
-3. Observabilidade: metricas de latencia, rejeicao e lag de outbox.
+1. **Interno:** Leitura direta no Postgres + views/materialized views.
+2. **Externo:** Webhook assinado/HMAC e lote por janela temporal.
+3. **Observabilidade:** Métricas de latência, rejeição e lag de outbox.
 
-## 7. Versionamento e migracao de dados
+---
 
-### 7.1 Estrategia de versionamento
+## 7. Versionamento e Migração de Dados
 
-1. Banco: migrations sequenciais (`00xx`) com compatibilidade backward.
-2. Contratos de evento: `schema_version` inteiro no envelope.
-3. API sync: header ou campo `contract_version` (default v1, novo v2).
+### 7.1 Estratégia de Versionamento
 
-### 7.2 Plano de migracao (expand-migrate-contract)
+1. **Banco:** Migrations sequenciais (`00xx`) com compatibilidade backward.
+2. **Contratos de evento:** `schema_version` inteiro no envelope.
+3. **API sync:** Header ou campo `contract_version` (default v1, novo v2).
+
+### 7.2 Plano de Migração (Expand-Migrate-Contract)
 
 #### Fase A - Expandir
 
@@ -290,160 +400,193 @@ Manter `agendado`, `concluido`, `cancelado`, com guardas:
 
 #### Fase B - Migrar
 
-1. Backfill por dominio:
+1. Backfill por domínio:
    1. `schema_version=1` para legado.
-   2. gerar `tipo` por regra de dominio.
-   3. popular `correlation_id/composite_root_id` quando inferivel.
-2. Adequar dados inconsistentes (`valor_total<=0`, `quantidade_kg<=0`, movimentacoes incompletas) para rejeicao controlada ou correcao.
+   2. gerar `tipo` por regra de domínio.
+   3. popular `correlation_id/composite_root_id` quando inferível.
+2. Adequar dados inconsistentes (`valor_total<=0`, `quantidade_kg<=0`, movimentações incompletas) para rejeição controlada ou correção.
 
 #### Fase C - Contrair
 
-1. Tornar constraints obrigatorias (`VALIDATE CONSTRAINT` + `NOT NULL`).
+1. Tornar constraints obrigatórias (`VALIDATE CONSTRAINT` + `NOT NULL`).
 2. Trocar leituras para `vw_eventos_unificados`.
-3. Remover caminhos legados do cliente quando adocao > 95%.
+3. Remover caminhos legados do cliente quando adoção > 95%.
 
-### 7.3 Compatibilidade de cliente offline
+### 7.3 Compatibilidade de Cliente Offline
 
-1. `sync-batch` aceita v1 e v2 durante janela de transicao.
+1. `sync-batch` aceita v1 e v2 durante janela de transição.
 2. Cliente antigo continua escrevendo v1; servidor enriquece metadados.
 3. Feature flag por fazenda para ativar regras estritas gradualmente.
 
-## 8. Seguranca, auditoria e rastreabilidade
+---
 
-### 8.1 Seguranca
+## 8. Segurança, Auditoria e Rastreabilidade
+
+### 8.1 Segurança
 
 1. Manter RLS em todas as tabelas de evento/agenda.
-2. Reforcar separacao de privilegios por role para operacoes sensiveis.
-3. Assinatura HMAC para webhooks de propagacao externa.
-4. Criptografia em transito (TLS) e em repouso (padrao plataforma).
+2. Reforçar separação de privilégios por role para operações sensíveis.
+3. Assinatura HMAC para webhooks de propagação externa.
+4. Criptografia em trânsito (TLS) e em repouso (padrão plataforma).
 
 ### 8.2 Auditoria
 
 1. Append-only preservado.
-2. Log tecnico imutavel por operacao (`client_op_id`, `client_tx_id`, usuario, timestamp).
-3. Tabela `eventos_auditoria` para trilha de aprovacao/acao administrativa.
-4. Encadeamento de correcao por `corrige_evento_id`.
+2. Log técnico imutável por operação (`client_op_id`, `client_tx_id`, usuário, timestamp).
+3. Tabela `eventos_auditoria` para trilha de aprovação/ação administrativa.
+4. Encadeamento de correção por `corrige_evento_id`.
 
-### 8.3 Rastreabilidade operacional
+### 8.3 Rastreabilidade Operacional
 
-1. `correlation_id` para cadeia completa agenda -> evento -> financeiro.
+1. `correlation_id` para cadeia completa agenda → evento → financeiro.
 2. `causation_id` para causalidade.
-3. Relatorio de proveniencia por origem (`producer`).
+3. Relatório de proveniência por origem (`producer`).
 
-## 9. Testes e validacao
+---
 
-### 9.1 Camadas de teste
+## 9. Testes e Validação
 
-1. Unitarios: validadores por dominio e dedup.
-2. Integracao: `sync-batch` com cenarios APPLIED/APPLIED_ALTERED/REJECTED.
-3. Contrato: JSON Schema v1/v2 e compatibilidade.
-4. Migracao: testes de backfill e rollback de dados.
-5. E2E: fluxos offline-first (captura, sync, rejeicao, rollback local).
-6. Performance: carga de batch e throughput outbox.
-7. Seguranca: testes de RLS por role e tenant isolation.
+### 9.1 Camadas de Teste
 
-### 9.2 Criterios minimos de aceite tecnico
+1. **Unitários:** Validadores por domínio e dedup.
+2. **Integração:** `sync-batch` com cenários APPLIED/APPLIED_ALTERED/REJECTED.
+3. **Contrato:** JSON Schema v1/v2 e compatibilidade.
+4. **Migração:** Testes de backfill e rollback de dados.
+5. **E2E:** Fluxos offline-first (captura, sync, rejeição, rollback local).
+6. **Performance:** Carga de batch e throughput outbox.
+7. **Segurança:** Testes de RLS por role e tenant isolation.
 
-1. 0 regressao de integridade referencial.
-2. >= 99% de lotes sincronizados sem erro em ambiente piloto.
+### 9.2 Critérios Mínimos de Aceite Técnico
+
+1. 0 regressão de integridade referencial.
+2. > = 99% de lotes sincronizados sem erro em ambiente piloto.
 3. 100% dos eventos v2 com `schema_version` e `tipo` preenchidos.
-4. Reprocessamento de rejeicao validado em todos os dominios.
-5. Dashboards e timeline lendo de modelo unificado sem divergencia.
+4. Reprocessamento de rejeição validado em todos os domínios.
+5. Dashboards e timeline lendo de modelo unificado sem divergência.
 
-## 10. Cronograma de implantacao em fases
+---
 
-### Fase 0 - Planejamento detalhado (Semana 1)
+## 10. Cronograma de Implantação em Fases
+
+### Fase 0 - Planejamento Detalhado (Semana 1)
 
 1. Fechar ADRs de modelo unificado.
-2. Definir schemas JSON por dominio.
+2. Definir schemas JSON por domínio.
 
-Aceite:
+**Aceite:**
 
 1. ADR aprovado por arquitetura e produto.
-2. Especificacoes versionadas publicadas.
+2. Especificações versionadas publicadas.
 
-### Fase 1 - Fundacao de dados (Semanas 2-3)
+### Fase 1 - Fundação de Dados (Semanas 2-3)
 
-1. Migrations de expansao (`eventos` v2, outbox, pipeline, constraints `NOT VALID`).
+1. Migrations de expansão (`eventos` v2, outbox, pipeline, constraints `NOT VALID`).
 2. Ajustes em `sync-batch` para v2 com compatibilidade v1.
 
-Aceite:
+**Aceite:**
 
 1. Migrations aplicam sem downtime.
-2. Testes de integracao verdes.
+2. Testes de integração verdes.
 
-### Fase 2 - Validacao por dominio (Semanas 4-5)
+### Fase 2 - Validação por Domínio (Semanas 4-5)
 
-1. Implementar regras obrigatorias por dominio.
+1. Implementar regras obrigatórias por domínio.
 2. Uniformizar contratos de erro por campo/regra.
 
-Aceite:
+**Aceite:**
 
 1. Suite de contrato 100% aprovada.
-2. Rejeicoes explicitas por `reason_code` padronizado.
+2. Rejeições explícitas por `reason_code` padronizado.
 
-### Fase 3 - UI e experiencia operacional (Semanas 6-7)
+### Fase 3 - UI e Experiência Operacional (Semanas 6-7)
 
-1. Habilitar formularios de `nutricao` e `financeiro`.
+1. Habilitar formulários de `nutricao` e `financeiro`.
 2. Evoluir telas de eventos/agenda com detalhes unificados e rastreabilidade.
 
-Aceite:
+**Aceite:**
 
-1. Registro completo dos 5 dominios na UI.
-2. Timeline e filtros funcionando por dominio/tipo.
+1. Registro completo dos 5 domínios na UI.
+2. Timeline e filtros funcionando por domínio/tipo.
 
-### Fase 4 - Migracao e backfill (Semanas 8-9)
+### Fase 4 - Migração e Backfill (Semanas 8-9)
 
-1. Executar backfill historico.
-2. Corrigir dados invalidos mapeados no diagnostico.
+1. Executar backfill histórico.
+2. Corrigir dados inválidos mapeados no diagnóstico.
 
-Aceite:
+**Aceite:**
 
-1. 100% eventos historicos com `schema_version`.
-2. Relatorio de inconsistencias zerado ou com excecoes aprovadas.
+1. 100% eventos históricos com `schema_version`.
+2. Relatório de inconsistências zerado ou com exceções aprovadas.
 
-### Fase 5 - Piloto controlado (Semanas 10-11)
+### Fase 5 - Piloto Controlado (Semanas 10-11)
 
 1. Ativar feature flag v2 em fazendas piloto.
-2. Monitorar rejeicoes, latencia e lag de outbox.
+2. Monitorar rejeições, latência e lag de outbox.
 
-Aceite:
+**Aceite:**
 
 1. SLA de sync atendido.
 2. Sem incidentes de tenant leakage ou perda de evento.
 
-### Fase 6 - Rollout geral (Semana 12)
+### Fase 6 - Rollout Geral (Semana 12)
 
 1. Expandir para todas as fazendas.
-2. Encerrar caminho legado v1 (apos janela acordada).
+2. Encerrar caminho legado v1 (após janela acordada).
 
-Aceite:
+**Aceite:**
 
-1. Adocao > 95% no novo contrato.
+1. Adoção > 95% no novo contrato.
 2. Plano de rollback documentado e testado.
 
-## 11. Documentacao tecnica de referencia (entregaveis)
+---
+
+## 11. Documentação Técnica de Referência (Entregáveis)
 
 1. `docs/EVENTOS_MODELO_UNIFICADO_V2.md` - modelo canonicamente tipado.
-2. `docs/EVENTOS_CONTRATOS_JSON_SCHEMA.md` - schemas por dominio e exemplos.
-3. `docs/EVENTOS_MIGRACAO_V2.md` - runbook de migracao/backfill/rollback.
-4. `docs/EVENTOS_OPERACAO_E_OBSERVABILIDADE.md` - monitoracao, alertas e SLO.
+2. `docs/EVENTOS_CONTRATOS_JSON_SCHEMA.md` - schemas por domínio e exemplos.
+3. `docs/EVENTOS_MIGRACAO_V2.md` - runbook de migração/backfill/rollback.
+4. `docs/EVENTOS_OPERACAO_E_OBSERVABILIDADE.md` - monitoração, alertas e SLO.
 5. `docs/EVENTOS_TEST_PLAN_V2.md` - plano de testes completo.
-6. Atualizacao de `docs/CONTRACTS.md`, `docs/OFFLINE.md`, `docs/RLS.md`, `docs/DB.md`.
+6. Atualização de `docs/CONTRACTS.md`, `docs/OFFLINE.md`, `docs/RLS.md`, `docs/DB.md`.
 
-## 12. Riscos e mitigacoes
+---
 
-| Risco | Impacto | Mitigacao |
-|---|---|---|
-| Rejeicoes altas apos regras v2 | Alto | rollout por feature flag + monitoracao por dominio |
-| Drift entre schema e tipos TS | Alto | CI de comparacao schema vs `types.ts` |
-| Quebra em clientes offline antigos | Medio/Alto | compat v1/v2 e janela de deprecacao |
-| Backfill com dados historicos incompletos | Medio | estrategia de quarentena + correcao assistida |
-| Aumento de latencia no sync | Medio | batch tuning + indices + outbox assincrono |
+## 12. Riscos e Mitigações
 
-## 13. Decisoes imediatas recomendadas (P0)
+| Risco                                     | Impacto    | Mitigação                                          |
+| ----------------------------------------- | ---------- | -------------------------------------------------- |
+| Rejeições altas após regras v2            | Alto       | rollout por feature flag + monitoração por domínio |
+| Drift entre schema e tipos TS             | Alto       | CI de comparação schema vs `types.ts`              |
+| Quebra em clientes offline antigos        | Médio/Alto | compat v1/v2 e janela de deprecação                |
+| Backfill com dados históricos incompletos | Médio      | estratégia de quarentena + correção assistida      |
+| Aumento de latência no sync               | Médio      | batch tuning + índices + outbox assíncrono         |
 
-1. Adicionar checks de negocio faltantes: `eventos_financeiro.valor_total > 0`, `eventos_nutricao.quantidade_kg > 0` (quando preenchido).
-2. Tornar obrigatoria a validacao de destino em movimentacao (`to_lote_id` ou `to_pasto_id`).
-3. Corrigir drift de tipos em `src/lib/offline/types.ts` para espelhar schema atual.
-4. Definir contrato minimo de `payload` por dominio com `schema_version`.
+---
+
+## 13. Decisões Imediatas Recomendadas (P0)
+
+1. ✅ **IMPLEMENTADO** (0023, 0024): Checks de negócio para `eventos_financeiro.valor_total > 0`, `eventos_nutricao.quantidade_kg > 0`.
+   - **PM:** `0023_hardening_eventos_financeiro.sql:13`, `0024_hardening_eventos_nutricao.sql:12`
+
+2. ✅ **IMPLEMENTADO** (0025): Validação de destino obrigatório em movimentação (`to_lote_id` or `to_pasto_id`).
+   - **PM:** `0025_hardening_eventos_movimentacao.sql:6-10`
+
+3. 🔄 **PENDENTE**: Corrigir drift de tipos em `src/lib/offline/types.ts` para espelhar schema atual.
+   - **Ação:** Adicionar `source_tx_id`, `source_client_op_id`, `server_received_at` em interfaces TypeScript.
+   - **PM:** Comparar `src/lib/offline/types.ts` vs `0001_init.sql:541-706`
+
+4. 🔄 **PENDENTE**: Definir contrato mínimo de `payload` por domínio com `schema_version`.
+   - **Ação:** Criar `docs/EVENTOS_CONTRATOS_JSON_SCHEMA.md` com schemas JSON por domínio.
+
+---
+
+## Veja Também
+
+- [MATRIZ_CANONICA_EVENTOS_SCHEMA.md](./MATRIZ_CANONICA_EVENTOS_SCHEMA.md) (baseline Fase 0)
+- [RECONCILIACAO_REPORT.md](./review/RECONCILIACAO_REPORT.md) (audit report)
+- [ARCHITECTURE.md](./ARCHITECTURE.md) (Two Rails e offline-first)
+- [CONTRACTS.md](./CONTRACTS.md) (sync-batch API)
+- [EVENTOS_AGENDA_SPEC.md](./EVENTOS_AGENDA_SPEC.md) (regras de negócio)
+- [DB.md](./DB.md) (esquema completo do banco)
+- [OFFLINE.md](./OFFLINE.md) (Dexie e sincronização)
+- [RLS.md](./RLS.md) (segurança e RBAC)
