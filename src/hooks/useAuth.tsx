@@ -123,10 +123,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         settings?.active_fazenda_id &&
         settings.active_fazenda_id !== localFarmId
       ) {
-        console.log(
-          "[useAuth] Syncing farm from remote:",
-          settings.active_fazenda_id,
-        );
+        if (import.meta.env.DEV) {
+          console.debug(
+            "[useAuth] Syncing farm from remote:",
+            settings.active_fazenda_id,
+          );
+        }
         setActiveFarmId(settings.active_fazenda_id);
         try {
           localStorage.setItem(
@@ -140,7 +142,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
 
       if (!settings?.active_fazenda_id && localFarmId) {
-        console.log("[useAuth] Persisting local farm to remote:", localFarmId);
+        if (import.meta.env.DEV) {
+          console.debug(
+            "[useAuth] Persisting local farm to remote:",
+            localFarmId,
+          );
+        }
         await persistActiveFarmToRemote(user.id, localFarmId);
       }
 
