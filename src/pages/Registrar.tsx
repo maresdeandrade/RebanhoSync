@@ -9,6 +9,7 @@ import type {
   OperationInput,
   SanitarioTipoEnum,
   ReproTipoEnum,
+  Animal,
 } from "@/lib/offline/types";
 import {
   ReproductionForm,
@@ -624,8 +625,23 @@ const Registrar = () => {
         ? selectedAnimais
         : [null];
 
+      // Performance Optimization: Use bulkGet to fetch all animals in one go (N+1 fix)
+      const distinctIds = Array.from(
+        new Set(targetAnimalIds.filter((id): id is string => id !== null)),
+      );
+      const animalsMap = new Map<string, Animal>();
+
+      if (distinctIds.length > 0) {
+        const animalsList = await db.state_animais.bulkGet(distinctIds);
+        animalsList.forEach((animal) => {
+          if (animal) {
+            animalsMap.set(animal.id, animal);
+          }
+        });
+      }
+
       for (const animalId of targetAnimalIds) {
-        const animal = animalId ? await db.state_animais.get(animalId) : null;
+        const animal = animalId ? animalsMap.get(animalId) ?? null : null;
         if (animalId && !animal) continue;
         const targetLoteId = animal?.lote_id ?? selectedLoteIdNormalized;
 
