@@ -3,7 +3,7 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "@/lib/offline/db";
 import { useAuth } from "@/hooks/useAuth";
 import { Animal, Evento, EventoReproducao } from "@/lib/offline/types";
-import { deriveReproductiveStatus, ReproStatus, AnimalReproStatus } from "@/lib/reproduction/status";
+import { computeReproStatus, ReproStatus, AnimalReproStatus } from "@/lib/reproduction/status";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -66,7 +66,7 @@ export default function ReproductionDashboard() {
     // 5. Derive Status for each Animal
     const result: DashboardAnimal[] = animals.map((animal) => {
       const animalEvents = eventsByAnimal.get(animal.id) || [];
-      const status = deriveReproductiveStatus(animalEvents);
+      const status = computeReproStatus(animalEvents);
       return { ...animal, reproStatus: status };
     });
 
