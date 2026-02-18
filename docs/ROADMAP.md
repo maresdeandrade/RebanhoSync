@@ -1,11 +1,15 @@
 # Roadmap do Produto (6 Semanas)
 
-> **Status:** Derivado
-> **Baseline:** `1f62e4b`
-> **Última Atualização:** 2026-02-16
-> **Fonte:** `TECH_DEBT.md` (OPEN), `E2E_MVP.md`, `IMPLEMENTATION_STATUS.md`
+> **Status:** Derivado (Rev D+)
+> **Baseline:** `8ae3860`
+> **Última Atualização:** 2026-02-17
+> **Derivado por:** Antigravity — capability_id Derivation Rev D+
+> **Fonte:** `TECH_DEBT.md` (OPEN), `IMPLEMENTATION_STATUS.md` (Matriz Analítica)
 
 Este roadmap define as etapas para estabilização e hardening do RebanhoSync, priorizando a resolução de dívidas técnicas **OPEN** críticas e conformidade com testes E2E.
+
+> [!NOTE]
+> Cada item do roadmap é derivado mecanicamente de `TECH_DEBT.md OPEN`. Itens Catalog incluem `capability_id`; itens Infra mantêm apenas TD-ID.
 
 **Status MVP:** ✅ **100% Completo** (7/7 domínios operacionais, incluindo Nutrição)
 
@@ -17,10 +21,10 @@ Este roadmap define as etapas para estabilização e hardening do RebanhoSync, p
 
 **Scope (Tech Debt P0 - OPEN):**
 
-- **TD-001:** Cleanup de `queue_rejections` (DLQ)
-  - **Fluxo E2E:** Offline → Sync (Fluxo 2)
-- **TD-008:** Validação Anti-Teleport no Frontend
+- **TD-008** (`movimentacao.anti_teleport_client`): Validação Anti-Teleport no Frontend
   - **Fluxo E2E:** Anti-Teleporte (Fluxo 3), Hardening (Fluxo 6)
+- **TD-001** (`infra.queue_cleanup` — Infra): Cleanup de `queue_rejections` (DLQ)
+  - **Fluxo E2E:** Offline → Sync (Fluxo 2)
 
 ### Semana 1: Offline Resilience
 
@@ -57,11 +61,13 @@ Este roadmap define as etapas para estabilização e hardening do RebanhoSync, p
 
 **Scope (Tech Debt P1 - OPEN):**
 
-- **TD-003:** RLS DELETE hardening (owner/manager apenas)
+- **TD-003** (`infra.rbac_hardening` — Infra): RLS DELETE hardening (owner/manager apenas)
   - **Fluxo E2E:** RBAC (Fluxo 1)
-- **TD-014:** Validação de peso no frontend (pesagem > 0)
+- **TD-011** (`sanitario.registro`): Produtos sanitários — normalização
   - **Fluxo E2E:** Hardening (Fluxo 6)
-- **TD-019 + TD-020:** Foreign Keys faltantes (movimentação + reprodução)
+- **TD-014** (`pesagem.registro`): Validação de peso no frontend (pesagem > 0)
+  - **Fluxo E2E:** Hardening (Fluxo 6)
+- **TD-019** (`movimentacao.registro`) + **TD-020** (`reproducao.registro`): Foreign Keys faltantes
   - **Fluxo E2E:** Operacional (Fluxo 7)
 
 ### Semana 3: RBAC + Validações
@@ -84,7 +90,7 @@ Este roadmap define as etapas para estabilização e hardening do RebanhoSync, p
 
 - [ ] Migration: FKs `eventos_movimentacao` (from/to_lote_id).
 - [ ] Migration: FK `eventos_reproducao` (macho_id).
-- [Testes E2E: Fluxo 7 (operacional) com constraints habilitadas.
+- [ ] Testes E2E: Fluxo 7 (operacional) com constraints habilitadas.
 
 **Critério de Aceite (M1 - Semana 4):**
 
@@ -98,14 +104,12 @@ Este roadmap define as etapas para estabilização e hardening do RebanhoSync, p
 
 **Objetivo:** Otimizar queries e preparar para escala.
 
-**Scope (Tech Debt P2 - OPEN + P1 Opcional):**
+**Scope (Tech Debt P2 - OPEN):**
 
-- **TD-004:** Índices de performance compostos
+- **TD-015** (`pesagem.historico`): Otimização GMD (View materializada)
   - **Fluxo E2E:** Operacional (Fluxo 7)
-- **TD-015:** Otimização GMD (View materializada)
+- **TD-004** (`infra.indexes` — Infra): Índices de performance compostos
   - **Fluxo E2E:** Operacional (Fluxo 7)
-- **TD-011:** _(Opcional)_ Catálogo de produtos veterinários
-  - **Fluxo E2E:** Hardening (Fluxo 6)
 
 ### Semana 5: Índices e Medição
 
@@ -138,38 +142,41 @@ Este roadmap define as etapas para estabilização e hardening do RebanhoSync, p
 
 ## Capability Scorecard (Pós-Roadmap)
 
-| Milestone            | Gaps Resolvidos                     | Capability Score    | Status    |
-| -------------------- | ----------------------------------- | ------------------- | --------- |
-| **HEAD (Baseline)**  | TD-006 (Nutrição UI)                | 100% MVP (7/7)      | ✅ ATUAL  |
-| **M0 (Semanas 1-2)** | TD-001, TD-008 (P0)                 | 100% + UX melhorada | Planejado |
-| **M1 (Semanas 3-4)** | TD-003, TD-014, TD-019, TD-020 (P1) | 100% + Integridade  | Planejado |
-| **M2 (Semanas 5-6)** | TD-004, TD-015 (P2)                 | 100% + Escala       | Planejado |
+| Milestone            | Gaps Resolvidos                         | Capability Score (Analítico) | Status    |
+| -------------------- | --------------------------------------- | ---------------------------- | --------- |
+| **HEAD (Baseline)**  | TD-006 (Nutrição UI)                    | 13/19 (68.4%)                | ✅ ATUAL  |
+| **M0 (Semanas 1-2)** | TD-001¹, TD-008                         | 14/19 (73.7%)                | Planejado |
+| **M1 (Semanas 3-4)** | TD-003¹, TD-011, TD-014, TD-019, TD-020 | 18/19 (94.7%)                | Planejado |
+| **M2 (Semanas 5-6)** | TD-004¹, TD-015                         | 19/19 (100%)                 | Planejado |
 
-**Meta Final:** Todos TECH_DEBT OPEN resolvidos (9 → 0).
+¹ Infra TDs — resolvem problemas reais mas não participam do `gap_set` analítico.
+
+**Meta Final:** Todos TECH_DEBT OPEN resolvidos (9 → 0). Capability Score: 100%.
 
 ---
 
-## E2E Flows Coverage (Pós-Roadmap)
+## Derivação (hard check)
 
-| Fluxo                          | Milestone       | Status Atual                     | Status Pós-Roadmap |
-| ------------------------------ | --------------- | -------------------------------- | ------------------ |
-| **Fluxo 0:** Auth + Fazenda    | HEAD            | ✅ PASS                          | ✅ PASS            |
-| **Fluxo 1:** RBAC              | M1 (Sem.3)      | ⚠️ PARTIAL (TD-003)              | ✅ PASS            |
-| **Fluxo 2:** Offline → Sync    | M0 (Sem.1)      | ⚠️ PARTIAL (TD-001)              | ✅ PASS            |
-| **Fluxo 3:** Anti-Teleporte    | M0 (Sem.2)      | ⚠️ PARTIAL (TD-008)              | ✅ PASS            |
-| **Fluxo 4:** Dedup Agenda      | HEAD            | ✅ PASS                          | ✅ PASS            |
-| **Fluxo 5:** Setup Fazenda     | HEAD            | ✅ PASS                          | ✅ PASS            |
-| **Fluxo 6:** Hardening Eventos | M0-M1 (Sem.2-3) | ⚠️ PARTIAL (TD-008, TD-014)      | ✅ PASS            |
-| **Fluxo 7:** Operacional       | M1-M2 (Sem.4-6) | ⚠️ PARTIAL (TD-004, TD-015, FKs) | ✅ PASS            |
-| **Fluxo 8:** Nutrição          | HEAD            | ✅ PASS (**MVP Completo**)       | ✅ PASS            |
+**ROADMAP items == TECH_DEBT OPEN (Catalog + Infra):**
 
-**Cobertura Atual:** 4/9 fluxos PASS (44%)  
-**Cobertura Pós-M2:** 9/9 fluxos PASS (100%)
+| TD     | capability_id                       | Track   | Milestone |
+| ------ | ----------------------------------- | ------- | --------- |
+| TD-001 | `infra.queue_cleanup`               | Infra   | M0        |
+| TD-003 | `infra.rbac_hardening`              | Infra   | M1        |
+| TD-004 | `infra.indexes`                     | Infra   | M2        |
+| TD-008 | `movimentacao.anti_teleport_client` | Catalog | M0        |
+| TD-011 | `sanitario.registro`                | Catalog | M1        |
+| TD-014 | `pesagem.registro`                  | Catalog | M1        |
+| TD-015 | `pesagem.historico`                 | Catalog | M2        |
+| TD-019 | `movimentacao.registro`             | Catalog | M1        |
+| TD-020 | `reproducao.registro`               | Catalog | M1        |
+
+**Match (9/9):** ✅
 
 ---
 
 ## Veja Também
 
-- [**TECH_DEBT.md**](./TECH_DEBT.md) - Gaps detalhados
+- [**TECH_DEBT.md**](./TECH_DEBT.md) - Gaps detalhados (com `capability_id`)
 - [**E2E_MVP.md**](./E2E_MVP.md) - Fluxos de validação
-- [**IMPLEMENTATION_STATUS.md**](./IMPLEMENTATION_STATUS.md) - Estado atual
+- [**IMPLEMENTATION_STATUS.md**](./IMPLEMENTATION_STATUS.md) - Matriz Analítica (fonte de derivação)
