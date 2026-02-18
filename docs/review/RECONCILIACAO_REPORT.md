@@ -65,7 +65,7 @@ IMPLEMENTATION_STATUS (Matriz Analítica)
 | TD-003 | `infra.rbac_hardening`              | Infra   | OPEN (P1) | RBAC refinement — fora do Catalog |
 | TD-004 | `infra.indexes`                     | Infra   | OPEN (P2) | DB indexes — fora do Catalog      |
 | TD-006 | `nutricao.registro`                 | Catalog | CLOSED    | UI já implementada                |
-| TD-008 | `movimentacao.anti_teleport_client` | Catalog | OPEN (P0) | match direto                      |
+| TD-008 | `movimentacao.anti_teleport_client` | Catalog | OPEN (P0) | E2E PARTIAL: server valida; UI não bloqueia |
 | TD-011 | `sanitario.registro`                | Catalog | OPEN (P1) | produto TEXT normalização         |
 | TD-014 | `pesagem.registro`                  | Catalog | OPEN (P1) | peso validation                   |
 | TD-015 | `pesagem.historico`                 | Catalog | OPEN (P2) | GMD in-memory perf                |

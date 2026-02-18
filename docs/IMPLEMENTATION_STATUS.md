@@ -359,26 +359,25 @@ migrations/0001_init.sql:632 - CREATE TABLE eventos_nutricao
 
 | `capability_id`                     | DB  | SRV | OFF | UIW | UIR | E2E | EIDs                                                 |
 | ----------------------------------- | --- | --- | --- | --- | --- | --- | ---------------------------------------------------- |
-| `sanitario.registro`                | ✅  | ✅  | ✅  | ⚠️  | ✅  | ✅  | `[E.san.reg.DB]` `[.SRV]` `[.OFF]` `[.UIW]` `[.UIR]` |
-| `sanitario.historico`               | —   | ✅  | ✅  | —   | ✅  | ✅  | `[E.san.his.SRV]` `[.OFF]` `[.UIR]`                  |
-| `sanitario.agenda_link`             | ✅  | ✅  | —   | —   | —   | ✅  | `[E.san.agl.DB]` `[.SRV]` `[.E2E]`                   |
-| `pesagem.registro`                  | ✅  | ✅  | ✅  | ⚠️  | ✅  | ✅  | `[E.pes.reg.DB]` `[.SRV]` `[.OFF]` `[.UIW]` `[.UIR]` |
-| `pesagem.historico`                 | —   | ✅  | ✅  | —   | ⚠️  | ✅  | `[E.pes.his.SRV]` `[.OFF]` `[.UIR]`                  |
-| `nutricao.registro`                 | ✅  | ✅  | ✅  | ✅  | ✅  | ✅  | `[E.nut.reg.DB]` `[.SRV]` `[.OFF]` `[.UIW]` `[.UIR]` |
-| `nutricao.historico`                | —   | ✅  | ✅  | —   | ✅  | ✅  | `[E.nut.his.SRV]` `[.OFF]` `[.UIR]`                  |
-| `movimentacao.registro`             | ⚠️  | ✅  | ✅  | ✅  | ✅  | ✅  | `[E.mov.reg.DB]` `[.SRV]` `[.OFF]` `[.UIW]` `[.UIR]` |
-| `movimentacao.historico`            | —   | ✅  | ✅  | —   | ✅  | ✅  | `[E.mov.his.SRV]` `[.OFF]` `[.UIR]`                  |
-| `movimentacao.anti_teleport_client` | —   | —   | —   | ❌  | —   | ❌  | `[E.mov.atc.UIW]` `[.E2E]`                           |
-| `reproducao.registro`               | ⚠️  | ✅  | ✅  | ✅  | ✅  | ✅  | `[E.rep.reg.DB]` `[.SRV]` `[.OFF]` `[.UIW]` `[.UIR]` |
-| `reproducao.historico`              | —   | ✅  | ✅  | —   | ✅  | ✅  | `[E.rep.his.SRV]` `[.OFF]` `[.UIR]`                  |
-| `reproducao.episode_linking`        | ✅  | ✅  | ✅  | ✅  | ✅  | ✅  | `[E.rep.epl.DB]` `[.SRV]` `[.OFF]` `[.UIW]` `[.UIR]` |
-| `financeiro.registro`               | ✅  | ✅  | ✅  | ✅  | ✅  | ✅  | `[E.fin.reg.DB]` `[.SRV]` `[.OFF]` `[.UIW]` `[.UIR]` |
-| `financeiro.historico`              | —   | ✅  | ✅  | —   | ✅  | ✅  | `[E.fin.his.SRV]` `[.OFF]` `[.UIR]`                  |
-| `agenda.gerar`                      | ✅  | ✅  | ✅  | ✅  | ✅  | ✅  | `[E.age.ger.DB]` `[.SRV]` `[.OFF]` `[.UIW]` `[.UIR]` |
-| `agenda.concluir`                   | ✅  | ✅  | ✅  | ✅  | —   | ✅  | `[E.age.con.DB]` `[.SRV]` `[.OFF]` `[.UIW]`          |
-| `agenda.dedup`                      | ✅  | ✅  | —   | —   | —   | ✅  | `[E.age.ded.DB]` `[.SRV]` `[.E2E]`                   |
-| `agenda.recalculo`                  | ✅  | ✅  | —   | —   | —   | ✅  | `[E.age.rec.DB]` `[.SRV]` `[.E2E]`                   |
-
+| `sanitario.registro` | ✅ | ✅ | ✅ | ⚠️ | ✅ | ✅ | `[E.san.reg.DB]` `[E.san.reg.SRV]` `[E.san.reg.OFF]` `[E.san.reg.UIW]` `[E.san.reg.UIR]` |
+| `sanitario.historico` | — | ✅ | ✅ | — | ✅ | ✅ | `[E.san.his.SRV]` `[E.san.his.OFF]` `[E.san.his.UIR]` |
+| `sanitario.agenda_link` | ✅ | ✅ | — | — | — | ✅ | `[E.san.agl.DB]` `[E.san.agl.SRV]` `[E.san.agl.E2E]` |
+| `pesagem.registro` | ✅ | ✅ | ✅ | ⚠️ | ✅ | ✅ | `[E.pes.reg.DB]` `[E.pes.reg.SRV]` `[E.pes.reg.OFF]` `[E.pes.reg.UIW]` `[E.pes.reg.UIR]` |
+| `pesagem.historico` | — | ✅ | ✅ | — | ⚠️ | ✅ | `[E.pes.his.SRV]` `[E.pes.his.OFF]` `[E.pes.his.UIR]` |
+| `nutricao.registro` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | `[E.nut.reg.DB]` `[E.nut.reg.SRV]` `[E.nut.reg.OFF]` `[E.nut.reg.UIW]` `[E.nut.reg.UIR]` |
+| `nutricao.historico` | — | ✅ | ✅ | — | ✅ | ✅ | `[E.nut.his.SRV]` `[E.nut.his.OFF]` `[E.nut.his.UIR]` |
+| `movimentacao.registro` | ⚠️ | ✅ | ✅ | ✅ | ✅ | ✅ | `[E.mov.reg.DB]` `[E.mov.reg.SRV]` `[E.mov.reg.OFF]` `[E.mov.reg.UIW]` `[E.mov.reg.UIR]` |
+| `movimentacao.historico` | — | ✅ | ✅ | — | ✅ | ✅ | `[E.mov.his.SRV]` `[E.mov.his.OFF]` `[E.mov.his.UIR]` |
+| `movimentacao.anti_teleport_client` | — | — | — | ❌ | — | ⚠️ | `[E.mov.atc.UIW]` `[E.mov.atc.E2E]` |
+| `reproducao.registro` | ⚠️ | ✅ | ✅ | ✅ | ✅ | ✅ | `[E.rep.reg.DB]` `[E.rep.reg.SRV]` `[E.rep.reg.OFF]` `[E.rep.reg.UIW]` `[E.rep.reg.UIR]` |
+| `reproducao.historico` | — | ✅ | ✅ | — | ✅ | ✅ | `[E.rep.his.SRV]` `[E.rep.his.OFF]` `[E.rep.his.UIR]` |
+| `reproducao.episode_linking` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | `[E.rep.epl.DB]` `[E.rep.epl.SRV]` `[E.rep.epl.OFF]` `[E.rep.epl.UIW]` `[E.rep.epl.UIR]` |
+| `financeiro.registro` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | `[E.fin.reg.DB]` `[E.fin.reg.SRV]` `[E.fin.reg.OFF]` `[E.fin.reg.UIW]` `[E.fin.reg.UIR]` |
+| `financeiro.historico` | — | ✅ | ✅ | — | ✅ | ✅ | `[E.fin.his.SRV]` `[E.fin.his.OFF]` `[E.fin.his.UIR]` |
+| `agenda.gerar` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | `[E.age.ger.DB]` `[E.age.ger.SRV]` `[E.age.ger.OFF]` `[E.age.ger.UIW]` `[E.age.ger.UIR]` |
+| `agenda.concluir` | ✅ | ✅ | ✅ | ✅ | — | ✅ | `[E.age.con.DB]` `[E.age.con.SRV]` `[E.age.con.OFF]` `[E.age.con.UIW]` |
+| `agenda.dedup` | ✅ | ✅ | — | — | — | ✅ | `[E.age.ded.DB]` `[E.age.ded.SRV]` `[E.age.ded.E2E]` |
+| `agenda.recalculo` | ✅ | ✅ | — | — | — | ✅ | `[E.age.rec.DB]` `[E.age.rec.SRV]` `[E.age.rec.E2E]` |
 ### Evidence Index
 
 | EID               | Evidência (PM)                                                                                                                                                         |
@@ -419,7 +418,7 @@ migrations/0001_init.sql:632 - CREATE TABLE eventos_nutricao
 | `[E.mov.his.OFF]` | PM: `src/lib/offline/db.ts:L67` — event_eventos_movimentacao (leitura offline)                                                                                         |
 | `[E.mov.his.UIR]` | PM: `src/pages/Eventos.tsx:L143` — histórico movimentação                                                                                                              |
 | `[E.mov.atc.UIW]` | ❌ PM: `src/pages/Registrar.tsx:L1066+` — NÃO desabilita origem==destino. P: `rg -n "from_lote_id.*disabled\|toLote.*disabled" src/pages/Registrar.tsx` → 0 resultados |
-| `[E.mov.atc.E2E]` | ❌ Capability exige bloqueio client-side de origem==destino; inexistente. P: `rg -n "anti.teleport" src/` → 0 resultados (somente server em supabase/functions/)       |
+| `[E.mov.atc.E2E]` | ⚠️ PM: `supabase/functions/sync-batch/rules.ts:L149-249` — `prevalidateAntiTeleport` rejeita origem==destino; UI não bloqueia (ver `[E.mov.atc.UIW]`). Resultado: fluxo existe, mas UX depende de rejeição server-side (PARTIAL). |
 | `[E.rep.reg.DB]`  | PM: `supabase/migrations/0035_reproducao_hardening_v1.sql`; ⚠️ TD-020 FK macho_id ausente                                                                              |
 | `[E.rep.reg.SRV]` | PM: `supabase/functions/sync-batch/index.ts:L191` — validação reprodução server-side                                                                                   |
 | `[E.rep.reg.OFF]` | PM: `src/lib/offline/db.ts:L156` — event_eventos_reproducao store                                                                                                      |
@@ -469,7 +468,7 @@ migrations/0001_init.sql:632 - CREATE TABLE eventos_nutricao
 | `pesagem.registro`                  | UIW ⚠️           | TD-014 | Peso validation    |
 | `pesagem.historico`                 | UIR ⚠️           | TD-015 | GMD in-memory      |
 | `movimentacao.registro`             | DB ⚠️            | TD-019 | FKs faltantes      |
-| `movimentacao.anti_teleport_client` | UIW ❌, E2E ❌   | TD-008 | UI não bloqueia    |
+| `movimentacao.anti_teleport_client` | UIW ❌, E2E ⚠️   | TD-008 | UI não bloqueia    |
 | `reproducao.registro`               | DB ⚠️            | TD-020 | FK macho_id        |
 
 **Gap count:** 6 / 19 capabilities

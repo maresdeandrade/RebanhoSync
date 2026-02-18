@@ -1,0 +1,76 @@
+name: antigravity-validate
+
+on:
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Basic repo sanity
+        run: |
+          set -euo pipefail
+          echo "Git status:"
+          git status -sb
+
+      - name: Header baseline consistency (derived docs)
+        run: |
+          set -euo pipefail
+          # Valida que os arquivos derivados (se alterados) têm Baseline e que é consistente entre si.
+          files=(
+            "docs/IMPLEMENTATION_STATUS.md"
+            "docs/TECH_DEBT.md"
+            "docs/ROADMAP.md"
+            "docs/review/RECONCILIACAO_REPORT.md"
+          )
+
+          changed="$(git diff --name-only origin/${{ github.base_ref }}...HEAD || true)"
+          echo "$changed" | sed 's/^/changed: /'
+
+          # se nenhum dos arquivos acima mudou, não checa baseline
+          any=false
+          for f in "${files[@]}"; do
+            if echo "$changed" | grep -qx "$f"; then any=true; fi
+          done
+          if [ "$any" = false ]; then
+            echo "No derived docs changed; skipping baseline header checks."
+            exit 0
+          fi
+
+          # extrai baseline de cada arquivo que mudou e valida igualdade
+          baseline=""
+          for f in "${files[@]}"; do
+            if echo "$changed" | grep -qx "$f"; then
+              b=$(rg -n "^> \*\*Baseline:\*\* `.*`$|^\*\*Baseline:\*\* `.*`$|^> \*\*Baseline:\*\*|^Baseline:" "$f" -m 1 || true)
+              if [ -z "$b" ]; then
+                echo "Missing Baseline header in $f"
+                exit 1
+              fi
+              # tenta capturar o hash entre backticks
+              bhash=$(echo "$b" | sed -n 's/.*`\(.*\)`.*/\1/p')
+              if [ -z "$bhash" ]; then
+                # fallback: última palavra
+                bhash=$(echo "$b" | awk '{print $NF}' | tr -d '`')
+              fi
+              echo "$f baseline=$bhash"
+              if [ -z "$baseline" ]; then baseline="$bhash"; fi
+              if [ "$baseline" != "$bhash" ]; then
+                echo "Baseline mismatch: expected=$baseline got=$bhash in $f"
+                exit 1
+              fi
+            fi
+          done
+
+      - name: Derivation sanity (presence of capability_id in derived docs)
+        run: |
+          set -euo pipefail
+          # Checks leves: garante que os docs derivativos carregam o conceito de capability_id
+          rg -n "capability_id" docs/IMPLEMENTATION_STATUS.md
+          rg -n "capability_id" docs/TECH_DEBT.md
+          rg -n "capability_id" docs/ROADMAP.md
+          rg -n "gap_set|gap\(capability_id\)" docs/IMPLEMENTATION_STATUS.md || true
+          rg -n "Match: ✅" docs/review/RECONCILIACAO_REPORT.md || true

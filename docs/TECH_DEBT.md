@@ -19,7 +19,7 @@ Lista consolidada de débitos técnicos do RebanhoSync. Itens OPEN são separado
 #### TD-008: Validação Anti-Teleport no Frontend
 
 - **capability_id:** `movimentacao.anti_teleport_client`
-- **Domínio:** Movimentação
+- **Domínio:** movimentacao
 - **Risco:** Usabilidade (UX degradada)
 - **Status:** 🔴 **OPEN** (P0)
 - **Evidência:** `Registrar.tsx` (movimentação) não desabilita lote origem no Select destino.
@@ -36,7 +36,7 @@ Lista consolidada de débitos técnicos do RebanhoSync. Itens OPEN são separado
 #### TD-011: Produtos Sanitários TEXT Livre
 
 - **capability_id:** `sanitario.registro`
-- **Domínio:** Sanitário
+- **Domínio:** sanitario
 - **Risco:** Consistência (Typos, duplicatas)
 - **Status:** 🟠 **OPEN** (P1)
 - **Evidência:** `eventos_sanitario.produto` é TEXT sem normalização.
@@ -49,7 +49,7 @@ Lista consolidada de débitos técnicos do RebanhoSync. Itens OPEN são separado
 #### TD-014: Validação de Peso no Frontend
 
 - **capability_id:** `pesagem.registro`
-- **Domínio:** Pesagem
+- **Domínio:** pesagem
 - **Risco:** Usabilidade (UX degradada)
 - **Status:** 🟠 **OPEN** (P1)
 - **Evidência:** `Registrar.tsx` (pesagem) permite envio de peso <= 0 (servidor rejeita).
@@ -62,7 +62,7 @@ Lista consolidada de débitos técnicos do RebanhoSync. Itens OPEN são separado
 #### TD-019: Foreign Keys Faltantes (Movimentação)
 
 - **capability_id:** `movimentacao.registro`
-- **Domínio:** Movimentação
+- **Domínio:** movimentacao
 - **Risco:** Integridade Referencial
 - **Status:** 🟠 **OPEN** (P1)
 - **Evidência:** `eventos_movimentacao` (from/to_lote_id) sem FOREIGN KEY.
@@ -75,7 +75,7 @@ Lista consolidada de débitos técnicos do RebanhoSync. Itens OPEN são separado
 #### TD-020: Foreign Key macho_id Faltante (Reprodução)
 
 - **capability_id:** `reproducao.registro`
-- **Domínio:** Reprodução
+- **Domínio:** reproducao
 - **Risco:** Integridade Referencial
 - **Status:** 🟠 **OPEN** (P1)
 - **Evidência:** `eventos_reproducao.macho_id` sem FOREIGN KEY para `animais`.
@@ -92,7 +92,7 @@ Lista consolidada de débitos técnicos do RebanhoSync. Itens OPEN são separado
 #### TD-015: Cálculo de GMD em Memória
 
 - **capability_id:** `pesagem.historico`
-- **Domínio:** Performance
+- **Domínio:** pesagem
 - **Risco:** Scalability
 - **Status:** 🟡 **OPEN** (P2)
 - **Evidência:** Dashboard carrega todo histórico para calcular ganho médio.
@@ -112,7 +112,7 @@ Lista consolidada de débitos técnicos do RebanhoSync. Itens OPEN são separado
 #### TD-001: Limpeza de Queue Rejections (Offline)
 
 - **capability_id:** `infra.queue_cleanup` _(NEW Proposed — fora do Catalog)_
-- **Domínio:** Offline / Infra
+- **Domínio:** platform
 - **Risco:** Storage/Performance (Crescimento infinito no Dexie)
 - **Status:** 🔴 **OPEN** (P0)
 - **Evidência:** `src/lib/offline/syncWorker.ts` não possui rotina de expurgo.
@@ -128,7 +128,7 @@ Lista consolidada de débitos técnicos do RebanhoSync. Itens OPEN são separado
 #### TD-003: RLS DELETE sem Restrição de Role
 
 - **capability_id:** `infra.rbac_hardening` _(NEW Proposed — fora do Catalog)_
-- **Domínio:** RBAC
+- **Domínio:** platform
 - **Risco:** Integridade de Dados (Cowboy pode deletar animais)
 - **Status:** 🟠 **OPEN** (P1)
 - **Evidência:** Policy `DELETE` em `animais` não filtra por role.
@@ -145,7 +145,7 @@ Lista consolidada de débitos técnicos do RebanhoSync. Itens OPEN são separado
 #### TD-004: Índices de Performance Faltantes
 
 - **capability_id:** `infra.indexes` _(NEW Proposed — fora do Catalog)_
-- **Domínio:** DB Performance
+- **Domínio:** platform
 - **Risco:** Scalability
 - **Status:** 🟡 **OPEN** (P2)
 - **Evidência:** Queries de dashboard sem índices compostos.
@@ -164,7 +164,7 @@ Lista consolidada de débitos técnicos do RebanhoSync. Itens OPEN são separado
 
 **Descoberta:** UI de Nutrição **JÁ ESTAVA IMPLEMENTADA** em `Registrar.tsx`.
 
-- **Domínio:** Nutrição
+- **Domínio:** nutricao
 - **Risco:** N/A (resolvido)
 - **Status:** ✅ **CLOSED** (2026-02-16)
 - **Evidência Original (falsa):** Grep por `NutricaoForm` retornava 0 resultados (buscava component separado).

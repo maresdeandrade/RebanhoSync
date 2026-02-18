@@ -1,0 +1,89 @@
+name: Capability Gap / Tech Debt
+description: Registrar gap ligado a capability_id (Catalog) ou infra.* (Out-of-catalog)
+title: "[<capability_id>] <resumo curto>"
+labels: ["capability"]
+body:
+  - type: input
+    id: capability_id
+    attributes:
+      label: capability_id (ou infra.*)
+      description: Ex.: movimentacao.anti_teleport_client, pesagem.registro, infra.rbac_hardening
+      placeholder: "movimentacao.anti_teleport_client"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: track
+    attributes:
+      label: Track
+      options:
+        - Catalog
+        - Infra (Out-of-catalog)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severidade
+      options:
+        - P0
+        - P1
+        - P2
+    validations:
+      required: true
+
+  - type: dropdown
+    id: domain
+    attributes:
+      label: Domínio
+      options:
+        - sanitario
+        - pesagem
+        - nutricao
+        - movimentacao
+        - reproducao
+        - financeiro
+        - agenda
+        - platform
+    validations:
+      required: true
+
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidência (PM + opcional P)
+      description: Inclua paths + linhas aproximadas (PM) e comandos rg/grep (P) reproduzíveis.
+      placeholder: |
+        PM: src/pages/Registrar.tsx:~L1066 — não bloqueia origem==destino
+        P: rg -n "toLote|fromLote" src/pages/Registrar.tsx
+    validations:
+      required: true
+
+  - type: textarea
+    id: risk
+    attributes:
+      label: Risco / Impacto
+      placeholder: "Ex.: UX degradada, rejeições no sync, integridade referencial, perda de dados"
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Critério de Aceite (mensurável)
+      description: Deve permitir fechar o gap no IMPLEMENTATION_STATUS (E2E PASS e/ou camada aplicável ✅).
+      placeholder: |
+        - UI impede origem==destino
+        - E2E Fluxo 3 passa sem depender de rejeição server-side
+    validations:
+      required: true
+
+  - type: textarea
+    id: depends_on
+    attributes:
+      label: depends_on (opcional)
+      description: Lista de capability_id que precisam ser feitas antes.
+      placeholder: "ex.: movimentacao.registro"
+    validations:
+      required: false
