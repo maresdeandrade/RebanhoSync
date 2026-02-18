@@ -25,6 +25,103 @@ Este documento é a **matriz única de verdade** sobre o que existe efetivamente
 
 ---
 
+## Matriz Analítica (capability_id)
+
+A Matriz Analítica é a fonte de derivação para TECH_DEBT e ROADMAP.
+
+| capability_id | DB | Server | Offline | UI Write | UI Read/Hist | E2E | Evidence (EIDs) |
+|---|---|---|---|---|---|---|---|
+| sanitario.registro | ✅ | ✅ | ✅ | ⚠️ | ✅ | ⚠️ | [E.sanitario.registro.all] |
+| sanitario.historico | ✅ | ✅ | ✅ | — | ✅ | ✅ | [E.sanitario.historico.all] |
+| sanitario.agenda_link | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | [E.sanitario.agenda_link.all] |
+| pesagem.registro | ✅ | ✅ | ✅ | ⚠️ | ✅ | ⚠️ | [E.pesagem.registro.all] |
+| pesagem.historico | ✅ | ✅ | ✅ | — | ⚠️ | ✅ | [E.pesagem.historico.all] |
+| nutricao.registro | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | [E.nutricao.registro.all] |
+| nutricao.historico | ✅ | ✅ | ✅ | — | ✅ | ✅ | [E.nutricao.historico.all] |
+| movimentacao.registro | ✅ | ✅ | ✅ | ⚠️ | ✅ | ✅ | [E.movimentacao.registro.all] |
+| movimentacao.historico | ✅ | ✅ | ✅ | — | ✅ | ✅ | [E.movimentacao.historico.all] |
+| movimentacao.anti_teleport_client | — | — | — | ❌ | — | ❌ | [E.movimentacao.at.ui] |
+| reproducao.registro | ✅ | ✅ | ✅ | ⚠️ | ✅ | ✅ | [E.reproducao.registro.all] |
+| reproducao.historico | ✅ | ✅ | ✅ | — | ✅ | ✅ | [E.reproducao.historico.all] |
+| reproducao.episode_linking | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | [E.reproducao.el.all] |
+| financeiro.registro | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | [E.financeiro.registro.all] |
+| financeiro.historico | ✅ | ✅ | ✅ | — | ✅ | ✅ | [E.financeiro.historico.all] |
+| agenda.gerar | ✅ | ✅ | ✅ | — | ✅ | ✅ | [E.agenda.gerar.all] |
+| agenda.concluir | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | [E.agenda.concluir.all] |
+| agenda.dedup | ✅ | ✅ | ✅ | — | — | ✅ | [E.agenda.dedup.all] |
+| agenda.recalculo | ✅ | ✅ | ✅ | — | — | ✅ | [E.agenda.recalculo.all] |
+
+### Evidence Index
+
+- **[E.sanitario.registro.all]**
+  - DB: `migrations/0001_init.sql:eventos_sanitario`
+  - UIW: `src/pages/Registrar.tsx` (Sanitário form)
+  - Issue: TD-011 (Produtos TEXT)
+
+- **[E.sanitario.historico.all]**
+  - UIR: `src/components/events/EventHistory.tsx` (implied)
+
+- **[E.sanitario.agenda_link.all]**
+  - DB: `migrations/0028_sanitario_agenda_engine.sql`
+  - UIW: `src/pages/Registrar.tsx` (concluirPendenciaSanitaria)
+
+- **[E.pesagem.registro.all]**
+  - DB: `migrations/0001_init.sql:eventos_pesagem`
+  - UIW: `src/pages/Registrar.tsx` (Pesagem form)
+  - Issue: TD-014 (Validação > 0)
+
+- **[E.pesagem.historico.all]**
+  - Issue: TD-015 (GMD em memória)
+
+- **[E.nutricao.registro.all]**
+  - DB: `migrations/0001_init.sql:eventos_nutricao`
+  - UIW: `src/pages/Registrar.tsx` (Nutrição inline)
+
+- **[E.nutricao.historico.all]**
+  - UIR: Dashboard histórico
+
+- **[E.movimentacao.registro.all]**
+  - DB: `migrations/0001_init.sql:eventos_movimentacao`
+  - Issue: TD-019 (FKs faltantes)
+
+- **[E.movimentacao.historico.all]**
+  - UIR: Histórico funcional
+
+- **[E.movimentacao.at.ui]**
+  - Issue: TD-008 (Select option disabling missing)
+
+- **[E.reproducao.registro.all]**
+  - DB: `migrations/0035_reproducao_hardening_v1.sql`
+  - UIW: `src/components/events/ReproductionForm.tsx`
+  - Issue: TD-020 (FK macho_id)
+
+- **[E.reproducao.historico.all]**
+  - UIR: ReproductionDashboard
+
+- **[E.reproducao.el.all]**
+  - DB: `migrations/0035_reproducao_hardening_v1.sql` (episode_linking)
+
+- **[E.financeiro.registro.all]**
+  - DB: `migrations/0023_hardening_eventos_financeiro.sql`
+  - UIW: `src/pages/Registrar.tsx`
+
+- **[E.financeiro.historico.all]**
+  - UIR: Histórico funcional
+
+- **[E.agenda.gerar.all]**
+  - DB: `migrations/0028_sanitario_agenda_engine.sql`
+
+- **[E.agenda.concluir.all]**
+  - UIW: `src/pages/Registrar.tsx` (handleFinalize/concluirPendencia)
+
+- **[E.agenda.dedup.all]**
+  - DB: `migrations/0001_init.sql` (unique dedup_key)
+
+- **[E.agenda.recalculo.all]**
+  - DB: `migrations/0028_sanitario_agenda_engine.sql`
+
+---
+
 ## 1. Infraestrutura Core
 
 ### Auth & Multi-Tenancy ✅ COMPLETO

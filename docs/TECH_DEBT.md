@@ -13,6 +13,7 @@ Lista consolidada de débitos técnicos OPEN, gaps de funcionalidade e riscos do
 
 ### TD-001: Limpeza de Queue Rejections (Offline)
 
+- **capability_id:** `offline.sync_resilience`
 - **Domínio:** Offline / Infra
 - **R isco:** Storage/Performance (Crescimento infinito no Dexie)
 - **Status:** 🔴 **OPEN** (P0)
@@ -24,6 +25,7 @@ Lista consolidada de débitos técnicos OPEN, gaps de funcionalidade e riscos do
 
 ### TD-008: Validação Anti-Teleport no Frontend
 
+- **capability_id:** `movimentacao.anti_teleport_client`
 - **Domínio:** Movimentação
 - **Risco:** Usabilidade (UX degradada)
 - **Status:** 🔴 **OPEN** (P0)
@@ -40,6 +42,7 @@ Lista consolidada de débitos técnicos OPEN, gaps de funcionalidade e riscos do
 
 ### TD-003: RLS DELETE sem Restrição de Role
 
+- **capability_id:** `security.rbac`
 - **Domínio:** RBAC
 - **Risco:** Integridade de Dados (Cowboy pode deletar animais)
 - **Status:** 🟠 **OPEN** (P1)
@@ -52,6 +55,7 @@ Lista consolidada de débitos técnicos OPEN, gaps de funcionalidade e riscos do
 
 ### TD-011: Produtos Sanitários TEXT Livre
 
+- **capability_id:** `sanitario.registro`
 - **Domínio:** Sanitário
 - **Risco:** Consistência (Typos, duplicatas)
 - **Status:** 🟠 **OPEN** (P1)
@@ -64,6 +68,7 @@ Lista consolidada de débitos técnicos OPEN, gaps de funcionalidade e riscos do
 
 ### TD-014: Validação de Peso no Frontend
 
+- **capability_id:** `pesagem.registro`
 - **Domínio:** Pesagem
 - **Risco:** Usabilidade (UX degradada)
 - **Status:** 🟠 **OPEN** (P1)
@@ -76,6 +81,7 @@ Lista consolidada de débitos técnicos OPEN, gaps de funcionalidade e riscos do
 
 ### TD-019: Foreign Keys Faltantes (Movimentação)
 
+- **capability_id:** `movimentacao.registro`
 - **Domínio:** Movimentação
 - **Risco:** Integridade Referencial
 - **Status:** 🟠 **OPEN** (P1)
@@ -88,6 +94,7 @@ Lista consolidada de débitos técnicos OPEN, gaps de funcionalidade e riscos do
 
 ### TD-020: Foreign Key macho_id Faltante (Reprodução)
 
+- **capability_id:** `reproducao.registro`
 - **Domínio:** Reprodução
 - **Risco:** Integridade Referencial
 - **Status:** 🟠 **OPEN** (P1)
@@ -104,6 +111,7 @@ Lista consolidada de débitos técnicos OPEN, gaps de funcionalidade e riscos do
 
 ### TD-004: Índices de Performance Faltantes
 
+- **capability_id:** `db.performance`
 - **Domínio:** DB Performance
 - **Risco:** Scalability
 - **Status:** 🟡 **OPEN** (P2)
@@ -115,6 +123,7 @@ Lista consolidada de débitos técnicos OPEN, gaps de funcionalidade e riscos do
 
 ### TD-015: Cálculo de GMD em Memória
 
+- **capability_id:** `pesagem.historico`
 - **Domínio:** Performance
 - **Risco:** Scalability
 - **Status:** 🟡 **OPEN** (P2)
@@ -132,6 +141,7 @@ Lista consolidada de débitos técnicos OPEN, gaps de funcionalidade e riscos do
 
 **Descoberta:** UI de Nutrição **JÁ ESTAVA IMPLEMENTADA** em `Registrar.tsx`.
 
+- **capability_id:** `nutricao.registro`
 - **Domínio:** Nutrição
 - **Risco:** N/A (resolvido)
 - **Status:** ✅ **CLOSED** (2026-02-16)
