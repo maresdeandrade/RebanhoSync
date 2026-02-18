@@ -10,7 +10,15 @@
     "lint": "eslint .",
     "test": "vitest run",
     "format": "prettier --write \"src/**/*.{ts,tsx,css}\"",
-    "preview": "vite preview"
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,css}\"",
+    "preview": "vite preview",
+
+    "gates": "bash scripts/antigravity/docs_gates.sh",
+    "gates:headers": "bash scripts/antigravity/validate_rev_d_headers.sh",
+    "gates:derivation": "bash scripts/antigravity/validate_derivation_td.sh",
+    "gates:scope": "bash scripts/antigravity/validate_scoped_changes.sh",
+    "audit:data": "bash scripts/antigravity/data_contract_audit.sh",
+    "audit:clean": "bash scripts/antigravity/check_clean_tree.sh"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
