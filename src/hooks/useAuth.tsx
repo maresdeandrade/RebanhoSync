@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useState, useCallback } fr
 import { supabase } from "@/lib/supabase";
 import { Session, User } from "@supabase/supabase-js";
 import { z } from "zod";
-import { STORAGE_PREFIX } from "./auth-constants";
+import { getActiveFarmId, setActiveFarmId as storeActiveFarmId, removeActiveFarmId } from "@/lib/storage";
 
 // Role schema for runtime validation
 const RoleSchema = z.enum(["cowboy", "manager", "owner"]);
@@ -26,11 +26,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeFarmId, setActiveFarmId] = useState<string | null>(() => {
-    try {
-      return localStorage.getItem(`${STORAGE_PREFIX}active_fazenda_id`);
-    } catch (e) {
-      return null;
-    }
+    return getActiveFarmId();
   });
   const [role, setRole] = useState<UserRole | null>(null);
 
@@ -98,9 +94,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (!user) return;
 
       // Load from localStorage first
-      const localFarmId = localStorage.getItem(
-        `${STORAGE_PREFIX}active_fazenda_id`,
-      );
+      const localFarmId = getActiveFarmId();
 
       if (localFarmId) {
         setActiveFarmId(localFarmId);
@@ -128,14 +122,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           settings.active_fazenda_id,
         );
         setActiveFarmId(settings.active_fazenda_id);
-        try {
-          localStorage.setItem(
-            `${STORAGE_PREFIX}active_fazenda_id`,
-            settings.active_fazenda_id,
-          );
-        } catch (e) {
-          console.error("[useAuth] Error updating localStorage:", e);
-        }
+        storeActiveFarmId(settings.active_fazenda_id);
         await loadRoleForFarm(user.id, settings.active_fazenda_id);
       }
 
@@ -162,12 +149,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     if (!user) return;
 
     setActiveFarmId(farmId);
-
-    try {
-      localStorage.setItem(`${STORAGE_PREFIX}active_fazenda_id`, farmId);
-    } catch (e) {
-      console.error("[useAuth] Error saving to localStorage:", e);
-    }
+    storeActiveFarmId(farmId);
 
     await persistActiveFarmToRemote(user.id, farmId);
     await loadRoleForFarm(user.id, farmId);
@@ -203,11 +185,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       } else {
         setActiveFarmId(null);
         setRole(null);
-        try {
-          localStorage.removeItem(`${STORAGE_PREFIX}active_fazenda_id`);
-        } catch (e) {
-          console.error("[useAuth] Error removing from localStorage:", e);
-        }
+        removeActiveFarmId();
       }
       setLoading(false);
     });
@@ -222,11 +200,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       await supabase.auth.signOut();
       setActiveFarmId(null);
       setRole(null);
-      try {
-        localStorage.removeItem(`${STORAGE_PREFIX}active_fazenda_id`);
-      } catch (e) {
-        console.error("[useAuth] Error removing from localStorage:", e);
-      }
+      removeActiveFarmId();
     } catch (e) {
       console.error("[useAuth] Error signing out:", e);
     }

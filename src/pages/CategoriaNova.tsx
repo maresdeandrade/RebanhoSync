@@ -17,10 +17,11 @@ import {
 import { showSuccess, showError } from "@/utils/toast";
 import { ChevronLeft, Save } from "lucide-react";
 import { SexoEnum } from "@/lib/offline/types";
+import { getActiveFarmId } from "@/lib/storage";
 
 const CategoriaNova = () => {
   const navigate = useNavigate();
-  const activeFazendaId = localStorage.getItem("gestao_agro_active_fazenda_id");
+  const activeFazendaId = getActiveFarmId();
 
   const [nome, setNome] = useState("");
   const [sexo, setSexo] = useState<SexoEnum | "ambos">("ambos");

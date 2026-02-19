@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/select";
 import { showSuccess, showError } from "@/utils/toast";
 import { ChevronLeft, Save } from "lucide-react";
+import { getActiveFarmId } from "@/lib/storage";
 
 const LoteNovo = () => {
   const navigate = useNavigate();
@@ -35,7 +36,7 @@ const LoteNovo = () => {
   const handleSave = async () => {
     const fazenda_id =
       pastos?.[0]?.fazenda_id ||
-      localStorage.getItem("gestao_agro_active_fazenda_id") ||
+      getActiveFarmId() ||
       "";
 
     if (!fazenda_id) {
