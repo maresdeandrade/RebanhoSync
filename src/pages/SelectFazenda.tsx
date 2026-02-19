@@ -37,15 +37,19 @@ const SelectFazenda = () => {
   useEffect(() => {
     const checkPermission = async () => {
       if (!user) {
-        console.log("[SelectFazenda] No user, skipping permission check");
+        if (import.meta.env.DEV) {
+          console.debug("[SelectFazenda] No user, skipping permission check");
+        }
         return;
       }
 
       try {
-        console.log(
-          "[SelectFazenda] Checking can_create_farm for user:",
-          user.id,
-        );
+        if (import.meta.env.DEV) {
+          console.debug(
+            "[SelectFazenda] Checking can_create_farm for user:",
+            user.id,
+          );
+        }
 
         const { data, error } = await supabase.rpc("can_create_farm");
 
@@ -54,19 +58,29 @@ const SelectFazenda = () => {
             "[SelectFazenda] ERROR checking can_create_farm:",
             error,
           );
-          console.error("[SelectFazenda] Error details:", {
-            message: error.message,
-            code: error.code,
-            details: error.details,
-            hint: error.hint,
-          });
+          if (import.meta.env.DEV) {
+            console.debug("[SelectFazenda] Error details:", {
+              message: error.message,
+              code: error.code,
+              details: error.details,
+              hint: error.hint,
+            });
+          }
           setCanCreateFarm(false);
           return;
         }
 
-        console.log("[SelectFazenda] ✅ can_create_farm RPC returned:", data);
-        console.log("[SelectFazenda] Type of data:", typeof data);
-        console.log("[SelectFazenda] Setting canCreateFarm to:", data === true);
+        if (import.meta.env.DEV) {
+          console.debug(
+            "[SelectFazenda] ✅ can_create_farm RPC returned:",
+            data,
+          );
+          console.debug("[SelectFazenda] Type of data:", typeof data);
+          console.debug(
+            "[SelectFazenda] Setting canCreateFarm to:",
+            data === true,
+          );
+        }
 
         setCanCreateFarm(data === true);
       } catch (error) {
