@@ -3,6 +3,7 @@ import { supabase } from "@/lib/supabase";
 import { Session, User } from "@supabase/supabase-js";
 import { z } from "zod";
 import { STORAGE_PREFIX } from "./auth-constants";
+import { applyTheme } from "@/lib/theme";
 
 // Role schema for runtime validation
 const RoleSchema = z.enum(["cowboy", "manager", "owner"]);
@@ -33,22 +34,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   });
   const [role, setRole] = useState<UserRole | null>(null);
-
-  // Helper function to apply theme
-  const applyTheme = (themeValue: string) => {
-    const root = window.document.documentElement;
-    root.classList.remove("light", "dark");
-
-    if (themeValue === "system") {
-      const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
-        .matches
-        ? "dark"
-        : "light";
-      root.classList.add(systemTheme);
-    } else {
-      root.classList.add(themeValue);
-    }
-  };
 
   const loadRoleForFarm = useCallback(async (userId: string, farmId: string) => {
     const { data: membership, error } = await supabase
