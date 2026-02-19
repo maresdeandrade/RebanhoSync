@@ -24,9 +24,10 @@ export const pullDataForFarm = async (
   options: PullOptions = {},
 ) => {
   const mode = options.mode ?? "replace";
-  console.log(
-    `[pull] Starting pull for farm ${fazenda_id} (mode=${mode})`,
-  );
+  console.log(`[pull] Starting pull for farm ${fazenda_id} (mode=${mode})`);
+
+  // 1. Fetch all data first (fail fast)
+  const results: Record<string, unknown[]> = {};
 
   for (const remoteTable of remoteTables) {
     const { data, error } = await supabase
@@ -36,29 +37,53 @@ export const pullDataForFarm = async (
 
     if (error) {
       console.error(`[pull] Error pulling ${remoteTable}:`, error);
-      continue;
+      throw error; // Abort immediately on critical failure
     }
 
-    const rows = data ?? [];
-    const localStore = getLocalStoreName(remoteTable);
-    const store = db.table(localStore);
-
-    if (!store) {
-      console.error(
-        `[pull] Store ${localStore} not found for table ${remoteTable}`,
-      );
-      continue;
-    }
-
-    if (mode === "replace") {
-      await store.clear();
-    }
-
-    await store.bulkPut(rows);
-    console.log(
-      `[pull] Synced ${rows.length} records for ${remoteTable} -> ${localStore} (mode=${mode})`,
-    );
+    results[remoteTable] = data ?? [];
   }
+
+  // 2. Determine valid local stores involved
+  // We filter out invalid stores to prevent transaction failure, but log warning
+  const validTableNames = new Set(db.tables.map((t) => t.name));
+  const storesToUpdate = remoteTables
+    .map((rt) => ({ remote: rt, local: getLocalStoreName(rt) }))
+    .filter(({ remote, local }) => {
+      if (!validTableNames.has(local)) {
+        console.warn(
+          `[pull] Store ${local} not found for table ${remote}. Skipping.`,
+        );
+        return false;
+      }
+      return true;
+    });
+
+  if (storesToUpdate.length === 0) {
+    console.warn("[pull] No valid stores to update.");
+    return;
+  }
+
+  const storeNames = storesToUpdate.map((s) => s.local);
+
+  // 3. Write in a single transaction
+  await db.transaction("rw", storeNames, async () => {
+    for (const { remote, local } of storesToUpdate) {
+      const rows = results[remote];
+      const store = db.table(local);
+
+      if (mode === "replace") {
+        await store.clear();
+      }
+
+      if (rows.length > 0) {
+        await store.bulkPut(rows);
+      }
+
+      console.log(
+        `[pull] Synced ${rows.length} records for ${remote} -> ${local} (mode=${mode})`,
+      );
+    }
+  });
 };
 
 export const pullInitialData = async (fazenda_id: string) => {
