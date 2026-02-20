@@ -25,6 +25,7 @@ export function useCurrentRole(fazendaId: string | null): UserRole | null {
         .select("role")
         .eq("user_id", user.id)
         .eq("fazenda_id", fazendaId!)
+        .is("deleted_at", null)
         .maybeSingle();
 
       setRole(data?.role as UserRole);

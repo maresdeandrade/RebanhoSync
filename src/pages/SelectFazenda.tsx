@@ -16,6 +16,7 @@ interface FazendaData {
 
 interface UserFazenda {
   fazendas: FazendaData[];
+  role: string;
 }
 
 const SelectFazenda = () => {
@@ -28,8 +29,9 @@ const SelectFazenda = () => {
     if (!user) return [];
     const { data } = await supabase
       .from("user_fazendas")
-      .select("fazendas(id, nome)")
-      .eq("user_id", user.id);
+      .select("role, fazendas(id, nome)")
+      .eq("user_id", user.id)
+      .is("deleted_at", null);
     return data || [];
   }, [user]);
 
@@ -161,6 +163,19 @@ const SelectFazenda = () => {
                 : fazendaRaw;
 
               if (!fazenda || !fazenda.id) return null;
+
+              // Validate role
+              const isValidRole = ["owner", "manager", "cowboy"].includes(
+                uf.role,
+              );
+              if (!isValidRole) {
+                if (import.meta.env.DEV) {
+                  console.warn(
+                    `[SelectFazenda] Invalid role for farm ${fazenda.id}: ${uf.role}`,
+                  );
+                }
+                return null;
+              }
 
               return (
                 <Card
