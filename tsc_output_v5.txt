@@ -1,0 +1,1 @@
+﻿src/components/ui/menubar.tsx(7,7): error TS2742: The inferred type of 'MenubarMenu' cannot be named without a reference to '.pnpm/@radix-ui+react-context@1.1_7f415b25484684a07709363f20be9a8b/node_modules/@radix-ui/react-context'. This is likely not portable. A type annotation is necessary.

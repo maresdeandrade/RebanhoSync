@@ -51,6 +51,19 @@ describe("event validators", () => {
     expect(issues.some((i) => i.field === "valorTotal")).toBe(true);
   });
 
+  it("rejects movimentacao with same origin and destination", () => {
+    const issues = validateEventInput({
+      dominio: "movimentacao",
+      fazendaId: "farm-1",
+      animalId: "animal-1",
+      loteId: "lote-1",
+      fromLoteId: "lote-1",
+      toLoteId: "lote-1",
+    });
+
+    expect(issues.some((i) => i.code === "INVALID_DESTINATION")).toBe(true);
+  });
+
   it("throws EventValidationError for invalid input", () => {
     expect(() =>
       assertValidEventInput({

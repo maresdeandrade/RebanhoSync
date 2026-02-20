@@ -3,8 +3,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/lib/supabase";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { MapPin, ChevronRight, LogOut, Plus } from "lucide-react";
-import { useState, useEffect } from "react";
+import { ChevronRight, LogOut, MapPin, Plus } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 // TYPE FIX: Define proper interface for user_fazendas query result
@@ -16,6 +16,7 @@ interface FazendaData {
 
 interface UserFazenda {
   fazendas: FazendaData[];
+  role: string;
 }
 
 const SelectFazenda = () => {
@@ -28,8 +29,9 @@ const SelectFazenda = () => {
     if (!user) return [];
     const { data } = await supabase
       .from("user_fazendas")
-      .select("fazendas(id, nome)")
-      .eq("user_id", user.id);
+      .select("role, fazendas(id, nome)")
+      .eq("user_id", user.id)
+      .is("deleted_at", null);
     return data || [];
   }, [user]);
 
@@ -95,12 +97,14 @@ const SelectFazenda = () => {
   const handleSelect = async (fazenda_id: string) => {
     setLoading(true);
 
-    // ✅ POLÍTICA DE ESCRITA: usa setActiveFarm do useAuth
-    // Isso persiste em localStorage + user_settings + carrega role
+    // ✅ CORREÇÃO: Usa setActiveFarm do useAuth que agora espera o role carregar
+    // O setActiveFarm agora é async e aguarda loadRoleForFarm completar
     await setActiveFarm(fazenda_id);
 
-    // Redireciona para home (fazenda já está ativa)
-    window.location.href = "/home";
+    // ✅ Usa navigate do React Router em vez de window.location.href
+    // Isso garante que o contexto React atualize corretamente antes do redirect
+    // O navigate é interno ao React e não causa perda de estado
+    navigate("/home", { replace: true });
   };
 
   return (
@@ -161,6 +165,19 @@ const SelectFazenda = () => {
                 : fazendaRaw;
 
               if (!fazenda || !fazenda.id) return null;
+
+              // Validate role
+              const isValidRole = ["owner", "manager", "cowboy"].includes(
+                uf.role,
+              );
+              if (!isValidRole) {
+                if (import.meta.env.DEV) {
+                  console.warn(
+                    `[SelectFazenda] Invalid role for farm ${fazenda.id}: ${uf.role}`,
+                  );
+                }
+                return null;
+              }
 
               return (
                 <Card

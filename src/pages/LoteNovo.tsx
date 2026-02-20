@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { showSuccess, showError } from "@/utils/toast";
+import { showError, showSuccess } from "@/utils/toast";
 import { ChevronLeft, Save } from "lucide-react";
 import { getActiveFarmId } from "@/lib/storage";
 
@@ -26,18 +26,25 @@ const LoteNovo = () => {
   const [pastoId, setPastoId] = useState<string>("null");
   const [touroId, setTouroId] = useState<string>("null");
 
-  const pastos = useLiveQuery(() => db.state_pastos.toArray());
+  const activeFarmId = getActiveFarmId();
+
+  const pastos = useLiveQuery(() => 
+    (activeFarmId ? db.state_pastos.where('fazenda_id').equals(activeFarmId).toArray() : [])
+  );
   const touros = useLiveQuery(() =>
-    db.state_animais
-      .filter((a) => a.sexo === "M" && (!a.deleted_at || a.deleted_at === null))
-      .toArray(),
+    (activeFarmId
+      ? db.state_animais
+          .filter((a) => 
+            a.sexo === 'M' && 
+            a.fazenda_id === activeFarmId &&
+            (!a.deleted_at || a.deleted_at === null)
+          )
+          .toArray()
+      : [])
   );
 
   const handleSave = async () => {
-    const fazenda_id =
-      pastos?.[0]?.fazenda_id ||
-      getActiveFarmId() ||
-      "";
+    const fazenda_id = activeFarmId || "";
 
     if (!fazenda_id) {
       showError("Fazenda não identificada.");

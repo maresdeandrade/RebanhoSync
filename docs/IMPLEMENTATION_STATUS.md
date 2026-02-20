@@ -1,7 +1,7 @@
 # Implementation Status Matrix
 
 > **Status:** Derivado (Rev D+)
-> **Baseline:** `8ae3860`
+> **Baseline:** `dd2f2d8`
 > **Última Atualização:** 2026-02-17
 > **Derivado por:** Antigravity — capability_id Derivation Rev D+
 
@@ -368,7 +368,7 @@ migrations/0001_init.sql:632 - CREATE TABLE eventos_nutricao
 | `nutricao.historico` | — | ✅ | ✅ | — | ✅ | ✅ | `[E.nut.his.SRV]` `[E.nut.his.OFF]` `[E.nut.his.UIR]` |
 | `movimentacao.registro` | ⚠️ | ✅ | ✅ | ✅ | ✅ | ✅ | `[E.mov.reg.DB]` `[E.mov.reg.SRV]` `[E.mov.reg.OFF]` `[E.mov.reg.UIW]` `[E.mov.reg.UIR]` |
 | `movimentacao.historico` | — | ✅ | ✅ | — | ✅ | ✅ | `[E.mov.his.SRV]` `[E.mov.his.OFF]` `[E.mov.his.UIR]` |
-| `movimentacao.anti_teleport_client` | — | — | — | ❌ | — | ⚠️ | `[E.mov.atc.UIW]` `[E.mov.atc.E2E]` |
+| `movimentacao.anti_teleport_client` | — | — | — | ✅ | — | ✅ | `[E.mov.atc.UIW]` `[E.mov.atc.E2E]` |
 | `reproducao.registro` | ⚠️ | ✅ | ✅ | ✅ | ✅ | ✅ | `[E.rep.reg.DB]` `[E.rep.reg.SRV]` `[E.rep.reg.OFF]` `[E.rep.reg.UIW]` `[E.rep.reg.UIR]` |
 | `reproducao.historico` | — | ✅ | ✅ | — | ✅ | ✅ | `[E.rep.his.SRV]` `[E.rep.his.OFF]` `[E.rep.his.UIR]` |
 | `reproducao.episode_linking` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | `[E.rep.epl.DB]` `[E.rep.epl.SRV]` `[E.rep.epl.OFF]` `[E.rep.epl.UIW]` `[E.rep.epl.UIR]` |
@@ -417,8 +417,8 @@ migrations/0001_init.sql:632 - CREATE TABLE eventos_nutricao
 | `[E.mov.his.SRV]` | PM: `supabase/functions/sync-batch/index.ts:L164` — eventos_movimentacao na lista TABLES_WITH_FAZENDA                                                                  |
 | `[E.mov.his.OFF]` | PM: `src/lib/offline/db.ts:L67` — event_eventos_movimentacao (leitura offline)                                                                                         |
 | `[E.mov.his.UIR]` | PM: `src/pages/Eventos.tsx:L143` — histórico movimentação                                                                                                              |
-| `[E.mov.atc.UIW]` | ❌ PM: `src/pages/Registrar.tsx:L1066+` — NÃO desabilita origem==destino. P: `rg -n "from_lote_id.*disabled\|toLote.*disabled" src/pages/Registrar.tsx` → 0 resultados |
-| `[E.mov.atc.E2E]` | ⚠️ PM: `supabase/functions/sync-batch/rules.ts:L149-249` — `prevalidateAntiTeleport` rejeita origem==destino; UI não bloqueia (ver `[E.mov.atc.UIW]`). Resultado: fluxo existe, mas UX depende de rejeição server-side (PARTIAL). |
+| `[E.mov.atc.UIW]` | PM: `src/pages/Registrar.tsx:382+` — `useEffect` impede origem==destino.                                                                                               |
+| `[E.mov.atc.E2E]` | PM: `src/pages/__tests__/Registrar.test.tsx` — Teste unitário verifica que destino reseta ao colidir com origem. ✅ PASS                                                |
 | `[E.rep.reg.DB]`  | PM: `supabase/migrations/0035_reproducao_hardening_v1.sql`; ⚠️ TD-020 FK macho_id ausente                                                                              |
 | `[E.rep.reg.SRV]` | PM: `supabase/functions/sync-batch/index.ts:L191` — validação reprodução server-side                                                                                   |
 | `[E.rep.reg.OFF]` | PM: `src/lib/offline/db.ts:L156` — event_eventos_reproducao store                                                                                                      |
@@ -468,20 +468,19 @@ migrations/0001_init.sql:632 - CREATE TABLE eventos_nutricao
 | `pesagem.registro`                  | UIW ⚠️           | TD-014 | Peso validation    |
 | `pesagem.historico`                 | UIR ⚠️           | TD-015 | GMD in-memory      |
 | `movimentacao.registro`             | DB ⚠️            | TD-019 | FKs faltantes      |
-| `movimentacao.anti_teleport_client` | UIW ❌, E2E ⚠️   | TD-008 | UI não bloqueia    |
 | `reproducao.registro`               | DB ⚠️            | TD-020 | FK macho_id        |
 
-**Gap count:** 6 / 19 capabilities
+**Gap count:** 5 / 19 capabilities
 
-**Capability Score (Analítico):** 13/19 = **68.4%** (capabilities com todas as camadas aplicáveis PASS)
+**Capability Score (Analítico):** 14/19 = **73.7%** (capabilities com todas as camadas aplicáveis PASS)
 
 > [!NOTE]
 > O score editorial "100% MVP (7/7 domínios)" mede cobertura por **domínio**. O Capability Score Analítico mede por **capability individual**, incluindo qualidade (validações, FKs, UX).
 
 **Consistência (hard check):**
 
-- `gap_set` = {sanitario.registro, pesagem.registro, pesagem.historico, movimentacao.registro, movimentacao.anti_teleport_client, reproducao.registro}
-- `TECH_DEBT OPEN (Catalog) capability_set` = {TD-011→sanitario.registro, TD-014→pesagem.registro, TD-015→pesagem.historico, TD-019→movimentacao.registro, TD-008→movimentacao.anti_teleport_client, TD-020→reproducao.registro}
+- `gap_set` = {sanitario.registro, pesagem.registro, pesagem.historico, movimentacao.registro, reproducao.registro}
+- `TECH_DEBT OPEN (Catalog) capability_set` = {TD-011→sanitario.registro, TD-014→pesagem.registro, TD-015→pesagem.historico, TD-019→movimentacao.registro, TD-020→reproducao.registro}
 - **Match:** ✅
 
 ---

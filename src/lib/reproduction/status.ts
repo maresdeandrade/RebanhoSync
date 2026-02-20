@@ -1,7 +1,7 @@
-
 import type { Evento, EventoReproducao, ReproTipoEnum } from "@/lib/offline/types";
-import { isPayloadV1, PUERPERIO_DAYS, ReproStatus } from "./types";
+import { isPayloadV1, PUERPERIO_DAYS, type ReproStatus } from "./types";
 import { ReproEventJoined } from "./selectors";
+export type { ReproStatus };
 
 export interface AnimalReproStatus {
   status: ReproStatus;

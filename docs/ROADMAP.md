@@ -1,7 +1,7 @@
 # Roadmap do Produto (6 Semanas)
 
 > **Status:** Derivado (Rev D+)
-> **Baseline:** `8ae3860`
+> **Baseline:** `dd2f2d8`
 > **Última Atualização:** 2026-02-17
 > **Derivado por:** Antigravity — capability_id Derivation Rev D+
 > **Fonte:** `TECH_DEBT.md` (OPEN), `IMPLEMENTATION_STATUS.md` (Matriz Analítica)
@@ -21,8 +21,6 @@ Este roadmap define as etapas para estabilização e hardening do RebanhoSync, p
 
 **Scope (Tech Debt P0 - OPEN):**
 
-- **TD-008** (`movimentacao.anti_teleport_client`): Validação Anti-Teleport no Frontend
-  - **Fluxo E2E:** Anti-Teleporte (Fluxo 3), Hardening (Fluxo 6)
 - **TD-001** (`infra.queue_cleanup` — Infra): Cleanup de `queue_rejections` (DLQ)
   - **Fluxo E2E:** Offline → Sync (Fluxo 2)
 
@@ -39,17 +37,15 @@ Este roadmap define as etapas para estabilização e hardening do RebanhoSync, p
 - [ ] DLQ não cresce indefinidamente após 1 semana de uso intenso.
 - [ ] Usuário consegue revisar rejeições antes do expurgo.
 
-### Semana 2: UX Hardening
+### Semana 2: UX Hardening (Concluído: Anti-Teleport)
 
 **Entregáveis:**
 
-- [ ] Validação frontend: Movimentação (origem != destino).
-- [ ] Botões desabilitados baseados em validações.
-- [ ] Testes E2E: Fluxo 3 (anti-teleport) + Fluxo 6 (hardening).
+- [ ] Botões desabilitados baseados em validações (genérico).
+- [ ] Testes E2E: Fluxo 6 (hardening) - Regressão.
 
 **Critério de Aceite (M0 - Semana 2):**
 
-- [ ] UI impede envio de movimentações inválidas (origem==destino).
 - [ ] Taxa de rejeições no sync reduz > 50%.
 - [ ] Todos fluxos E2E (0-8) passam sem regressão.
 
@@ -144,14 +140,14 @@ Este roadmap define as etapas para estabilização e hardening do RebanhoSync, p
 
 | Milestone            | Gaps Resolvidos                         | Capability Score (Analítico) | Status    |
 | -------------------- | --------------------------------------- | ---------------------------- | --------- |
-| **HEAD (Baseline)**  | TD-006 (Nutrição UI)                    | 13/19 (68.4%)                | ✅ ATUAL  |
-| **M0 (Semanas 1-2)** | TD-001¹, TD-008                         | 14/19 (73.7%)                | Planejado |
+| **HEAD (Baseline)**  | TD-006 (Nutrição UI), TD-008 (Teleport) | 14/19 (73.7%)                | ✅ ATUAL  |
+| **M0 (Semanas 1-2)** | TD-001¹                                 | 14/19 (73.7%)                | Planejado |
 | **M1 (Semanas 3-4)** | TD-003¹, TD-011, TD-014, TD-019, TD-020 | 18/19 (94.7%)                | Planejado |
 | **M2 (Semanas 5-6)** | TD-004¹, TD-015                         | 19/19 (100%)                 | Planejado |
 
 ¹ Infra TDs — resolvem problemas reais mas não participam do `gap_set` analítico.
 
-**Meta Final:** Todos TECH_DEBT OPEN resolvidos (9 → 0). Capability Score: 100%.
+**Meta Final:** Todos TECH_DEBT OPEN resolvidos (8 → 0). Capability Score: 100%.
 
 ---
 
@@ -164,14 +160,13 @@ Este roadmap define as etapas para estabilização e hardening do RebanhoSync, p
 | TD-001 | `infra.queue_cleanup`               | Infra   | M0        |
 | TD-003 | `infra.rbac_hardening`              | Infra   | M1        |
 | TD-004 | `infra.indexes`                     | Infra   | M2        |
-| TD-008 | `movimentacao.anti_teleport_client` | Catalog | M0        |
 | TD-011 | `sanitario.registro`                | Catalog | M1        |
 | TD-014 | `pesagem.registro`                  | Catalog | M1        |
 | TD-015 | `pesagem.historico`                 | Catalog | M2        |
 | TD-019 | `movimentacao.registro`             | Catalog | M1        |
 | TD-020 | `reproducao.registro`               | Catalog | M1        |
 
-**Match (9/9):** ✅
+**Match (8/8):** ✅
 
 ---
 

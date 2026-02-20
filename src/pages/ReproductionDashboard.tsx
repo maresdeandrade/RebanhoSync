@@ -82,9 +82,9 @@ export default function ReproductionDashboard() {
     total: dashboardData.length,
     servidas: dashboardData.filter(a => a.reproStatus.status === 'SERVIDA').length,
     prenhas: dashboardData.filter(a => a.reproStatus.status === 'PRENHA').length,
-    paridas: dashboardData.filter(a => a.reproStatus.status === 'PARIDA').length,
-    lactantes: dashboardData.filter(a => a.reproStatus.status === 'LACTANTE').length,
-    abertas: dashboardData.filter(a => a.reproStatus.status === 'ABERTA' || a.reproStatus.status === 'DIAGNOSTICO_PENDENTE').length,
+    paridas: dashboardData.filter(a => a.reproStatus.status === 'PARIDA_PUERPERIO' || a.reproStatus.status === 'PARIDA_ABERTA').length,
+    lactantes: 0, // Deprecated concept in new status enum, merged into PARIDA_*
+    abertas: dashboardData.filter(a => a.reproStatus.status === 'VAZIA').length,
   };
 
   // Filter Data based on Tab and Search
@@ -97,15 +97,15 @@ export default function ReproductionDashboard() {
     // Tab Filter
     switch (activeTab) {
       case 'active':
-        return ['SERVIDA', 'PRENHA', 'PARIDA'].includes(animal.reproStatus.status);
+        return ['SERVIDA', 'PRENHA', 'PARIDA_PUERPERIO', 'PARIDA_ABERTA'].includes(animal.reproStatus.status);
       case 'servida':
         return animal.reproStatus.status === 'SERVIDA';
       case 'prenha':
         return animal.reproStatus.status === 'PRENHA';
       case 'parida':
-        return ['PARIDA', 'LACTANTE'].includes(animal.reproStatus.status);
+        return ['PARIDA_PUERPERIO', 'PARIDA_ABERTA'].includes(animal.reproStatus.status);
       case 'aberta':
-        return ['ABERTA', 'DIAGNOSTICO_PENDENTE'].includes(animal.reproStatus.status);
+        return ['VAZIA'].includes(animal.reproStatus.status);
       default:
         return true;
     }
@@ -115,10 +115,9 @@ export default function ReproductionDashboard() {
     switch (status) {
       case 'PRENHA': return <Badge className="bg-green-600">Prenha</Badge>;
       case 'SERVIDA': return <Badge className="bg-yellow-600">Servida</Badge>;
-      case 'PARIDA': return <Badge className="bg-purple-600">Parida (Puerpério)</Badge>;
-      case 'LACTANTE': return <Badge className="bg-purple-400">Lactante</Badge>;
-      case 'ABERTA': return <Badge variant="outline">Aberta</Badge>;
-      case 'DIAGNOSTICO_PENDENTE': return <Badge variant="secondary">Diag. Pendente</Badge>;
+      case 'PARIDA_PUERPERIO': return <Badge className="bg-purple-600">Parida (Puerpério)</Badge>;
+      case 'PARIDA_ABERTA': return <Badge className="bg-purple-400">Parida (Aberta)</Badge>;
+      case 'VAZIA': return <Badge variant="outline">Vazia/Aberta</Badge>;
       default: return <Badge variant="outline">{status}</Badge>;
     }
   };
@@ -241,8 +240,9 @@ export default function ReproductionDashboard() {
                        </div>
                     </TableCell>
                     <TableCell>
-                       {animal.reproStatus.daysSinceServico ? `${animal.reproStatus.daysSinceServico} dias (Serv)` :
-                        animal.reproStatus.daysSinceParto ? `${animal.reproStatus.daysSinceParto} dias (Parto)` : '-'}
+                       {animal.reproStatus.status === 'SERVIDA' ? `${animal.reproStatus.daysSinceEvent ?? 0} dias (Serv)` :
+                        ['PARIDA_PUERPERIO', 'PARIDA_ABERTA'].includes(animal.reproStatus.status) ? `${animal.reproStatus.daysSinceEvent ?? 0} dias (Parto)` : 
+                        animal.reproStatus.daysSinceEvent ? `${animal.reproStatus.daysSinceEvent} dias` : '-'}
                     </TableCell>
                     <TableCell>
                         {animal.reproStatus.predictionDate ? (

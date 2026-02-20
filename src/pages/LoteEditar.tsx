@@ -33,11 +33,25 @@ const LoteEditar = () => {
   const [touroId, setTouroId] = useState<string>("null");
   const [isLoaded, setIsLoaded] = useState(false); // ✅ Flag para garantir carregamento
 
-  const pastos = useLiveQuery(() => db.state_pastos.toArray());
-  const touros = useLiveQuery(() =>
-    db.state_animais
-      .filter((a) => a.sexo === "M" && (!a.deleted_at || a.deleted_at === null))
-      .toArray(),
+  const pastos = useLiveQuery(
+    () =>
+      lote?.fazenda_id
+        ? db.state_pastos.where("fazenda_id").equals(lote.fazenda_id).toArray()
+        : [],
+    [lote?.fazenda_id],
+  );
+  const touros = useLiveQuery(
+    () =>
+      lote?.fazenda_id
+        ? db.state_animais
+            .where("fazenda_id")
+            .equals(lote.fazenda_id)
+            .filter(
+              (a) => a.sexo === "M" && (!a.deleted_at || a.deleted_at === null),
+            )
+            .toArray()
+        : [],
+    [lote?.fazenda_id],
   );
 
   // Preencher formulário quando lote carregar

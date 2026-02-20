@@ -1,7 +1,7 @@
 # Dívida Técnica (Tech Debt)
 
 > **Status:** Derivado (Rev D+)
-> **Baseline:** `8ae3860`
+> **Baseline:** `dd2f2d8`
 > **Última Atualização:** 2026-02-17
 > **Derivado por:** Antigravity — capability_id Derivation Rev D+
 > **Fonte:** `IMPLEMENTATION_STATUS.md` (Matriz Analítica), Código
@@ -10,26 +10,9 @@ Lista consolidada de débitos técnicos do RebanhoSync. Itens OPEN são separado
 
 ---
 
-## OPEN (Catalog) — 6 items
+## OPEN (Catalog) — 5 items
 
 > Estes TDs possuem `capability_id` do Capability Catalog e participam da derivação mecânica (gap_set → ROADMAP).
-
-### 🔴 P0 (Crítico - 1 item)
-
-#### TD-008: Validação Anti-Teleport no Frontend
-
-- **capability_id:** `movimentacao.anti_teleport_client`
-- **Domínio:** movimentacao
-- **Risco:** Usabilidade (UX degradada)
-- **Status:** 🔴 **OPEN** (P0)
-- **Evidência:** `Registrar.tsx` (movimentação) não desabilita lote origem no Select destino.
-- **Ação:** Desabilitar opção `fromLoteId` no Select de `toLoteId`.
-- **Critério de Aceite:**
-  - [ ] UI impede seleção origem==destino.
-  - [ ] Reduz envios rejeitados ao servidor (melhor UX).
-  - **Fluxo E2E:** Hardening de Eventos (Fluxo 6)
-
----
 
 ### 🟠 P1 (Importante - 4 items)
 
@@ -156,7 +139,26 @@ Lista consolidada de débitos técnicos do RebanhoSync. Itens OPEN são separado
 
 ---
 
-## 🟩 CLOSED (Resolvidos - 1 item)
+## 🟩 CLOSED (Resolvidos - 2 items)
+
+### TD-008: Validação Anti-Teleport no Frontend ✅ CLOSED
+
+- **capability_id:** `movimentacao.anti_teleport_client`
+- **Domínio:** movimentacao
+- **Risco:** N/A (resolvido)
+- **Status:** ✅ **CLOSED** (2026-02-17)
+- **Evidência Original:** `Registrar.tsx` permitia seleção de lote destino igual à origem.
+- **Solução:** Implementado `useEffect` em `Registrar.tsx` que monitora `selectedLoteId` e reseta `toLoteId` se houver colisão.
+- **Evidência Real:**
+  - `src/pages/Registrar.tsx:382+` - useEffect de reset.
+  - `src/lib/events/__tests__/validators.test.ts` - Teste de validação.
+  - `src/pages/__tests__/Registrar.test.tsx` - Teste de UI.
+
+**Critério de Aceite (DONE):**
+
+- [x] UI impede seleção origem==destino (reset automático).
+- [x] Testes unitários cobrem o cenário.
+- [x] **Fluxo E2E:** Anti-Teleporte - VALIDADO
 
 ### TD-006: UI de Nutrição ✅ CLOSED
 

@@ -413,11 +413,18 @@ const AnimalDetalhe = () => {
                   {evt.dominio === "reproducao" && evt.details && (
                      <div className="mt-1 text-xs bg-rose-50/50 p-2 rounded border border-rose-100">
                         {evt.details.macho_id && <p>Reprodutor: {evt.machoIdentificacao || evt.details.macho_id}</p>}
-                        {evt.details.payload?.diagnostico_resultado && (
-                           <p>Diagnóstico: {String(evt.details.payload.diagnostico_resultado)}</p>
-                        )}
-                        {evt.details.payload?.numero_crias && (
-                           <p>Crias: {Number(evt.details.payload.numero_crias)}</p>
+                        {evt.details.payload && (
+                           <>
+                             {(evt.details.payload as any).diagnostico_resultado && (
+                                <p>Diagnóstico: {String((evt.details.payload as any).diagnostico_resultado)}</p>
+                             )}
+                             {(evt.details.payload as any).resultado && (
+                                <p>Diagnóstico: {String((evt.details.payload as any).resultado)}</p>
+                             )}
+                             {(evt.details.payload as any).numero_crias && (
+                                <p>Crias: {Number((evt.details.payload as any).numero_crias)}</p>
+                             )}
+                           </>
                         )}
                      </div>
                   )}
