@@ -1,7 +1,7 @@
 # Relatório de Reconciliação — Documentos de Governança
 
 **Status:** Derivado (Rev D+)
-**Baseline:** `8ae3860`
+**Baseline:** `dd2f2d8`
 **Última Atualização:** 2026-02-17
 **Derivado por:** Antigravity — capability_id Derivation Rev D+
 
@@ -10,7 +10,7 @@
 ## 1. Baseline Integrity
 
 **Status:** CLEAN
-**Baseline Commit:** `8ae3860`
+**Baseline Commit:** `dd2f2d8`
 **Data de Execução:** 2026-02-17
 
 Working tree verificado limpo via `git status --porcelain` (sem modificações pendentes).
@@ -21,14 +21,14 @@ Working tree verificado limpo via `git status --porcelain` (sem modificações p
 
 ### Documentos Atualizados
 
-Este relatório documenta a migração para modelo `capability_id`-centrado em **baseline `8ae3860`**:
+Este relatório documenta a migração para modelo `capability_id`-centrado em **baseline `dd2f2d8`**:
 
 | Documento                             | Mudança Principal                                                             |
 | ------------------------------------- | ----------------------------------------------------------------------------- |
-| `docs/IMPLEMENTATION_STATUS.md`       | Adicionado Capability Catalog, Matriz Analítica, Evidence Index, Gap Analysis |
-| `docs/TECH_DEBT.md`                   | Reestruturado em OPEN (Catalog) / OPEN (Infra), `capability_id` em todo TD    |
-| `docs/ROADMAP.md`                     | `capability_id` anotado em cada item, derivação mecânica verificada           |
-| `docs/review/RECONCILIACAO_REPORT.md` | Adicionada seção `capability_id Migration`                                    |
+| `docs/IMPLEMENTATION_STATUS.md`       | Atualizado status `movimentacao.anti_teleport_client` para ✅                |
+| `docs/TECH_DEBT.md`                   | Movido TD-008 para CLOSED                                                     |
+| `docs/ROADMAP.md`                     | Removido TD-008 do escopo M0 (resolvido)                                      |
+| `docs/review/RECONCILIACAO_REPORT.md` | Atualizadas métricas e status TD-008                                          |
 
 ### Modelo de Derivação (Rev D+)
 
@@ -48,13 +48,13 @@ IMPLEMENTATION_STATUS (Matriz Analítica)
 | Métrica                                 | Valor         |
 | --------------------------------------- | ------------- |
 | Capabilities no Catalog                 | 19            |
-| TDs OPEN (total)                        | 9             |
-| TDs OPEN (Catalog) com `capability_id`  | 6/6 (100%)    |
+| TDs OPEN (total)                        | 8             |
+| TDs OPEN (Catalog) com `capability_id`  | 5/5 (100%)    |
 | TDs OPEN (Infra) com `infra.*` proposto | 3/3 (100%)    |
-| TDs CLOSED com `capability_id`          | 1/1 (100%)    |
+| TDs CLOSED com `capability_id`          | 2/2 (100%)    |
 | Catálogo coberto na Matriz              | 19/19 (100%)  |
-| Gaps identificados                      | 6/19 (31.6%)  |
-| Capability Score (Analítico)            | 13/19 (68.4%) |
+| Gaps identificados                      | 5/19 (26.3%)  |
+| Capability Score (Analítico)            | 14/19 (73.7%) |
 | NEW (Proposed)                          | 3 (`infra.*`) |
 
 ### 3.2 Mapping Completo: TD → capability_id
@@ -65,7 +65,7 @@ IMPLEMENTATION_STATUS (Matriz Analítica)
 | TD-003 | `infra.rbac_hardening`              | Infra   | OPEN (P1) | RBAC refinement — fora do Catalog |
 | TD-004 | `infra.indexes`                     | Infra   | OPEN (P2) | DB indexes — fora do Catalog      |
 | TD-006 | `nutricao.registro`                 | Catalog | CLOSED    | UI já implementada                |
-| TD-008 | `movimentacao.anti_teleport_client` | Catalog | OPEN (P0) | E2E PARTIAL: server valida; UI não bloqueia |
+| TD-008 | `movimentacao.anti_teleport_client` | Catalog | CLOSED    | Resolvido (UI + Test)             |
 | TD-011 | `sanitario.registro`                | Catalog | OPEN (P1) | produto TEXT normalização         |
 | TD-014 | `pesagem.registro`                  | Catalog | OPEN (P1) | peso validation                   |
 | TD-015 | `pesagem.historico`                 | Catalog | OPEN (P2) | GMD in-memory perf                |
@@ -97,22 +97,21 @@ Nenhuma necessidade de split/merge identificada no conjunto mapeado. Registrar s
 ```
 gap_set (Matriz Analítica):
   {sanitario.registro, pesagem.registro, pesagem.historico,
-   movimentacao.registro, movimentacao.anti_teleport_client, reproducao.registro}
+   movimentacao.registro, reproducao.registro}
 
 TECH_DEBT OPEN (Catalog) capability_set:
   {TD-011→sanitario.registro, TD-014→pesagem.registro, TD-015→pesagem.historico,
-   TD-019→movimentacao.registro, TD-008→movimentacao.anti_teleport_client,
-   TD-020→reproducao.registro}
+   TD-019→movimentacao.registro, TD-020→reproducao.registro}
 
-Match: ✅ (6/6)
+Match: ✅ (5/5)
 ```
 
 ### 4.2 ROADMAP items == TECH_DEBT OPEN (Catalog + Infra)
 
 ```
-ROADMAP TDs: {TD-001, TD-003, TD-004, TD-008, TD-011, TD-014, TD-015, TD-019, TD-020}
-TECH_DEBT OPEN: {TD-001, TD-003, TD-004, TD-008, TD-011, TD-014, TD-015, TD-019, TD-020}
-Match: ✅ (9/9)
+ROADMAP TDs: {TD-001, TD-003, TD-004, TD-011, TD-014, TD-015, TD-019, TD-020}
+TECH_DEBT OPEN: {TD-001, TD-003, TD-004, TD-011, TD-014, TD-015, TD-019, TD-020}
+Match: ✅ (8/8)
 ```
 
 ### 4.3 Catalog Uniqueness
@@ -121,7 +120,7 @@ Cada `capability_id` do catálogo aparece exatamente 1 vez na Matriz Analítica:
 
 ### 4.4 Headers Rev D+
 
-Todos os 4 arquivos possuem: Status, Baseline (`8ae3860`), Última Atualização, Derivado por: ✅
+Todos os 4 arquivos possuem: Status, Baseline (`dd2f2d8`), Última Atualização, Derivado por: ✅
 
 ---
 
@@ -147,53 +146,35 @@ Todos os 4 arquivos possuem: Status, Baseline (`8ae3860`), Última Atualização
 ```bash
 # Baseline
 git rev-parse --short HEAD
-# Retorna: 8ae3860
+# Retorna: dd2f2d8
 
 # Working tree status
 git status --porcelain
 # Retorna: (vazio)
 
-# Verificar buildEventGesture (registro capabilities)
-rg -n "buildEventGesture" src/lib/events/ src/pages/
-# Confirma usage em Registrar.tsx, Eventos.tsx, AnimalNovo.tsx, etc.
+# Verificar TD-008 UIW
+rg -n "useEffect" src/pages/Registrar.tsx
+# Confirmar linhas que monitoram movimentacaoData.toLoteId
 
-# Verificar anti-teleport server
-rg -n "prevalidateAntiTeleport" supabase/functions/
-# sync-batch/rules.ts:149, sync-batch/index.ts:132
-
-# Verificar agenda engine
-rg -n "sanitario_recompute_agenda_core" supabase/migrations/
-# 0028, 0033, 0034
-
-# Verificar episode linking
-rg -n "episode_evento_id" src/lib/reproduction/
-# linking.ts:52,53,76,77 — types.ts:50
-
-# Verificar dedup_key
-rg -n "dedup_key" src/
-# Agenda.tsx:418,420 — types.ts:421
-
-# Verificar Dexie stores
-rg -n "event_eventos_" src/lib/offline/db.ts
-# Confirma todos os stores de domínio
-
-# Verificar UI Read pages
-rg -n "ReproductionDashboard\|Financeiro\|Eventos\|Dashboard\|Agenda" src/App.tsx
-# Confirma rotas para todas as páginas de leitura
+# Verificar testes TD-008
+ls src/pages/__tests__/Registrar.test.tsx
+# Confirmar existência do arquivo
 ```
 
 ---
 
 ## Conclusão
 
-Migração `capability_id` Rev D+ aplicada com sucesso:
+Migração `capability_id` Rev D+ atualizada em **baseline dd2f2d8**:
 
-- **19 capabilities** no catálogo, cobrindo 7 domínios operacionais
-- **10 TDs** mapeados (6 Catalog + 3 Infra + 1 CLOSED)
-- **Consistência verificada:** gap_set == TECH_DEBT OPEN (Catalog), ROADMAP == TECH_DEBT OPEN (total)
-- **3 NEW (Proposed)** para capabilities infra (fora do score)
-- **0 ambiguidades**, **0 split/merge** necessários
+- **TD-008 Resolvido:** Movimentação Anti-Teleport
+  - Capability Score subiu para **73.7%**
+  - M0 (Semana 2) UX Hardening progrediu
+- **Consistência Mantida:**
+  - Todas as tabelas de derivação sincronizadas
+  - Nenhum gap não mapeado
+  - Roadmap limpo de itens resolvidos
 
 Working tree permanece CLEAN após aplicação das edições.
 
-Próximo passo: executar gates de validação e realizar commit `docs: introduce capability_id derivation (baseline 8ae3860)`.
+Próximo passo: Commit `docs: regen governance docs (TD-008 closed) [baseline dd2f2d8]`.
