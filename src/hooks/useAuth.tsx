@@ -171,16 +171,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session);
       if (session) {
-        refreshSettings();
+        // Prevent race condition: ensure settings (including role) are loaded before clearing loading state
+        setLoading(true);
+        await refreshSettings();
+        setLoading(false);
       } else {
         setActiveFarmId(null);
         setRole(null);
         removeActiveFarmId();
+        setLoading(false);
       }
-      setLoading(false);
     });
 
     return () => {
