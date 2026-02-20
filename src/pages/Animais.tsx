@@ -3,6 +3,7 @@ import { type Collection } from "dexie";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "@/lib/offline/db";
 import { type Animal } from "@/lib/offline/types";
+import { getActiveFarmId } from "@/lib/storage";
 import { Link, useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -65,12 +66,25 @@ const Animais = () => {
 
   const animais = useLiveQuery(async () => {
     let collection: Collection<Animal, string>;
+    const activeFarmId = getActiveFarmId();
 
-    // ⚡ Bolt: Use index for specific lote filter (O(1) vs O(N))
-    if (loteFilter !== "all" && loteFilter !== "none") {
-      collection = db.state_animais.where("lote_id").equals(loteFilter);
+    if (activeFarmId) {
+      // ⚡ Bolt: Use compound index for specific lote filter (O(1) vs O(N))
+      if (loteFilter !== "all" && loteFilter !== "none") {
+        collection = db.state_animais
+          .where("[fazenda_id+lote_id]")
+          .equals([activeFarmId, loteFilter]);
+      } else {
+        // Filter by farm using index to avoid scanning other farms' data
+        collection = db.state_animais.where("fazenda_id").equals(activeFarmId);
+      }
     } else {
-      collection = db.state_animais.toCollection();
+      // Fallback for safety (though activeFarmId should generally exist)
+      if (loteFilter !== "all" && loteFilter !== "none") {
+        collection = db.state_animais.where("lote_id").equals(loteFilter);
+      } else {
+        collection = db.state_animais.toCollection();
+      }
     }
 
     if (debouncedSearch) {
