@@ -5,10 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Plus, LayoutList } from "lucide-react";
+import { getActiveFarmId } from "@/lib/storage";
 
 const Categorias = () => {
   const navigate = useNavigate();
-  const fazendaId = localStorage.getItem("gestao_agro_active_fazenda_id");
+  const fazendaId = getActiveFarmId();
 
   const categorias = useLiveQuery(async () => {
     if (!fazendaId) return [];

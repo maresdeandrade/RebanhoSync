@@ -102,7 +102,6 @@ const Reconciliacao = () => {
 
     await db.queue_rejections.delete(rejection.id);
     showSuccess("Operação re-enfileirada para sincronização");
-    console.log("[Reconciliacao] Gesture re-queued for sync");
   };
 
   const handleClear = async (id: number) => {

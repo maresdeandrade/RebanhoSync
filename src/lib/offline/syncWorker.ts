@@ -29,7 +29,9 @@ interface SyncBatchResponse {
 export const startSyncWorker = () => {
   if (intervalId) return;
 
-  console.log("[sync-worker] Starting sync worker");
+  if (import.meta.env.DEV) {
+    console.debug("[sync-worker] Starting sync worker");
+  }
   intervalId = setInterval(async () => {
     if (isTickRunning) return;
     isTickRunning = true;
@@ -104,15 +106,17 @@ async function recoverAuthErroredGesturesOnce() {
 }
 
 function logTokenExpiry(session: Session) {
+  if (!import.meta.env.DEV) return;
+
   if (!session.expires_at) {
-    console.log("[sync-worker] Token expiry unavailable");
+    console.debug("[sync-worker] Token expiry unavailable");
     return;
   }
 
   const tokenExpiry = new Date(session.expires_at * 1000);
   const now = new Date();
   const timeLeft = Math.floor((tokenExpiry.getTime() - now.getTime()) / 1000 / 60);
-  console.log("[sync-worker] Token expira em:", timeLeft, "minutos");
+  console.debug("[sync-worker] Token expira em:", timeLeft, "minutos");
 }
 
 async function getValidSession() {
@@ -185,10 +189,12 @@ async function processGesture(gesture: Gesture) {
       record: o.record,
     }));
 
-    console.log(
-      "[sync-worker] Tentando sync do TX:",
-      gesture.client_tx_id.substring(0, 8),
-    );
+    if (import.meta.env.DEV) {
+      console.debug(
+        "[sync-worker] Tentando sync do TX:",
+        gesture.client_tx_id.substring(0, 8),
+      );
+    }
     logTokenExpiry(session);
 
     let response = await sendBatchRequest(session.access_token, gesture, mappedOps);
@@ -278,7 +284,9 @@ async function processGesture(gesture: Gesture) {
       });
       await db.queue_ops.where("client_tx_id").equals(gesture.client_tx_id).delete();
 
-      console.log(`[sync-worker] TX ${gesture.client_tx_id} synced successfully`);
+      if (import.meta.env.DEV) {
+        console.debug(`[sync-worker] TX ${gesture.client_tx_id} synced successfully`);
+      }
       return;
     }
 

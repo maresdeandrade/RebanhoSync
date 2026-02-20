@@ -79,6 +79,17 @@ export interface ReproductionEventInput extends BaseEventInput {
   machoId?: string | null;
   // Phase 1 payload fields (optional but typed here for builder)
   payloadData?: {
+    distocia?: string;
+    escore_condicao_corporal?: number;
+    
+    // Extended fields used in Registrar.tsx
+    schema_version?: number;
+    episode_evento_id?: string;
+    episode_link_method?: string;
+    tecnica_livre?: string;
+    reprodutor_tag?: string;
+    resultado?: string;
+    
     diagnostico_resultado?: string;
     data_prevista_parto?: string; // YYYY-MM-DD
     data_parto_real?: string; // YYYY-MM-DD

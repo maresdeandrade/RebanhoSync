@@ -1,10 +1,12 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
+import Dexie from "dexie";
 import { useLiveQuery } from "dexie-react-hooks";
 import { Calendar, Filter, RefreshCw, Search, PlusCircle } from "lucide-react";
 import { db } from "@/lib/offline/db";
 import { createGesture } from "@/lib/offline/ops";
 import { useAuth } from "@/hooks/useAuth";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import type {
   DominioEnum,
   Evento,
@@ -88,6 +90,8 @@ function toDateTime(value: string) {
   });
 }
 
+const PAGE_SIZE = 50;
+
 const Eventos = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -95,74 +99,168 @@ const Eventos = () => {
   const { activeFarmId } = useAuth();
 
   const [search, setSearch] = useState("");
+  const debouncedSearch = useDebouncedValue(search, 300);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [domainFilter, setDomainFilter] = useState<"all" | DominioEnum>("all");
   const [animalFilter, setAnimalFilter] = useState("all");
   const [loteFilter, setLoteFilter] = useState("all");
   const [syncFilter, setSyncFilter] = useState<SyncFilter>("all");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [
+    activeFarmId,
+    search,
+    domainFilter,
+    animalFilter,
+    loteFilter,
+    syncFilter,
+    dateFrom,
+    dateTo,
+  ]);
   const [complementTargetId, setComplementTargetId] = useState<string | null>(
     null,
   );
   const [complementText, setComplementText] = useState("");
   const [isSavingComplement, setIsSavingComplement] = useState(false);
 
-  const data = useLiveQuery(
-    async () => {
-      if (!activeFarmId) {
-        return {
-          eventos: [],
-          sanitarios: [],
-          pesagens: [],
-          nutricao: [],
-          movimentacoes: [],
-          financeiro: [],
-          reproducao: [],
-          animais: [],
-          lotes: [],
-          gestos: [],
-        };
-      }
-
-      const [
-        eventos,
-        sanitarios,
-        pesagens,
-        nutricao,
-        movimentacoes,
-        financeiro,
-        reproducao,
-        animais,
-        lotes,
-        gestos,
-      ] = await Promise.all([
-        db.event_eventos.where("fazenda_id").equals(activeFarmId).toArray(),
-        db.event_eventos_sanitario.where("fazenda_id").equals(activeFarmId).toArray(),
-        db.event_eventos_pesagem.where("fazenda_id").equals(activeFarmId).toArray(),
-        db.event_eventos_nutricao.where("fazenda_id").equals(activeFarmId).toArray(),
-        db.event_eventos_movimentacao.where("fazenda_id").equals(activeFarmId).toArray(),
-        db.event_eventos_financeiro.where("fazenda_id").equals(activeFarmId).toArray(),
-        db.event_eventos_reproducao.where("fazenda_id").equals(activeFarmId).toArray(),
-        db.state_animais.where("fazenda_id").equals(activeFarmId).toArray(),
-        db.state_lotes.where("fazenda_id").equals(activeFarmId).toArray(),
-        db.queue_gestures.where("fazenda_id").equals(activeFarmId).toArray(),
-      ]);
-
+  const data = useLiveQuery(async () => {
+    if (!activeFarmId) {
       return {
-        eventos: eventos.filter((e) => !e.deleted_at),
-        sanitarios: sanitarios.filter((e) => !e.deleted_at),
-        pesagens: pesagens.filter((e) => !e.deleted_at),
-        nutricao: nutricao.filter((e) => !e.deleted_at),
-        movimentacoes: movimentacoes.filter((e) => !e.deleted_at),
-        financeiro: financeiro.filter((e) => !e.deleted_at),
-        reproducao: reproducao.filter((e) => !e.deleted_at),
-        animais: animais.filter((a) => !a.deleted_at),
-        lotes: lotes.filter((l) => !l.deleted_at),
-        gestos,
+        eventos: [],
+        totalCount: 0,
+        sanitarios: [],
+        pesagens: [],
+        nutricao: [],
+        movimentacoes: [],
+        financeiro: [],
+        reproducao: [],
+        animais: [],
+        lotes: [],
+        gestos: [],
       };
-    },
-    [activeFarmId],
-  );
+    }
+
+    const [animais, lotes, gestos] = await Promise.all([
+      db.state_animais.where("fazenda_id").equals(activeFarmId).toArray(),
+      db.state_lotes.where("fazenda_id").equals(activeFarmId).toArray(),
+      db.queue_gestures.where("fazenda_id").equals(activeFarmId).toArray(),
+    ]);
+
+    const animalById = new Map(animais.map((a) => [a.id, a]));
+    const loteById = new Map(lotes.map((l) => [l.id, l]));
+    const gestoByTx = new Map(gestos.map((g) => [g.client_tx_id, g.status]));
+
+    const getFilteredCollection = () => {
+      const base = db.event_eventos
+        .where("[fazenda_id+occurred_at]")
+        .between(
+          [activeFarmId, Dexie.minKey],
+          [activeFarmId, Dexie.maxKey],
+          true,
+          true,
+        )
+        .reverse();
+
+      return base.filter((evento) => {
+        if (evento.deleted_at) return false;
+
+        // Domain filter
+        if (domainFilter !== "all" && evento.dominio !== domainFilter)
+          return false;
+
+        // Animal filter
+        if (animalFilter !== "all" && evento.animal_id !== animalFilter)
+          return false;
+
+        // Lote filter
+        if (loteFilter !== "all" && evento.lote_id !== loteFilter) return false;
+
+        // Sync filter
+        const syncStatus = normalizeSyncStatus(
+          evento.client_tx_id ? gestoByTx.get(evento.client_tx_id) : "SYNCED",
+        );
+        if (syncFilter !== "all" && syncStatus !== syncFilter) return false;
+
+        // Date filters
+        const occurredOn = evento.occurred_at.slice(0, 10);
+        if (dateFrom && occurredOn < dateFrom) return false;
+        if (dateTo && occurredOn > dateTo) return false;
+
+        // Partial Search (only fields available in event_eventos + state_animais/lotes)
+          if (debouncedSearch.trim()) {
+            const searchLower = debouncedSearch.trim().toLowerCase();
+          const animal = evento.animal_id
+            ? animalById.get(evento.animal_id)
+            : null;
+          const lote = evento.lote_id ? loteById.get(evento.lote_id) : null;
+          const textIndex = [
+            DOMAIN_LABEL[evento.dominio],
+            animal?.identificacao,
+            lote?.nome,
+            evento.observacoes ?? "",
+          ]
+            .join(" ")
+            .toLowerCase();
+          if (!textIndex.includes(searchLower)) return false;
+        }
+
+        return true;
+      });
+    };
+
+    const [totalCount, eventosPaged] = await Promise.all([
+      getFilteredCollection().count(),
+      getFilteredCollection().limit(visibleCount).toArray(),
+    ]);
+
+    const eventIds = eventosPaged.map((e) => e.id);
+
+    const [
+      sanitarios,
+      pesagens,
+      nutricao,
+      movimentacoes,
+      financeiro,
+      reproducao,
+    ] = await Promise.all([
+      db.event_eventos_sanitario.where("evento_id").anyOf(eventIds).toArray(),
+      db.event_eventos_pesagem.where("evento_id").anyOf(eventIds).toArray(),
+      db.event_eventos_nutricao.where("evento_id").anyOf(eventIds).toArray(),
+      db.event_eventos_movimentacao
+        .where("evento_id")
+        .anyOf(eventIds)
+        .toArray(),
+      db.event_eventos_financeiro.where("evento_id").anyOf(eventIds).toArray(),
+      db.event_eventos_reproducao.where("evento_id").anyOf(eventIds).toArray(),
+    ]);
+
+    return {
+      eventos: eventosPaged,
+      totalCount,
+      sanitarios: sanitarios.filter((e) => !e.deleted_at),
+      pesagens: pesagens.filter((e) => !e.deleted_at),
+      nutricao: nutricao.filter((e) => !e.deleted_at),
+      movimentacoes: movimentacoes.filter((e) => !e.deleted_at),
+      financeiro: financeiro.filter((e) => !e.deleted_at),
+      reproducao: reproducao.filter((e) => !e.deleted_at),
+      animais: animais.filter((a) => !a.deleted_at),
+      lotes: lotes.filter((l) => !l.deleted_at),
+      gestos,
+    };
+  }, [
+    activeFarmId,
+    domainFilter,
+    animalFilter,
+    loteFilter,
+    syncFilter,
+    dateFrom,
+    dateTo,
+    search,
+    visibleCount,
+  ]);
 
   const detailMaps = useMemo(() => {
     if (!data) return null;
@@ -318,7 +416,9 @@ const Eventos = () => {
       setComplementText("");
     } catch (error: unknown) {
       if (error instanceof EventValidationError) {
-        showError(error.issues[0]?.message ?? "Dados invalidos para complemento.");
+        showError(
+          error.issues[0]?.message ?? "Dados invalidos para complemento.",
+        );
       } else {
         showError("Falha ao salvar complemento.");
       }
@@ -332,12 +432,20 @@ const Eventos = () => {
 
     const animalById = new Map(data.animais.map((a) => [a.id, a]));
     const loteById = new Map(data.lotes.map((l) => [l.id, l]));
-    const gestoByTx = new Map(data.gestos.map((g) => [g.client_tx_id, g.status]));
+    const gestoByTx = new Map(
+      data.gestos.map((g) => [g.client_tx_id, g.status]),
+    );
 
-    const sanitarioByEvento = new Map(data.sanitarios.map((d) => [d.evento_id, d]));
+    const sanitarioByEvento = new Map(
+      data.sanitarios.map((d) => [d.evento_id, d]),
+    );
     const pesagemByEvento = new Map(data.pesagens.map((d) => [d.evento_id, d]));
-    const nutricaoByEvento = new Map(data.nutricao.map((d) => [d.evento_id, d]));
-    const movByEvento = new Map(data.movimentacoes.map((d) => [d.evento_id, d]));
+    const nutricaoByEvento = new Map(
+      data.nutricao.map((d) => [d.evento_id, d]),
+    );
+    const movByEvento = new Map(
+      data.movimentacoes.map((d) => [d.evento_id, d]),
+    );
     const finByEvento = new Map(data.financeiro.map((d) => [d.evento_id, d]));
     const reproByEvento = new Map(data.reproducao.map((d) => [d.evento_id, d]));
 
@@ -345,7 +453,9 @@ const Eventos = () => {
 
     const rows = data.eventos
       .map((evento) => {
-        const animal = evento.animal_id ? animalById.get(evento.animal_id) : null;
+        const animal = evento.animal_id
+          ? animalById.get(evento.animal_id)
+          : null;
         const lote = evento.lote_id ? loteById.get(evento.lote_id) : null;
         const syncStatus = normalizeSyncStatus(
           evento.client_tx_id ? gestoByTx.get(evento.client_tx_id) : "SYNCED",
@@ -363,7 +473,8 @@ const Eventos = () => {
         } else if (evento.dominio === "nutricao") {
           const d = nutricaoByEvento.get(evento.id);
           if (d) {
-            const quantidade = d.quantidade_kg != null ? `${d.quantidade_kg} kg` : "";
+            const quantidade =
+              d.quantidade_kg != null ? `${d.quantidade_kg} kg` : "";
             detail = `${d.alimento_nome ?? "Alimento"} ${quantidade}`.trim();
           } else {
             detail = "Sem detalhe de nutricao";
@@ -371,8 +482,12 @@ const Eventos = () => {
         } else if (evento.dominio === "movimentacao") {
           const d = movByEvento.get(evento.id);
           if (d) {
-            const fromLote = d.from_lote_id ? loteById.get(d.from_lote_id)?.nome : null;
-            const toLote = d.to_lote_id ? loteById.get(d.to_lote_id)?.nome : null;
+            const fromLote = d.from_lote_id
+              ? loteById.get(d.from_lote_id)?.nome
+              : null;
+            const toLote = d.to_lote_id
+              ? loteById.get(d.to_lote_id)?.nome
+              : null;
             detail = `Lote: ${fromLote ?? "-"} -> ${toLote ?? "-"}`;
           } else {
             detail = "Sem detalhe de movimentacao";
@@ -412,16 +527,10 @@ const Eventos = () => {
           .join(" ")
           .toLowerCase();
 
-        const occurredOn = evento.occurred_at.slice(0, 10);
-        const dateMatch =
-          (!dateFrom || occurredOn >= dateFrom) && (!dateTo || occurredOn <= dateTo);
-        const domainMatch = domainFilter === "all" || evento.dominio === domainFilter;
-        const animalMatch = animalFilter === "all" || evento.animal_id === animalFilter;
-        const loteMatch = loteFilter === "all" || evento.lote_id === loteFilter;
-        const syncMatch = syncFilter === "all" || syncStatus === syncFilter;
         const searchMatch = !searchLower || textIndex.includes(searchLower);
 
-        if (!dateMatch || !domainMatch || !animalMatch || !loteMatch || !syncMatch || !searchMatch) {
+        // All other filters are already handled in useLiveQuery
+        if (!searchMatch) {
           return null;
         }
 
@@ -435,12 +544,7 @@ const Eventos = () => {
           syncStatus,
         };
       })
-      .filter(Boolean)
-      .sort((a, b) => {
-        const aValue = a!.evento.occurred_at;
-        const bValue = b!.evento.occurred_at;
-        return bValue.localeCompare(aValue);
-      }) as Array<{
+      .filter(Boolean) as Array<{
       id: string;
       evento: (typeof data.eventos)[number];
       animalNome: string;
@@ -451,16 +555,7 @@ const Eventos = () => {
     }>;
 
     return rows;
-  }, [
-    data,
-    search,
-    domainFilter,
-    animalFilter,
-    loteFilter,
-    syncFilter,
-    dateFrom,
-    dateTo,
-  ]);
+  }, [data, debouncedSearch]);
 
   const animais = data?.animais ?? [];
   const lotes = data?.lotes ?? [];
@@ -505,7 +600,9 @@ const Eventos = () => {
             <Label>Dominio</Label>
             <Select
               value={domainFilter}
-              onValueChange={(value) => setDomainFilter(value as "all" | DominioEnum)}
+              onValueChange={(value) =>
+                setDomainFilter(value as "all" | DominioEnum)
+              }
             >
               <SelectTrigger>
                 <SelectValue />
@@ -577,12 +674,20 @@ const Eventos = () => {
 
           <div className="space-y-2">
             <Label>Data de</Label>
-            <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
+            <Input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+            />
           </div>
 
           <div className="space-y-2">
             <Label>Data ate</Label>
-            <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
+            <Input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+            />
           </div>
 
           <div className="flex items-end">
@@ -607,7 +712,7 @@ const Eventos = () => {
       </Card>
 
       <div className="text-sm text-muted-foreground">
-        {timeline.length} evento(s) encontrado(s)
+        {data?.totalCount ?? 0} evento(s) encontrado(s)
       </div>
 
       {timeline.length === 0 ? (
@@ -628,7 +733,9 @@ const Eventos = () => {
             return (
               <Card
                 key={row.id}
-                className={isHighlighted ? "ring-2 ring-primary border-primary/40" : ""}
+                className={
+                  isHighlighted ? "ring-2 ring-primary border-primary/40" : ""
+                }
               >
                 <CardContent className="p-4 space-y-3">
                   <div className="flex flex-wrap items-start justify-between gap-3">
@@ -636,10 +743,14 @@ const Eventos = () => {
                       <div className="font-semibold">
                         {DOMAIN_LABEL[row.evento.dominio]}
                       </div>
-                      <div className="text-sm text-muted-foreground">{row.detail}</div>
+                      <div className="text-sm text-muted-foreground">
+                        {row.detail}
+                      </div>
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      <Badge variant="outline">{toDateTime(row.evento.occurred_at)}</Badge>
+                      <Badge variant="outline">
+                        {toDateTime(row.evento.occurred_at)}
+                      </Badge>
                       <Badge variant="outline">{row.animalNome}</Badge>
                       <Badge variant="outline">{row.loteNome}</Badge>
                       <Badge className={statusBadgeClass(row.syncStatus)}>
@@ -650,23 +761,30 @@ const Eventos = () => {
 
                   <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
                     <div className="text-muted-foreground">
-                      Evento ID: <span className="font-mono">{row.id.slice(0, 8)}</span>
+                      Evento ID:{" "}
+                      <span className="font-mono">{row.id.slice(0, 8)}</span>
                     </div>
                     {row.amount != null && (
-                      <div className="font-semibold">{toCurrency(row.amount)}</div>
+                      <div className="font-semibold">
+                        {toCurrency(row.amount)}
+                      </div>
                     )}
                   </div>
 
                   {row.evento.source_task_id && (
                     <div className="text-xs text-muted-foreground">
                       Vinculado a agenda:{" "}
-                      <span className="font-mono">{row.evento.source_task_id.slice(0, 8)}</span>
+                      <span className="font-mono">
+                        {row.evento.source_task_id.slice(0, 8)}
+                      </span>
                     </div>
                   )}
                   {row.evento.corrige_evento_id && (
                     <div className="text-xs text-muted-foreground">
                       Complementa evento:{" "}
-                      <span className="font-mono">{row.evento.corrige_evento_id.slice(0, 8)}</span>
+                      <span className="font-mono">
+                        {row.evento.corrige_evento_id.slice(0, 8)}
+                      </span>
                     </div>
                   )}
 
@@ -693,7 +811,9 @@ const Eventos = () => {
                             onClick={() => handleSaveComplement(row.evento)}
                             disabled={isSavingComplement}
                           >
-                            {isSavingComplement ? "Salvando..." : "Salvar complemento"}
+                            {isSavingComplement
+                              ? "Salvando..."
+                              : "Salvar complemento"}
                           </Button>
                           <Button
                             size="sm"
@@ -725,6 +845,17 @@ const Eventos = () => {
               </Card>
             );
           })}
+
+          {data && data.totalCount > timeline.length && (
+            <div className="flex justify-center pt-4">
+              <Button
+                variant="outline"
+                onClick={() => setVisibleCount((prev) => prev + PAGE_SIZE)}
+              >
+                Carregar mais (restam {data.totalCount - timeline.length})
+              </Button>
+            </div>
+          )}
         </div>
       )}
     </div>

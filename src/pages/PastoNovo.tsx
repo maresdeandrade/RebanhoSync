@@ -18,6 +18,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { showSuccess, showError } from "@/utils/toast";
 import { ChevronLeft, Save } from "lucide-react";
 import { TipoPastoEnum, InfraestruturaPasto } from "@/lib/offline/types";
+import { getActiveFarmId } from "@/lib/storage";
 
 const PastoNovo = () => {
   const navigate = useNavigate();
@@ -52,7 +53,7 @@ const PastoNovo = () => {
     }));
   };
 
-  const activeFazendaId = localStorage.getItem("gestao_agro_active_fazenda_id");
+  const activeFazendaId = getActiveFarmId();
 
   const handleSave = async () => {
     if (!activeFazendaId) {

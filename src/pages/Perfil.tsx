@@ -33,6 +33,7 @@ import {
   Upload,
   Trash2,
 } from "lucide-react";
+import { applyTheme } from "@/lib/theme";
 
 export const Perfil = () => {
   const navigate = useNavigate();
@@ -209,21 +210,6 @@ export const Perfil = () => {
       });
     } finally {
       setIsSaving(false);
-    }
-  };
-
-  const applyTheme = (themeValue: string) => {
-    const root = window.document.documentElement;
-    root.classList.remove("light", "dark");
-
-    if (themeValue === "system") {
-      const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
-        .matches
-        ? "dark"
-        : "light";
-      root.classList.add(systemTheme);
-    } else {
-      root.classList.add(themeValue);
     }
   };
 
