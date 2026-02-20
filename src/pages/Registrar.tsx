@@ -46,12 +46,17 @@ import {
 import { useLotes } from "@/hooks/useLotes";
 import { useAuth } from "@/hooks/useAuth";
 
-// P2.2 FIX: Magic numbers to enum for better readability
 enum RegistrationStep {
   SELECT_ANIMALS = 1,
   CHOOSE_ACTION = 2,
   CONFIRM = 3,
 }
+
+const REGISTRATION_STEPS = [
+  RegistrationStep.SELECT_ANIMALS,
+  RegistrationStep.CHOOSE_ACTION,
+  RegistrationStep.CONFIRM,
+];
 
 const SEM_LOTE_OPTION = "__sem_lote__";
 
@@ -842,7 +847,7 @@ const Registrar = () => {
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-2xl font-bold">Registrar Manejo</h1>
         <div className="flex gap-1">
-          {[1, 2, 3].map((s) => (
+          {REGISTRATION_STEPS.map((s) => (
             <div
               key={s}
               className={`h-2 w-8 rounded-full ${step >= s ? "bg-primary" : "bg-muted"}`}
