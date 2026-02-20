@@ -379,6 +379,17 @@ const Registrar = () => {
     }
   }, [tipoManejo, financeiroData.natureza, selectedAnimais.length]);
 
+  // TD-008: Anti-teleport (ensure origin !== destination)
+  useEffect(() => {
+    if (
+      movimentacaoData.toLoteId &&
+      selectedLoteIdNormalized &&
+      movimentacaoData.toLoteId === selectedLoteIdNormalized
+    ) {
+      setMovimentacaoData((prev) => ({ ...prev, toLoteId: "" }));
+    }
+  }, [movimentacaoData.toLoteId, selectedLoteIdNormalized]);
+
   // UX Improvement: Auto-select bull if present in the selected lote
   useEffect(() => {
      const autoSelectBull = async () => {
