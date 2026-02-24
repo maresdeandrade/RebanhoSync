@@ -1,8 +1,8 @@
 # Relatório de Reconciliação — Documentos de Governança
 
 **Status:** Derivado (Rev D+)
-**Baseline:** `dd2f2d8`
-**Última Atualização:** 2026-02-17
+**Baseline:** `a8ae017`
+**Última Atualização:** 2026-02-23
 **Derivado por:** Antigravity — capability_id Derivation Rev D+
 
 ---
@@ -10,8 +10,8 @@
 ## 1. Baseline Integrity
 
 **Status:** CLEAN
-**Baseline Commit:** `dd2f2d8`
-**Data de Execução:** 2026-02-17
+**Baseline Commit:** `a8ae017`
+**Data de Execução:** 2026-02-23
 
 Working tree verificado limpo via `git status --porcelain` (sem modificações pendentes).
 
@@ -21,14 +21,14 @@ Working tree verificado limpo via `git status --porcelain` (sem modificações p
 
 ### Documentos Atualizados
 
-Este relatório documenta a migração para modelo `capability_id`-centrado em **baseline `dd2f2d8`**:
+Este relatório documenta a migração para modelo `capability_id`-centrado em **baseline `a8ae017`**:
 
-| Documento                             | Mudança Principal                                                             |
-| ------------------------------------- | ----------------------------------------------------------------------------- |
-| `docs/IMPLEMENTATION_STATUS.md`       | Atualizado status `movimentacao.anti_teleport_client` para ✅                |
-| `docs/TECH_DEBT.md`                   | Movido TD-008 para CLOSED                                                     |
-| `docs/ROADMAP.md`                     | Removido TD-008 do escopo M0 (resolvido)                                      |
-| `docs/review/RECONCILIACAO_REPORT.md` | Atualizadas métricas e status TD-008                                          |
+| Documento                             | Mudança Principal                                             |
+| ------------------------------------- | ------------------------------------------------------------- |
+| `docs/IMPLEMENTATION_STATUS.md`       | Atualizado status `movimentacao.anti_teleport_client` para ✅ |
+| `docs/TECH_DEBT.md`                   | Movido TD-008 para CLOSED                                     |
+| `docs/ROADMAP.md`                     | Removido TD-008 do escopo M0 (resolvido)                      |
+| `docs/review/RECONCILIACAO_REPORT.md` | Atualizadas métricas e status TD-008                          |
 
 ### Modelo de Derivação (Rev D+)
 
@@ -120,7 +120,7 @@ Cada `capability_id` do catálogo aparece exatamente 1 vez na Matriz Analítica:
 
 ### 4.4 Headers Rev D+
 
-Todos os 4 arquivos possuem: Status, Baseline (`dd2f2d8`), Última Atualização, Derivado por: ✅
+Todos os 4 arquivos possuem: Status, Baseline (`a8ae017`), Última Atualização, Derivado por: ✅
 
 ---
 
@@ -146,7 +146,7 @@ Todos os 4 arquivos possuem: Status, Baseline (`dd2f2d8`), Última Atualização
 ```bash
 # Baseline
 git rev-parse --short HEAD
-# Retorna: dd2f2d8
+# Retorna: a8ae017
 
 # Working tree status
 git status --porcelain
@@ -165,7 +165,7 @@ ls src/pages/__tests__/Registrar.test.tsx
 
 ## Conclusão
 
-Migração `capability_id` Rev D+ atualizada em **baseline dd2f2d8**:
+Migração `capability_id` Rev D+ atualizada em **baseline `a8ae017`**:
 
 - **TD-008 Resolvido:** Movimentação Anti-Teleport
   - Capability Score subiu para **73.7%**
@@ -177,4 +177,4 @@ Migração `capability_id` Rev D+ atualizada em **baseline dd2f2d8**:
 
 Working tree permanece CLEAN após aplicação das edições.
 
-Próximo passo: Commit `docs: regen governance docs (TD-008 closed) [baseline dd2f2d8]`.
+Próximo passo: Commit `docs: regen governance docs (TD-008 closed) [baseline a8ae017]`.

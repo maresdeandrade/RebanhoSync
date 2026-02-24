@@ -1,8 +1,8 @@
 # Dívida Técnica (Tech Debt)
 
 > **Status:** Derivado (Rev D+)
-> **Baseline:** `dd2f2d8`
-> **Última Atualização:** 2026-02-17
+> **Baseline:** `a8ae017`
+> **Última Atualização:** 2026-02-23
 > **Derivado por:** Antigravity — capability_id Derivation Rev D+
 > **Fonte:** `IMPLEMENTATION_STATUS.md` (Matriz Analítica), Código
 

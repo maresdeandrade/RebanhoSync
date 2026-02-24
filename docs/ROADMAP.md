@@ -1,8 +1,8 @@
 # Roadmap do Produto (6 Semanas)
 
 > **Status:** Derivado (Rev D+)
-> **Baseline:** `dd2f2d8`
-> **Última Atualização:** 2026-02-17
+> **Baseline:** `a8ae017`
+> **Última Atualização:** 2026-02-23
 > **Derivado por:** Antigravity — capability_id Derivation Rev D+
 > **Fonte:** `TECH_DEBT.md` (OPEN), `IMPLEMENTATION_STATUS.md` (Matriz Analítica)
 
@@ -155,16 +155,16 @@ Este roadmap define as etapas para estabilização e hardening do RebanhoSync, p
 
 **ROADMAP items == TECH_DEBT OPEN (Catalog + Infra):**
 
-| TD     | capability_id                       | Track   | Milestone |
-| ------ | ----------------------------------- | ------- | --------- |
-| TD-001 | `infra.queue_cleanup`               | Infra   | M0        |
-| TD-003 | `infra.rbac_hardening`              | Infra   | M1        |
-| TD-004 | `infra.indexes`                     | Infra   | M2        |
-| TD-011 | `sanitario.registro`                | Catalog | M1        |
-| TD-014 | `pesagem.registro`                  | Catalog | M1        |
-| TD-015 | `pesagem.historico`                 | Catalog | M2        |
-| TD-019 | `movimentacao.registro`             | Catalog | M1        |
-| TD-020 | `reproducao.registro`               | Catalog | M1        |
+| TD     | capability_id           | Track   | Milestone |
+| ------ | ----------------------- | ------- | --------- |
+| TD-001 | `infra.queue_cleanup`   | Infra   | M0        |
+| TD-003 | `infra.rbac_hardening`  | Infra   | M1        |
+| TD-004 | `infra.indexes`         | Infra   | M2        |
+| TD-011 | `sanitario.registro`    | Catalog | M1        |
+| TD-014 | `pesagem.registro`      | Catalog | M1        |
+| TD-015 | `pesagem.historico`     | Catalog | M2        |
+| TD-019 | `movimentacao.registro` | Catalog | M1        |
+| TD-020 | `reproducao.registro`   | Catalog | M1        |
 
 **Match (8/8):** ✅
 
