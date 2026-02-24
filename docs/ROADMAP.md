@@ -1,9 +1,9 @@
 # Roadmap do Produto (6 Semanas)
 
-- Status: Derivado (Rev D+)
-- Baseline: `47148f0`
-- Última Atualização: 2026-02-21
-- Derivado por: Antigravity Post-Impl TD-001 — Rev D+
+> **Status:** Derivado (Rev D+)
+> **Baseline:** `dd2f2d8`
+> **Última Atualização:** 2026-02-17
+> **Derivado por:** Antigravity — capability_id Derivation Rev D+
 > **Fonte:** `TECH_DEBT.md` (OPEN), `IMPLEMENTATION_STATUS.md` (Matriz Analítica)
 
 Este roadmap define as etapas para estabilização e hardening do RebanhoSync, priorizando a resolução de dívidas técnicas **OPEN** críticas e conformidade com testes E2E.

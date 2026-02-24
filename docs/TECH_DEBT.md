@@ -1,9 +1,9 @@
 # Dívida Técnica (Tech Debt)
 
-- Status: Derivado (Rev D+)
-- Baseline: `47148f0`
-- Última Atualização: 2026-02-21
-- Derivado por: Antigravity Post-Impl TD-001 — Rev D+
+> **Status:** Derivado (Rev D+)
+> **Baseline:** `dd2f2d8`
+> **Última Atualização:** 2026-02-17
+> **Derivado por:** Antigravity — capability_id Derivation Rev D+
 > **Fonte:** `IMPLEMENTATION_STATUS.md` (Matriz Analítica), Código
 
 Lista consolidada de débitos técnicos do RebanhoSync. Itens OPEN são separados em **Catalog** (com `capability_id` do catálogo, participam do score e derivação) e **Infra/Out-of-catalog** (fora do score, mantidos por compatibilidade).
