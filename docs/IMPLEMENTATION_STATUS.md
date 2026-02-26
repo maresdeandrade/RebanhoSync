@@ -1,8 +1,8 @@
 # Implementation Status Matrix
 
 > **Status:** Derivado (Rev D+)
-> **Baseline:** `a8ae017`
-> **Última Atualização:** 2026-02-23
+> **Baseline:** `d0278ce`
+> **Última Atualização:** 2026-02-26
 > **Derivado por:** Antigravity — capability_id Derivation Rev D+
 
 Este documento é a **matriz única de verdade** sobre o que existe efetivamente implementado no RebanhoSync.
@@ -27,7 +27,7 @@ Este documento é a **matriz única de verdade** sobre o que existe efetivamente
 - ✅ **Financeiro**: Completo
 - ✅ **Agenda**: Completo
 
-**Gaps Não-Bloqueantes:** 8 items (UX/RLS/Performance)
+**Gaps Não-Bloqueantes:** 7 items (UX/RLS/Performance)
 
 ---
 
@@ -65,19 +65,20 @@ Este documento é a **matriz única de verdade** sobre o que existe efetivamente
 
 ---
 
-### Offline-First Architecture ⚠️ PARTIAL
+### Offline-First Architecture ✅ COMPLETO
 
 **Implementado:**
 
 - ✅ Dexie stores: state*\*, event*\_, queue\_\_
 - ✅ Sync pipeline: createGesture → syncWorker → rollback
 - ✅ Two Rails (Agenda mutável + Eventos append-only)
-- ❌ **Gap (TD-001):** Sem rotina de cleanup `queue_rejections`
+- ✅ DLQ cleanup: auto-purge TTL 7d + UI review/export (TD-001 CLOSED)
 
 **Evidência:**
 
-- `src/lib/offline/db.ts`: 20+ stores Dexie
-- `src/lib/offline/syncWorker.ts`: Pipeline completo
+- `src/lib/offline/db.ts`: 20+ stores Dexie (v7 com índices queue_rejections)
+- `src/lib/offline/syncWorker.ts`: Pipeline completo + auto-purge
+- `src/lib/offline/rejections.ts`: API DLQ index-backed
 - `src/lib/offline/pull.ts`: Reconciliação remota
 
 ---
@@ -278,7 +279,6 @@ migrations/0001_init.sql:632 - CREATE TABLE eventos_nutricao
 
 | TD     | Domínio      | Tipo                         | Bloqueia E2E?           |
 | ------ | ------------ | ---------------------------- | ----------------------- |
-| TD-001 | Offline      | Queue cleanup missing        | Não (risco storage)     |
 | TD-003 | RBAC         | DELETE animais sem restrição | Não (risco perda dados) |
 | TD-004 | Performance  | Índices parciais             | Não (escala)            |
 | TD-011 | Sanitário    | Produtos TEXT livre          | Não (normalização)      |
@@ -287,7 +287,7 @@ migrations/0001_init.sql:632 - CREATE TABLE eventos_nutricao
 | TD-019 | Movimentação | FKs faltantes                | Não (integridade)       |
 | TD-020 | Reprodução   | FK macho_id faltante         | Não (integridade)       |
 
-**Total OPEN:** 8 items  
+**Total OPEN:** 7 items  
 **Bloqueadores:** 0 ✅
 
 ---

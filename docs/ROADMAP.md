@@ -1,8 +1,8 @@
 # Roadmap do Produto (6 Semanas)
 
 > **Status:** Derivado (Rev D+)
-> **Baseline:** `a8ae017`
-> **Última Atualização:** 2026-02-23
+> **Baseline:** `d0278ce`
+> **Última Atualização:** 2026-02-26
 > **Derivado por:** Antigravity — capability_id Derivation Rev D+
 > **Fonte:** `TECH_DEBT.md` (OPEN), `IMPLEMENTATION_STATUS.md` (Matriz Analítica)
 
@@ -24,18 +24,19 @@ Este roadmap define as etapas para estabilização e hardening do RebanhoSync, p
 - **TD-001** (`infra.queue_cleanup` — Infra): Cleanup de `queue_rejections` (DLQ)
   - **Fluxo E2E:** Offline → Sync (Fluxo 2)
 
-### Semana 1: Offline Resilience
+### Semana 1: Offline Resilience ✅ CONCLUÍDO
 
 **Entregáveis:**
 
-- [ ] Rotina de cleanup automático em `syncWorker` (age > 7 dias).
-- [ ] UI de visualização/exportação de `queue_rejections` antes do expurgo.
-- [ ] Testes E2E: Fluxo 2 (rejeição + cleanup).
+- [x] Rotina de cleanup automático em `syncWorker` (age > 7 dias).
+- [x] UI de visualização/exportação de `queue_rejections` antes do expurgo.
+- [x] Testes unitários: purge/list/stats/export (10 testes).
+- [ ] Testes E2E: Fluxo 2 (rejeição + cleanup) — AC-7 pendente (manual).
 
 **Critério de Aceite (M0 - Semana 1):**
 
-- [ ] DLQ não cresce indefinidamente após 1 semana de uso intenso.
-- [ ] Usuário consegue revisar rejeições antes do expurgo.
+- [x] DLQ não cresce indefinidamente após 1 semana de uso intenso.
+- [x] Usuário consegue revisar rejeições antes do expurgo.
 
 ### Semana 2: UX Hardening (Concluído: Anti-Teleport)
 
@@ -138,16 +139,16 @@ Este roadmap define as etapas para estabilização e hardening do RebanhoSync, p
 
 ## Capability Scorecard (Pós-Roadmap)
 
-| Milestone            | Gaps Resolvidos                         | Capability Score (Analítico) | Status    |
-| -------------------- | --------------------------------------- | ---------------------------- | --------- |
-| **HEAD (Baseline)**  | TD-006 (Nutrição UI), TD-008 (Teleport) | 14/19 (73.7%)                | ✅ ATUAL  |
-| **M0 (Semanas 1-2)** | TD-001¹                                 | 14/19 (73.7%)                | Planejado |
-| **M1 (Semanas 3-4)** | TD-003¹, TD-011, TD-014, TD-019, TD-020 | 18/19 (94.7%)                | Planejado |
-| **M2 (Semanas 5-6)** | TD-004¹, TD-015                         | 19/19 (100%)                 | Planejado |
+| Milestone            | Gaps Resolvidos                         | Capability Score (Analítico) | Status       |
+| -------------------- | --------------------------------------- | ---------------------------- | ------------ |
+| **HEAD (Baseline)**  | TD-006 (Nutrição UI), TD-008 (Teleport) | 14/19 (73.7%)                | ✅ Completo  |
+| **M0 (Semanas 1-2)** | TD-001¹ ✅                              | 14/19 (73.7%)                | ✅ Concluído |
+| **M1 (Semanas 3-4)** | TD-003¹, TD-011, TD-014, TD-019, TD-020 | 18/19 (94.7%)                | 🟡 Próximo   |
+| **M2 (Semanas 5-6)** | TD-004¹, TD-015                         | 19/19 (100%)                 | Planejado    |
 
 ¹ Infra TDs — resolvem problemas reais mas não participam do `gap_set` analítico.
 
-**Meta Final:** Todos TECH_DEBT OPEN resolvidos (8 → 0). Capability Score: 100%.
+**Meta Final:** Todos TECH_DEBT OPEN resolvidos (7 restantes → 0). Capability Score: 100%.
 
 ---
 
@@ -155,18 +156,18 @@ Este roadmap define as etapas para estabilização e hardening do RebanhoSync, p
 
 **ROADMAP items == TECH_DEBT OPEN (Catalog + Infra):**
 
-| TD     | capability_id           | Track   | Milestone |
-| ------ | ----------------------- | ------- | --------- |
-| TD-001 | `infra.queue_cleanup`   | Infra   | M0        |
-| TD-003 | `infra.rbac_hardening`  | Infra   | M1        |
-| TD-004 | `infra.indexes`         | Infra   | M2        |
-| TD-011 | `sanitario.registro`    | Catalog | M1        |
-| TD-014 | `pesagem.registro`      | Catalog | M1        |
-| TD-015 | `pesagem.historico`     | Catalog | M2        |
-| TD-019 | `movimentacao.registro` | Catalog | M1        |
-| TD-020 | `reproducao.registro`   | Catalog | M1        |
+| TD     | capability_id           | Track   | Milestone | Status       |
+| ------ | ----------------------- | ------- | --------- | ------------ |
+| TD-001 | `infra.queue_cleanup`   | Infra   | M0        | ✅ Concluído |
+| TD-003 | `infra.rbac_hardening`  | Infra   | M1        | 🟡 Próximo   |
+| TD-004 | `infra.indexes`         | Infra   | M2        | Planejado    |
+| TD-011 | `sanitario.registro`    | Catalog | M1        | 🟡 Próximo   |
+| TD-014 | `pesagem.registro`      | Catalog | M1        | 🟡 Próximo   |
+| TD-015 | `pesagem.historico`     | Catalog | M2        | Planejado    |
+| TD-019 | `movimentacao.registro` | Catalog | M1        | 🟡 Próximo   |
+| TD-020 | `reproducao.registro`   | Catalog | M1        | 🟡 Próximo   |
 
-**Match (8/8):** ✅
+**Match (7/7 OPEN + 1 CLOSED):** ✅
 
 ---
 

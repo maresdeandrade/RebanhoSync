@@ -6,6 +6,7 @@ import { getRemoteTableName } from "./tableMap";
 import { rollbackOpLocal, getAffectedStores } from "./ops";
 import { sortOpsForSync } from "./syncOrder";
 import { pullDataForFarm } from "./pull";
+import { purgeRejections } from "./rejections";
 
 let intervalId: ReturnType<typeof setInterval> | null = null;
 let isTickRunning = false;
@@ -14,6 +15,10 @@ let startupRecoveryDone = false;
 const WORKER_INTERVAL_MS = 5000;
 const MAX_RETRIES = 3;
 const AUTH_ERROR_MARKERS = ["HTTP 401", "Invalid JWT", "Unauthorized - invalid JWT"];
+
+// Auto-purge: run at most once every 6 hours, persisted across reloads
+const PURGE_INTERVAL_MS = 6 * 60 * 60 * 1000;
+const PURGE_LS_KEY = "rebanhosync:lastRejectionPurgeAt";
 
 interface SyncBatchResult {
   status: string;
@@ -60,6 +65,9 @@ export const startSyncWorker = () => {
           });
         }
       }
+
+      // Auto-purge old rejections (>7d) at most once per 6h
+      await tryPurgeOldRejections();
     } catch (e: unknown) {
       const error = e instanceof Error ? e : new Error(String(e));
       console.error("[sync-worker] Worker tick failed:", error.message);
@@ -78,6 +86,29 @@ export const stopSyncWorker = () => {
   isTickRunning = false;
   startupRecoveryDone = false;
 };
+
+async function tryPurgeOldRejections() {
+  try {
+    // Guard: skip in environments without localStorage (SSR, some workers)
+    if (typeof localStorage === "undefined") return;
+
+    const lastPurge = Number(localStorage.getItem(PURGE_LS_KEY) || "0");
+    if (Date.now() - lastPurge < PURGE_INTERVAL_MS) return;
+
+    const result = await purgeRejections({ olderThanDays: 7 });
+
+    localStorage.setItem(PURGE_LS_KEY, String(Date.now()));
+
+    if (import.meta.env.DEV && result.deletedCount > 0) {
+      console.debug(
+        `[sync-worker] Purged ${result.deletedCount} old rejection(s)`,
+      );
+    }
+  } catch (e: unknown) {
+    const error = e instanceof Error ? e : new Error(String(e));
+    console.warn("[sync-worker] Auto-purge failed (non-fatal):", error.message);
+  }
+}
 
 function isRecoverableAuthError(errorMessage?: string): boolean {
   if (!errorMessage) return false;

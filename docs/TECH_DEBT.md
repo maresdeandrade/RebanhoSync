@@ -1,8 +1,8 @@
 # Dívida Técnica (Tech Debt)
 
 > **Status:** Derivado (Rev D+)
-> **Baseline:** `a8ae017`
-> **Última Atualização:** 2026-02-23
+> **Baseline:** `d0278ce`
+> **Última Atualização:** 2026-02-26
 > **Derivado por:** Antigravity — capability_id Derivation Rev D+
 > **Fonte:** `IMPLEMENTATION_STATUS.md` (Matriz Analítica), Código
 
@@ -86,25 +86,9 @@ Lista consolidada de débitos técnicos do RebanhoSync. Itens OPEN são separado
 
 ---
 
-## OPEN (Infra/Out-of-catalog) — 3 items
+## OPEN (Infra/Out-of-catalog) — 2 items
 
 > Estes TDs são infraestruturais, fora do Capability Catalog. Não participam do `capability_score` nem do `gap_set`. Registrados como `NEW (Proposed)` no `RECONCILIACAO_REPORT`. Mantidos por compatibilidade histórica e continuam no ROADMAP por TD-ID.
-
-### 🔴 P0 (Crítico - 1 item)
-
-#### TD-001: Limpeza de Queue Rejections (Offline)
-
-- **capability_id:** `infra.queue_cleanup` _(NEW Proposed — fora do Catalog)_
-- **Domínio:** platform
-- **Risco:** Storage/Performance (Crescimento infinito no Dexie)
-- **Status:** 🔴 **OPEN** (P0)
-- **Evidência:** `src/lib/offline/syncWorker.ts` não possui rotina de expurgo.
-- **Ação:** Implementar Job ou UI para limpar rejeições antigas (> 7 dias).
-- **Critério de Aceite:**
-  - [ ] Dead Letter Queue (DLQ) não cresce indefinidamente.
-  - [ ] Usuário consegue visualizar/exportar rejeições antes do expurgo.
-
----
 
 ### 🟠 P1 (Importante - 1 item)
 
@@ -139,7 +123,30 @@ Lista consolidada de débitos técnicos do RebanhoSync. Itens OPEN são separado
 
 ---
 
-## 🟩 CLOSED (Resolvidos - 2 items)
+## 🟩 CLOSED (Resolvidos - 3 items)
+
+### TD-001: Limpeza de Queue Rejections (Offline) ✅ CLOSED
+
+- **capability_id:** `infra.queue_cleanup` _(Infra — fora do Catalog)_
+- **Domínio:** platform
+- **Risco:** N/A (resolvido)
+- **Status:** ✅ **CLOSED** (2026-02-26)
+- **Evidência Original:** `src/lib/offline/syncWorker.ts` não possuía rotina de expurgo.
+- **Solução:** Implementado TTL 7d auto-purge, UI de revisão/export, backfill de registros legados.
+- **Evidência Real:**
+  - `src/lib/offline/db.ts` — Schema v7 com `created_at` + `[fazenda_id+created_at]` + `.upgrade()` backfill
+  - `src/lib/offline/rejections.ts` — API DLQ (list/stats/export/purge) index-backed
+  - `src/lib/offline/syncWorker.ts` — Auto-purge throttled 6h via localStorage
+  - `src/pages/Reconciliacao.tsx` — UI com stats, paginação cursor, dialog, export JSON, bulk purge dryRun
+  - `src/lib/offline/__tests__/rejections.test.ts` — 10 testes unitários
+
+**Critério de Aceite (DONE):**
+
+- [x] DLQ não cresce indefinidamente (auto-purge >7d).
+- [x] Usuário consegue visualizar/exportar rejeições antes do expurgo.
+- [x] Purge index-backed (sem full scan).
+- [x] UI paginada com cursor.
+- [x] Testes unitários passam.
 
 ### TD-008: Validação Anti-Teleport no Frontend ✅ CLOSED
 
