@@ -27,7 +27,7 @@ Este documento é a **matriz única de verdade** sobre o que existe efetivamente
 - ✅ **Financeiro**: Completo
 - ✅ **Agenda**: Completo
 
-**Gaps Não-Bloqueantes:** 7 items (UX/RLS/Performance)
+**Gaps Não-Bloqueantes:** 6 items (UX/RLS/Performance)
 
 ---
 
@@ -113,7 +113,7 @@ Este documento é a **matriz única de verdade** sobre o que existe efetivamente
 
 **Gaps Não-Bloqueantes:**
 
-- ❌ (TD-014): UI não valida peso > 0 (servidor rejeita, mas UX ruim)
+- ✅ (TD-014): UI valida peso > 0 no frontend (implementado)
 
 ---
 
@@ -282,12 +282,11 @@ migrations/0001_init.sql:632 - CREATE TABLE eventos_nutricao
 | TD-003 | RBAC         | DELETE animais sem restrição | Não (risco perda dados) |
 | TD-004 | Performance  | Índices parciais             | Não (escala)            |
 | TD-011 | Sanitário    | Produtos TEXT livre          | Não (normalização)      |
-| TD-014 | Pesagem      | Peso validation UI           | Não (UX ruim)           |
 | TD-015 | Performance  | GMD em memória               | Não (escala)            |
 | TD-019 | Movimentação | FKs faltantes                | Não (integridade)       |
 | TD-020 | Reprodução   | FK macho_id faltante         | Não (integridade)       |
 
-**Total OPEN:** 7 items  
+**Total OPEN:** 6 items  
 **Bloqueadores:** 0 ✅
 
 ---
@@ -360,7 +359,7 @@ migrations/0001_init.sql:632 - CREATE TABLE eventos_nutricao
 | `sanitario.registro`                | ✅  | ✅  | ✅  | ⚠️  | ✅  | ✅  | `[E.san.reg.DB]` `[E.san.reg.SRV]` `[E.san.reg.OFF]` `[E.san.reg.UIW]` `[E.san.reg.UIR]` |
 | `sanitario.historico`               | —   | ✅  | ✅  | —   | ✅  | ✅  | `[E.san.his.SRV]` `[E.san.his.OFF]` `[E.san.his.UIR]`                                    |
 | `sanitario.agenda_link`             | ✅  | ✅  | —   | —   | —   | ✅  | `[E.san.agl.DB]` `[E.san.agl.SRV]` `[E.san.agl.E2E]`                                     |
-| `pesagem.registro`                  | ✅  | ✅  | ✅  | ⚠️  | ✅  | ✅  | `[E.pes.reg.DB]` `[E.pes.reg.SRV]` `[E.pes.reg.OFF]` `[E.pes.reg.UIW]` `[E.pes.reg.UIR]` |
+| `pesagem.registro`                  | ✅  | ✅  | ✅  | ✅  | ✅  | ✅  | `[E.pes.reg.DB]` `[E.pes.reg.SRV]` `[E.pes.reg.OFF]` `[E.pes.reg.UIW]` `[E.pes.reg.UIR]` |
 | `pesagem.historico`                 | —   | ✅  | ✅  | —   | ⚠️  | ✅  | `[E.pes.his.SRV]` `[E.pes.his.OFF]` `[E.pes.his.UIR]`                                    |
 | `nutricao.registro`                 | ✅  | ✅  | ✅  | ✅  | ✅  | ✅  | `[E.nut.reg.DB]` `[E.nut.reg.SRV]` `[E.nut.reg.OFF]` `[E.nut.reg.UIW]` `[E.nut.reg.UIR]` |
 | `nutricao.historico`                | —   | ✅  | ✅  | —   | ✅  | ✅  | `[E.nut.his.SRV]` `[E.nut.his.OFF]` `[E.nut.his.UIR]`                                    |
@@ -395,7 +394,7 @@ migrations/0001_init.sql:632 - CREATE TABLE eventos_nutricao
 | `[E.pes.reg.DB]`  | PM: `supabase/migrations/0001_init.sql:~L580` — CREATE TABLE eventos_pesagem                                                              |
 | `[E.pes.reg.SRV]` | PM: `supabase/functions/sync-batch/index.ts:L163` — TABLES_WITH_FAZENDA inclui 'eventos_pesagem'                                          |
 | `[E.pes.reg.OFF]` | PM: `src/lib/offline/db.ts:L67` — event_eventos_pesagem store                                                                             |
-| `[E.pes.reg.UIW]` | PM: `src/pages/Registrar.tsx:L1006+` — tipoManejo==='pesagem'; ⚠️ TD-014 peso≤0 aceito                                                    |
+| `[E.pes.reg.UIW]` | PM: `src/pages/Registrar.tsx:L1006+` — tipoManejo==='pesagem'; ✅ TD-014 peso>0 validado                                                    |
 | `[E.pes.reg.UIR]` | PM: `src/pages/Eventos.tsx:L141` — db.event_eventos_pesagem query                                                                         |
 | `[E.pes.his.SRV]` | PM: `supabase/functions/sync-batch/index.ts:L163` — eventos_pesagem na lista TABLES_WITH_FAZENDA                                          |
 | `[E.pes.his.OFF]` | PM: `src/lib/offline/db.ts:L67` — event_eventos_pesagem (leitura offline)                                                                 |
@@ -464,22 +463,21 @@ migrations/0001_init.sql:632 - CREATE TABLE eventos_nutricao
 | `capability_id`         | Layer(s) com gap | TD     | Tipo               |
 | ----------------------- | ---------------- | ------ | ------------------ |
 | `sanitario.registro`    | UIW ⚠️           | TD-011 | Produto TEXT livre |
-| `pesagem.registro`      | UIW ⚠️           | TD-014 | Peso validation    |
 | `pesagem.historico`     | UIR ⚠️           | TD-015 | GMD in-memory      |
 | `movimentacao.registro` | DB ⚠️            | TD-019 | FKs faltantes      |
 | `reproducao.registro`   | DB ⚠️            | TD-020 | FK macho_id        |
 
-**Gap count:** 5 / 19 capabilities
+**Gap count:** 4 / 19 capabilities
 
-**Capability Score (Analítico):** 14/19 = **73.7%** (capabilities com todas as camadas aplicáveis PASS)
+**Capability Score (Analítico):** 15/19 = **78.9%** (capabilities com todas as camadas aplicáveis PASS)
 
 > [!NOTE]
 > O score editorial "100% MVP (7/7 domínios)" mede cobertura por **domínio**. O Capability Score Analítico mede por **capability individual**, incluindo qualidade (validações, FKs, UX).
 
 **Consistência (hard check):**
 
-- `gap_set` = {sanitario.registro, pesagem.registro, pesagem.historico, movimentacao.registro, reproducao.registro}
-- `TECH_DEBT OPEN (Catalog) capability_set` = {TD-011→sanitario.registro, TD-014→pesagem.registro, TD-015→pesagem.historico, TD-019→movimentacao.registro, TD-020→reproducao.registro}
+- `gap_set` = {sanitario.registro, pesagem.historico, movimentacao.registro, reproducao.registro}
+- `TECH_DEBT OPEN (Catalog) capability_set` = {TD-011→sanitario.registro, TD-015→pesagem.historico, TD-019→movimentacao.registro, TD-020→reproducao.registro}
 - **Match:** ✅
 
 ---

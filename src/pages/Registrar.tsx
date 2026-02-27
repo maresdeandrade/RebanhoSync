@@ -143,6 +143,15 @@ const Registrar = () => {
   });
 
   const canManageContraparte = role === "owner" || role === "manager";
+
+  // TD-014: Validar peso > 0 no frontend para pesagem
+  const isPesagemValid = selectedAnimais.every((id) => {
+    const weightStr = pesagemData[id];
+    if (!weightStr || weightStr.trim() === "") return false;
+    const weight = Number.parseFloat(weightStr.replace(",", "."));
+    return !Number.isNaN(weight) && weight > 0;
+  });
+
   const financeiroTipo: FinanceiroTipoEnum =
     financeiroData.natureza === "venda" ||
     financeiroData.natureza === "sociedade_saida"
@@ -549,6 +558,20 @@ const Registrar = () => {
       );
       if (new Set(identificacoes).size !== identificacoes.length) {
         showError("Nao repita identificacoes nos novos animais.");
+        return;
+      }
+    }
+
+    if (tipoManejo === "pesagem") {
+      const invalidWeights = selectedAnimais.filter((id) => {
+        const weightStr = pesagemData[id];
+        if (!weightStr || weightStr.trim() === "") return true;
+        const weight = Number.parseFloat(weightStr.replace(",", "."));
+        return Number.isNaN(weight) || weight <= 0;
+      });
+
+      if (invalidWeights.length > 0) {
+        showError("Informe um peso maior que zero para todos os animais.");
         return;
       }
     }
@@ -1508,7 +1531,7 @@ const Registrar = () => {
               </Button>
               <Button
                 className="flex-1"
-                disabled={!tipoManejo}
+                disabled={!tipoManejo || (tipoManejo === "pesagem" && !isPesagemValid)}
                 onClick={() => setStep(RegistrationStep.CONFIRM)}
               >
                 Próximo <ChevronRight className="ml-2 h-4 w-4" />

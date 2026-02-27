@@ -10,11 +10,11 @@ Lista consolidada de débitos técnicos do RebanhoSync. Itens OPEN são separado
 
 ---
 
-## OPEN (Catalog) — 5 items
+## OPEN (Catalog) — 4 items
 
 > Estes TDs possuem `capability_id` do Capability Catalog e participam da derivação mecânica (gap_set → ROADMAP).
 
-### 🟠 P1 (Importante - 4 items)
+### 🟠 P1 (Importante - 3 items)
 
 #### TD-011: Produtos Sanitários TEXT Livre
 
@@ -27,19 +27,6 @@ Lista consolidada de débitos técnicos do RebanhoSync. Itens OPEN são separado
 - **Critério de Aceite:**
   - [ ] UI sugere produtos comuns (autocomplete).
   - [ ] Relatórios não quebram por typos.
-  - **Fluxo E2E:** Hardening de Eventos (Fluxo 6)
-
-#### TD-014: Validação de Peso no Frontend
-
-- **capability_id:** `pesagem.registro`
-- **Domínio:** pesagem
-- **Risco:** Usabilidade (UX degradada)
-- **Status:** 🟠 **OPEN** (P1)
-- **Evidência:** `Registrar.tsx` (pesagem) permite envio de peso <= 0 (servidor rejeita).
-- **Ação:** Adicionar validação `peso > 0` antes do submit.
-- **Critério de Aceite:**
-  - [ ] Botão Submit desabilitado se peso <= 0.
-  - [ ] Mensagem de erro clara no form.
   - **Fluxo E2E:** Hardening de Eventos (Fluxo 6)
 
 #### TD-019: Foreign Keys Faltantes (Movimentação)
@@ -123,7 +110,26 @@ Lista consolidada de débitos técnicos do RebanhoSync. Itens OPEN são separado
 
 ---
 
-## 🟩 CLOSED (Resolvidos - 3 items)
+## 🟩 CLOSED (Resolvidos - 4 items)
+
+### TD-014: Validação de Peso no Frontend ✅ CLOSED
+
+- **capability_id:** `pesagem.registro`
+- **Domínio:** pesagem
+- **Risco:** N/A (resolvido)
+- **Status:** ✅ **CLOSED** (2026-02-26)
+- **Evidência Original:** `Registrar.tsx` (pesagem) permitia envio de peso <= 0.
+- **Solução:** Implementada validação frontend com verificação de peso > 0 antes do submit.
+- **Evidência Real:**
+  - `src/pages/Registrar.tsx:145-153` - Constante `isPesagemValid` para validação
+  - `src/pages/Registrar.tsx:564-579` - Validação no `handleFinalize` antes do envio
+  - `src/pages/Registrar.tsx:1525` - Botão "Próximo" desabilitado se pesos inválidos
+
+**Critério de Aceite (DONE):**
+
+- [x] Botão Submit desabilitado se peso <= 0.
+- [x] Mensagem de erro clara no form.
+- [x] Validação consistente com backend (peso > 0).
 
 ### TD-001: Limpeza de Queue Rejections (Offline) ✅ CLOSED
 
