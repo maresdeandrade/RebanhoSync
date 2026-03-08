@@ -34,7 +34,7 @@ Este documento apresenta uma análise detalhada da estrutura de dados relacionad
 ### 1.2 Tabela: [`user_settings`](supabase/migrations/0001_init.sql:159)
 
 | Coluna | Tipo de Dados | Nullable | Relacionamento | Visibilidade Atual | Editabilidade | Propósito |
-|--------|---------------|----------|----------------|-------------------|--------------|-----------|
+|--------|---------------|----------|----------------|-------------------|--- -----------|-----------|
 | `user_id` | uuid | Não | FK → `auth.users(id)` | Privada | Não (PK) | Identificador do usuário |
 | `theme` | theme_enum | Não | N/A | Privada | **Sim** | Tema visual (system/light/dark) |
 | `date_format` | text | Não | N/A | Privada | Não (default) | Formato de data |
@@ -46,7 +46,7 @@ Este documento apresenta uma análise detalhada da estrutura de dados relacionad
 | `updated_at` | timestamptz | Não | N/A | Auditoria | Auto | Data da última atualização |
 
 **Estrutura do JSON `notifications`:**
-```json
+```json  
 {
   "enabled": true,
   "agenda_reminders": true,
