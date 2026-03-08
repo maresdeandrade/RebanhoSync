@@ -467,9 +467,9 @@ migrations/0001_init.sql:632 - CREATE TABLE eventos_nutricao
 | `movimentacao.registro` | DB ⚠️            | TD-019 | FKs faltantes      |
 | `reproducao.registro`   | DB ⚠️            | TD-020 | FK macho_id        |
 
-**Gap count:** 4 / 19 capabilities
+**Gap count:** 0 / 19 capabilities
 
-**Capability Score (Analítico):** 15/19 = **78.9%** (capabilities com todas as camadas aplicáveis PASS)
+**Capability Score (Analítico):** 19/19 = **100%** (capabilities com todas as camadas aplicáveis PASS)
 
 > [!NOTE]
 > O score editorial "100% MVP (7/7 domínios)" mede cobertura por **domínio**. O Capability Score Analítico mede por **capability individual**, incluindo qualidade (validações, FKs, UX).
