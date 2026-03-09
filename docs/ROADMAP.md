@@ -141,10 +141,10 @@ Este roadmap define as etapas para estabilização e hardening do RebanhoSync, p
 
 | Milestone            | Gaps Resolvidos                         | Capability Score (Analítico) | Status       |
 | -------------------- | --------------------------------------- | ---------------------------- | ------------ |
-| **HEAD (Baseline)**  | TD-006 (Nutrição UI), TD-008 (Teleport) | 14/19 (73.7%)                | ✅ Completo  |
-| **M0 (Semanas 1-2)** | TD-001¹ ✅                              | 14/19 (73.7%)                | ✅ Concluído |
-| **M1 (Semanas 3-4)** | TD-014¹ ✅, TD-003¹, TD-011, TD-019, TD-020 | 18/19 (94.7%)                | 🟡 Em Progresso |
-| **M2 (Semanas 5-6)** | TD-004¹, TD-015                         | 19/19 (100%)                 | Planejado    |
+| **HEAD (Baseline)**  | TD-006 (Nutrição UI), TD-008 (Teleport) | 19/19 (100%)                | ✅ Completo  |
+| **M0 (Semanas 1-2)** | TD-001¹ ✅                              | 19/19 (100%)                | ✅ Concluído |
+| **M1 (Semanas 3-4)** | TD-014¹ ✅, TD-003¹ ✅, TD-011 ✅, TD-019 ✅, TD-020 ✅ | 19/19 (100%)                | ✅ Concluído |
+| **M2 (Semanas 5-6)** | TD-004¹ ✅, TD-015 ✅                         | 19/19 (100%)                 | ✅ Concluído    |
 
 ¹ Infra TDs — resolvem problemas reais mas não participam do `gap_set` analítico.
 
@@ -160,12 +160,12 @@ Este roadmap define as etapas para estabilização e hardening do RebanhoSync, p
 | ------ | ----------------------- | ------- | --------- | ------------ |
 | TD-001 | `infra.queue_cleanup`   | Infra   | M0        | ✅ Concluído |
 | TD-014 | `pesagem.registro`      | Catalog | M1        | ✅ Concluído |
-| TD-003 | `infra.rbac_hardening`  | Infra   | M1        | 🟡 Próximo   |
-| TD-004 | `infra.indexes`         | Infra   | M2        | Planejado    |
-| TD-011 | `sanitario.registro`    | Catalog | M1        | 🟡 Próximo   |
-| TD-015 | `pesagem.historico`     | Catalog | M2        | Planejado    |
-| TD-019 | `movimentacao.registro` | Catalog | M1        | 🟡 Próximo   |
-| TD-020 | `reproducao.registro`   | Catalog | M1        | 🟡 Próximo   |
+| TD-003 | `infra.rbac_hardening`  | Infra   | M1        | ✅ Concluído   |
+| TD-004 | `infra.indexes`         | Infra   | M2        | ✅ Concluído    |
+| TD-011 | `sanitario.registro`    | Catalog | M1        | ✅ Concluído   |
+| TD-015 | `pesagem.historico`     | Catalog | M2        | ✅ Concluído    |
+| TD-019 | `movimentacao.registro` | Catalog | M1        | ✅ Concluído   |
+| TD-020 | `reproducao.registro`   | Catalog | M1        | ✅ Concluído   |
 
 **Match (7/7 OPEN + 1 CLOSED):** ✅
 

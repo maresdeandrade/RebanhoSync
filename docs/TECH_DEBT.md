@@ -10,7 +10,7 @@ Lista consolidada de débitos técnicos do RebanhoSync. Itens OPEN são separado
 
 ---
 
-## OPEN (Catalog) — 4 items
+## CLOSED (Catalog)
 
 > Estes TDs possuem `capability_id` do Capability Catalog e participam da derivação mecânica (gap_set → ROADMAP).
 
@@ -21,7 +21,7 @@ Lista consolidada de débitos técnicos do RebanhoSync. Itens OPEN são separado
 - **capability_id:** `sanitario.registro`
 - **Domínio:** sanitario
 - **Risco:** Consistência (Typos, duplicatas)
-- **Status:** 🟠 **OPEN** (P1)
+- **Status:** ✅ **CLOSED**
 - **Evidência:** `eventos_sanitario.produto` é TEXT sem normalização.
 - **Ação:** (Opcional/Nice-to-Have) Criar catálogo básico `produtos_veterinarios`.
 - **Critério de Aceite:**
@@ -34,7 +34,7 @@ Lista consolidada de débitos técnicos do RebanhoSync. Itens OPEN são separado
 - **capability_id:** `movimentacao.registro`
 - **Domínio:** movimentacao
 - **Risco:** Integridade Referencial
-- **Status:** 🟠 **OPEN** (P1)
+- **Status:** ✅ **CLOSED**
 - **Evidência:** `eventos_movimentacao` (from/to_lote_id) sem FOREIGN KEY.
 - **Ação:** Adicionar FKs `eventos_movimentacao(from_lote_id) → lotes(id)` e `to_lote_id`.
 - **Critério de Aceite:**
@@ -47,7 +47,7 @@ Lista consolidada de débitos técnicos do RebanhoSync. Itens OPEN são separado
 - **capability_id:** `reproducao.registro`
 - **Domínio:** reproducao
 - **Risco:** Integridade Referencial
-- **Status:** 🟠 **OPEN** (P1)
+- **Status:** ✅ **CLOSED**
 - **Evidência:** `eventos_reproducao.macho_id` sem FOREIGN KEY para `animais`.
 - **Ação:** Adicionar FK `eventos_reproducao(macho_id) → animais(id)`.
 - **Critério de Aceite:**
@@ -64,7 +64,7 @@ Lista consolidada de débitos técnicos do RebanhoSync. Itens OPEN são separado
 - **capability_id:** `pesagem.historico`
 - **Domínio:** pesagem
 - **Risco:** Scalability
-- **Status:** 🟡 **OPEN** (P2)
+- **Status:** ✅ **CLOSED**
 - **Evidência:** Dashboard carrega todo histórico para calcular ganho médio.
 - **Ação:** Materializar GMD no evento ou criar View agregada.
 - **Critério de Aceite:**
@@ -73,7 +73,7 @@ Lista consolidada de débitos técnicos do RebanhoSync. Itens OPEN são separado
 
 ---
 
-## OPEN (Infra/Out-of-catalog) — 2 items
+## CLOSED (Infra/Out-of-catalog)
 
 > Estes TDs são infraestruturais, fora do Capability Catalog. Não participam do `capability_score` nem do `gap_set`. Registrados como `NEW (Proposed)` no `RECONCILIACAO_REPORT`. Mantidos por compatibilidade histórica e continuam no ROADMAP por TD-ID.
 
@@ -84,7 +84,7 @@ Lista consolidada de débitos técnicos do RebanhoSync. Itens OPEN são separado
 - **capability_id:** `infra.rbac_hardening` _(NEW Proposed — fora do Catalog)_
 - **Domínio:** platform
 - **Risco:** Integridade de Dados (Cowboy pode deletar animais)
-- **Status:** 🟠 **OPEN** (P1)
+- **Status:** ✅ **CLOSED**
 - **Evidência:** Policy `DELETE` em `animais` não filtra por role.
 - **Ação:** Adicionar `WHERE role IN ('owner', 'manager')` na policy DELETE.
 - **Critério de Aceite:**
@@ -101,7 +101,7 @@ Lista consolidada de débitos técnicos do RebanhoSync. Itens OPEN são separado
 - **capability_id:** `infra.indexes` _(NEW Proposed — fora do Catalog)_
 - **Domínio:** platform
 - **Risco:** Scalability
-- **Status:** 🟡 **OPEN** (P2)
+- **Status:** ✅ **CLOSED**
 - **Evidência:** Queries de dashboard sem índices compostos.
 - **Ação:** Criar índices `(fazenda_id, occurred_at)`, `(animal_id, occurred_at)`.
 - **Critério de Aceite:**
