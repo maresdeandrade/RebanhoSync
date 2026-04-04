@@ -17,8 +17,8 @@ ALLOWED=(
 ROOT="$(git rev-parse --show-toplevel)"
 cd "$ROOT"
 
-changed="$(git diff --name-only --diff-filter=ACMRT || true)"
-changed_cached="$(git diff --name-only --cached --diff-filter=ACMRT || true)"
+changed="$(git diff --name-only --diff-filter=ACMRT 2>/dev/null || true)"
+changed_cached="$(git diff --name-only --cached --diff-filter=ACMRT 2>/dev/null || true)"
 all_changed="$(printf "%s\n%s\n" "$changed" "$changed_cached" | rg -v '^\s*$' | sort -u || true)"
 
 if [[ -z "$all_changed" ]]; then

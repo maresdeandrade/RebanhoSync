@@ -449,7 +449,7 @@ const Eventos = () => {
     const finByEvento = new Map(data.financeiro.map((d) => [d.evento_id, d]));
     const reproByEvento = new Map(data.reproducao.map((d) => [d.evento_id, d]));
 
-    const searchLower = search.trim().toLowerCase();
+    const searchLower = debouncedSearch.trim().toLowerCase();
 
     const rows = data.eventos
       .map((evento) => {

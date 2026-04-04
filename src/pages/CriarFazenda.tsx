@@ -1,13 +1,13 @@
+import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+import { useNavigate } from "react-router-dom";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/lib/supabase";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useForm } from "react-hook-form";
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Loader2 } from "lucide-react";
 
 type CriarFazendaForm = {
   nome: string;
@@ -34,44 +34,29 @@ const CriarFazenda = () => {
     formState: { errors },
   } = useForm<CriarFazendaForm>();
 
-  // ✅ Check permission on mount
   useEffect(() => {
     const checkPermission = async () => {
       if (!user) {
-        console.log("[CriarFazenda] No user, redirecting to login");
         navigate("/login");
         return;
       }
 
       try {
-        console.log("[CriarFazenda] Checking permission for user:", user.id);
-        console.log("[CriarFazenda] User email:", user.email);
-
         const { data, error } = await supabase.rpc("can_create_farm");
 
         if (error) {
           console.error("[CriarFazenda] ERROR checking permission:", error);
-          console.error("[CriarFazenda] Error details:", {
-            message: error.message,
-            code: error.code,
-            details: error.details,
-            hint: error.hint,
-          });
           setCanCreate(false);
           setCheckingPermission(false);
           return;
         }
 
-        console.log("[CriarFazenda] ✅ can_create_farm RPC returned:", data);
-        console.log("[CriarFazenda] Type of data:", typeof data);
-        console.log(
-          "[CriarFazenda] Permission result:",
-          data === true ? "ALLOWED" : "DENIED",
-        );
-
         setCanCreate(data === true);
-      } catch (error) {
-        console.error("[CriarFazenda] EXCEPTION checking permission:", error);
+      } catch (requestError) {
+        console.error(
+          "[CriarFazenda] EXCEPTION checking permission:",
+          requestError,
+        );
         setCanCreate(false);
       } finally {
         setCheckingPermission(false);
@@ -86,8 +71,6 @@ const CriarFazenda = () => {
     setError(null);
 
     try {
-      console.log("[CriarFazenda] Creating farm:", data);
-
       const { data: fazendaId, error: createError } = await supabase.rpc(
         "create_fazenda",
         {
@@ -99,20 +82,18 @@ const CriarFazenda = () => {
           _area_total_ha: data.area_total_ha || null,
           _tipo_producao: data.tipo_producao || null,
           _sistema_manejo: data.sistema_manejo || null,
-          // benfeitorias: reserved for future use (will default to {})
         },
       );
 
       if (createError) {
         console.error("[CriarFazenda] Error creating farm:", createError);
 
-        // ✅ User-friendly error messages
         if (
           createError.message?.includes("Forbidden") ||
-          createError.message?.includes("permissão")
+          createError.message?.includes("permissÃ£o")
         ) {
           throw new Error(
-            "Você não tem permissão para criar fazendas. Entre em contato com o administrador.",
+            "VocÃª nÃ£o tem permissÃ£o para criar fazendas. Entre em contato com o administrador.",
           );
         }
 
@@ -120,24 +101,21 @@ const CriarFazenda = () => {
       }
 
       if (!fazendaId) {
-        throw new Error("Fazenda criada mas ID não retornado");
+        throw new Error("Fazenda criada mas ID nÃ£o retornado");
       }
 
-      console.log("[CriarFazenda] Farm created successfully:", fazendaId);
-
-      // Set as active farm
       await setActiveFarm(fazendaId);
-
-      // Redirect to home
-      navigate("/home");
-    } catch (e: unknown) {
-      const err = e instanceof Error ? e : new Error(String(e));
-      setError(err.message);
+      navigate("/onboarding-inicial");
+    } catch (submitError: unknown) {
+      const normalizedError =
+        submitError instanceof Error
+          ? submitError
+          : new Error(String(submitError));
+      setError(normalizedError.message);
       setIsLoading(false);
     }
   };
 
-  // Loading permission check
   if (checkingPermission) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-muted/30">
@@ -146,17 +124,16 @@ const CriarFazenda = () => {
     );
   }
 
-  // No permission
   if (canCreate === false) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-muted/30 p-4">
         <Card className="w-full max-w-md">
           <CardHeader>
-            <CardTitle className="text-destructive">Sem Permissão</CardTitle>
+            <CardTitle className="text-destructive">Sem PermissÃ£o</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-muted-foreground">
-              Você não tem permissão para criar fazendas. Entre em contato com o
+              VocÃª nÃ£o tem permissÃ£o para criar fazendas. Entre em contato com o
               administrador ou aceite um convite para uma fazenda existente.
             </p>
             <Button
@@ -191,7 +168,7 @@ const CriarFazenda = () => {
               <Input
                 id="nome"
                 placeholder="Ex: Fazenda Santa Clara"
-                {...register("nome", { required: "Nome é obrigatório" })}
+                {...register("nome", { required: "Nome Ã© obrigatÃ³rio" })}
                 disabled={isLoading}
               />
               {errors.nome && (
@@ -202,7 +179,7 @@ const CriarFazenda = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="codigo">Código (opcional)</Label>
+              <Label htmlFor="codigo">CÃ³digo (opcional)</Label>
               <Input
                 id="codigo"
                 placeholder="Ex: FSC-001"
@@ -212,10 +189,10 @@ const CriarFazenda = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="municipio">Município (opcional)</Label>
+              <Label htmlFor="municipio">MunicÃ­pio (opcional)</Label>
               <Input
                 id="municipio"
-                placeholder="Ex: Goiânia"
+                placeholder="Ex: GoiÃ¢nia"
                 {...register("municipio")}
                 disabled={isLoading}
               />
@@ -232,29 +209,29 @@ const CriarFazenda = () => {
                 <option value="">Selecione...</option>
                 <option value="AC">Acre (AC)</option>
                 <option value="AL">Alagoas (AL)</option>
-                <option value="AP">Amapá (AP)</option>
+                <option value="AP">AmapÃ¡ (AP)</option>
                 <option value="AM">Amazonas (AM)</option>
                 <option value="BA">Bahia (BA)</option>
-                <option value="CE">Ceará (CE)</option>
+                <option value="CE">CearÃ¡ (CE)</option>
                 <option value="DF">Distrito Federal (DF)</option>
-                <option value="ES">Espírito Santo (ES)</option>
-                <option value="GO">Goiás (GO)</option>
-                <option value="MA">Maranhão (MA)</option>
+                <option value="ES">EspÃ­rito Santo (ES)</option>
+                <option value="GO">GoiÃ¡s (GO)</option>
+                <option value="MA">MaranhÃ£o (MA)</option>
                 <option value="MT">Mato Grosso (MT)</option>
                 <option value="MS">Mato Grosso do Sul (MS)</option>
                 <option value="MG">Minas Gerais (MG)</option>
-                <option value="PA">Pará (PA)</option>
-                <option value="PB">Paraíba (PB)</option>
-                <option value="PR">Paraná (PR)</option>
+                <option value="PA">ParÃ¡ (PA)</option>
+                <option value="PB">ParaÃ­ba (PB)</option>
+                <option value="PR">ParanÃ¡ (PR)</option>
                 <option value="PE">Pernambuco (PE)</option>
-                <option value="PI">Piauí (PI)</option>
+                <option value="PI">PiauÃ­ (PI)</option>
                 <option value="RJ">Rio de Janeiro (RJ)</option>
                 <option value="RN">Rio Grande do Norte (RN)</option>
                 <option value="RS">Rio Grande do Sul (RS)</option>
-                <option value="RO">Rondônia (RO)</option>
+                <option value="RO">RondÃ´nia (RO)</option>
                 <option value="RR">Roraima (RR)</option>
                 <option value="SC">Santa Catarina (SC)</option>
-                <option value="SP">São Paulo (SP)</option>
+                <option value="SP">SÃ£o Paulo (SP)</option>
                 <option value="SE">Sergipe (SE)</option>
                 <option value="TO">Tocantins (TO)</option>
               </select>
@@ -269,16 +246,16 @@ const CriarFazenda = () => {
                 {...register("cep", {
                   pattern: {
                     value: /^\d{5}-\d{3}$/,
-                    message: "CEP inválido. Use o formato: 12345-678",
+                    message: "CEP invÃ¡lido. Use o formato: 12345-678",
                   },
                 })}
                 disabled={isLoading}
-                onChange={(e) => {
-                  let value = e.target.value.replace(/\D/g, "");
+                onChange={(event) => {
+                  let value = event.target.value.replace(/\D/g, "");
                   if (value.length > 5) {
                     value = value.slice(0, 5) + "-" + value.slice(5, 8);
                   }
-                  e.target.value = value;
+                  event.target.value = value;
                 }}
               />
               {errors.cep && (
@@ -288,7 +265,7 @@ const CriarFazenda = () => {
 
             <div className="space-y-2">
               <Label htmlFor="area_total_ha">
-                Área Total (hectares) (opcional)
+                Ãrea Total (hectares) (opcional)
               </Label>
               <Input
                 id="area_total_ha"
@@ -300,7 +277,7 @@ const CriarFazenda = () => {
                   valueAsNumber: true,
                   min: {
                     value: 0.01,
-                    message: "Área deve ser maior que zero",
+                    message: "Ãrea deve ser maior que zero",
                   },
                 })}
                 disabled={isLoading}
@@ -313,7 +290,7 @@ const CriarFazenda = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="tipo_producao">Tipo de Produção (opcional)</Label>
+              <Label htmlFor="tipo_producao">Tipo de ProduÃ§Ã£o (opcional)</Label>
               <select
                 id="tipo_producao"
                 {...register("tipo_producao")}

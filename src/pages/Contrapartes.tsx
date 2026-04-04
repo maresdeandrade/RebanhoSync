@@ -59,15 +59,19 @@ const Contrapartes = () => {
   const [form, setForm] = useState<ContraparteForm>(EMPTY_FORM);
   const [editForm, setEditForm] = useState<ContraparteForm>(EMPTY_FORM);
 
-  const contrapartes =
-    useLiveQuery(async () => {
-      if (!activeFarmId) return [];
-      return db.state_contrapartes
-        .where("fazenda_id")
-        .equals(activeFarmId)
-        .and((item) => !item.deleted_at)
-        .toArray();
-    }, [activeFarmId]) || [];
+  const contrapartesQuery = useLiveQuery(async () => {
+    if (!activeFarmId) return [];
+    return db.state_contrapartes
+      .where("fazenda_id")
+      .equals(activeFarmId)
+      .and((item) => !item.deleted_at)
+      .toArray();
+  }, [activeFarmId]);
+
+  const contrapartes = useMemo(
+    () => contrapartesQuery ?? [],
+    [contrapartesQuery],
+  );
 
   const filtered = useMemo(() => {
     const searchLower = search.trim().toLowerCase();
@@ -227,7 +231,7 @@ const Contrapartes = () => {
     }
 
     const confirmed = window.confirm(
-      `Remover contraparte \"${nome}\"? Esta acao pode impactar registros financeiros futuros.`,
+      `Remover contraparte "${nome}"? Esta acao pode impactar registros financeiros futuros.`,
     );
     if (!confirmed) return;
 

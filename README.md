@@ -1,395 +1,74 @@
-# RebanhoSync — Offline-First MVP
+# RebanhoSync
 
-Aplicação **offline-first** para gestão pecuária com **multi-tenant por fazenda**, RBAC (`owner | manager | cowboy`), sincronização por **gestos** (`client_tx_id`) e servidor Supabase com **RLS hardened** + **RPCs security definer**.
+Aplicacao offline-first para gestao pecuaria de corte, com multi-tenant por fazenda, RBAC (`owner | manager | cowboy`), sincronizacao por gestos e backend Supabase com RLS.
 
----
+## Estado atual
 
-## Tech Stack
+- Estagio atual: MVP operacional em consolidacao.
+- Frontend SPA em React 19 com rotas de operacao, onboarding inicial, importacao CSV, relatorios e modulo reprodutivo dedicado.
+- Offline-first real com Dexie, fila local, rollback e worker de sync.
+- Banco e backend com migrations Supabase, RLS hardened e Edge Function `sync-batch`.
+- Qualidade local: `pnpm run lint`, `pnpm test` e `pnpm run build` passam.
 
-- React 19 + TypeScript + Vite
-- Tailwind CSS + shadcn/ui (Radix UI)
-- Supabase (Auth, Postgres, RLS, RPCs, Edge Functions)
-- Dexie.js (IndexedDB) para armazenamento local offline
-- pnpm
+## Escopo implementado
 
----
+- Gestao de animais, lotes, pastos, contrapartes e categorias zootecnicas.
+- Registro de eventos sanitarios, pesagem, nutricao, movimentacao, reproducao e financeiro.
+- Agenda operacional, reconciliacao offline e relatorios simples.
+- Onboarding guiado da fazenda e importacao inicial de animais, lotes e pastos.
+- Ficha do animal com vinculos mae/cria, leitura de peso e fluxo reprodutivo dedicado por matriz.
+- Pos-parto neonatal com confirmacao da cria, lote inicial e primeira pesagem.
+- Lista de animais agrupando matriz e cria com badge visual por estagio de vida.
 
-## Changelog Completo
+## Stack
 
-### Versão Atual (Fevereiro 2026)
+- React 19 + TypeScript + Vite 6
+- Tailwind CSS + shadcn/ui + Radix UI
+- Supabase + PostgreSQL + Edge Functions
+- Dexie + IndexedDB
+- Vitest + Testing Library
 
-#### ✅ Implementado Recente
-
-##### 1. Hardening de Dados e Validadores (Migrations 0023-0026)
-- **Financeiro**: Constraint `valor_total > 0`
-- **Nutrição**: Constraint `quantidade_kg > 0` (quando informado)
-- **Movimentação**: Constraint de destino obrigatório (`to_lote_id` ou `to_pasto_id`) e origem != destino
-- **Financeiro/Contrapartes**: FK tenant-safe composta (`contraparte_id`, `fazenda_id`)
-
-##### 2. Motor de Agenda Sanitária (Migration 0028)
-- Função `sanitario_recompute_agenda` para recomputar agenda de vacinação
-- Trigger `trg_eventos_sanitario_recompute_agenda` para atualizar agenda ao salvar evento sanitário
-- Trigger `trg_animais_atualiza_protocolo_data` para atualizar data do último protocolo ao editar animal
-- Motor completo de geração de agenda automática com regras de idade, dose e protocolo
-
-##### 3. Seed de Protocolos MAPA/SBMV (Migration 0027)
-- Função `seed_default_sanitary_protocols` para semear protocolos padrão
-- Trigger em `fazendas` para semear protocolos em novas fazendas
-- Protocolos padrão:
-  - Brucelose femeas 3-8 meses (B19/RB51)
-  - Raiva herbivoros - primovacinacao (areas de risco)
-  - Raiva herbivoros - revacinacao anual (areas de risco)
-  - Vermifugacao estrategica com base em risco
-  - Medicacao terapeutica com uso prudente
-
-##### 4. Hotfixes Sanitário (Migrations 0029-0034)
-- **Resiliência do Trigger**: Migration 0029 - Melhora resiliência do trigger de recomputação
-- **Payload do Protocolo**: Migration 0030 - Fix para referência a payload inválido
-- **Idade Default D1**: Migration 0031 - Define idade mínima para dose D1 como 0 dias
-- **Recompute Core**: Migration 0033 - Hard replace da função core de recomputação
-- **Vaccine Only**: Migration 0034 - Restringe agenda automática a vacinações apenas
-
-##### 5. Timeline Reprodução (Migration 0032)
-- View `vw_animais_timeline_reproducao` para consulta simplificada de eventos reprodutivos
-- Suporta visualização de histórico reprodutivo por animal
-
-##### 6. Motor de Events Unificado (src/lib/events/)
-- `types.ts`: Tipos canônicos para todos os domínios
-- `validators/`: Validadores por domínio com regras específicas
-- `buildEventGesture.ts`: Builder unificado para criar gestos de evento
-- Suporta eventos compostos (movimentação + update de animal)
-
-##### 7. Serviço Sanitario (src/lib/sanitario/)
-- `service.ts`: Funções para completar tarefas sanitárias
-- Recupera eventos pendentes, históricos e próximos do protocolo
-
-##### 8. UI Agenda (src/pages/Agenda.tsx)
-- Visualização de agenda com filtros por domínio, status e período
-- Exibe tarefas do dia, semana ou mês
-- Integração com eventos sanitários e reprodução
-- Suporta completar tarefas e visualizar detalhes
-
-#### ✅ Implementado Anteriormente
-
-##### Autenticação e Multi-Tenant
-- Login/logout com Supabase Auth
-- Seleção de fazenda ativa (multi-device)
-  - Cache local em `localStorage`
-  - Persistência remota em `user_settings.active_fazenda_id`
-- Onboarding invite-first com `can_create_farm`
-- RBAC client-side (UI) + RLS server-side
-
-##### Gestão do Rebanho
-- Cadastro de animais (identificação, sexo, status)
-- Cadastro de lotes (nome, status, touro)
-- Cadastro de pastos (nome, área em hectares)
-- Cadastro de contrapartes (pessoas/empresas)
-
-##### Eventos (Two Rails - Append-Only)
-- Eventos sanitários (vacinação, vermifugação, medicamento)
-- Eventos de pesagem (peso em kg)
-- Eventos de movimentação (entre lotes/pastos)
-- Eventos de reprodução (cobertura, IA, diagnóstico, parto)
-- Eventos financeiros (compra, venda)
-- Timeline de eventos por animal
-
-##### Agenda
-- Tarefas agendadas (mutáveis)
-- Status: agendado, concluido, cancelado
-- Deduplicação automática via `dedup_key`
-- source_kind: manual, automatico
-
-##### Protocolos Sanitários
-- Templates de protocolos
-- Itens de protocolo (tipo, produto, intervalo_dias, dose_num)
-- Geração automática de agenda
-- Deduplicação via `dedup_template`
-
-##### Fluxos Offline → Sync
-- Criação de gestos (`createGesture`)
-- Aplicação otimista no Dexie
-- Sync worker (a cada 5 segundos)
-- Anti-teleport (validação server-side)
-- Rollback determinístico com `before_snapshot`
-
-##### Segurança
-- JWT obrigatório no sync-batch
-- RLS policies por tenant
-- Membership verification
-- Tabelas bloqueadas (user_fazendas, user_profiles, user_settings)
-- RPCs security definer para operações críticas
-
-##### Campos de Fazenda (Migração 0016)
-- nome, codigo, municipio
-- **NOVO**: estado (UF), cep, area_total_ha
-- **NOVO**: tipo_producao (corte/leite/mista)
-- **NOVO**: sistema_manejo (confinamento/semi/pastagem)
-
-##### Performance (Migração 0018)
-- idx_animais_status
-- idx_animais_lote
-- idx_animais_sexo
-- idx_eventos_fazenda_dominio_occurred
-- idx_eventos_fazenda_animal_occurred
-- idx_agenda_fazenda_data
-- idx_agenda_fazenda_status
-
----
-
-## Arquitetura (Visão Rápida)
-
-### Two Rails: State + Events
-
-```
-Rail 1 (State - Mutável):
-├── animais        → Estado atual do rebanho
-├── lotes          → Agrupamentos de animais
-├── pastos         → Áreas de pastagem
-├── agenda_itens   → Tarefas agendadas
-├── contrapartes  → Compradores/vendedores
-└── protocolos_*  → Templates de manejo
-
-Rail 2 (Events - Append-Only):
-├── eventos              → Registro base
-├── eventos_sanitario   → Vacinação/vermifugação/medicamento
-├── eventos_pesagem      → Peso em kg
-├── eventos_nutricao    → Alimentação
-├── eventos_movimentacao → Transferências
-├── eventos_reproducao   → Cobertura/IA/diagnóstico/parto
-└── eventos_financeiro  → Compra/venda
-```
-
-### Offline-First com Fila de Gestos
-
-```typescript
-// 1. UI cria gesto
-const client_tx_id = await createGesture(fazenda_id, ops);
-
-// 2. Cliente aplica otimista no Dexie
-await applyOpLocal(op);
-
-// 3. Ops ficam em queue_ops e queue_gestures
-
-// 4. syncWorker envia para Edge Function sync-batch
-await syncBatch(gesture);
-
-// 5. Servidor retorna APPLIED / APPLIED_ALTERED / REJECTED
-
-// 6. Se REJECTED, rollback com before_snapshot
-```
-
-### Mapeamento de Tabelas
-
-Fonte única: [`src/lib/offline/tableMap.ts`](src/lib/offline/tableMap.ts)
-
-| Remoto (Supabase) | Local (Dexie) |
-|-------------------|---------------|
-| `animais` | `state_animais` |
-| `lotes` | `state_lotes` |
-| `pastos` | `state_pastos` |
-| `agenda_itens` | `state_agenda_itens` |
-| `contrapartes` | `state_contrapartes` |
-| `protocolos_sanitarios` | `state_protocolos_sanitarios` |
-| `protocolos_sanitarios_itens` | `state_protocolos_sanitarios_itens` |
-| `eventos` | `event_eventos` |
-| `eventos_sanitario` | `event_eventos_sanitario` |
-| `eventos_pesagem` | `event_eventos_pesagem` |
-| `eventos_movimentacao` | `event_eventos_movimentacao` |
-| `eventos_reproducao` | `event_eventos_reproducao` |
-| `eventos_financeiro` | `event_eventos_financeiro` |
-
----
-
-## Segurança (P0)
-
-### JWT Obrigatório no Sync
-
-A Edge Function `sync-batch` exige:
-
-```http
-Authorization: Bearer <access_token>
-```
-
-Validações:
-- **401**: JWT ausente ou inválido
-- **403**: Usuário sem acesso à fazenda
-
-### RLS Hardened
-
-- `user_fazendas`: SELECT-only (sem INSERT/UPDATE/DELETE direto)
-- Membership/gestão de membros **somente via RPCs**:
-
-| RPC | Descrição |
-|-----|-----------|
-| `create_fazenda` | Cria fazenda + owner bootstrap |
-| `admin_set_member_role` | Altera role de membro |
-| `admin_remove_member` | Remove membro (soft delete) |
-| `create_invite` | Cria convite |
-| `accept_invite` | Aceita convite |
-| `reject_invite` | Rejeita convite |
-| `cancel_invite` | Cancela convite |
-| `get_invite_preview` | Visualiza convite |
-| `can_create_farm` | Verifica se pode criar fazenda |
-
----
-
-## Estrutura de Pages
-
-```
-src/pages/
-├── AcceptInvite.tsx     # Aceitar convite
-├── AdminMembros.tsx     # Gestão de membros
-├── Agenda.tsx           # Agenda de tarefas
-├── Animais.tsx         # Lista de animais
-├── AnimalDetalhe.tsx   # Detalhe do animal
-├── AnimalEditar.tsx    # Editar animal
-├── AnimalNovo.tsx      # Cadastrar animal
-├── CriarFazenda.tsx    # Criar nova fazenda
-├── Dashboard.tsx       # Dashboard (em desenvolvimento)
-├── EditarFazenda.tsx   # Editar dados da fazenda
-├── Home.tsx            # Página principal
-├── Index.tsx           # Redirect
-├── Login.tsx           # Login
-├── LoteDetalhe.tsx    # Detalhe do lote
-├── LoteNovo.tsx        # Criar lote
-├── Lotes.tsx           # Lista de lotes
-├── Membros.tsx         # Lista de membros
-├── NotFound.tsx        # 404
-├── PastoDetalhe.tsx   # Detalhe do pasto
-├── PastoNovo.tsx       # Criar pasto
-├── Pastos.tsx          # Lista de pastos
-├── Perfil.tsx          # Perfil do usuário
-├── Reconciliacao.tsx   # Reconciliação de sync
-├── Registrar.tsx       # Registro de eventos
-├── SelectFazenda.tsx  # Seleção de fazenda ativa
-└── SignUp.tsx          # Cadastro
-```
-
----
-
-## Rodando Localmente
-
-### Pré-requisitos
-
-- Node.js 18+
-- pnpm
-- Projeto Supabase configurado
-
-### Variáveis de Ambiente
-
-Crie `.env.local`:
+## Scripts principais
 
 ```bash
-VITE_SUPABASE_URL="https://xxxx.supabase.co"
-VITE_SUPABASE_ANON_KEY="..."
-VITE_SUPABASE_FUNCTIONS_URL="https://xxxx.supabase.co/functions/v1"
-```
-
-### Comandos
-
-```bash
-# Instalar dependências
 pnpm install
-
-# Dev server
 pnpm dev
-
-# Build
-pnpm run build
-
-# Typecheck
-pnpm exec tsc --noEmit
-
-# Lint
 pnpm run lint
+pnpm test
+pnpm run build
 ```
 
----
+Scripts adicionais:
 
-## Documentação
+- `pnpm run test:e2e`: fluxos guiados de onboarding, importacao e relatorios
+- `pnpm run gates`: gates documentais do pacote Antigravity
 
-| Documento | Descrição |
-|-----------|-----------|
-| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Arquitetura Two Rails e offline-first |
-| [`docs/DB.md`](docs/DB.md) | Schema do banco de dados |
-| [`docs/RLS.md`](docs/RLS.md) | Row Level Security e permissões |
-| [`docs/CONTRACTS.md`](docs/CONTRACTS.md) | Contratos da Edge Function sync-batch |
-| [`docs/OFFLINE.md`](docs/OFFLINE.md) | Estratégia offline-first com Dexie |
-| [`docs/E2E_MVP.md`](docs/E2E_MVP.md) | Fluxos de teste E2E |
-| [`docs/ONBOARDING_FIX.md`](docs/ONBOARDING_FIX.md) | Fluxo de onboarding corrigido |
-| [`docs/ANALISE_CAMPOS_FAZENDA.md`](docs/ANALISE_CAMPOS_FAZENDA.md) | Análise de campos de fazendas |
-| [`docs/ANALISE_CAMPOS_REBANHO.md`](docs/ANALISE_CAMPOS_REBANHO.md) | Análise de campos do rebanho |
-| [`docs/ANALISE_EVENTOS_SANITARIOS.md`](docs/ANALISE_EVENTOS_SANITARIOS.md) | Análise de eventos sanitários |
-| [`docs/ROADMAP.md`](docs/ROADMAP.md) | **Funcionalidades planejadas** |
+## Ambiente
 
----
+Crie um `.env` local a partir de `.env.example`.
 
-## Convenções de Código
+Variaveis esperadas:
 
-### TypeScript
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_ANON_KEY`
+- `VITE_SUPABASE_FUNCTIONS_URL`
 
-```typescript
-// Erros: catch como unknown + instanceof Error
-catch (e: unknown) {
-  const error = e instanceof Error ? e : new Error(String(e));
-}
+## Estrutura
 
-// setInterval: tipar corretamente
-const timer = setInterval(fn, 1000) as unknown as ReturnType<typeof setInterval>;
+- `src/`: frontend React
+- `supabase/`: migrations e functions
+- `docs/`: arquitetura, contratos, snapshot operacional e backlog
+- `scripts/`: automacoes e gates
 
-// Server-managed: não enviar created_at/updated_at em payloads
-```
+## Documentacao
 
-### Offline Sync
+Consulte [docs/README.md](./docs/README.md) para o indice completo.
 
-```typescript
-// Metadata de sync via client_*
-const record = {
-  ...data,
-  client_id: getClientId(),
-  client_op_id: crypto.randomUUID(),
-  client_tx_id: txId,
-  client_recorded_at: new Date().toISOString(),
-};
-```
+Os documentos mais uteis para retomar o projeto hoje sao:
 
----
-
-## Troubleshooting
-
-### "Invalid hook call"
-
-Causas comuns:
-- Duas cóias de React (pnpm/workspaces)
-- Peer dependencies inconsistentes
-
-Solução:
-```bash
-pnpm why react
-# Verificar duplicações
-pnpm install
-```
-
-### Sync não funciona
-
-1. Verificar JWT no console:
-   ```javascript
-   console.log(await supabase.auth.getSession())
-   ```
-
-2. Verificar console do sync-worker:
-   ```javascript
-   // Logs mostram status de sync
-   console.log('[sync-worker] Processing gesture...')
-   ```
-
-3. Verificar rejections:
-   ```javascript
-   const rejections = await db.queue_rejections.toArray();
-   ```
-
----
-
-## Licença
-
-Proprietário - DYAD Apps
+- [docs/CURRENT_STATE.md](./docs/CURRENT_STATE.md)
+- [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md)
+- [docs/OFFLINE.md](./docs/OFFLINE.md)
+- [docs/CONTRACTS.md](./docs/CONTRACTS.md)
+- [docs/STACK.md](./docs/STACK.md)
+- [docs/ROUTES.md](./docs/ROUTES.md)

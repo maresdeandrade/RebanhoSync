@@ -1,218 +1,89 @@
-# Dívida Técnica (Tech Debt)
+# Divida Tecnica
 
 > **Status:** Derivado (Rev D+)
-> **Baseline:** `d0278ce`
-> **Última Atualização:** 2026-02-26
-> **Derivado por:** Antigravity — capability_id Derivation Rev D+
-> **Fonte:** `IMPLEMENTATION_STATUS.md` (Matriz Analítica), Código
+> **Baseline:** `f78dbb4`
+> **Ultima Atualizacao:** 2026-03-31
+> **Derivado por:** Atualizacao manual a partir de `IMPLEMENTATION_STATUS.md` e do codigo atual
+> **Fonte:** `IMPLEMENTATION_STATUS.md`, `src/`, `supabase/`
 
-Lista consolidada de débitos técnicos do RebanhoSync. Itens OPEN são separados em **Catalog** (com `capability_id` do catálogo, participam do score e derivação) e **Infra/Out-of-catalog** (fora do score, mantidos por compatibilidade).
+Lista consolidada dos gaps ainda abertos no repositorio.
 
----
+## OPEN (Catalog)
 
-## OPEN (Catalog) — 4 items
+> Estes itens participam do `gap_set` analitico e da derivacao para o roadmap.
 
-> Estes TDs possuem `capability_id` do Capability Catalog e participam da derivação mecânica (gap_set → ROADMAP).
-
-### 🟠 P1 (Importante - 3 items)
-
-#### TD-011: Produtos Sanitários TEXT Livre
+### TD-011: Produtos sanitarios em texto livre
 
 - **capability_id:** `sanitario.registro`
-- **Domínio:** sanitario
-- **Risco:** Consistência (Typos, duplicatas)
-- **Status:** 🟠 **OPEN** (P1)
-- **Evidência:** `eventos_sanitario.produto` é TEXT sem normalização.
-- **Ação:** (Opcional/Nice-to-Have) Criar catálogo básico `produtos_veterinarios`.
-- **Critério de Aceite:**
-  - [ ] UI sugere produtos comuns (autocomplete).
-  - [ ] Relatórios não quebram por typos.
-  - **Fluxo E2E:** Hardening de Eventos (Fluxo 6)
+- **Dominio:** sanitario
+- **Risco:** consistencia de dados e qualidade de relatorio
+- **Status:** OPEN
+- **Evidencia:** `eventos_sanitario.produto` segue livre; o fluxo de registro continua aceitando texto manual em `src/pages/Registrar.tsx`
+- **Acao sugerida:** introduzir catalogo simples ou autocomplete com normalizacao
 
-#### TD-019: Foreign Keys Faltantes (Movimentação)
-
-- **capability_id:** `movimentacao.registro`
-- **Domínio:** movimentacao
-- **Risco:** Integridade Referencial
-- **Status:** 🟠 **OPEN** (P1)
-- **Evidência:** `eventos_movimentacao` (from/to_lote_id) sem FOREIGN KEY.
-- **Ação:** Adicionar FKs `eventos_movimentacao(from_lote_id) → lotes(id)` e `to_lote_id`.
-- **Critério de Aceite:**
-  - [ ] FK constraints impedem referências inválidas.
-  - [ ] Migrations reversíveis (rollback seguro).
-  - **Fluxo E2E:** Operacional (Fluxo 7)
-
-#### TD-020: Foreign Key macho_id Faltante (Reprodução)
-
-- **capability_id:** `reproducao.registro`
-- **Domínio:** reproducao
-- **Risco:** Integridade Referencial
-- **Status:** 🟠 **OPEN** (P1)
-- **Evidência:** `eventos_reproducao.macho_id` sem FOREIGN KEY para `animais`.
-- **Ação:** Adicionar FK `eventos_reproducao(macho_id) → animais(id)`.
-- **Critério de Aceite:**
-  - [ ] FK constraint impede referências inválidas.
-  - [ ] Migrations reversíveis.
-  - **Fluxo E2E:** Operacional (Fluxo 7)
-
----
-
-### 🟡 P2 (Melhoria - 1 item)
-
-#### TD-015: Cálculo de GMD em Memória
+### TD-015: GMD e historico agregados no cliente
 
 - **capability_id:** `pesagem.historico`
-- **Domínio:** pesagem
-- **Risco:** Scalability
-- **Status:** 🟡 **OPEN** (P2)
-- **Evidência:** Dashboard carrega todo histórico para calcular ganho médio.
-- **Ação:** Materializar GMD no evento ou criar View agregada.
-- **Critério de Aceite:**
-  - [ ] Dashboard carrega em < 2s com 5000 animais.
-  - **Fluxo E2E:** Operacional (Fluxo 7)
+- **Dominio:** pesagem
+- **Risco:** escalabilidade e latencia em rebanhos maiores
+- **Status:** OPEN
+- **Evidencia:** leitura de peso e GMD ainda depende de carga local do historico em `src/pages/AnimalDetalhe.tsx` e `src/pages/Dashboard.tsx`
+- **Acao sugerida:** view agregada, coluna derivada ou precomputo no backend
 
----
+### TD-019: Foreign keys faltantes em movimentacao
 
-## OPEN (Infra/Out-of-catalog) — 2 items
+- **capability_id:** `movimentacao.registro`
+- **Dominio:** movimentacao
+- **Risco:** integridade referencial
+- **Status:** OPEN
+- **Evidencia:** referencias `from_lote_id` e `to_lote_id` continuam sem FK forte no schema
+- **Acao sugerida:** adicionar FKs compostas e revisar migrations com rollback seguro
 
-> Estes TDs são infraestruturais, fora do Capability Catalog. Não participam do `capability_score` nem do `gap_set`. Registrados como `NEW (Proposed)` no `RECONCILIACAO_REPORT`. Mantidos por compatibilidade histórica e continuam no ROADMAP por TD-ID.
+### TD-020: Foreign key faltante para `macho_id` na reproducao
 
-### 🟠 P1 (Importante - 1 item)
+- **capability_id:** `reproducao.registro`
+- **Dominio:** reproducao
+- **Risco:** integridade referencial
+- **Status:** OPEN
+- **Evidencia:** `eventos_reproducao.macho_id` ainda sem FK forte para `animais`
+- **Acao sugerida:** adicionar FK composta tenant-safe e validar migrations
 
-#### TD-003: RLS DELETE sem Restrição de Role
+### OPEN (Infra/Out-of-catalog)
 
-- **capability_id:** `infra.rbac_hardening` _(NEW Proposed — fora do Catalog)_
-- **Domínio:** platform
-- **Risco:** Integridade de Dados (Cowboy pode deletar animais)
-- **Status:** 🟠 **OPEN** (P1)
-- **Evidência:** Policy `DELETE` em `animais` não filtra por role.
-- **Ação:** Adicionar `WHERE role IN ('owner', 'manager')` na policy DELETE.
-- **Critério de Aceite:**
-  - [ ] Cowboy recebe erro 403 ao tentar DELETE animal.
-  - [ ] Owner/Manager conseguem DELETE normalmente.
-  - **Fluxo E2E:** RBAC (Fluxo 1)
+> Estes itens ficam fora do capability score, mas seguem relevantes para hardening da base.
 
----
+### TD-003: DELETE de animais ainda sem restricao adequada por role
 
-### 🟡 P2 (Melhoria - 1 item)
+- **capability_id:** `infra.rbac_hardening`
+- **Dominio:** platform
+- **Risco:** perda indevida de dados
+- **Status:** OPEN
+- **Evidencia:** a policy de DELETE em `animais` ainda nao foi endurecida para `owner/manager`
+- **Acao sugerida:** restringir DELETE e validar fluxo RBAC no backend
 
-#### TD-004: Índices de Performance Faltantes
+### TD-004: Indices compostos de performance ainda faltantes
 
-- **capability_id:** `infra.indexes` _(NEW Proposed — fora do Catalog)_
-- **Domínio:** platform
-- **Risco:** Scalability
-- **Status:** 🟡 **OPEN** (P2)
-- **Evidência:** Queries de dashboard sem índices compostos.
-- **Ação:** Criar índices `(fazenda_id, occurred_at)`, `(animal_id, occurred_at)`.
-- **Critério de Aceite:**
-  - [ ] Dashboard carrega em < 2s com 5000 animais.
-  - **Fluxo E2E:** Operacional (Fluxo 7)
+- **capability_id:** `infra.indexes`
+- **Dominio:** platform
+- **Risco:** degradacao de performance em volume alto
+- **Status:** OPEN
+- **Evidencia:** consultas agregadas e dashboards ainda dependem de indices parciais/incompletos
+- **Acao sugerida:** criar indices compostos e medir consultas principais
 
----
+## CLOSED (Recentes)
 
-## 🟩 CLOSED (Resolvidos - 4 items)
+- TD-001: limpeza de `queue_rejections`
+- TD-006: UI de nutricao
+- TD-008: anti-teleporte no frontend
+- TD-014: validacao de peso no frontend
 
-### TD-014: Validação de Peso no Frontend ✅ CLOSED
+## Resumo
 
-- **capability_id:** `pesagem.registro`
-- **Domínio:** pesagem
-- **Risco:** N/A (resolvido)
-- **Status:** ✅ **CLOSED** (2026-02-26)
-- **Evidência Original:** `Registrar.tsx` (pesagem) permitia envio de peso <= 0.
-- **Solução:** Implementada validação frontend com verificação de peso > 0 antes do submit.
-- **Evidência Real:**
-  - `src/pages/Registrar.tsx:145-153` - Constante `isPesagemValid` para validação
-  - `src/pages/Registrar.tsx:564-579` - Validação no `handleFinalize` antes do envio
-  - `src/pages/Registrar.tsx:1525` - Botão "Próximo" desabilitado se pesos inválidos
+- OPEN Catalog: `TD-011`, `TD-015`, `TD-019`, `TD-020`
+- OPEN Infra: `TD-003`, `TD-004`
+- Total OPEN: `6`
 
-**Critério de Aceite (DONE):**
+## Veja Tambem
 
-- [x] Botão Submit desabilitado se peso <= 0.
-- [x] Mensagem de erro clara no form.
-- [x] Validação consistente com backend (peso > 0).
-
-### TD-001: Limpeza de Queue Rejections (Offline) ✅ CLOSED
-
-- **capability_id:** `infra.queue_cleanup` _(Infra — fora do Catalog)_
-- **Domínio:** platform
-- **Risco:** N/A (resolvido)
-- **Status:** ✅ **CLOSED** (2026-02-26)
-- **Evidência Original:** `src/lib/offline/syncWorker.ts` não possuía rotina de expurgo.
-- **Solução:** Implementado TTL 7d auto-purge, UI de revisão/export, backfill de registros legados.
-- **Evidência Real:**
-  - `src/lib/offline/db.ts` — Schema v7 com `created_at` + `[fazenda_id+created_at]` + `.upgrade()` backfill
-  - `src/lib/offline/rejections.ts` — API DLQ (list/stats/export/purge) index-backed
-  - `src/lib/offline/syncWorker.ts` — Auto-purge throttled 6h via localStorage
-  - `src/pages/Reconciliacao.tsx` — UI com stats, paginação cursor, dialog, export JSON, bulk purge dryRun
-  - `src/lib/offline/__tests__/rejections.test.ts` — 10 testes unitários
-
-**Critério de Aceite (DONE):**
-
-- [x] DLQ não cresce indefinidamente (auto-purge >7d).
-- [x] Usuário consegue visualizar/exportar rejeições antes do expurgo.
-- [x] Purge index-backed (sem full scan).
-- [x] UI paginada com cursor.
-- [x] Testes unitários passam.
-
-### TD-008: Validação Anti-Teleport no Frontend ✅ CLOSED
-
-- **capability_id:** `movimentacao.anti_teleport_client`
-- **Domínio:** movimentacao
-- **Risco:** N/A (resolvido)
-- **Status:** ✅ **CLOSED** (2026-02-17)
-- **Evidência Original:** `Registrar.tsx` permitia seleção de lote destino igual à origem.
-- **Solução:** Implementado `useEffect` em `Registrar.tsx` que monitora `selectedLoteId` e reseta `toLoteId` se houver colisão.
-- **Evidência Real:**
-  - `src/pages/Registrar.tsx:382+` - useEffect de reset.
-  - `src/lib/events/__tests__/validators.test.ts` - Teste de validação.
-  - `src/pages/__tests__/Registrar.test.tsx` - Teste de UI.
-
-**Critério de Aceite (DONE):**
-
-- [x] UI impede seleção origem==destino (reset automático).
-- [x] Testes unitários cobrem o cenário.
-- [x] **Fluxo E2E:** Anti-Teleporte - VALIDADO
-
-### TD-006: UI de Nutrição ✅ CLOSED
-
-- **capability_id:** `nutricao.registro`
-
-**Descoberta:** UI de Nutrição **JÁ ESTAVA IMPLEMENTADA** em `Registrar.tsx`.
-
-- **Domínio:** nutricao
-- **Risco:** N/A (resolvido)
-- **Status:** ✅ **CLOSED** (2026-02-16)
-- **Evidência Original (falsa):** Grep por `NutricaoForm` retornava 0 resultados (buscava component separado).
-- **Evidência Real (positiva):**
-  - `Registrar.tsx:674-684` - Event builder input para nutrição
-  - `Registrar.tsx:1113-1143` - Form inline (alimentoNome, quantidadeKg)
-  - `buildEventGesture.ts:87-97` - Builder eventos_nutricao
-  - `migrations/0001_init.sql:632` - Tabela eventos_nutricao
-  - `db.ts:event_eventos_nutricao` - Dexie store
-
-**Escopo MVP Confirmado:**
-
-- ✅ Registro de alimento fornecido (nome + quantidade_kg)
-- ✅ Suporte animal/lote
-- ✅ Sync offline→online funcional
-- ✅ Histórico de eventos mostra nutrição
-- ❌ SEM gestão de estoque/inventário/compras (conforme decisão de produto)
-
-**Critério de Aceite (DONE):**
-
-- [x] Formulário Nutrição renderiza em `/registrar` (tipoManejo === "nutricao").
-- [x] Evento criado offline aparece em `state_eventos` e `event_eventos_nutricao`.
-- [x] Gesture criado com status `PENDING`.
-- [x] Sync aplica evento no servidor (200 OK, status `APPLIED`).
-- [x] Histórico mostra evento de nutrição após sync.
-- [x] **Fluxo E2E:** Nutrição (Fluxo 8) - VALIDADO
-
-**Lição Aprendida:** UI inline no `Registrar.tsx` (não component separado `NutricaoForm.tsx`). Grep deve buscar por `tipoManejo === "nutricao"` além de components.
-
----
-
-## Veja Também
-
-- [**IMPLEMENTATION_STATUS.md**](./IMPLEMENTATION_STATUS.md) - Matriz Analítica (fonte de derivação)
-- [**ROADMAP.md**](./ROADMAP.md) - Planejamento (derivado de TECH_DEBT OPEN)
-- [**E2E_MVP.md**](./E2E_MVP.md) - Fluxos de validação
+- [IMPLEMENTATION_STATUS.md](./IMPLEMENTATION_STATUS.md)
+- [ROADMAP.md](./ROADMAP.md)

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "@/lib/offline/db";
 import { createGesture } from "@/lib/offline/ops";
@@ -18,6 +18,7 @@ import {
 import { buildEventGesture } from "@/lib/events/buildEventGesture";
 import type { EventDomain, EventInput } from "@/lib/events/types";
 import { EventValidationError } from "@/lib/events/validators";
+import { prepareReproductionGesture } from "@/lib/reproduction/register";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -45,6 +46,8 @@ import {
 } from "lucide-react";
 import { useLotes } from "@/hooks/useLotes";
 import { useAuth } from "@/hooks/useAuth";
+import { isFemaleReproductionEligible } from "@/lib/animals/presentation";
+import { classificarAnimal, getLabelCategoria } from "@/lib/domain/categorias";
 
 enum RegistrationStep {
   SELECT_ANIMALS = 1,
@@ -59,6 +62,78 @@ const REGISTRATION_STEPS = [
 ];
 
 const SEM_LOTE_OPTION = "__sem_lote__";
+
+type QuickActionKey =
+  | "vacinacao"
+  | "vermifugacao"
+  | "pesagem"
+  | "movimentacao"
+  | "compra"
+  | "venda";
+
+type QuickActionConfig = {
+  key: QuickActionKey;
+  label: string;
+  helper: string;
+  requiresAnimals?: boolean;
+  icon: typeof Syringe;
+};
+
+const QUICK_ACTIONS: QuickActionConfig[] = [
+  {
+    key: "vacinacao",
+    label: "Vacinacao",
+    helper: "Aplicacao sanitaria rapida para rotina de vacina.",
+    requiresAnimals: true,
+    icon: Syringe,
+  },
+  {
+    key: "vermifugacao",
+    label: "Vermifugacao",
+    helper: "Registro sanitario rapido por lote ou animal.",
+    requiresAnimals: true,
+    icon: Syringe,
+  },
+  {
+    key: "pesagem",
+    label: "Pesagem",
+    helper: "Lancar peso sem navegar pelo fluxo generico.",
+    requiresAnimals: true,
+    icon: Scale,
+  },
+  {
+    key: "movimentacao",
+    label: "Movimentacao",
+    helper: "Mover animais entre lotes com menos cliques.",
+    requiresAnimals: true,
+    icon: Move,
+  },
+  {
+    key: "compra",
+    label: "Compra",
+    helper: "Compra simples por lote, com ou sem novos animais.",
+    icon: Handshake,
+  },
+  {
+    key: "venda",
+    label: "Venda",
+    helper: "Venda simples com atualizacao do status do animal.",
+    requiresAnimals: true,
+    icon: Handshake,
+  },
+];
+
+const isQuickActionKey = (value: string | null): value is QuickActionKey =>
+  QUICK_ACTIONS.some((action) => action.key === value);
+
+const getQuickActionConfig = (key: QuickActionKey | null) =>
+  QUICK_ACTIONS.find((action) => action.key === key) ?? null;
+
+const isReproTipoEnum = (value: string | null): value is ReproTipoEnum =>
+  value === "cobertura" ||
+  value === "IA" ||
+  value === "diagnostico" ||
+  value === "parto";
 
 const readString = (record: Record<string, unknown> | null | undefined, key: string) => {
   const value = record?.[key];
@@ -101,6 +176,7 @@ const Registrar = () => {
     RegistrationStep.SELECT_ANIMALS,
   );
   const [tipoManejo, setTipoManejo] = useState<EventDomain | null>(null);
+  const [quickAction, setQuickAction] = useState<QuickActionKey | null>(null);
   const [selectedLoteId, setSelectedLoteId] = useState<string>("");
   const [selectedAnimais, setSelectedAnimais] = useState<string[]>([]);
   const [sourceTaskId, setSourceTaskId] = useState<string>("");
@@ -141,6 +217,55 @@ const Registrar = () => {
     machoId: null,
     observacoes: "",
   });
+  const categorias = useLiveQuery(async () => {
+    if (!activeFarmId) return [];
+
+    return await db.state_categorias_zootecnicas
+      .where("fazenda_id")
+      .equals(activeFarmId)
+      .filter((categoria) => !categoria.deleted_at && categoria.ativa)
+      .toArray();
+  }, [activeFarmId]);
+  const quickActionConfig = getQuickActionConfig(quickAction);
+  const partoRequiresSingleMatrix =
+    tipoManejo === "reproducao" &&
+    reproducaoData.tipo === "parto" &&
+    selectedAnimais.length > 1;
+
+  const selectRegularAction = useCallback((domain: EventDomain) => {
+    setQuickAction(null);
+    setTipoManejo(domain);
+  }, []);
+
+  const applyQuickAction = useCallback((actionKey: QuickActionKey) => {
+    setQuickAction(actionKey);
+
+    if (actionKey === "vacinacao" || actionKey === "vermifugacao") {
+      setTipoManejo("sanitario");
+      setSanitarioData((prev) => ({
+        ...prev,
+        tipo: actionKey,
+        produto: prev.tipo === actionKey ? prev.produto : "",
+      }));
+      return;
+    }
+
+    if (actionKey === "pesagem") {
+      setTipoManejo("pesagem");
+      return;
+    }
+
+    if (actionKey === "movimentacao") {
+      setTipoManejo("movimentacao");
+      return;
+    }
+
+    setTipoManejo("financeiro");
+    setFinanceiroData((prev) => ({
+      ...prev,
+      natureza: actionKey === "compra" ? "compra" : "venda",
+    }));
+  }, []);
 
   const canManageContraparte = role === "owner" || role === "manager";
 
@@ -273,12 +398,14 @@ const Registrar = () => {
     const querySourceTaskId = searchParams.get("sourceTaskId");
     const queryDomain = searchParams.get("dominio");
     const queryNatureza = searchParams.get("natureza");
+    const queryQuick = searchParams.get("quick");
     const queryAnimalId = searchParams.get("animalId");
     const queryLoteId = searchParams.get("loteId");
     const queryProtocoloId = searchParams.get("protocoloId");
     const queryProtocoloItemId = searchParams.get("protocoloItemId");
     const queryProduto = searchParams.get("produto");
     const querySanitarioTipo = searchParams.get("sanitarioTipo");
+    const queryReproTipo = searchParams.get("reproTipo");
 
     if (querySourceTaskId) {
       setSourceTaskId(querySourceTaskId);
@@ -288,6 +415,9 @@ const Registrar = () => {
     }
     if (queryAnimalId) {
       setSelectedAnimais([queryAnimalId]);
+    }
+    if (isQuickActionKey(queryQuick)) {
+      applyQuickAction(queryQuick);
     }
     if (
       queryDomain &&
@@ -327,12 +457,21 @@ const Registrar = () => {
       }));
     }
     if (queryDomain === "reproducao") {
-       setTipoManejo("reproducao");
+      setTipoManejo("reproducao");
+      setQuickAction(null);
+      if (isReproTipoEnum(queryReproTipo)) {
+        setReproducaoData((prev) => ({
+          ...prev,
+          tipo: queryReproTipo,
+          episodeEventoId: null,
+          episodeLinkMethod: undefined,
+        }));
+      }
     }
-    if (queryDomain && queryAnimalId) {
+    if ((queryDomain && queryAnimalId) || (isQuickActionKey(queryQuick) && queryAnimalId)) {
       setStep(RegistrationStep.CHOOSE_ACTION);
     }
-  }, [searchParams]);
+  }, [searchParams, applyQuickAction]);
 
   useEffect(() => {
     const applySourceTaskPrefill = async () => {
@@ -521,6 +660,13 @@ const Registrar = () => {
       return;
     }
 
+    if (partoRequiresSingleMatrix) {
+      showError(
+        "Parto com geracao de cria deve ser registrado para uma matriz por vez.",
+      );
+      return;
+    }
+
     if (
       financeByLoteOnly &&
       selectedLoteId === SEM_LOTE_OPTION &&
@@ -659,6 +805,9 @@ const Registrar = () => {
       }
 
       let linkedEventId: string | null = null;
+      let postPartoRedirect:
+        | { motherId: string; eventId: string; calfIds: string[] }
+        | null = null;
 
       const targetAnimalIds: Array<string | null> = hasSelectedAnimals
         ? selectedAnimais
@@ -779,6 +928,43 @@ const Registrar = () => {
               natureza === "venda" && Boolean(animalId),
             payload: payloadFinanceiro,
           };
+        } else if (tipoManejo === "reproducao" && animalId && animal) {
+          const categoriaAtual = categorias
+            ? classificarAnimal(animal, categorias)
+            : null;
+          const categoriaLabel = categoriaAtual
+            ? getLabelCategoria(categoriaAtual)
+            : null;
+
+          if (!isFemaleReproductionEligible(animal, categoriaLabel)) {
+            showError(
+              `Reproducao disponivel apenas para novilhas e vacas. ${animal.identificacao} esta como ${categoriaLabel ?? "categoria nao elegivel"}.`,
+            );
+            return;
+          }
+
+          const built = await prepareReproductionGesture({
+            fazendaId: fazenda_id,
+            animalId,
+            occurredAt: now,
+            sourceTaskId: sourceTaskId || null,
+            animalIdentificacao: animal.identificacao,
+            loteId: targetLoteId,
+            data: reproducaoData,
+          });
+
+          if (!linkedEventId) {
+            linkedEventId = built.eventId;
+          }
+          if (reproducaoData.tipo === "parto" && built.calfIds.length > 0) {
+            postPartoRedirect = {
+              motherId: animalId,
+              eventId: built.eventId,
+              calfIds: built.calfIds,
+            };
+          }
+          ops.push(...built.ops);
+          continue;
         } else if (tipoManejo === "reproducao") {
           // Block orphan parto if validation failed or user selected 'unlinked'
           // Actually, we should check if we found a candidate if mode is auto.
@@ -866,6 +1052,19 @@ const Registrar = () => {
       } else {
         showSuccess(`Manejo registrado! TX: ${txId.slice(0, 8)}`);
       }
+
+      if (postPartoRedirect) {
+        const nextParams = new URLSearchParams();
+        nextParams.set("eventoId", postPartoRedirect.eventId);
+        postPartoRedirect.calfIds.forEach((calfId) =>
+          nextParams.append("cria", calfId),
+        );
+        navigate(
+          `/animais/${postPartoRedirect.motherId}/pos-parto?${nextParams.toString()}`,
+        );
+        return;
+      }
+
       navigate("/home", { state: { syncPending: true } });
     } catch (e: unknown) {
       if (e instanceof EventValidationError) {
@@ -899,12 +1098,66 @@ const Registrar = () => {
         </div>
       )}
 
+      {quickActionConfig && (
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge variant="secondary">Atalho rapido</Badge>
+          <span className="text-sm font-medium">{quickActionConfig.label}</span>
+          <span className="text-sm text-muted-foreground">
+            {quickActionConfig.helper}
+          </span>
+        </div>
+      )}
+
       {step === RegistrationStep.SELECT_ANIMALS && (
         <Card>
           <CardHeader>
             <CardTitle>1. Selecionar Alvo</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-medium">Manejos mais usados</p>
+                  <p className="text-sm text-muted-foreground">
+                    Escolha um atalho e depois selecione o lote e os animais.
+                  </p>
+                </div>
+                {quickAction && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setQuickAction(null)}
+                  >
+                    Limpar atalho
+                  </Button>
+                )}
+              </div>
+              <div className="grid gap-3 md:grid-cols-3">
+                {QUICK_ACTIONS.map((action) => {
+                  const Icon = action.icon;
+
+                  return (
+                    <Button
+                      key={action.key}
+                      type="button"
+                      variant={quickAction === action.key ? "default" : "outline"}
+                      className="h-auto flex-col items-start gap-2 p-4 text-left"
+                      onClick={() => applyQuickAction(action.key)}
+                    >
+                      <div className="flex items-center gap-2">
+                        <Icon className="h-4 w-4" />
+                        <span className="font-semibold">{action.label}</span>
+                      </div>
+                      <span className="whitespace-normal text-xs opacity-80">
+                        {action.helper}
+                      </span>
+                    </Button>
+                  );
+                })}
+              </div>
+            </div>
+
             <div className="space-y-2">
               <Label>Lote</Label>
               <Select
@@ -964,7 +1217,8 @@ const Registrar = () => {
               disabled={!selectedLoteId}
               onClick={() => setStep(RegistrationStep.CHOOSE_ACTION)}
             >
-              Próximo <ChevronRight className="ml-2 h-4 w-4" />
+              {quickActionConfig ? `Continuar para ${quickActionConfig.label}` : "Próximo"}{" "}
+              <ChevronRight className="ml-2 h-4 w-4" />
             </Button>
           </CardContent>
         </Card>
@@ -976,12 +1230,49 @@ const Registrar = () => {
             <CardTitle>2. Escolher Ação</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
+            <div className="space-y-3">
+              <div>
+                <p className="text-sm font-medium">Manejos mais usados</p>
+                <p className="text-sm text-muted-foreground">
+                  Atalhos com prefill para a rotina mais comum do campo.
+                </p>
+              </div>
+              <div className="grid gap-3 md:grid-cols-3">
+                {QUICK_ACTIONS.map((action) => {
+                  const Icon = action.icon;
+                  const disabled =
+                    action.requiresAnimals === true && selectedAnimais.length === 0;
+
+                  return (
+                    <Button
+                      key={action.key}
+                      type="button"
+                      variant={quickAction === action.key ? "default" : "outline"}
+                      className="h-auto flex-col items-start gap-2 p-4 text-left"
+                      disabled={disabled}
+                      onClick={() => applyQuickAction(action.key)}
+                    >
+                      <div className="flex items-center gap-2">
+                        <Icon className="h-4 w-4" />
+                        <span className="font-semibold">{action.label}</span>
+                      </div>
+                      <span className="whitespace-normal text-xs opacity-80">
+                        {action.helper}
+                      </span>
+                    </Button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div>
+              <p className="mb-3 text-sm font-medium">Todos os registros</p>
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
               <Button
                 variant={tipoManejo === "sanitario" ? "default" : "outline"}
                 className="flex-col h-24 gap-2"
                 disabled={selectedAnimais.length === 0}
-                onClick={() => setTipoManejo("sanitario")}
+                onClick={() => selectRegularAction("sanitario")}
               >
                 <Syringe className="h-6 w-6" /> Sanitário
               </Button>
@@ -989,7 +1280,7 @@ const Registrar = () => {
                 variant={tipoManejo === "pesagem" ? "default" : "outline"}
                 className="flex-col h-24 gap-2"
                 disabled={selectedAnimais.length === 0}
-                onClick={() => setTipoManejo("pesagem")}
+                onClick={() => selectRegularAction("pesagem")}
               >
                 <Scale className="h-6 w-6" /> Pesagem
               </Button>
@@ -997,7 +1288,7 @@ const Registrar = () => {
                 variant={tipoManejo === "movimentacao" ? "default" : "outline"}
                 className="flex-col h-24 gap-2"
                 disabled={selectedAnimais.length === 0}
-                onClick={() => setTipoManejo("movimentacao")}
+                onClick={() => selectRegularAction("movimentacao")}
               >
                 <Move className="h-6 w-6" /> Mover
               </Button>
@@ -1005,25 +1296,26 @@ const Registrar = () => {
                 variant={tipoManejo === "nutricao" ? "default" : "outline"}
                 className="flex-col h-24 gap-2"
                 disabled={selectedAnimais.length === 0}
-                onClick={() => setTipoManejo("nutricao")}
+                onClick={() => selectRegularAction("nutricao")}
               >
                 <Scale className="h-6 w-6" /> Nutricao
               </Button>
               <Button
                 variant={tipoManejo === "financeiro" ? "default" : "outline"}
                 className="flex-col h-24 gap-2"
-                onClick={() => setTipoManejo("financeiro")}
+                onClick={() => selectRegularAction("financeiro")}
               >
                 <Move className="h-6 w-6" /> Financeiro
               </Button>
               <Button
                 variant={tipoManejo === "reproducao" ? "default" : "outline"}
                 className="flex-col h-24 gap-2"
-                onClick={() => setTipoManejo("reproducao")}
+                onClick={() => selectRegularAction("reproducao")}
                 disabled={selectedAnimais.length === 0}
               >
                 <div className="h-6 w-6 rounded-full border-2 border-current" /> Reprodução
               </Button>
+            </div>
             </div>
 
             {selectedAnimais.length === 0 && (
@@ -1513,6 +1805,12 @@ const Registrar = () => {
 
             {tipoManejo === "reproducao" && (
                 <div className="space-y-4 border-t pt-4">
+                  {partoRequiresSingleMatrix && (
+                    <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+                      Para gerar a cria e vincular mae e pai com seguranca, registre
+                      o parto de uma matriz por vez.
+                    </div>
+                  )}
                   <ReproductionForm
                     fazendaId={activeFarmId ?? ""}
                     animalId={selectedAnimais[0]}
@@ -1531,7 +1829,11 @@ const Registrar = () => {
               </Button>
               <Button
                 className="flex-1"
-                disabled={!tipoManejo || (tipoManejo === "pesagem" && !isPesagemValid)}
+                disabled={
+                  !tipoManejo ||
+                  (tipoManejo === "pesagem" && !isPesagemValid) ||
+                  partoRequiresSingleMatrix
+                }
                 onClick={() => setStep(RegistrationStep.CONFIRM)}
               >
                 Próximo <ChevronRight className="ml-2 h-4 w-4" />
@@ -1550,7 +1852,9 @@ const Registrar = () => {
             <div className="bg-muted p-4 rounded-lg space-y-2">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Manejo:</span>
-                <span className="font-bold capitalize">{tipoManejo}</span>
+                <span className="font-bold capitalize">
+                  {quickActionConfig?.label ?? tipoManejo}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Animais:</span>
@@ -1612,6 +1916,19 @@ const Registrar = () => {
                     <span className="text-muted-foreground">Tipo:</span>
                     <span className="font-bold capitalize">{reproducaoData.tipo}</span>
                   </div>
+                  {reproducaoData.tipo === "parto" && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Crias geradas:</span>
+                      <span className="font-bold">
+                        {Math.max(
+                          1,
+                          reproducaoData.numeroCrias ??
+                            reproducaoData.crias?.length ??
+                            1,
+                        )}
+                      </span>
+                    </div>
+                  )}
                   {reproducaoData.machoId && (
                      <div className="flex justify-between">
                         <span className="text-muted-foreground">Reprodutor:</span>

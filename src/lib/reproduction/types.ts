@@ -52,6 +52,13 @@ export interface ReproductionEventPayloadV1 {
 }
 
 // Helper to check for V1
-export function isPayloadV1(payload: any): payload is ReproductionEventPayloadV1 {
-  return payload && payload.schema_version === 1;
+export function isPayloadV1(
+  payload: unknown,
+): payload is ReproductionEventPayloadV1 {
+  return (
+    typeof payload === "object" &&
+    payload !== null &&
+    "schema_version" in payload &&
+    payload.schema_version === 1
+  );
 }

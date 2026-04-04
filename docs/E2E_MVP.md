@@ -14,6 +14,20 @@ Este documento define os fluxos críticos de validação do sistema.
 - Persistência da fazenda ativa (`user_settings` + `localStorage`).
 - Bootstrapping automático de fazenda para novos usuários (via `create_fazenda`).
 
+## Fluxo 0.5: Implantacao Inicial
+
+- Wizard de onboarding aponta para a primeira etapa pendente.
+- Importacao de pastos por CSV cria gestos locais validos.
+- Importacao de lotes por CSV valida vinculo com pastos da fazenda ativa.
+- Fluxos automatizados por `pnpm run test:e2e`.
+
+## Fluxo 0.6: Resumo Operacional
+
+- Tela de resumo operacional consolida rebanho, agenda, financeiro basico e sync da fazenda ativa.
+- Exportacao CSV gera arquivo compartilhavel com o periodo selecionado.
+- Impressao abre visao resumida para repasse ao dono ou equipe.
+- Fluxo automatizado por `pnpm run test:e2e`.
+
 ## Fluxo 1: RBAC (Member Management)
 
 - Owner tem controle total.

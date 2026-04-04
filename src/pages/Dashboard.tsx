@@ -1,6 +1,14 @@
 import { useEffect, useMemo } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
-import { Beef, Calendar, AlertTriangle, CheckCircle2 } from "lucide-react";
+import {
+  Beef,
+  Calendar,
+  AlertTriangle,
+  CheckCircle2,
+  FileText,
+  MousePointerClick,
+  Upload,
+} from "lucide-react";
 import {
   LineChart,
   Line,
@@ -15,8 +23,11 @@ import {
 import { db } from "@/lib/offline/db";
 import { pullDataForFarm } from "@/lib/offline/pull";
 import { useAuth } from "@/hooks/useAuth";
+import { buildPilotMetricsSummary } from "@/lib/telemetry/pilotMetrics";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+
+const EMPTY_LIST: never[] = [];
 
 function resolveRejectionDomain(table: string, reasonCode?: string): string {
   const reason = (reasonCode || "").toUpperCase();
@@ -73,17 +84,38 @@ const Dashboard = () => {
         .count();
     }, [activeFarmId]) || 0;
 
-  const queueGestures =
-    useLiveQuery(async () => {
-      if (!activeFarmId) return [];
-      return db.queue_gestures.where("fazenda_id").equals(activeFarmId).toArray();
-    }, [activeFarmId]) || [];
+  const queueGesturesQuery = useLiveQuery(async () => {
+    if (!activeFarmId) return [];
+    return db.queue_gestures.where("fazenda_id").equals(activeFarmId).toArray();
+  }, [activeFarmId]);
 
-  const queueRejections =
-    useLiveQuery(async () => {
-      if (!activeFarmId) return [];
-      return db.queue_rejections.where("fazenda_id").equals(activeFarmId).toArray();
-    }, [activeFarmId]) || [];
+  const queueRejectionsQuery = useLiveQuery(async () => {
+    if (!activeFarmId) return [];
+    return db.queue_rejections.where("fazenda_id").equals(activeFarmId).toArray();
+  }, [activeFarmId]);
+
+  const queueGestures = useMemo(
+    () => queueGesturesQuery ?? EMPTY_LIST,
+    [queueGesturesQuery],
+  );
+  const queueRejections = useMemo(
+    () => queueRejectionsQuery ?? EMPTY_LIST,
+    [queueRejectionsQuery],
+  );
+
+  const pilotEventsQuery = useLiveQuery(async () => {
+    if (!activeFarmId) return [];
+    const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    return db.metrics_events
+      .where("[fazenda_id+created_at]")
+      .between([activeFarmId, since], [activeFarmId, "\uffff"], true, true)
+      .toArray();
+  }, [activeFarmId]);
+
+  const pilotEvents = useMemo(
+    () => pilotEventsQuery ?? EMPTY_LIST,
+    [pilotEventsQuery],
+  );
 
   const pesagemData =
     useLiveQuery(async () => {
@@ -186,6 +218,25 @@ const Dashboard = () => {
       .sort((a, b) => b.count - a.count)
       .slice(0, 8);
   }, [queueRejections]);
+
+  const pilotMetrics = useMemo(() => {
+    return buildPilotMetricsSummary(pilotEvents);
+  }, [pilotEvents]);
+
+  const routeLabel = (route: string) => {
+    const labels: Record<string, string> = {
+      "/home": "Hoje",
+      "/registrar": "Registrar",
+      "/agenda": "Agenda",
+      "/animais": "Animais",
+      "/lotes": "Lotes",
+      "/pastos": "Pastos",
+      "/relatorios": "Resumo",
+      "/financeiro": "Financeiro",
+      "/onboarding-inicial": "Onboarding",
+    };
+    return labels[route] ?? route;
+  };
 
   return (
     <div className="space-y-6">
@@ -343,6 +394,145 @@ const Dashboard = () => {
                 <Bar dataKey="qtd" fill="#10b981" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Indicadores do Piloto (7 dias)</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {pilotMetrics.totalEvents === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                Ainda nao ha telemetria local suficiente para resumir uso e falhas desta fazenda.
+              </p>
+            ) : (
+              <>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="rounded-md border p-3">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <MousePointerClick className="h-4 w-4" />
+                      Paginas abertas
+                    </div>
+                    <strong className="mt-2 block text-2xl">{pilotMetrics.pageViews}</strong>
+                    <span className="text-xs text-muted-foreground">
+                      {pilotMetrics.activeDays} dia(s) com uso
+                    </span>
+                  </div>
+
+                  <div className="rounded-md border p-3">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Upload className="h-4 w-4" />
+                      Importacoes
+                    </div>
+                    <strong className="mt-2 block text-2xl">
+                      {pilotMetrics.importedRecords}
+                    </strong>
+                    <span className="text-xs text-muted-foreground">
+                      {pilotMetrics.importsCompleted} carga(s) concluida(s)
+                    </span>
+                  </div>
+
+                  <div className="rounded-md border p-3">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <FileText className="h-4 w-4" />
+                      Relatorios compartilhados
+                    </div>
+                    <strong className="mt-2 block text-2xl">
+                      {pilotMetrics.reportsShared}
+                    </strong>
+                    <span className="text-xs text-muted-foreground">
+                      {pilotMetrics.reportExports} CSV + {pilotMetrics.reportPrints} impressos
+                    </span>
+                  </div>
+
+                  <div className="rounded-md border p-3">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <AlertTriangle className="h-4 w-4" />
+                      Falhas de sync
+                    </div>
+                    <strong className="mt-2 block text-2xl">
+                      {pilotMetrics.syncFailures}
+                    </strong>
+                    <span className="text-xs text-muted-foreground">
+                      {pilotMetrics.syncSuccesses} sucesso(s) no periodo
+                    </span>
+                  </div>
+                </div>
+
+                <div className="rounded-md border p-3 text-sm text-muted-foreground">
+                  {pilotMetrics.totalEvents} evento(s) de telemetria local agregados no periodo.
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Rotas e Alertas do Piloto</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-3">
+              <div className="text-sm font-medium">Rotas mais usadas</div>
+              {pilotMetrics.topRoutes.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  Sem navegacao registrada ainda.
+                </p>
+              ) : (
+                pilotMetrics.topRoutes.map((item) => (
+                  <div key={item.label} className="space-y-1">
+                    <div className="flex items-center justify-between gap-3 text-sm">
+                      <span>{routeLabel(item.label)}</span>
+                      <span className="text-muted-foreground">{item.count}</span>
+                    </div>
+                    <Progress
+                      value={(item.count / Math.max(pilotMetrics.topRoutes[0]?.count ?? 1, 1)) * 100}
+                    />
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="space-y-3">
+              <div className="text-sm font-medium">Importacoes por entidade</div>
+              {pilotMetrics.importsByEntity.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  Nenhuma importacao concluida no periodo.
+                </p>
+              ) : (
+                pilotMetrics.importsByEntity.map((item) => (
+                  <div
+                    key={item.label}
+                    className="flex items-center justify-between rounded-md border p-3 text-sm"
+                  >
+                    <span className="capitalize">{item.label}</span>
+                    <strong>{item.count}</strong>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="space-y-3">
+              <div className="text-sm font-medium">Falhas registradas</div>
+              {pilotMetrics.failuresByType.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  Nenhuma falha instrumentada nos ultimos 7 dias.
+                </p>
+              ) : (
+                pilotMetrics.failuresByType.map((item) => (
+                  <div
+                    key={item.label}
+                    className="flex items-center justify-between rounded-md border p-3 text-sm"
+                  >
+                    <span className="font-mono">{item.label}</span>
+                    <strong>{item.count}</strong>
+                  </div>
+                ))
+              )}
+            </div>
           </CardContent>
         </Card>
       </div>

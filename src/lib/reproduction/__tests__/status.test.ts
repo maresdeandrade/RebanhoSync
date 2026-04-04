@@ -2,12 +2,13 @@
 import { describe, it, expect } from "vitest";
 import { computeReproStatus } from "../status";
 import type { ReproEventJoined } from "../selectors";
+import type { ReproTipoEnum } from "@/lib/offline/types";
 
 // Helper
 const createEvent = (
   occurred_at: string, 
-  type: string, 
-  payload: any = {}
+  type: ReproTipoEnum, 
+  payload: Record<string, unknown> = {}
 ): ReproEventJoined => ({
   id: crypto.randomUUID(),
   fazenda_id: 'f1',
@@ -16,7 +17,7 @@ const createEvent = (
   // ... boilerplate
   client_id: 'c1', client_op_id: 'o1', client_tx_id: 't1', client_recorded_at: occurred_at, server_received_at: occurred_at, created_at: occurred_at, updated_at: occurred_at, deleted_at: null, animal_id: 'a1', lote_id: null, source_task_id: null, source_tx_id: null, source_client_op_id: null, corrige_evento_id: null, observacoes: null, payload: {},
   details: {
-    evento_id: 'x', fazenda_id: 'f1', tipo: type as any, macho_id: null, 
+    evento_id: 'x', fazenda_id: 'f1', tipo: type, macho_id: null, 
     payload,
     client_id: 'c1', client_op_id: 'o1', client_tx_id: 't1', client_recorded_at: occurred_at, server_received_at: occurred_at, created_at: occurred_at, updated_at: occurred_at, deleted_at: null,
   }

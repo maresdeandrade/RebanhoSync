@@ -1,0 +1,155 @@
+import { buildEventGesture } from "@/lib/events/buildEventGesture";
+import type { Animal, OperationInput } from "@/lib/offline/types";
+import {
+  getAnimalPayloadRecord,
+  getBirthEventId,
+  getNeonatalSetup,
+} from "@/lib/reproduction/neonatal";
+
+export interface PostPartumCalfDraft {
+  calfId: string;
+  identificacao: string;
+  nome: string;
+  loteId: string | null;
+  pesoKg: string;
+  curaUmbigo: boolean;
+}
+
+interface BuildPostPartumOpsInput {
+  fazendaId: string;
+  mother: Pick<Animal, "id" | "identificacao">;
+  calves: Pick<
+    Animal,
+    "id" | "identificacao" | "nome" | "lote_id" | "pai_id" | "payload"
+  >[];
+  drafts: PostPartumCalfDraft[];
+  occurredAt?: string;
+  birthEventId?: string | null;
+}
+
+interface PostPartumBuildResult {
+  ops: OperationInput[];
+  weighedCount: number;
+  umbigoCount: number;
+}
+
+function parseWeight(value: string): number | null {
+  const normalized = value.replace(",", ".").trim();
+  if (!normalized) return null;
+
+  const parsed = Number.parseFloat(normalized);
+  if (!Number.isFinite(parsed) || parsed <= 0) return null;
+
+  return parsed;
+}
+
+export function buildPostPartumOps({
+  fazendaId,
+  mother,
+  calves,
+  drafts,
+  occurredAt = new Date().toISOString(),
+  birthEventId = null,
+}: BuildPostPartumOpsInput): PostPartumBuildResult {
+  const calfMap = new Map(calves.map((calf) => [calf.id, calf]));
+  const ops: OperationInput[] = [];
+  let weighedCount = 0;
+  let umbigoCount = 0;
+
+  for (const draft of drafts) {
+    const calf = calfMap.get(draft.calfId);
+    if (!calf) continue;
+
+    const currentPayload = getAnimalPayloadRecord(calf.payload);
+    const currentNeonatalSetup = getNeonatalSetup(calf.payload) ?? {};
+    const currentBirthEventId = getBirthEventId(calf.payload);
+    const pesoKg = parseWeight(draft.pesoKg);
+    const umbigoAlreadyRecorded =
+      typeof currentNeonatalSetup.umbigo_curado_at === "string";
+    const shouldRegisterUmbigo = draft.curaUmbigo && !umbigoAlreadyRecorded;
+
+    ops.push({
+      table: "animais",
+      action: "UPDATE",
+      record: {
+        id: calf.id,
+        identificacao: draft.identificacao.trim() || calf.identificacao,
+        nome: draft.nome.trim() || null,
+        lote_id: draft.loteId,
+        payload: {
+          ...currentPayload,
+          neonatal_setup: {
+            ...currentNeonatalSetup,
+            completed_at: occurredAt,
+            birth_event_id: birthEventId ?? currentBirthEventId,
+            mother_id: mother.id,
+            father_id: calf.pai_id ?? null,
+            initial_lote_id: draft.loteId,
+            initial_weight_kg:
+              pesoKg !== null
+                ? pesoKg
+                : (currentNeonatalSetup.initial_weight_kg ?? null),
+            initial_weight_recorded_at:
+              pesoKg !== null
+                ? occurredAt
+                : (currentNeonatalSetup.initial_weight_recorded_at ?? null),
+            umbigo_curado_at:
+              shouldRegisterUmbigo
+                ? occurredAt
+                : (currentNeonatalSetup.umbigo_curado_at ?? null),
+          },
+        },
+      },
+    });
+
+    if (pesoKg !== null) {
+      const built = buildEventGesture({
+        dominio: "pesagem",
+        fazendaId,
+        animalId: calf.id,
+        loteId: draft.loteId,
+        occurredAt,
+        observacoes: `Pesagem neonatal apos parto da matriz ${mother.identificacao}`,
+        pesoKg,
+        payload: {
+          fase: "neonatal",
+          birth_event_id: birthEventId ?? currentBirthEventId,
+          mother_id: mother.id,
+          father_id: calf.pai_id,
+        },
+      });
+
+      ops.push(...built.ops);
+      weighedCount += 1;
+    }
+
+    if (shouldRegisterUmbigo) {
+      const built = buildEventGesture({
+        dominio: "sanitario",
+        fazendaId,
+        animalId: calf.id,
+        loteId: draft.loteId,
+        occurredAt,
+        tipo: "medicamento",
+        produto: "Cura de umbigo",
+        observacoes: `Cura de umbigo registrada no pos-parto da matriz ${mother.identificacao}`,
+        payload: {
+          fase: "neonatal",
+          procedimento: "cura_umbigo",
+          birth_event_id: birthEventId ?? currentBirthEventId,
+          mother_id: mother.id,
+          father_id: calf.pai_id,
+        },
+      });
+
+      ops.push(...built.ops);
+      umbigoCount += 1;
+    }
+  }
+
+  return {
+    ops,
+    weighedCount,
+    umbigoCount,
+  };
+}

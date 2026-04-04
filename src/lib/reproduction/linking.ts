@@ -2,6 +2,10 @@
 import { isPayloadV1, ReproLinkMethod } from "./types";
 import type { ReproEventJoined } from "./selectors";
 
+type LegacyDiagnosticPayload = {
+  diagnostico_resultado?: unknown;
+};
+
 /**
  * ALGORITHM A: Find Candidate Service for Diagnostic
  * Logic: Latest service (Cobertura/IA) occurred on or before diagnostic date.
@@ -96,5 +100,5 @@ function isPositiveDiag(e: ReproEventJoined): boolean {
     return p.resultado === 'positivo';
   }
   // Legacy fallback
-  return (p as any).diagnostico_resultado === 'positivo';
+  return (p as LegacyDiagnosticPayload).diagnostico_resultado === 'positivo';
 }

@@ -1,12 +1,21 @@
-import { useState, useMemo } from "react";
+import { useMemo, useState } from "react";
 import { type Collection } from "dexie";
 import { useLiveQuery } from "dexie-react-hooks";
-import { db } from "@/lib/offline/db";
-import { type Animal } from "@/lib/offline/types";
-import { getActiveFarmId } from "@/lib/storage";
 import { Link, useNavigate } from "react-router-dom";
-import { Input } from "@/components/ui/input";
+import {
+  Search,
+  Plus,
+  ChevronRight,
+  FilterX,
+  PawPrint,
+  Upload,
+  CornerDownRight,
+} from "lucide-react";
+import { AnimalCategoryBadge } from "@/components/animals/AnimalCategoryBadge";
+import { AnimalKinshipBadges } from "@/components/animals/AnimalKinshipBadges";
+import { EmptyState } from "@/components/EmptyState";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -23,12 +32,15 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Search, Plus, ChevronRight, FilterX, PawPrint } from "lucide-react";
+import { classificarAnimal, getLabelCategoria } from "@/lib/domain/categorias";
+import { buildAnimalFamilyRows } from "@/lib/animals/familyOrder";
+import { db } from "@/lib/offline/db";
+import { type Animal } from "@/lib/offline/types";
+import { getActiveFarmId } from "@/lib/storage";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { useLotes } from "@/hooks/useLotes";
-import { EmptyState } from "@/components/EmptyState";
+import { cn } from "@/lib/utils";
 
-// Moved outside component to avoid re-creation on render
 const calcularIdade = (
   dataNascimento: string | null | undefined,
 ): string | null => {
@@ -51,62 +63,90 @@ const Animais = () => {
   const [loteFilter, setLoteFilter] = useState<string>("all");
   const [sexoFilter, setSexoFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-
-  // P1.2 FIX: Debounce search to avoid query on every keystroke
   const debouncedSearch = useDebouncedValue(search, 300);
-
-  // P2.4 FIX: Use centralized useLotes hook
+  const activeFarmId = getActiveFarmId();
   const lotes = useLotes();
+  const categorias = useLiveQuery(async () => {
+    if (!activeFarmId) return [];
 
-  // P1.1 FIX: Pre-compute Map for O(n) lookup instead of O(n²)
+    return await db.state_categorias_zootecnicas
+      .where("fazenda_id")
+      .equals(activeFarmId)
+      .filter((categoria) => !categoria.deleted_at && categoria.ativa)
+      .toArray();
+  }, [activeFarmId]);
+  const animaisFamilia = useLiveQuery(async () => {
+    let collection: Collection<Animal, string>;
+
+    if (activeFarmId) {
+      collection = db.state_animais.where("fazenda_id").equals(activeFarmId);
+    } else {
+      collection = db.state_animais.toCollection();
+    }
+
+    return await collection.filter((animal) => !animal.deleted_at).toArray();
+  }, [activeFarmId]);
+
   const lotesMap = useMemo(
-    () => new Map(lotes?.map((l) => [l.id, l])),
+    () => new Map((lotes ?? []).map((lote) => [lote.id, lote])),
     [lotes],
   );
+  const animaisMap = useMemo(
+    () => new Map((animaisFamilia ?? []).map((animal) => [animal.id, animal])),
+    [animaisFamilia],
+  );
+  const calvesByMother = useMemo(() => {
+    const map = new Map<string, Animal[]>();
+
+    for (const animal of animaisFamilia ?? []) {
+      if (!animal.mae_id) continue;
+      const current = map.get(animal.mae_id) ?? [];
+      current.push(animal);
+      map.set(animal.mae_id, current);
+    }
+
+    return map;
+  }, [animaisFamilia]);
 
   const animais = useLiveQuery(async () => {
     let collection: Collection<Animal, string>;
-    const activeFarmId = getActiveFarmId();
 
     if (activeFarmId) {
-      // ⚡ Bolt: Use compound index for specific lote filter (O(1) vs O(N))
       if (loteFilter !== "all" && loteFilter !== "none") {
         collection = db.state_animais
           .where("[fazenda_id+lote_id]")
           .equals([activeFarmId, loteFilter]);
       } else {
-        // Filter by farm using index to avoid scanning other farms' data
         collection = db.state_animais.where("fazenda_id").equals(activeFarmId);
       }
+    } else if (loteFilter !== "all" && loteFilter !== "none") {
+      collection = db.state_animais.where("lote_id").equals(loteFilter);
     } else {
-      // Fallback for safety (though activeFarmId should generally exist)
-      if (loteFilter !== "all" && loteFilter !== "none") {
-        collection = db.state_animais.where("lote_id").equals(loteFilter);
-      } else {
-        collection = db.state_animais.toCollection();
-      }
+      collection = db.state_animais.toCollection();
     }
 
     if (debouncedSearch) {
       const searchLower = debouncedSearch.toLowerCase();
-      collection = collection.filter((a) =>
-        a.identificacao?.toLowerCase().includes(searchLower),
+      collection = collection.filter((animal) =>
+        animal.identificacao?.toLowerCase().includes(searchLower),
       );
     }
 
-    // Apply other filters in DB chain
     if (loteFilter === "none") {
-      collection = collection.filter((a) => !a.lote_id);
+      collection = collection.filter((animal) => !animal.lote_id);
     }
     if (sexoFilter !== "all") {
-      collection = collection.filter((a) => a.sexo === sexoFilter);
+      collection = collection.filter((animal) => animal.sexo === sexoFilter);
     }
     if (statusFilter !== "all") {
-      collection = collection.filter((a) => a.status === statusFilter);
+      collection = collection.filter((animal) => animal.status === statusFilter);
     }
 
     return await collection.toArray();
-  }, [debouncedSearch, loteFilter, sexoFilter, statusFilter]);
+  }, [activeFarmId, debouncedSearch, loteFilter, sexoFilter, statusFilter]);
+  const animalRows = useMemo(() => {
+    return buildAnimalFamilyRows(animais ?? [], animaisFamilia ?? []);
+  }, [animais, animaisFamilia]);
 
   const hasFilters =
     search ||
@@ -114,17 +154,23 @@ const Animais = () => {
     sexoFilter !== "all" ||
     statusFilter !== "all";
 
-  // Show empty state if no animals and no filters
   if (!animais || (animais.length === 0 && !hasFilters)) {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between gap-4">
           <h1 className="text-2xl font-bold">Animais</h1>
-          <Link to="/animais/novo">
-            <Button size="sm">
-              <Plus className="h-4 w-4 mr-2" /> Novo
-            </Button>
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link to="/animais/importar">
+              <Button size="sm" variant="outline">
+                <Upload className="mr-2 h-4 w-4" /> Importar planilha
+              </Button>
+            </Link>
+            <Link to="/animais/novo">
+              <Button size="sm">
+                <Plus className="mr-2 h-4 w-4" /> Novo
+              </Button>
+            </Link>
+          </div>
         </div>
         <EmptyState
           icon={PawPrint}
@@ -141,21 +187,28 @@ const Animais = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center just ify-between gap-4">
+      <div className="flex items-center justify-between gap-4">
         <h1 className="text-2xl font-bold">Animais</h1>
-        <Link to="/animais/novo">
-          <Button size="sm">
-            <Plus className="h-4 w-4 mr-2" /> Novo
-          </Button>
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link to="/animais/importar">
+            <Button size="sm" variant="outline">
+              <Upload className="mr-2 h-4 w-4" /> Importar planilha
+            </Button>
+          </Link>
+          <Link to="/animais/novo">
+            <Button size="sm">
+              <Plus className="mr-2 h-4 w-4" /> Novo
+            </Button>
+          </Link>
+        </div>
       </div>
 
-      <div className="flex flex-col md:flex-row gap-3">
+      <div className="flex flex-col gap-3 md:flex-row">
         <div className="relative flex-1">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
-            aria-label="Buscar animais por identificação"
-            placeholder="Buscar por identificação..."
+            aria-label="Buscar animais por identificacao"
+            placeholder="Buscar por identificacao..."
             className="pl-9"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -167,11 +220,11 @@ const Animais = () => {
               <SelectValue placeholder="Lote" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Todos os Lotes</SelectItem>
-              <SelectItem value="none">Sem Lote</SelectItem>
-              {lotes?.map((l) => (
-                <SelectItem key={l.id} value={l.id}>
-                  {l.nome}
+              <SelectItem value="all">Todos os lotes</SelectItem>
+              <SelectItem value="none">Sem lote</SelectItem>
+              {lotes?.map((lote) => (
+                <SelectItem key={lote.id} value={lote.id}>
+                  {lote.nome}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -184,7 +237,7 @@ const Animais = () => {
             <SelectContent>
               <SelectItem value="all">Ambos</SelectItem>
               <SelectItem value="M">Macho</SelectItem>
-              <SelectItem value="F">Fêmea</SelectItem>
+              <SelectItem value="F">Femea</SelectItem>
             </SelectContent>
           </Select>
 
@@ -218,75 +271,120 @@ const Animais = () => {
         </div>
       </div>
 
-      <div className="border rounded-xl bg-card overflow-hidden">
+      <div className="overflow-hidden rounded-xl border bg-card">
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/50">
-                <TableHead className="w-[150px]">Identificação</TableHead>
+                <TableHead className="w-[150px]">Identificacao</TableHead>
+                <TableHead>Categoria</TableHead>
                 <TableHead>Idade</TableHead>
                 <TableHead>Lote</TableHead>
-                <TableHead>Sexo</TableHead>
+                <TableHead>Vinculo</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead className="text-right">Ação</TableHead>
+                <TableHead className="text-right">Acao</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {animais?.map((animal) => (
-                <TableRow
-                  key={animal.id}
-                  className="hover:bg-muted/30 transition-colors"
-                >
-                  <TableCell className="font-bold">
-                    {animal.identificacao}
-                  </TableCell>
-                  <TableCell>
-                    <span className="text-xs text-muted-foreground">
-                      {calcularIdade(animal.data_nascimento) || "-"}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    {animal.lote_id ? (
-                      <Badge variant="secondary" className="font-normal">
-                        {lotesMap.get(animal.lote_id)?.nome || "..."}
-                      </Badge>
-                    ) : (
-                      <span className="text-muted-foreground italic text-xs">
-                        Sem lote
-                      </span>
+              {animalRows.map(({ animal, depth }) => {
+                const categoriaAtual = categorias
+                  ? classificarAnimal(animal, categorias)
+                  : null;
+                const categoriaLabel = categoriaAtual
+                  ? getLabelCategoria(categoriaAtual)
+                  : null;
+                const mother = animal.mae_id
+                  ? animaisMap.get(animal.mae_id) ?? null
+                  : null;
+                const father = animal.pai_id
+                  ? animaisMap.get(animal.pai_id) ?? null
+                  : null;
+                const calves = calvesByMother.get(animal.id) ?? [];
+
+                return (
+                  <TableRow
+                    key={animal.id}
+                    className={cn(
+                      "transition-colors hover:bg-muted/30",
+                      depth > 0 && "bg-muted/15",
                     )}
-                  </TableCell>
-                  <TableCell>
-                    {animal.sexo === "M" ? "Macho" : "Fêmea"}
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant={
-                        animal.status === "ativo" ? "outline" : "secondary"
-                      }
-                      className="capitalize"
-                    >
-                      {animal.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Link to={`/animais/${animal.id}`}>
-                      <Button
-                        aria-label={`Ver detalhes do animal ${animal.identificacao}`}
-                        variant="ghost"
-                        size="icon"
-                        className="rounded-full"
+                  >
+                    <TableCell className="font-bold">
+                      <div
+                        className="flex items-center gap-2"
+                        style={{ paddingLeft: `${depth * 18}px` }}
                       >
-                        <ChevronRight className="h-4 w-4" />
-                      </Button>
-                    </Link>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {animais?.length === 0 && hasFilters && (
+                        {depth > 0 && (
+                          <CornerDownRight className="h-4 w-4 text-muted-foreground" />
+                        )}
+                        <div className="space-y-0.5">
+                          <div>{animal.identificacao}</div>
+                          {depth > 0 && mother && (
+                            <div className="text-[11px] font-normal text-muted-foreground">
+                              junto da matriz {mother.identificacao}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <AnimalCategoryBadge
+                        animal={animal}
+                        categoriaLabel={categoriaLabel}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-xs text-muted-foreground">
+                        {calcularIdade(animal.data_nascimento) || "-"}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      {animal.lote_id ? (
+                        <Badge variant="secondary" className="font-normal">
+                          {lotesMap.get(animal.lote_id)?.nome || "..."}
+                        </Badge>
+                      ) : (
+                        <span className="text-xs italic text-muted-foreground">
+                          Sem lote
+                        </span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <AnimalKinshipBadges
+                        mother={mother}
+                        father={father}
+                        calves={calves}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={
+                          animal.status === "ativo" ? "outline" : "secondary"
+                        }
+                        className="capitalize"
+                      >
+                        {animal.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Link to={`/animais/${animal.id}`}>
+                        <Button
+                          aria-label={`Ver detalhes do animal ${animal.identificacao}`}
+                          variant="ghost"
+                          size="icon"
+                          className="rounded-full"
+                        >
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                      </Link>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+              {animalRows.length === 0 && hasFilters && (
                 <TableRow>
                   <TableCell
-                    colSpan={6}
+                    colSpan={7}
                     className="h-32 text-center text-muted-foreground"
                   >
                     Nenhum animal encontrado com os filtros aplicados.

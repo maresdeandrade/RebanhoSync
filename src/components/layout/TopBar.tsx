@@ -1,15 +1,17 @@
+import { useEffect, useState } from "react";
+import { useLiveQuery } from "dexie-react-hooks";
+import { Link } from "react-router-dom";
 import {
-  Cloud,
-  CloudOff,
-  RefreshCw,
-  Menu,
   AlertTriangle,
   Building2,
+  Cloud,
+  CloudOff,
+  Menu,
+  RefreshCw,
   Settings,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,12 +20,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useLiveQuery } from "dexie-react-hooks";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { db } from "@/lib/offline/db";
-import { Link } from "react-router-dom";
-import { useEffect, useState } from "react";
-import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/hooks/useAuth";
 
 interface TopBarProps {
   onMenuClick?: () => void;
@@ -37,11 +37,25 @@ export const TopBar = ({ onMenuClick }: TopBarProps) => {
   const [userName, setUserName] = useState<string | null>(null);
 
   const pendingCount =
-    useLiveQuery(() =>
-      db.queue_gestures.where("status").equals("PENDING").count(),
-    ) || 0;
+    useLiveQuery(async () => {
+      if (!activeFarmId) return 0;
 
-  const rejectionCount = useLiveQuery(() => db.queue_rejections.count()) || 0;
+      const gestures = await db.queue_gestures
+        .where("fazenda_id")
+        .equals(activeFarmId)
+        .toArray();
+
+      return gestures.filter(
+        (gesture) =>
+          gesture.status === "PENDING" || gesture.status === "SYNCING",
+      ).length;
+    }, [activeFarmId]) || 0;
+
+  const rejectionCount =
+    useLiveQuery(async () => {
+      if (!activeFarmId) return 0;
+      return db.queue_rejections.where("fazenda_id").equals(activeFarmId).count();
+    }, [activeFarmId]) || 0;
 
   useEffect(() => {
     const fetchFarmName = async () => {
@@ -101,7 +115,7 @@ export const TopBar = ({ onMenuClick }: TopBarProps) => {
     if (!name) return "?";
     return name
       .split(" ")
-      .map((n) => n[0])
+      .map((part) => part[0])
       .join("")
       .toUpperCase()
       .slice(0, 2);
@@ -132,17 +146,17 @@ export const TopBar = ({ onMenuClick }: TopBarProps) => {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start">
-                <DropdownMenuLabel>Fazenda Atual</DropdownMenuLabel>
+                <DropdownMenuLabel>Fazenda atual</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
                   <Link to="/select-fazenda" className="w-full cursor-pointer">
-                    Trocar Fazenda
+                    Trocar fazenda
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link to="/editar-fazenda" className="w-full cursor-pointer">
                     <Settings className="h-4 w-4 mr-2" />
-                    Editar Fazenda
+                    Editar fazenda
                   </Link>
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -178,10 +192,14 @@ export const TopBar = ({ onMenuClick }: TopBarProps) => {
           )}
 
           {pendingCount > 0 && (
-            <Button variant="ghost" size="sm" className="gap-2 text-amber-600">
-              <RefreshCw className="h-4 w-4 animate-spin-slow" />
-              <span className="hidden sm:inline">{pendingCount} pendentes</span>
-            </Button>
+            <Link to="/reconciliacao">
+              <Button variant="ghost" size="sm" className="gap-2 text-amber-600">
+                <RefreshCw className="h-4 w-4 animate-spin-slow" />
+                <span className="hidden sm:inline">
+                  {pendingCount} sincronizando
+                </span>
+              </Button>
+            </Link>
           )}
 
           <Link to="/perfil">

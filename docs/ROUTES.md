@@ -1,58 +1,96 @@
-# Mapa de Rotas (Routes)
+# Mapa de Rotas
 
-> **Status:** Derivado (Inventário)
+> **Status:** Derivado (Inventario)
 > **Fonte de Verdade:** `src/App.tsx`
-> **Última Atualização:** 2026-02-15
+> **Ultima Atualizacao:** 2026-04-01
 
-Inventário das rotas da aplicação, proteções de acesso e componentes associados.
+## Rotas publicas
 
----
+| Caminho | Componente |
+| --- | --- |
+| `/` | `Index` |
+| `/login` | `Login` |
+| `/signup` | `SignUp` |
+| `/invites/:token` | `AcceptInvite` |
 
-## 1. Rotas Públicas
+## Rotas autenticadas sem fazenda ativa
 
-Rotas acessíveis sem autenticação.
+| Caminho | Guard | Componente |
+| --- | --- | --- |
+| `/select-fazenda` | `RequireAuth` | `SelectFazenda` |
+| `/criar-fazenda` | `RequireAuth` | `CriarFazenda` |
 
-| Caminho      | Componente | Descrição                          |
-| :----------- | :--------- | :--------------------------------- |
-| `/login`     | `Login`    | Tela de login                      |
-| `/register`  | `Register` | Tela de cadastro de novo usuário   |
-| `/bem-vindo` | `Welcome`  | Tela de boas-vindas (pós-cadastro) |
+## Rotas de fazenda ativa
 
-## 2. Rotas Protegidas (Auth Required)
+Todas abaixo rodam dentro de `RequireAuth` + `RequireFarm` + `AppShell`.
 
-Rotas que exigem autenticação (`RequireAuth`), mas não necessariamente uma fazenda selecionada.
+### Operacao principal
 
-| Caminho          | Guard         | Componente   | Descrição                |
-| :--------------- | :------------ | :----------- | :----------------------- |
-| `/fazendas`      | `RequireAuth` | `FarmSelect` | Seleção de fazenda ativa |
-| `/fazendas/nova` | `RequireAuth` | `FarmCreate` | Criação de nova fazenda  |
+| Caminho | Componente |
+| --- | --- |
+| `/home` | `Home` |
+| `/onboarding-inicial` | `OnboardingInicial` |
+| `/registrar` | `Registrar` |
+| `/agenda` | `Agenda` |
+| `/eventos` | `Eventos` |
+| `/dashboard` | `Dashboard` |
+| `/relatorios` | `Relatorios` |
+| `/reconciliacao` | `Reconciliacao` |
 
-## 3. Rotas da Fazenda (Farm Required)
+### Animais
 
-Rotas que exigem autenticação E uma fazenda ativa (`RequireFarm`).
-Renderizadas dentro do `AppShell` (Layout com Sidebar/Header).
+| Caminho | Componente |
+| --- | --- |
+| `/animais` | `Animais` |
+| `/animais/importar` | `AnimaisImportar` |
+| `/animais/novo` | `AnimalNovo` |
+| `/animais/:id` | `AnimalDetalhe` |
+| `/animais/:id/editar` | `AnimalEditar` |
+| `/animais/:id/reproducao` | `AnimalReproducao` |
+| `/animais/:id/pos-parto` | `AnimalPosParto` |
 
-| Caminho          | Componente      | Descrição                                           | Acesso        |
-| :--------------- | :-------------- | :-------------------------------------------------- | :------------ |
-| `/`              | `Home`          | Dashboard principal                                 | Todos         |
-| `/animais`       | `Animais`       | Listagem de animais                                 | Todos         |
-| `/animais/:id`   | `AnimalDetalhe` | Detalhes do animal                                  | Todos         |
-| `/registrar`     | `Registrar`     | Registro de manejo (Sanitário/Pesagem/Movimentação) | Todos         |
-| `/pastos`        | `Pastos`        | Gestão de pastos e lotação                          | Todos         |
-| `/lotes`         | `Lotes`         | Gestão de lotes                                     | Todos         |
-| `/agenda`        | `Agenda`        | Agenda de tarefas sanitárias/manejo                 | Todos         |
-| `/protocolos`    | `Protocolos`    | Biblioteca de protocolos sanitários                 | Manager/Owner |
-| `/financeiro`    | `Financeiro`    | Módulo financeiro (Placeholder)                     | Manager/Owner |
-| `/membros`       | `AdminMembros`  | Gestão de equipe e permissões                       | Owner         |
-| `/configuracoes` | `Configuracoes` | Configurações da fazenda                            | Manager/Owner |
+### Lotes e pastos
 
-## 4. Estrutura de Proteção (Guards)
+| Caminho | Componente |
+| --- | --- |
+| `/lotes` | `Lotes` |
+| `/lotes/importar` | `LotesImportar` |
+| `/lotes/novo` | `LoteNovo` |
+| `/lotes/:id` | `LoteDetalhe` |
+| `/lotes/:id/editar` | `LoteEditar` |
+| `/pastos` | `Pastos` |
+| `/pastos/importar` | `PastosImportar` |
+| `/pastos/novo` | `PastoNovo` |
+| `/pastos/:id` | `PastoDetalhe` |
+| `/pastos/:id/editar` | `PastoEditar` |
 
-- `AuthGate`: Componente wrapper que verifica estado de autenticação global.
-- `RequireAuth`: Redireciona para `/login` se não autenticado.
-- `RequireFarm`: Redireciona para `/fazendas` se autenticado mas sem `active_fazenda_id`.
-- `AppShell`: Fornece estrutura de navegação e contexto visual da fazenda.
+### Dominios auxiliares
 
----
+| Caminho | Componente |
+| --- | --- |
+| `/financeiro` | `Financeiro` |
+| `/contrapartes` | `Contrapartes` |
+| `/reproducao` | `ReproductionDashboard` |
+| `/protocolos-sanitarios` | `ProtocolosSanitarios` |
+| `/categorias` | `Categorias` |
+| `/categorias/novo` | `CategoriaNova` |
 
-> **Nota:** As permissões de acesso (Role Based Access Control) são aplicadas via RLS no backend e ocultação de elementos na UI, mas a proteção de rota no React Router é primariamente Autenticação + Seleção de Contexto.
+### Fazenda, perfil e membros
+
+| Caminho | Componente |
+| --- | --- |
+| `/perfil` | `Perfil` |
+| `/membros` | `Membros` |
+| `/admin/membros` | `AdminMembros` |
+| `/editar-fazenda` | `EditarFazenda` |
+
+## Fallback
+
+| Caminho | Componente |
+| --- | --- |
+| `*` | `NotFound` |
+
+## Observacoes
+
+- A protecao por papel acontece principalmente em UI + RLS; o roteamento React protege autenticacao e contexto de fazenda.
+- O menu efetivo tambem depende do modo de experiencia da fazenda e do papel atual.

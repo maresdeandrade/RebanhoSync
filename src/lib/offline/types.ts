@@ -80,6 +80,15 @@ export type AgendaSourceKindEnum = "manual" | "automatico";
 export type SanitarioTipoEnum = "vacinacao" | "vermifugacao" | "medicamento";
 export type ReproTipoEnum = "cobertura" | "IA" | "diagnostico" | "parto";
 export type FinanceiroTipoEnum = "compra" | "venda";
+export type PilotMetricStatus = "info" | "success" | "error";
+export type PilotMetricEventName =
+  | "page_view"
+  | "import_completed"
+  | "report_exported"
+  | "report_printed"
+  | "sync_success"
+  | "sync_rejected"
+  | "sync_error";
 
 // =========================================================
 // CORE ENTITIES (State Tables)
@@ -701,6 +710,18 @@ export interface Rejection {
   created_at: string;
 }
 
+export interface PilotMetricEvent {
+  id: string;
+  fazenda_id: string;
+  event_name: PilotMetricEventName;
+  status: PilotMetricStatus;
+  route: string | null;
+  entity: string | null;
+  quantity: number | null;
+  payload: Record<string, unknown>;
+  created_at: string;
+}
+
 // =========================================================
 // SYNC API TYPES (sync-batch Edge Function)
 // =========================================================
@@ -776,4 +797,3 @@ export const normalizeDateToISO = (dateStr: string | undefined | null): string |
   }
   return undefined;
 };
-

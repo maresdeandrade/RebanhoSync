@@ -1,115 +1,216 @@
-# Processo de Desenvolvimento (DevOS) — Capability-Centric
+# Processo de Desenvolvimento (DevOS) - Capability-Centric
 
 > **Status:** Normativo
-> **Fonte de Verdade (Execução):** GitHub (PRs, Issues, Projects)
-> **Fonte de Verdade (Análise):** docs/IMPLEMENTATION_STATUS.md → docs/TECH_DEBT.md → docs/ROADMAP.md → docs/review/RECONCILIACAO_REPORT.md
-> **Última Atualização:** <YYYY-MM-DD>
+> **Fonte de Verdade (Execucao):** GitHub (PRs, Issues e Projects)
+> **Fonte de Verdade (Analise):** `docs/IMPLEMENTATION_STATUS.md` -> `docs/TECH_DEBT.md` -> `docs/ROADMAP.md` -> `docs/review/RECONCILIACAO_REPORT.md`
+> **Ultima Atualizacao:** 2026-04-02
 
-Este documento define o sistema operacional de desenvolvimento do RebanhoSync, com governança capability-centric usando `capability_id` como join key determinístico.
+Este documento define o processo de desenvolvimento do RebanhoSync com governanca capability-centric, usando `capability_id` como chave de derivacao entre matriz analitica, divida tecnica, roadmap e reconciliacao.
 
-## 0) Princípio central
+## 0. Principio central
 
-**Toda mudança de código deve mapear para um `capability_id` (Catalog) ou `infra.*` (Out-of-catalog).**  
-O conjunto de gaps é definido mecanicamente na Matriz Analítica e deriva TECH_DEBT e ROADMAP. 
+Toda mudanca relevante de codigo deve se conectar a um `capability_id` do catalogo ou a um item `infra.*` quando estiver fora do catalogo funcional.
 
----
+Regra pratica:
 
-## 1) Taxonomia de documentos
+- o estado analitico nasce em `IMPLEMENTATION_STATUS.md`;
+- os gaps abertos viram itens em `TECH_DEBT.md`;
+- o recorte de execucao vem de `ROADMAP.md`;
+- a consistencia entre esses arquivos e auditada em `docs/review/RECONCILIACAO_REPORT.md`.
 
-### 1.1 Normativo (decide)
-- Define contrato/arquitetura/planos.
-- Mudança exige decisão explícita (ADR quando alterar contrato/arquitetura).
+## 1. Taxonomia da documentacao
 
-### 1.2 Derivado (mede)
-- Atualizado via processo governado (regen).
-- Deve conter header com Baseline consistente.
-- Exemplos do projeto (Rev D+):
-  - `docs/IMPLEMENTATION_STATUS.md` :contentReference[oaicite:2]{index=2}
-  - `docs/TECH_DEBT.md` :contentReference[oaicite:3]{index=3}
-  - `docs/ROADMAP.md` :contentReference[oaicite:4]{index=4}
-  - `docs/review/RECONCILIACAO_REPORT.md` :contentReference[oaicite:5]{index=5}
+### 1.1 Normativo
 
----
+Decide contratos, arquitetura e regras de negocio.
 
-## 2) Fonte de verdade analítica (derivação mecânica)
+Exemplos:
 
-### 2.1 Regra única de gap
-`gap(capability_id) = (E2E ≠ PASS) OR (qualquer camada aplicável ∈ {⚠️, ❌})`
+- `docs/ARCHITECTURE.md`
+- `docs/OFFLINE.md`
+- `docs/CONTRACTS.md`
+- `docs/DB.md`
+- `docs/RLS.md`
+- `docs/PROCESS.md`
 
-- Camadas `—` (N/A) não contam como gap e não geram Tech Debt. :contentReference[oaicite:6]{index=6}
+### 1.2 Derivado
 
-### 2.2 Pipeline de derivação
-IMPLEMENTATION_STATUS (Matriz Analítica)
-→ gap_set(capability_id)
-→ TECH_DEBT OPEN (Catalog)
-→ ROADMAP (6 semanas)
+Mede o estado do repositorio e deve ser mantido coerente por derivacao.
 
-Consistência é verificada no RECONCILIACAO_REPORT (hard checks). :contentReference[oaicite:7]{index=7}
+Exemplos:
 
----
+- `docs/IMPLEMENTATION_STATUS.md`
+- `docs/TECH_DEBT.md`
+- `docs/ROADMAP.md`
+- `docs/review/RECONCILIACAO_REPORT.md`
 
-## 3) GitHub Projects como “espelho operacional”
+### 1.3 Snapshot operacional
 
-### 3.1 Fonte de verdade vs execução
-- **Docs** são a verdade do que está OPEN/CLOSED e do porquê (evidência).
-- **GitHub Projects** organiza trabalho diário (status, prioridade, sequência).
+Resume o estado atual do produto e do repositorio para leitura humana rapida.
 
-### 3.2 Convenção de títulos (obrigatória)
-**Issues/PRs devem incluir `capability_id` no título:**
-- Formato: `[<capability_id>] <resumo curto>`
-- Ex.: `[movimentacao.anti_teleport_client] bloquear origem==destino no UI`
+Exemplos:
 
----
+- `README.md`
+- `docs/CURRENT_STATE.md`
+- `docs/STACK.md`
+- `docs/ROUTES.md`
+- `docs/REPO_MAP.md`
 
-## 4) Fluxo padrão (solo)
+### 1.4 Historico
 
-### 4.1 Selecionar trabalho
-1) Escolha um item em `TECH_DEBT OPEN` (Catalog ou Infra). :contentReference[oaicite:8]{index=8}
-2) Crie/atualize a Issue correspondente no GitHub (com `capability_id` e severidade).
+Material preservado para consulta, sem valor de verdade operacional.
+
+Exemplos:
+
+- `docs/archive/`
+- `docs/ADRs/`
+
+Observacao: `docs/review/` contem apenas os relatorios ainda usados pelos gates documentais. Auditorias antigas ficam em `docs/archive/`.
+
+## 2. Regra de derivacao analitica
+
+### 2.1 Regra unica de gap
+
+`gap(capability_id) = (E2E != PASS) OR (qualquer camada aplicavel em {warning, fail})`
+
+Regras complementares:
+
+- camadas marcadas como `N/A` nao contam como gap;
+- `infra.*` nao entra no score funcional nem no `gap_set`;
+- a secao editorial dos documentos ajuda na leitura, mas nao substitui a matriz analitica.
+
+### 2.2 Pipeline de derivacao
+
+`IMPLEMENTATION_STATUS` -> `gap_set(capability_id)` -> `TECH_DEBT OPEN` -> `ROADMAP` -> `RECONCILIACAO_REPORT`
+
+Se houver divergencia entre esses arquivos, o report de reconciliacao deve apontar o mismatch explicitamente.
+
+## 3. Espelho operacional no GitHub
+
+As docs sao a fonte de verdade do estado analitico. GitHub e o espelho operacional do trabalho em andamento.
+
+### 3.1 Convencao de titulos
+
+Issues e PRs devem trazer o identificador principal no titulo:
+
+- catalogo funcional: `[<capability_id>] resumo curto`
+- infraestrutura: `[infra.<tema>] resumo curto`
+
+Exemplos:
+
+- `[movimentacao.registro] fechar FK composta de lotes`
+- `[infra.ci] endurecer validacao de derivacao`
+
+### 3.2 Relacao entre backlog e execucao
+
+- `TECH_DEBT.md` define o conjunto consolidado de gaps abertos;
+- `ROADMAP.md` organiza a ordem sugerida de execucao;
+- GitHub Projects acompanha prioridade, status e responsavel.
+
+## 4. Fluxo padrao de trabalho
+
+### 4.1 Selecionar o alvo
+
+1. Escolher um item em `TECH_DEBT OPEN` ou no trilho `infra.*`.
+2. Confirmar qual `capability_id` ou `infra.*` sera atacado.
+3. Criar ou atualizar a Issue correspondente no GitHub.
 
 ### 4.2 Implementar
-- Faça mudanças em `src/**`, `supabase/migrations/**`, `supabase/functions/**` conforme necessário.
-- Garanta que toda mudança se conecta ao `capability_id` alvo.
 
-### 4.3 Quality Gates (antes do PR)
-- **Gate A: Baseline/Tree**
-  - working tree clean para regen de docs derivadas.
-- **Gate B: Derivação**
-  - `gap_set == TECH_DEBT OPEN (Catalog)`
-  - `ROADMAP == TECH_DEBT OPEN (Catalog + Infra)`
-- **Gate C: Contratos/Segurança**
-  - se tocar em migrations/functions/sync, atualizar evidências e reconciliação.
+- alterar codigo em `src/**`, `supabase/migrations/**` e `supabase/functions/**` conforme necessario;
+- manter coerencia com as fontes normativas em arquitetura, offline, contratos, banco e RLS;
+- quando houver mudanca de contrato ou invariante, abrir ADR.
 
-### 4.4 Regen de derivados (quando tocar em código)
-- Atualize derivados na ordem:
-  1) IMPLEMENTATION_STATUS
-  2) TECH_DEBT
-  3) ROADMAP
-  4) RECONCILIACAO_REPORT
-- Confirme hard checks na reconciliação. :contentReference[oaicite:9]{index=9}
+### 4.3 Quality gates antes de concluir
 
-### 4.5 Definition of Done (DoD)
-Um item (Issue/Project card) só pode ir para **Done** quando:
-- o `capability_id` deixa de estar no `gap_set` (ou item Infra é resolvido e marcado CLOSED), e
-- o regen move o item para CLOSED/resolve o gap na matriz, e
-- a reconciliação confirma consistência. 
+#### Gate A: Qualidade executavel
 
----
+- `pnpm run lint`
+- `pnpm test`
+- `pnpm run build`
 
-## 5) Regras para Infra/Out-of-catalog
+#### Gate B: Derivacao documental
 
-- `infra.*` não entra no `capability_score` nem no `gap_set`.
-- Continua sendo trabalho válido (impacta estabilidade), aparece em TECH_DEBT e ROADMAP como trilha Infra. 
+Quando houver mudanca nos docs derivados, garantir:
 
----
+- baseline coerente entre `IMPLEMENTATION_STATUS`, `TECH_DEBT`, `ROADMAP` e `RECONCILIACAO_REPORT`;
+- presenca de `capability_id` nas secoes derivadas;
+- consistencia entre `gap_set`, `TECH_DEBT OPEN` e `ROADMAP`.
 
-## 6) ADRs (quando usar)
-Crie ADR quando:
-- mudar contrato de sync/ordering/dedup/reason codes,
-- mudar modelo de dados canônico,
-- mudar invariants de RLS/RPC,
-- alterar baseline normativo (ex.: matriz canônica/plano unificação).
+Scripts relevantes:
 
-Template em `docs/ADRs/ADR-0000-template.md`.
+- `scripts/antigravity/validate_scoped_changes.sh`
+- `scripts/antigravity/validate_rev_d_headers.sh`
+- `scripts/antigravity/data_contract_audit.sh`
 
----
+#### Gate C: Contratos, seguranca e multi-tenant
+
+Se a mudanca tocar sync, migrations, RLS ou Edge Functions:
+
+- revisar isolamento por `fazenda_id`;
+- revisar FKs compostas;
+- revisar invariantes append-only e anti-teleporte;
+- atualizar as evidencias documentais quando necessario.
+
+### 4.4 Regen dos derivados
+
+Quando o trabalho alterar estado funcional relevante, atualizar os derivados nesta ordem:
+
+1. `docs/IMPLEMENTATION_STATUS.md`
+2. `docs/TECH_DEBT.md`
+3. `docs/ROADMAP.md`
+4. `docs/review/RECONCILIACAO_REPORT.md`
+
+Se a alteracao for apenas de apresentacao, limpeza de arquivos ou organizacao documental sem impacto funcional, nao ha obrigacao de mexer em todos os derivados.
+
+### 4.5 Definition of Done
+
+Um item so vai para concluido quando:
+
+- o codigo necessario esta implementado;
+- lint, test e build estao verdes;
+- o `capability_id` deixa de aparecer como gap, ou o item `infra.*` foi resolvido;
+- os docs derivados foram atualizados quando aplicavel;
+- a reconciliacao nao aponta inconsistencias abertas para aquele item.
+
+## 5. Regras para `infra.*`
+
+Itens `infra.*` cobrem estabilidade, DX, CI, documentacao operacional e hygiene do repositorio.
+
+Regras:
+
+- nao entram no `capability_score`;
+- podem aparecer em `TECH_DEBT.md` e `ROADMAP.md`;
+- devem ter descricao objetiva do risco e do impacto esperado.
+
+## 6. Quando abrir ADR
+
+Abrir ADR quando a mudanca alterar qualquer uma destas bases:
+
+- contrato do sync (`sync-batch`, ordering, deduplicacao, status codes);
+- modelo de dados canonico;
+- invariantes de RLS, RPC ou RBAC;
+- arquitetura offline-first ou estrategia Two Rails;
+- regras normativas que deixam de ser apenas implementacao local e passam a orientar o produto.
+
+Template: `docs/ADRs/ADR-0000-template.md`
+
+## 7. Hygiene do repositorio
+
+Para reduzir ruido e evitar drift:
+
+- nao versionar artefatos gerados como `dist/`, caches, `*.tsbuildinfo` e saidas temporarias;
+- manter `README.md` e `docs/CURRENT_STATE.md` como leitura inicial do estado atual;
+- usar `docs/archive/` para material historico sem valor operacional;
+- evitar espalhar relatorios temporarios na raiz do repositorio.
+
+## 8. Resumo operacional
+
+Em caso de duvida, a ordem de consulta deve ser:
+
+1. `README.md`
+2. `docs/CURRENT_STATE.md`
+3. documentos normativos (`ARCHITECTURE`, `OFFLINE`, `CONTRACTS`, `DB`, `RLS`)
+4. documentos derivados (`IMPLEMENTATION_STATUS`, `TECH_DEBT`, `ROADMAP`, `RECONCILIACAO_REPORT`)
+
+Esse encadeamento reduz confusao entre intencao, implementacao e historico.

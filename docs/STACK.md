@@ -1,76 +1,68 @@
-# Stack Tecnológico
+# Stack Tecnologico
 
-> **Status:** Derivado (Inventário)
+> **Status:** Derivado (Inventario)
 > **Fonte de Verdade:** `package.json`
-> **Última Atualização:** 2026-02-15
+> **Ultima Atualizacao:** 2026-03-31
 
-Inventário de tecnologias, bibliotecas e ferramentas utilizadas no projeto.
+## Core
 
----
+| Tecnologia | Versao |
+| --- | --- |
+| React | ^19.2.3 |
+| React DOM | ^19.2.3 |
+| TypeScript | ^5.5.3 |
+| Vite | ^6.4.1 |
+| React Router DOM | ^6.30.2 |
 
-## 1. Core Framework
+## Offline e dados
 
-| Tecnologia     | Versão (aprox) | Finalidade              |
-| :------------- | :------------- | :---------------------- |
-| **React**      | ^18.3.1        | Biblioteca de UI        |
-| **TypeScript** | ^5.5.3         | Linguagem e Tipagem     |
-| **Vite**       | ^5.4.1         | Build Tool e Dev Server |
+| Tecnologia | Versao | Uso |
+| --- | --- | --- |
+| Dexie | ^4.3.0 | Banco local IndexedDB |
+| dexie-react-hooks | ^4.2.0 | Reatividade sobre stores locais |
+| Supabase JS | latest | Auth, Postgres e Edge Functions |
+| date-fns | ^3.6.0 | Datas e intervalos |
 
-## 2. Estado e Data Fetching
+## UI
 
-| Biblioteca         | Versão   | Finalidade                                     |
-| :----------------- | :------- | :--------------------------------------------- |
-| **TanStack Query** | ^5.51.23 | Gerenciamento de estado do servidor / Caching  |
-| **Zustand**        | ^4.5.4   | Gerenciamento de estado global (auth, fazenda) |
-| **Dexie.js**       | ^4.0.8   | Banco de dados local (IndexedDB) wrapper       |
+| Tecnologia | Versao | Uso |
+| --- | --- | --- |
+| Tailwind CSS | ^3.4.11 | Estilizacao utilitaria |
+| Radix UI | varios pacotes | Primitivos acessiveis |
+| shadcn/ui | composicao local | Sistema base de componentes |
+| lucide-react | ^0.462.0 | Iconografia |
+| sonner | ^1.5.0 | Toasts |
+| recharts | ^2.12.7 | Graficos |
 
-## 3. Backend e Serviços
+## Formularios e validacao
 
-| Serviço        | Biblioteca              | Versão  | Finalidade                                |
-| :------------- | :---------------------- | :------ | :---------------------------------------- |
-| **Supabase**   | `@supabase/supabase-js` | ^2.45.1 | BaaS (Auth, DB, Realtime, Edge Functions) |
-| **PostgreSQL** | (Supabase)              | 15+     | Banco de dados relacional                 |
+| Tecnologia | Versao |
+| --- | --- |
+| react-hook-form | ^7.53.0 |
+| zod | ^3.23.8 |
+| @hookform/resolvers | ^3.9.0 |
 
-## 4. UI e Estilização
+## Qualidade e testes
 
-| Biblioteca       | Versão           | Finalidade                                          |
-| :--------------- | :--------------- | :-------------------------------------------------- |
-| **Tailwind CSS** | ^3.4.10          | Framework de CSS utilitário                         |
-| **Radix UI**     | (Vários pacotes) | Primitivos de UI acessíveis (Dialog, Popover, etc.) |
-| **Lucide React** | ^0.427.0         | Ícones                                              |
-| **Sonner**       | ^1.5.0           | Toasts e notificações                               |
-| **Recharts**     | ^2.12.7          | Gráficos e Dashboards                               |
+| Tecnologia | Versao | Uso |
+| --- | --- | --- |
+| ESLint | ^9.9.0 | Lint |
+| Vitest | ^4.0.18 | Testes unitarios/integracao |
+| Testing Library | ^16.3.2 | Testes de UI |
+| jsdom | ^28.1.0 | Ambiente DOM para testes |
+| fake-indexeddb | ^6.2.5 | Testes do Dexie |
+| Prettier | ^3.3.3 | Formatacao |
 
-## 5. Formulários e Validação
+## Scripts relevantes
 
-| Biblioteca              | Versão  | Finalidade                      |
-| :---------------------- | :------ | :------------------------------ |
-| **React Hook Form**     | ^7.52.2 | Gestão de estado de formulários |
-| **Zod**                 | ^3.23.8 | Validação de schema             |
-| **@hookform/resolvers** | ^3.9.0  | Integração Zod + RHF            |
+- `dev`: servidor local
+- `build`: build de producao
+- `lint`: validacao estatica
+- `test`: suite principal
+- `test:e2e`: fluxos guiados criticos em Vitest
+- `gates`, `audit:data`, `gates:*`: validacoes documentais do pacote Antigravity
 
-## 6. Rotas e Navegação
+## Observacoes
 
-| Biblioteca           | Versão  | Finalidade     |
-| :------------------- | :------ | :------------- |
-| **React Router DOM** | ^6.26.1 | Roteamento SPA |
-
-## 7. Qualidade e Testes
-
-| Ferramenta   | Versão         | Finalidade                     |
-| :----------- | :------------- | :----------------------------- |
-| **ESLint**   | ^9.9.0         | Linting e análise estática     |
-| **Vitest**   | ^2.0.5         | Test Runner (Unit/Integration) |
-| **Prettier** | (Via extensão) | Formatação de código           |
-
-## 8. Utilitários (Libs)
-
-| Biblioteca                | Versão  | Finalidade                 |
-| :------------------------ | :------ | :------------------------- |
-| **date-fns**              | ^3.6.0  | Manipulação de datas       |
-| **clsx / tailwind-merge** | -       | Utilitários de classes CSS |
-| **uuid**                  | ^10.0.0 | Geração de IDs únicos      |
-
----
-
-> **Nota:** Para versões exatas (lockfile), consulte `pnpm-lock.yaml` na raiz do projeto.
+- Nao ha Next.js, Zustand ou backend Node dedicado no repositorio atual.
+- O projeto usa lazy loading nas paginas principais e code splitting no build.

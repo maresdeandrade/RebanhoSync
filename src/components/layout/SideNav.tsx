@@ -1,48 +1,56 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { NavLink } from "react-router-dom";
 import {
-  Home,
-  Beef,
-  Layers,
-  Map,
-  Calendar,
-  PlusCircle,
-  History,
-  DollarSign,
-  Handshake,
-  LayoutDashboard,
-  Users,
-  Settings,
   AlertCircle,
-  LayoutList,
-  Syringe,
+  Baby,
+  Beef,
+  Calendar,
   ChevronDown,
   ChevronRight,
+  DollarSign,
+  FileText,
+  Handshake,
+  History,
+  Home,
+  Layers,
+  LayoutDashboard,
+  LayoutList,
+  Map,
+  PlusCircle,
+  Settings,
+  Syringe,
   User,
+  Users,
   type LucideIcon,
 } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { type FarmExperienceMode } from "@/lib/farms/experienceMode";
 import { cn } from "@/lib/utils";
 
 type NavItem = {
   icon: LucideIcon;
   label: string;
   path?: string;
+  roles?: Array<"cowboy" | "manager" | "owner">;
+  modes?: FarmExperienceMode[];
   children?: {
     icon: LucideIcon;
     label: string;
     path: string;
+    modes?: FarmExperienceMode[];
   }[];
 };
 
 const navItems: NavItem[] = [
-  { icon: Home, label: "Inicio", path: "/home" },
-  { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
+  { icon: Home, label: "Hoje", path: "/home" },
+  { icon: PlusCircle, label: "Registrar", path: "/registrar" },
+  { icon: Calendar, label: "Agenda", path: "/agenda" },
+  { icon: FileText, label: "Resumo", path: "/relatorios" },
   { icon: Beef, label: "Animais", path: "/animais" },
   { icon: Layers, label: "Lotes", path: "/lotes" },
   { icon: Map, label: "Pastos", path: "/pastos" },
-  { icon: Calendar, label: "Agenda", path: "/agenda" },
-  { icon: PlusCircle, label: "Registrar", path: "/registrar" },
-  { icon: History, label: "Eventos", path: "/eventos" },
+  { icon: Baby, label: "Reproducao", path: "/reproducao" },
+  { icon: History, label: "Eventos", path: "/eventos", modes: ["completo"] },
   {
     icon: DollarSign,
     label: "Financeiro",
@@ -51,23 +59,67 @@ const navItems: NavItem[] = [
       { icon: Handshake, label: "Parceiros", path: "/contrapartes" },
     ],
   },
-  { icon: Users, label: "Equipe", path: "/membros" },
+  {
+    icon: Users,
+    label: "Equipe",
+    path: "/membros",
+    roles: ["manager", "owner"],
+  },
   {
     icon: Settings,
     label: "Configuracoes",
+    roles: ["manager", "owner"],
     children: [
+      {
+        icon: LayoutDashboard,
+        label: "Dashboard",
+        path: "/dashboard",
+        modes: ["completo"],
+      },
       { icon: Syringe, label: "Protocolos", path: "/protocolos-sanitarios" },
-      { icon: LayoutList, label: "Categorias", path: "/categorias" },
-      { icon: AlertCircle, label: "Reconciliacao", path: "/reconciliacao" },
+      {
+        icon: LayoutList,
+        label: "Categorias",
+        path: "/categorias",
+        modes: ["completo"],
+      },
+      {
+        icon: AlertCircle,
+        label: "Reconciliacao",
+        path: "/reconciliacao",
+        modes: ["completo"],
+      },
     ],
   },
 ];
 
 export const SideNav = () => {
-  const [expandedGroups, setExpandedGroups] = useState<string[]>([
-    "Financeiro",
-    "Configuracoes",
-  ]);
+  const { role, farmExperienceMode } = useAuth();
+  const [expandedGroups, setExpandedGroups] = useState<string[]>(["Financeiro"]);
+
+  const visibleItems = useMemo(() => {
+    return navItems
+      .filter((item) => {
+        if (item.modes && !item.modes.includes(farmExperienceMode)) return false;
+        if (!item.roles) return true;
+        return role ? item.roles.includes(role) : false;
+      })
+      .flatMap((item) => {
+        if (!item.children) {
+          return [item];
+        }
+
+        const children = item.children.filter(
+          (child) => !child.modes || child.modes.includes(farmExperienceMode),
+        );
+
+        if (children.length === 0 && !item.path) {
+          return [];
+        }
+
+        return [{ ...item, children }];
+      });
+  }, [farmExperienceMode, role]);
 
   const toggleGroup = (label: string) => {
     setExpandedGroups((prev) =>
@@ -80,7 +132,7 @@ export const SideNav = () => {
   return (
     <nav className="hidden md:flex flex-col w-64 border-r bg-muted/30 h-[calc(100vh-64px)] sticky top-16">
       <div className="flex-1 py-6 px-4 space-y-1 overflow-y-auto">
-        {navItems.map((item) => (
+        {visibleItems.map((item) => (
           <div key={item.label}>
             {item.children ? (
               <div className="space-y-1">

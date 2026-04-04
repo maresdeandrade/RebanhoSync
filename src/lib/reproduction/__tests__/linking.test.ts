@@ -2,13 +2,14 @@
 import { describe, it, expect } from "vitest";
 import { findLinkedServiceForDiagnostic, findLinkedServiceForParto } from "../linking";
 import type { ReproEventJoined } from "../selectors";
+import type { ReproTipoEnum } from "@/lib/offline/types";
 
 // Mock Helper
 const createEvent = (
   id: string, 
   occurred_at: string, 
-  type: string, 
-  payload: any = {}
+  type: ReproTipoEnum, 
+  payload: Record<string, unknown> = {}
 ): ReproEventJoined => ({
   id,
   fazenda_id: 'fazenda-1',
@@ -33,7 +34,7 @@ const createEvent = (
   details: {
     evento_id: id,
     fazenda_id: 'fazenda-1',
-    tipo: type as any,
+    tipo: type,
     macho_id: null,
     payload,
     client_id: 'client-1',

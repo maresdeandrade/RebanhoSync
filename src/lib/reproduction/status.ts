@@ -3,6 +3,10 @@ import { isPayloadV1, PUERPERIO_DAYS, type ReproStatus } from "./types";
 import { ReproEventJoined } from "./selectors";
 export type { ReproStatus };
 
+type LegacyDiagnosticPayload = {
+  diagnostico_resultado?: unknown;
+};
+
 export interface AnimalReproStatus {
   status: ReproStatus;
   lastEventDate: string | null;
@@ -107,17 +111,17 @@ function createStatus(
   };
 }
 
-function isPositive(payload: any): boolean {
+function isPositive(payload: unknown): boolean {
   if (isPayloadV1(payload)) return payload.resultado === 'positivo';
-  return payload.diagnostico_resultado === 'positivo';
+  return (payload as LegacyDiagnosticPayload).diagnostico_resultado === 'positivo';
 }
 
-function isNegative(payload: any): boolean {
+function isNegative(payload: unknown): boolean {
   if (isPayloadV1(payload)) return payload.resultado === 'negativo';
-  return payload.diagnostico_resultado === 'negativo';
+  return (payload as LegacyDiagnosticPayload).diagnostico_resultado === 'negativo';
 }
 
-function extractPredictionDate(payload: any): string | undefined {
+function extractPredictionDate(payload: unknown): string | undefined {
   if (isPayloadV1(payload)) return payload.data_prevista_parto;
   return undefined;
 }

@@ -1,12 +1,14 @@
 import type { Session } from "@supabase/supabase-js";
 import { db } from "./db";
 import { env } from "@/lib/env";
+import { supabase } from "@/lib/supabase";
 import type { Gesture } from "./types";
 import { getRemoteTableName } from "./tableMap";
 import { rollbackOpLocal, getAffectedStores } from "./ops";
 import { sortOpsForSync } from "./syncOrder";
 import { pullDataForFarm } from "./pull";
 import { purgeRejections } from "./rejections";
+import { trackPilotMetric } from "@/lib/telemetry/pilotMetrics";
 
 let intervalId: ReturnType<typeof setInterval> | null = null;
 let isTickRunning = false;
@@ -151,8 +153,6 @@ function logTokenExpiry(session: Session) {
 }
 
 async function getValidSession() {
-  const { supabase } = await import("@/lib/supabase");
-
   const {
     data: { session },
     error: sessionError,
@@ -314,6 +314,17 @@ async function processGesture(gesture: Gesture) {
         last_error: undefined,
       });
       await db.queue_ops.where("client_tx_id").equals(gesture.client_tx_id).delete();
+      await trackPilotMetric({
+        fazendaId: gesture.fazenda_id,
+        eventName: "sync_success",
+        status: "success",
+        entity: "sync-batch",
+        quantity: ops.length,
+        payload: {
+          tables: Array.from(remoteTablesTouched),
+          op_count: ops.length,
+        },
+      });
 
       if (import.meta.env.DEV) {
         console.debug(`[sync-worker] TX ${gesture.client_tx_id} synced successfully`);
@@ -370,6 +381,17 @@ async function processGesture(gesture: Gesture) {
       console.warn(
         `[sync-worker] TX ${gesture.client_tx_id} had rejections (rolled back locally)`,
       );
+      await trackPilotMetric({
+        fazendaId: gesture.fazenda_id,
+        eventName: "sync_rejected",
+        status: "error",
+        entity: "sync-batch",
+        quantity: rejectedResults.length,
+        payload: {
+          op_count: ops.length,
+          reasons: rejectedResults.map((result) => result.reason_code ?? "UNKNOWN"),
+        },
+      });
       return;
     }
 
@@ -390,6 +412,17 @@ async function processGesture(gesture: Gesture) {
     await db.queue_gestures.update(gesture.client_tx_id, {
       status: "ERROR",
       last_error: `Max retries: ${error.message}`,
+    });
+    await trackPilotMetric({
+      fazendaId: gesture.fazenda_id,
+      eventName: "sync_error",
+      status: "error",
+      entity: "sync-batch",
+      quantity: ops.length,
+      payload: {
+        op_count: ops.length,
+        message: error.message,
+      },
     });
   }
 }

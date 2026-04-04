@@ -14,6 +14,9 @@ import { useLiveQuery } from "dexie-react-hooks";
 vi.mock("@/hooks/useAuth");
 vi.mock("@/hooks/useLotes");
 vi.mock("dexie-react-hooks");
+vi.mock("@/lib/offline/pull", () => ({
+  pullDataForFarm: vi.fn().mockResolvedValue(undefined),
+}));
 
 // Mock scrollIntoView for Radix UI
 Element.prototype.scrollIntoView = vi.fn();
@@ -37,15 +40,18 @@ describe("Registrar Page - Anti-Teleport", () => {
     { id: "lote-A", nome: "Lote A", fazenda_id: mockFarmId },
     { id: "lote-B", nome: "Lote B", fazenda_id: mockFarmId },
   ];
+  const mockedUseAuth = vi.mocked(useAuth);
+  const mockedUseLotes = vi.mocked(useLotes);
+  const mockedUseLiveQuery = vi.mocked(useLiveQuery);
 
   beforeEach(() => {
     vi.clearAllMocks();
     
     // Default mocks
-    (useAuth as any).mockReturnValue({
+    mockedUseAuth.mockReturnValue({
       activeFarmId: mockFarmId,
       role: "owner",
-    });
+    } as ReturnType<typeof useAuth>);
     
     // Mock useLotes to return mock lotes
     // Since useLotes is a custom hook that might do something, let's mock its return value
@@ -54,7 +60,7 @@ describe("Registrar Page - Anti-Teleport", () => {
     // So mocking the module works.
     // Wait, useLotes returns `lotes` array directly (from useLiveQuery).
     // Let's check implementation again. Yes.
-    (useLotes as any).mockReturnValue(mockLotes);
+    mockedUseLotes.mockReturnValue(mockLotes as ReturnType<typeof useLotes>);
 
     // Mock useLiveQuery
     // Return a universal object that satisfies various query shapes to avoid crashes
@@ -69,12 +75,16 @@ describe("Registrar Page - Anti-Teleport", () => {
       tipo: "vacinacao", // for protocoloItens
       deleted_at: null,
     };
-    (useLiveQuery as any).mockReturnValue([universalRecord]);
+    mockedUseLiveQuery.mockReturnValue(
+      [universalRecord] as ReturnType<typeof useLiveQuery>,
+    );
   });
 
   it("resets destination (toLoteId) when source (selectedLoteId) is changed to match destination", async () => {
     render(
-      <MemoryRouter>
+      <MemoryRouter
+        future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+      >
         <Registrar />
       </MemoryRouter>
     );

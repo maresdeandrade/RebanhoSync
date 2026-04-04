@@ -5,7 +5,7 @@ import { type Lote, type Pasto } from "@/lib/offline/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Layers, Plus, ChevronRight, MapPin, Beef } from "lucide-react";
+import { Layers, Plus, ChevronRight, MapPin, Beef, Upload } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { EmptyState } from "@/components/EmptyState";
 
@@ -93,9 +93,16 @@ const Lotes = () => {
               Gerencie os agrupamentos de animais.
             </p>
           </div>
-          <Button size="sm" onClick={() => navigate("/lotes/novo")}>
-            <Plus className="h-4 w-4 mr-2" /> Novo Lote
-          </Button>
+          <div className="flex items-center gap-2">
+            <Link to="/lotes/importar">
+              <Button size="sm" variant="outline">
+                <Upload className="h-4 w-4 mr-2" /> Importar planilha
+              </Button>
+            </Link>
+            <Button size="sm" onClick={() => navigate("/lotes/novo")}>
+              <Plus className="h-4 w-4 mr-2" /> Novo Lote
+            </Button>
+          </div>
         </div>
         <EmptyState
           icon={Layers}
@@ -119,9 +126,16 @@ const Lotes = () => {
             Gerencie os agrupamentos de animais.
           </p>
         </div>
-        <Button size="sm" onClick={() => navigate("/lotes/novo")}>
-          <Plus className="h-4 w-4 mr-2" /> Novo Lote
-        </Button>
+        <div className="flex items-center gap-2">
+          <Link to="/lotes/importar">
+            <Button size="sm" variant="outline">
+              <Upload className="h-4 w-4 mr-2" /> Importar planilha
+            </Button>
+          </Link>
+          <Button size="sm" onClick={() => navigate("/lotes/novo")}>
+            <Plus className="h-4 w-4 mr-2" /> Novo Lote
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">

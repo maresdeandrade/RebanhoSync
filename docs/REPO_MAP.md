@@ -1,85 +1,77 @@
-# Mapa do Repositório (Repo Map)
+# Mapa do Repositorio
 
-> **Status:** Derivado (Inventário)
-> **Fonte de Verdade:** Estrutura de Diretórios
-> **Última Atualização:** 2026-02-15
+> **Status:** Derivado (Inventario)
+> **Fonte de Verdade:** Estrutura do repositorio
+> **Ultima Atualizacao:** 2026-04-01
 
-Visão geral da organização de pastas e módulos do projeto GestaoAgro.
+## Raiz
 
----
+| Caminho | Papel |
+| --- | --- |
+| `src/` | Frontend React |
+| `supabase/` | Migrations e Edge Functions |
+| `docs/` | Arquitetura, contratos, snapshot e backlog |
+| `scripts/` | Gates e automacoes |
+| `config/` | Configuracoes auxiliares |
+| `public/` | Assets estaticos |
 
-## 1. Raiz do Projeto
+## `src/`
 
-| Diretório/Arquivo | Descrição                                              |
-| :---------------- | :----------------------------------------------------- |
-| `.agent/`         | Configurações, skills e workflows do Agente AI.        |
-| `docs/`           | Documentação Normativa e Derivada.                     |
-| `src/`            | Código fonte da aplicação Frontend (React).            |
-| `supabase/`       | Configurações, migrações e Edge Functions do Supabase. |
-| `package.json`    | Dependências e scripts npm.                            |
-| `vite.config.ts`  | Configuração do bundler Vite.                          |
+| Caminho | Papel |
+| --- | --- |
+| `App.tsx` | Declaracao de rotas |
+| `main.tsx` | Bootstrap da aplicacao |
+| `components/` | Componentes reutilizaveis |
+| `hooks/` | Hooks de auth, dados e UX |
+| `lib/` | Dominio, offline, imports, relatorios e telemetry |
+| `pages/` | Views roteadas |
+| `utils/` | Helpers de interface |
 
-## 2. Código Fonte (`src/`)
+## `src/components/`
 
-### 2.1 Componentes (`src/components/`)
+- `animals/`: badges e apresentacao do animal
+- `auth/`: guards e wrappers de autenticacao
+- `events/`: formularios e blocos de eventos
+- `layout/`: `AppShell`, `SideNav`, `TopBar`
+- `manejo/`: componentes de operacao de campo
+- `members/`: membros e convites
+- `ui/`: base shadcn/ui
 
-- `auth/`: Componentes de autenticação e proteção de rotas (`AuthGate`, `RequireAuth`).
-- `common/`: Componentes reutilizáveis genéricos.
-- `events/`: Componentes de exibição de eventos (Timeline).
-- `layout/`: Estrutura da página (`AppShell`, `SideNav`, `TopBar`).
-- `manejo/`: Formulários de registro de manejo.
-- `members/`: Gestão de membros e convites.
-- `ui/`: Componentes base do Design System (Shadcn/Radix).
+## `src/lib/`
 
-### 2.2 Hooks (`src/hooks/`)
+- `offline/`: Dexie, fila, rollback, pull e sync worker
+- `events/`: builders e validadores de eventos
+- `domain/`: regras de dominio compartilhadas
+- `reproduction/`: dashboard, linking, status e registro reprodutivo
+- `import/`: parsers CSV e normalizacao
+- `reports/`: resumo operacional e exportacoes
+- `telemetry/`: metricas locais de piloto
+- `farms/`: modo de experiencia da fazenda
+- `animals/`: camada de apresentacao, elegibilidade e agrupamento familiar do animal
+- `sanitario/`: servicos sanitarios
 
-Hooks personalizados para lógica de UI e estado.
+## `src/pages/`
 
-- `useAuth.tsx`: Contexto de autenticação.
-- `useFarm.tsx`: Contexto da fazenda ativa.
-- `useToast.ts`: Notificações.
+Superficies principais do produto:
 
-### 2.3 Core & Libs (`src/lib/`)
+- onboarding: `SelectFazenda`, `CriarFazenda`, `OnboardingInicial`
+- operacao: `Home`, `Registrar`, `Agenda`, `Eventos`, `Relatorios`
+- rebanho: `Animais`, `AnimalDetalhe`, `AnimalReproducao`, `AnimalPosParto`
+- estrutura: `Lotes`, `Pastos`, importadores e detalhes
+- apoio: `Financeiro`, `Contrapartes`, `Dashboard`, `ReproductionDashboard`
+- gestao: `Perfil`, `Membros`, `AdminMembros`, `EditarFazenda`
 
-Núcleo da lógica de negócios e infraestrutura.
+## `supabase/`
 
-- `offline/`: **Core Offline-First**.
-  - `db.ts`: Schema do Dexie.js.
-  - `syncWorker.ts`: Lógica de sincronização background.
-  - `ops.ts`: Operações de banco (Repositório).
-  - `types.ts`: Tipagem compartilhada DB/App.
-  - `tableMap.ts`: Mapeamento Dexie <-> Supabase.
-- `supabase.ts`: Cliente Supabase instanciado.
-- `utils.ts`: Utilitários gerais (classes CSS, formatação).
-- `validators.ts`: Schemas Zod.
-- Domain Modules (`events/`, `sanitario/`, `reproduction/`): Lógica específica de domínio.
+| Caminho | Papel |
+| --- | --- |
+| `migrations/` | Evolucao do schema e hardening |
+| `functions/sync-batch/` | Endpoint de sincronizacao transacional |
+| `functions/test-auth/` | Endpoint auxiliar de diagnostico |
 
-### 2.4 Páginas (`src/pages/`)
+## Observacoes
 
-Componentes de rota (Views).
-
-- `Home.tsx`: Dashboard.
-- `Animais/`: Listagem e Detalhe de animais.
-- `Registrar.tsx`: Formulário central de manejo.
-- `Agenda.tsx`: Gestão de tarefas.
-- `Protocolos.tsx`: Gestão de protocolos sanitários.
-- `Configuracoes.tsx`: Configurações gerais.
-
-## 3. Backend (`supabase/`)
-
-### 3.1 Migrações (`supabase/migrations/`)
-
-Histórico de DDL do banco de dados (PostgreSQL).
-
-- `0001_init.sql`: Schema inicial.
-- `...`: Migrações incrementais.
-
-### 3.2 Edge Functions (`supabase/functions/`)
-
-Funções server-side (Deno).
-
-- `sync-batch/`: **API de Sincronização**. Recebe batches do cliente, valida e processa transacionalmente.
-
-## 4. Documentação (`docs/`)
-
-Ver [`README.md`](./README.md) para índice completo de documentação.
+- Pastas geradas localmente como `dist/`, `node_modules/` e caches nao entram neste mapa.
+- `docs/review/` contem apenas relatorios ainda usados pela governanca documental.
+- `docs/archive/` concentra analises e auditorias historicas que nao representam o snapshot operacional atual.
+- Materiais antigos de planejamento fora de `docs/` foram removidos para reduzir ruido no root do repositorio.

@@ -1,21 +1,19 @@
+import { useEffect, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
+import { useNavigate } from "react-router-dom";
+import { ChevronRight, LogOut, MapPin, Plus } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/lib/supabase";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ChevronRight, LogOut, MapPin, Plus } from "lucide-react";
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 
-// TYPE FIX: Define proper interface for user_fazendas query result
-// Supabase nested select returns array: fazendas: [{id, nome}]
 interface FazendaData {
   id: string;
   nome: string;
 }
 
 interface UserFazenda {
-  fazendas: FazendaData[];
+  fazendas: FazendaData[] | FazendaData;
   role: string;
 }
 
@@ -27,32 +25,21 @@ const SelectFazenda = () => {
 
   const fazendas = useLiveQuery(async () => {
     if (!user) return [];
+
     const { data } = await supabase
       .from("user_fazendas")
       .select("role, fazendas(id, nome)")
       .eq("user_id", user.id)
       .is("deleted_at", null);
+
     return data || [];
   }, [user]);
 
-  // ✅ Check can_create_farm permission
   useEffect(() => {
     const checkPermission = async () => {
-      if (!user) {
-        if (import.meta.env.DEV) {
-          console.debug("[SelectFazenda] No user, skipping permission check");
-        }
-        return;
-      }
+      if (!user) return;
 
       try {
-        if (import.meta.env.DEV) {
-          console.debug(
-            "[SelectFazenda] Checking can_create_farm for user:",
-            user.id,
-          );
-        }
-
         const { data, error } = await supabase.rpc("can_create_farm");
 
         if (error) {
@@ -60,33 +47,16 @@ const SelectFazenda = () => {
             "[SelectFazenda] ERROR checking can_create_farm:",
             error,
           );
-          if (import.meta.env.DEV) {
-            console.debug("[SelectFazenda] Error details:", {
-              message: error.message,
-              code: error.code,
-              details: error.details,
-              hint: error.hint,
-            });
-          }
           setCanCreateFarm(false);
           return;
         }
 
-        if (import.meta.env.DEV) {
-          console.debug(
-            "[SelectFazenda] ✅ can_create_farm RPC returned:",
-            data,
-          );
-          console.debug("[SelectFazenda] Type of data:", typeof data);
-          console.debug(
-            "[SelectFazenda] Setting canCreateFarm to:",
-            data === true,
-          );
-        }
-
         setCanCreateFarm(data === true);
-      } catch (error) {
-        console.error("[SelectFazenda] EXCEPTION checking permission:", error);
+      } catch (requestError) {
+        console.error(
+          "[SelectFazenda] EXCEPTION checking permission:",
+          requestError,
+        );
         setCanCreateFarm(false);
       }
     };
@@ -94,24 +64,20 @@ const SelectFazenda = () => {
     checkPermission();
   }, [user]);
 
-  const handleSelect = async (fazenda_id: string) => {
+  const handleSelect = async (fazendaId: string) => {
     setLoading(true);
-
-    // ✅ CORREÇÃO: Usa setActiveFarm do useAuth que agora espera o role carregar
-    // O setActiveFarm agora é async e aguarda loadRoleForFarm completar
-    await setActiveFarm(fazenda_id);
-
-    // ✅ Usa navigate do React Router em vez de window.location.href
-    // Isso garante que o contexto React atualize corretamente antes do redirect
-    // O navigate é interno ao React e não causa perda de estado
+    await setActiveFarm(fazendaId);
     navigate("/home", { replace: true });
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted/30 p-4">
       <div className="w-full max-w-md space-y-6">
-        <div className="text-center">
-          <h1 className="text-3xl font-bold mb-2">Selecionar Fazenda</h1>
+        <div className="text-center space-y-2">
+          <h1 className="text-3xl font-bold">Escolha a fazenda</h1>
+          <p className="text-sm text-muted-foreground">
+            Selecione a operacao ativa para abrir a rotina do dia.
+          </p>
           <p className="text-muted-foreground">{user?.email}</p>
         </div>
 
@@ -119,33 +85,32 @@ const SelectFazenda = () => {
           {!fazendas ? (
             <Card>
               <CardContent className="p-8 text-center">
-                <p className="text-muted-foreground">Carregando...</p>
+                <p className="text-muted-foreground">Carregando fazendas...</p>
               </CardContent>
             </Card>
           ) : fazendas.length === 0 ? (
             <Card>
               <CardContent className="p-8 text-center space-y-4">
                 <p className="text-muted-foreground mb-2">
-                  Você não está vinculado a nenhuma fazenda.
+                  VocÃª nÃ£o estÃ¡ vinculado a nenhuma fazenda.
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  Aceite um convite para entrar em uma fazenda existente.
+                  Aceite um convite ou crie a primeira fazenda para comeÃ§ar.
                 </p>
 
-                {/* ✅ Show Create Farm button only if user has permission */}
                 {canCreateFarm === true && (
                   <Button
                     onClick={() => navigate("/criar-fazenda")}
                     className="w-full gap-2"
                   >
                     <Plus className="h-4 w-4" />
-                    Criar Nova Fazenda
+                    Criar nova fazenda
                   </Button>
                 )}
 
                 {canCreateFarm === false && (
                   <p className="text-xs text-muted-foreground italic">
-                    Você não tem permissão para criar fazendas.
+                    VocÃª nÃ£o tem permissÃ£o para criar fazendas.
                   </p>
                 )}
 
@@ -156,26 +121,12 @@ const SelectFazenda = () => {
               </CardContent>
             </Card>
           ) : (
-            // ✅ DEFENSIVO: Supabase nested select retorna OBJETO para many-to-one
-            fazendas.map((uf: UserFazenda) => {
-              // Normaliza: pode ser array ou objeto direto
-              const fazendaRaw = uf.fazendas;
-              const fazenda: FazendaData | null = Array.isArray(fazendaRaw)
-                ? fazendaRaw[0]
-                : fazendaRaw;
+            fazendas.map((membership: UserFazenda) => {
+              const rawFarm = membership.fazendas;
+              const fazenda = Array.isArray(rawFarm) ? rawFarm[0] : rawFarm;
 
-              if (!fazenda || !fazenda.id) return null;
-
-              // Validate role
-              const isValidRole = ["owner", "manager", "cowboy"].includes(
-                uf.role,
-              );
-              if (!isValidRole) {
-                if (import.meta.env.DEV) {
-                  console.warn(
-                    `[SelectFazenda] Invalid role for farm ${fazenda.id}: ${uf.role}`,
-                  );
-                }
+              if (!fazenda?.id) return null;
+              if (!["owner", "manager", "cowboy"].includes(membership.role)) {
                 return null;
               }
 
@@ -192,6 +143,9 @@ const SelectFazenda = () => {
                       </div>
                       <div>
                         <p className="font-bold">{fazenda.nome}</p>
+                        <p className="text-sm text-muted-foreground">
+                          Entrar na rotina da fazenda
+                        </p>
                       </div>
                     </div>
                     <ChevronRight className="h-5 w-5 text-muted-foreground" />
@@ -201,7 +155,6 @@ const SelectFazenda = () => {
             })
           )}
 
-          {/* ✅ Add "Create Farm" button after list if user has permission */}
           {fazendas && fazendas.length > 0 && canCreateFarm === true && (
             <Card className="border-dashed">
               <CardContent className="p-4">
@@ -211,14 +164,19 @@ const SelectFazenda = () => {
                   className="w-full gap-2"
                 >
                   <Plus className="h-4 w-4" />
-                  Criar Nova Fazenda
+                  Criar nova fazenda
                 </Button>
               </CardContent>
             </Card>
           )}
         </div>
 
-        <Button variant="ghost" className="w-full gap-2" onClick={signOut}>
+        <Button
+          variant="ghost"
+          className="w-full gap-2"
+          onClick={signOut}
+          disabled={loading}
+        >
           <LogOut className="h-4 w-4" /> Sair da conta
         </Button>
       </div>

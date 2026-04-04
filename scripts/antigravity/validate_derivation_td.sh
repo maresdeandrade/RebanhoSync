@@ -1,12 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Validates derivation consistency using TD-### as the join key.
+# Validates derivation consistency using the current Rev D+ docs model.
 # Rules:
 # - TECH_DEBT OPEN TD set must equal IMPLEMENTATION_STATUS "Gaps consolidados" TD set
 # - ROADMAP TD set must equal TECH_DEBT OPEN TD set
-#
-# This matches your current editorial format (no capability_id).
+# - capability_id sets must also match across IMPLEMENTATION_STATUS, TECH_DEBT OPEN and ROADMAP
 
 ROOT="$(git rev-parse --show-toplevel)"
 cd "$ROOT"
@@ -28,31 +27,50 @@ tmp_dir="$(mktemp -d)"
 trap 'rm -rf "$tmp_dir"' EXIT
 
 impl_set="$tmp_dir/impl_tds.txt"
+impl_cap_set="$tmp_dir/impl_caps.txt"
 td_set="$tmp_dir/td_open_tds.txt"
+td_cap_set="$tmp_dir/td_open_caps.txt"
 rm_set="$tmp_dir/rm_tds.txt"
+rm_cap_set="$tmp_dir/rm_caps.txt"
 
-# --- Extract TDs from IMPLEMENTATION_STATUS
-# Prefer a section anchored by "Gaps consolidados" if present; else fallback to whole file.
+# Extract open TDs and capability_ids from IMPLEMENTATION_STATUS.
 if rg -n 'Gaps consolidados' "$impl" >/dev/null 2>&1; then
   awk '
-    BEGIN{in=0}
-    /Gaps consolidados/ {in=1}
-    in==1 {print}
+    BEGIN{in_section=0}
+    /Gaps consolidados/ {in_section=1}
+    in_section==1 {print}
   ' "$impl" | rg -o 'TD-[0-9]{3,}' | sort -u > "$impl_set"
 else
   rg -o 'TD-[0-9]{3,}' "$impl" | sort -u > "$impl_set"
 fi
 
-# --- Extract TDs from TECH_DEBT OPEN block
+rg -n '^\| TD-[0-9]{3,} \| `[^`]+` \| .* \| OPEN \|$' "$impl" \
+  | sed -E 's/.*\| `([^`]+)` \|.*/\1/' \
+  | sort -u > "$impl_cap_set"
+
+# Extract TDs and capability_ids from TECH_DEBT OPEN blocks.
 awk '
-  BEGIN{in=0}
-  /^##[[:space:]]+OPEN\b/ {in=1; next}
-  in==1 && /^##[[:space:]]+/ {exit}
-  in==1 {print}
+  BEGIN{in_section=0}
+  /^##[[:space:]]+OPEN($|[[:space:](])/ {in_section=1; next}
+  in_section==1 && /^##[[:space:]]+/ {exit}
+  in_section==1 {print}
 ' "$td" | rg -o 'TD-[0-9]{3,}' | sort -u > "$td_set"
 
-# --- Extract TDs from ROADMAP
+awk '
+  BEGIN{in_section=0}
+  /^##[[:space:]]+OPEN($|[[:space:](])/ {in_section=1; next}
+  in_section==1 && /^##[[:space:]]+/ {exit}
+  in_section==1 {print}
+' "$td" | rg -o '\*\*capability_id:\*\*[[:space:]]*`[^`]+`' \
+  | sed -E 's/.*`([^`]+)`.*/\1/' \
+  | sort -u > "$td_cap_set"
+
+# Extract TDs and capability_ids from ROADMAP derivation table.
 rg -o 'TD-[0-9]{3,}' "$rm" | sort -u > "$rm_set"
+
+rg -n '^\| TD-[0-9]{3,} \| `[^`]+` \| ' "$rm" \
+  | sed -E 's/.*\| `([^`]+)` \|.*/\1/' \
+  | sort -u > "$rm_cap_set"
 
 fail=0
 
@@ -78,8 +96,16 @@ if ! diff_sets "$td_set" "$rm_set" "TECH_DEBT OPEN vs ROADMAP"; then
   fail=1
 fi
 
+if ! diff_sets "$td_cap_set" "$impl_cap_set" "TECH_DEBT OPEN capability_id set vs IMPLEMENTATION_STATUS"; then
+  fail=1
+fi
+
+if ! diff_sets "$td_cap_set" "$rm_cap_set" "TECH_DEBT OPEN capability_id set vs ROADMAP"; then
+  fail=1
+fi
+
 if [[ "$fail" -ne 0 ]]; then
   exit 1
 fi
 
-echo "OK: derivation validated via TD IDs."
+echo "OK: derivation validated via TD IDs and capability_id sets."

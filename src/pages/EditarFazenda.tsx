@@ -13,6 +13,10 @@ import {
   resolveEventosRolloutFlags,
   withEventosRolloutFlags,
 } from "@/lib/events/featureFlags";
+import {
+  resolveFarmExperienceMode,
+  withFarmExperienceMode,
+} from "@/lib/farms/experienceMode";
 
 type EditarFazendaForm = {
   nome: string;
@@ -26,12 +30,13 @@ type EditarFazendaForm = {
 };
 
 const EditarFazenda = () => {
-  const { activeFarmId, role, loading: authLoading } = useAuth();
+  const { activeFarmId, role, loading: authLoading, refreshSettings } = useAuth();
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
   const [farmMetadata, setFarmMetadata] = useState<Record<string, unknown>>({});
+  const [essentialModeEnabled, setEssentialModeEnabled] = useState(true);
   const [strictRulesEnabled, setStrictRulesEnabled] = useState(true);
   const [strictAntiTeleportEnabled, setStrictAntiTeleportEnabled] = useState(true);
 
@@ -98,6 +103,9 @@ const EditarFazenda = () => {
             sistema_manejo: data.sistema_manejo || undefined,
           });
           setFarmMetadata(metadata);
+          setEssentialModeEnabled(
+            resolveFarmExperienceMode(metadata) === "essencial",
+          );
           setStrictRulesEnabled(rollout.strict_rules_enabled);
           setStrictAntiTeleportEnabled(rollout.strict_anti_teleporte);
         }
@@ -121,6 +129,14 @@ const EditarFazenda = () => {
 
     try {
       console.log("[EditarFazenda] Updating farm:", data);
+      const rolloutMetadata = withEventosRolloutFlags(farmMetadata, {
+        strict_rules_enabled: strictRulesEnabled,
+        strict_anti_teleporte: strictRulesEnabled && strictAntiTeleportEnabled,
+      });
+      const updatedMetadata = withFarmExperienceMode(
+        rolloutMetadata,
+        essentialModeEnabled ? "essencial" : "completo",
+      );
 
       const { error: updateError } = await supabase
         .from("fazendas")
@@ -133,10 +149,7 @@ const EditarFazenda = () => {
           area_total_ha: data.area_total_ha || null,
           tipo_producao: data.tipo_producao || null,
           sistema_manejo: data.sistema_manejo || null,
-          metadata: withEventosRolloutFlags(farmMetadata, {
-            strict_rules_enabled: strictRulesEnabled,
-            strict_anti_teleporte: strictRulesEnabled && strictAntiTeleportEnabled,
-          }),
+          metadata: updatedMetadata,
           // benfeitorias: reserved for future use (will be managed via pastos)
         })
         .eq("id", activeFarmId);
@@ -147,6 +160,8 @@ const EditarFazenda = () => {
       }
 
       console.log("[EditarFazenda] Farm updated successfully");
+      setFarmMetadata(updatedMetadata);
+      await refreshSettings();
       navigate("/home");
     } catch (e: unknown) {
       const err = e instanceof Error ? e : new Error(String(e));
@@ -355,6 +370,34 @@ const EditarFazenda = () => {
                 <option value="semi_confinamento">Semi-Confinamento</option>
                 <option value="pastagem">Pastagem</option>
               </select>
+            </div>
+
+            <div className="space-y-3 rounded-md border p-4">
+              <div>
+                <Label className="text-sm font-semibold">Experiencia do aplicativo</Label>
+                <p className="text-xs text-muted-foreground">
+                  Ajusta a navegacao para uma rotina mais enxuta ou libera todos os modulos.
+                </p>
+              </div>
+
+              <div className="flex items-center justify-between gap-3">
+                <div className="space-y-1">
+                  <p className="text-sm font-medium">Modo essencial</p>
+                  <p className="text-xs text-muted-foreground">
+                    Foca em hoje, agenda, rebanho, financeiro basico e resumo operacional.
+                  </p>
+                </div>
+                <Switch
+                  checked={essentialModeEnabled}
+                  onCheckedChange={setEssentialModeEnabled}
+                  disabled={isLoading}
+                />
+              </div>
+
+              <p className="text-xs text-muted-foreground">
+                Com o modo essencial desligado, o app volta a mostrar reproducao,
+                eventos completos, dashboard, categorias e reconciliacao.
+              </p>
             </div>
 
             <div className="space-y-3 rounded-md border p-4">
