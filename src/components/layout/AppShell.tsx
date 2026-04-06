@@ -1,12 +1,13 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
-import { TopBar } from "./TopBar";
-import { SideNav } from "./SideNav";
+
 import { Sheet, SheetContent } from "@/components/ui/sheet";
-import { SideNav as MobileNavContent } from "./SideNav";
-import { startSyncWorker, stopSyncWorker } from "@/lib/offline/syncWorker";
 import { useAuth } from "@/hooks/useAuth";
 import { trackPilotMetric } from "@/lib/telemetry/pilotMetrics";
+import { startSyncWorker, stopSyncWorker } from "@/lib/offline/syncWorker";
+
+import { SideNav } from "./SideNav";
+import { TopBar } from "./TopBar";
 
 export const AppShell = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -16,7 +17,6 @@ export const AppShell = () => {
   useEffect(() => {
     startSyncWorker();
 
-    // Cleanup: stop worker when component unmounts
     return () => {
       stopSyncWorker();
     };
@@ -35,31 +35,35 @@ export const AppShell = () => {
   }, [activeFarmId, location.pathname]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="min-h-screen bg-transparent">
       <TopBar onMenuClick={() => setIsMobileMenuOpen(true)} />
 
-      <div className="flex flex-1">
+      <div className="flex min-h-[calc(100vh-3.5rem)]">
         <SideNav />
 
-        <main className="flex-1 p-4 md:p-8 overflow-x-hidden">
-          <div className="max-w-7xl mx-auto">
+        <main className="min-w-0 flex-1 px-4 py-5 sm:px-6 lg:px-8 lg:py-8">
+          <div className="mx-auto w-full max-w-[1600px]">
             <Outlet />
           </div>
         </main>
       </div>
 
       <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
-        <SheetContent side="left" className="p-0 w-72">
-          <div className="h-full flex flex-col">
-            <div className="p-6 border-b">
-              <span className="text-xl font-bold text-primary">
-                Gestão Pecuária
-              </span>
+        <SheetContent
+          side="left"
+          className="w-[290px] border-r border-sidebar-border/80 bg-sidebar p-0 shadow-crisp"
+        >
+          <div className="flex h-full flex-col">
+            <div className="border-b border-sidebar-border/80 px-5 py-4">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                RebanhoSync
+              </p>
+              <p className="mt-1 text-base font-semibold text-foreground">
+                Navegacao da fazenda
+              </p>
             </div>
             <div className="flex-1 overflow-y-auto">
-              <div className="py-4 px-4 space-y-1">
-                <MobileNavContent />
-              </div>
+              <SideNav mobile />
             </div>
           </div>
         </SheetContent>

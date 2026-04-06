@@ -217,15 +217,41 @@ export function validateAnimalTaxonomyFactsContract(
     return { success: false, issues };
   }
 
+  const normalizedData: AnimalTaxonomyFactsContractV1 = {
+    schema_version: TAXONOMY_FACTS_SCHEMA_VERSION,
+    ...(typeof value.castrado === "boolean" ? { castrado: value.castrado } : {}),
+    ...(typeof value.puberdade_confirmada === "boolean"
+      ? { puberdade_confirmada: value.puberdade_confirmada }
+      : {}),
+    ...(typeof value.secagem_realizada === "boolean"
+      ? { secagem_realizada: value.secagem_realizada }
+      : {}),
+    ...(typeof value.data_secagem === "string"
+      ? { data_secagem: value.data_secagem }
+      : {}),
+    ...(typeof value.em_lactacao === "boolean"
+      ? { em_lactacao: value.em_lactacao }
+      : {}),
+    ...(typeof value.prenhez_confirmada === "boolean"
+      ? { prenhez_confirmada: value.prenhez_confirmada }
+      : {}),
+    ...(typeof value.data_prevista_parto === "string"
+      ? { data_prevista_parto: value.data_prevista_parto }
+      : {}),
+    ...(typeof value.data_ultimo_parto === "string"
+      ? { data_ultimo_parto: value.data_ultimo_parto }
+      : {}),
+  };
+
   return {
     success: true,
-    data: value as AnimalTaxonomyFactsContractV1,
+    data: normalizedData,
   };
 }
 
 export function assertValidAnimalTaxonomyFactsContract(value: unknown) {
   const result = validateAnimalTaxonomyFactsContract(value);
-  if (!result.success) {
+  if (result.success === false) {
     throw new TaxonomyFactsValidationError(result.issues);
   }
 

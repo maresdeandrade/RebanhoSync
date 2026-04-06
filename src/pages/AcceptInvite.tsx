@@ -1,17 +1,20 @@
-import { useEffect, useState, useCallback } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { supabase } from "@/lib/supabase";
+import { useCallback, useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
+  CheckCircle,
+  Clock3,
+  Loader2,
+  UserRound,
+  XCircle,
+} from "lucide-react";
+
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { MetricCard } from "@/components/ui/metric-card";
+import { PageIntro } from "@/components/ui/page-intro";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { useToast } from "@/hooks/use-toast";
-import { CheckCircle, XCircle, Loader2 } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 
 interface InvitePreview {
   fazenda_nome: string;
@@ -20,6 +23,54 @@ interface InvitePreview {
   expires_at: string;
   status: string;
   is_valid: boolean;
+}
+
+const roleLabelMap: Record<string, string> = {
+  owner: "Proprietario",
+  manager: "Gerente",
+  cowboy: "Operacao",
+};
+
+const roleToneMap: Record<string, "success" | "info" | "neutral"> = {
+  owner: "success",
+  manager: "info",
+  cowboy: "neutral",
+};
+
+const roleMetricToneMap: Record<string, "success" | "info" | "default"> = {
+  owner: "success",
+  manager: "info",
+  cowboy: "default",
+};
+
+function formatDate(dateString: string) {
+  return new Date(dateString).toLocaleDateString("pt-BR", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+}
+
+function normalizeAcceptError(message?: string) {
+  const normalized = message?.toLowerCase() ?? "";
+
+  if (normalized.includes("email does not match")) {
+    return "Este convite foi enviado para outro e-mail. Saia da conta atual e entre com o e-mail correto do convite.";
+  }
+
+  if (normalized.includes("phone does not match")) {
+    return "Seu telefone nao corresponde ao telefone informado no convite. Atualize seu perfil ou fale com quem enviou o convite.";
+  }
+
+  if (normalized.includes("already a member")) {
+    return "Voce ja faz parte desta fazenda.";
+  }
+
+  if (normalized.includes("expired")) {
+    return "Este convite expirou. Solicite um novo convite.";
+  }
+
+  return message || "Nao foi possivel concluir este convite.";
 }
 
 export const AcceptInvite = () => {
@@ -33,7 +84,7 @@ export const AcceptInvite = () => {
 
   const loadInvite = useCallback(async () => {
     if (!token) {
-      setError("Invalid invite link");
+      setError("Link de convite invalido.");
       setIsLoading(false);
       return;
     }
@@ -45,89 +96,66 @@ export const AcceptInvite = () => {
       });
 
       if (error) throw error;
-
-      // RPC returns null if invite not found
       if (!data) {
-        throw new Error("Invite not found");
+        throw new Error("Convite nao encontrado.");
       }
 
       setInvite(data);
-    } catch (error: unknown) {
-      const err = error instanceof Error ? error : new Error(String(error));
-      setError(err.message);
+      setError(null);
+    } catch (previewError: unknown) {
+      const normalized =
+        previewError instanceof Error
+          ? previewError
+          : new Error(String(previewError));
+      setError(normalized.message);
+      setInvite(null);
     } finally {
       setIsLoading(false);
     }
   }, [token]);
 
   useEffect(() => {
-    loadInvite();
+    void loadInvite();
   }, [loadInvite]);
 
   const handleAccept = async () => {
-    // Check if user is authenticated
     const {
       data: { user },
     } = await supabase.auth.getUser();
+
     if (!user) {
       toast({
-        title: "Autenticação necessária",
-        description: "Por favor faça login para aceitar este convite",
+        title: "Autenticacao necessaria",
+        description: "Faca login para aceitar este convite.",
         variant: "destructive",
       });
-      // Redirect to login with return URL
       navigate(`/login?redirect=/invites/${token}`);
       return;
     }
 
     setIsProcessing(true);
     try {
-      console.log("[AcceptInvite] Accepting invite:", token);
-      const { data: fazendaId, error } = await supabase.rpc("accept_invite", {
+      const { error } = await supabase.rpc("accept_invite", {
         _token: token,
       });
 
       if (error) {
-        console.error("[AcceptInvite] Error accepting invite:", error);
-
-        // ✅ P0: User-friendly error messages for common cases
-        if (error.message?.toLowerCase().includes("email does not match")) {
-          throw new Error(
-            "Este convite é para outro email. Por favor, saia e entre com o email correto do convite.",
-          );
-        }
-
-        if (error.message?.toLowerCase().includes("phone does not match")) {
-          throw new Error(
-            "Seu telefone não corresponde ao telefone do convite. Atualize seu telefone no Perfil ou entre em contato com quem enviou o convite.",
-          );
-        }
-
-        if (error.message?.toLowerCase().includes("already a member")) {
-          throw new Error("Você já é membro desta fazenda.");
-        }
-
-        if (error.message?.toLowerCase().includes("expired")) {
-          throw new Error("Este convite expirou. Solicite um novo convite.");
-        }
-
-        throw error;
+        throw new Error(normalizeAcceptError(error.message));
       }
 
-      console.log("[AcceptInvite] Invite accepted, fazenda:", fazendaId);
-
       toast({
-        title: "Sucesso!",
-        description: "Você entrou na fazenda",
+        title: "Convite aceito",
+        description: "Voce entrou na fazenda com sucesso.",
       });
-
-      // Redirect to home
       navigate("/home");
-    } catch (error: unknown) {
-      const err = error instanceof Error ? error : new Error(String(error));
+    } catch (acceptError: unknown) {
+      const normalized =
+        acceptError instanceof Error
+          ? acceptError
+          : new Error(String(acceptError));
       toast({
-        title: "Error",
-        description: err.message,
+        title: "Nao foi possivel aceitar o convite",
+        description: normalized.message,
         variant: "destructive",
       });
     } finally {
@@ -145,17 +173,18 @@ export const AcceptInvite = () => {
       if (error) throw error;
 
       toast({
-        title: "Convite rejeitado",
-        description: "Você recusou este convite",
+        title: "Convite recusado",
+        description: "O convite foi recusado e nao aparecera mais como pendente.",
       });
-
-      // Redirect to home or index
       navigate("/");
-    } catch (error: unknown) {
-      const err = error instanceof Error ? error : new Error(String(error));
+    } catch (rejectError: unknown) {
+      const normalized =
+        rejectError instanceof Error
+          ? rejectError
+          : new Error(String(rejectError));
       toast({
-        title: "Error",
-        description: err.message,
+        title: "Nao foi possivel recusar o convite",
+        description: normalized.message,
         variant: "destructive",
       });
     } finally {
@@ -163,17 +192,9 @@ export const AcceptInvite = () => {
     }
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("pt-BR", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-  };
-
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center bg-muted/20">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
@@ -181,130 +202,157 @@ export const AcceptInvite = () => {
 
   if (error || !invite) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <Card className="max-w-md w-full">
-          <CardHeader>
-            <CardTitle className="text-destructive">
-              Convite Não Encontrado
-            </CardTitle>
-            <CardDescription>
-              {error || "Este link de convite é inválido"}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button onClick={() => navigate("/")} className="w-full">
-              Ir para Início
-            </Button>
-          </CardContent>
-        </Card>
+      <div className="min-h-screen bg-muted/20 px-4 py-8">
+        <div className="mx-auto max-w-3xl space-y-6">
+          <PageIntro
+            eyebrow="Convite"
+            title="Convite indisponivel"
+            description={error || "Este link de convite nao esta mais disponivel."}
+            meta={<StatusBadge tone="danger">Convite invalido</StatusBadge>}
+            actions={
+              <Button onClick={() => navigate("/")}>
+                Voltar para o inicio
+              </Button>
+            }
+          />
+          <Card>
+            <CardContent className="p-5 text-sm text-muted-foreground">
+              Confira se o link foi copiado corretamente ou solicite um novo convite ao responsavel pela fazenda.
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }
 
   if (!invite.is_valid) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <Card className="max-w-md w-full">
-          <CardHeader>
-            <CardTitle className="text-destructive">Convite Expirado</CardTitle>
-            <CardDescription>
-              Este convite expirou ou já foi utilizado.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2 text-sm">
-              <p>
-                <strong>Fazenda:</strong> {invite.fazenda_nome}
-              </p>
-              <p>
-                <strong>Status:</strong> <Badge>{invite.status}</Badge>
-              </p>
-            </div>
-            <Button onClick={() => navigate("/")} className="w-full mt-4">
-              Go to Home
-            </Button>
-          </CardContent>
-        </Card>
+      <div className="min-h-screen bg-muted/20 px-4 py-8">
+        <div className="mx-auto max-w-4xl space-y-6">
+          <PageIntro
+            eyebrow="Convite"
+            title="Convite expirado ou ja utilizado"
+            description="Este link nao pode mais ser usado. Se ainda precisar acessar a fazenda, solicite um novo convite."
+            meta={
+              <>
+                <StatusBadge tone="danger">{invite.status}</StatusBadge>
+                <StatusBadge tone="neutral">{invite.fazenda_nome}</StatusBadge>
+              </>
+            }
+            actions={
+              <Button onClick={() => navigate("/")}>
+                Voltar para o inicio
+              </Button>
+            }
+          />
+
+          <div className="grid gap-4 md:grid-cols-3">
+            <MetricCard
+              label="Fazenda"
+              value={invite.fazenda_nome}
+              hint="Operacao vinculada a este convite."
+            />
+            <MetricCard
+              label="Perfil"
+              value={roleLabelMap[invite.role] ?? invite.role}
+              hint="Papel previsto para este acesso."
+              tone={roleMetricToneMap[invite.role] ?? "default"}
+            />
+            <MetricCard
+              label="Expiracao"
+              value={formatDate(invite.expires_at)}
+              hint="O convite precisa ser reemitido depois desse prazo."
+              icon={<Clock3 className="h-5 w-5" />}
+            />
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <Card className="max-w-md w-full">
-        <CardHeader>
-          <CardTitle>Você Foi Convidado!</CardTitle>
-          <CardDescription>
-            Você foi convidado para entrar em uma fazenda no RebanhoSync
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="space-y-3">
-            <div className="flex items-center justify-between py-2 border-b">
-              <span className="text-sm font-medium text-muted-foreground">
-                Fazenda
-              </span>
-              <span className="font-semibold">{invite.fazenda_nome}</span>
-            </div>
-            <div className="flex items-center justify-between py-2 border-b">
-              <span className="text-sm font-medium text-muted-foreground">
-                Função
-              </span>
-              <Badge className="capitalize">{invite.role}</Badge>
-            </div>
-            <div className="flex items-center justify-between py-2 border-b">
-              <span className="text-sm font-medium text-muted-foreground">
-                Convidado por
-              </span>
-              <span>{invite.inviter_nome}</span>
-            </div>
-            <div className="flex items-center justify-between py-2">
-              <span className="text-sm font-medium text-muted-foreground">
-                Expira
-              </span>
-              <span className="text-sm">{formatDate(invite.expires_at)}</span>
-            </div>
-          </div>
+    <div className="min-h-screen bg-muted/20 px-4 py-8">
+      <div className="mx-auto max-w-4xl space-y-6">
+        <PageIntro
+          eyebrow="Convite"
+          title="Voce foi convidado para entrar em uma fazenda"
+          description="Revise a operacao, o papel e o responsavel pelo convite antes de aceitar. O acesso entra no mesmo fluxo seguro de membership."
+          meta={
+            <>
+              <StatusBadge tone={roleToneMap[invite.role] ?? "neutral"}>
+                {roleLabelMap[invite.role] ?? invite.role}
+              </StatusBadge>
+              <StatusBadge tone="info">{invite.fazenda_nome}</StatusBadge>
+              <StatusBadge tone="neutral">Expira em {formatDate(invite.expires_at)}</StatusBadge>
+            </>
+          }
+          actions={
+            <>
+              <Button onClick={handleAccept} disabled={isProcessing}>
+                {isProcessing ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Processando...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="mr-2 h-4 w-4" />
+                    Aceitar convite
+                  </>
+                )}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleReject}
+                disabled={isProcessing}
+              >
+                {isProcessing ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Processando...
+                  </>
+                ) : (
+                  <>
+                    <XCircle className="mr-2 h-4 w-4" />
+                    Recusar por agora
+                  </>
+                )}
+              </Button>
+            </>
+          }
+        />
 
-          <div className="flex gap-3">
-            <Button
-              onClick={handleAccept}
-              disabled={isProcessing}
-              className="flex-1"
-            >
-              {isProcessing ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Processando...
-                </>
-              ) : (
-                <>
-                  <CheckCircle className="h-4 w-4 mr-2" />
-                  Aceitar
-                </>
-              )}
-            </Button>
-            <Button
-              onClick={handleReject}
-              disabled={isProcessing}
-              variant="outline"
-              className="flex-1"
-            >
-              {isProcessing ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Processing...
-                </>
-              ) : (
-                <>
-                  <XCircle className="h-4 w-4 mr-2" />
-                  Recusar
-                </>
-              )}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+        <div className="grid gap-4 md:grid-cols-3">
+          <MetricCard
+            label="Fazenda"
+            value={invite.fazenda_nome}
+            hint="Operacao que sera adicionada a sua conta."
+          />
+          <MetricCard
+            label="Papel"
+            value={roleLabelMap[invite.role] ?? invite.role}
+            hint="Permissoes previstas para sua rotina dentro da fazenda."
+            tone={roleMetricToneMap[invite.role] ?? "default"}
+          />
+          <MetricCard
+            label="Convidado por"
+            value={invite.inviter_nome}
+            hint="Responsavel que compartilhou este acesso."
+            icon={<UserRound className="h-5 w-5" />}
+          />
+        </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Antes de confirmar</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm text-muted-foreground">
+            <p>Se voce ainda nao estiver autenticado, o sistema pedira login antes de concluir o aceite.</p>
+            <p>Ao aceitar, a fazenda passa a fazer parte da sua conta e podera ser selecionada no fluxo operacional.</p>
+            <p>Se o convite tiver sido enviado para outro e-mail ou telefone, use a conta correta para evitar rejeicao de seguranca.</p>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };

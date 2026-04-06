@@ -5,15 +5,34 @@ import {
   AlertTriangle,
   Calendar,
   CheckCircle2,
-  Filter,
+  ClipboardCheck,
+  MoreHorizontal,
   Plus,
   Search,
   XCircle,
-  ClipboardCheck,
 } from "lucide-react";
-import { db } from "@/lib/offline/db";
-import { createGesture } from "@/lib/offline/ops";
-import { pullDataForFarm } from "@/lib/offline/pull";
+
+import { EmptyState } from "@/components/EmptyState";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { MetricCard } from "@/components/ui/metric-card";
+import { PageIntro } from "@/components/ui/page-intro";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { Toolbar, ToolbarGroup } from "@/components/ui/toolbar";
 import { useAuth } from "@/hooks/useAuth";
 import { getAnimalBreedLabel } from "@/lib/animals/catalogs";
 import {
@@ -22,23 +41,13 @@ import {
   getPendingAnimalLifecycleTransitions,
   summarizePendingAnimalLifecycleTransitions,
 } from "@/lib/animals/lifecycle";
+import { db } from "@/lib/offline/db";
+import { createGesture } from "@/lib/offline/ops";
+import { pullDataForFarm } from "@/lib/offline/pull";
+import type { AgendaItem, Animal, Lote, SanitarioTipoEnum } from "@/lib/offline/types";
 import { isCalfJourneyAgendaItem } from "@/lib/reproduction/calfJourney";
 import { concluirPendenciaSanitaria } from "@/lib/sanitario/service";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { EmptyState } from "@/components/EmptyState";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { showError, showSuccess } from "@/utils/toast";
-import type { AgendaItem, Animal, Lote, SanitarioTipoEnum } from "@/lib/offline/types";
 
 const DOMAIN_LABEL: Record<string, string> = {
   sanitario: "Sanitario",
@@ -68,10 +77,16 @@ type AgendaRow = {
   produtoLabel: string;
 };
 
-function statusClass(status: string) {
-  if (status === "cancelado") return "bg-red-100 text-red-700 border-red-200";
-  if (status === "concluido") return "bg-emerald-100 text-emerald-700 border-emerald-200";
-  return "bg-amber-100 text-amber-700 border-amber-200";
+function getAgendaStatusTone(status: string) {
+  if (status === "cancelado") return "danger";
+  if (status === "concluido") return "success";
+  return "warning";
+}
+
+function getSyncTone(status: string) {
+  if (status === "ERROR" || status === "REJECTED") return "danger";
+  if (status === "PENDING" || status === "SYNCING") return "warning";
+  return "neutral";
 }
 
 function normalizeSyncStatus(status?: string) {
@@ -115,13 +130,17 @@ function formatAnimalAge(dataNascimento: string | null) {
   return `${Math.floor(totalDays / 30)}m`;
 }
 
-const Agenda = () => {
+function formatAgendaDate(date: string) {
+  return new Date(`${date}T00:00:00`).toLocaleDateString("pt-BR");
+}
+
+export default function Agenda() {
   const navigate = useNavigate();
   const { activeFarmId, farmLifecycleConfig } = useAuth();
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"all" | "agendado" | "concluido" | "cancelado">(
-    "all",
-  );
+  const [statusFilter, setStatusFilter] = useState<
+    "all" | "agendado" | "concluido" | "cancelado"
+  >("all");
   const [dominioFilter, setDominioFilter] = useState("all");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
@@ -130,7 +149,9 @@ const Agenda = () => {
   useEffect(() => {
     if (!activeFarmId) return;
 
-    pullDataForFarm(activeFarmId, ["agenda_itens", "animais", "lotes"], { mode: "merge" }).catch((error) => {
+    pullDataForFarm(activeFarmId, ["agenda_itens", "animais", "lotes"], {
+      mode: "merge",
+    }).catch((error) => {
       console.warn("[agenda] failed to refresh agenda_itens", error);
     });
   }, [activeFarmId]);
@@ -149,9 +170,9 @@ const Agenda = () => {
       ]);
 
       return {
-        itens: itens.filter((i) => !i.deleted_at),
-        animais: animais.filter((a) => !a.deleted_at),
-        lotes: lotes.filter((l) => !l.deleted_at),
+        itens: itens.filter((item) => !item.deleted_at),
+        animais: animais.filter((animal) => !animal.deleted_at),
+        lotes: lotes.filter((lote) => !lote.deleted_at),
         gestos,
       };
     },
@@ -160,9 +181,9 @@ const Agenda = () => {
 
   const filtered = useMemo(() => {
     if (!data) return [];
-    const animalById = new Map(data.animais.map((a) => [a.id, a]));
-    const loteById = new Map(data.lotes.map((l) => [l.id, l]));
-    const gestoByTx = new Map(data.gestos.map((g) => [g.client_tx_id, g.status]));
+    const animalById = new Map(data.animais.map((animal) => [animal.id, animal]));
+    const loteById = new Map(data.lotes.map((lote) => [lote.id, lote]));
+    const gestoByTx = new Map(data.gestos.map((gesture) => [gesture.client_tx_id, gesture.status]));
     const searchLower = search.trim().toLowerCase();
 
     return data.itens
@@ -201,7 +222,7 @@ const Agenda = () => {
         };
       })
       .filter(Boolean)
-      .sort((a, b) => a!.item.data_prevista.localeCompare(b!.item.data_prevista))
+      .sort((left, right) => left!.item.data_prevista.localeCompare(right!.item.data_prevista))
       .map((row) => {
         const typed = row as NonNullable<typeof row>;
         const produtoLabel =
@@ -274,9 +295,11 @@ const Agenda = () => {
     return Array.from(byAnimal.values())
       .map((group) => ({
         ...group,
-        rows: [...group.rows].sort((a, b) => a.item.data_prevista.localeCompare(b.item.data_prevista)),
+        rows: [...group.rows].sort((left, right) =>
+          left.item.data_prevista.localeCompare(right.item.data_prevista),
+        ),
       }))
-      .sort((a, b) => a.title.localeCompare(b.title));
+      .sort((left, right) => left.title.localeCompare(right.title));
   }, [filtered]);
 
   const groupedByEvent = useMemo(() => {
@@ -302,7 +325,9 @@ const Agenda = () => {
       const current = byEvent.get(key);
       if (current) {
         current.rows.push(row);
-        if (row.item.data_prevista < current.earliestDate) current.earliestDate = row.item.data_prevista;
+        if (row.item.data_prevista < current.earliestDate) {
+          current.earliestDate = row.item.data_prevista;
+        }
       } else {
         byEvent.set(key, {
           key,
@@ -317,9 +342,11 @@ const Agenda = () => {
     return Array.from(byEvent.values())
       .map((group) => ({
         ...group,
-        rows: [...group.rows].sort((a, b) => a.item.data_prevista.localeCompare(b.item.data_prevista)),
+        rows: [...group.rows].sort((left, right) =>
+          left.item.data_prevista.localeCompare(right.item.data_prevista),
+        ),
       }))
-      .sort((a, b) => a.earliestDate.localeCompare(b.earliestDate));
+      .sort((left, right) => left.earliestDate.localeCompare(right.earliestDate));
   }, [filtered]);
 
   const counts = useMemo(() => {
@@ -333,6 +360,14 @@ const Agenda = () => {
     }
     return { agendado, concluido, cancelado };
   }, [filtered]);
+
+  const hasActiveFilters =
+    search.trim().length > 0 ||
+    statusFilter !== "all" ||
+    dominioFilter !== "all" ||
+    dateFrom.length > 0 ||
+    dateTo.length > 0 ||
+    groupMode !== "animal";
 
   const updateStatus = async (item: AgendaItem, status: "concluido" | "cancelado") => {
     if (!activeFarmId) {
@@ -411,7 +446,8 @@ const Agenda = () => {
     const protocoloId = readString(item.source_ref, "protocolo_id");
     const protocoloItemId =
       readString(item.source_ref, "protocolo_item_id") ?? item.protocol_item_version_id;
-    const produto = readString(item.source_ref, "produto") ?? readString(item.payload, "produto");
+    const produto =
+      readString(item.source_ref, "produto") ?? readString(item.payload, "produto");
     const sanitarioTipo = asSanitarioTipo(readString(item.source_ref, "tipo"));
 
     if (protocoloId) params.set("protocoloId", protocoloId);
@@ -422,93 +458,143 @@ const Agenda = () => {
     navigate(`/registrar?${params.toString()}`);
   };
 
-  const renderGenericRow = (row: AgendaRow) => {
-    const { item } = row;
+  const renderRow = (row: AgendaRow) => {
+    const periodicidade =
+      row.item.interval_days_applied && row.item.interval_days_applied > 0
+        ? `${row.item.interval_days_applied} dias`
+        : "Dose unica";
+    const indicacao =
+      readString(row.item.source_ref, "indicacao") ??
+      (readNumber(row.item.source_ref, "dose_num")
+        ? `Dose ${readNumber(row.item.source_ref, "dose_num")}`
+        : "Aplicacao conforme protocolo");
 
     return (
-      <div key={item.id} className="rounded-md border p-3 space-y-3">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <p className="font-semibold capitalize">{item.tipo.replaceAll("_", " ")}</p>
-            <p className="text-sm text-muted-foreground">
-              {new Date(`${item.data_prevista}T00:00:00`).toLocaleDateString("pt-BR")} -{" "}
-              {row.animalNome} ({row.idadeLabel}) - {row.loteNome}
+      <article
+        key={row.item.id}
+        className="rounded-2xl border border-border/70 bg-muted/30 p-4"
+      >
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="min-w-0 flex-1 space-y-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="font-medium capitalize">
+                {row.item.tipo.replaceAll("_", " ")}
+              </p>
+              <StatusBadge tone="neutral">
+                {DOMAIN_LABEL[row.item.dominio] ?? row.item.dominio}
+              </StatusBadge>
+              <StatusBadge tone={getAgendaStatusTone(row.item.status)}>
+                {STATUS_LABEL[row.item.status] ?? row.item.status}
+              </StatusBadge>
+              <StatusBadge tone={getSyncTone(row.syncStatus)}>
+                {row.syncStatus}
+              </StatusBadge>
+            </div>
+
+            <p className="text-sm leading-6 text-muted-foreground">
+              {formatAgendaDate(row.item.data_prevista)} | {row.animalNome} ({row.idadeLabel}) | {row.loteNome}
             </p>
+
+            <div className="grid gap-2 text-sm md:grid-cols-2">
+              <p className="text-muted-foreground">
+                Produto: <span className="font-medium text-foreground">{row.produtoLabel}</span>
+              </p>
+              <p className="text-muted-foreground">
+                Periodicidade: <span className="font-medium text-foreground">{periodicidade}</span>
+              </p>
+              <p className="text-muted-foreground">
+                Indicacao: <span className="font-medium text-foreground">{indicacao}</span>
+              </p>
+              <p className="text-muted-foreground">
+                Origem: <span className="font-medium text-foreground">{row.item.source_kind}</span>
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+              {row.item.source_evento_id ? (
+                <span>Evento {row.item.source_evento_id.slice(0, 8)}</span>
+              ) : null}
+              {row.item.protocol_item_version_id ? (
+                <span>Protocolo {row.item.protocol_item_version_id.slice(0, 8)}</span>
+              ) : null}
+              {row.item.dedup_key ? (
+                <span>Dedup {row.item.dedup_key.slice(0, 12)}</span>
+              ) : null}
+            </div>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <Badge variant="outline">{DOMAIN_LABEL[item.dominio] ?? item.dominio}</Badge>
-            <Badge className={statusClass(item.status)}>
-              {STATUS_LABEL[item.status] ?? item.status}
-            </Badge>
-            <Badge variant="outline">{item.source_kind}</Badge>
-            <Badge variant="outline">{row.syncStatus}</Badge>
+
+          <div className="flex items-center gap-2">
+            {row.item.status === "agendado" ? (
+              <Button size="sm" onClick={() => goToRegistrar(row.item)}>
+                {isCalfJourneyAgendaItem(row.item)
+                  ? "Abrir rotina da cria"
+                  : "Registrar evento"}
+              </Button>
+            ) : null}
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="outline"
+                  aria-label={`Mais acoes para o item ${row.item.id}`}
+                >
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {row.item.status === "agendado" && !isCalfJourneyAgendaItem(row.item) ? (
+                  <DropdownMenuItem onClick={() => updateStatus(row.item, "concluido")}>
+                    Concluir
+                  </DropdownMenuItem>
+                ) : null}
+                {row.item.status === "agendado" ? (
+                  <DropdownMenuItem onClick={() => updateStatus(row.item, "cancelado")}>
+                    Cancelar
+                  </DropdownMenuItem>
+                ) : null}
+                {row.item.source_evento_id ? (
+                  <DropdownMenuItem
+                    onClick={() => navigate(`/eventos?eventoId=${row.item.source_evento_id}`)}
+                  >
+                    Ver evento
+                  </DropdownMenuItem>
+                ) : null}
+                {row.item.animal_id ? (
+                  <DropdownMenuItem onClick={() => navigate(`/animais/${row.item.animal_id}`)}>
+                    Abrir ficha do animal
+                  </DropdownMenuItem>
+                ) : null}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
-
-        <div className="text-xs text-muted-foreground flex flex-wrap gap-3">
-          <span>
-            Produto: <span className="font-mono">{row.produtoLabel}</span>
-          </span>
-          {item.source_evento_id && (
-            <span>
-              Evento: <span className="font-mono">{item.source_evento_id.slice(0, 8)}</span>
-            </span>
-          )}
-          {item.protocol_item_version_id && (
-            <span>
-              Protocolo: <span className="font-mono">{item.protocol_item_version_id.slice(0, 8)}</span>
-            </span>
-          )}
-          {item.dedup_key && (
-            <span>
-              Dedup: <span className="font-mono">{item.dedup_key.slice(0, 12)}</span>
-            </span>
-          )}
-        </div>
-
-        {item.status === "agendado" && (
-          <div className="flex flex-wrap gap-2">
-            <Button size="sm" onClick={() => goToRegistrar(item)}>
-              {isCalfJourneyAgendaItem(item) ? "Abrir rotina da cria" : "Registrar Evento"}
-            </Button>
-            {!isCalfJourneyAgendaItem(item) && (
-              <Button size="sm" variant="outline" onClick={() => updateStatus(item, "concluido")}>
-                Concluir
-              </Button>
-            )}
-            <Button size="sm" variant="outline" onClick={() => updateStatus(item, "cancelado")}>
-              Cancelar
-            </Button>
-            {item.source_evento_id && (
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => navigate(`/eventos?eventoId=${item.source_evento_id}`)}
-              >
-                Ver Evento
-              </Button>
-            )}
-          </div>
-        )}
-      </div>
+      </article>
     );
   };
 
   if (!data || data.itens.length === 0) {
     return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold">Agenda de Manejo</h1>
-          <Button size="sm" onClick={() => navigate("/registrar")}>
-            <Plus className="h-4 w-4 mr-2" /> Novo Item
-          </Button>
-        </div>
+      <div className="space-y-5">
+        <PageIntro
+          eyebrow="Rotina planejada"
+          title="Agenda de manejo"
+          description="Itens manuais e automaticos que sustentam a rotina do dia, sempre vinculados ao fluxo real de eventos."
+          actions={
+            <Button size="sm" onClick={() => navigate("/registrar")}>
+              <Plus className="h-4 w-4" />
+              Registrar
+            </Button>
+          }
+        />
+
         <EmptyState
           icon={Calendar}
           title="Agenda vazia"
-          description="Sua agenda de manejo esta vazia. Registre eventos para gerar novas tarefas."
+          description="A agenda ainda nao tem tarefas abertas. Registre eventos ou ative protocolos para alimentar a rotina."
           action={{
-            label: "Registrar Atividade",
+            label: "Registrar atividade",
             onClick: () => navigate("/registrar"),
           }}
         />
@@ -517,214 +603,194 @@ const Agenda = () => {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold">Agenda de Manejo</h1>
-          <p className="text-sm text-muted-foreground">
-            Itens manuais e automaticos vinculados ao fluxo de eventos.
-          </p>
-        </div>
-        <Button size="sm" onClick={() => navigate("/registrar")}>
-          <Plus className="h-4 w-4 mr-2" /> Registrar
-        </Button>
-      </div>
+    <div className="space-y-5">
+      <PageIntro
+        eyebrow="Rotina planejada"
+        title="Agenda de manejo"
+        description="Itens manuais e automaticos vinculados ao fluxo de eventos, com leitura clara do proximo passo e do estado de sync."
+        meta={
+          <>
+            <StatusBadge tone="neutral">{filtered.length} item(ns) no recorte</StatusBadge>
+            {hasActiveFilters ? <StatusBadge tone="info">Filtros ativos</StatusBadge> : null}
+            {lifecycleSummary.total > 0 ? (
+              <StatusBadge tone="warning">
+                {lifecycleSummary.total} transicao(oes) no radar
+              </StatusBadge>
+            ) : null}
+          </>
+        }
+        actions={
+          <Button size="sm" onClick={() => navigate("/registrar")}>
+            <Plus className="h-4 w-4" />
+            Registrar
+          </Button>
+        }
+      />
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardContent className="p-4 flex items-center justify-between">
-            <div>
-              <p className="text-sm text-muted-foreground">Agendados</p>
-              <p className="text-2xl font-bold">{counts.agendado}</p>
-            </div>
-            <Calendar className="h-5 w-5 text-amber-500" />
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4 flex items-center justify-between">
-            <div>
-              <p className="text-sm text-muted-foreground">Concluidos</p>
-              <p className="text-2xl font-bold">{counts.concluido}</p>
-            </div>
-            <CheckCircle2 className="h-5 w-5 text-emerald-500" />
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4 flex items-center justify-between">
-            <div>
-              <p className="text-sm text-muted-foreground">Cancelados</p>
-              <p className="text-2xl font-bold">{counts.cancelado}</p>
-            </div>
-            <XCircle className="h-5 w-5 text-red-500" />
-          </CardContent>
-        </Card>
-      </div>
+      <section className="grid gap-4 md:grid-cols-3">
+        <MetricCard
+          label="Agendados"
+          value={counts.agendado}
+          hint="Itens que ainda pedem acao."
+          tone={counts.agendado > 0 ? "warning" : "default"}
+        />
+        <MetricCard
+          label="Concluidos"
+          value={counts.concluido}
+          hint="Ja resolvidos no recorte atual."
+          tone="success"
+        />
+        <MetricCard
+          label="Cancelados"
+          value={counts.cancelado}
+          hint="Itens encerrados sem execucao."
+          tone={counts.cancelado > 0 ? "danger" : "default"}
+        />
+      </section>
 
-      {lifecycleSummary.total > 0 && (
-        <Card className="border-amber-200 bg-amber-50/50">
-          <CardHeader className="pb-3">
-            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-              <div>
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <AlertTriangle className="h-4 w-4 text-amber-600" />
-                  Transicoes de estagio no radar
-                </CardTitle>
-                <p className="text-sm text-muted-foreground">
-                  Decisoes estrategicas e marcos biologicos que ja pedem ajuste no rebanho.
-                </p>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <Badge variant="outline">{lifecycleSummary.total} pendencia(s)</Badge>
-                <Badge variant="outline">
-                  {lifecycleSummary.strategic} estrategica(s)
-                </Badge>
-                <Badge variant="outline">
-                  {lifecycleSummary.biological} biologica(s)
-                </Badge>
-                <Button asChild size="sm" variant="outline">
-                  <Link to="/animais/transicoes">Abrir mutacao em lote</Link>
-                </Button>
-              </div>
-            </div>
+      {lifecycleSummary.total > 0 ? (
+        <Card className="border-warning/20 bg-warning-muted/70 shadow-none">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <AlertTriangle className="h-4 w-4 text-warning" />
+              Transicoes de estagio no radar
+            </CardTitle>
+            <CardDescription>
+              {lifecycleSummary.total} pendencia(s), com {lifecycleSummary.strategic} estrategica(s) e {lifecycleSummary.biological} biologica(s).
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             {lifecycleQueue.slice(0, 4).map((item) => (
               <div
                 key={item.animalId}
-                className="flex flex-col gap-3 rounded-xl border bg-background p-4 lg:flex-row lg:items-center lg:justify-between"
+                className="rounded-2xl border border-border/70 bg-background/90 p-4"
               >
-                <div className="space-y-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <p className="font-medium">{item.identificacao}</p>
-                    <Badge
-                      variant={
-                        item.queueKind === "decisao_estrategica"
-                          ? "secondary"
-                          : "outline"
-                      }
-                    >
-                      {getPendingAnimalLifecycleKindLabel(item.queueKind)}
-                    </Badge>
-                    <Badge variant={item.canAutoApply ? "secondary" : "outline"}>
-                      {item.canAutoApply ? "Auto/hibrido" : "Manual"}
-                    </Badge>
+                <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                  <div className="space-y-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="font-medium">{item.identificacao}</p>
+                      <StatusBadge
+                        tone={
+                          item.queueKind === "decisao_estrategica" ? "warning" : "info"
+                        }
+                      >
+                        {getPendingAnimalLifecycleKindLabel(item.queueKind)}
+                      </StatusBadge>
+                      <StatusBadge tone={item.canAutoApply ? "info" : "warning"}>
+                        {item.canAutoApply ? "Auto/hibrido" : "Manual"}
+                      </StatusBadge>
+                    </div>
+                    <p className="text-sm leading-6 text-muted-foreground">
+                      {getAnimalLifeStageLabel(item.currentStage)} para{" "}
+                      {getAnimalLifeStageLabel(item.targetStage)} | {item.loteNome}
+                    </p>
+                    <p className="text-xs text-muted-foreground">{item.reason}</p>
                   </div>
-                  <p className="text-sm text-muted-foreground">
-                    {getAnimalLifeStageLabel(item.currentStage)} para{" "}
-                    {getAnimalLifeStageLabel(item.targetStage)} · {item.loteNome}
-                  </p>
-                  <p className="text-xs text-muted-foreground">{item.reason}</p>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <Button asChild size="sm" variant="outline">
-                    <Link to={`/animais/${item.animalId}`}>Abrir ficha</Link>
-                  </Button>
-                  <Button asChild size="sm">
-                    <Link to="/animais/transicoes">Tratar na fila</Link>
-                  </Button>
+                  <div className="flex flex-wrap gap-2">
+                    <Button asChild size="sm" variant="outline">
+                      <Link to={`/animais/${item.animalId}`}>Abrir ficha</Link>
+                    </Button>
+                    <Button asChild size="sm">
+                      <Link to="/animais/transicoes">Tratar na fila</Link>
+                    </Button>
+                  </div>
                 </div>
               </div>
             ))}
           </CardContent>
         </Card>
-      )}
+      ) : null}
 
-      <Card>
-        <CardHeader className="pb-4">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Filter className="h-4 w-4" />
-            Filtros
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <div className="space-y-2">
-            <Label>Busca</Label>
-            <div className="relative">
-              <Search className="h-4 w-4 text-muted-foreground absolute left-3 top-3" />
-              <Input
-                className="pl-9"
-                placeholder="Tipo, animal, lote..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            </div>
+      <Toolbar>
+        <ToolbarGroup className="flex-1 gap-2">
+          <div className="relative min-w-[220px] flex-1">
+            <Search className="absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              className="pl-9"
+              placeholder="Buscar por tipo, animal ou lote"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+            />
           </div>
-          <div className="space-y-2">
-            <Label>Status</Label>
-            <Select
-              value={statusFilter}
-              onValueChange={(v) => setStatusFilter(v as "all" | "agendado" | "concluido" | "cancelado")}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                <SelectItem value="agendado">Agendado</SelectItem>
-                <SelectItem value="concluido">Concluido</SelectItem>
-                <SelectItem value="cancelado">Cancelado</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2">
-            <Label>Dominio</Label>
-            <Select value={dominioFilter} onValueChange={setDominioFilter}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                <SelectItem value="sanitario">Sanitario</SelectItem>
-                <SelectItem value="pesagem">Pesagem</SelectItem>
-                <SelectItem value="movimentacao">Movimentacao</SelectItem>
-                <SelectItem value="nutricao">Nutricao</SelectItem>
-                <SelectItem value="financeiro">Financeiro</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2">
-            <Label>Data de</Label>
-            <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
-          </div>
-          <div className="space-y-2">
-            <Label>Data ate</Label>
-            <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
-          </div>
-          <div className="space-y-2">
-            <Label>Agrupar por</Label>
-            <Select value={groupMode} onValueChange={(v) => setGroupMode(v as GroupMode)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="animal">Animal</SelectItem>
-                <SelectItem value="evento">Evento</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex items-end">
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={() => {
-                setSearch("");
-                setStatusFilter("all");
-                setDominioFilter("all");
-                setDateFrom("");
-                setDateTo("");
-                setGroupMode("animal");
-              }}
-            >
-              Limpar filtros
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+
+          <Select
+            value={statusFilter}
+            onValueChange={(value) =>
+              setStatusFilter(value as "all" | "agendado" | "concluido" | "cancelado")
+            }
+          >
+            <SelectTrigger className="w-full sm:w-[170px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os status</SelectItem>
+              <SelectItem value="agendado">Agendado</SelectItem>
+              <SelectItem value="concluido">Concluido</SelectItem>
+              <SelectItem value="cancelado">Cancelado</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select value={dominioFilter} onValueChange={setDominioFilter}>
+            <SelectTrigger className="w-full sm:w-[170px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os dominios</SelectItem>
+              <SelectItem value="sanitario">Sanitario</SelectItem>
+              <SelectItem value="pesagem">Pesagem</SelectItem>
+              <SelectItem value="movimentacao">Movimentacao</SelectItem>
+              <SelectItem value="nutricao">Nutricao</SelectItem>
+              <SelectItem value="financeiro">Financeiro</SelectItem>
+              <SelectItem value="reproducao">Reproducao</SelectItem>
+            </SelectContent>
+          </Select>
+        </ToolbarGroup>
+
+        <ToolbarGroup className="gap-2">
+          <Input
+            type="date"
+            value={dateFrom}
+            onChange={(event) => setDateFrom(event.target.value)}
+            className="w-full sm:w-[160px]"
+            aria-label="Data inicial"
+          />
+          <Input
+            type="date"
+            value={dateTo}
+            onChange={(event) => setDateTo(event.target.value)}
+            className="w-full sm:w-[160px]"
+            aria-label="Data final"
+          />
+          <Select value={groupMode} onValueChange={(value) => setGroupMode(value as GroupMode)}>
+            <SelectTrigger className="w-full sm:w-[170px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="animal">Agrupar por animal</SelectItem>
+              <SelectItem value="evento">Agrupar por evento</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setSearch("");
+              setStatusFilter("all");
+              setDominioFilter("all");
+              setDateFrom("");
+              setDateTo("");
+              setGroupMode("animal");
+            }}
+          >
+            Limpar filtros
+          </Button>
+        </ToolbarGroup>
+      </Toolbar>
 
       {filtered.length === 0 ? (
         <Card>
           <CardContent className="p-10 text-center">
-            <ClipboardCheck className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+            <ClipboardCheck className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
             <p className="font-medium">Nenhum item encontrado</p>
             <p className="text-sm text-muted-foreground">
               Ajuste os filtros para localizar tarefas da agenda.
@@ -736,9 +802,9 @@ const Agenda = () => {
           {groupMode === "animal"
             ? groupedByAnimal.map((group) => {
                 const categoriaZootecnica =
-                  readString(group.animal?.payload, "categoria_produtiva")
-                  ?? readString(group.animal?.payload, "categoria")
-                  ?? "N/D";
+                  readString(group.animal?.payload, "categoria_produtiva") ??
+                  readString(group.animal?.payload, "categoria") ??
+                  "N/D";
                 const sexoLabel =
                   group.animal?.sexo === "M"
                     ? "Macho"
@@ -751,107 +817,14 @@ const Agenda = () => {
 
                 return (
                   <Card key={group.key}>
-                    <CardHeader className="pb-3 space-y-2">
-                      <div className="grid gap-2 md:grid-cols-3 text-sm">
-                        <span>
-                          Identificacao: <span className="font-medium">{group.title}</span>
-                        </span>
-                        <span>
-                          Sexo: <span className="font-medium">{sexoLabel}</span>
-                        </span>
-                        <span>
-                          Raca: <span className="font-medium">{raca}</span>
-                        </span>
-                      </div>
-                      <div className="grid gap-2 md:grid-cols-3 text-sm">
-                        <span>
-                          Idade: <span className="font-medium">{idade}</span>
-                        </span>
-                        <span>
-                          Lote: <span className="font-medium">{lote}</span>
-                        </span>
-                        <span>
-                          Classificacao zootecnica: <span className="font-medium">{categoriaZootecnica}</span>
-                        </span>
-                      </div>
-                      <p className="text-xs text-muted-foreground">{group.rows.length} pendencia(s)</p>
+                    <CardHeader>
+                      <CardTitle className="text-base">{group.title}</CardTitle>
+                      <CardDescription>
+                        {sexoLabel} | {idade} | {lote} | {raca} | {categoriaZootecnica}
+                      </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-3">
-                      {group.rows.map((row) => {
-                        const periodicidade =
-                          row.item.interval_days_applied && row.item.interval_days_applied > 0
-                            ? `${row.item.interval_days_applied} dias`
-                            : "Dose unica";
-                        const indicacao =
-                          readString(row.item.source_ref, "indicacao")
-                          ?? (readNumber(row.item.source_ref, "dose_num")
-                            ? `Dose ${readNumber(row.item.source_ref, "dose_num")}`
-                            : "Aplicacao conforme protocolo");
-
-                        return (
-                          <div key={row.item.id} className="rounded-md border p-3 space-y-3">
-                            <div className="grid gap-2 md:grid-cols-2 text-sm">
-                              <div>
-                                <span className="text-muted-foreground">Nome da Vacina: </span>
-                                <span className="font-medium">{row.produtoLabel}</span>
-                              </div>
-                              <div>
-                                <span className="text-muted-foreground">Periodicidade: </span>
-                                <span className="font-medium">{periodicidade}</span>
-                              </div>
-                              <div>
-                                <span className="text-muted-foreground">Indicacao: </span>
-                                <span className="font-medium">{indicacao}</span>
-                              </div>
-                              <div>
-                                <span className="text-muted-foreground">Data prevista: </span>
-                                <span className="font-medium">
-                                  {new Date(`${row.item.data_prevista}T00:00:00`).toLocaleDateString("pt-BR")}
-                                </span>
-                              </div>
-                            </div>
-
-                            <div className="flex flex-wrap gap-2">
-                              <Badge variant="outline">{DOMAIN_LABEL[row.item.dominio] ?? row.item.dominio}</Badge>
-                              <Badge className={statusClass(row.item.status)}>
-                                {STATUS_LABEL[row.item.status] ?? row.item.status}
-                              </Badge>
-                              <Badge variant="outline">{row.syncStatus}</Badge>
-                              {row.item.protocol_item_version_id && (
-                                <Badge variant="outline">
-                                  Protocolo {row.item.protocol_item_version_id.slice(0, 8)}
-                                </Badge>
-                              )}
-                            </div>
-
-                            {row.item.status === "agendado" && (
-                              <div className="flex flex-wrap gap-2">
-                                <Button size="sm" onClick={() => goToRegistrar(row.item)}>
-                                  {isCalfJourneyAgendaItem(row.item)
-                                    ? "Abrir rotina da cria"
-                                    : "Registrar Evento"}
-                                </Button>
-                                {!isCalfJourneyAgendaItem(row.item) && (
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => updateStatus(row.item, "concluido")}
-                                  >
-                                    Concluir
-                                  </Button>
-                                )}
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => updateStatus(row.item, "cancelado")}
-                                >
-                                  Cancelar
-                                </Button>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
+                      {group.rows.map(renderRow)}
                     </CardContent>
                   </Card>
                 );
@@ -865,14 +838,14 @@ const Agenda = () => {
 
                 return (
                   <Card key={group.key}>
-                    <CardHeader className="pb-3">
+                    <CardHeader>
                       <CardTitle className="text-base">{group.title}</CardTitle>
-                      <p className="text-sm text-muted-foreground">
+                      <CardDescription>
                         {group.subtitle} | {uniqueAnimals} animal(is) | {group.rows.length} pendencia(s)
-                      </p>
+                      </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-3">
-                      {group.rows.map(renderGenericRow)}
+                      {group.rows.map(renderRow)}
                     </CardContent>
                   </Card>
                 );
@@ -881,6 +854,4 @@ const Agenda = () => {
       )}
     </div>
   );
-};
-
-export default Agenda;
+}

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { supabase } from "@/lib/supabase";
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -11,6 +11,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/lib/supabase";
 
 interface Member {
   user_id: string;
@@ -48,8 +49,8 @@ export const RemoveMemberDialog = ({
       if (error) throw error;
 
       toast({
-        title: "Success",
-        description: `${member.display_name} has been removed`,
+        title: "Membro removido",
+        description: `${member.display_name} perdeu acesso a esta fazenda.`,
       });
 
       onSuccess();
@@ -57,7 +58,7 @@ export const RemoveMemberDialog = ({
     } catch (error: unknown) {
       const err = error instanceof Error ? error : new Error(String(error));
       toast({
-        title: "Error",
+        title: "Erro ao remover membro",
         description: err.message,
         variant: "destructive",
       });
@@ -70,20 +71,20 @@ export const RemoveMemberDialog = ({
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Remove {member?.display_name}?</AlertDialogTitle>
+          <AlertDialogTitle>Remover acesso de {member?.display_name}?</AlertDialogTitle>
           <AlertDialogDescription>
-            This will remove their access to this farm. This action cannot be
-            undone.
+            Essa acao encerra o acesso deste membro a fazenda atual. Use apenas
+            quando o convite ou o vinculo nao devem continuar ativos.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={isLoading}>Cancel</AlertDialogCancel>
+          <AlertDialogCancel disabled={isLoading}>Cancelar</AlertDialogCancel>
           <AlertDialogAction
             onClick={handleRemove}
             disabled={isLoading}
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >
-            {isLoading ? "Removing..." : "Remove"}
+            {isLoading ? "Removendo..." : "Confirmar remocao"}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

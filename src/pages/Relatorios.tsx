@@ -25,6 +25,7 @@ import {
 } from "@/lib/reports/operationalSummary";
 import { trackPilotMetric } from "@/lib/telemetry/pilotMetrics";
 import { showError, showSuccess } from "@/utils/toast";
+import { formatWeight } from "@/lib/format/weight";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -80,7 +81,7 @@ function slugify(value: string): string {
 }
 
 const Relatorios = () => {
-  const { activeFarmId } = useAuth();
+  const { activeFarmId, farmMeasurementConfig } = useAuth();
   const [farm, setFarm] = useState<FarmSummary | null>(null);
   const [preset, setPreset] = useState<ReportPreset>("30d");
 
@@ -426,7 +427,10 @@ const Relatorios = () => {
               <p className="mt-2 text-2xl font-bold">
                 {report.pesagem.pesoMedioKg == null
                   ? "Sem dados"
-                  : `${report.pesagem.pesoMedioKg.toFixed(1)} kg`}
+                  : formatWeight(
+                      report.pesagem.pesoMedioKg,
+                      farmMeasurementConfig.weight_unit,
+                    )}
               </p>
               <p className="text-sm text-muted-foreground">
                 {report.pesagem.totalPesagens} pesagem(ns)

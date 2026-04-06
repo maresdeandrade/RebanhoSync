@@ -1,237 +1,227 @@
 import { useLiveQuery } from "dexie-react-hooks";
-import { useParams, useNavigate, Link } from "react-router-dom";
-import { db } from "@/lib/offline/db";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ChevronLeft, Map as MapIcon, PawPrint, Pencil, Ruler, Trees } from "lucide-react";
+import { Link, useNavigate, useParams } from "react-router-dom";
+
+import { EmptyState } from "@/components/EmptyState";
+import { MetricCard } from "@/components/ui/metric-card";
+import { PageIntro } from "@/components/ui/page-intro";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { ChevronLeft, Map as MapIcon, Layers, PawPrint } from "lucide-react";
+import { db } from "@/lib/offline/db";
 
 const PastoDetalhe = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
-  const pasto = useLiveQuery(
-    () => (id ? db.state_pastos.get(id) : undefined),
-    [id],
-  );
-
+  const pasto = useLiveQuery(() => (id ? db.state_pastos.get(id) : undefined), [id]);
   const lotes = useLiveQuery(
     () => (id ? db.state_lotes.where("pasto_id").equals(id).toArray() : []),
     [id],
   );
-
   const animaisCount = useLiveQuery(async () => {
-    if (!id || !lotes) return 0;
+    if (!id) return 0;
+
+    const lotesNoPasto = await db.state_lotes.where("pasto_id").equals(id).toArray();
     let total = 0;
-    for (const lote of lotes) {
-      const count = await db.state_animais
-        .where("lote_id")
-        .equals(lote.id)
-        .count();
-      total += count;
+    for (const lote of lotesNoPasto) {
+      total += await db.state_animais.where("lote_id").equals(lote.id).count();
     }
     return total;
-  }, [id, lotes]);
+  }, [id]);
 
   if (!id || !pasto) {
     return (
       <div className="space-y-6">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate("/pastos")}
-          >
-            <ChevronLeft className="h-5 w-5" />
-          </Button>
-          <h1 className="text-2xl font-bold">Pasto não encontrado</h1>
-        </div>
+        <PageIntro
+          eyebrow="Estrutura do rebanho"
+          title="Pasto nao encontrado"
+          description="O registro nao esta mais disponivel ou ainda nao foi sincronizado neste dispositivo."
+          actions={
+            <Button variant="outline" onClick={() => navigate("/pastos")}>
+              <ChevronLeft className="mr-2 h-4 w-4" />
+              Voltar
+            </Button>
+          }
+        />
       </div>
     );
   }
 
+  const infraestrutura = pasto.infraestrutura;
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => navigate("/pastos")}>
-          <ChevronLeft className="h-5 w-5" />
-        </Button>
-        <div className="flex-1">
-          <h1 className="text-2xl font-bold">{pasto.nome}</h1>
-        </div>
-        <Link to={`/pastos/${id}/editar`}>
-          <Button variant="outline" size="sm">
-            Editar
-          </Button>
-        </Link>
-      </div>
+      <PageIntro
+        eyebrow="Estrutura do rebanho"
+        title={pasto.nome}
+        description="Leia area, lotacao e infraestrutura do pasto em uma unica superficie de consulta."
+        meta={<StatusBadge tone="neutral">{pasto.tipo_pasto ?? "Tipo nao informado"}</StatusBadge>}
+        actions={
+          <>
+            <Button variant="outline" onClick={() => navigate("/pastos")}>
+              <ChevronLeft className="mr-2 h-4 w-4" />
+              Voltar
+            </Button>
+            <Link to={`/pastos/${id}/editar`}>
+              <Button>
+                <Pencil className="mr-2 h-4 w-4" />
+                Editar cadastro
+              </Button>
+            </Link>
+          </>
+        }
+      />
 
       <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <MapIcon className="h-4 w-4" />
-              Área & Tipo
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-             <div className="flex justify-between items-baseline">
-                <p className="text-3xl font-bold">{pasto.area_ha}</p>
-                {pasto.tipo_pasto && (
-                  <Badge variant="outline" className="capitalize">{pasto.tipo_pasto}</Badge>
-                )}
-             </div>
-            <p className="text-sm text-muted-foreground">hectares</p>
-          </CardContent>
-        </Card>
-
-        {pasto.capacidade_ua && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base text-muted-foreground">Capacidade</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-baseline gap-1">
-                <span className="text-2xl font-bold">{pasto.capacidade_ua}</span>
-                <span className="text-sm text-muted-foreground">UA</span>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        <Card>
-           <CardHeader>
-             <CardTitle className="text-base flex items-center gap-2">
-               <PawPrint className="h-4 w-4" />
-               Lotação Atual
-             </CardTitle>
-           </CardHeader>
-           <CardContent>
-             <p className="text-3xl font-bold">{animaisCount || 0}</p>
-             <p className="text-sm text-muted-foreground">animais</p>
-           </CardContent>
-         </Card>
+        <MetricCard
+          label="Area"
+          value={pasto.area_ha}
+          hint="Hectares declarados para o piquete."
+          icon={<MapIcon className="h-4 w-4" />}
+        />
+        <MetricCard
+          label="Capacidade"
+          value={pasto.capacidade_ua ?? "Nao informada"}
+          hint="UA usadas como referencia de lotacao."
+          icon={<Ruler className="h-4 w-4" />}
+        />
+        <MetricCard
+          label="Animais no pasto"
+          value={animaisCount ?? 0}
+          hint={`${lotes?.length ?? 0} lote(s) vinculados a este pasto.`}
+          icon={<PawPrint className="h-4 w-4" />}
+        />
       </div>
 
-      {/* Infraestrutura */}
-      {pasto.infraestrutura && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Infraestrutura</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Cochos */}
-              <div className="space-y-2">
-                <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider">
-                  🥣 Cochos
-                </h3>
-                <div className="space-y-1">
-                  <p>Quantidade: {pasto.infraestrutura.cochos?.quantidade || 0}</p>
-                  <p>Tipo: {pasto.infraestrutura.cochos?.tipo || "Não informado"}</p>
-                  <p>
-                    Capacidade: {pasto.infraestrutura.cochos?.capacidade || 0} m
-                  </p>
-                  <Badge variant={pasto.infraestrutura.cochos?.estado === 'ruim' ? 'destructive' : 'outline'}>
-                    Estado: {pasto.infraestrutura.cochos?.estado || "N/A"}
-                  </Badge>
-                </div>
-              </div>
+      {infraestrutura ? (
+        <section className="app-surface space-y-5 p-5 sm:p-6">
+          <div className="space-y-1">
+            <h2 className="text-lg font-semibold tracking-[-0.01em] text-foreground">
+              Infraestrutura
+            </h2>
+            <p className="text-sm leading-6 text-muted-foreground">
+              Leitura objetiva dos recursos de suporte ao manejo neste pasto.
+            </p>
+          </div>
 
-              {/* Bebedouros */}
-              <div className="space-y-2">
-                <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider">
-                  💧 Bebedouros
-                </h3>
-                <div className="space-y-1">
-                  <p>
-                    Quantidade: {pasto.infraestrutura.bebedouros?.quantidade || 0}
-                  </p>
-                  <p>
-                    Tipo: {pasto.infraestrutura.bebedouros?.tipo || "Não informado"}</p>
-                  <Badge variant={pasto.infraestrutura.bebedouros?.estado === 'ruim' ? 'destructive' : 'outline'}>
-                    Estado: {pasto.infraestrutura.bebedouros?.estado || "N/A"}
-                  </Badge>
-                </div>
-              </div>
-
-               {/* Cerca */}
-               <div className="space-y-2">
-                <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider">
-                  🚧 Cerca
-                </h3>
-                <div className="space-y-1">
-                  <p>
-                    Tipo: {pasto.infraestrutura.cerca?.tipo || "Não informado"}
-                  </p>
-                  <Badge variant={pasto.infraestrutura.cerca?.estado === 'ruim' ? 'destructive' : 'outline'}>
-                    Estado: {pasto.infraestrutura.cerca?.estado || "N/A"}
-                  </Badge>
-                  {pasto.infraestrutura.cerca?.comprimento_metros && (
-                    <p>Comprimento: {pasto.infraestrutura.cerca.comprimento_metros}m</p>
-                  )}
-                </div>
-              </div>
-            </div>
-            
-            {(pasto.infraestrutura.curral?.possui_brete || pasto.infraestrutura.curral?.possui_balanca) && (
-               <div className="border-t pt-4 mt-4">
-                  <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider mb-2">
-                    Curral
-                  </h3>
-                   <div className="flex gap-4">
-                      {pasto.infraestrutura.curral.possui_brete && <Badge>Possui Brete</Badge>}
-                      {pasto.infraestrutura.curral.possui_balanca && <Badge variant="secondary">Possui Balança</Badge>}
-                   </div>
-               </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
-      {lotes && lotes.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Layers className="h-4 w-4" />
-              Lotes neste Pasto ({lotes.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-2">
-              {lotes.map((lote) => (
-                <Link
-                  key={lote.id}
-                  to={`/lotes/${lote.id}`}
-                  className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 transition-colors"
+          <div className="grid gap-4 lg:grid-cols-2">
+            <div className="rounded-2xl border border-border/70 bg-muted/20 p-4">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <p className="font-medium text-foreground">Cochos</p>
+                <StatusBadge
+                  tone={
+                    infraestrutura.cochos?.estado === "ruim" ? "danger" : "neutral"
+                  }
                 >
-                  <div className="flex items-center gap-2">
-                    <p className="font-semibold">{lote.nome}</p>
-                    {lote.status && (
-                      <Badge
-                        variant={
-                          lote.status === "ativo" ? "default" : "secondary"
-                        }
-                        className="text-[10px]"
-                      >
-                        {lote.status}
-                      </Badge>
-                    )}
-                  </div>
-                </Link>
-              ))}
+                  {infraestrutura.cochos?.estado || "Sem estado"}
+                </StatusBadge>
+              </div>
+              <div className="grid gap-2 text-sm text-muted-foreground sm:grid-cols-3">
+                <span>Qtd: {infraestrutura.cochos?.quantidade || 0}</span>
+                <span>Tipo: {infraestrutura.cochos?.tipo || "Nao informado"}</span>
+                <span>Capacidade: {infraestrutura.cochos?.capacidade || 0} m</span>
+              </div>
             </div>
-          </CardContent>
-        </Card>
-      )}
 
-      {(!lotes || lotes.length === 0) && (
-        <Card>
-          <CardContent className="py-8 text-center text-muted-foreground">
-            <Layers className="h-8 w-8 mx-auto mb-2 opacity-50" />
-            <p>Nenhum lote alocado neste pasto</p>
-          </CardContent>
-        </Card>
+            <div className="rounded-2xl border border-border/70 bg-muted/20 p-4">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <p className="font-medium text-foreground">Bebedouros</p>
+                <StatusBadge
+                  tone={
+                    infraestrutura.bebedouros?.estado === "ruim"
+                      ? "danger"
+                      : "neutral"
+                  }
+                >
+                  {infraestrutura.bebedouros?.estado || "Sem estado"}
+                </StatusBadge>
+              </div>
+              <div className="grid gap-2 text-sm text-muted-foreground sm:grid-cols-3">
+                <span>Qtd: {infraestrutura.bebedouros?.quantidade || 0}</span>
+                <span>Tipo: {infraestrutura.bebedouros?.tipo || "Nao informado"}</span>
+                <span>Capacidade: {infraestrutura.bebedouros?.capacidade || 0} L</span>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-border/70 bg-muted/20 p-4">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <p className="font-medium text-foreground">Cerca</p>
+                <StatusBadge
+                  tone={infraestrutura.cerca?.estado === "ruim" ? "danger" : "neutral"}
+                >
+                  {infraestrutura.cerca?.estado || "Sem estado"}
+                </StatusBadge>
+              </div>
+              <div className="grid gap-2 text-sm text-muted-foreground sm:grid-cols-3">
+                <span>Tipo: {infraestrutura.cerca?.tipo || "Nao informado"}</span>
+                <span>
+                  Extensao: {infraestrutura.cerca?.comprimento_metros || 0} m
+                </span>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-border/70 bg-muted/20 p-4">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <p className="font-medium text-foreground">Saleiro e curral</p>
+                <StatusBadge
+                  tone={
+                    infraestrutura.curral?.possui_brete || infraestrutura.curral?.possui_balanca
+                      ? "info"
+                      : "neutral"
+                  }
+                >
+                  Apoio ao manejo
+                </StatusBadge>
+              </div>
+              <div className="grid gap-2 text-sm text-muted-foreground">
+                <span>Saleiros: {infraestrutura.saleiros?.quantidade || 0}</span>
+                <span>Brete: {infraestrutura.curral?.possui_brete ? "Sim" : "Nao"}</span>
+                <span>
+                  Balanca: {infraestrutura.curral?.possui_balanca ? "Sim" : "Nao"}
+                </span>
+              </div>
+            </div>
+          </div>
+        </section>
+      ) : null}
+
+      {lotes && lotes.length > 0 ? (
+        <section className="app-surface space-y-4 p-5 sm:p-6">
+          <div className="space-y-1">
+            <h2 className="text-lg font-semibold tracking-[-0.01em] text-foreground">
+              Lotes neste pasto
+            </h2>
+            <p className="text-sm leading-6 text-muted-foreground">
+              Acesse rapidamente os grupos vinculados e a lotacao atual do campo.
+            </p>
+          </div>
+
+          <div className="grid gap-3">
+            {lotes.map((lote) => (
+              <Link
+                key={lote.id}
+                to={`/lotes/${lote.id}`}
+                className="flex items-center justify-between rounded-2xl border border-border/70 bg-background/70 px-4 py-3 transition-colors hover:bg-muted/30"
+              >
+                <div className="space-y-1">
+                  <p className="font-medium text-foreground">{lote.nome}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {lote.status === "ativo" ? "Em operacao" : "Fora da rotina principal"}
+                  </p>
+                </div>
+                <StatusBadge tone={lote.status === "ativo" ? "success" : "neutral"}>
+                  {lote.status}
+                </StatusBadge>
+              </Link>
+            ))}
+          </div>
+        </section>
+      ) : (
+        <EmptyState
+          icon={Trees}
+          title="Nenhum lote neste pasto"
+          description="Vincule um lote ao pasto para acompanhar ocupacao e lotacao diretamente por aqui."
+        />
       )}
     </div>
   );

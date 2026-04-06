@@ -1,14 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, ClipboardCheck, History, MapPin } from "lucide-react";
 import {
   CalfInitialEditor,
   type CalfInitialDraft,
 } from "@/components/animals/CalfInitialEditor";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { MetricCard } from "@/components/ui/metric-card";
+import { PageIntro } from "@/components/ui/page-intro";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { useAuth } from "@/hooks/useAuth";
+import { formatWeightInput } from "@/lib/format/weight";
 import { db } from "@/lib/offline/db";
 import { createGesture } from "@/lib/offline/ops";
 import type { Animal } from "@/lib/offline/types";
@@ -30,6 +34,7 @@ function formatDate(value: string | null | undefined) {
 function getInitialDraft(
   calf: Animal,
   fallbackLoteId: string | null,
+  weightUnit: "kg" | "arroba",
 ): CalfInitialDraft {
   const neonatalSetup = getNeonatalSetup(calf.payload);
   return {
@@ -39,13 +44,14 @@ function getInitialDraft(
     loteId: calf.lote_id ?? fallbackLoteId,
     pesoKg:
       typeof neonatalSetup?.initial_weight_kg === "number"
-        ? String(neonatalSetup.initial_weight_kg)
+        ? formatWeightInput(neonatalSetup.initial_weight_kg, weightUnit)
         : "",
     curaUmbigo: Boolean(neonatalSetup?.umbigo_curado_at),
   };
 }
 
 export default function AnimalPosParto() {
+  const { farmMeasurementConfig } = useAuth();
   const { id } = useParams();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -165,9 +171,13 @@ export default function AnimalPosParto() {
 
     setDrafts((previous) => {
       const previousMap = new Map(previous.map((draft) => [draft.calfId, draft]));
-      return calves.map((calf) => previousMap.get(calf.id) ?? getInitialDraft(calf, fallbackLoteId));
+      return calves.map(
+        (calf) =>
+          previousMap.get(calf.id) ??
+          getInitialDraft(calf, fallbackLoteId, farmMeasurementConfig.weight_unit),
+      );
     });
-  }, [calves, fallbackLoteId]);
+  }, [calves, fallbackLoteId, farmMeasurementConfig.weight_unit]);
 
   const selectedCount = drafts.length;
   const suggestedPasto =
@@ -212,6 +222,7 @@ export default function AnimalPosParto() {
       const occurredAt = new Date().toISOString();
       const { ops, weighedCount, umbigoCount, agendaCount } = buildPostPartumOps({
         fazendaId: mother.fazenda_id,
+        weightUnit: farmMeasurementConfig.weight_unit,
         mother: {
           id: mother.id,
           identificacao: mother.identificacao,
@@ -307,78 +318,58 @@ export default function AnimalPosParto() {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-3xl border bg-gradient-to-br from-amber-50 via-white to-emerald-50 p-6 shadow-sm">
-        <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
-          <div className="space-y-3">
+      <PageIntro
+        eyebrow="Fechamento do parto"
+        title={`Pos-parto da matriz ${mother.identificacao}`}
+        description="Revise as crias recem-geradas, confirme a identificacao final, ajuste o lote inicial e distribua a rotina dedicada de crescimento sem voltar ao Registrar."
+        meta={
+          <>
+            <StatusBadge tone="neutral">Fluxo neonatal em lote</StatusBadge>
+            <StatusBadge tone={selectedCount > 0 ? "warning" : "success"}>
+              {selectedCount} cria(s) pronta(s) para revisar
+            </StatusBadge>
+            {motherLote ? (
+              <StatusBadge tone="info">Lote sugerido: {motherLote.nome}</StatusBadge>
+            ) : null}
+          </>
+        }
+        actions={
+          <>
             <Button
-              variant="ghost"
-              size="sm"
-              className="w-fit gap-2"
+              variant="outline"
               onClick={() => navigate(`/animais/${mother.id}/reproducao?tipo=parto`)}
             >
-              <ChevronLeft className="h-4 w-4" />
+              <ChevronLeft className="mr-2 h-4 w-4" />
               Voltar ao parto
             </Button>
+            <Button variant="outline" asChild>
+              <Link to={`/animais/${mother.id}`}>Abrir ficha da matriz</Link>
+            </Button>
+          </>
+        }
+      />
 
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="secondary">Fechamento do parto</Badge>
-              <Badge variant="outline" className="border-amber-200 bg-white text-amber-800">
-                {selectedCount} cria(s) pronta(s) para revisar
-              </Badge>
-              {motherLote && (
-                <Badge variant="outline" className="border-emerald-200 bg-white text-emerald-800">
-                  Lote sugerido: {motherLote.nome}
-                </Badge>
-              )}
-            </div>
-
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight">
-                Pos-parto da matriz {mother.identificacao}
-              </h1>
-              <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
-                Revise as crias recem-geradas, confirme a identificacao final,
-                ajuste o lote inicial e avance cada cria para a rotina dedicada
-                de crescimento inicial sem depender do Registrar.
-              </p>
-            </div>
-          </div>
-
-          <div className="grid gap-3 sm:grid-cols-3">
-            <div className="rounded-2xl border border-white/70 bg-white/85 p-4 shadow-sm">
-              <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                Matriz
-              </p>
-              <p className="mt-1 text-lg font-semibold">{mother.identificacao}</p>
-              <p className="text-xs text-muted-foreground">
-                {formatDate(mother.updated_at)}
-              </p>
-            </div>
-            <div className="rounded-2xl border border-white/70 bg-white/85 p-4 shadow-sm">
-              <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                Lote inicial
-              </p>
-              <p className="mt-1 text-lg font-semibold">
-                {motherLote?.nome ?? "Sem lote definido"}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                {suggestedPasto ? `Pasto ${suggestedPasto.nome}` : "Sem pasto vinculado"}
-              </p>
-            </div>
-            <div className="rounded-2xl border border-white/70 bg-white/85 p-4 shadow-sm">
-              <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                Evento de origem
-              </p>
-              <p className="mt-1 text-lg font-semibold">
-                {eventId ? eventId.slice(0, 8) : "Parto atual"}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                Varia as crias sem esperar sincronizacao.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
+      <div className="grid gap-4 md:grid-cols-3">
+        <MetricCard
+          label="Matriz"
+          value={mother.identificacao}
+          hint={`Ultima atualizacao em ${formatDate(mother.updated_at)}`}
+          icon={<ClipboardCheck className="h-5 w-5" />}
+        />
+        <MetricCard
+          label="Lote inicial"
+          value={motherLote?.nome ?? "Sem lote definido"}
+          hint={suggestedPasto ? `Pasto ${suggestedPasto.nome}` : "Sem pasto vinculado"}
+          tone={motherLote ? "info" : "warning"}
+          icon={<MapPin className="h-5 w-5" />}
+        />
+        <MetricCard
+          label="Evento de origem"
+          value={eventId ? eventId.slice(0, 8) : "Parto atual"}
+          hint="As crias avancam sem esperar sincronizacao."
+          icon={<History className="h-5 w-5" />}
+        />
+      </div>
 
       <Card>
         <CardHeader className="pb-3">
@@ -452,6 +443,7 @@ export default function AnimalPosParto() {
                   father={father}
                   lotes={lotes ?? []}
                   pastoById={pastoById}
+                  weightUnit={farmMeasurementConfig.weight_unit}
                   onChange={(patch) => updateDraft(calf.id, patch)}
                   action={
                     <Button variant="outline" size="sm" asChild>

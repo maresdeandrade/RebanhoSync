@@ -1,13 +1,16 @@
 import { useState } from "react";
-import { supabase } from "@/lib/supabase";
+
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+import { FormSection } from "@/components/ui/form-section";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -15,8 +18,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/lib/supabase";
 
 type Role = "owner" | "manager" | "cowboy";
 
@@ -61,8 +65,8 @@ export const MemberRoleDialog = ({
       if (error) throw error;
 
       toast({
-        title: "Success",
-        description: `Role updated to ${newRole}`,
+        title: "Papel atualizado",
+        description: `${member.display_name} agora esta como ${newRole}.`,
       });
 
       onSuccess();
@@ -70,7 +74,7 @@ export const MemberRoleDialog = ({
     } catch (error: unknown) {
       const err = error instanceof Error ? error : new Error(String(error));
       toast({
-        title: "Error",
+        title: "Erro ao atualizar papel",
         description: err.message,
         variant: "destructive",
       });
@@ -79,52 +83,60 @@ export const MemberRoleDialog = ({
     }
   };
 
-  // Reset when dialog opens
-  const handleOpenChange = (open: boolean) => {
-    if (open && member) {
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (nextOpen && member) {
       setNewRole(member.role);
     }
-    onOpenChange(open);
+    onOpenChange(nextOpen);
   };
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-w-xl">
         <DialogHeader>
-          <DialogTitle>Change Role - {member?.display_name}</DialogTitle>
+          <DialogTitle>Ajustar papel do membro</DialogTitle>
+          <DialogDescription>
+            Revise o papel atual e defina o nivel de acesso operacional deste
+            membro na fazenda.
+          </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
+        <FormSection
+          title={member?.display_name ?? "Membro"}
+          description="Mudancas entram em vigor assim que o convite estiver aceito ou o membro ja estiver ativo."
+          actions={
+            member ? (
+              <StatusBadge tone="neutral">Atual: {member.role}</StatusBadge>
+            ) : null
+          }
+          contentClassName="space-y-4"
+        >
           <div className="space-y-2">
-            <Label htmlFor="role">New Role</Label>
+            <Label>Novo papel</Label>
             <Select
               value={newRole}
               onValueChange={(value) => setNewRole(value as Role)}
             >
-              <SelectTrigger id="role">
-                <SelectValue placeholder="Select a role" />
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione um papel" />
               </SelectTrigger>
               <SelectContent>
-                {callerRole === "owner" && (
+                {callerRole === "owner" ? (
                   <SelectItem value="owner">Owner</SelectItem>
-                )}
+                ) : null}
                 <SelectItem value="manager">Manager</SelectItem>
                 <SelectItem value="cowboy">Cowboy</SelectItem>
               </SelectContent>
             </Select>
           </div>
-        </div>
+        </FormSection>
 
         <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={isLoading}
-          >
-            Cancel
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
+            Cancelar
           </Button>
           <Button onClick={handleChangeRole} disabled={isLoading || !newRole}>
-            {isLoading ? "Saving..." : "Save Changes"}
+            {isLoading ? "Salvando..." : "Salvar alteracao"}
           </Button>
         </DialogFooter>
       </DialogContent>

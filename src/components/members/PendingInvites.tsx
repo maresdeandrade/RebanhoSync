@@ -1,18 +1,18 @@
-import { useState, useEffect } from "react";
-import { supabase } from "@/lib/supabase";
+import { useCallback, useEffect, useState } from "react";
+import { Check, Copy, MoreHorizontal, X } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { useToast } from "@/hooks/use-toast";
-import { Copy, X, Check } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 
 interface PendingInvite {
   id: string;
@@ -29,16 +29,21 @@ interface PendingInvitesProps {
   onUpdate: () => void;
 }
 
-export const PendingInvites = ({
-  fazendaId,
-  onUpdate,
-}: PendingInvitesProps) => {
+function formatDate(dateString: string) {
+  return new Date(dateString).toLocaleDateString("pt-BR");
+}
+
+function isExpired(expiresAt: string) {
+  return new Date(expiresAt) < new Date();
+}
+
+export const PendingInvites = ({ fazendaId, onUpdate }: PendingInvitesProps) => {
   const [invites, setInvites] = useState<PendingInvite[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const { toast } = useToast();
 
-  const fetchInvites = async () => {
+  const fetchInvites = useCallback(async () => {
     try {
       setIsLoading(true);
       const { data, error } = await supabase
@@ -54,19 +59,18 @@ export const PendingInvites = ({
     } catch (error: unknown) {
       const err = error instanceof Error ? error : new Error(String(error));
       toast({
-        title: "Error loading invites",
+        title: "Erro ao carregar convites",
         description: err.message,
         variant: "destructive",
       });
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [fazendaId, toast]);
 
   useEffect(() => {
-    fetchInvites();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fazendaId]);
+    void fetchInvites();
+  }, [fetchInvites]);
 
   const handleCancelInvite = async (inviteId: string) => {
     try {
@@ -77,16 +81,16 @@ export const PendingInvites = ({
       if (error) throw error;
 
       toast({
-        title: "Success",
-        description: "Invite cancelled",
+        title: "Convite cancelado",
+        description: "O link deixou de ser valido para esta fazenda.",
       });
 
-      fetchInvites();
+      await fetchInvites();
       onUpdate();
     } catch (error: unknown) {
       const err = error instanceof Error ? error : new Error(String(error));
       toast({
-        title: "Error",
+        title: "Erro ao cancelar convite",
         description: err.message,
         variant: "destructive",
       });
@@ -100,32 +104,26 @@ export const PendingInvites = ({
       await navigator.clipboard.writeText(link);
       setCopiedId(id);
       toast({
-        title: "Copied!",
-        description: "Invite link copied to clipboard",
+        title: "Link copiado",
+        description: "O convite foi copiado para a area de transferencia.",
       });
       setTimeout(() => setCopiedId(null), 2000);
-    } catch (error) {
+    } catch {
       toast({
-        title: "Error",
-        description: "Failed to copy link",
+        title: "Falha ao copiar",
+        description: "Nao foi possivel copiar o link do convite.",
         variant: "destructive",
       });
     }
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("pt-BR");
-  };
-
-  const isExpired = (expiresAt: string) => {
-    return new Date(expiresAt) < new Date();
-  };
-
   if (isLoading) {
     return (
-      <p className="text-sm text-muted-foreground">
-        Loading pending invites...
-      </p>
+      <Card className="shadow-none">
+        <CardContent className="py-6 text-sm text-muted-foreground">
+          Carregando convites pendentes.
+        </CardContent>
+      </Card>
     );
   }
 
@@ -134,60 +132,74 @@ export const PendingInvites = ({
   }
 
   return (
-    <Card className="mt-6">
+    <Card className="shadow-none">
       <CardHeader>
-        <CardTitle className="text-lg">Pending Invites</CardTitle>
+        <CardTitle className="text-base">Convites pendentes</CardTitle>
       </CardHeader>
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Contact</TableHead>
-              <TableHead>Role</TableHead>
-              <TableHead>Expires</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {invites.map((invite) => (
-              <TableRow key={invite.id}>
-                <TableCell>
-                  {invite.email || invite.phone}
-                  {isExpired(invite.expires_at) && (
-                    <Badge variant="destructive" className="ml-2">
-                      Expired
-                    </Badge>
+      <CardContent className="space-y-3">
+        {invites.map((invite) => {
+          const expired = isExpired(invite.expires_at);
+          const contact = invite.email || invite.phone || "Contato nao informado";
+
+          return (
+            <div
+              key={invite.id}
+              className="flex flex-col gap-3 rounded-2xl border border-border/70 bg-background/80 p-4 sm:flex-row sm:items-center sm:justify-between"
+            >
+              <div className="min-w-0 space-y-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="truncate font-medium text-foreground">{contact}</p>
+                  <StatusBadge tone={expired ? "danger" : "neutral"}>
+                    {expired ? "Expirado" : "Pendente"}
+                  </StatusBadge>
+                  <StatusBadge tone="info">{invite.role}</StatusBadge>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Criado em {formatDate(invite.created_at)} · expira em{" "}
+                  {formatDate(invite.expires_at)}
+                </p>
+              </div>
+
+              <div className="flex items-center justify-end gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleCopyLink(invite.token, invite.id)}
+                  disabled={expired}
+                >
+                  {copiedId === invite.id ? (
+                    <Check className="mr-2 h-4 w-4" />
+                  ) : (
+                    <Copy className="mr-2 h-4 w-4" />
                   )}
-                </TableCell>
-                <TableCell className="capitalize">{invite.role}</TableCell>
-                <TableCell>{formatDate(invite.expires_at)}</TableCell>
-                <TableCell className="text-right space-x-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleCopyLink(invite.token, invite.id)}
-                    disabled={isExpired(invite.expires_at)}
-                  >
-                    {copiedId === invite.id ? (
-                      <Check className="h-4 w-4 mr-1" />
-                    ) : (
-                      <Copy className="h-4 w-4 mr-1" />
-                    )}
-                    Copy Link
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => handleCancelInvite(invite.id)}
-                  >
-                    <X className="h-4 w-4 mr-1" />
-                    Cancel
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+                  {copiedId === invite.id ? "Copiado" : "Copiar link"}
+                </Button>
+
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="icon" aria-label="Acoes do convite">
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => handleCopyLink(invite.token, invite.id)}>
+                      <Copy className="mr-2 h-4 w-4" />
+                      Copiar link
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      className="text-destructive focus:text-destructive"
+                      onClick={() => handleCancelInvite(invite.id)}
+                    >
+                      <X className="mr-2 h-4 w-4" />
+                      Cancelar convite
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </div>
+          );
+        })}
       </CardContent>
     </Card>
   );

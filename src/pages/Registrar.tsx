@@ -23,6 +23,7 @@ import {
   buildFinancialTransaction,
   resolveFinancialTotalAmount,
   type FinancialPriceMode,
+  type FinancialTransactionNature,
   type FinancialWeightMode,
 } from "@/lib/finance/transactions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -30,6 +31,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PageIntro } from "@/components/ui/page-intro";
 import {
   Select,
   SelectContent,
@@ -38,6 +40,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { showSuccess, showError } from "@/utils/toast";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
@@ -52,8 +55,14 @@ import {
 } from "lucide-react";
 import { useLotes } from "@/hooks/useLotes";
 import { useAuth } from "@/hooks/useAuth";
+import { deriveAnimalTaxonomy } from "@/lib/animals/taxonomy";
 import { isFemaleReproductionEligible } from "@/lib/animals/presentation";
-import { classificarAnimal, getLabelCategoria } from "@/lib/domain/categorias";
+import {
+  formatWeight,
+  getWeightInputStep,
+  getWeightUnitLabel,
+  parseWeightInput,
+} from "@/lib/format/weight";
 
 enum RegistrationStep {
   SELECT_ANIMALS = 1,
@@ -66,6 +75,12 @@ const REGISTRATION_STEPS = [
   RegistrationStep.CHOOSE_ACTION,
   RegistrationStep.CONFIRM,
 ];
+
+const STEP_LABEL: Record<RegistrationStep, string> = {
+  [RegistrationStep.SELECT_ANIMALS]: "Selecionar alvo",
+  [RegistrationStep.CHOOSE_ACTION]: "Escolher acao",
+  [RegistrationStep.CONFIRM]: "Confirmar",
+};
 
 const SEM_LOTE_OPTION = "__sem_lote__";
 
@@ -160,6 +175,10 @@ type FinanceiroNatureza =
   | "sociedade_entrada"
   | "sociedade_saida";
 
+const isDirectFinancialNature = (
+  value: FinanceiroNatureza,
+): value is FinancialTransactionNature => value === "compra" || value === "venda";
+
 interface NovaContraparteDraft {
   tipo: "pessoa" | "empresa";
   nome: string;
@@ -189,7 +208,8 @@ const BullNameDisplay = ({ machoId }: { machoId: string }) => {
 const Registrar = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { activeFarmId, role } = useAuth();
+  const { activeFarmId, role, farmMeasurementConfig, farmLifecycleConfig } =
+    useAuth();
   const [step, setStep] = useState<RegistrationStep>(
     RegistrationStep.SELECT_ANIMALS,
   );
@@ -240,15 +260,6 @@ const Registrar = () => {
     machoId: null,
     observacoes: "",
   });
-  const categorias = useLiveQuery(async () => {
-    if (!activeFarmId) return [];
-
-    return await db.state_categorias_zootecnicas
-      .where("fazenda_id")
-      .equals(activeFarmId)
-      .filter((categoria) => !categoria.deleted_at && categoria.ativa)
-      .toArray();
-  }, [activeFarmId]);
   const quickActionConfig = getQuickActionConfig(quickAction);
   const partoRequiresSingleMatrix =
     tipoManejo === "reproducao" &&
@@ -290,14 +301,17 @@ const Registrar = () => {
     }));
   }, []);
 
+  const parseUserWeight = (value: string) =>
+    parseWeightInput(value, farmMeasurementConfig.weight_unit);
+
   const canManageContraparte = role === "owner" || role === "manager";
 
   // TD-014: Validar peso > 0 no frontend para pesagem
   const isPesagemValid = selectedAnimais.every((id) => {
     const weightStr = pesagemData[id];
     if (!weightStr || weightStr.trim() === "") return false;
-    const weight = Number.parseFloat(weightStr.replace(",", "."));
-    return !Number.isNaN(weight) && weight > 0;
+    const weight = parseUserWeight(weightStr);
+    return weight !== null && weight > 0;
   });
 
   const financeiroTipo: FinanceiroTipoEnum =
@@ -324,7 +338,7 @@ const Registrar = () => {
       : null;
   const financeiroPesoLote =
     financeiroData.pesoLoteKg.trim() !== ""
-      ? parseNumeric(financeiroData.pesoLoteKg)
+      ? parseUserWeight(financeiroData.pesoLoteKg)
       : null;
   const financeiroValorTotalCalculado = resolveFinancialTotalAmount({
     quantity: financeiroQuantidadeAnimais,
@@ -609,18 +623,21 @@ const Registrar = () => {
       Number.parseInt(financeiroData.quantidadeAnimais || "1", 10) || 1,
     );
     setCompraNovosAnimais((prev) => {
-      const nextDrafts = Array.from({ length: nextQuantity }, (_, index) => {
-        const current = prev[index];
-        return (
-          current ?? {
-            localId: crypto.randomUUID(),
-            identificacao: "",
-            sexo: index === 0 ? "F" : "M",
-            dataNascimento: "",
-            pesoKg: "",
-          }
-        );
-      });
+      const nextDrafts: CompraNovoAnimalDraft[] = Array.from(
+        { length: nextQuantity },
+        (_, index) => {
+          const current = prev[index];
+          return (
+            current ?? {
+              localId: crypto.randomUUID(),
+              identificacao: "",
+              sexo: index === 0 ? ("F" as const) : ("M" as const),
+              dataNascimento: "",
+              pesoKg: "",
+            }
+          );
+        },
+      );
       return nextDrafts;
     });
   }, [
@@ -828,11 +845,11 @@ const Registrar = () => {
       }
 
       if (financeiroData.modoPeso === "individual") {
-        const pesoInvalido = compraNovosAnimais.some((item) => {
-          if (!item.pesoKg.trim()) return true;
-          const peso = parseNumeric(item.pesoKg);
-          return !Number.isFinite(peso) || peso <= 0;
-        });
+          const pesoInvalido = compraNovosAnimais.some((item) => {
+            if (!item.pesoKg.trim()) return true;
+            const peso = parseUserWeight(item.pesoKg);
+            return !Number.isFinite(peso) || peso <= 0;
+          });
         if (pesoInvalido) {
           showError("Informe um peso individual valido para cada animal da compra.");
           return;
@@ -847,7 +864,7 @@ const Registrar = () => {
     ) {
       const pesoInvalido = compraNovosAnimais.some((item) => {
         if (!item.pesoKg.trim()) return true;
-        const peso = parseNumeric(item.pesoKg);
+        const peso = parseUserWeight(item.pesoKg);
         return !Number.isFinite(peso) || peso <= 0;
       });
       if (pesoInvalido) {
@@ -860,8 +877,8 @@ const Registrar = () => {
       const invalidWeights = selectedAnimais.filter((id) => {
         const weightStr = pesagemData[id];
         if (!weightStr || weightStr.trim() === "") return true;
-        const weight = Number.parseFloat(weightStr.replace(",", "."));
-        return Number.isNaN(weight) || weight <= 0;
+        const weight = parseUserWeight(weightStr);
+        return weight === null || weight <= 0;
       });
 
       if (invalidWeights.length > 0) {
@@ -936,6 +953,12 @@ const Registrar = () => {
       }
 
       if (tipoManejo === "financeiro" && !isFinanceiroSociedade) {
+        if (!isDirectFinancialNature(financeiroData.natureza)) {
+          showError("Natureza financeira invalida para este fluxo.");
+          return;
+        }
+
+        const natureza = financeiroData.natureza;
         const selectedAnimalRecords = selectedAnimais
           .map((animalId) => {
             const animal = animalsMap.get(animalId);
@@ -957,7 +980,7 @@ const Registrar = () => {
           );
 
         const purchaseAnimals =
-          financeiroData.natureza === "compra"
+          natureza === "compra"
             ? compraNovosAnimais.map((draft) => ({
                 localId: draft.localId,
                 identificacao: draft.identificacao.trim(),
@@ -965,7 +988,7 @@ const Registrar = () => {
                 dataNascimento: draft.dataNascimento || null,
                 pesoKg:
                   financeiroData.modoPeso === "individual"
-                    ? parseNumeric(draft.pesoKg)
+                    ? parseUserWeight(draft.pesoKg)
                     : null,
               }))
             : selectedAnimalRecords.map((animal, index) => ({
@@ -975,13 +998,13 @@ const Registrar = () => {
                 dataNascimento: null,
                 pesoKg:
                   financeiroData.modoPeso === "individual"
-                    ? parseNumeric(compraNovosAnimais[index]?.pesoKg || "")
+                    ? parseUserWeight(compraNovosAnimais[index]?.pesoKg || "")
                     : null,
               }));
 
         const built = buildFinancialTransaction({
           fazendaId: fazenda_id,
-          natureza: financeiroData.natureza,
+          natureza,
           occurredAt: now,
           loteId: selectedLoteIdNormalized,
           contraparteId:
@@ -1042,7 +1065,7 @@ const Registrar = () => {
             sourceTaskId: sourceTaskId || null,
             animalId: animalId ?? null,
             loteId: targetLoteId,
-            pesoKg: parseNumeric(animalId ? pesagemData[animalId] || "" : ""),
+            pesoKg: parseUserWeight(animalId ? pesagemData[animalId] || "" : ""),
           };
         } else if (tipoManejo === "movimentacao") {
           eventInput = {
@@ -1111,12 +1134,9 @@ const Registrar = () => {
             payload: payloadFinanceiro,
           };
         } else if (tipoManejo === "reproducao" && animalId && animal) {
-          const categoriaAtual = categorias
-            ? classificarAnimal(animal, categorias)
-            : null;
-          const categoriaLabel = categoriaAtual
-            ? getLabelCategoria(categoriaAtual)
-            : null;
+          const categoriaLabel = deriveAnimalTaxonomy(animal, {
+            config: farmLifecycleConfig,
+          }).display.categoria;
 
           if (!isFemaleReproductionEligible(animal, categoriaLabel)) {
             showError(
@@ -1259,37 +1279,48 @@ const Registrar = () => {
   };
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
-      <div className="flex items-center justify-between mb-8">
-        <h1 className="text-2xl font-bold">Registrar Manejo</h1>
-        <div className="flex gap-1">
-          {REGISTRATION_STEPS.map((s) => (
-            <div
-              key={s}
-              className={`h-2 w-8 rounded-full ${step >= s ? "bg-primary" : "bg-muted"}`}
-            />
-          ))}
-        </div>
+    <div className="mx-auto max-w-5xl space-y-5">
+      <PageIntro
+        eyebrow="Fluxo operacional"
+        title="Registrar manejo"
+        description="Fluxo guiado para selecionar o alvo, escolher a acao e confirmar o gesto offline-first sem perder contexto operacional."
+        meta={
+          <>
+            <StatusBadge tone="info">
+              Etapa {step}/3: {STEP_LABEL[step]}
+            </StatusBadge>
+            {sourceTaskId ? (
+              <StatusBadge tone="neutral">
+                Origem agenda {sourceTaskId.slice(0, 8)}
+              </StatusBadge>
+            ) : null}
+            {quickActionConfig ? (
+              <StatusBadge tone="neutral">{quickActionConfig.label}</StatusBadge>
+            ) : null}
+            {selectedLoteLabel !== "-" ? (
+              <StatusBadge tone="neutral">{selectedLoteLabel}</StatusBadge>
+            ) : null}
+          </>
+        }
+      />
+
+      <div className="grid gap-2 sm:grid-cols-3">
+        {REGISTRATION_STEPS.map((currentStep) => (
+          <div
+            key={currentStep}
+            className={
+              step >= currentStep
+                ? "rounded-2xl border border-primary/20 bg-primary/5 px-4 py-3"
+                : "rounded-2xl border border-border/70 bg-background/80 px-4 py-3"
+            }
+          >
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+              Etapa {currentStep}
+            </p>
+            <p className="mt-1 text-sm font-medium">{STEP_LABEL[currentStep]}</p>
+          </div>
+        ))}
       </div>
-
-      {sourceTaskId && (
-        <div className="flex items-center gap-2">
-          <Badge variant="outline">Origem: Agenda</Badge>
-          <span className="text-sm text-muted-foreground">
-            Tarefa <span className="font-mono">{sourceTaskId.slice(0, 8)}</span>
-          </span>
-        </div>
-      )}
-
-      {quickActionConfig && (
-        <div className="flex flex-wrap items-center gap-2">
-          <Badge variant="secondary">Atalho rapido</Badge>
-          <span className="text-sm font-medium">{quickActionConfig.label}</span>
-          <span className="text-sm text-muted-foreground">
-            {quickActionConfig.helper}
-          </span>
-        </div>
-      )}
 
       {step === RegistrationStep.SELECT_ANIMALS && (
         <Card>
@@ -1598,12 +1629,15 @@ const Registrar = () => {
                       className="flex items-center justify-between gap-4"
                     >
                       <Label className="w-24">{animal?.identificacao}</Label>
-                      <Input
-                        type="number"
-                        placeholder="Peso (kg)"
-                        value={pesagemData[id] || ""}
-                        onChange={(e) =>
-                          setPesagemData((prev) => ({
+                        <Input
+                          type="number"
+                          step={getWeightInputStep(farmMeasurementConfig.weight_unit)}
+                          placeholder={`Peso (${getWeightUnitLabel(
+                            farmMeasurementConfig.weight_unit,
+                          )})`}
+                          value={pesagemData[id] || ""}
+                          onChange={(e) =>
+                            setPesagemData((prev) => ({
                             ...prev,
                             [id]: e.target.value,
                           }))
@@ -1826,10 +1860,12 @@ const Registrar = () => {
 
                       {financeiroData.modoPeso === "lote" && (
                         <div className="space-y-2">
-                          <Label>Peso do lote (kg)</Label>
+                          <Label>
+                            Peso do lote ({getWeightUnitLabel(farmMeasurementConfig.weight_unit)})
+                          </Label>
                           <Input
                             type="number"
-                            step="0.01"
+                            step={getWeightInputStep(farmMeasurementConfig.weight_unit)}
                             value={financeiroData.pesoLoteKg}
                             onChange={(e) =>
                               setFinanceiroData((prev) => ({
@@ -2061,7 +2097,7 @@ const Registrar = () => {
                           />
                           <Input
                             type="number"
-                            step="0.01"
+                            step={getWeightInputStep(farmMeasurementConfig.weight_unit)}
                             value={draft.pesoKg}
                             disabled={financeiroData.modoPeso !== "individual"}
                             onChange={(e) =>
@@ -2073,7 +2109,9 @@ const Registrar = () => {
                                 ),
                               )
                             }
-                            placeholder="Peso kg"
+                            placeholder={`Peso ${getWeightUnitLabel(
+                              farmMeasurementConfig.weight_unit,
+                            )}`}
                           />
                         </div>
                       ))}
@@ -2106,7 +2144,7 @@ const Registrar = () => {
                             </div>
                             <Input
                               type="number"
-                              step="0.01"
+                              step={getWeightInputStep(farmMeasurementConfig.weight_unit)}
                               value={currentDraft?.pesoKg ?? ""}
                               onChange={(e) =>
                                 setCompraNovosAnimais((prev) =>
@@ -2117,7 +2155,9 @@ const Registrar = () => {
                                   ),
                                 )
                               }
-                              placeholder="Peso kg"
+                              placeholder={`Peso ${getWeightUnitLabel(
+                                farmMeasurementConfig.weight_unit,
+                              )}`}
                             />
                           </div>
                         );
@@ -2248,7 +2288,14 @@ const Registrar = () => {
                           {financeiroData.modoPeso === "nenhum"
                             ? "Nao informado"
                             : financeiroData.modoPeso === "lote"
-                              ? `Lote ${financeiroData.pesoLoteKg || "-"} kg`
+                              ? `Lote ${
+                                  financeiroPesoLote !== null
+                                    ? formatWeight(
+                                        financeiroPesoLote,
+                                        farmMeasurementConfig.weight_unit,
+                                      )
+                                    : "-"
+                                }`
                               : "Individual"}
                         </span>
                       </div>

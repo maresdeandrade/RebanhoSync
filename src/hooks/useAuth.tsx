@@ -14,6 +14,11 @@ import {
   type FarmLifecycleConfig,
   resolveFarmLifecycleConfig,
 } from "@/lib/farms/lifecycleConfig";
+import {
+  DEFAULT_FARM_MEASUREMENT_CONFIG,
+  type FarmMeasurementConfig,
+  resolveFarmMeasurementConfig,
+} from "@/lib/farms/measurementConfig";
 
 
 // Role schema for runtime validation
@@ -28,6 +33,7 @@ interface AuthContextType {
   role: UserRole | null;
   farmExperienceMode: FarmExperienceMode;
   farmLifecycleConfig: FarmLifecycleConfig;
+  farmMeasurementConfig: FarmMeasurementConfig;
   loadRoleForFarm: (userId: string, farmId: string) => Promise<void>;
   setActiveFarm: (farmId: string) => Promise<void>;
   refreshSettings: () => Promise<void>;
@@ -91,6 +97,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   );
   const [farmLifecycleConfig, setFarmLifecycleConfig] =
     useState<FarmLifecycleConfig>(DEFAULT_FARM_LIFECYCLE_CONFIG);
+  const [farmMeasurementConfig, setFarmMeasurementConfig] =
+    useState<FarmMeasurementConfig>(DEFAULT_FARM_MEASUREMENT_CONFIG);
 
   const loadRoleForFarm = useCallback(async (userId: string, farmId: string) => {
     const nextRole = await fetchMembershipRole(userId, farmId);
@@ -126,6 +134,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       console.warn("[useAuth] Error fetching farm metadata:", error);
       setFarmExperienceMode(DEFAULT_FARM_EXPERIENCE_MODE);
       setFarmLifecycleConfig(DEFAULT_FARM_LIFECYCLE_CONFIG);
+      setFarmMeasurementConfig(DEFAULT_FARM_MEASUREMENT_CONFIG);
       return;
     }
 
@@ -136,6 +145,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     setFarmExperienceMode(resolveFarmExperienceMode(metadata));
     setFarmLifecycleConfig(resolveFarmLifecycleConfig(metadata));
+    setFarmMeasurementConfig(resolveFarmMeasurementConfig(metadata));
   }, []);
 
   const loadFarmContext = useCallback(
@@ -156,6 +166,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (!user) {
         setFarmExperienceMode(DEFAULT_FARM_EXPERIENCE_MODE);
         setFarmLifecycleConfig(DEFAULT_FARM_LIFECYCLE_CONFIG);
+        setFarmMeasurementConfig(DEFAULT_FARM_MEASUREMENT_CONFIG);
         return;
       }
 
@@ -206,6 +217,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             setRole(null);
             setFarmExperienceMode(DEFAULT_FARM_EXPERIENCE_MODE);
             setFarmLifecycleConfig(DEFAULT_FARM_LIFECYCLE_CONFIG);
+            setFarmMeasurementConfig(DEFAULT_FARM_MEASUREMENT_CONFIG);
           }
         }
       } else {
@@ -213,6 +225,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setRole(null);
         setFarmExperienceMode(DEFAULT_FARM_EXPERIENCE_MODE);
         setFarmLifecycleConfig(DEFAULT_FARM_LIFECYCLE_CONFIG);
+        setFarmMeasurementConfig(DEFAULT_FARM_MEASUREMENT_CONFIG);
       }
 
       if (persistLocalFarmId) {
@@ -283,6 +296,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setRole(null);
         setFarmExperienceMode(DEFAULT_FARM_EXPERIENCE_MODE);
         setFarmLifecycleConfig(DEFAULT_FARM_LIFECYCLE_CONFIG);
+        setFarmMeasurementConfig(DEFAULT_FARM_MEASUREMENT_CONFIG);
         removeActiveFarmId();
       }
       setLoading(false);
@@ -300,6 +314,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setRole(null);
       setFarmExperienceMode(DEFAULT_FARM_EXPERIENCE_MODE);
       setFarmLifecycleConfig(DEFAULT_FARM_LIFECYCLE_CONFIG);
+      setFarmMeasurementConfig(DEFAULT_FARM_MEASUREMENT_CONFIG);
       removeActiveFarmId();
     } catch (e) {
       console.error("[useAuth] Error signing out:", e);
@@ -316,6 +331,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         role,
         farmExperienceMode,
         farmLifecycleConfig,
+        farmMeasurementConfig,
         setActiveFarm,
         loadRoleForFarm,
         refreshSettings,

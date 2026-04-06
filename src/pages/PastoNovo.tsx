@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useLiveQuery } from "dexie-react-hooks";
-import { db } from "@/lib/offline/db";
-import { createGesture } from "@/lib/offline/ops";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ChevronLeft, Map as MapIcon, Save, Trees } from "lucide-react";
+
+import { FormSection } from "@/components/ui/form-section";
+import { MetricCard } from "@/components/ui/metric-card";
+import { PageIntro } from "@/components/ui/page-intro";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,75 +15,83 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { showSuccess, showError } from "@/utils/toast";
-import { ChevronLeft, Save } from "lucide-react";
-import { TipoPastoEnum, InfraestruturaPasto } from "@/lib/offline/types";
+import { Textarea } from "@/components/ui/textarea";
+import { createGesture } from "@/lib/offline/ops";
 import { getActiveFarmId } from "@/lib/storage";
+import { TipoPastoEnum, InfraestruturaPasto } from "@/lib/offline/types";
+import { showSuccess, showError } from "@/utils/toast";
+
+const INFRA_STATUS = [
+  { value: "otimo", label: "Otimo" },
+  { value: "bom", label: "Bom" },
+  { value: "regular", label: "Regular" },
+  { value: "ruim", label: "Ruim" },
+] as const;
 
 const PastoNovo = () => {
   const navigate = useNavigate();
 
-  // Basic Info
   const [nome, setNome] = useState("");
   const [areaHa, setAreaHa] = useState("");
   const [capacidadeUa, setCapacidadeUa] = useState("");
   const [tipoPasto, setTipoPasto] = useState<TipoPastoEnum>("nativo");
   const [observacoes, setObservacoes] = useState("");
-
-  // Infraestrutura
   const [infra, setInfra] = useState<InfraestruturaPasto>({
-    cochos: { quantidade: 0, tipo: "madeira", capacidade: 0 },
-    bebedouros: { quantidade: 0, tipo: "natural", capacidade: 0 },
-    saleiros: { quantidade: 0, tipo: "coberto", capacidade: 0 },
+    cochos: { quantidade: 0, tipo: "madeira", capacidade: 0, estado: "bom" },
+    bebedouros: { quantidade: 0, tipo: "natural", capacidade: 0, estado: "bom" },
+    saleiros: { quantidade: 0, tipo: "coberto", capacidade: 0, estado: "bom" },
     cerca: { tipo: "arame_liso", comprimento_metros: 0, estado: "bom" },
-    curral: { area_metros: 0, possui_balanca: false, possui_brete: false },
+    curral: {
+      area_metros: 0,
+      possui_balanca: false,
+      possui_brete: false,
+      estado: "bom",
+    },
   });
+
+  const activeFazendaId = getActiveFarmId();
 
   const handleInfraChange = (
     category: keyof InfraestruturaPasto,
     field: string,
-    value: string | number | boolean
+    value: string | number | boolean,
   ) => {
-    setInfra((prev) => ({
-      ...prev,
+    setInfra((previous) => ({
+      ...previous,
       [category]: {
-        ...prev[category],
+        ...previous[category],
         [field]: value,
       },
     }));
   };
 
-  const activeFazendaId = getActiveFarmId();
-
   const handleSave = async () => {
     if (!activeFazendaId) {
-      showError("Fazenda não identificada.");
+      showError("Fazenda nao identificada.");
       return;
     }
 
     if (!nome.trim()) {
-      showError("Nome do pasto é obrigatório.");
+      showError("Nome do pasto e obrigatorio.");
       return;
     }
 
-    if (!areaHa || parseFloat(areaHa) <= 0) {
-      showError("Área (ha) é obrigatória e deve ser maior que zero.");
+    if (!areaHa || Number.parseFloat(areaHa) <= 0) {
+      showError("Area (ha) e obrigatoria e deve ser maior que zero.");
       return;
     }
 
-    const pasto_id = crypto.randomUUID();
+    const pastoId = crypto.randomUUID();
     const now = new Date().toISOString();
-
     const op = {
       table: "pastos",
       action: "INSERT" as const,
       record: {
-        id: pasto_id,
+        id: pastoId,
         fazenda_id: activeFazendaId,
         nome: nome.trim(),
-        area_ha: parseFloat(areaHa),
-        capacidade_ua: capacidadeUa ? parseFloat(capacidadeUa) : null,
+        area_ha: Number.parseFloat(areaHa),
+        capacidade_ua: capacidadeUa ? Number.parseFloat(capacidadeUa) : null,
         tipo_pasto: tipoPasto,
         infraestrutura: infra,
         observacoes: observacoes || null,
@@ -96,294 +105,422 @@ const PastoNovo = () => {
       await createGesture(activeFazendaId, [op]);
       showSuccess("Pasto cadastrado com sucesso!");
       navigate("/pastos");
-    } catch (e) {
-      console.error(e);
+    } catch (error) {
+      console.error(error);
       showError("Erro ao cadastrar pasto. Tente novamente.");
     }
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 pb-20">
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => navigate("/pastos")}>
-          <ChevronLeft className="h-5 w-5" />
-        </Button>
-        <h1 className="text-2xl font-bold">Novo Pasto</h1>
+    <div className="space-y-6 pb-16">
+      <PageIntro
+        eyebrow="Estrutura do rebanho"
+        title="Novo pasto"
+        description="Cadastre area, capacidade e infraestrutura em blocos objetivos, sem transformar a tela em planilha."
+        actions={
+          <>
+            <Button variant="outline" onClick={() => navigate("/pastos")}>
+              <ChevronLeft className="mr-2 h-4 w-4" />
+              Voltar
+            </Button>
+            <Button onClick={handleSave}>
+              <Save className="mr-2 h-4 w-4" />
+              Salvar pasto
+            </Button>
+          </>
+        }
+      />
+
+      <div className="grid gap-4 md:grid-cols-3">
+        <MetricCard
+          label="Tipo de pastagem"
+          value={tipoPasto}
+          hint="Usado para leitura operacional e comparacao entre areas."
+          icon={<Trees className="h-4 w-4" />}
+        />
+        <MetricCard
+          label="Area informada"
+          value={areaHa || "0"}
+          hint="Hectares cadastrados para este pasto."
+          icon={<MapIcon className="h-4 w-4" />}
+        />
+        <MetricCard
+          label="Capacidade declarada"
+          value={capacidadeUa || "Nao informada"}
+          hint="UA de referencia para lotacao."
+        />
       </div>
 
-      <Tabs defaultValue="basic" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="basic">Dados Básicos</TabsTrigger>
-          <TabsTrigger value="infra">Infraestrutura</TabsTrigger>
-        </TabsList>
+      <form
+        className="space-y-6"
+        onSubmit={(event) => {
+          event.preventDefault();
+          void handleSave();
+        }}
+      >
+        <FormSection
+          title="Identidade e capacidade"
+          description="Campos principais para localizar o pasto, entender sua area e registrar a capacidade alvo."
+        >
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2 md:col-span-2">
+              <Label htmlFor="nome">Nome do pasto</Label>
+              <Input
+                id="nome"
+                value={nome}
+                onChange={(event) => setNome(event.target.value)}
+                placeholder="Ex: piquete 1, reserva norte, descanso..."
+              />
+            </div>
 
-        <TabsContent value="basic" className="space-y-4 mt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Informações Gerais</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="nome">Nome do Pasto *</Label>
-                  <Input
-                    id="nome"
-                    value={nome}
-                    onChange={(e) => setNome(e.target.value)}
-                    placeholder="Ex: Piquete 1"
-                  />
-                </div>
+            <div className="space-y-2">
+              <Label>Tipo de pastagem</Label>
+              <Select
+                value={tipoPasto}
+                onValueChange={(value: TipoPastoEnum) => setTipoPasto(value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="nativo">Nativo</SelectItem>
+                  <SelectItem value="cultivado">Cultivado</SelectItem>
+                  <SelectItem value="integracao">ILPF / Integracao</SelectItem>
+                  <SelectItem value="degradado">Degradado / Recuperacao</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="tipo">Tipo de Pastagem</Label>
-                  <Select
-                    value={tipoPasto}
-                    onValueChange={(v: TipoPastoEnum) => setTipoPasto(v)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="nativo">Nativo</SelectItem>
-                      <SelectItem value="cultivado">Cultivado</SelectItem>
-                      <SelectItem value="integracao">ILPF / Integração</SelectItem>
-                      <SelectItem value="degradado">Degradado / Em Recuperação</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+            <div className="space-y-2">
+              <Label htmlFor="area">Area (ha)</Label>
+              <Input
+                id="area"
+                type="number"
+                step="0.01"
+                value={areaHa}
+                onChange={(event) => setAreaHa(event.target.value)}
+                placeholder="Ex: 10.5"
+              />
+            </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="area">Área (ha) *</Label>
-                  <Input
-                    id="area"
-                    type="number"
-                    step="0.01"
-                    value={areaHa}
-                    onChange={(e) => setAreaHa(e.target.value)}
-                    placeholder="Ex: 10.5"
-                  />
-                </div>
+            <div className="space-y-2">
+              <Label htmlFor="capacidade">Capacidade (UA)</Label>
+              <Input
+                id="capacidade"
+                type="number"
+                step="0.1"
+                value={capacidadeUa}
+                onChange={(event) => setCapacidadeUa(event.target.value)}
+                placeholder="Ex: 25"
+              />
+            </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="capacidade">Capacidade (UA)</Label>
-                  <Input
-                    id="capacidade"
-                    type="number"
-                    step="0.1"
-                    value={capacidadeUa}
-                    onChange={(e) => setCapacidadeUa(e.target.value)}
-                    placeholder="Ex: 25.0"
-                  />
-                </div>
+            <div className="space-y-2 md:col-span-2">
+              <Label htmlFor="observacoes">Observacoes</Label>
+              <Textarea
+                id="observacoes"
+                value={observacoes}
+                onChange={(event) => setObservacoes(event.target.value)}
+                placeholder="Informacoes de manejo, limitacoes ou notas do campo."
+              />
+            </div>
+          </div>
+        </FormSection>
+
+        <FormSection
+          title="Infraestrutura"
+          description="Agrupe benfeitorias por bloco para manter o cadastro legivel e facilitar revisoes futuras."
+        >
+          <div className="grid gap-4 lg:grid-cols-2">
+            <div className="rounded-2xl border border-border/70 bg-muted/20 p-4">
+              <div className="mb-4 space-y-1">
+                <p className="font-medium text-foreground">Cochos</p>
+                <p className="text-sm text-muted-foreground">
+                  Quantidade, tipo predominante e metragem linear.
+                </p>
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="obs">Observações</Label>
-                <Input
-                  id="obs"
-                  value={observacoes}
-                  onChange={(e) => setObservacoes(e.target.value)}
-                  placeholder="Detalhes adicionais..."
-                />
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="infra" className="space-y-4 mt-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* COCHOS */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Cochos</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex gap-4">
-                  <div className="flex-1 space-y-1">
-                    <Label className="text-xs">Qtd</Label>
-                    <Input
-                      type="number"
-                      value={infra.cochos?.quantidade}
-                      onChange={(e) =>
-                        handleInfraChange("cochos", "quantidade", parseInt(e.target.value) || 0)
-                      }
-                    />
-                  </div>
-                  <div className="flex-[2] space-y-1">
-                    <Label className="text-xs">Tipo</Label>
-                    <Select
-                      value={infra.cochos?.tipo}
-                      onValueChange={(v) => handleInfraChange("cochos", "tipo", v)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="madeira">Madeira coberto</SelectItem>
-                        <SelectItem value="plastico">Plástico/Tambor</SelectItem>
-                        <SelectItem value="concreto">Concreto</SelectItem>
-                        <SelectItem value="bags">Bags/Móvel</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Capacidade Total (m lineares)</Label>
+              <div className="grid gap-3 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label>Quantidade</Label>
                   <Input
                     type="number"
-                    value={infra.cochos?.capacidade}
-                    onChange={(e) =>
-                      handleInfraChange("cochos", "capacidade", parseFloat(e.target.value) || 0)
+                    value={infra.cochos?.quantidade || 0}
+                    onChange={(event) =>
+                      handleInfraChange(
+                        "cochos",
+                        "quantidade",
+                        Number.parseInt(event.target.value, 10) || 0,
+                      )
                     }
                   />
                 </div>
-              </CardContent>
-            </Card>
-
-            {/* BEBEDOUROS */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Bebedouros</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex gap-4">
-                  <div className="flex-1 space-y-1">
-                    <Label className="text-xs">Qtd</Label>
-                    <Input
-                      type="number"
-                      value={infra.bebedouros?.quantidade}
-                      onChange={(e) =>
-                        handleInfraChange("bebedouros", "quantidade", parseInt(e.target.value) || 0)
-                      }
-                    />
-                  </div>
-                  <div className="flex-[2] space-y-1">
-                    <Label className="text-xs">Tipo</Label>
-                    <Select
-                      value={infra.bebedouros?.tipo}
-                      onValueChange={(v) => handleInfraChange("bebedouros", "tipo", v)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="natural">Natural (Açude/Rio)</SelectItem>
-                        <SelectItem value="artificial">Artificial (Pileta)</SelectItem>
-                        <SelectItem value="tanque">Tanque Rede</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Capacidade (Litros)</Label>
-                  <Input
-                    type="number"
-                    value={infra.bebedouros?.capacidade}
-                    onChange={(e) =>
-                      handleInfraChange("bebedouros", "capacidade", parseFloat(e.target.value) || 0)
-                    }
-                  />
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* CERCAS */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Cercas</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="space-y-1">
-                  <Label className="text-xs">Tipo Predominante</Label>
+                <div className="space-y-2">
+                  <Label>Tipo</Label>
                   <Select
-                    value={infra.cerca?.tipo}
-                    onValueChange={(v) => handleInfraChange("cerca", "tipo", v)}
+                    value={infra.cochos?.tipo || "madeira"}
+                    onValueChange={(value) => handleInfraChange("cochos", "tipo", value)}
                   >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="arame_liso">Arame Liso</SelectItem>
-                      <SelectItem value="arame_farpado">Arame Farpado</SelectItem>
-                      <SelectItem value="eletrica">Elétrica</SelectItem>
+                      <SelectItem value="madeira">Madeira coberto</SelectItem>
+                      <SelectItem value="plastico">Plastico / tambor</SelectItem>
+                      <SelectItem value="concreto">Concreto</SelectItem>
+                      <SelectItem value="bags">Bags / movel</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="flex gap-4">
-                  <div className="flex-1 space-y-1">
-                    <Label className="text-xs">Estado</Label>
-                    <Select
-                      value={infra.cerca?.estado}
-                      onValueChange={(v) => handleInfraChange("cerca", "estado", v)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="otimo">Ótimo</SelectItem>
-                        <SelectItem value="bom">Bom</SelectItem>
-                        <SelectItem value="regular">Regular</SelectItem>
-                        <SelectItem value="ruim">Ruim</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="flex-1 space-y-1">
-                    <Label className="text-xs">Metragem (m)</Label>
-                    <Input
-                      type="number"
-                      value={infra.cerca?.comprimento_metros}
-                      onChange={(e) =>
-                        handleInfraChange("cerca", "comprimento_metros", parseFloat(e.target.value) || 0)
-                      }
-                    />
-                  </div>
+                <div className="space-y-2">
+                  <Label>Capacidade total (m)</Label>
+                  <Input
+                    type="number"
+                    value={infra.cochos?.capacidade || 0}
+                    onChange={(event) =>
+                      handleInfraChange(
+                        "cochos",
+                        "capacidade",
+                        Number.parseFloat(event.target.value) || 0,
+                      )
+                    }
+                  />
                 </div>
-              </CardContent>
-            </Card>
-            
-             {/* CURRAL / SALEIRO */}
-             <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Outros (Saleiro/Curral)</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex gap-4 items-end">
-                   <div className="flex-1 space-y-1">
-                    <Label className="text-xs">Saleiros (Qtd)</Label>
-                    <Input
-                      type="number"
-                      value={infra.saleiros?.quantidade}
-                      onChange={(e) =>
-                        handleInfraChange("saleiros", "quantidade", parseInt(e.target.value) || 0)
-                      }
-                    />
-                   </div>
-                   <div className="flex-1 space-y-1">
-                      <Label className="text-xs">Possui Curral/Brete?</Label>
-                      <Select
-                        value={infra.curral?.possui_brete ? "sim" : "nao"}
-                        onValueChange={(v) => handleInfraChange("curral", "possui_brete", v === "sim")}
-                      >
-                         <SelectTrigger><SelectValue /></SelectTrigger>
-                         <SelectContent>
-                            <SelectItem value="sim">Sim</SelectItem>
-                            <SelectItem value="nao">Não</SelectItem>
-                         </SelectContent>
-                      </Select>
-                   </div>
+                <div className="space-y-2">
+                  <Label>Estado</Label>
+                  <Select
+                    value={infra.cochos?.estado || "bom"}
+                    onValueChange={(value) => handleInfraChange("cochos", "estado", value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {INFRA_STATUS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-      </Tabs>
+              </div>
+            </div>
 
-      <div className="pt-4">
-        <Button onClick={handleSave} className="w-full text-lg h-12">
-          <Save className="h-5 w-5 mr-2" />
-          Salvar Pasto
-        </Button>
-      </div>
+            <div className="rounded-2xl border border-border/70 bg-muted/20 p-4">
+              <div className="mb-4 space-y-1">
+                <p className="font-medium text-foreground">Bebedouros</p>
+                <p className="text-sm text-muted-foreground">
+                  Registre a estrutura que sustenta disponibilidade de agua.
+                </p>
+              </div>
+              <div className="grid gap-3 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label>Quantidade</Label>
+                  <Input
+                    type="number"
+                    value={infra.bebedouros?.quantidade || 0}
+                    onChange={(event) =>
+                      handleInfraChange(
+                        "bebedouros",
+                        "quantidade",
+                        Number.parseInt(event.target.value, 10) || 0,
+                      )
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Tipo</Label>
+                  <Select
+                    value={infra.bebedouros?.tipo || "natural"}
+                    onValueChange={(value) =>
+                      handleInfraChange("bebedouros", "tipo", value)
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="natural">Natural</SelectItem>
+                      <SelectItem value="artificial">Artificial</SelectItem>
+                      <SelectItem value="tanque">Tanque rede</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Capacidade (L)</Label>
+                  <Input
+                    type="number"
+                    value={infra.bebedouros?.capacidade || 0}
+                    onChange={(event) =>
+                      handleInfraChange(
+                        "bebedouros",
+                        "capacidade",
+                        Number.parseFloat(event.target.value) || 0,
+                      )
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Estado</Label>
+                  <Select
+                    value={infra.bebedouros?.estado || "bom"}
+                    onValueChange={(value) =>
+                      handleInfraChange("bebedouros", "estado", value)
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {INFRA_STATUS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-border/70 bg-muted/20 p-4">
+              <div className="mb-4 space-y-1">
+                <p className="font-medium text-foreground">Cercas</p>
+                <p className="text-sm text-muted-foreground">
+                  Tipo predominante, estado e metragem de referencia.
+                </p>
+              </div>
+              <div className="grid gap-3 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label>Tipo predominante</Label>
+                  <Select
+                    value={infra.cerca?.tipo || "arame_liso"}
+                    onValueChange={(value) => handleInfraChange("cerca", "tipo", value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="arame_liso">Arame liso</SelectItem>
+                      <SelectItem value="arame_farpado">Arame farpado</SelectItem>
+                      <SelectItem value="eletrica">Eletrica</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Estado</Label>
+                  <Select
+                    value={infra.cerca?.estado || "bom"}
+                    onValueChange={(value) => handleInfraChange("cerca", "estado", value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {INFRA_STATUS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2 md:col-span-2">
+                  <Label>Metragem total (m)</Label>
+                  <Input
+                    type="number"
+                    value={infra.cerca?.comprimento_metros || 0}
+                    onChange={(event) =>
+                      handleInfraChange(
+                        "cerca",
+                        "comprimento_metros",
+                        Number.parseFloat(event.target.value) || 0,
+                      )
+                    }
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-border/70 bg-muted/20 p-4">
+              <div className="mb-4 space-y-1">
+                <p className="font-medium text-foreground">Saleiro e curral</p>
+                <p className="text-sm text-muted-foreground">
+                  Itens de apoio ao manejo e infraestrutura de contenção.
+                </p>
+              </div>
+              <div className="grid gap-3 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label>Saleiros (qtd)</Label>
+                  <Input
+                    type="number"
+                    value={infra.saleiros?.quantidade || 0}
+                    onChange={(event) =>
+                      handleInfraChange(
+                        "saleiros",
+                        "quantidade",
+                        Number.parseInt(event.target.value, 10) || 0,
+                      )
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Estado do curral</Label>
+                  <Select
+                    value={infra.curral?.estado || "bom"}
+                    onValueChange={(value) => handleInfraChange("curral", "estado", value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {INFRA_STATUS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Possui brete</Label>
+                  <Select
+                    value={infra.curral?.possui_brete ? "sim" : "nao"}
+                    onValueChange={(value) =>
+                      handleInfraChange("curral", "possui_brete", value === "sim")
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="sim">Sim</SelectItem>
+                      <SelectItem value="nao">Nao</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Possui balanca</Label>
+                  <Select
+                    value={infra.curral?.possui_balanca ? "sim" : "nao"}
+                    onValueChange={(value) =>
+                      handleInfraChange("curral", "possui_balanca", value === "sim")
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="sim">Sim</SelectItem>
+                      <SelectItem value="nao">Nao</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+          </div>
+        </FormSection>
+      </form>
     </div>
   );
 };

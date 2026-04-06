@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import Dexie from "dexie";
 import { useLiveQuery } from "dexie-react-hooks";
-import { Calendar, Filter, RefreshCw, Search, PlusCircle } from "lucide-react";
+import { Calendar, MoreHorizontal, PlusCircle, RefreshCw, Search } from "lucide-react";
 import { db } from "@/lib/offline/db";
 import { createGesture } from "@/lib/offline/ops";
 import { useAuth } from "@/hooks/useAuth";
@@ -20,12 +20,18 @@ import type {
 import { buildEventGesture } from "@/lib/events/buildEventGesture";
 import type { EventInput } from "@/lib/events/types";
 import { EventValidationError } from "@/lib/events/validators";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { MetricCard } from "@/components/ui/metric-card";
+import { PageIntro } from "@/components/ui/page-intro";
 import {
   Select,
   SelectContent,
@@ -33,6 +39,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { Toolbar, ToolbarGroup } from "@/components/ui/toolbar";
+import { formatWeight } from "@/lib/format/weight";
+import { cn } from "@/lib/utils";
 import { showError, showSuccess } from "@/utils/toast";
 
 type SyncFilter = "all" | GestureStatus | "SYNCED";
@@ -55,17 +65,11 @@ const STATUS_LABEL: Record<GestureStatus | "SYNCED", string> = {
   REJECTED: "Rejeitado",
 };
 
-function statusBadgeClass(status: GestureStatus | "SYNCED") {
-  if (status === "REJECTED" || status === "ERROR") {
-    return "bg-red-100 text-red-700 border-red-200";
-  }
-  if (status === "PENDING") {
-    return "bg-amber-100 text-amber-700 border-amber-200";
-  }
-  if (status === "SYNCING") {
-    return "bg-blue-100 text-blue-700 border-blue-200";
-  }
-  return "bg-emerald-100 text-emerald-700 border-emerald-200";
+function getSyncTone(status: GestureStatus | "SYNCED") {
+  if (status === "REJECTED" || status === "ERROR") return "danger";
+  if (status === "PENDING") return "warning";
+  if (status === "SYNCING") return "info";
+  return "success";
 }
 
 function normalizeSyncStatus(status?: string): GestureStatus | "SYNCED" {
@@ -96,7 +100,7 @@ const Eventos = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const highlightedEventId = searchParams.get("eventoId");
-  const { activeFarmId } = useAuth();
+  const { activeFarmId, farmMeasurementConfig } = useAuth();
 
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebouncedValue(search, 300);
@@ -469,7 +473,9 @@ const Eventos = () => {
           detail = d ? `${d.tipo} - ${d.produto}` : "Sem detalhe sanitario";
         } else if (evento.dominio === "pesagem") {
           const d = pesagemByEvento.get(evento.id);
-          detail = d ? `${d.peso_kg.toFixed(2)} kg` : "Sem detalhe de pesagem";
+          detail = d
+            ? formatWeight(d.peso_kg, farmMeasurementConfig.weight_unit)
+            : "Sem detalhe de pesagem";
         } else if (evento.dominio === "nutricao") {
           const d = nutricaoByEvento.get(evento.id);
           if (d) {
@@ -555,173 +561,209 @@ const Eventos = () => {
     }>;
 
     return rows;
-  }, [data, debouncedSearch]);
+  }, [data, debouncedSearch, farmMeasurementConfig.weight_unit]);
 
   const animais = data?.animais ?? [];
   const lotes = data?.lotes ?? [];
+  const syncSummary = useMemo(
+    () =>
+      timeline.reduce(
+        (summary, row) => {
+          if (row.syncStatus === "PENDING" || row.syncStatus === "SYNCING") {
+            summary.pending += 1;
+          }
+          if (row.syncStatus === "REJECTED" || row.syncStatus === "ERROR") {
+            summary.errors += 1;
+          }
+          if (row.syncStatus === "SYNCED") {
+            summary.synced += 1;
+          }
+          return summary;
+        },
+        { pending: 0, errors: 0, synced: 0 },
+      ),
+    [timeline],
+  );
+  const hasActiveFilters =
+    debouncedSearch.trim().length > 0 ||
+    domainFilter !== "all" ||
+    animalFilter !== "all" ||
+    loteFilter !== "all" ||
+    syncFilter !== "all" ||
+    dateFrom.length > 0 ||
+    dateTo.length > 0;
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold">Eventos</h1>
-          <p className="text-sm text-muted-foreground">
-            Timeline unificada por dominio com rastreio de sync.
-          </p>
-        </div>
-        <Button onClick={() => navigate("/registrar")}>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Novo Registro
-        </Button>
-      </div>
+    <div className="space-y-5">
+      <PageIntro
+        eyebrow="Historico operacional"
+        title="Eventos da fazenda"
+        description="Timeline unificada por dominio com filtros compactos e rastreio de sincronizacao sem competir com o conteudo principal."
+        meta={
+          <>
+            <StatusBadge tone="neutral">
+              {data?.totalCount ?? 0} registro(s) filtrado(s)
+            </StatusBadge>
+            {hasActiveFilters ? (
+              <StatusBadge tone="info">Filtros ativos</StatusBadge>
+            ) : null}
+            {syncSummary.errors > 0 ? (
+              <StatusBadge tone="danger">
+                {syncSummary.errors} falha(s) visiveis
+              </StatusBadge>
+            ) : null}
+          </>
+        }
+        actions={
+          <Button onClick={() => navigate("/registrar")}>
+            <PlusCircle className="h-4 w-4" />
+            Novo registro
+          </Button>
+        }
+      />
 
-      <Card>
-        <CardHeader className="pb-4">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Filter className="h-4 w-4" />
-            Filtros
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <div className="space-y-2">
-            <Label>Busca</Label>
-            <div className="relative">
-              <Search className="h-4 w-4 text-muted-foreground absolute left-3 top-3" />
-              <Input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Produto, animal, lote..."
-                className="pl-9"
-              />
-            </div>
-          </div>
+      <section className="grid gap-4 md:grid-cols-3">
+        <MetricCard
+          label="Eventos filtrados"
+          value={data?.totalCount ?? 0}
+          hint={`${timeline.length} carregado(s) nesta leitura.`}
+        />
+        <MetricCard
+          label="Pendentes de sync"
+          value={syncSummary.pending}
+          hint="Inclui registros pendentes e sincronizando."
+          tone={syncSummary.pending > 0 ? "warning" : "default"}
+        />
+        <MetricCard
+          label="Falhas visiveis"
+          value={syncSummary.errors}
+          hint={
+            syncSummary.errors > 0
+              ? "Revise rejeicoes e erros do recorte atual."
+              : "Nenhuma falha aparente nos itens carregados."
+          }
+          tone={syncSummary.errors > 0 ? "danger" : "success"}
+        />
+      </section>
 
-          <div className="space-y-2">
-            <Label>Dominio</Label>
-            <Select
-              value={domainFilter}
-              onValueChange={(value) =>
-                setDomainFilter(value as "all" | DominioEnum)
-              }
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                <SelectItem value="sanitario">Sanitario</SelectItem>
-                <SelectItem value="pesagem">Pesagem</SelectItem>
-                <SelectItem value="movimentacao">Movimentacao</SelectItem>
-                <SelectItem value="nutricao">Nutricao</SelectItem>
-                <SelectItem value="financeiro">Financeiro</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Animal</Label>
-            <Select value={animalFilter} onValueChange={setAnimalFilter}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                {animais.map((animal) => (
-                  <SelectItem key={animal.id} value={animal.id}>
-                    {animal.identificacao}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Lote</Label>
-            <Select value={loteFilter} onValueChange={setLoteFilter}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                {lotes.map((lote) => (
-                  <SelectItem key={lote.id} value={lote.id}>
-                    {lote.nome}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Sync</Label>
-            <Select
-              value={syncFilter}
-              onValueChange={(value) => setSyncFilter(value as SyncFilter)}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                <SelectItem value="SYNCED">Sincronizado</SelectItem>
-                <SelectItem value="PENDING">Pendente</SelectItem>
-                <SelectItem value="SYNCING">Sincronizando</SelectItem>
-                <SelectItem value="ERROR">Erro</SelectItem>
-                <SelectItem value="REJECTED">Rejeitado</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Data de</Label>
+      <Toolbar>
+        <ToolbarGroup className="flex-1 gap-2">
+          <div className="relative min-w-[220px] flex-1">
+            <Search className="absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
             <Input
-              type="date"
-              value={dateFrom}
-              onChange={(e) => setDateFrom(e.target.value)}
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Buscar por dominio, animal, lote ou observacao"
+              className="pl-9"
             />
           </div>
 
-          <div className="space-y-2">
-            <Label>Data ate</Label>
-            <Input
-              type="date"
-              value={dateTo}
-              onChange={(e) => setDateTo(e.target.value)}
-            />
-          </div>
+          <Select
+            value={domainFilter}
+            onValueChange={(value) => setDomainFilter(value as "all" | DominioEnum)}
+          >
+            <SelectTrigger aria-label="Filtrar por dominio" className="w-full sm:w-[180px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os dominios</SelectItem>
+              <SelectItem value="sanitario">Sanitario</SelectItem>
+              <SelectItem value="pesagem">Pesagem</SelectItem>
+              <SelectItem value="movimentacao">Movimentacao</SelectItem>
+              <SelectItem value="nutricao">Nutricao</SelectItem>
+              <SelectItem value="reproducao">Reproducao</SelectItem>
+              <SelectItem value="financeiro">Financeiro</SelectItem>
+            </SelectContent>
+          </Select>
 
-          <div className="flex items-end">
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={() => {
-                setSearch("");
-                setDomainFilter("all");
-                setAnimalFilter("all");
-                setLoteFilter("all");
-                setSyncFilter("all");
-                setDateFrom("");
-                setDateTo("");
-              }}
-            >
-              <RefreshCw className="mr-2 h-4 w-4" />
-              Limpar filtros
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+          <Select value={animalFilter} onValueChange={setAnimalFilter}>
+            <SelectTrigger aria-label="Filtrar por animal" className="w-full sm:w-[180px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os animais</SelectItem>
+              {animais.map((animal) => (
+                <SelectItem key={animal.id} value={animal.id}>
+                  {animal.identificacao}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
-      <div className="text-sm text-muted-foreground">
-        {data?.totalCount ?? 0} evento(s) encontrado(s)
-      </div>
+          <Select value={loteFilter} onValueChange={setLoteFilter}>
+            <SelectTrigger aria-label="Filtrar por lote" className="w-full sm:w-[180px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os lotes</SelectItem>
+              {lotes.map((lote) => (
+                <SelectItem key={lote.id} value={lote.id}>
+                  {lote.nome}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={syncFilter}
+            onValueChange={(value) => setSyncFilter(value as SyncFilter)}
+          >
+            <SelectTrigger aria-label="Filtrar por sincronizacao" className="w-full sm:w-[180px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todo sync</SelectItem>
+              <SelectItem value="SYNCED">Sincronizado</SelectItem>
+              <SelectItem value="PENDING">Pendente</SelectItem>
+              <SelectItem value="SYNCING">Sincronizando</SelectItem>
+              <SelectItem value="ERROR">Erro</SelectItem>
+              <SelectItem value="REJECTED">Rejeitado</SelectItem>
+            </SelectContent>
+          </Select>
+        </ToolbarGroup>
+
+        <ToolbarGroup className="gap-2">
+          <Input
+            type="date"
+            aria-label="Data inicial"
+            value={dateFrom}
+            onChange={(event) => setDateFrom(event.target.value)}
+            className="w-full sm:w-[160px]"
+          />
+          <Input
+            type="date"
+            aria-label="Data final"
+            value={dateTo}
+            onChange={(event) => setDateTo(event.target.value)}
+            className="w-full sm:w-[160px]"
+          />
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              setSearch("");
+              setDomainFilter("all");
+              setAnimalFilter("all");
+              setLoteFilter("all");
+              setSyncFilter("all");
+              setDateFrom("");
+              setDateTo("");
+            }}
+          >
+            <RefreshCw className="h-4 w-4" />
+            Limpar filtros
+          </Button>
+        </ToolbarGroup>
+      </Toolbar>
 
       {timeline.length === 0 ? (
         <Card>
           <CardContent className="p-10 text-center">
-            <Calendar className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+            <Calendar className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
             <p className="font-medium">Nenhum evento encontrado</p>
             <p className="text-sm text-muted-foreground">
-              Ajuste os filtros ou registre um novo evento.
+              Ajuste o recorte atual ou registre um novo evento.
             </p>
           </CardContent>
         </Card>
@@ -729,124 +771,143 @@ const Eventos = () => {
         <div className="space-y-3">
           {timeline.map((row) => {
             const isHighlighted = highlightedEventId === row.id;
+            const isComplementOpen = complementTargetId === row.id;
 
             return (
-              <Card
+              <article
                 key={row.id}
-                className={
-                  isHighlighted ? "ring-2 ring-primary border-primary/40" : ""
-                }
+                className={cn(
+                  "rounded-2xl border border-border/70 bg-background/95 p-4 shadow-soft",
+                  isHighlighted && "border-primary/30 bg-primary/5",
+                )}
               >
-                <CardContent className="p-4 space-y-3">
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                      <div className="font-semibold">
-                        {DOMAIN_LABEL[row.evento.dominio]}
-                      </div>
-                      <div className="text-sm text-muted-foreground">
-                        {row.detail}
-                      </div>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      <Badge variant="outline">
-                        {toDateTime(row.evento.occurred_at)}
-                      </Badge>
-                      <Badge variant="outline">{row.animalNome}</Badge>
-                      <Badge variant="outline">{row.loteNome}</Badge>
-                      <Badge className={statusBadgeClass(row.syncStatus)}>
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                  <div className="min-w-0 flex-1 space-y-3">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="font-medium">{DOMAIN_LABEL[row.evento.dominio]}</p>
+                      <StatusBadge tone="neutral">{row.animalNome}</StatusBadge>
+                      <StatusBadge tone="neutral">{row.loteNome}</StatusBadge>
+                      <StatusBadge tone={getSyncTone(row.syncStatus)}>
                         {STATUS_LABEL[row.syncStatus]}
-                      </Badge>
+                      </StatusBadge>
+                      {isHighlighted ? (
+                        <StatusBadge tone="info">Em foco</StatusBadge>
+                      ) : null}
+                    </div>
+
+                    <p className="text-sm leading-6 text-muted-foreground">
+                      {row.detail}
+                    </p>
+
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                      <span>{toDateTime(row.evento.occurred_at)}</span>
+                      <span>ID {row.id.slice(0, 8)}</span>
+                      {row.evento.source_task_id ? (
+                        <span>Agenda {row.evento.source_task_id.slice(0, 8)}</span>
+                      ) : null}
+                      {row.evento.corrige_evento_id ? (
+                        <span>
+                          Complementa {row.evento.corrige_evento_id.slice(0, 8)}
+                        </span>
+                      ) : null}
                     </div>
                   </div>
 
-                  <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
-                    <div className="text-muted-foreground">
-                      Evento ID:{" "}
-                      <span className="font-mono">{row.id.slice(0, 8)}</span>
-                    </div>
-                    {row.amount != null && (
-                      <div className="font-semibold">
+                  <div className="flex items-start gap-2">
+                    {row.amount != null ? (
+                      <div className="rounded-full border border-border/70 bg-muted/40 px-3 py-1 text-sm font-semibold">
                         {toCurrency(row.amount)}
                       </div>
-                    )}
-                  </div>
+                    ) : null}
 
-                  {row.evento.source_task_id && (
-                    <div className="text-xs text-muted-foreground">
-                      Vinculado a agenda:{" "}
-                      <span className="font-mono">
-                        {row.evento.source_task_id.slice(0, 8)}
-                      </span>
-                    </div>
-                  )}
-                  {row.evento.corrige_evento_id && (
-                    <div className="text-xs text-muted-foreground">
-                      Complementa evento:{" "}
-                      <span className="font-mono">
-                        {row.evento.corrige_evento_id.slice(0, 8)}
-                      </span>
-                    </div>
-                  )}
-
-                  <div className="pt-1">
-                    {row.evento.dominio === "reproducao" ? (
-                      <p className="text-xs text-muted-foreground">
-                        Complemento ainda nao suportado para reproducao.
-                      </p>
-                    ) : complementTargetId === row.id ? (
-                      <div className="space-y-2 rounded-md border bg-muted/30 p-3">
-                        <Label htmlFor={`complemento-${row.id}`}>
-                          Complemento do evento
-                        </Label>
-                        <Textarea
-                          id={`complemento-${row.id}`}
-                          placeholder="Descreva informacoes adicionais deste evento..."
-                          value={complementText}
-                          onChange={(e) => setComplementText(e.target.value)}
-                          rows={3}
-                        />
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            onClick={() => handleSaveComplement(row.evento)}
-                            disabled={isSavingComplement}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="outline"
+                          aria-label={`Mais acoes para o evento ${row.id}`}
+                        >
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        {row.evento.animal_id ? (
+                          <DropdownMenuItem
+                            onClick={() => navigate(`/animais/${row.evento.animal_id}`)}
                           >
-                            {isSavingComplement
-                              ? "Salvando..."
-                              : "Salvar complemento"}
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
+                            Abrir ficha do animal
+                          </DropdownMenuItem>
+                        ) : null}
+                        {row.evento.dominio === "reproducao" ? (
+                          <DropdownMenuItem disabled>
+                            Complemento indisponivel em reproducao
+                          </DropdownMenuItem>
+                        ) : (
+                          <DropdownMenuItem
                             onClick={() => {
-                              setComplementTargetId(null);
+                              setComplementTargetId(isComplementOpen ? null : row.id);
                               setComplementText("");
                             }}
-                            disabled={isSavingComplement}
                           >
-                            Cancelar
-                          </Button>
-                        </div>
-                      </div>
-                    ) : (
+                            {isComplementOpen
+                              ? "Fechar complemento"
+                              : "Adicionar complemento"}
+                          </DropdownMenuItem>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </div>
+
+                {isComplementOpen ? (
+                  <div className="mt-4 rounded-2xl border border-border/70 bg-muted/30 p-4">
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium text-foreground">
+                        Complemento do evento
+                      </p>
+                      <p className="text-sm leading-6 text-muted-foreground">
+                        Acrescente contexto sem alterar o fato original ja
+                        registrado.
+                      </p>
+                    </div>
+
+                    <Textarea
+                      id={`complemento-${row.id}`}
+                      className="mt-3"
+                      placeholder="Descreva informacoes adicionais deste evento..."
+                      value={complementText}
+                      onChange={(event) => setComplementText(event.target.value)}
+                      rows={3}
+                    />
+
+                    <div className="mt-3 flex flex-wrap items-center justify-end gap-2">
                       <Button
                         size="sm"
                         variant="outline"
                         onClick={() => {
-                          setComplementTargetId(row.id);
+                          setComplementTargetId(null);
                           setComplementText("");
                         }}
+                        disabled={isSavingComplement}
                       >
-                        Adicionar complemento
+                        Cancelar
                       </Button>
-                    )}
+                      <Button
+                        size="sm"
+                        onClick={() => handleSaveComplement(row.evento)}
+                        disabled={isSavingComplement}
+                      >
+                        {isSavingComplement ? "Salvando..." : "Salvar complemento"}
+                      </Button>
+                    </div>
                   </div>
-                </CardContent>
-              </Card>
+                ) : null}
+              </article>
             );
           })}
 
-          {data && data.totalCount > timeline.length && (
+          {data && data.totalCount > timeline.length ? (
             <div className="flex justify-center pt-4">
               <Button
                 variant="outline"
@@ -855,7 +916,7 @@ const Eventos = () => {
                 Carregar mais (restam {data.totalCount - timeline.length})
               </Button>
             </div>
-          )}
+          ) : null}
         </div>
       )}
     </div>

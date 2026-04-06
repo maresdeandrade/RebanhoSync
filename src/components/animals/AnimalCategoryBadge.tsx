@@ -1,8 +1,9 @@
 import { Droplets, Scale } from "lucide-react";
+
+import { AnimalHeadIcon } from "@/components/animals/AnimalHeadIcon";
 import { Badge } from "@/components/ui/badge";
 import type { Animal } from "@/lib/offline/types";
 import { getAnimalVisualProfile } from "@/lib/animals/presentation";
-import { AnimalHeadIcon } from "@/components/animals/AnimalHeadIcon";
 import { cn } from "@/lib/utils";
 
 export function AnimalCategoryBadge({
@@ -13,11 +14,11 @@ export function AnimalCategoryBadge({
   categoriaLabel?: string | null;
 }) {
   const profile = getAnimalVisualProfile(animal, categoriaLabel);
-  const modifierSymbol =
+  const modifierLabel =
     profile.modifier === "female"
-      ? "♀"
+      ? "F"
       : profile.modifier === "male"
-        ? "♂"
+        ? "M"
         : null;
   const ModifierIcon =
     profile.modifier === "maternal"
@@ -29,11 +30,14 @@ export function AnimalCategoryBadge({
   return (
     <Badge
       variant="outline"
-      className={cn("gap-2 py-1 pl-1.5 pr-2", profile.toneClassName)}
+      className={cn(
+        "gap-2 border-border/70 bg-background/80 py-1 pl-1.5 pr-2 text-foreground",
+        profile.toneClassName,
+      )}
     >
       <span
         className={cn(
-          "relative inline-flex items-center justify-center rounded-full bg-white/80 ring-1 ring-black/5",
+          "relative inline-flex items-center justify-center rounded-full bg-white/85 ring-1 ring-black/5",
           profile.frameClassName,
         )}
       >
@@ -42,7 +46,7 @@ export function AnimalCategoryBadge({
           {ModifierIcon ? (
             <ModifierIcon className="h-2.5 w-2.5 text-current" />
           ) : (
-            modifierSymbol
+            modifierLabel
           )}
         </span>
       </span>

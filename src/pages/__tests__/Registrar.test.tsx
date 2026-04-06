@@ -9,6 +9,7 @@ import { MemoryRouter } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useLotes } from "@/hooks/useLotes";
 import { useLiveQuery } from "dexie-react-hooks";
+import { DEFAULT_FARM_LIFECYCLE_CONFIG } from "@/lib/farms/lifecycleConfig";
 
 // Mock hooks
 vi.mock("@/hooks/useAuth");
@@ -51,6 +52,8 @@ describe("Registrar Page - Anti-Teleport", () => {
     mockedUseAuth.mockReturnValue({
       activeFarmId: mockFarmId,
       role: "owner",
+      farmMeasurementConfig: { weight_unit: "kg" },
+      farmLifecycleConfig: DEFAULT_FARM_LIFECYCLE_CONFIG,
     } as ReturnType<typeof useAuth>);
     
     // Mock useLotes to return mock lotes
@@ -126,8 +129,9 @@ describe("Registrar Page - Anti-Teleport", () => {
 
     // 6. Change Source to Lote B
     // The source select now shows "Lote A"
-    const sourceSelect2 = screen.getByText("Lote A");
-    fireEvent.click(sourceSelect2);
+    const sourceSelect2 = screen.getAllByText("Lote A").at(-1);
+    expect(sourceSelect2).toBeDefined();
+    fireEvent.click(sourceSelect2!);
     
     const optionB_Source = await screen.findByText("Lote B");
     fireEvent.click(optionB_Source);

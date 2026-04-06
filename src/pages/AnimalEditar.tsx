@@ -27,6 +27,8 @@ import {
 import { buildEventGesture } from "@/lib/events/buildEventGesture";
 import { EventValidationError } from "@/lib/events/validators";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { MetricCard } from "@/components/ui/metric-card";
+import { PageIntro } from "@/components/ui/page-intro";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -213,6 +215,8 @@ const AnimalEditar = () => {
           (1000 * 60 * 60 * 24 * 30),
       )
     : null;
+  const maleBreedingSelected =
+    destinoProdutivo !== "null" && isMaleBreedingDestination(destinoProdutivo);
 
   const handleSave = async () => {
     if (!animal || !id) {
@@ -377,32 +381,66 @@ const AnimalEditar = () => {
 
   if (!animal) {
     return (
-      <div className="max-w-xl mx-auto space-y-6">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate("/animais")}
-          >
-            <ChevronLeft className="h-5 w-5" />
-          </Button>
-          <h1 className="text-2xl font-bold">Carregando...</h1>
-        </div>
+      <div className="space-y-6 pb-16">
+        <PageIntro
+          eyebrow="Cadastro animal"
+          title="Editar animal"
+          description="Carregando os dados do cadastro selecionado."
+          actions={
+            <Button variant="outline" onClick={() => navigate("/animais")}>
+              <ChevronLeft className="mr-2 h-4 w-4" />
+              Voltar
+            </Button>
+          }
+        />
       </div>
     );
   }
 
   return (
-    <div className="max-w-xl mx-auto space-y-6">
-      <div className="flex items-center gap-4">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => navigate(`/animais/${id}`)}
-        >
-          <ChevronLeft className="h-5 w-5" />
-        </Button>
-        <h1 className="text-2xl font-bold">Editar Animal</h1>
+    <div className="space-y-6 pb-16">
+      <PageIntro
+        eyebrow="Cadastro animal"
+        title="Editar animal"
+        description="Os blocos principais continuam os mesmos, agora com uma leitura mais previsivel para revisar o cadastro."
+        actions={
+          <>
+            <Button variant="outline" onClick={() => navigate(`/animais/${id}`)}>
+              <ChevronLeft className="mr-2 h-4 w-4" />
+              Voltar
+            </Button>
+            <Button onClick={handleSave} disabled={isSaving}>
+              {isSaving ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="mr-2 h-4 w-4" />
+              )}
+              {isSaving ? "Salvando..." : "Salvar alteracoes"}
+            </Button>
+          </>
+        }
+      />
+
+      <div className="grid gap-4 md:grid-cols-3">
+        <MetricCard
+          label="Sexo"
+          value={sexo === "M" ? "Macho" : "Femea"}
+          hint={idadeMeses !== null ? `${idadeMeses} mes(es) estimados.` : "Sem idade calculada."}
+        />
+        <MetricCard
+          label="Origem"
+          value={origem === "null" ? "Nao informada" : origem}
+          hint="Contexto atual do animal dentro do cadastro."
+        />
+        <MetricCard
+          label="Lote atual"
+          value={
+            loteId === "null"
+              ? "Sem lote"
+              : lotes?.find((loteAtual) => loteAtual.id === loteId)?.nome ?? "Selecionado"
+          }
+          hint="Pode ser alterado sem expor acoes destrutivas."
+        />
       </div>
 
       <Card>
@@ -716,10 +754,7 @@ const AnimalEditar = () => {
                 onValueChange={(
                   value: StatusReprodutivoMachoEnum | "null",
                 ) => setStatusReprodutivoMacho(value)}
-                disabled={
-                  destinoProdutivo === "null" ||
-                  !isMaleBreedingDestination(destinoProdutivo)
-                }
+                disabled={!maleBreedingSelected}
               >
                 <SelectTrigger>
                   <SelectValue
@@ -738,8 +773,7 @@ const AnimalEditar = () => {
                   <SelectItem value="inativo">Inativo</SelectItem>
                 </SelectContent>
               </Select>
-              {!isMaleBreedingDestination(destinoProdutivo) &&
-                destinoProdutivo !== "null" && (
+              {!maleBreedingSelected && destinoProdutivo !== "null" && (
                   <p className="text-xs text-muted-foreground">
                     Destinos nao reprodutivos mantem o manejo reprodutivo como
                     inativo.

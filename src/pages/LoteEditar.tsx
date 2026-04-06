@@ -1,9 +1,11 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useLiveQuery } from "dexie-react-hooks";
-import { db } from "@/lib/offline/db";
-import { createGesture } from "@/lib/offline/ops";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ChevronLeft, Layers, Save, Users } from "lucide-react";
+
+import { FormSection } from "@/components/ui/form-section";
+import { MetricCard } from "@/components/ui/metric-card";
+import { PageIntro } from "@/components/ui/page-intro";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,24 +16,35 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { showSuccess, showError } from "@/utils/toast";
-import { ChevronLeft, Save } from "lucide-react";
+import { db } from "@/lib/offline/db";
+import { createGesture } from "@/lib/offline/ops";
+import { showError, showSuccess } from "@/utils/toast";
+
+const NULL_VALUE = "null";
 
 const LoteEditar = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
-  // Carregar lote
-  const lote = useLiveQuery(
-    () => (id ? db.state_lotes.get(id) : undefined),
+  const lote = useLiveQuery(() => (id ? db.state_lotes.get(id) : undefined), [id]);
+  const animaisNoLote = useLiveQuery(
+    () => (id ? db.state_animais.where("lote_id").equals(id).count() : 0),
     [id],
+  );
+  const pastoAtual = useLiveQuery(
+    () => (lote?.pasto_id ? db.state_pastos.get(lote.pasto_id) : null),
+    [lote?.pasto_id],
+  );
+  const touroAtual = useLiveQuery(
+    () => (lote?.touro_id ? db.state_animais.get(lote.touro_id) : null),
+    [lote?.touro_id],
   );
 
   const [nome, setNome] = useState("");
   const [status, setStatus] = useState<"ativo" | "inativo">("ativo");
-  const [pastoId, setPastoId] = useState<string>("null");
-  const [touroId, setTouroId] = useState<string>("null");
-  const [isLoaded, setIsLoaded] = useState(false); // ✅ Flag para garantir carregamento
+  const [pastoId, setPastoId] = useState<string>(NULL_VALUE);
+  const [touroId, setTouroId] = useState<string>(NULL_VALUE);
+  const [isLoaded, setIsLoaded] = useState(false);
 
   const pastos = useLiveQuery(
     () =>
@@ -47,46 +60,45 @@ const LoteEditar = () => {
             .where("fazenda_id")
             .equals(lote.fazenda_id)
             .filter(
-              (a) => a.sexo === "M" && (!a.deleted_at || a.deleted_at === null),
+              (animal) =>
+                animal.sexo === "M" && (!animal.deleted_at || animal.deleted_at === null),
             )
             .toArray()
         : [],
     [lote?.fazenda_id],
   );
 
-  // Preencher formulário quando lote carregar
   useEffect(() => {
     if (lote && !isLoaded) {
       setNome(lote.nome ?? "");
       setStatus(lote.status ?? "ativo");
-      setPastoId(lote.pasto_id ?? "null");
-      setTouroId(lote.touro_id ?? "null");
-      setIsLoaded(true); // ✅ Marca como carregado
+      setPastoId(lote.pasto_id ?? NULL_VALUE);
+      setTouroId(lote.touro_id ?? NULL_VALUE);
+      setIsLoaded(true);
     }
-  }, [lote, isLoaded]);
+  }, [isLoaded, lote]);
 
   const handleSave = async () => {
     if (!lote || !id) {
-      showError("Lote não encontrado.");
+      showError("Lote nao encontrado.");
       return;
     }
 
     if (!nome.trim()) {
-      showError("Nome do lote é obrigatório.");
+      showError("Nome do lote e obrigatorio.");
       return;
     }
 
     const now = new Date().toISOString();
-
     const op = {
       table: "lotes",
       action: "UPDATE" as const,
       record: {
-        id: id,
+        id,
         nome: nome.trim(),
         status,
-        pasto_id: pastoId === "null" ? null : pastoId,
-        touro_id: touroId === "null" ? null : touroId,
+        pasto_id: pastoId === NULL_VALUE ? null : pastoId,
+        touro_id: touroId === NULL_VALUE ? null : touroId,
         updated_at: now,
       },
     };
@@ -95,112 +107,151 @@ const LoteEditar = () => {
       await createGesture(lote.fazenda_id, [op]);
       showSuccess("Lote atualizado localmente!");
       navigate(`/lotes/${id}`);
-    } catch (e) {
+    } catch {
       showError("Erro ao atualizar lote.");
     }
   };
 
   if (!lote || !isLoaded) {
     return (
-      <div className="max-w-xl mx-auto space-y-6">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate("/lotes")}
-          >
-            <ChevronLeft className="h-5 w-5" />
-          </Button>
-          <h1 className="text-2xl font-bold">Carregando...</h1>
-        </div>
+      <div className="space-y-6 pb-16">
+        <PageIntro
+          eyebrow="Estrutura do rebanho"
+          title="Editar lote"
+          description="Carregando os dados operacionais do lote."
+          actions={
+            <Button variant="outline" onClick={() => navigate("/lotes")}>
+              <ChevronLeft className="mr-2 h-4 w-4" />
+              Voltar
+            </Button>
+          }
+        />
       </div>
     );
   }
 
   return (
-    <div className="max-w-xl mx-auto space-y-6">
-      <div className="flex items-center gap-4">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => navigate(`/lotes/${id}`)}
-        >
-          <ChevronLeft className="h-5 w-5" />
-        </Button>
-        <h1 className="text-2xl font-bold">Editar Lote</h1>
+    <div className="space-y-6 pb-16">
+      <PageIntro
+        eyebrow="Estrutura do rebanho"
+        title={`Editar ${lote.nome}`}
+        description="Ajuste nome, status e vinculos atuais sem alterar o fluxo operacional do lote."
+        actions={
+          <>
+            <Button variant="outline" onClick={() => navigate(`/lotes/${id}`)}>
+              <ChevronLeft className="mr-2 h-4 w-4" />
+              Voltar
+            </Button>
+            <Button onClick={handleSave}>
+              <Save className="mr-2 h-4 w-4" />
+              Salvar alteracoes
+            </Button>
+          </>
+        }
+      />
+
+      <div className="grid gap-4 md:grid-cols-3">
+        <MetricCard
+          label="Animais no lote"
+          value={animaisNoLote ?? 0}
+          hint="Total atual usado na rotina de manejo."
+          icon={<Users className="h-4 w-4" />}
+        />
+        <MetricCard
+          label="Pasto atual"
+          value={pastoAtual?.nome ?? "Sem pasto"}
+          hint="Vinculo visivel nas listagens e lotacao."
+          icon={<Layers className="h-4 w-4" />}
+        />
+        <MetricCard
+          label="Reprodutor"
+          value={touroAtual?.identificacao ?? "Sem vinculo"}
+          hint={status === "ativo" ? "Lote em operacao." : "Lote fora da rotina principal."}
+          tone={status === "ativo" ? "success" : "default"}
+        />
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Informações do Lote</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="nome">Nome do Lote *</Label>
-            <Input
-              id="nome"
-              value={nome}
-              onChange={(e) => setNome(e.target.value)}
-              placeholder="Ex: Lote A, Desmame 2024..."
-            />
-          </div>
+      <form
+        className="space-y-6"
+        onSubmit={(event) => {
+          event.preventDefault();
+          void handleSave();
+        }}
+      >
+        <FormSection
+          title="Identidade do lote"
+          description="Esses campos controlam como o lote aparece para toda a fazenda."
+        >
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2 md:col-span-2">
+              <Label htmlFor="nome">Nome do lote</Label>
+              <Input
+                id="nome"
+                value={nome}
+                onChange={(event) => setNome(event.target.value)}
+                placeholder="Ex: lote de recria, vacas em servico..."
+              />
+            </div>
 
-          <div className="space-y-2">
-            <Label>Status</Label>
-            <Select
-              value={status}
-              onValueChange={(v: "ativo" | "inativo") => setStatus(v)}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ativo">Ativo</SelectItem>
-                <SelectItem value="inativo">Inativo</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="space-y-2">
+              <Label>Status</Label>
+              <Select
+                value={status}
+                onValueChange={(value: "ativo" | "inativo") => setStatus(value)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ativo">Ativo</SelectItem>
+                  <SelectItem value="inativo">Inativo</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
+        </FormSection>
 
-          <div className="space-y-2">
-            <Label>Pasto (Opcional)</Label>
-            <Select value={pastoId} onValueChange={setPastoId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione o pasto" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="null">Nenhum</SelectItem>
-                {pastos?.map((p) => (
-                  <SelectItem key={p.id} value={p.id}>
-                    {p.nome}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        <FormSection
+          title="Vinculos operacionais"
+          description="Pasto e reprodutor podem ser revistos aqui sem expor acoes extras na tela principal."
+        >
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label>Pasto</Label>
+              <Select value={pastoId} onValueChange={setPastoId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o pasto" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={NULL_VALUE}>Nenhum</SelectItem>
+                  {pastos?.map((pasto) => (
+                    <SelectItem key={pasto.id} value={pasto.id}>
+                      {pasto.nome}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Reprodutor vinculado</Label>
+              <Select value={touroId} onValueChange={setTouroId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o touro" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={NULL_VALUE}>Nenhum</SelectItem>
+                  {touros?.map((touro) => (
+                    <SelectItem key={touro.id} value={touro.id}>
+                      {touro.identificacao}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-
-          <div className="space-y-2">
-            <Label>Touro (Opcional)</Label>
-            <Select value={touroId} onValueChange={setTouroId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione o touro" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="null">Nenhum</SelectItem>
-                {touros?.map((t) => (
-                  <SelectItem key={t.id} value={t.id}>
-                    {t.identificacao}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Button onClick={handleSave} className="w-full">
-        <Save className="h-4 w-4 mr-2" />
-        Salvar Alterações
-      </Button>
+        </FormSection>
+      </form>
     </div>
   );
 };

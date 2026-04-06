@@ -1,4 +1,6 @@
 import { buildEventGesture } from "@/lib/events/buildEventGesture";
+import type { FarmWeightUnit } from "@/lib/farms/measurementConfig";
+import { parseWeightInput } from "@/lib/format/weight";
 import type { AgendaItem, Animal, OperationInput } from "@/lib/offline/types";
 import { buildCalfJourneyAgendaOps } from "@/lib/reproduction/calfJourney";
 import {
@@ -18,10 +20,17 @@ export interface PostPartumCalfDraft {
 
 interface BuildPostPartumOpsInput {
   fazendaId: string;
+  weightUnit?: FarmWeightUnit;
   mother: Pick<Animal, "id" | "identificacao">;
   calves: Pick<
     Animal,
-    "id" | "identificacao" | "nome" | "lote_id" | "pai_id" | "payload"
+    | "id"
+    | "identificacao"
+    | "nome"
+    | "lote_id"
+    | "pai_id"
+    | "payload"
+    | "data_nascimento"
   >[];
   drafts: PostPartumCalfDraft[];
   occurredAt?: string;
@@ -39,18 +48,9 @@ interface PostPartumBuildResult {
   agendaCount: number;
 }
 
-function parseWeight(value: string): number | null {
-  const normalized = value.replace(",", ".").trim();
-  if (!normalized) return null;
-
-  const parsed = Number.parseFloat(normalized);
-  if (!Number.isFinite(parsed) || parsed <= 0) return null;
-
-  return parsed;
-}
-
 export function buildPostPartumOps({
   fazendaId,
+  weightUnit = "kg",
   mother,
   calves,
   drafts,
@@ -71,7 +71,7 @@ export function buildPostPartumOps({
     const currentPayload = getAnimalPayloadRecord(calf.payload);
     const currentNeonatalSetup = getNeonatalSetup(calf.payload) ?? {};
     const currentBirthEventId = getBirthEventId(calf.payload);
-    const pesoKg = parseWeight(draft.pesoKg);
+    const pesoKg = parseWeightInput(draft.pesoKg, weightUnit);
     const umbigoAlreadyRecorded =
       typeof currentNeonatalSetup.umbigo_curado_at === "string";
     const shouldRegisterUmbigo = draft.curaUmbigo && !umbigoAlreadyRecorded;

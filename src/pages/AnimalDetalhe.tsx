@@ -22,6 +22,16 @@ import {
 import { AnimalCategoryBadge } from "@/components/animals/AnimalCategoryBadge";
 import { AnimalKinshipBadges } from "@/components/animals/AnimalKinshipBadges";
 import { MoverAnimalLote } from "@/components/manejo/MoverAnimalLote";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -58,6 +68,11 @@ import {
   hasPendingNeonatalSetup,
   wasGeneratedFromBirthEvent,
 } from "@/lib/reproduction/neonatal";
+import {
+  formatWeight,
+  formatWeightPerDay,
+  formatWeightValue,
+} from "@/lib/format/weight";
 import { showError, showSuccess } from "@/utils/toast";
 
 type EnrichedEvent = Evento & {
@@ -83,9 +98,11 @@ function getReproStatusLabel(value: string) {
 const AnimalDetalhe = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { farmLifecycleConfig } = useAuth();
+  const { farmLifecycleConfig, farmMeasurementConfig } = useAuth();
   const [showMoverLote, setShowMoverLote] = useState(false);
+  const [showCloseSociedadeDialog, setShowCloseSociedadeDialog] = useState(false);
   const [isApplyingLifecycle, setIsApplyingLifecycle] = useState(false);
+  const [isClosingSociedade, setIsClosingSociedade] = useState(false);
   const autoAppliedStageRef = useRef<string | null>(null);
 
   const animal = useLiveQuery(() => db.state_animais.get(id!), [id]);
@@ -391,6 +408,34 @@ const AnimalDetalhe = () => {
     void applyLifecycleTransition("automatico", true);
   }, [animal, applyLifecycleTransition, isApplyingLifecycle, lifecycleSnapshot]);
 
+  const handleCloseSociedade = useCallback(async () => {
+    if (!animal || !sociedadeAtiva) return;
+
+    const now = new Date().toISOString();
+    const hoje = new Date().toISOString().split("T")[0];
+
+    setIsClosingSociedade(true);
+    try {
+      await createGesture(animal.fazenda_id, [
+        {
+          table: "animais_sociedade",
+          action: "UPDATE",
+          record: {
+            id: sociedadeAtiva.id,
+            fim: hoje,
+            updated_at: now,
+          },
+        },
+      ]);
+      setShowCloseSociedadeDialog(false);
+      showSuccess("Sociedade encerrada!");
+    } catch {
+      showError("Erro ao encerrar sociedade.");
+    } finally {
+      setIsClosingSociedade(false);
+    }
+  }, [animal, sociedadeAtiva]);
+
   if (!animal) {
     return (
       <div className="p-12 text-center text-muted-foreground">
@@ -469,7 +514,10 @@ const AnimalDetalhe = () => {
               <div>
                 <div className="flex items-center gap-2 text-2xl font-bold">
                   <Scale className="h-5 w-5 text-primary" />
-                  {ultimoPeso.peso_kg} kg
+                  {formatWeight(
+                    ultimoPeso.peso_kg,
+                    farmMeasurementConfig.weight_unit,
+                  )}
                 </div>
                 <p className="mt-1 text-xs text-muted-foreground">
                   {formatDate(ultimoPeso.data)}
@@ -734,7 +782,11 @@ const AnimalDetalhe = () => {
                   }
                 >
                   {resumoPeso.variacaoKg >= 0 ? "+" : ""}
-                  {resumoPeso.variacaoKg.toFixed(1)} kg no periodo
+                  {formatWeight(
+                    Math.abs(resumoPeso.variacaoKg),
+                    farmMeasurementConfig.weight_unit,
+                  )}{" "}
+                  no periodo
                 </Badge>
               )}
               <Button
@@ -772,7 +824,12 @@ const AnimalDetalhe = () => {
                     Primeiro registro
                   </p>
                   <p className="mt-1 text-xl font-semibold">
-                    {resumoPeso ? `${resumoPeso.primeiro.pesoKg} kg` : "-"}
+                    {resumoPeso
+                      ? formatWeight(
+                          resumoPeso.primeiro.pesoKg,
+                          farmMeasurementConfig.weight_unit,
+                        )
+                      : "-"}
                   </p>
                   <p className="text-xs text-muted-foreground">
                     {resumoPeso?.primeiro.dataLabel ?? "Sem data"}
@@ -783,7 +840,12 @@ const AnimalDetalhe = () => {
                     Ultimo registro
                   </p>
                   <p className="mt-1 text-xl font-semibold">
-                    {resumoPeso ? `${resumoPeso.ultimo.pesoKg} kg` : "-"}
+                    {resumoPeso
+                      ? formatWeight(
+                          resumoPeso.ultimo.pesoKg,
+                          farmMeasurementConfig.weight_unit,
+                        )
+                      : "-"}
                   </p>
                   <p className="text-xs text-muted-foreground">
                     {resumoPeso?.ultimo.dataLabel ?? "Sem data"}
@@ -794,10 +856,10 @@ const AnimalDetalhe = () => {
                     GMD
                   </p>
                   <p className="mt-1 text-xl font-semibold">
-                    {resumoPeso?.ganhoMedioDiaKg !== null &&
-                    resumoPeso?.ganhoMedioDiaKg !== undefined
-                      ? `${resumoPeso.ganhoMedioDiaKg.toFixed(2)} kg/dia`
-                      : "Aguardando serie"}
+                    {formatWeightPerDay(
+                      resumoPeso?.ganhoMedioDiaKg,
+                      farmMeasurementConfig.weight_unit,
+                    )}
                   </p>
                   <p className="text-xs text-muted-foreground">
                     Media entre o primeiro e o ultimo registro
@@ -814,10 +876,18 @@ const AnimalDetalhe = () => {
                       tickLine={false}
                       axisLine={false}
                       width={56}
-                      tickFormatter={(value) => `${value}kg`}
+                      tickFormatter={(value) =>
+                        formatWeightValue(
+                          value,
+                          farmMeasurementConfig.weight_unit,
+                        )
+                      }
                     />
                     <Tooltip
-                      formatter={(value: number) => [`${value} kg`, "Peso"]}
+                      formatter={(value: number) => [
+                        formatWeight(value, farmMeasurementConfig.weight_unit),
+                        "Peso",
+                      ]}
                       labelFormatter={(label) => `Data: ${label}`}
                     />
                     <Line
@@ -1148,28 +1218,7 @@ const AnimalDetalhe = () => {
                   variant="outline"
                   size="sm"
                   className="border-red-300 text-red-600 hover:bg-red-50"
-                  onClick={async () => {
-                    if (!confirm("Deseja realmente encerrar esta sociedade?")) return;
-                    const now = new Date().toISOString();
-                    const hoje = new Date().toISOString().split("T")[0];
-
-                    try {
-                      await createGesture(animal.fazenda_id, [
-                        {
-                          table: "animais_sociedade",
-                          action: "UPDATE",
-                          record: {
-                            id: sociedadeAtiva.id,
-                            fim: hoje,
-                            updated_at: now,
-                          },
-                        },
-                      ]);
-                      showSuccess("Sociedade encerrada!");
-                    } catch {
-                      showError("Erro ao encerrar sociedade.");
-                    }
-                  }}
+                  onClick={() => setShowCloseSociedadeDialog(true)}
                 >
                   Encerrar sociedade
                 </Button>
@@ -1315,6 +1364,33 @@ const AnimalDetalhe = () => {
         onOpenChange={setShowMoverLote}
         onSuccess={() => {}}
       />
+
+      <AlertDialog
+        open={showCloseSociedadeDialog}
+        onOpenChange={setShowCloseSociedadeDialog}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Encerrar sociedade?</AlertDialogTitle>
+            <AlertDialogDescription>
+              O vinculo societario deste animal sera encerrado na fazenda ativa.
+              Use apenas quando o compartilhamento realmente terminou.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isClosingSociedade}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleCloseSociedade}
+              disabled={isClosingSociedade}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isClosingSociedade ? "Encerrando..." : "Confirmar encerramento"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

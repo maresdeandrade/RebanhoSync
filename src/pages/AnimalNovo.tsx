@@ -22,9 +22,17 @@ import { buildAnimalTaxonomyFactsPayload } from "@/lib/animals/taxonomy";
 import { buildEventGesture } from "@/lib/events/buildEventGesture";
 import { EventValidationError } from "@/lib/events/validators";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { MetricCard } from "@/components/ui/metric-card";
+import { PageIntro } from "@/components/ui/page-intro";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import {
   Select,
   SelectContent,
@@ -32,12 +40,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
 import { showSuccess, showError } from "@/utils/toast";
 import { ChevronLeft, Save, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
@@ -165,6 +167,8 @@ const AnimalNovo = () => {
           (1000 * 60 * 60 * 24 * 30),
       )
     : null;
+  const maleBreedingSelected =
+    destinoProdutivo !== "null" && isMaleBreedingDestination(destinoProdutivo);
 
   const handleSave = async () => {
     if (!identificacao) {
@@ -379,16 +383,49 @@ const AnimalNovo = () => {
   };
 
   return (
-    <div className="max-w-xl mx-auto space-y-6">
-      <div className="flex items-center gap-4">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => navigate("/animais")}
-        >
-          <ChevronLeft className="h-5 w-5" />
-        </Button>
-        <h1 className="text-2xl font-bold">Novo Animal</h1>
+    <div className="space-y-6 pb-16">
+      <PageIntro
+        eyebrow="Cadastro animal"
+        title="Novo animal"
+        description="O formulario foi reorganizado em blocos operacionais mais claros, preservando o comportamento atual do cadastro."
+        actions={
+          <>
+            <Button variant="outline" onClick={() => navigate("/animais")}>
+              <ChevronLeft className="mr-2 h-4 w-4" />
+              Voltar
+            </Button>
+            <Button onClick={handleSave} disabled={isSaving}>
+              {isSaving ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="mr-2 h-4 w-4" />
+              )}
+              {isSaving ? "Salvando..." : "Salvar animal"}
+            </Button>
+          </>
+        }
+      />
+
+      <div className="grid gap-4 md:grid-cols-3">
+        <MetricCard
+          label="Sexo"
+          value={sexo === "M" ? "Macho" : "Femea"}
+          hint={idadeMeses !== null ? `${idadeMeses} mes(es) estimados.` : "Sem idade calculada."}
+        />
+        <MetricCard
+          label="Origem"
+          value={origem === "null" ? "Nao informada" : origem}
+          hint="A origem organiza o restante do fluxo de entrada."
+        />
+        <MetricCard
+          label="Lote inicial"
+          value={
+            loteId === "null"
+              ? "Sem lote"
+              : lotes?.find((lote) => lote.id === loteId)?.nome ?? "Selecionado"
+          }
+          hint="Pode ser ajustado sem reabrir o cadastro."
+        />
       </div>
 
       <Card>
@@ -792,10 +829,7 @@ const AnimalNovo = () => {
                 onValueChange={(
                   value: StatusReprodutivoMachoEnum | "null",
                 ) => setStatusReprodutivoMacho(value)}
-                disabled={
-                  destinoProdutivo === "null" ||
-                  !isMaleBreedingDestination(destinoProdutivo)
-                }
+                disabled={!maleBreedingSelected}
               >
                 <SelectTrigger>
                   <SelectValue
@@ -814,8 +848,7 @@ const AnimalNovo = () => {
                   <SelectItem value="inativo">Inativo</SelectItem>
                 </SelectContent>
               </Select>
-              {!isMaleBreedingDestination(destinoProdutivo) &&
-                destinoProdutivo !== "null" && (
+              {!maleBreedingSelected && destinoProdutivo !== "null" && (
                   <p className="text-xs text-muted-foreground">
                     Destinos nao reprodutivos mantem o manejo reprodutivo como
                     inativo.

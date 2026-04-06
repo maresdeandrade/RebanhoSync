@@ -1,24 +1,22 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
-import {
-  ArrowLeft,
-  CalendarClock,
-  ChevronLeft,
-  Dna,
-  HeartPulse,
-  History,
-} from "lucide-react";
+import { CalendarClock, ChevronLeft, Dna, HeartPulse, History } from "lucide-react";
+
 import {
   ReproductionForm,
   type ReproductionEventData,
 } from "@/components/events/ReproductionForm";
 import { AnimalCategoryBadge } from "@/components/animals/AnimalCategoryBadge";
 import { AnimalKinshipBadges } from "@/components/animals/AnimalKinshipBadges";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { classificarAnimal, getLabelCategoria } from "@/lib/domain/categorias";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { MetricCard } from "@/components/ui/metric-card";
+import { PageIntro } from "@/components/ui/page-intro";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { Toolbar, ToolbarGroup } from "@/components/ui/toolbar";
+import { useAuth } from "@/hooks/useAuth";
+import { deriveAnimalTaxonomy } from "@/lib/animals/taxonomy";
 import { isFemaleReproductionEligible } from "@/lib/animals/presentation";
 import { EventValidationError } from "@/lib/events/validators";
 import { db } from "@/lib/offline/db";
@@ -38,9 +36,25 @@ const INITIAL_FORM: ReproductionEventData = {
   observacoes: "",
 };
 
+const REPRO_STATUS_LABEL: Record<string, string> = {
+  VAZIA: "Vazia / aberta",
+  SERVIDA: "Servida",
+  PRENHA: "Prenha",
+  PARIDA_PUERPERIO: "Parida em puerperio",
+  PARIDA_ABERTA: "Parida e aberta",
+};
+
 function formatDate(value: string | null | undefined) {
   if (!value) return "Sem data";
   return new Date(value).toLocaleDateString("pt-BR");
+}
+
+function formatEventLabel(tipo?: string | null) {
+  if (tipo === "cobertura") return "Cobertura";
+  if (tipo === "IA") return "Inseminacao artificial";
+  if (tipo === "diagnostico") return "Diagnostico";
+  if (tipo === "parto") return "Parto";
+  return "Registro reprodutivo";
 }
 
 function isReproTipoEnum(value: string | null): value is ReproTipoEnum {
@@ -58,6 +72,24 @@ function getRecommendedTipo(status: string | null | undefined): ReproTipoEnum {
   return "cobertura";
 }
 
+function getStatusTone(status: string | null | undefined) {
+  if (status === "PRENHA") return "success";
+  if (status === "SERVIDA") return "info";
+  if (status?.startsWith("PARIDA")) return "warning";
+  return "neutral";
+}
+
+function getUrgencyTone(urgency: string | null | undefined) {
+  if (urgency === "atencao") return "warning";
+  return "success";
+}
+
+function getEventTone(tipo: string | null | undefined) {
+  if (tipo === "parto") return "warning";
+  if (tipo === "diagnostico") return "success";
+  return "info";
+}
+
 function withTipo(
   previous: ReproductionEventData,
   tipo: ReproTipoEnum,
@@ -71,6 +103,7 @@ function withTipo(
 }
 
 export default function AnimalReproducao() {
+  const { farmLifecycleConfig } = useAuth();
   const { id } = useParams();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -96,15 +129,6 @@ export default function AnimalReproducao() {
       .filter((candidate) => candidate.mae_id === animal.id && !candidate.deleted_at)
       .sortBy("identificacao");
   }, [animal?.id, animal?.fazenda_id]);
-  const categorias = useLiveQuery(async () => {
-    if (!animal?.fazenda_id) return [];
-
-    return await db.state_categorias_zootecnicas
-      .where("fazenda_id")
-      .equals(animal.fazenda_id)
-      .filter((categoria) => !categoria.deleted_at && categoria.ativa)
-      .toArray();
-  }, [animal?.fazenda_id]);
   const eventos = useLiveQuery<EnrichedEvent[]>(async () => {
     if (!id) return [];
 
@@ -134,9 +158,11 @@ export default function AnimalReproducao() {
     );
   }, [id]);
 
-  const categoriaAtual =
-    animal && categorias ? classificarAnimal(animal, categorias) : null;
-  const categoriaLabel = categoriaAtual ? getLabelCategoria(categoriaAtual) : null;
+  const categoriaLabel = animal
+    ? deriveAnimalTaxonomy(animal, {
+        config: farmLifecycleConfig,
+      }).display.categoria
+    : null;
   const isReproductionEligible =
     animal && isFemaleReproductionEligible(animal, categoriaLabel);
   const reproResumo = useMemo(() => {
@@ -234,164 +260,135 @@ export default function AnimalReproducao() {
   }
 
   return (
-    <div className="space-y-6">
-      <section className="rounded-3xl border bg-gradient-to-br from-rose-50 via-white to-amber-50 p-6 shadow-sm">
-        <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
-          <div className="space-y-3">
+    <div className="space-y-5">
+      <PageIntro
+        eyebrow="Fluxo dedicado da matriz"
+        title={`Reproducao da matriz ${animal.identificacao}`}
+        description="Contexto do ciclo, formulario concentrado e historico recente na mesma tela para registrar o proximo passo sem dispersao."
+        meta={
+          <>
+            <AnimalCategoryBadge animal={animal} categoriaLabel={categoriaLabel} />
+            <StatusBadge tone={getStatusTone(reproResumo?.reproStatus.status)}>
+              {reproResumo
+                ? REPRO_STATUS_LABEL[reproResumo.reproStatus.status] ??
+                  reproResumo.reproStatus.status
+                : "Sem leitura"}
+            </StatusBadge>
+            <StatusBadge tone={getUrgencyTone(reproResumo?.urgency)}>
+              {reproResumo?.urgency === "atencao"
+                ? "Passo prioritario"
+                : "Fluxo sob controle"}
+            </StatusBadge>
+            <StatusBadge tone="neutral">
+              {lote ? `Lote ${lote.nome}` : "Sem lote definido"}
+            </StatusBadge>
+          </>
+        }
+        actions={
+          <>
             <Button
+              type="button"
               variant="ghost"
-              size="sm"
-              className="w-fit gap-2"
               onClick={() => navigate(`/animais/${animal.id}`)}
             >
               <ChevronLeft className="h-4 w-4" />
-              Voltar para a ficha
+              Voltar para ficha
             </Button>
+            <Button asChild variant="outline">
+              <Link to={`/registrar?dominio=reproducao&animalId=${animal.id}`}>
+                Abrir modo completo
+              </Link>
+            </Button>
+          </>
+        }
+      />
 
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="secondary">Area dedicada</Badge>
-              <AnimalCategoryBadge animal={animal} categoriaLabel={categoriaLabel} />
-              {reproResumo && (
-                <Badge
-                  variant="outline"
-                  className={
-                    reproResumo.urgency === "atencao"
-                      ? "border-amber-200 bg-amber-100 text-amber-800"
-                      : "border-emerald-200 bg-emerald-100 text-emerald-800"
-                  }
-                >
-                  {reproResumo.urgency === "atencao"
-                    ? "Passo prioritario"
-                    : "Fluxo sob controle"}
-                </Badge>
-              )}
-            </div>
+      <Toolbar>
+        <ToolbarGroup className="gap-2">
+          <Button
+            type="button"
+            size="sm"
+            variant={data.tipo === "cobertura" || data.tipo === "IA" ? "default" : "outline"}
+            onClick={() => setData((previous) => withTipo(previous, "cobertura"))}
+          >
+            <Dna className="h-4 w-4" />
+            Cobertura / IA
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant={data.tipo === "diagnostico" ? "default" : "outline"}
+            onClick={() => setData((previous) => withTipo(previous, "diagnostico"))}
+          >
+            <HeartPulse className="h-4 w-4" />
+            Diagnostico
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant={data.tipo === "parto" ? "default" : "outline"}
+            onClick={() => setData((previous) => withTipo(previous, "parto"))}
+          >
+            <CalendarClock className="h-4 w-4" />
+            Parto
+          </Button>
+        </ToolbarGroup>
+        <ToolbarGroup className="gap-2">
+          <Button asChild size="sm" variant="ghost">
+            <Link to={`/animais/${animal.id}`}>Abrir ficha completa</Link>
+          </Button>
+        </ToolbarGroup>
+      </Toolbar>
 
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight">
-                Rotina reprodutiva da matriz {animal.identificacao}
-              </h1>
-              <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
-                Tela focada em registrar cobertura, diagnostico e parto com o
-                contexto do ciclo atual, lote e vinculos familiares.
-              </p>
-            </div>
-          </div>
-
-          <div className="grid gap-2 sm:grid-cols-3">
-            <Button
-              type="button"
-              variant={data.tipo === "cobertura" || data.tipo === "IA" ? "default" : "outline"}
-              className="justify-start"
-              onClick={() => setData((previous) => withTipo(previous, "cobertura"))}
-            >
-              <Dna className="h-4 w-4" />
-              Cobertura / IA
-            </Button>
-            <Button
-              type="button"
-              variant={data.tipo === "diagnostico" ? "default" : "outline"}
-              className="justify-start"
-              onClick={() => setData((previous) => withTipo(previous, "diagnostico"))}
-            >
-              <HeartPulse className="h-4 w-4" />
-              Diagnostico
-            </Button>
-            <Button
-              type="button"
-              variant={data.tipo === "parto" ? "default" : "outline"}
-              className="justify-start"
-              onClick={() => setData((previous) => withTipo(previous, "parto"))}
-            >
-              <CalendarClock className="h-4 w-4" />
-              Parto
-            </Button>
-          </div>
-        </div>
+      <section className="grid gap-4 md:grid-cols-3">
+        <MetricCard
+          label="Status atual"
+          value={
+            reproResumo
+              ? REPRO_STATUS_LABEL[reproResumo.reproStatus.status] ??
+                reproResumo.reproStatus.status
+              : "Sem leitura"
+          }
+          hint={lote ? `Lote ${lote.nome}` : "Sem lote definido"}
+          tone={
+            reproResumo?.reproStatus.status === "PRENHA"
+              ? "success"
+              : reproResumo?.reproStatus.status === "SERVIDA"
+                ? "info"
+                : reproResumo?.reproStatus.status?.startsWith("PARIDA")
+                  ? "warning"
+                  : "default"
+          }
+        />
+        <MetricCard
+          label="Ultimo marco"
+          value={reproResumo?.lastEventLabel ?? "Sem historico"}
+          hint={
+            reproResumo?.lastEventDateLabel
+              ? formatDate(reproResumo.lastEventDateLabel)
+              : "Sem data registrada"
+          }
+        />
+        <MetricCard
+          label="Proximo passo"
+          value={reproResumo?.nextActionLabel ?? "Registrar primeiro evento"}
+          hint={
+            reproResumo?.nextActionDate
+              ? formatDate(reproResumo.nextActionDate)
+              : "Sem data prevista"
+          }
+          tone={reproResumo?.urgency === "atencao" ? "warning" : "info"}
+        />
       </section>
 
-      <section className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <HeartPulse className="h-5 w-5 text-rose-700" />
-              Leitura do ciclo atual
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-3 md:grid-cols-3">
-            <div className="rounded-xl border bg-muted/30 p-4">
-              <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                Status atual
-              </p>
-              <p className="mt-2 font-semibold">
-                {reproResumo
-                  ? reproResumo.reproStatus.status.replaceAll("_", " ").toLowerCase()
-                  : "sem leitura"}
-              </p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                {lote ? `Lote ${lote.nome}` : "Sem lote definido"}
-              </p>
-            </div>
-
-            <div className="rounded-xl border bg-muted/30 p-4">
-              <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                Ultimo marco
-              </p>
-              <p className="mt-2 font-semibold">
-                {reproResumo?.lastEventLabel ?? "Sem historico"}
-              </p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                {reproResumo?.lastEventDateLabel
-                  ? formatDate(reproResumo.lastEventDateLabel)
-                  : "Sem data registrada"}
-              </p>
-            </div>
-
-            <div className="rounded-xl border bg-muted/30 p-4">
-              <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                Proximo passo
-              </p>
-              <p className="mt-2 font-semibold">
-                {reproResumo?.nextActionLabel ?? "Registrar primeiro evento"}
-              </p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                {reproResumo?.nextActionDate
-                  ? formatDate(reproResumo.nextActionDate)
-                  : "Sem data prevista"}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Dna className="h-5 w-5 text-slate-700" />
-              Vinculos maternos
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <AnimalKinshipBadges mother={mae} calves={crias ?? []} />
-            <div className="space-y-1 text-sm text-muted-foreground">
-              {mae && <p>Matriz de origem: {mae.identificacao}</p>}
-              {(crias?.length ?? 0) > 0 && (
-                <p>
-                  {animal.identificacao} possui {(crias?.length ?? 0)} cria(s)
-                  vinculada(s).
-                </p>
-              )}
-              {!mae && (crias?.length ?? 0) === 0 && (
-                <p>Sem vinculos maternos registrados para esta matriz.</p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      </section>
-
-      <section className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
+      <section className="grid gap-4 xl:grid-cols-[1.08fr_0.92fr]">
         <Card>
           <CardHeader>
             <CardTitle>Registrar evento reprodutivo</CardTitle>
+            <CardDescription>
+              Campos organizados por bloco logico, com um unico CTA final para
+              gravar o evento da matriz.
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-5">
             <ReproductionForm
@@ -401,67 +398,125 @@ export default function AnimalReproducao() {
               onChange={setData}
             />
 
-            <div className="flex flex-wrap gap-2">
-              <Button onClick={handleSave} disabled={isSaving}>
-                {isSaving ? "Salvando..." : "Salvar evento"}
-              </Button>
-              <Button variant="outline" asChild>
-                <Link to={`/animais/${animal.id}`}>Voltar para ficha</Link>
-              </Button>
+            <div className="app-divider" />
+
+            <div className="flex flex-wrap items-center justify-end gap-2">
               <Button variant="ghost" asChild>
                 <Link to={`/registrar?dominio=reproducao&animalId=${animal.id}`}>
-                  Abrir modo completo
+                  Modo completo
                 </Link>
+              </Button>
+              <Button variant="outline" asChild>
+                <Link to={`/animais/${animal.id}`}>Cancelar</Link>
+              </Button>
+              <Button onClick={handleSave} disabled={isSaving}>
+                {isSaving ? "Salvando..." : "Salvar evento"}
               </Button>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <History className="h-5 w-5 text-primary" />
-              Historico reprodutivo recente
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {(eventos ?? []).length === 0 ? (
-              <div className="rounded-xl border border-dashed p-4 text-sm text-muted-foreground">
-                Nenhum evento reprodutivo registrado para esta matriz.
-              </div>
-            ) : (
-              (eventos ?? []).slice(0, 6).map((event) => (
-                <div key={event.id} className="rounded-xl border p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="font-medium capitalize">
-                        {event.details?.tipo ?? "Registro reprodutivo"}
-                      </p>
-                      <p className="mt-1 text-sm text-muted-foreground">
-                        {event.observacoes || "Sem observacoes adicionais."}
-                      </p>
-                    </div>
-                    <span className="text-xs text-muted-foreground">
-                      {formatDate(event.occurred_at)}
-                    </span>
-                  </div>
-                  {event.details?.macho_id && (
-                    <p className="mt-2 text-xs text-muted-foreground">
-                      Reprodutor: {event.machoIdentificacao || event.details.macho_id}
-                    </p>
-                  )}
+        <div className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Contexto operacional</CardTitle>
+              <CardDescription>
+                Leitura rapida do ciclo, parentesco e sinais que influenciam o
+                registro atual.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="app-surface-muted p-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                    Lote atual
+                  </p>
+                  <p className="mt-2 font-medium">
+                    {lote?.nome ?? "Sem lote definido"}
+                  </p>
                 </div>
-              ))
-            )}
+                <div className="app-surface-muted p-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                    Nivel de atencao
+                  </p>
+                  <p className="mt-2 font-medium">
+                    {reproResumo?.urgency === "atencao"
+                      ? "Passo prioritario"
+                      : "Sem alerta imediato"}
+                  </p>
+                </div>
+              </div>
 
-            <Button variant="outline" asChild className="w-full">
-              <Link to={`/animais/${animal.id}`}>
-                <ArrowLeft className="h-4 w-4" />
-                Voltar para timeline completa
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-foreground">
+                  Vinculos maternos
+                </p>
+                <AnimalKinshipBadges mother={mae} calves={crias ?? []} />
+                <p className="text-sm leading-6 text-muted-foreground">
+                  {mae
+                    ? `Matriz de origem: ${mae.identificacao}.`
+                    : "Sem matriz de origem registrada."}{" "}
+                  {(crias?.length ?? 0) > 0
+                    ? `${animal.identificacao} possui ${(crias?.length ?? 0)} cria(s) vinculada(s).`
+                    : "Nenhuma cria vinculada ate o momento."}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <History className="h-5 w-5 text-muted-foreground" />
+                <CardTitle>Historico reprodutivo recente</CardTitle>
+              </div>
+              <CardDescription>
+                Sequencia real dos ultimos registros da matriz, sem transformar a
+                timeline em formulario.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {(eventos ?? []).length === 0 ? (
+                <div className="rounded-2xl border border-dashed border-border/70 p-4 text-sm text-muted-foreground">
+                  Nenhum evento reprodutivo registrado para esta matriz.
+                </div>
+              ) : (
+                (eventos ?? []).slice(0, 6).map((event) => (
+                  <div
+                    key={event.id}
+                    className="rounded-2xl border border-border/70 bg-muted/30 p-4"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="font-medium">
+                          {formatEventLabel(event.details?.tipo)}
+                        </p>
+                        <StatusBadge tone={getEventTone(event.details?.tipo)}>
+                          {formatEventLabel(event.details?.tipo)}
+                        </StatusBadge>
+                      </div>
+                      <span className="text-xs text-muted-foreground">
+                        {formatDate(event.occurred_at)}
+                      </span>
+                    </div>
+                    <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                      {event.observacoes || "Sem observacoes adicionais."}
+                    </p>
+                    {event.details?.macho_id ? (
+                      <p className="mt-2 text-xs text-muted-foreground">
+                        Reprodutor: {event.machoIdentificacao || event.details.macho_id}
+                      </p>
+                    ) : null}
+                  </div>
+                ))
+              )}
+
+              <Button variant="outline" asChild className="w-full">
+                <Link to={`/animais/${animal.id}`}>Abrir timeline completa</Link>
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
       </section>
     </div>
   );

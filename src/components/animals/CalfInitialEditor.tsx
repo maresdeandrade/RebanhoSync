@@ -13,6 +13,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import type { FarmWeightUnit } from "@/lib/farms/measurementConfig";
+import { getWeightInputStep, getWeightUnitLabel } from "@/lib/format/weight";
 import type { Animal, Lote, Pasto } from "@/lib/offline/types";
 import { getNeonatalSetup } from "@/lib/reproduction/neonatal";
 
@@ -35,6 +37,7 @@ interface CalfInitialEditorProps {
   categoriaLabel?: string | null;
   lotes: Lote[];
   pastoById: Map<string, Pasto>;
+  weightUnit: FarmWeightUnit;
   onChange: (patch: Partial<CalfInitialDraft>) => void;
   action?: ReactNode;
 }
@@ -52,6 +55,7 @@ export function CalfInitialEditor({
   categoriaLabel,
   lotes,
   pastoById,
+  weightUnit,
   onChange,
   action,
 }: CalfInitialEditorProps) {
@@ -211,16 +215,20 @@ export function CalfInitialEditor({
 
       <div className="grid gap-4 md:grid-cols-2">
         <div className="space-y-2">
-          <Label htmlFor={`peso-${calf.id}`}>Primeira pesagem (kg)</Label>
+          <Label htmlFor={`peso-${calf.id}`}>
+            Primeira pesagem ({getWeightUnitLabel(weightUnit)})
+          </Label>
           <Input
             id={`peso-${calf.id}`}
             type="number"
             min="0"
-            step="0.1"
+            step={getWeightInputStep(weightUnit)}
             inputMode="decimal"
             value={draft.pesoKg}
             onChange={(event) => onChange({ pesoKg: event.target.value })}
-            placeholder="Ex: 31.5"
+            placeholder={
+              weightUnit === "arroba" ? "Ex: 2,10" : "Ex: 31,5"
+            }
           />
         </div>
 

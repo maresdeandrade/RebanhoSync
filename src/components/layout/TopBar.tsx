@@ -8,9 +8,11 @@ import {
   CloudOff,
   Menu,
   RefreshCw,
+  SlidersHorizontal,
   Settings,
 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -20,7 +22,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { db } from "@/lib/offline/db";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/useAuth";
@@ -122,27 +124,40 @@ export const TopBar = ({ onMenuClick }: TopBarProps) => {
   };
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 items-center justify-between px-4">
-        <div className="flex items-center gap-2">
+    <header className="sticky top-0 z-40 border-b border-border/70 bg-background/90 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+      <div className="flex h-14 items-center justify-between gap-3 px-4 lg:px-6">
+        <div className="flex min-w-0 items-center gap-3">
           <Button
             variant="ghost"
             size="icon"
             className="md:hidden"
             onClick={onMenuClick}
+            aria-label="Abrir navegacao"
           >
             <Menu className="h-5 w-5" />
           </Button>
-          <span className="text-lg font-bold tracking-tight text-primary">
-            RebanhoSync
-          </span>
 
-          {activeFarmName && (
+          <div className="hidden min-w-0 lg:block">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+              RebanhoSync
+            </p>
+            <p className="truncate text-sm font-medium text-foreground/80">
+              Operacao offline-first da fazenda
+            </p>
+          </div>
+
+          {activeFarmName ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="gap-2 ml-2">
-                  <Building2 className="h-4 w-4" />
-                  <span className="hidden sm:inline">{activeFarmName}</span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="min-w-0 max-w-[320px] justify-between rounded-full px-3.5"
+                >
+                  <span className="flex min-w-0 items-center gap-2">
+                    <Building2 className="h-4 w-4 text-muted-foreground" />
+                    <span className="truncate">{activeFarmName}</span>
+                  </span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start">
@@ -154,58 +169,54 @@ export const TopBar = ({ onMenuClick }: TopBarProps) => {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
+                  <Link to="/configuracoes" className="w-full cursor-pointer">
+                    <SlidersHorizontal className="mr-2 h-4 w-4" />
+                    Configuracoes
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
                   <Link to="/editar-fazenda" className="w-full cursor-pointer">
-                    <Settings className="h-4 w-4 mr-2" />
+                    <Settings className="mr-2 h-4 w-4" />
                     Editar fazenda
                   </Link>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-          )}
+          ) : null}
         </div>
 
-        <div className="flex items-center gap-3">
-          {!isOnline ? (
-            <Badge variant="destructive" className="gap-1">
-              <CloudOff className="h-3 w-3" /> Offline
-            </Badge>
-          ) : (
-            <Badge
-              variant="secondary"
-              className="gap-1 bg-emerald-100 text-emerald-700 hover:bg-emerald-100"
-            >
-              <Cloud className="h-3 w-3" /> Online
-            </Badge>
-          )}
+        <div className="flex items-center gap-2 sm:gap-3">
+          <StatusBadge tone={isOnline ? "success" : "danger"}>
+            {isOnline ? (
+              <Cloud className="h-3.5 w-3.5" />
+            ) : (
+              <CloudOff className="h-3.5 w-3.5" />
+            )}
+            {isOnline ? "Conectado" : "Offline"}
+          </StatusBadge>
 
-          {rejectionCount > 0 && (
+          {pendingCount > 0 ? (
             <Link to="/reconciliacao">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="gap-2 text-destructive animate-pulse"
-              >
-                <AlertTriangle className="h-4 w-4" />
-                <span className="hidden sm:inline">{rejectionCount} erros</span>
-              </Button>
+              <StatusBadge tone="warning" className="hover:opacity-90">
+                <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                {pendingCount} na fila
+              </StatusBadge>
             </Link>
-          )}
+          ) : null}
 
-          {pendingCount > 0 && (
+          {rejectionCount > 0 ? (
             <Link to="/reconciliacao">
-              <Button variant="ghost" size="sm" className="gap-2 text-amber-600">
-                <RefreshCw className="h-4 w-4 animate-spin-slow" />
-                <span className="hidden sm:inline">
-                  {pendingCount} sincronizando
-                </span>
-              </Button>
+              <StatusBadge tone="danger" className="hover:opacity-90">
+                <AlertTriangle className="h-3.5 w-3.5" />
+                {rejectionCount} pendencia{rejectionCount > 1 ? "s" : ""}
+              </StatusBadge>
             </Link>
-          )}
+          ) : null}
 
-          <Link to="/perfil">
-            <Avatar className="h-8 w-8 cursor-pointer hover:opacity-80 transition-opacity">
+          <Link to="/perfil" aria-label="Abrir perfil">
+            <Avatar className="h-9 w-9 border border-border/70 shadow-soft transition-transform hover:scale-[1.02]">
               <AvatarImage src={userAvatar || undefined} />
-              <AvatarFallback className="text-sm">
+              <AvatarFallback className="bg-secondary text-sm font-medium text-secondary-foreground">
                 {getInitials(userName)}
               </AvatarFallback>
             </Avatar>

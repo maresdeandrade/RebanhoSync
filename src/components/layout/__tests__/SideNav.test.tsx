@@ -36,7 +36,6 @@ describe("SideNav", () => {
 
     expect(screen.getByText("Protocolos")).toBeInTheDocument();
     expect(screen.queryByText("Dashboard")).not.toBeInTheDocument();
-    expect(screen.queryByText("Categorias")).not.toBeInTheDocument();
     expect(screen.queryByText("Reconciliacao")).not.toBeInTheDocument();
   });
 
@@ -55,7 +54,7 @@ describe("SideNav", () => {
 
     expect(screen.getByText("Dashboard")).toBeInTheDocument();
     expect(screen.getByText("Protocolos")).toBeInTheDocument();
-    expect(screen.getByText("Categorias")).toBeInTheDocument();
+    expect(screen.queryByText("Categorias")).not.toBeInTheDocument();
     expect(screen.getByText("Reconciliacao")).toBeInTheDocument();
   });
 });

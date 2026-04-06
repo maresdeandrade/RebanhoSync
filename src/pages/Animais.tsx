@@ -3,19 +3,23 @@ import { type Collection } from "dexie";
 import { useLiveQuery } from "dexie-react-hooks";
 import { Link, useNavigate } from "react-router-dom";
 import {
-  Search,
-  Plus,
-  ChevronRight,
+  AlertTriangle,
+  CornerDownRight,
   FilterX,
   PawPrint,
+  Plus,
+  Search,
   Upload,
-  CornerDownRight,
 } from "lucide-react";
+
+import { EmptyState } from "@/components/EmptyState";
 import { AnimalCategoryBadge } from "@/components/animals/AnimalCategoryBadge";
 import { AnimalKinshipBadges } from "@/components/animals/AnimalKinshipBadges";
-import { EmptyState } from "@/components/EmptyState";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { MetricCard } from "@/components/ui/metric-card";
+import { PageIntro } from "@/components/ui/page-intro";
 import {
   Select,
   SelectContent,
@@ -23,6 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { StatusBadge } from "@/components/ui/status-badge";
 import {
   Table,
   TableBody,
@@ -31,25 +36,25 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
+import { Toolbar, ToolbarGroup } from "@/components/ui/toolbar";
+import { useAuth } from "@/hooks/useAuth";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import { useLotes } from "@/hooks/useLotes";
 import {
   getAnimalLifeStageLabel,
   getPendingAnimalLifecycleKindLabel,
   getPendingAnimalLifecycleTransitions,
   resolveAnimalLifecycleSnapshot,
 } from "@/lib/animals/lifecycle";
+import { buildAnimalFamilyRows } from "@/lib/animals/familyOrder";
 import {
   buildAnimalTaxonomyReproContextMap,
   deriveAnimalTaxonomy,
 } from "@/lib/animals/taxonomy";
-import { buildAnimalFamilyRows } from "@/lib/animals/familyOrder";
 import { db } from "@/lib/offline/db";
 import { type Animal } from "@/lib/offline/types";
-import { useAuth } from "@/hooks/useAuth";
-import { useDebouncedValue } from "@/hooks/useDebouncedValue";
-import { useLotes } from "@/hooks/useLotes";
-import { cn } from "@/lib/utils";
 import { getReproductionEventsJoined } from "@/lib/reproduction/selectors";
+import { cn } from "@/lib/utils";
 
 const CATEGORY_FILTERS = [
   { value: "all", label: "Todas categorias" },
@@ -65,12 +70,12 @@ const CATEGORY_FILTERS = [
 const VETERINARY_PHASE_FILTERS = [
   { value: "all", label: "Todas fases" },
   { value: "neonatal", label: "Neonatal" },
-  { value: "pre_desmama", label: "Pré-desmama" },
-  { value: "pos_desmama", label: "Pós-desmama" },
-  { value: "pre_pubere", label: "Pré-púbere" },
-  { value: "pubere", label: "Púbere" },
+  { value: "pre_desmama", label: "Pre-desmama" },
+  { value: "pos_desmama", label: "Pos-desmama" },
+  { value: "pre_pubere", label: "Pre-pubere" },
+  { value: "pubere", label: "Pubere" },
   { value: "gestante", label: "Gestante" },
-  { value: "puerperio", label: "Puerpério" },
+  { value: "puerperio", label: "Puerperio" },
 ] as const;
 
 const PRODUCTIVE_STATE_FILTERS = [
@@ -80,11 +85,11 @@ const PRODUCTIVE_STATE_FILTERS = [
   { value: "pre_parto_imediato", label: "Amojando" },
   { value: "seca", label: "Seca" },
   { value: "recem_parida", label: "Vaca parida" },
-  { value: "lactacao", label: "Vaca em lactação" },
+  { value: "lactacao", label: "Vaca em lactacao" },
   { value: "inteiro", label: "Inteiro" },
   { value: "castrado", label: "Castrado" },
   { value: "reprodutor", label: "Reprodutor" },
-  { value: "terminacao", label: "Terminação" },
+  { value: "terminacao", label: "Terminacao" },
 ] as const;
 
 const calcularIdade = (
@@ -103,7 +108,17 @@ const calcularIdade = (
   return `${diffDays} dia${diffDays !== 1 ? "s" : ""}`;
 };
 
-const Animais = () => {
+function getProductiveTone(animalStatus: string) {
+  if (animalStatus === "ativo") return "success";
+  if (animalStatus === "vendido") return "warning";
+  return "danger";
+}
+
+function getLifecycleTone(canAutoApply: boolean) {
+  return canAutoApply ? "info" : "warning";
+}
+
+export default function Animais() {
   const navigate = useNavigate();
   const { activeFarmId, farmLifecycleConfig } = useAuth();
   const [search, setSearch] = useState("");
@@ -116,6 +131,7 @@ const Animais = () => {
     useState<string>("all");
   const debouncedSearch = useDebouncedValue(search, 300);
   const lotes = useLotes();
+
   const animaisFamilia = useLiveQuery(async () => {
     let collection: Collection<Animal, string>;
 
@@ -127,6 +143,7 @@ const Animais = () => {
 
     return await collection.filter((animal) => !animal.deleted_at).toArray();
   }, [activeFarmId]);
+
   const reproductionEvents = useLiveQuery(async () => {
     if (!activeFarmId) return [];
     return await getReproductionEventsJoined(activeFarmId);
@@ -140,6 +157,7 @@ const Animais = () => {
     () => new Map((animaisFamilia ?? []).map((animal) => [animal.id, animal])),
     [animaisFamilia],
   );
+
   const calvesByMother = useMemo(() => {
     const map = new Map<string, Animal[]>();
 
@@ -189,6 +207,7 @@ const Animais = () => {
 
     return await collection.toArray();
   }, [activeFarmId, debouncedSearch, loteFilter, sexoFilter, statusFilter]);
+
   const taxonomyByAnimal = useMemo(() => {
     const reproContextMap = buildAnimalTaxonomyReproContextMap(
       reproductionEvents ?? [],
@@ -204,6 +223,7 @@ const Animais = () => {
       ]),
     );
   }, [animaisFamilia, farmLifecycleConfig, reproductionEvents]);
+
   const filteredAnimals = useMemo(() => {
     return (animais ?? []).filter((animal) => {
       const taxonomy = taxonomyByAnimal.get(animal.id);
@@ -214,10 +234,7 @@ const Animais = () => {
       ) {
         return false;
       }
-      if (
-        phaseFilter !== "all" &&
-        taxonomy.fase_veterinaria !== phaseFilter
-      ) {
+      if (phaseFilter !== "all" && taxonomy.fase_veterinaria !== phaseFilter) {
         return false;
       }
       if (
@@ -229,9 +246,11 @@ const Animais = () => {
       return true;
     });
   }, [animais, categoryFilter, phaseFilter, productiveStateFilter, taxonomyByAnimal]);
+
   const animalRows = useMemo(() => {
     return buildAnimalFamilyRows(filteredAnimals, animaisFamilia ?? []);
   }, [filteredAnimals, animaisFamilia]);
+
   const lifecyclePendings = useMemo(() => {
     const queue = getPendingAnimalLifecycleTransitions(
       animaisFamilia ?? [],
@@ -248,6 +267,7 @@ const Animais = () => {
     categoryFilter !== "all" ||
     phaseFilter !== "all" ||
     productiveStateFilter !== "all";
+
   const lifecyclePendingCount = lifecyclePendings.size;
   const lifecycleStrategicCount = useMemo(
     () =>
@@ -257,31 +277,42 @@ const Animais = () => {
     [lifecyclePendings],
   );
   const lifecycleBiologicalCount = lifecyclePendingCount - lifecycleStrategicCount;
+  const semLoteCount = useMemo(
+    () => filteredAnimals.filter((animal) => !animal.lote_id).length,
+    [filteredAnimals],
+  );
 
   if (!animais || (animais.length === 0 && !hasFilters)) {
     return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between gap-4">
-          <h1 className="text-2xl font-bold">Animais</h1>
-          <div className="flex items-center gap-2">
-            <Link to="/animais/importar">
-              <Button size="sm" variant="outline">
-                <Upload className="mr-2 h-4 w-4" /> Importar planilha
+      <div className="space-y-5">
+        <PageIntro
+          eyebrow="Rebanho"
+          title="Animais"
+          description="Cadastro e leitura operacional do rebanho, com foco em estrutura, classificacao e proximo passo por animal."
+          actions={
+            <>
+              <Button asChild variant="outline">
+                <Link to="/animais/importar">
+                  <Upload className="h-4 w-4" />
+                  Importar planilha
+                </Link>
               </Button>
-            </Link>
-            <Link to="/animais/novo">
-              <Button size="sm">
-                <Plus className="mr-2 h-4 w-4" /> Novo
+              <Button asChild>
+                <Link to="/animais/novo">
+                  <Plus className="h-4 w-4" />
+                  Novo animal
+                </Link>
               </Button>
-            </Link>
-          </div>
-        </div>
+            </>
+          }
+        />
+
         <EmptyState
           icon={PawPrint}
           title="Nenhum animal cadastrado"
-          description="Comece cadastrando os primeiros animais da sua fazenda para acompanhar seu rebanho."
+          description="Comece cadastrando os primeiros animais da fazenda para liberar agenda, historico e acompanhamento do rebanho."
           action={{
-            label: "Cadastrar Primeiro Animal",
+            label: "Cadastrar primeiro animal",
             onClick: () => navigate("/animais/novo"),
           }}
         />
@@ -290,37 +321,80 @@ const Animais = () => {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4">
-        <h1 className="text-2xl font-bold">Animais</h1>
-        <div className="flex items-center gap-2">
-          <Link to="/animais/importar">
-            <Button size="sm" variant="outline">
-              <Upload className="mr-2 h-4 w-4" /> Importar planilha
+    <div className="space-y-5">
+      <PageIntro
+        eyebrow="Rebanho"
+        title="Animais"
+        description="Leitura operacional do rebanho com classificacao, vinculos familiares e transicoes de estagio visiveis sem poluir a tabela."
+        meta={
+          <>
+            <StatusBadge tone="neutral">
+              {animalRows.length} animal(is) no recorte
+            </StatusBadge>
+            {hasFilters ? <StatusBadge tone="info">Filtros ativos</StatusBadge> : null}
+            {lifecyclePendingCount > 0 ? (
+              <StatusBadge tone="warning">
+                {lifecyclePendingCount} transicao(oes) pendente(s)
+              </StatusBadge>
+            ) : null}
+          </>
+        }
+        actions={
+          <>
+            <Button asChild variant="outline">
+              <Link to="/animais/importar">
+                <Upload className="h-4 w-4" />
+                Importar planilha
+              </Link>
             </Button>
-          </Link>
-          <Link to="/animais/novo">
-            <Button size="sm">
-              <Plus className="mr-2 h-4 w-4" /> Novo
+            <Button asChild>
+              <Link to="/animais/novo">
+                <Plus className="h-4 w-4" />
+                Novo animal
+              </Link>
             </Button>
-          </Link>
-        </div>
-      </div>
+          </>
+        }
+      />
 
-      <div className="flex flex-col gap-3 md:flex-row">
-        <div className="relative flex-1">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            aria-label="Buscar animais por identificacao"
-            placeholder="Buscar por identificacao..."
-            className="pl-9"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
-        <div className="flex gap-2">
+      <section className="grid gap-4 md:grid-cols-3">
+        <MetricCard
+          label="Base do rebanho"
+          value={animaisFamilia?.length ?? 0}
+          hint="Total de animais cadastrados na fazenda."
+        />
+        <MetricCard
+          label="No recorte atual"
+          value={animalRows.length}
+          hint={hasFilters ? "Resultado da busca e dos filtros atuais." : "Sem filtros aplicados."}
+        />
+        <MetricCard
+          label="Sem lote"
+          value={semLoteCount}
+          hint={
+            lifecyclePendingCount > 0
+              ? `${lifecycleStrategicCount} estrategica(s) e ${lifecycleBiologicalCount} biologica(s) em transicao.`
+              : "Sem alerta de transicao no momento."
+          }
+          tone={lifecyclePendingCount > 0 ? "warning" : "default"}
+        />
+      </section>
+
+      <Toolbar>
+        <ToolbarGroup className="flex-1 gap-2">
+          <div className="relative min-w-[220px] flex-1">
+            <Search className="absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              aria-label="Buscar animais por identificacao"
+              placeholder="Buscar por identificacao"
+              className="pl-9"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+            />
+          </div>
+
           <Select value={loteFilter} onValueChange={setLoteFilter}>
-            <SelectTrigger className="w-[160px]">
+            <SelectTrigger className="w-full sm:w-[180px]">
               <SelectValue placeholder="Lote" />
             </SelectTrigger>
             <SelectContent>
@@ -335,7 +409,7 @@ const Animais = () => {
           </Select>
 
           <Select value={sexoFilter} onValueChange={setSexoFilter}>
-            <SelectTrigger className="w-[130px]">
+            <SelectTrigger className="w-full sm:w-[150px]">
               <SelectValue placeholder="Sexo" />
             </SelectTrigger>
             <SelectContent>
@@ -346,7 +420,7 @@ const Animais = () => {
           </Select>
 
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-[130px]">
+            <SelectTrigger className="w-full sm:w-[150px]">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
@@ -356,9 +430,11 @@ const Animais = () => {
               <SelectItem value="morto">Morto</SelectItem>
             </SelectContent>
           </Select>
+        </ToolbarGroup>
 
+        <ToolbarGroup className="gap-2">
           <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-            <SelectTrigger className="w-[170px]">
+            <SelectTrigger className="w-full sm:w-[180px]">
               <SelectValue placeholder="Categoria" />
             </SelectTrigger>
             <SelectContent>
@@ -371,8 +447,8 @@ const Animais = () => {
           </Select>
 
           <Select value={phaseFilter} onValueChange={setPhaseFilter}>
-            <SelectTrigger className="w-[170px]">
-              <SelectValue placeholder="Fase vet." />
+            <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectValue placeholder="Fase veterinaria" />
             </SelectTrigger>
             <SelectContent>
               {VETERINARY_PHASE_FILTERS.map((item) => (
@@ -387,8 +463,8 @@ const Animais = () => {
             value={productiveStateFilter}
             onValueChange={setProductiveStateFilter}
           >
-            <SelectTrigger className="w-[190px]">
-              <SelectValue placeholder="Estado" />
+            <SelectTrigger className="w-full sm:w-[190px]">
+              <SelectValue placeholder="Estado produtivo" />
             </SelectTrigger>
             <SelectContent>
               {PRODUCTIVE_STATE_FILTERS.map((item) => (
@@ -399,11 +475,11 @@ const Animais = () => {
             </SelectContent>
           </Select>
 
-          {hasFilters && (
+          {hasFilters ? (
             <Button
               aria-label="Limpar filtros"
-              variant="ghost"
-              size="icon"
+              variant="outline"
+              size="sm"
               onClick={() => {
                 setSearch("");
                 setLoteFilter("all");
@@ -415,40 +491,54 @@ const Animais = () => {
               }}
             >
               <FilterX className="h-4 w-4" />
+              Limpar
             </Button>
-          )}
-        </div>
-      </div>
+          ) : null}
+        </ToolbarGroup>
+      </Toolbar>
 
-      {lifecyclePendingCount > 0 && (
-        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-          {lifecyclePendingCount} animal(is) com transicao de estagio pendente.
-          {" "}
-          {lifecycleStrategicCount} decisao(oes) estrategica(s) e{" "}
-          {lifecycleBiologicalCount} marco(s) biologico(s).
-          {" "}
-          Abra a ficha para confirmar o marco ou use a{" "}
-          <Link to="/animais/transicoes" className="font-medium underline">
-            mutacao em lote
-          </Link>
-          .
-        </div>
-      )}
+      {lifecyclePendingCount > 0 ? (
+        <Card className="border-warning/20 bg-warning-muted/70 shadow-none">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <AlertTriangle className="h-4 w-4 text-warning" />
+              Transicoes de estagio no radar
+            </CardTitle>
+            <CardDescription>
+              {lifecyclePendingCount} animal(is) com ajuste pendente. {lifecycleStrategicCount} decisao(oes) estrategica(s) e {lifecycleBiologicalCount} marco(s) biologico(s).
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-wrap items-center gap-2">
+            <Button asChild size="sm">
+              <Link to="/animais/transicoes">Abrir mutacao em lote</Link>
+            </Button>
+            <Button asChild size="sm" variant="outline">
+              <Link to="/agenda">Cruzar com agenda</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      ) : null}
 
-      <div className="overflow-hidden rounded-xl border bg-card">
-        <div className="overflow-x-auto">
+      <Card className="overflow-hidden">
+        <CardHeader>
+          <CardTitle>Leitura operacional do rebanho</CardTitle>
+          <CardDescription>
+            O conteudo principal fica na tabela: identificacao, classificacao, contexto familiar e proximo marco visivel por animal.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="p-0">
           <Table>
             <TableHeader>
-              <TableRow className="bg-muted/50">
-                <TableHead className="w-[150px]">Identificacao</TableHead>
+              <TableRow>
+                <TableHead className="w-[170px]">Identificacao</TableHead>
                 <TableHead>Categoria</TableHead>
                 <TableHead>Idade</TableHead>
-                <TableHead>Fase Vet.</TableHead>
+                <TableHead>Fase vet.</TableHead>
                 <TableHead>Lote</TableHead>
                 <TableHead>Vinculo</TableHead>
                 <TableHead>Estagio</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead className="text-right">Acao</TableHead>
+                <TableHead className="text-right">Abrir</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -468,149 +558,127 @@ const Animais = () => {
                   <TableRow
                     key={animal.id}
                     className={cn(
-                      "transition-colors hover:bg-muted/30",
-                      lifecyclePending && "bg-amber-50/60",
-                      depth > 0 && "bg-muted/15",
+                      depth > 0 && "bg-muted/20",
+                      lifecyclePending && "bg-warning-muted/50",
                     )}
                   >
-                    <TableCell className="font-bold">
+                    <TableCell className="align-top">
                       <div
-                        className="flex items-center gap-2"
+                        className="flex items-start gap-2"
                         style={{ paddingLeft: `${depth * 18}px` }}
                       >
-                        {depth > 0 && (
-                          <CornerDownRight className="h-4 w-4 text-muted-foreground" />
-                        )}
+                        {depth > 0 ? (
+                          <CornerDownRight className="mt-0.5 h-4 w-4 text-muted-foreground" />
+                        ) : null}
                         <div className="space-y-0.5">
-                          <div>{animal.identificacao}</div>
-                          {depth > 0 && mother && (
-                            <div className="text-[11px] font-normal text-muted-foreground">
+                          <p className="font-medium">{animal.identificacao}</p>
+                          {depth > 0 && mother ? (
+                            <p className="text-xs text-muted-foreground">
                               junto da matriz {mother.identificacao}
-                            </div>
-                          )}
+                            </p>
+                          ) : null}
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell>
+
+                    <TableCell className="align-top">
                       <AnimalCategoryBadge
                         animal={animal}
                         categoriaLabel={categoriaLabel}
                       />
                     </TableCell>
-                    <TableCell>
-                      <span className="text-xs text-muted-foreground">
-                        {calcularIdade(animal.data_nascimento) || "-"}
-                      </span>
+
+                    <TableCell className="align-top text-sm text-muted-foreground">
+                      {calcularIdade(animal.data_nascimento) || "-"}
                     </TableCell>
-                    <TableCell>
+
+                    <TableCell className="align-top">
                       {taxonomy ? (
-                        <Badge
-                          variant="outline"
-                          className="border-violet-200 bg-violet-50 text-violet-800"
-                        >
+                        <StatusBadge tone="neutral">
                           {taxonomy.display.fase_veterinaria}
-                        </Badge>
+                        </StatusBadge>
                       ) : (
                         <span className="text-xs italic text-muted-foreground">
                           Sem fase
                         </span>
                       )}
                     </TableCell>
-                    <TableCell>
+
+                    <TableCell className="align-top">
                       {animal.lote_id ? (
-                        <Badge variant="secondary" className="font-normal">
-                          {lotesMap.get(animal.lote_id)?.nome || "..."}
-                        </Badge>
+                        <div className="space-y-1">
+                          <p className="text-sm font-medium">
+                            {lotesMap.get(animal.lote_id)?.nome || "..."}
+                          </p>
+                        </div>
                       ) : (
                         <span className="text-xs italic text-muted-foreground">
                           Sem lote
                         </span>
                       )}
                     </TableCell>
-                    <TableCell>
+
+                    <TableCell className="align-top">
                       <AnimalKinshipBadges
                         mother={mother}
                         father={father}
                         calves={calves}
                       />
                     </TableCell>
-                    <TableCell>
+
+                    <TableCell className="align-top">
                       {lifecyclePending ? (
-                        <div className="space-y-1">
-                          <Badge
-                            variant="outline"
-                            className={
-                              lifecyclePending.canAutoApply
-                                ? "border-sky-200 bg-sky-50 text-sky-800"
-                                : "border-amber-200 bg-amber-50 text-amber-800"
-                            }
-                          >
+                        <div className="space-y-2">
+                          <StatusBadge tone={getLifecycleTone(lifecyclePending.canAutoApply)}>
                             {getAnimalLifeStageLabel(lifecyclePending.currentStage)} para{" "}
                             {getAnimalLifeStageLabel(lifecyclePending.targetStage)}
-                          </Badge>
-                          <p className="text-[11px] text-muted-foreground">
-                            {lifecyclePending.canAutoApply
-                              ? "Ajuste automatico/hibrido"
-                              : "Confirmacao pendente"}
-                          </p>
-                          <p className="text-[11px] font-medium text-muted-foreground">
+                          </StatusBadge>
+                          <p className="text-xs text-muted-foreground">
                             {getPendingAnimalLifecycleKindLabel(
                               lifecyclePending.queueKind,
                             )}
                           </p>
                         </div>
                       ) : (
-                        <Badge variant="outline">
+                        <StatusBadge tone="neutral">
                           {getAnimalLifeStageLabel(
                             resolveAnimalLifecycleSnapshot(animal, farmLifecycleConfig)
                               .currentStage,
                           )}
-                        </Badge>
+                        </StatusBadge>
                       )}
                     </TableCell>
-                    <TableCell>
+
+                    <TableCell className="align-top">
                       {taxonomy ? (
                         <div className="space-y-1">
-                          <Badge
-                            variant="outline"
-                            className="border-emerald-200 bg-emerald-50 text-emerald-800"
-                          >
+                          <StatusBadge tone="neutral">
                             {taxonomy.display.estado_alias}
-                          </Badge>
+                          </StatusBadge>
                           {taxonomy.display.estado_alias !==
-                            taxonomy.display.estado_canonico && (
-                            <p className="text-[11px] text-muted-foreground">
+                          taxonomy.display.estado_canonico ? (
+                            <p className="text-xs text-muted-foreground">
                               {taxonomy.display.estado_canonico}
                             </p>
-                          )}
+                          ) : null}
                         </div>
                       ) : (
-                        <Badge
-                          variant={
-                            animal.status === "ativo" ? "outline" : "secondary"
-                          }
-                          className="capitalize"
-                        >
+                        <StatusBadge tone={getProductiveTone(animal.status)}>
                           {animal.status}
-                        </Badge>
+                        </StatusBadge>
                       )}
                     </TableCell>
-                    <TableCell className="text-right">
-                      <Link to={`/animais/${animal.id}`}>
-                        <Button
-                          aria-label={`Ver detalhes do animal ${animal.identificacao}`}
-                          variant="ghost"
-                          size="icon"
-                          className="rounded-full"
-                        >
-                          <ChevronRight className="h-4 w-4" />
-                        </Button>
-                      </Link>
+
+                    <TableCell className="text-right align-top">
+                      <Button asChild size="sm" variant="ghost">
+                        <Link to={`/animais/${animal.id}`}>Abrir ficha</Link>
+                      </Button>
                     </TableCell>
                   </TableRow>
                 );
               })}
-              {animalRows.length === 0 && hasFilters && (
+
+              {animalRows.length === 0 && hasFilters ? (
                 <TableRow>
                   <TableCell
                     colSpan={9}
@@ -619,13 +687,11 @@ const Animais = () => {
                     Nenhum animal encontrado com os filtros aplicados.
                   </TableCell>
                 </TableRow>
-              )}
+              ) : null}
             </TableBody>
           </Table>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
-};
-
-export default Animais;
+}

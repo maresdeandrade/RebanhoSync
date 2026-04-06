@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
+import { Search } from "lucide-react";
+
 import { db } from "@/lib/offline/db";
 import { createGesture } from "@/lib/offline/ops";
 import type { OperationInput } from "@/lib/offline/types";
@@ -15,10 +17,10 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { FormSection } from "@/components/ui/form-section";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { showSuccess, showError } from "@/utils/toast";
-import { Search } from "lucide-react";
 
 interface AdicionarAnimaisLoteProps {
   lote: {
@@ -43,33 +45,32 @@ export function AdicionarAnimaisLote({
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Buscar animais sem lote ou de outros lotes
   const animais = useLiveQuery(
     () =>
       db.state_animais
         .filter(
-          (a) =>
-            a.fazenda_id === lote.fazenda_id &&
-            (!a.deleted_at || a.deleted_at === null) &&
-            a.lote_id !== lote.id,
+          (animal) =>
+            animal.fazenda_id === lote.fazenda_id &&
+            (!animal.deleted_at || animal.deleted_at === null) &&
+            animal.lote_id !== lote.id,
         )
         .toArray(),
     [lote.fazenda_id, lote.id],
   );
 
   const animaisFiltrados =
-    animais?.filter((a) =>
-      a.identificacao?.toLowerCase().includes(search.toLowerCase()),
+    animais?.filter((animal) =>
+      animal.identificacao?.toLowerCase().includes(search.toLowerCase()),
     ) || [];
 
   const toggleAnimal = (animalId: string) => {
-    const newSet = new Set(selectedAnimais);
-    if (newSet.has(animalId)) {
-      newSet.delete(animalId);
+    const next = new Set(selectedAnimais);
+    if (next.has(animalId)) {
+      next.delete(animalId);
     } else {
-      newSet.add(animalId);
+      next.add(animalId);
     }
-    setSelectedAnimais(newSet);
+    setSelectedAnimais(next);
   };
 
   const handleConfirm = async () => {
@@ -81,11 +82,12 @@ export function AdicionarAnimaisLote({
     setIsSubmitting(true);
     const now = new Date().toISOString();
 
-    const animaisPorId = new Map((animais ?? []).map((a) => [a.id, a]));
+    const animaisPorId = new Map((animais ?? []).map((animal) => [animal.id, animal]));
     const ops: OperationInput[] = [];
 
     for (const animalId of selectedAnimais) {
-      const animal = animaisPorId.get(animalId) ?? (await db.state_animais.get(animalId));
+      const animal =
+        animaisPorId.get(animalId) ?? (await db.state_animais.get(animalId));
       if (!animal || animal.lote_id === lote.id) continue;
 
       const built = buildEventGesture({
@@ -111,15 +113,15 @@ export function AdicionarAnimaisLote({
     try {
       await createGesture(lote.fazenda_id, ops);
       showSuccess(
-        `${selectedAnimais.size} animal(is) adicionado(s) ao lote ${lote.nome}!`,
+        `${selectedAnimais.size} animal(is) adicionado(s) ao lote ${lote.nome}.`,
       );
       setSelectedAnimais(new Set());
       setSearch("");
       onSuccess();
       onOpenChange(false);
-    } catch (e: unknown) {
-      if (e instanceof EventValidationError) {
-        showError(e.issues[0]?.message ?? "Dados invalidos para movimentacao.");
+    } catch (error: unknown) {
+      if (error instanceof EventValidationError) {
+        showError(error.issues[0]?.message ?? "Dados invalidos para movimentacao.");
         return;
       }
       showError("Erro ao adicionar animais ao lote.");
@@ -130,99 +132,94 @@ export function AdicionarAnimaisLote({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[80vh]">
+      <DialogContent className="max-w-3xl">
         <DialogHeader>
-          <DialogTitle>Adicionar Animais ao Lote</DialogTitle>
+          <DialogTitle>Adicionar animais ao lote</DialogTitle>
           <DialogDescription>
-            Selecione os animais para adicionar ao lote{" "}
-            <strong>{lote.nome}</strong>
+            Monte a lista de entrada para <strong>{lote.nome}</strong> sem perder
+            contexto do lote de origem.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <FormSection
+          title="Selecao de animais"
+          description="Busque por identificacao e marque apenas os animais que devem entrar neste lote."
+          actions={
+            <StatusBadge tone="info">
+              {selectedAnimais.size} selecionado(s)
+            </StatusBadge>
+          }
+          contentClassName="space-y-4"
+        >
           <div className="relative">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Buscar por identificação..."
+              placeholder="Buscar por identificacao"
               className="pl-9"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(event) => setSearch(event.target.value)}
             />
           </div>
 
-          <div className="border rounded-lg max-h-[400px] overflow-y-auto">
+          <div className="max-h-[420px] overflow-y-auto rounded-2xl border border-border/70 bg-background/80">
             {animaisFiltrados.length === 0 ? (
-              <div className="p-8 text-center text-muted-foreground">
+              <div className="px-4 py-10 text-center text-sm text-muted-foreground">
                 {search
-                  ? "Nenhum animal encontrado"
-                  : "Nenhum animal disponível"}
+                  ? "Nenhum animal encontrado para a busca atual."
+                  : "Nenhum animal disponivel fora deste lote."}
               </div>
             ) : (
-              <div className="divide-y">
+              <div className="divide-y divide-border/70">
                 {animaisFiltrados.map((animal) => (
-                  <div
+                  <label
                     key={animal.id}
-                    className="flex items-center gap-3 p-3 hover:bg-muted/50 cursor-pointer"
-                    onClick={() => toggleAnimal(animal.id)}
+                    className="flex cursor-pointer items-start gap-3 px-4 py-3 transition-colors hover:bg-muted/30"
                   >
                     <Checkbox
                       checked={selectedAnimais.has(animal.id)}
                       onCheckedChange={() => toggleAnimal(animal.id)}
                     />
-                    <div className="flex-1">
-                      <p className="font-semibold">{animal.identificacao}</p>
-                      <div className="flex gap-2 mt-1">
-                        <Badge variant="outline" className="text-xs">
-                          {animal.sexo === "M" ? "Macho" : "Fêmea"}
-                        </Badge>
-                        {animal.lote_id ? (
-                          <span className="text-xs text-muted-foreground">
-                            Em outro lote
-                          </span>
-                        ) : (
-                          <span className="text-xs text-muted-foreground">
-                            Sem lote
-                          </span>
-                        )}
+                    <div className="min-w-0 flex-1 space-y-1">
+                      <p className="font-medium text-foreground">
+                        {animal.identificacao}
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        <StatusBadge tone="neutral">
+                          {animal.sexo === "M" ? "Macho" : "Femea"}
+                        </StatusBadge>
+                        <StatusBadge tone="neutral">
+                          {animal.lote_id ? "Em outro lote" : "Sem lote"}
+                        </StatusBadge>
                       </div>
                     </div>
-                  </div>
+                  </label>
                 ))}
               </div>
             )}
           </div>
 
-          {selectedAnimais.size > 0 && (
-            <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-              <span className="text-sm font-medium">
-                {selectedAnimais.size} animal(is) selecionado(s)
-              </span>
+          {selectedAnimais.size > 0 ? (
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-border/70 bg-muted/20 px-4 py-3">
+              <p className="text-sm text-muted-foreground">
+                Revise a selecao antes de confirmar a movimentacao em massa.
+              </p>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setSelectedAnimais(new Set())}
               >
-                Limpar seleção
+                Limpar selecao
               </Button>
             </div>
-          )}
-        </div>
+          ) : null}
+        </FormSection>
 
         <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={isSubmitting}
-          >
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
             Cancelar
           </Button>
-          <Button
-            onClick={handleConfirm}
-            disabled={isSubmitting || selectedAnimais.size === 0}
-          >
-            {isSubmitting
-              ? "Adicionando..."
-              : `Adicionar ${selectedAnimais.size}`}
+          <Button onClick={handleConfirm} disabled={isSubmitting || selectedAnimais.size === 0}>
+            {isSubmitting ? "Adicionando..." : `Adicionar ${selectedAnimais.size}`}
           </Button>
         </DialogFooter>
       </DialogContent>

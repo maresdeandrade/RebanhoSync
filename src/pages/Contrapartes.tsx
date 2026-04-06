@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import {
   Building2,
+  MoreHorizontal,
   Pencil,
   PlusCircle,
   Save,
@@ -10,15 +11,35 @@ import {
   UserRound,
   X,
 } from "lucide-react";
+
+import { useAuth } from "@/hooks/useAuth";
 import { db } from "@/lib/offline/db";
 import { createGesture } from "@/lib/offline/ops";
-import { useAuth } from "@/hooks/useAuth";
 import { showError, showSuccess } from "@/utils/toast";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { EmptyState } from "@/components/EmptyState";
+import { FormSection } from "@/components/ui/form-section";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { MetricCard } from "@/components/ui/metric-card";
+import { PageIntro } from "@/components/ui/page-intro";
 import {
   Select,
   SelectContent,
@@ -26,6 +47,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { Toolbar, ToolbarGroup } from "@/components/ui/toolbar";
 
 type ContraparteTipo = "pessoa" | "empresa";
 
@@ -47,7 +70,7 @@ const EMPTY_FORM: ContraparteForm = {
   endereco: "",
 };
 
-const Contrapartes = () => {
+export default function Contrapartes() {
   const { activeFarmId, role } = useAuth();
   const canManage = role === "owner" || role === "manager";
 
@@ -56,6 +79,10 @@ const Contrapartes = () => {
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [deleteCandidate, setDeleteCandidate] = useState<{
+    id: string;
+    nome: string;
+  } | null>(null);
   const [form, setForm] = useState<ContraparteForm>(EMPTY_FORM);
   const [editForm, setEditForm] = useState<ContraparteForm>(EMPTY_FORM);
 
@@ -91,6 +118,15 @@ const Contrapartes = () => {
       .sort((a, b) => a.nome.localeCompare(b.nome));
   }, [contrapartes, search]);
 
+  const counts = useMemo(
+    () => ({
+      total: contrapartes.length,
+      pessoas: contrapartes.filter((item) => item.tipo === "pessoa").length,
+      empresas: contrapartes.filter((item) => item.tipo === "empresa").length,
+    }),
+    [contrapartes],
+  );
+
   const handleCreate = async () => {
     if (!activeFarmId) {
       showError("Selecione uma fazenda ativa.");
@@ -120,9 +156,7 @@ const Contrapartes = () => {
             telefone: form.telefone.trim() || null,
             email: form.email.trim() || null,
             endereco: form.endereco.trim() || null,
-            payload: {
-              origem: "cadastro_manual_contraparte",
-            },
+            payload: { origem: "cadastro_manual_contraparte" },
           },
         },
       ]);
@@ -194,7 +228,7 @@ const Contrapartes = () => {
     }
   };
 
-  const handleDelete = async (id: string, nome: string) => {
+  const requestDelete = async (id: string, nome: string) => {
     if (!activeFarmId) {
       showError("Selecione uma fazenda ativa.");
       return;
@@ -210,7 +244,8 @@ const Contrapartes = () => {
         .equals(activeFarmId)
         .and(
           (item) =>
-            item.contraparte_id === id && (item.deleted_at === null || !item.deleted_at),
+            item.contraparte_id === id &&
+            (item.deleted_at === null || !item.deleted_at),
         )
         .count(),
       db.state_animais_sociedade
@@ -218,7 +253,8 @@ const Contrapartes = () => {
         .equals(activeFarmId)
         .and(
           (item) =>
-            item.contraparte_id === id && (item.deleted_at === null || !item.deleted_at),
+            item.contraparte_id === id &&
+            (item.deleted_at === null || !item.deleted_at),
         )
         .count(),
     ]);
@@ -230,25 +266,28 @@ const Contrapartes = () => {
       return;
     }
 
-    const confirmed = window.confirm(
-      `Remover contraparte "${nome}"? Esta acao pode impactar registros financeiros futuros.`,
-    );
-    if (!confirmed) return;
+    setDeleteCandidate({ id, nome });
+  };
 
-    setDeletingId(id);
+  const handleDelete = async () => {
+    if (!activeFarmId || !deleteCandidate) return;
+
+    setDeletingId(deleteCandidate.id);
     try {
       const txId = await createGesture(activeFarmId, [
         {
           table: "contrapartes",
           action: "DELETE",
-          record: { id },
+          record: { id: deleteCandidate.id },
         },
       ]);
 
-      if (editingId === id) {
+      if (editingId === deleteCandidate.id) {
         cancelEdit();
       }
+
       showSuccess(`Contraparte removida. TX: ${txId.slice(0, 8)}`);
+      setDeleteCandidate(null);
     } catch {
       showError("Falha ao remover contraparte.");
     } finally {
@@ -256,28 +295,67 @@ const Contrapartes = () => {
     }
   };
 
+  function setFormField<K extends keyof ContraparteForm>(
+    setter: typeof setForm | typeof setEditForm,
+    field: K,
+    value: ContraparteForm[K],
+  ) {
+    setter((prev) => ({ ...prev, [field]: value }));
+  }
+
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold">Parceiros</h1>
-          <p className="text-sm text-muted-foreground">
-            Cadastro de parceiros para eventos de compra, venda e sociedade.
-          </p>
-        </div>
+      <PageIntro
+        eyebrow="Financeiro"
+        title="Parceiros e contrapartes"
+        description="Cadastro limpo para compra, venda e sociedade, com exclusao protegida e edicao separada do fluxo principal."
+        meta={
+          <>
+            <StatusBadge tone="neutral">{counts.total} cadastro(s)</StatusBadge>
+            <StatusBadge tone="info">{counts.empresas} empresa(s)</StatusBadge>
+            <StatusBadge tone="neutral">{counts.pessoas} pessoa(s)</StatusBadge>
+          </>
+        }
+      />
+
+      <div className="grid gap-4 md:grid-cols-3">
+        <MetricCard
+          label="Total"
+          value={counts.total}
+          hint="Base unica de parceiros disponiveis para eventos financeiros."
+          icon={<Building2 className="h-5 w-5" />}
+        />
+        <MetricCard
+          label="Pessoas"
+          value={counts.pessoas}
+          hint="Cadastros individuais para compra, venda ou sociedade."
+          icon={<UserRound className="h-5 w-5" />}
+        />
+        <MetricCard
+          label="Empresas"
+          value={counts.empresas}
+          hint="Parceiros juridicos e fornecedores recorrentes."
+          tone="info"
+          icon={<Building2 className="h-5 w-5" />}
+        />
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Novo Cadastro</CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-4 md:grid-cols-2">
+      <FormSection
+        title="Nova contraparte"
+        description="Cadastre apenas os campos necessarios para a rotina. O restante pode ser complementado depois."
+        actions={
+          <StatusBadge tone={canManage ? "info" : "warning"}>
+            {canManage ? "Edicao liberada" : "Somente leitura"}
+          </StatusBadge>
+        }
+      >
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           <div className="space-y-2">
             <Label>Tipo</Label>
             <Select
               value={form.tipo}
               onValueChange={(value) =>
-                setForm((prev) => ({ ...prev, tipo: value as ContraparteTipo }))
+                setFormField(setForm, "tipo", value as ContraparteTipo)
               }
             >
               <SelectTrigger>
@@ -294,7 +372,7 @@ const Contrapartes = () => {
             <Label>Nome</Label>
             <Input
               value={form.nome}
-              onChange={(e) => setForm((prev) => ({ ...prev, nome: e.target.value }))}
+              onChange={(event) => setFormField(setForm, "nome", event.target.value)}
               placeholder="Nome da contraparte"
             />
           </div>
@@ -303,8 +381,8 @@ const Contrapartes = () => {
             <Label>Documento</Label>
             <Input
               value={form.documento}
-              onChange={(e) =>
-                setForm((prev) => ({ ...prev, documento: e.target.value }))
+              onChange={(event) =>
+                setFormField(setForm, "documento", event.target.value)
               }
               placeholder="CPF/CNPJ"
             />
@@ -314,8 +392,8 @@ const Contrapartes = () => {
             <Label>Telefone</Label>
             <Input
               value={form.telefone}
-              onChange={(e) =>
-                setForm((prev) => ({ ...prev, telefone: e.target.value }))
+              onChange={(event) =>
+                setFormField(setForm, "telefone", event.target.value)
               }
               placeholder="(00) 00000-0000"
             />
@@ -325,7 +403,7 @@ const Contrapartes = () => {
             <Label>Email</Label>
             <Input
               value={form.email}
-              onChange={(e) => setForm((prev) => ({ ...prev, email: e.target.value }))}
+              onChange={(event) => setFormField(setForm, "email", event.target.value)}
               placeholder="contato@dominio.com"
             />
           </div>
@@ -334,197 +412,233 @@ const Contrapartes = () => {
             <Label>Endereco</Label>
             <Input
               value={form.endereco}
-              onChange={(e) =>
-                setForm((prev) => ({ ...prev, endereco: e.target.value }))
+              onChange={(event) =>
+                setFormField(setForm, "endereco", event.target.value)
               }
               placeholder="Cidade/UF"
             />
           </div>
+        </div>
 
-          <div className="md:col-span-2">
-            {!canManage && (
-              <p className="mb-2 text-xs text-muted-foreground">
-                Apenas owner/manager pode criar contrapartes.
-              </p>
-            )}
+        <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          {!canManage ? (
+            <p className="text-sm text-muted-foreground">
+              Apenas owner/manager pode criar contrapartes.
+            </p>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Priorize nome, contato e documento para manter a operacao leve.
+            </p>
+          )}
+          <Button onClick={handleCreate} disabled={!canManage || isSavingCreate}>
+            <PlusCircle className="mr-2 h-4 w-4" />
+            {isSavingCreate ? "Salvando..." : "Salvar contraparte"}
+          </Button>
+        </div>
+      </FormSection>
+
+      {editingId ? (
+        <FormSection
+          title="Edicao em andamento"
+          description="Revise os dados da contraparte selecionada e confirme para aplicar o ajuste."
+          actions={<StatusBadge tone="warning">Edicao ativa</StatusBadge>}
+        >
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <div className="space-y-2">
+              <Label>Tipo</Label>
+              <Select
+                value={editForm.tipo}
+                onValueChange={(value) =>
+                  setFormField(setEditForm, "tipo", value as ContraparteTipo)
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pessoa">Pessoa</SelectItem>
+                  <SelectItem value="empresa">Empresa</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Nome</Label>
+              <Input
+                value={editForm.nome}
+                onChange={(event) =>
+                  setFormField(setEditForm, "nome", event.target.value)
+                }
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Documento</Label>
+              <Input
+                value={editForm.documento}
+                onChange={(event) =>
+                  setFormField(setEditForm, "documento", event.target.value)
+                }
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Telefone</Label>
+              <Input
+                value={editForm.telefone}
+                onChange={(event) =>
+                  setFormField(setEditForm, "telefone", event.target.value)
+                }
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Email</Label>
+              <Input
+                value={editForm.email}
+                onChange={(event) =>
+                  setFormField(setEditForm, "email", event.target.value)
+                }
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Endereco</Label>
+              <Input
+                value={editForm.endereco}
+                onChange={(event) =>
+                  setFormField(setEditForm, "endereco", event.target.value)
+                }
+              />
+            </div>
+          </div>
+
+          <div className="mt-4 flex flex-wrap gap-2">
             <Button
-              onClick={handleCreate}
-              disabled={!canManage || isSavingCreate}
-              className="w-full md:w-auto"
+              onClick={() => handleUpdate(editingId)}
+              disabled={updatingId === editingId || !canManage}
             >
-              <PlusCircle className="mr-2 h-4 w-4" />
-              {isSavingCreate ? "Salvando..." : "Salvar contraparte"}
+              <Save className="mr-2 h-4 w-4" />
+              {updatingId === editingId ? "Salvando..." : "Salvar alteracoes"}
+            </Button>
+            <Button variant="outline" onClick={cancelEdit} disabled={updatingId === editingId}>
+              <X className="mr-2 h-4 w-4" />
+              Cancelar
             </Button>
           </div>
-        </CardContent>
-      </Card>
+        </FormSection>
+      ) : null}
 
-      <Card>
-        <CardHeader className="space-y-3">
-          <CardTitle>Lista de Parceiros</CardTitle>
-          <div className="relative">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+      <Toolbar>
+        <ToolbarGroup className="flex-1 gap-2">
+          <div className="relative min-w-0 flex-1">
+            <Search className="absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
             <Input
               className="pl-9"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Buscar por nome, documento, telefone..."
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Buscar por nome, documento, telefone ou email"
             />
           </div>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {filtered.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Nenhuma contraparte cadastrada.</p>
-          ) : (
-            filtered.map((item) => (
-              <div key={item.id} className="rounded-md border p-3">
-                {editingId === item.id ? (
-                  <div className="space-y-3">
-                    <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
-                      <div className="space-y-2">
-                        <Label>Tipo</Label>
-                        <Select
-                          value={editForm.tipo}
-                          onValueChange={(value) =>
-                            setEditForm((prev) => ({
-                              ...prev,
-                              tipo: value as ContraparteTipo,
-                            }))
-                          }
+        </ToolbarGroup>
+        <ToolbarGroup className="gap-2">
+          <StatusBadge tone="info">{filtered.length} no recorte</StatusBadge>
+        </ToolbarGroup>
+      </Toolbar>
+
+      {filtered.length === 0 ? (
+        <EmptyState
+          icon={Building2}
+          title="Nenhuma contraparte encontrada"
+          description={
+            search
+              ? "Ajuste a busca para localizar parceiros ja cadastrados."
+              : "Cadastre a primeira contraparte para destravar compra, venda e sociedade."
+          }
+        />
+      ) : (
+        <div className="space-y-3">
+          {filtered.map((item) => (
+            <Card key={item.id} className="shadow-none">
+              <CardContent className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="space-y-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="font-medium text-foreground">{item.nome}</p>
+                    <StatusBadge tone="neutral">
+                      {item.tipo === "empresa" ? "Empresa" : "Pessoa"}
+                    </StatusBadge>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    {[item.documento, item.telefone, item.email]
+                      .filter(Boolean)
+                      .join(" · ") || "Sem contato informado"}
+                  </p>
+                  {item.endereco ? (
+                    <p className="text-sm text-muted-foreground">{item.endereco}</p>
+                  ) : null}
+                </div>
+
+                <div className="flex items-center gap-2">
+                  {item.tipo === "empresa" ? (
+                    <Building2 className="h-4 w-4 text-muted-foreground" />
+                  ) : (
+                    <UserRound className="h-4 w-4 text-muted-foreground" />
+                  )}
+
+                  {canManage ? (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="icon" aria-label="Acoes da contraparte">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => startEdit(item)}>
+                          <Pencil className="mr-2 h-4 w-4" />
+                          Editar
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="text-destructive focus:text-destructive"
+                          onClick={() => requestDelete(item.id, item.nome)}
                         >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="pessoa">Pessoa</SelectItem>
-                            <SelectItem value="empresa">Empresa</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Nome</Label>
-                        <Input
-                          value={editForm.nome}
-                          onChange={(e) =>
-                            setEditForm((prev) => ({ ...prev, nome: e.target.value }))
-                          }
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Documento</Label>
-                        <Input
-                          value={editForm.documento}
-                          onChange={(e) =>
-                            setEditForm((prev) => ({ ...prev, documento: e.target.value }))
-                          }
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Telefone</Label>
-                        <Input
-                          value={editForm.telefone}
-                          onChange={(e) =>
-                            setEditForm((prev) => ({ ...prev, telefone: e.target.value }))
-                          }
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Email</Label>
-                        <Input
-                          value={editForm.email}
-                          onChange={(e) =>
-                            setEditForm((prev) => ({ ...prev, email: e.target.value }))
-                          }
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Endereco</Label>
-                        <Input
-                          value={editForm.endereco}
-                          onChange={(e) =>
-                            setEditForm((prev) => ({ ...prev, endereco: e.target.value }))
-                          }
-                        />
-                      </div>
-                    </div>
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Remover
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  ) : null}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
 
-                    <div className="flex flex-wrap gap-2">
-                      <Button
-                        size="sm"
-                        onClick={() => handleUpdate(item.id)}
-                        disabled={updatingId === item.id || !canManage}
-                      >
-                        <Save className="mr-2 h-4 w-4" />
-                        {updatingId === item.id ? "Salvando..." : "Salvar"}
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={cancelEdit}
-                        disabled={updatingId === item.id}
-                      >
-                        <X className="mr-2 h-4 w-4" />
-                        Cancelar
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold">{item.nome}</span>
-                        <Badge variant="outline">
-                          {item.tipo === "empresa" ? "Empresa" : "Pessoa"}
-                        </Badge>
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        {[item.documento, item.telefone, item.email]
-                          .filter(Boolean)
-                          .join(" - ") || "Sem contato informado"}
-                      </p>
-                      {item.endereco && (
-                        <p className="text-xs text-muted-foreground">{item.endereco}</p>
-                      )}
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      {item.tipo === "empresa" ? (
-                        <Building2 className="h-4 w-4 text-muted-foreground" />
-                      ) : (
-                        <UserRound className="h-4 w-4 text-muted-foreground" />
-                      )}
-
-                      {canManage && (
-                        <>
-                          <Button
-                            size="icon"
-                            variant="outline"
-                            onClick={() => startEdit(item)}
-                            title="Editar contraparte"
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="icon"
-                            variant="outline"
-                            onClick={() => handleDelete(item.id, item.nome)}
-                            disabled={deletingId === item.id}
-                            title="Remover contraparte"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))
-          )}
-        </CardContent>
-      </Card>
+      <AlertDialog
+        open={!!deleteCandidate}
+        onOpenChange={(open) => !open && setDeleteCandidate(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remover contraparte?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteCandidate
+                ? `A contraparte "${deleteCandidate.nome}" sera removida da fazenda ativa.`
+                : "A contraparte sera removida da fazenda ativa."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={!!deletingId}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={!!deletingId}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deletingId ? "Removendo..." : "Confirmar remocao"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
-};
-
-export default Contrapartes;
+}

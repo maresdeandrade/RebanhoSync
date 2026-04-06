@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
-import type { Animal } from "@/lib/offline/types";
+
 import { Badge } from "@/components/ui/badge";
+import type { Animal } from "@/lib/offline/types";
 
 export function AnimalKinshipBadges({
   mother,
@@ -20,33 +21,44 @@ export function AnimalKinshipBadges({
 
   return (
     <div className="flex flex-wrap gap-1">
-      {mother && (
+      {mother ? (
         <Link to={`/animais/${mother.id}`}>
-          <Badge variant="outline" className="border-rose-200 bg-rose-50 text-rose-800">
+          <Badge
+            variant="outline"
+            className="border-border/70 bg-rose-50/70 text-foreground"
+          >
             Matriz {mother.identificacao}
           </Badge>
         </Link>
-      )}
+      ) : null}
 
-      {father && (
+      {father ? (
         <Link to={`/animais/${father.id}`}>
-          <Badge variant="outline" className="border-sky-200 bg-sky-50 text-sky-800">
+          <Badge
+            variant="outline"
+            className="border-border/70 bg-sky-50/70 text-foreground"
+          >
             Pai {father.identificacao}
           </Badge>
         </Link>
-      )}
+      ) : null}
 
       {visibleCalves.map((calf) => (
         <Link key={calf.id} to={`/animais/${calf.id}`}>
-          <Badge variant="outline" className="border-sky-200 bg-sky-50 text-sky-800">
+          <Badge
+            variant="outline"
+            className="border-border/70 bg-sky-50/70 text-foreground"
+          >
             Cria {calf.identificacao}
           </Badge>
         </Link>
       ))}
 
-      {remainingCalves > 0 && (
-        <Badge variant="outline">+{remainingCalves} cria(s)</Badge>
-      )}
+      {remainingCalves > 0 ? (
+        <Badge variant="outline" className="border-border/70 bg-background/80">
+          +{remainingCalves} cria(s)
+        </Badge>
+      ) : null}
     </div>
   );
 }

@@ -1,31 +1,37 @@
 import { useEffect, useMemo } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import {
+  AlertTriangle,
+  BarChart3,
   Beef,
   Calendar,
-  AlertTriangle,
   CheckCircle2,
   FileText,
   MousePointerClick,
+  RefreshCw,
   Upload,
 } from "lucide-react";
 import {
-  LineChart,
+  Bar,
+  BarChart,
+  CartesianGrid,
   Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  BarChart,
-  Bar,
 } from "recharts";
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { MetricCard } from "@/components/ui/metric-card";
+import { PageIntro } from "@/components/ui/page-intro";
+import { Progress } from "@/components/ui/progress";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { db } from "@/lib/offline/db";
 import { pullDataForFarm } from "@/lib/offline/pull";
 import { useAuth } from "@/hooks/useAuth";
 import { buildPilotMetricsSummary } from "@/lib/telemetry/pilotMetrics";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
 
 const EMPTY_LIST: never[] = [];
 
@@ -59,9 +65,11 @@ const Dashboard = () => {
   useEffect(() => {
     if (!activeFarmId) return;
 
-    pullDataForFarm(activeFarmId, ["agenda_itens"], { mode: "merge" }).catch((error) => {
-      console.warn("[dashboard] failed to refresh agenda_itens", error);
-    });
+    pullDataForFarm(activeFarmId, ["agenda_itens"], { mode: "merge" }).catch(
+      (error) => {
+        console.warn("[dashboard] failed to refresh agenda_itens", error);
+      },
+    );
   }, [activeFarmId]);
 
   const totalAnimais =
@@ -176,7 +184,6 @@ const Dashboard = () => {
     const backlog = queueGestures.filter(
       (gesture) => gesture.status === "PENDING" || gesture.status === "SYNCING",
     ).length;
-
     const processed = successful + failed;
 
     return {
@@ -190,11 +197,17 @@ const Dashboard = () => {
   }, [queueGestures]);
 
   const rejectionByDomainData = useMemo(() => {
-    const grouped = queueRejections.reduce((acc: Record<string, number>, rejection) => {
-      const domain = resolveRejectionDomain(rejection.table, rejection.reason_code);
-      acc[domain] = (acc[domain] || 0) + 1;
-      return acc;
-    }, {});
+    const grouped = queueRejections.reduce(
+      (acc: Record<string, number>, rejection) => {
+        const domain = resolveRejectionDomain(
+          rejection.table,
+          rejection.reason_code,
+        );
+        acc[domain] = (acc[domain] || 0) + 1;
+        return acc;
+      },
+      {},
+    );
 
     return Object.entries(grouped)
       .map(([domain, total]) => ({ domain, total }))
@@ -203,11 +216,14 @@ const Dashboard = () => {
 
   const rejectionByRuleData = useMemo(() => {
     const total = queueRejections.length;
-    const grouped = queueRejections.reduce((acc: Record<string, number>, rejection) => {
-      const reason = rejection.reason_code || "UNKNOWN";
-      acc[reason] = (acc[reason] || 0) + 1;
-      return acc;
-    }, {});
+    const grouped = queueRejections.reduce(
+      (acc: Record<string, number>, rejection) => {
+        const reason = rejection.reason_code || "UNKNOWN";
+        acc[reason] = (acc[reason] || 0) + 1;
+        return acc;
+      },
+      {},
+    );
 
     return Object.entries(grouped)
       .map(([reason, count]) => ({
@@ -239,80 +255,127 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Dashboard</h1>
+    <div className="space-y-5">
+      <PageIntro
+        eyebrow="Saude operacional"
+        title="Dashboard administrativo"
+        description="Monitoramento do sync, rejeicoes e adocao do produto. A rotina operacional continua protagonista; analytics entram como camada secundaria para gestao."
+        meta={
+          <>
+            <StatusBadge tone="neutral">{operationalStats.processed} gestos processados</StatusBadge>
+            {operationalStats.backlog > 0 ? (
+              <StatusBadge tone="warning">
+                {operationalStats.backlog} na fila
+              </StatusBadge>
+            ) : (
+              <StatusBadge tone="success">Fila sob controle</StatusBadge>
+            )}
+            {queueRejections.length > 0 ? (
+              <StatusBadge tone="danger">
+                {queueRejections.length} rejeicoes locais
+              </StatusBadge>
+            ) : null}
+          </>
+        }
+      />
 
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Total de Animais
-            </CardTitle>
-            <Beef className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalAnimais}</div>
-            <p className="text-xs text-muted-foreground">Cabecas ativas no rebanho</p>
-          </CardContent>
-        </Card>
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <MetricCard
+          label="Animais"
+          value={totalAnimais}
+          hint="Cabecas ativas no rebanho."
+          icon={<Beef className="h-4 w-4" />}
+        />
+        <MetricCard
+          label="Agenda aberta"
+          value={pendenciasAgenda}
+          hint="Itens agendados ativos."
+          icon={<Calendar className="h-4 w-4" />}
+        />
+        <MetricCard
+          label="Backlog de sync"
+          value={operationalStats.backlog}
+          hint="Gestos em PENDING ou SYNCING."
+          icon={<AlertTriangle className="h-4 w-4" />}
+          tone={operationalStats.backlog > 0 ? "warning" : "success"}
+        />
+        <MetricCard
+          label="Taxa de sucesso"
+          value={`${operationalStats.successRate.toFixed(1)}%`}
+          hint={`${operationalStats.successful} sucesso(s) de ${operationalStats.processed} processado(s).`}
+          icon={<CheckCircle2 className="h-4 w-4" />}
+          tone={operationalStats.successRate < 95 ? "warning" : "success"}
+        />
+      </section>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Agenda Pendente
-            </CardTitle>
-            <Calendar className="h-4 w-4 text-amber-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{pendenciasAgenda}</div>
-            <p className="text-xs text-muted-foreground">Itens agendados ativos</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Backlog de Sync
-            </CardTitle>
-            <AlertTriangle
-              className={`h-4 w-4 ${
-                operationalStats.backlog > 0
-                  ? "text-destructive animate-pulse"
-                  : "text-emerald-500"
-              }`}
-            />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{operationalStats.backlog}</div>
-            <p className="text-xs text-muted-foreground">Gestos em PENDING ou SYNCING</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Taxa de Sucesso do Sync
-            </CardTitle>
-            <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <div className="text-2xl font-bold">{operationalStats.successRate.toFixed(1)}%</div>
-            <Progress value={operationalStats.successRate} />
-            <p className="text-xs text-muted-foreground">
-              {operationalStats.successful} sucesso(s) de {operationalStats.processed} processado(s)
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2">
+      <section className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Rejeicoes por Dominio</CardTitle>
+            <CardTitle>Leitura do sync</CardTitle>
+            <CardDescription>
+              Backlog, taxa de sucesso e concentracao das rejeicoes por regra de
+              negocio.
+            </CardDescription>
           </CardHeader>
-          <CardContent className="h-[300px]">
+          <CardContent className="space-y-5">
+            <div className="app-surface-muted p-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Taxa global de rejeicao
+                  </p>
+                  <p className="mt-2 text-3xl font-semibold tracking-[-0.02em]">
+                    {operationalStats.rejectionRate.toFixed(1)}%
+                  </p>
+                </div>
+                <StatusBadge
+                  tone={
+                    operationalStats.rejectionRate > 5 ? "warning" : "success"
+                  }
+                >
+                  {operationalStats.failed} gesto(s) com falha
+                </StatusBadge>
+              </div>
+              <Progress
+                value={Math.max(0, 100 - operationalStats.rejectionRate)}
+                className="mt-4"
+              />
+            </div>
+
+            {rejectionByRuleData.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-border/70 p-4 text-sm text-muted-foreground">
+                Nenhuma rejeicao por regra no historico local.
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {rejectionByRuleData.map((item) => (
+                  <div key={item.reason} className="app-surface-muted p-4">
+                    <div className="flex items-center justify-between gap-3 text-sm">
+                      <span className="truncate font-mono">{item.reason}</span>
+                      <span className="text-muted-foreground">
+                        {item.count} ({item.rate.toFixed(1)}%)
+                      </span>
+                    </div>
+                    <Progress value={item.rate} className="mt-3" />
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Rejeicoes por dominio</CardTitle>
+            <CardDescription>
+              Onde o fluxo esta acumulando mais friccao localmente.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="h-[340px]">
             {rejectionByDomainData.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Sem rejeicoes registradas nesta fazenda.</p>
+              <div className="rounded-2xl border border-dashed border-border/70 p-4 text-sm text-muted-foreground">
+                Sem rejeicoes registradas nesta fazenda.
+              </div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={rejectionByDomainData}>
@@ -320,48 +383,26 @@ const Dashboard = () => {
                   <XAxis dataKey="domain" />
                   <YAxis />
                   <Tooltip />
-                  <Bar dataKey="total" fill="#ef4444" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="total" fill="hsl(var(--destructive))" radius={[8, 8, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             )}
           </CardContent>
         </Card>
+      </section>
 
+      <section className="grid gap-4 xl:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Rejeicoes por Regra</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <BarChart3 className="h-5 w-5 text-muted-foreground" />
+              Evolucao de peso
+            </CardTitle>
+            <CardDescription>
+              Serie curta para leitura rapida das ultimas pesagens.
+            </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex items-center justify-between rounded-md border p-3">
-              <span className="text-sm text-muted-foreground">Taxa global de rejeicao</span>
-              <strong>{operationalStats.rejectionRate.toFixed(1)}%</strong>
-            </div>
-
-            {rejectionByRuleData.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Nenhuma rejeicao por regra no historico local.</p>
-            ) : (
-              rejectionByRuleData.map((item) => (
-                <div key={item.reason} className="space-y-1">
-                  <div className="flex items-center justify-between gap-3 text-sm">
-                    <span className="truncate font-mono">{item.reason}</span>
-                    <span className="text-muted-foreground">
-                      {item.count} ({item.rate.toFixed(1)}%)
-                    </span>
-                  </div>
-                  <Progress value={item.rate} />
-                </div>
-              ))
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Evolucao de Peso (Media)</CardTitle>
-          </CardHeader>
-          <CardContent className="h-[300px]">
+          <CardContent className="h-[320px]">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={pesagemData}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
@@ -371,9 +412,9 @@ const Dashboard = () => {
                 <Line
                   type="monotone"
                   dataKey="media"
-                  stroke="#2563eb"
+                  stroke="hsl(var(--info))"
                   strokeWidth={2}
-                  dot={{ r: 4 }}
+                  dot={{ r: 3 }}
                 />
               </LineChart>
             </ResponsiveContainer>
@@ -382,52 +423,61 @@ const Dashboard = () => {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Agenda por Categoria</CardTitle>
+            <CardTitle>Agenda por categoria</CardTitle>
+            <CardDescription>
+              Distribuicao dos itens abertos para leitura de carga operacional.
+            </CardDescription>
           </CardHeader>
-          <CardContent className="h-[300px]">
+          <CardContent className="h-[320px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={agendaData}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                 <XAxis dataKey="nome" />
                 <YAxis />
                 <Tooltip />
-                <Bar dataKey="qtd" fill="#10b981" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="qtd" fill="hsl(var(--success))" radius={[8, 8, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
-      </div>
+      </section>
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <section className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Indicadores do Piloto (7 dias)</CardTitle>
+            <CardTitle>Indicadores do piloto</CardTitle>
+            <CardDescription>
+              Resumo dos ultimos 7 dias para acompanhar uso e falhas.
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {pilotMetrics.totalEvents === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                Ainda nao ha telemetria local suficiente para resumir uso e falhas desta fazenda.
-              </p>
+              <div className="rounded-2xl border border-dashed border-border/70 p-4 text-sm text-muted-foreground">
+                Ainda nao ha telemetria local suficiente para resumir uso e
+                falhas desta fazenda.
+              </div>
             ) : (
               <>
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="rounded-md border p-3">
+                  <div className="app-surface-muted p-4">
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <MousePointerClick className="h-4 w-4" />
                       Paginas abertas
                     </div>
-                    <strong className="mt-2 block text-2xl">{pilotMetrics.pageViews}</strong>
+                    <strong className="mt-3 block text-2xl">
+                      {pilotMetrics.pageViews}
+                    </strong>
                     <span className="text-xs text-muted-foreground">
                       {pilotMetrics.activeDays} dia(s) com uso
                     </span>
                   </div>
 
-                  <div className="rounded-md border p-3">
+                  <div className="app-surface-muted p-4">
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <Upload className="h-4 w-4" />
                       Importacoes
                     </div>
-                    <strong className="mt-2 block text-2xl">
+                    <strong className="mt-3 block text-2xl">
                       {pilotMetrics.importedRecords}
                     </strong>
                     <span className="text-xs text-muted-foreground">
@@ -435,25 +485,26 @@ const Dashboard = () => {
                     </span>
                   </div>
 
-                  <div className="rounded-md border p-3">
+                  <div className="app-surface-muted p-4">
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <FileText className="h-4 w-4" />
                       Relatorios compartilhados
                     </div>
-                    <strong className="mt-2 block text-2xl">
+                    <strong className="mt-3 block text-2xl">
                       {pilotMetrics.reportsShared}
                     </strong>
                     <span className="text-xs text-muted-foreground">
-                      {pilotMetrics.reportExports} CSV + {pilotMetrics.reportPrints} impressos
+                      {pilotMetrics.reportExports} CSV +{" "}
+                      {pilotMetrics.reportPrints} impressos
                     </span>
                   </div>
 
-                  <div className="rounded-md border p-3">
+                  <div className="app-surface-muted p-4">
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <AlertTriangle className="h-4 w-4" />
                       Falhas de sync
                     </div>
-                    <strong className="mt-2 block text-2xl">
+                    <strong className="mt-3 block text-2xl">
                       {pilotMetrics.syncFailures}
                     </strong>
                     <span className="text-xs text-muted-foreground">
@@ -462,8 +513,9 @@ const Dashboard = () => {
                   </div>
                 </div>
 
-                <div className="rounded-md border p-3 text-sm text-muted-foreground">
-                  {pilotMetrics.totalEvents} evento(s) de telemetria local agregados no periodo.
+                <div className="rounded-2xl border border-border/70 bg-muted/35 p-4 text-sm text-muted-foreground">
+                  {pilotMetrics.totalEvents} evento(s) de telemetria local
+                  agregados no periodo.
                 </div>
               </>
             )}
@@ -472,9 +524,12 @@ const Dashboard = () => {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Rotas e Alertas do Piloto</CardTitle>
+            <CardTitle>Rotas e alertas</CardTitle>
+            <CardDescription>
+              Como o produto esta sendo usado e onde surgem desvios.
+            </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-5">
             <div className="space-y-3">
               <div className="text-sm font-medium">Rotas mais usadas</div>
               {pilotMetrics.topRoutes.length === 0 ? (
@@ -483,13 +538,18 @@ const Dashboard = () => {
                 </p>
               ) : (
                 pilotMetrics.topRoutes.map((item) => (
-                  <div key={item.label} className="space-y-1">
+                  <div key={item.label} className="app-surface-muted p-4">
                     <div className="flex items-center justify-between gap-3 text-sm">
                       <span>{routeLabel(item.label)}</span>
                       <span className="text-muted-foreground">{item.count}</span>
                     </div>
                     <Progress
-                      value={(item.count / Math.max(pilotMetrics.topRoutes[0]?.count ?? 1, 1)) * 100}
+                      value={
+                        (item.count /
+                          Math.max(pilotMetrics.topRoutes[0]?.count ?? 1, 1)) *
+                        100
+                      }
+                      className="mt-3"
                     />
                   </div>
                 ))
@@ -506,7 +566,7 @@ const Dashboard = () => {
                 pilotMetrics.importsByEntity.map((item) => (
                   <div
                     key={item.label}
-                    className="flex items-center justify-between rounded-md border p-3 text-sm"
+                    className="flex items-center justify-between rounded-2xl border border-border/70 bg-muted/35 p-4 text-sm"
                   >
                     <span className="capitalize">{item.label}</span>
                     <strong>{item.count}</strong>
@@ -525,7 +585,7 @@ const Dashboard = () => {
                 pilotMetrics.failuresByType.map((item) => (
                   <div
                     key={item.label}
-                    className="flex items-center justify-between rounded-md border p-3 text-sm"
+                    className="flex items-center justify-between rounded-2xl border border-border/70 bg-muted/35 p-4 text-sm"
                   >
                     <span className="font-mono">{item.label}</span>
                     <strong>{item.count}</strong>
@@ -535,10 +595,9 @@ const Dashboard = () => {
             </div>
           </CardContent>
         </Card>
-      </div>
+      </section>
     </div>
   );
 };
 
 export default Dashboard;
-

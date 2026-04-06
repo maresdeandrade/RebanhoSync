@@ -1,18 +1,24 @@
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/lib/supabase";
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
+  Bell,
+  Building2,
+  Loader2,
+  LogOut,
+  Moon,
+  Sun,
+  Trash2,
+  Upload,
+  User,
+} from "lucide-react";
+
+import { FormSection } from "@/components/ui/form-section";
+import { MetricCard } from "@/components/ui/metric-card";
+import { PageIntro } from "@/components/ui/page-intro";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
   SelectContent,
@@ -21,31 +27,20 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import {
-  User,
-  LogOut,
-  Building2,
-  Loader2,
-  Bell,
-  Moon,
-  Sun,
-  Upload,
-  Trash2,
-} from "lucide-react";
 import { applyTheme } from "@/lib/theme";
+import { supabase } from "@/lib/supabase";
 
 export const Perfil = () => {
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Basic info state
   const [displayName, setDisplayName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
 
-  // Settings state
   const [theme, setTheme] = useState<"system" | "light" | "dark">("system");
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [agendaReminders, setAgendaReminders] = useState(true);
@@ -54,7 +49,6 @@ export const Perfil = () => {
   const [quietHoursEnd, setQuietHoursEnd] = useState("06:00");
   const [reminderDays, setReminderDays] = useState<number[]>([7, 3, 1]);
 
-  // UI state
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -63,8 +57,9 @@ export const Perfil = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    loadProfile();
-    loadSettings();
+    void loadProfile();
+    void loadSettings();
+    // Intentional one-time bootstrap for user-scoped data on page mount.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -194,12 +189,11 @@ export const Perfil = () => {
 
       if (error) throw error;
 
-      // Apply theme to document
       applyTheme(theme);
 
       toast({
         title: "Sucesso",
-        description: "Preferências atualizadas com sucesso",
+        description: "Preferencias atualizadas com sucesso",
       });
     } catch (error: unknown) {
       const err = error instanceof Error ? error : new Error(String(error));
@@ -226,7 +220,6 @@ export const Perfil = () => {
       } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
-      // Upload to Supabase Storage
       const fileExt = file.name.split(".").pop();
       const fileName = `${user.id}/${Date.now()}.${fileExt}`;
 
@@ -236,7 +229,6 @@ export const Perfil = () => {
 
       if (uploadError) throw uploadError;
 
-      // Get public URL
       const {
         data: { publicUrl },
       } = supabase.storage.from("avatars").getPublicUrl(fileName);
@@ -283,7 +275,7 @@ export const Perfil = () => {
 
       toast({
         title: "Desconectado",
-        description: "Você foi desconectado com sucesso",
+        description: "Voce foi desconectado com sucesso",
       });
 
       navigate("/login");
@@ -299,54 +291,84 @@ export const Perfil = () => {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
+      <div className="flex h-64 items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto py-8 max-w-2xl">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <User className="h-5 w-5" />
-            Meu Perfil
-          </CardTitle>
-          <CardDescription>
-            Gerencie suas informações pessoais e preferências
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="profile" className="flex items-center gap-2">
-                <User className="h-4 w-4" />
-                Perfil
-              </TabsTrigger>
-              <TabsTrigger value="settings" className="flex items-center gap-2">
-                <Bell className="h-4 w-4" />
-                Preferências
-              </TabsTrigger>
-            </TabsList>
+    <div className="space-y-6 pb-16">
+      <PageIntro
+        eyebrow="Conta"
+        title="Meu perfil"
+        description="Gerencie dados pessoais, preferências de interface e ações de conta em uma estrutura previsível."
+        meta={
+          <StatusBadge tone={notificationsEnabled ? "info" : "neutral"}>
+            {notificationsEnabled ? "Notificacoes ativas" : "Notificacoes desativadas"}
+          </StatusBadge>
+        }
+      />
 
-            {/* Profile Tab */}
-            <TabsContent value="profile" className="space-y-6 mt-6">
-              {/* Avatar Section */}
-              <div className="flex items-center gap-6">
-                <div className="relative">
-                  {avatarUrl ? (
-                    <img
-                      src={avatarUrl}
-                      alt="Avatar"
-                      className="h-24 w-24 rounded-full object-cover border-2 border-muted"
-                    />
-                  ) : (
-                    <div className="h-24 w-24 rounded-full bg-muted flex items-center justify-center">
-                      <User className="h-12 w-12 text-muted-foreground" />
-                    </div>
-                  )}
-                </div>
+      <div className="grid gap-4 md:grid-cols-3">
+        <MetricCard
+          label="Tema"
+          value={theme === "system" ? "Sistema" : theme === "light" ? "Claro" : "Escuro"}
+          hint="Preferencia aplicada na interface."
+          icon={
+            theme === "dark" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />
+          }
+        />
+        <MetricCard
+          label="Lembretes"
+          value={agendaReminders ? "Ativos" : "Pausados"}
+          hint={
+            notificationsEnabled
+              ? `${reminderDays.join(", ")} dia(s) antes do vencimento.`
+              : "Dependem das notificacoes gerais."
+          }
+          tone={agendaReminders ? "info" : "default"}
+        />
+        <MetricCard
+          label="Horario de silencio"
+          value={quietHoursEnabled ? `${quietHoursStart} - ${quietHoursEnd}` : "Desligado"}
+          hint="Usado para reduzir ruido fora da rotina operacional."
+        />
+      </div>
+
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <div className="app-surface p-2">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="profile" className="flex items-center gap-2">
+              <User className="h-4 w-4" />
+              Perfil
+            </TabsTrigger>
+            <TabsTrigger value="settings" className="flex items-center gap-2">
+              <Bell className="h-4 w-4" />
+              Preferencias
+            </TabsTrigger>
+          </TabsList>
+        </div>
+
+        <TabsContent value="profile" className="space-y-6">
+          <FormSection
+            title="Identidade"
+            description="Atualize foto, nome e telefone. O e-mail continua apenas para consulta."
+          >
+            <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
+              <div className="flex items-center gap-4 lg:min-w-[240px] lg:flex-col lg:items-start">
+                {avatarUrl ? (
+                  <img
+                    src={avatarUrl}
+                    alt="Avatar"
+                    className="h-24 w-24 rounded-full border border-border/70 object-cover"
+                  />
+                ) : (
+                  <div className="flex h-24 w-24 items-center justify-center rounded-full border border-border/70 bg-muted/20">
+                    <User className="h-10 w-10 text-muted-foreground" />
+                  </div>
+                )}
+
                 <div className="space-y-2">
                   <input
                     type="file"
@@ -359,54 +381,39 @@ export const Perfil = () => {
                     variant="outline"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={isUploading}
-                    className="flex items-center gap-2"
                   >
                     {isUploading ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     ) : (
-                      <Upload className="h-4 w-4" />
+                      <Upload className="mr-2 h-4 w-4" />
                     )}
                     {avatarUrl ? "Alterar foto" : "Adicionar foto"}
                   </Button>
-                  {avatarUrl && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={handleRemoveAvatar}
-                      className="text-muted-foreground hover:text-destructive flex items-center gap-1"
-                    >
-                      <Trash2 className="h-3 w-3" />
+                  {avatarUrl ? (
+                    <Button variant="ghost" size="sm" onClick={handleRemoveAvatar}>
+                      <Trash2 className="mr-2 h-4 w-4" />
                       Remover
                     </Button>
-                  )}
+                  ) : null}
                 </div>
               </div>
 
-              <Separator />
-
-              {/* Profile Form */}
-              <div className="space-y-4">
-                <div className="space-y-2">
+              <div className="grid flex-1 gap-4 md:grid-cols-2">
+                <div className="space-y-2 md:col-span-2">
                   <Label htmlFor="email">E-mail</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={email}
-                    disabled
-                    className="bg-muted"
-                  />
+                  <Input id="email" type="email" value={email} disabled className="bg-muted/30" />
                   <p className="text-xs text-muted-foreground">
-                    O e-mail não pode ser alterado
+                    O e-mail nao pode ser alterado neste fluxo.
                   </p>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="displayName">Nome de Exibição</Label>
+                  <Label htmlFor="displayName">Nome de exibicao</Label>
                   <Input
                     id="displayName"
                     type="text"
                     value={displayName}
-                    onChange={(e) => setDisplayName(e.target.value)}
+                    onChange={(event) => setDisplayName(event.target.value)}
                     placeholder="Seu nome"
                   />
                 </div>
@@ -417,183 +424,159 @@ export const Perfil = () => {
                     id="phone"
                     type="tel"
                     value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
+                    onChange={(event) => setPhone(event.target.value)}
                     placeholder="+55 11 99999-9999"
                   />
                 </div>
-
-                <Button
-                  onClick={handleSaveProfile}
-                  disabled={isSaving}
-                  className="w-full"
-                >
-                  {isSaving ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Salvando...
-                    </>
-                  ) : (
-                    "Salvar Alterações"
-                  )}
-                </Button>
               </div>
-            </TabsContent>
+            </div>
 
-            {/* Settings Tab */}
-            <TabsContent value="settings" className="space-y-6 mt-6">
-              {/* Theme Selection */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-muted rounded-lg">
-                      <Moon className="h-5 w-5" />
-                    </div>
-                    <div>
-                      <Label>Tema</Label>
-                      <p className="text-sm text-muted-foreground">
-                        Escolha o tema da aplicação
-                      </p>
-                    </div>
-                  </div>
-                  <Select
-                    value={theme}
-                    onValueChange={(v: "system" | "light" | "dark") =>
-                      setTheme(v)
-                    }
-                  >
-                    <SelectTrigger className="w-40">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="system">
-                        <div className="flex items-center gap-2">
-                          <Sun className="h-4 w-4" />
-                          Sistema
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="light">
-                        <div className="flex items-center gap-2">
-                          <Sun className="h-4 w-4" />
-                          Claro
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="dark">
-                        <div className="flex items-center gap-2">
-                          <Moon className="h-4 w-4" />
-                          Escuro
-                        </div>
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <Separator />
-
-              {/* Notifications */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-muted rounded-lg">
-                      <Bell className="h-5 w-5" />
-                    </div>
-                    <div>
-                      <Label>Notificações</Label>
-                      <p className="text-sm text-muted-foreground">
-                        Ativar notificações push
-                      </p>
-                    </div>
-                  </div>
-                  <Switch
-                    checked={notificationsEnabled}
-                    onCheckedChange={setNotificationsEnabled}
-                  />
-                </div>
-
-                {notificationsEnabled && (
-                  <>
-                    <div className="flex items-center justify-between ml-11">
-                      <Label className="text-sm">Lembretes de agenda</Label>
-                      <Switch
-                        checked={agendaReminders}
-                        onCheckedChange={setAgendaReminders}
-                      />
-                    </div>
-
-                    <div className="flex items-center justify-between ml-11">
-                      <div>
-                        <Label className="text-sm">Horário de silêncio</Label>
-                        <p className="text-xs text-muted-foreground">
-                          Não enviar notificações entre
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Input
-                          type="time"
-                          value={quietHoursStart}
-                          onChange={(e) => setQuietHoursStart(e.target.value)}
-                          className="w-28"
-                          disabled={!quietHoursEnabled}
-                        />
-                        <span className="text-muted-foreground">até</span>
-                        <Input
-                          type="time"
-                          value={quietHoursEnd}
-                          onChange={(e) => setQuietHoursEnd(e.target.value)}
-                          className="w-28"
-                          disabled={!quietHoursEnabled}
-                        />
-                        <Switch
-                          checked={quietHoursEnabled}
-                          onCheckedChange={setQuietHoursEnabled}
-                        />
-                      </div>
-                    </div>
-                  </>
-                )}
-              </div>
-
-              <Button
-                onClick={handleSaveSettings}
-                disabled={isSaving}
-                className="w-full"
-              >
+            <div className="pt-2">
+              <Button onClick={handleSaveProfile} disabled={isSaving} className="w-full sm:w-auto">
                 {isSaving ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Salvando...
                   </>
                 ) : (
-                  "Salvar Preferências"
+                  "Salvar perfil"
                 )}
               </Button>
-            </TabsContent>
-          </Tabs>
+            </div>
+          </FormSection>
+        </TabsContent>
 
-          <Separator className="mt-8" />
+        <TabsContent value="settings" className="space-y-6">
+          <FormSection
+            title="Aparencia"
+            description="Escolha como a interface deve se comportar neste dispositivo."
+          >
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div className="space-y-1">
+                <Label>Tema</Label>
+                <p className="text-sm leading-6 text-muted-foreground">
+                  Sistema, claro ou escuro. A aplicacao usa esta preferencia imediatamente.
+                </p>
+              </div>
+              <Select
+                value={theme}
+                onValueChange={(value: "system" | "light" | "dark") => setTheme(value)}
+              >
+                <SelectTrigger className="w-full lg:w-52">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="system">Sistema</SelectItem>
+                  <SelectItem value="light">Claro</SelectItem>
+                  <SelectItem value="dark">Escuro</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </FormSection>
 
-          {/* Actions */}
-          <div className="space-y-3 mt-6">
-            <Button
-              variant="outline"
-              onClick={handleSwitchFarm}
-              className="w-full"
-            >
-              <Building2 className="h-4 w-4 mr-2" />
-              Trocar de Fazenda
-            </Button>
+          <FormSection
+            title="Notificacoes"
+            description="Mantenha somente os lembretes realmente uteis na rotina e esconda o resto fora de horario."
+          >
+            <div className="space-y-5">
+              <div className="flex flex-col gap-3 rounded-2xl border border-border/70 bg-muted/20 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="space-y-1">
+                  <Label>Notificacoes gerais</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Ativa ou pausa os avisos do aplicativo neste dispositivo.
+                  </p>
+                </div>
+                <Switch
+                  checked={notificationsEnabled}
+                  onCheckedChange={setNotificationsEnabled}
+                />
+              </div>
 
-            <Button
-              variant="destructive"
-              onClick={handleLogout}
-              className="w-full"
-            >
-              <LogOut className="h-4 w-4 mr-2" />
-              Sair
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+              {notificationsEnabled ? (
+                <>
+                  <div className="flex flex-col gap-3 rounded-2xl border border-border/70 bg-background/80 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="space-y-1">
+                      <Label>Lembretes de agenda</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Mantem avisos de tarefas e vencimentos proximos.
+                      </p>
+                    </div>
+                    <Switch checked={agendaReminders} onCheckedChange={setAgendaReminders} />
+                  </div>
+
+                  <div className="space-y-4 rounded-2xl border border-border/70 bg-background/80 px-4 py-4">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="space-y-1">
+                        <Label>Horario de silencio</Label>
+                        <p className="text-sm text-muted-foreground">
+                          Suspende notificacoes entre os horarios configurados.
+                        </p>
+                      </div>
+                      <Switch
+                        checked={quietHoursEnabled}
+                        onCheckedChange={setQuietHoursEnabled}
+                      />
+                    </div>
+
+                    <div className="grid gap-3 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="quietHoursStart">Inicio</Label>
+                        <Input
+                          id="quietHoursStart"
+                          type="time"
+                          value={quietHoursStart}
+                          onChange={(event) => setQuietHoursStart(event.target.value)}
+                          disabled={!quietHoursEnabled}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="quietHoursEnd">Fim</Label>
+                        <Input
+                          id="quietHoursEnd"
+                          type="time"
+                          value={quietHoursEnd}
+                          onChange={(event) => setQuietHoursEnd(event.target.value)}
+                          disabled={!quietHoursEnabled}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </>
+              ) : null}
+            </div>
+
+            <div className="pt-2">
+              <Button onClick={handleSaveSettings} disabled={isSaving} className="w-full sm:w-auto">
+                {isSaving ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Salvando...
+                  </>
+                ) : (
+                  "Salvar preferencias"
+                )}
+              </Button>
+            </div>
+          </FormSection>
+        </TabsContent>
+      </Tabs>
+
+      <FormSection
+        title="Conta e acesso"
+        description="Acoes sensiveis ficam fora do conteudo principal para reduzir risco e ruido."
+      >
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <Button variant="outline" onClick={handleSwitchFarm} className="sm:w-auto">
+            <Building2 className="mr-2 h-4 w-4" />
+            Trocar de fazenda
+          </Button>
+
+          <Button variant="destructive" onClick={handleLogout} className="sm:w-auto">
+            <LogOut className="mr-2 h-4 w-4" />
+            Sair
+          </Button>
+        </div>
+      </FormSection>
     </div>
   );
 };

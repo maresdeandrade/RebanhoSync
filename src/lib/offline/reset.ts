@@ -26,9 +26,7 @@ const FARM_SCOPED_TABLES = [
 export async function resetOfflineFarmData(fazendaId: string) {
   await db.transaction("rw", [...FARM_SCOPED_TABLES], async () => {
     for (const table of FARM_SCOPED_TABLES) {
-      const keys = await table.where("fazenda_id").equals(fazendaId).primaryKeys();
-      if (keys.length === 0) continue;
-      await table.bulkDelete(keys);
+      await table.where("fazenda_id").equals(fazendaId).delete();
     }
   });
 }

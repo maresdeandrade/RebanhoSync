@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
+import { AlertCircle } from "lucide-react";
+
 import { db } from "@/lib/offline/db";
 import { createGesture } from "@/lib/offline/ops";
 import {
@@ -11,6 +13,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { FormSection } from "@/components/ui/form-section";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -18,10 +22,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { showSuccess, showError } from "@/utils/toast";
-import { AlertCircle } from "lucide-react";
 
 interface MudarPastoLoteProps {
   lote: {
@@ -44,32 +46,33 @@ export function MudarPastoLote({
   const [novoPastoId, setNovoPastoId] = useState<string>("null");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Buscar pastos disponíveis
   const pastos = useLiveQuery(
     () =>
       db.state_pastos
         .filter(
-          (p) =>
-            p.fazenda_id === lote.fazenda_id &&
-            (!p.deleted_at || p.deleted_at === null),
+          (pasto) =>
+            pasto.fazenda_id === lote.fazenda_id &&
+            (!pasto.deleted_at || pasto.deleted_at === null),
         )
         .toArray(),
     [lote.fazenda_id],
   );
 
-  // Buscar pasto atual
   const pastoAtual = useLiveQuery(
     () => (lote.pasto_id ? db.state_pastos.get(lote.pasto_id) : null),
     [lote.pasto_id],
   );
 
-  // Buscar animais no lote para calcular lotação
   const animaisLote = useLiveQuery(
     () => db.state_animais.where("lote_id").equals(lote.id).count(),
     [lote.id],
   );
 
-  const pastoSelecionado = pastos?.find((p) => p.id === novoPastoId);
+  const pastoSelecionado = pastos?.find((pasto) => pasto.id === novoPastoId);
+  const exceedsCapacity =
+    !!pastoSelecionado?.capacidade_ua &&
+    !!animaisLote &&
+    animaisLote > pastoSelecionado.capacidade_ua;
 
   const handleConfirm = async () => {
     setIsSubmitting(true);
@@ -87,11 +90,11 @@ export function MudarPastoLote({
 
     try {
       await createGesture(lote.fazenda_id, [op]);
-      showSuccess(`Pasto do lote ${lote.nome} atualizado!`);
+      showSuccess(`Pasto do lote ${lote.nome} atualizado.`);
       setNovoPastoId("null");
       onSuccess();
       onOpenChange(false);
-    } catch (e) {
+    } catch {
       showError("Erro ao mudar pasto do lote.");
     } finally {
       setIsSubmitting(false);
@@ -100,89 +103,80 @@ export function MudarPastoLote({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-w-xl">
         <DialogHeader>
-          <DialogTitle>Mudar Pasto do Lote</DialogTitle>
+          <DialogTitle>Mudar pasto do lote</DialogTitle>
           <DialogDescription>
-            Selecione o novo pasto para o lote <strong>{lote.nome}</strong>
+            Realoque <strong>{lote.nome}</strong> com uma leitura mais clara de
+            capacidade e ocupacao.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
-          {pastoAtual && (
-            <div className="p-3 bg-muted rounded-lg">
-              <p className="text-sm font-medium">Pasto Atual</p>
-              <p className="text-lg">{pastoAtual.nome}</p>
-              {pastoAtual.capacidade_ua && (
-                <p className="text-xs text-muted-foreground mt-1">
-                  Capacidade: {pastoAtual.capacidade_ua} UA
-                </p>
-              )}
-            </div>
-          )}
-
+        <FormSection
+          title="Novo pasto"
+          description="Se necessario, remova o lote do pasto atual antes de reorganizar a ocupacao."
+          actions={
+            pastoAtual ? (
+              <StatusBadge tone="neutral">Atual: {pastoAtual.nome}</StatusBadge>
+            ) : (
+              <StatusBadge tone="neutral">Sem pasto atual</StatusBadge>
+            )
+          }
+          contentClassName="space-y-4"
+        >
           <div className="space-y-2">
-            <Label>Novo Pasto</Label>
+            <Label>Pasto de destino</Label>
             <Select value={novoPastoId} onValueChange={setNovoPastoId}>
               <SelectTrigger>
                 <SelectValue placeholder="Selecione o pasto" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="null">Nenhum (remover do pasto)</SelectItem>
-                {pastos?.map((p) => (
-                  <SelectItem key={p.id} value={p.id}>
-                    {p.nome}
-                    {p.capacidade_ua && ` (${p.capacidade_ua} UA)`}
+                {pastos?.map((pasto) => (
+                  <SelectItem key={pasto.id} value={pasto.id}>
+                    {pasto.nome}
+                    {pasto.capacidade_ua ? ` (${pasto.capacidade_ua} UA)` : ""}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
 
-          {pastoSelecionado &&
-            pastoSelecionado.capacidade_ua &&
-            animaisLote && (
-              <div
-                className={`p-3 rounded-lg border ${
-                  animaisLote > pastoSelecionado.capacidade_ua
-                    ? "bg-destructive/10 border-destructive"
-                    : "bg-muted"
-                }`}
-              >
-                <div className="flex items-start gap-2">
-                  {animaisLote > pastoSelecionado.capacidade_ua && (
-                    <AlertCircle className="h-4 w-4 text-destructive mt-0.5" />
-                  )}
-                  <div className="flex-1">
-                    <p className="text-sm font-medium">Lotação</p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {animaisLote} animais / Capacidade:{" "}
-                      {pastoSelecionado.capacidade_ua} UA
-                    </p>
-                    {animaisLote > pastoSelecionado.capacidade_ua && (
-                      <Badge variant="destructive" className="mt-2">
-                        Excede capacidade
-                      </Badge>
-                    )}
+          {pastoSelecionado?.capacidade_ua && animaisLote ? (
+            <div className="rounded-2xl border border-border/70 bg-muted/20 p-4">
+              <div className="flex items-start gap-3">
+                {exceedsCapacity ? (
+                  <AlertCircle className="mt-0.5 h-4 w-4 text-warning" />
+                ) : null}
+                <div className="space-y-2">
+                  <div className="flex flex-wrap gap-2">
+                    <StatusBadge tone={exceedsCapacity ? "warning" : "neutral"}>
+                      {animaisLote} animal(is)
+                    </StatusBadge>
+                    <StatusBadge tone="neutral">
+                      Capacidade {pastoSelecionado.capacidade_ua} UA
+                    </StatusBadge>
                   </div>
+                  <p className="text-sm text-muted-foreground">
+                    {exceedsCapacity
+                      ? "A ocupacao estimada excede a capacidade informada do pasto."
+                      : "A capacidade do pasto suporta a ocupacao atual do lote."}
+                  </p>
                 </div>
               </div>
-            )}
-        </div>
+            </div>
+          ) : null}
+        </FormSection>
 
         <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={isSubmitting}
-          >
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
             Cancelar
           </Button>
           <Button
             onClick={handleConfirm}
             disabled={isSubmitting || novoPastoId === lote.pasto_id}
           >
-            {isSubmitting ? "Alterando..." : "Confirmar"}
+            {isSubmitting ? "Alterando..." : "Confirmar ajuste"}
           </Button>
         </DialogFooter>
       </DialogContent>

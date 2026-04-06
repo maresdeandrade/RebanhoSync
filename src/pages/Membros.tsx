@@ -1,34 +1,49 @@
-import React, { useEffect, useState, useCallback } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/useAuth";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { EmptyState } from "@/components/EmptyState";
+import { Input } from "@/components/ui/input";
+import { MetricCard } from "@/components/ui/metric-card";
+import { PageIntro } from "@/components/ui/page-intro";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { Toolbar, ToolbarGroup } from "@/components/ui/toolbar";
+import { useToast } from "@/hooks/use-toast";
 import {
   Copy,
   Loader2,
   Mail,
   MessageSquare,
+  MoreHorizontal,
   Phone as PhoneIcon,
   Shield,
   UserPlus,
   Users,
 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
 import { InviteMemberDialog } from "@/components/members/InviteMemberDialog";
 import { MemberRoleDialog } from "@/components/members/MemberRoleDialog";
+import { PendingInvites } from "@/components/members/PendingInvites";
 import { RemoveMemberDialog } from "@/components/members/RemoveMemberDialog";
 import { RoleBadge } from "@/components/members/RoleBadge";
 
 type Role = "owner" | "manager" | "cowboy";
+type MemberStatus = "active" | "pending" | "inactive";
 
 interface Member {
   user_id: string;
@@ -42,32 +57,38 @@ interface Member {
   created_at: string;
 }
 
+function getStatus(member: Member): MemberStatus {
+  if (member.deleted_at) return "inactive";
+  if (!member.accepted_at) return "pending";
+  return "active";
+}
+
+function getStatusTone(status: MemberStatus) {
+  if (status === "active") return "success";
+  if (status === "pending") return "warning";
+  return "danger";
+}
+
 export default function Membros() {
-  const { user, activeFarmId, role: userRole } = useAuth();
+  const { activeFarmId, role: userRole } = useAuth();
   const [members, setMembers] = useState<Member[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | MemberStatus>("all");
   const [showInviteDialog, setShowInviteDialog] = useState(false);
   const [editingMember, setEditingMember] = useState<Member | null>(null);
   const [removingMember, setRemovingMember] = useState<Member | null>(null);
   const { toast } = useToast();
 
   const role: Role =
-    userRole === "cowboy" || userRole === "manager" || userRole === "owner"
+    userRole === "owner" || userRole === "manager" || userRole === "cowboy"
       ? userRole
       : "cowboy";
 
-  // Derivar status de accepted_at e deleted_at
-  const getStatus = (member: Member): "active" | "pending" | "inactive" => {
-    if (member.deleted_at) return "inactive";
-    if (!member.accepted_at) return "pending";
-    return "active";
-  };
-
-  const loadMembers = React.useCallback(async () => {
+  const loadMembers = useCallback(async () => {
     if (!activeFarmId) return;
 
-    // Carregar membros usando colunas existentes: accepted_at e deleted_at
+    setIsLoading(true);
     const { data: membersData, error: membersError } = await supabase
       .from("user_fazendas")
       .select(
@@ -84,7 +105,6 @@ export default function Membros() {
       .eq("fazenda_id", activeFarmId);
 
     if (membersError) {
-      console.error("Error loading members:", membersError);
       toast({
         title: "Erro ao carregar membros",
         description: membersError.message,
@@ -94,12 +114,11 @@ export default function Membros() {
       return;
     }
 
-    // Transformar dados básicos
     const transformedMembers: Member[] = (membersData || []).map(
       (item: Record<string, unknown>) => ({
         user_id: item.user_id as string,
         fazenda_id: item.fazenda_id as string,
-        role: item.role as string as Role,
+        role: item.role as Role,
         accepted_at: item.accepted_at as string | null,
         deleted_at: item.deleted_at as string | null,
         created_at: item.created_at as string,
@@ -111,9 +130,8 @@ export default function Membros() {
       }),
     );
 
-    // Buscar emails usando RPC se houver membros
     if (transformedMembers.length > 0) {
-      const userIds = transformedMembers.map((m) => m.user_id);
+      const userIds = transformedMembers.map((member) => member.user_id);
       const { data: emailsData } = await supabase.rpc("get_user_emails", {
         user_ids: userIds,
       });
@@ -138,7 +156,7 @@ export default function Membros() {
 
   useEffect(() => {
     if (activeFarmId) {
-      loadMembers();
+      void loadMembers();
     }
   }, [activeFarmId, loadMembers]);
 
@@ -146,39 +164,24 @@ export default function Membros() {
     if (!name) return "?";
     return name
       .split(" ")
-      .map((n) => n[0])
+      .map((part) => part[0])
       .join("")
       .toUpperCase()
       .slice(0, 2);
   };
 
-  const handleCopyEmail = async (email: string) => {
+  const handleCopyText = async (
+    value: string,
+    title: string,
+    description: string,
+  ) => {
     try {
-      await navigator.clipboard.writeText(email);
-      toast({
-        title: "Copiado",
-        description: "Email copiado para a área de transferência",
-      });
+      await navigator.clipboard.writeText(value);
+      toast({ title, description });
     } catch {
       toast({
         title: "Erro",
-        description: "Não foi possível copiar o email",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleCopyPhone = async (phone: string) => {
-    try {
-      await navigator.clipboard.writeText(phone);
-      toast({
-        title: "Copiado",
-        description: "Telefone copiado para a área de transferência",
-      });
-    } catch {
-      toast({
-        title: "Erro",
-        description: "Não foi possível copiar o telefone",
+        description: "Nao foi possivel copiar o conteudo.",
         variant: "destructive",
       });
     }
@@ -187,179 +190,273 @@ export default function Membros() {
   const handleOpenWhatsApp = (phone: string | null) => {
     if (!phone) {
       toast({
-        title: "Indisponível",
-        description: "Este membro não possui telefone",
+        title: "Telefone indisponivel",
+        description: "Este membro nao possui telefone informado.",
         variant: "destructive",
       });
       return;
     }
+
     const cleanPhone = phone.replace(/\D/g, "");
     const formattedPhone = cleanPhone.startsWith("55")
       ? cleanPhone
-      : "55" + cleanPhone;
+      : `55${cleanPhone}`;
     window.open(`https://wa.me/${formattedPhone}`, "_blank");
   };
 
   const canManageMembers = role === "owner" || role === "manager";
 
-  const filteredMembers = members.filter(
-    (m) =>
-      m.display_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      m.role?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      m.email?.toLowerCase().includes(searchTerm.toLowerCase()),
-  );
+  const counts = useMemo(() => {
+    return members.reduce(
+      (summary, member) => {
+        summary.total += 1;
+        summary[getStatus(member)] += 1;
+        return summary;
+      },
+      { total: 0, active: 0, pending: 0, inactive: 0 },
+    );
+  }, [members]);
+
+  const filteredMembers = useMemo(() => {
+    const searchLower = searchTerm.trim().toLowerCase();
+    return members.filter((member) => {
+      const memberStatus = getStatus(member);
+      if (statusFilter !== "all" && memberStatus !== statusFilter) return false;
+
+      if (!searchLower) return true;
+      return [
+        member.display_name ?? "",
+        member.role,
+        member.email ?? "",
+        member.phone ?? "",
+      ]
+        .join(" ")
+        .toLowerCase()
+        .includes(searchLower);
+    });
+  }, [members, searchTerm, statusFilter]);
 
   return (
-    <div className="container mx-auto py-8">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-3xl font-bold">Equipe</h1>
-          <p className="text-muted-foreground">
-            Gerencie os membros da sua fazenda
-          </p>
-        </div>
-        {canManageMembers && (
-          <Button onClick={() => setShowInviteDialog(true)}>
-            <UserPlus className="mr-2 h-4 w-4" />
-            Convidar Membro
-          </Button>
-        )}
+    <div className="space-y-6">
+      <PageIntro
+        eyebrow="Equipe"
+        title="Pessoas e convites da fazenda"
+        description="Gestao de acesso com leitura mais limpa: o membro aparece primeiro, e os comandos secundarios ficam concentrados no menu contextual."
+        meta={
+          <>
+            <StatusBadge tone="neutral">{counts.total} pessoa(s)</StatusBadge>
+            <StatusBadge tone="success">{counts.active} ativa(s)</StatusBadge>
+            <StatusBadge tone="warning">{counts.pending} convite(s)</StatusBadge>
+          </>
+        }
+        actions={
+          canManageMembers ? (
+            <Button onClick={() => setShowInviteDialog(true)}>
+              <UserPlus className="mr-2 h-4 w-4" />
+              Convidar membro
+            </Button>
+          ) : null
+        }
+      />
+
+      <div className="grid gap-4 md:grid-cols-3">
+        <MetricCard
+          label="Ativos"
+          value={counts.active}
+          hint="Membros que ja aceitaram e podem operar na fazenda."
+          tone="success"
+          icon={<Users className="h-5 w-5" />}
+        />
+        <MetricCard
+          label="Pendentes"
+          value={counts.pending}
+          hint="Convites aguardando aceite."
+          tone="warning"
+          icon={<Mail className="h-5 w-5" />}
+        />
+        <MetricCard
+          label="Inativos"
+          value={counts.inactive}
+          hint="Vinculos encerrados ou removidos."
+          tone={counts.inactive > 0 ? "danger" : "default"}
+          icon={<Shield className="h-5 w-5" />}
+        />
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5" />
-            Membros da Equipe
-          </CardTitle>
-          <CardDescription>Total de membros: {members.length}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="mb-4">
+      <Toolbar>
+        <ToolbarGroup className="flex-1 gap-2">
+          <div className="min-w-0 flex-1">
             <Input
-              placeholder="Buscar membros..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(event) => setSearchTerm(event.target.value)}
+              placeholder="Buscar por nome, email, telefone ou papel"
             />
           </div>
+          <Select
+            value={statusFilter}
+            onValueChange={(value) => setStatusFilter(value as "all" | MemberStatus)}
+          >
+            <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os status</SelectItem>
+              <SelectItem value="active">Ativos</SelectItem>
+              <SelectItem value="pending">Pendentes</SelectItem>
+              <SelectItem value="inactive">Inativos</SelectItem>
+            </SelectContent>
+          </Select>
+        </ToolbarGroup>
 
-          {isLoading ? (
-            <div className="flex justify-center py-8">
-              <Loader2 className="h-8 w-8 animate-spin" />
-            </div>
-          ) : filteredMembers.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              {searchTerm ? "Nenhum membro encontrado" : "Nenhum membro ainda"}
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {filteredMembers.map((member) => {
-                const status = getStatus(member);
-                return (
-                  <div
-                    key={member.user_id}
-                    className="flex items-center justify-between p-4 border rounded-lg"
-                  >
-                    <div className="flex items-center gap-4">
-                      <Avatar>
-                        <AvatarImage src="" />
-                        <AvatarFallback className="bg-primary/10">
-                          {getInitials(member.display_name)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">
-                            {member.display_name || "Nome não informado"}
+        <ToolbarGroup className="gap-2">
+          <StatusBadge tone="info">
+            {filteredMembers.length} no recorte atual
+          </StatusBadge>
+        </ToolbarGroup>
+      </Toolbar>
+
+      {isLoading ? (
+        <Card className="shadow-none">
+          <CardContent className="flex items-center gap-3 py-10 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Carregando equipe.
+          </CardContent>
+        </Card>
+      ) : filteredMembers.length === 0 ? (
+        <EmptyState
+          icon={Users}
+          title="Nenhum membro neste recorte"
+          description={
+            searchTerm || statusFilter !== "all"
+              ? "Ajuste a busca ou o filtro para ver a equipe."
+              : "Convide a primeira pessoa para compartilhar a rotina operacional."
+          }
+          action={
+            canManageMembers
+              ? {
+                  label: "Convidar membro",
+                  onClick: () => setShowInviteDialog(true),
+                }
+              : undefined
+          }
+        />
+      ) : (
+        <div className="space-y-3">
+          {filteredMembers.map((member) => {
+            const status = getStatus(member);
+            const memberName = member.display_name || "Nome nao informado";
+            const canEditRole =
+              canManageMembers && status === "active" && member.role !== "owner";
+            const canRemoveMember = canManageMembers && status === "pending";
+
+            return (
+              <Card key={member.user_id} className="shadow-none">
+                <CardContent className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex min-w-0 items-start gap-4">
+                    <Avatar className="h-11 w-11 border border-border/70">
+                      <AvatarImage src="" />
+                      <AvatarFallback className="bg-secondary text-secondary-foreground">
+                        {getInitials(member.display_name)}
+                      </AvatarFallback>
+                    </Avatar>
+
+                    <div className="min-w-0 space-y-2">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="truncate font-medium text-foreground">{memberName}</p>
+                        <RoleBadge role={member.role} />
+                        <StatusBadge tone={getStatusTone(status)}>
+                          {status === "active"
+                            ? "Ativo"
+                            : status === "pending"
+                              ? "Pendente"
+                              : "Inativo"}
+                        </StatusBadge>
+                      </div>
+
+                      <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
+                        <span className="flex items-center gap-1.5">
+                          <Mail className="h-3.5 w-3.5" />
+                          {member.email || member.user_id}
+                        </span>
+                        {member.phone ? (
+                          <span className="flex items-center gap-1.5">
+                            <PhoneIcon className="h-3.5 w-3.5" />
+                            {member.phone}
                           </span>
-                          <RoleBadge role={member.role} />
-                          {status === "pending" && (
-                            <Badge variant="secondary">Pendente</Badge>
-                          )}
-                          {status === "inactive" && (
-                            <Badge variant="destructive">Inativo</Badge>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
-                          <span className="flex items-center gap-1">
-                            <Mail className="h-3 w-3" />
-                            {member.email || member.user_id}
-                          </span>
-                          {member.phone && (
-                            <span className="flex items-center gap-1">
-                              <PhoneIcon className="h-3 w-3" />
-                              {member.phone}
-                            </span>
-                          )}
-                        </div>
+                        ) : null}
                       </div>
                     </div>
+                  </div>
 
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() =>
-                          handleCopyEmail(member.email || member.user_id)
-                        }
-                        title="Copiar email"
-                      >
-                        <Copy className="h-4 w-4" />
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="icon" aria-label="Acoes do membro">
+                        <MoreHorizontal className="h-4 w-4" />
                       </Button>
-                      {member.phone && (
-                        <>
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={() => handleCopyPhone(member.phone)}
-                            title="Copiar telefone"
-                          >
-                            <PhoneIcon className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={() => handleOpenWhatsApp(member.phone)}
-                            title="Abrir WhatsApp"
-                            className="text-green-600 hover:text-green-700"
-                          >
-                            <MessageSquare className="h-4 w-4" />
-                          </Button>
-                        </>
-                      )}
-
-                      {canManageMembers &&
-                        status === "active" &&
-                        member.role !== "owner" && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setEditingMember(member)}
-                          >
-                            <Shield className="mr-2 h-4 w-4" />
-                            Editar Cargo
-                          </Button>
-                        )}
-                      {canManageMembers && status === "pending" && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-red-600"
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem
+                        onClick={() =>
+                          handleCopyText(
+                            member.email || member.user_id,
+                            "Email copiado",
+                            "O contato foi copiado para a area de transferencia.",
+                          )
+                        }
+                      >
+                        <Copy className="mr-2 h-4 w-4" />
+                        Copiar email
+                      </DropdownMenuItem>
+                      {member.phone ? (
+                        <DropdownMenuItem
+                          onClick={() =>
+                            handleCopyText(
+                              member.phone!,
+                              "Telefone copiado",
+                              "O telefone foi copiado para a area de transferencia.",
+                            )
+                          }
+                        >
+                          <PhoneIcon className="mr-2 h-4 w-4" />
+                          Copiar telefone
+                        </DropdownMenuItem>
+                      ) : null}
+                      {member.phone ? (
+                        <DropdownMenuItem onClick={() => handleOpenWhatsApp(member.phone)}>
+                          <MessageSquare className="mr-2 h-4 w-4" />
+                          Abrir WhatsApp
+                        </DropdownMenuItem>
+                      ) : null}
+                      {canEditRole || canRemoveMember ? <DropdownMenuSeparator /> : null}
+                      {canEditRole ? (
+                        <DropdownMenuItem onClick={() => setEditingMember(member)}>
+                          <Shield className="mr-2 h-4 w-4" />
+                          Ajustar papel
+                        </DropdownMenuItem>
+                      ) : null}
+                      {canRemoveMember ? (
+                        <DropdownMenuItem
+                          className="text-destructive focus:text-destructive"
                           onClick={() => setRemovingMember(member)}
                         >
-                          Remover
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                          <UserPlus className="mr-2 h-4 w-4 rotate-45" />
+                          Remover convite
+                        </DropdownMenuItem>
+                      ) : null}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
 
-      {activeFarmId && (
+      {activeFarmId ? (
+        <PendingInvites fazendaId={activeFarmId} onUpdate={loadMembers} />
+      ) : null}
+
+      {activeFarmId ? (
         <InviteMemberDialog
           open={showInviteDialog}
           onOpenChange={setShowInviteDialog}
@@ -367,9 +464,9 @@ export default function Membros() {
           callerRole={role}
           onSuccess={loadMembers}
         />
-      )}
+      ) : null}
 
-      {activeFarmId && editingMember && (
+      {activeFarmId && editingMember ? (
         <MemberRoleDialog
           member={{
             user_id: editingMember.user_id,
@@ -382,9 +479,9 @@ export default function Membros() {
           callerRole={role}
           onSuccess={loadMembers}
         />
-      )}
+      ) : null}
 
-      {activeFarmId && removingMember && (
+      {activeFarmId && removingMember ? (
         <RemoveMemberDialog
           member={{
             user_id: removingMember.user_id,
@@ -395,7 +492,7 @@ export default function Membros() {
           fazendaId={activeFarmId}
           onSuccess={loadMembers}
         />
-      )}
+      ) : null}
     </div>
   );
 }

@@ -53,6 +53,7 @@ describe("Relatorios flow", () => {
 
     mockedUseAuth.mockReturnValue({
       activeFarmId: "farm-1",
+      farmMeasurementConfig: { weight_unit: "kg" },
     } as ReturnType<typeof useAuth>);
 
     mockedUseLiveQuery.mockReturnValue({

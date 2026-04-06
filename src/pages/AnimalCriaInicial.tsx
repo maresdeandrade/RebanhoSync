@@ -28,6 +28,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { MetricCard } from "@/components/ui/metric-card";
+import { PageIntro } from "@/components/ui/page-intro";
 import {
   Select,
   SelectContent,
@@ -35,7 +37,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { classificarAnimal, getLabelCategoria } from "@/lib/domain/categorias";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { useAuth } from "@/hooks/useAuth";
+import { deriveAnimalTaxonomy } from "@/lib/animals/taxonomy";
+import {
+  formatWeight,
+  formatWeightInput,
+  formatWeightPerDay,
+  formatWeightValue,
+  getWeightInputStep,
+  getWeightUnitLabel,
+  parseWeightInput,
+} from "@/lib/format/weight";
 import { db } from "@/lib/offline/db";
 import type { Animal, AgendaItem } from "@/lib/offline/types";
 import { createGesture } from "@/lib/offline/ops";
@@ -74,16 +87,10 @@ function formatDate(value: string | null | undefined) {
   return new Date(value).toLocaleDateString("pt-BR");
 }
 
-function parseNumeric(value: string) {
-  const normalized = value.replace(",", ".").trim();
-  if (!normalized) return null;
-  const parsed = Number.parseFloat(normalized);
-  return Number.isFinite(parsed) ? parsed : null;
-}
-
 function getInitialDraft(
   calf: Animal,
   fallbackLoteId: string | null,
+  weightUnit: "kg" | "arroba",
 ): CalfInitialDraft {
   const neonatalSetup = getNeonatalSetup(calf.payload);
   return {
@@ -93,13 +100,14 @@ function getInitialDraft(
     loteId: calf.lote_id ?? fallbackLoteId,
     pesoKg:
       typeof neonatalSetup?.initial_weight_kg === "number"
-        ? String(neonatalSetup.initial_weight_kg)
+        ? formatWeightInput(neonatalSetup.initial_weight_kg, weightUnit)
         : "",
     curaUmbigo: Boolean(neonatalSetup?.umbigo_curado_at),
   };
 }
 
 export default function AnimalCriaInicial() {
+  const { farmMeasurementConfig, farmLifecycleConfig } = useAuth();
   const { id } = useParams();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -133,15 +141,6 @@ export default function AnimalCriaInicial() {
       .equals(calf.fazenda_id)
       .filter((pasto) => !pasto.deleted_at)
       .sortBy("nome");
-  }, [calf?.fazenda_id]);
-  const categorias = useLiveQuery(async () => {
-    if (!calf?.fazenda_id) return [];
-
-    return await db.state_categorias_zootecnicas
-      .where("fazenda_id")
-      .equals(calf.fazenda_id)
-      .filter((categoria) => !categoria.deleted_at && categoria.ativa)
-      .toArray();
   }, [calf?.fazenda_id]);
   const journeyAgendaItems = useLiveQuery(async () => {
     if (!calf?.id) return [];
@@ -225,7 +224,7 @@ export default function AnimalCriaInicial() {
             occurredAt: event.occurred_at,
             title: "Pesagem",
             detail: details?.peso_kg
-              ? `${details.peso_kg} kg`
+              ? formatWeight(details.peso_kg, farmMeasurementConfig.weight_unit)
               : event.observacoes || "Pesagem registrada.",
             tone: "bg-emerald-500",
           } satisfies TimelineItem;
@@ -278,9 +277,11 @@ export default function AnimalCriaInicial() {
     () => new Map((pastos ?? []).map((pasto) => [pasto.id, pasto])),
     [pastos],
   );
-  const categoriaAtual =
-    calf && categorias ? classificarAnimal(calf, categorias) : null;
-  const categoriaLabel = categoriaAtual ? getLabelCategoria(categoriaAtual) : null;
+  const categoriaLabel = calf
+    ? deriveAnimalTaxonomy(calf, {
+        config: farmLifecycleConfig,
+      }).display.categoria
+    : null;
   const journeyStage = useMemo(
     () => (calf ? getCalfJourneyStage(calf, journeyAgendaItems ?? []) : null),
     [calf, journeyAgendaItems],
@@ -312,8 +313,10 @@ export default function AnimalCriaInicial() {
 
   useEffect(() => {
     if (!calf) return;
-    setDraft(getInitialDraft(calf, fallbackLoteId));
-  }, [calf, fallbackLoteId]);
+    setDraft(
+      getInitialDraft(calf, fallbackLoteId, farmMeasurementConfig.weight_unit),
+    );
+  }, [calf, fallbackLoteId, farmMeasurementConfig.weight_unit]);
   useEffect(() => {
     if (!journeyAgendaItems) return;
 
@@ -362,6 +365,7 @@ export default function AnimalCriaInicial() {
       const birthEventId = getBirthEventId(calf.payload);
       const { ops, weighedCount, umbigoCount, agendaCount } = buildPostPartumOps({
         fazendaId: calf.fazenda_id,
+        weightUnit: farmMeasurementConfig.weight_unit,
         mother: {
           id: mother.id,
           identificacao: mother.identificacao,
@@ -413,7 +417,10 @@ export default function AnimalCriaInicial() {
             }
           : null,
         agendaItem: item,
-        pesoKg: parseNumeric(itemDraft.pesoKg),
+        pesoKg: parseWeightInput(
+          itemDraft.pesoKg,
+          farmMeasurementConfig.weight_unit,
+        ),
         destinationLoteId:
           itemDraft.loteId === KEEP_CURRENT_LOTE ? calf.lote_id : itemDraft.loteId,
       });
@@ -459,94 +466,65 @@ export default function AnimalCriaInicial() {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-3xl border bg-gradient-to-br from-sky-50 via-white to-emerald-50 p-6 shadow-sm">
-        <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
-          <div className="space-y-3">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="w-fit gap-2"
-              onClick={() => navigate(backToMother)}
+      <PageIntro
+        eyebrow="Cria"
+        title={`Jornada inicial da cria ${calf.identificacao}`}
+        description="Finalize identificacao, lote inicial, primeira pesagem e cuidados neonatais sem sair do fluxo matriz > cria."
+        meta={
+          <>
+            <StatusBadge tone="neutral">Rotina dedicada da cria</StatusBadge>
+            <StatusBadge
+              tone={hasPendingNeonatalSetup(calf.payload) ? "warning" : "success"}
             >
-              <ChevronLeft className="h-4 w-4" />
-              Voltar ao pos-parto da matriz
+              {hasPendingNeonatalSetup(calf.payload)
+                ? "Ajustes iniciais pendentes"
+                : "Crescimento inicial em acompanhamento"}
+            </StatusBadge>
+            {journeyStage ? <StatusBadge tone="info">{journeyStage.label}</StatusBadge> : null}
+          </>
+        }
+        actions={
+          <>
+            <Button variant="outline" onClick={() => navigate(backToMother)}>
+              <ChevronLeft className="mr-2 h-4 w-4" />
+              Voltar ao pos-parto
             </Button>
+            <Button variant="outline" asChild>
+              <Link to={`/animais/${calf.id}`}>Abrir ficha completa</Link>
+            </Button>
+          </>
+        }
+      />
 
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="secondary">Rotina dedicada da cria</Badge>
-              {hasPendingNeonatalSetup(calf.payload) ? (
-                <Badge
-                  variant="outline"
-                  className="border-amber-200 bg-amber-50 text-amber-800"
-                >
-                  Ajustes iniciais pendentes
-                </Badge>
-              ) : (
-                <Badge
-                  variant="outline"
-                  className="border-emerald-200 bg-emerald-50 text-emerald-800"
-                >
-                  Crescimento inicial em acompanhamento
-                </Badge>
-              )}
-              {journeyStage && (
-                <Badge variant="outline" className="border-sky-200 bg-sky-50 text-sky-800">
-                  {journeyStage.label}
-                </Badge>
-              )}
-            </div>
-
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight">
-                Jornada inicial da cria {calf.identificacao}
-              </h1>
-              <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
-                Finalize a identificacao, o lote inicial, a primeira pesagem e os
-                cuidados neonatais sem sair do fluxo matriz → cria.
-              </p>
-            </div>
-          </div>
-
-          <div className="grid gap-3 sm:grid-cols-3">
-            <div className="rounded-2xl border border-white/70 bg-white/85 p-4 shadow-sm">
-              <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                Matriz
-              </p>
-              <p className="mt-1 text-lg font-semibold">
-                {mother?.identificacao ?? "Nao informada"}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                {mother ? "Vinculo herdado do parto" : "Sem matriz carregada"}
-              </p>
-            </div>
-            <div className="rounded-2xl border border-white/70 bg-white/85 p-4 shadow-sm">
-              <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                Pai
-              </p>
-              <p className="mt-1 text-lg font-semibold">
-                {father?.identificacao ?? "Nao informado"}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                {father ? "Vinculo reaproveitado do episodio" : "Sem pai no parto"}
-              </p>
-            </div>
-            <div className="rounded-2xl border border-white/70 bg-white/85 p-4 shadow-sm">
-              <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                Status neonatal
-              </p>
-              <p className="mt-1 text-lg font-semibold">
-                {journeyStage?.label ?? (neonatalSetup?.completed_at ? "Fechado" : "Pendente")}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                {journeyStage?.helper ??
-                  (neonatalSetup?.completed_at
-                    ? `Concluido em ${formatDate(neonatalSetup.completed_at)}`
-                    : "Aguardando conferencia inicial")}
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
+      <div className="grid gap-4 md:grid-cols-3">
+        <MetricCard
+          label="Matriz"
+          value={mother?.identificacao ?? "Nao informada"}
+          hint={mother ? "Vinculo herdado do parto" : "Sem matriz carregada"}
+          icon={<HeartPulse className="h-5 w-5" />}
+        />
+        <MetricCard
+          label="Pai"
+          value={father?.identificacao ?? "Nao informado"}
+          hint={father ? "Vinculo reaproveitado do episodio" : "Sem pai no parto"}
+          icon={<Dna className="h-5 w-5" />}
+        />
+        <MetricCard
+          label="Status neonatal"
+          value={
+            journeyStage?.label ??
+            (neonatalSetup?.completed_at ? "Fechado" : "Pendente")
+          }
+          hint={
+            journeyStage?.helper ??
+            (neonatalSetup?.completed_at
+              ? `Concluido em ${formatDate(neonatalSetup.completed_at)}`
+              : "Aguardando conferencia inicial")
+          }
+          tone={journeyStage ? "info" : neonatalSetup?.completed_at ? "success" : "warning"}
+          icon={<ClipboardCheck className="h-5 w-5" />}
+        />
+      </div>
 
       <section className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
         <Card>
@@ -566,6 +544,7 @@ export default function AnimalCriaInicial() {
                 categoriaLabel={categoriaLabel}
                 lotes={lotes ?? []}
                 pastoById={pastoById}
+                weightUnit={farmMeasurementConfig.weight_unit}
                 onChange={(patch) =>
                   setDraft((current) => (current ? { ...current, ...patch } : current))
                 }
@@ -613,7 +592,10 @@ export default function AnimalCriaInicial() {
                 <p>
                   Primeira pesagem:{" "}
                   {typeof neonatalSetup?.initial_weight_kg === "number"
-                    ? `${neonatalSetup.initial_weight_kg} kg`
+                    ? formatWeight(
+                        neonatalSetup.initial_weight_kg,
+                        farmMeasurementConfig.weight_unit,
+                      )
                     : "Nao registrada"}
                 </p>
                 <p>
@@ -685,12 +667,14 @@ export default function AnimalCriaInicial() {
 
                     {requiresWeight && item.status === "agendado" && (
                       <div className="space-y-2">
-                        <Label htmlFor={`journey-weight-${item.id}`}>Peso (kg)</Label>
+                        <Label htmlFor={`journey-weight-${item.id}`}>
+                          Peso ({getWeightUnitLabel(farmMeasurementConfig.weight_unit)})
+                        </Label>
                         <Input
                           id={`journey-weight-${item.id}`}
                           type="number"
                           min="0"
-                          step="0.1"
+                          step={getWeightInputStep(farmMeasurementConfig.weight_unit)}
                           inputMode="decimal"
                           value={itemDraft.pesoKg}
                           onChange={(event) =>
@@ -702,7 +686,11 @@ export default function AnimalCriaInicial() {
                               },
                             }))
                           }
-                          placeholder="Ex: 58.4"
+                          placeholder={
+                            farmMeasurementConfig.weight_unit === "arroba"
+                              ? "Ex: 3,89"
+                              : "Ex: 58,4"
+                          }
                         />
                       </div>
                     )}
@@ -820,7 +808,11 @@ export default function AnimalCriaInicial() {
                   }
                 >
                   {resumoPeso.variacaoKg >= 0 ? "+" : ""}
-                  {resumoPeso.variacaoKg.toFixed(1)} kg no periodo
+                  {formatWeight(
+                    Math.abs(resumoPeso.variacaoKg),
+                    farmMeasurementConfig.weight_unit,
+                  )}{" "}
+                  no periodo
                 </Badge>
               )}
             </div>
@@ -842,7 +834,12 @@ export default function AnimalCriaInicial() {
                       Primeiro registro
                     </p>
                     <p className="mt-1 text-xl font-semibold">
-                      {resumoPeso ? `${resumoPeso.primeiro.pesoKg} kg` : "-"}
+                      {resumoPeso
+                        ? formatWeight(
+                            resumoPeso.primeiro.pesoKg,
+                            farmMeasurementConfig.weight_unit,
+                          )
+                        : "-"}
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {resumoPeso?.primeiro.dataLabel ?? "Sem data"}
@@ -853,10 +850,10 @@ export default function AnimalCriaInicial() {
                       GMD
                     </p>
                     <p className="mt-1 text-xl font-semibold">
-                      {resumoPeso?.ganhoMedioDiaKg !== null &&
-                      resumoPeso?.ganhoMedioDiaKg !== undefined
-                        ? `${resumoPeso.ganhoMedioDiaKg.toFixed(2)} kg/dia`
-                        : "Aguardando serie"}
+                      {formatWeightPerDay(
+                        resumoPeso?.ganhoMedioDiaKg,
+                        farmMeasurementConfig.weight_unit,
+                      )}
                     </p>
                   </div>
                 </div>
@@ -870,10 +867,18 @@ export default function AnimalCriaInicial() {
                         tickLine={false}
                         axisLine={false}
                         width={56}
-                        tickFormatter={(value) => `${value}kg`}
+                        tickFormatter={(value) =>
+                          formatWeightValue(
+                            value,
+                            farmMeasurementConfig.weight_unit,
+                          )
+                        }
                       />
                       <Tooltip
-                        formatter={(value: number) => [`${value} kg`, "Peso"]}
+                        formatter={(value: number) => [
+                          formatWeight(value, farmMeasurementConfig.weight_unit),
+                          "Peso",
+                        ]}
                         labelFormatter={(label) => `Data: ${label}`}
                       />
                       <Line
@@ -932,3 +937,4 @@ export default function AnimalCriaInicial() {
     </div>
   );
 }
+

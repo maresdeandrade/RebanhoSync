@@ -86,43 +86,46 @@ function buildGeneratedCalves(
   const baseIdentificacao = animalIdentificacao || animalId.slice(0, 8);
   const token = birthDate.replaceAll("-", "").slice(2);
 
-  const calves = Array.from({ length: requestedCount }, (_, index) => {
-    const cria = data.crias?.[index];
-    const criaId = cria?.localId || crypto.randomUUID();
-    const sexo = cria?.sexo || (index === 0 ? "F" : "M");
+  const calves: OperationInput[] = Array.from(
+    { length: requestedCount },
+    (_, index): OperationInput => {
+      const cria = data.crias?.[index];
+      const criaId = cria?.localId || crypto.randomUUID();
+      const sexo = cria?.sexo || (index === 0 ? "F" : "M");
 
-    return {
-      table: "animais",
-      action: "INSERT",
-      record: {
-        id: criaId,
-        identificacao:
-          cria?.identificacao?.trim() || `${baseIdentificacao}-${token}-C${index + 1}`,
-        sexo,
-        status: "ativo",
-        lote_id: loteId,
-        data_nascimento: birthDate,
-        data_entrada: null,
-        data_saida: null,
-        pai_id: paiId,
-        mae_id: animalId,
-        nome: cria?.nome?.trim() || null,
-        rfid: null,
-        origem: "nascimento",
-        raca: null,
-        papel_macho: null,
-        habilitado_monta: false,
-        observacoes: null,
-        payload: {
-          generated_from: "evento_parto",
-          birth_event_id: eventId,
-          ordem_cria: index + 1,
+      return {
+        table: "animais",
+        action: "INSERT",
+        record: {
+          id: criaId,
+          identificacao:
+            cria?.identificacao?.trim() || `${baseIdentificacao}-${token}-C${index + 1}`,
+          sexo,
+          status: "ativo",
+          lote_id: loteId,
+          data_nascimento: birthDate,
+          data_entrada: null,
+          data_saida: null,
+          pai_id: paiId,
+          mae_id: animalId,
+          nome: cria?.nome?.trim() || null,
+          rfid: null,
+          origem: "nascimento",
+          raca: null,
+          papel_macho: null,
+          habilitado_monta: false,
+          observacoes: null,
+          payload: {
+            generated_from: "evento_parto",
+            birth_event_id: eventId,
+            ordem_cria: index + 1,
+          },
+          created_at: occurredAt,
+          updated_at: occurredAt,
         },
-        created_at: occurredAt,
-        updated_at: occurredAt,
-      },
-    };
-  });
+      };
+    },
+  );
 
   return {
     calfIds: calves.map((calf) => String(calf.record.id)),

@@ -32,6 +32,7 @@ const Financeiro = lazy(() => import("./pages/Financeiro"));
 const Relatorios = lazy(() => import("./pages/Relatorios"));
 const Contrapartes = lazy(() => import("./pages/Contrapartes"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
+const Configuracoes = lazy(() => import("./pages/Configuracoes"));
 const Reconciliacao = lazy(() => import("./pages/Reconciliacao"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const Index = lazy(() => import("./pages/Index"));
@@ -117,6 +118,7 @@ const App = () => (
           <Route path="/relatorios" element={<Relatorios />} />
           <Route path="/contrapartes" element={<Contrapartes />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/configuracoes" element={<Configuracoes />} />
           <Route path="/perfil" element={<Perfil />} />
           <Route path="/membros" element={<Membros />} />
           <Route path="/reconciliacao" element={<Reconciliacao />} />

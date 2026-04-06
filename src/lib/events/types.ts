@@ -85,9 +85,11 @@ export interface ReproductionEventInput extends BaseEventInput {
     // Extended fields used in Registrar.tsx
     schema_version?: number;
     episode_evento_id?: string;
-    episode_link_method?: string;
+    episode_link_method?: "manual" | "auto_last_open_service" | "unlinked";
     tecnica_livre?: string;
     reprodutor_tag?: string;
+    lote_semen?: string;
+    dose_semen_ref?: string;
     resultado?: string;
     
     diagnostico_resultado?: string;
