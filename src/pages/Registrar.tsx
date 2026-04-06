@@ -19,6 +19,12 @@ import { buildEventGesture } from "@/lib/events/buildEventGesture";
 import type { EventDomain, EventInput } from "@/lib/events/types";
 import { EventValidationError } from "@/lib/events/validators";
 import { prepareReproductionGesture } from "@/lib/reproduction/register";
+import {
+  buildFinancialTransaction,
+  resolveFinancialTotalAmount,
+  type FinancialPriceMode,
+  type FinancialWeightMode,
+} from "@/lib/finance/transactions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -145,6 +151,7 @@ interface CompraNovoAnimalDraft {
   identificacao: string;
   sexo: "M" | "F";
   dataNascimento: string;
+  pesoKg: string;
 }
 
 type FinanceiroNatureza =
@@ -160,6 +167,17 @@ interface NovaContraparteDraft {
   telefone: string;
   email: string;
   endereco: string;
+}
+
+interface FinanceiroFormData {
+  natureza: FinanceiroNatureza;
+  contraparteId: string;
+  modoPreco: FinancialPriceMode;
+  valorUnitario: string;
+  valorTotal: string;
+  quantidadeAnimais: string;
+  modoPeso: FinancialWeightMode;
+  pesoLoteKg: string;
 }
 
 const BullNameDisplay = ({ machoId }: { machoId: string }) => {
@@ -194,10 +212,15 @@ const Registrar = () => {
     alimentoNome: "",
     quantidadeKg: "",
   });
-  const [financeiroData, setFinanceiroData] = useState({
-    natureza: "compra" as FinanceiroNatureza,
-    valorTotal: "",
+  const [financeiroData, setFinanceiroData] = useState<FinanceiroFormData>({
+    natureza: "compra",
     contraparteId: "none",
+    modoPreco: "por_lote",
+    valorUnitario: "",
+    valorTotal: "",
+    quantidadeAnimais: "1",
+    modoPeso: "nenhum",
+    pesoLoteKg: "",
   });
   const [showNovaContraparte, setShowNovaContraparte] = useState(false);
   const [isSavingContraparte, setIsSavingContraparte] = useState(false);
@@ -285,6 +308,30 @@ const Registrar = () => {
   const isFinanceiroSociedade =
     financeiroData.natureza === "sociedade_entrada" ||
     financeiroData.natureza === "sociedade_saida";
+  const parseNumeric = (value: string): number =>
+    Number.parseFloat(value.replace(",", "."));
+  const financeiroQuantidadeAnimais =
+    selectedAnimais.length > 0
+      ? selectedAnimais.length
+      : Math.max(1, Number.parseInt(financeiroData.quantidadeAnimais || "1", 10) || 1);
+  const financeiroValorUnitario =
+    financeiroData.valorUnitario.trim() !== ""
+      ? parseNumeric(financeiroData.valorUnitario)
+      : null;
+  const financeiroValorTotalInformado =
+    financeiroData.valorTotal.trim() !== ""
+      ? parseNumeric(financeiroData.valorTotal)
+      : null;
+  const financeiroPesoLote =
+    financeiroData.pesoLoteKg.trim() !== ""
+      ? parseNumeric(financeiroData.pesoLoteKg)
+      : null;
+  const financeiroValorTotalCalculado = resolveFinancialTotalAmount({
+    quantity: financeiroQuantidadeAnimais,
+    priceMode: financeiroData.modoPreco,
+    totalAmount: financeiroValorTotalInformado,
+    unitAmount: financeiroValorUnitario,
+  });
 
   // P2.4 FIX: Use centralized useLotes hook
   const lotes = useLotes();
@@ -523,14 +570,66 @@ const Registrar = () => {
   }, [selectedAnimais.length, financeiroData.natureza]);
 
   useEffect(() => {
-    if (
-      tipoManejo !== "financeiro" ||
-      financeiroData.natureza !== "compra" ||
-      selectedAnimais.length > 0
-    ) {
+    if (tipoManejo !== "financeiro") {
       setCompraNovosAnimais([]);
+      return;
     }
-  }, [tipoManejo, financeiroData.natureza, selectedAnimais.length]);
+
+    if (
+      financeiroData.natureza === "venda" &&
+      financeiroData.modoPeso === "individual"
+    ) {
+      setCompraNovosAnimais((prev) =>
+        selectedAnimais.map((animalId, index) => {
+          const current = prev[index];
+          return {
+            localId: current?.localId ?? animalId,
+            identificacao: current?.identificacao ?? "",
+            sexo: current?.sexo ?? "F",
+            dataNascimento: "",
+            pesoKg: current?.pesoKg ?? "",
+          };
+        }),
+      );
+      return;
+    }
+
+    if (financeiroData.natureza !== "compra") {
+      setCompraNovosAnimais([]);
+      return;
+    }
+
+    if (selectedAnimais.length > 0) {
+      setCompraNovosAnimais([]);
+      return;
+    }
+
+    const nextQuantity = Math.max(
+      1,
+      Number.parseInt(financeiroData.quantidadeAnimais || "1", 10) || 1,
+    );
+    setCompraNovosAnimais((prev) => {
+      const nextDrafts = Array.from({ length: nextQuantity }, (_, index) => {
+        const current = prev[index];
+        return (
+          current ?? {
+            localId: crypto.randomUUID(),
+            identificacao: "",
+            sexo: index === 0 ? "F" : "M",
+            dataNascimento: "",
+            pesoKg: "",
+          }
+        );
+      });
+      return nextDrafts;
+    });
+  }, [
+    tipoManejo,
+    financeiroData.natureza,
+    financeiroData.modoPeso,
+    financeiroData.quantidadeAnimais,
+    selectedAnimais,
+  ]);
 
   // TD-008: Anti-teleport (ensure origin !== destination)
   useEffect(() => {
@@ -636,10 +735,10 @@ const Registrar = () => {
       tipoManejo === "financeiro" &&
       !financeRequiresAnimal &&
       !hasSelectedAnimals;
-    const compraComCadastroAnimais =
-      financeByLoteOnly &&
+    const compraGerandoAnimais =
+      tipoManejo === "financeiro" &&
       financeiroData.natureza === "compra" &&
-      compraNovosAnimais.length > 0;
+      !hasSelectedAnimals;
 
     if (
       tipoManejo === "financeiro" &&
@@ -668,26 +767,47 @@ const Registrar = () => {
     }
 
     if (
-      financeByLoteOnly &&
-      selectedLoteId === SEM_LOTE_OPTION &&
-      financeiroData.natureza === "compra" &&
-      compraNovosAnimais.length === 0
+      tipoManejo === "financeiro" &&
+      !isFinanceiroSociedade &&
+      (!Number.isFinite(financeiroValorTotalCalculado) ||
+        financeiroValorTotalCalculado <= 0)
     ) {
-      showError(
-        "Para compra com alvo sem lote, informe ao menos um novo animal.",
-      );
+      showError("Informe um valor financeiro valido para a transacao.");
       return;
     }
 
-    if (compraComCadastroAnimais) {
-      const temIdentificacaoVazia = compraNovosAnimais.some(
-        (item) => !item.identificacao.trim(),
-      );
-      if (temIdentificacaoVazia) {
-        showError("Preencha a identificacao de todos os novos animais.");
-        return;
-      }
+    if (
+      tipoManejo === "financeiro" &&
+      !isFinanceiroSociedade &&
+      financeiroData.modoPeso === "lote" &&
+      (!Number.isFinite(financeiroPesoLote) || (financeiroPesoLote ?? 0) <= 0)
+    ) {
+      showError("Informe um peso de lote valido.");
+      return;
+    }
 
+    if (
+      tipoManejo === "financeiro" &&
+      !isFinanceiroSociedade &&
+      financeiroData.modoPreco === "por_animal" &&
+      (!Number.isFinite(financeiroValorUnitario) ||
+        (financeiroValorUnitario ?? 0) <= 0)
+    ) {
+      showError("Informe um valor unitario valido.");
+      return;
+    }
+
+    if (
+      tipoManejo === "financeiro" &&
+      financeiroData.natureza === "compra" &&
+      !hasSelectedAnimals &&
+      compraNovosAnimais.length !== financeiroQuantidadeAnimais
+    ) {
+      showError("A quantidade de animais da compra ficou inconsistente.");
+      return;
+    }
+
+    if (compraGerandoAnimais) {
       const hoje = new Date();
       const dataNascimentoInvalida = compraNovosAnimais.some((item) => {
         if (!item.dataNascimento) return false;
@@ -699,11 +819,39 @@ const Registrar = () => {
         return;
       }
 
-      const identificacoes = compraNovosAnimais.map((item) =>
-        item.identificacao.trim().toLowerCase(),
-      );
+      const identificacoes = compraNovosAnimais
+        .map((item) => item.identificacao.trim().toLowerCase())
+        .filter(Boolean);
       if (new Set(identificacoes).size !== identificacoes.length) {
         showError("Nao repita identificacoes nos novos animais.");
+        return;
+      }
+
+      if (financeiroData.modoPeso === "individual") {
+        const pesoInvalido = compraNovosAnimais.some((item) => {
+          if (!item.pesoKg.trim()) return true;
+          const peso = parseNumeric(item.pesoKg);
+          return !Number.isFinite(peso) || peso <= 0;
+        });
+        if (pesoInvalido) {
+          showError("Informe um peso individual valido para cada animal da compra.");
+          return;
+        }
+      }
+    }
+
+    if (
+      tipoManejo === "financeiro" &&
+      financeiroData.natureza === "venda" &&
+      financeiroData.modoPeso === "individual"
+    ) {
+      const pesoInvalido = compraNovosAnimais.some((item) => {
+        if (!item.pesoKg.trim()) return true;
+        const peso = parseNumeric(item.pesoKg);
+        return !Number.isFinite(peso) || peso <= 0;
+      });
+      if (pesoInvalido) {
+        showError("Informe um peso individual valido para cada animal da venda.");
         return;
       }
     }
@@ -724,7 +872,6 @@ const Registrar = () => {
 
     try {
       const now = new Date().toISOString();
-      const today = now.split("T")[0];
       const protocoloItem =
         tipoManejo === "sanitario" && protocoloItemId
           ? await db.state_protocolos_sanitarios_itens.get(protocoloItemId)
@@ -763,46 +910,8 @@ const Registrar = () => {
         }
       }
 
-      const parseNumeric = (value: string): number =>
-        Number.parseFloat(value.replace(",", "."));
-
       const ops: OperationInput[] = [];
       const createdAnimalIds: string[] = [];
-
-      if (compraComCadastroAnimais) {
-        for (const draft of compraNovosAnimais) {
-          const animalId = crypto.randomUUID();
-          createdAnimalIds.push(animalId);
-          ops.push({
-            table: "animais",
-            action: "INSERT",
-            record: {
-              id: animalId,
-              identificacao: draft.identificacao.trim(),
-              sexo: draft.sexo,
-              status: "ativo",
-              lote_id: selectedLoteIdNormalized,
-              data_nascimento: draft.dataNascimento || null,
-              data_entrada: today,
-              data_saida: null,
-              pai_id: null,
-              mae_id: null,
-              nome: null,
-              rfid: null,
-              origem: "compra",
-              raca: null,
-              papel_macho: null,
-              habilitado_monta: false,
-              observacoes: null,
-              payload: {
-                source: "registrar_manejo_compra",
-              },
-              created_at: now,
-              updated_at: now,
-            },
-          });
-        }
-      }
 
       let linkedEventId: string | null = null;
       let postPartoRedirect:
@@ -826,7 +935,80 @@ const Registrar = () => {
         });
       }
 
-      for (const animalId of targetAnimalIds) {
+      if (tipoManejo === "financeiro" && !isFinanceiroSociedade) {
+        const selectedAnimalRecords = selectedAnimais
+          .map((animalId) => {
+            const animal = animalsMap.get(animalId);
+            if (!animal) return null;
+            return {
+              id: animal.id,
+              identificacao: animal.identificacao,
+              loteId: animal.lote_id ?? selectedLoteIdNormalized,
+            };
+          })
+          .filter(
+            (
+              animal,
+            ): animal is {
+              id: string;
+              identificacao: string;
+              loteId: string | null;
+            } => animal !== null,
+          );
+
+        const purchaseAnimals =
+          financeiroData.natureza === "compra"
+            ? compraNovosAnimais.map((draft) => ({
+                localId: draft.localId,
+                identificacao: draft.identificacao.trim(),
+                sexo: draft.sexo,
+                dataNascimento: draft.dataNascimento || null,
+                pesoKg:
+                  financeiroData.modoPeso === "individual"
+                    ? parseNumeric(draft.pesoKg)
+                    : null,
+              }))
+            : selectedAnimalRecords.map((animal, index) => ({
+                localId: animal.id,
+                identificacao: animal.identificacao,
+                sexo: "M" as const,
+                dataNascimento: null,
+                pesoKg:
+                  financeiroData.modoPeso === "individual"
+                    ? parseNumeric(compraNovosAnimais[index]?.pesoKg || "")
+                    : null,
+              }));
+
+        const built = buildFinancialTransaction({
+          fazendaId: fazenda_id,
+          natureza: financeiroData.natureza,
+          occurredAt: now,
+          loteId: selectedLoteIdNormalized,
+          contraparteId:
+            financeiroData.contraparteId !== "none"
+              ? financeiroData.contraparteId
+              : null,
+          sourceTaskId: sourceTaskId || null,
+          selectedAnimals: selectedAnimalRecords,
+          purchaseAnimals,
+          priceMode: financeiroData.modoPreco,
+          totalAmount:
+            financeiroData.modoPreco === "por_lote"
+              ? financeiroValorTotalInformado
+              : null,
+          unitAmount:
+            financeiroData.modoPreco === "por_animal"
+              ? financeiroValorUnitario
+              : null,
+          weightMode: financeiroData.modoPeso,
+          lotWeightKg: financeiroPesoLote,
+        });
+
+        linkedEventId = built.financialEventId;
+        createdAnimalIds.push(...built.createdAnimalIds);
+        ops.push(...built.ops);
+      } else {
+        for (const animalId of targetAnimalIds) {
         const animal = animalId ? animalsMap.get(animalId) : null;
         if (animalId && !animal) continue;
         const targetLoteId = animal?.lote_id ?? selectedLoteIdNormalized;
@@ -1026,6 +1208,7 @@ const Registrar = () => {
         }
         ops.push(...built.ops);
       }
+      }
 
       if (sourceTaskId && linkedEventId) {
         ops.push({
@@ -1045,7 +1228,7 @@ const Registrar = () => {
       }
 
       const txId = await createGesture(fazenda_id, ops);
-      if (compraComCadastroAnimais) {
+      if (compraGerandoAnimais) {
         showSuccess(
           `Compra registrada com ${createdAnimalIds.length} novo(s) animal(is). TX: ${txId.slice(0, 8)}`,
         );
@@ -1520,21 +1703,147 @@ const Registrar = () => {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-2">
-                  <Label>Valor total</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={financeiroData.valorTotal}
-                    onChange={(e) =>
-                      setFinanceiroData((prev) => ({
-                        ...prev,
-                        valorTotal: e.target.value,
-                      }))
-                    }
-                    placeholder="0.00"
-                  />
-                </div>
+                {!isFinanceiroSociedade && (
+                  <>
+                    <div className="grid gap-3 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label>Quantidade de animais</Label>
+                        <Input
+                          type="number"
+                          min="1"
+                          value={
+                            selectedAnimais.length > 0
+                              ? String(selectedAnimais.length)
+                              : financeiroData.quantidadeAnimais
+                          }
+                          disabled={selectedAnimais.length > 0}
+                          onChange={(e) =>
+                            setFinanceiroData((prev) => ({
+                              ...prev,
+                              quantidadeAnimais: e.target.value,
+                            }))
+                          }
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          {selectedAnimais.length > 0
+                            ? "Quantidade travada pela selecao atual de animais."
+                            : "Para compra sem animais previamente selecionados, o sistema gera esse lote de animais no mesmo gesto."}
+                        </p>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Modo de preco</Label>
+                        <Select
+                          value={financeiroData.modoPreco}
+                          onValueChange={(value) =>
+                            setFinanceiroData((prev) => ({
+                              ...prev,
+                              modoPreco: value as FinancialPriceMode,
+                            }))
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="por_lote">Preco por lote</SelectItem>
+                            <SelectItem value="por_animal">Preco por animal</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    <div className="grid gap-3 md:grid-cols-2">
+                      {financeiroData.modoPreco === "por_animal" ? (
+                        <div className="space-y-2">
+                          <Label>Valor por animal</Label>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            value={financeiroData.valorUnitario}
+                            onChange={(e) =>
+                              setFinanceiroData((prev) => ({
+                                ...prev,
+                                valorUnitario: e.target.value,
+                              }))
+                            }
+                            placeholder="0.00"
+                          />
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          <Label>Valor total do lote</Label>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            value={financeiroData.valorTotal}
+                            onChange={(e) =>
+                              setFinanceiroData((prev) => ({
+                                ...prev,
+                                valorTotal: e.target.value,
+                              }))
+                            }
+                            placeholder="0.00"
+                          />
+                        </div>
+                      )}
+
+                      <div className="space-y-2">
+                        <Label>Total calculado</Label>
+                        <Input
+                          value={
+                            Number.isFinite(financeiroValorTotalCalculado)
+                              ? financeiroValorTotalCalculado.toFixed(2)
+                              : ""
+                          }
+                          disabled
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid gap-3 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label>Modo de peso</Label>
+                        <Select
+                          value={financeiroData.modoPeso}
+                          onValueChange={(value) =>
+                            setFinanceiroData((prev) => ({
+                              ...prev,
+                              modoPeso: value as FinancialWeightMode,
+                            }))
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="nenhum">Sem peso</SelectItem>
+                            <SelectItem value="lote">Peso do lote</SelectItem>
+                            <SelectItem value="individual">Peso individual</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {financeiroData.modoPeso === "lote" && (
+                        <div className="space-y-2">
+                          <Label>Peso do lote (kg)</Label>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            value={financeiroData.pesoLoteKg}
+                            onChange={(e) =>
+                              setFinanceiroData((prev) => ({
+                                ...prev,
+                                pesoLoteKg: e.target.value,
+                              }))
+                            }
+                            placeholder="0.00"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
                 <div className="space-y-2">
                   <Label>
                     Contraparte{" "}
@@ -1689,45 +1998,20 @@ const Registrar = () => {
                 )}
 
                 {selectedAnimais.length === 0 &&
-                  financeiroData.natureza === "compra" && (
+                  financeiroData.natureza === "compra" &&
+                  !isFinanceiroSociedade && (
                     <div className="space-y-3 rounded-md border p-3">
-                      <div className="flex items-center justify-between gap-2">
-                        <div>
-                          <Label>Novos Animais da Compra (opcional)</Label>
-                          <p className="text-xs text-muted-foreground">
-                            Cadastre os animais no mesmo gesto da compra.
-                          </p>
-                        </div>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          onClick={() =>
-                            setCompraNovosAnimais((prev) => [
-                              ...prev,
-                              {
-                                localId: crypto.randomUUID(),
-                                identificacao: "",
-                                sexo: "F",
-                                dataNascimento: "",
-                              },
-                            ])
-                          }
-                        >
-                          Adicionar
-                        </Button>
-                      </div>
-
-                      {compraNovosAnimais.length === 0 && (
+                      <div>
+                        <Label>Animais gerados pela compra</Label>
                         <p className="text-xs text-muted-foreground">
-                          Sem novos animais informados.
+                          Identificacao pode ficar vazia. O sistema gera automaticamente.
                         </p>
-                      )}
+                      </div>
 
                       {compraNovosAnimais.map((draft, index) => (
                         <div
                           key={draft.localId}
-                          className="grid grid-cols-1 gap-2 rounded border p-2 md:grid-cols-[1fr_150px_170px_96px]"
+                          className="grid grid-cols-1 gap-2 rounded border p-2 md:grid-cols-[1.2fr_140px_170px_140px]"
                         >
                           <Input
                             value={draft.identificacao}
@@ -1735,10 +2019,7 @@ const Registrar = () => {
                               setCompraNovosAnimais((prev) =>
                                 prev.map((item) =>
                                   item.localId === draft.localId
-                                    ? {
-                                        ...item,
-                                        identificacao: e.target.value,
-                                      }
+                                    ? { ...item, identificacao: e.target.value }
                                     : item,
                                 ),
                               )
@@ -1751,10 +2032,7 @@ const Registrar = () => {
                               setCompraNovosAnimais((prev) =>
                                 prev.map((item) =>
                                   item.localId === draft.localId
-                                    ? {
-                                        ...item,
-                                        sexo: value as "M" | "F",
-                                      }
+                                    ? { ...item, sexo: value as "M" | "F" }
                                     : item,
                                 ),
                               )
@@ -1775,28 +2053,75 @@ const Registrar = () => {
                               setCompraNovosAnimais((prev) =>
                                 prev.map((item) =>
                                   item.localId === draft.localId
-                                    ? {
-                                        ...item,
-                                        dataNascimento: e.target.value,
-                                      }
+                                    ? { ...item, dataNascimento: e.target.value }
                                     : item,
                                 ),
                               )
                             }
                           />
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            onClick={() =>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            value={draft.pesoKg}
+                            disabled={financeiroData.modoPeso !== "individual"}
+                            onChange={(e) =>
                               setCompraNovosAnimais((prev) =>
-                                prev.filter((item) => item.localId !== draft.localId),
+                                prev.map((item) =>
+                                  item.localId === draft.localId
+                                    ? { ...item, pesoKg: e.target.value }
+                                    : item,
+                                ),
                               )
                             }
-                          >
-                            Remover
-                          </Button>
+                            placeholder="Peso kg"
+                          />
                         </div>
                       ))}
+                    </div>
+                  )}
+
+                {selectedAnimais.length > 0 &&
+                  financeiroData.natureza === "venda" &&
+                  financeiroData.modoPeso === "individual" &&
+                  !isFinanceiroSociedade && (
+                    <div className="space-y-3 rounded-md border p-3">
+                      <div>
+                        <Label>Pesos individuais da venda</Label>
+                        <p className="text-xs text-muted-foreground">
+                          Esses pesos geram pesagens no mesmo gesto da saida.
+                        </p>
+                      </div>
+
+                      {selectedAnimais.map((animalId, index) => {
+                        const animal = animaisNoLote?.find((item) => item.id === animalId);
+                        const currentDraft = compraNovosAnimais[index];
+
+                        return (
+                          <div
+                            key={animalId}
+                            className="grid grid-cols-1 gap-2 rounded border p-2 md:grid-cols-[1fr_180px]"
+                          >
+                            <div className="flex items-center text-sm font-medium">
+                              {animal?.identificacao ?? animalId}
+                            </div>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              value={currentDraft?.pesoKg ?? ""}
+                              onChange={(e) =>
+                                setCompraNovosAnimais((prev) =>
+                                  prev.map((item, itemIndex) =>
+                                    itemIndex === index
+                                      ? { ...item, pesoKg: e.target.value }
+                                      : item,
+                                  ),
+                                )
+                              }
+                              placeholder="Peso kg"
+                            />
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
               </div>
@@ -1897,15 +2222,46 @@ const Registrar = () => {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Valor:</span>
-                    <span className="font-bold">{financeiroData.valorTotal}</span>
+                    <span className="font-bold">
+                      {Number.isFinite(financeiroValorTotalCalculado)
+                        ? financeiroValorTotalCalculado.toFixed(2)
+                        : "-"}
+                    </span>
                   </div>
+                  {!isFinanceiroSociedade && (
+                    <>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Quantidade:</span>
+                        <span className="font-bold">{financeiroQuantidadeAnimais}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Preco:</span>
+                        <span className="font-bold">
+                          {financeiroData.modoPreco === "por_animal"
+                            ? "Por animal"
+                            : "Por lote"}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Peso:</span>
+                        <span className="font-bold">
+                          {financeiroData.modoPeso === "nenhum"
+                            ? "Nao informado"
+                            : financeiroData.modoPeso === "lote"
+                              ? `Lote ${financeiroData.pesoLoteKg || "-"} kg`
+                              : "Individual"}
+                        </span>
+                      </div>
+                    </>
+                  )}
                 </>
               )}
               {tipoManejo === "financeiro" &&
+                financeiroData.natureza === "compra" &&
                 selectedAnimais.length === 0 &&
-                financeiroData.natureza === "compra" && (
+                !isFinanceiroSociedade && (
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Novos animais:</span>
+                    <span className="text-muted-foreground">Animais gerados:</span>
                     <span className="font-bold">{compraNovosAnimais.length}</span>
                   </div>
 

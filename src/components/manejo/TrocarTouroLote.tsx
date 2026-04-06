@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { isAnimalBreedingEligible } from "@/lib/animals/maleProfile";
 import { showSuccess, showError } from "@/utils/toast";
 
 interface TrocarTouroLoteProps {
@@ -52,7 +53,7 @@ export function TrocarTouroLote({
             a.lote_id === lote.id && // ✅ APENAS do lote atual!
             a.sexo === "M" &&
             (!a.deleted_at || a.deleted_at === null) &&
-            (a.papel_macho === "reprodutor" || a.habilitado_monta === true),
+            isAnimalBreedingEligible(a),
         )
         .toArray(),
     [lote.fazenda_id, lote.id],
@@ -134,8 +135,8 @@ export function TrocarTouroLote({
 
           {touros && touros.length === 0 && (
             <div className="p-3 bg-muted rounded-lg text-sm text-muted-foreground">
-              Nenhum touro disponível. Cadastre machos reprodutores ou habilite
-              algum para monta.
+              Nenhum touro disponivel. Defina um macho como reprodutor e deixe
+              o status reprodutivo como apto.
             </div>
           )}
         </div>

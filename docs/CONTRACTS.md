@@ -1,18 +1,18 @@
-# Contratos de Sincronização e API
+# Contratos de Sincronizacao e API
 
 > **Status:** Normativo
 > **Fonte de Verdade:** Edge Function `sync-batch`
-> **Última Atualização:** 2026-02-16
+> **Ultima Atualizacao:** 2026-04-06
 
-Este documento define os contratos da API de Sincronização e códigos de retorno.
+Este documento resume o contrato do `sync-batch` e destaca o impacto da taxonomia canonica no fluxo de escrita.
 
 ---
 
-## 1. Endpoint: Sync Batch (`/functions/v1/sync-batch`)
+## 1. Endpoint
 
-Gateway único de escrita transacional.
+`POST /functions/v1/sync-batch`
 
-### Request Payload
+Payload:
 
 ```json
 {
@@ -23,25 +23,23 @@ Gateway único de escrita transacional.
     {
       "client_op_id": "uuid",
       "table": "nome_tabela",
-      "action": "INSERT" | "UPDATE" | "DELETE",
-      "record": { ... }
+      "action": "INSERT",
+      "record": {}
     }
   ]
 }
 ```
 
-### Response Payload
+Resposta:
 
 ```json
 {
   "server_tx_id": "srv-...",
+  "client_tx_id": "uuid",
   "results": [
     {
       "op_id": "uuid",
-      "status": "APPLIED" | "APPLIED_ALTERED" | "REJECTED",
-      "reason_code": "CODE",
-      "reason_message": "...",
-      "altered": { ... }
+      "status": "APPLIED"
     }
   ]
 }
@@ -49,49 +47,100 @@ Gateway único de escrita transacional.
 
 ---
 
-## 2. Status de Resultado
+## 2. Status
 
-| Status                | Significado                      | Ação do Cliente         |
-| :-------------------- | :------------------------------- | :---------------------- |
-| **`APPLIED`**         | Sucesso / Idempotente.           | Marcar `SYNCED`.        |
-| **`APPLIED_ALTERED`** | Aceito com mudanças (ex: Dedup). | Atualizar estado local. |
-| **`REJECTED`**        | Recusado (Erro/Regra).           | **Rollback Local**.     |
+- `APPLIED`
+- `APPLIED_ALTERED`
+- `REJECTED`
 
----
-
-## 3. Reason Codes (Rejeição)
-
-### Segurança
-
-- `SECURITY_BLOCKED_TABLE`: Escrita em tabelas de sistema protegidas.
-- `PERMISSION_DENIED`: Bloqueio por RLS.
-
-### Validação de Negócio
-
-- `ANTI_TELEPORTE`: Movimentação sem evento correspondente.
-- `PAYLOAD_SCHEMA_VERSION_REQUIRED`: Eventos complexos sem versão.
-- `VALIDATION_ERROR`: Dados incompletos ou inválidos.
-- `INVALID_EPISODE_REFERENCE`: Vínculo reprodutivo quebrado.
-
-### Constraints de Banco
-
-- `VALIDATION_FINANCEIRO_VALOR_TOTAL`: Valor <= 0.
-- `VALIDATION_MOVIMENTACAO_DESTINO`: Sem destino definido.
-- `VALIDATION_MOVIMENTACAO_ORIGEM_DESTINO`: Origem = Destino.
+Em `REJECTED`, o cliente executa rollback local.
 
 ---
 
-## 4. Idempotência e Tratamento
+## 3. Taxonomia Canonica no Sync
 
-- **Idempotência:** Duplicatas retornam `APPLIED`.
-- **Agenda:** Colisão de `dedup_key` retorna `APPLIED_ALTERED` (`collision_noop`).
-- **Atomicidade:** Anti-teleporte valida lote inteiro; falha rejeita tudo. Falhas individuais (constraint) rejeitam apenas a operação, permitindo sucesso parcial do restante.
+A taxonomia canonica nao cria endpoint novo e nao altera o envelope de batch.
+
+Impacto real:
+
+- novos fatos seguem como `UPDATE` normal em `animais.payload`
+- nao existe tabela separada para categorias derivadas
+- labels canonicos e aliases continuam sendo projecoes locais ou SQL views de leitura
+
+### Contrato de `payload.taxonomy_facts`
+
+O subcontrato taxonomico segue o mesmo rigor dos outros payloads versionados:
+
+- `schema_version` obrigatorio
+- versao atual: `1`
+- fonte unica do schema: `src/lib/animals/taxonomyFactsContract.ts`
+- shape invalido deve ser rejeitado localmente e no servidor
+
+Campos canonicos v1:
+
+- `schema_version`
+- `castrado`
+- `puberdade_confirmada`
+- `secagem_realizada`
+- `data_secagem`
+- `em_lactacao`
+- `prenhez_confirmada`
+- `data_prevista_parto`
+- `data_ultimo_parto`
+
+### Ownership de escrita
+
+UI manual:
+
+- `castrado`
+- `puberdade_confirmada`
+- `secagem_realizada`
+- `data_secagem`
+- `em_lactacao`
+
+Writer `reproduction_event`:
+
+- `prenhez_confirmada`
+- `data_prevista_parto`
+- `data_ultimo_parto`
+- tambem pode ajustar `puberdade_confirmada`, `secagem_realizada`, `data_secagem`, `em_lactacao`
+
+Regra de conflito:
+
+- campos event-driven nao aceitam override manual
+- o cliente valida antes de enfileirar em `src/lib/offline/ops.ts`
+- o servidor valida novamente em `supabase/functions/sync-batch/taxonomy.ts`
+
+Exemplos de fatos sincronizados:
+
+- `payload.taxonomy_facts.prenhez_confirmada`
+- `payload.taxonomy_facts.data_prevista_parto`
+- `payload.taxonomy_facts.data_ultimo_parto`
+- `payload.taxonomy_facts.em_lactacao`
+- `payload.taxonomy_facts.secagem_realizada`
+- `payload.taxonomy_facts.castrado`
 
 ---
 
-## Veja Também
+## 4. Regras de Rejeicao Relevantes
 
-- [**ARCHITECTURE.md**](./ARCHITECTURE.md)
-- [**DB.md**](./DB.md)
-- [**OFFLINE.md**](./OFFLINE.md)
-- [**EVENTOS_AGENDA_SPEC.md**](./EVENTOS_AGENDA_SPEC.md)
+- `PERMISSION_DENIED`
+- `ANTI_TELEPORTE`
+- `VALIDATION_ERROR`
+- `INVALID_EPISODE_REFERENCE`
+- `TAXONOMY_FACTS_SCHEMA_VERSION_REQUIRED`
+- `INVALID_TAXONOMY_FACTS_PAYLOAD`
+
+Rejeicoes taxonomicas:
+
+- `TAXONOMY_FACTS_SCHEMA_VERSION_REQUIRED`: `taxonomy_facts.schema_version` ausente ou diferente de `1`
+- `INVALID_TAXONOMY_FACTS_PAYLOAD`: campo desconhecido, tipo invalido ou data fora do formato esperado
+
+---
+
+## Veja Tambem
+
+- [ARCHITECTURE.md](./ARCHITECTURE.md)
+- [DB.md](./DB.md)
+- [OFFLINE.md](./OFFLINE.md)
+- [ADRs/ADR-0001-taxonomia-canonica-bovina.md](./ADRs/ADR-0001-taxonomia-canonica-bovina.md)

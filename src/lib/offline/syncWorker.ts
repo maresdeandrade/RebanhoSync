@@ -202,7 +202,7 @@ async function sendBatchRequest(
   });
 }
 
-async function processGesture(gesture: Gesture) {
+export async function processGesture(gesture: Gesture) {
   await db.queue_gestures.update(gesture.client_tx_id, { status: "SYNCING" });
 
   const queuedOps = await db.queue_ops

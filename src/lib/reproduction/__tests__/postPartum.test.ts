@@ -60,7 +60,8 @@ describe("buildPostPartumOps", () => {
 
     expect(result.weighedCount).toBe(1);
     expect(result.umbigoCount).toBe(1);
-    expect(result.ops).toHaveLength(6);
+    expect(result.agendaCount).toBe(9);
+    expect(result.ops).toHaveLength(15);
 
     expect(result.ops[0]).toMatchObject({
       table: "animais",
@@ -115,7 +116,11 @@ describe("buildPostPartumOps", () => {
       },
     });
 
-    expect(result.ops[5]).toMatchObject({
+    const secondAnimalUpdate = result.ops.findLast(
+      (op) => op.table === "animais" && op.record.id === "cria-2",
+    );
+
+    expect(secondAnimalUpdate).toMatchObject({
       table: "animais",
       action: "UPDATE",
       record: {
@@ -125,9 +130,20 @@ describe("buildPostPartumOps", () => {
         lote_id: null,
       },
     });
-    expect(result.ops[5]?.record.payload.neonatal_setup).toMatchObject({
+    expect(secondAnimalUpdate?.record.payload.neonatal_setup).toMatchObject({
       started_at: "2026-04-01T10:00:00.000Z",
       completed_at: "2026-04-01T12:00:00.000Z",
     });
+
+    const agendaOps = result.ops.filter((op) => op.table === "agenda_itens");
+    expect(agendaOps).toHaveLength(9);
+    expect(agendaOps[0]?.record).toMatchObject({
+      animal_id: "cria-1",
+      status: "agendado",
+      source_kind: "automatico",
+    });
+    expect(agendaOps.map((op) => op.record.dedup_key)).not.toContain(
+      "calf_journey:cria-1:cura_umbigo",
+    );
   });
 });

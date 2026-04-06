@@ -1,3 +1,9 @@
+import type {
+  AnimalBreedEnum,
+  ReproductionBullReferenceEnum,
+  ReproductionTechniqueEnum,
+} from "@/lib/animals/catalogs";
+
 // =========================================================
 // ENUMS baseados no schema do banco de dados
 // =========================================================
@@ -26,6 +32,57 @@ export type SexoEnum = "M" | "F";
 export type AnimalStatusEnum = "ativo" | "vendido" | "morto";
 export type LoteStatusEnum = "ativo" | "inativo";
 export type PapelMachoEnum = "reprodutor" | "rufiao";
+export type DestinoProdutivoAnimalEnum =
+  | "reprodutor"
+  | "rufiao"
+  | "engorda"
+  | "abate"
+  | "venda"
+  | "descarte";
+export type CategoriaZootecnicaCanonicaEnum =
+  | "bezerra"
+  | "novilha"
+  | "vaca"
+  | "bezerro"
+  | "garrote"
+  | "boi_terminacao"
+  | "touro";
+export type FaseVeterinariaEnum =
+  | "neonatal"
+  | "pre_desmama"
+  | "pos_desmama"
+  | "pre_pubere"
+  | "pubere"
+  | "gestante"
+  | "puerperio";
+export type EstadoProdutivoReprodutivoEnum =
+  | "vazia"
+  | "prenhe"
+  | "pre_parto_imediato"
+  | "seca"
+  | "recem_parida"
+  | "lactacao"
+  | "inteiro"
+  | "castrado"
+  | "reprodutor"
+  | "terminacao";
+export type AnimalLifeStageEnum =
+  | "cria_neonatal"
+  | "cria_aleitamento"
+  | "desmamado"
+  | "recria"
+  | "garrote"
+  | "novilha"
+  | "vaca_adulta"
+  | "touro"
+  | "boi_adulto"
+  | "terminacao";
+export type StatusReprodutivoMachoEnum =
+  | "candidato"
+  | "apto"
+  | "suspenso"
+  | "inativo";
+export type ModoTransicaoEstagioEnum = "automatico" | "manual" | "hibrido";
 export type OrigemEnum = "nascimento" | "compra" | "doacao" | "arrendamento" | "sociedade";
 
 // Contrapartes
@@ -146,7 +203,7 @@ export interface Animal {
   
   // Campos adicionados na Fase 2
   origem: OrigemEnum | null;
-  raca: string | null;
+  raca: AnimalBreedEnum | null;
 
   // Campos específicos para machos
   papel_macho: PapelMachoEnum | null;
@@ -632,8 +689,8 @@ export interface ReproductionEventPayloadV1 {
 
   // Specific Fields per Type
   // Cobertura
-  tecnica_livre?: string;
-  reprodutor_tag?: string;
+  tecnica_livre?: ReproductionTechniqueEnum;
+  reprodutor_tag?: ReproductionBullReferenceEnum;
 
   // IA
   lote_semen?: string;

@@ -3,7 +3,22 @@ import { useNavigate } from "react-router-dom";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "@/lib/offline/db";
 import { createGesture } from "@/lib/offline/ops";
-import type { OperationInput } from "@/lib/offline/types";
+import type {
+  DestinoProdutivoAnimalEnum,
+  OperationInput,
+  StatusReprodutivoMachoEnum,
+} from "@/lib/offline/types";
+import { ANIMAL_BREED_OPTIONS } from "@/lib/animals/catalogs";
+import {
+  buildAnimalClassificationPayload,
+  getLegacyMaleFields,
+  isMaleBreedingDestination,
+} from "@/lib/animals/maleProfile";
+import {
+  buildAnimalLifecyclePayload,
+  resolveAnimalLifecycleSnapshot,
+} from "@/lib/animals/lifecycle";
+import { buildAnimalTaxonomyFactsPayload } from "@/lib/animals/taxonomy";
 import { buildEventGesture } from "@/lib/events/buildEventGesture";
 import { EventValidationError } from "@/lib/events/validators";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,7 +32,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Accordion,
   AccordionContent,
@@ -31,7 +45,7 @@ import { useLotes } from "@/hooks/useLotes";
 
 const AnimalNovo = () => {
   const navigate = useNavigate();
-  const { activeFarmId } = useAuth();
+  const { activeFarmId, farmLifecycleConfig } = useAuth();
 
   const [isSaving, setIsSaving] = useState(false);
 
@@ -56,7 +70,7 @@ const AnimalNovo = () => {
   const [origem, setOrigem] = useState<
     "nascimento" | "compra" | "doacao" | "arrendamento" | "sociedade" | "null"
   >("null");
-  const [raca, setRaca] = useState("");
+  const [raca, setRaca] = useState("null");
 
   // Estados da Fase 2.2: Sociedade (quando origem='sociedade')
   const [sociedadeContraparteId, setSociedadeContraparteId] =
@@ -70,11 +84,22 @@ const AnimalNovo = () => {
   const [compraObservacoes, setCompraObservacoes] = useState("");
 
   // Estados específicos para machos
-  const [papelMacho, setPapelMacho] = useState<
-    "reprodutor" | "rufiao" | "null"
+  const [destinoProdutivo, setDestinoProdutivo] = useState<
+    DestinoProdutivoAnimalEnum | "null"
   >("null");
-  const [habilitadoMonta, setHabilitadoMonta] = useState(false);
-
+  const [statusReprodutivoMacho, setStatusReprodutivoMacho] = useState<
+    StatusReprodutivoMachoEnum | "null"
+  >("null");
+  const [castrado, setCastrado] = useState<"null" | "true" | "false">("null");
+  const [puberdadeConfirmada, setPuberdadeConfirmada] = useState<
+    "null" | "true" | "false"
+  >("null");
+  const [emLactacao, setEmLactacao] = useState<"null" | "true" | "false">(
+    "null",
+  );
+  const [secagemRealizada, setSecagemRealizada] = useState<
+    "null" | "true" | "false"
+  >("null");
   const lotes = useLotes();
 
   // Query para machos (potenciais pais)
@@ -106,6 +131,40 @@ const AnimalNovo = () => {
       .filter((c) => !c.deleted_at)
       .toArray();
   }, [activeFarmId]);
+
+  const handleDestinoProdutivoChange = (
+    value: DestinoProdutivoAnimalEnum | "null",
+  ) => {
+    setDestinoProdutivo(value);
+
+    if (value === "null") {
+      setStatusReprodutivoMacho("null");
+      return;
+    }
+
+    if (isMaleBreedingDestination(value)) {
+      setStatusReprodutivoMacho((current) =>
+        current === "null" || current === "inativo" ? "candidato" : current,
+      );
+      return;
+    }
+
+    setStatusReprodutivoMacho("inativo");
+  };
+
+  const handleSecagemRealizadaChange = (value: "null" | "true" | "false") => {
+    setSecagemRealizada(value);
+    if (value === "true") {
+      setEmLactacao("false");
+    }
+  };
+
+  const idadeMeses = dataNascimento
+    ? Math.floor(
+        (Date.now() - new Date(dataNascimento).getTime()) /
+          (1000 * 60 * 60 * 24 * 30),
+      )
+    : null;
 
   const handleSave = async () => {
     if (!identificacao) {
@@ -143,6 +202,16 @@ const AnimalNovo = () => {
       }
     }
 
+    if (
+      sexo === "M" &&
+      castrado === "true" &&
+      destinoProdutivo !== "null" &&
+      isMaleBreedingDestination(destinoProdutivo)
+    ) {
+      showError("Macho castrado nao pode ficar com destino reprodutivo.");
+      return;
+    }
+
     const fazenda_id = activeFarmId;
 
     if (!fazenda_id) {
@@ -154,6 +223,51 @@ const AnimalNovo = () => {
 
     const animal_id = crypto.randomUUID();
     const now = new Date().toISOString();
+    const destinoProdutivoValue =
+      sexo === "M" && destinoProdutivo !== "null" ? destinoProdutivo : null;
+    const statusReprodutivoValue =
+      sexo === "M" && statusReprodutivoMacho !== "null"
+        ? statusReprodutivoMacho
+        : null;
+    let payload = buildAnimalClassificationPayload({}, {
+      sexo,
+      destinoProdutivo: destinoProdutivoValue,
+      statusReprodutivoMacho: statusReprodutivoValue,
+      modoTransicao: null,
+    });
+    const { papel_macho, habilitado_monta } = getLegacyMaleFields({
+      sexo,
+      destinoProdutivo: destinoProdutivoValue,
+      statusReprodutivoMacho: statusReprodutivoValue,
+    });
+    payload = buildAnimalTaxonomyFactsPayload(payload, {
+      castrado: sexo === "M" && castrado !== "null" ? castrado === "true" : null,
+      puberdade_confirmada:
+        puberdadeConfirmada !== "null"
+          ? puberdadeConfirmada === "true"
+          : null,
+      em_lactacao:
+        sexo === "F" && emLactacao !== "null" ? emLactacao === "true" : null,
+      secagem_realizada:
+        sexo === "F" && secagemRealizada !== "null"
+          ? secagemRealizada === "true"
+          : null,
+    });
+    const lifecycleSnapshot = resolveAnimalLifecycleSnapshot(
+      {
+        sexo,
+        data_nascimento: dataNascimento || null,
+        payload,
+        papel_macho,
+        habilitado_monta,
+      },
+      farmLifecycleConfig,
+    );
+    payload = buildAnimalLifecyclePayload(
+      payload,
+      lifecycleSnapshot.targetStage,
+      "manual",
+    );
 
     const ops: OperationInput[] = [];
 
@@ -183,11 +297,12 @@ const AnimalNovo = () => {
 
         // Campos da Fase 2: origem e raça
         origem: origem === "null" ? null : origem,
-        raca: raca || null,
+        raca: raca === "null" ? null : raca,
 
         // Campos específicos para machos
-        papel_macho: sexo === "M" && papelMacho !== "null" ? papelMacho : null,
-        habilitado_monta: sexo === "M" ? habilitadoMonta : false,
+        papel_macho,
+        habilitado_monta,
+        payload,
 
         created_at: now,
         updated_at: now,
@@ -372,11 +487,19 @@ const AnimalNovo = () => {
 
           <div className="space-y-2">
             <Label>Raça</Label>
-            <Input
-              value={raca}
-              onChange={(e) => setRaca(e.target.value)}
-              placeholder="Ex: Nelore, Angus, Mestiço..."
-            />
+            <Select value={raca} onValueChange={setRaca}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione a raca" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="null">Nao informada</SelectItem>
+                {ANIMAL_BREED_OPTIONS.map((breed) => (
+                  <SelectItem key={breed.value} value={breed.value}>
+                    {breed.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </CardContent>
       </Card>
@@ -499,6 +622,93 @@ const AnimalNovo = () => {
 
       <Card>
         <CardHeader>
+          <CardTitle>Fatos Taxonômicos</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label>Puberdade confirmada</Label>
+            <Select
+              value={puberdadeConfirmada}
+              onValueChange={(value: "null" | "true" | "false") =>
+                setPuberdadeConfirmada(value)
+              }
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Nao informado" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="null">Nao informado</SelectItem>
+                <SelectItem value="true">Sim</SelectItem>
+                <SelectItem value="false">Nao</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {sexo === "M" && (
+            <div className="space-y-2">
+              <Label>Castrado</Label>
+              <Select
+                value={castrado}
+                onValueChange={(value: "null" | "true" | "false") =>
+                  setCastrado(value)
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Nao informado" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="null">Nao informado</SelectItem>
+                  <SelectItem value="true">Sim</SelectItem>
+                  <SelectItem value="false">Nao</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {sexo === "F" && (
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Em lactação</Label>
+                <Select
+                  value={emLactacao}
+                  onValueChange={(value: "null" | "true" | "false") =>
+                    setEmLactacao(value)
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Nao informado" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="null">Nao informado</SelectItem>
+                    <SelectItem value="true">Sim</SelectItem>
+                    <SelectItem value="false">Nao</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Secagem realizada</Label>
+                <Select
+                  value={secagemRealizada}
+                  onValueChange={handleSecagemRealizadaChange}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Nao informado" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="null">Nao informado</SelectItem>
+                    <SelectItem value="true">Sim</SelectItem>
+                    <SelectItem value="false">Nao</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle>Genealogia</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -540,75 +750,81 @@ const AnimalNovo = () => {
         </CardContent>
       </Card>
 
-      {/* Card de Reprodutor: exibir somente para machos com data_nascimento E idade >= 15 meses */}
-      {sexo === "M" &&
-        dataNascimento &&
-        (() => {
-          // Calcular idade em meses
-          const hoje = new Date();
-          const nasc = new Date(dataNascimento);
-          const diffDays = Math.floor(
-            (hoje.getTime() - nasc.getTime()) / (1000 * 60 * 60 * 24),
-          );
-          const meses = Math.floor(diffDays / 30);
-          return meses >= 15; // Idade mínima de 15 meses
-        })() && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Informações de Reprodutor</CardTitle>
-              {dataNascimento &&
-                (() => {
-                  const hoje = new Date();
-                  const nasc = new Date(dataNascimento);
-                  const diffDays = Math.floor(
-                    (hoje.getTime() - nasc.getTime()) / (1000 * 60 * 60 * 24),
-                  );
-                  const meses = Math.floor(diffDays / 30);
-                  return (
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Idade mínima atingida ({meses} meses)
-                    </p>
-                  );
-                })()}
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label>Papel do Macho</Label>
-                <Select
-                  value={papelMacho}
-                  onValueChange={(v: "reprodutor" | "rufiao" | "null") =>
-                    setPapelMacho(v)
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="null">Não definido</SelectItem>
-                    <SelectItem value="reprodutor">Reprodutor</SelectItem>
-                    <SelectItem value="rufiao">Rufião</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+      {sexo === "M" && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Perfil do Macho</CardTitle>
+            <p className="text-xs text-muted-foreground">
+              Defina o destino do animal e, quando for o caso, o status
+              reprodutivo. O modo de transicao fica nas configuracoes gerais
+              da fazenda.
+              {idadeMeses !== null ? ` Idade atual: ${idadeMeses} meses.` : ""}
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label>Destino Produtivo</Label>
+              <Select
+                value={destinoProdutivo}
+                onValueChange={(value: DestinoProdutivoAnimalEnum | "null") =>
+                  handleDestinoProdutivoChange(value)
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Como este macho sera conduzido?" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="null">Nao definido</SelectItem>
+                  <SelectItem value="reprodutor">Reprodutor</SelectItem>
+                  <SelectItem value="rufiao">Rufiao</SelectItem>
+                  <SelectItem value="engorda">Engorda</SelectItem>
+                  <SelectItem value="abate">Abate</SelectItem>
+                  <SelectItem value="venda">Venda</SelectItem>
+                  <SelectItem value="descarte">Descarte</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="habilitado_monta"
-                  checked={habilitadoMonta}
-                  onCheckedChange={(checked) =>
-                    setHabilitadoMonta(checked as boolean)
-                  }
-                />
-                <Label
-                  htmlFor="habilitado_monta"
-                  className="text-sm font-normal cursor-pointer"
-                >
-                  Habilitado para monta
-                </Label>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+            <div className="space-y-2">
+              <Label>Status Reprodutivo</Label>
+              <Select
+                value={statusReprodutivoMacho}
+                onValueChange={(
+                  value: StatusReprodutivoMachoEnum | "null",
+                ) => setStatusReprodutivoMacho(value)}
+                disabled={
+                  destinoProdutivo === "null" ||
+                  !isMaleBreedingDestination(destinoProdutivo)
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue
+                    placeholder={
+                      destinoProdutivo === "null"
+                        ? "Defina primeiro o destino"
+                        : "Selecione o status"
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="null">Nao definido</SelectItem>
+                  <SelectItem value="candidato">Candidato</SelectItem>
+                  <SelectItem value="apto">Apto</SelectItem>
+                  <SelectItem value="suspenso">Suspenso</SelectItem>
+                  <SelectItem value="inativo">Inativo</SelectItem>
+                </SelectContent>
+              </Select>
+              {!isMaleBreedingDestination(destinoProdutivo) &&
+                destinoProdutivo !== "null" && (
+                  <p className="text-xs text-muted-foreground">
+                    Destinos nao reprodutivos mantem o manejo reprodutivo como
+                    inativo.
+                  </p>
+                )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Accordion type="single" collapsible>
         <AccordionItem value="advanced">

@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
+  AlertTriangle,
   Calendar,
   CheckCircle2,
   Filter,
@@ -14,6 +15,14 @@ import { db } from "@/lib/offline/db";
 import { createGesture } from "@/lib/offline/ops";
 import { pullDataForFarm } from "@/lib/offline/pull";
 import { useAuth } from "@/hooks/useAuth";
+import { getAnimalBreedLabel } from "@/lib/animals/catalogs";
+import {
+  getAnimalLifeStageLabel,
+  getPendingAnimalLifecycleKindLabel,
+  getPendingAnimalLifecycleTransitions,
+  summarizePendingAnimalLifecycleTransitions,
+} from "@/lib/animals/lifecycle";
+import { isCalfJourneyAgendaItem } from "@/lib/reproduction/calfJourney";
 import { concluirPendenciaSanitaria } from "@/lib/sanitario/service";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -108,7 +117,7 @@ function formatAnimalAge(dataNascimento: string | null) {
 
 const Agenda = () => {
   const navigate = useNavigate();
-  const { activeFarmId } = useAuth();
+  const { activeFarmId, farmLifecycleConfig } = useAuth();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "agendado" | "concluido" | "cancelado">(
     "all",
@@ -207,6 +216,31 @@ const Agenda = () => {
         };
       }) as AgendaRow[];
   }, [data, search, statusFilter, dominioFilter, dateFrom, dateTo]);
+
+  const lifecycleQueue = useMemo(() => {
+    if (!data) return [];
+
+    return getPendingAnimalLifecycleTransitions(
+      data.animais.filter((animal) => animal.status === "ativo"),
+      farmLifecycleConfig,
+    ).map((item) => {
+      const animal = data.animais.find((entry) => entry.id === item.animalId) ?? null;
+      const lote =
+        animal?.lote_id
+          ? data.lotes.find((entry) => entry.id === animal.lote_id) ?? null
+          : null;
+
+      return {
+        ...item,
+        loteNome: lote?.nome ?? "Sem lote",
+      };
+    });
+  }, [data, farmLifecycleConfig]);
+
+  const lifecycleSummary = useMemo(
+    () => summarizePendingAnimalLifecycleTransitions(lifecycleQueue),
+    [lifecycleQueue],
+  );
 
   const groupedByAnimal = useMemo(() => {
     const byAnimal = new Map<
@@ -358,6 +392,16 @@ const Agenda = () => {
   };
 
   const goToRegistrar = (item: AgendaItem) => {
+    if (item.animal_id && isCalfJourneyAgendaItem(item)) {
+      const params = new URLSearchParams();
+      params.set("agendaItemId", item.id);
+      if (item.source_evento_id) {
+        params.set("eventoId", item.source_evento_id);
+      }
+      navigate(`/animais/${item.animal_id}/cria-inicial?${params.toString()}`);
+      return;
+    }
+
     const params = new URLSearchParams();
     params.set("sourceTaskId", item.id);
     params.set("dominio", item.dominio);
@@ -425,11 +469,13 @@ const Agenda = () => {
         {item.status === "agendado" && (
           <div className="flex flex-wrap gap-2">
             <Button size="sm" onClick={() => goToRegistrar(item)}>
-              Registrar Evento
+              {isCalfJourneyAgendaItem(item) ? "Abrir rotina da cria" : "Registrar Evento"}
             </Button>
-            <Button size="sm" variant="outline" onClick={() => updateStatus(item, "concluido")}>
-              Concluir
-            </Button>
+            {!isCalfJourneyAgendaItem(item) && (
+              <Button size="sm" variant="outline" onClick={() => updateStatus(item, "concluido")}>
+                Concluir
+              </Button>
+            )}
             <Button size="sm" variant="outline" onClick={() => updateStatus(item, "cancelado")}>
               Cancelar
             </Button>
@@ -513,6 +559,75 @@ const Agenda = () => {
           </CardContent>
         </Card>
       </div>
+
+      {lifecycleSummary.total > 0 && (
+        <Card className="border-amber-200 bg-amber-50/50">
+          <CardHeader className="pb-3">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <AlertTriangle className="h-4 w-4 text-amber-600" />
+                  Transicoes de estagio no radar
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Decisoes estrategicas e marcos biologicos que ja pedem ajuste no rebanho.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Badge variant="outline">{lifecycleSummary.total} pendencia(s)</Badge>
+                <Badge variant="outline">
+                  {lifecycleSummary.strategic} estrategica(s)
+                </Badge>
+                <Badge variant="outline">
+                  {lifecycleSummary.biological} biologica(s)
+                </Badge>
+                <Button asChild size="sm" variant="outline">
+                  <Link to="/animais/transicoes">Abrir mutacao em lote</Link>
+                </Button>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {lifecycleQueue.slice(0, 4).map((item) => (
+              <div
+                key={item.animalId}
+                className="flex flex-col gap-3 rounded-xl border bg-background p-4 lg:flex-row lg:items-center lg:justify-between"
+              >
+                <div className="space-y-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="font-medium">{item.identificacao}</p>
+                    <Badge
+                      variant={
+                        item.queueKind === "decisao_estrategica"
+                          ? "secondary"
+                          : "outline"
+                      }
+                    >
+                      {getPendingAnimalLifecycleKindLabel(item.queueKind)}
+                    </Badge>
+                    <Badge variant={item.canAutoApply ? "secondary" : "outline"}>
+                      {item.canAutoApply ? "Auto/hibrido" : "Manual"}
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    {getAnimalLifeStageLabel(item.currentStage)} para{" "}
+                    {getAnimalLifeStageLabel(item.targetStage)} · {item.loteNome}
+                  </p>
+                  <p className="text-xs text-muted-foreground">{item.reason}</p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button asChild size="sm" variant="outline">
+                    <Link to={`/animais/${item.animalId}`}>Abrir ficha</Link>
+                  </Button>
+                  <Button asChild size="sm">
+                    <Link to="/animais/transicoes">Tratar na fila</Link>
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader className="pb-4">
@@ -630,7 +745,7 @@ const Agenda = () => {
                     : group.animal?.sexo === "F"
                       ? "Femea"
                       : "N/D";
-                const raca = group.animal?.raca ?? "N/D";
+                const raca = getAnimalBreedLabel(group.animal?.raca) ?? "N/D";
                 const lote = group.rows[0]?.loteNome ?? "Sem lote";
                 const idade = group.rows[0]?.idadeLabel ?? "idade n/d";
 
@@ -712,15 +827,19 @@ const Agenda = () => {
                             {row.item.status === "agendado" && (
                               <div className="flex flex-wrap gap-2">
                                 <Button size="sm" onClick={() => goToRegistrar(row.item)}>
-                                  Registrar Evento
+                                  {isCalfJourneyAgendaItem(row.item)
+                                    ? "Abrir rotina da cria"
+                                    : "Registrar Evento"}
                                 </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => updateStatus(row.item, "concluido")}
-                                >
-                                  Concluir
-                                </Button>
+                                {!isCalfJourneyAgendaItem(row.item) && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => updateStatus(row.item, "concluido")}
+                                  >
+                                    Concluir
+                                  </Button>
+                                )}
                                 <Button
                                   size="sm"
                                   variant="outline"

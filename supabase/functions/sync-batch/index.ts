@@ -6,6 +6,7 @@ import {
   prevalidateAntiTeleport,
 } from './rules.ts'
 import { resolveEventFeatureFlags } from './flags.ts'
+import { validateAnimalTaxonomyFactsOperation } from './taxonomy.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -187,6 +188,20 @@ Deno.serve(async (req: Request) => {
           record.fazenda_id = fazenda_id; // Always use request fazenda_id
         }
         
+        const taxonomyValidation = validateAnimalTaxonomyFactsOperation({
+          ...op,
+          record,
+        });
+        if (taxonomyValidation) {
+          results.push({
+            op_id: op.client_op_id,
+            status: taxonomyValidation.status,
+            reason_code: taxonomyValidation.reason_code,
+            reason_message: taxonomyValidation.reason_message,
+          });
+          continue;
+        }
+
         // P1.1: Reproduction Events Hardening (Payload v1 + Episode Linking)
         if (op.table === 'eventos_reproducao' && op.action === 'INSERT') {
           const payload = record.payload || {};

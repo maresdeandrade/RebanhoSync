@@ -187,6 +187,40 @@ describe('sync-batch rules: anti-teleporte', () => {
     expect(result).toEqual({ ok: true });
   });
 
+  it('accepts grouped sale when financeiro payload references all animal_ids', () => {
+    const eventoId = 'evt-fin-lote-1';
+    const result = prevalidateAntiTeleport([
+      op({
+        table: 'eventos',
+        action: 'INSERT',
+        record: {
+          id: eventoId,
+          dominio: 'financeiro',
+          animal_id: null,
+          lote_id: 'lote-1',
+          payload: { animal_ids: ['ani-1', 'ani-2'] },
+        },
+      }),
+      op({
+        table: 'eventos_financeiro',
+        action: 'INSERT',
+        record: { evento_id: eventoId, tipo: 'venda', valor_total: 2400 },
+      }),
+      op({
+        table: 'animais',
+        action: 'UPDATE',
+        record: { id: 'ani-1', status: 'vendido', lote_id: null },
+      }),
+      op({
+        table: 'animais',
+        action: 'UPDATE',
+        record: { id: 'ani-2', status: 'vendido', lote_id: null },
+      }),
+    ]);
+
+    expect(result).toEqual({ ok: true });
+  });
+
   it('keeps anti-teleporte rejection when sale tx tries to move animal to another lote', () => {
     const eventoId = 'evt-fin-1';
     const result = prevalidateAntiTeleport([

@@ -141,6 +141,19 @@ export default function AnimalPosParto() {
         .map((animal) => [animal.id, animal]),
     );
   }, [calves]);
+  const journeyAgendaItems = useLiveQuery(async () => {
+    if (!mother?.fazenda_id || !calves || calves.length === 0) return [];
+
+    const calfIds = new Set(calves.map((calf) => calf.id));
+    return await db.state_agenda_itens
+      .where("fazenda_id")
+      .equals(mother.fazenda_id)
+      .filter(
+        (item) =>
+          Boolean(item.animal_id && calfIds.has(item.animal_id)) && !item.deleted_at,
+      )
+      .toArray();
+  }, [mother?.fazenda_id, calves]);
 
   const pastoById = useMemo(() => {
     return new Map((pastos ?? []).map((pasto) => [pasto.id, pasto]));
@@ -197,7 +210,7 @@ export default function AnimalPosParto() {
     setIsSaving(true);
     try {
       const occurredAt = new Date().toISOString();
-      const { ops, weighedCount, umbigoCount } = buildPostPartumOps({
+      const { ops, weighedCount, umbigoCount, agendaCount } = buildPostPartumOps({
         fazendaId: mother.fazenda_id,
         mother: {
           id: mother.id,
@@ -207,6 +220,7 @@ export default function AnimalPosParto() {
         drafts,
         occurredAt,
         birthEventId: eventId,
+        existingAgendaItems: journeyAgendaItems ?? [],
       });
 
       if (ops.length === 0) {
@@ -220,6 +234,8 @@ export default function AnimalPosParto() {
           weighedCount > 0 ? `${weighedCount} pesagem(ns) neonatal(is) registrada(s). ` : ""
         }${
           umbigoCount > 0 ? `${umbigoCount} cura(s) de umbigo registrada(s). ` : ""
+        }${
+          agendaCount > 0 ? `${agendaCount} marco(s) ate o desmame criado(s). ` : ""
         }TX: ${txId.slice(0, 8)}`,
       );
 

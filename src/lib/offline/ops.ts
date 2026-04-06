@@ -1,6 +1,10 @@
 import { db } from "./db";
 import { Operation, Gesture, OperationInput } from "./types";
 import { getLocalStoreName } from "./tableMap";
+import {
+  assertValidAnimalTaxonomyFactsContract,
+  readTaxonomyFactsRecord,
+} from "@/lib/animals/taxonomyFactsContract";
 
 function getRecordKey(record: Record<string, unknown>): string | null {
   if (typeof record.id === "string") return record.id;
@@ -55,6 +59,10 @@ export const createGesture = async (
     };
   });
 
+  for (const op of ops) {
+    validateOperationPayloadContracts(op);
+  }
+
   await db.transaction(
     "rw",
     [db.queue_gestures, db.queue_ops, ...getAffectedStores(ops)],
@@ -70,6 +78,25 @@ export const createGesture = async (
 
   return client_tx_id;
 };
+
+function validateOperationPayloadContracts(op: Operation) {
+  if (
+    op.table !== "animais" ||
+    (op.action !== "INSERT" && op.action !== "UPDATE")
+  ) {
+    return;
+  }
+
+  const payload =
+    op.record && typeof op.record === "object" && !Array.isArray(op.record)
+      ? op.record.payload
+      : undefined;
+  const taxonomyFacts = readTaxonomyFactsRecord(payload);
+
+  if (!taxonomyFacts) return;
+
+  assertValidAnimalTaxonomyFactsContract(taxonomyFacts);
+}
 
 export const applyOpLocal = async (op: Operation) => {
   const localStoreName = getLocalStoreName(op.table);

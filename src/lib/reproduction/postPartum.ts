@@ -1,5 +1,6 @@
 import { buildEventGesture } from "@/lib/events/buildEventGesture";
-import type { Animal, OperationInput } from "@/lib/offline/types";
+import type { AgendaItem, Animal, OperationInput } from "@/lib/offline/types";
+import { buildCalfJourneyAgendaOps } from "@/lib/reproduction/calfJourney";
 import {
   getAnimalPayloadRecord,
   getBirthEventId,
@@ -25,12 +26,17 @@ interface BuildPostPartumOpsInput {
   drafts: PostPartumCalfDraft[];
   occurredAt?: string;
   birthEventId?: string | null;
+  existingAgendaItems?: Pick<
+    AgendaItem,
+    "id" | "animal_id" | "status" | "dedup_key" | "deleted_at"
+  >[];
 }
 
 interface PostPartumBuildResult {
   ops: OperationInput[];
   weighedCount: number;
   umbigoCount: number;
+  agendaCount: number;
 }
 
 function parseWeight(value: string): number | null {
@@ -50,11 +56,13 @@ export function buildPostPartumOps({
   drafts,
   occurredAt = new Date().toISOString(),
   birthEventId = null,
+  existingAgendaItems = [],
 }: BuildPostPartumOpsInput): PostPartumBuildResult {
   const calfMap = new Map(calves.map((calf) => [calf.id, calf]));
   const ops: OperationInput[] = [];
   let weighedCount = 0;
   let umbigoCount = 0;
+  let agendaCount = 0;
 
   for (const draft of drafts) {
     const calf = calfMap.get(draft.calfId);
@@ -67,6 +75,7 @@ export function buildPostPartumOps({
     const umbigoAlreadyRecorded =
       typeof currentNeonatalSetup.umbigo_curado_at === "string";
     const shouldRegisterUmbigo = draft.curaUmbigo && !umbigoAlreadyRecorded;
+    let umbigoEventId: string | null = null;
 
     ops.push({
       table: "animais",
@@ -144,12 +153,54 @@ export function buildPostPartumOps({
 
       ops.push(...built.ops);
       umbigoCount += 1;
+      umbigoEventId = built.eventId;
     }
+
+    const umbigoAgendaDedupKey = `calf_journey:${calf.id}:cura_umbigo`;
+    const existingUmbigoAgenda = existingAgendaItems.find(
+      (item) =>
+        item.animal_id === calf.id &&
+        item.dedup_key === umbigoAgendaDedupKey &&
+        !item.deleted_at,
+    );
+    if (umbigoEventId && existingUmbigoAgenda && existingUmbigoAgenda.status === "agendado") {
+      ops.push({
+        table: "agenda_itens",
+        action: "UPDATE",
+        record: {
+          id: existingUmbigoAgenda.id,
+          status: "concluido",
+          source_evento_id: umbigoEventId,
+        },
+      });
+    }
+
+    const agendaBuild = buildCalfJourneyAgendaOps({
+      fazendaId,
+      calf: {
+        ...calf,
+        payload: {
+          ...currentPayload,
+          neonatal_setup: {
+            ...currentNeonatalSetup,
+            umbigo_curado_at:
+              shouldRegisterUmbigo
+                ? occurredAt
+                : (currentNeonatalSetup.umbigo_curado_at ?? null),
+          },
+        },
+      },
+      mother,
+      existingAgendaItems,
+    });
+    ops.push(...agendaBuild.ops);
+    agendaCount += agendaBuild.createdCount;
   }
 
   return {
     ops,
     weighedCount,
     umbigoCount,
+    agendaCount,
   };
 }

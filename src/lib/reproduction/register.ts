@@ -8,6 +8,7 @@ import { db } from "@/lib/offline/db";
 import { createGesture } from "@/lib/offline/ops";
 import type { EventGestureBuildResult } from "@/lib/events/types";
 import type { OperationInput, ReproTipoEnum } from "@/lib/offline/types";
+import { buildAnimalTaxonomyFactsPayload } from "@/lib/animals/taxonomy";
 
 export interface ReproductionDraftInput {
   tipo: ReproTipoEnum;
@@ -40,6 +41,21 @@ interface BuildReproductionGestureInput {
 export interface ReproductionGestureBuildResult
   extends EventGestureBuildResult {
   calfIds: string[];
+}
+
+function normalizeDateKey(value: string | null | undefined) {
+  if (!value) return null;
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed.toISOString().slice(0, 10);
+}
+
+function addGestationDays(value: string | null | undefined, days: number) {
+  if (!value) return null;
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return null;
+  parsed.setUTCDate(parsed.getUTCDate() + days);
+  return parsed.toISOString().slice(0, 10);
 }
 
 function throwReproIssues(issues: EventValidationIssue[]): never {
@@ -148,6 +164,103 @@ async function resolvePartoFatherId({
   return null;
 }
 
+async function resolveExpectedBirthDate({
+  animalId,
+  occurredAt,
+  data,
+}: Pick<BuildReproductionGestureInput, "animalId" | "occurredAt" | "data">) {
+  if (data.dataPrevistaParto) {
+    return normalizeDateKey(data.dataPrevistaParto);
+  }
+
+  if (data.tipo === "cobertura" || data.tipo === "IA") {
+    return addGestationDays(occurredAt, 283);
+  }
+
+  if (data.tipo !== "diagnostico" || data.resultadoDiagnostico !== "positivo") {
+    return null;
+  }
+
+  if (data.episodeLinkMethod === "manual" && data.episodeEventoId) {
+    const sourceEvent = await db.event_eventos.get(data.episodeEventoId);
+    return addGestationDays(sourceEvent?.occurred_at ?? null, 283);
+  }
+
+  if (
+    data.episodeLinkMethod === "auto_last_open_service" ||
+    !data.episodeLinkMethod
+  ) {
+    const history = await db.event_eventos
+      .where("animal_id")
+      .equals(animalId)
+      .filter((event) => event.dominio === "reproducao" && !event.deleted_at)
+      .reverse()
+      .sortBy("occurred_at");
+
+    for (const event of history) {
+      const details = await db.event_eventos_reproducao.get(event.id);
+      if (details && (details.tipo === "cobertura" || details.tipo === "IA")) {
+        return addGestationDays(event.occurred_at, 283);
+      }
+    }
+  }
+
+  return null;
+}
+
+async function buildAnimalTaxonomyUpdateOp(
+  input: BuildReproductionGestureInput,
+  expectedBirthDate: string | null,
+  occurredAt: string,
+): Promise<OperationInput | null> {
+  const animal = await db.state_animais.get(input.animalId);
+  if (!animal) return null;
+
+  const partoDate = normalizeDateKey(input.data.dataParto) ?? occurredAt.slice(0, 10);
+  let payload = animal.payload;
+
+  if (input.data.tipo === "diagnostico") {
+    if (input.data.resultadoDiagnostico === "positivo") {
+      payload = buildAnimalTaxonomyFactsPayload(payload, {
+        prenhez_confirmada: true,
+        data_prevista_parto: expectedBirthDate,
+      }, "reproduction_event");
+    } else if (input.data.resultadoDiagnostico === "negativo") {
+      payload = buildAnimalTaxonomyFactsPayload(payload, {
+        prenhez_confirmada: false,
+        data_prevista_parto: null,
+      }, "reproduction_event");
+    } else {
+      return null;
+    }
+  }
+
+  if (input.data.tipo === "parto") {
+    payload = buildAnimalTaxonomyFactsPayload(payload, {
+      prenhez_confirmada: false,
+      data_prevista_parto: null,
+      data_ultimo_parto: partoDate,
+      em_lactacao: true,
+      secagem_realizada: false,
+      puberdade_confirmada: true,
+    }, "reproduction_event");
+  }
+
+  if (payload === animal.payload) {
+    return null;
+  }
+
+  return {
+    table: "animais",
+    action: "UPDATE",
+    record: {
+      id: animal.id,
+      payload,
+      updated_at: occurredAt,
+    },
+  };
+}
+
 export function buildReproductionGesture({
   fazendaId,
   animalId,
@@ -238,10 +351,26 @@ export async function prepareReproductionGesture(
   input: BuildReproductionGestureInput,
 ) {
   const paiId = await resolvePartoFatherId(input);
-  return buildReproductionGesture({
+  const expectedBirthDate = await resolveExpectedBirthDate(input);
+  const built = buildReproductionGesture({
     ...input,
     paiId,
+    data: {
+      ...input.data,
+      dataPrevistaParto: expectedBirthDate ?? input.data.dataPrevistaParto,
+    },
   });
+  const taxonomyUpdateOp = await buildAnimalTaxonomyUpdateOp(
+    input,
+    expectedBirthDate,
+    input.occurredAt ?? new Date().toISOString(),
+  );
+
+  if (taxonomyUpdateOp) {
+    built.ops.push(taxonomyUpdateOp);
+  }
+
+  return built;
 }
 
 export async function registerReproductionGesture(

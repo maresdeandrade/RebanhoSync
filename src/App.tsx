@@ -14,6 +14,7 @@ const AnimalDetalhe = lazy(() => import("./pages/AnimalDetalhe"));
 const AnimalReproducao = lazy(() => import("./pages/AnimalReproducao"));
 const AnimalPosParto = lazy(() => import("./pages/AnimalPosParto"));
 const AnimalCriaInicial = lazy(() => import("./pages/AnimalCriaInicial"));
+const AnimaisTransicoes = lazy(() => import("./pages/AnimaisTransicoes"));
 const Lotes = lazy(() => import("./pages/Lotes"));
 const LotesImportar = lazy(() => import("./pages/LotesImportar"));
 const LoteNovo = lazy(() => import("./pages/LoteNovo"));
@@ -91,6 +92,7 @@ const App = () => (
           <Route path="/home" element={<Home />} />
           <Route path="/onboarding-inicial" element={<OnboardingInicial />} />
           <Route path="/animais" element={<Animais />} />
+          <Route path="/animais/transicoes" element={<AnimaisTransicoes />} />
           <Route path="/animais/importar" element={<AnimaisImportar />} />
           <Route path="/animais/novo" element={<AnimalNovo />} />
           <Route path="/animais/:id/editar" element={<AnimalEditar />} />

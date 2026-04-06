@@ -1,10 +1,30 @@
+import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 
 export const RequireFarm = ({ children }: { children: React.ReactNode }) => {
-  const { session, activeFarmId, loading, role } = useAuth();
+  const { session, activeFarmId, loading, role, refreshSettings } = useAuth();
+  const [isRecoveringFarm, setIsRecoveringFarm] = useState(false);
 
-  if (loading) {
+  useEffect(() => {
+    if (!session || !activeFarmId || role || loading || isRecoveringFarm) {
+      return;
+    }
+
+    setIsRecoveringFarm(true);
+    void refreshSettings().finally(() => {
+      setIsRecoveringFarm(false);
+    });
+  }, [
+    activeFarmId,
+    isRecoveringFarm,
+    loading,
+    refreshSettings,
+    role,
+    session,
+  ]);
+
+  if (loading || isRecoveringFarm) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         Carregando...

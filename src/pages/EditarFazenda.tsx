@@ -17,6 +17,10 @@ import {
   resolveFarmExperienceMode,
   withFarmExperienceMode,
 } from "@/lib/farms/experienceMode";
+import {
+  resolveFarmLifecycleConfig,
+  withFarmLifecycleConfig,
+} from "@/lib/farms/lifecycleConfig";
 
 type EditarFazendaForm = {
   nome: string;
@@ -39,6 +43,25 @@ const EditarFazenda = () => {
   const [essentialModeEnabled, setEssentialModeEnabled] = useState(true);
   const [strictRulesEnabled, setStrictRulesEnabled] = useState(true);
   const [strictAntiTeleportEnabled, setStrictAntiTeleportEnabled] = useState(true);
+  const [neonatalDays, setNeonatalDays] = useState("7");
+  const [weaningDays, setWeaningDays] = useState("210");
+  const [weaningWeightKg, setWeaningWeightKg] = useState("180");
+  const [maleBreedingCandidateDays, setMaleBreedingCandidateDays] =
+    useState("450");
+  const [maleBreedingCandidateWeightKg, setMaleBreedingCandidateWeightKg] =
+    useState("320");
+  const [maleAdultDays, setMaleAdultDays] = useState("731");
+  const [maleAdultWeightKg, setMaleAdultWeightKg] = useState("450");
+  const [femaleAdultDays, setFemaleAdultDays] = useState("901");
+  const [femaleAdultWeightKg, setFemaleAdultWeightKg] = useState("300");
+  const [defaultTransitionMode, setDefaultTransitionMode] = useState<
+    "manual" | "hibrido" | "automatico"
+  >("manual");
+  const [stageClassificationBasis, setStageClassificationBasis] = useState<
+    "idade" | "peso"
+  >("idade");
+  const [hybridAutoApplyAgeStages, setHybridAutoApplyAgeStages] =
+    useState(true);
 
   const {
     register,
@@ -91,6 +114,7 @@ const EditarFazenda = () => {
               ? (data.metadata as Record<string, unknown>)
               : {};
           const rollout = resolveEventosRolloutFlags(metadata);
+          const lifecycle = resolveFarmLifecycleConfig(metadata);
 
           reset({
             nome: data.nome,
@@ -108,6 +132,22 @@ const EditarFazenda = () => {
           );
           setStrictRulesEnabled(rollout.strict_rules_enabled);
           setStrictAntiTeleportEnabled(rollout.strict_anti_teleporte);
+          setNeonatalDays(String(lifecycle.neonatal_days));
+          setWeaningDays(String(lifecycle.weaning_days));
+          setWeaningWeightKg(String(lifecycle.weaning_weight_kg));
+          setMaleBreedingCandidateDays(
+            String(lifecycle.male_breeding_candidate_days),
+          );
+          setMaleBreedingCandidateWeightKg(
+            String(lifecycle.male_breeding_candidate_weight_kg),
+          );
+          setMaleAdultDays(String(lifecycle.male_adult_days));
+          setMaleAdultWeightKg(String(lifecycle.male_adult_weight_kg));
+          setFemaleAdultDays(String(lifecycle.female_adult_days));
+          setFemaleAdultWeightKg(String(lifecycle.female_adult_weight_kg));
+          setDefaultTransitionMode(lifecycle.default_transition_mode);
+          setStageClassificationBasis(lifecycle.stage_classification_basis);
+          setHybridAutoApplyAgeStages(lifecycle.hybrid_auto_apply_age_stages);
         }
 
         setLoadingData(false);
@@ -133,10 +173,27 @@ const EditarFazenda = () => {
         strict_rules_enabled: strictRulesEnabled,
         strict_anti_teleporte: strictRulesEnabled && strictAntiTeleportEnabled,
       });
-      const updatedMetadata = withFarmExperienceMode(
+      const experienceMetadata = withFarmExperienceMode(
         rolloutMetadata,
         essentialModeEnabled ? "essencial" : "completo",
       );
+      const updatedMetadata = withFarmLifecycleConfig(experienceMetadata, {
+        neonatal_days: Number.parseInt(neonatalDays, 10) || 7,
+        weaning_days: Number.parseInt(weaningDays, 10) || 210,
+        weaning_weight_kg: Number.parseInt(weaningWeightKg, 10) || 180,
+        male_breeding_candidate_days:
+          Number.parseInt(maleBreedingCandidateDays, 10) || 450,
+        male_breeding_candidate_weight_kg:
+          Number.parseInt(maleBreedingCandidateWeightKg, 10) || 320,
+        male_adult_days: Number.parseInt(maleAdultDays, 10) || 731,
+        male_adult_weight_kg: Number.parseInt(maleAdultWeightKg, 10) || 450,
+        female_adult_days: Number.parseInt(femaleAdultDays, 10) || 901,
+        female_adult_weight_kg:
+          Number.parseInt(femaleAdultWeightKg, 10) || 300,
+        default_transition_mode: defaultTransitionMode,
+        stage_classification_basis: stageClassificationBasis,
+        hybrid_auto_apply_age_stages: hybridAutoApplyAgeStages,
+      });
 
       const { error: updateError } = await supabase
         .from("fazendas")
@@ -183,7 +240,7 @@ const EditarFazenda = () => {
   if (error && !activeFarmId) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-muted/30 p-4">
-        <Card className="w-full max-w-md">
+        <Card className="w-full max-w-2xl">
           <CardHeader>
             <CardTitle className="text-destructive">Erro</CardTitle>
           </CardHeader>
@@ -205,7 +262,7 @@ const EditarFazenda = () => {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted/30 p-4">
-      <Card className="w-full max-w-md">
+      <Card className="w-full max-w-2xl">
         <CardHeader>
           <CardTitle className="text-2xl font-bold">Editar Fazenda</CardTitle>
           <p className="text-sm text-muted-foreground">
@@ -450,6 +507,204 @@ const EditarFazenda = () => {
                   Apenas owner pode alterar flags de rollout da fazenda.
                 </p>
               )}
+            </div>
+
+            <div className="space-y-3 rounded-md border p-4">
+              <div>
+                <Label className="text-sm font-semibold">
+                  Regras de estagio de vida
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Personaliza os marcos usados para sugerir ou aplicar
+                  transicoes no perfil dos animais.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label htmlFor="neonatal_days">Faixa neonatal (dias)</Label>
+                  <Input
+                    id="neonatal_days"
+                    type="number"
+                    min="1"
+                    value={neonatalDays}
+                    onChange={(e) => setNeonatalDays(e.target.value)}
+                    disabled={isLoading}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="weaning_days">Meta de desmame (dias)</Label>
+                  <Input
+                    id="weaning_days"
+                    type="number"
+                    min="1"
+                    value={weaningDays}
+                    onChange={(e) => setWeaningDays(e.target.value)}
+                    disabled={isLoading}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="weaning_weight_kg">Meta de desmame (kg)</Label>
+                  <Input
+                    id="weaning_weight_kg"
+                    type="number"
+                    min="1"
+                    value={weaningWeightKg}
+                    onChange={(e) => setWeaningWeightKg(e.target.value)}
+                    disabled={isLoading}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="male_breeding_candidate_days">
+                    Macho candidato (dias)
+                  </Label>
+                  <Input
+                    id="male_breeding_candidate_days"
+                    type="number"
+                    min="1"
+                    value={maleBreedingCandidateDays}
+                    onChange={(e) =>
+                      setMaleBreedingCandidateDays(e.target.value)
+                    }
+                    disabled={isLoading}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="male_breeding_candidate_weight_kg">
+                    Macho candidato (kg)
+                  </Label>
+                  <Input
+                    id="male_breeding_candidate_weight_kg"
+                    type="number"
+                    min="1"
+                    value={maleBreedingCandidateWeightKg}
+                    onChange={(e) =>
+                      setMaleBreedingCandidateWeightKg(e.target.value)
+                    }
+                    disabled={isLoading}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="male_adult_days">Macho adulto (dias)</Label>
+                  <Input
+                    id="male_adult_days"
+                    type="number"
+                    min="1"
+                    value={maleAdultDays}
+                    onChange={(e) => setMaleAdultDays(e.target.value)}
+                    disabled={isLoading}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="male_adult_weight_kg">Macho adulto (kg)</Label>
+                  <Input
+                    id="male_adult_weight_kg"
+                    type="number"
+                    min="1"
+                    value={maleAdultWeightKg}
+                    onChange={(e) => setMaleAdultWeightKg(e.target.value)}
+                    disabled={isLoading}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="female_adult_days">Femea adulta (dias)</Label>
+                  <Input
+                    id="female_adult_days"
+                    type="number"
+                    min="1"
+                    value={femaleAdultDays}
+                    onChange={(e) => setFemaleAdultDays(e.target.value)}
+                    disabled={isLoading}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="female_adult_weight_kg">Femea adulta (kg)</Label>
+                  <Input
+                    id="female_adult_weight_kg"
+                    type="number"
+                    min="1"
+                    value={femaleAdultWeightKg}
+                    onChange={(e) => setFemaleAdultWeightKg(e.target.value)}
+                    disabled={isLoading}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="stage_classification_basis">
+                    Base da classificacao
+                  </Label>
+                  <select
+                    id="stage_classification_basis"
+                    value={stageClassificationBasis}
+                    onChange={(e) =>
+                      setStageClassificationBasis(
+                        e.target.value as "idade" | "peso",
+                      )
+                    }
+                    disabled={isLoading}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  >
+                    <option value="idade">Idade</option>
+                    <option value="peso">Peso</option>
+                  </select>
+                  <p className="text-xs text-muted-foreground">
+                    Quando a fazenda escolher peso, o motor usa o ultimo peso
+                    registrado no animal e cai para idade se faltar leitura.
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="default_transition_mode">
+                    Modo de transicao padrao
+                  </Label>
+                  <select
+                    id="default_transition_mode"
+                    value={defaultTransitionMode}
+                    onChange={(e) =>
+                      setDefaultTransitionMode(
+                        e.target.value as "manual" | "hibrido" | "automatico",
+                      )
+                    }
+                    disabled={isLoading}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  >
+                    <option value="manual">Manual</option>
+                    <option value="hibrido">Hibrido</option>
+                    <option value="automatico">Automatico</option>
+                  </select>
+                  <p className="text-xs text-muted-foreground">
+                    Esse valor vira o padrao da fazenda e substitui a edicao de
+                    modo de transicao no cadastro individual dos machos.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between gap-3">
+                <div className="space-y-1">
+                  <p className="text-sm font-medium">
+                    Hibrido aplica marcos biologicos automaticamente
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Mantem confirmacao manual para transicoes estrategicas como
+                    touro e terminacao.
+                  </p>
+                </div>
+                <Switch
+                  checked={hybridAutoApplyAgeStages}
+                  onCheckedChange={setHybridAutoApplyAgeStages}
+                  disabled={isLoading}
+                />
+              </div>
             </div>
 
             {error && (

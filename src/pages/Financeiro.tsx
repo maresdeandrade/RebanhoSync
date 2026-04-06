@@ -109,6 +109,12 @@ const Financeiro = () => {
           evento.payload && typeof evento.payload.kind === "string"
             ? (evento.payload.kind as string)
             : "";
+        const quantidadeAnimais =
+          evento.payload && typeof evento.payload.quantidade_animais === "number"
+            ? (evento.payload.quantidade_animais as number)
+            : animal
+              ? 1
+              : 0;
         const isSociedade = payloadKind.startsWith("sociedade_");
         const naturezaLabel = isSociedade
           ? payloadKind === "sociedade_entrada"
@@ -155,6 +161,7 @@ const Financeiro = () => {
           loteNome: lote?.nome ?? "Sem lote",
           naturezaLabel,
           isSociedade,
+          quantidadeAnimais,
           occurredAt: evento.occurred_at,
           sourceTaskId: evento.source_task_id,
         };
@@ -169,6 +176,7 @@ const Financeiro = () => {
       loteNome: string;
       naturezaLabel: string;
       isSociedade: boolean;
+      quantidadeAnimais: number;
       occurredAt: string;
       sourceTaskId: string | null;
     }>;
@@ -398,6 +406,9 @@ const Financeiro = () => {
                   >
                     {row.naturezaLabel}
                   </Badge>
+                  {row.quantidadeAnimais > 1 && (
+                    <Badge variant="outline">{row.quantidadeAnimais} animais</Badge>
+                  )}
                   <Badge variant="outline">
                     Evento: <span className="font-mono ml-1">{row.id.slice(0, 8)}</span>
                   </Badge>

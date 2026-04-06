@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useLiveQuery } from "dexie-react-hooks";
 import {
@@ -26,12 +26,33 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useAuth } from "@/hooks/useAuth";
+import { getAnimalBreedLabel } from "@/lib/animals/catalogs";
+import {
+  buildAnimalLifecyclePayload,
+  getAnimalLifeStageLabel,
+  resolveAnimalLifecycleSnapshot,
+} from "@/lib/animals/lifecycle";
+import {
+  getAnimalProductiveDestination,
+  getAnimalProductiveDestinationLabel,
+  getAnimalTransitionMode,
+  getMaleReproductiveStatus,
+  getMaleReproductiveStatusLabel,
+  getTransitionModeLabel,
+  isAnimalBreedingEligible,
+} from "@/lib/animals/maleProfile";
+import {
+  buildAnimalTaxonomyReproContextMap,
+  deriveAnimalTaxonomy,
+  getCategoriaZootecnicaAliases,
+} from "@/lib/animals/taxonomy";
 import { isFemaleReproductionEligible } from "@/lib/animals/presentation";
-import { classificarAnimal, getLabelCategoria } from "@/lib/domain/categorias";
 import { db } from "@/lib/offline/db";
 import { createGesture } from "@/lib/offline/ops";
 import type { Animal, Evento, EventoReproducao } from "@/lib/offline/types";
 import { buildReproductionDashboard } from "@/lib/reproduction/dashboard";
+import { isCalfJourneyAgendaItem } from "@/lib/reproduction/calfJourney";
 import {
   getBirthEventId,
   hasPendingNeonatalSetup,
@@ -62,7 +83,10 @@ function getReproStatusLabel(value: string) {
 const AnimalDetalhe = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { farmLifecycleConfig } = useAuth();
   const [showMoverLote, setShowMoverLote] = useState(false);
+  const [isApplyingLifecycle, setIsApplyingLifecycle] = useState(false);
+  const autoAppliedStageRef = useRef<string | null>(null);
 
   const animal = useLiveQuery(() => db.state_animais.get(id!), [id]);
   const lote = useLiveQuery(
@@ -220,20 +244,29 @@ const AnimalDetalhe = () => {
     return await db.state_contrapartes.get(sociedadeAtiva.contraparte_id);
   }, [sociedadeAtiva?.contraparte_id]);
 
-  const categorias = useLiveQuery(async () => {
-    if (!animal?.fazenda_id) return [];
-    return await db.state_categorias_zootecnicas
-      .where("fazenda_id")
-      .equals(animal.fazenda_id)
-      .filter((categoria) => !categoria.deleted_at && categoria.ativa)
-      .toArray();
-  }, [animal?.fazenda_id]);
-
-  const categoriaAtual =
-    animal && categorias ? classificarAnimal(animal, categorias) : null;
-  const categoriaLabel = categoriaAtual ? getLabelCategoria(categoriaAtual) : null;
+  const taxonomySnapshot = useMemo(() => {
+    if (!animal) return null;
+    const reproContext = buildAnimalTaxonomyReproContextMap(
+      (eventos ?? []).filter((evt) => evt.dominio === "reproducao"),
+    ).get(animal.id);
+    return deriveAnimalTaxonomy(animal, {
+      config: farmLifecycleConfig,
+      reproContext: reproContext ?? null,
+    });
+  }, [animal, eventos, farmLifecycleConfig]);
+  const categoriaLabel = taxonomySnapshot?.display.categoria ?? null;
   const isReproductionEligible =
     animal && isFemaleReproductionEligible(animal, categoriaLabel);
+  const lifecycleSnapshot = animal
+    ? resolveAnimalLifecycleSnapshot(animal, farmLifecycleConfig)
+    : null;
+  const maleDestination = animal ? getAnimalProductiveDestination(animal) : null;
+  const maleReproductiveStatus = animal
+    ? getMaleReproductiveStatus(animal)
+    : null;
+  const transitionMode = animal ? getAnimalTransitionMode(animal) : null;
+  const effectiveTransitionMode = lifecycleSnapshot?.transitionMode ?? transitionMode;
+  const isBreedingMale = animal ? isAnimalBreedingEligible(animal) : false;
   const reproResumo = useMemo(() => {
     if (!animal || !isReproductionEligible) return null;
 
@@ -279,7 +312,15 @@ const AnimalDetalhe = () => {
       (crias ?? []).filter((calf) => hasPendingNeonatalSetup(calf.payload)).length,
     [crias],
   );
-  const isNeonatalCalf = wasGeneratedFromBirthEvent(animal.payload);
+  const calfJourneyPendingCount = useMemo(() => {
+    if (!agenda || agenda.length === 0) return 0;
+    return agenda.filter(
+      (item) => item.status === "agendado" && isCalfJourneyAgendaItem(item),
+    ).length;
+  }, [agenda]);
+  const isNeonatalCalf = animal
+    ? wasGeneratedFromBirthEvent(animal.payload)
+    : false;
   const calfInitialRoute = useMemo(() => {
     if (!animal) return null;
 
@@ -296,6 +337,59 @@ const AnimalDetalhe = () => {
       ? `/animais/${animal.id}/cria-inicial?${params.toString()}`
       : `/animais/${animal.id}/cria-inicial`;
   }, [animal, mae?.id]);
+
+  const applyLifecycleTransition = useCallback(async (
+    source: "manual" | "automatico",
+    silent = false,
+  ) => {
+    if (!animal || !lifecycleSnapshot) return;
+
+    setIsApplyingLifecycle(true);
+    try {
+      await createGesture(animal.fazenda_id, [
+        {
+          table: "animais",
+          action: "UPDATE",
+          record: {
+            id: animal.id,
+            payload: buildAnimalLifecyclePayload(
+              animal.payload,
+              lifecycleSnapshot.targetStage,
+              source,
+            ),
+            updated_at: new Date().toISOString(),
+          },
+        },
+      ]);
+
+      if (!silent) {
+        showSuccess(
+          `Estagio atualizado para ${getAnimalLifeStageLabel(
+            lifecycleSnapshot.targetStage,
+          ).toLowerCase()}.`,
+        );
+      }
+    } catch (error) {
+      if (!silent) {
+        showError("Nao foi possivel atualizar o estagio de vida.");
+      }
+    } finally {
+      setIsApplyingLifecycle(false);
+    }
+  }, [animal, lifecycleSnapshot]);
+
+  useEffect(() => {
+    if (!animal || !lifecycleSnapshot?.canAutoApply || isApplyingLifecycle) {
+      return;
+    }
+
+    if (autoAppliedStageRef.current === lifecycleSnapshot.targetStage) {
+      return;
+    }
+
+    autoAppliedStageRef.current = lifecycleSnapshot.targetStage;
+    void applyLifecycleTransition("automatico", true);
+  }, [animal, applyLifecycleTransition, isApplyingLifecycle, lifecycleSnapshot]);
 
   if (!animal) {
     return (
@@ -414,7 +508,31 @@ const AnimalDetalhe = () => {
                 {animal.origem.charAt(0).toUpperCase() + animal.origem.slice(1)}
               </Badge>
             )}
-            {animal.raca && <Badge variant="outline">{animal.raca}</Badge>}
+            {animal.raca && (
+              <Badge variant="outline">{getAnimalBreedLabel(animal.raca)}</Badge>
+            )}
+            {animal.sexo === "M" && maleDestination && (
+              <Badge variant="outline" className="border-sky-200 bg-white text-sky-800">
+                {getAnimalProductiveDestinationLabel(maleDestination)}
+              </Badge>
+            )}
+            {animal.sexo === "M" && maleReproductiveStatus && (
+              <Badge
+                variant="outline"
+                className={
+                  maleReproductiveStatus === "apto"
+                    ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+                    : "border-amber-200 bg-amber-50 text-amber-800"
+                }
+              >
+                {getMaleReproductiveStatusLabel(maleReproductiveStatus)}
+              </Badge>
+            )}
+            {animal.sexo === "M" && effectiveTransitionMode && (
+              <Badge variant="secondary">
+                {getTransitionModeLabel(effectiveTransitionMode)}
+              </Badge>
+            )}
             {animal.origem === "sociedade" && sociedadeAtiva && contraparte && (
               <Badge variant="default" className="bg-blue-600">
                 {contraparte.nome}
@@ -437,6 +555,169 @@ const AnimalDetalhe = () => {
           </CardContent>
         </Card>
       </div>
+
+      {taxonomySnapshot && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Taxonomia canônica</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div className="rounded-lg border bg-muted/30 p-3">
+                <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                  Categoria zootécnica
+                </p>
+                <p className="mt-1 font-semibold">{taxonomySnapshot.display.categoria}</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Aliases: {getCategoriaZootecnicaAliases(taxonomySnapshot.categoria_zootecnica).join(", ")}
+                </p>
+              </div>
+              <div className="rounded-lg border bg-muted/30 p-3">
+                <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                  Fase veterinária
+                </p>
+                <p className="mt-1 font-semibold">
+                  {taxonomySnapshot.display.fase_veterinaria}
+                </p>
+              </div>
+              <div className="rounded-lg border bg-muted/30 p-3">
+                <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                  Estado produtivo/reprodutivo
+                </p>
+                <p className="mt-1 font-semibold">
+                  {taxonomySnapshot.display.estado_alias}
+                </p>
+                {taxonomySnapshot.display.estado_alias !==
+                  taxonomySnapshot.display.estado_canonico && (
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Canonico: {taxonomySnapshot.display.estado_canonico}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              {taxonomySnapshot.facts.data_desmama && (
+                <Badge variant="outline">
+                  Desmama: {formatDate(taxonomySnapshot.facts.data_desmama)}
+                </Badge>
+              )}
+              {taxonomySnapshot.facts.prenhez_confirmada && (
+                <Badge variant="outline" className="border-emerald-200 bg-emerald-50 text-emerald-800">
+                  Prenhez confirmada
+                </Badge>
+              )}
+              {taxonomySnapshot.facts.data_ultimo_parto && (
+                <Badge variant="outline">
+                  Último parto: {formatDate(taxonomySnapshot.facts.data_ultimo_parto)}
+                </Badge>
+              )}
+              {taxonomySnapshot.facts.secagem_realizada && (
+                <Badge variant="outline">Secagem realizada</Badge>
+              )}
+              {taxonomySnapshot.facts.em_lactacao && (
+                <Badge variant="outline">Em lactação</Badge>
+              )}
+              {taxonomySnapshot.facts.castrado && (
+                <Badge variant="outline">Castrado</Badge>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {lifecycleSnapshot && (
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <CardTitle className="text-base">Estagio de vida</CardTitle>
+              <div className="flex flex-wrap gap-2">
+                <Badge variant="outline" className="border-slate-200 bg-white text-slate-800">
+                  Atual: {getAnimalLifeStageLabel(lifecycleSnapshot.currentStage)}
+                </Badge>
+                <Badge variant="secondary">
+                  {getTransitionModeLabel(lifecycleSnapshot.transitionMode)}
+                </Badge>
+                {lifecycleSnapshot.currentStageSource === "inferred" && (
+                  <Badge variant="outline">Estagio ainda nao registrado</Badge>
+                )}
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div className="rounded-lg border bg-muted/30 p-3">
+                <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                  Estagio atual
+                </p>
+                <p className="mt-1 font-semibold">
+                  {getAnimalLifeStageLabel(lifecycleSnapshot.currentStage)}
+                </p>
+              </div>
+              <div className="rounded-lg border bg-muted/30 p-3">
+                <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                  Alvo calculado
+                </p>
+                <p className="mt-1 font-semibold">
+                  {getAnimalLifeStageLabel(lifecycleSnapshot.targetStage)}
+                </p>
+              </div>
+              <div className="rounded-lg border bg-muted/30 p-3">
+                <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                  Regra usada
+                </p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {lifecycleSnapshot.targetStageReason}
+                </p>
+              </div>
+            </div>
+
+            {lifecycleSnapshot.shouldSuggestTransition ? (
+              <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="space-y-1">
+                    <p className="font-medium text-amber-900">
+                      {lifecycleSnapshot.suggestionKind === "initialize"
+                        ? "Registrar estagio inicial"
+                        : "Transicao sugerida"}
+                    </p>
+                    <p className="text-sm text-amber-800">
+                      {lifecycleSnapshot.suggestionKind === "initialize"
+                        ? `Salvar ${getAnimalLifeStageLabel(
+                            lifecycleSnapshot.targetStage,
+                          ).toLowerCase()} como estagio atual deste animal.`
+                        : `Mover de ${getAnimalLifeStageLabel(
+                            lifecycleSnapshot.currentStage,
+                          ).toLowerCase()} para ${getAnimalLifeStageLabel(
+                            lifecycleSnapshot.targetStage,
+                          ).toLowerCase()}.`}
+                    </p>
+                  </div>
+                  {!lifecycleSnapshot.canAutoApply && (
+                    <Button
+                      size="sm"
+                      onClick={() => void applyLifecycleTransition("manual")}
+                      disabled={isApplyingLifecycle}
+                    >
+                      {isApplyingLifecycle ? "Aplicando..." : "Confirmar transicao"}
+                    </Button>
+                  )}
+                </div>
+                {lifecycleSnapshot.canAutoApply && (
+                  <p className="mt-3 text-sm text-amber-800">
+                    Este marco sera aplicado automaticamente pelo modo{" "}
+                    {lifecycleSnapshot.transitionMode}.
+                  </p>
+                )}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                O estagio registrado ja esta alinhado com as regras atuais da fazenda.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader className="pb-3">
@@ -559,7 +840,7 @@ const AnimalDetalhe = () => {
         </CardContent>
       </Card>
 
-      <div className={`grid gap-4 ${animal.sexo === "F" ? "lg:grid-cols-2" : "grid-cols-1"}`}>
+      <div className="grid gap-4 lg:grid-cols-2">
         {animal.sexo === "F" && (
           <Card className="border-rose-200 bg-rose-50/40">
             <CardHeader className="pb-3">
@@ -682,6 +963,102 @@ const AnimalDetalhe = () => {
           </Card>
         )}
 
+        {animal.sexo === "M" && (
+          <Card className="border-sky-200 bg-sky-50/40">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-sky-900">
+                <HeartPulse className="h-4 w-4" />
+                Perfil de manejo do macho
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex flex-wrap gap-2">
+                <Badge
+                  variant="outline"
+                  className="border-sky-200 bg-white text-sky-800"
+                >
+                  {getAnimalProductiveDestinationLabel(maleDestination) ??
+                    "Destino: nao definido"}
+                </Badge>
+                <Badge
+                  variant="outline"
+                  className={
+                    maleReproductiveStatus === "apto"
+                      ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+                      : "border-amber-200 bg-amber-50 text-amber-800"
+                  }
+                >
+                  {getMaleReproductiveStatusLabel(maleReproductiveStatus) ??
+                    "Status: nao definido"}
+                </Badge>
+                <Badge
+                  variant="outline"
+                  className="border-slate-200 bg-white text-slate-700"
+                >
+                  {getTransitionModeLabel(effectiveTransitionMode) ??
+                    "Transicao manual"}
+                </Badge>
+                <Badge
+                  variant="outline"
+                  className={
+                    isBreedingMale
+                      ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+                      : "border-slate-200 bg-white text-slate-700"
+                  }
+                >
+                  {isBreedingMale
+                    ? "Elegivel para touro de lote"
+                    : "Ainda fora da liberacao para cobertura"}
+                </Badge>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-3">
+                <div className="rounded-lg border border-white/70 bg-white/80 p-3">
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                    Destino
+                  </p>
+                  <p className="mt-1 font-semibold text-slate-900">
+                    {maleDestination ?? "Nao definido"}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Decide se o animal segue para reproducao, engorda ou saida.
+                  </p>
+                </div>
+
+                <div className="rounded-lg border border-white/70 bg-white/80 p-3">
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                    Status reprodutivo
+                  </p>
+                  <p className="mt-1 font-semibold text-slate-900">
+                    {maleReproductiveStatus ?? "Nao definido"}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Separa candidato, apto, suspenso ou inativo.
+                  </p>
+                </div>
+
+                <div className="rounded-lg border border-white/70 bg-white/80 p-3">
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                    Modo de transicao
+                  </p>
+                  <p className="mt-1 font-semibold text-slate-900">
+                    {transitionMode ?? "manual"}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Define se a troca de marco fica manual, automatica ou mista.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                <Link to={`/animais/${animal.id}/editar`}>
+                  <Button size="sm">Ajustar perfil</Button>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2">
@@ -694,6 +1071,9 @@ const AnimalDetalhe = () => {
             <div className="space-y-1 text-sm text-muted-foreground">
               {mae && <p>Matriz de origem: {mae.identificacao}</p>}
               {pai && <p>Pai vinculado: {pai.identificacao}</p>}
+              {calfJourneyPendingCount > 0 && (
+                <p>{calfJourneyPendingCount} marco(s) da jornada da cria em aberto.</p>
+              )}
               {(crias?.length ?? 0) > 0 && (
                 <p>
                   {animal.identificacao} tem {(crias?.length ?? 0)} cria(s)

@@ -1,141 +1,141 @@
 # Database Schema - RebanhoSync
 
 > **Status:** Normativo
-> **Fonte de Verdade:** Migrations PostgreSQL (Supabase)
-> **Última Atualização:** 2026-02-16
+> **Fonte de Verdade:** Migrations PostgreSQL
+> **Ultima Atualizacao:** 2026-04-06
 
-Este documento define o schema lógico do banco de dados, alinhado às migrações aplicadas.
-
----
-
-## 1. Tenant & Auth
-
-O sistema é Multi-Tenant (por `fazenda_id`) e utiliza RLS para isolamento.
-
-### `fazendas`
-
-- **PK:** `id` (uuid)
-- **Dados:** `nome`, `codigo`, `municipio`, `timezone`.
-- **Extensões:** `estado`, `cep`, `area_total_ha`, `tipo_producao`, `sistema_manejo`, `benfeitorias` (jsonb).
-- **Sync:** `client_*`, `server_received_at`, `deleted_at`.
-
-### `user_fazendas`
-
-Tabela de associação (Membership) N:N.
-
-- **PK:** `(user_id, fazenda_id)`
-- **Dados:** `role` (owner, manager, cowboy), `is_primary`.
-
-### `farm_invites`
-
-Sistema de convites.
-
-- **PK:** `id`
-- **Dados:** `token`, `status`, `expires_at`, `role`.
+Este documento descreve o schema logico do banco e destaca os pontos relevantes para offline-first, multi-tenant e taxonomia bovina canonica.
 
 ---
 
-## 2. Entidades Administrativas
+## 1. Tenant e Seguranca
 
-### `protocolos_sanitarios`
+O banco e multi-tenant por `fazenda_id`.
 
-Cabeçalho de protocolos.
-
-- **FK:** `fazenda_id`
-
-### `protocolos_sanitarios_itens`
-
-Regras de aplicação.
-
-- **Dados:** `tipo`, `produto`, `intervalo_dias`, `gera_agenda`, `dedup_template`.
-
-### `contrapartes`
-
-Pessoas ou empresas (compradores, vendedores).
-
-- **Dados:** `tipo`, `documento`, `telefone`.
-
-### `categorias_zootecnicas` (Planejado - Fase 2)
-
-Regras de classificação automática (Idade/Sexo).
+- toda tabela operacional possui `fazenda_id`
+- o acesso e isolado por RLS
+- FKs compostas com `fazenda_id` sao obrigatorias quando aplicavel
 
 ---
 
-## 3. State (Estado Operacional)
-
-Active Record do sistema.
-
-### `pastos`
-
-Locais físicos.
-
-- **Dados:** `capacidade_ua`, `tipo_pasto`.
-
-### `lotes`
-
-Agrupamento lógico.
-
-- **FK:** `pasto_id`.
+## 2. Tabelas Operacionais
 
 ### `animais`
 
-Cabeças de gado.
+Estado atual do animal.
 
-- **FK:** `lote_id`, `pai_id`, `mae_id`.
-- **Dados:** `identificacao`, `sexo`, `status` (ativo/vendido/morto), `origem`.
+Campos centrais:
 
-### `animais_sociedade` (Planejado - Fase 2)
-
-Rastreio de propriedade de terceiros.
-
----
-
-## 4. Agenda (Rail 1)
+- `identificacao`
+- `sexo`
+- `status`
+- `lote_id`
+- `data_nascimento`
+- `data_entrada`
+- `data_saida`
+- `pai_id`
+- `mae_id`
+- `origem`
+- `raca`
+- `papel_macho`
+- `habilitado_monta`
+- `payload`
 
 ### `agenda_itens`
 
-Planejamento futuro.
+Rail mutavel para intencoes futuras.
 
-- **FK:** `animal_id`, `lote_id`.
-- **Dados:** `status`, `data_prevista`, `dedup_key`.
-- **Unique:** `(fazenda_id, dedup_key)` para itens agendados.
+### `eventos`
 
----
+Cabecalho append-only de fatos passados.
 
-## 5. Eventos (Rail 2 - Append-Only)
+Tabelas satelites:
 
-Histórico imutável.
-
-### `eventos` (Header)
-
-Tabela mãe.
-
-- **FK:** `source_task_id`, `corrige_evento_id`.
-- **Dados:** `dominio`, `occurred_at`.
-
-### Detalhes por Domínio
-
-- **`eventos_sanitario`**: `tipo`, `produto`.
-- **`eventos_pesagem`**: `peso_kg`.
-- **`eventos_nutricao`**: `alimento_nome`, `quantidade_kg`.
-- **`eventos_movimentacao`**: `from_lote_id`, `to_lote_id`.
-- **`eventos_reproducao`**: `tipo`, `macho_id`.
-- **`eventos_financeiro`**: `tipo`, `valor_total`, `contraparte_id`.
+- `eventos_sanitario`
+- `eventos_pesagem`
+- `eventos_nutricao`
+- `eventos_movimentacao`
+- `eventos_reproducao`
+- `eventos_financeiro`
 
 ---
 
-## 6. Sincronização e Auditoria
+## 3. Taxonomia Canonica
 
-Todas as tabelas de negócio possuem o "Envelope de Sync":
+O schema fisico de `animais` nao ganhou colunas novas para labels derivados.
 
-- `client_id`, `client_tx_id`, `client_op_id`
-- `client_recorded_at`, `server_received_at`
-- `deleted_at` (Soft Delete)
+### Fatos persistidos
+
+Fatos taxonomicos minimos ficam em `animais.payload.taxonomy_facts`.
+
+Contrato v1:
+
+- `schema_version = 1` obrigatorio
+- `castrado`
+- `puberdade_confirmada`
+- `prenhez_confirmada`
+- `data_prevista_parto`
+- `data_ultimo_parto`
+- `em_lactacao`
+- `secagem_realizada`
+- `data_secagem`
+
+Observacoes:
+
+- o shape e validado pelo schema central `src/lib/animals/taxonomyFactsContract.ts`
+- a persistencia continua em `payload` para evitar migração fisica destrutiva
+- facts invalidos devem ser rejeitados antes de sync e novamente no servidor
+
+Esses fatos coexistem com dados ja existentes em:
+
+- `data_nascimento`
+- `payload.weaning.completed_at`
+- `payload.metrics.last_weight_kg`
+- `payload.lifecycle.*`
+- `payload.male_profile.*`
+
+### Enums canonicos
+
+A migration `0038_animais_taxonomia_canonica.sql` cria:
+
+- `categoria_zootecnica_canonica_enum`
+- `fase_veterinaria_enum`
+- `estado_produtivo_reprodutivo_enum`
+
+### View derivada
+
+`vw_animais_taxonomia` projeta:
+
+- `categoria_zootecnica`
+- `fase_veterinaria`
+- `estado_produtivo_reprodutivo`
+- `taxonomy_facts_schema_version`
+
+alem dos fatos auxiliares usados para leitura e auditoria.
+
+Observacao importante:
+
+- a view e uma projecao SQL de leitura
+- a fonte operacional da regra continua no cliente em `src/lib/animals/taxonomy.ts`
+- a paridade TS vs SQL e testada por fixture em `src/lib/animals/__tests__/taxonomySqlParity.test.ts`
 
 ---
 
-## Veja Também
+## 4. Sync Envelope
 
-- [**ARCHITECTURE.md**](./ARCHITECTURE.md)
-- [**RLS.md**](./RLS.md)
-- [**CONTRACTS.md**](./CONTRACTS.md)
+As tabelas de negocio mantem:
+
+- `client_id`
+- `client_tx_id`
+- `client_op_id`
+- `client_recorded_at`
+- `server_received_at`
+- `deleted_at`
+
+---
+
+## Veja Tambem
+
+- [ARCHITECTURE.md](./ARCHITECTURE.md)
+- [OFFLINE.md](./OFFLINE.md)
+- [CONTRACTS.md](./CONTRACTS.md)

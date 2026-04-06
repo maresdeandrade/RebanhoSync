@@ -3,6 +3,7 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
   ChevronLeft,
+  ClipboardCheck,
   Dna,
   HeartPulse,
   History,
@@ -25,10 +26,25 @@ import { AnimalKinshipBadges } from "@/components/animals/AnimalKinshipBadges";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { classificarAnimal, getLabelCategoria } from "@/lib/domain/categorias";
 import { db } from "@/lib/offline/db";
-import type { Animal, Evento } from "@/lib/offline/types";
+import type { Animal, AgendaItem } from "@/lib/offline/types";
 import { createGesture } from "@/lib/offline/ops";
+import {
+  buildCalfJourneyCompletionOps,
+  getCalfJourneyMilestoneKey,
+  getCalfJourneyStage,
+  isCalfJourneyAgendaItem,
+} from "@/lib/reproduction/calfJourney";
 import {
   getBirthEventId,
   getNeonatalSetup,
@@ -46,9 +62,23 @@ type TimelineItem = {
   tone: string;
 };
 
+type JourneyActionDraft = {
+  pesoKg: string;
+  loteId: string;
+};
+
+const KEEP_CURRENT_LOTE = "__manter_lote__";
+
 function formatDate(value: string | null | undefined) {
   if (!value) return "Sem data";
   return new Date(value).toLocaleDateString("pt-BR");
+}
+
+function parseNumeric(value: string) {
+  const normalized = value.replace(",", ".").trim();
+  if (!normalized) return null;
+  const parsed = Number.parseFloat(normalized);
+  return Number.isFinite(parsed) ? parsed : null;
 }
 
 function getInitialDraft(
@@ -75,6 +105,7 @@ export default function AnimalCriaInicial() {
   const [searchParams] = useSearchParams();
   const [draft, setDraft] = useState<CalfInitialDraft | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [actionDrafts, setActionDrafts] = useState<Record<string, JourneyActionDraft>>({});
 
   const calf = useLiveQuery(() => (id ? db.state_animais.get(id) : undefined), [id]);
   const mother = useLiveQuery(
@@ -112,6 +143,15 @@ export default function AnimalCriaInicial() {
       .filter((categoria) => !categoria.deleted_at && categoria.ativa)
       .toArray();
   }, [calf?.fazenda_id]);
+  const journeyAgendaItems = useLiveQuery(async () => {
+    if (!calf?.id) return [];
+
+    return await db.state_agenda_itens
+      .where("animal_id")
+      .equals(calf.id)
+      .filter((item) => !item.deleted_at && isCalfJourneyAgendaItem(item))
+      .sortBy("data_prevista");
+  }, [calf?.id]);
   const historicoPeso = useLiveQuery(async () => {
     if (!calf?.id) return [];
 
@@ -205,6 +245,19 @@ export default function AnimalCriaInicial() {
           } satisfies TimelineItem;
         }
 
+        if (event.dominio === "nutricao") {
+          const details = await db.event_eventos_nutricao.get(event.id);
+          return {
+            id: event.id,
+            occurredAt: event.occurred_at,
+            title:
+              details?.alimento_nome === "Desmame" ? "Desmame" : "Manejo nutricional",
+            detail:
+              details?.alimento_nome || event.observacoes || "Sem detalhe adicional.",
+            tone: "bg-amber-500",
+          } satisfies TimelineItem;
+        }
+
         return {
           id: event.id,
           occurredAt: event.occurred_at,
@@ -228,6 +281,10 @@ export default function AnimalCriaInicial() {
   const categoriaAtual =
     calf && categorias ? classificarAnimal(calf, categorias) : null;
   const categoriaLabel = categoriaAtual ? getLabelCategoria(categoriaAtual) : null;
+  const journeyStage = useMemo(
+    () => (calf ? getCalfJourneyStage(calf, journeyAgendaItems ?? []) : null),
+    [calf, journeyAgendaItems],
+  );
   const resumoPeso = useMemo(() => {
     if (!historicoPeso || historicoPeso.length === 0) return null;
 
@@ -257,6 +314,21 @@ export default function AnimalCriaInicial() {
     if (!calf) return;
     setDraft(getInitialDraft(calf, fallbackLoteId));
   }, [calf, fallbackLoteId]);
+  useEffect(() => {
+    if (!journeyAgendaItems) return;
+
+    setActionDrafts((current) => {
+      const next = { ...current };
+      for (const item of journeyAgendaItems) {
+        if (next[item.id]) continue;
+        next[item.id] = {
+          pesoKg: "",
+          loteId: KEEP_CURRENT_LOTE,
+        };
+      }
+      return next;
+    });
+  }, [journeyAgendaItems]);
 
   const neonatalSetup = calf ? getNeonatalSetup(calf.payload) : null;
   const backToMother = useMemo(() => {
@@ -288,7 +360,7 @@ export default function AnimalCriaInicial() {
     try {
       const occurredAt = new Date().toISOString();
       const birthEventId = getBirthEventId(calf.payload);
-      const { ops, weighedCount, umbigoCount } = buildPostPartumOps({
+      const { ops, weighedCount, umbigoCount, agendaCount } = buildPostPartumOps({
         fazendaId: calf.fazenda_id,
         mother: {
           id: mother.id,
@@ -298,6 +370,7 @@ export default function AnimalCriaInicial() {
         drafts: [draft],
         occurredAt,
         birthEventId,
+        existingAgendaItems: journeyAgendaItems ?? [],
       });
 
       if (ops.length === 0) {
@@ -311,12 +384,50 @@ export default function AnimalCriaInicial() {
           weighedCount > 0 ? `${weighedCount} pesagem inicial registrada. ` : ""
         }${
           umbigoCount > 0 ? `${umbigoCount} cura de umbigo registrada. ` : ""
+        }${
+          agendaCount > 0 ? `${agendaCount} marco(s) ate o desmame criado(s). ` : ""
         }TX: ${txId.slice(0, 8)}`,
       );
     } catch {
       showError("Erro ao salvar a ficha inicial da cria.");
     } finally {
       setIsSaving(false);
+    }
+  };
+  const handleJourneyMilestone = async (item: AgendaItem) => {
+    if (!calf) return;
+
+    const itemDraft = actionDrafts[item.id] ?? {
+      pesoKg: "",
+      loteId: KEEP_CURRENT_LOTE,
+    };
+
+    try {
+      const built = buildCalfJourneyCompletionOps({
+        fazendaId: calf.fazenda_id,
+        calf,
+        mother: mother
+          ? {
+              id: mother.id,
+              identificacao: mother.identificacao,
+            }
+          : null,
+        agendaItem: item,
+        pesoKg: parseNumeric(itemDraft.pesoKg),
+        destinationLoteId:
+          itemDraft.loteId === KEEP_CURRENT_LOTE ? calf.lote_id : itemDraft.loteId,
+      });
+
+      const txId = await createGesture(calf.fazenda_id, built.ops);
+      showSuccess(
+        `${built.milestone.title} concluido. TX: ${txId.slice(0, 8)}`,
+      );
+    } catch (error) {
+      if (error instanceof Error) {
+        showError(error.message);
+        return;
+      }
+      showError("Falha ao concluir marco da cria.");
     }
   };
 
@@ -378,6 +489,11 @@ export default function AnimalCriaInicial() {
                   Crescimento inicial em acompanhamento
                 </Badge>
               )}
+              {journeyStage && (
+                <Badge variant="outline" className="border-sky-200 bg-sky-50 text-sky-800">
+                  {journeyStage.label}
+                </Badge>
+              )}
             </div>
 
             <div>
@@ -419,12 +535,13 @@ export default function AnimalCriaInicial() {
                 Status neonatal
               </p>
               <p className="mt-1 text-lg font-semibold">
-                {neonatalSetup?.completed_at ? "Fechado" : "Pendente"}
+                {journeyStage?.label ?? (neonatalSetup?.completed_at ? "Fechado" : "Pendente")}
               </p>
               <p className="text-xs text-muted-foreground">
-                {neonatalSetup?.completed_at
-                  ? `Concluido em ${formatDate(neonatalSetup.completed_at)}`
-                  : "Aguardando conferencia inicial"}
+                {journeyStage?.helper ??
+                  (neonatalSetup?.completed_at
+                    ? `Concluido em ${formatDate(neonatalSetup.completed_at)}`
+                    : "Aguardando conferencia inicial")}
               </p>
             </div>
           </div>
@@ -505,8 +622,182 @@ export default function AnimalCriaInicial() {
                     ? formatDate(neonatalSetup.umbigo_curado_at)
                     : "Nao registrada"}
                 </p>
+                <p>
+                  Marcos na agenda: {(journeyAgendaItems ?? []).length}
+                </p>
               </div>
             </div>
+          </CardContent>
+        </Card>
+      </section>
+
+      <section className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ClipboardCheck className="h-5 w-5 text-sky-700" />
+              Trilha da cria ate o desmame
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {(journeyAgendaItems ?? []).length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                Salve a ficha inicial para gerar os marcos automaticos da cria.
+              </p>
+            ) : (
+              (journeyAgendaItems ?? []).map((item) => {
+                const milestoneKey = getCalfJourneyMilestoneKey(item);
+                const itemDraft = actionDrafts[item.id] ?? {
+                  pesoKg: "",
+                  loteId: KEEP_CURRENT_LOTE,
+                };
+                const requiresWeight =
+                  milestoneKey === "pesagem_d7" || milestoneKey === "pesagem_d30";
+                const isWeaning = milestoneKey === "desmame";
+
+                return (
+                  <div key={item.id} className="rounded-xl border p-4 space-y-3">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <p className="font-medium">
+                          {(typeof item.payload?.milestone_label === "string"
+                            ? item.payload.milestone_label
+                            : item.tipo) || "Marco da cria"}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          Previsto para {formatDate(item.data_prevista)}
+                        </p>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <Badge
+                          variant="outline"
+                          className={
+                            item.status === "concluido"
+                              ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+                              : "border-amber-200 bg-amber-50 text-amber-800"
+                          }
+                        >
+                          {item.status}
+                        </Badge>
+                        <Badge variant="outline">{item.dominio}</Badge>
+                      </div>
+                    </div>
+
+                    {requiresWeight && item.status === "agendado" && (
+                      <div className="space-y-2">
+                        <Label htmlFor={`journey-weight-${item.id}`}>Peso (kg)</Label>
+                        <Input
+                          id={`journey-weight-${item.id}`}
+                          type="number"
+                          min="0"
+                          step="0.1"
+                          inputMode="decimal"
+                          value={itemDraft.pesoKg}
+                          onChange={(event) =>
+                            setActionDrafts((current) => ({
+                              ...current,
+                              [item.id]: {
+                                ...itemDraft,
+                                pesoKg: event.target.value,
+                              },
+                            }))
+                          }
+                          placeholder="Ex: 58.4"
+                        />
+                      </div>
+                    )}
+
+                    {isWeaning && item.status === "agendado" && (
+                      <div className="space-y-2">
+                        <Label>Lote de destino apos desmame</Label>
+                        <Select
+                          value={itemDraft.loteId}
+                          onValueChange={(value) =>
+                            setActionDrafts((current) => ({
+                              ...current,
+                              [item.id]: {
+                                ...itemDraft,
+                                loteId: value,
+                              },
+                            }))
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value={KEEP_CURRENT_LOTE}>Manter lote atual</SelectItem>
+                            {(lotes ?? []).map((lote) => (
+                              <SelectItem key={lote.id} value={lote.id}>
+                                {lote.nome}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+
+                    <div className="flex flex-wrap gap-2">
+                      {item.status === "agendado" ? (
+                        <Button size="sm" onClick={() => handleJourneyMilestone(item)}>
+                          Concluir marco
+                        </Button>
+                      ) : item.source_evento_id ? (
+                        <Button variant="outline" size="sm" asChild>
+                          <Link to={`/eventos?eventoId=${item.source_evento_id}`}>
+                            Ver evento gerado
+                          </Link>
+                        </Button>
+                      ) : null}
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <HeartPulse className="h-5 w-5 text-slate-700" />
+              Leitura da fase atual
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {journeyStage && (
+              <div className="rounded-xl border bg-muted/20 p-4">
+                <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                  Estagio de vida da jornada
+                </p>
+                <p className="mt-1 text-xl font-semibold">{journeyStage.label}</p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  {journeyStage.helper}
+                </p>
+              </div>
+            )}
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="rounded-xl border bg-muted/20 p-4">
+                <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                  Pendentes abertas
+                </p>
+                <p className="mt-1 text-xl font-semibold">
+                  {(journeyAgendaItems ?? []).filter((item) => item.status === "agendado").length}
+                </p>
+              </div>
+              <div className="rounded-xl border bg-muted/20 p-4">
+                <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                  Marcos concluidos
+                </p>
+                <p className="mt-1 text-xl font-semibold">
+                  {(journeyAgendaItems ?? []).filter((item) => item.status === "concluido").length}
+                </p>
+              </div>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              A trilha nasce no fechamento inicial da cria e segue aberta ate o
+              desmame, sempre com agenda mutavel e eventos imutaveis ao concluir cada marco.
+            </p>
           </CardContent>
         </Card>
       </section>

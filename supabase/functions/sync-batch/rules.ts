@@ -161,14 +161,25 @@ export function prevalidateAntiTeleport(ops: Operation[]):
     if (
       op.table === 'eventos' &&
       op.action === 'INSERT' &&
-      op.record?.animal_id &&
       op.record?.id
     ) {
       if (op.record.dominio === 'movimentacao') {
-        movBaseByAnimal.set(op.record.animal_id as string, op.record.id as string);
+        if (typeof op.record.animal_id === 'string') {
+          movBaseByAnimal.set(op.record.animal_id as string, op.record.id as string);
+        }
       }
       if (op.record.dominio === 'financeiro') {
-        finBaseByAnimal.set(op.record.animal_id as string, op.record.id as string);
+        if (typeof op.record.animal_id === 'string') {
+          finBaseByAnimal.set(op.record.animal_id as string, op.record.id as string);
+        }
+        const animalIds = Array.isArray(op.record.payload?.animal_ids)
+          ? op.record.payload.animal_ids
+          : [];
+        for (const animalId of animalIds) {
+          if (typeof animalId === 'string' && animalId.length > 0) {
+            finBaseByAnimal.set(animalId, op.record.id as string);
+          }
+        }
       }
     }
   }

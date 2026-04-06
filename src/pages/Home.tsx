@@ -21,6 +21,11 @@ import {
   Syringe,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import {
+  getAnimalLifeStageLabel,
+  getPendingAnimalLifecycleKindLabel,
+  getPendingAnimalLifecycleTransitions,
+} from "@/lib/animals/lifecycle";
 import { supabase } from "@/lib/supabase";
 import { db } from "@/lib/offline/db";
 import { Badge } from "@/components/ui/badge";
@@ -49,6 +54,18 @@ type HomeSnapshot = {
   agendaAtrasada: number;
   pendenciasSync: number;
   errosSync: number;
+  lifecyclePendings: {
+    animalId: string;
+    identificacao: string;
+    currentStageLabel: string;
+    targetStageLabel: string;
+    queueKindLabel: string;
+    canAutoApply: boolean;
+    reason: string;
+  }[];
+  lifecyclePendingCount: number;
+  lifecycleStrategicCount: number;
+  lifecycleBiologicalCount: number;
   proximosItens: {
     id: string;
     data: string;
@@ -107,7 +124,7 @@ function formatDay(date: string) {
 }
 
 const Home = () => {
-  const { activeFarmId, role } = useAuth();
+  const { activeFarmId, role, farmLifecycleConfig } = useAuth();
   const [farm, setFarm] = useState<FarmSummary | null>(null);
 
   useEffect(() => {
@@ -245,6 +262,25 @@ const Home = () => {
           done: eventosRecentes.length > 0,
         },
       ];
+      const lifecycleQueue = getPendingAnimalLifecycleTransitions(
+        animaisAtivos,
+        farmLifecycleConfig,
+      );
+      const lifecyclePendings = lifecycleQueue
+        .slice(0, 5)
+        .map((item) => ({
+          animalId: item.animalId,
+          identificacao: item.identificacao,
+          currentStageLabel: getAnimalLifeStageLabel(item.currentStage),
+          targetStageLabel: getAnimalLifeStageLabel(item.targetStage),
+          queueKindLabel: getPendingAnimalLifecycleKindLabel(item.queueKind),
+          canAutoApply: item.canAutoApply,
+          reason: item.reason,
+        }));
+      const lifecycleStrategicCount = lifecycleQueue.filter(
+        (item) => item.queueKind === "decisao_estrategica",
+      ).length;
+      const lifecycleBiologicalCount = lifecycleQueue.length - lifecycleStrategicCount;
 
       return {
         animais: animaisAtivos.length,
@@ -255,6 +291,10 @@ const Home = () => {
         agendaAtrasada: agendaAtrasada.length,
         pendenciasSync,
         errosSync: rejeicoes.length,
+        lifecyclePendings,
+        lifecyclePendingCount: lifecycleQueue.length,
+        lifecycleStrategicCount,
+        lifecycleBiologicalCount,
         proximosItens,
         eventosRecentes: eventosRecentes.map((evento) => {
           const animal = animaisAtivos.find((entry) => entry.id === evento.animal_id);
@@ -274,7 +314,7 @@ const Home = () => {
         checklist,
       };
     },
-    [activeFarmId],
+    [activeFarmId, farmLifecycleConfig],
   );
 
   const farmSubtitle = useMemo(() => {
@@ -436,7 +476,7 @@ const Home = () => {
         </Button>
       </section>
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardDescription>Animais ativos</CardDescription>
@@ -494,9 +534,24 @@ const Home = () => {
             </p>
           </CardContent>
         </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardDescription>Transicoes de estagio</CardDescription>
+            <AlertTriangle className="h-4 w-4 text-amber-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold">{snapshot.lifecyclePendingCount}</div>
+            <p className="text-sm text-muted-foreground">
+              {snapshot.lifecyclePendingCount > 0
+                ? `${snapshot.lifecycleStrategicCount} decisao(oes) e ${snapshot.lifecycleBiologicalCount} marco(s) biologico(s).`
+                : "Sem transicoes de vida pendentes."}
+            </p>
+          </CardContent>
+        </Card>
       </section>
 
-      <section className="grid gap-4 xl:grid-cols-[1.4fr_1fr]">
+      <section className="grid gap-4 xl:grid-cols-[1.3fr_1fr_1fr]">
         <Card>
           <CardHeader>
             <CardTitle className="text-xl">Rotina de hoje</CardTitle>
@@ -547,6 +602,58 @@ const Home = () => {
                   </div>
                 </div>
               ))
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-xl">Transicoes de estagio</CardTitle>
+            <CardDescription>
+              Sugestoes vindas do perfil do animal e das regras da fazenda.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {snapshot.lifecyclePendings.length === 0 ? (
+              <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+                Nenhum animal precisa de transicao de estagio neste momento.
+              </div>
+            ) : (
+              snapshot.lifecyclePendings.map((item) => (
+                <div
+                  key={item.animalId}
+                  className="space-y-2 rounded-xl border p-4"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className="font-medium">{item.identificacao}</p>
+                    <Badge variant={item.canAutoApply ? "secondary" : "outline"}>
+                      {item.canAutoApply ? "Auto/hibrido" : "Confirmacao manual"}
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    {item.currentStageLabel} para {item.targetStageLabel}
+                  </p>
+                  <p className="text-xs font-medium text-muted-foreground">
+                    {item.queueKindLabel}
+                  </p>
+                  <p className="text-xs text-muted-foreground">{item.reason}</p>
+                  <Button asChild variant="outline" size="sm">
+                    <Link to={`/animais/${item.animalId}`}>Abrir ficha</Link>
+                  </Button>
+                </div>
+              ))
+            )}
+            {snapshot.lifecyclePendingCount > snapshot.lifecyclePendings.length && (
+              <Button asChild variant="ghost" size="sm" className="w-full">
+                <Link to="/animais/transicoes">
+                  Ver mais {snapshot.lifecyclePendingCount - snapshot.lifecyclePendings.length}
+                </Link>
+              </Button>
+            )}
+            {snapshot.lifecyclePendingCount > 0 && (
+              <Button asChild variant="outline" size="sm" className="w-full">
+                <Link to="/animais/transicoes">Abrir mutacao em lote</Link>
+              </Button>
             )}
           </CardContent>
         </Card>

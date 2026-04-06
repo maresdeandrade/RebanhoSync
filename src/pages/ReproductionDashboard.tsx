@@ -16,6 +16,12 @@ import {
 } from "lucide-react";
 import { db } from "@/lib/offline/db";
 import { useAuth } from "@/hooks/useAuth";
+import {
+  getAnimalLifeStageLabel,
+  getPendingAnimalLifecycleKindLabel,
+  getPendingAnimalLifecycleTransitions,
+  summarizePendingAnimalLifecycleTransitions,
+} from "@/lib/animals/lifecycle";
 import { isFemaleReproductionEligible } from "@/lib/animals/presentation";
 import { classificarAnimal, getLabelCategoria } from "@/lib/domain/categorias";
 import {
@@ -217,7 +223,7 @@ function FocusCard({
 }
 
 export default function ReproductionDashboard() {
-  const { activeFarmId } = useAuth();
+  const { activeFarmId, farmLifecycleConfig } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [activeFilter, setActiveFilter] =
     useState<ReproDashboardFilter>("todas");
@@ -262,12 +268,29 @@ export default function ReproductionDashboard() {
           events,
         }),
         events,
+        eligibleAnimals,
       };
     },
     [activeFarmId],
   );
 
   const dashboardData = reproductionData?.dashboard ?? null;
+  const lifecycleQueue = useMemo(() => {
+    if (!reproductionData?.eligibleAnimals) return [];
+
+    return getPendingAnimalLifecycleTransitions(
+      reproductionData.eligibleAnimals,
+      farmLifecycleConfig,
+    );
+  }, [farmLifecycleConfig, reproductionData?.eligibleAnimals]);
+  const lifecycleSummary = useMemo(
+    () => summarizePendingAnimalLifecycleTransitions(lifecycleQueue),
+    [lifecycleQueue],
+  );
+  const lifecycleByAnimal = useMemo(
+    () => new Map(lifecycleQueue.map((item) => [item.animalId, item])),
+    [lifecycleQueue],
+  );
 
   const filteredAnimals = useMemo(() => {
     if (!dashboardData) return [];
@@ -327,6 +350,9 @@ export default function ReproductionDashboard() {
 
   const selectedAnimal =
     filteredAnimals.find((animal) => animal.id === selectedAnimalId) ?? null;
+  const selectedLifecyclePending = selectedAnimalId
+    ? lifecycleByAnimal.get(selectedAnimalId) ?? null
+    : null;
   const selectedHistory = selectedAnimalId
     ? historyByAnimal.get(selectedAnimalId) ?? []
     : [];
@@ -533,6 +559,21 @@ export default function ReproductionDashboard() {
               activeFilter={activeFilter}
               onSelect={setActiveFilter}
             />
+            <div className="rounded-xl border p-4">
+              <p className="text-sm text-muted-foreground">
+                Marcos de vida pendentes
+              </p>
+              <p className="mt-2 text-3xl font-semibold">
+                {lifecycleSummary.total}
+              </p>
+              <p className="mt-2 text-sm text-muted-foreground">
+                {lifecycleSummary.strategic} estrategica(s) e{" "}
+                {lifecycleSummary.biological} biologica(s) entre as femeas em acompanhamento.
+              </p>
+              <Button asChild size="sm" variant="outline" className="mt-3">
+                <Link to="/animais/transicoes">Abrir fila de estagios</Link>
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </section>
@@ -597,6 +638,7 @@ export default function ReproductionDashboard() {
           ) : (
             filteredAnimals.map((animal) => {
               const urgencyMeta = URGENCY_META[animal.urgency];
+              const lifecyclePending = lifecycleByAnimal.get(animal.id);
 
               return (
                 <Card key={animal.id} className="overflow-hidden">
@@ -613,6 +655,19 @@ export default function ReproductionDashboard() {
                           >
                             {STATUS_LABEL[animal.reproStatus.status]}
                           </Badge>
+                          {lifecyclePending && (
+                            <Badge
+                              variant={
+                                lifecyclePending.queueKind === "decisao_estrategica"
+                                  ? "secondary"
+                                  : "outline"
+                              }
+                            >
+                              {getPendingAnimalLifecycleKindLabel(
+                                lifecyclePending.queueKind,
+                              )}
+                            </Badge>
+                          )}
                         </div>
                         <CardDescription>
                           {animal.nome ?? "Matriz sem nome"} ·{" "}
@@ -631,6 +686,21 @@ export default function ReproductionDashboard() {
 
                   <CardContent className="space-y-4">
                     <div className="grid gap-3 md:grid-cols-2">
+                      {lifecyclePending && (
+                        <div className="rounded-xl border bg-muted/30 p-4 md:col-span-2">
+                          <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                            Estagio de vida
+                          </p>
+                          <p className="mt-2 text-base font-medium">
+                            {getAnimalLifeStageLabel(lifecyclePending.currentStage)} para{" "}
+                            {getAnimalLifeStageLabel(lifecyclePending.targetStage)}
+                          </p>
+                          <p className="mt-1 text-sm text-muted-foreground">
+                            {lifecyclePending.reason}
+                          </p>
+                        </div>
+                      )}
+
                       <div className="rounded-xl border bg-muted/30 p-4">
                         <p className="text-xs uppercase tracking-wide text-muted-foreground">
                           Ultimo marco
@@ -709,6 +779,7 @@ export default function ReproductionDashboard() {
             ) : (
               visibleAgenda.slice(0, 12).map((item) => {
                 const urgencyMeta = URGENCY_META[item.urgency];
+                const lifecyclePending = lifecycleByAnimal.get(item.animalId);
 
                 return (
                   <div
@@ -724,10 +795,29 @@ export default function ReproductionDashboard() {
                         >
                           {urgencyMeta.label}
                         </Badge>
+                        {lifecyclePending && (
+                          <Badge
+                            variant={
+                              lifecyclePending.queueKind === "decisao_estrategica"
+                                ? "secondary"
+                                : "outline"
+                            }
+                          >
+                            {getPendingAnimalLifecycleKindLabel(
+                              lifecyclePending.queueKind,
+                            )}
+                          </Badge>
+                        )}
                       </div>
                       <p className="text-sm text-muted-foreground">
                         {item.animalIdentificacao} · {item.helper}
                       </p>
+                      {lifecyclePending && (
+                        <p className="text-xs text-muted-foreground">
+                          {getAnimalLifeStageLabel(lifecyclePending.currentStage)} para{" "}
+                          {getAnimalLifeStageLabel(lifecyclePending.targetStage)}
+                        </p>
+                      )}
                       <p className="text-sm text-muted-foreground">
                         {formatDate(item.date)}
                       </p>
@@ -787,12 +877,33 @@ export default function ReproductionDashboard() {
                     >
                       {STATUS_LABEL[selectedAnimal.reproStatus.status]}
                     </Badge>
+                    {selectedLifecyclePending && (
+                      <Badge
+                        variant={
+                          selectedLifecyclePending.queueKind === "decisao_estrategica"
+                            ? "secondary"
+                            : "outline"
+                        }
+                      >
+                        {getPendingAnimalLifecycleKindLabel(
+                          selectedLifecyclePending.queueKind,
+                        )}
+                      </Badge>
+                    )}
                   </div>
                   <p className="mt-1 text-sm text-muted-foreground">
                     {selectedAnimal.loteNome ?? "Sem lote definido"} · proximo
                     passo: {selectedAnimal.nextActionLabel}
                   </p>
                 </div>
+
+                {selectedLifecyclePending && (
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {getAnimalLifeStageLabel(selectedLifecyclePending.currentStage)} para{" "}
+                    {getAnimalLifeStageLabel(selectedLifecyclePending.targetStage)} Â·{" "}
+                    {selectedLifecyclePending.reason}
+                  </p>
+                )}
 
                 <div className="space-y-4 border-l pl-4">
                   {selectedHistory.length === 0 ? (

@@ -70,7 +70,30 @@ describe("getAnimalVisualProfile", () => {
     expect(profile.headClassName).toBe("h-5 w-5");
   });
 
-  it("falls back to touro for breeding male", () => {
+  it("falls back to touro for breeding male using the new profile payload", () => {
+    const profile = getAnimalVisualProfile(
+      createAnimal({
+        sexo: "M",
+        data_nascimento: "2021-01-01",
+        payload: {
+          lifecycle: {
+            destino_produtivo: "reprodutor",
+          },
+          male_profile: {
+            status_reprodutivo: "apto",
+          },
+        },
+      }),
+      null,
+    );
+
+    expect(profile.label).toBe("Touro");
+    expect(profile.toneClassName).toContain("sky");
+    expect(profile.modifier).toBe("weight");
+    expect(profile.headClassName).toBe("h-5 w-6");
+  });
+
+  it("keeps compatibility with legacy male breeding fields", () => {
     const profile = getAnimalVisualProfile(
       createAnimal({
         sexo: "M",
@@ -82,12 +105,9 @@ describe("getAnimalVisualProfile", () => {
     );
 
     expect(profile.label).toBe("Touro");
-    expect(profile.toneClassName).toContain("sky");
-    expect(profile.modifier).toBe("weight");
-    expect(profile.headClassName).toBe("h-5 w-6");
   });
 
-  it("falls back to boi for adult male without category", () => {
+  it("falls back to garrote for adult male sem destino de terminacao", () => {
     const profile = getAnimalVisualProfile(
       createAnimal({
         sexo: "M",
@@ -96,7 +116,7 @@ describe("getAnimalVisualProfile", () => {
       null,
     );
 
-    expect(profile.label).toBe("Boi");
+    expect(profile.label).toBe("Garrote");
   });
 
   it("flags only novilha and vaca as eligible for female reproduction", () => {

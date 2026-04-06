@@ -1,80 +1,108 @@
-# Arquitetura Offline-First (Cliente)
+# Arquitetura Offline-First
 
 > **Status:** Normativo
-> **Fonte de Verdade:** Implementação `src/lib/offline/`
-> **Última Atualização:** 2026-02-16
+> **Fonte de Verdade:** `src/lib/offline/`
+> **Ultima Atualizacao:** 2026-04-06
 
-Este documento define a implementação técnica da persistência local (Dexie.js) e sincronização.
-
----
-
-## 1. Stores Locais (Dexie)
-
-O banco local `RebanhoSync` espelha o servidor em duas trilhas:
-
-### State Stores (Rail 1)
-
-Active Record mutável. Tabela `state_*`.
-
-- Ex: `state_animais`, `state_lotes`, `state_agenda_itens`.
-
-### Event Stores (Rail 2)
-
-Log append-only. Tabela `event_*`.
-
-- `event_eventos` (Header)
-- `event_eventos_sanitario`, `event_eventos_pesagem`, `event_eventos_nutricao`, `event_eventos_movimentacao`, `event_eventos_reproducao`, `event_eventos_financeiro`
-
-### Queue Stores
-
-Controle de transações pendentes.
-
-- `queue_gestures`: Cabeçalho (Status: `PENDING`, `SYNCING`, `DONE`, `REJECTED`).
-- `queue_ops`: Operações individuais (com `before_snapshot`).
-- `queue_rejections`: Dead Letter Queue (DLQ).
+Este documento descreve a persistencia local, a fila transacional e como a taxonomia canonica convive com o modelo offline-first.
 
 ---
 
-## 2. Semântica de Delete
+## 1. Stores Dexie
 
-- **State:** Soft Delete (`deleted_at`).
-- **Event:** Imutável. Correção via contra-lançamento.
+### `state_*`
 
----
+Replica local mutavel do estado atual.
 
-## 3. Pipeline de Sync
+Exemplos:
 
-1.  **Create Gesture:** Cliente grava em `queue_gestures` e `queue_ops`.
-2.  **Optimistic UI:** Aplica mudança em `state_*` imediatamente.
-3.  **Sync Worker:**
-    - Lê `PENDING`.
-    - Envia `POST /sync-batch`.
-    - Processa resposta.
-    - Se `REJECTED`: Executa **Rollback Local** usando snapshots.
+- `state_animais`
+- `state_lotes`
+- `state_agenda_itens`
 
----
+### `event_*`
 
-## 4. Rollback Local
+Log local append-only.
 
-Mecanismo crítico para consistência eventual em caso de rejeição.
+Exemplos:
 
-- **Snapshot:** Antes de qualquer write local, o estado anterior é salvo em `queue_ops.before_snapshot`.
-- **Reversão:** Se rejeitado, o worker restaura o snapshot (LIFO).
+- `event_eventos`
+- `event_eventos_reproducao`
+- `event_eventos_pesagem`
 
----
+### `queue_*`
 
-## 5. Table Mapping
+Controle de sincronizacao.
 
-Mapeamento entre Domínio (Remoto) e Dexie (Local):
-
-- `animais` → `state_animais`
-- `eventos` → `event_eventos`
-- `eventos_sanitario` → `event_eventos_sanitario`
+- `queue_gestures`
+- `queue_ops`
+- `queue_rejections`
 
 ---
 
-## Veja Também
+## 2. Taxonomia no Cliente
 
-- [**ARCHITECTURE.md**](./ARCHITECTURE.md)
-- [**CONTRACTS.md**](./CONTRACTS.md)
-- [**DB.md**](./DB.md)
+A taxonomia canonica nao introduz uma nova store dedicada.
+
+Decisao adotada:
+
+- fatos minimos ficam em `state_animais.payload.taxonomy_facts`
+- a derivacao e calculada em selectors/helpers
+- a UI consome snapshots derivados sem persistir labels canonicos como fonte primaria
+- `taxonomy_facts` carrega `schema_version = 1`
+- o contrato e validado antes do enqueue em `src/lib/offline/ops.ts`
+
+Beneficios:
+
+- sem breaking change no Dexie schema
+- sem custo de backfill local estrutural
+- rollback continua igual, porque os fatos seguem como `UPDATE` normal em `animais.payload`
+
+---
+
+## 3. Escrita e Rollback
+
+Quando um fato taxonomico muda:
+
+1. a UI cria um gesto
+2. grava `queue_ops`
+3. atualiza `state_animais`
+4. em rejeicao, restaura `before_snapshot`
+
+Exemplos de fatos atualizados automaticamente:
+
+- diagnostico positivo -> `prenhez_confirmada`, `data_prevista_parto`
+- parto -> `data_ultimo_parto`, `em_lactacao`, `secagem_realizada`
+
+Exemplos de fatos manuais:
+
+- `castrado`
+- `secagem_realizada`
+- `data_secagem`
+- `em_lactacao`
+
+Se o `sync-batch` responder `REJECTED`, o rollback continua restaurando o `before_snapshot` inteiro de `state_animais`.
+
+---
+
+## 4. Compatibilidade
+
+O shape da store `state_animais` permanece o mesmo.
+
+- nao foi criada tabela nova para taxonomia
+- dados legados continuam validos
+- compatibilidade com `papel_macho` e `habilitado_monta` permanece por helper
+
+Cobertura critica:
+
+- `src/lib/offline/__tests__/taxonomySync.e2e.test.ts`
+- fluxo `APPLIED` para novilha prenhe, parto e secagem
+- fluxo `REJECTED` com rollback local do animal
+
+---
+
+## Veja Tambem
+
+- [ARCHITECTURE.md](./ARCHITECTURE.md)
+- [DB.md](./DB.md)
+- [CONTRACTS.md](./CONTRACTS.md)

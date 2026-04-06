@@ -1,4 +1,5 @@
 import type { OrigemEnum, SexoEnum } from "@/lib/offline/types";
+import { parseAnimalBreed } from "@/lib/animals/catalogs";
 
 export type AnimalImportRow = {
   lineNumber: number;
@@ -241,7 +242,7 @@ export function parseAnimalImportCsv(text: string): AnimalImportParseResult {
     const dataNascimentoValue = readCell(cells, dataNascimentoIndex);
     const dataEntradaValue = readCell(cells, dataEntradaIndex);
     const origemValue = readCell(cells, origemIndex);
-    const raca = readCell(cells, racaIndex);
+    const racaValue = readCell(cells, racaIndex);
     const rfid = readCell(cells, rfidIndex);
 
     if (!identificacao) {
@@ -294,6 +295,17 @@ export function parseAnimalImportCsv(text: string): AnimalImportParseResult {
       continue;
     }
 
+    const raca = racaValue ? parseAnimalBreed(racaValue) : null;
+    if (racaValue && !raca) {
+      issues.push({
+        lineNumber,
+        field: "raca",
+        message:
+          "Raca invalida. Use uma das racas padronizadas configuradas no cadastro.",
+      });
+      continue;
+    }
+
     const duplicateKey = normalizeAnimalIdentifier(identificacao);
     const previousLine = seenIdentifiers.get(duplicateKey);
     if (previousLine) {
@@ -315,7 +327,7 @@ export function parseAnimalImportCsv(text: string): AnimalImportParseResult {
       dataNascimento,
       dataEntrada,
       origem,
-      raca: raca || null,
+      raca,
       rfid: rfid || null,
     });
   }

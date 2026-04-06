@@ -2,108 +2,98 @@
 
 > **Status:** Normativo
 > **Fonte de Verdade:** Requisitos de Produto
-> **Última Atualização:** 2026-02-16
+> **Ultima Atualizacao:** 2026-04-06
 
-Este documento define os fluxos críticos de validação do sistema.
+Este documento define os fluxos criticos de validacao do sistema.
 
 ---
 
-## Fluxo 0: Autenticação e Fazenda
+## Fluxo 0: Autenticacao e Fazenda
 
-- Login e redirecionamento correto.
-- Persistência da fazenda ativa (`user_settings` + `localStorage`).
-- Bootstrapping automático de fazenda para novos usuários (via `create_fazenda`).
+- login e redirecionamento correto
+- persistencia da fazenda ativa (`user_settings` + `localStorage`)
+- bootstrapping automatico de fazenda para novos usuarios
 
 ## Fluxo 0.5: Implantacao Inicial
 
-- Wizard de onboarding aponta para a primeira etapa pendente.
-- Importacao de pastos por CSV cria gestos locais validos.
-- Importacao de lotes por CSV valida vinculo com pastos da fazenda ativa.
-- Fluxos automatizados por `pnpm run test:e2e`.
+- wizard de onboarding aponta para a primeira etapa pendente
+- importacao de pastos por CSV cria gestos locais validos
+- importacao de lotes por CSV valida vinculo com pastos da fazenda ativa
 
 ## Fluxo 0.6: Resumo Operacional
 
-- Tela de resumo operacional consolida rebanho, agenda, financeiro basico e sync da fazenda ativa.
-- Exportacao CSV gera arquivo compartilhavel com o periodo selecionado.
-- Impressao abre visao resumida para repasse ao dono ou equipe.
-- Fluxo automatizado por `pnpm run test:e2e`.
+- tela de resumo operacional consolida rebanho, agenda, financeiro basico e sync da fazenda ativa
+- exportacao CSV gera arquivo compartilhavel com o periodo selecionado
+- impressao abre visao resumida para repasse ao dono ou equipe
 
-## Fluxo 1: RBAC (Member Management)
+## Fluxo 1: RBAC
 
-- Owner tem controle total.
-- Manager não pode alterar owner.
-- Bloqueio de remoção do último owner (Safeguard).
-- Soft delete de membros.
+- owner tem controle total
+- manager nao pode alterar owner
+- bloqueio de remocao do ultimo owner
+- soft delete de membros
 
-## Fluxo 2: Offline → Online → Sync
+## Fluxo 2: Offline -> Online -> Sync
 
-- Criação de evento offline (Active Record + Queue).
-- Sincronização automática ao recuperar conexão.
-- Validação de dados no servidor e consistência local.
+- criacao de evento offline (`state_*` + `queue_*`)
+- sincronizacao automatica ao recuperar conexao
+- validacao de dados no servidor e consistencia local
+
+## Fluxo 2.1: Taxonomia Canonica
+
+- novilha prenhe: write offline em `animais.payload.taxonomy_facts`, sync `APPLIED`, projecao final `novilha/prenhe`
+- parto: write derivado de evento reprodutivo, sync `APPLIED`, projecao final `vaca/recem_parida`
+- secagem: write offline, sync `APPLIED`, projecao final `vaca/seca`
+- rejeicao taxonomica: `REJECTED` por shape invalido deve executar rollback local completo do `before_snapshot`
+- cobertura automatizada minima em `src/lib/offline/__tests__/taxonomySync.e2e.test.ts`
 
 ## Fluxo 3: Anti-Teleporte
 
-- Movimentação mágica (UPDATE sem INSERT evento) deve ser **REJEITADA** (Atomicidade).
-- Movimentação correta (Evento + Detalhe + Update) deve ser **ACEITA**.
-- Rollback local correto em caso de rejeição.
+- movimentacao magica (`UPDATE` sem `INSERT` de evento) deve ser rejeitada
+- movimentacao correta (`Evento + Detalhe + Update`) deve ser aceita
+- rollback local correto em caso de rejeicao
 
-## Fluxo 4: Deduplicação de Agenda
+## Fluxo 4: Duplicacao de Agenda
 
-- Tarefas com mesmo `dedup_key` não duplicam.
-- Retorno `APPLIED_ALTERED` tratado como sucesso pelo cliente.
+- tarefas com mesmo `dedup_key` nao duplicam
+- retorno `APPLIED_ALTERED` tratado como sucesso pelo cliente
 
 ## Fluxo 5: Setup de Fazenda
 
-- RPC `create_fazenda` cria tenant e membership corretamente.
+- RPC `create_fazenda` cria tenant e membership corretamente
 
 ## Fluxo 6: Hardening de Eventos
 
-- Validação de constraints financeiros (valor > 0).
-- Validação de movimentação (origem != destino).
-- Validação de integridade de chaves.
+- validacao de constraints financeiros (`valor > 0`)
+- validacao de movimentacao (`origem != destino`)
+- validacao de integridade de chaves
 
 ## Fluxo 7: Operacional
 
-- Feature flags de fazenda.
-- Dashboard de monitoramento de rejeições (Planejado - M2).
+- feature flags de fazenda
+- dashboard de monitoramento de rejeicoes
 
-## Fluxo 8: Nutrição (Registro Offline→Sync→Histórico)
+## Fluxo 8: Nutricao
 
-**Escopo MVP:** Registro operacional de eventos de nutrição (alimento fornecido) para animais e/ou lotes. **Não inclui** gestão de estoque, inventário ou compras.
+Escopo MVP:
 
-**Requisitos:**
+- registro operacional de eventos de nutricao para animais e/ou lotes
+- nao inclui gestao de estoque, inventario ou compras
 
-1. **Registro Offline:**
-   - Formulário de Nutrição permite registrar evento offline (animal ou lote, alimento_nome, quantidade_kg).
-   - Grava em `state_eventos` (rail mutável) e `event_eventos_nutricao` (rail append-only).
-   - Cria gesture em `queue_gestures` + `queue_ops` para sync futuro.
+Requisitos:
 
-2. **Sincronização:**
-   - Ao recuperar conexão, sync-batch processa gesture e aplica evento no servidor.
-   - Server valida schema (alimento_nome, quantidade_kg > 0) e constraints de tenant.
-   - Retorna `APPLIED` ou `REJECTED` com motivo.
-
-3. **Rollback Local:**
-   - Em caso de rejeição, syncWorker reverte alterações locais (state*\* + event*\*).
-
-4. **Histórico:**
-   - UI de histórico de eventos mostra eventos de nutrição sincronizados.
-   - Filtro por domínio "Nutrição" funcional.
-
-**Validação de Aceite:**
-
-- [ ] Formulário Nutrição renderiza em `/registrar` (tipoManejo === "nutricao").
-- [ ] Evento criado offline aparece em `state_eventos` e `event_eventos_nutricao`.
-- [ ] Gesture criado com status `PENDING`.
-- [ ] Sync aplica evento no servidor (200 OK, status `APPLIED`).
-- [ ] Histórico mostra evento de nutrição após sync.
-- [ ] Rejeição (ex: quantidade_kg <= 0) aciona rollback local.
+- formulario de nutricao registra evento offline
+- grava em `state_eventos` e `event_eventos_nutricao`
+- cria `queue_gestures` + `queue_ops`
+- `sync-batch` processa o gesto
+- `syncWorker` executa rollback local em caso de rejeicao
+- historico exibe eventos de nutricao sincronizados
 
 ---
 
-## Veja Também
+## Veja Tambem
 
-- [**ARCHITECTURE.md**](./ARCHITECTURE.md)
-- [**DB.md**](./DB.md)
-- [**CONTRACTS.md**](./CONTRACTS.md)
-- [**EVENTOS_AGENDA_SPEC.md**](./EVENTOS_AGENDA_SPEC.md)
+- [ARCHITECTURE.md](./ARCHITECTURE.md)
+- [DB.md](./DB.md)
+- [CONTRACTS.md](./CONTRACTS.md)
+- [EVENTOS_AGENDA_SPEC.md](./EVENTOS_AGENDA_SPEC.md)

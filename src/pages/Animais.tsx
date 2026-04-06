@@ -32,14 +32,60 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { classificarAnimal, getLabelCategoria } from "@/lib/domain/categorias";
+import {
+  getAnimalLifeStageLabel,
+  getPendingAnimalLifecycleKindLabel,
+  getPendingAnimalLifecycleTransitions,
+  resolveAnimalLifecycleSnapshot,
+} from "@/lib/animals/lifecycle";
+import {
+  buildAnimalTaxonomyReproContextMap,
+  deriveAnimalTaxonomy,
+} from "@/lib/animals/taxonomy";
 import { buildAnimalFamilyRows } from "@/lib/animals/familyOrder";
 import { db } from "@/lib/offline/db";
 import { type Animal } from "@/lib/offline/types";
-import { getActiveFarmId } from "@/lib/storage";
+import { useAuth } from "@/hooks/useAuth";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { useLotes } from "@/hooks/useLotes";
 import { cn } from "@/lib/utils";
+import { getReproductionEventsJoined } from "@/lib/reproduction/selectors";
+
+const CATEGORY_FILTERS = [
+  { value: "all", label: "Todas categorias" },
+  { value: "bezerra", label: "Bezerra" },
+  { value: "novilha", label: "Novilha" },
+  { value: "vaca", label: "Vaca" },
+  { value: "bezerro", label: "Bezerro" },
+  { value: "garrote", label: "Garrote" },
+  { value: "boi_terminacao", label: "Boi" },
+  { value: "touro", label: "Touro" },
+] as const;
+
+const VETERINARY_PHASE_FILTERS = [
+  { value: "all", label: "Todas fases" },
+  { value: "neonatal", label: "Neonatal" },
+  { value: "pre_desmama", label: "Pré-desmama" },
+  { value: "pos_desmama", label: "Pós-desmama" },
+  { value: "pre_pubere", label: "Pré-púbere" },
+  { value: "pubere", label: "Púbere" },
+  { value: "gestante", label: "Gestante" },
+  { value: "puerperio", label: "Puerpério" },
+] as const;
+
+const PRODUCTIVE_STATE_FILTERS = [
+  { value: "all", label: "Todos estados" },
+  { value: "vazia", label: "Vazia" },
+  { value: "prenhe", label: "Prenhe" },
+  { value: "pre_parto_imediato", label: "Amojando" },
+  { value: "seca", label: "Seca" },
+  { value: "recem_parida", label: "Vaca parida" },
+  { value: "lactacao", label: "Vaca em lactação" },
+  { value: "inteiro", label: "Inteiro" },
+  { value: "castrado", label: "Castrado" },
+  { value: "reprodutor", label: "Reprodutor" },
+  { value: "terminacao", label: "Terminação" },
+] as const;
 
 const calcularIdade = (
   dataNascimento: string | null | undefined,
@@ -59,22 +105,17 @@ const calcularIdade = (
 
 const Animais = () => {
   const navigate = useNavigate();
+  const { activeFarmId, farmLifecycleConfig } = useAuth();
   const [search, setSearch] = useState("");
   const [loteFilter, setLoteFilter] = useState<string>("all");
   const [sexoFilter, setSexoFilter] = useState<string>("all");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("ativo");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [phaseFilter, setPhaseFilter] = useState<string>("all");
+  const [productiveStateFilter, setProductiveStateFilter] =
+    useState<string>("all");
   const debouncedSearch = useDebouncedValue(search, 300);
-  const activeFarmId = getActiveFarmId();
   const lotes = useLotes();
-  const categorias = useLiveQuery(async () => {
-    if (!activeFarmId) return [];
-
-    return await db.state_categorias_zootecnicas
-      .where("fazenda_id")
-      .equals(activeFarmId)
-      .filter((categoria) => !categoria.deleted_at && categoria.ativa)
-      .toArray();
-  }, [activeFarmId]);
   const animaisFamilia = useLiveQuery(async () => {
     let collection: Collection<Animal, string>;
 
@@ -85,6 +126,10 @@ const Animais = () => {
     }
 
     return await collection.filter((animal) => !animal.deleted_at).toArray();
+  }, [activeFarmId]);
+  const reproductionEvents = useLiveQuery(async () => {
+    if (!activeFarmId) return [];
+    return await getReproductionEventsJoined(activeFarmId);
   }, [activeFarmId]);
 
   const lotesMap = useMemo(
@@ -144,15 +189,74 @@ const Animais = () => {
 
     return await collection.toArray();
   }, [activeFarmId, debouncedSearch, loteFilter, sexoFilter, statusFilter]);
+  const taxonomyByAnimal = useMemo(() => {
+    const reproContextMap = buildAnimalTaxonomyReproContextMap(
+      reproductionEvents ?? [],
+    );
+
+    return new Map(
+      (animaisFamilia ?? []).map((animal) => [
+        animal.id,
+        deriveAnimalTaxonomy(animal, {
+          config: farmLifecycleConfig,
+          reproContext: reproContextMap.get(animal.id) ?? null,
+        }),
+      ]),
+    );
+  }, [animaisFamilia, farmLifecycleConfig, reproductionEvents]);
+  const filteredAnimals = useMemo(() => {
+    return (animais ?? []).filter((animal) => {
+      const taxonomy = taxonomyByAnimal.get(animal.id);
+      if (!taxonomy) return true;
+      if (
+        categoryFilter !== "all" &&
+        taxonomy.categoria_zootecnica !== categoryFilter
+      ) {
+        return false;
+      }
+      if (
+        phaseFilter !== "all" &&
+        taxonomy.fase_veterinaria !== phaseFilter
+      ) {
+        return false;
+      }
+      if (
+        productiveStateFilter !== "all" &&
+        taxonomy.estado_produtivo_reprodutivo !== productiveStateFilter
+      ) {
+        return false;
+      }
+      return true;
+    });
+  }, [animais, categoryFilter, phaseFilter, productiveStateFilter, taxonomyByAnimal]);
   const animalRows = useMemo(() => {
-    return buildAnimalFamilyRows(animais ?? [], animaisFamilia ?? []);
-  }, [animais, animaisFamilia]);
+    return buildAnimalFamilyRows(filteredAnimals, animaisFamilia ?? []);
+  }, [filteredAnimals, animaisFamilia]);
+  const lifecyclePendings = useMemo(() => {
+    const queue = getPendingAnimalLifecycleTransitions(
+      animaisFamilia ?? [],
+      farmLifecycleConfig,
+    );
+    return new Map(queue.map((item) => [item.animalId, item]));
+  }, [animaisFamilia, farmLifecycleConfig]);
 
   const hasFilters =
     search ||
     loteFilter !== "all" ||
     sexoFilter !== "all" ||
-    statusFilter !== "all";
+    statusFilter !== "ativo" ||
+    categoryFilter !== "all" ||
+    phaseFilter !== "all" ||
+    productiveStateFilter !== "all";
+  const lifecyclePendingCount = lifecyclePendings.size;
+  const lifecycleStrategicCount = useMemo(
+    () =>
+      Array.from(lifecyclePendings.values()).filter(
+        (item) => item.queueKind === "decisao_estrategica",
+      ).length,
+    [lifecyclePendings],
+  );
+  const lifecycleBiologicalCount = lifecyclePendingCount - lifecycleStrategicCount;
 
   if (!animais || (animais.length === 0 && !hasFilters)) {
     return (
@@ -253,6 +357,48 @@ const Animais = () => {
             </SelectContent>
           </Select>
 
+          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+            <SelectTrigger className="w-[170px]">
+              <SelectValue placeholder="Categoria" />
+            </SelectTrigger>
+            <SelectContent>
+              {CATEGORY_FILTERS.map((item) => (
+                <SelectItem key={item.value} value={item.value}>
+                  {item.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={phaseFilter} onValueChange={setPhaseFilter}>
+            <SelectTrigger className="w-[170px]">
+              <SelectValue placeholder="Fase vet." />
+            </SelectTrigger>
+            <SelectContent>
+              {VETERINARY_PHASE_FILTERS.map((item) => (
+                <SelectItem key={item.value} value={item.value}>
+                  {item.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={productiveStateFilter}
+            onValueChange={setProductiveStateFilter}
+          >
+            <SelectTrigger className="w-[190px]">
+              <SelectValue placeholder="Estado" />
+            </SelectTrigger>
+            <SelectContent>
+              {PRODUCTIVE_STATE_FILTERS.map((item) => (
+                <SelectItem key={item.value} value={item.value}>
+                  {item.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
           {hasFilters && (
             <Button
               aria-label="Limpar filtros"
@@ -262,7 +408,10 @@ const Animais = () => {
                 setSearch("");
                 setLoteFilter("all");
                 setSexoFilter("all");
-                setStatusFilter("all");
+                setStatusFilter("ativo");
+                setCategoryFilter("all");
+                setPhaseFilter("all");
+                setProductiveStateFilter("all");
               }}
             >
               <FilterX className="h-4 w-4" />
@@ -270,6 +419,21 @@ const Animais = () => {
           )}
         </div>
       </div>
+
+      {lifecyclePendingCount > 0 && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          {lifecyclePendingCount} animal(is) com transicao de estagio pendente.
+          {" "}
+          {lifecycleStrategicCount} decisao(oes) estrategica(s) e{" "}
+          {lifecycleBiologicalCount} marco(s) biologico(s).
+          {" "}
+          Abra a ficha para confirmar o marco ou use a{" "}
+          <Link to="/animais/transicoes" className="font-medium underline">
+            mutacao em lote
+          </Link>
+          .
+        </div>
+      )}
 
       <div className="overflow-hidden rounded-xl border bg-card">
         <div className="overflow-x-auto">
@@ -279,20 +443,18 @@ const Animais = () => {
                 <TableHead className="w-[150px]">Identificacao</TableHead>
                 <TableHead>Categoria</TableHead>
                 <TableHead>Idade</TableHead>
+                <TableHead>Fase Vet.</TableHead>
                 <TableHead>Lote</TableHead>
                 <TableHead>Vinculo</TableHead>
+                <TableHead>Estagio</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Acao</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {animalRows.map(({ animal, depth }) => {
-                const categoriaAtual = categorias
-                  ? classificarAnimal(animal, categorias)
-                  : null;
-                const categoriaLabel = categoriaAtual
-                  ? getLabelCategoria(categoriaAtual)
-                  : null;
+                const taxonomy = taxonomyByAnimal.get(animal.id);
+                const categoriaLabel = taxonomy?.display.categoria ?? null;
                 const mother = animal.mae_id
                   ? animaisMap.get(animal.mae_id) ?? null
                   : null;
@@ -300,12 +462,14 @@ const Animais = () => {
                   ? animaisMap.get(animal.pai_id) ?? null
                   : null;
                 const calves = calvesByMother.get(animal.id) ?? [];
+                const lifecyclePending = lifecyclePendings.get(animal.id);
 
                 return (
                   <TableRow
                     key={animal.id}
                     className={cn(
                       "transition-colors hover:bg-muted/30",
+                      lifecyclePending && "bg-amber-50/60",
                       depth > 0 && "bg-muted/15",
                     )}
                   >
@@ -339,6 +503,20 @@ const Animais = () => {
                       </span>
                     </TableCell>
                     <TableCell>
+                      {taxonomy ? (
+                        <Badge
+                          variant="outline"
+                          className="border-violet-200 bg-violet-50 text-violet-800"
+                        >
+                          {taxonomy.display.fase_veterinaria}
+                        </Badge>
+                      ) : (
+                        <span className="text-xs italic text-muted-foreground">
+                          Sem fase
+                        </span>
+                      )}
+                    </TableCell>
+                    <TableCell>
                       {animal.lote_id ? (
                         <Badge variant="secondary" className="font-normal">
                           {lotesMap.get(animal.lote_id)?.nome || "..."}
@@ -357,14 +535,65 @@ const Animais = () => {
                       />
                     </TableCell>
                     <TableCell>
-                      <Badge
-                        variant={
-                          animal.status === "ativo" ? "outline" : "secondary"
-                        }
-                        className="capitalize"
-                      >
-                        {animal.status}
-                      </Badge>
+                      {lifecyclePending ? (
+                        <div className="space-y-1">
+                          <Badge
+                            variant="outline"
+                            className={
+                              lifecyclePending.canAutoApply
+                                ? "border-sky-200 bg-sky-50 text-sky-800"
+                                : "border-amber-200 bg-amber-50 text-amber-800"
+                            }
+                          >
+                            {getAnimalLifeStageLabel(lifecyclePending.currentStage)} para{" "}
+                            {getAnimalLifeStageLabel(lifecyclePending.targetStage)}
+                          </Badge>
+                          <p className="text-[11px] text-muted-foreground">
+                            {lifecyclePending.canAutoApply
+                              ? "Ajuste automatico/hibrido"
+                              : "Confirmacao pendente"}
+                          </p>
+                          <p className="text-[11px] font-medium text-muted-foreground">
+                            {getPendingAnimalLifecycleKindLabel(
+                              lifecyclePending.queueKind,
+                            )}
+                          </p>
+                        </div>
+                      ) : (
+                        <Badge variant="outline">
+                          {getAnimalLifeStageLabel(
+                            resolveAnimalLifecycleSnapshot(animal, farmLifecycleConfig)
+                              .currentStage,
+                          )}
+                        </Badge>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {taxonomy ? (
+                        <div className="space-y-1">
+                          <Badge
+                            variant="outline"
+                            className="border-emerald-200 bg-emerald-50 text-emerald-800"
+                          >
+                            {taxonomy.display.estado_alias}
+                          </Badge>
+                          {taxonomy.display.estado_alias !==
+                            taxonomy.display.estado_canonico && (
+                            <p className="text-[11px] text-muted-foreground">
+                              {taxonomy.display.estado_canonico}
+                            </p>
+                          )}
+                        </div>
+                      ) : (
+                        <Badge
+                          variant={
+                            animal.status === "ativo" ? "outline" : "secondary"
+                          }
+                          className="capitalize"
+                        >
+                          {animal.status}
+                        </Badge>
+                      )}
                     </TableCell>
                     <TableCell className="text-right">
                       <Link to={`/animais/${animal.id}`}>
@@ -384,7 +613,7 @@ const Animais = () => {
               {animalRows.length === 0 && hasFilters && (
                 <TableRow>
                   <TableCell
-                    colSpan={7}
+                    colSpan={9}
                     className="h-32 text-center text-muted-foreground"
                   >
                     Nenhum animal encontrado com os filtros aplicados.

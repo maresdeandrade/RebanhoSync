@@ -2,6 +2,10 @@ import { useEffect } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "@/lib/offline/db";
 import type { ReproTipoEnum } from "@/lib/offline/types";
+import {
+  REPRODUCTION_BULL_REFERENCE_OPTIONS,
+  REPRODUCTION_TECHNIQUE_OPTIONS,
+} from "@/lib/animals/catalogs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -241,14 +245,47 @@ export function ReproductionForm({
           </div>
 
           <div className="space-y-2">
-            <Label>Tecnica / tag do reprodutor</Label>
-            <Input
-              placeholder={
-                data.tipo === "IA" ? "Lote do semen / dose" : "Monta natural / IATF"
+            <Label>Tecnica</Label>
+            <Select
+              value={data.tecnicaLivre || "none"}
+              onValueChange={(value) =>
+                updateField("tecnicaLivre", value === "none" ? undefined : value)
               }
-              value={data.tecnicaLivre || ""}
-              onChange={(event) => updateField("tecnicaLivre", event.target.value)}
-            />
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione a tecnica" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Nao informada</SelectItem>
+                {REPRODUCTION_TECHNIQUE_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Registro do reprodutor</Label>
+            <Select
+              value={data.reprodutorTag || "none"}
+              onValueChange={(value) =>
+                updateField("reprodutorTag", value === "none" ? undefined : value)
+              }
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione a referencia" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Nao informado</SelectItem>
+                {REPRODUCTION_BULL_REFERENCE_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
       )}

@@ -34,6 +34,7 @@ import {
   triggerDownload,
   type RejectionStats,
 } from "@/lib/offline/rejections";
+import { resetOfflineFarmData } from "@/lib/offline/reset";
 import type { Rejection } from "@/lib/offline/types";
 
 const PAGE_SIZE = 20;
@@ -84,6 +85,8 @@ const Reconciliacao = () => {
   const [purgeDialogOpen, setPurgeDialogOpen] = useState(false);
   const [purgeDryRunCount, setPurgeDryRunCount] = useState<number | null>(null);
   const [isPurging, setIsPurging] = useState(false);
+  const [resetDialogOpen, setResetDialogOpen] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
 
   // Load first page + stats
   const loadFirstPage = useCallback(async () => {
@@ -180,6 +183,23 @@ const Reconciliacao = () => {
     }
   };
 
+  const handleResetOfflineFarm = async () => {
+    if (!activeFarmId) return;
+    setIsResetting(true);
+    try {
+      await resetOfflineFarmData(activeFarmId);
+      setResetDialogOpen(false);
+      setSelectedRejection(null);
+      showSuccess("Estado offline da fazenda foi resetado");
+      await loadFirstPage();
+    } catch (e: unknown) {
+      const error = e instanceof Error ? e : new Error(String(e));
+      showError(`Erro ao resetar estado offline: ${error.message}`);
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
   // Retry (preserve existing logic from original Reconciliacao)
   const handleRetry = async (rejection: Rejection) => {
     if (rejection.reason_code === "ANTI_TELEPORTE") {
@@ -273,6 +293,13 @@ const Reconciliacao = () => {
               </Button>
             </>
           )}
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={() => setResetDialogOpen(true)}
+          >
+            <Trash2 className="h-4 w-4 mr-1" /> Resetar offline
+          </Button>
         </div>
       </div>
 
@@ -507,6 +534,36 @@ const Reconciliacao = () => {
               disabled={isPurging || purgeDryRunCount === 0}
             >
               {isPurging ? "Removendo..." : "Confirmar exclusão"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={resetDialogOpen} onOpenChange={setResetDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Resetar estado offline</DialogTitle>
+            <DialogDescription>
+              Isso remove dados locais, fila de sincronizacao e rejeicoes da fazenda ativa neste navegador.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-muted-foreground">
+            Use apenas para ambiente de teste. O servidor nao e alterado; apenas o estado offline local sera limpo.
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setResetDialogOpen(false)}
+              disabled={isResetting}
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleResetOfflineFarm}
+              disabled={isResetting}
+            >
+              {isResetting ? "Resetando..." : "Confirmar reset"}
             </Button>
           </DialogFooter>
         </DialogContent>

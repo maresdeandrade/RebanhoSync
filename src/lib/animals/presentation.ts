@@ -1,4 +1,6 @@
 import type { Animal } from "@/lib/offline/types";
+import { isAnimalBreedingEligible } from "@/lib/animals/maleProfile";
+import { deriveAnimalTaxonomy } from "@/lib/animals/taxonomy";
 
 export type AnimalVisualRole =
   | "vaca"
@@ -34,13 +36,36 @@ export function getAnimalVisualRole(
 ): AnimalVisualRole {
   const normalized = categoriaLabel?.trim().toLowerCase() ?? "";
 
+  if (normalized.includes("bezerro(a)")) {
+    return animal.sexo === "F" ? "bezerra" : "bezerro";
+  }
   if (normalized.includes("novilha")) return "novilha";
   if (normalized.includes("vaca")) return "vaca";
   if (normalized.includes("touro")) return "touro";
   if (normalized.includes("garrote")) return "garrote";
   if (normalized.includes("boi")) return "boi";
+  if (normalized.includes("bezerra")) return "bezerra";
+  if (normalized.includes("bezerro")) return "bezerro";
   if (normalized.includes("bezer")) {
     return animal.sexo === "F" ? "bezerra" : "bezerro";
+  }
+
+  const taxonomy = deriveAnimalTaxonomy(animal);
+  switch (taxonomy.categoria_zootecnica) {
+    case "bezerra":
+      return "bezerra";
+    case "novilha":
+      return "novilha";
+    case "vaca":
+      return "vaca";
+    case "bezerro":
+      return "bezerro";
+    case "garrote":
+      return "garrote";
+    case "touro":
+      return "touro";
+    case "boi_terminacao":
+      return "boi";
   }
 
   const idadeDias = getAgeInDays(animal.data_nascimento);
@@ -55,7 +80,7 @@ export function getAnimalVisualRole(
     return "vaca";
   }
 
-  if (animal.papel_macho === "reprodutor" && animal.habilitado_monta) {
+  if (isAnimalBreedingEligible(animal)) {
     return "touro";
   }
 

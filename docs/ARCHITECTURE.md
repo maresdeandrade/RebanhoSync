@@ -1,144 +1,196 @@
 # Arquitetura do RebanhoSync
 
 > **Status:** Normativo
-> **Fonte de Verdade:** Código Fonte (Implementação Two Rails)
-> **Última Atualização:** 2026-02-16
+> **Fonte de Verdade:** Codigo fonte e migrations
+> **Ultima Atualizacao:** 2026-04-06
 
-Este documento é a **Fonte de Verdade** arquitetural do sistema RebanhoSync. Ele consolida os princípios de Two Rails, Offline-First, Multi-Tenancy e Segurança.
-
----
-
-## 1. Visão Geral
-
-O **RebanhoSync** é um sistema de gestão pecuária habilitado para **Offline-First**, utilizando sincronização bidirecional entre um banco de dados local (Dexie.js/IndexedDB) e um remoto (Supabase/PostgreSQL).
-
-### Inventário Técnico
-
-Para detalhes de versões, bibliotecas e estrutura de arquivos, consulte os documentos derivados:
-
-- [**STACK.md**](./STACK.md) (Versões de libs e ferramentas)
-- [**REPO_MAP.md**](./REPO_MAP.md) (Estrutura de diretórios)
+Este documento consolida os principios arquiteturais do RebanhoSync: Two Rails, Offline-First, isolamento por fazenda e a derivacao canonica da taxonomia bovina.
 
 ---
 
-## 2. Princípios Arquiteturais: Two Rails
+## 1. Visao Geral
 
-O sistema adota o padrão **Two Rails** para desacoplar o planejamento (Agenda) da execução (Eventos).
+O RebanhoSync opera com persistencia local em Dexie/IndexedDB e sincronizacao transacional com Supabase/Postgres via `sync-batch`.
 
-### Rail 1 (Agenda) - Mutável
+Objetivos estruturais:
 
-- **Propósito:** Planejamento e intenção futura.
-- **Tabela:** `agenda_itens`.
-- **Características:**
-  - Mutável (Status: `agendado` → `concluido` | `cancelado`).
-  - Deduplicação via `dedup_key`.
-- **Stores Locais:** `state_agenda_itens`.
-
-### Rail 2 (Eventos) - Append-Only
-
-- **Propósito:** Registro histórico de fatos (Source of Truth).
-- **Tabela:** `eventos` + Tabelas Satélites (`eventos_sanitario`, etc).
-- **Características:**
-  - Imutável (Trigger `prevent_business_update`).
-  - Correção via contra-lançamento (`corrige_evento_id`).
-- **Stores Locais:** `event_eventos`, `event_eventos_*`.
-
-### Desacoplamento
-
-Não existe FK rígida entre `agenda_itens` e `eventos`. A relação é apenas lógica (`source_evento_id` / `source_task_id`), permitindo criação offline sem dependência de IDs síncronos.
+- manter operacao offline-first
+- separar fatos passados de intencoes futuras
+- isolar tudo por `fazenda_id`
+- derivar classificacoes a partir de fatos, nao de labels persistidos
 
 ---
 
-## 3. Fluxo de Dados (Offline-First)
+## 2. Two Rails
 
-### 3.1 Componentes
+### Rail 1: Agenda
 
-1.  **Cliente (Dexie.js):**
-    - `state_*`: Active Record (estado atual).
-    - `event_*`: Log local.
-    - `queue_*`: Fila de sincronização (Gestures/Ops).
+- tabela: `agenda_itens`
+- semantica: intencao futura mutavel
+- exemplos: revisao neonatal, pesagem futura, protocolos sanitarios
 
-2.  **Motor de Sync (`syncWorker`):**
-    - Processa fila `queue_gestures`.
-    - Envia batches para `sync-batch`.
-    - Trata rollback local em caso de `REJECTED`.
+### Rail 2: Eventos
 
-3.  **Server (`sync-batch`):**
-    - Gateway transacional autoritativo.
-    - Força `fazenda_id` (Tenant Isolation).
-    - Valida regras de negócio (Anti-Teleport).
+- tabela cabecalho: `eventos`
+- tabelas satelite: `eventos_*`
+- semantica: fato passado append-only
+- correcoes: por contra-lancamento, nunca por update de negocio
 
-### 3.2 Fluxo de Execução
-
-1.  **Offline Write:** UI grava `state` e `queue` atomicamente. Update imediato (Optimistic UI).
-2.  **Sync:** Worker envia batch.
-3.  **Enforcement:** Servidor valida Auth, Tenant e Regras.
-4.  **Response:** `APPLIED`, `APPLIED_ALTERED` ou `REJECTED`.
+Nao existe FK dura entre agenda e eventos. O vinculo e logico por `source_task_id` e `source_evento_id`.
 
 ---
 
-## 4. Multi-tenancy
+## 3. Taxonomia Canonica
 
-O sistema é isolado logicamente por `fazenda_id` em todas as tabelas.
+O projeto adota tres eixos independentes:
 
-- **Dados:** Toda tabela tem `fazenda_id` com FK.
-- **Acesso:** Tabela `user_fazendas` controla membership.
-- **Segurança:** RLS (`has_membership`) e Sync Function garantem isolamento.
+- `categoria_zootecnica`
+- `fase_veterinaria`
+- `estado_produtivo_reprodutivo`
+
+### Fonte de verdade
+
+A fonte operacional de verdade da derivacao fica em [`src/lib/animals/taxonomy.ts`](../src/lib/animals/taxonomy.ts).
+
+Principios:
+
+- persistir apenas fatos minimos
+- calcular labels e categorias em projection/selectors
+- manter alias regionais apenas na apresentacao
+
+### Fatos persistidos
+
+Os fatos taxonomicos minimos ficam em `animais.payload.taxonomy_facts`.
+
+Contrato:
+
+- `schema_version = 1` obrigatorio
+- schema TS central: `src/lib/animals/taxonomyFactsContract.ts`
+- validacao local antes de enfileirar gesto em `src/lib/offline/ops.ts`
+- validacao autoritativa no `sync-batch`
+
+Campos do contrato v1:
+
+- `castrado`
+- `puberdade_confirmada`
+- `prenhez_confirmada`
+- `data_prevista_parto`
+- `data_ultimo_parto`
+- `em_lactacao`
+- `secagem_realizada`
+- `data_secagem`
+
+Fatos complementares ja existentes e reutilizados:
+
+- `sexo`
+- `data_nascimento`
+- `payload.weaning.completed_at`
+- `payload.metrics.last_weight_kg`
+- `payload.lifecycle.destino_produtivo`
+- `payload.male_profile.status_reprodutivo`
+- historico reprodutivo de `eventos_reproducao`
+
+### Projecao composta
+
+O modelo adota:
+
+- multiplos fatos persistidos
+- um label principal derivado por eixo
+
+Exemplo:
+
+- uma vaca pode estar simultaneamente com fatos de prenhez e secagem
+- o label principal de `estado_produtivo_reprodutivo` segue uma precedencia centralizada
+
+Precedencia feminina atual:
+
+- `recem_parida`
+- `seca`
+- `pre_parto_imediato`
+- `prenhe`
+- `lactacao`
+- `vazia`
+
+### Ownership dos fatos
+
+Manual:
+
+- `castrado`
+- `puberdade_confirmada`
+- `secagem_realizada`
+- `data_secagem`
+- `em_lactacao`
+
+Derivado de evento reprodutivo:
+
+- `prenhez_confirmada`
+- `data_prevista_parto`
+- `data_ultimo_parto`
+
+Campos com escrita hibrida:
+
+- `puberdade_confirmada`
+- `secagem_realizada`
+- `data_secagem`
+- `em_lactacao`
+
+Precedencia de writer:
+
+- fatos do writer `reproduction_event` vencem para o eixo reprodutivo
+- UI manual nao pode sobrescrever `prenhez_confirmada`, `data_prevista_parto` nem `data_ultimo_parto`
+- correcao de fatos event-driven deve acontecer por novo evento, nunca por edicao arbitraria
 
 ---
 
-## 5. Segurança (Defense in Depth)
+## 4. Fluxo Offline-First
 
-- **RLS:** Políticas de banco bloqueiam acesso indevido via API direta.
-- **RBAC:** Roles `Owner`, `Manager`, `Cowboy` definem permissões (ver [RLS.md](./RLS.md)).
-- **Sync Batch:** Atua como firewall, validando JWT e impondo Tenant Context.
-- **RPCs:** Operações críticas (`admin_*`) usam `SECURITY DEFINER`.
-
----
-
-## 6. Módulos de Domínio
-
-Os módulos encapsulam a lógica de negócio específica:
-
-- **Sanitário:** Gestão de vacinas e medicamentos.
-- **Reprodução:** Ciclo reprodutivo, Status Computation e Episode Linking.
-- **Eventos:** Abstração de gestos para todos os domínios.
+1. UI cria um gesto com `client_tx_id`
+2. o cliente grava `queue_gestures` e `queue_ops`
+3. aplica optimistic update em `state_*`
+4. o worker envia o lote para `sync-batch`
+5. o servidor valida tenant, regras e constraints
+6. em rejeicao, o cliente executa rollback local por `before_snapshot`
 
 ---
 
-## 7. Invariantes do Sistema
+## 5. Multi-tenancy
 
-1.  **Fazenda Mandatória:** Todo dado pertence a uma fazenda.
-2.  **Imutabilidade de Eventos:** Histórico não é alterado.
-3.  **Servidor Autoritativo:** Rollback local em conflito.
-4.  **Anti-Teleporte:** Animal não muda de lugar sem evento de movimentação.
+Tudo e isolado por `fazenda_id`.
 
----
-
-## 8. Roteamento
-
-Para a lista completa de rotas e proteções, consulte:
-
-- [**ROUTES.md**](./ROUTES.md)
+- tabelas de negocio carregam `fazenda_id`
+- membership fica em `user_fazendas`
+- RLS e `sync-batch` reforcam isolamento
 
 ---
 
-## 9. Manutenção e Gaps
+## 6. Modulos de Dominio
 
-Pontos de atenção técnica:
+- sanitario
+- reproducao
+- financeiro
+- lifecycle
+- taxonomia animal
 
-1.  **Limpeza de Queue:** Necessário job para limpar `queue_rejections`.
-2.  **Sync Background:** Implementar Background Sync API.
-3.  **Testes:** Expandir cobertura E2E conforme [E2E_MVP.md](./E2E_MVP.md).
+Taxonomia nao substitui eventos nem agenda. Ela apenas projeta leitura canonica sobre fatos operacionais.
 
 ---
 
-## Veja Também
+## 7. SQL de Apoio
 
-- [**DB.md**](./DB.md) - Esquema do banco de dados.
-- [**RLS.md**](./RLS.md) - Modelo de segurança e permissões.
-- [**CONTRACTS.md**](./CONTRACTS.md) - Contratos de API e Sincronização.
-- [**OFFLINE.md**](./OFFLINE.md) - Detalhes da implementação Dexie.
-- [**EVENTOS_AGENDA_SPEC.md**](./EVENTOS_AGENDA_SPEC.md) - Regras de negócio de Eventos/Agenda.
-- [**E2E_MVP.md**](./E2E_MVP.md) - Roteiro de testes.
-- **Derivados:** [STACK.md](./STACK.md), [REPO_MAP.md](./REPO_MAP.md), [ROUTES.md](./ROUTES.md).
+A migration `0038_animais_taxonomia_canonica.sql` cria:
+
+- enums canonicos de taxonomia
+- a view `vw_animais_taxonomia`
+
+Essa view e voltada a leitura SQL e relatorios. Ela nao substitui a derivacao principal do cliente.
+
+A conformidade entre derivacao TS e view SQL e coberta por fixture de paridade em `src/lib/animals/__tests__/taxonomySqlParity.test.ts`.
+
+---
+
+## Veja Tambem
+
+- [DB.md](./DB.md)
+- [OFFLINE.md](./OFFLINE.md)
+- [CONTRACTS.md](./CONTRACTS.md)
+- [RLS.md](./RLS.md)

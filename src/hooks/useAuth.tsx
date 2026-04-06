@@ -9,6 +9,11 @@ import {
   type FarmExperienceMode,
   resolveFarmExperienceMode,
 } from "@/lib/farms/experienceMode";
+import {
+  DEFAULT_FARM_LIFECYCLE_CONFIG,
+  type FarmLifecycleConfig,
+  resolveFarmLifecycleConfig,
+} from "@/lib/farms/lifecycleConfig";
 
 
 // Role schema for runtime validation
@@ -22,6 +27,7 @@ interface AuthContextType {
   activeFarmId: string | null;
   role: UserRole | null;
   farmExperienceMode: FarmExperienceMode;
+  farmLifecycleConfig: FarmLifecycleConfig;
   loadRoleForFarm: (userId: string, farmId: string) => Promise<void>;
   setActiveFarm: (farmId: string) => Promise<void>;
   refreshSettings: () => Promise<void>;
@@ -29,6 +35,49 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+async function fetchMembershipRole(userId: string, farmId: string) {
+  const { data: membership, error } = await supabase
+    .from("user_fazendas")
+    .select("role")
+    .eq("user_id", userId)
+    .eq("fazenda_id", farmId)
+    .is("deleted_at", null)
+    .maybeSingle();
+
+  if (error) {
+    console.warn("[useAuth] Error fetching role:", error);
+    return null;
+  }
+
+  const roleResult = RoleSchema.safeParse(membership?.role);
+  if (!roleResult.success) {
+    console.warn("[useAuth] Invalid role from database:", membership?.role);
+    return null;
+  }
+
+  return roleResult.data;
+}
+
+async function fetchFirstAccessibleFarmId(userId: string) {
+  const { data, error } = await supabase
+    .from("user_fazendas")
+    .select("fazenda_id, role")
+    .eq("user_id", userId)
+    .is("deleted_at", null)
+    .limit(20);
+
+  if (error) {
+    console.warn("[useAuth] Error fetching memberships:", error);
+    return null;
+  }
+
+  const membership = (data ?? []).find((item) =>
+    RoleSchema.safeParse(item.role).success,
+  );
+
+  return membership?.fazenda_id ?? null;
+}
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
@@ -40,28 +89,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [farmExperienceMode, setFarmExperienceMode] = useState<FarmExperienceMode>(
     DEFAULT_FARM_EXPERIENCE_MODE,
   );
+  const [farmLifecycleConfig, setFarmLifecycleConfig] =
+    useState<FarmLifecycleConfig>(DEFAULT_FARM_LIFECYCLE_CONFIG);
 
   const loadRoleForFarm = useCallback(async (userId: string, farmId: string) => {
-    const { data: membership, error } = await supabase
-      .from("user_fazendas")
-      .select("role")
-      .eq("user_id", userId)
-      .eq("fazenda_id", farmId)
-      .is("deleted_at", null)
-      .maybeSingle();
-
-    if (error) {
-      console.warn("[useAuth] Error fetching role:", error);
-      setRole(null);
-      return;
-    }
-
-    const roleResult = RoleSchema.safeParse(membership?.role);
-    setRole(roleResult.success ? roleResult.data : null);
-
-    if (!roleResult.success) {
-      console.warn("[useAuth] Invalid role from database:", membership?.role);
-    }
+    const nextRole = await fetchMembershipRole(userId, farmId);
+    setRole(nextRole);
   }, []);
 
   const persistActiveFarmToRemote = useCallback(async (userId: string, farmId: string) => {
@@ -92,6 +125,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     if (error) {
       console.warn("[useAuth] Error fetching farm metadata:", error);
       setFarmExperienceMode(DEFAULT_FARM_EXPERIENCE_MODE);
+      setFarmLifecycleConfig(DEFAULT_FARM_LIFECYCLE_CONFIG);
       return;
     }
 
@@ -101,6 +135,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         : null;
 
     setFarmExperienceMode(resolveFarmExperienceMode(metadata));
+    setFarmLifecycleConfig(resolveFarmLifecycleConfig(metadata));
   }, []);
 
   const loadFarmContext = useCallback(
@@ -120,6 +155,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       } = await supabase.auth.getUser();
       if (!user) {
         setFarmExperienceMode(DEFAULT_FARM_EXPERIENCE_MODE);
+        setFarmLifecycleConfig(DEFAULT_FARM_LIFECYCLE_CONFIG);
         return;
       }
 
@@ -137,31 +173,56 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
 
       const resolvedFarmId = settings?.active_fazenda_id ?? localFarmId ?? null;
+      let persistLocalFarmId: string | null = null;
 
       if (resolvedFarmId) {
-        if (resolvedFarmId !== localFarmId) {
-          if (import.meta.env.DEV) {
-            console.debug("[useAuth] Syncing farm from remote:", resolvedFarmId);
-          }
-          storeActiveFarmId(resolvedFarmId);
-        }
+        const nextRole = await fetchMembershipRole(user.id, resolvedFarmId);
 
-        setActiveFarmId(resolvedFarmId);
-        await loadFarmContext(user.id, resolvedFarmId);
+        if (nextRole) {
+          if (resolvedFarmId !== localFarmId) {
+            if (import.meta.env.DEV) {
+              console.debug("[useAuth] Syncing farm from remote:", resolvedFarmId);
+            }
+            storeActiveFarmId(resolvedFarmId);
+          }
+
+          setActiveFarmId(resolvedFarmId);
+          setRole(nextRole);
+          await loadFarmExperienceForFarm(resolvedFarmId);
+          if (!settings?.active_fazenda_id && localFarmId === resolvedFarmId) {
+            persistLocalFarmId = localFarmId;
+          }
+        } else {
+          const fallbackFarmId = await fetchFirstAccessibleFarmId(user.id);
+
+          if (fallbackFarmId) {
+            storeActiveFarmId(fallbackFarmId);
+            setActiveFarmId(fallbackFarmId);
+            await persistActiveFarmToRemote(user.id, fallbackFarmId);
+            await loadFarmContext(user.id, fallbackFarmId);
+          } else {
+            removeActiveFarmId();
+            setActiveFarmId(null);
+            setRole(null);
+            setFarmExperienceMode(DEFAULT_FARM_EXPERIENCE_MODE);
+            setFarmLifecycleConfig(DEFAULT_FARM_LIFECYCLE_CONFIG);
+          }
+        }
       } else {
         setActiveFarmId(null);
         setRole(null);
         setFarmExperienceMode(DEFAULT_FARM_EXPERIENCE_MODE);
+        setFarmLifecycleConfig(DEFAULT_FARM_LIFECYCLE_CONFIG);
       }
 
-      if (!settings?.active_fazenda_id && localFarmId) {
+      if (persistLocalFarmId) {
         if (import.meta.env.DEV) {
           console.debug(
             "[useAuth] Persisting local farm to remote:",
-            localFarmId,
+            persistLocalFarmId,
           );
         }
-        await persistActiveFarmToRemote(user.id, localFarmId);
+        await persistActiveFarmToRemote(user.id, persistLocalFarmId);
       }
 
       // Apply theme preference
@@ -173,7 +234,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     } catch (e) {
       console.error("[useAuth] Error in refreshSettings:", e);
     }
-  }, [loadFarmContext, persistActiveFarmToRemote]);
+  }, [loadFarmContext, loadFarmExperienceForFarm, persistActiveFarmToRemote]);
 
   const setActiveFarm = async (farmId: string) => {
     const {
@@ -221,6 +282,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setActiveFarmId(null);
         setRole(null);
         setFarmExperienceMode(DEFAULT_FARM_EXPERIENCE_MODE);
+        setFarmLifecycleConfig(DEFAULT_FARM_LIFECYCLE_CONFIG);
         removeActiveFarmId();
       }
       setLoading(false);
@@ -237,6 +299,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setActiveFarmId(null);
       setRole(null);
       setFarmExperienceMode(DEFAULT_FARM_EXPERIENCE_MODE);
+      setFarmLifecycleConfig(DEFAULT_FARM_LIFECYCLE_CONFIG);
       removeActiveFarmId();
     } catch (e) {
       console.error("[useAuth] Error signing out:", e);
@@ -252,6 +315,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         activeFarmId,
         role,
         farmExperienceMode,
+        farmLifecycleConfig,
         setActiveFarm,
         loadRoleForFarm,
         refreshSettings,
