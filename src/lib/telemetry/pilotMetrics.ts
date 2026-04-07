@@ -12,6 +12,7 @@ export interface TrackPilotMetricInput {
   route?: string | null;
   entity?: string | null;
   quantity?: number | null;
+  reasonCode?: string | null;
   payload?: Record<string, unknown>;
 }
 
@@ -50,6 +51,7 @@ export async function trackPilotMetric(
     route: input.route ?? null,
     entity: input.entity ?? null,
     quantity: input.quantity ?? null,
+    reason_code: input.reasonCode ?? null,
     payload: input.payload ?? {},
     created_at: new Date().toISOString(),
   };
@@ -66,6 +68,48 @@ function toSortedCounts(map: Map<string, number>, limit = 5): PilotMetricCount[]
     .map(([label, count]) => ({ label, count }))
     .sort((left, right) => right.count - left.count || left.label.localeCompare(right.label))
     .slice(0, limit);
+}
+
+import { env } from "@/lib/env";
+import { supabase } from "@/lib/supabase";
+
+export async function flushPilotMetrics(): Promise<void> {
+  if (typeof indexedDB === "undefined") return;
+
+  try {
+    const events = await db.metrics_events.toArray();
+    if (events.length === 0) return;
+
+    // Get current session
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    if (!session) {
+       // Cannot flush without session, will try again later
+       return;
+    }
+
+    const response = await fetch(`${env.supabaseFunctionsUrl}/telemetry-ingest`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        apikey: env.supabaseAnonKey,
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({ events }),
+    });
+
+    if (response.ok) {
+      // Successfully sent, delete them from local store
+      const sentIds = events.map((e) => e.id);
+      await db.metrics_events.bulkDelete(sentIds);
+    } else {
+       console.warn("[pilot-metrics] Failed to flush telemetry:", response.status);
+    }
+  } catch (error) {
+    console.warn("[pilot-metrics] Failed to flush telemetry (network/offline):", error);
+  }
 }
 
 export function buildPilotMetricsSummary(

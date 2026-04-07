@@ -237,6 +237,39 @@ export class OfflineDB extends Dexie {
       metrics_events:
         "id, fazenda_id, event_name, route, entity, created_at, [fazenda_id+created_at]",
     });
+
+    // Version 9: Add status to metrics_events index for queryability
+    this.version(9).stores({
+      state_animais:
+        "id, fazenda_id, [fazenda_id+lote_id], [fazenda_id+status], lote_id, deleted_at",
+      state_lotes: "id, fazenda_id, pasto_id, deleted_at",
+      state_pastos: "id, fazenda_id, deleted_at",
+      state_agenda_itens:
+        "id, fazenda_id, [fazenda_id+data_prevista], [fazenda_id+status], animal_id, lote_id, deleted_at",
+      state_contrapartes: "id, fazenda_id, deleted_at",
+      state_animais_sociedade:
+        "id, [fazenda_id+animal_id], fazenda_id, animal_id, contraparte_id, deleted_at, fim",
+      state_categorias_zootecnicas: "id, fazenda_id, deleted_at",
+      state_protocolos_sanitarios: "id, fazenda_id, deleted_at",
+      state_protocolos_sanitarios_itens:
+        "id, fazenda_id, protocolo_id, deleted_at",
+
+      event_eventos:
+        "id, fazenda_id, [fazenda_id+dominio], [fazenda_id+occurred_at], animal_id, lote_id, deleted_at",
+      event_eventos_sanitario: "evento_id, fazenda_id, deleted_at",
+      event_eventos_pesagem: "evento_id, fazenda_id, deleted_at",
+      event_eventos_nutricao: "evento_id, fazenda_id, deleted_at",
+      event_eventos_movimentacao: "evento_id, fazenda_id, deleted_at",
+      event_eventos_reproducao: "evento_id, fazenda_id, deleted_at",
+      event_eventos_financeiro: "evento_id, fazenda_id, deleted_at",
+
+      queue_gestures: "client_tx_id, status, [status+created_at], fazenda_id",
+      queue_ops: "client_op_id, client_tx_id, fazenda_id",
+      queue_rejections:
+        "++id, client_tx_id, fazenda_id, created_at, [fazenda_id+created_at]",
+      metrics_events:
+        "id, fazenda_id, event_name, status, route, entity, created_at, [fazenda_id+created_at]",
+    });
   }
 }
 

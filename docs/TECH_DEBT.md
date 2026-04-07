@@ -164,6 +164,10 @@ Lista consolidada dos gaps ainda abertos no repositorio.
 - TD-008: anti-teleporte no frontend
 - TD-014: validacao de peso no frontend
 
+## CLOSED (Outros)
+
+- TD-021: Telemetria remota estruturada e observabilidade básica (sync_batch health, sync_backlog) implementada via Edge Function (`telemetry-ingest`) no background flush.
+
 ## Resumo
 
 - OPEN Catalog: `TD-011`, `TD-015`, `TD-019`, `TD-020`

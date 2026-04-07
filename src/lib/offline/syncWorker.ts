@@ -8,7 +8,7 @@ import { rollbackOpLocal, getAffectedStores } from "./ops";
 import { sortOpsForSync } from "./syncOrder";
 import { pullDataForFarm } from "./pull";
 import { purgeRejections } from "./rejections";
-import { trackPilotMetric } from "@/lib/telemetry/pilotMetrics";
+import { trackPilotMetric, flushPilotMetrics } from "@/lib/telemetry/pilotMetrics";
 
 let intervalId: ReturnType<typeof setInterval> | null = null;
 let isTickRunning = false;
@@ -68,6 +68,23 @@ export const startSyncWorker = () => {
             last_error: error.message,
           });
         }
+      }
+
+      // Flush pilot metrics (non-blocking)
+      try {
+         const pendingCount = pending.length;
+         if (pendingCount > 0) {
+            // Pick the fazenda_id of the first pending gesture (if there are multiple, it's fine, it's just telemetry)
+            await trackPilotMetric({
+              fazendaId: pending[0].fazenda_id,
+              eventName: "sync_backlog",
+              status: "info",
+              quantity: pendingCount,
+            });
+         }
+         await flushPilotMetrics();
+      } catch(e) {
+         console.warn("[sync-worker] telemetry flush error", e);
       }
 
       // Auto-purge old rejections (>7d) at most once per 6h
@@ -406,6 +423,7 @@ export async function processGesture(gesture: Gesture) {
         status: "error",
         entity: "sync-batch",
         quantity: rejectedResults.length,
+        reasonCode: rejectedResults[0]?.reason_code,
         payload: {
           op_count: ops.length,
           reasons: rejectedResults.map((result) => result.reason_code ?? "UNKNOWN"),
