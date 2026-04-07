@@ -13,6 +13,7 @@ import { trackPilotMetric, flushPilotMetrics } from "@/lib/telemetry/pilotMetric
 let intervalId: ReturnType<typeof setInterval> | null = null;
 let isTickRunning = false;
 let startupRecoveryDone = false;
+let lastBacklogMetricTime = 0;
 
 const WORKER_INTERVAL_MS = 5000;
 const MAX_RETRIES = 3;
@@ -73,8 +74,10 @@ export const startSyncWorker = () => {
       // Flush pilot metrics (non-blocking)
       try {
          const pendingCount = pending.length;
-         if (pendingCount > 0) {
-            // Pick the fazenda_id of the first pending gesture (if there are multiple, it's fine, it's just telemetry)
+         const now = Date.now();
+         // Only log backlog telemetry once every hour to prevent DB and network spam
+         if (pendingCount > 0 && (now - lastBacklogMetricTime) > 3600000) {
+            lastBacklogMetricTime = now;
             await trackPilotMetric({
               fazendaId: pending[0].fazenda_id,
               eventName: "sync_backlog",
@@ -83,8 +86,8 @@ export const startSyncWorker = () => {
             });
          }
          await flushPilotMetrics();
-      } catch(e) {
-         console.warn("[sync-worker] telemetry flush error", e);
+      } catch (e: unknown) {
+         // Silently fail telemetry in worker to avoid spamming the console on network loss
       }
 
       // Auto-purge old rejections (>7d) at most once per 6h

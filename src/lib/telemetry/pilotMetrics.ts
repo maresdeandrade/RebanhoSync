@@ -105,10 +105,13 @@ export async function flushPilotMetrics(): Promise<void> {
       const sentIds = events.map((e) => e.id);
       await db.metrics_events.bulkDelete(sentIds);
     } else {
-       console.warn("[pilot-metrics] Failed to flush telemetry:", response.status);
+       // Only log non-transient warnings if in dev
+       if (import.meta.env.DEV) {
+          console.warn("[pilot-metrics] Failed to flush telemetry:", response.status);
+       }
     }
   } catch (error) {
-    console.warn("[pilot-metrics] Failed to flush telemetry (network/offline):", error);
+    // Network errors during offline usage are expected. Suppress spam.
   }
 }
 
