@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
+  Activity,
   AlertCircle,
-  Baby,
-  Beef,
   Calendar,
   ChevronDown,
   ChevronRight,
@@ -14,6 +13,7 @@ import {
   Home,
   Layers,
   LayoutDashboard,
+  ListTree,
   Map,
   PlusCircle,
   SlidersHorizontal,
@@ -55,7 +55,7 @@ const navItems: NavItem[] = [
   },
   { icon: Calendar, label: "Agenda", path: "/agenda", section: "operacao" },
   {
-    icon: Baby,
+    icon: Activity,
     label: "Reproducao",
     path: "/reproducao",
     section: "operacao",
@@ -73,7 +73,7 @@ const navItems: NavItem[] = [
     path: "/relatorios",
     section: "operacao",
   },
-  { icon: Beef, label: "Animais", path: "/animais", section: "estrutura" },
+  { icon: ListTree, label: "Animais", path: "/animais", section: "estrutura" },
   { icon: Layers, label: "Lotes", path: "/lotes", section: "estrutura" },
   { icon: Map, label: "Pastos", path: "/pastos", section: "estrutura" },
   {
