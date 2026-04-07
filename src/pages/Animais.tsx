@@ -4,6 +4,7 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { Link, useNavigate } from "react-router-dom";
 import {
   AlertTriangle,
+  CalendarClock,
   CornerDownRight,
   FilterX,
   PawPrint,
@@ -14,7 +15,6 @@ import {
 
 import { EmptyState } from "@/components/EmptyState";
 import { AnimalCategoryBadge } from "@/components/animals/AnimalCategoryBadge";
-import { AnimalKinshipBadges } from "@/components/animals/AnimalKinshipBadges";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -51,8 +51,12 @@ import {
   buildAnimalTaxonomyReproContextMap,
   deriveAnimalTaxonomy,
 } from "@/lib/animals/taxonomy";
+import {
+  formatWeight,
+  formatWeightPerDay,
+} from "@/lib/format/weight";
 import { db } from "@/lib/offline/db";
-import { type Animal } from "@/lib/offline/types";
+import { type AgendaItem, type Animal } from "@/lib/offline/types";
 import { getReproductionEventsJoined } from "@/lib/reproduction/selectors";
 import { cn } from "@/lib/utils";
 
@@ -65,17 +69,6 @@ const CATEGORY_FILTERS = [
   { value: "garrote", label: "Garrote" },
   { value: "boi_terminacao", label: "Boi" },
   { value: "touro", label: "Touro" },
-] as const;
-
-const VETERINARY_PHASE_FILTERS = [
-  { value: "all", label: "Todas fases" },
-  { value: "neonatal", label: "Neonatal" },
-  { value: "pre_desmama", label: "Pre-desmama" },
-  { value: "pos_desmama", label: "Pos-desmama" },
-  { value: "pre_pubere", label: "Pre-pubere" },
-  { value: "pubere", label: "Pubere" },
-  { value: "gestante", label: "Gestante" },
-  { value: "puerperio", label: "Puerperio" },
 ] as const;
 
 const PRODUCTIVE_STATE_FILTERS = [
@@ -91,6 +84,30 @@ const PRODUCTIVE_STATE_FILTERS = [
   { value: "reprodutor", label: "Reprodutor" },
   { value: "terminacao", label: "Terminacao" },
 ] as const;
+
+const DOMAIN_LABEL: Record<string, string> = {
+  sanitario: "Sanitario",
+  pesagem: "Pesagem",
+  nutricao: "Nutricao",
+  movimentacao: "Movimentacao",
+  reproducao: "Reproducao",
+  financeiro: "Financeiro",
+};
+
+type AnimalWeightSummary = {
+  animalId: string;
+  ultimoPesoKg: number;
+  ultimoPesoData: string;
+  ganhoMedioDiaKg: number | null;
+  totalPesagens: number;
+};
+
+type AnimalNextAgendaSummary = {
+  animalId: string;
+  titulo: string;
+  data: string;
+  status: "atrasado" | "hoje" | "proximo";
+};
 
 const calcularIdade = (
   dataNascimento: string | null | undefined,
@@ -108,6 +125,16 @@ const calcularIdade = (
   return `${diffDays} dia${diffDays !== 1 ? "s" : ""}`;
 };
 
+function formatDate(value: string | null | undefined) {
+  if (!value) return "-";
+  return new Date(value).toLocaleDateString("pt-BR");
+}
+
+function formatAgendaTitle(item: Pick<AgendaItem, "dominio" | "tipo">) {
+  const domainLabel = DOMAIN_LABEL[item.dominio] ?? "Agenda";
+  return `${domainLabel}: ${item.tipo.replaceAll("_", " ")}`;
+}
+
 function getProductiveTone(animalStatus: string) {
   if (animalStatus === "ativo") return "success";
   if (animalStatus === "vendido") return "warning";
@@ -118,15 +145,26 @@ function getLifecycleTone(canAutoApply: boolean) {
   return canAutoApply ? "info" : "warning";
 }
 
+function getAgendaTone(status: AnimalNextAgendaSummary["status"]) {
+  if (status === "atrasado") return "danger";
+  if (status === "hoje") return "warning";
+  return "info";
+}
+
+function getAgendaStatusLabel(status: AnimalNextAgendaSummary["status"]) {
+  if (status === "atrasado") return "Atrasado";
+  if (status === "hoje") return "Hoje";
+  return "Proximo";
+}
+
 export default function Animais() {
   const navigate = useNavigate();
-  const { activeFarmId, farmLifecycleConfig } = useAuth();
+  const { activeFarmId, farmLifecycleConfig, farmMeasurementConfig } = useAuth();
   const [search, setSearch] = useState("");
   const [loteFilter, setLoteFilter] = useState<string>("all");
   const [sexoFilter, setSexoFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("ativo");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
-  const [phaseFilter, setPhaseFilter] = useState<string>("all");
   const [productiveStateFilter, setProductiveStateFilter] =
     useState<string>("all");
   const debouncedSearch = useDebouncedValue(search, 300);
@@ -149,6 +187,119 @@ export default function Animais() {
     return await getReproductionEventsJoined(activeFarmId);
   }, [activeFarmId]);
 
+  const weightSummaries = useLiveQuery(async () => {
+    if (!activeFarmId) return [];
+
+    const [events, details] = await Promise.all([
+      db.event_eventos
+        .where("fazenda_id")
+        .equals(activeFarmId)
+        .filter(
+          (event) =>
+            event.dominio === "pesagem" &&
+            !event.deleted_at &&
+            Boolean(event.animal_id),
+        )
+        .toArray(),
+      db.event_eventos_pesagem
+        .where("fazenda_id")
+        .equals(activeFarmId)
+        .filter((detail) => !detail.deleted_at)
+        .toArray(),
+    ]);
+
+    const detailByEventId = new Map(
+      details.map((detail) => [detail.evento_id, detail]),
+    );
+    const pointsByAnimal = new Map<
+      string,
+      Array<{ data: string; pesoKg: number }>
+    >();
+
+    for (const event of events) {
+      if (!event.animal_id) continue;
+      const detail = detailByEventId.get(event.id);
+      if (!detail || typeof detail.peso_kg !== "number") continue;
+
+      const referenceDate = event.server_received_at || event.occurred_at;
+      const current = pointsByAnimal.get(event.animal_id) ?? [];
+      current.push({
+        data: referenceDate,
+        pesoKg: detail.peso_kg,
+      });
+      pointsByAnimal.set(event.animal_id, current);
+    }
+
+    return Array.from(pointsByAnimal.entries()).map(
+      ([animalId, rawPoints]): AnimalWeightSummary => {
+        const points = rawPoints
+          .slice()
+          .sort((left, right) => left.data.localeCompare(right.data));
+        const primeiro = points[0];
+        const ultimo = points[points.length - 1];
+        const diasEntreRegistros = Math.max(
+          1,
+          Math.round(
+            (new Date(ultimo.data).getTime() - new Date(primeiro.data).getTime()) /
+              (1000 * 60 * 60 * 24),
+          ),
+        );
+        const ganhoMedioDiaKg =
+          points.length > 1
+            ? (ultimo.pesoKg - primeiro.pesoKg) / diasEntreRegistros
+            : null;
+
+        return {
+          animalId,
+          ultimoPesoKg: ultimo.pesoKg,
+          ultimoPesoData: ultimo.data,
+          ganhoMedioDiaKg,
+          totalPesagens: points.length,
+        };
+      },
+    );
+  }, [activeFarmId]);
+
+  const nextAgendaSummaries = useLiveQuery(async () => {
+    if (!activeFarmId) return [];
+
+    const todayKey = new Date().toISOString().split("T")[0];
+    const items = await db.state_agenda_itens
+      .where("fazenda_id")
+      .equals(activeFarmId)
+      .filter(
+        (item) =>
+          item.status === "agendado" &&
+          !item.deleted_at &&
+          Boolean(item.animal_id),
+      )
+      .toArray();
+
+    const byAnimal = new Map<string, AgendaItem>();
+
+    for (const item of items) {
+      if (!item.animal_id) continue;
+      const current = byAnimal.get(item.animal_id);
+      if (!current || item.data_prevista < current.data_prevista) {
+        byAnimal.set(item.animal_id, item);
+      }
+    }
+
+    return Array.from(byAnimal.entries()).map(
+      ([animalId, item]): AnimalNextAgendaSummary => ({
+        animalId,
+        titulo: formatAgendaTitle(item),
+        data: item.data_prevista,
+        status:
+          item.data_prevista < todayKey
+            ? "atrasado"
+            : item.data_prevista === todayKey
+              ? "hoje"
+              : "proximo",
+      }),
+    );
+  }, [activeFarmId]);
+
   const lotesMap = useMemo(
     () => new Map((lotes ?? []).map((lote) => [lote.id, lote])),
     [lotes],
@@ -156,6 +307,14 @@ export default function Animais() {
   const animaisMap = useMemo(
     () => new Map((animaisFamilia ?? []).map((animal) => [animal.id, animal])),
     [animaisFamilia],
+  );
+  const weightSummaryByAnimal = useMemo(
+    () => new Map((weightSummaries ?? []).map((item) => [item.animalId, item])),
+    [weightSummaries],
+  );
+  const nextAgendaByAnimal = useMemo(
+    () => new Map((nextAgendaSummaries ?? []).map((item) => [item.animalId, item])),
+    [nextAgendaSummaries],
   );
 
   const calvesByMother = useMemo(() => {
@@ -234,9 +393,6 @@ export default function Animais() {
       ) {
         return false;
       }
-      if (phaseFilter !== "all" && taxonomy.fase_veterinaria !== phaseFilter) {
-        return false;
-      }
       if (
         productiveStateFilter !== "all" &&
         taxonomy.estado_produtivo_reprodutivo !== productiveStateFilter
@@ -245,7 +401,7 @@ export default function Animais() {
       }
       return true;
     });
-  }, [animais, categoryFilter, phaseFilter, productiveStateFilter, taxonomyByAnimal]);
+  }, [animais, categoryFilter, productiveStateFilter, taxonomyByAnimal]);
 
   const animalRows = useMemo(() => {
     return buildAnimalFamilyRows(filteredAnimals, animaisFamilia ?? []);
@@ -265,7 +421,6 @@ export default function Animais() {
     sexoFilter !== "all" ||
     statusFilter !== "ativo" ||
     categoryFilter !== "all" ||
-    phaseFilter !== "all" ||
     productiveStateFilter !== "all";
 
   const lifecyclePendingCount = lifecyclePendings.size;
@@ -281,6 +436,28 @@ export default function Animais() {
     () => filteredAnimals.filter((animal) => !animal.lote_id).length,
     [filteredAnimals],
   );
+  const activeAnimalsCount = useMemo(
+    () => (animaisFamilia ?? []).filter((animal) => animal.status === "ativo").length,
+    [animaisFamilia],
+  );
+  const animalsWithWeightCount = useMemo(
+    () =>
+      animalRows.filter(({ animal }) => weightSummaryByAnimal.has(animal.id)).length,
+    [animalRows, weightSummaryByAnimal],
+  );
+  const animalsWithNextAgendaCount = useMemo(
+    () =>
+      animalRows.filter(({ animal }) => nextAgendaByAnimal.has(animal.id)).length,
+    [animalRows, nextAgendaByAnimal],
+  );
+  const agendaRadarCount = useMemo(
+    () =>
+      animalRows.filter(({ animal }) => {
+        const nextAgenda = nextAgendaByAnimal.get(animal.id);
+        return nextAgenda && nextAgenda.status !== "proximo";
+      }).length,
+    [animalRows, nextAgendaByAnimal],
+  );
 
   if (!animais || (animais.length === 0 && !hasFilters)) {
     return (
@@ -288,7 +465,7 @@ export default function Animais() {
         <PageIntro
           eyebrow="Rebanho"
           title="Animais"
-          description="Cadastro e leitura operacional do rebanho, com foco em estrutura, classificacao e proximo passo por animal."
+          description="Cadastro e leitura operacional do rebanho, com foco em estrutura, categoria, peso e proximo passo por animal."
           actions={
             <>
               <Button asChild variant="outline">
@@ -310,7 +487,7 @@ export default function Animais() {
         <EmptyState
           icon={PawPrint}
           title="Nenhum animal cadastrado"
-          description="Comece cadastrando os primeiros animais da fazenda para liberar agenda, historico e acompanhamento do rebanho."
+          description="Comece cadastrando os primeiros animais da fazenda para liberar agenda, historico, peso e acompanhamento do rebanho."
           action={{
             label: "Cadastrar primeiro animal",
             onClick: () => navigate("/animais/novo"),
@@ -325,7 +502,7 @@ export default function Animais() {
       <PageIntro
         eyebrow="Rebanho"
         title="Animais"
-        description="Leitura operacional do rebanho com classificacao, vinculos familiares e transicoes de estagio visiveis sem poluir a tabela."
+        description="Leitura operacional do rebanho com categoria, hierarquia materna, peso atual, ganho e proximo evento na mesma superficie."
         meta={
           <>
             <StatusBadge tone="neutral">
@@ -357,26 +534,33 @@ export default function Animais() {
         }
       />
 
-      <section className="grid gap-4 md:grid-cols-3">
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <MetricCard
-          label="Base do rebanho"
-          value={animaisFamilia?.length ?? 0}
-          hint="Total de animais cadastrados na fazenda."
+          label="Base ativa"
+          value={activeAnimalsCount}
+          hint="Animais ativos cadastrados na fazenda."
         />
         <MetricCard
           label="No recorte atual"
           value={animalRows.length}
-          hint={hasFilters ? "Resultado da busca e dos filtros atuais." : "Sem filtros aplicados."}
+          hint={`${animalsWithWeightCount} com pesagem registrada no recorte.`}
         />
         <MetricCard
           label="Sem lote"
           value={semLoteCount}
+          hint="Animais sem lote definido continuam pedindo ajuste estrutural."
+          tone={semLoteCount > 0 ? "warning" : "default"}
+        />
+        <MetricCard
+          label="Agenda no radar"
+          value={agendaRadarCount}
           hint={
-            lifecyclePendingCount > 0
-              ? `${lifecycleStrategicCount} estrategica(s) e ${lifecycleBiologicalCount} biologica(s) em transicao.`
-              : "Sem alerta de transicao no momento."
+            animalsWithNextAgendaCount > 0
+              ? `${animalsWithNextAgendaCount} com proximo evento mapeado.`
+              : "Nenhum proximo evento aberto para o recorte."
           }
-          tone={lifecyclePendingCount > 0 ? "warning" : "default"}
+          tone={agendaRadarCount > 0 ? "warning" : "info"}
+          icon={<CalendarClock className="h-5 w-5" />}
         />
       </section>
 
@@ -446,19 +630,6 @@ export default function Animais() {
             </SelectContent>
           </Select>
 
-          <Select value={phaseFilter} onValueChange={setPhaseFilter}>
-            <SelectTrigger className="w-full sm:w-[180px]">
-              <SelectValue placeholder="Fase veterinaria" />
-            </SelectTrigger>
-            <SelectContent>
-              {VETERINARY_PHASE_FILTERS.map((item) => (
-                <SelectItem key={item.value} value={item.value}>
-                  {item.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
           <Select
             value={productiveStateFilter}
             onValueChange={setProductiveStateFilter}
@@ -486,7 +657,6 @@ export default function Animais() {
                 setSexoFilter("all");
                 setStatusFilter("ativo");
                 setCategoryFilter("all");
-                setPhaseFilter("all");
                 setProductiveStateFilter("all");
               }}
             >
@@ -523,19 +693,20 @@ export default function Animais() {
         <CardHeader>
           <CardTitle>Leitura operacional do rebanho</CardTitle>
           <CardDescription>
-            O conteudo principal fica na tabela: identificacao, classificacao, contexto familiar e proximo marco visivel por animal.
+            A tabela prioriza categoria, localizacao, peso, ganho e proximo evento.
+            Hierarquia mae &gt; cria continua visivel sem ocupar coluna exclusiva.
           </CardDescription>
         </CardHeader>
         <CardContent className="p-0">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[170px]">Identificacao</TableHead>
+                <TableHead className="w-[250px]">Animal</TableHead>
                 <TableHead>Categoria</TableHead>
-                <TableHead>Idade</TableHead>
-                <TableHead>Fase vet.</TableHead>
                 <TableHead>Lote</TableHead>
-                <TableHead>Vinculo</TableHead>
+                <TableHead>Peso atual</TableHead>
+                <TableHead>Ganho</TableHead>
+                <TableHead>Proximo evento</TableHead>
                 <TableHead>Estagio</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Abrir</TableHead>
@@ -548,17 +719,16 @@ export default function Animais() {
                 const mother = animal.mae_id
                   ? animaisMap.get(animal.mae_id) ?? null
                   : null;
-                const father = animal.pai_id
-                  ? animaisMap.get(animal.pai_id) ?? null
-                  : null;
                 const calves = calvesByMother.get(animal.id) ?? [];
                 const lifecyclePending = lifecyclePendings.get(animal.id);
+                const weightSummary = weightSummaryByAnimal.get(animal.id);
+                const nextAgenda = nextAgendaByAnimal.get(animal.id);
 
                 return (
                   <TableRow
                     key={animal.id}
                     className={cn(
-                      depth > 0 && "bg-muted/20",
+                      depth > 0 && "bg-muted/15",
                       lifecyclePending && "bg-warning-muted/50",
                     )}
                   >
@@ -568,15 +738,44 @@ export default function Animais() {
                         style={{ paddingLeft: `${depth * 18}px` }}
                       >
                         {depth > 0 ? (
-                          <CornerDownRight className="mt-0.5 h-4 w-4 text-muted-foreground" />
+                          <span className="mt-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-rose-50 text-rose-600">
+                            <CornerDownRight className="h-3.5 w-3.5" />
+                          </span>
                         ) : null}
-                        <div className="space-y-0.5">
-                          <p className="font-medium">{animal.identificacao}</p>
-                          {depth > 0 && mother ? (
-                            <p className="text-xs text-muted-foreground">
-                              junto da matriz {mother.identificacao}
-                            </p>
-                          ) : null}
+                        <div className="space-y-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <Link
+                              to={`/animais/${animal.id}`}
+                              className="font-medium text-foreground hover:text-primary hover:underline"
+                            >
+                              {animal.identificacao}
+                            </Link>
+                            {animal.nome ? (
+                              <span className="text-xs text-muted-foreground">
+                                {animal.nome}
+                              </span>
+                            ) : null}
+                            {depth > 0 ? (
+                              <StatusBadge tone="info">Cria</StatusBadge>
+                            ) : null}
+                            {depth === 0 && calves.length > 0 ? (
+                              <StatusBadge tone="neutral">
+                                {calves.length} cria(s)
+                              </StatusBadge>
+                            ) : null}
+                          </div>
+                          <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                            <span>{calcularIdade(animal.data_nascimento) || "Sem idade"}</span>
+                            <span>{animal.sexo === "F" ? "Femea" : "Macho"}</span>
+                            {depth > 0 && mother ? (
+                              <Link
+                                to={`/animais/${mother.id}`}
+                                className="hover:text-foreground hover:underline"
+                              >
+                                Abrir matriz
+                              </Link>
+                            ) : null}
+                          </div>
                         </div>
                       </div>
                     </TableCell>
@@ -588,29 +787,11 @@ export default function Animais() {
                       />
                     </TableCell>
 
-                    <TableCell className="align-top text-sm text-muted-foreground">
-                      {calcularIdade(animal.data_nascimento) || "-"}
-                    </TableCell>
-
-                    <TableCell className="align-top">
-                      {taxonomy ? (
-                        <StatusBadge tone="neutral">
-                          {taxonomy.display.fase_veterinaria}
-                        </StatusBadge>
-                      ) : (
-                        <span className="text-xs italic text-muted-foreground">
-                          Sem fase
-                        </span>
-                      )}
-                    </TableCell>
-
                     <TableCell className="align-top">
                       {animal.lote_id ? (
-                        <div className="space-y-1">
-                          <p className="text-sm font-medium">
-                            {lotesMap.get(animal.lote_id)?.nome || "..."}
-                          </p>
-                        </div>
+                        <p className="text-sm font-medium">
+                          {lotesMap.get(animal.lote_id)?.nome || "..."}
+                        </p>
                       ) : (
                         <span className="text-xs italic text-muted-foreground">
                           Sem lote
@@ -619,11 +800,61 @@ export default function Animais() {
                     </TableCell>
 
                     <TableCell className="align-top">
-                      <AnimalKinshipBadges
-                        mother={mother}
-                        father={father}
-                        calves={calves}
-                      />
+                      {weightSummary ? (
+                        <div className="space-y-1">
+                          <p className="text-sm font-medium">
+                            {formatWeight(
+                              weightSummary.ultimoPesoKg,
+                              farmMeasurementConfig.weight_unit,
+                            )}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {formatDate(weightSummary.ultimoPesoData)}
+                          </p>
+                        </div>
+                      ) : (
+                        <span className="text-xs italic text-muted-foreground">
+                          Sem pesagem
+                        </span>
+                      )}
+                    </TableCell>
+
+                    <TableCell className="align-top">
+                      {weightSummary ? (
+                        <div className="space-y-1">
+                          <p className="text-sm font-medium">
+                            {formatWeightPerDay(
+                              weightSummary.ganhoMedioDiaKg,
+                              farmMeasurementConfig.weight_unit,
+                            )}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {weightSummary.totalPesagens} pesagem(ns)
+                          </p>
+                        </div>
+                      ) : (
+                        <span className="text-xs italic text-muted-foreground">
+                          Aguardando serie
+                        </span>
+                      )}
+                    </TableCell>
+
+                    <TableCell className="align-top">
+                      {nextAgenda ? (
+                        <div className="space-y-1">
+                          <StatusBadge tone={getAgendaTone(nextAgenda.status)}>
+                            {getAgendaStatusLabel(nextAgenda.status)}
+                          </StatusBadge>
+                          <p className="text-sm font-medium">{nextAgenda.titulo}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {formatDate(nextAgenda.data)}
+                          </p>
+                        </div>
+                      ) : (
+                        <span className="text-xs italic text-muted-foreground">
+                          Sem agenda
+                        </span>
+                      )}
                     </TableCell>
 
                     <TableCell className="align-top">
@@ -655,11 +886,10 @@ export default function Animais() {
                           <StatusBadge tone="neutral">
                             {taxonomy.display.estado_alias}
                           </StatusBadge>
-                          {taxonomy.display.estado_alias !==
-                          taxonomy.display.estado_canonico ? (
-                            <p className="text-xs text-muted-foreground">
-                              {taxonomy.display.estado_canonico}
-                            </p>
+                          {animal.status !== "ativo" ? (
+                            <StatusBadge tone={getProductiveTone(animal.status)}>
+                              {animal.status}
+                            </StatusBadge>
                           ) : null}
                         </div>
                       ) : (
