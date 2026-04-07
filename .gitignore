@@ -25,3 +25,5 @@ tsc_output*.txt
 *.sln
 *.sw?
 .env
+.vercel
+.env*.local

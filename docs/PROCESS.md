@@ -3,7 +3,7 @@
 > **Status:** Normativo
 > **Fonte de Verdade (Execucao):** GitHub (PRs, Issues e Projects)
 > **Fonte de Verdade (Analise):** `docs/IMPLEMENTATION_STATUS.md` -> `docs/TECH_DEBT.md` -> `docs/ROADMAP.md` -> `docs/review/RECONCILIACAO_REPORT.md`
-> **Ultima Atualizacao:** 2026-04-02
+> **Ultima Atualizacao:** 2026-04-07
 
 Este documento define o processo de desenvolvimento do RebanhoSync com governanca capability-centric, usando `capability_id` como chave de derivacao entre matriz analitica, divida tecnica, roadmap e reconciliacao.
 
@@ -214,3 +214,13 @@ Em caso de duvida, a ordem de consulta deve ser:
 4. documentos derivados (`IMPLEMENTATION_STATUS`, `TECH_DEBT`, `ROADMAP`, `RECONCILIACAO_REPORT`)
 
 Esse encadeamento reduz confusao entre intencao, implementacao e historico.
+
+## 9. Gaps Residuais (beta interno)
+
+Apos auditoria de abril/2026, os seguintes TDs permanecem abertos:
+
+| TD | Descricao | Prioridade |
+|---|---|---|
+| TD-021 | Telemetria local-only (sem observabilidade remota) | P1 |
+| TD-022 | `produtos_veterinarios` sem autocomplete integrado em `Registrar.tsx` | P1 |
+| TD-023 | Pos-parto e Cria Inicial sem cobertura no pacote `test:e2e` | P2 |

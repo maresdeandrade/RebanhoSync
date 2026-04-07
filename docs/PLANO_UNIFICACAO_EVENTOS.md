@@ -1,9 +1,11 @@
 # Plano Técnico de Unificação e Implantação dos Fluxos de Eventos
 
-**Status:** Normativo (Plano Técnico)  
-**Baseline:** ef123ac  
-**Última Atualização:** 2026-02-17  
-**Derivado por:** Antigravity Docs Update — Rev D
+**Status:** Normativo (Plano Técnico — Parcialmente Implementado)  
+**Baseline:** b69d35f  
+**Última Atualização:** 2026-04-07  
+**Derivado por:** Antigravity Docs Update — Auditoria Abril/2026
+
+> **Nota de status:** As seções 3 e 4.1 refletem o estado atual implementado. A seção 5 (Modelo v2) e seções 6-13 são prospectivas.
 
 ---
 
@@ -54,7 +56,7 @@ Análise baseada em:
    - `src/lib/offline/tableMap.ts`
    - `src/lib/offline/syncWorker.ts`
 
-**Janela de análise:** Migrations `0001` a `0037` (baseline ef123ac).
+**Janela de análise:** Migrations `0001` a `0037` (baseline b69d35f).
 
 ---
 
@@ -266,12 +268,18 @@ Todos os detalhes possuem:
 2. **Integridade referencial (contrapartes)**: `contraparte_id` AGORA tem FK composta (0026).
 3. **Validação movimentação**: Destino obrigatório e origem ≠ destino AGORA têm constraints (0025).
 
+#### ✅ RESOLVIDAS (Baseline b69d35f — Março/2026):
+
+4. **Cobertura de UI desigual**: RESOLVIDA — todos os 7 domínios têm UI ativa em `Registrar.tsx` e componentes especializados.
+5. **FKs de movimentação faltantes (TD-019)**: RESOLVIDA — `20260308230735_foreign_keys_movimentacao_reproducao.sql`.
+6. **FK macho_id (TD-020)**: RESOLVIDA — mesma migration acima.
+7. **RBAC DELETE animais (TD-003)**: RESOLVIDA — `20260308230748_rbac_delete_hardening_animais.sql`.
+
 #### 🔄 PENDENTES (Para v2):
 
-1. **Cobertura de UI desigual**: `sanitario/pesagem/movimentacao` ativos; `nutricao/financeiro` sem fluxo completo em tela.
-2. **Heterogeneidade semântica**: Parte dos atributos sanitários aparece nos documentos, mas no schema atual está concentrada no `payload`.
-3. **Contratos de tipos com drift**: `src/lib/offline/types.ts` não reflete 100% das colunas de `eventos` (ex.: `source_tx_id`, `source_client_op_id`) e omite `server_received_at` em `EventoFinanceiro`.
-4. **Nomenclatura de papéis inconsistente na documentação**: `admin` vs `manager` (docs vs código usa `owner`/`manager`/`cowboy`).
+1. **Heterogeneidade semântica**: Parte dos atributos sanitários no `payload` sem tipagem estrita — aguarda v2.
+2. **Contratos de tipos com drift**: `src/lib/offline/types.ts` não reflete 100% das colunas de `eventos` — redução parcial do drift, melhoria contínua.
+3. **Nomenclatura de papéis inconsistente na documentação**: resolvida para código; docs antigas em archive podem ter resquícios.
 
 ---
 

@@ -1,28 +1,29 @@
 # Auditoria de Capacidades - RebanhoSync
 
-> **Status:** Derivado
-> **Baseline:** `1f62e4b`
-> **Última Atualização:** 2026-02-16
+> **Status:** Derivado (Rev D+ — Pós-Fechamento)
+> **Baseline:** `b69d35f`
+> **Última Atualização:** 2026-04-07
 
 ---
 
-## Capability Score: 100% MVP (7/7 domínios)
+## Capability Score: 100% MVP (7/7 domínios) — 0 gaps abertos
 
-Este documento consolida a auditoria rigorosa de capacidades funcionais do RebanhoSync no baseline `1f62e4b`.
+Este documento consolida a auditoria de capacidades funcionais do RebanhoSync no baseline `b69d35f`.
+Todos os gaps não-bloqueantes do baseline anterior foram fechados via migrations de março/2026.
 
 ---
 
 ## Matriz de Capacidades por Domínio
 
-| Domínio          | DB  | Server | Offline | Builder | UI Write | UI Read | E2E | Status                           |
-| ---------------- | --- | ------ | ------- | ------- | -------- | ------- | --- | -------------------------------- |
-| **Sanitário**    | ✅  | ✅     | ✅      | ✅      | ✅       | ✅      | ✅  | COMPLETO                         |
-| **Pesagem**      | ✅  | ✅     | ✅      | ✅      | ✅       | ✅      | ⚠️  | FUNCIONAL (TD-014)               |
-| **Movimentação** | ✅  | ✅     | ✅      | ✅      | ✅       | ✅      | ⚠️  | FUNCIONAL (TD-008, TD-019)       |
-| **Nutrição**     | ✅  | ✅     | ✅      | ✅      | ✅       | ✅      | ✅  | **COMPLETO** ✨                  |
-| **Reprodução**   | ✅  | ✅     | ✅      | ✅      | ✅       | ✅      | ⚠️  | COMPLETO (TD-020 não-bloqueante) |
-| **Financeiro**   | ✅  | ✅     | ✅      | ✅      | ✅       | ✅      | ✅  | COMPLETO                         |
-| **Agenda**       | ✅  | ✅     | ✅      | ✅      | ✅       | ✅      | ✅  | COMPLETO                         |
+| Domínio          | DB  | Server | Offline | Builder | UI Write | UI Read | E2E | Status   |
+| ---------------- | --- | ------ | ------- | ------- | -------- | ------- | --- | -------- |
+| **Sanitário**    | ✅  | ✅     | ✅      | ✅      | ✅       | ✅      | ✅  | COMPLETO |
+| **Pesagem**      | ✅  | ✅     | ✅      | ✅      | ✅       | ✅      | ✅  | COMPLETO |
+| **Movimentação** | ✅  | ✅     | ✅      | ✅      | ✅       | ✅      | ✅  | COMPLETO |
+| **Nutrição**     | ✅  | ✅     | ✅      | ✅      | ✅       | ✅      | ✅  | COMPLETO |
+| **Reprodução**   | ✅  | ✅     | ✅      | ✅      | ✅       | ✅      | ✅  | COMPLETO |
+| **Financeiro**   | ✅  | ✅     | ✅      | ✅      | ✅       | ✅      | ✅  | COMPLETO |
+| **Agenda**       | ✅  | ✅     | ✅      | ✅      | ✅       | ✅      | ✅  | COMPLETO |
 
 **Legenda:**
 
@@ -50,36 +51,33 @@ Este documento consolida a auditoria rigorosa de capacidades funcionais do Reban
 
 ---
 
-### 2. Pesagem ⚠️ FUNCIONAL
+### 2. Pesagem ✅ COMPLETO
 
 **DB:** `migrations/0001_init.sql:eventos_pesagem` (peso_kg)  
 **Server:** `sync-batch` aceita `dominio='pesagem'`  
 **Offline:** `db.ts:event_eventos_pesagem`  
 **Builder:** `buildEventGesture.ts:L63-71`  
-**UI Write:** `Registrar.tsx:tipoManejo==='pesagem'` (L1006+)  
-**UI Read:** Histórico funcional  
-**E2E:** Fluxo 6 (Hardening) - PARTIAL
+**UI Write:** `Registrar.tsx:tipoManejo==='pesagem'` — valida peso > 0  
+**UI Read:** Histórico + `vw_animal_gmd` (GMD server-side)  
+**E2E:** Fluxo 6 — PASS
 
-**Gap Não-Bloqueante:**
-
-- ❌ TD-014: UI não valida peso > 0 (servidor rejeita, mas UX degradada)
+**TD-014:** ✅ CLOSED — validação peso > 0 implementada no frontend  
+**TD-015:** ✅ CLOSED — `vw_animal_gmd` substitui cálculo in-memory (`20260308230811_indexes_performance_gmd.sql`)
 
 ---
 
-### 3. Movimentação ⚠️ FUNCIONAL
+### 3. Movimentação ✅ COMPLETO
 
-**DB:** `migrations/0001_init.sql:eventos_movimentacao` (from_lote_id, to_lote_id)  
-**Server:** `sync-batch` + anti-teleport server (rules.ts:prevalidateAntiTeleport)  
+**DB:** `migrations/0001_init.sql:eventos_movimentacao` + FKs (`20260308230735`)  
+**Server:** `sync-batch` + anti-teleport (rules.ts:prevalidateAntiTeleport)  
 **Offline:** `db.ts:event_eventos_movimentacao`  
 **Builder:** `buildEventGesture.ts:L72-86` (INSERT evento + UPDATE animal.lote_id)  
-**UI Write:** `Registrar.tsx:tipoManejo==='movimentacao'` (L1066+)  
+**UI Write:** `Registrar.tsx:tipoManejo==='movimentacao'` — desabilita origem==destino  
 **UI Read:** Histórico funcional  
-**E2E:** Fluxo 3 (Anti-Teleporte) - PARTIAL
+**E2E:** Fluxo 3 (Anti-Teleporte) — PASS
 
-**Gaps Não-Bloqueantes:**
-
-- ❌ TD-008: UI não desabilita origem==destino (servidor rejeita, UX degradada)
-- ❌ TD-019: FKs faltantes (from/to_lote_id sem FOREIGN KEY)
+**TD-008:** ✅ CLOSED — useEffect desabilita `toLoteId` quando igual à origem (`Registrar.tsx:387-396`)  
+**TD-019:** ✅ CLOSED — FKs `from_lote_id` e `to_lote_id` adicionadas com limpeza de órfãos (`20260308230735_foreign_keys_movimentacao_reproducao.sql`)
 
 ---
 
@@ -125,24 +123,22 @@ else if (tipoManejo === "nutricao") {
 
 ---
 
-### 5. Reprodução ⚠️ COMPLETO
+### 5. Reprodução ✅ COMPLETO
 
-**DB:** `migrations/0035_reproducao_hardening_v1.sql` (tipo, macho_id, episodio_id)  
-**Server:** `sync-batch` aceita `dominio='reproducao'`  
+**DB:** `migrations/0035_reproducao_hardening_v1.sql` + FK macho_id (`20260308230735`)  
+**Server:** `sync-batch` aceita `dominio='reproducao'`; valida taxonomia v1  
 **Offline:** `db.ts:event_eventos_reproducao`  
 **Builder:** `buildEventGesture.ts:L98-112` (com linking episódios)  
-**UI Write:** `components/events/ReproductionForm.tsx`  
-**UI Read:** `ReproductionDashboard.tsx` + views (prenhez_stats, tx_ia)  
-**E2E:** Fluxo deReproduction - PASS
+**UI Write:** formulário reprodutivo + `AnimalPosParto.tsx` + `AnimalCriaInicial.tsx`  
+**UI Read:** `ReproductionDashboard.tsx` + ficha `AnimalReproducao.tsx`  
+**E2E:** Fluxos reprodutivos — PASS
 
-**Recursos Avançados:**
+**Recursos avançados:**
+- Linking episódios (cobertura/IA → diagnóstico → parto)
+- Taxonomia canônica bovina (contrato v1 + paridade TS/SQL)
+- Pós-parto neonatal e cria inicial
 
-- Linking episódios (cobertura → diagnóstico → parto)
-- Status computation (prenha, vazia, solteira)
-
-**Gap Não-Bloqueante:**
-
-- ❌ TD-020: FK macho_id faltante
+**TD-020:** ✅ CLOSED — FK `macho_id → animais(id)` adicionada com limpeza de órfãos (`20260308230735_foreign_keys_movimentacao_reproducao.sql`)
 
 ---
 
@@ -180,61 +176,67 @@ else if (tipoManejo === "nutricao") {
 
 ### Owner
 
-| Operação                 | Implementado?       | Evidência                                  | Gap    |
-| ------------------------ | ------------------- | ------------------------------------------ | ------ |
-| Gerenciar membros        | ✅                  | `admin_change_role`, `admin_remove_member` | -      |
-| CRUD fazenda             | ✅                  | RLS policies                               | -      |
-| DELETE animais           | ⚠️ (permite cowboy) | RLS sem role check                         | TD-003 |
-| Todos 7 domínios eventos | ✅                  | Sem restrições                             | -      |
+| Operação                 | Implementado? | Evidência                                           | Status  |
+| ------------------------ | ------------- | --------------------------------------------------- | ------- |
+| Gerenciar membros        | ✅            | `admin_set_member_role`, `admin_remove_member`      | OK      |
+| CRUD fazenda             | ✅            | RLS policies                                        | OK      |
+| DELETE animais           | ✅            | `animais_delete_by_role` (role_in_fazenda)          | TD-003 ✅ CLOSED |
+| Todos 7 domínios eventos | ✅            | Sem restrições operacionais                         | OK      |
 
 ### Manager
 
-| Operação             | Implementado?       | Evidência          | Gap    |
-| -------------------- | ------------------- | ------------------ | ------ |
-| Promover cowboy      | ✅                  | RPC funcional      | -      |
-| CRUD estrutura       | ✅                  | Lotes/Pastos RLS   | -      |
-| DELETE animais       | ⚠️ (permite cowboy) | RLS sem role check | TD-003 |
-| Convites             | ✅                  | `create_invite`    | -      |
-| Eventos (7 domínios) | ✅                  | Sem restrições     | -      |
+| Operação             | Implementado? | Evidência                                           | Status  |
+| -------------------- | ------------- | --------------------------------------------------- | ------- |
+| Promover cowboy      | ✅            | RPC funcional                                       | OK      |
+| CRUD estrutura       | ✅            | Lotes/Pastos RLS                                    | OK      |
+| DELETE animais       | ✅            | `animais_delete_by_role` (owner/manager)            | TD-003 ✅ CLOSED |
+| Convites             | ✅            | `create_invite`                                     | OK      |
+| Eventos (7 domínios) | ✅            | Sem restrições                                      | OK      |
 
 ### Cowboy
 
-| Operação                       | Implementado?      | Evidência              | Gap         |
-| ------------------------------ | ------------------ | ---------------------- | ----------- |
-| Registrar eventos (7 domínios) | ✅                 | **Incluindo Nutrição** | -           |
-| DELETE animais                 | ⚠️ Permitido (bug) | RLS sem role check     | TD-003      |
-| CRUD lotes/pastos              | ❌ Bloqueado       | RLS restringe          | - (correto) |
+| Operação                       | Implementado? | Evidência                                           | Status  |
+| ------------------------------ | ------------- | --------------------------------------------------- | ------- |
+| Registrar eventos (7 domínios) | ✅            | INSERT/UPDATE em animais, todos os eventos          | OK      |
+| DELETE animais                 | ❌ Bloqueado  | `animais_delete_by_role` bloqueia cowboy            | TD-003 ✅ CLOSED |
+| CRUD lotes/pastos              | ❌ Bloqueado  | RLS restringe (correto)                             | OK      |
 
 ---
 
-## Gaps Consolidados (Não-Bloqueantes)
+## Gaps Consolidados
 
-### P0 (2 items)
+### Da lista original — todos FECHADOS ✅
 
-- **TD-001:** Queue cleanup missing (risco storage, não bloqueia operação)
-- **TD-008:** Anti-Teleport UI missing (servidor valida, UX degradada)
+| TD     | Descrição                              | Status     | Fechado por                                          |
+| ------ | -------------------------------------- | ---------- | ---------------------------------------------------- |
+| TD-001 | Queue cleanup (DLQ auto-purge)         | ✅ CLOSED  | `syncWorker.ts` + `rejections.ts` (TTL 7d)           |
+| TD-003 | DELETE RLS sem role check              | ✅ CLOSED  | `20260308230748_rbac_delete_hardening_animais.sql`   |
+| TD-004 | Índices de performance                 | ✅ CLOSED  | `20260308230811_indexes_performance_gmd.sql`         |
+| TD-006 | UI nutrição                            | ✅ CLOSED  | `Registrar.tsx` inline                               |
+| TD-008 | Anti-Teleport UI (origem==destino)     | ✅ CLOSED  | `Registrar.tsx:387-396` useEffect                    |
+| TD-011 | Produtos sanitários — catálogo DB      | ✅ CLOSED  | `20260308230824_produtos_veterinarios_ui.sql`        |
+| TD-014 | Peso validation UI                     | ✅ CLOSED  | `Registrar.tsx`                                      |
+| TD-015 | GMD em memória                         | ✅ CLOSED  | `vw_animal_gmd` (`20260308230811`)                   |
+| TD-019 | FKs movimentação faltantes             | ✅ CLOSED  | `20260308230735_foreign_keys_movimentacao_reproducao.sql` |
+| TD-020 | FK macho_id faltante                   | ✅ CLOSED  | `20260308230735_foreign_keys_movimentacao_reproducao.sql` |
 
-### P1 (5 items)
-
-- **TD-003:** DELETE RLS sem role check (permite cowboy inadvertidamente)
-- **TD-011:** Produtos TEXT livre (autocomplete nice-to-have)
-- **TD-014:** Peso validation UI (servidor valida, UX degradada)
-- **TD-019:** FKs movimentação faltantes (integridade futura)
-- **TD-020:** FK macho_id faltante (integridade futura)
-
-### P2 (2 items)
-
-- **TD-004:** Índices performance parciais (escala)
-- **TD-015:** GMD em memória (escala)
-
-**Total OPEN:** 9 items  
+**Total OPEN (lista original):** 0 ✅  
 **Bloqueadores E2E:** 0 ✅
+
+### Gaps residuais pós-auditoria (novos)
+
+| TD     | Descrição                                    | Status | Impacto       |
+| ------ | -------------------------------------------- | ------ | ------------- |
+| TD-021 | Telemetria local-only (sem observabilidade remota) | OPEN | Baixo/Médio |
+| TD-022 | `produtos_veterinarios` sem autocomplete UI  | OPEN   | UX            |
+| TD-023 | Pós-parto e Cria Inicial sem cobertura E2E   | OPEN   | Testes        |
 
 ---
 
 ## Assinatura
 
-**Baseline:** `1f62e4b`  
-**Data:** 2026-02-16  
+**Baseline:** `b69d35f`  
+**Data:** 2026-04-07  
 **Capability Score:** 100% MVP (7/7 domínios operacionais)  
-**Gaps:** 9 items não-bloqueantes
+**Gaps originais:** 10 → 0 CLOSED  
+**Gaps residuais:** 3 (TD-021, TD-022, TD-023)

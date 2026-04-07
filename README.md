@@ -1,74 +1,101 @@
 # RebanhoSync
 
-Aplicacao offline-first para gestao pecuaria de corte, com multi-tenant por fazenda, RBAC (`owner | manager | cowboy`), sincronizacao por gestos e backend Supabase com RLS.
+Plataforma **offline-first** para gestão pecuária de corte. Multi-tenant por fazenda, RBAC (`owner | manager | cowboy`), sincronização transacional por gestos e backend Supabase com RLS hardened.
 
-## Estado atual
+> **Estado atual:** Beta interno — MVP completo e operacional.  
+> Todos os 7 domínios operacionais implementados. Qualidade local verde (`lint`, `test`, `build`).
 
-- Estagio atual: MVP operacional em consolidacao.
-- Frontend SPA em React 19 com rotas de operacao, onboarding inicial, importacao CSV, relatorios e modulo reprodutivo dedicado.
-- Offline-first real com Dexie, fila local, rollback e worker de sync.
-- Banco e backend com migrations Supabase, RLS hardened e Edge Function `sync-batch`.
-- Qualidade local: `pnpm run lint`, `pnpm test` e `pnpm run build` passam.
+---
 
 ## Escopo implementado
 
-- Gestao de animais, lotes, pastos, contrapartes e categorias zootecnicas.
-- Registro de eventos sanitarios, pesagem, nutricao, movimentacao, reproducao e financeiro.
-- Agenda operacional, reconciliacao offline e relatorios simples.
-- Onboarding guiado da fazenda e importacao inicial de animais, lotes e pastos.
-- Ficha do animal com vinculos mae/cria, leitura de peso e fluxo reprodutivo dedicado por matriz.
-- Pos-parto neonatal com confirmacao da cria, lote inicial e primeira pesagem.
-- Lista de animais agrupando matriz e cria com badge visual por estagio de vida.
+- Gestão de animais, lotes, pastos, contrapartes e categorias zootécnicas.
+- Registro de eventos: sanitário, pesagem, nutrição, movimentação, reprodução e financeiro.
+- Agenda operacional com protocolos, deduplicação automática e recálculo por trigger.
+- Onboarding guiado da fazenda e importação CSV de animais, lotes e pastos.
+- Módulo reprodutivo completo: cobertura/IA → diagnóstico → parto → pós-parto → cria inicial.
+- Ficha do animal com vínculos mãe/cria, curva de peso, timeline de eventos.
+- Lista de animais agrupando matriz e cria com badge visual por estágio de vida.
+- Transições do rebanho com histórico consolidado.
+- Dashboard reprodutivo dedicado e relatórios operacionais com exportação.
+- Telemetria local de piloto (store `metrics_events`, Dexie v8).
+- Taxonomia canônica bovina: 3 eixos derivados, contrato v1, SQL view de paridade.
+- Sistema de convites e gestão de membros.
+- Catálogo global de produtos veterinários com seed básico.
+
+---
 
 ## Stack
 
-- React 19 + TypeScript + Vite 6
-- Tailwind CSS + shadcn/ui + Radix UI
-- Supabase + PostgreSQL + Edge Functions
-- Dexie + IndexedDB
-- Vitest + Testing Library
+| Camada | Tecnologia |
+|---|---|
+| Frontend | React 19 + TypeScript + Vite 6 |
+| UI | Tailwind CSS + shadcn/ui + Radix UI |
+| Formulários | React Hook Form + Zod |
+| Dados remotos | Supabase JS + TanStack React Query |
+| Offline | Dexie v4 (IndexedDB) + dexie-react-hooks |
+| Backend | Supabase (Auth, Postgres, RLS, Edge Functions) |
+| Testes | Vitest + Testing Library + fake-indexeddb |
+| Deploy | Vercel (frontend) + Supabase (backend) |
+
+---
 
 ## Scripts principais
 
 ```bash
 pnpm install
-pnpm dev
-pnpm run lint
-pnpm test
-pnpm run build
+pnpm dev          # servidor local (Vite)
+pnpm run lint     # ESLint
+pnpm test         # Vitest (unitários + integração)
+pnpm run build    # build de produção
 ```
 
 Scripts adicionais:
 
-- `pnpm run test:e2e`: fluxos guiados de onboarding, importacao e relatorios
-- `pnpm run gates`: gates documentais do pacote Antigravity
+```bash
+pnpm run test:e2e       # fluxos guiados: onboarding, importação, relatórios
+pnpm run gates          # gates documentais do pacote Antigravity
+pnpm run audit:data     # auditoria de contratos de dados
+```
+
+---
 
 ## Ambiente
 
-Crie um `.env` local a partir de `.env.example`.
+Crie um `.env` local a partir de `.env.example`:
 
-Variaveis esperadas:
+```env
+VITE_SUPABASE_URL=
+VITE_SUPABASE_ANON_KEY=
+VITE_SUPABASE_FUNCTIONS_URL=
+```
 
-- `VITE_SUPABASE_URL`
-- `VITE_SUPABASE_ANON_KEY`
-- `VITE_SUPABASE_FUNCTIONS_URL`
+---
 
-## Estrutura
+## Estrutura do repositório
 
-- `src/`: frontend React
-- `supabase/`: migrations e functions
-- `docs/`: arquitetura, contratos, snapshot operacional e backlog
-- `scripts/`: automacoes e gates
+```
+src/              Frontend React (pages, components, lib, hooks)
+supabase/
+  migrations/     44+ migrations SQL — evolução do schema
+  functions/
+    sync-batch/   Edge Function de sincronização transacional
+    test-auth/    Edge Function auxiliar de diagnóstico
+docs/             Documentação normativa e inventários vivos
+scripts/          Automações e gates documentais
+```
 
-## Documentacao
+---
 
-Consulte [docs/README.md](./docs/README.md) para o indice completo.
+## Documentação
 
-Os documentos mais uteis para retomar o projeto hoje sao:
+Leia primeiro → [`docs/README.md`](./docs/README.md)
 
-- [docs/CURRENT_STATE.md](./docs/CURRENT_STATE.md)
-- [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md)
-- [docs/OFFLINE.md](./docs/OFFLINE.md)
-- [docs/CONTRACTS.md](./docs/CONTRACTS.md)
-- [docs/STACK.md](./docs/STACK.md)
-- [docs/ROUTES.md](./docs/ROUTES.md)
+Para retomar o projeto rapidamente:
+
+1. [`docs/CURRENT_STATE.md`](./docs/CURRENT_STATE.md) — snapshot executivo do estado atual
+2. [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) — Two Rails, sync flow, taxonomia
+3. [`docs/OFFLINE.md`](./docs/OFFLINE.md) — Dexie stores, fila, rollback, `metrics_events`
+4. [`docs/CONTRACTS.md`](./docs/CONTRACTS.md) — contrato `sync-batch`, status codes
+5. [`docs/ROUTES.md`](./docs/ROUTES.md) — todas as rotas implementadas
+6. [`docs/TECH_DEBT.md`](./docs/TECH_DEBT.md) — gaps residuais (TDs 021-023)

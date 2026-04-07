@@ -2,7 +2,7 @@
 
 > **Status:** Derivado (Inventario)
 > **Fonte de Verdade:** `package.json`
-> **Ultima Atualizacao:** 2026-03-31
+> **Ultima Atualizacao:** 2026-04-07
 
 ## Core
 
@@ -18,6 +18,7 @@
 
 | Tecnologia | Versao | Uso |
 | --- | --- | --- |
+| TanStack React Query | ^5.56.2 | Cache e suspense de dados remotos |
 | Dexie | ^4.3.0 | Banco local IndexedDB |
 | dexie-react-hooks | ^4.2.0 | Reatividade sobre stores locais |
 | Supabase JS | latest | Auth, Postgres e Edge Functions |

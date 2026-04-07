@@ -2,7 +2,7 @@
 
 > **Status:** Normativo
 > **Fonte de Verdade:** Migrations PostgreSQL
-> **Ultima Atualizacao:** 2026-04-06
+> **Ultima Atualizacao:** 2026-04-07
 
 Este documento descreve o schema logico do banco e destaca os pontos relevantes para offline-first, multi-tenant e taxonomia bovina canonica.
 
@@ -57,6 +57,16 @@ Tabelas satelites:
 - `eventos_movimentacao`
 - `eventos_reproducao`
 - `eventos_financeiro`
+
+### `produtos_veterinarios`
+
+Tabela global (sem `fazenda_id`) com catálogo de produtos veterinários.
+
+- Criada em `supabase/migrations/20260308230824_produtos_veterinarios_ui.sql`
+- Campos: `id`, `nome`, `categoria`, `created_at`, `updated_at`
+- RLS habilitado: SELECT pública para `authenticated`; sem política de WRITE (seed-only)
+- Não é tenant-scoped — decisão intencional (catálogo compartilhado)
+- Não sincronizada via `sync-batch` (somente leitura direta via Supabase)
 
 ---
 
@@ -118,6 +128,17 @@ Observacao importante:
 - a view e uma projecao SQL de leitura
 - a fonte operacional da regra continua no cliente em `src/lib/animals/taxonomy.ts`
 - a paridade TS vs SQL e testada por fixture em `src/lib/animals/__tests__/taxonomySqlParity.test.ts`
+
+### View de GMD
+
+`vw_animal_gmd` (migration `20260308230811_indexes_performance_gmd.sql`) projeta:
+
+- `animal_id`, `fazenda_id`
+- `peso_atual`, `data_atual`
+- `peso_anterior`, `data_anterior`
+- `gmd_kg_dia` (Ganho Médio Diário calculado server-side)
+
+Substitui cálculo in-memory que dependia de carregar histórico completo no cliente.
 
 ---
 

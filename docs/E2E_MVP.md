@@ -2,7 +2,7 @@
 
 > **Status:** Normativo
 > **Fonte de Verdade:** Requisitos de Produto
-> **Ultima Atualizacao:** 2026-04-06
+> **Ultima Atualizacao:** 2026-04-07
 
 Este documento define os fluxos criticos de validacao do sistema.
 
@@ -88,6 +88,24 @@ Requisitos:
 - `sync-batch` processa o gesto
 - `syncWorker` executa rollback local em caso de rejeicao
 - historico exibe eventos de nutricao sincronizados
+
+---
+
+## Fluxo 9: Pos-Parto Neonatal e Cria Inicial
+
+Escopo:
+
+- parto gera cria localmente e redireciona para pos-parto
+- pos-parto confirma identificacao final, lote inicial e pesagem neonatal em gesto atomico
+- cria inicial registra dados basicos da cria recem-gerada
+- sincronizacao do gesto composto (animal cria + evento pesagem + agenda)
+
+Requisitos:
+
+- `AnimalPosParto.tsx` aceita cria_id e confirma dados neonatais
+- `AnimalCriaInicial.tsx` registra ciclo inicial da cria
+- gesto atomico com rollback correto em caso de rejeicao
+- historico de parto vincula mae a cria corretamente
 
 ---
 

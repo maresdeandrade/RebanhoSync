@@ -1,19 +1,19 @@
 # Matriz Canônica de Campos — Eventos e Agenda
 
-**Status:** Normativo (Baseline Fase 0)  
-**Baseline:** ef123ac  
-**Última Atualização:** 2026-02-17  
-**Derivado por:** Antigravity Docs Update — Rev D
+**Status:** Normativo (Baseline Fase 0 — Fechado)  
+**Baseline:** b69d35f  
+**Última Atualização:** 2026-04-07  
+**Derivado por:** Antigravity Docs Update — Auditoria Abril/2026
 
 ---
 
 ## 1. Fonte de Verdade e Escopo
 
-Este documento é a **fonte canônica do baseline Fase 0** para a estrutura de eventos, agenda e protocolos sanitários. Ele documenta o estado do schema conforme implementado nas migrations `0001_init.sql` (estrutura inicial) através de `0037_security_hardening_review.sql` (hardenings aplicados).
+Este documento é a **fonte canônica do baseline Fase 0** para a estrutura de eventos, agenda e protocolos sanitários. Ele documenta o estado do schema conforme implementado nas migrations `0001_init.sql` (estrutura inicial) até `20260308230824_produtos_veterinarios_ui.sql` (hardenings de março/2026, inclusive closure dos TDs 003, 004, 011, 014, 015, 019, 020).
 
 **Premissas:**
 
-- Baseline de migrations: `0001` (init) + `0023-0037` (hardenings eventos, agenda sanitária, reprodução)
+- Baseline de migrations: `0001` (init) + `0023-0037` (hardenings eventos) + `20260308*` (fechamento TDs março/2026)
 - Fonte primária: `supabase/migrations/*.sql`
 - Este documento NÃO prescreve mudanças futuras (ver `PLANO_UNIFICACAO_EVENTOS.md` para v2)
 

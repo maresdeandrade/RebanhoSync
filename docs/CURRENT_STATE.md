@@ -2,53 +2,54 @@
 
 > **Status:** Derivado (Snapshot Operacional)
 > **Fonte de Verdade:** `src/`, `supabase/`, `package.json`
-> **Ultima Atualizacao:** 2026-04-01
+> **Ultima Atualizacao:** 2026-04-07
 
 ## Resumo
 
-O repositorio esta em um ponto de **MVP operacional em consolidacao**, agora com o ciclo reprodutivo e o pos-parto muito mais aderentes ao uso de campo. A base tecnica principal segue funcional: aplicacao React, banco local Dexie, sync offline-first, schema Supabase com RLS, automacao de build/test/lint e um conjunto relevante de testes automatizados.
+O repositorio esta em **beta interno** — MVP completo e operacional. A base técnica principal está funcional e testada: aplicação React19, banco local Dexie v8, sync offline-first com rollback, schema Supabase com RLS endurecida, taxonomia canônica bovina, automação de build/test/lint e conjunto relevante de testes automatizados.
 
-Nos ultimos ciclos, o produto foi reorientado para uma proposta mais aderente ao pequeno e medio produtor, com foco em simplicidade operacional, onboarding inicial, importacao de dados, relatorios simples e um modulo reprodutivo dedicado por matriz, parto e pos-parto.
+Todos os TDs da lista original foram fechados via migrations de março/2026. Não há bloqueadores para uso interno controlado.
 
-## Camadas ja consolidadas
+## Camadas Consolidadas
 
-- Home orientada a operacao diaria.
+- Home orientada a operação diária.
 - Onboarding inicial da fazenda.
-- Importacao CSV para animais, lotes e pastos.
-- Registro rapido de manejos principais em `Registrar`.
+- Importação CSV para animais, lotes e pastos.
+- Registro rápido de manejos principais em `Registrar`.
 - Dashboard reprodutivo dedicado.
 - Ficha reprodutiva por matriz.
-- Pos-parto neonatal para crias recem-geradas.
-- Ficha do animal com vinculos mae/cria e curva de peso.
+- Pós-parto neonatal para crias recém-geradas.
+- Cria inicial pós-parto com identificação final e pesagem neonatal.
+- Transições do rebanho com histórico consolidado.
+- Ficha do animal com vínculos mãe/cria e curva de peso.
 - Lista de animais agrupando matriz e cria na mesma leitura.
-- Badges visuais por estagio de vida do animal usando icone base + modificadores.
-- Regra de elegibilidade reprodutiva alinhada com categoria: somente novilhas e vacas entram no fluxo.
-- Relatorios operacionais com exportacao/impressao.
-- Telemetria local de piloto e dashboard de uso.
-- Modo de experiencia por fazenda (`essencial` vs `completo`).
+- Badges visuais por estágio de vida com ícone base + modificadores.
+- Regra de elegibilidade reprodutiva por categoria.
+- Relatórios operacionais com exportação/impressão.
+- Telemetria local de piloto (store `metrics_events`, Dexie v8).
+- Modo de experiência por fazenda (`essencial` vs `completo`).
+- Taxonomia canônica bovina (3 eixos, contrato v1, SQL view, teste de paridade).
+- RBAC del animais restrito a owner/manager (TD-003 CLOSED).
+- FKs compostas em movimentação e reprodução (TD-019, TD-020 CLOSED).
+- View `vw_animal_gmd` para cálculo de GMD server-side (TD-015 CLOSED).
+- Catálogo `produtos_veterinarios` com seed básico (TD-011 CLOSED parcialmente).
 
-## Estado tecnico
+## Estado Técnico
 
 - `pnpm run lint`: verde
 - `pnpm test`: verde
 - `pnpm run build`: verde
-- `pnpm run test:e2e`: cobre onboarding, importacoes e relatorios
+- `pnpm run test:e2e`: cobre onboarding, importações e relatórios
+- Unitários: 25+ arquivos de teste em `src/lib/` e `src/pages/`
 
-## Destaques recentes de produto
+## Lacunas Residuais
 
-- `parto` gera as crias localmente e redireciona para uma etapa dedicada de pos-parto.
-- O pos-parto permite confirmar identificacao final, lote inicial e primeira pesagem neonatal em um gesto atomico.
-- A superficie de reproducao passou a respeitar a classificacao do rebanho, evitando uso do fluxo em bezerras.
-- A navegacao do rebanho ficou mais legivel para operacao diaria com agrupamento familiar e simbolismo visual por fase.
+- Telemetria ainda local-first (TD-021); sem observabilidade remota estruturada.
+- `produtos_veterinarios` criado no banco mas autocomplete em `Registrar.tsx` não confirmado (TD-022).
+- Fluxo pós-parto e cria inicial sem cobertura no pacote `test:e2e` (TD-023).
+- Aviso conhecido de `caniuse-lite` desatualizado no build (cosmético).
 
-## Lacunas mais importantes
-
-- Hardening restante de integridade/RLS documentado em `TECH_DEBT.md`.
-- Telemetria ainda local-first, sem observabilidade remota estruturada.
-- O pacote automatizado `test:e2e` ainda nao cobre o fluxo novo de pos-parto neonatal.
-- Bundle ainda com aviso conhecido de `caniuse-lite` desatualizado no build.
-
-## Leitura recomendada para retomada
+## Leitura Recomendada para Retomada
 
 1. `README.md`
 2. `ARCHITECTURE.md`

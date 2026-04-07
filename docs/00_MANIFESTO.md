@@ -2,7 +2,7 @@
 
 > **Status:** STABLE
 > **Fonte de Verdade:** Este Documento
-> **Última Atualização:** 2026-02-15
+> **Última Atualização:** 2026-04-07
 
 ## 1. Visão do Produto
 
@@ -16,10 +16,13 @@ O MVP foca no essencial para a gestão do ciclo de vida animal e operações di�
 
 ### O que Entra (In-Scope)
 
-- Gestão de Animais (Nascimento, Compra, Venda, Morte).
-- Movimentação de Rebanho (Troca de Pasto/Lote).
-- Manejo Sanitário (Vacinas, Vermífugos).
-- Reprodução Básica (Monta, Diagnóstico, Parto).
+- Reprodução Completa (Cobertura/IA, Diagnóstico, Parto, Pós-parto, Cria Inicial).
+- Registro de Nutrição (operacional, sem gestão de estoque).
+- Registro Financeiro (lançamentos, sem fluxo de caixa complexo ou NFE).
+- Agenda Sanitária Automática com protocolos e deduplicação.
+- Importação de Dados por CSV (animais, lotes, pastos).
+- Telemetria Local de Piloto.
+- Catálogo de Produtos Veterinários (catálogo global compartilhado).
 - Funcionalidade Offline Completa (Leitura e Escrita).
 - Sincronização Bidirecional Robusta.
 

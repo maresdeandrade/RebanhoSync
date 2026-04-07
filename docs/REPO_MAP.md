@@ -2,7 +2,7 @@
 
 > **Status:** Derivado (Inventario)
 > **Fonte de Verdade:** Estrutura do repositorio
-> **Ultima Atualizacao:** 2026-04-01
+> **Ultima Atualizacao:** 2026-04-07
 
 ## Raiz
 
@@ -56,9 +56,9 @@ Superficies principais do produto:
 
 - onboarding: `SelectFazenda`, `CriarFazenda`, `OnboardingInicial`
 - operacao: `Home`, `Registrar`, `Agenda`, `Eventos`, `Relatorios`
-- rebanho: `Animais`, `AnimalDetalhe`, `AnimalReproducao`, `AnimalPosParto`
+- rebanho: `Animais`, `AnimalDetalhe`, `AnimalReproducao`, `AnimalPosParto`, `AnimalCriaInicial`, `AnimalTransicoes`
 - estrutura: `Lotes`, `Pastos`, importadores e detalhes
-- apoio: `Financeiro`, `Contrapartes`, `Dashboard`, `ReproductionDashboard`
+- apoio: `Financeiro`, `Contrapartes`, `Dashboard`, `ReproductionDashboard`, `Sanitarios`
 - gestao: `Perfil`, `Membros`, `AdminMembros`, `EditarFazenda`
 
 ## `supabase/`
@@ -74,4 +74,6 @@ Superficies principais do produto:
 - Pastas geradas localmente como `dist/`, `node_modules/` e caches nao entram neste mapa.
 - `docs/review/` contem apenas relatorios ainda usados pela governanca documental.
 - `docs/archive/` concentra analises e auditorias historicas que nao representam o snapshot operacional atual.
+- `docs/ADRs/` contem decisoes de arquitetura: ADR-0001 (taxonomia) e ADR-0002 (produtos_veterinarios global).
 - Materiais antigos de planejamento fora de `docs/` foram removidos para reduzir ruido no root do repositorio.
+- Migrations nomeadas com prefixo YYYYMMDD (ex: `20260308*`) sao do ciclo de fechamento de TDs de marco/2026.

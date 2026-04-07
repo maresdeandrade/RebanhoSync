@@ -2,7 +2,7 @@
 
 > **Status:** Normativo
 > **Fonte de Verdade:** Codigo fonte e migrations
-> **Ultima Atualizacao:** 2026-04-06
+> **Ultima Atualizacao:** 2026-04-07
 
 Este documento consolida os principios arquiteturais do RebanhoSync: Two Rails, Offline-First, isolamento por fazenda e a derivacao canonica da taxonomia bovina.
 
@@ -16,8 +16,9 @@ Objetivos estruturais:
 
 - manter operacao offline-first
 - separar fatos passados de intencoes futuras
-- isolar tudo por `fazenda_id`
+- isolar tudo por `fazenda_id` (excecao documentada: `produtos_veterinarios` — catalogo global, ver ADR-0002)
 - derivar classificacoes a partir de fatos, nao de labels persistidos
+- coletar telemetria local de piloto em `metrics_events` (sem envio remoto no estado atual)
 
 ---
 
@@ -146,10 +147,18 @@ Precedencia de writer:
 
 1. UI cria um gesto com `client_tx_id`
 2. o cliente grava `queue_gestures` e `queue_ops`
-3. aplica optimistic update em `state_*`
-4. o worker envia o lote para `sync-batch`
+3. aplica optimistic update em `state_*` e captura `before_snapshot`
+4. o worker tenta ate 3 vezes enviar o lote para `sync-batch`
 5. o servidor valida tenant, regras e constraints
-6. em rejeicao, o cliente executa rollback local por `before_snapshot`
+6. em rejeicao, o cliente executa rollback local por `before_snapshot` (ordem reversa)
+7. `queue_rejections` recebe o erro com TTL 7 dias para consulta de diagnostico
+
+### Dexie.js v4 — Schema v8 (4 categorias)
+
+- `state_*` (9 stores): replica mutavel do estado atual
+- `event_*` (7 stores): log append-only de eventos ocorridos
+- `queue_*` (3 stores): fila transacional + DLQ
+- `metrics_events` (1 store): telemetria local de piloto — append-only, sem sync remoto
 
 ---
 
@@ -165,13 +174,17 @@ Tudo e isolado por `fazenda_id`.
 
 ## 6. Modulos de Dominio
 
-- sanitario
-- reproducao
-- financeiro
-- lifecycle
-- taxonomia animal
+Dominios operacionais completos (7/7):
 
-Taxonomia nao substitui eventos nem agenda. Ela apenas projeta leitura canonica sobre fatos operacionais.
+- sanitario (vacinas, vermifugacao, tratamentos, protocolo automatico)
+- pesagem (lote, GMD via `vw_animal_gmd`)
+- movimentacao (anti-teleporte, historico)
+- nutricao (operacional, sem estoque)
+- reproducao (cobertura/IA, diagnostico, parto, pos-parto, cria inicial)
+- financeiro (lancamentos, contrapartes)
+- agenda (ciclica, dedup, protocolos)
+
+Taxonomia nao substitui eventos nem agenda. Ela projeta leitura canonica sobre fatos operacionais.
 
 ---
 
@@ -194,3 +207,5 @@ A conformidade entre derivacao TS e view SQL e coberta por fixture de paridade e
 - [OFFLINE.md](./OFFLINE.md)
 - [CONTRACTS.md](./CONTRACTS.md)
 - [RLS.md](./RLS.md)
+- [ADRs/ADR-0001-taxonomia-canonica-bovina.md](./ADRs/ADR-0001-taxonomia-canonica-bovina.md)
+- [ADRs/ADR-0002-catalogo-produtos-veterinarios-global.md](./ADRs/ADR-0002-catalogo-produtos-veterinarios-global.md)

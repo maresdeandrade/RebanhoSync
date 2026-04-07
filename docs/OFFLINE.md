@@ -2,7 +2,7 @@
 
 > **Status:** Normativo
 > **Fonte de Verdade:** `src/lib/offline/`
-> **Ultima Atualizacao:** 2026-04-06
+> **Ultima Atualizacao:** 2026-04-07
 
 Este documento descreve a persistencia local, a fila transacional e como a taxonomia canonica convive com o modelo offline-first.
 
@@ -37,6 +37,16 @@ Controle de sincronizacao.
 - `queue_gestures`
 - `queue_ops`
 - `queue_rejections`
+
+### `metrics_events`
+
+Store de telemetria local (Dexie v8). Append-only local.
+
+- Registra eventos de uso e falhas do sync worker.
+- Dados permanecem no dispositivo — sem envio remoto automático no estado atual.
+- Usada por dashboard de piloto para análise local.
+
+Exemplo de campos: `event_name`, `route`, `entity`, `status`, `fazenda_id`, `created_at`.
 
 ---
 

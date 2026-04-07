@@ -2,7 +2,7 @@
 
 > **Status:** Normativo
 > **Fonte de Verdade:** Código Fonte (`sync-batch`, Migrations)
-> **Última Atualização:** 2026-02-16
+> **Última Atualização:** 2026-04-07
 
 Este documento define regras de domínio, invariantes e validações para os módulos de Eventos e Agenda.
 
@@ -68,8 +68,17 @@ O servidor rejeita **todo o lote** se detectar mudança mágica de lote sem even
 
 ---
 
+## 4. Catálogo de Produtos Veterinários
+
+Tabela global `produtos_veterinarios` (sem `fazenda_id`). Seed somente via migrations.
+Integração de UI pendente como autocomplete em `Registrar.tsx` (TD-022).
+Ver `docs/ADRs/ADR-0002-catalogo-produtos-veterinarios-global.md`.
+
+---
+
 ## Veja Também
 
 - [**ARCHITECTURE.md**](./ARCHITECTURE.md)
 - [**DB.md**](./DB.md)
 - [**CONTRACTS.md**](./CONTRACTS.md)
+- [**ADRs/ADR-0002**](./ADRs/ADR-0002-catalogo-produtos-veterinarios-global.md)

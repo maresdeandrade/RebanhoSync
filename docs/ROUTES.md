@@ -2,7 +2,7 @@
 
 > **Status:** Derivado (Inventario)
 > **Fonte de Verdade:** `src/App.tsx`
-> **Ultima Atualizacao:** 2026-04-01
+> **Ultima Atualizacao:** 2026-04-07
 
 ## Rotas publicas
 
@@ -48,6 +48,8 @@ Todas abaixo rodam dentro de `RequireAuth` + `RequireFarm` + `AppShell`.
 | `/animais/:id/editar` | `AnimalEditar` |
 | `/animais/:id/reproducao` | `AnimalReproducao` |
 | `/animais/:id/pos-parto` | `AnimalPosParto` |
+| `/animais/:id/cria-inicial` | `AnimalCriaInicial` |
+| `/animais/transicoes` | `AnimaisTransicoes` |
 
 ### Lotes e pastos
 

@@ -2,7 +2,7 @@
 
 > **Status:** Normativo
 > **Fonte de Verdade:** Edge Function `sync-batch`
-> **Ultima Atualizacao:** 2026-04-06
+> **Ultima Atualizacao:** 2026-04-07
 
 Este documento resume o contrato do `sync-batch` e destaca o impacto da taxonomia canonica no fluxo de escrita.
 
@@ -53,7 +53,39 @@ Resposta:
 - `APPLIED_ALTERED`
 - `REJECTED`
 
-Em `REJECTED`, o cliente executa rollback local.
+## 2. Status
+
+- `APPLIED` — sucesso (ou idempotencia: `client_op_id` ja existia)
+- `APPLIED_ALTERED` — sucesso com modificacao (ex: `dedup_key` colidiu)
+- `REJECTED` — erro de negocio
+
+Em `REJECTED`, o cliente executa rollback local usando `before_snapshot` na ordem reversa das ops.
+
+---
+
+## 2.1 Tabelas Bloqueadas
+
+As seguintes tabelas sao rejeitadas sem processamento:
+
+- `user_fazendas`
+- `user_profiles`
+- `user_settings`
+
+Mutacoes nestas tabelas devem ocorrer apenas via RPCs `SECURITY DEFINER`.
+
+---
+
+## 2.2 Retry e Recuperacao
+
+- Worker tenta ate 3 vezes em caso de falha de rede
+- Gestos com erro de JWT sao recuperados no proximo startup
+- `queue_rejections` recebe erros de negocio com TTL 7 dias (auto-purge a cada 6h)
+
+---
+
+## 2.3 Post-Sync Pull
+
+Apos sincronizacao de `animais`, `eventos` e `agenda_itens`, o worker executa pull seletivo para refletir triggers server-side (ex: agenda automatica sanitaria, recompute).
 
 ---
 

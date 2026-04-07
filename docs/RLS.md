@@ -2,7 +2,7 @@
 
 > **Status:** Normativo
 > **Fonte de Verdade:** SQL Policies (PostgreSQL)
-> **Última Atualização:** 2026-02-16
+> **Última Atualização:** 2026-04-07
 
 Este documento define as regras de Row Level Security (RLS) e Controle de Acesso (RBAC).
 
@@ -171,11 +171,13 @@ Causa: imutabilidade forte → correções viram soft-delete + novo evento
 Impacto: inconsistência lógica se frontend não tratar corretamente correções/duplicatas
 Recomendação: padronizar UX/consulta (ex.: ignorar deleted_at, exibir “evento corrigido por X”, etc.)
 
-Risco 3 — Permissões excessivas em recursos operacionais (exemplo)
-Sintoma típico: Cowboy com DELETE em animais ou “estrutura”
-Impacto: perda de dados operacionais
-Recomendação: restringir delete a Owner/Manager e/ou trocar delete por soft-delete + auditoria
-Sugestão: manter esta seção em formato “lista priorizada” (P0/P1/P2) com evidência quando virar documento derivado do SQL.
+Risco 3 (Resolvido — TD-003 CLOSED) — Cowboy com DELETE em animais
+Sintoma original: Policy de DELETE não filtrava por role.
+Status: RESOLVIDO via migration 20260308230748_rbac_delete_hardening_animais.sql
+Solução: policies separadas: animais_insert_update_by_membership (todos os membros) e animais_delete_by_role (somente owner/manager).
+
+Nota — Tabela global produtos_veterinarios:
+Tabela global (sem fazenda_id), RLS SELECT para authenticated. Sem policy de escrita direta. Catalogão compartilhado entre tenants. Se precisar crescer, criar RPC SECURITY DEFINER.
 
 ---
 

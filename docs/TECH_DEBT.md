@@ -1,176 +1,113 @@
 # Divida Tecnica
 
 > **Status:** Derivado (Rev D+)
-> **Baseline:** `f78dbb4`
-> **Ultima Atualizacao:** 2026-03-31
-> **Derivado por:** Atualizacao manual a partir de `IMPLEMENTATION_STATUS.md` e do codigo atual
+> **Baseline:** `b69d35f`
+> **Ultima Atualizacao:** 2026-04-07
+> **Derivado por:** Auditoria técnica — código + migrations como fonte de verdade
 > **Fonte:** `IMPLEMENTATION_STATUS.md`, `src/`, `supabase/`
-
-Lista consolidada dos gaps ainda abertos no repositorio.
-
-## OPEN (Catalog)
-
-<<<<<<< HEAD
-> Estes itens participam do `gap_set` analitico e da derivacao para o roadmap.
-=======
-## CLOSED (Catalog)
->>>>>>> 622305ac3129954abf36b809730ef8929a0263b5
-
-### TD-011: Produtos sanitarios em texto livre
-
-- **capability_id:** `sanitario.registro`
-<<<<<<< HEAD
-- **Dominio:** sanitario
-- **Risco:** consistencia de dados e qualidade de relatorio
-- **Status:** OPEN
-- **Evidencia:** `eventos_sanitario.produto` segue livre; o fluxo de registro continua aceitando texto manual em `src/pages/Registrar.tsx`
-- **Acao sugerida:** introduzir catalogo simples ou autocomplete com normalizacao
-
-### TD-015: GMD e historico agregados no cliente
-
-- **capability_id:** `pesagem.historico`
-- **Dominio:** pesagem
-- **Risco:** escalabilidade e latencia em rebanhos maiores
-- **Status:** OPEN
-- **Evidencia:** leitura de peso e GMD ainda depende de carga local do historico em `src/pages/AnimalDetalhe.tsx` e `src/pages/Dashboard.tsx`
-- **Acao sugerida:** view agregada, coluna derivada ou precomputo no backend
-=======
-- **Domínio:** sanitario
-- **Risco:** Consistência (Typos, duplicatas)
-- **Status:** ✅ **CLOSED**
-- **Evidência:** `eventos_sanitario.produto` é TEXT sem normalização.
-- **Ação:** (Opcional/Nice-to-Have) Criar catálogo básico `produtos_veterinarios`.
-- **Critério de Aceite:**
-  - [ ] UI sugere produtos comuns (autocomplete).
-  - [ ] Relatórios não quebram por typos.
-  - **Fluxo E2E:** Hardening de Eventos (Fluxo 6)
-
-#### TD-019: Foreign Keys Faltantes (Movimentação)
-
-- **capability_id:** `movimentacao.registro`
-- **Domínio:** movimentacao
-- **Risco:** Integridade Referencial
-- **Status:** ✅ **CLOSED**
-- **Evidência:** `eventos_movimentacao` (from/to_lote_id) sem FOREIGN KEY.
-- **Ação:** Adicionar FKs `eventos_movimentacao(from_lote_id) → lotes(id)` e `to_lote_id`.
-- **Critério de Aceite:**
-  - [ ] FK constraints impedem referências inválidas.
-  - [ ] Migrations reversíveis (rollback seguro).
-  - **Fluxo E2E:** Operacional (Fluxo 7)
-
-#### TD-020: Foreign Key macho_id Faltante (Reprodução)
-
-- **capability_id:** `reproducao.registro`
-- **Domínio:** reproducao
-- **Risco:** Integridade Referencial
-- **Status:** ✅ **CLOSED**
-- **Evidência:** `eventos_reproducao.macho_id` sem FOREIGN KEY para `animais`.
-- **Ação:** Adicionar FK `eventos_reproducao(macho_id) → animais(id)`.
-- **Critério de Aceite:**
-  - [ ] FK constraint impede referências inválidas.
-  - [ ] Migrations reversíveis.
-  - **Fluxo E2E:** Operacional (Fluxo 7)
 
 ---
 
-### 🟡 P2 (Melhoria - 1 item)
+## OPEN (Residual Pós-MVP)
 
-#### TD-015: Cálculo de GMD em Memória
+> Itens identificados na auditoria de abril/2026 como próximos passos relevantes.
 
-- **capability_id:** `pesagem.historico`
-- **Domínio:** pesagem
-- **Risco:** Scalability
-- **Status:** ✅ **CLOSED**
-- **Evidência:** Dashboard carrega todo histórico para calcular ganho médio.
-- **Ação:** Materializar GMD no evento ou criar View agregada.
-- **Critério de Aceite:**
-  - [ ] Dashboard carrega em < 2s com 5000 animais.
-  - **Fluxo E2E:** Operacional (Fluxo 7)
->>>>>>> 622305ac3129954abf36b809730ef8929a0263b5
+### TD-021: Telemetria local-only sem observabilidade remota
 
-### TD-019: Foreign keys faltantes em movimentacao
-
-<<<<<<< HEAD
-- **capability_id:** `movimentacao.registro`
-- **Dominio:** movimentacao
-- **Risco:** integridade referencial
+- **capability_id:** `infra.observabilidade`
+- **Domínio:** platform
+- **Risco:** invisibilidade de erros de sync em produção
 - **Status:** OPEN
-- **Evidencia:** referencias `from_lote_id` e `to_lote_id` continuam sem FK forte no schema
-- **Acao sugerida:** adicionar FKs compostas e revisar migrations com rollback seguro
-=======
-## CLOSED (Infra/Out-of-catalog)
->>>>>>> 622305ac3129954abf36b809730ef8929a0263b5
+- **Evidência:** `src/lib/offline/syncWorker.ts` coleta métricas em `metrics_events` (Dexie v8) mas não há Edge Function de upload nem integração com Supabase Analytics
+- **Ação sugerida:** avaliar Edge Function de coleta de métricas ou integração nativa
 
-### TD-020: Foreign key faltante para `macho_id` na reproducao
+### TD-022: `produtos_veterinarios` sem integração UI confirmada
+
+- **capability_id:** `sanitario.registro`
+- **Domínio:** sanitario
+- **Risco:** consistência de dados (catálogo criado mas não consumido pela UI)
+- **Status:** OPEN (pendente verificação)
+- **Evidência:** migration `20260308230824` criou tabela e seed; `src/pages/Registrar.tsx` ainda não confirmado com autocomplete integrado
+- **Ação sugerida:** integrar `produtos_veterinarios` como fonte de autocomplete no formulário sanitário de `Registrar.tsx`
+
+### TD-023: Pós-parto e Cria Inicial sem cobertura E2E no pacote `test:e2e`
 
 - **capability_id:** `reproducao.registro`
-- **Dominio:** reproducao
-- **Risco:** integridade referencial
+- **Domínio:** reproducao
+- **Risco:** regressão sem detecção automática
 - **Status:** OPEN
-- **Evidencia:** `eventos_reproducao.macho_id` ainda sem FK forte para `animais`
-- **Acao sugerida:** adicionar FK composta tenant-safe e validar migrations
+- **Evidência:** `src/pages/AnimalPosParto.tsx` e `src/pages/AnimalCriaInicial.tsx` existem mas não aparecem nos testes em `package.json:test:e2e`
+- **Ação sugerida:** criar testes guiados para fluxo parto → pós-parto → cria
 
-### OPEN (Infra/Out-of-catalog)
+---
 
-<<<<<<< HEAD
-> Estes itens ficam fora do capability score, mas seguem relevantes para hardening da base.
-=======
-- **capability_id:** `infra.rbac_hardening` _(NEW Proposed — fora do Catalog)_
-- **Domínio:** platform
-- **Risco:** Integridade de Dados (Cowboy pode deletar animais)
-- **Status:** ✅ **CLOSED**
-- **Evidência:** Policy `DELETE` em `animais` não filtra por role.
-- **Ação:** Adicionar `WHERE role IN ('owner', 'manager')` na policy DELETE.
-- **Critério de Aceite:**
-  - [ ] Cowboy recebe erro 403 ao tentar DELETE animal.
-  - [ ] Owner/Manager conseguem DELETE normalmente.
-  - **Fluxo E2E:** RBAC (Fluxo 1)
->>>>>>> 622305ac3129954abf36b809730ef8929a0263b5
+## CLOSED (Histórico Completo)
 
-### TD-003: DELETE de animais ainda sem restricao adequada por role
+### TD-001: Limpeza de `queue_rejections`
 
-- **capability_id:** `infra.rbac_hardening`
-- **Dominio:** platform
-- **Risco:** perda indevida de dados
-- **Status:** OPEN
-- **Evidencia:** a policy de DELETE em `animais` ainda nao foi endurecida para `owner/manager`
-- **Acao sugerida:** restringir DELETE e validar fluxo RBAC no backend
+- **Status:** ✅ CLOSED
+- **Fechado por:** `src/lib/offline/rejections.ts` + auto-purge no `syncWorker.ts` (TTL 7d)
 
-### TD-004: Indices compostos de performance ainda faltantes
+### TD-003: DELETE de animais sem restrição por role
 
-<<<<<<< HEAD
-- **capability_id:** `infra.indexes`
-- **Dominio:** platform
-- **Risco:** degradacao de performance em volume alto
-- **Status:** OPEN
-- **Evidencia:** consultas agregadas e dashboards ainda dependem de indices parciais/incompletos
-- **Acao sugerida:** criar indices compostos e medir consultas principais
-=======
-- **capability_id:** `infra.indexes` _(NEW Proposed — fora do Catalog)_
-- **Domínio:** platform
-- **Risco:** Scalability
-- **Status:** ✅ **CLOSED**
-- **Evidência:** Queries de dashboard sem índices compostos.
-- **Ação:** Criar índices `(fazenda_id, occurred_at)`, `(animal_id, occurred_at)`.
-- **Critério de Aceite:**
-  - [ ] Dashboard carrega em < 2s com 5000 animais.
-  - **Fluxo E2E:** Operacional (Fluxo 7)
->>>>>>> 622305ac3129954abf36b809730ef8929a0263b5
+- **Status:** ✅ CLOSED
+- **Fechado por:** `supabase/migrations/20260308230748_rbac_delete_hardening_animais.sql`
+- **Detalhe:** cria `animais_delete_by_role` restringindo DELETE a `owner/manager` via `role_in_fazenda()`
 
-## CLOSED (Recentes)
+### TD-004: Índices compostos de performance
 
-- TD-001: limpeza de `queue_rejections`
-- TD-006: UI de nutricao
-- TD-008: anti-teleporte no frontend
-- TD-014: validacao de peso no frontend
+- **Status:** ✅ CLOSED
+- **Fechado por:** `supabase/migrations/20260308230811_indexes_performance_gmd.sql`
+- **Detalhe:** índices em `(fazenda_id, occurred_at)`, `(animal_id, occurred_at)` e `(evento_id, peso_kg)`
+
+### TD-006: UI de nutrição
+
+- **Status:** ✅ CLOSED
+- **Fechado por:** `src/pages/Registrar.tsx` — formulário inline nutrição
+
+### TD-008: Anti-teleporte no frontend
+
+- **Status:** ✅ CLOSED
+- **Fechado por:** `src/pages/Registrar.tsx:387-396` — useEffect reseta `toLoteId` ao colidir com origem
+
+### TD-011: Produtos sanitários em texto livre
+
+- **Status:** ✅ CLOSED (catálogo DB criado)
+- **Fechado por:** `supabase/migrations/20260308230824_produtos_veterinarios_ui.sql`
+- **Nota:** integração UI pendente como TD-022
+
+### TD-014: Validação de peso no frontend
+
+- **Status:** ✅ CLOSED
+- **Fechado por:** `src/pages/Registrar.tsx` — validação peso > 0
+
+### TD-015: GMD e histórico agregados no cliente
+
+- **Status:** ✅ CLOSED
+- **Fechado por:** `supabase/migrations/20260308230811_indexes_performance_gmd.sql:vw_animal_gmd`
+- **Detalhe:** view otimizada com join pesagens + cálculo GMD server-side
+
+### TD-019: Foreign keys faltantes em movimentação
+
+- **Status:** ✅ CLOSED
+- **Fechado por:** `supabase/migrations/20260308230735_foreign_keys_movimentacao_reproducao.sql`
+- **Detalhe:** FKs `from_lote_id → lotes(id)` e `to_lote_id → lotes(id)` com limpeza de órfãos
+
+### TD-020: Foreign key faltante para `macho_id` na reprodução
+
+- **Status:** ✅ CLOSED
+- **Fechado por:** `supabase/migrations/20260308230735_foreign_keys_movimentacao_reproducao.sql`
+- **Detalhe:** FK `macho_id → animais(id)` com limpeza de órfãos
+
+---
 
 ## Resumo
 
-- OPEN Catalog: `TD-011`, `TD-015`, `TD-019`, `TD-020`
-- OPEN Infra: `TD-003`, `TD-004`
-- Total OPEN: `6`
+- OPEN: `TD-021`, `TD-022`, `TD-023`
+- CLOSED: `TD-001`, `TD-003`, `TD-004`, `TD-006`, `TD-008`, `TD-011`, `TD-014`, `TD-015`, `TD-019`, `TD-020`
+- Total OPEN: `3`
 
-## Veja Tambem
+## Veja Também
 
 - [IMPLEMENTATION_STATUS.md](./IMPLEMENTATION_STATUS.md)
 - [ROADMAP.md](./ROADMAP.md)

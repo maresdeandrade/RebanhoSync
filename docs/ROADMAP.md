@@ -1,182 +1,101 @@
 # Roadmap do Produto
 
 > **Status:** Derivado (Rev D+)
-> **Baseline:** `f78dbb4`
-> **Ultima Atualizacao:** 2026-03-31
-> **Derivado por:** Atualizacao manual derivada de `TECH_DEBT.md OPEN`
+> **Baseline:** `b69d35f`
+> **Ultima Atualizacao:** 2026-04-07
+> **Derivado por:** Auditoria técnica — estado pós-fechamento de todos os TDs originais
 > **Fonte:** `TECH_DEBT.md`, `IMPLEMENTATION_STATUS.md`
 
-Este roadmap foi reorientado para o estado atual do repositorio: base funcional, produto mais simples para pequeno e medio produtor e backlog concentrado em hardening e consistencia.
+---
 
-## Principio
+## Contexto
 
-O core operacional ja existe. O roadmap atual nao e de expansao ampla de escopo; ele e de consolidacao da base e eliminacao dos gaps abertos.
+Todos os milestones do roadmap anterior (M0, M1, M2) foram concluídos via migrations de março/2026. O capability score analítico está em 19/19 = 100%. O projeto está em fase de **beta interno**.
 
-## Milestone 1: Hardening de integridade e seguranca
+O roadmap atual cobre a próxima fase: consolidação de observabilidade, UX de catálogos e cobertura de testes dos fluxos mais recentes.
 
-**Objetivo:** remover os riscos mais diretos de integridade e permissao.
+---
 
-### Escopo
+## Milestone 3: Observabilidade e Instrumentação Remota
 
-- TD-003 (`infra.rbac_hardening`)
-- TD-019 (`movimentacao.registro`)
-- TD-020 (`reproducao.registro`)
+**Objetivo:** tornar visíveis os erros de sync e o comportamento do produto em campo.
 
-### Entregaveis
-
-- endurecer DELETE por role em `animais`
-- adicionar FKs em movimentacao
-- adicionar FK de `macho_id` em reproducao
-- validar essas mudancas nos fluxos operacionais e RBAC
-
-## Milestone 2: Consistencia de dados de operacao
-
-**Objetivo:** reduzir ruido e divergencia na captura de dados do campo.
+**Derivado de:** TD-021
 
 ### Escopo
 
-- TD-011 (`sanitario.registro`)
+- Avaliar e implementar Edge Function de coleta de `metrics_events`
+- Ou integrar com Supabase Analytics / logs
+- Dashboard de sync health por fazenda (rejeições, gestos pendentes, taxa de erro)
 
-### Entregaveis
+### Entregáveis
 
-- autocomplete ou catalogo simples de produtos sanitarios
-- reducao de typos e duplicidades sem quebrar o fluxo rapido de registro
+- [ ] Definir estratégia de telemetria remota (Edge Function vs Analytics)
+- [ ] Implementar upload periódico ou webhook de erros críticos
+- [ ] Dashboard simples para visualização de health de sync
 
-## Milestone 3: Escala de leitura e agregacao
+---
 
-**Objetivo:** melhorar a performance das leituras analiticas e historicas.
+## Milestone 4: UX do Catálogo de Produtos Veterinários
+
+**Objetivo:** fechar a lacuna entre o catálogo de `produtos_veterinarios` criado no DB e a experiência do usuário.
+
+**Derivado de:** TD-022
 
 ### Escopo
 
-- TD-015 (`pesagem.historico`)
-- TD-004 (`infra.indexes`)
+- Integrar `produtos_veterinarios` como autocomplete no formulário sanitário de `Registrar.tsx`
+- Garantir que o catálogo é carregável offline (pull via sync ou seed local)
 
-### Entregaveis
+### Entregáveis
 
-- estrategia de GMD/historico sem agregacao pesada no cliente
-- indices compostos para consultas de dashboard, historico e relatorios
-- benchmarks em base volumosa
+- [ ] Verificar estratégia de acesso: Supabase direto (somente online) ou pull para Dexie
+- [ ] Implementar autocomplete de produto em `Registrar.tsx` (sanitário)
+- [ ] Testar fluxo offline-fallback: o usuário pode registrar sem conexão?
 
-## Derivacao
+---
+
+## Milestone 5: Cobertura E2E do Fluxo Reprodutivo Completo
+
+**Objetivo:** garantir cobertura automática do fluxo parto → pós-parto → cria.
+
+**Derivado de:** TD-023
+
+### Escopo
+
+- Criar testes guiados para `AnimalPosParto.tsx` e `AnimalCriaInicial.tsx`
+- Cobrir: registro de identificação final, lote inicial, pesagem neonatal, gesto atômico
+
+### Entregáveis
+
+- [ ] `src/pages/__tests__/AnimalPosParto.e2e.test.tsx`
+- [ ] `src/pages/__tests__/AnimalCriaInicial.e2e.test.tsx`
+- [ ] Atualizar `package.json:test:e2e` com os novos testes
+
+---
+
+## Derivação
 
 | TD | capability_id | Track | Milestone |
 | --- | --- | --- | --- |
-| TD-003 | `infra.rbac_hardening` | Infra | Milestone 1 |
-| TD-004 | `infra.indexes` | Infra | Milestone 3 |
-| TD-011 | `sanitario.registro` | Catalog | Milestone 2 |
-| TD-015 | `pesagem.historico` | Catalog | Milestone 3 |
-| TD-019 | `movimentacao.registro` | Catalog | Milestone 1 |
-| TD-020 | `reproducao.registro` | Catalog | Milestone 1 |
-
-## Resultado esperado
-
-Ao final dessas tres frentes, o repositorio fica mais coerente com o momento do produto: um MVP operacional confiavel, com menos risco de integridade, menos ruido de captura e melhor comportamento em escala.
-
-## Veja Tambem
-
-<<<<<<< HEAD
-- [TECH_DEBT.md](./TECH_DEBT.md)
-- [IMPLEMENTATION_STATUS.md](./IMPLEMENTATION_STATUS.md)
-=======
-**Critério de Aceite (M1 - Semana 3):**
-
-- [ ] Cowboy recebe 403 ao tentar DELETE animal.
-- [ ] Owner/Manager conseguem DELETE normalmente.
-- [ ] UI impede envio de peso <= 0.
-
-### Semana 4: Integridade Referencial
-
-**Entregáveis:**
-
-- [ ] Migration: FKs `eventos_movimentacao` (from/to_lote_id).
-- [ ] Migration: FK `eventos_reproducao` (macho_id).
-- [ ] Testes E2E: Fluxo 7 (operacional) com constraints habilitadas.
-
-**Critério de Aceite (M1 - Semana 4):**
-
-- [ ] FK constraints impedem referências inválidas.
-- [ ] Migrations reversíveis (rollback testado).
-- [ ] Nenhuma regressão em fluxos existentes.
+| TD-021 | `infra.observabilidade` | Infra | Milestone 3 |
+| TD-022 | `sanitario.registro` | Catalog | Milestone 4 |
+| TD-023 | `reproducao.registro` | Tests | Milestone 5 |
 
 ---
 
-## Milestone 2: Performance e Hardening Final (Semanas 5-6)
+## Histórico de Milestones Concluídos
 
-**Objetivo:** Otimizar queries e preparar para escala.
-
-**Scope (Tech Debt P2 - OPEN):**
-
-- **TD-015** (`pesagem.historico`): Otimização GMD (View materializada)
-  - **Fluxo E2E:** Operacional (Fluxo 7)
-- **TD-004** (`infra.indexes` — Infra): Índices de performance compostos
-  - **Fluxo E2E:** Operacional (Fluxo 7)
-
-### Semana 5: Índices e Medição
-
-**Entregáveis:**
-
-- [ ] Migration: Índices `(fazenda_id, occurred_at)`, `(animal_id, occurred_at)`.
-- [ ] Benchmarks: Dashboard com 5000 animais.
-- [ ] Testes E2E: Fluxo 7 (carga).
-
-**Critério de Aceite (M2 - Semana 5):**
-
-- [ ] Dashboard carrega em < 2s com 5000 animais.
-- [ ] Queries lentas (> 1s) eliminadas.
-
-### Semana 6: Otimização GMD + Nice-to-Have
-
-**Entregáveis:**
-
-- [ ] View materializada ou coluna computada para GMD.
-- [ ] _(Opcional)_ Catálogo básico `produtos_veterinarios` (autocomplete UI).
-- [ ] Testes E2E: Fluxo 7 (GMD otimizado).
-
-**Critério de Aceite (M2 - Semana 6):**
-
-- [ ] GMD calculado sem carregar histórico completo.
-- [ ] Dashboard permanece < 2s com 10k animais.
-- [ ] (Opcional) Autocomplete produtos reduz typos.
-
----
-
-## Capability Scorecard (Pós-Roadmap)
-
-| Milestone            | Gaps Resolvidos                         | Capability Score (Analítico) | Status       |
-| -------------------- | --------------------------------------- | ---------------------------- | ------------ |
-| **HEAD (Baseline)**  | TD-006 (Nutrição UI), TD-008 (Teleport) | 19/19 (100%)                | ✅ Completo  |
-| **M0 (Semanas 1-2)** | TD-001¹ ✅                              | 19/19 (100%)                | ✅ Concluído |
-| **M1 (Semanas 3-4)** | TD-014¹ ✅, TD-003¹ ✅, TD-011 ✅, TD-019 ✅, TD-020 ✅ | 19/19 (100%)                | ✅ Concluído |
-| **M2 (Semanas 5-6)** | TD-004¹ ✅, TD-015 ✅                         | 19/19 (100%)                 | ✅ Concluído    |
-
-¹ Infra TDs — resolvem problemas reais mas não participam do `gap_set` analítico.
-
-**Meta Final:** Todos TECH_DEBT OPEN resolvidos (7 restantes → 0). Capability Score: 100%.
-
----
-
-## Derivação (hard check)
-
-**ROADMAP items == TECH_DEBT OPEN (Catalog + Infra):**
-
-| TD     | capability_id           | Track   | Milestone | Status       |
-| ------ | ----------------------- | ------- | --------- | ------------ |
-| TD-001 | `infra.queue_cleanup`   | Infra   | M0        | ✅ Concluído |
-| TD-014 | `pesagem.registro`      | Catalog | M1        | ✅ Concluído |
-| TD-003 | `infra.rbac_hardening`  | Infra   | M1        | ✅ Concluído   |
-| TD-004 | `infra.indexes`         | Infra   | M2        | ✅ Concluído    |
-| TD-011 | `sanitario.registro`    | Catalog | M1        | ✅ Concluído   |
-| TD-015 | `pesagem.historico`     | Catalog | M2        | ✅ Concluído    |
-| TD-019 | `movimentacao.registro` | Catalog | M1        | ✅ Concluído   |
-| TD-020 | `reproducao.registro`   | Catalog | M1        | ✅ Concluído   |
-
-**Match (7/7 OPEN + 1 CLOSED):** ✅
+| Milestone | Escopo | Status |
+| --- | --- | --- |
+| M0 | DLQ auto-purge (TD-001) | ✅ Concluído |
+| M1 | RBAC hardening (TD-003), FKs (TD-019, TD-020), catálogo (TD-011), peso (TD-014) | ✅ Concluído |
+| M2 | Índices (TD-004), GMD view (TD-015) | ✅ Concluído |
 
 ---
 
 ## Veja Também
 
-- [**TECH_DEBT.md**](./TECH_DEBT.md) - Gaps detalhados (com `capability_id`)
-- [**E2E_MVP.md**](./E2E_MVP.md) - Fluxos de validação
-- [**IMPLEMENTATION_STATUS.md**](./IMPLEMENTATION_STATUS.md) - Matriz Analítica (fonte de derivação)
->>>>>>> 622305ac3129954abf36b809730ef8929a0263b5
+- [TECH_DEBT.md](./TECH_DEBT.md)
+- [E2E_MVP.md](./E2E_MVP.md)
+- [IMPLEMENTATION_STATUS.md](./IMPLEMENTATION_STATUS.md)
