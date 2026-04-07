@@ -5,6 +5,12 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { Calendar, MoreHorizontal, PlusCircle, RefreshCw, Search } from "lucide-react";
 import { db } from "@/lib/offline/db";
 import { createGesture } from "@/lib/offline/ops";
+import {
+  getGestureSyncStage,
+  getSyncStageLabel,
+  getSyncStageTone,
+  type SyncStage,
+} from "@/lib/offline/syncPresentation";
 import { useAuth } from "@/hooks/useAuth";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import type {
@@ -55,22 +61,6 @@ const DOMAIN_LABEL: Record<DominioEnum, string> = {
   reproducao: "Reproducao",
   financeiro: "Financeiro",
 };
-
-const STATUS_LABEL: Record<GestureStatus | "SYNCED", string> = {
-  PENDING: "Pendente",
-  SYNCING: "Sincronizando",
-  DONE: "Sincronizado",
-  ERROR: "Erro",
-  SYNCED: "Sincronizado",
-  REJECTED: "Rejeitado",
-};
-
-function getSyncTone(status: GestureStatus | "SYNCED") {
-  if (status === "REJECTED" || status === "ERROR") return "danger";
-  if (status === "PENDING") return "warning";
-  if (status === "SYNCING") return "info";
-  return "success";
-}
 
 function normalizeSyncStatus(status?: string): GestureStatus | "SYNCED" {
   if (!status || status === "DONE" || status === "SYNCED") return "SYNCED";
@@ -155,7 +145,7 @@ const Eventos = () => {
 
     const animalById = new Map(animais.map((a) => [a.id, a]));
     const loteById = new Map(lotes.map((l) => [l.id, l]));
-    const gestoByTx = new Map(gestos.map((g) => [g.client_tx_id, g.status]));
+    const gestoByTx = new Map(gestos.map((g) => [g.client_tx_id, g]));
 
     const getFilteredCollection = () => {
       const base = db.event_eventos
@@ -184,7 +174,9 @@ const Eventos = () => {
 
         // Sync filter
         const syncStatus = normalizeSyncStatus(
-          evento.client_tx_id ? gestoByTx.get(evento.client_tx_id) : "SYNCED",
+          evento.client_tx_id
+            ? gestoByTx.get(evento.client_tx_id)?.status
+            : "SYNCED",
         );
         if (syncFilter !== "all" && syncStatus !== syncFilter) return false;
 
@@ -415,7 +407,9 @@ const Eventos = () => {
     try {
       const built = buildEventGesture(input);
       const txId = await createGesture(activeFarmId, built.ops);
-      showSuccess(`Complemento adicionado. TX: ${txId.slice(0, 8)}`);
+      showSuccess(
+        `Complemento salvo neste aparelho. Sincronizacao pendente. TX ${txId.slice(0, 8)}.`,
+      );
       setComplementTargetId(null);
       setComplementText("");
     } catch (error: unknown) {
@@ -436,9 +430,7 @@ const Eventos = () => {
 
     const animalById = new Map(data.animais.map((a) => [a.id, a]));
     const loteById = new Map(data.lotes.map((l) => [l.id, l]));
-    const gestoByTx = new Map(
-      data.gestos.map((g) => [g.client_tx_id, g.status]),
-    );
+    const gestoByTx = new Map(data.gestos.map((g) => [g.client_tx_id, g]));
 
     const sanitarioByEvento = new Map(
       data.sanitarios.map((d) => [d.evento_id, d]),
@@ -461,8 +453,8 @@ const Eventos = () => {
           ? animalById.get(evento.animal_id)
           : null;
         const lote = evento.lote_id ? loteById.get(evento.lote_id) : null;
-        const syncStatus = normalizeSyncStatus(
-          evento.client_tx_id ? gestoByTx.get(evento.client_tx_id) : "SYNCED",
+        const syncStage = getGestureSyncStage(
+          evento.client_tx_id ? gestoByTx.get(evento.client_tx_id) ?? null : null,
         );
 
         let detail = "";
@@ -547,7 +539,7 @@ const Eventos = () => {
           loteNome: lote?.nome ?? "Sem lote",
           detail,
           amount,
-          syncStatus,
+          syncStage,
         };
       })
       .filter(Boolean) as Array<{
@@ -557,7 +549,7 @@ const Eventos = () => {
       loteNome: string;
       detail: string;
       amount: number | null;
-      syncStatus: GestureStatus | "SYNCED";
+      syncStage: SyncStage;
     }>;
 
     return rows;
@@ -569,13 +561,13 @@ const Eventos = () => {
     () =>
       timeline.reduce(
         (summary, row) => {
-          if (row.syncStatus === "PENDING" || row.syncStatus === "SYNCING") {
+          if (row.syncStage === "local_pending" || row.syncStage === "syncing") {
             summary.pending += 1;
           }
-          if (row.syncStatus === "REJECTED" || row.syncStatus === "ERROR") {
+          if (row.syncStage === "rejected" || row.syncStage === "error") {
             summary.errors += 1;
           }
-          if (row.syncStatus === "SYNCED") {
+          if (row.syncStage === "synced" || row.syncStage === "synced_altered") {
             summary.synced += 1;
           }
           return summary;
@@ -787,8 +779,8 @@ const Eventos = () => {
                       <p className="font-medium">{DOMAIN_LABEL[row.evento.dominio]}</p>
                       <StatusBadge tone="neutral">{row.animalNome}</StatusBadge>
                       <StatusBadge tone="neutral">{row.loteNome}</StatusBadge>
-                      <StatusBadge tone={getSyncTone(row.syncStatus)}>
-                        {STATUS_LABEL[row.syncStatus]}
+                      <StatusBadge tone={getSyncStageTone(row.syncStage)}>
+                        {getSyncStageLabel(row.syncStage)}
                       </StatusBadge>
                       {isHighlighted ? (
                         <StatusBadge tone="info">Em foco</StatusBadge>

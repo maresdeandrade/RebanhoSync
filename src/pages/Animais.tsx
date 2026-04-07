@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { type Collection } from "dexie";
 import { useLiveQuery } from "dexie-react-hooks";
 import { Link, useNavigate } from "react-router-dom";
@@ -20,6 +20,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { MetricCard } from "@/components/ui/metric-card";
 import { PageIntro } from "@/components/ui/page-intro";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 import {
   Select,
   SelectContent,
@@ -94,6 +103,8 @@ const DOMAIN_LABEL: Record<string, string> = {
   financeiro: "Financeiro",
 };
 
+const ANIMAL_ROWS_PAGE_SIZE = 100;
+
 type AnimalWeightSummary = {
   animalId: string;
   ultimoPesoKg: number;
@@ -108,6 +119,8 @@ type AnimalNextAgendaSummary = {
   data: string;
   status: "atrasado" | "hoje" | "proximo";
 };
+
+type PaginationToken = number | "ellipsis-left" | "ellipsis-right";
 
 const calcularIdade = (
   dataNascimento: string | null | undefined,
@@ -157,6 +170,34 @@ function getAgendaStatusLabel(status: AnimalNextAgendaSummary["status"]) {
   return "Proximo";
 }
 
+function buildPaginationTokens(
+  currentPage: number,
+  totalPages: number,
+): PaginationToken[] {
+  if (totalPages <= 7) {
+    return Array.from({ length: totalPages }, (_, index) => index + 1);
+  }
+
+  const tokens: PaginationToken[] = [1];
+  const start = Math.max(2, currentPage - 1);
+  const end = Math.min(totalPages - 1, currentPage + 1);
+
+  if (start > 2) {
+    tokens.push("ellipsis-left");
+  }
+
+  for (let page = start; page <= end; page += 1) {
+    tokens.push(page);
+  }
+
+  if (end < totalPages - 1) {
+    tokens.push("ellipsis-right");
+  }
+
+  tokens.push(totalPages);
+  return tokens;
+}
+
 export default function Animais() {
   const navigate = useNavigate();
   const { activeFarmId, farmLifecycleConfig, farmMeasurementConfig } = useAuth();
@@ -167,6 +208,7 @@ export default function Animais() {
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [productiveStateFilter, setProductiveStateFilter] =
     useState<string>("all");
+  const [page, setPage] = useState(1);
   const debouncedSearch = useDebouncedValue(search, 300);
   const lotes = useLotes();
 
@@ -192,13 +234,11 @@ export default function Animais() {
 
     const [events, details] = await Promise.all([
       db.event_eventos
-        .where("fazenda_id")
-        .equals(activeFarmId)
+        .where("[fazenda_id+dominio]")
+        .equals([activeFarmId, "pesagem"])
         .filter(
           (event) =>
-            event.dominio === "pesagem" &&
-            !event.deleted_at &&
-            Boolean(event.animal_id),
+            !event.deleted_at && Boolean(event.animal_id),
         )
         .toArray(),
       db.event_eventos_pesagem
@@ -265,13 +305,11 @@ export default function Animais() {
 
     const todayKey = new Date().toISOString().split("T")[0];
     const items = await db.state_agenda_itens
-      .where("fazenda_id")
-      .equals(activeFarmId)
+      .where("[fazenda_id+status]")
+      .equals([activeFarmId, "agendado"])
       .filter(
         (item) =>
-          item.status === "agendado" &&
-          !item.deleted_at &&
-          Boolean(item.animal_id),
+          !item.deleted_at && Boolean(item.animal_id),
       )
       .toArray();
 
@@ -332,12 +370,18 @@ export default function Animais() {
 
   const animais = useLiveQuery(async () => {
     let collection: Collection<Animal, string>;
+    let statusHandledByIndex = false;
 
     if (activeFarmId) {
       if (loteFilter !== "all" && loteFilter !== "none") {
         collection = db.state_animais
           .where("[fazenda_id+lote_id]")
           .equals([activeFarmId, loteFilter]);
+      } else if (statusFilter !== "all") {
+        collection = db.state_animais
+          .where("[fazenda_id+status]")
+          .equals([activeFarmId, statusFilter]);
+        statusHandledByIndex = true;
       } else {
         collection = db.state_animais.where("fazenda_id").equals(activeFarmId);
       }
@@ -360,7 +404,7 @@ export default function Animais() {
     if (sexoFilter !== "all") {
       collection = collection.filter((animal) => animal.sexo === sexoFilter);
     }
-    if (statusFilter !== "all") {
+    if (statusFilter !== "all" && !statusHandledByIndex) {
       collection = collection.filter((animal) => animal.status === statusFilter);
     }
 
@@ -422,6 +466,53 @@ export default function Animais() {
     statusFilter !== "ativo" ||
     categoryFilter !== "all" ||
     productiveStateFilter !== "all";
+
+  useEffect(() => {
+    setPage(1);
+  }, [
+    activeFarmId,
+    search,
+    loteFilter,
+    sexoFilter,
+    statusFilter,
+    categoryFilter,
+    productiveStateFilter,
+  ]);
+
+  const totalAnimalRows = animalRows.length;
+  const totalPages = Math.max(1, Math.ceil(totalAnimalRows / ANIMAL_ROWS_PAGE_SIZE));
+
+  useEffect(() => {
+    if (page > totalPages) {
+      setPage(totalPages);
+    }
+  }, [page, totalPages]);
+
+  const currentPage = Math.min(page, totalPages);
+  const pageStartIndex =
+    totalAnimalRows === 0 ? 0 : (currentPage - 1) * ANIMAL_ROWS_PAGE_SIZE;
+  const visibleAnimalRows = useMemo(
+    () =>
+      animalRows.slice(
+        pageStartIndex,
+        pageStartIndex + ANIMAL_ROWS_PAGE_SIZE,
+      ),
+    [animalRows, pageStartIndex],
+  );
+  const firstVisibleRow = totalAnimalRows === 0 ? 0 : pageStartIndex + 1;
+  const lastVisibleRow = Math.min(
+    totalAnimalRows,
+    pageStartIndex + visibleAnimalRows.length,
+  );
+  const hasPagination = totalAnimalRows > ANIMAL_ROWS_PAGE_SIZE;
+  const paginationTokens = useMemo(
+    () => buildPaginationTokens(currentPage, totalPages),
+    [currentPage, totalPages],
+  );
+
+  function handlePageChange(nextPage: number) {
+    setPage(Math.min(totalPages, Math.max(1, nextPage)));
+  }
 
   const lifecyclePendingCount = lifecyclePendings.size;
   const lifecycleStrategicCount = useMemo(
@@ -506,9 +597,14 @@ export default function Animais() {
         meta={
           <>
             <StatusBadge tone="neutral">
-              {animalRows.length} animal(is) no recorte
+              {totalAnimalRows} animal(is) no recorte
             </StatusBadge>
             {hasFilters ? <StatusBadge tone="info">Filtros ativos</StatusBadge> : null}
+            {hasPagination ? (
+              <StatusBadge tone="neutral">
+                Pagina {currentPage} de {totalPages}
+              </StatusBadge>
+            ) : null}
             {lifecyclePendingCount > 0 ? (
               <StatusBadge tone="warning">
                 {lifecyclePendingCount} transicao(oes) pendente(s)
@@ -698,6 +794,24 @@ export default function Animais() {
           </CardDescription>
         </CardHeader>
         <CardContent className="p-0">
+          <div className="flex flex-col gap-2 border-b bg-muted/20 px-6 py-4 text-sm md:flex-row md:items-center md:justify-between">
+            <div className="space-y-1">
+              <p className="font-medium text-foreground">
+                {totalAnimalRows === 0
+                  ? "Nenhum animal no recorte atual."
+                  : `Mostrando ${firstVisibleRow}-${lastVisibleRow} de ${totalAnimalRows} animais do recorte.`}
+              </p>
+              <p className="text-muted-foreground">
+                As metricas continuam considerando todo o recorte filtrado, nao
+                apenas a pagina visivel.
+              </p>
+            </div>
+            {hasPagination ? (
+              <StatusBadge tone="neutral">
+                {ANIMAL_ROWS_PAGE_SIZE} por pagina
+              </StatusBadge>
+            ) : null}
+          </div>
           <Table>
             <TableHeader>
               <TableRow>
@@ -713,7 +827,7 @@ export default function Animais() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {animalRows.map(({ animal, depth }) => {
+              {visibleAnimalRows.map(({ animal, depth }) => {
                 const taxonomy = taxonomyByAnimal.get(animal.id);
                 const categoriaLabel = taxonomy?.display.categoria ?? null;
                 const mother = animal.mae_id
@@ -920,6 +1034,67 @@ export default function Animais() {
               ) : null}
             </TableBody>
           </Table>
+
+          {hasPagination ? (
+            <div className="flex flex-col gap-3 border-t px-6 py-4 md:flex-row md:items-center md:justify-between">
+              <p className="text-sm text-muted-foreground">
+                Exibindo {visibleAnimalRows.length} linha(s) por vez para manter a
+                leitura fluida em bases grandes.
+              </p>
+
+              <Pagination className="mx-0 w-full justify-start md:w-auto md:justify-end">
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious
+                      href="#"
+                      aria-disabled={currentPage === 1}
+                      className={currentPage === 1 ? "pointer-events-none opacity-50" : undefined}
+                      onClick={(event) => {
+                        event.preventDefault();
+                        handlePageChange(currentPage - 1);
+                      }}
+                    />
+                  </PaginationItem>
+
+                  {paginationTokens.map((token) => (
+                    <PaginationItem key={token}>
+                      {typeof token === "number" ? (
+                        <PaginationLink
+                          href="#"
+                          aria-label={`Ir para a pagina ${token}`}
+                          isActive={token === currentPage}
+                          onClick={(event) => {
+                            event.preventDefault();
+                            handlePageChange(token);
+                          }}
+                        >
+                          {token}
+                        </PaginationLink>
+                      ) : (
+                        <PaginationEllipsis />
+                      )}
+                    </PaginationItem>
+                  ))}
+
+                  <PaginationItem>
+                    <PaginationNext
+                      href="#"
+                      aria-disabled={currentPage === totalPages}
+                      className={
+                        currentPage === totalPages
+                          ? "pointer-events-none opacity-50"
+                          : undefined
+                      }
+                      onClick={(event) => {
+                        event.preventDefault();
+                        handlePageChange(currentPage + 1);
+                      }}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </div>
+          ) : null}
         </CardContent>
       </Card>
     </div>

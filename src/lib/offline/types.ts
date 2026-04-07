@@ -16,6 +16,11 @@ export type GestureStatus =
   | "ERROR"
   | "SYNCED"
   | "REJECTED";
+export type GestureSyncResult =
+  | "APPLIED"
+  | "APPLIED_ALTERED"
+  | "REJECTED"
+  | "ERROR";
 export type OpAction = "INSERT" | "UPDATE" | "DELETE";
 
 // Farm & User Management
@@ -750,6 +755,8 @@ export interface Gesture {
   fazenda_id: string;
   client_id: string;
   status: GestureStatus;
+  sync_result?: GestureSyncResult;
+  completed_at?: string;
   last_error?: string;
   retry_count?: number; // P1.3: For exponential backoff retry strategy
   created_at: string;

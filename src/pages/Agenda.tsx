@@ -44,6 +44,12 @@ import {
 import { db } from "@/lib/offline/db";
 import { createGesture } from "@/lib/offline/ops";
 import { pullDataForFarm } from "@/lib/offline/pull";
+import {
+  getGestureSyncStage,
+  getSyncStageLabel,
+  getSyncStageTone,
+  type SyncStage,
+} from "@/lib/offline/syncPresentation";
 import type { AgendaItem, Animal, Lote, SanitarioTipoEnum } from "@/lib/offline/types";
 import { isCalfJourneyAgendaItem } from "@/lib/reproduction/calfJourney";
 import { concluirPendenciaSanitaria } from "@/lib/sanitario/service";
@@ -73,7 +79,7 @@ type AgendaRow = {
   animalNome: string;
   loteNome: string;
   idadeLabel: string;
-  syncStatus: string;
+  syncStage: SyncStage;
   produtoLabel: string;
 };
 
@@ -81,17 +87,6 @@ function getAgendaStatusTone(status: string) {
   if (status === "cancelado") return "danger";
   if (status === "concluido") return "success";
   return "warning";
-}
-
-function getSyncTone(status: string) {
-  if (status === "ERROR" || status === "REJECTED") return "danger";
-  if (status === "PENDING" || status === "SYNCING") return "warning";
-  return "neutral";
-}
-
-function normalizeSyncStatus(status?: string) {
-  if (!status || status === "DONE" || status === "SYNCED") return "SYNCED";
-  return status;
 }
 
 function readString(record: Record<string, unknown> | null | undefined, key: string) {
@@ -183,15 +178,15 @@ export default function Agenda() {
     if (!data) return [];
     const animalById = new Map(data.animais.map((animal) => [animal.id, animal]));
     const loteById = new Map(data.lotes.map((lote) => [lote.id, lote]));
-    const gestoByTx = new Map(data.gestos.map((gesture) => [gesture.client_tx_id, gesture.status]));
+    const gestoByTx = new Map(data.gestos.map((gesture) => [gesture.client_tx_id, gesture]));
     const searchLower = search.trim().toLowerCase();
 
     return data.itens
       .map((item) => {
         const animal = item.animal_id ? animalById.get(item.animal_id) : null;
         const lote = item.lote_id ? loteById.get(item.lote_id) : null;
-        const syncStatus = normalizeSyncStatus(
-          item.client_tx_id ? gestoByTx.get(item.client_tx_id) : "SYNCED",
+        const syncStage = getGestureSyncStage(
+          item.client_tx_id ? gestoByTx.get(item.client_tx_id) ?? null : null,
         );
 
         const dateMatch =
@@ -218,7 +213,7 @@ export default function Agenda() {
           lote,
           animalNome: animal?.identificacao ?? "Sem animal",
           loteNome: lote?.nome ?? "Sem lote",
-          syncStatus,
+          syncStage,
         };
       })
       .filter(Boolean)
@@ -399,7 +394,9 @@ export default function Agenda() {
           { mode: "merge" },
         );
 
-        showSuccess(`Evento sanitario criado: ${eventoId.slice(0, 8)}`);
+        showSuccess(
+          `Aplicacao sanitaria confirmada no servidor. Evento ${eventoId.slice(0, 8)}.`,
+        );
         return;
       } catch (error) {
         console.error("[agenda] failed to conclude sanitary item with event", error);
@@ -420,7 +417,11 @@ export default function Agenda() {
           },
         },
       ]);
-      showSuccess(`Item ${status === "concluido" ? "concluido" : "cancelado"} com sucesso.`);
+      showSuccess(
+        `Item ${
+          status === "concluido" ? "concluido" : "cancelado"
+        } neste aparelho. Sincronizacao pendente.`,
+      );
     } catch {
       showError("Falha ao atualizar item da agenda.");
     }
@@ -486,8 +487,8 @@ export default function Agenda() {
               <StatusBadge tone={getAgendaStatusTone(row.item.status)}>
                 {STATUS_LABEL[row.item.status] ?? row.item.status}
               </StatusBadge>
-              <StatusBadge tone={getSyncTone(row.syncStatus)}>
-                {row.syncStatus}
+              <StatusBadge tone={getSyncStageTone(row.syncStage)}>
+                {getSyncStageLabel(row.syncStage)}
               </StatusBadge>
             </div>
 

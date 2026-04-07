@@ -63,6 +63,8 @@ export const startSyncWorker = () => {
 
           await db.queue_gestures.update(gesture.client_tx_id, {
             status: "ERROR",
+            sync_result: "ERROR",
+            completed_at: new Date().toISOString(),
             last_error: error.message,
           });
         }
@@ -128,6 +130,8 @@ async function recoverAuthErroredGesturesOnce() {
   for (const gesture of recoverable) {
     await db.queue_gestures.update(gesture.client_tx_id, {
       status: "PENDING",
+      sync_result: undefined,
+      completed_at: undefined,
       retry_count: 0,
       last_error: "Recovered auth error; retrying after worker startup",
     });
@@ -203,7 +207,11 @@ async function sendBatchRequest(
 }
 
 export async function processGesture(gesture: Gesture) {
-  await db.queue_gestures.update(gesture.client_tx_id, { status: "SYNCING" });
+  await db.queue_gestures.update(gesture.client_tx_id, {
+    status: "SYNCING",
+    sync_result: undefined,
+    completed_at: undefined,
+  });
 
   const queuedOps = await db.queue_ops
     .where("client_tx_id")
@@ -280,6 +288,12 @@ export async function processGesture(gesture: Gesture) {
     const hasRejected = result.results.some((r) => r.status === "REJECTED");
 
     if (allApplied) {
+      const completedAt = new Date().toISOString();
+      const syncResult = result.results.some(
+        (entry) => entry.status === "APPLIED_ALTERED",
+      )
+        ? "APPLIED_ALTERED"
+        : "APPLIED";
       const remoteTablesTouched = new Set(mappedOps.map((op) => op.table));
       const refreshTables = new Set<string>();
 
@@ -311,6 +325,8 @@ export async function processGesture(gesture: Gesture) {
 
       await db.queue_gestures.update(gesture.client_tx_id, {
         status: "DONE",
+        sync_result: syncResult,
+        completed_at: completedAt,
         last_error: undefined,
       });
       await db.queue_ops.where("client_tx_id").equals(gesture.client_tx_id).delete();
@@ -333,6 +349,7 @@ export async function processGesture(gesture: Gesture) {
     }
 
     if (hasRejected) {
+      const completedAt = new Date().toISOString();
       const rejectedResults = result.results.filter((r) => r.status === "REJECTED");
       const rejectionSummary = rejectedResults
         .map((r) => `${r.reason_code ?? "UNKNOWN"}: ${r.reason_message ?? "-"}`)
@@ -340,6 +357,8 @@ export async function processGesture(gesture: Gesture) {
 
       await db.queue_gestures.update(gesture.client_tx_id, {
         status: "REJECTED",
+        sync_result: "REJECTED",
+        completed_at: completedAt,
         last_error: rejectionSummary || "TX rejected by sync-batch",
       });
       console.warn(
@@ -403,6 +422,8 @@ export async function processGesture(gesture: Gesture) {
     if (retryCount < MAX_RETRIES) {
       await db.queue_gestures.update(gesture.client_tx_id, {
         status: "PENDING",
+        sync_result: undefined,
+        completed_at: undefined,
         retry_count: retryCount + 1,
         last_error: error.message,
       });
@@ -411,6 +432,8 @@ export async function processGesture(gesture: Gesture) {
 
     await db.queue_gestures.update(gesture.client_tx_id, {
       status: "ERROR",
+      sync_result: "ERROR",
+      completed_at: new Date().toISOString(),
       last_error: `Max retries: ${error.message}`,
     });
     await trackPilotMetric({

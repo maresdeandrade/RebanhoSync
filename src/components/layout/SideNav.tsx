@@ -238,11 +238,17 @@ export const SideNav = ({ mobile = false }: SideNavProps) => {
                   expandedGroups.includes(item.label) || groupIsActive;
 
                 if (item.children) {
+                  const groupId = `sidenav-group-${item.label
+                    .toLowerCase()
+                    .replaceAll(" ", "-")}`;
+
                   return (
                     <div key={item.label} className="space-y-1">
                       <button
                         type="button"
                         onClick={() => toggleGroup(item.label)}
+                        aria-expanded={groupIsExpanded}
+                        aria-controls={groupId}
                         className={cn(
                           itemClasses({ active: groupIsActive }),
                           "w-full justify-between",
@@ -261,7 +267,7 @@ export const SideNav = ({ mobile = false }: SideNavProps) => {
                       </button>
 
                       {groupIsExpanded ? (
-                        <div className="space-y-1 pl-5">
+                        <div id={groupId} className="space-y-1 pl-5">
                           {item.children.map((child) => (
                             <NavLink
                               key={child.path}

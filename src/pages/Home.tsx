@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 
 import { useAuth } from "@/hooks/useAuth";
+import { SyncStatusPanel } from "@/components/offline/SyncStatusPanel";
 import {
   getAnimalLifeStageLabel,
   getPendingAnimalLifecycleKindLabel,
@@ -27,6 +28,8 @@ import {
 } from "@/lib/animals/lifecycle";
 import { supabase } from "@/lib/supabase";
 import { db } from "@/lib/offline/db";
+import type { FarmSyncSummary } from "@/lib/offline/syncPresentation";
+import { loadFarmSyncSummary } from "@/lib/offline/syncQueries";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { MetricCard } from "@/components/ui/metric-card";
@@ -48,8 +51,7 @@ type HomeSnapshot = {
   protocolos: number;
   agendaHoje: number;
   agendaAtrasada: number;
-  pendenciasSync: number;
-  errosSync: number;
+  syncSummary: FarmSyncSummary;
   lifecyclePendings: {
     animalId: string;
     identificacao: string;
@@ -189,11 +191,10 @@ const Home = () => {
         animais,
         lotes,
         pastos,
-        protocolos,
+        protocolosAtivos,
         agendaItens,
         eventos,
-        gestos,
-        rejeicoes,
+        syncSummary,
       ] = await Promise.all([
         db.state_animais.where("fazenda_id").equals(activeFarmId).toArray(),
         db.state_lotes.where("fazenda_id").equals(activeFarmId).toArray(),
@@ -201,11 +202,21 @@ const Home = () => {
         db.state_protocolos_sanitarios
           .where("fazenda_id")
           .equals(activeFarmId)
+          .filter((protocolo) => !protocolo.deleted_at && protocolo.ativo)
+          .count(),
+        db.state_agenda_itens
+          .where("[fazenda_id+status]")
+          .equals([activeFarmId, "agendado"])
+          .filter((item) => !item.deleted_at)
           .toArray(),
-        db.state_agenda_itens.where("fazenda_id").equals(activeFarmId).toArray(),
-        db.event_eventos.where("fazenda_id").equals(activeFarmId).toArray(),
-        db.queue_gestures.where("fazenda_id").equals(activeFarmId).toArray(),
-        db.queue_rejections.where("fazenda_id").equals(activeFarmId).toArray(),
+        db.event_eventos
+          .where("[fazenda_id+occurred_at]")
+          .between([activeFarmId, ""], [activeFarmId, "\uffff"], true, true)
+          .reverse()
+          .filter((evento) => !evento.deleted_at)
+          .limit(5)
+          .toArray(),
+        loadFarmSyncSummary(activeFarmId),
       ]);
 
       const todayKey = getTodayKey();
@@ -214,19 +225,10 @@ const Home = () => {
       );
       const lotesAtivos = lotes.filter((lote) => !lote.deleted_at);
       const pastosAtivos = pastos.filter((pasto) => !pasto.deleted_at);
-      const protocolosAtivos = protocolos.filter(
-        (protocolo) => !protocolo.deleted_at && protocolo.ativo,
-      );
       const agendaAberta = agendaItens.filter(
         (item) => !item.deleted_at && item.status === "agendado",
       );
-      const eventosRecentes = eventos
-        .filter((evento) => !evento.deleted_at)
-        .sort((left, right) => right.occurred_at.localeCompare(left.occurred_at))
-        .slice(0, 5);
-      const pendenciasSync = gestos.filter(
-        (gesto) => gesto.status === "PENDING" || gesto.status === "SYNCING",
-      ).length;
+      const eventosRecentes = eventos.slice();
       const agendaHoje = agendaAberta.filter(
         (item) => item.data_prevista === todayKey,
       );
@@ -282,7 +284,7 @@ const Home = () => {
           label: "Ativar protocolos sanitarios",
           helper: "Ajuda a gerar agenda e padronizar o manejo.",
           path: "/protocolos-sanitarios",
-          done: protocolosAtivos.length > 0,
+          done: protocolosAtivos > 0,
         },
         {
           label: "Registrar o primeiro manejo",
@@ -313,11 +315,10 @@ const Home = () => {
         animais: animaisAtivos.length,
         lotes: lotesAtivos.length,
         pastos: pastosAtivos.length,
-        protocolos: protocolosAtivos.length,
+        protocolos: protocolosAtivos,
         agendaHoje: agendaHoje.length,
         agendaAtrasada: agendaAtrasada.length,
-        pendenciasSync,
-        errosSync: rejeicoes.length,
+        syncSummary,
         lifecyclePendings,
         lifecyclePendingCount: lifecycleQueue.length,
         lifecycleStrategicCount,
@@ -411,6 +412,11 @@ const Home = () => {
           <>
             {role ? <StatusBadge tone="info">{ROLE_LABEL[role] ?? role}</StatusBadge> : null}
             <StatusBadge tone="neutral">{farmSubtitle}</StatusBadge>
+            {snapshot.syncSummary.pendingCount > 0 ? (
+              <StatusBadge tone="warning">
+                {snapshot.syncSummary.pendingCount} salvo(s) neste aparelho
+              </StatusBadge>
+            ) : null}
             {snapshot.agendaAtrasada > 0 ? (
               <StatusBadge tone="warning">
                 {snapshot.agendaAtrasada} atraso{snapshot.agendaAtrasada > 1 ? "s" : ""}
@@ -435,6 +441,8 @@ const Home = () => {
           </>
         }
       />
+
+      <SyncStatusPanel summary={snapshot.syncSummary} />
 
       <Toolbar>
         <ToolbarGroup className="gap-2">
@@ -482,18 +490,24 @@ const Home = () => {
           tone={snapshot.agendaAtrasada > 0 ? "warning" : "default"}
         />
         <MetricCard
-          label="Fila de sync"
-          value={snapshot.pendenciasSync}
+          label="Fila local"
+          value={snapshot.syncSummary.pendingCount}
           hint={
-            snapshot.errosSync > 0
-              ? `${snapshot.errosSync} erro(s) para revisar.`
-              : "Fila local sob controle."
+            snapshot.syncSummary.rejectionCount > 0
+              ? `${snapshot.syncSummary.rejectionCount} rejeicao(oes) para revisar.`
+              : snapshot.syncSummary.syncingCount > 0
+                ? `${snapshot.syncSummary.syncingCount} gesto(s) em sincronizacao.`
+                : snapshot.syncSummary.savedLocalCount > 0
+                  ? `${snapshot.syncSummary.savedLocalCount} gesto(s) aguardando rede/worker.`
+                  : snapshot.syncSummary.lastCompletedStage === "synced_altered"
+                    ? "Ultima confirmacao teve ajuste do servidor."
+                    : "Sem fila local pendente."
           }
           icon={<RefreshCw className="h-4 w-4" />}
           tone={
-            snapshot.errosSync > 0
+            snapshot.syncSummary.rejectionCount > 0
               ? "danger"
-              : snapshot.pendenciasSync > 0
+              : snapshot.syncSummary.pendingCount > 0
                 ? "warning"
                 : "success"
           }
@@ -742,7 +756,9 @@ const Home = () => {
                 <RefreshCw className="h-4 w-4" />
                 Erros de sync
               </div>
-              <p className="mt-3 text-2xl font-semibold">{snapshot.errosSync}</p>
+              <p className="mt-3 text-2xl font-semibold">
+                {snapshot.syncSummary.rejectionCount}
+              </p>
             </div>
           </CardContent>
         </Card>

@@ -4,8 +4,10 @@ import { Link } from "react-router-dom";
 import {
   AlertTriangle,
   Building2,
+  CheckCircle2,
   Cloud,
   CloudOff,
+  Clock3,
   Menu,
   RefreshCw,
   SlidersHorizontal,
@@ -23,7 +25,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { db } from "@/lib/offline/db";
+import {
+  EMPTY_FARM_SYNC_SUMMARY,
+  loadFarmSyncSummary,
+} from "@/lib/offline/syncQueries";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -38,26 +43,10 @@ export const TopBar = ({ onMenuClick }: TopBarProps) => {
   const [userAvatar, setUserAvatar] = useState<string | null>(null);
   const [userName, setUserName] = useState<string | null>(null);
 
-  const pendingCount =
+  const syncSummary =
     useLiveQuery(async () => {
-      if (!activeFarmId) return 0;
-
-      const gestures = await db.queue_gestures
-        .where("fazenda_id")
-        .equals(activeFarmId)
-        .toArray();
-
-      return gestures.filter(
-        (gesture) =>
-          gesture.status === "PENDING" || gesture.status === "SYNCING",
-      ).length;
-    }, [activeFarmId]) || 0;
-
-  const rejectionCount =
-    useLiveQuery(async () => {
-      if (!activeFarmId) return 0;
-      return db.queue_rejections.where("fazenda_id").equals(activeFarmId).count();
-    }, [activeFarmId]) || 0;
+      return loadFarmSyncSummary(activeFarmId);
+    }, [activeFarmId]) || EMPTY_FARM_SYNC_SUMMARY;
 
   useEffect(() => {
     const fetchFarmName = async () => {
@@ -195,22 +184,54 @@ export const TopBar = ({ onMenuClick }: TopBarProps) => {
             {isOnline ? "Conectado" : "Offline"}
           </StatusBadge>
 
-          {pendingCount > 0 ? (
+          {syncSummary.rejectionCount > 0 ? (
             <Link to="/reconciliacao">
-              <StatusBadge tone="warning" className="hover:opacity-90">
-                <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-                {pendingCount} na fila
+              <StatusBadge tone="danger" className="hover:opacity-90">
+                <AlertTriangle className="h-3.5 w-3.5" />
+                {syncSummary.rejectionCount} rejei
+                {syncSummary.rejectionCount > 1 ? "coes" : "cao"}
               </StatusBadge>
             </Link>
           ) : null}
 
-          {rejectionCount > 0 ? (
-            <Link to="/reconciliacao">
-              <StatusBadge tone="danger" className="hover:opacity-90">
-                <AlertTriangle className="h-3.5 w-3.5" />
-                {rejectionCount} pendencia{rejectionCount > 1 ? "s" : ""}
+          {syncSummary.syncingCount > 0 ? (
+            <Link to="/home">
+              <StatusBadge tone="info" className="hover:opacity-90">
+                <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                {syncSummary.syncingCount} sincronizando
               </StatusBadge>
             </Link>
+          ) : null}
+
+          {syncSummary.savedLocalCount > 0 ? (
+            <Link to="/home">
+              <StatusBadge tone="warning" className="hover:opacity-90">
+                <Clock3 className="h-3.5 w-3.5" />
+                {syncSummary.savedLocalCount} salvo
+                {syncSummary.savedLocalCount > 1 ? "s" : ""} localmente
+              </StatusBadge>
+            </Link>
+          ) : null}
+
+          {syncSummary.pendingCount === 0 &&
+          syncSummary.rejectionCount === 0 &&
+          syncSummary.lastCompletedStage === "synced_altered" ? (
+            <Link to="/home">
+              <StatusBadge tone="warning" className="hover:opacity-90">
+                <AlertTriangle className="h-3.5 w-3.5" />
+                Confirmado com ajuste
+              </StatusBadge>
+            </Link>
+          ) : null}
+
+          {syncSummary.pendingCount === 0 &&
+          syncSummary.rejectionCount === 0 &&
+          syncSummary.lastCompletedStage !== "synced_altered" &&
+          syncSummary.lastCompletedAt ? (
+            <StatusBadge tone="success">
+              <CheckCircle2 className="h-3.5 w-3.5" />
+              Sync em dia
+            </StatusBadge>
           ) : null}
 
           <Link to="/perfil" aria-label="Abrir perfil">

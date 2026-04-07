@@ -1,6 +1,6 @@
 /** @vitest-environment jsdom */
 import "@testing-library/jest-dom";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 import { useLiveQuery } from "dexie-react-hooks";
@@ -170,5 +170,61 @@ describe("Animais page", () => {
     expect(screen.getByText("0,7 kg/dia")).toBeInTheDocument();
     expect(screen.getByText("Sanitario: vacina reforco")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Abrir matriz" })).toBeInTheDocument();
+  });
+
+  it("pagina o recorte quando a tabela excede cem animais", () => {
+    const animaisBase = Array.from({ length: 101 }, (_, index) =>
+      makeAnimal({
+        id: `animal-${index + 1}`,
+        identificacao: `A-${String(index + 1).padStart(3, "0")}`,
+        sexo: index % 2 === 0 ? "F" : "M",
+      }),
+    );
+
+    mockedUseLiveQuery.mockImplementation((() => {
+      let callCount = 0;
+      return () => {
+        const index = callCount % 5;
+        callCount += 1;
+
+        switch (index) {
+          case 0:
+            return animaisBase as ReturnType<typeof useLiveQuery>;
+          case 1:
+            return [] as ReturnType<typeof useLiveQuery>;
+          case 2:
+            return [] as ReturnType<typeof useLiveQuery>;
+          case 3:
+            return [] as ReturnType<typeof useLiveQuery>;
+          case 4:
+          default:
+            return animaisBase as ReturnType<typeof useLiveQuery>;
+        }
+      };
+    })());
+
+    render(
+      <MemoryRouter
+        future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+      >
+        <Animais />
+      </MemoryRouter>,
+    );
+
+    expect(
+      screen.getByText("Mostrando 1-100 de 101 animais do recorte."),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Pagina 1 de 2")).toBeInTheDocument();
+    expect(screen.getByText("A-001")).toBeInTheDocument();
+    expect(screen.queryByText("A-101")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("link", { name: /proxima/i }));
+
+    expect(
+      screen.getByText("Mostrando 101-101 de 101 animais do recorte."),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Pagina 2 de 2")).toBeInTheDocument();
+    expect(screen.getByText("A-101")).toBeInTheDocument();
+    expect(screen.queryByText("A-001")).not.toBeInTheDocument();
   });
 });

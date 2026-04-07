@@ -172,6 +172,11 @@ describe("taxonomy sync flow", () => {
     const gesture = await getGesture(txId);
     await processGesture(gesture);
 
+    const syncedGesture = await getGesture(txId);
+    expect(syncedGesture.status).toBe("DONE");
+    expect(syncedGesture.sync_result).toBe("APPLIED");
+    expect(typeof syncedGesture.completed_at).toBe("string");
+
     const animal = await db.state_animais.get(animalId);
     const taxonomy = deriveAnimalTaxonomy(animal!);
     expect(taxonomy.categoria_zootecnica).toBe("novilha");
@@ -347,6 +352,11 @@ describe("taxonomy sync flow", () => {
     );
 
     await processGesture(await getGesture(txId));
+
+    const rejectedGesture = await getGesture(txId);
+    expect(rejectedGesture.status).toBe("REJECTED");
+    expect(rejectedGesture.sync_result).toBe("REJECTED");
+    expect(typeof rejectedGesture.completed_at).toBe("string");
 
     const rolledBack = await db.state_animais.get(animalId);
     expect(deriveAnimalTaxonomy(rolledBack!).facts.em_lactacao).toBe(false);

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "@/lib/offline/db";
 import { createGesture } from "@/lib/offline/ops";
@@ -46,6 +46,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   Scale,
   Move,
+  Search,
   Syringe,
   ChevronRight,
   ChevronLeft,
@@ -63,6 +64,7 @@ import {
   getWeightUnitLabel,
   parseWeightInput,
 } from "@/lib/format/weight";
+import { cn } from "@/lib/utils";
 
 enum RegistrationStep {
   SELECT_ANIMALS = 1,
@@ -217,6 +219,7 @@ const Registrar = () => {
   const [quickAction, setQuickAction] = useState<QuickActionKey | null>(null);
   const [selectedLoteId, setSelectedLoteId] = useState<string>("");
   const [selectedAnimais, setSelectedAnimais] = useState<string[]>([]);
+  const [animalSearch, setAnimalSearch] = useState("");
   const [sourceTaskId, setSourceTaskId] = useState<string>("");
 
   // Form states
@@ -357,6 +360,84 @@ const Registrar = () => {
     selectedLoteId === SEM_LOTE_OPTION
       ? "Sem lote"
       : lotes?.find((l) => l.id === selectedLoteId)?.nome ?? "-";
+  const sanitatioProductMissing = sanitarioData.produto.trim().length === 0;
+  const nutricaoQuantidade =
+    nutricaoData.quantidadeKg.trim() !== ""
+      ? parseNumeric(nutricaoData.quantidadeKg)
+      : null;
+  const nutricaoAlimentoMissing = nutricaoData.alimentoNome.trim().length === 0;
+  const nutricaoQuantidadeInvalida =
+    nutricaoQuantidade === null ||
+    !Number.isFinite(nutricaoQuantidade) ||
+    nutricaoQuantidade <= 0;
+  const movimentacaoSemDestino = movimentacaoData.toLoteId.trim().length === 0;
+  const movimentacaoDestinoIgualOrigem =
+    Boolean(selectedLoteIdNormalized) &&
+    movimentacaoData.toLoteId === selectedLoteIdNormalized;
+  const pesagemAnimaisInvalidos = selectedAnimais.filter((id) => {
+    const weightStr = pesagemData[id];
+    if (!weightStr || weightStr.trim() === "") return true;
+    const weight = parseUserWeight(weightStr);
+    return weight === null || weight <= 0;
+  });
+  const requiresAnimalsForQuickAction =
+    quickActionConfig?.requiresAnimals === true && selectedAnimais.length === 0;
+  const actionStepIssues = useMemo(() => {
+    if (!tipoManejo) return ["Escolha um manejo antes de continuar."];
+
+    const issues: string[] = [];
+
+    if (tipoManejo === "sanitario" && sanitatioProductMissing) {
+      issues.push("Informe o produto sanitario antes de confirmar.");
+    }
+
+    if (tipoManejo === "pesagem" && pesagemAnimaisInvalidos.length > 0) {
+      issues.push("Informe peso maior que zero para todos os animais selecionados.");
+    }
+
+    if (tipoManejo === "movimentacao") {
+      if (movimentacaoSemDestino) {
+        issues.push("Selecione o lote de destino antes de continuar.");
+      } else if (movimentacaoDestinoIgualOrigem) {
+        issues.push("Origem e destino devem ser diferentes.");
+      }
+    }
+
+    if (tipoManejo === "nutricao") {
+      if (nutricaoAlimentoMissing) {
+        issues.push("Informe o alimento usado no manejo.");
+      }
+      if (nutricaoQuantidadeInvalida) {
+        issues.push("Quantidade de nutricao deve ser maior que zero.");
+      }
+    }
+
+    if (
+      tipoManejo === "financeiro" &&
+      isFinanceiroSociedade &&
+      financeiroData.contraparteId === "none"
+    ) {
+      issues.push("Eventos de sociedade exigem uma contraparte vinculada.");
+    }
+
+    if (partoRequiresSingleMatrix) {
+      issues.push("Parto com geracao de cria deve ser registrado para uma matriz por vez.");
+    }
+
+    return issues;
+  }, [
+    financeiroData.contraparteId,
+    isFinanceiroSociedade,
+    movimentacaoDestinoIgualOrigem,
+    movimentacaoSemDestino,
+    nutricaoAlimentoMissing,
+    nutricaoQuantidadeInvalida,
+    partoRequiresSingleMatrix,
+    pesagemAnimaisInvalidos.length,
+    sanitatioProductMissing,
+    tipoManejo,
+  ]);
+  const canAdvanceToConfirm = actionStepIssues.length === 0;
   const animaisNoLote = useLiveQuery(
     async () => {
       if (!selectedLoteId) return [];
@@ -373,6 +454,28 @@ const Registrar = () => {
     },
     [selectedLoteId],
   );
+  const filteredAnimaisNoLote = useMemo(() => {
+    const normalizedSearch = animalSearch.trim().toLowerCase();
+    const base = animaisNoLote ?? [];
+
+    if (!normalizedSearch) return base;
+
+    return base.filter((animal) =>
+      [
+        animal.identificacao,
+        animal.nome ?? "",
+        animal.rfid ?? "",
+        animal.sexo === "M" ? "macho" : "femea",
+      ]
+        .join(" ")
+        .toLowerCase()
+        .includes(normalizedSearch),
+    );
+  }, [animalSearch, animaisNoLote]);
+  const visibleAnimalIds = filteredAnimaisNoLote.map((animal) => animal.id);
+  const selectedVisibleCount = visibleAnimalIds.filter((id) =>
+    selectedAnimais.includes(id),
+  ).length;
 
   const protocolos = useLiveQuery(() => {
     return activeFarmId
@@ -731,7 +834,9 @@ const Registrar = () => {
         endereco: "",
       });
       setShowNovaContraparte(false);
-      showSuccess(`Contraparte cadastrada. TX: ${txId.slice(0, 8)}`);
+      showSuccess(
+        `Contraparte salva neste aparelho. Sincronizacao pendente. TX ${txId.slice(0, 8)}.`,
+      );
     } catch {
       showError("Falha ao cadastrar contraparte.");
     } finally {
@@ -915,9 +1020,9 @@ const Registrar = () => {
           ]);
 
           showSuccess(
-            `Aplicacao sanitaria registrada! Evento ${eventoId.slice(0, 8)}`,
+            `Aplicacao sanitaria confirmada no servidor. Evento ${eventoId.slice(0, 8)}.`,
           );
-          navigate("/home", { state: { syncPending: false } });
+          navigate("/home");
           return;
         } catch (rpcError) {
           console.warn(
@@ -1250,10 +1355,12 @@ const Registrar = () => {
       const txId = await createGesture(fazenda_id, ops);
       if (compraGerandoAnimais) {
         showSuccess(
-          `Compra registrada com ${createdAnimalIds.length} novo(s) animal(is). TX: ${txId.slice(0, 8)}`,
+          `Compra salva neste aparelho com ${createdAnimalIds.length} novo(s) animal(is). Sincronizacao pendente. TX ${txId.slice(0, 8)}.`,
         );
       } else {
-        showSuccess(`Manejo registrado! TX: ${txId.slice(0, 8)}`);
+        showSuccess(
+          `Manejo salvo neste aparelho. Sincronizacao pendente. TX ${txId.slice(0, 8)}.`,
+        );
       }
 
       if (postPartoRedirect) {
@@ -1268,7 +1375,7 @@ const Registrar = () => {
         return;
       }
 
-      navigate("/home", { state: { syncPending: true } });
+      navigate("/home");
     } catch (e: unknown) {
       if (e instanceof EventValidationError) {
         showError(e.issues[0]?.message ?? "Dados invalidos para o evento.");
@@ -1396,26 +1503,85 @@ const Registrar = () => {
             </div>
 
             {selectedLoteId && (
-              <div className="border rounded-lg divide-y max-h-64 overflow-y-auto">
-                {animaisNoLote?.map((a) => (
-                  <div key={a.id} className="flex items-center p-3 gap-3">
-                    <Checkbox
-                      checked={selectedAnimais.includes(a.id)}
-                      onCheckedChange={(checked) => {
-                        setSelectedAnimais((prev) =>
-                          checked
-                            ? [...prev, a.id]
-                            : prev.filter((id) => id !== a.id),
-                        );
-                      }}
+              <>
+                <div className="rounded-lg border border-border/70 bg-muted/25 p-3">
+                  <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium">
+                        {selectedAnimais.length} animal(is) selecionado(s)
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Filtre por identificacao, nome, RFID ou sexo para reduzir erro de selecao.
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        disabled={
+                          filteredAnimaisNoLote.length === 0 ||
+                          selectedVisibleCount === filteredAnimaisNoLote.length
+                        }
+                        onClick={() =>
+                          setSelectedAnimais((prev) =>
+                            Array.from(new Set([...prev, ...visibleAnimalIds])),
+                          )
+                        }
+                      >
+                        Selecionar visiveis
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        disabled={selectedAnimais.length === 0}
+                        onClick={() => setSelectedAnimais([])}
+                      >
+                        Limpar selecao
+                      </Button>
+                    </div>
+                    </div>
+
+                  <div className="relative mt-3">
+                    <Search className="absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      className="pl-9"
+                      value={animalSearch}
+                      onChange={(event) => setAnimalSearch(event.target.value)}
+                      placeholder="Buscar animal neste lote"
+                      aria-label="Buscar animal no lote selecionado"
                     />
-                    <span className="font-medium">{a.identificacao}</span>
-                    <span className="text-xs text-muted-foreground">
+                  </div>
+                </div>
+
+                <div className="border rounded-lg divide-y max-h-64 overflow-y-auto">
+                  {filteredAnimaisNoLote.map((a) => (
+                    <label
+                      key={a.id}
+                      htmlFor={`registrar-animal-${a.id}`}
+                      className="flex cursor-pointer items-center gap-3 p-3 transition-colors hover:bg-muted/35"
+                    >
+                      <Checkbox
+                        id={`registrar-animal-${a.id}`}
+                        aria-label={`Selecionar animal ${a.identificacao}`}
+                        checked={selectedAnimais.includes(a.id)}
+                        onCheckedChange={(checked) => {
+                          setSelectedAnimais((prev) =>
+                            checked
+                              ? [...prev, a.id]
+                              : prev.filter((id) => id !== a.id),
+                          );
+                        }}
+                      />
+                      <span className="font-medium">{a.identificacao}</span>
+                      <span className="text-xs text-muted-foreground">
                       {a.sexo === "M" ? "Macho" : "Fêmea"}
                     </span>
-                  </div>
-                ))}
-              </div>
+                    </label>
+                  ))}
+                </div>
+              </>
             )}
 
             {selectedLoteId && (animaisNoLote?.length ?? 0) === 0 && (
@@ -1426,9 +1592,23 @@ const Registrar = () => {
               </p>
             )}
 
+            {selectedLoteId &&
+            (animaisNoLote?.length ?? 0) > 0 &&
+            filteredAnimaisNoLote.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                Nenhum animal encontrado com este filtro.
+              </p>
+            ) : null}
+
+            {requiresAnimalsForQuickAction ? (
+              <p className="text-sm text-amber-700">
+                Esta acao exige ao menos um animal selecionado antes de continuar.
+              </p>
+            ) : null}
+
             <Button
               className="w-full"
-              disabled={!selectedLoteId}
+              disabled={!selectedLoteId || requiresAnimalsForQuickAction}
               onClick={() => setStep(RegistrationStep.CHOOSE_ACTION)}
             >
               {quickActionConfig ? `Continuar para ${quickActionConfig.label}` : "Próximo"}{" "}
@@ -1565,6 +1745,9 @@ const Registrar = () => {
                 <div className="space-y-2">
                   <Label>Produto</Label>
                   <Input
+                    className={cn(
+                      sanitatioProductMissing && "border-destructive focus-visible:ring-destructive/30",
+                    )}
                     value={sanitarioData.produto}
                     onChange={(e) =>
                       setSanitarioData((d) => ({
@@ -1573,6 +1756,11 @@ const Registrar = () => {
                       }))
                     }
                   />
+                  {sanitatioProductMissing ? (
+                    <p className="text-xs text-destructive">
+                      Informe o produto ou selecione um item de protocolo antes de continuar.
+                    </p>
+                  ) : null}
                 </div>
                 <div className="space-y-2">
                   <Label>Protocolo (opcional)</Label>
@@ -1623,13 +1811,18 @@ const Registrar = () => {
               <div className="space-y-4 border-t pt-4 max-h-64 overflow-y-auto">
                 {selectedAnimais.map((id) => {
                   const animal = animaisNoLote?.find((a) => a.id === id);
+                  const isInvalid = pesagemAnimaisInvalidos.includes(id);
                   return (
                     <div
                       key={id}
-                      className="flex items-center justify-between gap-4"
+                      className="flex items-start justify-between gap-4"
                     >
-                      <Label className="w-24">{animal?.identificacao}</Label>
+                      <Label className="w-24 pt-2">{animal?.identificacao}</Label>
+                      <div className="flex-1 space-y-1">
                         <Input
+                          className={cn(
+                            isInvalid && "border-destructive focus-visible:ring-destructive/30",
+                          )}
                           type="number"
                           step={getWeightInputStep(farmMeasurementConfig.weight_unit)}
                           placeholder={`Peso (${getWeightUnitLabel(
@@ -1638,11 +1831,17 @@ const Registrar = () => {
                           value={pesagemData[id] || ""}
                           onChange={(e) =>
                             setPesagemData((prev) => ({
-                            ...prev,
-                            [id]: e.target.value,
-                          }))
-                        }
-                      />
+                              ...prev,
+                              [id]: e.target.value,
+                            }))
+                          }
+                        />
+                        {isInvalid ? (
+                          <p className="text-xs text-destructive">
+                            Peso deve ser maior que zero.
+                          </p>
+                        ) : null}
+                      </div>
                     </div>
                   );
                 })}
@@ -1669,6 +1868,16 @@ const Registrar = () => {
                       ))}
                   </SelectContent>
                 </Select>
+                {movimentacaoSemDestino ? (
+                  <p className="text-xs text-destructive">
+                    Selecione o lote de destino antes de continuar.
+                  </p>
+                ) : null}
+                {movimentacaoDestinoIgualOrigem ? (
+                  <p className="text-xs text-destructive">
+                    Origem e destino devem ser diferentes.
+                  </p>
+                ) : null}
               </div>
             )}
 
@@ -1677,6 +1886,10 @@ const Registrar = () => {
                 <div className="space-y-2">
                   <Label>Alimento</Label>
                   <Input
+                    className={cn(
+                      nutricaoAlimentoMissing &&
+                        "border-destructive focus-visible:ring-destructive/30",
+                    )}
                     value={nutricaoData.alimentoNome}
                     onChange={(e) =>
                       setNutricaoData((prev) => ({
@@ -1686,10 +1899,19 @@ const Registrar = () => {
                     }
                     placeholder="Ex.: racao proteica"
                   />
+                  {nutricaoAlimentoMissing ? (
+                    <p className="text-xs text-destructive">
+                      Informe o alimento usado neste manejo.
+                    </p>
+                  ) : null}
                 </div>
                 <div className="space-y-2">
                   <Label>Quantidade (kg)</Label>
                   <Input
+                    className={cn(
+                      nutricaoQuantidadeInvalida &&
+                        "border-destructive focus-visible:ring-destructive/30",
+                    )}
                     type="number"
                     step="0.001"
                     value={nutricaoData.quantidadeKg}
@@ -1700,6 +1922,11 @@ const Registrar = () => {
                       }))
                     }
                   />
+                  {nutricaoQuantidadeInvalida ? (
+                    <p className="text-xs text-destructive">
+                      Quantidade deve ser maior que zero.
+                    </p>
+                  ) : null}
                 </div>
               </div>
             )}
@@ -1894,7 +2121,13 @@ const Registrar = () => {
                     }
                     value={financeiroData.contraparteId}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger
+                      className={cn(
+                        isFinanceiroSociedade &&
+                          financeiroData.contraparteId === "none" &&
+                          "border-destructive focus:ring-destructive/30",
+                      )}
+                    >
                       <SelectValue placeholder="Sem contraparte" />
                     </SelectTrigger>
                     <SelectContent>
@@ -1906,6 +2139,12 @@ const Registrar = () => {
                       ))}
                     </SelectContent>
                   </Select>
+                  {isFinanceiroSociedade &&
+                  financeiroData.contraparteId === "none" ? (
+                    <p className="text-xs text-destructive">
+                      Eventos de sociedade exigem uma contraparte vinculada.
+                    </p>
+                  ) : null}
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                   <Button
@@ -1929,9 +2168,10 @@ const Registrar = () => {
                   </Button>
                 </div>
                 {!canManageContraparte && (
-                  <p className="text-xs text-muted-foreground">
-                    Apenas owner/manager pode criar contraparte.
-                  </p>
+                  <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
+                    Sua role pode registrar o evento, mas nao pode criar nova contraparte.
+                    Use uma contraparte existente ou encaminhe o cadastro para owner/manager.
+                  </div>
                 )}
 
                 {showNovaContraparte && (
@@ -2185,6 +2425,12 @@ const Registrar = () => {
                 </div>
             )}
 
+            {actionStepIssues.length > 0 ? (
+              <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-3 text-sm text-destructive">
+                {actionStepIssues[0]}
+              </div>
+            ) : null}
+
             <div className="flex gap-3">
               <Button
                 variant="outline"
@@ -2194,11 +2440,7 @@ const Registrar = () => {
               </Button>
               <Button
                 className="flex-1"
-                disabled={
-                  !tipoManejo ||
-                  (tipoManejo === "pesagem" && !isPesagemValid) ||
-                  partoRequiresSingleMatrix
-                }
+                disabled={!tipoManejo || !canAdvanceToConfirm}
                 onClick={() => setStep(RegistrationStep.CONFIRM)}
               >
                 Próximo <ChevronRight className="ml-2 h-4 w-4" />
@@ -2211,9 +2453,13 @@ const Registrar = () => {
       {step === RegistrationStep.CONFIRM && (
         <Card>
           <CardHeader>
-            <CardTitle>3. Confirmar Registro</CardTitle>
+            <CardTitle>3. Salvar neste aparelho</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
+            <div className="rounded-lg border border-info/20 bg-info/5 p-4 text-sm text-muted-foreground">
+              Ao confirmar, o manejo fica salvo imediatamente neste aparelho. A
+              confirmacao autoritativa aparece depois na fila de sync.
+            </div>
             <div className="bg-muted p-4 rounded-lg space-y-2">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Manejo:</span>
@@ -2359,7 +2605,7 @@ const Registrar = () => {
                 className="flex-1 bg-emerald-600 hover:bg-emerald-700"
                 onClick={handleFinalize}
               >
-                <Check className="mr-2 h-4 w-4" /> Confirmar e Salvar
+                <Check className="mr-2 h-4 w-4" /> Salvar neste aparelho
               </Button>
             </div>
           </CardContent>

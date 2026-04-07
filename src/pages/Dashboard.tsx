@@ -1,5 +1,6 @@
 import { useEffect, useMemo } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
+import { Link } from "react-router-dom";
 import {
   AlertTriangle,
   BarChart3,
@@ -23,17 +24,29 @@ import {
   YAxis,
 } from "recharts";
 
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { MetricCard } from "@/components/ui/metric-card";
 import { PageIntro } from "@/components/ui/page-intro";
 import { Progress } from "@/components/ui/progress";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { db } from "@/lib/offline/db";
+import { getRejectionStats, listRejections } from "@/lib/offline/rejections";
+import {
+  EMPTY_FARM_OPERATIONAL_GESTURE_STATS,
+  loadFarmOperationalGestureStats,
+} from "@/lib/offline/syncQueries";
 import { pullDataForFarm } from "@/lib/offline/pull";
 import { useAuth } from "@/hooks/useAuth";
 import { buildPilotMetricsSummary } from "@/lib/telemetry/pilotMetrics";
 
 const EMPTY_LIST: never[] = [];
+const DASHBOARD_REJECTION_SAMPLE_LIMIT = 120;
+const EMPTY_REJECTION_SNAPSHOT = {
+  recentItems: EMPTY_LIST,
+  totalCount: 0,
+};
 
 function resolveRejectionDomain(table: string, reasonCode?: string): string {
   const reason = (reasonCode || "").toUpperCase();
@@ -86,30 +99,38 @@ const Dashboard = () => {
     useLiveQuery(async () => {
       if (!activeFarmId) return 0;
       return db.state_agenda_itens
-        .where("fazenda_id")
-        .equals(activeFarmId)
-        .and((item) => item.status === "agendado" && !item.deleted_at)
+        .where("[fazenda_id+status]")
+        .equals([activeFarmId, "agendado"])
+        .filter((item) => !item.deleted_at)
         .count();
     }, [activeFarmId]) || 0;
 
-  const queueGesturesQuery = useLiveQuery(async () => {
-    if (!activeFarmId) return [];
-    return db.queue_gestures.where("fazenda_id").equals(activeFarmId).toArray();
-  }, [activeFarmId]);
+  const rejectionSnapshot =
+    useLiveQuery(async () => {
+      if (!activeFarmId) {
+        return EMPTY_REJECTION_SNAPSHOT;
+      }
 
-  const queueRejectionsQuery = useLiveQuery(async () => {
-    if (!activeFarmId) return [];
-    return db.queue_rejections.where("fazenda_id").equals(activeFarmId).toArray();
-  }, [activeFarmId]);
+      const [recentPage, stats] = await Promise.all([
+        listRejections(activeFarmId, { limit: DASHBOARD_REJECTION_SAMPLE_LIMIT }),
+        getRejectionStats(activeFarmId),
+      ]);
 
-  const queueGestures = useMemo(
-    () => queueGesturesQuery ?? EMPTY_LIST,
-    [queueGesturesQuery],
-  );
-  const queueRejections = useMemo(
-    () => queueRejectionsQuery ?? EMPTY_LIST,
-    [queueRejectionsQuery],
-  );
+      return {
+        recentItems: recentPage.items,
+        totalCount: stats.count,
+      };
+    }, [activeFarmId]) || EMPTY_REJECTION_SNAPSHOT;
+
+  const recentRejections = rejectionSnapshot.recentItems;
+  const totalRejections = rejectionSnapshot.totalCount;
+  const rejectionSampleIsPartial = totalRejections > recentRejections.length;
+
+  const operationalStats =
+    useLiveQuery(
+      async () => loadFarmOperationalGestureStats(activeFarmId),
+      [activeFarmId],
+    ) || EMPTY_FARM_OPERATIONAL_GESTURE_STATS;
 
   const pilotEventsQuery = useLiveQuery(async () => {
     if (!activeFarmId) return [];
@@ -129,18 +150,18 @@ const Dashboard = () => {
     useLiveQuery(async () => {
       if (!activeFarmId) return [];
 
-      const eventos = (
-        await db.event_eventos.where("fazenda_id").equals(activeFarmId).toArray()
-      )
+      const eventos = await db.event_eventos
+        .where("[fazenda_id+occurred_at]")
+        .between([activeFarmId, ""], [activeFarmId, "\uffff"], true, true)
+        .reverse()
         .filter((evt) => evt.dominio === "pesagem" && !evt.deleted_at)
-        .sort(
-          (a, b) =>
-            new Date(a.occurred_at).getTime() - new Date(b.occurred_at).getTime(),
-        )
-        .slice(-10);
+        .limit(10)
+        .toArray();
+
+      const orderedEventos = eventos.slice().reverse();
 
       const data = await Promise.all(
-        eventos.map(async (evt) => {
+        orderedEventos.map(async (evt) => {
           const detalhes = await db.event_eventos_pesagem.get(evt.id);
           return {
             data: new Date(evt.occurred_at).toLocaleDateString("pt-BR", {
@@ -160,9 +181,9 @@ const Dashboard = () => {
       if (!activeFarmId) return [];
 
       const itens = await db.state_agenda_itens
-        .where("fazenda_id")
-        .equals(activeFarmId)
-        .and((item) => item.status === "agendado" && !item.deleted_at)
+        .where("[fazenda_id+status]")
+        .equals([activeFarmId, "agendado"])
+        .filter((item) => !item.deleted_at)
         .toArray();
 
       const grouped = itens.reduce((acc: Record<string, number>, item) => {
@@ -174,30 +195,8 @@ const Dashboard = () => {
       return Object.entries(grouped).map(([nome, qtd]) => ({ nome, qtd }));
     }, [activeFarmId]) || [];
 
-  const operationalStats = useMemo(() => {
-    const successful = queueGestures.filter(
-      (gesture) => gesture.status === "DONE" || gesture.status === "SYNCED",
-    ).length;
-    const failed = queueGestures.filter(
-      (gesture) => gesture.status === "ERROR" || gesture.status === "REJECTED",
-    ).length;
-    const backlog = queueGestures.filter(
-      (gesture) => gesture.status === "PENDING" || gesture.status === "SYNCING",
-    ).length;
-    const processed = successful + failed;
-
-    return {
-      successful,
-      failed,
-      backlog,
-      processed,
-      successRate: processed > 0 ? (successful / processed) * 100 : 100,
-      rejectionRate: processed > 0 ? (failed / processed) * 100 : 0,
-    };
-  }, [queueGestures]);
-
   const rejectionByDomainData = useMemo(() => {
-    const grouped = queueRejections.reduce(
+    const grouped = recentRejections.reduce(
       (acc: Record<string, number>, rejection) => {
         const domain = resolveRejectionDomain(
           rejection.table,
@@ -212,11 +211,11 @@ const Dashboard = () => {
     return Object.entries(grouped)
       .map(([domain, total]) => ({ domain, total }))
       .sort((a, b) => b.total - a.total);
-  }, [queueRejections]);
+  }, [recentRejections]);
 
   const rejectionByRuleData = useMemo(() => {
-    const total = queueRejections.length;
-    const grouped = queueRejections.reduce(
+    const total = recentRejections.length;
+    const grouped = recentRejections.reduce(
       (acc: Record<string, number>, rejection) => {
         const reason = rejection.reason_code || "UNKNOWN";
         acc[reason] = (acc[reason] || 0) + 1;
@@ -233,11 +232,51 @@ const Dashboard = () => {
       }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 8);
-  }, [queueRejections]);
+  }, [recentRejections]);
 
   const pilotMetrics = useMemo(() => {
     return buildPilotMetricsSummary(pilotEvents);
   }, [pilotEvents]);
+
+  const adminPriorityActions = useMemo(
+    () => [
+      {
+        title: "DLQ local",
+        tone: totalRejections > 0 ? "danger" : "success",
+        value: totalRejections,
+        helper:
+          totalRejections > 0
+            ? "Rejeicoes e rollbacks pedem revisao antes de novo retrabalho."
+            : "Nenhuma rejeicao local aberta neste momento.",
+        path: totalRejections > 0 ? "/reconciliacao" : "/home",
+        actionLabel: totalRejections > 0 ? "Abrir reconciliacao" : "Ver status de sync",
+      },
+      {
+        title: "Fila de sync",
+        tone: operationalStats.backlog > 0 ? "warning" : "success",
+        value: operationalStats.backlog,
+        helper:
+          operationalStats.backlog > 0
+            ? "Gestos ainda aguardam worker, rede ou confirmacao do servidor."
+            : "Fila local estabilizada para a fazenda ativa.",
+        path: "/home",
+        actionLabel:
+          operationalStats.backlog > 0 ? "Acompanhar fila" : "Abrir painel inicial",
+      },
+      {
+        title: "Agenda aberta",
+        tone: pendenciasAgenda > 0 ? "warning" : "success",
+        value: pendenciasAgenda,
+        helper:
+          pendenciasAgenda > 0
+            ? "Itens agendados continuam pressionando a operacao."
+            : "Agenda aberta sob controle no momento.",
+        path: "/agenda",
+        actionLabel: pendenciasAgenda > 0 ? "Abrir agenda" : "Ver agenda",
+      },
+    ],
+    [operationalStats.backlog, pendenciasAgenda, totalRejections],
+  );
 
   const routeLabel = (route: string) => {
     const labels: Record<string, string> = {
@@ -270,9 +309,9 @@ const Dashboard = () => {
             ) : (
               <StatusBadge tone="success">Fila sob controle</StatusBadge>
             )}
-            {queueRejections.length > 0 ? (
+            {totalRejections > 0 ? (
               <StatusBadge tone="danger">
-                {queueRejections.length} rejeicoes locais
+                {totalRejections} rejeicoes locais
               </StatusBadge>
             ) : null}
           </>
@@ -308,13 +347,47 @@ const Dashboard = () => {
         />
       </section>
 
+      <Card>
+        <CardHeader>
+          <CardTitle>Prioridades administrativas</CardTitle>
+          <CardDescription>
+            Comece pela fila, pela DLQ e pela agenda. A telemetria detalhada fica
+            recolhida para nao competir com a operacao.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-3 lg:grid-cols-3">
+          {adminPriorityActions.map((action) => (
+            <div
+              key={action.title}
+              className="rounded-2xl border border-border/70 bg-muted/25 p-4"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm font-medium text-foreground">{action.title}</p>
+                  <strong className="mt-2 block text-3xl tracking-[-0.02em]">
+                    {action.value}
+                  </strong>
+                </div>
+                <StatusBadge tone={action.tone}>{action.title}</StatusBadge>
+              </div>
+              <p className="mt-3 text-sm text-muted-foreground">
+                {action.helper}
+              </p>
+              <Button asChild variant="outline" size="sm" className="mt-4">
+                <Link to={action.path}>{action.actionLabel}</Link>
+              </Button>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+
       <section className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
         <Card>
           <CardHeader>
             <CardTitle>Leitura do sync</CardTitle>
             <CardDescription>
               Backlog, taxa de sucesso e concentracao das rejeicoes por regra de
-              negocio.
+              negocio no recorte mais recente da DLQ local.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-5">
@@ -348,6 +421,13 @@ const Dashboard = () => {
               </div>
             ) : (
               <div className="space-y-3">
+                {rejectionSampleIsPartial ? (
+                  <div className="rounded-2xl border border-border/70 bg-muted/35 p-4 text-sm text-muted-foreground">
+                    Graficos baseados nas ultimas {recentRejections.length} rejeicoes locais
+                    para manter a leitura administrativa leve. Total em fila/DLQ:
+                    {" "}{totalRejections}.
+                  </div>
+                ) : null}
                 {rejectionByRuleData.map((item) => (
                   <div key={item.reason} className="app-surface-muted p-4">
                     <div className="flex items-center justify-between gap-3 text-sm">
@@ -368,7 +448,8 @@ const Dashboard = () => {
           <CardHeader>
             <CardTitle>Rejeicoes por dominio</CardTitle>
             <CardDescription>
-              Onde o fluxo esta acumulando mais friccao localmente.
+              Onde o fluxo esta acumulando mais friccao no recorte recente da
+              DLQ local.
             </CardDescription>
           </CardHeader>
           <CardContent className="h-[340px]">
@@ -442,160 +523,183 @@ const Dashboard = () => {
         </Card>
       </section>
 
-      <section className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
-        <Card>
-          <CardHeader>
-            <CardTitle>Indicadores do piloto</CardTitle>
-            <CardDescription>
-              Resumo dos ultimos 7 dias para acompanhar uso e falhas.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {pilotMetrics.totalEvents === 0 ? (
-              <div className="rounded-2xl border border-dashed border-border/70 p-4 text-sm text-muted-foreground">
-                Ainda nao ha telemetria local suficiente para resumir uso e
-                falhas desta fazenda.
-              </div>
-            ) : (
-              <>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="app-surface-muted p-4">
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <MousePointerClick className="h-4 w-4" />
-                      Paginas abertas
-                    </div>
-                    <strong className="mt-3 block text-2xl">
-                      {pilotMetrics.pageViews}
-                    </strong>
-                    <span className="text-xs text-muted-foreground">
-                      {pilotMetrics.activeDays} dia(s) com uso
-                    </span>
-                  </div>
-
-                  <div className="app-surface-muted p-4">
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Upload className="h-4 w-4" />
-                      Importacoes
-                    </div>
-                    <strong className="mt-3 block text-2xl">
-                      {pilotMetrics.importedRecords}
-                    </strong>
-                    <span className="text-xs text-muted-foreground">
-                      {pilotMetrics.importsCompleted} carga(s) concluida(s)
-                    </span>
-                  </div>
-
-                  <div className="app-surface-muted p-4">
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <FileText className="h-4 w-4" />
-                      Relatorios compartilhados
-                    </div>
-                    <strong className="mt-3 block text-2xl">
-                      {pilotMetrics.reportsShared}
-                    </strong>
-                    <span className="text-xs text-muted-foreground">
-                      {pilotMetrics.reportExports} CSV +{" "}
-                      {pilotMetrics.reportPrints} impressos
-                    </span>
-                  </div>
-
-                  <div className="app-surface-muted p-4">
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <AlertTriangle className="h-4 w-4" />
-                      Falhas de sync
-                    </div>
-                    <strong className="mt-3 block text-2xl">
-                      {pilotMetrics.syncFailures}
-                    </strong>
-                    <span className="text-xs text-muted-foreground">
-                      {pilotMetrics.syncSuccesses} sucesso(s) no periodo
-                    </span>
-                  </div>
+      <Card>
+        <CardContent className="p-0">
+          <Accordion type="single" collapsible>
+            <AccordionItem value="pilot-metrics" className="border-b-0">
+              <AccordionTrigger className="px-6 py-5 text-left hover:no-underline">
+                <div className="space-y-1">
+                  <p className="text-base font-semibold text-foreground">
+                    Telemetria de piloto
+                  </p>
+                  <p className="text-sm font-normal text-muted-foreground">
+                    Expanda apenas quando precisar analisar adocao, rotas e falhas
+                    instrumentadas.
+                  </p>
                 </div>
+              </AccordionTrigger>
+              <AccordionContent className="px-6 pb-6">
+                <section className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Indicadores do piloto</CardTitle>
+                      <CardDescription>
+                        Resumo dos ultimos 7 dias para acompanhar uso e falhas.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {pilotMetrics.totalEvents === 0 ? (
+                        <div className="rounded-2xl border border-dashed border-border/70 p-4 text-sm text-muted-foreground">
+                          Ainda nao ha telemetria local suficiente para resumir uso e
+                          falhas desta fazenda.
+                        </div>
+                      ) : (
+                        <>
+                          <div className="grid gap-3 sm:grid-cols-2">
+                            <div className="app-surface-muted p-4">
+                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <MousePointerClick className="h-4 w-4" />
+                                Paginas abertas
+                              </div>
+                              <strong className="mt-3 block text-2xl">
+                                {pilotMetrics.pageViews}
+                              </strong>
+                              <span className="text-xs text-muted-foreground">
+                                {pilotMetrics.activeDays} dia(s) com uso
+                              </span>
+                            </div>
 
-                <div className="rounded-2xl border border-border/70 bg-muted/35 p-4 text-sm text-muted-foreground">
-                  {pilotMetrics.totalEvents} evento(s) de telemetria local
-                  agregados no periodo.
-                </div>
-              </>
-            )}
-          </CardContent>
-        </Card>
+                            <div className="app-surface-muted p-4">
+                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <Upload className="h-4 w-4" />
+                                Importacoes
+                              </div>
+                              <strong className="mt-3 block text-2xl">
+                                {pilotMetrics.importedRecords}
+                              </strong>
+                              <span className="text-xs text-muted-foreground">
+                                {pilotMetrics.importsCompleted} carga(s) concluida(s)
+                              </span>
+                            </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Rotas e alertas</CardTitle>
-            <CardDescription>
-              Como o produto esta sendo usado e onde surgem desvios.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-5">
-            <div className="space-y-3">
-              <div className="text-sm font-medium">Rotas mais usadas</div>
-              {pilotMetrics.topRoutes.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  Sem navegacao registrada ainda.
-                </p>
-              ) : (
-                pilotMetrics.topRoutes.map((item) => (
-                  <div key={item.label} className="app-surface-muted p-4">
-                    <div className="flex items-center justify-between gap-3 text-sm">
-                      <span>{routeLabel(item.label)}</span>
-                      <span className="text-muted-foreground">{item.count}</span>
-                    </div>
-                    <Progress
-                      value={
-                        (item.count /
-                          Math.max(pilotMetrics.topRoutes[0]?.count ?? 1, 1)) *
-                        100
-                      }
-                      className="mt-3"
-                    />
-                  </div>
-                ))
-              )}
-            </div>
+                            <div className="app-surface-muted p-4">
+                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <FileText className="h-4 w-4" />
+                                Relatorios compartilhados
+                              </div>
+                              <strong className="mt-3 block text-2xl">
+                                {pilotMetrics.reportsShared}
+                              </strong>
+                              <span className="text-xs text-muted-foreground">
+                                {pilotMetrics.reportExports} CSV +{" "}
+                                {pilotMetrics.reportPrints} impressos
+                              </span>
+                            </div>
 
-            <div className="space-y-3">
-              <div className="text-sm font-medium">Importacoes por entidade</div>
-              {pilotMetrics.importsByEntity.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  Nenhuma importacao concluida no periodo.
-                </p>
-              ) : (
-                pilotMetrics.importsByEntity.map((item) => (
-                  <div
-                    key={item.label}
-                    className="flex items-center justify-between rounded-2xl border border-border/70 bg-muted/35 p-4 text-sm"
-                  >
-                    <span className="capitalize">{item.label}</span>
-                    <strong>{item.count}</strong>
-                  </div>
-                ))
-              )}
-            </div>
+                            <div className="app-surface-muted p-4">
+                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <AlertTriangle className="h-4 w-4" />
+                                Falhas de sync
+                              </div>
+                              <strong className="mt-3 block text-2xl">
+                                {pilotMetrics.syncFailures}
+                              </strong>
+                              <span className="text-xs text-muted-foreground">
+                                {pilotMetrics.syncSuccesses} sucesso(s) no periodo
+                              </span>
+                            </div>
+                          </div>
 
-            <div className="space-y-3">
-              <div className="text-sm font-medium">Falhas registradas</div>
-              {pilotMetrics.failuresByType.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  Nenhuma falha instrumentada nos ultimos 7 dias.
-                </p>
-              ) : (
-                pilotMetrics.failuresByType.map((item) => (
-                  <div
-                    key={item.label}
-                    className="flex items-center justify-between rounded-2xl border border-border/70 bg-muted/35 p-4 text-sm"
-                  >
-                    <span className="font-mono">{item.label}</span>
-                    <strong>{item.count}</strong>
-                  </div>
-                ))
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      </section>
+                          <div className="rounded-2xl border border-border/70 bg-muted/35 p-4 text-sm text-muted-foreground">
+                            {pilotMetrics.totalEvents} evento(s) de telemetria local
+                            agregados no periodo.
+                          </div>
+                        </>
+                      )}
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Rotas e alertas</CardTitle>
+                      <CardDescription>
+                        Como o produto esta sendo usado e onde surgem desvios.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-5">
+                      <div className="space-y-3">
+                        <div className="text-sm font-medium">Rotas mais usadas</div>
+                        {pilotMetrics.topRoutes.length === 0 ? (
+                          <p className="text-sm text-muted-foreground">
+                            Sem navegacao registrada ainda.
+                          </p>
+                        ) : (
+                          pilotMetrics.topRoutes.map((item) => (
+                            <div key={item.label} className="app-surface-muted p-4">
+                              <div className="flex items-center justify-between gap-3 text-sm">
+                                <span>{routeLabel(item.label)}</span>
+                                <span className="text-muted-foreground">{item.count}</span>
+                              </div>
+                              <Progress
+                                value={
+                                  (item.count /
+                                    Math.max(
+                                      pilotMetrics.topRoutes[0]?.count ?? 1,
+                                      1,
+                                    )) *
+                                  100
+                                }
+                                className="mt-3"
+                              />
+                            </div>
+                          ))
+                        )}
+                      </div>
+
+                      <div className="space-y-3">
+                        <div className="text-sm font-medium">Importacoes por entidade</div>
+                        {pilotMetrics.importsByEntity.length === 0 ? (
+                          <p className="text-sm text-muted-foreground">
+                            Nenhuma importacao concluida no periodo.
+                          </p>
+                        ) : (
+                          pilotMetrics.importsByEntity.map((item) => (
+                            <div
+                              key={item.label}
+                              className="flex items-center justify-between rounded-2xl border border-border/70 bg-muted/35 p-4 text-sm"
+                            >
+                              <span className="capitalize">{item.label}</span>
+                              <strong>{item.count}</strong>
+                            </div>
+                          ))
+                        )}
+                      </div>
+
+                      <div className="space-y-3">
+                        <div className="text-sm font-medium">Falhas registradas</div>
+                        {pilotMetrics.failuresByType.length === 0 ? (
+                          <p className="text-sm text-muted-foreground">
+                            Nenhuma falha instrumentada nos ultimos 7 dias.
+                          </p>
+                        ) : (
+                          pilotMetrics.failuresByType.map((item) => (
+                            <div
+                              key={item.label}
+                              className="flex items-center justify-between rounded-2xl border border-border/70 bg-muted/35 p-4 text-sm"
+                            >
+                              <span className="font-mono">{item.label}</span>
+                              <strong>{item.count}</strong>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </section>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+        </CardContent>
+      </Card>
     </div>
   );
 };
