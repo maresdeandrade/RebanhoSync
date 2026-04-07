@@ -667,14 +667,14 @@ export default function Animais() {
             <Input
               aria-label="Buscar animais por identificacao"
               placeholder="Buscar por identificacao"
-              className="pl-9"
+              className="pl-9 bg-surface"
               value={search}
               onChange={(event) => setSearch(event.target.value)}
             />
           </div>
 
           <Select value={loteFilter} onValueChange={setLoteFilter}>
-            <SelectTrigger className="w-full sm:w-[180px]">
+            <SelectTrigger className="w-full sm:w-auto min-w-[140px] bg-transparent border-transparent hover:border-border hover:bg-muted/30 transition-colors">
               <SelectValue placeholder="Lote" />
             </SelectTrigger>
             <SelectContent>
@@ -689,7 +689,7 @@ export default function Animais() {
           </Select>
 
           <Select value={sexoFilter} onValueChange={setSexoFilter}>
-            <SelectTrigger className="w-full sm:w-[150px]">
+            <SelectTrigger className="w-full sm:w-auto min-w-[120px] bg-transparent border-transparent hover:border-border hover:bg-muted/30 transition-colors">
               <SelectValue placeholder="Sexo" />
             </SelectTrigger>
             <SelectContent>
@@ -700,7 +700,7 @@ export default function Animais() {
           </Select>
 
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-full sm:w-[150px]">
+            <SelectTrigger className="w-full sm:w-auto min-w-[120px] bg-transparent border-transparent hover:border-border hover:bg-muted/30 transition-colors">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
@@ -714,7 +714,7 @@ export default function Animais() {
 
         <ToolbarGroup className="gap-2">
           <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-            <SelectTrigger className="w-full sm:w-[180px]">
+            <SelectTrigger className="w-full sm:w-auto min-w-[140px] bg-transparent border-transparent hover:border-border hover:bg-muted/30 transition-colors">
               <SelectValue placeholder="Categoria" />
             </SelectTrigger>
             <SelectContent>
@@ -730,7 +730,7 @@ export default function Animais() {
             value={productiveStateFilter}
             onValueChange={setProductiveStateFilter}
           >
-            <SelectTrigger className="w-full sm:w-[190px]">
+            <SelectTrigger className="w-full sm:w-auto min-w-[160px] bg-transparent border-transparent hover:border-border hover:bg-muted/30 transition-colors">
               <SelectValue placeholder="Estado produtivo" />
             </SelectTrigger>
             <SelectContent>
@@ -852,15 +852,13 @@ export default function Animais() {
                         style={{ paddingLeft: `${depth * 18}px` }}
                       >
                         {depth > 0 ? (
-                          <span className="mt-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-rose-50 text-rose-600">
-                            <CornerDownRight className="h-3.5 w-3.5" />
-                          </span>
+                          <div className="mt-2 h-[1px] w-4 bg-border/80 shrink-0" />
                         ) : null}
-                        <div className="space-y-1">
+                        <div className={cn("space-y-1", depth > 0 && "border-l-2 border-border/50 pl-2")}>
                           <div className="flex flex-wrap items-center gap-2">
                             <Link
                               to={`/animais/${animal.id}`}
-                              className="font-medium text-foreground hover:text-primary hover:underline"
+                              className="font-semibold tabular-nums text-foreground hover:text-primary hover:underline"
                             >
                               {animal.identificacao}
                             </Link>
@@ -916,13 +914,13 @@ export default function Animais() {
                     <TableCell className="align-top">
                       {weightSummary ? (
                         <div className="space-y-1">
-                          <p className="text-sm font-medium">
+                          <p className="text-sm font-semibold tabular-nums">
                             {formatWeight(
                               weightSummary.ultimoPesoKg,
                               farmMeasurementConfig.weight_unit,
                             )}
                           </p>
-                          <p className="text-xs text-muted-foreground">
+                          <p className="text-xs tabular-nums text-muted-foreground">
                             {formatDate(weightSummary.ultimoPesoData)}
                           </p>
                         </div>
@@ -936,7 +934,7 @@ export default function Animais() {
                     <TableCell className="align-top">
                       {weightSummary ? (
                         <div className="space-y-1">
-                          <p className="text-sm font-medium">
+                          <p className="text-sm font-medium tabular-nums">
                             {formatWeightPerDay(
                               weightSummary.ganhoMedioDiaKg,
                               farmMeasurementConfig.weight_unit,
@@ -1001,13 +999,13 @@ export default function Animais() {
                             {taxonomy.display.estado_alias}
                           </StatusBadge>
                           {animal.status !== "ativo" ? (
-                            <StatusBadge tone={getProductiveTone(animal.status)}>
+                            <StatusBadge tone={animal.status === "vendido" ? "neutral" : getProductiveTone(animal.status)}>
                               {animal.status}
                             </StatusBadge>
                           ) : null}
                         </div>
                       ) : (
-                        <StatusBadge tone={getProductiveTone(animal.status)}>
+                        <StatusBadge tone={animal.status === "vendido" ? "neutral" : getProductiveTone(animal.status)}>
                           {animal.status}
                         </StatusBadge>
                       )}

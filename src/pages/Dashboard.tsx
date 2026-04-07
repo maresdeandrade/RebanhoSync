@@ -355,25 +355,27 @@ const Dashboard = () => {
             recolhida para nao competir com a operacao.
           </CardDescription>
         </CardHeader>
-        <CardContent className="grid gap-3 lg:grid-cols-3">
+        <CardContent className="grid gap-0 lg:grid-cols-3 lg:divide-x divide-y lg:divide-y-0 rounded-2xl border border-border overflow-hidden bg-card">
           {adminPriorityActions.map((action) => (
             <div
               key={action.title}
-              className="rounded-2xl border border-border/70 bg-muted/25 p-4"
+              className="p-5 flex flex-col justify-between hover:bg-muted/10 transition-colors"
             >
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-sm font-medium text-foreground">{action.title}</p>
-                  <strong className="mt-2 block text-3xl tracking-[-0.02em]">
-                    {action.value}
-                  </strong>
+              <div>
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-medium text-foreground">{action.title}</p>
+                    <strong className="mt-2 block text-3xl tracking-[-0.02em] tabular-nums">
+                      {action.value}
+                    </strong>
+                  </div>
+                  <StatusBadge tone={action.tone}>{action.title}</StatusBadge>
                 </div>
-                <StatusBadge tone={action.tone}>{action.title}</StatusBadge>
+                <p className="mt-3 text-sm text-muted-foreground">
+                  {action.helper}
+                </p>
               </div>
-              <p className="mt-3 text-sm text-muted-foreground">
-                {action.helper}
-              </p>
-              <Button asChild variant="outline" size="sm" className="mt-4">
+              <Button asChild variant="outline" size="sm" className="mt-4 self-start bg-transparent border-transparent hover:border-border hover:bg-muted/30">
                 <Link to={action.path}>{action.actionLabel}</Link>
               </Button>
             </div>
@@ -476,7 +478,6 @@ const Dashboard = () => {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <BarChart3 className="h-5 w-5 text-muted-foreground" />
               Evolucao de peso
             </CardTitle>
             <CardDescription>
@@ -486,16 +487,16 @@ const Dashboard = () => {
           <CardContent className="h-[320px]">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={pesagemData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="data" />
-                <YAxis />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
+                <XAxis dataKey="data" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
+                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
                 <Tooltip />
                 <Line
                   type="monotone"
                   dataKey="media"
-                  stroke="hsl(var(--info))"
-                  strokeWidth={2}
-                  dot={{ r: 3 }}
+                  stroke="hsl(var(--primary))"
+                  strokeWidth={1.5}
+                  dot={{ r: 2, fill: "hsl(var(--primary))" }}
                 />
               </LineChart>
             </ResponsiveContainer>
@@ -512,11 +513,11 @@ const Dashboard = () => {
           <CardContent className="h-[320px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={agendaData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="nome" />
-                <YAxis />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
+                  <XAxis dataKey="nome" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
+                  <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
                 <Tooltip />
-                <Bar dataKey="qtd" fill="hsl(var(--success))" radius={[8, 8, 0, 0]} />
+                  <Bar dataKey="qtd" fill="hsl(var(--success))" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>

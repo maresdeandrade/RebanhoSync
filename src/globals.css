@@ -4,63 +4,63 @@
 
 @layer base {
   :root {
-    --background: 210 33% 98%;
-    --foreground: 222 29% 17%;
+    --background: 0 0% 98%;
+    --foreground: 240 5% 15%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222 29% 17%;
+    --card-foreground: 240 5% 15%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 29% 17%;
+    --popover-foreground: 240 5% 15%;
 
-    --primary: 221 63% 43%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 200 15% 30%;
+    --primary-foreground: 0 0% 98%;
 
-    --secondary: 210 26% 95%;
-    --secondary-foreground: 222 29% 18%;
+    --secondary: 24 10% 95%;
+    --secondary-foreground: 240 5% 15%;
 
-    --muted: 210 24% 96%;
-    --muted-foreground: 218 15% 42%;
+    --muted: 24 10% 95%;
+    --muted-foreground: 240 5% 45%;
 
-    --accent: 210 26% 95%;
-    --accent-foreground: 222 29% 18%;
+    --accent: 24 10% 95%;
+    --accent-foreground: 240 5% 15%;
 
-    --destructive: 0 70% 47%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 10 70% 45%;
+    --destructive-foreground: 0 0% 98%;
 
-    --border: 214 23% 88%;
-    --input: 214 23% 88%;
-    --ring: 221 63% 43%;
+    --border: 24 10% 90%;
+    --input: 24 10% 90%;
+    --ring: 200 15% 30%;
 
     --radius: 1rem;
 
-    --success: 146 46% 36%;
+    --success: 142 60% 35%;
     --success-foreground: 0 0% 100%;
-    --success-muted: 150 42% 96%;
-    --warning: 35 84% 40%;
+    --success-muted: 142 40% 95%;
+    --warning: 35 90% 40%;
     --warning-foreground: 36 100% 11%;
-    --warning-muted: 42 95% 95%;
-    --info: 221 63% 43%;
+    --warning-muted: 35 60% 95%;
+    --info: 200 15% 30%;
     --info-foreground: 0 0% 100%;
-    --info-muted: 220 100% 97%;
+    --info-muted: 200 15% 95%;
     --surface: 0 0% 100%;
-    --surface-muted: 210 28% 97%;
+    --surface-muted: 24 10% 97%;
 
-    --sidebar-background: 210 30% 97%;
+    --sidebar-background: 24 10% 97%;
 
-    --sidebar-foreground: 222 24% 24%;
+    --sidebar-foreground: 240 5% 15%;
 
-    --sidebar-primary: 221 63% 43%;
+    --sidebar-primary: 200 15% 30%;
 
     --sidebar-primary-foreground: 0 0% 98%;
 
-    --sidebar-accent: 210 26% 94%;
+    --sidebar-accent: 24 10% 92%;
 
-    --sidebar-accent-foreground: 222 29% 18%;
+    --sidebar-accent-foreground: 240 5% 15%;
 
-    --sidebar-border: 214 23% 88%;
+    --sidebar-border: 24 10% 90%;
 
-    --sidebar-ring: 221 63% 43%;
+    --sidebar-ring: 200 15% 30%;
   }
 
   .dark {
@@ -109,9 +109,6 @@
 
   body {
     @apply bg-background text-foreground antialiased;
-    background-image:
-      radial-gradient(circle at top left, hsl(var(--info-muted)) 0, transparent 28rem),
-      linear-gradient(to bottom, hsl(var(--background)), hsl(var(--surface-muted)));
     min-height: 100vh;
   }
 
@@ -127,14 +124,14 @@
   }
 
   .app-surface {
-    @apply rounded-2xl border border-border/70 bg-card shadow-soft;
+    @apply rounded-2xl border border-border/50 bg-card shadow-soft;
   }
 
   .app-surface-muted {
-    @apply rounded-2xl border border-border/70 bg-muted/45 shadow-soft;
+    @apply rounded-2xl border border-border/50 bg-muted/30 shadow-soft;
   }
 
   .app-divider {
-    @apply border-t border-border/70;
+    @apply border-t border-border/50;
   }
 }
