@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 
 import { FarmLifecycleSettingsPanel } from "@/components/settings/FarmLifecycleSettingsPanel";
+import { SyncHealthPanel } from "@/components/settings/SyncHealthPanel";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MetricCard } from "@/components/ui/metric-card";
@@ -346,6 +347,8 @@ export default function Configuracoes() {
         isSaving={isSavingLifecycle}
         onSave={handleSaveLifecycle}
       />
+
+      <SyncHealthPanel />
 
       <Card className="shadow-none">
         <CardHeader>
