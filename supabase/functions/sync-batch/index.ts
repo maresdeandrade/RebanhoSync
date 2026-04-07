@@ -8,12 +8,29 @@ import {
 import { resolveEventFeatureFlags } from './flags.ts'
 import { validateAnimalTaxonomyFactsOperation } from './taxonomy.ts'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:3000',
+  Deno.env.get('APP_ORIGIN') || '',
+]
+
+function getCorsHeaders(origin: string | null) {
+  let allowOrigin = allowedOrigins[0]
+  if (origin) {
+    if (allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
+      allowOrigin = origin
+    }
+  }
+  return {
+    'Access-Control-Allow-Origin': allowOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  }
 }
 
 Deno.serve(async (req: Request) => {
+  const origin = req.headers.get('Origin');
+  const corsHeaders = getCorsHeaders(origin);
+
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }

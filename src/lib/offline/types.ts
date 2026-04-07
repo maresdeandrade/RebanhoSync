@@ -150,7 +150,8 @@ export type PilotMetricEventName =
   | "report_printed"
   | "sync_success"
   | "sync_rejected"
-  | "sync_error";
+  | "sync_error"
+  | "sync_backlog";
 
 // =========================================================
 // CORE ENTITIES (State Tables)
@@ -782,6 +783,7 @@ export interface PilotMetricEvent {
   route: string | null;
   entity: string | null;
   quantity: number | null;
+  reason_code?: string | null;
   payload: Record<string, unknown>;
   created_at: string;
 }

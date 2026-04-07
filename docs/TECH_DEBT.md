@@ -101,6 +101,10 @@
 
 ---
 
+## CLOSED (Outros)
+
+- TD-021: Telemetria remota estruturada e observabilidade básica (sync_batch health, sync_backlog) implementada via Edge Function (`telemetry-ingest`) no background flush.
+
 ## Resumo
 
 - OPEN: `TD-021`, `TD-022`, `TD-023`
