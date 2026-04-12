@@ -9,6 +9,13 @@ import {
   type SanitaryBaseCalendarAnchor,
   type SanitaryBaseCalendarMode,
 } from "@/lib/sanitario/calendar";
+import {
+  buildSanitaryRegimenDedupTemplate,
+  buildSanitaryRegimenPayload,
+  inferSanitaryRegimenMilestone,
+  readSanitaryRegimen,
+} from "@/lib/sanitario/regimen";
+import { normalizeSanitaryFamilyCode } from "@/lib/sanitario/protocolLayers";
 
 export type SanitaryCalendarDraftMode = "" | SanitaryBaseCalendarMode;
 export type SanitaryCalendarDraftAnchor = "" | SanitaryBaseCalendarAnchor;
@@ -19,6 +26,8 @@ export interface SanitaryProtocolDraft {
   nome: string;
   descricao: string;
   ativo: boolean;
+  familyCode: string;
+  regimenVersion: string;
   sexoAlvo: SanitaryTargetSex;
   idadeMinDias: string;
   idadeMaxDias: string;
@@ -62,6 +71,8 @@ export function createEmptyProtocolDraft(
     nome: "",
     descricao: "",
     ativo: true,
+    familyCode: "",
+    regimenVersion: "1",
     sexoAlvo: "",
     idadeMinDias: "",
     idadeMaxDias: "",
@@ -107,6 +118,13 @@ export function createEmptyProtocolItemDraft(
 
 const PROTOCOL_PAYLOAD_KEYS = [
   "sexo_alvo",
+  "family_code",
+  "regimen_version",
+  "canonical_key",
+  "origem",
+  "source_origin",
+  "scope",
+  "activation_mode",
   "idade_min_dias",
   "idade_minima_dias",
   "idade_max_dias",
@@ -135,7 +153,10 @@ const ITEM_PAYLOAD_KEYS = [
   "requires_compliance_document",
   "item_code",
   "depends_on_item_code",
+  "family_code",
+  "regimen_version",
   "calendario_base",
+  "regime_sanitario",
 ];
 
 function readString(
@@ -177,6 +198,10 @@ function readBoolean(
 
 function normalizeSexoAlvo(value: unknown): SanitaryTargetSex {
   return value === "M" || value === "F" || value === "todos" ? value : "";
+}
+
+function normalizeFamilyCodeInput(value: string) {
+  return normalizeSanitaryFamilyCode(value) ?? "";
 }
 
 function normalizeCalendarMode(value: unknown): SanitaryCalendarDraftMode {
@@ -264,6 +289,12 @@ function normalizeInterval(intervaloDias: string): number {
   return parsed > 0 ? Math.trunc(parsed) : 1;
 }
 
+function normalizePositiveInteger(value: string, fallback = 1) {
+  const parsed = Number(value.trim());
+  if (!Number.isFinite(parsed) || parsed < 1) return fallback;
+  return Math.trunc(parsed);
+}
+
 function parseCalendarMonths(value: string): number[] | undefined {
   const months = value
     .split(",")
@@ -331,6 +362,11 @@ export function readProtocolDraft(
     nome: protocol.nome,
     descricao: protocol.descricao ?? "",
     ativo: protocol.ativo,
+    familyCode:
+      normalizeFamilyCodeInput(readString(protocol.payload, "family_code")) ||
+      normalizeFamilyCodeInput(protocol.nome),
+    regimenVersion:
+      readNumberString(protocol.payload, ["regimen_version"]) || "1",
     sexoAlvo: normalizeSexoAlvo(protocol.payload?.sexo_alvo),
     idadeMinDias: readNumberString(protocol.payload, [
       "idade_min_dias",
@@ -423,6 +459,21 @@ export function buildProtocolPayload(
 
   clearKeys(payload, PROTOCOL_PAYLOAD_KEYS);
 
+  const familyCode =
+    normalizeFamilyCodeInput(draft.familyCode) ||
+    normalizeFamilyCodeInput(draft.nome);
+  const regimenVersion = normalizePositiveInteger(draft.regimenVersion, 1);
+
+  payload.origem = readString(basePayload, "origem") || "customizado_fazenda";
+  payload.source_origin =
+    readString(basePayload, "source_origin") || "fazenda_customizada";
+  payload.scope = readString(basePayload, "scope") || "fazenda";
+  payload.activation_mode =
+    readString(basePayload, "activation_mode") || "materializar_protocolo";
+
+  upsertString(payload, "family_code", familyCode);
+  upsertNumber(payload, "regimen_version", String(regimenVersion));
+  upsertString(payload, "canonical_key", familyCode);
   upsertString(payload, "sexo_alvo", draft.sexoAlvo);
   upsertNumber(payload, "idade_min_dias", draft.idadeMinDias);
   upsertNumber(payload, "idade_max_dias", draft.idadeMaxDias);
@@ -444,6 +495,7 @@ export function buildProtocolItemPayload(
   basePayload: Record<string, unknown> | null | undefined,
   draft: SanitaryProtocolItemDraft,
   extraPayload?: Record<string, unknown>,
+  context?: { protocolPayload?: Record<string, unknown> | null | undefined },
 ): Record<string, unknown> {
   const payload =
     basePayload && typeof basePayload === "object"
@@ -473,12 +525,54 @@ export function buildProtocolItemPayload(
     Object.assign(payload, calendarPayload);
   }
 
+  const familyCode =
+    normalizeFamilyCodeInput(
+      readString(context?.protocolPayload ?? null, "family_code"),
+    ) ||
+    normalizeFamilyCodeInput(readString(basePayload, "family_code"));
+  const regimenVersion = normalizePositiveInteger(
+    readNumberString(context?.protocolPayload ?? null, ["regimen_version"]) ||
+      readNumberString(basePayload, ["regimen_version"]) ||
+      "1",
+    1,
+  );
+  const draftPayload = {
+    ...payload,
+    ...(extraPayload ?? {}),
+  };
+  const regimen = inferSanitaryRegimenMilestone({
+    familyCode,
+    regimenVersion,
+    milestoneCode: draft.itemCode || null,
+    sequenceOrder:
+      draft.doseNum.trim().length > 0 ? Number(draft.doseNum) : 1,
+    dependsOnMilestone: draft.dependsOnItemCode || null,
+    sexoAlvo: draft.sexoAlvo,
+    idadeMinDias:
+      draft.idadeMinDias.trim().length > 0 ? Number(draft.idadeMinDias) : null,
+    idadeMaxDias:
+      draft.idadeMaxDias.trim().length > 0 ? Number(draft.idadeMaxDias) : null,
+    requiresComplianceDocument: draft.requiresComplianceDocument,
+    payload: draftPayload,
+  });
+
+  if (familyCode) {
+    upsertString(payload, "family_code", familyCode);
+    upsertNumber(payload, "regimen_version", String(regimenVersion));
+  }
+
+  Object.assign(payload, buildSanitaryRegimenPayload(regimen));
+
   return extraPayload ? { ...payload, ...extraPayload } : payload;
 }
 
 export function validateProtocolDraft(draft: SanitaryProtocolDraft): string | null {
   if (draft.nome.trim().length === 0) {
     return "Nome do protocolo e obrigatorio.";
+  }
+
+  if (draft.regimenVersion.trim().length > 0 && Number(draft.regimenVersion) < 1) {
+    return "Versao do regime deve ser maior que zero.";
   }
 
   const min = draft.idadeMinDias.trim();
@@ -566,9 +660,12 @@ export function buildProtocolItemUpdateRecord(
   item: Pick<ProtocoloSanitarioItem, "id" | "payload">,
   draft: SanitaryProtocolItemDraft,
   extraPayload?: Record<string, unknown>,
+  context?: { protocolPayload?: Record<string, unknown> | null | undefined },
 ) {
   const normalizedDose = draft.doseNum.trim();
   const parsedDose = Number(normalizedDose);
+  const payload = buildProtocolItemPayload(item.payload, draft, extraPayload, context);
+  const regimen = readSanitaryRegimen(payload);
 
   return {
     id: item.id,
@@ -580,8 +677,11 @@ export function buildProtocolItemUpdateRecord(
         ? null
         : Math.max(1, Math.trunc(parsedDose)),
     gera_agenda: draft.geraAgenda,
-    dedup_template: draft.dedupTemplate.trim() || null,
-    payload: buildProtocolItemPayload(item.payload, draft, extraPayload),
+    dedup_template:
+      draft.dedupTemplate.trim() ||
+      (regimen ? buildSanitaryRegimenDedupTemplate(regimen) : "") ||
+      null,
+    payload,
   };
 }
 
@@ -592,9 +692,19 @@ export function buildProtocolItemInsertRecord(input: {
   version?: number;
   draft: SanitaryProtocolItemDraft;
   extraPayload?: Record<string, unknown>;
+  protocolPayload?: Record<string, unknown> | null | undefined;
 }) {
   const normalizedDose = input.draft.doseNum.trim();
   const parsedDose = Number(normalizedDose);
+  const payload = buildProtocolItemPayload(
+    null,
+    input.draft,
+    input.extraPayload,
+    {
+      protocolPayload: input.protocolPayload,
+    },
+  );
+  const regimen = readSanitaryRegimen(payload);
 
   return {
     id: input.itemId,
@@ -609,11 +719,10 @@ export function buildProtocolItemInsertRecord(input: {
         ? null
         : Math.max(1, Math.trunc(parsedDose)),
     gera_agenda: input.draft.geraAgenda,
-    dedup_template: input.draft.dedupTemplate.trim() || null,
-    payload: buildProtocolItemPayload(
+    dedup_template:
+      input.draft.dedupTemplate.trim() ||
+      (regimen ? buildSanitaryRegimenDedupTemplate(regimen) : "") ||
       null,
-      input.draft,
-      input.extraPayload,
-    ),
+    payload,
   };
 }

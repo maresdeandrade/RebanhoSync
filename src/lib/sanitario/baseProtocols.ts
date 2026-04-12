@@ -3,6 +3,10 @@ import {
   buildSanitaryBaseCalendarPayload,
   type SanitaryBaseCalendarRule,
 } from "@/lib/sanitario/calendar";
+import {
+  buildSanitaryRegimenPayload,
+  inferSanitaryRegimenMilestone,
+} from "@/lib/sanitario/regimen";
 
 export type StandardProtocolCategory =
   | "vacinas"
@@ -424,6 +428,7 @@ export function buildStandardProtocolPayload(protocol: StandardProtocol) {
     activation_mode: protocol.activation_mode,
     status_legal: protocol.status_legal,
     family_code: protocol.family_code,
+    regimen_version: STANDARD_PROTOCOL_LIBRARY_VERSION,
     canonical_key: protocol.canonical_key,
     referencia: protocol.referencia ?? null,
     standard_id: protocol.id,
@@ -439,7 +444,22 @@ export function buildStandardProtocolPayload(protocol: StandardProtocol) {
   };
 }
 
-export function buildStandardProtocolItemPayload(item: StandardProtocolItem) {
+export function buildStandardProtocolItemPayload(
+  protocol: Pick<StandardProtocol, "family_code">,
+  item: StandardProtocolItem,
+) {
+  const regimen = inferSanitaryRegimenMilestone({
+    familyCode: protocol.family_code,
+    regimenVersion: STANDARD_PROTOCOL_LIBRARY_VERSION,
+    milestoneCode: item.item_code,
+    sequenceOrder: item.dose_num,
+    dependsOnMilestone: item.depends_on_item_code ?? null,
+    sexoAlvo: item.sexo_alvo ?? null,
+    idadeMinDias: item.idade_min_dias ?? null,
+    idadeMaxDias: item.idade_max_dias ?? null,
+    payload: buildSanitaryBaseCalendarPayload(item.calendario_base),
+  });
+
   return {
     indicacao: item.indicacao,
     sexo_alvo: item.sexo_alvo ?? null,
@@ -449,5 +469,6 @@ export function buildStandardProtocolItemPayload(item: StandardProtocolItem) {
     item_code: item.item_code,
     depends_on_item_code: item.depends_on_item_code ?? null,
     ...buildSanitaryBaseCalendarPayload(item.calendario_base),
+    ...buildSanitaryRegimenPayload(regimen),
   };
 }

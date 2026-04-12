@@ -90,13 +90,14 @@ scripts/          Automações e gates documentais
 
 ## Documentação
 
-Leia primeiro → [`docs/README.md`](./docs/README.md)
-
-Para retomar o projeto rapidamente:
+Para retomar o projeto rapidamente, siga a ordem:
 
 1. [`docs/CURRENT_STATE.md`](./docs/CURRENT_STATE.md) — snapshot executivo do estado atual
-2. [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) — Two Rails, sync flow, taxonomia
-3. [`docs/OFFLINE.md`](./docs/OFFLINE.md) — Dexie stores, fila, rollback, `metrics_events`
-4. [`docs/CONTRACTS.md`](./docs/CONTRACTS.md) — contrato `sync-batch`, status codes
-5. [`docs/ROUTES.md`](./docs/ROUTES.md) — todas as rotas implementadas
-6. [`docs/TECH_DEBT.md`](./docs/TECH_DEBT.md) — gaps residuais e historico de fechamentos
+2. [`docs/PRODUCT.md`](./docs/PRODUCT.md) — visão de produto, escopo e princípios
+3. [`docs/SYSTEM.md`](./docs/SYSTEM.md) — arquitetura, banco, offline-first e contratos
+4. [`docs/PROCESS.md`](./docs/PROCESS.md) — fluxo capability-centric e governança de release
+5. [`docs/REFERENCE.md`](./docs/REFERENCE.md) — mapas do repositório, rotas, E2E e domínios
+6. [`docs/IMPLEMENTATION_STATUS.md`](./docs/IMPLEMENTATION_STATUS.md) — matriz de capacidade atualizada
+7. [`docs/ROADMAP.md`](./docs/ROADMAP.md) — visão de curto e longo prazo
+8. [`docs/TECH_DEBT.md`](./docs/TECH_DEBT.md) — log de problemas residuais e backlog técnico
+

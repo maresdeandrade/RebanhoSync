@@ -86,6 +86,14 @@ import {
   type SanitaryBaseCalendarAnchor,
   type SanitaryBaseCalendarMode,
 } from "@/lib/sanitario/calendar";
+import {
+  buildSanitaryFamilyCoverageIndex,
+  findSanitaryFamilyConflict,
+  hasOfficialFamilyCoverage,
+  readSanitaryProtocolFamilyCode,
+  resolveSanitaryProtocolLayer,
+  type SanitaryProtocolLayer,
+} from "@/lib/sanitario/protocolLayers";
 import { showError, showSuccess } from "@/utils/toast";
 
 interface FarmProtocolManagerProps {
@@ -187,7 +195,7 @@ const TEMPLATE_CATEGORY_META: Record<
   },
 };
 
-type FarmProtocolSourceGroup = "official" | "standard" | "custom";
+type FarmProtocolSourceGroup = SanitaryProtocolLayer;
 
 function readString(
   record: Record<string, unknown> | null | undefined,
@@ -210,10 +218,7 @@ function getStandardProtocolLegalStatusVariant(
 function resolveProtocolSourceGroup(
   protocol: Pick<ProtocoloSanitario, "payload">,
 ): FarmProtocolSourceGroup {
-  const origin = readString(protocol.payload, "origem");
-  if (origin === "catalogo_oficial") return "official";
-  if (origin === "template_padrao") return "standard";
-  return "custom";
+  return resolveSanitaryProtocolLayer(protocol.payload);
 }
 
 function getProtocolSourceMeta(group: FarmProtocolSourceGroup) {
@@ -245,6 +250,18 @@ function getProtocolSourceOrder(protocol: Pick<ProtocoloSanitario, "payload">) {
   if (group === "official") return 0;
   if (group === "standard") return 1;
   return 2;
+}
+
+function getFamilyConflictMessage(group: SanitaryProtocolLayer, familyCode: string) {
+  if (group === "standard") {
+    return `A familia protocolar "${familyCode}" ja esta coberta na fazenda. O template canonico nao pode duplicar esse tronco.`;
+  }
+
+  if (group === "custom") {
+    return `A familia protocolar "${familyCode}" ja esta ativa na fazenda. Use um complemento operacional com outra familia, em vez de duplicar a mesma agenda central.`;
+  }
+
+  return `A familia protocolar "${familyCode}" ja esta ativa.`;
 }
 
 function summarizeTarget(
@@ -433,6 +450,15 @@ export function FarmProtocolManager({
     return grouped;
   }, [protocolItems]);
 
+  const protocolById = useMemo(() => {
+    return new Map(activeProtocols.map((protocol) => [protocol.id, protocol]));
+  }, [activeProtocols]);
+
+  const familyCoverage = useMemo(
+    () => buildSanitaryFamilyCoverageIndex(activeProtocols),
+    [activeProtocols],
+  );
+
   const groupedActiveProtocols = useMemo(
     () =>
       [
@@ -535,6 +561,16 @@ export function FarmProtocolManager({
       return;
     }
 
+    const familyConflict = findSanitaryFamilyConflict({
+      protocols: activeProtocols,
+      candidateFamilyCode: protocol.family_code,
+      candidateLayer: "standard",
+    });
+    if (familyConflict) {
+      showError(getFamilyConflictMessage("standard", familyConflict.familyCode));
+      return;
+    }
+
     const protocolId = crypto.randomUUID();
 
     const protocolOperation: OperationInput = {
@@ -576,7 +612,7 @@ export function FarmProtocolManager({
           gera_agenda: item.gera_agenda,
           dedup_template: item.dedup_template ?? null,
           payload: {
-            ...buildStandardProtocolItemPayload(item),
+            ...buildStandardProtocolItemPayload(protocol, item),
             ...buildVeterinaryProductMetadata({
               selectedProduct: automaticSelection,
               typedName: item.produto,
@@ -607,6 +643,21 @@ export function FarmProtocolManager({
     const validationError = validateProtocolDraft(protocolEditor.draft);
     if (validationError) {
       showError(validationError);
+      return;
+    }
+
+    const candidateLayer = protocolEditor.protocol
+      ? resolveProtocolSourceGroup(protocolEditor.protocol)
+      : ("custom" as const);
+    const familyConflict = findSanitaryFamilyConflict({
+      protocols: activeProtocols,
+      candidateFamilyCode:
+        protocolEditor.draft.familyCode || protocolEditor.draft.nome,
+      candidateLayer,
+      ignoreProtocolId: protocolEditor.protocol?.id ?? null,
+    });
+    if (familyConflict) {
+      showError(getFamilyConflictMessage(candidateLayer, familyConflict.familyCode));
       return;
     }
 
@@ -679,6 +730,7 @@ export function FarmProtocolManager({
       itemEditor.selectedProduct,
       catalogProducts,
     );
+    const protocol = protocolById.get(itemEditor.protocolId) ?? null;
 
     const operation: OperationInput = itemEditor.item
       ? {
@@ -688,6 +740,9 @@ export function FarmProtocolManager({
             itemEditor.item,
             itemEditor.draft,
             resolvedProduct.metadata,
+            {
+              protocolPayload: protocol?.payload ?? null,
+            },
           ),
         }
       : {
@@ -699,6 +754,7 @@ export function FarmProtocolManager({
             protocolItemId: crypto.randomUUID(),
             draft: itemEditor.draft,
             extraPayload: resolvedProduct.metadata,
+            protocolPayload: protocol?.payload ?? null,
           }),
         };
 
@@ -750,7 +806,7 @@ export function FarmProtocolManager({
 
   const managementHint = canManage
     ? hasAdvancedFields
-      ? "Modo completo: inclui dependencias, deduplicacao e exigencias regulatorias."
+      ? "Modo completo: inclui familia protocolar, dependencias, deduplicacao e exigencias regulatorias."
       : "Modo essencial: edite o necessario para a rotina sem expor campos tecnicos."
     : "Apenas manager e owner podem customizar protocolos da fazenda.";
 
@@ -758,7 +814,7 @@ export function FarmProtocolManager({
     <>
       <FormSection
         title="Protocolos operacionais da fazenda"
-        description="Customiza a execucao local em cima da base regulatoria: regras por sexo, faixa etaria, obrigatoriedade, produto e agenda."
+        description="Customizado = como a fazenda escolhe operar em cima da base regulatoria, sem duplicar o mesmo tronco oficial por familia protocolar."
         actions={
           <>
             <Badge variant="outline">{activeProtocols.length} protocolos</Badge>
@@ -784,19 +840,19 @@ export function FarmProtocolManager({
                 Templates canonicos da fazenda
               </CardTitle>
               <CardDescription>
-                Modelos operacionais reutilizaveis para importar direto para a
-                camada ativa da fazenda. Brucelose, raiva e exigencias de
-                carencia/rastreabilidade permanecem no catalogo oficial e no
-                overlay acima.
+                Template canonico = modelos padrao recomendados pelo sistema.
+                Eles entram direto na camada ativa da fazenda, mas nao podem
+                duplicar familias ja cobertas pelo pack oficial.
               </CardDescription>
             </div>
           </CardHeader>
 
           <CardContent className="space-y-4">
             <div className="rounded-2xl border border-border/70 bg-background/80 px-4 py-3 text-sm text-muted-foreground">
-              Esta biblioteca nao cria uma camada paralela. Cada importacao
-              vira um `protocolo_sanitario` normal da fazenda, com
-              `calendario_base`, produto e rastreabilidade iguais aos demais.
+              Esta biblioteca nao cria uma quarta camada. Cada importacao vira
+              um `protocolo_sanitario` normal da fazenda, mas a familia
+              protocolar continua unica para evitar agendas paralelas da mesma
+              obrigacao central.
             </div>
 
             <div className="grid gap-4 xl:grid-cols-3">
@@ -826,6 +882,15 @@ export function FarmProtocolManager({
                         const alreadyImported = importedStandardTemplateIds.has(
                           template.id,
                         );
+                        const templateFamilyCovered = familyCoverage.has(
+                          template.family_code,
+                        );
+                        const coveredByOfficialPack = hasOfficialFamilyCoverage(
+                          familyCoverage,
+                          template.family_code,
+                        );
+                        const importBlocked =
+                          alreadyImported || templateFamilyCovered;
 
                         return (
                           <Card key={template.id} className="border-border/70 shadow-none">
@@ -841,14 +906,18 @@ export function FarmProtocolManager({
                                 </div>
 
                                 <Button
-                                  variant={alreadyImported ? "outline" : "default"}
+                                  variant={importBlocked ? "outline" : "default"}
                                   size="sm"
                                   onClick={() =>
                                     handleImportStandardTemplate(template)
                                   }
-                                  disabled={!canManage || alreadyImported || isSaving}
+                                  disabled={!canManage || importBlocked || isSaving}
                                 >
-                                  {alreadyImported ? "Ja importado" : "Importar"}
+                                  {alreadyImported
+                                    ? "Ja importado"
+                                    : templateFamilyCovered
+                                      ? "Familia ativa"
+                                      : "Importar"}
                                 </Button>
                               </div>
 
@@ -868,6 +937,19 @@ export function FarmProtocolManager({
                                 <Badge variant="outline">
                                   {template.itens.length} etapa(s)
                                 </Badge>
+                                <Badge variant="outline">
+                                  familia: {template.family_code}
+                                </Badge>
+                                {coveredByOfficialPack ? (
+                                  <Badge variant="destructive">
+                                    Coberta pelo pack oficial
+                                  </Badge>
+                                ) : null}
+                                {templateFamilyCovered && !coveredByOfficialPack ? (
+                                  <Badge variant="secondary">
+                                    Familia ja ativa na fazenda
+                                  </Badge>
+                                ) : null}
                               </div>
                             </CardHeader>
                           </Card>
@@ -919,6 +1001,12 @@ export function FarmProtocolManager({
                   const sourceGroup = resolveProtocolSourceGroup(protocol);
                   const sourceMeta = getProtocolSourceMeta(sourceGroup);
                   const legalStatus = readString(protocol.payload, "status_legal");
+                  const familyCode =
+                    readSanitaryProtocolFamilyCode(protocol.payload) ??
+                    draft.familyCode;
+                  const duplicatesOfficialFamily =
+                    sourceGroup !== "official" &&
+                    hasOfficialFamilyCoverage(familyCoverage, familyCode);
 
                   return (
                     <Card key={protocol.id} className="border-border/70">
@@ -956,9 +1044,17 @@ export function FarmProtocolManager({
 
                         <div className="flex flex-wrap gap-2">
                           <Badge variant="outline">{sourceMeta.label}</Badge>
+                          {familyCode ? (
+                            <Badge variant="outline">familia: {familyCode}</Badge>
+                          ) : null}
                           {legalStatus ? (
                             <Badge variant="outline">
                               {legalStatus.replaceAll("_", " ")}
+                            </Badge>
+                          ) : null}
+                          {duplicatesOfficialFamily ? (
+                            <Badge variant="destructive">
+                              Tronco oficial ja coberto
                             </Badge>
                           ) : null}
                           <ProtocolBadges draft={draft} />
@@ -1214,8 +1310,9 @@ function ProtocolEditorDialog({
             {isEditing ? "Editar protocolo" : "Novo protocolo customizado"}
           </DialogTitle>
           <DialogDescription>
-            Ajuste o cabecalho do protocolo. As regras de produto e agenda ficam
-            nas etapas.
+            Customizado = como sua fazenda escolhe operar. Use outra familia
+            protocolar para complementos locais e nao duplique o mesmo tronco
+            oficial em paralelo.
           </DialogDescription>
         </DialogHeader>
 
@@ -1244,6 +1341,40 @@ function ProtocolEditorDialog({
               rows={3}
             />
           </div>
+
+          {hasAdvancedFields ? (
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="protocol-family-code">Familia protocolar</Label>
+                <Input
+                  id="protocol-family-code"
+                  value={draft.familyCode}
+                  onChange={(event) =>
+                    onDraftChange({
+                      ...draft,
+                      familyCode: event.target.value,
+                    })
+                  }
+                  placeholder="Ex: vermifugacao_entrada"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="protocol-regimen-version">Versao do regime</Label>
+                <Input
+                  id="protocol-regimen-version"
+                  inputMode="numeric"
+                  value={draft.regimenVersion}
+                  onChange={(event) =>
+                    onDraftChange({
+                      ...draft,
+                      regimenVersion: sanitizeNumberInput(event.target.value),
+                    })
+                  }
+                  placeholder="1"
+                />
+              </div>
+            </>
+          ) : null}
 
           <div className="space-y-2">
             <Label>Sexo alvo</Label>

@@ -73,11 +73,11 @@ const ProtocolosSanitarios = () => {
           </h1>
         </div>
         <p className="max-w-3xl text-muted-foreground">
-          Estrutura sanitaria animal-centric com tres camadas claras: base
-          regulatoria oficial, overlay operacional de conformidade e protocolos
-          operacionais ativos da fazenda. Os templates canonicos reutilizaveis
-          agora vivem dentro da camada operacional da fazenda, sem biblioteca
-          paralela.
+          Estrutura sanitaria animal-centric com tres camadas claras. Pack
+          oficial = o que sua fazenda precisa cumprir. Template canonico =
+          modelos padrao recomendados pelo sistema. Customizado = como sua
+          fazenda escolhe operar sem recriar, em paralelo, o mesmo tronco
+          obrigatorio ja coberto pelo pack oficial.
         </p>
         {!canManageProtocols ? (
           <p className="text-sm text-muted-foreground">

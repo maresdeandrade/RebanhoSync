@@ -75,7 +75,7 @@ Este documento registra o estado efetivo do RebanhoSync em abril de 2026, pós-f
 | `financeiro.historico` | Completo | `src/pages/Financeiro.tsx` |
 | `agenda.gerar` | Completo | `src/pages/Agenda.tsx`, `supabase/migrations/0028_sanitario_agenda_engine.sql` |
 | `agenda.concluir` | Completo | `src/pages/Agenda.tsx`, `src/lib/sanitario/service.ts` |
-| `agenda.dedup` | Completo | `docs/CONTRACTS.md`, `supabase/functions/sync-batch/` |
+| `agenda.dedup` | Completo | `docs/SYSTEM.md`, `supabase/functions/sync-batch/` |
 | `agenda.recalculo` | Completo — recompute limpa e reconstrui pendencias automaticas do escopo antes de reaplicar o motor | `supabase/migrations/20260411103000_sanitario_calendario_base_declarative_engine.sql` |
 
 **Capability Score:** 19/19 = **100%** ✅

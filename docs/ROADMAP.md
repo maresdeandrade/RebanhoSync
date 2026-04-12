@@ -211,5 +211,5 @@ O roadmap atual cobre a consolidacao de observabilidade, cobertura E2E dos fluxo
 ## Veja Tambem
 
 - [TECH_DEBT.md](./TECH_DEBT.md)
-- [E2E_MVP.md](./E2E_MVP.md)
+- [REFERENCE.md](./REFERENCE.md)
 - [IMPLEMENTATION_STATUS.md](./IMPLEMENTATION_STATUS.md)

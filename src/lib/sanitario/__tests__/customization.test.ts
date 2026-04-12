@@ -76,6 +76,8 @@ describe("sanitary customization drafts", () => {
   it("reads protocol and item drafts from payload", () => {
     expect(readProtocolDraft(baseProtocol)).toMatchObject({
       nome: "Calendario oficial",
+      familyCode: "calendario_oficial",
+      regimenVersion: "1",
       sexoAlvo: "F",
       idadeMinDias: "90",
       idadeMaxDias: "240",
@@ -112,6 +114,9 @@ describe("sanitary customization drafts", () => {
       ativo: true,
     });
     expect(protocolRecord.payload).toMatchObject({
+      family_code: "calendario_oficial",
+      regimen_version: 1,
+      canonical_key: "calendario_oficial",
       origem: "template_padrao",
       reference: "MAPA",
       obrigatorio: true,
@@ -136,6 +141,9 @@ describe("sanitary customization drafts", () => {
       {
         produto_veterinario_id: "prod-2",
       },
+      {
+        protocolPayload: protocolRecord.payload,
+      },
     );
 
     expect(itemRecord).toMatchObject({
@@ -148,9 +156,15 @@ describe("sanitary customization drafts", () => {
     expect(itemRecord.payload).toMatchObject({
       indicacao: "Aplicar em bezerras",
       produto_veterinario_id: "prod-2",
+      family_code: "calendario_oficial",
+      regimen_version: 1,
       sexo_alvo: "F",
       item_code: "dose-1",
       depends_on_item_code: "dose-1",
+      regime_sanitario: {
+        family_code: "calendario_oficial",
+        milestone_code: "dose_1",
+      },
     });
   });
 
@@ -180,10 +194,17 @@ describe("sanitary customization drafts", () => {
       {
         produto_veterinario_id: "prod-9",
       },
+      {
+        protocolPayload: {
+          family_code: "brucelose",
+          regimen_version: 1,
+        },
+      },
     );
 
     expect(itemRecord.payload).toMatchObject({
       produto_veterinario_id: "prod-9",
+      family_code: "brucelose",
       calendario_base: {
         version: 1,
         mode: "age_window",
@@ -193,6 +214,10 @@ describe("sanitary customization drafts", () => {
         age_end_days: 240,
       },
       observacoes: "Aplicacao obrigatoria com controle oficial.",
+      regime_sanitario: {
+        family_code: "brucelose",
+        milestone_code: "dose_1",
+      },
     });
   });
 
@@ -200,6 +225,8 @@ describe("sanitary customization drafts", () => {
     expect(createEmptyProtocolDraft()).toMatchObject({
       nome: "",
       ativo: true,
+      familyCode: "",
+      regimenVersion: "1",
       obrigatorio: false,
     });
 
@@ -224,6 +251,11 @@ describe("sanitary customization drafts", () => {
       nome: "Calendario regional",
       ativo: true,
       payload: {
+        origem: "customizado_fazenda",
+        source_origin: "fazenda_customizada",
+        family_code: "calendario_regional",
+        regimen_version: 1,
+        canonical_key: "calendario_regional",
         sexo_alvo: "todos",
         obrigatorio: false,
         obrigatorio_por_risco: true,
@@ -247,6 +279,10 @@ describe("sanitary customization drafts", () => {
         extraPayload: {
           produto_veterinario_id: "prod-new",
         },
+        protocolPayload: {
+          family_code: "calendario_regional",
+          regimen_version: 1,
+        },
       }),
     ).toMatchObject({
       id: "item-new",
@@ -256,14 +292,21 @@ describe("sanitary customization drafts", () => {
       produto: "Vacina Regional",
       intervalo_dias: 1,
       dose_num: null,
+      dedup_template: "sanitario:calendario_regional:{animal_id}:milestone:dose_1",
       payload: {
         produto_veterinario_id: "prod-new",
+        family_code: "calendario_regional",
+        regimen_version: 1,
         calendario_base: {
           mode: "campaign",
           anchor: "calendar_month",
           label: "Campanha regional",
           months: [4, 10],
           interval_days: 1,
+        },
+        regime_sanitario: {
+          family_code: "calendario_regional",
+          milestone_code: "dose_1",
         },
       },
     });

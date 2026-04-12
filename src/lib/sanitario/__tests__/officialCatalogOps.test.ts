@@ -211,10 +211,27 @@ describe("official sanitary catalog ops", () => {
     const protocolInsert = ops.find(
       (op) => op.table === "protocolos_sanitarios" && op.action === "INSERT",
     );
+    const itemInsert = ops.find(
+      (op) => op.table === "protocolos_sanitarios_itens" && op.action === "INSERT",
+    );
 
     expect(protocolInsert?.record.payload).toMatchObject({
       status_legal: "obrigatorio",
       obrigatorio: true,
+      family_code: "brucelose",
+      regimen_version: 1,
+    });
+    expect(itemInsert?.record).toMatchObject({
+      dedup_template: "sanitario:brucelose:{animal_id}:milestone:brucelose_b19",
+      payload: {
+        family_code: "brucelose",
+        regimen_version: 1,
+        regime_sanitario: {
+          family_code: "brucelose",
+          milestone_code: "brucelose_b19",
+          compliance_state: "documentation_required",
+        },
+      },
     });
   });
 });

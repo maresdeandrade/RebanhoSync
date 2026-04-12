@@ -26,11 +26,8 @@ Decide contratos, arquitetura e regras de negocio.
 
 Exemplos:
 
-- `docs/ARCHITECTURE.md`
-- `docs/OFFLINE.md`
-- `docs/CONTRACTS.md`
-- `docs/DB.md`
-- `docs/RLS.md`
+- `docs/PRODUCT.md`
+- `docs/SYSTEM.md`
 - `docs/PROCESS.md`
 
 ### 1.2 Derivado
@@ -52,9 +49,7 @@ Exemplos:
 
 - `README.md`
 - `docs/CURRENT_STATE.md`
-- `docs/STACK.md`
-- `docs/ROUTES.md`
-- `docs/REPO_MAP.md`
+- `docs/REFERENCE.md`
 
 ### 1.4 Historico
 
@@ -210,8 +205,10 @@ Em caso de duvida, a ordem de consulta deve ser:
 
 1. `README.md`
 2. `docs/CURRENT_STATE.md`
-3. documentos normativos (`ARCHITECTURE`, `OFFLINE`, `CONTRACTS`, `DB`, `RLS`)
-4. documentos derivados (`IMPLEMENTATION_STATUS`, `TECH_DEBT`, `ROADMAP`, `RECONCILIACAO_REPORT`)
+3. `docs/PRODUCT.md`
+4. `docs/SYSTEM.md`
+5. `docs/REFERENCE.md`
+6. documentos derivados (`IMPLEMENTATION_STATUS`, `TECH_DEBT`, `ROADMAP`)
 
 Esse encadeamento reduz confusao entre intencao, implementacao e historico.
 

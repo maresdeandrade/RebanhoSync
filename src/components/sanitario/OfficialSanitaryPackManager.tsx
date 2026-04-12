@@ -371,11 +371,12 @@ export function OfficialSanitaryPackManager({
               ) : null}
             </div>
             <CardDescription className="max-w-3xl text-sm leading-6">
-              Ativa um nucleo federal versionado, aplica overlay estadual por UF
-              e ajusta a selecao conforme perfil produtivo e risco da fazenda.
-              O calendario nao e fixo nacional: o pack materializa so o que faz
-              sentido no contexto atual e delega os fluxos procedurais para o
-              overlay operacional abaixo.
+              Pack oficial = o que sua fazenda precisa cumprir. Ele ativa um
+              nucleo federal versionado, aplica overlay estadual por UF e
+              ajusta a selecao conforme perfil produtivo e risco da fazenda. O
+              calendario nao e fixo nacional: o pack materializa so o tronco
+              regulatorio central e delega os fluxos procedurais para o overlay
+              operacional abaixo.
             </CardDescription>
           </div>
 

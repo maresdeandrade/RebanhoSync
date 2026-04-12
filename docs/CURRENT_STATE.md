@@ -100,9 +100,9 @@ Todos os TDs da lista original foram fechados via migrations de marco/2026. Nao 
 
 ## Leitura Recomendada para Retomada
 
-1. `README.md`
-2. `ARCHITECTURE.md`
-3. `OFFLINE.md`
-4. `STACK.md`
-5. `ROUTES.md`
+1. `PRODUCT.md`
+2. `SYSTEM.md`
+3. `PROCESS.md`
+4. `REFERENCE.md`
+5. `IMPLEMENTATION_STATUS.md`
 6. `TECH_DEBT.md`

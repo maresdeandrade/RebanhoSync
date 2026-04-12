@@ -76,6 +76,7 @@ import {
   type VeterinaryProductSelection,
 } from "@/lib/sanitario/products";
 import { describeSanitaryCalendarSchedule } from "@/lib/sanitario/calendar";
+import { readSanitaryRegimen } from "@/lib/sanitario/regimen";
 import {
   evaluateSanitaryProtocolEligibility,
   formatSanitaryProtocolRestrictions,
@@ -1730,6 +1731,10 @@ const Registrar = () => {
         tipoManejo === "sanitario"
           ? sanitarioData.produto.trim() || protocoloItem?.produto || ""
           : "";
+      const protocolRegimen =
+        tipoManejo === "sanitario" && protocoloItem
+          ? readSanitaryRegimen(protocoloItem.payload)
+          : null;
       const protocolProductSelection =
         tipoManejo === "sanitario" && protocoloItem
           ? resolveProtocolProductSelection(
@@ -1755,6 +1760,14 @@ const Registrar = () => {
                 ? {
                     protocolo_item_id: protocoloItem.id,
                     protocolo_id: protocoloItem.protocolo_id,
+                  }
+                : {}),
+              ...(protocolRegimen
+                ? {
+                    family_code: protocolRegimen.family_code,
+                    regimen_version: protocolRegimen.regimen_version,
+                    milestone_code: protocolRegimen.milestone_code,
+                    regime_sanitario: protocolRegimen,
                   }
                 : {}),
             }

@@ -20,6 +20,14 @@ import type {
 } from "@/lib/offline/types";
 import { supabase } from "@/lib/supabase";
 import { buildSanitaryBaseCalendarPayload } from "@/lib/sanitario/calendar";
+import {
+  buildSanitaryRegimenDedupTemplate,
+  buildSanitaryRegimenPayload,
+  inferSanitaryRegimenMilestone,
+  readSanitaryRegimen,
+  type SanitaryComplianceState,
+  type SanitaryHistoryConfidence,
+} from "@/lib/sanitario/regimen";
 
 const OFFICIAL_PROTOCOL_SOURCE = "catalogo_oficial";
 const OFFICIAL_PROTOCOL_SCOPE = "oficial";
@@ -231,6 +239,56 @@ function buildCalendarPayload(item: CatalogoProtocoloOficialItem) {
   });
 }
 
+function buildOfficialRegimenMilestone(
+  template: CatalogoProtocoloOficial,
+  item: CatalogoProtocoloOficialItem,
+) {
+  const familyCode = resolveOfficialFamilyCode(template);
+  const payloadWithCalendar = {
+    ...buildCalendarPayload(item),
+  } as Record<string, unknown>;
+
+  let dependsOnMilestone: string | null = null;
+  let historyConfidence: SanitaryHistoryConfidence | null = null;
+  let complianceState: SanitaryComplianceState | null = null;
+  let scheduleKind: "calendar_base" | "after_previous_completion" | "rolling_from_last_completion" | null =
+    null;
+
+  if (familyCode === "raiva_herbivoros") {
+    if (item.codigo === "raiva-reforco-30d") {
+      dependsOnMilestone = "raiva_d1";
+      scheduleKind = "after_previous_completion";
+    } else if (item.codigo === "raiva-anual") {
+      dependsOnMilestone = "raiva_reforco_30d";
+      scheduleKind = "rolling_from_last_completion";
+    } else if (item.codigo === "raiva-d1") {
+      scheduleKind = "calendar_base";
+    }
+  }
+
+  if (familyCode === "brucelose") {
+    historyConfidence = "known";
+    complianceState = "documentation_required";
+  }
+
+  return inferSanitaryRegimenMilestone({
+    familyCode,
+    regimenVersion: template.versao,
+    milestoneCode: item.codigo,
+    sequenceOrder: normalizeDoseNumber(item) ?? 1,
+    dependsOnMilestone,
+    sexoAlvo: readString(item.gatilho_json, "sexo_alvo") as "M" | "F" | "todos" | null,
+    idadeMinDias: readNumber(item.gatilho_json, "age_start_days"),
+    idadeMaxDias: readNumber(item.gatilho_json, "age_end_days"),
+    requiresComplianceDocument:
+      familyCode === "brucelose" || readBoolean(item.payload, "requires_documentation"),
+    historyConfidence,
+    complianceState,
+    scheduleKind,
+    payload: payloadWithCalendar,
+  });
+}
+
 function resolveOfficialFamilyCode(template: CatalogoProtocoloOficial) {
   if (template.slug.includes("brucelose")) return "brucelose";
   if (template.slug.includes("raiva")) return "raiva_herbivoros";
@@ -269,6 +327,7 @@ function buildOfficialProtocolPayload(
     scope: OFFICIAL_PROTOCOL_SCOPE,
     activation_mode: OFFICIAL_PROTOCOL_ACTIVATION_MODE,
     family_code: resolveOfficialFamilyCode(template),
+    regimen_version: template.versao,
     canonical_key: template.slug,
     official_pack_active: true,
     official_template_id: template.id,
@@ -290,12 +349,15 @@ function buildOfficialProtocolItemPayload(
   template: CatalogoProtocoloOficial,
   item: CatalogoProtocoloOficialItem,
 ): Record<string, unknown> {
+  const regimen = buildOfficialRegimenMilestone(template, item);
+
   return {
     origem: OFFICIAL_PROTOCOL_SOURCE,
     source_origin: OFFICIAL_PROTOCOL_SOURCE,
     scope: OFFICIAL_PROTOCOL_SCOPE,
     activation_mode: OFFICIAL_PROTOCOL_ACTIVATION_MODE,
     family_code: resolveOfficialFamilyCode(template),
+    regimen_version: template.versao,
     canonical_key: `${template.slug}:${item.codigo}`,
     official_template_id: template.id,
     official_item_id: item.id,
@@ -310,6 +372,7 @@ function buildOfficialProtocolItemPayload(
     requires_gta: item.requires_gta,
     carencia_regra_json: item.carencia_regra_json,
     ...buildCalendarPayload(item),
+    ...buildSanitaryRegimenPayload(regimen),
     ...item.payload,
   };
 }
@@ -597,6 +660,7 @@ export async function buildOfficialSanitaryPackOps(input: {
     for (const item of selection.materializableItems) {
       const existingItem = existingItemByOfficialId.get(item.id) ?? null;
       const itemPayload = buildOfficialProtocolItemPayload(selection.template, item);
+      const itemRegimen = readSanitaryRegimen(itemPayload);
       const trigger = item.gatilho_json;
       const sanitaryType = resolveMaterializableSanitaryType(item);
       if (!sanitaryType) continue;
@@ -616,6 +680,7 @@ export async function buildOfficialSanitaryPackOps(input: {
           gera_agenda: item.gera_agenda,
           dedup_template:
             readString(item.payload, "dedup_template") ??
+            (itemRegimen ? buildSanitaryRegimenDedupTemplate(itemRegimen) : null) ??
             `${selection.template.slug}:{animal_id}:${item.codigo}`,
           payload: {
             ...itemPayload,

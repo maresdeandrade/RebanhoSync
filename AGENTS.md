@@ -7,14 +7,13 @@ Este arquivo contém as diretrizes **oficiais** de arquitetura, dados e seguran�
 
 > **Fontes de Verdade (ler nesta ordem ao retomar):**
 > - `docs/CURRENT_STATE.md` (snapshot executivo)
-> - `docs/ARCHITECTURE.md` (Two Rails, Sync Flow, Taxonomia Canônica)
-> - `docs/OFFLINE.md` (Dexie Stores, Queue, Rollback, metrics_events)
-> - `docs/CONTRACTS.md` (Endpoint Sync, Status Codes, Taxonomia no Sync)
-> - `docs/DB.md` (Schema, Enums, FKs Compostas, Views)
-> - `docs/RLS.md` (RBAC, Policies, RPCs)
-> - `docs/E2E_MVP.md` (Fluxos Críticos, incluindo Fluxo 9 pós-parto)
-> - `docs/IMPLEMENTATION_STATUS.md` (capability matrix completa)
-> - `docs/TECH_DEBT.md` (gaps residuais: TD-021, TD-022, TD-023)
+> - `docs/PRODUCT.md` (visão de produto, escopo e princípios)
+> - `docs/SYSTEM.md` (Two Rails, Sync Flow, Banco, Offline-first, Contratos, RLS e Taxonomia Mínima)
+> - `docs/PROCESS.md` (fluxo capability-centric e governança de projeto)
+> - `docs/REFERENCE.md` (stack de repositório, mapas de rotas, topologia E2E)
+> - `docs/IMPLEMENTATION_STATUS.md` (matriz de capacidades atual)
+> - `docs/ROADMAP.md` (evolução e curto prazo)
+> - `docs/TECH_DEBT.md` (gaps residuais mapeados)
 
 ---
 
@@ -198,6 +197,6 @@ Antes de submeter alterações:
 - [ ] **Dexie Stores:** mudanças de schema refletidas nos stores locais + nova versão Dexie
 - [ ] **tableMap.ts:** novas tabelas sync adicionadas ao mapeamento remoto ↔ local
 - [ ] **Migrations:** SQL idempotente e seguro (não quebra dados existentes)
-- [ ] **E2E:** fluxos críticos validados conforme `docs/E2E_MVP.md`
+- [ ] **E2E:** fluxos críticos validados conforme base em `docs/REFERENCE.md`
 - [ ] **Taxonomia:** se tocar `animais.payload`, respeitar contrato `taxonomy_facts` v1
-- [ ] **Docs:** atualizar `IMPLEMENTATION_STATUS.md`, `TECH_DEBT.md` e `ROUTES.md` se aplicável
+- [ ] **Docs:** atualizar `IMPLEMENTATION_STATUS.md` e `TECH_DEBT.md` se aplicável

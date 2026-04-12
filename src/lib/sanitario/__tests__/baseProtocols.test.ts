@@ -8,6 +8,7 @@ import {
   normalizeStandardProtocolInterval,
 } from "@/lib/sanitario/baseProtocols";
 import { readSanitaryBaseCalendar } from "@/lib/sanitario/calendar";
+import { readSanitaryRegimen } from "@/lib/sanitario/regimen";
 
 describe("standard sanitary protocol library", () => {
   it("keeps protocol ids unique and item dependencies internally consistent", () => {
@@ -72,7 +73,7 @@ describe("standard sanitary protocol library", () => {
     const item = protocol!.itens.find((entry) => entry.item_code === "seca-julho");
     expect(item).toBeDefined();
 
-    const payload = buildStandardProtocolItemPayload(item!);
+    const payload = buildStandardProtocolItemPayload(protocol!, item!);
 
     expect(payload).toMatchObject({
       item_code: "seca-julho",
@@ -85,6 +86,12 @@ describe("standard sanitary protocol library", () => {
       label: "Campanha de julho",
       intervalDays: 60,
       months: [7],
+    });
+    expect(readSanitaryRegimen(payload)).toMatchObject({
+      family_code: "controle_estrategico_parasitas",
+      milestone_code: "seca_julho",
+      depends_on_milestone: "seca_maio",
+      sequence_order: 2,
     });
   });
 
