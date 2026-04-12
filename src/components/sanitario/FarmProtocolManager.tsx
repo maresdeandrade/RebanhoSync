@@ -1,8 +1,10 @@
 import { useMemo, useState } from "react";
 import {
+  AlertTriangle,
   Bug,
   CheckCircle2,
   ClipboardList,
+  Info,
   Link2,
   PencilLine,
   Pill,
@@ -12,6 +14,7 @@ import {
 } from "lucide-react";
 
 import { FormSection } from "@/components/ui/form-section";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -87,11 +90,17 @@ import {
   type SanitaryBaseCalendarMode,
 } from "@/lib/sanitario/calendar";
 import {
+  buildSanitaryRegimenDedupTemplate,
+  inferSanitaryRegimenMilestone,
+} from "@/lib/sanitario/regimen";
+import {
   buildSanitaryFamilyCoverageIndex,
   findSanitaryFamilyConflict,
   hasOfficialFamilyCoverage,
+  normalizeSanitaryFamilyCode,
   readSanitaryProtocolFamilyCode,
   resolveSanitaryProtocolLayer,
+  type SanitaryFamilyConflict,
   type SanitaryProtocolLayer,
 } from "@/lib/sanitario/protocolLayers";
 import { showError, showSuccess } from "@/utils/toast";
@@ -252,7 +261,21 @@ function getProtocolSourceOrder(protocol: Pick<ProtocoloSanitario, "payload">) {
   return 2;
 }
 
-function getFamilyConflictMessage(group: SanitaryProtocolLayer, familyCode: string) {
+function getFamilyConflictMessage(
+  group: SanitaryProtocolLayer,
+  familyCode: string,
+  conflict?: Pick<SanitaryFamilyConflict, "reason"> | null,
+) {
+  if (conflict?.reason === "official_family_already_active") {
+    if (group === "standard") {
+      return `A familia protocolar "${familyCode}" ja esta coberta pelo Pack oficial. O template canonico nao pode duplicar esse tronco regulatorio.`;
+    }
+
+    if (group === "custom") {
+      return `A familia protocolar "${familyCode}" ja esta coberta pelo Pack oficial. Crie apenas o complemento operacional com outra familia, sem abrir agenda paralela para a mesma obrigacao oficial.`;
+    }
+  }
+
   if (group === "standard") {
     return `A familia protocolar "${familyCode}" ja esta coberta na fazenda. O template canonico nao pode duplicar esse tronco.`;
   }
@@ -262,6 +285,39 @@ function getFamilyConflictMessage(group: SanitaryProtocolLayer, familyCode: stri
   }
 
   return `A familia protocolar "${familyCode}" ja esta ativa.`;
+}
+
+function buildDefaultMilestoneCode(sequenceOrder: number | string | null | undefined) {
+  const numeric =
+    typeof sequenceOrder === "number"
+      ? sequenceOrder
+      : typeof sequenceOrder === "string" && sequenceOrder.trim().length > 0
+        ? Number(sequenceOrder)
+        : NaN;
+
+  if (!Number.isFinite(numeric) || numeric < 1) {
+    return "dose_1";
+  }
+
+  return `dose_${Math.trunc(numeric)}`;
+}
+
+function resolveDraftMilestoneCode(
+  draft: Pick<SanitaryProtocolItemDraft, "itemCode" | "doseNum">,
+) {
+  return (
+    normalizeSanitaryFamilyCode(draft.itemCode) ??
+    buildDefaultMilestoneCode(draft.doseNum)
+  );
+}
+
+function resolveDraftProtocolFamilyCode(
+  draft: Pick<SanitaryProtocolDraft, "familyCode" | "nome">,
+) {
+  return (
+    normalizeSanitaryFamilyCode(draft.familyCode) ??
+    normalizeSanitaryFamilyCode(draft.nome)
+  );
 }
 
 function summarizeTarget(
@@ -459,6 +515,37 @@ export function FarmProtocolManager({
     [activeProtocols],
   );
 
+  const protocolEditorLayer = protocolEditor?.protocol
+    ? resolveProtocolSourceGroup(protocolEditor.protocol)
+    : ("custom" as const);
+
+  const protocolEditorEffectiveFamilyCode = protocolEditor
+    ? resolveDraftProtocolFamilyCode(protocolEditor.draft)
+    : null;
+
+  const protocolEditorFamilyConflict = useMemo(() => {
+    if (!protocolEditor) return null;
+
+    return findSanitaryFamilyConflict({
+      protocols: activeProtocols,
+      candidateFamilyCode: protocolEditor.draft.familyCode || protocolEditor.draft.nome,
+      candidateLayer: protocolEditorLayer,
+      ignoreProtocolId: protocolEditor.protocol?.id ?? null,
+    });
+  }, [activeProtocols, protocolEditor, protocolEditorLayer]);
+
+  const itemEditorProtocol = itemEditor
+    ? protocolById.get(itemEditor.protocolId) ?? null
+    : null;
+
+  const itemEditorProtocolDraft = itemEditorProtocol
+    ? readProtocolDraft(itemEditorProtocol)
+    : null;
+
+  const itemEditorSiblingItems = itemEditor
+    ? itemsByProtocol.get(itemEditor.protocolId) ?? []
+    : [];
+
   const groupedActiveProtocols = useMemo(
     () =>
       [
@@ -525,13 +612,20 @@ export function FarmProtocolManager({
     const protocol = activeProtocols.find((item) => item.id === protocolId);
     const protocolDraft = protocol ? readProtocolDraft(protocol) : null;
     const currentItems = itemsByProtocol.get(protocolId) ?? [];
+    const previousItem = currentItems.at(-1) ?? null;
+    const previousItemDraft = previousItem ? readProtocolItemDraft(previousItem) : null;
+    const nextDose = nextDoseNumber(currentItems);
 
     setItemEditor({
       item: null,
       protocolId,
       selectedProduct: null,
       draft: createEmptyProtocolItemDraft({
-        doseNum: nextDoseNumber(currentItems),
+        doseNum: nextDose,
+        itemCode: buildDefaultMilestoneCode(nextDose),
+        dependsOnItemCode: previousItemDraft
+          ? resolveDraftMilestoneCode(previousItemDraft)
+          : "",
         sexoAlvo: protocolDraft?.sexoAlvo ?? "",
         idadeMinDias: protocolDraft?.idadeMinDias ?? "",
         idadeMaxDias: protocolDraft?.idadeMaxDias ?? "",
@@ -567,7 +661,9 @@ export function FarmProtocolManager({
       candidateLayer: "standard",
     });
     if (familyConflict) {
-      showError(getFamilyConflictMessage("standard", familyConflict.familyCode));
+      showError(
+        getFamilyConflictMessage("standard", familyConflict.familyCode, familyConflict),
+      );
       return;
     }
 
@@ -646,18 +742,12 @@ export function FarmProtocolManager({
       return;
     }
 
-    const candidateLayer = protocolEditor.protocol
-      ? resolveProtocolSourceGroup(protocolEditor.protocol)
-      : ("custom" as const);
-    const familyConflict = findSanitaryFamilyConflict({
-      protocols: activeProtocols,
-      candidateFamilyCode:
-        protocolEditor.draft.familyCode || protocolEditor.draft.nome,
-      candidateLayer,
-      ignoreProtocolId: protocolEditor.protocol?.id ?? null,
-    });
+    const candidateLayer = protocolEditorLayer;
+    const familyConflict = protocolEditorFamilyConflict;
     if (familyConflict) {
-      showError(getFamilyConflictMessage(candidateLayer, familyConflict.familyCode));
+      showError(
+        getFamilyConflictMessage(candidateLayer, familyConflict.familyCode, familyConflict),
+      );
       return;
     }
 
@@ -696,6 +786,7 @@ export function FarmProtocolManager({
           selectedProduct: null,
           draft: createEmptyProtocolItemDraft({
             doseNum: "1",
+            itemCode: "dose_1",
             sexoAlvo: protocolEditor.draft.sexoAlvo,
             idadeMinDias: protocolEditor.draft.idadeMinDias,
             idadeMaxDias: protocolEditor.draft.idadeMaxDias,
@@ -1102,6 +1193,7 @@ export function FarmProtocolManager({
                             const linkedProduct = readVeterinaryProductSelection(
                               item.payload,
                             );
+                            const milestoneCode = resolveDraftMilestoneCode(itemDraft);
 
                             return (
                               <div
@@ -1119,6 +1211,16 @@ export function FarmProtocolManager({
                                       </span>
                                       {item.dose_num ? (
                                         <Badge variant="outline">Dose {item.dose_num}</Badge>
+                                      ) : null}
+                                      {milestoneCode ? (
+                                        <Badge variant="outline">
+                                          milestone: {milestoneCode}
+                                        </Badge>
+                                      ) : null}
+                                      {itemDraft.dependsOnItemCode ? (
+                                        <Badge variant="outline">
+                                          apos {itemDraft.dependsOnItemCode}
+                                        </Badge>
                                       ) : null}
                                       {item.gera_agenda ? (
                                         <Badge variant="secondary">Gera agenda</Badge>
@@ -1212,6 +1314,17 @@ export function FarmProtocolManager({
           if (!open) setProtocolEditor(null);
         }}
         draft={protocolEditor?.draft ?? createEmptyProtocolDraft()}
+        effectiveFamilyCode={protocolEditorEffectiveFamilyCode}
+        familyConflict={protocolEditorFamilyConflict}
+        familyConflictMessage={
+          protocolEditorFamilyConflict
+            ? getFamilyConflictMessage(
+                protocolEditorLayer,
+                protocolEditorFamilyConflict.familyCode,
+                protocolEditorFamilyConflict,
+              )
+            : null
+        }
         onDraftChange={(draft) =>
           setProtocolEditor((current) => (current ? { ...current, draft } : current))
         }
@@ -1229,6 +1342,11 @@ export function FarmProtocolManager({
         draft={itemEditor?.draft ?? createEmptyProtocolItemDraft()}
         selectedProduct={itemEditor?.selectedProduct ?? null}
         suggestions={itemSuggestions}
+        siblingItems={itemEditorSiblingItems}
+        currentItemId={itemEditor?.item?.id ?? null}
+        protocolName={itemEditorProtocol?.nome ?? "Protocolo"}
+        protocolFamilyCode={itemEditorProtocolDraft?.familyCode ?? null}
+        protocolRegimenVersion={itemEditorProtocolDraft?.regimenVersion ?? "1"}
         hasAdvancedFields={hasAdvancedFields}
         isSaving={isSaving}
         isEditing={Boolean(itemEditor?.item)}
@@ -1285,6 +1403,9 @@ interface ProtocolEditorDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   draft: SanitaryProtocolDraft;
+  effectiveFamilyCode: string | null;
+  familyConflict: SanitaryFamilyConflict | null;
+  familyConflictMessage: string | null;
   onDraftChange: (draft: SanitaryProtocolDraft) => void;
   isSaving: boolean;
   hasAdvancedFields: boolean;
@@ -1296,6 +1417,9 @@ function ProtocolEditorDialog({
   open,
   onOpenChange,
   draft,
+  effectiveFamilyCode,
+  familyConflict,
+  familyConflictMessage,
   onDraftChange,
   isSaving,
   hasAdvancedFields,
@@ -1315,6 +1439,33 @@ function ProtocolEditorDialog({
             oficial em paralelo.
           </DialogDescription>
         </DialogHeader>
+
+        <Alert
+          variant={familyConflict ? "destructive" : "default"}
+          className={
+            familyConflict
+              ? "border-destructive/30 bg-destructive/5"
+              : "border-border/70 bg-muted/20"
+          }
+        >
+          {familyConflict ? (
+            <AlertTriangle className="h-4 w-4" />
+          ) : (
+            <Info className="h-4 w-4" />
+          )}
+          <AlertTitle>Familia protocolar efetiva</AlertTitle>
+          <AlertDescription>
+            <p>
+              {effectiveFamilyCode
+                ? `Esta rotina sera tratada como familia "${effectiveFamilyCode}" para agenda, deduplicacao e bloqueio de duplicatas.`
+                : "Se voce deixar a familia em branco, o sistema vai deriva-la do nome do protocolo ao salvar."}
+            </p>
+            <p className="mt-2">
+              {familyConflictMessage ??
+                "Use familia nova para complemento operacional. Se a obrigacao principal ja estiver no pack oficial, este protocolo deve cobrir apenas o processo local da fazenda."}
+            </p>
+          </AlertDescription>
+        </Alert>
 
         <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2 md:col-span-2">
@@ -1357,6 +1508,10 @@ function ProtocolEditorDialog({
                   }
                   placeholder="Ex: vermifugacao_entrada"
                 />
+                <p className="text-xs text-muted-foreground">
+                  Familia unica por tronco sanitario. Se ficar vazia, o nome do
+                  protocolo vira a base da familia.
+                </p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="protocol-regimen-version">Versao do regime</Label>
@@ -1372,6 +1527,10 @@ function ProtocolEditorDialog({
                   }
                   placeholder="1"
                 />
+                <p className="text-xs text-muted-foreground">
+                  Use a mesma versao enquanto o tronco continuar semanticamente o
+                  mesmo. Mude apenas quando a sequencia ou regra do regime mudar.
+                </p>
               </div>
             </>
           ) : null}
@@ -1517,7 +1676,7 @@ function ProtocolEditorDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSaving}>
             Cancelar
           </Button>
-          <Button onClick={onSave} disabled={isSaving}>
+          <Button onClick={onSave} disabled={isSaving || Boolean(familyConflict)}>
             {isSaving ? "Salvando..." : isEditing ? "Salvar protocolo" : "Criar protocolo"}
           </Button>
         </DialogFooter>
@@ -1533,6 +1692,10 @@ interface ItemEditorDialogProps {
   selectedProduct: VeterinaryProductSelection | null;
   suggestions: ProdutoVeterinarioCatalogEntry[];
   siblingItems: ProtocoloSanitarioItem[];
+  currentItemId: string | null;
+  protocolName: string;
+  protocolFamilyCode: string | null;
+  protocolRegimenVersion: string;
   hasAdvancedFields: boolean;
   isSaving: boolean;
   isEditing: boolean;
@@ -1548,6 +1711,10 @@ function ItemEditorDialog({
   selectedProduct,
   suggestions,
   siblingItems,
+  currentItemId,
+  protocolName,
+  protocolFamilyCode,
+  protocolRegimenVersion,
   hasAdvancedFields,
   isSaving,
   isEditing,
@@ -1561,17 +1728,94 @@ function ItemEditorDialog({
 
   const dependencyOptions = useMemo(() => {
     return siblingItems
-      .filter((item) => !isEditing || item.id !== draft.itemCode) // Simplified check, draft.itemCode might not be item.id
+      .filter((item) => item.id !== currentItemId)
       .map((item) => {
         const itemDraft = readProtocolItemDraft(item);
-        const code = itemDraft.itemCode || (item.dose_num ? `dose_${item.dose_num}` : "");
+        const code = resolveDraftMilestoneCode(itemDraft);
         return {
           code,
           label: `${item.produto}${item.dose_num ? ` (Dose ${item.dose_num})` : ""}`,
         };
       })
       .filter((opt) => opt.code.length > 0);
-  }, [siblingItems, isEditing, draft.itemCode]);
+  }, [currentItemId, siblingItems]);
+
+  const dependencySelectOptions = useMemo(() => {
+    if (
+      draft.dependsOnItemCode.trim().length > 0 &&
+      !dependencyOptions.some((option) => option.code === draft.dependsOnItemCode)
+    ) {
+      return [
+        {
+          code: draft.dependsOnItemCode,
+          label: `${draft.dependsOnItemCode} (configurado manualmente)`,
+        },
+        ...dependencyOptions,
+      ];
+    }
+
+    return dependencyOptions;
+  }, [dependencyOptions, draft.dependsOnItemCode]);
+
+  const effectiveMilestoneCode = useMemo(
+    () => resolveDraftMilestoneCode(draft),
+    [draft],
+  );
+
+  const regimenPreview = useMemo(() => {
+    return inferSanitaryRegimenMilestone({
+      familyCode: protocolFamilyCode,
+      regimenVersion: Number(protocolRegimenVersion || "1"),
+      milestoneCode: draft.itemCode || null,
+      sequenceOrder:
+        draft.doseNum.trim().length > 0 ? Number(draft.doseNum) : 1,
+      dependsOnMilestone: draft.dependsOnItemCode || null,
+      sexoAlvo: draft.sexoAlvo,
+      idadeMinDias:
+        draft.idadeMinDias.trim().length > 0 ? Number(draft.idadeMinDias) : null,
+      idadeMaxDias:
+        draft.idadeMaxDias.trim().length > 0 ? Number(draft.idadeMaxDias) : null,
+      requiresComplianceDocument: draft.requiresComplianceDocument,
+      payload:
+        draft.calendarMode && draft.calendarAnchor
+          ? {
+              calendario_base: {
+                mode: draft.calendarMode,
+                anchor: draft.calendarAnchor,
+                interval_days:
+                  draft.intervaloDias.trim().length > 0
+                    ? Number(draft.intervaloDias)
+                    : null,
+                age_start_days:
+                  draft.idadeMinDias.trim().length > 0
+                    ? Number(draft.idadeMinDias)
+                    : null,
+                age_end_days:
+                  draft.idadeMaxDias.trim().length > 0
+                    ? Number(draft.idadeMaxDias)
+                    : null,
+              },
+            }
+          : null,
+    });
+  }, [
+    draft.calendarAnchor,
+    draft.calendarMode,
+    draft.dependsOnItemCode,
+    draft.doseNum,
+    draft.idadeMaxDias,
+    draft.idadeMinDias,
+    draft.intervaloDias,
+    draft.itemCode,
+    draft.requiresComplianceDocument,
+    draft.sexoAlvo,
+    protocolFamilyCode,
+    protocolRegimenVersion,
+  ]);
+
+  const dedupPreview = regimenPreview
+    ? buildSanitaryRegimenDedupTemplate(regimenPreview)
+    : draft.dedupTemplate.trim() || null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -1583,6 +1827,31 @@ function ItemEditorDialog({
             produtos veterinarios.
           </DialogDescription>
         </DialogHeader>
+
+        <Alert className="border-border/70 bg-muted/20">
+          <Info className="h-4 w-4" />
+          <AlertTitle>Contexto da etapa</AlertTitle>
+          <AlertDescription>
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="outline">{protocolName}</Badge>
+              {protocolFamilyCode ? (
+                <Badge variant="outline">familia: {protocolFamilyCode}</Badge>
+              ) : (
+                <Badge variant="outline">familia nao definida no protocolo</Badge>
+              )}
+              <Badge variant="outline">regime v{protocolRegimenVersion || "1"}</Badge>
+              <Badge variant="outline">milestone: {effectiveMilestoneCode}</Badge>
+              {draft.dependsOnItemCode ? (
+                <Badge variant="outline">depende de: {draft.dependsOnItemCode}</Badge>
+              ) : null}
+            </div>
+            <p className="mt-2">
+              A agenda materializa so o proximo milestone pendente. Quando esta
+              etapa depende de outra, ela so aparece depois da conclusao real da
+              anterior.
+            </p>
+          </AlertDescription>
+        </Alert>
 
         <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2">
@@ -1683,7 +1952,7 @@ function ItemEditorDialog({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="item-dose">Dose</Label>
+              <Label htmlFor="item-dose">Ordem / dose</Label>
               <Input
                 id="item-dose"
                 inputMode="numeric"
@@ -1751,6 +2020,25 @@ function ItemEditorDialog({
                 }
               />
             </div>
+          </div>
+
+          <div className="rounded-2xl border border-border/70 bg-muted/10 p-4 md:col-span-2">
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="outline">Milestone final: {effectiveMilestoneCode}</Badge>
+              {regimenPreview?.schedule_rule.kind ? (
+                <Badge variant="outline">
+                  agenda: {regimenPreview.schedule_rule.kind.replaceAll("_", " ")}
+                </Badge>
+              ) : null}
+              {dedupPreview ? (
+                <Badge variant="outline">dedup sugerido: {dedupPreview}</Badge>
+              ) : null}
+            </div>
+            <p className="mt-3 text-xs text-muted-foreground">
+              Se voce nao alterar o codigo da etapa, o sistema usa o milestone
+              derivado da ordem/dose e mantem a mesma identidade logica da
+              pendencia nos recomputes.
+            </p>
           </div>
 
           {hasAdvancedFields ? (
@@ -1963,6 +2251,10 @@ function ItemEditorDialog({
                   }
                   placeholder="Ex: vacina:brucelose:{animal_id}"
                 />
+                <p className="text-xs text-muted-foreground">
+                  Se ficar vazio, sera usado o dedup semantico do regime:
+                  {dedupPreview ? ` ${dedupPreview}` : " defina familia no protocolo."}
+                </p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="item-code">Codigo da etapa</Label>
@@ -1974,20 +2266,41 @@ function ItemEditorDialog({
                   }
                   placeholder="Ex: dose-1"
                 />
+                <p className="text-xs text-muted-foreground">
+                  Milestone canonico desta etapa. Se ficar vazio, o sistema usa{" "}
+                  <span className="font-medium text-foreground">
+                    {effectiveMilestoneCode}
+                  </span>
+                  .
+                </p>
               </div>
               <div className="space-y-2 md:col-span-2">
                 <Label htmlFor="item-dependency">Depende de</Label>
-                <Input
-                  id="item-dependency"
-                  value={draft.dependsOnItemCode}
-                  onChange={(event) =>
+                <Select
+                  value={draft.dependsOnItemCode || "__empty__"}
+                  onValueChange={(value) =>
                     onDraftChange({
                       ...draft,
-                      dependsOnItemCode: event.target.value,
+                      dependsOnItemCode: value === "__empty__" ? "" : value,
                     })
                   }
-                  placeholder="Ex: dose-1"
-                />
+                >
+                  <SelectTrigger id="item-dependency">
+                    <SelectValue placeholder="Sem dependencia" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__empty__">Sem dependencia</SelectItem>
+                    {dependencySelectOptions.map((option) => (
+                      <SelectItem key={option.code} value={option.code}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Use dependencia apenas quando esta etapa deve nascer apos a
+                  conclusao real do milestone anterior.
+                </p>
               </div>
             </>
           ) : null}

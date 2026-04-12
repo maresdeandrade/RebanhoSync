@@ -21,7 +21,19 @@ Nenhuma Foreign Key da agenda subordina o evento. Modelos lógicos conectam as p
 
 ### Taxonomia Canônica e Estado de Compliance
 Classificações como *categoria zootécnica*, *fase de vida*, e *estado reprodutivo* mudam dinamicamente a partir dos fatos consumados pelo rebanho ao longo do tempo. Elas persistem de foma agregada restrita dentro de `animais.payload.taxonomy_facts` atendendo o escopo v1, garantindo que "vacas" possam virar "secas" por eventos do Trilho 2 de forma declarativa e orgânica sem atualizações procedurais duplas pelo frontend/backend.
-Da mesma forma, o sistema gerencia o *estado de compliance sanitária* (`compliance_state`) e a dependência de milestones (`history_confidence`), derivando a necessidade de protocolos de catch-up se um animal entrar no rebanho sem histórico comprovado. Essa lógica transborda do Rail 1 para o bloqueio e triagem na UI de operação.
+
+Nesta arquitetura, o sistema gerencia dois novos eixos de rastreabilidade sanitária:
+1. **`history_confidence`**: Grau de certeza sobre o histórico pregresso do animal.
+   - `known`: Histórico total desde o nascimento ou comprovado por documentos.
+   - `partial`: Histórico parcial, permitindo inferências seguras mas com lacunas.
+   - `unknown`: Animal recém-adquirido ou sem histórico rastreado; exige protocolos de entrada.
+2. **`compliance_state`**: Estado atual do animal perante o regime sanitário vigente.
+   - `scheduled`: Futuras doses agendadas e compatíveis com milestones.
+   - `catch_up_required`: Exige execução imediata de doses de equalização (motor de regime sequencial).
+   - `documentation_required`: Exige atestado ou documento comprobatório para isenção.
+   - `evaluation_required`: Exige avaliação técnica ou diagnóstico para definir o próximo passo do regime.
+
+Essa lógica transborda do Rail 1 para o bloqueio e triagem na UI de operação, assegurando que o status de "conformidade" seja derivado de fatos (Rail 2) e milestones pendentes (Rail 1).
 
 ---
 

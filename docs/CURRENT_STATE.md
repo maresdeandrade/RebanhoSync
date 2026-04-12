@@ -3,10 +3,11 @@
 > **Status:** Derivado (Snapshot Operacional)
 > **Fonte de Verdade:** `src/`, `supabase/`, `package.json`
 > **Ultima Atualizacao:** 2026-04-12
+> **Snapshot:** Beta Interno — Hardening Sanitário (Pós-Motor, Pré-UX Final)
 
 ## Resumo
 
-O repositorio esta em **beta interno** - MVP completo e operacional. A base tecnica principal esta funcional e testada: aplicacao React 19, banco local Dexie v11, sync offline-first com rollback, schema Supabase com RLS endurecida, taxonomia canonica bovina, automacao de build/test/lint e conjunto relevante de testes automatizados.
+O repositorio esta em **beta interno** - MVP completo e operacional. A base tecnica principal esta funcional e testada. O foco atual é o **Hardening Sanitário**, especificamente a UI de compliance para animais com histórico desconhecido (TD-025). O motor de regime sequencial e a engine de Historical Confidence já estão integrados ao backend e ao sync-batch, permitindo que a interface de registro de manejo trate automaticamente o catch-up imunológico necessário para animais sem procedência confirmada.
 
 Todos os TDs da lista original foram fechados via migrations de marco/2026. Nao ha bloqueadores para uso interno controlado.
 

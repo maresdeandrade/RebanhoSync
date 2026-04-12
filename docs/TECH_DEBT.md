@@ -2,7 +2,7 @@
 
 > **Status:** Derivado (Rev D+)
 > **Baseline:** `b69d35f`
-> **Ultima Atualizacao:** 2026-04-11
+> **Ultima Atualizacao:** 2026-04-12
 > **Derivado por:** Auditoria tecnica - codigo + migrations como fonte de verdade
 > **Fonte:** `IMPLEMENTATION_STATUS.md`, `src/`, `supabase/`
 
@@ -103,9 +103,9 @@
 
 ## Resumo
 
-- OPEN: nenhum
+- OPEN: `TD-025`
 - CLOSED: `TD-001`, `TD-003`, `TD-004`, `TD-006`, `TD-008`, `TD-011`, `TD-014`, `TD-015`, `TD-019`, `TD-020`, `TD-021`, `TD-022`, `TD-023`, `TD-024`
-- Total OPEN: `0`
+- Total OPEN: `1`
 
 ## Veja Tambem
 

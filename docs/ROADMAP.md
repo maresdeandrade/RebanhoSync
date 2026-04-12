@@ -2,7 +2,7 @@
 
 > **Status:** Derivado (Rev D+)
 > **Baseline:** `b69d35f`
-> **Ultima Atualizacao:** 2026-04-11
+> **Ultima Atualizacao:** 2026-04-12
 > **Derivado por:** Auditoria tecnica - estado pos-fechamento dos TDs originais e evolucao funcional de UX operacional
 > **Fonte:** `TECH_DEBT.md`, `IMPLEMENTATION_STATUS.md`
 
@@ -189,7 +189,7 @@ O roadmap atual cobre a consolidacao de observabilidade, cobertura E2E dos fluxo
 
 **Derivado de:** Evolução do motor sanitário (Regime Sequencial e Histórico de Entrada).
 
-**Status:** Em planejamento (TD-025 aberto)
+**Status:** Em execução (TD-025 aberto) — UI em desenvolvimento em `src/components/sanitario/FarmProtocolManager.tsx`
 
 ### Escopo
 
