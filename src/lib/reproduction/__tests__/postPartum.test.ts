@@ -61,9 +61,12 @@ describe("buildPostPartumOps", () => {
     expect(result.weighedCount).toBe(1);
     expect(result.umbigoCount).toBe(1);
     expect(result.agendaCount).toBe(9);
-    expect(result.ops).toHaveLength(15);
+    expect(result.ops).toHaveLength(19);
 
-    expect(result.ops[0]).toMatchObject({
+
+    const firstAnimalUpdate = result.ops.find(op => op.table === "animais" && op.record.id === "cria-1");
+    expect(firstAnimalUpdate).toMatchObject({
+
       table: "animais",
       action: "UPDATE",
       record: {
@@ -73,7 +76,7 @@ describe("buildPostPartumOps", () => {
         lote_id: "bezerreiro",
       },
     });
-    expect(result.ops[0]?.record.payload.neonatal_setup).toMatchObject({
+    expect(firstAnimalUpdate?.record.payload.neonatal_setup).toMatchObject({
       completed_at: "2026-04-01T12:00:00.000Z",
       birth_event_id: "evento-1",
       mother_id: "matriz-1",
@@ -83,7 +86,10 @@ describe("buildPostPartumOps", () => {
       umbigo_curado_at: "2026-04-01T12:00:00.000Z",
     });
 
-    expect(result.ops[1]).toMatchObject({
+
+    const pesagemEvent = result.ops.find(op => op.table === "eventos" && op.record.dominio === "pesagem" && op.record.animal_id === "cria-1");
+    expect(pesagemEvent).toMatchObject({
+
       table: "eventos",
       action: "INSERT",
       record: {
@@ -92,14 +98,20 @@ describe("buildPostPartumOps", () => {
         lote_id: "bezerreiro",
       },
     });
-    expect(result.ops[2]).toMatchObject({
+
+    const pesagemDetails = result.ops.find(op => op.table === "eventos_pesagem" && op.action === "INSERT");
+    expect(pesagemDetails).toMatchObject({
+
       table: "eventos_pesagem",
       action: "INSERT",
       record: {
         peso_kg: 32.5,
       },
     });
-    expect(result.ops[3]).toMatchObject({
+
+    const sanitarioEvent = result.ops.find(op => op.table === "eventos" && op.record.dominio === "sanitario" && op.record.animal_id === "cria-1");
+    expect(sanitarioEvent).toMatchObject({
+
       table: "eventos",
       action: "INSERT",
       record: {
@@ -107,7 +119,10 @@ describe("buildPostPartumOps", () => {
         animal_id: "cria-1",
       },
     });
-    expect(result.ops[4]).toMatchObject({
+
+    const sanitarioDetails = result.ops.find(op => op.table === "eventos_sanitario" && op.action === "INSERT");
+    expect(sanitarioDetails).toMatchObject({
+
       table: "eventos_sanitario",
       action: "INSERT",
       record: {

@@ -117,6 +117,7 @@ export function buildPostPartumOps({
         occurredAt,
         fromLoteId: calf.lote_id,
         toLoteId: draft.loteId,
+        allowDestinationNull: true,
         applyAnimalStateUpdate: false, // We're already updating the animal in this loop
         observacoes: `Movimentacao inicial (pos-parto da matriz ${mother.identificacao})`,
       });

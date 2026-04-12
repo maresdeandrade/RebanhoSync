@@ -358,13 +358,13 @@ export function buildActiveRegulatoryOverlayEntries({
 }): RegulatoryOverlayEntry[] {
   const activeSlugs = new Set(readActivatedTemplateSlugs(config));
   const itemsByTemplate = new Map<string, CatalogoProtocoloOficialItem[]>();
-  for (const item of items) {
+  for (const item of (items || [])) {
     const current = itemsByTemplate.get(item.template_id) ?? [];
     current.push(item);
     itemsByTemplate.set(item.template_id, current);
   }
 
-  const officialEntries = templates.flatMap((template) => {
+  const officialEntries = (templates || []).flatMap((template) => {
     if (!activeSlugs.has(template.slug)) return [];
     if (RUNTIME_OWNED_TEMPLATE_SLUGS.has(template.slug)) return [];
 
