@@ -48,19 +48,65 @@ import {
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Toolbar, ToolbarGroup } from "@/components/ui/toolbar";
 import { formatWeight } from "@/lib/format/weight";
+import { describeSanitaryAlertEvent } from "@/lib/sanitario/alerts";
+import {
+  buildRegulatoryOperationalReadModel,
+  EMPTY_REGULATORY_OPERATIONAL_READ_MODEL,
+  getRegulatoryAnalyticsImpactLabel,
+  getRegulatoryAnalyticsSubareaLabel,
+  loadRegulatorySurfaceSource,
+  parseRegulatoryAnalyticsImpactKey,
+  parseRegulatoryAnalyticsSubareaKey,
+  resolveRegulatoryAnalyticsImpactsFromAttributes,
+  resolveRegulatoryAnalyticsSubareaFromAttributes,
+  type RegulatoryAnalyticsImpactKey,
+  type RegulatoryAnalyticsSubareaKey,
+} from "@/lib/sanitario/regulatoryReadModel";
 import { cn } from "@/lib/utils";
 import { showError, showSuccess } from "@/utils/toast";
 
 type SyncFilter = "all" | GestureStatus | "SYNCED";
+type RegulatorySubareaFilter = RegulatoryAnalyticsSubareaKey | "all";
+type RegulatoryImpactFilter = RegulatoryAnalyticsImpactKey | "all";
 
 const DOMAIN_LABEL: Record<DominioEnum, string> = {
   sanitario: "Sanitario",
+  alerta_sanitario: "Alerta sanitario",
+  conformidade: "Conformidade",
   pesagem: "Pesagem",
   nutricao: "Nutricao",
   movimentacao: "Movimentacao",
   reproducao: "Reproducao",
   financeiro: "Financeiro",
+  obito: "Óbito",
 };
+
+function parseDomainFilter(value: string | null | undefined): "all" | DominioEnum {
+  if (
+    value === "sanitario" ||
+    value === "alerta_sanitario" ||
+    value === "conformidade" ||
+    value === "pesagem" ||
+    value === "nutricao" ||
+    value === "movimentacao" ||
+    value === "reproducao" ||
+    value === "financeiro" ||
+    value === "obito"
+  ) {
+    return value;
+  }
+
+  return "all";
+}
+
+function readPayloadString(payload: unknown, key: string): string | null {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    return null;
+  }
+
+  const value = (payload as Record<string, unknown>)[key];
+  return typeof value === "string" ? value : null;
+}
 
 function normalizeSyncStatus(status?: string): GestureStatus | "SYNCED" {
   if (!status || status === "DONE" || status === "SYNCED") return "SYNCED";
@@ -90,17 +136,39 @@ const Eventos = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const highlightedEventId = searchParams.get("eventoId");
+  const domainFilterFromQuery = parseDomainFilter(searchParams.get("dominio"));
+  const regulatorySubareaFromQuery =
+    parseRegulatoryAnalyticsSubareaKey(searchParams.get("overlaySubarea")) ?? "all";
+  const regulatoryImpactFromQuery =
+    parseRegulatoryAnalyticsImpactKey(searchParams.get("overlayImpact")) ?? "all";
   const { activeFarmId, farmMeasurementConfig } = useAuth();
 
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebouncedValue(search, 300);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
-  const [domainFilter, setDomainFilter] = useState<"all" | DominioEnum>("all");
+  const [domainFilter, setDomainFilter] =
+    useState<"all" | DominioEnum>(domainFilterFromQuery);
   const [animalFilter, setAnimalFilter] = useState("all");
   const [loteFilter, setLoteFilter] = useState("all");
   const [syncFilter, setSyncFilter] = useState<SyncFilter>("all");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [regulatorySubareaFilter, setRegulatorySubareaFilter] =
+    useState<RegulatorySubareaFilter>(regulatorySubareaFromQuery);
+  const [regulatoryImpactFilter, setRegulatoryImpactFilter] =
+    useState<RegulatoryImpactFilter>(regulatoryImpactFromQuery);
+
+  useEffect(() => {
+    setDomainFilter(domainFilterFromQuery);
+  }, [domainFilterFromQuery]);
+
+  useEffect(() => {
+    setRegulatorySubareaFilter(regulatorySubareaFromQuery);
+  }, [regulatorySubareaFromQuery]);
+
+  useEffect(() => {
+    setRegulatoryImpactFilter(regulatoryImpactFromQuery);
+  }, [regulatoryImpactFromQuery]);
 
   useEffect(() => {
     setVisibleCount(PAGE_SIZE);
@@ -113,12 +181,21 @@ const Eventos = () => {
     syncFilter,
     dateFrom,
     dateTo,
+    regulatorySubareaFilter,
+    regulatoryImpactFilter,
   ]);
   const [complementTargetId, setComplementTargetId] = useState<string | null>(
     null,
   );
   const [complementText, setComplementText] = useState("");
   const [isSavingComplement, setIsSavingComplement] = useState(false);
+  const regulatoryReadModel =
+    useLiveQuery(async () => {
+      if (!activeFarmId) return EMPTY_REGULATORY_OPERATIONAL_READ_MODEL;
+      return buildRegulatoryOperationalReadModel(
+        await loadRegulatorySurfaceSource(activeFarmId),
+      );
+    }, [activeFarmId]) || EMPTY_REGULATORY_OPERATIONAL_READ_MODEL;
 
   const data = useLiveQuery(async () => {
     if (!activeFarmId) {
@@ -164,6 +241,36 @@ const Eventos = () => {
         // Domain filter
         if (domainFilter !== "all" && evento.dominio !== domainFilter)
           return false;
+
+        if (
+          regulatorySubareaFilter !== "all" ||
+          regulatoryImpactFilter !== "all"
+        ) {
+          if (evento.dominio !== "conformidade") return false;
+
+          const subarea = resolveRegulatoryAnalyticsSubareaFromAttributes({
+            subarea: readPayloadString(evento.payload, "subarea"),
+            complianceKind: readPayloadString(evento.payload, "compliance_kind"),
+          });
+          const impacts = resolveRegulatoryAnalyticsImpactsFromAttributes({
+            subarea: readPayloadString(evento.payload, "subarea"),
+            complianceKind: readPayloadString(evento.payload, "compliance_kind"),
+          });
+
+          if (
+            regulatorySubareaFilter !== "all" &&
+            subarea !== regulatorySubareaFilter
+          ) {
+            return false;
+          }
+
+          if (
+            regulatoryImpactFilter !== "all" &&
+            !impacts.includes(regulatoryImpactFilter)
+          ) {
+            return false;
+          }
+        }
 
         // Animal filter
         if (animalFilter !== "all" && evento.animal_id !== animalFilter)
@@ -256,6 +363,8 @@ const Eventos = () => {
     dateTo,
     search,
     visibleCount,
+    regulatorySubareaFilter,
+    regulatoryImpactFilter,
   ]);
 
   const detailMaps = useMemo(() => {
@@ -512,7 +621,23 @@ const Eventos = () => {
           }
         } else if (evento.dominio === "reproducao") {
           const d = reproByEvento.get(evento.id);
-          detail = d ? d.tipo : "Sem detalhe de reproducao";
+          if (d?.tipo === "aborto") {
+            detail = "Aborto / Interrupção de gestação";
+          } else {
+            detail = d ? d.tipo : "Sem detalhe de reproducao";
+          }
+        } else if (evento.dominio === "alerta_sanitario") {
+          detail = describeSanitaryAlertEvent(evento.payload);
+        } else if (evento.dominio === "conformidade") {
+          detail =
+            typeof evento.payload.official_item_label === "string"
+              ? `${evento.payload.official_item_label} - ${evento.payload.status ?? "pendente"}`
+              : "Checklist de conformidade";
+        } else if (evento.dominio === "obito") {
+          const causa = evento.payload && typeof evento.payload.causa === "string" 
+            ? (evento.payload.causa as string) 
+            : null;
+          detail = causa ? `Óbito: ${causa}` : "Registro de óbito";
         }
 
         const textIndex = [
@@ -576,6 +701,20 @@ const Eventos = () => {
       ),
     [timeline],
   );
+  const hasRegulatoryAnalyticalFilters =
+    regulatorySubareaFilter !== "all" || regulatoryImpactFilter !== "all";
+  const regulatoryFilterSummary = useMemo(() => {
+    const labels: string[] = [];
+
+    if (regulatorySubareaFilter !== "all") {
+      labels.push(getRegulatoryAnalyticsSubareaLabel(regulatorySubareaFilter));
+    }
+    if (regulatoryImpactFilter !== "all") {
+      labels.push(getRegulatoryAnalyticsImpactLabel(regulatoryImpactFilter));
+    }
+
+    return labels;
+  }, [regulatoryImpactFilter, regulatorySubareaFilter]);
   const hasActiveFilters =
     debouncedSearch.trim().length > 0 ||
     domainFilter !== "all" ||
@@ -583,7 +722,8 @@ const Eventos = () => {
     loteFilter !== "all" ||
     syncFilter !== "all" ||
     dateFrom.length > 0 ||
-    dateTo.length > 0;
+    dateTo.length > 0 ||
+    hasRegulatoryAnalyticalFilters;
 
   return (
     <div className="space-y-5">
@@ -604,6 +744,18 @@ const Eventos = () => {
                 {syncSummary.errors} falha(s) visiveis
               </StatusBadge>
             ) : null}
+            {regulatoryReadModel.attention.openCount > 0 ? (
+              <StatusBadge
+                tone={regulatoryReadModel.hasBlockingIssues ? "danger" : "warning"}
+              >
+                {regulatoryReadModel.attention.openCount} pendencia(s) regulatoria(s)
+              </StatusBadge>
+            ) : null}
+            {regulatoryFilterSummary.map((label) => (
+              <StatusBadge key={label} tone="info">
+                {label}
+              </StatusBadge>
+            ))}
           </>
         }
         actions={
@@ -614,7 +766,7 @@ const Eventos = () => {
         }
       />
 
-      <section className="grid gap-4 md:grid-cols-3">
+      <section className="grid gap-4 md:grid-cols-4">
         <MetricCard
           label="Eventos filtrados"
           value={data?.totalCount ?? 0}
@@ -636,7 +788,117 @@ const Eventos = () => {
           }
           tone={syncSummary.errors > 0 ? "danger" : "success"}
         />
+        <MetricCard
+          label="Conformidade aberta"
+          value={regulatoryReadModel.attention.openCount}
+          hint={
+            regulatoryReadModel.flows.sale.blockerCount > 0
+              ? `${regulatoryReadModel.flows.sale.blockerCount} bloqueio(s) para venda/transito.`
+              : regulatoryReadModel.flows.nutrition.blockerCount > 0
+                ? `${regulatoryReadModel.flows.nutrition.blockerCount} bloqueio(s) em nutricao.`
+                : regulatoryReadModel.attention.openCount > 0
+                  ? "Ha pendencias procedurais abertas no overlay oficial."
+                  : "Sem pendencias regulatorias abertas."
+          }
+          tone={
+            regulatoryReadModel.hasBlockingIssues
+              ? "danger"
+              : regulatoryReadModel.attention.openCount > 0
+                ? "warning"
+                : "success"
+          }
+        />
       </section>
+
+      {regulatoryReadModel.attention.openCount > 0 ? (
+        <Card className="border-amber-200 bg-amber-50/60">
+          <CardHeader>
+            <CardTitle>Overlay regulatorio ativo</CardTitle>
+            <CardDescription>
+              O historico reconhece o estado regulatorio atual da fazenda para
+              evitar leitura isolada dos eventos de conformidade.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex flex-wrap gap-2">
+              {regulatoryReadModel.attention.badges.map((badge) => (
+                <StatusBadge key={badge.key} tone={badge.tone}>
+                  {badge.label} {badge.count}
+                </StatusBadge>
+              ))}
+              {regulatoryReadModel.flows.nutrition.blockerCount > 0 ? (
+                <StatusBadge tone="danger">Bloqueia nutricao</StatusBadge>
+              ) : null}
+              {regulatoryReadModel.flows.sale.blockerCount > 0 ? (
+                <StatusBadge tone="danger">Bloqueia venda/transito</StatusBadge>
+              ) : null}
+            </div>
+
+            {regulatoryReadModel.attention.topItems.slice(0, 2).map((item) => (
+              <div
+                key={item.key}
+                className="rounded-2xl border border-border/70 bg-background/80 p-4"
+              >
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="font-medium">{item.label}</p>
+                  <StatusBadge tone={item.tone}>{item.statusLabel}</StatusBadge>
+                </div>
+                <p className="mt-2 text-sm text-muted-foreground">{item.recommendation}</p>
+              </div>
+            ))}
+
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant="outline"
+                onClick={() => navigate("/protocolos-sanitarios")}
+              >
+                Abrir overlay de conformidade
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={() => setDomainFilter("conformidade")}
+              >
+                Filtrar conformidade
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      ) : null}
+
+      {hasRegulatoryAnalyticalFilters ? (
+        <Card className="border-sky-200 bg-sky-50/60">
+          <CardHeader>
+            <CardTitle>Recorte regulatorio ativo</CardTitle>
+            <CardDescription>
+              Este historico foi aberto com foco analitico pronto. O recorte
+              mantem apenas eventos de conformidade alinhados a subarea ou
+              impacto operacional selecionado.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-wrap items-center gap-2">
+            {regulatorySubareaFilter !== "all" ? (
+              <StatusBadge tone="info">
+                {getRegulatoryAnalyticsSubareaLabel(regulatorySubareaFilter)}
+              </StatusBadge>
+            ) : null}
+            {regulatoryImpactFilter !== "all" ? (
+              <StatusBadge tone="info">
+                {getRegulatoryAnalyticsImpactLabel(regulatoryImpactFilter)}
+              </StatusBadge>
+            ) : null}
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => {
+                setRegulatorySubareaFilter("all");
+                setRegulatoryImpactFilter("all");
+              }}
+            >
+              Limpar recorte regulatorio
+            </Button>
+          </CardContent>
+        </Card>
+      ) : null}
 
       <Toolbar>
         <ToolbarGroup className="flex-1 gap-2">
@@ -660,11 +922,14 @@ const Eventos = () => {
             <SelectContent>
               <SelectItem value="all">Todos os dominios</SelectItem>
               <SelectItem value="sanitario">Sanitario</SelectItem>
+              <SelectItem value="alerta_sanitario">Alerta sanitario</SelectItem>
+              <SelectItem value="conformidade">Conformidade</SelectItem>
               <SelectItem value="pesagem">Pesagem</SelectItem>
               <SelectItem value="movimentacao">Movimentacao</SelectItem>
               <SelectItem value="nutricao">Nutricao</SelectItem>
               <SelectItem value="reproducao">Reproducao</SelectItem>
               <SelectItem value="financeiro">Financeiro</SelectItem>
+              <SelectItem value="obito">Óbito</SelectItem>
             </SelectContent>
           </Select>
 
@@ -741,6 +1006,8 @@ const Eventos = () => {
               setSyncFilter("all");
               setDateFrom("");
               setDateTo("");
+              setRegulatorySubareaFilter("all");
+              setRegulatoryImpactFilter("all");
             }}
           >
             <RefreshCw className="h-4 w-4" />
@@ -831,9 +1098,11 @@ const Eventos = () => {
                             Abrir ficha do animal
                           </DropdownMenuItem>
                         ) : null}
-                        {row.evento.dominio === "reproducao" ? (
+                        {row.evento.dominio === "reproducao" ||
+                        row.evento.dominio === "alerta_sanitario" ||
+                        row.evento.dominio === "conformidade" ? (
                           <DropdownMenuItem disabled>
-                            Complemento indisponivel em reproducao
+                            Complemento indisponivel neste dominio
                           </DropdownMenuItem>
                         ) : (
                           <DropdownMenuItem

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { Search } from "lucide-react";
 
@@ -7,6 +7,11 @@ import { createGesture } from "@/lib/offline/ops";
 import type { OperationInput } from "@/lib/offline/types";
 import { buildEventGesture } from "@/lib/events/buildEventGesture";
 import { EventValidationError } from "@/lib/events/validators";
+import { listAnimalsBlockedBySanitaryAlert } from "@/lib/sanitario/alerts";
+import {
+  buildRegulatoryOperationalReadModel,
+  loadRegulatorySurfaceSource,
+} from "@/lib/sanitario/regulatoryReadModel";
 import {
   Dialog,
   DialogContent,
@@ -57,11 +62,32 @@ export function AdicionarAnimaisLote({
         .toArray(),
     [lote.fazenda_id, lote.id],
   );
+  const regulatorySurfaceSource = useLiveQuery(
+    () => loadRegulatorySurfaceSource(lote.fazenda_id),
+    [lote.fazenda_id],
+  );
 
   const animaisFiltrados =
     animais?.filter((animal) =>
       animal.identificacao?.toLowerCase().includes(search.toLowerCase()),
     ) || [];
+  const regulatoryReadModel = useMemo(
+    () =>
+      buildRegulatoryOperationalReadModel(
+        regulatorySurfaceSource ?? undefined,
+      ),
+    [regulatorySurfaceSource],
+  );
+  const movementComplianceGuards = regulatoryReadModel.flows.movementInternal;
+  const complianceBlockReason = movementComplianceGuards.blockers[0]?.message ?? null;
+  const blockedAnimals = listAnimalsBlockedBySanitaryAlert(animais ?? []);
+  const blockedAnimalIds = new Set(blockedAnimals.map(({ animal }) => animal.id));
+  const blockedAnimalReasonById = new Map(
+    blockedAnimals.map(({ animal, alert }) => [
+      animal.id,
+      alert.diseaseName ?? "suspeita sanitaria",
+    ]),
+  );
 
   const toggleAnimal = (animalId: string) => {
     const next = new Set(selectedAnimais);
@@ -79,6 +105,11 @@ export function AdicionarAnimaisLote({
       return;
     }
 
+    if (complianceBlockReason) {
+      showError(complianceBlockReason);
+      return;
+    }
+
     setIsSubmitting(true);
     const now = new Date().toISOString();
 
@@ -89,6 +120,7 @@ export function AdicionarAnimaisLote({
       const animal =
         animaisPorId.get(animalId) ?? (await db.state_animais.get(animalId));
       if (!animal || animal.lote_id === lote.id) continue;
+      if (blockedAnimalIds.has(animal.id)) continue;
 
       const built = buildEventGesture({
         dominio: "movimentacao",
@@ -105,7 +137,11 @@ export function AdicionarAnimaisLote({
     }
 
     if (ops.length === 0) {
-      showError("Nenhum animal elegivel para movimentacao.");
+      showError(
+        selectedAnimais.size > 0 && blockedAnimals.length > 0
+          ? "Os animais selecionados estao bloqueados por suspeita sanitaria aberta."
+          : "Nenhum animal elegivel para movimentacao.",
+      );
       setIsSubmitting(false);
       return;
     }
@@ -178,6 +214,7 @@ export function AdicionarAnimaisLote({
                     <Checkbox
                       checked={selectedAnimais.has(animal.id)}
                       onCheckedChange={() => toggleAnimal(animal.id)}
+                      disabled={blockedAnimalIds.has(animal.id)}
                     />
                     <div className="min-w-0 flex-1 space-y-1">
                       <p className="font-medium text-foreground">
@@ -190,8 +227,19 @@ export function AdicionarAnimaisLote({
                         <StatusBadge tone="neutral">
                           {animal.lote_id ? "Em outro lote" : "Sem lote"}
                         </StatusBadge>
+                        {blockedAnimalIds.has(animal.id) ? (
+                          <StatusBadge tone="danger">
+                            Bloqueado:{" "}
+                            {blockedAnimalReasonById.get(animal.id) ?? "suspeita"}
+                          </StatusBadge>
+                        ) : null}
                       </div>
                     </div>
+                    {blockedAnimalIds.has(animal.id) ? (
+                      <span className="text-xs text-amber-700">
+                        Encerrar a suspeita sanitaria antes da movimentacao.
+                      </span>
+                    ) : null}
                   </label>
                 ))}
               </div>
@@ -212,13 +260,26 @@ export function AdicionarAnimaisLote({
               </Button>
             </div>
           ) : null}
+
+          {complianceBlockReason ? (
+            <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+              {complianceBlockReason}
+            </div>
+          ) : null}
         </FormSection>
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
             Cancelar
           </Button>
-          <Button onClick={handleConfirm} disabled={isSubmitting || selectedAnimais.size === 0}>
+          <Button
+            onClick={handleConfirm}
+            disabled={
+              isSubmitting ||
+              selectedAnimais.size === 0 ||
+              Boolean(complianceBlockReason)
+            }
+          >
             {isSubmitting ? "Adicionando..." : `Adicionar ${selectedAnimais.size}`}
           </Button>
         </DialogFooter>

@@ -51,6 +51,28 @@ describe("event validators", () => {
     expect(issues.some((i) => i.field === "valorTotal")).toBe(true);
   });
 
+  it("rejects sanitary alert without animal target", () => {
+    const issues = validateEventInput({
+      dominio: "alerta_sanitario",
+      fazendaId: "farm-1",
+      loteId: "lote-1",
+      alertKind: "suspeita_aberta",
+      animalPayload: {},
+    });
+
+    expect(issues.some((i) => i.field === "animalId")).toBe(true);
+  });
+
+  it("allows farm-level compliance events without animal or lote target", () => {
+    const issues = validateEventInput({
+      dominio: "conformidade",
+      fazendaId: "farm-1",
+      complianceKind: "checklist",
+    });
+
+    expect(issues).toHaveLength(0);
+  });
+
   it("rejects movimentacao with same origin and destination", () => {
     const issues = validateEventInput({
       dominio: "movimentacao",
@@ -76,4 +98,3 @@ describe("event validators", () => {
     ).toThrow(EventValidationError);
   });
 });
-

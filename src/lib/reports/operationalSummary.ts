@@ -1,16 +1,32 @@
 import type {
   AgendaItem,
   Animal,
+  CatalogoProtocoloOficial,
+  CatalogoProtocoloOficialItem,
   DominioEnum,
   Evento,
   EventoFinanceiro,
   EventoPesagem,
+  FazendaSanidadeConfig,
   FinanceiroTipoEnum,
   Gesture,
   Lote,
   Pasto,
+  ProtocoloSanitario,
+  ProtocoloSanitarioItem,
   Rejection,
 } from "@/lib/offline/types";
+import { describeSanitaryAgendaScheduleMeta } from "@/lib/sanitario/calendar";
+import { summarizeSanitaryAgendaAttention } from "@/lib/sanitario/attention";
+import type {
+  RegulatoryComplianceAttentionBadge,
+  RegulatoryComplianceAttentionItem,
+} from "@/lib/sanitario/complianceAttention";
+import {
+  buildRegulatoryOperationalReadModel,
+  type RegulatoryImpactAnalyticalCut,
+  type RegulatorySubareaAnalyticalCut,
+} from "@/lib/sanitario/regulatoryReadModel";
 
 export type ReportPreset = "7d" | "30d" | "90d" | "mes_atual";
 
@@ -32,6 +48,11 @@ export interface OperationalSummaryInput {
   eventosFinanceiro: EventoFinanceiro[];
   gestures: Gesture[];
   rejections: Rejection[];
+  protocolosSanitarios?: ProtocoloSanitario[];
+  protocoloItensSanitarios?: ProtocoloSanitarioItem[];
+  fazendaSanidadeConfig?: FazendaSanidadeConfig | null;
+  catalogoProtocolosOficiais?: CatalogoProtocoloOficial[];
+  catalogoProtocolosOficiaisItens?: CatalogoProtocoloOficialItem[];
 }
 
 export interface SummaryMetric {
@@ -44,7 +65,14 @@ export interface AgendaAttentionRow {
   data: string;
   titulo: string;
   contexto: string;
+  scheduleLabel?: string;
+  scheduleModeLabel?: string;
+  scheduleAnchorLabel?: string;
   status: "atrasado" | "hoje" | "proximo";
+  priorityLabel?: string;
+  priorityTone?: "neutral" | "info" | "warning" | "danger";
+  mandatory?: boolean;
+  requiresVet?: boolean;
 }
 
 export interface RecentEventRow {
@@ -83,26 +111,45 @@ export interface OperationalSummaryReport {
     ultimoPesoKg: number | null;
     ultimaPesagemEm: string | null;
   };
+  regulatoryCompliance: {
+    openCount: number;
+    blockingCount: number;
+    feedBanOpenCount: number;
+    criticalChecklistCount: number;
+    nutritionBlockers: number;
+    movementBlockers: number;
+    saleBlockers: number;
+    badges: RegulatoryComplianceAttentionBadge[];
+    topItems: RegulatoryComplianceAttentionItem[];
+    subareas: RegulatorySubareaAnalyticalCut[];
+    impacts: RegulatoryImpactAnalyticalCut[];
+  };
   agendaAttention: AgendaAttentionRow[];
   recentEvents: RecentEventRow[];
 }
 
 const DOMAIN_LABEL: Record<DominioEnum, string> = {
   sanitario: "Sanitario",
+  alerta_sanitario: "Alerta sanitario",
+  conformidade: "Conformidade",
   pesagem: "Pesagem",
   nutricao: "Nutricao",
   movimentacao: "Movimentacao",
   reproducao: "Reproducao",
   financeiro: "Financeiro",
+  obito: "Obito",
 };
 
 const DOMAIN_ORDER: DominioEnum[] = [
   "sanitario",
+  "alerta_sanitario",
+  "conformidade",
   "pesagem",
   "movimentacao",
   "nutricao",
   "reproducao",
   "financeiro",
+  "obito",
 ];
 
 const FINANCE_SIGNAL: Record<FinanceiroTipoEnum, "entrada" | "saida"> = {
@@ -246,6 +293,30 @@ export function buildOperationalSummary(
       .filter((item) => !item.deleted_at)
       .map((item) => [item.evento_id, item]),
   );
+  const sanitaryAttention = summarizeSanitaryAgendaAttention({
+    agenda: agendaAberta,
+    animals,
+    lotes,
+    protocols: (input.protocolosSanitarios ?? []).filter((item) => !item.deleted_at),
+    protocolItems: (input.protocoloItensSanitarios ?? []).filter(
+      (item) => !item.deleted_at,
+    ),
+    limit: agendaAberta.length,
+    today: now,
+  });
+  const regulatoryReadModel = buildRegulatoryOperationalReadModel({
+    config: input.fazendaSanidadeConfig ?? null,
+    templates: input.catalogoProtocolosOficiais ?? [],
+    items: input.catalogoProtocolosOficiaisItens ?? [],
+  });
+  const sanitaryAttentionById = new Map(
+    sanitaryAttention.topItems.map((item) => [item.id, item]),
+  );
+  const sanitaryProtocolItemById = new Map(
+    (input.protocoloItensSanitarios ?? [])
+      .filter((item) => !item.deleted_at)
+      .map((item) => [item.id, item]),
+  );
 
   const domainCounts = DOMAIN_ORDER.map((dominio) => ({
     label: DOMAIN_LABEL[dominio],
@@ -303,16 +374,42 @@ export function buildOperationalSummary(
     .slice()
     .sort((left, right) => left.data_prevista.localeCompare(right.data_prevista))
     .slice(0, 10)
-    .map((item) => ({
-      id: item.id,
-      data: item.data_prevista,
-      titulo: `${DOMAIN_LABEL[item.dominio]}: ${item.tipo.replaceAll("_", " ")}`,
-      contexto:
-        animalById.get(item.animal_id ?? "") ??
-        loteById.get(item.lote_id ?? "") ??
-        "Sem animal ou lote vinculado",
-      status: resolveAgendaStatus(item, todayKey),
-    }));
+    .map((item) => {
+      const sanitaryItem = sanitaryAttentionById.get(item.id);
+      const protocolItem = item.protocol_item_version_id
+        ? sanitaryProtocolItemById.get(item.protocol_item_version_id) ?? null
+        : null;
+      const scheduleMeta =
+        item.dominio === "sanitario"
+          ? describeSanitaryAgendaScheduleMeta({
+              intervalDays: item.interval_days_applied ?? protocolItem?.intervalo_dias ?? null,
+              payloads: [
+                protocolItem?.payload ?? null,
+                item.payload,
+                item.source_ref,
+              ],
+            })
+          : null;
+
+      return {
+        id: item.id,
+        data: item.data_prevista,
+        titulo: sanitaryItem?.titulo ?? `${DOMAIN_LABEL[item.dominio]}: ${item.tipo.replaceAll("_", " ")}`,
+        contexto:
+          sanitaryItem?.contexto ??
+          animalById.get(item.animal_id ?? "") ??
+          loteById.get(item.lote_id ?? "") ??
+          "Sem animal ou lote vinculado",
+        scheduleLabel: scheduleMeta?.label,
+        scheduleModeLabel: scheduleMeta?.modeLabel,
+        scheduleAnchorLabel: scheduleMeta?.anchorLabel ?? undefined,
+        status: resolveAgendaStatus(item, todayKey),
+        priorityLabel: sanitaryItem?.priorityLabel,
+        priorityTone: sanitaryItem?.priorityTone,
+        mandatory: sanitaryItem?.mandatory,
+        requiresVet: sanitaryItem?.requiresVet,
+      };
+    });
 
   const recentEvents = eventos
     .slice()
@@ -354,6 +451,19 @@ export function buildOperationalSummary(
       ultimaPesagemEm: ultimaPesagem
         ? getEventDateKey(ultimaPesagem.evento)
         : null,
+    },
+    regulatoryCompliance: {
+      openCount: regulatoryReadModel.attention.openCount,
+      blockingCount: regulatoryReadModel.attention.blockingCount,
+      feedBanOpenCount: regulatoryReadModel.attention.feedBanOpenCount,
+      criticalChecklistCount: regulatoryReadModel.attention.criticalChecklistCount,
+      nutritionBlockers: regulatoryReadModel.flows.nutrition.blockerCount,
+      movementBlockers: regulatoryReadModel.flows.movementInternal.blockerCount,
+      saleBlockers: regulatoryReadModel.flows.sale.blockerCount,
+      badges: regulatoryReadModel.attention.badges,
+      topItems: regulatoryReadModel.attention.topItems,
+      subareas: regulatoryReadModel.analytics.subareas,
+      impacts: regulatoryReadModel.analytics.impacts,
     },
     agendaAttention,
     recentEvents,
@@ -398,13 +508,64 @@ export function buildOperationalSummaryCsv(
     report.pesagem.ultimoPesoKg == null ? "" : report.pesagem.ultimoPesoKg.toFixed(2),
   );
   pushRow("pesagem", "ultima_pesagem_em", report.pesagem.ultimaPesagemEm);
+  pushRow("conformidade", "pendencias_abertas", report.regulatoryCompliance.openCount);
+  pushRow("conformidade", "bloqueios", report.regulatoryCompliance.blockingCount);
+  pushRow("conformidade", "feed_ban_aberto", report.regulatoryCompliance.feedBanOpenCount);
+  pushRow(
+    "conformidade",
+    "checklists_criticos",
+    report.regulatoryCompliance.criticalChecklistCount,
+  );
+  pushRow(
+    "conformidade",
+    "bloqueios_nutricao",
+    report.regulatoryCompliance.nutritionBlockers,
+  );
+  pushRow(
+    "conformidade",
+    "bloqueios_movimentacao",
+    report.regulatoryCompliance.movementBlockers,
+  );
+  pushRow(
+    "conformidade",
+    "bloqueios_venda",
+    report.regulatoryCompliance.saleBlockers,
+  );
+
+  for (const item of report.regulatoryCompliance.subareas) {
+    pushRow(
+      "conformidade_subarea",
+      item.label,
+      `${item.openCount} pendencia(s) | ${item.blockerCount} bloqueio(s) | ${item.warningCount} revisao(oes) | ${item.recommendation}`,
+    );
+  }
+
+  for (const item of report.regulatoryCompliance.impacts) {
+    pushRow(
+      "conformidade_impacto",
+      item.label,
+      `${item.totalCount} alerta(s) | ${item.blockerCount} bloqueio(s) | ${item.warningCount} revisao(oes) | ${item.message}`,
+    );
+  }
 
   for (const item of report.manejoByDomain) {
     pushRow("manejo", item.label, item.value);
   }
 
+  for (const item of report.regulatoryCompliance.topItems) {
+    pushRow(
+      "conformidade_item",
+      item.label,
+      `${item.statusLabel} | ${item.detail} | ${item.recommendation}`,
+    );
+  }
+
   for (const item of report.agendaAttention) {
-    pushRow("agenda", item.data, `${item.titulo} | ${item.contexto} | ${item.status}`);
+    pushRow(
+      "agenda",
+      item.data,
+      `${item.titulo} | ${item.contexto}${item.scheduleLabel ? ` | ${item.scheduleLabel}` : ""}${item.scheduleModeLabel ? ` | ${item.scheduleModeLabel}` : ""}${item.scheduleAnchorLabel ? ` | ${item.scheduleAnchorLabel}` : ""} | ${item.status}${item.priorityLabel ? ` | ${item.priorityLabel}` : ""}`,
+    );
   }
 
   for (const item of report.recentEvents) {
@@ -456,8 +617,17 @@ export function buildOperationalSummaryPrintHtml(
               <tr>
                 <td>${escapeHtml(safeDateLabel(item.data))}</td>
                 <td>${escapeHtml(item.titulo)}</td>
-                <td>${escapeHtml(item.contexto)}</td>
-                <td>${escapeHtml(item.status)}</td>
+                <td>${escapeHtml(
+                  [
+                    item.contexto,
+                    item.scheduleLabel,
+                    item.scheduleModeLabel,
+                    item.scheduleAnchorLabel,
+                  ]
+                    .filter(Boolean)
+                    .join(" | "),
+                )}</td>
+                <td>${escapeHtml(item.priorityLabel ? `${item.status} | ${item.priorityLabel}` : item.status)}</td>
               </tr>
             `,
           )
@@ -465,6 +635,66 @@ export function buildOperationalSummaryPrintHtml(
       : `
           <tr>
             <td colspan="4">Nenhuma tarefa aberta na agenda.</td>
+          </tr>
+        `;
+
+  const complianceRows =
+    report.regulatoryCompliance.topItems.length > 0
+      ? report.regulatoryCompliance.topItems
+          .map(
+            (item) => `
+              <tr>
+                <td>${escapeHtml(item.label)}</td>
+                <td>${escapeHtml(item.statusLabel)}</td>
+                <td>${escapeHtml(item.detail)}</td>
+                <td>${escapeHtml(item.recommendation)}</td>
+              </tr>
+            `,
+          )
+          .join("")
+      : `
+          <tr>
+            <td colspan="4">Sem pendencias regulatorias abertas no periodo.</td>
+          </tr>
+        `;
+
+  const complianceSubareaRows =
+    report.regulatoryCompliance.subareas.length > 0
+      ? report.regulatoryCompliance.subareas
+          .map(
+            (item) => `
+              <tr>
+                <td>${escapeHtml(item.label)}</td>
+                <td>${item.openCount}</td>
+                <td>${item.blockerCount}</td>
+                <td>${escapeHtml(item.recommendation)}</td>
+              </tr>
+            `,
+          )
+          .join("")
+      : `
+          <tr>
+            <td colspan="4">Sem recortes analiticos abertos por subarea.</td>
+          </tr>
+        `;
+
+  const complianceImpactRows =
+    report.regulatoryCompliance.impacts.length > 0
+      ? report.regulatoryCompliance.impacts
+          .map(
+            (item) => `
+              <tr>
+                <td>${escapeHtml(item.label)}</td>
+                <td>${item.totalCount}</td>
+                <td>${item.blockerCount}</td>
+                <td>${escapeHtml(item.message)}</td>
+              </tr>
+            `,
+          )
+          .join("")
+      : `
+          <tr>
+            <td colspan="4">Sem impactos operacionais abertos.</td>
           </tr>
         `;
 
@@ -614,6 +844,56 @@ export function buildOperationalSummaryPrintHtml(
           <p class="meta" style="margin-top: 12px;">
             ${report.financeiro.transacoes} transacao(oes) no periodo. Pesagens: ${report.pesagem.totalPesagens}.
           </p>
+        </section>
+
+        <section>
+          <h2>Conformidade regulatoria</h2>
+          <p class="meta">
+            ${report.regulatoryCompliance.openCount} pendencia(s) aberta(s) |
+            ${report.regulatoryCompliance.blockingCount} bloqueio(s) |
+            ${report.regulatoryCompliance.saleBlockers} bloqueio(s) para venda/transito
+          </p>
+          <table>
+            <thead>
+              <tr>
+                <th>Item</th>
+                <th>Status</th>
+                <th>Contexto</th>
+                <th>Recomendacao</th>
+              </tr>
+            </thead>
+            <tbody>${complianceRows}</tbody>
+          </table>
+        </section>
+
+        <section>
+          <h2>Recortes regulatorios por subarea</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Subarea</th>
+                <th>Pendencias</th>
+                <th>Bloqueios</th>
+                <th>Recomendacao</th>
+              </tr>
+            </thead>
+            <tbody>${complianceSubareaRows}</tbody>
+          </table>
+        </section>
+
+        <section>
+          <h2>Impacto operacional da conformidade</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Impacto</th>
+                <th>Alertas</th>
+                <th>Bloqueios</th>
+                <th>Mensagem</th>
+              </tr>
+            </thead>
+            <tbody>${complianceImpactRows}</tbody>
+          </table>
         </section>
 
         <section>

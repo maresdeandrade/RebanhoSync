@@ -34,6 +34,15 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { MetricCard } from "@/components/ui/metric-card";
 import { PageIntro } from "@/components/ui/page-intro";
+import {
+  summarizeSanitaryAgendaAttention,
+  type SanitaryAttentionSummary,
+} from "@/lib/sanitario/attention";
+import {
+  buildRegulatoryOperationalReadModel,
+  loadRegulatorySurfaceSource,
+  type RegulatoryOperationalReadModel,
+} from "@/lib/sanitario/regulatoryReadModel";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Toolbar, ToolbarGroup } from "@/components/ui/toolbar";
 
@@ -64,6 +73,8 @@ type HomeSnapshot = {
   lifecyclePendingCount: number;
   lifecycleStrategicCount: number;
   lifecycleBiologicalCount: number;
+  sanitaryAttention: SanitaryAttentionSummary;
+  regulatoryCompliance: RegulatoryOperationalReadModel;
   proximosItens: {
     id: string;
     data: string;
@@ -99,6 +110,8 @@ const PRODUCTION_LABEL: Record<string, string> = {
 
 const DOMAIN_LABEL: Record<string, string> = {
   sanitario: "Sanitario",
+  alerta_sanitario: "Alerta sanitario",
+  conformidade: "Conformidade",
   pesagem: "Pesagem",
   movimentacao: "Movimentacao",
   nutricao: "Nutricao",
@@ -143,6 +156,10 @@ const dateFormatter = new Intl.DateTimeFormat("pt-BR", {
   day: "2-digit",
   month: "short",
 });
+
+function buildAgendaCalendarModePath(mode: string) {
+  return `/agenda?calendarMode=${mode}`;
+}
 
 function getTodayKey() {
   const now = new Date();
@@ -191,10 +208,12 @@ const Home = () => {
         animais,
         lotes,
         pastos,
-        protocolosAtivos,
+        protocolos,
+        protocoloItens,
         agendaItens,
         eventos,
         syncSummary,
+        regulatorySource,
       ] = await Promise.all([
         db.state_animais.where("fazenda_id").equals(activeFarmId).toArray(),
         db.state_lotes.where("fazenda_id").equals(activeFarmId).toArray(),
@@ -202,8 +221,11 @@ const Home = () => {
         db.state_protocolos_sanitarios
           .where("fazenda_id")
           .equals(activeFarmId)
-          .filter((protocolo) => !protocolo.deleted_at && protocolo.ativo)
-          .count(),
+          .toArray(),
+        db.state_protocolos_sanitarios_itens
+          .where("fazenda_id")
+          .equals(activeFarmId)
+          .toArray(),
         db.state_agenda_itens
           .where("[fazenda_id+status]")
           .equals([activeFarmId, "agendado"])
@@ -217,14 +239,20 @@ const Home = () => {
           .limit(5)
           .toArray(),
         loadFarmSyncSummary(activeFarmId),
+        loadRegulatorySurfaceSource(activeFarmId),
       ]);
 
       const todayKey = getTodayKey();
+      const animaisDisponiveis = animais.filter((animal) => !animal.deleted_at);
       const animaisAtivos = animais.filter(
         (animal) => !animal.deleted_at && animal.status === "ativo",
       );
-      const lotesAtivos = lotes.filter((lote) => !lote.deleted_at);
+      const lotesDisponiveis = lotes.filter((lote) => !lote.deleted_at);
+      const lotesAtivos = lotesDisponiveis.filter((lote) => !lote.deleted_at);
       const pastosAtivos = pastos.filter((pasto) => !pasto.deleted_at);
+      const protocolosDisponiveis = protocolos.filter((protocolo) => !protocolo.deleted_at);
+      const protocolosAtivos = protocolosDisponiveis.filter((protocolo) => protocolo.ativo);
+      const protocoloItensDisponiveis = protocoloItens.filter((item) => !item.deleted_at);
       const agendaAberta = agendaItens.filter(
         (item) => !item.deleted_at && item.status === "agendado",
       );
@@ -234,6 +262,17 @@ const Home = () => {
       );
       const agendaAtrasada = agendaAberta.filter(
         (item) => item.data_prevista < todayKey,
+      );
+      const sanitaryAttention = summarizeSanitaryAgendaAttention({
+        agenda: agendaAberta,
+        animals: animaisDisponiveis,
+        lotes: lotesDisponiveis,
+        protocols: protocolosDisponiveis,
+        protocolItems: protocoloItensDisponiveis,
+        limit: 4,
+      });
+      const regulatoryCompliance = buildRegulatoryOperationalReadModel(
+        regulatorySource,
       );
       const proximosItens = agendaAberta
         .slice()
@@ -315,7 +354,7 @@ const Home = () => {
         animais: animaisAtivos.length,
         lotes: lotesAtivos.length,
         pastos: pastosAtivos.length,
-        protocolos: protocolosAtivos,
+        protocolos: protocolosAtivos.length,
         agendaHoje: agendaHoje.length,
         agendaAtrasada: agendaAtrasada.length,
         syncSummary,
@@ -323,6 +362,8 @@ const Home = () => {
         lifecyclePendingCount: lifecycleQueue.length,
         lifecycleStrategicCount,
         lifecycleBiologicalCount,
+        sanitaryAttention,
+        regulatoryCompliance,
         proximosItens,
         eventosRecentes: eventosRecentes.map((evento) => {
           const animal = animaisAtivos.find((entry) => entry.id === evento.animal_id);
@@ -422,6 +463,27 @@ const Home = () => {
                 {snapshot.agendaAtrasada} atraso{snapshot.agendaAtrasada > 1 ? "s" : ""}
               </StatusBadge>
             ) : null}
+            {snapshot.sanitaryAttention.criticalCount > 0 ? (
+              <StatusBadge tone="danger">
+                {snapshot.sanitaryAttention.criticalCount} sanitario(s) critico(s)
+              </StatusBadge>
+            ) : snapshot.sanitaryAttention.warningCount > 0 ? (
+              <StatusBadge tone="warning">
+                {snapshot.sanitaryAttention.warningCount} sanitario(s) no radar
+              </StatusBadge>
+            ) : null}
+            {snapshot.regulatoryCompliance.attention.openCount > 0 ? (
+              <StatusBadge
+                tone={
+                  snapshot.regulatoryCompliance.hasBlockingIssues
+                    ? "danger"
+                    : "warning"
+                }
+              >
+                {snapshot.regulatoryCompliance.attention.openCount} pendencia(s)
+                regulatoria(s)
+              </StatusBadge>
+            ) : null}
           </>
         }
         actions={
@@ -482,12 +544,20 @@ const Home = () => {
           label="Agenda de hoje"
           value={snapshot.agendaHoje}
           hint={
-            snapshot.agendaAtrasada > 0
-              ? `${snapshot.agendaAtrasada} item(ns) atrasado(s).`
+            snapshot.sanitaryAttention.criticalCount > 0
+              ? `${snapshot.sanitaryAttention.criticalCount} sanitario(s) critico(s) na agenda.`
+              : snapshot.agendaAtrasada > 0
+                ? `${snapshot.agendaAtrasada} item(ns) atrasado(s).`
               : "Sem atraso acumulado."
           }
           icon={<CalendarClock className="h-4 w-4" />}
-          tone={snapshot.agendaAtrasada > 0 ? "warning" : "default"}
+          tone={
+            snapshot.sanitaryAttention.criticalCount > 0
+              ? "danger"
+              : snapshot.agendaAtrasada > 0
+                ? "warning"
+                : "default"
+          }
         />
         <MetricCard
           label="Fila local"
@@ -530,6 +600,160 @@ const Home = () => {
           tone={snapshot.lifecyclePendingCount > 0 ? "warning" : "default"}
         />
       </section>
+
+      {snapshot.sanitaryAttention.totalOpen > 0 ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Alertas sanitarios</CardTitle>
+            <CardDescription>
+              Itens sanitarios priorizados por criticidade, obrigatoriedade e
+              proximidade do prazo.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <StatusBadge
+                tone={
+                  snapshot.sanitaryAttention.criticalCount > 0 ? "danger" : "neutral"
+                }
+              >
+                {snapshot.sanitaryAttention.criticalCount} critico(s)
+              </StatusBadge>
+              <StatusBadge
+                tone={
+                  snapshot.sanitaryAttention.mandatoryCount > 0 ? "warning" : "neutral"
+                }
+              >
+                {snapshot.sanitaryAttention.mandatoryCount} obrigatorio(s)
+              </StatusBadge>
+              <StatusBadge
+                tone={
+                  snapshot.sanitaryAttention.requiresVetCount > 0 ? "info" : "neutral"
+                }
+              >
+                {snapshot.sanitaryAttention.requiresVetCount} exige(m) veterinario
+              </StatusBadge>
+              {snapshot.sanitaryAttention.scheduleModes.map((mode) => (
+                <Button
+                  key={mode.key}
+                  asChild
+                  variant="outline"
+                  size="sm"
+                  className="h-auto rounded-full px-3 py-1 text-[11px] leading-none"
+                >
+                  <Link to={buildAgendaCalendarModePath(mode.key)}>
+                    {mode.label} {mode.count}
+                  </Link>
+                </Button>
+              ))}
+            </div>
+
+            {snapshot.sanitaryAttention.topItems.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-border/70 p-4 text-sm text-muted-foreground">
+                Nenhum item sanitario com criticidade destacada no momento.
+              </div>
+            ) : (
+              snapshot.sanitaryAttention.topItems.map((item) => (
+                <div
+                  key={item.id}
+                  className="rounded-2xl border border-border/70 bg-muted/35 p-4"
+                >
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="space-y-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="font-medium">{item.titulo}</p>
+                        <StatusBadge tone={item.priorityTone}>
+                          {item.priorityLabel}
+                        </StatusBadge>
+                        {item.mandatory ? (
+                          <StatusBadge tone="warning">Obrigatorio</StatusBadge>
+                        ) : null}
+                        {item.requiresVet ? (
+                          <StatusBadge tone="info">Veterinario</StatusBadge>
+                        ) : null}
+                      </div>
+                      <p className="text-sm leading-6 text-muted-foreground">
+                        {item.contexto}
+                      </p>
+                      <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
+                        Produto {item.produto}
+                        {item.scheduleModeLabel ? ` | ${item.scheduleModeLabel}` : ""}
+                        {item.scheduleAnchorLabel ? ` | ${item.scheduleAnchorLabel}` : ""}
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Clock3 className="h-4 w-4" />
+                      <span>{formatDay(item.data)}</span>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+
+            <Button asChild variant="outline" size="sm" className="w-full sm:w-auto">
+              <Link to="/agenda">Abrir agenda sanitaria</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      ) : null}
+
+      {snapshot.regulatoryCompliance.attention.openCount > 0 ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Pendencias regulatorias</CardTitle>
+            <CardDescription>
+              A mesma leitura do overlay oficial agora aparece aqui para expor
+              restricoes de nutricao, transito e venda sem depender da agenda.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex flex-wrap items-center gap-2">
+              {snapshot.regulatoryCompliance.attention.badges.map((badge) => (
+                <StatusBadge key={badge.key} tone={badge.tone}>
+                  {badge.label} {badge.count}
+                </StatusBadge>
+              ))}
+              {snapshot.regulatoryCompliance.flows.nutrition.blockerCount > 0 ? (
+                <StatusBadge tone="danger">Bloqueia nutricao</StatusBadge>
+              ) : null}
+              {snapshot.regulatoryCompliance.flows.sale.blockerCount > 0 ? (
+                <StatusBadge tone="danger">Bloqueia transito/venda</StatusBadge>
+              ) : null}
+              {snapshot.regulatoryCompliance.flows.movementInternal.warningCount > 0 &&
+              snapshot.regulatoryCompliance.flows.sale.blockerCount === 0 ? (
+                <StatusBadge tone="warning">Exige revisao de lote</StatusBadge>
+              ) : null}
+            </div>
+
+            {snapshot.regulatoryCompliance.attention.topItems.map((item) => (
+              <div
+                key={item.key}
+                className="rounded-2xl border border-border/70 bg-muted/35 p-4"
+              >
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="font-medium">{item.label}</p>
+                  <StatusBadge tone={item.tone}>{item.statusLabel}</StatusBadge>
+                  <StatusBadge tone={item.tone}>{item.kindLabel}</StatusBadge>
+                </div>
+                <p className="mt-2 text-sm text-muted-foreground">{item.detail}</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {item.recommendation}
+                </p>
+              </div>
+            ))}
+
+            <div className="flex flex-wrap gap-2">
+              <Button asChild variant="outline" size="sm">
+                <Link to="/protocolos-sanitarios">Abrir overlay de conformidade</Link>
+              </Button>
+              <Button asChild variant="ghost" size="sm">
+                <Link to="/financeiro">Revisar vendas e transito</Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      ) : null}
 
       <section className="grid gap-4 xl:grid-cols-[1.25fr_0.95fr_0.95fr]">
         <Card>

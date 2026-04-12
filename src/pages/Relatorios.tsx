@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
+import { Link } from "react-router-dom";
 import {
   Beef,
   CalendarClock,
@@ -119,6 +120,11 @@ const Relatorios = () => {
         lotes,
         pastos,
         agenda,
+        protocolosSanitarios,
+        protocoloItensSanitarios,
+        fazendaSanidadeConfig,
+        catalogoProtocolosOficiais,
+        catalogoProtocolosOficiaisItens,
         eventos,
         eventosPesagem,
         eventosFinanceiro,
@@ -129,6 +135,11 @@ const Relatorios = () => {
         db.state_lotes.where("fazenda_id").equals(activeFarmId).toArray(),
         db.state_pastos.where("fazenda_id").equals(activeFarmId).toArray(),
         db.state_agenda_itens.where("fazenda_id").equals(activeFarmId).toArray(),
+        db.state_protocolos_sanitarios.where("fazenda_id").equals(activeFarmId).toArray(),
+        db.state_protocolos_sanitarios_itens.where("fazenda_id").equals(activeFarmId).toArray(),
+        db.state_fazenda_sanidade_config.get(activeFarmId),
+        db.catalog_protocolos_oficiais.toArray(),
+        db.catalog_protocolos_oficiais_itens.toArray(),
         db.event_eventos.where("fazenda_id").equals(activeFarmId).toArray(),
         db.event_eventos_pesagem.where("fazenda_id").equals(activeFarmId).toArray(),
         db.event_eventos_financeiro.where("fazenda_id").equals(activeFarmId).toArray(),
@@ -141,6 +152,14 @@ const Relatorios = () => {
         lotes,
         pastos,
         agenda,
+        protocolosSanitarios,
+        protocoloItensSanitarios,
+        fazendaSanidadeConfig:
+          fazendaSanidadeConfig && !fazendaSanidadeConfig.deleted_at
+            ? fazendaSanidadeConfig
+            : null,
+        catalogoProtocolosOficiais,
+        catalogoProtocolosOficiaisItens,
         eventos,
         eventosPesagem,
         eventosFinanceiro,
@@ -443,12 +462,225 @@ const Relatorios = () => {
         </Card>
       </section>
 
+      {report.regulatoryCompliance.openCount > 0 ? (
+        <section>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-xl">Conformidade regulatoria</CardTitle>
+              <CardDescription>
+                A mesma leitura oficial usada na agenda e nos fluxos transacionais,
+                agora consolidada no resumo para acompanhamento de pendencias.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex flex-wrap gap-2">
+                {report.regulatoryCompliance.badges.map((badge) => (
+                  <Badge
+                    key={badge.key}
+                    variant={
+                      badge.tone === "danger"
+                        ? "destructive"
+                        : badge.tone === "warning"
+                          ? "secondary"
+                          : "outline"
+                    }
+                  >
+                    {badge.label} {badge.count}
+                  </Badge>
+                ))}
+                {report.regulatoryCompliance.nutritionBlockers > 0 ? (
+                  <Badge variant="destructive">Bloqueia nutricao</Badge>
+                ) : null}
+                {report.regulatoryCompliance.saleBlockers > 0 ? (
+                  <Badge variant="destructive">Bloqueia venda/transito</Badge>
+                ) : null}
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-3">
+                <div className="rounded-xl border p-4">
+                  <p className="text-sm text-muted-foreground">Pendencias abertas</p>
+                  <p className="mt-2 text-2xl font-bold">
+                    {report.regulatoryCompliance.openCount}
+                  </p>
+                </div>
+                <div className="rounded-xl border p-4">
+                  <p className="text-sm text-muted-foreground">Bloqueios ativos</p>
+                  <p className="mt-2 text-2xl font-bold">
+                    {report.regulatoryCompliance.blockingCount}
+                  </p>
+                </div>
+                <div className="rounded-xl border p-4">
+                  <p className="text-sm text-muted-foreground">Venda/transito</p>
+                  <p className="mt-2 text-2xl font-bold">
+                    {report.regulatoryCompliance.saleBlockers}
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                {report.regulatoryCompliance.topItems.map((item) => (
+                  <div
+                    key={item.key}
+                    className="rounded-xl border p-4"
+                  >
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="font-medium">{item.label}</p>
+                      <Badge
+                        variant={
+                          item.tone === "danger"
+                            ? "destructive"
+                            : item.tone === "warning"
+                              ? "secondary"
+                              : "outline"
+                        }
+                      >
+                        {item.statusLabel}
+                      </Badge>
+                    </div>
+                    <p className="mt-2 text-sm text-muted-foreground">{item.detail}</p>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      {item.recommendation}
+                    </p>
+                  </div>
+                ))}
+              </div>
+
+              {report.regulatoryCompliance.subareas.length > 0 ? (
+                <div className="space-y-3">
+                  <div className="space-y-1">
+                    <h3 className="text-base font-semibold">
+                      Recortes analiticos por subarea
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      Use este corte para abrir direto o subconjunto de
+                      `feed-ban`, quarentena, documental ou agua/limpeza.
+                    </p>
+                  </div>
+                  {report.regulatoryCompliance.subareas.map((item) => (
+                    <div
+                      key={item.key}
+                      className="rounded-xl border p-4"
+                    >
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div className="space-y-2">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="font-medium">{item.label}</p>
+                            <Badge
+                              variant={
+                                item.tone === "danger"
+                                  ? "destructive"
+                                  : item.tone === "warning"
+                                    ? "secondary"
+                                    : "outline"
+                              }
+                            >
+                              {item.openCount} pendencia(s)
+                            </Badge>
+                            {item.blockerCount > 0 ? (
+                              <Badge variant="destructive">
+                                {item.blockerCount} bloqueio(s)
+                              </Badge>
+                            ) : null}
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            {item.recommendation}
+                          </p>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          <Button asChild size="sm" variant="outline">
+                            <Link to={`/protocolos-sanitarios?overlaySubarea=${item.key}`}>
+                              Abrir overlay
+                            </Link>
+                          </Button>
+                          <Button asChild size="sm" variant="ghost">
+                            <Link to={`/eventos?dominio=conformidade&overlaySubarea=${item.key}`}>
+                              Ver historico
+                            </Link>
+                          </Button>
+                          <Button asChild size="sm" variant="ghost">
+                            <Link to={`/animais?overlaySubarea=${item.key}`}>
+                              Ver animais
+                            </Link>
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+
+              {report.regulatoryCompliance.impacts.length > 0 ? (
+                <div className="space-y-3">
+                  <div className="space-y-1">
+                    <h3 className="text-base font-semibold">
+                      Impacto operacional da conformidade
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      Leitura por efeito real no fluxo: nutricao, lote e
+                      transito/venda.
+                    </p>
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    {report.regulatoryCompliance.impacts.map((item) => (
+                      <div
+                        key={item.key}
+                        className="rounded-xl border p-4"
+                      >
+                        <div className="space-y-2">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="font-medium">{item.label}</p>
+                            <Badge
+                              variant={
+                                item.tone === "danger"
+                                  ? "destructive"
+                                  : item.tone === "warning"
+                                    ? "secondary"
+                                    : "outline"
+                              }
+                            >
+                              {item.totalCount > 0
+                                ? `${item.totalCount} alerta(s)`
+                                : "Sem restricao"}
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            {item.message}
+                          </p>
+                          <div className="flex flex-wrap gap-2 pt-1">
+                            <Button asChild size="sm" variant="outline">
+                              <Link to={`/protocolos-sanitarios?overlayImpact=${item.key}`}>
+                                Abrir overlay
+                              </Link>
+                            </Button>
+                            <Button asChild size="sm" variant="ghost">
+                              <Link to={`/eventos?dominio=conformidade&overlayImpact=${item.key}`}>
+                                Ver historico
+                              </Link>
+                            </Button>
+                            <Button asChild size="sm" variant="ghost">
+                              <Link to={`/animais?overlayImpact=${item.key}`}>
+                                Ver animais
+                              </Link>
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+            </CardContent>
+          </Card>
+        </section>
+      ) : null}
+
       <section className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
         <Card>
           <CardHeader>
             <CardTitle className="text-xl">Agenda que exige atencao</CardTitle>
             <CardDescription>
-              Proximas tarefas abertas, com destaque para o que ja passou do prazo.
+              Proximas tarefas abertas, com prioridade sanitaria quando houver
+              protocolo obrigatorio ou janela critica.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -467,9 +699,9 @@ const Relatorios = () => {
                       <p className="font-medium">{item.titulo}</p>
                       <Badge
                         variant={
-                          item.status === "atrasado"
+                          item.priorityTone === "danger" || item.status === "atrasado"
                             ? "destructive"
-                            : item.status === "hoje"
+                            : item.priorityTone === "warning" || item.status === "hoje"
                               ? "secondary"
                               : "outline"
                         }
@@ -480,8 +712,32 @@ const Relatorios = () => {
                             ? "Hoje"
                             : "Proximo"}
                       </Badge>
+                      {item.priorityLabel ? (
+                        <Badge
+                          variant={
+                            item.priorityTone === "danger"
+                              ? "destructive"
+                              : item.priorityTone === "warning"
+                                ? "secondary"
+                                : "outline"
+                          }
+                        >
+                          {item.priorityLabel}
+                        </Badge>
+                      ) : null}
                     </div>
                     <p className="text-sm text-muted-foreground">{item.contexto}</p>
+                    {item.scheduleLabel ? (
+                      <p className="text-sm text-muted-foreground">
+                        Periodicidade: {item.scheduleLabel}
+                      </p>
+                    ) : null}
+                    {item.scheduleModeLabel ? (
+                      <p className="text-sm text-muted-foreground">
+                        Tipo de agenda: {item.scheduleModeLabel}
+                        {item.scheduleAnchorLabel ? ` | Ancora: ${item.scheduleAnchorLabel}` : ""}
+                      </p>
+                    ) : null}
                   </div>
                   <span className="text-sm text-muted-foreground">
                     {formatDate(item.data)}

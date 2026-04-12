@@ -9,12 +9,19 @@ import { validateMovimentacaoInput } from "./movimentacao";
 import { validateNutricaoInput } from "./nutricao";
 import { validatePesagemInput } from "./pesagem";
 import { validateSanitarioInput } from "./sanitario";
+import { validateObitoInput } from "./obito";
+import { validateAlertaSanitarioInput } from "./alertaSanitario";
+import { validateConformidadeInput } from "./conformidade";
 
 export const validateEventInput = (input: EventInput): EventValidationIssue[] => {
   const issues = [...validateBaseEventInput(input)];
 
   if (input.dominio === "sanitario") {
     issues.push(...validateSanitarioInput(input));
+  } else if (input.dominio === "alerta_sanitario") {
+    issues.push(...validateAlertaSanitarioInput(input));
+  } else if (input.dominio === "conformidade") {
+    issues.push(...validateConformidadeInput(input));
   } else if (input.dominio === "pesagem") {
     issues.push(...validatePesagemInput(input));
   } else if (input.dominio === "movimentacao") {
@@ -23,6 +30,8 @@ export const validateEventInput = (input: EventInput): EventValidationIssue[] =>
     issues.push(...validateNutricaoInput(input));
   } else if (input.dominio === "financeiro") {
     issues.push(...validateFinanceiroInput(input));
+  } else if (input.dominio === "obito") {
+    issues.push(...validateObitoInput(input));
   }
 
   return issues;
@@ -39,4 +48,3 @@ export const assertValidEventInput = (input: EventInput): void => {
     throw new EventValidationError(issues);
   }
 };
-

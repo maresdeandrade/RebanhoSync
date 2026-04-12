@@ -19,6 +19,11 @@ import {
   type FarmMeasurementConfig,
   resolveFarmMeasurementConfig,
 } from "@/lib/farms/measurementConfig";
+import {
+  DEFAULT_NOTIFICATION_PREFERENCES,
+  resolveNotificationPreferences,
+  type NotificationPreferences,
+} from "@/lib/notifications/sanitaryReminders";
 
 
 // Role schema for runtime validation
@@ -34,6 +39,7 @@ interface AuthContextType {
   farmExperienceMode: FarmExperienceMode;
   farmLifecycleConfig: FarmLifecycleConfig;
   farmMeasurementConfig: FarmMeasurementConfig;
+  notificationPreferences: NotificationPreferences;
   loadRoleForFarm: (userId: string, farmId: string) => Promise<void>;
   setActiveFarm: (farmId: string) => Promise<void>;
   refreshSettings: () => Promise<void>;
@@ -99,6 +105,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     useState<FarmLifecycleConfig>(DEFAULT_FARM_LIFECYCLE_CONFIG);
   const [farmMeasurementConfig, setFarmMeasurementConfig] =
     useState<FarmMeasurementConfig>(DEFAULT_FARM_MEASUREMENT_CONFIG);
+  const [notificationPreferences, setNotificationPreferences] =
+    useState<NotificationPreferences>(DEFAULT_NOTIFICATION_PREFERENCES);
 
   const loadRoleForFarm = useCallback(async (userId: string, farmId: string) => {
     const nextRole = await fetchMembershipRole(userId, farmId);
@@ -167,6 +175,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setFarmExperienceMode(DEFAULT_FARM_EXPERIENCE_MODE);
         setFarmLifecycleConfig(DEFAULT_FARM_LIFECYCLE_CONFIG);
         setFarmMeasurementConfig(DEFAULT_FARM_MEASUREMENT_CONFIG);
+        setNotificationPreferences(DEFAULT_NOTIFICATION_PREFERENCES);
         return;
       }
 
@@ -174,7 +183,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       const { data: settings, error } = await supabase
         .from("user_settings")
-        .select("active_fazenda_id, theme")
+        .select("active_fazenda_id, theme, notifications")
         .eq("user_id", user.id)
         .maybeSingle();
 
@@ -182,6 +191,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         console.warn("[useAuth] Error fetching user_settings:", error);
         return;
       }
+
+      setNotificationPreferences(
+        resolveNotificationPreferences(settings?.notifications ?? null),
+      );
 
       const resolvedFarmId = settings?.active_fazenda_id ?? localFarmId ?? null;
       let persistLocalFarmId: string | null = null;
@@ -218,6 +231,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             setFarmExperienceMode(DEFAULT_FARM_EXPERIENCE_MODE);
             setFarmLifecycleConfig(DEFAULT_FARM_LIFECYCLE_CONFIG);
             setFarmMeasurementConfig(DEFAULT_FARM_MEASUREMENT_CONFIG);
+            setNotificationPreferences(DEFAULT_NOTIFICATION_PREFERENCES);
           }
         }
       } else {
@@ -226,6 +240,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setFarmExperienceMode(DEFAULT_FARM_EXPERIENCE_MODE);
         setFarmLifecycleConfig(DEFAULT_FARM_LIFECYCLE_CONFIG);
         setFarmMeasurementConfig(DEFAULT_FARM_MEASUREMENT_CONFIG);
+        setNotificationPreferences(DEFAULT_NOTIFICATION_PREFERENCES);
       }
 
       if (persistLocalFarmId) {
@@ -297,6 +312,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setFarmExperienceMode(DEFAULT_FARM_EXPERIENCE_MODE);
         setFarmLifecycleConfig(DEFAULT_FARM_LIFECYCLE_CONFIG);
         setFarmMeasurementConfig(DEFAULT_FARM_MEASUREMENT_CONFIG);
+        setNotificationPreferences(DEFAULT_NOTIFICATION_PREFERENCES);
         removeActiveFarmId();
       }
       setLoading(false);
@@ -315,6 +331,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setFarmExperienceMode(DEFAULT_FARM_EXPERIENCE_MODE);
       setFarmLifecycleConfig(DEFAULT_FARM_LIFECYCLE_CONFIG);
       setFarmMeasurementConfig(DEFAULT_FARM_MEASUREMENT_CONFIG);
+      setNotificationPreferences(DEFAULT_NOTIFICATION_PREFERENCES);
       removeActiveFarmId();
     } catch (e) {
       console.error("[useAuth] Error signing out:", e);
@@ -332,6 +349,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         farmExperienceMode,
         farmLifecycleConfig,
         farmMeasurementConfig,
+        notificationPreferences,
         setActiveFarm,
         loadRoleForFarm,
         refreshSettings,

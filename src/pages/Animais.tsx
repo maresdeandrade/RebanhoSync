@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { type Collection } from "dexie";
 import { useLiveQuery } from "dexie-react-hooks";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
   AlertTriangle,
   CalendarClock,
@@ -65,8 +65,34 @@ import {
   formatWeightPerDay,
 } from "@/lib/format/weight";
 import { db } from "@/lib/offline/db";
+import { triggerDownload } from "@/lib/offline/rejections";
 import { type AgendaItem, type Animal } from "@/lib/offline/types";
 import { getReproductionEventsJoined } from "@/lib/reproduction/selectors";
+import {
+  describeSanitaryCalendarAnchor,
+  describeSanitaryCalendarMode,
+  type SanitaryBaseCalendarAnchor,
+  type SanitaryBaseCalendarMode,
+} from "@/lib/sanitario/calendar";
+import { resolveSanitaryAgendaItemScheduleMeta } from "@/lib/sanitario/agendaSchedule";
+import {
+  buildRegulatoryOperationalReadModel,
+  EMPTY_REGULATORY_OPERATIONAL_READ_MODEL,
+  getRegulatoryAnalyticsImpactLabel,
+  getRegulatoryAnalyticsSubareaLabel,
+  loadRegulatorySurfaceSource,
+  parseRegulatoryAnalyticsImpactKey,
+  parseRegulatoryAnalyticsSubareaKey,
+  type RegulatoryAnalyticsImpactKey,
+  type RegulatoryAnalyticsSubareaKey,
+} from "@/lib/sanitario/regulatoryReadModel";
+import {
+  buildAnimalRegulatoryExportCsv,
+  buildAnimalRegulatoryProfile,
+  getAnimalRegulatoryImpactLabel,
+  matchesAnimalRegulatoryFilters,
+  type AnimalRegulatoryProfile,
+} from "@/lib/sanitario/regulatoryAnimals";
 import { cn } from "@/lib/utils";
 
 const CATEGORY_FILTERS = [
@@ -96,6 +122,8 @@ const PRODUCTIVE_STATE_FILTERS = [
 
 const DOMAIN_LABEL: Record<string, string> = {
   sanitario: "Sanitario",
+  alerta_sanitario: "Alerta sanitario",
+  conformidade: "Conformidade",
   pesagem: "Pesagem",
   nutricao: "Nutricao",
   movimentacao: "Movimentacao",
@@ -118,7 +146,17 @@ type AnimalNextAgendaSummary = {
   titulo: string;
   data: string;
   status: "atrasado" | "hoje" | "proximo";
+  scheduleLabel: string | null;
+  scheduleMode: SanitaryBaseCalendarMode | null;
+  scheduleModeLabel: string | null;
+  scheduleAnchor: SanitaryBaseCalendarAnchor | null;
+  scheduleAnchorLabel: string | null;
 };
+
+type RegulatoryImpactFilter = RegulatoryAnalyticsImpactKey | "all";
+type RegulatorySubareaFilter = RegulatoryAnalyticsSubareaKey | "all";
+type AnimalCalendarModeFilter = "all" | SanitaryBaseCalendarMode;
+type AnimalCalendarAnchorFilter = "all" | SanitaryBaseCalendarAnchor;
 
 type PaginationToken = number | "ellipsis-left" | "ellipsis-right";
 
@@ -170,6 +208,37 @@ function getAgendaStatusLabel(status: AnimalNextAgendaSummary["status"]) {
   return "Proximo";
 }
 
+function parseCalendarModeFilter(value: string | null): AnimalCalendarModeFilter {
+  if (
+    value === "campaign" ||
+    value === "age_window" ||
+    value === "rolling_interval" ||
+    value === "immediate" ||
+    value === "clinical_protocol"
+  ) {
+    return value;
+  }
+
+  return "all";
+}
+
+function parseCalendarAnchorFilter(
+  value: string | null,
+): AnimalCalendarAnchorFilter {
+  if (
+    value === "calendar_month" ||
+    value === "birth" ||
+    value === "weaning" ||
+    value === "pre_breeding_season" ||
+    value === "clinical_need" ||
+    value === "dry_off"
+  ) {
+    return value;
+  }
+
+  return "all";
+}
+
 function buildPaginationTokens(
   currentPage: number,
   totalPages: number,
@@ -198,8 +267,35 @@ function buildPaginationTokens(
   return tokens;
 }
 
+function buildAnimalExportFilename(input: {
+  farmId: string | null;
+  impact: RegulatoryImpactFilter;
+  subarea: RegulatorySubareaFilter;
+}) {
+  const dateTag = new Date().toISOString().slice(0, 10);
+  const scope =
+    input.subarea !== "all"
+      ? input.subarea
+      : input.impact !== "all"
+        ? input.impact
+        : "restricoes";
+
+  return `animais_restricao_regulatoria_${(input.farmId ?? "fazenda").slice(0, 8)}_${scope}_${dateTag}.csv`;
+}
+
 export default function Animais() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const regulatoryImpactFromQuery =
+    parseRegulatoryAnalyticsImpactKey(searchParams.get("overlayImpact")) ?? "all";
+  const regulatorySubareaFromQuery =
+    parseRegulatoryAnalyticsSubareaKey(searchParams.get("overlaySubarea")) ?? "all";
+  const calendarModeFromQuery = parseCalendarModeFilter(
+    searchParams.get("calendarMode"),
+  );
+  const calendarAnchorFromQuery = parseCalendarAnchorFilter(
+    searchParams.get("calendarAnchor"),
+  );
   const { activeFarmId, farmLifecycleConfig, farmMeasurementConfig } = useAuth();
   const [search, setSearch] = useState("");
   const [loteFilter, setLoteFilter] = useState<string>("all");
@@ -208,9 +304,33 @@ export default function Animais() {
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [productiveStateFilter, setProductiveStateFilter] =
     useState<string>("all");
+  const [regulatoryImpactFilter, setRegulatoryImpactFilter] =
+    useState<RegulatoryImpactFilter>(regulatoryImpactFromQuery);
+  const [regulatorySubareaFilter, setRegulatorySubareaFilter] =
+    useState<RegulatorySubareaFilter>(regulatorySubareaFromQuery);
+  const [calendarModeFilter, setCalendarModeFilter] =
+    useState<AnimalCalendarModeFilter>(calendarModeFromQuery);
+  const [calendarAnchorFilter, setCalendarAnchorFilter] =
+    useState<AnimalCalendarAnchorFilter>(calendarAnchorFromQuery);
   const [page, setPage] = useState(1);
   const debouncedSearch = useDebouncedValue(search, 300);
   const lotes = useLotes();
+
+  useEffect(() => {
+    setRegulatoryImpactFilter(regulatoryImpactFromQuery);
+  }, [regulatoryImpactFromQuery]);
+
+  useEffect(() => {
+    setRegulatorySubareaFilter(regulatorySubareaFromQuery);
+  }, [regulatorySubareaFromQuery]);
+
+  useEffect(() => {
+    setCalendarModeFilter(calendarModeFromQuery);
+  }, [calendarModeFromQuery]);
+
+  useEffect(() => {
+    setCalendarAnchorFilter(calendarAnchorFromQuery);
+  }, [calendarAnchorFromQuery]);
 
   const animaisFamilia = useLiveQuery(async () => {
     let collection: Collection<Animal, string>;
@@ -323,20 +443,60 @@ export default function Animais() {
       }
     }
 
+    const protocolItemIds = Array.from(
+      new Set(
+        Array.from(byAnimal.values())
+          .map((item) => item.protocol_item_version_id)
+          .filter((value): value is string => typeof value === "string" && value.length > 0),
+      ),
+    );
+    const protocolItems =
+      protocolItemIds.length > 0
+        ? await db.state_protocolos_sanitarios_itens.bulkGet(protocolItemIds)
+        : [];
+    const protocolItemById = new Map(
+      protocolItems
+        .filter((item): item is NonNullable<(typeof protocolItems)[number]> => Boolean(item))
+        .map((item) => [item.id, item]),
+    );
+
     return Array.from(byAnimal.entries()).map(
-      ([animalId, item]): AnimalNextAgendaSummary => ({
-        animalId,
-        titulo: formatAgendaTitle(item),
-        data: item.data_prevista,
-        status:
-          item.data_prevista < todayKey
-            ? "atrasado"
-            : item.data_prevista === todayKey
-              ? "hoje"
-              : "proximo",
-      }),
+      ([animalId, item]): AnimalNextAgendaSummary => {
+        const protocolItem =
+          item.protocol_item_version_id
+            ? protocolItemById.get(item.protocol_item_version_id) ?? null
+            : null;
+        const scheduleMeta = resolveSanitaryAgendaItemScheduleMeta(
+          item,
+          protocolItem,
+        );
+
+        return {
+          animalId,
+          titulo: formatAgendaTitle(item),
+          data: item.data_prevista,
+          status:
+            item.data_prevista < todayKey
+              ? "atrasado"
+              : item.data_prevista === todayKey
+                ? "hoje"
+                : "proximo",
+          scheduleLabel: scheduleMeta?.label ?? null,
+          scheduleMode: scheduleMeta?.mode ?? null,
+          scheduleModeLabel: scheduleMeta?.modeLabel ?? null,
+          scheduleAnchor: scheduleMeta?.anchor ?? null,
+          scheduleAnchorLabel: scheduleMeta?.anchorLabel ?? null,
+        };
+      },
     );
   }, [activeFarmId]);
+  const regulatoryReadModel =
+    useLiveQuery(async () => {
+      if (!activeFarmId) return EMPTY_REGULATORY_OPERATIONAL_READ_MODEL;
+      return buildRegulatoryOperationalReadModel(
+        await loadRegulatorySurfaceSource(activeFarmId),
+      );
+    }, [activeFarmId]) ?? EMPTY_REGULATORY_OPERATIONAL_READ_MODEL;
 
   const lotesMap = useMemo(
     () => new Map((lotes ?? []).map((lote) => [lote.id, lote])),
@@ -426,26 +586,68 @@ export default function Animais() {
       ]),
     );
   }, [animaisFamilia, farmLifecycleConfig, reproductionEvents]);
+  const regulatoryProfileByAnimal = useMemo(() => {
+    return new Map(
+      (animaisFamilia ?? []).map((animal) => [
+        animal.id,
+        buildAnimalRegulatoryProfile(animal, regulatoryReadModel),
+      ]),
+    );
+  }, [animaisFamilia, regulatoryReadModel]);
 
   const filteredAnimals = useMemo(() => {
     return (animais ?? []).filter((animal) => {
       const taxonomy = taxonomyByAnimal.get(animal.id);
-      if (!taxonomy) return true;
+      const regulatoryProfile = regulatoryProfileByAnimal.get(animal.id);
+      if (taxonomy) {
+        if (
+          categoryFilter !== "all" &&
+          taxonomy.categoria_zootecnica !== categoryFilter
+        ) {
+          return false;
+        }
+        if (
+          productiveStateFilter !== "all" &&
+          taxonomy.estado_produtivo_reprodutivo !== productiveStateFilter
+        ) {
+          return false;
+        }
+      }
       if (
-        categoryFilter !== "all" &&
-        taxonomy.categoria_zootecnica !== categoryFilter
+        !matchesAnimalRegulatoryFilters(regulatoryProfile, {
+          impact: regulatoryImpactFilter,
+          subarea: regulatorySubareaFilter,
+        })
+      ) {
+        return false;
+      }
+      const nextAgenda = nextAgendaByAnimal.get(animal.id);
+      if (
+        calendarModeFilter !== "all" &&
+        nextAgenda?.scheduleMode !== calendarModeFilter
       ) {
         return false;
       }
       if (
-        productiveStateFilter !== "all" &&
-        taxonomy.estado_produtivo_reprodutivo !== productiveStateFilter
+        calendarAnchorFilter !== "all" &&
+        nextAgenda?.scheduleAnchor !== calendarAnchorFilter
       ) {
         return false;
       }
       return true;
     });
-  }, [animais, categoryFilter, productiveStateFilter, taxonomyByAnimal]);
+  }, [
+    animais,
+    calendarAnchorFilter,
+    calendarModeFilter,
+    categoryFilter,
+    productiveStateFilter,
+    nextAgendaByAnimal,
+    regulatoryImpactFilter,
+    regulatoryProfileByAnimal,
+    regulatorySubareaFilter,
+    taxonomyByAnimal,
+  ]);
 
   const animalRows = useMemo(() => {
     return buildAnimalFamilyRows(filteredAnimals, animaisFamilia ?? []);
@@ -465,7 +667,11 @@ export default function Animais() {
     sexoFilter !== "all" ||
     statusFilter !== "ativo" ||
     categoryFilter !== "all" ||
-    productiveStateFilter !== "all";
+    productiveStateFilter !== "all" ||
+    calendarModeFilter !== "all" ||
+    calendarAnchorFilter !== "all" ||
+    regulatoryImpactFilter !== "all" ||
+    regulatorySubareaFilter !== "all";
 
   useEffect(() => {
     setPage(1);
@@ -477,6 +683,10 @@ export default function Animais() {
     statusFilter,
     categoryFilter,
     productiveStateFilter,
+    calendarModeFilter,
+    calendarAnchorFilter,
+    regulatoryImpactFilter,
+    regulatorySubareaFilter,
   ]);
 
   const totalAnimalRows = animalRows.length;
@@ -549,6 +759,67 @@ export default function Animais() {
       }).length,
     [animalRows, nextAgendaByAnimal],
   );
+  const regulatoryImpactedAnimals = useMemo(
+    () =>
+      filteredAnimals.filter(
+        (animal) => regulatoryProfileByAnimal.get(animal.id)?.hasIssues,
+      ),
+    [filteredAnimals, regulatoryProfileByAnimal],
+  );
+  const regulatoryBlockingAnimalsCount = useMemo(
+    () =>
+      regulatoryImpactedAnimals.filter(
+        (animal) => regulatoryProfileByAnimal.get(animal.id)?.hasBlockingIssues,
+      ).length,
+    [regulatoryImpactedAnimals, regulatoryProfileByAnimal],
+  );
+  const regulatoryFilterLabels = useMemo(() => {
+    const labels: string[] = [];
+
+    if (regulatorySubareaFilter !== "all") {
+      labels.push(getRegulatoryAnalyticsSubareaLabel(regulatorySubareaFilter));
+    }
+    if (regulatoryImpactFilter !== "all") {
+      labels.push(getRegulatoryAnalyticsImpactLabel(regulatoryImpactFilter));
+    }
+
+    return labels;
+  }, [regulatoryImpactFilter, regulatorySubareaFilter]);
+  const calendarFilterLabels = useMemo(() => {
+    const labels: string[] = [];
+
+    if (calendarModeFilter !== "all") {
+      labels.push(describeSanitaryCalendarMode(calendarModeFilter));
+    }
+    if (calendarAnchorFilter !== "all") {
+      labels.push(describeSanitaryCalendarAnchor(calendarAnchorFilter) ?? "Sem ancora");
+    }
+
+    return labels;
+  }, [calendarAnchorFilter, calendarModeFilter]);
+
+  function handleExportRegulatoryCut() {
+    const csv = buildAnimalRegulatoryExportCsv({
+      animals: filteredAnimals,
+      profilesByAnimalId: regulatoryProfileByAnimal,
+      resolveLoteName: (loteId) =>
+        loteId ? lotesMap.get(loteId)?.nome ?? "Lote sem nome" : "Sem lote",
+      resolveCategoryLabel: (animalId) =>
+        taxonomyByAnimal.get(animalId)?.display.categoria ?? "",
+    });
+    const blob = new Blob(["\ufeff", csv], {
+      type: "text/csv;charset=utf-8",
+    });
+
+    triggerDownload(
+      blob,
+      buildAnimalExportFilename({
+        farmId: activeFarmId,
+        impact: regulatoryImpactFilter,
+        subarea: regulatorySubareaFilter,
+      }),
+    );
+  }
 
   if (!animais || (animais.length === 0 && !hasFilters)) {
     return (
@@ -610,6 +881,23 @@ export default function Animais() {
                 {lifecyclePendingCount} transicao(oes) pendente(s)
               </StatusBadge>
             ) : null}
+            {regulatoryReadModel.hasOpenIssues ? (
+              <StatusBadge
+                tone={regulatoryReadModel.hasBlockingIssues ? "danger" : "warning"}
+              >
+                {regulatoryImpactedAnimals.length} com restricao regulatoria
+              </StatusBadge>
+            ) : null}
+            {regulatoryFilterLabels.map((label) => (
+              <StatusBadge key={label} tone="info">
+                {label}
+              </StatusBadge>
+            ))}
+            {calendarFilterLabels.map((label) => (
+              <StatusBadge key={label} tone="info">
+                {label}
+              </StatusBadge>
+            ))}
           </>
         }
         actions={
@@ -659,6 +947,88 @@ export default function Animais() {
           icon={<CalendarClock className="h-5 w-5" />}
         />
       </section>
+
+      {regulatoryReadModel.hasOpenIssues ? (
+        <Card className="border-amber-200 bg-amber-50/60">
+          <CardHeader>
+            <CardTitle>Restricoes regulatorias no rebanho</CardTitle>
+            <CardDescription>
+              A mesma leitura compartilhada do overlay oficial agora tambem
+              recorta a lista animal-centric e a exportacao dedicada por
+              impacto operacional.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex flex-wrap gap-2">
+              <StatusBadge
+                tone={regulatoryReadModel.hasBlockingIssues ? "danger" : "warning"}
+              >
+                {regulatoryImpactedAnimals.length} animal(is) impactado(s)
+              </StatusBadge>
+              {regulatoryBlockingAnimalsCount > 0 ? (
+                <StatusBadge tone="danger">
+                  {regulatoryBlockingAnimalsCount} com bloqueio operacional
+                </StatusBadge>
+              ) : null}
+              {regulatoryReadModel.analytics.subareas.map((cut) => (
+                <StatusBadge key={cut.key} tone={cut.tone}>
+                  {cut.label} {cut.openCount}
+                </StatusBadge>
+              ))}
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              {regulatoryReadModel.analytics.impacts
+                .filter((impact) => impact.totalCount > 0)
+                .map((impact) => (
+                  <Button
+                    key={impact.key}
+                    type="button"
+                    size="sm"
+                    variant={
+                      regulatoryImpactFilter === impact.key ? "default" : "outline"
+                    }
+                    onClick={() => {
+                      setRegulatoryImpactFilter(impact.key);
+                      setRegulatorySubareaFilter("all");
+                    }}
+                  >
+                    {impact.label}
+                  </Button>
+                ))}
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                onClick={() => {
+                  setRegulatoryImpactFilter("all");
+                  setRegulatorySubareaFilter("all");
+                }}
+              >
+                Limpar recorte regulatorio
+              </Button>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={handleExportRegulatoryCut}
+                disabled={regulatoryImpactedAnimals.length === 0}
+              >
+                Exportar recorte regulatorio
+              </Button>
+              <Button asChild size="sm" variant="outline">
+                <Link to="/protocolos-sanitarios">Abrir overlay oficial</Link>
+              </Button>
+              <Button asChild size="sm" variant="ghost">
+                <Link to="/eventos?dominio=conformidade">Ver historico</Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      ) : null}
 
       <Toolbar>
         <ToolbarGroup className="flex-1 gap-2">
@@ -742,6 +1112,80 @@ export default function Animais() {
             </SelectContent>
           </Select>
 
+          <Select
+            value={regulatoryImpactFilter}
+            onValueChange={(value) =>
+              setRegulatoryImpactFilter(value as RegulatoryImpactFilter)
+            }
+          >
+            <SelectTrigger className="w-full sm:w-auto min-w-[180px] bg-transparent border-transparent hover:border-border hover:bg-muted/30 transition-colors">
+              <SelectValue placeholder="Impacto regulatorio" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todo impacto regulatorio</SelectItem>
+              <SelectItem value="nutrition">Nutricao</SelectItem>
+              <SelectItem value="movementInternal">Movimentacao interna</SelectItem>
+              <SelectItem value="sale">Venda/transito</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={regulatorySubareaFilter}
+            onValueChange={(value) =>
+              setRegulatorySubareaFilter(value as RegulatorySubareaFilter)
+            }
+          >
+            <SelectTrigger className="w-full sm:w-auto min-w-[180px] bg-transparent border-transparent hover:border-border hover:bg-muted/30 transition-colors">
+              <SelectValue placeholder="Subarea regulatoria" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas as subareas</SelectItem>
+              <SelectItem value="feed_ban">Feed-ban</SelectItem>
+              <SelectItem value="quarentena">Quarentena</SelectItem>
+              <SelectItem value="documental">Documental</SelectItem>
+              <SelectItem value="agua_limpeza">Agua e limpeza</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={calendarModeFilter}
+            onValueChange={(value) =>
+              setCalendarModeFilter(value as AnimalCalendarModeFilter)
+            }
+          >
+            <SelectTrigger className="w-full sm:w-auto min-w-[170px] bg-transparent border-transparent hover:border-border hover:bg-muted/30 transition-colors">
+              <SelectValue placeholder="Calendario" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todo calendario</SelectItem>
+              <SelectItem value="campaign">Campanha</SelectItem>
+              <SelectItem value="age_window">Janela etaria</SelectItem>
+              <SelectItem value="rolling_interval">Recorrente</SelectItem>
+              <SelectItem value="immediate">Uso imediato</SelectItem>
+              <SelectItem value="clinical_protocol">Protocolo clinico</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={calendarAnchorFilter}
+            onValueChange={(value) =>
+              setCalendarAnchorFilter(value as AnimalCalendarAnchorFilter)
+            }
+          >
+            <SelectTrigger className="w-full sm:w-auto min-w-[170px] bg-transparent border-transparent hover:border-border hover:bg-muted/30 transition-colors">
+              <SelectValue placeholder="Ancora" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas as ancoras</SelectItem>
+              <SelectItem value="calendar_month">Calendario</SelectItem>
+              <SelectItem value="birth">Nascimento</SelectItem>
+              <SelectItem value="weaning">Desmama</SelectItem>
+              <SelectItem value="pre_breeding_season">Pre-estacao</SelectItem>
+              <SelectItem value="clinical_need">Necessidade clinica</SelectItem>
+              <SelectItem value="dry_off">Secagem</SelectItem>
+            </SelectContent>
+          </Select>
+
           {hasFilters ? (
             <Button
               aria-label="Limpar filtros"
@@ -754,6 +1198,10 @@ export default function Animais() {
                 setStatusFilter("ativo");
                 setCategoryFilter("all");
                 setProductiveStateFilter("all");
+                setCalendarModeFilter("all");
+                setCalendarAnchorFilter("all");
+                setRegulatoryImpactFilter("all");
+                setRegulatorySubareaFilter("all");
               }}
             >
               <FilterX className="h-4 w-4" />
@@ -837,6 +1285,15 @@ export default function Animais() {
                 const lifecyclePending = lifecyclePendings.get(animal.id);
                 const weightSummary = weightSummaryByAnimal.get(animal.id);
                 const nextAgenda = nextAgendaByAnimal.get(animal.id);
+                const regulatoryProfile =
+                  regulatoryProfileByAnimal.get(animal.id) ??
+                  ({
+                    animalId: animal.id,
+                    restrictions: [],
+                    activeSubareas: [],
+                    hasIssues: false,
+                    hasBlockingIssues: false,
+                  } satisfies AnimalRegulatoryProfile);
 
                 return (
                   <TableRow
@@ -844,6 +1301,7 @@ export default function Animais() {
                     className={cn(
                       depth > 0 && "bg-muted/15",
                       lifecyclePending && "bg-warning-muted/50",
+                      regulatoryProfile.hasBlockingIssues && "bg-danger-muted/35",
                     )}
                   >
                     <TableCell className="align-top">
@@ -958,6 +1416,23 @@ export default function Animais() {
                             {getAgendaStatusLabel(nextAgenda.status)}
                           </StatusBadge>
                           <p className="text-sm font-medium">{nextAgenda.titulo}</p>
+                          {nextAgenda.scheduleLabel ? (
+                            <p className="text-xs text-muted-foreground">
+                              {nextAgenda.scheduleLabel}
+                            </p>
+                          ) : null}
+                          {nextAgenda.scheduleModeLabel ? (
+                            <div className="flex flex-wrap gap-2">
+                              <StatusBadge tone="info">
+                                {nextAgenda.scheduleModeLabel}
+                              </StatusBadge>
+                              {nextAgenda.scheduleAnchorLabel ? (
+                                <StatusBadge tone="neutral">
+                                  {nextAgenda.scheduleAnchorLabel}
+                                </StatusBadge>
+                              ) : null}
+                            </div>
+                          ) : null}
                           <p className="text-xs text-muted-foreground">
                             {formatDate(nextAgenda.data)}
                           </p>
@@ -1003,11 +1478,29 @@ export default function Animais() {
                               {animal.status}
                             </StatusBadge>
                           ) : null}
+                          {regulatoryProfile.restrictions.map((restriction) => (
+                            <StatusBadge
+                              key={restriction.key}
+                              tone={restriction.tone}
+                            >
+                              {restriction.label}
+                            </StatusBadge>
+                          ))}
                         </div>
                       ) : (
-                        <StatusBadge tone={animal.status === "vendido" ? "neutral" : getProductiveTone(animal.status)}>
-                          {animal.status}
-                        </StatusBadge>
+                        <div className="space-y-1">
+                          <StatusBadge tone={animal.status === "vendido" ? "neutral" : getProductiveTone(animal.status)}>
+                            {animal.status}
+                          </StatusBadge>
+                          {regulatoryProfile.restrictions.map((restriction) => (
+                            <StatusBadge
+                              key={restriction.key}
+                              tone={restriction.tone}
+                            >
+                              {restriction.label}
+                            </StatusBadge>
+                          ))}
+                        </div>
                       )}
                     </TableCell>
 

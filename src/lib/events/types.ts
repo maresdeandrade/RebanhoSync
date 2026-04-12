@@ -1,18 +1,16 @@
-import type {
-  AnimalStatusEnum,
-  FinanceiroTipoEnum,
-  OperationInput,
-  SanitarioTipoEnum,
-  ReproTipoEnum,
-} from "@/lib/offline/types";
+import type { AnimalStatusEnum, FinanceiroTipoEnum, OperationInput, SanitarioTipoEnum, ReproTipoEnum, CausaObitoEnum } from "@/lib/offline/types";
+import type { VeterinaryProductSelection } from "@/lib/sanitario/products";
 
 export type EventDomain =
   | "sanitario"
+  | "alerta_sanitario"
+  | "conformidade"
   | "pesagem"
   | "movimentacao"
   | "nutricao"
   | "financeiro"
-  | "reproducao";
+  | "reproducao"
+  | "obito";
 
 export interface BaseEventInput {
   dominio: EventDomain;
@@ -38,6 +36,18 @@ export interface SanitarioEventInput extends BaseEventInput {
   tipo: SanitarioTipoEnum;
   produto: string;
   protocoloItem?: ProtocoloAgendaRefInput;
+  produtoRef?: VeterinaryProductSelection;
+}
+
+export interface AlertaSanitarioEventInput extends BaseEventInput {
+  dominio: "alerta_sanitario";
+  alertKind: "suspeita_aberta" | "suspeita_encerrada";
+  animalPayload: Record<string, unknown>;
+}
+
+export interface ConformidadeEventInput extends BaseEventInput {
+  dominio: "conformidade";
+  complianceKind: "feed_ban" | "checklist";
 }
 
 export interface PesagemEventInput extends BaseEventInput {
@@ -61,6 +71,13 @@ export interface NutricaoEventInput extends BaseEventInput {
   quantidadeKg: number;
 }
 
+export interface ObitoEventInput extends BaseEventInput {
+  dominio: "obito";
+  causa?: CausaObitoEnum;
+  dataObito?: string; // YYYY-MM-DD, defaults to today if omitted
+  cancelAgendaIds?: string[]; // IDs of pending agenda items to cancel
+}
+
 export interface FinanceiroEventInput extends BaseEventInput {
   dominio: "financeiro";
   tipo: FinanceiroTipoEnum;
@@ -70,6 +87,7 @@ export interface FinanceiroEventInput extends BaseEventInput {
   clearAnimalLoteOnSale?: boolean;
   animalSaleStatus?: Extract<AnimalStatusEnum, "vendido" | "morto">;
 }
+
 
 
 
@@ -101,10 +119,13 @@ export interface ReproductionEventInput extends BaseEventInput {
 
 export type EventInput =
   | SanitarioEventInput
+  | AlertaSanitarioEventInput
+  | ConformidadeEventInput
   | PesagemEventInput
   | MovimentacaoEventInput
   | NutricaoEventInput
   | FinanceiroEventInput
+  | ObitoEventInput
   | ReproductionEventInput;
 
 export interface EventGestureBuildResult {

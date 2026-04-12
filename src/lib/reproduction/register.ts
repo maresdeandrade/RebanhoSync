@@ -36,6 +36,7 @@ interface BuildReproductionGestureInput {
   animalIdentificacao?: string;
   loteId?: string | null;
   paiId?: string | null;
+  maeRaca?: string | null;
 }
 
 export interface ReproductionGestureBuildResult
@@ -70,10 +71,11 @@ function buildGeneratedCalves(
     animalIdentificacao,
     loteId = null,
     paiId = null,
+    maeRaca = null,
     data,
   }: Pick<
     BuildReproductionGestureInput,
-    "animalId" | "animalIdentificacao" | "loteId" | "paiId" | "data"
+    "animalId" | "animalIdentificacao" | "loteId" | "paiId" | "maeRaca" | "data"
   >,
 ): { calfIds: string[]; ops: OperationInput[] } {
   if (data.tipo !== "parto") return { calfIds: [], ops: [] };
@@ -111,7 +113,7 @@ function buildGeneratedCalves(
           nome: cria?.nome?.trim() || null,
           rfid: null,
           origem: "nascimento",
-          raca: null,
+          raca: maeRaca,
           papel_macho: null,
           habilitado_monta: false,
           observacoes: null,
@@ -272,6 +274,7 @@ export function buildReproductionGesture({
   animalIdentificacao,
   loteId = null,
   paiId = null,
+  maeRaca = null,
   data,
 }: BuildReproductionGestureInput): ReproductionGestureBuildResult {
   if (data.tipo === "parto") {
@@ -339,6 +342,7 @@ export function buildReproductionGesture({
       animalIdentificacao,
       loteId,
       paiId,
+      maeRaca,
       data,
     },
   );
@@ -355,9 +359,13 @@ export async function prepareReproductionGesture(
 ) {
   const paiId = await resolvePartoFatherId(input);
   const expectedBirthDate = await resolveExpectedBirthDate(input);
+  const animal = await db.state_animais.get(input.animalId);
+  const maeRaca = animal?.raca ?? null;
+
   const built = buildReproductionGesture({
     ...input,
     paiId,
+    maeRaca,
     data: {
       ...input.data,
       dataPrevistaParto: expectedBirthDate ?? input.data.dataPrevistaParto,

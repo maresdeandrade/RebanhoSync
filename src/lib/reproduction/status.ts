@@ -82,6 +82,11 @@ export function computeReproStatus(events: ReproEventJoined[]): AnimalReproStatu
       continue;
     }
 
+    if (type === 'aborto') {
+      // Abortion resets the status to VAZIA.
+      return createStatus('VAZIA', evt, diffDays, null);
+    }
+
     if (type === 'cobertura' || type === 'IA') {
       // Found a service (and no later Parto/Diag stopped us).
       return createStatus('SERVIDA', evt, diffDays, estimateDiagDate(date));

@@ -23,7 +23,7 @@ const FK_CONSTRAINT_REASON: Record<string, string> = {
   fk_evt_fin_contraparte_fazenda: 'VALIDATION_FINANCEIRO_CONTRAPARTE',
 };
 
-const TABLE_PRIMARY_KEY: Record<string, 'id' | 'evento_id' | 'user_id'> = {
+const TABLE_PRIMARY_KEY: Record<string, 'id' | 'evento_id' | 'user_id' | 'fazenda_id'> = {
   eventos_sanitario: 'evento_id',
   eventos_pesagem: 'evento_id',
   eventos_nutricao: 'evento_id',
@@ -32,6 +32,7 @@ const TABLE_PRIMARY_KEY: Record<string, 'id' | 'evento_id' | 'user_id'> = {
   eventos_financeiro: 'evento_id',
   user_profiles: 'user_id',
   user_settings: 'user_id',
+  fazenda_sanidade_config: 'fazenda_id',
 };
 
 function extractConstraintName(error: DbErrorLike): string | null {
@@ -126,7 +127,7 @@ export function resolveOperationPrimaryKey(
     }
   }
 
-  const fallbackFields = ['id', 'evento_id', 'user_id'] as const;
+  const fallbackFields = ['id', 'evento_id', 'user_id', 'fazenda_id'] as const;
   for (const field of fallbackFields) {
     const value = op.record?.[field];
     if (typeof value === 'string' && value.length > 0) {

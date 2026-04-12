@@ -1,0 +1,1213 @@
+﻿diff --git a/src/components/events/ReproductionForm.tsx b/src/components/events/ReproductionForm.tsx
+index 8267fda..1061d87 100644
+--- a/src/components/events/ReproductionForm.tsx
++++ b/src/components/events/ReproductionForm.tsx
+@@ -8,7 +8,10 @@ import {
+   REPRODUCTION_TECHNIQUE_OPTIONS,
+ } from "@/lib/animals/catalogs";
+ import { Input } from "@/components/ui/input";
++import { Button } from "@/components/ui/button";
++import { cn } from "@/lib/utils";
+ import { Label } from "@/components/ui/label";
++import { computeReproStatus } from "@/lib/reproduction/status";
+ import {
+   Select,
+   SelectContent,
+@@ -103,15 +106,34 @@ export function ReproductionForm({
+   data,
+   onChange,
+ }: ReproductionFormProps) {
++  
++  
++  const animalReproStatus = useLiveQuery(async () => {
++    if (!animalId) return null;
++    const services = await db.event_eventos
++      .where("animal_id")
++      .equals(animalId)
++      .filter((event) => event.dominio === "reproducao" && !event.deleted_at)
++      .toArray();
++
++    const joined = await Promise.all(
++      services.map(async (s) => ({
++        ...s,
++        details: await db.event_eventos_reproducao.get(s.id),
++      }))
++    );
++
++    return computeReproStatus(joined as any);
++  }, [animalId]);
++
++  
+   const machos = useLiveQuery(() => {
+     return db.state_animais
+       .where("fazenda_id")
+       .equals(fazendaId)
+       .filter(
+         (animal) =>
+-          animal.sexo === "M" &&
+-          animal.status === "ativo" &&
+-          (!animal.deleted_at || animal.deleted_at === null),
++          animal.sexo === "M" && animal.status === "ativo" && animal.habilitado_monta === true && (!animal.deleted_at || animal.deleted_at === null),
+       )
+       .toArray();
+   }, [fazendaId]);
+@@ -178,6 +200,15 @@ export function ReproductionForm({
+     });
+   }, [data, onChange]);
+ 
++  useEffect(() => {
++    if (data.tipo === "cobertura" && data.machoId && data.machoId !== "none" && data.reprodutorTag !== "cadastrado_no_rebanho") {
++      const timer = setTimeout(() => {
++        onChange({ ...data, reprodutorTag: "cadastrado_no_rebanho" });
++      }, 0);
++      return () => clearTimeout(timer);
++    }
++  }, [data.machoId, data.tipo, data.reprodutorTag, onChange]);
++
+   const isMachoRequired =
+     data.tipo === "cobertura" || (data.tipo === "IA" && !data.loteSemen);
+   const today = new Date().toISOString().split("T")[0];
+@@ -190,98 +221,129 @@ export function ReproductionForm({
+       >
+         <div className="grid gap-4 md:grid-cols-2">
+           <div className="space-y-2">
+-            <Label htmlFor="repro-tipo">Tipo de evento</Label>
+-            <Select
+-              value={data.tipo}
+-              onValueChange={(value) => {
+-                onChange({
+-                  ...data,
+-                  tipo: value as ReproTipoEnum,
+-                  episodeEventoId: null,
+-                  episodeLinkMethod: undefined,
+-                });
+-              }}
+-            >
+-              <SelectTrigger id="repro-tipo">
+-                <SelectValue />
+-              </SelectTrigger>
+-              <SelectContent>
+-                <SelectItem value="cobertura">Cobertura (monta)</SelectItem>
+-                <SelectItem value="IA">Inseminacao artificial (IA)</SelectItem>
+-                <SelectItem value="diagnostico">
+-                  Diagnostico de gestacao
+-                </SelectItem>
+-                <SelectItem value="parto">Parto</SelectItem>
+-              </SelectContent>
+-            </Select>
++            <Label className="mb-3 block">Estagio do Ciclo</Label>
++            
++            {(() => {
++              const statusFemea = animalReproStatus?.status;
++              const showService = !statusFemea || statusFemea !== "SERVIDA" && statusFemea !== "PRENHA";
++              const showDiagnostico = statusFemea === "SERVIDA" || statusFemea === "PRENHA" || data.tipo === "diagnostico";
++              const showParto = statusFemea === "PRENHA" || data.tipo === "parto";
++
++              return (
++                <div className="grid grid-cols-2 gap-2">
++                  {showService && (
++                    <>
++                      <Button
++                        type="button"
++                        variant={data.tipo === "cobertura" ? "default" : "outline"}
++                        className={cn("h-auto py-3", data.tipo === "cobertura" && "bg-emerald-600 hover:bg-emerald-700")}
++                        onClick={() => {
++                          const dpp = new Date(Date.now() + 283 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
++                          onChange({
++                            ...data,
++                            tipo: "cobertura",
++                            episodeEventoId: null,
++                            episodeLinkMethod: undefined,
++                            dataPrevistaParto: data.dataPrevistaParto || dpp
++                          });
++                        }}
++                      >
++                        <div className="text-left">
++                          <div className="font-semibold">Cobertura</div>
++                          <div className="text-xs opacity-80">(Monta natural)</div>
++                        </div>
++                      </Button>
++
++                      <Button
++                        type="button"
++                        variant={data.tipo === "IA" ? "default" : "outline"}
++                        className={cn("h-auto py-3", data.tipo === "IA" && "bg-emerald-600 hover:bg-emerald-700")}
++                        onClick={() => {
++                          const dpp = new Date(Date.now() + 283 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
++                          onChange({
++                            ...data,
++                            tipo: "IA",
++                            episodeEventoId: null,
++                            episodeLinkMethod: undefined,
++                            dataPrevistaParto: data.dataPrevistaParto || dpp
++                          });
++                        }}
++                      >
++                        <div className="text-left">
++                          <div className="font-semibold">Insemina├º├úo</div>
++                          <div className="text-xs opacity-80">(IA / IATF)</div>
++                        </div>
++                      </Button>
++                    </>
++                  )}
++
++                  {showDiagnostico && (
++                    <Button
++                      type="button"
++                      variant={data.tipo === "diagnostico" ? "default" : "outline"}
++                      className="h-auto py-3"
++                      onClick={() => {
++                        onChange({
++                          ...data,
++                          tipo: "diagnostico", episodeEventoId: null, episodeLinkMethod: "auto_last_open_service",
++                        });
++                      }}
++                    >
++                      <div className="text-left">
++                        <div className="font-semibold">Diagn├│stico</div>
++                        <div className="text-xs opacity-80">(Toque / US)</div>
++                      </div>
++                    </Button>
++                  )}
++
++                  {showParto && (
++                    <Button
++                      type="button"
++                      variant={data.tipo === "parto" ? "default" : "outline"}
++                      className="h-auto py-3"
++                      onClick={() => {
++                        onChange({
++                          ...data,
++                          tipo: "parto", episodeEventoId: null, episodeLinkMethod: "auto_last_open_service",
++                        });
++                      }}
++                    >
++                      <div className="text-left">
++                        <div className="font-semibold">Parto</div>
++                        <div className="text-xs opacity-80">(Nascimento)</div>
++                      </div>
++                    </Button>
++                  )}
++
++                  <Button
++                    type="button"
++                    variant={data.tipo === "aborto" ? "default" : "outline"}
++                    className={cn("h-auto py-3", data.tipo === "aborto" && "bg-destructive text-destructive-foreground hover:bg-destructive/90")}
++                    onClick={() => {
++                      onChange({
++                        ...data,
++                        tipo: "aborto", episodeEventoId: null, episodeLinkMethod: "auto_last_open_service",
++                      });
++                    }}
++                  >
++                    <div className="text-left">
++                      <div className="font-semibold">Aborto</div>
++                      <div className="text-xs opacity-80">(Interrup├º├úo)</div>
++                    </div>
++                  </Button>
++                </div>
++              );
++            })()}
++            
++            {(data.tipo === "cobertura" || data.tipo === "IA") && (
++               <div className="mt-3 rounded border border-emerald-100 bg-emerald-50 p-3 text-sm text-emerald-900">
++                 <strong>Data Provavel de Parto (DPP):</strong> {data.dataPrevistaParto ? new Date(data.dataPrevistaParto).toLocaleDateString('pt-BR') : 'Calculando...'} (projetada 283 dias)
++               </div>
++            )}
+           </div>
+         </div>
+ 
+-        {data.tipo === "diagnostico" || data.tipo === "parto" ? (
+-          <div className="rounded-2xl border border-border/70 bg-background/75 p-4">
+-            <div className="space-y-1">
+-              <p className="text-sm font-medium text-foreground">
+-                Vinculo com servico
+-              </p>
+-              <p className="text-sm leading-6 text-muted-foreground">
+-                O sistema pode localizar automaticamente o ultimo servico aberto
+-                ou permitir um vinculo manual para manter o episodio coerente.
+-              </p>
+-            </div>
+-
+-            <div className="mt-4 space-y-2">
+-              <Label htmlFor="repro-episode">Servico relacionado</Label>
+-              <Select
+-                value={data.episodeEventoId || "auto"}
+-                onValueChange={(value) => {
+-                  if (value === "auto") {
+-                    onChange({
+-                      ...data,
+-                      episodeEventoId: null,
+-                      episodeLinkMethod: "auto_last_open_service",
+-                    });
+-                    return;
+-                  }
+-
+-                  if (value === "unlinked") {
+-                    onChange({
+-                      ...data,
+-                      episodeEventoId: null,
+-                      episodeLinkMethod: "unlinked",
+-                    });
+-                    return;
+-                  }
+-
+-                  onChange({
+-                    ...data,
+-                    episodeEventoId: value,
+-                    episodeLinkMethod: "manual",
+-                  });
+-                }}
+-              >
+-                <SelectTrigger id="repro-episode" className="w-full">
+-                  <SelectValue placeholder="Automatico (ultimo servico aberto)" />
+-                </SelectTrigger>
+-                <SelectContent>
+-                  <SelectItem value="auto">
+-                    Automatico (ultimo servico aberto)
+-                  </SelectItem>
+-                  {candidateEpisodes?.map((event) => (
+-                    <SelectItem key={event.id} value={event.id}>
+-                      {new Date(event.occurred_at).toLocaleDateString("pt-BR")} -{" "}
+-                      {event.details.tipo.toUpperCase()}
+-                    </SelectItem>
+-                  ))}
+-                  <SelectItem value="unlinked">Sem vinculo</SelectItem>
+-                </SelectContent>
+-              </Select>
+-              <p className="text-xs leading-5 text-muted-foreground">
+-                Em partos, esse vinculo ajuda a reaproveitar o reprodutor para
+-                gerar a cria ja ligada ao pai correto.
+-              </p>
+-            </div>
+-          </div>
+-        ) : null}
++        
+       </FormSection>
+ 
+       {data.tipo === "cobertura" || data.tipo === "IA" ? (
+@@ -327,7 +389,13 @@ export function ReproductionForm({
+                 </SelectTrigger>
+                 <SelectContent>
+                   <SelectItem value="none">Nao informada</SelectItem>
+-                  {REPRODUCTION_TECHNIQUE_OPTIONS.map((option) => (
++                  {REPRODUCTION_TECHNIQUE_OPTIONS
++                    .filter(opt => {
++                       if (data.tipo === "cobertura") return opt.value.includes("monta") || opt.value.includes("repasse");
++                       if (data.tipo === "IA") return opt.value.includes("ia") || opt.value.includes("semen");
++                       return true;
++                    })
++                    .map((option) => (
+                     <SelectItem key={option.value} value={option.value}>
+                       {option.label}
+                     </SelectItem>
+@@ -340,6 +408,7 @@ export function ReproductionForm({
+               <Label htmlFor="repro-tag">Registro do reprodutor</Label>
+               <Select
+                 value={data.reprodutorTag || "none"}
++                disabled={!!(data.machoId && data.machoId !== "none")}
+                 onValueChange={(value) =>
+                   updateField("reprodutorTag", value === "none" ? undefined : value)
+                 }
+@@ -349,7 +418,13 @@ export function ReproductionForm({
+                 </SelectTrigger>
+                 <SelectContent>
+                   <SelectItem value="none">Nao informado</SelectItem>
+-                  {REPRODUCTION_BULL_REFERENCE_OPTIONS.map((option) => (
++                  {REPRODUCTION_BULL_REFERENCE_OPTIONS
++                    .filter(opt => {
++                       if (data.tipo === "cobertura") return !opt.value.includes("semen_lote");
++                       if (data.tipo === "IA") return opt.value.includes("semen_lote");
++                       return true;
++                    })
++                    .map((option) => (
+                     <SelectItem key={option.value} value={option.value}>
+                       {option.label}
+                     </SelectItem>
+diff --git a/src/lib/events/buildEventGesture.ts b/src/lib/events/buildEventGesture.ts
+index f5b0fe0..2e3d15c 100644
+--- a/src/lib/events/buildEventGesture.ts
++++ b/src/lib/events/buildEventGesture.ts
+@@ -136,6 +136,35 @@ export const buildEventGesture = (input: EventInput): EventGestureBuildResult =>
+         payload: input.payloadData ?? {},
+       },
+     });
++  } else if (input.dominio === "obito") {
++    // Note: ├│bito is stored in the base 'eventos' table with payload including causa.
++    // We add an UPDATE to the animal record to mark it as dead.
++    if (input.animalId) {
++      ops.push({
++        table: "animais",
++        action: "UPDATE",
++        record: {
++          id: input.animalId,
++          status: "morto",
++          data_saida: toIsoDate(input.dataObito ?? occurredAt),
++          lote_id: null, // Clear lote on death
++        },
++      });
++
++      // Automatic agenda cancellation
++      if (input.cancelAgendaIds && input.cancelAgendaIds.length > 0) {
++        input.cancelAgendaIds.forEach((taskId) => {
++          ops.push({
++            table: "state_agenda_itens",
++            action: "UPDATE",
++            record: {
++              id: taskId,
++              status: "cancelado",
++            },
++          });
++        });
++      }
++    }
+   }
+ 
+   return { eventId, ops };
+diff --git a/src/lib/events/types.ts b/src/lib/events/types.ts
+index 3fe3b1f..1ea03e3 100644
+--- a/src/lib/events/types.ts
++++ b/src/lib/events/types.ts
+@@ -1,10 +1,4 @@
+-import type {
+-  AnimalStatusEnum,
+-  FinanceiroTipoEnum,
+-  OperationInput,
+-  SanitarioTipoEnum,
+-  ReproTipoEnum,
+-} from "@/lib/offline/types";
++import type { AnimalStatusEnum, FinanceiroTipoEnum, OperationInput, SanitarioTipoEnum, ReproTipoEnum, CausaObitoEnum } from "@/lib/offline/types";
+ 
+ export type EventDomain =
+   | "sanitario"
+@@ -12,7 +6,8 @@ export type EventDomain =
+   | "movimentacao"
+   | "nutricao"
+   | "financeiro"
+-  | "reproducao";
++  | "reproducao"
++  | "obito";
+ 
+ export interface BaseEventInput {
+   dominio: EventDomain;
+@@ -61,6 +56,13 @@ export interface NutricaoEventInput extends BaseEventInput {
+   quantidadeKg: number;
+ }
+ 
++export interface ObitoEventInput extends BaseEventInput {
++  dominio: "obito";
++  causa?: CausaObitoEnum;
++  dataObito?: string; // YYYY-MM-DD, defaults to today if omitted
++  cancelAgendaIds?: string[]; // IDs of pending agenda items to cancel
++}
++
+ export interface FinanceiroEventInput extends BaseEventInput {
+   dominio: "financeiro";
+   tipo: FinanceiroTipoEnum;
+@@ -73,6 +75,7 @@ export interface FinanceiroEventInput extends BaseEventInput {
+ 
+ 
+ 
++
+ export interface ReproductionEventInput extends BaseEventInput {
+   dominio: "reproducao";
+   tipo: ReproTipoEnum; // from offline/types
+@@ -105,6 +108,7 @@ export type EventInput =
+   | MovimentacaoEventInput
+   | NutricaoEventInput
+   | FinanceiroEventInput
++  | ObitoEventInput
+   | ReproductionEventInput;
+ 
+ export interface EventGestureBuildResult {
+diff --git a/src/lib/events/validators/index.ts b/src/lib/events/validators/index.ts
+index f647cc4..dd55eee 100644
+--- a/src/lib/events/validators/index.ts
++++ b/src/lib/events/validators/index.ts
+@@ -9,6 +9,7 @@ import { validateMovimentacaoInput } from "./movimentacao";
+ import { validateNutricaoInput } from "./nutricao";
+ import { validatePesagemInput } from "./pesagem";
+ import { validateSanitarioInput } from "./sanitario";
++import { validateObitoInput } from "./obito";
+ 
+ export const validateEventInput = (input: EventInput): EventValidationIssue[] => {
+   const issues = [...validateBaseEventInput(input)];
+@@ -23,6 +24,8 @@ export const validateEventInput = (input: EventInput): EventValidationIssue[] =>
+     issues.push(...validateNutricaoInput(input));
+   } else if (input.dominio === "financeiro") {
+     issues.push(...validateFinanceiroInput(input));
++  } else if (input.dominio === "obito") {
++    issues.push(...validateObitoInput(input));
+   }
+ 
+   return issues;
+diff --git a/src/lib/offline/types.ts b/src/lib/offline/types.ts
+index 46788cc..7d3ec3a 100644
+--- a/src/lib/offline/types.ts
++++ b/src/lib/offline/types.ts
+@@ -35,6 +35,9 @@ export type FarmInviteStatusEnum =
+ // Animal & Lote
+ export type SexoEnum = "M" | "F";
+ export type AnimalStatusEnum = "ativo" | "vendido" | "morto";
++
++// Cause of death enum for ├│bito events
++export type CausaObitoEnum = "doenca" | "acidente" | "predador" | "outro";
+ export type LoteStatusEnum = "ativo" | "inativo";
+ export type PapelMachoEnum = "reprodutor" | "rufiao";
+ export type DestinoProdutivoAnimalEnum =
+@@ -136,11 +139,12 @@ export type DominioEnum =
+   | "nutricao"
+   | "movimentacao"
+   | "reproducao"
+-  | "financeiro";
++  | "financeiro"
++  | "obito";
+ export type AgendaStatusEnum = "agendado" | "concluido" | "cancelado";
+ export type AgendaSourceKindEnum = "manual" | "automatico";
+ export type SanitarioTipoEnum = "vacinacao" | "vermifugacao" | "medicamento";
+-export type ReproTipoEnum = "cobertura" | "IA" | "diagnostico" | "parto";
++export type ReproTipoEnum = "cobertura" | "IA" | "diagnostico" | "parto" | "aborto";
+ export type FinanceiroTipoEnum = "compra" | "venda";
+ export type PilotMetricStatus = "info" | "success" | "error";
+ export type PilotMetricEventName =
+diff --git a/src/lib/reproduction/__tests__/calfJourney.test.ts b/src/lib/reproduction/__tests__/calfJourney.test.ts
+index 1f93ecd..975f3f8 100644
+--- a/src/lib/reproduction/__tests__/calfJourney.test.ts
++++ b/src/lib/reproduction/__tests__/calfJourney.test.ts
+@@ -64,7 +64,6 @@ function createAgendaItem(overrides: Partial<AgendaItem> = {}): AgendaItem {
+     source_client_op_id: null,
+     source_tx_id: null,
+     source_evento_id: "evento-1",
+-    source_task_id: null,
+     protocol_item_version_id: null,
+     interval_days_applied: 7,
+     payload: {
+diff --git a/src/lib/reproduction/calfJourney.ts b/src/lib/reproduction/calfJourney.ts
+index 6bdd8ad..8972b4e 100644
+--- a/src/lib/reproduction/calfJourney.ts
++++ b/src/lib/reproduction/calfJourney.ts
+@@ -202,7 +202,6 @@ export function buildCalfJourneyAgendaOps({
+           produto: milestone.title,
+         },
+         source_evento_id: birthEventId,
+-        source_task_id: null,
+         source_tx_id: null,
+         source_client_op_id: null,
+         protocol_item_version_id: null,
+diff --git a/src/lib/reproduction/postPartum.ts b/src/lib/reproduction/postPartum.ts
+index cf638e4..7627a93 100644
+--- a/src/lib/reproduction/postPartum.ts
++++ b/src/lib/reproduction/postPartum.ts
+@@ -77,38 +77,56 @@ export function buildPostPartumOps({
+     const shouldRegisterUmbigo = draft.curaUmbigo && !umbigoAlreadyRecorded;
+     let umbigoEventId: string | null = null;
+ 
++    const loteChanged = draft.loteId !== calf.lote_id;
++    const animalUpdateRecord: Record<string, unknown> = {
++      id: calf.id,
++      identificacao: draft.identificacao.trim() || calf.identificacao,
++      nome: draft.nome.trim() || null,
++      payload: {
++        ...currentPayload,
++        neonatal_setup: {
++          ...currentNeonatalSetup,
++          completed_at: occurredAt,
++          birth_event_id: birthEventId ?? currentBirthEventId,
++          mother_id: mother.id,
++          father_id: calf.pai_id ?? null,
++          initial_lote_id: draft.loteId,
++          initial_weight_kg:
++            pesoKg !== null
++              ? pesoKg
++              : (currentNeonatalSetup.initial_weight_kg ?? null),
++          initial_weight_recorded_at:
++            pesoKg !== null
++              ? occurredAt
++              : (currentNeonatalSetup.initial_weight_recorded_at ?? null),
++          umbigo_curado_at:
++            shouldRegisterUmbigo
++              ? occurredAt
++              : (currentNeonatalSetup.umbigo_curado_at ?? null),
++        },
++      },
++    };
++
++    if (loteChanged) {
++      animalUpdateRecord.lote_id = draft.loteId;
++      const movEvent = buildEventGesture({
++        dominio: "movimentacao",
++        fazendaId,
++        animalId: calf.id,
++        loteId: calf.lote_id,
++        occurredAt,
++        fromLoteId: calf.lote_id,
++        toLoteId: draft.loteId,
++        applyAnimalStateUpdate: false, // We're already updating the animal in this loop
++        observacoes: `Movimentacao inicial (pos-parto da matriz ${mother.identificacao})`,
++      });
++      ops.push(...movEvent.ops);
++    }
++
+     ops.push({
+       table: "animais",
+       action: "UPDATE",
+-      record: {
+-        id: calf.id,
+-        identificacao: draft.identificacao.trim() || calf.identificacao,
+-        nome: draft.nome.trim() || null,
+-        lote_id: draft.loteId,
+-        payload: {
+-          ...currentPayload,
+-          neonatal_setup: {
+-            ...currentNeonatalSetup,
+-            completed_at: occurredAt,
+-            birth_event_id: birthEventId ?? currentBirthEventId,
+-            mother_id: mother.id,
+-            father_id: calf.pai_id ?? null,
+-            initial_lote_id: draft.loteId,
+-            initial_weight_kg:
+-              pesoKg !== null
+-                ? pesoKg
+-                : (currentNeonatalSetup.initial_weight_kg ?? null),
+-            initial_weight_recorded_at:
+-              pesoKg !== null
+-                ? occurredAt
+-                : (currentNeonatalSetup.initial_weight_recorded_at ?? null),
+-            umbigo_curado_at:
+-              shouldRegisterUmbigo
+-                ? occurredAt
+-                : (currentNeonatalSetup.umbigo_curado_at ?? null),
+-          },
+-        },
+-      },
++      record: animalUpdateRecord,
+     });
+ 
+     if (pesoKg !== null) {
+diff --git a/src/lib/reproduction/register.ts b/src/lib/reproduction/register.ts
+index 9a04b20..8408d76 100644
+--- a/src/lib/reproduction/register.ts
++++ b/src/lib/reproduction/register.ts
+@@ -36,6 +36,7 @@ interface BuildReproductionGestureInput {
+   animalIdentificacao?: string;
+   loteId?: string | null;
+   paiId?: string | null;
++  maeRaca?: string | null;
+ }
+ 
+ export interface ReproductionGestureBuildResult
+@@ -70,10 +71,11 @@ function buildGeneratedCalves(
+     animalIdentificacao,
+     loteId = null,
+     paiId = null,
++    maeRaca = null,
+     data,
+   }: Pick<
+     BuildReproductionGestureInput,
+-    "animalId" | "animalIdentificacao" | "loteId" | "paiId" | "data"
++    "animalId" | "animalIdentificacao" | "loteId" | "paiId" | "maeRaca" | "data"
+   >,
+ ): { calfIds: string[]; ops: OperationInput[] } {
+   if (data.tipo !== "parto") return { calfIds: [], ops: [] };
+@@ -111,7 +113,7 @@ function buildGeneratedCalves(
+           nome: cria?.nome?.trim() || null,
+           rfid: null,
+           origem: "nascimento",
+-          raca: null,
++          raca: maeRaca,
+           papel_macho: null,
+           habilitado_monta: false,
+           observacoes: null,
+@@ -272,6 +274,7 @@ export function buildReproductionGesture({
+   animalIdentificacao,
+   loteId = null,
+   paiId = null,
++  maeRaca = null,
+   data,
+ }: BuildReproductionGestureInput): ReproductionGestureBuildResult {
+   if (data.tipo === "parto") {
+@@ -339,6 +342,7 @@ export function buildReproductionGesture({
+       animalIdentificacao,
+       loteId,
+       paiId,
++      maeRaca,
+       data,
+     },
+   );
+@@ -355,9 +359,13 @@ export async function prepareReproductionGesture(
+ ) {
+   const paiId = await resolvePartoFatherId(input);
+   const expectedBirthDate = await resolveExpectedBirthDate(input);
++  const animal = await db.state_animais.get(input.animalId);
++  const maeRaca = animal?.raca ?? null;
++
+   const built = buildReproductionGesture({
+     ...input,
+     paiId,
++    maeRaca,
+     data: {
+       ...input.data,
+       dataPrevistaParto: expectedBirthDate ?? input.data.dataPrevistaParto,
+diff --git a/src/lib/reproduction/status.ts b/src/lib/reproduction/status.ts
+index 29880c8..034040d 100644
+--- a/src/lib/reproduction/status.ts
++++ b/src/lib/reproduction/status.ts
+@@ -82,6 +82,11 @@ export function computeReproStatus(events: ReproEventJoined[]): AnimalReproStatu
+       continue;
+     }
+ 
++    if (type === 'aborto') {
++      // Abortion resets the status to VAZIA.
++      return createStatus('VAZIA', evt, diffDays, null);
++    }
++
+     if (type === 'cobertura' || type === 'IA') {
+       // Found a service (and no later Parto/Diag stopped us).
+       return createStatus('SERVIDA', evt, diffDays, estimateDiagDate(date));
+diff --git a/src/lib/telemetry/pilotMetrics.ts b/src/lib/telemetry/pilotMetrics.ts
+index 86f3f92..01519ba 100644
+--- a/src/lib/telemetry/pilotMetrics.ts
++++ b/src/lib/telemetry/pilotMetrics.ts
+@@ -70,46 +70,14 @@ function toSortedCounts(map: Map<string, number>, limit = 5): PilotMetricCount[]
+     .slice(0, limit);
+ }
+ 
+-import { env } from "@/lib/env";
+-import { supabase } from "@/lib/supabase";
+-
++/**
++ * flushPilotMetrics ÔÇö no-op until remote telemetry ingestion is implemented (TD-021).
++ * Metrics stay in local IndexedDB only.
++ */
+ export async function flushPilotMetrics(): Promise<void> {
+-  if (typeof indexedDB === "undefined") return;
+-
+-  try {
+-    const events = await db.metrics_events.toArray();
+-    if (events.length === 0) return;
+-
+-    // Get current session
+-    const {
+-      data: { session },
+-    } = await supabase.auth.getSession();
+-
+-    if (!session) {
+-       // Cannot flush without session, will try again later
+-       return;
+-    }
+-
+-    const response = await fetch(`${env.supabaseFunctionsUrl}/telemetry-ingest`, {
+-      method: "POST",
+-      headers: {
+-        "Content-Type": "application/json",
+-        apikey: env.supabaseAnonKey,
+-        Authorization: `Bearer ${session.access_token}`,
+-      },
+-      body: JSON.stringify({ events }),
+-    });
+-
+-    if (response.ok) {
+-      // Successfully sent, delete them from local store
+-      const sentIds = events.map((e) => e.id);
+-      await db.metrics_events.bulkDelete(sentIds);
+-    } else {
+-       console.warn("[pilot-metrics] Failed to flush telemetry:", response.status);
+-    }
+-  } catch (error) {
+-    console.warn("[pilot-metrics] Failed to flush telemetry (network/offline):", error);
+-  }
++  // TD-021: telemetry-ingest Edge Function not yet deployed.
++  // Data stays local in metrics_events store.
++  return;
+ }
+ 
+ export function buildPilotMetricsSummary(
+diff --git a/src/pages/AnimalDetalhe.tsx b/src/pages/AnimalDetalhe.tsx
+index bc6665b..35ff7e6 100644
+--- a/src/pages/AnimalDetalhe.tsx
++++ b/src/pages/AnimalDetalhe.tsx
+@@ -9,6 +9,7 @@ import {
+   HeartPulse,
+   History,
+   Scale,
++  Skull,
+ } from "lucide-react";
+ import {
+   CartesianGrid,
+@@ -35,6 +36,16 @@ import {
+ import { Badge } from "@/components/ui/badge";
+ import { Button } from "@/components/ui/button";
+ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
++import { Input } from "@/components/ui/input";
++import { Label } from "@/components/ui/label";
++import {
++  Select,
++  SelectContent,
++  SelectItem,
++  SelectTrigger,
++  SelectValue,
++} from "@/components/ui/select";
++import { Textarea } from "@/components/ui/textarea";
+ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+ import { useAuth } from "@/hooks/useAuth";
+ import { getAnimalBreedLabel } from "@/lib/animals/catalogs";
+@@ -60,7 +71,8 @@ import {
+ import { isFemaleReproductionEligible } from "@/lib/animals/presentation";
+ import { db } from "@/lib/offline/db";
+ import { createGesture } from "@/lib/offline/ops";
+-import type { Animal, Evento, EventoReproducao } from "@/lib/offline/types";
++import type { Animal, Evento, EventoReproducao, CausaObitoEnum } from "@/lib/offline/types";
++import { buildEventGesture } from "@/lib/events/buildEventGesture";
+ import { buildReproductionDashboard } from "@/lib/reproduction/dashboard";
+ import { isCalfJourneyAgendaItem } from "@/lib/reproduction/calfJourney";
+ import {
+@@ -103,6 +115,11 @@ const AnimalDetalhe = () => {
+   const [showCloseSociedadeDialog, setShowCloseSociedadeDialog] = useState(false);
+   const [isApplyingLifecycle, setIsApplyingLifecycle] = useState(false);
+   const [isClosingSociedade, setIsClosingSociedade] = useState(false);
++  const [showObitoDialog, setShowObitoDialog] = useState(false);
++  const [isRegisteringObito, setIsRegisteringObito] = useState(false);
++  const [obitoData, setObitoData] = useState(new Date().toISOString().split("T")[0]);
++  const [obitoCausa, setObitoCausa] = useState<CausaObitoEnum>("outro");
++  const [obitoObs, setObitoObs] = useState("");
+   const autoAppliedStageRef = useRef<string | null>(null);
+ 
+   const animal = useLiveQuery(() => db.state_animais.get(id!), [id]);
+@@ -436,6 +453,37 @@ const AnimalDetalhe = () => {
+     }
+   }, [animal, sociedadeAtiva]);
+ 
++  const handleRegisterObito = useCallback(async () => {
++    if (!animal) return;
++
++    setIsRegisteringObito(true);
++    try {
++      // Find pending agenda items for this animal to cancel them
++      const pendingTasks = agenda?.filter(item => item.status === "agendado").map(item => item.id) || [];
++
++      const { ops } = buildEventGesture({
++        dominio: "obito",
++        fazendaId: animal.fazenda_id,
++        animalId: animal.id,
++        occurredAt: new Date(`${obitoData}T12:00:00`).toISOString(),
++        dataObito: obitoData,
++        causa: obitoCausa,
++        observacoes: obitoObs || `├ôbito registrado: ${obitoCausa}`,
++        cancelAgendaIds: pendingTasks,
++      });
++
++      await createGesture(animal.fazenda_id, ops);
++      setShowObitoDialog(false);
++      showSuccess("├ôbito registrado com sucesso.");
++      // Redirect or let the UI reflect status (animal detail will show 'morto' and hide buttons)
++    } catch (error) {
++      console.error(error);
++      showError("Erro ao registrar ├│bito.");
++    } finally {
++      setIsRegisteringObito(false);
++    }
++  }, [animal, obitoData, obitoCausa, obitoObs, agenda]);
++
+   if (!animal) {
+     return (
+       <div className="p-12 text-center text-muted-foreground">
+@@ -472,6 +520,15 @@ const AnimalDetalhe = () => {
+           </p>
+         </div>
+         <div className="flex gap-2">
++          <Button
++            size="sm"
++            variant="destructive"
++            onClick={() => setShowObitoDialog(true)}
++            disabled={animal.status !== "ativo"}
++          >
++            <Skull className="mr-2 h-4 w-4" />
++            Registrar obito
++          </Button>
+           <Button
+             size="sm"
+             onClick={() => {
+@@ -483,6 +540,7 @@ const AnimalDetalhe = () => {
+               }
+               navigate(`/registrar?${params.toString()}`);
+             }}
++            disabled={animal.status !== "ativo"}
+           >
+             Registrar venda
+           </Button>
+@@ -989,19 +1047,25 @@ const AnimalDetalhe = () => {
+                   </div>
+ 
+                   <div className="flex flex-wrap gap-2">
+-                    <Link to={`/animais/${animal.id}/reproducao?tipo=cobertura`}>
+-                      <Button size="sm">Cobertura / IA</Button>
+-                    </Link>
+-                    <Link to={`/animais/${animal.id}/reproducao?tipo=diagnostico`}>
+-                      <Button variant="outline" size="sm">
+-                        Diagnostico
+-                      </Button>
+-                    </Link>
+-                    <Link to={`/animais/${animal.id}/reproducao?tipo=parto`}>
+-                      <Button variant="outline" size="sm">
+-                        Parto
+-                      </Button>
+-                    </Link>
++                    {reproResumo.reproStatus.status !== "SERVIDA" && reproResumo.reproStatus.status !== "PRENHA" && (
++                      <Link to={`/animais/${animal.id}/reproducao?tipo=cobertura`}>
++                        <Button size="sm">Cobertura / IA</Button>
++                      </Link>
++                    )}
++                    {(reproResumo.reproStatus.status === "SERVIDA" || reproResumo.reproStatus.status === "PRENHA") && (
++                      <Link to={`/animais/${animal.id}/reproducao?tipo=diagnostico`}>
++                        <Button variant="outline" size="sm">
++                          Diagn├│stico
++                        </Button>
++                      </Link>
++                    )}
++                    {reproResumo.reproStatus.status === "PRENHA" && (
++                      <Link to={`/animais/${animal.id}/reproducao?tipo=parto`}>
++                        <Button variant="outline" size="sm">
++                          Parto
++                        </Button>
++                      </Link>
++                    )}
+                     {pendingNeonatalCount > 0 && (
+                       <Link to={`/animais/${animal.id}/pos-parto`}>
+                         <Button variant="outline" size="sm">
+@@ -1365,6 +1429,72 @@ const AnimalDetalhe = () => {
+         onSuccess={() => {}}
+       />
+ 
++      <AlertDialog open={showObitoDialog} onOpenChange={setShowObitoDialog}>
++        <AlertDialogContent className="sm:max-w-[450px]">
++          <AlertDialogHeader>
++            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
++              <Skull className="h-5 w-5" />
++              Registrar obito de {animal.identificacao}
++            </AlertDialogTitle>
++            <AlertDialogDescription>
++              Esta acao marcara o animal como morto, removendo-o de lotes ativos e cancelando todas as tarefas agendadas. Esta operacao e irreversivel.
++            </AlertDialogDescription>
++          </AlertDialogHeader>
++
++          <div className="grid gap-4 py-4">
++            <div className="grid gap-2">
++              <Label htmlFor="data_obito">Data do obito</Label>
++              <Input
++                id="data_obito"
++                type="date"
++                value={obitoData}
++                onChange={(e) => setObitoData(e.target.value)}
++                max={new Date().toISOString().split("T")[0]}
++              />
++            </div>
++            <div className="grid gap-2">
++              <Label htmlFor="causa_obito">Causa provavel</Label>
++              <Select
++                value={obitoCausa}
++                onValueChange={(v) => setObitoCausa(v as CausaObitoEnum)}
++              >
++                <SelectTrigger>
++                  <SelectValue placeholder="Selecione a causa" />
++                </SelectTrigger>
++                <SelectContent>
++                  <SelectItem value="doenca">Doen├ºa</SelectItem>
++                  <SelectItem value="acidente">Acidente</SelectItem>
++                  <SelectItem value="predador">Predador</SelectItem>
++                  <SelectItem value="outro">Outro / Desconhecida</SelectItem>
++                </SelectContent>
++              </Select>
++            </div>
++            <div className="grid gap-2">
++              <Label htmlFor="obs_obito">Observacoes/Detalhes</Label>
++              <Textarea
++                id="obs_obito"
++                placeholder="Descreva detalhes ou sintomas se houver..."
++                value={obitoObs}
++                onChange={(e) => setObitoObs(e.target.value)}
++              />
++            </div>
++          </div>
++
++          <AlertDialogFooter>
++            <AlertDialogCancel disabled={isRegisteringObito}>
++              Cancelar
++            </AlertDialogCancel>
++            <AlertDialogAction
++              onClick={handleRegisterObito}
++              disabled={isRegisteringObito}
++              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
++            >
++              {isRegisteringObito ? "Registrando..." : "Confirmar obito"}
++            </AlertDialogAction>
++          </AlertDialogFooter>
++        </AlertDialogContent>
++      </AlertDialog>
++
+       <AlertDialog
+         open={showCloseSociedadeDialog}
+         onOpenChange={setShowCloseSociedadeDialog}
+diff --git a/src/pages/AnimalEditar.tsx b/src/pages/AnimalEditar.tsx
+index 235ef4d..d97490b 100644
+--- a/src/pages/AnimalEditar.tsx
++++ b/src/pages/AnimalEditar.tsx
+@@ -40,14 +40,14 @@ import {
+   SelectValue,
+ } from "@/components/ui/select";
+ import { showSuccess, showError } from "@/utils/toast";
+-import { ChevronLeft, Save, Loader2 } from "lucide-react";
++import { ChevronLeft, Save, Loader2, Trash2 } from "lucide-react";
+ import { useLotes } from "@/hooks/useLotes";
+ import { useAuth } from "@/hooks/useAuth";
+ 
+ const AnimalEditar = () => {
+   const { id } = useParams<{ id: string }>();
+   const navigate = useNavigate();
+-  const { farmLifecycleConfig } = useAuth();
++  const { farmLifecycleConfig, role } = useAuth();
+   const [isSaving, setIsSaving] = useState(false);
+ 
+   // Carregar animal
+@@ -98,6 +98,31 @@ const AnimalEditar = () => {
+   >("null");
+   const lotes = useLotes(animal?.fazenda_id);
+ 
++  const temCriaRecente = useLiveQuery(async () => {
++    if (!animal?.id) return false;
++    const crias = await db.state_animais
++      .where("mae_id")
++      .equals(animal.id)
++      .filter((a) => !a.deleted_at)
++      .toArray();
++      
++    const umAnoAtras = Date.now() - 365 * 24 * 60 * 60 * 1000;
++    return crias.some((c) => {
++      if (!c.data_nascimento) return true; // se nao tem data, por precaucao consideramos vinculo valido
++      return new Date(c.data_nascimento).getTime() > umAnoAtras;
++    });
++  }, [animal?.id]) ?? false;
++
++  const dataUltimoParto = animal?.payload?.data_ultimo_parto;
++  let tevePartoRecente = false;
++  if (dataUltimoParto) {
++    const umAnoAtras = Date.now() - 365 * 24 * 60 * 60 * 1000;
++    tevePartoRecente = new Date(dataUltimoParto).getTime() > umAnoAtras;
++  }
++  
++  const isLactationEligible = (tevePartoRecente || temCriaRecente || animal?.payload?.em_lactacao === true);
++
++
+   // Query para machos (potenciais pais) - excluir o pr├│prio animal se for macho
+   const machos = useLiveQuery(
+     () => {
+@@ -252,14 +277,8 @@ const AnimalEditar = () => {
+ 
+     const now = new Date().toISOString();
+ 
+-    const novoLoteId = loteId === "null" ? null : loteId;
+-    const loteAtualId = animal.lote_id ?? null;
+-    const loteChanged = novoLoteId !== loteAtualId;
+-
+-    if (loteChanged && novoLoteId === null) {
+-      showError("Movimentacao exige lote de destino.");
+-      return;
+-    }
++    // Lote alterado removido (read-only na UI)
++    const novoLoteId = animal.lote_id ?? null;
+ 
+     setIsSaving(true);
+ 
+@@ -343,22 +362,6 @@ const AnimalEditar = () => {
+ 
+     const ops: OperationInput[] = [];
+ 
+-    if (loteChanged) {
+-      const built = buildEventGesture({
+-        dominio: "movimentacao",
+-        fazendaId: animal.fazenda_id,
+-        occurredAt: now,
+-        animalId: id,
+-        loteId: loteAtualId,
+-        fromLoteId: loteAtualId,
+-        toLoteId: novoLoteId,
+-        applyAnimalStateUpdate: false,
+-        observacoes: "Movimentacao de lote via edicao de cadastro",
+-      });
+-      ops.push(...built.ops);
+-      animalUpdateRecord.lote_id = novoLoteId;
+-    }
+-
+     ops.push({
+       table: "animais",
+       action: "UPDATE",
+@@ -379,6 +382,30 @@ const AnimalEditar = () => {
+     }
+   };
+ 
++  const handleDelete = async () => {
++    if (!animal || !id) return;
++
++    if (!window.confirm("ATEN├ç├âO: Voc├¬ est├í prestes a excluir este animal de todos os registros da Gest├úo Agro. Esta a├º├úo o remover├í dos relat├│rios passados e cancelar├í sua vida ativa na fazenda. Deseja mesmo excluir este animal?")) {
++      return;
++    }
++
++    setIsSaving(true);
++    try {
++      await createGesture(animal.fazenda_id, [{
++        table: "animais",
++        action: "DELETE",
++        record: { id: animal.id }
++      }]);
++      await db.state_animais.delete(animal.id);
++      showSuccess("Animal exclu├¡do com sucesso.");
++      navigate("/animais");
++    } catch (e: unknown) {
++      setIsSaving(false);
++      showError("Erro ao excluir animal.");
++      console.error(e);
++    }
++  };
++
+   if (!animal) {
+     return (
+       <div className="space-y-6 pb-16">
+@@ -472,20 +499,12 @@ const AnimalEditar = () => {
+           </div>
+ 
+           <div className="space-y-2">
+-            <Label>Lote (Opcional)</Label>
+-            <Select value={loteId} onValueChange={setLoteId}>
+-              <SelectTrigger>
+-                <SelectValue placeholder="Selecione um lote" />
+-              </SelectTrigger>
+-              <SelectContent>
+-                <SelectItem value="null">Nenhum</SelectItem>
+-                {lotes?.map((l) => (
+-                  <SelectItem key={l.id} value={l.id}>
+-                    {l.nome}
+-                  </SelectItem>
+-                ))}
+-              </SelectContent>
+-            </Select>
++            <Label>Lote</Label>
++            <Input 
++              value={lotes?.find((l) => l.id === loteId)?.nome ?? "Sem lote"} 
++              disabled 
++            />
++            <p className="text-xs text-muted-foreground mt-1">Para alterar o lote, utilize o recurso de Movimenta├º├úo do Animal.</p>
+           </div>
+         </CardContent>
+       </Card>
+@@ -561,6 +580,7 @@ const AnimalEditar = () => {
+           <CardTitle>Fatos Taxon├┤micos</CardTitle>
+         </CardHeader>
+         <CardContent className="space-y-4">
++          {(idadeMeses === null || (idadeMeses >= 7 && idadeMeses <= 12)) && (
+           <div className="space-y-2">
+             <Label>Puberdade confirmada</Label>
+             <Select
+@@ -579,6 +599,7 @@ const AnimalEditar = () => {
+               </SelectContent>
+             </Select>
+           </div>
++          )}
+ 
+           {sexo === "M" && (
+             <div className="space-y-2">
+@@ -601,7 +622,7 @@ const AnimalEditar = () => {
+             </div>
+           )}
+ 
+-          {sexo === "F" && (
++          {sexo === "F" && isLactationEligible && (
+             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+               <div className="space-y-2">
+                 <Label>Em lacta├º├úo</Label>
+@@ -784,6 +805,35 @@ const AnimalEditar = () => {
+         </Card>
+       )}
+ 
++      {role === "owner" && (
++        <Card className="border-destructive/50 shadow-sm mb-6">
++          <CardHeader>
++            <CardTitle className="text-destructive flex items-center">
++              <Trash2 className="h-5 w-5 mr-2" />
++              Zona de Perigo
++            </CardTitle>
++            <p className="text-sm text-muted-foreground">
++              A exclus├úo remove este animal dos relat├│rios, contadores do painel e registros visuais. Para preservar a consist├¬ncia causal, esta a├º├úo aplica um silenciamento permanente (soft-delete).
++            </p>
++          </CardHeader>
++          <CardContent>
++            <Button
++              variant="destructive"
++              onClick={handleDelete}
++              disabled={isSaving}
++              className="w-full sm:w-auto"
++            >
++              {isSaving ? (
++                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
++              ) : (
++                <Trash2 className="h-4 w-4 mr-2" />
++              )}
++              Excluir animal permanentemente
++            </Button>
++          </CardContent>
++        </Card>
++      )}
++
+       <Button onClick={handleSave} className="w-full" disabled={isSaving}>
+         {isSaving ? (
+           <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+diff --git a/src/pages/Eventos.tsx b/src/pages/Eventos.tsx
+index c62cb1f..e29c9cf 100644
+--- a/src/pages/Eventos.tsx
++++ b/src/pages/Eventos.tsx
+@@ -60,6 +60,7 @@ const DOMAIN_LABEL: Record<DominioEnum, string> = {
+   movimentacao: "Movimentacao",
+   reproducao: "Reproducao",
+   financeiro: "Financeiro",
++  obito: "├ôbito",
+ };
+ 
+ function normalizeSyncStatus(status?: string): GestureStatus | "SYNCED" {
+@@ -512,7 +513,16 @@ const Eventos = () => {
+           }
+         } else if (evento.dominio === "reproducao") {
+           const d = reproByEvento.get(evento.id);
+-          detail = d ? d.tipo : "Sem detalhe de reproducao";
++          if (d?.tipo === "aborto") {
++            detail = "Aborto / Interrup├º├úo de gesta├º├úo";
++          } else {
++            detail = d ? d.tipo : "Sem detalhe de reproducao";
++          }
++        } else if (evento.dominio === "obito") {
++          const causa = evento.payload && typeof evento.payload.causa === "string" 
++            ? (evento.payload.causa as string) 
++            : null;
++          detail = causa ? `├ôbito: ${causa}` : "Registro de ├│bito";
+         }
+ 
+         const textIndex = [
+@@ -665,6 +675,7 @@ const Eventos = () => {
+               <SelectItem value="nutricao">Nutricao</SelectItem>
+               <SelectItem value="reproducao">Reproducao</SelectItem>
+               <SelectItem value="financeiro">Financeiro</SelectItem>
++              <SelectItem value="obito">├ôbito</SelectItem>
+             </SelectContent>
+           </Select>
+ 
+diff --git a/src/pages/Registrar.tsx b/src/pages/Registrar.tsx
+index 1e5489b..675bffa 100644
+--- a/src/pages/Registrar.tsx
++++ b/src/pages/Registrar.tsx
+@@ -156,7 +156,8 @@ const isReproTipoEnum = (value: string | null): value is ReproTipoEnum =>
+   value === "cobertura" ||
+   value === "IA" ||
+   value === "diagnostico" ||
+-  value === "parto";
++  value === "parto" ||
++  value === "aborto";
+ 
+ const readString = (record: Record<string, unknown> | null | undefined, key: string) => {
+   const value = record?.[key];

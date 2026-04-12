@@ -217,10 +217,6 @@ Esse encadeamento reduz confusao entre intencao, implementacao e historico.
 
 ## 9. Gaps Residuais (beta interno)
 
-Apos auditoria de abril/2026, os seguintes TDs permanecem abertos:
+No estado atual desta revisao, nao ha TDs residuais abertos.
 
-| TD | Descricao | Prioridade |
-|---|---|---|
-| TD-021 | Telemetria local-only (sem observabilidade remota) | P1 |
-| TD-022 | `produtos_veterinarios` sem autocomplete integrado em `Registrar.tsx` | P1 |
-| TD-023 | Pos-parto e Cria Inicial sem cobertura no pacote `test:e2e` | P2 |
+Quando novos gaps surgirem, eles devem voltar a aparecer aqui apenas depois de entrarem em `TECH_DEBT.md` e `ROADMAP.md`.

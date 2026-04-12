@@ -18,7 +18,7 @@ Plataforma **offline-first** para gestão pecuária de corte. Multi-tenant por f
 - Lista de animais agrupando matriz e cria com badge visual por estágio de vida.
 - Transições do rebanho com histórico consolidado.
 - Dashboard reprodutivo dedicado e relatórios operacionais com exportação.
-- Telemetria local de piloto (store `metrics_events`, Dexie v8).
+- Telemetria de piloto com buffer local em `metrics_events` (Dexie v11) e flush remoto periodico.
 - Taxonomia canônica bovina: 3 eixos derivados, contrato v1, SQL view de paridade.
 - Sistema de convites e gestão de membros.
 - Catálogo global de produtos veterinários com seed básico.
@@ -79,8 +79,9 @@ src/              Frontend React (pages, components, lib, hooks)
 supabase/
   migrations/     44+ migrations SQL — evolução do schema
   functions/
-    sync-batch/   Edge Function de sincronização transacional
-    test-auth/    Edge Function auxiliar de diagnóstico
+    sync-batch/   Edge Function de sincronizacao transacional
+    telemetry-ingest/ Edge Function de ingestao de telemetria de piloto
+    test-auth/    Edge Function auxiliar de diagnostico
 docs/             Documentação normativa e inventários vivos
 scripts/          Automações e gates documentais
 ```
@@ -98,4 +99,4 @@ Para retomar o projeto rapidamente:
 3. [`docs/OFFLINE.md`](./docs/OFFLINE.md) — Dexie stores, fila, rollback, `metrics_events`
 4. [`docs/CONTRACTS.md`](./docs/CONTRACTS.md) — contrato `sync-batch`, status codes
 5. [`docs/ROUTES.md`](./docs/ROUTES.md) — todas as rotas implementadas
-6. [`docs/TECH_DEBT.md`](./docs/TECH_DEBT.md) — gaps residuais (TDs 021-023)
+6. [`docs/TECH_DEBT.md`](./docs/TECH_DEBT.md) — gaps residuais e historico de fechamentos

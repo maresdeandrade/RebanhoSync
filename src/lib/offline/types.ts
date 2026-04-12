@@ -35,6 +35,9 @@ export type FarmInviteStatusEnum =
 // Animal & Lote
 export type SexoEnum = "M" | "F";
 export type AnimalStatusEnum = "ativo" | "vendido" | "morto";
+
+// Cause of death enum for óbito events
+export type CausaObitoEnum = "doenca" | "acidente" | "predador" | "outro";
 export type LoteStatusEnum = "ativo" | "inativo";
 export type PapelMachoEnum = "reprodutor" | "rufiao";
 export type DestinoProdutivoAnimalEnum =
@@ -132,15 +135,50 @@ export type TipoPastoEnum = "nativo" | "cultivado" | "integracao" | "degradado";
 // Eventos & Agenda
 export type DominioEnum =
   | "sanitario"
+  | "alerta_sanitario"
+  | "conformidade"
   | "pesagem"
   | "nutricao"
   | "movimentacao"
   | "reproducao"
-  | "financeiro";
+  | "financeiro"
+  | "obito";
 export type AgendaStatusEnum = "agendado" | "concluido" | "cancelado";
 export type AgendaSourceKindEnum = "manual" | "automatico";
 export type SanitarioTipoEnum = "vacinacao" | "vermifugacao" | "medicamento";
-export type ReproTipoEnum = "cobertura" | "IA" | "diagnostico" | "parto";
+export type SanitaryOfficialScopeEnum = "federal" | "estadual";
+export type SanitaryOfficialAptidaoEnum = "corte" | "leite" | "misto" | "all";
+export type SanitaryOfficialSistemaEnum =
+  | "extensivo"
+  | "semi_intensivo"
+  | "intensivo"
+  | "all";
+export type SanitaryOfficialLegalStatusEnum =
+  | "obrigatorio"
+  | "recomendado"
+  | "boa_pratica";
+export type SanitaryOfficialAreaEnum =
+  | "vacinacao"
+  | "parasitas"
+  | "medicamentos"
+  | "biosseguranca"
+  | "nutricao"
+  | "sustentabilidade"
+  | "notificacao";
+export type SanitaryOfficialTriggerTypeEnum =
+  | "idade"
+  | "sexo"
+  | "entrada"
+  | "movimento"
+  | "calendario"
+  | "risco"
+  | "uso_produto";
+export type FazendaSanitaryCalendarModeEnum =
+  | "minimo_legal"
+  | "tecnico_recomendado"
+  | "completo";
+export type FazendaSanitaryRiskLevelEnum = "baixo" | "medio" | "alto";
+export type ReproTipoEnum = "cobertura" | "IA" | "diagnostico" | "parto" | "aborto";
 export type FinanceiroTipoEnum = "compra" | "venda";
 export type PilotMetricStatus = "info" | "success" | "error";
 export type PilotMetricEventName =
@@ -411,7 +449,11 @@ export interface UserSettings {
     enabled: boolean;
     agenda_reminders: boolean;
     days_before: number[];
-    quiet_hours: { start: string; end: string };
+    quiet_hours: { start: string; end: string } | null;
+    sanitary_critical?: boolean;
+    sanitary_mandatory?: boolean;
+    sanitary_upcoming?: boolean;
+    sanitary_followups?: boolean;
   };
   sync_prefs: {
     wifi_only: boolean;
@@ -571,6 +613,81 @@ export interface ProtocoloSanitarioItem {
   payload: Record<string, unknown>;
 
   // Campos de sistema
+  client_id: string;
+  client_op_id: string;
+  client_tx_id: string | null;
+  client_recorded_at: string;
+  server_received_at: string;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+}
+
+export interface ProdutoVeterinarioCatalogEntry {
+  id: string;
+  nome: string;
+  categoria: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CatalogoProtocoloOficial {
+  id: string;
+  slug: string;
+  nome: string;
+  versao: number;
+  escopo: SanitaryOfficialScopeEnum;
+  uf: EstadoUFEnum | null;
+  aptidao: SanitaryOfficialAptidaoEnum;
+  sistema: SanitaryOfficialSistemaEnum;
+  status_legal: SanitaryOfficialLegalStatusEnum;
+  base_legal_json: Record<string, unknown>;
+  payload: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CatalogoProtocoloOficialItem {
+  id: string;
+  template_id: string;
+  area: SanitaryOfficialAreaEnum;
+  codigo: string;
+  categoria_animal: string | null;
+  gatilho_tipo: SanitaryOfficialTriggerTypeEnum;
+  gatilho_json: Record<string, unknown>;
+  frequencia_json: Record<string, unknown>;
+  requires_vet: boolean;
+  requires_gta: boolean;
+  carencia_regra_json: Record<string, unknown>;
+  gera_agenda: boolean;
+  payload: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CatalogoDoencaNotificavel {
+  codigo: string;
+  nome: string;
+  especie_alvo: string | null;
+  tipo_notificacao: string;
+  sinais_alerta_json: Record<string, unknown>;
+  acao_imediata_json: Record<string, unknown>;
+  base_legal_json: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface FazendaSanidadeConfig {
+  fazenda_id: string;
+  uf: EstadoUFEnum | null;
+  aptidao: SanitaryOfficialAptidaoEnum;
+  sistema: SanitaryOfficialSistemaEnum;
+  zona_raiva_risco: FazendaSanitaryRiskLevelEnum;
+  pressao_carrapato: FazendaSanitaryRiskLevelEnum;
+  pressao_helmintos: FazendaSanitaryRiskLevelEnum;
+  modo_calendario: FazendaSanitaryCalendarModeEnum;
+  payload: Record<string, unknown>;
+
   client_id: string;
   client_op_id: string;
   client_tx_id: string | null;

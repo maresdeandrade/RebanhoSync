@@ -3,6 +3,7 @@ import { Outlet, useLocation } from "react-router-dom";
 
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useAuth } from "@/hooks/useAuth";
+import { SanitaryNotificationManager } from "@/components/notifications/SanitaryNotificationManager";
 import { trackPilotMetric } from "@/lib/telemetry/pilotMetrics";
 import { startSyncWorker, stopSyncWorker } from "@/lib/offline/syncWorker";
 
@@ -36,6 +37,7 @@ export const AppShell = () => {
 
   return (
     <div className="min-h-screen bg-transparent">
+      <SanitaryNotificationManager />
       <TopBar onMenuClick={() => setIsMobileMenuOpen(true)} />
 
       <div className="flex min-h-[calc(100vh-3.5rem)]">

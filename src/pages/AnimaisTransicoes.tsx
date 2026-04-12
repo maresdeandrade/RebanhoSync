@@ -21,6 +21,11 @@ import {
 import { buildEventGesture } from "@/lib/events/buildEventGesture";
 import { db } from "@/lib/offline/db";
 import { createGesture } from "@/lib/offline/ops";
+import { listAnimalsBlockedBySanitaryAlert } from "@/lib/sanitario/alerts";
+import {
+  buildRegulatoryOperationalReadModel,
+  loadRegulatorySurfaceSource,
+} from "@/lib/sanitario/regulatoryReadModel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -82,6 +87,13 @@ export default function AnimaisTransicoes() {
     if (!activeFarmId) return [];
     return db.state_lotes.where("fazenda_id").equals(activeFarmId).toArray();
   }, [activeFarmId]);
+  const regulatorySurfaceSource = useLiveQuery(
+    async () => {
+      if (!activeFarmId) return null;
+      return loadRegulatorySurfaceSource(activeFarmId);
+    },
+    [activeFarmId],
+  );
 
   const rows = useMemo(() => {
     const lotesMap = new Map((lotes ?? []).map((lote) => [lote.id, lote.nome]));
@@ -127,6 +139,22 @@ export default function AnimaisTransicoes() {
     () => rows.filter((row) => selectedIds.includes(row.animalId)),
     [rows, selectedIds],
   );
+  const selectedRowsBlockedBySanitaryAlert = useMemo(
+    () => listAnimalsBlockedBySanitaryAlert(selectedRows.map((row) => row.animal)),
+    [selectedRows],
+  );
+  const regulatoryReadModel = useMemo(
+    () =>
+      buildRegulatoryOperationalReadModel(
+        regulatorySurfaceSource ?? undefined,
+      ),
+    [regulatorySurfaceSource],
+  );
+  const movementComplianceGuards = regulatoryReadModel.flows.movementInternal;
+  const complianceBlockReason =
+    batchLoteId !== UNCHANGED
+      ? movementComplianceGuards.blockers[0]?.message ?? null
+      : null;
   const selectedMaleRows = selectedRows.filter((row) => row.animal.sexo === "M");
   const selectedPostWeaningRows = selectedRows.filter(
     (row) =>
@@ -184,6 +212,21 @@ export default function AnimaisTransicoes() {
   const handleApplySelected = async () => {
     if (!activeFarmId || selectedRows.length === 0) {
       showError("Selecione pelo menos um animal para aplicar a transicao.");
+      return;
+    }
+
+    if (
+      batchLoteId !== UNCHANGED &&
+      selectedRowsBlockedBySanitaryAlert.length > 0
+    ) {
+      showError(
+        `${selectedRowsBlockedBySanitaryAlert[0]?.animal.identificacao} esta com suspeita sanitaria aberta e nao pode ser movido de lote.`,
+      );
+      return;
+    }
+
+    if (complianceBlockReason) {
+      showError(complianceBlockReason);
       return;
     }
 
@@ -395,6 +438,14 @@ export default function AnimaisTransicoes() {
         </CardContent>
       </Card>
 
+      {complianceBlockReason ? (
+        <Card className="border-amber-200 bg-amber-50 shadow-none">
+          <CardContent className="p-4 text-sm text-amber-900">
+            {complianceBlockReason}
+          </CardContent>
+        </Card>
+      ) : null}
+
       {rows.length === 0 ? (
         <EmptyState
           icon={CheckCircle2}
@@ -463,7 +514,11 @@ export default function AnimaisTransicoes() {
 
               <Button
                 onClick={handleApplySelected}
-                disabled={selectedRows.length === 0 || isSubmitting}
+                disabled={
+                  selectedRows.length === 0 ||
+                  isSubmitting ||
+                  Boolean(complianceBlockReason)
+                }
               >
                 {isSubmitting
                   ? "Aplicando..."

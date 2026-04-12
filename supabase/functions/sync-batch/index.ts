@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0'
 import {
   type Operation,
   buildMutationMatch,
@@ -7,6 +7,7 @@ import {
 } from './rules.ts'
 import { resolveEventFeatureFlags } from './flags.ts'
 import { validateAnimalTaxonomyFactsOperation } from './taxonomy.ts'
+import { normalizeTableMutationRecord } from '../_shared/mutationRecord.ts'
 
 const allowedOrigins = [
   'http://localhost:5173',
@@ -179,11 +180,13 @@ Deno.serve(async (req: Request) => {
     const TABLES_WITH_FAZENDA = new Set([
       'animais', 'lotes', 'pastos', 'agenda_itens', 'eventos',
       'contrapartes', 'protocolos_sanitarios', 'protocolos_sanitarios_itens',
+      'fazenda_sanidade_config',
       'eventos_sanitario', 'eventos_pesagem', 'eventos_nutricao',
       'eventos_movimentacao', 'eventos_reproducao', 'eventos_financeiro'
     ]);
 
     const results = [];
+    const recomputeTablesTouched = new Set<string>();
     
     for (const op of ops) {
       try {
@@ -200,7 +203,11 @@ Deno.serve(async (req: Request) => {
         }
 
         // P0: Force tenant consistency (server is authoritative)
-        const record = { ...op.record };
+        const record = normalizeTableMutationRecord(
+          op.table,
+          { ...op.record },
+          TABLES_WITH_FAZENDA.has(op.table) ? fazenda_id : undefined,
+        );
         if (TABLES_WITH_FAZENDA.has(op.table)) {
           record.fazenda_id = fazenda_id; // Always use request fazenda_id
         }
@@ -402,11 +409,34 @@ Deno.serve(async (req: Request) => {
             });
           }
         } else {
+          if (
+            op.table === 'protocolos_sanitarios' ||
+            op.table === 'protocolos_sanitarios_itens' ||
+            op.table === 'fazenda_sanidade_config'
+          ) {
+            recomputeTablesTouched.add(op.table);
+          }
           results.push({ op_id: op.client_op_id, status: 'APPLIED' });
         }
       } catch (e: unknown) {
         const error = e instanceof Error ? e : new Error(String(e));
         results.push({ op_id: op.client_op_id, status: 'REJECTED', reason_code: 'INTERNAL_ERROR', reason_message: error.message });
+      }
+    }
+
+    if (recomputeTablesTouched.size > 0) {
+      const { error: recomputeError } = await supabase.rpc(
+        'sanitario_recompute_agenda_for_fazenda',
+        {
+          _fazenda_id: fazenda_id,
+          _as_of: new Date().toISOString().slice(0, 10),
+        },
+      );
+
+      if (recomputeError) {
+        console.warn(
+          `[sync-batch] Failed to recompute sanitary agenda for farm ${fazenda_id}: ${recomputeError.message}`,
+        );
       }
     }
 

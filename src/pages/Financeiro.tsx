@@ -3,6 +3,7 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { useNavigate } from "react-router-dom";
 import {
   BadgeDollarSign,
+  AlertTriangle,
   Filter,
   Handshake,
   PlusCircle,
@@ -13,6 +14,11 @@ import {
 } from "lucide-react";
 import { db } from "@/lib/offline/db";
 import { useAuth } from "@/hooks/useAuth";
+import {
+  buildRegulatoryOperationalReadModel,
+  EMPTY_REGULATORY_OPERATIONAL_READ_MODEL,
+  loadRegulatorySurfaceSource,
+} from "@/lib/sanitario/regulatoryReadModel";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -25,6 +31,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { StatusBadge } from "@/components/ui/status-badge";
 
 const money = new Intl.NumberFormat("pt-BR", {
   style: "currency",
@@ -52,6 +59,16 @@ const Financeiro = () => {
   const [contraparteFilter, setContraparteFilter] = useState("all");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const regulatoryReadModel =
+    useLiveQuery(async () => {
+      if (!activeFarmId) return EMPTY_REGULATORY_OPERATIONAL_READ_MODEL;
+      return buildRegulatoryOperationalReadModel(
+        await loadRegulatorySurfaceSource(activeFarmId),
+      );
+    }, [activeFarmId]) || EMPTY_REGULATORY_OPERATIONAL_READ_MODEL;
+  const saleCompliance = regulatoryReadModel.flows.sale;
+  const saleBlockingMessage =
+    saleCompliance.firstBlockerMessage ?? saleCompliance.firstWarningMessage;
 
   const data = useLiveQuery(
     async () => {
@@ -222,12 +239,69 @@ const Financeiro = () => {
             <Handshake className="mr-2 h-4 w-4" />
             Parceiros
           </Button>
-          <Button onClick={() => navigate("/registrar?dominio=financeiro")}>
+          <Button
+            variant="outline"
+            onClick={() => navigate("/registrar?dominio=financeiro&natureza=compra")}
+          >
             <PlusCircle className="mr-2 h-4 w-4" />
-            Novo Lancamento
+            Nova compra
+          </Button>
+          <Button
+            onClick={() => navigate("/registrar?dominio=financeiro&natureza=venda")}
+            disabled={saleCompliance.blockerCount > 0}
+          >
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Nova venda
           </Button>
         </div>
       </div>
+
+      {regulatoryReadModel.attention.openCount > 0 ? (
+        <Card className="border-amber-200 bg-amber-50/60">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-amber-950">
+              <AlertTriangle className="h-4 w-4" />
+              Venda e transito sob leitura regulatoria
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex flex-wrap gap-2">
+              {regulatoryReadModel.attention.badges.map((badge) => (
+                <StatusBadge key={badge.key} tone={badge.tone}>
+                  {badge.label} {badge.count}
+                </StatusBadge>
+              ))}
+              {saleCompliance.blockerCount > 0 ? (
+                <StatusBadge tone="danger">Bloqueia nova venda</StatusBadge>
+              ) : saleCompliance.warningCount > 0 ? (
+                <StatusBadge tone="warning">Exige revisao antes da venda</StatusBadge>
+              ) : null}
+            </div>
+            {saleBlockingMessage ? (
+              <p className="text-sm text-amber-950">{saleBlockingMessage}</p>
+            ) : (
+              <p className="text-sm text-amber-950">
+                O overlay oficial segue aberto. Revise quarentena, documentacao e
+                demais checklists antes de liberar venda com transito.
+              </p>
+            )}
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant="outline"
+                onClick={() => navigate("/protocolos-sanitarios")}
+              >
+                Abrir overlay de conformidade
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={() => navigate("/registrar?dominio=financeiro&natureza=compra")}
+              >
+                Registrar compra
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      ) : null}
 
       <div className="grid gap-4 md:grid-cols-4">
         <Card>

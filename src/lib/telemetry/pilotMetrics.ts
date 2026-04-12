@@ -1,9 +1,11 @@
+import { env } from "@/lib/env";
 import { db } from "@/lib/offline/db";
 import type {
   PilotMetricEvent,
   PilotMetricEventName,
   PilotMetricStatus,
 } from "@/lib/offline/types";
+import { supabase } from "@/lib/supabase";
 
 export interface TrackPilotMetricInput {
   fazendaId: string | null | undefined;
@@ -35,6 +37,143 @@ export interface PilotMetricsSummary {
   topRoutes: PilotMetricCount[];
   importsByEntity: PilotMetricCount[];
   failuresByType: PilotMetricCount[];
+}
+
+const TELEMETRY_FLUSH_BATCH_SIZE = 100;
+const TELEMETRY_FLUSH_CURSOR_PREFIX = "rebanhosync:telemetry-flush:";
+
+interface TelemetryFlushCursor {
+  createdAt: string;
+  idsAtCursor: string[];
+}
+
+function getTelemetryFlushCursorKey(fazendaId: string) {
+  return `${TELEMETRY_FLUSH_CURSOR_PREFIX}${fazendaId}`;
+}
+
+function readTelemetryFlushCursor(fazendaId: string): TelemetryFlushCursor | null {
+  if (typeof localStorage === "undefined") return null;
+  const raw = localStorage.getItem(getTelemetryFlushCursorKey(fazendaId));
+  if (!raw) return null;
+
+  try {
+    const parsed = JSON.parse(raw) as Partial<TelemetryFlushCursor>;
+    if (
+      typeof parsed.createdAt === "string" &&
+      Array.isArray(parsed.idsAtCursor) &&
+      parsed.idsAtCursor.every((value) => typeof value === "string")
+    ) {
+      return {
+        createdAt: parsed.createdAt,
+        idsAtCursor: parsed.idsAtCursor,
+      };
+    }
+  } catch {
+    // Ignore malformed local cursor and rebuild from the next successful flush.
+  }
+
+  return null;
+}
+
+function writeTelemetryFlushCursor(fazendaId: string, cursor: TelemetryFlushCursor) {
+  if (typeof localStorage === "undefined") return;
+  localStorage.setItem(getTelemetryFlushCursorKey(fazendaId), JSON.stringify(cursor));
+}
+
+async function getTelemetryAccessToken(): Promise<string | null> {
+  const {
+    data: { session },
+    error: sessionError,
+  } = await supabase.auth.getSession();
+
+  if (!sessionError && session?.access_token) {
+    return session.access_token;
+  }
+
+  const {
+    data: { session: refreshedSession },
+    error: refreshError,
+  } = await supabase.auth.refreshSession();
+
+  if (refreshError || !refreshedSession?.access_token) {
+    return null;
+  }
+
+  return refreshedSession.access_token;
+}
+
+async function loadTelemetryBatch(fazendaId: string): Promise<PilotMetricEvent[]> {
+  const cursor = readTelemetryFlushCursor(fazendaId);
+  const collection = cursor
+    ? db.metrics_events
+        .where("[fazenda_id+created_at]")
+        .between([fazendaId, cursor.createdAt], [fazendaId, "\uffff"], true, true)
+    : db.metrics_events
+        .where("[fazenda_id+created_at]")
+        .between([fazendaId, ""], [fazendaId, "\uffff"], true, true);
+
+  const rows = await collection
+    .limit(TELEMETRY_FLUSH_BATCH_SIZE + (cursor?.idsAtCursor.length ?? 0) + 5)
+    .toArray();
+
+  const filteredRows = cursor
+    ? rows.filter(
+        (event) =>
+          event.created_at !== cursor.createdAt ||
+          !cursor.idsAtCursor.includes(event.id),
+      )
+    : rows;
+
+  return filteredRows.slice(0, TELEMETRY_FLUSH_BATCH_SIZE);
+}
+
+async function flushTelemetryBatch(
+  accessToken: string,
+  events: PilotMetricEvent[],
+): Promise<boolean> {
+  const response = await fetch(`${env.supabaseFunctionsUrl}/telemetry-ingest`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      apikey: env.supabaseAnonKey,
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify({ events }),
+  });
+
+  return response.ok;
+}
+
+async function flushTelemetryForFarm(fazendaId: string): Promise<number> {
+  const pendingEvents = await loadTelemetryBatch(fazendaId);
+  if (pendingEvents.length === 0) return 0;
+
+  let accessToken = await getTelemetryAccessToken();
+  if (!accessToken) return 0;
+
+  let flushed = await flushTelemetryBatch(accessToken, pendingEvents);
+  if (!flushed) {
+    accessToken = await getTelemetryAccessToken();
+    if (!accessToken) return 0;
+    flushed = await flushTelemetryBatch(accessToken, pendingEvents);
+  }
+
+  if (!flushed) {
+    throw new Error("Falha ao enviar telemetria remota.");
+  }
+
+  const lastCreatedAt =
+    pendingEvents[pendingEvents.length - 1]?.created_at ?? new Date().toISOString();
+  const idsAtCursor = pendingEvents
+    .filter((event) => event.created_at === lastCreatedAt)
+    .map((event) => event.id);
+
+  writeTelemetryFlushCursor(fazendaId, {
+    createdAt: lastCreatedAt,
+    idsAtCursor,
+  });
+
+  return pendingEvents.length;
 }
 
 export async function trackPilotMetric(
@@ -70,45 +209,24 @@ function toSortedCounts(map: Map<string, number>, limit = 5): PilotMetricCount[]
     .slice(0, limit);
 }
 
-import { env } from "@/lib/env";
-import { supabase } from "@/lib/supabase";
-
+/**
+ * flushPilotMetrics uploads locally buffered pilot telemetry in bounded batches.
+ * The local Dexie store remains append-only and acts as the offline buffer.
+ */
 export async function flushPilotMetrics(): Promise<void> {
-  if (typeof indexedDB === "undefined") return;
+  if (typeof indexedDB === "undefined" || typeof fetch === "undefined") return;
 
-  try {
-    const events = await db.metrics_events.toArray();
-    if (events.length === 0) return;
+  const farmIds = (await db.metrics_events.orderBy("fazenda_id").uniqueKeys()).filter(
+    (value): value is string => typeof value === "string" && value.length > 0,
+  );
 
-    // Get current session
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
+  for (const fazendaId of farmIds) {
+    let hasMore = true;
 
-    if (!session) {
-       // Cannot flush without session, will try again later
-       return;
+    while (hasMore) {
+      const flushedCount = await flushTelemetryForFarm(fazendaId);
+      hasMore = flushedCount === TELEMETRY_FLUSH_BATCH_SIZE;
     }
-
-    const response = await fetch(`${env.supabaseFunctionsUrl}/telemetry-ingest`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        apikey: env.supabaseAnonKey,
-        Authorization: `Bearer ${session.access_token}`,
-      },
-      body: JSON.stringify({ events }),
-    });
-
-    if (response.ok) {
-      // Successfully sent, delete them from local store
-      const sentIds = events.map((e) => e.id);
-      await db.metrics_events.bulkDelete(sentIds);
-    } else {
-       console.warn("[pilot-metrics] Failed to flush telemetry:", response.status);
-    }
-  } catch (error) {
-    console.warn("[pilot-metrics] Failed to flush telemetry (network/offline):", error);
   }
 }
 

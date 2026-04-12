@@ -2,7 +2,7 @@
 
 > **Status:** Normativo
 > **Fonte de Verdade:** Migrations PostgreSQL
-> **Ultima Atualizacao:** 2026-04-07
+> **Ultima Atualizacao:** 2026-04-09
 
 Este documento descreve o schema logico do banco e destaca os pontos relevantes para offline-first, multi-tenant e taxonomia bovina canonica.
 
@@ -67,6 +67,45 @@ Tabela global (sem `fazenda_id`) com catálogo de produtos veterinários.
 - RLS habilitado: SELECT pública para `authenticated`; sem política de WRITE (seed-only)
 - Não é tenant-scoped — decisão intencional (catálogo compartilhado)
 - Não sincronizada via `sync-batch` (somente leitura direta via Supabase)
+- Seed expandido em `supabase/migrations/20260408133000_expand_produtos_veterinarios_seed.sql`
+- Referências estruturadas podem ser copiadas para `protocolos_sanitarios_itens.payload` e `eventos_sanitario.payload` usando:
+  - `produto_veterinario_id`
+  - `produto_nome_catalogo`
+  - `produto_categoria`
+  - `produto_origem`
+
+### `catalogo_protocolos_oficiais`
+
+Tabela global e versionada com templates regulatorios oficiais.
+
+- Criada em `supabase/migrations/20260409183000_official_sanitary_catalog_foundation.sql`
+- Campos centrais: `slug`, `nome`, `versao`, `escopo`, `uf`, `aptidao`, `sistema`, `status_legal`
+- Fonte de verdade do pack oficial: nucleo federal + overlays estaduais
+- Nao entra no `sync-batch`; e cacheada localmente no Dexie
+
+### `catalogo_protocolos_oficiais_itens`
+
+Itens detalhados do catalogo oficial.
+
+- Campos centrais: `template_id`, `area`, `codigo`, `gatilho_tipo`, `gatilho_json`, `frequencia_json`
+- Pode representar obrigacao legal, recomendacao tecnica ou boa pratica
+- Nem todo item e materializado no modelo atual de `protocolos_sanitarios_itens`; parte fica como contexto/checklist regulatorio
+
+### `catalogo_doencas_notificaveis`
+
+Tabela global com a base de suspeitas/doencas de notificacao obrigatoria.
+
+- Campos centrais: `codigo`, `nome`, `tipo_notificacao`, `sinais_alerta_json`, `acao_imediata_json`
+- Alimenta o futuro fluxo de suspeita/notificacao imediata
+
+### `fazenda_sanidade_config`
+
+Configuracao tenant-scoped da fazenda para ativacao do pack oficial.
+
+- Chave primaria: `fazenda_id`
+- Campos centrais: `uf`, `aptidao`, `sistema`, `zona_raiva_risco`, `pressao_carrapato`, `pressao_helmintos`, `modo_calendario`
+- Participa do `sync-batch` e do pull offline
+- Serve de overlay local para selecionar obrigacoes minimas, recomendacoes tecnicas e boas praticas
 
 ---
 

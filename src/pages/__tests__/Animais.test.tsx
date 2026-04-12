@@ -11,6 +11,7 @@ import { useLotes } from "@/hooks/useLotes";
 import { DEFAULT_FARM_LIFECYCLE_CONFIG } from "@/lib/farms/lifecycleConfig";
 import { DEFAULT_FARM_MEASUREMENT_CONFIG } from "@/lib/farms/measurementConfig";
 import type { Animal } from "@/lib/offline/types";
+import type { RegulatoryOperationalReadModel } from "@/lib/sanitario/regulatoryReadModel";
 import Animais from "@/pages/Animais";
 
 vi.mock("@/hooks/useAuth");
@@ -60,6 +61,74 @@ describe("Animais page", () => {
   const mockedUseDebouncedValue = vi.mocked(useDebouncedValue);
   const mockedUseLotes = vi.mocked(useLotes);
   const mockedUseLiveQuery = vi.mocked(useLiveQuery);
+
+  const emptyRegulatoryReadModel: RegulatoryOperationalReadModel = {
+    entries: [],
+    attention: {
+      total: 0,
+      openCount: 0,
+      pendingCount: 0,
+      adjustmentCount: 0,
+      blockingCount: 0,
+      feedBanOpenCount: 0,
+      criticalChecklistCount: 0,
+      badges: [],
+      topItems: [],
+      groupBadge: null,
+    },
+    flows: {
+      nutrition: {
+        blockers: [],
+        warnings: [],
+        totalCount: 0,
+        blockerCount: 0,
+        warningCount: 0,
+        firstBlockerMessage: null,
+        firstWarningMessage: null,
+        hasIssues: false,
+        tone: "success",
+      },
+      movementInternal: {
+        blockers: [],
+        warnings: [],
+        totalCount: 0,
+        blockerCount: 0,
+        warningCount: 0,
+        firstBlockerMessage: null,
+        firstWarningMessage: null,
+        hasIssues: false,
+        tone: "success",
+      },
+      movementExternal: {
+        blockers: [],
+        warnings: [],
+        totalCount: 0,
+        blockerCount: 0,
+        warningCount: 0,
+        firstBlockerMessage: null,
+        firstWarningMessage: null,
+        hasIssues: false,
+        tone: "success",
+      },
+      sale: {
+        blockers: [],
+        warnings: [],
+        totalCount: 0,
+        blockerCount: 0,
+        warningCount: 0,
+        firstBlockerMessage: null,
+        firstWarningMessage: null,
+        hasIssues: false,
+        tone: "success",
+      },
+    },
+    analytics: {
+      subareas: [],
+      impacts: [],
+    },
+    hasOpenIssues: false,
+    hasBlockingIssues: false,
+  };
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -111,7 +180,7 @@ describe("Animais page", () => {
     mockedUseLiveQuery.mockImplementation((() => {
       let callCount = 0;
       return () => {
-        const index = callCount % 5;
+        const index = callCount % 6;
         callCount += 1;
 
         switch (index) {
@@ -143,9 +212,16 @@ describe("Animais page", () => {
                 titulo: "Sanitario: vacina reforco",
                 data: "2026-04-10",
                 status: "proximo",
+                scheduleLabel: "Aplicar entre 3 e 8 meses",
+                scheduleMode: "age_window",
+                scheduleModeLabel: "Janela etaria",
+                scheduleAnchor: "birth",
+                scheduleAnchorLabel: "Nascimento",
               },
             ] as ReturnType<typeof useLiveQuery>;
           case 4:
+            return emptyRegulatoryReadModel as ReturnType<typeof useLiveQuery>;
+          case 5:
           default:
             return [mother] as ReturnType<typeof useLiveQuery>;
         }
@@ -169,6 +245,9 @@ describe("Animais page", () => {
     expect(screen.getByText("450,0 kg")).toBeInTheDocument();
     expect(screen.getByText("0,7 kg/dia")).toBeInTheDocument();
     expect(screen.getByText("Sanitario: vacina reforco")).toBeInTheDocument();
+    expect(screen.getAllByText("Janela etaria").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Nascimento").length).toBeGreaterThan(0);
+    expect(screen.getByText("Aplicar entre 3 e 8 meses")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Abrir matriz" })).toBeInTheDocument();
   });
 
@@ -184,7 +263,7 @@ describe("Animais page", () => {
     mockedUseLiveQuery.mockImplementation((() => {
       let callCount = 0;
       return () => {
-        const index = callCount % 5;
+        const index = callCount % 6;
         callCount += 1;
 
         switch (index) {
@@ -197,6 +276,8 @@ describe("Animais page", () => {
           case 3:
             return [] as ReturnType<typeof useLiveQuery>;
           case 4:
+            return emptyRegulatoryReadModel as ReturnType<typeof useLiveQuery>;
+          case 5:
           default:
             return animaisBase as ReturnType<typeof useLiveQuery>;
         }
@@ -226,5 +307,187 @@ describe("Animais page", () => {
     expect(screen.getByText("Pagina 2 de 2")).toBeInTheDocument();
     expect(screen.getByText("A-101")).toBeInTheDocument();
     expect(screen.queryByText("A-001")).not.toBeInTheDocument();
+  });
+
+  it("abre a lista animal-centric ja filtrada por restricao operacional", () => {
+    const activeAnimal = makeAnimal({
+      id: "animal-1",
+      identificacao: "BR-001",
+      sexo: "F",
+    });
+    const soldAnimal = makeAnimal({
+      id: "animal-2",
+      identificacao: "BR-002",
+      sexo: "M",
+      status: "vendido",
+    });
+
+    mockedUseLiveQuery.mockImplementation((() => {
+      let callCount = 0;
+      return () => {
+        const index = callCount % 6;
+        callCount += 1;
+
+        switch (index) {
+          case 0:
+            return [activeAnimal, soldAnimal] as ReturnType<typeof useLiveQuery>;
+          case 1:
+            return [] as ReturnType<typeof useLiveQuery>;
+          case 2:
+            return [] as ReturnType<typeof useLiveQuery>;
+          case 3:
+            return [] as ReturnType<typeof useLiveQuery>;
+          case 4:
+            return {
+              ...emptyRegulatoryReadModel,
+              attention: {
+                ...emptyRegulatoryReadModel.attention,
+                total: 1,
+                openCount: 1,
+                blockingCount: 1,
+              },
+              flows: {
+                ...emptyRegulatoryReadModel.flows,
+                sale: {
+                  blockers: [],
+                  warnings: [],
+                  totalCount: 1,
+                  blockerCount: 1,
+                  warningCount: 0,
+                  firstBlockerMessage:
+                    "Checklist documental bloqueia o transito externo.",
+                  firstWarningMessage: null,
+                  hasIssues: true,
+                  tone: "danger",
+                },
+              },
+              analytics: {
+                subareas: [
+                  {
+                    key: "documental",
+                    label: "Documental",
+                    openCount: 1,
+                    blockerCount: 1,
+                    warningCount: 0,
+                    adjustmentCount: 0,
+                    pendingCount: 1,
+                    tone: "danger",
+                    affectedImpacts: ["sale"],
+                    recommendation: "Regularizar checklist.",
+                  },
+                ],
+                impacts: [
+                  {
+                    key: "sale",
+                    label: "Impacta transito/venda",
+                    blockerCount: 1,
+                    warningCount: 0,
+                    totalCount: 1,
+                    tone: "danger",
+                    message: "Checklist documental bloqueia o transito externo.",
+                  },
+                ],
+              },
+              hasOpenIssues: true,
+              hasBlockingIssues: true,
+            } as ReturnType<typeof useLiveQuery>;
+          case 5:
+          default:
+            return [activeAnimal, soldAnimal] as ReturnType<typeof useLiveQuery>;
+        }
+      };
+    })());
+
+    render(
+      <MemoryRouter
+        initialEntries={["/animais?overlayImpact=sale"]}
+        future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+      >
+        <Animais />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText("Restricoes regulatorias no rebanho")).toBeInTheDocument();
+    expect(screen.getAllByText("Impacta transito/venda").length).toBeGreaterThan(0);
+    expect(screen.getByText("Venda/transito bloqueados")).toBeInTheDocument();
+    expect(screen.getByText("BR-001")).toBeInTheDocument();
+    expect(screen.queryByText("BR-002")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /exportar recorte regulatorio/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("aceita calendarMode e calendarAnchor por query string no recorte animal-centric", () => {
+    const animalJanela = makeAnimal({
+      id: "animal-1",
+      identificacao: "BR-001",
+      sexo: "F",
+    });
+    const animalRecorrente = makeAnimal({
+      id: "animal-2",
+      identificacao: "BR-002",
+      sexo: "F",
+    });
+
+    mockedUseLiveQuery.mockImplementation((() => {
+      let callCount = 0;
+      return () => {
+        const index = callCount % 6;
+        callCount += 1;
+
+        switch (index) {
+          case 0:
+            return [animalJanela, animalRecorrente] as ReturnType<typeof useLiveQuery>;
+          case 1:
+            return [] as ReturnType<typeof useLiveQuery>;
+          case 2:
+            return [] as ReturnType<typeof useLiveQuery>;
+          case 3:
+            return [
+              {
+                animalId: animalJanela.id,
+                titulo: "Sanitario: brucelose",
+                data: "2026-04-10",
+                status: "proximo",
+                scheduleLabel: "Aplicar entre 3 e 8 meses",
+                scheduleMode: "age_window",
+                scheduleModeLabel: "Janela etaria",
+                scheduleAnchor: "birth",
+                scheduleAnchorLabel: "Nascimento",
+              },
+              {
+                animalId: animalRecorrente.id,
+                titulo: "Sanitario: vermifugo",
+                data: "2026-04-12",
+                status: "proximo",
+                scheduleLabel: "A cada 90 dias",
+                scheduleMode: "rolling_interval",
+                scheduleModeLabel: "Recorrente",
+                scheduleAnchor: null,
+                scheduleAnchorLabel: null,
+              },
+            ] as ReturnType<typeof useLiveQuery>;
+          case 4:
+            return emptyRegulatoryReadModel as ReturnType<typeof useLiveQuery>;
+          case 5:
+          default:
+            return [animalJanela, animalRecorrente] as ReturnType<typeof useLiveQuery>;
+        }
+      };
+    })());
+
+    render(
+      <MemoryRouter
+        initialEntries={["/animais?calendarMode=age_window&calendarAnchor=birth"]}
+        future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+      >
+        <Animais />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText("BR-001")).toBeInTheDocument();
+    expect(screen.queryByText("BR-002")).not.toBeInTheDocument();
+    expect(screen.getAllByText("Janela etaria").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Nascimento").length).toBeGreaterThan(0);
   });
 });

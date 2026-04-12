@@ -39,7 +39,33 @@ import {
 } from "@/lib/offline/syncQueries";
 import { pullDataForFarm } from "@/lib/offline/pull";
 import { useAuth } from "@/hooks/useAuth";
+import {
+  EMPTY_SANITARY_ATTENTION_SUMMARY,
+  summarizeSanitaryAgendaAttention,
+} from "@/lib/sanitario/attention";
+import {
+  buildRegulatoryOperationalReadModel,
+  EMPTY_REGULATORY_OPERATIONAL_READ_MODEL,
+  getRegulatoryAnalyticsImpactLabel,
+  loadRegulatorySurfaceSource,
+} from "@/lib/sanitario/regulatoryReadModel";
 import { buildPilotMetricsSummary } from "@/lib/telemetry/pilotMetrics";
+
+function buildAgendaCalendarModePath(mode: string) {
+  return `/agenda?calendarMode=${mode}`;
+}
+
+function buildAgendaCalendarAnchorPath(anchor: string) {
+  return `/agenda?calendarAnchor=${anchor}`;
+}
+
+function buildAnimalsCalendarModePath(mode: string) {
+  return `/animais?calendarMode=${mode}`;
+}
+
+function buildAnimalsCalendarAnchorPath(anchor: string) {
+  return `/animais?calendarAnchor=${anchor}`;
+}
 
 const EMPTY_LIST: never[] = [];
 const DASHBOARD_REJECTION_SAMPLE_LIMIT = 120;
@@ -104,6 +130,43 @@ const Dashboard = () => {
         .filter((item) => !item.deleted_at)
         .count();
     }, [activeFarmId]) || 0;
+
+  const sanitaryAttention =
+    useLiveQuery(async () => {
+      if (!activeFarmId) return EMPTY_SANITARY_ATTENTION_SUMMARY;
+
+      const [agenda, protocols, protocolItems] = await Promise.all([
+        db.state_agenda_itens
+          .where("[fazenda_id+status]")
+          .equals([activeFarmId, "agendado"])
+          .filter((item) => !item.deleted_at)
+          .toArray(),
+        db.state_protocolos_sanitarios
+          .where("fazenda_id")
+          .equals(activeFarmId)
+          .filter((item) => !item.deleted_at)
+          .toArray(),
+        db.state_protocolos_sanitarios_itens
+          .where("fazenda_id")
+          .equals(activeFarmId)
+          .filter((item) => !item.deleted_at)
+          .toArray(),
+      ]);
+
+      return summarizeSanitaryAgendaAttention({
+        agenda,
+        protocols,
+        protocolItems,
+        limit: 3,
+      });
+    }, [activeFarmId]) || EMPTY_SANITARY_ATTENTION_SUMMARY;
+  const regulatoryReadModel =
+    useLiveQuery(async () => {
+      if (!activeFarmId) return EMPTY_REGULATORY_OPERATIONAL_READ_MODEL;
+      return buildRegulatoryOperationalReadModel(
+        await loadRegulatorySurfaceSource(activeFarmId),
+      );
+    }, [activeFarmId]) || EMPTY_REGULATORY_OPERATIONAL_READ_MODEL;
 
   const rejectionSnapshot =
     useLiveQuery(async () => {
@@ -264,18 +327,48 @@ const Dashboard = () => {
           operationalStats.backlog > 0 ? "Acompanhar fila" : "Abrir painel inicial",
       },
       {
-        title: "Agenda aberta",
-        tone: pendenciasAgenda > 0 ? "warning" : "success",
-        value: pendenciasAgenda,
+        title: "Conformidade regulatoria",
+        tone: regulatoryReadModel.hasBlockingIssues
+          ? "danger"
+          : regulatoryReadModel.attention.openCount > 0
+            ? "warning"
+            : "success",
+        value: regulatoryReadModel.attention.openCount,
         helper:
-          pendenciasAgenda > 0
-            ? "Itens agendados continuam pressionando a operacao."
-            : "Agenda aberta sob controle no momento.",
+          regulatoryReadModel.flows.sale.blockerCount > 0
+            ? "Venda/transito estao restritos ate regularizar o overlay oficial."
+            : regulatoryReadModel.flows.nutrition.blockerCount > 0
+              ? "Nutricao segue bloqueada por feed-ban ou checklist critico."
+              : regulatoryReadModel.attention.openCount > 0
+                ? "Ha pendencias procedurais abertas que exigem revisao."
+                : "Sem restricoes regulatorias abertas no momento.",
+        path: "/protocolos-sanitarios",
+        actionLabel:
+          regulatoryReadModel.attention.openCount > 0
+            ? "Abrir overlay"
+            : "Revisar pack oficial",
+      },
+      {
+        title: "Sanitario critico",
+        tone:
+          sanitaryAttention.criticalCount > 0
+            ? "danger"
+            : sanitaryAttention.warningCount > 0
+              ? "warning"
+              : "success",
+        value: sanitaryAttention.criticalCount,
+        helper:
+          sanitaryAttention.criticalCount > 0
+            ? `${sanitaryAttention.mandatoryCount} obrigatorio(s), ${sanitaryAttention.requiresVetCount} com veterinario.${sanitaryAttention.scheduleModes[0] ? ` Predomina ${sanitaryAttention.scheduleModes[0].label.toLowerCase()}.` : ""}`
+            : sanitaryAttention.warningCount > 0
+              ? `${sanitaryAttention.warningCount} item(ns) entram na janela curta de manejo.`
+              : "Sem protocolo sanitario critico no momento.",
         path: "/agenda",
-        actionLabel: pendenciasAgenda > 0 ? "Abrir agenda" : "Ver agenda",
+        actionLabel:
+          sanitaryAttention.totalOpen > 0 ? "Abrir agenda" : "Ver agenda",
       },
     ],
-    [operationalStats.backlog, pendenciasAgenda, totalRejections],
+    [operationalStats.backlog, regulatoryReadModel, sanitaryAttention, totalRejections],
   );
 
   const routeLabel = (route: string) => {
@@ -314,11 +407,23 @@ const Dashboard = () => {
                 {totalRejections} rejeicoes locais
               </StatusBadge>
             ) : null}
+            {sanitaryAttention.criticalCount > 0 ? (
+              <StatusBadge tone="danger">
+                {sanitaryAttention.criticalCount} sanitario(s) critico(s)
+              </StatusBadge>
+            ) : null}
+            {regulatoryReadModel.attention.openCount > 0 ? (
+              <StatusBadge
+                tone={regulatoryReadModel.hasBlockingIssues ? "danger" : "warning"}
+              >
+                {regulatoryReadModel.attention.openCount} pendencia(s) regulatoria(s)
+              </StatusBadge>
+            ) : null}
           </>
         }
       />
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-6">
         <MetricCard
           label="Animais"
           value={totalAnimais}
@@ -345,17 +450,58 @@ const Dashboard = () => {
           icon={<CheckCircle2 className="h-4 w-4" />}
           tone={operationalStats.successRate < 95 ? "warning" : "success"}
         />
+        <MetricCard
+          label="Sanitario critico"
+          value={sanitaryAttention.criticalCount}
+          hint={
+            sanitaryAttention.criticalCount > 0
+              ? `${sanitaryAttention.mandatoryCount} obrigatorio(s) e ${sanitaryAttention.requiresVetCount} com veterinario.`
+              : sanitaryAttention.warningCount > 0
+                ? `${sanitaryAttention.warningCount} item(ns) na janela curta.`
+                : "Sem protocolo sanitario urgente."
+          }
+          icon={<AlertTriangle className="h-4 w-4" />}
+          tone={
+            sanitaryAttention.criticalCount > 0
+              ? "danger"
+              : sanitaryAttention.warningCount > 0
+                ? "warning"
+            : "success"
+          }
+        />
+        <MetricCard
+          label="Conformidade aberta"
+          value={regulatoryReadModel.attention.openCount}
+          hint={
+            regulatoryReadModel.flows.sale.blockerCount > 0
+              ? `${regulatoryReadModel.flows.sale.blockerCount} bloqueio(s) para venda/transito.`
+              : regulatoryReadModel.flows.nutrition.blockerCount > 0
+                ? `${regulatoryReadModel.flows.nutrition.blockerCount} bloqueio(s) em nutricao.`
+                : regulatoryReadModel.attention.openCount > 0
+                  ? `${regulatoryReadModel.attention.openCount} pendencia(s) procedurais em aberto.`
+                  : "Sem pendencia regulatoria aberta."
+          }
+          icon={<AlertTriangle className="h-4 w-4" />}
+          tone={
+            regulatoryReadModel.hasBlockingIssues
+              ? "danger"
+              : regulatoryReadModel.attention.openCount > 0
+                ? "warning"
+                : "success"
+          }
+        />
       </section>
 
       <Card>
         <CardHeader>
           <CardTitle>Prioridades administrativas</CardTitle>
           <CardDescription>
-            Comece pela fila, pela DLQ e pela agenda. A telemetria detalhada fica
-            recolhida para nao competir com a operacao.
+            Comece pela fila, pela DLQ, pela conformidade regulatoria e pelo
+            sanitario critico. A telemetria detalhada fica recolhida para nao
+            competir com a operacao.
           </CardDescription>
         </CardHeader>
-        <CardContent className="grid gap-0 lg:grid-cols-3 lg:divide-x divide-y lg:divide-y-0 rounded-2xl border border-border overflow-hidden bg-card">
+        <CardContent className="grid gap-0 lg:grid-cols-4 lg:divide-x divide-y lg:divide-y-0 rounded-2xl border border-border overflow-hidden bg-card">
           {adminPriorityActions.map((action) => (
             <div
               key={action.title}
@@ -382,6 +528,227 @@ const Dashboard = () => {
           ))}
         </CardContent>
       </Card>
+
+      {sanitaryAttention.scheduleModes.length > 0 ? (
+        <section className="grid gap-4 xl:grid-cols-2">
+          <Card>
+          <CardHeader>
+            <CardTitle>Agenda sanitaria por calendario</CardTitle>
+            <CardDescription>
+              Recorte declarativo do `calendario_base` para abrir a agenda ja filtrada por campanha, janela etaria, recorrencia ou uso imediato.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            {sanitaryAttention.scheduleModes.map((mode) => (
+              <div
+                key={mode.key}
+                className="rounded-2xl border border-border/70 bg-muted/35 p-4"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="font-medium">{mode.label}</p>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      {mode.count} item(ns) aberto(s) neste recorte.
+                    </p>
+                  </div>
+                  <StatusBadge tone="info">{mode.count}</StatusBadge>
+                </div>
+                <Button
+                  asChild
+                  variant="outline"
+                  size="sm"
+                  className="mt-4 bg-transparent"
+                >
+                  <Link to={buildAgendaCalendarModePath(mode.key)}>
+                    Abrir {mode.label.toLowerCase()}
+                  </Link>
+                </Button>
+                <Button
+                  asChild
+                  variant="ghost"
+                  size="sm"
+                  className="mt-2 px-0"
+                >
+                  <Link to={buildAnimalsCalendarModePath(mode.key)}>
+                    Ver animais
+                  </Link>
+                </Button>
+              </div>
+            ))}
+          </CardContent>
+          </Card>
+
+          {sanitaryAttention.scheduleAnchors.length > 0 ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>Agenda sanitaria por ancora</CardTitle>
+                <CardDescription>
+                  Recortes por ancora operacional para abrir diretamente nascimento, desmama, secagem, calendario ou necessidade clinica.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="grid gap-3 md:grid-cols-2">
+                {sanitaryAttention.scheduleAnchors.map((anchor) => (
+                  <div
+                    key={anchor.key}
+                    className="rounded-2xl border border-border/70 bg-muted/35 p-4"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="font-medium">{anchor.label}</p>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          {anchor.count} item(ns) aberto(s) nesta ancora.
+                        </p>
+                      </div>
+                      <StatusBadge tone="info">{anchor.count}</StatusBadge>
+                    </div>
+                    <Button
+                      asChild
+                      variant="outline"
+                      size="sm"
+                      className="mt-4 bg-transparent"
+                    >
+                      <Link to={buildAgendaCalendarAnchorPath(anchor.key)}>
+                        Abrir {anchor.label.toLowerCase()}
+                      </Link>
+                    </Button>
+                    <Button
+                      asChild
+                      variant="ghost"
+                      size="sm"
+                      className="mt-2 px-0"
+                    >
+                      <Link to={buildAnimalsCalendarAnchorPath(anchor.key)}>
+                        Ver animais
+                      </Link>
+                    </Button>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          ) : null}
+        </section>
+      ) : null}
+
+      {regulatoryReadModel.attention.openCount > 0 ? (
+        <section className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
+          <Card>
+            <CardHeader>
+              <CardTitle>Pendencias regulatorias por subarea</CardTitle>
+              <CardDescription>
+                Recorte do overlay oficial por frente operacional para acelerar
+                a triagem de feed-ban, quarentena, documental e agua/limpeza.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {regulatoryReadModel.analytics.subareas.map((cut) => (
+                <div
+                  key={cut.key}
+                  className="rounded-2xl border border-border/70 bg-muted/35 p-4"
+                >
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="space-y-2">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="font-medium">{cut.label}</p>
+                        <StatusBadge tone={cut.tone}>
+                          {cut.openCount} pendencia(s)
+                        </StatusBadge>
+                        {cut.blockerCount > 0 ? (
+                          <StatusBadge tone="danger">
+                            {cut.blockerCount} bloqueio(s)
+                          </StatusBadge>
+                        ) : null}
+                        {cut.warningCount > 0 ? (
+                          <StatusBadge tone="warning">
+                            {cut.warningCount} revisao(oes)
+                          </StatusBadge>
+                        ) : null}
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {cut.affectedImpacts.map((impact) => (
+                          <StatusBadge key={impact} tone="info">
+                            {getRegulatoryAnalyticsImpactLabel(impact)}
+                          </StatusBadge>
+                        ))}
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        {cut.recommendation}
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap gap-2 self-start">
+                      <Button asChild variant="outline" size="sm">
+                        <Link to={`/protocolos-sanitarios?overlaySubarea=${cut.key}`}>
+                          Abrir overlay filtrado
+                        </Link>
+                      </Button>
+                      <Button asChild variant="ghost" size="sm">
+                        <Link to={`/animais?overlaySubarea=${cut.key}`}>
+                          Ver animais
+                        </Link>
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Impacto operacional da conformidade</CardTitle>
+              <CardDescription>
+                Corte por efeito real no fluxo: nutricao, movimentacao interna
+                e transito/venda.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {regulatoryReadModel.analytics.impacts.map((impact) => (
+                <div
+                  key={impact.key}
+                  className="rounded-2xl border border-border/70 bg-muted/35 p-4"
+                >
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="space-y-2">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="font-medium">{impact.label}</p>
+                        <StatusBadge tone={impact.tone}>
+                          {impact.totalCount > 0
+                            ? `${impact.totalCount} alerta(s)`
+                            : "Sem restricao"}
+                        </StatusBadge>
+                        {impact.blockerCount > 0 ? (
+                          <StatusBadge tone="danger">
+                            {impact.blockerCount} bloqueio(s)
+                          </StatusBadge>
+                        ) : null}
+                        {impact.warningCount > 0 ? (
+                          <StatusBadge tone="warning">
+                            {impact.warningCount} revisao(oes)
+                          </StatusBadge>
+                        ) : null}
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        {impact.message}
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap gap-2 self-start">
+                      <Button asChild variant="ghost" size="sm">
+                        <Link to={`/protocolos-sanitarios?overlayImpact=${impact.key}`}>
+                          Abrir recorte
+                        </Link>
+                      </Button>
+                      <Button asChild variant="outline" size="sm">
+                        <Link to={`/animais?overlayImpact=${impact.key}`}>
+                          Ver animais
+                        </Link>
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        </section>
+      ) : null}
 
       <section className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
         <Card>

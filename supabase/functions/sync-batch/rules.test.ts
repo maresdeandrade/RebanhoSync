@@ -97,6 +97,20 @@ describe('sync-batch rules: mutation key resolution', () => {
     expect(match).toEqual({ id: 'ani-1', fazenda_id: 'faz-1' });
   });
 
+  it('uses fazenda_id for fazenda_sanidade_config', () => {
+    const operation = op({
+      table: 'fazenda_sanidade_config',
+      action: 'UPDATE',
+      record: { fazenda_id: 'faz-1', payload: { overlay_runtime: {} } },
+    });
+
+    const key = resolveOperationPrimaryKey(operation);
+    expect(key).toEqual({ field: 'fazenda_id', value: 'faz-1' });
+
+    const match = buildMutationMatch(operation, 'faz-1');
+    expect(match).toEqual({ fazenda_id: 'faz-1' });
+  });
+
   it('returns null when mutation has no known primary key field', () => {
     const operation = op({
       table: 'animais',

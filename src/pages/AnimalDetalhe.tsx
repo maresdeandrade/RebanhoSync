@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useLiveQuery } from "dexie-react-hooks";
 import {
+  AlertTriangle,
   ArrowLeftRight,
   Calendar,
   ChevronLeft,
@@ -9,6 +10,7 @@ import {
   HeartPulse,
   History,
   Scale,
+  Skull,
 } from "lucide-react";
 import {
   CartesianGrid,
@@ -35,6 +37,24 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
 import { getAnimalBreedLabel } from "@/lib/animals/catalogs";
@@ -60,7 +80,14 @@ import {
 import { isFemaleReproductionEligible } from "@/lib/animals/presentation";
 import { db } from "@/lib/offline/db";
 import { createGesture } from "@/lib/offline/ops";
-import type { Animal, Evento, EventoReproducao } from "@/lib/offline/types";
+import type {
+  AgendaItem,
+  Animal,
+  Evento,
+  EventoReproducao,
+  CausaObitoEnum,
+} from "@/lib/offline/types";
+import { buildEventGesture } from "@/lib/events/buildEventGesture";
 import { buildReproductionDashboard } from "@/lib/reproduction/dashboard";
 import { isCalfJourneyAgendaItem } from "@/lib/reproduction/calfJourney";
 import {
@@ -69,10 +96,21 @@ import {
   wasGeneratedFromBirthEvent,
 } from "@/lib/reproduction/neonatal";
 import {
+  buildClosedSanitaryAlertPayload,
+  buildOpenSanitaryAlertPayload,
+  buildSanitaryAlertEventPayload,
+  describeSanitaryAlertEvent,
+  hasOpenSanitaryAlert,
+  readAnimalSanitaryAlert,
+  readStringArray,
+  type SanitaryAlertClosureReason,
+} from "@/lib/sanitario/alerts";
+import {
   formatWeight,
   formatWeightPerDay,
   formatWeightValue,
 } from "@/lib/format/weight";
+import { resolveSanitaryAgendaItemScheduleMeta } from "@/lib/sanitario/agendaSchedule";
 import { showError, showSuccess } from "@/utils/toast";
 
 type EnrichedEvent = Evento & {
@@ -86,6 +124,39 @@ type ReproDetailsPayload = {
   numero_crias?: unknown;
 };
 
+type SanitaryAlertFormState = {
+  diseaseCode: string;
+  sinaisDesconhecidos: boolean;
+  mortalidadeAlta: boolean;
+  routeLabel: string;
+  observacoes: string;
+};
+
+type SanitaryAlertResolutionState = {
+  closureReason: SanitaryAlertClosureReason;
+  closureNotes: string;
+};
+
+type AnimalAgendaRow = {
+  item: AgendaItem;
+  scheduleLabel: string | null;
+  scheduleModeLabel: string | null;
+  scheduleAnchorLabel: string | null;
+};
+
+const SANITARY_ALERT_CLOSURE_OPTIONS: Array<{
+  value: SanitaryAlertClosureReason;
+  label: string;
+}> = [
+  { value: "descartada", label: "Suspeita descartada" },
+  {
+    value: "notificada_em_acompanhamento",
+    label: "Notificada e em acompanhamento",
+  },
+  { value: "encerrada_clinicamente", label: "Encerrada clinicamente" },
+  { value: "outro", label: "Outro desfecho" },
+];
+
 function formatDate(value: string | null | undefined) {
   if (!value) return "-";
   return new Date(value).toLocaleDateString("pt-BR");
@@ -93,6 +164,10 @@ function formatDate(value: string | null | undefined) {
 
 function getReproStatusLabel(value: string) {
   return value.replaceAll("_", " ").toLowerCase();
+}
+
+function formatAgendaTipoLabel(value: string) {
+  return value.replaceAll("_", " ");
 }
 
 const AnimalDetalhe = () => {
@@ -103,6 +178,30 @@ const AnimalDetalhe = () => {
   const [showCloseSociedadeDialog, setShowCloseSociedadeDialog] = useState(false);
   const [isApplyingLifecycle, setIsApplyingLifecycle] = useState(false);
   const [isClosingSociedade, setIsClosingSociedade] = useState(false);
+  const [showObitoDialog, setShowObitoDialog] = useState(false);
+  const [isRegisteringObito, setIsRegisteringObito] = useState(false);
+  const [obitoData, setObitoData] = useState(new Date().toISOString().split("T")[0]);
+  const [obitoCausa, setObitoCausa] = useState<CausaObitoEnum>("outro");
+  const [obitoObs, setObitoObs] = useState("");
+  const [showSanitaryAlertDialog, setShowSanitaryAlertDialog] = useState(false);
+  const [showCloseSanitaryAlertDialog, setShowCloseSanitaryAlertDialog] =
+    useState(false);
+  const [isSubmittingSanitaryAlert, setIsSubmittingSanitaryAlert] =
+    useState(false);
+  const [isClosingSanitaryAlert, setIsClosingSanitaryAlert] = useState(false);
+  const [sanitaryAlertForm, setSanitaryAlertForm] =
+    useState<SanitaryAlertFormState>({
+      diseaseCode: "notif-generica",
+      sinaisDesconhecidos: false,
+      mortalidadeAlta: false,
+      routeLabel: "Acionar SVO e registrar a rota local/e-Sisbravet",
+      observacoes: "",
+    });
+  const [sanitaryAlertResolution, setSanitaryAlertResolution] =
+    useState<SanitaryAlertResolutionState>({
+      closureReason: "descartada",
+      closureNotes: "",
+    });
   const autoAppliedStageRef = useRef<string | null>(null);
 
   const animal = useLiveQuery(() => db.state_animais.get(id!), [id]);
@@ -152,9 +251,55 @@ const AnimalDetalhe = () => {
     );
   }, [id]);
 
-  const agenda = useLiveQuery(
-    () => db.state_agenda_itens.where("animal_id").equals(id!).toArray(),
-    [id],
+  const agenda = useLiveQuery(async () => {
+    if (!id) return [];
+
+    const items = await db.state_agenda_itens
+      .where("animal_id")
+      .equals(id)
+      .filter((item) => !item.deleted_at)
+      .toArray();
+    const protocolItemIds = Array.from(
+      new Set(
+        items
+          .map((item) => item.protocol_item_version_id)
+          .filter((value): value is string => typeof value === "string" && value.length > 0),
+      ),
+    );
+    const protocolItems =
+      protocolItemIds.length > 0
+        ? await db.state_protocolos_sanitarios_itens.bulkGet(protocolItemIds)
+        : [];
+    const protocolItemById = new Map(
+      protocolItems
+        .filter((item): item is NonNullable<(typeof protocolItems)[number]> => Boolean(item))
+        .map((item) => [item.id, item]),
+    );
+
+    return items
+      .slice()
+      .sort((left, right) => left.data_prevista.localeCompare(right.data_prevista))
+      .map((item): AnimalAgendaRow => {
+        const protocolItem =
+          item.protocol_item_version_id
+            ? protocolItemById.get(item.protocol_item_version_id) ?? null
+            : null;
+        const scheduleMeta = resolveSanitaryAgendaItemScheduleMeta(
+          item,
+          protocolItem,
+        );
+
+        return {
+          item,
+          scheduleLabel: scheduleMeta?.label ?? null,
+          scheduleModeLabel: scheduleMeta?.modeLabel ?? null,
+          scheduleAnchorLabel: scheduleMeta?.anchorLabel ?? null,
+        };
+      });
+  }, [id]);
+  const officialDiseases = useLiveQuery(
+    () => db.catalog_doencas_notificaveis.toArray(),
+    [],
   );
 
   const ultimoPeso = useLiveQuery(async () => {
@@ -225,26 +370,18 @@ const AnimalDetalhe = () => {
       .sort((left, right) => left.data.localeCompare(right.data));
   }, [id]);
 
-  const proximaAgenda = useLiveQuery(async () => {
-    if (!animal) return null;
+  const proximaAgenda = useMemo(() => {
     const hoje = new Date().toISOString().split("T")[0];
-    const agendas = await db.state_agenda_itens
-      .where("[fazenda_id+data_prevista]")
-      .between([animal.fazenda_id, hoje], [animal.fazenda_id, "9999-12-31"])
-      .filter(
-        (item) =>
-          item.animal_id === animal.id &&
-          item.status === "agendado" &&
-          (!item.deleted_at || item.deleted_at === null),
-      )
-      .toArray();
 
-    return agendas.sort(
-      (left, right) =>
-        new Date(left.data_prevista).getTime() -
-        new Date(right.data_prevista).getTime(),
-    )[0];
-  }, [animal]);
+    return (
+      agenda?.find(
+        (entry) =>
+          entry.item.status === "agendado" &&
+          entry.item.data_prevista >= hoje &&
+          (!entry.item.deleted_at || entry.item.deleted_at === null),
+      ) ?? null
+    );
+  }, [agenda]);
 
   const sociedadeAtiva = useLiveQuery(async () => {
     if (!animal?.id || animal.origem !== "sociedade") return null;
@@ -260,6 +397,27 @@ const AnimalDetalhe = () => {
     if (!sociedadeAtiva?.contraparte_id) return null;
     return await db.state_contrapartes.get(sociedadeAtiva.contraparte_id);
   }, [sociedadeAtiva?.contraparte_id]);
+  const activeSanitaryAlert = useMemo(
+    () => readAnimalSanitaryAlert(animal?.payload),
+    [animal?.payload],
+  );
+  const hasMovementBlockedSanitaryAlert = hasOpenSanitaryAlert(animal?.payload);
+  const selectedOfficialDisease = useMemo(() => {
+    const diseases = officialDiseases ?? [];
+    return (
+      diseases.find((disease) => disease.codigo === sanitaryAlertForm.diseaseCode) ??
+      diseases[0] ??
+      null
+    );
+  }, [officialDiseases, sanitaryAlertForm.diseaseCode]);
+  const selectedOfficialDiseaseSignals = useMemo(
+    () => readStringArray(selectedOfficialDisease?.sinais_alerta_json, "sinais"),
+    [selectedOfficialDisease],
+  );
+  const selectedOfficialDiseaseActions = useMemo(
+    () => readStringArray(selectedOfficialDisease?.acao_imediata_json, "passos"),
+    [selectedOfficialDisease],
+  );
 
   const taxonomySnapshot = useMemo(() => {
     if (!animal) return null;
@@ -408,6 +566,22 @@ const AnimalDetalhe = () => {
     void applyLifecycleTransition("automatico", true);
   }, [animal, applyLifecycleTransition, isApplyingLifecycle, lifecycleSnapshot]);
 
+  useEffect(() => {
+    if (!officialDiseases || officialDiseases.length === 0) {
+      return;
+    }
+
+    const hasCurrentDisease = officialDiseases.some(
+      (disease) => disease.codigo === sanitaryAlertForm.diseaseCode,
+    );
+    if (hasCurrentDisease) return;
+
+    setSanitaryAlertForm((prev) => ({
+      ...prev,
+      diseaseCode: officialDiseases[0]?.codigo ?? "notif-generica",
+    }));
+  }, [officialDiseases, sanitaryAlertForm.diseaseCode]);
+
   const handleCloseSociedade = useCallback(async () => {
     if (!animal || !sociedadeAtiva) return;
 
@@ -435,6 +609,170 @@ const AnimalDetalhe = () => {
       setIsClosingSociedade(false);
     }
   }, [animal, sociedadeAtiva]);
+
+  const handleRegisterObito = useCallback(async () => {
+    if (!animal) return;
+
+    setIsRegisteringObito(true);
+    try {
+      // Find pending agenda items for this animal to cancel them
+      const pendingTasks = agenda?.filter(item => item.status === "agendado").map(item => item.id) || [];
+
+      const { ops } = buildEventGesture({
+        dominio: "obito",
+        fazendaId: animal.fazenda_id,
+        animalId: animal.id,
+        occurredAt: new Date(`${obitoData}T12:00:00`).toISOString(),
+        dataObito: obitoData,
+        causa: obitoCausa,
+        observacoes: obitoObs || `Óbito registrado: ${obitoCausa}`,
+        cancelAgendaIds: pendingTasks,
+      });
+
+      await createGesture(animal.fazenda_id, ops);
+      setShowObitoDialog(false);
+      showSuccess("Óbito registrado com sucesso.");
+      // Redirect or let the UI reflect status (animal detail will show 'morto' and hide buttons)
+    } catch (error) {
+      console.error(error);
+      showError("Erro ao registrar óbito.");
+    } finally {
+      setIsRegisteringObito(false);
+    }
+  }, [animal, obitoData, obitoCausa, obitoObs, agenda]);
+
+  const handleOpenSanitaryAlert = useCallback(async () => {
+    if (!animal) return;
+    if (!selectedOfficialDisease) {
+      showError("Catalogo oficial de doencas notificaveis ainda nao esta disponivel.");
+      return;
+    }
+
+    const occurredAt = new Date().toISOString();
+    const alertSignals = [
+      sanitaryAlertForm.sinaisDesconhecidos
+        ? "sinais de causa desconhecida"
+        : null,
+      sanitaryAlertForm.mortalidadeAlta
+        ? "mortalidade alta ou inesperada"
+        : null,
+    ].filter((value): value is string => Boolean(value));
+    const routeLabel =
+      sanitaryAlertForm.routeLabel.trim() ||
+      "Acionar SVO e registrar a rota local/e-Sisbravet";
+
+    setIsSubmittingSanitaryAlert(true);
+    try {
+      const eventPayload = buildSanitaryAlertEventPayload({
+        alertKind: "suspeita_aberta",
+        diseaseCode: selectedOfficialDisease.codigo,
+        diseaseName: selectedOfficialDisease.nome,
+        notificationType: selectedOfficialDisease.tipo_notificacao,
+        routeLabel,
+        notes: sanitaryAlertForm.observacoes,
+        immediateActions: selectedOfficialDiseaseActions,
+        alertSignals,
+      });
+      const animalPayload = buildOpenSanitaryAlertPayload(animal.payload, {
+        diseaseCode: selectedOfficialDisease.codigo,
+        diseaseName: selectedOfficialDisease.nome,
+        notificationType: selectedOfficialDisease.tipo_notificacao,
+        occurredAt,
+        notes: sanitaryAlertForm.observacoes,
+        routeLabel,
+        immediateActions: selectedOfficialDiseaseActions,
+        alertSignals,
+      });
+
+      const { ops } = buildEventGesture({
+        dominio: "alerta_sanitario",
+        fazendaId: animal.fazenda_id,
+        animalId: animal.id,
+        loteId: animal.lote_id ?? null,
+        occurredAt,
+        observacoes:
+          sanitaryAlertForm.observacoes.trim() ||
+          `Suspeita sanitaria aberta: ${selectedOfficialDisease.nome}`,
+        payload: eventPayload,
+        alertKind: "suspeita_aberta",
+        animalPayload,
+      });
+
+      await createGesture(animal.fazenda_id, ops);
+      setShowSanitaryAlertDialog(false);
+      setSanitaryAlertForm((prev) => ({
+        ...prev,
+        observacoes: "",
+        sinaisDesconhecidos: false,
+        mortalidadeAlta: false,
+      }));
+      showSuccess("Suspeita sanitaria aberta com bloqueio local de movimentacao.");
+    } catch (error) {
+      console.error(error);
+      showError("Nao foi possivel abrir a suspeita sanitaria.");
+    } finally {
+      setIsSubmittingSanitaryAlert(false);
+    }
+  }, [
+    animal,
+    sanitaryAlertForm,
+    selectedOfficialDisease,
+    selectedOfficialDiseaseActions,
+  ]);
+
+  const handleCloseSanitaryAlert = useCallback(async () => {
+    if (!animal || !activeSanitaryAlert) return;
+
+    const occurredAt = new Date().toISOString();
+
+    setIsClosingSanitaryAlert(true);
+    try {
+      const eventPayload = buildSanitaryAlertEventPayload({
+        alertKind: "suspeita_encerrada",
+        diseaseCode: activeSanitaryAlert.diseaseCode,
+        diseaseName: activeSanitaryAlert.diseaseName,
+        notificationType: activeSanitaryAlert.notificationType,
+        routeLabel: activeSanitaryAlert.routeLabel,
+        notes: activeSanitaryAlert.notes,
+        immediateActions: activeSanitaryAlert.immediateActions,
+        alertSignals: activeSanitaryAlert.alertSignals,
+        closureReason: sanitaryAlertResolution.closureReason,
+        closureNotes: sanitaryAlertResolution.closureNotes,
+      });
+      const animalPayload = buildClosedSanitaryAlertPayload(animal.payload, {
+        occurredAt,
+        closureReason: sanitaryAlertResolution.closureReason,
+        closureNotes: sanitaryAlertResolution.closureNotes,
+      });
+
+      const { ops } = buildEventGesture({
+        dominio: "alerta_sanitario",
+        fazendaId: animal.fazenda_id,
+        animalId: animal.id,
+        loteId: animal.lote_id ?? null,
+        occurredAt,
+        observacoes:
+          sanitaryAlertResolution.closureNotes.trim() ||
+          "Suspeita sanitaria encerrada",
+        payload: eventPayload,
+        alertKind: "suspeita_encerrada",
+        animalPayload,
+      });
+
+      await createGesture(animal.fazenda_id, ops);
+      setShowCloseSanitaryAlertDialog(false);
+      setSanitaryAlertResolution({
+        closureReason: "descartada",
+        closureNotes: "",
+      });
+      showSuccess("Suspeita sanitaria encerrada e bloqueio local removido.");
+    } catch (error) {
+      console.error(error);
+      showError("Nao foi possivel encerrar a suspeita sanitaria.");
+    } finally {
+      setIsClosingSanitaryAlert(false);
+    }
+  }, [activeSanitaryAlert, animal, sanitaryAlertResolution]);
 
   if (!animal) {
     return (
@@ -472,6 +810,38 @@ const AnimalDetalhe = () => {
           </p>
         </div>
         <div className="flex gap-2">
+          {hasMovementBlockedSanitaryAlert ? (
+            <Button
+              size="sm"
+              variant="outline"
+              className="border-amber-300 text-amber-800 hover:bg-amber-50"
+              onClick={() => setShowCloseSanitaryAlertDialog(true)}
+              disabled={animal.status !== "ativo"}
+            >
+              <AlertTriangle className="mr-2 h-4 w-4" />
+              Encerrar suspeita
+            </Button>
+          ) : (
+            <Button
+              size="sm"
+              variant="outline"
+              className="border-amber-300 text-amber-800 hover:bg-amber-50"
+              onClick={() => setShowSanitaryAlertDialog(true)}
+              disabled={animal.status !== "ativo"}
+            >
+              <AlertTriangle className="mr-2 h-4 w-4" />
+              Abrir suspeita sanitaria
+            </Button>
+          )}
+          <Button
+            size="sm"
+            variant="destructive"
+            onClick={() => setShowObitoDialog(true)}
+            disabled={animal.status !== "ativo"}
+          >
+            <Skull className="mr-2 h-4 w-4" />
+            Registrar obito
+          </Button>
           <Button
             size="sm"
             onClick={() => {
@@ -483,6 +853,7 @@ const AnimalDetalhe = () => {
               }
               navigate(`/registrar?${params.toString()}`);
             }}
+            disabled={animal.status !== "ativo" || hasMovementBlockedSanitaryAlert}
           >
             Registrar venda
           </Button>
@@ -490,6 +861,7 @@ const AnimalDetalhe = () => {
             variant="outline"
             size="sm"
             onClick={() => setShowMoverLote(true)}
+            disabled={hasMovementBlockedSanitaryAlert}
           >
             <ArrowLeftRight className="mr-2 h-4 w-4" />
             Mover lote
@@ -598,11 +970,135 @@ const AnimalDetalhe = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-amber-600">
-              {proximaAgenda ? formatDate(proximaAgenda.data_prevista) : "Sem agenda"}
+              {proximaAgenda ? formatDate(proximaAgenda.item.data_prevista) : "Sem agenda"}
             </div>
+            {proximaAgenda ? (
+              <div className="mt-3 space-y-2">
+                <p className="text-sm font-medium text-foreground">
+                  {formatAgendaTipoLabel(proximaAgenda.item.tipo)}
+                </p>
+                {proximaAgenda.scheduleLabel ? (
+                  <p className="text-xs text-muted-foreground">
+                    {proximaAgenda.scheduleLabel}
+                  </p>
+                ) : null}
+                {proximaAgenda.scheduleModeLabel || proximaAgenda.scheduleAnchorLabel ? (
+                  <div className="flex flex-wrap gap-2">
+                    {proximaAgenda.scheduleModeLabel ? (
+                      <Badge variant="outline" className="text-[10px]">
+                        {proximaAgenda.scheduleModeLabel}
+                      </Badge>
+                    ) : null}
+                    {proximaAgenda.scheduleAnchorLabel ? (
+                      <Badge variant="secondary" className="text-[10px]">
+                        {proximaAgenda.scheduleAnchorLabel}
+                      </Badge>
+                    ) : null}
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
           </CardContent>
         </Card>
       </div>
+
+      {activeSanitaryAlert?.status === "suspeita_aberta" ? (
+        <Card className="border-amber-200 bg-amber-50/40">
+          <CardHeader className="pb-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <CardTitle className="flex items-center gap-2 text-amber-900">
+                <AlertTriangle className="h-4 w-4" />
+                Suspeita sanitaria aberta
+              </CardTitle>
+              <div className="flex flex-wrap gap-2">
+                <Badge className="bg-amber-600 text-white">Movimentacao bloqueada</Badge>
+                {activeSanitaryAlert.notificationType ? (
+                  <Badge variant="outline" className="border-amber-300 text-amber-900">
+                    Notificacao {activeSanitaryAlert.notificationType}
+                  </Badge>
+                ) : null}
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div className="rounded-lg border border-amber-200 bg-white/70 p-3">
+                <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                  Doenca / suspeita
+                </p>
+                <p className="mt-1 font-semibold text-amber-950">
+                  {activeSanitaryAlert.diseaseName ?? "Suspeita sanitaria"}
+                </p>
+              </div>
+              <div className="rounded-lg border border-amber-200 bg-white/70 p-3">
+                <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                  Aberta em
+                </p>
+                <p className="mt-1 font-semibold text-amber-950">
+                  {formatDate(activeSanitaryAlert.openedAt)}
+                </p>
+              </div>
+              <div className="rounded-lg border border-amber-200 bg-white/70 p-3">
+                <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                  Rota imediata
+                </p>
+                <p className="mt-1 text-sm text-amber-950">
+                  {activeSanitaryAlert.routeLabel ?? "Acionar SVO e registrar rota local"}
+                </p>
+              </div>
+            </div>
+
+            {activeSanitaryAlert.alertSignals.length > 0 ? (
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-amber-950">
+                  Sinais que motivaram o bloqueio
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {activeSanitaryAlert.alertSignals.map((signal) => (
+                    <Badge
+                      key={signal}
+                      variant="outline"
+                      className="border-amber-200 bg-white text-amber-900"
+                    >
+                      {signal}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            {activeSanitaryAlert.immediateActions.length > 0 ? (
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-amber-950">
+                  Passos imediatos recomendados
+                </p>
+                <ul className="space-y-1 text-sm text-amber-900">
+                  {activeSanitaryAlert.immediateActions.map((action) => (
+                    <li key={action}>- {action}</li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+
+            {activeSanitaryAlert.notes ? (
+              <div className="rounded-lg border border-amber-200 bg-white/70 p-3 text-sm text-amber-950">
+                {activeSanitaryAlert.notes}
+              </div>
+            ) : null}
+
+            <div className="flex flex-wrap gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                className="border-amber-300 text-amber-800 hover:bg-amber-50"
+                onClick={() => setShowCloseSanitaryAlertDialog(true)}
+              >
+                Encerrar suspeita
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      ) : null}
 
       {taxonomySnapshot && (
         <Card>
@@ -989,19 +1485,25 @@ const AnimalDetalhe = () => {
                   </div>
 
                   <div className="flex flex-wrap gap-2">
-                    <Link to={`/animais/${animal.id}/reproducao?tipo=cobertura`}>
-                      <Button size="sm">Cobertura / IA</Button>
-                    </Link>
-                    <Link to={`/animais/${animal.id}/reproducao?tipo=diagnostico`}>
-                      <Button variant="outline" size="sm">
-                        Diagnostico
-                      </Button>
-                    </Link>
-                    <Link to={`/animais/${animal.id}/reproducao?tipo=parto`}>
-                      <Button variant="outline" size="sm">
-                        Parto
-                      </Button>
-                    </Link>
+                    {reproResumo.reproStatus.status !== "SERVIDA" && reproResumo.reproStatus.status !== "PRENHA" && (
+                      <Link to={`/animais/${animal.id}/reproducao?tipo=cobertura`}>
+                        <Button size="sm">Cobertura / IA</Button>
+                      </Link>
+                    )}
+                    {(reproResumo.reproStatus.status === "SERVIDA" || reproResumo.reproStatus.status === "PRENHA") && (
+                      <Link to={`/animais/${animal.id}/reproducao?tipo=diagnostico`}>
+                        <Button variant="outline" size="sm">
+                          Diagnóstico
+                        </Button>
+                      </Link>
+                    )}
+                    {reproResumo.reproStatus.status === "PRENHA" && (
+                      <Link to={`/animais/${animal.id}/reproducao?tipo=parto`}>
+                        <Button variant="outline" size="sm">
+                          Parto
+                        </Button>
+                      </Link>
+                    )}
                     {pendingNeonatalCount > 0 && (
                       <Link to={`/animais/${animal.id}/pos-parto`}>
                         <Button variant="outline" size="sm">
@@ -1251,6 +1753,8 @@ const AnimalDetalhe = () => {
                     className={`absolute -left-[25px] h-4 w-4 rounded-full border-2 border-background ${
                       evt.dominio === "sanitario"
                         ? "bg-blue-500"
+                        : evt.dominio === "alerta_sanitario"
+                          ? "bg-amber-500"
                         : evt.dominio === "pesagem"
                           ? "bg-emerald-500"
                           : evt.dominio === "reproducao"
@@ -1262,6 +1766,8 @@ const AnimalDetalhe = () => {
                     <h4 className="text-sm font-bold capitalize">
                       {evt.dominio === "reproducao" && evt.details
                         ? `Reproducao: ${evt.details.tipo}`
+                        : evt.dominio === "alerta_sanitario"
+                          ? "Alerta sanitario"
                         : evt.dominio}
                     </h4>
                     <span className="rounded bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
@@ -1269,8 +1775,40 @@ const AnimalDetalhe = () => {
                     </span>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    {evt.observacoes || "Manejo realizado no campo."}
+                    {evt.dominio === "alerta_sanitario"
+                      ? describeSanitaryAlertEvent(evt.payload)
+                      : evt.observacoes || "Manejo realizado no campo."}
                   </p>
+                  {evt.dominio === "alerta_sanitario" && (
+                    <div className="mt-1 rounded border border-amber-100 bg-amber-50/50 p-2 text-xs">
+                      {(() => {
+                        const immediateActions = readStringArray(
+                          evt.payload,
+                          "immediate_actions",
+                        );
+                        const routeLabel =
+                          typeof evt.payload.route_label === "string"
+                            ? evt.payload.route_label
+                            : null;
+                        const closureReason =
+                          typeof evt.payload.closure_reason === "string"
+                            ? evt.payload.closure_reason
+                            : null;
+
+                        return (
+                          <>
+                            {routeLabel ? <p>Rota: {routeLabel}</p> : null}
+                            {closureReason ? (
+                              <p>Desfecho: {closureReason.replaceAll("_", " ")}</p>
+                            ) : null}
+                            {immediateActions.length > 0 ? (
+                              <p>Passos: {immediateActions.join(" | ")}</p>
+                            ) : null}
+                          </>
+                        );
+                      })()}
+                    </div>
+                  )}
                   {evt.dominio === "reproducao" && evt.details && (
                     <div className="mt-1 rounded border border-rose-100 bg-rose-50/50 p-2 text-xs">
                       {evt.details.macho_id && (
@@ -1319,11 +1857,11 @@ const AnimalDetalhe = () => {
 
         <TabsContent value="agenda" className="mt-6">
           <div className="grid gap-3">
-            {agenda?.map((item) => (
+            {agenda?.map((entry) => (
               <Card
-                key={item.id}
+                key={entry.item.id}
                 className={
-                  item.status === "agendado"
+                  entry.item.status === "agendado"
                     ? "border-amber-200 bg-amber-50/30"
                     : ""
                 }
@@ -1332,19 +1870,36 @@ const AnimalDetalhe = () => {
                   <div className="flex items-center gap-3">
                     <Calendar className="h-5 w-5 text-muted-foreground" />
                     <div>
-                      <p className="text-sm font-medium">{item.tipo}</p>
+                      <p className="text-sm font-medium">
+                        {formatAgendaTipoLabel(entry.item.tipo)}
+                      </p>
+                      {entry.scheduleModeLabel || entry.scheduleAnchorLabel ? (
+                        <div className="mt-1 flex flex-wrap gap-2">
+                          {entry.scheduleModeLabel ? (
+                            <Badge variant="outline" className="text-[10px]">
+                              {entry.scheduleModeLabel}
+                            </Badge>
+                          ) : null}
+                          {entry.scheduleAnchorLabel ? (
+                            <Badge variant="secondary" className="text-[10px]">
+                              {entry.scheduleAnchorLabel}
+                            </Badge>
+                          ) : null}
+                        </div>
+                      ) : null}
                       <p className="text-[10px] text-muted-foreground">
-                        Previsto: {formatDate(item.data_prevista)}
+                        Previsto: {formatDate(entry.item.data_prevista)}
+                        {entry.scheduleLabel ? ` | ${entry.scheduleLabel}` : ""}
                       </p>
                     </div>
                   </div>
                   <Badge
                     variant={
-                      item.status === "agendado" ? "default" : "secondary"
+                      entry.item.status === "agendado" ? "default" : "secondary"
                     }
                     className="text-[10px]"
                   >
-                    {item.status}
+                    {entry.item.status}
                   </Badge>
                 </CardContent>
               </Card>
@@ -1364,6 +1919,323 @@ const AnimalDetalhe = () => {
         onOpenChange={setShowMoverLote}
         onSuccess={() => {}}
       />
+
+      <Dialog open={showSanitaryAlertDialog} onOpenChange={setShowSanitaryAlertDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-amber-900">
+              <AlertTriangle className="h-5 w-5" />
+              Abrir suspeita sanitaria para {animal.identificacao}
+            </DialogTitle>
+            <DialogDescription>
+              Este fluxo registra a suspeita como evento append-only e congela a
+              movimentacao do animal ate o desfecho local.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Doenca / suspeita oficial</Label>
+                <Select
+                  value={selectedOfficialDisease?.codigo ?? sanitaryAlertForm.diseaseCode}
+                  onValueChange={(value) =>
+                    setSanitaryAlertForm((prev) => ({ ...prev, diseaseCode: value }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione a suspeita" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(officialDiseases ?? []).map((disease) => (
+                      <SelectItem key={disease.codigo} value={disease.codigo}>
+                        {disease.nome}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Tipo de notificacao</Label>
+                <Input
+                  value={selectedOfficialDisease?.tipo_notificacao ?? "imediata"}
+                  readOnly
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="flex items-start gap-3 rounded-xl border border-border/70 bg-background/80 p-3">
+                <input
+                  type="checkbox"
+                  className="mt-1"
+                  checked={sanitaryAlertForm.sinaisDesconhecidos}
+                  onChange={(event) =>
+                    setSanitaryAlertForm((prev) => ({
+                      ...prev,
+                      sinaisDesconhecidos: event.target.checked,
+                    }))
+                  }
+                />
+                <div className="space-y-1">
+                  <span className="text-sm font-medium text-foreground">
+                    Sinais de causa desconhecida
+                  </span>
+                  <p className="text-sm text-muted-foreground">
+                    Aciona suspeita notificavel imediata.
+                  </p>
+                </div>
+              </label>
+              <label className="flex items-start gap-3 rounded-xl border border-border/70 bg-background/80 p-3">
+                <input
+                  type="checkbox"
+                  className="mt-1"
+                  checked={sanitaryAlertForm.mortalidadeAlta}
+                  onChange={(event) =>
+                    setSanitaryAlertForm((prev) => ({
+                      ...prev,
+                      mortalidadeAlta: event.target.checked,
+                    }))
+                  }
+                />
+                <div className="space-y-1">
+                  <span className="text-sm font-medium text-foreground">
+                    Mortalidade alta ou inesperada
+                  </span>
+                  <p className="text-sm text-muted-foreground">
+                    Mantem o bloqueio local ate avaliacao do caso.
+                  </p>
+                </div>
+              </label>
+            </div>
+
+            {selectedOfficialDiseaseSignals.length > 0 ? (
+              <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-4">
+                <p className="text-sm font-medium text-amber-950">
+                  Sinais oficiais de alerta
+                </p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {selectedOfficialDiseaseSignals.map((signal) => (
+                    <Badge
+                      key={signal}
+                      variant="outline"
+                      className="border-amber-200 bg-white text-amber-900"
+                    >
+                      {signal}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            {selectedOfficialDiseaseActions.length > 0 ? (
+              <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-4">
+                <p className="text-sm font-medium text-amber-950">
+                  Passos imediatos recomendados
+                </p>
+                <ul className="mt-2 space-y-1 text-sm text-amber-900">
+                  {selectedOfficialDiseaseActions.map((action) => (
+                    <li key={action}>- {action}</li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+
+            <div className="space-y-2">
+              <Label htmlFor="sanitary_alert_route">Rota imediata / contato</Label>
+              <Input
+                id="sanitary_alert_route"
+                value={sanitaryAlertForm.routeLabel}
+                onChange={(event) =>
+                  setSanitaryAlertForm((prev) => ({
+                    ...prev,
+                    routeLabel: event.target.value,
+                  }))
+                }
+                placeholder="Ex.: Acionar SVO e registrar no e-Sisbravet"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="sanitary_alert_obs">Observacoes</Label>
+              <Textarea
+                id="sanitary_alert_obs"
+                value={sanitaryAlertForm.observacoes}
+                onChange={(event) =>
+                  setSanitaryAlertForm((prev) => ({
+                    ...prev,
+                    observacoes: event.target.value,
+                  }))
+                }
+                placeholder="Descreva sinais, lote exposto, mortalidade ou contexto do caso."
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowSanitaryAlertDialog(false)}
+              disabled={isSubmittingSanitaryAlert}
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={() => void handleOpenSanitaryAlert()}
+              disabled={isSubmittingSanitaryAlert || !selectedOfficialDisease}
+              className="bg-amber-600 text-white hover:bg-amber-700"
+            >
+              {isSubmittingSanitaryAlert ? "Abrindo..." : "Abrir suspeita"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={showCloseSanitaryAlertDialog}
+        onOpenChange={setShowCloseSanitaryAlertDialog}
+      >
+        <DialogContent className="max-w-xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-amber-900">
+              <AlertTriangle className="h-5 w-5" />
+              Encerrar suspeita sanitaria
+            </DialogTitle>
+            <DialogDescription>
+              O bloqueio local de movimentacao sera removido, mas o historico do
+              alerta continuara append-only na timeline.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="rounded-xl border border-border/70 bg-muted/20 p-4 text-sm text-muted-foreground">
+              {activeSanitaryAlert?.diseaseName ?? "Suspeita sanitaria"} em{" "}
+              {formatDate(activeSanitaryAlert?.openedAt)}
+            </div>
+
+            <div className="space-y-2">
+              <Label>Desfecho local</Label>
+              <Select
+                value={sanitaryAlertResolution.closureReason}
+                onValueChange={(value) =>
+                  setSanitaryAlertResolution((prev) => ({
+                    ...prev,
+                    closureReason: value as SanitaryAlertClosureReason,
+                  }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o desfecho" />
+                </SelectTrigger>
+                <SelectContent>
+                  {SANITARY_ALERT_CLOSURE_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="sanitary_alert_close_notes">Observacoes de encerramento</Label>
+              <Textarea
+                id="sanitary_alert_close_notes"
+                value={sanitaryAlertResolution.closureNotes}
+                onChange={(event) =>
+                  setSanitaryAlertResolution((prev) => ({
+                    ...prev,
+                    closureNotes: event.target.value,
+                  }))
+                }
+                placeholder="Descreva o exame, orientacao veterinaria ou desfecho local."
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowCloseSanitaryAlertDialog(false)}
+              disabled={isClosingSanitaryAlert}
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={() => void handleCloseSanitaryAlert()}
+              disabled={isClosingSanitaryAlert || !activeSanitaryAlert}
+            >
+              {isClosingSanitaryAlert ? "Encerrando..." : "Confirmar encerramento"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={showObitoDialog} onOpenChange={setShowObitoDialog}>
+        <AlertDialogContent className="sm:max-w-[450px]">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+              <Skull className="h-5 w-5" />
+              Registrar obito de {animal.identificacao}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acao marcara o animal como morto, removendo-o de lotes ativos e cancelando todas as tarefas agendadas. Esta operacao e irreversivel.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="data_obito">Data do obito</Label>
+              <Input
+                id="data_obito"
+                type="date"
+                value={obitoData}
+                onChange={(e) => setObitoData(e.target.value)}
+                max={new Date().toISOString().split("T")[0]}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="causa_obito">Causa provavel</Label>
+              <Select
+                value={obitoCausa}
+                onValueChange={(v) => setObitoCausa(v as CausaObitoEnum)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione a causa" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="doenca">Doença</SelectItem>
+                  <SelectItem value="acidente">Acidente</SelectItem>
+                  <SelectItem value="predador">Predador</SelectItem>
+                  <SelectItem value="outro">Outro / Desconhecida</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="obs_obito">Observacoes/Detalhes</Label>
+              <Textarea
+                id="obs_obito"
+                placeholder="Descreva detalhes ou sintomas se houver..."
+                value={obitoObs}
+                onChange={(e) => setObitoObs(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isRegisteringObito}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleRegisterObito}
+              disabled={isRegisteringObito}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isRegisteringObito ? "Registrando..." : "Confirmar obito"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog
         open={showCloseSociedadeDialog}

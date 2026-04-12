@@ -10,6 +10,8 @@ import type {
   SanitarioTipoEnum,
   ReproTipoEnum,
   Animal,
+  ProdutoVeterinarioCatalogEntry,
+  EstadoUFEnum,
 } from "@/lib/offline/types";
 import {
   ReproductionForm,
@@ -64,6 +66,35 @@ import {
   getWeightUnitLabel,
   parseWeightInput,
 } from "@/lib/format/weight";
+import {
+  buildVeterinaryProductMetadata,
+  readVeterinaryProductSelection,
+  refreshVeterinaryProductsCatalog,
+  resolveVeterinaryProductByName,
+  searchVeterinaryProducts,
+  normalizeVeterinaryProductText,
+  type VeterinaryProductSelection,
+} from "@/lib/sanitario/products";
+import { describeSanitaryCalendarSchedule } from "@/lib/sanitario/calendar";
+import {
+  evaluateSanitaryProtocolEligibility,
+  formatSanitaryProtocolRestrictions,
+} from "@/lib/sanitario/protocolRules";
+import {
+  listAnimalsBlockedBySanitaryAlert,
+} from "@/lib/sanitario/alerts";
+import {
+  buildRegulatoryOperationalReadModel,
+  EMPTY_REGULATORY_OPERATIONAL_READ_MODEL,
+  loadRegulatorySurfaceSource,
+} from "@/lib/sanitario/regulatoryReadModel";
+import {
+  DEFAULT_TRANSIT_CHECKLIST_DRAFT,
+  buildTransitChecklistPayload,
+  hasOfficialTransitChecklistEnabled,
+  validateTransitChecklist,
+  type TransitChecklistPurpose,
+} from "@/lib/sanitario/transit";
 import { cn } from "@/lib/utils";
 
 enum RegistrationStep {
@@ -85,6 +116,45 @@ const STEP_LABEL: Record<RegistrationStep, string> = {
 };
 
 const SEM_LOTE_OPTION = "__sem_lote__";
+const TRANSIT_CHECKLIST_UF_OPTIONS: EstadoUFEnum[] = [
+  "AC",
+  "AL",
+  "AP",
+  "AM",
+  "BA",
+  "CE",
+  "DF",
+  "ES",
+  "GO",
+  "MA",
+  "MT",
+  "MS",
+  "MG",
+  "PA",
+  "PB",
+  "PR",
+  "PE",
+  "PI",
+  "RJ",
+  "RN",
+  "RS",
+  "RO",
+  "RR",
+  "SC",
+  "SP",
+  "SE",
+  "TO",
+];
+const TRANSIT_PURPOSE_OPTIONS: Array<{
+  value: TransitChecklistPurpose;
+  label: string;
+}> = [
+  { value: "movimentacao", label: "Movimentacao" },
+  { value: "venda", label: "Venda" },
+  { value: "reproducao", label: "Reproducao" },
+  { value: "evento", label: "Evento" },
+  { value: "abate", label: "Abate" },
+];
 
 type QuickActionKey =
   | "vacinacao"
@@ -156,7 +226,8 @@ const isReproTipoEnum = (value: string | null): value is ReproTipoEnum =>
   value === "cobertura" ||
   value === "IA" ||
   value === "diagnostico" ||
-  value === "parto";
+  value === "parto" ||
+  value === "aborto";
 
 const readString = (record: Record<string, unknown> | null | undefined, key: string) => {
   const value = record?.[key];
@@ -227,10 +298,15 @@ const Registrar = () => {
     tipo: "vacinacao" as SanitarioTipoEnum,
     produto: "",
   });
+  const [selectedVeterinaryProductId, setSelectedVeterinaryProductId] =
+    useState<string>("");
   const [protocoloId, setProtocoloId] = useState<string>("");
   const [protocoloItemId, setProtocoloItemId] = useState<string>("");
   const [pesagemData, setPesagemData] = useState<Record<string, string>>({});
   const [movimentacaoData, setMovimentacaoData] = useState({ toLoteId: "" });
+  const [transitChecklist, setTransitChecklist] = useState(
+    DEFAULT_TRANSIT_CHECKLIST_DRAFT,
+  );
   const [nutricaoData, setNutricaoData] = useState({
     alimentoNome: "",
     quantidadeKg: "",
@@ -352,6 +428,17 @@ const Registrar = () => {
 
   // P2.4 FIX: Use centralized useLotes hook
   const lotes = useLotes();
+  const regulatorySurfaceSource = useLiveQuery(
+    () => (activeFarmId ? loadRegulatorySurfaceSource(activeFarmId) : null),
+    [activeFarmId],
+  );
+  const regulatoryReadModel = useMemo(
+    () =>
+      buildRegulatoryOperationalReadModel(
+        regulatorySurfaceSource ?? undefined,
+      ),
+    [regulatorySurfaceSource],
+  );
   const selectedLoteIdNormalized =
     selectedLoteId === SEM_LOTE_OPTION
       ? null
@@ -374,6 +461,35 @@ const Registrar = () => {
   const movimentacaoDestinoIgualOrigem =
     Boolean(selectedLoteIdNormalized) &&
     movimentacaoData.toLoteId === selectedLoteIdNormalized;
+  const showsTransitChecklist =
+    tipoManejo === "movimentacao" ||
+    (tipoManejo === "financeiro" && financeiroData.natureza === "venda");
+  const officialTransitChecklistEnabled = hasOfficialTransitChecklistEnabled(
+    regulatorySurfaceSource?.config ?? null,
+  );
+  const isExternalTransitContext =
+    showsTransitChecklist && transitChecklist.enabled;
+  const nutritionComplianceGuards =
+    tipoManejo === "nutricao"
+      ? regulatoryReadModel.flows.nutrition
+      : EMPTY_REGULATORY_OPERATIONAL_READ_MODEL.flows.nutrition;
+  const movementComplianceGuards = useMemo(
+    () =>
+      showsTransitChecklist || tipoManejo === "movimentacao"
+        ? isExternalTransitContext
+          ? regulatoryReadModel.flows.movementExternal
+          : regulatoryReadModel.flows.movementInternal
+        : EMPTY_REGULATORY_OPERATIONAL_READ_MODEL.flows.movementInternal,
+    [isExternalTransitContext, regulatoryReadModel, showsTransitChecklist, tipoManejo],
+  );
+  const transitChecklistIssues = useMemo(() => {
+    if (!showsTransitChecklist) return [];
+
+    return validateTransitChecklist(
+      transitChecklist,
+      new Date().toISOString().slice(0, 10),
+    );
+  }, [showsTransitChecklist, transitChecklist]);
   const pesagemAnimaisInvalidos = selectedAnimais.filter((id) => {
     const weightStr = pesagemData[id];
     if (!weightStr || weightStr.trim() === "") return true;
@@ -382,7 +498,7 @@ const Registrar = () => {
   });
   const requiresAnimalsForQuickAction =
     quickActionConfig?.requiresAnimals === true && selectedAnimais.length === 0;
-  const actionStepIssues = useMemo(() => {
+  const baseActionStepIssues = useMemo(() => {
     if (!tipoManejo) return ["Escolha um manejo antes de continuar."];
 
     const issues: string[] = [];
@@ -437,7 +553,6 @@ const Registrar = () => {
     sanitatioProductMissing,
     tipoManejo,
   ]);
-  const canAdvanceToConfirm = actionStepIssues.length === 0;
   const animaisNoLote = useLiveQuery(
     async () => {
       if (!selectedLoteId) return [];
@@ -496,7 +611,6 @@ const Registrar = () => {
           .toArray()
       : [];
   }, [activeFarmId]);
-
   const protocoloItens = useLiveQuery(() => {
     return protocoloId && activeFarmId
       ? db.state_protocolos_sanitarios_itens
@@ -511,11 +625,538 @@ const Registrar = () => {
           .toArray()
       : [];
   }, [protocoloId, sanitarioData.tipo, activeFarmId]);
+  const veterinaryProducts = useLiveQuery(() => {
+    return db.catalog_produtos_veterinarios.orderBy("nome").toArray();
+  }, []);
   const contraparteSelecionadaNome =
     financeiroData.contraparteId !== "none"
       ? contrapartes?.find((item) => item.id === financeiroData.contraparteId)
           ?.nome ?? "Contraparte selecionada"
       : "Sem contraparte";
+  const selectedVeterinaryProduct = useMemo(
+    () =>
+      (veterinaryProducts ?? []).find(
+        (product) => product.id === selectedVeterinaryProductId,
+      ) ?? null,
+    [selectedVeterinaryProductId, veterinaryProducts],
+  );
+  const selectedVeterinaryProductSelection = useMemo<VeterinaryProductSelection | null>(
+    () =>
+      selectedVeterinaryProduct
+        ? {
+            id: selectedVeterinaryProduct.id,
+            nome: selectedVeterinaryProduct.nome,
+            categoria: selectedVeterinaryProduct.categoria,
+            origem: "catalogo",
+          }
+        : null,
+    [selectedVeterinaryProduct],
+  );
+  const veterinaryProductSuggestions = useMemo(
+    () =>
+      searchVeterinaryProducts(veterinaryProducts ?? [], {
+        query: sanitarioData.produto,
+        sanitaryType: sanitarioData.tipo,
+        limit: 6,
+      }),
+    [sanitarioData.produto, sanitarioData.tipo, veterinaryProducts],
+  );
+  const selectedAnimaisDetalhes = useMemo(
+    () =>
+      (animaisNoLote ?? []).filter((animal) => selectedAnimais.includes(animal.id)),
+    [animaisNoLote, selectedAnimais],
+  );
+  const movementSensitiveAnimals = useMemo(() => {
+    if (!showsTransitChecklist) return [];
+    if (selectedAnimaisDetalhes.length > 0) return selectedAnimaisDetalhes;
+    return animaisNoLote ?? [];
+  }, [animaisNoLote, selectedAnimaisDetalhes, showsTransitChecklist]);
+  const animalsBlockedBySanitaryAlert = useMemo(
+    () => listAnimalsBlockedBySanitaryAlert(movementSensitiveAnimals),
+    [movementSensitiveAnimals],
+  );
+  const sanitaryMovementBlockIssues = useMemo(() => {
+    if (!showsTransitChecklist || animalsBlockedBySanitaryAlert.length === 0) {
+      return [];
+    }
+
+    const firstBlocked = animalsBlockedBySanitaryAlert[0];
+    if (!firstBlocked) return [];
+
+    return [
+      animalsBlockedBySanitaryAlert.length === 1
+        ? `${firstBlocked.animal.identificacao} esta com suspeita sanitaria aberta e nao pode sair da fazenda.`
+        : `${animalsBlockedBySanitaryAlert.length} animal(is) do recorte atual estao com suspeita sanitaria aberta e bloqueio de movimentacao.`,
+    ];
+  }, [animalsBlockedBySanitaryAlert, showsTransitChecklist]);
+  const complianceFlowIssues = useMemo(() => {
+    if (tipoManejo === "nutricao") {
+      return nutritionComplianceGuards.blockers.map((guard) => guard.message);
+    }
+
+    if (tipoManejo === "movimentacao") {
+      return movementComplianceGuards.blockers.map((guard) => guard.message);
+    }
+
+    if (tipoManejo === "financeiro" && financeiroData.natureza === "venda") {
+      return movementComplianceGuards.blockers.map((guard) => guard.message);
+    }
+
+    return [];
+  }, [
+    financeiroData.natureza,
+    movementComplianceGuards.blockers,
+    nutritionComplianceGuards.blockers,
+    tipoManejo,
+  ]);
+  const protocolosById = useMemo(
+    () => new Map((protocolos ?? []).map((protocolo) => [protocolo.id, protocolo])),
+    [protocolos],
+  );
+  const protocoloItensEvaluated = useMemo(
+    () =>
+      (protocoloItens ?? [])
+        .map((item) => {
+          const protocolo = protocolosById.get(item.protocolo_id) ?? null;
+          const eligibility = evaluateSanitaryProtocolEligibility(
+            item,
+            selectedAnimaisDetalhes,
+            protocolo,
+          );
+
+          return {
+            item,
+            protocolo,
+            eligibility,
+          };
+        })
+        .sort((left, right) => {
+          if (
+            left.eligibility.compatibleWithAll !==
+            right.eligibility.compatibleWithAll
+          ) {
+            return left.eligibility.compatibleWithAll ? -1 : 1;
+          }
+
+          return (left.item.dose_num ?? 0) - (right.item.dose_num ?? 0);
+        }),
+    [protocoloItens, protocolosById, selectedAnimaisDetalhes],
+  );
+  const selectedProtocoloItemEvaluation = useMemo(
+    () =>
+      protocoloItensEvaluated.find(({ item }) => item.id === protocoloItemId) ?? null,
+    [protocoloItemId, protocoloItensEvaluated],
+  );
+  const protocolEligibilityIssues = useMemo(() => {
+    if (tipoManejo !== "sanitario" || !selectedProtocoloItemEvaluation) {
+      return [];
+    }
+
+    if (selectedProtocoloItemEvaluation.eligibility.compatibleWithAll) {
+      return [];
+    }
+
+    return [
+      "O item de protocolo escolhido nao atende todos os animais selecionados.",
+    ];
+  }, [selectedProtocoloItemEvaluation, tipoManejo]);
+  const actionStepIssues = useMemo(
+    () => [
+      ...baseActionStepIssues,
+      ...protocolEligibilityIssues,
+      ...sanitaryMovementBlockIssues,
+      ...complianceFlowIssues,
+      ...transitChecklistIssues,
+    ],
+    [
+      baseActionStepIssues,
+      complianceFlowIssues,
+      protocolEligibilityIssues,
+      sanitaryMovementBlockIssues,
+      transitChecklistIssues,
+    ],
+  );
+  const canAdvanceToConfirm = actionStepIssues.length === 0;
+  const transitChecklistSection = showsTransitChecklist ? (
+    <div className="space-y-4 rounded-lg border border-amber-200/70 bg-amber-50/60 p-4 dark:border-amber-900/50 dark:bg-amber-950/20">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="space-y-1">
+          <p className="text-sm font-medium text-foreground">
+            Transito externo e checklist GTA
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Use apenas quando houver saida para outra localizacao. Manejo interno
+            entre lotes da mesma fazenda nao exige GTA por padrao.
+          </p>
+        </div>
+        <StatusBadge tone={officialTransitChecklistEnabled ? "warning" : "neutral"}>
+          {officialTransitChecklistEnabled
+            ? "Overlay oficial ativo"
+            : "Checklist manual"}
+        </StatusBadge>
+      </div>
+
+      <label className="flex items-start gap-3 rounded-xl border border-border/70 bg-background/80 p-3">
+        <Checkbox
+          checked={transitChecklist.enabled}
+          onCheckedChange={(checked) =>
+            setTransitChecklist((prev) => ({
+              ...prev,
+              enabled: checked === true,
+            }))
+          }
+        />
+        <div className="space-y-1">
+          <span className="text-sm font-medium text-foreground">
+            Este manejo representa transito externo
+          </span>
+          <p className="text-sm text-muted-foreground">
+            Ao ativar, o fluxo passa a exigir GTA/e-GTA e, em reproducao
+            interestadual, os atestados sanitarios do PNCEBT.
+          </p>
+        </div>
+      </label>
+
+      {transitChecklist.enabled ? (
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="space-y-2">
+            <Label>Finalidade do transito</Label>
+            <Select
+              value={transitChecklist.purpose}
+              onValueChange={(value) =>
+                setTransitChecklist((prev) => ({
+                  ...prev,
+                  purpose: value as TransitChecklistPurpose,
+                }))
+              }
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione a finalidade" />
+              </SelectTrigger>
+              <SelectContent>
+                {TRANSIT_PURPOSE_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Numero/protocolo GTA</Label>
+            <Input
+              value={transitChecklist.gtaNumber}
+              onChange={(event) =>
+                setTransitChecklist((prev) => ({
+                  ...prev,
+                  gtaNumber: event.target.value,
+                }))
+              }
+              placeholder="Ex.: eGTA-2026-000123"
+            />
+          </div>
+
+          <label className="flex items-start gap-3 rounded-xl border border-border/70 bg-background/80 p-3 md:col-span-2">
+            <Checkbox
+              checked={transitChecklist.gtaChecked}
+              onCheckedChange={(checked) =>
+                setTransitChecklist((prev) => ({
+                  ...prev,
+                  gtaChecked: checked === true,
+                }))
+              }
+            />
+            <div className="space-y-1">
+              <span className="text-sm font-medium text-foreground">
+                Checklist de GTA/e-GTA concluido
+              </span>
+              <p className="text-sm text-muted-foreground">
+                Confirma a revisao documental minima antes de liberar o transito.
+              </p>
+            </div>
+          </label>
+
+          <label className="flex items-start gap-3 rounded-xl border border-border/70 bg-background/80 p-3 md:col-span-2">
+            <Checkbox
+              checked={transitChecklist.isInterstate}
+              onCheckedChange={(checked) =>
+                setTransitChecklist((prev) => ({
+                  ...prev,
+                  isInterstate: checked === true,
+                  destinationUf:
+                    checked === true ? prev.destinationUf : null,
+                }))
+              }
+            />
+            <div className="space-y-1">
+              <span className="text-sm font-medium text-foreground">
+                Transito interestadual
+              </span>
+              <p className="text-sm text-muted-foreground">
+                Habilita UF de destino e, para reproducao, a validacao dos
+                atestados negativos com janela de 60 dias.
+              </p>
+            </div>
+          </label>
+
+          {transitChecklist.isInterstate ? (
+            <div className="space-y-2 md:col-span-2">
+              <Label>UF de destino</Label>
+              <Select
+                value={transitChecklist.destinationUf ?? "__none__"}
+                onValueChange={(value) =>
+                  setTransitChecklist((prev) => ({
+                    ...prev,
+                    destinationUf:
+                      value === "__none__" ? null : (value as EstadoUFEnum),
+                  }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione a UF" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">Selecione</SelectItem>
+                  {TRANSIT_CHECKLIST_UF_OPTIONS.map((uf) => (
+                    <SelectItem key={uf} value={uf}>
+                      {uf}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          ) : null}
+
+          {transitChecklist.purpose === "reproducao" && transitChecklist.isInterstate ? (
+            <>
+              <label className="flex items-start gap-3 rounded-xl border border-border/70 bg-background/80 p-3 md:col-span-2">
+                <Checkbox
+                  checked={transitChecklist.reproductionDocsChecked}
+                  onCheckedChange={(checked) =>
+                    setTransitChecklist((prev) => ({
+                      ...prev,
+                      reproductionDocsChecked: checked === true,
+                    }))
+                  }
+                />
+                <div className="space-y-1">
+                  <span className="text-sm font-medium text-foreground">
+                    Atestados PNCEBT conferidos
+                  </span>
+                  <p className="text-sm text-muted-foreground">
+                    Confirmar brucelose e tuberculose negativas antes do
+                    transito para reproducao interestadual.
+                  </p>
+                </div>
+              </label>
+
+              <div className="space-y-2">
+                <Label>Atestado negativo de brucelose</Label>
+                <Input
+                  type="date"
+                  value={transitChecklist.brucellosisExamDate}
+                  onChange={(event) =>
+                    setTransitChecklist((prev) => ({
+                      ...prev,
+                      brucellosisExamDate: event.target.value,
+                    }))
+                  }
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Atestado negativo de tuberculose</Label>
+                <Input
+                  type="date"
+                  value={transitChecklist.tuberculosisExamDate}
+                  onChange={(event) =>
+                    setTransitChecklist((prev) => ({
+                      ...prev,
+                      tuberculosisExamDate: event.target.value,
+                    }))
+                  }
+                />
+              </div>
+            </>
+          ) : null}
+
+          <div className="space-y-2 md:col-span-2">
+            <Label>Observacoes do transito</Label>
+            <Input
+              value={transitChecklist.notes}
+              onChange={(event) =>
+                setTransitChecklist((prev) => ({
+                  ...prev,
+                  notes: event.target.value,
+                }))
+              }
+              placeholder="Ex.: saida para feira, leilao, frigorifico ou cobertura interestadual"
+            />
+          </div>
+        </div>
+      ) : null}
+
+      {transitChecklistIssues.length > 0 ? (
+        <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-3 text-sm text-destructive">
+          {transitChecklistIssues[0]}
+        </div>
+      ) : null}
+    </div>
+  ) : null;
+  const sanitaryMovementBlockSection =
+    showsTransitChecklist && animalsBlockedBySanitaryAlert.length > 0 ? (
+      <div className="space-y-3 rounded-lg border border-rose-200/70 bg-rose-50/60 p-4 dark:border-rose-900/50 dark:bg-rose-950/20">
+        <div className="space-y-1">
+          <p className="text-sm font-medium text-foreground">
+            Bloqueio sanitario de movimentacao
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Animais com suspeita sanitaria aberta nao podem seguir para
+            movimentacao externa ou venda ate o encerramento do alerta.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {animalsBlockedBySanitaryAlert.map(({ animal, alert }) => (
+            <StatusBadge key={animal.id} tone="danger">
+              {animal.identificacao}: {alert.diseaseName ?? "suspeita aberta"}
+            </StatusBadge>
+          ))}
+        </div>
+      </div>
+    ) : null;
+  const movementComplianceBlockSection =
+    movementComplianceGuards.blockers.length > 0 ||
+    movementComplianceGuards.warnings.length > 0 ? (
+      <div className="space-y-3 rounded-lg border border-amber-200/70 bg-amber-50/60 p-4 dark:border-amber-900/50 dark:bg-amber-950/20">
+        <div className="space-y-1">
+          <p className="text-sm font-medium text-foreground">
+            Restricoes regulatorias de movimentacao
+          </p>
+          <p className="text-xs text-muted-foreground">
+            O overlay oficial detectou pendencias que afetam este fluxo de
+            movimentacao.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {movementComplianceGuards.blockers.map((guard) => (
+            <StatusBadge key={guard.key} tone={guard.tone}>
+              {guard.label}
+            </StatusBadge>
+          ))}
+          {movementComplianceGuards.warnings.map((guard) => (
+            <StatusBadge key={guard.key} tone={guard.tone}>
+              {guard.label}
+            </StatusBadge>
+          ))}
+        </div>
+        {movementComplianceGuards.blockers.length > 0 ? (
+          <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-3 text-sm text-destructive">
+            {movementComplianceGuards.blockers[0]?.message}
+          </div>
+        ) : null}
+        {movementComplianceGuards.blockers.length === 0 &&
+        movementComplianceGuards.warnings.length > 0 ? (
+          <div className="rounded-lg border border-warning/20 bg-warning-muted/60 p-3 text-sm text-warning">
+            {movementComplianceGuards.warnings[0]?.message}
+          </div>
+        ) : null}
+      </div>
+    ) : null;
+  const nutritionComplianceBlockSection =
+    nutritionComplianceGuards.blockers.length > 0 ||
+    nutritionComplianceGuards.warnings.length > 0 ? (
+      <div className="space-y-3 rounded-lg border border-amber-200/70 bg-amber-50/60 p-4 dark:border-amber-900/50 dark:bg-amber-950/20">
+        <div className="space-y-1">
+          <p className="text-sm font-medium text-foreground">
+            Restricoes regulatorias de nutricao
+          </p>
+          <p className="text-xs text-muted-foreground">
+            O overlay oficial detectou risco alimentar ou operacional antes do
+            lancamento deste manejo.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {nutritionComplianceGuards.blockers.map((guard) => (
+            <StatusBadge key={guard.key} tone={guard.tone}>
+              {guard.label}
+            </StatusBadge>
+          ))}
+          {nutritionComplianceGuards.warnings.map((guard) => (
+            <StatusBadge key={guard.key} tone={guard.tone}>
+              {guard.label}
+            </StatusBadge>
+          ))}
+        </div>
+        {nutritionComplianceGuards.blockers.length > 0 ? (
+          <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-3 text-sm text-destructive">
+            {nutritionComplianceGuards.blockers[0]?.message}
+          </div>
+        ) : null}
+        {nutritionComplianceGuards.blockers.length === 0 &&
+        nutritionComplianceGuards.warnings.length > 0 ? (
+          <div className="rounded-lg border border-warning/20 bg-warning-muted/60 p-3 text-sm text-warning">
+            {nutritionComplianceGuards.warnings[0]?.message}
+          </div>
+        ) : null}
+      </div>
+    ) : null;
+
+  const createAutomaticProductSelection = useCallback(
+    (
+      product: ProdutoVeterinarioCatalogEntry,
+      matchMode: VeterinaryProductSelection["matchMode"],
+    ): VeterinaryProductSelection => ({
+      id: product.id,
+      nome: product.nome,
+      categoria: product.categoria,
+      origem: "catalogo_automatico",
+      matchMode,
+    }),
+    [],
+  );
+
+  const resolveProtocolProductSelection = useCallback(
+    (
+      payload: Record<string, unknown> | null | undefined,
+      productName: string,
+      sanitaryType: SanitarioTipoEnum,
+    ): VeterinaryProductSelection | null => {
+      const fromPayload = readVeterinaryProductSelection(payload);
+      if (fromPayload) return fromPayload;
+
+      const resolved = resolveVeterinaryProductByName(
+        productName,
+        veterinaryProducts ?? [],
+        {
+          sanitaryType,
+        },
+      );
+
+      if (!resolved.product) return null;
+
+      return createAutomaticProductSelection(
+        resolved.product,
+        resolved.matchMode,
+      );
+    },
+    [createAutomaticProductSelection, veterinaryProducts],
+  );
+
+  const selectVeterinaryProduct = useCallback(
+    (
+      product: ProdutoVeterinarioCatalogEntry,
+      options?: { preserveTypedName?: boolean },
+    ) => {
+      setSelectedVeterinaryProductId(product.id);
+      if (options?.preserveTypedName) return;
+      setSanitarioData((prev) => ({
+        ...prev,
+        produto: product.nome,
+      }));
+    },
+    [],
+  );
 
   useEffect(() => {
     if (!activeFarmId) return;
@@ -525,6 +1166,14 @@ const Registrar = () => {
       "protocolos_sanitarios_itens",
     ]).catch((error) => {
       console.warn("[registrar] failed to refresh sanitary protocols", error);
+    });
+  }, [activeFarmId]);
+
+  useEffect(() => {
+    if (!activeFarmId) return;
+
+    refreshVeterinaryProductsCatalog().catch((error) => {
+      console.warn("[registrar] failed to refresh veterinary products", error);
     });
   }, [activeFarmId]);
 
@@ -552,11 +1201,49 @@ const Registrar = () => {
     );
     if (!selectedItem) return;
 
+    const productSelection = resolveProtocolProductSelection(
+      selectedItem.payload,
+      selectedItem.produto,
+      selectedItem.tipo,
+    );
+
     setSanitarioData((prev) => {
       if (prev.produto.trim()) return prev;
       return { ...prev, produto: selectedItem.produto };
     });
-  }, [protocoloItemId, protocoloItens]);
+
+    if (productSelection) {
+      setSelectedVeterinaryProductId((currentId) =>
+        currentId || productSelection.id,
+      );
+    }
+  }, [protocoloItemId, protocoloItens, resolveProtocolProductSelection]);
+
+  useEffect(() => {
+    const normalizedTypedProduct = normalizeVeterinaryProductText(
+      sanitarioData.produto,
+    );
+
+    if (!normalizedTypedProduct) {
+      if (selectedVeterinaryProductId) {
+        setSelectedVeterinaryProductId("");
+      }
+      return;
+    }
+
+    if (!selectedVeterinaryProduct) return;
+
+    if (
+      normalizeVeterinaryProductText(selectedVeterinaryProduct.nome) !==
+      normalizedTypedProduct
+    ) {
+      setSelectedVeterinaryProductId("");
+    }
+  }, [
+    sanitarioData.produto,
+    selectedVeterinaryProduct,
+    selectedVeterinaryProductId,
+  ]);
 
   useEffect(() => {
     const querySourceTaskId = searchParams.get("sourceTaskId");
@@ -652,10 +1339,18 @@ const Registrar = () => {
       const produtoFromTask =
         readString(sourceRef, "produto") ?? readString(sourceTask.payload, "produto");
       const tipoFromTask = readString(sourceRef, "tipo");
+      const productSelectionFromTask =
+        readVeterinaryProductSelection(sourceRef) ??
+        readVeterinaryProductSelection(sourceTask.payload);
 
       if (protocoloIdFromTask) setProtocoloId((prev) => prev || protocoloIdFromTask);
       if (protocoloItemIdFromTask) {
         setProtocoloItemId((prev) => prev || protocoloItemIdFromTask);
+      }
+      if (productSelectionFromTask) {
+        setSelectedVeterinaryProductId((prev) =>
+          prev || productSelectionFromTask.id,
+        );
       }
 
       if (
@@ -761,6 +1456,29 @@ const Registrar = () => {
       setMovimentacaoData((prev) => ({ ...prev, toLoteId: "" }));
     }
   }, [movimentacaoData.toLoteId, selectedLoteIdNormalized]);
+
+  useEffect(() => {
+    if (!showsTransitChecklist) {
+      setTransitChecklist(DEFAULT_TRANSIT_CHECKLIST_DRAFT);
+      return;
+    }
+
+    setTransitChecklist((prev) => {
+      const expectedPurpose =
+        tipoManejo === "financeiro" && financeiroData.natureza === "venda"
+          ? "venda"
+          : "movimentacao";
+
+      if (!prev.enabled && prev.purpose !== expectedPurpose) {
+        return {
+          ...prev,
+          purpose: expectedPurpose,
+        };
+      }
+
+      return prev;
+    });
+  }, [financeiroData.natureza, showsTransitChecklist, tipoManejo]);
 
   // UX Improvement: Auto-select bull if present in the selected lote
   useEffect(() => {
@@ -992,12 +1710,60 @@ const Registrar = () => {
       }
     }
 
+    if (transitChecklistIssues.length > 0) {
+      showError(transitChecklistIssues[0] ?? "Checklist de transito incompleto.");
+      return;
+    }
+
+    if (complianceFlowIssues.length > 0) {
+      showError(complianceFlowIssues[0] ?? "Bloqueio regulatorio em aberto.");
+      return;
+    }
+
     try {
       const now = new Date().toISOString();
       const protocoloItem =
         tipoManejo === "sanitario" && protocoloItemId
           ? await db.state_protocolos_sanitarios_itens.get(protocoloItemId)
           : null;
+      const sanitaryProductName =
+        tipoManejo === "sanitario"
+          ? sanitarioData.produto.trim() || protocoloItem?.produto || ""
+          : "";
+      const protocolProductSelection =
+        tipoManejo === "sanitario" && protocoloItem
+          ? resolveProtocolProductSelection(
+              protocoloItem.payload,
+              protocoloItem.produto,
+              protocoloItem.tipo,
+            )
+          : null;
+      const sanitaryProductSelection =
+        tipoManejo === "sanitario"
+          ? selectedVeterinaryProductSelection ?? protocolProductSelection
+          : null;
+      const sanitaryProductMetadata =
+        tipoManejo === "sanitario"
+          ? {
+              ...buildVeterinaryProductMetadata({
+                selectedProduct: sanitaryProductSelection,
+                typedName: sanitaryProductName,
+                source: sanitaryProductSelection?.origem,
+                matchMode: sanitaryProductSelection?.matchMode ?? null,
+              }),
+              ...(protocoloItem
+                ? {
+                    protocolo_item_id: protocoloItem.id,
+                    protocolo_id: protocoloItem.protocolo_id,
+                  }
+                : {}),
+            }
+          : {};
+      const transitChecklistPayload = showsTransitChecklist
+        ? buildTransitChecklistPayload(transitChecklist, {
+            officialPackEnabled: officialTransitChecklistEnabled,
+          })
+        : {};
 
       if (tipoManejo === "sanitario" && sourceTaskId) {
         try {
@@ -1005,11 +1771,10 @@ const Registrar = () => {
             agendaItemId: sourceTaskId,
             occurredAt: now,
             tipo: sanitarioData.tipo,
-            produto: sanitarioData.produto.trim() || protocoloItem?.produto || "",
+            produto: sanitaryProductName,
             payload: {
               origem: "registrar_manejo",
-              protocolo_item_id: protocoloItem?.id ?? null,
-              protocolo_id: protocoloItem?.protocolo_id ?? null,
+              ...sanitaryProductMetadata,
             },
           });
 
@@ -1130,6 +1895,7 @@ const Registrar = () => {
               : null,
           weightMode: financeiroData.modoPeso,
           lotWeightKg: financeiroPesoLote,
+          payload: transitChecklistPayload,
         });
 
         linkedEventId = built.financialEventId;
@@ -1152,7 +1918,7 @@ const Registrar = () => {
             animalId: animalId ?? null,
             loteId: targetLoteId,
             tipo: sanitarioData.tipo,
-            produto: sanitarioData.produto.trim() || protocoloItem?.produto || "",
+            produto: sanitaryProductName,
             protocoloItem: protocoloItem
               ? {
                   id: protocoloItem.id,
@@ -1161,6 +1927,8 @@ const Registrar = () => {
                   geraAgenda: protocoloItem.gera_agenda,
                 }
               : undefined,
+            produtoRef: sanitaryProductSelection ?? undefined,
+            payload: sanitaryProductMetadata,
           };
         } else if (tipoManejo === "pesagem") {
           eventInput = {
@@ -1182,6 +1950,7 @@ const Registrar = () => {
             loteId: targetLoteId,
             fromLoteId: targetLoteId,
             toLoteId: movimentacaoData.toLoteId || null,
+            payload: transitChecklistPayload,
           };
         } else if (tipoManejo === "nutricao") {
           eventInput = {
@@ -1236,7 +2005,10 @@ const Registrar = () => {
               natureza === "venda" && Boolean(animalId),
             clearAnimalLoteOnSale:
               natureza === "venda" && Boolean(animalId),
-            payload: payloadFinanceiro,
+            payload: {
+              ...payloadFinanceiro,
+              ...transitChecklistPayload,
+            },
           };
         } else if (tipoManejo === "reproducao" && animalId && animal) {
           const categoriaLabel = deriveAnimalTaxonomy(animal, {
@@ -1748,6 +2520,7 @@ const Registrar = () => {
                     className={cn(
                       sanitatioProductMissing && "border-destructive focus-visible:ring-destructive/30",
                     )}
+                    placeholder="Digite o nome ou use uma sugestao do catalogo"
                     value={sanitarioData.produto}
                     onChange={(e) =>
                       setSanitarioData((d) => ({
@@ -1759,6 +2532,53 @@ const Registrar = () => {
                   {sanitatioProductMissing ? (
                     <p className="text-xs text-destructive">
                       Informe o produto ou selecione um item de protocolo antes de continuar.
+                    </p>
+                  ) : selectedVeterinaryProduct ? (
+                    <p className="text-xs text-muted-foreground">
+                      Catalogo vinculado: {selectedVeterinaryProduct.nome}
+                      {selectedVeterinaryProduct.categoria
+                        ? ` | ${selectedVeterinaryProduct.categoria}`
+                        : ""}
+                    </p>
+                  ) : sanitarioData.produto.trim() ? (
+                    <p className="text-xs text-muted-foreground">
+                      Texto livre: o evento sera salvo sem vinculo direto ao catalogo.
+                    </p>
+                  ) : veterinaryProducts && veterinaryProducts.length > 0 ? (
+                    <p className="text-xs text-muted-foreground">
+                      Sugestoes do catalogo aparecem abaixo para acelerar o registro.
+                    </p>
+                  ) : null}
+
+                  {veterinaryProductSuggestions.length > 0 ? (
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      {veterinaryProductSuggestions.map((product) => {
+                        const isSelected = product.id === selectedVeterinaryProductId;
+                        return (
+                          <Button
+                            key={product.id}
+                            type="button"
+                            size="sm"
+                            variant={isSelected ? "default" : "outline"}
+                            className="h-auto min-h-9 px-3 py-2 text-left"
+                            onClick={() => selectVeterinaryProduct(product)}
+                          >
+                            <span>{product.nome}</span>
+                            {product.categoria ? (
+                              <Badge
+                                variant="secondary"
+                                className="ml-2 whitespace-nowrap"
+                              >
+                                {product.categoria}
+                              </Badge>
+                            ) : null}
+                          </Button>
+                        );
+                      })}
+                    </div>
+                  ) : veterinaryProducts && veterinaryProducts.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">
+                      Catalogo veterinario indisponivel offline neste aparelho.
                     </p>
                   ) : null}
                 </div>
@@ -1794,14 +2614,55 @@ const Registrar = () => {
                         <SelectValue placeholder="Selecione o item" />
                       </SelectTrigger>
                       <SelectContent>
-                        {protocoloItens.map((item) => (
-                          <SelectItem key={item.id} value={item.id}>
-                            Dose {item.dose_num}{" "}
-                            {item.gera_agenda && `(+${item.intervalo_dias}d)`}
+                        {protocoloItensEvaluated.map(({ item, eligibility }) => (
+                          <SelectItem
+                            key={item.id}
+                            value={item.id}
+                            disabled={!eligibility.compatibleWithAll}
+                          >
+                            Dose {item.dose_num} |{" "}
+                            {describeSanitaryCalendarSchedule({
+                              intervalDays: item.intervalo_dias,
+                              geraAgenda: item.gera_agenda,
+                              payload: item.payload,
+                            })}
+                            {selectedAnimaisDetalhes.length > 0
+                              ? ` | ${eligibility.eligibleCount}/${selectedAnimaisDetalhes.length} aptos`
+                              : ""}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
+                    {selectedProtocoloItemEvaluation ? (
+                      <div className="space-y-1 text-xs text-muted-foreground">
+                        {formatSanitaryProtocolRestrictions(
+                          selectedProtocoloItemEvaluation.eligibility.restrictions,
+                        ) ? (
+                          <p>
+                            Regras:{" "}
+                            {
+                              formatSanitaryProtocolRestrictions(
+                                selectedProtocoloItemEvaluation.eligibility.restrictions,
+                              )
+                            }
+                          </p>
+                        ) : null}
+                        {!selectedProtocoloItemEvaluation.eligibility.compatibleWithAll ? (
+                          <p className="text-destructive">
+                            {selectedProtocoloItemEvaluation.eligibility.reasons[0]}
+                          </p>
+                        ) : null}
+                      </div>
+                    ) : null}
+                    {protocoloItensEvaluated.length > 0 &&
+                    protocoloItensEvaluated.every(
+                      ({ eligibility }) => !eligibility.compatibleWithAll,
+                    ) ? (
+                      <p className="text-xs text-muted-foreground">
+                        Nenhum item deste protocolo atende todos os animais
+                        selecionados. Ajuste a selecao ou troque o protocolo.
+                      </p>
+                    ) : null}
                   </div>
                 )}
               </div>
@@ -1878,6 +2739,9 @@ const Registrar = () => {
                     Origem e destino devem ser diferentes.
                   </p>
                 ) : null}
+                {transitChecklistSection}
+                {sanitaryMovementBlockSection}
+                {movementComplianceBlockSection}
               </div>
             )}
 
@@ -1928,6 +2792,7 @@ const Registrar = () => {
                     </p>
                   ) : null}
                 </div>
+                {nutritionComplianceBlockSection}
               </div>
             )}
 
@@ -2404,6 +3269,9 @@ const Registrar = () => {
                       })}
                     </div>
                   )}
+                {transitChecklistSection}
+                {sanitaryMovementBlockSection}
+                {movementComplianceBlockSection}
               </div>
 
             )}
@@ -2488,6 +3356,34 @@ const Registrar = () => {
                   </span>
                 </div>
               )}
+              {transitChecklist.enabled ? (
+                <>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Transito externo:</span>
+                    <span className="font-bold">Sim</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Finalidade:</span>
+                    <span className="font-bold capitalize">
+                      {transitChecklist.purpose.replace(/_/g, " ")}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">GTA/e-GTA:</span>
+                    <span className="font-bold">
+                      {transitChecklist.gtaNumber || "Checklist concluido"}
+                    </span>
+                  </div>
+                  {transitChecklist.isInterstate ? (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Destino UF:</span>
+                      <span className="font-bold">
+                        {transitChecklist.destinationUf ?? "-"}
+                      </span>
+                    </div>
+                  ) : null}
+                </>
+              ) : null}
               {tipoManejo === "nutricao" && (
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Alimento:</span>

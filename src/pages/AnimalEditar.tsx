@@ -40,14 +40,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { showSuccess, showError } from "@/utils/toast";
-import { ChevronLeft, Save, Loader2 } from "lucide-react";
+import { ChevronLeft, Save, Loader2, Trash2 } from "lucide-react";
 import { useLotes } from "@/hooks/useLotes";
 import { useAuth } from "@/hooks/useAuth";
 
 const AnimalEditar = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { farmLifecycleConfig } = useAuth();
+  const { farmLifecycleConfig, role } = useAuth();
   const [isSaving, setIsSaving] = useState(false);
 
   // Carregar animal
@@ -97,6 +97,31 @@ const AnimalEditar = () => {
     "null" | "true" | "false"
   >("null");
   const lotes = useLotes(animal?.fazenda_id);
+
+  const temCriaRecente = useLiveQuery(async () => {
+    if (!animal?.id) return false;
+    const crias = await db.state_animais
+      .where("mae_id")
+      .equals(animal.id)
+      .filter((a) => !a.deleted_at)
+      .toArray();
+      
+    const umAnoAtras = Date.now() - 365 * 24 * 60 * 60 * 1000;
+    return crias.some((c) => {
+      if (!c.data_nascimento) return true; // se nao tem data, por precaucao consideramos vinculo valido
+      return new Date(c.data_nascimento).getTime() > umAnoAtras;
+    });
+  }, [animal?.id]) ?? false;
+
+  const dataUltimoParto = animal?.payload?.data_ultimo_parto;
+  let tevePartoRecente = false;
+  if (dataUltimoParto) {
+    const umAnoAtras = Date.now() - 365 * 24 * 60 * 60 * 1000;
+    tevePartoRecente = new Date(dataUltimoParto).getTime() > umAnoAtras;
+  }
+  
+  const isLactationEligible = (tevePartoRecente || temCriaRecente || animal?.payload?.em_lactacao === true);
+
 
   // Query para machos (potenciais pais) - excluir o próprio animal se for macho
   const machos = useLiveQuery(
@@ -252,14 +277,8 @@ const AnimalEditar = () => {
 
     const now = new Date().toISOString();
 
-    const novoLoteId = loteId === "null" ? null : loteId;
-    const loteAtualId = animal.lote_id ?? null;
-    const loteChanged = novoLoteId !== loteAtualId;
-
-    if (loteChanged && novoLoteId === null) {
-      showError("Movimentacao exige lote de destino.");
-      return;
-    }
+    // Lote alterado removido (read-only na UI)
+    const novoLoteId = animal.lote_id ?? null;
 
     setIsSaving(true);
 
@@ -343,22 +362,6 @@ const AnimalEditar = () => {
 
     const ops: OperationInput[] = [];
 
-    if (loteChanged) {
-      const built = buildEventGesture({
-        dominio: "movimentacao",
-        fazendaId: animal.fazenda_id,
-        occurredAt: now,
-        animalId: id,
-        loteId: loteAtualId,
-        fromLoteId: loteAtualId,
-        toLoteId: novoLoteId,
-        applyAnimalStateUpdate: false,
-        observacoes: "Movimentacao de lote via edicao de cadastro",
-      });
-      ops.push(...built.ops);
-      animalUpdateRecord.lote_id = novoLoteId;
-    }
-
     ops.push({
       table: "animais",
       action: "UPDATE",
@@ -376,6 +379,30 @@ const AnimalEditar = () => {
         return;
       }
       showError("Erro ao atualizar animal.");
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!animal || !id) return;
+
+    if (!window.confirm("ATENÇÃO: Você está prestes a excluir este animal de todos os registros da Gestão Agro. Esta ação o removerá dos relatórios passados e cancelará sua vida ativa na fazenda. Deseja mesmo excluir este animal?")) {
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      await createGesture(animal.fazenda_id, [{
+        table: "animais",
+        action: "DELETE",
+        record: { id: animal.id }
+      }]);
+      await db.state_animais.delete(animal.id);
+      showSuccess("Animal excluído com sucesso.");
+      navigate("/animais");
+    } catch (e: unknown) {
+      setIsSaving(false);
+      showError("Erro ao excluir animal.");
+      console.error(e);
     }
   };
 
@@ -472,20 +499,12 @@ const AnimalEditar = () => {
           </div>
 
           <div className="space-y-2">
-            <Label>Lote (Opcional)</Label>
-            <Select value={loteId} onValueChange={setLoteId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione um lote" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="null">Nenhum</SelectItem>
-                {lotes?.map((l) => (
-                  <SelectItem key={l.id} value={l.id}>
-                    {l.nome}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label>Lote</Label>
+            <Input 
+              value={lotes?.find((l) => l.id === loteId)?.nome ?? "Sem lote"} 
+              disabled 
+            />
+            <p className="text-xs text-muted-foreground mt-1">Para alterar o lote, utilize o recurso de Movimentação do Animal.</p>
           </div>
         </CardContent>
       </Card>
@@ -561,6 +580,7 @@ const AnimalEditar = () => {
           <CardTitle>Fatos Taxonômicos</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          {(idadeMeses === null || (idadeMeses >= 7 && idadeMeses <= 12)) && (
           <div className="space-y-2">
             <Label>Puberdade confirmada</Label>
             <Select
@@ -579,6 +599,7 @@ const AnimalEditar = () => {
               </SelectContent>
             </Select>
           </div>
+          )}
 
           {sexo === "M" && (
             <div className="space-y-2">
@@ -601,7 +622,7 @@ const AnimalEditar = () => {
             </div>
           )}
 
-          {sexo === "F" && (
+          {sexo === "F" && isLactationEligible && (
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label>Em lactação</Label>
@@ -780,6 +801,35 @@ const AnimalEditar = () => {
                   </p>
                 )}
             </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {role === "owner" && (
+        <Card className="border-destructive/50 shadow-sm mb-6">
+          <CardHeader>
+            <CardTitle className="text-destructive flex items-center">
+              <Trash2 className="h-5 w-5 mr-2" />
+              Zona de Perigo
+            </CardTitle>
+            <p className="text-sm text-muted-foreground">
+              A exclusão remove este animal dos relatórios, contadores do painel e registros visuais. Para preservar a consistência causal, esta ação aplica um silenciamento permanente (soft-delete).
+            </p>
+          </CardHeader>
+          <CardContent>
+            <Button
+              variant="destructive"
+              onClick={handleDelete}
+              disabled={isSaving}
+              className="w-full sm:w-auto"
+            >
+              {isSaving ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Trash2 className="h-4 w-4 mr-2" />
+              )}
+              Excluir animal permanentemente
+            </Button>
           </CardContent>
         </Card>
       )}

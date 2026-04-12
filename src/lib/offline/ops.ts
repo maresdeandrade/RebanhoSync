@@ -1,6 +1,7 @@
 import { db } from "./db";
 import { Operation, Gesture, OperationInput } from "./types";
 import { getLocalStoreName } from "./tableMap";
+import { normalizeTableMutationRecord } from "./mutationRecord";
 import {
   assertValidAnimalTaxonomyFactsContract,
   readTaxonomyFactsRecord,
@@ -10,6 +11,14 @@ function getRecordKey(record: Record<string, unknown>): string | null {
   if (typeof record.id === "string") return record.id;
   if (typeof record.evento_id === "string") return record.evento_id;
   if (typeof record.user_id === "string") return record.user_id;
+  if (
+    typeof record.fazenda_id === "string" &&
+    typeof record.id !== "string" &&
+    typeof record.evento_id !== "string" &&
+    typeof record.user_id !== "string"
+  ) {
+    return record.fazenda_id;
+  }
   return null;
 }
 
@@ -40,6 +49,11 @@ export const createGesture = async (
 
   const ops: Operation[] = ops_input.map((op, index) => {
     const client_op_id = crypto.randomUUID();
+    const normalizedRecord = normalizeTableMutationRecord(
+      op.table,
+      op.record,
+      fazenda_id,
+    );
 
     return {
       ...op,
@@ -49,7 +63,7 @@ export const createGesture = async (
       created_at: client_recorded_at,
       // Injeta SyncMeta no record (sem created_at/updated_at de negocio)
       record: {
-        ...op.record,
+        ...normalizedRecord,
         fazenda_id,
         client_id,
         client_op_id,

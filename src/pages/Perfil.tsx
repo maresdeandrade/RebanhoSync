@@ -17,6 +17,7 @@ import { MetricCard } from "@/components/ui/metric-card";
 import { PageIntro } from "@/components/ui/page-intro";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -28,13 +29,18 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { resolveNotificationPreferences } from "@/lib/notifications/sanitaryReminders";
 import { applyTheme } from "@/lib/theme";
 import { supabase } from "@/lib/supabase";
+
+const REMINDER_DAY_OPTIONS = [7, 3, 1] as const;
 
 export const Perfil = () => {
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { refreshSettings, farmExperienceMode } = useAuth();
 
   const [displayName, setDisplayName] = useState("");
   const [phone, setPhone] = useState("");
@@ -48,6 +54,10 @@ export const Perfil = () => {
   const [quietHoursStart, setQuietHoursStart] = useState("22:00");
   const [quietHoursEnd, setQuietHoursEnd] = useState("06:00");
   const [reminderDays, setReminderDays] = useState<number[]>([7, 3, 1]);
+  const [sanitaryCriticalAlerts, setSanitaryCriticalAlerts] = useState(true);
+  const [sanitaryMandatoryAlerts, setSanitaryMandatoryAlerts] = useState(true);
+  const [sanitaryUpcomingAlerts, setSanitaryUpcomingAlerts] = useState(true);
+  const [sanitaryFollowupAlerts, setSanitaryFollowupAlerts] = useState(true);
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -112,13 +122,17 @@ export const Perfil = () => {
       if (settings) {
         setTheme(settings.theme || "system");
 
-        const notifications = settings.notifications || {};
-        setNotificationsEnabled(notifications.enabled ?? true);
-        setAgendaReminders(notifications.agenda_reminders ?? true);
-        setQuietHoursEnabled(notifications.quiet_hours?.start ? true : false);
-        setQuietHoursStart(notifications.quiet_hours?.start || "22:00");
-        setQuietHoursEnd(notifications.quiet_hours?.end || "06:00");
-        setReminderDays(notifications.days_before || [7, 3, 1]);
+        const notifications = resolveNotificationPreferences(settings.notifications || {});
+        setNotificationsEnabled(notifications.enabled);
+        setAgendaReminders(notifications.agendaReminders);
+        setQuietHoursEnabled(Boolean(notifications.quietHours?.start));
+        setQuietHoursStart(notifications.quietHours?.start || "22:00");
+        setQuietHoursEnd(notifications.quietHours?.end || "06:00");
+        setReminderDays(notifications.daysBefore);
+        setSanitaryCriticalAlerts(notifications.sanitaryCritical);
+        setSanitaryMandatoryAlerts(notifications.sanitaryMandatory);
+        setSanitaryUpcomingAlerts(notifications.sanitaryUpcoming);
+        setSanitaryFollowupAlerts(notifications.sanitaryFollowups);
       }
     } catch (error: unknown) {
       console.error("Error loading settings:", error);
@@ -173,6 +187,10 @@ export const Perfil = () => {
         enabled: notificationsEnabled,
         agenda_reminders: agendaReminders,
         days_before: reminderDays,
+        sanitary_critical: sanitaryCriticalAlerts,
+        sanitary_mandatory: sanitaryMandatoryAlerts,
+        sanitary_upcoming: sanitaryUpcomingAlerts,
+        sanitary_followups: sanitaryFollowupAlerts,
         quiet_hours: quietHoursEnabled
           ? { start: quietHoursStart, end: quietHoursEnd }
           : null,
@@ -190,6 +208,7 @@ export const Perfil = () => {
       if (error) throw error;
 
       applyTheme(theme);
+      await refreshSettings();
 
       toast({
         title: "Sucesso",
@@ -268,6 +287,17 @@ export const Perfil = () => {
     navigate("/select-fazenda");
   };
 
+  const handleReminderDayToggle = (day: number, checked: boolean) => {
+    setReminderDays((current) => {
+      if (checked) {
+        return Array.from(new Set([...current, day])).sort((left, right) => right - left);
+      }
+
+      const next = current.filter((entry) => entry !== day);
+      return next.length > 0 ? next : current;
+    });
+  };
+
   const handleLogout = async () => {
     try {
       localStorage.removeItem("activeFarmId");
@@ -324,7 +354,7 @@ export const Perfil = () => {
           value={agendaReminders ? "Ativos" : "Pausados"}
           hint={
             notificationsEnabled
-              ? `${reminderDays.join(", ")} dia(s) antes do vencimento.`
+              ? `${reminderDays.join(", ")} dia(s) antes | ${sanitaryCriticalAlerts ? "criticos" : "sem criticos"}.`
               : "Dependem das notificacoes gerais."
           }
           tone={agendaReminders ? "info" : "default"}
@@ -333,6 +363,16 @@ export const Perfil = () => {
           label="Horario de silencio"
           value={quietHoursEnabled ? `${quietHoursStart} - ${quietHoursEnd}` : "Desligado"}
           hint="Usado para reduzir ruido fora da rotina operacional."
+        />
+        <MetricCard
+          label="Sanitario inteligente"
+          value={farmExperienceMode === "completo" ? "Completo" : "Essencial"}
+          hint={
+            farmExperienceMode === "completo"
+              ? "Pode avisar criticidade, follow-up e janelas antecipadas."
+              : "Foca em criticos e obrigatorios."
+          }
+          tone="warning"
         />
       </div>
 
@@ -538,6 +578,103 @@ export const Perfil = () => {
                           onChange={(event) => setQuietHoursEnd(event.target.value)}
                           disabled={!quietHoursEnabled}
                         />
+                      </div>
+                    </div>
+
+                    <div className="space-y-3 rounded-2xl border border-border/70 bg-muted/20 px-4 py-4">
+                      <div className="space-y-1">
+                        <Label>Notificacoes sanitarias inteligentes</Label>
+                        <p className="text-sm text-muted-foreground">
+                          Priorizam protocolos criticos, obrigatorios e, no modo completo,
+                          tambem proximo procedimento e janela antecipada.
+                        </p>
+                      </div>
+
+                      <div className="grid gap-3 md:grid-cols-2">
+                        <label className="flex items-start gap-3 rounded-xl border border-border/70 bg-background/80 p-3">
+                          <Switch
+                            checked={sanitaryCriticalAlerts}
+                            onCheckedChange={setSanitaryCriticalAlerts}
+                          />
+                          <div className="space-y-1">
+                            <span className="text-sm font-medium text-foreground">
+                              Criticos e atrasados
+                            </span>
+                            <p className="text-sm text-muted-foreground">
+                              Avisa quando ha item sanitario vencido com risco alto.
+                            </p>
+                          </div>
+                        </label>
+
+                        <label className="flex items-start gap-3 rounded-xl border border-border/70 bg-background/80 p-3">
+                          <Switch
+                            checked={sanitaryMandatoryAlerts}
+                            onCheckedChange={setSanitaryMandatoryAlerts}
+                          />
+                          <div className="space-y-1">
+                            <span className="text-sm font-medium text-foreground">
+                              Obrigatorios do dia
+                            </span>
+                            <p className="text-sm text-muted-foreground">
+                              Destaca protocolo legal ou obrigatorio vencendo hoje.
+                            </p>
+                          </div>
+                        </label>
+
+                        <label className="flex items-start gap-3 rounded-xl border border-border/70 bg-background/80 p-3">
+                          <Switch
+                            checked={sanitaryFollowupAlerts}
+                            onCheckedChange={setSanitaryFollowupAlerts}
+                            disabled={farmExperienceMode !== "completo"}
+                          />
+                          <div className="space-y-1">
+                            <span className="text-sm font-medium text-foreground">
+                              Proximo procedimento
+                            </span>
+                            <p className="text-sm text-muted-foreground">
+                              No modo completo, avisa quando a proxima etapa ja entrou na janela curta.
+                            </p>
+                          </div>
+                        </label>
+
+                        <label className="flex items-start gap-3 rounded-xl border border-border/70 bg-background/80 p-3">
+                          <Switch
+                            checked={sanitaryUpcomingAlerts}
+                            onCheckedChange={setSanitaryUpcomingAlerts}
+                            disabled={farmExperienceMode !== "completo"}
+                          />
+                          <div className="space-y-1">
+                            <span className="text-sm font-medium text-foreground">
+                              Janela antecipada
+                            </span>
+                            <p className="text-sm text-muted-foreground">
+                              Usa os dias configurados abaixo para antecipar a rotina.
+                            </p>
+                          </div>
+                        </label>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Antecedencia dos lembretes</Label>
+                        <div className="flex flex-wrap gap-3">
+                          {REMINDER_DAY_OPTIONS.map((day) => (
+                            <label
+                              key={day}
+                              className="flex items-center gap-2 rounded-full border border-border/70 bg-background/80 px-3 py-2 text-sm"
+                            >
+                              <Checkbox
+                                checked={reminderDays.includes(day)}
+                                onCheckedChange={(checked) =>
+                                  handleReminderDayToggle(day, checked === true)
+                                }
+                              />
+                              <span>{day} dia(s) antes</span>
+                            </label>
+                          ))}
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Pelo menos uma janela permanece ativa para evitar silencio total por engano.
+                        </p>
                       </div>
                     </div>
                   </div>

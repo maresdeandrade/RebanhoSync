@@ -2,7 +2,7 @@
 
 > **Status:** Normativo
 > **Fonte de Verdade:** `src/lib/offline/`
-> **Ultima Atualizacao:** 2026-04-07
+> **Ultima Atualizacao:** 2026-04-11
 
 Este documento descreve a persistencia local, a fila transacional e como a taxonomia canonica convive com o modelo offline-first.
 
@@ -38,13 +38,25 @@ Controle de sincronizacao.
 - `queue_ops`
 - `queue_rejections`
 
+### `catalog_*`
+
+Cache local read-only para referências globais fora do `sync-batch`.
+
+- `catalog_produtos_veterinarios`
+- `catalog_protocolos_oficiais`
+- `catalog_protocolos_oficiais_itens`
+- `catalog_doencas_notificaveis`
+- alimentado via leitura direta do Supabase
+- permanece disponível offline para autocomplete e prefill sanitário
+
 ### `metrics_events`
 
-Store de telemetria local (Dexie v8). Append-only local.
+Store de telemetria de piloto (Dexie v11). Append-only local com flush remoto periodico.
 
 - Registra eventos de uso e falhas do sync worker.
-- Dados permanecem no dispositivo — sem envio remoto automático no estado atual.
-- Usada por dashboard de piloto para análise local.
+- `flushPilotMetrics()` envia lotes de ate 100 eventos para `supabase/functions/telemetry-ingest`.
+- O cursor local de envio fica por fazenda em `localStorage`, e a ingestao remota e idempotente por `id`.
+- Continua servindo como buffer offline e como fonte para sumarios locais quando necessario.
 
 Exemplo de campos: `event_name`, `route`, `entity`, `status`, `fazenda_id`, `created_at`.
 
@@ -102,6 +114,7 @@ O shape da store `state_animais` permanece o mesmo.
 - nao foi criada tabela nova para taxonomia
 - dados legados continuam validos
 - compatibilidade com `papel_macho` e `habilitado_monta` permanece por helper
+- o catálogo `produtos_veterinarios` não entra no `tableMap.ts`; o cliente usa cache local próprio em `catalog_produtos_veterinarios`
 
 Cobertura critica:
 

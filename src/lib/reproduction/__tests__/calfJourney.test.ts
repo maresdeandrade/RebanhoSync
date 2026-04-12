@@ -64,7 +64,6 @@ function createAgendaItem(overrides: Partial<AgendaItem> = {}): AgendaItem {
     source_client_op_id: null,
     source_tx_id: null,
     source_evento_id: "evento-1",
-    source_task_id: null,
     protocol_item_version_id: null,
     interval_days_applied: 7,
     payload: {

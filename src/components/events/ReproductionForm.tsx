@@ -8,7 +8,11 @@ import {
   REPRODUCTION_TECHNIQUE_OPTIONS,
 } from "@/lib/animals/catalogs";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
+import { computeReproStatus } from "@/lib/reproduction/status";
+import type { ReproEventJoined } from "@/lib/reproduction/selectors";
 import {
   Select,
   SelectContent,
@@ -103,15 +107,34 @@ export function ReproductionForm({
   data,
   onChange,
 }: ReproductionFormProps) {
+  
+  
+  const animalReproStatus = useLiveQuery(async () => {
+    if (!animalId) return null;
+    const services = await db.event_eventos
+      .where("animal_id")
+      .equals(animalId)
+      .filter((event) => event.dominio === "reproducao" && !event.deleted_at)
+      .toArray();
+
+    const joined: ReproEventJoined[] = await Promise.all(
+      services.map(async (s) => ({
+        ...s,
+        details: await db.event_eventos_reproducao.get(s.id),
+      })),
+    );
+
+    return computeReproStatus(joined);
+  }, [animalId]);
+
+  
   const machos = useLiveQuery(() => {
     return db.state_animais
       .where("fazenda_id")
       .equals(fazendaId)
       .filter(
         (animal) =>
-          animal.sexo === "M" &&
-          animal.status === "ativo" &&
-          (!animal.deleted_at || animal.deleted_at === null),
+          animal.sexo === "M" && animal.status === "ativo" && animal.habilitado_monta === true && (!animal.deleted_at || animal.deleted_at === null),
       )
       .toArray();
   }, [fazendaId]);
@@ -178,6 +201,15 @@ export function ReproductionForm({
     });
   }, [data, onChange]);
 
+  useEffect(() => {
+    if (data.tipo === "cobertura" && data.machoId && data.machoId !== "none" && data.reprodutorTag !== "cadastrado_no_rebanho") {
+      const timer = setTimeout(() => {
+        onChange({ ...data, reprodutorTag: "cadastrado_no_rebanho" });
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+  }, [data, onChange]);
+
   const isMachoRequired =
     data.tipo === "cobertura" || (data.tipo === "IA" && !data.loteSemen);
   const today = new Date().toISOString().split("T")[0];
@@ -190,98 +222,129 @@ export function ReproductionForm({
       >
         <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2">
-            <Label htmlFor="repro-tipo">Tipo de evento</Label>
-            <Select
-              value={data.tipo}
-              onValueChange={(value) => {
-                onChange({
-                  ...data,
-                  tipo: value as ReproTipoEnum,
-                  episodeEventoId: null,
-                  episodeLinkMethod: undefined,
-                });
-              }}
-            >
-              <SelectTrigger id="repro-tipo">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="cobertura">Cobertura (monta)</SelectItem>
-                <SelectItem value="IA">Inseminacao artificial (IA)</SelectItem>
-                <SelectItem value="diagnostico">
-                  Diagnostico de gestacao
-                </SelectItem>
-                <SelectItem value="parto">Parto</SelectItem>
-              </SelectContent>
-            </Select>
+            <Label className="mb-3 block">Estagio do Ciclo</Label>
+            
+            {(() => {
+              const statusFemea = animalReproStatus?.status;
+              const showService = !statusFemea || statusFemea !== "SERVIDA" && statusFemea !== "PRENHA";
+              const showDiagnostico = statusFemea === "SERVIDA" || statusFemea === "PRENHA" || data.tipo === "diagnostico";
+              const showParto = statusFemea === "PRENHA" || data.tipo === "parto";
+
+              return (
+                <div className="grid grid-cols-2 gap-2">
+                  {showService && (
+                    <>
+                      <Button
+                        type="button"
+                        variant={data.tipo === "cobertura" ? "default" : "outline"}
+                        className={cn("h-auto py-3", data.tipo === "cobertura" && "bg-emerald-600 hover:bg-emerald-700")}
+                        onClick={() => {
+                          const dpp = new Date(Date.now() + 283 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+                          onChange({
+                            ...data,
+                            tipo: "cobertura",
+                            episodeEventoId: null,
+                            episodeLinkMethod: undefined,
+                            dataPrevistaParto: data.dataPrevistaParto || dpp
+                          });
+                        }}
+                      >
+                        <div className="text-left">
+                          <div className="font-semibold">Cobertura</div>
+                          <div className="text-xs opacity-80">(Monta natural)</div>
+                        </div>
+                      </Button>
+
+                      <Button
+                        type="button"
+                        variant={data.tipo === "IA" ? "default" : "outline"}
+                        className={cn("h-auto py-3", data.tipo === "IA" && "bg-emerald-600 hover:bg-emerald-700")}
+                        onClick={() => {
+                          const dpp = new Date(Date.now() + 283 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+                          onChange({
+                            ...data,
+                            tipo: "IA",
+                            episodeEventoId: null,
+                            episodeLinkMethod: undefined,
+                            dataPrevistaParto: data.dataPrevistaParto || dpp
+                          });
+                        }}
+                      >
+                        <div className="text-left">
+                          <div className="font-semibold">Inseminação</div>
+                          <div className="text-xs opacity-80">(IA / IATF)</div>
+                        </div>
+                      </Button>
+                    </>
+                  )}
+
+                  {showDiagnostico && (
+                    <Button
+                      type="button"
+                      variant={data.tipo === "diagnostico" ? "default" : "outline"}
+                      className="h-auto py-3"
+                      onClick={() => {
+                        onChange({
+                          ...data,
+                          tipo: "diagnostico", episodeEventoId: null, episodeLinkMethod: "auto_last_open_service",
+                        });
+                      }}
+                    >
+                      <div className="text-left">
+                        <div className="font-semibold">Diagnóstico</div>
+                        <div className="text-xs opacity-80">(Toque / US)</div>
+                      </div>
+                    </Button>
+                  )}
+
+                  {showParto && (
+                    <Button
+                      type="button"
+                      variant={data.tipo === "parto" ? "default" : "outline"}
+                      className="h-auto py-3"
+                      onClick={() => {
+                        onChange({
+                          ...data,
+                          tipo: "parto", episodeEventoId: null, episodeLinkMethod: "auto_last_open_service",
+                        });
+                      }}
+                    >
+                      <div className="text-left">
+                        <div className="font-semibold">Parto</div>
+                        <div className="text-xs opacity-80">(Nascimento)</div>
+                      </div>
+                    </Button>
+                  )}
+
+                  <Button
+                    type="button"
+                    variant={data.tipo === "aborto" ? "default" : "outline"}
+                    className={cn("h-auto py-3", data.tipo === "aborto" && "bg-destructive text-destructive-foreground hover:bg-destructive/90")}
+                    onClick={() => {
+                      onChange({
+                        ...data,
+                        tipo: "aborto", episodeEventoId: null, episodeLinkMethod: "auto_last_open_service",
+                      });
+                    }}
+                  >
+                    <div className="text-left">
+                      <div className="font-semibold">Aborto</div>
+                      <div className="text-xs opacity-80">(Interrupção)</div>
+                    </div>
+                  </Button>
+                </div>
+              );
+            })()}
+            
+            {(data.tipo === "cobertura" || data.tipo === "IA") && (
+               <div className="mt-3 rounded border border-emerald-100 bg-emerald-50 p-3 text-sm text-emerald-900">
+                 <strong>Data Provavel de Parto (DPP):</strong> {data.dataPrevistaParto ? new Date(data.dataPrevistaParto).toLocaleDateString('pt-BR') : 'Calculando...'} (projetada 283 dias)
+               </div>
+            )}
           </div>
         </div>
 
-        {data.tipo === "diagnostico" || data.tipo === "parto" ? (
-          <div className="rounded-2xl border border-border/70 bg-background/75 p-4">
-            <div className="space-y-1">
-              <p className="text-sm font-medium text-foreground">
-                Vinculo com servico
-              </p>
-              <p className="text-sm leading-6 text-muted-foreground">
-                O sistema pode localizar automaticamente o ultimo servico aberto
-                ou permitir um vinculo manual para manter o episodio coerente.
-              </p>
-            </div>
-
-            <div className="mt-4 space-y-2">
-              <Label htmlFor="repro-episode">Servico relacionado</Label>
-              <Select
-                value={data.episodeEventoId || "auto"}
-                onValueChange={(value) => {
-                  if (value === "auto") {
-                    onChange({
-                      ...data,
-                      episodeEventoId: null,
-                      episodeLinkMethod: "auto_last_open_service",
-                    });
-                    return;
-                  }
-
-                  if (value === "unlinked") {
-                    onChange({
-                      ...data,
-                      episodeEventoId: null,
-                      episodeLinkMethod: "unlinked",
-                    });
-                    return;
-                  }
-
-                  onChange({
-                    ...data,
-                    episodeEventoId: value,
-                    episodeLinkMethod: "manual",
-                  });
-                }}
-              >
-                <SelectTrigger id="repro-episode" className="w-full">
-                  <SelectValue placeholder="Automatico (ultimo servico aberto)" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="auto">
-                    Automatico (ultimo servico aberto)
-                  </SelectItem>
-                  {candidateEpisodes?.map((event) => (
-                    <SelectItem key={event.id} value={event.id}>
-                      {new Date(event.occurred_at).toLocaleDateString("pt-BR")} -{" "}
-                      {event.details.tipo.toUpperCase()}
-                    </SelectItem>
-                  ))}
-                  <SelectItem value="unlinked">Sem vinculo</SelectItem>
-                </SelectContent>
-              </Select>
-              <p className="text-xs leading-5 text-muted-foreground">
-                Em partos, esse vinculo ajuda a reaproveitar o reprodutor para
-                gerar a cria ja ligada ao pai correto.
-              </p>
-            </div>
-          </div>
-        ) : null}
+        
       </FormSection>
 
       {data.tipo === "cobertura" || data.tipo === "IA" ? (
@@ -327,7 +390,13 @@ export function ReproductionForm({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">Nao informada</SelectItem>
-                  {REPRODUCTION_TECHNIQUE_OPTIONS.map((option) => (
+                  {REPRODUCTION_TECHNIQUE_OPTIONS
+                    .filter(opt => {
+                       if (data.tipo === "cobertura") return opt.value.includes("monta") || opt.value.includes("repasse");
+                       if (data.tipo === "IA") return opt.value.includes("ia") || opt.value.includes("semen");
+                       return true;
+                    })
+                    .map((option) => (
                     <SelectItem key={option.value} value={option.value}>
                       {option.label}
                     </SelectItem>
@@ -340,6 +409,7 @@ export function ReproductionForm({
               <Label htmlFor="repro-tag">Registro do reprodutor</Label>
               <Select
                 value={data.reprodutorTag || "none"}
+                disabled={!!(data.machoId && data.machoId !== "none")}
                 onValueChange={(value) =>
                   updateField("reprodutorTag", value === "none" ? undefined : value)
                 }
@@ -349,7 +419,13 @@ export function ReproductionForm({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">Nao informado</SelectItem>
-                  {REPRODUCTION_BULL_REFERENCE_OPTIONS.map((option) => (
+                  {REPRODUCTION_BULL_REFERENCE_OPTIONS
+                    .filter(opt => {
+                       if (data.tipo === "cobertura") return !opt.value.includes("semen_lote");
+                       if (data.tipo === "IA") return opt.value.includes("semen_lote");
+                       return true;
+                    })
+                    .map((option) => (
                     <SelectItem key={option.value} value={option.value}>
                       {option.label}
                     </SelectItem>

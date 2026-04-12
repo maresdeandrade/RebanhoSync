@@ -12,6 +12,7 @@ export const TABLE_MAP: Record<string, string> = {
   categorias_zootecnicas: "state_categorias_zootecnicas", // FASE 2.3
   protocolos_sanitarios: "state_protocolos_sanitarios",
   protocolos_sanitarios_itens: "state_protocolos_sanitarios_itens",
+  fazenda_sanidade_config: "state_fazenda_sanidade_config",
 
   // Event Rails (Append-Only)
   eventos: "event_eventos",

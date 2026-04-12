@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
+  AlertTriangle,
   ArrowRightLeft,
   Beef,
   MapPin,
@@ -27,6 +28,10 @@ import { MetricCard } from "@/components/ui/metric-card";
 import { PageIntro } from "@/components/ui/page-intro";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { db } from "@/lib/offline/db";
+import {
+  buildRegulatoryOperationalReadModel,
+  loadRegulatorySurfaceSource,
+} from "@/lib/sanitario/regulatoryReadModel";
 
 export default function LoteDetalhe() {
   const { id } = useParams<{ id: string }>();
@@ -49,6 +54,17 @@ export default function LoteDetalhe() {
     () => (id ? db.state_animais.where("lote_id").equals(id).toArray() : []),
     [id],
   );
+  const regulatorySurfaceSource = useLiveQuery(
+    () => (lote ? loadRegulatorySurfaceSource(lote.fazenda_id) : null),
+    [lote?.fazenda_id],
+  );
+  const regulatoryReadModel = useMemo(
+    () =>
+      buildRegulatoryOperationalReadModel(
+        regulatorySurfaceSource ?? undefined,
+      ),
+    [regulatorySurfaceSource],
+  );
 
   if (!id || !lote) {
     return (
@@ -68,6 +84,12 @@ export default function LoteDetalhe() {
   }
 
   const animaisCount = animais?.length ?? 0;
+  const movementCompliance = regulatoryReadModel.flows.movementInternal;
+  const movementBlocked = movementCompliance.blockerCount > 0;
+  const movementWarning = movementCompliance.warningCount > 0;
+  const movementMessage =
+    movementCompliance.firstBlockerMessage ??
+    movementCompliance.firstWarningMessage;
 
   return (
     <div className="space-y-6">
@@ -80,6 +102,11 @@ export default function LoteDetalhe() {
             <StatusBadge tone="neutral">{lote.status ?? "Sem status"}</StatusBadge>
             <StatusBadge tone="info">{animaisCount} animal(is)</StatusBadge>
             {pasto ? <StatusBadge tone="neutral">Pasto {pasto.nome}</StatusBadge> : null}
+            {movementBlocked ? (
+              <StatusBadge tone="danger">Movimentacao restrita</StatusBadge>
+            ) : movementWarning ? (
+              <StatusBadge tone="warning">Movimentacao sob revisao</StatusBadge>
+            ) : null}
           </>
         }
         actions={
@@ -108,13 +135,44 @@ export default function LoteDetalhe() {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            <Button onClick={() => setShowAdicionarAnimais(true)}>
+            <Button
+              onClick={() => setShowAdicionarAnimais(true)}
+              disabled={movementBlocked}
+            >
               <UserPlus className="mr-2 h-4 w-4" />
               Adicionar animais
             </Button>
           </>
         }
       />
+
+      {movementMessage ? (
+        <Card
+          className={
+            movementBlocked
+              ? "border-amber-200 bg-amber-50/60"
+              : "border-warning/30 bg-warning-muted/70"
+          }
+        >
+          <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 text-warning" />
+                <p className="font-medium text-foreground">
+                  Overlay regulatorio impacta este lote
+                </p>
+              </div>
+              <p className="text-sm text-muted-foreground">{movementMessage}</p>
+            </div>
+            <Button
+              variant="outline"
+              onClick={() => navigate("/protocolos-sanitarios")}
+            >
+              Abrir overlay de conformidade
+            </Button>
+          </CardContent>
+        </Card>
+      ) : null}
 
       <div className="grid gap-4 md:grid-cols-3">
         <MetricCard

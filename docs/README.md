@@ -3,7 +3,7 @@
 Este diretorio concentra a documentacao normativa, os inventarios vivos do codigo e os materiais historicos de auditoria.
 
 > **Estado do produto:** Beta interno — MVP completo (7/7 dominios operacionais).  
-> **Ultima Atualizacao:** 2026-04-07
+> **Ultima Atualizacao:** 2026-04-11
 
 ---
 
@@ -12,7 +12,7 @@ Este diretorio concentra a documentacao normativa, os inventarios vivos do codig
 - [CURRENT_STATE.md](./CURRENT_STATE.md)
   — Snapshot executivo do repositorio e do produto.
 - [ARCHITECTURE.md](./ARCHITECTURE.md)
-  — Arquitetura geral, Two Rails, Offline-First, Taxonomia Canonica, Dexie v8.
+  — Arquitetura geral, Two Rails, Offline-First, Taxonomia Canonica, Dexie v11.
 - [OFFLINE.md](./OFFLINE.md)
   — Dexie stores (state/event/queue/metrics_events), fila, rollback e sync worker.
 - [CONTRACTS.md](./CONTRACTS.md)
@@ -37,7 +37,7 @@ Este diretorio concentra a documentacao normativa, os inventarios vivos do codig
 
 - [PROCESS.md](./PROCESS.md) — processo de desenvolvimento capability-centric
 - [IMPLEMENTATION_STATUS.md](./IMPLEMENTATION_STATUS.md) — matriz de capacidades
-- [TECH_DEBT.md](./TECH_DEBT.md) — gaps residuais (TD-021, TD-022, TD-023)
+- [TECH_DEBT.md](./TECH_DEBT.md) — gaps residuais e historico de fechamentos
 - [ROADMAP.md](./ROADMAP.md) — milestones e proximos passos
 
 ---

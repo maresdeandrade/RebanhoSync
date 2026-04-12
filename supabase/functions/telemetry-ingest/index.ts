@@ -94,6 +94,13 @@ Deno.serve(async (req: Request) => {
        );
     }
 
+    if (events.length > 100) {
+      return new Response(
+        JSON.stringify({ error: 'Batch de telemetria excede o limite de 100 eventos.' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Limpar o array para garantir que tem o que queremos
     const eventsToInsert = events.map(e => ({
        id: e.id,
@@ -111,7 +118,7 @@ Deno.serve(async (req: Request) => {
     // Inserir. Se houver falha de RLS (tenant mismatch), a query retornará erro ou ignorará os registros bloqueados.
     const { error: insertError, data } = await supabase
        .from('metrics_events')
-       .insert(eventsToInsert)
+       .upsert(eventsToInsert, { onConflict: 'id', ignoreDuplicates: true })
        .select('id');
 
     if (insertError) {

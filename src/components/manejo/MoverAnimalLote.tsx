@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 
 import { db } from "@/lib/offline/db";
@@ -6,6 +6,11 @@ import { useLotes } from "@/hooks/useLotes";
 import { createGesture } from "@/lib/offline/ops";
 import { buildEventGesture } from "@/lib/events/buildEventGesture";
 import { EventValidationError } from "@/lib/events/validators";
+import { getAnimalSanitaryAlertBlockReason } from "@/lib/sanitario/alerts";
+import {
+  buildRegulatoryOperationalReadModel,
+  loadRegulatorySurfaceSource,
+} from "@/lib/sanitario/regulatoryReadModel";
 import {
   Dialog,
   DialogContent,
@@ -53,8 +58,38 @@ export function MoverAnimalLote({
     () => (animal.lote_id ? db.state_lotes.get(animal.lote_id) : null),
     [animal.lote_id],
   );
+  const animalRecord = useLiveQuery(
+    () => db.state_animais.get(animal.id),
+    [animal.id],
+  );
+  const regulatorySurfaceSource = useLiveQuery(
+    () => loadRegulatorySurfaceSource(animal.fazenda_id),
+    [animal.fazenda_id],
+  );
+  const sanitaryBlockReason = animalRecord
+    ? getAnimalSanitaryAlertBlockReason(animalRecord)
+    : null;
+  const regulatoryReadModel = useMemo(
+    () =>
+      buildRegulatoryOperationalReadModel(
+        regulatorySurfaceSource ?? undefined,
+      ),
+    [regulatorySurfaceSource],
+  );
+  const movementComplianceGuards = regulatoryReadModel.flows.movementInternal;
+  const complianceBlockReason = movementComplianceGuards.blockers[0]?.message ?? null;
 
   const handleConfirm = async () => {
+    if (sanitaryBlockReason) {
+      showError(sanitaryBlockReason);
+      return;
+    }
+
+    if (complianceBlockReason) {
+      showError(complianceBlockReason);
+      return;
+    }
+
     if (!novoLoteId) {
       showError("Selecione o lote de destino.");
       return;
@@ -129,6 +164,17 @@ export function MoverAnimalLote({
               </SelectContent>
             </Select>
           </div>
+
+          {sanitaryBlockReason ? (
+            <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+              {sanitaryBlockReason}
+            </div>
+          ) : null}
+          {!sanitaryBlockReason && complianceBlockReason ? (
+            <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+              {complianceBlockReason}
+            </div>
+          ) : null}
         </FormSection>
 
         <DialogFooter>
@@ -137,7 +183,13 @@ export function MoverAnimalLote({
           </Button>
           <Button
             onClick={handleConfirm}
-            disabled={isSubmitting || !novoLoteId || novoLoteId === animal.lote_id}
+            disabled={
+              isSubmitting ||
+              !novoLoteId ||
+              novoLoteId === animal.lote_id ||
+              Boolean(sanitaryBlockReason) ||
+              Boolean(complianceBlockReason)
+            }
           >
             {isSubmitting ? "Movendo..." : "Confirmar movimentacao"}
           </Button>

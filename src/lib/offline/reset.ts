@@ -10,6 +10,7 @@ const FARM_SCOPED_TABLES = [
   db.state_categorias_zootecnicas,
   db.state_protocolos_sanitarios,
   db.state_protocolos_sanitarios_itens,
+  db.state_fazenda_sanidade_config,
   db.event_eventos,
   db.event_eventos_sanitario,
   db.event_eventos_pesagem,

@@ -77,38 +77,56 @@ export function buildPostPartumOps({
     const shouldRegisterUmbigo = draft.curaUmbigo && !umbigoAlreadyRecorded;
     let umbigoEventId: string | null = null;
 
+    const loteChanged = draft.loteId !== calf.lote_id;
+    const animalUpdateRecord: Record<string, unknown> = {
+      id: calf.id,
+      identificacao: draft.identificacao.trim() || calf.identificacao,
+      nome: draft.nome.trim() || null,
+      payload: {
+        ...currentPayload,
+        neonatal_setup: {
+          ...currentNeonatalSetup,
+          completed_at: occurredAt,
+          birth_event_id: birthEventId ?? currentBirthEventId,
+          mother_id: mother.id,
+          father_id: calf.pai_id ?? null,
+          initial_lote_id: draft.loteId,
+          initial_weight_kg:
+            pesoKg !== null
+              ? pesoKg
+              : (currentNeonatalSetup.initial_weight_kg ?? null),
+          initial_weight_recorded_at:
+            pesoKg !== null
+              ? occurredAt
+              : (currentNeonatalSetup.initial_weight_recorded_at ?? null),
+          umbigo_curado_at:
+            shouldRegisterUmbigo
+              ? occurredAt
+              : (currentNeonatalSetup.umbigo_curado_at ?? null),
+        },
+      },
+    };
+
+    if (loteChanged) {
+      animalUpdateRecord.lote_id = draft.loteId;
+      const movEvent = buildEventGesture({
+        dominio: "movimentacao",
+        fazendaId,
+        animalId: calf.id,
+        loteId: calf.lote_id,
+        occurredAt,
+        fromLoteId: calf.lote_id,
+        toLoteId: draft.loteId,
+        applyAnimalStateUpdate: false, // We're already updating the animal in this loop
+        observacoes: `Movimentacao inicial (pos-parto da matriz ${mother.identificacao})`,
+      });
+      ops.push(...movEvent.ops);
+    }
+
     ops.push({
       table: "animais",
       action: "UPDATE",
-      record: {
-        id: calf.id,
-        identificacao: draft.identificacao.trim() || calf.identificacao,
-        nome: draft.nome.trim() || null,
-        lote_id: draft.loteId,
-        payload: {
-          ...currentPayload,
-          neonatal_setup: {
-            ...currentNeonatalSetup,
-            completed_at: occurredAt,
-            birth_event_id: birthEventId ?? currentBirthEventId,
-            mother_id: mother.id,
-            father_id: calf.pai_id ?? null,
-            initial_lote_id: draft.loteId,
-            initial_weight_kg:
-              pesoKg !== null
-                ? pesoKg
-                : (currentNeonatalSetup.initial_weight_kg ?? null),
-            initial_weight_recorded_at:
-              pesoKg !== null
-                ? occurredAt
-                : (currentNeonatalSetup.initial_weight_recorded_at ?? null),
-            umbigo_curado_at:
-              shouldRegisterUmbigo
-                ? occurredAt
-                : (currentNeonatalSetup.umbigo_curado_at ?? null),
-          },
-        },
-      },
+      record: animalUpdateRecord,
     });
 
     if (pesoKg !== null) {

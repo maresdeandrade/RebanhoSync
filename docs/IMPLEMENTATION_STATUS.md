@@ -2,7 +2,7 @@
 
 > **Status:** Derivado (Rev D+)
 > **Baseline:** `b69d35f`
-> **Ultima Atualizacao:** 2026-04-07
+> **Ultima Atualizacao:** 2026-04-12
 > **Derivado por:** Auditoria técnica completa — código + migrations + testes como fonte de verdade
 
 Este documento registra o estado efetivo do RebanhoSync em abril de 2026, pós-fechamento de todos os TDs da lista aberta.
@@ -11,10 +11,10 @@ Este documento registra o estado efetivo do RebanhoSync em abril de 2026, pós-f
 
 - **Estagio do produto:** Beta interno — MVP completo e operacional.
 - **Core operacional:** sanitário, pesagem, movimentação, nutrição, reprodução, financeiro e agenda estão implementados e usáveis.
-- **Camadas consolidadas:** onboarding guiado, importação CSV, relatórios operacionais, telemetria local de piloto, modo de experiência da fazenda, dashboard e ficha reprodutiva dedicada, pós-parto neonatal, cria inicial, transições de rebanho.
+- **Camadas consolidadas:** onboarding guiado, importação CSV, relatórios operacionais, telemetria de piloto com flush remoto, modo de experiência da fazenda, dashboard e ficha reprodutiva dedicada, pós-parto neonatal, cria inicial, transições de rebanho.
 - **Qualidade local:** lint, test, build e pacote E2E guiados estão verdes.
 - **TDs anteriormente abertos:** todos fechados via migrations de março/2026.
-- **Gaps residuais:** observabilidade remota (telemetria local-only), `produtos_veterinarios` sem integração UI confirmada, docs com conflito de merge resolvidos nesta auditoria.
+- **Gaps residuais:** nenhum gap funcional ou de observabilidade aberto nesta revisão.
 
 ---
 
@@ -39,15 +39,15 @@ Este documento registra o estado efetivo do RebanhoSync em abril de 2026, pós-f
 
 ### Offline-First ✅ COMPLETO
 
-- Dexie v8 com stores de estado, eventos, fila e métricas locais.
+- Dexie v11 com stores de estado, eventos, fila, métricas locais, cache do catálogo veterinário e cache do catálogo regulatório oficial.
 - Gestos atômicos com `queue_gestures` e `queue_ops`.
 - Aplicação otimista, rollback e DLQ.
 - Worker de sync com `sync-batch`.
 - Auto-purge de rejeições (TTL 7d, a cada 6h).
-- Store `metrics_events` para telemetria local de piloto.
+- Store `metrics_events` como buffer local append-only para telemetria de piloto, com flush remoto periódico.
 
 **Evidência principal:**
-- `src/lib/offline/db.ts` — 20+ stores Dexie (v8 com `metrics_events`)
+- `src/lib/offline/db.ts` — 20+ stores Dexie (v11 com `metrics_events`, `catalog_produtos_veterinarios`, `catalogo_protocolos_oficiais*` e `state_fazenda_sanidade_config`)
 - `src/lib/offline/syncWorker.ts` — pipeline completo + auto-purge
 - `src/lib/offline/rejections.ts` — API DLQ index-backed
 - `src/lib/offline/pull.ts` — reconciliação remota
@@ -58,9 +58,9 @@ Este documento registra o estado efetivo do RebanhoSync em abril de 2026, pós-f
 
 | Domínio | Estado | Evidência principal |
 | --- | --- | --- |
-| `sanitario.registro` | Completo — catálogo `produtos_veterinarios` criado | `src/pages/Registrar.tsx`, `supabase/migrations/20260308230824_produtos_veterinarios_ui.sql` |
+| `sanitario.registro` | Completo — catálogo `produtos_veterinarios` e biblioteca canônica de protocolos com `calendario_base` estruturado em registro, protocolo e agenda | `src/pages/Registrar.tsx`, `src/pages/ProtocolosSanitarios.tsx`, `src/lib/sanitario/baseProtocols.ts` |
 | `sanitario.historico` | Completo | `src/pages/Eventos.tsx` |
-| `sanitario.agenda_link` | Completo | `supabase/migrations/0028_sanitario_agenda_engine.sql` |
+| `sanitario.agenda_link` | Completo — motor declarativo por `calendario_base`, campanha, janela etaria e ancora operacional | `supabase/migrations/20260411103000_sanitario_calendario_base_declarative_engine.sql` |
 | `pesagem.registro` | Completo | `src/pages/Registrar.tsx`, `src/pages/AnimalDetalhe.tsx` |
 | `pesagem.historico` | Completo — **TD-015 CLOSED** via `vw_animal_gmd` | `supabase/migrations/20260308230811_indexes_performance_gmd.sql` |
 | `nutricao.registro` | Completo | `src/pages/Registrar.tsx`, `src/pages/Eventos.tsx` |
@@ -76,7 +76,7 @@ Este documento registra o estado efetivo do RebanhoSync em abril de 2026, pós-f
 | `agenda.gerar` | Completo | `src/pages/Agenda.tsx`, `supabase/migrations/0028_sanitario_agenda_engine.sql` |
 | `agenda.concluir` | Completo | `src/pages/Agenda.tsx`, `src/lib/sanitario/service.ts` |
 | `agenda.dedup` | Completo | `docs/CONTRACTS.md`, `supabase/functions/sync-batch/` |
-| `agenda.recalculo` | Completo | `supabase/migrations/0028_sanitario_agenda_engine.sql` |
+| `agenda.recalculo` | Completo — recompute limpa e reconstrui pendencias automaticas do escopo antes de reaplicar o motor | `supabase/migrations/20260411103000_sanitario_calendario_base_declarative_engine.sql` |
 
 **Capability Score:** 19/19 = **100%** ✅
 
@@ -97,7 +97,9 @@ Este documento registra o estado efetivo do RebanhoSync em abril de 2026, pós-f
 - Apresentação visual por categoria/estágio: `src/components/animals/`
 - Agrupamento matriz-cria na listagem: `src/pages/Animais.tsx`, `src/lib/animals/familyOrder.ts`
 - Elegibilidade reprodutiva por categoria: `src/lib/animals/presentation.ts`
-- Telemetria local de piloto: `src/lib/telemetry/` — store `metrics_events` (Dexie v8)
+- Telemetria de piloto com buffer local + flush remoto: `src/lib/telemetry/`, `supabase/functions/telemetry-ingest/`, `src/components/settings/SyncHealthPanel.tsx`
+- Overlay regulatorio operacional guiado: `src/components/sanitario/RegulatoryOverlayManager.tsx`, `src/lib/sanitario/compliance.ts`
+- Catálogo veterinário com cache local e vínculo estruturado no payload sanitário: `src/lib/sanitario/products.ts`
 - Modo de experiência por fazenda: `src/lib/farms/experienceMode.ts`
 - Taxonomia canônica bovina: `src/lib/animals/taxonomy.ts` + contrato v1 + view SQL
 
@@ -108,7 +110,7 @@ Este documento registra o estado efetivo do RebanhoSync em abril de 2026, pós-f
 - `pnpm run lint`: verde
 - `pnpm test`: verde
 - `pnpm run build`: verde
-- `pnpm run test:e2e`: cobre onboarding, importações, relatorios
+- `pnpm run test:e2e`: cobre onboarding, importações, relatorios e fluxo parto -> pos-parto -> cria inicial
 - Unitários: `src/lib/animals/__tests__/` (7 arquivos), `src/lib/offline/__tests__/` (6 arquivos), `src/pages/__tests__/` (12 arquivos)
 
 ---
@@ -136,9 +138,7 @@ Este documento registra o estado efetivo do RebanhoSync em abril de 2026, pós-f
 
 | Item | Tipo | Impacto | Próxima ação |
 | --- | --- | --- | --- |
-| Telemetria local-only | Observabilidade | Sem visibilidade remota de erros de sync | Avaliar Edge Function de coleta ou integração Supabase |
-| `produtos_veterinarios` sem integração UI confirmada | UX | Catálogo existe mas autocomplete em Registrar não foi confirmado | Verificar `src/pages/Registrar.tsx` |
-| Pós-parto (AnimalPosParto + AnimalCriaInicial) sem cobertura E2E | Testes | Fluxo novo não coberto no pacote `test:e2e` | Adicionar testes guiados |
+| Nenhum gap residual aberto | Observabilidade | Pipeline remoto de telemetria, ingestão idempotente e painel por fazenda implementados | Manter monitoramento e evoluir analíticos quando houver demanda |
 
 ---
 
@@ -175,3 +175,109 @@ Este documento registra o estado efetivo do RebanhoSync em abril de 2026, pós-f
 - [TECH_DEBT.md](./TECH_DEBT.md)
 - [ROADMAP.md](./ROADMAP.md)
 - [CURRENT_STATE.md](./CURRENT_STATE.md)
+
+## 8. Update 2026-04-09
+
+- Home now surfaces prioritized sanitary attention based on due date, mandatory flags and veterinary/compliance requirements.
+- Dashboard administrativo now tracks `sanitario critico` separately from generic agenda backlog.
+- Agenda now exposes group-level badges, with type + due buckets when grouped by animal and animal composition when grouped by event.
+- Agenda event grouping now uses a hardened signature, prioritizing protocol version, protocol item and milestone metadata before generic product fallback.
+- Agenda groups are now ordered by urgency, pushing overdue and due-today cards ahead of future-only or closed-only groups.
+- Agenda summary badges now act as quick filters, allowing drill-down by type, due bucket and animal composition directly from group cards.
+- Agenda summary badges now also drive contextual navigation, keeping the selected quick filter active while scrolling and highlighting the matching rows of the clicked group.
+- Agenda groups are now collapsed by default, auto-expand on contextual badge navigation, and show `visible/total` counts to reduce card noise without losing situational awareness.
+- Expanded agenda groups can now temporarily reveal their full row set without clearing the active quick filters, making local comparison easier during triage.
+- Agenda group headers now surface the recommended next action and offer a direct CTA into the registration flow, even while the group remains collapsed.
+- Agenda now persists group mode, filters, expanded groups, reveal state and contextual focus per user/farm, so triage resumes from the same operational point.
+- Agenda interaction coverage now validates persisted rehydration and the badge -> focus -> expand -> reveal flow at page level.
+- Agenda mobile density is now reduced with compact badge overflow (`+N`) and condensed secondary group actions under a small-screen menu.
+- Agenda now exposes a critical shortcut bar that jumps between overdue groups in the current recorte, keeping contextual focus and auto-expansion aligned with urgency ordering.
+- Relatorios operacionais now carry sanitary priority context, keeping the same rule set used by agenda and home.
+- Perfil + AppShell now drive local sanitary reminders with quiet hours, urgency filters and `experience_mode` awareness.
+- `produtos_veterinarios` remains the canonical product catalog reference inside protocol, agenda and event flows.
+- ProtocolosSanitarios now includes a farm-level editor for custom protocols and steps, with `experience_mode` gating, explicit `calendario_base` editing and structured product metadata updates.
+- The standard sanitary protocol library is now canonicalized in `src/lib/sanitario/baseProtocols.ts`, removing protocol base definitions from the UI layer.
+- Standard protocols and farm protocol items now carry structured `calendario_base` metadata, and `Registrar` / `FarmProtocolManager` describe schedule semantics from that payload instead of raw `intervalo_dias` alone.
+- `supabase/migrations/20260411103000_sanitario_calendario_base_declarative_engine.sql` now makes `payload.calendario_base` the effective source of truth for sanitary agenda generation, supporting campaign months, age windows, rolling intervals and operational anchors such as birth, weaning and dry-off.
+- The sanitary recompute wrappers now rebuild automatic pending tasks inside the recalculated scope before reapplying the declarative engine, preventing stale sanitary agenda rows from surviving protocol, risk or animal-payload changes.
+- `src/pages/Agenda.tsx`, `src/lib/reports/operationalSummary.ts` and `src/pages/Relatorios.tsx` now reuse the same calendar-base semantics in read-only surfaces, projecting the declarative schedule label instead of collapsing sanitary periodicity to raw day intervals.
+- `src/pages/Agenda.tsx` now also turns the declarative `calendario_base` mode into a persisted quick filter and row-level operational badge, while `src/lib/reports/operationalSummary.ts` / `src/pages/Relatorios.tsx` project mode and anchor into summary/export surfaces.
+- `src/lib/sanitario/attention.ts` now carries declarative calendar mode/anchor semantics into the shared sanitary-attention read model, and `src/pages/Home.tsx` / `src/pages/Dashboard.tsx` expose analytical cuts that deep-link into `/agenda?calendarMode=...`.
+- `src/pages/Agenda.tsx` now also accepts `calendarAnchor` as persisted filter/query param, and `src/pages/Dashboard.tsx` exposes deep links by operational anchor so birth-, weaning-, calendar- and dry-off-driven schedules open directly in the right sanitary recorte.
+- `src/pages/Animais.tsx` and `src/pages/AnimalDetalhe.tsx` now reuse the same declarative sanitary schedule semantics, exposing `mode`, `anchor` and `label` in the animal-centric next-step view; `Dashboard` also links these cuts directly into `/animais?calendarMode=...` and `/animais?calendarAnchor=...`.
+- The sanitary domain now has a global regulatory foundation: `catalogo_protocolos_oficiais`, `catalogo_protocolos_oficiais_itens`, `catalogo_doencas_notificaveis` and tenant-scoped `fazenda_sanidade_config`.
+- `src/lib/sanitario/officialCatalog.ts` now selects the official pack by `modo_calendario`, state overlay and farm risk, and materializes only the portions compatible with the current `protocolos_sanitarios` execution model.
+- `src/pages/ProtocolosSanitarios.tsx` now exposes a farm-level official pack activation surface, and `src/components/sanitario/OfficialSanitaryPackManager.tsx` lets owner/manager configure UF, mode, aptitude, system and risk before materializing the selected regulatory base.
+- Reapplying the official pack now deactivates official protocols that leave the current selection, preventing stale recommended content from surviving after a downgrade to `minimo_legal`.
+- `src/pages/Registrar.tsx` now distinguishes internal lote movement from external transit, persists GTA/e-GTA checklist metadata on the base event, and blocks interstate reproduction transit without the PNCEBT documentary pre-check.
+- `src/lib/sanitario/transit.ts` centralizes transit checklist validation/payload logic, and `src/lib/finance/transactions.ts` now accepts extra structured payload so sale events can keep transit compliance context.
+- `src/lib/sanitario/alerts.ts` now centralizes sanitary suspicion state, event payload description and local movement blocking semantics for animal-centric sanitary alerts.
+- `src/pages/AnimalDetalhe.tsx` now exposes guided open/close suspicion dialogs backed by the official disease catalog, writes append-only `alerta_sanitario` events and keeps the mutable block state in `animais.payload.sanidade_alerta`.
+- `src/pages/Registrar.tsx`, `src/components/manejo/MoverAnimalLote.tsx`, `src/components/manejo/AdicionarAnimaisLote.tsx` and `src/pages/AnimaisTransicoes.tsx` now enforce local movement blocking whenever the selected animal already has an open sanitary suspicion.
+- `src/components/sanitario/OfficialSanitaryPackManager.tsx`, `src/components/sanitario/RegulatoryOverlayManager.tsx` and `src/components/sanitario/FarmProtocolManager.tsx` now separate the protocols tab into three layers: official regulatory base, official operational overlay and farm operational protocols.
+- `src/lib/sanitario/compliance.ts` now derives the active procedural overlays from the selected official pack, persists mutable compliance runtime state in `fazenda_sanidade_config.payload.overlay_runtime` and builds append-only event payloads for the new `conformidade` domain.
+- `src/components/sanitario/RegulatoryOverlayManager.tsx` now lets owner/manager execute guided runtime checks for ruminant `feed-ban` and operational compliance checklists, instead of leaving those overlays as documentation-only.
+- `src/lib/events/types.ts`, `src/lib/events/buildEventGesture.ts` and `src/lib/events/validators/conformidade.ts` now support farm-level append-only `conformidade` events without forcing an `animalId` or `loteId`.
+- `src/pages/Eventos.tsx`, `src/pages/Home.tsx`, `src/pages/Animais.tsx`, `src/pages/Agenda.tsx` and `src/lib/reports/operationalSummary.ts` now recognize the new `conformidade` domain in operational history and summary surfaces.
+- `src/lib/sanitario/complianceAttention.ts` now summarizes procedural overlay urgency for the agenda, distinguishing `feed-ban`, critical checklists and generic pending compliance.
+- `src/pages/Agenda.tsx` now pulls `fazenda_sanidade_config` together with the local official catalog cache, surfaces compliance badges in the page intro, shows a dedicated operational alert card for `overlay_runtime`, and propagates a compact restriction badge into open group headers.
+- Agenda empty-state handling now keeps the compliance alert visible even when there are no `agenda_itens`, preventing the regulatory overlay from disappearing behind an empty schedule.
+- `src/lib/sanitario/complianceGuards.ts` now derives contextual blockers and warnings from the active `overlay_runtime`, separating nutrition and movement semantics before they reach the UI.
+- `src/pages/Registrar.tsx` now blocks nutrition when `feed-ban` or critical water/hygiene checks remain open, and also blocks movement/sale flows when quarantine or documentary overlays required by the current context are still pending.
+- `src/components/manejo/MoverAnimalLote.tsx`, `src/components/manejo/AdicionarAnimaisLote.tsx` and `src/pages/AnimaisTransicoes.tsx` now enforce the same movement-side compliance blockers, so auxiliary lote flows cannot bypass the official overlay runtime.
+- `src/lib/sanitario/regulatoryReadModel.ts` now materializes a shared regulatory read model, combining active overlay entries, compliance-attention summary and contextual flow guards for nutrition, internal movement and external transit/sale.
+- `src/pages/Home.tsx`, `src/pages/Dashboard.tsx`, `src/pages/Financeiro.tsx` and `src/lib/reports/operationalSummary.ts` now reuse that same read model, so derived surfaces expose the identical regulatory state instead of reinterpreting the official overlay independently.
+- `src/pages/Relatorios.tsx` now includes regulatory compliance in the operational summary itself, and the CSV/print export path also carries those pending items and blocker counts.
+- `src/pages/Eventos.tsx` now reuses that same read model to surface open compliance, movement/nutrition impact badges and contextual CTA/filtering inside operational history, instead of treating `conformidade` as an isolated append-only domain.
+- `src/pages/LoteDetalhe.tsx` now anticipates internal-movement restrictions from the shared read model, surfaces `Movimentacao restrita` or `sob revisao` in the page intro and disables the primary `Adicionar animais` action when the official overlay is blocking lote changes.
+- `src/lib/sanitario/regulatoryReadModel.ts` now also derives analytical cuts by subarea and operational impact, keeping `feed-ban`, quarantine, documentary and water/hygiene summaries tied to the same guard semantics already used in runtime blockers.
+- `src/pages/Dashboard.tsx` now exposes those analytical cuts as a dedicated regulatory panel, and each card opens `/protocolos-sanitarios` with `overlaySubarea` or `overlayImpact` preselected instead of forcing a manual search through the full overlay.
+- `src/components/sanitario/RegulatoryOverlayManager.tsx` now reads those analytical query params, applies the corresponding filtered recorte to runtime checklist cards and lets the user clear the analytical focus back to the full official overlay.
+- `src/lib/reports/operationalSummary.ts` and `src/pages/Relatorios.tsx` now project those same analytical cuts into the operational summary, CSV/print payloads and CTA links that open either the official overlay or the historical surface already filtered.
+- `src/pages/Eventos.tsx` now honors `dominio`, `overlaySubarea` and `overlayImpact` query params, so regulatory CTAs can land directly on a specialized compliance history cut instead of only toggling the generic domain filter.
+- `src/lib/sanitario/regulatoryAnimals.ts` now projects the same shared regulatory read model into an animal-centric profile, including row-level restriction badges, impact/subarea matching and dedicated CSV export for the affected animal cut.
+- `src/pages/Animais.tsx` now supports `overlaySubarea` and `overlayImpact`, exposes animal-centric regulatory filters, highlights restricted animals in the list and exports the current impacted cut without inventing a new rule layer outside the shared read model.
+- `src/pages/Dashboard.tsx` and `src/pages/Relatorios.tsx` now also link into `/animais` with the same analytical query params, completing the navigation path between dashboard, reports, official overlay, history and animal list.
+- Focused sanitary/event coverage now validates sanitary alert payload round-trip, validator/build behavior for the new `alerta_sanitario` domain and block reasoning helpers.
+- The legacy standard sanitary UI library no longer exposes aftosa as a default vaccination calendar.
+- Focused sanitary coverage now validates calendar-base round-trip, standard protocol invariants and preservation of structured payload metadata during farm-level customization.
+- Focused sanitary coverage now also validates official catalog selection by legal status, state overlay and farm-risk gates.
+- Focused sanitary coverage now validates official pack reapplication and the deactivation of stale official protocols.
+- Focused sanitary/finance coverage now validates transit checklist rules and structured transit payload propagation in sale events.
+- Focused sanitary/event coverage now also validates farm-level `conformidade` event construction and the runtime state round-trip for procedural overlays.
+- Focused agenda/sanitary coverage now validates compliance-attention severity rules, the agenda projection of official overlay restrictions and the blocker derivation used by nutrition/movement flows.
+- Focused sanitary/reporting coverage now also validates the shared regulatory read model and the projection of regulatory compliance into the operational summary.
+- Focused page/reporting coverage now also validates lote-level anticipation of regulatory movement restrictions in `src/pages/__tests__/LoteDetalhe.test.tsx`, the regulatory overlay projection and query-driven analytical recorte inside `src/pages/__tests__/Eventos.test.tsx`, dashboard analytical cuts in `src/pages/__tests__/Dashboard.test.tsx`, query-driven overlay filtering in `src/components/sanitario/__tests__/RegulatoryOverlayManager.test.tsx` and analytical export rows in `src/lib/reports/__tests__/operationalSummary.test.ts`.
+- Focused animal/regulatory coverage now also validates animal-centric restriction projection and dedicated export in `src/lib/sanitario/__tests__/regulatoryAnimals.test.ts` plus the query-driven restricted list in `src/pages/__tests__/Animais.test.tsx`.
+- Local validation for this update: `pnpm exec eslint` (changed files), `pnpm exec tsc --noEmit`, `pnpm run build`, `pnpm run lint`, and focused `vitest` suites for agenda/sanitario/relatorios.
+
+### Agenda UX Delivery Map
+
+This update turned `agenda.*` from a flat list into an operational triage surface with progressive disclosure.
+
+**Delivered phases**
+
+1. Group summaries: badges by type + due bucket when grouped by animal, and animal composition when grouped by event.
+2. Event grouping hardening: canonical signature prioritizing protocol version, protocol item and milestone metadata before generic fallback.
+3. Urgency ordering: overdue groups first, then due-today, future-only and closed-only groups.
+4. Quick filters: summary badges now act as drill-down controls.
+5. Contextual navigation: clicking a badge keeps the filter active, scrolls to the matching row set and highlights the selected group.
+6. Progressive disclosure: groups are collapsed by default, expose `visible/total` counts, and can reveal the full group locally without clearing global filters.
+7. Group-level action guidance: headers now surface the recommended next action and provide a direct CTA into the execution flow.
+8. Persisted triage state: group mode, active filters, expanded groups, reveal state and contextual focus are restored per user/farm.
+9. Page interaction coverage: agenda tests now validate persisted rehydration and the main triage drill-down path.
+10. Mobile density refinement: small screens now cap visible summary badges, emit a `+N` overflow marker and collapse secondary group actions into a compact menu.
+11. Critical shortcut navigation: overdue groups in the current recorte can now be traversed directly from a top-level shortcut bar.
+
+**Interconnections**
+
+- Data ingress into agenda: `src/pages/Registrar.tsx`, `src/pages/ProtocolosSanitarios.tsx`, `src/components/sanitario/FarmProtocolManager.tsx`
+- Shared agenda semantics: `src/lib/agenda/groupSummaries.ts`, `src/lib/agenda/groupOrdering.ts`, `src/lib/agenda/grouping.ts`, `src/lib/agenda/storage.ts`
+- Shared sanitary priority semantics: `src/lib/sanitario/protocolRules.ts`, `src/lib/sanitario/attention.ts`
+- Offline and sync substrate: `src/lib/offline/db.ts`, `src/lib/offline/pull.ts`, `src/lib/offline/ops.ts`
+- Reused operational surfaces: `src/pages/Agenda.tsx`, `src/pages/Home.tsx`, `src/pages/Dashboard.tsx`, `src/pages/Relatorios.tsx`
+- Interaction coverage: `src/pages/__tests__/Agenda.test.tsx`, `src/lib/agenda/__tests__/storage.test.ts`
+
+**Recommended next increments**
+
+- Add keyboard shortcuts for the critical shortcut bar.

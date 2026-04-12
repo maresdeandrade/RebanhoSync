@@ -24,11 +24,11 @@ Working tree verificado limpo. Conflitos de merge resolvidos em `IMPLEMENTATION_
 | Documento | Mudança Principal |
 | --- | --- |
 | `docs/IMPLEMENTATION_STATUS.md` | Reescrito — conflitos resolvidos, todos TDs CLOSED, capability score 100% |
-| `docs/TECH_DEBT.md` | Reescrito — conflitos resolvidos, 3 novos TDs residuais (021-023) |
-| `docs/ROADMAP.md` | Reescrito — conflitos resolvidos, Milestones 3-5 para próxima fase |
+| `docs/TECH_DEBT.md` | Atualizado — TD-021 fechado e catalogo residual zerado |
+| `docs/ROADMAP.md` | Atualizado — Milestone 3 concluido e historico alinhado |
 | `docs/CURRENT_STATE.md` | Atualizado — fase beta interno, novas tabelas/stores documentadas |
 | `docs/ROUTES.md` | Adicionadas rotas `/animais/transicoes` e `/animais/:id/cria-inicial` |
-| `docs/OFFLINE.md` | Store `metrics_events` (Dexie v8) documentada |
+| `docs/OFFLINE.md` | Store `metrics_events` (Dexie v11) documentada com flush remoto |
 | `docs/DB.md` | `produtos_veterinarios` e `vw_animal_gmd` documentadas |
 | `docs/RLS.md` | TD-003 marcado RESOLVIDO; nota sobre tabela global |
 | `docs/E2E_MVP.md` | Fluxo 9 (pós-parto neonatal) adicionado |
@@ -59,7 +59,7 @@ IMPLEMENTATION_STATUS (Matriz Analítica)
 | --- | --- |
 | Capabilities no Catalog | 19 |
 | TDs OPEN (lista original) | 0 (todos CLOSED) |
-| TDs OPEN residuais (novos) | 3 (TD-021, TD-022, TD-023) |
+| TDs OPEN residuais (novos) | 0 |
 | TDs CLOSED da lista original | 10/10 (100%) |
 | Catálogo coberto na Matriz | 19/19 (100%) |
 | Gaps originais fechados | 10/10 (100%) |
@@ -82,11 +82,7 @@ IMPLEMENTATION_STATUS (Matriz Analítica)
 
 ### 3.3 TDs Residuais (Pós-Auditoria Abril/2026)
 
-| `capability_id` | TD | Tipo | Status |
-| --- | --- | --- | --- |
-| `infra.observabilidade` | TD-021 | Infra | OPEN |
-| `sanitario.registro` (UI autocomplete) | TD-022 | Catalog | OPEN |
-| `reproducao.registro` (E2E coverage) | TD-023 | Tests | OPEN |
+Nenhum TD residual permanece aberto nesta revisao.
 
 ### 3.4 Mapping Ambiguity
 
@@ -116,9 +112,9 @@ Match funcional: ✅
 ### 4.2 ROADMAP items == TECH_DEBT OPEN
 
 ```
-ROADMAP Milestones 3-5: {TD-021, TD-022, TD-023}
-TECH_DEBT OPEN: {TD-021, TD-022, TD-023}
-Match: ✅ (3/3)
+ROADMAP Milestones abertos: {}
+TECH_DEBT OPEN: {}
+Match: ✅ (0/0)
 ```
 
 ### 4.3 Catalog Uniqueness
@@ -186,9 +182,9 @@ Auditoria técnica completa em abril/2026:
 
 - **Todos os TDs originais:** CLOSED (10/10 via migrations março/2026)
 - **Capability Score:** 19/19 (100%) — sem gaps funcionais abertos
-- **3 novos TDs residuais** mapeados (observabilidade, autocomplete UI, cobertura E2E)
+- **TDs residuais fechados** e reconciliados com `TECH_DEBT.md` e `ROADMAP.md`
 - **Conflitos de merge** em 3 documentos críticos resolvidos
 - **12+ documentos** atualizados para refletir estado beta interno
-- Working tree: CLEAN após resolução
+- Working tree limpo na auditoria original; o estado atual deve ser lido via `git status` na branch ativa
 
-Próximos passos: Milestones 3-5 conforme `ROADMAP.md`.
+Próximos passos: seguir apenas milestones evolutivos ainda abertos em `ROADMAP.md`.

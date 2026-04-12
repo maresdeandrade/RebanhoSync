@@ -202,7 +202,6 @@ export function buildCalfJourneyAgendaOps({
           produto: milestone.title,
         },
         source_evento_id: birthEventId,
-        source_task_id: null,
         source_tx_id: null,
         source_client_op_id: null,
         protocol_item_version_id: null,

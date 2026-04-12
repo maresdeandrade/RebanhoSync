@@ -104,7 +104,7 @@ INSERT/UPDATE/DELETE: has_membership(fazenda_id) (operacional)
 ---
 
 ## 6) Integridade: Append-Only e Triggers
-#### 6.1 Regra de imutabilidade
+### 6.1 Regra de imutabilidade
 Eventos representam “fatos” e não devem ser alterados após inseridos. O banco aplica isso com trigger(s) do tipo prevent_business_update.
 
 Padrão esperado:
@@ -176,8 +176,8 @@ Sintoma original: Policy de DELETE não filtrava por role.
 Status: RESOLVIDO via migration 20260308230748_rbac_delete_hardening_animais.sql
 Solução: policies separadas: animais_insert_update_by_membership (todos os membros) e animais_delete_by_role (somente owner/manager).
 
-Nota — Tabela global produtos_veterinarios:
-Tabela global (sem fazenda_id), RLS SELECT para authenticated. Sem policy de escrita direta. Catalogão compartilhado entre tenants. Se precisar crescer, criar RPC SECURITY DEFINER.
+Nota — Tabelas globais de catalogo:
+`produtos_veterinarios`, `catalogo_protocolos_oficiais`, `catalogo_protocolos_oficiais_itens` e `catalogo_doencas_notificaveis` sao globais (sem fazenda_id), com RLS SELECT para authenticated e sem policy de escrita direta. A camada tenant-scoped correspondente e `fazenda_sanidade_config`.
 
 ---
 

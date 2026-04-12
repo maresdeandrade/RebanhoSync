@@ -81,6 +81,13 @@ describe("finance transactions", () => {
       totalAmount: 7200,
       weightMode: "lote",
       lotWeightKg: 510,
+      payload: {
+        transito_sanitario: {
+          enabled: true,
+          purpose: "venda",
+          gta_number: "GTA-2026-01",
+        },
+      },
       selectedAnimals: [
         { id: "animal-1", identificacao: "BR-001", loteId: "lote-a" },
         { id: "animal-2", identificacao: "BR-002", loteId: "lote-a" },
@@ -98,5 +105,12 @@ describe("finance transactions", () => {
         (op) => op.table === "eventos_financeiro",
       )?.record.valor_total,
     ).toBe(7200);
+    expect(result.ops[0]?.record.payload).toMatchObject({
+      transito_sanitario: {
+        enabled: true,
+        purpose: "venda",
+        gta_number: "GTA-2026-01",
+      },
+    });
   });
 });

@@ -1,6 +1,7 @@
 import type { OperationInput } from "@/lib/offline/types";
 import type { EventGestureBuildResult, EventInput } from "./types";
 import { assertValidEventInput } from "./validators";
+import { buildVeterinaryProductMetadata } from "@/lib/sanitario/products";
 
 const toIsoDate = (value: string): string => {
   return value.split("T")[0];
@@ -43,9 +44,25 @@ export const buildEventGesture = (input: EventInput): EventGestureBuildResult =>
         evento_id: eventId,
         tipo: input.tipo,
         produto: input.produto.trim(),
-        payload: {},
+        payload: buildVeterinaryProductMetadata({
+          selectedProduct: input.produtoRef,
+          typedName: input.produto,
+        }),
       },
     });
+  } else if (input.dominio === "alerta_sanitario") {
+    if (input.animalId) {
+      ops.push({
+        table: "animais",
+        action: "UPDATE",
+        record: {
+          id: input.animalId,
+          payload: input.animalPayload,
+        },
+      });
+    }
+  } else if (input.dominio === "conformidade") {
+    // Compliance overlays live entirely in the base event payload for now.
   } else if (input.dominio === "pesagem") {
     ops.push({
       table: "eventos_pesagem",
@@ -136,6 +153,35 @@ export const buildEventGesture = (input: EventInput): EventGestureBuildResult =>
         payload: input.payloadData ?? {},
       },
     });
+  } else if (input.dominio === "obito") {
+    // Note: óbito is stored in the base 'eventos' table with payload including causa.
+    // We add an UPDATE to the animal record to mark it as dead.
+    if (input.animalId) {
+      ops.push({
+        table: "animais",
+        action: "UPDATE",
+        record: {
+          id: input.animalId,
+          status: "morto",
+          data_saida: toIsoDate(input.dataObito ?? occurredAt),
+          lote_id: null, // Clear lote on death
+        },
+      });
+
+      // Automatic agenda cancellation
+      if (input.cancelAgendaIds && input.cancelAgendaIds.length > 0) {
+        input.cancelAgendaIds.forEach((taskId) => {
+          ops.push({
+            table: "state_agenda_itens",
+            action: "UPDATE",
+            record: {
+              id: taskId,
+              status: "cancelado",
+            },
+          });
+        });
+      }
+    }
   }
 
   return { eventId, ops };

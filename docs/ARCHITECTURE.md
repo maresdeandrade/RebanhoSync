@@ -2,7 +2,7 @@
 
 > **Status:** Normativo
 > **Fonte de Verdade:** Codigo fonte e migrations
-> **Ultima Atualizacao:** 2026-04-07
+> **Ultima Atualizacao:** 2026-04-11
 
 Este documento consolida os principios arquiteturais do RebanhoSync: Two Rails, Offline-First, isolamento por fazenda e a derivacao canonica da taxonomia bovina.
 
@@ -17,8 +17,9 @@ Objetivos estruturais:
 - manter operacao offline-first
 - separar fatos passados de intencoes futuras
 - isolar tudo por `fazenda_id` (excecao documentada: `produtos_veterinarios` — catalogo global, ver ADR-0002)
+- manter catalogos globais fora do `sync-batch`, com cache local quando a operacao de campo precisa fallback offline
 - derivar classificacoes a partir de fatos, nao de labels persistidos
-- coletar telemetria local de piloto em `metrics_events` (sem envio remoto no estado atual)
+- coletar telemetria de piloto em `metrics_events`, mantendo buffer local append-only com flush remoto periodico
 
 ---
 
@@ -38,6 +39,24 @@ Objetivos estruturais:
 - correcoes: por contra-lancamento, nunca por update de negocio
 
 Nao existe FK dura entre agenda e eventos. O vinculo e logico por `source_task_id` e `source_evento_id`.
+
+---
+
+## 2.1 Catalogo Regulatorio Global
+
+O sanitario agora opera com uma camada global de conteudo regulatorio e uma camada tenant-scoped de ativacao.
+
+Camadas:
+
+- conteudo global: `catalogo_protocolos_oficiais`, `catalogo_protocolos_oficiais_itens`, `catalogo_doencas_notificaveis`
+- configuracao da fazenda: `fazenda_sanidade_config`
+- materializacao operacional: `protocolos_sanitarios`, `protocolos_sanitarios_itens`, `agenda_itens` e `eventos`
+
+Principios:
+
+- o pack oficial nao fica hardcoded na UI da fazenda
+- o app seleciona nucleo federal + overlay estadual + ajuste por risco da fazenda
+- apenas itens materializaveis no motor atual viram protocolo/agendamento; obrigacoes administrativas e checklists permanecem como conteudo regulatorio ativado
 
 ---
 
@@ -153,12 +172,12 @@ Precedencia de writer:
 6. em rejeicao, o cliente executa rollback local por `before_snapshot` (ordem reversa)
 7. `queue_rejections` recebe o erro com TTL 7 dias para consulta de diagnostico
 
-### Dexie.js v4 — Schema v8 (4 categorias)
+### Dexie.js v4 — Schema v11 (4 categorias)
 
 - `state_*` (9 stores): replica mutavel do estado atual
 - `event_*` (7 stores): log append-only de eventos ocorridos
 - `queue_*` (3 stores): fila transacional + DLQ
-- `metrics_events` (1 store): telemetria local de piloto — append-only, sem sync remoto
+- `metrics_events` (1 store): telemetria de piloto — append-only local, com upload remoto periodico via `telemetry-ingest`
 
 ---
 

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "@/lib/offline/db";
 import { createGesture } from "@/lib/offline/ops";
@@ -21,6 +21,10 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { showError, showSuccess } from "@/utils/toast";
+import { FarmProtocolManager } from "@/components/sanitario/FarmProtocolManager";
+import { OfficialSanitaryPackManager } from "@/components/sanitario/OfficialSanitaryPackManager";
+import { RegulatoryOverlayManager } from "@/components/sanitario/RegulatoryOverlayManager";
+import { FormSection } from "@/components/ui/form-section";
 import {
   Syringe,
   ShieldCheck,
@@ -31,317 +35,25 @@ import {
   Info,
   CalendarDays,
 } from "lucide-react";
-import type { SanitarioTipoEnum } from "@/lib/offline/types";
+import {
+  buildVeterinaryProductMetadata,
+  refreshVeterinaryProductsCatalog,
+  resolveVeterinaryProductByName,
+  type VeterinaryProductSelection,
+} from "@/lib/sanitario/products";
+import {
+  STANDARD_PROTOCOLS,
+  buildStandardProtocolItemPayload,
+  buildStandardProtocolPayload,
+  normalizeStandardProtocolInterval,
+  type StandardProtocol,
+} from "@/lib/sanitario/baseProtocols";
+import { describeSanitaryCalendarSchedule } from "@/lib/sanitario/calendar";
 
-// ============================================================================
-// DEFINIÇÃO DOS PROTOCOLOS PADRÃO (MAPA & SBMV)
-// ============================================================================
-
-interface StandardProtocolItem {
-  tipo: SanitarioTipoEnum;
-  produto: string;
-  intervalo_dias: number;
-  dose_num: number;
-  gera_agenda: boolean;
-  indicacao: string;
-  sexo_alvo?: "M" | "F" | "todos";
-  idade_min_dias?: number;
-  idade_max_dias?: number;
-  observacoes?: string;
-  dedup_template?: string;
-}
-
-interface StandardProtocol {
-  id: string; // ID estático para referência
-  nome: string;
-  descricao: string;
-  categoria: "vacinas" | "vermifugacao" | "medicamentos";
-  obrigatorio?: boolean;
-  referencia?: string; // Fonte da recomendação (MAPA, SBMV, Embrapa)
-  itens: StandardProtocolItem[];
-}
-
-const STANDARD_PROTOCOLS: StandardProtocol[] = [
-  // --------------------------------------------------------------------------
-  // VACINAS (Imunização)
-  // --------------------------------------------------------------------------
-  {
-    id: "vac-aftosa",
-    nome: "Febre Aftosa (Obrigatória)",
-    descricao:
-      "Protocolo oficial de erradicação da Febre Aftosa conforme calendário nacional do MAPA.",
-    categoria: "vacinas",
-    obrigatorio: true,
-    referencia: "MAPA - PNEFA",
-    itens: [
-      {
-        tipo: "vacinacao",
-        produto: "Vacina Febre Aftosa (Bivalente/Trivalente)",
-        intervalo_dias: 180, // Semestral (Maio e Novembro geralmente)
-        dose_num: 1,
-        gera_agenda: true,
-        indicacao:
-          "Todo o rebanho ou conforme calendário estadual (ex: jovens em Maio, todos em Novembro).",
-        sexo_alvo: "todos",
-        observacoes:
-          "Verificar calendário específico do estado. Dose padrão: 2ml subcutânea. Manter refrigerada (2-8°C).",
-        dedup_template: "vacina:aftosa:{ano}:{mes}",
-      },
-    ],
-  },
-  {
-    id: "vac-brucelose",
-    nome: "Brucelose (Obrigatória - Fêmeas)",
-    descricao:
-      "Vacinação obrigatória de fêmeas entre 3 e 8 meses de idade com vacina B19. Zoonose grave.",
-    categoria: "vacinas",
-    obrigatorio: true,
-    referencia: "MAPA - PNCEBT",
-    itens: [
-      {
-        tipo: "vacinacao",
-        produto: "Vacina Brucelose B19 (Viva)",
-        intervalo_dias: 0, // Dose única
-        dose_num: 1,
-        gera_agenda: true,
-        indicacao:
-          "Fêmeas (bezerras) entre 3 e 8 meses de idade. Obrigatória marcação com ferro candente (V + algarismo final do ano) ou tatuagem.",
-        sexo_alvo: "F",
-        idade_min_dias: 90, // 3 meses
-        idade_max_dias: 240, // 8 meses
-        observacoes:
-          "APENAS Médico Veterinário ou vacinador auxiliar cadastrado pode aplicar. Vacina viva (CUIDADO).",
-        dedup_template: "vacina:brucelose:{animal_id}",
-      },
-    ],
-  },
-  {
-    id: "vac-raiva",
-    nome: "Raiva dos Herbívoros",
-    descricao:
-      "Vacinação contra Raiva. Obrigatória em regiões endêmicas e recomendada em todo o território nacional.",
-    categoria: "vacinas",
-    obrigatorio: false, // Depende da região, mas marcamos como recomendada
-    referencia: "MAPA - PNCRH",
-    itens: [
-      {
-        tipo: "vacinacao",
-        produto: "Vacina Antirrábica",
-        intervalo_dias: 365, // Anual
-        dose_num: 1,
-        gera_agenda: true,
-        indicacao:
-          "Todo o rebanho a partir de 3 meses. Primovacinação requer reforço após 30 dias.",
-        sexo_alvo: "todos",
-        idade_min_dias: 90,
-        observacoes:
-          "Em áreas de foco, revacinação pode ser semestral ou conforme determinação da defesa sanitária.",
-        dedup_template: "vacina:raiva:{ano}",
-      },
-    ],
-  },
-  {
-    id: "vac-clostridioses",
-    nome: "Clostridioses (Manqueira/Polivalente)",
-    descricao:
-      "Prevenção contra Carbúnculo Sintomático, Gangrena Gasosa, Enterotoxemias e Botulismo.",
-    categoria: "vacinas",
-    obrigatorio: false,
-    referencia: "SBMV / Embrapa",
-    itens: [
-      {
-        tipo: "vacinacao",
-        produto: "Vacina Polivalente Clostridioses",
-        intervalo_dias: 365, // Anual
-        dose_num: 1,
-        gera_agenda: true,
-        indicacao:
-          "Todo o rebanho. Animais jovens: primovacinação aos 3-4 meses + reforço 4 semanas depois.",
-        sexo_alvo: "todos",
-        observacoes:
-          "Essencial em sistemas intensivos e regiões com histórico da doença.",
-        dedup_template: "vacina:clostridio:{ano}",
-      },
-    ],
-  },
-  {
-    id: "vac-reprodutiva",
-    nome: "Reprodutiva (IBR/BVD/Leptospirose)",
-    descricao:
-      "Prevenção de perdas gestacionais e infertilidade causadas por vírus e bactérias.",
-    categoria: "vacinas",
-    obrigatorio: false,
-    referencia: "SBMV / Embrapa",
-    itens: [
-      {
-        tipo: "vacinacao",
-        produto: "Vacina Reprodutiva (IBR/BVD/Lepto)",
-        intervalo_dias: 365, // Anual (pré-estação)
-        dose_num: 1,
-        gera_agenda: true,
-        indicacao:
-          "Fêmeas em idade reprodutiva e touros. Aplicar 30 dias antes da estação de monta.",
-        sexo_alvo: "todos", // Touros também vacinam
-        observacoes: "Primovacinação requer reforço.",
-        dedup_template: "vacina:reprodutiva:{ano}",
-      },
-    ],
-  },
-
-  // --------------------------------------------------------------------------
-  // VERMIFUGAÇÃO (Controle Parasitário)
-  // --------------------------------------------------------------------------
-  {
-    id: "vermi-estrategica-seca",
-    nome: "Controle Estratégico (5-7-9)",
-    descricao:
-      "Esquema clássico de vermifugação estratégica no início, meio e fim da seca (Maio, Julho, Setembro).",
-    categoria: "vermifugacao",
-    referencia: "Embrapa Gado de Corte",
-    itens: [
-      {
-        tipo: "vermifugacao",
-        produto: "Vermífugo (Base Avermectina 1%)",
-        intervalo_dias: 60,
-        dose_num: 1,
-        gera_agenda: true,
-        indicacao:
-          "Mês 5 (Maio) - Início da seca. Reduzir carga parasitária nos animais e pastagens.",
-        dedup_template: "vermi:579:maio:{ano}",
-      },
-      {
-        tipo: "vermifugacao",
-        produto: "Vermífugo (Base Levamisol/Albendazol)",
-        intervalo_dias: 60,
-        dose_num: 2,
-        gera_agenda: true,
-        indicacao:
-          "Mês 7 (Julho) - Meio da seca. Rotação de princípio ativo para evitar resistência.",
-        dedup_template: "vermi:579:julho:{ano}",
-      },
-      {
-        tipo: "vermifugacao",
-        produto: "Vermífugo (Base Moxidectina/Avermectina)",
-        intervalo_dias: 60,
-        dose_num: 3,
-        gera_agenda: true,
-        indicacao:
-          "Mês 9 (Setembro) - Fim da seca / Início das chuvas. Preparação para época das águas.",
-        dedup_template: "vermi:579:setembro:{ano}",
-      },
-    ],
-  },
-  {
-    id: "vermi-desmama",
-    nome: "Vermifugação à Desmama",
-    descricao:
-      "Controle parasitário em bezerros no momento da desmama (fase de alto estresse e suscetibilidade).",
-    categoria: "vermifugacao",
-    referencia: "Prática Zootécnica Padrão",
-    itens: [
-      {
-        tipo: "vermifugacao",
-        produto: "Vermífugo (Endectocida)",
-        intervalo_dias: 0,
-        dose_num: 1,
-        gera_agenda: true,
-        indicacao: "Bezerros(as) na desmama (6-8 meses).",
-        idade_min_dias: 180,
-        idade_max_dias: 270,
-        dedup_template: "vermi:desmama:{animal_id}",
-      },
-    ],
-  },
-
-  // --------------------------------------------------------------------------
-  // MEDICAMENTOS (Terapêuticos e Preventivos)
-  // --------------------------------------------------------------------------
-  {
-    id: "med-cura-umbigo",
-    nome: "Cura de Umbigo (Recém-Nascidos)",
-    descricao:
-      "Protocolo essencial para prevenção de onfaloflebites, miíases e infecções sistêmicas.",
-    categoria: "medicamentos",
-    referencia: "Boas Práticas de Manejo (BPM)",
-    itens: [
-      {
-        tipo: "medicamento",
-        produto: "Iodo 10% (tintura) + Repelente spray",
-        intervalo_dias: 1,
-        dose_num: 1,
-        gera_agenda: false, // É diário/imediato, não agenda futura distante
-        indicacao:
-          "Imediatamente após o nascimento. Cortar umbigo se necessário (2 dedos). Mergulhar no iodo.",
-        idade_min_dias: 0,
-        idade_max_dias: 30,
-        observacoes: "Repetir diariamente até a secagem completa (3-5 dias).",
-        dedup_template: "med:umbigo:{animal_id}",
-      },
-    ],
-  },
-  {
-    id: "med-tpb",
-    nome: "Tratamento Tristeza Parasitária (TPB)",
-    descricao:
-      "Protocolo terapêutico para casos de Babesiose e Anaplasmose (Carrapato).",
-    categoria: "medicamentos",
-    referencia: "Protocolo Clínico Veterinário",
-    itens: [
-      {
-        tipo: "medicamento",
-        produto: "Diminazeno (Ganaseg/Outros)",
-        intervalo_dias: 0,
-        dose_num: 1,
-        gera_agenda: false,
-        indicacao: "Combate à Babesia. Aplicar intramuscular profunda conforme bula.",
-        observacoes: "Dose geralmente 3,5mg/kg.",
-      },
-      {
-        tipo: "medicamento",
-        produto: "Oxitetraciclina L.A.",
-        intervalo_dias: 0,
-        dose_num: 1,
-        gera_agenda: false,
-        indicacao: "Combate à Anaplasma. Aplicar intramuscular profunda.",
-        observacoes: "Dose geralmente 20mg/kg.",
-      },
-      {
-        tipo: "medicamento",
-        produto: "Antitérmico/Anti-inflamatório (Dipirona/Melo)",
-        intervalo_dias: 0,
-        dose_num: 1,
-        gera_agenda: false,
-        indicacao: "Controle da febre e dor. Suporte.",
-      },
-    ],
-  },
-  {
-    id: "med-mastite-seca",
-    nome: "Terapia de Vaca Seca (Mastite)",
-    descricao:
-      "Prevenção e cura de mastite no período seco em vacas leiteiras ou corte com alta produção.",
-    categoria: "medicamentos",
-    referencia: "SBMV - Qualidade do Leite",
-    itens: [
-      {
-        tipo: "medicamento",
-        produto: "Antibiótico Intramamário (Vaca Seca)",
-        intervalo_dias: 0,
-        dose_num: 1,
-        gera_agenda: true,
-        indicacao:
-          "Vacas no encerramento da lactação (60 dias antes do parto previsto).",
-        sexo_alvo: "F",
-        observacoes:
-          "Aplicar em todos os quartos após a última ordenha. Usar selante de teto se possível.",
-        dedup_template: "med:secagem:{animal_id}",
-      },
-    ],
-  },
-];
+// Biblioteca padrao extraida para src/lib/sanitario/baseProtocols.ts
 
 const ProtocolosSanitarios = () => {
-  const { activeFarmId } = useAuth();
+  const { activeFarmId, farmExperienceMode, role } = useAuth();
   const [activeTab, setActiveTab] = useState<string>("vacinas");
 
   // --------------------------------------------------------------------------
@@ -353,7 +65,11 @@ const ProtocolosSanitarios = () => {
     if (!activeFarmId) return;
     pullDataForFarm(
       activeFarmId,
-      ["protocolos_sanitarios", "protocolos_sanitarios_itens"],
+      [
+        "protocolos_sanitarios",
+        "protocolos_sanitarios_itens",
+        "fazenda_sanidade_config",
+      ],
       { mode: "merge" }
     ).catch((error) => {
       console.warn(
@@ -362,9 +78,22 @@ const ProtocolosSanitarios = () => {
       );
     });
   }, [activeFarmId]);
+
+  useEffect(() => {
+    refreshVeterinaryProductsCatalog().catch((error) => {
+      console.warn(
+        "[protocolos-sanitarios] failed to refresh veterinary products",
+        error,
+      );
+    });
+  }, []);
+
+  const catalogProducts = useLiveQuery(() => {
+    return db.catalog_produtos_veterinarios.orderBy("nome").toArray();
+  }, []);
   
-  // Consulta protocolos JÁ CADASTRADOS na fazenda ativa para indicar status visualmente
-  // Isso evita que o usuário adicione o mesmo protocolo padrão múltiplas vezes sem necessidade
+  // Consulta protocolos JÃ CADASTRADOS na fazenda ativa para indicar status visualmente
+  // Isso evita que o usuÃ¡rio adicione o mesmo protocolo padrÃ£o mÃºltiplas vezes sem necessidade
   const protocolosExistentes = useLiveQuery(() => {
     if (!activeFarmId) return [];
     return db.state_protocolos_sanitarios
@@ -374,21 +103,43 @@ const ProtocolosSanitarios = () => {
       .toArray();
   }, [activeFarmId]);
 
-  // Helper para verificar se um protocolo específico já existe na lista
+  const protocolosItensExistentes = useLiveQuery(() => {
+    if (!activeFarmId) return [];
+    return db.state_protocolos_sanitarios_itens
+      .where("fazenda_id")
+      .equals(activeFarmId)
+      .filter((item) => !item.deleted_at)
+      .toArray();
+  }, [activeFarmId]);
+
+  // Helper para verificar se um protocolo especÃ­fico jÃ¡ existe na lista
   const isProtocoloAdicionado = (nomeProtocolo: string) => {
     return protocolosExistentes?.some(
       (p) => p.nome === nomeProtocolo && p.ativo
     );
   };
 
+  const canManageProtocols = role === "manager" || role === "owner";
+
+  const createAutomaticProductSelection = (
+    product: { id: string; nome: string; categoria: string | null },
+    matchMode: VeterinaryProductSelection["matchMode"],
+  ): VeterinaryProductSelection => ({
+    id: product.id,
+    nome: product.nome,
+    categoria: product.categoria,
+    origem: "catalogo_automatico",
+    matchMode,
+  });
+
   // --------------------------------------------------------------------------
-  // AÇÕES
+  // AÃ‡Ã•ES
   // --------------------------------------------------------------------------
 
   /**
-   * Adiciona um protocolo padrão à fazenda ativa.
-   * Utiliza o sistema de "Gestures" (createGesture) para garantir sincronização offline-first.
-   * Cria tanto o registro do protocolo (cabeçalho) quanto seus itens (etapas).
+   * Adiciona um protocolo padrao a fazenda ativa.
+   * Utiliza gestures para garantir sincronizacao offline-first.
+   * Cria tanto o cabecalho quanto as etapas do protocolo.
    */
   const handleAdicionarProtocolo = async (protocolo: StandardProtocol) => {
     if (!activeFarmId) {
@@ -396,10 +147,15 @@ const ProtocolosSanitarios = () => {
       return;
     }
 
+    if (!canManageProtocols) {
+      showError("Apenas manager e owner podem alterar protocolos da fazenda.");
+      return;
+    }
+
     try {
       const protocoloId = crypto.randomUUID();
 
-      // 1. Preparar operação para criar o protocolo (cabeçalho)
+      // 1. Preparar operaÃ§Ã£o para criar o protocolo (cabeÃ§alho)
       // O payload armazena metadados da origem para rastreabilidade futura
       const opProtocolo = {
         table: "protocolos_sanitarios",
@@ -409,22 +165,26 @@ const ProtocolosSanitarios = () => {
           nome: protocolo.nome,
           descricao: protocolo.descricao,
           ativo: true,
-          payload: {
-            origem: "template_padrao",
-            referencia: protocolo.referencia,
-            standard_id: protocolo.id,
-          },
+          payload: buildStandardProtocolPayload(protocolo),
         },
       };
 
-      // 2. Preparar operações para criar os itens do protocolo
-      // Mapeia cada etapa do padrão para um registro na tabela protocolos_sanitarios_itens
+      // 2. Preparar operaÃ§Ãµes para criar os itens do protocolo
+      // Mapeia cada etapa do padrÃ£o para um registro na tabela protocolos_sanitarios_itens
       const opsItens = protocolo.itens.map((item) => {
-        // Schema exige intervalo_dias > 0; para dose unica/imediato usamos valor tecnico = 1.
-        const intervaloDiasNormalizado =
-          Number.isFinite(item.intervalo_dias) && item.intervalo_dias > 0
-            ? Math.trunc(item.intervalo_dias)
-            : 1;
+        const resolvedProduct = resolveVeterinaryProductByName(
+          item.produto,
+          catalogProducts ?? [],
+          {
+            sanitaryType: item.tipo,
+          },
+        );
+        const productSelection = resolvedProduct.product
+          ? createAutomaticProductSelection(
+              resolvedProduct.product,
+              resolvedProduct.matchMode,
+            )
+          : null;
 
         return {
           table: "protocolos_sanitarios_itens",
@@ -436,27 +196,29 @@ const ProtocolosSanitarios = () => {
             version: 1,
             tipo: item.tipo,
             produto: item.produto,
-            intervalo_dias: intervaloDiasNormalizado,
+            intervalo_dias: normalizeStandardProtocolInterval(item),
             dose_num: item.dose_num,
             gera_agenda: item.gera_agenda,
             dedup_template: item.dedup_template || null,
             payload: {
-              indicacao: item.indicacao,
-              sexo_alvo: item.sexo_alvo || null,
-              idade_min_dias: item.idade_min_dias || null,
-              idade_max_dias: item.idade_max_dias || null,
-              observacoes: item.observacoes || null,
+              ...buildStandardProtocolItemPayload(item),
+              ...buildVeterinaryProductMetadata({
+                selectedProduct: productSelection,
+                typedName: item.produto,
+                source: productSelection?.origem,
+                matchMode: productSelection?.matchMode ?? null,
+              }),
             },
           },
         };
       });
 
-      // Executa todas as operações em uma única transação (Gesture)
+      // Executa todas as operacoes em uma unica transacao.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await createGesture(activeFarmId, [opProtocolo, ...opsItens] as any);
 
       showSuccess(
-        `Protocolo "${protocolo.nome}" adicionado à fazenda com sucesso!`
+        `Protocolo "${protocolo.nome}" adicionado a fazenda com sucesso!`
       );
     } catch (error) {
       console.error("Erro ao adicionar protocolo:", error);
@@ -478,7 +240,7 @@ const ProtocolosSanitarios = () => {
                 </CardTitle>
                 {protocolo.obrigatorio && (
                   <Badge variant="destructive" className="gap-1">
-                    <AlertTriangle className="h-3 w-3" /> Obrigatório
+                    <AlertTriangle className="h-3 w-3" /> ObrigatÃ³rio
                   </Badge>
                 )}
                 {adicionado && (
@@ -493,6 +255,9 @@ const ProtocolosSanitarios = () => {
               <CardDescription className="text-base">
                 {protocolo.descricao}
               </CardDescription>
+              <p className="text-xs text-muted-foreground mt-1">
+                Calendario-base: {protocolo.calendario_base.label}
+              </p>
               {protocolo.referencia && (
                 <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
                   <Info className="h-3 w-3" /> Fonte: {protocolo.referencia}
@@ -503,9 +268,9 @@ const ProtocolosSanitarios = () => {
               variant={adicionado ? "outline" : "default"}
               size="sm"
               onClick={() => handleAdicionarProtocolo(protocolo)}
-              disabled={adicionado}
+              disabled={adicionado || !canManageProtocols}
             >
-              {adicionado ? "Já Adicionado" : "Adicionar à Fazenda"}
+              {adicionado ? "JÃ¡ Adicionado" : "Adicionar Ã  Fazenda"}
             </Button>
           </div>
         </CardHeader>
@@ -525,7 +290,7 @@ const ProtocolosSanitarios = () => {
                       <div className="flex items-center justify-between font-medium">
                         <span className="flex items-center gap-2">
                           <span className="bg-primary/10 text-primary px-2 py-0.5 rounded text-xs font-bold">
-                            {item.dose_num}ª Etapa
+                            {item.dose_num}Âª Etapa
                           </span>
                           {item.produto}
                         </span>
@@ -536,14 +301,16 @@ const ProtocolosSanitarios = () => {
                         <div className="flex items-center gap-2">
                           <CalendarDays className="h-4 w-4" />
                           <span>
-                            Periodicidade:{" "}
-                            {item.intervalo_dias > 0
-                              ? `${item.intervalo_dias} dias`
-                              : "Dose Única / Imediato"}
+                            Calendario-base:{" "}
+                            {describeSanitaryCalendarSchedule({
+                              intervalDays: item.intervalo_dias,
+                              geraAgenda: item.gera_agenda,
+                              payload: buildStandardProtocolItemPayload(item),
+                            })}
                           </span>
                         </div>
                         <div>
-                          <strong>Indicação:</strong> {item.indicacao}
+                          <strong>IndicaÃ§Ã£o:</strong> {item.indicacao}
                         </div>
                         {(item.sexo_alvo ||
                           item.idade_min_dias !== undefined) && (
@@ -552,7 +319,7 @@ const ProtocolosSanitarios = () => {
                             {item.sexo_alvo === "M"
                               ? "Machos"
                               : item.sexo_alvo === "F"
-                              ? "Fêmeas"
+                              ? "FÃªmeas"
                               : "Todos"}
                             {item.idade_min_dias !== undefined
                               ? ` | ${item.idade_min_dias} a ${
@@ -584,97 +351,160 @@ const ProtocolosSanitarios = () => {
         <div className="flex items-center gap-3">
           <ShieldCheck className="h-8 w-8 text-primary" />
           <h1 className="text-3xl font-bold tracking-tight">
-            Protocolos Sanitários Oficiais
+            Protocolos Sanitarios
           </h1>
         </div>
         <p className="text-muted-foreground max-w-2xl">
-          Biblioteca de protocolos sanitários baseada nas recomendações do
-          Ministério da Agricultura (MAPA) e Sociedade Brasileira de Medicina
-          Veterinária (SBMV). Selecione e adicione os protocolos recomendados
-          para garantir a conformidade legal e a saúde do seu rebanho.
+          Estrutura sanitaria animal-centric com nucleo federal, overlay
+          estadual e ajuste por risco da fazenda. O pack oficial abaixo ativa a
+          base regulatoria versionada, o overlay operacional executa checklists
+          procedurais e o editor da fazenda ajusta a execucao local.
         </p>
+        {!canManageProtocols ? (
+          <p className="text-sm text-muted-foreground">
+            Seu perfil esta em modo leitura para protocolos. Edicao estrutural e
+            liberada para manager e owner.
+          </p>
+        ) : null}
       </div>
 
-      <Tabs
-        defaultValue="vacinas"
-        value={activeTab}
-        onValueChange={setActiveTab}
-        className="w-full"
+      {activeFarmId ? (
+        <OfficialSanitaryPackManager
+          activeFarmId={activeFarmId}
+          canManage={canManageProtocols}
+        />
+      ) : null}
+
+      {activeFarmId ? (
+        <RegulatoryOverlayManager activeFarmId={activeFarmId} />
+      ) : null}
+
+      {activeFarmId ? (
+        <FarmProtocolManager
+          activeFarmId={activeFarmId}
+          farmExperienceMode={farmExperienceMode}
+          catalogProducts={catalogProducts ?? []}
+          protocols={protocolosExistentes ?? []}
+          protocolItems={protocolosItensExistentes ?? []}
+          canManage={canManageProtocols}
+        />
+      ) : null}
+
+      <FormSection
+        title="Biblioteca complementar"
+        description="Importe protocolos tecnicos prontos para dentro da camada operacional da fazenda. Esta biblioteca e secundaria: ela nao substitui a base regulatoria nem o editor operacional acima."
+        className="border border-dashed border-border/70 bg-muted/10 shadow-none"
+        contentClassName="pt-3"
       >
-        <TabsList className="grid w-full grid-cols-3 lg:w-[600px]">
-          <TabsTrigger value="vacinas" className="flex items-center gap-2">
-            <Syringe className="h-4 w-4" /> Vacinas
-          </TabsTrigger>
-          <TabsTrigger value="vermifugacao" className="flex items-center gap-2">
-            <Bug className="h-4 w-4" /> Vermifugação
-          </TabsTrigger>
-          <TabsTrigger value="medicamentos" className="flex items-center gap-2">
-            <Pill className="h-4 w-4" /> Medicamentos
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent
-          value="vacinas"
-          className="mt-6 animate-in fade-in-50 duration-500"
-        >
-          <div className="grid gap-6">
-            <div className="bg-blue-50 dark:bg-blue-950/30 p-4 rounded-lg border border-blue-100 dark:border-blue-900 flex gap-3 items-start text-sm text-blue-800 dark:text-blue-200">
-              <Info className="h-5 w-5 flex-shrink-0 mt-0.5" />
-              <div>
-                <strong>Atenção:</strong> O calendário de vacinação contra Febre
-                Aftosa varia conforme o estado. Consulte sempre o órgão de
-                defesa sanitária da sua região para datas exatas e
-                obrigatoriedade.
+        <Accordion type="single" collapsible className="w-full">
+          <AccordionItem
+            value="biblioteca-complementar"
+            className="rounded-2xl border border-border/70 bg-background px-4"
+          >
+            <AccordionTrigger className="text-left">
+              <div className="space-y-1">
+                <div className="text-sm font-medium text-foreground">
+                  Abrir biblioteca complementar
+                </div>
+                <p className="max-w-3xl text-sm text-muted-foreground">
+                  Use esta secao apenas quando quiser acelerar a criacao de um
+                  protocolo complementar de vacinacao, vermifugacao ou
+                  medicamento.
+                </p>
               </div>
-            </div>
-            {STANDARD_PROTOCOLS.filter((p) => p.categoria === "vacinas").map(
-              renderProtocoloCard
-            )}
-          </div>
-        </TabsContent>
+            </AccordionTrigger>
+            <AccordionContent className="pb-2 pt-2">
+              <Tabs
+                defaultValue="vacinas"
+                value={activeTab}
+                onValueChange={setActiveTab}
+                className="w-full"
+              >
+                <TabsList className="grid w-full grid-cols-3 lg:w-[600px]">
+                  <TabsTrigger value="vacinas" className="flex items-center gap-2">
+                    <Syringe className="h-4 w-4" /> Vacinas
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="vermifugacao"
+                    className="flex items-center gap-2"
+                  >
+                    <Bug className="h-4 w-4" /> Vermifugacao
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="medicamentos"
+                    className="flex items-center gap-2"
+                  >
+                    <Pill className="h-4 w-4" /> Medicamentos
+                  </TabsTrigger>
+                </TabsList>
 
-        <TabsContent
-          value="vermifugacao"
-          className="mt-6 animate-in fade-in-50 duration-500"
-        >
-          <div className="grid gap-6">
-            <div className="bg-green-50 dark:bg-green-950/30 p-4 rounded-lg border border-green-100 dark:border-green-900 flex gap-3 items-start text-sm text-green-800 dark:text-green-200">
-              <Info className="h-5 w-5 flex-shrink-0 mt-0.5" />
-              <div>
-                <strong>Dica de Manejo:</strong> A rotação de princípios ativos
-                (bases químicas) é fundamental para evitar a resistência
-                parasitária. O protocolo 5-7-9 é uma estratégia consagrada para
-                otimizar o controle durante a seca.
-              </div>
-            </div>
-            {STANDARD_PROTOCOLS.filter(
-              (p) => p.categoria === "vermifugacao"
-            ).map(renderProtocoloCard)}
-          </div>
-        </TabsContent>
+                <TabsContent
+                  value="vacinas"
+                  className="mt-6 animate-in fade-in-50 duration-500"
+                >
+                  <div className="grid gap-6">
+                    <div className="bg-blue-50 dark:bg-blue-950/30 p-4 rounded-lg border border-blue-100 dark:border-blue-900 flex gap-3 items-start text-sm text-blue-800 dark:text-blue-200">
+                      <Info className="h-5 w-5 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <strong>Importante:</strong> O Brasil-base oficial nao gera
+                        mais vacina de febre aftosa como rotina padrao. Use o pack
+                        oficial para obrigacoes regulatorias e esta biblioteca apenas
+                        para protocolos complementares do manejo.
+                      </div>
+                    </div>
+                    {STANDARD_PROTOCOLS.filter((p) => p.categoria === "vacinas").map(
+                      renderProtocoloCard
+                    )}
+                  </div>
+                </TabsContent>
 
-        <TabsContent
-          value="medicamentos"
-          className="mt-6 animate-in fade-in-50 duration-500"
-        >
-          <div className="grid gap-6">
-            <div className="bg-amber-50 dark:bg-amber-950/30 p-4 rounded-lg border border-amber-100 dark:border-amber-900 flex gap-3 items-start text-sm text-amber-800 dark:text-amber-200">
-              <Info className="h-5 w-5 flex-shrink-0 mt-0.5" />
-              <div>
-                <strong>Uso Responsável:</strong> Medicamentos como antibióticos
-                devem ser utilizados sob orientação veterinária e respeitando
-                rigorosamente os períodos de carência (abate e leite) descritos
-                na bula.
-              </div>
-            </div>
-            {STANDARD_PROTOCOLS.filter(
-              (p) => p.categoria === "medicamentos"
-            ).map(renderProtocoloCard)}
-          </div>
-        </TabsContent>
-      </Tabs>
+                <TabsContent
+                  value="vermifugacao"
+                  className="mt-6 animate-in fade-in-50 duration-500"
+                >
+                  <div className="grid gap-6">
+                    <div className="bg-green-50 dark:bg-green-950/30 p-4 rounded-lg border border-green-100 dark:border-green-900 flex gap-3 items-start text-sm text-green-800 dark:text-green-200">
+                      <Info className="h-5 w-5 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <strong>Dica de Manejo:</strong> A rotacao de principios ativos
+                        (bases quimicas) e fundamental para evitar resistencia
+                        parasitaria. O protocolo 5-7-9 e uma estrategia consagrada
+                        para otimizar o controle durante a seca.
+                      </div>
+                    </div>
+                    {STANDARD_PROTOCOLS.filter(
+                      (p) => p.categoria === "vermifugacao"
+                    ).map(renderProtocoloCard)}
+                  </div>
+                </TabsContent>
+
+                <TabsContent
+                  value="medicamentos"
+                  className="mt-6 animate-in fade-in-50 duration-500"
+                >
+                  <div className="grid gap-6">
+                    <div className="bg-amber-50 dark:bg-amber-950/30 p-4 rounded-lg border border-amber-100 dark:border-amber-900 flex gap-3 items-start text-sm text-amber-800 dark:text-amber-200">
+                      <Info className="h-5 w-5 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <strong>Uso Responsavel:</strong> Medicamentos como
+                        antibioticos devem ser utilizados sob orientacao
+                        veterinaria e respeitando rigorosamente os periodos de
+                        carencia (abate e leite) descritos na bula.
+                      </div>
+                    </div>
+                    {STANDARD_PROTOCOLS.filter(
+                      (p) => p.categoria === "medicamentos"
+                    ).map(renderProtocoloCard)}
+                  </div>
+                </TabsContent>
+              </Tabs>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+      </FormSection>
     </div>
   );
 };
 
 export default ProtocolosSanitarios;
+

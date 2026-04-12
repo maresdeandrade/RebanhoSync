@@ -2,12 +2,17 @@ import { describe, expect, it } from "vitest";
 import type {
   AgendaItem,
   Animal,
+  CatalogoProtocoloOficial,
+  CatalogoProtocoloOficialItem,
   Evento,
   EventoFinanceiro,
   EventoPesagem,
+  FazendaSanidadeConfig,
   Gesture,
   Lote,
   Pasto,
+  ProtocoloSanitario,
+  ProtocoloSanitarioItem,
   Rejection,
 } from "@/lib/offline/types";
 import {
@@ -163,6 +168,58 @@ describe("buildOperationalSummary", () => {
     ];
     const lotes: Lote[] = [{ ...baseLote, id: "lote-1", nome: "Matrizes" }];
     const pastos: Pasto[] = [{ ...basePasto, id: "pasto-1", nome: "Piquete 1" }];
+    const protocolosSanitarios: ProtocoloSanitario[] = [
+      {
+        id: "protocol-1",
+        fazenda_id: "farm-1",
+        nome: "Calendario oficial",
+        descricao: null,
+        ativo: true,
+        payload: {},
+        client_id: "client-1",
+        client_op_id: "op-1",
+        client_tx_id: null,
+        client_recorded_at: "2026-03-20T10:00:00.000Z",
+        server_received_at: "2026-03-20T10:00:00.000Z",
+        created_at: "2026-03-20T10:00:00.000Z",
+        updated_at: "2026-03-20T10:00:00.000Z",
+        deleted_at: null,
+      },
+    ];
+    const protocoloItensSanitarios: ProtocoloSanitarioItem[] = [
+      {
+        id: "protocol-item-1",
+        fazenda_id: "farm-1",
+        protocolo_id: "protocol-1",
+        protocol_item_id: "aftosa-1",
+        version: 1,
+        tipo: "vermifugacao",
+        produto: "Endectocida",
+        intervalo_dias: 180,
+        dose_num: 1,
+        gera_agenda: true,
+        dedup_template: null,
+        payload: {
+          obrigatorio: true,
+          calendario_base: {
+            version: 1,
+            mode: "campaign",
+            anchor: "calendar_month",
+            label: "Campanha oficial de novembro",
+            months: [11],
+            interval_days: 180,
+          },
+        },
+        client_id: "client-1",
+        client_op_id: "op-1",
+        client_tx_id: null,
+        client_recorded_at: "2026-03-20T10:00:00.000Z",
+        server_received_at: "2026-03-20T10:00:00.000Z",
+        created_at: "2026-03-20T10:00:00.000Z",
+        updated_at: "2026-03-20T10:00:00.000Z",
+        deleted_at: null,
+      },
+    ];
     const agenda: AgendaItem[] = [
       {
         ...baseAgenda,
@@ -177,6 +234,10 @@ describe("buildOperationalSummary", () => {
         tipo: "vermifugacao",
         data_prevista: "2026-03-10",
         lote_id: "lote-1",
+        source_ref: {
+          protocolo_id: "protocol-1",
+        },
+        protocol_item_version_id: "protocol-item-1",
       },
     ];
     const eventos: Evento[] = [
@@ -253,6 +314,84 @@ describe("buildOperationalSummary", () => {
         created_at: "2026-03-25T08:00:00.000Z",
       },
     ];
+    const fazendaSanidadeConfig: FazendaSanidadeConfig = {
+      fazenda_id: "farm-1",
+      uf: "SP",
+      aptidao: "all",
+      sistema: "all",
+      zona_raiva_risco: "medio",
+      pressao_carrapato: "medio",
+      pressao_helmintos: "medio",
+      modo_calendario: "minimo_legal",
+      payload: {
+        activated_template_slugs: ["feed-ban-ruminantes"],
+        overlay_runtime: {
+          items: {
+            "feed-ban": {
+              template_slug: "feed-ban-ruminantes",
+              template_name: "Feed-ban",
+              item_code: "feed-ban",
+              item_label: "Feed-ban de ruminantes",
+              subarea: "feed_ban",
+              compliance_kind: "feed_ban",
+              status: "pendente",
+              checked_at: "2026-03-29T10:00:00.000Z",
+              responsible: "Equipe",
+              notes: null,
+              source_evento_id: "event-feed-ban",
+              answers: {},
+            },
+          },
+        },
+      },
+      client_id: "client-1",
+      client_op_id: "op-1",
+      client_tx_id: null,
+      client_recorded_at: "2026-03-29T10:00:00.000Z",
+      server_received_at: "2026-03-29T10:00:00.000Z",
+      created_at: "2026-03-29T10:00:00.000Z",
+      updated_at: "2026-03-29T10:00:00.000Z",
+      deleted_at: null,
+    };
+    const catalogoProtocolosOficiais: CatalogoProtocoloOficial[] = [
+      {
+        id: "template-feed-ban",
+        slug: "feed-ban-ruminantes",
+        nome: "Feed-ban",
+        versao: 1,
+        escopo: "federal",
+        uf: null,
+        aptidao: "all",
+        sistema: "all",
+        status_legal: "obrigatorio",
+        base_legal_json: {},
+        payload: {},
+        created_at: "2026-03-29T10:00:00.000Z",
+        updated_at: "2026-03-29T10:00:00.000Z",
+      },
+    ];
+    const catalogoProtocolosOficiaisItens: CatalogoProtocoloOficialItem[] = [
+      {
+        id: "item-feed-ban",
+        template_id: "template-feed-ban",
+        area: "nutricao",
+        codigo: "feed-ban",
+        categoria_animal: "all",
+        gatilho_tipo: "uso_produto",
+        gatilho_json: {},
+        frequencia_json: {},
+        requires_vet: false,
+        requires_gta: false,
+        carencia_regra_json: {},
+        gera_agenda: false,
+        payload: {
+          label: "Feed-ban de ruminantes",
+          subarea: "feed_ban",
+        },
+        created_at: "2026-03-29T10:00:00.000Z",
+        updated_at: "2026-03-29T10:00:00.000Z",
+      },
+    ];
 
     const report = buildOperationalSummary(
       {
@@ -260,6 +399,11 @@ describe("buildOperationalSummary", () => {
         lotes,
         pastos,
         agenda,
+        protocolosSanitarios,
+        protocoloItensSanitarios,
+        fazendaSanidadeConfig,
+        catalogoProtocolosOficiais,
+        catalogoProtocolosOficiaisItens,
         eventos,
         eventosPesagem,
         eventosFinanceiro,
@@ -297,6 +441,37 @@ describe("buildOperationalSummary", () => {
     });
     expect(report.manejoByDomain.find((item) => item.label === "Sanitario")?.value).toBe(1);
     expect(report.agendaAttention[0]?.status).toBe("atrasado");
+    expect(report.agendaAttention[0]?.priorityLabel).toBe("Critico 19d");
+    expect(report.agendaAttention[0]?.titulo).toBe("Calendario oficial: Endectocida");
+    expect(report.agendaAttention[0]?.scheduleLabel).toBe("Campanha oficial de novembro");
+    expect(report.agendaAttention[0]?.scheduleModeLabel).toBe("Campanha");
+    expect(report.agendaAttention[0]?.scheduleAnchorLabel).toBe("Calendario");
+    expect(report.regulatoryCompliance).toMatchObject({
+      openCount: 1,
+      blockingCount: 1,
+      feedBanOpenCount: 1,
+      nutritionBlockers: 1,
+      saleBlockers: 0,
+    });
+    expect(report.regulatoryCompliance.subareas).toEqual([
+      expect.objectContaining({
+        key: "feed_ban",
+        openCount: 1,
+        blockerCount: 1,
+      }),
+    ]);
+    expect(report.regulatoryCompliance.impacts).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          key: "nutrition",
+          blockerCount: 1,
+        }),
+        expect.objectContaining({
+          key: "sale",
+          blockerCount: 0,
+        }),
+      ]),
+    );
     expect(report.recentEvents[0]?.dominio).toBe("Sanitario");
   });
 });
@@ -304,12 +479,95 @@ describe("buildOperationalSummary", () => {
 describe("buildOperationalSummaryCsv", () => {
   it("serializes report sections for spreadsheet export", () => {
     const range = resolveReportRange("7d", new Date("2026-03-29T12:00:00.000Z"));
+    const fazendaSanidadeConfig: FazendaSanidadeConfig = {
+      fazenda_id: "farm-1",
+      uf: "SP",
+      aptidao: "all",
+      sistema: "all",
+      zona_raiva_risco: "medio",
+      pressao_carrapato: "medio",
+      pressao_helmintos: "medio",
+      modo_calendario: "minimo_legal",
+      payload: {
+        activated_template_slugs: ["feed-ban-ruminantes"],
+        overlay_runtime: {
+          items: {
+            "feed-ban": {
+              template_slug: "feed-ban-ruminantes",
+              template_name: "Feed-ban",
+              item_code: "feed-ban",
+              item_label: "Feed-ban de ruminantes",
+              subarea: "feed_ban",
+              compliance_kind: "feed_ban",
+              status: "pendente",
+              checked_at: "2026-03-29T10:00:00.000Z",
+              responsible: "Equipe",
+              notes: null,
+              source_evento_id: "event-feed-ban",
+              answers: {},
+            },
+          },
+        },
+      },
+      client_id: "client-1",
+      client_op_id: "op-1",
+      client_tx_id: null,
+      client_recorded_at: "2026-03-29T10:00:00.000Z",
+      server_received_at: "2026-03-29T10:00:00.000Z",
+      created_at: "2026-03-29T10:00:00.000Z",
+      updated_at: "2026-03-29T10:00:00.000Z",
+      deleted_at: null,
+    };
+    const catalogoProtocolosOficiais: CatalogoProtocoloOficial[] = [
+      {
+        id: "template-feed-ban",
+        slug: "feed-ban-ruminantes",
+        nome: "Feed-ban",
+        versao: 1,
+        escopo: "federal",
+        uf: null,
+        aptidao: "all",
+        sistema: "all",
+        status_legal: "obrigatorio",
+        base_legal_json: {},
+        payload: {},
+        created_at: "2026-03-29T10:00:00.000Z",
+        updated_at: "2026-03-29T10:00:00.000Z",
+      },
+    ];
+    const catalogoProtocolosOficiaisItens: CatalogoProtocoloOficialItem[] = [
+      {
+        id: "item-feed-ban",
+        template_id: "template-feed-ban",
+        area: "nutricao",
+        codigo: "feed-ban",
+        categoria_animal: "all",
+        gatilho_tipo: "uso_produto",
+        gatilho_json: {},
+        frequencia_json: {},
+        requires_vet: false,
+        requires_gta: false,
+        carencia_regra_json: {},
+        gera_agenda: false,
+        payload: {
+          label: "Feed-ban de ruminantes",
+          subarea: "feed_ban",
+        },
+        created_at: "2026-03-29T10:00:00.000Z",
+        updated_at: "2026-03-29T10:00:00.000Z",
+      },
+    ];
     const report = buildOperationalSummary(
       {
         animals: [],
         lotes: [],
         pastos: [],
         agenda: [],
+        protocolosSanitarios: [],
+        protocoloItensSanitarios: [],
+        fazendaSanidadeConfig,
+        catalogoProtocolosOficiais,
+        catalogoProtocolosOficiaisItens,
         eventos: [],
         eventosPesagem: [],
         eventosFinanceiro: [],
@@ -325,5 +583,8 @@ describe("buildOperationalSummaryCsv", () => {
     expect(csv).toContain("meta;fazenda;Fazenda Teste");
     expect(csv).toContain("resumo;animais_ativos;0");
     expect(csv).toContain("financeiro;saldo;0.00");
+    expect(csv).toContain("conformidade_subarea");
+    expect(csv).toContain("conformidade_impacto");
+    expect(csv).not.toContain("undefined");
   });
 });

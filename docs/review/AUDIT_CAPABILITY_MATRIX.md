@@ -225,11 +225,7 @@ else if (tipoManejo === "nutricao") {
 
 ### Gaps residuais pós-auditoria (novos)
 
-| TD     | Descrição                                    | Status | Impacto       |
-| ------ | -------------------------------------------- | ------ | ------------- |
-| TD-021 | Telemetria local-only (sem observabilidade remota) | OPEN | Baixo/Médio |
-| TD-022 | `produtos_veterinarios` sem autocomplete UI  | OPEN   | UX            |
-| TD-023 | Pós-parto e Cria Inicial sem cobertura E2E   | OPEN   | Testes        |
+Nenhum gap residual permanece aberto nesta revisão.
 
 ---
 
@@ -239,4 +235,4 @@ else if (tipoManejo === "nutricao") {
 **Data:** 2026-04-07  
 **Capability Score:** 100% MVP (7/7 domínios operacionais)  
 **Gaps originais:** 10 → 0 CLOSED  
-**Gaps residuais:** 3 (TD-021, TD-022, TD-023)
+**Gaps residuais:** 0

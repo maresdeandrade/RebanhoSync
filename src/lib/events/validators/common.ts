@@ -35,7 +35,11 @@ export const validateBaseEventInput = (
     });
   }
 
-  if (!input.animalId && !input.loteId) {
+  if (
+    input.dominio !== "conformidade" &&
+    !input.animalId &&
+    !input.loteId
+  ) {
     issues.push({
       code: "REQUIRED_TARGET",
       field: "animalId|loteId",
@@ -66,4 +70,3 @@ export const validateBaseEventInput = (
 
   return issues;
 };
-

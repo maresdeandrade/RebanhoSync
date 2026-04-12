@@ -33,6 +33,7 @@ export interface BuildFinancialTransactionInput {
   unitAmount?: number | null;
   weightMode: FinancialWeightMode;
   lotWeightKg?: number | null;
+  payload?: Record<string, unknown>;
 }
 
 export interface BuildFinancialTransactionResult {
@@ -112,6 +113,7 @@ export function buildFinancialTransaction(input: BuildFinancialTransactionInput)
       input.natureza === "compra"
         ? purchaseAnimals.map((animal) => animal.identificacao?.trim()).filter(Boolean)
         : selectedAnimals.map((animal) => animal.identificacao),
+    ...(input.payload ?? {}),
   };
 
   const financialEvent = buildEventGesture({

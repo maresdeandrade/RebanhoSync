@@ -9,6 +9,7 @@ const DEFAULT_REMOTE_TABLES = [
   "agenda_itens",
   "protocolos_sanitarios",
   "protocolos_sanitarios_itens",
+  "fazenda_sanidade_config",
   "contrapartes",
 ] as const;
 

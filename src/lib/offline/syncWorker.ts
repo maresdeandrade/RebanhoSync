@@ -4,6 +4,7 @@ import { env } from "@/lib/env";
 import { supabase } from "@/lib/supabase";
 import type { Gesture } from "./types";
 import { getRemoteTableName } from "./tableMap";
+import { normalizeTableMutationRecord } from "./mutationRecord";
 import { rollbackOpLocal, getAffectedStores } from "./ops";
 import { sortOpsForSync } from "./syncOrder";
 import { pullDataForFarm } from "./pull";
@@ -238,12 +239,20 @@ export async function processGesture(gesture: Gesture) {
 
   try {
     const { supabase, session } = await getValidSession();
-    const mappedOps = ops.map((o) => ({
-      client_op_id: o.client_op_id,
-      table: getRemoteTableName(o.table),
-      action: o.action,
-      record: o.record,
-    }));
+    const mappedOps = ops.map((o) => {
+      const remoteTable = getRemoteTableName(o.table);
+
+      return {
+        client_op_id: o.client_op_id,
+        table: remoteTable,
+        action: o.action,
+        record: normalizeTableMutationRecord(
+          remoteTable,
+          o.record,
+          gesture.fazenda_id,
+        ),
+      };
+    });
 
     if (import.meta.env.DEV) {
       console.debug(
@@ -327,6 +336,16 @@ export async function processGesture(gesture: Gesture) {
         refreshTables.add("agenda_itens");
         refreshTables.add("eventos");
         refreshTables.add("eventos_sanitario");
+      }
+      if (
+        remoteTablesTouched.has("protocolos_sanitarios") ||
+        remoteTablesTouched.has("protocolos_sanitarios_itens") ||
+        remoteTablesTouched.has("fazenda_sanidade_config")
+      ) {
+        refreshTables.add("protocolos_sanitarios");
+        refreshTables.add("protocolos_sanitarios_itens");
+        refreshTables.add("agenda_itens");
+        refreshTables.add("fazenda_sanidade_config");
       }
 
       if (refreshTables.size > 0) {
