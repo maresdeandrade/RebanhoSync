@@ -1532,6 +1532,7 @@ interface ItemEditorDialogProps {
   draft: SanitaryProtocolItemDraft;
   selectedProduct: VeterinaryProductSelection | null;
   suggestions: ProdutoVeterinarioCatalogEntry[];
+  siblingItems: ProtocoloSanitarioItem[];
   hasAdvancedFields: boolean;
   isSaving: boolean;
   isEditing: boolean;
@@ -1546,6 +1547,7 @@ function ItemEditorDialog({
   draft,
   selectedProduct,
   suggestions,
+  siblingItems,
   hasAdvancedFields,
   isSaving,
   isEditing,
@@ -1556,6 +1558,20 @@ function ItemEditorDialog({
   const normalizedSelected = selectedProduct
     ? normalizeVeterinaryProductText(selectedProduct.nome)
     : null;
+
+  const dependencyOptions = useMemo(() => {
+    return siblingItems
+      .filter((item) => !isEditing || item.id !== draft.itemCode) // Simplified check, draft.itemCode might not be item.id
+      .map((item) => {
+        const itemDraft = readProtocolItemDraft(item);
+        const code = itemDraft.itemCode || (item.dose_num ? `dose_${item.dose_num}` : "");
+        return {
+          code,
+          label: `${item.produto}${item.dose_num ? ` (Dose ${item.dose_num})` : ""}`,
+        };
+      })
+      .filter((opt) => opt.code.length > 0);
+  }, [siblingItems, isEditing, draft.itemCode]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
