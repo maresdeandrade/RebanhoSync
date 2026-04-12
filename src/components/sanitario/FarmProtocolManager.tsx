@@ -64,7 +64,17 @@ import {
   validateProtocolItemDraft,
 } from "@/lib/sanitario/customization";
 import {
+  STANDARD_PROTOCOLS,
+  buildStandardProtocolItemPayload,
+  buildStandardProtocolPayload,
+  normalizeStandardProtocolInterval,
+  type StandardProtocol,
+  type StandardProtocolCategory,
+  type StandardProtocolLegalStatus,
+} from "@/lib/sanitario/baseProtocols";
+import {
   buildVeterinaryProductMetadataPatch,
+  buildVeterinaryProductMetadata,
   normalizeVeterinaryProductText,
   readVeterinaryProductSelection,
   resolveVeterinaryProductByName,
@@ -148,6 +158,94 @@ const TYPE_META: Record<
     tone: "bg-amber-50 text-amber-700 border-amber-200",
   },
 };
+
+const TEMPLATE_CATEGORY_META: Record<
+  StandardProtocolCategory,
+  {
+    label: string;
+    description: string;
+    icon: typeof Syringe;
+  }
+> = {
+  vacinas: {
+    label: "Vacinas tecnicas",
+    description:
+      "Protocolos preventivos recomendados que nao pertencem ao pack oficial.",
+    icon: Syringe,
+  },
+  vermifugacao: {
+    label: "Parasitas",
+    description:
+      "Rotinas de controle estrategico por categoria, estacao e pressao parasitaria.",
+    icon: Bug,
+  },
+  medicamentos: {
+    label: "Protocolos clinicos e de manejo",
+    description:
+      "Fluxos terapeuticos e boas praticas operacionais materializados como protocolo.",
+    icon: Pill,
+  },
+};
+
+type FarmProtocolSourceGroup = "official" | "standard" | "custom";
+
+function readString(
+  record: Record<string, unknown> | null | undefined,
+  key: string,
+) {
+  const value = record?.[key];
+  return typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
+}
+
+function getStandardProtocolLegalStatusLabel(status: StandardProtocolLegalStatus) {
+  return status === "boa_pratica" ? "Boa pratica" : "Recomendado";
+}
+
+function getStandardProtocolLegalStatusVariant(
+  status: StandardProtocolLegalStatus,
+): "outline" | "secondary" {
+  return status === "boa_pratica" ? "outline" : "secondary";
+}
+
+function resolveProtocolSourceGroup(
+  protocol: Pick<ProtocoloSanitario, "payload">,
+): FarmProtocolSourceGroup {
+  const origin = readString(protocol.payload, "origem");
+  if (origin === "catalogo_oficial") return "official";
+  if (origin === "template_padrao") return "standard";
+  return "custom";
+}
+
+function getProtocolSourceMeta(group: FarmProtocolSourceGroup) {
+  if (group === "official") {
+    return {
+      label: "Pack oficial",
+      description:
+        "Materializados da base oficial e ajustados localmente pela fazenda.",
+    };
+  }
+
+  if (group === "standard") {
+    return {
+      label: "Template canonico",
+      description:
+        "Importados da biblioteca canonica de protocolos operacionais da fazenda.",
+    };
+  }
+
+  return {
+    label: "Customizado",
+    description:
+      "Criados diretamente pela fazenda para cobrir rotinas proprias ou locais.",
+  };
+}
+
+function getProtocolSourceOrder(protocol: Pick<ProtocoloSanitario, "payload">) {
+  const group = resolveProtocolSourceGroup(protocol);
+  if (group === "official") return 0;
+  if (group === "standard") return 1;
+  return 2;
+}
 
 function summarizeTarget(
   sexoAlvo: string,
@@ -302,9 +400,21 @@ export function FarmProtocolManager({
     () =>
       [...protocols]
         .filter((protocol) => !protocol.deleted_at)
-        .sort((left, right) => left.nome.localeCompare(right.nome)),
+        .sort((left, right) => {
+          const sourceOrder = getProtocolSourceOrder(left) - getProtocolSourceOrder(right);
+          if (sourceOrder !== 0) return sourceOrder;
+          return left.nome.localeCompare(right.nome);
+        }),
     [protocols],
   );
+
+  const groupedStandardTemplates = useMemo(() => {
+    return Object.entries(TEMPLATE_CATEGORY_META).map(([category, meta]) => ({
+      category: category as StandardProtocolCategory,
+      meta,
+      protocols: STANDARD_PROTOCOLS.filter((protocol) => protocol.categoria === category),
+    }));
+  }, []);
 
   const itemsByProtocol = useMemo(() => {
     const grouped = new Map<string, ProtocoloSanitarioItem[]>();
@@ -322,6 +432,42 @@ export function FarmProtocolManager({
 
     return grouped;
   }, [protocolItems]);
+
+  const groupedActiveProtocols = useMemo(
+    () =>
+      [
+        {
+          key: "official" as const,
+          meta: getProtocolSourceMeta("official"),
+          protocols: activeProtocols.filter(
+            (protocol) => resolveProtocolSourceGroup(protocol) === "official",
+          ),
+        },
+        {
+          key: "standard" as const,
+          meta: getProtocolSourceMeta("standard"),
+          protocols: activeProtocols.filter(
+            (protocol) => resolveProtocolSourceGroup(protocol) === "standard",
+          ),
+        },
+        {
+          key: "custom" as const,
+          meta: getProtocolSourceMeta("custom"),
+          protocols: activeProtocols.filter(
+            (protocol) => resolveProtocolSourceGroup(protocol) === "custom",
+          ),
+        },
+      ].filter((group) => group.protocols.length > 0),
+    [activeProtocols],
+  );
+
+  const importedStandardTemplateIds = useMemo(() => {
+    return new Set(
+      activeProtocols
+        .map((protocol) => readString(protocol.payload, "standard_id"))
+        .filter((value): value is string => Boolean(value)),
+    );
+  }, [activeProtocols]);
 
   const itemSuggestions = useMemo(() => {
     if (!itemEditor) return [];
@@ -376,6 +522,83 @@ export function FarmProtocolManager({
       selectedProduct: readVeterinaryProductSelection(item.payload),
       draft: readProtocolItemDraft(item),
     });
+  };
+
+  const handleImportStandardTemplate = async (protocol: StandardProtocol) => {
+    if (!canManage) {
+      showError("Apenas manager e owner podem importar templates canonicos.");
+      return;
+    }
+
+    if (importedStandardTemplateIds.has(protocol.id)) {
+      showError("Este template canonico ja foi importado para a fazenda.");
+      return;
+    }
+
+    const protocolId = crypto.randomUUID();
+
+    const protocolOperation: OperationInput = {
+      table: "protocolos_sanitarios",
+      action: "INSERT",
+      record: {
+        id: protocolId,
+        nome: protocol.nome,
+        descricao: protocol.descricao,
+        ativo: true,
+        payload: buildStandardProtocolPayload(protocol),
+      },
+    };
+
+    const itemOperations: OperationInput[] = protocol.itens.map((item) => {
+      const resolvedProduct = resolveVeterinaryProductByName(
+        item.produto,
+        catalogProducts,
+        {
+          sanitaryType: item.tipo,
+        },
+      );
+      const automaticSelection = resolvedProduct.product
+        ? createProductSelection(resolvedProduct.product, resolvedProduct.matchMode)
+        : null;
+
+      return {
+        table: "protocolos_sanitarios_itens",
+        action: "INSERT",
+        record: {
+          id: crypto.randomUUID(),
+          protocolo_id: protocolId,
+          protocol_item_id: crypto.randomUUID(),
+          version: 1,
+          tipo: item.tipo,
+          produto: item.produto,
+          intervalo_dias: normalizeStandardProtocolInterval(item),
+          dose_num: item.dose_num,
+          gera_agenda: item.gera_agenda,
+          dedup_template: item.dedup_template ?? null,
+          payload: {
+            ...buildStandardProtocolItemPayload(item),
+            ...buildVeterinaryProductMetadata({
+              selectedProduct: automaticSelection,
+              typedName: item.produto,
+              source: automaticSelection?.origem,
+              matchMode: automaticSelection?.matchMode ?? null,
+            }),
+          },
+        },
+      };
+    });
+
+    setIsSaving(true);
+    try {
+      await createGesture(activeFarmId, [protocolOperation, ...itemOperations]);
+      showSuccess(`Template "${protocol.nome}" importado para a fazenda.`);
+    } catch (error) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      console.error(err);
+      showError("Nao foi possivel importar o template canonico.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleSaveProtocol = async () => {
@@ -554,204 +777,336 @@ export function FarmProtocolManager({
           {managementHint}
         </div>
 
+        <Card className="border-dashed border-primary/30 bg-primary/5">
+          <CardHeader className="space-y-3">
+            <div className="space-y-1">
+              <CardTitle className="text-lg">
+                Templates canonicos da fazenda
+              </CardTitle>
+              <CardDescription>
+                Modelos operacionais reutilizaveis para importar direto para a
+                camada ativa da fazenda. Brucelose, raiva e exigencias de
+                carencia/rastreabilidade permanecem no catalogo oficial e no
+                overlay acima.
+              </CardDescription>
+            </div>
+          </CardHeader>
+
+          <CardContent className="space-y-4">
+            <div className="rounded-2xl border border-border/70 bg-background/80 px-4 py-3 text-sm text-muted-foreground">
+              Esta biblioteca nao cria uma camada paralela. Cada importacao
+              vira um `protocolo_sanitario` normal da fazenda, com
+              `calendario_base`, produto e rastreabilidade iguais aos demais.
+            </div>
+
+            <div className="grid gap-4 xl:grid-cols-3">
+              {groupedStandardTemplates.map((group) => {
+                const GroupIcon = group.meta.icon;
+
+                return (
+                  <div
+                    key={group.category}
+                    className="space-y-3 rounded-2xl border border-border/70 bg-background/80 p-4"
+                  >
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <GroupIcon className="h-4 w-4 text-primary" />
+                        <p className="font-medium text-foreground">
+                          {group.meta.label}
+                        </p>
+                        <Badge variant="outline">{group.protocols.length}</Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        {group.meta.description}
+                      </p>
+                    </div>
+
+                    <div className="space-y-3">
+                      {group.protocols.map((template) => {
+                        const alreadyImported = importedStandardTemplateIds.has(
+                          template.id,
+                        );
+
+                        return (
+                          <Card key={template.id} className="border-border/70 shadow-none">
+                            <CardHeader className="space-y-3 pb-3">
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="space-y-1">
+                                  <CardTitle className="text-base">
+                                    {template.nome}
+                                  </CardTitle>
+                                  <CardDescription className="text-sm">
+                                    {template.descricao}
+                                  </CardDescription>
+                                </div>
+
+                                <Button
+                                  variant={alreadyImported ? "outline" : "default"}
+                                  size="sm"
+                                  onClick={() =>
+                                    handleImportStandardTemplate(template)
+                                  }
+                                  disabled={!canManage || alreadyImported || isSaving}
+                                >
+                                  {alreadyImported ? "Ja importado" : "Importar"}
+                                </Button>
+                              </div>
+
+                              <div className="flex flex-wrap gap-2">
+                                <Badge
+                                  variant={getStandardProtocolLegalStatusVariant(
+                                    template.status_legal,
+                                  )}
+                                >
+                                  {getStandardProtocolLegalStatusLabel(
+                                    template.status_legal,
+                                  )}
+                                </Badge>
+                                <Badge variant="outline">
+                                  {template.calendario_base.label}
+                                </Badge>
+                                <Badge variant="outline">
+                                  {template.itens.length} etapa(s)
+                                </Badge>
+                              </div>
+                            </CardHeader>
+                          </Card>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+
         {activeProtocols.length === 0 ? (
           <Card className="border-dashed">
             <CardContent className="flex flex-col items-center gap-3 py-10 text-center">
               <ClipboardList className="h-8 w-8 text-muted-foreground" />
               <div className="space-y-1">
                 <p className="font-medium text-foreground">
-                  Nenhum protocolo customizado ainda
+                  Nenhum protocolo operacional ativo ainda
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  Ative a base regulatoria oficial acima ou crie um calendario
-                  operacional proprio para a fazenda.
+                  Ative a base regulatoria oficial acima, importe um template
+                  canonico ou crie um calendario operacional proprio para a
+                  fazenda.
                 </p>
               </div>
             </CardContent>
           </Card>
         ) : null}
 
-        <div className="grid gap-4 xl:grid-cols-2">
-          {activeProtocols.map((protocol) => {
-            const draft = readProtocolDraft(protocol);
-            const protocolItemsList = itemsByProtocol.get(protocol.id) ?? [];
+        <div className="space-y-6">
+          {groupedActiveProtocols.map((group) => (
+            <div key={group.key} className="space-y-3">
+              <div className="space-y-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="font-medium text-foreground">{group.meta.label}</p>
+                  <Badge variant="outline">{group.protocols.length}</Badge>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  {group.meta.description}
+                </p>
+              </div>
 
-            return (
-              <Card key={protocol.id} className="border-border/70">
-                <CardHeader className="space-y-3">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="space-y-1">
-                      <CardTitle className="text-lg">{protocol.nome}</CardTitle>
-                      <CardDescription>
-                        {protocol.descricao || "Sem descricao operacional."}
-                      </CardDescription>
-                    </div>
+              <div className="grid gap-4 xl:grid-cols-2">
+                {group.protocols.map((protocol) => {
+                  const draft = readProtocolDraft(protocol);
+                  const protocolItemsList = itemsByProtocol.get(protocol.id) ?? [];
+                  const sourceGroup = resolveProtocolSourceGroup(protocol);
+                  const sourceMeta = getProtocolSourceMeta(sourceGroup);
+                  const legalStatus = readString(protocol.payload, "status_legal");
 
-                    <div className="flex flex-wrap gap-2">
-                      <Badge variant={protocol.ativo ? "secondary" : "outline"}>
-                        {protocol.ativo ? "Ativo" : "Inativo"}
-                      </Badge>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => openEditProtocol(protocol)}
-                        disabled={!canManage}
-                      >
-                        <PencilLine className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setDeleteTarget(protocol)}
-                        disabled={!canManage}
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </div>
-                  </div>
+                  return (
+                    <Card key={protocol.id} className="border-border/70">
+                      <CardHeader className="space-y-3">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="space-y-1">
+                            <CardTitle className="text-lg">{protocol.nome}</CardTitle>
+                            <CardDescription>
+                              {protocol.descricao || "Sem descricao operacional."}
+                            </CardDescription>
+                          </div>
 
-                  <div className="flex flex-wrap gap-2">
-                    <ProtocolBadges draft={draft} />
-                    <Badge variant="outline">
-                      {summarizeTarget(
-                        draft.sexoAlvo,
-                        draft.idadeMinDias,
-                        draft.idadeMaxDias,
-                      )}
-                    </Badge>
-                    {draft.validoDe || draft.validoAte ? (
-                      <Badge variant="outline">
-                        Vigencia {draft.validoDe || "..."} ate {draft.validoAte || "..."}
-                      </Badge>
-                    ) : null}
-                  </div>
-                </CardHeader>
-
-                <CardContent className="space-y-3">
-                  <div className="flex items-center justify-between rounded-2xl border border-border/70 bg-muted/10 px-4 py-3">
-                    <div className="text-sm">
-                      <p className="font-medium text-foreground">
-                        {protocolItemsList.length} etapas configuradas
-                      </p>
-                      <p className="text-muted-foreground">
-                        Produtos, deduplicacao e elegibilidade ficam por etapa.
-                      </p>
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => openCreateItem(protocol.id)}
-                      disabled={!canManage}
-                    >
-                      <Plus className="mr-2 h-4 w-4" />
-                      Nova etapa
-                    </Button>
-                  </div>
-
-                  <div className="space-y-3">
-                    {protocolItemsList.map((item) => {
-                      const itemDraft = readProtocolItemDraft(item);
-                      const typeMeta = TYPE_META[item.tipo];
-                      const TypeIcon = typeMeta.icon;
-                      const linkedProduct = readVeterinaryProductSelection(item.payload);
-
-                      return (
-                        <div
-                          key={item.id}
-                          className="rounded-2xl border border-border/70 p-4"
-                        >
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="space-y-2">
-                              <div className="flex flex-wrap items-center gap-2">
-                                <span
-                                  className={`inline-flex items-center gap-2 rounded-full border px-2.5 py-1 text-xs font-medium ${typeMeta.tone}`}
-                                >
-                                  <TypeIcon className="h-3.5 w-3.5" />
-                                  {typeMeta.label}
-                                </span>
-                                {item.dose_num ? (
-                                  <Badge variant="outline">Dose {item.dose_num}</Badge>
-                                ) : null}
-                                {item.gera_agenda ? (
-                                  <Badge variant="secondary">Gera agenda</Badge>
-                                ) : (
-                                  <Badge variant="outline">Sem agenda</Badge>
-                                )}
-                                {linkedProduct ? (
-                                  <Badge variant="outline">
-                                    Catalogo vinculado
-                                  </Badge>
-                                ) : null}
-                              </div>
-                              <div>
-                                <p className="font-medium text-foreground">
-                                  {item.produto}
-                                </p>
-                                <p className="text-sm text-muted-foreground">
-                                  {summarizeInterval(
-                                    item.intervalo_dias,
-                                    item.gera_agenda,
-                                    item.payload,
-                                  )}
-                                </p>
-                              </div>
-                            </div>
-
+                          <div className="flex flex-wrap gap-2">
+                            <Badge variant={protocol.ativo ? "secondary" : "outline"}>
+                              {protocol.ativo ? "Ativo" : "Inativo"}
+                            </Badge>
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => openEditItem(item)}
+                              onClick={() => openEditProtocol(protocol)}
                               disabled={!canManage}
                             >
                               <PencilLine className="h-4 w-4" />
                             </Button>
-                          </div>
-
-                          <div className="mt-3 grid gap-2 text-sm text-muted-foreground">
-                            <p>{itemDraft.indicacao || "Sem indicacao operacional."}</p>
-                            <div className="flex flex-wrap gap-2">
-                              <Badge variant="outline">
-                                {summarizeTarget(
-                                  itemDraft.sexoAlvo,
-                                  itemDraft.idadeMinDias,
-                                  itemDraft.idadeMaxDias,
-                                )}
-                              </Badge>
-                              {itemDraft.obrigatorio ? (
-                                <Badge variant="destructive">Obrigatorio</Badge>
-                              ) : null}
-                              {itemDraft.obrigatorioPorRisco ? (
-                                <Badge variant="secondary">Por risco</Badge>
-                              ) : null}
-                              {itemDraft.requiresVet ? (
-                                <Badge variant="outline">Veterinario</Badge>
-                              ) : null}
-                              {itemDraft.dedupTemplate ? (
-                                <Badge variant="outline">
-                                  Dedup {itemDraft.dedupTemplate}
-                                </Badge>
-                              ) : null}
-                              {linkedProduct ? (
-                                <Badge variant="outline">
-                                  <Link2 className="mr-1 h-3 w-3" />
-                                  {linkedProduct.nome}
-                                </Badge>
-                              ) : null}
-                            </div>
-                            {itemDraft.observacoes ? (
-                              <p className="rounded-xl bg-muted/20 p-3 text-xs leading-6">
-                                {itemDraft.observacoes}
-                              </p>
-                            ) : null}
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => setDeleteTarget(protocol)}
+                              disabled={!canManage}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
                           </div>
                         </div>
-                      );
-                    })}
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
+
+                        <div className="flex flex-wrap gap-2">
+                          <Badge variant="outline">{sourceMeta.label}</Badge>
+                          {legalStatus ? (
+                            <Badge variant="outline">
+                              {legalStatus.replaceAll("_", " ")}
+                            </Badge>
+                          ) : null}
+                          <ProtocolBadges draft={draft} />
+                          <Badge variant="outline">
+                            {summarizeTarget(
+                              draft.sexoAlvo,
+                              draft.idadeMinDias,
+                              draft.idadeMaxDias,
+                            )}
+                          </Badge>
+                          {draft.validoDe || draft.validoAte ? (
+                            <Badge variant="outline">
+                              Vigencia {draft.validoDe || "..."} ate {draft.validoAte || "..."}
+                            </Badge>
+                          ) : null}
+                        </div>
+                      </CardHeader>
+
+                      <CardContent className="space-y-3">
+                        <div className="flex items-center justify-between rounded-2xl border border-border/70 bg-muted/10 px-4 py-3">
+                          <div className="text-sm">
+                            <p className="font-medium text-foreground">
+                              {protocolItemsList.length} etapas configuradas
+                            </p>
+                            <p className="text-muted-foreground">
+                              Produtos, deduplicacao e elegibilidade ficam por etapa.
+                            </p>
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => openCreateItem(protocol.id)}
+                            disabled={!canManage}
+                          >
+                            <Plus className="mr-2 h-4 w-4" />
+                            Nova etapa
+                          </Button>
+                        </div>
+
+                        <div className="space-y-3">
+                          {protocolItemsList.map((item) => {
+                            const itemDraft = readProtocolItemDraft(item);
+                            const typeMeta = TYPE_META[item.tipo];
+                            const TypeIcon = typeMeta.icon;
+                            const linkedProduct = readVeterinaryProductSelection(
+                              item.payload,
+                            );
+
+                            return (
+                              <div
+                                key={item.id}
+                                className="rounded-2xl border border-border/70 p-4"
+                              >
+                                <div className="flex items-start justify-between gap-3">
+                                  <div className="space-y-2">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                      <span
+                                        className={`inline-flex items-center gap-2 rounded-full border px-2.5 py-1 text-xs font-medium ${typeMeta.tone}`}
+                                      >
+                                        <TypeIcon className="h-3.5 w-3.5" />
+                                        {typeMeta.label}
+                                      </span>
+                                      {item.dose_num ? (
+                                        <Badge variant="outline">Dose {item.dose_num}</Badge>
+                                      ) : null}
+                                      {item.gera_agenda ? (
+                                        <Badge variant="secondary">Gera agenda</Badge>
+                                      ) : (
+                                        <Badge variant="outline">Sem agenda</Badge>
+                                      )}
+                                      {linkedProduct ? (
+                                        <Badge variant="outline">
+                                          Catalogo vinculado
+                                        </Badge>
+                                      ) : null}
+                                    </div>
+                                    <div>
+                                      <p className="font-medium text-foreground">
+                                        {item.produto}
+                                      </p>
+                                      <p className="text-sm text-muted-foreground">
+                                        {summarizeInterval(
+                                          item.intervalo_dias,
+                                          item.gera_agenda,
+                                          item.payload,
+                                        )}
+                                      </p>
+                                    </div>
+                                  </div>
+
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => openEditItem(item)}
+                                    disabled={!canManage}
+                                  >
+                                    <PencilLine className="h-4 w-4" />
+                                  </Button>
+                                </div>
+
+                                <div className="mt-3 grid gap-2 text-sm text-muted-foreground">
+                                  <p>{itemDraft.indicacao || "Sem indicacao operacional."}</p>
+                                  <div className="flex flex-wrap gap-2">
+                                    <Badge variant="outline">
+                                      {summarizeTarget(
+                                        itemDraft.sexoAlvo,
+                                        itemDraft.idadeMinDias,
+                                        itemDraft.idadeMaxDias,
+                                      )}
+                                    </Badge>
+                                    {itemDraft.obrigatorio ? (
+                                      <Badge variant="destructive">Obrigatorio</Badge>
+                                    ) : null}
+                                    {itemDraft.obrigatorioPorRisco ? (
+                                      <Badge variant="secondary">Por risco</Badge>
+                                    ) : null}
+                                    {itemDraft.requiresVet ? (
+                                      <Badge variant="outline">Veterinario</Badge>
+                                    ) : null}
+                                    {itemDraft.dedupTemplate ? (
+                                      <Badge variant="outline">
+                                        Dedup {itemDraft.dedupTemplate}
+                                      </Badge>
+                                    ) : null}
+                                    {linkedProduct ? (
+                                      <Badge variant="outline">
+                                        <Link2 className="mr-1 h-3 w-3" />
+                                        {linkedProduct.nome}
+                                      </Badge>
+                                    ) : null}
+                                  </div>
+                                  {itemDraft.observacoes ? (
+                                    <p className="rounded-xl bg-muted/20 p-3 text-xs leading-6">
+                                      {itemDraft.observacoes}
+                                    </p>
+                                  ) : null}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </div>
       </FormSection>
 

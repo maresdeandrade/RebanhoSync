@@ -22,6 +22,8 @@ import { supabase } from "@/lib/supabase";
 import { buildSanitaryBaseCalendarPayload } from "@/lib/sanitario/calendar";
 
 const OFFICIAL_PROTOCOL_SOURCE = "catalogo_oficial";
+const OFFICIAL_PROTOCOL_SCOPE = "oficial";
+const OFFICIAL_PROTOCOL_ACTIVATION_MODE = "materializar_protocolo";
 
 type CachedOfficialCatalog = {
   templates: CatalogoProtocoloOficial[];
@@ -229,6 +231,33 @@ function buildCalendarPayload(item: CatalogoProtocoloOficialItem) {
   });
 }
 
+function resolveOfficialFamilyCode(template: CatalogoProtocoloOficial) {
+  if (template.slug.includes("brucelose")) return "brucelose";
+  if (template.slug.includes("raiva")) return "raiva_herbivoros";
+  if (template.slug.includes("medicamentos")) return "medicamentos_rastreabilidade";
+  if (template.slug.includes("parasitas")) return "controle_parasitario";
+  if (template.slug.includes("transito")) return "transito_documental";
+  if (template.slug.includes("quarentena")) return "quarentena_entrada";
+  if (template.slug.includes("agua-limpeza")) return "agua_limpeza";
+  if (template.slug.includes("feed-ban")) return "feed_ban_ruminantes";
+  if (template.slug.includes("notificacao")) return "notificacao_suspeita";
+  return template.slug.replaceAll("-", "_");
+}
+
+function resolveLegacySeedFamilyCode(
+  protocol: Pick<ProtocoloSanitario, "payload">,
+) {
+  const familyCode = readString(protocol.payload, "family_code");
+  if (familyCode) return familyCode;
+
+  const templateCode = readString(protocol.payload, "template_code");
+  if (!templateCode) return null;
+
+  if (templateCode.startsWith("MAPA_RAIVA_")) return "raiva_herbivoros";
+  if (templateCode.startsWith("MAPA_BRUCELOSE_")) return "brucelose";
+  return null;
+}
+
 function buildOfficialProtocolPayload(
   template: CatalogoProtocoloOficial,
   config: OfficialSanitaryPackConfigInput,
@@ -236,6 +265,11 @@ function buildOfficialProtocolPayload(
 ): Record<string, unknown> {
   return {
     origem: OFFICIAL_PROTOCOL_SOURCE,
+    source_origin: OFFICIAL_PROTOCOL_SOURCE,
+    scope: OFFICIAL_PROTOCOL_SCOPE,
+    activation_mode: OFFICIAL_PROTOCOL_ACTIVATION_MODE,
+    family_code: resolveOfficialFamilyCode(template),
+    canonical_key: template.slug,
     official_pack_active: true,
     official_template_id: template.id,
     official_slug: template.slug,
@@ -258,6 +292,11 @@ function buildOfficialProtocolItemPayload(
 ): Record<string, unknown> {
   return {
     origem: OFFICIAL_PROTOCOL_SOURCE,
+    source_origin: OFFICIAL_PROTOCOL_SOURCE,
+    scope: OFFICIAL_PROTOCOL_SCOPE,
+    activation_mode: OFFICIAL_PROTOCOL_ACTIVATION_MODE,
+    family_code: resolveOfficialFamilyCode(template),
+    canonical_key: `${template.slug}:${item.codigo}`,
     official_template_id: template.id,
     official_item_id: item.id,
     official_item_code: item.codigo,
@@ -452,6 +491,9 @@ export async function buildOfficialSanitaryPackOps(input: {
   const selectedTemplateIds = new Set(
     input.selection.templates.map((entry) => entry.template.id),
   );
+  const selectedFamilyCodes = new Set(
+    input.selection.templates.map((entry) => resolveOfficialFamilyCode(entry.template)),
+  );
 
   const configRecord = {
     fazenda_id: input.fazendaId,
@@ -481,7 +523,32 @@ export async function buildOfficialSanitaryPackOps(input: {
       existingProtocol.payload,
       "official_template_id",
     );
-    if (!officialTemplateId || selectedTemplateIds.has(officialTemplateId)) {
+    if (officialTemplateId) {
+      if (selectedTemplateIds.has(officialTemplateId)) {
+        continue;
+      }
+
+      ops.push({
+        table: "protocolos_sanitarios",
+        action: "UPDATE",
+        record: {
+          id: existingProtocol.id,
+          ativo: false,
+          payload: {
+            ...(existingProtocol.payload ?? {}),
+            official_pack_active: false,
+            official_pack_disabled_at: new Date().toISOString(),
+            official_pack_disabled_reason:
+              "template_removed_from_current_official_selection",
+          },
+        },
+      });
+
+      continue;
+    }
+
+    const legacyFamilyCode = resolveLegacySeedFamilyCode(existingProtocol);
+    if (!legacyFamilyCode || !selectedFamilyCodes.has(legacyFamilyCode)) {
       continue;
     }
 
@@ -496,7 +563,7 @@ export async function buildOfficialSanitaryPackOps(input: {
           official_pack_active: false,
           official_pack_disabled_at: new Date().toISOString(),
           official_pack_disabled_reason:
-            "template_removed_from_current_official_selection",
+            "legacy_seed_replaced_by_current_official_family",
         },
       },
     });

@@ -157,7 +157,7 @@ describe("RegulatoryOverlayManager", () => {
       <MemoryRouter
         initialEntries={["/protocolos-sanitarios?overlayImpact=nutrition"]}
       >
-        <RegulatoryOverlayManager activeFarmId="farm-1" />
+        <RegulatoryOverlayManager activeFarmId="farm-1" canManage={false} />
       </MemoryRouter>,
     );
 
@@ -165,5 +165,69 @@ describe("RegulatoryOverlayManager", () => {
     expect(screen.getByText("Feed-ban de ruminantes")).toBeInTheDocument();
     expect(screen.queryByText("Atualizacao documental")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /limpar recorte/i })).toBeInTheDocument();
+  });
+
+  it("renderiza complementos da fazenda na mesma camada do overlay", () => {
+    mockedUseLiveQuery.mockImplementation((() => {
+      const responses = [
+        {
+          fazenda_id: "farm-1",
+          uf: "SP",
+          aptidao: "all",
+          sistema: "all",
+          zona_raiva_risco: "medio",
+          pressao_carrapato: "medio",
+          pressao_helmintos: "medio",
+          modo_calendario: "minimo_legal",
+          payload: {
+            activated_template_slugs: [],
+            custom_overlay_definitions: [
+              {
+                id: "overlay-farm-1",
+                label: "Checklist pre-lote maternidade",
+                description: "Revisar cama e segregacao antes da entrada.",
+                subarea: "quarentena",
+                status_legal: "boa_pratica",
+                animal_centric: true,
+                active: true,
+                created_at: "2026-04-11T10:00:00.000Z",
+                updated_at: "2026-04-11T10:00:00.000Z",
+              },
+            ],
+          },
+          client_id: "client-1",
+          client_op_id: "op-config",
+          client_tx_id: null,
+          client_recorded_at: "2026-04-11T10:00:00.000Z",
+          server_received_at: "2026-04-11T10:00:00.000Z",
+          created_at: "2026-04-11T10:00:00.000Z",
+          updated_at: "2026-04-11T10:00:00.000Z",
+          deleted_at: null,
+        },
+        [],
+        [],
+      ];
+      let callCount = 0;
+      return () => responses[callCount++] as ReturnType<typeof useLiveQuery>;
+    })());
+
+    render(
+      <MemoryRouter initialEntries={["/protocolos-sanitarios"]}>
+        <RegulatoryOverlayManager activeFarmId="farm-1" canManage={true} />
+      </MemoryRouter>,
+    );
+
+    expect(
+      screen.getByText("Complementos operacionais e overlays"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Checklist pre-lote maternidade"),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Complemento operacional da fazenda")).toBeInTheDocument();
+    expect(screen.queryByText("1 oficial(is) | 0 fazenda")).not.toBeInTheDocument();
+    expect(screen.getByText("0 oficial(is) | 1 fazenda")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /novo complemento da fazenda/i }),
+    ).toBeInTheDocument();
   });
 });

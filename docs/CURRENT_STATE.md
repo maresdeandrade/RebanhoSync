@@ -54,11 +54,12 @@ Todos os TDs da lista original foram fechados via migrations de marco/2026. Nao 
 - Selecao do pack oficial agora suporta nucleo federal + overlay estadual + ajuste por risco da fazenda.
 - `ProtocolosSanitarios` agora expoe uma superficie de ativacao do pack oficial por fazenda, com preview da selecao regulatoria, configuracao de risco e reaplicacao controlada para owner/manager.
 - A aba de protocolos agora separa explicitamente tres camadas: base regulatoria oficial, overlay operacional do pack e protocolos operacionais da fazenda, reduzindo a leitura de cards aparentemente repetidos.
+- Os templates canonicos de protocolos da fazenda agora ficam dentro da propria camada operacional e deixaram de existir como "biblioteca complementar" paralela.
 - A biblioteca padrao da UI deixou de expor aftosa como calendario vacinal base.
 - `Registrar` agora diferencia movimentacao interna de transito externo e aplica checklist GTA/e-GTA com bloqueio documental e pre-check PNCEBT para reproducao interestadual.
 - `AnimalDetalhe` agora abre e encerra suspeita sanitaria a partir do catalogo oficial de doencas notificaveis, gravando evento append-only e bloqueando movimentacao/venda enquanto a suspeita permanecer aberta.
 - Bloqueio local por suspeita sanitaria agora tambem fecha os atalhos de movimentacao fora do `Registrar`, incluindo ficha do animal, adicao em lote e mudanca de lote em massa.
-- O overlay regulatorio oficial agora tambem roda no runtime com um gerenciador de conformidade para `feed-ban` de ruminantes e checklists operacionais de agua/limpeza, quarentena, atualizacao documental e boas praticas.
+- O overlay regulatorio agora roda em uma unica superficie para o pack oficial e para complementos operacionais da propria fazenda, cobrindo `feed-ban` de ruminantes, checklists de agua/limpeza, quarentena, atualizacao documental e boas praticas locais sem abrir uma camada paralela.
 - O dominio append-only `conformidade` passou a registrar verificacoes regulatorio-operacionais no historico sem exigir alvo animal/lote, enquanto `fazenda_sanidade_config.payload.overlay_runtime` guarda o estado mutavel dessas checagens por fazenda.
 - A agenda agora projeta o `overlay_runtime` de conformidade com badges de restricao no topo e nos grupos, alerta operacional para `feed-ban` e checklists criticos pendentes, e segue visivel mesmo quando `agenda_itens` ainda estiver vazia.
 - `Registrar` agora transforma o `overlay_runtime` de conformidade em bloqueios contextuais reais para nutricao e movimentacao, impedindo continuidade quando `feed-ban`, quarentena ou exigencias documentais criticas estiverem em aberto.

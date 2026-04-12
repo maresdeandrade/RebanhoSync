@@ -9,6 +9,19 @@ export type StandardProtocolCategory =
   | "vermifugacao"
   | "medicamentos";
 
+export type StandardProtocolLegalStatus = "recomendado" | "boa_pratica";
+export type StandardProtocolScope = "fazenda";
+export type StandardProtocolActivationMode = "materializar_protocolo";
+
+export type StandardProtocolFamilyCode =
+  | "clostridioses"
+  | "reprodutiva"
+  | "controle_estrategico_parasitas"
+  | "vermifugacao_desmama"
+  | "cura_umbigo"
+  | "tristeza_parasitaria_bovina"
+  | "terapia_vaca_seca";
+
 export interface StandardProtocolItem {
   tipo: SanitarioTipoEnum;
   produto: string;
@@ -28,9 +41,15 @@ export interface StandardProtocolItem {
 
 export interface StandardProtocol {
   id: string;
+  canonical_key: string;
+  family_code: StandardProtocolFamilyCode;
   nome: string;
   descricao: string;
   categoria: StandardProtocolCategory;
+  scope: StandardProtocolScope;
+  status_legal: StandardProtocolLegalStatus;
+  source_origin: "biblioteca_canonica_fazenda";
+  activation_mode: StandardProtocolActivationMode;
   obrigatorio?: boolean;
   referencia?: string;
   calendario_base: {
@@ -50,86 +69,17 @@ export const STANDARD_PROTOCOL_LIBRARY_VERSION = 1;
 
 export const STANDARD_PROTOCOLS: StandardProtocol[] = [
   {
-    id: "vac-brucelose",
-    nome: "Brucelose (Obrigatoria - Femeas)",
-    descricao:
-      "Vacinacao obrigatoria de femeas entre 3 e 8 meses de idade com vacina B19. Zoonose grave.",
-    categoria: "vacinas",
-    obrigatorio: true,
-    referencia: "MAPA - PNCEBT",
-    calendario_base: {
-      profile: "janela_etaria",
-      label: "Janela etaria obrigatoria",
-    },
-    itens: [
-      {
-        item_code: "brucelose-b19",
-        tipo: "vacinacao",
-        produto: "Vacina Brucelose B19 (Viva)",
-        intervalo_dias: 0,
-        dose_num: 1,
-        gera_agenda: true,
-        indicacao:
-          "Femeas (bezerras) entre 3 e 8 meses de idade. Obrigatoria marcacao com ferro candente ou tatuagem.",
-        sexo_alvo: "F",
-        idade_min_dias: 90,
-        idade_max_dias: 240,
-        observacoes:
-          "Apenas medico veterinario ou vacinador auxiliar cadastrado pode aplicar. Vacina viva.",
-        dedup_template: "vacina:brucelose:{animal_id}",
-        calendario_base: {
-          mode: "age_window",
-          anchor: "birth",
-          label: "Dose unica entre 90 e 240 dias",
-          ageStartDays: 90,
-          ageEndDays: 240,
-        },
-      },
-    ],
-  },
-  {
-    id: "vac-raiva",
-    nome: "Raiva dos Herbivoros",
-    descricao:
-      "Vacinacao contra Raiva. Obrigatoria em regioes endemicas e recomendada em todo o territorio nacional.",
-    categoria: "vacinas",
-    obrigatorio: false,
-    referencia: "MAPA - PNCRH",
-    calendario_base: {
-      profile: "preventivo_anual",
-      label: "Revisao anual do rebanho",
-    },
-    itens: [
-      {
-        item_code: "raiva-anual",
-        tipo: "vacinacao",
-        produto: "Vacina Antirrabica",
-        intervalo_dias: 365,
-        dose_num: 1,
-        gera_agenda: true,
-        indicacao:
-          "Todo o rebanho a partir de 3 meses. Primovacinacao requer reforco apos 30 dias.",
-        sexo_alvo: "todos",
-        idade_min_dias: 90,
-        observacoes:
-          "Em areas de foco, revacinacao pode ser semestral ou conforme determinacao da defesa sanitaria.",
-        dedup_template: "vacina:raiva:{ano}",
-        calendario_base: {
-          mode: "rolling_interval",
-          anchor: "calendar_month",
-          label: "Revisao anual a partir de 90 dias",
-          intervalDays: 365,
-          ageStartDays: 90,
-        },
-      },
-    ],
-  },
-  {
     id: "vac-clostridioses",
+    canonical_key: "clostridioses",
+    family_code: "clostridioses",
     nome: "Clostridioses (Manqueira/Polivalente)",
     descricao:
       "Prevencao contra Carbunculo Sintomatico, Gangrena Gasosa, Enterotoxemias e Botulismo.",
     categoria: "vacinas",
+    scope: "fazenda",
+    status_legal: "recomendado",
+    source_origin: "biblioteca_canonica_fazenda",
+    activation_mode: "materializar_protocolo",
     obrigatorio: false,
     referencia: "SBMV / Embrapa",
     calendario_base: {
@@ -161,10 +111,16 @@ export const STANDARD_PROTOCOLS: StandardProtocol[] = [
   },
   {
     id: "vac-reprodutiva",
+    canonical_key: "reprodutiva",
+    family_code: "reprodutiva",
     nome: "Reprodutiva (IBR/BVD/Leptospirose)",
     descricao:
       "Prevencao de perdas gestacionais e infertilidade causadas por virus e bacterias.",
     categoria: "vacinas",
+    scope: "fazenda",
+    status_legal: "recomendado",
+    source_origin: "biblioteca_canonica_fazenda",
+    activation_mode: "materializar_protocolo",
     obrigatorio: false,
     referencia: "SBMV / Embrapa",
     calendario_base: {
@@ -195,10 +151,16 @@ export const STANDARD_PROTOCOLS: StandardProtocol[] = [
   },
   {
     id: "vermi-estrategica-seca",
+    canonical_key: "controle_estrategico_parasitas",
+    family_code: "controle_estrategico_parasitas",
     nome: "Controle Estrategico (5-7-9)",
     descricao:
       "Esquema classico de vermifugacao estrategica no inicio, meio e fim da seca (maio, julho, setembro).",
     categoria: "vermifugacao",
+    scope: "fazenda",
+    status_legal: "recomendado",
+    source_origin: "biblioteca_canonica_fazenda",
+    activation_mode: "materializar_protocolo",
     referencia: "Embrapa Gado de Corte",
     calendario_base: {
       profile: "preventivo_sazonal",
@@ -265,10 +227,16 @@ export const STANDARD_PROTOCOLS: StandardProtocol[] = [
   },
   {
     id: "vermi-desmama",
+    canonical_key: "vermifugacao_desmama",
+    family_code: "vermifugacao_desmama",
     nome: "Vermifugacao a Desmama",
     descricao:
       "Controle parasitario em bezerros no momento da desmama (fase de alto estresse e suscetibilidade).",
     categoria: "vermifugacao",
+    scope: "fazenda",
+    status_legal: "recomendado",
+    source_origin: "biblioteca_canonica_fazenda",
+    activation_mode: "materializar_protocolo",
     referencia: "Pratica Zootecnica Padrao",
     calendario_base: {
       profile: "janela_etaria",
@@ -298,10 +266,16 @@ export const STANDARD_PROTOCOLS: StandardProtocol[] = [
   },
   {
     id: "med-cura-umbigo",
+    canonical_key: "cura_umbigo",
+    family_code: "cura_umbigo",
     nome: "Cura de Umbigo (Recem-Nascidos)",
     descricao:
       "Protocolo essencial para prevencao de onfaloflebites, miiases e infeccoes sistemicas.",
     categoria: "medicamentos",
+    scope: "fazenda",
+    status_legal: "boa_pratica",
+    source_origin: "biblioteca_canonica_fazenda",
+    activation_mode: "materializar_protocolo",
     referencia: "Boas Praticas de Manejo (BPM)",
     calendario_base: {
       profile: "procedimento_imediato",
@@ -333,10 +307,16 @@ export const STANDARD_PROTOCOLS: StandardProtocol[] = [
   },
   {
     id: "med-tpb",
+    canonical_key: "tristeza_parasitaria_bovina",
+    family_code: "tristeza_parasitaria_bovina",
     nome: "Tratamento Tristeza Parasitara (TPB)",
     descricao:
       "Protocolo terapeutico para casos de Babesiose e Anaplasmose (carrapato).",
     categoria: "medicamentos",
+    scope: "fazenda",
+    status_legal: "recomendado",
+    source_origin: "biblioteca_canonica_fazenda",
+    activation_mode: "materializar_protocolo",
     referencia: "Protocolo Clinico Veterinario",
     calendario_base: {
       profile: "terapeutico",
@@ -391,10 +371,16 @@ export const STANDARD_PROTOCOLS: StandardProtocol[] = [
   },
   {
     id: "med-mastite-seca",
+    canonical_key: "terapia_vaca_seca",
+    family_code: "terapia_vaca_seca",
     nome: "Terapia de Vaca Seca (Mastite)",
     descricao:
       "Prevencao e cura de mastite no periodo seco em vacas leiteiras ou corte com alta producao.",
     categoria: "medicamentos",
+    scope: "fazenda",
+    status_legal: "recomendado",
+    source_origin: "biblioteca_canonica_fazenda",
+    activation_mode: "materializar_protocolo",
     referencia: "SBMV - Qualidade do Leite",
     calendario_base: {
       profile: "terapeutico",
@@ -433,9 +419,16 @@ export function normalizeStandardProtocolInterval(item: StandardProtocolItem) {
 export function buildStandardProtocolPayload(protocol: StandardProtocol) {
   return {
     origem: "template_padrao",
+    source_origin: protocol.source_origin,
+    scope: protocol.scope,
+    activation_mode: protocol.activation_mode,
+    status_legal: protocol.status_legal,
+    family_code: protocol.family_code,
+    canonical_key: protocol.canonical_key,
     referencia: protocol.referencia ?? null,
     standard_id: protocol.id,
-    obrigatorio: Boolean(protocol.obrigatorio),
+    obrigatorio:
+      protocol.status_legal === "obrigatorio" || Boolean(protocol.obrigatorio),
     biblioteca_base_versao: STANDARD_PROTOCOL_LIBRARY_VERSION,
     calendario_base: {
       version: STANDARD_PROTOCOL_LIBRARY_VERSION,

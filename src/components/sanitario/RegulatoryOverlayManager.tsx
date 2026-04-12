@@ -12,10 +12,14 @@ import { createGesture } from "@/lib/offline/ops";
 import { buildEventGesture } from "@/lib/events/buildEventGesture";
 import {
   buildActiveRegulatoryOverlayEntries,
+  removeFarmCustomRegulatoryOverlayDefinition,
   buildRegulatoryOverlayConfigPayload,
   buildRegulatoryOverlayEventPayload,
   getRegulatoryOverlayStatusLabel,
   getRegulatoryOverlayStatusTone,
+  readFarmCustomRegulatoryOverlayDefinitions,
+  upsertFarmCustomRegulatoryOverlayDefinition,
+  type FarmCustomRegulatoryOverlayDefinition,
   type RegulatoryOverlayEntry,
 } from "@/lib/sanitario/compliance";
 import {
@@ -40,12 +44,20 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { showError, showSuccess } from "@/utils/toast";
 
 interface RegulatoryOverlayManagerProps {
   activeFarmId: string;
+  canManage: boolean;
 }
 
 type OverlayExecutionForm = {
@@ -57,6 +69,16 @@ type OverlayExecutionForm = {
   reviewedLabel: boolean;
   prohibitedDetected: boolean;
   checklistAnswers: Record<string, boolean>;
+};
+
+type OverlayStructureDraft = {
+  id: string | null;
+  label: string;
+  description: string;
+  subarea: string;
+  statusLegal: "obrigatorio" | "recomendado" | "boa_pratica";
+  animalCentric: boolean;
+  active: boolean;
 };
 
 const CHECKLIST_FIELDS_BY_SUBAREA: Record<
@@ -115,6 +137,20 @@ const CHECKLIST_FIELDS_BY_SUBAREA: Record<
     },
   ],
 };
+
+const CUSTOM_OVERLAY_SUBAREA_OPTIONS = [
+  { value: "__none__", label: "Sem subarea analitica" },
+  { value: "quarentena", label: "Quarentena" },
+  { value: "agua_limpeza", label: "Agua e limpeza" },
+  { value: "atualizacao_rebanho", label: "Documental" },
+  { value: "comprovacao_brucelose", label: "Comprovacao de brucelose" },
+] as const;
+
+const CUSTOM_OVERLAY_STATUS_OPTIONS = [
+  { value: "obrigatorio", label: "Obrigatorio" },
+  { value: "recomendado", label: "Recomendado" },
+  { value: "boa_pratica", label: "Boa pratica" },
+] as const;
 
 function toDateInputValue(value?: string | null) {
   if (!value) return new Date().toISOString().slice(0, 10);
@@ -201,8 +237,88 @@ function buildOverlayAnswers(
   };
 }
 
+function createEmptyStructureDraft(): OverlayStructureDraft {
+  return {
+    id: null,
+    label: "",
+    description: "",
+    subarea: "__none__",
+    statusLegal: "boa_pratica",
+    animalCentric: false,
+    active: true,
+  };
+}
+
+function createStructureDraftFromEntry(
+  entry: RegulatoryOverlayEntry,
+): OverlayStructureDraft {
+  return {
+    id: entry.customOverlayId,
+    label: entry.label,
+    description:
+      typeof entry.item.payload.indicacao === "string"
+        ? entry.item.payload.indicacao
+        : "",
+    subarea: entry.subarea ?? "__none__",
+    statusLegal: entry.template.status_legal,
+    animalCentric: entry.animalCentric,
+    active: true,
+  };
+}
+
+function buildCustomOverlayDefinition(
+  draft: OverlayStructureDraft,
+): FarmCustomRegulatoryOverlayDefinition {
+  const now = new Date().toISOString();
+  return {
+    id: draft.id ?? crypto.randomUUID(),
+    label: draft.label.trim(),
+    description: draft.description.trim(),
+    subarea: draft.subarea === "__none__" ? null : draft.subarea,
+    statusLegal: draft.statusLegal,
+    animalCentric: draft.animalCentric,
+    active: draft.active,
+    createdAt: draft.id ? null : now,
+    updatedAt: now,
+  };
+}
+
+function buildFarmSanitaryConfigRecord(
+  activeFarmId: string,
+  currentPayload: Record<string, unknown>,
+  currentConfig:
+    | {
+        uf: string | null;
+        aptidao: string;
+        sistema: string;
+        zona_raiva_risco: string;
+        pressao_carrapato: string;
+        pressao_helmintos: string;
+        modo_calendario: string;
+      }
+    | null
+    | undefined,
+) {
+  return {
+    fazenda_id: activeFarmId,
+    uf: currentConfig?.uf ?? null,
+    aptidao: currentConfig?.aptidao ?? "all",
+    sistema: currentConfig?.sistema ?? "all",
+    zona_raiva_risco: currentConfig?.zona_raiva_risco ?? "baixo",
+    pressao_carrapato: currentConfig?.pressao_carrapato ?? "baixo",
+    pressao_helmintos: currentConfig?.pressao_helmintos ?? "baixo",
+    modo_calendario: currentConfig?.modo_calendario ?? "minimo_legal",
+    payload: currentPayload,
+  };
+}
+
+function getOverlaySourceLabel(entry: RegulatoryOverlayEntry) {
+  return entry.sourceScope === "oficial" ? "Oficial" : "Fazenda";
+}
+
 export function RegulatoryOverlayManager({
   activeFarmId,
+  canManage,
 }: RegulatoryOverlayManagerProps) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -211,6 +327,14 @@ export function RegulatoryOverlayManager({
   );
   const [form, setForm] = useState<OverlayExecutionForm | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [structureDraft, setStructureDraft] = useState<OverlayStructureDraft | null>(
+    null,
+  );
+  const [deleteTarget, setDeleteTarget] = useState<RegulatoryOverlayEntry | null>(
+    null,
+  );
+  const [isSavingStructure, setIsSavingStructure] = useState(false);
+  const [isDeletingStructure, setIsDeletingStructure] = useState(false);
   const activeSubareaFilter = parseRegulatoryAnalyticsSubareaKey(
     searchParams.get("overlaySubarea"),
   );
@@ -233,6 +357,10 @@ export function RegulatoryOverlayManager({
         items: items ?? [],
       }),
     [config, items, templates],
+  );
+  const customOverlayDefinitions = useMemo(
+    () => readFarmCustomRegulatoryOverlayDefinitions(config?.payload),
+    [config?.payload],
   );
 
   const visibleEntries = useMemo(
@@ -263,6 +391,8 @@ export function RegulatoryOverlayManager({
     [visibleEntries],
   );
   const hasActiveAnalyticalCut = Boolean(activeSubareaFilter || activeImpactFilter);
+  const customEntryCount = entries.filter((entry) => entry.sourceScope === "fazenda").length;
+  const officialEntryCount = entries.filter((entry) => entry.sourceScope === "oficial").length;
 
   const openEntry = (entry: RegulatoryOverlayEntry) => {
     setSelectedEntry(entry);
@@ -274,7 +404,25 @@ export function RegulatoryOverlayManager({
     setForm(null);
   };
 
+  const openCreateStructure = () => {
+    setStructureDraft(createEmptyStructureDraft());
+  };
+
+  const openEditStructure = (entry: RegulatoryOverlayEntry) => {
+    if (!entry.editable) return;
+    setStructureDraft(createStructureDraftFromEntry(entry));
+  };
+
+  const closeStructureDialog = () => {
+    setStructureDraft(null);
+  };
+
   const handleSave = async () => {
+    if (!canManage) {
+      showError("Apenas manager e owner podem registrar o overlay.");
+      return;
+    }
+
     if (!selectedEntry || !form || !config) {
       showError("Contexto do overlay regulatorio ainda nao esta disponivel.");
       return;
@@ -350,6 +498,92 @@ export function RegulatoryOverlayManager({
     }
   };
 
+  const handleSaveStructure = async () => {
+    if (!canManage) {
+      showError("Apenas manager e owner podem estruturar overlays da fazenda.");
+      return;
+    }
+
+    if (!structureDraft) return;
+    if (structureDraft.label.trim().length === 0) {
+      showError("Informe o nome do complemento operacional.");
+      return;
+    }
+
+    const now = new Date().toISOString();
+    const builtDefinition = buildCustomOverlayDefinition(structureDraft);
+    const existingDefinition = structureDraft.id
+      ? customOverlayDefinitions.find((entry) => entry.id === structureDraft.id) ?? null
+      : null;
+
+    const normalizedDefinition: FarmCustomRegulatoryOverlayDefinition = {
+      ...builtDefinition,
+      createdAt:
+        existingDefinition?.createdAt ?? builtDefinition.createdAt ?? now,
+      updatedAt: now,
+    };
+
+    const nextPayload = upsertFarmCustomRegulatoryOverlayDefinition(
+      config?.payload,
+      normalizedDefinition,
+    );
+
+    setIsSavingStructure(true);
+    try {
+      await createGesture(activeFarmId, [
+        {
+          table: "fazenda_sanidade_config",
+          action: config ? "UPDATE" : "INSERT",
+          record: buildFarmSanitaryConfigRecord(activeFarmId, nextPayload, config),
+        },
+      ]);
+
+      closeStructureDialog();
+      showSuccess(
+        structureDraft.id
+          ? "Complemento operacional atualizado."
+          : "Complemento operacional criado.",
+      );
+    } catch (error) {
+      console.error(error);
+      showError("Nao foi possivel salvar o complemento operacional.");
+    } finally {
+      setIsSavingStructure(false);
+    }
+  };
+
+  const handleDeleteStructure = async () => {
+    if (!canManage) {
+      showError("Apenas manager e owner podem remover overlays da fazenda.");
+      return;
+    }
+
+    if (!deleteTarget?.customOverlayId) return;
+
+    const nextPayload = removeFarmCustomRegulatoryOverlayDefinition(
+      config?.payload,
+      deleteTarget.customOverlayId,
+    );
+
+    setIsDeletingStructure(true);
+    try {
+      await createGesture(activeFarmId, [
+        {
+          table: "fazenda_sanidade_config",
+          action: config ? "UPDATE" : "INSERT",
+          record: buildFarmSanitaryConfigRecord(activeFarmId, nextPayload, config),
+        },
+      ]);
+      setDeleteTarget(null);
+      showSuccess("Complemento operacional removido.");
+    } catch (error) {
+      console.error(error);
+      showError("Nao foi possivel remover o complemento operacional.");
+    } finally {
+      setIsDeletingStructure(false);
+    }
+  };
+
   const currentStatus = selectedEntry && form
     ? deriveOverlayStatus(selectedEntry, form)
     : "pendente";
@@ -363,16 +597,16 @@ export function RegulatoryOverlayManager({
               <div className="flex flex-wrap items-center gap-2">
                 <ClipboardCheck className="h-5 w-5 text-amber-700" />
                 <CardTitle className="text-xl">
-                  Overlay operacional do pack oficial
+                  Complementos operacionais e overlays
                 </CardTitle>
                 <Badge variant="outline">Procedural</Badge>
               </div>
               <CardDescription className="max-w-3xl text-sm leading-6">
-                Executa as frentes do pack oficial que nao viram protocolo ou
-                agenda automatica no modelo atual e ainda nao possuem fluxo
-                dedicado. Aqui entram feed-ban para ruminantes, checklists de
-                agua/limpeza, quarentena e obrigacoes administrativas
-                documentais.
+                Concentra, em uma unica superficie, as frentes procedurais do
+                pack oficial e os complementos operacionais da fazenda que nao
+                viram protocolo ou agenda automatica no modelo atual. Aqui
+                entram feed-ban para ruminantes, checklists de agua/limpeza,
+                quarentena, obrigacoes documentais e boas praticas internas.
               </CardDescription>
             </div>
 
@@ -392,6 +626,14 @@ export function RegulatoryOverlayManager({
                 <StatusBadge tone="info">
                   {visibleEntries.length} de {entries.length} no recorte
                 </StatusBadge>
+              ) : null}
+              <StatusBadge tone="info">
+                {officialEntryCount} oficial(is) | {customEntryCount} fazenda
+              </StatusBadge>
+              {canManage ? (
+                <Button variant="outline" size="sm" onClick={openCreateStructure}>
+                  Novo complemento da fazenda
+                </Button>
               ) : null}
             </div>
           </div>
@@ -430,9 +672,9 @@ export function RegulatoryOverlayManager({
 
           {entries.length === 0 ? (
             <div className="rounded-2xl border border-border/70 bg-background/80 px-4 py-6 text-sm text-muted-foreground">
-              Nenhum overlay procedural ativo no pack atual. Ative o pack
-              oficial ou ajuste a configuracao para expor checklists e
-              conformidade desta fazenda.
+              Nenhum overlay ou complemento operacional ativo nesta fazenda.
+              Ative o pack oficial ou crie um complemento local para expor
+              checklists e conformidade nesta camada.
             </div>
           ) : visibleEntries.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-border/70 bg-background/80 px-4 py-6 text-sm text-muted-foreground">
@@ -449,10 +691,13 @@ export function RegulatoryOverlayManager({
                         <CardTitle className="text-lg">{entry.label}</CardTitle>
                         <CardDescription>{entry.template.nome}</CardDescription>
                       </div>
-                      <div className="flex flex-wrap gap-2">
-                        <StatusBadge tone={getRegulatoryOverlayStatusTone(entry.status)}>
-                          {getRegulatoryOverlayStatusLabel(entry.status)}
-                        </StatusBadge>
+                    <div className="flex flex-wrap gap-2">
+                      <Badge variant={entry.sourceScope === "oficial" ? "outline" : "secondary"}>
+                        {getOverlaySourceLabel(entry)}
+                      </Badge>
+                      <StatusBadge tone={getRegulatoryOverlayStatusTone(entry.status)}>
+                        {getRegulatoryOverlayStatusLabel(entry.status)}
+                      </StatusBadge>
                         <Badge variant="outline">
                           {entry.complianceKind === "feed_ban"
                             ? "Feed-ban"
@@ -461,19 +706,22 @@ export function RegulatoryOverlayManager({
                       </div>
                     </div>
 
-                    <div className="flex flex-wrap gap-2">
-                      <Badge variant="outline">{entry.item.area}</Badge>
-                      {entry.subarea ? <Badge variant="outline">{entry.subarea}</Badge> : null}
-                      <Badge variant="outline">
-                        {entry.template.status_legal.replaceAll("_", " ")}
-                      </Badge>
+                      <div className="flex flex-wrap gap-2">
+                        <Badge variant="outline">{entry.item.area}</Badge>
+                        {entry.subarea ? <Badge variant="outline">{entry.subarea}</Badge> : null}
+                        <Badge variant="outline">
+                          {entry.template.status_legal.replaceAll("_", " ")}
+                        </Badge>
                       {entry.animalCentric ? (
                         <Badge variant="secondary">Animal-centric</Badge>
                       ) : (
-                        <Badge variant="outline">Nivel fazenda</Badge>
-                      )}
-                    </div>
-                  </CardHeader>
+                          <Badge variant="outline">Nivel fazenda</Badge>
+                        )}
+                        {entry.editable ? (
+                          <Badge variant="secondary">Editavel</Badge>
+                        ) : null}
+                      </div>
+                    </CardHeader>
 
                   <CardContent className="space-y-3">
                     <p className="text-sm text-muted-foreground">
@@ -502,14 +750,34 @@ export function RegulatoryOverlayManager({
                       </div>
                     )}
 
-                    <Button onClick={() => openEntry(entry)}>
-                      {entry.complianceKind === "feed_ban" ? (
-                        <WheatOff className="mr-2 h-4 w-4" />
-                      ) : (
-                        <ShieldCheck className="mr-2 h-4 w-4" />
-                      )}
-                      Registrar verificacao
-                    </Button>
+                    <div className="flex flex-wrap gap-2">
+                      <Button onClick={() => openEntry(entry)} disabled={!canManage}>
+                        {entry.complianceKind === "feed_ban" ? (
+                          <WheatOff className="mr-2 h-4 w-4" />
+                        ) : (
+                          <ShieldCheck className="mr-2 h-4 w-4" />
+                        )}
+                        Registrar verificacao
+                      </Button>
+                      {entry.editable ? (
+                        <>
+                          <Button
+                            variant="outline"
+                            onClick={() => openEditStructure(entry)}
+                            disabled={!canManage}
+                          >
+                            Editar complemento
+                          </Button>
+                          <Button
+                            variant="outline"
+                            onClick={() => setDeleteTarget(entry)}
+                            disabled={!canManage}
+                          >
+                            Remover
+                          </Button>
+                        </>
+                      ) : null}
+                    </div>
                   </CardContent>
                 </Card>
               ))}
@@ -700,6 +968,183 @@ export function RegulatoryOverlayManager({
             </Button>
             <Button onClick={() => void handleSave()} disabled={isSaving || !selectedEntry || !form}>
               {isSaving ? "Salvando..." : "Registrar verificacao"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={Boolean(structureDraft)} onOpenChange={(open) => (!open ? closeStructureDialog() : null)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>
+              {structureDraft?.id
+                ? "Editar complemento operacional"
+                : "Novo complemento operacional da fazenda"}
+            </DialogTitle>
+            <DialogDescription>
+              Crie um checklist adicional de boa pratica, recomendacao tecnica ou
+              obrigacao interna sem abrir outra tela e sem misturar isso ao pack
+              oficial.
+            </DialogDescription>
+          </DialogHeader>
+
+          {structureDraft ? (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="custom-overlay-label">Nome</Label>
+                <Input
+                  id="custom-overlay-label"
+                  value={structureDraft.label}
+                  onChange={(event) =>
+                    setStructureDraft((current) =>
+                      current ? { ...current, label: event.target.value } : current,
+                    )
+                  }
+                  placeholder="Ex.: Checklist pre-lote maternidade"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="custom-overlay-description">Descricao operacional</Label>
+                <Textarea
+                  id="custom-overlay-description"
+                  value={structureDraft.description}
+                  onChange={(event) =>
+                    setStructureDraft((current) =>
+                      current
+                        ? { ...current, description: event.target.value }
+                        : current,
+                    )
+                  }
+                  rows={3}
+                  placeholder="Explique o procedimento ou a boa pratica que a equipe deve registrar."
+                />
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label>Subarea</Label>
+                  <Select
+                    value={structureDraft.subarea}
+                    onValueChange={(value) =>
+                      setStructureDraft((current) =>
+                        current ? { ...current, subarea: value } : current,
+                      )
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CUSTOM_OVERLAY_SUBAREA_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Status legal</Label>
+                  <Select
+                    value={structureDraft.statusLegal}
+                    onValueChange={(value) =>
+                      setStructureDraft((current) =>
+                        current
+                          ? {
+                              ...current,
+                              statusLegal: value as OverlayStructureDraft["statusLegal"],
+                            }
+                          : current,
+                      )
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CUSTOM_OVERLAY_STATUS_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3 rounded-2xl border border-border/70 p-4">
+                <Checkbox
+                  checked={structureDraft.animalCentric}
+                  onCheckedChange={(checked) =>
+                    setStructureDraft((current) =>
+                      current
+                        ? { ...current, animalCentric: checked === true }
+                        : current,
+                    )
+                  }
+                />
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-foreground">
+                    Marcar como animal-centric
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Use quando a leitura e os impactos desse checklist devem ser
+                    interpretados como ligados ao manejo animal, e nao apenas ao
+                    nivel fazenda.
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : null}
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={closeStructureDialog}
+              disabled={isSavingStructure}
+            >
+              Cancelar
+            </Button>
+            <Button onClick={handleSaveStructure} disabled={isSavingStructure}>
+              {isSavingStructure ? "Salvando..." : "Salvar complemento"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={Boolean(deleteTarget)} onOpenChange={(open) => (!open ? setDeleteTarget(null) : null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Remover complemento operacional?</DialogTitle>
+            <DialogDescription>
+              A definicao estrutural sera removida da fazenda. Eventos append-only
+              ja registrados permanecem no historico.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="rounded-2xl border border-border/70 bg-muted/10 p-4 text-sm text-muted-foreground">
+            <p className="font-medium text-foreground">{deleteTarget?.label}</p>
+            <p className="mt-1">
+              O complemento deixara de aparecer no overlay operacional da fazenda.
+            </p>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setDeleteTarget(null)}
+              disabled={isDeletingStructure}
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteStructure}
+              disabled={isDeletingStructure}
+            >
+              {isDeletingStructure ? "Removendo..." : "Remover"}
             </Button>
           </DialogFooter>
         </DialogContent>

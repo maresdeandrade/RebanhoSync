@@ -145,4 +145,92 @@ describe("regulatory overlay compliance helpers", () => {
       status: "ajuste_necessario",
     });
   });
+
+  it("surfaces custom farm overlays in the same operational layer", () => {
+    const entries = buildActiveRegulatoryOverlayEntries({
+      config: {
+        ...config,
+        payload: {
+          ...config.payload,
+          custom_overlay_definitions: [
+            {
+              id: "overlay-farm-1",
+              label: "Checklist pre-lote maternidade",
+              description: "Revisar cama, agua e segregacao antes da entrada.",
+              subarea: "quarentena",
+              status_legal: "boa_pratica",
+              animal_centric: true,
+              active: true,
+              created_at: "2026-04-10T00:00:00.000Z",
+              updated_at: "2026-04-10T00:00:00.000Z",
+            },
+          ],
+        },
+      },
+      templates: [template],
+      items: [feedBanItem],
+    });
+
+    const customEntry = entries.find(
+      (entry) => entry.customOverlayId === "overlay-farm-1",
+    );
+
+    expect(customEntry).toMatchObject({
+      label: "Checklist pre-lote maternidade",
+      complianceKind: "checklist",
+      sourceScope: "fazenda",
+      editable: true,
+      animalCentric: true,
+      subarea: "quarentena",
+      status: "pendente",
+    });
+    expect(customEntry?.template.nome).toBe("Complemento operacional da fazenda");
+  });
+
+  it("builds append-only payload for a custom farm overlay event", () => {
+    const [entry] = buildActiveRegulatoryOverlayEntries({
+      config: {
+        ...config,
+        payload: {
+          ...config.payload,
+          activated_template_slugs: [],
+          custom_overlay_definitions: [
+            {
+              id: "overlay-farm-1",
+              label: "Checklist pre-lote maternidade",
+              description: "Revisar cama, agua e segregacao antes da entrada.",
+              subarea: "quarentena",
+              status_legal: "recomendado",
+              animal_centric: false,
+              active: true,
+              created_at: "2026-04-10T00:00:00.000Z",
+              updated_at: "2026-04-10T00:00:00.000Z",
+            },
+          ],
+        },
+      },
+      templates: [template],
+      items: [feedBanItem],
+    });
+
+    const payload = buildRegulatoryOverlayEventPayload(entry, {
+      status: "conforme",
+      occurredAt: "2026-04-10T12:00:00.000Z",
+      responsible: "Equipe sanitaria",
+      notes: "Checklist local concluido.",
+      answers: {
+        rotina_executada: true,
+        pendencias_tratadas: true,
+      },
+    });
+
+    expect(payload).toMatchObject({
+      kind: "overlay_regulatorio",
+      source_scope: "fazenda",
+      custom_overlay_id: "overlay-farm-1",
+      custom_overlay_label: "Checklist pre-lote maternidade",
+      custom_status_legal: "recomendado",
+      status: "conforme",
+    });
+  });
 });
