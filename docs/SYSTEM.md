@@ -19,8 +19,9 @@ O núcleo de dados adota dois "trilhos" paralelos que não devem se fundir de fo
 
 Nenhuma Foreign Key da agenda subordina o evento. Modelos lógicos conectam as pontas se necessário, preservando a imutabilidade do fato e a flexibilidade da agenda.
 
-### Taxonomia Canônica
+### Taxonomia Canônica e Estado de Compliance
 Classificações como *categoria zootécnica*, *fase de vida*, e *estado reprodutivo* mudam dinamicamente a partir dos fatos consumados pelo rebanho ao longo do tempo. Elas persistem de foma agregada restrita dentro de `animais.payload.taxonomy_facts` atendendo o escopo v1, garantindo que "vacas" possam virar "secas" por eventos do Trilho 2 de forma declarativa e orgânica sem atualizações procedurais duplas pelo frontend/backend.
+Da mesma forma, o sistema gerencia o *estado de compliance sanitária* (`compliance_state`) e a dependência de milestones (`history_confidence`), derivando a necessidade de protocolos de catch-up se um animal entrar no rebanho sem histórico comprovado. Essa lógica transborda do Rail 1 para o bloqueio e triagem na UI de operação.
 
 ---
 

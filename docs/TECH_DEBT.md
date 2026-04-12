@@ -12,7 +12,11 @@
 
 > Itens identificados na auditoria de abril/2026 como proximos passos relevantes.
 
-Nenhum item OPEN nesta revisao.
+### TD-025: Superficie de produto para Catch-Up e History Confidence
+
+- **Status:** OPEN
+- **Origem:** Feat `sanitario_regime_sequencial_e_historico_entrada`
+- **Impacto:** O backend agora calcula bloqueios ou agenda pendente para animais com `history_confidence = unknown` e `compliance_state = catch_up_required`, exigindo uma documentação (ex: atestado de vacinação na compra) ou execução de um catch-up (protocolo de entrada). A UI atual carece de uma tela específica ou card contextual no AnimalDetalhe que permita resolver este status fechando o ciclo do regime.
 
 ## CLOSED (Historico Completo)
 

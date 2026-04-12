@@ -151,7 +151,7 @@ O roadmap atual cobre a consolidacao de observabilidade, cobertura E2E dos fluxo
 
 **Derivado de:** reestruturacao do sanitario para modelo animal-centric, com obrigacoes legais, recomendacoes tecnicas e boas praticas em camadas distintas.
 
-**Status:** Fundacao + ativacao + principais fluxos operacionais guiados concluidos em 2026-04-10
+**Status:** Concluído em 2026-04-12
 
 ### Interligacoes
 
@@ -183,6 +183,22 @@ O roadmap atual cobre a consolidacao de observabilidade, cobertura E2E dos fluxo
 
 ---
 
+## Milestone 9: Sanitary Regimen & Catch-up Compliance UX
+
+**Objetivo:** Oferecer uma superfície clara para gerenciar animais sem histórico ("unknown base"), resolvendo dependências de milestones e regimes pendentes (catch-up) na UI.
+
+**Derivado de:** Evolução do motor sanitário (Regime Sequencial e Histórico de Entrada).
+
+**Status:** Em planejamento (TD-025 aberto)
+
+### Escopo
+
+- Alertar sobre amimais recém-adquiridos (ou de histórico desconhecido) que possuem pendências (`catch_up_required`).
+- Implementar fluxo de marcação de isenção via "atestado de vacinação" ou outro controle de documentação (`documentation_required`).
+- Atualizar a interface da *Ficha do Animal* com um módulo de Compliance mostrando em qual `sequence_order` ou `milestone_code` o animal travou e sugerindo a ação correspondente.
+
+---
+
 ## Derivacao
 
 | TD | capability_id | Track | Milestone |
@@ -193,6 +209,7 @@ O roadmap atual cobre a consolidacao de observabilidade, cobertura E2E dos fluxo
 | N/A | `agenda.triagem_contextual` | UX | Milestone 6 |
 | N/A | `sanitario.calendario_base` | Domain | Milestone 7 |
 | N/A | `sanitario.catalogo_regulatorio` | Domain | Milestone 8 |
+| TD-025 | `sanitario.regime_sequencial` | UX | Milestone 9 |
 
 ---
 

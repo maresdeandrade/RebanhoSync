@@ -62,7 +62,10 @@ O frontend utiliza **Dexie.js v4** (IndexedDB) na **versão 8** do schema, com 4
 ### `metrics_events` (1 store — Dexie v8)
 - **O que é:** Store de telemetria local de piloto. Append-only local.
 - **Campos:** `event_name`, `route`, `entity`, `status`, `fazenda_id`, `created_at`.
-- **Nota:** os dados permanecem no dispositivo; sem envio remoto automático no estado atual (TD-021).
+- **Nota:** os dados permanecem no dispositivo; sem envio remoto automático no estado atual (TD-021 resolvido via flush externo documentado em Roadmap).
+
+### Contrato de History Confidence (Novo)
+- **O que é:** Entradas e rebanho sem histórico de vacinação assumem state de compliance e `history_confidence = unknown`. Requerem eventos ou documentos (`compliance_state = catch_up_required`).
 
 ---
 

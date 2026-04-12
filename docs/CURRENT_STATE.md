@@ -43,8 +43,10 @@ Todos os TDs da lista original foram fechados via migrations de marco/2026. Nao 
 - Editor de protocolos sanitarios por fazenda com customizacao de cabecalho, etapas, deduplicacao, `calendario_base` explicito e vinculo ao catalogo `produtos_veterinarios`.
 - Biblioteca canonica de protocolos sanitarios padrao extraida da UI, com `calendario_base` estruturado por protocolo e por etapa.
 - `Registrar`, `ProtocolosSanitarios` e editor da fazenda agora descrevem a agenda sanitaria a partir do `payload.calendario_base`, em vez de depender apenas de `intervalo_dias`.
-- O motor server-side da agenda sanitaria agora le `payload.calendario_base` e gera pendencias declarativas por campanha, janela etaria, intervalo recorrente e ancoras operacionais, inclusive para itens nao vacinais com `gera_agenda = true`.
-- O recompute sanitario agora reconstrui as pendencias automaticas do escopo recalculado antes de reaplicar o motor declarativo, evitando drift quando risco, protocolo, item ou payload do animal mudam.
+- O motor server-side da agenda sanitária agora le `payload.calendario_base` e gera pendências declarativas por campanha, janela etária, intervalo recorrente e âncoras operacionais, inclusive para itens não vacinais com `gera_agenda = true`.
+- Implementado suporte a **regime sequencial e controle de doses** (milestone logic) para dependências de execução sanitária.
+- Introduzido **Historical Confidence Engine** com tratamento nativo para classificação recém-adquirida e exigências de catch-up imunológico.
+- O recompute sanitario agora reconstrui as pendencias automaticas do escopo recalculado antes de reaplicar o motor declarativo...
 - Agenda e relatorios agora projetam o rotulo do `calendario_base` na leitura operacional das pendencias sanitarias, evitando reduzir toda periodicidade a um simples `X dias`.
 - A agenda agora tambem projeta `mode` e `anchor` do `calendario_base` como sinal operacional e filtro persistido, enquanto os relatorios/exportacoes exibem o tipo declarativo da agenda (`campanha`, `janela etaria`, `recorrente`, `uso imediato` ou `protocolo clinico`).
 - `Home` e `Dashboard` agora reutilizam a mesma leitura declarativa do sanitario, exibindo cortes por tipo de calendario e abrindo a agenda ja filtrada por `calendarMode`.

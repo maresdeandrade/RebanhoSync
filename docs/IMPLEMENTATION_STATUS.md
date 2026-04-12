@@ -12,6 +12,7 @@ Este documento registra o estado efetivo do RebanhoSync em abril de 2026, pós-f
 - **Estagio do produto:** Beta interno — MVP completo e operacional.
 - **Core operacional:** sanitário, pesagem, movimentação, nutrição, reprodução, financeiro e agenda estão implementados e usáveis.
 - **Camadas consolidadas:** onboarding guiado, importação CSV, relatórios operacionais, telemetria de piloto com flush remoto, modo de experiência da fazenda, dashboard e ficha reprodutiva dedicada, pós-parto neonatal, cria inicial, transições de rebanho.
+- **Motor sanitário endurecido:** adoção de regime sequencial, dependência de milestones, logica de catch-up para entrada de rebanho (history_confidence) e motor de regras de repetição declarativas.
 - **Qualidade local:** lint, test, build e pacote E2E guiados estão verdes.
 - **TDs anteriormente abertos:** todos fechados via migrations de março/2026.
 - **Gaps residuais:** nenhum gap funcional ou de observabilidade aberto nesta revisão.
@@ -163,8 +164,9 @@ Este documento registra o estado efetivo do RebanhoSync em abril de 2026, pós-f
 | financeiro | `financeiro.historico` | Histórico/leitura financeiro |
 | agenda | `agenda.gerar` | Geração/criação de agenda items |
 | agenda | `agenda.concluir` | Conclusão/cancelamento de agenda items |
-| agenda | `agenda.dedup` | Deduplicação via `dedup_key` |
+| agenda | `agenda.dedup` | Deduplicação via `dedup_key` e assinatura semântica de família |
 | agenda | `agenda.recalculo` | Recalculo automático via engine sanitária |
+| sanitario| `sanitario.regime_sequencial`| Motor de sequência de doses, dependência de milestone e catch-up |
 
 **Total: 19 capabilities**
 
@@ -251,6 +253,16 @@ Este documento registra o estado efetivo do RebanhoSync em abril de 2026, pós-f
 - Focused page/reporting coverage now also validates lote-level anticipation of regulatory movement restrictions in `src/pages/__tests__/LoteDetalhe.test.tsx`, the regulatory overlay projection and query-driven analytical recorte inside `src/pages/__tests__/Eventos.test.tsx`, dashboard analytical cuts in `src/pages/__tests__/Dashboard.test.tsx`, query-driven overlay filtering in `src/components/sanitario/__tests__/RegulatoryOverlayManager.test.tsx` and analytical export rows in `src/lib/reports/__tests__/operationalSummary.test.ts`.
 - Focused animal/regulatory coverage now also validates animal-centric restriction projection and dedicated export in `src/lib/sanitario/__tests__/regulatoryAnimals.test.ts` plus the query-driven restricted list in `src/pages/__tests__/Animais.test.tsx`.
 - Local validation for this update: `pnpm exec eslint` (changed files), `pnpm exec tsc --noEmit`, `pnpm run build`, `pnpm run lint`, and focused `vitest` suites for agenda/sanitario/relatorios.
+
+## 9. Update 2026-04-12 (Sanitary Regimen & Compliance Engine)
+
+- Implementado motor de **regime sequencial e histórico de entrada** no escopo sanitário via `20260412173000_sanitario_regime_sequencial_e_historico_entrada.sql`.
+- Deduplicação semântica refinada por **família protocolar** (`family_code`), `milestone_code` e `sequence_order`.
+- A engine sanitária (`sanitario_recompute_agenda_core`) agora processa declarativamente regras de agendamento por encadeamento (`after_previous_completion`, `rolling_from_last_completion`), mitigando drift cronológico de múltiplas doses.
+- Introdução de **`history_confidence`** no processamento de animais para identificar rebanho recém-adquirido ou sem histórico rastreado (`known`, `partial`, `unknown`).
+- Adição de **`compliance_state`** (`catch_up_required`, `documentation_required`, `evaluation_required`, `scheduled`) para sinalizar pendências de equalização sanitária.
+- Frontend estendido com framework híbrido de layers sanitários (oficial, overlay, farm) com lógica rica de parsing do `history_confidence` e `schedule_rule`.
+- Cobertura de testes focado no motor de sequência (`regimen.test.ts`, `customization.test.ts`), garantindo idempotência e re-hidratação estruturada.
 
 ### Agenda UX Delivery Map
 

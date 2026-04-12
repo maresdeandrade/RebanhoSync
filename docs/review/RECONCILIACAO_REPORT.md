@@ -11,9 +11,10 @@
 
 **Status:** CLEAN  
 **Baseline Commit:** `b69d35f`  
-**Data de Execução:** 2026-04-07
+**Data de Execução:** 2026-04-12
 
-Working tree verificado limpo. Conflitos de merge resolvidos em `IMPLEMENTATION_STATUS.md`, `TECH_DEBT.md` e `ROADMAP.md` durante auditoria de abril/2026.
+Working tree verificado limpo. Múltiplos updates de Abril fechados no fluxo de MVP.
+Recente adição da feature do Motor Sanitário Sequencial (Mid-Month Abril).
 
 ---
 
@@ -23,9 +24,9 @@ Working tree verificado limpo. Conflitos de merge resolvidos em `IMPLEMENTATION_
 
 | Documento | Mudança Principal |
 | --- | --- |
-| `docs/IMPLEMENTATION_STATUS.md` | Reescrito — conflitos resolvidos, todos TDs CLOSED, capability score 100% |
-| `docs/TECH_DEBT.md` | Atualizado — TD-021 fechado e catalogo residual zerado |
-| `docs/ROADMAP.md` | Atualizado — Milestone 3 concluido e historico alinhado |
+| `docs/IMPLEMENTATION_STATUS.md` | Reescrito — conflitos resolvidos, capability score ajustado p/ 20/20. Adicionado Update 2026-04-12 (Compliance/Regime). |
+| `docs/TECH_DEBT.md` | Atualizado — TD-021 fechado, e criado TD-025 (Catch up UX). |
+| `docs/ROADMAP.md` | Atualizado — Milestone 8 fechado, Milestone 9 criado (Sanitary Regimen & Catch-up Compliance UX). |
 | `docs/CURRENT_STATE.md` | Atualizado — fase beta interno, novas tabelas/stores documentadas |
 | `docs/ROUTES.md` | Adicionadas rotas `/animais/transicoes` e `/animais/:id/cria-inicial` |
 | `docs/OFFLINE.md` | Store `metrics_events` (Dexie v11) documentada com flush remoto |
@@ -57,13 +58,13 @@ IMPLEMENTATION_STATUS (Matriz Analítica)
 
 | Métrica | Valor |
 | --- | --- |
-| Capabilities no Catalog | 19 |
+| Capabilities no Catalog | 20 |
 | TDs OPEN (lista original) | 0 (todos CLOSED) |
-| TDs OPEN residuais (novos) | 0 |
+| TDs OPEN residuais (novos) | 1 (TD-025) |
 | TDs CLOSED da lista original | 10/10 (100%) |
-| Catálogo coberto na Matriz | 19/19 (100%) |
+| Catálogo coberto na Matriz | 20/20 (100%) |
 | Gaps originais fechados | 10/10 (100%) |
-| Capability Score (Analítico) | 19/19 (100%) |
+| Capability Score (Analítico) | 20/20 (100%) |
 
 ### 3.2 Mapping Completo: TD → capability_id (Pós-Fechamento)
 
@@ -80,9 +81,11 @@ IMPLEMENTATION_STATUS (Matriz Analítica)
 | TD-019 | `movimentacao.registro` | Catalog | ✅ CLOSED | `20260308230735_foreign_keys_movimentacao_reproducao.sql` |
 | TD-020 | `reproducao.registro` | Catalog | ✅ CLOSED | `20260308230735_foreign_keys_movimentacao_reproducao.sql` |
 
-### 3.3 TDs Residuais (Pós-Auditoria Abril/2026)
+### 3.3 TDs Residuais (Pós-Auditoria Abril/2026 - Mid-Month)
 
-Nenhum TD residual permanece aberto nesta revisao.
+| TD | capability_id | Track | Status |
+| --- | --- | --- | --- |
+| TD-025| `sanitario.regime_sequencial` | UX | ⚠️ OPEN |
 
 ### 3.4 Mapping Ambiguity
 
@@ -100,13 +103,10 @@ Nenhuma necessidade identificada.
 
 ```
 gap_set (Matriz Analítica após fechamento):
-  {} (vazio — todos os 19 capabilities ✅)
+  {TD-025→sanitario.regime_sequencial (UX)} 
 
 TECH_DEBT OPEN (Catalog) capabiliy_set:
-  {TD-022→sanitario.registro (UI), TD-023→reproducao.registro (E2E)}
-
-Nota: TD-022 é extensão de UI sobre capability já CLOSED funcionalmente.
-Match funcional: ✅
+  {TD-025}
 ```
 
 ### 4.2 ROADMAP items == TECH_DEBT OPEN
