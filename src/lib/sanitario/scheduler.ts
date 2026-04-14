@@ -19,12 +19,129 @@ import type {
 import { blockingCategory, isBlockingReason, reasonCodeMessage, type OccurrenceBlockReason } from "./reasonCodes";
 import { buildSanitaryDedupKey, campaignPeriodKey, eventPeriodKey, intervalPeriodKey, windowPeriodKey } from "./dedup";
 import { addDays, daysBetween, resolveAnchorDate } from "./anchorResolution";
+import type { SanitaryProtocolMetadata } from "./protocolLayers";
 
 export interface ComputeNextSanitaryOccurrenceInput {
   item: SanitaryProtocolItemDomain;
   subject: SanitarySubjectContext;
   history: SanitaryExecutionRecord[];
   now: SchedulerNowContext;
+}
+
+// ============================================================================
+// PR2: Gate Único de Geração de Agenda
+// ============================================================================
+
+export interface ProtocolAgendaEligibilityCheckInput {
+  protocolMetadata: SanitaryProtocolMetadata | null;
+  item: SanitaryProtocolItemDomain;
+  subject: SanitarySubjectContext;
+  history: SanitaryExecutionRecord[];
+  now: SchedulerNowContext;
+  existingDedupKey?: string | null;
+}
+
+export interface ProtocolAgendaEligibilityResult {
+  eligible: boolean;
+  blockedBy: string[] | null;
+  reasons: OccurrenceBlockReason[];
+}
+
+/**
+ * Gate único para determinar se um protocolo pode gerar agenda.
+ *
+ * Validações em ordem:
+ * 1. Metadados de camada (activation_state, superseded, overlay)
+ * 2. Protocolo gera agenda (gera_agenda=true)
+ * 3. Protocolo é aplicável
+ * 4. Animal é elegível
+ * 5. Dependência foi satisfeita
+ * 6. Âncora é resolvível
+ * 7. Modo de calendário permite materialização
+ * 8. Dedup não existe em aberto
+ *
+ * Retorna bloqueadores em ordem de severidade.
+ */
+export function computeProtocolAgendaEligibility(
+  input: ProtocolAgendaEligibilityCheckInput,
+): ProtocolAgendaEligibilityResult {
+  const { protocolMetadata, item, subject, history, now, existingDedupKey } = input;
+  const reasons: OccurrenceBlockReason[] = [];
+
+  // VALIDAÇÃO 1: Metadados de camada
+  if (protocolMetadata) {
+    if (protocolMetadata.hiddenFromPrimaryList) {
+      reasons.push("superseded_by_layer");
+      return { eligible: false, blockedBy: ["superseded"], reasons };
+    }
+
+    const { activationState } = protocolMetadata;
+    if (
+      activationState !== "active_official" &&
+      activationState !== "active_custom"
+    ) {
+      reasons.push("inactive_protocol");
+      return { eligible: false, blockedBy: ["not_active"], reasons };
+    }
+  }
+
+  // VALIDAÇÃO 2: Protocolo gera agenda
+  let checkResult = step1CheckGeneratesAgenda(item);
+  if (checkResult !== "continue") {
+    reasons.push(checkResult);
+    return { eligible: false, blockedBy: [checkResult], reasons };
+  }
+
+  // VALIDAÇÃO 3: Aplicabilidade
+  checkResult = step2CheckApplicability(item, subject);
+  if (checkResult !== "continue") {
+    reasons.push(checkResult);
+    return { eligible: false, blockedBy: [checkResult], reasons };
+  }
+
+  // VALIDAÇÃO 4: Elegibilidade
+  checkResult = step3CheckEligibility(item, subject);
+  if (checkResult !== "continue") {
+    reasons.push(checkResult);
+    return { eligible: false, blockedBy: [checkResult], reasons };
+  }
+
+  // VALIDAÇÃO 5: Dependência
+  checkResult = step4CheckDependency(item, history);
+  if (checkResult !== "continue") {
+    reasons.push(checkResult);
+    return { eligible: false, blockedBy: [checkResult], reasons };
+  }
+
+  // VALIDAÇÃO 6: Âncora
+  const { anchorDate, reason: anchorReason } = step5ResolveAnchor(item, subject, history);
+  if (anchorReason !== "continue") {
+    reasons.push(anchorReason);
+    return { eligible: false, blockedBy: [anchorReason], reasons };
+  }
+
+  // VALIDAÇÃO 7: Modo de calendário permite materialização
+  const calendarMode = item.schedule.mode ?? "nao_estruturado";
+  const allowedModes = ["campanha", "janela_etaria", "rotina_recorrente", "procedimento_imediato", "nao_estruturado"];
+  if (!allowedModes.includes(calendarMode)) {
+    reasons.push("calendar_mode_not_materializable");
+    return { eligible: false, blockedBy: ["calendar_mode_not_materializable"], reasons };
+  }
+
+  // VALIDAÇÃO 8: Dedup
+  if (existingDedupKey) {
+    const dedupKey = step7BuildDedupKey(item, subject, null);
+    if (dedupKey && dedupKey === existingDedupKey) {
+      const dedupResult = step8CheckExistingOccurrence(dedupKey, history);
+      if (dedupResult !== "continue") {
+        reasons.push(dedupResult);
+        return { eligible: false, blockedBy: [dedupResult], reasons };
+      }
+    }
+  }
+
+  // Passou em todas as validações
+  return { eligible: true, blockedBy: null, reasons: [] };
 }
 
 /**

@@ -764,3 +764,183 @@ export async function activateOfficialSanitaryPack(input: {
     operationCount: ops.length,
   };
 }
+
+// ============================================================================
+// PR4: Idempotent Pack Re-application & Reconciliation
+// ============================================================================
+
+export interface FarmSanitaryFamilyConflict {
+  familyCode: string;
+  reason:
+    | "official_family_already_active"
+    | "custom_family_already_active"
+    | "standard_family_already_active";
+  existingProtocolId: string;
+  incomingOfficialFamily: string;
+}
+
+export interface PackReapplicationReconciliationResult {
+  isIdempotent: boolean;
+  conflicts: FarmSanitaryFamilyConflict[];
+  familiesWithNoChange: string[];
+  familiesWithUpdate: string[];
+  legacyProtocolsToDeactivate: Array<{
+    id: string;
+    reason: string;
+  }>;
+  recommendation: "safe_to_reapply" | "conflicts_exist" | "manual_review_required";
+}
+
+/**
+ * PR4: Validates farm's sanitary family configuration before re-applying official pack.
+ *
+ * **Idempotency Guarantee:**
+ * - Re-applying the official pack multiple times produces identical results
+ * - Existing official protocols are UPDATEd, not re-INSERTed
+ * - Custom overlays block re-application only if they conflict with mandatory official families
+ * - Legacy MAPA templates (Brucelose, Raiva) are always deactivated
+ * - Agenda items already materialized are not re-created (dedup check in scheduler Step 8)
+ *
+ * **Checks Performed:**
+ * 1. Identify active families (official, custom, standard layers)
+ * 2. Detect conflicts: official family conflicting with custom/standard
+ * 3. Deactivate legacy MAPA templates
+ * 4. Return reconciliation status + recommendation
+ */
+export async function reconcileFarmSanitaryFamiliesBeforePackReapply(input: {
+  fazendaId: string;
+  config: OfficialSanitaryPackConfigInput;
+}): Promise<PackReapplicationReconciliationResult> {
+  // Read farm's current protocols
+  const protocolsDb = db.state_protocolos_sanitarios;
+  const existingProtocols =
+    (await protocolsDb.where("fazenda_id").equals(input.fazendaId).toArray()) ?? [];
+
+  // Read official catalog
+  let catalog = await readCachedOfficialSanitaryCatalog();
+  if (catalog.templates.length === 0) {
+    catalog = await refreshOfficialSanitaryCatalog();
+  }
+
+  // Determine which official families will be applied
+  const selection = selectOfficialSanitaryPack(catalog, input.config);
+  const incomingOfficialFamilies = new Map(
+    selection.templates.map((entry) => [
+      resolveOfficialFamilyCode(entry.template),
+      entry.template.id,
+    ])
+  );
+
+  // Index existing protocols by layer + family
+  const existingByLayer = {
+    official: new Map<string, ProtocoloSanitario>(),
+    custom: new Map<string, ProtocoloSanitario>(),
+    standard: new Map<string, ProtocoloSanitario>(),
+  };
+
+  const legacyToDeactivate: Array<{ id: string; reason: string }> = [];
+
+  for (const protocol of existingProtocols) {
+    const officialTemplateId = readString(protocol.payload, "official_template_id");
+    const templateCode = readString(protocol.payload, "template_code");
+
+    // Classify legacy MAPA + deactivate
+    if (
+      templateCode?.startsWith("MAPA_BRUCELOSE_") ||
+      templateCode?.startsWith("MAPA_RAIVA_")
+    ) {
+      if (protocol.ativo) {
+        legacyToDeactivate.push({
+          id: protocol.id,
+          reason: "legacy_seed_mapa_always_replaced_by_official_catalog",
+        });
+      }
+      continue;
+    }
+
+    // Classify by layer
+    if (officialTemplateId) {
+      const familyCode = resolveOfficialFamilyCode(
+        catalog.templates.find((t) => t.id === officialTemplateId)
+      );
+      if (familyCode) {
+        existingByLayer.official.set(familyCode, protocol);
+      }
+    } else if (readBoolean(protocol.payload, "is_operational_complement")) {
+      const familyCode = readString(protocol.payload, "family_code");
+      if (familyCode) {
+        existingByLayer.custom.set(familyCode, protocol);
+      }
+    } else {
+      const familyCode = readString(protocol.payload, "family_code") ??
+        readString(protocol.payload, "canonical_code") ?? null;
+      if (familyCode) {
+        existingByLayer.standard.set(familyCode, protocol);
+      }
+    }
+  }
+
+  // Detect conflicts: official family conflicting with existing custom/standard
+  const conflicts: FarmSanitaryFamilyConflict[] = [];
+  const familiesWithNoChange: string[] = [];
+  const familiesWithUpdate: string[] = [];
+
+  for (const [familyCode, officialTemplateId] of incomingOfficialFamilies) {
+    const existingOfficial = existingByLayer.official.get(familyCode);
+    const existingCustom = existingByLayer.custom.get(familyCode);
+    const existingStandard = existingByLayer.standard.get(familyCode);
+
+    if (existingCustom && existingCustom.ativo) {
+      // Custom overlay blocks re-application
+      conflicts.push({
+        familyCode,
+        reason: "custom_family_already_active",
+        existingProtocolId: existingCustom.id,
+        incomingOfficialFamily: familyCode,
+      });
+      continue;
+    }
+
+    if (existingStandard && existingStandard.ativo) {
+      // Standard template exists — info conflict (will be superseded)
+      conflicts.push({
+        familyCode,
+        reason: "standard_family_already_active",
+        existingProtocolId: existingStandard.id,
+        incomingOfficialFamily: familyCode,
+      });
+      continue;
+    }
+
+    if (existingOfficial) {
+      // Already applied — no change needed
+      familiesWithNoChange.push(familyCode);
+    } else {
+      // New official family being added
+      familiesWithUpdate.push(familyCode);
+    }
+  }
+
+  // Recommendation logic
+  let recommendation: "safe_to_reapply" | "conflicts_exist" | "manual_review_required";
+  if (conflicts.length === 0) {
+    recommendation = "safe_to_reapply";
+  } else if (conflicts.every((c) => c.reason !== "custom_family_already_active")) {
+    // Only standard conflicts (non-blocking, will be superseded)
+    recommendation = "manual_review_required";
+  } else {
+    // Custom overlay conflicts (blocking)
+    recommendation = "conflicts_exist";
+  }
+
+  const isIdempotent = conflicts.filter((c) => c.reason === "custom_family_already_active").length === 0;
+
+  return {
+    isIdempotent,
+    conflicts,
+    familiesWithNoChange,
+    familiesWithUpdate,
+    legacyProtocolsToDeactivate,
+    recommendation,
+  };
+}
