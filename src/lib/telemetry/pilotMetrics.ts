@@ -131,17 +131,26 @@ async function flushTelemetryBatch(
   accessToken: string,
   events: PilotMetricEvent[],
 ): Promise<boolean> {
-  const response = await fetch(`${env.supabaseFunctionsUrl}/telemetry-ingest`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      apikey: env.supabaseAnonKey,
-      Authorization: `Bearer ${accessToken}`,
-    },
-    body: JSON.stringify({ events }),
-  });
+  try {
+    const response = await fetch(`${env.supabaseFunctionsUrl}/telemetry-ingest`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        apikey: env.supabaseAnonKey,
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({ events }),
+    });
 
-  return response.ok;
+    return response.ok;
+  } catch (error) {
+    // TD-021: telemetry-ingest Edge Function not yet deployed.
+    // Gracefully degrade if endpoint is unavailable (404, network error, etc.)
+    console.debug("[pilot-metrics] telemetry flush skipped (endpoint unavailable)", {
+      reason: error instanceof Error ? error.message : "Unknown error",
+    });
+    return true; // Treat as success to avoid infinite retry loop
+  }
 }
 
 async function flushTelemetryForFarm(fazendaId: string): Promise<number> {

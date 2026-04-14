@@ -1,19 +1,22 @@
 export const SANITARY_BASE_CALENDAR_VERSION = 1;
 
 export type SanitaryBaseCalendarMode =
-  | "campaign"
-  | "age_window"
-  | "rolling_interval"
-  | "immediate"
-  | "clinical_protocol";
+  | "campanha"
+  | "janela_etaria"
+  | "rotina_recorrente"
+  | "procedimento_imediato"
+  | "nao_estruturado";
 
 export type SanitaryBaseCalendarAnchor =
-  | "calendar_month"
-  | "birth"
-  | "weaning"
-  | "pre_breeding_season"
-  | "clinical_need"
-  | "dry_off";
+  | "nascimento"
+  | "entrada_fazenda"
+  | "conclusao_etapa_dependente"
+  | "ultima_conclusao_mesma_familia"
+  | "desmama"
+  | "parto_previsto"
+  | "movimentacao"
+  | "diagnostico_evento"
+  | "sem_ancora";
 
 export interface SanitaryBaseCalendarRule {
   mode: SanitaryBaseCalendarMode;
@@ -115,10 +118,11 @@ export function describeSanitaryCalendarSchedule(input: {
 }
 
 export function describeSanitaryCalendarMode(mode: SanitaryBaseCalendarMode) {
-  if (mode === "campaign") return "Campanha";
-  if (mode === "age_window") return "Janela etaria";
-  if (mode === "rolling_interval") return "Recorrente";
-  if (mode === "clinical_protocol") return "Protocolo clinico";
+  if (mode === "campanha") return "Campanha";
+  if (mode === "janela_etaria") return "Janela etaria";
+  if (mode === "rotina_recorrente") return "Rotina recorrente";
+  if (mode === "procedimento_imediato") return "Procedimento imediato";
+  if (mode === "nao_estruturado") return "Nao estruturado";
   return "Uso imediato";
 }
 
@@ -126,12 +130,16 @@ export function describeSanitaryCalendarAnchor(
   anchor: SanitaryBaseCalendarAnchor | null,
 ) {
   if (!anchor) return null;
-  if (anchor === "calendar_month") return "Calendario";
-  if (anchor === "birth") return "Nascimento";
-  if (anchor === "weaning") return "Desmama";
-  if (anchor === "pre_breeding_season") return "Pre-estacao";
-  if (anchor === "clinical_need") return "Necessidade clinica";
-  return "Secagem";
+  if (anchor === "nascimento") return "Nascimento";
+  if (anchor === "entrada_fazenda") return "Entrada na fazenda";
+  if (anchor === "conclusao_etapa_dependente") return "Conclusao de etapa anterior";
+  if (anchor === "ultima_conclusao_mesma_familia") return "Ultima conclusao da mesma familia";
+  if (anchor === "desmama") return "Desmama";
+  if (anchor === "parto_previsto") return "Parto previsto";
+  if (anchor === "movimentacao") return "Movimentacao";
+  if (anchor === "diagnostico_evento") return "Diagnostico de evento";
+  if (anchor === "sem_ancora") return "Sem ancora";
+  return null;
 }
 
 export function describeSanitaryAgendaScheduleMeta(input: {
@@ -162,7 +170,7 @@ export function describeSanitaryAgendaScheduleMeta(input: {
       ? input.intervalDays
       : 0;
   const fallbackMode: SanitaryBaseCalendarMode =
-    intervalDays <= 1 ? "immediate" : "rolling_interval";
+    intervalDays <= 1 ? "procedimento_imediato" : "rotina_recorrente";
 
   return {
     label: describeSanitaryCalendarSchedule({

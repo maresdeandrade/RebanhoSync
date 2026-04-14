@@ -342,9 +342,20 @@ export function OfficialSanitaryPackManager({
         config: form,
       });
 
-      showSuccess(
-        `Pack oficial aplicado com ${result.selection.templates.length} frentes. A agenda sanitaria sera recomposta apos o sync.`,
-      );
+      // Log result for debugging (selection + operationCount)
+      if (import.meta.env.DEV) {
+        console.debug("[official-sanitary-pack] activation result:", result);
+      }
+
+      if (!result.operationCount || result.operationCount === 0) {
+        showSuccess(
+          `Pack oficial aplicado com ${result.selection.templates.length} frentes. Nenhuma mudanca materializada (operationCount=0).`,
+        );
+      } else {
+        showSuccess(
+          `Pack oficial aplicado com ${result.selection.templates.length} frentes. ${result.operationCount} operacoes enfileiradas; a agenda sanitaria sera recomposta apos o sync.`,
+        );
+      }
     } catch (error) {
       console.error("[official-sanitary-pack] activation failed", error);
       showError("Nao foi possivel ativar o pack oficial desta fazenda.");

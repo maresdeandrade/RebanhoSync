@@ -45,6 +45,7 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import type { FarmExperienceMode } from "@/lib/farms/experienceMode";
 import { createGesture } from "@/lib/offline/ops";
+import { pullDataForFarm } from "@/lib/offline/pull";
 import type {
   OperationInput,
   ProdutoVeterinarioCatalogEntry,
@@ -136,23 +137,26 @@ const CALENDAR_MODE_OPTIONS: Array<{
   value: SanitaryBaseCalendarMode;
   label: string;
 }> = [
-  { value: "rolling_interval", label: "Intervalo recorrente" },
-  { value: "campaign", label: "Campanha programada" },
-  { value: "age_window", label: "Janela etaria" },
-  { value: "immediate", label: "Procedimento imediato" },
-  { value: "clinical_protocol", label: "Protocolo clinico" },
+  { value: "rotina_recorrente", label: "Rotina recorrente" },
+  { value: "campanha", label: "Campanha" },
+  { value: "janela_etaria", label: "Janela etaria" },
+  { value: "procedimento_imediato", label: "Procedimento imediato" },
+  { value: "nao_estruturado", label: "Nao estruturado" },
 ];
 
 const CALENDAR_ANCHOR_OPTIONS: Array<{
   value: SanitaryBaseCalendarAnchor;
   label: string;
 }> = [
-  { value: "calendar_month", label: "Mes/calendario" },
-  { value: "birth", label: "Nascimento" },
-  { value: "weaning", label: "Desmama" },
-  { value: "pre_breeding_season", label: "Pre-estacao de monta" },
-  { value: "dry_off", label: "Secagem" },
-  { value: "clinical_need", label: "Necessidade clinica" },
+  { value: "sem_ancora", label: "Sem ancora" },
+  { value: "nascimento", label: "Nascimento" },
+  { value: "desmama", label: "Desmama" },
+  { value: "parto_previsto", label: "Parto previsto" },
+  { value: "entrada_fazenda", label: "Entrada na fazenda" },
+  { value: "movimentacao", label: "Movimentacao" },
+  { value: "diagnostico_evento", label: "Diagnostico de evento" },
+  { value: "conclusao_etapa_dependente", label: "Conclusao de etapa anterior" },
+  { value: "ultima_conclusao_mesma_familia", label: "Ultima conclusao da mesma familia" },
 ];
 
 const TYPE_META: Record<

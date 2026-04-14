@@ -186,8 +186,8 @@ function buildCalendarPayload(item: CatalogoProtocoloOficialItem) {
 
   if (item.gatilho_tipo === "idade") {
     return buildSanitaryBaseCalendarPayload({
-      mode: "age_window",
-      anchor: "birth",
+      mode: "janela_etaria",
+      anchor: "nascimento",
       label,
       ageStartDays: readNumber(item.gatilho_json, "age_start_days"),
       ageEndDays: readNumber(item.gatilho_json, "age_end_days"),
@@ -201,8 +201,8 @@ function buildCalendarPayload(item: CatalogoProtocoloOficialItem) {
 
   if (item.gatilho_tipo === "calendario") {
     return buildSanitaryBaseCalendarPayload({
-      mode: "campaign",
-      anchor: "calendar_month",
+      mode: "campanha",
+      anchor: "sem_ancora",
       label,
       months: readNumberList(item.gatilho_json, "months"),
       intervalDays: normalizeIntervalDays(item),
@@ -212,8 +212,8 @@ function buildCalendarPayload(item: CatalogoProtocoloOficialItem) {
 
   if (item.gatilho_tipo === "risco") {
     return buildSanitaryBaseCalendarPayload({
-      mode: "rolling_interval",
-      anchor: "calendar_month",
+      mode: "rotina_recorrente",
+      anchor: "sem_ancora",
       label,
       intervalDays: normalizeIntervalDays(item),
       ageStartDays: readNumber(item.gatilho_json, "age_start_days"),
@@ -224,16 +224,16 @@ function buildCalendarPayload(item: CatalogoProtocoloOficialItem) {
 
   if (item.gatilho_tipo === "uso_produto") {
     return buildSanitaryBaseCalendarPayload({
-      mode: "clinical_protocol",
-      anchor: "clinical_need",
+      mode: "procedimento_imediato",
+      anchor: "diagnostico_evento",
       label,
       notes: readString(item.payload, "notes") ?? undefined,
     });
   }
 
   return buildSanitaryBaseCalendarPayload({
-    mode: "immediate",
-    anchor: "clinical_need",
+    mode: "procedimento_imediato",
+    anchor: "diagnostico_evento",
     label,
     notes: readString(item.payload, "notes") ?? undefined,
   });
@@ -610,6 +610,31 @@ export async function buildOfficialSanitaryPackOps(input: {
       continue;
     }
 
+    // CRITICAL: Always deactivate legacy MAPA seed templates (Brucelose, Raiva)
+    // regardless of current selection, because official equivalents are mandatory
+    const templateCode = readString(existingProtocol.payload, "template_code");
+    if (
+      templateCode?.startsWith("MAPA_BRUCELOSE_") ||
+      templateCode?.startsWith("MAPA_RAIVA_")
+    ) {
+      ops.push({
+        table: "protocolos_sanitarios",
+        action: "UPDATE",
+        record: {
+          id: existingProtocol.id,
+          ativo: false,
+          payload: {
+            ...(existingProtocol.payload ?? {}),
+            official_pack_active: false,
+            official_pack_disabled_at: new Date().toISOString(),
+            official_pack_disabled_reason:
+              "legacy_seed_mapa_always_replaced_by_official_catalog",
+          },
+        },
+      });
+      continue;
+    }
+
     const legacyFamilyCode = resolveLegacySeedFamilyCode(existingProtocol);
     if (!legacyFamilyCode || !selectedFamilyCodes.has(legacyFamilyCode)) {
       continue;
@@ -719,6 +744,19 @@ export async function activateOfficialSanitaryPack(input: {
 
   const clientTxId =
     ops.length > 0 ? await createGesture(input.fazendaId, ops) : null;
+
+  // Materialize standard protocols (Clostridioses, Reprodução, Controle Estratégico)
+  // These are created as draft templates that users can activate later
+  try {
+    await supabase.rpc("materialize_standard_sanitary_protocols", {
+      _fazenda_id: input.fazendaId,
+    });
+  } catch (e: unknown) {
+    console.warn(
+      "Failed to materialize standard protocols:",
+      e instanceof Error ? e.message : "unknown error"
+    );
+  }
 
   return {
     clientTxId,

@@ -252,11 +252,11 @@ function parseCalendarModeQuickFilter(
   if (value === null) return null;
   if (
     value === "all" ||
-    value === "campaign" ||
-    value === "age_window" ||
-    value === "rolling_interval" ||
-    value === "immediate" ||
-    value === "clinical_protocol"
+    value === "campanha" ||
+    value === "janela_etaria" ||
+    value === "rotina_recorrente" ||
+    value === "procedimento_imediato" ||
+    value === "nao_estruturado"
   ) {
     return value;
   }
@@ -269,12 +269,15 @@ function parseCalendarAnchorQuickFilter(
   if (value === null) return null;
   if (
     value === "all" ||
-    value === "calendar_month" ||
-    value === "birth" ||
-    value === "weaning" ||
-    value === "pre_breeding_season" ||
-    value === "clinical_need" ||
-    value === "dry_off"
+    value === "sem_ancora" ||
+    value === "nascimento" ||
+    value === "desmama" ||
+    value === "parto_previsto" ||
+    value === "entrada_fazenda" ||
+    value === "movimentacao" ||
+    value === "diagnostico_evento" ||
+    value === "conclusao_etapa_dependente" ||
+    value === "ultima_conclusao_mesma_familia"
   ) {
     return value;
   }

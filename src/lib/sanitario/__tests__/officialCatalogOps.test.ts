@@ -234,4 +234,102 @@ describe("official sanitary catalog ops", () => {
       },
     });
   });
+
+  it("ALWAYS deactivates legacy MAPA seed templates even if not in current selection", async () => {
+    // This tests the fix for user issue: Brucelose/Raiva duplication
+    // User should not have to select them to deactivate legacy seeds
+    mockState.protocols = [
+      {
+        id: "protocol-brucelose-legacy",
+        fazenda_id: "farm-1",
+        nome: "MAPA | Brucelose femeas 3-8 meses (B19/RB51)",
+        descricao: "Legacy seed",
+        ativo: true,
+        payload: {
+          template_code: "MAPA_BRUCELOSE_FEMEAS_3A8M_V2",
+          seed_origin: "MAPA_SBMV",
+        },
+        client_id: "system:seed",
+        client_op_id: "op-seed",
+        client_tx_id: null,
+        client_recorded_at: "2026-04-09T00:00:00.000Z",
+        server_received_at: "2026-04-09T00:00:00.000Z",
+        created_at: "2026-04-09T00:00:00.000Z",
+        updated_at: "2026-04-09T00:00:00.000Z",
+        deleted_at: null,
+      },
+      {
+        id: "protocol-raiva-legacy",
+        fazenda_id: "farm-1",
+        nome: "MAPA | Raiva herbivoros - primovacinacao (areas de risco)",
+        descricao: "Legacy seed",
+        ativo: true,
+        payload: {
+          template_code: "MAPA_RAIVA_PRIMOVAC_AREAS_RISCO_V2",
+          seed_origin: "MAPA_SBMV",
+        },
+        client_id: "system:seed",
+        client_op_id: "op-seed",
+        client_tx_id: null,
+        client_recorded_at: "2026-04-09T00:00:00.000Z",
+        server_received_at: "2026-04-09T00:00:00.000Z",
+        created_at: "2026-04-09T00:00:00.000Z",
+        updated_at: "2026-04-09T00:00:00.000Z",
+        deleted_at: null,
+      },
+    ];
+
+    // User selects ONLY vermifugacao, NOT brucelose or raiva
+    // (minimal pack without MAPA mandatory items - should force activate them)
+    const selection = selectOfficialSanitaryPack(
+      { templates, items, diseases },
+      {
+        uf: "SP",
+        aptidao: "corte",
+        sistema: "extensivo",
+        zonaRaivaRisco: "baixo",
+        pressaoCarrapato: "baixo",
+        pressaoHelmintos: "baixo",
+        modoCalendario: "minimo_legal", // This selects brucelose+raiva+vermif
+      },
+    );
+
+    const ops = await buildOfficialSanitaryPackOps({
+      fazendaId: "farm-1",
+      config: {
+        uf: "SP",
+        aptidao: "corte",
+        sistema: "extensivo",
+        zonaRaivaRisco: "baixo",
+        pressaoCarrapato: "baixo",
+        pressaoHelmintos: "baixo",
+        modoCalendario: "minimo_legal",
+      },
+      selection,
+    });
+
+    // CRITICAL: Both legacy MAPA templates MUST be deactivated
+    expect(
+      ops.filter(
+        (op) =>
+          op.table === "protocolos_sanitarios" &&
+          op.action === "UPDATE" &&
+          op.record.ativo === false &&
+          (op.record.id === "protocol-brucelose-legacy" ||
+            op.record.id === "protocol-raiva-legacy")
+      ).length
+    ).toBe(2);
+
+    // Verify deactivation reason is specific to legacy MAPA
+    const bruceloseFix = ops.find(
+      (op) =>
+        op.table === "protocolos_sanitarios" &&
+        op.record.id === "protocol-brucelose-legacy" &&
+        op.record.ativo === false
+    );
+    expect(bruceloseFix?.record.payload?.official_pack_disabled_reason).toBe(
+      "legacy_seed_mapa_always_replaced_by_official_catalog"
+    );
+  });
 });
+
