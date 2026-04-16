@@ -1,205 +1,230 @@
-# REBANHOSYNC — Guia para Agentes e Desenvolvedores
+# REBANHOSYNC — ENTRYPOINT FOR CODEX
 
-Este arquivo contém as diretrizes **oficiais** de arquitetura, dados e segurança do projeto.
+Estado atual:
+- Beta interno
+- MVP completo e operacional
+- Prioridade: patches pequenos, locais e revisáveis
+- Este arquivo é um dispatcher curto; detalhes de domínio ficam nos `AGENTS.md` locais
 
-> **Estado atual do produto:** Beta interno — MVP completo (7/7 domínios operacionais implementados).  
-> **Última atualização documental:** 2026-04-07
+## 1) Leitura inicial obrigatória
 
-> **Fontes de Verdade (ler nesta ordem ao retomar):**
-> - `docs/CURRENT_STATE.md` (snapshot executivo)
-> - `docs/PRODUCT.md` (visão de produto, escopo e princípios)
-> - `docs/SYSTEM.md` (Two Rails, Sync Flow, Banco, Offline-first, Contratos, RLS e Taxonomia Mínima)
-> - `docs/PROCESS.md` (fluxo capability-centric e governança de projeto)
-> - `docs/REFERENCE.md` (stack de repositório, mapas de rotas, topologia E2E)
-> - `docs/IMPLEMENTATION_STATUS.md` (matriz de capacidades atual)
-> - `docs/ROADMAP.md` (evolução e curto prazo)
-> - `docs/TECH_DEBT.md` (gaps residuais mapeados)
+Leia nesta ordem:
+1. `README.md`
+2. `docs/CURRENT_STATE.md`
+3. `docs/PROCESS.md`
 
----
+Objetivo dessa leitura:
+- entender o snapshot operacional atual
+- identificar o `capability_id` ou `infra.*` alvo
+- evitar abrir documentação histórica ou derivada sem necessidade
 
-## 1. Princípios do Domínio (Two Rails)
+## 2) Leitura adicional apenas se a tarefa exigir
 
-O sistema opera sob o paradigma de **Two Rails** para conciliar estado mutável e rastreabilidade imutável.
+### Arquitetura / offline / sync
+- `docs/ARCHITECTURE.md`
+- `docs/OFFLINE.md`
+- `docs/CONTRACTS.md`
 
-### Rail 1: Agenda (Mutável)
-- **Propósito:** Intenções futuras (ex: tarefas agendadas).
-- **Características:** Mutável (`UPDATE` permitido), Status (`agendado` → `concluido` | `cancelado`).
-- **Deduplicação:** Essencial para protocolos automáticos (via `dedup_key`).
+### Banco / segurança / tenancy
+- `docs/DB.md`
+- `docs/RLS.md`
 
-### Rail 2: Eventos (Append-Only)
-- **Propósito:** Fatos passados (ex: pesagem realizada, vacina aplicada).
-- **Características:** **Imutável**. Trigger `prevent_business_update` bloqueia alterações em colunas de negócio.
-- **Correções:** Feitas via contra-lançamento (novo evento com `corrige_evento_id`), nunca por edição direta.
+### Estado analítico / backlog / reconciliação
+- `docs/IMPLEMENTATION_STATUS.md`
+- `docs/TECH_DEBT.md`
+- `docs/ROADMAP.md`
+- `docs/review/RECONCILIACAO_REPORT.md`
 
-### Sem "FK Dura" (Agenda ↔ Evento)
-- Não existe Foreign Key rígida no banco entre `agenda_itens` e `eventos`.
-- **Motivo:** Desacoplamento. Eventos podem existir sem agenda (emergências) e tarefas podem ser resolvidas por múltiplos eventos.
-- **Vínculo Lógico:** Usa-se `source_task_id` (nos eventos) ou `source_evento_id` (na agenda) apenas para referência e rastreabilidade.
+### Domínio / produto
+- `docs/00_MANIFESTO.md`
+- `docs/STACK.md`
+- `docs/REPO_MAP.md`
+- `docs/ROUTES.md`
 
----
+## 3) Não ler por padrão
 
-## 2. Offline-First (Dexie Stores)
+Evite abrir sem necessidade explícita:
+- `docs/archive/**`
+- auditorias históricas
+- relatórios temporários
+- arquivos gerados (`dist/**`, `coverage/**`, caches)
+- documentos derivados quando a tarefa é apenas de implementação local
+- qualquer doc antigo que contradiga `CURRENT_STATE.md` ou `PROCESS.md`
 
-O frontend utiliza **Dexie.js v4** (IndexedDB) na **versão 8** do schema, com 4 categorias de stores:
+## 4) Escopo padrão de trabalho
 
-### `state_*` (9 stores)
-- **O que são:** Réplica local mutável do estado atual das entidades.
-- **Comportamento:** Mutável. Reflete a "foto" atual do banco.
-- **Stores:** `state_animais`, `state_lotes`, `state_pastos`, `state_agenda_itens`, `state_contrapartes`, `state_animais_sociedade`, `state_categorias_zootecnicas`, `state_protocolos_sanitarios`, `state_protocolos_sanitarios_itens`.
+- Sempre fechar a tarefa por `capability_id` ou `infra.*`
+- Tocar no máximo 1 capability principal por tarefa
+- Evitar refatoração ampla sem pedido explícito
+- Preferir diff mínimo sobre reescrita completa
+- Não “reaprender” o repositório inteiro a cada tarefa
+- Não abrir múltiplos domínios se a mudança for local
+- Se a tarefa for ambígua, assumir o menor escopo seguro e explicitá-lo
 
-### `event_*` (7 stores)
-- **O que são:** Log local append-only de eventos ocorridos.
-- **Comportamento:** Append-only. Usado para timelines e histórico offline.
-- **Stores:** `event_eventos`, `event_eventos_sanitario`, `event_eventos_pesagem`, `event_eventos_nutricao`, `event_eventos_movimentacao`, `event_eventos_reproducao`, `event_eventos_financeiro`.
+## 5) AGENTS locais: quando escalar
 
-### `queue_*` (3 stores)
-- **O que são:** Fila de sincronização e controle de transações.
-- **Stores:**
-  - `queue_gestures`: Metadados da transação (`client_tx_id`, `status`: PENDING/SYNCING/DONE/REJECTED/ERROR).
-  - `queue_ops`: Operações individuais (`client_op_id`, `table`, `action`, `record`, `before_snapshot`).
-  - `queue_rejections`: Erros de negócio retornados pelo servidor (com TTL 7d e auto-purge).
+Antes de abrir muitos arquivos, verificar se a pasta já possui `AGENTS.md` local.
 
-### `metrics_events` (1 store — Dexie v8)
-- **O que é:** Store de telemetria local de piloto. Append-only local.
-- **Campos:** `event_name`, `route`, `entity`, `status`, `fazenda_id`, `created_at`.
-- **Nota:** os dados permanecem no dispositivo; sem envio remoto automático no estado atual (TD-021 resolvido via flush externo documentado em Roadmap).
+### Escalar para:
+- `src/lib/offline/AGENTS.md`
+  - quando tocar Dexie, gestures, rollback, pull, sync worker, telemetry, `tableMap`
+- `src/lib/sanitario/AGENTS.md`
+  - quando tocar protocolos, `calendario_base`, catálogo oficial, overlay, compliance, produtos veterinários
+- `src/lib/reproduction/AGENTS.md`
+  - quando tocar cobertura/IA, diagnóstico, parto, pós-parto, cria inicial, episode linking
+- `supabase/functions/sync-batch/AGENTS.md`
+  - quando tocar validação autoritativa, status codes, blocked tables, payload versionado, reason codes
+- `supabase/migrations/AGENTS.md`
+  - quando tocar schema, RLS, RPCs, views, triggers, FKs compostas, catálogo global vs tenant-scoped
 
-### Contrato de History Confidence (Novo)
-- **O que é:** Entradas e rebanho sem histórico de vacinação assumem state de compliance e `history_confidence = unknown`. Requerem eventos ou documentos (`compliance_state = catch_up_required`).
+Regra:
+- o AGENT local restringe e aprofunda
+- o root define o enquadramento geral
+- não duplicar regra longa no root e no local
 
----
+## 6) Áreas críticas do produto
 
-## 3. Sync Contract (Sincronização)
+Tratar como zonas de maior risco:
+- `src/lib/offline/**`
+- `src/lib/sanitario/**`
+- `src/lib/reproduction/**`
+- `src/lib/animals/**` quando a tarefa tocar taxonomia / elegibilidade / apresentação derivada
+- `src/lib/events/**` quando a tarefa tocar builders / validators / payloads
+- `src/pages/Registrar.tsx`
+- `src/pages/Agenda.tsx`
+- `src/pages/ProtocolosSanitarios.tsx`
+- `supabase/functions/sync-batch/**`
+- `supabase/migrations/**`
 
-O sync é orientado a **Gestos** (Transações Atômicas).
+## 7) Invariantes que não podem ser quebradas
 
-### Fluxo de Escrita
-1. **UI:** Usuário realiza ação (ex: vacinar animal).
-2. **Local:** `createGesture` gera `client_tx_id` e grava em `queue_gestures` + `queue_ops`.
-3. **Otimismo:** Aplica mudança imediatamente em `state_*` e captura `before_snapshot` para rollback.
-4. **Worker:** A cada ~5s, pega gestos `PENDING`.
-5. **Envio:** POST `/functions/v1/sync-batch` com payload JSON.
-6. **Retry:** até 3 tentativas em caso de falha de rede. Gestos com erro de auth são recuperados no próximo startup.
+### Produto / arquitetura
+- Two Rails:
+  - agenda = intenção futura mutável
+  - eventos = fatos passados append-only
+- correção de evento ocorre por contra-lançamento, nunca por update de negócio
+- não existe FK dura agenda ↔ evento; vínculo é lógico
+- taxonomia é derivada de fatos; não persistir label derivado como fonte primária
 
-### Endpoint: `/functions/v1/sync-batch`
-- **Auth:** Bearer JWT obrigatório.
-- **Validações:** Membership (`has_membership`), Anti-teleporte, Blocked Tables (`user_fazendas`, `user_profiles`, `user_settings`), Taxonomia canônica (`schema_version = 1`), Episódios reprodução (linking cobertura→parto).
-- **Resposta:** Lista de status por operação (`APPLIED`, `APPLIED_ALTERED`, `REJECTED`).
-- **Post-sync pull:** após sync de animais/eventos/agenda, o worker faz pull seletivo para refletir triggers server-side.
+### Offline / sync
+- preservar idempotência
+- preservar rollback determinístico por `before_snapshot`
+- preservar metadata obrigatória de sync:
+  - `fazenda_id`
+  - `client_id`
+  - `client_op_id`
+  - `client_tx_id`
+  - `client_recorded_at`
+- não enviar `created_at` / `updated_at` como payload de escrita
+- nomes remotos continuam sendo a interface de escrita; Dexie usa tradução via `tableMap`
+- catálogo global offline não deve virar tabela tenant-scoped por acidente
 
----
+### Segurança / tenancy
+- `fazenda_id` é a fronteira de isolamento
+- FKs compostas com `fazenda_id` quando aplicável
+- `user_fazendas` não ganha escrita direta
+- RLS / RBAC / RPCs `SECURITY DEFINER` devem ser preservados
+- policies não devem introduzir bypass cross-tenant
+- manter `search_path = public` e validação explícita nas RPCs privilegiadas
 
-## 4. Idempotência e Deduplicação
+### Sanitário
+- manter separação entre:
+  1. base regulatória oficial
+  2. overlay operacional do pack
+  3. protocolos operacionais da fazenda
+- não reduzir `calendario_base` a `intervalo_dias`
+- não reintroduzir protocolo base hardcoded na UI
+- `produtos_veterinarios` permanece referência estruturada do fluxo sanitário
 
-O sistema é resiliente a falhas de rede e retries.
+### Reprodução
+- preservar episode linking determinístico
+- fatos event-driven não aceitam override manual arbitrário
+- não quebrar fluxo parto -> pós-parto -> cria inicial
 
-### Identificadores
-- **`client_tx_id`**: UUID do gesto. Agrupa operações atômicas.
-- **`client_op_id`**: UUID da operação individual. Chave de idempotência no banco.
-- **`dedup_key`**: String lógica na Agenda (ex: `${fazenda_id}|animal:${animalId}|piv:${versionId}|dose:${doseNum}`).
+## 8) Forma de entrega
 
-### Status de Retorno
-- **`APPLIED`**: Sucesso (ou idempotência: `client_op_id` já existia).
-- **`APPLIED_ALTERED`**: Sucesso com modificação (ex: `dedup_key` colidiu).
-- **`REJECTED`**: Erro de negócio (ex: Anti-teleporte, validação de payload).
-  - **Ação do Cliente:** Executa `rollbackOpLocal` usando `before_snapshot` em ordem reversa.
+Retorne por padrão:
+- diff mínimo
+- até 3 riscos
+- até 5 arquivos principais afetados
+- testes/comandos realmente necessários
+- sem reescrever arquivo inteiro sem necessidade
+- sem refatoração ampla “por oportunidade” fora do escopo
 
----
+## 9) Validação mínima
 
-## 5. Segurança (Multi-tenant & RLS)
+Sempre que a mudança tocar código:
+- `pnpm run lint`
+- `pnpm test`
+- `pnpm run build`
 
-### Isolamento Estrito
-- **Tenant:** Tudo é isolado por `fazenda_id`.
-- **FKs Compostas:** FKs internas devem incluir `fazenda_id`.
-  - *Correto:* `FOREIGN KEY (lote_id, fazenda_id) REFERENCES lotes(id, fazenda_id)`
-  - *Errado:* `FOREIGN KEY (lote_id) REFERENCES lotes(id)`
-- **Exceção documentada:** `produtos_veterinarios` é tabela global (sem `fazenda_id`) — catálogo compartilhado entre tenants. Ver `docs/ADRs/ADR-0002`.
+Quando a mudança tocar sync, migrations, RLS ou edge functions:
+- revisar isolamento por `fazenda_id`
+- revisar FKs compostas
+- revisar invariantes append-only
+- revisar reason codes / rollback / compatibilidade offline
 
-### RLS Hardened
-- **`user_fazendas`**: Tabela de membership é **SELECT-ONLY** via RLS.
-- **Mutações de Membership:** Apenas via RPCs `SECURITY DEFINER`:
-  - `create_fazenda()`, `admin_set_member_role()`, `admin_remove_member()`
-  - `create_invite()`, `accept_invite()`, `reject_invite()`, `cancel_invite()`, `get_invite_preview()`
-- **RPCs:** Validam permissões explicitamente e fixam `search_path = public`.
+## 10) Atualização documental
 
-### RBAC de DELETE — Animais
-- **DELETE em `animais`** é restrito a `owner` e `manager` via policy `animais_delete_by_role`.
-- `Cowboy` só pode `INSERT` e `UPDATE` em animais.
-- Evidência: migration `20260308230748_rbac_delete_hardening_animais.sql`.
+Atualizar docs derivados apenas quando houver mudança funcional real.
 
----
+Ordem:
+1. `docs/IMPLEMENTATION_STATUS.md`
+2. `docs/TECH_DEBT.md`
+3. `docs/ROADMAP.md`
+4. `docs/review/RECONCILIACAO_REPORT.md`
 
-## 6. RBAC (Role-Based Access Control)
+Se a mudança for apenas:
+- visual
+- limpeza local
+- organização de código sem impacto funcional
+- refino interno sem alterar capability/gap/contrato
 
-Roles definidas em `farm_role_enum`.
+então não abrir docs derivados por padrão.
 
-| Role | Leitura | Escrita (Operacional) | Escrita (Estrutural) | DELETE Animais | Gestão de Membros |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **Cowboy** | ✅ Total | ✅ Eventos, Agenda, Animais (INSERT/UPDATE) | ❌ | ❌ | ❌ |
-| **Manager** | ✅ Total | ✅ Tudo do Cowboy | ✅ Lotes, Pastos, Protocolos | ✅ | ❌ |
-| **Owner** | ✅ Total | ✅ Tudo do Manager | ✅ Tudo do Manager | ✅ | ✅ |
+## 11) Quando abrir ADR
 
-*Nota: Manager não pode alterar role de Owner nem remover membros (owner only).*
+Abrir ADR se a mudança alterar:
+- contrato do sync
+- ordering / deduplicação / status codes
+- modelo de dados canônico
+- invariantes de RLS / RBAC / RPC
+- arquitetura offline-first / Two Rails
+- regra normativa que passa a orientar o produto
 
----
+## 12) Convenção operacional
 
-## 7. Taxonomia Canônica Bovina
+Quando aplicável:
+- use no título lógico da tarefa o identificador principal:
+  - `[capability_id] resumo`
+  - `[infra.tema] resumo`
+- explicite no início da resposta:
+  - alvo
+  - arquivos lidos
+  - arquivos ignorados
+  - se houve ou não impacto documental
 
-O sistema deriva classificações de animais a partir de **fatos**, não de labels persistidos.
+## 13) Regras de higiene
 
-### Três eixos de classificação
-- `categoria_zootecnica` (ex: bezerro, novilha, vaca, touro)
-- `fase_veterinaria` (ex: amamentando, desmamado)
-- `estado_produtivo_reprodutivo` (ex: prenhe, seca, recem_parida, vazia)
+- não versionar artefatos gerados
+- não espalhar relatórios temporários na raiz
+- preferir leitura inicial por `README.md` + `docs/CURRENT_STATE.md`
+- usar `docs/archive/` apenas como histórico, não como fonte operacional
+- em caso de conflito, confiar primeiro em:
+  1. código + migrations
+  2. `docs/CURRENT_STATE.md`
+  3. docs normativos
+  4. docs derivados
+  5. histórico
 
-### Princípios
-- Persistir apenas **fatos mínimos** em `animais.payload.taxonomy_facts` (contrato v1 com `schema_version = 1`)
-- Derivar labels e categorias em selectors/projections (nunca persistir labels derivados)
-- Validação no cliente (`src/lib/offline/ops.ts`) e no servidor (`sync-batch/taxonomy.ts`)
-- Paridade TS ↔ SQL view testada por fixture em `src/lib/animals/__tests__/taxonomySqlParity.test.ts`
+## 14) Anti-drift explícito
 
-### Campos de `taxonomy_facts` (v1)
-`castrado`, `puberdade_confirmada`, `prenhez_confirmada`, `data_prevista_parto`, `data_ultimo_parto`, `em_lactacao`, `secagem_realizada`, `data_secagem`
+Não assumir como verdade operacional:
+- qualquer referência antiga a Dexie v8
+- qualquer referência antiga a gaps residuais TD-021 / TD-022 / TD-023 ainda abertos
+- qualquer leitura antiga que contradiga o snapshot atual do projeto
 
----
-
-## 8. Padrões de Código Obrigatórios
-
-### TypeScript
-- `catch (e: unknown)` + `e instanceof Error` — nunca `catch (e: any)`
-- `setInterval`: usar `ReturnType<typeof setInterval>` — nunca `NodeJS.Timeout` (Vite não é Node)
-- Sem strict mode global (MVP)
-
-### Operações de Sync
-- Records enviados ao servidor **devem conter:** `fazenda_id`, `client_id`, `client_op_id`, `client_tx_id`, `client_recorded_at`
-- **Nunca enviar:** `created_at` / `updated_at` (server-managed)
-- **Sempre usar `tableMap.ts`:** ops usam nome remoto (ex: `animais`), Dexie usa nome local (`state_animais`)
-
-### Agenda
-- `data_prevista`: **sempre** string `'YYYY-MM-DD'`
-- `dominio`: ex. `'sanitario'` (diferente de `tipo`)
-- `status`: `agendado | concluido | cancelado`
-
-### Segurança de Banco
-- Toda tabela tenant: `fazenda_id` obrigatório + RLS habilitada
-- Tabelas de eventos: trigger `prevent_business_update` obrigatório
-- RPCs com privilégio: `SECURITY DEFINER` + `search_path = public` + validação explícita de role
-- Policies de RLS **não podem** consultar a própria tabela via subquery — usar helpers `SECURITY DEFINER`
-
----
-
-## 9. Checklist de PR (Pull Request)
-
-Antes de submeter alterações:
-
-- [ ] **Build verde:** `pnpm exec tsc --noEmit` + `pnpm run lint` + `pnpm run build`
-- [ ] **RLS Policies:** novas tabelas têm RLS habilitado e policies por `fazenda_id`
-- [ ] **FKs Compostas:** Foreign Keys internas incluem `fazenda_id` (ou justificativa documentada)
-- [ ] **Append-Only:** tabelas de eventos têm trigger `prevent_business_update`
-- [ ] **Anti-Teleporte:** lógica de movimentação valida consistência (UPDATE animal + INSERT evento)
-- [ ] **Dexie Stores:** mudanças de schema refletidas nos stores locais + nova versão Dexie
-- [ ] **tableMap.ts:** novas tabelas sync adicionadas ao mapeamento remoto ↔ local
-- [ ] **Migrations:** SQL idempotente e seguro (não quebra dados existentes)
-- [ ] **E2E:** fluxos críticos validados conforme base em `docs/REFERENCE.md`
-- [ ] **Taxonomia:** se tocar `animais.payload`, respeitar contrato `taxonomy_facts` v1
-- [ ] **Docs:** atualizar `IMPLEMENTATION_STATUS.md` e `TECH_DEBT.md` se aplicável
+Se encontrar divergência documental:
+- reportar o drift
+- seguir o snapshot atual + normativos + código/migrations
+- só atualizar docs se a tarefa realmente incluir reconciliação documental
