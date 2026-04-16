@@ -1,4 +1,4 @@
-# Análise Arquitetural do Módulo Sanitário - GestaoAgro
+# Análise Arquitetural do Módulo Sanitário - RebanhoSync
 
 ## 1. Visão Geral e Desenho Atual
 

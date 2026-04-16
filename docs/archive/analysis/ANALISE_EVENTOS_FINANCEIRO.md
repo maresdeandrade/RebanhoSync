@@ -2,7 +2,7 @@
 
 ## 1. Escopo
 
-Esta analise cobre o estado atual do dominio `financeiro` no GestaoAgro:
+Esta analise cobre o estado atual do dominio `financeiro` no RebanhoSync:
 
 - schema de banco (`eventos` + `eventos_financeiro`)
 - permissao de acesso (RLS)
