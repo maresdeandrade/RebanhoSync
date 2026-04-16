@@ -101,3 +101,6 @@ pnpm dev          # servidor local (Vite)
 pnpm run lint     # ESLint
 pnpm test         # Vitest (unitários + integração)
 pnpm run build    # build de produção
+pnpm run test:e2e       # fluxos guiados: onboarding, importação, relatórios
+pnpm run gates          # gates documentais do pacote Antigravity
+pnpm run audit:data     # auditoria de contratos de dados

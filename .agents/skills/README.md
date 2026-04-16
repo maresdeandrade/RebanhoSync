@@ -23,14 +23,51 @@ Ordem prática:
   2. `docs/CURRENT_STATE.md`
   3. docs normativos
   4. skill
-- Não usar skills antigas ou material histórico como fonte operacional.
+- Não usar material histórico como fonte operacional.
+- Workflows antigos do Cline foram absorvidos aqui como skills do Codex.
 
 ## Skills disponíveis
 
-### 1) `sanitario-registro-operacional`
+### 1) `harden-module`
+Use quando a tarefa for sobre:
+- hotspot com mistura de responsabilidades
+- hardening arquitetural incremental
+- separação entre Normalize / Select-Policy / Payload / Plan / Effects / Reconcile
+- refatoração incremental de módulos como `Registrar` e `syncWorker`
+
+Não usar para:
+- bug visual local
+- ajuste simples de texto
+- mudança operacional pequena sem dívida arquitetural real
+
+### 2) `prepare-pr`
+Use quando a tarefa for sobre:
+- revisar patch pronto
+- preparar PR
+- checar escopo, riscos, invariantes e validação
+- montar título e corpo do PR
+
+Não usar para:
+- implementar feature do zero
+- refatorar hotspot
+- reconciliação documental ampla
+
+### 3) `reconcile-docs`
+Use quando a tarefa for sobre:
+- reconciliar documentação com o estado real do código
+- medir delta da iteração
+- atualizar snapshot, normativos ou derivados
+- fechar drift documental
+
+Não usar para:
+- pequena mudança local sem impacto funcional
+- ajuste visual
+- simples refino de wording sem reconciliação real
+
+### 4) `sanitario-registro-operacional`
 Use quando a tarefa for sobre:
 - registrar evento sanitário
-- concluir agenda sanitária
+- concluir item de agenda sanitária
 - vacinação, vermifugação, tratamento, exame sanitário
 - `produtos_veterinarios`
 - fluxo operacional em `Registrar`, `Agenda`, `Eventos`, `Relatorios`
@@ -42,11 +79,11 @@ Não usar para:
 - `feed-ban`
 - bloqueios regulatórios amplos
 
-### 2) `sanitario-catalogo-regulatorio-compliance`
+### 5) `sanitario-catalogo-regulatorio-compliance`
 Use quando a tarefa for sobre:
 - catálogo oficial sanitário
-- pack oficial
 - overlay estadual
+- pack oficial
 - `fazenda_sanidade_config`
 - `conformidade`
 - `feed-ban`
@@ -59,14 +96,14 @@ Não usar para:
 - autocomplete de produto
 - ajuste local de formulário operacional
 
-### 3) `animal-cadastro-origem-destino`
+### 6) `animal-cadastro-origem-destino`
 Use quando a tarefa for sobre:
 - cadastro-base do animal
-- criação/edição de animal
+- criação ou edição de animal
 - origem, entrada, compra
 - venda, saída, morte
 - status do animal
-- separação entre cadastro e projeção derivada
+- separação entre atributo-base e projeção derivada
 
 Não usar para:
 - parto
@@ -75,12 +112,12 @@ Não usar para:
 - episode linking
 - trânsito/GTA
 
-### 4) `reproducao-parto-posparto-cria`
+### 7) `reproducao-parto-posparto-cria`
 Use quando a tarefa for sobre:
 - cobertura / IA
-- diagnóstico
+- diagnóstico de gestação
 - parto
-- pós-parto neonatal
+- pós-parto
 - cria inicial
 - ficha reprodutiva
 - episode linking
@@ -92,16 +129,16 @@ Não usar para:
 - movimentação
 - sanitário regulatório
 
-### 5) `movimentacao-transito-conformidade`
+### 8) `movimentacao-transito-conformidade`
 Use quando a tarefa for sobre:
-- movimentação entre lotes/pastos
+- movimentação entre lotes ou pastos
 - anti-teleporte
 - trânsito externo
 - GTA/e-GTA
 - PNCEBT
 - bloqueio por suspeita sanitária
-- bloqueio por compliance/overlay
-- venda com impacto regulatório
+- bloqueio por compliance
+- tracing operacional de origem-destino
 
 Não usar para:
 - cadastro-base simples
@@ -109,7 +146,7 @@ Não usar para:
 - sanitário operacional simples
 - catálogo regulatório fora do impacto em movimentação
 
-### 6) `sync-offline-rollback`
+### 9) `sync-offline-rollback`
 Use quando a tarefa for sobre:
 - Dexie
 - offline-first
@@ -128,7 +165,7 @@ Não usar para:
 - ajuste local de UI sem impacto em sync/store
 - regra de domínio pura sem impacto offline
 
-### 7) `migrations-rls-contracts`
+### 10) `migrations-rls-contracts`
 Use quando a tarefa for sobre:
 - migrations SQL
 - schema
@@ -139,20 +176,20 @@ Use quando a tarefa for sobre:
 - RLS / RBAC
 - RPCs `SECURITY DEFINER`
 - contratos versionados
-- catálogo global vs tenant-scoped
+- catálogo global versus tenant-scoped
 
 Não usar para:
 - ajuste puramente de UI
 - refino local sem impacto estrutural
 
-### 8) `docs-reconciliation`
+### 11) `docs-reconciliation`
 Use quando a tarefa for sobre:
 - reconciliar documentação
 - medir delta real da iteração
 - atualizar `IMPLEMENTATION_STATUS`
-- atualizar `TECH_DEBT`
-- atualizar `ROADMAP`
-- atualizar `RECONCILIACAO_REPORT`
+- `TECH_DEBT`
+- `ROADMAP`
+- `RECONCILIACAO_REPORT`
 - decidir se precisa ADR
 - fechar drift documental
 
@@ -162,6 +199,15 @@ Não usar para:
 - refatoração interna sem impacto funcional real
 
 ## Mapa rápido por tipo de tarefa
+
+### Refatoração arquitetural
+- hotspot com mistura de camadas -> `harden-module`
+
+### Fechamento de entrega
+- revisão final e corpo de PR -> `prepare-pr`
+
+### Governança documental
+- snapshot / backlog / roadmap / drift -> `reconcile-docs` ou `docs-reconciliation`
 
 ### Fluxo operacional diário
 - sanitário manual -> `sanitario-registro-operacional`
@@ -173,9 +219,6 @@ Não usar para:
 - rollback / Dexie / sync -> `sync-offline-rollback`
 - migration / RLS / contrato -> `migrations-rls-contracts`
 
-### Governança documental
-- snapshot / backlog / roadmap / drift -> `docs-reconciliation`
-
 ### Regulatório sanitário
 - pack oficial / compliance / overlay -> `sanitario-catalogo-regulatorio-compliance`
 
@@ -183,10 +226,11 @@ Não usar para:
 
 Se a tarefa começar em uma skill e tocar outra fronteira:
 
+- de hardening para PR -> escalar para `prepare-pr`
+- de hardening para docs -> escalar para `reconcile-docs`
 - de sanitário operacional para regulatório -> escalar para `sanitario-catalogo-regulatorio-compliance`
 - de domínio para Dexie/sync/rollback -> escalar para `sync-offline-rollback`
 - de código para schema/RLS/contrato -> escalar para `migrations-rls-contracts`
-- de implementação para atualização documental -> escalar para `docs-reconciliation`
 
 ## O que evitar
 

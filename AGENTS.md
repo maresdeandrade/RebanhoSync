@@ -4,7 +4,7 @@ Estado atual:
 - Beta interno
 - MVP completo e operacional
 - Prioridade: patches pequenos, locais e revisáveis
-- Este arquivo é um dispatcher curto; detalhes de domínio ficam nos `AGENTS.md` locais
+- Este arquivo é um dispatcher curto; detalhes de domínio ficam nos `AGENTS.md` locais e nas skills em `.agent/skills/`
 
 ## 1) Leitura inicial obrigatória
 
@@ -36,10 +36,9 @@ Objetivo dessa leitura:
 - `docs/review/RECONCILIACAO_REPORT.md`
 
 ### Domínio / produto
-- `docs/00_MANIFESTO.md`
-- `docs/STACK.md`
-- `docs/REPO_MAP.md`
-- `docs/ROUTES.md`
+- `docs/PRODUCT.md`
+- `docs/SYSTEM.md`
+- `docs/REFERENCE.md`
 
 ## 3) Não ler por padrão
 
@@ -82,7 +81,24 @@ Regra:
 - o root define o enquadramento geral
 - não duplicar regra longa no root e no local
 
-## 6) Áreas críticas do produto
+## 6) Skills: quando usar
+
+Consulte `.agent/skills/README.md` para o índice completo.
+
+Use skills quando a tarefa for principalmente:
+- architectural hardening -> `harden-module`
+- PR preparation -> `prepare-pr`
+- documentation reconciliation -> `reconcile-docs`
+- sanitary operational flow -> `sanitario-registro-operacional`
+- sanitary regulatory/compliance flow -> `sanitario-catalogo-regulatorio-compliance`
+- animal registration / origin / destination -> `animal-cadastro-origem-destino`
+- reproduction / parto / pós-parto / cria -> `reproducao-parto-posparto-cria`
+- movement / transit / compliance -> `movimentacao-transito-conformidade`
+- offline / sync / rollback -> `sync-offline-rollback`
+- migrations / RLS / contracts -> `migrations-rls-contracts`
+- derived doc reconciliation -> `docs-reconciliation`
+
+## 7) Áreas críticas do produto
 
 Tratar como zonas de maior risco:
 - `src/lib/offline/**`
@@ -96,13 +112,13 @@ Tratar como zonas de maior risco:
 - `supabase/functions/sync-batch/**`
 - `supabase/migrations/**`
 
-## 7) Invariantes que não podem ser quebradas
+## 8) Invariantes que não podem ser quebradas
 
 ### Produto / arquitetura
 - Two Rails:
   - agenda = intenção futura mutável
   - eventos = fatos passados append-only
-- correção de evento ocorre por contra-lançamento, nunca por update de negócio
+- correção de evento ocorre por contra-lançamento, nunca por update destrutivo de negócio
 - não existe FK dura agenda ↔ evento; vínculo é lógico
 - taxonomia é derivada de fatos; não persistir label derivado como fonte primária
 
@@ -141,7 +157,7 @@ Tratar como zonas de maior risco:
 - fatos event-driven não aceitam override manual arbitrário
 - não quebrar fluxo parto -> pós-parto -> cria inicial
 
-## 8) Forma de entrega
+## 9) Forma de entrega
 
 Retorne por padrão:
 - diff mínimo
@@ -151,7 +167,7 @@ Retorne por padrão:
 - sem reescrever arquivo inteiro sem necessidade
 - sem refatoração ampla “por oportunidade” fora do escopo
 
-## 9) Validação mínima
+## 10) Validação mínima
 
 Sempre que a mudança tocar código:
 - `pnpm run lint`
@@ -164,7 +180,7 @@ Quando a mudança tocar sync, migrations, RLS ou edge functions:
 - revisar invariantes append-only
 - revisar reason codes / rollback / compatibilidade offline
 
-## 10) Atualização documental
+## 11) Atualização documental
 
 Atualizar docs derivados apenas quando houver mudança funcional real.
 
@@ -182,7 +198,7 @@ Se a mudança for apenas:
 
 então não abrir docs derivados por padrão.
 
-## 11) Quando abrir ADR
+## 12) Quando abrir ADR
 
 Abrir ADR se a mudança alterar:
 - contrato do sync
@@ -192,23 +208,29 @@ Abrir ADR se a mudança alterar:
 - arquitetura offline-first / Two Rails
 - regra normativa que passa a orientar o produto
 
-## 12) Convenção operacional
+## 13) Codex execution
 
-Quando aplicável:
-- use no título lógico da tarefa o identificador principal:
-  - `[capability_id] resumo`
-  - `[infra.tema] resumo`
-- explicite no início da resposta:
-  - alvo
-  - arquivos lidos
-  - arquivos ignorados
-  - se houve ou não impacto documental
+Before starting a task:
+- read `README.md`, `docs/CURRENT_STATE.md`, `docs/PROCESS.md`
+- if needed, run `powershell -File scripts/codex/bootstrap.ps1`
 
-## 13) Regras de higiene
+Do not edit by default:
+- `docs/archive/**`
+- `dist/**`
+- `coverage/**`
+- `*.tsbuildinfo`
+
+Before editing restricted or generated paths explicitly:
+- run `powershell -File scripts/codex/preflight.ps1 -Paths "<path1>","<path2>"`
+
+After touching critical areas:
+- run `powershell -File scripts/codex/validate.ps1 -TouchedPaths "<path1>","<path2>"`
+
+## 14) Regras de higiene
 
 - não versionar artefatos gerados
 - não espalhar relatórios temporários na raiz
-- preferir leitura inicial por `README.md` + `docs/CURRENT_STATE.md`
+- preferir leitura inicial por `README.md` + `docs/CURRENT_STATE.md` + `docs/PROCESS.md`
 - usar `docs/archive/` apenas como histórico, não como fonte operacional
 - em caso de conflito, confiar primeiro em:
   1. código + migrations
@@ -217,11 +239,11 @@ Quando aplicável:
   4. docs derivados
   5. histórico
 
-## 14) Anti-drift explícito
+## 15) Anti-drift explícito
 
 Não assumir como verdade operacional:
-- qualquer referência antiga a Dexie v8
-- qualquer referência antiga a gaps residuais TD-021 / TD-022 / TD-023 ainda abertos
+- qualquer referência antiga a versões/arquiteturas superadas do offline
+- qualquer referência antiga a gaps residuais já fechados
 - qualquer leitura antiga que contradiga o snapshot atual do projeto
 
 Se encontrar divergência documental:

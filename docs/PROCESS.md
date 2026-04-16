@@ -1,122 +1,112 @@
-# Processo de Desenvolvimento (DevOS) - Capability-Centric
+# Processo de Engenharia (RebanhoSync)
 
 > **Status:** Normativo
-> **Fonte de Verdade (Execucao):** GitHub (PRs, Issues e Projects)
-> **Fonte de Verdade (Analise):** `docs/IMPLEMENTATION_STATUS.md` -> `docs/TECH_DEBT.md` -> `docs/ROADMAP.md` -> `docs/review/RECONCILIACAO_REPORT.md`
-> **Ultima Atualizacao:** 2026-04-07
+> **Fonte de Verdade:** Este documento
+> **Última Atualização:** 2026-04-16
 
-Este documento define o processo de desenvolvimento do RebanhoSync com governanca capability-centric, usando `capability_id` como chave de derivacao entre matriz analitica, divida tecnica, roadmap e reconciliacao.
+## 1. Objetivo
 
-## 0. Principio central
+Este documento define **como o projeto é evoluído**, **como mudanças são enquadradas**, **como o estado do repositório é refletido na documentação** e **quais critérios mínimos determinam que uma entrega está realmente concluída**.
 
-Toda mudanca relevante de codigo deve se conectar a um `capability_id` do catalogo ou a um item `infra.*` quando estiver fora do catalogo funcional.
+Ele não é snapshot do momento, nem backlog de gaps em aberto.  
+Seu papel é normativo: orientar execução, revisão e reconciliação.
 
-Regra pratica:
+---
 
-- o estado analitico nasce em `IMPLEMENTATION_STATUS.md`;
-- os gaps abertos viram itens em `TECH_DEBT.md`;
-- o recorte de execucao vem de `ROADMAP.md`;
-- a consistencia entre esses arquivos e auditada em `docs/review/RECONCILIACAO_REPORT.md`.
+## 2. Princípios de execução
 
-## 1. Taxonomia da documentacao
+### 2.1 Capability-centric
+Toda mudança deve ser enquadrada, sempre que possível, por:
+- `capability_id`
+- ou trilhos `infra.*`
 
-### 1.1 Normativo
+A unidade principal de evolução não é “arquivo editado”, e sim:
+- capacidade funcional
+- contrato
+- trilho estrutural
+- item de infraestrutura
 
-Decide contratos, arquitetura e regras de negocio.
+### 2.2 Código e migrations acima da narrativa
+Em caso de conflito, a ordem de confiança é:
+
+1. código + migrations
+2. `docs/CURRENT_STATE.md`
+3. docs normativos
+4. docs derivados
+5. histórico
+
+### 2.3 Escopo estreito
+Mudanças devem, por padrão:
+- atacar no máximo 1 capability principal por vez
+- preferir patch mínimo
+- evitar refatoração ampla sem pedido explícito
+- explicitar o que ficou fora do escopo
+
+### 2.4 Não usar histórico como fonte operacional
+`docs/archive/**` e materiais históricos podem servir como contexto, mas não como fonte principal de decisão do presente.
+
+---
+
+## 3. Taxonomia documental
+
+### 3.1 Snapshot operacional
+Resume o estado atual para leitura rápida.
 
 Exemplos:
+- `README.md`
+- `docs/CURRENT_STATE.md`
 
+### 3.2 Normativo
+Define arquitetura, contratos, regras e processo.
+
+Exemplos:
+- `docs/PROCESS.md`
 - `docs/PRODUCT.md`
 - `docs/SYSTEM.md`
-- `docs/PROCESS.md`
+- `docs/ARCHITECTURE.md`
+- `docs/OFFLINE.md`
+- `docs/CONTRACTS.md`
+- `docs/DB.md`
+- `docs/RLS.md`
 
-### 1.2 Derivado
-
-Mede o estado do repositorio e deve ser mantido coerente por derivacao.
+### 3.3 Derivado
+Mede o estado do repositório por derivação.
 
 Exemplos:
-
 - `docs/IMPLEMENTATION_STATUS.md`
 - `docs/TECH_DEBT.md`
 - `docs/ROADMAP.md`
 - `docs/review/RECONCILIACAO_REPORT.md`
 
-### 1.3 Snapshot operacional
-
-Resume o estado atual do produto e do repositorio para leitura humana rapida.
-
-Exemplos:
-
-- `README.md`
-- `docs/CURRENT_STATE.md`
-- `docs/REFERENCE.md`
-
-### 1.4 Historico
-
-Material preservado para consulta, sem valor de verdade operacional.
+### 3.4 Histórico
+Não é fonte operacional de verdade.
 
 Exemplos:
+- `docs/archive/**`
+- auditorias antigas
+- relatórios temporários não consolidados
 
-- `docs/archive/`
-- `docs/ADRs/`
+---
 
-Observacao: `docs/review/` contem apenas os relatorios ainda usados pelos gates documentais. Auditorias antigas ficam em `docs/archive/`.
+## 4. Trilho padrão de execução
 
-## 2. Regra de derivacao analitica
-
-### 2.1 Regra unica de gap
-
-`gap(capability_id) = (E2E != PASS) OR (qualquer camada aplicavel em {warning, fail})`
-
-Regras complementares:
-
-- camadas marcadas como `N/A` nao contam como gap;
-- `infra.*` nao entra no score funcional nem no `gap_set`;
-- a secao editorial dos documentos ajuda na leitura, mas nao substitui a matriz analitica.
-
-### 2.2 Pipeline de derivacao
-
-`IMPLEMENTATION_STATUS` -> `gap_set(capability_id)` -> `TECH_DEBT OPEN` -> `ROADMAP` -> `RECONCILIACAO_REPORT`
-
-Se houver divergencia entre esses arquivos, o report de reconciliacao deve apontar o mismatch explicitamente.
-
-## 3. Espelho operacional no GitHub
-
-As docs sao a fonte de verdade do estado analitico. GitHub e o espelho operacional do trabalho em andamento.
-
-### 3.1 Convencao de titulos
-
-Issues e PRs devem trazer o identificador principal no titulo:
-
-- catalogo funcional: `[<capability_id>] resumo curto`
-- infraestrutura: `[infra.<tema>] resumo curto`
-
-Exemplos:
-
-- `[movimentacao.registro] fechar FK composta de lotes`
-- `[infra.ci] endurecer validacao de derivacao`
-
-### 3.2 Relacao entre backlog e execucao
-
-- `TECH_DEBT.md` define o conjunto consolidado de gaps abertos;
-- `ROADMAP.md` organiza a ordem sugerida de execucao;
-- GitHub Projects acompanha prioridade, status e responsavel.
-
-## 4. Fluxo padrao de trabalho
-
-### 4.1 Selecionar o alvo
-
-1. Escolher um item em `TECH_DEBT OPEN` ou no trilho `infra.*`.
-2. Confirmar qual `capability_id` ou `infra.*` sera atacado.
-3. Criar ou atualizar a Issue correspondente no GitHub.
+### 4.1 Delimitar
+Toda tarefa deve começar com:
+- capability ou `infra.*` alvo
+- arquivos-alvo
+- arquivos explicitamente fora do escopo
+- invariantes que não podem ser quebradas
+- comandos mínimos de validação
 
 ### 4.2 Implementar
+A implementação deve:
+- preservar o modelo arquitetural do produto
+- manter alinhamento com offline-first, contratos, banco e RLS
+- evitar duplicação de regra entre camadas
+- reduzir acoplamento quando a tarefa for de hardening
+- permanecer revisável como patch pequeno
 
-- alterar codigo em `src/**`, `supabase/migrations/**` e `supabase/functions/**` conforme necessario;
-- manter coerencia com as fontes normativas em arquitetura, offline, contratos, banco e RLS;
-- quando houver mudanca de contrato ou invariante, abrir ADR.
-
-#### 4.2.1 Disciplina arquitetural operacional
+### 4.2.1 Disciplina arquitetural operacional
 
 Além da coerência com arquitetura, offline, contratos, banco e RLS, toda frente relevante de fluxo operacional deve tender à separação explícita entre:
 
@@ -148,7 +138,7 @@ Regra prática:
 - o objetivo não é impor uma árvore rígida em todo o repositório de uma vez
 - o objetivo é reduzir hotspots que acumulam múltiplas responsabilidades primárias
 
-#### 4.2.2 Fluxo de hardening arquitetural
+### 4.2.2 Fluxo de hardening arquitetural
 
 Quando a mudança tiver caráter de hardening arquitetural operacional, seguir esta ordem:
 
@@ -165,113 +155,104 @@ Regra prática:
 - evitar big bang rewrite
 - preferir patch mínimo, incremental e revisável
 
-### 4.3 Quality gates antes de concluir
-
-#### Gate A: Qualidade executavel
+### 4.3 Validar
+Toda entrega deve, no mínimo, validar:
 
 - `pnpm run lint`
 - `pnpm test`
 - `pnpm run build`
 
-#### Gate B: Derivacao documental
+Quando a tarefa tocar áreas sensíveis, revisar adicionalmente:
+- invariantes de sync/offline
+- isolamento por `fazenda_id`
+- FKs compostas
+- append-only
+- contratos de payload
+- impactos em rollback/idempotência
 
-Quando houver mudanca nos docs derivados, garantir:
+### 4.4 Reconciliar docs
+Docs só devem ser atualizados quando houver delta real.
 
-- baseline coerente entre `IMPLEMENTATION_STATUS`, `TECH_DEBT`, `ROADMAP` e `RECONCILIACAO_REPORT`;
-- presenca de `capability_id` nas secoes derivadas;
-- consistencia entre `gap_set`, `TECH_DEBT OPEN` e `ROADMAP`.
+Regra:
+- snapshot atualiza quando o momento operacional muda
+- normativo atualiza quando arquitetura/contrato/regra muda
+- derivados atualizam quando capability, gap, dívida, fase ou reconciliação mudam de fato
 
-Scripts relevantes:
+### 4.5 Definition of Done
 
-- `scripts/antigravity/validate_scoped_changes.sh`
-- `scripts/antigravity/validate_rev_d_headers.sh`
-- `scripts/antigravity/data_contract_audit.sh`
+Um item só vai para concluído quando:
 
-#### Gate C: Contratos, seguranca e multi-tenant
+- o código necessário está implementado
+- lint, test e build estão verdes
+- o `capability_id` deixa de aparecer como gap, ou o item `infra.*` foi resolvido
+- os docs derivados foram atualizados quando aplicável
+- a reconciliação não aponta inconsistências abertas para aquele item
 
-Se a mudanca tocar sync, migrations, RLS ou Edge Functions:
+Quando a mudança tiver caráter de hardening arquitetural operacional, a Definition of Done também exige:
 
-- revisar isolamento por `fazenda_id`;
-- revisar FKs compostas;
-- revisar invariantes append-only e anti-teleporte;
-- atualizar as evidencias documentais quando necessario.
+- fronteiras de responsabilidade mais claras no hotspot atacado
+- UI mais fina quando a tela fizer parte do hotspot
+- regra testável sem depender diretamente de UI ou infra, quando aplicável
+- reconciliação fora da tela quando aplicável
+- comportamento preservado por testes ou evidência objetiva
+- escopo incremental e revisável
 
-### 4.4 Regen dos derivados
+---
 
-Quando o trabalho alterar estado funcional relevante, atualizar os derivados nesta ordem:
+## 5. Regras para `infra.*`
+
+Trilhos `infra.*` são usados quando a mudança principal não é uma capability de produto, e sim uma frente estrutural.
+
+Exemplos:
+- `infra.sync.*`
+- `infra.db.*`
+- `infra.rls.*`
+- `infra.docs.*`
+- `infra.arch.*`
+- `infra.gates.*`
+- `infra.registrar.*`
+
+Nesses casos, o item deve explicitar:
+- hotspot ou área atacada
+- risco atual
+- fronteira desejada
+- impacto esperado
+- critério de fechamento
+
+---
+
+## 6. Atualização documental derivada
+
+Quando a mudança tiver impacto funcional real, os derivados devem ser atualizados nesta ordem:
 
 1. `docs/IMPLEMENTATION_STATUS.md`
 2. `docs/TECH_DEBT.md`
 3. `docs/ROADMAP.md`
 4. `docs/review/RECONCILIACAO_REPORT.md`
 
-Se a alteracao for apenas de apresentacao, limpeza de arquivos ou organizacao documental sem impacto funcional, nao ha obrigacao de mexer em todos os derivados.
-
-### 4.5 Definition of Done
-
-Um item so vai para concluido quando:
-
-- o codigo necessario esta implementado;
-- lint, test e build estao verdes;
-- o `capability_id` deixa de aparecer como gap, ou o item `infra.*` foi resolvido;
-- os docs derivados foram atualizados quando aplicavel;
-- a reconciliacao nao aponta inconsistencias abertas para aquele item.
-
-Quando a mudanca tiver carater de hardening arquitetural operacional, a Definition of Done tambem exige:
-
-- fronteiras de responsabilidade mais claras no hotspot atacado;
-- UI mais fina quando a tela fizer parte do hotspot;
-- regra testavel sem depender diretamente de UI ou infra, quando aplicavel;
-- reconciliação fora da tela quando aplicável;
-- comportamento preservado por testes ou evidencia objetiva;
-- escopo incremental e revisável.
-
-## 5. Regras para `infra.*`
-
-Itens `infra.*` cobrem estabilidade, DX, CI, documentacao operacional e hygiene do repositorio.
-
 Regras:
+- `IMPLEMENTATION_STATUS` mede estado efetivo
+- `TECH_DEBT` registra gaps/dívidas reais
+- `ROADMAP` organiza execução futura
+- `RECONCILIACAO_REPORT` registra inconsistências entre fontes
 
-- nao entram no `capability_score`;
-- podem aparecer em `TECH_DEBT.md` e `ROADMAP.md`;
-- devem ter descricao objetiva do risco e do impacto esperado.
-Frentes de hardening arquitetural operacional podem nascer como trilhos `infra.*`, por exemplo:
+---
 
-- `infra.arch.*`
-- `infra.gates.*`
-- `infra.sync.*`
-- `infra.registrar.*`
+## 7. Quando abrir ADR
 
-Nesses casos, o item deve explicitar:
-- hotspot atacado
-- risco atual
-- fronteira arquitetural desejada
-- impacto esperado
+Abrir ADR se a mudança alterar:
+- contrato do sync
+- ordering / deduplicação / status codes
+- modelo de dados canônico
+- invariantes de RLS / RBAC / RPC
+- arquitetura offline-first / Two Rails
+- regra normativa que passa a orientar o produto
 
-## 6. Quando abrir ADR
-
-Abrir ADR quando a mudanca alterar qualquer uma destas bases:
-
-- contrato do sync (`sync-batch`, ordering, deduplicacao, status codes);
-- modelo de dados canonico;
-- invariantes de RLS, RPC ou RBAC;
-- arquitetura offline-first ou estrategia Two Rails;
-- regras normativas que deixam de ser apenas implementacao local e passam a orientar o produto.
-
-Template: `docs/ADRs/ADR-0000-template.md`
-
-## 7. Hygiene do repositorio
-
-Para reduzir ruido e evitar drift:
-
-- nao versionar artefatos gerados como `dist/`, caches, `*.tsbuildinfo` e saidas temporarias;
-- manter `README.md` e `docs/CURRENT_STATE.md` como leitura inicial do estado atual;
-- usar `docs/archive/` para material historico sem valor operacional;
-- evitar espalhar relatorios temporarios na raiz do repositorio.
+---
 
 ## 8. Resumo operacional
 
-Em caso de duvida, a ordem de consulta deve ser:
+Em caso de dúvida, a ordem de consulta deve ser:
 
 1. `README.md`
 2. `docs/CURRENT_STATE.md`
@@ -281,5 +262,14 @@ Em caso de duvida, a ordem de consulta deve ser:
 6. `docs/REFERENCE.md`
 7. documentos derivados (`IMPLEMENTATION_STATUS`, `TECH_DEBT`, `ROADMAP`)
 
-Esse encadeamento reduz confusao entre momento atual, processo, aprofundamento normativo e historico.
+Esse encadeamento reduz confusão entre momento atual, processo, aprofundamento normativo e histórico.
 
+---
+
+## 9. Regras finais
+
+- não usar histórico como fonte principal
+- não abrir escopo por conveniência
+- não atualizar docs por reflexo
+- não declarar concluído o que ainda depende de reconciliação
+- não misturar snapshot do momento com documento normativo de processo
