@@ -1,0 +1,32 @@
+RebanhoSync context:
+- Beta interno; MVP completo e operacional.
+- Leia primeiro: README.md, docs/CURRENT_STATE.md, docs/PROCESS.md.
+- Preserve Two Rails:
+  - agenda_itens = intenção futura mutável
+  - eventos + eventos_* = fatos passados append-only
+- Preserve fazenda_id como fronteira de isolamento.
+- Sync/offline:
+  - preservar idempotência
+  - preservar rollback determinístico por before_snapshot
+  - não quebrar tableMap, queue_* ou pull seletivo
+- Banco/RLS:
+  - usar FK composta com fazenda_id quando aplicável
+  - não abrir bypass cross-tenant
+  - user_fazendas não ganha escrita direta
+  - RPC privilegiada exige validação explícita + search_path = public
+- Sanitário:
+  - separar base regulatória oficial, overlay/compliance e protocolos da fazenda
+  - não reduzir calendario_base a intervalo_dias
+  - produtos_veterinarios permanece referência estruturada
+- Reprodução:
+  - preservar episode linking
+  - não sobrescrever manualmente fatos event-driven críticos
+  - manter fluxo parto -> pós-parto -> cria inicial
+- Docs:
+  - não usar docs/archive/** como fonte operacional
+  - atualizar docs derivados só com delta funcional real
+- Entrega padrão:
+  - diff mínimo
+  - até 3 riscos
+  - até 5 arquivos principais afetados
+  - validar com pnpm run lint, pnpm test, pnpm run build
