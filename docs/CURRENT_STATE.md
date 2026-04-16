@@ -1,111 +1,149 @@
+
+---
+
+## 2) `docs/CURRENT_STATE.md` — versão revisada
+
+```md
 # Estado Atual do Repositorio
 
 > **Status:** Derivado (Snapshot Operacional)
 > **Fonte de Verdade:** `src/`, `supabase/`, `package.json`
-> **Ultima Atualizacao:** 2026-04-12
-> **Snapshot:** Beta Interno — Hardening Sanitário (Pós-Motor, Pré-UX Final)
+> **Ultima Atualizacao:** 2026-04-16
 
-## Resumo
+## 1. Resumo executivo
 
-O repositorio esta em **beta interno** - MVP completo e operacional. A base tecnica principal esta funcional e testada. O foco atual é o **Hardening Sanitário**, especificamente a UI de compliance para animais com histórico desconhecido (TD-025). O motor de regime sequencial e a engine de Historical Confidence já estão integrados ao backend e ao sync-batch, permitindo que a interface de registro de manejo trate automaticamente o catch-up imunológico necessário para animais sem procedência confirmada.
+O repositório está em **beta interno**: o MVP principal já foi implementado e a base técnica segue funcional, testada e utilizável em regime interno controlado.
 
-Todos os TDs da lista original foram fechados via migrations de marco/2026. Nao ha bloqueadores para uso interno controlado.
+A fase atual não é de construção do núcleo funcional do produto, e sim de **hardening arquitetural operacional**. O foco imediato é restaurar fronteiras claras de responsabilidade em hotspots que ainda concentram, no mesmo módulo, normalização, regra, montagem de payload, plano de mutação, efeitos e reconciliação.
 
-## Camadas Consolidadas
+A frente atual deve ser lida como **melhoria estrutural incremental**, não como falta de capacidade funcional do produto.
 
-- Home orientada a operacao diaria com alertas sanitarios priorizados por criticidade.
+---
+
+## 2. Capacidades consolidadas
+
+As seguintes frentes estão consolidadas no estado atual do produto:
+
 - Onboarding inicial da fazenda.
-- Importacao CSV para animais, lotes e pastos.
-- Registro rapido de manejos principais em `Registrar`.
-- Dashboard administrativo com leitura de sanitario critico.
+- Importação CSV de animais, lotes e pastos.
+- Registro rápido de manejos principais em `Registrar`.
+- Agenda operacional com agrupamento, filtros, deduplicação e leitura contextual.
+- Dashboard administrativo com leitura sanitária crítica.
 - Dashboard reprodutivo dedicado.
-- Agenda com badges de resumo por agrupamento: tipos e buckets de prazo por animal, composicao de animais por evento.
-- Agrupamento por evento na agenda endurecido com assinatura canonica por protocolo, marco ou combinacao operacional mais rica.
-- Agenda ordena grupos por urgencia real do card, priorizando atrasados, hoje e proximos antes de grupos sem pendencias abertas.
-- Agenda permite filtros rapidos clicando nos badges de resumo dos cards, refletindo o atalho ativo no topo da tela.
-- Agenda usa os badges-resumo como navegacao contextual, rolando e destacando as linhas relevantes do grupo clicado.
-- Agenda agora recolhe grupos por padrao, autoexpande o grupo contextual e mostra quantos itens seguem visiveis dentro do total do card.
-- Agenda permite comparar o recorte rapido com o contexto completo do grupo via `Ver grupo completo` sem perder os filtros globais.
-- Agenda destaca a proxima acao recomendada no cabecalho de cada grupo e permite abrir o fluxo direto sem expandir o card.
-- Agenda persiste por usuario/fazenda o modo de agrupamento, filtros, grupos expandidos e recorte contextual da triagem.
-- Agenda agora tem testes de interacao cobrindo rehidratacao do estado salvo e o fluxo `badge -> foco -> expandir -> revelar grupo completo`.
-- Agenda reduz densidade no mobile com overflow `+N` nos badges e concentra acoes secundarias do grupo em um menu compacto.
-- Agenda oferece atalhos para saltar entre grupos atrasados do recorte atual, reaproveitando o foco contextual e a autoexpansao do card alvo.
 - Ficha reprodutiva por matriz.
-- Pos-parto neonatal para crias recem-geradas.
-- Cria inicial pos-parto com identificacao final e pesagem neonatal.
-- Transicoes do rebanho com historico consolidado.
-- Ficha do animal com vinculos mae/cria e curva de peso.
-- Lista de animais agrupando matriz e cria na mesma leitura.
-- Badges visuais por estagio de vida com icone base + modificadores.
-- Regra de elegibilidade reprodutiva por categoria.
-- Relatorios operacionais com exportacao/impressao e prioridade sanitaria contextual.
-- Automacao local de lembretes sanitarios com preferencia por criticidade, follow-up e horario de silencio.
-- Editor de protocolos sanitarios por fazenda com customizacao de cabecalho, etapas, deduplicacao, `calendario_base` explicito e vinculo ao catalogo `produtos_veterinarios`.
-- Biblioteca canonica de protocolos sanitarios padrao extraida da UI, com `calendario_base` estruturado por protocolo e por etapa.
-- `Registrar`, `ProtocolosSanitarios` e editor da fazenda agora descrevem a agenda sanitaria a partir do `payload.calendario_base`, em vez de depender apenas de `intervalo_dias`.
-- O motor server-side da agenda sanitária agora le `payload.calendario_base` e gera pendências declarativas por campanha, janela etária, intervalo recorrente e âncoras operacionais, inclusive para itens não vacinais com `gera_agenda = true`.
-- Implementado suporte a **regime sequencial e controle de doses** (milestone logic) para dependências de execução sanitária.
-- Introduzido **Historical Confidence Engine** com tratamento nativo para classificação recém-adquirida e exigências de catch-up imunológico.
-- O recompute sanitario agora reconstrui as pendencias automaticas do escopo recalculado antes de reaplicar o motor declarativo...
-- Agenda e relatorios agora projetam o rotulo do `calendario_base` na leitura operacional das pendencias sanitarias, evitando reduzir toda periodicidade a um simples `X dias`.
-- A agenda agora tambem projeta `mode` e `anchor` do `calendario_base` como sinal operacional e filtro persistido, enquanto os relatorios/exportacoes exibem o tipo declarativo da agenda (`campanha`, `janela etaria`, `recorrente`, `uso imediato` ou `protocolo clinico`).
-- `Home` e `Dashboard` agora reutilizam a mesma leitura declarativa do sanitario, exibindo cortes por tipo de calendario e abrindo a agenda ja filtrada por `calendarMode`.
-- A agenda agora tambem aceita `calendarAnchor` como filtro persistido e deep-link, enquanto o `Dashboard` expoe recortes por ancora operacional (`Nascimento`, `Desmama`, `Calendario`, `Secagem`, `Necessidade clinica`).
-- `Animais` e `AnimalDetalhe` agora tambem projetam `mode`, `anchor` e rotulo do `calendario_base` na leitura animal-centric do proximo manejo, e a listagem aceita recortes por `calendarMode` / `calendarAnchor`.
-- Fundacao regulatoria do sanitario com catalogo global versionado (`catalogo_protocolos_oficiais*`, `catalogo_doencas_notificaveis`) e `fazenda_sanidade_config` tenant-scoped.
-- Selecao do pack oficial agora suporta nucleo federal + overlay estadual + ajuste por risco da fazenda.
-- `ProtocolosSanitarios` agora expoe uma superficie de ativacao do pack oficial por fazenda, com preview da selecao regulatoria, configuracao de risco e reaplicacao controlada para owner/manager.
-- A aba de protocolos agora separa explicitamente tres camadas: base regulatoria oficial, overlay operacional do pack e protocolos operacionais da fazenda, reduzindo a leitura de cards aparentemente repetidos.
-- Os templates canonicos de protocolos da fazenda agora ficam dentro da propria camada operacional e deixaram de existir como "biblioteca complementar" paralela.
-- A biblioteca padrao da UI deixou de expor aftosa como calendario vacinal base.
-- `Registrar` agora diferencia movimentacao interna de transito externo e aplica checklist GTA/e-GTA com bloqueio documental e pre-check PNCEBT para reproducao interestadual.
-- `AnimalDetalhe` agora abre e encerra suspeita sanitaria a partir do catalogo oficial de doencas notificaveis, gravando evento append-only e bloqueando movimentacao/venda enquanto a suspeita permanecer aberta.
-- Bloqueio local por suspeita sanitaria agora tambem fecha os atalhos de movimentacao fora do `Registrar`, incluindo ficha do animal, adicao em lote e mudanca de lote em massa.
-- O overlay regulatorio agora roda em uma unica superficie para o pack oficial e para complementos operacionais da propria fazenda, cobrindo `feed-ban` de ruminantes, checklists de agua/limpeza, quarentena, atualizacao documental e boas praticas locais sem abrir uma camada paralela.
-- O dominio append-only `conformidade` passou a registrar verificacoes regulatorio-operacionais no historico sem exigir alvo animal/lote, enquanto `fazenda_sanidade_config.payload.overlay_runtime` guarda o estado mutavel dessas checagens por fazenda.
-- A agenda agora projeta o `overlay_runtime` de conformidade com badges de restricao no topo e nos grupos, alerta operacional para `feed-ban` e checklists criticos pendentes, e segue visivel mesmo quando `agenda_itens` ainda estiver vazia.
-- `Registrar` agora transforma o `overlay_runtime` de conformidade em bloqueios contextuais reais para nutricao e movimentacao, impedindo continuidade quando `feed-ban`, quarentena ou exigencias documentais criticas estiverem em aberto.
-- Os fluxos auxiliares de movimentacao tambem passaram a respeitar o overlay regulatorio ativo, bloqueando mover animal, adicionar animais em lote e transicoes em massa quando houver risco de conformidade aberto.
-- A leitura regulatoria da fazenda agora passa por um read model compartilhado (`regulatoryReadModel`), que centraliza overlay ativo, atencao de conformidade e bloqueios por contexto antes de projetar isso nas telas.
-- `Home`, `Dashboard`, `Financeiro` e `Relatorios` agora exibem a mesma leitura regulatoria da agenda, com pendencias abertas, badges de restricao, impacto em nutricao/transito/venda e CTA coerente para o overlay oficial.
-- O `Financeiro` tambem deixou de tratar `venda` como acao neutra: a superficie passou a destacar bloqueios do overlay e separar `Nova compra` de `Nova venda`, desabilitando a venda quando houver restricao regulatoria aberta.
-- `Eventos` agora projeta o mesmo read model regulatorio, destacando conformidade aberta, bloqueios de nutricao/venda-transito e CTA direto para abrir o overlay ou filtrar o dominio `conformidade`.
-- `LoteDetalhe` agora antecipa restricoes internas de movimentacao a partir do overlay oficial, sinaliza revisao/bloqueio no cabecalho do lote e desabilita `Adicionar animais` quando houver impeditivo regulatorio aberto.
-- O `Dashboard` agora projeta recortes analiticos regulatorios por subarea (`feed-ban`, quarentena, documental e agua/limpeza) e por impacto operacional (nutricao, lote e transito/venda), sempre derivados do mesmo `regulatoryReadModel`.
-- O `RegulatoryOverlayManager` agora aceita recortes analiticos por query string e abre o overlay oficial ja filtrado por subarea ou impacto, permitindo que os CTAs do dashboard levem o usuario direto ao subconjunto correto.
-- `Relatorios` agora expande esses mesmos recortes analiticos no resumo operacional, exporta as linhas de subarea/impacto em CSV e oferece CTA direto para overlay oficial ou historico ja filtrado.
-- `Eventos` agora honra `dominio`, `overlaySubarea` e `overlayImpact` via query string, abrindo o historico operacional ja recortado para a frente regulatoria correta sem reinterpretar o overlay fora do read model compartilhado.
-- `Animais` agora tambem aceita `overlaySubarea` e `overlayImpact`, projeta badges de restricao por linha, permite recorte animal-centric por impacto/subarea e exporta CSV dedicado com os animais afetados pela restricao operacional atual.
-- `Dashboard` e `Relatorios` agora apontam tambem para a lista animal-centric recortada, fechando a navegacao entre painel analitico, overlay oficial, historico e rebanho impactado.
-- Telemetria de piloto com buffer local em `metrics_events`, flush remoto periodico por Edge Function e painel de saude do sync por fazenda.
-- Modo de experiencia por fazenda (`essencial` vs `completo`).
-- Taxonomia canonica bovina (3 eixos, contrato v1, SQL view, teste de paridade).
-- RBAC de animais restrito a owner/manager (TD-003 CLOSED).
-- FKs compostas em movimentacao e reproducao (TD-019, TD-020 CLOSED).
-- View `vw_animal_gmd` para calculo de GMD server-side (TD-015 CLOSED).
-- Catalogo `produtos_veterinarios` integrado ao fluxo sanitario com cache local, sugestoes no `Registrar` e referencia estruturada em protocolos/eventos.
+- Pós-parto neonatal e cria inicial.
+- Ficha do animal com vínculos mãe/cria, curva de peso e timeline.
+- Transições do rebanho com histórico consolidado.
+- Relatórios operacionais com exportação/impressão.
+- Biblioteca canônica de protocolos sanitários com `calendario_base`.
+- Catálogo global de produtos veterinários com cache local e referência estruturada.
+- Camada regulatória sanitária com catálogo oficial, overlays e `fazenda_sanidade_config`.
+- `conformidade` como domínio append-only de verificações regulatório-operacionais.
+- Bloqueios contextuais de nutrição, movimentação e venda/trânsito baseados no read model regulatório compartilhado.
+- Telemetria de piloto com buffer local e flush remoto periódico.
+- Taxonomia canônica bovina.
+- Sync offline-first com rollback determinístico e fila transacional.
+- RBAC endurecido, FKs compostas relevantes e contratos de sync estabilizados.
 
-## Estado Tecnico
+---
 
-- `pnpm exec eslint` (arquivos alterados): verde
-- `pnpm exec tsc --noEmit`: verde
-- `pnpm run build`: verde
-- `pnpm exec vitest run` (sanitario + relatorios): verde
+## 3. Arquitetura operacional: estado atual
+
+O sistema já opera com uma pipeline arquitetural identificável, mas ainda com hotspots que acumulam responsabilidades demais.
+
+A separação-alvo atualmente adotada como disciplina de engenharia é:
+
+1. **Normalize**
+2. **Select / Policy**
+3. **Payload**
+4. **Plan**
+5. **Effects**
+6. **Reconcile**
+
+Leitura operacional dessa pipeline no estado atual:
+
+- **Normalize**: saneamento, defaults, shape mínimo coerente para escrita.
+- **Select / Policy**: elegibilidade, autorização, bloqueios e invariantes de negócio.
+- **Payload**: montagem do shape persistível e metadados de sync.
+- **Plan**: composição/ordenação das mutações e definição do fluxo transacional.
+- **Effects**: IO, fila, escrita local/remota, adapters e integrações.
+- **Reconcile**: rollback, replay, deduplicação, refresh, pull e alinhamento entre local/remoto.
+
+**Status atual:** a pipeline já existe de forma operacional, mas ainda não está suficientemente explícita nem bem separada em todos os hotspots críticos.
+
+---
+
+## 4. Hotspots sob refatoração
+
+### `src/pages/Registrar.tsx`
+Hotspot de fluxo operacional e orquestração de tela.
+
+Problema principal:
+- mistura lógica de UI com partes de normalização, decisão operacional, montagem de payload e acionamento de efeitos.
+
+Objetivo da frente:
+- tornar a UI mais fina
+- deslocar regra testável para camadas/artefatos mais previsíveis
+- preservar comportamento atual
+
+### `src/lib/offline/syncWorker.ts`
+Hotspot de sync, efeitos e reconciliação.
+
+Problema principal:
+- concentra ordenação, envio, tratamento de resultado, retry, recuperação, purge, telemetria e refresh pós-sync.
+
+Objetivo da frente:
+- transformar o worker em orquestrador mais claro
+- tornar explícita a separação entre plan, effects e reconcile
+- preservar rollback determinístico e idempotência
+
+---
+
+## 5. Riscos e cuidado de regressão
+
+Os principais riscos desta fase não são de escopo funcional, e sim de regressão estrutural:
+
+- espalhar retry/replay/idempotência em UI ou camada de domínio
+- quebrar rollback determinístico em fluxos offline-first
+- deslocar regra de negócio para infraestrutura ou tela
+- misturar catálogo regulatório, overlay e protocolo operacional da fazenda
+- transformar a frente de hardening em refatoração ampla demais
+
+Guardrails desta fase:
+- patch mínimo e revisável
+- baseline antes da cirurgia
+- characterization tests quando fizer sentido
+- preservação explícita de comportamento
+- uma rodada de hotspot por vez
+
+---
+
+## 6. Proximos passos imediatos
+
+Ordem imediata da frente atual:
+
+1. atualizar docs-base
+2. registrar baseline e comportamento preservado
+3. refatorar piloto do `Registrar`
+4. refatorar piloto do `syncWorker`
+5. adicionar guardrails de processo, fronteira e revisão
+
+---
+
+## 7. Estado tecnico
+
 - `pnpm run lint`: verde
-- `pnpm run test:e2e`: cobre onboarding, importacoes, relatorios e o fluxo parto -> pos-parto -> cria inicial
-- Unitarios: 25+ arquivos de teste em `src/lib/` e `src/pages/`
+- `pnpm test`: verde
+- `pnpm run build`: verde
+- `pnpm run test:e2e`: cobre onboarding, importações, relatórios e fluxo parto → pós-parto → cria inicial
 
-## Lacunas Residuais
+---
 
-- Nenhuma lacuna aberta de observabilidade nesta revisao; a telemetria de piloto agora sobe periodicamente para o backend e alimenta o painel remoto de sync.
-- Aviso conhecido de `caniuse-lite` desatualizado no build (cosmetico).
+## 8. Leitura recomendada para retomada
 
-## Leitura Recomendada para Retomada
-
-1. `PRODUCT.md`
-2. `SYSTEM.md`
-3. `PROCESS.md`
-4. `REFERENCE.md`
-5. `IMPLEMENTATION_STATUS.md`
-6. `TECH_DEBT.md`
+1. `README.md`
+2. `docs/CURRENT_STATE.md`
+3. `docs/PROCESS.md`
+4. `docs/PRODUCT.md`
+5. `docs/SYSTEM.md`
+6. `docs/REFERENCE.md`

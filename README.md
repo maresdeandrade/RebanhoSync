@@ -3,7 +3,21 @@
 Plataforma **offline-first** para gestão pecuária de corte. Multi-tenant por fazenda, RBAC (`owner | manager | cowboy`), sincronização transacional por gestos e backend Supabase com RLS hardened.
 
 > **Estado atual:** Beta interno — MVP completo e operacional.  
-> Todos os 7 domínios operacionais implementados. Qualidade local verde (`lint`, `test`, `build`).
+> **Foco atual:** Hardening arquitetural operacional.  
+> Todos os 7 domínios operacionais já estão implementados. Qualidade local verde (`lint`, `test`, `build`).
+
+---
+
+## Estado atual
+
+O produto já está funcional para uso interno controlado, com escopo principal implementado e fluxos operacionais consolidados.
+
+A frente atual de engenharia não é de expansão de escopo funcional, e sim de **restauração de fronteiras arquiteturais** em hotspots relevantes do fluxo operacional, para tornar o sistema mais previsível, testável e sustentável.
+
+Prioridade do momento:
+- preservar comportamento atual
+- reduzir acoplamento entre UI, domínio, infraestrutura e reconciliação
+- tornar explícita a separação entre etapas da pipeline operacional
 
 ---
 
@@ -14,14 +28,51 @@ Plataforma **offline-first** para gestão pecuária de corte. Multi-tenant por f
 - Agenda operacional com protocolos, deduplicação automática e recálculo por trigger.
 - Onboarding guiado da fazenda e importação CSV de animais, lotes e pastos.
 - Módulo reprodutivo completo: cobertura/IA → diagnóstico → parto → pós-parto → cria inicial.
-- Ficha do animal com vínculos mãe/cria, curva de peso, timeline de eventos.
+- Ficha do animal com vínculos mãe/cria, curva de peso e timeline de eventos.
 - Lista de animais agrupando matriz e cria com badge visual por estágio de vida.
 - Transições do rebanho com histórico consolidado.
 - Dashboard reprodutivo dedicado e relatórios operacionais com exportação.
-- Telemetria de piloto com buffer local em `metrics_events` (Dexie v11) e flush remoto periodico.
-- Taxonomia canônica bovina: 3 eixos derivados, contrato v1, SQL view de paridade.
+- Telemetria de piloto com buffer local em `metrics_events` e flush remoto periódico.
+- Taxonomia canônica bovina: 3 eixos derivados, contrato v1 e view SQL de apoio.
 - Sistema de convites e gestão de membros.
 - Catálogo global de produtos veterinários com seed básico.
+
+---
+
+## Arquitetura operacional em foco
+
+A frente atual de hardening usa a seguinte pipeline como alvo de separação de responsabilidades:
+
+1. **Normalize**
+2. **Select / Policy**
+3. **Payload**
+4. **Plan**
+5. **Effects**
+6. **Reconcile**
+
+A intenção não é redesenhar o sistema do zero, e sim tornar explícito, por fluxo, o que pertence a:
+- saneamento e defaults
+- regra de negócio / elegibilidade
+- montagem de payload
+- plano de mutação
+- efeitos / integração
+- rollback, idempotência e reconciliação
+
+---
+
+## Hotspots prioritários
+
+A frente inicial de refatoração está concentrada em:
+
+- `src/pages/Registrar.tsx`
+- `src/lib/offline/syncWorker.ts`
+
+A ordem inicial é:
+1. atualizar docs-base
+2. registrar baseline/comportamento preservado
+3. refatorar piloto do `Registrar`
+4. refatorar piloto do `syncWorker`
+5. adicionar guardrails de processo
 
 ---
 
@@ -33,10 +84,12 @@ Plataforma **offline-first** para gestão pecuária de corte. Multi-tenant por f
 | UI | Tailwind CSS + shadcn/ui + Radix UI |
 | Formulários | React Hook Form + Zod |
 | Dados remotos | Supabase JS + TanStack React Query |
-| Offline | Dexie v4 (IndexedDB) + dexie-react-hooks |
+| Offline | Dexie.js + dexie-react-hooks |
 | Backend | Supabase (Auth, Postgres, RLS, Edge Functions) |
 | Testes | Vitest + Testing Library + fake-indexeddb |
 | Deploy | Vercel (frontend) + Supabase (backend) |
+
+> **Nota:** o projeto usa Dexie.js como biblioteca e atualmente opera com schema/store local evoluído, incluindo `metrics_events` para telemetria de piloto.
 
 ---
 
@@ -48,56 +101,3 @@ pnpm dev          # servidor local (Vite)
 pnpm run lint     # ESLint
 pnpm test         # Vitest (unitários + integração)
 pnpm run build    # build de produção
-```
-
-Scripts adicionais:
-
-```bash
-pnpm run test:e2e       # fluxos guiados: onboarding, importação, relatórios
-pnpm run gates          # gates documentais do pacote Antigravity
-pnpm run audit:data     # auditoria de contratos de dados
-```
-
----
-
-## Ambiente
-
-Crie um `.env` local a partir de `.env.example`:
-
-```env
-VITE_SUPABASE_URL=
-VITE_SUPABASE_ANON_KEY=
-VITE_SUPABASE_FUNCTIONS_URL=
-```
-
----
-
-## Estrutura do repositório
-
-```
-src/              Frontend React (pages, components, lib, hooks)
-supabase/
-  migrations/     44+ migrations SQL — evolução do schema
-  functions/
-    sync-batch/   Edge Function de sincronizacao transacional
-    telemetry-ingest/ Edge Function de ingestao de telemetria de piloto
-    test-auth/    Edge Function auxiliar de diagnostico
-docs/             Documentação normativa e inventários vivos
-scripts/          Automações e gates documentais
-```
-
----
-
-## Documentação
-
-Para retomar o projeto rapidamente, siga a ordem:
-
-1. [`docs/CURRENT_STATE.md`](./docs/CURRENT_STATE.md) — snapshot executivo do estado atual
-2. [`docs/PRODUCT.md`](./docs/PRODUCT.md) — visão de produto, escopo e princípios
-3. [`docs/SYSTEM.md`](./docs/SYSTEM.md) — arquitetura, banco, offline-first e contratos
-4. [`docs/PROCESS.md`](./docs/PROCESS.md) — fluxo capability-centric e governança de release
-5. [`docs/REFERENCE.md`](./docs/REFERENCE.md) — mapas do repositório, rotas, E2E e domínios
-6. [`docs/IMPLEMENTATION_STATUS.md`](./docs/IMPLEMENTATION_STATUS.md) — matriz de capacidade atualizada
-7. [`docs/ROADMAP.md`](./docs/ROADMAP.md) — visão de curto e longo prazo
-8. [`docs/TECH_DEBT.md`](./docs/TECH_DEBT.md) — log de problemas residuais e backlog técnico
-

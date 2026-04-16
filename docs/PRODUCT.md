@@ -1,47 +1,116 @@
 # RebanhoSync: Visão de Produto
 
 > **Status:** Normativo
-> **Fonte de Verdade:** Este Documento
-> **Última Atualização:** 2026-04-12
+> **Fonte de Verdade:** Este documento
+> **Última Atualização:** 2026-04-16
 
 ## 1. Visão do Produto
 
-O **RebanhoSync** é uma plataforma de gestão pecuária projetada para a realidade do campo: **Offline-First**, **Multi-Tenant** e focada na integridade dos dados.
+O **RebanhoSync** é uma plataforma de gestão pecuária voltada à operação de campo, com arquitetura **Offline-First**, modelo **Multi-Tenant por fazenda** e foco em **integridade operacional dos dados**.
 
-O sistema permite que produtores rurais (Owners) gerenciem múltiplas fazendas, delegando acesso a gerentes (Managers) e peões (Cowboys) através de um controle de acesso baseado em funções (RBAC). A operação continua fluida mesmo sem internet, sincronizando dados automaticamente quando a conexão é restabelecida.
+O sistema permite que produtores rurais (Owners) operem múltiplas fazendas, delegando acesso a gerentes (Managers) e peões (Cowboys) por meio de controle de acesso baseado em funções (RBAC). A operação crítica deve continuar utilizável mesmo sem internet, com sincronização automática quando a conexão for restabelecida.
 
-## 2. Escopo MVP (Minimum Viable Product)
+## 2. Proposta de Valor
 
-O MVP foca no essencial para a gestão do ciclo de vida animal e operações diárias.
+O produto busca resolver a gestão operacional do rebanho em ambiente real de campo, priorizando:
 
-### O que Entra (In-Scope)
+- registro confiável das operações diárias
+- continuidade de uso offline
+- rastreabilidade dos eventos
+- agenda operacional utilizável
+- consistência entre estado atual e histórico do rebanho
+- simplicidade prática para uso no curral e na rotina da fazenda
 
-- Reprodução Completa (Cobertura/IA, Diagnóstico, Parto, Pós-parto, Cria Inicial).
-- Registro de Nutrição (operacional, sem gestão de estoque).
-- Registro Financeiro (lançamentos, sem fluxo de caixa complexo ou NFE).
-- Agenda Sanitária Automática com protocolos e deduplicação.
-- Importação de Dados por CSV (animais, lotes, pastos).
-- Telemetria Local de Piloto.
-- Catálogo de Produtos Veterinários (catálogo global compartilhado).
-- Funcionalidade Offline Completa (Leitura e Escrita).
-- Sincronização Bidirecional Robusta.
+## 3. Escopo MVP
 
-### O que Não Entra (Out-of-Scope)
+O MVP cobre o núcleo operacional necessário para uso interno controlado.
 
-- Gestão Financeira Complexa (Fluxo de Caixa detalhado, NFE).
-- Integração com Balanças Eletrônicas via Bluetooth (nesta fase).
-- Módulos de Agricultura (Plantio, Colheita).
-- Marketplace ou Rede Social.
+### O que entra
 
-## 3. Princípios Fundamentais
+- Gestão de animais, lotes, pastos, contrapartes e categorias zootécnicas
+- Reprodução completa:
+  - cobertura / IA
+  - diagnóstico
+  - parto
+  - pós-parto
+  - cria inicial
+- Registro de eventos:
+  - sanitário
+  - pesagem
+  - nutrição
+  - movimentação
+  - financeiro
+- Agenda sanitária automática com protocolos, deduplicação e recálculo
+- Onboarding guiado da fazenda
+- Importação CSV de animais, lotes e pastos
+- Telemetria de piloto
+- Catálogo global de produtos veterinários
+- Operação offline com leitura e escrita locais
+- Sincronização bidirecional robusta
 
-1. **Integridade do Rebanho > Conveniência:** Não permitimos estados inconsistentes a favor da facilidade de uso. Um animal não pode estar em dois lugares ao mesmo tempo (Anti-Teleport). Eventos passados são imutáveis; correções são feitas via contra-lançamentos (Event Sourcing light).
-2. **Funcionamento Offline é Cidadão de Primeira Classe:** A falta de internet é a regra, não a exceção. Todas as funcionalidades críticas devem funcionar localmente com a mesma fidelidade do online.
-3. **Auditabilidade:** Quem fez, o que fez e quando fez. Todas as operações críticas são rastreáveis.
+### O que não entra
 
-## 4. Referências Técnicas
+- Gestão financeira complexa
+- Fluxo de caixa avançado
+- Emissão de NFE / fiscal complexo
+- Gestão agrícola (plantio, colheita)
+- Integração com balanças eletrônicas via Bluetooth nesta fase
+- Marketplace, rede social ou camadas de comunidade
 
-Para detalhes de implementação, consulte os demais documentos da suíte:
-- [**SYSTEM.md**](./SYSTEM.md): Visão arquitetural, limites do BD (Postgres), Offline-First (Dexie) e Segurança (RLS).
-- [**REFERENCE.md**](./REFERENCE.md): Mapas do repo, stack, rotas e testes básicos (E2E MVP).
-- [**PROCESS.md**](./PROCESS.md): Fluxo de Engenharia e governança de releases.
+## 4. Princípios Fundamentais
+
+### 4.1 Integridade do rebanho acima de conveniência
+
+O sistema não deve aceitar estados operacionais inconsistentes em troca de facilidade de uso.
+
+Exemplos:
+- um animal não pode “teleportar” entre lotes sem justificativa histórica
+- fatos passados não devem ser corrigidos por edição destrutiva de negócio
+- regras de integridade prevalecem sobre atalhos de UI
+
+### 4.2 Offline-First como requisito estrutural
+
+A ausência de internet é tratada como condição normal de operação, não exceção.
+
+As operações críticas devem continuar possíveis localmente, com sincronização posterior preservando integridade, idempotência e rastreabilidade.
+
+### 4.3 Auditabilidade operacional
+
+Mudanças críticas devem ser rastreáveis:
+- quem fez
+- o que foi feito
+- quando foi feito
+- em qual fazenda
+- com qual contexto transacional
+
+### 4.4 Separação entre estado atual e histórico
+
+O produto diferencia:
+- estado operacional atual
+- fatos históricos append-only
+- intenções futuras da agenda
+
+Essa separação é central para confiabilidade, reconciliação e leitura operacional.
+
+## 5. Situação Atual do Produto
+
+O produto já se encontra em **beta interno**, com o núcleo funcional principal implementado.
+
+A frente atual de engenharia está concentrada em **hardening arquitetural operacional**, ou seja:
+- restaurar fronteiras de responsabilidade em hotspots relevantes
+- reduzir acoplamento entre UI, domínio, infraestrutura e reconciliação
+- tornar o sistema mais previsível, testável e sustentável
+
+Esse foco de engenharia **não altera o escopo do produto**; ele melhora a forma como o escopo já implementado é sustentado.
+
+## 6. Referências Técnicas
+
+Para detalhes de implementação e operação, consulte:
+
+- [**CURRENT_STATE.md**](./CURRENT_STATE.md) — snapshot executivo do estado atual
+- [**PROCESS.md**](./PROCESS.md) — fluxo capability-centric e disciplina de execução
+- [**SYSTEM.md**](./SYSTEM.md) — arquitetura, banco, offline-first e contratos
+- [**REFERENCE.md**](./REFERENCE.md) — mapas do repositório, rotas, stack e comandos úteis
+- [**IMPLEMENTATION_STATUS.md**](./IMPLEMENTATION_STATUS.md) — matriz atual de capacidades
+- [**ROADMAP.md**](./ROADMAP.md) — próximos marcos e frentes
+- [**TECH_DEBT.md**](./TECH_DEBT.md) — backlog técnico e problemas abertos, quando aplicável

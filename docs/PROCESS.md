@@ -116,6 +116,55 @@ Exemplos:
 - manter coerencia com as fontes normativas em arquitetura, offline, contratos, banco e RLS;
 - quando houver mudanca de contrato ou invariante, abrir ADR.
 
+#### 4.2.1 Disciplina arquitetural operacional
+
+Além da coerência com arquitetura, offline, contratos, banco e RLS, toda frente relevante de fluxo operacional deve tender à separação explícita entre:
+
+1. **Normalize**
+2. **Select / Policy**
+3. **Payload**
+4. **Plan**
+5. **Effects**
+6. **Reconcile**
+
+Intenção normativa por etapa:
+
+- **Normalize:** saneamento, parsing, defaults e shape mínimo coerente de entrada
+- **Select / Policy:** elegibilidade, seleção, autorização, invariantes e regras de negócio
+- **Payload:** montagem do shape persistível/de negócio
+- **Plan:** composição e ordenação do plano de mutação/operação
+- **Effects:** IO, adapters, persistência, fila, chamadas remotas e side effects
+- **Reconcile:** rollback, deduplicação, replay, merge, refresh e alinhamento local/remoto
+
+Regras de fronteira:
+
+- `domain/*` não deve importar React, router, toast, Dexie, Supabase, fetch, `window` ou `localStorage`
+- `ui/*` não deve implementar regra de negócio forte, montar payload persistível como fonte de verdade nem concentrar reconciliação
+- `infrastructure/*` não deve decidir elegibilidade ou política de negócio
+- `reconcile/*` deve concentrar rollback, deduplicação, replay, idempotência e refresh quando aplicável
+- `useCase` pode orquestrar, mas não deve concentrar o detalhe completo de todas as etapas
+
+Regra prática:
+- o objetivo não é impor uma árvore rígida em todo o repositório de uma vez
+- o objetivo é reduzir hotspots que acumulam múltiplas responsabilidades primárias
+
+#### 4.2.2 Fluxo de hardening arquitetural
+
+Quando a mudança tiver caráter de hardening arquitetural operacional, seguir esta ordem:
+
+1. identificar hotspot e responsabilidades misturadas
+2. registrar baseline/comportamento preservado
+3. extrair funções puras quando fizer sentido
+4. isolar efeitos e adapters
+5. separar reconciliação da camada de tela
+6. validar preservação de comportamento
+7. só então expandir para o próximo hotspot
+
+Regra prática:
+- atacar um hotspot por vez
+- evitar big bang rewrite
+- preferir patch mínimo, incremental e revisável
+
 ### 4.3 Quality gates antes de concluir
 
 #### Gate A: Qualidade executavel
@@ -168,6 +217,15 @@ Um item so vai para concluido quando:
 - os docs derivados foram atualizados quando aplicavel;
 - a reconciliacao nao aponta inconsistencias abertas para aquele item.
 
+Quando a mudanca tiver carater de hardening arquitetural operacional, a Definition of Done tambem exige:
+
+- fronteiras de responsabilidade mais claras no hotspot atacado;
+- UI mais fina quando a tela fizer parte do hotspot;
+- regra testavel sem depender diretamente de UI ou infra, quando aplicavel;
+- reconciliação fora da tela quando aplicável;
+- comportamento preservado por testes ou evidencia objetiva;
+- escopo incremental e revisável.
+
 ## 5. Regras para `infra.*`
 
 Itens `infra.*` cobrem estabilidade, DX, CI, documentacao operacional e hygiene do repositorio.
@@ -177,6 +235,18 @@ Regras:
 - nao entram no `capability_score`;
 - podem aparecer em `TECH_DEBT.md` e `ROADMAP.md`;
 - devem ter descricao objetiva do risco e do impacto esperado.
+Frentes de hardening arquitetural operacional podem nascer como trilhos `infra.*`, por exemplo:
+
+- `infra.arch.*`
+- `infra.gates.*`
+- `infra.sync.*`
+- `infra.registrar.*`
+
+Nesses casos, o item deve explicitar:
+- hotspot atacado
+- risco atual
+- fronteira arquitetural desejada
+- impacto esperado
 
 ## 6. Quando abrir ADR
 
@@ -205,15 +275,11 @@ Em caso de duvida, a ordem de consulta deve ser:
 
 1. `README.md`
 2. `docs/CURRENT_STATE.md`
-3. `docs/PRODUCT.md`
-4. `docs/SYSTEM.md`
-5. `docs/REFERENCE.md`
-6. documentos derivados (`IMPLEMENTATION_STATUS`, `TECH_DEBT`, `ROADMAP`)
+3. `docs/PROCESS.md`
+4. `docs/PRODUCT.md`
+5. `docs/SYSTEM.md`
+6. `docs/REFERENCE.md`
+7. documentos derivados (`IMPLEMENTATION_STATUS`, `TECH_DEBT`, `ROADMAP`)
 
-Esse encadeamento reduz confusao entre intencao, implementacao e historico.
+Esse encadeamento reduz confusao entre momento atual, processo, aprofundamento normativo e historico.
 
-## 9. Gaps Residuais (beta interno)
-
-No estado atual desta revisao, nao ha TDs residuais abertos.
-
-Quando novos gaps surgirem, eles devem voltar a aparecer aqui apenas depois de entrarem em `TECH_DEBT.md` e `ROADMAP.md`.

@@ -1,52 +1,210 @@
 # Referência Rápida (RebanhoSync)
 
 > **Status:** Derivado (Inventário)
-> **Última Atualização:** 2026-04-12
+> **Última Atualização:** 2026-04-16
 
-Este documento consolida referências vitais para o ambiente de desenvolvimento, facilitando o descobrimento de caminhos-chave do projeto e a navegação da stack.
+Este documento consolida referências rápidas para navegação do repositório, stack, rotas, diretórios e comandos úteis.
 
 ---
 
-## 1. Stack Tecnológico Principal
+## 1. Ordem de consulta recomendada
 
-- **Interface:** React ^19.2.3, Vite ^6.4.1, Tailwind CSS, Radix UI & shadcn/ui. Form/Validação via react-hook-form e zod. Gráficos com recharts.
-- **Ambiente de Dados Remotos:** Supabase JS (Auth, Postgres, Edge Functions) & TanStack React Query ^5.56.2 para ponte de rede.
-- **Armazenamento e Offline:** Dexie ^4.3.0 e dexie-react-hooks para armazenamento e visualização reativa client-side permanente (IndexedDB).
-- **Testes e Qualidade:** Vitest e Testing Library (testes de DOM com fake-indexeddb). ESLint e Prettier para controle estático de qualidade.
-- *Nota:* Sem renderização SSR pesada via Next.js. O app baseia-se em Code Splitting rigoroso e Padrões Lazy em cliente.
+Para retomada rápida do projeto:
 
-## 2. Mapa do Repositório (`/src` e Backend)
+1. `README.md`
+2. `docs/CURRENT_STATE.md`
+3. `docs/PROCESS.md`
+4. `docs/PRODUCT.md`
+5. `docs/SYSTEM.md`
+6. `docs/REFERENCE.md`
 
-### Rotinas e Serviços Locais (`/src`)
-- `components/`: Bibliotecas de reuso UI (`ui/`), cards organizacionais por domínio (`animals/`, `manejo/`, `events/`), navegação estática de tela (`layout/`).
-- `lib/`: Toda a força lógica. Subfolders críticos:
-    - `offline/`: Mecanismo do Dexie, Loop do Worker, Gerador da Fila e controle de Rollback Otimista.
-    - `domain/` & `animals/` & `reproduction/`: Agrupadores de Regra de Negócio (ex: Taxonomia, Anti-teleport, vínculos de cria).
-    - `telemetry/`: Buffer em memória com Indexed para diagnóstico de uso silencioso em betas limitados.
-- `pages/`: Arquitetura visual roteada com proteções (`RequireAuth`, `RequireFarm`).
-- `supabase/functions/`: Backend remoto pontual. Endpoint `sync-batch` consolida a maior parte pesada da comunicação de persistência. Endpoints auxiliares agem sem mexer no local first.
+---
 
-## 3. Topologia e Mapa de Rotas
+## 2. Stack principal
 
-Superfícies públicas limitam-se ao engajamento inicial (`/login`, `/signup`, `/invites/:token`). Rotas autenticadas aguardando contexto forçam o produtor ao `/select-fazenda` ou `/criar-fazenda`.
+### Frontend
+- React 19
+- TypeScript
+- Vite 6
+- Tailwind CSS
+- Radix UI
+- shadcn/ui
+- react-hook-form
+- zod
+- recharts
 
-Rotas operativas (`RequireAuth` + `RequireFarm`):
-- **Painéis Base:** `/home`, `/agenda`, `/dashboard`, `/eventos`.
-- **Topologia Animal:** Ponto central de vida. `/animais/:id` bifurcando para módulos adjacentes de evento como `/animais/:id/reproducao`, `/animais/:id/pos-parto`, `/animais/:id/cria-inicial`.
-- **Topologia Demográfica:** `/lotes`, `/pastos` acoplados nas dinâmicas de movimentação em blocos.
-- **Topologia de Domínio Auxiliar:** Protocolos base de catálogo de sanitário (`/protocolos-sanitarios`), Financeiro (`/financeiro`), e Perfils Demográficos/Admin de Pessoal (`/admin/membros`).
+### Dados remotos
+- Supabase JS
+- Postgres / Auth / Edge Functions
+- TanStack React Query
 
-## 4. Roteiro E2E (Fluxos Críticos MVP)
-O ciclo completo ideal é mapeado para segurança transacional em cada deploy:
-1. **Implantação & Autenticação:** Wizard que preenche os pastos e restringe lotes antes de trazer o primeiro rebanho, seja manual ou via injetor CSV, amarrando o `fazenda_id`.
-2. **Ciclo Sincronização e Anti-teleporte:** Geração pura com status OFFLINE -> worker envia lote de fatos pro batch -> backend rejeita magic movements e força Rollbacks (rollback revertendo as telas de interface e as referências sem deixar rastro de bug visual local).
-3. **Dinâmicas Naturais de Vida:** Fluxo 9 (Partos). O animal (mãe) desencadeia eventos locais compostos e autônomos que geram crias pré-amarradas localmente numa única intenção (`client_tx_id`), convertendo a mãe em Lactante e vinculando as novas vidas na mesma aba, sem falhas lógicas de rede.
-4. **Agendas e Recidivas Financeiras/Nutricionais:** Trabalhos com preenchimento via `dedup_key`. Múltiplos avisos locais agrupados como única operação na rede central em repetição natural (Vacina 2º Dose) sem duplicidade local visível.
+### Offline
+- Dexie.js
+- dexie-react-hooks
+- IndexedDB
 
-## 5. Scripts Relevantes
+### Testes e qualidade
+- Vitest
+- Testing Library
+- fake-indexeddb
+- ESLint
+- Prettier
 
-Para desenvolvimento, rode:
-- `pnpm dev`: Inicia ambiente dinâmico cliente com Vite.
-- `pnpm test`: Cobertura Vitest local. Testes de paridade taxonomia e lógica estão garantidos.
-- `pnpm run test:e2e`: Avalia as rotinas descritas no item acima batendo de ponta a ponta sem internet na simulação IndexedDB local.
-- `pnpm run gates`: Analises de integridade da própria documentação via automações para evitar ruídos textuais (Antigravity validation).
+### Deploy
+- Vercel (frontend)
+- Supabase (backend)
+
+---
+
+## 3. Diretórios principais
+
+### `src/`
+Frontend React.
+
+Subáreas importantes:
+- `pages/` — superfícies roteadas
+- `components/` — componentes reutilizáveis por domínio e UI base
+- `lib/` — lógica principal do sistema
+- `hooks/` — hooks de suporte ao frontend
+
+### `src/lib/`
+Principal concentração de lógica operacional.
+
+Subáreas críticas:
+- `offline/` — Dexie, fila, worker, rollback, pull, sync
+- `sanitario/` — protocolos, catálogo, compliance, trânsito, read models
+- `reproduction/` — linking, status, tipos, selectors
+- `animals/` — taxonomia, apresentação, ordenação, helpers de leitura
+- `telemetry/` — métricas de piloto e flush remoto
+- `events/` — builders, tipos, validações
+
+### `supabase/`
+Backend e evolução estrutural.
+
+- `migrations/` — evolução do schema SQL
+- `functions/sync-batch/` — validação autoritativa e aplicação do sync
+- `functions/telemetry-ingest/` — ingestão remota de telemetria
+- `functions/test-auth/` — diagnóstico auxiliar
+
+### `docs/`
+Documentação normativa, snapshot, derivados e referência.
+
+### `scripts/`
+Automações operacionais e gates documentais.
+
+---
+
+## 4. Superfícies principais
+
+### Painéis base
+- `/home`
+- `/agenda`
+- `/dashboard`
+- `/eventos`
+
+### Operação animal
+- `/animais`
+- `/animais/:id`
+- `/animais/:id/reproducao`
+- `/animais/:id/pos-parto`
+- `/animais/:id/cria-inicial`
+
+### Estrutura de rebanho
+- `/lotes`
+- `/pastos`
+
+### Domínios auxiliares
+- `/protocolos-sanitarios`
+- `/financeiro`
+- `/admin/membros`
+
+### Entrada e contexto
+- `/login`
+- `/signup`
+- `/invites/:token`
+- `/select-fazenda`
+- `/criar-fazenda`
+
+---
+
+## 5. Pontos críticos do sistema
+
+### Offline / Sync
+Arquivos centrais:
+- `src/lib/offline/db.ts`
+- `src/lib/offline/ops.ts`
+- `src/lib/offline/pull.ts`
+- `src/lib/offline/syncWorker.ts`
+- `src/lib/offline/tableMap.ts`
+
+### Sanitário
+Arquivos centrais:
+- `src/lib/sanitario/baseProtocols.ts`
+- `src/lib/sanitario/officialCatalog.ts`
+- `src/lib/sanitario/compliance.ts`
+- `src/lib/sanitario/complianceGuards.ts`
+- `src/lib/sanitario/regulatoryReadModel.ts`
+- `src/lib/sanitario/transit.ts`
+
+### Reprodução
+Arquivos centrais:
+- `src/lib/reproduction/linking.ts`
+- `src/lib/reproduction/status.ts`
+- `src/lib/reproduction/types.ts`
+- `src/lib/reproduction/selectors.ts`
+
+### Taxonomia canônica
+Arquivos centrais:
+- `src/lib/animals/taxonomy.ts`
+- `src/lib/animals/taxonomyFactsContract.ts`
+
+### Hotspots atuais de hardening
+- `src/pages/Registrar.tsx`
+- `src/lib/offline/syncWorker.ts`
+
+---
+
+## 6. Fluxos operacionais que merecem atenção
+
+- registro operacional em `Registrar`
+- agenda sanitária e execução de pendências
+- movimentação com anti-teleporte
+- trânsito externo com GTA/e-GTA e pre-check PNCEBT
+- parto → pós-parto → cria inicial
+- rollback local após `REJECTED`
+- flush remoto de telemetria de piloto
+
+---
+
+## 7. Comandos úteis
+
+### Desenvolvimento
+```bash
+pnpm install
+pnpm dev
+```
+
+### Qualidade
+```bash
+pnpm run lint
+pnpm test
+pnpm run build
+```
+
+### Fluxos adicionais
+```bash
+pnpm run test:e2e
+pnpm run gates
+pnpm run audit:data
+```
+
+---
+
+## 8. Leitura complementar
+
+- `docs/CURRENT_STATE.md`
+- `docs/PROCESS.md`
+- `docs/SYSTEM.md`
+- `docs/IMPLEMENTATION_STATUS.md`
+- `docs/ROADMAP.md`
+- `docs/TECH_DEBT.md`
