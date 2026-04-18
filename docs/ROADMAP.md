@@ -2,7 +2,7 @@
 
 > **Status:** Derivado (Rev D+)
 > **Baseline:** `b69d35f`
-> **Ultima Atualizacao:** 2026-04-12
+> **Ultima Atualizacao:** 2026-04-18
 > **Derivado por:** Auditoria tecnica - estado pos-fechamento dos TDs originais e evolucao funcional de UX operacional
 > **Fonte:** `TECH_DEBT.md`, `IMPLEMENTATION_STATUS.md`
 
@@ -13,6 +13,10 @@
 Todos os milestones do roadmap anterior (M0, M1, M2) foram concluidos via migrations de marco/2026. O capability score analitico permanece em 19/19 = 100%. O projeto segue em fase de **beta interno**.
 
 O roadmap atual cobre a consolidacao de observabilidade, cobertura E2E dos fluxos mais recentes, refinamentos de UX operacional da agenda e a reestruturacao da biblioteca sanitaria base.
+
+Atualizacao estrutural 2026-04-18 (sem mudanca funcional):
+- `src/pages/Registrar/**`, `src/pages/Agenda/**` e `src/pages/ProtocolosSanitarios/**` operam com entrypoints folderizados (`index.tsx`) e contexto local (`README.md`/`AGENTS.md`).
+- Dispatch local de paginas consolidado em `src/pages/AGENTS.md`.
 
 ---
 
@@ -88,11 +92,11 @@ O roadmap atual cobre a consolidacao de observabilidade, cobertura E2E dos fluxo
 
 ### Interligacoes
 
-- Entrada de dados: `src/pages/Registrar.tsx`, `src/pages/ProtocolosSanitarios.tsx`, `src/components/sanitario/FarmProtocolManager.tsx`
+- Entrada de dados: `src/pages/Registrar/index.tsx`, `src/pages/ProtocolosSanitarios/index.tsx`, `src/components/sanitario/FarmProtocolManager.tsx`
 - Semantica e agrupamento: `src/lib/agenda/groupSummaries.ts`, `src/lib/agenda/groupOrdering.ts`, `src/lib/agenda/grouping.ts`
 - Prioridade sanitaria compartilhada: `src/lib/sanitario/protocolRules.ts`, `src/lib/sanitario/attention.ts`
 - Estado local e reconciliacao: `src/lib/offline/db.ts`, `src/lib/offline/pull.ts`, `src/lib/offline/ops.ts`
-- Superficies consumidoras da mesma leitura operacional: `src/pages/Agenda.tsx`, `src/pages/Home.tsx`, `src/pages/Dashboard.tsx`, `src/pages/Relatorios.tsx`
+- Superficies consumidoras da mesma leitura operacional: `src/pages/Agenda/index.tsx`, `src/pages/Home.tsx`, `src/pages/Dashboard.tsx`, `src/pages/Relatorios.tsx`
 
 ### Fases do Desenvolvimento
 
@@ -124,8 +128,8 @@ O roadmap atual cobre a consolidacao de observabilidade, cobertura E2E dos fluxo
 
 - Biblioteca canonica: `src/lib/sanitario/baseProtocols.ts`
 - Semantica do calendario base: `src/lib/sanitario/calendar.ts`
-- Propagacao para protocolos da fazenda: `src/pages/ProtocolosSanitarios.tsx`, `src/lib/sanitario/customization.ts`
-- Leitura operacional da agenda base: `src/pages/Registrar.tsx`, `src/components/sanitario/FarmProtocolManager.tsx`
+- Propagacao para protocolos da fazenda: `src/pages/ProtocolosSanitarios/index.tsx`, `src/lib/sanitario/customization.ts`
+- Leitura operacional da agenda base: `src/pages/Registrar/index.tsx`, `src/components/sanitario/FarmProtocolManager.tsx`
 - Superficies animal-centric: `src/pages/Animais.tsx`, `src/pages/AnimalDetalhe.tsx`
 - Catalogo global de produtos: `src/lib/sanitario/products.ts`
 

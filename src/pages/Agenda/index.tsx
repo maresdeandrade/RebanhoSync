@@ -80,13 +80,10 @@ import type {
   Lote,
   ProtocoloSanitario,
   ProtocoloSanitarioItem,
-  SanitarioTipoEnum,
 } from "@/lib/offline/types";
 import { isCalfJourneyAgendaItem } from "@/lib/reproduction/calfJourney";
 import { buildRegulatoryOperationalReadModel } from "@/lib/sanitario/regulatoryReadModel";
 import {
-  describeSanitaryCalendarAnchor,
-  describeSanitaryCalendarMode,
   type SanitaryBaseCalendarAnchor,
   type SanitaryBaseCalendarMode,
 } from "@/lib/sanitario/calendar";
@@ -95,6 +92,36 @@ import { concluirPendenciaSanitaria } from "@/lib/sanitario/service";
 import { pickVeterinaryProductMetadata } from "@/lib/sanitario/products";
 import { getSanitaryAgendaPriority } from "@/lib/sanitario/protocolRules";
 import { cn } from "@/lib/utils";
+import {
+  asSanitarioTipo,
+  formatAgendaDate,
+  formatAgendaTypeLabel,
+  formatAnimalAge,
+  getAgendaStatusTone,
+  getGroupVisibilityLabel,
+  readNumber,
+  readString,
+} from "@/pages/Agenda/helpers/formatting";
+import {
+  getAnimalQuickFilterLabel,
+  getCalendarAnchorQuickFilterLabel,
+  getCalendarModeQuickFilterLabel,
+  getQuickFilterBadgeToneClass,
+  getScheduleQuickFilterLabel,
+  mapAnimalBadgeToQuickFilter,
+  mapScheduleBadgeToQuickFilter,
+  matchesAnimalQuickFilter,
+  parseCalendarAnchorQuickFilter,
+  parseCalendarModeQuickFilter,
+} from "@/pages/Agenda/helpers/quickFilters";
+import type {
+  AgendaCalendarAnchorQuickFilter,
+  AgendaCalendarModeQuickFilter,
+  AgendaScheduleQuickFilter,
+  AnimalQuickFilter,
+  GroupMode,
+  QuickFilterTone,
+} from "@/pages/Agenda/types";
 import { showError, showSuccess } from "@/utils/toast";
 
 const DOMAIN_LABEL: Record<string, string> = {
@@ -113,17 +140,6 @@ const STATUS_LABEL: Record<string, string> = {
   concluido: "Concluido",
   cancelado: "Cancelado",
 };
-
-type GroupMode = "animal" | "evento";
-type AnimalQuickFilter =
-  | "all"
-  | "with-animal"
-  | "without-animal"
-  | "F"
-  | "M"
-  | "unknown";
-type AgendaCalendarModeQuickFilter = "all" | SanitaryBaseCalendarMode;
-type AgendaCalendarAnchorQuickFilter = "all" | SanitaryBaseCalendarAnchor;
 
 type AgendaRow = {
   item: AgendaItem;
@@ -159,176 +175,11 @@ const DEFAULT_AGENDA_STATE = {
   dateTo: "",
   groupMode: "animal" as GroupMode,
   quickTypeFilter: "all",
-  quickScheduleFilter: "all" as AgendaScheduleBucket | "all",
+  quickScheduleFilter: "all" as AgendaScheduleQuickFilter,
   quickCalendarModeFilter: "all" as AgendaCalendarModeQuickFilter,
   quickCalendarAnchorFilter: "all" as AgendaCalendarAnchorQuickFilter,
   quickAnimalFilter: "all" as AnimalQuickFilter,
 };
-
-function getAgendaStatusTone(status: string) {
-  if (status === "cancelado") return "danger";
-  if (status === "concluido") return "success";
-  return "warning";
-}
-
-function readString(record: Record<string, unknown> | null | undefined, key: string) {
-  const value = record?.[key];
-  return typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
-}
-
-function readNumber(record: Record<string, unknown> | null | undefined, key: string) {
-  const value = record?.[key];
-  return typeof value === "number" && Number.isFinite(value) ? value : null;
-}
-
-function asSanitarioTipo(value: string | null): SanitarioTipoEnum | null {
-  if (value === "vacinacao" || value === "vermifugacao" || value === "medicamento") {
-    return value;
-  }
-  return null;
-}
-
-function formatAnimalAge(dataNascimento: string | null) {
-  if (!dataNascimento) return "idade n/d";
-
-  const birth = new Date(`${dataNascimento}T00:00:00`);
-  if (Number.isNaN(birth.getTime())) return "idade n/d";
-
-  const diffMs = Date.now() - birth.getTime();
-  if (diffMs < 0) return "idade n/d";
-
-  const totalDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-  if (totalDays < 30) return `${totalDays}d`;
-
-  const years = Math.floor(totalDays / 365);
-  const months = Math.floor((totalDays % 365) / 30);
-
-  if (years > 0) return months > 0 ? `${years}a ${months}m` : `${years}a`;
-  return `${Math.floor(totalDays / 30)}m`;
-}
-
-function formatAgendaDate(date: string) {
-  return new Date(`${date}T00:00:00`).toLocaleDateString("pt-BR");
-}
-
-function formatAgendaTypeLabel(value: string) {
-  return value
-    .replaceAll("_", " ")
-    .split(" ")
-    .filter(Boolean)
-    .map((token) => token.charAt(0).toUpperCase() + token.slice(1))
-    .join(" ");
-}
-
-function getScheduleQuickFilterLabel(value: AgendaScheduleBucket) {
-  if (value === "overdue") return "Atrasado";
-  if (value === "today") return "Hoje";
-  if (value === "future") return "Futuro";
-  return "Fechado";
-}
-
-function getAnimalQuickFilterLabel(value: AnimalQuickFilter) {
-  if (value === "with-animal") return "Com animal";
-  if (value === "without-animal") return "Sem animal";
-  if (value === "F") return "Femeas";
-  if (value === "M") return "Machos";
-  if (value === "unknown") return "Sexo n/d";
-  return "Todos";
-}
-
-function getCalendarModeQuickFilterLabel(value: AgendaCalendarModeQuickFilter) {
-  if (value === "all") return "Todos";
-  return describeSanitaryCalendarMode(value);
-}
-
-function getCalendarAnchorQuickFilterLabel(value: AgendaCalendarAnchorQuickFilter) {
-  if (value === "all") return "Todas";
-  return describeSanitaryCalendarAnchor(value) ?? "Sem ancora";
-}
-
-function parseCalendarModeQuickFilter(
-  value: string | null,
-): AgendaCalendarModeQuickFilter | null {
-  if (value === null) return null;
-  if (
-    value === "all" ||
-    value === "campanha" ||
-    value === "janela_etaria" ||
-    value === "rotina_recorrente" ||
-    value === "procedimento_imediato" ||
-    value === "nao_estruturado"
-  ) {
-    return value;
-  }
-  return null;
-}
-
-function parseCalendarAnchorQuickFilter(
-  value: string | null,
-): AgendaCalendarAnchorQuickFilter | null {
-  if (value === null) return null;
-  if (
-    value === "all" ||
-    value === "sem_ancora" ||
-    value === "nascimento" ||
-    value === "desmama" ||
-    value === "parto_previsto" ||
-    value === "entrada_fazenda" ||
-    value === "movimentacao" ||
-    value === "diagnostico_evento" ||
-    value === "conclusao_etapa_dependente" ||
-    value === "ultima_conclusao_mesma_familia"
-  ) {
-    return value;
-  }
-  return null;
-}
-
-function getGroupVisibilityLabel(visibleCount: number, totalCount: number) {
-  if (visibleCount === totalCount) {
-    return `${totalCount} item(ns) no recorte`;
-  }
-
-  return `${visibleCount} de ${totalCount} item(ns) visiveis`;
-}
-
-function matchesAnimalQuickFilter(
-  item: Pick<AgendaItem, "animal_id">,
-  animal: Pick<Animal, "sexo"> | null,
-  filter: AnimalQuickFilter,
-) {
-  if (filter === "all") return true;
-  if (filter === "with-animal") return Boolean(item.animal_id);
-  if (filter === "without-animal") return !item.animal_id;
-  if (filter === "unknown") return Boolean(item.animal_id) && !animal?.sexo;
-  return animal?.sexo === filter;
-}
-
-function mapAnimalBadgeToQuickFilter(key: string): AnimalQuickFilter | null {
-  if (key === "animals") return "with-animal";
-  if (key === "female") return "F";
-  if (key === "male") return "M";
-  if (key === "unknown") return "unknown";
-  if (key === "without-animal") return "without-animal";
-  return null;
-}
-
-function mapScheduleBadgeToQuickFilter(key: string): AgendaScheduleBucket | null {
-  if (key === "overdue") return "overdue";
-  if (key === "today") return "today";
-  if (key === "future") return "future";
-  return null;
-}
-
-function getQuickFilterBadgeToneClass(
-  tone: "neutral" | "info" | "success" | "warning" | "danger",
-) {
-  if (tone === "info") return "border-info/15 bg-info-muted text-info";
-  if (tone === "success") return "border-success/15 bg-success-muted text-success";
-  if (tone === "warning") return "border-warning/20 bg-warning-muted text-warning";
-  if (tone === "danger") return "border-destructive/15 bg-destructive/10 text-destructive";
-  return "border-border/80 bg-background/75 text-muted-foreground";
-}
 
 function QuickFilterBadge({
   tone,
@@ -337,7 +188,7 @@ function QuickFilterBadge({
   children,
   className,
 }: {
-  tone: "neutral" | "info" | "success" | "warning" | "danger";
+  tone: QuickFilterTone;
   active: boolean;
   onClick: () => void;
   children: ReactNode;

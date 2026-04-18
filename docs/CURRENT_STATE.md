@@ -112,9 +112,9 @@ Tratar como zonas de maior risco:
 - `src/lib/reproduction/**`
 - `src/lib/animals/**` quando a tarefa tocar taxonomia / elegibilidade / apresentação derivada
 - `src/lib/events/**` quando a tarefa tocar builders / validators / payloads
-- `src/pages/Registrar.tsx`
-- `src/pages/Agenda.tsx`
-- `src/pages/ProtocolosSanitarios.tsx`
+- `src/pages/Registrar/**`
+- `src/pages/Agenda/**`
+- `src/pages/ProtocolosSanitarios/**`
 - `supabase/functions/sync-batch/**`
 - `supabase/migrations/**`
 

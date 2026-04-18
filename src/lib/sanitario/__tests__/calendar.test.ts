@@ -13,16 +13,16 @@ import {
 describe("sanitary calendar base", () => {
   it("round-trips a structured calendar rule through payload", () => {
     const payload = buildSanitaryBaseCalendarPayload({
-      mode: "age_window",
-      anchor: "birth",
+      mode: "janela_etaria",
+      anchor: "nascimento",
       label: "Dose unica entre 90 e 240 dias",
       ageStartDays: 90,
       ageEndDays: 240,
     });
 
     expect(readSanitaryBaseCalendar(payload)).toEqual({
-      mode: "age_window",
-      anchor: "birth",
+      mode: "janela_etaria",
+      anchor: "nascimento",
       label: "Dose unica entre 90 e 240 dias",
       ageStartDays: 90,
       ageEndDays: 240,
@@ -34,8 +34,8 @@ describe("sanitary calendar base", () => {
 
   it("prefers the explicit calendar-base label when describing schedule", () => {
     const payload = buildSanitaryBaseCalendarPayload({
-      mode: "campaign",
-      anchor: "calendar_month",
+      mode: "campanha",
+      anchor: "sem_ancora",
       label: "Campanha semestral (maio/novembro)",
       months: [5, 11],
       intervalDays: 180,
@@ -85,8 +85,8 @@ describe("sanitary calendar base", () => {
             produto: "Vacina X",
           },
           buildSanitaryBaseCalendarPayload({
-            mode: "campaign",
-            anchor: "calendar_month",
+            mode: "campanha",
+            anchor: "sem_ancora",
             label: "Campanha oficial de maio",
             months: [5],
             intervalDays: 365,
@@ -102,8 +102,8 @@ describe("sanitary calendar base", () => {
         intervalDays: 365,
         payloads: [
           buildSanitaryBaseCalendarPayload({
-            mode: "campaign",
-            anchor: "calendar_month",
+            mode: "campanha",
+            anchor: "sem_ancora",
             label: "Campanha oficial de maio",
             months: [5],
             intervalDays: 365,
@@ -112,10 +112,10 @@ describe("sanitary calendar base", () => {
       }),
     ).toEqual({
       label: "Campanha oficial de maio",
-      mode: "campaign",
+      mode: "campanha",
       modeLabel: "Campanha",
-      anchor: "calendar_month",
-      anchorLabel: "Calendario",
+      anchor: "sem_ancora",
+      anchorLabel: "Sem ancora",
     });
 
     expect(
@@ -125,16 +125,16 @@ describe("sanitary calendar base", () => {
       }),
     ).toEqual({
       label: "A cada 45 dias",
-      mode: "rolling_interval",
-      modeLabel: "Recorrente",
+      mode: "rotina_recorrente",
+      modeLabel: "Rotina recorrente",
       anchor: null,
       anchorLabel: null,
     });
   });
 
   it("describes mode and anchor labels for toolbar filters", () => {
-    expect(describeSanitaryCalendarMode("age_window")).toBe("Janela etaria");
-    expect(describeSanitaryCalendarAnchor("birth")).toBe("Nascimento");
+    expect(describeSanitaryCalendarMode("janela_etaria")).toBe("Janela etaria");
+    expect(describeSanitaryCalendarAnchor("nascimento")).toBe("Nascimento");
     expect(describeSanitaryCalendarAnchor(null)).toBeNull();
   });
 });

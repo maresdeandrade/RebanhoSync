@@ -13,9 +13,23 @@ import {
 } from "@/lib/sanitario/scheduler";
 import {
   parseLegacyProtocolItemToDomain,
-  type SanitaryProtocolItemDomain,
-} from "@/lib/sanitario/domain";
+} from "@/lib/sanitario/adapters";
 import { shouldUseNewSanitaryScheduler } from "@/lib/sanitario/featureFlags";
+
+function resolveLegacyIdentity(protocolItem: ProtocoloSanitarioItem) {
+  const protocolId =
+    (protocolItem as Partial<ProtocoloSanitarioItem> & { protocol_id?: string })
+      .protocolo_id ??
+    (protocolItem as Partial<ProtocoloSanitarioItem> & { protocol_id?: string })
+      .protocol_id ??
+    "unknown_protocol";
+  const itemId =
+    (protocolItem as Partial<ProtocoloSanitarioItem> & { protocol_item_id?: string })
+      .protocol_item_id ??
+    "unknown_item";
+
+  return { protocolId, itemId };
+}
 
 /**
  * Contexto de Subject para próximo cálculo de ocorrência
@@ -64,7 +78,12 @@ export function computeNextSanitaryOccurrenceForItem(
 
   try {
     // 1. Parsear item legado para domínio novo
-    const domain = parseLegacyProtocolItemToDomain(protocolItem.payload);
+    const { protocolId, itemId } = resolveLegacyIdentity(protocolItem);
+    const domain = parseLegacyProtocolItemToDomain(
+      protocolId,
+      itemId,
+      protocolItem.payload,
+    );
     if (!domain) {
       console.warn("Failed to parse protocol item to domain", protocolItem.id);
       return null;
@@ -133,7 +152,12 @@ export function isProtocolItemCompatibleWithNewScheduler(
   protocolItem: ProtocoloSanitarioItem
 ): boolean {
   try {
-    const domain = parseLegacyProtocolItemToDomain(protocolItem.payload);
+    const { protocolId, itemId } = resolveLegacyIdentity(protocolItem);
+    const domain = parseLegacyProtocolItemToDomain(
+      protocolId,
+      itemId,
+      protocolItem.payload,
+    );
     return domain !== null;
   } catch {
     return false;

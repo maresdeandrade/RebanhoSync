@@ -450,9 +450,9 @@ describe("Animais page", () => {
                 data: "2026-04-10",
                 status: "proximo",
                 scheduleLabel: "Aplicar entre 3 e 8 meses",
-                scheduleMode: "age_window",
+                scheduleMode: "janela_etaria",
                 scheduleModeLabel: "Janela etaria",
-                scheduleAnchor: "birth",
+                scheduleAnchor: "nascimento",
                 scheduleAnchorLabel: "Nascimento",
               },
               {
@@ -461,8 +461,8 @@ describe("Animais page", () => {
                 data: "2026-04-12",
                 status: "proximo",
                 scheduleLabel: "A cada 90 dias",
-                scheduleMode: "rolling_interval",
-                scheduleModeLabel: "Recorrente",
+                scheduleMode: "rotina_recorrente",
+                scheduleModeLabel: "Rotina recorrente",
                 scheduleAnchor: null,
                 scheduleAnchorLabel: null,
               },
@@ -478,7 +478,7 @@ describe("Animais page", () => {
 
     render(
       <MemoryRouter
-        initialEntries={["/animais?calendarMode=age_window&calendarAnchor=birth"]}
+        initialEntries={["/animais?calendarMode=janela_etaria&calendarAnchor=nascimento"]}
         future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
       >
         <Animais />

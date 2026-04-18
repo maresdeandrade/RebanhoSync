@@ -65,22 +65,36 @@ describe("Registrar Page - Anti-Teleport", () => {
     // Let's check implementation again. Yes.
     mockedUseLotes.mockReturnValue(mockLotes as ReturnType<typeof useLotes>);
 
-    // Mock useLiveQuery
-    // Return a universal object that satisfies various query shapes to avoid crashes
-    // and provide animals for selection.
     const universalRecord = {
       id: "animal-1",
       identificacao: "Boi 1",
       sexo: "M",
       lote_id: "lote-A",
       fazenda_id: "farm-1",
-      nome: "Protocolo Fake", // for protocols/contrapartes
-      tipo: "vacinacao", // for protocoloItens
       deleted_at: null,
     };
-    mockedUseLiveQuery.mockReturnValue(
-      [universalRecord] as ReturnType<typeof useLiveQuery>,
-    );
+    mockedUseLiveQuery.mockImplementation(((query) => {
+      const querySource =
+        typeof query === "function" ? query.toString() : "";
+
+      if (querySource.includes("loadRegulatorySurfaceSource")) {
+        return {
+          config: null,
+          templates: [],
+          items: [],
+        } as ReturnType<typeof useLiveQuery>;
+      }
+
+      if (querySource.includes("state_animais.get")) {
+        return null as ReturnType<typeof useLiveQuery>;
+      }
+
+      if (querySource.includes("state_animais")) {
+        return [universalRecord] as ReturnType<typeof useLiveQuery>;
+      }
+
+      return [] as ReturnType<typeof useLiveQuery>;
+    }) as typeof useLiveQuery);
   });
 
   it("resets destination (toLoteId) when source (selectedLoteId) is changed to match destination", async () => {

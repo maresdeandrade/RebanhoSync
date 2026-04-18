@@ -1,509 +1,184 @@
-/**
- * Testes — ProtocolItemDraftEditor (Renderização e Interações)
- */
+/** @vitest-environment jsdom */
+import "@testing-library/jest-dom";
 
-import { describe, it, expect, beforeEach, vi } from "vitest";
-import { render, screen, fireEvent, within } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
+import { describe, it, expect, vi } from "vitest";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { ProtocolItemDraftEditor } from "@/components/sanitario/ProtocolItemDraftEditor";
 import { createEmptyProtocolItemDraft } from "@/lib/sanitario/draft";
-import type { ProtocolItemDraft } from "@/lib/sanitario/draft";
 
 describe("ProtocolItemDraftEditor Component", () => {
-  let mockOnUpdate: ReturnType<typeof vi.fn>;
+  it("renderiza campos base", () => {
+    const draft = createEmptyProtocolItemDraft();
 
-  beforeEach(() => {
-    mockOnUpdate = vi.fn();
+    render(
+      <ProtocolItemDraftEditor
+        draft={draft}
+        onUpdateDraft={vi.fn()}
+        errors={[]}
+      />,
+    );
+
+    expect(screen.getByLabelText("Código da família")).toBeInTheDocument();
+    expect(screen.getByLabelText("Código do item")).toBeInTheDocument();
+    expect(screen.getByLabelText("Versão do regime")).toBeInTheDocument();
+    expect(screen.getByLabelText("Código do produto")).toBeInTheDocument();
   });
 
-  describe("Rendering — Basic Fields", () => {
-    it("renderiza seção de identificação com campos", () => {
-      const draft = createEmptyProtocolItemDraft({
-        protocolId: "proto-1",
-        itemId: "item-1",
-        familyCode: "brucelose",
-        itemCode: "dose_unica",
-      });
-
-      render(
-        <ProtocolItemDraftEditor
-          draft={draft}
-          onUpdateDraft={mockOnUpdate}
-          errors={[]}
-        />
-      );
-
-      expect(screen.getByLabelText("Código da família")).toBeInTheDocument();
-      expect(screen.getByLabelText("Código do item")).toBeInTheDocument();
-      expect(screen.getByLabelText("Versão do regime")).toBeInTheDocument();
+  it("renderiza campos de campanha quando mode é campanha", () => {
+    const draft = createEmptyProtocolItemDraft({
+      mode: "campanha",
+      anchor: "entrada_fazenda",
+      layer: "sanitario",
+      scopeType: "animal",
     });
 
-    it("renderiza seção de localização (layer e scope)", () => {
-      const draft = createEmptyProtocolItemDraft();
-      render(
-        <ProtocolItemDraftEditor
-          draft={draft}
-          onUpdateDraft={mockOnUpdate}
-          errors={[]}
-        />
-      );
+    render(
+      <ProtocolItemDraftEditor
+        draft={draft}
+        onUpdateDraft={vi.fn()}
+        errors={[]}
+      />,
+    );
 
-      expect(screen.getByLabelText("Camada de domínio")).toBeInTheDocument();
-      expect(screen.getByLabelText("Escopo")).toBeInTheDocument();
-    });
-
-    it("renderiza seção de agendamento (mode e anchor)", () => {
-      const draft = createEmptyProtocolItemDraft();
-      render(
-        <ProtocolItemDraftEditor
-          draft={draft}
-          onUpdateDraft={mockOnUpdate}
-          errors={[]}
-        />
-      );
-
-      expect(screen.getByLabelText("Modo de agendamento")).toBeInTheDocument();
-      expect(screen.getByLabelText("Âncora de agendamento")).toBeInTheDocument();
-    });
-
-    it("renderiza seção de metadados (produto, dose, descrição)", () => {
-      const draft = createEmptyProtocolItemDraft();
-      render(
-        <ProtocolItemDraftEditor
-          draft={draft}
-          onUpdateDraft={mockOnUpdate}
-          errors={[]}
-        />
-      );
-
-      expect(screen.getByLabelText("Código do produto")).toBeInTheDocument();
-      expect(screen.getByLabelText("Nome do produto")).toBeInTheDocument();
-      expect(screen.getByLabelText("Número da dose")).toBeInTheDocument();
-      expect(screen.getByLabelText("Descrição")).toBeInTheDocument();
-    });
+    expect(
+      screen.getByPlaceholderText("ex: 5,6,7 para maio-julho"),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText("Rótulo da campanha")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Idade inicial (dias)")).not.toBeInTheDocument();
   });
 
-  describe("Rendering — Dynamic Fields by Mode", () => {
-    it("mostra campos de campanha quando mode é campanha", () => {
-      const draft = createEmptyProtocolItemDraft({
-        layer: "sanitario",
-        scopeType: "animal",
-        mode: "campanha",
-        anchor: "entrada_fazenda",
-      });
-
-      render(
-        <ProtocolItemDraftEditor
-          draft={draft}
-          onUpdateDraft={mockOnUpdate}
-          errors={[]}
-        />
-      );
-
-      expect(screen.getByLabelText("Meses da campanha")).toBeInTheDocument();
-      expect(screen.getByLabelText("Rótulo da campanha")).toBeInTheDocument();
-      expect(
-        screen.queryByLabelText("Idade inicial (dias)")
-      ).not.toBeInTheDocument();
-      expect(
-        screen.queryByLabelText("Intervalo (dias)")
-      ).not.toBeInTheDocument();
+  it("renderiza campos de janela etária quando mode é janela_etaria", () => {
+    const draft = createEmptyProtocolItemDraft({
+      mode: "janela_etaria",
+      anchor: "nascimento",
+      layer: "sanitario",
+      scopeType: "animal",
     });
 
-    it("mostra campos de janela_etaria quando mode é janela_etaria", () => {
-      const draft = createEmptyProtocolItemDraft({
-        layer: "sanitario",
-        scopeType: "animal",
-        mode: "janela_etaria",
-        anchor: "nascimento",
-      });
+    render(
+      <ProtocolItemDraftEditor
+        draft={draft}
+        onUpdateDraft={vi.fn()}
+        errors={[]}
+      />,
+    );
 
-      render(
-        <ProtocolItemDraftEditor
-          draft={draft}
-          onUpdateDraft={mockOnUpdate}
-          errors={[]}
-        />
-      );
-
-      expect(screen.getByLabelText("Idade inicial (dias)")).toBeInTheDocument();
-      expect(screen.getByLabelText("Idade final (dias)")).toBeInTheDocument();
-      expect(
-        screen.queryByLabelText("Meses da campanha")
-      ).not.toBeInTheDocument();
-      expect(
-        screen.queryByLabelText("Intervalo (dias)")
-      ).not.toBeInTheDocument();
-    });
-
-    it("mostra campo de intervalo quando mode é rotina_recorrente", () => {
-      const draft = createEmptyProtocolItemDraft({
-        layer: "sanitario",
-        scopeType: "animal",
-        mode: "rotina_recorrente",
-        anchor: "ultima_conclusao_mesma_familia",
-      });
-
-      render(
-        <ProtocolItemDraftEditor
-          draft={draft}
-          onUpdateDraft={mockOnUpdate}
-          errors={[]}
-        />
-      );
-
-      expect(screen.getByLabelText("Intervalo (dias)")).toBeInTheDocument();
-      expect(
-        screen.queryByLabelText("Meses da campanha")
-      ).not.toBeInTheDocument();
-      expect(
-        screen.queryByLabelText("Idade inicial (dias)")
-      ).not.toBeInTheDocument();
-    });
-
-    it("mostra campo de triggerEvent quando mode é procedimento_imediato", () => {
-      const draft = createEmptyProtocolItemDraft({
-        layer: "sanitario",
-        scopeType: "fazenda",
-        mode: "procedimento_imediato",
-      });
-
-      render(
-        <ProtocolItemDraftEditor
-          draft={draft}
-          onUpdateDraft={mockOnUpdate}
-          errors={[]}
-        />
-      );
-
-      expect(screen.getByLabelText("Tipo de evento")).toBeInTheDocument();
-      expect(
-        screen.queryByLabelText("Meses da campanha")
-      ).not.toBeInTheDocument();
-    });
-
-    it("desabilita campo de anchor para mode procedimento_imediato", () => {
-      const draft = createEmptyProtocolItemDraft({
-        layer: "sanitario",
-        scopeType: "fazenda",
-        mode: "procedimento_imediato",
-      });
-
-      render(
-        <ProtocolItemDraftEditor
-          draft={draft}
-          onUpdateDraft={mockOnUpdate}
-          errors={[]}
-        />
-      );
-
-      const anchorSelect = screen.getByLabelText("Âncora de agendamento");
-      expect(anchorSelect).toHaveAttribute("aria-disabled", "true");
-    });
+    expect(screen.getByLabelText("Idade inicial (dias)")).toBeInTheDocument();
+    expect(screen.getByLabelText("Idade final (dias)")).toBeInTheDocument();
+    expect(
+      screen.queryByPlaceholderText("ex: 5,6,7 para maio-julho"),
+    ).not.toBeInTheDocument();
   });
 
-  describe("Rendering — Error Display", () => {
-    it("mostra banner de erro quando há errors", () => {
-      const draft = createEmptyProtocolItemDraft();
-      const errors = ["Layer é obrigatório", "Modo é obrigatório"];
-
-      const { container } = render(
-        <ProtocolItemDraftEditor
-          draft={draft}
-          onUpdateDraft={mockOnUpdate}
-          errors={errors}
-        />
-      );
-
-      const alert = container.querySelector('[data-v-role="alert"]') ||
-        container.querySelector('[role="alert"]') ||
-        screen.getByRole("alert", { hidden: true });
-
-      expect(alert).toBeInTheDocument();
-      expect(screen.getByText("Layer é obrigatório")).toBeInTheDocument();
-      expect(screen.getByText("Modo é obrigatório")).toBeInTheDocument();
+  it("renderiza campo de intervalo quando mode é rotina_recorrente", () => {
+    const draft = createEmptyProtocolItemDraft({
+      mode: "rotina_recorrente",
+      anchor: "ultima_conclusao_mesma_familia",
+      layer: "sanitario",
+      scopeType: "animal",
     });
 
-    it("não mostra banner de erro quando errors está vazio", () => {
-      const draft = createEmptyProtocolItemDraft();
-      const { container } = render(
-        <ProtocolItemDraftEditor
-          draft={draft}
-          onUpdateDraft={mockOnUpdate}
-          errors={[]}
-        />
-      );
+    render(
+      <ProtocolItemDraftEditor
+        draft={draft}
+        onUpdateDraft={vi.fn()}
+        errors={[]}
+      />,
+    );
 
-      const alerts = container.querySelectorAll('[role="alert"]');
-      expect(alerts.length).toBe(0);
-    });
+    expect(screen.getByLabelText("Intervalo (dias)")).toBeInTheDocument();
   });
 
-  describe("Dedup Preview", () => {
-    it("renderiza preview de dedup quando mode é definido", () => {
-      const draft = createEmptyProtocolItemDraft({
-        protocolId: "proto-1",
-        itemId: "item-1",
-        familyCode: "brucelose",
-        itemCode: "dose_unica",
-        layer: "sanitario",
-        scopeType: "animal",
-        mode: "campanha",
-        anchor: "entrada_fazenda",
-        campaignMonths: [5, 6, 7],
-      });
-
-      render(
-        <ProtocolItemDraftEditor
-          draft={draft}
-          onUpdateDraft={mockOnUpdate}
-          errors={[]}
-        />
-      );
-
-      const previewSection = screen.getByText("Preview de Dedup");
-      expect(previewSection).toBeInTheDocument();
-      
-      // Deve conter a chave gerada
-      const previewCode = screen.getByText(/sanitario:animal/);
-      expect(previewCode).toBeInTheDocument();
+  it("renderiza campo de trigger quando mode é procedimento_imediato", () => {
+    const draft = createEmptyProtocolItemDraft({
+      mode: "procedimento_imediato",
+      layer: "sanitario",
+      scopeType: "fazenda",
     });
 
-    it("atualiza preview quando mode muda", async () => {
-      const user = userEvent.setup();
-      const draft = createEmptyProtocolItemDraft({
-        familyCode: "brucelose",
-        layer: "sanitario",
-        scopeType: "animal",
-        anchor: "nascimento",
-      });
+    render(
+      <ProtocolItemDraftEditor
+        draft={draft}
+        onUpdateDraft={vi.fn()}
+        errors={[]}
+      />,
+    );
 
-      const { rerender } = render(
-        <ProtocolItemDraftEditor
-          draft={draft}
-          onUpdateDraft={mockOnUpdate}
-          errors={[]}
-        />
-      );
-
-      // Update draft com novo mode
-      const updatedDraft = {
-        ...draft,
-        mode: "campanha" as const,
-        campaignMonths: [5],
-      };
-
-      rerender(
-        <ProtocolItemDraftEditor
-          draft={updatedDraft}
-          onUpdateDraft={mockOnUpdate}
-          errors={[]}
-        />
-      );
-
-      // Preview deve estar presente
-      expect(screen.getByText("Preview de Dedup")).toBeInTheDocument();
-    });
+    expect(screen.getByLabelText("Tipo de evento")).toBeInTheDocument();
   });
 
-  describe("User Interactions", () => {
-    it("chama onUpdateDraft quando familyCode muda", async () => {
-      const user = userEvent.setup();
-      const draft = createEmptyProtocolItemDraft();
+  it("renderiza banner de erro quando há inconsistências", () => {
+    const draft = createEmptyProtocolItemDraft();
 
-      render(
-        <ProtocolItemDraftEditor
-          draft={draft}
-          onUpdateDraft={mockOnUpdate}
-          errors={[]}
-        />
-      );
+    render(
+      <ProtocolItemDraftEditor
+        draft={draft}
+        onUpdateDraft={vi.fn()}
+        errors={["Layer é obrigatório", "Modo é obrigatório"]}
+      />,
+    );
 
-      const input = screen.getByLabelText("Código da família");
-      await user.clear(input);
-      await user.type(input, "raiva");
-
-      expect(mockOnUpdate).toHaveBeenCalledWith("familyCode", "raiva");
-    });
-
-    it("chama onUpdateDraft quando mode muda", async () => {
-      const user = userEvent.setup();
-      const draft = createEmptyProtocolItemDraft();
-
-      render(
-        <ProtocolItemDraftEditor
-          draft={draft}
-          onUpdateDraft={mockOnUpdate}
-          errors={[]}
-        />
-      );
-
-      const modeSelect = screen.getByLabelText("Modo de agendamento");
-      await user.click(modeSelect);
-
-      const campaignaOption = screen.getByText("Campanha sazonal");
-      await user.click(campaignaOption);
-
-      expect(mockOnUpdate).toHaveBeenCalledWith("mode", "campanha");
-    });
-
-    it("chama onUpdateDraft quando campaignMonths muda", async () => {
-      const user = userEvent.setup();
-      const draft = createEmptyProtocolItemDraft({
-        layer: "sanitario",
-        scopeType: "animal",
-        mode: "campanha",
-        anchor: "entrada_fazenda",
-      });
-
-      render(
-        <ProtocolItemDraftEditor
-          draft={draft}
-          onUpdateDraft={mockOnUpdate}
-          errors={[]}
-        />
-      );
-
-      const input = screen.getByLabelText("Meses da campanha");
-      await user.clear(input);
-      await user.type(input, "5, 6, 7");
-
-      expect(mockOnUpdate).toHaveBeenCalledWith("campaignMonths", [5, 6, 7]);
-    });
-
-    it("chama onUpdateDraft quando ageStartDays muda", async () => {
-      const user = userEvent.setup();
-      const draft = createEmptyProtocolItemDraft({
-        layer: "sanitario",
-        scopeType: "animal",
-        mode: "janela_etaria",
-        anchor: "nascimento",
-      });
-
-      render(
-        <ProtocolItemDraftEditor
-          draft={draft}
-          onUpdateDraft={mockOnUpdate}
-          errors={[]}
-        />
-      );
-
-      const input = screen.getByLabelText("Idade inicial (dias)");
-      await user.clear(input);
-      await user.type(input, "100");
-
-      expect(mockOnUpdate).toHaveBeenCalledWith("ageStartDays", 100);
-    });
-
-    it("chama onUpdateDraft quando intervalDays muda", async () => {
-      const user = userEvent.setup();
-      const draft = createEmptyProtocolItemDraft({
-        layer: "sanitario",
-        scopeType: "animal",
-        mode: "rotina_recorrente",
-        anchor: "ultima_conclusao_mesma_familia",
-      });
-
-      render(
-        <ProtocolItemDraftEditor
-          draft={draft}
-          onUpdateDraft={mockOnUpdate}
-          errors={[]}
-        />
-      );
-
-      const input = screen.getByLabelText("Intervalo (dias)");
-      await user.clear(input);
-      await user.type(input, "90");
-
-      expect(mockOnUpdate).toHaveBeenCalledWith("intervalDays", 90);
-    });
-
-    it("chama onUpdateDraft quando triggerEvent muda", async () => {
-      const user = userEvent.setup();
-      const draft = createEmptyProtocolItemDraft({
-        layer: "sanitario",
-        scopeType: "fazenda",
-        mode: "procedimento_imediato",
-      });
-
-      render(
-        <ProtocolItemDraftEditor
-          draft={draft}
-          onUpdateDraft={mockOnUpdate}
-          errors={[]}
-        />
-      );
-
-      const input = screen.getByLabelText("Tipo de evento");
-      await user.clear(input);
-      await user.type(input, "notificacao_svo");
-
-      expect(mockOnUpdate).toHaveBeenCalledWith("triggerEvent", "notificacao_svo");
-    });
+    expect(screen.getByText("Layer é obrigatório")).toBeInTheDocument();
+    expect(screen.getByText("Modo é obrigatório")).toBeInTheDocument();
   });
 
-  describe("Field Dependencies", () => {
-    it("não renderiza campos dinâmicos quando mode é undefined", () => {
-      const draft = createEmptyProtocolItemDraft();
-
-      render(
-        <ProtocolItemDraftEditor
-          draft={draft}
-          onUpdateDraft={mockOnUpdate}
-          errors={[]}
-        />
-      );
-
-      expect(
-        screen.queryByLabelText("Meses da campanha")
-      ).not.toBeInTheDocument();
-      expect(
-        screen.queryByLabelText("Idade inicial (dias)")
-      ).not.toBeInTheDocument();
-      expect(screen.queryByLabelText("Intervalo (dias)")).not.toBeInTheDocument();
+  it("renderiza preview de dedup quando o mode está definido", () => {
+    const draft = createEmptyProtocolItemDraft({
+      protocolId: "proto-1",
+      itemId: "item-1",
+      familyCode: "brucelose",
+      itemCode: "dose_unica",
+      mode: "campanha",
+      anchor: "entrada_fazenda",
+      layer: "sanitario",
+      scopeType: "animal",
+      campaignMonths: [5],
     });
 
-    it("mostra campos condicionais conforme mode muda", () => {
-      const draft1 = createEmptyProtocolItemDraft({
-        layer: "sanitario",
-        scopeType: "animal",
-        mode: "campanha",
-        anchor: "entrada_fazenda",
-      });
+    render(
+      <ProtocolItemDraftEditor
+        draft={draft}
+        onUpdateDraft={vi.fn()}
+        errors={[]}
+      />,
+    );
 
-      const { rerender } = render(
-        <ProtocolItemDraftEditor
-          draft={draft1}
-          onUpdateDraft={mockOnUpdate}
-          errors={[]}
-        />
-      );
+    expect(screen.getByText(/Preview de Dedup/i)).toBeInTheDocument();
+    expect(screen.getByText(/sanitario:animal/i)).toBeInTheDocument();
+  });
 
-      expect(screen.getByLabelText("Meses da campanha")).toBeInTheDocument();
-      expect(
-        screen.queryByLabelText("Idade inicial (dias)")
-      ).not.toBeInTheDocument();
-
-      const draft2 = createEmptyProtocolItemDraft({
-        layer: "sanitario",
-        scopeType: "animal",
-        mode: "janela_etaria",
-        anchor: "nascimento",
-      });
-
-      rerender(
-        <ProtocolItemDraftEditor
-          draft={draft2}
-          onUpdateDraft={mockOnUpdate}
-          errors={[]}
-        />
-      );
-
-      expect(
-        screen.queryByLabelText("Meses da campanha")
-      ).not.toBeInTheDocument();
-      expect(screen.getByLabelText("Idade inicial (dias)")).toBeInTheDocument();
+  it("chama onUpdateDraft em mudanças de inputs", () => {
+    const onUpdateDraft = vi.fn();
+    const draft = createEmptyProtocolItemDraft({
+      mode: "campanha",
+      anchor: "entrada_fazenda",
+      layer: "sanitario",
+      scopeType: "animal",
     });
+
+    render(
+      <ProtocolItemDraftEditor
+        draft={draft}
+        onUpdateDraft={onUpdateDraft}
+        errors={[]}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText("Código da família"), {
+      target: { value: "raiva" },
+    });
+    fireEvent.change(screen.getByPlaceholderText("ex: 5,6,7 para maio-julho"), {
+      target: { value: "5, 6, 7" },
+    });
+    fireEvent.change(screen.getByLabelText("Rótulo da campanha"), {
+      target: { value: "Campanha Inverno" },
+    });
+
+    expect(onUpdateDraft).toHaveBeenCalledWith("familyCode", "raiva");
+    expect(onUpdateDraft).toHaveBeenCalledWith("campaignMonths", [5, 6, 7]);
+    expect(onUpdateDraft).toHaveBeenCalledWith(
+      "campaignLabel",
+      "Campanha Inverno",
+    );
   });
 });

@@ -27,8 +27,8 @@ describe("resolveSanitaryAgendaItemScheduleMeta", () => {
         {
           intervalo_dias: 180,
           payload: buildSanitaryBaseCalendarPayload({
-            mode: "age_window",
-            anchor: "birth",
+            mode: "janela_etaria",
+            anchor: "nascimento",
             label: "Aplicar entre 3 e 8 meses",
             ageStartDays: 90,
             ageEndDays: 240,
@@ -37,9 +37,9 @@ describe("resolveSanitaryAgendaItemScheduleMeta", () => {
       ),
     ).toEqual({
       label: "Aplicar entre 3 e 8 meses",
-      mode: "age_window",
+      mode: "janela_etaria",
       modeLabel: "Janela etaria",
-      anchor: "birth",
+      anchor: "nascimento",
       anchorLabel: "Nascimento",
     });
   });

@@ -2,7 +2,7 @@
 
 > **Status:** Derivado (Rev D+)
 > **Baseline:** `b69d35f`
-> **Ultima Atualizacao:** 2026-04-12
+> **Ultima Atualizacao:** 2026-04-18
 > **Derivado por:** Auditoria tecnica - codigo + migrations como fonte de verdade
 > **Fonte:** `IMPLEMENTATION_STATUS.md`, `src/`, `supabase/`
 
@@ -46,12 +46,12 @@
 ### TD-006: UI de nutricao
 
 - **Status:** CLOSED
-- **Fechado por:** `src/pages/Registrar.tsx` - formulario inline nutricao
+- **Fechado por:** `src/pages/Registrar/index.tsx` - formulario inline nutricao
 
 ### TD-008: Anti-teleporte no frontend
 
 - **Status:** CLOSED
-- **Fechado por:** `src/pages/Registrar.tsx:387-396` - useEffect reseta `toLoteId` ao colidir com origem
+- **Fechado por:** `src/pages/Registrar/index.tsx` - useEffect reseta `toLoteId` ao colidir com origem
 
 ### TD-011: Produtos sanitarios em texto livre
 
@@ -61,7 +61,7 @@
 ### TD-014: Validacao de peso no frontend
 
 - **Status:** CLOSED
-- **Fechado por:** `src/pages/Registrar.tsx` - validacao peso > 0
+- **Fechado por:** `src/pages/Registrar/index.tsx` - validacao peso > 0
 
 ### TD-015: GMD e historico agregados no cliente
 
@@ -84,7 +84,7 @@
 ### TD-022: `produtos_veterinarios` integrado ao fluxo sanitario
 
 - **Status:** CLOSED
-- **Fechado por:** `src/lib/sanitario/products.ts`, `src/pages/Registrar.tsx`, `src/pages/ProtocolosSanitarios.tsx`, `src/pages/Agenda.tsx`, `src/lib/offline/db.ts`
+- **Fechado por:** `src/lib/sanitario/products.ts`, `src/pages/Registrar/index.tsx`, `src/pages/ProtocolosSanitarios/index.tsx`, `src/pages/Agenda/index.tsx`, `src/lib/offline/db.ts`
 - **Detalhe:** o catalogo agora fica em cache local, gera sugestoes no `Registrar` e propaga referencia estruturada para protocolos e eventos sanitarios
 
 ### TD-023: Pos-parto e Cria Inicial sem cobertura E2E no pacote `test:e2e`
@@ -96,7 +96,7 @@
 ### TD-024: Overlay regulatorio oficial virou malha operacional compartilhada
 
 - **Status:** CLOSED
-- **Fechado por:** `src/lib/sanitario/regulatoryReadModel.ts`, `src/pages/Registrar.tsx`, `src/pages/Agenda.tsx`, `src/pages/Home.tsx`, `src/pages/Dashboard.tsx`, `src/pages/Financeiro.tsx`, `src/pages/Eventos.tsx`, `src/pages/LoteDetalhe.tsx`, `src/components/sanitario/RegulatoryOverlayManager.tsx`
+- **Fechado por:** `src/lib/sanitario/regulatoryReadModel.ts`, `src/pages/Registrar/index.tsx`, `src/pages/Agenda/index.tsx`, `src/pages/Home.tsx`, `src/pages/Dashboard.tsx`, `src/pages/Financeiro.tsx`, `src/pages/Eventos.tsx`, `src/pages/LoteDetalhe.tsx`, `src/components/sanitario/RegulatoryOverlayManager.tsx`
 - **Detalhe:** o overlay oficial agora cobre runtime guiado, bloqueios contextuais, leitura compartilhada nas principais superficies e recortes analiticos com CTA direto para o overlay filtrado
 
 ---

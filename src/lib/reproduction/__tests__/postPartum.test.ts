@@ -49,7 +49,7 @@ describe("buildPostPartumOps", () => {
           calfId: "cria-2",
           identificacao: "BZ-002",
           nome: "",
-          loteId: null,
+          loteId: "lote-matriz",
           pesoKg: "",
           curaUmbigo: false,
         },
@@ -61,9 +61,12 @@ describe("buildPostPartumOps", () => {
     expect(result.weighedCount).toBe(1);
     expect(result.umbigoCount).toBe(1);
     expect(result.agendaCount).toBe(9);
-    expect(result.ops).toHaveLength(15);
+    expect(result.ops).toHaveLength(17);
 
-    expect(result.ops[0]).toMatchObject({
+    const firstAnimalUpdate = result.ops.find(
+      (op) => op.table === "animais" && op.action === "UPDATE" && op.record.id === "cria-1",
+    );
+    expect(firstAnimalUpdate).toMatchObject({
       table: "animais",
       action: "UPDATE",
       record: {
@@ -73,7 +76,7 @@ describe("buildPostPartumOps", () => {
         lote_id: "bezerreiro",
       },
     });
-    expect(result.ops[0]?.record.payload.neonatal_setup).toMatchObject({
+    expect(firstAnimalUpdate?.record.payload.neonatal_setup).toMatchObject({
       completed_at: "2026-04-01T12:00:00.000Z",
       birth_event_id: "evento-1",
       mother_id: "matriz-1",
@@ -83,38 +86,42 @@ describe("buildPostPartumOps", () => {
       umbigo_curado_at: "2026-04-01T12:00:00.000Z",
     });
 
-    expect(result.ops[1]).toMatchObject({
-      table: "eventos",
-      action: "INSERT",
-      record: {
-        dominio: "pesagem",
-        animal_id: "cria-1",
-        lote_id: "bezerreiro",
-      },
-    });
-    expect(result.ops[2]).toMatchObject({
-      table: "eventos_pesagem",
-      action: "INSERT",
-      record: {
-        peso_kg: 32.5,
-      },
-    });
-    expect(result.ops[3]).toMatchObject({
-      table: "eventos",
-      action: "INSERT",
-      record: {
-        dominio: "sanitario",
-        animal_id: "cria-1",
-      },
-    });
-    expect(result.ops[4]).toMatchObject({
-      table: "eventos_sanitario",
-      action: "INSERT",
-      record: {
-        produto: "Cura de umbigo",
-        tipo: "medicamento",
-      },
-    });
+    expect(
+      result.ops.some(
+        (op) =>
+          op.table === "eventos" &&
+          op.action === "INSERT" &&
+          op.record.dominio === "pesagem" &&
+          op.record.animal_id === "cria-1" &&
+          op.record.lote_id === "bezerreiro",
+      ),
+    ).toBe(true);
+    expect(
+      result.ops.some(
+        (op) =>
+          op.table === "eventos_pesagem" &&
+          op.action === "INSERT" &&
+          op.record.peso_kg === 32.5,
+      ),
+    ).toBe(true);
+    expect(
+      result.ops.some(
+        (op) =>
+          op.table === "eventos" &&
+          op.action === "INSERT" &&
+          op.record.dominio === "sanitario" &&
+          op.record.animal_id === "cria-1",
+      ),
+    ).toBe(true);
+    expect(
+      result.ops.some(
+        (op) =>
+          op.table === "eventos_sanitario" &&
+          op.action === "INSERT" &&
+          op.record.produto === "Cura de umbigo" &&
+          op.record.tipo === "medicamento",
+      ),
+    ).toBe(true);
 
     const secondAnimalUpdate = result.ops.findLast(
       (op) => op.table === "animais" && op.record.id === "cria-2",
@@ -127,7 +134,6 @@ describe("buildPostPartumOps", () => {
         id: "cria-2",
         identificacao: "BZ-002",
         nome: null,
-        lote_id: null,
       },
     });
     expect(secondAnimalUpdate?.record.payload.neonatal_setup).toMatchObject({

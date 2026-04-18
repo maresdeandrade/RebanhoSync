@@ -62,17 +62,20 @@ A intenção não é redesenhar o sistema do zero, e sim tornar explícito, por 
 
 ## Hotspots prioritários
 
-A frente inicial de refatoração está concentrada em:
+A frente atual de hardening está concentrada em:
 
-- `src/pages/Registrar.tsx`
 - `src/lib/offline/syncWorker.ts`
+- `src/pages/Agenda/**`
+- `src/pages/ProtocolosSanitarios/**`
 
-A ordem inicial é:
-1. atualizar docs-base
-2. registrar baseline/comportamento preservado
-3. refatorar piloto do `Registrar`
-4. refatorar piloto do `syncWorker`
-5. adicionar guardrails de processo
+Hotspot já fechado nesta frente:
+- `src/pages/Registrar/**` (folderizado e com contexto local)
+
+A ordem atual é:
+1. concluir hardening do `syncWorker` com diff local e validável
+2. reduzir acoplamentos remanescentes em `Agenda` sem mudança funcional
+3. reduzir acoplamentos remanescentes em `ProtocolosSanitarios` sem mudança funcional
+4. manter guardrails documentais locais e validação mínima contínua
 
 ---
 

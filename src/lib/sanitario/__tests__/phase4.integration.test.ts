@@ -79,7 +79,7 @@ describe("Scheduler Integration & Feature Flag", () => {
       expect(compatible).toBe(false);
     });
 
-    it("identifica item como incompatível com payload inválido", () => {
+    it("mantem compatibilidade para payload legado minimo", () => {
       const item: ProtocoloSanitarioItem = {
         id: "item-1",
         protocol_id: "proto-1",
@@ -88,7 +88,7 @@ describe("Scheduler Integration & Feature Flag", () => {
       } as Partial<ProtocoloSanitarioItem>;
 
       const compatible = isProtocolItemCompatibleWithNewScheduler(item);
-      expect(compatible).toBe(false);
+      expect(compatible).toBe(true);
     });
   });
 

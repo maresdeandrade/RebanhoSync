@@ -501,7 +501,7 @@ export const FIXTURE_STATS = {
   byMode: {
     janela_etaria: 2,
     rotina_recorrente: 3,
-    campanha: 1,
+    campanha: 2,
     procedimento_imediato: 1,
   },
   coverage: {

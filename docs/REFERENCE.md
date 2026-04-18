@@ -1,7 +1,7 @@
 # Referência Rápida (RebanhoSync)
 
 > **Status:** Derivado (Inventário)
-> **Última Atualização:** 2026-04-16
+> **Última Atualização:** 2026-04-18
 
 Este documento consolida referências rápidas para navegação do repositório, stack, rotas, diretórios e comandos úteis.
 
@@ -159,14 +159,16 @@ Arquivos centrais:
 - `src/lib/animals/taxonomyFactsContract.ts`
 
 ### Hotspots atuais de hardening
-- `src/pages/Registrar.tsx`
+- `src/pages/Registrar/index.tsx`
+- `src/pages/Agenda/index.tsx`
+- `src/pages/ProtocolosSanitarios/index.tsx`
 - `src/lib/offline/syncWorker.ts`
 
 ---
 
 ## 6. Fluxos operacionais que merecem atenção
 
-- registro operacional em `Registrar`
+- registro operacional em `src/pages/Registrar/**`
 - agenda sanitária e execução de pendências
 - movimentação com anti-teleporte
 - trânsito externo com GTA/e-GTA e pre-check PNCEBT

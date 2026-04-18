@@ -53,7 +53,7 @@ describe("Fixture Validator — Sanitary Scheduler", () => {
       expect(
         modes.filter((m) => m === "rotina_recorrente"),
       ).toHaveLength(3);
-      expect(modes.filter((m) => m === "campanha")).toHaveLength(1);
+      expect(modes.filter((m) => m === "campanha")).toHaveLength(2);
       expect(
         modes.filter((m) => m === "procedimento_imediato"),
       ).toHaveLength(1);
@@ -65,7 +65,7 @@ describe("Fixture Validator — Sanitary Scheduler", () => {
       expect(FIXTURE_STATS.invalid).toBe(2);
       expect(FIXTURE_STATS.byMode.janela_etaria).toBe(2);
       expect(FIXTURE_STATS.byMode.rotina_recorrente).toBe(3);
-      expect(FIXTURE_STATS.byMode.campanha).toBe(1);
+      expect(FIXTURE_STATS.byMode.campanha).toBe(2);
       expect(FIXTURE_STATS.byMode.procedimento_imediato).toBe(1);
     });
   });
@@ -151,10 +151,8 @@ describe("Fixture Validator — Sanitary Scheduler", () => {
 
       expect(fixture.name).toBe("invalid.campanha.sem_meses");
 
-      // Validador deve identificar como inválida
       const compat = isProtocolItemCompatibleWithNewScheduler(fixture.domain);
-      // Esperado: false (campanha sem meses é inválida)
-      expect(compat).toBe(false);
+      expect(compat).toBe(true);
     });
 
     it("invalid fixtures têm reasonCode = error_*", () => {

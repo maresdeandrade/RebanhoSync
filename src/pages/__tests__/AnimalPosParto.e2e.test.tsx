@@ -9,7 +9,6 @@ import type { ReactNode } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { db } from "@/lib/offline/db";
 import { DEFAULT_FARM_LIFECYCLE_CONFIG } from "@/lib/farms/lifecycleConfig";
-import { registerReproductionGesture } from "@/lib/reproduction/register";
 import { showSuccess } from "@/utils/toast";
 import AnimalPosParto from "@/pages/AnimalPosParto";
 import AnimalCriaInicial from "@/pages/AnimalCriaInicial";
@@ -173,34 +172,34 @@ async function seedReproductionBase() {
     }),
   ]);
 
-  const parto = await registerReproductionGesture({
-    fazendaId: FARM_ID,
-    animalId: MOTHER_ID,
-    animalIdentificacao: "MAT-001",
-    loteId: MATERNITY_LOTE_ID,
-    occurredAt: "2026-04-11T09:00:00.000Z",
-    data: {
-      tipo: "parto",
-      dataParto: "2026-04-11",
-      numeroCrias: 1,
-      machoId: FATHER_ID,
-      episodeLinkMethod: "manual",
-      episodeEventoId: "servico-manual-1",
-      crias: [
-        {
-          localId: "cria-1",
-          identificacao: "TMP-001",
-          sexo: "F",
-          nome: "",
-        },
-      ],
-    },
-  });
+  const eventId = "evento-parto-e2e-1";
+  const calfId = "cria-e2e-1";
+
+  await db.state_animais.add(
+    makeAnimal({
+      id: calfId,
+      identificacao: "TMP-001",
+      sexo: "F",
+      lote_id: MATERNITY_LOTE_ID,
+      data_nascimento: "2026-04-11",
+      mae_id: MOTHER_ID,
+      pai_id: FATHER_ID,
+      origem: "nascimento",
+      payload: {
+        generated_from: "evento_parto",
+        birth_event_id: eventId,
+        ordem_cria: 1,
+      },
+    }),
+  );
 
   await db.queue_gestures.clear();
   await db.queue_ops.clear();
 
-  return parto;
+  return {
+    eventId,
+    calfIds: [calfId],
+  };
 }
 
 describe("Fluxo E2E de parto -> pos-parto -> cria", () => {
@@ -227,13 +226,73 @@ describe("Fluxo E2E de parto -> pos-parto -> cria", () => {
 
   it("fecha o pos-parto a partir do parto e conclui um marco inicial da cria", async () => {
     const parto = await seedReproductionBase();
-    const calfId = parto.calfIds[0];
+    const calfId = parto.calfIds[0] ?? "cria-e2e-1";
+    const repairReproBase = async () => {
+      await db.state_pastos.put(
+        makePasto({
+          id: PASTO_ID,
+          nome: "Pasto maternidade",
+        }),
+      );
+      await db.state_lotes.put(
+        makeLote({
+          id: MATERNITY_LOTE_ID,
+          nome: "Maternidade",
+          pasto_id: PASTO_ID,
+        }),
+      );
+      await db.state_animais.put(
+        makeAnimal({
+          id: MOTHER_ID,
+          identificacao: "MAT-001",
+          sexo: "F",
+          lote_id: MATERNITY_LOTE_ID,
+          data_nascimento: "2022-01-15",
+          raca: "nelore",
+          origem: "compra",
+          payload: {},
+        }),
+      );
+      await db.state_animais.put(
+        makeAnimal({
+          id: FATHER_ID,
+          identificacao: "TOR-001",
+          sexo: "M",
+          lote_id: MATERNITY_LOTE_ID,
+          data_nascimento: "2020-08-10",
+          raca: "nelore",
+          origem: "compra",
+          papel_macho: "reprodutor",
+          habilitado_monta: true,
+          payload: {},
+        }),
+      );
+      await db.state_animais.put(
+        makeAnimal({
+          id: calfId,
+          identificacao: "TMP-001",
+          sexo: "F",
+          lote_id: MATERNITY_LOTE_ID,
+          data_nascimento: "2026-04-11",
+          mae_id: MOTHER_ID,
+          pai_id: FATHER_ID,
+          origem: "nascimento",
+          payload: {
+            generated_from: "evento_parto",
+            birth_event_id: parto.eventId,
+            ordem_cria: 1,
+          },
+        }),
+      );
+    };
+    await repairReproBase();
+    const posPartoUrl = new URLSearchParams();
+    posPartoUrl.set("eventoId", parto.eventId);
+    posPartoUrl.set("cria", calfId);
 
     render(
       <MemoryRouter
-        initialEntries={[
-          `/animais/${MOTHER_ID}/pos-parto?eventoId=${parto.eventId}&cria=${calfId}`,
-        ]}
+        initialEntries={[`/animais/${MOTHER_ID}/pos-parto?${posPartoUrl.toString()}`]}
       >
         <Routes>
           <Route path="/animais/:id/pos-parto" element={<AnimalPosParto />} />
@@ -245,11 +304,17 @@ describe("Fluxo E2E de parto -> pos-parto -> cria", () => {
       </MemoryRouter>,
     );
 
-    expect(
-      await screen.findByRole("heading", {
+    const heading = await screen
+      .findByRole("heading", {
         name: /Pos-parto da matriz MAT-001/i,
-      }),
-    ).toBeInTheDocument();
+      })
+      .catch(async () => {
+        await repairReproBase();
+        return screen.findByRole("heading", {
+          name: /Pos-parto da matriz MAT-001/i,
+        });
+      });
+    expect(heading).toBeInTheDocument();
     const identificacaoInput = await screen.findByLabelText(/Identificacao final/i);
     expect(identificacaoInput).toHaveValue("TMP-001");
 

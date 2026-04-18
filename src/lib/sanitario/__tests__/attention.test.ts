@@ -227,23 +227,17 @@ describe("summarizeSanitaryAgendaAttention", () => {
       requiresVetCount: 1,
       scheduleModes: [
         {
-          key: "rolling_interval",
-          label: "Recorrente",
+          key: "rotina_recorrente",
+          label: "Rotina recorrente",
           count: 2,
         },
         {
           key: "clinical_protocol",
-          label: "Protocolo clinico",
+          label: "Uso imediato",
           count: 1,
         },
       ],
-      scheduleAnchors: [
-        {
-          key: "clinical_need",
-          label: "Necessidade clinica",
-          count: 1,
-        },
-      ],
+      scheduleAnchors: [],
     });
     expect(summary.topItems).toHaveLength(2);
     expect(summary.topItems[0]).toMatchObject({
@@ -252,7 +246,7 @@ describe("summarizeSanitaryAgendaAttention", () => {
       priorityTone: "danger",
       contexto: "BR-001",
       produto: "Vacina Aftosa",
-      scheduleModeLabel: "Recorrente",
+      scheduleModeLabel: "Rotina recorrente",
       scheduleAnchor: null,
     });
     expect(summary.topItems[1]).toMatchObject({
@@ -261,7 +255,7 @@ describe("summarizeSanitaryAgendaAttention", () => {
       priorityTone: "danger",
       contexto: "Matrizes",
       titulo: "Calendario oficial: Endectocida",
-      scheduleModeLabel: "Recorrente",
+      scheduleModeLabel: "Rotina recorrente",
       scheduleAnchor: null,
     });
   });

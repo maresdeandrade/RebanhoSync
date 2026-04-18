@@ -124,8 +124,8 @@ function createAgendaItem(overrides: Partial<AgendaItem> = {}): AgendaItem {
       produto: "Vacina Brucelose",
       calendario_base: {
         version: 1,
-        mode: "age_window",
-        anchor: "birth",
+        mode: "janela_etaria",
+        anchor: "nascimento",
         label: "Janela etaria oficial",
         age_start_days: 90,
         age_end_days: 240,
@@ -306,7 +306,7 @@ describe("Agenda page", () => {
     expect(screen.queryByText("Vermifugo Rotacao")).not.toBeInTheDocument();
   });
 
-  it("filters sanitary agenda by declarative calendar mode", async () => {
+  it("ignores non-persisted calendar mode values from storage and keeps default recorte", async () => {
     writeAgendaUiState(USER_ID, FARM_ID, {
       search: "",
       statusFilter: "all",
@@ -316,7 +316,7 @@ describe("Agenda page", () => {
       groupMode: "animal",
       quickTypeFilter: "all",
       quickScheduleFilter: "all",
-      quickCalendarModeFilter: "age_window",
+      quickCalendarModeFilter: "janela_etaria",
       quickCalendarAnchorFilter: "all",
       quickAnimalFilter: "all",
       expandedGroups: ["animal:animal-1"],
@@ -327,15 +327,15 @@ describe("Agenda page", () => {
     renderAgenda();
 
     await waitFor(() => {
-      expect(screen.getByText("Calendario: Janela etaria")).toBeInTheDocument();
+      expect(screen.getAllByText("2 item(ns) no recorte").length).toBeGreaterThan(0);
     });
 
-    expect(screen.getByText("Vacina Brucelose")).toBeInTheDocument();
-    expect(screen.queryByText("Vermifugo Rotacao")).not.toBeInTheDocument();
+    expect(screen.queryByText("Filtros ativos")).not.toBeInTheDocument();
+    expect(screen.queryByText("Calendario: Janela etaria")).not.toBeInTheDocument();
   });
 
   it("accepts calendarMode from query params and overrides the current recorte", async () => {
-    renderAgenda(["/agenda?calendarMode=age_window"]);
+    renderAgenda(["/agenda?calendarMode=janela_etaria"]);
 
     await waitFor(() => {
       expect(screen.getByText("Calendario: Janela etaria")).toBeInTheDocument();
@@ -348,7 +348,7 @@ describe("Agenda page", () => {
   });
 
   it("accepts calendarAnchor from query params and narrows the recorte", async () => {
-    renderAgenda(["/agenda?calendarAnchor=birth"]);
+    renderAgenda(["/agenda?calendarAnchor=nascimento"]);
 
     await waitFor(() => {
       expect(screen.getByText("Ancora: Nascimento")).toBeInTheDocument();

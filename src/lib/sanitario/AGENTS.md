@@ -3,7 +3,7 @@
 Escopo:
 - `src/lib/sanitario/**`
 - `src/components/sanitario/**` quando a tarefa tocar materialização ou overlay
-- `src/pages/Registrar.tsx`, `src/pages/Agenda.tsx`, `src/pages/ProtocolosSanitarios.tsx` só se necessário
+- `src/pages/Registrar/**`, `src/pages/Agenda/**`, `src/pages/ProtocolosSanitarios/**` só se necessário
 - não abrir outros domínios sem motivo explícito
 
 Leia primeiro:
@@ -51,7 +51,7 @@ Checagens mentais antes de alterar:
 5. Há impacto em offline cache do catálogo?
 
 Evitar:
-- duplicar lógica entre `Registrar.tsx`, `Agenda.tsx` e `Relatorios.tsx`
+- duplicar lógica entre `Registrar/**`, `Agenda/**` e `Relatorios.tsx`
 - salvar campo derivado que deveria ser projeção
 - criar texto livre quando já existe referência estruturada
 - puxar `IMPLEMENTATION_STATUS` / `ROADMAP` sem necessidade de estado

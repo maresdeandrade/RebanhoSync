@@ -50,7 +50,7 @@ describe("ReproductionForm", () => {
     expect(screen.getByText("Parto e crias")).toBeInTheDocument();
   });
 
-  it("shows service link controls for diagnostico", () => {
+  it("shows diagnostico result controls", () => {
     const onChange = vi.fn();
     const data: ReproductionEventData = {
       tipo: "diagnostico",
@@ -70,11 +70,11 @@ describe("ReproductionForm", () => {
       />,
     );
 
-    expect(screen.getByText("Servico relacionado")).toBeInTheDocument();
     expect(screen.getByText("Resultado do diagnostico")).toBeInTheDocument();
+    expect(screen.getByText("Data prevista do parto")).toBeInTheDocument();
   });
 
-  it("hides service link controls for cobertura", () => {
+  it("hides diagnostico result controls for cobertura", () => {
     const onChange = vi.fn();
     const data: ReproductionEventData = {
       tipo: "cobertura",
@@ -93,7 +93,7 @@ describe("ReproductionForm", () => {
       />,
     );
 
-    expect(screen.queryByText("Servico relacionado")).not.toBeInTheDocument();
+    expect(screen.queryByText("Resultado do diagnostico")).not.toBeInTheDocument();
     expect(screen.getByText("Servico e reprodutor")).toBeInTheDocument();
   });
 });
