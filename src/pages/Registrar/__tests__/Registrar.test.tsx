@@ -77,7 +77,10 @@ describe("Registrar Page - Anti-Teleport", () => {
       const querySource =
         typeof query === "function" ? query.toString() : "";
 
-      if (querySource.includes("loadRegulatorySurfaceSource")) {
+      if (
+        querySource.includes("loadRegulatorySurfaceSource") ||
+        querySource.includes("loadRegistrarRegulatorySurfaceSourceEffect")
+      ) {
         return {
           config: null,
           templates: [],
@@ -89,7 +92,10 @@ describe("Registrar Page - Anti-Teleport", () => {
         return null as ReturnType<typeof useLiveQuery>;
       }
 
-      if (querySource.includes("state_animais")) {
+      if (
+        querySource.includes("state_animais") ||
+        querySource.includes("loadRegistrarAnimaisNoLoteEffect")
+      ) {
         return [universalRecord] as ReturnType<typeof useLiveQuery>;
       }
 
