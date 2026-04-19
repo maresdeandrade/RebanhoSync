@@ -1,5 +1,11 @@
 # Agenda Hotspot
 
+## Status estrutural (2026-04-19)
+- Hardening estrutural principal concluido.
+- Shell deixou de concentrar controller de acoes, shell state, interaction state e blocos macro de composicao (overview/compliance/lifecycle).
+- `AgendaGroupedContent` foi fatiado em subcomponentes locais.
+- Residual atual: leitura/preparacao de dados no shell (sem acoplamento macro de composicao).
+
 ## Papel do modulo
 - Superficie operacional para leitura, priorizacao e conclusao de pendencias da agenda.
 - Orquestra filtros, agrupamentos, navegacao contextual e acoes rapidas de registro.
@@ -31,6 +37,6 @@
 - Duplicar calculos de prioridade/metadata que ja existem em `src/lib/agenda` ou `src/lib/sanitario`.
 
 ## Proximos recortes recomendados
-1. Extrair blocos visuais densos para `components/`.
-2. Isolar helpers puros de filtro/derivacao para `helpers/`.
-3. Reduzir tamanho da tela por secoes sem alterar contrato funcional.
+1. Extrair/normalizar montagem de dados residual do shell para artefatos locais dedicados.
+2. Manter semantica de dominio em `src/lib/**` e evitar duplicacao de regras de prioridade/elegibilidade.
+3. Refinar estados de experiencia (empty/loading/error/feedback) para consolidacao de fase SLC.

@@ -12,6 +12,24 @@
 
 > Itens identificados na auditoria de abril/2026 como proximos passos relevantes.
 
+### TD-026: Residual estrutural de shell em `Agenda`
+
+- **Status:** OPEN
+- **Origem:** Hardening estrutural principal de `src/pages/Agenda/**` concluido
+- **Impacto:** apesar da extracao de controller/shell state/interaction state e blocos macro de composicao, o shell ainda concentra leitura/preparacao de dados acima do ideal para a fase de consolidacao SLC.
+
+### TD-027: Residual de composicao no shell de `Registrar`
+
+- **Status:** OPEN
+- **Origem:** Hardening estrutural principal de `src/pages/Registrar/**` concluido
+- **Impacto:** o hotspot deixou de concentrar orquestracao densa, mas ainda possui volume alto de composicao/JSX no entrypoint, mantendo custo de manutencao.
+
+### TD-028: Estabilidade de regressao cross-flow fora de recortes locais
+
+- **Status:** OPEN
+- **Origem:** fase de consolidacao MVP -> SLC
+- **Impacto:** suites locais de hotspot estao verdes, mas ainda ha risco de regressao em mudancas transversais sem smoke critico consolidado.
+
 ### TD-025: Superficie de produto para Catch-Up e History Confidence
 
 - **Status:** OPEN
@@ -23,6 +41,12 @@
 - **Status:** CLOSED
 - **Fechado por:** `src/pages/Registrar/index.tsx`, `src/pages/Registrar/useRegistrarShellState.ts`, `src/pages/Registrar/useRegistrarActionSectionState.tsx`, `src/pages/Registrar/buildRegistrarActionSectionSlots.tsx`
 - **Detalhe:** o shell deixou de concentrar decisões operacionais densas e volume de estado bruto; wiring local de seleção/toggles/derives simples foi extraído para hook local explícito, mantendo fronteiras de domínio e sync intactas.
+
+### Hardening estrutural do hotspot `Agenda` (entrypoint shell) — FECHADO
+
+- **Status:** CLOSED
+- **Fechado por:** `src/pages/Agenda/index.tsx`, `src/pages/Agenda/createAgendaActionController.ts`, `src/pages/Agenda/useAgendaShellState.ts`, `src/pages/Agenda/useAgendaInteractionState.ts`, `src/pages/Agenda/components/*`
+- **Detalhe:** controller de acoes, estado de shell, estado de interacao e composicao macro de resumo/compliance/lifecycle sairam do shell; `AgendaGroupedContent` foi fatiado e o entrypoint ficou majoritariamente em papel de composicao/wiring.
 
 ## CLOSED (Historico Completo)
 
@@ -109,9 +133,9 @@
 
 ## Resumo
 
-- OPEN: `TD-025`
+- OPEN: `TD-025`, `TD-026`, `TD-027`, `TD-028`
 - CLOSED: `TD-001`, `TD-003`, `TD-004`, `TD-006`, `TD-008`, `TD-011`, `TD-014`, `TD-015`, `TD-019`, `TD-020`, `TD-021`, `TD-022`, `TD-023`, `TD-024`
-- Total OPEN: `1`
+- Total OPEN: `4`
 
 ## Veja Tambem
 

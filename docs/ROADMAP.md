@@ -13,14 +13,16 @@
 Todos os milestones do roadmap anterior (M0, M1, M2) foram concluidos via migrations de marco/2026. O capability score analitico permanece em 19/19 = 100%. O projeto segue em fase de **beta interno**.
 
 O roadmap atual cobre a consolidacao de observabilidade, cobertura E2E dos fluxos mais recentes, refinamentos de UX operacional da agenda e a reestruturacao da biblioteca sanitaria base.
+Com o hardening estrutural principal de `Registrar` e `Agenda` concluido, o repositorio entra em fase de consolidacao MVP -> SLC.
 
 Atualizacao estrutural 2026-04-18 (sem mudanca funcional):
 - `src/pages/Registrar/**`, `src/pages/Agenda/**` e `src/pages/ProtocolosSanitarios/**` operam com entrypoints folderizados (`index.tsx`) e contexto local (`README.md`/`AGENTS.md`).
 - Dispatch local de paginas consolidado em `src/pages/AGENTS.md`.
 
 Atualizacao estrutural 2026-04-19 (sem mudanca funcional de dominio):
-- Hardening final do hotspot `src/pages/Registrar/**` concluido em camadas locais de shell/composicao (`useRegistrarShellState`, `useRegistrarActionSectionState`, `buildRegistrarActionSectionSlots`), com reducao adicional do entrypoint para ~916 linhas.
-- O foco de hardening de hotspot de pagina deixa de estar em `Registrar` e permanece em `Agenda` e `ProtocolosSanitarios` para rodadas subsequentes.
+- Hardening final do hotspot `src/pages/Registrar/**` concluido em camadas locais de shell/composicao (`useRegistrarShellState`, `useRegistrarActionSectionState`, `buildRegistrarActionSectionSlots`), com reducao do entrypoint para ~916 linhas.
+- Hardening final do hotspot `src/pages/Agenda/**` concluido em camadas locais de controller/shell/interacao/composicao macro, com reducao do entrypoint para ~591 linhas.
+- O foco de hardening de hotspot de pagina deixa de ser quebra inicial de monolitos e passa a consolidacao residual + acabamento de experiencia para SLC.
 
 ---
 
@@ -218,6 +220,39 @@ Atualizacao estrutural 2026-04-19 (sem mudanca funcional de dominio):
 | N/A | `sanitario.calendario_base` | Domain | Milestone 7 |
 | N/A | `sanitario.catalogo_regulatorio` | Domain | Milestone 8 |
 | TD-025 | `sanitario.regime_sequencial` | UX | Milestone 9 |
+
+---
+
+## Milestone 10: Consolidacao MVP -> SLC (em execucao)
+
+**Objetivo:** consolidar previsibilidade de fluxo, reduzir friccao operacional e fechar residuos estruturais sem reabrir fronteiras de dominio.
+
+**Status:** Em execucao
+
+### Frente A — Estrutural residual
+
+- [ ] Reduzir residual de composicao/JSX no shell de `Registrar`
+- [ ] Extrair leitura/preparacao de dados residual do shell de `Agenda`
+- [ ] Limpar wiring local remanescente de hotspots sem alterar semantica
+
+### Frente B — UX/experiencia
+
+- [ ] Uniformizar feedbacks de sucesso/erro/loading nos fluxos centrais
+- [ ] Refinar empty/loading/error states para reduzir ambiguidade
+- [ ] Revisar consistencia visual entre `Agenda`, `Registrar` e `ProtocolosSanitarios`
+- [ ] Reduzir carga cognitiva de fluxo em campo (menos passos ambiguos)
+
+### Frente C — Produto operacional
+
+- [ ] Alinhar continuidade de fluxo entre agenda -> registrar -> historico/protocolos
+- [ ] Garantir completude percebida nas rotinas centrais do recorte-alvo
+- [ ] Revisar friccoes recorrentes de uso em beta interno e fechar lacunas priorizadas
+
+### Frente D — Confiabilidade
+
+- [ ] Estabilizar suites fora de recortes locais de hotspot
+- [ ] Definir smoke critico minimo por fluxo de producao
+- [ ] Fortalecer cobertura de regressao para caminhos de maior risco operacional
 
 ---
 

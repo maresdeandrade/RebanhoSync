@@ -10,12 +10,13 @@ Este documento registra o estado efetivo do RebanhoSync em abril de 2026, pós-f
 ## Resumo Executivo
 
 - **Estagio do produto:** Beta interno — MVP completo e operacional.
+- **Fase de engenharia/produto:** transicao de MVP funcional para SLC (Simple, Lovable, Complete) em consolidacao.
 - **Core operacional:** sanitário, pesagem, movimentação, nutrição, reprodução, financeiro e agenda estão implementados e usáveis.
 - **Camadas consolidadas:** onboarding guiado, importação CSV, relatórios operacionais, telemetria de piloto com flush remoto, modo de experiência da fazenda, dashboard e ficha reprodutiva dedicada, pós-parto neonatal, cria inicial, transições de rebanho.
 - **Motor sanitário endurecido:** adoção de regime sequencial, dependência de milestones, logica de catch-up para entrada de rebanho (history_confidence) e motor de regras de repetição declarativas.
 - **Qualidade local:** lint, test, build e pacote E2E guiados estão verdes.
 - **TDs anteriormente abertos:** todos fechados via migrations de março/2026.
-- **Gaps residuais:** nenhum gap funcional ou de observabilidade aberto nesta revisão.
+- **Gaps residuais:** sem gap funcional critico aberto; permanecem residuos estruturais locais e consolidacao de experiencia/confiabilidade.
 
 ---
 
@@ -135,11 +136,14 @@ Este documento registra o estado efetivo do RebanhoSync em abril de 2026, pós-f
 
 ---
 
-## 6. Gaps Residuais (Pós-Audit)
+## 6. Gaps Residuais (Pos-Audit)
 
 | Item | Tipo | Impacto | Próxima ação |
 | --- | --- | --- | --- |
-| Nenhum gap residual aberto | Observabilidade | Pipeline remoto de telemetria, ingestão idempotente e painel por fazenda implementados | Manter monitoramento e evoluir analíticos quando houver demanda |
+| Residual `Registrar`: volume de composicao/JSX no shell | Estrutural local UI | Mantem custo de leitura/manutencao acima do ideal para evolucao de UX | Fatiar blocos de composicao restantes por recortes pequenos |
+| Residual `Agenda`: leitura/preparacao de dados ainda no shell | Estrutural local UI | Shell ainda acumula montagem de read-model local | Extrair montagem de dados para artefatos locais sem mover dominio |
+| Estabilidade de testes fora de recortes locais | Confiabilidade | Maior risco de regressao ao expandir mudancas cross-flow | Fortalecer smoke critico e suites focadas por fluxo |
+| Acabamento de experiencia cross-flow | UX/produto | Fluxos centrais funcionam, mas com friccao e inconsistencia de feedback | Consolidar backlog MVP -> SLC por frentes de UX operacional |
 
 ---
 
@@ -190,6 +194,22 @@ Este documento registra o estado efetivo do RebanhoSync em abril de 2026, pós-f
   - `buildRegistrarActionSectionSlots.tsx` (slots/blocos visuais de compliance e checklist de trânsito)
   - `useRegistrarShellState.ts` (estado local bruto, toggles, derives simples e wiring local de seleção/reset)
 - A validação de corte final permaneceu verde em escopo local de hotspot (`lint`, `test -- Registrar`, `build`) sem reabrir fronteiras de domínio/offline/sync.
+
+## 7.3 Update 2026-04-19 (Hardening Final do Hotspot Agenda)
+
+- `src/pages/Agenda/index.tsx` foi reduzido de ~2076 para ~591 linhas ao longo dos cortes de hardening.
+- O shell deixou de concentrar controller de acoes, shell state, interaction state e blocos macro de composicao (overview/compliance/lifecycle).
+- `AgendaGroupedContent` foi fatiado em subcomponentes locais de composicao.
+- Residual principal: leitura/preparacao de dados no shell, sem acoplamento macro de composicao.
+
+## 7.4 Reposicionamento de Fase (MVP -> SLC em consolidacao)
+
+- Encerrada a frente principal de quebra de monolitos de UI em `Registrar` e `Agenda`.
+- A proxima etapa prioriza consolidacao operacional:
+  - previsibilidade de fluxo (Simple),
+  - reducao de friccao e consistencia de feedback (Lovable),
+  - completude percebida dos fluxos centrais com confiabilidade de regressao (Complete).
+- Esta classificacao nao indica produto finalizado; indica transicao controlada de fase.
 
 ---
 

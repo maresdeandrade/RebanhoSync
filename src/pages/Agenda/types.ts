@@ -1,4 +1,14 @@
 import type { AgendaScheduleBucket } from "@/lib/agenda/groupOrdering";
+import type { AgendaSummaryBadge } from "@/lib/agenda/groupSummaries";
+import type { SanitaryAgendaPriority } from "@/lib/sanitario/protocolRules";
+import type {
+  AgendaItem,
+  Animal,
+  Lote,
+  ProtocoloSanitario,
+  ProtocoloSanitarioItem,
+} from "@/lib/offline/types";
+import type { SyncStage } from "@/lib/offline/syncPresentation";
 import type {
   SanitaryBaseCalendarAnchor,
   SanitaryBaseCalendarMode,
@@ -26,3 +36,74 @@ export type QuickFilterTone =
   | "danger";
 
 export type AgendaScheduleQuickFilter = AgendaScheduleBucket | "all";
+
+export type AgendaStatusFilter = "all" | "agendado" | "concluido" | "cancelado";
+
+export type AgendaContextualFocus = {
+  token: number;
+  groupKey: string;
+  rowId: string;
+  rowIds: string[];
+};
+
+export type AgendaRow = {
+  item: AgendaItem;
+  animal: Animal | null;
+  lote: Lote | null;
+  animalNome: string;
+  loteNome: string;
+  idadeLabel: string;
+  syncStage: SyncStage;
+  produtoLabel: string;
+  scheduleLabel: string | null;
+  scheduleMode: SanitaryBaseCalendarMode | null;
+  scheduleModeLabel: string | null;
+  scheduleAnchor: SanitaryBaseCalendarAnchor | null;
+  scheduleAnchorLabel: string | null;
+  protocol: ProtocoloSanitario | null;
+  protocolItem: ProtocoloSanitarioItem | null;
+  priority: SanitaryAgendaPriority | null;
+};
+
+export type AgendaAnimalGroup = {
+  key: string;
+  title: string;
+  rows: AgendaRow[];
+  visibleRows: AgendaRow[];
+  animal: Animal | null;
+  summary: {
+    animalBadges: AgendaSummaryBadge[];
+    typeBadges: AgendaSummaryBadge[];
+    scheduleBadges: AgendaSummaryBadge[];
+  };
+  sortMeta: {
+    hasOverdue: boolean;
+    hasToday: boolean;
+    pendingCount: number;
+    firstPendingDate: string | null;
+    firstDate: string | null;
+    severityRank: number;
+  };
+};
+
+export type AgendaEventGroup = {
+  key: string;
+  title: string;
+  subtitle: string;
+  rows: AgendaRow[];
+  visibleRows: AgendaRow[];
+  earliestDate: string;
+  summary: {
+    animalBadges: AgendaSummaryBadge[];
+    typeBadges: AgendaSummaryBadge[];
+    scheduleBadges: AgendaSummaryBadge[];
+  };
+  sortMeta: {
+    hasOverdue: boolean;
+    hasToday: boolean;
+    pendingCount: number;
+    firstPendingDate: string | null;
+    firstDate: string | null;
+    severityRank: number;
+  };
+};

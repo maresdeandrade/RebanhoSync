@@ -1,5 +1,10 @@
 # Registrar Hotspot
 
+## Status estrutural (2026-04-19)
+- Hardening estrutural principal concluido.
+- Shell deixou de concentrar IO, pacotes financeiro/sanitario, finalize orchestration, step-flow, query parsing, quick action policy e state wiring dominante.
+- Residual atual: volume de composicao/JSX no entrypoint, sem orquestracao densa relevante.
+
 ## Papel do modulo
 - Tela operacional para registrar manejo (sanitario, pesagem, movimentacao, reproducao e financeiro) com suporte a agenda e contexto sanitario.
 - Hotspot de alto acoplamento historico; evoluir por recortes pequenos e reversiveis.
@@ -25,9 +30,9 @@
 - Refatoracao ampla de uma vez (big-bang) neste hotspot.
 
 ## Proximos recortes recomendados
-1. Extrair helpers puros de montagem de payload por dominio (`helpers/`).
-2. Colocalizar componentes de secoes com estado local (`components/`).
-3. Isolar orchestrators por trilho (`sanitize/select/payload/plan/effects/reconcile`) sem alterar comportamento.
+1. Reduzir volume residual de composicao/JSX do shell em recortes pequenos.
+2. Consolidar consistencia visual e de feedback entre sections do registro.
+3. Manter fronteiras atuais (dominio em `src/lib/**`, efeitos fora de componente visual) durante acabamento para fase SLC.
 
 ## Estrutura local atual
 - `index.tsx`: entrada da pagina.

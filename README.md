@@ -3,7 +3,7 @@
 Plataforma **offline-first** para gestão pecuária de corte. Multi-tenant por fazenda, RBAC (`owner | manager | cowboy`), sincronização transacional por gestos e backend Supabase com RLS hardened.
 
 > **Estado atual:** Beta interno — MVP completo e operacional.  
-> **Foco atual:** Hardening arquitetural operacional.  
+> **Fase atual:** Transicao de MVP funcional para SLC (Simple, Lovable, Complete) em consolidacao.  
 > Todos os 7 domínios operacionais já estão implementados. Qualidade local verde (`lint`, `test`, `build`).
 
 ---
@@ -12,12 +12,14 @@ Plataforma **offline-first** para gestão pecuária de corte. Multi-tenant por f
 
 O produto já está funcional para uso interno controlado, com escopo principal implementado e fluxos operacionais consolidados.
 
-A frente atual de engenharia não é de expansão de escopo funcional, e sim de **restauração de fronteiras arquiteturais** em hotspots relevantes do fluxo operacional, para tornar o sistema mais previsível, testável e sustentável.
+A frente atual de engenharia não é de expansão de escopo funcional, e sim de **consolidacao operacional** apos o hardening estrutural principal dos hotspots de UI criticos.
 
 Prioridade do momento:
 - preservar comportamento atual
-- reduzir acoplamento entre UI, domínio, infraestrutura e reconciliação
-- tornar explícita a separação entre etapas da pipeline operacional
+- reduzir friccao de uso nos fluxos centrais
+- aumentar consistencia visual e de feedback
+- estabilizar confiabilidade e regressao nos fluxos de producao
+- remover residuos estruturais pontuais sem reabrir monolitos
 
 ---
 
@@ -62,20 +64,22 @@ A intenção não é redesenhar o sistema do zero, e sim tornar explícito, por 
 
 ## Hotspots prioritários
 
-A frente atual de hardening está concentrada em:
+A frente atual de hardening estrutural principal em UI foi concluida para:
+- `src/pages/Registrar/**`
+- `src/pages/Agenda/**`
+
+Frentes prioritarias atuais:
 
 - `src/lib/offline/syncWorker.ts`
-- `src/pages/Agenda/**`
 - `src/pages/ProtocolosSanitarios/**`
-
-Hotspot já fechado nesta frente:
-- `src/pages/Registrar/**` (folderizado e com contexto local)
+- residuos estruturais locais de `Registrar`/`Agenda` (sem reabrir fronteiras ja fechadas)
 
 A ordem atual é:
 1. concluir hardening do `syncWorker` com diff local e validável
-2. reduzir acoplamentos remanescentes em `Agenda` sem mudança funcional
-3. reduzir acoplamentos remanescentes em `ProtocolosSanitarios` sem mudança funcional
-4. manter guardrails documentais locais e validação mínima contínua
+2. reduzir acoplamentos remanescentes em `ProtocolosSanitarios` sem mudança funcional
+3. consolidar UX operacional de fluxos centrais para reduzir carga cognitiva
+4. estabilizar cobertura de regressao dos fluxos criticos
+5. manter guardrails documentais locais e validação mínima contínua
 
 ---
 

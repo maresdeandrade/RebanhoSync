@@ -155,6 +155,15 @@ Regra prática:
 - evitar big bang rewrite
 - preferir patch mínimo, incremental e revisável
 
+### 4.2.3 Pós-hardening de hotspots críticos
+
+Quando os hotspots criticos de uma frente estiverem endurecidos (ex.: shell fino, fronteiras claras, sem orquestracao densa na UI), o processo entra em fase de consolidacao:
+
+- reduzir residuos estruturais pontuais sem reabrir monolitos;
+- priorizar consistencia de experiencia e friccao operacional;
+- fortalecer cobertura de regressao dos fluxos centrais;
+- tratar a fase como transicao de MVP funcional para SLC em consolidacao (nao produto finalizado).
+
 ### 4.3 Validar
 Toda entrega deve, no mínimo, validar:
 
