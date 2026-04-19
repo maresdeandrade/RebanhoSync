@@ -8,9 +8,14 @@ export function buildRegistrarFinalizeSuccessMessage(input: {
   compraGerandoAnimais: boolean;
   createdAnimalCount: number;
   txId: string;
+  sourceTaskId?: string | null;
 }) {
   if (input.compraGerandoAnimais) {
     return `Compra salva neste aparelho com ${input.createdAnimalCount} novo(s) animal(is). Sincronizacao pendente. TX ${input.txId.slice(0, 8)}.`;
+  }
+
+  if (input.sourceTaskId) {
+    return `Manejo salvo neste aparelho e vinculado a agenda. Sincronizacao pendente. TX ${input.txId.slice(0, 8)}.`;
   }
 
   return `Manejo salvo neste aparelho. Sincronizacao pendente. TX ${input.txId.slice(0, 8)}.`;
@@ -18,9 +23,10 @@ export function buildRegistrarFinalizeSuccessMessage(input: {
 
 export function buildRegistrarPostFinalizeNavigationPath(
   postPartoRedirect: RegistrarPostPartoRedirect | null,
+  sourceTaskId: string | null = null,
 ) {
   if (!postPartoRedirect) {
-    return "/home";
+    return sourceTaskId ? "/agenda" : "/home";
   }
 
   const nextParams = new URLSearchParams();

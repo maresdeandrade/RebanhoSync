@@ -1,33 +1,23 @@
 import { useCallback, useEffect, useMemo } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
-import type {
-  ReproTipoEnum,
-  Animal,
-} from "@/lib/offline/types";
+import type { ReproTipoEnum, Animal } from "@/lib/offline/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/EmptyState";
 import { PageIntro } from "@/components/ui/page-intro";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { showSuccess, showError } from "@/utils/toast";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import {
-  ChevronRight,
-  ChevronLeft,
-  Check,
-} from "lucide-react";
+import { ChevronRight, ChevronLeft, Check } from "lucide-react";
 import { useLotes } from "@/hooks/useLotes";
 import { useAuth } from "@/hooks/useAuth";
 import { parseWeightInput } from "@/lib/format/weight";
-import {
-  buildRegulatoryOperationalReadModel,
-} from "@/lib/sanitario/regulatoryReadModel";
+import { buildRegulatoryOperationalReadModel } from "@/lib/sanitario/regulatoryReadModel";
 import {
   filterRegistrarAnimalsBySearch,
   resolveSelectedVisibleCount,
 } from "@/pages/Registrar/helpers/animalSelection";
-import {
-  resolveSelectedRecordsByIds,
-} from "@/pages/Registrar/helpers/selectContext";
+import { resolveSelectedRecordsByIds } from "@/pages/Registrar/helpers/selectContext";
 import {
   buildBaseActionStepIssues,
   composeRegistrarActionStepIssues,
@@ -61,9 +51,7 @@ import { RegistrarPesagemSection } from "@/pages/Registrar/components/RegistrarP
 import { RegistrarMovimentacaoSection } from "@/pages/Registrar/components/RegistrarMovimentacaoSection";
 import { RegistrarNutricaoSection } from "@/pages/Registrar/components/RegistrarNutricaoSection";
 import { RegistrarReproducaoSection } from "@/pages/Registrar/components/RegistrarReproducaoSection";
-import {
-  useRegistrarSanitarioPackage,
-} from "@/pages/Registrar/components/useRegistrarSanitarioPackage";
+import { useRegistrarSanitarioPackage } from "@/pages/Registrar/components/useRegistrarSanitarioPackage";
 import { useRegistrarFinanceiroPackage } from "@/pages/Registrar/components/useRegistrarFinanceiroPackage";
 import {
   buildRegistrarFinalizeSuccessMessage,
@@ -77,7 +65,10 @@ import {
 } from "@/pages/Registrar/useRegistrarStepFlow";
 import { parseRegistrarQueryState } from "@/pages/Registrar/helpers/registrarQueryState";
 import { createRegistrarFinalizeController } from "@/pages/Registrar/createRegistrarFinalizeController";
-import { resolveRegistrarFinalizeOpsIssue, resolveRegistrarFinalizeCatchIssue } from "@/pages/Registrar/helpers/finalizeGuards";
+import {
+  resolveRegistrarFinalizeOpsIssue,
+  resolveRegistrarFinalizeCatchIssue,
+} from "@/pages/Registrar/helpers/finalizeGuards";
 import {
   buildRegistrarAgendaCompletionOp,
   resolveRegistrarDistinctAnimalIds,
@@ -105,8 +96,13 @@ const BullNameDisplay = ({ machoId }: { machoId: string }) => {
     () => loadRegistrarBullByIdEffect({ machoId }),
     [machoId],
   );
-  if (!bull) return <span className="font-bold truncate max-w-[150px]">{machoId}</span>;
-  return <span className="font-bold truncate max-w-[150px]">{bull.identificacao}</span>;
+  if (!bull)
+    return <span className="font-bold truncate max-w-[150px]">{machoId}</span>;
+  return (
+    <span className="font-bold truncate max-w-[150px]">
+      {bull.identificacao}
+    </span>
+  );
 };
 
 const Registrar = () => {
@@ -149,7 +145,8 @@ const Registrar = () => {
   } = shellState;
 
   const parseUserWeight = useCallback(
-    (value: string) => parseWeightInput(value, farmMeasurementConfig.weight_unit),
+    (value: string) =>
+      parseWeightInput(value, farmMeasurementConfig.weight_unit),
     [farmMeasurementConfig.weight_unit],
   );
 
@@ -172,15 +169,13 @@ const Registrar = () => {
   );
   const regulatoryReadModel = useMemo(
     () =>
-      buildRegulatoryOperationalReadModel(
-        regulatorySurfaceSource ?? undefined,
-      ),
+      buildRegulatoryOperationalReadModel(regulatorySurfaceSource ?? undefined),
     [regulatorySurfaceSource],
   );
   const selectedLoteLabel =
     selectedLoteId === SEM_LOTE_OPTION
       ? "Sem lote"
-      : lotes?.find((l) => l.id === selectedLoteId)?.nome ?? "-";
+      : (lotes?.find((l) => l.id === selectedLoteId)?.nome ?? "-");
   const pesagemAnimaisInvalidos = selectedAnimais.filter((id) => {
     const weightStr = pesagemData[id];
     if (!weightStr || weightStr.trim() === "") return true;
@@ -266,7 +261,11 @@ const Registrar = () => {
     tipoManejo,
     sourceTaskId,
     financeiroNatureza: financeiroData.natureza,
-    regulatorySurfaceConfig: (regulatorySurfaceSource?.config as Record<string, unknown> | null) ?? null,
+    regulatorySurfaceConfig:
+      (regulatorySurfaceSource?.config as unknown as Record<
+        string,
+        unknown
+      > | null) ?? null,
     regulatoryReadModel,
     animaisNoLote: (animaisNoLote as Animal[] | undefined) ?? undefined,
     selectedAnimaisDetalhes,
@@ -333,8 +332,8 @@ const Registrar = () => {
 
   const contraparteSelecionadaNome =
     financeiroData.contraparteId !== "none"
-      ? contrapartes?.find((item) => item.id === financeiroData.contraparteId)
-          ?.nome ?? "Contraparte selecionada"
+      ? (contrapartes?.find((item) => item.id === financeiroData.contraparteId)
+          ?.nome ?? "Contraparte selecionada")
       : "Sem contraparte";
   const showFinanceiroAnimaisGeradosResumo =
     tipoManejo === "financeiro" &&
@@ -348,8 +347,12 @@ const Registrar = () => {
   const reproducaoResumoReprodutorLabel = reproducaoData.machoId ? (
     <BullNameDisplay machoId={reproducaoData.machoId} />
   ) : null;
-  const transitChecklistPurposeLabel = transitChecklist.purpose.replace(/_/g, " ");
-  const transitChecklistGtaLabel = transitChecklist.gtaNumber || "Checklist concluido";
+  const transitChecklistPurposeLabel = transitChecklist.purpose.replace(
+    /_/g,
+    " ",
+  );
+  const transitChecklistGtaLabel =
+    transitChecklist.gtaNumber || "Checklist concluido";
   const confirmacaoManejoLabel = quickActionConfig?.label ?? tipoManejo ?? "-";
   const showConfirmacaoAlvoLote = selectedAnimais.length === 0;
   const showConfirmacaoDestinoMovimentacao = tipoManejo === "movimentacao";
@@ -365,6 +368,7 @@ const Registrar = () => {
     farmWeightUnit: farmMeasurementConfig.weight_unit,
     animaisNoLote,
     sanitarioSection: {
+      selectedAnimaisDetalhesCount: selectedAnimaisDetalhes.length,
       sanitarioTipo: sanitarioData.tipo,
       onSanitarioTipoChange: handleSanitarioTipoChange,
       produto: sanitarioData.produto,
@@ -564,22 +568,22 @@ const Registrar = () => {
 
   // UX Improvement: Auto-select bull if present in the selected lote
   useEffect(() => {
-     const autoSelectBull = async () => {
-        const selectedBull = await loadRegistrarSingleActiveBullInLoteEffect({
-          tipoManejo,
-          selectedLoteId,
-          semLoteOption: SEM_LOTE_OPTION,
-          selectedBullId: reproducaoData.machoId,
-        });
-        if (!selectedBull) return;
+    const autoSelectBull = async () => {
+      const selectedBull = await loadRegistrarSingleActiveBullInLoteEffect({
+        tipoManejo,
+        selectedLoteId,
+        semLoteOption: SEM_LOTE_OPTION,
+        selectedBullId: reproducaoData.machoId,
+      });
+      if (!selectedBull) return;
 
-        setReproducaoData((prev) => ({ ...prev, machoId: selectedBull.id }));
-        showSuccess(
-          `Reprodutor ${selectedBull.identificacao} selecionado automaticamente.`,
-        );
-     };
+      setReproducaoData((prev) => ({ ...prev, machoId: selectedBull.id }));
+      showSuccess(
+        `Reprodutor ${selectedBull.identificacao} selecionado automaticamente.`,
+      );
+    };
 
-     autoSelectBull();
+    autoSelectBull();
   }, [tipoManejo, selectedLoteId, reproducaoData.machoId, setReproducaoData]);
 
   const finalizeController = useMemo(
@@ -597,7 +601,8 @@ const Registrar = () => {
         tracks: {
           isFinancialFlow: isRegistrarFinancialFlow,
           resolveFinancialFinalizePlan: resolveRegistrarFinancialFinalizePlan,
-          resolveNonFinancialFinalizePlan: resolveRegistrarNonFinancialFinalizePlan,
+          resolveNonFinancialFinalizePlan:
+            resolveRegistrarNonFinancialFinalizePlan,
         },
         commit: {
           buildAgendaCompletionOp: buildRegistrarAgendaCompletionOp,
@@ -606,7 +611,8 @@ const Registrar = () => {
         },
         feedback: {
           buildFinalizeSuccessMessage: buildRegistrarFinalizeSuccessMessage,
-          buildPostFinalizeNavigationPath: buildRegistrarPostFinalizeNavigationPath,
+          buildPostFinalizeNavigationPath:
+            buildRegistrarPostFinalizeNavigationPath,
           resolveFinalizeCatchIssue: resolveRegistrarFinalizeCatchIssue,
           showSuccess,
           showError,
@@ -715,6 +721,31 @@ const Registrar = () => {
     transitChecklistIssues,
   ]);
 
+  if (!activeFarmId) {
+    return (
+      <div className="mx-auto max-w-5xl space-y-5">
+        <PageIntro
+          eyebrow="Fluxo operacional"
+          title="Registrar manejo"
+          description="Selecione uma fazenda para iniciar um registro."
+          actions={
+            <Button size="sm" onClick={() => navigate("/select-fazenda")}>
+              Selecionar fazenda
+            </Button>
+          }
+        />
+        <EmptyState
+          title="Fazenda nao selecionada"
+          description="Sem fazenda ativa, o registro nao pode ser iniciado."
+          action={{
+            label: "Selecionar fazenda",
+            onClick: () => navigate("/select-fazenda"),
+          }}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto max-w-5xl space-y-5">
       <PageIntro
@@ -732,7 +763,9 @@ const Registrar = () => {
               </StatusBadge>
             ) : null}
             {quickActionConfig ? (
-              <StatusBadge tone="neutral">{quickActionConfig.label}</StatusBadge>
+              <StatusBadge tone="neutral">
+                {quickActionConfig.label}
+              </StatusBadge>
             ) : null}
             {selectedLoteLabel !== "-" ? (
               <StatusBadge tone="neutral">{selectedLoteLabel}</StatusBadge>
@@ -754,7 +787,9 @@ const Registrar = () => {
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
               Etapa {currentStep}
             </p>
-            <p className="mt-1 text-sm font-medium">{STEP_LABEL[currentStep]}</p>
+            <p className="mt-1 text-sm font-medium">
+              {STEP_LABEL[currentStep]}
+            </p>
           </div>
         ))}
       </div>
@@ -827,27 +862,39 @@ const Registrar = () => {
             )}
 
             {tipoManejo === "sanitario" && (
-              <RegistrarSanitarioSection {...actionSectionState.sanitarioSectionProps} />
+              <RegistrarSanitarioSection
+                {...actionSectionState.sanitarioSectionProps}
+              />
             )}
 
             {tipoManejo === "pesagem" && (
-              <RegistrarPesagemSection {...actionSectionState.pesagemSectionProps} />
+              <RegistrarPesagemSection
+                {...actionSectionState.pesagemSectionProps}
+              />
             )}
 
             {tipoManejo === "movimentacao" && (
-              <RegistrarMovimentacaoSection {...actionSectionState.movimentacaoSectionProps} />
+              <RegistrarMovimentacaoSection
+                {...actionSectionState.movimentacaoSectionProps}
+              />
             )}
 
             {tipoManejo === "nutricao" && (
-              <RegistrarNutricaoSection {...actionSectionState.nutricaoSectionProps} />
+              <RegistrarNutricaoSection
+                {...actionSectionState.nutricaoSectionProps}
+              />
             )}
 
             {tipoManejo === "financeiro" && (
-              <RegistrarFinanceiroSection {...actionSectionState.financeiroSectionProps} />
+              <RegistrarFinanceiroSection
+                {...actionSectionState.financeiroSectionProps}
+              />
             )}
 
             {tipoManejo === "reproducao" && (
-              <RegistrarReproducaoSection {...actionSectionState.reproducaoSectionProps} />
+              <RegistrarReproducaoSection
+                {...actionSectionState.reproducaoSectionProps}
+              />
             )}
 
             {actionStepIssues.length > 0 ? (
@@ -857,10 +904,7 @@ const Registrar = () => {
             ) : null}
 
             <div className="flex gap-3">
-              <Button
-                variant="outline"
-                onClick={goToSelectAnimals}
-              >
+              <Button variant="outline" onClick={goToSelectAnimals}>
                 <ChevronLeft className="mr-2 h-4 w-4" /> Voltar
               </Button>
               <Button
@@ -929,17 +973,15 @@ const Registrar = () => {
             </div>
 
             <div className="flex gap-3">
-              <Button
-                variant="outline"
-                onClick={goToChooseAction}
-              >
+              <Button variant="outline" onClick={goToChooseAction}>
                 <ChevronLeft className="mr-2 h-4 w-4" /> Voltar
               </Button>
               <Button
                 className="flex-1 bg-emerald-600 hover:bg-emerald-700"
                 onClick={handleFinalize}
               >
-                <Check className="mr-2 h-4 w-4" /> Salvar neste aparelho
+                <Check className="mr-2 h-4 w-4" />{" "}
+                {sourceTaskId ? "Salvar e voltar para agenda" : "Salvar neste aparelho"}
               </Button>
             </div>
           </CardContent>

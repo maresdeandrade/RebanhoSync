@@ -1,6 +1,8 @@
 import type { SanitarioTipoEnum } from "@/lib/offline/types";
 
-export function getAgendaStatusTone(status: string) {
+export function getAgendaStatusTone(
+  status: string,
+): "neutral" | "info" | "success" | "warning" | "danger" {
   if (status === "cancelado") return "danger";
   if (status === "concluido") return "success";
   return "warning";
@@ -11,7 +13,9 @@ export function readString(
   key: string,
 ) {
   const value = record?.[key];
-  return typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
+  return typeof value === "string" && value.trim().length > 0
+    ? value.trim()
+    : null;
 }
 
 export function readNumber(
@@ -22,8 +26,14 @@ export function readNumber(
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
 
-export function asSanitarioTipo(value: string | null): SanitarioTipoEnum | null {
-  if (value === "vacinacao" || value === "vermifugacao" || value === "medicamento") {
+export function asSanitarioTipo(
+  value: string | null,
+): SanitarioTipoEnum | null {
+  if (
+    value === "vacinacao" ||
+    value === "vermifugacao" ||
+    value === "medicamento"
+  ) {
     return value;
   }
   return null;
@@ -61,7 +71,10 @@ export function formatAgendaTypeLabel(value: string) {
     .join(" ");
 }
 
-export function getGroupVisibilityLabel(visibleCount: number, totalCount: number) {
+export function getGroupVisibilityLabel(
+  visibleCount: number,
+  totalCount: number,
+) {
   if (visibleCount === totalCount) {
     return `${totalCount} item(ns) no recorte`;
   }

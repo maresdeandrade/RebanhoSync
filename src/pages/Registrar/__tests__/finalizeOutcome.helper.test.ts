@@ -25,11 +25,28 @@ describe("buildRegistrarFinalizeSuccessMessage", () => {
 
     expect(message).toContain("Manejo salvo neste aparelho");
   });
+
+  it("gera mensagem de continuidade para fluxo originado da agenda", () => {
+    const message = buildRegistrarFinalizeSuccessMessage({
+      compraGerandoAnimais: false,
+      createdAnimalCount: 0,
+      txId: "abcdef123456",
+      sourceTaskId: "agenda-1",
+    });
+
+    expect(message).toContain("vinculado a agenda");
+  });
 });
 
 describe("buildRegistrarPostFinalizeNavigationPath", () => {
   it("retorna home quando nao existe redirect de pos-parto", () => {
     expect(buildRegistrarPostFinalizeNavigationPath(null)).toBe("/home");
+  });
+
+  it("retorna agenda quando finalize veio de sourceTaskId", () => {
+    expect(buildRegistrarPostFinalizeNavigationPath(null, "agenda-1")).toBe(
+      "/agenda",
+    );
   });
 
   it("monta rota de pos-parto com evento e crias", () => {

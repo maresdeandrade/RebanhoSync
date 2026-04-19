@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Calendar, Plus } from "lucide-react";
@@ -7,9 +7,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { Button } from "@/components/ui/button";
 import { PageIntro } from "@/components/ui/page-intro";
 import { useAuth } from "@/hooks/useAuth";
-import {
-  buildAgendaCriticalNavigationTargets,
-} from "@/lib/agenda/criticalNavigation";
+import { buildAgendaCriticalNavigationTargets } from "@/lib/agenda/criticalNavigation";
 import {
   getAnimalLifeStageLabel,
   getPendingAnimalLifecycleKindLabel,
@@ -55,12 +53,8 @@ import {
   summarizeAgendaRowsByStatus,
 } from "@/pages/Agenda/helpers/derivations";
 import { createAgendaActionController } from "@/pages/Agenda/createAgendaActionController";
-import type {
-  AgendaRow,
-} from "@/pages/Agenda/types";
-import {
-  useAgendaShellState,
-} from "@/pages/Agenda/useAgendaShellState";
+import type { AgendaRow } from "@/pages/Agenda/types";
+import { useAgendaShellState } from "@/pages/Agenda/useAgendaShellState";
 import { useAgendaInteractionState } from "@/pages/Agenda/useAgendaInteractionState";
 import { showError, showSuccess } from "@/utils/toast";
 
@@ -85,6 +79,8 @@ export default function Agenda() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { activeFarmId, farmLifecycleConfig, user } = useAuth();
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [refreshError, setRefreshError] = useState<string | null>(null);
   const queryCalendarModeFilter = parseCalendarModeQuickFilter(
     searchParams.get("calendarMode"),
   );
@@ -134,6 +130,8 @@ export default function Agenda() {
   useEffect(() => {
     if (!activeFarmId) return;
 
+    setIsRefreshing(true);
+    setRefreshError(null);
     pullDataForFarm(
       activeFarmId,
       [
@@ -145,72 +143,72 @@ export default function Agenda() {
         "fazenda_sanidade_config",
       ],
       {
-      mode: "merge",
+        mode: "merge",
       },
     ).catch((error) => {
       console.warn("[agenda] failed to refresh agenda_itens", error);
+      setRefreshError("Falha ao atualizar agenda local.");
+    }).finally(() => {
+      setIsRefreshing(false);
     });
   }, [activeFarmId]);
 
-  const data = useLiveQuery(
-    async () => {
-      if (!activeFarmId) {
-        return {
-          itens: [],
-          animais: [],
-          lotes: [],
-          protocolos: [],
-          protocoloItens: [],
-          gestos: [],
-          sanidadeConfig: null,
-          officialTemplates: [],
-          officialTemplateItems: [],
-        };
-      }
-
-      const [
-        itens,
-        animais,
-        lotes,
-        protocolos,
-        protocoloItens,
-        gestos,
-        sanidadeConfig,
-        officialTemplates,
-        officialTemplateItems,
-      ] =
-        await Promise.all([
-        db.state_agenda_itens.where("fazenda_id").equals(activeFarmId).toArray(),
-        db.state_animais.where("fazenda_id").equals(activeFarmId).toArray(),
-        db.state_lotes.where("fazenda_id").equals(activeFarmId).toArray(),
-        db.state_protocolos_sanitarios
-          .where("fazenda_id")
-          .equals(activeFarmId)
-          .toArray(),
-        db.state_protocolos_sanitarios_itens
-          .where("fazenda_id")
-          .equals(activeFarmId)
-          .toArray(),
-        db.queue_gestures.where("fazenda_id").equals(activeFarmId).toArray(),
-        db.state_fazenda_sanidade_config.get(activeFarmId),
-        db.catalog_protocolos_oficiais.toArray(),
-        db.catalog_protocolos_oficiais_itens.toArray(),
-      ]);
-
+  const data = useLiveQuery(async () => {
+    if (!activeFarmId) {
       return {
-        itens: itens.filter((item) => !item.deleted_at),
-        animais: animais.filter((animal) => !animal.deleted_at),
-        lotes: lotes.filter((lote) => !lote.deleted_at),
-        protocolos: protocolos.filter((protocolo) => !protocolo.deleted_at),
-        protocoloItens: protocoloItens.filter((item) => !item.deleted_at),
-        gestos,
-        sanidadeConfig: sanidadeConfig && !sanidadeConfig.deleted_at ? sanidadeConfig : null,
-        officialTemplates,
-        officialTemplateItems,
+        itens: [],
+        animais: [],
+        lotes: [],
+        protocolos: [],
+        protocoloItens: [],
+        gestos: [],
+        sanidadeConfig: null,
+        officialTemplates: [],
+        officialTemplateItems: [],
       };
-    },
-    [activeFarmId],
-  );
+    }
+
+    const [
+      itens,
+      animais,
+      lotes,
+      protocolos,
+      protocoloItens,
+      gestos,
+      sanidadeConfig,
+      officialTemplates,
+      officialTemplateItems,
+    ] = await Promise.all([
+      db.state_agenda_itens.where("fazenda_id").equals(activeFarmId).toArray(),
+      db.state_animais.where("fazenda_id").equals(activeFarmId).toArray(),
+      db.state_lotes.where("fazenda_id").equals(activeFarmId).toArray(),
+      db.state_protocolos_sanitarios
+        .where("fazenda_id")
+        .equals(activeFarmId)
+        .toArray(),
+      db.state_protocolos_sanitarios_itens
+        .where("fazenda_id")
+        .equals(activeFarmId)
+        .toArray(),
+      db.queue_gestures.where("fazenda_id").equals(activeFarmId).toArray(),
+      db.state_fazenda_sanidade_config.get(activeFarmId),
+      db.catalog_protocolos_oficiais.toArray(),
+      db.catalog_protocolos_oficiais_itens.toArray(),
+    ]);
+
+    return {
+      itens: itens.filter((item) => !item.deleted_at),
+      animais: animais.filter((animal) => !animal.deleted_at),
+      lotes: lotes.filter((lote) => !lote.deleted_at),
+      protocolos: protocolos.filter((protocolo) => !protocolo.deleted_at),
+      protocoloItens: protocoloItens.filter((item) => !item.deleted_at),
+      gestos,
+      sanidadeConfig:
+        sanidadeConfig && !sanidadeConfig.deleted_at ? sanidadeConfig : null,
+      officialTemplates,
+      officialTemplateItems,
+    };
+  }, [activeFarmId]);
 
   const regulatoryReadModel = useMemo(
     () =>
@@ -263,7 +261,10 @@ export default function Agenda() {
     quickAnimalFilter,
   });
 
-  const expandedGroupSet = useMemo(() => new Set(expandedGroups), [expandedGroups]);
+  const expandedGroupSet = useMemo(
+    () => new Set(expandedGroups),
+    [expandedGroups],
+  );
 
   const lifecycleQueue = useMemo(() => {
     if (!data) return [];
@@ -272,11 +273,11 @@ export default function Agenda() {
       data.animais.filter((animal) => animal.status === "ativo"),
       farmLifecycleConfig,
     ).map((item) => {
-      const animal = data.animais.find((entry) => entry.id === item.animalId) ?? null;
-      const lote =
-        animal?.lote_id
-          ? data.lotes.find((entry) => entry.id === animal.lote_id) ?? null
-          : null;
+      const animal =
+        data.animais.find((entry) => entry.id === item.animalId) ?? null;
+      const lote = animal?.lote_id
+        ? (data.lotes.find((entry) => entry.id === animal.lote_id) ?? null)
+        : null;
 
       return {
         ...item,
@@ -310,7 +311,10 @@ export default function Agenda() {
     [baseRows, filtered, hasQuickFiltersActive],
   );
 
-  const counts = useMemo(() => summarizeAgendaRowsByStatus(filtered), [filtered]);
+  const counts = useMemo(
+    () => summarizeAgendaRowsByStatus(filtered),
+    [filtered],
+  );
 
   const hasActiveFilters =
     search.trim().length > 0 ||
@@ -332,9 +336,13 @@ export default function Agenda() {
         animalId: item.animalId,
         identificacao: item.identificacao,
         kindLabel: getPendingAnimalLifecycleKindLabel(item.queueKind),
-        kindTone: item.queueKind === "decisao_estrategica" ? "warning" : "info",
+        kindTone: (item.queueKind === "decisao_estrategica"
+          ? "warning"
+          : "info") as "warning" | "info",
         autoApplyLabel: item.canAutoApply ? "Auto/hibrido" : "Manual",
-        autoApplyTone: item.canAutoApply ? "info" : "warning",
+        autoApplyTone: (item.canAutoApply ? "info" : "warning") as
+          | "info"
+          | "warning",
         stageLabel: `${getAnimalLifeStageLabel(item.currentStage)} para ${getAnimalLifeStageLabel(item.targetStage)}`,
         loteNome: item.loteNome,
         reason: item.reason,
@@ -342,7 +350,11 @@ export default function Agenda() {
     [lifecycleQueue],
   );
   const overviewBadges = useMemo(() => {
-    const badges: Array<{ key: string; label: string; tone: "neutral" | "info" | "success" | "warning" | "danger" }> = [
+    const badges: Array<{
+      key: string;
+      label: string;
+      tone: "neutral" | "info" | "success" | "warning" | "danger";
+    }> = [
       {
         key: "recorte",
         label: `${filtered.length} item(ns) no recorte`,
@@ -350,7 +362,8 @@ export default function Agenda() {
       },
     ];
 
-    if (hasActiveFilters) badges.push({ key: "filters", label: "Filtros ativos", tone: "info" });
+    if (hasActiveFilters)
+      badges.push({ key: "filters", label: "Filtros ativos", tone: "info" });
     if (quickTypeFilter !== "all") {
       badges.push({
         key: "quick-type",
@@ -438,7 +451,9 @@ export default function Agenda() {
 
   const currentCriticalTarget = useMemo(
     () =>
-      criticalTargets.find((entry) => entry.groupKey === contextualFocus?.groupKey) ?? null,
+      criticalTargets.find(
+        (entry) => entry.groupKey === contextualFocus?.groupKey,
+      ) ?? null,
     [contextualFocus?.groupKey, criticalTargets],
   );
   const actionController = useMemo(
@@ -498,27 +513,44 @@ export default function Agenda() {
     };
   };
 
+  if (!activeFarmId) {
+    return (
+      <div className="space-y-5">
+        <PageIntro
+          eyebrow="Rotina planejada"
+          title="Fazenda nao selecionada"
+          description="Selecione uma fazenda para abrir a agenda operacional."
+          actions={
+            <Button size="sm" onClick={() => navigate("/select-fazenda")}>
+              Selecionar fazenda
+            </Button>
+          }
+        />
+      </div>
+    );
+  }
+
   if (!data) {
     return (
       <div className="space-y-5">
         <PageIntro
           eyebrow="Rotina planejada"
           title="Agenda de manejo"
-          description="Itens manuais e automaticos que sustentam a rotina do dia, sempre vinculados ao fluxo real de eventos."
+          description="Carregando itens manuais e automaticos da rotina."
           actions={
             <Button size="sm" onClick={() => navigate("/registrar")}>
               <Plus className="h-4 w-4" />
-              Registrar
+              Abrir registro
             </Button>
           }
         />
 
         <EmptyState
           icon={Calendar}
-          title="Agenda vazia"
-          description="A agenda ainda nao tem tarefas abertas. Registre eventos ou ative protocolos para alimentar a rotina."
+          title="Carregando agenda"
+          description="Estamos preparando o recorte operacional desta fazenda."
           action={{
-            label: "Registrar atividade",
+            label: "Abrir registro",
             onClick: () => navigate("/registrar"),
           }}
         />
@@ -532,6 +564,17 @@ export default function Agenda() {
         badges={overviewBadges}
         onGoToRegistrar={() => navigate("/registrar")}
       />
+
+      {isRefreshing ? (
+        <div className="rounded-lg border border-info/20 bg-info/5 p-3 text-sm text-muted-foreground">
+          Atualizando dados locais da agenda...
+        </div>
+      ) : null}
+      {refreshError ? (
+        <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-3 text-sm text-destructive">
+          {refreshError}
+        </div>
+      ) : null}
 
       <AgendaStatusMetrics
         agendado={counts.agendado}
@@ -568,9 +611,15 @@ export default function Agenda() {
               : "A agenda ainda nao tem tarefas abertas. Registre eventos ou ative protocolos para alimentar a rotina."
           }
           action={{
-            label: hasComplianceAttention ? "Abrir protocolos" : "Registrar atividade",
+            label: hasComplianceAttention
+              ? "Abrir protocolos"
+              : "Abrir registro",
             onClick: () =>
-              navigate(hasComplianceAttention ? "/protocolos-sanitarios" : "/registrar"),
+              navigate(
+                hasComplianceAttention
+                  ? "/protocolos-sanitarios"
+                  : "/registrar",
+              ),
           }}
         />
       ) : null}

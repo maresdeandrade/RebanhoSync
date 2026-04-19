@@ -36,7 +36,7 @@
 - Embutir regra sanitaria normativa diretamente na UI.
 - Duplicar calculos de prioridade/metadata que ja existem em `src/lib/agenda` ou `src/lib/sanitario`.
 
-## Proximos recortes recomendados
+## Backlog local imediato
 1. Extrair/normalizar montagem de dados residual do shell para artefatos locais dedicados.
-2. Manter semantica de dominio em `src/lib/**` e evitar duplicacao de regras de prioridade/elegibilidade.
-3. Refinar estados de experiencia (empty/loading/error/feedback) para consolidacao de fase SLC.
+2. Preservar semantica de dominio em `src/lib/**` sem duplicar regra de prioridade/elegibilidade.
+3. Refinar estados de experiencia (empty/loading/error/feedback) para consolidacao da fase SLC.

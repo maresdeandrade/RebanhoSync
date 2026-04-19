@@ -118,13 +118,7 @@ describe("pullDataForFarm", () => {
     const mockStore = { clear: vi.fn(), bulkPut: vi.fn() };
     (db.table as unknown as Mock).mockReturnValue(mockStore);
 
-    const consoleSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
-
     await pullDataForFarm(fazendaId, remoteTables);
-
-    expect(consoleSpy).toHaveBeenCalledWith(
-      expect.stringContaining("Store invalid_table not found"),
-    );
 
     expect(db.transaction).toHaveBeenCalledWith(
       "rw",

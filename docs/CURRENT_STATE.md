@@ -54,6 +54,7 @@ Residual dominante:
 ## 3. O que ainda nao esta consolidado
 
 - estabilizacao ampla de testes fora dos recortes locais de hotspot;
+- consolidacao da nova suite de integracao por fluxo (`tests/integration/flows/**`) como cobertura minima cross-flow;
 - cleanup residual de shell/read-model nos pontos restantes;
 - acabamento de UX para reduzir ambiguidade e carga cognitiva;
 - maior consistencia cross-flow (agenda <-> registrar <-> protocolos).

@@ -8,6 +8,11 @@ import type {
   ProtocoloSanitarioItem,
   SanitarioTipoEnum,
 } from "@/lib/offline/types";
+
+type ProtocolItemLike = Pick<
+  ProtocoloSanitarioItem,
+  "id" | "protocolo_id" | "produto" | "tipo" | "payload"
+>;
 import type { VeterinaryProductSelection } from "@/lib/sanitario/products";
 import type { TransitChecklistDraft } from "@/lib/sanitario/transit";
 import {
@@ -34,7 +39,9 @@ type RegistrarFinalizeSharedDeps = {
     selectedAnimais: string[];
   }) => Array<string | null>;
   resolveDistinctAnimalIds: (targetAnimalIds: Array<string | null>) => string[];
-  loadAnimalsMap: (input: { animalIds: string[] }) => Promise<Map<string, Animal>>;
+  loadAnimalsMap: (input: {
+    animalIds: string[];
+  }) => Promise<Map<string, Animal>>;
 };
 
 type RegistrarFinalizeSanitaryDeps = {
@@ -52,7 +59,7 @@ type RegistrarFinalizeSanitaryDeps = {
     transitChecklist: TransitChecklistDraft;
     officialTransitChecklistEnabled: boolean;
   }) => Promise<{
-    protocoloItem: ProtocoloSanitarioItem | null;
+    protocoloItem: ProtocolItemLike | null;
     sanitaryProductName: string;
     sanitaryProductSelection: VeterinaryProductSelection | null;
     sanitaryProductMetadata: Record<string, unknown>;
@@ -66,7 +73,11 @@ type RegistrarFinalizeSanitaryDeps = {
     tipo: SanitarioTipoEnum;
     sanitaryProductName: string;
     sanitaryProductMetadata: Record<string, unknown>;
-  }) => Promise<{ status: "handled"; eventoId: string } | { status: "fallback" }>;
+  }) => Promise<
+    | { status: "skip" }
+    | { status: "handled"; eventoId: string }
+    | { status: "fallback" }
+  >;
 };
 
 type RegistrarFinalizeTrackDeps = {
@@ -134,7 +145,11 @@ type RegistrarFinalizeTrackDeps = {
     | {
         issue: null;
         linkedEventId: string | null;
-        postPartoRedirect: { motherId: string; eventId: string; calfIds: string[] } | null;
+        postPartoRedirect: {
+          motherId: string;
+          eventId: string;
+          calfIds: string[];
+        } | null;
         ops: OperationInput[];
       }
   >;
@@ -157,9 +172,15 @@ type RegistrarFinalizeFeedbackDeps = {
     compraGerandoAnimais: boolean;
     createdAnimalCount: number;
     txId: string;
+    sourceTaskId?: string | null;
   }) => string;
   buildPostFinalizeNavigationPath: (
-    postPartoRedirect: { motherId: string; eventId: string; calfIds: string[] } | null,
+    postPartoRedirect: {
+      motherId: string;
+      eventId: string;
+      calfIds: string[];
+    } | null,
+    sourceTaskId?: string | null,
   ) => string;
   resolveFinalizeCatchIssue: (error: unknown) => string;
   showSuccess: (message: string) => void;
@@ -292,11 +313,14 @@ export function createRegistrarFinalizeController(
         tipoManejo: context.tipoManejo,
         protocoloItemId: sanitary.protocoloItemId,
         sanitaryTypedProduct: sanitary.data.produto,
-        selectedVeterinaryProductSelection: sanitary.selectedVeterinaryProductSelection,
-        resolveProtocolProductSelection: sanitary.resolveProtocolProductSelection,
+        selectedVeterinaryProductSelection:
+          sanitary.selectedVeterinaryProductSelection,
+        resolveProtocolProductSelection:
+          sanitary.resolveProtocolProductSelection,
         showsTransitChecklist: sanitary.transit.showsTransitChecklist,
         transitChecklist: sanitary.transit.transitChecklist,
-        officialTransitChecklistEnabled: sanitary.transit.officialTransitChecklistEnabled,
+        officialTransitChecklistEnabled:
+          sanitary.transit.officialTransitChecklistEnabled,
       });
 
       const sanitaryRpc = await deps.sanitary.trySanitaryRpcFinalize({
@@ -320,15 +344,18 @@ export function createRegistrarFinalizeController(
       const ops: OperationInput[] = [];
       const createdAnimalIds: string[] = [];
       let linkedEventId: string | null = null;
-      let postPartoRedirect:
-        | { motherId: string; eventId: string; calfIds: string[] }
-        | null = null;
+      let postPartoRedirect: {
+        motherId: string;
+        eventId: string;
+        calfIds: string[];
+      } | null = null;
 
       const targetAnimalIds = deps.shared.resolveTargetAnimalIds({
         hasSelectedAnimals,
         selectedAnimais: selection.selectedAnimais,
       });
-      const distinctAnimalIds = deps.shared.resolveDistinctAnimalIds(targetAnimalIds);
+      const distinctAnimalIds =
+        deps.shared.resolveDistinctAnimalIds(targetAnimalIds);
       const animalsMap = await deps.shared.loadAnimalsMap({
         animalIds: distinctAnimalIds,
       });
@@ -368,35 +395,36 @@ export function createRegistrarFinalizeController(
         createdAnimalIds.push(...financialPlan.createdAnimalIds);
         ops.push(...financialPlan.ops);
       } else {
-        const nonFinancialPlan = await deps.tracks.resolveNonFinancialFinalizePlan({
-          tipoManejo: context.tipoManejo,
-          fazendaId,
-          occurredAt: now,
-          sourceTaskId: context.sourceTaskId || null,
-          targetAnimalIds,
-          animalsMap,
-          selectedLoteIsSemLote: selection.selectedLoteId === "__sem_lote__",
-          selectedLoteIdNormalized: selection.selectedLoteIdNormalized,
-          createdAnimalIds,
-          transitChecklistPayload,
-          sanitaryProductName,
-          sanitaryProductSelection,
-          sanitaryProductMetadata,
-          protocoloItem,
-          sanitarioData: { tipo: sanitary.data.tipo },
-          pesagemData: operationData.pesagemData,
-          movimentacaoData: operationData.movimentacaoData,
-          nutricaoData: operationData.nutricaoData,
-          financeiroData: {
-            natureza: finance.data.natureza,
-            valorTotal: finance.data.valorTotal,
-            contraparteId: finance.data.contraparteId,
-          },
-          financeiroTipo: finance.summary.tipo,
-          reproducaoData: operationData.reproducaoData,
-          farmLifecycleConfig: context.farmLifecycleConfig,
-          parseUserWeight: context.parseUserWeight,
-        });
+        const nonFinancialPlan =
+          await deps.tracks.resolveNonFinancialFinalizePlan({
+            tipoManejo: context.tipoManejo,
+            fazendaId,
+            occurredAt: now,
+            sourceTaskId: context.sourceTaskId || null,
+            targetAnimalIds,
+            animalsMap,
+            selectedLoteIsSemLote: selection.selectedLoteId === "__sem_lote__",
+            selectedLoteIdNormalized: selection.selectedLoteIdNormalized,
+            createdAnimalIds,
+            transitChecklistPayload,
+            sanitaryProductName,
+            sanitaryProductSelection,
+            sanitaryProductMetadata,
+            protocoloItem,
+            sanitarioData: { tipo: sanitary.data.tipo },
+            pesagemData: operationData.pesagemData,
+            movimentacaoData: operationData.movimentacaoData,
+            nutricaoData: operationData.nutricaoData,
+            financeiroData: {
+              natureza: finance.data.natureza,
+              valorTotal: finance.data.valorTotal,
+              contraparteId: finance.data.contraparteId,
+            },
+            financeiroTipo: finance.summary.tipo,
+            reproducaoData: operationData.reproducaoData,
+            farmLifecycleConfig: context.farmLifecycleConfig,
+            parseUserWeight: context.parseUserWeight,
+          });
         if (nonFinancialPlan.issue) {
           deps.feedback.showError(nonFinancialPlan.issue);
           return;
@@ -433,10 +461,14 @@ export function createRegistrarFinalizeController(
           compraGerandoAnimais,
           createdAnimalCount: createdAnimalIds.length,
           txId,
+          sourceTaskId: context.sourceTaskId,
         }),
       );
       deps.feedback.navigate(
-        deps.feedback.buildPostFinalizeNavigationPath(postPartoRedirect),
+        deps.feedback.buildPostFinalizeNavigationPath(
+          postPartoRedirect,
+          context.sourceTaskId,
+        ),
       );
       input.onFinalizeHandled?.();
     } catch (error: unknown) {

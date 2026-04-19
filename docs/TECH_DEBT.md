@@ -24,31 +24,39 @@
 - **Origem:** Hardening estrutural principal de `src/pages/Registrar/**` concluido
 - **Impacto:** o hotspot deixou de concentrar orquestracao densa, mas ainda possui volume alto de composicao/JSX no entrypoint, mantendo custo de manutencao.
 
-### TD-028: Estabilidade de regressao cross-flow fora de recortes locais
-
-- **Status:** OPEN
-- **Origem:** fase de consolidacao MVP -> SLC
-- **Impacto:** suites locais de hotspot estao verdes, mas ainda ha risco de regressao em mudancas transversais sem smoke critico consolidado.
-
 ### TD-025: Superficie de produto para Catch-Up e History Confidence
 
 - **Status:** OPEN
 - **Origem:** Feat `sanitario_regime_sequencial_e_historico_entrada`
 - **Impacto:** O backend agora calcula bloqueios ou agenda pendente para animais com `history_confidence = unknown` e `compliance_state = catch_up_required`, exigindo uma documentação (ex: atestado de vacinação na compra) ou execução de um catch-up (protocolo de entrada). A UI atual carece de uma tela específica ou card contextual no AnimalDetalhe que permita resolver este status fechando o ciclo do regime.
 
-### Hardening estrutural do hotspot `Registrar` (entrypoint shell) — FECHADO
+### TD-029: Warnings de chunks circulares no build
+
+- **Status:** OPEN
+- **Origem:** `vite build` com `manualChunks` atual
+- **Impacto:** warning recorrente (`vendor <-> react-vendor <-> ui-vendor/charts-vendor`) adiciona ruído técnico e reduz previsibilidade de empacotamento.
+- **Classificacao:** monitorar (nao bloqueante para gate atual); adiar refino de chunk strategy para ciclo de performance dedicado.
+
+### TD-030: Warnings `act(...)` e instabilidade E2E fora do gate minimo
+
+- **Status:** OPEN
+- **Origem:** consolidacao MVP -> SLC (confiabilidade cross-flow)
+- **Impacto:** warnings recorrentes de `act(...)` em cenarios E2E/RTL e flakiness em execucao ampla (`pnpm test`) reduzem confiabilidade percebida e podem mascarar regressao silenciosa.
+- **Classificacao:** bloquear SLC ate reducao material dos warnings e estabilizacao dos fluxos E2E criticos.
+
+## CLOSED (Historico Completo)
+
+### Hardening estrutural do hotspot `Registrar` (entrypoint shell)
 
 - **Status:** CLOSED
 - **Fechado por:** `src/pages/Registrar/index.tsx`, `src/pages/Registrar/useRegistrarShellState.ts`, `src/pages/Registrar/useRegistrarActionSectionState.tsx`, `src/pages/Registrar/buildRegistrarActionSectionSlots.tsx`
-- **Detalhe:** o shell deixou de concentrar decisões operacionais densas e volume de estado bruto; wiring local de seleção/toggles/derives simples foi extraído para hook local explícito, mantendo fronteiras de domínio e sync intactas.
+- **Detalhe:** o shell deixou de concentrar decisoes operacionais densas e volume de estado bruto; wiring local de selecao/toggles/derives simples foi extraido para hook local explicito, mantendo fronteiras de dominio e sync intactas.
 
-### Hardening estrutural do hotspot `Agenda` (entrypoint shell) — FECHADO
+### Hardening estrutural do hotspot `Agenda` (entrypoint shell)
 
 - **Status:** CLOSED
 - **Fechado por:** `src/pages/Agenda/index.tsx`, `src/pages/Agenda/createAgendaActionController.ts`, `src/pages/Agenda/useAgendaShellState.ts`, `src/pages/Agenda/useAgendaInteractionState.ts`, `src/pages/Agenda/components/*`
 - **Detalhe:** controller de acoes, estado de shell, estado de interacao e composicao macro de resumo/compliance/lifecycle sairam do shell; `AgendaGroupedContent` foi fatiado e o entrypoint ficou majoritariamente em papel de composicao/wiring.
-
-## CLOSED (Historico Completo)
 
 ### TD-021: Telemetria local-only sem observabilidade remota
 
@@ -129,13 +137,19 @@
 - **Fechado por:** `src/lib/sanitario/regulatoryReadModel.ts`, `src/pages/Registrar/index.tsx`, `src/pages/Agenda/index.tsx`, `src/pages/Home.tsx`, `src/pages/Dashboard.tsx`, `src/pages/Financeiro.tsx`, `src/pages/Eventos.tsx`, `src/pages/LoteDetalhe.tsx`, `src/components/sanitario/RegulatoryOverlayManager.tsx`
 - **Detalhe:** o overlay oficial agora cobre runtime guiado, bloqueios contextuais, leitura compartilhada nas principais superficies e recortes analiticos com CTA direto para o overlay filtrado
 
+### TD-028: Gate minimo de qualidade e smoke critico
+
+- **Status:** CLOSED
+- **Fechado por:** `tests/smoke/**`, `package.json` (`test:hotspots`, `test:smoke`, `quality:gate`), `docs/PROCESS.md`
+- **Detalhe:** suite de smoke critico minima definida e automatizada com gate padrao de qualidade para evolucao de fluxo.
+
 ---
 
 ## Resumo
 
-- OPEN: `TD-025`, `TD-026`, `TD-027`, `TD-028`
-- CLOSED: `TD-001`, `TD-003`, `TD-004`, `TD-006`, `TD-008`, `TD-011`, `TD-014`, `TD-015`, `TD-019`, `TD-020`, `TD-021`, `TD-022`, `TD-023`, `TD-024`
-- Total OPEN: `4`
+- OPEN: `TD-025`, `TD-026`, `TD-027`, `TD-029`, `TD-030`
+- CLOSED: `TD-001`, `TD-003`, `TD-004`, `TD-006`, `TD-008`, `TD-011`, `TD-014`, `TD-015`, `TD-019`, `TD-020`, `TD-021`, `TD-022`, `TD-023`, `TD-024`, `TD-028`
+- Total OPEN: `5`
 
 ## Veja Tambem
 

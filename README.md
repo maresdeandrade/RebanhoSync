@@ -107,6 +107,11 @@ pnpm install
 pnpm dev          # servidor local (Vite)
 pnpm run lint     # ESLint
 pnpm test         # Vitest (unitários + integração)
+pnpm run test:unit      # recorte unitário local
+pnpm run test:integration # fluxos de integração em tests/integration/**
+pnpm run test:hotspots  # subset local de hotspots criticos de UI
+pnpm run test:smoke     # smoke critico minimo (tests/smoke/**)
+pnpm run quality:gate   # lint + hotspots + integration + smoke
 pnpm run build    # build de produção
 pnpm run test:e2e       # fluxos guiados: onboarding, importação, relatórios
 pnpm run gates          # gates documentais do pacote Antigravity

@@ -14,8 +14,8 @@ Este documento registra o estado efetivo do RebanhoSync em abril de 2026, pós-f
 - **Core operacional:** sanitário, pesagem, movimentação, nutrição, reprodução, financeiro e agenda estão implementados e usáveis.
 - **Camadas consolidadas:** onboarding guiado, importação CSV, relatórios operacionais, telemetria de piloto com flush remoto, modo de experiência da fazenda, dashboard e ficha reprodutiva dedicada, pós-parto neonatal, cria inicial, transições de rebanho.
 - **Motor sanitário endurecido:** adoção de regime sequencial, dependência de milestones, logica de catch-up para entrada de rebanho (history_confidence) e motor de regras de repetição declarativas.
-- **Qualidade local:** lint, test, build e pacote E2E guiados estão verdes.
-- **TDs anteriormente abertos:** todos fechados via migrations de março/2026.
+- **Qualidade local:** `lint`, `test:unit`, `test:integration`, `test:smoke`, `quality:gate` e `build` verdes.
+- **TDs originalmente abertos (M0-M2):** fechados via migrations de março/2026.
 - **Gaps residuais:** sem gap funcional critico aberto; permanecem residuos estruturais locais e consolidacao de experiencia/confiabilidade.
 
 ---
@@ -110,7 +110,12 @@ Este documento registra o estado efetivo do RebanhoSync em abril de 2026, pós-f
 ## 4. Estado de Qualidade
 
 - `pnpm run lint`: verde
-- `pnpm test`: verde
+- `pnpm test`: instavel fora do gate minimo (flaky E2E residual)
+- `pnpm run test:unit`: verde
+- `pnpm run test:integration`: verde (suite de fluxo em `tests/integration/**`)
+- `pnpm run test:hotspots`: verde
+- `pnpm run test:smoke`: verde (suite minima em `tests/smoke/**`)
+- `pnpm run quality:gate`: verde (`lint` + `test:hotspots` + `test:integration` + `test:smoke`)
 - `pnpm run build`: verde
 - `pnpm run test:e2e`: cobre onboarding, importações, relatorios e fluxo parto -> pos-parto -> cria inicial
 - Unitários: `src/lib/animals/__tests__/` (7 arquivos), `src/lib/offline/__tests__/` (6 arquivos), `src/pages/__tests__/` (12 arquivos)
@@ -132,7 +137,9 @@ Este documento registra o estado efetivo do RebanhoSync em abril de 2026, pós-f
 | TD-019 | `movimentacao.registro` | FKs from/to_lote_id | ✅ CLOSED | `20260308230735_foreign_keys_movimentacao_reproducao.sql` |
 | TD-020 | `reproducao.registro` | FK macho_id | ✅ CLOSED | `20260308230735_foreign_keys_movimentacao_reproducao.sql` |
 
-**Total OPEN:** 0 (da lista original) ✅
+**Total OPEN da lista original (M0-M2):** 0 ✅
+**Total OPEN residual atual em `TECH_DEBT.md`:** 5 (`TD-025`, `TD-026`, `TD-027`, `TD-029`, `TD-030`)
+**Residual adicional nao-TD (fase MVP -> SLC):** acabamento de experiencia cross-flow
 
 ---
 
@@ -142,7 +149,7 @@ Este documento registra o estado efetivo do RebanhoSync em abril de 2026, pós-f
 | --- | --- | --- | --- |
 | Residual `Registrar`: volume de composicao/JSX no shell | Estrutural local UI | Mantem custo de leitura/manutencao acima do ideal para evolucao de UX | Fatiar blocos de composicao restantes por recortes pequenos |
 | Residual `Agenda`: leitura/preparacao de dados ainda no shell | Estrutural local UI | Shell ainda acumula montagem de read-model local | Extrair montagem de dados para artefatos locais sem mover dominio |
-| Estabilidade de testes fora de recortes locais | Confiabilidade | Maior risco de regressao ao expandir mudancas cross-flow | Fortalecer smoke critico e suites focadas por fluxo |
+| Warnings `act(...)` e flakiness E2E fora do gate minimo | Confiabilidade | Reduz confianca da suite ampla e pode ocultar regressao silenciosa | Corrigir causa de updates assincronos, estabilizar cenarios E2E criticos e reduzir warnings >= 70% |
 | Acabamento de experiencia cross-flow | UX/produto | Fluxos centrais funcionam, mas com friccao e inconsistencia de feedback | Consolidar backlog MVP -> SLC por frentes de UX operacional |
 
 ---

@@ -171,6 +171,52 @@ Toda entrega deve, no mínimo, validar:
 - `pnpm test`
 - `pnpm run build`
 
+Para evolucao de fluxo de produto em fase MVP -> SLC, manter tambem:
+
+- `pnpm run test:hotspots`
+- `pnpm run test:integration`
+- `pnpm run test:smoke`
+
+### 4.3.1 Smoke critico minimo
+
+A suite de smoke critico fica em `tests/smoke/**` e precisa permanecer com execucao rapida (alvo <= 2 min).
+
+Cobertura minima obrigatoria:
+
+1. Agenda -> Registrar -> Conclusao
+2. Registro direto (trilhos principais)
+3. Execucao sanitaria basica
+4. Navegacao critica (animal, evento, protocolo)
+
+Regra:
+- smoke nao substitui suites de dominio nem E2E;
+- smoke protege regressao de fluxo central e roteamento operacional;
+- toda mudanca que quebrar smoke bloqueia merge ate ajuste.
+
+### 4.3.2 Gate minimo de qualidade
+
+Gate operacional padrao para mudancas de produto:
+
+1. `pnpm run lint`
+2. `pnpm run test:hotspots`
+3. `pnpm run test:integration`
+4. `pnpm run test:smoke`
+
+Script consolidado:
+- `pnpm run quality:gate`
+
+### 4.3.3 Padrao minimo de suites por dominio
+
+Para reduzir regressao cross-flow e evitar cobertura excessivamente acoplada a componente, manter a separacao:
+
+- `unit`: helpers, policies e funcoes puras (`src/**/__tests__/*helper.test.ts*` e equivalentes)
+- `integration`: fluxo entre modulos/controladores (`tests/integration/**`)
+- `smoke`: cenarios criticos de navegacao/execucao (`tests/smoke/**`)
+
+Regra:
+- priorizar testes por fluxo de negocio e nao por detalhe de UI;
+- quando existir duvida, validar comportamento observavel do fluxo (entrada -> acao -> estado/saida).
+
 Quando a tarefa tocar áreas sensíveis, revisar adicionalmente:
 - invariantes de sync/offline
 - isolamento por `fazenda_id`

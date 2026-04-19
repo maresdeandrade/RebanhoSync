@@ -72,9 +72,9 @@ Atualizacao estrutural 2026-04-19 (sem mudanca funcional de dominio):
 
 ---
 
+## Milestone 5: Cobertura E2E do Fluxo Reprodutivo Completo
 
 **Objetivo:** garantir cobertura automatica do fluxo parto -> pos-parto -> cria.
-## Milestone 5: Cobertura E2E do Fluxo Reprodutivo Completo
 
 **Derivado de:** TD-023
 
@@ -220,6 +220,10 @@ Atualizacao estrutural 2026-04-19 (sem mudanca funcional de dominio):
 | N/A | `sanitario.calendario_base` | Domain | Milestone 7 |
 | N/A | `sanitario.catalogo_regulatorio` | Domain | Milestone 8 |
 | TD-025 | `sanitario.regime_sequencial` | UX | Milestone 9 |
+| TD-026 | `agenda.shell_readmodel_residual` | Structural | Milestone 10 |
+| TD-027 | `registrar.shell_composition_residual` | Structural | Milestone 10 |
+| TD-028 (CLOSED) | `infra.quality_gate_smoke` | Reliability | Milestone 10 |
+| TD-030 | `infra.test_reliability_act_flaky` | Reliability | Milestone 10 |
 
 ---
 
@@ -251,8 +255,15 @@ Atualizacao estrutural 2026-04-19 (sem mudanca funcional de dominio):
 ### Frente D — Confiabilidade
 
 - [ ] Estabilizar suites fora de recortes locais de hotspot
-- [ ] Definir smoke critico minimo por fluxo de producao
-- [ ] Fortalecer cobertura de regressao para caminhos de maior risco operacional
+- [x] Definir smoke critico minimo por fluxo de producao
+- [x] Definir suite de integracao de fluxo em `tests/integration/flows/**`
+- [x] Manter suite `tests/smoke/**` com execucao rapida (<= 2 min)
+- [x] Instituir gate minimo (`lint` + `test:hotspots` + `test:integration` + `test:smoke`)
+- [x] Fortalecer cobertura de regressao para caminhos de maior risco operacional
+- [x] Reduzir ruído de logs esperados em testes de cenarios negativos (sync/pull)
+- [ ] Eliminar filtros de console em testes e corrigir warnings `act(...)` na causa (async/state updates)
+- [ ] Reduzir warnings `act(...)` em E2E/RTL em pelo menos 70%
+- [ ] Tratar warnings de chunks circulares (classificado como monitorar; nao bloqueante)
 
 ---
 

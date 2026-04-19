@@ -1,6 +1,7 @@
 /** @vitest-environment jsdom */
 import "@testing-library/jest-dom";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, expect, it, beforeEach, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 import { useLiveQuery } from "dexie-react-hooks";
@@ -220,8 +221,9 @@ function createOfficialTemplateItem(
   };
 }
 
-function renderAgenda(initialEntries: string[] = ["/agenda"]) {
-  return render(
+async function renderAgenda(initialEntries: string[] = ["/agenda"]) {
+  const mockedPullDataForFarm = vi.mocked(pullDataForFarm);
+  const rendered = render(
     <MemoryRouter
       initialEntries={initialEntries}
       future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
@@ -229,6 +231,18 @@ function renderAgenda(initialEntries: string[] = ["/agenda"]) {
       <Agenda />
     </MemoryRouter>,
   );
+
+  await waitFor(() => {
+    expect(mockedPullDataForFarm).toHaveBeenCalled();
+  });
+
+  await waitFor(() => {
+    expect(
+      screen.queryByText(/Atualizando agenda local/i),
+    ).not.toBeInTheDocument();
+  });
+
+  return rendered;
 }
 
 describe("Agenda page", () => {
@@ -292,7 +306,7 @@ describe("Agenda page", () => {
       contextualFocus: null,
     });
 
-    renderAgenda();
+    await renderAgenda();
 
     await waitFor(() => {
       expect(screen.getByText("Prazo: Atrasado")).toBeInTheDocument();
@@ -324,7 +338,7 @@ describe("Agenda page", () => {
       contextualFocus: null,
     });
 
-    renderAgenda();
+    await renderAgenda();
 
     await waitFor(() => {
       expect(screen.getAllByText("2 item(ns) no recorte").length).toBeGreaterThan(0);
@@ -335,38 +349,41 @@ describe("Agenda page", () => {
   });
 
   it("accepts calendarMode from query params and overrides the current recorte", async () => {
-    renderAgenda(["/agenda?calendarMode=janela_etaria"]);
+    const user = userEvent.setup();
+    await renderAgenda(["/agenda?calendarMode=janela_etaria"]);
 
     await waitFor(() => {
       expect(screen.getByText("Calendario: Janela etaria")).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByRole("button", { name: /ver itens/i }));
+    await user.click(screen.getByRole("button", { name: /ver itens/i }));
 
     expect(screen.getByText("Vacina Brucelose")).toBeInTheDocument();
     expect(screen.queryByText("Vermifugo Rotacao")).not.toBeInTheDocument();
   });
 
   it("accepts calendarAnchor from query params and narrows the recorte", async () => {
-    renderAgenda(["/agenda?calendarAnchor=nascimento"]);
+    const user = userEvent.setup();
+    await renderAgenda(["/agenda?calendarAnchor=nascimento"]);
 
     await waitFor(() => {
       expect(screen.getByText("Ancora: Nascimento")).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByRole("button", { name: /ver itens/i }));
+    await user.click(screen.getByRole("button", { name: /ver itens/i }));
 
     expect(screen.getByText("Vacina Brucelose")).toBeInTheDocument();
     expect(screen.queryByText("Vermifugo Rotacao")).not.toBeInTheDocument();
   });
 
   it("uses summary badges to focus the group and can reveal the full context", async () => {
-    renderAgenda();
+    const user = userEvent.setup();
+    await renderAgenda();
 
     expect(screen.getByRole("button", { name: /ver itens/i })).toBeInTheDocument();
     expect(screen.queryByText("Vacina Brucelose")).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "Atrasado 1" }));
+    await user.click(screen.getByRole("button", { name: "Atrasado 1" }));
 
     await waitFor(() => {
       expect(screen.getByText("Prazo: Atrasado")).toBeInTheDocument();
@@ -378,7 +395,7 @@ describe("Agenda page", () => {
     expect(screen.getByText("Janela etaria oficial")).toBeInTheDocument();
     expect(screen.queryByText("Vermifugo Rotacao")).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: /ver grupo completo/i }));
+    await user.click(screen.getByRole("button", { name: /ver grupo completo/i }));
 
     expect(screen.getByText("Vermifugo Rotacao")).toBeInTheDocument();
 
@@ -442,17 +459,18 @@ describe("Agenda page", () => {
       gestos: [],
     } as ReturnType<typeof useLiveQuery>);
 
-    renderAgenda();
+    const user = userEvent.setup();
+    await renderAgenda();
 
     expect(screen.getByText("2 grupo(s) atrasado(s)")).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: /proximo critico/i }));
+    await user.click(screen.getByRole("button", { name: /proximo critico/i }));
 
     await waitFor(() => {
       expect(screen.getByText("Foco: Matriz 001")).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByRole("button", { name: /proximo critico/i }));
+    await user.click(screen.getByRole("button", { name: /proximo critico/i }));
 
     await waitFor(() => {
       expect(screen.getByText("Foco: Matriz 002")).toBeInTheDocument();
@@ -474,7 +492,7 @@ describe("Agenda page", () => {
       officialTemplateItems: [createOfficialTemplateItem()],
     } as ReturnType<typeof useLiveQuery>);
 
-    renderAgenda();
+    await renderAgenda();
 
     expect(screen.getAllByText("Feed-ban 1").length).toBeGreaterThan(0);
     expect(

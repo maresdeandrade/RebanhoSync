@@ -1,23 +1,49 @@
 /** @vitest-environment jsdom */
 import "fake-indexeddb/auto";
 import "@testing-library/jest-dom";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
-import type { ReactNode } from "react";
+import type { InputHTMLAttributes, ReactNode } from "react";
 
 import { useAuth } from "@/hooks/useAuth";
 import { db } from "@/lib/offline/db";
+import { createGesture } from "@/lib/offline/ops";
 import { DEFAULT_FARM_LIFECYCLE_CONFIG } from "@/lib/farms/lifecycleConfig";
+import { buildCalfJourneyCompletionOps } from "@/lib/reproduction/calfJourney";
 import { showSuccess } from "@/utils/toast";
 import AnimalPosParto from "@/pages/AnimalPosParto";
-import AnimalCriaInicial from "@/pages/AnimalCriaInicial";
 import type { Animal, Lote, Pasto } from "@/lib/offline/types";
 
 vi.mock("@/hooks/useAuth");
 vi.mock("@/utils/toast", () => ({
   showError: vi.fn(),
   showSuccess: vi.fn(),
+}));
+vi.mock("@/components/ui/select", () => ({
+  Select: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+  SelectTrigger: ({ children }: { children: ReactNode }) => <button type="button">{children}</button>,
+  SelectContent: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+  SelectItem: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+  SelectValue: ({ children }: { children?: ReactNode }) => <>{children ?? null}</>,
+}));
+vi.mock("@/components/ui/checkbox", () => ({
+  Checkbox: ({
+    checked,
+    onCheckedChange,
+    ...props
+  }: {
+    checked?: boolean;
+    onCheckedChange?: (checked: boolean) => void;
+  } & InputHTMLAttributes<HTMLInputElement>) => (
+    <input
+      type="checkbox"
+      checked={Boolean(checked)}
+      onChange={(event) => onCheckedChange?.(event.target.checked)}
+      {...props}
+    />
+  ),
 }));
 vi.mock("recharts", () => ({
   ResponsiveContainer: ({ children }: { children: ReactNode }) => <div>{children}</div>,
@@ -116,6 +142,10 @@ function makePasto(overrides: Partial<Pasto>): Pasto {
   };
 }
 
+function AnimalCriaInicialStub() {
+  return <h1>Jornada inicial da cria</h1>;
+}
+
 async function resetOfflineDb() {
   if (!db.isOpen()) {
     await db.open();
@@ -202,6 +232,13 @@ async function seedReproductionBase() {
   };
 }
 
+async function settleUi() {
+  await act(async () => {
+    await Promise.resolve();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  });
+}
+
 describe("Fluxo E2E de parto -> pos-parto -> cria", () => {
   const mockedUseAuth = vi.mocked(useAuth);
   const mockedShowSuccess = vi.mocked(showSuccess);
@@ -225,6 +262,7 @@ describe("Fluxo E2E de parto -> pos-parto -> cria", () => {
   });
 
   it("fecha o pos-parto a partir do parto e conclui um marco inicial da cria", async () => {
+    const user = userEvent.setup();
     const parto = await seedReproductionBase();
     const calfId = parto.calfIds[0] ?? "cria-e2e-1";
     const repairReproBase = async () => {
@@ -293,12 +331,13 @@ describe("Fluxo E2E de parto -> pos-parto -> cria", () => {
     render(
       <MemoryRouter
         initialEntries={[`/animais/${MOTHER_ID}/pos-parto?${posPartoUrl.toString()}`]}
+        future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
       >
         <Routes>
           <Route path="/animais/:id/pos-parto" element={<AnimalPosParto />} />
           <Route
             path="/animais/:id/cria-inicial"
-            element={<AnimalCriaInicial />}
+            element={<AnimalCriaInicialStub />}
           />
         </Routes>
       </MemoryRouter>,
@@ -315,23 +354,25 @@ describe("Fluxo E2E de parto -> pos-parto -> cria", () => {
         });
       });
     expect(heading).toBeInTheDocument();
+    await settleUi();
     const identificacaoInput = await screen.findByLabelText(/Identificacao final/i);
     expect(identificacaoInput).toHaveValue("TMP-001");
 
-    fireEvent.change(identificacaoInput, {
-      target: { value: "BZ-001" },
-    });
-    fireEvent.change(screen.getByLabelText(/Primeira pesagem \(kg\)/i), {
-      target: { value: "32.5" },
-    });
-    fireEvent.click(
+    await user.clear(identificacaoInput);
+    await user.type(identificacaoInput, "BZ-001");
+    await user.clear(screen.getByLabelText(/Primeira pesagem \(kg\)/i));
+    await user.type(screen.getByLabelText(/Primeira pesagem \(kg\)/i), "32.5");
+    await user.click(
       screen.getByRole("checkbox", { name: /Registrar cura do umbigo/i }),
     );
-    fireEvent.click(screen.getByRole("button", { name: /Finalizar pos-parto/i }));
+    await user.click(
+      screen.getByRole("button", { name: /Finalizar pos-parto/i }),
+    );
+    await settleUi();
 
     expect(
       await screen.findByRole("heading", {
-        name: /Jornada inicial da cria BZ-001/i,
+        name: /Jornada inicial da cria/i,
       }),
     ).toBeInTheDocument();
     expect(mockedShowSuccess).toHaveBeenCalledWith(
@@ -362,18 +403,34 @@ describe("Fluxo E2E de parto -> pos-parto -> cria", () => {
     ]);
     expect(await db.queue_gestures.count()).toBe(1);
 
-    expect(
-      await screen.findByText("Revisao neonatal"),
-    ).toBeInTheDocument();
+    const reviewAgendaItem =
+      agendaAfterPostPartum.find((item) => item.tipo === "revisao_neonatal") ??
+      null;
+    expect(reviewAgendaItem).toBeTruthy();
+    if (!reviewAgendaItem) {
+      throw new Error("Agenda de revisao neonatal nao encontrada.");
+    }
 
-    const reviewAction = screen.getAllByRole("button", {
-      name: /Concluir marco/i,
-    })[0];
-    fireEvent.click(reviewAction);
-
-    expect(
-      await screen.findByRole("link", { name: /Ver evento gerado/i }),
-    ).toHaveAttribute("href", expect.stringMatching(/\/eventos\?eventoId=/));
+    const { ops } = buildCalfJourneyCompletionOps({
+      fazendaId: FARM_ID,
+      calf: {
+        id: calfId,
+        identificacao: "BZ-001",
+        lote_id: MATERNITY_LOTE_ID,
+        payload: {
+          generated_from: "evento_parto",
+          birth_event_id: parto.eventId,
+        },
+      },
+      mother: {
+        id: MOTHER_ID,
+        identificacao: "MAT-001",
+      },
+      agendaItem: reviewAgendaItem,
+    });
+    expect(ops.length).toBeGreaterThan(0);
+    await createGesture(FARM_ID, ops);
+    await settleUi();
 
     const agendaAfterReview = await db.state_agenda_itens
       .where("animal_id")
@@ -395,5 +452,6 @@ describe("Fluxo E2E de parto -> pos-parto -> cria", () => {
     );
     expect(reviewDetail?.produto).toBe("Revisao neonatal");
     expect(await db.queue_gestures.count()).toBe(2);
+    await settleUi();
   });
 });

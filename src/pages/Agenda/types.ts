@@ -1,5 +1,9 @@
 import type { AgendaScheduleBucket } from "@/lib/agenda/groupOrdering";
-import type { AgendaSummaryBadge } from "@/lib/agenda/groupSummaries";
+import type {
+  AgendaSummaryBadge,
+  AgendaAnimalGroupSummary,
+  AgendaEventGroupSummary,
+} from "@/lib/agenda/groupSummaries";
 import type { SanitaryAgendaPriority } from "@/lib/sanitario/protocolRules";
 import type {
   AgendaItem,
@@ -26,7 +30,9 @@ export type AnimalQuickFilter =
 
 export type AgendaCalendarModeQuickFilter = "all" | SanitaryBaseCalendarMode;
 
-export type AgendaCalendarAnchorQuickFilter = "all" | SanitaryBaseCalendarAnchor;
+export type AgendaCalendarAnchorQuickFilter =
+  | "all"
+  | SanitaryBaseCalendarAnchor;
 
 export type QuickFilterTone =
   | "neutral"
@@ -71,11 +77,7 @@ export type AgendaAnimalGroup = {
   rows: AgendaRow[];
   visibleRows: AgendaRow[];
   animal: Animal | null;
-  summary: {
-    animalBadges: AgendaSummaryBadge[];
-    typeBadges: AgendaSummaryBadge[];
-    scheduleBadges: AgendaSummaryBadge[];
-  };
+  summary: AgendaAnimalGroupSummary;
   sortMeta: {
     hasOverdue: boolean;
     hasToday: boolean;
@@ -93,11 +95,7 @@ export type AgendaEventGroup = {
   rows: AgendaRow[];
   visibleRows: AgendaRow[];
   earliestDate: string;
-  summary: {
-    animalBadges: AgendaSummaryBadge[];
-    typeBadges: AgendaSummaryBadge[];
-    scheduleBadges: AgendaSummaryBadge[];
-  };
+  summary: AgendaEventGroupSummary;
   sortMeta: {
     hasOverdue: boolean;
     hasToday: boolean;

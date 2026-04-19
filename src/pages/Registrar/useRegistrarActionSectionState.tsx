@@ -10,15 +10,30 @@ import { RegistrarPesagemSection } from "@/pages/Registrar/components/RegistrarP
 import { RegistrarReproducaoSection } from "@/pages/Registrar/components/RegistrarReproducaoSection";
 import { RegistrarSanitarioSection } from "@/pages/Registrar/components/RegistrarSanitarioSection";
 import { RegistrarTransitChecklistSection } from "@/pages/Registrar/components/RegistrarTransitChecklistSection";
-import { RegistrarComplianceBlockSection, RegistrarSanitaryMovementBlockSection } from "@/pages/Registrar/components/RegistrarComplianceBlocks";
+import {
+  RegistrarComplianceBlockSection,
+  RegistrarSanitaryMovementBlockSection,
+} from "@/pages/Registrar/components/RegistrarComplianceBlocks";
 import { buildRegistrarActionSectionSlots } from "@/pages/Registrar/buildRegistrarActionSectionSlots";
 
-type RegistrarSanitarioSectionProps = ComponentProps<typeof RegistrarSanitarioSection>;
-type RegistrarPesagemSectionProps = ComponentProps<typeof RegistrarPesagemSection>;
-type RegistrarMovimentacaoSectionProps = ComponentProps<typeof RegistrarMovimentacaoSection>;
-type RegistrarNutricaoSectionProps = ComponentProps<typeof RegistrarNutricaoSection>;
-type RegistrarFinanceiroSectionProps = ComponentProps<typeof RegistrarFinanceiroSection>;
-type RegistrarReproducaoSectionProps = ComponentProps<typeof RegistrarReproducaoSection>;
+type RegistrarSanitarioSectionProps = ComponentProps<
+  typeof RegistrarSanitarioSection
+>;
+type RegistrarPesagemSectionProps = ComponentProps<
+  typeof RegistrarPesagemSection
+>;
+type RegistrarMovimentacaoSectionProps = ComponentProps<
+  typeof RegistrarMovimentacaoSection
+>;
+type RegistrarNutricaoSectionProps = ComponentProps<
+  typeof RegistrarNutricaoSection
+>;
+type RegistrarFinanceiroSectionProps = ComponentProps<
+  typeof RegistrarFinanceiroSection
+>;
+type RegistrarReproducaoSectionProps = ComponentProps<
+  typeof RegistrarReproducaoSection
+>;
 
 type RegistrarActionSectionStateInput = {
   activeFarmId: string | null;
@@ -38,26 +53,46 @@ type RegistrarActionSectionStateInput = {
   };
 
   transitChecklistState: {
-    transitChecklistSection: ComponentProps<typeof RegistrarTransitChecklistSection>["transitChecklist"];
-    onTransitChecklistChange: ComponentProps<typeof RegistrarTransitChecklistSection>["onTransitChecklistChange"];
-    officialTransitChecklistEnabled: ComponentProps<typeof RegistrarTransitChecklistSection>["officialTransitChecklistEnabled"];
-    transitChecklistIssues: ComponentProps<typeof RegistrarTransitChecklistSection>["transitChecklistIssues"];
+    transitChecklistSection: ComponentProps<
+      typeof RegistrarTransitChecklistSection
+    >["transitChecklist"];
+    onTransitChecklistChange: ComponentProps<
+      typeof RegistrarTransitChecklistSection
+    >["onTransitChecklistChange"];
+    officialTransitChecklistEnabled: ComponentProps<
+      typeof RegistrarTransitChecklistSection
+    >["officialTransitChecklistEnabled"];
+    transitChecklistIssues: ComponentProps<
+      typeof RegistrarTransitChecklistSection
+    >["transitChecklistIssues"];
     showsTransitChecklist: boolean;
-    blockedAnimals: ComponentProps<typeof RegistrarSanitaryMovementBlockSection>["blockedAnimals"];
+    blockedAnimals: ComponentProps<
+      typeof RegistrarSanitaryMovementBlockSection
+    >["blockedAnimals"];
     movementComplianceGuards: {
-      blockers: ComponentProps<typeof RegistrarComplianceBlockSection>["blockers"];
-      warnings: ComponentProps<typeof RegistrarComplianceBlockSection>["warnings"];
+      blockers: ComponentProps<
+        typeof RegistrarComplianceBlockSection
+      >["blockers"];
+      warnings: ComponentProps<
+        typeof RegistrarComplianceBlockSection
+      >["warnings"];
     };
     nutritionComplianceGuards: {
-      blockers: ComponentProps<typeof RegistrarComplianceBlockSection>["blockers"];
-      warnings: ComponentProps<typeof RegistrarComplianceBlockSection>["warnings"];
+      blockers: ComponentProps<
+        typeof RegistrarComplianceBlockSection
+      >["blockers"];
+      warnings: ComponentProps<
+        typeof RegistrarComplianceBlockSection
+      >["warnings"];
     };
   };
 
   pesagemSection: {
     invalidAnimalIds: string[];
     pesagemData: Record<string, string>;
-    setPesagemData: (updater: (prev: Record<string, string>) => Record<string, string>) => void;
+    setPesagemData: (
+      updater: (prev: Record<string, string>) => Record<string, string>,
+    ) => void;
   };
 
   movimentacaoSection: {
@@ -98,7 +133,9 @@ type RegistrarActionSectionStateInput = {
     contrapartes: Contraparte[] | undefined;
     canManageContraparte: boolean;
     showNovaContraparte: boolean;
-    setShowNovaContraparte: (value: boolean | ((prev: boolean) => boolean)) => void;
+    setShowNovaContraparte: (
+      value: boolean | ((prev: boolean) => boolean),
+    ) => void;
     novaContraparte: RegistrarFinanceiroSectionProps["novaContraparte"];
     setNovaContraparte: (
       updater: (
@@ -114,7 +151,7 @@ type RegistrarActionSectionStateInput = {
       value: string,
     ) => void;
     updateCompraNovoAnimalPesoByIndex: (index: number, value: string) => void;
-    financeiroWeightStep: number;
+    financeiroWeightStep: string;
     financeiroWeightUnitLabel: string;
     onNavigateContrapartes: () => void;
   };
@@ -126,7 +163,9 @@ type RegistrarActionSectionStateInput = {
   };
 };
 
-export function useRegistrarActionSectionState(input: RegistrarActionSectionStateInput) {
+export function useRegistrarActionSectionState(
+  input: RegistrarActionSectionStateInput,
+) {
   const {
     transitChecklistSection,
     sanitaryMovementBlockSection,
@@ -134,19 +173,22 @@ export function useRegistrarActionSectionState(input: RegistrarActionSectionStat
     nutritionComplianceBlockSection,
   } = buildRegistrarActionSectionSlots({
     transitChecklist: input.transitChecklistState.transitChecklistSection,
-    onTransitChecklistChange: input.transitChecklistState.onTransitChecklistChange,
+    onTransitChecklistChange:
+      input.transitChecklistState.onTransitChecklistChange,
     officialTransitChecklistEnabled:
       input.transitChecklistState.officialTransitChecklistEnabled,
     transitChecklistIssues: input.transitChecklistState.transitChecklistIssues,
     showsTransitChecklist: input.transitChecklistState.showsTransitChecklist,
     blockedAnimals: input.transitChecklistState.blockedAnimals,
-    movementComplianceGuards: input.transitChecklistState.movementComplianceGuards,
+    movementComplianceGuards:
+      input.transitChecklistState.movementComplianceGuards,
     nutritionComplianceGuards:
       input.transitChecklistState.nutritionComplianceGuards,
   });
 
   const onProtocoloChange = useCallback(
-    (value: string) => input.sanitarioSection.setProtocoloId(value === "none" ? "" : value),
+    (value: string) =>
+      input.sanitarioSection.setProtocoloId(value === "none" ? "" : value),
     [input.sanitarioSection],
   );
 
@@ -165,20 +207,28 @@ export function useRegistrarActionSectionState(input: RegistrarActionSectionStat
     weightUnitLabel: getWeightUnitLabel(input.farmWeightUnit),
     pesagemData: input.pesagemSection.pesagemData,
     onPesoChange: (animalId, value) =>
-      input.pesagemSection.setPesagemData((prev) => ({ ...prev, [animalId]: value })),
+      input.pesagemSection.setPesagemData((prev) => ({
+        ...prev,
+        [animalId]: value,
+      })),
   };
 
   const lotesDestino = useMemo(
-    () => input.lotes?.filter((lote) => lote.id !== input.selectedLoteIdNormalized) ?? [],
+    () =>
+      input.lotes?.filter(
+        (lote) => lote.id !== input.selectedLoteIdNormalized,
+      ) ?? [],
     [input.lotes, input.selectedLoteIdNormalized],
   );
 
   const movimentacaoSectionProps: RegistrarMovimentacaoSectionProps = {
     movimentacaoDestinoId: input.movimentacaoSection.movimentacaoData.toLoteId,
-    onMovimentacaoDestinoChange: (value) => input.movimentacaoSection.setMovimentacaoData({ toLoteId: value }),
+    onMovimentacaoDestinoChange: (value) =>
+      input.movimentacaoSection.setMovimentacaoData({ toLoteId: value }),
     lotesDestino,
     movimentacaoSemDestino: input.movimentacaoSection.movimentacaoSemDestino,
-    movimentacaoDestinoIgualOrigem: input.movimentacaoSection.movimentacaoDestinoIgualOrigem,
+    movimentacaoDestinoIgualOrigem:
+      input.movimentacaoSection.movimentacaoDestinoIgualOrigem,
     transitChecklistSection,
     sanitaryMovementBlockSection,
     movementComplianceBlockSection,
@@ -187,29 +237,48 @@ export function useRegistrarActionSectionState(input: RegistrarActionSectionStat
   const nutricaoSectionProps: RegistrarNutricaoSectionProps = {
     alimentoNome: input.nutricaoSection.nutricaoData.alimentoNome,
     onAlimentoNomeChange: (value) =>
-      input.nutricaoSection.setNutricaoData((prev) => ({ ...prev, alimentoNome: value })),
+      input.nutricaoSection.setNutricaoData((prev) => ({
+        ...prev,
+        alimentoNome: value,
+      })),
     quantidadeKg: input.nutricaoSection.nutricaoData.quantidadeKg,
     onQuantidadeKgChange: (value) =>
-      input.nutricaoSection.setNutricaoData((prev) => ({ ...prev, quantidadeKg: value })),
+      input.nutricaoSection.setNutricaoData((prev) => ({
+        ...prev,
+        quantidadeKg: value,
+      })),
     nutricaoAlimentoMissing: input.nutricaoSection.nutricaoAlimentoMissing,
-    nutricaoQuantidadeInvalida: input.nutricaoSection.nutricaoQuantidadeInvalida,
+    nutricaoQuantidadeInvalida:
+      input.nutricaoSection.nutricaoQuantidadeInvalida,
     nutritionComplianceBlockSection,
   };
 
   const financeiroSectionProps: RegistrarFinanceiroSectionProps = {
     financeiroData: input.financeiroSection.financeiroData,
-    onNaturezaChange: (natureza) => input.financeiroSection.updateFinanceiroData("natureza", natureza),
+    onNaturezaChange: (natureza) =>
+      input.financeiroSection.updateFinanceiroData("natureza", natureza),
     onQuantidadeAnimaisChange: (value) =>
       input.financeiroSection.updateFinanceiroData("quantidadeAnimais", value),
-    onModoPrecoChange: (modoPreco) => input.financeiroSection.updateFinanceiroData("modoPreco", modoPreco),
+    onModoPrecoChange: (modoPreco) =>
+      input.financeiroSection.updateFinanceiroData("modoPreco", modoPreco),
     onValorUnitarioChange: (valorUnitario) =>
-      input.financeiroSection.updateFinanceiroData("valorUnitario", valorUnitario),
-    onValorTotalChange: (valorTotal) => input.financeiroSection.updateFinanceiroData("valorTotal", valorTotal),
-    onModoPesoChange: (modoPeso) => input.financeiroSection.updateFinanceiroData("modoPeso", modoPeso),
-    onPesoLoteChange: (pesoLoteKg) => input.financeiroSection.updateFinanceiroData("pesoLoteKg", pesoLoteKg),
+      input.financeiroSection.updateFinanceiroData(
+        "valorUnitario",
+        valorUnitario,
+      ),
+    onValorTotalChange: (valorTotal) =>
+      input.financeiroSection.updateFinanceiroData("valorTotal", valorTotal),
+    onModoPesoChange: (modoPeso) =>
+      input.financeiroSection.updateFinanceiroData("modoPeso", modoPeso),
+    onPesoLoteChange: (pesoLoteKg) =>
+      input.financeiroSection.updateFinanceiroData("pesoLoteKg", pesoLoteKg),
     onContraparteChange: (contraparteId) =>
-      input.financeiroSection.updateFinanceiroData("contraparteId", contraparteId),
-    financeiroValorTotalCalculado: input.financeiroSection.financeiroValorTotalCalculado,
+      input.financeiroSection.updateFinanceiroData(
+        "contraparteId",
+        contraparteId,
+      ),
+    financeiroValorTotalCalculado:
+      input.financeiroSection.financeiroValorTotalCalculado,
     isFinanceiroSociedade: input.financeiroSection.isFinanceiroSociedade,
     selectedAnimalIds: input.selectedAnimais,
     contrapartes: input.financeiroSection.contrapartes,
@@ -220,19 +289,39 @@ export function useRegistrarActionSectionState(input: RegistrarActionSectionStat
     onNavigateContrapartes: input.financeiroSection.onNavigateContrapartes,
     novaContraparte: input.financeiroSection.novaContraparte,
     onNovaContraparteFieldChange: (field, value) =>
-      input.financeiroSection.setNovaContraparte((prev) => ({ ...prev, [field]: value })),
+      input.financeiroSection.setNovaContraparte((prev) => ({
+        ...prev,
+        [field]: value,
+      })),
     onCreateContraparte: input.financeiroSection.handleCreateContraparte,
     isSavingContraparte: input.financeiroSection.isSavingContraparte,
     compraNovosAnimais: input.financeiroSection.compraNovosAnimais,
     onCompraIdentificacaoChange: (localId, value) =>
-      input.financeiroSection.updateCompraNovoAnimalField(localId, "identificacao", value),
+      input.financeiroSection.updateCompraNovoAnimalField(
+        localId,
+        "identificacao",
+        value,
+      ),
     onCompraSexoChange: (localId, value) =>
-      input.financeiroSection.updateCompraNovoAnimalField(localId, "sexo", value),
+      input.financeiroSection.updateCompraNovoAnimalField(
+        localId,
+        "sexo",
+        value,
+      ),
     onCompraDataNascimentoChange: (localId, value) =>
-      input.financeiroSection.updateCompraNovoAnimalField(localId, "dataNascimento", value),
+      input.financeiroSection.updateCompraNovoAnimalField(
+        localId,
+        "dataNascimento",
+        value,
+      ),
     onCompraPesoChange: (localId, value) =>
-      input.financeiroSection.updateCompraNovoAnimalField(localId, "pesoKg", value),
-    onVendaPesoAtIndexChange: input.financeiroSection.updateCompraNovoAnimalPesoByIndex,
+      input.financeiroSection.updateCompraNovoAnimalField(
+        localId,
+        "pesoKg",
+        value,
+      ),
+    onVendaPesoAtIndexChange:
+      input.financeiroSection.updateCompraNovoAnimalPesoByIndex,
     animaisNoLote: input.animaisNoLote,
     weightInputStep: input.financeiroSection.financeiroWeightStep,
     weightUnitLabel: input.financeiroSection.financeiroWeightUnitLabel,
@@ -242,7 +331,8 @@ export function useRegistrarActionSectionState(input: RegistrarActionSectionStat
   };
 
   const reproducaoSectionProps: RegistrarReproducaoSectionProps = {
-    partoRequiresSingleMatrix: input.reproducaoSection.partoRequiresSingleMatrix,
+    partoRequiresSingleMatrix:
+      input.reproducaoSection.partoRequiresSingleMatrix,
     fazendaId: input.activeFarmId ?? "",
     animalId: input.selectedAnimais[0],
     data: input.reproducaoSection.reproducaoData,

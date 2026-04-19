@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 
 import { db } from "@/lib/offline/db";
@@ -10,9 +10,14 @@ type UseProtocolosDataInput = {
 };
 
 export function useProtocolosData({ activeFarmId }: UseProtocolosDataInput) {
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [refreshError, setRefreshError] = useState<string | null>(null);
+
   useEffect(() => {
     if (!activeFarmId) return;
 
+    setIsRefreshing(true);
+    setRefreshError(null);
     pullDataForFarm(
       activeFarmId,
       [
@@ -23,6 +28,9 @@ export function useProtocolosData({ activeFarmId }: UseProtocolosDataInput) {
       { mode: "merge" },
     ).catch((error) => {
       console.warn("[protocolos-sanitarios] failed to refresh protocols", error);
+      setRefreshError("Falha ao atualizar protocolos locais.");
+    }).finally(() => {
+      setIsRefreshing(false);
     });
   }, [activeFarmId]);
 
@@ -63,5 +71,11 @@ export function useProtocolosData({ activeFarmId }: UseProtocolosDataInput) {
     catalogProducts: catalogProducts ?? [],
     protocolosExistentes: protocolosExistentes ?? [],
     protocolosItensExistentes: protocolosItensExistentes ?? [],
+    isRefreshing,
+    refreshError,
+    isLoading:
+      catalogProducts === undefined ||
+      protocolosExistentes === undefined ||
+      protocolosItensExistentes === undefined,
   };
 }

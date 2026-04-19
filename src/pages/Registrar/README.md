@@ -29,10 +29,10 @@
 - Misturar IO remoto/local novo na UI quando existir adapter/servico especifico.
 - Refatoracao ampla de uma vez (big-bang) neste hotspot.
 
-## Proximos recortes recomendados
-1. Reduzir volume residual de composicao/JSX do shell em recortes pequenos.
+## Backlog local imediato
+1. Reduzir volume residual de composicao/JSX do shell em recortes pequenos e revisaveis.
 2. Consolidar consistencia visual e de feedback entre sections do registro.
-3. Manter fronteiras atuais (dominio em `src/lib/**`, efeitos fora de componente visual) durante acabamento para fase SLC.
+3. Preservar fronteiras atuais (`src/lib/**` para dominio e efeitos fora de componente visual).
 
 ## Estrutura local atual
 - `index.tsx`: entrada da pagina.

@@ -4,6 +4,7 @@ import {
   getWeightInputStep,
   getWeightUnitLabel,
 } from "@/lib/format/weight";
+import type { FarmWeightUnit } from "@/lib/farms/measurementConfig";
 import { deriveRegistrarFinancialContext } from "@/pages/Registrar/helpers/financialContext";
 import {
   runRegistrarCreateContraparteEffect,
@@ -50,20 +51,25 @@ export function useRegistrarFinanceiroPackage(input: {
   activeFarmId: string | null;
   tipoManejo: EventDomain | null;
   selectedAnimalIds: string[];
-  farmWeightUnit: "kg" | "@";
+  farmWeightUnit: FarmWeightUnit;
   parseUserWeight: (value: string) => number | null;
   lotes: Array<{ id: string; fazenda_id: string; nome: string }> | undefined;
 }) {
-  const [financeiroData, setFinanceiroData] =
-    useState<FinanceiroFormData>(INITIAL_FINANCEIRO_DATA);
+  const [financeiroData, setFinanceiroData] = useState<FinanceiroFormData>(
+    INITIAL_FINANCEIRO_DATA,
+  );
   const [showNovaContraparte, setShowNovaContraparte] = useState(false);
   const [isSavingContraparte, setIsSavingContraparte] = useState(false);
-  const [novaContraparte, setNovaContraparte] = useState<RegistrarNovaContraparteDraft>(
-    INITIAL_NOVA_CONTRAPARTE,
-  );
-  const [compraNovosAnimais, setCompraNovosAnimais] = useState<CompraNovoAnimalDraft[]>([]);
+  const [novaContraparte, setNovaContraparte] =
+    useState<RegistrarNovaContraparteDraft>(INITIAL_NOVA_CONTRAPARTE);
+  const [compraNovosAnimais, setCompraNovosAnimais] = useState<
+    CompraNovoAnimalDraft[]
+  >([]);
   const updateFinanceiroData = useCallback(
-    <K extends keyof FinanceiroFormData>(key: K, value: FinanceiroFormData[K]) => {
+    <K extends keyof FinanceiroFormData>(
+      key: K,
+      value: FinanceiroFormData[K],
+    ) => {
       setFinanceiroData((prev) => ({ ...prev, [key]: value }));
     },
     [],
@@ -71,13 +77,15 @@ export function useRegistrarFinanceiroPackage(input: {
   const applyFinanceiroNaturezaQueryPrefill = useCallback(
     (natureza: string | null) => {
       if (!natureza) return;
-      if (!FINANCEIRO_NATUREZA_OPTIONS.includes(natureza as FinanceiroNatureza)) return;
+      if (!FINANCEIRO_NATUREZA_OPTIONS.includes(natureza as FinanceiroNatureza))
+        return;
       updateFinanceiroData("natureza", natureza as FinanceiroNatureza);
     },
     [updateFinanceiroData],
   );
 
-  const canManageContraparte = input.role === "owner" || input.role === "manager";
+  const canManageContraparte =
+    input.role === "owner" || input.role === "manager";
   const financeiroWeightStep = getWeightInputStep(input.farmWeightUnit);
   const financeiroWeightUnitLabel = getWeightUnitLabel(input.farmWeightUnit);
 
@@ -102,13 +110,16 @@ export function useRegistrarFinanceiroPackage(input: {
     [],
   );
 
-  const updateCompraNovoAnimalPesoByIndex = useCallback((index: number, value: string) => {
-    setCompraNovosAnimais((prev) =>
-      prev.map((item, itemIndex) =>
-        itemIndex === index ? { ...item, pesoKg: value } : item,
-      ),
-    );
-  }, []);
+  const updateCompraNovoAnimalPesoByIndex = useCallback(
+    (index: number, value: string) => {
+      setCompraNovosAnimais((prev) =>
+        prev.map((item, itemIndex) =>
+          itemIndex === index ? { ...item, pesoKg: value } : item,
+        ),
+      );
+    },
+    [],
+  );
 
   const handleCreateContraparte = useCallback(async () => {
     const fazendaId = input.activeFarmId ?? input.lotes?.[0]?.fazenda_id;
@@ -127,10 +138,12 @@ export function useRegistrarFinanceiroPackage(input: {
 
     setIsSavingContraparte(true);
     try {
-      const { contraparteId, txId } = await runRegistrarCreateContraparteEffect({
-        fazendaId,
-        draft: novaContraparte,
-      });
+      const { contraparteId, txId } = await runRegistrarCreateContraparteEffect(
+        {
+          fazendaId,
+          draft: novaContraparte,
+        },
+      );
 
       setFinanceiroData((prev) => ({ ...prev, contraparteId }));
       setNovaContraparte(INITIAL_NOVA_CONTRAPARTE);
@@ -146,7 +159,10 @@ export function useRegistrarFinanceiroPackage(input: {
   }, [canManageContraparte, input.activeFarmId, input.lotes, novaContraparte]);
 
   useEffect(() => {
-    if (input.selectedAnimalIds.length === 0 && financeiroData.natureza === "venda") {
+    if (
+      input.selectedAnimalIds.length === 0 &&
+      financeiroData.natureza === "venda"
+    ) {
       setFinanceiroData((prev) => ({ ...prev, natureza: "compra" }));
     }
   }, [financeiroData.natureza, input.selectedAnimalIds.length]);
@@ -157,7 +173,10 @@ export function useRegistrarFinanceiroPackage(input: {
       return;
     }
 
-    if (financeiroData.natureza === "venda" && financeiroData.modoPeso === "individual") {
+    if (
+      financeiroData.natureza === "venda" &&
+      financeiroData.modoPeso === "individual"
+    ) {
       setCompraNovosAnimais((prev) =>
         input.selectedAnimalIds.map((animalId, index) => {
           const current = prev[index];
@@ -211,7 +230,9 @@ export function useRegistrarFinanceiroPackage(input: {
   ]);
 
   const financialSummary = useMemo(() => {
-    const valorLabel = Number.isFinite(financialContext.financeiroValorTotalCalculado)
+    const valorLabel = Number.isFinite(
+      financialContext.financeiroValorTotalCalculado,
+    )
       ? financialContext.financeiroValorTotalCalculado.toFixed(2)
       : "-";
 
