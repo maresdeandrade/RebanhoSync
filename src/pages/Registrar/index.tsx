@@ -1,27 +1,19 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import type {
-  OperationInput,
   ReproTipoEnum,
   Animal,
 } from "@/lib/offline/types";
-import { type ReproductionEventData } from "@/components/events/ReproductionForm";
-import type { EventDomain } from "@/lib/events/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { PageIntro } from "@/components/ui/page-intro";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { showSuccess, showError } from "@/utils/toast";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
-  Scale,
-  Move,
-  Syringe,
   ChevronRight,
   ChevronLeft,
   Check,
-  Handshake,
 } from "lucide-react";
 import { useLotes } from "@/hooks/useLotes";
 import { useAuth } from "@/hooks/useAuth";
@@ -29,10 +21,6 @@ import { parseWeightInput } from "@/lib/format/weight";
 import {
   buildRegulatoryOperationalReadModel,
 } from "@/lib/sanitario/regulatoryReadModel";
-import {
-  isMovimentacaoDestinoIgualOrigem,
-  shouldClearMovimentacaoDestino,
-} from "@/pages/Registrar/helpers/movimentacao";
 import {
   filterRegistrarAnimalsBySearch,
   resolveSelectedVisibleCount,
@@ -44,19 +32,6 @@ import {
   buildBaseActionStepIssues,
   composeRegistrarActionStepIssues,
 } from "@/pages/Registrar/helpers/actionStepIssues";
-import {
-  buildRegistrarAgendaCompletionOp,
-  resolveRegistrarDistinctAnimalIds,
-  resolveRegistrarTargetAnimalIds,
-} from "@/pages/Registrar/helpers/plan";
-import { resolveRegistrarPreflightIssue } from "@/pages/Registrar/helpers/preflight";
-import {
-  parseRegistrarNumeric,
-} from "@/pages/Registrar/helpers/financialContext";
-import {
-  resolveRegistrarFinalizeCatchIssue,
-  resolveRegistrarFinalizeOpsIssue,
-} from "@/pages/Registrar/helpers/finalizeGuards";
 import { resolveRegistrarFinancialFinalizePlan } from "@/pages/Registrar/helpers/financialFinalize";
 import {
   isRegistrarFinancialFlow,
@@ -75,11 +50,6 @@ import {
 import { runRegistrarFinalizeGestureEffect } from "@/pages/Registrar/effects/finalizeGesture";
 import { FinanceiroResumoConfirmacao } from "@/pages/Registrar/components/FinanceiroResumoConfirmacao";
 import { RegistrarFinanceiroSection } from "@/pages/Registrar/components/RegistrarFinanceiroSection";
-import {
-  RegistrarComplianceBlockSection,
-  RegistrarSanitaryMovementBlockSection,
-} from "@/pages/Registrar/components/RegistrarComplianceBlocks";
-import { RegistrarTransitChecklistSection } from "@/pages/Registrar/components/RegistrarTransitChecklistSection";
 import { ReproducaoResumoConfirmacao } from "@/pages/Registrar/components/ReproducaoResumoConfirmacao";
 import { TransitChecklistResumoConfirmacao } from "@/pages/Registrar/components/TransitChecklistResumoConfirmacao";
 import { ConfirmacaoResumoBase } from "@/pages/Registrar/components/ConfirmacaoResumoBase";
@@ -92,8 +62,6 @@ import { RegistrarMovimentacaoSection } from "@/pages/Registrar/components/Regis
 import { RegistrarNutricaoSection } from "@/pages/Registrar/components/RegistrarNutricaoSection";
 import { RegistrarReproducaoSection } from "@/pages/Registrar/components/RegistrarReproducaoSection";
 import {
-  TRANSIT_CHECKLIST_UF_OPTIONS,
-  TRANSIT_PURPOSE_OPTIONS,
   useRegistrarSanitarioPackage,
 } from "@/pages/Registrar/components/useRegistrarSanitarioPackage";
 import { useRegistrarFinanceiroPackage } from "@/pages/Registrar/components/useRegistrarFinanceiroPackage";
@@ -101,92 +69,29 @@ import {
   buildRegistrarFinalizeSuccessMessage,
   buildRegistrarPostFinalizeNavigationPath,
 } from "@/pages/Registrar/helpers/finalizeOutcome";
-
-enum RegistrationStep {
-  SELECT_ANIMALS = 1,
-  CHOOSE_ACTION = 2,
-  CONFIRM = 3,
-}
-
-const REGISTRATION_STEPS = [
-  RegistrationStep.SELECT_ANIMALS,
-  RegistrationStep.CHOOSE_ACTION,
-  RegistrationStep.CONFIRM,
-];
-
-const STEP_LABEL: Record<RegistrationStep, string> = {
-  [RegistrationStep.SELECT_ANIMALS]: "Selecionar alvo",
-  [RegistrationStep.CHOOSE_ACTION]: "Escolher acao",
-  [RegistrationStep.CONFIRM]: "Confirmar",
-};
+import {
+  REGISTRATION_STEPS,
+  RegistrationStep,
+  STEP_LABEL,
+  useRegistrarStepFlow,
+} from "@/pages/Registrar/useRegistrarStepFlow";
+import { parseRegistrarQueryState } from "@/pages/Registrar/helpers/registrarQueryState";
+import { createRegistrarFinalizeController } from "@/pages/Registrar/createRegistrarFinalizeController";
+import { resolveRegistrarFinalizeOpsIssue, resolveRegistrarFinalizeCatchIssue } from "@/pages/Registrar/helpers/finalizeGuards";
+import {
+  buildRegistrarAgendaCompletionOp,
+  resolveRegistrarDistinctAnimalIds,
+  resolveRegistrarTargetAnimalIds,
+} from "@/pages/Registrar/helpers/plan";
+import {
+  isQuickActionKey,
+  requiresAnimalsForQuickAction,
+  useRegistrarQuickActionPolicy,
+} from "@/pages/Registrar/useRegistrarQuickActionPolicy";
+import { useRegistrarActionSectionState } from "@/pages/Registrar/useRegistrarActionSectionState";
+import { useRegistrarShellState } from "@/pages/Registrar/useRegistrarShellState";
 
 const SEM_LOTE_OPTION = "__sem_lote__";
-
-type QuickActionKey =
-  | "vacinacao"
-  | "vermifugacao"
-  | "pesagem"
-  | "movimentacao"
-  | "compra"
-  | "venda";
-
-type QuickActionConfig = {
-  key: QuickActionKey;
-  label: string;
-  helper: string;
-  requiresAnimals?: boolean;
-  icon: typeof Syringe;
-};
-
-const QUICK_ACTIONS: QuickActionConfig[] = [
-  {
-    key: "vacinacao",
-    label: "Vacinacao",
-    helper: "Aplicacao sanitaria rapida para rotina de vacina.",
-    requiresAnimals: true,
-    icon: Syringe,
-  },
-  {
-    key: "vermifugacao",
-    label: "Vermifugacao",
-    helper: "Registro sanitario rapido por lote ou animal.",
-    requiresAnimals: true,
-    icon: Syringe,
-  },
-  {
-    key: "pesagem",
-    label: "Pesagem",
-    helper: "Lancar peso sem navegar pelo fluxo generico.",
-    requiresAnimals: true,
-    icon: Scale,
-  },
-  {
-    key: "movimentacao",
-    label: "Movimentacao",
-    helper: "Mover animais entre lotes com menos cliques.",
-    requiresAnimals: true,
-    icon: Move,
-  },
-  {
-    key: "compra",
-    label: "Compra",
-    helper: "Compra simples por lote, com ou sem novos animais.",
-    icon: Handshake,
-  },
-  {
-    key: "venda",
-    label: "Venda",
-    helper: "Venda simples com atualizacao do status do animal.",
-    requiresAnimals: true,
-    icon: Handshake,
-  },
-];
-
-const isQuickActionKey = (value: string | null): value is QuickActionKey =>
-  QUICK_ACTIONS.some((action) => action.key === value);
-
-const getQuickActionConfig = (key: QuickActionKey | null) =>
-  QUICK_ACTIONS.find((action) => action.key === key) ?? null;
 
 const isReproTipoEnum = (value: string | null): value is ReproTipoEnum =>
   value === "cobertura" ||
@@ -209,40 +114,44 @@ const Registrar = () => {
   const [searchParams] = useSearchParams();
   const { activeFarmId, role, farmMeasurementConfig, farmLifecycleConfig } =
     useAuth();
-  const [step, setStep] = useState<RegistrationStep>(
-    RegistrationStep.SELECT_ANIMALS,
+  const shellState = useRegistrarShellState({
+    semLoteOption: SEM_LOTE_OPTION,
+  });
+  const {
+    tipoManejo,
+    setTipoManejo,
+    selectedLoteId,
+    setSelectedLoteId,
+    selectedLoteIdNormalized,
+    selectedAnimais,
+    setSelectedAnimais,
+    animalSearch,
+    setAnimalSearch,
+    sourceTaskId,
+    setSourceTaskId,
+    pesagemData,
+    setPesagemData,
+    movimentacaoData,
+    setMovimentacaoData,
+    nutricaoData,
+    setNutricaoData,
+    reproducaoData,
+    setReproducaoData,
+    partoRequiresSingleMatrix,
+    nutricaoAlimentoMissing,
+    nutricaoQuantidadeInvalida,
+    movimentacaoSemDestino,
+    movimentacaoDestinoIgualOrigem,
+    onSelectedLoteIdChange,
+    onSelectVisibleAnimais,
+    onToggleAnimalSelection,
+    clearSelectedAnimais,
+  } = shellState;
+
+  const parseUserWeight = useCallback(
+    (value: string) => parseWeightInput(value, farmMeasurementConfig.weight_unit),
+    [farmMeasurementConfig.weight_unit],
   );
-  const [tipoManejo, setTipoManejo] = useState<EventDomain | null>(null);
-  const [quickAction, setQuickAction] = useState<QuickActionKey | null>(null);
-  const [selectedLoteId, setSelectedLoteId] = useState<string>("");
-  const [selectedAnimais, setSelectedAnimais] = useState<string[]>([]);
-  const [animalSearch, setAnimalSearch] = useState("");
-  const [sourceTaskId, setSourceTaskId] = useState<string>("");
-
-  const [pesagemData, setPesagemData] = useState<Record<string, string>>({});
-  const [movimentacaoData, setMovimentacaoData] = useState({ toLoteId: "" });
-  const [nutricaoData, setNutricaoData] = useState({
-    alimentoNome: "",
-    quantidadeKg: "",
-  });
-  const [reproducaoData, setReproducaoData] = useState<ReproductionEventData>({
-    tipo: "cobertura",
-    machoId: null,
-    observacoes: "",
-  });
-  const quickActionConfig = getQuickActionConfig(quickAction);
-  const partoRequiresSingleMatrix =
-    tipoManejo === "reproducao" &&
-    reproducaoData.tipo === "parto" &&
-    selectedAnimais.length > 1;
-
-  const selectRegularAction = useCallback((domain: EventDomain) => {
-    setQuickAction(null);
-    setTipoManejo(domain);
-  }, []);
-
-  const parseUserWeight = (value: string) =>
-    parseWeightInput(value, farmMeasurementConfig.weight_unit);
 
   // TD-014: Validar peso > 0 no frontend para pesagem
   const isPesagemValid = selectedAnimais.every((id) => {
@@ -268,36 +177,16 @@ const Registrar = () => {
       ),
     [regulatorySurfaceSource],
   );
-  const selectedLoteIdNormalized =
-    selectedLoteId === SEM_LOTE_OPTION
-      ? null
-      : selectedLoteId || null;
   const selectedLoteLabel =
     selectedLoteId === SEM_LOTE_OPTION
       ? "Sem lote"
       : lotes?.find((l) => l.id === selectedLoteId)?.nome ?? "-";
-  const nutricaoQuantidade =
-    nutricaoData.quantidadeKg.trim() !== ""
-      ? parseRegistrarNumeric(nutricaoData.quantidadeKg)
-      : null;
-  const nutricaoAlimentoMissing = nutricaoData.alimentoNome.trim().length === 0;
-  const nutricaoQuantidadeInvalida =
-    nutricaoQuantidade === null ||
-    !Number.isFinite(nutricaoQuantidade) ||
-    nutricaoQuantidade <= 0;
-  const movimentacaoSemDestino = movimentacaoData.toLoteId.trim().length === 0;
-  const movimentacaoDestinoIgualOrigem = isMovimentacaoDestinoIgualOrigem({
-    origemLoteId: selectedLoteIdNormalized,
-    destinoLoteId: movimentacaoData.toLoteId,
-  });
   const pesagemAnimaisInvalidos = selectedAnimais.filter((id) => {
     const weightStr = pesagemData[id];
     if (!weightStr || weightStr.trim() === "") return true;
     const weight = parseUserWeight(weightStr);
     return weight === null || weight <= 0;
   });
-  const requiresAnimalsForQuickAction =
-    quickActionConfig?.requiresAnimals === true && selectedAnimais.length === 0;
   const animaisNoLote = useLiveQuery(
     () =>
       loadRegistrarAnimaisNoLoteEffect({
@@ -424,28 +313,23 @@ const Registrar = () => {
     precoLabel: financeiroResumoPrecoLabel,
     pesoLabel: financeiroResumoPesoLabel,
   } = financialSummary;
-  const applyQuickAction = useCallback((actionKey: QuickActionKey) => {
-    setQuickAction(actionKey);
-
-    if (actionKey === "vacinacao" || actionKey === "vermifugacao") {
-      setTipoManejo("sanitario");
-      applySanitaryQuickAction(actionKey);
-      return;
-    }
-
-    if (actionKey === "pesagem") {
-      setTipoManejo("pesagem");
-      return;
-    }
-
-    if (actionKey === "movimentacao") {
-      setTipoManejo("movimentacao");
-      return;
-    }
-
-    setTipoManejo("financeiro");
-    updateFinanceiroData("natureza", actionKey === "compra" ? "compra" : "venda");
-  }, [applySanitaryQuickAction, updateFinanceiroData]);
+  const {
+    quickAction,
+    quickActionConfig,
+    quickActions,
+    applyQuickAction,
+    clearQuickAction,
+    selectRegularAction,
+  } = useRegistrarQuickActionPolicy({
+    applySanitaryQuickAction,
+    setTipoManejo,
+    updateFinanceiroNatureza: (natureza) =>
+      updateFinanceiroData("natureza", natureza),
+  });
+  const quickActionRequiresAnimals = requiresAnimalsForQuickAction({
+    quickAction,
+    selectedAnimalCount: selectedAnimais.length,
+  });
 
   const contraparteSelecionadaNome =
     financeiroData.contraparteId !== "none"
@@ -472,38 +356,91 @@ const Registrar = () => {
   const confirmacaoDestinoMovimentacaoLabel =
     lotes?.find((item) => item.id === movimentacaoData.toLoteId)?.nome ?? "-";
   const showConfirmacaoNutricaoAlimento = tipoManejo === "nutricao";
-  const transitChecklistSection = showsTransitChecklist ? (
-    <RegistrarTransitChecklistSection
-      transitChecklist={transitChecklist}
-      onTransitChecklistChange={setTransitChecklist}
-      officialTransitChecklistEnabled={officialTransitChecklistEnabled}
-      transitChecklistIssues={transitChecklistIssues}
-      transitPurposeOptions={TRANSIT_PURPOSE_OPTIONS}
-      ufOptions={TRANSIT_CHECKLIST_UF_OPTIONS}
-    />
-  ) : null;
-  const sanitaryMovementBlockSection =
-    showsTransitChecklist && animalsBlockedBySanitaryAlert.length > 0 ? (
-      <RegistrarSanitaryMovementBlockSection
-        blockedAnimals={animalsBlockedBySanitaryAlert}
-      />
-    ) : null;
-  const movementComplianceBlockSection = (
-    <RegistrarComplianceBlockSection
-      title="Restricoes regulatorias de movimentacao"
-      description="O overlay oficial detectou pendencias que afetam este fluxo de movimentacao."
-      blockers={movementComplianceGuards.blockers}
-      warnings={movementComplianceGuards.warnings}
-    />
-  );
-  const nutritionComplianceBlockSection = (
-    <RegistrarComplianceBlockSection
-      title="Restricoes regulatorias de nutricao"
-      description="O overlay oficial detectou risco alimentar ou operacional antes do lancamento deste manejo."
-      blockers={nutritionComplianceGuards.blockers}
-      warnings={nutritionComplianceGuards.warnings}
-    />
-  );
+  const actionSectionState = useRegistrarActionSectionState({
+    activeFarmId: activeFarmId ?? null,
+    selectedAnimais,
+    selectedAnimaisDetalhesCount: selectedAnimaisDetalhes.length,
+    selectedLoteIdNormalized,
+    lotes,
+    farmWeightUnit: farmMeasurementConfig.weight_unit,
+    animaisNoLote,
+    sanitarioSection: {
+      sanitarioTipo: sanitarioData.tipo,
+      onSanitarioTipoChange: handleSanitarioTipoChange,
+      produto: sanitarioData.produto,
+      onProdutoChange: handleSanitarioProdutoChange,
+      sanitatioProductMissing: sanitatioProductMissing,
+      selectedVeterinaryProduct,
+      hasVeterinaryProducts,
+      isVeterinaryProductsEmpty,
+      veterinaryProductSuggestions,
+      selectedVeterinaryProductId,
+      onSelectVeterinaryProduct: selectVeterinaryProduct,
+      protocoloId,
+      setProtocoloId,
+      protocolos: protocolos ?? [],
+      protocoloItemId,
+      setProtocoloItemId,
+      protocoloItensEvaluated,
+      selectedProtocolRestrictionsText,
+      selectedProtocolPrimaryReason,
+      selectedProtocolCompatibleWithAll:
+        selectedProtocoloItemEvaluation?.eligibility.compatibleWithAll ?? null,
+      allProtocolItemsIneligible,
+    },
+    transitChecklistState: {
+      transitChecklistSection: transitChecklist,
+      onTransitChecklistChange: setTransitChecklist,
+      officialTransitChecklistEnabled,
+      transitChecklistIssues,
+      showsTransitChecklist,
+      blockedAnimals: animalsBlockedBySanitaryAlert,
+      movementComplianceGuards,
+      nutritionComplianceGuards,
+    },
+    pesagemSection: {
+      invalidAnimalIds: pesagemAnimaisInvalidos,
+      pesagemData,
+      setPesagemData,
+    },
+    movimentacaoSection: {
+      movimentacaoData,
+      setMovimentacaoData,
+      movimentacaoSemDestino,
+      movimentacaoDestinoIgualOrigem,
+    },
+    nutricaoSection: {
+      nutricaoData,
+      setNutricaoData,
+      nutricaoAlimentoMissing,
+      nutricaoQuantidadeInvalida,
+    },
+    financeiroSection: {
+      financeiroData,
+      updateFinanceiroData,
+      financeiroValorTotalCalculado,
+      isFinanceiroSociedade,
+      contrapartes,
+      canManageContraparte,
+      showNovaContraparte,
+      setShowNovaContraparte,
+      novaContraparte,
+      setNovaContraparte,
+      handleCreateContraparte,
+      isSavingContraparte,
+      compraNovosAnimais,
+      updateCompraNovoAnimalField,
+      updateCompraNovoAnimalPesoByIndex,
+      financeiroWeightStep,
+      financeiroWeightUnitLabel,
+      onNavigateContrapartes: () => navigate("/contrapartes"),
+    },
+    reproducaoSection: {
+      partoRequiresSingleMatrix,
+      reproducaoData,
+      setReproducaoData,
+    },
+  });
 
   const baseActionStepIssues = useMemo(
     () =>
@@ -550,80 +487,80 @@ const Registrar = () => {
     ],
   );
   const canAdvanceToConfirm = actionStepIssues.length === 0;
+  const {
+    step,
+    advanceFromSelect,
+    goToSelectAnimals,
+    goToChooseAction,
+    goToConfirm,
+  } = useRegistrarStepFlow({
+    selectedLoteId,
+    requiresAnimalsForQuickAction: quickActionRequiresAnimals,
+    hasTipoManejo: tipoManejo !== null,
+    canAdvanceToConfirm,
+  });
 
   useEffect(() => {
-    const querySourceTaskId = searchParams.get("sourceTaskId");
-    const queryDomain = searchParams.get("dominio");
-    const queryNatureza = searchParams.get("natureza");
-    const queryQuick = searchParams.get("quick");
-    const queryAnimalId = searchParams.get("animalId");
-    const queryLoteId = searchParams.get("loteId");
-    const queryProtocoloId = searchParams.get("protocoloId");
-    const queryProtocoloItemId = searchParams.get("protocoloItemId");
-    const queryProduto = searchParams.get("produto");
-    const querySanitarioTipo = searchParams.get("sanitarioTipo");
-    const queryReproTipo = searchParams.get("reproTipo");
+    const parsedQuery = parseRegistrarQueryState({
+      searchParams,
+      isQuickActionKey,
+      isReproTipoEnum,
+    });
 
-    if (querySourceTaskId) {
-      setSourceTaskId(querySourceTaskId);
+    if (parsedQuery.sourceTaskId) {
+      setSourceTaskId(parsedQuery.sourceTaskId);
     }
-    if (queryLoteId) {
-      setSelectedLoteId(queryLoteId);
+    if (parsedQuery.loteId) {
+      setSelectedLoteId(parsedQuery.loteId);
     }
-    if (queryAnimalId) {
-      setSelectedAnimais([queryAnimalId]);
+    if (parsedQuery.animalId) {
+      setSelectedAnimais([parsedQuery.animalId]);
     }
-    if (isQuickActionKey(queryQuick)) {
-      applyQuickAction(queryQuick);
+    if (parsedQuery.quickAction) {
+      applyQuickAction(parsedQuery.quickAction);
     }
     if (
-      queryDomain &&
-      ["sanitario", "pesagem", "movimentacao", "nutricao", "financeiro"].includes(
-        queryDomain,
-      )
+      parsedQuery.domain &&
+      [
+        "sanitario",
+        "pesagem",
+        "movimentacao",
+        "nutricao",
+        "financeiro",
+      ].includes(parsedQuery.domain)
     ) {
-      setTipoManejo(queryDomain as EventDomain);
+      setTipoManejo(parsedQuery.domain);
     }
-    applySanitaryQueryPrefill({
-      protocoloId: queryProtocoloId,
-      protocoloItemId: queryProtocoloItemId,
-      produto: queryProduto,
-      sanitarioTipo: querySanitarioTipo,
-    });
-    applyFinanceiroNaturezaQueryPrefill(queryNatureza);
-    if (queryDomain === "reproducao") {
+    applySanitaryQueryPrefill(parsedQuery.sanitaryPrefill);
+    applyFinanceiroNaturezaQueryPrefill(parsedQuery.natureza);
+    if (parsedQuery.domain === "reproducao") {
       setTipoManejo("reproducao");
-      setQuickAction(null);
-      if (isReproTipoEnum(queryReproTipo)) {
+      clearQuickAction();
+      if (parsedQuery.reproTipo) {
         setReproducaoData((prev) => ({
           ...prev,
-          tipo: queryReproTipo,
+          tipo: parsedQuery.reproTipo,
           episodeEventoId: null,
           episodeLinkMethod: undefined,
         }));
       }
     }
-    if ((queryDomain && queryAnimalId) || (isQuickActionKey(queryQuick) && queryAnimalId)) {
-      setStep(RegistrationStep.CHOOSE_ACTION);
+    if (parsedQuery.shouldOpenChooseActionStep) {
+      goToChooseAction();
     }
   }, [
     searchParams,
     applyQuickAction,
     applyFinanceiroNaturezaQueryPrefill,
     applySanitaryQueryPrefill,
+    clearQuickAction,
+    goToChooseAction,
+    setReproducaoData,
+    setSelectedAnimais,
+    setSelectedLoteId,
+    setSourceTaskId,
+    setTipoManejo,
   ]);
-
-  // TD-008: Anti-teleport (ensure origin !== destination)
-  useEffect(() => {
-    if (
-      shouldClearMovimentacaoDestino({
-        origemLoteId: selectedLoteIdNormalized,
-        destinoLoteId: movimentacaoData.toLoteId,
-      })
-    ) {
-      setMovimentacaoData((prev) => ({ ...prev, toLoteId: "" }));
-    }
-  }, [movimentacaoData.toLoteId, selectedLoteIdNormalized]);
 
   // UX Improvement: Auto-select bull if present in the selected lote
   useEffect(() => {
@@ -643,213 +580,140 @@ const Registrar = () => {
      };
 
      autoSelectBull();
-  }, [tipoManejo, selectedLoteId, reproducaoData.machoId]);
+  }, [tipoManejo, selectedLoteId, reproducaoData.machoId, setReproducaoData]);
 
+  const finalizeController = useMemo(
+    () =>
+      createRegistrarFinalizeController({
+        shared: {
+          resolveTargetAnimalIds: resolveRegistrarTargetAnimalIds,
+          resolveDistinctAnimalIds: resolveRegistrarDistinctAnimalIds,
+          loadAnimalsMap: loadRegistrarAnimalsMap,
+        },
+        sanitary: {
+          loadSanitaryFinalizeContext: loadRegistrarSanitaryFinalizeContext,
+          trySanitaryRpcFinalize: tryRegistrarSanitaryRpcFinalizeEffect,
+        },
+        tracks: {
+          isFinancialFlow: isRegistrarFinancialFlow,
+          resolveFinancialFinalizePlan: resolveRegistrarFinancialFinalizePlan,
+          resolveNonFinancialFinalizePlan: resolveRegistrarNonFinancialFinalizePlan,
+        },
+        commit: {
+          buildAgendaCompletionOp: buildRegistrarAgendaCompletionOp,
+          resolveFinalizeOpsIssue: resolveRegistrarFinalizeOpsIssue,
+          runFinalizeGesture: runRegistrarFinalizeGestureEffect,
+        },
+        feedback: {
+          buildFinalizeSuccessMessage: buildRegistrarFinalizeSuccessMessage,
+          buildPostFinalizeNavigationPath: buildRegistrarPostFinalizeNavigationPath,
+          resolveFinalizeCatchIssue: resolveRegistrarFinalizeCatchIssue,
+          showSuccess,
+          showError,
+          navigate,
+        },
+      }),
+    [navigate],
+  );
 
-  const handleFinalize = async () => {
-    if (!tipoManejo) return;
-
-    const fazenda_id = activeFarmId ?? lotes?.[0]?.fazenda_id;
-    if (!fazenda_id) return;
-
-    const hasSelectedAnimals = selectedAnimais.length > 0;
-    const compraGerandoAnimais =
-      tipoManejo === "financeiro" &&
-      financeiroData.natureza === "compra" &&
-      !hasSelectedAnimals;
-
-    const preflightIssue = resolveRegistrarPreflightIssue({
-      tipoManejo,
-      selectedAnimais,
-      selectedLoteId,
-      partoRequiresSingleMatrix,
-      isFinanceiroSociedade,
-      financeiroData: {
-        natureza: financeiroData.natureza,
-        modoPeso: financeiroData.modoPeso,
-        modoPreco: financeiroData.modoPreco,
-        contraparteId: financeiroData.contraparteId,
-      },
-      financeiroValorTotalCalculado,
-      financeiroPesoLote,
-      financeiroValorUnitario,
-      financeiroQuantidadeAnimais,
-      compraNovosAnimais,
-      pesagemData,
-      transitChecklistIssues,
-      complianceFlowIssues,
-      parseUserWeight,
-    });
-    if (preflightIssue) {
-      showError(preflightIssue);
-      return;
-    }
-
-    try {
-      const now = new Date().toISOString();
-      const {
-        protocoloItem,
-        sanitaryProductName,
-        sanitaryProductSelection,
-        sanitaryProductMetadata,
-        transitChecklistPayload,
-      } = await loadRegistrarSanitaryFinalizeContext({
+  const handleFinalize = useCallback(async () => {
+    await finalizeController({
+      context: {
         tipoManejo,
-        protocoloItemId,
-        sanitaryTypedProduct: sanitarioData.produto,
-        selectedVeterinaryProductSelection,
-        resolveProtocolProductSelection,
-        showsTransitChecklist,
-        transitChecklist,
-        officialTransitChecklistEnabled,
-      });
-
-      const sanitaryRpc = await tryRegistrarSanitaryRpcFinalizeEffect({
-        tipoManejo,
+        activeFarmId: activeFarmId ?? null,
+        fallbackFarmId: lotes?.[0]?.fazenda_id ?? null,
         sourceTaskId,
-        fazendaId: fazenda_id,
-        occurredAt: now,
-        tipo: sanitarioData.tipo,
-        sanitaryProductName,
-        sanitaryProductMetadata,
-      });
-      if (sanitaryRpc.status === "handled") {
-        showSuccess(
-          `Aplicacao sanitaria confirmada no servidor. Evento ${sanitaryRpc.eventoId.slice(0, 8)}.`,
-        );
-        navigate("/home");
-        return;
-      }
-
-      const ops: OperationInput[] = [];
-      const createdAnimalIds: string[] = [];
-
-      let linkedEventId: string | null = null;
-      let postPartoRedirect:
-        | { motherId: string; eventId: string; calfIds: string[] }
-        | null = null;
-
-      const targetAnimalIds = resolveRegistrarTargetAnimalIds({
-        hasSelectedAnimals,
+        farmLifecycleConfig,
+        parseUserWeight,
+      },
+      selection: {
         selectedAnimais,
-      });
-
-      // P3.2 PERF: Fetch all animals in bulk to avoid N+1 queries
-      const distinctAnimalIds =
-        resolveRegistrarDistinctAnimalIds(targetAnimalIds);
-      const animalsMap = await loadRegistrarAnimalsMap({
-        animalIds: distinctAnimalIds,
-      });
-
-      if (
-        isRegistrarFinancialFlow({
-          tipoManejo,
-          isFinanceiroSociedade,
-        })
-      ) {
-        const financialPlan = resolveRegistrarFinancialFinalizePlan({
-          tipoManejo,
+        selectedLoteId,
+        selectedLoteIdNormalized,
+        partoRequiresSingleMatrix,
+      },
+      finance: {
+        isFinanceiroSociedade,
+        data: {
           natureza: financeiroData.natureza,
-          isFinanceiroSociedade,
-          fazendaId: fazenda_id,
-          occurredAt: now,
-          selectedAnimalIds: selectedAnimais,
-          animalsMap,
-          selectedLoteIdNormalized,
-          contraparteId: financeiroData.contraparteId,
-          sourceTaskId: sourceTaskId || null,
-          compraNovosAnimais,
           modoPeso: financeiroData.modoPeso,
           modoPreco: financeiroData.modoPreco,
+          contraparteId: financeiroData.contraparteId,
+          valorTotal: financeiroData.valorTotal,
+        },
+        summary: {
+          tipo: financeiroTipo,
+          valorTotalCalculado: financeiroValorTotalCalculado,
           valorTotalInformado: financeiroValorTotalInformado,
           valorUnitario: financeiroValorUnitario,
           pesoLote: financeiroPesoLote,
-          transitChecklistPayload,
-          parseUserWeight,
-        });
-
-        if (financialPlan.issue) {
-          showError(financialPlan.issue);
-          return;
-        }
-
-        linkedEventId = financialPlan.linkedEventId;
-        createdAnimalIds.push(...financialPlan.createdAnimalIds);
-        ops.push(...financialPlan.ops);
-      } else {
-        const nonFinancialPlan = await resolveRegistrarNonFinancialFinalizePlan({
-          tipoManejo,
-          fazendaId: fazenda_id,
-          occurredAt: now,
-          sourceTaskId: sourceTaskId || null,
-          targetAnimalIds,
-          animalsMap,
-          selectedLoteIsSemLote: selectedLoteId === SEM_LOTE_OPTION,
-          selectedLoteIdNormalized,
-          createdAnimalIds,
-          transitChecklistPayload,
-          sanitaryProductName,
-          sanitaryProductSelection,
-          sanitaryProductMetadata,
-          protocoloItem,
-          sanitarioData,
-          pesagemData,
-          movimentacaoData,
-          nutricaoData,
-          financeiroData: {
-            natureza: financeiroData.natureza,
-            valorTotal: financeiroData.valorTotal,
-            contraparteId: financeiroData.contraparteId,
-          },
-          financeiroTipo,
-          reproducaoData,
-          farmLifecycleConfig,
-          parseUserWeight,
-        });
-
-        if (nonFinancialPlan.issue) {
-          showError(nonFinancialPlan.issue);
-          return;
-        }
-
-        if (!linkedEventId && nonFinancialPlan.linkedEventId) {
-          linkedEventId = nonFinancialPlan.linkedEventId;
-        }
-        postPartoRedirect = nonFinancialPlan.postPartoRedirect;
-        ops.push(...nonFinancialPlan.ops);
-      }
-
-      if (sourceTaskId && linkedEventId) {
-        ops.push(
-          buildRegistrarAgendaCompletionOp({
-            sourceTaskId,
-            linkedEventId,
-          }),
-        );
-      }
-
-      const opsIssue = resolveRegistrarFinalizeOpsIssue(ops.length);
-      if (opsIssue) {
-        showError(opsIssue);
-        return;
-      }
-
-      const txId = await runRegistrarFinalizeGestureEffect({
-        fazendaId: fazenda_id,
-        ops,
-      });
-      showSuccess(
-        buildRegistrarFinalizeSuccessMessage({
-          compraGerandoAnimais,
-          createdAnimalCount: createdAnimalIds.length,
-          txId,
-        }),
-      );
-      navigate(buildRegistrarPostFinalizeNavigationPath(postPartoRedirect));
-    } catch (e: unknown) {
-      showError(resolveRegistrarFinalizeCatchIssue(e));
-    }
-  };
+          quantidadeAnimais: financeiroQuantidadeAnimais,
+        },
+        compraNovosAnimais,
+      },
+      sanitary: {
+        protocoloItemId,
+        data: {
+          tipo: sanitarioData.tipo,
+          produto: sanitarioData.produto,
+        },
+        selectedVeterinaryProductSelection,
+        resolveProtocolProductSelection,
+        transit: {
+          showsTransitChecklist,
+          transitChecklist,
+          officialTransitChecklistEnabled,
+          transitChecklistIssues,
+        },
+        complianceFlowIssues,
+      },
+      operationData: {
+        pesagemData,
+        movimentacaoData,
+        nutricaoData,
+        reproducaoData,
+      },
+    });
+  }, [
+    activeFarmId,
+    compraNovosAnimais,
+    complianceFlowIssues,
+    farmLifecycleConfig,
+    financeiroData.contraparteId,
+    financeiroData.modoPeso,
+    financeiroData.modoPreco,
+    financeiroData.natureza,
+    financeiroData.valorTotal,
+    financeiroPesoLote,
+    financeiroQuantidadeAnimais,
+    financeiroTipo,
+    financeiroValorTotalCalculado,
+    financeiroValorTotalInformado,
+    financeiroValorUnitario,
+    finalizeController,
+    isFinanceiroSociedade,
+    lotes,
+    movimentacaoData,
+    nutricaoData,
+    officialTransitChecklistEnabled,
+    parseUserWeight,
+    partoRequiresSingleMatrix,
+    pesagemData,
+    protocoloItemId,
+    reproducaoData,
+    resolveProtocolProductSelection,
+    sanitarioData.produto,
+    sanitarioData.tipo,
+    selectedAnimais,
+    selectedLoteId,
+    selectedLoteIdNormalized,
+    selectedVeterinaryProductSelection,
+    showsTransitChecklist,
+    sourceTaskId,
+    tipoManejo,
+    transitChecklist,
+    transitChecklistIssues,
+  ]);
 
   return (
     <div className="mx-auto max-w-5xl space-y-5">
@@ -898,14 +762,11 @@ const Registrar = () => {
       {step === RegistrationStep.SELECT_ANIMALS && (
         <RegistrarSelectTargetStep
           quickAction={quickAction}
-          quickActions={QUICK_ACTIONS}
+          quickActions={quickActions}
           onApplyQuickAction={applyQuickAction}
-          onClearQuickAction={() => setQuickAction(null)}
+          onClearQuickAction={clearQuickAction}
           selectedLoteId={selectedLoteId}
-          onSelectedLoteIdChange={(value) => {
-            setSelectedLoteId(value);
-            setSelectedAnimais([]);
-          }}
+          onSelectedLoteIdChange={onSelectedLoteIdChange}
           semLoteOption={SEM_LOTE_OPTION}
           lotes={lotes ?? []}
           selectedAnimaisCount={selectedAnimais.length}
@@ -915,23 +776,13 @@ const Registrar = () => {
           selectedAnimais={selectedAnimais}
           animalSearch={animalSearch}
           onAnimalSearchChange={setAnimalSearch}
-          onSelectVisible={(visibleIds) =>
-            setSelectedAnimais((prev) =>
-              Array.from(new Set([...prev, ...visibleIds])),
-            )
-          }
-          onClearSelection={() => setSelectedAnimais([])}
-          onToggleAnimalSelection={(animalId, checked) =>
-            setSelectedAnimais((prev) =>
-              checked
-                ? [...prev, animalId]
-                : prev.filter((id) => id !== animalId),
-            )
-          }
+          onSelectVisible={onSelectVisibleAnimais}
+          onClearSelection={clearSelectedAnimais}
+          onToggleAnimalSelection={onToggleAnimalSelection}
           animaisNoLoteCount={animaisNoLote?.length ?? 0}
-          requiresAnimalsForQuickAction={requiresAnimalsForQuickAction}
+          requiresAnimalsForQuickAction={quickActionRequiresAnimals}
           quickActionLabel={quickActionConfig?.label ?? null}
-          onNext={() => setStep(RegistrationStep.CHOOSE_ACTION)}
+          onNext={advanceFromSelect}
         />
       )}
 
@@ -950,7 +801,7 @@ const Registrar = () => {
               </div>
               <div>
                 <RegistrarQuickActionsGrid
-                  actions={QUICK_ACTIONS}
+                  actions={quickActions}
                   activeAction={quickAction}
                   selectedAnimalsCount={selectedAnimais.length}
                   disableRequiresAnimals
@@ -976,146 +827,27 @@ const Registrar = () => {
             )}
 
             {tipoManejo === "sanitario" && (
-              <RegistrarSanitarioSection
-                sanitarioTipo={sanitarioData.tipo}
-                onSanitarioTipoChange={handleSanitarioTipoChange}
-                produto={sanitarioData.produto}
-                onProdutoChange={handleSanitarioProdutoChange}
-                sanitatioProductMissing={sanitatioProductMissing}
-                selectedVeterinaryProduct={selectedVeterinaryProduct}
-                hasVeterinaryProducts={hasVeterinaryProducts}
-                isVeterinaryProductsEmpty={isVeterinaryProductsEmpty}
-                veterinaryProductSuggestions={veterinaryProductSuggestions}
-                selectedVeterinaryProductId={selectedVeterinaryProductId}
-                onSelectVeterinaryProduct={selectVeterinaryProduct}
-                protocoloId={protocoloId}
-                onProtocoloChange={(value) => setProtocoloId(value === "none" ? "" : value)}
-                protocolos={protocolos ?? []}
-                protocoloItemId={protocoloItemId}
-                onProtocoloItemChange={setProtocoloItemId}
-                protocoloItensEvaluated={protocoloItensEvaluated}
-                selectedAnimaisDetalhesCount={selectedAnimaisDetalhes.length}
-                selectedProtocolRestrictionsText={selectedProtocolRestrictionsText}
-                selectedProtocolPrimaryReason={selectedProtocolPrimaryReason}
-                selectedProtocolCompatibleWithAll={
-                  selectedProtocoloItemEvaluation?.eligibility.compatibleWithAll ?? null
-                }
-                allProtocolItemsIneligible={allProtocolItemsIneligible}
-              />
+              <RegistrarSanitarioSection {...actionSectionState.sanitarioSectionProps} />
             )}
 
             {tipoManejo === "pesagem" && (
-              <RegistrarPesagemSection
-                selectedAnimalIds={selectedAnimais}
-                animaisNoLote={animaisNoLote}
-                invalidAnimalIds={pesagemAnimaisInvalidos}
-                weightInputStep={getWeightInputStep(farmMeasurementConfig.weight_unit)}
-                weightUnitLabel={getWeightUnitLabel(farmMeasurementConfig.weight_unit)}
-                pesagemData={pesagemData}
-                onPesoChange={(animalId, value) =>
-                  setPesagemData((prev) => ({ ...prev, [animalId]: value }))
-                }
-              />
+              <RegistrarPesagemSection {...actionSectionState.pesagemSectionProps} />
             )}
 
             {tipoManejo === "movimentacao" && (
-              <RegistrarMovimentacaoSection
-                movimentacaoDestinoId={movimentacaoData.toLoteId}
-                onMovimentacaoDestinoChange={(value) => setMovimentacaoData({ toLoteId: value })}
-                lotesDestino={
-                  lotes?.filter((lote) => lote.id !== selectedLoteIdNormalized) ?? []
-                }
-                movimentacaoSemDestino={movimentacaoSemDestino}
-                movimentacaoDestinoIgualOrigem={movimentacaoDestinoIgualOrigem}
-                transitChecklistSection={transitChecklistSection}
-                sanitaryMovementBlockSection={sanitaryMovementBlockSection}
-                movementComplianceBlockSection={movementComplianceBlockSection}
-              />
+              <RegistrarMovimentacaoSection {...actionSectionState.movimentacaoSectionProps} />
             )}
 
             {tipoManejo === "nutricao" && (
-              <RegistrarNutricaoSection
-                alimentoNome={nutricaoData.alimentoNome}
-                onAlimentoNomeChange={(value) =>
-                  setNutricaoData((prev) => ({ ...prev, alimentoNome: value }))
-                }
-                quantidadeKg={nutricaoData.quantidadeKg}
-                onQuantidadeKgChange={(value) =>
-                  setNutricaoData((prev) => ({ ...prev, quantidadeKg: value }))
-                }
-                nutricaoAlimentoMissing={nutricaoAlimentoMissing}
-                nutricaoQuantidadeInvalida={nutricaoQuantidadeInvalida}
-                nutritionComplianceBlockSection={nutritionComplianceBlockSection}
-              />
+              <RegistrarNutricaoSection {...actionSectionState.nutricaoSectionProps} />
             )}
 
             {tipoManejo === "financeiro" && (
-              <RegistrarFinanceiroSection
-                financeiroData={financeiroData}
-                onNaturezaChange={(natureza) => updateFinanceiroData("natureza", natureza)}
-                onQuantidadeAnimaisChange={(value) =>
-                  updateFinanceiroData("quantidadeAnimais", value)
-                }
-                onModoPrecoChange={(modoPreco) => updateFinanceiroData("modoPreco", modoPreco)}
-                onValorUnitarioChange={(valorUnitario) =>
-                  updateFinanceiroData("valorUnitario", valorUnitario)
-                }
-                onValorTotalChange={(valorTotal) =>
-                  updateFinanceiroData("valorTotal", valorTotal)
-                }
-                onModoPesoChange={(modoPeso) => updateFinanceiroData("modoPeso", modoPeso)}
-                onPesoLoteChange={(pesoLoteKg) =>
-                  updateFinanceiroData("pesoLoteKg", pesoLoteKg)
-                }
-                onContraparteChange={(contraparteId) =>
-                  updateFinanceiroData("contraparteId", contraparteId)
-                }
-                financeiroValorTotalCalculado={financeiroValorTotalCalculado}
-                isFinanceiroSociedade={isFinanceiroSociedade}
-                selectedAnimalIds={selectedAnimais}
-                contrapartes={contrapartes}
-                canManageContraparte={canManageContraparte}
-                showNovaContraparte={showNovaContraparte}
-                onToggleNovaContraparte={() => setShowNovaContraparte((prev) => !prev)}
-                onNavigateContrapartes={() => navigate("/contrapartes")}
-                novaContraparte={novaContraparte}
-                onNovaContraparteFieldChange={(field, value) =>
-                  setNovaContraparte((prev) => ({ ...prev, [field]: value }))
-                }
-                onCreateContraparte={handleCreateContraparte}
-                isSavingContraparte={isSavingContraparte}
-                compraNovosAnimais={compraNovosAnimais}
-                onCompraIdentificacaoChange={(localId, value) =>
-                  updateCompraNovoAnimalField(localId, "identificacao", value)
-                }
-                onCompraSexoChange={(localId, value) =>
-                  updateCompraNovoAnimalField(localId, "sexo", value)
-                }
-                onCompraDataNascimentoChange={(localId, value) =>
-                  updateCompraNovoAnimalField(localId, "dataNascimento", value)
-                }
-                onCompraPesoChange={(localId, value) =>
-                  updateCompraNovoAnimalField(localId, "pesoKg", value)
-                }
-                onVendaPesoAtIndexChange={updateCompraNovoAnimalPesoByIndex}
-                animaisNoLote={animaisNoLote}
-                weightInputStep={financeiroWeightStep}
-                weightUnitLabel={financeiroWeightUnitLabel}
-                transitChecklistSection={transitChecklistSection}
-                sanitaryMovementBlockSection={sanitaryMovementBlockSection}
-                movementComplianceBlockSection={movementComplianceBlockSection}
-              />
-
+              <RegistrarFinanceiroSection {...actionSectionState.financeiroSectionProps} />
             )}
 
             {tipoManejo === "reproducao" && (
-              <RegistrarReproducaoSection
-                partoRequiresSingleMatrix={partoRequiresSingleMatrix}
-                fazendaId={activeFarmId ?? ""}
-                animalId={selectedAnimais[0]}
-                data={reproducaoData}
-                onChange={setReproducaoData}
-              />
+              <RegistrarReproducaoSection {...actionSectionState.reproducaoSectionProps} />
             )}
 
             {actionStepIssues.length > 0 ? (
@@ -1127,14 +859,14 @@ const Registrar = () => {
             <div className="flex gap-3">
               <Button
                 variant="outline"
-                onClick={() => setStep(RegistrationStep.SELECT_ANIMALS)}
+                onClick={goToSelectAnimals}
               >
                 <ChevronLeft className="mr-2 h-4 w-4" /> Voltar
               </Button>
               <Button
                 className="flex-1"
                 disabled={!tipoManejo || !canAdvanceToConfirm}
-                onClick={() => setStep(RegistrationStep.CONFIRM)}
+                onClick={goToConfirm}
               >
                 Próximo <ChevronRight className="ml-2 h-4 w-4" />
               </Button>
@@ -1199,7 +931,7 @@ const Registrar = () => {
             <div className="flex gap-3">
               <Button
                 variant="outline"
-                onClick={() => setStep(RegistrationStep.CHOOSE_ACTION)}
+                onClick={goToChooseAction}
               >
                 <ChevronLeft className="mr-2 h-4 w-4" /> Voltar
               </Button>

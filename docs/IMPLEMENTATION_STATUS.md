@@ -2,7 +2,7 @@
 
 > **Status:** Derivado (Rev D+)
 > **Baseline:** `b69d35f`
-> **Ultima Atualizacao:** 2026-04-18
+> **Ultima Atualizacao:** 2026-04-19
 > **Derivado por:** Auditoria técnica completa — código + migrations + testes como fonte de verdade
 
 Este documento registra o estado efetivo do RebanhoSync em abril de 2026, pós-fechamento de todos os TDs da lista aberta.
@@ -180,6 +180,16 @@ Este documento registra o estado efetivo do RebanhoSync em abril de 2026, pós-f
   - `src/pages/ProtocolosSanitarios/index.tsx`
 - Contexto local consolidado por hotspot (`README.md` + `AGENTS.md`) e dispatcher local de telas em `src/pages/AGENTS.md`.
 - Esta atualização é estrutural/documental e não altera capability score nem comportamento funcional.
+
+## 7.2 Update 2026-04-19 (Hardening Final do Hotspot Registrar)
+
+- `src/pages/Registrar/index.tsx` foi reduzido de ~1304 -> ~1220 -> ~1019 -> ~948 -> **916** linhas ao longo das sprints de hardening.
+- O entrypoint agora atua como shell quase final: IO, quick action policy, step-flow, query parsing e finalize controller estão fora do shell.
+- A camada de composição de sections foi particionada em artefatos locais:
+  - `useRegistrarActionSectionState.tsx` (builder de props/callbacks de section)
+  - `buildRegistrarActionSectionSlots.tsx` (slots/blocos visuais de compliance e checklist de trânsito)
+  - `useRegistrarShellState.ts` (estado local bruto, toggles, derives simples e wiring local de seleção/reset)
+- A validação de corte final permaneceu verde em escopo local de hotspot (`lint`, `test -- Registrar`, `build`) sem reabrir fronteiras de domínio/offline/sync.
 
 ---
 

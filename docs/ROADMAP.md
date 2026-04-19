@@ -2,7 +2,7 @@
 
 > **Status:** Derivado (Rev D+)
 > **Baseline:** `b69d35f`
-> **Ultima Atualizacao:** 2026-04-18
+> **Ultima Atualizacao:** 2026-04-19
 > **Derivado por:** Auditoria tecnica - estado pos-fechamento dos TDs originais e evolucao funcional de UX operacional
 > **Fonte:** `TECH_DEBT.md`, `IMPLEMENTATION_STATUS.md`
 
@@ -17,6 +17,10 @@ O roadmap atual cobre a consolidacao de observabilidade, cobertura E2E dos fluxo
 Atualizacao estrutural 2026-04-18 (sem mudanca funcional):
 - `src/pages/Registrar/**`, `src/pages/Agenda/**` e `src/pages/ProtocolosSanitarios/**` operam com entrypoints folderizados (`index.tsx`) e contexto local (`README.md`/`AGENTS.md`).
 - Dispatch local de paginas consolidado em `src/pages/AGENTS.md`.
+
+Atualizacao estrutural 2026-04-19 (sem mudanca funcional de dominio):
+- Hardening final do hotspot `src/pages/Registrar/**` concluido em camadas locais de shell/composicao (`useRegistrarShellState`, `useRegistrarActionSectionState`, `buildRegistrarActionSectionSlots`), com reducao adicional do entrypoint para ~916 linhas.
+- O foco de hardening de hotspot de pagina deixa de estar em `Registrar` e permanece em `Agenda` e `ProtocolosSanitarios` para rodadas subsequentes.
 
 ---
 

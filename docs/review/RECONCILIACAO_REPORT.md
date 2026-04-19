@@ -2,7 +2,7 @@
 
 **Status:** Derivado (Rev D+ — Pós-Fechamento)
 **Baseline:** `b69d35f`
-**Última Atualização:** 2026-04-07
+**Última Atualização:** 2026-04-19
 **Derivado por:** Antigravity — Auditoria Técnica Completa Abril/2026
 
 ---
@@ -19,6 +19,19 @@ Recente adição da feature do Motor Sanitário Sequencial (Mid-Month Abril).
 ---
 
 ## 2. Summary
+
+### Delta 2026-04-19 (Hotspot `Registrar`)
+
+- Consolidado o hardening estrutural do entrypoint `src/pages/Registrar/index.tsx` com extração de:
+  - `createRegistrarFinalizeController.ts`
+  - `useRegistrarStepFlow.ts`
+  - `useRegistrarQuickActionPolicy.ts`
+  - `helpers/registrarQueryState.ts`
+  - `useRegistrarActionSectionState.tsx`
+  - `useRegistrarShellState.ts`
+  - `buildRegistrarActionSectionSlots.tsx`
+- Resultado observado: shell de `Registrar` reduzido para ~916 linhas, sem reintrodução de IO/regra de domínio na camada visual.
+- Estado de validação local da trilha: `pnpm run lint`, `pnpm test -- Registrar`, `pnpm run build` verdes nas rodadas de hardening.
 
 ### Documentos Atualizados (Auditoria Abril/2026)
 
@@ -168,9 +181,9 @@ rg -n "animais_delete_by_role" supabase/migrations/
 rg -n "fk_movimentacao\|fk_reproducao_macho" supabase/migrations/
 
 # Verificar TD-008 (anti-teleport UI)
-rg -n "toLoteId" src/pages/Registrar.tsx
+rg -n "toLoteId" src/pages/Registrar/index.tsx
 
-# Verificar stores Dexie v8
+# Verificar stores Dexie v11
 rg -n "metrics_events" src/lib/offline/db.ts
 ```
 

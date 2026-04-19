@@ -2,7 +2,7 @@
 
 > **Status:** Derivado (Rev D+)
 > **Baseline:** `b69d35f`
-> **Ultima Atualizacao:** 2026-04-18
+> **Ultima Atualizacao:** 2026-04-19
 > **Derivado por:** Auditoria tecnica - codigo + migrations como fonte de verdade
 > **Fonte:** `IMPLEMENTATION_STATUS.md`, `src/`, `supabase/`
 
@@ -17,6 +17,12 @@
 - **Status:** OPEN
 - **Origem:** Feat `sanitario_regime_sequencial_e_historico_entrada`
 - **Impacto:** O backend agora calcula bloqueios ou agenda pendente para animais com `history_confidence = unknown` e `compliance_state = catch_up_required`, exigindo uma documentação (ex: atestado de vacinação na compra) ou execução de um catch-up (protocolo de entrada). A UI atual carece de uma tela específica ou card contextual no AnimalDetalhe que permita resolver este status fechando o ciclo do regime.
+
+### Hardening estrutural do hotspot `Registrar` (entrypoint shell) — FECHADO
+
+- **Status:** CLOSED
+- **Fechado por:** `src/pages/Registrar/index.tsx`, `src/pages/Registrar/useRegistrarShellState.ts`, `src/pages/Registrar/useRegistrarActionSectionState.tsx`, `src/pages/Registrar/buildRegistrarActionSectionSlots.tsx`
+- **Detalhe:** o shell deixou de concentrar decisões operacionais densas e volume de estado bruto; wiring local de seleção/toggles/derives simples foi extraído para hook local explícito, mantendo fronteiras de domínio e sync intactas.
 
 ## CLOSED (Historico Completo)
 
