@@ -349,11 +349,11 @@ export function OfficialSanitaryPackManager({
 
       if (!result.operationCount || result.operationCount === 0) {
         showSuccess(
-          `Pack oficial aplicado com ${result.selection.templates.length} frentes. Nenhuma mudanca materializada (operationCount=0).`,
+          `Agenda atualizada. Protocolo oficial aplicado com ${result.selection.templates.length} frente(s). Nenhuma mudanca materializada (operationCount=0).`,
         );
       } else {
         showSuccess(
-          `Pack oficial aplicado com ${result.selection.templates.length} frentes. ${result.operationCount} operacoes enfileiradas; a agenda sanitaria sera recomposta apos o sync.`,
+          `Agenda atualizada. Protocolo oficial aplicado com ${result.selection.templates.length} frente(s). ${result.operationCount} operacoes enfileiradas.`,
         );
       }
     } catch (error) {
@@ -419,7 +419,7 @@ export function OfficialSanitaryPackManager({
               {isApplyingPack ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : null}
-              {appliedTemplateCount > 0 ? "Reaplicar pack oficial" : "Ativar pack oficial"}
+              Aplicar protocolo oficial
             </Button>
           </div>
         </div>

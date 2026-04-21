@@ -18,7 +18,7 @@ export function getScheduleQuickFilterLabel(value: AgendaScheduleBucket) {
 export function getAnimalQuickFilterLabel(value: AnimalQuickFilter) {
   if (value === "with-animal") return "Com animal";
   if (value === "without-animal") return "Sem animal";
-  if (value === "F") return "Femeas";
+  if (value === "F") return "Fêmeas";
   if (value === "M") return "Machos";
   if (value === "unknown") return "Sexo n/d";
   return "Todos";
@@ -35,7 +35,7 @@ export function getCalendarAnchorQuickFilterLabel(
   value: AgendaCalendarAnchorQuickFilter,
 ) {
   if (value === "all") return "Todas";
-  return describeSanitaryCalendarAnchor(value) ?? "Sem ancora";
+  return describeSanitaryCalendarAnchor(value) ?? "Sem âncora";
 }
 
 export function parseCalendarModeQuickFilter(
@@ -70,6 +70,22 @@ export function parseCalendarAnchorQuickFilter(
     value === "diagnostico_evento" ||
     value === "conclusao_etapa_dependente" ||
     value === "ultima_conclusao_mesma_familia"
+  ) {
+    return value;
+  }
+  return null;
+}
+
+export function parseAgendaDominioFilter(value: string | null): string | null {
+  if (value === null) return null;
+  if (
+    value === "all" ||
+    value === "sanitario" ||
+    value === "pesagem" ||
+    value === "movimentacao" ||
+    value === "nutricao" ||
+    value === "financeiro" ||
+    value === "reproducao"
   ) {
     return value;
   }

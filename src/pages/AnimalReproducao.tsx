@@ -199,14 +199,14 @@ export default function AnimalReproducao() {
 
     setIsSaving(true);
     try {
-      const { txId, eventId, calfIds } = await registerReproductionGesture({
+      const { eventId, calfIds } = await registerReproductionGesture({
         fazendaId: animal.fazenda_id,
         animalId: animal.id,
         animalIdentificacao: animal.identificacao,
         loteId: animal.lote_id,
         data,
       });
-      showSuccess(`Evento reprodutivo salvo. TX: ${txId.slice(0, 8)}`);
+      showSuccess("Evento registrado com sucesso. Sincronizacao pendente.");
 
       if (data.tipo === "parto" && calfIds.length > 0) {
         const nextParams = new URLSearchParams();

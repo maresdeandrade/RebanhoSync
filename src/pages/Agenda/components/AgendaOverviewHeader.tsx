@@ -22,7 +22,7 @@ export function AgendaOverviewHeader({ badges, onGoToRegistrar }: AgendaOverview
     <PageIntro
       eyebrow="Rotina planejada"
       title="Agenda de manejo"
-      description="Itens manuais e automaticos vinculados ao fluxo de eventos, com leitura clara do proximo passo e do estado de sync."
+      description="Itens manuais e automáticos vinculados ao fluxo de eventos, com leitura clara do próximo passo e do estado de sync."
       meta={
         <>
           {badges.map((badge) => (

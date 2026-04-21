@@ -113,6 +113,9 @@ export default function AnimalCriaInicial() {
   const [searchParams] = useSearchParams();
   const [draft, setDraft] = useState<CalfInitialDraft | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [processingJourneyItemIds, setProcessingJourneyItemIds] = useState<
+    Set<string>
+  >(new Set());
   const [actionDrafts, setActionDrafts] = useState<Record<string, JourneyActionDraft>>({});
 
   const calf = useLiveQuery(() => (id ? db.state_animais.get(id) : undefined), [id]);
@@ -342,7 +345,19 @@ export default function AnimalCriaInicial() {
     if (eventId) {
       params.set("eventoId", eventId);
     }
-    if (calf?.id) {
+    const criaIds = Array.from(
+      new Set(
+        searchParams
+          .getAll("cria")
+          .map((value) => value.trim())
+          .filter(Boolean),
+      ),
+    );
+    if (criaIds.length > 0) {
+      for (const criaId of criaIds) {
+        params.append("cria", criaId);
+      }
+    } else if (calf?.id) {
       params.append("cria", calf.id);
     }
 
@@ -352,6 +367,7 @@ export default function AnimalCriaInicial() {
   }, [mother, searchParams, calf?.id, calf?.payload]);
 
   const handleSave = async () => {
+    if (isSaving) return;
     if (!calf || !mother || !draft) return;
 
     if (!draft.identificacao.trim()) {
@@ -382,15 +398,15 @@ export default function AnimalCriaInicial() {
         return;
       }
 
-      const txId = await createGesture(calf.fazenda_id, ops);
+      await createGesture(calf.fazenda_id, ops);
       showSuccess(
-        `Ficha inicial salva. ${
+        `Execução registrada com sucesso. ${
           weighedCount > 0 ? `${weighedCount} pesagem inicial registrada. ` : ""
         }${
           umbigoCount > 0 ? `${umbigoCount} cura de umbigo registrada. ` : ""
         }${
-          agendaCount > 0 ? `${agendaCount} marco(s) ate o desmame criado(s). ` : ""
-        }TX: ${txId.slice(0, 8)}`,
+          agendaCount > 0 ? `${agendaCount} etapa(s) ate o desmame criada(s). ` : ""
+        }Sincronizacao pendente.`,
       );
     } catch {
       showError("Erro ao salvar a ficha inicial da cria.");
@@ -400,11 +416,18 @@ export default function AnimalCriaInicial() {
   };
   const handleJourneyMilestone = async (item: AgendaItem) => {
     if (!calf) return;
+    if (processingJourneyItemIds.has(item.id)) return;
 
     const itemDraft = actionDrafts[item.id] ?? {
       pesoKg: "",
       loteId: KEEP_CURRENT_LOTE,
     };
+
+    setProcessingJourneyItemIds((current) => {
+      const next = new Set(current);
+      next.add(item.id);
+      return next;
+    });
 
     try {
       const built = buildCalfJourneyCompletionOps({
@@ -425,16 +448,20 @@ export default function AnimalCriaInicial() {
           itemDraft.loteId === KEEP_CURRENT_LOTE ? calf.lote_id : itemDraft.loteId,
       });
 
-      const txId = await createGesture(calf.fazenda_id, built.ops);
-      showSuccess(
-        `${built.milestone.title} concluido. TX: ${txId.slice(0, 8)}`,
-      );
+      await createGesture(calf.fazenda_id, built.ops);
+      showSuccess(`Evento registrado com sucesso. ${built.milestone.title}.`);
     } catch (error) {
       if (error instanceof Error) {
         showError(error.message);
         return;
       }
-      showError("Falha ao concluir marco da cria.");
+      showError("Falha ao executar etapa da cria.");
+    } finally {
+      setProcessingJourneyItemIds((current) => {
+        const next = new Set(current);
+        next.delete(item.id);
+        return next;
+      });
     }
   };
 
@@ -487,7 +514,7 @@ export default function AnimalCriaInicial() {
           <>
             <Button variant="outline" onClick={() => navigate(backToMother)}>
               <ChevronLeft className="mr-2 h-4 w-4" />
-              Voltar ao pos-parto
+              Seguir pós-parto
             </Button>
             <Button variant="outline" asChild>
               <Link to={`/animais/${calf.id}`}>Abrir ficha completa</Link>
@@ -727,8 +754,14 @@ export default function AnimalCriaInicial() {
 
                     <div className="flex flex-wrap gap-2">
                       {item.status === "agendado" ? (
-                        <Button size="sm" onClick={() => handleJourneyMilestone(item)}>
-                          Concluir marco
+                        <Button
+                          size="sm"
+                          onClick={() => handleJourneyMilestone(item)}
+                          disabled={processingJourneyItemIds.has(item.id)}
+                        >
+                          {processingJourneyItemIds.has(item.id)
+                            ? "Executando..."
+                            : "Executar etapa"}
                         </Button>
                       ) : item.source_evento_id ? (
                         <Button variant="outline" size="sm" asChild>

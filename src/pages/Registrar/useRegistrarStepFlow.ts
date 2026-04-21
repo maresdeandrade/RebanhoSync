@@ -14,8 +14,8 @@ export const REGISTRATION_STEPS = [
 
 export const STEP_LABEL: Record<RegistrationStep, string> = {
   [RegistrationStep.SELECT_ANIMALS]: "Selecionar alvo",
-  [RegistrationStep.CHOOSE_ACTION]: "Escolher acao",
-  [RegistrationStep.CONFIRM]: "Confirmar",
+  [RegistrationStep.CHOOSE_ACTION]: "Escolher ação",
+  [RegistrationStep.CONFIRM]: "Registrar",
 };
 
 export function canAdvanceFromSelectStep(input: {

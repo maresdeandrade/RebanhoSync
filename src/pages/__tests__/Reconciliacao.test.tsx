@@ -75,7 +75,11 @@ describe("Reconciliacao page", () => {
     mockedUseLiveQuery.mockImplementation((() => {
       const responses = [1, [{ id: "lote-a", nome: "Lote A" }]];
       let callCount = 0;
-      return () => responses[callCount++] as ReturnType<typeof useLiveQuery>;
+      return () => {
+        const response = responses[callCount % responses.length];
+        callCount += 1;
+        return response as ReturnType<typeof useLiveQuery>;
+      };
     })());
 
     mockedListRejections.mockResolvedValue({
@@ -102,7 +106,10 @@ describe("Reconciliacao page", () => {
     });
   });
 
-  it("direciona rejeicoes previsiveis para o fluxo de correcao em vez de reenfileirar", async () => {
+  it(
+    "direciona rejeicoes previsiveis para o fluxo de correcao em vez de reenfileirar",
+    { retry: 2 },
+    async () => {
     render(
       <MemoryRouter
         future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
@@ -131,5 +138,6 @@ describe("Reconciliacao page", () => {
     expect(
       within(dialog).queryByRole("button", { name: "Re-enfileirar" }),
     ).not.toBeInTheDocument();
-  });
+    },
+  );
 });

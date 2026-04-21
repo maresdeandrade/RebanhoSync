@@ -153,7 +153,35 @@ describe("createRegistrarFinalizeController", () => {
 
     await finalize(input);
 
+    expect(deps.feedback.buildPostFinalizeNavigationPath).toHaveBeenCalledWith(
+      null,
+      null,
+    );
+    expect(deps.feedback.navigate).toHaveBeenCalledTimes(1);
     expect(deps.feedback.navigate).toHaveBeenCalledWith("/home");
+    expect(deps.commit.runFinalizeGesture).not.toHaveBeenCalled();
+  });
+
+  it("retorna para agenda quando RPC sanitário é tratado e o fluxo veio da agenda", async () => {
+    const deps = buildControllerDeps();
+    deps.sanitary.trySanitaryRpcFinalize.mockResolvedValue({
+      status: "handled",
+      eventoId: "evt-server-1234",
+    });
+    deps.feedback.buildPostFinalizeNavigationPath.mockReturnValue("/agenda");
+    const finalize = createRegistrarFinalizeController(deps);
+    const input = buildFinalizeInput();
+    input.context.tipoManejo = "sanitario";
+    input.context.sourceTaskId = "agenda-1";
+
+    await finalize(input);
+
+    expect(deps.feedback.buildPostFinalizeNavigationPath).toHaveBeenCalledWith(
+      null,
+      "agenda-1",
+    );
+    expect(deps.feedback.navigate).toHaveBeenCalledTimes(1);
+    expect(deps.feedback.navigate).toHaveBeenCalledWith("/agenda");
     expect(deps.commit.runFinalizeGesture).not.toHaveBeenCalled();
   });
 

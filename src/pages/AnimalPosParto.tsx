@@ -206,6 +206,8 @@ export default function AnimalPosParto() {
   };
 
   const handleSave = async () => {
+    if (isSaving) return;
+
     if (!mother || !calves || calves.length === 0) {
       showError("Nenhuma cria disponivel para finalizar o pos-parto.");
       return;
@@ -239,28 +241,30 @@ export default function AnimalPosParto() {
         return;
       }
 
-      const txId = await createGesture(mother.fazenda_id, ops);
+      await createGesture(mother.fazenda_id, ops);
       showSuccess(
-        `Pos-parto finalizado para ${calves.length} cria(s). ${
+        `Execução registrada com sucesso. Pós-parto finalizado para ${calves.length} cria(s). ${
           weighedCount > 0 ? `${weighedCount} pesagem(ns) neonatal(is) registrada(s). ` : ""
         }${
           umbigoCount > 0 ? `${umbigoCount} cura(s) de umbigo registrada(s). ` : ""
         }${
-          agendaCount > 0 ? `${agendaCount} marco(s) ate o desmame criado(s). ` : ""
-        }TX: ${txId.slice(0, 8)}`,
+          agendaCount > 0 ? `${agendaCount} etapa(s) ate o desmame criada(s). ` : ""
+        }${
+          calves.length > 1
+            ? "Seguindo a rotina da primeira cria. "
+            : ""
+        }Sincronizacao pendente.`,
       );
 
-      if (calves.length === 1) {
-        const params = new URLSearchParams();
-        if (eventId) {
-          params.set("eventoId", eventId);
-        }
-        params.set("mae", mother.id);
-        navigate(`/animais/${calves[0].id}/cria-inicial?${params.toString()}`);
-        return;
+      const params = new URLSearchParams();
+      if (eventId) {
+        params.set("eventoId", eventId);
       }
-
-      navigate(`/animais/${mother.id}`);
+      params.set("mae", mother.id);
+      for (const calf of calves) {
+        params.append("cria", calf.id);
+      }
+      navigate(`/animais/${calves[0].id}/cria-inicial?${params.toString()}`);
     } catch (error) {
       void error;
       showError("Erro ao finalizar o pos-parto das crias.");
@@ -448,7 +452,7 @@ export default function AnimalPosParto() {
                   action={
                     <Button variant="outline" size="sm" asChild>
                       <Link to={`/animais/${calf.id}/cria-inicial?${nextParams.toString()}`}>
-                        Abrir rotina da cria
+                        Seguir rotina da cria
                       </Link>
                     </Button>
                   }
@@ -469,7 +473,7 @@ export default function AnimalPosParto() {
             Revisar depois
           </Button>
           <Button onClick={handleSave} disabled={isSaving || drafts.length === 0}>
-            {isSaving ? "Salvando..." : "Finalizar pos-parto"}
+            {isSaving ? "Registrando..." : "Registrar pós-parto"}
           </Button>
         </div>
       </div>

@@ -79,5 +79,5 @@ export function getGroupVisibilityLabel(
     return `${totalCount} item(ns) no recorte`;
   }
 
-  return `${visibleCount} de ${totalCount} item(ns) visiveis`;
+  return `${visibleCount} de ${totalCount} item(ns) visíveis`;
 }

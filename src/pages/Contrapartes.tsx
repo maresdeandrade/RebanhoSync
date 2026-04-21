@@ -128,6 +128,8 @@ export default function Contrapartes() {
   );
 
   const handleCreate = async () => {
+    if (isSavingCreate) return;
+
     if (!activeFarmId) {
       showError("Selecione uma fazenda ativa.");
       return;
@@ -144,7 +146,7 @@ export default function Contrapartes() {
     setIsSavingCreate(true);
     try {
       const contraparteId = crypto.randomUUID();
-      const txId = await createGesture(activeFarmId, [
+      await createGesture(activeFarmId, [
         {
           table: "contrapartes",
           action: "INSERT",
@@ -162,7 +164,7 @@ export default function Contrapartes() {
       ]);
 
       setForm(EMPTY_FORM);
-      showSuccess(`Contraparte criada. TX: ${txId.slice(0, 8)}`);
+      showSuccess("Contraparte criada. Sincronizacao pendente.");
     } catch {
       showError("Falha ao criar contraparte.");
     } finally {
@@ -188,6 +190,8 @@ export default function Contrapartes() {
   };
 
   const handleUpdate = async (id: string) => {
+    if (updatingId === id) return;
+
     if (!activeFarmId) {
       showError("Selecione uma fazenda ativa.");
       return;
@@ -203,7 +207,7 @@ export default function Contrapartes() {
 
     setUpdatingId(id);
     try {
-      const txId = await createGesture(activeFarmId, [
+      await createGesture(activeFarmId, [
         {
           table: "contrapartes",
           action: "UPDATE",
@@ -220,7 +224,7 @@ export default function Contrapartes() {
       ]);
 
       cancelEdit();
-      showSuccess(`Contraparte atualizada. TX: ${txId.slice(0, 8)}`);
+      showSuccess("Contraparte atualizada. Sincronizacao pendente.");
     } catch {
       showError("Falha ao atualizar contraparte.");
     } finally {
@@ -271,10 +275,11 @@ export default function Contrapartes() {
 
   const handleDelete = async () => {
     if (!activeFarmId || !deleteCandidate) return;
+    if (deletingId === deleteCandidate.id) return;
 
     setDeletingId(deleteCandidate.id);
     try {
-      const txId = await createGesture(activeFarmId, [
+      await createGesture(activeFarmId, [
         {
           table: "contrapartes",
           action: "DELETE",
@@ -286,7 +291,7 @@ export default function Contrapartes() {
         cancelEdit();
       }
 
-      showSuccess(`Contraparte removida. TX: ${txId.slice(0, 8)}`);
+      showSuccess("Contraparte removida. Sincronizacao pendente.");
       setDeleteCandidate(null);
     } catch {
       showError("Falha ao remover contraparte.");

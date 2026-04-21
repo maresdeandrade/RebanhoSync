@@ -494,6 +494,8 @@ const Eventos = () => {
   };
 
   const handleSaveComplement = async (baseEvento: Evento) => {
+    if (isSavingComplement) return;
+
     if (!activeFarmId) {
       showError("Fazenda ativa obrigatoria.");
       return;
@@ -515,10 +517,8 @@ const Eventos = () => {
     setIsSavingComplement(true);
     try {
       const built = buildEventGesture(input);
-      const txId = await createGesture(activeFarmId, built.ops);
-      showSuccess(
-        `Complemento salvo neste aparelho. Sincronizacao pendente. TX ${txId.slice(0, 8)}.`,
-      );
+      await createGesture(activeFarmId, built.ops);
+      showSuccess("Complemento salvo neste aparelho. Sincronizacao pendente.");
       setComplementTargetId(null);
       setComplementText("");
     } catch (error: unknown) {

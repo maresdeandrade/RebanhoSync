@@ -23,6 +23,28 @@ Prioridade do momento:
 
 ---
 
+## Semantica Operacional Consolidada
+
+- `Registrar`: abre fluxo completo (formulario) e registra evento ao salvar.
+- `Executar`: registra evento imediato (acao direta).
+- `Encerrar`: fecha pendencia na agenda sem gerar evento.
+- `Aplicar protocolo`: recalcula/materializa agenda e nao gera evento.
+- `Seguir pos-parto` / `Seguir rotina da cria`: continuidade guiada de reproducao.
+- Termos ambiguos legados sao proibidos em copy de UI: `Concluir direto`, `Abrir proxima acao`, `Abrir registro detalhado`, `Executar direto`.
+
+Regra de regressao semantica:
+- `tests/smoke/semantic_terms_guard.smoke.test.ts` bloqueia merge quando termos proibidos reaparecem.
+
+---
+
+## Invariantes de Execucao (Idempotencia)
+
+- `1 acao -> 1 createGesture`.
+- Handlers de acao devem ter guarda de reentrada/concorrencia para evitar clique duplo e corrida.
+- Fluxos centrais devem preservar `1 acao -> 1 resultado -> 1 navegacao`.
+
+---
+
 ## Escopo implementado
 
 - Gestão de animais, lotes, pastos, contrapartes e categorias zootécnicas.
@@ -116,3 +138,4 @@ pnpm run build    # build de produção
 pnpm run test:e2e       # fluxos guiados: onboarding, importação, relatórios
 pnpm run gates          # gates documentais do pacote Antigravity
 pnpm run audit:data     # auditoria de contratos de dados
+```

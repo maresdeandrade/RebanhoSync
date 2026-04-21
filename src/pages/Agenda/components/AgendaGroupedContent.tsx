@@ -89,13 +89,16 @@ export function AgendaGroupedContent({
               <p className="text-sm text-muted-foreground">
                 Use os atalhos para saltar entre os grupos mais urgentes do recorte atual.
               </p>
+              <p className="text-xs text-muted-foreground">
+                "Registrar" abre o formulário completo; "Executar" gera evento imediato; "Encerrar" fecha a pendência.
+              </p>
             </div>
             <div className="flex flex-wrap gap-2">
               <Button type="button" variant="outline" size="sm" onClick={() => onNavigateCriticalGroup("previous")}>
-                Critico anterior
+                Crítico anterior
               </Button>
               <Button type="button" size="sm" onClick={() => onNavigateCriticalGroup("next")}>
-                Proximo critico
+                Próximo crítico
               </Button>
             </div>
           </CardContent>

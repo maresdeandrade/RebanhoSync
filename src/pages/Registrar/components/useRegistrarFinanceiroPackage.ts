@@ -138,7 +138,7 @@ export function useRegistrarFinanceiroPackage(input: {
 
     setIsSavingContraparte(true);
     try {
-      const { contraparteId, txId } = await runRegistrarCreateContraparteEffect(
+      const { contraparteId } = await runRegistrarCreateContraparteEffect(
         {
           fazendaId,
           draft: novaContraparte,
@@ -148,9 +148,7 @@ export function useRegistrarFinanceiroPackage(input: {
       setFinanceiroData((prev) => ({ ...prev, contraparteId }));
       setNovaContraparte(INITIAL_NOVA_CONTRAPARTE);
       setShowNovaContraparte(false);
-      showSuccess(
-        `Contraparte salva neste aparelho. Sincronizacao pendente. TX ${txId.slice(0, 8)}.`,
-      );
+      showSuccess("Contraparte salva neste aparelho. Sincronizacao pendente.");
     } catch {
       showError("Falha ao cadastrar contraparte.");
     } finally {

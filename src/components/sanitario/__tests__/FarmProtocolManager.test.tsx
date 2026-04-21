@@ -95,7 +95,7 @@ describe("FarmProtocolManager", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: /novo protocolo/i }));
+    fireEvent.click(screen.getByRole("button", { name: /criar protocolo/i }));
     fireEvent.change(screen.getByLabelText("Nome"), {
       target: { value: "Complemento local" },
     });

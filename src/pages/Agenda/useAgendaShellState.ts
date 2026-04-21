@@ -34,6 +34,7 @@ type UseAgendaShellStateInput = {
   userId: string | undefined;
   queryCalendarModeFilter: AgendaCalendarModeQuickFilter | null;
   queryCalendarAnchorFilter: AgendaCalendarAnchorQuickFilter | null;
+  queryDominioFilter: string | null;
 };
 
 function buildGroupStateKey(mode: GroupMode, groupKey: string) {
@@ -45,6 +46,7 @@ export function useAgendaShellState({
   userId,
   queryCalendarModeFilter,
   queryCalendarAnchorFilter,
+  queryDominioFilter,
 }: UseAgendaShellStateInput) {
   const previousGroupModeRef = useRef<GroupMode | null>(null);
   const [search, setSearch] = useState(DEFAULT_AGENDA_SHELL_STATE.search);
@@ -255,6 +257,13 @@ export function useAgendaShellState({
     setQuickCalendarAnchorFilter(queryCalendarAnchorFilter);
     clearContextualState();
   }, [hasHydratedUiState, queryCalendarAnchorFilter]);
+
+  useEffect(() => {
+    if (!hasHydratedUiState || queryDominioFilter === null) return;
+
+    setDominioFilter(queryDominioFilter);
+    clearContextualState();
+  }, [hasHydratedUiState, queryDominioFilter]);
 
   return {
     search,

@@ -336,7 +336,12 @@ export function createRegistrarFinalizeController(
         deps.feedback.showSuccess(
           `Aplicacao sanitaria confirmada no servidor. Evento ${sanitaryRpc.eventoId.slice(0, 8)}.`,
         );
-        deps.feedback.navigate("/home");
+        deps.feedback.navigate(
+          deps.feedback.buildPostFinalizeNavigationPath(
+            null,
+            context.sourceTaskId || null,
+          ),
+        );
         input.onFinalizeHandled?.();
         return;
       }

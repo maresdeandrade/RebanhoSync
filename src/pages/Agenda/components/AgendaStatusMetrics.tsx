@@ -12,19 +12,19 @@ export function AgendaStatusMetrics({ agendado, concluido, cancelado }: AgendaSt
       <MetricCard
         label="Agendados"
         value={agendado}
-        hint="Itens que ainda pedem acao."
+        hint="Itens que ainda pedem ação."
         tone={agendado > 0 ? "warning" : "default"}
       />
       <MetricCard
-        label="Concluidos"
+        label="Concluídos"
         value={concluido}
-        hint="Ja resolvidos no recorte atual."
+        hint="Já resolvidos no recorte atual."
         tone="success"
       />
       <MetricCard
         label="Cancelados"
         value={cancelado}
-        hint="Itens encerrados sem execucao."
+        hint="Itens encerrados sem execução."
         tone={cancelado > 0 ? "danger" : "default"}
       />
     </section>

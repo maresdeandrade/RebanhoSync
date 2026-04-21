@@ -233,6 +233,11 @@ describe("official sanitary catalog ops", () => {
         },
       },
     });
+    expect(
+      ops.some(
+        (op) => op.table === "eventos" || op.table.startsWith("eventos_"),
+      ),
+    ).toBe(false);
   });
 
   it("ALWAYS deactivates legacy MAPA seed templates even if not in current selection", async () => {
@@ -332,4 +337,3 @@ describe("official sanitary catalog ops", () => {
     );
   });
 });
-

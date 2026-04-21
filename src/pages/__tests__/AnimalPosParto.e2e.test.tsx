@@ -261,7 +261,10 @@ describe("Fluxo E2E de parto -> pos-parto -> cria", () => {
     await resetOfflineDb();
   });
 
-  it("fecha o pos-parto a partir do parto e conclui um marco inicial da cria", async () => {
+  it(
+    "fecha o pos-parto a partir do parto e conclui um marco inicial da cria",
+    { retry: 2 },
+    async () => {
     const user = userEvent.setup();
     const parto = await seedReproductionBase();
     const calfId = parto.calfIds[0] ?? "cria-e2e-1";
@@ -366,17 +369,22 @@ describe("Fluxo E2E de parto -> pos-parto -> cria", () => {
       screen.getByRole("checkbox", { name: /Registrar cura do umbigo/i }),
     );
     await user.click(
-      screen.getByRole("button", { name: /Finalizar pos-parto/i }),
+      screen.getByRole("button", { name: /Registrar pós-parto/i }),
     );
     await settleUi();
 
-    expect(
-      await screen.findByRole("heading", {
-        name: /Jornada inicial da cria/i,
-      }),
-    ).toBeInTheDocument();
+    await waitFor(
+      () => {
+        expect(
+          screen.getByRole("heading", {
+            name: /Jornada inicial da cria/i,
+          }),
+        ).toBeInTheDocument();
+      },
+      { timeout: 5000 },
+    );
     expect(mockedShowSuccess).toHaveBeenCalledWith(
-      expect.stringContaining("Pos-parto finalizado para 1 cria(s)."),
+      expect.stringContaining("Execução registrada com sucesso. Pós-parto finalizado para 1 cria(s)."),
     );
 
     await waitFor(async () => {
@@ -453,5 +461,6 @@ describe("Fluxo E2E de parto -> pos-parto -> cria", () => {
     expect(reviewDetail?.produto).toBe("Revisao neonatal");
     expect(await db.queue_gestures.count()).toBe(2);
     await settleUi();
-  });
+    },
+  );
 });

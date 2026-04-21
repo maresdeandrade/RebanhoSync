@@ -2,7 +2,7 @@
 
 > **Status:** Normativo
 > **Fonte de Verdade:** Este documento
-> **Última Atualização:** 2026-04-16
+> **Última Atualização:** 2026-04-21
 
 ## 1. Objetivo
 
@@ -164,6 +164,19 @@ Quando os hotspots criticos de uma frente estiverem endurecidos (ex.: shell fino
 - fortalecer cobertura de regressao dos fluxos centrais;
 - tratar a fase como transicao de MVP funcional para SLC em consolidacao (nao produto finalizado).
 
+### 4.2.4 Governanca semantica e idempotencia
+
+Em fluxos operacionais, manter as regras normativas:
+
+- Two Rails explicito: Agenda (intencao mutavel) != Eventos (fato append-only).
+- `Registrar` e `Executar` registram evento.
+- `Encerrar` e `Cancelar` atuam apenas na agenda.
+- `Aplicar protocolo` atua apenas na agenda (materializacao/recalculo), sem registrar evento.
+- `Seguir pos-parto` e `Seguir rotina da cria` identificam continuidade de fluxo guiado em reproducao.
+- `Concluir direto`, `Abrir proxima acao`, `Abrir registro detalhado` e `Executar direto` sao termos proibidos.
+- invariavel de execucao: `1 acao -> 1 createGesture` (sem duplicacao sequencial).
+- handlers de acao direta devem usar guarda de reentrada/concorrencia para evitar dupla submissao e navegacao duplicada.
+
 ### 4.3 Validar
 Toda entrega deve, no mínimo, validar:
 
@@ -192,6 +205,7 @@ Regra:
 - smoke nao substitui suites de dominio nem E2E;
 - smoke protege regressao de fluxo central e roteamento operacional;
 - toda mudanca que quebrar smoke bloqueia merge ate ajuste.
+- `tests/smoke/semantic_terms_guard.smoke.test.ts` e regra oficial para bloquear regressoes de taxonomia semantica.
 
 ### 4.3.2 Gate minimo de qualidade
 

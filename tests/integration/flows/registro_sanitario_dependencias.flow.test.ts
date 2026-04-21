@@ -26,7 +26,8 @@ describe("flow: registro sanitario com dependencias", () => {
       }),
     );
     expect(deps.commit.runFinalizeGesture).not.toHaveBeenCalled();
-    expect(deps.feedback.navigate).toHaveBeenCalledWith("/home");
+    expect(deps.feedback.navigate).toHaveBeenCalledTimes(1);
+    expect(deps.feedback.navigate).toHaveBeenCalledWith("/agenda");
   });
 
   it("quando RPC nao trata, propaga dependencias para o plano nao financeiro", async () => {

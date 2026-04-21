@@ -313,7 +313,7 @@ describe("Agenda page", () => {
     });
 
     expect(screen.getByRole("button", { name: /ocultar itens/i })).toBeInTheDocument();
-    expect(screen.getByText("1 de 2 item(ns) visiveis")).toBeInTheDocument();
+    expect(screen.getByText("1 de 2 item(ns) visíveis")).toBeInTheDocument();
     expect(screen.getByText("Vacina Brucelose")).toBeInTheDocument();
     expect(screen.getByText("Janela etaria oficial")).toBeInTheDocument();
     expect(screen.getByText("Janela etaria")).toBeInTheDocument();
@@ -345,7 +345,7 @@ describe("Agenda page", () => {
     });
 
     expect(screen.queryByText("Filtros ativos")).not.toBeInTheDocument();
-    expect(screen.queryByText("Calendario: Janela etaria")).not.toBeInTheDocument();
+    expect(screen.queryByText("Calendário: Janela etaria")).not.toBeInTheDocument();
   });
 
   it("accepts calendarMode from query params and overrides the current recorte", async () => {
@@ -353,7 +353,7 @@ describe("Agenda page", () => {
     await renderAgenda(["/agenda?calendarMode=janela_etaria"]);
 
     await waitFor(() => {
-      expect(screen.getByText("Calendario: Janela etaria")).toBeInTheDocument();
+      expect(screen.getByText("Calendário: Janela etaria")).toBeInTheDocument();
     });
 
     await user.click(screen.getByRole("button", { name: /ver itens/i }));
@@ -367,13 +367,55 @@ describe("Agenda page", () => {
     await renderAgenda(["/agenda?calendarAnchor=nascimento"]);
 
     await waitFor(() => {
-      expect(screen.getByText("Ancora: Nascimento")).toBeInTheDocument();
+      expect(screen.getByText("Âncora: Nascimento")).toBeInTheDocument();
     });
 
     await user.click(screen.getByRole("button", { name: /ver itens/i }));
 
     expect(screen.getByText("Vacina Brucelose")).toBeInTheDocument();
     expect(screen.queryByText("Vermifugo Rotacao")).not.toBeInTheDocument();
+  });
+
+  it("accepts dominio from query params and opens agenda sanitaria from cross-flow", async () => {
+    mockedUseLiveQuery.mockReturnValue({
+      itens: [
+        createAgendaItem(),
+        createAgendaItem({
+          id: "agenda-pesagem-1",
+          dominio: "pesagem",
+          tipo: "pesagem",
+          source_ref: {
+            produto: "Balanca",
+            indicacao: "Controle de peso",
+          },
+          payload: {
+            produto: "Balanca",
+          },
+          client_op_id: "agenda-op-pesagem-1",
+        }),
+      ],
+      animais: [createAnimal()],
+      lotes: [createLote()],
+      protocolos: [],
+      protocoloItens: [],
+      gestos: [],
+      sanidadeConfig: null,
+      officialTemplates: [],
+      officialTemplateItems: [],
+    } as ReturnType<typeof useLiveQuery>);
+
+    const user = userEvent.setup();
+    await renderAgenda(["/agenda?dominio=sanitario"]);
+
+    await waitFor(() => {
+      expect(screen.getAllByText("1 item(ns) no recorte").length).toBeGreaterThan(0);
+      expect(screen.getByText("Filtros ativos")).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole("button", { name: /ver itens/i }));
+
+    expect(screen.getByText("Vacina Brucelose")).toBeInTheDocument();
+    expect(screen.queryByText("Controle de peso")).not.toBeInTheDocument();
   });
 
   it("uses summary badges to focus the group and can reveal the full context", async () => {
@@ -390,7 +432,7 @@ describe("Agenda page", () => {
     });
 
     expect(screen.getByRole("button", { name: /ocultar itens/i })).toBeInTheDocument();
-    expect(screen.getByText("1 de 2 item(ns) visiveis")).toBeInTheDocument();
+    expect(screen.getByText("1 de 2 item(ns) visíveis")).toBeInTheDocument();
     expect(screen.getByText("Vacina Brucelose")).toBeInTheDocument();
     expect(screen.getByText("Janela etaria oficial")).toBeInTheDocument();
     expect(screen.queryByText("Vermifugo Rotacao")).not.toBeInTheDocument();
@@ -464,13 +506,13 @@ describe("Agenda page", () => {
 
     expect(screen.getByText("2 grupo(s) atrasado(s)")).toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: /proximo critico/i }));
+    await user.click(screen.getByRole("button", { name: /próximo crítico/i }));
 
     await waitFor(() => {
       expect(screen.getByText("Foco: Matriz 001")).toBeInTheDocument();
     });
 
-    await user.click(screen.getByRole("button", { name: /proximo critico/i }));
+    await user.click(screen.getByRole("button", { name: /próximo crítico/i }));
 
     await waitFor(() => {
       expect(screen.getByText("Foco: Matriz 002")).toBeInTheDocument();

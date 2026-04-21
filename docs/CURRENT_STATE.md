@@ -1,7 +1,7 @@
 # Current State (Snapshot Operacional)
 
 > **Status:** Snapshot vivo
-> **Ultima atualizacao:** 2026-04-19
+> **Ultima atualizacao:** 2026-04-21
 > **Estado do produto:** Beta interno
 > **Fase atual:** MVP funcional completo -> **SLC (Simple, Lovable, Complete) em consolidacao**
 
@@ -18,6 +18,12 @@ A fase corrente e de **consolidacao operacional**:
 - reduzir friccao de uso em campo;
 - aumentar consistencia de experiencia;
 - estabilizar qualidade para evolucao incremental sem regressao estrutural.
+
+Consolidacoes recentes da fase SLC:
+- semantica transversal padronizada: `Registrar`, `Executar`, `Encerrar`, `Aplicar protocolo`, `Seguir fluxo` (reproducao);
+- remocao de termos ambiguos legados da UI operacional;
+- reforco do modelo Two Rails: Agenda (`agenda_itens`) != Eventos (`eventos`);
+- `Aplicar protocolo` atua apenas na agenda (materializacao/recalculo), sem gerar evento.
 
 ---
 
@@ -48,6 +54,14 @@ Hardening estrutural principal concluido:
 
 Residual dominante:
 - leitura/preparacao de dados ainda concentrada no shell (nao composicao macro).
+
+---
+
+## 2.1 Invariantes operacionais consolidados
+
+- idempotencia de execucao: `1 acao -> 1 createGesture`;
+- guards de reentrada/concorrencia ativos nos fluxos operacionais criticos para evitar dupla execucao;
+- regressao semantica travada por `tests/smoke/semantic_terms_guard.smoke.test.ts`.
 
 ---
 

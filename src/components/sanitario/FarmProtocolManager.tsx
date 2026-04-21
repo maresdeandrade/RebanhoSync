@@ -649,6 +649,8 @@ export function FarmProtocolManager({
   };
 
   const handleImportStandardTemplate = async (protocol: StandardProtocol) => {
+    if (isSaving) return;
+
     if (!canManage) {
       showError("Apenas manager e owner podem importar templates canonicos.");
       return;
@@ -738,6 +740,7 @@ export function FarmProtocolManager({
   };
 
   const handleSaveProtocol = async () => {
+    if (isSaving) return;
     if (!protocolEditor) return;
 
     const validationError = validateProtocolDraft(protocolEditor.draft);
@@ -812,6 +815,7 @@ export function FarmProtocolManager({
   };
 
   const handleSaveItem = async () => {
+    if (isSaving) return;
     if (!itemEditor) return;
 
     const validationError = validateProtocolItemDraft(itemEditor.draft);
@@ -871,6 +875,7 @@ export function FarmProtocolManager({
   };
 
   const handleDeleteProtocol = async () => {
+    if (isDeleting) return;
     if (!deleteTarget) return;
 
     const protocolOps: OperationInput[] = [
@@ -908,7 +913,7 @@ export function FarmProtocolManager({
   return (
     <>
       <FormSection
-        title="Protocolos operacionais da fazenda"
+        title="Gerenciar protocolos da fazenda"
         description="Customizado = como a fazenda escolhe operar em cima da base regulatoria, sem duplicar o mesmo tronco oficial por familia protocolar."
         actions={
           <>
@@ -918,7 +923,7 @@ export function FarmProtocolManager({
             </Badge>
             <Button onClick={openCreateProtocol} disabled={!canManage}>
               <Plus className="mr-2 h-4 w-4" />
-              Novo protocolo
+              Criar protocolo
             </Button>
           </>
         }
@@ -1435,7 +1440,7 @@ function ProtocolEditorDialog({
       <DialogContent className="max-w-3xl">
         <DialogHeader>
           <DialogTitle>
-            {isEditing ? "Editar protocolo" : "Novo protocolo customizado"}
+            {isEditing ? "Editar protocolo" : "Criar protocolo customizado"}
           </DialogTitle>
           <DialogDescription>
             Customizado = como sua fazenda escolhe operar. Use outra familia

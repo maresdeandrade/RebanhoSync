@@ -46,6 +46,22 @@ export function AgendaItemRowCard({
   registerRowRef,
 }: AgendaItemRowCardProps) {
   const rowMeta = renderRowMeta(row);
+  const isScheduled = row.item.status === "agendado";
+  const isCalfJourney = isCalfJourneyAgendaItem(row.item);
+  const isSanitary = row.item.dominio === "sanitario";
+  const canDirectComplete = isScheduled && !isCalfJourney;
+
+  const registerCtaLabel = isCalfJourney
+    ? "Seguir rotina da cria"
+    : "Registrar";
+  const directCompleteLabel = isSanitary
+    ? "Executar"
+    : "Encerrar";
+  const nextStepHint = isCalfJourney
+    ? "Próximo passo: seguir a rotina guiada da cria."
+    : isSanitary
+      ? "Próximo passo: usar Registrar para revisar dados ou Executar para gerar evento sanitário."
+      : "Próximo passo: usar Registrar para gravar a execução completa; Encerrar apenas fecha a pendência.";
 
   return (
     <article
@@ -83,11 +99,11 @@ export function AgendaItemRowCard({
             ) : null}
             {row.scheduleAnchorLabel ? (
               <p className="text-muted-foreground">
-                Ancora: <span className="font-medium text-foreground">{row.scheduleAnchorLabel}</span>
+                Âncora: <span className="font-medium text-foreground">{row.scheduleAnchorLabel}</span>
               </p>
             ) : null}
             <p className="text-muted-foreground">
-              Indicacao: <span className="font-medium text-foreground">{rowMeta.indicacao}</span>
+              Indicação: <span className="font-medium text-foreground">{rowMeta.indicacao}</span>
             </p>
             <p className="text-muted-foreground">
               Origem: <span className="font-medium text-foreground">{row.item.source_kind}</span>
@@ -98,26 +114,36 @@ export function AgendaItemRowCard({
               </p>
             ) : null}
           </div>
+          {isScheduled ? (
+            <p className="text-xs text-muted-foreground">{nextStepHint}</p>
+          ) : null}
         </div>
 
         <div className="flex items-center gap-2">
-          {row.item.status === "agendado" ? (
+          {isScheduled ? (
             <Button size="sm" onClick={() => onGoToRegistrar(row.item)}>
-              {isCalfJourneyAgendaItem(row.item) ? "Abrir rotina da cria" : "Registrar evento"}
+              {registerCtaLabel}
             </Button>
           ) : null}
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button type="button" size="icon" variant="outline" aria-label={`Mais acoes para o item ${row.item.id}`}>
+              <Button
+                type="button"
+                size="icon"
+                variant="outline"
+                aria-label={`Mais ações para o item ${row.item.id}`}
+              >
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              {row.item.status === "agendado" && !isCalfJourneyAgendaItem(row.item) ? (
-                <DropdownMenuItem onClick={() => onUpdateStatus(row.item, "concluido")}>Concluir</DropdownMenuItem>
+              {canDirectComplete ? (
+                <DropdownMenuItem onClick={() => onUpdateStatus(row.item, "concluido")}>
+                  {directCompleteLabel}
+                </DropdownMenuItem>
               ) : null}
-              {row.item.status === "agendado" ? (
+              {isScheduled ? (
                 <DropdownMenuItem onClick={() => onUpdateStatus(row.item, "cancelado")}>Cancelar</DropdownMenuItem>
               ) : null}
               {row.item.source_evento_id ? (

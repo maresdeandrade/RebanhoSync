@@ -32,6 +32,7 @@ import {
 } from "@/pages/Agenda/helpers/formatting";
 import {
   getAnimalQuickFilterLabel,
+  parseAgendaDominioFilter,
   getCalendarAnchorQuickFilterLabel,
   getCalendarModeQuickFilterLabel,
   getScheduleQuickFilterLabel,
@@ -59,19 +60,19 @@ import { useAgendaInteractionState } from "@/pages/Agenda/useAgendaInteractionSt
 import { showError, showSuccess } from "@/utils/toast";
 
 const DOMAIN_LABEL: Record<string, string> = {
-  sanitario: "Sanitario",
-  alerta_sanitario: "Alerta sanitario",
+  sanitario: "Sanitário",
+  alerta_sanitario: "Alerta sanitário",
   conformidade: "Conformidade",
   pesagem: "Pesagem",
-  movimentacao: "Movimentacao",
-  nutricao: "Nutricao",
+  movimentacao: "Movimentação",
+  nutricao: "Nutrição",
   financeiro: "Financeiro",
-  reproducao: "Reproducao",
+  reproducao: "Reprodução",
 };
 
 const STATUS_LABEL: Record<string, string> = {
   agendado: "Agendado",
-  concluido: "Concluido",
+  concluido: "Concluído",
   cancelado: "Cancelado",
 };
 
@@ -87,6 +88,7 @@ export default function Agenda() {
   const queryCalendarAnchorFilter = parseCalendarAnchorQuickFilter(
     searchParams.get("calendarAnchor"),
   );
+  const queryDominioFilter = parseAgendaDominioFilter(searchParams.get("dominio"));
   const {
     search,
     setSearch,
@@ -125,6 +127,7 @@ export default function Agenda() {
     userId: user?.id,
     queryCalendarModeFilter,
     queryCalendarAnchorFilter,
+    queryDominioFilter,
   });
 
   useEffect(() => {
@@ -339,7 +342,7 @@ export default function Agenda() {
         kindTone: (item.queueKind === "decisao_estrategica"
           ? "warning"
           : "info") as "warning" | "info",
-        autoApplyLabel: item.canAutoApply ? "Auto/hibrido" : "Manual",
+        autoApplyLabel: item.canAutoApply ? "Auto/híbrido" : "Manual",
         autoApplyTone: (item.canAutoApply ? "info" : "warning") as
           | "info"
           | "warning",
@@ -381,14 +384,14 @@ export default function Agenda() {
     if (quickCalendarModeFilter !== "all") {
       badges.push({
         key: "quick-calendar-mode",
-        label: `Calendario: ${getCalendarModeQuickFilterLabel(quickCalendarModeFilter)}`,
+        label: `Calendário: ${getCalendarModeQuickFilterLabel(quickCalendarModeFilter)}`,
         tone: "info",
       });
     }
     if (quickCalendarAnchorFilter !== "all") {
       badges.push({
         key: "quick-calendar-anchor",
-        label: `Ancora: ${getCalendarAnchorQuickFilterLabel(quickCalendarAnchorFilter)}`,
+        label: `Âncora: ${getCalendarAnchorQuickFilterLabel(quickCalendarAnchorFilter)}`,
         tone: "info",
       });
     }
@@ -411,7 +414,7 @@ export default function Agenda() {
     if (lifecycleSummary.total > 0) {
       badges.push({
         key: "lifecycle",
-        label: `${lifecycleSummary.total} transicao(oes) no radar`,
+        label: `${lifecycleSummary.total} transição(ões) no radar`,
         tone: "warning",
       });
     }
@@ -500,7 +503,7 @@ export default function Agenda() {
       readString(row.item.source_ref, "indicacao") ??
       (readNumber(row.item.source_ref, "dose_num")
         ? `Dose ${readNumber(row.item.source_ref, "dose_num")}`
-        : "Aplicacao conforme protocolo");
+        : "Aplicação conforme protocolo");
 
     return {
       dateLabel: formatAgendaDate(row.item.data_prevista),
@@ -518,7 +521,7 @@ export default function Agenda() {
       <div className="space-y-5">
         <PageIntro
           eyebrow="Rotina planejada"
-          title="Fazenda nao selecionada"
+          title="Fazenda não selecionada"
           description="Selecione uma fazenda para abrir a agenda operacional."
           actions={
             <Button size="sm" onClick={() => navigate("/select-fazenda")}>
@@ -536,11 +539,11 @@ export default function Agenda() {
         <PageIntro
           eyebrow="Rotina planejada"
           title="Agenda de manejo"
-          description="Carregando itens manuais e automaticos da rotina."
+          description="Carregando itens manuais e automáticos da rotina."
           actions={
             <Button size="sm" onClick={() => navigate("/registrar")}>
               <Plus className="h-4 w-4" />
-              Abrir registro
+              Registrar
             </Button>
           }
         />
@@ -550,7 +553,7 @@ export default function Agenda() {
           title="Carregando agenda"
           description="Estamos preparando o recorte operacional desta fazenda."
           action={{
-            label: "Abrir registro",
+            label: "Registrar",
             onClick: () => navigate("/registrar"),
           }}
         />
@@ -607,13 +610,13 @@ export default function Agenda() {
           title="Agenda vazia"
           description={
             hasComplianceAttention
-              ? "A agenda ainda nao tem tarefas abertas, mas o overlay regulatorio da fazenda segue com pendencias operacionais."
-              : "A agenda ainda nao tem tarefas abertas. Registre eventos ou ative protocolos para alimentar a rotina."
+              ? "A agenda ainda não tem tarefas abertas, mas o overlay regulatório da fazenda segue com pendências operacionais."
+              : "A agenda ainda não tem tarefas abertas. Registre eventos ou ative protocolos para alimentar a rotina."
           }
           action={{
             label: hasComplianceAttention
               ? "Abrir protocolos"
-              : "Abrir registro",
+              : "Registrar",
             onClick: () =>
               navigate(
                 hasComplianceAttention

@@ -12,7 +12,7 @@ import { isCalfJourneyAgendaItem } from "@/lib/reproduction/calfJourney";
 import type { AgendaRow, GroupMode } from "@/pages/Agenda/types";
 
 function getCompactActionLabel(item: AgendaRow["item"]) {
-  return isCalfJourneyAgendaItem(item) ? "Rotina da cria" : "Abrir acao";
+  return isCalfJourneyAgendaItem(item) ? "Seguir rotina da cria" : "Registrar";
 }
 
 type AgendaGroupActionsProps = {
@@ -68,7 +68,12 @@ export function AgendaGroupActions({
         {canToggleReveal ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button type="button" size="icon" variant="outline" aria-label={`Mais acoes para o grupo ${groupTitle}`}>
+              <Button
+                type="button"
+                size="icon"
+                variant="outline"
+                aria-label={`Mais ações para o grupo ${groupTitle}`}
+              >
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
@@ -89,7 +94,9 @@ export function AgendaGroupActions({
             className="self-start"
             onClick={() => onGoToRegistrar(recommendedRow.item)}
           >
-            {isCalfJourneyAgendaItem(recommendedRow.item) ? "Abrir rotina da cria" : "Abrir proxima acao"}
+            {isCalfJourneyAgendaItem(recommendedRow.item)
+              ? "Seguir rotina da cria"
+              : "Registrar"}
           </Button>
         ) : null}
         {canToggleReveal ? (

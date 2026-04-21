@@ -94,7 +94,7 @@ describe("Agenda macro panels", () => {
     render(<AgendaStatusMetrics agendado={3} concluido={1} cancelado={2} />);
 
     expect(screen.getByText("Agendados")).toBeInTheDocument();
-    expect(screen.getByText("Concluidos")).toBeInTheDocument();
+    expect(screen.getByText("Concluídos")).toBeInTheDocument();
     expect(screen.getByText("Cancelados")).toBeInTheDocument();
     expect(screen.getByText("3")).toBeInTheDocument();
     expect(screen.getByText("1")).toBeInTheDocument();

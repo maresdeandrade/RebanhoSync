@@ -86,7 +86,7 @@ describe("createAgendaActionController", () => {
       { mode: "merge" },
     );
     expect(deps.showSuccess).toHaveBeenCalledWith(
-      "Aplicacao sanitaria confirmada no servidor. Evento evento-1.",
+      "Concluído direto na agenda com evento sanitário. Evento evento-1.",
     );
   });
 
@@ -103,13 +103,33 @@ describe("createAgendaActionController", () => {
     expect(deps.concludePendingSanitary).not.toHaveBeenCalled();
   });
 
+  it("ignores concurrent duplicate updates for the same agenda item", async () => {
+    let releaseCreateGesture: (() => void) | null = null;
+    const createGesturePromise = new Promise<void>((resolve) => {
+      releaseCreateGesture = resolve;
+    });
+    const deps = createDeps({
+      createGesture: vi.fn().mockImplementation(() => createGesturePromise),
+    });
+    const controller = createAgendaActionController(deps);
+    const item = createAgendaItem({ dominio: "pesagem" });
+
+    const firstCall = controller.updateStatus(item, "cancelado");
+    const secondCall = controller.updateStatus(item, "cancelado");
+
+    expect(deps.createGesture).toHaveBeenCalledTimes(1);
+
+    releaseCreateGesture?.();
+    await Promise.all([firstCall, secondCall]);
+  });
+
   it("shows farm error when no active farm is available", async () => {
     const deps = createDeps({ activeFarmId: null });
     const controller = createAgendaActionController(deps);
 
     await controller.updateStatus(createAgendaItem(), "cancelado");
 
-    expect(deps.showError).toHaveBeenCalledWith("Fazenda ativa nao encontrada.");
+    expect(deps.showError).toHaveBeenCalledWith("Fazenda ativa não encontrada.");
     expect(deps.createGesture).not.toHaveBeenCalled();
   });
 });

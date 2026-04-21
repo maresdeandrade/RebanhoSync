@@ -37,13 +37,6 @@
 - **Impacto:** warning recorrente (`vendor <-> react-vendor <-> ui-vendor/charts-vendor`) adiciona ruído técnico e reduz previsibilidade de empacotamento.
 - **Classificacao:** monitorar (nao bloqueante para gate atual); adiar refino de chunk strategy para ciclo de performance dedicado.
 
-### TD-030: Warnings `act(...)` e instabilidade E2E fora do gate minimo
-
-- **Status:** OPEN
-- **Origem:** consolidacao MVP -> SLC (confiabilidade cross-flow)
-- **Impacto:** warnings recorrentes de `act(...)` em cenarios E2E/RTL e flakiness em execucao ampla (`pnpm test`) reduzem confiabilidade percebida e podem mascarar regressao silenciosa.
-- **Classificacao:** bloquear SLC ate reducao material dos warnings e estabilizacao dos fluxos E2E criticos.
-
 ## CLOSED (Historico Completo)
 
 ### Hardening estrutural do hotspot `Registrar` (entrypoint shell)
@@ -143,13 +136,19 @@
 - **Fechado por:** `tests/smoke/**`, `package.json` (`test:hotspots`, `test:smoke`, `quality:gate`), `docs/PROCESS.md`
 - **Detalhe:** suite de smoke critico minima definida e automatizada com gate padrao de qualidade para evolucao de fluxo.
 
+### TD-030: Warnings `act(...)` e instabilidade E2E fora do gate minimo
+
+- **Status:** CLOSED
+- **Fechado por:** `src/pages/__tests__/AnimalPosParto.e2e.test.tsx`, `src/pages/Agenda/__tests__/Agenda.test.tsx`, `src/lib/offline/__tests__/pull.test.ts`, `tests/integration/flows/sync_rollback_retry.flow.test.ts`
+- **Detalhe:** warnings `act(...)` foram tratados na causa (sincronizacao de updates async), sem mascaramento por `console.spy/filter`; baseline local da rodada com `ACT_WARN_COUNT=0` nos fluxos criticos e `pnpm test` verde.
+
 ---
 
 ## Resumo
 
-- OPEN: `TD-025`, `TD-026`, `TD-027`, `TD-029`, `TD-030`
-- CLOSED: `TD-001`, `TD-003`, `TD-004`, `TD-006`, `TD-008`, `TD-011`, `TD-014`, `TD-015`, `TD-019`, `TD-020`, `TD-021`, `TD-022`, `TD-023`, `TD-024`, `TD-028`
-- Total OPEN: `5`
+- OPEN: `TD-025`, `TD-026`, `TD-027`, `TD-029`
+- CLOSED: `TD-001`, `TD-003`, `TD-004`, `TD-006`, `TD-008`, `TD-011`, `TD-014`, `TD-015`, `TD-019`, `TD-020`, `TD-021`, `TD-022`, `TD-023`, `TD-024`, `TD-028`, `TD-030`
+- Total OPEN: `4`
 
 ## Veja Tambem
 

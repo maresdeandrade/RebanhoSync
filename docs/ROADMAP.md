@@ -223,7 +223,7 @@ Atualizacao estrutural 2026-04-19 (sem mudanca funcional de dominio):
 | TD-026 | `agenda.shell_readmodel_residual` | Structural | Milestone 10 |
 | TD-027 | `registrar.shell_composition_residual` | Structural | Milestone 10 |
 | TD-028 (CLOSED) | `infra.quality_gate_smoke` | Reliability | Milestone 10 |
-| TD-030 | `infra.test_reliability_act_flaky` | Reliability | Milestone 10 |
+| TD-030 (CLOSED) | `infra.test_reliability_act_flaky` | Reliability | Milestone 10 |
 
 ---
 
@@ -261,8 +261,8 @@ Atualizacao estrutural 2026-04-19 (sem mudanca funcional de dominio):
 - [x] Instituir gate minimo (`lint` + `test:hotspots` + `test:integration` + `test:smoke`)
 - [x] Fortalecer cobertura de regressao para caminhos de maior risco operacional
 - [x] Reduzir ruído de logs esperados em testes de cenarios negativos (sync/pull)
-- [ ] Eliminar filtros de console em testes e corrigir warnings `act(...)` na causa (async/state updates)
-- [ ] Reduzir warnings `act(...)` em E2E/RTL em pelo menos 70%
+- [x] Eliminar filtros de console em testes e corrigir warnings `act(...)` na causa (async/state updates)
+- [x] Reduzir warnings `act(...)` em E2E/RTL em pelo menos 70%
 - [ ] Tratar warnings de chunks circulares (classificado como monitorar; nao bloqueante)
 
 ---

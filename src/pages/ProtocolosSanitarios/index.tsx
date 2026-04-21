@@ -13,6 +13,11 @@ const ProtocolosSanitarios = () => {
   const navigate = useNavigate();
   const { activeFarmId, farmExperienceMode, role } = useAuth();
   const canManageProtocols = role === "manager" || role === "owner";
+  const scrollToSection = (sectionId: string) => {
+    const section = document.getElementById(sectionId);
+    if (!section) return;
+    section.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
   const {
     catalogProducts,
     protocolosExistentes,
@@ -61,11 +66,25 @@ const ProtocolosSanitarios = () => {
           </p>
         ) : null}
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" onClick={() => navigate("/agenda")}>
-            Abrir agenda
+          <Button
+            variant="outline"
+            onClick={() => scrollToSection("protocolos-gerenciar")}
+            disabled={!canManageProtocols}
+          >
+            Gerenciar protocolos
           </Button>
-          <Button onClick={() => navigate("/registrar?dominio=sanitario")}>
-            Abrir registro
+          <Button
+            variant="outline"
+            onClick={() => scrollToSection("protocolos-gerenciar")}
+            disabled={!canManageProtocols}
+          >
+            Criar protocolo
+          </Button>
+          <Button onClick={() => scrollToSection("protocolos-aplicar")}>
+            Aplicar protocolo
+          </Button>
+          <Button variant="ghost" onClick={() => navigate("/agenda?dominio=sanitario")}>
+            Voltar para agenda
           </Button>
         </div>
       </div>
@@ -89,10 +108,12 @@ const ProtocolosSanitarios = () => {
       ) : null}
 
       {!isLoading ? (
-        <OfficialSanitaryPackManager
-          activeFarmId={activeFarmId}
-          canManage={canManageProtocols}
-        />
+        <div id="protocolos-aplicar">
+          <OfficialSanitaryPackManager
+            activeFarmId={activeFarmId}
+            canManage={canManageProtocols}
+          />
+        </div>
       ) : null}
 
       {!isLoading ? (
@@ -103,14 +124,16 @@ const ProtocolosSanitarios = () => {
       ) : null}
 
       {!isLoading ? (
-        <FarmProtocolManager
-          activeFarmId={activeFarmId}
-          farmExperienceMode={farmExperienceMode}
-          catalogProducts={catalogProducts}
-          protocols={protocolosExistentes}
-          protocolItems={protocolosItensExistentes}
-          canManage={canManageProtocols}
-        />
+        <div id="protocolos-gerenciar">
+          <FarmProtocolManager
+            activeFarmId={activeFarmId}
+            farmExperienceMode={farmExperienceMode}
+            catalogProducts={catalogProducts}
+            protocols={protocolosExistentes}
+            protocolItems={protocolosItensExistentes}
+            canManage={canManageProtocols}
+          />
+        </div>
       ) : null}
     </div>
   );

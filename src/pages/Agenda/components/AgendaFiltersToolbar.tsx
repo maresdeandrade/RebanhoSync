@@ -79,7 +79,7 @@ export function AgendaFiltersToolbar({
           <SelectContent>
             <SelectItem value="all">Todos os status</SelectItem>
             <SelectItem value="agendado">Agendado</SelectItem>
-            <SelectItem value="concluido">Concluido</SelectItem>
+            <SelectItem value="concluido">Concluído</SelectItem>
             <SelectItem value="cancelado">Cancelado</SelectItem>
           </SelectContent>
         </Select>
@@ -89,13 +89,13 @@ export function AgendaFiltersToolbar({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Todos os dominios</SelectItem>
-            <SelectItem value="sanitario">Sanitario</SelectItem>
+            <SelectItem value="all">Todos os domínios</SelectItem>
+            <SelectItem value="sanitario">Sanitário</SelectItem>
             <SelectItem value="pesagem">Pesagem</SelectItem>
-            <SelectItem value="movimentacao">Movimentacao</SelectItem>
-            <SelectItem value="nutricao">Nutricao</SelectItem>
+            <SelectItem value="movimentacao">Movimentação</SelectItem>
+            <SelectItem value="nutricao">Nutrição</SelectItem>
             <SelectItem value="financeiro">Financeiro</SelectItem>
-            <SelectItem value="reproducao">Reproducao</SelectItem>
+            <SelectItem value="reproducao">Reprodução</SelectItem>
           </SelectContent>
         </Select>
 
@@ -109,12 +109,12 @@ export function AgendaFiltersToolbar({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Todos os calendarios</SelectItem>
-            <SelectItem value="campaign">Campanha</SelectItem>
-            <SelectItem value="age_window">Janela etaria</SelectItem>
-            <SelectItem value="rolling_interval">Recorrente</SelectItem>
-            <SelectItem value="immediate">Uso imediato</SelectItem>
-            <SelectItem value="clinical_protocol">Protocolo clinico</SelectItem>
+            <SelectItem value="all">Todos os calendários</SelectItem>
+            <SelectItem value="campanha">Campanha</SelectItem>
+            <SelectItem value="janela_etaria">Janela etária</SelectItem>
+            <SelectItem value="rotina_recorrente">Recorrente</SelectItem>
+            <SelectItem value="procedimento_imediato">Uso imediato</SelectItem>
+            <SelectItem value="nao_estruturado">Não estruturado</SelectItem>
           </SelectContent>
         </Select>
 
@@ -128,13 +128,16 @@ export function AgendaFiltersToolbar({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Todas as ancoras</SelectItem>
-            <SelectItem value="calendar_month">Calendario</SelectItem>
-            <SelectItem value="birth">Nascimento</SelectItem>
-            <SelectItem value="weaning">Desmama</SelectItem>
-            <SelectItem value="pre_breeding_season">Pre-estacao</SelectItem>
-            <SelectItem value="clinical_need">Necessidade clinica</SelectItem>
-            <SelectItem value="dry_off">Secagem</SelectItem>
+            <SelectItem value="all">Todas as âncoras</SelectItem>
+            <SelectItem value="sem_ancora">Sem âncora</SelectItem>
+            <SelectItem value="nascimento">Nascimento</SelectItem>
+            <SelectItem value="desmama">Desmama</SelectItem>
+            <SelectItem value="parto_previsto">Parto previsto</SelectItem>
+            <SelectItem value="entrada_fazenda">Entrada na fazenda</SelectItem>
+            <SelectItem value="movimentacao">Movimentação</SelectItem>
+            <SelectItem value="diagnostico_evento">Diagnóstico de evento</SelectItem>
+            <SelectItem value="conclusao_etapa_dependente">Conclusão de etapa anterior</SelectItem>
+            <SelectItem value="ultima_conclusao_mesma_familia">Última conclusão da mesma família</SelectItem>
           </SelectContent>
         </Select>
       </ToolbarGroup>

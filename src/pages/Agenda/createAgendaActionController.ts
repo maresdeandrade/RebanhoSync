@@ -34,6 +34,8 @@ type AgendaActionControllerDeps = {
 };
 
 export function createAgendaActionController(deps: AgendaActionControllerDeps) {
+  const inFlightStatusUpdates = new Set<string>();
+
   const goToRegistrar = (item: AgendaItem) => {
     if (item.animal_id && isCalfJourneyAgendaItem(item)) {
       const params = new URLSearchParams();
@@ -68,73 +70,79 @@ export function createAgendaActionController(deps: AgendaActionControllerDeps) {
 
   const updateStatus = async (item: AgendaItem, status: "concluido" | "cancelado") => {
     if (!deps.activeFarmId) {
-      deps.showError("Fazenda ativa nao encontrada.");
+      deps.showError("Fazenda ativa não encontrada.");
       return;
     }
+    if (inFlightStatusUpdates.has(item.id)) return;
 
-    const sourceTipo = asSanitarioTipo(readString(item.source_ref, "tipo"));
-    const sourceProduto =
-      readString(item.source_ref, "produto") ??
-      readString(item.payload, "produto") ??
-      null;
-    const protocolItem = item.protocol_item_version_id
-      ? await deps.getProtocolItemById(item.protocol_item_version_id)
-      : null;
-    const sanitaryProductMetadata = {
-      ...pickVeterinaryProductMetadata(protocolItem?.payload),
-      ...pickVeterinaryProductMetadata(item.source_ref),
-      ...pickVeterinaryProductMetadata(item.payload),
-    };
-
-    if (item.dominio === "sanitario" && status === "concluido") {
-      try {
-        const eventoId = await deps.concludePendingSanitary({
-          agendaItemId: item.id,
-          occurredAt: deps.nowIso(),
-          tipo: sourceTipo ?? undefined,
-          produto: sourceProduto ?? undefined,
-          payload: {
-            origem: "agenda_concluir",
-            ...sanitaryProductMetadata,
-          },
-        });
-
-        await deps.pullDataForFarm(
-          deps.activeFarmId,
-          ["agenda_itens", "eventos", "eventos_sanitario"],
-          { mode: "merge" },
-        );
-
-        deps.showSuccess(
-          `Aplicacao sanitaria confirmada no servidor. Evento ${eventoId.slice(0, 8)}.`,
-        );
-        return;
-      } catch (error) {
-        deps.logError("[agenda] failed to conclude sanitary item with event", error);
-        deps.showError("Falha ao concluir pendencia sanitaria com evento.");
-        return;
-      }
-    }
-
+    inFlightStatusUpdates.add(item.id);
     try {
-      await deps.createGesture(deps.activeFarmId, [
-        {
-          table: "agenda_itens",
-          action: "UPDATE",
-          record: {
-            id: item.id,
-            status,
-            source_evento_id: item.source_evento_id ?? null,
+      const sourceTipo = asSanitarioTipo(readString(item.source_ref, "tipo"));
+      const sourceProduto =
+        readString(item.source_ref, "produto") ??
+        readString(item.payload, "produto") ??
+        null;
+      const protocolItem = item.protocol_item_version_id
+        ? await deps.getProtocolItemById(item.protocol_item_version_id)
+        : null;
+      const sanitaryProductMetadata = {
+        ...pickVeterinaryProductMetadata(protocolItem?.payload),
+        ...pickVeterinaryProductMetadata(item.source_ref),
+        ...pickVeterinaryProductMetadata(item.payload),
+      };
+
+      if (item.dominio === "sanitario" && status === "concluido") {
+        try {
+          const eventoId = await deps.concludePendingSanitary({
+            agendaItemId: item.id,
+            occurredAt: deps.nowIso(),
+            tipo: sourceTipo ?? undefined,
+            produto: sourceProduto ?? undefined,
+            payload: {
+              origem: "agenda_concluir",
+              ...sanitaryProductMetadata,
+            },
+          });
+
+          await deps.pullDataForFarm(
+            deps.activeFarmId,
+            ["agenda_itens", "eventos", "eventos_sanitario"],
+            { mode: "merge" },
+          );
+
+          deps.showSuccess(
+            `Concluído direto na agenda com evento sanitário. Evento ${eventoId.slice(0, 8)}.`,
+          );
+          return;
+        } catch (error) {
+          deps.logError("[agenda] failed to conclude sanitary item with event", error);
+          deps.showError("Falha ao concluir pendência sanitária com evento.");
+          return;
+        }
+      }
+
+      try {
+        await deps.createGesture(deps.activeFarmId, [
+          {
+            table: "agenda_itens",
+            action: "UPDATE",
+            record: {
+              id: item.id,
+              status,
+              source_evento_id: item.source_evento_id ?? null,
+            },
           },
-        },
-      ]);
-      deps.showSuccess(
-        `Item ${
-          status === "concluido" ? "concluido" : "cancelado"
-        } neste aparelho. Sincronizacao pendente.`,
-      );
-    } catch {
-      deps.showError("Falha ao atualizar item da agenda.");
+        ]);
+        deps.showSuccess(
+          `Item ${
+            status === "concluido" ? "concluído" : "cancelado"
+          } direto na agenda neste aparelho. Sincronização pendente.`,
+        );
+      } catch {
+        deps.showError("Falha ao atualizar item da agenda.");
+      }
+    } finally {
+      inFlightStatusUpdates.delete(item.id);
     }
   };
 

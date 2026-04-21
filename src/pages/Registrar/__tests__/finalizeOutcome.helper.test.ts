@@ -13,7 +13,7 @@ describe("buildRegistrarFinalizeSuccessMessage", () => {
     });
 
     expect(message).toContain("3 novo(s) animal(is)");
-    expect(message).toContain("abcdef12");
+    expect(message).not.toContain("TX");
   });
 
   it("gera mensagem padrao para manejo nao-compra", () => {
@@ -23,7 +23,7 @@ describe("buildRegistrarFinalizeSuccessMessage", () => {
       txId: "abcdef123456",
     });
 
-    expect(message).toContain("Manejo salvo neste aparelho");
+    expect(message).toContain("Execução registrada com sucesso");
   });
 
   it("gera mensagem de continuidade para fluxo originado da agenda", () => {
@@ -34,7 +34,7 @@ describe("buildRegistrarFinalizeSuccessMessage", () => {
       sourceTaskId: "agenda-1",
     });
 
-    expect(message).toContain("vinculado a agenda");
+    expect(message).toContain("vinculado à agenda");
   });
 });
 

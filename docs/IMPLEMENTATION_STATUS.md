@@ -110,7 +110,7 @@ Este documento registra o estado efetivo do RebanhoSync em abril de 2026, pós-f
 ## 4. Estado de Qualidade
 
 - `pnpm run lint`: verde
-- `pnpm test`: instavel fora do gate minimo (flaky E2E residual)
+- `pnpm test`: verde na baseline local desta rodada (manter monitoramento cross-run)
 - `pnpm run test:unit`: verde
 - `pnpm run test:integration`: verde (suite de fluxo em `tests/integration/**`)
 - `pnpm run test:hotspots`: verde
@@ -138,7 +138,7 @@ Este documento registra o estado efetivo do RebanhoSync em abril de 2026, pós-f
 | TD-020 | `reproducao.registro` | FK macho_id | ✅ CLOSED | `20260308230735_foreign_keys_movimentacao_reproducao.sql` |
 
 **Total OPEN da lista original (M0-M2):** 0 ✅
-**Total OPEN residual atual em `TECH_DEBT.md`:** 5 (`TD-025`, `TD-026`, `TD-027`, `TD-029`, `TD-030`)
+**Total OPEN residual atual em `TECH_DEBT.md`:** 4 (`TD-025`, `TD-026`, `TD-027`, `TD-029`)
 **Residual adicional nao-TD (fase MVP -> SLC):** acabamento de experiencia cross-flow
 
 ---
@@ -149,7 +149,7 @@ Este documento registra o estado efetivo do RebanhoSync em abril de 2026, pós-f
 | --- | --- | --- | --- |
 | Residual `Registrar`: volume de composicao/JSX no shell | Estrutural local UI | Mantem custo de leitura/manutencao acima do ideal para evolucao de UX | Fatiar blocos de composicao restantes por recortes pequenos |
 | Residual `Agenda`: leitura/preparacao de dados ainda no shell | Estrutural local UI | Shell ainda acumula montagem de read-model local | Extrair montagem de dados para artefatos locais sem mover dominio |
-| Warnings `act(...)` e flakiness E2E fora do gate minimo | Confiabilidade | Reduz confianca da suite ampla e pode ocultar regressao silenciosa | Corrigir causa de updates assincronos, estabilizar cenarios E2E criticos e reduzir warnings >= 70% |
+| Ruido tecnico residual de testes/build (router future flags, logs negativos esperados, circular chunks) | Confiabilidade | Aumenta ruído operacional e dificulta leitura de regressao real | Tratar warning-by-warning por criticidade, sem mascaramento de erro |
 | Acabamento de experiencia cross-flow | UX/produto | Fluxos centrais funcionam, mas com friccao e inconsistencia de feedback | Consolidar backlog MVP -> SLC por frentes de UX operacional |
 
 ---

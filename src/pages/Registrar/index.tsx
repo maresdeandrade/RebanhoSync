@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import type { ReproTipoEnum, Animal } from "@/lib/offline/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -108,6 +108,7 @@ const BullNameDisplay = ({ machoId }: { machoId: string }) => {
 const Registrar = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const [isFinalizing, setIsFinalizing] = useState(false);
   const { activeFarmId, role, farmMeasurementConfig, farmLifecycleConfig } =
     useAuth();
   const shellState = useRegistrarShellState({
@@ -623,63 +624,70 @@ const Registrar = () => {
   );
 
   const handleFinalize = useCallback(async () => {
-    await finalizeController({
-      context: {
-        tipoManejo,
-        activeFarmId: activeFarmId ?? null,
-        fallbackFarmId: lotes?.[0]?.fazenda_id ?? null,
-        sourceTaskId,
-        farmLifecycleConfig,
-        parseUserWeight,
-      },
-      selection: {
-        selectedAnimais,
-        selectedLoteId,
-        selectedLoteIdNormalized,
-        partoRequiresSingleMatrix,
-      },
-      finance: {
-        isFinanceiroSociedade,
-        data: {
-          natureza: financeiroData.natureza,
-          modoPeso: financeiroData.modoPeso,
-          modoPreco: financeiroData.modoPreco,
-          contraparteId: financeiroData.contraparteId,
-          valorTotal: financeiroData.valorTotal,
+    if (isFinalizing) return;
+
+    setIsFinalizing(true);
+    try {
+      await finalizeController({
+        context: {
+          tipoManejo,
+          activeFarmId: activeFarmId ?? null,
+          fallbackFarmId: lotes?.[0]?.fazenda_id ?? null,
+          sourceTaskId,
+          farmLifecycleConfig,
+          parseUserWeight,
         },
-        summary: {
-          tipo: financeiroTipo,
-          valorTotalCalculado: financeiroValorTotalCalculado,
-          valorTotalInformado: financeiroValorTotalInformado,
-          valorUnitario: financeiroValorUnitario,
-          pesoLote: financeiroPesoLote,
-          quantidadeAnimais: financeiroQuantidadeAnimais,
+        selection: {
+          selectedAnimais,
+          selectedLoteId,
+          selectedLoteIdNormalized,
+          partoRequiresSingleMatrix,
         },
-        compraNovosAnimais,
-      },
-      sanitary: {
-        protocoloItemId,
-        data: {
-          tipo: sanitarioData.tipo,
-          produto: sanitarioData.produto,
+        finance: {
+          isFinanceiroSociedade,
+          data: {
+            natureza: financeiroData.natureza,
+            modoPeso: financeiroData.modoPeso,
+            modoPreco: financeiroData.modoPreco,
+            contraparteId: financeiroData.contraparteId,
+            valorTotal: financeiroData.valorTotal,
+          },
+          summary: {
+            tipo: financeiroTipo,
+            valorTotalCalculado: financeiroValorTotalCalculado,
+            valorTotalInformado: financeiroValorTotalInformado,
+            valorUnitario: financeiroValorUnitario,
+            pesoLote: financeiroPesoLote,
+            quantidadeAnimais: financeiroQuantidadeAnimais,
+          },
+          compraNovosAnimais,
         },
-        selectedVeterinaryProductSelection,
-        resolveProtocolProductSelection,
-        transit: {
-          showsTransitChecklist,
-          transitChecklist,
-          officialTransitChecklistEnabled,
-          transitChecklistIssues,
+        sanitary: {
+          protocoloItemId,
+          data: {
+            tipo: sanitarioData.tipo,
+            produto: sanitarioData.produto,
+          },
+          selectedVeterinaryProductSelection,
+          resolveProtocolProductSelection,
+          transit: {
+            showsTransitChecklist,
+            transitChecklist,
+            officialTransitChecklistEnabled,
+            transitChecklistIssues,
+          },
+          complianceFlowIssues,
         },
-        complianceFlowIssues,
-      },
-      operationData: {
-        pesagemData,
-        movimentacaoData,
-        nutricaoData,
-        reproducaoData,
-      },
-    });
+        operationData: {
+          pesagemData,
+          movimentacaoData,
+          nutricaoData,
+          reproducaoData,
+        },
+      });
+    } finally {
+      setIsFinalizing(false);
+    }
   }, [
     activeFarmId,
     compraNovosAnimais,
@@ -719,6 +727,7 @@ const Registrar = () => {
     tipoManejo,
     transitChecklist,
     transitChecklistIssues,
+    isFinalizing,
   ]);
 
   if (!activeFarmId) {
@@ -726,7 +735,7 @@ const Registrar = () => {
       <div className="mx-auto max-w-5xl space-y-5">
         <PageIntro
           eyebrow="Fluxo operacional"
-          title="Registrar manejo"
+          title="Registrar execução"
           description="Selecione uma fazenda para iniciar um registro."
           actions={
             <Button size="sm" onClick={() => navigate("/select-fazenda")}>
@@ -750,8 +759,8 @@ const Registrar = () => {
     <div className="mx-auto max-w-5xl space-y-5">
       <PageIntro
         eyebrow="Fluxo operacional"
-        title="Registrar manejo"
-        description="Fluxo guiado para selecionar o alvo, escolher a acao e confirmar o gesto offline-first sem perder contexto operacional."
+        title="Registrar execução"
+        description="Fluxo guiado para registrar execução com formulário. Para execução direta sem formulário, use Executar na agenda."
         meta={
           <>
             <StatusBadge tone="info">
@@ -922,7 +931,7 @@ const Registrar = () => {
       {step === RegistrationStep.CONFIRM && (
         <Card>
           <CardHeader>
-            <CardTitle>3. Salvar neste aparelho</CardTitle>
+            <CardTitle>3. Registrar execução</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="rounded-lg border border-info/20 bg-info/5 p-4 text-sm text-muted-foreground">
@@ -979,9 +988,14 @@ const Registrar = () => {
               <Button
                 className="flex-1 bg-emerald-600 hover:bg-emerald-700"
                 onClick={handleFinalize}
+                disabled={isFinalizing}
               >
                 <Check className="mr-2 h-4 w-4" />{" "}
-                {sourceTaskId ? "Salvar e voltar para agenda" : "Salvar neste aparelho"}
+                {isFinalizing
+                  ? "Registrando..."
+                  : sourceTaskId
+                    ? "Registrar e voltar para agenda"
+                    : "Registrar execução"}
               </Button>
             </div>
           </CardContent>

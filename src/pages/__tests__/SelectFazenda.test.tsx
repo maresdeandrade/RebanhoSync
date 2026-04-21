@@ -49,7 +49,7 @@ describe("SelectFazenda", () => {
     } as ReturnType<typeof useAuth>);
   });
 
-  it("mostra o estado vazio com copy limpa e CTA de criacao quando permitido", async () => {
+  it("mostra o estado vazio com copy limpa e sinaliza criacao permitida", async () => {
     mockedUseLiveQuery.mockReturnValue([] as ReturnType<typeof useLiveQuery>);
     mockedSupabaseRpc.mockResolvedValue({
       data: true,
@@ -67,9 +67,8 @@ describe("SelectFazenda", () => {
     expect(
       await screen.findByText(/Voce ainda nao esta vinculado a nenhuma fazenda/i),
     ).toBeInTheDocument();
-    expect(
-      screen.getAllByRole("button", { name: /Criar nova fazenda/i }).length,
-    ).toBeGreaterThan(0);
+    expect(screen.getByText(/Criacao permitida/i)).toBeInTheDocument();
+    expect(screen.getByText(/^Sim$/i)).toBeInTheDocument();
   });
 
   it("seleciona a fazenda e navega para a rotina quando houver membership", async () => {

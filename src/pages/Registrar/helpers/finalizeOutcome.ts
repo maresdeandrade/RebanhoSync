@@ -11,14 +11,14 @@ export function buildRegistrarFinalizeSuccessMessage(input: {
   sourceTaskId?: string | null;
 }) {
   if (input.compraGerandoAnimais) {
-    return `Compra salva neste aparelho com ${input.createdAnimalCount} novo(s) animal(is). Sincronizacao pendente. TX ${input.txId.slice(0, 8)}.`;
+    return `Execução registrada com sucesso. Compra salva neste aparelho com ${input.createdAnimalCount} novo(s) animal(is). Sincronização pendente.`;
   }
 
   if (input.sourceTaskId) {
-    return `Manejo salvo neste aparelho e vinculado a agenda. Sincronizacao pendente. TX ${input.txId.slice(0, 8)}.`;
+    return "Execução registrada com sucesso. Registro vinculado à agenda. Sincronização pendente.";
   }
 
-  return `Manejo salvo neste aparelho. Sincronizacao pendente. TX ${input.txId.slice(0, 8)}.`;
+  return "Execução registrada com sucesso. Sincronização pendente.";
 }
 
 export function buildRegistrarPostFinalizeNavigationPath(
