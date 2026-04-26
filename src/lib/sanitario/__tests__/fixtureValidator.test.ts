@@ -152,7 +152,7 @@ describe("Fixture Validator — Sanitary Scheduler", () => {
       expect(fixture.name).toBe("invalid.campanha.sem_meses");
 
       const compat = isProtocolItemCompatibleWithNewScheduler(fixture.domain);
-      expect(compat).toBe(true);
+      expect(compat).toBe(false);
     });
 
     it("invalid fixtures têm reasonCode = error_*", () => {

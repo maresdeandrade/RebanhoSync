@@ -19,6 +19,7 @@ import type {
   SanitarySubjectContext,
   SchedulerNowContext,
 } from "@/lib/sanitario/domain";
+import { buildSchedulerNowContext } from "./helpers/schedulerNow";
 
 // Builders
 const buildMetadata = (
@@ -141,7 +142,7 @@ const buildSubject = (
 const buildNow = (
   overrides?: Partial<SchedulerNowContext>,
 ): SchedulerNowContext => ({
-  currentDate: "2026-04-12",
+  ...buildSchedulerNowContext("2026-04-12"),
   ...overrides,
 } as SchedulerNowContext);
 

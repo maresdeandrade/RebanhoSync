@@ -276,7 +276,7 @@ function step3CheckEligibility(
   // Verificar espécie
   if (eligibility.species) {
     const species = eligibility.species;
-    if (species.length > 0 && animal.species && !species.includes(animal.species)) {  
+    if (species.length > 0 && !species.includes(animal.species)) {
       return "not_eligible";
     }
   }

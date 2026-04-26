@@ -9,8 +9,8 @@
 import type {
   SanitaryProtocolItemDomain,
   SanitarySubjectContext,
-  SchedulerNowContext,
 } from "../domain";
+import { buildSchedulerNowContext } from "../helpers/schedulerNow";
 
 export const invalidCampanhaSemMeses = {
   domain: {
@@ -78,9 +78,7 @@ export const invalidCampanhaSemMeses = {
     activeEvents: [],
   } as SanitarySubjectContext,
 
-  now: {
-    currentDate: "2026-07-15",
-  } as SchedulerNowContext,
+  now: buildSchedulerNowContext("2026-07-15"),
 
   expectedValidationError: "Campanha deve ter pelo menos um mês",
   expectedSchedulerResult: "not_due_yet", // Fallback quando não há meses

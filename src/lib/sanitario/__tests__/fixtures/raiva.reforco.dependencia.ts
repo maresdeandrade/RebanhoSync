@@ -10,9 +10,9 @@ import type {
   SanitaryProtocolItemDomain,
   SanitarySubjectContext,
   SanitaryExecutionRecord,
-  SchedulerNowContext,
   ComputeNextSanitaryOccurrenceResult,
 } from "../domain";
+import { buildSchedulerNowContext } from "../helpers/schedulerNow";
 
 export const raivaReforçoDependencia = {
   domain: {
@@ -101,9 +101,7 @@ export const raivaReforçoDependencia = {
     },
   ] as SanitaryExecutionRecord[],
 
-  now: {
-    currentDate: "2026-07-25", // 35 dias depois
-  } as SchedulerNowContext,
+  now: buildSchedulerNowContext("2026-07-25"), // 35 dias depois
 
   expectedResult: {
     materialize: true,

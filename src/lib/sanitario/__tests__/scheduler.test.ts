@@ -20,6 +20,7 @@ import type {
   SanitaryExecutionRecord,
   SchedulerNowContext,
 } from "../domain";
+import { buildSchedulerNowContext } from "./helpers/schedulerNow";
 
 // ============================================================================
 // FIXTURE HELPER: Minimal valid domain
@@ -95,7 +96,7 @@ function createMinimalSubject(): SanitarySubjectContext {
 }
 
 function createMinimalNowContext(): SchedulerNowContext {
-  return { currentDate: "2026-07-15" };
+  return buildSchedulerNowContext("2026-07-15");
 }
 
 // ============================================================================
@@ -268,7 +269,7 @@ describe("Scheduler: Campanha", () => {
       item: domain,
       subject,
       history: [],
-      now: { currentDate: "2026-07-15" }, // julho
+      now: buildSchedulerNowContext("2026-07-15"), // julho
     });
 
     expect(result.reasonCode).toBe("ready");
@@ -290,7 +291,7 @@ describe("Scheduler: Campanha", () => {
       item: domain,
       subject,
       history: [],
-      now: { currentDate: "2026-08-15" }, // agosto
+      now: buildSchedulerNowContext("2026-08-15"), // agosto
     });
 
     expect(result.reasonCode).toBe("not_due_yet");
@@ -328,7 +329,7 @@ describe("Scheduler: Campanha", () => {
       item: domain,
       subject,
       history,
-      now: { currentDate: "2026-07-20" }, // ainda julho
+      now: buildSchedulerNowContext("2026-07-20"), // ainda julho
     });
 
     expect(result.reasonCode).toBe("already_materialized");
@@ -414,7 +415,7 @@ describe("Scheduler: Dependência", () => {
       item: domain,
       subject,
       history,
-      now: { currentDate: "2026-07-15" },
+      now: buildSchedulerNowContext("2026-07-15"),
     });
 
     expect(result.reasonCode).toBe("dependency_not_satisfied");
@@ -423,6 +424,7 @@ describe("Scheduler: Dependência", () => {
 
   it("should allow when dependency is satisfied", () => {
     const domain = createMinimalDomain();
+    domain.identity.familyCode = "raiva";
     domain.schedule = {
       ...domain.schedule,
       mode: "campanha",
@@ -452,7 +454,7 @@ describe("Scheduler: Dependência", () => {
       item: domain,
       subject,
       history,
-      now: { currentDate: "2026-07-15" },
+      now: buildSchedulerNowContext("2026-07-15"),
     });
 
     expect(result.reasonCode).toBe("ready");
@@ -527,9 +529,15 @@ describe("Scheduler: Elegibilidade", () => {
 describe("Scheduler: Applicability", () => {
   it("should block when jurisdiction does not match", () => {
     const domain = createMinimalDomain();
+    domain.schedule = {
+      ...domain.schedule,
+      mode: "campanha",
+      anchor: "nascimento",
+      campaignMonths: [7],
+    };
     domain.applicability = {
       type: "jurisdicao",
-      jurisdiction: "SP", // São Paulo apenas
+      jurisdiction: { uf: ["SP"] }, // São Paulo apenas
     };
 
     const subject = createMinimalSubject();
@@ -548,9 +556,15 @@ describe("Scheduler: Applicability", () => {
 
   it("should block when required risk is not active", () => {
     const domain = createMinimalDomain();
+    domain.schedule = {
+      ...domain.schedule,
+      mode: "campanha",
+      anchor: "nascimento",
+      campaignMonths: [7],
+    };
     domain.applicability = {
       type: "risco",
-      risk: "raiva",
+      risk: { riskCodes: ["raiva"] },
     };
 
     const subject = createMinimalSubject();
@@ -610,14 +624,14 @@ describe("Scheduler: Dedup", () => {
       item: domain,
       subject,
       history: [],
-      now: { currentDate: "2026-07-15" },
+      now: buildSchedulerNowContext("2026-07-15"),
     });
 
     const result2 = computeNextSanitaryOccurrence({
       item: domain,
       subject,
       history: [],
-      now: { currentDate: "2026-07-20" }, // outro dia, mesmo mês
+      now: buildSchedulerNowContext("2026-07-20"), // outro dia, mesmo mês
     });
 
     expect(result1.dedupKey).toBe(result2.dedupKey);
@@ -638,14 +652,14 @@ describe("Scheduler: Dedup", () => {
       item: domain,
       subject,
       history: [],
-      now: { currentDate: "2026-06-15" },
+      now: buildSchedulerNowContext("2026-06-15"),
     });
 
     const result2 = computeNextSanitaryOccurrence({
       item: domain,
       subject,
       history: [],
-      now: { currentDate: "2026-07-15" }, // próximo mês
+      now: buildSchedulerNowContext("2026-07-15"), // próximo mês
     });
 
     expect(result1.dedupKey).not.toBe(result2.dedupKey);
@@ -669,7 +683,7 @@ describe("Scheduler: Integração Múltiplos Passos", () => {
       item: domain,
       subject,
       history: [],
-      now: { currentDate: "2026-07-15" },
+      now: buildSchedulerNowContext("2026-07-15"),
     });
 
     expect(result.reasonCode).toBe("agenda_disabled");
@@ -678,6 +692,7 @@ describe("Scheduler: Integração Múltiplos Passos", () => {
 
   it("should allow complex scenario: campanha com dependência e elegibilidade", () => {
     const domain = createMinimalDomain();
+    domain.identity.familyCode = "raiva";
     domain.schedule = {
       ...domain.schedule,
       mode: "campanha",
@@ -709,7 +724,7 @@ describe("Scheduler: Integração Múltiplos Passos", () => {
       item: domain,
       subject,
       history,
-      now: { currentDate: "2026-07-15" },
+      now: buildSchedulerNowContext("2026-07-15"),
     });
 
     expect(result.reasonCode).toBe("ready");

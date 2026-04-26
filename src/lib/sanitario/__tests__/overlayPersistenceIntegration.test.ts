@@ -26,7 +26,6 @@ describe("PR3: Overlay Persistence Integration", () => {
   // Mock official protocol with overlay flag
   const mockTemplate = {
     slug: "raiva-vacinacao",
-    codigo: "rv-001",
     nome: "Vacinação contra Raiva",
     descricao: "Protocolo de raiva",
     payload: {

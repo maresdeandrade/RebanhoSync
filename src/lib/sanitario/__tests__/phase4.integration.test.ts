@@ -55,9 +55,11 @@ describe("Scheduler Integration & Feature Flag", () => {
         protocol_id: "proto-1",
         tipo: "vacinacao",
         payload: {
+          family_code: "brucelose",
+          item_code: "dose_1",
           calendario_base: {
-            mode: "campaign",
-            anchor: "birth",
+            mode: "campanha",
+            anchor: "nascimento",
             campaignMonths: [5, 6, 7],
           },
         },
@@ -79,7 +81,7 @@ describe("Scheduler Integration & Feature Flag", () => {
       expect(compatible).toBe(false);
     });
 
-    it("mantem compatibilidade para payload legado minimo", () => {
+    it("rejeita payload legado minimo invalido", () => {
       const item: ProtocoloSanitarioItem = {
         id: "item-1",
         protocol_id: "proto-1",
@@ -88,7 +90,7 @@ describe("Scheduler Integration & Feature Flag", () => {
       } as Partial<ProtocoloSanitarioItem>;
 
       const compatible = isProtocolItemCompatibleWithNewScheduler(item);
-      expect(compatible).toBe(true);
+      expect(compatible).toBe(false);
     });
   });
 
@@ -155,7 +157,7 @@ describe("Scheduler Integration & Feature Flag", () => {
           fazendaId: "farm-1",
         },
         history: [],
-        now: { date: "2026-05-15", timestamp: 1234567890 },
+        now: { nowIso: "2026-05-15T00:00:00Z", timezone: "America/Sao_Paulo" },
         expectedResult: {
           materialize: true,
           reasonCode: "ready",

@@ -10,9 +10,9 @@ import type {
   SanitaryProtocolItemDomain,
   SanitarySubjectContext,
   SanitaryExecutionRecord,
-  SchedulerNowContext,
   ComputeNextSanitaryOccurrenceResult,
 } from "../domain";
+import { buildSchedulerNowContext } from "../helpers/schedulerNow";
 
 export const procedimentoImediatoNotificacao = {
   domain: {
@@ -85,9 +85,7 @@ export const procedimentoImediatoNotificacao = {
 
   history: [] as SanitaryExecutionRecord[],
 
-  now: {
-    currentDate: "2026-07-15",
-  } as SchedulerNowContext,
+  now: buildSchedulerNowContext("2026-07-15"),
 
   expectedResult: {
     materialize: true,

@@ -9,9 +9,9 @@ import type {
   SanitaryProtocolItemDomain,
   SanitarySubjectContext,
   SanitaryExecutionRecord,
-  SchedulerNowContext,
   ComputeNextSanitaryOccurrenceResult,
 } from "../domain";
+import { buildSchedulerNowContext } from "../helpers/schedulerNow";
 
 export const vermifugacaoRecorrente = {
   domain: {
@@ -95,9 +95,7 @@ export const vermifugacaoRecorrente = {
     },
   ] as SanitaryExecutionRecord[],
 
-  now: {
-    currentDate: "2026-07-20", // 66 dias depois
-  } as SchedulerNowContext,
+  now: buildSchedulerNowContext("2026-07-20"), // 66 dias depois
 
   expectedResult: {
     materialize: true,
