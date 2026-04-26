@@ -29,6 +29,7 @@ import {
   buildTransitChecklistIssues,
   shouldShowTransitChecklist,
 } from "@/pages/Registrar/helpers/transitCompliance";
+import { isFinanceiroSaidaNatureza } from "@/pages/Registrar/helpers/financialNature";
 import {
   buildProtocolEligibilityIssues,
   buildSanitaryMovementBlockIssues,
@@ -515,7 +516,8 @@ export function useRegistrarSanitarioPackage(input: {
 
     setTransitChecklist((prev) => {
       const expectedPurpose =
-        input.tipoManejo === "financeiro" && input.financeiroNatureza === "venda"
+        input.tipoManejo === "financeiro" &&
+        isFinanceiroSaidaNatureza(input.financeiroNatureza)
           ? "venda"
           : "movimentacao";
 

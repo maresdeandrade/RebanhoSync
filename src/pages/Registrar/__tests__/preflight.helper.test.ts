@@ -69,7 +69,7 @@ describe("resolveRegistrarPreflightIssue", () => {
       }),
     );
 
-    expect(issue).toBe("Selecione um lote para registrar compra sem animais.");
+    expect(issue).toBe("Selecione um lote para registrar entrada sem animais.");
   });
 
   it("retorna erro para pesagem com peso inválido", () => {
@@ -100,8 +100,8 @@ describe("resolveRegistrarPreflightIssue", () => {
         },
         financeiroQuantidadeAnimais: 2,
         compraNovosAnimais: [
-          { identificacao: "BZ-01", dataNascimento: "", pesoKg: "30" },
-          { identificacao: "bz-01", dataNascimento: "", pesoKg: "31" },
+          { identificacao: "BZ-01", dataNascimento: "", pesoKg: "30", raca: null },
+          { identificacao: "bz-01", dataNascimento: "", pesoKg: "31", raca: null },
         ],
       }),
     );
@@ -121,6 +121,27 @@ describe("resolveRegistrarPreflightIssue", () => {
 
   it("retorna null no caminho feliz", () => {
     const issue = resolveRegistrarPreflightIssue(buildBaseInput());
+    expect(issue).toBeNull();
+  });
+
+  it("permite doacao sem valor financeiro informado", () => {
+    const issue = resolveRegistrarPreflightIssue(
+      buildBaseInput({
+        selectedAnimais: [],
+        financeiroData: {
+          natureza: "doacao_entrada",
+          modoPeso: "nenhum",
+          modoPreco: "por_lote",
+          contraparteId: "none",
+        },
+        financeiroValorTotalCalculado: 0,
+        financeiroQuantidadeAnimais: 1,
+        compraNovosAnimais: [
+          { identificacao: "DOA-01", dataNascimento: "", pesoKg: "", raca: null },
+        ],
+      }),
+    );
+
     expect(issue).toBeNull();
   });
 });

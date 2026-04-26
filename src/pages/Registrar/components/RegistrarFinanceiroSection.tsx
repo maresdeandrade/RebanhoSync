@@ -23,6 +23,12 @@ import type {
   RegistrarSexo,
 } from "@/pages/Registrar/types";
 import type { RegistrarNovaContraparteDraft } from "@/pages/Registrar/effects/contraparteCreate";
+import {
+  isFinanceiroSaidaNatureza,
+  resolveFinanceiroNaturezaOptions,
+  supportsDraftAnimalsInFinanceiroNatureza,
+} from "@/pages/Registrar/helpers/financialNature";
+import type { AnimalBreedEnum } from "@/lib/animals/catalogs";
 
 export function RegistrarFinanceiroSection(input: {
   financeiroData: FinanceiroFormData;
@@ -52,6 +58,7 @@ export function RegistrarFinanceiroSection(input: {
   compraNovosAnimais: CompraNovoAnimalDraft[];
   onCompraIdentificacaoChange: (localId: string, value: string) => void;
   onCompraSexoChange: (localId: string, value: RegistrarSexo) => void;
+  onCompraRacaChange: (localId: string, value: AnimalBreedEnum | null) => void;
   onCompraDataNascimentoChange: (localId: string, value: string) => void;
   onCompraPesoChange: (localId: string, value: string) => void;
   onVendaPesoAtIndexChange: (index: number, value: string) => void;
@@ -62,14 +69,17 @@ export function RegistrarFinanceiroSection(input: {
   sanitaryMovementBlockSection: ReactNode;
   movementComplianceBlockSection: ReactNode;
 }) {
+  const naturezaOptions = resolveFinanceiroNaturezaOptions(
+    input.financeiroData.natureza,
+  );
   const showCompraAnimaisSection =
     input.selectedAnimalIds.length === 0 &&
-    input.financeiroData.natureza === "compra" &&
+    supportsDraftAnimalsInFinanceiroNatureza(input.financeiroData.natureza) &&
     !input.isFinanceiroSociedade;
 
   const showVendaPesosSection =
     input.selectedAnimalIds.length > 0 &&
-    input.financeiroData.natureza === "venda" &&
+    isFinanceiroSaidaNatureza(input.financeiroData.natureza) &&
     input.financeiroData.modoPeso === "individual" &&
     !input.isFinanceiroSociedade;
 
@@ -85,12 +95,15 @@ export function RegistrarFinanceiroSection(input: {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="compra">Compra</SelectItem>
-            <SelectItem value="venda" disabled={input.selectedAnimalIds.length === 0}>
-              Venda
-            </SelectItem>
-            <SelectItem value="sociedade_entrada">Sociedade (Entrada)</SelectItem>
-            <SelectItem value="sociedade_saida">Sociedade (Saida)</SelectItem>
+            {naturezaOptions.map((option) => (
+              <SelectItem
+                key={option.value}
+                value={option.value}
+                disabled={option.requiresAnimals && input.selectedAnimalIds.length === 0}
+              >
+                {option.label}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>
@@ -230,6 +243,7 @@ export function RegistrarFinanceiroSection(input: {
           weightUnitLabel={input.weightUnitLabel}
           onIdentificacaoChange={input.onCompraIdentificacaoChange}
           onSexoChange={input.onCompraSexoChange}
+          onRacaChange={input.onCompraRacaChange}
           onDataNascimentoChange={input.onCompraDataNascimentoChange}
           onPesoChange={input.onCompraPesoChange}
         />

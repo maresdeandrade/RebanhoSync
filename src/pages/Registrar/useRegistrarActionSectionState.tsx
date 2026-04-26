@@ -147,8 +147,8 @@ type RegistrarActionSectionStateInput = {
     compraNovosAnimais: RegistrarFinanceiroSectionProps["compraNovosAnimais"];
     updateCompraNovoAnimalField: (
       localId: string,
-      field: "identificacao" | "sexo" | "dataNascimento" | "pesoKg",
-      value: string,
+      field: "identificacao" | "sexo" | "dataNascimento" | "pesoKg" | "raca",
+      value: string | null,
     ) => void;
     updateCompraNovoAnimalPesoByIndex: (index: number, value: string) => void;
     financeiroWeightStep: string;
@@ -308,6 +308,8 @@ export function useRegistrarActionSectionState(
         "sexo",
         value,
       ),
+    onCompraRacaChange: (localId, value) =>
+      input.financeiroSection.updateCompraNovoAnimalField(localId, "raca", value),
     onCompraDataNascimentoChange: (localId, value) =>
       input.financeiroSection.updateCompraNovoAnimalField(
         localId,

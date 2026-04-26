@@ -27,6 +27,16 @@ describe("resolveRegistrarFinancialNatureIssue", () => {
 
     expect(issue).toBeNull();
   });
+
+  it("retorna null para doacao de entrada no fluxo financeiro", () => {
+    const issue = resolveRegistrarFinancialNatureIssue({
+      tipoManejo: "financeiro",
+      isFinanceiroSociedade: false,
+      natureza: "doacao_entrada",
+    });
+
+    expect(issue).toBeNull();
+  });
 });
 
 describe("buildRegistrarReproducaoIneligibleIssue", () => {

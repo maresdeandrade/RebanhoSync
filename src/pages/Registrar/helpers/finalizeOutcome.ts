@@ -11,7 +11,7 @@ export function buildRegistrarFinalizeSuccessMessage(input: {
   sourceTaskId?: string | null;
 }) {
   if (input.compraGerandoAnimais) {
-    return `Execução registrada com sucesso. Compra salva neste aparelho com ${input.createdAnimalCount} novo(s) animal(is). Sincronização pendente.`;
+    return `Execução registrada com sucesso. Entrada salva neste aparelho com ${input.createdAnimalCount} novo(s) animal(is). Sincronização pendente.`;
   }
 
   if (input.sourceTaskId) {

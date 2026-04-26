@@ -4,7 +4,10 @@ type FinanceiroPayloadNatureza =
   | "compra"
   | "venda"
   | "sociedade_entrada"
-  | "sociedade_saida";
+  | "sociedade_saida"
+  | "doacao_entrada"
+  | "doacao_saida"
+  | "arrendamento";
 
 export function resolveRegistrarTransitChecklistPayload(input: {
   showsTransitChecklist: boolean;
@@ -28,6 +31,15 @@ export function buildRegistrarFinanceiroPayloadBase(input: {
   }
   if (input.natureza === "sociedade_saida") {
     return { kind: "sociedade_saida", origem: "registrar_manejo" as const };
+  }
+  if (input.natureza === "doacao_entrada") {
+    return { kind: "doacao_entrada", origem: "registrar_manejo" as const };
+  }
+  if (input.natureza === "doacao_saida") {
+    return { kind: "doacao_saida", origem: "registrar_manejo" as const };
+  }
+  if (input.natureza === "arrendamento") {
+    return { kind: "arrendamento", origem: "registrar_manejo" as const };
   }
   if (input.natureza === "venda") {
     return { kind: "venda_animal", origem: "registrar_manejo" as const };

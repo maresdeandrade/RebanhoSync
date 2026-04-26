@@ -7,6 +7,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ANIMAL_BREED_OPTIONS, type AnimalBreedEnum } from "@/lib/animals/catalogs";
 import type {
   CompraNovoAnimalDraft,
   RegistrarSexo,
@@ -19,6 +20,7 @@ type FinanceiroCompraAnimaisSectionProps = {
   weightUnitLabel: string;
   onIdentificacaoChange: (localId: string, value: string) => void;
   onSexoChange: (localId: string, value: RegistrarSexo) => void;
+  onRacaChange: (localId: string, value: AnimalBreedEnum | null) => void;
   onDataNascimentoChange: (localId: string, value: string) => void;
   onPesoChange: (localId: string, value: string) => void;
 };
@@ -29,7 +31,7 @@ export function FinanceiroCompraAnimaisSection(
   return (
     <div className="space-y-3 rounded-md border p-3">
       <div>
-        <Label>Animais gerados pela compra</Label>
+        <Label>Animais gerados pela entrada</Label>
         <p className="text-xs text-muted-foreground">
           Identificacao pode ficar vazia. O sistema gera automaticamente.
         </p>
@@ -38,7 +40,7 @@ export function FinanceiroCompraAnimaisSection(
       {props.drafts.map((draft, index) => (
         <div
           key={draft.localId}
-          className="grid grid-cols-1 gap-2 rounded border p-2 md:grid-cols-[1.2fr_140px_170px_140px]"
+          className="grid grid-cols-1 gap-2 rounded border p-2 md:grid-cols-[1.2fr_130px_170px_170px_140px]"
         >
           <Input
             value={draft.identificacao}
@@ -59,6 +61,27 @@ export function FinanceiroCompraAnimaisSection(
             <SelectContent>
               <SelectItem value="F">Femea</SelectItem>
               <SelectItem value="M">Macho</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select
+            value={draft.raca ?? "null"}
+            onValueChange={(value) =>
+              props.onRacaChange(
+                draft.localId,
+                value === "null" ? null : (value as AnimalBreedEnum),
+              )
+            }
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Raca" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="null">Raca nao informada</SelectItem>
+              {ANIMAL_BREED_OPTIONS.map((breed) => (
+                <SelectItem key={breed.value} value={breed.value}>
+                  {breed.label}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
           <Input

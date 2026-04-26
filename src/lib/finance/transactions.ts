@@ -1,5 +1,12 @@
 import { buildEventGesture } from "@/lib/events/buildEventGesture";
-import type { OperationInput, SexoEnum } from "@/lib/offline/types";
+import type { OperationInput, OrigemEnum, SexoEnum } from "@/lib/offline/types";
+import type { AnimalBreedEnum } from "@/lib/animals/catalogs";
+import type { FarmLifecycleConfig } from "@/lib/farms/lifecycleConfig";
+import { DEFAULT_FARM_LIFECYCLE_CONFIG } from "@/lib/farms/lifecycleConfig";
+import {
+  buildAnimalLifecyclePayload,
+  resolveAnimalLifecycleSnapshot,
+} from "@/lib/animals/lifecycle";
 
 export type FinancialTransactionNature = "compra" | "venda";
 export type FinancialPriceMode = "por_animal" | "por_lote";
@@ -11,6 +18,7 @@ export interface FinancialDraftAnimalInput {
   sexo: SexoEnum;
   dataNascimento?: string | null;
   pesoKg?: number | null;
+  raca?: AnimalBreedEnum | null;
 }
 
 export interface FinancialExistingAnimalInput {
@@ -34,6 +42,8 @@ export interface BuildFinancialTransactionInput {
   weightMode: FinancialWeightMode;
   lotWeightKg?: number | null;
   payload?: Record<string, unknown>;
+  animalOrigin?: OrigemEnum;
+  lifecycleConfig?: FarmLifecycleConfig;
 }
 
 export interface BuildFinancialTransactionResult {
@@ -133,11 +143,33 @@ export function buildFinancialTransaction(input: BuildFinancialTransactionInput)
   const ops: OperationInput[] = [...financialEvent.ops];
   const createdAnimalIds: string[] = [];
   const dateKey = toDateKey(input.occurredAt);
+  const lifecycleConfig =
+    input.lifecycleConfig ?? DEFAULT_FARM_LIFECYCLE_CONFIG;
 
   if (input.natureza === "compra") {
     purchaseAnimals.forEach((draft, index) => {
       const animalId = generatedPurchaseAnimalIds[index] ?? crypto.randomUUID();
       createdAnimalIds.push(animalId);
+      const basePayload = {
+        source: "registrar_manejo_compra",
+        purchase_event_id: financialEvent.eventId,
+      };
+      const lifecycleSnapshot = resolveAnimalLifecycleSnapshot(
+        {
+          sexo: draft.sexo,
+          data_nascimento: draft.dataNascimento || null,
+          payload: basePayload,
+          papel_macho: null,
+          habilitado_monta: false,
+        },
+        lifecycleConfig,
+      );
+      const payload = buildAnimalLifecyclePayload(
+        basePayload,
+        lifecycleSnapshot.targetStage,
+        "manual",
+        input.occurredAt,
+      );
       ops.push({
         table: "animais",
         action: "INSERT",
@@ -156,15 +188,12 @@ export function buildFinancialTransaction(input: BuildFinancialTransactionInput)
           mae_id: null,
           nome: null,
           rfid: null,
-          origem: "compra",
-          raca: null,
+          origem: input.animalOrigin ?? "compra",
+          raca: draft.raca ?? null,
           papel_macho: null,
           habilitado_monta: false,
           observacoes: null,
-          payload: {
-            source: "registrar_manejo_compra",
-            purchase_event_id: financialEvent.eventId,
-          },
+          payload,
           created_at: input.occurredAt,
           updated_at: input.occurredAt,
         },

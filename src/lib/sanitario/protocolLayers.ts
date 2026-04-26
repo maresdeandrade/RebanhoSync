@@ -240,8 +240,9 @@ export function resolveProtocolPrecedence(
           return { winnerId: operationalComplement.id, losers };
         }
       } else {
-        // official ou standard
-        const winner = group[0]; // Pega primeiro (pode haver tie-break futura)
+        // official ou standard: usar tie-break determinístico por id (ordem lexicográfica)
+        const sorted = group.sort((a, b) => a.id.localeCompare(b.id));
+        const winner = sorted[0];
         const losers = candidates
           .filter((c) => c.id !== winner.id)
           .map((c) => c.id);

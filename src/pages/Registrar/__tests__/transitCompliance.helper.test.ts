@@ -21,6 +21,12 @@ describe("transitCompliance helpers", () => {
         financeiroNatureza: "venda",
       }),
     ).toBe(true);
+    expect(
+      shouldShowTransitChecklist({
+        tipoManejo: "financeiro",
+        financeiroNatureza: "doacao_saida",
+      }),
+    ).toBe(true);
 
     expect(
       shouldShowTransitChecklist({
@@ -68,7 +74,7 @@ describe("transitCompliance helpers", () => {
   it("usa blockers de movimento para venda financeira", () => {
     const issues = buildComplianceFlowIssues({
       tipoManejo: "financeiro",
-      financeiroNatureza: "venda",
+      financeiroNatureza: "doacao_saida",
       nutritionBlockers: [{ message: "Bloqueio nutricional" }],
       movementBlockers: [{ message: "Bloqueio de movimento" }],
     });

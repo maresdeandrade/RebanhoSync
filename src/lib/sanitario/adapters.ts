@@ -5,6 +5,7 @@
  * e converte entre formatos legado (livre) e domínio estruturado.
  */
 
+import { readString } from "@/pages/Agenda/helpers/formatting";
 import type {
   SanitaryProtocolItemDomain,
   SanitaryIdentity,
@@ -32,10 +33,7 @@ import type {
  * Normalizar nome de campo, suportando variações de grafia.
  * Tenta os nomes em ordem de preferência.
  */
-function getField(
-  obj: Record<string, unknown>,
-  ...names: string[]
-): unknown {
+function getField(obj: Record<string, unknown>, ...names: string[]): unknown {
   for (const name of names) {
     if (name in obj) {
       return obj[name];
@@ -69,7 +67,9 @@ function toBooleanOrDefault(value: unknown, defaultValue: boolean): boolean {
 function toStringArrayOrNull(value: unknown): string[] | null {
   if (!value) return null;
   if (Array.isArray(value)) {
-    const filtered = value.filter((v) => typeof v === "string" || typeof v === "number");
+    const filtered = value.filter(
+      (v) => typeof v === "string" || typeof v === "number",
+    );
     return filtered.length > 0 ? filtered.map(String) : null;
   }
   if (typeof value === "string" || typeof value === "number") {
@@ -84,7 +84,9 @@ function toStringArrayOrNull(value: unknown): string[] | null {
 function toNumberArrayOrNull(value: unknown): number[] | null {
   if (!value) return null;
   if (Array.isArray(value)) {
-    const filtered = value.map(toIntOrNull).filter((v) => v !== null) as number[];
+    const filtered = value
+      .map(toIntOrNull)
+      .filter((v) => v !== null) as number[];
     return filtered.length > 0 ? filtered : null;
   }
   const n = toIntOrNull(value);
@@ -110,7 +112,10 @@ export function parseLegacyProtocolItemToDomain(
   const generatesAgenda =
     schedule.mode === "nao_estruturado"
       ? false
-      : toBooleanOrDefault(getField(payload, "generates_agenda", "generatesAgenda"), true);
+      : toBooleanOrDefault(
+          getField(payload, "generates_agenda", "generatesAgenda"),
+          true,
+        );
 
   // Completar schedule com flag
   schedule.generatesAgenda = generatesAgenda;
@@ -142,30 +147,49 @@ function parseIdentity(
   itemId: string,
   payload: LegacyPayload,
 ): SanitaryIdentity {
-  const familyCode = String(
-    getField(
-      payload,
-      "family_code",
-      "familyCode",
-      "familia_code",
-      "familiar_code",
-      "familia"
-    ) || "unknown"
+  const familyCodeRaw = getField(
+    payload,
+    "family_code",
+    "familyCode",
+    "familia_code",
+    "familiar_code",
+    "familia",
   );
+  if (!familyCodeRaw || String(familyCodeRaw).trim().length === 0) {
+    throw new Error("parseIdentity: family_code é obrigatório");
+  }
+  const familyCode = String(familyCodeRaw);
 
-  const itemCode = String(getField(payload, "item_code", "itemCode", "codigo") || "unknown");
+  const itemCodeRaw = getField(payload, "item_code", "itemCode", "codigo");
+  if (!itemCodeRaw || String(itemCodeRaw).trim().length === 0) {
+    throw new Error("parseIdentity: item_code é obrigatório");
+  }
+  const itemCode = String(itemCodeRaw);
 
-  const regimenVersion = toIntOrNull(
-    getField(payload, "regimen_version", "regimenVersion", "version")
-  ) || 1;
+  const regimenVersionRaw = getField(
+    payload,
+    "regimen_version",
+    "regimenVersion",
+    "version",
+  );
+  const regimenVersion = toIntOrNull(regimenVersionRaw) ?? 1;
 
-  const layer = String(
-    getField(payload, "origem", "layer", "origin", "camada") || "custom"
-  ).toLowerCase() as "official" | "standard" | "custom" | string;
+  const layerRaw = String(
+    getField(payload, "origem", "layer", "origin", "camada") || "custom",
+  ).toLowerCase();
+  const layer = (
+    ["official", "standard", "custom"].includes(layerRaw) ? layerRaw : "custom"
+  ) as "official" | "standard" | "custom";
 
-  const scopeType = String(
-    getField(payload, "scope_type", "scopeType", "escopo", "escopo_tipo") || "animal"
-  ).toLowerCase() as "animal" | "lote" | "fazenda" | string;
+  const scopeTypeRaw = String(
+    getField(payload, "scope_type", "scopeType", "escopo", "escopo_tipo") ||
+      "animal",
+  ).toLowerCase();
+  const scopeType = (
+    ["animal", "lote", "fazenda"].includes(scopeTypeRaw)
+      ? scopeTypeRaw
+      : "animal"
+  ) as "animal" | "lote" | "fazenda";
 
   return {
     protocolId,
@@ -173,12 +197,8 @@ function parseIdentity(
     familyCode,
     itemCode,
     regimenVersion,
-    layer: (["official", "standard", "custom"].includes(layer as string)
-      ? layer
-      : "custom") as "official" | "standard" | "custom",
-    scopeType: (["animal", "lote", "fazenda"].includes(scopeType as string)
-      ? scopeType
-      : "animal") as "animal" | "lote" | "fazenda",
+    layer,
+    scopeType,
   };
 }
 
@@ -191,21 +211,29 @@ function parseSchedule(payload: LegacyPayload): SanitarySchedule {
     "campaign_months",
     "campaignMonths",
     "meses_campanha",
-    "meses"
+    "meses",
   );
-  const intervalDaysRaw = getField(payload, "interval_days", "intervalDays", "intervalo_dias");
+  const intervalDaysRaw = getField(
+    payload,
+    "interval_days",
+    "intervalDays",
+    "intervalo_dias",
+  );
   const ageStartDaysRaw = getField(
     payload,
     "age_start_days",
     "ageStartDays",
     "idade_min_dias",
-    "idade_minima_dias"
+    "idade_minima_dias",
   );
 
   const hasCampaignMonths = Boolean(
-    campaignMonthsRaw && Array.isArray(campaignMonthsRaw) && campaignMonthsRaw.length > 0
+    campaignMonthsRaw &&
+    Array.isArray(campaignMonthsRaw) &&
+    campaignMonthsRaw.length > 0,
   );
-  const hasIntervalDays = toIntOrNull(intervalDaysRaw) !== null && toIntOrNull(intervalDaysRaw)! > 0;
+  const hasIntervalDays =
+    toIntOrNull(intervalDaysRaw) !== null && toIntOrNull(intervalDaysRaw)! > 0;
   const hasAgeStartDays = toIntOrNull(ageStartDaysRaw) !== null;
 
   if (hasCampaignMonths) {
@@ -217,7 +245,8 @@ function parseSchedule(payload: LegacyPayload): SanitarySchedule {
   }
 
   const anchor = String(
-    getField(payload, "anchor", "anchoragem", "ancla", "ponto_referencia") || "sem_ancora"
+    getField(payload, "anchor", "anchoragem", "ancla", "ponto_referencia") ||
+      "sem_ancora",
   ).toLowerCase();
 
   const validAnchors = [
@@ -239,23 +268,37 @@ function parseSchedule(payload: LegacyPayload): SanitarySchedule {
   return {
     mode,
     anchor: anchorValue,
-    intervalDays: mode === "rotina_recorrente" ? toIntOrNull(intervalDaysRaw) : null,
-    campaignMonths: mode === "campanha" ? toNumberArrayOrNull(campaignMonthsRaw) : null,
+    intervalDays:
+      mode === "rotina_recorrente" ? toIntOrNull(intervalDaysRaw) : null,
+    campaignMonths:
+      mode === "campanha" ? toNumberArrayOrNull(campaignMonthsRaw) : null,
     ageStartDays:
       mode === "janela_etaria"
         ? toIntOrNull(ageStartDaysRaw)
         : toIntOrNull(getField(payload, "age_min_days", "ageMinDays")) || null,
     ageEndDays:
       mode === "janela_etaria"
-        ? toIntOrNull(getField(payload, "age_end_days", "ageMaxDays", "age_max_days"))
+        ? toIntOrNull(
+            getField(payload, "age_end_days", "ageMaxDays", "age_max_days"),
+          )
         : null,
     dependsOnItemCode: (() => {
-      const dep = getField(payload, "depends_on_item_code", "dependsOnItemCode", "dependencia");
+      const dep = getField(
+        payload,
+        "depends_on_item_code",
+        "dependsOnItemCode",
+        "dependencia",
+      );
       return typeof dep === "string" ? dep : null;
     })(),
     generatesAgenda: true, // será sobrescrito em parseLegacyProtocolItemToDomain
     operationalLabel: (() => {
-      const label = getField(payload, "operational_label", "operationalLabel", "label_operacional");
+      const label = getField(
+        payload,
+        "operational_label",
+        "operationalLabel",
+        "label_operacional",
+      );
       return typeof label === "string" ? label : null;
     })(),
     notes: (() => {
@@ -263,7 +306,12 @@ function parseSchedule(payload: LegacyPayload): SanitarySchedule {
       return typeof notes === "string" ? notes : null;
     })(),
     instructions: (() => {
-      const instr = getField(payload, "instructions", "instrucoes", "instructoes");
+      const instr = getField(
+        payload,
+        "instructions",
+        "instrucoes",
+        "instructoes",
+      );
       return typeof instr === "string" ? instr : null;
     })(),
   };
@@ -279,8 +327,8 @@ function parseEligibility(payload: LegacyPayload): SanitaryEligibility {
       "idade_min_dias",
       "idade_minima_dias",
       "age_start_days",
-      "ageStartDays"
-    )
+      "ageStartDays",
+    ),
   );
   const ageMaxDays = toIntOrNull(
     getField(
@@ -290,23 +338,31 @@ function parseEligibility(payload: LegacyPayload): SanitaryEligibility {
       "idade_max_dias",
       "idade_maxima_dias",
       "age_end_days",
-      "ageEndDays"
-    )
+      "ageEndDays",
+    ),
   );
 
   return {
-    sexTarget: (
-      ["macho", "femea", "sem_restricao"].includes(
-        String(getField(payload, "sex_target", "sexTarget", "sexo_alvo") || "sem_restricao")
-      )
-        ? (String(getField(payload, "sex_target", "sexTarget", "sexo_alvo")) as "macho" | "femea" | "sem_restricao")
-        : "sem_restricao"
-    ) as "macho" | "femea" | "sem_restricao",
+    sexTarget: (["macho", "femea", "sem_restricao"].includes(
+      String(
+        getField(payload, "sex_target", "sexTarget", "sexo_alvo") ||
+          "sem_restricao",
+      ),
+    )
+      ? (String(getField(payload, "sex_target", "sexTarget", "sexo_alvo")) as
+          | "macho"
+          | "femea"
+          | "sem_restricao")
+      : "sem_restricao") as "macho" | "femea" | "sem_restricao",
     ageMinDays,
     ageMaxDays,
-    species: toStringArrayOrNull(getField(payload, "species", "especies", "especie")),
+    species: toStringArrayOrNull(
+      getField(payload, "species", "especies", "especie"),
+    )?.filter((s) => s === "bovino" || s === "bubalino") as Array<
+      "bovino" | "bubalino"
+    > | null,
     categoryCodes: toStringArrayOrNull(
-      getField(payload, "category_codes", "categoryCodes", "codigos_categoria")
+      getField(payload, "category_codes", "categoryCodes", "codigos_categoria"),
     ),
   };
 }
@@ -314,10 +370,23 @@ function parseEligibility(payload: LegacyPayload): SanitaryEligibility {
 function parseApplicability(payload: LegacyPayload): SanitaryApplicability {
   const type = (
     ["sempre", "jurisdicao", "risco", "evento", "perfil_animal"].includes(
-      String(getField(payload, "applicability_type", "applicabilityType", "tipo_aplicabilidade") ||
-        "sempre")
+      String(
+        getField(
+          payload,
+          "applicability_type",
+          "applicabilityType",
+          "tipo_aplicabilidade",
+        ) || "sempre",
+      ),
     )
-      ? String(getField(payload, "applicability_type", "applicabilityType", "tipo_aplicabilidade"))
+      ? String(
+          getField(
+            payload,
+            "applicability_type",
+            "applicabilityType",
+            "tipo_aplicabilidade",
+          ),
+        )
       : "sempre"
   ) as ApplicabilityType;
 
@@ -330,14 +399,22 @@ function parseApplicability(payload: LegacyPayload): SanitaryApplicability {
   };
 }
 
-function extractJurisdictionRule(payload: LegacyPayload): JurisdictionRule | null {
+function extractJurisdictionRule(
+  payload: LegacyPayload,
+): JurisdictionRule | null {
   const uf = toStringArrayOrNull(getField(payload, "jurisdiction_uf", "uf"));
-  const municipio = toStringArrayOrNull(getField(payload, "jurisdiction_municipio", "municipio"));
+  const municipio = toStringArrayOrNull(
+    getField(payload, "jurisdiction_municipio", "municipio"),
+  );
   const regiaoSanitaria = toStringArrayOrNull(
-    getField(payload, "jurisdiction_regiao_sanitaria", "regiao_sanitaria")
+    getField(payload, "jurisdiction_regiao_sanitaria", "regiao_sanitaria"),
   );
   const classificacaoSanitaria = toStringArrayOrNull(
-    getField(payload, "jurisdiction_classificacao_sanitaria", "classificacao_sanitaria")
+    getField(
+      payload,
+      "jurisdiction_classificacao_sanitaria",
+      "classificacao_sanitaria",
+    ),
   );
 
   if (uf || municipio || regiaoSanitaria || classificacaoSanitaria) {
@@ -347,10 +424,14 @@ function extractJurisdictionRule(payload: LegacyPayload): JurisdictionRule | nul
 }
 
 function extractRiskRule(payload: LegacyPayload): RiskRule | null {
-  const riskCodes = toStringArrayOrNull(getField(payload, "risk_codes", "riskCodes"));
+  const riskCodes = toStringArrayOrNull(
+    getField(payload, "risk_codes", "riskCodes"),
+  );
   const outbreakActive = (() => {
     const val = getField(payload, "outbreak_active", "outbreakActive");
-    return val !== null && val !== undefined ? toBooleanOrDefault(val, false) : null;
+    return val !== null && val !== undefined
+      ? toBooleanOrDefault(val, false)
+      : null;
   })();
   const zoneIds = toStringArrayOrNull(getField(payload, "zone_ids", "zoneIds"));
 
@@ -362,11 +443,13 @@ function extractRiskRule(payload: LegacyPayload): RiskRule | null {
 
 function extractEventRule(payload: LegacyPayload): EventRule | null {
   const eventCodes = toStringArrayOrNull(
-    getField(payload, "event_codes", "eventCodes", "codigos_evento")
+    getField(payload, "event_codes", "eventCodes", "codigos_evento"),
   );
   const requiresOpenEvent = (() => {
     const val = getField(payload, "requires_open_event", "requiresOpenEvent");
-    return val !== null && val !== undefined ? toBooleanOrDefault(val, false) : null;
+    return val !== null && val !== undefined
+      ? toBooleanOrDefault(val, false)
+      : null;
   })();
 
   if (eventCodes || requiresOpenEvent !== null) {
@@ -375,7 +458,9 @@ function extractEventRule(payload: LegacyPayload): EventRule | null {
   return null;
 }
 
-function extractAnimalProfileRule(payload: LegacyPayload): AnimalProfileRule | null {
+function extractAnimalProfileRule(
+  payload: LegacyPayload,
+): AnimalProfileRule | null {
   const species = (() => {
     const val = getField(payload, "profile_species", "species");
     if (!val) return null;
@@ -387,10 +472,10 @@ function extractAnimalProfileRule(payload: LegacyPayload): AnimalProfileRule | n
   })();
 
   const categoryCodes = toStringArrayOrNull(
-    getField(payload, "profile_category_codes", "categoryCodes")
+    getField(payload, "profile_category_codes", "categoryCodes"),
   );
   const reproductionStatus = toStringArrayOrNull(
-    getField(payload, "profile_reproduction_status", "reproductionStatus")
+    getField(payload, "profile_reproduction_status", "reproductionStatus"),
   );
 
   if (species || categoryCodes || reproductionStatus) {
@@ -401,8 +486,12 @@ function extractAnimalProfileRule(payload: LegacyPayload): AnimalProfileRule | n
 
 function parseCompliance(payload: LegacyPayload): SanitaryCompliance {
   const levelValue = String(
-    getField(payload, "compliance_level", "complianceLevel", "nivel_conformidade") ||
-      "recomendado"
+    getField(
+      payload,
+      "compliance_level",
+      "complianceLevel",
+      "nivel_conformidade",
+    ) || "recomendado",
   );
   const level = (
     ["obrigatorio", "condicional", "recomendado"].includes(levelValue)
@@ -412,29 +501,46 @@ function parseCompliance(payload: LegacyPayload): SanitaryCompliance {
 
   return {
     level,
-    mandatory: toBooleanOrDefault(getField(payload, "mandatory", "obrigatorio"), false),
+    mandatory: toBooleanOrDefault(
+      getField(payload, "mandatory", "obrigatorio"),
+      false,
+    ),
     requiresVeterinarian: toBooleanOrDefault(
-      getField(payload, "requires_veterinarian", "requiresVeterinarian", "requer_veterinario"),
-      false
+      getField(
+        payload,
+        "requires_veterinarian",
+        "requiresVeterinarian",
+        "requer_veterinario",
+      ),
+      false,
     ),
     requiresDocument: toBooleanOrDefault(
-      getField(payload, "requires_document", "requiresDocument", "requer_documento"),
-      false
+      getField(
+        payload,
+        "requires_document",
+        "requiresDocument",
+        "requer_documento",
+      ),
+      false,
     ),
     requiredDocumentTypes: toStringArrayOrNull(
-      getField(payload, "required_document_types", "requiredDocumentTypes")
+      getField(payload, "required_document_types", "requiredDocumentTypes"),
     ),
     blocksExecutionWithoutVeterinarian: toBooleanOrDefault(
       getField(
         payload,
         "blocks_execution_without_veterinarian",
-        "blocksExecutionWithoutVeterinarian"
+        "blocksExecutionWithoutVeterinarian",
       ),
-      false
+      false,
     ),
     blocksCompletionWithoutDocument: toBooleanOrDefault(
-      getField(payload, "blocks_completion_without_document", "blocksCompletionWithoutDocument"),
-      false
+      getField(
+        payload,
+        "blocks_completion_without_document",
+        "blocksCompletionWithoutDocument",
+      ),
+      false,
     ),
   };
 }
@@ -443,19 +549,23 @@ function parseExecutionPolicy(payload: LegacyPayload): SanitaryExecutionPolicy {
   return {
     allowsManualExecution: toBooleanOrDefault(
       getField(payload, "allows_manual_execution", "allowsManualExecution"),
-      true
+      true,
     ),
     createsInstantTaskOnEvent: toBooleanOrDefault(
-      getField(payload, "creates_instant_task_on_event", "createsInstantTaskOnEvent"),
-      false
+      getField(
+        payload,
+        "creates_instant_task_on_event",
+        "createsInstantTaskOnEvent",
+      ),
+      false,
     ),
     expiresWhenWindowEnds: toBooleanOrDefault(
       getField(payload, "expires_when_window_ends", "expiresWhenWindowEnds"),
-      false
+      false,
     ),
     supportsBatchExecution: toBooleanOrDefault(
       getField(payload, "supports_batch_execution", "supportsBatchExecution"),
-      false
+      false,
     ),
   };
 }
@@ -499,8 +609,10 @@ export function serializeDomainToLegacyPayload(
     applicability_type: item.applicability.type,
     jurisdiction_uf: item.applicability.jurisdiction?.uf,
     jurisdiction_municipio: item.applicability.jurisdiction?.municipio,
-    jurisdiction_regiao_sanitaria: item.applicability.jurisdiction?.regiaoSanitaria,
-    jurisdiction_classificacao_sanitaria: item.applicability.jurisdiction?.classificacaoSanitaria,
+    jurisdiction_regiao_sanitaria:
+      item.applicability.jurisdiction?.regiaoSanitaria,
+    jurisdiction_classificacao_sanitaria:
+      item.applicability.jurisdiction?.classificacaoSanitaria,
     risk_codes: item.applicability.risk?.riskCodes,
     outbreak_active: item.applicability.risk?.outbreakActive,
     zone_ids: item.applicability.risk?.zoneIds,
@@ -508,7 +620,8 @@ export function serializeDomainToLegacyPayload(
     requires_open_event: item.applicability.event?.requiresOpenEvent,
     profile_species: item.applicability.animalProfile?.species,
     profile_category_codes: item.applicability.animalProfile?.categoryCodes,
-    profile_reproduction_status: item.applicability.animalProfile?.reproductionStatus,
+    profile_reproduction_status:
+      item.applicability.animalProfile?.reproductionStatus,
 
     // compliance
     compliance_level: item.compliance.level,
@@ -516,12 +629,15 @@ export function serializeDomainToLegacyPayload(
     requires_veterinarian: item.compliance.requiresVeterinarian,
     requires_document: item.compliance.requiresDocument,
     required_document_types: item.compliance.requiredDocumentTypes,
-    blocks_execution_without_veterinarian: item.compliance.blocksExecutionWithoutVeterinarian,
-    blocks_completion_without_document: item.compliance.blocksCompletionWithoutDocument,
+    blocks_execution_without_veterinarian:
+      item.compliance.blocksExecutionWithoutVeterinarian,
+    blocks_completion_without_document:
+      item.compliance.blocksCompletionWithoutDocument,
 
     // executionPolicy
     allows_manual_execution: item.executionPolicy.allowsManualExecution,
-    creates_instant_task_on_event: item.executionPolicy.createsInstantTaskOnEvent,
+    creates_instant_task_on_event:
+      item.executionPolicy.createsInstantTaskOnEvent,
     expires_when_window_ends: item.executionPolicy.expiresWhenWindowEnds,
     supports_batch_execution: item.executionPolicy.supportsBatchExecution,
   };

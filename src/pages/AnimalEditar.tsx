@@ -99,11 +99,11 @@ const AnimalEditar = () => {
   const lotes = useLotes(animal?.fazenda_id);
 
   const temCriaRecente = useLiveQuery(async () => {
-    if (!animal?.id) return false;
+    if (!animal?.id || !animal.fazenda_id) return false;
     const crias = await db.state_animais
-      .where("mae_id")
-      .equals(animal.id)
-      .filter((a) => !a.deleted_at)
+      .where("fazenda_id")
+      .equals(animal.fazenda_id)
+      .filter((a) => a.mae_id === animal.id && !a.deleted_at)
       .toArray();
       
     const umAnoAtras = Date.now() - 365 * 24 * 60 * 60 * 1000;

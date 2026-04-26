@@ -1,15 +1,18 @@
 import type { TransitChecklistDraft } from "@/lib/sanitario/transit";
 import { validateTransitChecklist } from "@/lib/sanitario/transit";
+import { isFinanceiroSaidaNatureza } from "@/pages/Registrar/helpers/financialNature";
+import type { FinanceiroNatureza } from "@/pages/Registrar/types";
 
 type GuardMessage = { message: string };
 
 export function shouldShowTransitChecklist(input: {
   tipoManejo: string | null;
-  financeiroNatureza: string;
+  financeiroNatureza: FinanceiroNatureza;
 }) {
   return (
     input.tipoManejo === "movimentacao" ||
-    (input.tipoManejo === "financeiro" && input.financeiroNatureza === "venda")
+    (input.tipoManejo === "financeiro" &&
+      isFinanceiroSaidaNatureza(input.financeiroNatureza))
   );
 }
 
@@ -24,7 +27,7 @@ export function buildTransitChecklistIssues(input: {
 
 export function buildComplianceFlowIssues(input: {
   tipoManejo: string | null;
-  financeiroNatureza: string;
+  financeiroNatureza: FinanceiroNatureza;
   movementBlockers: GuardMessage[];
   nutritionBlockers: GuardMessage[];
 }) {
@@ -34,7 +37,8 @@ export function buildComplianceFlowIssues(input: {
 
   if (
     input.tipoManejo === "movimentacao" ||
-    (input.tipoManejo === "financeiro" && input.financeiroNatureza === "venda")
+    (input.tipoManejo === "financeiro" &&
+      isFinanceiroSaidaNatureza(input.financeiroNatureza))
   ) {
     return input.movementBlockers.map((guard) => guard.message);
   }

@@ -17,7 +17,10 @@ export type OccurrenceBlockReason =
   | "before_window"
   | "window_expired"
   | "not_due_yet"
-  | "already_materialized";
+  | "already_materialized"
+  | "superseded_by_layer"
+  | "inactive_protocol"
+  | "calendar_mode_not_materializable";
 
 /**
  * Retorna mensagem legível para razão de bloqueio/sucesso.
@@ -37,6 +40,9 @@ export function reasonCodeMessage(code: OccurrenceBlockReason): string {
     window_expired: "Animal excedeu a idade máxima",
     not_due_yet: "Não é época de campanha ou intervalo não venceu",
     already_materialized: "Ocorrência já foi materializada neste período",
+    superseded_by_layer: "Protocolo substituído por camada de maior precedência",
+    inactive_protocol: "Protocolo está inativo ou desativado",
+    calendar_mode_not_materializable: "Modo de calendário não permite materialização automática",
   };
 
   return messages[code] ?? "Razão desconhecida";
@@ -70,6 +76,12 @@ export function blockingCategory(
       return "window";
     case "not_due_yet":
     case "agenda_disabled":
+      return "schedule";
+    // Bloqueios de camada/ativacao/modo sao tratados como impedimentos de agenda.
+    // Mantemos agrupados em `schedule` para preservar contrato atual de BlockedBy.
+    case "superseded_by_layer":
+    case "inactive_protocol":
+    case "calendar_mode_not_materializable":
       return "schedule";
     case "already_materialized":
       return "dedup";

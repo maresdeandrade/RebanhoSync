@@ -1,10 +1,12 @@
 import type { EventDomain } from "@/lib/events/types";
+import type { FinanceiroNatureza } from "@/pages/Registrar/types";
+import {
+  isFinanceiroDoacaoNatureza,
+  isFinanceiroSaidaNatureza,
+  supportsDraftAnimalsInFinanceiroNatureza,
+} from "@/pages/Registrar/helpers/financialNature";
 
-export type RegistrarFinanceiroNatureza =
-  | "compra"
-  | "venda"
-  | "sociedade_entrada"
-  | "sociedade_saida";
+export type RegistrarFinanceiroNatureza = FinanceiroNatureza;
 
 export type RegistrarFinanceiroModoPeso = "nenhum" | "lote" | "individual";
 export type RegistrarFinanceiroModoPreco = "por_lote" | "por_animal";
@@ -13,6 +15,7 @@ export interface RegistrarCompraNovoAnimalDraft {
   identificacao: string;
   dataNascimento: string;
   pesoKg: string;
+  raca?: string | null;
 }
 
 export interface RegistrarPreflightInput {
@@ -43,15 +46,19 @@ export function resolveRegistrarPreflightIssue(
 ): string | null {
   const hasSelectedAnimals = input.selectedAnimais.length > 0;
   const financeRequiresAnimal =
-    input.tipoManejo === "financeiro" && input.financeiroData.natureza === "venda";
+    input.tipoManejo === "financeiro" &&
+    isFinanceiroSaidaNatureza(input.financeiroData.natureza);
   const financeByLoteOnly =
     input.tipoManejo === "financeiro" &&
     !financeRequiresAnimal &&
     !hasSelectedAnimals;
-  const compraGerandoAnimais =
+  const entradaGerandoAnimais =
     input.tipoManejo === "financeiro" &&
-    input.financeiroData.natureza === "compra" &&
+    supportsDraftAnimalsInFinanceiroNatureza(input.financeiroData.natureza) &&
     !hasSelectedAnimals;
+  const isFinanceiroDoacao =
+    input.tipoManejo === "financeiro" &&
+    isFinanceiroDoacaoNatureza(input.financeiroData.natureza);
 
   if (
     input.tipoManejo === "financeiro" &&
@@ -66,7 +73,7 @@ export function resolveRegistrarPreflightIssue(
   }
 
   if (financeByLoteOnly && !input.selectedLoteId) {
-    return "Selecione um lote para registrar compra sem animais.";
+    return "Selecione um lote para registrar entrada sem animais.";
   }
 
   if (input.partoRequiresSingleMatrix) {
@@ -76,6 +83,7 @@ export function resolveRegistrarPreflightIssue(
   if (
     input.tipoManejo === "financeiro" &&
     !input.isFinanceiroSociedade &&
+    !isFinanceiroDoacao &&
     (!Number.isFinite(input.financeiroValorTotalCalculado) ||
       (input.financeiroValorTotalCalculado ?? 0) <= 0)
   ) {
@@ -95,6 +103,7 @@ export function resolveRegistrarPreflightIssue(
   if (
     input.tipoManejo === "financeiro" &&
     !input.isFinanceiroSociedade &&
+    !isFinanceiroDoacao &&
     input.financeiroData.modoPreco === "por_animal" &&
     (!Number.isFinite(input.financeiroValorUnitario) ||
       (input.financeiroValorUnitario ?? 0) <= 0)
@@ -104,14 +113,14 @@ export function resolveRegistrarPreflightIssue(
 
   if (
     input.tipoManejo === "financeiro" &&
-    input.financeiroData.natureza === "compra" &&
+    supportsDraftAnimalsInFinanceiroNatureza(input.financeiroData.natureza) &&
     !hasSelectedAnimals &&
     input.compraNovosAnimais.length !== input.financeiroQuantidadeAnimais
   ) {
-    return "A quantidade de animais da compra ficou inconsistente.";
+    return "A quantidade de animais da entrada ficou inconsistente.";
   }
 
-  if (compraGerandoAnimais) {
+  if (entradaGerandoAnimais) {
     const hoje = new Date();
     const dataNascimentoInvalida = input.compraNovosAnimais.some((item) => {
       if (!item.dataNascimento) return false;
@@ -136,14 +145,14 @@ export function resolveRegistrarPreflightIssue(
         return !Number.isFinite(peso) || (peso ?? 0) <= 0;
       });
       if (pesoInvalido) {
-        return "Informe um peso individual valido para cada animal da compra.";
+        return "Informe um peso individual valido para cada animal da entrada.";
       }
     }
   }
 
   if (
     input.tipoManejo === "financeiro" &&
-    input.financeiroData.natureza === "venda" &&
+    isFinanceiroSaidaNatureza(input.financeiroData.natureza) &&
     input.financeiroData.modoPeso === "individual"
   ) {
     const pesoInvalido = input.compraNovosAnimais.some((item) => {
@@ -152,7 +161,7 @@ export function resolveRegistrarPreflightIssue(
       return !Number.isFinite(peso) || (peso ?? 0) <= 0;
     });
     if (pesoInvalido) {
-      return "Informe um peso individual valido para cada animal da venda.";
+      return "Informe um peso individual valido para cada animal da saida.";
     }
   }
 

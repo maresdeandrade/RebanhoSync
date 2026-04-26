@@ -50,4 +50,23 @@ describe("deriveRegistrarFinancialContext", () => {
     expect(result.financeiroQuantidadeAnimais).toBe(4);
     expect(result.financeiroValorTotalCalculado).toBe(100);
   });
+
+  it("mapeia doacao de entrada para tipo compra", () => {
+    const result = deriveRegistrarFinancialContext({
+      financeiroData: {
+        natureza: "doacao_entrada",
+        modoPreco: "por_lote",
+        valorUnitario: "",
+        valorTotal: "0",
+        quantidadeAnimais: "2",
+        modoPeso: "nenhum",
+        pesoLoteKg: "",
+      },
+      selectedAnimalsCount: 0,
+      parseUserWeight: () => null,
+    });
+
+    expect(result.financeiroTipo).toBe("compra");
+    expect(result.isFinanceiroSociedade).toBe(false);
+  });
 });

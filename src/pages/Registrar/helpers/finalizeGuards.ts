@@ -1,22 +1,31 @@
 import { EventValidationError } from "@/lib/events/validators";
 import type { EventDomain } from "@/lib/events/types";
-
-type FinanceiroNatureza =
-  | "compra"
-  | "venda"
-  | "sociedade_entrada"
-  | "sociedade_saida";
+import type { FinanceiroNatureza } from "@/pages/Registrar/types";
+import { isFinanceiroSociedadeNatureza } from "@/pages/Registrar/helpers/financialNature";
 
 export function resolveRegistrarFinancialNatureIssue(input: {
   tipoManejo: EventDomain;
   isFinanceiroSociedade: boolean;
   natureza: FinanceiroNatureza;
 }) {
+  if (input.tipoManejo !== "financeiro") {
+    return null;
+  }
+
+  const sociedadeNatureza = isFinanceiroSociedadeNatureza(input.natureza);
+  if (input.isFinanceiroSociedade !== sociedadeNatureza) {
+    return "Natureza financeira invalida para este fluxo.";
+  }
+
   if (
-    input.tipoManejo === "financeiro" &&
-    !input.isFinanceiroSociedade &&
-    input.natureza !== "compra" &&
-    input.natureza !== "venda"
+    !sociedadeNatureza &&
+    ![
+      "compra",
+      "venda",
+      "doacao_entrada",
+      "doacao_saida",
+      "arrendamento",
+    ].includes(input.natureza)
   ) {
     return "Natureza financeira invalida para este fluxo.";
   }

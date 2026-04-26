@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 
 import { getAdjacentAgendaCriticalNavigationTarget } from "@/lib/agenda/criticalNavigation";
 import { getAgendaScheduleBucket } from "@/lib/agenda/groupOrdering";
@@ -8,7 +8,7 @@ import type { AgendaRow, AgendaScheduleQuickFilter, AnimalQuickFilter } from "@/
 export type UseAgendaInteractionStateInput = {
   contextualFocus: { groupKey: string; rowId: string; rowIds: string[] } | null;
   filteredRows: AgendaRow[];
-  criticalTargets: Array<{ groupKey: string; rows: AgendaRow[] }>;
+  criticalTargets: Array<{ groupKey: string; groupTitle: string; rows: AgendaRow[]; overdueCount: number }>;
   currentCriticalGroupKey: string | null;
   quickScheduleFilter: AgendaScheduleQuickFilter;
   quickTypeFilter: string;
@@ -63,14 +63,14 @@ export function useAgendaInteractionState({
     return () => window.clearTimeout(timeoutId);
   }, [contextualFocus, filteredRows, setContextualFocus]);
 
-  const registerRowRef = (rowId: string, node: HTMLElement | null) => {
+  const registerRowRef = useCallback((rowId: string, node: HTMLElement | null) => {
     if (node) {
       rowRefs.current.set(rowId, node);
       return;
     }
 
     rowRefs.current.delete(rowId);
-  };
+  }, []);
 
   const navigateCriticalGroup = (direction: "next" | "previous") => {
     const target = getAdjacentAgendaCriticalNavigationTarget(
@@ -79,6 +79,7 @@ export function useAgendaInteractionState({
       direction,
     );
     if (!target) return;
+
 
     setQuickScheduleFilter("overdue");
     applyContextualFocus(target.groupKey, target.rows);

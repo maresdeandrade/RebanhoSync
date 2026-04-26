@@ -68,6 +68,7 @@ describe("buildRegistrarFinancialPurchaseAnimals", () => {
           sexo: "F",
           dataNascimento: "2025-02-01",
           pesoKg: "250,5",
+          raca: "nelore",
         },
       ],
       selectedAnimalRecords: [],
@@ -82,6 +83,7 @@ describe("buildRegistrarFinancialPurchaseAnimals", () => {
         sexo: "F",
         dataNascimento: "2025-02-01",
         pesoKg: 250.5,
+        raca: "nelore",
       },
     ]);
   });
@@ -96,6 +98,7 @@ describe("buildRegistrarFinancialPurchaseAnimals", () => {
           sexo: "M",
           dataNascimento: "",
           pesoKg: "300",
+          raca: null,
         },
       ],
       selectedAnimalRecords: [{ id: "a-1", identificacao: "BR-001", loteId: "lote-1" }],
@@ -110,6 +113,7 @@ describe("buildRegistrarFinancialPurchaseAnimals", () => {
         sexo: "M",
         dataNascimento: null,
         pesoKg: 300,
+        raca: null,
       },
     ]);
   });

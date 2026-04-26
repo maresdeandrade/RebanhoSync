@@ -7,6 +7,11 @@ import {
 import type { FarmWeightUnit } from "@/lib/farms/measurementConfig";
 import { deriveRegistrarFinancialContext } from "@/pages/Registrar/helpers/financialContext";
 import {
+  isFinanceiroSociedadeNatureza,
+  isFinanceiroSaidaNatureza,
+  supportsDraftAnimalsInFinanceiroNatureza,
+} from "@/pages/Registrar/helpers/financialNature";
+import {
   runRegistrarCreateContraparteEffect,
   type RegistrarNovaContraparteDraft,
 } from "@/pages/Registrar/effects/contraparteCreate";
@@ -44,6 +49,9 @@ const FINANCEIRO_NATUREZA_OPTIONS: FinanceiroNatureza[] = [
   "venda",
   "sociedade_entrada",
   "sociedade_saida",
+  "doacao_entrada",
+  "doacao_saida",
+  "arrendamento",
 ];
 
 export function useRegistrarFinanceiroPackage(input: {
@@ -70,7 +78,9 @@ export function useRegistrarFinanceiroPackage(input: {
       key: K,
       value: FinanceiroFormData[K],
     ) => {
-      setFinanceiroData((prev) => ({ ...prev, [key]: value }));
+      setFinanceiroData((prev) =>
+        Object.is(prev[key], value) ? prev : { ...prev, [key]: value },
+      );
     },
     [],
   );
@@ -157,22 +167,14 @@ export function useRegistrarFinanceiroPackage(input: {
   }, [canManageContraparte, input.activeFarmId, input.lotes, novaContraparte]);
 
   useEffect(() => {
-    if (
-      input.selectedAnimalIds.length === 0 &&
-      financeiroData.natureza === "venda"
-    ) {
-      setFinanceiroData((prev) => ({ ...prev, natureza: "compra" }));
-    }
-  }, [financeiroData.natureza, input.selectedAnimalIds.length]);
-
-  useEffect(() => {
     if (input.tipoManejo !== "financeiro") {
       setCompraNovosAnimais([]);
       return;
     }
 
     if (
-      financeiroData.natureza === "venda" &&
+      isFinanceiroSaidaNatureza(financeiroData.natureza) &&
+      !isFinanceiroSociedadeNatureza(financeiroData.natureza) &&
       financeiroData.modoPeso === "individual"
     ) {
       setCompraNovosAnimais((prev) =>
@@ -184,13 +186,14 @@ export function useRegistrarFinanceiroPackage(input: {
             sexo: current?.sexo ?? "F",
             dataNascimento: "",
             pesoKg: current?.pesoKg ?? "",
+            raca: null,
           };
         }),
       );
       return;
     }
 
-    if (financeiroData.natureza !== "compra") {
+    if (!supportsDraftAnimalsInFinanceiroNatureza(financeiroData.natureza)) {
       setCompraNovosAnimais([]);
       return;
     }
@@ -215,6 +218,7 @@ export function useRegistrarFinanceiroPackage(input: {
             sexo: index === 0 ? ("F" as RegistrarSexo) : ("M" as RegistrarSexo),
             dataNascimento: "",
             pesoKg: "",
+            raca: null,
           }
         );
       }),

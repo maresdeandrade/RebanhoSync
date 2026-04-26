@@ -940,7 +940,7 @@ export async function reconcileFarmSanitaryFamiliesBeforePackReapply(input: {
     conflicts,
     familiesWithNoChange,
     familiesWithUpdate,
-    legacyProtocolsToDeactivate,
+    legacyProtocolsToDeactivate: legacyToDeactivate,
     recommendation,
   };
 }

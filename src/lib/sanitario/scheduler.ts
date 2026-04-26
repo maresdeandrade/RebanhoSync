@@ -100,8 +100,8 @@ export function computeProtocolAgendaEligibility(
   }
 
   // VALIDAÇÃO 4: Elegibilidade
-  checkResult = step3CheckEligibility(item, subject);
-  if (checkResult !== "continue") {
+  const nowDateIso = now.nowIso.split("T")[0] ?? now.nowIso;
+  checkResult = step3CheckEligibility(item, subject, nowDateIso);  if (checkResult !== "continue") {
     reasons.push(checkResult);
     return { eligible: false, blockedBy: [checkResult], reasons };
   }
@@ -168,22 +168,51 @@ function step2CheckApplicability(item: SanitaryProtocolItemDomain, subject: Sani
 
   if (applicability.type === "jurisdicao") {
     const farmedaUF = subject.fazenda?.uf;
-    if (applicability.jurisdiction && farmedaUF !== applicability.jurisdiction) {
-      return "jurisdiction_not_allowed";
+    const jurisdiction = applicability.jurisdiction;
+    if (jurisdiction) {
+      // Comparar arrays corretamente
+      if (jurisdiction.uf && jurisdiction.uf.length > 0 && farmedaUF) {
+        if (!jurisdiction.uf.includes(farmedaUF)) {
+          return "jurisdiction_not_allowed";
+        }
+      }
+      if (jurisdiction.municipio && jurisdiction.municipio.length > 0 && subject.fazenda.municipio) {
+        if (!jurisdiction.municipio.includes(subject.fazenda.municipio)) {
+          return "jurisdiction_not_allowed";
+        }
+      }
+      if (jurisdiction.regiaoSanitaria && jurisdiction.regiaoSanitaria.length > 0 && subject.fazenda.regiaoSanitaria) {
+        if (!jurisdiction.regiaoSanitaria.includes(subject.fazenda.regiaoSanitaria)) {
+          return "jurisdiction_not_allowed";
+        }
+      }
+      if (jurisdiction.classificacaoSanitaria && jurisdiction.classificacaoSanitaria.length > 0 && subject.fazenda.classificacaoSanitaria) {
+        if (!jurisdiction.classificacaoSanitaria.includes(subject.fazenda.classificacaoSanitaria)) {
+          return "jurisdiction_not_allowed";
+        }
+      }
     }
   }
 
   if (applicability.type === "risco") {
     const activeRisks = subject.activeRisks ?? [];
-    if (applicability.risk && !activeRisks.some((r) => r.riskCode === applicability.risk)) {
-      return "risk_not_active";
+    const risk = applicability.risk;
+    if (risk?.riskCodes && risk.riskCodes.length > 0) {
+      const hasMatchingRisk = risk.riskCodes.some(code => activeRisks.includes(code));
+      if (!hasMatchingRisk) {
+        return "risk_not_active";
+      }
     }
   }
 
   if (applicability.type === "evento") {
     const activeEvents = subject.activeEvents ?? [];
-    if (applicability.event && !activeEvents.some((e) => e.eventCode === applicability.event)) {
-      return "event_not_active";
+    const event = applicability.event;
+    if (event?.eventCodes && event.eventCodes.length > 0) {
+      const hasMatchingEvent = activeEvents.some(e => event.eventCodes!.includes(e.eventCode));
+      if (!hasMatchingEvent) {
+        return "event_not_active";
+      }
     }
   }
 
@@ -191,9 +220,29 @@ function step2CheckApplicability(item: SanitaryProtocolItemDomain, subject: Sani
     if (!subject.animal) {
       return "not_applicable";
     }
-    const profile = subject.animal.categoryCode ?? "";
-    if (applicability.animalProfile && !profile.includes(applicability.animalProfile)) {
-      return "not_applicable";
+    const animal = subject.animal;
+    const profile = applicability.animalProfile;
+    if (profile) {
+      // Verificar espécie
+      if (profile.species && profile.species.length > 0) {
+        if (!profile.species.includes(animal.species)) {
+          return "not_applicable";
+        }
+      }
+      // Verificar categoria
+      if (profile.categoryCodes && profile.categoryCodes.length > 0) {
+        const animalCategory = animal.categoryCode ?? "";
+        if (!profile.categoryCodes.includes(animalCategory)) {
+          return "not_applicable";
+        }
+      }
+      // Verificar status reprodutivo
+      if (profile.reproductionStatus && profile.reproductionStatus.length > 0) {
+        const animalStatus = animal.reproductionStatus ?? "";
+        if (!profile.reproductionStatus.includes(animalStatus)) {
+          return "not_applicable";
+        }
+      }
     }
   }
 
@@ -204,11 +253,16 @@ function step2CheckApplicability(item: SanitaryProtocolItemDomain, subject: Sani
  * PASSO 3: Verifica se animal é elegível
  * (sexo, idade, espécie, categoria).
  */
-function step3CheckEligibility(item: SanitaryProtocolItemDomain, subject: SanitarySubjectContext): OccurrenceBlockReason | "continue" {
+function step3CheckEligibility(
+  item: SanitaryProtocolItemDomain,
+  subject: SanitarySubjectContext,
+  nowIso: string,
+): OccurrenceBlockReason | "continue" {
   if (!subject.animal) {
     return "not_eligible";
   }
 
+  const animal = subject.animal;
   const eligibility = item.eligibility;
 
   // Verificar sexo
@@ -221,7 +275,8 @@ function step3CheckEligibility(item: SanitaryProtocolItemDomain, subject: Sanita
 
   // Verificar espécie
   if (eligibility.species) {
-    if (!eligibility.species.includes(subject.animal.species ?? "")) {
+    const species = eligibility.species;
+    if (species.length > 0 && animal.species && !species.includes(animal.species)) {  
       return "not_eligible";
     }
   }
@@ -238,9 +293,9 @@ function step3CheckEligibility(item: SanitaryProtocolItemDomain, subject: Sanita
   if (eligibility.ageMinDays !== null && eligibility.ageMinDays !== undefined) {
     const birthDate = subject.animal.birthDate;
     if (birthDate) {
-      const ageNowDays = daysBetween(birthDate, subject.fazenda?.now ?? new Date().toISOString());
+      const ageNowDays = daysBetween(birthDate, nowIso);
       if (ageNowDays < eligibility.ageMinDays) {
-        return "not_eligible"; // Será tratado por before_window se tiver janela
+        return "before_window";
       }
     }
   }
@@ -248,9 +303,9 @@ function step3CheckEligibility(item: SanitaryProtocolItemDomain, subject: Sanita
   if (eligibility.ageMaxDays !== null && eligibility.ageMaxDays !== undefined) {
     const birthDate = subject.animal.birthDate;
     if (birthDate) {
-      const ageNowDays = daysBetween(birthDate, subject.fazenda?.now ?? new Date().toISOString());
+      const ageNowDays = daysBetween(birthDate, nowIso);
       if (ageNowDays > eligibility.ageMaxDays) {
-        return "not_eligible";
+        return "window_expired";
       }
     }
   }
@@ -260,16 +315,33 @@ function step3CheckEligibility(item: SanitaryProtocolItemDomain, subject: Sanita
 
 /**
  * PASSO 4: Verifica se dependência foi satisfeita.
+ * Valida familyCode, itemCode e regimenVersion para evitar dependência cruzada.
  */
-function step4CheckDependency(item: SanitaryProtocolItemDomain, history: SanitaryExecutionRecord[]): OccurrenceBlockReason | "continue" {
+function step4CheckDependency(
+  item: SanitaryProtocolItemDomain,
+  history: SanitaryExecutionRecord[],
+): OccurrenceBlockReason | "continue" {
   if (!item.schedule.dependsOnItemCode) {
     return "continue";
   }
 
   const dependsOn = item.schedule.dependsOnItemCode;
-  const dependencyCompleted = history.some(
-    (h) => h.itemCode === dependsOn && h.status === "completed"
-  );
+  const { familyCode, regimenVersion } = item.identity;
+
+  // Buscar no histórico: deve ser mesma família, mesmo item de dependência e mesma versão de regimen
+  // Fallback para legado: se regimenVersion for 1, aceita histórico sem validação estrita de versão
+  const dependencyCompleted = history.some((h) => {
+    if (h.status !== "completed") return false;
+    if (h.itemCode !== dependsOn) return false;
+    if (h.familyCode !== familyCode) return false;
+
+    // Validação estrita de versão para regimen > 1
+    // Para regimenVersion === 1, aceitar histórico com versão 1 ou undefined/0 (legado)
+    if (regimenVersion > 1) {
+      return h.regimenVersion === regimenVersion;
+    }
+    return h.regimenVersion === regimenVersion || h.regimenVersion === 1 || h.regimenVersion === 0;
+  });
 
   if (!dependencyCompleted) {
     return "dependency_not_satisfied";
@@ -312,7 +384,7 @@ function step6EvaluateMode(
   periodKey: string | null;
 } {
   const mode = item.schedule.mode;
-  const nowDate = now.currentDate ?? new Date().toISOString().split("T")[0]!;
+  const nowDate = now.nowIso.split("T")[0] ?? now.nowIso;
 
   if (mode === "campanha") {
     return evaluateCampagnaMode(item, nowDate);
@@ -327,7 +399,7 @@ function step6EvaluateMode(
   }
 
   if (mode === "procedimento_imediato") {
-    return evaluateProcedimentoImediatoMode(item, subject);
+    return evaluateProcedimentoImediatoMode(item, subject, nowDate);
   }
 
   // nao_estruturado: sem regra temporal
@@ -449,6 +521,7 @@ function evaluateRotinaRecorrenteMode(
 function evaluateProcedimentoImediatoMode(
   item: SanitaryProtocolItemDomain,
   subject: SanitarySubjectContext,
+  nowIso: string,
 ): { dueDate: string | null; reason: OccurrenceBlockReason; periodKey: string | null } {
   const activeEvents = subject.activeEvents ?? [];
 
@@ -459,8 +532,11 @@ function evaluateProcedimentoImediatoMode(
   // Usar primeiro evento ativo como trigger
   const eventId = activeEvents[0]?.eventId ?? "unknown";
 
+  // Extrair data de nowIso (YYYY-MM-DD)
+  const dueDate = nowIso.split("T")[0] ?? null;
+
   return {
-    dueDate: new Date().toISOString().split("T")[0] ?? null,
+    dueDate,
     reason: "ready",
     periodKey: eventPeriodKey(eventId),
   };
@@ -486,7 +562,10 @@ function step7BuildDedupKey(
     regimenVersion: item.identity.regimenVersion,
     mode: item.schedule.mode,
     periodKey,
-    jurisdiction: item.applicability.jurisdiction,
+    jurisdiction:
+      item.applicability.jurisdiction?.uf?.length === 1
+        ? item.applicability.jurisdiction.uf[0] ?? null
+        : null,
   });
 }
 
@@ -526,6 +605,7 @@ function step9CompileResult(
   const actionable = !isBlockingReason(reasonCode);
   const blockedBy = blockingCategory(reasonCode);
   const reasonMessage = reasonCodeMessage(reasonCode);
+  const complianceLevel = item.compliance.level;
 
   return {
     materialize: shouldMaterialize,
@@ -535,6 +615,7 @@ function step9CompileResult(
     reasonCode,
     reasonMessage,
     actionable,
+    complianceLevel,
     blockedBy: blockedBy === "ready" ? null : (blockedBy as "eligibility" | "applicability" | "dependency" | "window" | "schedule" | "dedup"),
   };
 }
@@ -574,7 +655,8 @@ export function computeNextSanitaryOccurrence(
   }
 
   // --- PASSO 3 ---
-  result = step3CheckEligibility(item, subject);
+  const nowDateIso = now.nowIso.split("T")[0] ?? now.nowIso;
+  result = step3CheckEligibility(item, subject, nowDateIso);
   if (result !== "continue") {
     return step9CompileResult(result, null, item, subject, null);
   }

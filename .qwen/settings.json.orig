@@ -1,13 +1,10 @@
 {
   "context": {
-    "fileName": [
-      "QWEN.md"
-    ],
+    "fileName": ["QWEN.md"],
     "loadFromIncludeDirectories": false,
     "fileFiltering": {
       "respectGitIgnore": true,
       "respectQwenIgnore": true
     }
-  },
-  "$version": 3
+  }
 }

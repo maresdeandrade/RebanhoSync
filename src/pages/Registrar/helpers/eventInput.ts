@@ -7,6 +7,11 @@ import type {
 import type { EventInput } from "@/lib/events/types";
 import type { VeterinaryProductSelection } from "@/lib/sanitario/products";
 import { buildRegistrarFinanceiroPayloadBase } from "@/pages/Registrar/helpers/payload";
+import {
+  isFinanceiroSaidaNatureza,
+  isFinanceiroSociedadeNatureza,
+  supportsDraftAnimalsInFinanceiroNatureza,
+} from "@/pages/Registrar/helpers/financialNature";
 
 type RegistrarEventDomain =
   | "sanitario"
@@ -59,7 +64,14 @@ type BuildRegistrarEventInputParams = {
     quantidadeKg: number;
   };
   financeiro?: {
-    natureza: "compra" | "venda" | "sociedade_entrada" | "sociedade_saida";
+    natureza:
+      | "compra"
+      | "venda"
+      | "sociedade_entrada"
+      | "sociedade_saida"
+      | "doacao_entrada"
+      | "doacao_saida"
+      | "arrendamento";
     tipo: FinanceiroTipoEnum;
     valorTotal: number;
     contraparteId: string | null;
@@ -126,9 +138,13 @@ export function buildRegistrarEventInput(
   const natureza = params.financeiro?.natureza ?? "compra";
   const selectedLoteIsSemLote = params.selectedLoteIsSemLote === true;
   const createdAnimalIds = params.createdAnimalIds ?? [];
+  const shouldApplyAnimalStateUpdate =
+    !isFinanceiroSociedadeNatureza(natureza) &&
+    isFinanceiroSaidaNatureza(natureza) &&
+    Boolean(params.animalId);
   const financialAnimalId =
     params.animalId ??
-    (natureza === "compra" && selectedLoteIsSemLote
+    (supportsDraftAnimalsInFinanceiroNatureza(natureza) && selectedLoteIsSemLote
       ? createdAnimalIds[0] ?? null
       : null);
 
@@ -139,8 +155,8 @@ export function buildRegistrarEventInput(
     tipo: params.financeiro?.tipo ?? "compra",
     valorTotal: params.financeiro?.valorTotal ?? 0,
     contraparteId: params.financeiro?.contraparteId ?? null,
-    applyAnimalStateUpdate: natureza === "venda" && Boolean(params.animalId),
-    clearAnimalLoteOnSale: natureza === "venda" && Boolean(params.animalId),
+    applyAnimalStateUpdate: shouldApplyAnimalStateUpdate,
+    clearAnimalLoteOnSale: shouldApplyAnimalStateUpdate,
     payload: {
       ...buildRegistrarFinanceiroPayloadBase({
         natureza,

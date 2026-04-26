@@ -39,6 +39,7 @@ describe("finance transactions", () => {
           sexo: "F",
           dataNascimento: "2026-01-10",
           pesoKg: 182,
+          raca: "nelore",
         },
         {
           localId: "draft-2",
@@ -46,6 +47,7 @@ describe("finance transactions", () => {
           sexo: "M",
           dataNascimento: "2026-01-11",
           pesoKg: 190,
+          raca: "angus",
         },
       ],
     });
@@ -61,6 +63,17 @@ describe("finance transactions", () => {
     expect(
       result.ops.filter((op) => op.table === "eventos_pesagem"),
     ).toHaveLength(2);
+    const insertedAnimal = result.ops.find(
+      (op) => op.table === "animais" && op.action === "INSERT",
+    );
+    expect(insertedAnimal?.record.payload?.lifecycle).toMatchObject({
+      estagio_source: "manual",
+      estagio_recorded_at: "2026-04-05T12:00:00.000Z",
+    });
+    expect(
+      insertedAnimal?.record.payload?.lifecycle?.estagio_vida,
+    ).toBeTruthy();
+    expect(insertedAnimal?.record.raca).toBe("nelore");
 
     const financialDetail = result.ops.find(
       (op) => op.table === "eventos_financeiro",

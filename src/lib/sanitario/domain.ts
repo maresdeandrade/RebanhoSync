@@ -13,6 +13,8 @@
  * e o modelo de registro de execução.
  */
 
+import type { OccurrenceBlockReason as ReasonCode } from "./reasonCodes";
+
 // ============================================================================
 // ENUMS
 // ============================================================================
@@ -256,25 +258,14 @@ export interface ComputeNextSanitaryOccurrenceInput {
 // REASON CODES (para referência cruzada com reasonCodes.ts)
 // ============================================================================
 
-export type OccurrenceBlockReason =
-  | "ready"
-  | "agenda_disabled"
-  | "not_eligible"
-  | "not_applicable"
-  | "dependency_not_satisfied"
-  | "risk_not_active"
-  | "jurisdiction_not_allowed"
-  | "event_not_active"
-  | "before_window"
-  | "window_expired"
-  | "not_due_yet"
-  | "already_materialized";
+export type OccurrenceBlockReason = ReasonCode;
 
 export type BlockedBy =
   | "eligibility"
   | "applicability"
   | "dependency"
   | "window"
+  // Inclui bloqueios de camada/ativacao/modo de calendario.
   | "schedule"
   | "dedup"
   | null;

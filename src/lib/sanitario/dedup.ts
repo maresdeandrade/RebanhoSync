@@ -29,7 +29,7 @@ export interface DedupKeyInput {
    * Opcional: jurisdiction (se protocolo é jurisdiction-specific).
    * Exemplo: "GO" (Goiás)
    */
-  jurisdiction?: string;
+  jurisdiction?: string | null;
 }
 
 /**

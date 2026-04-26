@@ -133,15 +133,22 @@ const Financeiro = () => {
               ? 1
               : 0;
         const isSociedade = payloadKind.startsWith("sociedade_");
-        const naturezaLabel = isSociedade
-          ? payloadKind === "sociedade_entrada"
-            ? "Sociedade (Entrada)"
-            : payloadKind === "sociedade_saida"
-              ? "Sociedade (Saida)"
-              : "Sociedade"
-          : detalhe.tipo === "compra"
-            ? "Compra"
-            : "Venda";
+        const isDoacao =
+          payloadKind === "doacao_entrada" || payloadKind === "doacao_saida";
+        const isArrendamento = payloadKind === "arrendamento";
+        let naturezaLabel = detalhe.tipo === "compra" ? "Compra" : "Venda";
+        if (isSociedade) {
+          naturezaLabel =
+            payloadKind === "sociedade_entrada"
+              ? "Sociedade (Entrada)"
+              : payloadKind === "sociedade_saida"
+                ? "Sociedade (Saida)"
+                : "Sociedade";
+        } else if (isDoacao) {
+          naturezaLabel = "Doacao";
+        } else if (isArrendamento) {
+          naturezaLabel = "Arrendamento";
+        }
 
         const tipoMatch =
           tipoFilter === "all"

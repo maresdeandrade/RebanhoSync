@@ -43,7 +43,14 @@ type NonFinancialNutricaoData = {
 };
 
 type NonFinancialFinanceiroData = {
-  natureza: "compra" | "venda" | "sociedade_entrada" | "sociedade_saida";
+  natureza:
+    | "compra"
+    | "venda"
+    | "sociedade_entrada"
+    | "sociedade_saida"
+    | "doacao_entrada"
+    | "doacao_saida"
+    | "arrendamento";
   valorTotal: string;
   contraparteId: string;
 };

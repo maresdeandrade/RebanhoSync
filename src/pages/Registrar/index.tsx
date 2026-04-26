@@ -79,6 +79,10 @@ import {
   requiresAnimalsForQuickAction,
   useRegistrarQuickActionPolicy,
 } from "@/pages/Registrar/useRegistrarQuickActionPolicy";
+import {
+  resolveFinanceiroNaturezaLabel,
+  supportsDraftAnimalsInFinanceiroNatureza,
+} from "@/pages/Registrar/helpers/financialNature";
 import { useRegistrarActionSectionState } from "@/pages/Registrar/useRegistrarActionSectionState";
 import { useRegistrarShellState } from "@/pages/Registrar/useRegistrarShellState";
 
@@ -338,7 +342,7 @@ const Registrar = () => {
       : "Sem contraparte";
   const showFinanceiroAnimaisGeradosResumo =
     tipoManejo === "financeiro" &&
-    financeiroData.natureza === "compra" &&
+    supportsDraftAnimalsInFinanceiroNatureza(financeiroData.natureza) &&
     selectedAnimais.length === 0 &&
     !isFinanceiroSociedade;
   const reproducaoResumoCriasGeradas = Math.max(
@@ -865,8 +869,9 @@ const Registrar = () => {
 
             {selectedAnimais.length === 0 && (
               <p className="text-sm text-muted-foreground">
-                Sem animais selecionados: use Financeiro para compra/sociedade
-                por lote. Venda exige selecao de animal.
+                Sem animais selecionados: use Financeiro para compra, doacao,
+                arrendamento ou sociedade por lote. Saida exige selecao de
+                animal.
               </p>
             )}
 
@@ -959,7 +964,9 @@ const Registrar = () => {
               ) : null}
               {tipoManejo === "financeiro" && (
                 <FinanceiroResumoConfirmacao
-                  naturezaLabel={financeiroData.natureza.replace(/_/g, " ")}
+                  naturezaLabel={resolveFinanceiroNaturezaLabel(
+                    financeiroData.natureza,
+                  )}
                   contraparteNome={contraparteSelecionadaNome}
                   valorLabel={financeiroResumoValorLabel}
                   isFinanceiroSociedade={isFinanceiroSociedade}

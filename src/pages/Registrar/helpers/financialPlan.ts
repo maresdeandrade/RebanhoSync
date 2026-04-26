@@ -1,11 +1,11 @@
 import type { Animal } from "@/lib/offline/types";
 import type { FinancialWeightMode } from "@/lib/finance/transactions";
-
-type FinanceiroNatureza =
-  | "compra"
-  | "venda"
-  | "sociedade_entrada"
-  | "sociedade_saida";
+import type { AnimalBreedEnum } from "@/lib/animals/catalogs";
+import type { FinanceiroNatureza } from "@/pages/Registrar/types";
+import {
+  isFinanceiroSaidaNatureza,
+  supportsDraftAnimalsInFinanceiroNatureza,
+} from "@/pages/Registrar/helpers/financialNature";
 
 type CompraNovoAnimalDraft = {
   localId: string;
@@ -13,6 +13,7 @@ type CompraNovoAnimalDraft = {
   sexo: "M" | "F";
   dataNascimento: string;
   pesoKg: string;
+  raca: AnimalBreedEnum | null;
 };
 
 export type RegistrarSelectedAnimalRecord = {
@@ -27,6 +28,7 @@ export type RegistrarPurchaseAnimalInput = {
   sexo: "M" | "F";
   dataNascimento: string | null;
   pesoKg: number | null;
+  raca: AnimalBreedEnum | null;
 };
 
 export function buildRegistrarSelectedAnimalRecords(input: {
@@ -62,7 +64,7 @@ export function buildRegistrarFinancialPurchaseAnimals(input: {
   modoPeso: FinancialWeightMode;
   parseUserWeight: (value: string) => number | null;
 }) {
-  if (input.natureza === "compra") {
+  if (supportsDraftAnimalsInFinanceiroNatureza(input.natureza)) {
     return input.compraNovosAnimais.map((draft) => ({
       localId: draft.localId,
       identificacao: draft.identificacao.trim(),
@@ -70,17 +72,23 @@ export function buildRegistrarFinancialPurchaseAnimals(input: {
       dataNascimento: draft.dataNascimento || null,
       pesoKg:
         input.modoPeso === "individual" ? input.parseUserWeight(draft.pesoKg) : null,
+      raca: draft.raca ?? null,
     }));
   }
 
-  return input.selectedAnimalRecords.map((animal, index) => ({
-    localId: animal.id,
-    identificacao: animal.identificacao,
-    sexo: "M" as const,
-    dataNascimento: null,
-    pesoKg:
-      input.modoPeso === "individual"
-        ? input.parseUserWeight(input.compraNovosAnimais[index]?.pesoKg || "")
-        : null,
-  }));
+  if (isFinanceiroSaidaNatureza(input.natureza)) {
+    return input.selectedAnimalRecords.map((animal, index) => ({
+      localId: animal.id,
+      identificacao: animal.identificacao,
+      sexo: "M" as const,
+      dataNascimento: null,
+      pesoKg:
+        input.modoPeso === "individual"
+          ? input.parseUserWeight(input.compraNovosAnimais[index]?.pesoKg || "")
+          : null,
+      raca: null,
+    }));
+  }
+
+  return [];
 }

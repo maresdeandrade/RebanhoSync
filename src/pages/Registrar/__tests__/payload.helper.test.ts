@@ -78,4 +78,17 @@ describe("payload helpers", () => {
       origem: "registrar_manejo",
     });
   });
+
+  it("retorna kind de doacao de saida quando selecionado", () => {
+    expect(
+      buildRegistrarFinanceiroPayloadBase({
+        natureza: "doacao_saida",
+        hasAnimalId: true,
+        createdAnimalIds: [],
+      }),
+    ).toEqual({
+      kind: "doacao_saida",
+      origem: "registrar_manejo",
+    });
+  });
 });

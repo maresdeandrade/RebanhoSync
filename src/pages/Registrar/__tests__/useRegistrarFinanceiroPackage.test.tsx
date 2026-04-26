@@ -33,4 +33,28 @@ describe("useRegistrarFinanceiroPackage", () => {
     });
     expect(result.current.financeiroData.natureza).toBe("venda");
   });
+
+  it("nao recria estado quando prefill repete a mesma natureza", () => {
+    const selectedAnimalIds = ["animal-1"];
+    const lotes = [{ id: "lote-1", nome: "Lote 1", fazenda_id: "farm-1" }];
+    const { result } = renderHook(() =>
+      useRegistrarFinanceiroPackage({
+        role: "owner",
+        activeFarmId: "farm-1",
+        tipoManejo: "financeiro",
+        selectedAnimalIds,
+        farmWeightUnit: "kg",
+        parseUserWeight: (value) => Number(value),
+        lotes,
+      }),
+    );
+
+    const stateBefore = result.current.financeiroData;
+
+    act(() => {
+      result.current.applyFinanceiroNaturezaQueryPrefill("compra");
+    });
+
+    expect(result.current.financeiroData).toBe(stateBefore);
+  });
 });

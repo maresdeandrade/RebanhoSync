@@ -1,6 +1,7 @@
 import type { ReproductionEventData } from "@/components/events/ReproductionForm";
 import type { EventDomain } from "@/lib/events/types";
 import type { FarmLifecycleConfig } from "@/lib/farms/lifecycleConfig";
+import type { AnimalBreedEnum } from "@/lib/animals/catalogs";
 import type {
   Animal,
   FinanceiroTipoEnum,
@@ -21,6 +22,7 @@ import {
   type RegistrarFinanceiroNatureza,
   resolveRegistrarPreflightIssue,
 } from "@/pages/Registrar/helpers/preflight";
+import { supportsDraftAnimalsInFinanceiroNatureza } from "@/pages/Registrar/helpers/financialNature";
 
 type FinancialWeightMode = "nenhum" | "lote" | "individual";
 type FinancialPriceMode = "por_lote" | "por_animal";
@@ -31,6 +33,7 @@ type CompraNovoAnimalDraft = {
   sexo: "M" | "F";
   dataNascimento: string;
   pesoKg: string;
+  raca: AnimalBreedEnum | null;
 };
 
 type RegistrarFinalizeSharedDeps = {
@@ -103,6 +106,7 @@ type RegistrarFinalizeTrackDeps = {
     valorUnitario: number;
     pesoLote: number;
     transitChecklistPayload: Record<string, unknown>;
+    farmLifecycleConfig: FarmLifecycleConfig;
     parseUserWeight: (value: string) => number | null;
   }) =>
     | { issue: string; linkedEventId: null; createdAnimalIds: []; ops: [] }
@@ -271,7 +275,7 @@ export function createRegistrarFinalizeController(
     const hasSelectedAnimals = selection.selectedAnimais.length > 0;
     const compraGerandoAnimais =
       context.tipoManejo === "financeiro" &&
-      finance.data.natureza === "compra" &&
+      supportsDraftAnimalsInFinanceiroNatureza(finance.data.natureza) &&
       !hasSelectedAnimals;
 
     const preflightIssue = resolveRegistrarPreflightIssue({
@@ -389,6 +393,7 @@ export function createRegistrarFinalizeController(
           valorUnitario: finance.summary.valorUnitario,
           pesoLote: finance.summary.pesoLote,
           transitChecklistPayload,
+          farmLifecycleConfig: context.farmLifecycleConfig,
           parseUserWeight: context.parseUserWeight,
         });
         if (financialPlan.issue) {

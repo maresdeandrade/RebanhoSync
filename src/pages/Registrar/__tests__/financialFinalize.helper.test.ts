@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { DEFAULT_FARM_LIFECYCLE_CONFIG } from "@/lib/farms/lifecycleConfig";
 import type { Animal } from "@/lib/offline/types";
 import { resolveRegistrarFinancialFinalizePlan } from "@/pages/Registrar/helpers/financialFinalize";
 
@@ -54,6 +55,7 @@ describe("resolveRegistrarFinancialFinalizePlan", () => {
       valorUnitario: 0,
       pesoLote: 0,
       transitChecklistPayload: {},
+      farmLifecycleConfig: DEFAULT_FARM_LIFECYCLE_CONFIG,
       parseUserWeight: () => null,
     });
 
@@ -80,6 +82,7 @@ describe("resolveRegistrarFinancialFinalizePlan", () => {
           sexo: "F",
           dataNascimento: "2025-02-01",
           pesoKg: "220,5",
+          raca: "nelore",
         },
       ],
       modoPeso: "individual",
@@ -88,6 +91,7 @@ describe("resolveRegistrarFinancialFinalizePlan", () => {
       valorUnitario: 0,
       pesoLote: 0,
       transitChecklistPayload: {},
+      farmLifecycleConfig: DEFAULT_FARM_LIFECYCLE_CONFIG,
       parseUserWeight: (value) => Number.parseFloat(value.replace(",", ".")),
     });
 

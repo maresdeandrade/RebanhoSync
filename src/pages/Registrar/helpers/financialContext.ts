@@ -4,12 +4,11 @@ import {
   type FinancialPriceMode,
   type FinancialWeightMode,
 } from "@/lib/finance/transactions";
-
-type FinanceiroNatureza =
-  | "compra"
-  | "venda"
-  | "sociedade_entrada"
-  | "sociedade_saida";
+import type { FinanceiroNatureza } from "@/pages/Registrar/types";
+import {
+  isFinanceiroSociedadeNatureza,
+  resolveFinanceiroTipoFromNatureza,
+} from "@/pages/Registrar/helpers/financialNature";
 
 type FinanceiroDataLike = {
   natureza: FinanceiroNatureza;
@@ -34,15 +33,12 @@ export function parseRegistrarNumeric(value: string): number {
 export function deriveRegistrarFinancialContext(
   input: DeriveRegistrarFinancialContextInput,
 ) {
-  const financeiroTipo: FinanceiroTipoEnum =
-    input.financeiroData.natureza === "venda" ||
-    input.financeiroData.natureza === "sociedade_saida"
-      ? "venda"
-      : "compra";
-
-  const isFinanceiroSociedade =
-    input.financeiroData.natureza === "sociedade_entrada" ||
-    input.financeiroData.natureza === "sociedade_saida";
+  const financeiroTipo: FinanceiroTipoEnum = resolveFinanceiroTipoFromNatureza(
+    input.financeiroData.natureza,
+  );
+  const isFinanceiroSociedade = isFinanceiroSociedadeNatureza(
+    input.financeiroData.natureza,
+  );
 
   const financeiroQuantidadeAnimais =
     input.selectedAnimalsCount > 0
