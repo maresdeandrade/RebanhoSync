@@ -56,9 +56,12 @@ async function startFunctionsServeNoVerify() {
     return null;
   }
 
-  // The local gateway in older Supabase CLI builds can reject Auth-issued ES256
-  // user JWTs before the function runs. The function still validates the JWT
-  // with GoTrue and uses a user-scoped client, so RLS remains exercised.
+  // Supabase CLI 2.72.7 / edge-runtime 1.70.0 rejects local Auth ES256 user
+  // JWTs in the gateway before the function runs:
+  // "Key for the ES256 algorithm must be of type CryptoKey. Received Uint8Array".
+  // Newer CLI/runtime builds validate the same JWTs correctly. Keep this local
+  // fallback scoped to the baseline validator; the handler still validates the
+  // JWT with GoTrue and uses a user-scoped client, so RLS remains exercised.
   const child = spawn("supabase", ["functions", "serve", "--no-verify-jwt"], {
     cwd: process.cwd(),
     stdio: "ignore",
