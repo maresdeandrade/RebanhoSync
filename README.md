@@ -51,6 +51,7 @@ Regra de regressao semantica:
 - Registro de eventos: sanitário, pesagem, nutrição, movimentação, reprodução e financeiro.
 - Agenda operacional com protocolos, deduplicação automática e recálculo por trigger.
 - Motor sanitário com materialização/recompute liderados por SQL/Supabase, contratos TS protegidos por golden tests, calendário TS->SQL alinhado e dedup canônico estruturado.
+- Boundary sanitário do Registrar encerrado no recorte estrutural atual: `src/pages/Registrar/**` não importa `@/lib/sanitario/engine/*`; labels visuais passam por facade em `src/lib/sanitario/models/calendarDisplay.ts`.
 - Onboarding guiado da fazenda e importação CSV de animais, lotes e pastos.
 - Módulo reprodutivo completo: cobertura/IA → diagnóstico → parto → pós-parto → cria inicial.
 - Ficha do animal com vínculos mãe/cria, curva de peso e timeline de eventos.
@@ -61,6 +62,19 @@ Regra de regressao semantica:
 - Taxonomia canônica bovina: 3 eixos derivados, contrato v1 e view SQL de apoio.
 - Sistema de convites e gestão de membros.
 - Catálogo global de produtos veterinários com seed básico.
+
+---
+
+## Baseline Supabase de desenvolvimento
+
+- A baseline canônica atual de desenvolvimento é `supabase/migrations/00000000000000_rebuild_base_schema_sanitario.sql`.
+- `supabase/seed.sql` repopula os catálogos sanitários mínimos: protocolos oficiais, itens oficiais, doenças notificáveis e produtos veterinários.
+- `supabase/migrations_legacy_pre_baseline/` preserva as migrations antigas como backup documental.
+- Shims de compatibilidade ainda existem porque testes históricos leem esses filenames: `0028`, `0034`, `0038`, `20260412173000`, `20260427090000`.
+- Validação funcional pós-baseline: `node scripts/codex/validate-supabase-baseline-functional.mjs`.
+- O handler real de `sync-batch` foi validado localmente; por limitação do gateway local da CLI, a chamada rodou com `functions serve --no-verify-jwt`, mas o handler ainda executou `auth.getUser(jwt)` e operações user-scoped com RLS.
+
+Riscos remanescentes conhecidos: validar o caminho completo do gateway JWT sem `--no-verify-jwt`, migrar testes que dependem dos shims, manter claro que o seed sanitário é mínimo/técnico e não normativo, e acompanhar timeouts intermitentes já observados em testes UI longos.
 
 ---
 

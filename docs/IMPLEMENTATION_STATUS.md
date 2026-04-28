@@ -218,7 +218,7 @@ Este documento registra o estado efetivo do RebanhoSync em abril de 2026, pós-f
   - completude percebida dos fluxos centrais com confiabilidade de regressao (Complete).
 - Esta classificacao nao indica produto finalizado; indica transicao controlada de fase.
 
-## 7.5 Update 2026-04-27 (Saneamento Sanitario P0-P3)
+## 7.5 Update 2026-04-28 (Saneamento Sanitario P0-P5)
 
 - P0.1 criou golden/parity tests para os casos criticos sanitarios.
 - P0.2 alinhou o adapter de calendario TS -> SQL, mantendo leitura retrocompativel de payload PT-BR legado.
@@ -228,7 +228,8 @@ Este documento registra o estado efetivo do RebanhoSync em abril de 2026, pós-f
 - P1 introduziu taxonomia sanitaria passiva (`ProtocolKind`, `MaterializationMode`, `ComplianceKind`) sem alterar comportamento.
 - P2 reorganizou `src/lib/sanitario/**` por responsabilidade: `models/`, `engine/`, `catalog/`, `compliance/`, `infrastructure/`, `customization/`.
 - P3.1A-P3.2 reduziram acoplamento do `Registrar` via `buildSanitaryExecutionPayload`, `executeSanitaryCompletion`, `validateSanitaryExecutionPreflight` e `resolveRegistrarSanitaryPackage`.
-- P3.3-P3.4 documentaram o boundary local e removeram o import direto de `engine/protocolRules` do Registrar; restou apenas `engine/calendar` em uso visual/descritivo.
+- P3.3-P3.4 documentaram o boundary local e removeram o import direto de `engine/protocolRules` do Registrar.
+- P5 removeu o ultimo import direto de `@/lib/sanitario/engine/*` em `src/pages/Registrar/**`; labels visuais de calendario agora passam por `src/lib/sanitario/models/calendarDisplay.ts`.
 - Residuos conhecidos: carencia ainda nao e motor pleno de withholding; produto/lote/estoque ainda nao formam rastreabilidade sanitaria completa; SISBOV/fiscal seguem fora do core.
 
 ---

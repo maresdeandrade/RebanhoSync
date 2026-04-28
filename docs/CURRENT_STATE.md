@@ -1,7 +1,7 @@
 # Current State (Snapshot Operacional)
 
 > **Status:** Snapshot vivo
-> **Ultima atualizacao:** 2026-04-27
+> **Ultima atualizacao:** 2026-04-28
 > **Estado do produto:** Beta interno
 > **Fase atual:** MVP funcional completo -> **SLC (Simple, Lovable, Complete) em consolidacao**
 
@@ -47,7 +47,7 @@ Hardening estrutural principal concluido:
 Residual dominante:
 - volume de composicao/JSX (sem orquestracao densa relevante).
 - no recorte sanitario, o `Registrar` atua como orquestrador: payload, preflight, pacote sanitario e boundary RPC/fallback estao delegados a `src/lib/sanitario/**`.
-- nao ha import direto remanescente de `src/pages/Registrar/**` para `@/lib/sanitario/engine/*`.
+- no recorte sanitario, `src/pages/Registrar/**` nao importa diretamente `@/lib/sanitario/engine/*`; labels visuais de calendario passam por `src/lib/sanitario/models/calendarDisplay.ts`.
 
 ### Hotspot `src/pages/Agenda`
 
@@ -87,6 +87,29 @@ Contratos sanitarios centrais:
 - idempotencia de execucao: `1 acao -> 1 createGesture`;
 - guards de reentrada/concorrencia ativos nos fluxos operacionais criticos para evitar dupla execucao;
 - regressao semantica travada por `tests/smoke/semantic_terms_guard.smoke.test.ts`.
+
+---
+
+## 2.2 Baseline Supabase validada
+
+Estado real validado em 2026-04-28:
+
+- `supabase/migrations/00000000000000_rebuild_base_schema_sanitario.sql` e a baseline canonica atual de desenvolvimento.
+- `supabase/seed.sql` repopula catalogos sanitarios minimos e idempotentes.
+- `supabase/migrations_legacy_pre_baseline/` preserva a cadeia antiga como backup documental.
+- Shims permanecem por dependencia de testes historicos: `0028`, `0034`, `0038`, `20260412173000`, `20260427090000`.
+- `supabase db reset` passou em rodada dupla; seed idempotente passou.
+- RLS funcional passou para `owner`, `manager`, `cowboy` e usuario sem vinculo.
+- FK composta bloqueou cruzamento entre fazendas.
+- Fluxo minimo agenda sanitaria -> `eventos` -> `eventos_sanitario` passou via RPC.
+- `sync-batch` foi validado com handler real; o gateway local rodou com `functions serve --no-verify-jwt`, mas `auth.getUser(jwt)` e RLS foram exercitados dentro do handler.
+- Validador funcional: `node scripts/codex/validate-supabase-baseline-functional.mjs`.
+
+Riscos remanescentes:
+- validar caminho completo do gateway JWT local sem `--no-verify-jwt`;
+- remover dependencia dos shims migrando testes historicos para a baseline canonica;
+- manter o seed sanitario como minimo tecnico, nao fonte normativa;
+- acompanhar historico de timeout intermitente em testes UI longos.
 
 ---
 

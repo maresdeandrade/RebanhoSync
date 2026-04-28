@@ -1,6 +1,6 @@
 # Boundary Registrar x Sanitario
 
-Status: P3.4, documentacao operacional local.  
+Status: P5, documentacao operacional local.  
 Fonte primaria: codigo atual em `src/pages/Registrar/**` e `src/lib/sanitario/**`.
 
 ## Boundary atual
@@ -55,15 +55,15 @@ Fonte primaria: codigo atual em `src/pages/Registrar/**` e `src/lib/sanitario/**
 | `@/lib/sanitario/models/registrarProtocolEvaluation` | permitido | Facade pura para avaliacao de protocolo no contexto do Registrar; substitui import direto de `engine/protocolRules`. |
 | `@/lib/sanitario/infrastructure/executionBoundary` | permitido apenas em effect/facade | `effects/sanitaryRpc.ts` deve continuar sendo wrapper fino. |
 | `@/lib/sanitario/compliance/*` | permitido com cautela | Aceitavel em adapter/hook quando for tipo/read model; regra profunda deve ficar no dominio. |
-| `@/lib/sanitario/engine/calendar`, `dedup`, `scheduler`, `regimen` | remover agora | Registrar nao deve importar engine diretamente; usar facade/model quando a necessidade for visual/descritiva. |
+| `@/lib/sanitario/engine/*` | proibido/suspeito | Sem ocorrencia ativa no Registrar pos-P5. Usar facade/model quando a necessidade for visual/descritiva. |
 | RPC/Supabase direto no Registrar | suspeito | Preferir `executeSanitaryCompletion` via `effects/sanitaryRpc.ts`. |
 
-## Inventario P3.4 de imports sanitarios diretos
+## Inventario pos-P5 de imports sanitarios diretos
 
 | Arquivo | Import | Status | Acao |
 |---|---|---|---|
 | `src/pages/Registrar/components/RegistrarSanitarioSection.tsx` | `@/lib/sanitario/models/calendarDisplay` | permitido | Substitui o import direto de `engine/calendar`; uso permanece descritivo/visual para label de calendario no select. |
-| `src/pages/Registrar/helpers/protocolEvaluation.ts` | `@/lib/sanitario/engine/protocolRules` | remover agora | Removido. Helper virou wrapper para `@/lib/sanitario/models/registrarProtocolEvaluation`. |
+| `src/pages/Registrar/helpers/protocolEvaluation.ts` | `@/lib/sanitario/models/registrarProtocolEvaluation` | permitido | Substitui o import direto de `engine/protocolRules`. |
 | `src/pages/Registrar/index.tsx` | `@/lib/sanitario/compliance/regulatoryReadModel` | permitido | Mantido. Monta read model compartilhado para a tela; nao interpreta regra profunda diretamente. |
 | `src/pages/Registrar/effects/bootstrap.ts` | `@/lib/sanitario/catalog/products` | permitido | Mantido. Efeito de refresh/cache do catalogo veterinario. |
 | `src/pages/Registrar/effects/localQueries.ts` | `@/lib/sanitario/compliance/regulatoryReadModel` | permitido | Mantido. Carrega fonte/read model para composicao local. |
@@ -76,11 +76,13 @@ Fonte primaria: codigo atual em `src/pages/Registrar/**` e `src/lib/sanitario/**
 | `src/pages/Registrar/components/useRegistrarSanitarioPackage.ts` | `catalog/products`, `compliance/*`, `models/registrarPackage` | permitido | Mantido. Hook wrapper consome package resolver e tipos/read models. |
 | `src/pages/Registrar/components/RegistrarTransitChecklistSection.tsx` | `@/lib/sanitario/compliance/transit` | permitido | Mantido. Usa tipos/opcoes do checklist na camada visual. |
 
-Resultado P3.4:
+Resolvido no P5:
 
 - Import direto de `engine/protocolRules` removido de `src/pages/Registrar/**`.
+- Import direto de `engine/calendar` removido de `src/pages/Registrar/**`.
 - Imports diretos restantes para `engine/*`: nenhum.
 - Nenhum import direto de `engine/calendar`, `engine/scheduler`, `engine/dedup` ou `engine/regimen` permanece no Registrar.
+- Labels visuais de calendario no Registrar passam por `src/lib/sanitario/models/calendarDisplay.ts`.
 
 ## Auditoria do `createRegistrarFinalizeController`
 

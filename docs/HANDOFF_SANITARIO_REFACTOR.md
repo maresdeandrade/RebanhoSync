@@ -1,7 +1,7 @@
 # Handoff Sanitario Pos-Saneamento
 
 > **Status:** Snapshot de handoff
-> **Ultima atualizacao:** 2026-04-27
+> **Ultima atualizacao:** 2026-04-28
 > **Fonte primaria:** codigo atual em `src/lib/sanitario/**`, `src/pages/Registrar/**`, migrations sanitarias e testes sanitarios.
 
 Este documento separa o resumo da rodada de saneamento sanitario da documentacao operacional local do boundary `Registrar` x Sanitario.
@@ -22,8 +22,9 @@ Este documento separa o resumo da rodada de saneamento sanitario da documentacao
 | P3.1C | Preflight sanitario puro extraido. |
 | P3.2 | Resolver puro de pacote sanitario extraido do hook React. |
 | P3.3 | Boundary `Registrar` x Sanitario documentado. |
-| P3.4 | Import direto de `engine/protocolRules` removido do Registrar; inventario de imports diretos atualizado. |
+| P3.4 | Facade `models/registrarProtocolEvaluation` adotada no Registrar; inventario de imports diretos atualizado. |
 | P5 | Ultimo import direto de `engine/*` no Registrar removido por facade visual `models/calendarDisplay`. |
+| P5.1 | Documentacao reconciliada para remover dividas falsas pos-P5. |
 
 ## Motor e contratos atuais
 
@@ -33,6 +34,19 @@ Este documento separa o resumo da rodada de saneamento sanitario da documentacao
 - Dedup sanitario usa contrato canonico estruturado em TS e SQL.
 - Sequenciamento de raiva diferencia etapa unica D2 de reforco anual recorrente.
 - Taxonomia sanitaria e passiva e retrocompativel.
+- No estado pos-P5, `src/pages/Registrar/**` nao importa diretamente `@/lib/sanitario/engine/*`.
+- Labels visuais de calendario no Registrar passam por `src/lib/sanitario/models/calendarDisplay.ts`.
+- Payload, preflight, package e RPC/fallback sanitario estao delegados a facades/models/infrastructure de `src/lib/sanitario/**`.
+
+## Baseline Supabase sanitaria
+
+- A baseline canonica atual de desenvolvimento e `supabase/migrations/00000000000000_rebuild_base_schema_sanitario.sql`.
+- `supabase/seed.sql` repopula catalogos sanitarios minimos; o seed e tecnico/idempotente e nao deve ser tratado como fonte normativa.
+- `supabase/migrations_legacy_pre_baseline/` preserva migrations antigas como backup documental.
+- Shims mantidos por testes historicos: `0028`, `0034`, `0038`, `20260412173000`, `20260427090000`.
+- A validacao funcional pos-baseline roda por `node scripts/codex/validate-supabase-baseline-functional.mjs`.
+- A validacao cobriu RLS por papel, FK composta cross-farm, agenda sanitaria -> evento sanitario e `sync-batch` com handler real.
+- Caveat do `sync-batch`: o gateway local foi servido com `functions serve --no-verify-jwt`; dentro do handler, `auth.getUser(jwt)` e RLS user-scoped ainda foram exercitados.
 
 Contratos relevantes:
 
@@ -43,6 +57,7 @@ Contratos relevantes:
 - `buildSanitaryDedupKey`
 - `toSqlCalendarMode` / `fromSqlOrLegacyCalendarMode` e equivalentes de anchor
 - `resolveProtocolKind`, `resolveMaterializationMode`, `resolveComplianceKind`
+- `describeRegistrarSanitaryCalendarSchedule` via `src/lib/sanitario/models/calendarDisplay.ts`
 
 ## Estrutura atual de `src/lib/sanitario`
 
@@ -64,12 +79,14 @@ Contratos relevantes:
 - RPC/fallback sanitario conhecido diretamente pelo Registrar.
 - Import direto de `engine/protocolRules` no Registrar.
 - Import direto de `engine/calendar` no Registrar.
+- Qualquer import direto de `@/lib/sanitario/engine/*` dentro de `src/pages/Registrar/**`.
 
 ## Historico/obsoleto
 
 - A recomendacao antiga de iniciar por "Rodada 1 — Evidencia e diagnostico" esta obsoleta: P0.1 ja criou golden/parity tests e P0.2-P0.4 corrigiram os contratos principais.
 - Prompts antigos P0/P1/P2/P3 foram executados e nao devem ser reabertos como plano ativo.
-- Riscos de calendario TS/SQL, dedup TS/SQL, D2 da raiva e import direto de `engine/protocolRules` devem permanecer como historico resolvido, nao como backlog aberto.
+- Riscos de calendario TS/SQL, dedup TS/SQL, D2 da raiva e imports diretos de `engine/protocolRules`/`engine/calendar` devem permanecer como historico resolvido, nao como backlog aberto.
+- O saneamento do Registrar sanitario esta encerrado no escopo estrutural atual; novas frentes devem ser produto/dominio e separadas.
 
 ## Dividas remanescentes
 

@@ -2,7 +2,7 @@
 
 > **Status:** Accepted
 > **Data:** 2026-04-27
-> **Contexto:** Saneamento sanitario P3
+> **Contexto:** Saneamento sanitario P3-P5
 > **Autores:** Codex + revisao tecnica
 
 ## Contexto
@@ -30,6 +30,7 @@ Detalhes de dedup, calendario, scheduler, sequenciamento e materializacao nao de
 - Imports diretos para `engine/*` no `Registrar` sao suspeitos e precisam de justificativa.
 - Boundary RPC/fallback fica em `src/lib/sanitario/infrastructure/**`.
 - Helpers visuais podem consumir descricoes, mas nao decidir materializacao.
+- No estado pos-P5, `src/pages/Registrar/**` nao importa `@/lib/sanitario/engine/*`; labels visuais de calendario passam por `src/lib/sanitario/models/calendarDisplay.ts`.
 
 ## Evidencias e referencias
 
@@ -42,4 +43,4 @@ Detalhes de dedup, calendario, scheduler, sequenciamento e materializacao nao de
 ## Plano de rollout
 
 - Nao mexer em `createRegistrarFinalizeController` sem evidencia de novo acoplamento.
-- Proximo corte possivel: remover ou encapsular o uso visual remanescente de `engine/calendar`.
+- Saneamento estrutural do Registrar sanitario esta encerrado para esta rodada; novas frentes devem ser abertas separadamente.

@@ -54,7 +54,7 @@
 
 - **Status:** CLOSED
 - **Fechado por:** golden/parity tests, adapter calendario TS->SQL, dedup canonico TS/SQL, sequenciamento Raiva D1/D2/anual, taxonomia passiva, reorganizacao `src/lib/sanitario/**` e boundary Registrar <-> sanitario.
-- **Detalhe:** divergencias conhecidas de calendario e dedup foram resolvidas, D2 da raiva deixou de ser recriada indefinidamente, payload/preflight/package/boundary RPC-fallback sairam do acoplamento direto do Registrar e o import direto de `engine/protocolRules` foi removido.
+- **Detalhe:** divergencias conhecidas de calendario e dedup foram resolvidas, D2 da raiva deixou de ser recriada indefinidamente, payload/preflight/package/boundary RPC-fallback sairam do acoplamento direto do Registrar e os imports diretos de `engine/protocolRules` e `engine/calendar` foram removidos.
 
 ### Hardening estrutural do hotspot `Registrar` (entrypoint shell)
 

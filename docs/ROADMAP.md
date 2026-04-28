@@ -26,7 +26,10 @@ Atualizacao estrutural 2026-04-19 (sem mudanca funcional de dominio):
 
 Atualizacao sanitaria 2026-04-27:
 - Saneamento sanitario P0-P3 concluido: golden/parity tests, calendario TS->SQL, dedup canonico, sequenciamento Raiva D1/D2/anual, taxonomia passiva, separacao estrutural de `src/lib/sanitario/**` e boundary Registrar <-> sanitario.
-- Proximas frentes sanitarias devem ser pequenas e separadas: carencia/rastreabilidade ou limpeza visual de `engine/calendar` no Registrar.
+
+Atualizacao sanitaria 2026-04-28:
+- P5 removeu o ultimo import direto de `@/lib/sanitario/engine/*` em `src/pages/Registrar/**`; labels visuais de calendario passam por `src/lib/sanitario/models/calendarDisplay.ts`.
+- Proximas frentes sanitarias devem ser pequenas e separadas: carencia/rastreabilidade leve ou modelagem produto/lote, sem misturar estoque completo, SISBOV ou fiscal.
 
 ---
 

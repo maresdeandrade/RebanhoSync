@@ -89,3 +89,33 @@ Regras de implementacao:
 
 - `tests/smoke/semantic_terms_guard.smoke.test.ts` e a regra oficial para bloquear retorno de termos semanticos proibidos.
 - O gate de qualidade deve manter smoke ativo para validar previsibilidade dos fluxos centrais.
+
+---
+
+## 6. Baseline Supabase de Desenvolvimento
+
+A baseline canonica atual de desenvolvimento e `supabase/migrations/00000000000000_rebuild_base_schema_sanitario.sql`.
+
+Estado validado:
+
+- `supabase db reset` passou em rodada dupla.
+- `supabase/seed.sql` repopula catalogos sanitarios minimos de forma idempotente.
+- `supabase/migrations_legacy_pre_baseline/` contem as migrations antigas preservadas como backup documental.
+- Shims ainda existem por dependencia de testes historicos: `0028`, `0034`, `0038`, `20260412173000`, `20260427090000`.
+- RLS funcional passou para `owner`, `manager`, `cowboy` e usuario sem vinculo.
+- FKs compostas impediram vinculo cross-farm.
+- Agenda sanitaria executada via `sanitario_complete_agenda_with_event` gerou `eventos` e `eventos_sanitario` com vinculo de origem preservado.
+- `sync-batch` foi validado com handler real. Caveat: no ambiente local, o gateway da CLI rodou com `functions serve --no-verify-jwt`; dentro do handler, `auth.getUser(jwt)` e o cliente user-scoped ainda exerceram autenticacao e RLS.
+
+Validador funcional:
+
+```bash
+node scripts/codex/validate-supabase-baseline-functional.mjs
+```
+
+Riscos remanescentes:
+
+- validar o caminho completo do gateway JWT sem `--no-verify-jwt`;
+- remover shims quando testes historicos passarem a ler a baseline canonica;
+- manter claro que o seed sanitario e minimo/tecnico, nao normativo;
+- acompanhar timeouts intermitentes em testes UI longos.
