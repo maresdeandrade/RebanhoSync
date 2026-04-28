@@ -879,6 +879,21 @@ begin
           and (age_max_days is null or (_as_of - data_nascimento) <= age_max_days)
         )
       )
+  ),
+  planned as (
+    select
+      *,
+      public.render_sanitario_canonical_dedup_key(
+        'animal',
+        animal_id,
+        coalesce(payload->>'family_code', protocolo_id::text),
+        coalesce(payload->>'official_item_code', protocol_item_version_ref::text),
+        version,
+        public.sanitario_dedup_period_mode(calendar_mode),
+        dedup_period_key,
+        null
+      ) as candidate_dedup_key
+    from eligible
   )
   insert into public.agenda_itens (
     fazenda_id, dominio, tipo, status, data_prevista, animal_id, dedup_key,
@@ -892,16 +907,7 @@ begin
     'agendado'::public.agenda_status_enum,
     due_date,
     animal_id,
-    public.render_sanitario_canonical_dedup_key(
-      'animal',
-      animal_id,
-      coalesce(payload->>'family_code', protocolo_id::text),
-      coalesce(payload->>'official_item_code', protocol_item_version_ref::text),
-      version,
-      public.sanitario_dedup_period_mode(calendar_mode),
-      dedup_period_key,
-      null
-    ),
+    candidate_dedup_key,
     'automatico'::public.agenda_source_kind_enum,
     jsonb_build_object('protocolo_id', protocolo_id, 'protocol_item_id', protocolo_item_id),
     protocolo_item_id,
@@ -910,7 +916,27 @@ begin
     'server',
     now(),
     now()
-  from eligible
+  from planned p
+  where not exists (
+    select 1
+    from public.agenda_itens ai
+    where ai.fazenda_id = p.fazenda_id
+      and ai.dedup_key = p.candidate_dedup_key
+      and ai.status = 'concluido'
+      and ai.deleted_at is null
+      and ai.source_evento_id is not null
+      and exists (
+        select 1
+        from public.eventos e
+        join public.eventos_sanitario es
+          on es.evento_id = e.id
+         and es.fazenda_id = e.fazenda_id
+        where e.id = ai.source_evento_id
+          and e.fazenda_id = ai.fazenda_id
+          and e.deleted_at is null
+          and es.deleted_at is null
+      )
+  )
   on conflict (fazenda_id, dedup_key)
   where status = 'agendado' and deleted_at is null and dedup_key is not null
   do nothing;

@@ -596,6 +596,11 @@ describe("sanitario engine SQL contracts", () => {
     expect(baseline).toContain("public.sanitario_dedup_period_mode");
     expect(baseline).toContain("coalesce(payload->>'official_item_code'");
     expect(baseline).toContain("(data_nascimento + age_min_days)::text");
+    expect(baseline).toContain("as candidate_dedup_key");
+    expect(baseline).toContain("ai.dedup_key = p.candidate_dedup_key");
+    expect(baseline).toContain("ai.status = 'concluido'");
+    expect(baseline).toContain("ai.source_evento_id is not null");
+    expect(baseline).toContain("join public.eventos_sanitario es");
     expect(baseline).toContain("on conflict (fazenda_id, dedup_key)");
   });
 

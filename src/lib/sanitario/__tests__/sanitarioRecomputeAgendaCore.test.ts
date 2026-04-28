@@ -34,6 +34,15 @@ interface BrucellosisCandidateInput {
   itemDeleted?: boolean;
   geraAgenda?: boolean;
   existingDedups?: Set<string>;
+  completedAgendas?: CompletedAgendaFixture[];
+}
+
+interface CompletedAgendaFixture {
+  dedupKey: string;
+  deleted?: boolean;
+  sourceEventoId?: string | null;
+  eventDeleted?: boolean;
+  sanitaryEventDeleted?: boolean;
 }
 
 function dateUtc(value: string) {
@@ -81,6 +90,18 @@ function evaluateBrucellosisCandidate(input: BrucellosisCandidateInput) {
 
   const dedupKey = brucellosisWindowDedup(animal.id, animal.dataNascimento);
   if (input.existingDedups?.has(dedupKey)) return null;
+  if (
+    input.completedAgendas?.some(
+      (agenda) =>
+        agenda.dedupKey === dedupKey &&
+        agenda.deleted !== true &&
+        Boolean(agenda.sourceEventoId) &&
+        agenda.eventDeleted !== true &&
+        agenda.sanitaryEventDeleted !== true,
+    )
+  ) {
+    return null;
+  }
 
   return {
     dataPrevista: input.asOf,
@@ -111,6 +132,22 @@ describe("P6.2.1 sanitario_recompute_agenda_core brucellosis contract", () => {
     expect(core).toContain("and a.status = 'ativo'");
     expect(core).toContain("on conflict (fazenda_id, dedup_key)");
     expect(core).toContain("where status = 'agendado' and deleted_at is null");
+  });
+
+  it("keeps SQL gates for completed sanitary occurrences before inserting", () => {
+    const core = extractRecomputeCore();
+
+    expect(core).toContain("planned as (");
+    expect(core).toContain("as candidate_dedup_key");
+    expect(core).toContain("from planned p");
+    expect(core).toContain("ai.dedup_key = p.candidate_dedup_key");
+    expect(core).toContain("ai.status = 'concluido'");
+    expect(core).toContain("ai.source_evento_id is not null");
+    expect(core).toContain("from public.eventos e");
+    expect(core).toContain("join public.eventos_sanitario es");
+    expect(core).toContain("e.id = ai.source_evento_id");
+    expect(core).toContain("e.deleted_at is null");
+    expect(core).toContain("es.deleted_at is null");
   });
 
   it("keeps SQL gates for age-window birth date, sex target and window dedup", () => {
@@ -165,6 +202,123 @@ describe("P6.2.1 sanitario_recompute_agenda_core brucellosis contract", () => {
     });
 
     expect(second).toBeNull();
+  });
+
+  it("does not reopen brucellosis when the same dedup has a completed sanitary event", () => {
+    const first = evaluateBrucellosisCandidate({
+      animal: activeFemale(),
+      asOf: "2026-07-10",
+    });
+    expect(first).not.toBeNull();
+
+    const afterCompletion = evaluateBrucellosisCandidate({
+      animal: activeFemale(),
+      asOf: "2026-07-10",
+      completedAgendas: [
+        {
+          dedupKey: first?.dedupKey ?? "",
+          sourceEventoId: "evento-1",
+        },
+      ],
+    });
+
+    expect(afterCompletion).toBeNull();
+  });
+
+  it("does not treat administrative completion without a sanitary event as fulfilled", () => {
+    const first = evaluateBrucellosisCandidate({
+      animal: activeFemale(),
+      asOf: "2026-07-10",
+    });
+    expect(first).not.toBeNull();
+
+    const withoutEvent = evaluateBrucellosisCandidate({
+      animal: activeFemale(),
+      asOf: "2026-07-10",
+      completedAgendas: [
+        {
+          dedupKey: first?.dedupKey ?? "",
+          sourceEventoId: null,
+        },
+      ],
+    });
+
+    expect(withoutEvent?.dedupKey).toBe(first?.dedupKey);
+  });
+
+  it("does not treat a deleted linked event as fulfilled", () => {
+    const first = evaluateBrucellosisCandidate({
+      animal: activeFemale(),
+      asOf: "2026-07-10",
+    });
+    expect(first).not.toBeNull();
+
+    const withDeletedBaseEvent = evaluateBrucellosisCandidate({
+      animal: activeFemale(),
+      asOf: "2026-07-10",
+      completedAgendas: [
+        {
+          dedupKey: first?.dedupKey ?? "",
+          sourceEventoId: "evento-1",
+          eventDeleted: true,
+        },
+      ],
+    });
+    const withDeletedSanitaryEvent = evaluateBrucellosisCandidate({
+      animal: activeFemale(),
+      asOf: "2026-07-10",
+      completedAgendas: [
+        {
+          dedupKey: first?.dedupKey ?? "",
+          sourceEventoId: "evento-1",
+          sanitaryEventDeleted: true,
+        },
+      ],
+    });
+
+    expect(withDeletedBaseEvent?.dedupKey).toBe(first?.dedupKey);
+    expect(withDeletedSanitaryEvent?.dedupKey).toBe(first?.dedupKey);
+  });
+
+  it("does not block another animal, another window or another version", () => {
+    const first = evaluateBrucellosisCandidate({
+      animal: activeFemale(),
+      asOf: "2026-07-10",
+    });
+    expect(first).not.toBeNull();
+    const completedAgendas = [
+      {
+        dedupKey: first?.dedupKey ?? "",
+        sourceEventoId: "evento-1",
+      },
+    ];
+
+    const otherAnimal = evaluateBrucellosisCandidate({
+      animal: activeFemale({ id: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb" }),
+      asOf: "2026-07-10",
+      completedAgendas,
+    });
+    const otherWindow = evaluateBrucellosisCandidate({
+      animal: activeFemale({ dataNascimento: "2026-04-12" }),
+      asOf: "2026-07-25",
+      completedAgendas,
+    });
+    const otherVersionCompletion = evaluateBrucellosisCandidate({
+      animal: activeFemale(),
+      asOf: "2026-07-10",
+      completedAgendas: [
+        {
+          dedupKey: (first?.dedupKey ?? "").replace(":v1:", ":v2:"),
+          sourceEventoId: "evento-1",
+        },
+      ],
+    });
+
+    expect(otherAnimal).not.toBeNull();
+    expect(otherAnimal?.dedupKey).not.toBe(first?.dedupKey);
+    expect(otherWindow).not.toBeNull();
+    expect(otherWindow?.dedupKey).not.toBe(first?.dedupKey);
+    expect(otherVersionCompletion?.dedupKey).toBe(first?.dedupKey);
   });
 
   it.each([
