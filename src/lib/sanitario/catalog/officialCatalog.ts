@@ -163,7 +163,7 @@ function resolveMaterializableSanitaryType(
 }
 
 function isMaterializableItem(item: CatalogoProtocoloOficialItem) {
-  return Boolean(resolveMaterializableSanitaryType(item));
+  return item.gera_agenda === true && Boolean(resolveMaterializableSanitaryType(item));
 }
 
 function normalizeIntervalDays(item: CatalogoProtocoloOficialItem) {
@@ -290,8 +290,22 @@ function buildOfficialRegimenMilestone(
 function resolveOfficialFamilyCode(template: CatalogoProtocoloOficial) {
   if (template.slug.includes("brucelose")) return "brucelose";
   if (template.slug.includes("raiva")) return "raiva_herbivoros";
+  if (template.slug.includes("pnefa") || template.slug.includes("aftosa")) {
+    return "febre_aftosa_vigilancia";
+  }
+  if (template.slug.includes("in50") || template.slug.includes("notificaveis")) {
+    return "doencas_notificaveis";
+  }
   if (template.slug.includes("medicamentos")) return "medicamentos_rastreabilidade";
-  if (template.slug.includes("parasitas")) return "controle_parasitario";
+  if (template.slug.includes("vermifugacao") || template.slug.includes("parasitas")) {
+    return "controle_parasitario";
+  }
+  if (template.slug.includes("carrapato")) return "controle_carrapato";
+  if (template.slug.includes("clostridioses")) return "clostridioses";
+  if (template.slug.includes("ibr-bvd") || template.slug.includes("reprodutiva")) {
+    return "leptospirose_ibr_bvd";
+  }
+  if (template.slug.includes("biosseguranca")) return "biosseguranca_operacional";
   if (template.slug.includes("transito")) return "transito_documental";
   if (template.slug.includes("quarentena")) return "quarentena_entrada";
   if (template.slug.includes("agua-limpeza")) return "agua_limpeza";

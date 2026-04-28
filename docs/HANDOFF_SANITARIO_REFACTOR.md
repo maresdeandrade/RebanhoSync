@@ -41,7 +41,7 @@ Este documento separa o resumo da rodada de saneamento sanitario da documentacao
 ## Baseline Supabase sanitaria
 
 - A baseline canonica atual de desenvolvimento e `supabase/migrations/00000000000000_rebuild_base_schema_sanitario.sql`.
-- `supabase/seed.sql` repopula catalogos sanitarios minimos; o seed e tecnico/idempotente e nao deve ser tratado como fonte normativa.
+- `supabase/seed.sql` repopula catalogos sanitarios canonicos conservadores; o seed e tecnico/idempotente, nao e fonte normativa completa e nao deve gerar agenda automatica exceto para a janela de brucelose PNCEBT.
 - `supabase/migrations_legacy_pre_baseline/` preserva migrations antigas como backup documental.
 - Shims de compatibilidade pos-squash foram removidos da pasta ativa; testes de contrato leem a baseline canonica ou fixtures canonicas de dominio.
 - A validacao funcional pos-baseline roda por `node scripts/codex/validate-supabase-baseline-functional.mjs`.

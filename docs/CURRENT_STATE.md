@@ -96,7 +96,7 @@ Contratos sanitarios centrais:
 Estado real validado em 2026-04-28:
 
 - `supabase/migrations/00000000000000_rebuild_base_schema_sanitario.sql` e a baseline canonica atual de desenvolvimento.
-- `supabase/seed.sql` repopula catalogos sanitarios minimos e idempotentes.
+- `supabase/seed.sql` repopula catalogos sanitarios canonicos conservadores e idempotentes: somente brucelose PNCEBT entra como agenda automatica; raiva, PNEFA/aftosa, notificaveis, GTA, biosseguranca e tecnicos recomendados nao geram agenda por seed.
 - `supabase/migrations_legacy_pre_baseline/` preserva a cadeia antiga como backup documental.
 - Shims de compatibilidade pos-squash foram removidos da pasta ativa de migrations; testes de contrato passaram a ler a baseline canonica ou fixtures canonicas de dominio.
 - `supabase db reset` passou em rodada dupla; seed idempotente passou.
@@ -108,7 +108,7 @@ Estado real validado em 2026-04-28:
 
 Riscos remanescentes:
 - validar caminho completo do gateway JWT local sem `--no-verify-jwt`;
-- manter o seed sanitario como minimo tecnico, nao fonte normativa;
+- manter o seed sanitario como catalogo tecnico conservador, nao fonte normativa completa;
 - acompanhar historico de timeout intermitente em testes UI longos.
 
 ---

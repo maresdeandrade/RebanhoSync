@@ -108,7 +108,7 @@ const items: CatalogoProtocoloOficialItem[] = [
     requires_vet: false,
     requires_gta: false,
     carencia_regra_json: {},
-    gera_agenda: true,
+    gera_agenda: false,
     payload: { produto: "Vacina Antirrabica", label: "Raiva - dose inicial" },
     created_at: "2026-04-09T00:00:00.000Z",
     updated_at: "2026-04-09T00:00:00.000Z",
@@ -213,7 +213,8 @@ describe("official sanitary catalog selection", () => {
     const raivaSelection = selection.templates.find(
       (entry) => entry.template.slug === "raiva-herbivoros-risco",
     );
-    expect(raivaSelection?.materializableItems.map((entry) => entry.codigo)).toEqual([
+    expect(raivaSelection?.materializableItems).toEqual([]);
+    expect(raivaSelection?.skippedItems.map((entry) => entry.codigo)).toEqual([
       "raiva-d1",
     ]);
   });
