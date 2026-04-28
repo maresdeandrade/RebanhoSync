@@ -1,159 +1,221 @@
-# REBANHOSYNC — ENTRYPOINT FOR CODEX
+# REBANHOSYNC - ENTRYPOINT RAPIDO PARA AGENTES
+
+Objetivo deste arquivo: reduzir prompt futuro. Use isto como dispatcher curto; detalhes versionados ficam em `docs/AGENT_CONTEXT.md`, docs locais e skills.
 
 Estado atual:
-- Beta interno
-- MVP completo e operacional
-- Prioridade: patches pequenos, locais e revisaveis
-- Este arquivo e um dispatcher; detalhes ficam em contextos locais e skills
+- Beta interno.
+- MVP completo e operacional.
+- Fase: consolidacao SLC, com prioridade em patches pequenos, locais e revisaveis.
+- Mudancas devem ser enquadradas por `capability_id` ou `infra.*`.
 
 ## 1) Leitura inicial obrigatoria
 
-Leia nesta ordem:
+Leia nesta ordem antes de agir:
 1. `README.md`
 2. `docs/CURRENT_STATE.md`
 3. `docs/PROCESS.md`
+4. `docs/AGENT_CONTEXT.md`
 
 Objetivo:
-- alinhar snapshot operacional atual
-- delimitar escopo por `capability_id` ou `infra.*`
-- evitar leitura historica desnecessaria
+- alinhar snapshot operacional atual;
+- delimitar escopo;
+- evitar leitura historica desnecessaria;
+- nao reinventar invariantes ja documentadas.
 
-## 2) Leitura adicional apenas se a tarefa exigir
+Se o ambiente precisar de orientacao rapida:
 
-Arquitetura/offline/sync:
-- `docs/ARCHITECTURE.md`
-- `docs/OFFLINE.md`
-- `docs/CONTRACTS.md`
+```powershell
+powershell -File scripts/codex/bootstrap.ps1
+```
 
-Banco/seguranca/tenancy:
-- `docs/DB.md`
-- `docs/RLS.md`
+## 2) Fontes de verdade
 
-Estado derivado/backlog:
-- `docs/IMPLEMENTATION_STATUS.md`
-- `docs/TECH_DEBT.md`
-- `docs/ROADMAP.md`
-- `docs/review/RECONCILIACAO_REPORT.md`
+Ordem de confianca em caso de conflito:
+1. codigo + migrations ativas;
+2. `docs/CURRENT_STATE.md`;
+3. docs normativos;
+4. docs derivados;
+5. historico.
 
-Dominio/produto:
-- `docs/PRODUCT.md`
-- `docs/SYSTEM.md`
-- `docs/REFERENCE.md`
+Fontes atuais principais:
+- `README.md`: snapshot executivo e comandos principais.
+- `docs/CURRENT_STATE.md`: estado operacional vivo.
+- `docs/PROCESS.md`: processo normativo capability-centric.
+- `docs/ARCHITECTURE.md`: Two Rails, boundary sanitario, idempotencia e baseline Supabase.
+- `docs/AGENT_CONTEXT.md`: contexto ampliado para agentes.
+- `docs/PRODUCT.md`, `docs/SYSTEM.md`, `docs/REFERENCE.md`: dominio/produto.
+- `docs/IMPLEMENTATION_STATUS.md`, `docs/TECH_DEBT.md`, `docs/ROADMAP.md`, `docs/review/RECONCILIACAO_REPORT.md`: derivados, apenas quando houver delta real.
 
-## 3) Nao ler por padrao
+Observacao: `docs/OFFLINE.md`, `docs/CONTRACTS.md`, `docs/DB.md` e `docs/RLS.md` nao estavam presentes na raiz de `docs/` na ultima inspecao; versoes em `docs/archive/**` sao historicas.
 
-Evite abrir sem necessidade explicita:
-- `docs/archive/**`
-- auditorias historicas
-- relatorios temporarios
-- arquivos gerados (`dist/**`, `coverage/**`, caches)
+## 3) Nao usar como fonte operacional
 
-## 4) Escopo padrao de trabalho
+Evite abrir por padrao:
+- `docs/archive/**`;
+- auditorias historicas;
+- relatorios temporarios;
+- arquivos gerados (`dist/**`, `coverage/**`, caches, `*.tsbuildinfo`);
+- dependencias instaladas (`node_modules/**`, `.kilo/node_modules/**`).
 
-- Atacar no maximo 1 capability principal por tarefa
-- Preferir diff minimo sobre reescrita completa
-- Evitar refatoracao ampla sem pedido explicito
-- Se ambiguo, assumir menor escopo seguro e explicitar
+## 4) Baseline Supabase atual
 
-## 5) Contexto local: quando escalar
+Estado real inspecionado:
+- baseline canonica ativa: `supabase/migrations/00000000000000_rebuild_base_schema_sanitario.sql`;
+- pasta ativa de migrations contem a baseline e `supabase/migrations/AGENTS.md`;
+- migrations antigas preservadas em `supabase/migrations_legacy_pre_baseline/`;
+- shims pos-squash removidos da pasta ativa;
+- seed tecnico/minimo/idempotente: `supabase/seed.sql`;
+- seed sanitario nao e fonte normativa oficial.
 
-Antes de abrir muitos arquivos, verificar `AGENTS.md` local.
+Validador funcional real:
 
-Escalar para:
-- `src/pages/AGENTS.md` (dispatcher local de telas e hotspots de pagina)
-- `src/pages/Registrar/AGENTS.md` (restricoes locais do hotspot Registrar)
-- `src/pages/Agenda/AGENTS.md` (restricoes locais do hotspot Agenda)
-- `src/pages/ProtocolosSanitarios/AGENTS.md` (restricoes locais do hotspot de protocolos)
-- `src/lib/offline/AGENTS.md` (Dexie, gestures, rollback, pull, sync worker, telemetry, `tableMap`)
-- `src/lib/sanitario/AGENTS.md` (catalogo/protocolos/calendario/overlay/compliance/produtos)
-- `src/lib/reproduction/AGENTS.md` (cobertura/IA/diagnostico/parto/pos-parto/cria)
-- `supabase/functions/sync-batch/AGENTS.md` (validacao autoritativa/status codes/reason codes)
-- `supabase/migrations/AGENTS.md` (schema/RLS/RPC/views/triggers/FKs compostas)
-- `src/pages/Registrar/README.md` (hotspot de pagina e recortes locais)
-- `src/pages/Agenda/README.md` (hotspot de agenda e recortes locais)
-- `src/pages/ProtocolosSanitarios/README.md` (hotspot sanitario de pagina)
+```bash
+node scripts/codex/validate-supabase-baseline-functional.mjs
+```
 
-Regra:
-- o contexto local aprofunda
-- o root enquadra e limita
+Caveat documentado: o validador pode servir `sync-batch` local com `supabase functions serve --no-verify-jwt` por limitacao de CLI/runtime antiga, mas o handler ainda valida `auth.getUser(jwt)` e usa cliente user-scoped com RLS.
 
-## 6) Skills
+## 5) Regras absolutas
 
-Consulte `.agent/skills/README.md` e use skill quando o problema for majoritariamente especializado (offline/sync, sanitario, reproducao, migrations/RLS, hardening, reconcile docs, etc).
+- Nao colocar regra de negocio forte em componente React.
+- Nao usar UI como unica fronteira de autorizacao.
+- Nao expor `service_role` no client.
+- Nao alterar migrations sem tarefa explicita.
+- Nao alterar `supabase/seed.sql` sem tarefa explicita.
+- Nao modificar RLS/policies/RPCs sem auditoria especifica.
+- Preservar `fazenda_id` como fronteira de isolamento.
+- Preservar compatibilidade com dados legados.
+- Preservar separacao entre dominio, infraestrutura e apresentacao.
+- Preferir mudancas pequenas, reversiveis e testaveis.
+- Nao refatorar por conveniencia.
 
-## 7) Areas criticas
+## 6) Invariantes arquiteturais
 
-Tratar como risco alto:
+- Two Rails: `agenda_itens` e intencao futura mutavel; `eventos` e fatos passados append-only.
+- Correcao historica ocorre por contra-lancamento, nunca update destrutivo de negocio.
+- `Registrar` e `Executar` registram evento.
+- `Encerrar` e `Cancelar` atuam na agenda.
+- `Aplicar protocolo` materializa/recalcula agenda e nao gera evento diretamente.
+- Idempotencia operacional: `1 acao -> 1 createGesture`.
+- Offline-first: preservar gestures, rollback deterministico, metadata de sync, retries e compatibilidade de fila.
+- Sanitario: base oficial, overlay/config por fazenda e protocolo operacional nao devem virar uma unica fonte misturada.
+- Reproducao: preservar linking deterministico `parto -> pos-parto -> cria`.
+
+Pipeline desejada em hotspots:
+1. Normalize
+2. Select / Policy
+3. Payload
+4. Plan
+5. Effects
+6. Reconcile
+
+## 7) Contexto local
+
+Antes de abrir muitos arquivos, procure `AGENTS.md` local no caminho afetado.
+
+Escalar quando aplicavel:
+- `src/pages/AGENTS.md`
+- `src/pages/Registrar/AGENTS.md`
+- `src/pages/Agenda/AGENTS.md`
+- `src/pages/ProtocolosSanitarios/AGENTS.md`
+- `src/lib/offline/AGENTS.md`
+- `src/lib/sanitario/AGENTS.md`
+- `src/lib/reproduction/AGENTS.md`
+- `supabase/functions/sync-batch/AGENTS.md`
+- `supabase/migrations/AGENTS.md`
+
+Skills locais:
+- indice real: `.agents/skills/README.md`
+- use skill especializada para offline/sync, sanitario, reproducao, migrations/RLS, hardening, prepare-pr ou reconciliacao documental.
+
+## 8) Alteracao segura
+
+Antes de editar:
+- declarar escopo permitido e proibido;
+- listar arquivos provaveis;
+- checar `git status --short`;
+- rodar preflight se houver risco de path restrito:
+
+```powershell
+powershell -File scripts/codex/preflight.ps1 -Paths "<path1>","<path2>"
+```
+
+Durante a tarefa:
+- atacar no maximo 1 capability principal;
+- manter diff minimo;
+- nao editar docs derivados sem mudanca funcional real;
+- nao usar `docs/archive/**` como autoridade;
+- se algo nao for encontrado, registrar: `nao encontrado - locais inspecionados: ...`;
+- se um comando for inferido, registrar: `inferido - confirmar antes de usar`.
+
+Depois de tocar area critica:
+
+```powershell
+powershell -File scripts/codex/validate.ps1 -TouchedPaths "<path1>","<path2>"
+```
+
+Areas criticas:
 - `src/lib/offline/**`
 - `src/lib/sanitario/**`
 - `src/lib/reproduction/**`
-- `src/lib/animals/**` (taxonomia/elegibilidade/apresentacao derivada)
-- `src/lib/events/**` (builders/validators/payloads)
+- `src/lib/animals/**`
+- `src/lib/events/**`
 - `src/pages/Registrar/**`
 - `src/pages/Agenda/**`
 - `src/pages/ProtocolosSanitarios/**`
 - `supabase/functions/sync-batch/**`
 - `supabase/migrations/**`
 
-## 8) Invariantes globais (resumo)
+## 9) Comandos de validacao reais
 
-- Two Rails: agenda (intencao futura mutavel) x eventos (fatos passados append-only)
-- Correcao de evento por contra-lancamento, nunca update destrutivo de negocio
-- Preservar idempotencia, rollback deterministico e metadata obrigatoria de sync
-- `fazenda_id` e fronteira de isolamento; nao introduzir bypass cross-tenant
-- Preservar separacao sanitaria (base oficial x overlay x protocolo operacional)
-- Preservar linking reprodutivo deterministico (parto -> pos-parto -> cria)
+Do `package.json`:
 
-## 9) Forma de entrega
+```bash
+pnpm run lint
+pnpm test
+pnpm run build
+pnpm run test:unit
+pnpm run test:integration
+pnpm run test:hotspots
+pnpm run test:smoke
+pnpm run quality:gate
+pnpm run test:e2e
+pnpm run gates
+pnpm run audit:data
+```
 
-Retornar por padrao:
-- diff minimo
-- ate 3 riscos
-- ate 5 arquivos principais afetados
-- testes/comandos realmente necessarios
+Scripts Codex reais:
 
-## 10) Validacao minima
+```powershell
+powershell -File scripts/codex/bootstrap.ps1
+powershell -File scripts/codex/preflight.ps1 -Paths "<path1>","<path2>"
+powershell -File scripts/codex/validate.ps1 -TouchedPaths "<path1>","<path2>"
+powershell -File scripts/codex/prepare-pr.ps1
+node scripts/codex/validate-supabase-baseline-functional.mjs
+```
 
-Sempre que tocar codigo:
-- `pnpm run lint`
-- `pnpm test`
-- `pnpm run build`
+Nao ha script `typecheck` em `package.json` na ultima inspecao.
 
-Se tocar sync/migrations/RLS/edge:
-- revisar isolamento por `fazenda_id`
-- revisar FKs compostas
-- revisar invariantes append-only
-- revisar reason codes/rollback/compatibilidade offline
+## 10) Formato padrao de resposta
 
-## 11) Atualizacao documental
+Responder por padrao:
+1. resumo executivo;
+2. arquivos criados/alterados;
+3. conteudo principal adicionado;
+4. baseline Supabase impactada ou confirmada;
+5. comandos de validacao executados;
+6. confirmacao de escopo;
+7. riscos ou pendencias, no maximo 3.
 
-Atualizar docs derivados somente com mudanca funcional real:
-1. `docs/IMPLEMENTATION_STATUS.md`
-2. `docs/TECH_DEBT.md`
-3. `docs/ROADMAP.md`
-4. `docs/review/RECONCILIACAO_REPORT.md`
+Para tarefas de codigo, incluir ate 5 arquivos principais afetados e testes/comandos realmente necessarios.
 
-## 12) Codex execution
+## 11) Checklist antes de finalizar
 
-Antes da tarefa:
-- ler `README.md`, `docs/CURRENT_STATE.md`, `docs/PROCESS.md`
-- se necessario: `powershell -File scripts/codex/bootstrap.ps1`
-
-Nao editar por padrao:
-- `docs/archive/**`
-- `dist/**`
-- `coverage/**`
-- `*.tsbuildinfo`
-
-Antes de editar path restrito/gerado explicitamente:
-- `powershell -File scripts/codex/preflight.ps1 -Paths "<path1>","<path2>"`
-
-Apos tocar area critica:
-- `powershell -File scripts/codex/validate.ps1 -TouchedPaths "<path1>","<path2>"`
-
-## 13) Higiene
-
-- nao versionar artefatos gerados
-- manter raiz previsivel (sem relatorios/transientes soltos)
-- priorizar contexto atual (`README` + `CURRENT_STATE` + `PROCESS`)
-- em conflito documental: codigo/migrations > `CURRENT_STATE` > normativos > derivados > historico
+- Li `README.md`, `docs/CURRENT_STATE.md`, `docs/PROCESS.md` e `docs/AGENT_CONTEXT.md`.
+- Verifiquei contexto local/skill quando a area exigiu.
+- Confirmei que o diff toca apenas o escopo permitido.
+- Nao usei `docs/archive/**` como fonte normativa.
+- Nao alterei migrations/seed/RLS sem pedido explicito.
+- Rodei validacoes aplicaveis ou declarei motivo para nao rodar.
+- Executei `git diff --name-only` e `git diff --stat`.
+- Listei incertezas com locais inspecionados.
