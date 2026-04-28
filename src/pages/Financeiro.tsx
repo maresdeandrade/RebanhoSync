@@ -18,7 +18,7 @@ import {
   buildRegulatoryOperationalReadModel,
   EMPTY_REGULATORY_OPERATIONAL_READ_MODEL,
   loadRegulatorySurfaceSource,
-} from "@/lib/sanitario/regulatoryReadModel";
+} from "@/lib/sanitario/compliance/regulatoryReadModel";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";

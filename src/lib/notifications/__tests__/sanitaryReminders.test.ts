@@ -6,7 +6,7 @@ import {
   isWithinQuietHours,
   resolveNotificationPreferences,
 } from "@/lib/notifications/sanitaryReminders";
-import type { SanitaryAttentionSummary } from "@/lib/sanitario/attention";
+import type { SanitaryAttentionSummary } from "@/lib/sanitario/compliance/attention";
 
 const baseSummary: SanitaryAttentionSummary = {
   totalOpen: 3,

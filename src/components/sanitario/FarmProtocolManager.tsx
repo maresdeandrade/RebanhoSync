@@ -66,7 +66,7 @@ import {
   type SanitaryProtocolItemDraft,
   validateProtocolDraft,
   validateProtocolItemDraft,
-} from "@/lib/sanitario/customization";
+} from "@/lib/sanitario/customization/customization";
 import {
   STANDARD_PROTOCOLS,
   buildStandardProtocolItemPayload,
@@ -75,7 +75,7 @@ import {
   type StandardProtocol,
   type StandardProtocolCategory,
   type StandardProtocolLegalStatus,
-} from "@/lib/sanitario/baseProtocols";
+} from "@/lib/sanitario/catalog/baseProtocols";
 import {
   buildVeterinaryProductMetadataPatch,
   buildVeterinaryProductMetadata,
@@ -84,16 +84,16 @@ import {
   resolveVeterinaryProductByName,
   searchVeterinaryProducts,
   type VeterinaryProductSelection,
-} from "@/lib/sanitario/products";
+} from "@/lib/sanitario/catalog/products";
 import {
   describeSanitaryCalendarSchedule,
   type SanitaryBaseCalendarAnchor,
   type SanitaryBaseCalendarMode,
-} from "@/lib/sanitario/calendar";
+} from "@/lib/sanitario/engine/calendar";
 import {
   buildSanitaryRegimenDedupTemplate,
   inferSanitaryRegimenMilestone,
-} from "@/lib/sanitario/regimen";
+} from "@/lib/sanitario/engine/regimen";
 import {
   buildSanitaryFamilyCoverageIndex,
   findSanitaryFamilyConflict,
@@ -103,7 +103,7 @@ import {
   resolveSanitaryProtocolLayer,
   type SanitaryFamilyConflict,
   type SanitaryProtocolLayer,
-} from "@/lib/sanitario/protocolLayers";
+} from "@/lib/sanitario/engine/protocolLayers";
 import { showError, showSuccess } from "@/utils/toast";
 
 interface FarmProtocolManagerProps {

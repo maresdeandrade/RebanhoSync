@@ -9,7 +9,7 @@
 import type {
   SanitaryProtocolItemDomain,
   SanitarySubjectContext,
-} from "../domain";
+} from "@/lib/sanitario/models/domain";
 import { buildSchedulerNowContext } from "../helpers/schedulerNow";
 
 export const invalidCampanhaSemMeses = {

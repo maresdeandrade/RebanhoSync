@@ -1,0 +1,93 @@
+# Handoff Sanitario Pos-Saneamento
+
+> **Status:** Snapshot de handoff
+> **Ultima atualizacao:** 2026-04-27
+> **Fonte primaria:** codigo atual em `src/lib/sanitario/**`, `src/pages/Registrar/**`, migrations sanitarias e testes sanitarios.
+
+Este documento separa o resumo da rodada de saneamento sanitario da documentacao operacional local do boundary `Registrar` x Sanitario.
+
+## Estado consolidado
+
+| Rodada | Estado atual |
+|---|---|
+| P0.1 | Golden/parity tests sanitarios criados para capturar divergencias TS/SQL. |
+| P0.2 | Calendario TS -> SQL alinhado; leitura de payload legado PT-BR preservada. |
+| P0.3 | Dedup sanitario unificado em contrato canonico estruturado TS/SQL. |
+| P0.4 | Sequencia Raiva D2/anual corrigida: D2 nao rematerializa apos conclusao; reforco anual permanece recorrente. |
+| P0.5 | Gate global restaurado com estabilizacao do teste date-sensitive de Relatorios. |
+| P1 | Taxonomia sanitaria passiva criada (`ProtocolKind`, `MaterializationMode`, `ComplianceKind`) sem mudar comportamento. |
+| P2 | `src/lib/sanitario/**` reorganizado por responsabilidade. |
+| P3.1A | Payload builder sanitario puro extraido. |
+| P3.1B | Boundary RPC/fallback sanitario extraido. |
+| P3.1C | Preflight sanitario puro extraido. |
+| P3.2 | Resolver puro de pacote sanitario extraido do hook React. |
+| P3.3 | Boundary `Registrar` x Sanitario documentado. |
+| P3.4 | Import direto de `engine/protocolRules` removido do Registrar; inventario de imports diretos atualizado. |
+| P5 | Ultimo import direto de `engine/*` no Registrar removido por facade visual `models/calendarDisplay`. |
+
+## Motor e contratos atuais
+
+- SQL/Supabase e o motor lider atual de materializacao/recompute da agenda sanitaria, via `sanitario_recompute_agenda_core`.
+- TypeScript mantem contratos, adapters, suporte offline/local e golden/parity tests.
+- Calendario emitido pelo TS usa vocabulario SQL; leitura continua aceitando legado PT-BR.
+- Dedup sanitario usa contrato canonico estruturado em TS e SQL.
+- Sequenciamento de raiva diferencia etapa unica D2 de reforco anual recorrente.
+- Taxonomia sanitaria e passiva e retrocompativel.
+
+Contratos relevantes:
+
+- `resolveRegistrarSanitaryPackage`
+- `buildSanitaryExecutionPayload`
+- `validateSanitaryExecutionPreflight`
+- `executeSanitaryCompletion`
+- `buildSanitaryDedupKey`
+- `toSqlCalendarMode` / `fromSqlOrLegacyCalendarMode` e equivalentes de anchor
+- `resolveProtocolKind`, `resolveMaterializationMode`, `resolveComplianceKind`
+
+## Estrutura atual de `src/lib/sanitario`
+
+| Pasta | Responsabilidade |
+|---|---|
+| `models/` | Tipos, adapters, payload builder, preflight, resolver de pacote do Registrar e taxonomia passiva. |
+| `engine/` | Calendario, dedup, scheduler, regimen, precedencia de layers e calculos deterministicos. |
+| `catalog/` | Protocolos base, catalogo oficial, produtos e operacoes de catalogo. |
+| `compliance/` | Read models, guards e regras regulatorio-documentais. |
+| `infrastructure/` | Services e boundary RPC/fallback de execucao sanitaria. |
+| `customization/` | Customizacao de protocolos por fazenda. |
+
+## Resolvido
+
+- Divergencia calendario TS/SQL.
+- Divergencia dedup TS/SQL.
+- Recriacao indevida da D2 da raiva.
+- Payload sanitario montado diretamente no Registrar.
+- RPC/fallback sanitario conhecido diretamente pelo Registrar.
+- Import direto de `engine/protocolRules` no Registrar.
+- Import direto de `engine/calendar` no Registrar.
+
+## Historico/obsoleto
+
+- A recomendacao antiga de iniciar por "Rodada 1 — Evidencia e diagnostico" esta obsoleta: P0.1 ja criou golden/parity tests e P0.2-P0.4 corrigiram os contratos principais.
+- Prompts antigos P0/P1/P2/P3 foram executados e nao devem ser reabertos como plano ativo.
+- Riscos de calendario TS/SQL, dedup TS/SQL, D2 da raiva e import direto de `engine/protocolRules` devem permanecer como historico resolvido, nao como backlog aberto.
+
+## Dividas remanescentes
+
+- Helpers de compliance/transit ainda existem dentro de `src/pages/Registrar/**`.
+- Carencia ainda e metadata/compliance parcial, nao motor pleno de withholding.
+- Produto/lote/estoque ainda nao sao entidades completas de rastreabilidade sanitaria.
+- SISBOV/fiscal permanecem fora do core sanitario.
+
+## Proximas frentes possiveis
+
+Escolher uma frente por vez:
+
+- carencia/rastreabilidade leve, sem estoque completo;
+- continuidade documental/ADR apenas se surgir nova decisao normativa.
+
+ADRs ja existentes para a rodada:
+
+- `docs/ADRs/ADR-0003-sanitario-sql-materialization-leader.md`
+- `docs/ADRs/ADR-0004-sanitario-canonical-dedup.md`
+- `docs/ADRs/ADR-0005-registrar-sanitario-boundary.md`
+- `docs/ADRs/ADR-0006-sanitario-passive-taxonomy.md`

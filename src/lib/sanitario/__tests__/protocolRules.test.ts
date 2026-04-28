@@ -5,7 +5,7 @@ import {
   formatSanitaryProtocolRestrictions,
   getAnimalAgeInDays,
   getSanitaryAgendaPriority,
-} from "@/lib/sanitario/protocolRules";
+} from "@/lib/sanitario/engine/protocolRules";
 import type {
   AgendaItem,
   Animal,

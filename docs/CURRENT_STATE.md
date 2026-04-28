@@ -1,7 +1,7 @@
 # Current State (Snapshot Operacional)
 
 > **Status:** Snapshot vivo
-> **Ultima atualizacao:** 2026-04-21
+> **Ultima atualizacao:** 2026-04-27
 > **Estado do produto:** Beta interno
 > **Fase atual:** MVP funcional completo -> **SLC (Simple, Lovable, Complete) em consolidacao**
 
@@ -24,6 +24,10 @@ Consolidacoes recentes da fase SLC:
 - remocao de termos ambiguos legados da UI operacional;
 - reforco do modelo Two Rails: Agenda (`agenda_itens`) != Eventos (`eventos`);
 - `Aplicar protocolo` atua apenas na agenda (materializacao/recalculo), sem gerar evento.
+- saneamento sanitario P0-P3 concluido: SQL/Supabase permanece motor lider de materializacao/recompute; TypeScript preserva contratos, adapters, golden tests e suporte offline.
+- calendario sanitario TS->SQL alinhado; dedup sanitario canonico estruturado em TS/SQL; sequencia Raiva D1/D2/anual estabilizada.
+- taxonomia sanitaria passiva introduzida (`ProtocolKind`, `MaterializationMode`, `ComplianceKind`) sem mudanca de comportamento.
+- `src/lib/sanitario/**` reorganizado por responsabilidade e boundary `Registrar` <-> sanitario documentado.
 
 ---
 
@@ -42,6 +46,8 @@ Hardening estrutural principal concluido:
 
 Residual dominante:
 - volume de composicao/JSX (sem orquestracao densa relevante).
+- no recorte sanitario, o `Registrar` atua como orquestrador: payload, preflight, pacote sanitario e boundary RPC/fallback estao delegados a `src/lib/sanitario/**`.
+- nao ha import direto remanescente de `src/pages/Registrar/**` para `@/lib/sanitario/engine/*`.
 
 ### Hotspot `src/pages/Agenda`
 
@@ -54,6 +60,25 @@ Hardening estrutural principal concluido:
 
 Residual dominante:
 - leitura/preparacao de dados ainda concentrada no shell (nao composicao macro).
+
+### Dominio `src/lib/sanitario`
+
+Estrutura fisica atual pos-P2:
+- `models/`: tipos, adapters de payload, taxonomia passiva, preflight e builders puros.
+- `engine/`: calendario, dedup, scheduler, regimen e precedencia de layers.
+- `catalog/`: protocolos base, catalogo oficial, produtos e operacoes de catalogo.
+- `compliance/`: read models, guards e regras regulatorio-documentais.
+- `infrastructure/`: service, agenda schedule e boundary RPC/fallback.
+- `customization/`: customizacao de protocolos por fazenda.
+
+Contratos sanitarios centrais:
+- `resolveRegistrarSanitaryPackage`
+- `buildSanitaryExecutionPayload`
+- `validateSanitaryExecutionPreflight`
+- `executeSanitaryCompletion`
+- `buildSanitaryDedupKey`
+- adapters `toSqlCalendarMode` / `fromSqlOrLegacyCalendarMode` e equivalentes de anchor
+- taxonomia passiva em `models/taxonomy.ts`
 
 ---
 
@@ -70,6 +95,9 @@ Residual dominante:
 - estabilizacao ampla de testes fora dos recortes locais de hotspot;
 - consolidacao da nova suite de integracao por fluxo (`tests/integration/flows/**`) como cobertura minima cross-flow;
 - cleanup residual de shell/read-model nos pontos restantes;
+- carencia ainda e metadata/compliance parcial, nao motor pleno de withholding;
+- produto/lote/estoque ainda nao formam rastreabilidade sanitaria completa;
+- SISBOV/fiscal continuam fora do core sanitario atual;
 - acabamento de UX para reduzir ambiguidade e carga cognitiva;
 - maior consistencia cross-flow (agenda <-> registrar <-> protocolos).
 

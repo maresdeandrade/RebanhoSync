@@ -4,7 +4,7 @@ import "@testing-library/jest-dom";
 import { describe, it, expect, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { ProtocolItemDraftEditor } from "@/components/sanitario/ProtocolItemDraftEditor";
-import { createEmptyProtocolItemDraft } from "@/lib/sanitario/draft";
+import { createEmptyProtocolItemDraft } from "@/lib/sanitario/models/draft";
 
 describe("ProtocolItemDraftEditor Component", () => {
   it("renderiza campos base", () => {

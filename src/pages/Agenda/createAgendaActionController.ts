@@ -1,7 +1,7 @@
 import { isCalfJourneyAgendaItem } from "@/lib/reproduction/calfJourney";
 import type { AgendaItem, ProtocoloSanitarioItem } from "@/lib/offline/types";
 import { asSanitarioTipo, readString } from "@/pages/Agenda/helpers/formatting";
-import { pickVeterinaryProductMetadata } from "@/lib/sanitario/products";
+import { pickVeterinaryProductMetadata } from "@/lib/sanitario/catalog/products";
 
 type AgendaActionControllerDeps = {
   activeFarmId: string | null;

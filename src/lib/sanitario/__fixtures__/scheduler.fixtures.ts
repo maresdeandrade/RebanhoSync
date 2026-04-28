@@ -12,7 +12,7 @@ import type {
 import type {
   ComputeNextOccurrenceContext,
   ComputedOccurrence,
-} from "@/lib/sanitario/schedulerIntegration";
+} from "@/lib/sanitario/engine/schedulerIntegration";
 
 // ============================================================================
 // VALID CASES (Modo 1: Janela Etária)

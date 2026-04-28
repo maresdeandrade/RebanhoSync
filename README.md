@@ -50,6 +50,7 @@ Regra de regressao semantica:
 - Gestão de animais, lotes, pastos, contrapartes e categorias zootécnicas.
 - Registro de eventos: sanitário, pesagem, nutrição, movimentação, reprodução e financeiro.
 - Agenda operacional com protocolos, deduplicação automática e recálculo por trigger.
+- Motor sanitário com materialização/recompute liderados por SQL/Supabase, contratos TS protegidos por golden tests, calendário TS->SQL alinhado e dedup canônico estruturado.
 - Onboarding guiado da fazenda e importação CSV de animais, lotes e pastos.
 - Módulo reprodutivo completo: cobertura/IA → diagnóstico → parto → pós-parto → cria inicial.
 - Ficha do animal com vínculos mãe/cria, curva de peso e timeline de eventos.
@@ -92,16 +93,14 @@ A frente atual de hardening estrutural principal em UI foi concluida para:
 
 Frentes prioritarias atuais:
 
-- `src/lib/offline/syncWorker.ts`
-- `src/pages/ProtocolosSanitarios/**`
-- residuos estruturais locais de `Registrar`/`Agenda` (sem reabrir fronteiras ja fechadas)
+- carencia/rastreabilidade sanitaria como frente pequena e separada
+- residuos estruturais locais de `Registrar`/`Agenda` sem reabrir fronteiras ja fechadas
 
 A ordem atual é:
-1. concluir hardening do `syncWorker` com diff local e validável
-2. reduzir acoplamentos remanescentes em `ProtocolosSanitarios` sem mudança funcional
+1. manter guardrails documentais locais e validacao minima continua
+2. tratar carencia/rastreabilidade sem misturar com estoque/SISBOV/fiscal
 3. consolidar UX operacional de fluxos centrais para reduzir carga cognitiva
 4. estabilizar cobertura de regressao dos fluxos criticos
-5. manter guardrails documentais locais e validação mínima contínua
 
 ---
 

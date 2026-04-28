@@ -8,7 +8,7 @@ import {
   buildRegulatoryOverlayConfigPayload,
   buildRegulatoryOverlayEventPayload,
   readRegulatoryOverlayRuntimeRecord,
-} from "@/lib/sanitario/compliance";
+} from "@/lib/sanitario/compliance/compliance";
 
 const template: CatalogoProtocoloOficial = {
   id: "template-1",

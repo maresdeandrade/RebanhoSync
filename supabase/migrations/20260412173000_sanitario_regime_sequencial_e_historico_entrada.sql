@@ -3,6 +3,84 @@
 -- deduplicacao semantica por familia protocolar e regra de catch-up para
 -- animais adquiridos sem historico confirmado.
 
+create or replace function public.render_sanitario_canonical_dedup_key(
+  _scope_type text,
+  _scope_id uuid,
+  _family_code text,
+  _item_code text,
+  _regimen_version int,
+  _period_mode text,
+  _period_key text,
+  _jurisdiction text default null
+)
+returns text
+language plpgsql
+stable
+set search_path = public
+as $$
+declare
+  v_key text;
+begin
+  if nullif(_scope_type, '') is null
+    or _scope_id is null
+    or nullif(_family_code, '') is null
+    or nullif(_item_code, '') is null
+    or coalesce(_regimen_version, 0) < 1
+    or nullif(_period_mode, '') is null
+    or nullif(_period_key, '') is null then
+    return null;
+  end if;
+
+  v_key := concat_ws(
+    ':',
+    'sanitario',
+    lower(trim(_scope_type)),
+    _scope_id::text,
+    lower(trim(_family_code)),
+    lower(trim(_item_code)),
+    format('v%s', coalesce(_regimen_version, 1)),
+    lower(trim(_period_mode)),
+    trim(_period_key)
+  );
+
+  if nullif(_jurisdiction, '') is not null then
+    v_key := concat(v_key, ':', upper(trim(_jurisdiction)));
+  end if;
+
+  return v_key;
+end;
+$$;
+
+comment on function public.render_sanitario_canonical_dedup_key(text, uuid, text, text, int, text, text, text)
+  is 'Gera dedup_key canonica da agenda sanitaria no mesmo contrato estruturado do TypeScript.';
+
+create or replace function public.sanitario_dedup_period_mode(
+  _calendar_mode text,
+  _schedule_kind text
+)
+returns text
+language sql
+immutable
+set search_path = public
+as $$
+  select case lower(coalesce(nullif(_calendar_mode, ''), 'legacy'))
+    when 'campaign' then 'campaign'
+    when 'age_window' then 'window'
+    when 'rolling_interval' then 'interval'
+    when 'immediate' then 'event'
+    when 'clinical_protocol' then 'unstructured'
+    else
+      case lower(coalesce(nullif(_schedule_kind, ''), 'calendar_base'))
+        when 'after_previous_completion' then 'interval'
+        when 'rolling_from_last_completion' then 'interval'
+        else 'unstructured'
+      end
+    end;
+$$;
+
+comment on function public.sanitario_dedup_period_mode(text, text)
+  is 'Normaliza modo de calendario/regime para periodMode canonico usado em dedup sanitario.';
+
 create or replace function public.sanitario_recompute_agenda_core(
   _fazenda_id uuid default null,
   _animal_id uuid default null,
@@ -518,11 +596,13 @@ begin
       ce.sequence_order_eff,
       ce.intervalo_dias_eff,
       ce.idade_min_dias_eff,
-      ce.dedup_template,
       ce.calendar_mode_eff,
       ce.calendar_anchor_eff,
+      ce.schedule_kind_eff,
+      ce.eligibility_start_date_eff,
       ce.family_code_eff,
       ce.regimen_version_eff,
+      ce.item_code_eff,
       ce.milestone_code_eff,
       ce.history_confidence_eff,
       case
@@ -694,23 +774,19 @@ begin
   candidatos_validos as (
     select
       c.*,
-      public.render_dedup_key(
-        coalesce(
-          c.dedup_template,
-          case
-            when c.family_code_eff is not null and c.milestone_code_eff is not null then
-              format(
-                'sanitario:%s:{animal_id}:milestone:%s',
-                c.family_code_eff,
-                c.milestone_code_eff
-              )
-            else null::text
-          end
-        ),
+      public.render_sanitario_canonical_dedup_key(
+        'animal',
         c.animal_id,
-        c.dose_num_eff,
-        c.protocolo_item_id,
-        c.data_prevista_calc
+        c.family_code_eff,
+        coalesce(c.item_code_eff, c.milestone_code_eff, format('dose_%s', c.dose_num_eff)),
+        c.regimen_version_eff,
+        public.sanitario_dedup_period_mode(c.calendar_mode_eff, c.schedule_kind_eff),
+        case public.sanitario_dedup_period_mode(c.calendar_mode_eff, c.schedule_kind_eff)
+          when 'campaign' then to_char(c.data_prevista_calc, 'YYYY-MM')
+          when 'window' then coalesce(c.eligibility_start_date_eff, c.data_prevista_calc)::text
+          else c.data_prevista_calc::text
+        end,
+        null
       ) as dedup_key
     from candidatos c
     where c.data_prevista_calc is not null

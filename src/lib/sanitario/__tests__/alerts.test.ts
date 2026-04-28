@@ -7,7 +7,7 @@ import {
   hasOpenSanitaryAlert,
   readAnimalSanitaryAlert,
   readStringArray,
-} from "@/lib/sanitario/alerts";
+} from "@/lib/sanitario/compliance/alerts";
 
 describe("sanitary alerts", () => {
   it("builds and reads an open sanitary alert state", () => {

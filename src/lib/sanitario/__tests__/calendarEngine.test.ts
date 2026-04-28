@@ -5,7 +5,7 @@ import {
   resolveDeclarativeSanitaryDueDate,
   resolveSanitaryAnchorDate,
   resolveSanitaryCampaignDueDate,
-} from "@/lib/sanitario/calendarEngine";
+} from "@/lib/sanitario/engine/calendarEngine";
 
 describe("sanitary declarative calendar engine", () => {
   it("resolves weaning anchor from the animal payload and falls back to farm lifecycle config", () => {

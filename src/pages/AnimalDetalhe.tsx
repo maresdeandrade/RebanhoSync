@@ -104,13 +104,13 @@ import {
   readAnimalSanitaryAlert,
   readStringArray,
   type SanitaryAlertClosureReason,
-} from "@/lib/sanitario/alerts";
+} from "@/lib/sanitario/compliance/alerts";
 import {
   formatWeight,
   formatWeightPerDay,
   formatWeightValue,
 } from "@/lib/format/weight";
-import { resolveSanitaryAgendaItemScheduleMeta } from "@/lib/sanitario/agendaSchedule";
+import { resolveSanitaryAgendaItemScheduleMeta } from "@/lib/sanitario/infrastructure/agendaSchedule";
 import { showError, showSuccess } from "@/utils/toast";
 
 type EnrichedEvent = Evento & {

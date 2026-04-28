@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest";
 
 import type { Animal } from "@/lib/offline/types";
-import type { RegulatoryOperationalReadModel } from "@/lib/sanitario/regulatoryReadModel";
+import type { RegulatoryOperationalReadModel } from "@/lib/sanitario/compliance/regulatoryReadModel";
 import {
   buildAnimalRegulatoryExportCsv,
   buildAnimalRegulatoryProfile,
   getAnimalRegulatoryImpactLabel,
   matchesAnimalRegulatoryFilters,
-} from "@/lib/sanitario/regulatoryAnimals";
+} from "@/lib/sanitario/compliance/regulatoryAnimals";
 
 const baseAnimal = {
   fazenda_id: "farm-1",

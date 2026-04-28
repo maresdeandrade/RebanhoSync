@@ -14,8 +14,8 @@ type ProtocolItemLike = Pick<
   ProtocoloSanitarioItem,
   "id" | "protocolo_id" | "produto" | "tipo" | "payload"
 >;
-import type { VeterinaryProductSelection } from "@/lib/sanitario/products";
-import type { TransitChecklistDraft } from "@/lib/sanitario/transit";
+import type { VeterinaryProductSelection } from "@/lib/sanitario/catalog/products";
+import type { TransitChecklistDraft } from "@/lib/sanitario/compliance/transit";
 import {
   type RegistrarFinanceiroModoPeso,
   type RegistrarFinanceiroModoPreco,

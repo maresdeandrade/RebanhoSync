@@ -21,8 +21,8 @@ import {
   getSyncStageLabel,
   getSyncStageTone,
 } from "@/lib/offline/syncPresentation";
-import { buildRegulatoryOperationalReadModel } from "@/lib/sanitario/regulatoryReadModel";
-import { concluirPendenciaSanitaria } from "@/lib/sanitario/service";
+import { buildRegulatoryOperationalReadModel } from "@/lib/sanitario/compliance/regulatoryReadModel";
+import { concluirPendenciaSanitaria } from "@/lib/sanitario/infrastructure/service";
 import {
   formatAgendaDate,
   formatAgendaTypeLabel,

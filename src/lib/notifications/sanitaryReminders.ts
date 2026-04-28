@@ -1,5 +1,5 @@
 import type { FarmExperienceMode } from "@/lib/farms/experienceMode";
-import type { SanitaryAttentionRow, SanitaryAttentionSummary } from "@/lib/sanitario/attention";
+import type { SanitaryAttentionRow, SanitaryAttentionSummary } from "@/lib/sanitario/compliance/attention";
 
 export interface NotificationPreferences {
   enabled: boolean;

@@ -13,13 +13,13 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { computeNextSanitaryOccurrence } from "../scheduler";
+import { computeNextSanitaryOccurrence } from "@/lib/sanitario/engine/scheduler";
 import type {
   SanitaryProtocolItemDomain,
   SanitarySubjectContext,
   SanitaryExecutionRecord,
   SchedulerNowContext,
-} from "../domain";
+} from "@/lib/sanitario/models/domain";
 import { buildSchedulerNowContext } from "./helpers/schedulerNow";
 
 // ============================================================================

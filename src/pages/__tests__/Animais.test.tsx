@@ -11,7 +11,7 @@ import { useLotes } from "@/hooks/useLotes";
 import { DEFAULT_FARM_LIFECYCLE_CONFIG } from "@/lib/farms/lifecycleConfig";
 import { DEFAULT_FARM_MEASUREMENT_CONFIG } from "@/lib/farms/measurementConfig";
 import type { Animal } from "@/lib/offline/types";
-import type { RegulatoryOperationalReadModel } from "@/lib/sanitario/regulatoryReadModel";
+import type { RegulatoryOperationalReadModel } from "@/lib/sanitario/compliance/regulatoryReadModel";
 import Animais from "@/pages/Animais";
 
 vi.mock("@/hooks/useAuth");

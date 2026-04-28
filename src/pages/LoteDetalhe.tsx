@@ -31,7 +31,7 @@ import { db } from "@/lib/offline/db";
 import {
   buildRegulatoryOperationalReadModel,
   loadRegulatorySurfaceSource,
-} from "@/lib/sanitario/regulatoryReadModel";
+} from "@/lib/sanitario/compliance/regulatoryReadModel";
 
 export default function LoteDetalhe() {
   const { id } = useParams<{ id: string }>();

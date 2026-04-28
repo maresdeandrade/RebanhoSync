@@ -8,7 +8,7 @@ import type {
 import {
   buildRegulatoryOperationalReadModel,
   EMPTY_REGULATORY_OPERATIONAL_READ_MODEL,
-} from "@/lib/sanitario/regulatoryReadModel";
+} from "@/lib/sanitario/compliance/regulatoryReadModel";
 
 const now = "2026-04-10T10:00:00.000Z";
 

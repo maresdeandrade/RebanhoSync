@@ -58,7 +58,7 @@ vi.mock("@/lib/supabase", () => ({
 import {
   buildOfficialSanitaryPackOps,
   selectOfficialSanitaryPack,
-} from "@/lib/sanitario/officialCatalog";
+} from "@/lib/sanitario/catalog/officialCatalog";
 
 const templates: CatalogoProtocoloOficial[] = [
   {
@@ -222,7 +222,7 @@ describe("official sanitary catalog ops", () => {
       regimen_version: 1,
     });
     expect(itemInsert?.record).toMatchObject({
-      dedup_template: "sanitario:brucelose:{animal_id}:milestone:brucelose_b19",
+      dedup_template: null,
       payload: {
         family_code: "brucelose",
         regimen_version: 1,

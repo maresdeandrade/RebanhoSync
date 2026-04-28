@@ -1,7 +1,7 @@
 import type { OperationInput } from "@/lib/offline/types";
 import type { EventGestureBuildResult, EventInput } from "./types";
 import { assertValidEventInput } from "./validators";
-import { buildVeterinaryProductMetadata } from "@/lib/sanitario/products";
+import { buildVeterinaryProductMetadata } from "@/lib/sanitario/catalog/products";
 
 const toIsoDate = (value: string): string => {
   return value.split("T")[0];

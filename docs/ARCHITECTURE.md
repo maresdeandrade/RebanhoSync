@@ -2,7 +2,7 @@
 
 > **Status:** Normativo
 > **Fonte de Verdade:** Codigo fonte e migrations
-> **Ultima Atualizacao:** 2026-04-21
+> **Ultima Atualizacao:** 2026-04-27
 
 Documento normativo enxuto para semantica operacional transversal e invariantes de execucao. Complementa `docs/SYSTEM.md`.
 
@@ -22,7 +22,36 @@ Regra de acao:
 
 ---
 
-## 2. Taxonomia Semantica Consolidada
+## 2. Motor Sanitario e Boundary TS/SQL
+
+Invariantes atuais do dominio sanitario:
+
+- SQL/Supabase e o motor lider atual de materializacao e recompute da agenda sanitaria, via `sanitario_recompute_agenda_core`.
+- TypeScript mantem contratos de dominio, adapters, suporte offline/local e golden/parity tests; nao deve ser tratado como fonte alternativa silenciosa de materializacao.
+- Calendario emitido pelo TS para SQL usa vocabulario reconhecido pelo SQL; leitura continua aceitando payload legado PT-BR.
+- Dedup sanitario usa contrato canonico estruturado em TS e SQL, protegido por `buildSanitaryDedupKey` e pela funcao SQL canonica correspondente.
+- Sequenciamento sanitario estabiliza Raiva D1/D2/anual: D2 e etapa unica dependente; reforco anual e a etapa recorrente.
+- Taxonomia sanitaria (`ProtocolKind`, `MaterializationMode`, `ComplianceKind`) e passiva e retrocompativel; nao decide materializacao por si so.
+
+Boundary `Registrar` <-> sanitario:
+
+- `Registrar` orquestra estado visual, navegacao, feedback e composicao do fluxo.
+- `src/lib/sanitario/models/**` concentra payload, preflight, pacote do Registrar e taxonomia passiva.
+- `src/lib/sanitario/infrastructure/**` concentra boundary RPC/fallback de execucao sanitaria.
+- SQL/RPC fecha agenda sanitaria de forma transacional e recalcula agenda operacional.
+
+Contratos disponiveis para consumo:
+
+- `resolveRegistrarSanitaryPackage`
+- `buildSanitaryExecutionPayload`
+- `validateSanitaryExecutionPreflight`
+- `executeSanitaryCompletion`
+- `buildSanitaryDedupKey`
+- adapters de calendario TS/SQL
+
+---
+
+## 3. Taxonomia Semantica Consolidada
 
 CTAs oficiais do fluxo operacional:
 
@@ -42,7 +71,7 @@ Termos proibidos:
 
 ---
 
-## 3. Idempotencia e Concorrencia de Execucao
+## 4. Idempotencia e Concorrencia de Execucao
 
 Invariante operacional:
 
@@ -56,8 +85,7 @@ Regras de implementacao:
 
 ---
 
-## 4. Protecao de Regressao
+## 5. Protecao de Regressao
 
 - `tests/smoke/semantic_terms_guard.smoke.test.ts` e a regra oficial para bloquear retorno de termos semanticos proibidos.
 - O gate de qualidade deve manter smoke ativo para validar previsibilidade dos fluxos centrais.
-

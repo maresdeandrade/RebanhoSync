@@ -7,10 +7,48 @@ import {
   describeSanitaryCalendarSchedule,
   describeSanitaryCalendarAnchor,
   describeSanitaryCalendarMode,
+  fromSqlOrLegacyCalendarAnchor,
+  fromSqlOrLegacyCalendarMode,
   readSanitaryBaseCalendar,
-} from "@/lib/sanitario/calendar";
+  toSqlCalendarAnchor,
+  toSqlCalendarMode,
+} from "@/lib/sanitario/engine/calendar";
 
 describe("sanitary calendar base", () => {
+  it("contract: serializes TS calendar modes and anchors to SQL vocabulary", () => {
+    expect(toSqlCalendarMode("campanha")).toBe("campaign");
+    expect(toSqlCalendarMode("janela_etaria")).toBe("age_window");
+    expect(toSqlCalendarMode("rotina_recorrente")).toBe("rolling_interval");
+
+    expect(toSqlCalendarAnchor("nascimento")).toBe("birth");
+    expect(toSqlCalendarAnchor("ultima_conclusao_mesma_familia")).toBe(
+      "last_family_completion",
+    );
+    expect(toSqlCalendarAnchor("diagnostico_evento")).toBe("clinical_need");
+  });
+
+  it("contract: reads SQL and legacy calendar vocabulary into TS vocabulary", () => {
+    expect(fromSqlOrLegacyCalendarMode("campaign")).toBe("campanha");
+    expect(fromSqlOrLegacyCalendarMode("age_window")).toBe("janela_etaria");
+    expect(fromSqlOrLegacyCalendarMode("rolling_interval")).toBe(
+      "rotina_recorrente",
+    );
+    expect(fromSqlOrLegacyCalendarMode("campanha")).toBe("campanha");
+    expect(fromSqlOrLegacyCalendarMode("janela_etaria")).toBe("janela_etaria");
+    expect(fromSqlOrLegacyCalendarMode("rotina_recorrente")).toBe(
+      "rotina_recorrente",
+    );
+
+    expect(fromSqlOrLegacyCalendarAnchor("birth")).toBe("nascimento");
+    expect(fromSqlOrLegacyCalendarAnchor("last_family_completion")).toBe(
+      "ultima_conclusao_mesma_familia",
+    );
+    expect(fromSqlOrLegacyCalendarAnchor("clinical_need")).toBe(
+      "diagnostico_evento",
+    );
+    expect(fromSqlOrLegacyCalendarAnchor("nascimento")).toBe("nascimento");
+  });
+
   it("round-trips a structured calendar rule through payload", () => {
     const payload = buildSanitaryBaseCalendarPayload({
       mode: "janela_etaria",
@@ -20,6 +58,12 @@ describe("sanitary calendar base", () => {
       ageEndDays: 240,
     });
 
+    expect(payload).toMatchObject({
+      calendario_base: {
+        mode: "age_window",
+        anchor: "birth",
+      },
+    });
     expect(readSanitaryBaseCalendar(payload)).toEqual({
       mode: "janela_etaria",
       anchor: "nascimento",
@@ -29,6 +73,25 @@ describe("sanitary calendar base", () => {
       intervalDays: null,
       months: undefined,
       notes: undefined,
+    });
+  });
+
+  it("keeps legacy PT-BR payloads readable", () => {
+    expect(
+      readSanitaryBaseCalendar({
+        calendario_base: {
+          version: 1,
+          mode: "rotina_recorrente",
+          anchor: "ultima_conclusao_mesma_familia",
+          label: "Revisao anual",
+          interval_days: 365,
+        },
+      }),
+    ).toMatchObject({
+      mode: "rotina_recorrente",
+      anchor: "ultima_conclusao_mesma_familia",
+      label: "Revisao anual",
+      intervalDays: 365,
     });
   });
 

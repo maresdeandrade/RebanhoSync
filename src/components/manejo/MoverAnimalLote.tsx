@@ -6,11 +6,11 @@ import { useLotes } from "@/hooks/useLotes";
 import { createGesture } from "@/lib/offline/ops";
 import { buildEventGesture } from "@/lib/events/buildEventGesture";
 import { EventValidationError } from "@/lib/events/validators";
-import { getAnimalSanitaryAlertBlockReason } from "@/lib/sanitario/alerts";
+import { getAnimalSanitaryAlertBlockReason } from "@/lib/sanitario/compliance/alerts";
 import {
   buildRegulatoryOperationalReadModel,
   loadRegulatorySurfaceSource,
-} from "@/lib/sanitario/regulatoryReadModel";
+} from "@/lib/sanitario/compliance/regulatoryReadModel";
 import {
   Dialog,
   DialogContent,

@@ -8,8 +8,8 @@ import {
   mapDraftToDomain,
   mapDomainToDraft,
   validateProtocolItemDraft,
-} from "@/lib/sanitario/draft";
-import type { SanitaryProtocolItemDomain } from "@/lib/sanitario/domain";
+} from "@/lib/sanitario/models/draft";
+import type { SanitaryProtocolItemDomain } from "@/lib/sanitario/models/domain";
 
 describe("Draft Model — Advanced Edge Cases", () => {
   describe("Empty/Null Field Handling", () => {

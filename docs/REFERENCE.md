@@ -1,7 +1,7 @@
 # Referência Rápida (RebanhoSync)
 
 > **Status:** Derivado (Inventário)
-> **Última Atualização:** 2026-04-18
+> **Última Atualização:** 2026-04-27
 
 Este documento consolida referências rápidas para navegação do repositório, stack, rotas, diretórios e comandos úteis.
 
@@ -139,12 +139,19 @@ Arquivos centrais:
 
 ### Sanitário
 Arquivos centrais:
-- `src/lib/sanitario/baseProtocols.ts`
-- `src/lib/sanitario/officialCatalog.ts`
-- `src/lib/sanitario/compliance.ts`
-- `src/lib/sanitario/complianceGuards.ts`
-- `src/lib/sanitario/regulatoryReadModel.ts`
-- `src/lib/sanitario/transit.ts`
+- `src/lib/sanitario/models/domain.ts`
+- `src/lib/sanitario/models/taxonomy.ts`
+- `src/lib/sanitario/engine/calendar.ts`
+- `src/lib/sanitario/engine/dedup.ts`
+- `src/lib/sanitario/engine/scheduler.ts`
+- `src/lib/sanitario/catalog/baseProtocols.ts`
+- `src/lib/sanitario/catalog/officialCatalog.ts`
+- `src/lib/sanitario/catalog/products.ts`
+- `src/lib/sanitario/compliance/compliance.ts`
+- `src/lib/sanitario/compliance/complianceGuards.ts`
+- `src/lib/sanitario/compliance/regulatoryReadModel.ts`
+- `src/lib/sanitario/compliance/transit.ts`
+- `src/lib/sanitario/infrastructure/executionBoundary.ts`
 
 ### Reprodução
 Arquivos centrais:

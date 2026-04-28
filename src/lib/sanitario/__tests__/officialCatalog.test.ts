@@ -9,7 +9,7 @@ import {
   resolveOfficialAptidao,
   resolveOfficialSistema,
   selectOfficialSanitaryPack,
-} from "@/lib/sanitario/officialCatalog";
+} from "@/lib/sanitario/catalog/officialCatalog";
 
 const templates: CatalogoProtocoloOficial[] = [
   {

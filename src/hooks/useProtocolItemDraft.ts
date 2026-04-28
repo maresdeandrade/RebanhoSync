@@ -5,15 +5,15 @@
  */
 
 import { useCallback, useState } from "react";
-import type { ProtocolItemDraft } from "@/lib/sanitario/draft";
+import type { ProtocolItemDraft } from "@/lib/sanitario/models/draft";
 import {
   createEmptyProtocolItemDraft,
   mapDraftToDomain,
   mapDomainToDraft,
   validateProtocolItemDraft,
   getVisibleFieldsByMode,
-} from "@/lib/sanitario/draft";
-import type { SanitaryProtocolItemDomain } from "@/lib/sanitario/domain";
+} from "@/lib/sanitario/models/draft";
+import type { SanitaryProtocolItemDomain } from "@/lib/sanitario/models/domain";
 
 export interface UseProtocolItemDraftState {
   draft: ProtocolItemDraft;

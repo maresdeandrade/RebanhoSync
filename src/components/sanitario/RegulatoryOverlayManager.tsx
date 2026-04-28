@@ -21,7 +21,7 @@ import {
   upsertFarmCustomRegulatoryOverlayDefinition,
   type FarmCustomRegulatoryOverlayDefinition,
   type RegulatoryOverlayEntry,
-} from "@/lib/sanitario/compliance";
+} from "@/lib/sanitario/compliance/compliance";
 import {
   getRegulatoryAnalyticsImpactLabel,
   getRegulatoryAnalyticsSubareaLabel,
@@ -29,7 +29,7 @@ import {
   matchesRegulatoryAnalyticsSubarea,
   parseRegulatoryAnalyticsImpactKey,
   parseRegulatoryAnalyticsSubareaKey,
-} from "@/lib/sanitario/regulatoryReadModel";
+} from "@/lib/sanitario/compliance/regulatoryReadModel";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";

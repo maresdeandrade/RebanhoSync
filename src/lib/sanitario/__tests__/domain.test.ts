@@ -12,19 +12,19 @@ import { describe, it, expect } from "vitest";
 import {
   parseLegacyProtocolItemToDomain,
   serializeDomainToLegacyPayload,
-} from "../adapters";
+} from "@/lib/sanitario/models/adapters";
 import {
   validateSanitaryItemDomain,
   validateSanitarySubjectContext,
   validateSanitaryExecutionRecord,
   detectDependencyCycle,
   validateSanitaryProtocolItemCollection,
-} from "../validation";
+} from "@/lib/sanitario/models/validation";
 import type {
   SanitaryProtocolItemDomain,
   SanitarySubjectContext,
   LegacyPayload,
-} from "../domain";
+} from "@/lib/sanitario/models/domain";
 
 // ============================================================================
 // ADAPTER TESTS: ROUNDTRIP LEGACY → DOMAIN → LEGACY

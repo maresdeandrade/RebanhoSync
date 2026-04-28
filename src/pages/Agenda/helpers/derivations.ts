@@ -20,8 +20,8 @@ import type {
   ProtocoloSanitario,
   ProtocoloSanitarioItem,
 } from "@/lib/offline/types";
-import { getSanitaryAgendaPriority } from "@/lib/sanitario/protocolRules";
-import { resolveSanitaryAgendaItemScheduleMeta } from "@/lib/sanitario/agendaSchedule";
+import { getSanitaryAgendaPriority } from "@/lib/sanitario/engine/protocolRules";
+import { resolveSanitaryAgendaItemScheduleMeta } from "@/lib/sanitario/infrastructure/agendaSchedule";
 import {
   formatAnimalAge,
   readString,

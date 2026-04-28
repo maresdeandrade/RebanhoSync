@@ -1,4 +1,5 @@
 import type { EventDomain } from "@/lib/events/types";
+import { validateSanitaryExecutionPreflight } from "@/lib/sanitario/models/executionPreflight";
 
 type BuildBaseActionStepIssuesInput = {
   tipoManejo: EventDomain | null;
@@ -20,8 +21,13 @@ export function buildBaseActionStepIssues(
 
   const issues: string[] = [];
 
-  if (input.tipoManejo === "sanitario" && input.sanitatioProductMissing) {
-    issues.push("Informe o produto sanitario antes de confirmar.");
+  const sanitaryProductPreflight = validateSanitaryExecutionPreflight({
+    tipoManejo: input.tipoManejo,
+    sanitaryProductName: input.sanitatioProductMissing ? "" : "present",
+    requireProduct: true,
+  });
+  if (!sanitaryProductPreflight.ok) {
+    issues.push(sanitaryProductPreflight.message);
   }
 
   if (
@@ -117,5 +123,12 @@ export function buildProtocolEligibilityIssues(input: {
     return [];
   }
 
-  return ["O item de protocolo escolhido nao atende todos os animais selecionados."];
+  const preflight = validateSanitaryExecutionPreflight({
+    tipoManejo: input.tipoManejo,
+    protocolEligibilityIssues: [
+      "O item de protocolo escolhido nao atende todos os animais selecionados.",
+    ],
+  });
+
+  return preflight.ok ? [] : [preflight.message];
 }

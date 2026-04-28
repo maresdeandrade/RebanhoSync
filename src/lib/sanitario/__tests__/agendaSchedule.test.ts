@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { resolveSanitaryAgendaItemScheduleMeta } from "@/lib/sanitario/agendaSchedule";
-import { buildSanitaryBaseCalendarPayload } from "@/lib/sanitario/calendar";
+import { resolveSanitaryAgendaItemScheduleMeta } from "@/lib/sanitario/infrastructure/agendaSchedule";
+import { buildSanitaryBaseCalendarPayload } from "@/lib/sanitario/engine/calendar";
 
 describe("resolveSanitaryAgendaItemScheduleMeta", () => {
   it("returns null for non-sanitary agenda items", () => {

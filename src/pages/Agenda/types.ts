@@ -4,7 +4,7 @@ import type {
   AgendaAnimalGroupSummary,
   AgendaEventGroupSummary,
 } from "@/lib/agenda/groupSummaries";
-import type { SanitaryAgendaPriority } from "@/lib/sanitario/protocolRules";
+import type { SanitaryAgendaPriority } from "@/lib/sanitario/engine/protocolRules";
 import type {
   AgendaItem,
   Animal,
@@ -16,7 +16,7 @@ import type { SyncStage } from "@/lib/offline/syncPresentation";
 import type {
   SanitaryBaseCalendarAnchor,
   SanitaryBaseCalendarMode,
-} from "@/lib/sanitario/calendar";
+} from "@/lib/sanitario/engine/calendar";
 
 export type GroupMode = "animal" | "evento";
 

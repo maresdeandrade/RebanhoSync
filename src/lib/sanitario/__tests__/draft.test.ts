@@ -9,8 +9,8 @@ import {
   mapDomainToDraft,
   validateProtocolItemDraft,
   getVisibleFieldsByMode,
-} from "@/lib/sanitario/draft";
-import type { ProtocolItemDraft, SanitaryProtocolItemDomain } from "@/lib/sanitario/domain";
+} from "@/lib/sanitario/models/draft";
+import type { ProtocolItemDraft, SanitaryProtocolItemDomain } from "@/lib/sanitario/models/domain";
 
 describe("Draft Model", () => {
   describe("createEmptyProtocolItemDraft", () => {

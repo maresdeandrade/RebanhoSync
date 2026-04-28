@@ -28,7 +28,7 @@ import {
   resolveOfficialSistema,
   selectOfficialSanitaryPack,
   type OfficialSanitaryPackConfigInput,
-} from "@/lib/sanitario/officialCatalog";
+} from "@/lib/sanitario/catalog/officialCatalog";
 import { showError, showSuccess } from "@/utils/toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";

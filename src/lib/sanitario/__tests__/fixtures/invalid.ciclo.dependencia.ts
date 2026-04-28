@@ -12,7 +12,7 @@
 import type {
   SanitaryProtocolItemDomain,
   SanitarySubjectContext,
-} from "../domain";
+} from "@/lib/sanitario/models/domain";
 
 export const invalidCicloDependencia = {
   itemA: {

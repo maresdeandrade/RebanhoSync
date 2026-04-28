@@ -1,5 +1,5 @@
 import type { SanitarioTipoEnum } from "@/lib/offline/types";
-import { describeSanitaryCalendarSchedule } from "@/lib/sanitario/calendar";
+import { describeRegistrarSanitaryCalendarSchedule } from "@/lib/sanitario/models/calendarDisplay";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -163,7 +163,7 @@ export function RegistrarSanitarioSection(props: RegistrarSanitarioSectionProps)
               {props.protocoloItensEvaluated.map(({ item, eligibility }) => (
                 <SelectItem key={item.id} value={item.id} disabled={!eligibility.compatibleWithAll}>
                   Dose {item.dose_num} |{" "}
-                  {describeSanitaryCalendarSchedule({
+                  {describeRegistrarSanitaryCalendarSchedule({
                     intervalDays: item.intervalo_dias,
                     geraAgenda: item.gera_agenda,
                     payload: item.payload,

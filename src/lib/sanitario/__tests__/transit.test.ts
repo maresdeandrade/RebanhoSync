@@ -5,7 +5,7 @@ import {
   buildTransitChecklistPayload,
   hasOfficialTransitChecklistEnabled,
   validateTransitChecklist,
-} from "@/lib/sanitario/transit";
+} from "@/lib/sanitario/compliance/transit";
 
 describe("transit sanitary checklist helpers", () => {
   it("detects the official transit overlay from farm sanitary config payload", () => {

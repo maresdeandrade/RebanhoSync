@@ -12,7 +12,7 @@ import { ChevronRight, ChevronLeft, Check } from "lucide-react";
 import { useLotes } from "@/hooks/useLotes";
 import { useAuth } from "@/hooks/useAuth";
 import { parseWeightInput } from "@/lib/format/weight";
-import { buildRegulatoryOperationalReadModel } from "@/lib/sanitario/regulatoryReadModel";
+import { buildRegulatoryOperationalReadModel } from "@/lib/sanitario/compliance/regulatoryReadModel";
 import {
   filterRegistrarAnimalsBySearch,
   resolveSelectedVisibleCount,

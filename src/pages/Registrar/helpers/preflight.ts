@@ -1,4 +1,5 @@
 import type { EventDomain } from "@/lib/events/types";
+import { validateSanitaryExecutionPreflight } from "@/lib/sanitario/models/executionPreflight";
 import type { FinanceiroNatureza } from "@/pages/Registrar/types";
 import {
   isFinanceiroDoacaoNatureza,
@@ -178,12 +179,14 @@ export function resolveRegistrarPreflightIssue(
     }
   }
 
-  if (input.transitChecklistIssues.length > 0) {
-    return input.transitChecklistIssues[0] ?? "Checklist de transito incompleto.";
-  }
-
-  if (input.complianceFlowIssues.length > 0) {
-    return input.complianceFlowIssues[0] ?? "Bloqueio regulatorio em aberto.";
+  const sanitaryPreflight = validateSanitaryExecutionPreflight({
+    tipoManejo: input.tipoManejo,
+    transitChecklistIssues: input.transitChecklistIssues,
+    complianceFlowIssues: input.complianceFlowIssues,
+    issueScope: "all_flows",
+  });
+  if (!sanitaryPreflight.ok) {
+    return sanitaryPreflight.message;
   }
 
   return null;

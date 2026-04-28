@@ -4,7 +4,7 @@ import {
   buildRegulatoryOverlayEventPayload,
   buildActiveRegulatoryOverlayEntries,
   type RegulatoryOverlayRuntimeRecord,
-} from "@/lib/sanitario/compliance";
+} from "@/lib/sanitario/compliance/compliance";
 import { buildEventGesture } from "@/lib/events/buildEventGesture";
 import type {
   FazendaSanidadeConfig,

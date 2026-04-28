@@ -37,12 +37,12 @@ import { PageIntro } from "@/components/ui/page-intro";
 import {
   summarizeSanitaryAgendaAttention,
   type SanitaryAttentionSummary,
-} from "@/lib/sanitario/attention";
+} from "@/lib/sanitario/compliance/attention";
 import {
   buildRegulatoryOperationalReadModel,
   loadRegulatorySurfaceSource,
   type RegulatoryOperationalReadModel,
-} from "@/lib/sanitario/regulatoryReadModel";
+} from "@/lib/sanitario/compliance/regulatoryReadModel";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Toolbar, ToolbarGroup } from "@/components/ui/toolbar";
 

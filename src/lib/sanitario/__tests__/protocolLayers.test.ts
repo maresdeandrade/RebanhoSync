@@ -8,7 +8,7 @@ import {
   resolveActivationState,
   resolveProtocolPrecedence,
   resolveEffectiveProtocolsByFamily,
-} from "@/lib/sanitario/protocolLayers";
+} from "@/lib/sanitario/engine/protocolLayers";
 
 const buildProtocol = (
   id: string,

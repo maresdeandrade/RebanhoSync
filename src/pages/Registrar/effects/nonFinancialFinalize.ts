@@ -8,7 +8,7 @@ import type {
   ProtocoloSanitarioItem,
   SanitarioTipoEnum,
 } from "@/lib/offline/types";
-import type { VeterinaryProductSelection } from "@/lib/sanitario/products";
+import type { VeterinaryProductSelection } from "@/lib/sanitario/catalog/products";
 import type { FarmLifecycleConfig } from "@/lib/farms/lifecycleConfig";
 import {
   buildRegistrarFallbackReproductionEventInput,

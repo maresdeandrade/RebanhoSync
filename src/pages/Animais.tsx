@@ -73,8 +73,8 @@ import {
   describeSanitaryCalendarMode,
   type SanitaryBaseCalendarAnchor,
   type SanitaryBaseCalendarMode,
-} from "@/lib/sanitario/calendar";
-import { resolveSanitaryAgendaItemScheduleMeta } from "@/lib/sanitario/agendaSchedule";
+} from "@/lib/sanitario/engine/calendar";
+import { resolveSanitaryAgendaItemScheduleMeta } from "@/lib/sanitario/infrastructure/agendaSchedule";
 import {
   buildRegulatoryOperationalReadModel,
   EMPTY_REGULATORY_OPERATIONAL_READ_MODEL,
@@ -85,14 +85,14 @@ import {
   parseRegulatoryAnalyticsSubareaKey,
   type RegulatoryAnalyticsImpactKey,
   type RegulatoryAnalyticsSubareaKey,
-} from "@/lib/sanitario/regulatoryReadModel";
+} from "@/lib/sanitario/compliance/regulatoryReadModel";
 import {
   buildAnimalRegulatoryExportCsv,
   buildAnimalRegulatoryProfile,
   getAnimalRegulatoryImpactLabel,
   matchesAnimalRegulatoryFilters,
   type AnimalRegulatoryProfile,
-} from "@/lib/sanitario/regulatoryAnimals";
+} from "@/lib/sanitario/compliance/regulatoryAnimals";
 import { cn } from "@/lib/utils";
 
 const CATEGORY_FILTERS = [

@@ -1,5 +1,5 @@
-import type { TransitChecklistDraft } from "@/lib/sanitario/transit";
-import { validateTransitChecklist } from "@/lib/sanitario/transit";
+import type { TransitChecklistDraft } from "@/lib/sanitario/compliance/transit";
+import { validateTransitChecklist } from "@/lib/sanitario/compliance/transit";
 import { isFinanceiroSaidaNatureza } from "@/pages/Registrar/helpers/financialNature";
 import type { FinanceiroNatureza } from "@/pages/Registrar/types";
 

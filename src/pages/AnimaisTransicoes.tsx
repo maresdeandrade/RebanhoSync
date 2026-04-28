@@ -21,11 +21,11 @@ import {
 import { buildEventGesture } from "@/lib/events/buildEventGesture";
 import { db } from "@/lib/offline/db";
 import { createGesture } from "@/lib/offline/ops";
-import { listAnimalsBlockedBySanitaryAlert } from "@/lib/sanitario/alerts";
+import { listAnimalsBlockedBySanitaryAlert } from "@/lib/sanitario/compliance/alerts";
 import {
   buildRegulatoryOperationalReadModel,
   loadRegulatorySurfaceSource,
-} from "@/lib/sanitario/regulatoryReadModel";
+} from "@/lib/sanitario/compliance/regulatoryReadModel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

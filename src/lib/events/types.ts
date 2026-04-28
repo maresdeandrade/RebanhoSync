@@ -1,5 +1,5 @@
 import type { AnimalStatusEnum, FinanceiroTipoEnum, OperationInput, SanitarioTipoEnum, ReproTipoEnum, CausaObitoEnum } from "@/lib/offline/types";
-import type { VeterinaryProductSelection } from "@/lib/sanitario/products";
+import type { VeterinaryProductSelection } from "@/lib/sanitario/catalog/products";
 
 export type EventDomain =
   | "sanitario"

@@ -8,11 +8,11 @@ import {
   tryComputeNextSanitaryOccurrence,
   isProtocolItemCompatibleWithNewScheduler,
   type ComputeNextOccurrenceContext,
-} from "@/lib/sanitario/schedulerIntegration";
+} from "@/lib/sanitario/engine/schedulerIntegration";
 import {
   USE_NEW_SANITARY_SCHEDULER as FEATURE_FLAG,
   shouldUseNewSanitaryScheduler,
-} from "@/lib/sanitario/featureFlags";
+} from "@/lib/sanitario/engine/featureFlags";
 import type { ProtocoloSanitarioItem, Animal } from "@/lib/offline/types";
 
 describe("Scheduler Integration & Feature Flag", () => {

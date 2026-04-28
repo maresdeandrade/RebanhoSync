@@ -7,11 +7,11 @@ import { createGesture } from "@/lib/offline/ops";
 import type { OperationInput } from "@/lib/offline/types";
 import { buildEventGesture } from "@/lib/events/buildEventGesture";
 import { EventValidationError } from "@/lib/events/validators";
-import { listAnimalsBlockedBySanitaryAlert } from "@/lib/sanitario/alerts";
+import { listAnimalsBlockedBySanitaryAlert } from "@/lib/sanitario/compliance/alerts";
 import {
   buildRegulatoryOperationalReadModel,
   loadRegulatorySurfaceSource,
-} from "@/lib/sanitario/regulatoryReadModel";
+} from "@/lib/sanitario/compliance/regulatoryReadModel";
 import {
   Dialog,
   DialogContent,

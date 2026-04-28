@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { buildSanitaryBaseCalendarPayload } from "@/lib/sanitario/calendar";
+import { buildSanitaryBaseCalendarPayload } from "@/lib/sanitario/engine/calendar";
 import {
   buildSanitaryRegimenDedupTemplate,
   buildSanitaryRegimenPayload,
   inferSanitaryRegimenMilestone,
   readSanitaryRegimen,
-} from "@/lib/sanitario/regimen";
+} from "@/lib/sanitario/engine/regimen";
 
 describe("sanitary regimen metadata", () => {
   it("infers a stable milestone contract from family, calendar and sequence metadata", () => {
@@ -71,6 +71,28 @@ describe("sanitary regimen metadata", () => {
       schedule_rule: {
         kind: "after_previous_completion",
         intervalDays: 30,
+      },
+    });
+  });
+
+  it("contract: serializes legacy TS calendar mode in regime_sanitario as SQL vocabulary", () => {
+    const regimen = inferSanitaryRegimenMilestone({
+      familyCode: "clostridioses",
+      milestoneCode: "reforco_anual",
+      sequenceOrder: 1,
+      payload: buildSanitaryBaseCalendarPayload({
+        mode: "rotina_recorrente",
+        anchor: "ultima_conclusao_mesma_familia",
+        label: "Revisao anual",
+        intervalDays: 365,
+      }),
+    });
+
+    expect(buildSanitaryRegimenPayload(regimen)).toMatchObject({
+      regime_sanitario: {
+        schedule_rule: {
+          calendar_mode: "rolling_interval",
+        },
       },
     });
   });

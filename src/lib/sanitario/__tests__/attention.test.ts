@@ -7,7 +7,7 @@ import type {
   ProtocoloSanitario,
   ProtocoloSanitarioItem,
 } from "@/lib/offline/types";
-import { summarizeSanitaryAgendaAttention } from "@/lib/sanitario/attention";
+import { summarizeSanitaryAgendaAttention } from "@/lib/sanitario/compliance/attention";
 
 const baseAgendaItem: AgendaItem = {
   id: "agenda-base",
@@ -232,12 +232,18 @@ describe("summarizeSanitaryAgendaAttention", () => {
           count: 2,
         },
         {
-          key: "clinical_protocol",
-          label: "Uso imediato",
+          key: "nao_estruturado",
+          label: "Nao estruturado",
           count: 1,
         },
       ],
-      scheduleAnchors: [],
+      scheduleAnchors: [
+        {
+          key: "diagnostico_evento",
+          label: "Diagnostico de evento",
+          count: 1,
+        },
+      ],
     });
     expect(summary.topItems).toHaveLength(2);
     expect(summary.topItems[0]).toMatchObject({

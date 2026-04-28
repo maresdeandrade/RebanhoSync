@@ -42,13 +42,13 @@ import { useAuth } from "@/hooks/useAuth";
 import {
   EMPTY_SANITARY_ATTENTION_SUMMARY,
   summarizeSanitaryAgendaAttention,
-} from "@/lib/sanitario/attention";
+} from "@/lib/sanitario/compliance/attention";
 import {
   buildRegulatoryOperationalReadModel,
   EMPTY_REGULATORY_OPERATIONAL_READ_MODEL,
   getRegulatoryAnalyticsImpactLabel,
   loadRegulatorySurfaceSource,
-} from "@/lib/sanitario/regulatoryReadModel";
+} from "@/lib/sanitario/compliance/regulatoryReadModel";
 import { buildPilotMetricsSummary } from "@/lib/telemetry/pilotMetrics";
 
 function buildAgendaCalendarModePath(mode: string) {

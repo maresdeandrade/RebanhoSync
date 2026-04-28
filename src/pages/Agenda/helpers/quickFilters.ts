@@ -1,5 +1,5 @@
 import type { AgendaScheduleBucket } from "@/lib/agenda/groupOrdering";
-import { describeSanitaryCalendarAnchor, describeSanitaryCalendarMode } from "@/lib/sanitario/calendar";
+import { describeSanitaryCalendarAnchor, describeSanitaryCalendarMode } from "@/lib/sanitario/engine/calendar";
 import type { AgendaItem, Animal } from "@/lib/offline/types";
 import type {
   AgendaCalendarAnchorQuickFilter,

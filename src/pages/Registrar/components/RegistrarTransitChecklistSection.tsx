@@ -2,7 +2,7 @@ import type { EstadoUFEnum } from "@/lib/offline/types";
 import type {
   TransitChecklistDraft,
   TransitChecklistPurpose,
-} from "@/lib/sanitario/transit";
+} from "@/lib/sanitario/compliance/transit";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

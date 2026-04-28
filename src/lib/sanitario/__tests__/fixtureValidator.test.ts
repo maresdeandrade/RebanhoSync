@@ -16,7 +16,7 @@ import {
   tryComputeNextSanitaryOccurrence,
   isProtocolItemCompatibleWithNewScheduler,
   type ComputedOccurrence,
-} from "@/lib/sanitario/schedulerIntegration";
+} from "@/lib/sanitario/engine/schedulerIntegration";
 
 describe("Fixture Validator — Sanitary Scheduler", () => {
   describe("Fixture Structure Validation", () => {

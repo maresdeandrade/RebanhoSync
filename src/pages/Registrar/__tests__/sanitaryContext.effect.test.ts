@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { DEFAULT_TRANSIT_CHECKLIST_DRAFT } from "@/lib/sanitario/transit";
+import { DEFAULT_TRANSIT_CHECKLIST_DRAFT } from "@/lib/sanitario/compliance/transit";
 import { loadRegistrarSanitaryFinalizeContext } from "@/pages/Registrar/effects/sanitaryContext";
 
 describe("loadRegistrarSanitaryFinalizeContext", () => {

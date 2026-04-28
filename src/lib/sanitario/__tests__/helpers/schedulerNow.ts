@@ -1,4 +1,4 @@
-import type { SchedulerNowContext } from "@/lib/sanitario/domain";
+import type { SchedulerNowContext } from "@/lib/sanitario/models/domain";
 
 export function buildSchedulerNowContext(
   dateOrIso: string,

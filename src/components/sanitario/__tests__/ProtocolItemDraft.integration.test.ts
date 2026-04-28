@@ -3,8 +3,8 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { createEmptyProtocolItemDraft } from "@/lib/sanitario/draft";
-import { buildSanitaryDedupKey } from "@/lib/sanitario/dedup";
+import { createEmptyProtocolItemDraft } from "@/lib/sanitario/models/draft";
+import { buildSanitaryDedupKey } from "@/lib/sanitario/engine/dedup";
 
 describe("Protocol Item Draft Integration", () => {
   describe("Draft creation and defaults", () => {

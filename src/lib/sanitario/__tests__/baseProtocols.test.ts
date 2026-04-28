@@ -6,9 +6,9 @@ import {
   buildStandardProtocolItemPayload,
   buildStandardProtocolPayload,
   normalizeStandardProtocolInterval,
-} from "@/lib/sanitario/baseProtocols";
-import { readSanitaryBaseCalendar } from "@/lib/sanitario/calendar";
-import { readSanitaryRegimen } from "@/lib/sanitario/regimen";
+} from "@/lib/sanitario/catalog/baseProtocols";
+import { readSanitaryBaseCalendar } from "@/lib/sanitario/engine/calendar";
+import { readSanitaryRegimen } from "@/lib/sanitario/engine/regimen";
 
 describe("standard sanitary protocol library", () => {
   it("keeps protocol ids unique and item dependencies internally consistent", () => {
@@ -79,9 +79,18 @@ describe("standard sanitary protocol library", () => {
       item_code: "seca-julho",
       depends_on_item_code: "seca-maio",
       indicacao: expect.any(String),
+      calendario_base: {
+        mode: "campaign",
+        anchor: "calendar_month",
+      },
+      regime_sanitario: {
+        schedule_rule: {
+          calendar_mode: "campaign",
+        },
+      },
     });
     expect(readSanitaryBaseCalendar(payload)).toMatchObject({
-      mode: "campaign",
+      mode: "campanha",
       anchor: "calendar_month",
       label: "Campanha de julho",
       intervalDays: 60,
@@ -92,6 +101,9 @@ describe("standard sanitary protocol library", () => {
       milestone_code: "seca_julho",
       depends_on_milestone: "seca_maio",
       sequence_order: 2,
+      schedule_rule: {
+        calendarMode: "campaign",
+      },
     });
   });
 

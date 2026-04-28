@@ -5,10 +5,10 @@
  * Separado do componente principal para modularidade.
  */
 
-import type { ProtocolItemDraft } from "@/lib/sanitario/draft";
-import { getVisibleFieldsByMode } from "@/lib/sanitario/draft";
-import { buildSanitaryDedupKey } from "@/lib/sanitario/dedup";
-import type { SanitaryCalendarAnchor, SanitaryCalendarMode } from "@/lib/sanitario/domain";
+import type { ProtocolItemDraft } from "@/lib/sanitario/models/draft";
+import { getVisibleFieldsByMode } from "@/lib/sanitario/models/draft";
+import { buildSanitaryDedupKey } from "@/lib/sanitario/engine/dedup";
+import type { SanitaryCalendarAnchor, SanitaryCalendarMode } from "@/lib/sanitario/models/domain";
 import {
   FormSection,
 } from "@/components/ui/form-section";

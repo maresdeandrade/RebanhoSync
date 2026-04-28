@@ -48,7 +48,7 @@ import {
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Toolbar, ToolbarGroup } from "@/components/ui/toolbar";
 import { formatWeight } from "@/lib/format/weight";
-import { describeSanitaryAlertEvent } from "@/lib/sanitario/alerts";
+import { describeSanitaryAlertEvent } from "@/lib/sanitario/compliance/alerts";
 import {
   buildRegulatoryOperationalReadModel,
   EMPTY_REGULATORY_OPERATIONAL_READ_MODEL,
@@ -61,7 +61,7 @@ import {
   resolveRegulatoryAnalyticsSubareaFromAttributes,
   type RegulatoryAnalyticsImpactKey,
   type RegulatoryAnalyticsSubareaKey,
-} from "@/lib/sanitario/regulatoryReadModel";
+} from "@/lib/sanitario/compliance/regulatoryReadModel";
 import { cn } from "@/lib/utils";
 import { showError, showSuccess } from "@/utils/toast";
 

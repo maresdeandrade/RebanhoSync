@@ -15,7 +15,7 @@ import {
   readProtocolItemDraft,
   validateProtocolDraft,
   validateProtocolItemDraft,
-} from "@/lib/sanitario/customization";
+} from "@/lib/sanitario/customization/customization";
 
 const baseProtocol: ProtocoloSanitario = {
   id: "protocol-1",

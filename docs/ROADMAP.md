@@ -2,7 +2,7 @@
 
 > **Status:** Derivado (Rev D+)
 > **Baseline:** `b69d35f`
-> **Ultima Atualizacao:** 2026-04-19
+> **Ultima Atualizacao:** 2026-04-27
 > **Derivado por:** Auditoria tecnica - estado pos-fechamento dos TDs originais e evolucao funcional de UX operacional
 > **Fonte:** `TECH_DEBT.md`, `IMPLEMENTATION_STATUS.md`
 
@@ -23,6 +23,10 @@ Atualizacao estrutural 2026-04-19 (sem mudanca funcional de dominio):
 - Hardening final do hotspot `src/pages/Registrar/**` concluido em camadas locais de shell/composicao (`useRegistrarShellState`, `useRegistrarActionSectionState`, `buildRegistrarActionSectionSlots`), com reducao do entrypoint para ~916 linhas.
 - Hardening final do hotspot `src/pages/Agenda/**` concluido em camadas locais de controller/shell/interacao/composicao macro, com reducao do entrypoint para ~591 linhas.
 - O foco de hardening de hotspot de pagina deixa de ser quebra inicial de monolitos e passa a consolidacao residual + acabamento de experiencia para SLC.
+
+Atualizacao sanitaria 2026-04-27:
+- Saneamento sanitario P0-P3 concluido: golden/parity tests, calendario TS->SQL, dedup canonico, sequenciamento Raiva D1/D2/anual, taxonomia passiva, separacao estrutural de `src/lib/sanitario/**` e boundary Registrar <-> sanitario.
+- Proximas frentes sanitarias devem ser pequenas e separadas: carencia/rastreabilidade ou limpeza visual de `engine/calendar` no Registrar.
 
 ---
 
@@ -100,7 +104,7 @@ Atualizacao estrutural 2026-04-19 (sem mudanca funcional de dominio):
 
 - Entrada de dados: `src/pages/Registrar/index.tsx`, `src/pages/ProtocolosSanitarios/index.tsx`, `src/components/sanitario/FarmProtocolManager.tsx`
 - Semantica e agrupamento: `src/lib/agenda/groupSummaries.ts`, `src/lib/agenda/groupOrdering.ts`, `src/lib/agenda/grouping.ts`
-- Prioridade sanitaria compartilhada: `src/lib/sanitario/protocolRules.ts`, `src/lib/sanitario/attention.ts`
+- Prioridade sanitaria compartilhada: `src/lib/sanitario/engine/protocolRules.ts`, `src/lib/sanitario/compliance/attention.ts`
 - Estado local e reconciliacao: `src/lib/offline/db.ts`, `src/lib/offline/pull.ts`, `src/lib/offline/ops.ts`
 - Superficies consumidoras da mesma leitura operacional: `src/pages/Agenda/index.tsx`, `src/pages/Home.tsx`, `src/pages/Dashboard.tsx`, `src/pages/Relatorios.tsx`
 
@@ -132,16 +136,16 @@ Atualizacao estrutural 2026-04-19 (sem mudanca funcional de dominio):
 
 ### Interligacoes
 
-- Biblioteca canonica: `src/lib/sanitario/baseProtocols.ts`
-- Semantica do calendario base: `src/lib/sanitario/calendar.ts`
-- Propagacao para protocolos da fazenda: `src/pages/ProtocolosSanitarios/index.tsx`, `src/lib/sanitario/customization.ts`
+- Biblioteca canonica: `src/lib/sanitario/catalog/baseProtocols.ts`
+- Semantica do calendario base: `src/lib/sanitario/engine/calendar.ts`
+- Propagacao para protocolos da fazenda: `src/pages/ProtocolosSanitarios/index.tsx`, `src/lib/sanitario/customization/customization.ts`
 - Leitura operacional da agenda base: `src/pages/Registrar/index.tsx`, `src/components/sanitario/FarmProtocolManager.tsx`
 - Superficies animal-centric: `src/pages/Animais.tsx`, `src/pages/AnimalDetalhe.tsx`
-- Catalogo global de produtos: `src/lib/sanitario/products.ts`
+- Catalogo global de produtos: `src/lib/sanitario/catalog/products.ts`
 
 ### Fases do Desenvolvimento
 
-- [x] Extrair `STANDARD_PROTOCOLS` da UI para uma biblioteca canonica em `src/lib/sanitario/baseProtocols.ts`
+- [x] Extrair `STANDARD_PROTOCOLS` da UI para uma biblioteca canonica em `src/lib/sanitario/catalog/baseProtocols.ts`
 - [x] Introduzir `calendario_base` estruturado por protocolo e por etapa
 - [x] Propagar `standard_id`, versao da biblioteca e metadados de calendario ao adicionar protocolos padrao na fazenda
 - [x] Passar `Registrar` e editor de protocolos a descrever a agenda a partir do `payload.calendario_base`
@@ -224,6 +228,7 @@ Atualizacao estrutural 2026-04-19 (sem mudanca funcional de dominio):
 | TD-027 | `registrar.shell_composition_residual` | Structural | Milestone 10 |
 | TD-028 (CLOSED) | `infra.quality_gate_smoke` | Reliability | Milestone 10 |
 | TD-030 (CLOSED) | `infra.test_reliability_act_flaky` | Reliability | Milestone 10 |
+| N/A | `sanitario.saneamento_p0_p3` | Domain/Architecture | Milestone 11 |
 
 ---
 
@@ -264,6 +269,30 @@ Atualizacao estrutural 2026-04-19 (sem mudanca funcional de dominio):
 - [x] Eliminar filtros de console em testes e corrigir warnings `act(...)` na causa (async/state updates)
 - [x] Reduzir warnings `act(...)` em E2E/RTL em pelo menos 70%
 - [ ] Tratar warnings de chunks circulares (classificado como monitorar; nao bloqueante)
+
+---
+
+## Milestone 11: Saneamento Sanitario P0-P3
+
+**Objetivo:** estabilizar o motor sanitario antes de novas features ou reestruturacoes maiores.
+
+**Status:** Concluido em 2026-04-27
+
+### Entregaveis
+
+- [x] Golden/parity tests para casos criticos de agenda sanitaria.
+- [x] Adapter de calendario TS -> SQL com leitura retrocompativel de valores legados.
+- [x] Dedup canonico estruturado em TS e SQL.
+- [x] Sequenciamento Raiva D1/D2/anual corrigido.
+- [x] Taxonomia sanitaria passiva sem mudanca de comportamento.
+- [x] Separacao fisica de `src/lib/sanitario/**` por responsabilidade.
+- [x] Boundary Registrar <-> sanitario documentado e imports diretos criticos do engine removidos.
+
+### Fora de escopo mantido
+
+- Motor pleno de withholding/carencia.
+- Entidades completas de produto/lote/estoque para rastreabilidade sanitaria.
+- SISBOV/fiscal.
 
 ---
 

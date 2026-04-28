@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ProtocoloSanitarioItem } from "@/lib/offline/types";
-import { DEFAULT_TRANSIT_CHECKLIST_DRAFT } from "@/lib/sanitario/transit";
+import { DEFAULT_TRANSIT_CHECKLIST_DRAFT } from "@/lib/sanitario/compliance/transit";
 import { resolveRegistrarSanitaryFinalizeContext } from "@/pages/Registrar/helpers/sanitaryFinalize";
 
 const baseProtocolItem: Pick<

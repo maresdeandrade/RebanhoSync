@@ -5,42 +5,23 @@ import type {
   Animal,
   EstadoUFEnum,
   ProdutoVeterinarioCatalogEntry,
-  ProtocoloSanitario,
   SanitarioTipoEnum,
 } from "@/lib/offline/types";
 import {
   readVeterinaryProductSelection,
-  resolveVeterinaryProductByName,
-  searchVeterinaryProducts,
   normalizeVeterinaryProductText,
   type VeterinaryProductSelection,
-} from "@/lib/sanitario/products";
-import {
-  EMPTY_REGULATORY_OPERATIONAL_READ_MODEL,
-  type RegulatoryOperationalReadModel,
-} from "@/lib/sanitario/regulatoryReadModel";
+} from "@/lib/sanitario/catalog/products";
+import type { RegulatoryOperationalReadModel } from "@/lib/sanitario/compliance/regulatoryReadModel";
 import {
   DEFAULT_TRANSIT_CHECKLIST_DRAFT,
-  hasOfficialTransitChecklistEnabled,
   type TransitChecklistDraft,
-} from "@/lib/sanitario/transit";
+} from "@/lib/sanitario/compliance/transit";
 import {
-  buildComplianceFlowIssues,
-  buildTransitChecklistIssues,
-  shouldShowTransitChecklist,
-} from "@/pages/Registrar/helpers/transitCompliance";
+  resolveProtocolProductSelectionFromCatalog,
+  resolveRegistrarSanitaryPackage,
+} from "@/lib/sanitario/models/registrarPackage";
 import { isFinanceiroSaidaNatureza } from "@/pages/Registrar/helpers/financialNature";
-import {
-  buildProtocolEligibilityIssues,
-  buildSanitaryMovementBlockIssues,
-} from "@/pages/Registrar/helpers/actionStepIssues";
-import { formatSanitaryProtocolRestrictions } from "@/lib/sanitario/protocolRules";
-import { listAnimalsBlockedBySanitaryAlert } from "@/lib/sanitario/alerts";
-import { resolveMovementSensitiveRecords } from "@/pages/Registrar/helpers/selectContext";
-import {
-  evaluateRegistrarProtocolItems,
-  findRegistrarProtocolItemEvaluation,
-} from "@/pages/Registrar/helpers/protocolEvaluation";
 import { loadRegistrarSourceTaskPrefillEffect } from "@/pages/Registrar/effects/sourceTaskPrefill";
 import {
   refreshRegistrarSanitaryProtocolsEffect,
@@ -164,80 +145,19 @@ export function useRegistrarSanitarioPackage(input: {
     [],
   );
 
-  const selectedVeterinaryProduct = useMemo(
-    () =>
-      (veterinaryProducts ?? []).find((product) => product.id === selectedVeterinaryProductId) ??
-      null,
-    [selectedVeterinaryProductId, veterinaryProducts],
-  );
-
-  const selectedVeterinaryProductSelection = useMemo<VeterinaryProductSelection | null>(
-    () =>
-      selectedVeterinaryProduct
-        ? {
-            id: selectedVeterinaryProduct.id,
-            nome: selectedVeterinaryProduct.nome,
-            categoria: selectedVeterinaryProduct.categoria,
-            origem: "catalogo",
-          }
-        : null,
-    [selectedVeterinaryProduct],
-  );
-
-  const hasVeterinaryProducts =
-    Array.isArray(veterinaryProducts) && veterinaryProducts.length > 0;
-  const isVeterinaryProductsEmpty =
-    Array.isArray(veterinaryProducts) && veterinaryProducts.length === 0;
-
-  const veterinaryProductSuggestions = useMemo(
-    () =>
-      searchVeterinaryProducts(veterinaryProducts ?? [], {
-        query: sanitarioData.produto,
-        sanitaryType: sanitarioData.tipo,
-        limit: 6,
-      }),
-    [sanitarioData.produto, sanitarioData.tipo, veterinaryProducts],
-  );
-
-  const createAutomaticProductSelection = useCallback(
-    (
-      product: ProdutoVeterinarioCatalogEntry,
-      matchMode: VeterinaryProductSelection["matchMode"],
-    ): VeterinaryProductSelection => ({
-      id: product.id,
-      nome: product.nome,
-      categoria: product.categoria,
-      origem: "catalogo_automatico",
-      matchMode,
-    }),
-    [],
-  );
-
   const resolveProtocolProductSelection = useCallback(
     (
       payload: Record<string, unknown> | null | undefined,
       productName: string,
       sanitaryType: SanitarioTipoEnum,
-    ): VeterinaryProductSelection | null => {
-      const fromPayload = readVeterinaryProductSelection(payload);
-      if (fromPayload) return fromPayload;
-
-      const resolved = resolveVeterinaryProductByName(
+    ): VeterinaryProductSelection | null =>
+      resolveProtocolProductSelectionFromCatalog({
+        payload,
         productName,
-        veterinaryProducts ?? [],
-        {
-          sanitaryType,
-        },
-      );
-
-      if (!resolved.product) return null;
-
-      return createAutomaticProductSelection(
-        resolved.product,
-        resolved.matchMode,
-      );
-    },
-    [createAutomaticProductSelection, veterinaryProducts],
+        sanitaryType,
+        veterinaryProducts,
+      }),
+    [veterinaryProducts],
   );
 
   const selectVeterinaryProduct = useCallback(
@@ -255,134 +175,40 @@ export function useRegistrarSanitarioPackage(input: {
     [],
   );
 
-  const showsTransitChecklist = shouldShowTransitChecklist({
-    tipoManejo: input.tipoManejo,
-    financeiroNatureza: input.financeiroNatureza,
-  });
-
-  const officialTransitChecklistEnabled = hasOfficialTransitChecklistEnabled(
-    input.regulatorySurfaceConfig,
-  );
-
-  const isExternalTransitContext = showsTransitChecklist && transitChecklist.enabled;
-
-  const movementComplianceGuards = useMemo(
+  const sanitaryPackage = useMemo(
     () =>
-      showsTransitChecklist || input.tipoManejo === "movimentacao"
-        ? isExternalTransitContext
-          ? input.regulatoryReadModel.flows.movementExternal
-          : input.regulatoryReadModel.flows.movementInternal
-        : EMPTY_REGULATORY_OPERATIONAL_READ_MODEL.flows.movementInternal,
-    [input.regulatoryReadModel, input.tipoManejo, isExternalTransitContext, showsTransitChecklist],
-  );
-
-  const nutritionComplianceGuards =
-    input.tipoManejo === "nutricao"
-      ? input.regulatoryReadModel.flows.nutrition
-      : EMPTY_REGULATORY_OPERATIONAL_READ_MODEL.flows.nutrition;
-
-  const transitChecklistIssues = useMemo(
-    () =>
-      buildTransitChecklistIssues({
-        showsTransitChecklist,
+      resolveRegistrarSanitaryPackage({
+        tipoManejo: input.tipoManejo,
+        financeiroNatureza: input.financeiroNatureza,
+        regulatorySurfaceConfig: input.regulatorySurfaceConfig,
+        regulatoryReadModel: input.regulatoryReadModel,
+        animaisNoLote: input.animaisNoLote,
+        selectedAnimaisDetalhes: input.selectedAnimaisDetalhes,
+        protocolos,
+        protocoloItens,
+        protocoloItemId: protocoloItemId || null,
+        sanitarioData,
+        selectedVeterinaryProductId,
+        veterinaryProducts,
         transitChecklist,
         asOfDate: new Date().toISOString().slice(0, 10),
       }),
-    [showsTransitChecklist, transitChecklist],
-  );
-
-  const movementSensitiveAnimals = useMemo(
-    () =>
-      resolveMovementSensitiveRecords({
-        showsTransitChecklist,
-        selectedRecords: input.selectedAnimaisDetalhes,
-        fallbackRecords: input.animaisNoLote ?? [],
-      }),
-    [input.animaisNoLote, input.selectedAnimaisDetalhes, showsTransitChecklist],
-  );
-
-  const animalsBlockedBySanitaryAlert = useMemo(
-    () => listAnimalsBlockedBySanitaryAlert(movementSensitiveAnimals),
-    [movementSensitiveAnimals],
-  );
-
-  const sanitaryMovementBlockIssues = useMemo(
-    () =>
-      buildSanitaryMovementBlockIssues({
-        showsTransitChecklist,
-        blockedAnimals: animalsBlockedBySanitaryAlert,
-      }),
-    [animalsBlockedBySanitaryAlert, showsTransitChecklist],
-  );
-
-  const complianceFlowIssues = useMemo(
-    () =>
-      buildComplianceFlowIssues({
-        tipoManejo: input.tipoManejo,
-        financeiroNatureza: input.financeiroNatureza,
-        movementBlockers: movementComplianceGuards.blockers,
-        nutritionBlockers: nutritionComplianceGuards.blockers,
-      }),
     [
+      input.animaisNoLote,
       input.financeiroNatureza,
+      input.regulatoryReadModel,
+      input.regulatorySurfaceConfig,
+      input.selectedAnimaisDetalhes,
       input.tipoManejo,
-      movementComplianceGuards.blockers,
-      nutritionComplianceGuards.blockers,
+      protocoloItemId,
+      protocoloItens,
+      protocolos,
+      sanitarioData,
+      selectedVeterinaryProductId,
+      transitChecklist,
+      veterinaryProducts,
     ],
   );
-
-  const protocolosById = useMemo<Map<string, ProtocoloSanitario>>(
-    () => new Map((protocolos ?? []).map((protocolo) => [protocolo.id, protocolo])),
-    [protocolos],
-  );
-
-  const protocoloItensEvaluated = useMemo(
-    () =>
-      evaluateRegistrarProtocolItems({
-        items: protocoloItens ?? [],
-        protocolsById: protocolosById,
-        selectedAnimals: input.selectedAnimaisDetalhes,
-      }),
-    [input.selectedAnimaisDetalhes, protocoloItens, protocolosById],
-  );
-
-  const selectedProtocoloItemEvaluation = useMemo(
-    () =>
-      findRegistrarProtocolItemEvaluation({
-        protocolItemId: protocoloItemId || null,
-        evaluations: protocoloItensEvaluated,
-      }),
-    [protocoloItemId, protocoloItensEvaluated],
-  );
-
-  const selectedProtocolRestrictionsText = useMemo(
-    () =>
-      selectedProtocoloItemEvaluation
-        ? formatSanitaryProtocolRestrictions(
-            selectedProtocoloItemEvaluation.eligibility.restrictions,
-          )
-        : null,
-    [selectedProtocoloItemEvaluation],
-  );
-
-  const selectedProtocolPrimaryReason =
-    selectedProtocoloItemEvaluation?.eligibility.reasons[0] ?? null;
-
-  const allProtocolItemsIneligible =
-    protocoloItensEvaluated.length > 0 &&
-    protocoloItensEvaluated.every(({ eligibility }) => !eligibility.compatibleWithAll);
-
-  const protocolEligibilityIssues = useMemo(
-    () =>
-      buildProtocolEligibilityIssues({
-        tipoManejo: input.tipoManejo,
-        selectedProtocolCompatibleWithAll:
-          selectedProtocoloItemEvaluation?.eligibility.compatibleWithAll ?? null,
-      }),
-    [input.tipoManejo, selectedProtocoloItemEvaluation],
-  );
-
-  const sanitatioProductMissing = sanitarioData.produto.trim().length === 0;
 
   useEffect(() => {
     refreshRegistrarSanitaryProtocolsEffect({
@@ -448,15 +274,19 @@ export function useRegistrarSanitarioPackage(input: {
       return;
     }
 
-    if (!selectedVeterinaryProduct) return;
+    if (!sanitaryPackage.selectedVeterinaryProduct) return;
 
     if (
-      normalizeVeterinaryProductText(selectedVeterinaryProduct.nome) !==
+      normalizeVeterinaryProductText(sanitaryPackage.selectedVeterinaryProduct.nome) !==
       normalizedTypedProduct
     ) {
       setSelectedVeterinaryProductId("");
     }
-  }, [sanitarioData.produto, selectedVeterinaryProduct, selectedVeterinaryProductId]);
+  }, [
+    sanitarioData.produto,
+    sanitaryPackage.selectedVeterinaryProduct,
+    selectedVeterinaryProductId,
+  ]);
 
   useEffect(() => {
     const applySourceTaskPrefill = async () => {
@@ -509,7 +339,7 @@ export function useRegistrarSanitarioPackage(input: {
   }, [input.sourceTaskId, input.tipoManejo]);
 
   useEffect(() => {
-    if (!showsTransitChecklist) {
+    if (!sanitaryPackage.showsTransitChecklist) {
       setTransitChecklist(DEFAULT_TRANSIT_CHECKLIST_DRAFT);
       return;
     }
@@ -530,7 +360,7 @@ export function useRegistrarSanitarioPackage(input: {
 
       return prev;
     });
-  }, [input.financeiroNatureza, input.tipoManejo, showsTransitChecklist]);
+  }, [input.financeiroNatureza, input.tipoManejo, sanitaryPackage.showsTransitChecklist]);
 
   const applySanitaryQueryPrefill = useCallback((query: {
     protocoloId?: string | null;
@@ -559,36 +389,41 @@ export function useRegistrarSanitarioPackage(input: {
     handleSanitarioTipoChange,
     handleSanitarioProdutoChange,
     applySanitaryQueryPrefill,
-    selectedVeterinaryProduct,
+    selectedVeterinaryProduct: sanitaryPackage.selectedVeterinaryProduct,
     selectedVeterinaryProductId,
     setSelectedVeterinaryProductId,
-    selectedVeterinaryProductSelection,
-    hasVeterinaryProducts,
-    isVeterinaryProductsEmpty,
-    veterinaryProductSuggestions,
+    selectedVeterinaryProductSelection:
+      sanitaryPackage.selectedVeterinaryProductSelection,
+    hasVeterinaryProducts: sanitaryPackage.hasVeterinaryProducts,
+    isVeterinaryProductsEmpty: sanitaryPackage.isVeterinaryProductsEmpty,
+    veterinaryProductSuggestions: sanitaryPackage.veterinaryProductSuggestions,
     selectVeterinaryProduct,
     protocolos,
     protocoloId,
     setProtocoloId,
     protocoloItemId,
     setProtocoloItemId,
-    protocoloItensEvaluated,
-    selectedProtocoloItemEvaluation,
-    selectedProtocolRestrictionsText,
-    selectedProtocolPrimaryReason,
-    allProtocolItemsIneligible,
-    protocolEligibilityIssues,
-    sanitatioProductMissing,
+    protocoloItensEvaluated: sanitaryPackage.protocoloItensEvaluated,
+    selectedProtocoloItemEvaluation:
+      sanitaryPackage.selectedProtocoloItemEvaluation,
+    selectedProtocolRestrictionsText:
+      sanitaryPackage.selectedProtocolRestrictionsText,
+    selectedProtocolPrimaryReason: sanitaryPackage.selectedProtocolPrimaryReason,
+    allProtocolItemsIneligible: sanitaryPackage.allProtocolItemsIneligible,
+    protocolEligibilityIssues: sanitaryPackage.protocolEligibilityIssues,
+    sanitatioProductMissing: sanitaryPackage.sanitatioProductMissing,
     resolveProtocolProductSelection,
     transitChecklist,
     setTransitChecklist,
-    transitChecklistIssues,
-    showsTransitChecklist,
-    officialTransitChecklistEnabled,
-    animalsBlockedBySanitaryAlert,
-    sanitaryMovementBlockIssues,
-    movementComplianceGuards,
-    nutritionComplianceGuards,
-    complianceFlowIssues,
+    transitChecklistIssues: sanitaryPackage.transitChecklistIssues,
+    showsTransitChecklist: sanitaryPackage.showsTransitChecklist,
+    officialTransitChecklistEnabled:
+      sanitaryPackage.officialTransitChecklistEnabled,
+    animalsBlockedBySanitaryAlert:
+      sanitaryPackage.animalsBlockedBySanitaryAlert,
+    sanitaryMovementBlockIssues: sanitaryPackage.sanitaryMovementBlockIssues,
+    movementComplianceGuards: sanitaryPackage.movementComplianceGuards,
+    nutritionComplianceGuards: sanitaryPackage.nutritionComplianceGuards,
+    complianceFlowIssues: sanitaryPackage.complianceFlowIssues,
   };
 }

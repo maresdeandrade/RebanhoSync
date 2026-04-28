@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { concluirPendenciaSanitaria } from "@/lib/sanitario/service";
+import { concluirPendenciaSanitaria } from "@/lib/sanitario/infrastructure/service";
 
 const { rpcMock, fromMock } = vi.hoisted(() => ({
   rpcMock: vi.fn(),

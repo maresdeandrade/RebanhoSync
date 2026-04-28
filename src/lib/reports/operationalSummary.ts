@@ -16,17 +16,17 @@ import type {
   ProtocoloSanitarioItem,
   Rejection,
 } from "@/lib/offline/types";
-import { describeSanitaryAgendaScheduleMeta } from "@/lib/sanitario/calendar";
-import { summarizeSanitaryAgendaAttention } from "@/lib/sanitario/attention";
+import { describeSanitaryAgendaScheduleMeta } from "@/lib/sanitario/engine/calendar";
+import { summarizeSanitaryAgendaAttention } from "@/lib/sanitario/compliance/attention";
 import type {
   RegulatoryComplianceAttentionBadge,
   RegulatoryComplianceAttentionItem,
-} from "@/lib/sanitario/complianceAttention";
+} from "@/lib/sanitario/compliance/complianceAttention";
 import {
   buildRegulatoryOperationalReadModel,
   type RegulatoryImpactAnalyticalCut,
   type RegulatorySubareaAnalyticalCut,
-} from "@/lib/sanitario/regulatoryReadModel";
+} from "@/lib/sanitario/compliance/regulatoryReadModel";
 
 export type ReportPreset = "7d" | "30d" | "90d" | "mes_atual";
 

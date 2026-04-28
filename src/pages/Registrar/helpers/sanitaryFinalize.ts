@@ -1,9 +1,11 @@
 import type { EventDomain } from "@/lib/events/types";
-import type { ProtocoloSanitarioItem, SanitarioTipoEnum } from "@/lib/offline/types";
-import type { VeterinaryProductSelection } from "@/lib/sanitario/products";
-import { buildVeterinaryProductMetadata } from "@/lib/sanitario/products";
-import { readSanitaryRegimen } from "@/lib/sanitario/regimen";
-import type { TransitChecklistDraft } from "@/lib/sanitario/transit";
+import type { ProtocoloSanitarioItem } from "@/lib/offline/types";
+import type { VeterinaryProductSelection } from "@/lib/sanitario/catalog/products";
+import type { TransitChecklistDraft } from "@/lib/sanitario/compliance/transit";
+import {
+  buildSanitaryExecutionPayload,
+  type ResolveSanitaryProtocolProductSelection,
+} from "@/lib/sanitario/models/executionPayload";
 import { resolveRegistrarTransitChecklistPayload } from "@/pages/Registrar/helpers/payload";
 
 type ProtocolItemLike = Pick<
@@ -16,11 +18,7 @@ export function resolveRegistrarSanitaryFinalizeContext(input: {
   protocoloItem: ProtocolItemLike | null;
   sanitaryTypedProduct: string;
   selectedVeterinaryProductSelection: VeterinaryProductSelection | null;
-  resolveProtocolProductSelection: (
-    payload: Record<string, unknown> | null | undefined,
-    productName: string,
-    sanitaryType: SanitarioTipoEnum,
-  ) => VeterinaryProductSelection | null;
+  resolveProtocolProductSelection: ResolveSanitaryProtocolProductSelection;
   showsTransitChecklist: boolean;
   transitChecklist: TransitChecklistDraft;
   officialTransitChecklistEnabled: boolean;
@@ -40,48 +38,16 @@ export function resolveRegistrarSanitaryFinalizeContext(input: {
     };
   }
 
-  const sanitaryProductName =
-    input.sanitaryTypedProduct.trim() || input.protocoloItem?.produto || "";
-  const protocolRegimen = input.protocoloItem
-    ? readSanitaryRegimen(input.protocoloItem.payload)
-    : null;
-  const protocolProductSelection = input.protocoloItem
-    ? input.resolveProtocolProductSelection(
-        input.protocoloItem.payload,
-        input.protocoloItem.produto,
-        input.protocoloItem.tipo,
-      )
-    : null;
-  const sanitaryProductSelection =
-    input.selectedVeterinaryProductSelection ?? protocolProductSelection;
-
-  const sanitaryProductMetadata = {
-    ...buildVeterinaryProductMetadata({
-      selectedProduct: sanitaryProductSelection,
-      typedName: sanitaryProductName,
-      source: sanitaryProductSelection?.origem,
-      matchMode: sanitaryProductSelection?.matchMode ?? null,
-    }),
-    ...(input.protocoloItem
-      ? {
-          protocolo_item_id: input.protocoloItem.id,
-          protocolo_id: input.protocoloItem.protocolo_id,
-        }
-      : {}),
-    ...(protocolRegimen
-      ? {
-          family_code: protocolRegimen.family_code,
-          regimen_version: protocolRegimen.regimen_version,
-          milestone_code: protocolRegimen.milestone_code,
-          regime_sanitario: protocolRegimen,
-        }
-      : {}),
-  };
+  const sanitaryPayload = buildSanitaryExecutionPayload({
+    protocoloItem: input.protocoloItem,
+    typedProductName: input.sanitaryTypedProduct,
+    selectedVeterinaryProductSelection:
+      input.selectedVeterinaryProductSelection,
+    resolveProtocolProductSelection: input.resolveProtocolProductSelection,
+  });
 
   return {
-    sanitaryProductName,
-    sanitaryProductSelection,
-    sanitaryProductMetadata,
+    ...sanitaryPayload,
     transitChecklistPayload,
   };
 }

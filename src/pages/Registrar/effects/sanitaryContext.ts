@@ -1,8 +1,8 @@
 import type { EventDomain } from "@/lib/events/types";
 import { db } from "@/lib/offline/db";
 import type { ProtocoloSanitarioItem, SanitarioTipoEnum } from "@/lib/offline/types";
-import type { VeterinaryProductSelection } from "@/lib/sanitario/products";
-import type { TransitChecklistDraft } from "@/lib/sanitario/transit";
+import type { VeterinaryProductSelection } from "@/lib/sanitario/catalog/products";
+import type { TransitChecklistDraft } from "@/lib/sanitario/compliance/transit";
 import { resolveRegistrarSanitaryFinalizeContext } from "@/pages/Registrar/helpers/sanitaryFinalize";
 
 type ProtocolItemLike = Pick<

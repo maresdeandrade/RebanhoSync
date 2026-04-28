@@ -12,13 +12,13 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { computeProtocolAgendaEligibility } from "@/lib/sanitario/scheduler";
-import type { SanitaryProtocolMetadata } from "@/lib/sanitario/protocolLayers";
+import { computeProtocolAgendaEligibility } from "@/lib/sanitario/engine/scheduler";
+import type { SanitaryProtocolMetadata } from "@/lib/sanitario/engine/protocolLayers";
 import type {
   SanitaryProtocolItemDomain,
   SanitarySubjectContext,
   SchedulerNowContext,
-} from "@/lib/sanitario/domain";
+} from "@/lib/sanitario/models/domain";
 import { buildSchedulerNowContext } from "./helpers/schedulerNow";
 
 // Builders

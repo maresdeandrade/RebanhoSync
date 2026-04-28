@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_TRANSIT_CHECKLIST_DRAFT } from "@/lib/sanitario/transit";
+import { DEFAULT_TRANSIT_CHECKLIST_DRAFT } from "@/lib/sanitario/compliance/transit";
 import {
   buildComplianceFlowIssues,
   buildTransitChecklistIssues,

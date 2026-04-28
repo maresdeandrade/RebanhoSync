@@ -49,6 +49,8 @@ describe("Relatorios flow", () => {
   };
 
   beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-03-29T12:00:00.000Z"));
     vi.clearAllMocks();
 
     mockedUseAuth.mockReturnValue({
@@ -187,6 +189,7 @@ describe("Relatorios flow", () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
+    vi.useRealTimers();
   });
 
   it("gera CSV e abre impressao do resumo operacional", async () => {
@@ -202,6 +205,9 @@ describe("Relatorios flow", () => {
       await screen.findByRole("heading", { name: /Fazenda Boa Vista/i }),
     ).toBeInTheDocument();
     expect(screen.getByText(/Resumo operacional/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Periodo analisado: 28\/02\/2026 a 29\/03\/2026\./i),
+    ).toBeInTheDocument();
     expect(screen.getAllByText(/R\$ 3\.500,00/i).length).toBeGreaterThan(0);
 
     fireEvent.click(screen.getByRole("button", { name: /Exportar CSV/i }));

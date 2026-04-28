@@ -6,7 +6,7 @@ import { MemoryRouter } from "react-router-dom";
 import { useLiveQuery } from "dexie-react-hooks";
 
 import { useAuth } from "@/hooks/useAuth";
-import type { RegulatoryOperationalReadModel } from "@/lib/sanitario/regulatoryReadModel";
+import type { RegulatoryOperationalReadModel } from "@/lib/sanitario/compliance/regulatoryReadModel";
 import Eventos from "@/pages/Eventos";
 
 vi.mock("@/hooks/useAuth");

@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   type OfficialSanitaryPackConfigInput,
   type PackReapplicationReconciliationResult,
-} from "@/lib/sanitario/officialCatalog";
+} from "@/lib/sanitario/catalog/officialCatalog";
 
 /**
  * PR4 Idempotent Pack Re-application Tests

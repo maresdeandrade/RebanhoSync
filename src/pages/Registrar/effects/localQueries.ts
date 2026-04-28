@@ -7,7 +7,7 @@ import type {
   SanitarioTipoEnum,
   ProdutoVeterinarioCatalogEntry,
 } from "@/lib/offline/types";
-import { loadRegulatorySurfaceSource } from "@/lib/sanitario/regulatoryReadModel";
+import { loadRegulatorySurfaceSource } from "@/lib/sanitario/compliance/regulatoryReadModel";
 
 export async function loadRegistrarBullByIdEffect(input: {
   machoId: string;

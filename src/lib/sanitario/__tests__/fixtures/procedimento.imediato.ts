@@ -11,7 +11,7 @@ import type {
   SanitarySubjectContext,
   SanitaryExecutionRecord,
   ComputeNextSanitaryOccurrenceResult,
-} from "../domain";
+} from "@/lib/sanitario/models/domain";
 import { buildSchedulerNowContext } from "../helpers/schedulerNow";
 
 export const procedimentoImediatoNotificacao = {

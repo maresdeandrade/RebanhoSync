@@ -1,4 +1,4 @@
-import { buildTransitChecklistPayload, type TransitChecklistDraft } from "@/lib/sanitario/transit";
+import { buildTransitChecklistPayload, type TransitChecklistDraft } from "@/lib/sanitario/compliance/transit";
 
 type FinanceiroPayloadNatureza =
   | "compra"

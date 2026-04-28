@@ -11,10 +11,10 @@ import {
   computeWithMetadata,
   diagnosticWhichSchedulerWasUsed,
   type NextOccurrenceMetadata,
-} from "@/lib/sanitario/nextOccurrenceService";
+} from "@/lib/sanitario/engine/nextOccurrenceService";
 import { VALID_MODE_FIXTURES } from "../__fixtures__/scheduler.fixtures";
 import type { ProtocoloSanitarioItem, Animal } from "@/lib/offline/types";
-import type { ComputeNextOccurrenceContext } from "@/lib/sanitario/schedulerIntegration";
+import type { ComputeNextOccurrenceContext } from "@/lib/sanitario/engine/schedulerIntegration";
 
 describe("Next Occurrence Service", () => {
   describe("computeNextOccurrence", () => {

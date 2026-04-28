@@ -1,5 +1,5 @@
 import { pullDataForFarm } from "@/lib/offline/pull";
-import { refreshVeterinaryProductsCatalog } from "@/lib/sanitario/products";
+import { refreshVeterinaryProductsCatalog } from "@/lib/sanitario/catalog/products";
 
 type PullDataForFarmFn = typeof pullDataForFarm;
 type RefreshVeterinaryProductsCatalogFn = typeof refreshVeterinaryProductsCatalog;

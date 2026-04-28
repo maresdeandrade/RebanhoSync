@@ -2,7 +2,7 @@
 
 > **Status:** Derivado (Rev D+)
 > **Baseline:** `b69d35f`
-> **Ultima Atualizacao:** 2026-04-19
+> **Ultima Atualizacao:** 2026-04-27
 > **Derivado por:** Auditoria tecnica - codigo + migrations como fonte de verdade
 > **Fonte:** `IMPLEMENTATION_STATUS.md`, `src/`, `supabase/`
 
@@ -37,7 +37,24 @@
 - **Impacto:** warning recorrente (`vendor <-> react-vendor <-> ui-vendor/charts-vendor`) adiciona ruído técnico e reduz previsibilidade de empacotamento.
 - **Classificacao:** monitorar (nao bloqueante para gate atual); adiar refino de chunk strategy para ciclo de performance dedicado.
 
+### TD-031: Residuos sanitarios pos-saneamento
+
+- **Status:** OPEN
+- **Origem:** Rodada P0-P3 de saneamento sanitario concluiu contratos, dedup, calendario, sequenciamento e boundary Registrar, mas manteve pontos fora de escopo.
+- **Impacto:** ainda ha custo de manutencao e risco semantico em pontos adjacentes, sem bloquear o gate atual.
+- **Residuos registrados:**
+  - helpers de compliance/transito ainda existem no `Registrar`;
+  - carencia permanece como metadata/compliance parcial, nao como motor pleno de withholding;
+  - produto/lote/estoque ainda nao sao entidades completas de rastreabilidade sanitaria;
+  - SISBOV/fiscal permanecem fora do core.
+
 ## CLOSED (Historico Completo)
+
+### Saneamento sanitario P0-P3
+
+- **Status:** CLOSED
+- **Fechado por:** golden/parity tests, adapter calendario TS->SQL, dedup canonico TS/SQL, sequenciamento Raiva D1/D2/anual, taxonomia passiva, reorganizacao `src/lib/sanitario/**` e boundary Registrar <-> sanitario.
+- **Detalhe:** divergencias conhecidas de calendario e dedup foram resolvidas, D2 da raiva deixou de ser recriada indefinidamente, payload/preflight/package/boundary RPC-fallback sairam do acoplamento direto do Registrar e o import direto de `engine/protocolRules` foi removido.
 
 ### Hardening estrutural do hotspot `Registrar` (entrypoint shell)
 
@@ -115,7 +132,7 @@
 ### TD-022: `produtos_veterinarios` integrado ao fluxo sanitario
 
 - **Status:** CLOSED
-- **Fechado por:** `src/lib/sanitario/products.ts`, `src/pages/Registrar/index.tsx`, `src/pages/ProtocolosSanitarios/index.tsx`, `src/pages/Agenda/index.tsx`, `src/lib/offline/db.ts`
+- **Fechado por:** `src/lib/sanitario/catalog/products.ts`, `src/pages/Registrar/index.tsx`, `src/pages/ProtocolosSanitarios/index.tsx`, `src/pages/Agenda/index.tsx`, `src/lib/offline/db.ts`
 - **Detalhe:** o catalogo agora fica em cache local, gera sugestoes no `Registrar` e propaga referencia estruturada para protocolos e eventos sanitarios
 
 ### TD-023: Pos-parto e Cria Inicial sem cobertura E2E no pacote `test:e2e`
@@ -127,7 +144,7 @@
 ### TD-024: Overlay regulatorio oficial virou malha operacional compartilhada
 
 - **Status:** CLOSED
-- **Fechado por:** `src/lib/sanitario/regulatoryReadModel.ts`, `src/pages/Registrar/index.tsx`, `src/pages/Agenda/index.tsx`, `src/pages/Home.tsx`, `src/pages/Dashboard.tsx`, `src/pages/Financeiro.tsx`, `src/pages/Eventos.tsx`, `src/pages/LoteDetalhe.tsx`, `src/components/sanitario/RegulatoryOverlayManager.tsx`
+- **Fechado por:** `src/lib/sanitario/compliance/regulatoryReadModel.ts`, `src/pages/Registrar/index.tsx`, `src/pages/Agenda/index.tsx`, `src/pages/Home.tsx`, `src/pages/Dashboard.tsx`, `src/pages/Financeiro.tsx`, `src/pages/Eventos.tsx`, `src/pages/LoteDetalhe.tsx`, `src/components/sanitario/RegulatoryOverlayManager.tsx`
 - **Detalhe:** o overlay oficial agora cobre runtime guiado, bloqueios contextuais, leitura compartilhada nas principais superficies e recortes analiticos com CTA direto para o overlay filtrado
 
 ### TD-028: Gate minimo de qualidade e smoke critico
@@ -146,9 +163,9 @@
 
 ## Resumo
 
-- OPEN: `TD-025`, `TD-026`, `TD-027`, `TD-029`
+- OPEN: `TD-025`, `TD-026`, `TD-027`, `TD-029`, `TD-031`
 - CLOSED: `TD-001`, `TD-003`, `TD-004`, `TD-006`, `TD-008`, `TD-011`, `TD-014`, `TD-015`, `TD-019`, `TD-020`, `TD-021`, `TD-022`, `TD-023`, `TD-024`, `TD-028`, `TD-030`
-- Total OPEN: `4`
+- Total OPEN: `5`
 
 ## Veja Tambem
 

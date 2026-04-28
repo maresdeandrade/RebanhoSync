@@ -11,7 +11,7 @@ import { db } from "@/lib/offline/db";
 import {
   EMPTY_SANITARY_ATTENTION_SUMMARY,
   summarizeSanitaryAgendaAttention,
-} from "@/lib/sanitario/attention";
+} from "@/lib/sanitario/compliance/attention";
 import { showInfo } from "@/utils/toast";
 
 const STORAGE_PREFIX = "rebanhosync:sanitary-reminder";

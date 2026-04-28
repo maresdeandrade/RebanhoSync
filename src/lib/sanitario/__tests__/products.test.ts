@@ -7,7 +7,7 @@ import {
   readVeterinaryProductSelection,
   resolveVeterinaryProductByName,
   searchVeterinaryProducts,
-} from "@/lib/sanitario/products";
+} from "@/lib/sanitario/catalog/products";
 import type { ProdutoVeterinarioCatalogEntry } from "@/lib/offline/types";
 
 const CATALOG: ProdutoVeterinarioCatalogEntry[] = [

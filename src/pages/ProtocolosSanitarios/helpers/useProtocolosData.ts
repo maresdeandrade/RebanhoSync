@@ -3,7 +3,7 @@ import { useLiveQuery } from "dexie-react-hooks";
 
 import { db } from "@/lib/offline/db";
 import { pullDataForFarm } from "@/lib/offline/pull";
-import { refreshVeterinaryProductsCatalog } from "@/lib/sanitario/products";
+import { refreshVeterinaryProductsCatalog } from "@/lib/sanitario/catalog/products";
 
 type UseProtocolosDataInput = {
   activeFarmId: string | null;

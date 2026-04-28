@@ -4,7 +4,7 @@
 import { act, renderHook } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useLiveQuery } from "dexie-react-hooks";
-import { EMPTY_REGULATORY_OPERATIONAL_READ_MODEL } from "@/lib/sanitario/regulatoryReadModel";
+import { EMPTY_REGULATORY_OPERATIONAL_READ_MODEL } from "@/lib/sanitario/compliance/regulatoryReadModel";
 import { useRegistrarSanitarioPackage } from "@/pages/Registrar/components/useRegistrarSanitarioPackage";
 
 vi.mock("dexie-react-hooks", () => ({

@@ -1,6 +1,6 @@
 import type { CatalogoProtocoloOficial, CatalogoProtocoloOficialItem } from "@/lib/offline/types";
-import type { RegulatoryOverlayEntry } from "@/lib/sanitario/compliance";
-import { resolveComplianceFlowGuards } from "@/lib/sanitario/complianceGuards";
+import type { RegulatoryOverlayEntry } from "@/lib/sanitario/compliance/compliance";
+import { resolveComplianceFlowGuards } from "@/lib/sanitario/compliance/complianceGuards";
 
 function createEntry(overrides: Partial<RegulatoryOverlayEntry> = {}): RegulatoryOverlayEntry {
   const template: CatalogoProtocoloOficial = {
