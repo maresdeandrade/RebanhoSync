@@ -585,6 +585,8 @@ describe("sanitario engine SQL contracts", () => {
     expect(baseline).toContain("psi.gera_agenda");
     expect(baseline).toContain("a.status = 'ativo'");
     expect(baseline).toContain("(_animal_id is null or a.id = _animal_id)");
+    expect(baseline).toContain("data_nascimento is not null");
+    expect(baseline).toContain("or sexo = 'F'::public.sexo_enum");
   });
 
   it("contract: SQL core uses canonical sanitary dedup instead of free templates", () => {
@@ -592,7 +594,8 @@ describe("sanitario engine SQL contracts", () => {
 
     expect(baseline).toContain("public.render_sanitario_canonical_dedup_key");
     expect(baseline).toContain("public.sanitario_dedup_period_mode");
-    expect(baseline).toContain("coalesce(psi.payload->>'official_item_code'");
+    expect(baseline).toContain("coalesce(payload->>'official_item_code'");
+    expect(baseline).toContain("(data_nascimento + age_min_days)::text");
     expect(baseline).toContain("on conflict (fazenda_id, dedup_key)");
   });
 

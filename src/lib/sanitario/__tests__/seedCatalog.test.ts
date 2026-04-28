@@ -79,17 +79,18 @@ describe("P6.1 conservative sanitary seed catalog", () => {
   });
 
   it("does not mark technical practices as legal obligations", () => {
-    const technicalSlugs = [
-      "clostridioses-tecnico",
-      "reprodutiva-ibr-bvd-lepto",
-      "vermifugacao-estrategica",
-      "controle-carrapato",
-      "biosseguranca-operacional",
-      "medicamentos-rastreabilidade",
+    const technicalItems = [
+      ["clostridioses-tecnico", "clostridioses-recomendado"],
+      ["reprodutiva-ibr-bvd-lepto", "reprodutiva-ibr-bvd-lepto"],
+      ["vermifugacao-estrategica", "vermifugacao-estrategica"],
+      ["controle-carrapato", "controle-carrapato"],
+      ["biosseguranca-operacional", "biosseguranca-checklist"],
+      ["medicamentos-rastreabilidade", "medicamento-registro-carencia"],
     ];
 
-    for (const slug of technicalSlugs) {
+    for (const [slug, code] of technicalItems) {
       expect(sqlTupleStartingWith(slug)).not.toContain("'obrigatorio'");
+      expect(compact(sqlItemTuple(slug, code))).toMatch(/false, false, .*::jsonb, false,/);
     }
   });
 

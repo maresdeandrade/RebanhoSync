@@ -778,50 +778,139 @@ begin
     raise exception 'Forbidden';
   end if;
 
+  with candidates as (
+    select
+      a.fazenda_id,
+      a.id as animal_id,
+      a.sexo,
+      a.data_nascimento,
+      ps.id as protocolo_id,
+      psi.id as protocolo_item_id,
+      psi.protocol_item_id as protocol_item_version_ref,
+      psi.tipo,
+      psi.version,
+      psi.intervalo_dias,
+      psi.payload,
+      rule.calendar_mode,
+      rule.is_age_window,
+      rule.sex_target,
+      rule.age_min_days,
+      rule.age_max_days
+    from public.animais a
+    join public.protocolos_sanitarios ps
+      on ps.fazenda_id = a.fazenda_id
+     and ps.ativo
+     and ps.deleted_at is null
+    join public.protocolos_sanitarios_itens psi
+      on psi.fazenda_id = ps.fazenda_id
+     and psi.protocolo_id = ps.id
+     and psi.gera_agenda
+     and psi.deleted_at is null
+    cross join lateral (
+      select
+        lower(nullif(coalesce(
+          psi.payload #>> '{calendario_base,mode}',
+          psi.payload->>'calendario_mode',
+          psi.payload->>'calendar_mode',
+          psi.payload->>'mode'
+        ), '')) as calendar_mode,
+        upper(nullif(coalesce(
+          psi.payload->>'sexo_alvo',
+          psi.payload #>> '{gatilho_json,sexo_alvo}',
+          psi.payload->>'sex_target',
+          psi.payload->>'sexTarget'
+        ), '')) as sex_target,
+        nullif(coalesce(
+          psi.payload->>'idade_min_dias',
+          psi.payload #>> '{gatilho_json,age_start_days}',
+          psi.payload #>> '{calendario_base,age_start_days}',
+          psi.payload->>'age_start_days',
+          psi.payload->>'ageStartDays'
+        ), '') as age_min_days_raw,
+        nullif(coalesce(
+          psi.payload->>'idade_max_dias',
+          psi.payload #>> '{gatilho_json,age_end_days}',
+          psi.payload #>> '{calendario_base,age_end_days}',
+          psi.payload->>'age_end_days',
+          psi.payload->>'ageEndDays'
+        ), '') as age_max_days_raw
+    ) raw
+    cross join lateral (
+      select
+        raw.calendar_mode,
+        coalesce(raw.calendar_mode, '') in ('age_window', 'janela_etaria') as is_age_window,
+        raw.sex_target,
+        case
+          when raw.age_min_days_raw ~ '^[0-9]+$' then raw.age_min_days_raw::integer
+          else null
+        end as age_min_days,
+        case
+          when raw.age_max_days_raw ~ '^[0-9]+$' then raw.age_max_days_raw::integer
+          else null
+        end as age_max_days
+    ) rule
+    where a.fazenda_id = _fazenda_id
+      and a.deleted_at is null
+      and a.status = 'ativo'
+      and (_animal_id is null or a.id = _animal_id)
+  ),
+  eligible as (
+    select
+      *,
+      case
+        when is_age_window then _as_of
+        else greatest(_as_of, coalesce(data_nascimento, _as_of) + intervalo_dias)
+      end as due_date,
+      case
+        when is_age_window and age_min_days is not null then (data_nascimento + age_min_days)::text
+        else greatest(_as_of, coalesce(data_nascimento, _as_of) + intervalo_dias)::text
+      end as dedup_period_key
+    from candidates
+    where (
+        sex_target is null
+        or sex_target not in ('F', 'FEMEA', 'FEMININO', 'FEMALE')
+        or sexo = 'F'::public.sexo_enum
+      )
+      and (
+        not is_age_window
+        or (
+          data_nascimento is not null
+          and (age_min_days is null or (_as_of - data_nascimento) >= age_min_days)
+          and (age_max_days is null or (_as_of - data_nascimento) <= age_max_days)
+        )
+      )
+  )
   insert into public.agenda_itens (
     fazenda_id, dominio, tipo, status, data_prevista, animal_id, dedup_key,
     source_kind, source_ref, protocol_item_version_id, interval_days_applied,
     payload, client_id, client_recorded_at, server_received_at
   )
   select
-    a.fazenda_id,
+    fazenda_id,
     'sanitario'::public.dominio_enum,
-    psi.tipo::text,
+    tipo::text,
     'agendado'::public.agenda_status_enum,
-    greatest(_as_of, coalesce(a.data_nascimento, _as_of) + psi.intervalo_dias),
-    a.id,
+    due_date,
+    animal_id,
     public.render_sanitario_canonical_dedup_key(
       'animal',
-      a.id,
-      coalesce(psi.payload->>'family_code', ps.id::text),
-      coalesce(psi.payload->>'official_item_code', psi.protocol_item_id::text),
-      psi.version,
-      public.sanitario_dedup_period_mode(psi.payload #>> '{calendario_base,mode}'),
-      greatest(_as_of, coalesce(a.data_nascimento, _as_of) + psi.intervalo_dias)::text,
+      animal_id,
+      coalesce(payload->>'family_code', protocolo_id::text),
+      coalesce(payload->>'official_item_code', protocol_item_version_ref::text),
+      version,
+      public.sanitario_dedup_period_mode(calendar_mode),
+      dedup_period_key,
       null
     ),
     'automatico'::public.agenda_source_kind_enum,
-    jsonb_build_object('protocolo_id', ps.id, 'protocol_item_id', psi.id),
-    psi.id,
-    psi.intervalo_dias,
-    psi.payload,
+    jsonb_build_object('protocolo_id', protocolo_id, 'protocol_item_id', protocolo_item_id),
+    protocolo_item_id,
+    intervalo_dias,
+    payload,
     'server',
     now(),
     now()
-  from public.animais a
-  join public.protocolos_sanitarios ps
-    on ps.fazenda_id = a.fazenda_id
-   and ps.ativo
-   and ps.deleted_at is null
-  join public.protocolos_sanitarios_itens psi
-    on psi.fazenda_id = ps.fazenda_id
-   and psi.protocolo_id = ps.id
-   and psi.gera_agenda
-   and psi.deleted_at is null
-  where a.fazenda_id = _fazenda_id
-    and a.deleted_at is null
-    and a.status = 'ativo'
-    and (_animal_id is null or a.id = _animal_id)
+  from eligible
   on conflict (fazenda_id, dedup_key)
   where status = 'agendado' and deleted_at is null and dedup_key is not null
   do nothing;
