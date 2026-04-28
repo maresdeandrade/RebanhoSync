@@ -43,7 +43,7 @@ Este documento separa o resumo da rodada de saneamento sanitario da documentacao
 - A baseline canonica atual de desenvolvimento e `supabase/migrations/00000000000000_rebuild_base_schema_sanitario.sql`.
 - `supabase/seed.sql` repopula catalogos sanitarios minimos; o seed e tecnico/idempotente e nao deve ser tratado como fonte normativa.
 - `supabase/migrations_legacy_pre_baseline/` preserva migrations antigas como backup documental.
-- Shims mantidos por testes historicos: `0028`, `0034`, `0038`, `20260412173000`, `20260427090000`.
+- Shims de compatibilidade pos-squash foram removidos da pasta ativa; testes de contrato leem a baseline canonica ou fixtures canonicas de dominio.
 - A validacao funcional pos-baseline roda por `node scripts/codex/validate-supabase-baseline-functional.mjs`.
 - A validacao cobriu RLS por papel, FK composta cross-farm, agenda sanitaria -> evento sanitario e `sync-batch` com handler real.
 - Caveat do `sync-batch`: o gateway local foi servido com `functions serve --no-verify-jwt`; dentro do handler, `auth.getUser(jwt)` e RLS user-scoped ainda foram exercitados.

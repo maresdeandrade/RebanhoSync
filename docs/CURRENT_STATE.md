@@ -28,6 +28,7 @@ Consolidacoes recentes da fase SLC:
 - calendario sanitario TS->SQL alinhado; dedup sanitario canonico estruturado em TS/SQL; sequencia Raiva D1/D2/anual estabilizada.
 - taxonomia sanitaria passiva introduzida (`ProtocolKind`, `MaterializationMode`, `ComplianceKind`) sem mudanca de comportamento.
 - `src/lib/sanitario/**` reorganizado por responsabilidade e boundary `Registrar` <-> sanitario documentado.
+- Shims de migrations pos-squash removidos da pasta ativa; testes de contrato leem a baseline canonica ou fixtures canonicas.
 
 ---
 
@@ -97,7 +98,7 @@ Estado real validado em 2026-04-28:
 - `supabase/migrations/00000000000000_rebuild_base_schema_sanitario.sql` e a baseline canonica atual de desenvolvimento.
 - `supabase/seed.sql` repopula catalogos sanitarios minimos e idempotentes.
 - `supabase/migrations_legacy_pre_baseline/` preserva a cadeia antiga como backup documental.
-- Shims permanecem por dependencia de testes historicos: `0028`, `0034`, `0038`, `20260412173000`, `20260427090000`.
+- Shims de compatibilidade pos-squash foram removidos da pasta ativa de migrations; testes de contrato passaram a ler a baseline canonica ou fixtures canonicas de dominio.
 - `supabase db reset` passou em rodada dupla; seed idempotente passou.
 - RLS funcional passou para `owner`, `manager`, `cowboy` e usuario sem vinculo.
 - FK composta bloqueou cruzamento entre fazendas.
@@ -107,7 +108,6 @@ Estado real validado em 2026-04-28:
 
 Riscos remanescentes:
 - validar caminho completo do gateway JWT local sem `--no-verify-jwt`;
-- remover dependencia dos shims migrando testes historicos para a baseline canonica;
 - manter o seed sanitario como minimo tecnico, nao fonte normativa;
 - acompanhar historico de timeout intermitente em testes UI longos.
 

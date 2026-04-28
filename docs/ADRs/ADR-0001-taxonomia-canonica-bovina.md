@@ -28,15 +28,11 @@ A fonte operacional da regra fica em `src/lib/animals/taxonomy.ts`.
 
 Persistimos apenas fatos minimos em `animais.payload.taxonomy_facts`, sob contrato versionado definido em `src/lib/animals/taxonomyFactsContract.ts`.
 
-### Papel da view SQL
+### Papel SQL pos-baseline
 
-A migration `supabase/migrations/0038_animais_taxonomia_canonica.sql` cria `vw_animais_taxonomia` apenas como projecao de leitura para:
+Na baseline ativa pos-squash, a fonte operacional da taxonomia permanece em TypeScript e os testes protegem fixtures canonicas. A implementacao SQL historica foi movida para `supabase/migrations_legacy_pre_baseline/` como referencia documental e nao e dependencia da pasta ativa.
 
-- relatorios
-- inspecao SQL
-- consumidores server-side que precisem da visao taxonomica
-
-A view nao substitui a derivacao principal do cliente.
+Qualquer nova projecao SQL deve continuar subordinada a essa regra: nao substituir a derivacao principal do cliente nem criar uma segunda fonte de verdade.
 
 ### Ownership dos fatos
 

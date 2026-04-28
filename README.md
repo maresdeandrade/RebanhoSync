@@ -59,7 +59,7 @@ Regra de regressao semantica:
 - Transições do rebanho com histórico consolidado.
 - Dashboard reprodutivo dedicado e relatórios operacionais com exportação.
 - Telemetria de piloto com buffer local em `metrics_events` e flush remoto periódico.
-- Taxonomia canônica bovina: 3 eixos derivados, contrato v1 e view SQL de apoio.
+- Taxonomia canônica bovina: 3 eixos derivados em TypeScript, contrato v1 e fixtures canônicas de regressão.
 - Sistema de convites e gestão de membros.
 - Catálogo global de produtos veterinários com seed básico.
 
@@ -70,11 +70,11 @@ Regra de regressao semantica:
 - A baseline canônica atual de desenvolvimento é `supabase/migrations/00000000000000_rebuild_base_schema_sanitario.sql`.
 - `supabase/seed.sql` repopula os catálogos sanitários mínimos: protocolos oficiais, itens oficiais, doenças notificáveis e produtos veterinários.
 - `supabase/migrations_legacy_pre_baseline/` preserva as migrations antigas como backup documental.
-- Shims de compatibilidade ainda existem porque testes históricos leem esses filenames: `0028`, `0034`, `0038`, `20260412173000`, `20260427090000`.
+- Shims de compatibilidade pós-squash foram removidos da pasta ativa; testes de contrato agora leem a baseline canônica ou fixtures canônicas de domínio.
 - Validação funcional pós-baseline: `node scripts/codex/validate-supabase-baseline-functional.mjs`.
 - O handler real de `sync-batch` foi validado localmente; por limitação do gateway local da CLI, a chamada rodou com `functions serve --no-verify-jwt`, mas o handler ainda executou `auth.getUser(jwt)` e operações user-scoped com RLS.
 
-Riscos remanescentes conhecidos: validar o caminho completo do gateway JWT sem `--no-verify-jwt`, migrar testes que dependem dos shims, manter claro que o seed sanitário é mínimo/técnico e não normativo, e acompanhar timeouts intermitentes já observados em testes UI longos.
+Riscos remanescentes conhecidos: validar o caminho completo do gateway JWT sem `--no-verify-jwt`, manter claro que o seed sanitário é mínimo/técnico e não normativo, e acompanhar timeouts intermitentes já observados em testes UI longos.
 
 ---
 

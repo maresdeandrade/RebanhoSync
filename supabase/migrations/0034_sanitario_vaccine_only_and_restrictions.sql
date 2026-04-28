@@ -1,4 +1,0 @@
--- Compatibility shim for golden tests after the development baseline/squash.
--- The original migration was moved to supabase/migrations_legacy_pre_baseline/.
---
--- i.tipo = 'vacinacao'

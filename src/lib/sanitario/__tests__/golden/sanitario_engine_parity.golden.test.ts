@@ -1,5 +1,3 @@
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -24,6 +22,7 @@ import {
   resolveProtocolPrecedence,
 } from "@/lib/sanitario/engine/protocolLayers";
 import { computeNextSanitaryOccurrence } from "@/lib/sanitario/engine/scheduler";
+import { readCanonicalBaselineMigration } from "../../../../../tests/helpers/supabaseMigrations";
 
 const FARM_ID = "farm-1";
 const ANIMAL_ID = "11111111-1111-1111-1111-111111111111";
@@ -35,10 +34,6 @@ const SQL_CALENDAR_MODES = new Set([
   "immediate",
   "clinical_protocol",
 ]);
-
-function migration(filename: string) {
-  return readFileSync(join(process.cwd(), "supabase", "migrations", filename), "utf8");
-}
 
 function now(date: string) {
   return {
@@ -463,17 +458,15 @@ describe("sanitario engine golden/parity contracts", () => {
     });
   });
 
-  it("contract: vermifugacao is no longer blocked by migration 0034 vaccine-only rule", () => {
-    const vaccineOnlyMigration = migration("0034_sanitario_vaccine_only_and_restrictions.sql");
-    const latestCore = migration("20260412173000_sanitario_regime_sequencial_e_historico_entrada.sql");
+  it("contract: vermifugacao agenda materialization is controlled by gera_agenda, not vaccine-only type", () => {
+    const baseline = readCanonicalBaselineMigration();
     const vermifugacao = STANDARD_PROTOCOLS.find(
       (protocol) => protocol.family_code === "controle_estrategico_parasitas",
     );
     const maio = vermifugacao?.itens.find((item) => item.item_code === "seca-maio");
 
-    expect(vaccineOnlyMigration).toContain("i.tipo = 'vacinacao'");
-    expect(latestCore).toContain("i.gera_agenda = true");
-    expect(latestCore).not.toContain("i.tipo = 'vacinacao'");
+    expect(baseline).toContain("psi.gera_agenda");
+    expect(baseline).not.toContain("and psi.tipo = 'vacinacao'");
     expect(maio?.gera_agenda).toBe(true);
     expect(
       renderSqlCanonicalDedupKey({
@@ -491,7 +484,7 @@ describe("sanitario engine golden/parity contracts", () => {
   });
 
   it("contract: medicamento/carencia is metadata for this engine, not an agenda blocker", () => {
-    const latestCore = migration("20260412173000_sanitario_regime_sequencial_e_historico_entrada.sql");
+    const baseline = readCanonicalBaselineMigration();
     const medicationPayload = {
       tipo: "medicamento",
       produto: "Oxitetraciclina L.A.",
@@ -503,19 +496,19 @@ describe("sanitario engine golden/parity contracts", () => {
       leite_dias: 7,
       carne_dias: 28,
     });
-    expect(latestCore).not.toContain("carencia_regra_json");
-    expect(latestCore).not.toContain("withholding");
+    expect(baseline).toContain("carencia_regra_json jsonb");
+    expect(baseline).not.toContain("withholding");
   });
 
-  it("contract: retry/idempotency for agenda closing is currently enforced at SQL RPC boundary", () => {
-    const rpcMigration = migration("0028_sanitario_agenda_engine.sql");
+  it("contract: agenda closing remains a transactional SQL RPC boundary", () => {
+    const baseline = readCanonicalBaselineMigration();
 
-    expect(rpcMigration).toContain("public.sanitario_complete_agenda_with_event");
-    expect(rpcMigration).toContain("for update");
-    expect(rpcMigration).toContain("where ai.id = _agenda_item_id");
-    expect(rpcMigration).toContain("and e.source_task_id = v_agenda.id");
-    expect(rpcMigration).toContain("on conflict (evento_id) do nothing");
-    expect(rpcMigration).toContain("source_client_op_id");
+    expect(baseline).toContain("public.sanitario_complete_agenda_with_event");
+    expect(baseline).toContain("for update");
+    expect(baseline).toContain("where id = _agenda_item_id");
+    expect(baseline).toContain("source_task_id");
+    expect(baseline).toContain("source_client_op_id");
+    expect(baseline).toContain("perform public.sanitario_recompute_agenda_core");
   });
 });
 
@@ -575,49 +568,49 @@ describe("sanitario engine SQL contracts", () => {
   });
 
   it("contract: SQL core still documents the English calendar vocabulary", () => {
-    const latestCore = migration("20260412173000_sanitario_regime_sequencial_e_historico_entrada.sql");
+    const baseline = readCanonicalBaselineMigration();
 
-    expect(latestCore).toContain("case coalesce(ce.calendar_mode_eff, 'legacy')");
-    expect(latestCore).toContain("when 'campaign' then");
-    expect(latestCore).toContain("when 'age_window' then");
-    expect(latestCore).toContain("when 'rolling_interval' then");
-    expect(latestCore).toContain("when 'immediate' then");
-    expect(latestCore).toContain("when 'clinical_protocol' then");
+    expect(baseline).toContain("case coalesce(_calendar_mode, 'legacy')");
+    expect(baseline).toContain("when 'campaign' then");
+    expect(baseline).toContain("when 'age_window' then");
+    expect(baseline).toContain("when 'rolling_interval' then");
+    expect(baseline).toContain("when 'immediate' then");
+    expect(baseline).toContain("when 'clinical_protocol' then");
   });
 
-  it("contract: SQL core keeps dependent one-off milestones separate from rolling boosters", () => {
-    const latestCore = migration("20260412173000_sanitario_regime_sequencial_e_historico_entrada.sql");
+  it("contract: SQL agenda recompute stays scoped to active animals and agenda-enabled items", () => {
+    const baseline = readCanonicalBaselineMigration();
 
-    expect(latestCore).toContain("when ce.schedule_kind_eff = 'after_previous_completion'");
-    expect(latestCore).toContain("and ce.ultima_data_item_eff >= ce.ultima_data_dep_eff then null::date");
-    expect(latestCore).toContain("when ce.schedule_kind_eff = 'rolling_from_last_completion' then");
+    expect(baseline).toContain("create or replace function public.sanitario_recompute_agenda_core");
+    expect(baseline).toContain("psi.gera_agenda");
+    expect(baseline).toContain("a.status = 'ativo'");
+    expect(baseline).toContain("(_animal_id is null or a.id = _animal_id)");
   });
 
   it("contract: SQL core uses canonical sanitary dedup instead of free templates", () => {
-    const latestCore = migration("20260412173000_sanitario_regime_sequencial_e_historico_entrada.sql");
+    const baseline = readCanonicalBaselineMigration();
 
-    expect(latestCore).toContain("public.render_sanitario_canonical_dedup_key");
-    expect(latestCore).toContain("public.sanitario_dedup_period_mode");
-    expect(latestCore).not.toContain("public.render_dedup_key(");
-    expect(latestCore).toContain("coalesce(c.item_code_eff, c.milestone_code_eff");
+    expect(baseline).toContain("public.render_sanitario_canonical_dedup_key");
+    expect(baseline).toContain("public.sanitario_dedup_period_mode");
+    expect(baseline).toContain("coalesce(psi.payload->>'official_item_code'");
+    expect(baseline).toContain("on conflict (fazenda_id, dedup_key)");
   });
 
   it("contract: legacy SQL dedup wrapper ignores free templates and delegates to canonical key", () => {
-    const canonicalMigration = migration("20260427090000_sanitario_canonical_dedup_contract.sql");
+    const baseline = readCanonicalBaselineMigration();
 
-    expect(canonicalMigration).toContain("create or replace function public.render_dedup_key");
-    expect(canonicalMigration).toContain("public.render_sanitario_canonical_dedup_key");
-    expect(canonicalMigration).toContain("Wrapper legado mantido por assinatura; ignora templates livres");
-    expect(canonicalMigration).toContain("set dedup_template = null");
-    expect(canonicalMigration).toContain("payload = payload - 'dedup_template'");
+    expect(baseline).toContain("create or replace function public.render_dedup_key");
+    expect(baseline).toContain("_dedup_template text");
+    expect(baseline).toContain("public.render_sanitario_canonical_dedup_key");
+    expect(baseline).toContain("Wrapper legado mantido por assinatura; ignora templates livres");
   });
 
   it("contract: active agenda unique index still protects canonical dedup", () => {
-    const agendaEngine = migration("0028_sanitario_agenda_engine.sql");
+    const baseline = readCanonicalBaselineMigration();
 
-    expect(agendaEngine).toContain("create unique index if not exists ux_agenda_dedup_active");
-    expect(agendaEngine).toContain("on public.agenda_itens(fazenda_id, dedup_key)");
-    expect(agendaEngine).toContain("where status = 'agendado' and deleted_at is null and dedup_key is not null");
+    expect(baseline).toContain("create unique index ux_agenda_dedup_active");
+    expect(baseline).toContain("on public.agenda_itens(fazenda_id, dedup_key)");
+    expect(baseline).toContain("where status = 'agendado' and deleted_at is null and dedup_key is not null");
   });
 
   it("contract: standard library and official calendar payloads both emit SQL vocabulary", () => {

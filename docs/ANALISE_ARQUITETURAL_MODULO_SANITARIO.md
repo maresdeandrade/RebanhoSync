@@ -138,7 +138,7 @@ catalog_doenças_notificáveis;
 | --- | ------------------------------------------------------- | -------------------------------------------------------------------------------- | ---------------------------------------------------------- |
 | F1  | **Ausência de cache dedicado para pendências**          | A cada load, executa view complexa `vw_sanitario_pendencias` com joins múltiplos | `service.ts:120-142`                                       |
 | F2  | **Falta de índice composto para busca por animal+tipo** | Queries de pendências por animal são lentas                                      | `db.ts` - sem `animal_id+tipo`                             |
-| F3  | **Fragilidade no recompute de agenda**                  | Trigger `trg_sanitario_recompute_agenda_on_event` pode falhar silenciosamente    | `0028_sanitario_agenda_engine.sql`                         |
+| F3  | **Fragilidade no recompute de agenda**                  | Trigger `trg_sanitario_recompute_agenda_on_event` pode falhar silenciosamente    | baseline canônica `00000000000000_rebuild_base_schema_sanitario.sql` |
 | F4  | **Compliance sem histórico de mudanças**                | Updates em `fazenda_sanidade_config` são mutate sem auditoria                    | `compliance.ts`                                            |
 | F5  | **Sem deduplicação no registro de eventos**             | Duplicatas podem ocorrer em rede instável                                        | `service.ts` - usa `client_op_id` mas sem dedup no payload |
 

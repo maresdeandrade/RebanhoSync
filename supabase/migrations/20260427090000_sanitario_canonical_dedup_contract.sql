@@ -1,8 +1,0 @@
--- Compatibility shim for golden tests after the development baseline/squash.
--- The canonical functions are recreated in the baseline migration.
---
--- create or replace function public.render_dedup_key
--- public.render_sanitario_canonical_dedup_key
--- Wrapper legado mantido por assinatura; ignora templates livres
--- set dedup_template = null
--- payload = payload - 'dedup_template'

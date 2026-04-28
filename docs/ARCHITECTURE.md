@@ -101,7 +101,7 @@ Estado validado:
 - `supabase db reset` passou em rodada dupla.
 - `supabase/seed.sql` repopula catalogos sanitarios minimos de forma idempotente.
 - `supabase/migrations_legacy_pre_baseline/` contem as migrations antigas preservadas como backup documental.
-- Shims ainda existem por dependencia de testes historicos: `0028`, `0034`, `0038`, `20260412173000`, `20260427090000`.
+- Shims de compatibilidade pos-squash foram removidos da pasta ativa; testes de contrato leem a baseline canonica ou fixtures canonicas de dominio.
 - RLS funcional passou para `owner`, `manager`, `cowboy` e usuario sem vinculo.
 - FKs compostas impediram vinculo cross-farm.
 - Agenda sanitaria executada via `sanitario_complete_agenda_with_event` gerou `eventos` e `eventos_sanitario` com vinculo de origem preservado.
@@ -116,6 +116,5 @@ node scripts/codex/validate-supabase-baseline-functional.mjs
 Riscos remanescentes:
 
 - validar o caminho completo do gateway JWT sem `--no-verify-jwt`;
-- remover shims quando testes historicos passarem a ler a baseline canonica;
 - manter claro que o seed sanitario e minimo/tecnico, nao normativo;
 - acompanhar timeouts intermitentes em testes UI longos.

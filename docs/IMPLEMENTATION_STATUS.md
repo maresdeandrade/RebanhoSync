@@ -2,7 +2,7 @@
 
 > **Status:** Derivado (Rev D+)
 > **Baseline:** `b69d35f`
-> **Ultima Atualizacao:** 2026-04-27
+> **Ultima Atualizacao:** 2026-04-28
 > **Derivado por:** Auditoria técnica completa — código + migrations + testes como fonte de verdade
 
 Este documento registra o estado efetivo do RebanhoSync em abril de 2026, pós-fechamento de todos os TDs da lista aberta.
@@ -15,7 +15,7 @@ Este documento registra o estado efetivo do RebanhoSync em abril de 2026, pós-f
 - **Camadas consolidadas:** onboarding guiado, importação CSV, relatórios operacionais, telemetria de piloto com flush remoto, modo de experiência da fazenda, dashboard e ficha reprodutiva dedicada, pós-parto neonatal, cria inicial, transições de rebanho.
 - **Motor sanitário endurecido:** adoção de regime sequencial, dependência de milestones, logica de catch-up para entrada de rebanho (history_confidence), motor de regras de repetição declarativas, calendario TS->SQL alinhado, dedup canonico TS/SQL e golden/parity tests.
 - **Qualidade local:** `lint`, `test:unit`, `test:integration`, `test:smoke`, `quality:gate` e `build` verdes.
-- **TDs originalmente abertos (M0-M2):** fechados via migrations de março/2026.
+- **TDs originalmente abertos (M0-M2):** fechados e consolidados na baseline Supabase pos-squash.
 - **Gaps residuais:** sem gap funcional critico aberto; permanecem residuos estruturais locais e consolidacao de experiencia/confiabilidade.
 
 ---
@@ -29,13 +29,12 @@ Este documento registra o estado efetivo do RebanhoSync em abril de 2026, pós-f
 - Contexto multi-tenant por `fazenda_id`.
 - Controle de acesso por `owner`, `manager` e `cowboy`.
 - Gestão de membros e convites implementada.
-- **TD-003 CLOSED:** DELETE em `animais` restrito a owner/manager via migration `20260308230748`.
+- **TD-003 CLOSED:** DELETE em `animais` restrito a owner/manager, consolidado na baseline canonica.
 
 **Evidência principal:**
 - `src/hooks/useAuth.tsx`
 - `src/pages/SelectFazenda.tsx`, `src/pages/Membros.tsx`, `src/pages/AdminMembros.tsx`
-- `supabase/migrations/0004_rls_hardening.sql`
-- `supabase/migrations/20260308230748_rbac_delete_hardening_animais.sql`
+- `supabase/migrations/00000000000000_rebuild_base_schema_sanitario.sql`
 
 ---
 
@@ -62,23 +61,23 @@ Este documento registra o estado efetivo do RebanhoSync em abril de 2026, pós-f
 | --- | --- | --- |
 | `sanitario.registro` | Completo — catálogo `produtos_veterinarios`, biblioteca canônica de protocolos, payload/preflight/package sanitário extraídos e boundary RPC/fallback isolado | `src/pages/Registrar/**`, `src/pages/ProtocolosSanitarios/**`, `src/lib/sanitario/models/**`, `src/lib/sanitario/infrastructure/**`, `src/lib/sanitario/catalog/baseProtocols.ts` |
 | `sanitario.historico` | Completo | `src/pages/Eventos.tsx` |
-| `sanitario.agenda_link` | Completo — SQL/Supabase e motor lider de recompute; TS mantem contratos/adapters/golden tests e suporte offline | `supabase/migrations/20260411103000_sanitario_calendario_base_declarative_engine.sql`, `supabase/migrations/20260412173000_sanitario_regime_sequencial_e_historico_entrada.sql`, `supabase/migrations/20260427090000_sanitario_canonical_dedup_contract.sql`, `src/lib/sanitario/engine/**` |
+| `sanitario.agenda_link` | Completo — SQL/Supabase e motor lider de recompute; TS mantem contratos/adapters/golden tests e suporte offline | `supabase/migrations/00000000000000_rebuild_base_schema_sanitario.sql`, `src/lib/sanitario/engine/**` |
 | `pesagem.registro` | Completo | `src/pages/Registrar/index.tsx`, `src/pages/AnimalDetalhe.tsx` |
-| `pesagem.historico` | Completo — **TD-015 CLOSED** via `vw_animal_gmd` | `supabase/migrations/20260308230811_indexes_performance_gmd.sql` |
+| `pesagem.historico` | Completo — **TD-015 CLOSED** via artefatos SQL consolidados na baseline | `supabase/migrations/00000000000000_rebuild_base_schema_sanitario.sql` |
 | `nutricao.registro` | Completo | `src/pages/Registrar/index.tsx`, `src/pages/Eventos.tsx` |
 | `nutricao.historico` | Completo | `src/pages/Eventos.tsx` |
-| `movimentacao.registro` | Completo — **TD-019 CLOSED** | `supabase/migrations/20260308230735_foreign_keys_movimentacao_reproducao.sql` |
+| `movimentacao.registro` | Completo — **TD-019 CLOSED** | `supabase/migrations/00000000000000_rebuild_base_schema_sanitario.sql` |
 | `movimentacao.historico` | Completo | `src/pages/Eventos.tsx` |
 | `movimentacao.anti_teleport_client` | Completo | `src/pages/Registrar/index.tsx`, `src/lib/offline/syncWorker.ts` |
-| `reproducao.registro` | Completo — **TD-020 CLOSED** | `supabase/migrations/20260308230735_foreign_keys_movimentacao_reproducao.sql` |
+| `reproducao.registro` | Completo — **TD-020 CLOSED** | `supabase/migrations/00000000000000_rebuild_base_schema_sanitario.sql` |
 | `reproducao.historico` | Completo | `src/pages/ReproductionDashboard.tsx`, `src/pages/AnimalDetalhe.tsx` |
 | `reproducao.episode_linking` | Completo | `src/lib/reproduction/linking.ts`, `src/lib/reproduction/status.ts` |
 | `financeiro.registro` | Completo | `src/pages/Registrar/index.tsx`, `src/pages/Financeiro.tsx` |
 | `financeiro.historico` | Completo | `src/pages/Financeiro.tsx` |
-| `agenda.gerar` | Completo | `src/pages/Agenda/index.tsx`, `supabase/migrations/0028_sanitario_agenda_engine.sql` |
+| `agenda.gerar` | Completo | `src/pages/Agenda/index.tsx`, `supabase/migrations/00000000000000_rebuild_base_schema_sanitario.sql` |
 | `agenda.concluir` | Completo | `src/pages/Agenda/index.tsx`, `src/lib/sanitario/infrastructure/service.ts` |
-| `agenda.dedup` | Completo — contrato canonico estruturado TS/SQL | `src/lib/sanitario/engine/dedup.ts`, `supabase/migrations/20260427090000_sanitario_canonical_dedup_contract.sql` |
-| `agenda.recalculo` | Completo — recompute limpa e reconstrui pendencias automaticas do escopo antes de reaplicar o motor | `supabase/migrations/20260411103000_sanitario_calendario_base_declarative_engine.sql` |
+| `agenda.dedup` | Completo — contrato canonico estruturado TS/SQL | `src/lib/sanitario/engine/dedup.ts`, `supabase/migrations/00000000000000_rebuild_base_schema_sanitario.sql` |
+| `agenda.recalculo` | Completo — recompute limpa e reconstrui pendencias automaticas do escopo antes de reaplicar o motor | `supabase/migrations/00000000000000_rebuild_base_schema_sanitario.sql` |
 
 **Capability Score:** 19/19 = **100%** ✅
 
@@ -103,7 +102,7 @@ Este documento registra o estado efetivo do RebanhoSync em abril de 2026, pós-f
 - Overlay regulatorio operacional guiado: `src/components/sanitario/RegulatoryOverlayManager.tsx`, `src/lib/sanitario/compliance/compliance.ts`
 - Catálogo veterinário com cache local e vínculo estruturado no payload sanitário: `src/lib/sanitario/catalog/products.ts`
 - Modo de experiência por fazenda: `src/lib/farms/experienceMode.ts`
-- Taxonomia canônica bovina: `src/lib/animals/taxonomy.ts` + contrato v1 + view SQL
+- Taxonomia canônica bovina: `src/lib/animals/taxonomy.ts` + contrato v1 + fixtures canônicas
 
 ---
 
@@ -127,15 +126,15 @@ Este documento registra o estado efetivo do RebanhoSync em abril de 2026, pós-f
 | TD | capability_id | Tipo | Status | Fechado por |
 | --- | --- | --- | --- | --- |
 | TD-001 | `infra.queue_cleanup` | DLQ auto-purge | ✅ CLOSED | `src/lib/offline/rejections.ts` + syncWorker |
-| TD-003 | `infra.rbac_hardening` | DELETE animais restrito a owner/manager | ✅ CLOSED | `20260308230748_rbac_delete_hardening_animais.sql` |
-| TD-004 | `infra.indexes` | Índices compostos de performance | ✅ CLOSED | `20260308230811_indexes_performance_gmd.sql` |
+| TD-003 | `infra.rbac_hardening` | DELETE animais restrito a owner/manager | ✅ CLOSED | baseline Supabase canonica |
+| TD-004 | `infra.indexes` | Índices compostos de performance | ✅ CLOSED | baseline Supabase canonica |
 | TD-006 | `nutricao.registro` | UI de nutrição | ✅ CLOSED | `src/pages/Registrar/index.tsx` |
 | TD-008 | `movimentacao.anti_teleport_client` | Anti-teleporte no frontend | ✅ CLOSED | `src/pages/Registrar/index.tsx` |
-| TD-011 | `sanitario.registro` | Catálogo de produtos veterinários | ✅ CLOSED | `20260308230824_produtos_veterinarios_ui.sql` |
+| TD-011 | `sanitario.registro` | Catálogo de produtos veterinários | ✅ CLOSED | baseline Supabase canonica |
 | TD-014 | `pesagem.registro` | Validação peso > 0 no frontend | ✅ CLOSED | `src/pages/Registrar/index.tsx` |
-| TD-015 | `pesagem.historico` | GMD via view otimizada | ✅ CLOSED | `20260308230811_indexes_performance_gmd.sql:vw_animal_gmd` |
-| TD-019 | `movimentacao.registro` | FKs from/to_lote_id | ✅ CLOSED | `20260308230735_foreign_keys_movimentacao_reproducao.sql` |
-| TD-020 | `reproducao.registro` | FK macho_id | ✅ CLOSED | `20260308230735_foreign_keys_movimentacao_reproducao.sql` |
+| TD-015 | `pesagem.historico` | GMD via artefato SQL consolidado | ✅ CLOSED | baseline Supabase canonica |
+| TD-019 | `movimentacao.registro` | FKs from/to_lote_id | ✅ CLOSED | baseline Supabase canonica |
+| TD-020 | `reproducao.registro` | FK macho_id | ✅ CLOSED | baseline Supabase canonica |
 
 **Total OPEN da lista original (M0-M2):** 0 ✅
 **Total OPEN residual atual em `TECH_DEBT.md`:** 5 (`TD-025`, `TD-026`, `TD-027`, `TD-029`, `TD-031`)
@@ -262,7 +261,7 @@ Este documento registra o estado efetivo do RebanhoSync em abril de 2026, pós-f
 - ProtocolosSanitarios now includes a farm-level editor for custom protocols and steps, with `experience_mode` gating, explicit `calendario_base` editing and structured product metadata updates.
 - The standard sanitary protocol library is now canonicalized in `src/lib/sanitario/catalog/baseProtocols.ts`, removing protocol base definitions from the UI layer.
 - Standard protocols and farm protocol items now carry structured `calendario_base` metadata, and `Registrar` / `FarmProtocolManager` describe schedule semantics from that payload instead of raw `intervalo_dias` alone.
-- `supabase/migrations/20260411103000_sanitario_calendario_base_declarative_engine.sql` now makes `payload.calendario_base` the effective source of truth for sanitary agenda generation, supporting campaign months, age windows, rolling intervals and operational anchors such as birth, weaning and dry-off.
+- A baseline Supabase canonica now carries `payload.calendario_base` as the effective source of truth for sanitary agenda generation, supporting campaign months, age windows, rolling intervals and operational anchors such as birth, weaning and dry-off.
 - The sanitary recompute wrappers now rebuild automatic pending tasks inside the recalculated scope before reapplying the declarative engine, preventing stale sanitary agenda rows from surviving protocol, risk or animal-payload changes.
 - `src/pages/Agenda/index.tsx`, `src/lib/reports/operationalSummary.ts` and `src/pages/Relatorios.tsx` now reuse the same calendar-base semantics in read-only surfaces, projecting the declarative schedule label instead of collapsing sanitary periodicity to raw day intervals.
 - `src/pages/Agenda/index.tsx` now also turns the declarative `calendario_base` mode into a persisted quick filter and row-level operational badge, while `src/lib/reports/operationalSummary.ts` / `src/pages/Relatorios.tsx` project mode and anchor into summary/export surfaces.
@@ -318,7 +317,7 @@ Este documento registra o estado efetivo do RebanhoSync em abril de 2026, pós-f
 
 ## 9. Update 2026-04-12 (Sanitary Regimen & Compliance Engine)
 
-- Implementado motor de **regime sequencial e histórico de entrada** no escopo sanitário via `20260412173000_sanitario_regime_sequencial_e_historico_entrada.sql`.
+- Motor de **regime sequencial e histórico de entrada** do escopo sanitário consolidado na baseline canônica `00000000000000_rebuild_base_schema_sanitario.sql`.
 - Deduplicação semântica refinada por **família protocolar** (`family_code`), `milestone_code` e `sequence_order`.
 - A engine sanitária (`sanitario_recompute_agenda_core`) agora processa declarativamente regras de agendamento por encadeamento (`after_previous_completion`, `rolling_from_last_completion`), mitigando drift cronológico de múltiplas doses.
 - Introdução de **`history_confidence`** no processamento de animais para identificar rebanho recém-adquirido ou sem histórico rastreado (`known`, `partial`, `unknown`).

@@ -33,7 +33,7 @@ TypeScript gera esse contrato por `buildSanitaryDedupKey`. SQL deve gerar a mesm
 ## Evidencias e referencias
 
 - `src/lib/sanitario/engine/dedup.ts`
-- `supabase/migrations/20260427090000_sanitario_canonical_dedup_contract.sql`
+- `supabase/migrations/00000000000000_rebuild_base_schema_sanitario.sql`
 - `src/lib/sanitario/__tests__/dedup.test.ts`
 - `src/lib/sanitario/__tests__/golden/sanitario_engine_parity.golden.test.ts`
 
