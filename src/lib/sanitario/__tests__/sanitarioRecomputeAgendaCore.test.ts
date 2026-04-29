@@ -25,9 +25,11 @@ function extractCompleteAgendaWithEvent() {
 }
 
 type AnimalStatus = "ativo" | "vendido" | "morto";
+type AnimalSpecies = "bovino" | "bubalino" | "equino" | null;
 
 interface AnimalFixture {
   id: string;
+  especie: AnimalSpecies;
   sexo: "F" | "M";
   status: AnimalStatus;
   dataNascimento: string | null;
@@ -81,6 +83,7 @@ interface TechnicalCandidateInput {
   hasConfig?: boolean;
   pressure?: RabiesRisk;
   riskValues?: RabiesRisk[] | null;
+  speciesTargets?: string | string[] | null;
   existingDedups?: Set<string>;
 }
 
@@ -152,6 +155,59 @@ function technicalDedup(animalId: string, familyCode: string, itemCode: string, 
   ].join(":");
 }
 
+function tokenizeSpeciesTargets(targets: string | string[] | null | undefined) {
+  if (targets === null || targets === undefined) return null;
+  const values = Array.isArray(targets) ? targets : [targets];
+  return values.flatMap((value) =>
+    value
+      .toLowerCase()
+      .split(/[^a-z_]+/)
+      .map((token) => token.trim())
+      .filter(Boolean),
+  );
+}
+
+function speciesTargetMatches(
+  animalSpecies: AnimalSpecies,
+  targets: string | string[] | null | undefined,
+) {
+  if (animalSpecies === null) return true;
+  const tokens = tokenizeSpeciesTargets(targets);
+  if (!tokens || tokens.length === 0) return false;
+
+  return tokens.some((token) => {
+    if (["herbivoro", "herbivoros", "ruminante", "ruminantes"].includes(token)) {
+      return animalSpecies === "bovino" || animalSpecies === "bubalino";
+    }
+    if (["bovino", "bovinos", "bovina", "bovinas"].includes(token)) {
+      return animalSpecies === "bovino";
+    }
+    if (["bubalino", "bubalinos", "bufalino", "bufalinos"].includes(token)) {
+      return animalSpecies === "bubalino";
+    }
+    return false;
+  });
+}
+
+function speciesEligibleForFamily(
+  animalSpecies: AnimalSpecies,
+  familyCode: "brucelose" | "raiva_herbivoros" | TechnicalFamily,
+  speciesTargets?: string | string[] | null,
+) {
+  if (animalSpecies === null) return true;
+
+  if (familyCode === "brucelose" || familyCode === "raiva_herbivoros") {
+    return animalSpecies === "bovino" || animalSpecies === "bubalino";
+  }
+
+  const hasExplicitTarget = speciesTargets !== null && speciesTargets !== undefined;
+  if (!hasExplicitTarget) {
+    return animalSpecies === "bovino" || animalSpecies === "bubalino";
+  }
+
+  return speciesTargetMatches(animalSpecies, speciesTargets);
+}
+
 function evaluateBrucellosisCandidate(input: BrucellosisCandidateInput) {
   const protocolActive = input.protocolActive ?? true;
   const protocolDeleted = input.protocolDeleted ?? false;
@@ -161,6 +217,7 @@ function evaluateBrucellosisCandidate(input: BrucellosisCandidateInput) {
 
   if (!protocolActive || protocolDeleted || itemDeleted || !geraAgenda) return null;
   if (animal.deleted || animal.status !== "ativo") return null;
+  if (!speciesEligibleForFamily(animal.especie, "brucelose")) return null;
   if (animal.sexo !== "F") return null;
   if (!animal.dataNascimento) return null;
 
@@ -213,6 +270,7 @@ function evaluateRabiesCandidate(input: RabiesCandidateInput) {
   if (!hasOperationalItem) return null;
   if (!protocolActive || protocolDeleted || itemDeleted || !geraAgenda) return null;
   if (animal.deleted || animal.status !== "ativo") return null;
+  if (!speciesEligibleForFamily(animal.especie, "raiva_herbivoros")) return null;
   if (!hasConfig) return null;
   if (!explicitActivation) return null;
   if (!riskValues?.includes(farmRisk)) return null;
@@ -239,6 +297,7 @@ function evaluateTechnicalCandidate(input: TechnicalCandidateInput) {
 
   if (!protocolActive || protocolDeleted || itemDeleted || !geraAgenda) return null;
   if (animal.deleted || animal.status !== "ativo") return null;
+  if (!speciesEligibleForFamily(animal.especie, input.familyCode, input.speciesTargets)) return null;
   if (!explicitActivation) return null;
   if (
     (input.familyCode === "controle_parasitario" ||
@@ -267,6 +326,7 @@ function evaluateTechnicalCandidate(input: TechnicalCandidateInput) {
 function activeFemale(overrides: Partial<AnimalFixture> = {}): AnimalFixture {
   return {
     id: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+    especie: "bovino",
     sexo: "F",
     status: "ativo",
     dataNascimento: "2026-04-01",
@@ -345,6 +405,20 @@ describe("P6.2.1 sanitario_recompute_agenda_core brucellosis contract", () => {
     expect(core).toContain("public.sanitario_dedup_period_mode(calendar_mode)");
   });
 
+  it("keeps SQL transitional species gates inside agenda recompute", () => {
+    const core = extractRecomputeCore();
+
+    expect(core).toContain("a.especie as animal_especie");
+    expect(core).toContain("psi.payload->'species'");
+    expect(core).toContain("psi.payload->'especies_alvo'");
+    expect(core).toContain("psi.payload #> '{gatilho_json,species}'");
+    expect(core).toContain("raw.species_targets_json is not null as has_explicit_species_target");
+    expect(core).toContain("when a.especie is null then true");
+    expect(core).toContain("animal_especie is null");
+    expect(core).toContain("and animal_especie in ('bovino', 'bubalino')");
+    expect(core).toContain("has_explicit_species_target and species_target_matches");
+  });
+
   it("keeps SQL gates that prevent universal rabies agenda", () => {
     const core = extractRecomputeCore();
 
@@ -399,6 +473,28 @@ describe("P6.2.1 sanitario_recompute_agenda_core brucellosis contract", () => {
       dedupKey:
         "sanitario:animal:aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa:brucelose:brucelose-b19-dose-unica:v1:window:2026-06-30",
     });
+  });
+
+  it.each([
+    ["bovino", "bovino"],
+    ["bubalino", "bubalino"],
+    ["null species", null],
+  ] as const)("creates brucellosis agenda for %s in the transitional species gate", (_label, especie) => {
+    expect(
+      evaluateBrucellosisCandidate({
+        animal: activeFemale({ especie }),
+        asOf: "2026-07-10",
+      }),
+    ).not.toBeNull();
+  });
+
+  it("blocks brucellosis agenda for future known incompatible species", () => {
+    expect(
+      evaluateBrucellosisCandidate({
+        animal: activeFemale({ especie: "equino" }),
+        asOf: "2026-07-10",
+      }),
+    ).toBeNull();
   });
 
   it("keeps recompute idempotent with an existing active dedup", () => {
@@ -688,6 +784,30 @@ describe("P6.2.1 sanitario_recompute_agenda_core brucellosis contract", () => {
     });
   });
 
+  it.each([
+    ["bovino", "bovino"],
+    ["bubalino", "bubalino"],
+    ["null species", null],
+  ] as const)("creates rabies agenda for %s with all existing gates", (_label, especie) => {
+    expect(
+      evaluateRabiesCandidate({
+        animal: activeFemale({ especie }),
+        asOf: "2026-07-10",
+        farmRisk: "alto",
+      }),
+    ).not.toBeNull();
+  });
+
+  it("blocks rabies agenda for future known incompatible species", () => {
+    expect(
+      evaluateRabiesCandidate({
+        animal: activeFemale({ especie: "equino" }),
+        asOf: "2026-07-10",
+        farmRisk: "alto",
+      }),
+    ).toBeNull();
+  });
+
   it("keeps rabies recompute idempotent with an existing active dedup", () => {
     const first = evaluateRabiesCandidate({
       animal: activeFemale(),
@@ -737,6 +857,52 @@ describe("P6.2.1 sanitario_recompute_agenda_core brucellosis contract", () => {
     });
 
     expect(result?.dedupKey).toContain(`:${familyCode}:`);
+  });
+
+  it("blocks technical agenda when explicit species target is incompatible", () => {
+    expect(
+      evaluateTechnicalCandidate({
+        animal: activeFemale({ especie: "bubalino" }),
+        asOf: "2026-07-10",
+        familyCode: "clostridioses",
+        speciesTargets: "bovinos",
+      }),
+    ).toBeNull();
+  });
+
+  it("allows technical agenda for null species even with explicit species target", () => {
+    expect(
+      evaluateTechnicalCandidate({
+        animal: activeFemale({ especie: null }),
+        asOf: "2026-07-10",
+        familyCode: "clostridioses",
+        speciesTargets: ["bovino"],
+      }),
+    ).not.toBeNull();
+  });
+
+  it.each([
+    ["bovino", "bovino"],
+    ["bubalino", "bubalino"],
+    ["null species", null],
+  ] as const)("allows technical agenda without explicit species target for %s", (_label, especie) => {
+    expect(
+      evaluateTechnicalCandidate({
+        animal: activeFemale({ especie }),
+        asOf: "2026-07-10",
+        familyCode: "clostridioses",
+      }),
+    ).not.toBeNull();
+  });
+
+  it("blocks technical agenda without explicit target for future known incompatible species", () => {
+    expect(
+      evaluateTechnicalCandidate({
+        animal: activeFemale({ especie: "equino" }),
+        asOf: "2026-07-10",
+        familyCode: "clostridioses",
+      }),
+    ).toBeNull();
   });
 
   it("keeps technical recompute idempotent with an existing active dedup", () => {

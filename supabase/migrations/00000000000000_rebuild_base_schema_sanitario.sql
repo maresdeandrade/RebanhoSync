@@ -784,6 +784,7 @@ begin
     select
       a.fazenda_id,
       a.id as animal_id,
+      a.especie as animal_especie,
       a.sexo,
       a.data_nascimento,
       ps.id as protocolo_id,
@@ -803,6 +804,8 @@ begin
       rule.age_min_days,
       rule.age_max_days,
       rule.has_explicit_agenda_activation,
+      rule.has_explicit_species_target,
+      rule.species_target_matches,
       rule.rabies_risk_allowed,
       rule.helminth_risk_allowed,
       rule.tick_risk_allowed
@@ -862,7 +865,12 @@ begin
         coalesce(
           psi.payload #> '{agenda_activation,risk_values}',
           psi.payload #> '{gatilho_json,risk_values}'
-        ) as risk_values_json
+        ) as risk_values_json,
+        coalesce(
+          psi.payload->'species',
+          psi.payload->'especies_alvo',
+          psi.payload #> '{gatilho_json,species}'
+        ) as species_targets_json
     ) raw
     cross join lateral (
       select
@@ -879,6 +887,39 @@ begin
           else null
         end as age_max_days,
         coalesce(raw.explicit_activation_raw, '') in ('true', '1', 'sim', 'yes') as has_explicit_agenda_activation,
+        raw.species_targets_json is not null as has_explicit_species_target,
+        case
+          when a.especie is null then true
+          when raw.species_targets_json is null then false
+          when jsonb_typeof(raw.species_targets_json) = 'array' then exists (
+            select 1
+            from jsonb_array_elements_text(raw.species_targets_json) as st(raw_value)
+            cross join regexp_split_to_table(lower(st.raw_value), '[^a-z_]+') as token(value)
+            where (
+              a.especie = 'bovino'
+              and token.value in ('bovino', 'bovinos', 'bovina', 'bovinas')
+            )
+            or (
+              a.especie = 'bubalino'
+              and token.value in ('bubalino', 'bubalinos', 'bufalino', 'bufalinos')
+            )
+            or token.value in ('herbivoro', 'herbivoros', 'ruminante', 'ruminantes')
+          )
+          when jsonb_typeof(raw.species_targets_json) = 'string' then exists (
+            select 1
+            from regexp_split_to_table(lower(raw.species_targets_json #>> '{}'), '[^a-z_]+') as token(value)
+            where (
+              a.especie = 'bovino'
+              and token.value in ('bovino', 'bovinos', 'bovina', 'bovinas')
+            )
+            or (
+              a.especie = 'bubalino'
+              and token.value in ('bubalino', 'bubalinos', 'bufalino', 'bufalinos')
+            )
+            or token.value in ('herbivoro', 'herbivoros', 'ruminante', 'ruminantes')
+          )
+          else false
+        end as species_target_matches,
         case
           when jsonb_typeof(raw.risk_values_json) = 'array' then exists (
             select 1
@@ -932,6 +973,33 @@ begin
           data_nascimento is not null
           and (age_min_days is null or (_as_of - data_nascimento) >= age_min_days)
           and (age_max_days is null or (_as_of - data_nascimento) <= age_max_days)
+        )
+      )
+      and (
+        animal_especie is null
+        or coalesce(family_code, '') not in (
+          'brucelose',
+          'raiva_herbivoros',
+          'clostridioses',
+          'leptospirose_ibr_bvd',
+          'controle_parasitario',
+          'controle_carrapato'
+        )
+        or (
+          coalesce(family_code, '') in ('brucelose', 'raiva_herbivoros')
+          and animal_especie in ('bovino', 'bubalino')
+        )
+        or (
+          coalesce(family_code, '') in (
+            'clostridioses',
+            'leptospirose_ibr_bvd',
+            'controle_parasitario',
+            'controle_carrapato'
+          )
+          and (
+            (not has_explicit_species_target and animal_especie in ('bovino', 'bubalino'))
+            or (has_explicit_species_target and species_target_matches)
+          )
         )
       )
       and (

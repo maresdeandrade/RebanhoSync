@@ -434,10 +434,14 @@ describe("sanitario engine golden/parity contracts", () => {
     });
   });
 
-  it("contract: GTA/checklist remains compliance-only and does not enter agenda", () => {
+  it.each([
+    ["PNEFA/aftosa", "febre_aftosa_vigilancia", "sindrome_vesicular_alerta"],
+    ["IN50/notificaveis", "doencas_notificaveis", "doencas_notificaveis_alerta"],
+    ["GTA/checklist", "transito_documental", "gta_checklist"],
+  ])("contract: %s remains compliance-only and does not enter agenda", (_label, familyCode, itemCode) => {
     const item = buildItem({
-      familyCode: "transito_documental",
-      itemCode: "gta_checklist",
+      familyCode,
+      itemCode,
       mode: "campanha",
       anchor: "nascimento",
       campaignMonths: [6],
@@ -586,10 +590,26 @@ describe("sanitario engine SQL contracts", () => {
 
     expect(baseline).toContain("create or replace function public.sanitario_recompute_agenda_core");
     expect(baseline).toContain("psi.gera_agenda");
+    expect(baseline).toContain("a.especie as animal_especie");
     expect(baseline).toContain("a.status = 'ativo'");
     expect(baseline).toContain("(_animal_id is null or a.id = _animal_id)");
     expect(baseline).toContain("data_nascimento is not null");
     expect(baseline).toContain("or sexo = 'F'::public.sexo_enum");
+  });
+
+  it("contract: SQL agenda recompute applies the transitional species gate", () => {
+    const baseline = readCanonicalBaselineMigration();
+
+    expect(baseline).toContain("psi.payload->'species'");
+    expect(baseline).toContain("psi.payload->'especies_alvo'");
+    expect(baseline).toContain("psi.payload #> '{gatilho_json,species}'");
+    expect(baseline).toContain("raw.species_targets_json is not null as has_explicit_species_target");
+    expect(baseline).toContain("when a.especie is null then true");
+    expect(baseline).toContain("animal_especie is null");
+    expect(baseline).toContain("'brucelose'");
+    expect(baseline).toContain("'raiva_herbivoros'");
+    expect(baseline).toContain("and animal_especie in ('bovino', 'bubalino')");
+    expect(baseline).toContain("has_explicit_species_target and species_target_matches");
   });
 
   it("contract: SQL agenda recompute gates rabies by farm risk config and explicit activation", () => {
