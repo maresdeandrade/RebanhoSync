@@ -1,7 +1,7 @@
 # Current State (Snapshot Operacional)
 
 > **Status:** Snapshot vivo
-> **Ultima atualizacao:** 2026-04-28
+> **Ultima atualizacao:** 2026-04-29
 > **Estado do produto:** Beta interno
 > **Fase atual:** MVP funcional completo -> **SLC (Simple, Lovable, Complete) em consolidacao**
 
@@ -24,8 +24,8 @@ Consolidacoes recentes da fase SLC:
 - remocao de termos ambiguos legados da UI operacional;
 - reforco do modelo Two Rails: Agenda (`agenda_itens`) != Eventos (`eventos`);
 - `Aplicar protocolo` atua apenas na agenda (materializacao/recalculo), sem gerar evento.
-- saneamento sanitario P0-P3 concluido: SQL/Supabase permanece motor lider de materializacao/recompute; TypeScript preserva contratos, adapters, golden tests e suporte offline.
-- calendario sanitario TS->SQL alinhado; dedup sanitario canonico estruturado em TS/SQL; sequencia Raiva D1/D2/anual estabilizada.
+- saneamento sanitario P0-P6.2.4 concluido no recorte atual: SQL/Supabase permanece motor lider de materializacao/recompute; TypeScript preserva contratos, adapters, golden tests e suporte offline.
+- calendario sanitario TS->SQL alinhado; dedup sanitario canonico estruturado em TS/SQL; agenda sanitaria canonica agora bloqueia geracao indevida por catalogo global e exige gates explicitos por janela, risco, configuracao ou ativacao operacional.
 - taxonomia sanitaria passiva introduzida (`ProtocolKind`, `MaterializationMode`, `ComplianceKind`) sem mudanca de comportamento.
 - `src/lib/sanitario/**` reorganizado por responsabilidade e boundary `Registrar` <-> sanitario documentado.
 - Shims de migrations pos-squash removidos da pasta ativa; testes de contrato leem a baseline canonica ou fixtures canonicas.
@@ -81,6 +81,14 @@ Contratos sanitarios centrais:
 - adapters `toSqlCalendarMode` / `fromSqlOrLegacyCalendarMode` e equivalentes de anchor
 - taxonomia passiva em `models/taxonomy.ts`
 
+Contrato atual de agenda sanitaria pos-P6.2.4:
+- P6.1 consolidou o catalogo sanitario conservador: o seed e tecnico/idempotente, separa catalogo oficial, tecnicos recomendados, notificaveis e produtos, mas nao e fonte normativa completa.
+- P6.2.1 materializa brucelose PNCEBT apenas para femeas ativas, com nascimento conhecido, janela etaria 90-240 dias, `gera_agenda=true`, dedup canonico por janela e bloqueio de backfill expirado.
+- P6.2.2a/P6.2.2b impedem reabertura de brucelose concluida: primeiro por agenda concluida com evento sanitario valido e depois por `payload.sanitary_completion` espelhado em `eventos` e persistido canonicamente em `eventos_sanitario`.
+- P6.2.3 permite raiva dos herbivoros somente por protocolo operacional ativo, item `gera_agenda=true`, `family_code='raiva_herbivoros'`, `fazenda_sanidade_config.zona_raiva_risco` medio/alto e ativacao explicita no payload; nao ha vacinacao universal.
+- P6.2.4 permite agenda tecnica recomendada somente por protocolo operacional da fazenda, item `gera_agenda=true` e ativacao explicita no payload; `controle_parasitario` exige `pressao_helmintos` medio/alto e `controle_carrapato` exige `pressao_carrapato` medio/alto.
+- PNEFA/aftosa, IN50/doencas notificaveis, GTA, suspeitas, checklists e biosseguranca continuam fora da agenda automatica.
+
 ---
 
 ## 2.1 Invariantes operacionais consolidados
@@ -93,7 +101,7 @@ Contratos sanitarios centrais:
 
 ## 2.2 Baseline Supabase validada
 
-Estado real validado em 2026-04-28:
+Estado real validado em 2026-04-29:
 
 - `supabase/migrations/00000000000000_rebuild_base_schema_sanitario.sql` e a baseline canonica atual de desenvolvimento.
 - `supabase/seed.sql` repopula catalogos sanitarios canonicos conservadores e idempotentes: somente brucelose PNCEBT entra como agenda automatica; raiva, PNEFA/aftosa, notificaveis, GTA, biosseguranca e tecnicos recomendados nao geram agenda por seed.
@@ -105,6 +113,12 @@ Estado real validado em 2026-04-28:
 - Fluxo minimo agenda sanitaria -> `eventos` -> `eventos_sanitario` passou via RPC.
 - `sync-batch` foi validado com handler real; o gateway local rodou com `functions serve --no-verify-jwt`, mas `auth.getUser(jwt)` e RLS foram exercitados dentro do handler.
 - Validador funcional: `node scripts/codex/validate-supabase-baseline-functional.mjs`.
+
+Limites explicitamente mantidos:
+- nao ha implementacao nova de sequencia D1/D2/anual de raiva neste recorte P6.2;
+- nao ha especie canonica persistida em `animais`;
+- nao ha indice JSONB para `payload.sanitary_completion`;
+- o seed sanitario permanece conservador e nao e catalogo normativo completo.
 
 Riscos remanescentes:
 - validar caminho completo do gateway JWT local sem `--no-verify-jwt`;

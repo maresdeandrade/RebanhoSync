@@ -791,12 +791,23 @@ begin
       psi.version,
       psi.intervalo_dias,
       psi.payload,
+      fsc.zona_raiva_risco,
+      fsc.pressao_helmintos,
+      fsc.pressao_carrapato,
+      rule.family_code,
       rule.calendar_mode,
       rule.is_age_window,
       rule.sex_target,
       rule.age_min_days,
-      rule.age_max_days
+      rule.age_max_days,
+      rule.has_explicit_agenda_activation,
+      rule.rabies_risk_allowed,
+      rule.helminth_risk_allowed,
+      rule.tick_risk_allowed
     from public.animais a
+    left join public.fazenda_sanidade_config fsc
+      on fsc.fazenda_id = a.fazenda_id
+     and fsc.deleted_at is null
     join public.protocolos_sanitarios ps
       on ps.fazenda_id = a.fazenda_id
      and ps.ativo
@@ -808,6 +819,10 @@ begin
      and psi.deleted_at is null
     cross join lateral (
       select
+        nullif(coalesce(
+          psi.payload->>'family_code',
+          psi.payload #>> '{regime_sanitario,family_code}'
+        ), '') as family_code,
         lower(nullif(coalesce(
           psi.payload #>> '{calendario_base,mode}',
           psi.payload->>'calendario_mode',
@@ -833,10 +848,23 @@ begin
           psi.payload #>> '{calendario_base,age_end_days}',
           psi.payload->>'age_end_days',
           psi.payload->>'ageEndDays'
-        ), '') as age_max_days_raw
+        ), '') as age_max_days_raw,
+        lower(nullif(coalesce(
+          psi.payload #>> '{agenda_activation,explicit}',
+          psi.payload #>> '{agenda_activation,requires_explicit_activation}',
+          psi.payload #>> '{gatilho_json,requires_explicit_activation}',
+          psi.payload->>'requires_explicit_activation',
+          psi.payload->>'explicit_activation',
+          psi.payload->>'ativacao_operacional_explicita'
+        ), '')) as explicit_activation_raw,
+        coalesce(
+          psi.payload #> '{agenda_activation,risk_values}',
+          psi.payload #> '{gatilho_json,risk_values}'
+        ) as risk_values_json
     ) raw
     cross join lateral (
       select
+        raw.family_code,
         raw.calendar_mode,
         coalesce(raw.calendar_mode, '') in ('age_window', 'janela_etaria') as is_age_window,
         raw.sex_target,
@@ -847,7 +875,32 @@ begin
         case
           when raw.age_max_days_raw ~ '^[0-9]+$' then raw.age_max_days_raw::integer
           else null
-        end as age_max_days
+        end as age_max_days,
+        coalesce(raw.explicit_activation_raw, '') in ('true', '1', 'sim', 'yes') as has_explicit_agenda_activation,
+        case
+          when jsonb_typeof(raw.risk_values_json) = 'array' then exists (
+            select 1
+            from jsonb_array_elements_text(raw.risk_values_json) as rv(value)
+            where rv.value = fsc.zona_raiva_risco
+          )
+          else false
+        end as rabies_risk_allowed,
+        case
+          when jsonb_typeof(raw.risk_values_json) = 'array' then exists (
+            select 1
+            from jsonb_array_elements_text(raw.risk_values_json) as rv(value)
+            where rv.value = fsc.pressao_helmintos
+          )
+          else false
+        end as helminth_risk_allowed,
+        case
+          when jsonb_typeof(raw.risk_values_json) = 'array' then exists (
+            select 1
+            from jsonb_array_elements_text(raw.risk_values_json) as rv(value)
+            where rv.value = fsc.pressao_carrapato
+          )
+          else false
+        end as tick_risk_allowed
     ) rule
     where a.fazenda_id = _fazenda_id
       and a.deleted_at is null
@@ -879,6 +932,37 @@ begin
           and (age_max_days is null or (_as_of - data_nascimento) <= age_max_days)
         )
       )
+      and (
+        coalesce(family_code, '') <> 'raiva_herbivoros'
+        or (
+          zona_raiva_risco is not null
+          and has_explicit_agenda_activation
+          and rabies_risk_allowed
+        )
+      )
+      and (
+        coalesce(family_code, '') not in (
+          'clostridioses',
+          'leptospirose_ibr_bvd',
+          'controle_parasitario',
+          'controle_carrapato'
+        )
+        or has_explicit_agenda_activation
+      )
+      and (
+        coalesce(family_code, '') <> 'controle_parasitario'
+        or (
+          pressao_helmintos is not null
+          and helminth_risk_allowed
+        )
+      )
+      and (
+        coalesce(family_code, '') <> 'controle_carrapato'
+        or (
+          pressao_carrapato is not null
+          and tick_risk_allowed
+        )
+      )
   ),
   planned as (
     select
@@ -886,7 +970,7 @@ begin
       public.render_sanitario_canonical_dedup_key(
         'animal',
         animal_id,
-        coalesce(payload->>'family_code', protocolo_id::text),
+        coalesce(family_code, protocolo_id::text),
         coalesce(payload->>'official_item_code', protocol_item_version_ref::text),
         version,
         public.sanitario_dedup_period_mode(calendar_mode),

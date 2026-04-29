@@ -592,6 +592,41 @@ describe("sanitario engine SQL contracts", () => {
     expect(baseline).toContain("or sexo = 'F'::public.sexo_enum");
   });
 
+  it("contract: SQL agenda recompute gates rabies by farm risk config and explicit activation", () => {
+    const baseline = readCanonicalBaselineMigration();
+
+    expect(baseline).toContain("left join public.fazenda_sanidade_config fsc");
+    expect(baseline).toContain("fsc.deleted_at is null");
+    expect(baseline).toContain("psi.payload->>'family_code'");
+    expect(baseline).toContain("psi.payload #>> '{regime_sanitario,family_code}'");
+    expect(baseline).toContain("psi.payload #>> '{agenda_activation,explicit}'");
+    expect(baseline).toContain("psi.payload #>> '{gatilho_json,requires_explicit_activation}'");
+    expect(baseline).toContain("psi.payload #> '{agenda_activation,risk_values}'");
+    expect(baseline).toContain("psi.payload #> '{gatilho_json,risk_values}'");
+    expect(baseline).toContain("jsonb_array_elements_text(raw.risk_values_json)");
+    expect(baseline).toContain("rv.value = fsc.zona_raiva_risco");
+    expect(baseline).toContain("coalesce(family_code, '') <> 'raiva_herbivoros'");
+    expect(baseline).toContain("zona_raiva_risco is not null");
+    expect(baseline).toContain("has_explicit_agenda_activation");
+    expect(baseline).toContain("rabies_risk_allowed");
+  });
+
+  it("contract: SQL agenda recompute gates recommended technical protocols by explicit activation", () => {
+    const baseline = readCanonicalBaselineMigration();
+
+    expect(baseline).toContain("fsc.pressao_helmintos");
+    expect(baseline).toContain("fsc.pressao_carrapato");
+    expect(baseline).toContain("'clostridioses'");
+    expect(baseline).toContain("'leptospirose_ibr_bvd'");
+    expect(baseline).toContain("'controle_parasitario'");
+    expect(baseline).toContain("'controle_carrapato'");
+    expect(baseline).toContain("or has_explicit_agenda_activation");
+    expect(baseline).toContain("pressao_helmintos is not null");
+    expect(baseline).toContain("and helminth_risk_allowed");
+    expect(baseline).toContain("pressao_carrapato is not null");
+    expect(baseline).toContain("and tick_risk_allowed");
+  });
+
   it("contract: SQL core uses canonical sanitary dedup instead of free templates", () => {
     const baseline = readCanonicalBaselineMigration();
 

@@ -46,6 +46,44 @@ interface BrucellosisCandidateInput {
   completedSanitaryEvents?: CompletedSanitaryEventFixture[];
 }
 
+type RabiesRisk = "baixo" | "medio" | "alto";
+type TechnicalFamily =
+  | "clostridioses"
+  | "leptospirose_ibr_bvd"
+  | "controle_parasitario"
+  | "controle_carrapato";
+
+interface RabiesCandidateInput {
+  animal: AnimalFixture;
+  asOf: string;
+  hasOperationalItem?: boolean;
+  protocolActive?: boolean;
+  protocolDeleted?: boolean;
+  itemDeleted?: boolean;
+  geraAgenda?: boolean;
+  hasConfig?: boolean;
+  farmRisk?: RabiesRisk;
+  explicitActivation?: boolean;
+  riskValues?: RabiesRisk[] | null;
+  existingDedups?: Set<string>;
+}
+
+interface TechnicalCandidateInput {
+  animal: AnimalFixture;
+  asOf: string;
+  familyCode: TechnicalFamily;
+  itemCode?: string;
+  protocolActive?: boolean;
+  protocolDeleted?: boolean;
+  itemDeleted?: boolean;
+  geraAgenda?: boolean;
+  explicitActivation?: boolean;
+  hasConfig?: boolean;
+  pressure?: RabiesRisk;
+  riskValues?: RabiesRisk[] | null;
+  existingDedups?: Set<string>;
+}
+
 interface CompletedAgendaFixture {
   dedupKey: string;
   deleted?: boolean;
@@ -88,6 +126,32 @@ function brucellosisWindowDedup(animalId: string, birthDate: string) {
   ].join(":");
 }
 
+function rabiesRiskDedup(animalId: string, asOf: string) {
+  return [
+    "sanitario",
+    "animal",
+    animalId,
+    "raiva_herbivoros",
+    "raiva-vigilancia-risco",
+    "v1",
+    "unstructured",
+    asOf,
+  ].join(":");
+}
+
+function technicalDedup(animalId: string, familyCode: string, itemCode: string, asOf: string) {
+  return [
+    "sanitario",
+    "animal",
+    animalId,
+    familyCode,
+    itemCode,
+    "v1",
+    "unstructured",
+    asOf,
+  ].join(":");
+}
+
 function evaluateBrucellosisCandidate(input: BrucellosisCandidateInput) {
   const protocolActive = input.protocolActive ?? true;
   const protocolDeleted = input.protocolDeleted ?? false;
@@ -127,6 +191,72 @@ function evaluateBrucellosisCandidate(input: BrucellosisCandidateInput) {
   ) {
     return null;
   }
+
+  return {
+    dataPrevista: input.asOf,
+    dedupKey,
+  };
+}
+
+function evaluateRabiesCandidate(input: RabiesCandidateInput) {
+  const hasOperationalItem = input.hasOperationalItem ?? true;
+  const protocolActive = input.protocolActive ?? true;
+  const protocolDeleted = input.protocolDeleted ?? false;
+  const itemDeleted = input.itemDeleted ?? false;
+  const geraAgenda = input.geraAgenda ?? true;
+  const hasConfig = input.hasConfig ?? true;
+  const farmRisk = input.farmRisk ?? "alto";
+  const explicitActivation = input.explicitActivation ?? true;
+  const riskValues = input.riskValues === undefined ? ["medio", "alto"] : input.riskValues;
+  const { animal } = input;
+
+  if (!hasOperationalItem) return null;
+  if (!protocolActive || protocolDeleted || itemDeleted || !geraAgenda) return null;
+  if (animal.deleted || animal.status !== "ativo") return null;
+  if (!hasConfig) return null;
+  if (!explicitActivation) return null;
+  if (!riskValues?.includes(farmRisk)) return null;
+
+  const dedupKey = rabiesRiskDedup(animal.id, input.asOf);
+  if (input.existingDedups?.has(dedupKey)) return null;
+
+  return {
+    dataPrevista: input.asOf,
+    dedupKey,
+  };
+}
+
+function evaluateTechnicalCandidate(input: TechnicalCandidateInput) {
+  const protocolActive = input.protocolActive ?? true;
+  const protocolDeleted = input.protocolDeleted ?? false;
+  const itemDeleted = input.itemDeleted ?? false;
+  const geraAgenda = input.geraAgenda ?? true;
+  const explicitActivation = input.explicitActivation ?? true;
+  const hasConfig = input.hasConfig ?? true;
+  const pressure = input.pressure ?? "alto";
+  const riskValues = input.riskValues === undefined ? ["medio", "alto"] : input.riskValues;
+  const { animal } = input;
+
+  if (!protocolActive || protocolDeleted || itemDeleted || !geraAgenda) return null;
+  if (animal.deleted || animal.status !== "ativo") return null;
+  if (!explicitActivation) return null;
+  if (
+    (input.familyCode === "controle_parasitario" ||
+      input.familyCode === "controle_carrapato") &&
+    (!hasConfig || !riskValues?.includes(pressure))
+  ) {
+    return null;
+  }
+
+  const itemCode =
+    input.itemCode ??
+    (input.familyCode === "controle_parasitario"
+      ? "vermifugacao-estrategica"
+      : input.familyCode === "controle_carrapato"
+        ? "controle-carrapato"
+        : `${input.familyCode}-operacional`);
+  const dedupKey = technicalDedup(animal.id, input.familyCode, itemCode, input.asOf);
+  if (input.existingDedups?.has(dedupKey)) return null;
 
   return {
     dataPrevista: input.asOf,
@@ -213,6 +343,41 @@ describe("P6.2.1 sanitario_recompute_agenda_core brucellosis contract", () => {
     expect(core).toContain("when is_age_window then _as_of");
     expect(core).toContain("(data_nascimento + age_min_days)::text");
     expect(core).toContain("public.sanitario_dedup_period_mode(calendar_mode)");
+  });
+
+  it("keeps SQL gates that prevent universal rabies agenda", () => {
+    const core = extractRecomputeCore();
+
+    expect(core).toContain("left join public.fazenda_sanidade_config fsc");
+    expect(core).toContain("fsc.deleted_at is null");
+    expect(core).toContain("psi.payload->>'family_code'");
+    expect(core).toContain("psi.payload #>> '{regime_sanitario,family_code}'");
+    expect(core).toContain("psi.payload #>> '{agenda_activation,explicit}'");
+    expect(core).toContain("psi.payload #>> '{gatilho_json,requires_explicit_activation}'");
+    expect(core).toContain("psi.payload #> '{agenda_activation,risk_values}'");
+    expect(core).toContain("psi.payload #> '{gatilho_json,risk_values}'");
+    expect(core).toContain("jsonb_array_elements_text(raw.risk_values_json)");
+    expect(core).toContain("rv.value = fsc.zona_raiva_risco");
+    expect(core).toContain("coalesce(family_code, '') <> 'raiva_herbivoros'");
+    expect(core).toContain("zona_raiva_risco is not null");
+    expect(core).toContain("has_explicit_agenda_activation");
+    expect(core).toContain("rabies_risk_allowed");
+  });
+
+  it("keeps SQL gates that prevent implicit technical agenda", () => {
+    const core = extractRecomputeCore();
+
+    expect(core).toContain("fsc.pressao_helmintos");
+    expect(core).toContain("fsc.pressao_carrapato");
+    expect(core).toContain("'clostridioses'");
+    expect(core).toContain("'leptospirose_ibr_bvd'");
+    expect(core).toContain("'controle_parasitario'");
+    expect(core).toContain("'controle_carrapato'");
+    expect(core).toContain("or has_explicit_agenda_activation");
+    expect(core).toContain("pressao_helmintos is not null");
+    expect(core).toContain("and helminth_risk_allowed");
+    expect(core).toContain("pressao_carrapato is not null");
+    expect(core).toContain("and tick_risk_allowed");
   });
 
   it("does not turn the global official catalog into agenda source inside recompute", () => {
@@ -504,5 +669,142 @@ describe("P6.2.1 sanitario_recompute_agenda_core brucellosis contract", () => {
     expect(first?.dataPrevista).toBe("2026-07-10");
     expect(later?.dataPrevista).toBe("2026-07-25");
     expect(later?.dedupKey).toBe(first?.dedupKey);
+  });
+
+  it.each([
+    ["alto", "alto"],
+    ["medio", "medio"],
+  ] as const)("creates one rabies agenda for %s risk with active operational item and explicit activation", (_label, farmRisk) => {
+    const result = evaluateRabiesCandidate({
+      animal: activeFemale(),
+      asOf: "2026-07-10",
+      farmRisk,
+    });
+
+    expect(result).toEqual({
+      dataPrevista: "2026-07-10",
+      dedupKey:
+        "sanitario:animal:aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa:raiva_herbivoros:raiva-vigilancia-risco:v1:unstructured:2026-07-10",
+    });
+  });
+
+  it("keeps rabies recompute idempotent with an existing active dedup", () => {
+    const first = evaluateRabiesCandidate({
+      animal: activeFemale(),
+      asOf: "2026-07-10",
+      farmRisk: "alto",
+    });
+    expect(first).not.toBeNull();
+
+    const second = evaluateRabiesCandidate({
+      animal: activeFemale(),
+      asOf: "2026-07-10",
+      farmRisk: "alto",
+      existingDedups: new Set([first?.dedupKey ?? ""]),
+    });
+
+    expect(second).toBeNull();
+  });
+
+  it.each([
+    ["baixo risk", { farmRisk: "baixo" as const }],
+    ["missing fazenda_sanidade_config", { hasConfig: false }],
+    ["activated template without operational item", { hasOperationalItem: false }],
+    ["missing explicit activation", { explicitActivation: false }],
+    ["missing risk values", { riskValues: null }],
+    ["inactive protocol", { protocolActive: false }],
+    ["deleted protocol", { protocolDeleted: true }],
+    ["deleted item", { itemDeleted: true }],
+    ["disabled agenda flag", { geraAgenda: false }],
+  ])("does not create rabies agenda for %s", (_label, overrides) => {
+    expect(
+      evaluateRabiesCandidate({
+        animal: activeFemale(),
+        asOf: "2026-07-10",
+        ...overrides,
+      }),
+    ).toBeNull();
+  });
+
+  it.each([
+    ["clostridioses", "clostridioses"],
+    ["IBR/BVD/lepto", "leptospirose_ibr_bvd"],
+  ] as const)("creates technical agenda for %s only after explicit farm activation", (_label, familyCode) => {
+    const result = evaluateTechnicalCandidate({
+      animal: activeFemale(),
+      asOf: "2026-07-10",
+      familyCode,
+    });
+
+    expect(result?.dedupKey).toContain(`:${familyCode}:`);
+  });
+
+  it("keeps technical recompute idempotent with an existing active dedup", () => {
+    const first = evaluateTechnicalCandidate({
+      animal: activeFemale(),
+      asOf: "2026-07-10",
+      familyCode: "clostridioses",
+    });
+    expect(first).not.toBeNull();
+
+    const second = evaluateTechnicalCandidate({
+      animal: activeFemale(),
+      asOf: "2026-07-10",
+      familyCode: "clostridioses",
+      existingDedups: new Set([first?.dedupKey ?? ""]),
+    });
+
+    expect(second).toBeNull();
+  });
+
+  it.each([
+    ["global catalog technical item with gera_agenda=false", { geraAgenda: false }],
+    ["technical item without explicit activation", { explicitActivation: false }],
+    ["inactive technical protocol", { protocolActive: false }],
+    ["deleted technical protocol", { protocolDeleted: true }],
+    ["deleted technical item", { itemDeleted: true }],
+  ])("does not create technical agenda for %s", (_label, overrides) => {
+    expect(
+      evaluateTechnicalCandidate({
+        animal: activeFemale(),
+        asOf: "2026-07-10",
+        familyCode: "clostridioses",
+        ...overrides,
+      }),
+    ).toBeNull();
+  });
+
+  it.each([
+    ["controle_parasitario", "medio"],
+    ["controle_parasitario", "alto"],
+    ["controle_carrapato", "medio"],
+    ["controle_carrapato", "alto"],
+  ] as const)("creates %s technical agenda when pressure is %s", (familyCode, pressure) => {
+    expect(
+      evaluateTechnicalCandidate({
+        animal: activeFemale(),
+        asOf: "2026-07-10",
+        familyCode,
+        pressure,
+      }),
+    ).not.toBeNull();
+  });
+
+  it.each([
+    ["controle_parasitario", { pressure: "baixo" as const }],
+    ["controle_parasitario", { hasConfig: false }],
+    ["controle_parasitario", { riskValues: null }],
+    ["controle_carrapato", { pressure: "baixo" as const }],
+    ["controle_carrapato", { hasConfig: false }],
+    ["controle_carrapato", { riskValues: null }],
+  ])("does not create %s agenda when risk/config is insufficient", (familyCode, overrides) => {
+    expect(
+      evaluateTechnicalCandidate({
+        animal: activeFemale(),
+        asOf: "2026-07-10",
+        familyCode,
+        ...overrides,
+      }),
+    ).toBeNull();
   });
 });
