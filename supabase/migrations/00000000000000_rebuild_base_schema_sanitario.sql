@@ -937,6 +937,19 @@ begin
           and es.deleted_at is null
       )
   )
+  and not exists (
+    select 1
+    from public.eventos e
+    join public.eventos_sanitario es
+      on es.evento_id = e.id
+     and es.fazenda_id = e.fazenda_id
+    where e.fazenda_id = p.fazenda_id
+      and e.animal_id = p.animal_id
+      and e.dominio = 'sanitario'
+      and e.deleted_at is null
+      and es.deleted_at is null
+      and es.payload #>> '{sanitary_completion,sanitary_completion_key}' = p.candidate_dedup_key
+  )
   on conflict (fazenda_id, dedup_key)
   where status = 'agendado' and deleted_at is null and dedup_key is not null
   do nothing;
@@ -982,6 +995,11 @@ declare
   v_evento_id uuid := gen_random_uuid();
   v_tipo public.sanitario_tipo_enum;
   v_produto text;
+  v_protocol_item_version integer;
+  v_calendar_mode text;
+  v_period_mode text;
+  v_window_start text;
+  v_enriched_payload jsonb;
 begin
   select * into v_agenda
   from public.agenda_itens
@@ -998,6 +1016,55 @@ begin
   v_tipo := coalesce(_tipo, nullif(v_agenda.tipo, '')::public.sanitario_tipo_enum);
   v_produto := coalesce(nullif(_produto, ''), v_agenda.payload->>'produto', v_agenda.tipo);
 
+  select psi.version into v_protocol_item_version
+  from public.protocolos_sanitarios_itens psi
+  where psi.id = v_agenda.protocol_item_version_id
+    and psi.fazenda_id = v_agenda.fazenda_id
+    and psi.deleted_at is null;
+
+  v_calendar_mode := nullif(coalesce(
+    v_agenda.payload #>> '{calendario_base,mode}',
+    v_agenda.payload->>'calendario_mode',
+    v_agenda.payload->>'calendar_mode',
+    v_agenda.payload->>'mode'
+  ), '');
+  v_period_mode := coalesce(
+    nullif(v_agenda.payload->>'period_mode', ''),
+    case when v_calendar_mode is not null then public.sanitario_dedup_period_mode(v_calendar_mode) end
+  );
+  v_window_start := coalesce(
+    nullif(v_agenda.payload->>'window_start', ''),
+    case
+      when v_period_mode = 'window'
+       and v_agenda.dedup_key is not null
+       and split_part(v_agenda.dedup_key, ':', 7) = 'window'
+      then nullif(split_part(v_agenda.dedup_key, ':', 8), '')
+    end
+  );
+  v_enriched_payload :=
+    coalesce(_sanitario_payload, '{}'::jsonb) ||
+    jsonb_build_object(
+      'sanitary_completion',
+      jsonb_build_object(
+        'schema_version', 1,
+        'sanitary_completion_key', v_agenda.dedup_key,
+        'agenda_dedup_key', v_agenda.dedup_key,
+        'subject_type', case when v_agenda.animal_id is not null then 'animal' end,
+        'animal_id', v_agenda.animal_id,
+        'family_code', coalesce(v_agenda.payload->>'family_code', v_agenda.payload #>> '{regime_sanitario,family_code}'),
+        'official_item_code', v_agenda.payload->>'official_item_code',
+        'protocol_item_version_id', v_agenda.protocol_item_version_id,
+        'protocol_item_version', coalesce(
+          v_protocol_item_version,
+          case when nullif(v_agenda.payload->>'protocol_item_version', '') ~ '^[0-9]+$' then (v_agenda.payload->>'protocol_item_version')::integer end,
+          case when nullif(v_agenda.payload->>'regimen_version', '') ~ '^[0-9]+$' then (v_agenda.payload->>'regimen_version')::integer end
+        ),
+        'period_mode', v_period_mode,
+        'window_start', v_window_start,
+        'source_agenda_item_id', v_agenda.id
+      )
+    );
+
   insert into public.eventos (
     id, fazenda_id, dominio, occurred_at, animal_id, lote_id, source_task_id,
     source_tx_id, source_client_op_id, observacoes, payload, client_id,
@@ -1006,7 +1073,7 @@ begin
     v_evento_id, v_agenda.fazenda_id, 'sanitario', _occurred_at,
     v_agenda.animal_id, v_agenda.lote_id, v_agenda.id,
     _client_tx_id, _client_op_id, _observacoes,
-    coalesce(_sanitario_payload, '{}'::jsonb),
+    v_enriched_payload,
     _client_id, _client_op_id, _client_tx_id, _client_recorded_at, now()
   );
 
@@ -1015,7 +1082,7 @@ begin
     client_op_id, client_tx_id, client_recorded_at, server_received_at
   ) values (
     v_evento_id, v_agenda.fazenda_id, v_tipo, v_produto,
-    coalesce(_sanitario_payload, '{}'::jsonb),
+    v_enriched_payload,
     _client_id, _client_op_id, _client_tx_id, _client_recorded_at, now()
   );
 

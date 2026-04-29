@@ -508,6 +508,9 @@ describe("sanitario engine golden/parity contracts", () => {
     expect(baseline).toContain("where id = _agenda_item_id");
     expect(baseline).toContain("source_task_id");
     expect(baseline).toContain("source_client_op_id");
+    expect(baseline).toContain("'sanitary_completion'");
+    expect(baseline).toContain("'sanitary_completion_key', v_agenda.dedup_key");
+    expect(baseline).toContain("v_enriched_payload");
     expect(baseline).toContain("perform public.sanitario_recompute_agenda_core");
   });
 });
@@ -601,6 +604,7 @@ describe("sanitario engine SQL contracts", () => {
     expect(baseline).toContain("ai.status = 'concluido'");
     expect(baseline).toContain("ai.source_evento_id is not null");
     expect(baseline).toContain("join public.eventos_sanitario es");
+    expect(baseline).toContain("es.payload #>> '{sanitary_completion,sanitary_completion_key}' = p.candidate_dedup_key");
     expect(baseline).toContain("on conflict (fazenda_id, dedup_key)");
   });
 
