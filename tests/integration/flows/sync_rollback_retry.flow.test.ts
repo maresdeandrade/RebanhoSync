@@ -57,6 +57,7 @@ async function seedAnimal(animalId: string) {
     mae_id: null,
     nome: null,
     rfid: null,
+    especie: "bovino",
     origem: null,
     raca: null,
     papel_macho: null,
@@ -186,5 +187,47 @@ describe("flow: sync rollback + retry", () => {
     const rolledBack = await db.state_animais.get("rollback-1");
     expect(rolledBack?.observacoes).toBeNull();
     expect(await db.queue_rejections.count()).toBe(1);
+  });
+
+  it("preserva especie no apply local e no rollback offline", async () => {
+    await seedAnimal("species-1");
+    const clientTxId = await createGesture("farm-1", [
+      {
+        table: "animais",
+        action: "UPDATE",
+        record: {
+          id: "species-1",
+          especie: "bubalino",
+          updated_at: new Date().toISOString(),
+        },
+      },
+    ]);
+
+    const localUpdated = await db.state_animais.get("species-1");
+    expect(localUpdated?.especie).toBe("bubalino");
+
+    const op = await db.queue_ops.where("client_tx_id").equals(clientTxId).first();
+    expect(op?.record.especie).toBe("bubalino");
+
+    vi.mocked(fetch).mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          results: [
+            {
+              op_id: op?.client_op_id,
+              status: "REJECTED",
+              reason_code: "VALIDATION_ERROR",
+              reason_message: "especie invalida",
+            },
+          ],
+        }),
+        { status: 200 },
+      ),
+    );
+
+    await processGesture(await getGesture(clientTxId));
+
+    const rolledBack = await db.state_animais.get("species-1");
+    expect(rolledBack?.especie).toBe("bovino");
   });
 });

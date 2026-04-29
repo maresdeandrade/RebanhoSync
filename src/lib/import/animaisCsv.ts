@@ -1,5 +1,7 @@
 import type { OrigemEnum, SexoEnum } from "@/lib/offline/types";
 import { parseAnimalBreed } from "@/lib/animals/catalogs";
+import { parseAnimalSpecies } from "@/lib/animals/species";
+import type { AnimalSpeciesEnum } from "@/lib/animals/species";
 
 export type AnimalImportRow = {
   lineNumber: number;
@@ -9,6 +11,7 @@ export type AnimalImportRow = {
   nome: string | null;
   dataNascimento: string | null;
   dataEntrada: string | null;
+  especie: AnimalSpeciesEnum | null;
   origem: OrigemEnum | null;
   raca: string | null;
   rfid: string | null;
@@ -34,6 +37,7 @@ const HEADER_ALIASES: Record<string, string[]> = {
   nome: ["nome"],
   dataNascimento: ["data_nascimento", "nascimento"],
   dataEntrada: ["data_entrada", "entrada"],
+  especie: ["especie", "species"],
   origem: ["origem"],
   raca: ["raca"],
   rfid: ["rfid"],
@@ -225,6 +229,7 @@ export function parseAnimalImportCsv(text: string): AnimalImportParseResult {
   const nomeIndex = findHeaderIndex(headers, "nome");
   const dataNascimentoIndex = findHeaderIndex(headers, "dataNascimento");
   const dataEntradaIndex = findHeaderIndex(headers, "dataEntrada");
+  const especieIndex = findHeaderIndex(headers, "especie");
   const origemIndex = findHeaderIndex(headers, "origem");
   const racaIndex = findHeaderIndex(headers, "raca");
   const rfidIndex = findHeaderIndex(headers, "rfid");
@@ -241,6 +246,7 @@ export function parseAnimalImportCsv(text: string): AnimalImportParseResult {
     const nome = readCell(cells, nomeIndex);
     const dataNascimentoValue = readCell(cells, dataNascimentoIndex);
     const dataEntradaValue = readCell(cells, dataEntradaIndex);
+    const especieValue = readCell(cells, especieIndex);
     const origemValue = readCell(cells, origemIndex);
     const racaValue = readCell(cells, racaIndex);
     const rfid = readCell(cells, rfidIndex);
@@ -295,6 +301,16 @@ export function parseAnimalImportCsv(text: string): AnimalImportParseResult {
       continue;
     }
 
+    const especie = especieValue ? parseAnimalSpecies(especieValue) : null;
+    if (especieValue && !especie) {
+      issues.push({
+        lineNumber,
+        field: "especie",
+        message: "Especie invalida. Use bovino ou bubalino.",
+      });
+      continue;
+    }
+
     const raca = racaValue ? parseAnimalBreed(racaValue) : null;
     if (racaValue && !raca) {
       issues.push({
@@ -326,6 +342,7 @@ export function parseAnimalImportCsv(text: string): AnimalImportParseResult {
       nome: nome || null,
       dataNascimento,
       dataEntrada,
+      especie,
       origem,
       raca,
       rfid: rfid || null,

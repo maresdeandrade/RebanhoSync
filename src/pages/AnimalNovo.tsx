@@ -9,6 +9,8 @@ import type {
   StatusReprodutivoMachoEnum,
 } from "@/lib/offline/types";
 import { ANIMAL_BREED_OPTIONS } from "@/lib/animals/catalogs";
+import { ANIMAL_SPECIES_OPTIONS, formatAnimalSpecies } from "@/lib/animals/species";
+import type { AnimalSpeciesEnum } from "@/lib/animals/species";
 import {
   buildAnimalClassificationPayload,
   getLegacyMaleFields,
@@ -55,6 +57,7 @@ const AnimalNovo = () => {
   const [identificacao, setIdentificacao] = useState("");
   const [sexo, setSexo] = useState<"M" | "F">("M");
   const [loteId, setLoteId] = useState<string>("null");
+  const [especie, setEspecie] = useState<AnimalSpeciesEnum | "null">("null");
 
   // Estados de rastreabilidade
   const [dataNascimento, setDataNascimento] = useState("");
@@ -286,6 +289,7 @@ const AnimalNovo = () => {
         sexo,
         status: "ativo",
         lote_id: loteId === "null" ? null : loteId,
+        especie: especie === "null" ? null : especie,
 
         // Campos de rastreabilidade
         data_nascimento: dataNascimento || null,
@@ -452,6 +456,28 @@ const AnimalNovo = () => {
               <SelectContent>
                 <SelectItem value="M">Macho</SelectItem>
                 <SelectItem value="F">Fêmea</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Espécie</Label>
+            <Select
+              value={especie}
+              onValueChange={(value: AnimalSpeciesEnum | "null") =>
+                setEspecie(value)
+              }
+            >
+              <SelectTrigger aria-label="Espécie">
+                <SelectValue placeholder={formatAnimalSpecies(null)} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="null">Nao informada</SelectItem>
+                {ANIMAL_SPECIES_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>

@@ -8,9 +8,9 @@ import {
 describe("parseAnimalImportCsv", () => {
   it("parses semicolon-delimited files with aliases", () => {
     const csv = [
-      "brinco;sexo;lote;data_nascimento;origem",
-      "BR-001;F;Lote A;12/01/2024;nascimento",
-      "BR-002;M;Lote B;2024-02-20;compra",
+      "brinco;sexo;especie;lote;data_nascimento;origem",
+      "BR-001;F;bovino;Lote A;12/01/2024;nascimento",
+      "BR-002;M;bubalino;Lote B;2024-02-20;compra",
     ].join("\n");
 
     const result = parseAnimalImportCsv(csv);
@@ -20,6 +20,7 @@ describe("parseAnimalImportCsv", () => {
     expect(result.rows[0]).toMatchObject({
       identificacao: "BR-001",
       sexo: "F",
+      especie: "bovino",
       loteNome: "Lote A",
       dataNascimento: "2024-01-12",
       origem: "nascimento",
@@ -49,6 +50,36 @@ describe("parseAnimalImportCsv", () => {
 
     expect(result.rows).toHaveLength(0);
     expect(result.issues.some((issue) => issue.field === "sexo")).toBe(true);
+  });
+
+  it("accepts old CSV files without species", () => {
+    const csv = [
+      "identificacao;sexo;lote;data_nascimento;origem",
+      "BR-001;F;Matrizes;2024-01-12;nascimento",
+    ].join("\n");
+
+    const result = parseAnimalImportCsv(csv);
+
+    expect(result.issues).toEqual([]);
+    expect(result.rows[0]).toMatchObject({
+      identificacao: "BR-001",
+      especie: null,
+    });
+  });
+
+  it("rejects species outside the canonical minimum", () => {
+    const csv = [
+      "identificacao;sexo;especie",
+      "BR-001;F;caprino",
+    ].join("\n");
+
+    const result = parseAnimalImportCsv(csv);
+
+    expect(result.rows).toHaveLength(0);
+    expect(result.issues[0]).toMatchObject({
+      field: "especie",
+      message: "Especie invalida. Use bovino ou bubalino.",
+    });
   });
 });
 

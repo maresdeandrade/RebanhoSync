@@ -180,6 +180,7 @@ export function buildFinancialTransaction(input: BuildFinancialTransactionInput)
             buildAutoIdentifier("CPR", dateKey, index),
           sexo: draft.sexo,
           status: "ativo",
+          especie: null,
           lote_id: input.loteId,
           data_nascimento: draft.dataNascimento || null,
           data_entrada: dateKey,

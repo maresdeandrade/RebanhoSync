@@ -3,6 +3,7 @@ import type {
   ReproductionBullReferenceEnum,
   ReproductionTechniqueEnum,
 } from "@/lib/animals/catalogs";
+import type { AnimalSpeciesEnum } from "@/lib/animals/species";
 
 // =========================================================
 // ENUMS baseados no schema do banco de dados
@@ -246,6 +247,7 @@ export interface Animal {
   rfid: string | null;
   
   // Campos adicionados na Fase 2
+  especie: AnimalSpeciesEnum | null;
   origem: OrigemEnum | null;
   raca: AnimalBreedEnum | null;
 

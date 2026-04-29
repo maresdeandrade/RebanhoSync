@@ -9,6 +9,8 @@ import type {
   StatusReprodutivoMachoEnum,
 } from "@/lib/offline/types";
 import { ANIMAL_BREED_OPTIONS, parseAnimalBreed } from "@/lib/animals/catalogs";
+import { ANIMAL_SPECIES_OPTIONS, formatAnimalSpecies } from "@/lib/animals/species";
+import type { AnimalSpeciesEnum } from "@/lib/animals/species";
 import {
   buildAnimalClassificationPayload,
   getAnimalProductiveDestination,
@@ -60,6 +62,7 @@ const AnimalEditar = () => {
   const [identificacao, setIdentificacao] = useState("");
   const [sexo, setSexo] = useState<"M" | "F">("M");
   const [loteId, setLoteId] = useState<string>("null");
+  const [especie, setEspecie] = useState<AnimalSpeciesEnum | "null">("null");
 
   // Estados de rastreabilidade
   const [dataNascimento, setDataNascimento] = useState("");
@@ -165,6 +168,7 @@ const AnimalEditar = () => {
       setIdentificacao(animal.identificacao ?? "");
       setSexo(animal.sexo);
       setLoteId(animal.lote_id ?? "null");
+      setEspecie(animal.especie ?? "null");
       setDataNascimento(animal.data_nascimento ?? "");
       setDataEntrada(animal.data_entrada ?? "");
       setPaiId(animal.pai_id ?? "null");
@@ -335,6 +339,7 @@ const AnimalEditar = () => {
       identificacao,
       sexo,
       status: animal.status, // CRÍTICO: Preservar status original
+      especie: especie === "null" ? null : especie,
 
       // Campos de rastreabilidade
       data_nascimento: dataNascimento || null,
@@ -494,6 +499,28 @@ const AnimalEditar = () => {
               <SelectContent>
                 <SelectItem value="M">Macho</SelectItem>
                 <SelectItem value="F">Fêmea</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Espécie</Label>
+            <Select
+              value={especie}
+              onValueChange={(value: AnimalSpeciesEnum | "null") =>
+                setEspecie(value)
+              }
+            >
+              <SelectTrigger aria-label="Espécie">
+                <SelectValue placeholder={formatAnimalSpecies(null)} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="null">Nao informada</SelectItem>
+                {ANIMAL_SPECIES_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>

@@ -42,9 +42,9 @@ import {
 } from "@/components/ui/table";
 
 const TEMPLATE_CSV = [
-  "identificacao;sexo;lote;data_nascimento;data_entrada;origem;raca;nome;rfid",
-  "BR-001;F;Matrizes;2023-01-15;;nascimento;Nelore;Estrela;",
-  "BR-002;M;Recria;2022-11-03;2024-02-10;compra;Angus;Trovão;982000123456789",
+  "identificacao;sexo;especie;lote;data_nascimento;data_entrada;origem;raca;nome;rfid",
+  "BR-001;F;bovino;Matrizes;2023-01-15;;nascimento;Nelore;Estrela;",
+  "BR-002;M;bubalino;Recria;2022-11-03;2024-02-10;compra;Angus;Trovão;982000123456789",
 ].join("\n");
 
 const AnimaisImportar = () => {
@@ -150,6 +150,7 @@ const AnimaisImportar = () => {
           identificacao: row.identificacao,
           sexo: row.sexo,
           status: "ativo",
+          especie: row.especie,
           lote_id: row.loteNome
             ? validation.loteMap.get(normalizeLookupValue(row.loteNome)) ?? null
             : null,

@@ -116,7 +116,7 @@ Estado real validado em 2026-04-29:
 
 Limites explicitamente mantidos:
 - nao ha implementacao nova de sequencia D1/D2/anual de raiva neste recorte P6.2;
-- nao ha especie canonica persistida em `animais`;
+- `animais.especie` existe como campo canonico nullable minimo (`bovino`/`bubalino`), ainda sem atuar como gate autoritativo da agenda sanitaria;
 - nao ha indice JSONB para `payload.sanitary_completion`;
 - o seed sanitario permanece conservador e nao e catalogo normativo completo.
 
