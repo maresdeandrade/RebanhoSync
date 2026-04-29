@@ -1,7 +1,7 @@
 # Implementation Status Matrix
 
 > **Status:** Derivado (Rev D+)
-> **Baseline:** `b69d35f`
+> **Baseline:** `e459de8`
 > **Ultima Atualizacao:** 2026-04-29
 > **Derivado por:** Auditoria técnica completa — código + migrations + testes como fonte de verdade
 
@@ -13,7 +13,7 @@ Este documento registra o estado efetivo do RebanhoSync em abril de 2026, pós-f
 - **Fase de engenharia/produto:** transicao de MVP funcional para SLC (Simple, Lovable, Complete) em consolidacao.
 - **Core operacional:** sanitário, pesagem, movimentação, nutrição, reprodução, financeiro e agenda estão implementados e usáveis.
 - **Camadas consolidadas:** onboarding guiado, importação CSV, relatórios operacionais, telemetria de piloto com flush remoto, modo de experiência da fazenda, dashboard e ficha reprodutiva dedicada, pós-parto neonatal, cria inicial, transições de rebanho.
-- **Motor sanitário endurecido:** catalogo conservador, calendario TS->SQL alinhado, dedup canonico TS/SQL, brucelose por janela/sexo, bloqueio historico de reabertura via `sanitary_completion`, raiva por risco/configuracao e tecnicos por ativacao operacional explicita.
+- **Motor sanitário endurecido:** catalogo conservador, calendario TS->SQL alinhado, dedup canonico TS/SQL, brucelose por janela/sexo/especie transicional, bloqueio historico de reabertura via `sanitary_completion`, raiva por risco/configuracao/especie transicional e tecnicos por ativacao operacional explicita com alvo de especie quando informado.
 - **Qualidade local:** `lint`, `test:unit`, `test:integration`, `test:smoke`, `quality:gate` e `build` verdes.
 - **TDs originalmente abertos (M0-M2):** fechados e consolidados na baseline Supabase pos-squash.
 - **Gaps residuais:** sem gap funcional critico aberto; permanecem residuos estruturais locais e consolidacao de experiencia/confiabilidade.
@@ -61,7 +61,7 @@ Este documento registra o estado efetivo do RebanhoSync em abril de 2026, pós-f
 | --- | --- | --- |
 | `sanitario.registro` | Completo — catálogo `produtos_veterinarios`, biblioteca canônica de protocolos, payload/preflight/package sanitário extraídos e boundary RPC/fallback isolado | `src/pages/Registrar/**`, `src/pages/ProtocolosSanitarios/**`, `src/lib/sanitario/models/**`, `src/lib/sanitario/infrastructure/**`, `src/lib/sanitario/catalog/baseProtocols.ts` |
 | `sanitario.historico` | Completo | `src/pages/Eventos.tsx` |
-| `sanitario.agenda_link` | Completo — SQL/Supabase e motor lider de recompute; TS mantem contratos/adapters/golden tests e suporte offline; agenda automatica exige gates canonicos por janela, risco/configuracao ou ativacao operacional | `supabase/migrations/00000000000000_rebuild_base_schema_sanitario.sql`, `src/lib/sanitario/engine/**` |
+| `sanitario.agenda_link` | Completo — SQL/Supabase e motor lider de recompute; TS mantem contratos/adapters/golden tests e suporte offline; agenda automatica exige gates canonicos por janela, risco/configuracao, ativacao operacional ou especie transicional | `supabase/migrations/00000000000000_rebuild_base_schema_sanitario.sql`, `src/lib/sanitario/engine/**` |
 | `pesagem.registro` | Completo | `src/pages/Registrar/index.tsx`, `src/pages/AnimalDetalhe.tsx` |
 | `pesagem.historico` | Completo — **TD-015 CLOSED** via artefatos SQL consolidados na baseline | `supabase/migrations/00000000000000_rebuild_base_schema_sanitario.sql` |
 | `nutricao.registro` | Completo | `src/pages/Registrar/index.tsx`, `src/pages/Eventos.tsx` |
@@ -231,14 +231,16 @@ Este documento registra o estado efetivo do RebanhoSync em abril de 2026, pós-f
 - P5 removeu o ultimo import direto de `@/lib/sanitario/engine/*` em `src/pages/Registrar/**`; labels visuais de calendario agora passam por `src/lib/sanitario/models/calendarDisplay.ts`.
 - Residuos conhecidos: carencia ainda nao e motor pleno de withholding; produto/lote/estoque ainda nao formam rastreabilidade sanitaria completa; SISBOV/fiscal seguem fora do core.
 
-## 7.6 Update 2026-04-29 (Contrato Sanitario P6.1-P6.2.4)
+## 7.6 Update 2026-04-29 (Contrato Sanitario P6.1-P6.3b)
 
 - P6.1 consolidou o catalogo sanitario conservador no seed: brucelose PNCEBT e o unico item oficial com agenda automatica por seed; raiva, PNEFA/aftosa, IN50/doencas notificaveis, GTA, checklists, biosseguranca e tecnicos recomendados permanecem sem agenda automatica por simples presenca no catalogo global.
 - P6.2.1 endureceu `sanitario_recompute_agenda_core` para brucelose PNCEBT: animal ativo, femea, nascimento obrigatorio, janela 90-240 dias, sem backfill expirado e dedup canonico por janela.
 - P6.2.2a/P6.2.2b impediram reabertura de brucelose concluida: recompute bloqueia por agenda concluida com evento sanitario valido e por historico `payload.sanitary_completion` preservado em `eventos_sanitario.payload` e espelhado em `eventos.payload`.
 - P6.2.3 bloqueou vacinacao universal de raiva: agenda exige protocolo/item operacional ativo, `gera_agenda=true`, `family_code='raiva_herbivoros'`, risco medio/alto em `fazenda_sanidade_config.zona_raiva_risco`, `risk_values` e ativacao explicita.
 - P6.2.4 habilitou agenda tecnica recomendada apenas por ativacao operacional da fazenda: `clostridioses`, `leptospirose_ibr_bvd`, `controle_parasitario` e `controle_carrapato` exigem item operacional ativo, `gera_agenda=true` e ativacao explicita; helmintos/carrapato tambem exigem pressao configurada medio/alto.
-- Limites atuais preservados: sem nova sequencia D1/D2/anual de raiva, sem especie canonica persistida, sem coluna/indice JSONB para `sanitary_completion`, sem backfill historico amplo e sem transformar boa pratica tecnica em obrigacao legal.
+- P6.3a adicionou `animais.especie` como campo canonico nullable minimo (`bovino` | `bubalino` | `null`), sem backfill obrigatorio e sem tornar especie obrigatoria.
+- P6.3b habilitou gate sanitario transicional por especie em `sanitario_recompute_agenda_core`: `especie=null` segue elegivel temporariamente; brucelose e raiva permitem `bovino`, `bubalino` e `null`; tecnicos recomendados respeitam alvo explicito de especie quando existir e, sem alvo explicito, permitem as especies canonicas e `null`.
+- Limites atuais preservados: sem nova sequencia D1/D2/anual de raiva, sem coluna/indice JSONB para `sanitary_completion`, sem backfill historico amplo, sem especie obrigatoria e sem transformar boa pratica tecnica em obrigacao legal.
 
 ---
 

@@ -30,6 +30,8 @@ Este documento separa o resumo da rodada de saneamento sanitario da documentacao
 | P6.2.2a/b | Recompute passou a bloquear reabertura de brucelose concluida por dedup historico e por `payload.sanitary_completion` em eventos sanitarios. |
 | P6.2.3 | Raiva dos herbivoros passou a exigir risco/configuracao medio-alto e ativacao operacional explicita; sem vacinacao universal. |
 | P6.2.4 | Protocolos tecnicos recomendados passaram a exigir ativacao operacional explicita; helmintos/carrapato tambem exigem pressao configurada medio-alto. |
+| P6.3a | `animais.especie` foi adicionado como campo canonico nullable minimo (`bovino`/`bubalino`/`null`), sem backfill obrigatorio e sem tornar especie obrigatoria. |
+| P6.3b | `sanitario_recompute_agenda_core` passou a aplicar gate sanitario transicional por especie, mantendo `especie=null` elegivel temporariamente. |
 
 ## Motor e contratos atuais
 
@@ -43,13 +45,13 @@ Este documento separa o resumo da rodada de saneamento sanitario da documentacao
 - Labels visuais de calendario no Registrar passam por `src/lib/sanitario/models/calendarDisplay.ts`.
 - Payload, preflight, package e RPC/fallback sanitario estao delegados a facades/models/infrastructure de `src/lib/sanitario/**`.
 
-Contrato de agenda sanitaria pos-P6.2.4:
+Contrato de agenda sanitaria pos-P6.3b:
 
 - Catalogo global oficial/tecnico nao e fonte direta de agenda: `sanitario_recompute_agenda_core` nao consulta `catalogo_protocolos_oficiais`, `catalogo_protocolos_oficiais_itens` ou `catalogo_doencas_notificaveis`.
-- Brucelose PNCEBT gera agenda somente para femeas ativas com nascimento conhecido e idade entre 90 e 240 dias, mantendo `requires_vet=true` e dedup canonico por janela.
+- Brucelose PNCEBT gera agenda somente para femeas ativas com nascimento conhecido e idade entre 90 e 240 dias, mantendo `requires_vet=true`, dedup canonico por janela e gate transicional de especie que permite `bovino`, `bubalino` e `null`.
 - Conclusao de agenda sanitaria via `sanitario_complete_agenda_with_event` preserva `payload.sanitary_completion` em `eventos_sanitario.payload` e espelha em `eventos.payload`; recompute usa esse historico para nao recriar agenda concluida mesmo se a agenda original for soft-deletada.
-- Raiva dos herbivoros exige protocolo/item operacional ativo, `gera_agenda=true`, `family_code='raiva_herbivoros'`, `fazenda_sanidade_config.zona_raiva_risco` em `medio|alto`, `risk_values` no payload e ativacao explicita.
-- Tecnicos recomendados (`clostridioses`, `leptospirose_ibr_bvd`, `controle_parasitario`, `controle_carrapato`) exigem protocolo/item operacional ativo, `gera_agenda=true` e ativacao explicita. `controle_parasitario` exige `pressao_helmintos` em `medio|alto`; `controle_carrapato` exige `pressao_carrapato` em `medio|alto`.
+- Raiva dos herbivoros exige protocolo/item operacional ativo, `gera_agenda=true`, `family_code='raiva_herbivoros'`, `fazenda_sanidade_config.zona_raiva_risco` em `medio|alto`, `risk_values` no payload, ativacao explicita e gate transicional de especie que permite `bovino`, `bubalino` e `null`.
+- Tecnicos recomendados (`clostridioses`, `leptospirose_ibr_bvd`, `controle_parasitario`, `controle_carrapato`) exigem protocolo/item operacional ativo, `gera_agenda=true` e ativacao explicita. Quando o payload traz alvo explicito de especie (`species`, `especies_alvo` ou `gatilho_json.species`), especie conhecida precisa bater; `especie=null` passa transicionalmente. Sem alvo explicito, `bovino`, `bubalino` e `null` permanecem elegiveis. `controle_parasitario` exige `pressao_helmintos` em `medio|alto`; `controle_carrapato` exige `pressao_carrapato` em `medio|alto`.
 - PNEFA/aftosa, IN50/doencas notificaveis, GTA, suspeitas, checklists, biosseguranca e itens dependentes de avaliacao manual continuam sem agenda automatica.
 
 ## Baseline Supabase sanitaria
@@ -65,7 +67,7 @@ Contrato de agenda sanitaria pos-P6.2.4:
 Limites mantidos no contrato atual:
 
 - sem nova sequencia D1/D2/anual de raiva neste recorte;
-- sem especie canonica persistida em `animais`;
+- `animais.especie` e canonica e nullable (`bovino`/`bubalino`/`null`), mas sem backfill obrigatorio, sem especie obrigatoria e sem bloquear legado `null` nesta etapa;
 - sem coluna nova, indice JSONB ou backfill de eventos antigos para `sanitary_completion`;
 - sem transformacao de boa pratica tecnica em obrigacao legal;
 - seed sanitario conservador, nao normativo completo.
@@ -116,6 +118,7 @@ Contratos relevantes:
 - Carencia ainda e metadata/compliance parcial, nao motor pleno de withholding.
 - Produto/lote/estoque ainda nao sao entidades completas de rastreabilidade sanitaria.
 - SISBOV/fiscal permanecem fora do core sanitario.
+- Legado com `animais.especie is null` ainda precisa de saneamento futuro e decisao explicita sobre eventual bloqueio de `null` na agenda sanitaria.
 
 ## Proximas frentes possiveis
 
