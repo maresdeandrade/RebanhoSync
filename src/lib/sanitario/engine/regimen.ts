@@ -102,6 +102,18 @@ function normalizeCode(value: string | null | undefined) {
   return normalized.length > 0 ? normalized : null;
 }
 
+function normalizeRegimenMilestoneCode(
+  familyCode: string,
+  value: string | null | undefined,
+) {
+  const normalized = normalizeCode(value);
+  if (familyCode === "raiva_herbivoros" && normalized === "raiva_reforco_30d") {
+    return "raiva_d2";
+  }
+
+  return normalized;
+}
+
 function sanitizeSequenceOrder(value: number | null | undefined) {
   if (typeof value !== "number" || !Number.isFinite(value) || value < 1) {
     return 1;
@@ -125,9 +137,12 @@ export function inferSanitaryRegimenMilestone(
   const calendarRule = readSanitaryBaseCalendar(input.payload);
   const sequenceOrder = sanitizeSequenceOrder(input.sequenceOrder);
   const milestoneCode =
-    normalizeCode(input.milestoneCode) ??
+    normalizeRegimenMilestoneCode(familyCode, input.milestoneCode) ??
     (sequenceOrder > 1 ? `dose_${sequenceOrder}` : "dose_1");
-  const dependsOnMilestone = normalizeCode(input.dependsOnMilestone);
+  const dependsOnMilestone = normalizeRegimenMilestoneCode(
+    familyCode,
+    input.dependsOnMilestone,
+  );
 
   let scheduleKind: SanitaryScheduleRuleKind =
     input.scheduleKind ?? "calendar_base";
@@ -244,7 +259,9 @@ export function readSanitaryRegimen(
 
   const record = raw as Record<string, unknown>;
   const familyCode = normalizeCode(readString(record, "family_code"));
-  const milestoneCode = normalizeCode(readString(record, "milestone_code"));
+  const milestoneCode = familyCode
+    ? normalizeRegimenMilestoneCode(familyCode, readString(record, "milestone_code"))
+    : null;
   if (!familyCode || !milestoneCode) return null;
 
   const eligibilityRaw =
@@ -272,7 +289,8 @@ export function readSanitaryRegimen(
     regimen_version: sanitizeSequenceOrder(readNumber(record, "regimen_version")),
     milestone_code: milestoneCode,
     sequence_order: sanitizeSequenceOrder(readNumber(record, "sequence_order")),
-    depends_on_milestone: normalizeCode(
+    depends_on_milestone: normalizeRegimenMilestoneCode(
+      familyCode,
       readString(record, "depends_on_milestone"),
     ),
     eligibility_rule: {

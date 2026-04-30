@@ -253,11 +253,11 @@ function buildOfficialRegimenMilestone(
     null;
 
   if (familyCode === "raiva_herbivoros") {
-    if (item.codigo === "raiva-reforco-30d") {
+    if (item.codigo === "raiva-reforco-30d" || item.codigo === "raiva-d2") {
       dependsOnMilestone = "raiva_d1";
       scheduleKind = "after_previous_completion";
     } else if (item.codigo === "raiva-anual") {
-      dependsOnMilestone = "raiva_reforco_30d";
+      dependsOnMilestone = "raiva_d2";
       scheduleKind = "rolling_from_last_completion";
     } else if (item.codigo === "raiva-d1") {
       scheduleKind = "calendar_base";

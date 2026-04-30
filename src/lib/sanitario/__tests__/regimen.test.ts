@@ -75,6 +75,82 @@ describe("sanitary regimen metadata", () => {
     });
   });
 
+  it("accepts legacy rabies D2 alias only as read compatibility", () => {
+    const inferred = inferSanitaryRegimenMilestone({
+      familyCode: "raiva_herbivoros",
+      regimenVersion: 1,
+      milestoneCode: "raiva_reforco_30d",
+      sequenceOrder: 2,
+      dependsOnMilestone: "raiva_d1",
+      scheduleKind: "after_previous_completion",
+      payload: buildSanitaryBaseCalendarPayload({
+        mode: "rolling_interval",
+        anchor: "previous_completion",
+        label: "Reforco apos 30 dias",
+        intervalDays: 30,
+      }),
+    });
+
+    expect(inferred).toMatchObject({
+      family_code: "raiva_herbivoros",
+      milestone_code: "raiva_d2",
+      sequence_order: 2,
+      depends_on_milestone: "raiva_d1",
+    });
+
+    const legacyPayload = {
+      regime_sanitario: {
+        family_code: "raiva_herbivoros",
+        regimen_version: 1,
+        milestone_code: "raiva_reforco_30d",
+        sequence_order: 2,
+        depends_on_milestone: "raiva_d1",
+        schedule_rule: {
+          kind: "after_previous_completion",
+          calendar_mode: "rolling_interval",
+          interval_days: 30,
+          projection_horizon_days: 30,
+        },
+      },
+    };
+
+    expect(readSanitaryRegimen(legacyPayload)).toMatchObject({
+      family_code: "raiva_herbivoros",
+      milestone_code: "raiva_d2",
+      depends_on_milestone: "raiva_d1",
+      schedule_rule: {
+        kind: "after_previous_completion",
+        intervalDays: 30,
+      },
+    });
+
+    const legacyAnnualPayload = {
+      regime_sanitario: {
+        family_code: "raiva_herbivoros",
+        regimen_version: 1,
+        milestone_code: "raiva_anual",
+        sequence_order: 3,
+        depends_on_milestone: "raiva_reforco_30d",
+        schedule_rule: {
+          kind: "rolling_from_last_completion",
+          calendar_mode: "rolling_interval",
+          interval_days: 365,
+          projection_horizon_days: 365,
+        },
+      },
+    };
+
+    expect(readSanitaryRegimen(legacyAnnualPayload)).toMatchObject({
+      family_code: "raiva_herbivoros",
+      milestone_code: "raiva_anual",
+      depends_on_milestone: "raiva_d2",
+      schedule_rule: {
+        kind: "rolling_from_last_completion",
+        intervalDays: 365,
+      },
+    });
+  });
+
   it("contract: serializes legacy TS calendar mode in regime_sanitario as SQL vocabulary", () => {
     const regimen = inferSanitaryRegimenMilestone({
       familyCode: "clostridioses",

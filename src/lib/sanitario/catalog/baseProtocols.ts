@@ -18,6 +18,7 @@ export type StandardProtocolScope = "fazenda";
 export type StandardProtocolActivationMode = "materializar_protocolo";
 
 export type StandardProtocolFamilyCode =
+  | "raiva_herbivoros"
   | "clostridioses"
   | "reprodutiva"
   | "controle_estrategico_parasitas"
@@ -25,6 +26,24 @@ export type StandardProtocolFamilyCode =
   | "cura_umbigo"
   | "tristeza_parasitaria_bovina"
   | "terapia_vaca_seca";
+
+export type StandardProtocolScheduleKind =
+  | "calendar_base"
+  | "after_previous_completion"
+  | "rolling_from_last_completion";
+
+export interface StandardProtocolAgendaActivation {
+  mode: "risk_config_explicit";
+  explicit: true;
+  risk_field: "zona_raiva_risco";
+  risk_values: ["medio", "alto"];
+  unknown_history_policy?: "start_from_d1";
+}
+
+export interface StandardProtocolDependsOn {
+  milestone_code: string;
+  interval_days: number;
+}
 
 export interface StandardProtocolItem {
   tipo: SanitarioTipoEnum;
@@ -40,6 +59,9 @@ export interface StandardProtocolItem {
   dedup_template?: string;
   item_code: string;
   depends_on_item_code?: string;
+  schedule_kind?: StandardProtocolScheduleKind;
+  depends_on?: StandardProtocolDependsOn;
+  agenda_activation?: StandardProtocolAgendaActivation;
   calendario_base: SanitaryBaseCalendarRule;
 }
 
@@ -71,7 +93,104 @@ export interface StandardProtocol {
 
 export const STANDARD_PROTOCOL_LIBRARY_VERSION = 1;
 
+const RABIES_OPERATIONAL_AGENDA_ACTIVATION = {
+  mode: "risk_config_explicit",
+  explicit: true,
+  risk_field: "zona_raiva_risco",
+  risk_values: ["medio", "alto"],
+} satisfies StandardProtocolAgendaActivation;
+
 export const STANDARD_PROTOCOLS: StandardProtocol[] = [
+  {
+    id: "vac-raiva-herbivoros",
+    canonical_key: "raiva_herbivoros",
+    family_code: "raiva_herbivoros",
+    nome: "Raiva dos Herbivoros (D1/D2/Anual)",
+    descricao:
+      "Protocolo tecnico operacional condicionado a risco medio/alto e ativacao explicita pela fazenda.",
+    categoria: "vacinas",
+    scope: "fazenda",
+    status_legal: "recomendado",
+    source_origin: "biblioteca_canonica_fazenda",
+    activation_mode: "materializar_protocolo",
+    obrigatorio: false,
+    referencia: "PNCRH / orientacao tecnica operacional por risco",
+    calendario_base: {
+      profile: "preventivo_anual",
+      label: "Sequencia condicionada a risco configurado",
+    },
+    itens: [
+      {
+        item_code: "raiva_d1",
+        tipo: "vacinacao",
+        produto: "Vacina Raiva Herbivoros",
+        intervalo_dias: 1,
+        dose_num: 1,
+        gera_agenda: true,
+        indicacao:
+          "Dose inicial somente por protocolo operacional ativo, risco medio/alto e ativacao explicita.",
+        sexo_alvo: "todos",
+        schedule_kind: "calendar_base",
+        agenda_activation: {
+          ...RABIES_OPERATIONAL_AGENDA_ACTIVATION,
+          unknown_history_policy: "start_from_d1",
+        },
+        calendario_base: {
+          mode: "clinical_protocol",
+          anchor: "none",
+          label: "Raiva D1 - inicio operacional por risco",
+        },
+      },
+      {
+        item_code: "raiva_d2",
+        depends_on_item_code: "raiva_d1",
+        tipo: "vacinacao",
+        produto: "Vacina Raiva Herbivoros",
+        intervalo_dias: 30,
+        dose_num: 2,
+        gera_agenda: true,
+        indicacao:
+          "Reforco 30 dias apos conclusao valida de D1. Nao deve nascer sem D1 concluida.",
+        sexo_alvo: "todos",
+        schedule_kind: "after_previous_completion",
+        depends_on: {
+          milestone_code: "raiva_d1",
+          interval_days: 30,
+        },
+        agenda_activation: RABIES_OPERATIONAL_AGENDA_ACTIVATION,
+        calendario_base: {
+          mode: "rolling_interval",
+          anchor: "previous_completion",
+          label: "Raiva D2 - 30 dias apos D1",
+          intervalDays: 30,
+        },
+      },
+      {
+        item_code: "raiva_anual",
+        depends_on_item_code: "raiva_d2",
+        tipo: "vacinacao",
+        produto: "Vacina Raiva Herbivoros",
+        intervalo_dias: 365,
+        dose_num: 3,
+        gera_agenda: true,
+        indicacao:
+          "Reforco anual apos D2 e, depois, apos a ultima dose anual concluida.",
+        sexo_alvo: "todos",
+        schedule_kind: "rolling_from_last_completion",
+        depends_on: {
+          milestone_code: "raiva_d2",
+          interval_days: 365,
+        },
+        agenda_activation: RABIES_OPERATIONAL_AGENDA_ACTIVATION,
+        calendario_base: {
+          mode: "rolling_interval",
+          anchor: "previous_completion",
+          label: "Raiva anual - 365 dias apos ultima conclusao valida",
+          intervalDays: 365,
+        },
+      },
+    ],
+  },
   {
     id: "vac-clostridioses",
     canonical_key: "clostridioses",
@@ -449,17 +568,24 @@ export function buildStandardProtocolItemPayload(
     sexoAlvo: item.sexo_alvo ?? null,
     idadeMinDias: item.idade_min_dias ?? null,
     idadeMaxDias: item.idade_max_dias ?? null,
+    scheduleKind: item.schedule_kind ?? null,
     payload: buildSanitaryBaseCalendarPayload(item.calendario_base),
   });
 
   return {
+    family_code: protocol.family_code,
     indicacao: item.indicacao,
     sexo_alvo: item.sexo_alvo ?? null,
     idade_min_dias: item.idade_min_dias ?? null,
     idade_max_dias: item.idade_max_dias ?? null,
     observacoes: item.observacoes ?? null,
     item_code: item.item_code,
+    milestone_code: regimen?.milestone_code ?? item.item_code,
+    sequence_order: regimen?.sequence_order ?? item.dose_num,
+    schedule_kind: regimen?.schedule_rule.kind ?? item.schedule_kind ?? null,
     depends_on_item_code: item.depends_on_item_code ?? null,
+    depends_on: item.depends_on ?? null,
+    agenda_activation: item.agenda_activation ?? null,
     ...buildSanitaryBaseCalendarPayload(item.calendario_base),
     ...buildSanitaryRegimenPayload(regimen),
   };

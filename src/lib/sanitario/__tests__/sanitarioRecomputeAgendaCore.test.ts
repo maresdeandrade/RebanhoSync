@@ -49,6 +49,7 @@ interface BrucellosisCandidateInput {
 }
 
 type RabiesRisk = "baixo" | "medio" | "alto";
+type RabiesMilestone = "raiva_d1" | "raiva_d2" | "raiva_anual";
 type TechnicalFamily =
   | "clostridioses"
   | "leptospirose_ibr_bvd"
@@ -67,6 +68,10 @@ interface RabiesCandidateInput {
   farmRisk?: RabiesRisk;
   explicitActivation?: boolean;
   riskValues?: RabiesRisk[] | null;
+  milestoneCode?: RabiesMilestone | "raiva_reforco_30d";
+  unknownHistoryPolicy?: "start_from_d1" | "manual_confirmation" | null;
+  completedRabiesEvents?: CompletedRabiesEventFixture[];
+  completedRabiesAgendas?: CompletedRabiesAgendaFixture[];
   existingDedups?: Set<string>;
 }
 
@@ -101,6 +106,18 @@ interface CompletedSanitaryEventFixture {
   sanitaryEventDeleted?: boolean;
 }
 
+interface CompletedRabiesEventFixture {
+  milestoneCode: RabiesMilestone | "raiva_reforco_30d";
+  completedOn: string;
+  eventDeleted?: boolean;
+  sanitaryEventDeleted?: boolean;
+}
+
+interface CompletedRabiesAgendaFixture {
+  milestoneCode: RabiesMilestone;
+  completedOn: string;
+}
+
 function dateUtc(value: string) {
   return new Date(`${value}T00:00:00.000Z`);
 }
@@ -129,16 +146,22 @@ function brucellosisWindowDedup(animalId: string, birthDate: string) {
   ].join(":");
 }
 
-function rabiesRiskDedup(animalId: string, asOf: string) {
+function normalizeRabiesMilestone(milestoneCode: RabiesMilestone | "raiva_reforco_30d") {
+  const normalized = milestoneCode.toLowerCase().replace(/-/g, "_");
+  return normalized === "raiva_reforco_30d" ? "raiva_d2" : (normalized as RabiesMilestone);
+}
+
+function rabiesSequenceDedup(animalId: string, milestoneCode: RabiesMilestone, periodKey: string) {
+  const periodMode = milestoneCode === "raiva_d1" ? "event" : "interval";
   return [
     "sanitario",
     "animal",
     animalId,
     "raiva_herbivoros",
-    "raiva-vigilancia-risco",
+    milestoneCode,
     "v1",
-    "unstructured",
-    asOf,
+    periodMode,
+    periodKey,
   ].join(":");
 }
 
@@ -265,6 +288,27 @@ function evaluateRabiesCandidate(input: RabiesCandidateInput) {
   const farmRisk = input.farmRisk ?? "alto";
   const explicitActivation = input.explicitActivation ?? true;
   const riskValues = input.riskValues === undefined ? ["medio", "alto"] : input.riskValues;
+  const milestoneCode = normalizeRabiesMilestone(input.milestoneCode ?? "raiva_d1");
+  const unknownHistoryPolicy =
+    input.unknownHistoryPolicy === undefined ? "start_from_d1" : input.unknownHistoryPolicy;
+  const completedEvents = (input.completedRabiesEvents ?? []).filter(
+    (event) => event.eventDeleted !== true && event.sanitaryEventDeleted !== true,
+  );
+  const d1CompletedOn = completedEvents
+    .filter((event) => normalizeRabiesMilestone(event.milestoneCode) === "raiva_d1")
+    .map((event) => event.completedOn)
+    .sort()
+    .at(-1);
+  const d2CompletedOn = completedEvents
+    .filter((event) => normalizeRabiesMilestone(event.milestoneCode) === "raiva_d2")
+    .map((event) => event.completedOn)
+    .sort()
+    .at(-1);
+  const lastAnnualCompletedOn = completedEvents
+    .filter((event) => normalizeRabiesMilestone(event.milestoneCode) === "raiva_anual")
+    .map((event) => event.completedOn)
+    .sort()
+    .at(-1);
   const { animal } = input;
 
   if (!hasOperationalItem) return null;
@@ -273,13 +317,35 @@ function evaluateRabiesCandidate(input: RabiesCandidateInput) {
   if (!speciesEligibleForFamily(animal.especie, "raiva_herbivoros")) return null;
   if (!hasConfig) return null;
   if (!explicitActivation) return null;
+  if (farmRisk === "baixo") return null;
   if (!riskValues?.includes(farmRisk)) return null;
 
-  const dedupKey = rabiesRiskDedup(animal.id, input.asOf);
+  let dueDate = input.asOf;
+  let periodKey = `protocol_item:${milestoneCode}`;
+  if (milestoneCode === "raiva_d1") {
+    if (unknownHistoryPolicy !== "start_from_d1") return null;
+    if (d1CompletedOn) return null;
+  }
+  if (milestoneCode === "raiva_d2") {
+    if (!d1CompletedOn) return null;
+    if (d2CompletedOn) return null;
+    const sequenceDueOn = addDays(d1CompletedOn, 30);
+    dueDate = sequenceDueOn > input.asOf ? sequenceDueOn : input.asOf;
+    periodKey = sequenceDueOn;
+  }
+  if (milestoneCode === "raiva_anual") {
+    if (!d2CompletedOn) return null;
+    const anchorCompletedOn = lastAnnualCompletedOn ?? d2CompletedOn;
+    const sequenceDueOn = addDays(anchorCompletedOn, 365);
+    dueDate = sequenceDueOn > input.asOf ? sequenceDueOn : input.asOf;
+    periodKey = sequenceDueOn;
+  }
+
+  const dedupKey = rabiesSequenceDedup(animal.id, milestoneCode, periodKey);
   if (input.existingDedups?.has(dedupKey)) return null;
 
   return {
-    dataPrevista: input.asOf,
+    dataPrevista: dueDate,
     dedupKey,
   };
 }
@@ -431,9 +497,10 @@ describe("P6.2.1 sanitario_recompute_agenda_core brucellosis contract", () => {
     expect(core).toContain("psi.payload #> '{agenda_activation,risk_values}'");
     expect(core).toContain("psi.payload #> '{gatilho_json,risk_values}'");
     expect(core).toContain("jsonb_array_elements_text(raw.risk_values_json)");
-    expect(core).toContain("rv.value = fsc.zona_raiva_risco");
+    expect(core).toContain("lower(rv.value) = fsc.zona_raiva_risco");
     expect(core).toContain("coalesce(family_code, '') <> 'raiva_herbivoros'");
     expect(core).toContain("zona_raiva_risco is not null");
+    expect(core).toContain("zona_raiva_risco in ('medio', 'alto')");
     expect(core).toContain("has_explicit_agenda_activation");
     expect(core).toContain("rabies_risk_allowed");
   });
@@ -767,10 +834,47 @@ describe("P6.2.1 sanitario_recompute_agenda_core brucellosis contract", () => {
     expect(later?.dedupKey).toBe(first?.dedupKey);
   });
 
+  it("keeps SQL contract for rabies D1/D2/annual sequence materialization", () => {
+    const core = extractRecomputeCore();
+
+    expect(core).toContain("sanitary_history as (");
+    expect(core).toContain("psi.payload->>'milestone_code'");
+    expect(core).toContain("psi.payload #>> '{regime_sanitario,milestone_code}'");
+    expect(core).toContain("psi.payload->>'item_code'");
+    expect(core).toContain("psi.payload->>'official_item_code'");
+    expect(core).toContain("raw.raw_milestone_code = 'raiva_reforco_30d'");
+    expect(core).toContain("then 'raiva_d2'");
+    expect(core).toContain("canonical_milestone_code in ('raiva_d1', 'raiva_d2', 'raiva_anual')");
+    expect(core).toContain("unknown_history_policy = 'start_from_d1'");
+    expect(core).toContain("depends_on_milestone_code = 'raiva_d1'");
+    expect(core).toContain("depends_on_milestone_code = 'raiva_d2'");
+    expect(core).toContain("d1_completed_on is not null");
+    expect(core).toContain("d2_completed_on is not null");
+    expect(core).toContain("annual_anchor_completed_on is not null");
+    expect(core).toContain("greatest(_as_of, d1_completed_on + depends_on_interval_days)");
+    expect(core).toContain("greatest(_as_of, annual_anchor_completed_on + depends_on_interval_days)");
+    expect(core).toContain("'sequence_anchor_milestone', sequence_anchor_milestone");
+    expect(core).toContain("'sequence_anchor_completed_on', sequence_anchor_completed_on");
+    expect(core).toContain("'sequence_due_on', sequence_due_on");
+  });
+
+  it("enriches sanitary completion with sequence metadata and canonical rabies alias", () => {
+    const complete = extractCompleteAgendaWithEvent();
+
+    expect(complete).toContain("v_milestone_code = 'raiva_reforco_30d'");
+    expect(complete).toContain("v_milestone_code := 'raiva_d2'");
+    expect(complete).toContain("'milestone_code', v_milestone_code");
+    expect(complete).toContain("'sequence_order', v_sequence_order");
+    expect(complete).toContain("'schedule_kind', v_schedule_kind");
+    expect(complete).toContain("'completed_on', v_completed_on");
+    expect(complete).toContain("'official_item_code', coalesce(");
+    expect(complete).toContain("'sanitary_completion_key', v_agenda.dedup_key");
+  });
+
   it.each([
     ["alto", "alto"],
     ["medio", "medio"],
-  ] as const)("creates one rabies agenda for %s risk with active operational item and explicit activation", (_label, farmRisk) => {
+  ] as const)("creates rabies D1 for %s risk with active operational item, explicit activation and unknown history policy", (_label, farmRisk) => {
     const result = evaluateRabiesCandidate({
       animal: activeFemale(),
       asOf: "2026-07-10",
@@ -780,7 +884,7 @@ describe("P6.2.1 sanitario_recompute_agenda_core brucellosis contract", () => {
     expect(result).toEqual({
       dataPrevista: "2026-07-10",
       dedupKey:
-        "sanitario:animal:aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa:raiva_herbivoros:raiva-vigilancia-risco:v1:unstructured:2026-07-10",
+        "sanitario:animal:aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa:raiva_herbivoros:raiva_d1:v1:event:protocol_item:raiva_d1",
     });
   });
 
@@ -832,6 +936,7 @@ describe("P6.2.1 sanitario_recompute_agenda_core brucellosis contract", () => {
     ["activated template without operational item", { hasOperationalItem: false }],
     ["missing explicit activation", { explicitActivation: false }],
     ["missing risk values", { riskValues: null }],
+    ["missing unknown history policy", { unknownHistoryPolicy: null }],
     ["inactive protocol", { protocolActive: false }],
     ["deleted protocol", { protocolDeleted: true }],
     ["deleted item", { itemDeleted: true }],
@@ -844,6 +949,96 @@ describe("P6.2.1 sanitario_recompute_agenda_core brucellosis contract", () => {
         ...overrides,
       }),
     ).toBeNull();
+  });
+
+  it("blocks rabies D2 without a valid D1 event and ignores agenda-only completion", () => {
+    expect(
+      evaluateRabiesCandidate({
+        animal: activeFemale(),
+        asOf: "2026-07-30",
+        milestoneCode: "raiva_d2",
+      }),
+    ).toBeNull();
+    expect(
+      evaluateRabiesCandidate({
+        animal: activeFemale(),
+        asOf: "2026-07-30",
+        milestoneCode: "raiva_d2",
+        completedRabiesAgendas: [{ milestoneCode: "raiva_d1", completedOn: "2026-06-30" }],
+      }),
+    ).toBeNull();
+  });
+
+  it("creates rabies D2 from a valid D1 event, clamps overdue dates and emits canonical alias", () => {
+    expect(
+      evaluateRabiesCandidate({
+        animal: activeFemale(),
+        asOf: "2026-07-15",
+        milestoneCode: "raiva_d2",
+        completedRabiesEvents: [{ milestoneCode: "raiva_d1", completedOn: "2026-06-30" }],
+      }),
+    ).toEqual({
+      dataPrevista: "2026-07-30",
+      dedupKey:
+        "sanitario:animal:aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa:raiva_herbivoros:raiva_d2:v1:interval:2026-07-30",
+    });
+    expect(
+      evaluateRabiesCandidate({
+        animal: activeFemale(),
+        asOf: "2026-08-15",
+        milestoneCode: "raiva_reforco_30d",
+        completedRabiesEvents: [{ milestoneCode: "raiva_d1", completedOn: "2026-06-30" }],
+      }),
+    ).toEqual({
+      dataPrevista: "2026-08-15",
+      dedupKey:
+        "sanitario:animal:aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa:raiva_herbivoros:raiva_d2:v1:interval:2026-07-30",
+    });
+  });
+
+  it("blocks rabies annual without D2 and never uses D1 as fallback", () => {
+    expect(
+      evaluateRabiesCandidate({
+        animal: activeFemale(),
+        asOf: "2027-07-30",
+        milestoneCode: "raiva_anual",
+        completedRabiesEvents: [{ milestoneCode: "raiva_d1", completedOn: "2026-06-30" }],
+      }),
+    ).toBeNull();
+  });
+
+  it("creates rabies annual from D2 or latest annual and emits only the next pending period", () => {
+    expect(
+      evaluateRabiesCandidate({
+        animal: activeFemale(),
+        asOf: "2027-07-30",
+        milestoneCode: "raiva_anual",
+        completedRabiesEvents: [
+          { milestoneCode: "raiva_d1", completedOn: "2026-06-30" },
+          { milestoneCode: "raiva_d2", completedOn: "2026-07-30" },
+        ],
+      }),
+    ).toEqual({
+      dataPrevista: "2027-07-30",
+      dedupKey:
+        "sanitario:animal:aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa:raiva_herbivoros:raiva_anual:v1:interval:2027-07-30",
+    });
+    expect(
+      evaluateRabiesCandidate({
+        animal: activeFemale(),
+        asOf: "2029-08-01",
+        milestoneCode: "raiva_anual",
+        completedRabiesEvents: [
+          { milestoneCode: "raiva_d1", completedOn: "2026-06-30" },
+          { milestoneCode: "raiva_d2", completedOn: "2026-07-30" },
+          { milestoneCode: "raiva_anual", completedOn: "2027-07-30" },
+        ],
+      }),
+    ).toEqual({
+      dataPrevista: "2029-08-01",
+      dedupKey:
+        "sanitario:animal:aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa:raiva_herbivoros:raiva_anual:v1:interval:2028-07-29",
+    });
   });
 
   it.each([

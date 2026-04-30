@@ -13,7 +13,7 @@ Este documento separa o resumo da rodada de saneamento sanitario da documentacao
 | P0.1 | Golden/parity tests sanitarios criados para capturar divergencias TS/SQL. |
 | P0.2 | Calendario TS -> SQL alinhado; leitura de payload legado PT-BR preservada. |
 | P0.3 | Dedup sanitario unificado em contrato canonico estruturado TS/SQL. |
-| P0.4 | Historico pre-P6 de sequenciamento sanitario estabilizado em testes TS; no contrato SQL P6.2 atual, raiva nao ganhou nova sequencia D1/D2/anual. |
+| P0.4 | Historico pre-P6 de sequenciamento sanitario estabilizado em testes TS; naquele recorte, a raiva ainda nao tinha a materializacao SQL D1/D2/anual que foi fechada depois em P6.4b. |
 | P0.5 | Gate global restaurado com estabilizacao do teste date-sensitive de Relatorios. |
 | P1 | Taxonomia sanitaria passiva criada (`ProtocolKind`, `MaterializationMode`, `ComplianceKind`) sem mudar comportamento. |
 | P2 | `src/lib/sanitario/**` reorganizado por responsabilidade. |
@@ -32,6 +32,8 @@ Este documento separa o resumo da rodada de saneamento sanitario da documentacao
 | P6.2.4 | Protocolos tecnicos recomendados passaram a exigir ativacao operacional explicita; helmintos/carrapato tambem exigem pressao configurada medio-alto. |
 | P6.3a | `animais.especie` foi adicionado como campo canonico nullable minimo (`bovino`/`bubalino`/`null`), sem backfill obrigatorio e sem tornar especie obrigatoria. |
 | P6.3b | `sanitario_recompute_agenda_core` passou a aplicar gate sanitario transicional por especie, mantendo `especie=null` elegivel temporariamente. |
+| P6.4a | Contrato TS de raiva operacional D1/D2/anual foi fixado sem alterar RPC/SQL/seed: `raiva_d1`, `raiva_d2`, `raiva_anual`, `schedule_kind`, `depends_on`, ativacao por risco medio/alto, `unknown_history_policy='start_from_d1'` em D1 e alias legado `raiva_reforco_30d` normalizado para `raiva_d2`. |
+| P6.4b | Baseline SQL passou a consumir o contrato P6.4a na `sanitario_recompute_agenda_core`: D1 explicito por risco/ativacao/politica, D2 apos evento sanitario D1 valido e anual apos D2 ou ultima anual, sem catalogo global como materializador. |
 
 ## Motor e contratos atuais
 
@@ -39,18 +41,20 @@ Este documento separa o resumo da rodada de saneamento sanitario da documentacao
 - TypeScript mantem contratos, adapters, suporte offline/local e golden/parity tests.
 - Calendario emitido pelo TS usa vocabulario SQL; leitura continua aceitando legado PT-BR.
 - Dedup sanitario usa contrato canonico estruturado em TS e SQL.
-- No recorte P6.2 atual, a agenda canonica nao implementa nova sequencia D1/D2/anual de raiva; raiva so pode gerar agenda quando ha protocolo operacional ativo, item `gera_agenda=true`, risco/configuracao valido e ativacao explicita.
+- No recorte P6.4b atual, a agenda canonica SQL implementa a sequencia D1/D2/anual de raiva apenas para protocolo operacional tenant-scoped ativo, item `gera_agenda=true`, risco/configuracao valido, `risk_values` compativel e ativacao explicita.
 - Taxonomia sanitaria e passiva e retrocompativel.
 - No estado pos-P5, `src/pages/Registrar/**` nao importa diretamente `@/lib/sanitario/engine/*`.
 - Labels visuais de calendario no Registrar passam por `src/lib/sanitario/models/calendarDisplay.ts`.
 - Payload, preflight, package e RPC/fallback sanitario estao delegados a facades/models/infrastructure de `src/lib/sanitario/**`.
 
-Contrato de agenda sanitaria pos-P6.3b:
+Contrato de agenda sanitaria pos-P6.4b:
 
 - Catalogo global oficial/tecnico nao e fonte direta de agenda: `sanitario_recompute_agenda_core` nao consulta `catalogo_protocolos_oficiais`, `catalogo_protocolos_oficiais_itens` ou `catalogo_doencas_notificaveis`.
 - Brucelose PNCEBT gera agenda somente para femeas ativas com nascimento conhecido e idade entre 90 e 240 dias, mantendo `requires_vet=true`, dedup canonico por janela e gate transicional de especie que permite `bovino`, `bubalino` e `null`.
 - Conclusao de agenda sanitaria via `sanitario_complete_agenda_with_event` preserva `payload.sanitary_completion` em `eventos_sanitario.payload` e espelha em `eventos.payload`; recompute usa esse historico para nao recriar agenda concluida mesmo se a agenda original for soft-deletada.
 - Raiva dos herbivoros exige protocolo/item operacional ativo, `gera_agenda=true`, `family_code='raiva_herbivoros'`, `fazenda_sanidade_config.zona_raiva_risco` em `medio|alto`, `risk_values` no payload, ativacao explicita e gate transicional de especie que permite `bovino`, `bubalino` e `null`.
+- Contrato TS P6.4a da raiva operacional usa D1 `raiva_d1` com `unknown_history_policy='start_from_d1'`, D2 canonico `raiva_d2` dependente de D1 apos 30 dias e anual `raiva_anual` dependente de D2 com `rolling_from_last_completion`; `raiva_reforco_30d` permanece apenas como alias legado de leitura e normaliza para `raiva_d2`.
+- Materializacao SQL P6.4b aplica a sequencia na agenda: D1 nasce somente com risco medio/alto, ativacao explicita e politica de historico desconhecido; D2 nasce somente se houver evento sanitario D1 valido; anual nasce somente se houver D2 valida e ancora na ultima anual valida ou, se ainda nao existir anual, na D2.
 - Tecnicos recomendados (`clostridioses`, `leptospirose_ibr_bvd`, `controle_parasitario`, `controle_carrapato`) exigem protocolo/item operacional ativo, `gera_agenda=true` e ativacao explicita. Quando o payload traz alvo explicito de especie (`species`, `especies_alvo` ou `gatilho_json.species`), especie conhecida precisa bater; `especie=null` passa transicionalmente. Sem alvo explicito, `bovino`, `bubalino` e `null` permanecem elegiveis. `controle_parasitario` exige `pressao_helmintos` em `medio|alto`; `controle_carrapato` exige `pressao_carrapato` em `medio|alto`.
 - PNEFA/aftosa, IN50/doencas notificaveis, GTA, suspeitas, checklists, biosseguranca e itens dependentes de avaliacao manual continuam sem agenda automatica.
 
@@ -66,9 +70,9 @@ Contrato de agenda sanitaria pos-P6.3b:
 
 Limites mantidos no contrato atual:
 
-- sem nova sequencia D1/D2/anual de raiva neste recorte;
+- sem materializacao por catalogo global/seed da sequencia D1/D2/anual de raiva;
 - `animais.especie` e canonica e nullable (`bovino`/`bubalino`/`null`), mas sem backfill obrigatorio, sem especie obrigatoria e sem bloquear legado `null` nesta etapa;
-- sem coluna nova, indice JSONB ou backfill de eventos antigos para `sanitary_completion`;
+- sem coluna nova, indice JSONB ou backfill de eventos antigos para `sanitary_completion`; a ausencia de indice JSONB permanece o risco operacional principal para historico sanitario volumoso;
 - sem transformacao de boa pratica tecnica em obrigacao legal;
 - seed sanitario conservador, nao normativo completo.
 

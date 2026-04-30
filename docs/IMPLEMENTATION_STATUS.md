@@ -13,7 +13,7 @@ Este documento registra o estado efetivo do RebanhoSync em abril de 2026, pós-f
 - **Fase de engenharia/produto:** transicao de MVP funcional para SLC (Simple, Lovable, Complete) em consolidacao.
 - **Core operacional:** sanitário, pesagem, movimentação, nutrição, reprodução, financeiro e agenda estão implementados e usáveis.
 - **Camadas consolidadas:** onboarding guiado, importação CSV, relatórios operacionais, telemetria de piloto com flush remoto, modo de experiência da fazenda, dashboard e ficha reprodutiva dedicada, pós-parto neonatal, cria inicial, transições de rebanho.
-- **Motor sanitário endurecido:** catalogo conservador, calendario TS->SQL alinhado, dedup canonico TS/SQL, brucelose por janela/sexo/especie transicional, bloqueio historico de reabertura via `sanitary_completion`, raiva por risco/configuracao/especie transicional e tecnicos por ativacao operacional explicita com alvo de especie quando informado.
+- **Motor sanitário endurecido:** catalogo conservador, calendario TS->SQL alinhado, dedup canonico TS/SQL, brucelose por janela/sexo/especie transicional, bloqueio historico de reabertura via `sanitary_completion`, raiva sequencial D1/D2/anual por risco/configuracao/ativacao explicita e tecnicos por ativacao operacional explicita com alvo de especie quando informado.
 - **Qualidade local:** `lint`, `test:unit`, `test:integration`, `test:smoke`, `quality:gate` e `build` verdes.
 - **TDs originalmente abertos (M0-M2):** fechados e consolidados na baseline Supabase pos-squash.
 - **Gaps residuais:** sem gap funcional critico aberto; permanecem residuos estruturais locais e consolidacao de experiencia/confiabilidade.
@@ -61,7 +61,7 @@ Este documento registra o estado efetivo do RebanhoSync em abril de 2026, pós-f
 | --- | --- | --- |
 | `sanitario.registro` | Completo — catálogo `produtos_veterinarios`, biblioteca canônica de protocolos, payload/preflight/package sanitário extraídos e boundary RPC/fallback isolado | `src/pages/Registrar/**`, `src/pages/ProtocolosSanitarios/**`, `src/lib/sanitario/models/**`, `src/lib/sanitario/infrastructure/**`, `src/lib/sanitario/catalog/baseProtocols.ts` |
 | `sanitario.historico` | Completo | `src/pages/Eventos.tsx` |
-| `sanitario.agenda_link` | Completo — SQL/Supabase e motor lider de recompute; TS mantem contratos/adapters/golden tests e suporte offline; agenda automatica exige gates canonicos por janela, risco/configuracao, ativacao operacional ou especie transicional | `supabase/migrations/00000000000000_rebuild_base_schema_sanitario.sql`, `src/lib/sanitario/engine/**` |
+| `sanitario.agenda_link` | Completo — SQL/Supabase e motor lider de recompute; TS mantem contratos/adapters/golden tests e suporte offline; agenda automatica exige gates canonicos por janela, risco/configuracao, ativacao operacional ou especie transicional; raiva operacional segue sequencia D1/D2/anual | `supabase/migrations/00000000000000_rebuild_base_schema_sanitario.sql`, `src/lib/sanitario/engine/**` |
 | `pesagem.registro` | Completo | `src/pages/Registrar/index.tsx`, `src/pages/AnimalDetalhe.tsx` |
 | `pesagem.historico` | Completo — **TD-015 CLOSED** via artefatos SQL consolidados na baseline | `supabase/migrations/00000000000000_rebuild_base_schema_sanitario.sql` |
 | `nutricao.registro` | Completo | `src/pages/Registrar/index.tsx`, `src/pages/Eventos.tsx` |
@@ -222,7 +222,7 @@ Este documento registra o estado efetivo do RebanhoSync em abril de 2026, pós-f
 - P0.1 criou golden/parity tests para os casos criticos sanitarios.
 - P0.2 alinhou o adapter de calendario TS -> SQL, mantendo leitura retrocompativel de payload PT-BR legado.
 - P0.3 unificou dedup sanitario no contrato canonico estruturado TS/SQL.
-- P0.4 registrou estabilizacao historica de sequenciamento sanitario em testes TS; no contrato SQL P6.2 atual, raiva nao ganhou nova sequencia D1/D2/anual.
+- P0.4 registrou estabilizacao historica de sequenciamento sanitario em testes TS; a sequencia operacional de raiva foi posteriormente fixada em contrato TS por P6.4a e materializada em SQL por P6.4b.
 - P0.5 restaurou o gate global estabilizando teste date-sensitive fora do dominio sanitario.
 - P1 introduziu taxonomia sanitaria passiva (`ProtocolKind`, `MaterializationMode`, `ComplianceKind`) sem alterar comportamento.
 - P2 reorganizou `src/lib/sanitario/**` por responsabilidade: `models/`, `engine/`, `catalog/`, `compliance/`, `infrastructure/`, `customization/`.
@@ -231,7 +231,7 @@ Este documento registra o estado efetivo do RebanhoSync em abril de 2026, pós-f
 - P5 removeu o ultimo import direto de `@/lib/sanitario/engine/*` em `src/pages/Registrar/**`; labels visuais de calendario agora passam por `src/lib/sanitario/models/calendarDisplay.ts`.
 - Residuos conhecidos: carencia ainda nao e motor pleno de withholding; produto/lote/estoque ainda nao formam rastreabilidade sanitaria completa; SISBOV/fiscal seguem fora do core.
 
-## 7.6 Update 2026-04-29 (Contrato Sanitario P6.1-P6.3b)
+## 7.6 Update 2026-04-29 (Contrato Sanitario P6.1-P6.4b)
 
 - P6.1 consolidou o catalogo sanitario conservador no seed: brucelose PNCEBT e o unico item oficial com agenda automatica por seed; raiva, PNEFA/aftosa, IN50/doencas notificaveis, GTA, checklists, biosseguranca e tecnicos recomendados permanecem sem agenda automatica por simples presenca no catalogo global.
 - P6.2.1 endureceu `sanitario_recompute_agenda_core` para brucelose PNCEBT: animal ativo, femea, nascimento obrigatorio, janela 90-240 dias, sem backfill expirado e dedup canonico por janela.
@@ -240,7 +240,9 @@ Este documento registra o estado efetivo do RebanhoSync em abril de 2026, pós-f
 - P6.2.4 habilitou agenda tecnica recomendada apenas por ativacao operacional da fazenda: `clostridioses`, `leptospirose_ibr_bvd`, `controle_parasitario` e `controle_carrapato` exigem item operacional ativo, `gera_agenda=true` e ativacao explicita; helmintos/carrapato tambem exigem pressao configurada medio/alto.
 - P6.3a adicionou `animais.especie` como campo canonico nullable minimo (`bovino` | `bubalino` | `null`), sem backfill obrigatorio e sem tornar especie obrigatoria.
 - P6.3b habilitou gate sanitario transicional por especie em `sanitario_recompute_agenda_core`: `especie=null` segue elegivel temporariamente; brucelose e raiva permitem `bovino`, `bubalino` e `null`; tecnicos recomendados respeitam alvo explicito de especie quando existir e, sem alvo explicito, permitem as especies canonicas e `null`.
-- Limites atuais preservados: sem nova sequencia D1/D2/anual de raiva, sem coluna/indice JSONB para `sanitary_completion`, sem backfill historico amplo, sem especie obrigatoria e sem transformar boa pratica tecnica em obrigacao legal.
+- P6.4a fixou o contrato TS de raiva operacional D1/D2/anual: D1 `raiva_d1`, D2 canonico `raiva_d2`, anual `raiva_anual`, `schedule_kind`, `depends_on`, ativacao por risco medio/alto, `unknown_history_policy='start_from_d1'` e alias legado `raiva_reforco_30d` normalizado para `raiva_d2`.
+- P6.4b materializou a sequencia em `sanitario_recompute_agenda_core`: D1 exige risco medio/alto, ativacao explicita e `unknown_history_policy='start_from_d1'`; D2 exige evento sanitario D1 valido; anual exige D2 valida e ancora na ultima anual valida ou, se ausente, em D2.
+- Limites atuais preservados: catalogo global/seed nao materializam agenda de raiva, sem coluna/indice JSONB para `sanitary_completion`, sem backfill historico amplo, sem especie obrigatoria e sem transformar boa pratica tecnica em obrigacao legal. Risco remanescente: ausencia de indice JSONB para `sanitary_completion` em historico volumoso.
 
 ---
 

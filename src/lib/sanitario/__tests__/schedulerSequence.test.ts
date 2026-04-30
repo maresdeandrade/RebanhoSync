@@ -135,7 +135,7 @@ function rabiesItems() {
     }),
     d2: item({
       familyCode: "raiva_herbivoros",
-      itemCode: "raiva_reforco_30d",
+      itemCode: "raiva_d2",
       mode: "rotina_recorrente",
       anchor: "conclusao_etapa_dependente",
       intervalDays: 30,
@@ -148,7 +148,7 @@ function rabiesItems() {
       mode: "rotina_recorrente",
       anchor: "conclusao_etapa_dependente",
       intervalDays: 365,
-      dependsOnItemCode: "raiva_reforco_30d",
+      dependsOnItemCode: "raiva_d2",
       scheduleKind: "rolling_from_last_completion",
     }),
   };
@@ -239,9 +239,9 @@ describe("sanitary scheduler sequential materialization", () => {
       }),
       completed({
         familyCode: "raiva_herbivoros",
-        itemCode: "raiva_reforco_30d",
+        itemCode: "raiva_d2",
         completedAt: "2026-07-30",
-        dedupKey: "sanitario:animal:animal-1:raiva_herbivoros:raiva_reforco_30d:v1:interval:2026-07-30",
+        dedupKey: "sanitario:animal:animal-1:raiva_herbivoros:raiva_d2:v1:interval:2026-07-30",
       }),
     ];
 
@@ -287,9 +287,9 @@ describe("sanitary scheduler sequential materialization", () => {
       }),
       completed({
         familyCode: "raiva_herbivoros",
-        itemCode: "raiva_reforco_30d",
+        itemCode: "raiva_d2",
         completedAt: "2026-07-30",
-        dedupKey: "sanitario:animal:animal-1:raiva_herbivoros:raiva_reforco_30d:v1:interval:2026-07-30",
+        dedupKey: "sanitario:animal:animal-1:raiva_herbivoros:raiva_d2:v1:interval:2026-07-30",
       }),
       completed({
         familyCode: "raiva_herbivoros",

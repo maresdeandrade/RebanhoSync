@@ -51,6 +51,9 @@ describe("P6.1 conservative sanitary seed catalog", () => {
     expect(item).toContain('"risk_field":"zona_raiva_risco"');
     expect(item).toContain('"requires_explicit_activation":true');
     expect(compact(item)).toContain("false, false, '{}'::jsonb, false,");
+    expect(seedSql).not.toContain("raiva-d1");
+    expect(seedSql).not.toContain("raiva-d2");
+    expect(seedSql).not.toContain("raiva-anual");
   });
 
   it("keeps PNEFA/aftosa as vesicular-syndrome vigilance, not routine vaccination", () => {

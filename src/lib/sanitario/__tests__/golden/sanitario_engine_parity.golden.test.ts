@@ -239,7 +239,7 @@ describe("sanitario engine golden/parity contracts", () => {
     });
     const d2 = buildItem({
       familyCode: "raiva_herbivoros",
-      itemCode: "raiva_reforco_30d",
+      itemCode: "raiva_d2",
       mode: "rotina_recorrente",
       anchor: "conclusao_etapa_dependente",
       intervalDays: 30,
@@ -283,7 +283,7 @@ describe("sanitario engine golden/parity contracts", () => {
     });
     const d2 = buildItem({
       familyCode: "raiva_herbivoros",
-      itemCode: "raiva_reforco_30d",
+      itemCode: "raiva_d2",
       mode: "rotina_recorrente",
       anchor: "conclusao_etapa_dependente",
       intervalDays: 30,
@@ -319,7 +319,7 @@ describe("sanitario engine golden/parity contracts", () => {
       materialize: true,
       dueDate: "2026-07-30",
       reasonCode: "ready",
-      dedupKey: `sanitario:animal:${ANIMAL_ID}:raiva_herbivoros:raiva_reforco_30d:v1:interval:2026-07-30`,
+      dedupKey: `sanitario:animal:${ANIMAL_ID}:raiva_herbivoros:raiva_d2:v1:interval:2026-07-30`,
     });
     expect(d2Result.dedupKey).not.toBe(d1Dedup);
   });
@@ -334,7 +334,7 @@ describe("sanitario engine golden/parity contracts", () => {
     });
     const d2 = buildItem({
       familyCode: "raiva_herbivoros",
-      itemCode: "raiva_reforco_30d",
+      itemCode: "raiva_d2",
       mode: "rotina_recorrente",
       anchor: "conclusao_etapa_dependente",
       intervalDays: 30,
@@ -347,7 +347,7 @@ describe("sanitario engine golden/parity contracts", () => {
       mode: "rotina_recorrente",
       anchor: "conclusao_etapa_dependente",
       intervalDays: 365,
-      dependsOnItemCode: "raiva_reforco_30d",
+      dependsOnItemCode: "raiva_d2",
       scheduleKind: "rolling_from_last_completion",
     });
     const subject = buildSubject({ birthDate: "2026-01-01" });
@@ -360,9 +360,9 @@ describe("sanitario engine golden/parity contracts", () => {
       }),
       completedRecord({
         familyCode: "raiva_herbivoros",
-        itemCode: "raiva_reforco_30d",
+        itemCode: "raiva_d2",
         completedAt: "2026-07-30",
-        dedupKey: `sanitario:animal:${ANIMAL_ID}:raiva_herbivoros:raiva_reforco_30d:v1:interval:2026-07-30`,
+        dedupKey: `sanitario:animal:${ANIMAL_ID}:raiva_herbivoros:raiva_d2:v1:interval:2026-07-30`,
       }),
     ];
 
@@ -516,6 +516,10 @@ describe("sanitario engine golden/parity contracts", () => {
     expect(baseline).toContain("'sanitary_completion_key', v_agenda.dedup_key");
     expect(baseline).toContain("v_enriched_payload");
     expect(baseline).toContain("perform public.sanitario_recompute_agenda_core");
+    expect(baseline).toContain("'milestone_code', v_milestone_code");
+    expect(baseline).toContain("'sequence_order', v_sequence_order");
+    expect(baseline).toContain("'schedule_kind', v_schedule_kind");
+    expect(baseline).toContain("'completed_on', v_completed_on");
   });
 });
 
@@ -624,11 +628,16 @@ describe("sanitario engine SQL contracts", () => {
     expect(baseline).toContain("psi.payload #> '{agenda_activation,risk_values}'");
     expect(baseline).toContain("psi.payload #> '{gatilho_json,risk_values}'");
     expect(baseline).toContain("jsonb_array_elements_text(raw.risk_values_json)");
-    expect(baseline).toContain("rv.value = fsc.zona_raiva_risco");
+    expect(baseline).toContain("lower(rv.value) = fsc.zona_raiva_risco");
     expect(baseline).toContain("coalesce(family_code, '') <> 'raiva_herbivoros'");
     expect(baseline).toContain("zona_raiva_risco is not null");
+    expect(baseline).toContain("zona_raiva_risco in ('medio', 'alto')");
     expect(baseline).toContain("has_explicit_agenda_activation");
     expect(baseline).toContain("rabies_risk_allowed");
+    expect(baseline).toContain("canonical_milestone_code in ('raiva_d1', 'raiva_d2', 'raiva_anual')");
+    expect(baseline).toContain("unknown_history_policy = 'start_from_d1'");
+    expect(baseline).toContain("d1_completed_on is not null");
+    expect(baseline).toContain("d2_completed_on is not null");
   });
 
   it("contract: SQL agenda recompute gates recommended technical protocols by explicit activation", () => {
@@ -652,7 +661,8 @@ describe("sanitario engine SQL contracts", () => {
 
     expect(baseline).toContain("public.render_sanitario_canonical_dedup_key");
     expect(baseline).toContain("public.sanitario_dedup_period_mode");
-    expect(baseline).toContain("coalesce(payload->>'official_item_code'");
+    expect(baseline).toContain("payload->>'official_item_code'");
+    expect(baseline).toContain("case when family_code = 'raiva_herbivoros' then canonical_milestone_code end");
     expect(baseline).toContain("(data_nascimento + age_min_days)::text");
     expect(baseline).toContain("as candidate_dedup_key");
     expect(baseline).toContain("ai.dedup_key = p.candidate_dedup_key");
@@ -788,7 +798,7 @@ describe("sanitario engine SQL contracts", () => {
           scopeType: "animal",
           scopeId: ANIMAL_ID,
           familyCode: "raiva_herbivoros",
-          itemCode: "raiva_reforco_30d",
+          itemCode: "raiva_d2",
           regimenVersion: 1,
           mode: "rotina_recorrente",
           periodKey: "2026-07-30",
@@ -797,7 +807,7 @@ describe("sanitario engine SQL contracts", () => {
           scopeType: "animal",
           scopeId: ANIMAL_ID,
           familyCode: "raiva_herbivoros",
-          itemCode: "raiva_reforco_30d",
+          itemCode: "raiva_d2",
           regimenVersion: 1,
           periodMode: "interval",
           periodKey: "2026-07-30",
@@ -912,8 +922,8 @@ describe("sanitario engine SQL contracts", () => {
       },
       {
         case: "Raiva D2",
-        dedupTs: `sanitario:animal:${ANIMAL_ID}:raiva_herbivoros:raiva_reforco_30d:v1:interval:2026-07-30`,
-        dedupSql: `sanitario:animal:${ANIMAL_ID}:raiva_herbivoros:raiva_reforco_30d:v1:interval:2026-07-30`,
+        dedupTs: `sanitario:animal:${ANIMAL_ID}:raiva_herbivoros:raiva_d2:v1:interval:2026-07-30`,
+        dedupSql: `sanitario:animal:${ANIMAL_ID}:raiva_herbivoros:raiva_d2:v1:interval:2026-07-30`,
         equivalent: true,
       },
       {

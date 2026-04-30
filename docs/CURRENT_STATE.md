@@ -24,7 +24,7 @@ Consolidacoes recentes da fase SLC:
 - remocao de termos ambiguos legados da UI operacional;
 - reforco do modelo Two Rails: Agenda (`agenda_itens`) != Eventos (`eventos`);
 - `Aplicar protocolo` atua apenas na agenda (materializacao/recalculo), sem gerar evento.
-- saneamento sanitario P0-P6.3b concluido no recorte atual: SQL/Supabase permanece motor lider de materializacao/recompute; TypeScript preserva contratos, adapters, golden tests e suporte offline.
+- saneamento sanitario P0-P6.4b concluido no recorte atual: SQL/Supabase permanece motor lider de materializacao/recompute; TypeScript preserva contratos, adapters, golden tests e suporte offline.
 - calendario sanitario TS->SQL alinhado; dedup sanitario canonico estruturado em TS/SQL; agenda sanitaria canonica agora bloqueia geracao indevida por catalogo global e exige gates explicitos por janela, risco, configuracao, ativacao operacional ou especie canonica transicional.
 - taxonomia sanitaria passiva introduzida (`ProtocolKind`, `MaterializationMode`, `ComplianceKind`) sem mudanca de comportamento.
 - `src/lib/sanitario/**` reorganizado por responsabilidade e boundary `Registrar` <-> sanitario documentado.
@@ -81,7 +81,7 @@ Contratos sanitarios centrais:
 - adapters `toSqlCalendarMode` / `fromSqlOrLegacyCalendarMode` e equivalentes de anchor
 - taxonomia passiva em `models/taxonomy.ts`
 
-Contrato atual de agenda sanitaria pos-P6.3b:
+Contrato atual de agenda sanitaria pos-P6.4b:
 - P6.1 consolidou o catalogo sanitario conservador: o seed e tecnico/idempotente, separa catalogo oficial, tecnicos recomendados, notificaveis e produtos, mas nao e fonte normativa completa.
 - P6.2.1 materializa brucelose PNCEBT apenas para femeas ativas, com nascimento conhecido, janela etaria 90-240 dias, `gera_agenda=true`, dedup canonico por janela e bloqueio de backfill expirado.
 - P6.2.2a/P6.2.2b impedem reabertura de brucelose concluida: primeiro por agenda concluida com evento sanitario valido e depois por `payload.sanitary_completion` espelhado em `eventos` e persistido canonicamente em `eventos_sanitario`.
@@ -89,6 +89,8 @@ Contrato atual de agenda sanitaria pos-P6.3b:
 - P6.2.4 permite agenda tecnica recomendada somente por protocolo operacional da fazenda, item `gera_agenda=true` e ativacao explicita no payload; `controle_parasitario` exige `pressao_helmintos` medio/alto e `controle_carrapato` exige `pressao_carrapato` medio/alto.
 - P6.3a adicionou `animais.especie` como campo canonico nullable minimo (`bovino` | `bubalino` | `null`), sem backfill obrigatorio e sem tornar especie obrigatoria.
 - P6.3b aplica gate sanitario transicional por especie na `sanitario_recompute_agenda_core`: `especie=null` continua elegivel temporariamente; brucelose e raiva permitem `bovino`, `bubalino` e `null`; tecnicos recomendados respeitam alvo explicito de especie quando existir e, sem alvo explicito, permitem as especies canonicas e `null`.
+- P6.4a fixou o contrato TS de raiva operacional D1/D2/anual em `baseProtocols`/regimen: `raiva_d1`, `raiva_d2`, `raiva_anual`, `schedule_kind`, `depends_on`, `agenda_activation` por risco medio/alto e `unknown_history_policy='start_from_d1'` para D1; alias legado `raiva_reforco_30d` normaliza para `raiva_d2` apenas como leitura compativel.
+- P6.4b materializou a sequencia de raiva na `sanitario_recompute_agenda_core`: D1 exige risco medio/alto, ativacao explicita e `unknown_history_policy='start_from_d1'`; D2 depende de evento sanitario D1 valido; anual exige D2 valida e ancora na ultima anual valida ou, na ausencia dela, em D2; datas vencidas sao clampadas para evitar backfill amplo.
 - PNEFA/aftosa, IN50/doencas notificaveis, GTA, suspeitas, checklists e biosseguranca continuam fora da agenda automatica.
 
 ---
@@ -117,9 +119,9 @@ Estado real validado em 2026-04-29:
 - Validador funcional: `node scripts/codex/validate-supabase-baseline-functional.mjs`.
 
 Limites explicitamente mantidos:
-- nao ha implementacao nova de sequencia D1/D2/anual de raiva neste recorte P6;
+- raiva sequencial D1/D2/anual esta materializada na baseline SQL apenas via protocolo operacional tenant-scoped; catalogo global/seed continuam sem gerar agenda automatica;
 - `animais.especie` existe como campo canonico nullable minimo (`bovino`/`bubalino`/`null`) e atua como gate sanitario transicional, sem backfill obrigatorio e sem obrigatoriedade de preenchimento;
-- nao ha indice JSONB para `payload.sanitary_completion`;
+- nao ha indice JSONB para `payload.sanitary_completion`; este e o risco remanescente principal da sequencia de raiva quando o volume historico crescer;
 - o seed sanitario permanece conservador e nao e catalogo normativo completo.
 
 Riscos remanescentes:

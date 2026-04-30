@@ -780,7 +780,58 @@ begin
     raise exception 'Forbidden';
   end if;
 
-  with candidates as (
+  with sanitary_history as (
+    select
+      e.fazenda_id,
+      e.animal_id,
+      hnorm.family_code,
+      hnorm.milestone_code,
+      case
+        when nullif(es.payload #>> '{sanitary_completion,completed_on}', '') ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'
+        then (es.payload #>> '{sanitary_completion,completed_on}')::date
+        else (e.occurred_at at time zone 'America/Sao_Paulo')::date
+      end as completed_on,
+      es.payload #>> '{sanitary_completion,sanitary_completion_key}' as sanitary_completion_key
+    from public.eventos e
+    join public.eventos_sanitario es
+      on es.evento_id = e.id
+     and es.fazenda_id = e.fazenda_id
+    cross join lateral (
+      select
+        lower(nullif(coalesce(
+          es.payload #>> '{sanitary_completion,family_code}',
+          es.payload->>'family_code',
+          es.payload #>> '{regime_sanitario,family_code}'
+        ), '')) as family_code,
+        regexp_replace(lower(nullif(coalesce(
+          es.payload #>> '{sanitary_completion,milestone_code}',
+          es.payload->>'milestone_code',
+          es.payload #>> '{regime_sanitario,milestone_code}',
+          es.payload #>> '{sanitary_completion,official_item_code}',
+          es.payload->>'official_item_code',
+          es.payload->>'item_code'
+        ), '')), '-', '_', 'g') as raw_milestone_code
+    ) hraw
+    cross join lateral (
+      select
+        hraw.family_code,
+        case
+          when hraw.family_code = 'raiva_herbivoros'
+           and hraw.raw_milestone_code = 'raiva_reforco_30d'
+          then 'raiva_d2'
+          else hraw.raw_milestone_code
+        end as milestone_code
+    ) hnorm
+    where e.fazenda_id = _fazenda_id
+      and (_animal_id is null or e.animal_id = _animal_id)
+      and e.animal_id is not null
+      and e.dominio = 'sanitario'
+      and e.deleted_at is null
+      and es.deleted_at is null
+      and hnorm.family_code = 'raiva_herbivoros'
+      and hnorm.milestone_code in ('raiva_d1', 'raiva_d2', 'raiva_anual')
+  ),
+  candidates as (
     select
       a.fazenda_id,
       a.id as animal_id,
@@ -808,7 +859,15 @@ begin
       rule.species_target_matches,
       rule.rabies_risk_allowed,
       rule.helminth_risk_allowed,
-      rule.tick_risk_allowed
+      rule.tick_risk_allowed,
+      rule.canonical_milestone_code,
+      rule.schedule_kind,
+      rule.sequence_order,
+      rule.depends_on_milestone_code,
+      rule.depends_on_interval_days,
+      rule.unknown_history_policy,
+      rule.activation_cycle_key,
+      rule.activation_date
     from public.animais a
     left join public.fazenda_sanidade_config fsc
       on fsc.fazenda_id = a.fazenda_id
@@ -870,8 +929,57 @@ begin
           psi.payload->'species',
           psi.payload->'especies_alvo',
           psi.payload #> '{gatilho_json,species}'
-        ) as species_targets_json
+        ) as species_targets_json,
+        regexp_replace(lower(nullif(coalesce(
+          psi.payload->>'milestone_code',
+          psi.payload #>> '{regime_sanitario,milestone_code}',
+          psi.payload->>'item_code',
+          psi.payload->>'official_item_code'
+        ), '')), '-', '_', 'g') as raw_milestone_code,
+        lower(nullif(coalesce(
+          psi.payload->>'schedule_kind',
+          psi.payload #>> '{regime_sanitario,schedule_kind}',
+          psi.payload #>> '{regime_sanitario,schedule_rule,kind}'
+        ), '')) as raw_schedule_kind,
+        nullif(coalesce(
+          psi.payload->>'sequence_order',
+          psi.payload #>> '{regime_sanitario,sequence_order}',
+          psi.payload->>'dose_num'
+        ), '') as sequence_order_raw,
+        regexp_replace(lower(nullif(coalesce(
+          psi.payload #>> '{depends_on,milestone_code}',
+          psi.payload #>> '{regime_sanitario,depends_on_milestone}',
+          psi.payload->>'depends_on_item_code'
+        ), '')), '-', '_', 'g') as raw_depends_on_milestone_code,
+        nullif(coalesce(
+          psi.payload #>> '{depends_on,interval_days}',
+          psi.payload #>> '{regime_sanitario,schedule_rule,interval_days}',
+          psi.payload #>> '{calendario_base,intervalDays}',
+          psi.payload #>> '{calendario_base,interval_days}',
+          psi.intervalo_dias::text
+        ), '') as depends_on_interval_days_raw,
+        lower(nullif(psi.payload #>> '{agenda_activation,unknown_history_policy}', '')) as unknown_history_policy,
+        coalesce(
+          nullif(psi.payload #>> '{agenda_activation,activation_key}', ''),
+          nullif(psi.payload #>> '{agenda_activation,cycle_key}', ''),
+          nullif(psi.payload #>> '{agenda_activation,activated_on}', ''),
+          nullif(psi.payload #>> '{agenda_activation,activated_at}', ''),
+          'protocol_item:' || psi.id::text
+        ) as activation_cycle_key,
+        nullif(coalesce(
+          psi.payload #>> '{agenda_activation,activated_on}',
+          psi.payload #>> '{agenda_activation,activated_at}'
+        ), '') as activation_date_raw
     ) raw
+    cross join lateral (
+      select
+        case
+          when raw.family_code = 'raiva_herbivoros'
+           and raw.raw_milestone_code = 'raiva_reforco_30d'
+          then 'raiva_d2'
+          else raw.raw_milestone_code
+        end as canonical_milestone_code
+    ) milestone
     cross join lateral (
       select
         raw.family_code,
@@ -924,7 +1032,7 @@ begin
           when jsonb_typeof(raw.risk_values_json) = 'array' then exists (
             select 1
             from jsonb_array_elements_text(raw.risk_values_json) as rv(value)
-            where rv.value = fsc.zona_raiva_risco
+            where lower(rv.value) = fsc.zona_raiva_risco
           )
           else false
         end as rabies_risk_allowed,
@@ -943,25 +1051,143 @@ begin
             where rv.value = fsc.pressao_carrapato
           )
           else false
-        end as tick_risk_allowed
+        end as tick_risk_allowed,
+        milestone.canonical_milestone_code,
+        coalesce(
+          raw.raw_schedule_kind,
+          case milestone.canonical_milestone_code
+            when 'raiva_d1' then 'calendar_base'
+            when 'raiva_d2' then 'after_previous_completion'
+            when 'raiva_anual' then 'rolling_from_last_completion'
+          end
+        ) as schedule_kind,
+        coalesce(
+          case when raw.sequence_order_raw ~ '^[0-9]+$' then raw.sequence_order_raw::integer end,
+          case milestone.canonical_milestone_code
+            when 'raiva_d1' then 1
+            when 'raiva_d2' then 2
+            when 'raiva_anual' then 3
+          end
+        ) as sequence_order,
+        case
+          when raw.family_code = 'raiva_herbivoros'
+           and raw.raw_depends_on_milestone_code = 'raiva_reforco_30d'
+          then 'raiva_d2'
+          else coalesce(
+            raw.raw_depends_on_milestone_code,
+            case milestone.canonical_milestone_code
+              when 'raiva_d2' then 'raiva_d1'
+              when 'raiva_anual' then 'raiva_d2'
+            end
+          )
+        end as depends_on_milestone_code,
+        coalesce(
+          case when raw.depends_on_interval_days_raw ~ '^[0-9]+$' then raw.depends_on_interval_days_raw::integer end,
+          case milestone.canonical_milestone_code
+            when 'raiva_d2' then 30
+            when 'raiva_anual' then 365
+          end
+        ) as depends_on_interval_days,
+        raw.unknown_history_policy,
+        raw.activation_cycle_key,
+        case
+          when raw.activation_date_raw ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}'
+          then left(raw.activation_date_raw, 10)::date
+        end as activation_date
     ) rule
     where a.fazenda_id = _fazenda_id
       and a.deleted_at is null
       and a.status = 'ativo'
       and (_animal_id is null or a.id = _animal_id)
   ),
+  sequence_anchors as (
+    select
+      c.*,
+      d1.completed_on as d1_completed_on,
+      d2.completed_on as d2_completed_on,
+      annual.completed_on as last_annual_completed_on,
+      case
+        when annual.completed_on is not null then 'raiva_anual'
+        when d2.completed_on is not null then 'raiva_d2'
+      end as annual_anchor_milestone,
+      coalesce(annual.completed_on, d2.completed_on) as annual_anchor_completed_on
+    from candidates c
+    left join lateral (
+      select max(h.completed_on) as completed_on
+      from sanitary_history h
+      where h.fazenda_id = c.fazenda_id
+        and h.animal_id = c.animal_id
+        and h.family_code = 'raiva_herbivoros'
+        and h.milestone_code = 'raiva_d1'
+    ) d1 on true
+    left join lateral (
+      select max(h.completed_on) as completed_on
+      from sanitary_history h
+      where h.fazenda_id = c.fazenda_id
+        and h.animal_id = c.animal_id
+        and h.family_code = 'raiva_herbivoros'
+        and h.milestone_code = 'raiva_d2'
+    ) d2 on true
+    left join lateral (
+      select max(h.completed_on) as completed_on
+      from sanitary_history h
+      where h.fazenda_id = c.fazenda_id
+        and h.animal_id = c.animal_id
+        and h.family_code = 'raiva_herbivoros'
+        and h.milestone_code = 'raiva_anual'
+    ) annual on true
+  ),
   eligible as (
     select
       *,
       case
+        when family_code = 'raiva_herbivoros' and canonical_milestone_code = 'raiva_d1'
+        then greatest(_as_of, coalesce(activation_date, _as_of))
+        when family_code = 'raiva_herbivoros' and canonical_milestone_code = 'raiva_d2'
+        then greatest(_as_of, d1_completed_on + depends_on_interval_days)
+        when family_code = 'raiva_herbivoros' and canonical_milestone_code = 'raiva_anual'
+        then greatest(_as_of, annual_anchor_completed_on + depends_on_interval_days)
         when is_age_window then _as_of
         else greatest(_as_of, coalesce(data_nascimento, _as_of) + intervalo_dias)
       end as due_date,
       case
+        when family_code = 'raiva_herbivoros' and canonical_milestone_code = 'raiva_d1'
+        then activation_cycle_key
+        when family_code = 'raiva_herbivoros' and canonical_milestone_code = 'raiva_d2'
+        then (d1_completed_on + depends_on_interval_days)::text
+        when family_code = 'raiva_herbivoros' and canonical_milestone_code = 'raiva_anual'
+        then (annual_anchor_completed_on + depends_on_interval_days)::text
         when is_age_window and age_min_days is not null then (data_nascimento + age_min_days)::text
         else greatest(_as_of, coalesce(data_nascimento, _as_of) + intervalo_dias)::text
-      end as dedup_period_key
-    from candidates
+      end as dedup_period_key,
+      case
+        when family_code = 'raiva_herbivoros' and canonical_milestone_code = 'raiva_d1'
+        then 'event'
+        when family_code = 'raiva_herbivoros' and canonical_milestone_code in ('raiva_d2', 'raiva_anual')
+        then 'interval'
+        else public.sanitario_dedup_period_mode(calendar_mode)
+      end as dedup_period_mode,
+      case
+        when family_code = 'raiva_herbivoros' and canonical_milestone_code = 'raiva_d2'
+        then 'raiva_d1'
+        when family_code = 'raiva_herbivoros' and canonical_milestone_code = 'raiva_anual'
+        then annual_anchor_milestone
+      end as sequence_anchor_milestone,
+      case
+        when family_code = 'raiva_herbivoros' and canonical_milestone_code = 'raiva_d2'
+        then d1_completed_on
+        when family_code = 'raiva_herbivoros' and canonical_milestone_code = 'raiva_anual'
+        then annual_anchor_completed_on
+      end as sequence_anchor_completed_on,
+      case
+        when family_code = 'raiva_herbivoros' and canonical_milestone_code = 'raiva_d1'
+        then greatest(_as_of, coalesce(activation_date, _as_of))
+        when family_code = 'raiva_herbivoros' and canonical_milestone_code = 'raiva_d2'
+        then d1_completed_on + depends_on_interval_days
+        when family_code = 'raiva_herbivoros' and canonical_milestone_code = 'raiva_anual'
+        then annual_anchor_completed_on + depends_on_interval_days
+      end as sequence_due_on
+    from sequence_anchors
     where (
         sex_target is null
         or sex_target not in ('F', 'FEMEA', 'FEMININO', 'FEMALE')
@@ -1006,8 +1232,29 @@ begin
         coalesce(family_code, '') <> 'raiva_herbivoros'
         or (
           zona_raiva_risco is not null
+          and zona_raiva_risco in ('medio', 'alto')
           and has_explicit_agenda_activation
           and rabies_risk_allowed
+          and canonical_milestone_code in ('raiva_d1', 'raiva_d2', 'raiva_anual')
+          and (
+            (
+              canonical_milestone_code = 'raiva_d1'
+              and unknown_history_policy = 'start_from_d1'
+              and d1_completed_on is null
+            )
+            or (
+              canonical_milestone_code = 'raiva_d2'
+              and depends_on_milestone_code = 'raiva_d1'
+              and d1_completed_on is not null
+              and d2_completed_on is null
+            )
+            or (
+              canonical_milestone_code = 'raiva_anual'
+              and depends_on_milestone_code = 'raiva_d2'
+              and d2_completed_on is not null
+              and annual_anchor_completed_on is not null
+            )
+          )
         )
       )
       and (
@@ -1041,12 +1288,37 @@ begin
         'animal',
         animal_id,
         coalesce(family_code, protocolo_id::text),
-        coalesce(payload->>'official_item_code', protocol_item_version_ref::text),
+        coalesce(
+          case when family_code = 'raiva_herbivoros' then canonical_milestone_code end,
+          payload->>'official_item_code',
+          payload->>'item_code',
+          protocol_item_version_ref::text
+        ),
         version,
-        public.sanitario_dedup_period_mode(calendar_mode),
+        dedup_period_mode,
         dedup_period_key,
         null
-      ) as candidate_dedup_key
+      ) as candidate_dedup_key,
+      case
+        when family_code = 'raiva_herbivoros' then
+          payload ||
+          jsonb_strip_nulls(jsonb_build_object(
+            'family_code', 'raiva_herbivoros',
+            'item_code', canonical_milestone_code,
+            'official_item_code', canonical_milestone_code,
+            'milestone_code', canonical_milestone_code,
+            'sequence_order', sequence_order,
+            'schedule_kind', schedule_kind,
+            'sequence_anchor_milestone', sequence_anchor_milestone,
+            'sequence_anchor_completed_on', sequence_anchor_completed_on,
+            'sequence_due_on', sequence_due_on
+          ))
+        else payload
+      end as planned_payload,
+      case
+        when family_code = 'raiva_herbivoros' then coalesce(depends_on_interval_days, intervalo_dias)
+        else intervalo_dias
+      end as planned_interval_days
     from eligible
   )
   insert into public.agenda_itens (
@@ -1065,8 +1337,8 @@ begin
     'automatico'::public.agenda_source_kind_enum,
     jsonb_build_object('protocolo_id', protocolo_id, 'protocol_item_id', protocolo_item_id),
     protocolo_item_id,
-    intervalo_dias,
-    payload,
+    planned_interval_days,
+    planned_payload,
     'server',
     now(),
     now()
@@ -1153,6 +1425,11 @@ declare
   v_calendar_mode text;
   v_period_mode text;
   v_window_start text;
+  v_family_code text;
+  v_milestone_code text;
+  v_schedule_kind text;
+  v_sequence_order integer;
+  v_completed_on date;
   v_enriched_payload jsonb;
 begin
   select * into v_agenda
@@ -1195,6 +1472,35 @@ begin
       then nullif(split_part(v_agenda.dedup_key, ':', 8), '')
     end
   );
+  v_family_code := lower(nullif(coalesce(
+    v_agenda.payload->>'family_code',
+    v_agenda.payload #>> '{regime_sanitario,family_code}'
+  ), ''));
+  v_milestone_code := regexp_replace(lower(nullif(coalesce(
+    v_agenda.payload->>'milestone_code',
+    v_agenda.payload #>> '{regime_sanitario,milestone_code}',
+    v_agenda.payload->>'item_code',
+    v_agenda.payload->>'official_item_code'
+  ), '')), '-', '_', 'g');
+  if v_family_code = 'raiva_herbivoros' and v_milestone_code = 'raiva_reforco_30d' then
+    v_milestone_code := 'raiva_d2';
+  end if;
+  v_schedule_kind := lower(nullif(coalesce(
+    v_agenda.payload->>'schedule_kind',
+    v_agenda.payload #>> '{regime_sanitario,schedule_kind}',
+    v_agenda.payload #>> '{regime_sanitario,schedule_rule,kind}'
+  ), ''));
+  v_sequence_order := coalesce(
+    case when nullif(v_agenda.payload->>'sequence_order', '') ~ '^[0-9]+$' then (v_agenda.payload->>'sequence_order')::integer end,
+    case when nullif(v_agenda.payload #>> '{regime_sanitario,sequence_order}', '') ~ '^[0-9]+$' then (v_agenda.payload #>> '{regime_sanitario,sequence_order}')::integer end,
+    case when nullif(v_agenda.payload->>'dose_num', '') ~ '^[0-9]+$' then (v_agenda.payload->>'dose_num')::integer end,
+    case
+      when v_family_code = 'raiva_herbivoros' and v_milestone_code = 'raiva_d1' then 1
+      when v_family_code = 'raiva_herbivoros' and v_milestone_code = 'raiva_d2' then 2
+      when v_family_code = 'raiva_herbivoros' and v_milestone_code = 'raiva_anual' then 3
+    end
+  );
+  v_completed_on := (_occurred_at at time zone 'America/Sao_Paulo')::date;
   v_enriched_payload :=
     coalesce(_sanitario_payload, '{}'::jsonb) ||
     jsonb_build_object(
@@ -1205,8 +1511,15 @@ begin
         'agenda_dedup_key', v_agenda.dedup_key,
         'subject_type', case when v_agenda.animal_id is not null then 'animal' end,
         'animal_id', v_agenda.animal_id,
-        'family_code', coalesce(v_agenda.payload->>'family_code', v_agenda.payload #>> '{regime_sanitario,family_code}'),
-        'official_item_code', v_agenda.payload->>'official_item_code',
+        'family_code', v_family_code,
+        'milestone_code', v_milestone_code,
+        'sequence_order', v_sequence_order,
+        'schedule_kind', v_schedule_kind,
+        'completed_on', v_completed_on,
+        'official_item_code', coalesce(
+          case when v_family_code = 'raiva_herbivoros' then v_milestone_code end,
+          v_agenda.payload->>'official_item_code'
+        ),
         'protocol_item_version_id', v_agenda.protocol_item_version_id,
         'protocol_item_version', coalesce(
           v_protocol_item_version,
