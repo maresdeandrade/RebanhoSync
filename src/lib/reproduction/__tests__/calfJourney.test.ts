@@ -95,10 +95,28 @@ describe("calfJourney", () => {
       existingAgendaItems: [],
     });
 
-    expect(result.createdCount).toBe(5);
+    expect(result.createdCount).toBe(10);
     expect(result.ops.every((op) => op.table === "agenda_itens")).toBe(true);
-    expect(result.ops[4]?.record.tipo).toBe("desmame");
-    expect(result.ops[4]?.record.data_prevista).toBe("2026-10-28");
+    const umbigoOps = result.ops.filter(
+      (op) => op.record.tipo === "cura_umbigo",
+    );
+    expect(umbigoOps).toHaveLength(6);
+    expect(umbigoOps.map((op) => op.record.data_prevista)).toEqual([
+      "2026-04-01",
+      "2026-04-01",
+      "2026-04-02",
+      "2026-04-02",
+      "2026-04-03",
+      "2026-04-03",
+    ]);
+    expect(umbigoOps[0]?.record.payload).toMatchObject({
+      schedule_kind: "twice_daily_until_dry",
+      min_days: 3,
+      max_days: 5,
+      stop_condition: "umbigo_completamente_seco",
+    });
+    expect(result.ops[9]?.record.tipo).toBe("desmame");
+    expect(result.ops[9]?.record.data_prevista).toBe("2026-10-28");
   });
 
   it("builds completion ops for follow-up weight and closes agenda item", () => {

@@ -257,12 +257,20 @@ describe("buildReproductionGesture", () => {
       },
     });
 
-    expect(result.ops).toHaveLength(3);
+    expect(result.ops).toHaveLength(9);
     expect(result.ops[2]?.table).toBe("animais");
     expect(result.ops[2]?.record.identificacao).toBe("BZ-001");
     expect(result.ops[2]?.record.mae_id).toBe("matriz-1");
     expect(result.ops[2]?.record.pai_id).toBe("touro-1");
     expect(result.ops[2]?.record.origem).toBe("nascimento");
+    const umbigoAgendaOps = result.ops.filter(
+      (op) => op.table === "agenda_itens" && op.record.tipo === "cura_umbigo",
+    );
+    expect(umbigoAgendaOps).toHaveLength(6);
+    expect(umbigoAgendaOps[0]?.record.payload).toMatchObject({
+      schedule_kind: "twice_daily_until_dry",
+      stop_condition: "umbigo_completamente_seco",
+    });
   });
 
   it("resolves sire from linked service before generating calf ops", async () => {

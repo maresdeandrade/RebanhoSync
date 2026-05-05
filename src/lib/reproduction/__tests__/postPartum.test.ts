@@ -60,8 +60,8 @@ describe("buildPostPartumOps", () => {
 
     expect(result.weighedCount).toBe(1);
     expect(result.umbigoCount).toBe(1);
-    expect(result.agendaCount).toBe(9);
-    expect(result.ops).toHaveLength(17);
+    expect(result.agendaCount).toBe(14);
+    expect(result.ops).toHaveLength(22);
 
     const firstAnimalUpdate = result.ops.find(
       (op) => op.table === "animais" && op.action === "UPDATE" && op.record.id === "cria-1",
@@ -142,14 +142,86 @@ describe("buildPostPartumOps", () => {
     });
 
     const agendaOps = result.ops.filter((op) => op.table === "agenda_itens");
-    expect(agendaOps).toHaveLength(9);
+    expect(agendaOps).toHaveLength(14);
     expect(agendaOps[0]?.record).toMatchObject({
       animal_id: "cria-1",
       status: "agendado",
       source_kind: "automatico",
     });
-    expect(agendaOps.map((op) => op.record.dedup_key)).not.toContain(
-      "calf_journey:cria-1:cura_umbigo",
+    expect(
+      agendaOps
+        .map((op) => op.record.dedup_key)
+        .filter((dedupKey) => String(dedupKey).includes(":cura_umbigo")),
+    ).toHaveLength(6);
+    expect(
+      agendaOps.map((op) => op.record.dedup_key),
+    ).not.toContain("calf_journey:cria-1:cura_umbigo:d0:manha");
+  });
+
+  it("closes remaining umbigo care agenda slots when the umbilicus is marked dry", () => {
+    const result = buildPostPartumOps({
+      fazendaId: "farm-1",
+      mother: {
+        id: "matriz-1",
+        identificacao: "MAT-001",
+      },
+      calves: [
+        {
+          id: "cria-1",
+          identificacao: "TEMP-1",
+          nome: null,
+          lote_id: "lote-matriz",
+          pai_id: null,
+          payload: {
+            generated_from: "evento_parto",
+            birth_event_id: "evento-1",
+          },
+        },
+      ],
+      drafts: [
+        {
+          calfId: "cria-1",
+          identificacao: "BZ-001",
+          nome: "",
+          loteId: "lote-matriz",
+          pesoKg: "",
+          curaUmbigo: true,
+        },
+      ],
+      occurredAt: "2026-04-03T16:00:00.000Z",
+      birthEventId: "evento-1",
+      existingAgendaItems: [
+        {
+          id: "umbigo-1",
+          animal_id: "cria-1",
+          status: "agendado",
+          dedup_key: "calf_journey:cria-1:cura_umbigo:d0:manha",
+          deleted_at: null,
+          tipo: "cura_umbigo",
+          payload: { milestone_key: "cura_umbigo" },
+          source_ref: null,
+        },
+        {
+          id: "umbigo-2",
+          animal_id: "cria-1",
+          status: "agendado",
+          dedup_key: "calf_journey:cria-1:cura_umbigo:d2:tarde",
+          deleted_at: null,
+          tipo: "cura_umbigo",
+          payload: { milestone_key: "cura_umbigo" },
+          source_ref: null,
+        },
+      ],
+    });
+
+    const umbigoCompletionOps = result.ops.filter(
+      (op) =>
+        op.table === "agenda_itens" &&
+        op.action === "UPDATE" &&
+        ["umbigo-1", "umbigo-2"].includes(String(op.record.id)),
     );
+
+    expect(umbigoCompletionOps).toHaveLength(2);
+    expect(umbigoCompletionOps.every((op) => op.record.status === "concluido")).toBe(true);
   });
 });

@@ -16,8 +16,17 @@ type SignUpForm = {
   phone: string;
 };
 
+const normalizeSignupPhone = (value: string) => {
+  const trimmed = value.trim();
+  const digits = trimmed.replace(/\D/g, "");
+  return trimmed.startsWith("+") ? `+${digits}` : digits;
+};
+
+const isValidSignupPhone = (value: string) =>
+  /^\+?[1-9]\d{1,14}$/.test(normalizeSignupPhone(value));
+
 const SignUp = () => {
-  const { session } = useAuth();
+  const { session, activeFarmId } = useAuth();
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -32,7 +41,7 @@ const SignUp = () => {
   const password = watch("password");
 
   if (session) {
-    return <Navigate to="/home" replace />;
+    return <Navigate to={activeFarmId ? "/home" : "/select-fazenda"} replace />;
   }
 
   const onSubmit = async (data: SignUpForm) => {
@@ -49,7 +58,7 @@ const SignUp = () => {
           options: {
             data: {
               display_name: data.displayName,
-              phone: data.phone,
+              phone: normalizeSignupPhone(data.phone),
             },
           },
         },
@@ -140,10 +149,8 @@ const SignUp = () => {
                 placeholder="+55 11 98765-4321"
                 {...register("phone", {
                   required: "Telefone é obrigatório",
-                  pattern: {
-                    value: /^\+?[1-9]\d{1,14}$/,
-                    message: "Telefone inválido",
-                  },
+                  validate: (value) =>
+                    isValidSignupPhone(value) || "Telefone inválido",
                 })}
                 disabled={isLoading}
               />

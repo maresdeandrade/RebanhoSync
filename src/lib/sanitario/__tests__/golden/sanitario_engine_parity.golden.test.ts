@@ -598,7 +598,9 @@ describe("sanitario engine SQL contracts", () => {
     expect(baseline).toContain("a.status = 'ativo'");
     expect(baseline).toContain("(_animal_id is null or a.id = _animal_id)");
     expect(baseline).toContain("data_nascimento is not null");
-    expect(baseline).toContain("or sexo = 'F'::public.sexo_enum");
+    expect(baseline).toContain("sex_target in ('TODOS', 'ALL', 'AMBOS')");
+    expect(baseline).toContain("sex_target in ('F', 'FEMEA', 'FEMININO', 'FEMALE')");
+    expect(baseline).toContain("sex_target in ('M', 'MACHO', 'MASCULINO', 'MALE')");
   });
 
   it("contract: SQL agenda recompute applies the transitional species gate", () => {

@@ -2,7 +2,11 @@ import { buildEventGesture } from "@/lib/events/buildEventGesture";
 import type { FarmWeightUnit } from "@/lib/farms/measurementConfig";
 import { parseWeightInput } from "@/lib/format/weight";
 import type { AgendaItem, Animal, OperationInput } from "@/lib/offline/types";
-import { buildCalfJourneyAgendaOps } from "@/lib/reproduction/calfJourney";
+import {
+  buildCalfJourneyAgendaOps,
+  isUmbigoCareAgendaItem,
+  type CalfJourneyExistingAgendaItem,
+} from "@/lib/reproduction/calfJourney";
 import {
   getAnimalPayloadRecord,
   getBirthEventId,
@@ -35,10 +39,7 @@ interface BuildPostPartumOpsInput {
   drafts: PostPartumCalfDraft[];
   occurredAt?: string;
   birthEventId?: string | null;
-  existingAgendaItems?: Pick<
-    AgendaItem,
-    "id" | "animal_id" | "status" | "dedup_key" | "deleted_at"
-  >[];
+  existingAgendaItems?: CalfJourneyExistingAgendaItem[];
 }
 
 interface PostPartumBuildResult {
@@ -174,23 +175,25 @@ export function buildPostPartumOps({
       umbigoEventId = built.eventId;
     }
 
-    const umbigoAgendaDedupKey = `calf_journey:${calf.id}:cura_umbigo`;
-    const existingUmbigoAgenda = existingAgendaItems.find(
+    const existingUmbigoAgendas = existingAgendaItems.filter(
       (item) =>
         item.animal_id === calf.id &&
-        item.dedup_key === umbigoAgendaDedupKey &&
-        !item.deleted_at,
+        !item.deleted_at &&
+        item.status === "agendado" &&
+        isUmbigoCareAgendaItem(item),
     );
-    if (umbigoEventId && existingUmbigoAgenda && existingUmbigoAgenda.status === "agendado") {
-      ops.push({
-        table: "agenda_itens",
-        action: "UPDATE",
-        record: {
-          id: existingUmbigoAgenda.id,
-          status: "concluido",
-          source_evento_id: umbigoEventId,
-        },
-      });
+    if (umbigoEventId) {
+      for (const existingUmbigoAgenda of existingUmbigoAgendas) {
+        ops.push({
+          table: "agenda_itens",
+          action: "UPDATE",
+          record: {
+            id: existingUmbigoAgenda.id,
+            status: "concluido",
+            source_evento_id: umbigoEventId,
+          },
+        });
+      }
     }
 
     const agendaBuild = buildCalfJourneyAgendaOps({

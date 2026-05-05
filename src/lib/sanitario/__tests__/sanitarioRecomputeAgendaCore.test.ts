@@ -54,6 +54,7 @@ type TechnicalFamily =
   | "clostridioses"
   | "leptospirose_ibr_bvd"
   | "controle_parasitario"
+  | "controle_estrategico_parasitas"
   | "controle_carrapato";
 
 interface RabiesCandidateInput {
@@ -367,6 +368,7 @@ function evaluateTechnicalCandidate(input: TechnicalCandidateInput) {
   if (!explicitActivation) return null;
   if (
     (input.familyCode === "controle_parasitario" ||
+      input.familyCode === "controle_estrategico_parasitas" ||
       input.familyCode === "controle_carrapato") &&
     (!hasConfig || !riskValues?.includes(pressure))
   ) {
@@ -377,6 +379,8 @@ function evaluateTechnicalCandidate(input: TechnicalCandidateInput) {
     input.itemCode ??
     (input.familyCode === "controle_parasitario"
       ? "vermifugacao-estrategica"
+      : input.familyCode === "controle_estrategico_parasitas"
+        ? "seca-maio"
       : input.familyCode === "controle_carrapato"
         ? "controle-carrapato"
         : `${input.familyCode}-operacional`);
@@ -465,10 +469,23 @@ describe("P6.2.1 sanitario_recompute_agenda_core brucellosis contract", () => {
     expect(core).toContain("data_nascimento is not null");
     expect(core).toContain("(_as_of - data_nascimento) >= age_min_days");
     expect(core).toContain("(_as_of - data_nascimento) <= age_max_days");
-    expect(core).toContain("or sexo = 'F'::public.sexo_enum");
+    expect(core).toContain("sex_target in ('F', 'FEMEA', 'FEMININO', 'FEMALE')");
+    expect(core).toContain("sex_target in ('M', 'MACHO', 'MASCULINO', 'MALE')");
     expect(core).toContain("when is_age_window then _as_of");
     expect(core).toContain("(data_nascimento + age_min_days)::text");
     expect(core).toContain("public.sanitario_dedup_period_mode(calendar_mode)");
+  });
+
+  it("keeps campaign agenda on the next configured month instead of clamping backlog to today", () => {
+    const core = extractRecomputeCore();
+
+    expect(core).toContain("coalesce(raw.calendar_mode, '') in ('campaign', 'campanha') as is_campaign");
+    expect(core).toContain("jsonb_typeof(s.payload #> '{calendario_base,months}') = 'array'");
+    expect(core).toContain("where months.month_value = extract(month from _as_of)::integer");
+    expect(core).toContain("not is_campaign");
+    expect(core).toContain("or campaign_due_on is not null");
+    expect(core).toContain("when is_campaign then coalesce(campaign_due_on, _as_of)");
+    expect(core).toContain("when is_campaign then to_char(coalesce(campaign_due_on, _as_of), 'YYYY-MM')");
   });
 
   it("keeps SQL transitional species gates inside agenda recompute", () => {
@@ -513,12 +530,22 @@ describe("P6.2.1 sanitario_recompute_agenda_core brucellosis contract", () => {
     expect(core).toContain("'clostridioses'");
     expect(core).toContain("'leptospirose_ibr_bvd'");
     expect(core).toContain("'controle_parasitario'");
+    expect(core).toContain("'controle_estrategico_parasitas'");
     expect(core).toContain("'controle_carrapato'");
     expect(core).toContain("or has_explicit_agenda_activation");
     expect(core).toContain("pressao_helmintos is not null");
     expect(core).toContain("and helminth_risk_allowed");
     expect(core).toContain("pressao_carrapato is not null");
     expect(core).toContain("and tick_risk_allowed");
+  });
+
+  it("keeps therapeutic clinical protocols out of automatic recompute materialization", () => {
+    const core = extractRecomputeCore();
+
+    expect(core).toContain("sanitario_recompute_invalidated_non_materializable_protocol");
+    expect(core).toContain("'terapia_vaca_seca'");
+    expect(core).toContain("'tristeza_parasitaria_bovina'");
+    expect(core).toContain("'cura_umbigo'");
   });
 
   it("does not turn the global official catalog into agenda source inside recompute", () => {
@@ -1138,6 +1165,8 @@ describe("P6.2.1 sanitario_recompute_agenda_core brucellosis contract", () => {
   it.each([
     ["controle_parasitario", "medio"],
     ["controle_parasitario", "alto"],
+    ["controle_estrategico_parasitas", "medio"],
+    ["controle_estrategico_parasitas", "alto"],
     ["controle_carrapato", "medio"],
     ["controle_carrapato", "alto"],
   ] as const)("creates %s technical agenda when pressure is %s", (familyCode, pressure) => {
@@ -1155,6 +1184,9 @@ describe("P6.2.1 sanitario_recompute_agenda_core brucellosis contract", () => {
     ["controle_parasitario", { pressure: "baixo" as const }],
     ["controle_parasitario", { hasConfig: false }],
     ["controle_parasitario", { riskValues: null }],
+    ["controle_estrategico_parasitas", { pressure: "baixo" as const }],
+    ["controle_estrategico_parasitas", { hasConfig: false }],
+    ["controle_estrategico_parasitas", { riskValues: null }],
     ["controle_carrapato", { pressure: "baixo" as const }],
     ["controle_carrapato", { hasConfig: false }],
     ["controle_carrapato", { riskValues: null }],

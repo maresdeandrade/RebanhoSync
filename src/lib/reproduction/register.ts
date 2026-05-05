@@ -9,6 +9,7 @@ import { createGesture } from "@/lib/offline/ops";
 import type { EventGestureBuildResult } from "@/lib/events/types";
 import type { OperationInput, ReproTipoEnum } from "@/lib/offline/types";
 import { buildAnimalTaxonomyFactsPayload } from "@/lib/animals/taxonomy";
+import { buildUmbigoCareAgendaOps } from "@/lib/reproduction/calfJourney";
 
 export interface ReproductionDraftInput {
   tipo: ReproTipoEnum;
@@ -88,50 +89,70 @@ function buildGeneratedCalves(
   const baseIdentificacao = animalIdentificacao || animalId.slice(0, 8);
   const token = birthDate.replaceAll("-", "").slice(2);
 
-  const calves: OperationInput[] = Array.from(
+  const calfOps = Array.from(
     { length: requestedCount },
-    (_, index): OperationInput => {
+    (_, index): { calfId: string; ops: OperationInput[] } => {
       const cria = data.crias?.[index];
       const criaId = cria?.localId || crypto.randomUUID();
       const sexo = cria?.sexo || (index === 0 ? "F" : "M");
+      const calfRecord = {
+        id: criaId,
+        identificacao:
+          cria?.identificacao?.trim() || `${baseIdentificacao}-${token}-C${index + 1}`,
+        sexo,
+        status: "ativo",
+        lote_id: loteId,
+        data_nascimento: birthDate,
+        data_entrada: null,
+        data_saida: null,
+        pai_id: paiId,
+        mae_id: animalId,
+        nome: cria?.nome?.trim() || null,
+        rfid: null,
+        origem: "nascimento",
+        raca: maeRaca,
+        papel_macho: null,
+        habilitado_monta: false,
+        observacoes: null,
+        payload: {
+          generated_from: "evento_parto",
+          birth_event_id: eventId,
+          ordem_cria: index + 1,
+        },
+        created_at: occurredAt,
+        updated_at: occurredAt,
+      };
+      const umbigoAgenda = buildUmbigoCareAgendaOps({
+        calf: {
+          id: calfRecord.id,
+          identificacao: calfRecord.identificacao,
+          lote_id: calfRecord.lote_id,
+          data_nascimento: calfRecord.data_nascimento,
+          payload: calfRecord.payload,
+        },
+        mother: {
+          id: animalId,
+          identificacao: animalIdentificacao || animalId.slice(0, 8),
+        },
+      });
 
       return {
-        table: "animais",
-        action: "INSERT",
-        record: {
-          id: criaId,
-          identificacao:
-            cria?.identificacao?.trim() || `${baseIdentificacao}-${token}-C${index + 1}`,
-          sexo,
-          status: "ativo",
-          lote_id: loteId,
-          data_nascimento: birthDate,
-          data_entrada: null,
-          data_saida: null,
-          pai_id: paiId,
-          mae_id: animalId,
-          nome: cria?.nome?.trim() || null,
-          rfid: null,
-          origem: "nascimento",
-          raca: maeRaca,
-          papel_macho: null,
-          habilitado_monta: false,
-          observacoes: null,
-          payload: {
-            generated_from: "evento_parto",
-            birth_event_id: eventId,
-            ordem_cria: index + 1,
+        calfId: criaId,
+        ops: [
+          {
+            table: "animais",
+            action: "INSERT",
+            record: calfRecord,
           },
-          created_at: occurredAt,
-          updated_at: occurredAt,
-        },
+          ...umbigoAgenda.ops,
+        ],
       };
     },
   );
 
   return {
-    calfIds: calves.map((calf) => String(calf.record.id)),
-    ops: calves,
+    calfIds: calfOps.map((calf) => calf.calfId),
+    ops: calfOps.flatMap((calf) => calf.ops),
   };
 }
 

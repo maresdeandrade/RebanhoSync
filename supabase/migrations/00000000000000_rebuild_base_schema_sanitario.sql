@@ -780,6 +780,45 @@ begin
     raise exception 'Forbidden';
   end if;
 
+  update public.agenda_itens ai
+  set
+    status = 'cancelado'::public.agenda_status_enum,
+    deleted_at = coalesce(ai.deleted_at, now()),
+    payload = coalesce(ai.payload, '{}'::jsonb) || jsonb_build_object(
+      'auto_cancel_reason',
+      'sanitario_recompute_invalidated_non_materializable_protocol',
+      'auto_cancelled_at',
+      now()
+    )
+  where ai.fazenda_id = _fazenda_id
+    and (_animal_id is null or ai.animal_id = _animal_id)
+    and ai.dominio = 'sanitario'
+    and ai.status = 'agendado'
+    and ai.deleted_at is null
+    and ai.source_kind = 'automatico'
+    and ai.source_evento_id is null
+    and (
+      coalesce(ai.payload->>'family_code', '') in (
+        'terapia_vaca_seca',
+        'tristeza_parasitaria_bovina',
+        'cura_umbigo'
+      )
+      or (
+        coalesce(ai.payload->>'family_code', '') in (
+          'controle_parasitario',
+          'controle_estrategico_parasitas'
+        )
+        and coalesce(ai.payload #>> '{calendario_base,mode}', ai.payload->>'calendar_mode', '') in ('campaign', 'campanha')
+        and jsonb_typeof(ai.payload #> '{calendario_base,months}') = 'array'
+        and not exists (
+          select 1
+          from jsonb_array_elements_text(ai.payload #> '{calendario_base,months}') as month_entry(raw_value)
+          where month_entry.raw_value ~ '^[0-9]+$'
+            and month_entry.raw_value::integer = extract(month from _as_of)::integer
+        )
+      )
+    );
+
   with sanitary_history as (
     select
       e.fazenda_id,
@@ -850,6 +889,7 @@ begin
       fsc.pressao_carrapato,
       rule.family_code,
       rule.calendar_mode,
+      rule.is_campaign,
       rule.is_age_window,
       rule.sex_target,
       rule.age_min_days,
@@ -893,6 +933,11 @@ begin
           psi.payload->>'calendar_mode',
           psi.payload->>'mode'
         ), '')) as calendar_mode,
+        coalesce(
+          psi.payload #> '{calendario_base,months}',
+          psi.payload->'months',
+          psi.payload #> '{gatilho_json,months}'
+        ) as campaign_months_json,
         upper(nullif(coalesce(
           psi.payload->>'sexo_alvo',
           psi.payload #>> '{gatilho_json,sexo_alvo}',
@@ -984,6 +1029,7 @@ begin
       select
         raw.family_code,
         raw.calendar_mode,
+        coalesce(raw.calendar_mode, '') in ('campaign', 'campanha') as is_campaign,
         coalesce(raw.calendar_mode, '') in ('age_window', 'janela_etaria') as is_age_window,
         raw.sex_target,
         case
@@ -1137,6 +1183,32 @@ begin
         and h.milestone_code = 'raiva_anual'
     ) annual on true
   ),
+  scheduled as (
+    select
+      s.*,
+      case
+        when s.is_campaign
+         and jsonb_typeof(s.payload #> '{calendario_base,months}') = 'array'
+        then (
+          select _as_of
+          from (
+            select distinct month_value
+            from jsonb_array_elements_text(s.payload #> '{calendario_base,months}') as month_entry(raw_value)
+            cross join lateral (
+              select case
+                when month_entry.raw_value ~ '^[0-9]+$'
+                 and month_entry.raw_value::integer between 1 and 12
+                then month_entry.raw_value::integer
+              end as month_value
+            ) parsed
+            where month_value is not null
+          ) months
+          where months.month_value = extract(month from _as_of)::integer
+          limit 1
+        )
+      end as campaign_due_on
+    from sequence_anchors s
+  ),
   eligible as (
     select
       *,
@@ -1148,6 +1220,7 @@ begin
         when family_code = 'raiva_herbivoros' and canonical_milestone_code = 'raiva_anual'
         then greatest(_as_of, annual_anchor_completed_on + depends_on_interval_days)
         when is_age_window then _as_of
+        when is_campaign then coalesce(campaign_due_on, _as_of)
         else greatest(_as_of, coalesce(data_nascimento, _as_of) + intervalo_dias)
       end as due_date,
       case
@@ -1158,6 +1231,7 @@ begin
         when family_code = 'raiva_herbivoros' and canonical_milestone_code = 'raiva_anual'
         then (annual_anchor_completed_on + depends_on_interval_days)::text
         when is_age_window and age_min_days is not null then (data_nascimento + age_min_days)::text
+        when is_campaign then to_char(coalesce(campaign_due_on, _as_of), 'YYYY-MM')
         else greatest(_as_of, coalesce(data_nascimento, _as_of) + intervalo_dias)::text
       end as dedup_period_key,
       case
@@ -1187,14 +1261,21 @@ begin
         when family_code = 'raiva_herbivoros' and canonical_milestone_code = 'raiva_anual'
         then annual_anchor_completed_on + depends_on_interval_days
       end as sequence_due_on
-    from sequence_anchors
+    from scheduled
     where (
         sex_target is null
-        or sex_target not in ('F', 'FEMEA', 'FEMININO', 'FEMALE')
-        or sexo = 'F'::public.sexo_enum
+        or sex_target in ('TODOS', 'ALL', 'AMBOS')
+        or (
+          sex_target in ('F', 'FEMEA', 'FEMININO', 'FEMALE')
+          and sexo = 'F'::public.sexo_enum
+        )
+        or (
+          sex_target in ('M', 'MACHO', 'MASCULINO', 'MALE')
+          and sexo = 'M'::public.sexo_enum
+        )
       )
       and (
-        not is_age_window
+        age_min_days is null and age_max_days is null
         or (
           data_nascimento is not null
           and (age_min_days is null or (_as_of - data_nascimento) >= age_min_days)
@@ -1209,6 +1290,7 @@ begin
           'clostridioses',
           'leptospirose_ibr_bvd',
           'controle_parasitario',
+          'controle_estrategico_parasitas',
           'controle_carrapato'
         )
         or (
@@ -1220,12 +1302,24 @@ begin
             'clostridioses',
             'leptospirose_ibr_bvd',
             'controle_parasitario',
+            'controle_estrategico_parasitas',
             'controle_carrapato'
           )
           and (
             (not has_explicit_species_target and animal_especie in ('bovino', 'bubalino'))
             or (has_explicit_species_target and species_target_matches)
           )
+        )
+      )
+      and (
+        not is_campaign
+        or campaign_due_on is not null
+      )
+      and (
+        coalesce(family_code, '') not in (
+          'terapia_vaca_seca',
+          'tristeza_parasitaria_bovina',
+          'cura_umbigo'
         )
       )
       and (
@@ -1262,12 +1356,13 @@ begin
           'clostridioses',
           'leptospirose_ibr_bvd',
           'controle_parasitario',
+          'controle_estrategico_parasitas',
           'controle_carrapato'
         )
         or has_explicit_agenda_activation
       )
       and (
-        coalesce(family_code, '') <> 'controle_parasitario'
+        coalesce(family_code, '') not in ('controle_parasitario', 'controle_estrategico_parasitas')
         or (
           pressao_helmintos is not null
           and helminth_risk_allowed

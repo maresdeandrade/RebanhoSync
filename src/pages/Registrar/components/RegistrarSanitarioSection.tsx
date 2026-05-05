@@ -5,13 +5,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
 type RegistrarSanitarioSectionProps = {
   sanitarioTipo: SanitarioTipoEnum;
@@ -59,19 +52,15 @@ export function RegistrarSanitarioSection(props: RegistrarSanitarioSectionProps)
     <div className="space-y-4 border-t pt-4">
       <div className="space-y-2">
         <Label>Tipo</Label>
-        <Select
-          onValueChange={(value) => props.onSanitarioTipoChange(value as SanitarioTipoEnum)}
+        <select
+          className="flex h-11 w-full rounded-xl border border-border/80 bg-background px-3.5 py-2 text-sm shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] focus:outline-none focus:ring-2 focus:ring-ring/30"
+          onChange={(event) => props.onSanitarioTipoChange(event.target.value as SanitarioTipoEnum)}
           value={props.sanitarioTipo}
         >
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="vacinacao">Vacinacao</SelectItem>
-            <SelectItem value="vermifugacao">Vermifugacao</SelectItem>
-            <SelectItem value="medicamento">Medicamento</SelectItem>
-          </SelectContent>
-        </Select>
+          <option value="vacinacao">Vacinacao</option>
+          <option value="vermifugacao">Vermifugacao</option>
+          <option value="medicamento">Medicamento</option>
+        </select>
       </div>
 
       <div className="space-y-2">
@@ -137,31 +126,37 @@ export function RegistrarSanitarioSection(props: RegistrarSanitarioSectionProps)
 
       <div className="space-y-2">
         <Label>Protocolo (opcional)</Label>
-        <Select onValueChange={props.onProtocoloChange} value={props.protocoloId || "none"}>
-          <SelectTrigger>
-            <SelectValue placeholder="Sem protocolo" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="none">Sem protocolo</SelectItem>
-            {props.protocolos.map((protocol) => (
-              <SelectItem key={protocol.id} value={protocol.id}>
-                {protocol.nome}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <select
+          className="flex h-11 w-full rounded-xl border border-border/80 bg-background px-3.5 py-2 text-sm shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] focus:outline-none focus:ring-2 focus:ring-ring/30"
+          onChange={(event) => props.onProtocoloChange(event.target.value)}
+          value={props.protocoloId || "none"}
+        >
+          <option value="none">Sem protocolo</option>
+          {props.protocolos.map((protocol) => (
+            <option key={protocol.id} value={protocol.id}>
+              {protocol.nome}
+            </option>
+          ))}
+        </select>
       </div>
 
       {props.protocoloId && props.protocoloItensEvaluated.length > 0 ? (
         <div className="space-y-2">
           <Label>Item do Protocolo</Label>
-          <Select onValueChange={props.onProtocoloItemChange} value={props.protocoloItemId}>
-            <SelectTrigger>
-              <SelectValue placeholder="Selecione o item" />
-            </SelectTrigger>
-            <SelectContent>
-              {props.protocoloItensEvaluated.map(({ item, eligibility }) => (
-                <SelectItem key={item.id} value={item.id} disabled={!eligibility.compatibleWithAll}>
+          <select
+            className="flex h-11 w-full rounded-xl border border-border/80 bg-background px-3.5 py-2 text-sm shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] focus:outline-none focus:ring-2 focus:ring-ring/30 disabled:cursor-not-allowed disabled:opacity-50"
+            onChange={(event) => props.onProtocoloItemChange(event.target.value)}
+            value={props.protocoloItemId}
+          >
+            <option value="" disabled>
+              Selecione o item
+            </option>
+            {props.protocoloItensEvaluated.map(({ item, eligibility }) => (
+              <option
+                key={item.id}
+                value={item.id}
+                disabled={!eligibility.compatibleWithAll && item.id !== props.protocoloItemId}
+              >
                   Dose {item.dose_num} |{" "}
                   {describeRegistrarSanitaryCalendarSchedule({
                     intervalDays: item.intervalo_dias,
@@ -171,10 +166,9 @@ export function RegistrarSanitarioSection(props: RegistrarSanitarioSectionProps)
                   {props.selectedAnimaisDetalhesCount > 0
                     ? ` | ${eligibility.eligibleCount}/${props.selectedAnimaisDetalhesCount} aptos`
                     : ""}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+              </option>
+            ))}
+          </select>
 
           {props.selectedProtocolRestrictionsText || !props.selectedProtocolCompatibleWithAll ? (
             <div className="space-y-1 text-xs text-muted-foreground">

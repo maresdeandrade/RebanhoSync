@@ -17,7 +17,18 @@ let startupRecoveryDone = false;
 
 const WORKER_INTERVAL_MS = 5000;
 const MAX_RETRIES = 3;
-const AUTH_ERROR_MARKERS = ["HTTP 401", "Invalid JWT", "Unauthorized - invalid JWT"];
+const RECOVERABLE_ERROR_MARKERS = [
+  "HTTP 401",
+  "Invalid JWT",
+  "Unauthorized - invalid JWT",
+  "HTTP 502",
+  "HTTP 503",
+  "HTTP 504",
+  "Failed to fetch",
+  "NetworkError",
+  "fetch failed",
+  "name resolution failed",
+];
 
 // Auto-purge: run at most once every 6 hours, persisted across reloads
 const PURGE_INTERVAL_MS = 6 * 60 * 60 * 1000;
@@ -46,7 +57,7 @@ export const startSyncWorker = () => {
 
     try {
       if (!startupRecoveryDone) {
-        await recoverAuthErroredGesturesOnce();
+        await recoverErroredGesturesOnce();
         startupRecoveryDone = true;
       }
 
@@ -132,15 +143,27 @@ async function tryPurgeOldRejections() {
   }
 }
 
-function isRecoverableAuthError(errorMessage?: string): boolean {
+function isRecoverableSyncError(errorMessage?: string): boolean {
   if (!errorMessage) return false;
-  return AUTH_ERROR_MARKERS.some((marker) => errorMessage.includes(marker));
+  const normalizedMessage = errorMessage.toLowerCase();
+  return RECOVERABLE_ERROR_MARKERS.some((marker) =>
+    normalizedMessage.includes(marker.toLowerCase()),
+  );
 }
 
-async function recoverAuthErroredGesturesOnce() {
+function isNonRetryableSyncError(errorMessage?: string): boolean {
+  if (!errorMessage) return false;
+  const normalizedMessage = errorMessage.toLowerCase();
+  return (
+    normalizedMessage.includes("http 403") ||
+    normalizedMessage.includes("forbidden - no access to this farm")
+  );
+}
+
+export async function recoverErroredGesturesOnce() {
   const errored = await db.queue_gestures.where("status").equals("ERROR").toArray();
   const recoverable = errored.filter((gesture) =>
-    isRecoverableAuthError(gesture.last_error),
+    isRecoverableSyncError(gesture.last_error),
   );
 
   if (recoverable.length === 0) return;
@@ -151,12 +174,12 @@ async function recoverAuthErroredGesturesOnce() {
       sync_result: undefined,
       completed_at: undefined,
       retry_count: 0,
-      last_error: "Recovered auth error; retrying after worker startup",
+      last_error: "Recovered transient sync error; retrying after worker startup",
     });
   }
 
   console.warn(
-    `[sync-worker] Re-queued ${recoverable.length} auth-related ERROR gesture(s)`,
+    `[sync-worker] Re-queued ${recoverable.length} recoverable ERROR gesture(s)`,
   );
 }
 
@@ -300,7 +323,9 @@ export async function processGesture(gesture: Gesture) {
         response.statusText,
         errorBody ? `- ${errorBody}` : "",
       );
-      throw new Error(`HTTP ${response.status}`);
+      throw new Error(
+        `HTTP ${response.status}${errorBody ? ` - ${errorBody}` : ""}`,
+      );
     }
 
     const result = (await response.json()) as SyncBatchResponse;
@@ -455,6 +480,28 @@ export async function processGesture(gesture: Gesture) {
   } catch (e: unknown) {
     const error = e instanceof Error ? e : new Error(String(e));
     const retryCount = gesture.retry_count || 0;
+
+    if (isNonRetryableSyncError(error.message)) {
+      await db.queue_gestures.update(gesture.client_tx_id, {
+        status: "ERROR",
+        sync_result: "ERROR",
+        completed_at: new Date().toISOString(),
+        last_error: error.message,
+      });
+      await trackPilotMetric({
+        fazendaId: gesture.fazenda_id,
+        eventName: "sync_error",
+        status: "error",
+        entity: "sync-batch",
+        quantity: ops.length,
+        payload: {
+          op_count: ops.length,
+          message: error.message,
+          retryable: false,
+        },
+      });
+      return;
+    }
 
     if (retryCount < MAX_RETRIES) {
       await db.queue_gestures.update(gesture.client_tx_id, {

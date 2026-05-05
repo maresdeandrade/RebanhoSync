@@ -196,6 +196,12 @@ describe("standard sanitary protocol library", () => {
       item_code: "seca-julho",
       depends_on_item_code: "seca-maio",
       indicacao: expect.any(String),
+      agenda_activation: {
+        mode: "risk_config_explicit",
+        explicit: true,
+        risk_field: "pressao_helmintos",
+        risk_values: ["medio", "alto"],
+      },
       calendario_base: {
         mode: "campaign",
         anchor: "calendar_month",
@@ -224,10 +230,118 @@ describe("standard sanitary protocol library", () => {
     });
   });
 
+  it("keeps strategic deworming gated by helminth pressure and campaign month", () => {
+    const protocol = STANDARD_PROTOCOLS.find(
+      (entry) => entry.id === "vermi-estrategica-seca",
+    );
+    expect(protocol).toBeDefined();
+    expect(protocol!.itens.map((item) => item.item_code)).toEqual([
+      "seca-maio",
+      "seca-julho",
+      "seca-setembro",
+    ]);
+
+    for (const item of protocol!.itens) {
+      expect(item.gera_agenda).toBe(true);
+      expect(item.agenda_activation).toEqual({
+        mode: "risk_config_explicit",
+        explicit: true,
+        risk_field: "pressao_helmintos",
+        risk_values: ["medio", "alto"],
+      });
+      expect(item.calendario_base).toMatchObject({
+        mode: "campaign",
+        anchor: "calendar_month",
+      });
+      expect(item.calendario_base.months).toHaveLength(1);
+    }
+  });
+
+  it("limits pre-breeding reproductive vaccination to adult females", () => {
+    const protocol = STANDARD_PROTOCOLS.find((entry) => entry.id === "vac-reprodutiva");
+    expect(protocol).toBeDefined();
+
+    const item = protocol!.itens.find(
+      (entry) => entry.item_code === "reprodutiva-pre-estacao",
+    );
+    expect(item).toMatchObject({
+      sexo_alvo: "F",
+      idade_min_dias: 365,
+      gera_agenda: true,
+    });
+
+    const payload = buildStandardProtocolItemPayload(protocol!, item!);
+    expect(payload).toMatchObject({
+      sexo_alvo: "F",
+      idade_min_dias: 365,
+      calendario_base: {
+        mode: "campaign",
+        anchor: "pre_breeding_season",
+      },
+    });
+  });
+
   it("normalizes non-positive intervals so persisted protocol items remain compatible with agenda", () => {
     const protocol = STANDARD_PROTOCOLS.find((entry) => entry.id === "med-cura-umbigo");
     expect(protocol).toBeDefined();
 
     expect(normalizeStandardProtocolInterval(protocol!.itens[0])).toBe(1);
+  });
+
+  it("keeps TPB therapy animal-scoped and outside automatic agenda generation", () => {
+    const protocol = STANDARD_PROTOCOLS.find((entry) => entry.id === "med-tpb");
+    expect(protocol).toBeDefined();
+
+    expect(protocol!.nome).toBe("Terapia de Tristeza Parasitaria Bovina (TPB)");
+    expect(protocol!.itens).toHaveLength(3);
+
+    for (const item of protocol!.itens) {
+      expect(item.gera_agenda).toBe(false);
+      expect(item.target_policy).toEqual({
+        mode: "suspected_animal_required",
+        target_scope: "animal",
+        condition_code: "tristeza_parasitaria_bovina",
+      });
+
+      const payload = buildStandardProtocolItemPayload(protocol!, item);
+      expect(payload).toMatchObject({
+        family_code: "tristeza_parasitaria_bovina",
+        target_policy: {
+          mode: "suspected_animal_required",
+          target_scope: "animal",
+          condition_code: "tristeza_parasitaria_bovina",
+        },
+      });
+    }
+  });
+
+  it("keeps dry cow mastitis therapy outside automatic agenda generation", () => {
+    const protocol = STANDARD_PROTOCOLS.find((entry) => entry.id === "med-mastite-seca");
+    expect(protocol).toBeDefined();
+
+    const item = protocol!.itens.find((entry) => entry.item_code === "secagem-intramamario");
+    expect(item).toMatchObject({
+      sexo_alvo: "F",
+      gera_agenda: false,
+      target_policy: {
+        mode: "dry_off_required",
+        target_scope: "animal",
+        condition_code: "secagem_lactacao",
+      },
+    });
+
+    const payload = buildStandardProtocolItemPayload(protocol!, item!);
+    expect(payload).toMatchObject({
+      family_code: "terapia_vaca_seca",
+      target_policy: {
+        mode: "dry_off_required",
+        target_scope: "animal",
+        condition_code: "secagem_lactacao",
+      },
+      calendario_base: {
+        mode: "clinical_protocol",
+        anchor: "dry_off",
+      },
+    });
   });
 });

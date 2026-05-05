@@ -21,6 +21,27 @@ export interface CalfJourneyMilestoneDefinition {
   dominio: AgendaItem["dominio"];
 }
 
+export const UMBIGO_CARE_MIN_DAYS = 3;
+export const UMBIGO_CARE_MAX_DAYS = 5;
+
+const UMBIGO_CARE_SCHEDULE = Array.from(
+  { length: UMBIGO_CARE_MIN_DAYS },
+  (_, dayIndex) => [
+    {
+      dayOffset: dayIndex,
+      slot: "manha",
+      slotLabel: "Manha",
+      sequenceOrder: dayIndex * 2 + 1,
+    },
+    {
+      dayOffset: dayIndex,
+      slot: "tarde",
+      slotLabel: "Tarde",
+      sequenceOrder: dayIndex * 2 + 2,
+    },
+  ],
+).flat();
+
 export const CALF_JOURNEY_MILESTONES: CalfJourneyMilestoneDefinition[] = [
   {
     key: "cura_umbigo",
@@ -66,11 +87,19 @@ export interface BuildCalfJourneyAgendaOpsInput {
     "id" | "identificacao" | "lote_id" | "data_nascimento" | "payload"
   >;
   mother: Pick<Animal, "id" | "identificacao">;
-  existingAgendaItems?: Pick<
-    AgendaItem,
-    "id" | "animal_id" | "status" | "dedup_key" | "deleted_at"
-  >[];
+  existingAgendaItems?: CalfJourneyExistingAgendaItem[];
 }
+
+export type BuildUmbigoCareAgendaOpsInput = Omit<
+  BuildCalfJourneyAgendaOpsInput,
+  "fazendaId"
+>;
+
+export type CalfJourneyExistingAgendaItem = Pick<
+  AgendaItem,
+  "id" | "animal_id" | "status" | "dedup_key" | "deleted_at"
+> &
+  Partial<Pick<AgendaItem, "tipo" | "payload" | "source_ref">>;
 
 export interface BuildCalfJourneyCompletionOpsInput {
   fazendaId: string;
@@ -130,6 +159,14 @@ export function getCalfJourneyDedupKey(calfId: string, key: CalfJourneyMilestone
   return `calf_journey:${calfId}:${key}`;
 }
 
+export function getUmbigoCareDedupKey(
+  calfId: string,
+  dayOffset: number,
+  slot: string,
+) {
+  return `${getCalfJourneyDedupKey(calfId, "cura_umbigo")}:d${dayOffset}:${slot}`;
+}
+
 export function getCalfJourneyMilestoneKey(item: Pick<AgendaItem, "tipo" | "payload" | "source_ref">) {
   const payloadMilestone =
     item.payload && typeof item.payload.milestone_key === "string"
@@ -150,6 +187,100 @@ export function isCalfJourneyAgendaItem(
   item: Pick<AgendaItem, "tipo" | "payload" | "source_ref">,
 ) {
   return getCalfJourneyMilestoneKey(item) !== null;
+}
+
+export function isUmbigoCareAgendaItem(item: CalfJourneyExistingAgendaItem) {
+  if (item.tipo === "cura_umbigo") return true;
+  if (item.dedup_key?.includes(":cura_umbigo")) return true;
+
+  const payloadMilestone =
+    item.payload && typeof item.payload.milestone_key === "string"
+      ? item.payload.milestone_key
+      : null;
+  const sourceMilestone =
+    item.source_ref && typeof item.source_ref.milestone_key === "string"
+      ? item.source_ref.milestone_key
+      : null;
+
+  return payloadMilestone === "cura_umbigo" || sourceMilestone === "cura_umbigo";
+}
+
+export function buildUmbigoCareAgendaOps({
+  calf,
+  mother,
+  existingAgendaItems = [],
+}: BuildUmbigoCareAgendaOpsInput) {
+  const birthDate = calf.data_nascimento ?? new Date().toISOString().slice(0, 10);
+  const birthEventId = getBirthEventId(calf.payload);
+  const existingDedupKeys = new Set(
+    existingAgendaItems
+      .filter((item) => item.animal_id === calf.id && !item.deleted_at)
+      .map((item) => item.dedup_key)
+      .filter((value): value is string => Boolean(value)),
+  );
+
+  const ops: OperationInput[] = [];
+
+  for (const scheduled of UMBIGO_CARE_SCHEDULE) {
+    const dedupKey = getUmbigoCareDedupKey(
+      calf.id,
+      scheduled.dayOffset,
+      scheduled.slot,
+    );
+    if (existingDedupKeys.has(dedupKey)) continue;
+
+    ops.push({
+      table: "agenda_itens",
+      action: "INSERT",
+      record: {
+        id: crypto.randomUUID(),
+        dominio: "sanitario",
+        tipo: "cura_umbigo",
+        status: "agendado",
+        data_prevista: addDays(birthDate, scheduled.dayOffset),
+        animal_id: calf.id,
+        lote_id: calf.lote_id ?? null,
+        dedup_key: dedupKey,
+        source_kind: "automatico",
+        source_ref: {
+          journey: "cria",
+          milestone_key: "cura_umbigo",
+          milestone_label: "Cura do umbigo",
+          mother_id: mother.id,
+          mother_identificacao: mother.identificacao,
+          birth_event_id: birthEventId,
+          produto: "Cura de umbigo",
+          schedule_slot: scheduled.slot,
+          schedule_day_offset: scheduled.dayOffset,
+        },
+        source_evento_id: birthEventId,
+        source_tx_id: null,
+        source_client_op_id: null,
+        protocol_item_version_id: null,
+        interval_days_applied: scheduled.dayOffset,
+        payload: {
+          journey: "cria",
+          milestone_key: "cura_umbigo",
+          milestone_label: "Cura do umbigo",
+          mother_id: mother.id,
+          birth_event_id: birthEventId,
+          schedule_kind: "twice_daily_until_dry",
+          schedule_slot: scheduled.slot,
+          schedule_slot_label: scheduled.slotLabel,
+          schedule_day_offset: scheduled.dayOffset,
+          sequence_order: scheduled.sequenceOrder,
+          min_days: UMBIGO_CARE_MIN_DAYS,
+          max_days: UMBIGO_CARE_MAX_DAYS,
+          stop_condition: "umbigo_completamente_seco",
+        },
+      },
+    });
+  }
+
+  return {
+    ops,
+    createdCount: ops.length,
+  };
 }
 
 export function buildCalfJourneyAgendaOps({
@@ -176,6 +307,28 @@ export function buildCalfJourneyAgendaOps({
     ) {
       continue;
     }
+
+    if (milestone.key === "cura_umbigo") {
+      if (
+        existingAgendaItems.some(
+          (item) =>
+            item.animal_id === calf.id &&
+            !item.deleted_at &&
+            isUmbigoCareAgendaItem(item),
+        )
+      ) {
+        continue;
+      }
+
+      const agendaBuild = buildUmbigoCareAgendaOps({
+        calf,
+        mother,
+        existingAgendaItems,
+      });
+      ops.push(...agendaBuild.ops);
+      continue;
+    }
+
     const dedupKey = getCalfJourneyDedupKey(calf.id, milestone.key);
     if (existingDedupKeys.has(dedupKey)) continue;
 

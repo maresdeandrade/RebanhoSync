@@ -35,7 +35,7 @@ export type StandardProtocolScheduleKind =
 export interface StandardProtocolAgendaActivation {
   mode: "risk_config_explicit";
   explicit: true;
-  risk_field: "zona_raiva_risco";
+  risk_field: "zona_raiva_risco" | "pressao_helmintos";
   risk_values: ["medio", "alto"];
   unknown_history_policy?: "start_from_d1";
 }
@@ -43,6 +43,12 @@ export interface StandardProtocolAgendaActivation {
 export interface StandardProtocolDependsOn {
   milestone_code: string;
   interval_days: number;
+}
+
+export interface StandardProtocolTargetPolicy {
+  mode: "suspected_animal_required" | "dry_off_required";
+  target_scope: "animal";
+  condition_code: "tristeza_parasitaria_bovina" | "secagem_lactacao";
 }
 
 export interface StandardProtocolItem {
@@ -62,6 +68,7 @@ export interface StandardProtocolItem {
   schedule_kind?: StandardProtocolScheduleKind;
   depends_on?: StandardProtocolDependsOn;
   agenda_activation?: StandardProtocolAgendaActivation;
+  target_policy?: StandardProtocolTargetPolicy;
   calendario_base: SanitaryBaseCalendarRule;
 }
 
@@ -97,6 +104,13 @@ const RABIES_OPERATIONAL_AGENDA_ACTIVATION = {
   mode: "risk_config_explicit",
   explicit: true,
   risk_field: "zona_raiva_risco",
+  risk_values: ["medio", "alto"],
+} satisfies StandardProtocolAgendaActivation;
+
+const HELMINTH_OPERATIONAL_AGENDA_ACTIVATION = {
+  mode: "risk_config_explicit",
+  explicit: true,
+  risk_field: "pressao_helmintos",
   risk_values: ["medio", "alto"],
 } satisfies StandardProtocolAgendaActivation;
 
@@ -259,7 +273,8 @@ export const STANDARD_PROTOCOLS: StandardProtocol[] = [
         gera_agenda: true,
         indicacao:
           "Femeas em idade reprodutiva e touros. Aplicar 30 dias antes da estacao de monta.",
-        sexo_alvo: "todos",
+        sexo_alvo: "F",
+        idade_min_dias: 365,
         observacoes: "Primovacinacao requer reforco.",
         calendario_base: {
           mode: "campaign",
@@ -297,6 +312,7 @@ export const STANDARD_PROTOCOLS: StandardProtocol[] = [
         gera_agenda: true,
         indicacao:
           "Mes 5 (maio) - Inicio da seca. Reduzir carga parasitaria nos animais e pastagens.",
+        agenda_activation: HELMINTH_OPERATIONAL_AGENDA_ACTIVATION,
         calendario_base: {
           mode: "campaign",
           anchor: "calendar_month",
@@ -315,6 +331,7 @@ export const STANDARD_PROTOCOLS: StandardProtocol[] = [
         gera_agenda: true,
         indicacao:
           "Mes 7 (julho) - Meio da seca. Rotacao de principio ativo para evitar resistencia.",
+        agenda_activation: HELMINTH_OPERATIONAL_AGENDA_ACTIVATION,
         calendario_base: {
           mode: "campaign",
           anchor: "calendar_month",
@@ -333,6 +350,7 @@ export const STANDARD_PROTOCOLS: StandardProtocol[] = [
         gera_agenda: true,
         indicacao:
           "Mes 9 (setembro) - Fim da seca / inicio das chuvas. Preparacao para epoca das aguas.",
+        agenda_activation: HELMINTH_OPERATIONAL_AGENDA_ACTIVATION,
         calendario_base: {
           mode: "campaign",
           anchor: "calendar_month",
@@ -425,7 +443,7 @@ export const STANDARD_PROTOCOLS: StandardProtocol[] = [
     id: "med-tpb",
     canonical_key: "tristeza_parasitaria_bovina",
     family_code: "tristeza_parasitaria_bovina",
-    nome: "Tratamento Tristeza Parasitara (TPB)",
+    nome: "Terapia de Tristeza Parasitaria Bovina (TPB)",
     descricao:
       "Protocolo terapeutico para casos de Babesiose e Anaplasmose (carrapato).",
     categoria: "medicamentos",
@@ -447,6 +465,11 @@ export const STANDARD_PROTOCOLS: StandardProtocol[] = [
         dose_num: 1,
         gera_agenda: false,
         indicacao: "Combate a Babesia. Aplicar intramuscular profunda conforme bula.",
+        target_policy: {
+          mode: "suspected_animal_required",
+          target_scope: "animal",
+          condition_code: "tristeza_parasitaria_bovina",
+        },
         observacoes: "Dose geralmente 3,5mg/kg.",
         calendario_base: {
           mode: "clinical_protocol",
@@ -462,6 +485,11 @@ export const STANDARD_PROTOCOLS: StandardProtocol[] = [
         dose_num: 1,
         gera_agenda: false,
         indicacao: "Combate a Anaplasma. Aplicar intramuscular profunda.",
+        target_policy: {
+          mode: "suspected_animal_required",
+          target_scope: "animal",
+          condition_code: "tristeza_parasitaria_bovina",
+        },
         observacoes: "Dose geralmente 20mg/kg.",
         calendario_base: {
           mode: "clinical_protocol",
@@ -477,6 +505,11 @@ export const STANDARD_PROTOCOLS: StandardProtocol[] = [
         dose_num: 1,
         gera_agenda: false,
         indicacao: "Controle da febre e dor. Suporte.",
+        target_policy: {
+          mode: "suspected_animal_required",
+          target_scope: "animal",
+          condition_code: "tristeza_parasitaria_bovina",
+        },
         calendario_base: {
           mode: "clinical_protocol",
           anchor: "clinical_need",
@@ -509,10 +542,15 @@ export const STANDARD_PROTOCOLS: StandardProtocol[] = [
         produto: "Antibiotico Intramamario (Vaca Seca)",
         intervalo_dias: 0,
         dose_num: 1,
-        gera_agenda: true,
+        gera_agenda: false,
         indicacao:
           "Vacas no encerramento da lactacao (60 dias antes do parto previsto).",
         sexo_alvo: "F",
+        target_policy: {
+          mode: "dry_off_required",
+          target_scope: "animal",
+          condition_code: "secagem_lactacao",
+        },
         observacoes:
           "Aplicar em todos os quartos apos a ultima ordenha. Usar selante de teto se possivel.",
         calendario_base: {
@@ -586,6 +624,7 @@ export function buildStandardProtocolItemPayload(
     depends_on_item_code: item.depends_on_item_code ?? null,
     depends_on: item.depends_on ?? null,
     agenda_activation: item.agenda_activation ?? null,
+    target_policy: item.target_policy ?? null,
     ...buildSanitaryBaseCalendarPayload(item.calendario_base),
     ...buildSanitaryRegimenPayload(regimen),
   };

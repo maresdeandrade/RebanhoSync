@@ -2,14 +2,23 @@ import { createClient } from '@supabase/supabase-js'
 
 const allowedOrigins = [
   'http://localhost:5173',
+  'http://localhost:8080',
   'http://localhost:3000',
   Deno.env.get('APP_ORIGIN') || '',
 ]
 
+function isAllowedDevOrigin(origin: string) {
+  return /^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin)
+}
+
 function getCorsHeaders(origin: string | null) {
   let allowOrigin = allowedOrigins[0]
   if (origin) {
-    if (allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
+    if (
+      allowedOrigins.includes(origin) ||
+      origin.endsWith('.vercel.app') ||
+      isAllowedDevOrigin(origin)
+    ) {
       allowOrigin = origin
     }
   }
