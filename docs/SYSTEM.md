@@ -2,7 +2,7 @@
 
 > **Status:** Normativo
 > **Fonte de Verdade:** Código fonte e banco de dados (migrations)
-> **Última Atualização:** 2026-04-12
+> **Última Atualização:** 2026-05-06
 
 Este documento consolida os princípios arquiteturais (Two Rails, Offline-First, Sincronização), de segurança (Tenant, RLS, RBAC), o modelo de persistência no PostgreSQL, e os contratos assumidos pelo servidor e cliente. Substitui os antigos relatórios de arquitetura fragmentados.
 
@@ -15,9 +15,9 @@ O sistema opera com persistência local pesada no frontend via IndexedDB (offlin
 ### A Separação Two Rails
 O núcleo de dados adota dois "trilhos" paralelos que não devem se fundir de forma estrita via integridade referencial:
 1. **Rail 1 (Agenda):** Focado em ações pretendidas no futuro (tabela `agenda_itens`). **Mutável**. Deduplicação mantida via `dedup_key`. Pode ser reprogramado e alterado infinitamente.
-2. **Rail 2 (Eventos):** Focado no registro de fatos transcorridos com base numa fotografia de momento (tabelas `eventos` e `eventos_*`). **Append-only**. Não permite remoção direta ou edição em colunas de balanço/negócio, forçando eventuais "contra-lançamentos" via `corrige_evento_id` se houver necessidade de revisão histórico. Triggers no próprio Postgres (ex: `prevent_business_update`) e policies atuam neste bloqueio.
+2. **Rail 2 (Eventos):** Focado no registro de fatos transcorridos com base numa fotografia de momento (tabelas `eventos` e `eventos_*`). Possui proteção contra update destrutivo de negócio via triggers/funções como `prevent_business_update`, com exceções técnicas controladas para metadados, `deleted_at`, `updated_at` e `server_received_at`. Correção histórica por `corrige_evento_id` é parcialmente validada: o campo existe, mas o fluxo completo de correção não foi confirmado.
 
-Nenhuma Foreign Key da agenda subordina o evento. Modelos lógicos conectam as pontas se necessário, preservando a imutabilidade do fato e a flexibilidade da agenda.
+Nenhuma Foreign Key da agenda subordina o evento. Modelos lógicos conectam as pontas se necessário, preservando a proteção do fato contra update destrutivo de negócio e a flexibilidade da agenda. Agenda concluída sem evento vinculado não deve ser tratada como execução factual.
 
 ### Taxonomia Canônica e Estado de Compliance
 Classificações como *categoria zootécnica*, *fase de vida*, e *estado reprodutivo* mudam dinamicamente a partir dos fatos consumados pelo rebanho ao longo do tempo. Elas persistem de foma agregada restrita dentro de `animais.payload.taxonomy_facts` atendendo o escopo v1, garantindo que "vacas" possam virar "secas" por eventos do Trilho 2 de forma declarativa e orgânica sem atualizações procedurais duplas pelo frontend/backend.
@@ -33,7 +33,7 @@ Nesta arquitetura, o sistema gerencia dois novos eixos de rastreabilidade sanit�
    - `documentation_required`: Exige atestado ou documento comprobatório para isenção.
    - `evaluation_required`: Exige avaliação técnica ou diagnóstico para definir o próximo passo do regime.
 
-Essa lógica transborda do Rail 1 para o bloqueio e triagem na UI de operação, assegurando que o status de "conformidade" seja derivado de fatos (Rail 2) e milestones pendentes (Rail 1).
+Essa lógica transborda do Rail 1 para triagem na UI de operação. Compliance sanitário está parcialmente validado por overlays, views e regras sanitárias, mas não deve ser tratado como bloqueio operacional completo e universal sem nova validação.
 
 ---
 
@@ -77,4 +77,17 @@ A comunicação cliente/servidor essencial de produção bate sob `/functions/v1
 - Recebe lote unitário englobado (o *gesture*).
 - Devolve comitiva com flag (`APPLIED`, `APPLIED_ALTERED`, `REJECTED`).
 - Intervenções anti-burlamento: *Configuração de perfil e delegação de fazendas inteiras são rejeitadas por padrão nesta via da máquina pesada do offline*. Esse ponto está isolado em endpoints RPC próprios e via Supabase JS default.
-- Processos baseados em automação como reagendamentos do Rail 1 acionados por um novo protocolo do trilho 2 podem rodar *Server-side*, deflagrando requisição local do worker ao final ("Post-Sync Pull" obrigatório) para buscar novidades do Postgres induzidas lá mesmo e que ainda não batem com o local.
+- Processos baseados em automação como reagendamentos do Rail 1 por protocolo/config podem rodar *Server-side*, deflagrando requisição local do worker ao final ("Post-Sync Pull" obrigatório) para buscar novidades do Postgres induzidas lá mesmo e que ainda não batem com o local. Há RPC/funções de recompute sanitário por animal, mas o disparo automático por mutação do animal não foi confirmado no código inspecionado.
+
+## 6. Contrato de fontes de verdade e bloqueios atuais
+
+`docs/review/RebanhoSync_auditoria.md` consolida o contrato documental pós-validação para perguntas operacionais:
+
+- Agenda é intenção/tarefa operacional mutável.
+- Evento é fonte factual/histórica de execução realizada.
+- `state_*` é estado atual/read model, não histórico.
+- Protocolo configurado é regra, não execução.
+- Necessidade futura deve partir de agenda materializada válida quando o domínio tiver agenda confirmada; regra mais validada para sanitário e cria/pós-parto.
+- `src/lib/insights/` não existe hoje e só pode ser proposta futura de composição operacional, não fonte primária.
+- Não existe camada real de marcadores/tags no repositório; marcadores são proposta futura auxiliar, nunca fonte primária.
+- Peso atual confiável, carência ativa operacional, pronto para venda/abate, `commercialReadiness.ts` conclusivo, tags/marcadores persistidos como fonte primária, consulta em linguagem natural, IA gerando agenda, IA concluindo execução e motor geral IATF permanecem bloqueados até nova validação.

@@ -2,7 +2,7 @@
 
 > **Status:** Normativo
 > **Fonte de Verdade:** Este documento
-> **Última Atualização:** 2026-04-21
+> **Última Atualização:** 2026-05-06
 
 ## 1. Objetivo
 
@@ -34,6 +34,8 @@ Em caso de conflito, a ordem de confiança é:
 3. docs normativos
 4. docs derivados
 5. histórico
+
+Quando a tarefa envolver fontes de verdade operacionais, propostas de `src/lib/insights/`, marcadores/tags, relatórios de prontidão comercial ou decisões automatizadas, usar também `docs/review/RebanhoSync_auditoria.md` como contrato documental pós-validação. Ele não supera código/migrations, mas registra os bloqueios e limites atuais aprovados para orientar prompts futuros.
 
 ### 2.3 Escopo estreito
 Mudanças devem, por padrão:
@@ -168,7 +170,7 @@ Quando os hotspots criticos de uma frente estiverem endurecidos (ex.: shell fino
 
 Em fluxos operacionais, manter as regras normativas:
 
-- Two Rails explicito: Agenda (intencao mutavel) != Eventos (fato append-only).
+- Two Rails explicito: Agenda (intencao mutavel) != Eventos (fato historico protegido contra update destrutivo de negocio, com excecoes tecnicas controladas).
 - `Registrar` e `Executar` registram evento.
 - `Encerrar` e `Cancelar` atuam apenas na agenda.
 - `Aplicar protocolo` atua apenas na agenda (materializacao/recalculo), sem registrar evento.
@@ -176,6 +178,11 @@ Em fluxos operacionais, manter as regras normativas:
 - `Concluir direto`, `Abrir proxima acao`, `Abrir registro detalhado` e `Executar direto` sao termos proibidos.
 - invariavel de execucao: `1 acao -> 1 createGesture` (sem duplicacao sequencial).
 - handlers de acao direta devem usar guarda de reentrada/concorrencia para evitar dupla submissao e navegacao duplicada.
+- agenda concluida sem evento vinculado nao deve ser tratada como execucao factual.
+- necessidade futura deve partir de agenda materializada valida quando o dominio tiver agenda confirmada; regra mais validada para sanitario e cria/pos-parto.
+- protocolo configurado nao e execucao realizada.
+- `state_*` e estado atual/read model, nao historico.
+- peso atual confiavel, carencia ativa operacional, pronto para venda/abate, `commercialReadiness.ts` conclusivo, tags/marcadores persistidos como fonte primaria, consulta em linguagem natural, IA gerando agenda, IA concluindo execucao e motor geral IATF permanecem bloqueados ate fonte consolidada e nova validacao.
 
 ### 4.3 Validar
 Toda entrega deve, no mínimo, validar:
@@ -235,7 +242,7 @@ Quando a tarefa tocar áreas sensíveis, revisar adicionalmente:
 - invariantes de sync/offline
 - isolamento por `fazenda_id`
 - FKs compostas
-- append-only
+- protecao contra update destrutivo de negocio em eventos
 - contratos de payload
 - impactos em rollback/idempotência
 
@@ -329,7 +336,8 @@ Em caso de dúvida, a ordem de consulta deve ser:
 4. `docs/PRODUCT.md`
 5. `docs/SYSTEM.md`
 6. `docs/REFERENCE.md`
-7. documentos derivados (`IMPLEMENTATION_STATUS`, `TECH_DEBT`, `ROADMAP`)
+7. `docs/review/RebanhoSync_auditoria.md`, quando a pergunta envolver contrato de fontes de verdade, insights, marcadores ou decisoes bloqueadas
+8. documentos derivados (`IMPLEMENTATION_STATUS`, `TECH_DEBT`, `ROADMAP`)
 
 Esse encadeamento reduz confusão entre momento atual, processo, aprofundamento normativo e histórico.
 
