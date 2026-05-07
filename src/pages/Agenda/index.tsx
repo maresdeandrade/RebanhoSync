@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { useLiveQuery } from "dexie-react-hooks";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Calendar, Plus } from "lucide-react";
 
@@ -9,8 +8,6 @@ import { PageIntro } from "@/components/ui/page-intro";
 import { useAuth } from "@/hooks/useAuth";
 import { buildAgendaCriticalNavigationTargets } from "@/lib/agenda/criticalNavigation";
 import {
-  getAnimalLifeStageLabel,
-  getPendingAnimalLifecycleKindLabel,
   getPendingAnimalLifecycleTransitions,
   summarizePendingAnimalLifecycleTransitions,
 } from "@/lib/animals/lifecycle";
@@ -25,17 +22,12 @@ import { buildRegulatoryOperationalReadModel } from "@/lib/sanitario/compliance/
 import { concluirPendenciaSanitaria } from "@/lib/sanitario/infrastructure/service";
 import {
   formatAgendaDate,
-  formatAgendaTypeLabel,
   getAgendaStatusTone,
   readNumber,
   readString,
 } from "@/pages/Agenda/helpers/formatting";
 import {
-  getAnimalQuickFilterLabel,
   parseAgendaDominioFilter,
-  getCalendarAnchorQuickFilterLabel,
-  getCalendarModeQuickFilterLabel,
-  getScheduleQuickFilterLabel,
   parseCalendarAnchorQuickFilter,
   parseCalendarModeQuickFilter,
 } from "@/pages/Agenda/helpers/quickFilters";
@@ -53,8 +45,10 @@ import {
   hasAgendaQuickFiltersActive,
   summarizeAgendaRowsByStatus,
 } from "@/pages/Agenda/helpers/derivations";
+import { buildAgendaPageSummaries } from "@/pages/Agenda/helpers/pageSummaries";
 import { createAgendaActionController } from "@/pages/Agenda/createAgendaActionController";
 import type { AgendaRow } from "@/pages/Agenda/types";
+import { useAgendaPageData } from "@/pages/Agenda/useAgendaPageData";
 import { useAgendaShellState } from "@/pages/Agenda/useAgendaShellState";
 import { useAgendaInteractionState } from "@/pages/Agenda/useAgendaInteractionState";
 import { showError, showSuccess } from "@/utils/toast";
@@ -156,62 +150,7 @@ export default function Agenda() {
     });
   }, [activeFarmId]);
 
-  const data = useLiveQuery(async () => {
-    if (!activeFarmId) {
-      return {
-        itens: [],
-        animais: [],
-        lotes: [],
-        protocolos: [],
-        protocoloItens: [],
-        gestos: [],
-        sanidadeConfig: null,
-        officialTemplates: [],
-        officialTemplateItems: [],
-      };
-    }
-
-    const [
-      itens,
-      animais,
-      lotes,
-      protocolos,
-      protocoloItens,
-      gestos,
-      sanidadeConfig,
-      officialTemplates,
-      officialTemplateItems,
-    ] = await Promise.all([
-      db.state_agenda_itens.where("fazenda_id").equals(activeFarmId).toArray(),
-      db.state_animais.where("fazenda_id").equals(activeFarmId).toArray(),
-      db.state_lotes.where("fazenda_id").equals(activeFarmId).toArray(),
-      db.state_protocolos_sanitarios
-        .where("fazenda_id")
-        .equals(activeFarmId)
-        .toArray(),
-      db.state_protocolos_sanitarios_itens
-        .where("fazenda_id")
-        .equals(activeFarmId)
-        .toArray(),
-      db.queue_gestures.where("fazenda_id").equals(activeFarmId).toArray(),
-      db.state_fazenda_sanidade_config.get(activeFarmId),
-      db.catalog_protocolos_oficiais.toArray(),
-      db.catalog_protocolos_oficiais_itens.toArray(),
-    ]);
-
-    return {
-      itens: itens.filter((item) => !item.deleted_at),
-      animais: animais.filter((animal) => !animal.deleted_at),
-      lotes: lotes.filter((lote) => !lote.deleted_at),
-      protocolos: protocolos.filter((protocolo) => !protocolo.deleted_at),
-      protocoloItens: protocoloItens.filter((item) => !item.deleted_at),
-      gestos,
-      sanidadeConfig:
-        sanidadeConfig && !sanidadeConfig.deleted_at ? sanidadeConfig : null,
-      officialTemplates,
-      officialTemplateItems,
-    };
-  }, [activeFarmId]);
+  const data = useAgendaPageData(activeFarmId);
 
   const regulatoryReadModel = useMemo(
     () =>
@@ -319,118 +258,52 @@ export default function Agenda() {
     [filtered],
   );
 
-  const hasActiveFilters =
-    search.trim().length > 0 ||
-    statusFilter !== "all" ||
-    dominioFilter !== "all" ||
-    dateFrom.length > 0 ||
-    dateTo.length > 0 ||
-    groupMode !== "animal" ||
-    quickTypeFilter !== "all" ||
-    quickScheduleFilter !== "all" ||
-    quickCalendarModeFilter !== "all" ||
-    quickCalendarAnchorFilter !== "all" ||
-    quickAnimalFilter !== "all";
-
-  const hasComplianceAttention = complianceSummary.openCount > 0;
-  const lifecyclePanelItems = useMemo(
+  const pageSummaries = useMemo(
     () =>
-      lifecycleQueue.slice(0, 4).map((item) => ({
-        animalId: item.animalId,
-        identificacao: item.identificacao,
-        kindLabel: getPendingAnimalLifecycleKindLabel(item.queueKind),
-        kindTone: (item.queueKind === "decisao_estrategica"
-          ? "warning"
-          : "info") as "warning" | "info",
-        autoApplyLabel: item.canAutoApply ? "Auto/híbrido" : "Manual",
-        autoApplyTone: (item.canAutoApply ? "info" : "warning") as
-          | "info"
-          | "warning",
-        stageLabel: `${getAnimalLifeStageLabel(item.currentStage)} para ${getAnimalLifeStageLabel(item.targetStage)}`,
-        loteNome: item.loteNome,
-        reason: item.reason,
-      })),
-    [lifecycleQueue],
+      buildAgendaPageSummaries({
+        filteredLength: filtered.length,
+        filters: {
+          search,
+          statusFilter,
+          dominioFilter,
+          dateFrom,
+          dateTo,
+          groupMode,
+          quickTypeFilter,
+          quickScheduleFilter,
+          quickCalendarModeFilter,
+          quickCalendarAnchorFilter,
+          quickAnimalFilter,
+        },
+        complianceSummary,
+        lifecycleSummary,
+        lifecycleQueue,
+      }),
+    [
+      complianceSummary,
+      dateFrom,
+      dateTo,
+      dominioFilter,
+      filtered.length,
+      groupMode,
+      lifecycleQueue,
+      lifecycleSummary,
+      quickAnimalFilter,
+      quickCalendarAnchorFilter,
+      quickCalendarModeFilter,
+      quickScheduleFilter,
+      quickTypeFilter,
+      search,
+      statusFilter,
+    ],
   );
-  const overviewBadges = useMemo(() => {
-    const badges: Array<{
-      key: string;
-      label: string;
-      tone: "neutral" | "info" | "success" | "warning" | "danger";
-    }> = [
-      {
-        key: "recorte",
-        label: `${filtered.length} item(ns) no recorte`,
-        tone: "neutral",
-      },
-    ];
 
-    if (hasActiveFilters)
-      badges.push({ key: "filters", label: "Filtros ativos", tone: "info" });
-    if (quickTypeFilter !== "all") {
-      badges.push({
-        key: "quick-type",
-        label: `Tipo: ${formatAgendaTypeLabel(quickTypeFilter)}`,
-        tone: "info",
-      });
-    }
-    if (quickScheduleFilter !== "all") {
-      badges.push({
-        key: "quick-schedule",
-        label: `Prazo: ${getScheduleQuickFilterLabel(quickScheduleFilter)}`,
-        tone: "info",
-      });
-    }
-    if (quickCalendarModeFilter !== "all") {
-      badges.push({
-        key: "quick-calendar-mode",
-        label: `Calendário: ${getCalendarModeQuickFilterLabel(quickCalendarModeFilter)}`,
-        tone: "info",
-      });
-    }
-    if (quickCalendarAnchorFilter !== "all") {
-      badges.push({
-        key: "quick-calendar-anchor",
-        label: `Âncora: ${getCalendarAnchorQuickFilterLabel(quickCalendarAnchorFilter)}`,
-        tone: "info",
-      });
-    }
-    if (quickAnimalFilter !== "all") {
-      badges.push({
-        key: "quick-animal",
-        label: `Animal: ${getAnimalQuickFilterLabel(quickAnimalFilter)}`,
-        tone: "info",
-      });
-    }
-
-    for (const badge of complianceSummary.badges) {
-      badges.push({
-        key: `compliance-${badge.key}`,
-        label: `${badge.label} ${badge.count}`,
-        tone: badge.tone,
-      });
-    }
-
-    if (lifecycleSummary.total > 0) {
-      badges.push({
-        key: "lifecycle",
-        label: `${lifecycleSummary.total} transição(ões) no radar`,
-        tone: "warning",
-      });
-    }
-
-    return badges;
-  }, [
-    complianceSummary.badges,
-    filtered.length,
-    hasActiveFilters,
-    lifecycleSummary.total,
-    quickAnimalFilter,
-    quickCalendarAnchorFilter,
-    quickCalendarModeFilter,
-    quickScheduleFilter,
-    quickTypeFilter,
-  ]);
+  const {
+    hasComplianceAttention,
+    lifecyclePanelItems,
+    overviewBadges,
+    showLifecyclePanel,
+  } = pageSummaries;
 
   const criticalTargets = useMemo(
     () =>
@@ -595,7 +468,7 @@ export default function Agenda() {
         />
       ) : null}
 
-      {lifecycleSummary.total > 0 ? (
+      {showLifecyclePanel ? (
         <AgendaLifecycleSummaryPanel
           total={lifecycleSummary.total}
           strategic={lifecycleSummary.strategic}
