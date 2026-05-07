@@ -45,6 +45,12 @@ import {
 } from "@/lib/sanitario/compliance/regulatoryReadModel";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Toolbar, ToolbarGroup } from "@/components/ui/toolbar";
+import { OperationalInsightsPanel } from "@/features/operationalInsights/OperationalInsightsPanel";
+import { useOperationalInsights } from "@/features/operationalInsights/useOperationalInsights";
+import type {
+  BuildOperationalInsightsInput,
+  OperationalInsightsLoadedSources,
+} from "@/features/operationalInsights/operationalInsightsAdapter";
 
 type FarmSummary = {
   nome: string;
@@ -54,6 +60,13 @@ type FarmSummary = {
 };
 
 type HomeSnapshot = {
+  generatedAt: string;
+  referenceDate: string;
+  monthlyPeriod: {
+    start: string;
+    end: string;
+  };
+  operationalInsightSources: OperationalInsightsLoadedSources;
   animais: number;
   lotes: number;
   pastos: number;
@@ -157,6 +170,12 @@ const dateFormatter = new Intl.DateTimeFormat("pt-BR", {
   month: "short",
 });
 
+const EMPTY_OPERATIONAL_INSIGHT_SOURCES: OperationalInsightsLoadedSources = {};
+const EMPTY_MONTHLY_PERIOD = {
+  start: "1970-01-01",
+  end: "1970-01-31",
+};
+
 function buildAgendaCalendarModePath(mode: string) {
   return `/agenda?calendarMode=${mode}`;
 }
@@ -165,6 +184,17 @@ function getTodayKey() {
   const now = new Date();
   const local = new Date(now.getTime() - now.getTimezoneOffset() * 60_000);
   return local.toISOString().slice(0, 10);
+}
+
+function getMonthPeriod(referenceDate: string) {
+  const [year, month] = referenceDate.split("-").map(Number);
+  const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  const monthKey = referenceDate.slice(0, 7);
+
+  return {
+    start: `${monthKey}-01`,
+    end: `${monthKey}-${String(lastDay).padStart(2, "0")}`,
+  };
 }
 
 function formatDay(date: string) {
@@ -204,6 +234,8 @@ const Home = () => {
     async () => {
       if (!activeFarmId) return null;
 
+      const todayKey = getTodayKey();
+      const monthlyPeriod = getMonthPeriod(todayKey);
       const [
         animais,
         lotes,
@@ -212,6 +244,7 @@ const Home = () => {
         protocoloItens,
         agendaItens,
         eventos,
+        eventosMensais,
         syncSummary,
         regulatorySource,
       ] = await Promise.all([
@@ -238,11 +271,20 @@ const Home = () => {
           .filter((evento) => !evento.deleted_at)
           .limit(5)
           .toArray(),
+        db.event_eventos
+          .where("[fazenda_id+occurred_at]")
+          .between(
+            [activeFarmId, `${monthlyPeriod.start}T00:00:00.000Z`],
+            [activeFarmId, `${monthlyPeriod.end}T23:59:59.999Z`],
+            true,
+            true,
+          )
+          .filter((evento) => !evento.deleted_at)
+          .toArray(),
         loadFarmSyncSummary(activeFarmId),
         loadRegulatorySurfaceSource(activeFarmId),
       ]);
 
-      const todayKey = getTodayKey();
       const animaisDisponiveis = animais.filter((animal) => !animal.deleted_at);
       const animaisAtivos = animais.filter(
         (animal) => !animal.deleted_at && animal.status === "ativo",
@@ -323,7 +365,7 @@ const Home = () => {
           label: "Ativar protocolos sanitarios",
           helper: "Ajuda a gerar agenda e padronizar o manejo.",
           path: "/protocolos-sanitarios",
-          done: protocolosAtivos > 0,
+          done: protocolosAtivos.length > 0,
         },
         {
           label: "Registrar o primeiro manejo",
@@ -351,6 +393,15 @@ const Home = () => {
       const lifecycleBiologicalCount = lifecycleQueue.length - lifecycleStrategicCount;
 
       return {
+        generatedAt: new Date().toISOString(),
+        referenceDate: todayKey,
+        monthlyPeriod,
+        operationalInsightSources: {
+          agendaItems: agendaAberta,
+          animals: animaisDisponiveis,
+          events: eventosMensais,
+          protocolItems: protocoloItensDisponiveis,
+        },
         animais: animaisAtivos.length,
         lotes: lotesAtivos.length,
         pastos: pastosAtivos.length,
@@ -403,6 +454,19 @@ const Home = () => {
     if (!snapshot) return 0;
     return snapshot.checklist.filter((item) => item.done).length;
   }, [snapshot]);
+
+  const operationalInsightsInput = useMemo<BuildOperationalInsightsInput>(
+    () => ({
+      generatedAt: snapshot?.generatedAt ?? "1970-01-01T00:00:00.000Z",
+      referenceDate: snapshot?.referenceDate ?? "1970-01-01",
+      monthlyPeriod: snapshot?.monthlyPeriod ?? EMPTY_MONTHLY_PERIOD,
+      sources: snapshot?.operationalInsightSources ?? EMPTY_OPERATIONAL_INSIGHT_SOURCES,
+      upcomingDays: 7,
+      requireSanitaryProductSource: true,
+    }),
+    [snapshot],
+  );
+  const operationalInsights = useOperationalInsights(operationalInsightsInput);
 
   if (!activeFarmId) {
     return (
@@ -600,6 +664,8 @@ const Home = () => {
           tone={snapshot.lifecyclePendingCount > 0 ? "warning" : "default"}
         />
       </section>
+
+      <OperationalInsightsPanel viewModel={operationalInsights} />
 
       {snapshot.sanitaryAttention.totalOpen > 0 ? (
         <Card>
