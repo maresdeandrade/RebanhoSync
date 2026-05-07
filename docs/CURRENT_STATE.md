@@ -1,7 +1,7 @@
 # Current State (Snapshot Operacional)
 
 > **Status:** Snapshot vivo
-> **Ultima atualizacao:** 2026-04-29
+> **Ultima atualizacao:** 2026-05-06
 > **Estado do produto:** Beta interno
 > **Fase atual:** MVP funcional completo -> **SLC (Simple, Lovable, Complete) em consolidacao**
 
@@ -29,6 +29,7 @@ Consolidacoes recentes da fase SLC:
 - taxonomia sanitaria passiva introduzida (`ProtocolKind`, `MaterializationMode`, `ComplianceKind`) sem mudanca de comportamento.
 - `src/lib/sanitario/**` reorganizado por responsabilidade e boundary `Registrar` <-> sanitario documentado.
 - Shims de migrations pos-squash removidos da pasta ativa; testes de contrato leem a baseline canonica ou fixtures canonicas.
+- `docs/review/RebanhoSync_auditoria.md` foi ajustado pos-validacao como contrato documental de fontes de verdade para orientar propostas futuras de `insights` e marcadores sem transformar proposta em comportamento existente.
 
 ---
 
@@ -123,6 +124,8 @@ Limites explicitamente mantidos:
 - `animais.especie` existe como campo canonico nullable minimo (`bovino`/`bubalino`/`null`) e atua como gate sanitario transicional, sem backfill obrigatorio e sem obrigatoriedade de preenchimento;
 - nao ha indice JSONB para `payload.sanitary_completion`; este e o risco remanescente principal da sequencia de raiva quando o volume historico crescer;
 - o seed sanitario permanece conservador e nao e catalogo normativo completo.
+- eventos possuem protecao contra update destrutivo de negocio, com excecoes tecnicas controladas; correcao por `corrige_evento_id` segue parcialmente validada como contrato/campo, sem fluxo completo confirmado.
+- ha RPC/funcoes de recompute sanitario por animal, mas disparo automatico por mutacao do animal nao ficou confirmado no codigo inspecionado; recompute por protocolo/config esta mais claramente validado.
 
 Riscos remanescentes:
 - validar caminho completo do gateway JWT local sem `--no-verify-jwt`;
@@ -138,8 +141,11 @@ Riscos remanescentes:
 - consolidacao da nova suite de integracao por fluxo (`tests/integration/flows/**`) como cobertura minima cross-flow;
 - cleanup residual de shell/read-model nos pontos restantes;
 - carencia ainda e metadata/compliance parcial, nao motor pleno de withholding;
+- compliance sanitario esta parcialmente validado por overlays, views e regras sanitarias, mas nao e bloqueio operacional completo e universal;
 - produto/lote/estoque ainda nao formam rastreabilidade sanitaria completa;
 - SISBOV/fiscal continuam fora do core sanitario atual;
+- peso atual confiavel, carencia ativa operacional e pronto para venda/abate continuam bloqueados como decisoes automatizadas por falta de fonte composta/read model consolidado;
+- `src/lib/insights/`, camada real de marcadores/tags, tags persistidas como fonte primaria, consulta em linguagem natural, IA gerando agenda, IA concluindo execucao e motor geral IATF permanecem nao implementados/bloqueados;
 - acabamento de UX para reduzir ambiguidade e carga cognitiva;
 - maior consistencia cross-flow (agenda <-> registrar <-> protocolos).
 
@@ -170,3 +176,4 @@ Esses pontos impedem declarar SLC consolidado neste momento.
 - [TECH_DEBT.md](./TECH_DEBT.md)
 - [ROADMAP.md](./ROADMAP.md)
 - [PROCESS.md](./PROCESS.md)
+- [RebanhoSync_auditoria.md](./review/RebanhoSync_auditoria.md)

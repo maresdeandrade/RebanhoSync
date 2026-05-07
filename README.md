@@ -49,7 +49,7 @@ Regra de regressao semantica:
 
 - Gestão de animais, lotes, pastos, contrapartes e categorias zootécnicas.
 - Registro de eventos: sanitário, pesagem, nutrição, movimentação, reprodução e financeiro.
-- Agenda operacional com protocolos, deduplicação automática e recálculo por trigger.
+- Agenda operacional com protocolos, deduplicação automática e recálculo sanitário liderado por SQL/RPC; recompute por protocolo/config está validado com mais clareza do que disparo automático por mutação de animal.
 - Motor sanitário com materialização/recompute liderados por SQL/Supabase, contratos TS protegidos por golden tests, calendário TS->SQL alinhado e dedup canônico estruturado.
 - Boundary sanitário do Registrar encerrado no recorte estrutural atual: `src/pages/Registrar/**` não importa `@/lib/sanitario/engine/*`; labels visuais passam por facade em `src/lib/sanitario/models/calendarDisplay.ts`.
 - Onboarding guiado da fazenda e importação CSV de animais, lotes e pastos.
@@ -75,6 +75,10 @@ Regra de regressao semantica:
 - O handler real de `sync-batch` foi validado localmente; por limitação do gateway local da CLI, a chamada rodou com `functions serve --no-verify-jwt`, mas o handler ainda executou `auth.getUser(jwt)` e operações user-scoped com RLS.
 
 Riscos remanescentes conhecidos: validar o caminho completo do gateway JWT sem `--no-verify-jwt`, manter claro que o seed sanitário é mínimo/técnico e não normativo, e acompanhar timeouts intermitentes já observados em testes UI longos.
+
+Contrato documental recente:
+- `docs/review/RebanhoSync_auditoria.md` consolida o contrato validado de fontes de verdade: Agenda é intenção, Evento é fato, `state_*` é estado atual/read model, Protocolo é regra e marcadores/insights são apenas propostas auxiliares futuras.
+- Permanecem bloqueados como decisão automatizada: peso atual confiável, carência ativa operacional, pronto para venda/abate, `commercialReadiness.ts` conclusivo, tags/marcadores persistidos como fonte primária, consulta em linguagem natural, IA gerando agenda, IA concluindo execução e motor geral IATF.
 
 ---
 

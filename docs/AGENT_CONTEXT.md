@@ -36,6 +36,7 @@ Fontes principais:
 - `docs/PRODUCT.md`: produto e dominio.
 - `docs/SYSTEM.md`: visao sistemica.
 - `docs/REFERENCE.md`: referencia de dominio/uso.
+- `docs/review/RebanhoSync_auditoria.md`: contrato documental pos-validacao para fontes de verdade, `insights`, marcadores e decisoes bloqueadas.
 - `docs/IMPLEMENTATION_STATUS.md`, `docs/TECH_DEBT.md`, `docs/ROADMAP.md`, `docs/review/RECONCILIACAO_REPORT.md`: derivados.
 
 Inspecao de docs:
@@ -61,7 +62,7 @@ O arquivo de baseline contem, entre outros:
 - FKs compostas com `fazenda_id`;
 - RLS habilitado e policies por membership/RBAC;
 - funcoes de membership e roles;
-- eventos append-only protegidos contra update destrutivo de negocio;
+- eventos protegidos contra update destrutivo de negocio, com excecoes tecnicas controladas (`deleted_at`, `updated_at`, `server_received_at` e metadados);
 - agenda sanitaria, recompute e RPCs sanitarias;
 - catalogos sanitarios globais.
 
@@ -121,14 +122,25 @@ Antes de expandir leitura, procure `AGENTS.md` local na area afetada.
 
 Modelo operacional:
 - Rail 1: `agenda_itens` representa intencao futura mutavel.
-- Rail 2: `eventos` e tabelas `eventos_*` representam fatos passados append-only.
+- Rail 2: `eventos` e tabelas `eventos_*` representam fatos passados protegidos contra update destrutivo de negocio.
 
 Regras:
 - Agenda e Evento nao se confundem.
 - `Registrar` e `Executar` escrevem evento.
 - `Encerrar` e `Cancelar` atuam em pendencia de agenda.
 - `Aplicar protocolo` recalcula/materializa agenda e nao cria evento diretamente.
-- Correcao historica ocorre por contra-lancamento, nunca update destrutivo de negocio.
+- Correcao historica por `corrige_evento_id` esta parcialmente validada: o campo existe, mas o fluxo completo de correcao nao foi confirmado no codigo inspecionado.
+- Agenda concluida sem evento vinculado nao deve ser tratada como execucao factual.
+- Necessidade futura deve partir de agenda materializada valida quando o dominio tiver agenda confirmada; regra mais validada para sanitario e cria/pos-parto.
+
+## 6.1 Contrato de fontes e bloqueios atuais
+
+- `src/lib/insights/` nao existe hoje; e apenas proposta futura de composicao operacional, nao fonte primaria nem motor de regra critica.
+- Nao existe camada real de marcadores/tags no repositorio; termos como tag, label, badge, chip, status e classificacao aparecem em UI, identificacao ou dominio, mas nao constituem camada de marcadores operacionais.
+- Marcadores, se propostos, devem ser auxiliares, recalculaveis ou auditaveis, nunca fonte primaria.
+- Peso atual confiavel, carencia ativa operacional, pronto para venda/abate, `commercialReadiness.ts` conclusivo, tags/marcadores persistidos como fonte primaria, consulta em linguagem natural, IA gerando agenda, IA concluindo execucao e motor geral IATF permanecem bloqueados ate nova validacao.
+- Compliance sanitario esta parcialmente validado por overlays, views e regras sanitarias, mas nao e bloqueio operacional completo e universal.
+- Ha RPC/funcoes de recompute sanitario por animal, mas disparo automatico por mutacao do animal nao foi confirmado; recompute por protocolo/config esta mais claramente validado.
 
 ## 7. Offline-first e sync gestures
 
@@ -160,7 +172,7 @@ Regras:
 Ao tocar banco/edge:
 - revisar isolamento por `fazenda_id`;
 - revisar FKs compostas;
-- revisar append-only;
+- revisar protecao contra update destrutivo de negocio em eventos;
 - revisar `SECURITY DEFINER` quando existir;
 - revisar grants e uso de cliente user-scoped.
 
@@ -171,7 +183,7 @@ Ao tocar banco/edge:
 - `supabase/migrations_legacy_pre_baseline/**` e backup documental, nao cadeia ativa.
 - Nao recriar shims pos-squash na pasta ativa sem decisao explicita.
 - Qualquer mudanca estrutural deve preservar compatibilidade com dados legados e contratos offline.
-- Mudancas de schema/RLS/RPC devem citar validacao de `fazenda_id`, FKs compostas e append-only.
+- Mudancas de schema/RLS/RPC devem citar validacao de `fazenda_id`, FKs compostas e protecao contra update destrutivo de negocio em eventos.
 
 ## 10. Regras para seed
 
