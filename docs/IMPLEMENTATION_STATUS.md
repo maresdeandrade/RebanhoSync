@@ -112,7 +112,8 @@ Este documento registra o estado efetivo do RebanhoSync na fase atual de consoli
 - `src/features/operationalInsights/` adapta fontes já carregadas para o core, preservando `answerability`, `resultStatus`, `source`, `limitations` e `primarySource`.
 - `src/pages/Home.tsx` monta input estável para `useOperationalInsights` a partir de `state_agenda_itens`, `state_animais`, `event_eventos`/eventos mensais e `state_protocolos_sanitarios_itens`.
 - A UI mostra cards de pendências abertas, vencem hoje, atrasadas, pendências sanitárias, rebanho por estágio, KPIs mensais e sinais operacionais auxiliares.
-- Estados exibidos: `Bloqueado`, `Vazio`, `Parcial` e `Completo`.
+- Estados exibidos: `Bloqueado` (fonte obrigatoria ausente), `Vazio` (fonte carregada sem itens), `Parcial` (fonte carregada com limitacao) e `Completo` (leitura completa).
+- Refino visual posterior priorizou atrasadas e vencem hoje, compactou limitacoes, reduziu ruido de fonte/texto e reforcou que sinais auxiliares nao persistem tags.
 - Limites preservados: sem concluir/gerar agenda, sem criar evento, sem persistir tag, sem carência, sem pronto venda/abate, sem peso atual confiável e sem IATF amplo.
 
 ---
@@ -262,6 +263,8 @@ Este documento registra o estado efetivo do RebanhoSync na fase atual de consoli
 - Home passou a ser a primeira superficie da Central Operacional passiva, usando dados ja carregados por Dexie/read models existentes.
 - Cards expostos: pendencias abertas, vencem hoje, atrasadas, pendencias sanitarias, rebanho por estagio, KPIs mensais e sinais operacionais auxiliares.
 - Estados expostos: `Bloqueado`, `Vazio`, `Parcial` e `Completo`, com limitacoes visiveis quando existirem.
+- Refinamento de UX/copy concluido: cards atrasados e vencendo hoje aparecem primeiro; limitacoes ficam visiveis de forma compacta; microcopy dos estados explicita se a fonte esta ausente, vazia, parcial ou completa.
+- Testes do painel cobrem ordem de urgencia, microcopy dos estados, ausencia de link/botao e ausencia de elementos acionaveis.
 - Validacao da rodada: `pnpm test` verde (175 arquivos / 1100 testes), `pnpm run lint` verde, `pnpm run build` verde e `git status --short --untracked-files=all` limpo.
 - Limites preservados: nenhuma persistencia, evento, geracao/conclusao de agenda, tag persistida, regra de carencia, pronto venda/abate, peso atual confiavel ou IATF amplo.
 

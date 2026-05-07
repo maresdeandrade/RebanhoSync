@@ -103,6 +103,7 @@ Primeira integracao read-only concluida:
 - `src/features/operationalInsights/useOperationalInsights.ts` memoiza o consumo do adapter.
 - `src/features/operationalInsights/OperationalInsightsPanel.tsx` expõe painel somente leitura.
 - `src/pages/Home.tsx` e a primeira superficie da Central Operacional passiva.
+- O painel foi refinado para priorizar visualmente atrasadas e vencendo hoje, reduzir ruido textual, compactar limitacoes e deixar estados de resposta mais claros.
 
 Cards expostos na Home:
 - pendencias abertas;
@@ -114,10 +115,10 @@ Cards expostos na Home:
 - sinais operacionais auxiliares.
 
 Estados exibidos:
-- `Bloqueado`;
-- `Vazio`;
-- `Parcial`;
-- `Completo`.
+- `Bloqueado`: fonte obrigatoria ausente;
+- `Vazio`: fonte carregada, sem itens;
+- `Parcial`: fonte carregada com limitacao;
+- `Completo`: fonte carregada, leitura completa.
 
 Fontes lidas pela primeira integracao:
 - `state_agenda_itens`;
@@ -131,6 +132,7 @@ Limites preservados:
 - nao calcula carencia operacional, pronto para venda/abate, peso atual confiavel ou IATF amplo;
 - agenda continua intencao operacional, nao fato historico;
 - protocolo configurado continua regra, nao execucao.
+- o painel permanece sem botao, link, `onClick` ou CTA de dominio.
 
 ---
 

@@ -34,6 +34,7 @@ Atualizacao sanitaria 2026-04-28:
 Atualizacao Central Operacional 2026-05-07:
 - Primeira integracao read-only concluida: `src/lib/insights/` como core puro, `src/features/operationalInsights/` como adapter/hook/painel e Home como primeira superficie passiva.
 - O escopo atual e apenas leitura: cards de pendencias, rebanho por estagio, KPIs mensais e sinais operacionais auxiliares, com estados bloqueado/vazio/parcial/completo.
+- Refino inicial de UX/copy concluido: atrasadas e vencendo hoje foram priorizadas, estados ganharam microcopy operacional e limitacoes ficaram compactas sem serem escondidas.
 - A Central nao e motor de decisao e nao executa agenda, eventos, tags persistidas, carencia, venda/abate, peso atual confiavel ou IATF amplo.
 
 ---
@@ -320,6 +321,8 @@ Atualizacao Central Operacional 2026-05-07:
 - [x] Conectar `src/pages/Home.tsx` como primeira superficie da Central Operacional passiva.
 - [x] Expor cards de pendencias abertas, vencem hoje, atrasadas, pendencias sanitarias, rebanho por estagio, KPIs mensais e sinais operacionais auxiliares.
 - [x] Expor estados `Bloqueado`, `Vazio`, `Parcial` e `Completo`, mantendo limitacoes visiveis.
+- [x] Refinar hierarquia visual, densidade, copy de estados e priorizacao de atrasadas/vencendo hoje sem adicionar acoes.
+- [x] Cobrir no teste do painel a ordem de urgencia, os estados e a ausencia de links/botoes/elementos acionaveis.
 
 ### Fora de escopo mantido
 
@@ -338,7 +341,7 @@ Atualizacao Central Operacional 2026-05-07:
 
 - Ampliar testes de contrato do adapter para novos read models antes de adicionar outra superficie.
 - Avaliar uma pagina dedicada da Central somente se a Home ficar densa demais, mantendo a UI read-only.
-- Revisar copy e densidade visual dos cards com dados reais de beta interno, sem adicionar CTAs operacionais.
+- Reavaliar densidade visual com dados reais de beta interno, sem adicionar CTAs operacionais.
 
 ---
 

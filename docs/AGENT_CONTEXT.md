@@ -138,6 +138,7 @@ Regras:
 - `src/lib/insights/` existe como core puro/read-only de composicao operacional, sem IO, Supabase, Dexie, UI, persistencia ou relogio interno. Ele nao e fonte primaria nem motor de regra critica.
 - `src/features/operationalInsights/` e a primeira integracao passiva: adapter, hook e painel read-only para a Central Operacional na Home.
 - A Home consome dados ja carregados de `state_agenda_itens`, `state_animais`, `event_eventos`/eventos e `state_protocolos_sanitarios_itens` para exibir pendencias abertas, vencendo hoje, atrasadas, pendencias sanitarias, rebanho por estagio, KPIs mensais e sinais operacionais auxiliares.
+- O painel prioriza atrasadas e vencendo hoje, usa microcopy explicita para `Bloqueado`/`Vazio`/`Parcial`/`Completo`, compacta limitacoes e deve permanecer sem botao, link, `onClick` ou CTA de dominio.
 - Nao existe camada real de marcadores/tags persistidos como fonte primaria; termos como tag, label, badge, chip, status e classificacao aparecem em UI, identificacao ou dominio, mas nao constituem camada persistida de marcadores operacionais.
 - Sinais/marcadores, quando derivados por insights, devem ser auxiliares, recalculaveis ou auditaveis, nunca fonte primaria.
 - Peso atual confiavel, carencia ativa operacional, pronto para venda/abate, `commercialReadiness.ts` conclusivo, tags/marcadores persistidos como fonte primaria, consulta em linguagem natural, IA gerando agenda, IA concluindo execucao e motor geral IATF permanecem bloqueados ate nova validacao.
