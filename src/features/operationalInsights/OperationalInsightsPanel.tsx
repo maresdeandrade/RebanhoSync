@@ -34,6 +34,14 @@ const cardToneStyles: Record<InsightCardTone, string> = {
   danger: "border-destructive/15 bg-destructive/5",
 };
 
+const iconToneStyles: Record<InsightCardTone, string> = {
+  default: "text-muted-foreground",
+  info: "text-info",
+  success: "text-success",
+  warning: "text-warning",
+  danger: "text-destructive",
+};
+
 const severityTone: Record<string, StatusTone> = {
   info: "info",
   warning: "warning",
@@ -55,6 +63,21 @@ function getStatusLabel(status: string): string {
   }
 }
 
+function getStatusDescription(status: string): string {
+  switch (status) {
+    case "blocked":
+      return "Fonte obrigatoria ausente.";
+    case "empty":
+      return "Fonte carregada, sem itens.";
+    case "partial":
+      return "Fonte carregada com limitacao.";
+    case "complete":
+      return "Fonte carregada, leitura completa.";
+    default:
+      return "Estado da resposta.";
+  }
+}
+
 function getStatusTone(status: string): StatusTone {
   switch (status) {
     case "blocked":
@@ -70,19 +93,29 @@ function getStatusTone(status: string): StatusTone {
   }
 }
 
-function getCardTone(status: string): InsightCardTone {
-  switch (status) {
-    case "blocked":
-      return "danger";
-    case "partial":
-      return "warning";
-    case "empty":
-      return "default";
-    case "complete":
-      return "success";
-    default:
-      return "default";
-  }
+function hasPositiveValue(summary: InsightSummary): boolean {
+  return typeof summary.value === "number" && summary.value > 0;
+}
+
+function getCardTone(
+  card: OperationalInsightCard<unknown>,
+  summary: InsightSummary,
+): InsightCardTone {
+  const status = card.insight.resultStatus;
+
+  if (status === "blocked") return "danger";
+  if (card.id === "agendaNeeds.overdue" && hasPositiveValue(summary)) return "danger";
+  if (card.id === "agendaNeeds.dueToday" && hasPositiveValue(summary)) return "warning";
+  if (status === "partial") return "warning";
+  if (status === "complete") return "success";
+  return "default";
+}
+
+function getStatusCardTone(status: string): InsightCardTone {
+  if (status === "blocked") return "danger";
+  if (status === "partial") return "warning";
+  if (status === "complete") return "success";
+  return "default";
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -200,36 +233,67 @@ function getCardIcon(card: OperationalInsightCard<unknown>) {
   return <CalendarClock className="h-4 w-4" />;
 }
 
+function SourceLine({ primarySource }: { primarySource: string | null }) {
+  return (
+    <p className="truncate text-xs text-muted-foreground">
+      {primarySource ? `Fonte: ${primarySource}` : "Fonte ausente"}
+    </p>
+  );
+}
+
+function LimitationsList({ limitations }: { limitations: readonly string[] }) {
+  if (limitations.length === 0) return null;
+
+  const visibleLimitations = limitations.slice(0, 2);
+  const hiddenCount = limitations.length - visibleLimitations.length;
+
+  return (
+    <div className="rounded-md border border-border/70 bg-muted/25 px-3 py-2 text-xs leading-5 text-muted-foreground">
+      <span className="font-medium text-foreground">Limites: </span>
+      {visibleLimitations.join(" ")}
+      {hiddenCount > 0 ? ` +${hiddenCount} limite(s).` : null}
+    </div>
+  );
+}
+
 function InsightSectionCard({ card }: { card: OperationalInsightCard<unknown> }) {
   const insight = card.insight;
   const summary = summarizeCard(card);
   const limitations = insight.source.limitations;
+  const tone = getCardTone(card, summary);
 
   return (
-    <Card className={`shadow-none ${cardToneStyles[getCardTone(insight.resultStatus)]}`}>
-      <CardHeader className="space-y-3 pb-3">
+    <Card className={`shadow-none ${cardToneStyles[tone]}`}>
+      <CardHeader className="space-y-3 p-4 pb-3 sm:p-4 sm:pb-3">
         <div className="flex items-start justify-between gap-3">
-          <div className="space-y-1">
-            <CardDescription>{card.title}</CardDescription>
-            <CardTitle className="text-2xl">{summary.value}</CardTitle>
+          <div className="min-w-0 space-y-2">
+            <CardDescription className="text-xs font-medium uppercase tracking-[0.12em]">
+              {card.title}
+            </CardDescription>
+            <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+              <CardTitle className="text-3xl tabular-nums tracking-normal">
+                {summary.value}
+              </CardTitle>
+              <span className="text-sm text-muted-foreground">{summary.detail}</span>
+            </div>
           </div>
-          <div className="text-muted-foreground">{getCardIcon(card)}</div>
+          <div className={iconToneStyles[tone]}>{getCardIcon(card)}</div>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
           <StatusBadge tone={getStatusTone(insight.resultStatus)}>
             {getStatusLabel(insight.resultStatus)}
           </StatusBadge>
-          <StatusBadge tone="neutral">
-            {insight.source.primarySource ?? "sem fonte primaria"}
-          </StatusBadge>
+          <span className="text-xs text-muted-foreground">
+            {getStatusDescription(insight.resultStatus)}
+          </span>
         </div>
+        <SourceLine primarySource={insight.source.primarySource} />
       </CardHeader>
-      <CardContent className="space-y-3">
-        <p className="text-sm text-muted-foreground">{summary.detail}</p>
-
+      <CardContent className="space-y-3 px-4 pb-4 sm:px-4 sm:pb-4">
         {insight.answerability === "blocked" ? (
           <div className="rounded-md border border-destructive/15 bg-destructive/5 p-3 text-sm text-destructive">
-            {insight.source.block.reason}
+            <p className="font-medium">Leitura bloqueada</p>
+            <p className="mt-1">{insight.source.block.reason}</p>
             {insight.source.block.requiredSources.length > 0 ? (
               <p className="mt-1 text-xs">
                 Fonte requerida: {insight.source.block.requiredSources.join(", ")}
@@ -238,7 +302,8 @@ function InsightSectionCard({ card }: { card: OperationalInsightCard<unknown> })
           </div>
         ) : insight.resultStatus === "partial" && insight.partialReason ? (
           <div className="rounded-md border border-warning/20 bg-warning-muted/55 p-3 text-sm text-warning">
-            {insight.partialReason}
+            <p className="font-medium">Leitura parcial</p>
+            <p className="mt-1">{insight.partialReason}</p>
           </div>
         ) : null}
 
@@ -252,18 +317,7 @@ function InsightSectionCard({ card }: { card: OperationalInsightCard<unknown> })
           </div>
         ) : null}
 
-        {limitations.length > 0 ? (
-          <div className="space-y-1 border-t border-border/70 pt-3">
-            <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">
-              Limitacoes
-            </p>
-            <ul className="space-y-1 text-xs leading-5 text-muted-foreground">
-              {limitations.map((limitation) => (
-                <li key={limitation}>{limitation}</li>
-              ))}
-            </ul>
-          </div>
-        ) : null}
+        <LimitationsList limitations={limitations} />
       </CardContent>
     </Card>
   );
@@ -271,7 +325,7 @@ function InsightSectionCard({ card }: { card: OperationalInsightCard<unknown> })
 
 function SignalRow({ signal }: { signal: OperationalSignal }) {
   return (
-    <div className="rounded-md border border-border/70 bg-muted/35 p-3">
+    <div className="rounded-md border border-border/70 bg-muted/25 p-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap items-center gap-2">
           <StatusBadge tone={severityTone[signal.severity ?? "info"] ?? "neutral"}>
@@ -284,7 +338,7 @@ function SignalRow({ signal }: { signal: OperationalSignal }) {
         ) : null}
       </div>
       <p className="mt-2 text-xs text-muted-foreground">
-        Fonte {signal.primarySource}; sinal auxiliar nao persistido.
+        Fonte {signal.primarySource}.
       </p>
     </div>
   );
@@ -292,23 +346,34 @@ function SignalRow({ signal }: { signal: OperationalSignal }) {
 
 function SignalsCard({ viewModel }: { viewModel: OperationalInsightsViewModel }) {
   const { tagSignals } = viewModel;
+  const tone = getStatusCardTone(tagSignals.resultStatus);
 
   return (
-    <Card className={`shadow-none ${cardToneStyles[getCardTone(tagSignals.resultStatus)]}`}>
-      <CardHeader className="space-y-3 pb-3">
+    <Card className={`shadow-none ${cardToneStyles[tone]}`}>
+      <CardHeader className="space-y-3 p-4 pb-3 sm:p-4 sm:pb-3">
         <div className="flex items-start justify-between gap-3">
           <div className="space-y-1">
-            <CardDescription>{tagSignals.title}</CardDescription>
-            <CardTitle className="text-2xl">{tagSignals.signals.length}</CardTitle>
+            <CardDescription className="text-xs font-medium uppercase tracking-[0.12em]">
+              {tagSignals.title}
+            </CardDescription>
+            <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+              <CardTitle className="text-3xl tabular-nums tracking-normal">
+                {tagSignals.signals.length}
+              </CardTitle>
+              <span className="text-sm text-muted-foreground">sinais visuais</span>
+            </div>
           </div>
-          <div className="text-muted-foreground">
+          <div className={iconToneStyles[tone]}>
             <Signal className="h-4 w-4" />
           </div>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
           <StatusBadge tone={getStatusTone(tagSignals.resultStatus)}>
             {getStatusLabel(tagSignals.resultStatus)}
           </StatusBadge>
+          <span className="text-xs text-muted-foreground">
+            {getStatusDescription(tagSignals.resultStatus)}
+          </span>
           {tagSignals.skippedBlockedInsightIds.length > 0 ? (
             <StatusBadge tone="warning">
               {tagSignals.skippedBlockedInsightIds.length} bloqueado(s)
@@ -316,7 +381,10 @@ function SignalsCard({ viewModel }: { viewModel: OperationalInsightsViewModel })
           ) : null}
         </div>
       </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent className="space-y-3 px-4 pb-4 sm:px-4 sm:pb-4">
+        <p className="text-xs text-muted-foreground">
+          Sinais auxiliares; nao persistem tags.
+        </p>
         {tagSignals.signals.length === 0 ? (
           <div className="rounded-md border border-dashed border-border/70 p-3 text-sm text-muted-foreground">
             Nenhum sinal auxiliar emitido pelas fontes carregadas.
@@ -327,18 +395,7 @@ function SignalsCard({ viewModel }: { viewModel: OperationalInsightsViewModel })
           ))
         )}
 
-        {tagSignals.limitations.length > 0 ? (
-          <div className="space-y-1 border-t border-border/70 pt-3">
-            <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">
-              Limitacoes
-            </p>
-            <ul className="space-y-1 text-xs leading-5 text-muted-foreground">
-              {tagSignals.limitations.map((limitation) => (
-                <li key={limitation}>{limitation}</li>
-              ))}
-            </ul>
-          </div>
-        ) : null}
+        <LimitationsList limitations={tagSignals.limitations} />
       </CardContent>
     </Card>
   );
@@ -367,9 +424,9 @@ export function OperationalInsightsPanel({
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-4">
-        <InsightSectionCard card={viewModel.agendaNeeds.allOpen} />
-        <InsightSectionCard card={viewModel.agendaNeeds.dueToday} />
         <InsightSectionCard card={viewModel.agendaNeeds.overdue} />
+        <InsightSectionCard card={viewModel.agendaNeeds.dueToday} />
+        <InsightSectionCard card={viewModel.agendaNeeds.allOpen} />
         <InsightSectionCard card={viewModel.sanitarySupplyNeeds} />
       </div>
 

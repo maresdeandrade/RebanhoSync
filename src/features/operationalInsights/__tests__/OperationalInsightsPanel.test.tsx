@@ -10,6 +10,12 @@ const generatedAt = "2026-05-07T12:00:00.000Z";
 const referenceDate = "2026-05-07";
 const monthlyPeriod = { start: "2026-05-01", end: "2026-05-31" };
 
+function expectReadOnly(container: HTMLElement) {
+  expect(screen.queryByRole("link")).not.toBeInTheDocument();
+  expect(screen.queryByRole("button")).not.toBeInTheDocument();
+  expect(container.querySelector("a, button")).toBeNull();
+}
+
 describe("OperationalInsightsPanel", () => {
   it("renders read-only complete, partial and signal cards", () => {
     const viewModel = buildOperationalInsights({
@@ -66,25 +72,35 @@ describe("OperationalInsightsPanel", () => {
       requireSanitaryProductSource: false,
     });
 
-    render(<OperationalInsightsPanel viewModel={viewModel} />);
+    const { container } = render(<OperationalInsightsPanel viewModel={viewModel} />);
 
     expect(screen.getByText("Central Operacional")).toBeInTheDocument();
-    expect(screen.getByText("Pendencias abertas")).toBeInTheDocument();
-    expect(screen.getByText("Vencendo hoje")).toBeInTheDocument();
-    expect(screen.getByText("Atrasadas")).toBeInTheDocument();
-    expect(screen.getByText("Pendencias sanitarias")).toBeInTheDocument();
+    const priorityTitles = screen.getAllByText(
+      /Atrasadas|Vencendo hoje|Pendencias abertas|Pendencias sanitarias/,
+    );
+    expect(priorityTitles.map((title) => title.textContent)).toEqual([
+      "Atrasadas",
+      "Vencendo hoje",
+      "Pendencias abertas",
+      "Pendencias sanitarias",
+    ]);
     expect(screen.getByText("Resumo por estagio")).toBeInTheDocument();
     expect(screen.getByText("KPIs mensais")).toBeInTheDocument();
     expect(screen.getByText("Sinais operacionais auxiliares")).toBeInTheDocument();
     expect(screen.getAllByText("Parcial").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Fonte carregada com limitacao.").length)
+      .toBeGreaterThan(0);
+    expect(screen.getAllByText("Fonte carregada, leitura completa.").length)
+      .toBeGreaterThan(0);
     expect(screen.getByText("Vacina Raiva: 1")).toBeInTheDocument();
     expect(screen.getByText("vaca: 1")).toBeInTheDocument();
     expect(screen.getByText("sanitario: 1")).toBeInTheDocument();
     expect(screen.getByText("agenda:atrasada")).toBeInTheDocument();
-    expect(screen.getAllByText(/sinal auxiliar nao persistido/i).length)
+    expect(screen.getByText("Sinais auxiliares; nao persistem tags."))
+      .toBeInTheDocument();
+    expect(screen.getAllByText(/Fonte: state_agenda_itens/i).length)
       .toBeGreaterThan(0);
-    expect(screen.queryByRole("link")).not.toBeInTheDocument();
-    expect(screen.queryByRole("button")).not.toBeInTheDocument();
+    expectReadOnly(container);
   });
 
   it("renders blocked primary-source cards instead of hiding them", () => {
@@ -95,15 +111,19 @@ describe("OperationalInsightsPanel", () => {
       sources: {},
     });
 
-    render(<OperationalInsightsPanel viewModel={viewModel} />);
+    const { container } = render(<OperationalInsightsPanel viewModel={viewModel} />);
 
     expect(screen.getAllByText("Bloqueado").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Fonte obrigatoria ausente.").length)
+      .toBeGreaterThan(0);
+    expect(screen.getAllByText("Leitura bloqueada").length).toBeGreaterThan(0);
     expect(
       screen.getByText("Pendencias atuais exigem agenda aberta ja carregada."),
     ).toBeInTheDocument();
-    expect(screen.getAllByText("sem fonte primaria").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Fonte ausente").length).toBeGreaterThan(0);
     expect(screen.getByText("Nenhum sinal auxiliar emitido pelas fontes carregadas."))
       .toBeInTheDocument();
+    expectReadOnly(container);
   });
 
   it("renders loaded empty arrays as empty cards", () => {
@@ -118,10 +138,13 @@ describe("OperationalInsightsPanel", () => {
       },
     });
 
-    render(<OperationalInsightsPanel viewModel={viewModel} />);
+    const { container } = render(<OperationalInsightsPanel viewModel={viewModel} />);
 
     expect(screen.getAllByText("Vazio").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Fonte carregada, sem itens.").length)
+      .toBeGreaterThan(0);
     expect(screen.queryByText("Pendencias atuais exigem agenda aberta ja carregada."))
       .not.toBeInTheDocument();
+    expectReadOnly(container);
   });
 });
