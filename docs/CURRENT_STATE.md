@@ -1,7 +1,7 @@
 # Current State (Snapshot Operacional)
 
 > **Status:** Snapshot vivo
-> **Ultima atualizacao:** 2026-05-06
+> **Ultima atualizacao:** 2026-05-07
 > **Estado do produto:** Beta interno
 > **Fase atual:** MVP funcional completo -> **SLC (Simple, Lovable, Complete) em consolidacao**
 
@@ -29,7 +29,8 @@ Consolidacoes recentes da fase SLC:
 - taxonomia sanitaria passiva introduzida (`ProtocolKind`, `MaterializationMode`, `ComplianceKind`) sem mudanca de comportamento.
 - `src/lib/sanitario/**` reorganizado por responsabilidade e boundary `Registrar` <-> sanitario documentado.
 - Shims de migrations pos-squash removidos da pasta ativa; testes de contrato leem a baseline canonica ou fixtures canonicas.
-- `docs/review/RebanhoSync_auditoria.md` foi ajustado pos-validacao como contrato documental de fontes de verdade para orientar propostas futuras de `insights` e marcadores sem transformar proposta em comportamento existente.
+- `docs/review/RebanhoSync_auditoria.md` foi ajustado pos-validacao como contrato documental de fontes de verdade para orientar uso de `insights` e marcadores sem transformar sinal auxiliar em fonte primaria ou comportamento operacional.
+- `src/lib/insights/` foi consolidado como core puro/read-only de composicao operacional; a primeira integracao passiva foi conectada na Home por `src/features/operationalInsights/` sem IO no core, sem persistencia, sem eventos e sem acoes de dominio.
 
 ---
 
@@ -94,6 +95,43 @@ Contrato atual de agenda sanitaria pos-P6.4b:
 - P6.4b materializou a sequencia de raiva na `sanitario_recompute_agenda_core`: D1 exige risco medio/alto, ativacao explicita e `unknown_history_policy='start_from_d1'`; D2 depende de evento sanitario D1 valido; anual exige D2 valida e ancora na ultima anual valida ou, na ausencia dela, em D2; datas vencidas sao clampadas para evitar backfill amplo.
 - PNEFA/aftosa, IN50/doencas notificaveis, GTA, suspeitas, checklists e biosseguranca continuam fora da agenda automatica.
 
+### Central Operacional passiva
+
+Primeira integracao read-only concluida:
+- `src/lib/insights/` atua como core puro de composicao operacional, com funcoes deterministicas e sem IO, Supabase, Dexie, UI, persistencia ou `Date.now`.
+- `src/features/operationalInsights/operationalInsightsAdapter.ts` normaliza dados ja carregados em memoria/read models para os modulos puros de insights.
+- `src/features/operationalInsights/useOperationalInsights.ts` memoiza o consumo do adapter.
+- `src/features/operationalInsights/OperationalInsightsPanel.tsx` expõe painel somente leitura.
+- `src/pages/Home.tsx` e a primeira superficie da Central Operacional passiva.
+
+Cards expostos na Home:
+- pendencias abertas;
+- vencem hoje;
+- atrasadas;
+- pendencias sanitarias;
+- rebanho por estagio;
+- KPIs mensais;
+- sinais operacionais auxiliares.
+
+Estados exibidos:
+- `Bloqueado`;
+- `Vazio`;
+- `Parcial`;
+- `Completo`.
+
+Fontes lidas pela primeira integracao:
+- `state_agenda_itens`;
+- `state_animais`;
+- `event_eventos` / eventos factuais do periodo mensal;
+- `state_protocolos_sanitarios_itens` como apoio de produto/protocolo.
+
+Limites preservados:
+- a Central nao conclui agenda, nao gera agenda e nao cria evento;
+- nao persiste tag/marcador e nao transforma `tagSignals` em fonte primaria;
+- nao calcula carencia operacional, pronto para venda/abate, peso atual confiavel ou IATF amplo;
+- agenda continua intencao operacional, nao fato historico;
+- protocolo configurado continua regra, nao execucao.
+
 ---
 
 ## 2.1 Invariantes operacionais consolidados
@@ -145,7 +183,7 @@ Riscos remanescentes:
 - produto/lote/estoque ainda nao formam rastreabilidade sanitaria completa;
 - SISBOV/fiscal continuam fora do core sanitario atual;
 - peso atual confiavel, carencia ativa operacional e pronto para venda/abate continuam bloqueados como decisoes automatizadas por falta de fonte composta/read model consolidado;
-- `src/lib/insights/`, camada real de marcadores/tags, tags persistidas como fonte primaria, consulta em linguagem natural, IA gerando agenda, IA concluindo execucao e motor geral IATF permanecem nao implementados/bloqueados;
+- camada real de marcadores/tags persistidos como fonte primaria, consulta em linguagem natural, IA gerando agenda, IA concluindo execucao e motor geral IATF permanecem nao implementados/bloqueados;
 - acabamento de UX para reduzir ambiguidade e carga cognitiva;
 - maior consistencia cross-flow (agenda <-> registrar <-> protocolos).
 

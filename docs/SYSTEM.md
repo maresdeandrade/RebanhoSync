@@ -2,7 +2,7 @@
 
 > **Status:** Normativo
 > **Fonte de Verdade:** Código fonte e banco de dados (migrations)
-> **Última Atualização:** 2026-05-06
+> **Última Atualização:** 2026-05-07
 
 Este documento consolida os princípios arquiteturais (Two Rails, Offline-First, Sincronização), de segurança (Tenant, RLS, RBAC), o modelo de persistência no PostgreSQL, e os contratos assumidos pelo servidor e cliente. Substitui os antigos relatórios de arquitetura fragmentados.
 
@@ -88,6 +88,8 @@ A comunicação cliente/servidor essencial de produção bate sob `/functions/v1
 - `state_*` é estado atual/read model, não histórico.
 - Protocolo configurado é regra, não execução.
 - Necessidade futura deve partir de agenda materializada válida quando o domínio tiver agenda confirmada; regra mais validada para sanitário e cria/pós-parto.
-- `src/lib/insights/` não existe hoje e só pode ser proposta futura de composição operacional, não fonte primária.
-- Não existe camada real de marcadores/tags no repositório; marcadores são proposta futura auxiliar, nunca fonte primária.
+- `src/lib/insights/` existe como core puro/read-only de composição operacional. Ele não faz IO, não acessa Supabase/Dexie, não renderiza UI, não persiste dados e não decide ações de domínio.
+- `src/features/operationalInsights/` é a camada de integração passiva que adapta dados já carregados para o core de insights, expõe `useOperationalInsights` e renderiza a primeira UI read-only na Home.
+- A Central Operacional passiva exibe pendências abertas, vencendo hoje, atrasadas, pendências sanitárias, rebanho por estágio, KPIs mensais e sinais operacionais auxiliares com estados `Bloqueado`, `Vazio`, `Parcial` e `Completo`.
+- Não existe camada real de marcadores/tags persistidos como fonte primária; sinais operacionais de insights são auxiliares visuais e recalculáveis, nunca tags persistidas.
 - Peso atual confiável, carência ativa operacional, pronto para venda/abate, `commercialReadiness.ts` conclusivo, tags/marcadores persistidos como fonte primária, consulta em linguagem natural, IA gerando agenda, IA concluindo execução e motor geral IATF permanecem bloqueados até nova validação.

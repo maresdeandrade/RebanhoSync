@@ -1,7 +1,7 @@
 # Referência Rápida (RebanhoSync)
 
 > **Status:** Derivado (Inventário)
-> **Última Atualização:** 2026-04-27
+> **Última Atualização:** 2026-05-07
 
 Este documento consolida referências rápidas para navegação do repositório, stack, rotas, diretórios e comandos úteis.
 
@@ -77,6 +77,14 @@ Subáreas críticas:
 - `animals/` — taxonomia, apresentação, ordenação, helpers de leitura
 - `telemetry/` — métricas de piloto e flush remoto
 - `events/` — builders, tipos, validações
+- `insights/` — core puro/read-only de composição operacional
+
+### `src/features/operationalInsights/`
+Primeira integração passiva da Central Operacional.
+
+- `operationalInsightsAdapter.ts` — normaliza fontes já carregadas para o core de insights
+- `useOperationalInsights.ts` — hook memoizado de consumo
+- `OperationalInsightsPanel.tsx` — painel read-only usado na Home
 
 ### `supabase/`
 Backend e evolução estrutural.
@@ -164,6 +172,17 @@ Arquivos centrais:
 Arquivos centrais:
 - `src/lib/animals/taxonomy.ts`
 - `src/lib/animals/taxonomyFactsContract.ts`
+
+### Insights / Central Operacional
+Arquivos centrais:
+- `src/lib/insights/agendaNeeds.ts`
+- `src/lib/insights/sanitarySupplyNeeds.ts`
+- `src/lib/insights/herdStageSummary.ts`
+- `src/lib/insights/monthlyOperationalKpis.ts`
+- `src/lib/insights/tagSignals.ts`
+- `src/features/operationalInsights/operationalInsightsAdapter.ts`
+- `src/features/operationalInsights/useOperationalInsights.ts`
+- `src/features/operationalInsights/OperationalInsightsPanel.tsx`
 
 ### Hotspots atuais de hardening
 - `src/pages/Registrar/index.tsx`

@@ -60,6 +60,7 @@ Regra de regressao semantica:
 - Dashboard reprodutivo dedicado e relatórios operacionais com exportação.
 - Telemetria de piloto com buffer local em `metrics_events` e flush remoto periódico.
 - Taxonomia canônica bovina: 3 eixos derivados em TypeScript, contrato v1 e fixtures canônicas de regressão.
+- Central Operacional passiva na Home, consumindo `src/lib/insights/` via adapter/hook read-only em `src/features/operationalInsights/`.
 - Sistema de convites e gestão de membros.
 - Catálogo global de produtos veterinários com seed básico.
 
@@ -77,7 +78,8 @@ Regra de regressao semantica:
 Riscos remanescentes conhecidos: validar o caminho completo do gateway JWT sem `--no-verify-jwt`, manter claro que o seed sanitário é mínimo/técnico e não normativo, e acompanhar timeouts intermitentes já observados em testes UI longos.
 
 Contrato documental recente:
-- `docs/review/RebanhoSync_auditoria.md` consolida o contrato validado de fontes de verdade: Agenda é intenção, Evento é fato, `state_*` é estado atual/read model, Protocolo é regra e marcadores/insights são apenas propostas auxiliares futuras.
+- `docs/review/RebanhoSync_auditoria.md` consolida o contrato validado de fontes de verdade: Agenda é intenção, Evento é fato, `state_*` é estado atual/read model, Protocolo é regra e marcadores/sinais de insights são apenas auxiliares visuais, não fontes primárias.
+- `src/lib/insights/` existe como core puro/read-only de composição operacional, sem IO, Supabase, Dexie, UI, persistência ou relógio interno; a primeira integração passiva consome esse core por `src/features/operationalInsights/` e pela Home.
 - Permanecem bloqueados como decisão automatizada: peso atual confiável, carência ativa operacional, pronto para venda/abate, `commercialReadiness.ts` conclusivo, tags/marcadores persistidos como fonte primária, consulta em linguagem natural, IA gerando agenda, IA concluindo execução e motor geral IATF.
 
 ---

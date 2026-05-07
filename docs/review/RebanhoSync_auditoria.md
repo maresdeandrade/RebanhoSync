@@ -398,14 +398,14 @@ Antes de aprovar este documento, validar:
 
 Este documento deve ser usado como base normativa para:
 
-1. Proposta da camada `src/lib/insights/`.
+1. Evolucao da camada `src/lib/insights/`.
 2. Avaliação de marcadores inteligentes.
 3. MVP de inteligência operacional.
 4. Estratégia de relatórios por lote/período/animal.
 5. Definição de riscos e testes mínimos.
 6. UX operacional de Central Operacional, Agenda, Animais e Lotes.
 
-A próxima etapa não deve implementar código. Deve propor a camada `insights` respeitando este contrato de fontes de verdade.
+A primeira implementação read-only da Central Operacional já existe e deve continuar respeitando este contrato de fontes de verdade.
 
 
 ---
@@ -416,17 +416,17 @@ A próxima etapa não deve implementar código. Deve propor a camada `insights` 
 
 ### 18. Status da proposta
 
-**Status:** Proposta conceitual futura; `src/lib/insights/` não existe hoje.
-**Natureza:** Não implementar nesta etapa
-**Escopo:** Camada futura de composição operacional baseada no contrato de fontes de verdade
+**Status:** Core puro/read-only implementado e integrado passivamente à Home.
+**Natureza:** Composição operacional sem ação de domínio
+**Escopo:** Camada de composição operacional baseada no contrato de fontes de verdade
 
-A proposta de `src/lib/insights/` está alinhada apenas como camada futura de composição operacional, não como fonte primária nem motor de regra crítica, desde que:
+A camada `src/lib/insights/` está alinhada como composição operacional, não como fonte primária nem motor de regra crítica, porque:
 
 - não seja fonte primária;
 - não duplique regras críticas existentes;
 - não substitua eventos, agenda, protocolos ou `state_*`;
 - não crie nova verdade paralela;
-- use funções puras sempre que possível;
+- usa funções puras;
 - separe cálculo operacional de UI;
 - declare fonte primária, fonte auxiliar, fonte proibida, risco e classificação para cada resposta;
 - use SQL/view para relatórios críticos, agregações pesadas e consistência multiusuário;
@@ -438,10 +438,10 @@ A proposta de `src/lib/insights/` está alinhada apenas como camada futura de co
 
 | Decisão | Resultado |
 |---|---|
-| Criar camada `insights` | Recomendado conceitualmente. |
-| Implementar agora | Não nesta etapa. A proposta ainda é documental. |
-| Primeiro MVP seguro | Necessidades por agenda materializada válida nos domínios com agenda confirmada, vacinas/produtos por lote/período, agendas atrasadas/próximas, resumo sanitário e resumo operacional por lote. |
-| Módulos seguros para propor | `agendaNeeds.ts`, `vaccineNeeds.ts`, `sanitaryRiskSummary.ts`, `lotOperationalSummary.ts`. |
+| Criar camada `insights` | Concluído como core puro/read-only. |
+| Implementar agora | Primeira integração passiva concluída na Home por `src/features/operationalInsights/`. |
+| Primeiro MVP seguro | Pendências por agenda materializada válida, pendências sanitárias por agenda/produto, resumo de rebanho por `state_animais`, KPIs mensais por eventos e sinais auxiliares não persistidos. |
+| Módulos seguros implementados | `agendaNeeds.ts`, `sanitarySupplyNeeds.ts`, `herdStageSummary.ts`, `monthlyOperationalKpis.ts`, `tagSignals.ts`. |
 | Módulos parciais | `herdStageSummary.ts`, `reproductionSummary.ts`. |
 | Módulos bloqueados | `commercialReadiness.ts` conclusivo, carência ativa operacional, tags/marcadores persistidos, consulta em linguagem natural, IA gerando agenda, IA concluindo execução. |
 
@@ -686,14 +686,17 @@ A proposta de `src/lib/insights/` está alinhada apenas como camada futura de co
 
 ### 29. Veredito final da Parte 3
 
-`src/lib/insights/` não existe hoje. A proposta é adequada para o RebanhoSync apenas se for tratada como **camada futura de composição e leitura operacional**, não como motor de verdade, fonte primária ou motor de regra crítica.
+`src/lib/insights/` existe hoje como **camada pura/read-only de composição e leitura operacional**, não como motor de verdade, fonte primária ou motor de regra crítica.
 
-A primeira entrega de menor risco deve ser:
+A primeira entrega de menor risco foi concluída com:
 
 1. `agendaNeeds.ts`;
-2. `vaccineNeeds.ts` como especialização de `agendaNeeds`;
-3. `sanitaryRiskSummary.ts`;
-4. `lotOperationalSummary.ts` como agregador derivado.
+2. `sanitarySupplyNeeds.ts`;
+3. `herdStageSummary.ts`;
+4. `monthlyOperationalKpis.ts`;
+5. `tagSignals.ts` como sinais auxiliares não persistidos;
+6. `src/features/operationalInsights/` como adapter/hook/painel read-only;
+7. `src/pages/Home.tsx` como primeira superfície passiva da Central Operacional.
 
 Não devem avançar nesta fase:
 

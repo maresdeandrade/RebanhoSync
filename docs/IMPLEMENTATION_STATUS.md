@@ -2,10 +2,10 @@
 
 > **Status:** Derivado (Rev D+)
 > **Baseline:** `e459de8`
-> **Ultima Atualizacao:** 2026-04-29
+> **Ultima Atualizacao:** 2026-05-07
 > **Derivado por:** Auditoria técnica completa — código + migrations + testes como fonte de verdade
 
-Este documento registra o estado efetivo do RebanhoSync em abril de 2026, pós-fechamento de todos os TDs da lista aberta.
+Este documento registra o estado efetivo do RebanhoSync na fase atual de consolidacao SLC, pós-fechamento de todos os TDs da lista aberta original.
 
 ## Resumo Executivo
 
@@ -13,6 +13,7 @@ Este documento registra o estado efetivo do RebanhoSync em abril de 2026, pós-f
 - **Fase de engenharia/produto:** transicao de MVP funcional para SLC (Simple, Lovable, Complete) em consolidacao.
 - **Core operacional:** sanitário, pesagem, movimentação, nutrição, reprodução, financeiro e agenda estão implementados e usáveis.
 - **Camadas consolidadas:** onboarding guiado, importação CSV, relatórios operacionais, telemetria de piloto com flush remoto, modo de experiência da fazenda, dashboard e ficha reprodutiva dedicada, pós-parto neonatal, cria inicial, transições de rebanho.
+- **Central Operacional passiva:** primeira integração read-only concluída na Home, consumindo `src/lib/insights/` por `src/features/operationalInsights/` sem ações de domínio.
 - **Motor sanitário endurecido:** catalogo conservador, calendario TS->SQL alinhado, dedup canonico TS/SQL, brucelose por janela/sexo/especie transicional, bloqueio historico de reabertura via `sanitary_completion`, raiva sequencial D1/D2/anual por risco/configuracao/ativacao explicita e tecnicos por ativacao operacional explicita com alvo de especie quando informado.
 - **Qualidade local:** `lint`, `test:unit`, `test:integration`, `test:smoke`, `quality:gate` e `build` verdes.
 - **TDs originalmente abertos (M0-M2):** fechados e consolidados na baseline Supabase pos-squash.
@@ -103,6 +104,16 @@ Este documento registra o estado efetivo do RebanhoSync em abril de 2026, pós-f
 - Catálogo veterinário com cache local e vínculo estruturado no payload sanitário: `src/lib/sanitario/catalog/products.ts`
 - Modo de experiência por fazenda: `src/lib/farms/experienceMode.ts`
 - Taxonomia canônica bovina: `src/lib/animals/taxonomy.ts` + contrato v1 + fixtures canônicas
+- Central Operacional passiva na Home: `src/lib/insights/**`, `src/features/operationalInsights/operationalInsightsAdapter.ts`, `src/features/operationalInsights/useOperationalInsights.ts`, `src/features/operationalInsights/OperationalInsightsPanel.tsx`, `src/pages/Home.tsx`
+
+### Central Operacional passiva
+
+- `src/lib/insights/` atua como core puro/read-only de composição operacional.
+- `src/features/operationalInsights/` adapta fontes já carregadas para o core, preservando `answerability`, `resultStatus`, `source`, `limitations` e `primarySource`.
+- `src/pages/Home.tsx` monta input estável para `useOperationalInsights` a partir de `state_agenda_itens`, `state_animais`, `event_eventos`/eventos mensais e `state_protocolos_sanitarios_itens`.
+- A UI mostra cards de pendências abertas, vencem hoje, atrasadas, pendências sanitárias, rebanho por estágio, KPIs mensais e sinais operacionais auxiliares.
+- Estados exibidos: `Bloqueado`, `Vazio`, `Parcial` e `Completo`.
+- Limites preservados: sem concluir/gerar agenda, sem criar evento, sem persistir tag, sem carência, sem pronto venda/abate, sem peso atual confiável e sem IATF amplo.
 
 ---
 
@@ -243,6 +254,16 @@ Este documento registra o estado efetivo do RebanhoSync em abril de 2026, pós-f
 - P6.4a fixou o contrato TS de raiva operacional D1/D2/anual: D1 `raiva_d1`, D2 canonico `raiva_d2`, anual `raiva_anual`, `schedule_kind`, `depends_on`, ativacao por risco medio/alto, `unknown_history_policy='start_from_d1'` e alias legado `raiva_reforco_30d` normalizado para `raiva_d2`.
 - P6.4b materializou a sequencia em `sanitario_recompute_agenda_core`: D1 exige risco medio/alto, ativacao explicita e `unknown_history_policy='start_from_d1'`; D2 exige evento sanitario D1 valido; anual exige D2 valida e ancora na ultima anual valida ou, se ausente, em D2.
 - Limites atuais preservados: catalogo global/seed nao materializam agenda de raiva, sem coluna/indice JSONB para `sanitary_completion`, sem backfill historico amplo, sem especie obrigatoria e sem transformar boa pratica tecnica em obrigacao legal. Risco remanescente: ausencia de indice JSONB para `sanitary_completion` em historico volumoso.
+
+## 7.7 Update 2026-05-07 (Central Operacional Read-only)
+
+- `src/lib/insights/` consolidado como core puro/read-only para composicao operacional.
+- `src/features/operationalInsights/` criado como camada intermediaria de adapter/hook/painel, sem IO dentro do core de insights.
+- Home passou a ser a primeira superficie da Central Operacional passiva, usando dados ja carregados por Dexie/read models existentes.
+- Cards expostos: pendencias abertas, vencem hoje, atrasadas, pendencias sanitarias, rebanho por estagio, KPIs mensais e sinais operacionais auxiliares.
+- Estados expostos: `Bloqueado`, `Vazio`, `Parcial` e `Completo`, com limitacoes visiveis quando existirem.
+- Validacao da rodada: `pnpm test` verde (175 arquivos / 1100 testes), `pnpm run lint` verde, `pnpm run build` verde e `git status --short --untracked-files=all` limpo.
+- Limites preservados: nenhuma persistencia, evento, geracao/conclusao de agenda, tag persistida, regra de carencia, pronto venda/abate, peso atual confiavel ou IATF amplo.
 
 ---
 

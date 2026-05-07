@@ -2,7 +2,7 @@
 
 > **Status:** Derivado (Rev D+)
 > **Baseline:** `b69d35f`
-> **Ultima Atualizacao:** 2026-04-27
+> **Ultima Atualizacao:** 2026-05-07
 > **Derivado por:** Auditoria tecnica - estado pos-fechamento dos TDs originais e evolucao funcional de UX operacional
 > **Fonte:** `TECH_DEBT.md`, `IMPLEMENTATION_STATUS.md`
 
@@ -30,6 +30,11 @@ Atualizacao sanitaria 2026-04-27:
 Atualizacao sanitaria 2026-04-28:
 - P5 removeu o ultimo import direto de `@/lib/sanitario/engine/*` em `src/pages/Registrar/**`; labels visuais de calendario passam por `src/lib/sanitario/models/calendarDisplay.ts`.
 - Proximas frentes sanitarias devem ser pequenas e separadas: carencia/rastreabilidade leve ou modelagem produto/lote, sem misturar estoque completo, SISBOV ou fiscal.
+
+Atualizacao Central Operacional 2026-05-07:
+- Primeira integracao read-only concluida: `src/lib/insights/` como core puro, `src/features/operationalInsights/` como adapter/hook/painel e Home como primeira superficie passiva.
+- O escopo atual e apenas leitura: cards de pendencias, rebanho por estagio, KPIs mensais e sinais operacionais auxiliares, com estados bloqueado/vazio/parcial/completo.
+- A Central nao e motor de decisao e nao executa agenda, eventos, tags persistidas, carencia, venda/abate, peso atual confiavel ou IATF amplo.
 
 ---
 
@@ -232,6 +237,7 @@ Atualizacao sanitaria 2026-04-28:
 | TD-028 (CLOSED) | `infra.quality_gate_smoke` | Reliability | Milestone 10 |
 | TD-030 (CLOSED) | `infra.test_reliability_act_flaky` | Reliability | Milestone 10 |
 | N/A | `sanitario.saneamento_p0_p3` | Domain/Architecture | Milestone 11 |
+| N/A | `central_operacional.readonly` | UX/Read Model | Milestone 12 |
 
 ---
 
@@ -296,6 +302,43 @@ Atualizacao sanitaria 2026-04-28:
 - Motor pleno de withholding/carencia.
 - Entidades completas de produto/lote/estoque para rastreabilidade sanitaria.
 - SISBOV/fiscal.
+
+---
+
+## Milestone 12: Central Operacional Read-only
+
+**Objetivo:** criar a primeira superficie passiva de composicao operacional sem transformar insights em acoes de dominio.
+
+**Status:** Concluido em 2026-05-07
+
+### Entregaveis
+
+- [x] Consolidar `src/lib/insights/` como core puro/read-only.
+- [x] Criar `src/features/operationalInsights/operationalInsightsAdapter.ts` para normalizar fontes ja carregadas.
+- [x] Criar `src/features/operationalInsights/useOperationalInsights.ts` como hook memoizado.
+- [x] Criar `src/features/operationalInsights/OperationalInsightsPanel.tsx` como painel somente leitura.
+- [x] Conectar `src/pages/Home.tsx` como primeira superficie da Central Operacional passiva.
+- [x] Expor cards de pendencias abertas, vencem hoje, atrasadas, pendencias sanitarias, rebanho por estagio, KPIs mensais e sinais operacionais auxiliares.
+- [x] Expor estados `Bloqueado`, `Vazio`, `Parcial` e `Completo`, mantendo limitacoes visiveis.
+
+### Fora de escopo mantido
+
+- Concluir agenda.
+- Gerar agenda.
+- Criar evento.
+- Persistir tag/marcador.
+- Calcular carencia operacional.
+- Calcular pronto para venda/abate.
+- Calcular peso atual confiavel.
+- Calcular IATF amplo.
+- Tratar agenda como fato historico.
+- Tratar protocolo como execucao.
+
+### Proximas frentes recomendadas
+
+- Ampliar testes de contrato do adapter para novos read models antes de adicionar outra superficie.
+- Avaliar uma pagina dedicada da Central somente se a Home ficar densa demais, mantendo a UI read-only.
+- Revisar copy e densidade visual dos cards com dados reais de beta interno, sem adicionar CTAs operacionais.
 
 ---
 
