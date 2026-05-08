@@ -10,6 +10,7 @@ import { startSyncWorker, stopSyncWorker } from "@/lib/offline/syncWorker";
 import { MobileBottomNav } from "./MobileBottomNav";
 import { SideNav } from "./SideNav";
 import { TopBar } from "./TopBar";
+import { BrandMark } from "./BrandMark";
 
 export const AppShell = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -60,13 +61,7 @@ export const AppShell = () => {
         >
           <div className="flex h-full flex-col">
             <div className="border-b border-sidebar-border/80 px-5 py-4">
-              <Link to="/home" className="flex items-center gap-2">
-                <img
-                  src="/logo.png"
-                  alt="RebanhoSync"
-                  className="h-6 w-auto"
-                />
-              </Link>
+              <BrandMark showSubtitle />
               <p className="mt-2 text-base font-semibold text-sidebar-foreground">
                 Navegacao da fazenda
               </p>

@@ -31,8 +31,7 @@ import {
 } from "@/lib/offline/syncQueries";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/useAuth";
-
-const BRAND_LOGO_SRC = "/logo.png";
+import { BrandMark } from "./BrandMark";
 
 interface TopBarProps {
   onMenuClick?: () => void;
@@ -128,16 +127,10 @@ export const TopBar = ({ onMenuClick }: TopBarProps) => {
             <Menu className="h-5 w-5" />
           </Button>
 
-          <Link to="/home" className="hidden items-center gap-2 lg:flex">
-            <img
-              src={BRAND_LOGO_SRC}
-              alt="RebanhoSync"
-              className="h-7 w-auto"
-            />
-            <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-sidebar-foreground/65">
-              RebanhoSync
-            </span>
-          </Link>
+          <BrandMark
+            className="max-w-[180px] sm:max-w-[220px]"
+            showSubtitle
+          />
 
           <div className="hidden min-w-0 lg:block">
             <p className="truncate text-sm font-medium text-sidebar-foreground/90">
