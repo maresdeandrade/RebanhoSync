@@ -1,6 +1,6 @@
-# AGENTS.md — RebanhoSync
+# AGENTS.md — RebanhoSync Design/UX
 
-Status: Normativo para agentes de implementação e revisão  
+Status: Normativo para agentes de implementação e revisão visual/UX  
 Escopo: RebanhoSync — app offline-first para gestão simples de pecuária de corte  
 Última atualização: 2026-05-08
 
@@ -96,21 +96,60 @@ Fonte de orientação:
 - `docs/design/BRAND_DIRECTION.md`
 - `docs/design/UI_VISUAL_REFERENCES.md`
 - `docs/design/STITCH_PROMPTS.md`
+- `docs/design/HANDOFF_VISUAL_UX_20260508.md`
 
-Direção aprovada:
+Direção vigente: **Azul Sync Técnico / Campo Operacional**.
 
-- identidade azul “Sync Técnico”;
-- azul petróleo como base visual;
-- header azul profundo;
-- cards brancos em fundo claro;
-- ícones lineares estilo Lucide;
-- bottom navigation mobile;
-- perfil/lista de animais sem foto real como avatar padrão;
-- logo conceitual em escudo/hexágono técnico com boi branco e elementos discretos de sync/circuito.
+Direção aplicada no app:
+
+- tokens globais alinhados ao azul petróleo;
+- correções de contraste em light/dark mode;
+- Bottom Navigation mobile;
+- SideNav desktop/tablet preservada;
+- cards brancos/neutros com bordas visíveis;
+- estados semânticos para sucesso, aviso, erro, informação, offline e rejeição.
 
 As referências visuais não são pixel-perfect e não substituem o código atual.
 
-## 5. Direção UX vigente
+## 5. Logo e ilustrações
+
+### 5.1 Logo
+
+Referência visual principal:
+
+- animal adulto + bezerro;
+- movimento circular/sincronização;
+- wordmark `RebanhoSync`;
+- aplicação monocromática/negativa;
+- uso em fundo escuro;
+- possível uso como logo horizontal, favicon e app icon.
+
+Status: **referência visual aprovada**.
+
+Não tratar como asset final se o arquivo final de produção não estiver confirmado.
+
+### 5.2 Perfis visuais de animal
+
+Perfis nas referências:
+
+- Touro Reprodutor;
+- Boi Engorda;
+- Vaca Seca / Solteira;
+- Vaca Parida;
+- Novilha;
+- Bezerro.
+
+Regras visuais:
+
+- Novilha não deve ter úbere proeminente.
+- Vaca Parida deve representar matriz com bezerro ao pé.
+- Touro Reprodutor deve sugerir robustez/cupim.
+- Boi Engorda deve sugerir volume/terminação.
+- Bezerro deve ser menor/esguio.
+
+Essas ilustrações não criam regra automática de domínio. Não inferir categoria, reprodução, aptidão comercial, peso confiável ou status sanitário a partir do ícone.
+
+## 6. Direção UX vigente
 
 A refatoração UX deve ser incremental e orientada ao uso em campo.
 
@@ -120,11 +159,14 @@ Hipótese operacional:
 
 Essa hipótese deve ser validada por código/teste/uso real. Não tratá-la como regra absoluta.
 
-### 5.1 Navegação mobile
+### 6.1 Navegação mobile
 
-Preferir introduzir Bottom Navigation apenas em mobile, preservando SideNav em desktop/tablet.
+Implementado:
 
-Estrutura sugerida:
+- Bottom Navigation em mobile;
+- SideNav preservada em desktop/tablet.
+
+Estrutura vigente:
 
 ```txt
 Hoje | Rebanho | Manejo | Estrutura | Mais
@@ -135,12 +177,12 @@ Regras:
 - não remover rotas existentes;
 - não remover SideNav desktop;
 - não duplicar navegação de forma confusa;
-- item Manejo pode ser destaque central;
+- item Manejo navega para Registrar;
 - manter Agenda completa acessível.
 
-### 5.2 Home como Central Operacional
+### 6.2 Home como Central Operacional
 
-Home deve evoluir para `Hoje / Central Operacional`.
+Home atua como `Hoje / Central Operacional`.
 
 Função da Home:
 
@@ -158,15 +200,15 @@ Home / Hoje = execução diária e priorização
 Agenda = visão completa, filtros e gestão ampla das pendências
 ```
 
-### 5.3 Registro contexto-primeiro
+### 6.3 Registro contexto-primeiro
 
 Contexto pode pré-preencher o alvo, mas nunca salvar automaticamente.
 
-Fluxos desejados:
+Fluxos vigentes:
 
 ```txt
 Lote → Manejar este lote → Registrar com lote pré-preenchido → Revisar → Salvar
-Pasto → Manejar neste pasto → Registrar com contexto pré-preenchido → Revisar → Salvar
+Pasto → Manejar neste pasto → Registrar com contexto informativo → Revisar → Salvar
 Animal → Registrar manejo deste animal → Revisar → Salvar
 Agenda item → Registrar execução da pendência → Revisar → Salvar
 ```
@@ -180,17 +222,19 @@ Invariantes:
 - respeitar fazenda atual;
 - não registrar para animais inativos/deletados;
 - não inferir animais se a fonte estiver inconsistente;
+- `pastoId` é contexto informativo e não infere lote/animais;
 - não transformar agenda em histórico.
 
-### 5.4 Bandeja de seleção
+### 6.4 Bandeja de seleção
 
-Bandeja global de seleção multi-animal é proposta futura, não primeiro patch.
+Bandeja global de seleção multi-animal é proposta futura, não implementada.
 
 Só considerar após:
 
 1. Bottom Navigation mobile;
 2. Home/Central Operacional;
-3. manejo contextual básico.
+3. manejo contextual básico;
+4. validação de risco operacional.
 
 Regras mínimas futuras:
 
@@ -202,7 +246,7 @@ Regras mínimas futuras:
 - limpar seleção após finalizar/cancelar;
 - não persistir seleção como dado de negócio.
 
-## 6. Estratégia de prompts para agentes
+## 7. Estratégia de prompts para agentes
 
 Use prompts curtos e escopados.
 
@@ -229,7 +273,7 @@ Tem validação?
 Evita reexplicar o projeto inteiro?
 ```
 
-## 7. Padrões de execução
+## 8. Padrões de execução
 
 Antes de alterar código:
 
@@ -238,30 +282,24 @@ Antes de alterar código:
 3. separe achado confirmado, inferência e hipótese;
 4. proponha patch pequeno;
 5. implemente somente o escopo pedido;
-6. teste;
-7. reporte riscos remanescentes.
+6. rode validação proporcional ao risco;
+7. reporte arquivos alterados, testes e riscos remanescentes.
 
-Para tarefas de documentação:
+## 9. Validação recomendada
+
+Para documentação:
 
 ```bash
 git status --short --untracked-files=all
+git diff --stat
 ```
 
-Para tarefas com código:
+Para patches visuais/UX:
 
 ```bash
-pnpm test
 pnpm run lint
 pnpm run build
-git status --short --untracked-files=all
+pnpm test
 ```
 
-## 8. Primeiro patch UX realizado (Maio/2026)
-
-O primeiro ciclo de refinamento visual e UX foi concluído:
-
-1. **Navegação**: Bottom Navigation mobile e SideNav desktop operacionais.
-2. **Central Operacional**: Home (Hoje) consolidada com foco em execução e sync.
-3. **Contraste**: Revisão completa de `light/dark mode` para legibilidade técnica.
-4. **Contexto**: Manejo contextual via alvos operacionais implementado.
-5. **Próximo Passo**: Avaliar necessidade de bandeja de seleção (apenas se houver demanda operacional clara).
+Para revisão corretiva visual pequena, `test:smoke` pode ser usado antes da suíte completa, mas não substitui `pnpm test` antes de PR/merge.

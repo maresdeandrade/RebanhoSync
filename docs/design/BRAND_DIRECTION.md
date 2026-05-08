@@ -1,139 +1,138 @@
 # Brand Direction — RebanhoSync
 
-Status: Implementado e validado em runtime  
-Tipo: Referência de marca e UX real  
-Versão: v1 — Azul Sync Técnico (Pós-Revisão de Contraste)
+Status: Direção visual aplicada parcialmente na UI atual e expandida por referências aprovadas  
+Tipo: Direção de marca e UI, não design system final  
+Versão: Sync Técnico / Campo Operacional — maio de 2026
 
-## 1. Posicionamento
+## 1. Escopo
 
-RebanhoSync é uma ferramenta simples, operacional e offline-first para gestão de pecuária de corte.
+Este documento define a direção visual do RebanhoSync para orientar evolução de UI, documentação, prompts de geração visual e próximos patches de interface.
+
+Este documento não é especificação pixel-perfect, não substitui o código atual e não autoriza criação de regra de negócio.
+
+## 2. Classificação de status
+
+| Status | Significado |
+|---|---|
+| Implementado no app | Já existe no código atual e foi validado em patch anterior |
+| Referência visual aprovada | Existe nas imagens de `docs/design/references/` e orienta a UI futura |
+| Recomendado | Deve guiar implementação futura, mas ainda depende de patch específico |
+| Não autorizado por referência visual | Não deve ser inferido das imagens |
+
+## 3. Posicionamento
+
+O RebanhoSync é uma ferramenta operacional, mobile-first e offline-first para gestão simples de pecuária de corte.
 
 A marca deve transmitir:
 
 - confiança;
 - precisão;
 - operação em campo;
+- clareza técnica;
 - sincronização segura;
-- tecnologia útil;
-- clareza para tomada de decisão;
-- baixa fricção para pequeno e médio produtor.
+- baixa fricção;
+- uso prático no curral, pasto e rotina da fazenda.
 
-A marca não deve parecer:
+A marca deve evitar:
 
-- ERP agro completo;
-- sistema corporativo pesado;
-- app financeiro genérico;
-- app veterinário hospitalar;
-- produto excessivamente “tech” e distante do campo.
+- aparência de ERP agro complexo;
+- visual corporativo pesado;
+- estética genérica de app financeiro;
+- aparência de app veterinário hospitalar;
+- excesso de verde rural;
+- ilustrações decorativas sem função operacional.
 
-## 2. Conceito visual
+## 4. Conceito visual
 
-Direção: **Azul Sync Técnico (Implementado)**.
+Direção: **Sync Técnico / Campo Operacional**.
 
 A identidade combina:
 
-- azul petróleo;
-- estrutura limpa;
-- cards operacionais;
+- azul petróleo como base institucional;
+- azul de ação para navegação e CTAs;
+- cards brancos e neutros claros para leitura;
 - ícones lineares;
-- estados claros de sincronização;
-- símbolo técnico com boi em escudo/hexágono;
-- linguagem visual mobile-first.
+- alertas semânticos fortes;
+- ilustrações simples por perfil animal;
+- componentes densos, mas legíveis;
+- hierarquia clara para uso em campo.
 
-Promessa visual:
+## 5. Logo
 
-> A rotina do rebanho organizada, mesmo sem internet.
+Status: **Referência visual aprovada**.
 
-## 3. Logo
+A referência atual de logo usa:
 
-Direção aprovada:
+- símbolo monocromático/negativo;
+- animal adulto com bezerro;
+- movimento circular sugerindo ciclo, rotina e sincronização;
+- wordmark “RebanhoSync”;
+- aplicação horizontal;
+- aplicação reduzida como favicon/app icon;
+- boa leitura em fundo escuro.
 
-- símbolo em formato de escudo/hexágono técnico;
-- cabeça de boi branca no centro;
-- azul petróleo como base;
-- elementos discretos de sincronização/circuito;
-- alta legibilidade em tamanho pequeno.
+### Direção aprovada
 
-Usos:
-
-| Versão | Uso |
+| Elemento | Direção |
 |---|---|
-| Símbolo isolado | app icon, favicon, sidebar/bottom bar |
-| Horizontal | login, README, landing futura |
-| Monocromática | documentação, PDF, impressão |
-| Negativa | header escuro, splash, loading |
+| Símbolo | Animal adulto + bezerro com movimento circular |
+| Wordmark | RebanhoSync em peso alto, legível |
+| Aplicação | Preferência por fundo azul petróleo ou negativo/monocromático |
+| Favicon/app icon | Versão reduzida do símbolo |
 
-Evitar:
+### Limites
 
-- brinco/etiqueta como símbolo principal;
-- foto real de animal;
-- boi hiper-realista;
-- folha genérica;
-- nuvem/Wi-Fi como elemento principal;
-- excesso de detalhes que desapareçam em 24–32 px.
+- O logo de referência não deve ser tratado como asset final de produção se o SVG final ainda não estiver confirmado no repositório.
+- Versões antigas conflitantes não devem ser usadas como direção principal.
+- O logo não cria regra de negócio nem classificação automática de animal.
 
-## 4. Paleta
+## 6. Paleta
+
+Status: **Implementado parcialmente no app** e **referência visual aprovada**.
 
 | Token | HEX | Uso |
 |---|---|---|
-| Azul petróleo profundo | `#002B45` | header, marca, navegação |
-| Azul ação | `#0057C2` | CTA, estado ativo |
-| Azul informação | `#2563EB` | links, badges informativos |
-| Azul claro | `#3B82F6` | realces secundários |
-| Verde sucesso | `#16A34A` | sincronizado, concluído |
-| Aviso | `#F59E0B` | offline, atenção |
-| Erro/crítico | `#DC2626` | rejeição, falha |
-| Fundo | `#F7F9FA` | background |
-| Card | `#FFFFFF` | superfícies |
-| Borda | `#E2E8F0` | divisores |
-| Texto principal | `#0F172A` | conteúdo |
-| Texto secundário | `#64748B` | apoio |
-| Texto fraco | `#94A3B8` | metadados |
+| Azul petróleo profundo | `#002B45` | Header, marca, navegação, fundo institucional |
+| Azul ação | `#0057C2` | CTA, item ativo, ação primária |
+| Azul informação | `#2563EB` | Links, badges informativos, destaque secundário |
+| Azul claro | `#3B82F6` | Realces e ícones secundários |
+| Verde sucesso | `#16A34A` | Sincronizado, concluído, saudável |
+| Aviso | `#F59E0B` | Atenção, offline, pendência moderada |
+| Erro/crítico | `#DC2626` | Atrasado, rejeição, falha, crítico |
+| Fundo | `#F7F9FA` | Background geral |
+| Card | `#FFFFFF` | Superfícies e cartões |
+| Borda | `#E2E8F0` | Divisores e contornos |
+| Texto principal | `#0F172A` | Conteúdo de alta prioridade |
+| Texto secundário | `#64748B` | Apoio, metadados e descrições |
+| Texto fraco | `#94A3B8` | Metadados fracos e estados auxiliares |
 
-## 5. Aplicação de cores
+## 7. Tipografia
 
-| Elemento | Recomendação |
-|---|---|
-| Header | azul petróleo profundo |
-| CTA primário | azul ação |
-| CTA secundário | card branco + borda |
-| Estado ativo | azul ação / azul informação |
-| Sincronizado | verde sucesso |
-| Offline | aviso/laranja |
-| Rejeitado/falha | erro/crítico |
-| Cards operacionais | branco sobre fundo claro |
-| Badges | semânticos, com contraste adequado |
+Status: **Referência visual aprovada**.
 
-Não depender somente de cor para comunicar estado. Usar também ícone, texto e posição.
+Direção recomendada:
 
-## 6. Tipografia
-
-Fonte principal: **Inter**.  
-Fonte opcional para dados: **JetBrains Mono**.
-
-Diretrizes:
-
+- fonte principal: Inter ou equivalente sans-serif de alta legibilidade;
 - títulos com peso 600/700;
-- texto comum com peso 400/500;
-- KPIs com peso 600/700;
-- boa leitura em mobile;
-- evitar tipografia decorativa.
+- métricas com peso alto e tamanho ampliado;
+- labels e metadados com contraste suficiente;
+- números operacionais sempre escaneáveis em mobile.
 
-## 7. Iconografia
+## 8. Iconografia
 
-Usar ícones lineares estilo Lucide.
+Status: **Implementado parcialmente no app** e **referência visual aprovada**.
 
-Diretrizes:
+Direção:
 
-- tamanho padrão: 18–20 px;
-- tamanho compacto: 16 px;
-- stroke consistente;
-- ícone + label em ações críticas;
-- evitar ícone isolado quando houver risco operacional.
+- ícones lineares;
+- estilo compatível com Lucide;
+- traço limpo;
+- uso semântico por domínio;
+- não depender apenas da cor para comunicar status.
 
-Ícones principais:
+Ícones centrais:
 
-- Home;
+- Home / Hoje;
 - Agenda;
 - Registrar;
 - Animais;
@@ -150,70 +149,248 @@ Diretrizes:
 - Configurações;
 - Equipe.
 
-## 8. Componentes visuais
+## 9. Sistema visual de perfis animais
 
-Componentes devem favorecer operação rápida:
+Status: **Referência visual aprovada**.  
+Não é regra zootécnica automática.
 
-- cards com hierarquia clara;
-- botões grandes o suficiente para mobile;
-- badges semânticos;
-- listas escaneáveis;
-- bottom navigation mobile;
-- estados vazios acionáveis;
-- alertas claros, sem alarmismo excessivo;
-- feedback explícito de sync/offline.
+As referências visuais definem ícones/ilustrações por perfil operacional do animal. Elas servem para reconhecimento visual rápido e não devem inferir categoria sem regra de domínio validada.
 
-## 9. Estado Real (Maio/2026)
+| Perfil | Representação visual | Uso sugerido | Observação |
+|---|---|---|---|
+| Touro Reprodutor | Animal adulto robusto, cupim/proporção forte | Perfil animal, lista, cards de rebanho | Deve sugerir robustez e função reprodutiva |
+| Boi Engorda | Silhueta larga e musculosa | Perfil, lote de engorda, lista | Deve sugerir volume/terminação |
+| Vaca Seca / Solteira | Fêmea adulta sem bezerro ao pé | Perfil e lista de fêmeas adultas | Pode ter silhueta feminina adulta; não usar bezerro |
+| Vaca Parida | Matriz com bezerro ao pé | Perfil, cria, listas operacionais | Representa vínculo matriz-bezerro |
+| Novilha | Fêmea jovem sem úbere proeminente | Perfil/lista de animais em desenvolvimento | Não deve ter úbere proeminente |
+| Bezerro / Bezerra | Animal menor e esguio | Perfil/lista de fase inicial | Deve comunicar porte inicial |
 
-A identidade “Sync Técnico” foi consolidada com os seguintes refinamentos:
+### Limites
 
-- **Contraste Aprimorado**: Badges e estados críticos (`danger`) ajustados para legibilidade em light e dark mode (uso de `dark:text-red-400`).
-- **Cards Operacionais**: Opacidade de fundo e borda em cards de pendências/atrasos elevada para 10% e 25% respectivamente, garantindo visibilidade em telas OLED/campo.
-- **SideNav Desktop**: Preservada como âncora de navegação em telas grandes.
-- **Bottom Navigation**: Implementada como padrão para mobile.
-- **Home**: Consolidada como Central Operacional (Hoje).
-- **Contexto de Manejo**: Implementado acesso via Lote, Pasto, Animal e Agenda.
-- **PastoId**: Tratado como contexto informativo na UI, sem inferência automática de animais (preservando integridade).
-- **Intenção vs Fato**: Agenda preservada como intenção operacional; Eventos como fatos históricos.
+- Não inferir estágio, categoria, reprodução, carência ou aptidão comercial apenas por ícone.
+- Não usar imagem real como avatar padrão.
+- A representação visual deve ser auxiliar, não fonte primária de verdade.
 
-## 10. Microcopy preferencial
+## 10. Direção de componentes
 
-Usar:
+### Header
 
-- “Sincronizado”
-- “Salvo neste aparelho”
-- “Sincroniza quando houver conexão”
-- “Nenhuma rejeição”
-- “Pendentes para envio”
-- “Registrar manejo”
-- “Ver agenda”
-- “Ver histórico completo”
-- “Salvar offline”
-- “Salvar registro”
-- “Encerrar pendência”
-- “Aplicar protocolo”
-- “Manejar este lote”
-- “Manejar neste pasto”
-- “Registrar manejo deste animal”
+Status: **Referência visual aprovada**.
+
+- Fundo azul petróleo;
+- alta legibilidade;
+- logo ou título claro;
+- status de sincronização quando relevante;
+- ícones de ação no topo.
+
+### Cards
+
+Status: **Implementado parcialmente**.
+
+- Cards brancos sobre fundo claro;
+- borda suave;
+- sombra discreta;
+- raio arredondado;
+- informação escaneável;
+- hierarquia entre métrica principal e metadados.
+
+### Badges e status
+
+Status: **Implementado parcialmente**.
+
+- Verde para sucesso/concluído/sincronizado;
+- vermelho para atraso/crítico/rejeição;
+- laranja/amarelo para atenção/offline;
+- azul para informação/hoje/programado;
+- texto legível em light/dark mode.
+
+### Bottom Navigation
+
+Status: **Implementado no app**.
+
+- Navegação mobile por barra inferior;
+- item ativo claro;
+- preservar SideNav em desktop/tablet;
+- não ocultar ações críticas.
+
+## 11. Direção por tela
+
+### Home / Hoje
+
+Status: **Implementado parcialmente** e **referência visual aprovada**.
+
+Direção:
+
+- header azul com logo/fazenda/status de sync;
+- resumo do dia;
+- agenda de hoje;
+- ações rápidas;
+- alertas importantes;
+- Bottom Navigation mobile.
+
+Conceito preservado:
+
+```txt
+Home = Hoje / Central Operacional
+Agenda = visão completa de pendências
+```
+
+### Perfil do Animal
+
+Status: **Referência visual aprovada**, parcialmente alinhado no app.
+
+Direção:
+
+- header azul petróleo;
+- cartão principal branco;
+- avatar/ilustração por perfil animal, não foto real;
+- código do animal em destaque;
+- sexo visível;
+- raça, idade, brinco e status;
+- badge de categoria;
+- abas: Resumo, Histórico, Manejos;
+- cards de peso, GMD, lote e métrica contextual;
+- próximos eventos;
+- CTA “Ver histórico completo”.
+
+Limites:
+
+- Não criar regra nova para GMD, previsão de desmame, cobertura, status reprodutivo ou terminação.
+- Campos só devem aparecer quando houver fonte confiável no app.
+
+### Lista de Animais
+
+Status: **Referência visual aprovada**.
+
+Direção:
+
+- lista em cards;
+- ilustração por perfil;
+- símbolo de sexo;
+- código animal em destaque;
+- badge de categoria;
+- idade, peso, GMD e status;
+- ação “Novo Animal” como referência visual;
+- rodapé de total/atualização.
+
+### Lote
+
+Status: **Referência visual aprovada**.
+
+Direção:
+
+- header azul;
+- identidade do lote;
+- total de animais;
+- status geral;
+- cards de peso médio, manejos pendentes e calendário sanitário;
+- atividades recentes;
+- agenda do lote;
+- CTAs: Ver animais, Registrar manejo, Relatório.
+
+Limite: CTA navega; não executa manejo nem gera evento automaticamente.
+
+### Registrar Manejo
+
+Status: **Implementado parcialmente** e **referência visual aprovada**.
+
+Direção:
+
+- header azul;
+- stepper Tipo → Detalhes → Revisão;
+- seleção de tipo em cards;
+- campos organizados em blocos claros;
+- botões “Salvar offline” e “Salvar registro”;
+- mensagem de revisão antes de salvar.
+
+Regra preservada:
+
+- contexto pode pré-preencher, mas não salva;
+- salvamento exige confirmação explícita;
+- `pastoId` é informativo e não infere animais.
+
+### Offline / Sincronização
+
+Status: **Referência visual aprovada**.
+
+Direção:
+
+- status da conexão;
+- última sincronização;
+- pendentes para sincronizar;
+- rejeições;
+- armazenamento local;
+- atividade de sincronização;
+- ações “Ver dados locais” e “Sincronizar agora”.
+
+Limite: referência visual não altera comportamento do sync.
+
+### Relatórios / Insights
+
+Status: **Referência visual aprovada**.
+
+Direção:
+
+- indicadores simples;
+- filtros por período/lote;
+- resumo do período;
+- manejos do mês;
+- animais por lote;
+- pendências da agenda;
+- eventos recentes;
+- status offline.
+
+Limites:
+
+- Não criar BI complexo;
+- não criar predição;
+- não criar regra crítica;
+- insights devem ser read-only quando usados.
+
+## 12. Tom visual e verbal
+
+Direção:
+
+- direto;
+- operacional;
+- técnico sem excesso de jargão;
+- orientado à ação;
+- claro sobre status offline/sync;
+- sem prometer automação crítica não existente.
+
+Microcopy preferencial:
+
+- “Sincronizado”;
+- “Salvo neste aparelho”;
+- “Sincroniza quando houver conexão”;
+- “Pendentes para envio”;
+- “Registrar manejo”;
+- “Ver agenda”;
+- “Ver histórico completo”;
+- “Salvar offline”;
+- “Salvar registro”;
+- “Encerrar pendência”;
+- “Aplicar protocolo”.
 
 Evitar:
 
-- “ERP”
-- “IA decide”
-- “Concluir direto”
-- “Executar direto”
-- “Pronto para abate”
-- “Livre de carência”
+- “ERP”;
+- “IA decide”;
+- “Concluir direto”;
+- “Executar direto”;
+- “Pronto para abate”;
+- “Livre de carência”.
 
-## 11. Limites
+## 13. Limites explícitos
 
-Esta direção visual não autoriza:
+As referências visuais não autorizam:
 
-- nova regra de negócio;
-- alteração de banco;
-- alteração de sync;
-- carência conclusiva;
+- criação de nova regra de negócio;
+- inferência automática de perfil animal;
+- cálculo de carência;
 - venda/abate;
 - aptidão comercial;
-- uso de foto real do animal como avatar padrão;
-- implementação pixel-perfect baseada em imagem.
+- geração automática de evento;
+- conclusão automática de agenda;
+- alteração do sync;
+- substituição de fontes primárias por ícones, badges ou ilustrações.

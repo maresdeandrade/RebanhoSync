@@ -2,7 +2,8 @@
 
 Status: Ferramenta auxiliar  
 Tipo: Prompts para geração de telas de referência  
-Fonte visual: `BRAND_DIRECTION.md` + `UI_VISUAL_REFERENCES.md`
+Fonte visual: `BRAND_DIRECTION.md` + `UI_VISUAL_REFERENCES.md`  
+Última atualização: 2026-05-08
 
 ## 1. Regra de uso
 
@@ -15,9 +16,53 @@ Não usar outputs do Stitch como:
 - especificação funcional automática;
 - implementação pixel-perfect;
 - autorização para alterar regra de negócio;
-- autorização para criar funcionalidades fora do escopo.
+- autorização para criar funcionalidades fora do escopo;
+- fonte para inferir categoria animal, carência, aptidão comercial ou regra sanitária.
 
-## 2. Prompt principal — Telas mobile Azul Sync Técnico
+Classificar sempre o resultado como:
+
+| Status | Uso |
+|---|---|
+| Referência visual aprovada | Pode orientar UI futura |
+| Recomendado | Pode virar backlog visual |
+| Não autorizado por referência visual | Não deve ser inferido |
+
+## 2. Direção visual fixa para prompts
+
+Usar a direção **Azul Sync Técnico / Campo Operacional**:
+
+- azul petróleo profundo `#002B45`;
+- azul ação `#0057C2`;
+- azul informação `#2563EB`;
+- azul claro `#3B82F6`;
+- verde sucesso `#16A34A`;
+- aviso/offline `#F59E0B` ou laranja próximo;
+- erro/crítico `#DC2626`;
+- fundo claro `#F7F9FA`;
+- cards `#FFFFFF`;
+- bordas `#E2E8F0`;
+- texto principal `#0F172A`;
+- texto secundário `#64748B`.
+
+## 3. Logo fixo para novas gerações
+
+Usar o logo de referência atual:
+
+- animal adulto + bezerro;
+- movimento circular/sincronização;
+- wordmark `RebanhoSync`;
+- aplicação monocromática/negativa quando em fundo escuro;
+- possibilidade de favicon/app icon simplificado.
+
+Evitar:
+
+- escudo/hexágono como direção principal se conflitar com a referência atual;
+- foto real de animal;
+- boi hiper-realista;
+- folha genérica;
+- nuvem/Wi-Fi como elemento principal.
+
+## 4. Prompt principal — Telas mobile Azul Sync Técnico
 
 ```markdown
 Você é um Product Designer Sênior especializado em aplicativos mobile-first, offline-first e sistemas de gestão operacional para campo.
@@ -39,14 +84,14 @@ O app ajuda o usuário a:
 Não trate o produto como ERP agro completo.
 Não crie módulos fiscais, estoque avançado, IA generativa, marketplace ou funcionalidades não solicitadas.
 
-Use a identidade visual azul “Sync Técnico”:
+Use a identidade visual azul “Sync Técnico / Campo Operacional”:
 
 - azul petróleo profundo `#002B45`;
 - azul ação `#0057C2`;
 - azul informação `#2563EB`;
 - azul claro `#3B82F6`;
 - verde sucesso `#16A34A`;
-- aviso `#F59E0B`;
+- aviso/offline `#F59E0B`;
 - erro/crítico `#DC2626`;
 - fundo `#F7F9FA`;
 - cards `#FFFFFF`;
@@ -54,7 +99,7 @@ Use a identidade visual azul “Sync Técnico”:
 - texto principal `#0F172A`;
 - texto secundário `#64748B`.
 
-Use logo em escudo/hexágono técnico azul com cabeça de boi branca e elementos discretos de sincronização/circuito.
+Use logo com animal adulto + bezerro, movimento circular de sincronização e wordmark RebanhoSync. Em fundo escuro, usar versão monocromática/negativa branca.
 
 Não usar foto real do animal como avatar.
 
@@ -94,28 +139,28 @@ Priorize fidelidade funcional, clareza operacional e consistência com o app atu
 Não criar funcionalidades fora do escopo.
 ```
 
-## 3. Prompt curto
+## 5. Prompt curto
 
 ```markdown
 Crie telas mobile high-fidelity para o app RebanhoSync.
 
 RebanhoSync é um app offline-first para gestão simples de pecuária de corte, focado em pequeno/médio produtor. Não é ERP completo.
 
-Use identidade azul “Sync Técnico”:
+Use identidade azul “Sync Técnico / Campo Operacional”:
 
 - azul petróleo `#002B45`;
 - azul ação `#0057C2`;
 - azul info `#2563EB`;
 - azul claro `#3B82F6`;
 - sucesso `#16A34A`;
-- aviso `#F59E0B`;
+- aviso/offline `#F59E0B`;
 - erro `#DC2626`;
 - fundo `#F7F9FA`;
 - cards `#FFFFFF`;
 - borda `#E2E8F0`;
 - texto `#0F172A`.
 
-Logo: escudo/hexágono técnico azul com cabeça de boi branca e elementos discretos de sync/circuito.
+Logo: animal adulto + bezerro, movimento circular de sincronização e wordmark RebanhoSync. Usar versão branca em fundo azul escuro.
 
 Não usar fotos de animais como avatar.
 
@@ -148,10 +193,53 @@ Gerar telas:
 Não criar ERP fiscal, marketplace, venda/abate, carência conclusiva, aptidão comercial ou IA preditiva.
 ```
 
-## 4. Prompt — Home / Hoje Central Operacional
+## 6. Prompt — Perfis visuais de animal
 
 ```markdown
-Crie uma tela mobile high-fidelity para a Home do RebanhoSync, agora chamada “Hoje”.
+Crie telas mobile high-fidelity de Perfil do Animal para o RebanhoSync.
+
+Usar a identidade azul “Sync Técnico / Campo Operacional”.
+
+Gerar variações visuais para:
+
+- Touro Reprodutor;
+- Boi Engorda;
+- Vaca Seca;
+- Vaca Parida;
+- Novilha;
+- Bezerro.
+
+Estrutura da tela:
+
+- header azul petróleo;
+- cartão principal branco;
+- ilustração do perfil animal, sem foto real;
+- código do animal em destaque;
+- símbolo de sexo visível;
+- raça, idade, brinco e status;
+- badge da categoria;
+- abas Resumo, Histórico e Manejos;
+- cards de Peso, GMD, Lote e métrica contextual;
+- seção Próximos eventos;
+- CTA “Ver histórico completo”.
+
+Regras visuais:
+
+- Novilha sem úbere proeminente.
+- Vaca Parida com bezerro ao pé.
+- Touro Reprodutor robusto, com cupim evidente.
+- Boi Engorda com volume/terminação.
+- Bezerro menor e esguio.
+- Vaca Seca como fêmea adulta sem bezerro ao pé.
+
+Não transformar perfil visual em regra automática de negócio.
+Não criar cálculo de GMD, desmame, cobertura, status reprodutivo ou terminação se a fonte não estiver disponível.
+```
+
+## 7. Prompt — Home / Hoje Central Operacional
+
+```markdown
+Crie uma tela mobile high-fidelity para a Home do RebanhoSync, chamada “Hoje”.
 
 Objetivo: funcionar como Central Operacional do dia.
 
@@ -171,7 +259,7 @@ Bottom navigation: Hoje ativo, Rebanho, Manejo, Estrutura, Mais.
 Não criar gráficos complexos. Não tratar agenda como histórico. Não criar evento automático.
 ```
 
-## 5. Prompt — Agenda completa
+## 8. Prompt — Agenda completa
 
 ```markdown
 Crie uma tela mobile high-fidelity para Agenda do RebanhoSync.
@@ -192,7 +280,7 @@ Bottom navigation com Hoje/Rebanho/Manejo/Estrutura/Mais.
 Não tratar agenda como histórico factual. Não concluir automaticamente.
 ```
 
-## 6. Prompt — Manejo contextual
+## 9. Prompt — Manejo contextual
 
 ```markdown
 Crie telas mobile high-fidelity demonstrando o fluxo de Manejo Contextual do RebanhoSync.
@@ -216,7 +304,7 @@ Mostrar no Registrar:
 Não salvar automaticamente. Não criar regra de negócio nova.
 ```
 
-## 7. Prompt — Rebanho
+## 10. Prompt — Rebanho
 
 ```markdown
 Crie uma tela mobile high-fidelity para “Rebanho” do RebanhoSync.
@@ -229,14 +317,18 @@ Mostrar:
 - cards de métricas: total, ativos, atenção, em tratamento;
 - abas ou filtros: Animais, Lotes;
 - lista de animais sem foto real;
-- avatar simbólico com ícone simples;
-- status visual por animal;
+- ilustração por perfil visual quando disponível;
+- símbolo de sexo;
+- badge de categoria;
+- idade, peso, GMD e status visual por animal;
 - acesso ao perfil do animal.
 
 Bottom navigation com Rebanho ativo.
+
+Não inferir categoria automaticamente apenas pelo ícone.
 ```
 
-## 8. Prompt — Estrutura
+## 11. Prompt — Estrutura
 
 ```markdown
 Crie uma tela mobile high-fidelity para “Estrutura” do RebanhoSync.
@@ -257,18 +349,81 @@ Bottom navigation com Estrutura ativo.
 Não criar mapa avançado se não houver suporte funcional.
 ```
 
-## 9. Restrições fixas
+## 12. Prompt — Lote
 
-Sempre manter:
+```markdown
+Crie uma tela mobile high-fidelity para Detalhe do Lote no RebanhoSync.
 
-- identidade azul “Sync Técnico”;
-- estrutura mobile-first;
-- bottom navigation;
-- ausência de foto real de animal como avatar padrão;
-- clareza sobre offline/sync;
-- fidelidade funcional ao app atual.
+Mostrar:
 
-Nunca criar:
+- header azul petróleo;
+- identificação do lote;
+- total de animais;
+- status geral;
+- cards de peso médio, manejos pendentes e calendário sanitário;
+- atividades recentes;
+- agenda do lote;
+- CTAs: Ver animais, Registrar manejo, Relatório.
+
+O CTA Registrar manejo apenas navega e pré-preenche contexto. Não salva, não executa e não gera evento automaticamente.
+```
+
+## 13. Prompt — Offline / Sync
+
+```markdown
+Crie uma tela mobile high-fidelity para Offline / Sincronização do RebanhoSync.
+
+Mostrar:
+
+- header azul petróleo;
+- status da conexão;
+- última sincronização;
+- pendentes para sincronizar;
+- rejeições;
+- armazenamento local;
+- atividade de sincronização;
+- botões “Ver dados locais” e “Sincronizar agora”.
+
+Usar laranja para offline/atenção, verde para sucesso, vermelho para rejeição/falha.
+
+Não criar regra nova de sincronização.
+```
+
+## 14. Prompt — Relatórios / Insights
+
+```markdown
+Crie uma tela mobile high-fidelity para Relatórios / Insights do RebanhoSync.
+
+Mostrar:
+
+- header azul petróleo com logo e status sincronizado;
+- filtros de período e lote;
+- resumo do período;
+- manejos do mês;
+- animais por lote;
+- pendências da agenda;
+- eventos recentes;
+- card de modo offline.
+
+Usar gráficos simples, como barras e donut.
+
+Não criar BI complexo, predição, aptidão comercial, carência sanitária conclusiva ou regra crítica.
+```
+
+## 15. Restrições fixas
+
+Todo prompt deve preservar:
+
+- Agenda como intenção operacional;
+- Eventos como fatos históricos;
+- protocolos como regra/configuração, não execução;
+- `pastoId` como contexto informativo;
+- CTAs contextuais como navegação/pré-preenchimento, não ação automática;
+- revisão obrigatória antes de salvar;
+- offline-first;
+- mobile-first.
+
+Não criar:
 
 - ERP fiscal;
 - marketplace;
@@ -276,18 +431,5 @@ Nunca criar:
 - carência sanitária conclusiva;
 - aptidão comercial;
 - IA preditiva;
-- regra de negócio nova;
-- tela sem relação com fluxo existente.
-
-## 10. Como promover output do Stitch para referência
-
-Antes de salvar imagem em `docs/design/references/`, revisar:
-
-```txt
-Respeita identidade azul?
-Respeita navegação Hoje/Rebanho/Manejo/Estrutura/Mais?
-Não usa foto real de animal?
-Não cria função fora do escopo?
-Não sugere regra crítica inexistente?
-Serve como referência, não pixel-perfect?
-```
+- seleção global/bandeja sem prompt próprio de risco;
+- regra automática baseada em imagem, ícone ou categoria visual.
