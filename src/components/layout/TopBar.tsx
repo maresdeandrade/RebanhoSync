@@ -32,6 +32,8 @@ import {
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/useAuth";
 
+const BRAND_LOGO_SRC = "/logo.png";
+
 interface TopBarProps {
   onMenuClick?: () => void;
 }
@@ -126,10 +128,18 @@ export const TopBar = ({ onMenuClick }: TopBarProps) => {
             <Menu className="h-5 w-5" />
           </Button>
 
-          <div className="hidden min-w-0 lg:block">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-sidebar-foreground/65">
+          <Link to="/home" className="hidden items-center gap-2 lg:flex">
+            <img
+              src={BRAND_LOGO_SRC}
+              alt="RebanhoSync"
+              className="h-7 w-auto"
+            />
+            <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-sidebar-foreground/65">
               RebanhoSync
-            </p>
+            </span>
+          </Link>
+
+          <div className="hidden min-w-0 lg:block">
             <p className="truncate text-sm font-medium text-sidebar-foreground/90">
               Operacao offline-first da fazenda
             </p>

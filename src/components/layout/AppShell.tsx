@@ -60,10 +60,14 @@ export const AppShell = () => {
         >
           <div className="flex h-full flex-col">
             <div className="border-b border-sidebar-border/80 px-5 py-4">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-sidebar-foreground/65">
-                RebanhoSync
-              </p>
-              <p className="mt-1 text-base font-semibold text-sidebar-foreground">
+              <Link to="/home" className="flex items-center gap-2">
+                <img
+                  src="/logo.png"
+                  alt="RebanhoSync"
+                  className="h-6 w-auto"
+                />
+              </Link>
+              <p className="mt-2 text-base font-semibold text-sidebar-foreground">
                 Navegacao da fazenda
               </p>
             </div>

@@ -52,7 +52,14 @@ const Login = () => {
     <div className="flex min-h-screen items-center justify-center bg-muted/30 p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold">RebanhoSync</CardTitle>
+          <div className="flex justify-center">
+            <img
+              src="/logo.png"
+              alt="RebanhoSync"
+              className="h-12 w-auto"
+            />
+          </div>
+          <CardTitle className="mt-4 text-2xl font-bold">RebanhoSync</CardTitle>
           <p className="text-sm text-muted-foreground">
             Entre para gerenciar sua fazenda
           </p>
