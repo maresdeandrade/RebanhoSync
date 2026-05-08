@@ -16,9 +16,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { buildEventGesture } from "@/lib/events/buildEventGesture";
 import { createGesture } from "@/lib/offline/ops";
 import { getActiveFarmId } from "@/lib/storage";
-import { TipoPastoEnum, InfraestruturaPasto } from "@/lib/offline/types";
+import {
+  TipoPastoEnum,
+  InfraestruturaPasto,
+  PastoCoberturaSoloEnum,
+} from "@/lib/offline/types";
 import { showSuccess, showError } from "@/utils/toast";
 
 const INFRA_STATUS = [
@@ -27,6 +32,39 @@ const INFRA_STATUS = [
   { value: "regular", label: "Regular" },
   { value: "ruim", label: "Ruim" },
 ] as const;
+
+const FORRAGEIRA_OPTIONS_BY_TIPO: Record<TipoPastoEnum, string[]> = {
+  nativo: ["Campo nativo", "Capim nativo", "Outro"],
+  cultivado: [
+    "Braquiaria Marandu",
+    "Braquiaria Decumbens",
+    "Panicum Mombaca",
+    "Panicum Tanzania",
+    "Massai",
+    "Tifton",
+    "Andropogon",
+    "Outro",
+  ],
+  integracao: [
+    "Braquiaria Marandu",
+    "Braquiaria Ruziziensis",
+    "Panicum Mombaca",
+    "Panicum Tanzania",
+    "Outro",
+  ],
+  degradado: [
+    "Braquiaria Marandu",
+    "Braquiaria Decumbens",
+    "Capim degradado",
+    "Outro",
+  ],
+};
+
+function getForrageiraOptions(tipo: TipoPastoEnum, current: string) {
+  const options = FORRAGEIRA_OPTIONS_BY_TIPO[tipo];
+  if (!current || options.includes(current)) return options;
+  return [current, ...options];
+}
 
 function parseOptionalNumber(value: string) {
   const normalized = value.trim().replace(",", ".");
@@ -46,13 +84,10 @@ const PastoNovo = () => {
   const [areaHa, setAreaHa] = useState("");
   const [capacidadeUa, setCapacidadeUa] = useState("");
   const [tipoPasto, setTipoPasto] = useState<TipoPastoEnum>("nativo");
-  const [tipoArea, setTipoArea] = useState("cultivado");
-  const [forrageiraNome, setForrageiraNome] = useState("");
-  const [forrageiraGenero, setForrageiraGenero] = useState("");
   const [forrageiraCultivar, setForrageiraCultivar] = useState("");
+  const [coberturaSolo, setCoberturaSolo] = useState<PastoCoberturaSoloEnum | "">("");
   const [alturaEntrada, setAlturaEntrada] = useState("");
   const [alturaSaida, setAlturaSaida] = useState("");
-  const [capacidadeUaAlvo, setCapacidadeUaAlvo] = useState("");
   const [observacoes, setObservacoes] = useState("");
   const [infra, setInfra] = useState<InfraestruturaPasto>({
     cochos: { quantidade: 0, tipo: "madeira", capacidade: 0, estado: "bom" },
@@ -77,6 +112,13 @@ const PastoNovo = () => {
     }));
   };
 
+  const handleTipoPastoChange = (value: TipoPastoEnum) => {
+    setTipoPasto(value);
+    setForrageiraCultivar((current) =>
+      current && !FORRAGEIRA_OPTIONS_BY_TIPO[value].includes(current) ? "" : current,
+    );
+  };
+
   const handleSave = async () => {
     if (!activeFazendaId) {
       showError("Fazenda nao identificada.");
@@ -97,14 +139,9 @@ const PastoNovo = () => {
     const entradaParsed = parseOptionalNumber(alturaEntrada);
     const saidaParsed = parseOptionalNumber(alturaSaida);
     const capacidadeParsed = parseOptionalNumber(capacidadeUa);
-    const capacidadeAlvoParsed = parseOptionalNumber(capacidadeUaAlvo);
 
     if (!capacidadeParsed.valid) {
       showError("Capacidade UA deve ser um numero valido.");
-      return;
-    }
-    if (!capacidadeAlvoParsed.valid) {
-      showError("Capacidade UA alvo deve ser um numero valido.");
       return;
     }
     if (!entradaParsed.valid) {
@@ -119,14 +156,9 @@ const PastoNovo = () => {
     const entrada = entradaParsed.value;
     const saida = saidaParsed.value;
     const capacidade = capacidadeParsed.value;
-    const capacidadeAlvo = capacidadeAlvoParsed.value;
 
     if (capacidade !== null && capacidade < 0) {
       showError("Capacidade UA deve ser maior ou igual a zero.");
-      return;
-    }
-    if (capacidadeAlvo !== null && capacidadeAlvo < 0) {
-      showError("Capacidade UA alvo deve ser maior ou igual a zero.");
       return;
     }
     if (entrada !== null && entrada <= 0) {
@@ -154,13 +186,13 @@ const PastoNovo = () => {
         area_ha: area,
         capacidade_ua: capacidade,
         tipo_pasto: tipoPasto, // legado
-        tipo_area: tipoArea || null,
-        forrageira_nome: forrageiraNome.trim() || null,
-        forrageira_genero: forrageiraGenero.trim() || null,
+        tipo_area: tipoPasto,
+        forrageira_nome: null,
+        forrageira_genero: null,
         forrageira_cultivar: forrageiraCultivar.trim() || null,
         altura_entrada_alvo_cm: entrada,
         altura_saida_alvo_cm: saida,
-        capacidade_ua_alvo: capacidadeAlvo,
+        capacidade_ua_alvo: capacidade,
         infraestrutura: infra,
         observacoes: observacoes || null,
         payload: {},
@@ -168,9 +200,26 @@ const PastoNovo = () => {
         updated_at: now,
       },
     };
+    const ops = [op];
+
+    if (coberturaSolo) {
+      ops.push(
+        ...buildEventGesture({
+          dominio: "pastagem",
+          fazendaId: activeFazendaId,
+          pastoId,
+          loteId: null,
+          ocupacaoId: null,
+          momento: "ronda",
+          coberturaSolo,
+          observacoes: "Condicao inicial registrada no cadastro do pasto.",
+          payload: { origem: "cadastro_pasto" },
+        }).ops,
+      );
+    }
 
     try {
-      await createGesture(activeFazendaId, [op]);
+      await createGesture(activeFazendaId, ops);
       showSuccess("Pasto cadastrado com sucesso!");
       navigate("/pastos");
     } catch (error) {
@@ -228,7 +277,7 @@ const PastoNovo = () => {
       >
         <FormSection
           title="Identidade e capacidade"
-          description="Campos principais para localizar o pasto, entender sua area e registrar a capacidade alvo."
+          description="Identifique o pasto, classifique a area e registre os numeros que definem a lotacao."
         >
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2 md:col-span-2">
@@ -245,9 +294,9 @@ const PastoNovo = () => {
               <Label>Tipo de pastagem</Label>
               <Select
                 value={tipoPasto}
-                onValueChange={(value: TipoPastoEnum) => setTipoPasto(value)}
+                onValueChange={(value: TipoPastoEnum) => handleTipoPastoChange(value)}
               >
-                <SelectTrigger>
+                <SelectTrigger aria-label="Tipo de pastagem">
                   <SelectValue placeholder="Selecione..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -283,89 +332,60 @@ const PastoNovo = () => {
               />
             </div>
 
-            <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="observacoes">Observacoes</Label>
-              <Textarea
-                id="observacoes"
-                value={observacoes}
-                onChange={(event) => setObservacoes(event.target.value)}
-                placeholder="Informacoes de manejo, limitacoes ou notas do campo."
-              />
-            </div>
           </div>
         </FormSection>
 
         <FormSection
-          title="Forrageira e manejo"
-          description="Especifique o tipo de capim e as metas de altura para otimizar o pastejo."
+          title="Manejo da pastagem"
+          description="Escolha uma forrageira coerente com o tipo de pastagem e registre metas de campo."
         >
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label>Tipo da área</Label>
+              <Label htmlFor="cultivar">Forrageira / cultivar</Label>
               <Select
-                value={tipoArea}
-                onValueChange={setTipoArea}
+                value={forrageiraCultivar || "none"}
+                onValueChange={(value) =>
+                  setForrageiraCultivar(value === "none" ? "" : value)
+                }
               >
-                <SelectTrigger>
+                <SelectTrigger id="cultivar" aria-label="Forrageira / cultivar">
                   <SelectValue placeholder="Selecione..." />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="nativo">Nativo</SelectItem>
-                  <SelectItem value="cultivado">Cultivado</SelectItem>
-                  <SelectItem value="integracao">ILPF / Integração</SelectItem>
-                  <SelectItem value="degradado">Degradado</SelectItem>
-                  <SelectItem value="recuperacao">Em Recuperação</SelectItem>
+                  <SelectItem value="none">Nao informado</SelectItem>
+                  {getForrageiraOptions(tipoPasto, forrageiraCultivar).map((option) => (
+                    <SelectItem key={option} value={option}>
+                      {option}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="forrageira_genero">Genero da forrageira</Label>
+              <Label>Taxa de cobertura do solo / Aspecto visual</Label>
               <Select
-                value={forrageiraGenero || "none"}
-                onValueChange={(val) => setForrageiraGenero(val === "none" ? "" : val)}
+                value={coberturaSolo || "nao_informado"}
+                onValueChange={(value) =>
+                  setCoberturaSolo(
+                    value === "nao_informado"
+                      ? ""
+                      : (value as PastoCoberturaSoloEnum),
+                  )
+                }
               >
-                <SelectTrigger id="forrageira_genero" aria-label="Genero da forrageira">
-                  <SelectValue placeholder="Ex: Brachiaria" />
+                <SelectTrigger aria-label="Taxa de cobertura do solo / Aspecto visual">
+                  <SelectValue placeholder="Selecione..." />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">Não especificado</SelectItem>
-                  <SelectItem value="Brachiaria">Brachiaria</SelectItem>
-                  <SelectItem value="Panicum">Panicum</SelectItem>
-                  <SelectItem value="Cynodon">Cynodon</SelectItem>
-                  <SelectItem value="Andropogon">Andropogon</SelectItem>
-                  <SelectItem value="Outro">Outro</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="forrageira_nome">Nome da forrageira</Label>
-              <Input
-                id="forrageira_nome"
-                value={forrageiraNome}
-                onChange={(event) => setForrageiraNome(event.target.value)}
-                placeholder="Ex: capim-marandu"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="cultivar">Cultivar</Label>
-              <Select
-                value={forrageiraCultivar || "none"}
-                onValueChange={(val) => setForrageiraCultivar(val === "none" ? "" : val)}
-              >
-                <SelectTrigger id="cultivar" aria-label="Cultivar">
-                  <SelectValue placeholder="Ex: Marandu" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Não especificado</SelectItem>
-                  <SelectItem value="Marandu">Marandu</SelectItem>
-                  <SelectItem value="Mombaca">Mombaça</SelectItem>
-                  <SelectItem value="Tanzania">Tanzânia</SelectItem>
-                  <SelectItem value="Massai">Massai</SelectItem>
-                  <SelectItem value="Tifton">Tifton</SelectItem>
-                  <SelectItem value="Outro">Outro</SelectItem>
+                  <SelectItem value="nao_informado">Nao informado</SelectItem>
+                  <SelectItem value="excelente">
+                    Excelente (sem solo exposto)
+                  </SelectItem>
+                  <SelectItem value="media">Media (falhas leves)</SelectItem>
+                  <SelectItem value="ruim">
+                    Ruim (solo exposto e plantas daninhas)
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -393,17 +413,16 @@ const PastoNovo = () => {
                   placeholder="Ex: 15"
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="capacidade_ua_alvo">Capacidade UA alvo</Label>
-                <Input
-                  id="capacidade_ua_alvo"
-                  type="number"
-                  step="0.1"
-                  value={capacidadeUaAlvo}
-                  onChange={(event) => setCapacidadeUaAlvo(event.target.value)}
-                  placeholder="Ex: 25"
-                />
-              </div>
+            </div>
+
+            <div className="space-y-2 md:col-span-2">
+              <Label htmlFor="observacoes">Observacoes</Label>
+              <Textarea
+                id="observacoes"
+                value={observacoes}
+                onChange={(event) => setObservacoes(event.target.value)}
+                placeholder="Informacoes de manejo, limitacoes ou notas do campo."
+              />
             </div>
           </div>
         </FormSection>

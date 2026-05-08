@@ -156,36 +156,54 @@ describe("P2 pasture management fields", () => {
     fireEvent.change(screen.getByLabelText(/Area \(ha\)/i), {
       target: { value: "10" },
     });
-    fireEvent.change(screen.getByRole("combobox", { name: "Genero da forrageira" }), {
-      target: { value: "Panicum" },
+    fireEvent.change(screen.getByRole("combobox", { name: "Tipo de pastagem" }), {
+      target: { value: "cultivado" },
     });
-    fireEvent.change(screen.getByLabelText(/Nome da forrageira/i), {
-      target: { value: "Mombaca" },
-    });
-    fireEvent.change(screen.getByRole("combobox", { name: "Cultivar" }), {
+    fireEvent.change(screen.getByRole("combobox", { name: "Forrageira / cultivar" }), {
       target: { value: "Massai" },
     });
+    fireEvent.change(screen.getByLabelText(/Capacidade \(UA\)/i), {
+      target: { value: "22" },
+    });
+    fireEvent.change(
+      screen.getByRole("combobox", {
+        name: "Taxa de cobertura do solo / Aspecto visual",
+      }),
+      {
+        target: { value: "media" },
+      },
+    );
     fireEvent.change(screen.getByLabelText(/Alt. entrada/i), {
       target: { value: "35" },
     });
     fireEvent.change(screen.getByLabelText(/Alt. saída/i), {
       target: { value: "15" },
     });
-    fireEvent.change(screen.getByLabelText(/Capacidade UA alvo/i), {
-      target: { value: "22" },
-    });
-
     fireEvent.click(screen.getAllByRole("button", { name: /Salvar pasto/i })[0]);
 
     await waitFor(() => expect(mockedCreateGesture).toHaveBeenCalled());
     expect(mockedCreateGesture.mock.calls[0]?.[1][0]?.record).toMatchObject({
       nome: "Piquete 2",
-      forrageira_genero: "Panicum",
-      forrageira_nome: "Mombaca",
+      tipo_area: "cultivado",
+      forrageira_genero: null,
+      forrageira_nome: null,
       forrageira_cultivar: "Massai",
       altura_entrada_alvo_cm: 35,
       altura_saida_alvo_cm: 15,
+      capacidade_ua: 22,
       capacidade_ua_alvo: 22,
+    });
+    expect(mockedCreateGesture.mock.calls[0]?.[1].map((op) => op.table)).toEqual([
+      "pastos",
+      "eventos",
+      "eventos_pasto_avaliacao",
+    ]);
+    expect(mockedCreateGesture.mock.calls[0]?.[1][2]?.record).toMatchObject({
+      pasto_id: mockedCreateGesture.mock.calls[0]?.[1][0]?.record.id,
+      lote_id: null,
+      ocupacao_id: null,
+      momento: "ronda",
+      cobertura_solo: "media",
     });
     expect(
       mockedCreateGesture.mock.calls[0]?.[1][0]?.record.infraestrutura.curral,
@@ -213,23 +231,24 @@ describe("P2 pasture management fields", () => {
     );
 
     await waitFor(() =>
-      expect(screen.getByLabelText(/Nome da forrageira/i)).toHaveValue("Mombaca"),
+      expect(screen.getByRole("combobox", { name: "Forrageira / cultivar" })).toHaveValue("Massai"),
     );
-    expect(screen.getByRole("combobox", { name: "Genero da forrageira" })).toHaveValue("Panicum");
-    expect(screen.getByLabelText(/Capacidade UA alvo/i)).toHaveValue(22);
+    expect(screen.getByLabelText(/Capacidade \(UA\)/i)).toHaveValue(22);
 
-    fireEvent.change(screen.getByLabelText(/Capacidade UA alvo/i), {
+    fireEvent.change(screen.getByLabelText(/Capacidade \(UA\)/i), {
       target: { value: "24" },
     });
     fireEvent.click(screen.getAllByRole("button", { name: /Salvar alteracoes/i })[0]);
 
     await waitFor(() => expect(mockedCreateGesture).toHaveBeenCalled());
     expect(mockedCreateGesture.mock.calls[0]?.[1][0]?.record).toMatchObject({
-      forrageira_genero: "Panicum",
-      forrageira_nome: "Mombaca",
+      tipo_area: "cultivado",
+      forrageira_genero: null,
+      forrageira_nome: null,
       forrageira_cultivar: "Massai",
       altura_entrada_alvo_cm: 35,
       altura_saida_alvo_cm: 15,
+      capacidade_ua: 24,
       capacidade_ua_alvo: 24,
     });
     expect(
@@ -299,7 +318,7 @@ describe("P2 pasture management fields", () => {
       </MemoryRouter>,
     );
 
-    expect(await screen.findByText(/Tipo de area: nativo/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Tipo de pastagem: nativo/i)).toBeInTheDocument();
     expect(screen.getAllByText(/Nao informado/i).length).toBeGreaterThan(0);
   });
 

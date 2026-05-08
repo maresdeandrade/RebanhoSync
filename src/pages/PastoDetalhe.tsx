@@ -69,6 +69,31 @@ function formatDateTime(value?: string | null) {
 const labelize = (value?: string | null) =>
   value ? value.replaceAll("_", " ") : "Nao informado";
 
+const ECC_OPTIONS = ["1.0", "1.5", "2.0", "2.5", "3.0", "3.5", "4.0", "4.5", "5.0"];
+
+const SUPLEMENTO_OPTIONS = [
+  { value: "nenhum", label: "Nenhum", unidade: "" },
+  { value: "sal_mineral", label: "Sal Mineral", unidade: "sacos" },
+  { value: "sal_ureado", label: "Sal Ureado", unidade: "sacos" },
+  {
+    value: "proteinado",
+    label: "Proteinado (Suplemento Proteico)",
+    unidade: "sacos",
+  },
+  {
+    value: "proteico_energetico",
+    label: "Proteico-Energetico",
+    unidade: "sacos",
+  },
+  { value: "racao", label: "Racao (Concentrado)", unidade: "kg" },
+] as const;
+
+type SuplementoTipoValue = (typeof SUPLEMENTO_OPTIONS)[number]["value"];
+
+const SUPLEMENTO_BY_VALUE = new Map(
+  SUPLEMENTO_OPTIONS.map((option) => [option.value, option]),
+);
+
 const PastoDetalhe = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -80,10 +105,9 @@ const PastoDetalhe = () => {
   const [aguaStatus, setAguaStatus] = useState<PastoAguaStatusEnum | "">("");
   const [eccLoteMedio, setEccLoteMedio] = useState("");
   const [fezesScore, setFezesScore] = useState<PastoFezesScoreEnum | "">("");
-  const [suplementoTipo, setSuplementoTipo] = useState("");
+  const [suplementoTipo, setSuplementoTipo] =
+    useState<SuplementoTipoValue>("nenhum");
   const [suplementoQuantidade, setSuplementoQuantidade] = useState("");
-  const [suplementoUnidade, setSuplementoUnidade] =
-    useState<SuplementoUnidadeEnum | "">("");
   const [rondaObservacoes, setRondaObservacoes] = useState("");
 
   const pasto = useLiveQuery(() => (id ? db.state_pastos.get(id) : undefined), [id]);
@@ -167,6 +191,10 @@ const PastoDetalhe = () => {
     pasto.tipo_pasto ||
     "Nao informado";
   const ultimaAvaliacao = avaliacoesPasto?.[0] ?? null;
+  const suplementoSelecionado =
+    SUPLEMENTO_BY_VALUE.get(suplementoTipo) ?? SUPLEMENTO_OPTIONS[0];
+  const suplementoUnidade =
+    suplementoSelecionado.unidade as SuplementoUnidadeEnum | "";
 
   const resetRondaForm = () => {
     setMomento("ronda");
@@ -176,16 +204,18 @@ const PastoDetalhe = () => {
     setAguaStatus("");
     setEccLoteMedio("");
     setFezesScore("");
-    setSuplementoTipo("");
+    setSuplementoTipo("nenhum");
     setSuplementoQuantidade("");
-    setSuplementoUnidade("");
     setRondaObservacoes("");
   };
 
   const handleSalvarRonda = async () => {
     const alturaParsed = parseOptionalNumber(alturaCm);
     const eccParsed = parseOptionalNumber(eccLoteMedio);
-    const suplementoParsed = parseOptionalNumber(suplementoQuantidade);
+    const suplementoParsed =
+      suplementoTipo === "nenhum"
+        ? { value: null, valid: true }
+        : parseOptionalNumber(suplementoQuantidade);
 
     if (!alturaParsed.valid) {
       showError("Altura do capim deve ser um numero valido.");
@@ -229,7 +259,8 @@ const PastoDetalhe = () => {
         eccLoteMedio: eccParsed.value,
         aguaStatus: aguaStatus || null,
         fezesScore: fezesScore || null,
-        suplementoTipo: suplementoTipo.trim() || null,
+        suplementoTipo:
+          suplementoTipo === "nenhum" ? null : suplementoSelecionado.label,
         suplementoQuantidade: suplementoParsed.value,
         suplementoUnidade: suplementoUnidade || null,
         observacoes: rondaObservacoes.trim() || null,
@@ -309,11 +340,9 @@ const PastoDetalhe = () => {
             <p className="mb-3 font-medium text-foreground">Pastagem</p>
             <div className="grid gap-2 text-sm text-muted-foreground sm:grid-cols-2">
               <span>
-                Tipo de area: {tipoAreaLabel}
+                Tipo de pastagem: {tipoAreaLabel}
               </span>
-              <span>Forrageira: {forrageiraLabel}</span>
-              <span>Genero: {pasto.forrageira_genero || "Nao informado"}</span>
-              <span>Cultivar: {pasto.forrageira_cultivar || "Nao informado"}</span>
+              <span>Forrageira / cultivar: {forrageiraLabel}</span>
             </div>
           </div>
 
@@ -374,7 +403,7 @@ const PastoDetalhe = () => {
                   : "Nao informado"}
               </span>
               <span>
-                Cobertura: {labelize(ultimaAvaliacao.avaliacao.cobertura_solo)}
+                Cobertura/aspecto: {labelize(ultimaAvaliacao.avaliacao.cobertura_solo)}
               </span>
               <span>Agua: {labelize(ultimaAvaliacao.avaliacao.agua_status)}</span>
               <span>
@@ -550,7 +579,7 @@ const PastoDetalhe = () => {
             </div>
 
             <div className="space-y-2">
-              <Label>Cobertura do solo</Label>
+              <Label>Taxa de cobertura do solo / Aspecto visual</Label>
               <Select
                 value={coberturaSolo || "nao_informado"}
                 onValueChange={(value) =>
@@ -561,14 +590,18 @@ const PastoDetalhe = () => {
                   )
                 }
               >
-                <SelectTrigger aria-label="Cobertura do solo">
+                <SelectTrigger aria-label="Taxa de cobertura do solo / Aspecto visual">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="nao_informado">Nao informado</SelectItem>
-                  <SelectItem value="excelente">Excelente</SelectItem>
-                  <SelectItem value="media">Media</SelectItem>
-                  <SelectItem value="ruim">Ruim</SelectItem>
+                  <SelectItem value="excelente">
+                    Excelente (sem solo exposto)
+                  </SelectItem>
+                  <SelectItem value="media">Media (falhas leves)</SelectItem>
+                  <SelectItem value="ruim">
+                    Ruim (solo exposto e plantas daninhas)
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -622,13 +655,25 @@ const PastoDetalhe = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="ecc-medio">ECC medio do lote</Label>
-              <Input
-                id="ecc-medio"
-                value={eccLoteMedio}
-                onChange={(event) => setEccLoteMedio(event.target.value)}
-                inputMode="decimal"
-              />
+              <Label>ECC medio do lote</Label>
+              <div
+                className="grid grid-cols-3 gap-2 sm:grid-cols-5"
+                role="group"
+                aria-label="ECC medio do lote"
+              >
+                {ECC_OPTIONS.map((option) => (
+                  <Button
+                    key={option}
+                    type="button"
+                    size="sm"
+                    variant={eccLoteMedio === option ? "default" : "outline"}
+                    aria-pressed={eccLoteMedio === option}
+                    onClick={() => setEccLoteMedio(option)}
+                  >
+                    {option}
+                  </Button>
+                ))}
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -656,45 +701,42 @@ const PastoDetalhe = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="suplemento-tipo">Suplemento tipo</Label>
-              <Input
-                id="suplemento-tipo"
+              <Label>Suplemento tipo</Label>
+              <Select
                 value={suplementoTipo}
-                onChange={(event) => setSuplementoTipo(event.target.value)}
-              />
+                onValueChange={(value) => {
+                  setSuplementoTipo(value as SuplementoTipoValue);
+                  setSuplementoQuantidade("");
+                }}
+              >
+                <SelectTrigger aria-label="Suplemento tipo">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {SUPLEMENTO_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="suplemento-quantidade">Suplemento quantidade</Label>
+              <Label htmlFor="suplemento-quantidade">
+                {suplementoUnidade === "kg"
+                  ? "Quantidade (Kg)"
+                  : suplementoUnidade === "sacos"
+                    ? "Quantidade (Sacos)"
+                    : "Quantidade"}
+              </Label>
               <Input
                 id="suplemento-quantidade"
                 value={suplementoQuantidade}
                 onChange={(event) => setSuplementoQuantidade(event.target.value)}
                 inputMode="decimal"
+                disabled={suplementoTipo === "nenhum"}
               />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Suplemento unidade</Label>
-              <Select
-                value={suplementoUnidade || "nao_informado"}
-                onValueChange={(value) =>
-                  setSuplementoUnidade(
-                    value === "nao_informado"
-                      ? ""
-                      : (value as SuplementoUnidadeEnum),
-                  )
-                }
-              >
-                <SelectTrigger aria-label="Suplemento unidade">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="nao_informado">Nao informado</SelectItem>
-                  <SelectItem value="kg">kg</SelectItem>
-                  <SelectItem value="sacos">Sacos</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
 
             <div className="space-y-2 sm:col-span-2">

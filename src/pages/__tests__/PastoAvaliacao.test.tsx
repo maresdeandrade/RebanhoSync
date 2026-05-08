@@ -276,7 +276,7 @@ describe("PastoDetalhe avaliacao/ronda", () => {
 
     expect(screen.getByText(/Ultima ronda/i)).toBeInTheDocument();
     expect(screen.getByText(/32 cm/i)).toBeInTheDocument();
-    expect(screen.getByText(/Cobertura: media/i)).toBeInTheDocument();
+    expect(screen.getByText(/Cobertura\/aspecto: media/i)).toBeInTheDocument();
     expect(screen.getByText(/Agua: sujo/i)).toBeInTheDocument();
     expect(screen.getByText(/ECC: 3.2/i)).toBeInTheDocument();
     expect(screen.getByText(/Fezes: liquidas/i)).toBeInTheDocument();
@@ -291,14 +291,23 @@ describe("PastoDetalhe avaliacao/ronda", () => {
     fireEvent.change(screen.getByLabelText(/Altura do capim/i), {
       target: { value: "31" },
     });
-    fireEvent.change(screen.getByRole("combobox", { name: "Cobertura do solo" }), {
-      target: { value: "excelente" },
-    });
+    fireEvent.change(
+      screen.getByRole("combobox", {
+        name: "Taxa de cobertura do solo / Aspecto visual",
+      }),
+      {
+        target: { value: "excelente" },
+      },
+    );
     fireEvent.change(screen.getByRole("combobox", { name: "Status da agua" }), {
       target: { value: "limpo" },
     });
-    fireEvent.change(screen.getByLabelText(/ECC medio/i), {
-      target: { value: "3.5" },
+    fireEvent.click(screen.getByRole("button", { name: "3.5" }));
+    fireEvent.change(screen.getByRole("combobox", { name: "Suplemento tipo" }), {
+      target: { value: "racao" },
+    });
+    fireEvent.change(screen.getByLabelText(/Quantidade \(Kg\)/i), {
+      target: { value: "12" },
     });
     fireEvent.click(screen.getByRole("button", { name: /Salvar ronda/i }));
 
@@ -322,12 +331,33 @@ describe("PastoDetalhe avaliacao/ronda", () => {
       cobertura_solo: "excelente",
       agua_status: "limpo",
       ecc_lote_medio: 3.5,
+      suplemento_tipo: "Racao (Concentrado)",
+      suplemento_quantidade: 12,
+      suplemento_unidade: "kg",
     });
     expect(
       ops.filter((op) =>
         ["pastos", "lotes", "pasto_ocupacoes"].includes(op.table),
       ),
     ).toHaveLength(0);
+  });
+
+  it("ajusta unidade de suplemento conforme o tipo selecionado", () => {
+    renderPastoDetalhe();
+
+    fireEvent.click(screen.getByRole("button", { name: /Registrar ronda/i }));
+
+    expect(screen.getByLabelText(/^Quantidade$/i)).toBeDisabled();
+
+    fireEvent.change(screen.getByRole("combobox", { name: "Suplemento tipo" }), {
+      target: { value: "sal_mineral" },
+    });
+    expect(screen.getByLabelText(/Quantidade \(Sacos\)/i)).toBeEnabled();
+
+    fireEvent.change(screen.getByRole("combobox", { name: "Suplemento tipo" }), {
+      target: { value: "racao" },
+    });
+    expect(screen.getByLabelText(/Quantidade \(Kg\)/i)).toBeEnabled();
   });
 
   it("sem ocupacao aberta ainda permite avaliacao com lote_id null", async () => {
