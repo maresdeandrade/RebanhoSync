@@ -151,6 +151,6 @@ describe("AnimalDetalhe", () => {
     expect(screen.getByRole("tab", { name: /agenda/i })).toBeInTheDocument();
     expect(
       screen.getByRole("link", { name: /Registrar manejo deste animal/i }),
-    ).toHaveAttribute("href", "/registrar?animalId=animal-1&loteId=lote-1");
+    ).toHaveAttribute("href", "/registrar?animalId=animal-1");
   });
 });

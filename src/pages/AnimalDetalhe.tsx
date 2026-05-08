@@ -783,11 +783,7 @@ const AnimalDetalhe = () => {
     );
   }
 
-  const registrarParams = new URLSearchParams({ animalId: animal.id });
-  if (animal.lote_id) {
-    registrarParams.set("loteId", animal.lote_id);
-  }
-  const registrarAnimalPath = `/registrar?${registrarParams.toString()}`;
+  const registrarAnimalPath = `/registrar?animalId=${encodeURIComponent(animal.id)}`;
 
   return (
     <div className="space-y-6">

@@ -11,6 +11,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { ChevronRight, ChevronLeft, Check } from "lucide-react";
 import { useLotes } from "@/hooks/useLotes";
 import { useAuth } from "@/hooks/useAuth";
+import { db } from "@/lib/offline/db";
 import { parseWeightInput } from "@/lib/format/weight";
 import { buildRegulatoryOperationalReadModel } from "@/lib/sanitario/compliance/regulatoryReadModel";
 import {
@@ -64,6 +65,7 @@ import {
   useRegistrarStepFlow,
 } from "@/pages/Registrar/useRegistrarStepFlow";
 import { parseRegistrarQueryState } from "@/pages/Registrar/helpers/registrarQueryState";
+import { resolveRegistrarDisplayContext } from "@/pages/Registrar/helpers/registrarContextResolver";
 import { createRegistrarFinalizeController } from "@/pages/Registrar/createRegistrarFinalizeController";
 import {
   resolveRegistrarFinalizeOpsIssue,
@@ -113,6 +115,8 @@ const Registrar = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [isFinalizing, setIsFinalizing] = useState(false);
+  const [contextAnimalId, setContextAnimalId] = useState("");
+  const [contextLoteId, setContextLoteId] = useState("");
   const [contextPastoId, setContextPastoId] = useState("");
   const { activeFarmId, role, farmMeasurementConfig, farmLifecycleConfig } =
     useAuth();
@@ -214,6 +218,55 @@ const Registrar = () => {
         selectedIds: selectedAnimais,
       }),
     [animaisNoLote, selectedAnimais],
+  );
+  const hasRegistrarDisplayContext = Boolean(
+    sourceTaskId || contextAnimalId || contextLoteId || contextPastoId,
+  );
+  const registrarContextRecords = useLiveQuery(
+    async () => {
+      if (!hasRegistrarDisplayContext) {
+        return {
+          agendaItem: null,
+          animal: null,
+          lote: null,
+          pasto: null,
+        };
+      }
+
+      const [agendaItem, animal, lote, pasto] = await Promise.all([
+        sourceTaskId ? db.state_agenda_itens.get(sourceTaskId) : Promise.resolve(null),
+        contextAnimalId ? db.state_animais.get(contextAnimalId) : Promise.resolve(null),
+        contextLoteId ? db.state_lotes.get(contextLoteId) : Promise.resolve(null),
+        contextPastoId ? db.state_pastos.get(contextPastoId) : Promise.resolve(null),
+      ]);
+
+      return {
+        agendaItem: agendaItem ?? null,
+        animal: animal ?? null,
+        lote: lote ?? null,
+        pasto: pasto ?? null,
+      };
+    },
+    [sourceTaskId, contextAnimalId, contextLoteId, contextPastoId, hasRegistrarDisplayContext],
+  );
+  const registrarDisplayContext = useMemo(
+    () =>
+      registrarContextRecords
+        ? resolveRegistrarDisplayContext({
+            sourceTaskId: sourceTaskId || null,
+            animalId: contextAnimalId || null,
+            loteId: contextLoteId || null,
+            pastoId: contextPastoId || null,
+            records: registrarContextRecords,
+          })
+        : [],
+    [
+      contextAnimalId,
+      contextLoteId,
+      contextPastoId,
+      registrarContextRecords,
+      sourceTaskId,
+    ],
   );
 
   const contrapartes = useLiveQuery(
@@ -523,6 +576,7 @@ const Registrar = () => {
     if (parsedQuery.loteId) {
       setSelectedLoteId(parsedQuery.loteId);
     }
+    setContextLoteId(parsedQuery.loteId ?? "");
     setContextPastoId(parsedQuery.pastoId ?? "");
     if (parsedQuery.animalId) {
       setSelectedAnimais((prev) =>
@@ -531,6 +585,7 @@ const Registrar = () => {
           : [parsedQuery.animalId],
       );
     }
+    setContextAnimalId(parsedQuery.animalId ?? "");
     if (parsedQuery.quickAction) {
       applyQuickAction(parsedQuery.quickAction);
     }
@@ -571,6 +626,8 @@ const Registrar = () => {
     clearQuickAction,
     goToChooseAction,
     setReproducaoData,
+    setContextAnimalId,
+    setContextLoteId,
     setContextPastoId,
     setSelectedAnimais,
     setSelectedLoteId,
@@ -795,20 +852,41 @@ const Registrar = () => {
                 {selectedAnimais.length} animal(is) selecionado(s)
               </StatusBadge>
             ) : null}
-            {contextPastoId ? (
-              <StatusBadge tone="neutral">
-                Contexto pasto {contextPastoId.slice(0, 8)}
-              </StatusBadge>
+            {hasRegistrarDisplayContext ? (
+              <StatusBadge tone="neutral">Contexto recebido</StatusBadge>
             ) : null}
           </>
         }
       />
 
-      {contextPastoId ? (
-        <div className="rounded-lg border border-info/20 bg-info/5 p-4 text-sm text-muted-foreground">
-          Contexto de pasto recebido. Selecione o lote e os animais antes de
-          revisar e salvar; nenhum animal e inferido automaticamente a partir do
-          pasto.
+      {hasRegistrarDisplayContext ? (
+        <div className="space-y-3 rounded-lg border border-info/20 bg-info/5 p-4 text-sm text-muted-foreground">
+          <div>
+            <p className="font-medium text-foreground">Contexto recebido</p>
+            <p>
+              Revise o alvo antes de salvar. O contexto apenas preenche ou
+              identifica a origem do fluxo.
+            </p>
+          </div>
+          {registrarContextRecords === undefined ? (
+            <p>Carregando contexto...</p>
+          ) : (
+            <div className="grid gap-2 sm:grid-cols-2">
+              {registrarDisplayContext.map((entry) => (
+                <div
+                  key={`${entry.kind}-${entry.id}`}
+                  className={
+                    entry.found
+                      ? "rounded-lg border border-info/15 bg-background/80 p-3"
+                      : "rounded-lg border border-warning/30 bg-warning/10 p-3"
+                  }
+                >
+                  <p className="font-medium text-foreground">{entry.title}</p>
+                  <p>{entry.description}</p>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       ) : null}
 

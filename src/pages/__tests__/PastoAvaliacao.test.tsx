@@ -270,6 +270,10 @@ describe("PastoDetalhe avaliacao/ronda", () => {
     expect(
       screen.getByRole("link", { name: /Manejar neste pasto/i }),
     ).toHaveAttribute("href", "/registrar?pastoId=pasto-1");
+
+    fireEvent.click(screen.getByRole("link", { name: /Manejar neste pasto/i }));
+
+    expect(mockedCreateGesture).not.toHaveBeenCalled();
   });
 
   it("mostra ultima avaliacao quando existe", () => {

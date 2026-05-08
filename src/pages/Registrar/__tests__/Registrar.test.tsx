@@ -92,6 +92,25 @@ describe("Registrar Page - Anti-Teleport", () => {
         } as ReturnType<typeof useLiveQuery>;
       }
 
+      if (querySource.includes("state_agenda_itens.get")) {
+        return {
+          agendaItem: {
+            id: "agenda-1",
+            dominio: "sanitario",
+            tipo: "vacinacao",
+            status: "agendado",
+            data_prevista: "2026-05-08",
+          },
+          animal: universalRecord,
+          lote: mockLotes[0],
+          pasto: {
+            id: "pasto-1",
+            nome: "Piquete 1",
+            tipo_pasto: "cultivado",
+          },
+        } as ReturnType<typeof useLiveQuery>;
+      }
+
       if (querySource.includes("state_animais.get")) {
         return null as ReturnType<typeof useLiveQuery>;
       }
@@ -204,8 +223,25 @@ describe("Registrar Page - Anti-Teleport", () => {
 
     expect(screen.getAllByText(/1 animal\(is\) selecionado\(s\)/i).length)
       .toBeGreaterThan(0);
-    expect(screen.getByText(/Contexto pasto pasto-1/i)).toBeInTheDocument();
+    expect(screen.getByText("Animal: Boi 1")).toBeInTheDocument();
+    expect(screen.getByText("Lote: Lote A")).toBeInTheDocument();
+    expect(screen.getByText("Pasto: Piquete 1")).toBeInTheDocument();
     expect(screen.getByText(/nenhum animal e inferido automaticamente/i)).toBeInTheDocument();
+    expect(runRegistrarFinalizeGestureEffect).not.toHaveBeenCalled();
+  });
+
+  it("keeps pastoId as informative context without selecting animals", () => {
+    render(
+      <MemoryRouter
+        initialEntries={["/registrar?pastoId=pasto-1"]}
+        future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+      >
+        <Registrar />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByText("Pasto: Piquete 1")).toBeInTheDocument();
+    expect(screen.queryByText(/animal\(is\) selecionado\(s\)/i)).not.toBeInTheDocument();
     expect(runRegistrarFinalizeGestureEffect).not.toHaveBeenCalled();
   });
 });

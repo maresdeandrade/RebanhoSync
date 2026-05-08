@@ -86,6 +86,8 @@ describe("createAgendaActionController", () => {
     expect(deps.navigate).toHaveBeenCalledWith(
       "/registrar?sourceTaskId=agenda-1&dominio=sanitario&animalId=animal-1&loteId=lote-1&protocoloId=protocolo-1&protocoloItemId=protocolo-item-1&produto=Vacina+X&sanitarioTipo=vacinacao",
     );
+    expect(deps.createGesture).not.toHaveBeenCalled();
+    expect(deps.concludePendingSanitary).not.toHaveBeenCalled();
   });
 
   it("routes generic conclude to sanitary event and refresh", async () => {
