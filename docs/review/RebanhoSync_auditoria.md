@@ -103,14 +103,15 @@ Este documento não propõe implementação. Ele organiza o que está validado, 
 | Item | Estado consolidado | Classificação |
 |---|---|---|
 | Tabela principal | `eventos` é a tabela factual base. | validado |
-| Detail tables | `eventos_sanitario`, `eventos_pesagem`, `eventos_nutricao`, `eventos_movimentacao`, `eventos_reproducao`, `eventos_financeiro`. | validado |
-| Domínios citados | Sanitário, alerta sanitário, conformidade, pesagem, nutrição, movimentação, reprodução, financeiro, óbito. | parcialmente validado |
+| Detail tables | `eventos_sanitario`, `eventos_pesagem`, `eventos_nutricao`, `eventos_movimentacao`, `eventos_pasto_avaliacao`, `eventos_reproducao`, `eventos_financeiro`. | validado |
+| Domínios citados | Sanitário, alerta sanitário, conformidade, pesagem, nutrição, movimentação, pastagem, reprodução, financeiro, óbito. | parcialmente validado |
 | Append-only | Eventos possuem proteção contra update destrutivo de negócio via trigger/função, com exceções técnicas controladas como metadados, `deleted_at`, `updated_at` e `server_received_at`. | parcialmente validado |
 | Correção de evento | Correção histórica por `corrige_evento_id` é parcialmente validada: o campo existe, mas o fluxo completo de correção não foi confirmado. | parcialmente validado |
 | Sanitário | Evento base + detail sanitário; pode fechar agenda vinculada. | validado |
 | Pesagem | Evento base + detail de pesagem. Peso atual não consolidado. | parcialmente validado |
 | Nutrição | Evento base + detail de nutrição. Estado atual derivado não confirmado. | parcialmente validado |
 | Movimentação | Evento pode alterar lote atual do animal. | parcialmente validado |
+| Pastagem | Evento base + detail `eventos_pasto_avaliacao`; registra ronda/avaliação de campo sem alterar `pastos`, `lotes`, `pasto_ocupacoes` ou agenda. | validado |
 | Financeiro | Evento financeiro; venda pode alterar status do animal. | parcialmente validado |
 | Compra financeira | Pode criar animais e evento de pesagem de entrada. | parcialmente validado |
 | Reprodução | Evento reprodutivo; parto pode gerar cria, agenda da cria e atualizar fatos taxonômicos. | parcialmente validado |
@@ -221,6 +222,7 @@ Este documento não propõe implementação. Ele organiza o que está validado, 
 | Necessidade de vacina/produto | Agenda válida no período + produto/protocolo vinculado | Upcoming/views, protocolos, lote/animal ativo | Apenas protocolo ativo; apenas histórico | parcialmente validado |
 | Estado atual do animal | `state_animais` + read model/derivação explícita | Eventos recentes, payload, taxonomy facts | Eventos brutos sem reconciliação | parcialmente validado |
 | Estado atual do lote | `state_lotes` + animais ativos vinculados | Movimentações, pastos | Histórico isolado | parcialmente validado |
+| Histórico de avaliação de pasto | `eventos` + `eventos_pasto_avaliacao` | `state_pasto_ocupacoes` para contexto de ocupação aberta | Cadastro estático de `pastos`; `pasto_ocupacoes` isolado como histórico | validado |
 | Status sanitário | Agenda sanitária + eventos sanitários + compliance/read model | Protocolos/config sanitária | Tags ou protocolo isolado | parcialmente validado |
 | Status reprodutivo | Read model/função parcialmente validada + eventos reprodutivos | `taxonomy_facts`, payload, estado matriz/cria | Agenda de diagnóstico pendente | parcialmente validado |
 | Carência | Não há fonte consolidada validada | Eventos sanitários + produto + regra de carência | Tag, agenda, protocolo isolado | bloqueado |

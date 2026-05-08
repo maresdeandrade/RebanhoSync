@@ -34,7 +34,7 @@ export function AgendaLifecycleSummaryPanel({
     <Card className="border-warning/20 bg-warning-muted/70 shadow-none">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-base">
-          <AlertTriangle className="h-4 w-4 text-warning" />
+          <AlertTriangle className="h-4 w-4 text-amber-700 dark:text-amber-200" />
           Transicoes de estagio no radar
         </CardTitle>
         <CardDescription>

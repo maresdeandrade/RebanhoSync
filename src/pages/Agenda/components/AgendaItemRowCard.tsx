@@ -68,7 +68,7 @@ export function AgendaItemRowCard({
       ref={(node) => registerRowRef(row.item.id, node)}
       tabIndex={-1}
       className={cn(
-        "scroll-mt-24 rounded-2xl border border-border/70 bg-muted/30 p-4 transition-colors transition-shadow",
+        "scroll-mt-24 rounded-2xl border border-border/70 bg-muted/50 p-4 transition-all",
         isContextualMatch ? "border-info/30 bg-info-muted/30" : null,
         isContextualFocusRow ? "ring-2 ring-info/25 ring-offset-2 ring-offset-background" : null,
       )}

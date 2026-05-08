@@ -13,6 +13,13 @@ export type PastoImportRow = {
   areaHa: number;
   capacidadeUa: number | null;
   tipoPasto: TipoPastoEnum;
+  tipoArea: string | null;
+  forrageiraNome: string | null;
+  forrageiraGenero: string | null;
+  forrageiraCultivar: string | null;
+  alturaEntrada: number | null;
+  alturaSaida: number | null;
+  capacidadeUaAlvo: number | null;
   observacoes: string | null;
 };
 
@@ -36,6 +43,25 @@ const PASTO_HEADER_ALIASES: Record<string, string[]> = {
   areaHa: ["area_ha", "area", "hectares", "ha"],
   capacidadeUa: ["capacidade_ua", "capacidade", "ua"],
   tipoPasto: ["tipo_pasto", "tipo", "pastagem"],
+  tipoArea: ["tipo_area", "tipo_da_area"],
+  forrageiraNome: ["forrageira", "capim", "especie"],
+  forrageiraGenero: ["forrageira_genero", "genero", "genero_forrageira"],
+  forrageiraCultivar: ["forrageira_cultivar", "cultivar", "variedade"],
+  alturaEntrada: [
+    "altura_entrada",
+    "altura_entrada_cm",
+    "altura_entrada_alvo",
+    "altura_entrada_alvo_cm",
+    "entrada_cm",
+  ],
+  alturaSaida: [
+    "altura_saida",
+    "altura_saida_cm",
+    "altura_saida_alvo",
+    "altura_saida_alvo_cm",
+    "saida_cm",
+  ],
+  capacidadeUaAlvo: ["capacidade_ua_alvo", "capacidade_alvo"],
   observacoes: ["observacoes", "observacao", "obs", "descricao"],
 };
 
@@ -145,6 +171,18 @@ function normalizeOptionalNumber(value: string) {
   return parsed;
 }
 
+function parseOptionalNumber(value: string) {
+  const normalized = value.trim().replace(",", ".");
+  if (!normalized) return { value: null, provided: false, valid: true };
+
+  const parsed = Number(normalized);
+  return {
+    value: Number.isFinite(parsed) ? parsed : null,
+    provided: true,
+    valid: Number.isFinite(parsed),
+  };
+}
+
 function normalizeTipoPasto(value: string): TipoPastoEnum | null {
   const normalized = normalizeLookupValue(value).replace(/\s+/g, "_");
 
@@ -229,6 +267,13 @@ export function parsePastoImportCsv(
     "capacidadeUa",
   );
   const tipoIndex = findHeaderIndex(headers, PASTO_HEADER_ALIASES, "tipoPasto");
+  const tipoAreaIndex = findHeaderIndex(headers, PASTO_HEADER_ALIASES, "tipoArea");
+  const forrageiraIndex = findHeaderIndex(headers, PASTO_HEADER_ALIASES, "forrageiraNome");
+  const forrageiraGeneroIndex = findHeaderIndex(headers, PASTO_HEADER_ALIASES, "forrageiraGenero");
+  const cultivarIndex = findHeaderIndex(headers, PASTO_HEADER_ALIASES, "forrageiraCultivar");
+  const alturaEntradaIndex = findHeaderIndex(headers, PASTO_HEADER_ALIASES, "alturaEntrada");
+  const alturaSaidaIndex = findHeaderIndex(headers, PASTO_HEADER_ALIASES, "alturaSaida");
+  const capacidadeAlvoIndex = findHeaderIndex(headers, PASTO_HEADER_ALIASES, "capacidadeUaAlvo");
   const observacoesIndex = findHeaderIndex(
     headers,
     PASTO_HEADER_ALIASES,
@@ -245,6 +290,13 @@ export function parsePastoImportCsv(
     const areaValue = readCell(cells, areaIndex);
     const capacidadeValue = readCell(cells, capacidadeIndex);
     const tipoValue = readCell(cells, tipoIndex);
+    const tipoAreaValue = readCell(cells, tipoAreaIndex);
+    const forrageiraValue = readCell(cells, forrageiraIndex);
+    const forrageiraGeneroValue = readCell(cells, forrageiraGeneroIndex);
+    const cultivarValue = readCell(cells, cultivarIndex);
+    const alturaEntradaValue = readCell(cells, alturaEntradaIndex);
+    const alturaSaidaValue = readCell(cells, alturaSaidaIndex);
+    const capacidadeAlvoValue = readCell(cells, capacidadeAlvoIndex);
     const observacoes = readCell(cells, observacoesIndex);
 
     if (!nome) {
@@ -298,6 +350,48 @@ export function parsePastoImportCsv(
       continue;
     }
 
+    const alturaEntradaParsed = parseOptionalNumber(alturaEntradaValue);
+    const alturaSaidaParsed = parseOptionalNumber(alturaSaidaValue);
+    const capacidadeUaAlvoParsed = parseOptionalNumber(capacidadeAlvoValue);
+
+    if (!alturaEntradaParsed.valid || (alturaEntradaParsed.provided && (alturaEntradaParsed.value ?? 0) <= 0)) {
+      issues.push({
+        lineNumber,
+        field: "altura_entrada",
+        message: "Altura de entrada deve ser maior que zero.",
+      });
+      continue;
+    }
+    if (!alturaSaidaParsed.valid || (alturaSaidaParsed.provided && (alturaSaidaParsed.value ?? 0) <= 0)) {
+      issues.push({
+        lineNumber,
+        field: "altura_saida",
+        message: "Altura de saida deve ser maior que zero.",
+      });
+      continue;
+    }
+    if (!capacidadeUaAlvoParsed.valid || (capacidadeUaAlvoParsed.provided && (capacidadeUaAlvoParsed.value ?? 0) < 0)) {
+      issues.push({
+        lineNumber,
+        field: "capacidade_ua_alvo",
+        message: "Capacidade UA alvo deve ser maior ou igual a zero.",
+      });
+      continue;
+    }
+
+    const alturaEntrada = alturaEntradaParsed.value;
+    const alturaSaida = alturaSaidaParsed.value;
+    const capacidadeUaAlvo = capacidadeUaAlvoParsed.value;
+
+    if (alturaEntrada !== null && alturaSaida !== null && alturaSaida >= alturaEntrada) {
+      issues.push({
+        lineNumber,
+        field: "altura_saida",
+        message: "Altura de saida deve ser menor que a altura de entrada.",
+      });
+      continue;
+    }
+
     seenNames.set(normalizedName, lineNumber);
     rows.push({
       lineNumber,
@@ -305,6 +399,13 @@ export function parsePastoImportCsv(
       areaHa,
       capacidadeUa,
       tipoPasto,
+      tipoArea: tipoAreaValue || null,
+      forrageiraNome: forrageiraValue || null,
+      forrageiraGenero: forrageiraGeneroValue || null,
+      forrageiraCultivar: cultivarValue || null,
+      alturaEntrada,
+      alturaSaida,
+      capacidadeUaAlvo,
       observacoes: observacoes || null,
     });
   }

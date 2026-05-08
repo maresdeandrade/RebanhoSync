@@ -83,10 +83,11 @@ export const buildEventGesture = (input: EventInput): EventGestureBuildResult =>
         to_lote_id: input.toLoteId ?? null,
         from_pasto_id: input.fromPastoId ?? null,
         to_pasto_id: input.toPastoId ?? null,
-        payload: {},
+        payload: input.payload ?? {},
       },
     });
 
+    // Animal lote update (movimentação de animal entre lotes)
     if (
       input.applyAnimalStateUpdate !== false &&
       input.animalId &&
@@ -101,6 +102,23 @@ export const buildEventGesture = (input: EventInput): EventGestureBuildResult =>
         },
       });
     }
+
+    // Lote pasto update (movimentação de lote entre pastos).
+    // Requer opt-in explícito: applyLoteStateUpdate === true && movementKind === "lote_pasto".
+    if (
+      input.applyLoteStateUpdate === true &&
+      input.movementKind === "lote_pasto" &&
+      input.loteId
+    ) {
+      ops.push({
+        table: "lotes",
+        action: "UPDATE",
+        record: {
+          id: input.loteId,
+          pasto_id: input.toPastoId ?? null,
+        },
+      });
+    }
   } else if (input.dominio === "nutricao") {
     ops.push({
       table: "eventos_nutricao",
@@ -110,6 +128,31 @@ export const buildEventGesture = (input: EventInput): EventGestureBuildResult =>
         alimento_nome: input.alimentoNome.trim(),
         quantidade_kg: input.quantidadeKg,
         payload: {},
+      },
+    });
+  } else if (input.dominio === "pastagem") {
+    ops.push({
+      table: "eventos_pasto_avaliacao",
+      action: "INSERT",
+      record: {
+        evento_id: eventId,
+        fazenda_id: input.fazendaId,
+        pasto_id: input.pastoId,
+        lote_id: input.loteId ?? null,
+        ocupacao_id: input.ocupacaoId ?? null,
+        momento: input.momento,
+        altura_cm: input.alturaCm ?? null,
+        cobertura_solo: input.coberturaSolo ?? null,
+        invasoras_nivel: input.invasorasNivel ?? null,
+        ecc_lote_medio: input.eccLoteMedio ?? null,
+        ecc_escala: input.eccEscala ?? "1_5",
+        fezes_score: input.fezesScore ?? null,
+        agua_status: input.aguaStatus ?? null,
+        suplemento_tipo: input.suplementoTipo?.trim() || null,
+        suplemento_quantidade: input.suplementoQuantidade ?? null,
+        suplemento_unidade: input.suplementoUnidade ?? null,
+        observacoes: input.observacoes ?? null,
+        payload: input.payload ?? {},
       },
     });
   } else if (input.dominio === "financeiro") {

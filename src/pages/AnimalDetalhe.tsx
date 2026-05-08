@@ -6,6 +6,7 @@ import {
   ArrowLeftRight,
   Calendar,
   ChevronLeft,
+  ClipboardCheck,
   Dna,
   HeartPulse,
   History,
@@ -782,6 +783,8 @@ const AnimalDetalhe = () => {
     );
   }
 
+  const registrarAnimalPath = `/registrar?animalId=${encodeURIComponent(animal.id)}`;
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
@@ -842,6 +845,19 @@ const AnimalDetalhe = () => {
             <Skull className="mr-2 h-4 w-4" />
             Registrar obito
           </Button>
+          {animal.status === "ativo" && !hasMovementBlockedSanitaryAlert ? (
+            <Button size="sm" asChild>
+              <Link to={registrarAnimalPath}>
+                <ClipboardCheck className="mr-2 h-4 w-4" />
+                Registrar manejo deste animal
+              </Link>
+            </Button>
+          ) : (
+            <Button size="sm" disabled>
+              <ClipboardCheck className="mr-2 h-4 w-4" />
+              Registrar manejo deste animal
+            </Button>
+          )}
           <Button
             size="sm"
             onClick={() => {
@@ -932,7 +948,7 @@ const AnimalDetalhe = () => {
               <Badge variant="outline">{getAnimalBreedLabel(animal.raca)}</Badge>
             )}
             {animal.sexo === "M" && maleDestination && (
-              <Badge variant="outline" className="border-sky-200 bg-white text-sky-800">
+              <Badge variant="outline" className="border-sky-200 bg-sky-50 text-sky-800 dark:border-sky-800 dark:bg-sky-950/40 dark:text-sky-200">
                 {getAnimalProductiveDestinationLabel(maleDestination)}
               </Badge>
             )}
@@ -1022,7 +1038,7 @@ const AnimalDetalhe = () => {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-3 sm:grid-cols-3">
-              <div className="rounded-lg border border-amber-200 bg-white/70 p-3">
+              <div className="rounded-lg border border-amber-200 bg-background/80 p-3 dark:border-amber-900/60">
                 <p className="text-xs uppercase tracking-wide text-muted-foreground">
                   Doenca / suspeita
                 </p>
@@ -1030,7 +1046,7 @@ const AnimalDetalhe = () => {
                   {activeSanitaryAlert.diseaseName ?? "Suspeita sanitaria"}
                 </p>
               </div>
-              <div className="rounded-lg border border-amber-200 bg-white/70 p-3">
+              <div className="rounded-lg border border-amber-200 bg-background/80 p-3 dark:border-amber-900/60">
                 <p className="text-xs uppercase tracking-wide text-muted-foreground">
                   Aberta em
                 </p>
@@ -1038,7 +1054,7 @@ const AnimalDetalhe = () => {
                   {formatDate(activeSanitaryAlert.openedAt)}
                 </p>
               </div>
-              <div className="rounded-lg border border-amber-200 bg-white/70 p-3">
+              <div className="rounded-lg border border-amber-200 bg-background/80 p-3 dark:border-amber-900/60">
                 <p className="text-xs uppercase tracking-wide text-muted-foreground">
                   Rota imediata
                 </p>
@@ -1058,7 +1074,7 @@ const AnimalDetalhe = () => {
                     <Badge
                       key={signal}
                       variant="outline"
-                      className="border-amber-200 bg-white text-amber-900"
+                      className="border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-200"
                     >
                       {signal}
                     </Badge>
@@ -1081,7 +1097,7 @@ const AnimalDetalhe = () => {
             ) : null}
 
             {activeSanitaryAlert.notes ? (
-              <div className="rounded-lg border border-amber-200 bg-white/70 p-3 text-sm text-amber-950">
+              <div className="rounded-lg border border-amber-200 bg-background/80 p-3 text-sm text-amber-950 dark:border-amber-900/60 dark:text-amber-100">
                 {activeSanitaryAlert.notes}
               </div>
             ) : null}
@@ -1176,7 +1192,7 @@ const AnimalDetalhe = () => {
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <CardTitle className="text-base">Estagio de vida</CardTitle>
               <div className="flex flex-wrap gap-2">
-                <Badge variant="outline" className="border-slate-200 bg-white text-slate-800">
+                <Badge variant="outline" className="border-border bg-background/80 text-foreground">
                   Atual: {getAnimalLifeStageLabel(lifecycleSnapshot.currentStage)}
                 </Badge>
                 <Badge variant="secondary">
@@ -1421,7 +1437,7 @@ const AnimalDetalhe = () => {
                   <div className="flex flex-wrap gap-2">
                     <Badge
                       variant="outline"
-                      className="border-rose-200 bg-white text-rose-800"
+                      className="border-rose-200 bg-rose-50 text-rose-800 dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-200"
                     >
                       Status: {getReproStatusLabel(reproResumo.reproStatus.status)}
                     </Badge>
@@ -1437,17 +1453,17 @@ const AnimalDetalhe = () => {
                         ? "Acao prioritaria"
                         : "Fluxo sob controle"}
                     </Badge>
-                    <Badge variant="outline" className="border-slate-200 bg-white text-slate-700">
+                    <Badge variant="outline" className="border-border bg-background/80 text-foreground">
                       {reproResumo.loteNome ? `Lote ${reproResumo.loteNome}` : "Sem lote"}
                     </Badge>
                   </div>
 
                   <div className="grid gap-3 sm:grid-cols-3">
-                    <div className="rounded-lg border border-white/70 bg-white/80 p-3">
+                    <div className="rounded-lg border border-border/70 bg-background/80 p-3">
                       <p className="text-xs uppercase tracking-wide text-muted-foreground">
                         Ultimo marco
                       </p>
-                      <p className="mt-1 font-semibold text-slate-900">
+                      <p className="mt-1 font-semibold text-foreground">
                         {reproResumo.lastEventLabel}
                       </p>
                       <p className="text-xs text-muted-foreground">
@@ -1457,11 +1473,11 @@ const AnimalDetalhe = () => {
                       </p>
                     </div>
 
-                    <div className="rounded-lg border border-white/70 bg-white/80 p-3">
+                    <div className="rounded-lg border border-border/70 bg-background/80 p-3">
                       <p className="text-xs uppercase tracking-wide text-muted-foreground">
                         Proximo passo
                       </p>
-                      <p className="mt-1 font-semibold text-slate-900">
+                      <p className="mt-1 font-semibold text-foreground">
                         {reproResumo.nextActionLabel}
                       </p>
                       <p className="text-xs text-muted-foreground">
@@ -1471,11 +1487,11 @@ const AnimalDetalhe = () => {
                       </p>
                     </div>
 
-                    <div className="rounded-lg border border-white/70 bg-white/80 p-3">
+                    <div className="rounded-lg border border-border/70 bg-background/80 p-3">
                       <p className="text-xs uppercase tracking-wide text-muted-foreground">
                         Faixa do ciclo
                       </p>
-                      <p className="mt-1 font-semibold capitalize text-slate-900">
+                      <p className="mt-1 font-semibold capitalize text-foreground">
                         {reproResumo.lane}
                       </p>
                       <p className="text-xs text-muted-foreground">
@@ -1521,7 +1537,7 @@ const AnimalDetalhe = () => {
                 <div className="space-y-2">
                   <Badge
                     variant="outline"
-                    className="border-slate-200 bg-white text-slate-700"
+                    className="border-border bg-background/80 text-foreground"
                   >
                     Categoria atual: {categoriaLabel ?? "Nao classificada"}
                   </Badge>
@@ -1547,7 +1563,7 @@ const AnimalDetalhe = () => {
               <div className="flex flex-wrap gap-2">
                 <Badge
                   variant="outline"
-                  className="border-sky-200 bg-white text-sky-800"
+                  className="border-sky-200 bg-sky-50 text-sky-800 dark:border-sky-800 dark:bg-sky-950/40 dark:text-sky-200"
                 >
                   {getAnimalProductiveDestinationLabel(maleDestination) ??
                     "Destino: nao definido"}
@@ -1565,7 +1581,7 @@ const AnimalDetalhe = () => {
                 </Badge>
                 <Badge
                   variant="outline"
-                  className="border-slate-200 bg-white text-slate-700"
+                  className="border-border bg-background/80 text-foreground"
                 >
                   {getTransitionModeLabel(effectiveTransitionMode) ??
                     "Transicao manual"}
@@ -1575,7 +1591,7 @@ const AnimalDetalhe = () => {
                   className={
                     isBreedingMale
                       ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-                      : "border-slate-200 bg-white text-slate-700"
+                      : "border-border bg-background/80 text-foreground"
                   }
                 >
                   {isBreedingMale
@@ -1585,11 +1601,11 @@ const AnimalDetalhe = () => {
               </div>
 
               <div className="grid gap-3 sm:grid-cols-3">
-                <div className="rounded-lg border border-white/70 bg-white/80 p-3">
+                <div className="rounded-lg border border-border/70 bg-background/80 p-3">
                   <p className="text-xs uppercase tracking-wide text-muted-foreground">
                     Destino
                   </p>
-                  <p className="mt-1 font-semibold text-slate-900">
+                  <p className="mt-1 font-semibold text-foreground">
                     {maleDestination ?? "Nao definido"}
                   </p>
                   <p className="text-xs text-muted-foreground">
@@ -1597,11 +1613,11 @@ const AnimalDetalhe = () => {
                   </p>
                 </div>
 
-                <div className="rounded-lg border border-white/70 bg-white/80 p-3">
+                <div className="rounded-lg border border-border/70 bg-background/80 p-3">
                   <p className="text-xs uppercase tracking-wide text-muted-foreground">
                     Status reprodutivo
                   </p>
-                  <p className="mt-1 font-semibold text-slate-900">
+                  <p className="mt-1 font-semibold text-foreground">
                     {maleReproductiveStatus ?? "Nao definido"}
                   </p>
                   <p className="text-xs text-muted-foreground">
@@ -1609,11 +1625,11 @@ const AnimalDetalhe = () => {
                   </p>
                 </div>
 
-                <div className="rounded-lg border border-white/70 bg-white/80 p-3">
+                <div className="rounded-lg border border-border/70 bg-background/80 p-3">
                   <p className="text-xs uppercase tracking-wide text-muted-foreground">
                     Modo de transicao
                   </p>
-                  <p className="mt-1 font-semibold text-slate-900">
+                  <p className="mt-1 font-semibold text-foreground">
                     {transitionMode ?? "manual"}
                   </p>
                   <p className="text-xs text-muted-foreground">
@@ -2019,7 +2035,7 @@ const AnimalDetalhe = () => {
                     <Badge
                       key={signal}
                       variant="outline"
-                      className="border-amber-200 bg-white text-amber-900"
+                      className="border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-200"
                     >
                       {signal}
                     </Badge>

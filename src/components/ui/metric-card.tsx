@@ -10,7 +10,7 @@ const toneStyles: Record<MetricTone, string> = {
   info: "border-info/15 bg-info-muted/60",
   success: "border-success/15 bg-success-muted/70",
   warning: "border-warning/20 bg-warning-muted/80",
-  danger: "border-destructive/15 bg-destructive/5",
+  danger: "border-destructive/25 bg-destructive/10",
 };
 
 interface MetricCardProps extends React.HTMLAttributes<HTMLDivElement> {

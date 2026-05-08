@@ -149,5 +149,8 @@ describe("AnimalDetalhe", () => {
     expect(screen.getByText("Proximo manejo")).toBeInTheDocument();
 
     expect(screen.getByRole("tab", { name: /agenda/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /Registrar manejo deste animal/i }),
+    ).toHaveAttribute("href", "/registrar?animalId=animal-1");
   });
 });

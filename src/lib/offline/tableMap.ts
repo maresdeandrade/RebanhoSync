@@ -13,6 +13,7 @@ export const TABLE_MAP: Record<string, string> = {
   protocolos_sanitarios: "state_protocolos_sanitarios",
   protocolos_sanitarios_itens: "state_protocolos_sanitarios_itens",
   fazenda_sanidade_config: "state_fazenda_sanidade_config",
+  pasto_ocupacoes: "state_pasto_ocupacoes",
 
   // Event Rails (Append-Only)
   eventos: "event_eventos",
@@ -20,6 +21,7 @@ export const TABLE_MAP: Record<string, string> = {
   eventos_pesagem: "event_eventos_pesagem",
   eventos_nutricao: "event_eventos_nutricao",
   eventos_movimentacao: "event_eventos_movimentacao",
+  eventos_pasto_avaliacao: "event_eventos_pasto_avaliacao",
   eventos_reproducao: "event_eventos_reproducao",
   eventos_financeiro: "event_eventos_financeiro",
 };

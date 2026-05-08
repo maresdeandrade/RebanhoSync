@@ -7,6 +7,7 @@ import { SanitaryNotificationManager } from "@/components/notifications/Sanitary
 import { trackPilotMetric } from "@/lib/telemetry/pilotMetrics";
 import { startSyncWorker, stopSyncWorker } from "@/lib/offline/syncWorker";
 
+import { MobileBottomNav } from "./MobileBottomNav";
 import { SideNav } from "./SideNav";
 import { TopBar } from "./TopBar";
 
@@ -43,12 +44,14 @@ export const AppShell = () => {
       <div className="flex min-h-[calc(100vh-3.5rem)]">
         <SideNav />
 
-        <main className="min-w-0 flex-1 px-4 py-5 sm:px-6 lg:px-8 lg:py-8">
+        <main className="min-w-0 flex-1 px-4 pb-24 pt-5 sm:px-6 md:pb-5 lg:px-8 lg:py-8">
           <div className="mx-auto w-full max-w-[1600px]">
             <Outlet />
           </div>
         </main>
       </div>
+
+      <MobileBottomNav onOpenMenu={() => setIsMobileMenuOpen(true)} />
 
       <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
         <SheetContent
@@ -57,10 +60,10 @@ export const AppShell = () => {
         >
           <div className="flex h-full flex-col">
             <div className="border-b border-sidebar-border/80 px-5 py-4">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-sidebar-foreground/65">
                 RebanhoSync
               </p>
-              <p className="mt-1 text-base font-semibold text-foreground">
+              <p className="mt-1 text-base font-semibold text-sidebar-foreground">
                 Navegacao da fazenda
               </p>
             </div>

@@ -4,7 +4,7 @@ Plataforma **offline-first** para gestão pecuária de corte. Multi-tenant por f
 
 > **Estado atual:** Beta interno — MVP completo e operacional.  
 > **Fase atual:** Transicao de MVP funcional para SLC (Simple, Lovable, Complete) em consolidacao.  
-> Todos os 7 domínios operacionais já estão implementados. Qualidade local verde (`lint`, `test`, `build`).
+> Todos os 8 domínios operacionais já estão implementados. Qualidade local verde (`lint`, `test`, `build`).
 
 ---
 
@@ -48,11 +48,12 @@ Regra de regressao semantica:
 ## Escopo implementado
 
 - Gestão de animais, lotes, pastos, contrapartes e categorias zootécnicas.
-- Registro de eventos: sanitário, pesagem, nutrição, movimentação, reprodução e financeiro.
+- Registro de eventos: sanitário, pesagem, nutrição, movimentação, reprodução, financeiro e avaliações/rondas de pasto.
 - Agenda operacional com protocolos, deduplicação automática e recálculo sanitário liderado por SQL/RPC; recompute por protocolo/config está validado com mais clareza do que disparo automático por mutação de animal.
 - Motor sanitário com materialização/recompute liderados por SQL/Supabase, contratos TS protegidos por golden tests, calendário TS->SQL alinhado e dedup canônico estruturado.
 - Boundary sanitário do Registrar encerrado no recorte estrutural atual: `src/pages/Registrar/**` não importa `@/lib/sanitario/engine/*`; labels visuais passam por facade em `src/lib/sanitario/models/calendarDisplay.ts`.
 - Onboarding guiado da fazenda e importação CSV de animais, lotes e pastos.
+- Manejo de pastagens com ficha técnica agronômica, ocupações materializadas e ronda de pasto como fato histórico append-only.
 - Módulo reprodutivo completo: cobertura/IA → diagnóstico → parto → pós-parto → cria inicial.
 - Ficha do animal com vínculos mãe/cria, curva de peso e timeline de eventos.
 - Lista de animais agrupando matriz e cria com badge visual por estágio de vida.

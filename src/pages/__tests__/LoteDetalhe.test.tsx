@@ -31,7 +31,7 @@ describe("LoteDetalhe page", () => {
     mockedUseLiveQuery.mockImplementation((() => {
       let callCount = 0;
       return () => {
-        const index = callCount % 5;
+        const index = callCount % 6;
         callCount += 1;
 
         switch (index) {
@@ -79,6 +79,8 @@ describe("LoteDetalhe page", () => {
           case 3:
             return [] as ReturnType<typeof useLiveQuery>;
           case 4:
+            return undefined as ReturnType<typeof useLiveQuery>; // ocupacaoAberta
+          case 5:
           default:
             return {
               config: {
@@ -183,5 +185,8 @@ describe("LoteDetalhe page", () => {
     expect(
       screen.getByRole("button", { name: /abrir overlay de conformidade/i }),
     ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /manejar este lote/i }),
+    ).toHaveAttribute("href", "/registrar?loteId=lote-1");
   });
 });

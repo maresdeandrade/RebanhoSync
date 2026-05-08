@@ -10,9 +10,9 @@ const statusBadgeVariants = cva(
       tone: {
         neutral: "border-border/80 bg-background/75 text-muted-foreground",
         info: "border-info/15 bg-info-muted text-info",
-        success: "border-success/15 bg-success-muted text-success",
-        warning: "border-warning/20 bg-warning-muted text-warning",
-        danger: "border-destructive/15 bg-destructive/10 text-destructive",
+        success: "border-success/20 bg-success-muted text-emerald-800 dark:text-emerald-200",
+        warning: "border-warning/25 bg-warning-muted text-amber-800 dark:text-amber-200",
+        danger: "border-destructive/15 bg-destructive/10 text-destructive dark:text-red-400",
       },
     },
     defaultVariants: {

@@ -71,7 +71,7 @@ export function RegistrarComplianceBlockSection(input: {
         </div>
       ) : null}
       {input.blockers.length === 0 && input.warnings.length > 0 ? (
-        <div className="rounded-lg border border-warning/20 bg-warning-muted/60 p-3 text-sm text-warning">
+        <div className="rounded-lg border border-warning/25 bg-warning-muted/60 p-3 text-sm text-amber-800 dark:text-amber-200">
           {input.warnings[0]?.message}
         </div>
       ) : null}

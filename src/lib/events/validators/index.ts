@@ -7,6 +7,7 @@ import {
 import { validateFinanceiroInput } from "./financeiro";
 import { validateMovimentacaoInput } from "./movimentacao";
 import { validateNutricaoInput } from "./nutricao";
+import { validatePastagemInput } from "./pastagem";
 import { validatePesagemInput } from "./pesagem";
 import { validateSanitarioInput } from "./sanitario";
 import { validateObitoInput } from "./obito";
@@ -28,6 +29,8 @@ export const validateEventInput = (input: EventInput): EventValidationIssue[] =>
     issues.push(...validateMovimentacaoInput(input));
   } else if (input.dominio === "nutricao") {
     issues.push(...validateNutricaoInput(input));
+  } else if (input.dominio === "pastagem") {
+    issues.push(...validatePastagemInput(input));
   } else if (input.dominio === "financeiro") {
     issues.push(...validateFinanceiroInput(input));
   } else if (input.dominio === "obito") {
