@@ -126,8 +126,8 @@ export function mapScheduleBadgeToQuickFilter(
 
 export function getQuickFilterBadgeToneClass(tone: QuickFilterTone) {
   if (tone === "info") return "border-info/15 bg-info-muted text-info";
-  if (tone === "success") return "border-success/15 bg-success-muted text-success";
-  if (tone === "warning") return "border-warning/20 bg-warning-muted text-warning";
+  if (tone === "success") return "border-success/20 bg-success-muted text-emerald-800 dark:text-emerald-200";
+  if (tone === "warning") return "border-warning/25 bg-warning-muted text-amber-800 dark:text-amber-200";
   if (tone === "danger") return "border-destructive/15 bg-destructive/10 text-destructive";
   return "border-border/80 bg-background/75 text-muted-foreground";
 }

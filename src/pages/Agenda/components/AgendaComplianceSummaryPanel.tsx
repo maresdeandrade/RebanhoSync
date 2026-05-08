@@ -53,7 +53,9 @@ export function AgendaComplianceSummaryPanel({
           <AlertTriangle
             className={cn(
               "h-4 w-4",
-              alertTone === "danger" ? "text-destructive" : "text-warning",
+              alertTone === "danger"
+                ? "text-destructive"
+                : "text-amber-700 dark:text-amber-200",
             )}
           />
           {blockingCount > 0
