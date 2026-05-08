@@ -1,132 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
-  Activity,
-  AlertCircle,
-  Calendar,
   ChevronDown,
   ChevronRight,
-  DollarSign,
-  FileText,
-  Handshake,
-  History,
-  Home,
-  Layers,
-  LayoutDashboard,
-  ListTree,
-  Map,
-  PlusCircle,
-  SlidersHorizontal,
-  Settings,
-  Syringe,
   User,
-  Users,
-  type LucideIcon,
 } from "lucide-react";
 
 import { useAuth } from "@/hooks/useAuth";
-import { type FarmExperienceMode } from "@/lib/farms/experienceMode";
 import { cn } from "@/lib/utils";
-
-type NavSectionKey = "operacao" | "estrutura" | "gestao";
-
-type NavItem = {
-  icon: LucideIcon;
-  label: string;
-  section: NavSectionKey;
-  path?: string;
-  roles?: Array<"cowboy" | "manager" | "owner">;
-  modes?: FarmExperienceMode[];
-  children?: {
-    icon: LucideIcon;
-    label: string;
-    path: string;
-    modes?: FarmExperienceMode[];
-  }[];
-};
-
-const navItems: NavItem[] = [
-  { icon: Home, label: "Hoje", path: "/home", section: "operacao" },
-  {
-    icon: PlusCircle,
-    label: "Registrar",
-    path: "/registrar",
-    section: "operacao",
-  },
-  { icon: Calendar, label: "Agenda", path: "/agenda", section: "operacao" },
-  {
-    icon: Activity,
-    label: "Reproducao",
-    path: "/reproducao",
-    section: "operacao",
-  },
-  {
-    icon: History,
-    label: "Eventos",
-    path: "/eventos",
-    modes: ["completo"],
-    section: "operacao",
-  },
-  {
-    icon: FileText,
-    label: "Resumo",
-    path: "/relatorios",
-    section: "operacao",
-  },
-  { icon: ListTree, label: "Animais", path: "/animais", section: "estrutura" },
-  { icon: Layers, label: "Lotes", path: "/lotes", section: "estrutura" },
-  { icon: Map, label: "Pastos", path: "/pastos", section: "estrutura" },
-  {
-    icon: DollarSign,
-    label: "Financeiro",
-    section: "gestao",
-    children: [
-      { icon: DollarSign, label: "Lancamentos", path: "/financeiro" },
-      { icon: Handshake, label: "Parceiros", path: "/contrapartes" },
-    ],
-  },
-  {
-    icon: Users,
-    label: "Equipe",
-    path: "/membros",
-    roles: ["manager", "owner"],
-    section: "gestao",
-  },
-  {
-    icon: Settings,
-    label: "Configuracoes",
-    roles: ["manager", "owner"],
-    section: "gestao",
-    children: [
-      {
-        icon: SlidersHorizontal,
-        label: "Ajustes",
-        path: "/configuracoes",
-      },
-      {
-        icon: LayoutDashboard,
-        label: "Dashboard",
-        path: "/dashboard",
-        modes: ["completo"],
-      },
-      { icon: Syringe, label: "Protocolos", path: "/protocolos-sanitarios" },
-      {
-        icon: AlertCircle,
-        label: "Reconciliacao",
-        path: "/reconciliacao",
-        modes: ["completo"],
-      },
-    ],
-  },
-];
-
-const sectionOrder: NavSectionKey[] = ["operacao", "estrutura", "gestao"];
-
-const sectionLabel: Record<NavSectionKey, string> = {
-  operacao: "Operacao",
-  estrutura: "Estrutura",
-  gestao: "Gestao",
-};
+import { navigationItems, navigationSections } from "./navigationConfig";
 
 interface SideNavProps {
   mobile?: boolean;
@@ -138,7 +20,7 @@ export const SideNav = ({ mobile = false }: SideNavProps) => {
   const [expandedGroups, setExpandedGroups] = useState<string[]>(["Financeiro"]);
 
   const visibleSections = useMemo(() => {
-    const visibleItems = navItems
+    const visibleItems = navigationItems
       .filter((item) => {
         if (item.modes && !item.modes.includes(farmExperienceMode)) return false;
         if (!item.roles) return true;
@@ -156,11 +38,10 @@ export const SideNav = ({ mobile = false }: SideNavProps) => {
         return [{ ...item, children }];
       });
 
-    return sectionOrder
+    return navigationSections
       .map((section) => ({
-        key: section,
-        label: sectionLabel[section],
-        items: visibleItems.filter((item) => item.section === section),
+        ...section,
+        items: visibleItems.filter((item) => item.section === section.key),
       }))
       .filter((section) => section.items.length > 0);
   }, [farmExperienceMode, role]);
@@ -202,14 +83,16 @@ export const SideNav = ({ mobile = false }: SideNavProps) => {
       "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors",
       nested && "pl-4",
       active
-        ? "bg-sidebar-accent text-foreground shadow-sm"
-        : "text-muted-foreground hover:bg-sidebar-accent/80 hover:text-foreground",
+        ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
+        : "text-sidebar-foreground/72 hover:bg-sidebar-accent/80 hover:text-sidebar-foreground",
     );
 
   const indicatorClasses = (active: boolean) =>
     cn(
       "h-1.5 w-1.5 rounded-full transition-colors",
-      active ? "bg-primary" : "bg-border group-hover:bg-muted-foreground/30",
+      active
+        ? "bg-sidebar-primary"
+        : "bg-sidebar-foreground/25 group-hover:bg-sidebar-foreground/45",
     );
 
   return (
@@ -226,7 +109,7 @@ export const SideNav = ({ mobile = false }: SideNavProps) => {
         <div className="space-y-6">
           {visibleSections.map((section) => (
             <div key={section.key} className="space-y-1.5">
-              <p className="px-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+              <p className="px-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-sidebar-foreground/55">
                 {section.label}
               </p>
               {section.items.map((item) => {
@@ -260,9 +143,9 @@ export const SideNav = ({ mobile = false }: SideNavProps) => {
                           {item.label}
                         </span>
                         {groupIsExpanded ? (
-                          <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                          <ChevronDown className="h-4 w-4 text-sidebar-foreground/60" />
                         ) : (
-                          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                          <ChevronRight className="h-4 w-4 text-sidebar-foreground/60" />
                         )}
                       </button>
 

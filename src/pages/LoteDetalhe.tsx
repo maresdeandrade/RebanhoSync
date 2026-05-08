@@ -5,6 +5,7 @@ import {
   AlertTriangle,
   ArrowRightLeft,
   Beef,
+  ClipboardCheck,
   MapPin,
   MoreHorizontal,
   PawPrint,
@@ -124,6 +125,12 @@ export default function LoteDetalhe() {
           <>
             <Button variant="outline" onClick={() => navigate("/lotes")}>
               Voltar
+            </Button>
+            <Button asChild>
+              <Link to={`/registrar?loteId=${encodeURIComponent(id)}`}>
+                <ClipboardCheck className="mr-2 h-4 w-4" />
+                Manejar este lote
+              </Link>
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

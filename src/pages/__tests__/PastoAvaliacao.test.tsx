@@ -267,6 +267,9 @@ describe("PastoDetalhe avaliacao/ronda", () => {
     expect(
       screen.getByRole("button", { name: /Registrar ronda/i }),
     ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /Manejar neste pasto/i }),
+    ).toHaveAttribute("href", "/registrar?pastoId=pasto-1");
   });
 
   it("mostra ultima avaliacao quando existe", () => {

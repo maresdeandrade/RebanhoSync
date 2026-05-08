@@ -6,6 +6,7 @@ import {
   ArrowLeftRight,
   Calendar,
   ChevronLeft,
+  ClipboardCheck,
   Dna,
   HeartPulse,
   History,
@@ -782,6 +783,12 @@ const AnimalDetalhe = () => {
     );
   }
 
+  const registrarParams = new URLSearchParams({ animalId: animal.id });
+  if (animal.lote_id) {
+    registrarParams.set("loteId", animal.lote_id);
+  }
+  const registrarAnimalPath = `/registrar?${registrarParams.toString()}`;
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
@@ -842,6 +849,19 @@ const AnimalDetalhe = () => {
             <Skull className="mr-2 h-4 w-4" />
             Registrar obito
           </Button>
+          {animal.status === "ativo" && !hasMovementBlockedSanitaryAlert ? (
+            <Button size="sm" asChild>
+              <Link to={registrarAnimalPath}>
+                <ClipboardCheck className="mr-2 h-4 w-4" />
+                Registrar manejo deste animal
+              </Link>
+            </Button>
+          ) : (
+            <Button size="sm" disabled>
+              <ClipboardCheck className="mr-2 h-4 w-4" />
+              Registrar manejo deste animal
+            </Button>
+          )}
           <Button
             size="sm"
             onClick={() => {

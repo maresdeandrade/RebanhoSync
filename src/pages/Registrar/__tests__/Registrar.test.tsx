@@ -5,6 +5,7 @@ import "@testing-library/jest-dom";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import Registrar from "@/pages/Registrar";
+import { runRegistrarFinalizeGestureEffect } from "@/pages/Registrar/effects/finalizeGesture";
 import { MemoryRouter } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useLotes } from "@/hooks/useLotes";
@@ -17,6 +18,9 @@ vi.mock("@/hooks/useLotes");
 vi.mock("dexie-react-hooks");
 vi.mock("@/lib/offline/pull", () => ({
   pullDataForFarm: vi.fn().mockResolvedValue(undefined),
+}));
+vi.mock("@/pages/Registrar/effects/finalizeGesture", () => ({
+  runRegistrarFinalizeGestureEffect: vi.fn().mockResolvedValue(undefined),
 }));
 
 // Mock scrollIntoView for Radix UI
@@ -180,5 +184,28 @@ describe("Registrar Page - Anti-Teleport", () => {
     // And "Lote B" should not be the selected value text (might still be in document as option if open, but we closed it).
     // Ideally, check that "Lote B" is NOT the text content of the trigger.
     
+  });
+
+  it("prefills contextual query without saving automatically", async () => {
+    render(
+      <MemoryRouter
+        initialEntries={[
+          "/registrar?loteId=lote-A&animalId=animal-1&pastoId=pasto-1",
+        ]}
+        future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+      >
+        <Registrar />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getAllByText("Lote A").length).toBeGreaterThan(0);
+    });
+
+    expect(screen.getAllByText(/1 animal\(is\) selecionado\(s\)/i).length)
+      .toBeGreaterThan(0);
+    expect(screen.getByText(/Contexto pasto pasto-1/i)).toBeInTheDocument();
+    expect(screen.getByText(/nenhum animal e inferido automaticamente/i)).toBeInTheDocument();
+    expect(runRegistrarFinalizeGestureEffect).not.toHaveBeenCalled();
   });
 });

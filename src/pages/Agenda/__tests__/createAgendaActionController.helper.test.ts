@@ -68,6 +68,26 @@ describe("createAgendaActionController", () => {
     );
   });
 
+  it("navigates agenda item to Registrar with source task context", () => {
+    const deps = createDeps();
+    const controller = createAgendaActionController(deps);
+
+    controller.goToRegistrar(
+      createAgendaItem({
+        source_ref: {
+          protocolo_id: "protocolo-1",
+          protocolo_item_id: "protocolo-item-1",
+          produto: "Vacina X",
+          tipo: "vacinacao",
+        },
+      }),
+    );
+
+    expect(deps.navigate).toHaveBeenCalledWith(
+      "/registrar?sourceTaskId=agenda-1&dominio=sanitario&animalId=animal-1&loteId=lote-1&protocoloId=protocolo-1&protocoloItemId=protocolo-item-1&produto=Vacina+X&sanitarioTipo=vacinacao",
+    );
+  });
+
   it("routes generic conclude to sanitary event and refresh", async () => {
     const deps = createDeps();
     const controller = createAgendaActionController(deps);

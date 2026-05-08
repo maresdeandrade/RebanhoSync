@@ -23,7 +23,7 @@ const isReproTipoEnum = (
 describe("parseRegistrarQueryState", () => {
   it("normaliza quick action, domínio e prefill sanitário", () => {
     const searchParams = new URLSearchParams(
-      "dominio=sanitario&quick=vacinacao&animalId=a-1&protocoloId=p-1&sanitarioTipo=vacinacao",
+      "dominio=sanitario&quick=vacinacao&animalId=a-1&loteId=l-1&pastoId=pasto-1&protocoloId=p-1&sanitarioTipo=vacinacao",
     );
     const parsed = parseRegistrarQueryState({
       searchParams,
@@ -34,6 +34,8 @@ describe("parseRegistrarQueryState", () => {
     expect(parsed.domain).toBe("sanitario");
     expect(parsed.quickAction).toBe("vacinacao");
     expect(parsed.animalId).toBe("a-1");
+    expect(parsed.loteId).toBe("l-1");
+    expect(parsed.pastoId).toBe("pasto-1");
     expect(parsed.sanitaryPrefill).toEqual({
       protocoloId: "p-1",
       protocoloItemId: null,
@@ -53,6 +55,10 @@ describe("parseRegistrarQueryState", () => {
 
     expect(parsed.domain).toBeNull();
     expect(parsed.quickAction).toBeNull();
+    expect(parsed.sourceTaskId).toBeNull();
+    expect(parsed.animalId).toBeNull();
+    expect(parsed.loteId).toBeNull();
+    expect(parsed.pastoId).toBeNull();
     expect(parsed.shouldOpenChooseActionStep).toBe(false);
   });
 });

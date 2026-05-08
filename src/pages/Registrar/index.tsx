@@ -113,6 +113,7 @@ const Registrar = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [isFinalizing, setIsFinalizing] = useState(false);
+  const [contextPastoId, setContextPastoId] = useState("");
   const { activeFarmId, role, farmMeasurementConfig, farmLifecycleConfig } =
     useAuth();
   const shellState = useRegistrarShellState({
@@ -522,8 +523,13 @@ const Registrar = () => {
     if (parsedQuery.loteId) {
       setSelectedLoteId(parsedQuery.loteId);
     }
+    setContextPastoId(parsedQuery.pastoId ?? "");
     if (parsedQuery.animalId) {
-      setSelectedAnimais([parsedQuery.animalId]);
+      setSelectedAnimais((prev) =>
+        prev.length === 1 && prev[0] === parsedQuery.animalId
+          ? prev
+          : [parsedQuery.animalId],
+      );
     }
     if (parsedQuery.quickAction) {
       applyQuickAction(parsedQuery.quickAction);
@@ -565,6 +571,7 @@ const Registrar = () => {
     clearQuickAction,
     goToChooseAction,
     setReproducaoData,
+    setContextPastoId,
     setSelectedAnimais,
     setSelectedLoteId,
     setSourceTaskId,
@@ -783,9 +790,27 @@ const Registrar = () => {
             {selectedLoteLabel !== "-" ? (
               <StatusBadge tone="neutral">{selectedLoteLabel}</StatusBadge>
             ) : null}
+            {selectedAnimais.length > 0 ? (
+              <StatusBadge tone="neutral">
+                {selectedAnimais.length} animal(is) selecionado(s)
+              </StatusBadge>
+            ) : null}
+            {contextPastoId ? (
+              <StatusBadge tone="neutral">
+                Contexto pasto {contextPastoId.slice(0, 8)}
+              </StatusBadge>
+            ) : null}
           </>
         }
       />
+
+      {contextPastoId ? (
+        <div className="rounded-lg border border-info/20 bg-info/5 p-4 text-sm text-muted-foreground">
+          Contexto de pasto recebido. Selecione o lote e os animais antes de
+          revisar e salvar; nenhum animal e inferido automaticamente a partir do
+          pasto.
+        </div>
+      ) : null}
 
       <div className="grid gap-2 sm:grid-cols-3">
         {REGISTRATION_STEPS.map((currentStep) => (

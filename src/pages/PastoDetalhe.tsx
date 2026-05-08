@@ -296,6 +296,12 @@ const PastoDetalhe = () => {
                 Editar cadastro
               </Button>
             </Link>
+            <Button asChild>
+              <Link to={`/registrar?pastoId=${encodeURIComponent(id)}`}>
+                <ClipboardCheck className="mr-2 h-4 w-4" />
+                Manejar neste pasto
+              </Link>
+            </Button>
             <Button variant="outline" onClick={() => setRondaOpen(true)}>
               <ClipboardCheck className="mr-2 h-4 w-4" />
               Registrar ronda

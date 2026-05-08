@@ -22,6 +22,7 @@ export type RegistrarParsedQueryState<QuickActionKey extends string> = {
   quickAction: QuickActionKey | null;
   animalId: string | null;
   loteId: string | null;
+  pastoId: string | null;
   sanitaryPrefill: {
     protocoloId: string | null;
     protocoloItemId: string | null;
@@ -54,6 +55,7 @@ export function parseRegistrarQueryState<QuickActionKey extends string>(input: {
     quickAction,
     animalId,
     loteId: input.searchParams.get("loteId"),
+    pastoId: input.searchParams.get("pastoId"),
     sanitaryPrefill: {
       protocoloId: input.searchParams.get("protocoloId"),
       protocoloItemId: input.searchParams.get("protocoloItemId"),

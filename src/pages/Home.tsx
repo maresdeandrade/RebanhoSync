@@ -507,12 +507,22 @@ const Home = () => {
     );
   }
 
+  const overdueItems = snapshot.proximosItens.filter(
+    (item) => item.status === "atrasado",
+  );
+  const todayItems = snapshot.proximosItens.filter(
+    (item) => item.status === "hoje",
+  );
+  const upcomingItems = snapshot.proximosItens.filter(
+    (item) => item.status === "proximo",
+  );
+
   return (
     <div className="space-y-5">
       <PageIntro
-        eyebrow="Rotina do dia"
+        eyebrow="Hoje"
         title={farm?.nome ?? "Sua fazenda"}
-        description="Agenda, rebanho e sincronizacao ficam no primeiro plano. A interface privilegia o proximo passo operacional sem competir com informacoes secundarias."
+        description="Priorize atrasos, agenda de hoje, sincronizacao e proximos manejos antes de abrir visoes amplas."
         meta={
           <>
             {role ? <StatusBadge tone="info">{ROLE_LABEL[role] ?? role}</StatusBadge> : null}
@@ -561,7 +571,7 @@ const Home = () => {
             <Button asChild variant="outline">
               <Link to="/agenda">
                 <CalendarClock className="h-4 w-4" />
-                Abrir agenda
+                Ver agenda
               </Link>
             </Button>
           </>
@@ -569,6 +579,137 @@ const Home = () => {
       />
 
       <SyncStatusPanel summary={snapshot.syncSummary} />
+
+      <section className="grid gap-4 xl:grid-cols-[1fr_1fr_0.82fr]">
+        <Card
+          className={
+            overdueItems.length > 0
+              ? "border-destructive/15 bg-destructive/5"
+              : undefined
+          }
+        >
+          <CardHeader>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <CardTitle>Pendencias atrasadas</CardTitle>
+                <CardDescription>
+                  O que passou do prazo e deve ser revisado primeiro.
+                </CardDescription>
+              </div>
+              <StatusBadge tone={overdueItems.length > 0 ? "danger" : "success"}>
+                {overdueItems.length} atrasada
+                {overdueItems.length === 1 ? "" : "s"}
+              </StatusBadge>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {overdueItems.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-border/70 bg-background/60 p-4 text-sm text-muted-foreground">
+                Sem pendencias atrasadas no recorte carregado.
+              </div>
+            ) : (
+              overdueItems.map((item) => (
+                <div
+                  key={item.id}
+                  className="rounded-2xl border border-destructive/15 bg-background/70 p-4"
+                >
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="space-y-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="font-medium">{item.titulo}</p>
+                        <StatusBadge tone="danger">Atrasado</StatusBadge>
+                      </div>
+                      <p className="text-sm leading-6 text-muted-foreground">
+                        {item.contexto}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Clock3 className="h-4 w-4" />
+                      <span>{formatDay(item.data)}</span>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <CardTitle>Agenda de hoje</CardTitle>
+                <CardDescription>
+                  Intencoes abertas para executar ou revisar com seguranca.
+                </CardDescription>
+              </div>
+              <StatusBadge tone={todayItems.length > 0 ? "info" : "neutral"}>
+                {todayItems.length} hoje
+              </StatusBadge>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {todayItems.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-border/70 bg-muted/20 p-4 text-sm text-muted-foreground">
+                Nada vence hoje no recorte carregado. Use Agenda para consultar
+                outros periodos.
+              </div>
+            ) : (
+              todayItems.map((item) => (
+                <div
+                  key={item.id}
+                  className="rounded-2xl border border-info/15 bg-info-muted/35 p-4"
+                >
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="space-y-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="font-medium">{item.titulo}</p>
+                        <StatusBadge tone="info">Hoje</StatusBadge>
+                      </div>
+                      <p className="text-sm leading-6 text-muted-foreground">
+                        {item.contexto}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Clock3 className="h-4 w-4" />
+                      <span>{formatDay(item.data)}</span>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Acoes seguras</CardTitle>
+            <CardDescription>
+              Atalhos que apenas navegam para revisao ou registro.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <Button asChild className="w-full justify-start">
+              <Link to="/registrar">
+                <PlusCircle className="h-4 w-4" />
+                Registrar manejo
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="w-full justify-start">
+              <Link to="/agenda">
+                <CalendarClock className="h-4 w-4" />
+                Ver agenda completa
+              </Link>
+            </Button>
+            <Button asChild variant="ghost" className="w-full justify-start">
+              <Link to="/animais">
+                <Beef className="h-4 w-4" />
+                Ver rebanho
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </section>
 
       <Toolbar>
         <ToolbarGroup className="gap-2">
@@ -824,20 +965,18 @@ const Home = () => {
       <section className="grid gap-4 xl:grid-cols-[1.25fr_0.95fr_0.95fr]">
         <Card>
           <CardHeader>
-            <CardTitle>Rotina de hoje</CardTitle>
+            <CardTitle>Proximos manejos</CardTitle>
             <CardDescription>
-              O que precisa acontecer agora, com atraso e proximidade visiveis
-              sem poluir a tela.
+              O que vem depois das pendencias atrasadas e da agenda de hoje.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            {snapshot.proximosItens.length === 0 ? (
+            {upcomingItems.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-border/70 p-4 text-sm text-muted-foreground">
-                Nenhuma tarefa aberta na agenda. O proximo passo e registrar um
-                manejo ou ativar protocolos sanitarios.
+                Nenhum manejo futuro no recorte carregado.
               </div>
             ) : (
-              snapshot.proximosItens.map((item) => (
+              upcomingItems.map((item) => (
                 <div
                   key={item.id}
                   className="rounded-2xl border border-border/70 bg-muted/35 p-4"

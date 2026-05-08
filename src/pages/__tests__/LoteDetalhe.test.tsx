@@ -185,5 +185,8 @@ describe("LoteDetalhe page", () => {
     expect(
       screen.getByRole("button", { name: /abrir overlay de conformidade/i }),
     ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /manejar este lote/i }),
+    ).toHaveAttribute("href", "/registrar?loteId=lote-1");
   });
 });
