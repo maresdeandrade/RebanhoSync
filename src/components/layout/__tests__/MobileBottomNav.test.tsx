@@ -5,10 +5,10 @@ import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 
 import { getBottomNavigationActiveKey } from "../navigationConfig";
-import { BottomNav } from "../BottomNav";
+import { MobileBottomNav } from "../MobileBottomNav";
 
-describe("BottomNav", () => {
-  function renderBottomNav(initialEntry = "/home") {
+describe("MobileBottomNav", () => {
+  function renderMobileBottomNav(initialEntry = "/home") {
     const onOpenMenu = vi.fn();
 
     render(
@@ -16,7 +16,7 @@ describe("BottomNav", () => {
         initialEntries={[initialEntry]}
         future={{ v7_relativeSplatPath: true, v7_startTransition: true }}
       >
-        <BottomNav onOpenMenu={onOpenMenu} />
+        <MobileBottomNav onOpenMenu={onOpenMenu} />
       </MemoryRouter>,
     );
 
@@ -24,7 +24,7 @@ describe("BottomNav", () => {
   }
 
   it("renders the five mobile items with expected links", () => {
-    renderBottomNav();
+    renderMobileBottomNav();
 
     expect(screen.getByRole("navigation", { name: /navegacao mobile/i }))
       .toHaveClass("md:hidden");
@@ -48,7 +48,7 @@ describe("BottomNav", () => {
   });
 
   it("opens the full mobile menu from Mais", () => {
-    const { onOpenMenu } = renderBottomNav("/financeiro");
+    const { onOpenMenu } = renderMobileBottomNav("/financeiro");
 
     fireEvent.click(screen.getByRole("button", { name: /mais/i }));
 
@@ -67,7 +67,7 @@ describe("BottomNav", () => {
     ["/lotes/lote-1", "Rebanho"],
     ["/pastos/pasto-1", "Estrutura"],
   ])("marks %s as %s", (path, label) => {
-    renderBottomNav(path);
+    renderMobileBottomNav(path);
 
     const item =
       label === "Mais"

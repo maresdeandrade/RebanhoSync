@@ -7,7 +7,7 @@ import { SanitaryNotificationManager } from "@/components/notifications/Sanitary
 import { trackPilotMetric } from "@/lib/telemetry/pilotMetrics";
 import { startSyncWorker, stopSyncWorker } from "@/lib/offline/syncWorker";
 
-import { BottomNav } from "./BottomNav";
+import { MobileBottomNav } from "./MobileBottomNav";
 import { SideNav } from "./SideNav";
 import { TopBar } from "./TopBar";
 
@@ -51,7 +51,7 @@ export const AppShell = () => {
         </main>
       </div>
 
-      <BottomNav onOpenMenu={() => setIsMobileMenuOpen(true)} />
+      <MobileBottomNav onOpenMenu={() => setIsMobileMenuOpen(true)} />
 
       <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
         <SheetContent
