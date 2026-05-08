@@ -159,7 +159,7 @@ Este documento registra o estado efetivo do RebanhoSync na fase atual de consoli
 | Item | Tipo | Impacto | Próxima ação |
 | --- | --- | --- | --- |
 | Residual `Registrar`: volume de composicao/JSX no shell | Estrutural local UI | Mantem custo de leitura/manutencao acima do ideal para evolucao de UX | Fatiar blocos de composicao restantes por recortes pequenos |
-| Residual `Agenda`: leitura/preparacao de dados ainda no shell | Estrutural local UI | Shell ainda acumula montagem de read-model local | Extrair montagem de dados para artefatos locais sem mover dominio |
+| Residual `Agenda`: wiring/read-model local remanescente no shell | Estrutural local UI | Leitura inicial, resumos visuais e metadados de linha ja foram extraidos; shell ainda acumula wiring de filtros, grupos, alvos criticos e efeitos existentes | Avaliar proximos cortes locais sem mover dominio nem alterar comportamento |
 | Ruido tecnico residual de testes/build (router future flags, logs negativos esperados, circular chunks) | Confiabilidade | Aumenta ruído operacional e dificulta leitura de regressao real | Tratar warning-by-warning por criticidade, sem mascaramento de erro |
 | Acabamento de experiencia cross-flow | UX/produto | Fluxos centrais funcionam, mas com friccao e inconsistencia de feedback | Consolidar backlog MVP -> SLC por frentes de UX operacional |
 
@@ -218,7 +218,15 @@ Este documento registra o estado efetivo do RebanhoSync na fase atual de consoli
 - `src/pages/Agenda/index.tsx` foi reduzido de ~2076 para ~591 linhas ao longo dos cortes de hardening.
 - O shell deixou de concentrar controller de acoes, shell state, interaction state e blocos macro de composicao (overview/compliance/lifecycle).
 - `AgendaGroupedContent` foi fatiado em subcomponentes locais de composicao.
-- Residual principal: leitura/preparacao de dados no shell, sem acoplamento macro de composicao.
+- Residual entao identificado: leitura/preparacao de dados no shell, sem acoplamento macro de composicao.
+
+## 7.3.1 Update 2026-05-08 (TD-026 Agenda - Cortes Incrementais)
+
+- `src/pages/Agenda/useAgendaPageData.ts` encapsula a live query e a normalizacao inicial local da Agenda.
+- `src/pages/Agenda/helpers/pageSummaries.ts` concentra preparacao pura de badges, flags de painel e itens visuais de lifecycle.
+- `src/pages/Agenda/helpers/rowMeta.ts` concentra metadados visuais de linha antes montados por `renderRowMeta` no shell.
+- Testes locais cobrem os helpers novos e preservam comportamento observavel da pagina Agenda.
+- TD-026 permanece OPEN como residual estrutural local, agora reduzido para wiring/orquestracao remanescente.
 
 ## 7.4 Reposicionamento de Fase (MVP -> SLC em consolidacao)
 

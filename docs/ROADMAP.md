@@ -24,6 +24,10 @@ Atualizacao estrutural 2026-04-19 (sem mudanca funcional de dominio):
 - Hardening final do hotspot `src/pages/Agenda/**` concluido em camadas locais de controller/shell/interacao/composicao macro, com reducao do entrypoint para ~591 linhas.
 - O foco de hardening de hotspot de pagina deixa de ser quebra inicial de monolitos e passa a consolidacao residual + acabamento de experiencia para SLC.
 
+Atualizacao estrutural 2026-05-08 (TD-026 Agenda):
+- Cortes incrementais locais reduziram o residual de shell em `src/pages/Agenda/**`: live query/normalizacao inicial (`useAgendaPageData`), resumos visuais (`helpers/pageSummaries`) e metadados de linha (`helpers/rowMeta`) sairam do entrypoint.
+- TD-026 segue como residual aberto apenas para wiring/orquestracao local remanescente, sem mudanca funcional de dominio.
+
 Atualizacao sanitaria 2026-04-27:
 - Saneamento sanitario P0-P3 concluido: golden/parity tests, calendario TS->SQL, dedup canonico, sequenciamento Raiva D1/D2/anual, taxonomia passiva, separacao estrutural de `src/lib/sanitario/**` e boundary Registrar <-> sanitario.
 
@@ -251,7 +255,7 @@ Atualizacao Central Operacional 2026-05-07:
 ### Frente A — Estrutural residual
 
 - [ ] Reduzir residual de composicao/JSX no shell de `Registrar`
-- [ ] Extrair leitura/preparacao de dados residual do shell de `Agenda`
+- [ ] Reduzir wiring/read-model residual do shell de `Agenda` apos cortes `useAgendaPageData`, `pageSummaries` e `rowMeta`
 - [ ] Limpar wiring local remanescente de hotspots sem alterar semantica
 
 ### Frente B — UX/experiencia

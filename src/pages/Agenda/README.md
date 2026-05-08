@@ -1,10 +1,11 @@
 # Agenda Hotspot
 
-## Status estrutural (2026-04-19)
+## Status estrutural (2026-05-08)
 - Hardening estrutural principal concluido.
 - Shell deixou de concentrar controller de acoes, shell state, interaction state e blocos macro de composicao (overview/compliance/lifecycle).
 - `AgendaGroupedContent` foi fatiado em subcomponentes locais.
-- Residual atual: leitura/preparacao de dados no shell (sem acoplamento macro de composicao).
+- TD-026 recebeu cortes incrementais locais: live query/normalizacao inicial (`useAgendaPageData`), resumos visuais (`helpers/pageSummaries`) e metadados de linha (`helpers/rowMeta`) sairam do shell.
+- Residual atual: wiring/orquestracao local de read-model, filtros, grupos, alvos criticos e efeitos existentes no shell.
 
 ## Papel do modulo
 - Superficie operacional para leitura, priorizacao e conclusao de pendencias da agenda.
@@ -37,6 +38,6 @@
 - Duplicar calculos de prioridade/metadata que ja existem em `src/lib/agenda` ou `src/lib/sanitario`.
 
 ## Backlog local imediato
-1. Extrair/normalizar montagem de dados residual do shell para artefatos locais dedicados.
+1. Avaliar cortes pequenos restantes de wiring/read-model no shell sem mover dominio nem alterar interacao.
 2. Preservar semantica de dominio em `src/lib/**` sem duplicar regra de prioridade/elegibilidade.
 3. Refinar estados de experiencia (empty/loading/error/feedback) para consolidacao da fase SLC.

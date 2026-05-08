@@ -14,18 +14,8 @@ import {
 import { db } from "@/lib/offline/db";
 import { createGesture } from "@/lib/offline/ops";
 import { pullDataForFarm } from "@/lib/offline/pull";
-import {
-  getSyncStageLabel,
-  getSyncStageTone,
-} from "@/lib/offline/syncPresentation";
 import { buildRegulatoryOperationalReadModel } from "@/lib/sanitario/compliance/regulatoryReadModel";
 import { concluirPendenciaSanitaria } from "@/lib/sanitario/infrastructure/service";
-import {
-  formatAgendaDate,
-  getAgendaStatusTone,
-  readNumber,
-  readString,
-} from "@/pages/Agenda/helpers/formatting";
 import {
   parseAgendaDominioFilter,
   parseCalendarAnchorQuickFilter,
@@ -46,29 +36,12 @@ import {
   summarizeAgendaRowsByStatus,
 } from "@/pages/Agenda/helpers/derivations";
 import { buildAgendaPageSummaries } from "@/pages/Agenda/helpers/pageSummaries";
+import { buildAgendaRowMeta } from "@/pages/Agenda/helpers/rowMeta";
 import { createAgendaActionController } from "@/pages/Agenda/createAgendaActionController";
-import type { AgendaRow } from "@/pages/Agenda/types";
 import { useAgendaPageData } from "@/pages/Agenda/useAgendaPageData";
 import { useAgendaShellState } from "@/pages/Agenda/useAgendaShellState";
 import { useAgendaInteractionState } from "@/pages/Agenda/useAgendaInteractionState";
 import { showError, showSuccess } from "@/utils/toast";
-
-const DOMAIN_LABEL: Record<string, string> = {
-  sanitario: "Sanitário",
-  alerta_sanitario: "Alerta sanitário",
-  conformidade: "Conformidade",
-  pesagem: "Pesagem",
-  movimentacao: "Movimentação",
-  nutricao: "Nutrição",
-  financeiro: "Financeiro",
-  reproducao: "Reprodução",
-};
-
-const STATUS_LABEL: Record<string, string> = {
-  agendado: "Agendado",
-  concluido: "Concluído",
-  cancelado: "Cancelado",
-};
 
 export default function Agenda() {
   const navigate = useNavigate();
@@ -371,24 +344,6 @@ export default function Agenda() {
     applyContextualFocus,
   });
 
-  const renderRowMeta = (row: AgendaRow) => {
-    const indicacao =
-      readString(row.item.source_ref, "indicacao") ??
-      (readNumber(row.item.source_ref, "dose_num")
-        ? `Dose ${readNumber(row.item.source_ref, "dose_num")}`
-        : "Aplicação conforme protocolo");
-
-    return {
-      dateLabel: formatAgendaDate(row.item.data_prevista),
-      statusLabel: STATUS_LABEL[row.item.status] ?? row.item.status,
-      statusTone: getAgendaStatusTone(row.item.status),
-      syncLabel: getSyncStageLabel(row.syncStage),
-      syncTone: getSyncStageTone(row.syncStage),
-      indicacao,
-      domainLabel: DOMAIN_LABEL[row.item.dominio] ?? row.item.dominio,
-    };
-  };
-
   if (!activeFarmId) {
     return (
       <div className="space-y-5">
@@ -547,7 +502,7 @@ export default function Agenda() {
             onUpdateStatus={actionController.updateStatus}
             onNavigateToEvent={actionController.goToEvent}
             onNavigateToAnimal={actionController.goToAnimal}
-            renderRowMeta={renderRowMeta}
+            renderRowMeta={buildAgendaRowMeta}
             registerRowRef={registerRowRef}
           />
         </>

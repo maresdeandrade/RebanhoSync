@@ -2,7 +2,7 @@
 
 > **Status:** Derivado (Rev D+)
 > **Baseline:** `b69d35f`
-> **Ultima Atualizacao:** 2026-04-27
+> **Ultima Atualizacao:** 2026-05-08
 > **Derivado por:** Auditoria tecnica - codigo + migrations como fonte de verdade
 > **Fonte:** `IMPLEMENTATION_STATUS.md`, `src/`, `supabase/`
 
@@ -16,7 +16,8 @@
 
 - **Status:** OPEN
 - **Origem:** Hardening estrutural principal de `src/pages/Agenda/**` concluido
-- **Impacto:** apesar da extracao de controller/shell state/interaction state e blocos macro de composicao, o shell ainda concentra leitura/preparacao de dados acima do ideal para a fase de consolidacao SLC.
+- **Impacto:** mitigado por cortes locais de TD-026 (`useAgendaPageData`, `helpers/pageSummaries`, `helpers/rowMeta`), mas o shell ainda concentra wiring/orquestracao de read-model, filtros, grupos, alvos criticos e efeitos existentes acima do ideal para a fase de consolidacao SLC.
+- **Proximo corte seguro:** avaliar apenas wiring residual que possa virar helper/hook local puro, sem alterar filtros, ordenacao, grouping, acoes ou dominio.
 
 ### TD-027: Residual de composicao no shell de `Registrar`
 

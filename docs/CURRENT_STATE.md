@@ -1,7 +1,7 @@
 # Current State (Snapshot Operacional)
 
 > **Status:** Snapshot vivo
-> **Ultima atualizacao:** 2026-05-07
+> **Ultima atualizacao:** 2026-05-08
 > **Estado do produto:** Beta interno
 > **Fase atual:** MVP funcional completo -> **SLC (Simple, Lovable, Complete) em consolidacao**
 
@@ -60,9 +60,10 @@ Hardening estrutural principal concluido:
 - interaction state saiu do shell;
 - blocos macro de resumo/compliance/lifecycle sairam do shell;
 - componente visual monolitico principal foi fatiado.
+- TD-026 em reducao incremental: leitura/local data hook (`useAgendaPageData`), resumos visuais (`helpers/pageSummaries`) e metadados de linha (`helpers/rowMeta`) sairam do shell.
 
 Residual dominante:
-- leitura/preparacao de dados ainda concentrada no shell (nao composicao macro).
+- wiring/orquestracao local de read-model, filtros, grupos, alvos criticos e efeitos existentes no shell.
 
 ### Dominio `src/lib/sanitario`
 
