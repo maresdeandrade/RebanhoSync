@@ -43,9 +43,9 @@ import { trackPilotMetric } from "@/lib/telemetry/pilotMetrics";
 import { showError, showSuccess } from "@/utils/toast";
 
 const TEMPLATE_CSV = [
-  "nome;area_ha;capacidade_ua;tipo_pasto;observacoes",
-  "Piquete 1;12.5;18;cultivado;Entrada principal",
-  "Reserva;8;;nativo;Uso estrategico na seca",
+  "nome;area_ha;capacidade_ua;tipo_pasto;tipo_area;forrageira_genero;forrageira;cultivar;altura_entrada;altura_saida;capacidade_ua_alvo;observacoes",
+  "Piquete 1;12.5;18;cultivado;cultivado;Panicum;Mombaca;;35;15;20;Entrada principal",
+  "Reserva;8;;nativo;;;;;;;;;Uso estrategico na seca",
 ].join("\n");
 
 const PastosImportar = () => {
@@ -135,6 +135,13 @@ const PastosImportar = () => {
           area_ha: row.areaHa,
           capacidade_ua: row.capacidadeUa,
           tipo_pasto: row.tipoPasto,
+          tipo_area: row.tipoArea,
+          forrageira_nome: row.forrageiraNome,
+          forrageira_genero: row.forrageiraGenero,
+          forrageira_cultivar: row.forrageiraCultivar,
+          altura_entrada_alvo_cm: row.alturaEntrada,
+          altura_saida_alvo_cm: row.alturaSaida,
+          capacidade_ua_alvo: row.capacidadeUaAlvo,
           infraestrutura: {},
           observacoes: row.observacoes,
           payload: {
@@ -282,8 +289,9 @@ const PastosImportar = () => {
                       <TableHead>Linha</TableHead>
                       <TableHead>Nome</TableHead>
                       <TableHead>Area (ha)</TableHead>
-                      <TableHead>Capacidade</TableHead>
-                      <TableHead>Tipo</TableHead>
+                      <TableHead>Forrageira/Cultivar</TableHead>
+                      <TableHead>Alturas (In/Out)</TableHead>
+                      <TableHead>UA Alvo</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -292,8 +300,13 @@ const PastosImportar = () => {
                         <TableCell>{row.lineNumber}</TableCell>
                         <TableCell className="font-medium">{row.nome}</TableCell>
                         <TableCell>{row.areaHa}</TableCell>
-                        <TableCell>{row.capacidadeUa ?? "-"}</TableCell>
-                        <TableCell>{row.tipoPasto}</TableCell>
+                        <TableCell>
+                          {row.forrageiraCultivar || row.forrageiraNome || row.tipoPasto}
+                        </TableCell>
+                        <TableCell>
+                          {row.alturaEntrada || "?"} / {row.alturaSaida || "?"}
+                        </TableCell>
+                        <TableCell>{row.capacidadeUaAlvo || row.capacidadeUa || "-"}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>

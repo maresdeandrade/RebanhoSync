@@ -42,17 +42,10 @@ const LoteEditar = () => {
 
   const [nome, setNome] = useState("");
   const [status, setStatus] = useState<"ativo" | "inativo">("ativo");
-  const [pastoId, setPastoId] = useState<string>(NULL_VALUE);
   const [touroId, setTouroId] = useState<string>(NULL_VALUE);
   const [isLoaded, setIsLoaded] = useState(false);
 
-  const pastos = useLiveQuery(
-    () =>
-      lote?.fazenda_id
-        ? db.state_pastos.where("fazenda_id").equals(lote.fazenda_id).toArray()
-        : [],
-    [lote?.fazenda_id],
-  );
+  // Pastos não são editados aqui — use a ação "Mudar pasto" no detalhe do lote.
   const touros = useLiveQuery(
     () =>
       lote?.fazenda_id
@@ -72,7 +65,6 @@ const LoteEditar = () => {
     if (lote && !isLoaded) {
       setNome(lote.nome ?? "");
       setStatus(lote.status ?? "ativo");
-      setPastoId(lote.pasto_id ?? NULL_VALUE);
       setTouroId(lote.touro_id ?? NULL_VALUE);
       setIsLoaded(true);
     }
@@ -89,7 +81,6 @@ const LoteEditar = () => {
       return;
     }
 
-    const now = new Date().toISOString();
     const op = {
       table: "lotes",
       action: "UPDATE" as const,
@@ -97,9 +88,7 @@ const LoteEditar = () => {
         id,
         nome: nome.trim(),
         status,
-        pasto_id: pastoId === NULL_VALUE ? null : pastoId,
         touro_id: touroId === NULL_VALUE ? null : touroId,
-        updated_at: now,
       },
     };
 
@@ -160,7 +149,7 @@ const LoteEditar = () => {
         <MetricCard
           label="Pasto atual"
           value={pastoAtual?.nome ?? "Sem pasto"}
-          hint="Vinculo visivel nas listagens e lotacao."
+          hint="Para alterar o pasto, use a acao Mudar pasto no detalhe do lote."
           icon={<Layers className="h-4 w-4" />}
         />
         <MetricCard
@@ -213,26 +202,9 @@ const LoteEditar = () => {
 
         <FormSection
           title="Vinculos operacionais"
-          description="Pasto e reprodutor podem ser revistos aqui sem expor acoes extras na tela principal."
+          description="O reprodutor pode ser revisado aqui. Para alterar o pasto, use a acao Mudar pasto no detalhe do lote."
         >
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label>Pasto</Label>
-              <Select value={pastoId} onValueChange={setPastoId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o pasto" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={NULL_VALUE}>Nenhum</SelectItem>
-                  {pastos?.map((pasto) => (
-                    <SelectItem key={pasto.id} value={pasto.id}>
-                      {pasto.nome}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
+          <div className="grid gap-4 md:grid-cols-1">
             <div className="space-y-2">
               <Label>Reprodutor vinculado</Label>
               <Select value={touroId} onValueChange={setTouroId}>

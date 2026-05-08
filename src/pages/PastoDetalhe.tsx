@@ -48,6 +48,14 @@ const PastoDetalhe = () => {
   }
 
   const infraestrutura = pasto.infraestrutura;
+  const tipoAreaLabel = pasto.tipo_area || pasto.tipo_pasto || "Nao informado";
+  const forrageiraLabel =
+    pasto.forrageira_cultivar ||
+    pasto.forrageira_nome ||
+    pasto.forrageira_genero ||
+    pasto.tipo_area ||
+    pasto.tipo_pasto ||
+    "Nao informado";
 
   return (
     <div className="space-y-6">
@@ -92,6 +100,55 @@ const PastoDetalhe = () => {
           icon={<PawPrint className="h-4 w-4" />}
         />
       </div>
+
+      <section className="app-surface space-y-5 p-5 sm:p-6">
+        <div className="space-y-1">
+          <h2 className="text-lg font-semibold tracking-[-0.01em] text-foreground">
+            Manejo e Forrageira
+          </h2>
+          <p className="text-sm leading-6 text-muted-foreground">
+            Metas de altura e detalhes da pastagem para decisao de entrada e saida de lotes.
+          </p>
+        </div>
+
+        <div className="grid gap-4 lg:grid-cols-2">
+          <div className="rounded-2xl border border-border/70 bg-muted/20 p-4">
+            <p className="mb-3 font-medium text-foreground">Pastagem</p>
+            <div className="grid gap-2 text-sm text-muted-foreground sm:grid-cols-2">
+              <span>
+                Tipo de area: {tipoAreaLabel}
+              </span>
+              <span>Forrageira: {forrageiraLabel}</span>
+              <span>Genero: {pasto.forrageira_genero || "Nao informado"}</span>
+              <span>Cultivar: {pasto.forrageira_cultivar || "Nao informado"}</span>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-border/70 bg-muted/20 p-4">
+            <p className="mb-3 font-medium text-foreground">Metas de Manejo</p>
+            <div className="grid gap-2 text-sm text-muted-foreground sm:grid-cols-2">
+              <span>
+                Altura Entrada:{" "}
+                {pasto.altura_entrada_alvo_cm
+                  ? `${pasto.altura_entrada_alvo_cm} cm`
+                  : "Nao informado"}
+              </span>
+              <span>
+                Altura Saida:{" "}
+                {pasto.altura_saida_alvo_cm
+                  ? `${pasto.altura_saida_alvo_cm} cm`
+                  : "Nao informado"}
+              </span>
+              <span>
+                Capacidade Alvo:{" "}
+                {pasto.capacidade_ua_alvo !== null && pasto.capacidade_ua_alvo !== undefined
+                  ? `${pasto.capacidade_ua_alvo} UA`
+                  : "Nao informado"}
+              </span>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {infraestrutura ? (
         <section className="app-surface space-y-5 p-5 sm:p-6">
@@ -162,23 +219,15 @@ const PastoDetalhe = () => {
 
             <div className="rounded-2xl border border-border/70 bg-muted/20 p-4">
               <div className="mb-3 flex items-center justify-between gap-3">
-                <p className="font-medium text-foreground">Saleiro e curral</p>
-                <StatusBadge
-                  tone={
-                    infraestrutura.curral?.possui_brete || infraestrutura.curral?.possui_balanca
-                      ? "info"
-                      : "neutral"
-                  }
-                >
-                  Apoio ao manejo
+                <p className="font-medium text-foreground">Saleiros</p>
+                <StatusBadge tone={infraestrutura.saleiros?.estado === "ruim" ? "danger" : "neutral"}>
+                  {infraestrutura.saleiros?.estado || "Sem estado"}
                 </StatusBadge>
               </div>
-              <div className="grid gap-2 text-sm text-muted-foreground">
+              <div className="grid gap-2 text-sm text-muted-foreground sm:grid-cols-3">
                 <span>Saleiros: {infraestrutura.saleiros?.quantidade || 0}</span>
-                <span>Brete: {infraestrutura.curral?.possui_brete ? "Sim" : "Nao"}</span>
-                <span>
-                  Balanca: {infraestrutura.curral?.possui_balanca ? "Sim" : "Nao"}
-                </span>
+                <span>Tipo: {infraestrutura.saleiros?.tipo || "Nao informado"}</span>
+                <span>Capacidade: {infraestrutura.saleiros?.capacidade || 0}</span>
               </div>
             </div>
           </div>

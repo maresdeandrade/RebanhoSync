@@ -14,7 +14,9 @@ export const validateMovimentacaoInput = (
     });
   }
 
+  // Para movimentacao lote→pasto, fromLoteId === toLoteId é esperado (movementKind="lote_pasto").
   if (
+    input.movementKind !== "lote_pasto" &&
     input.fromLoteId &&
     input.toLoteId &&
     input.fromLoteId === input.toLoteId
@@ -38,5 +40,19 @@ export const validateMovimentacaoInput = (
     });
   }
 
+  // Para movimentacao lote→pasto, bloqueia quando nao ha mudanca real de pasto
+  // (inclui null→null, que a checagem anterior nao cobre por causa de truthiness).
+  if (
+    input.movementKind === "lote_pasto" &&
+    input.fromPastoId === input.toPastoId
+  ) {
+    issues.push({
+      code: "INVALID_DESTINATION",
+      field: "toPastoId",
+      message: "Pasto de destino deve ser diferente do pasto atual do lote.",
+    });
+  }
+
   return issues;
 };
+

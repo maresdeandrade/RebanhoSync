@@ -62,7 +62,16 @@ export interface MovimentacaoEventInput extends BaseEventInput {
   fromPastoId?: string | null;
   toPastoId?: string | null;
   allowDestinationNull?: boolean;
+  /**
+   * "lote_pasto": movimentacao do lote inteiro entre pastos.
+   *   - Permite fromLoteId === toLoteId (o lote nao muda, o pasto muda).
+   *   - UPDATE em lotes.pasto_id é gerado somente com applyLoteStateUpdate === true.
+   * Ausente/undefined: movimentacao de animal entre lotes (comportamento padrao).
+   */
+  movementKind?: "lote_pasto";
   applyAnimalStateUpdate?: boolean;
+  /** Deve ser true explicitamente para emitir UPDATE em lotes.pasto_id. */
+  applyLoteStateUpdate?: boolean;
 }
 
 export interface NutricaoEventInput extends BaseEventInput {

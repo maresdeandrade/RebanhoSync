@@ -11,6 +11,17 @@ import { db } from "@/lib/offline/db";
 import { useAuth } from "@/hooks/useAuth";
 import type { Pasto } from "@/lib/offline/types";
 
+function getPastoDisplayLabels(pasto: Pasto) {
+  const tipoArea = pasto.tipo_area || pasto.tipo_pasto || "Nao informado";
+  const forrageira =
+    pasto.forrageira_cultivar ||
+    pasto.forrageira_nome ||
+    pasto.forrageira_genero ||
+    tipoArea;
+
+  return { tipoArea, forrageira };
+}
+
 function PastoCard({ pasto }: { pasto: Pasto }) {
   const lotesNoPasto = useLiveQuery(
     () => db.state_lotes.where("pasto_id").equals(pasto.id).count(),
@@ -26,6 +37,7 @@ function PastoCard({ pasto }: { pasto: Pasto }) {
     }
     return total;
   }, [pasto.id]);
+  const labels = getPastoDisplayLabels(pasto);
 
   return (
     <Link
@@ -37,9 +49,12 @@ function PastoCard({ pasto }: { pasto: Pasto }) {
           <p className="text-base font-semibold text-foreground">{pasto.nome}</p>
           <p className="text-sm text-muted-foreground">
             {pasto.area_ha} ha {pasto.capacidade_ua ? `| ${pasto.capacidade_ua} UA` : ""}
+            {` | ${labels.tipoArea}`}
           </p>
         </div>
-        <StatusBadge tone="neutral">{pasto.tipo_pasto ?? "Nao informado"}</StatusBadge>
+        <StatusBadge tone="neutral">
+          {labels.forrageira}
+        </StatusBadge>
       </div>
 
       <div className="grid gap-3 text-sm text-muted-foreground sm:grid-cols-2">

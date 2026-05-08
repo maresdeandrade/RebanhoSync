@@ -83,10 +83,11 @@ export const buildEventGesture = (input: EventInput): EventGestureBuildResult =>
         to_lote_id: input.toLoteId ?? null,
         from_pasto_id: input.fromPastoId ?? null,
         to_pasto_id: input.toPastoId ?? null,
-        payload: {},
+        payload: input.payload ?? {},
       },
     });
 
+    // Animal lote update (movimentação de animal entre lotes)
     if (
       input.applyAnimalStateUpdate !== false &&
       input.animalId &&
@@ -98,6 +99,23 @@ export const buildEventGesture = (input: EventInput): EventGestureBuildResult =>
         record: {
           id: input.animalId,
           lote_id: input.toLoteId,
+        },
+      });
+    }
+
+    // Lote pasto update (movimentação de lote entre pastos).
+    // Requer opt-in explícito: applyLoteStateUpdate === true && movementKind === "lote_pasto".
+    if (
+      input.applyLoteStateUpdate === true &&
+      input.movementKind === "lote_pasto" &&
+      input.loteId
+    ) {
+      ops.push({
+        table: "lotes",
+        action: "UPDATE",
+        record: {
+          id: input.loteId,
+          pasto_id: input.toPastoId ?? null,
         },
       });
     }

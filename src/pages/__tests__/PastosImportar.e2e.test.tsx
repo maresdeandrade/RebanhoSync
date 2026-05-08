@@ -94,4 +94,53 @@ describe("PastosImportar flow", () => {
     expect(showSuccess).toHaveBeenCalled();
     expect(mockNavigate).toHaveBeenCalledWith("/pastos");
   });
+
+  it("importa campos novos de manejo no record do gesto", async () => {
+    render(
+      <MemoryRouter
+        future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+      >
+        <PastosImportar />
+      </MemoryRouter>,
+    );
+
+    fireEvent.change(
+      screen.getByPlaceholderText(/nome;area_ha;capacidade_ua;tipo_pasto/i),
+      {
+        target: {
+          value: [
+            "nome;area_ha;capacidade_ua;tipo_pasto;tipo_area;forrageira_genero;forrageira;cultivar;altura_entrada;altura_saida;capacidade_ua_alvo",
+            "Piquete 1;12;18;cultivado;cultivado;Panicum;Mombaca;Massai;35;15;22",
+          ].join("\n"),
+        },
+      },
+    );
+
+    fireEvent.click(
+      await screen.findByRole("button", {
+        name: /Importar 1 pasto\(s\)/i,
+      }),
+    );
+
+    await waitFor(() => {
+      expect(mockedCreateGesture).toHaveBeenCalledTimes(1);
+    });
+
+    expect(mockedCreateGesture.mock.calls[0]?.[1]).toMatchObject([
+      {
+        table: "pastos",
+        action: "INSERT",
+        record: {
+          nome: "Piquete 1",
+          tipo_area: "cultivado",
+          forrageira_genero: "Panicum",
+          forrageira_nome: "Mombaca",
+          forrageira_cultivar: "Massai",
+          altura_entrada_alvo_cm: 35,
+          altura_saida_alvo_cm: 15,
+          capacidade_ua_alvo: 22,
+        },
+      },
+    ]);
+  });
 });

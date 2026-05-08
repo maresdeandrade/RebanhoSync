@@ -29,6 +29,17 @@ const INFRA_STATUS = [
   { value: "ruim", label: "Ruim" },
 ] as const;
 
+function parseOptionalNumber(value: string) {
+  const normalized = value.trim().replace(",", ".");
+  if (!normalized) return { value: null, valid: true };
+
+  const parsed = Number(normalized);
+  return {
+    value: Number.isFinite(parsed) ? parsed : null,
+    valid: Number.isFinite(parsed),
+  };
+}
+
 const PastoEditar = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -43,18 +54,19 @@ const PastoEditar = () => {
   const [areaHa, setAreaHa] = useState("");
   const [capacidadeUa, setCapacidadeUa] = useState("");
   const [tipoPasto, setTipoPasto] = useState<TipoPastoEnum>("nativo");
+  const [tipoArea, setTipoArea] = useState("cultivado");
+  const [forrageiraNome, setForrageiraNome] = useState("");
+  const [forrageiraGenero, setForrageiraGenero] = useState("");
+  const [forrageiraCultivar, setForrageiraCultivar] = useState("");
+  const [alturaEntrada, setAlturaEntrada] = useState("");
+  const [alturaSaida, setAlturaSaida] = useState("");
+  const [capacidadeUaAlvo, setCapacidadeUaAlvo] = useState("");
   const [observacoes, setObservacoes] = useState("");
   const [infra, setInfra] = useState<InfraestruturaPasto>({
     cochos: { quantidade: 0, tipo: "", estado: "bom" },
     bebedouros: { quantidade: 0, tipo: "", estado: "bom" },
     saleiros: { quantidade: 0, tipo: "", estado: "bom" },
     cerca: { tipo: "", estado: "bom", comprimento_metros: 0 },
-    curral: {
-      area_metros: 0,
-      possui_balanca: false,
-      possui_brete: false,
-      estado: "bom",
-    },
   });
 
   useEffect(() => {
@@ -64,9 +76,17 @@ const PastoEditar = () => {
     setAreaHa(pasto.area_ha?.toString() ?? "");
     setCapacidadeUa(pasto.capacidade_ua?.toString() ?? "");
     setTipoPasto(pasto.tipo_pasto ?? "nativo");
+    setTipoArea(pasto.tipo_area ?? pasto.tipo_pasto ?? "cultivado");
+    setForrageiraNome(pasto.forrageira_nome ?? "");
+    setForrageiraGenero(pasto.forrageira_genero ?? "");
+    setForrageiraCultivar(pasto.forrageira_cultivar ?? "");
+    setAlturaEntrada(pasto.altura_entrada_alvo_cm?.toString() ?? "");
+    setAlturaSaida(pasto.altura_saida_alvo_cm?.toString() ?? "");
+    setCapacidadeUaAlvo(pasto.capacidade_ua_alvo?.toString() ?? "");
     setObservacoes(pasto.observacoes ?? "");
     if (pasto.infraestrutura) {
-      setInfra(pasto.infraestrutura);
+      const { curral: _legacyCurral, ...infraLocalPasto } = pasto.infraestrutura;
+      setInfra(infraLocalPasto);
     }
   }, [pasto]);
 
@@ -95,22 +115,79 @@ const PastoEditar = () => {
       return;
     }
 
-    if (!areaHa || Number.parseFloat(areaHa) <= 0) {
+    const area = Number(areaHa.trim().replace(",", "."));
+    if (!Number.isFinite(area) || area <= 0) {
       showError("Area (ha) e obrigatoria e deve ser maior que zero.");
       return;
     }
 
+    const entradaParsed = parseOptionalNumber(alturaEntrada);
+    const saidaParsed = parseOptionalNumber(alturaSaida);
+    const capacidadeParsed = parseOptionalNumber(capacidadeUa);
+    const capacidadeAlvoParsed = parseOptionalNumber(capacidadeUaAlvo);
+
+    if (!capacidadeParsed.valid) {
+      showError("Capacidade UA deve ser um numero valido.");
+      return;
+    }
+    if (!capacidadeAlvoParsed.valid) {
+      showError("Capacidade UA alvo deve ser um numero valido.");
+      return;
+    }
+    if (!entradaParsed.valid) {
+      showError("Altura de entrada deve ser um numero valido.");
+      return;
+    }
+    if (!saidaParsed.valid) {
+      showError("Altura de saida deve ser um numero valido.");
+      return;
+    }
+
+    const entrada = entradaParsed.value;
+    const saida = saidaParsed.value;
+    const capacidade = capacidadeParsed.value;
+    const capacidadeAlvo = capacidadeAlvoParsed.value;
+
+    if (capacidade !== null && capacidade < 0) {
+      showError("Capacidade UA deve ser maior ou igual a zero.");
+      return;
+    }
+    if (capacidadeAlvo !== null && capacidadeAlvo < 0) {
+      showError("Capacidade UA alvo deve ser maior ou igual a zero.");
+      return;
+    }
+    if (entrada !== null && entrada <= 0) {
+      showError("Altura de entrada deve ser maior que zero.");
+      return;
+    }
+    if (saida !== null && saida <= 0) {
+      showError("Altura de saida deve ser maior que zero.");
+      return;
+    }
+    if (entrada !== null && saida !== null && saida >= entrada) {
+      showError("Altura de saida deve ser menor que a altura de entrada.");
+      return;
+    }
+
     const now = new Date().toISOString();
+    const { curral: _legacyCurral, ...infraLocalPasto } = infra;
     const op = {
       table: "pastos",
       action: "UPDATE" as const,
       record: {
         id,
         nome: nome.trim(),
-        area_ha: Number.parseFloat(areaHa),
-        capacidade_ua: capacidadeUa ? Number.parseFloat(capacidadeUa) : null,
-        tipo_pasto: tipoPasto,
-        infraestrutura: infra,
+        area_ha: area,
+        capacidade_ua: capacidade,
+        tipo_pasto: tipoPasto, // legado
+        tipo_area: tipoArea || null,
+        forrageira_nome: forrageiraNome.trim() || null,
+        forrageira_genero: forrageiraGenero.trim() || null,
+        forrageira_cultivar: forrageiraCultivar.trim() || null,
+        altura_entrada_alvo_cm: entrada,
+        altura_saida_alvo_cm: saida,
+        capacidade_ua_alvo: capacidadeAlvo,
+        infraestrutura: infraLocalPasto,
         observacoes: observacoes || null,
         updated_at: now,
       },
@@ -253,6 +330,119 @@ const PastoEditar = () => {
                 onChange={(event) => setObservacoes(event.target.value)}
                 placeholder="Notas operacionais, limites ou contexto de uso."
               />
+            </div>
+          </div>
+        </FormSection>
+
+        <FormSection
+          title="Forrageira e manejo"
+          description="Especifique o tipo de capim e as metas de altura para otimizar o pastejo."
+        >
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label>Tipo da área</Label>
+              <Select
+                value={tipoArea}
+                onValueChange={setTipoArea}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="nativo">Nativo</SelectItem>
+                  <SelectItem value="cultivado">Cultivado</SelectItem>
+                  <SelectItem value="integracao">ILPF / Integração</SelectItem>
+                  <SelectItem value="degradado">Degradado</SelectItem>
+                  <SelectItem value="recuperacao">Em Recuperação</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="forrageira_genero">Genero da forrageira</Label>
+              <Select
+                value={forrageiraGenero || "none"}
+                onValueChange={(val) => setForrageiraGenero(val === "none" ? "" : val)}
+              >
+                <SelectTrigger id="forrageira_genero" aria-label="Genero da forrageira">
+                  <SelectValue placeholder="Ex: Brachiaria" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Não especificado</SelectItem>
+                  <SelectItem value="Brachiaria">Brachiaria</SelectItem>
+                  <SelectItem value="Panicum">Panicum</SelectItem>
+                  <SelectItem value="Cynodon">Cynodon</SelectItem>
+                  <SelectItem value="Andropogon">Andropogon</SelectItem>
+                  <SelectItem value="Outro">Outro</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="forrageira_nome">Nome da forrageira</Label>
+              <Input
+                id="forrageira_nome"
+                value={forrageiraNome}
+                onChange={(event) => setForrageiraNome(event.target.value)}
+                placeholder="Ex: capim-marandu"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="cultivar">Cultivar</Label>
+              <Select
+                value={forrageiraCultivar || "none"}
+                onValueChange={(val) => setForrageiraCultivar(val === "none" ? "" : val)}
+              >
+                <SelectTrigger id="cultivar" aria-label="Cultivar">
+                  <SelectValue placeholder="Ex: Marandu" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Não especificado</SelectItem>
+                  <SelectItem value="Marandu">Marandu</SelectItem>
+                  <SelectItem value="Mombaca">Mombaça</SelectItem>
+                  <SelectItem value="Tanzania">Tanzânia</SelectItem>
+                  <SelectItem value="Massai">Massai</SelectItem>
+                  <SelectItem value="Tifton">Tifton</SelectItem>
+                  <SelectItem value="Outro">Outro</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid gap-4 grid-cols-2 md:col-span-2">
+              <div className="space-y-2">
+                <Label htmlFor="alt_entrada">Alt. entrada (cm)</Label>
+                <Input
+                  id="alt_entrada"
+                  type="number"
+                  step="0.1"
+                  value={alturaEntrada}
+                  onChange={(event) => setAlturaEntrada(event.target.value)}
+                  placeholder="Ex: 30"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="alt_saida">Alt. saída (cm)</Label>
+                <Input
+                  id="alt_saida"
+                  type="number"
+                  step="0.1"
+                  value={alturaSaida}
+                  onChange={(event) => setAlturaSaida(event.target.value)}
+                  placeholder="Ex: 15"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="capacidade_ua_alvo">Capacidade UA alvo</Label>
+                <Input
+                  id="capacidade_ua_alvo"
+                  type="number"
+                  step="0.1"
+                  value={capacidadeUaAlvo}
+                  onChange={(event) => setCapacidadeUaAlvo(event.target.value)}
+                  placeholder="Ex: 25"
+                />
+              </div>
             </div>
           </div>
         </FormSection>
@@ -453,9 +643,9 @@ const PastoEditar = () => {
 
             <div className="rounded-2xl border border-border/70 bg-muted/20 p-4">
               <div className="mb-4 space-y-1">
-                <p className="font-medium text-foreground">Saleiro e curral</p>
+                <p className="font-medium text-foreground">Saleiros</p>
                 <p className="text-sm text-muted-foreground">
-                  Estruturas de apoio para suplementacao e manejo contido.
+                  Itens locais de apoio a suplementacao no piquete.
                 </p>
               </div>
               <div className="grid gap-3 md:grid-cols-2">
@@ -474,10 +664,10 @@ const PastoEditar = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Estado do curral</Label>
+                  <Label>Estado</Label>
                   <Select
-                    value={infra.curral?.estado || "bom"}
-                    onValueChange={(value) => handleInfraChange("curral", "estado", value)}
+                    value={infra.saleiros?.estado || "bom"}
+                    onValueChange={(value) => handleInfraChange("saleiros", "estado", value)}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -492,38 +682,14 @@ const PastoEditar = () => {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>Possui brete</Label>
-                  <Select
-                    value={infra.curral?.possui_brete ? "sim" : "nao"}
-                    onValueChange={(value) =>
-                      handleInfraChange("curral", "possui_brete", value === "sim")
+                  <Label>Tipo</Label>
+                  <Input
+                    value={infra.saleiros?.tipo || ""}
+                    onChange={(event) =>
+                      handleInfraChange("saleiros", "tipo", event.target.value)
                     }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="sim">Sim</SelectItem>
-                      <SelectItem value="nao">Nao</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Possui balanca</Label>
-                  <Select
-                    value={infra.curral?.possui_balanca ? "sim" : "nao"}
-                    onValueChange={(value) =>
-                      handleInfraChange("curral", "possui_balanca", value === "sim")
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="sim">Sim</SelectItem>
-                      <SelectItem value="nao">Nao</SelectItem>
-                    </SelectContent>
-                  </Select>
+                    placeholder="Ex: coberto, movel"
+                  />
                 </div>
               </div>
             </div>

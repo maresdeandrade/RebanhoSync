@@ -54,6 +54,17 @@ export default function LoteDetalhe() {
     () => (id ? db.state_animais.where("lote_id").equals(id).toArray() : []),
     [id],
   );
+  const ocupacaoAberta = useLiveQuery(
+    () =>
+      id && lote
+        ? db.state_pasto_ocupacoes
+            .where("[fazenda_id+lote_id]")
+            .equals([lote.fazenda_id, id])
+            .filter((o) => o.status === "aberta" && !o.deleted_at)
+            .first()
+        : undefined,
+    [id, lote?.fazenda_id],
+  );
   const regulatorySurfaceSource = useLiveQuery(
     () => (lote ? loadRegulatorySurfaceSource(lote.fazenda_id) : null),
     [lote?.fazenda_id],
@@ -179,7 +190,9 @@ export default function LoteDetalhe() {
           label="Pasto"
           value={pasto?.nome ?? "Sem pasto"}
           hint={
-            pasto?.area_ha
+            ocupacaoAberta
+              ? `Desde ${new Date(ocupacaoAberta.entrada_em).toLocaleDateString("pt-BR")} · ${Math.floor((Date.now() - new Date(ocupacaoAberta.entrada_em).getTime()) / 86_400_000)} dias`
+              : pasto?.area_ha
               ? `${pasto.area_ha} ha cadastrados nesta area.`
               : "Sem area vinculada ao lote."
           }
