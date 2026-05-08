@@ -18,7 +18,7 @@ describe("AnimalVisualAvatar", () => {
 
     expect(resolveAnimalVisualDescriptor("Vaca Parida")).toMatchObject({
       profile: "vaca-parida",
-      label: "Vaca parida",
+      label: "Vaca Parida",
     });
   });
 });

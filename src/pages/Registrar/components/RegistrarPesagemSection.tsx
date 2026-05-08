@@ -14,12 +14,15 @@ type RegistrarPesagemSectionProps = {
 
 export function RegistrarPesagemSection(props: RegistrarPesagemSectionProps) {
   return (
-    <div className="max-h-64 space-y-4 overflow-y-auto border-t pt-4">
+    <div className="max-h-64 space-y-3 overflow-y-auto rounded-xl border border-border/70 bg-muted/20 p-4">
       {props.selectedAnimalIds.map((animalId) => {
         const animal = props.animaisNoLote?.find((item) => item.id === animalId);
         const isInvalid = props.invalidAnimalIds.includes(animalId);
         return (
-          <div key={animalId} className="flex items-start justify-between gap-4">
+          <div
+            key={animalId}
+            className="flex items-start justify-between gap-4 rounded-lg bg-background/80 p-3"
+          >
             <Label className="w-24 pt-2">{animal?.identificacao}</Label>
             <div className="flex-1 space-y-1">
               <Input

@@ -1,6 +1,7 @@
 import { Move, Scale, Syringe } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 type RegistrarManejoActionsGridProps = {
   tipoManejo: string;
@@ -17,50 +18,58 @@ type RegistrarManejoActionsGridProps = {
 };
 
 export function RegistrarManejoActionsGrid(props: RegistrarManejoActionsGridProps) {
+  const getActionClassName = (active: boolean) =>
+    cn(
+      "h-24 flex-col gap-2 rounded-xl border text-center shadow-sm transition-colors",
+      active
+        ? "border-[#0057C2] bg-sky-50 text-[#002B45] ring-1 ring-[#0057C2] hover:bg-sky-100 dark:border-sky-500 dark:bg-sky-950/50 dark:text-sky-100"
+        : "border-border/70 bg-card text-foreground hover:border-sky-300 hover:bg-sky-50 dark:hover:border-sky-800 dark:hover:bg-sky-950/30",
+    );
+
   return (
-    <div className="grid grid-cols-2 gap-4 md:grid-cols-5">
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
       <Button
-        variant={props.tipoManejo === "sanitario" ? "default" : "outline"}
-        className="h-24 flex-col gap-2"
+        variant="outline"
+        className={getActionClassName(props.tipoManejo === "sanitario")}
         disabled={props.selectedAnimaisCount === 0}
         onClick={() => props.onSelectAction("sanitario")}
       >
         <Syringe className="h-6 w-6" /> Sanitario
       </Button>
       <Button
-        variant={props.tipoManejo === "pesagem" ? "default" : "outline"}
-        className="h-24 flex-col gap-2"
+        variant="outline"
+        className={getActionClassName(props.tipoManejo === "pesagem")}
         disabled={props.selectedAnimaisCount === 0}
         onClick={() => props.onSelectAction("pesagem")}
       >
         <Scale className="h-6 w-6" /> Pesagem
       </Button>
       <Button
-        variant={props.tipoManejo === "movimentacao" ? "default" : "outline"}
-        className="h-24 flex-col gap-2"
+        variant="outline"
+        className={getActionClassName(props.tipoManejo === "movimentacao")}
         disabled={props.selectedAnimaisCount === 0}
         onClick={() => props.onSelectAction("movimentacao")}
       >
         <Move className="h-6 w-6" /> Mover
       </Button>
       <Button
-        variant={props.tipoManejo === "nutricao" ? "default" : "outline"}
-        className="h-24 flex-col gap-2"
+        variant="outline"
+        className={getActionClassName(props.tipoManejo === "nutricao")}
         disabled={props.selectedAnimaisCount === 0}
         onClick={() => props.onSelectAction("nutricao")}
       >
         <Scale className="h-6 w-6" /> Nutricao
       </Button>
       <Button
-        variant={props.tipoManejo === "financeiro" ? "default" : "outline"}
-        className="h-24 flex-col gap-2"
+        variant="outline"
+        className={getActionClassName(props.tipoManejo === "financeiro")}
         onClick={() => props.onSelectAction("financeiro")}
       >
         <Move className="h-6 w-6" /> Financeiro
       </Button>
       <Button
-        variant={props.tipoManejo === "reproducao" ? "default" : "outline"}
-        className="h-24 flex-col gap-2"
+        variant="outline"
+        className={getActionClassName(props.tipoManejo === "reproducao")}
         onClick={() => props.onSelectAction("reproducao")}
         disabled={props.selectedAnimaisCount === 0}
       >

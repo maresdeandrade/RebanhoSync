@@ -16,7 +16,7 @@ type RegistrarNutricaoSectionProps = {
 
 export function RegistrarNutricaoSection(props: RegistrarNutricaoSectionProps) {
   return (
-    <div className="space-y-4 border-t pt-4">
+    <div className="space-y-4 rounded-xl border border-border/70 bg-muted/20 p-4">
       <div className="space-y-2">
         <Label>Alimento</Label>
         <Input

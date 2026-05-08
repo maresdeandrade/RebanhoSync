@@ -267,7 +267,7 @@ export default function AnimalReproducao() {
         description="Contexto do ciclo, formulario concentrado e historico recente na mesma tela para registrar o proximo passo sem dispersao."
         meta={
           <>
-            <AnimalCategoryBadge animal={animal} categoriaLabel={categoriaLabel} />
+            <AnimalCategoryBadge categoriaLabel={categoriaLabel} />
             <StatusBadge tone={getStatusTone(reproResumo?.reproStatus.status)}>
               {reproResumo
                 ? REPRO_STATUS_LABEL[reproResumo.reproStatus.status] ??

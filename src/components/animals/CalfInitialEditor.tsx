@@ -77,7 +77,7 @@ export function CalfInitialEditor({
               <Baby className="h-3.5 w-3.5" />
               Cria recem-gerada
             </Badge>
-            <AnimalCategoryBadge animal={calf} categoriaLabel={categoriaLabel} />
+            <AnimalCategoryBadge categoriaLabel={categoriaLabel} />
             <Badge
               variant="outline"
               className={

@@ -84,14 +84,14 @@ export function RegistrarFinanceiroSection(input: {
     !input.isFinanceiroSociedade;
 
   return (
-    <div className="space-y-4 border-t pt-4">
+    <div className="space-y-4 rounded-xl border border-border/70 bg-muted/20 p-4">
       <div className="space-y-2">
         <Label>Natureza</Label>
         <Select
           onValueChange={(value) => input.onNaturezaChange(value as FinanceiroNatureza)}
           value={input.financeiroData.natureza}
         >
-          <SelectTrigger>
+          <SelectTrigger className="min-h-11 bg-background">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -137,7 +137,7 @@ export function RegistrarFinanceiroSection(input: {
                 value={input.financeiroData.modoPreco}
                 onValueChange={(value) => input.onModoPrecoChange(value as FinancialPriceMode)}
               >
-                <SelectTrigger>
+                <SelectTrigger className="min-h-11 bg-background">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -193,7 +193,7 @@ export function RegistrarFinanceiroSection(input: {
                 value={input.financeiroData.modoPeso}
                 onValueChange={(value) => input.onModoPesoChange(value as FinancialWeightMode)}
               >
-                <SelectTrigger>
+                <SelectTrigger className="min-h-11 bg-background">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

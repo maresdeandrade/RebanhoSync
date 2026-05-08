@@ -8,7 +8,7 @@ import { PageIntro } from "@/components/ui/page-intro";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { showSuccess, showError } from "@/utils/toast";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ChevronRight, ChevronLeft, Check } from "lucide-react";
+import { ChevronRight, ChevronLeft, Check, ClipboardCheck, Info } from "lucide-react";
 import { useLotes } from "@/hooks/useLotes";
 import { useAuth } from "@/hooks/useAuth";
 import { db } from "@/lib/offline/db";
@@ -824,49 +824,75 @@ const Registrar = () => {
   }
 
   return (
-    <div className="mx-auto max-w-5xl space-y-5">
-      <PageIntro
-        eyebrow="Fluxo operacional"
-        title="Registrar execução"
-        description="Fluxo guiado para registrar execução com formulário. Para execução direta sem formulário, use Executar na agenda."
-        meta={
-          <>
-            <StatusBadge tone="info">
+    <div className="mx-auto max-w-5xl space-y-5 pb-8">
+      <section className="overflow-hidden rounded-2xl border border-sky-900/20 bg-gradient-to-br from-[#002B45] via-sky-950 to-[#004264] text-white shadow-sm dark:border-sky-400/20">
+        <div className="space-y-5 p-5 sm:p-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex min-w-0 gap-3">
+              <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-white/20 bg-white/10">
+                <ClipboardCheck className="h-5 w-5" />
+              </div>
+              <div className="min-w-0 space-y-1">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-sky-100/80">
+                  Fluxo operacional
+                </p>
+                <h1 className="text-2xl font-bold tracking-normal text-white sm:text-3xl">
+                  Registrar manejo
+                </h1>
+                <p className="max-w-2xl text-sm text-sky-50/85">
+                  Fluxo guiado para registrar execução com revisão antes de salvar.
+                  Para execução direta sem formulário, use Executar na agenda.
+                </p>
+              </div>
+            </div>
+            <StatusBadge tone="info" className="w-fit border-white/20 bg-white/10 text-white">
               Etapa {step}/3: {STEP_LABEL[step]}
             </StatusBadge>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
             {sourceTaskId ? (
-              <StatusBadge tone="neutral">
+              <StatusBadge tone="neutral" className="border-white/20 bg-white/10 text-white">
                 Origem agenda {sourceTaskId.slice(0, 8)}
               </StatusBadge>
             ) : null}
             {quickActionConfig ? (
-              <StatusBadge tone="neutral">
+              <StatusBadge tone="neutral" className="border-white/20 bg-white/10 text-white">
                 {quickActionConfig.label}
               </StatusBadge>
             ) : null}
             {selectedLoteLabel !== "-" ? (
-              <StatusBadge tone="neutral">{selectedLoteLabel}</StatusBadge>
+              <StatusBadge tone="neutral" className="border-white/20 bg-white/10 text-white">
+                {selectedLoteLabel}
+              </StatusBadge>
             ) : null}
             {selectedAnimais.length > 0 ? (
-              <StatusBadge tone="neutral">
+              <StatusBadge tone="neutral" className="border-white/20 bg-white/10 text-white">
                 {selectedAnimais.length} animal(is) selecionado(s)
               </StatusBadge>
             ) : null}
             {hasRegistrarDisplayContext ? (
-              <StatusBadge tone="neutral">Contexto recebido</StatusBadge>
+              <StatusBadge tone="neutral" className="border-white/20 bg-white/10 text-white">
+                Contexto recebido
+              </StatusBadge>
             ) : null}
-          </>
-        }
-      />
+          </div>
+        </div>
+      </section>
 
       {hasRegistrarDisplayContext ? (
-        <div className="space-y-3 rounded-lg border border-info/20 bg-info/5 p-4 text-sm text-muted-foreground">
-          <div>
-            <p className="font-medium text-foreground">Contexto recebido</p>
-            <p>
-              Revise o alvo antes de salvar. O contexto apenas preenche ou
-              identifica a origem do fluxo.
-            </p>
+        <div className="space-y-3 rounded-2xl border border-sky-200/70 bg-sky-50/80 p-4 text-sm text-sky-950 shadow-sm dark:border-sky-900/60 dark:bg-sky-950/30 dark:text-sky-100">
+          <div className="flex gap-3">
+            <div className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-full bg-sky-100 text-sky-700 dark:bg-sky-900/70 dark:text-sky-200">
+              <Info className="h-4 w-4" />
+            </div>
+            <div>
+              <p className="font-medium text-foreground">Contexto recebido</p>
+              <p>
+                Revise o alvo antes de salvar. O contexto apenas preenche ou
+                identifica a origem do fluxo.
+              </p>
+            </div>
           </div>
           {registrarContextRecords === undefined ? (
             <p>Carregando contexto...</p>
@@ -877,8 +903,8 @@ const Registrar = () => {
                   key={`${entry.kind}-${entry.id}`}
                   className={
                     entry.found
-                      ? "rounded-lg border border-info/15 bg-background/80 p-3"
-                      : "rounded-lg border border-warning/30 bg-warning/10 p-3"
+                      ? "rounded-xl border border-sky-200/70 bg-background/90 p-3 shadow-sm dark:border-sky-900/60"
+                      : "rounded-xl border border-warning/30 bg-warning/10 p-3"
                   }
                 >
                   <p className="font-medium text-foreground">{entry.title}</p>
@@ -890,22 +916,35 @@ const Registrar = () => {
         </div>
       ) : null}
 
-      <div className="grid gap-2 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-3">
         {REGISTRATION_STEPS.map((currentStep) => (
           <div
             key={currentStep}
             className={
               step >= currentStep
-                ? "rounded-2xl border border-primary/20 bg-primary/5 px-4 py-3"
-                : "rounded-2xl border border-border/70 bg-background/80 px-4 py-3"
+                ? "rounded-2xl border border-sky-300 bg-sky-50 px-4 py-3 shadow-sm dark:border-sky-800 dark:bg-sky-950/40"
+                : "rounded-2xl border border-border/70 bg-card px-4 py-3 text-muted-foreground"
             }
           >
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-              Etapa {currentStep}
-            </p>
-            <p className="mt-1 text-sm font-medium">
-              {STEP_LABEL[currentStep]}
-            </p>
+            <div className="flex items-center gap-3">
+              <span
+                className={
+                  step >= currentStep
+                    ? "grid h-8 w-8 place-items-center rounded-full bg-sky-700 text-sm font-bold text-white"
+                    : "grid h-8 w-8 place-items-center rounded-full border border-border text-sm font-semibold"
+                }
+              >
+                {currentStep}
+              </span>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.14em]">
+                  Etapa {currentStep}
+                </p>
+                <p className="mt-0.5 text-sm font-medium text-foreground">
+                  {STEP_LABEL[currentStep]}
+                </p>
+              </div>
+            </div>
           </div>
         ))}
       </div>
@@ -938,9 +977,9 @@ const Registrar = () => {
       )}
 
       {step === RegistrationStep.CHOOSE_ACTION && (
-        <Card>
-          <CardHeader>
-            <CardTitle>2. Escolher Ação</CardTitle>
+        <Card className="overflow-hidden border-sky-200/70 shadow-sm dark:border-sky-900/60">
+          <CardHeader className="border-b border-sky-100 bg-sky-50/70 dark:border-sky-900/50 dark:bg-sky-950/20">
+            <CardTitle className="text-base">2. Escolher acao</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-3">
@@ -1015,17 +1054,17 @@ const Registrar = () => {
             )}
 
             {actionStepIssues.length > 0 ? (
-              <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-3 text-sm text-destructive">
+              <div className="rounded-xl border border-destructive/25 bg-destructive/10 p-3 text-sm font-medium text-destructive">
                 {actionStepIssues[0]}
               </div>
             ) : null}
 
-            <div className="flex gap-3">
+            <div className="flex flex-col gap-3 sm:flex-row">
               <Button variant="outline" onClick={goToSelectAnimals}>
                 <ChevronLeft className="mr-2 h-4 w-4" /> Voltar
               </Button>
               <Button
-                className="flex-1"
+                className="flex-1 bg-[#0057C2] text-white hover:bg-[#00479f]"
                 disabled={!tipoManejo || !canAdvanceToConfirm}
                 onClick={goToConfirm}
               >
@@ -1037,16 +1076,16 @@ const Registrar = () => {
       )}
 
       {step === RegistrationStep.CONFIRM && (
-        <Card>
-          <CardHeader>
-            <CardTitle>3. Registrar execução</CardTitle>
+        <Card className="overflow-hidden border-sky-200/70 shadow-sm dark:border-sky-900/60">
+          <CardHeader className="border-b border-sky-100 bg-sky-50/70 dark:border-sky-900/50 dark:bg-sky-950/20">
+            <CardTitle className="text-base">3. Revisar e salvar</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="rounded-lg border border-info/20 bg-info/5 p-4 text-sm text-muted-foreground">
+            <div className="rounded-xl border border-sky-200/70 bg-sky-50/80 p-4 text-sm text-sky-950 dark:border-sky-900/60 dark:bg-sky-950/30 dark:text-sky-100">
               Ao confirmar, o manejo fica salvo imediatamente neste aparelho. A
               confirmacao autoritativa aparece depois na fila de sync.
             </div>
-            <div className="bg-muted p-4 rounded-lg space-y-2">
+            <div className="space-y-2 rounded-xl border border-border/70 bg-muted/30 p-4">
               <ConfirmacaoResumoBase
                 manejoLabel={confirmacaoManejoLabel}
                 animaisCount={selectedAnimais.length}
@@ -1091,12 +1130,12 @@ const Registrar = () => {
               )}
             </div>
 
-            <div className="flex gap-3">
+            <div className="flex flex-col gap-3 sm:flex-row">
               <Button variant="outline" onClick={goToChooseAction}>
                 <ChevronLeft className="mr-2 h-4 w-4" /> Voltar
               </Button>
               <Button
-                className="flex-1 bg-emerald-600 hover:bg-emerald-700"
+                className="min-h-12 flex-1 bg-[#0057C2] text-base font-semibold text-white shadow-sm hover:bg-[#00479f]"
                 onClick={handleFinalize}
                 disabled={isFinalizing}
               >
@@ -1104,8 +1143,8 @@ const Registrar = () => {
                 {isFinalizing
                   ? "Registrando..."
                   : sourceTaskId
-                    ? "Registrar e voltar para agenda"
-                    : "Registrar execução"}
+                    ? "Salvar registro e voltar para agenda"
+                    : "Salvar registro"}
               </Button>
             </div>
           </CardContent>

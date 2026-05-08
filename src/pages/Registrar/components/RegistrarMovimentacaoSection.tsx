@@ -22,20 +22,22 @@ type RegistrarMovimentacaoSectionProps = {
 
 export function RegistrarMovimentacaoSection(props: RegistrarMovimentacaoSectionProps) {
   return (
-    <div className="space-y-4 border-t pt-4">
-      <Label>Lote Destino</Label>
-      <Select onValueChange={props.onMovimentacaoDestinoChange} value={props.movimentacaoDestinoId}>
-        <SelectTrigger>
-          <SelectValue placeholder="Selecione o destino" />
-        </SelectTrigger>
-        <SelectContent>
-          {props.lotesDestino.map((lote) => (
-            <SelectItem key={lote.id} value={lote.id}>
-              {lote.nome}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+    <div className="space-y-4 rounded-xl border border-border/70 bg-muted/20 p-4">
+      <div className="space-y-2">
+        <Label>Lote Destino</Label>
+        <Select onValueChange={props.onMovimentacaoDestinoChange} value={props.movimentacaoDestinoId}>
+          <SelectTrigger className="min-h-11 bg-background">
+            <SelectValue placeholder="Selecione o destino" />
+          </SelectTrigger>
+          <SelectContent>
+            {props.lotesDestino.map((lote) => (
+              <SelectItem key={lote.id} value={lote.id}>
+                {lote.nome}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
       {props.movimentacaoSemDestino ? (
         <p className="text-xs text-destructive">Selecione o lote de destino antes de continuar.</p>
       ) : null}

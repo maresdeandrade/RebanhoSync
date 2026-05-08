@@ -11,36 +11,36 @@ type ConfirmacaoResumoBaseProps = {
 
 export function ConfirmacaoResumoBase(props: ConfirmacaoResumoBaseProps) {
   return (
-    <>
-      <div className="flex justify-between">
+    <div className="grid gap-2 text-sm">
+      <div className="flex justify-between gap-4 rounded-lg bg-background/70 px-3 py-2">
         <span className="text-muted-foreground">Manejo:</span>
         <span className="font-bold capitalize">{props.manejoLabel}</span>
       </div>
-      <div className="flex justify-between">
+      <div className="flex justify-between gap-4 rounded-lg bg-background/70 px-3 py-2">
         <span className="text-muted-foreground">Animais:</span>
         <span className="font-bold">{props.animaisCount}</span>
       </div>
 
       {props.showAlvoLote ? (
-        <div className="flex justify-between">
+        <div className="flex justify-between gap-4 rounded-lg bg-background/70 px-3 py-2">
           <span className="text-muted-foreground">Alvo (lote):</span>
           <span className="font-bold">{props.alvoLoteLabel}</span>
         </div>
       ) : null}
 
       {props.showDestinoMovimentacao ? (
-        <div className="flex justify-between">
+        <div className="flex justify-between gap-4 rounded-lg bg-background/70 px-3 py-2">
           <span className="text-muted-foreground">Destino:</span>
           <span className="font-bold">{props.destinoMovimentacaoLabel}</span>
         </div>
       ) : null}
 
       {props.showNutricaoAlimento ? (
-        <div className="flex justify-between">
+        <div className="flex justify-between gap-4 rounded-lg bg-background/70 px-3 py-2">
           <span className="text-muted-foreground">Alimento:</span>
           <span className="font-bold">{props.nutricaoAlimentoLabel}</span>
         </div>
       ) : null}
-    </>
+    </div>
   );
 }

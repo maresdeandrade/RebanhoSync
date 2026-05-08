@@ -831,7 +831,6 @@ const AnimalDetalhe = () => {
               </div>
               <div className="flex flex-wrap gap-2">
                 <AnimalCategoryBadge
-                  animal={animal}
                   categoriaLabel={categoriaLabel}
                 />
                 <Badge
@@ -964,7 +963,7 @@ const AnimalDetalhe = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="flex flex-wrap gap-2">
-            <AnimalCategoryBadge animal={animal} categoriaLabel={categoriaLabel} />
+            <AnimalCategoryBadge categoriaLabel={categoriaLabel} />
             <Badge
               variant="outline"
               className={

@@ -45,11 +45,11 @@ export function RegistrarSelectTargetStep<QuickActionKey extends string = string
   props: RegistrarSelectTargetStepProps<QuickActionKey>,
 ) {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>1. Selecionar Alvo</CardTitle>
+    <Card className="overflow-hidden border-sky-200/70 shadow-sm dark:border-sky-900/60">
+      <CardHeader className="border-b border-sky-100 bg-sky-50/70 dark:border-sky-900/50 dark:bg-sky-950/20">
+        <CardTitle className="text-base">1. Selecionar alvo</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-5">
         <div className="space-y-3">
           <div className="flex items-center justify-between gap-3">
             <div>
@@ -59,7 +59,7 @@ export function RegistrarSelectTargetStep<QuickActionKey extends string = string
               </p>
             </div>
             {props.quickAction ? (
-              <Button type="button" variant="ghost" size="sm" onClick={props.onClearQuickAction}>
+              <Button type="button" variant="outline" size="sm" onClick={props.onClearQuickAction}>
                 Limpar atalho
               </Button>
             ) : null}
@@ -74,10 +74,10 @@ export function RegistrarSelectTargetStep<QuickActionKey extends string = string
           />
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-2 rounded-xl border border-border/70 bg-card p-4">
           <Label>Lote</Label>
           <Select onValueChange={props.onSelectedLoteIdChange} value={props.selectedLoteId}>
-            <SelectTrigger>
+            <SelectTrigger className="min-h-11">
               <SelectValue placeholder="Selecione o lote" />
             </SelectTrigger>
             <SelectContent>
@@ -123,13 +123,13 @@ export function RegistrarSelectTargetStep<QuickActionKey extends string = string
         ) : null}
 
         {props.requiresAnimalsForQuickAction ? (
-          <p className="text-sm text-amber-700">
+          <p className="rounded-xl border border-amber-200/70 bg-amber-50/70 p-3 text-sm font-medium text-amber-900 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-200">
             Esta acao exige ao menos um animal selecionado antes de continuar.
           </p>
         ) : null}
 
         <Button
-          className="w-full"
+          className="min-h-12 w-full bg-[#0057C2] text-base font-semibold text-white hover:bg-[#00479f]"
           disabled={!props.selectedLoteId || props.requiresAnimalsForQuickAction}
           onClick={props.onNext}
         >

@@ -38,10 +38,14 @@ export function resolveAnimalVisualDescriptor(
     };
   }
 
-  if (normalized.includes("vaca parida") || normalized.includes("recem parida")) {
+  if (
+    normalized.includes("vaca parida") ||
+    normalized.includes("recem parida") ||
+    normalized.includes("matriz parida")
+  ) {
     return {
       profile: "vaca-parida",
-      label: "Vaca parida",
+      label: categoriaLabel?.trim() || "Vaca parida",
       frameClassName:
         "border-sky-200 bg-sky-50 text-sky-950 dark:border-sky-800/70 dark:bg-sky-950/40 dark:text-sky-100",
       sexToneClassName: "text-rose-600 dark:text-rose-300",
@@ -51,14 +55,15 @@ export function resolveAnimalVisualDescriptor(
   if (normalized.includes("vaca seca") || normalized.includes("solteira")) {
     return {
       profile: "vaca-seca",
-      label: "Vaca seca",
+      label: categoriaLabel?.trim() || "Vaca seca",
       frameClassName:
         "border-sky-200 bg-sky-50 text-sky-950 dark:border-sky-800/70 dark:bg-sky-950/40 dark:text-sky-100",
       sexToneClassName: "text-rose-600 dark:text-rose-300",
     };
   }
 
-  if (normalized.includes("bezer")) {
+  // Use exact or specific boundaries to avoid "recria" matching "cria"
+  if (normalized.includes("bezer") || normalized === "cria" || normalized.includes(" cria ")) {
     return {
       profile: "bezerro",
       label: categoriaLabel?.trim() || "Bezerro",
@@ -68,40 +73,40 @@ export function resolveAnimalVisualDescriptor(
     };
   }
 
-  if (normalized.includes("novilha")) {
+  if (normalized.includes("novilh") || normalized.includes("recria")) {
     return {
       profile: "novilha",
-      label: "Novilha",
+      label: categoriaLabel?.trim() || "Novilha",
       frameClassName:
         "border-sky-200 bg-sky-50 text-sky-950 dark:border-sky-800/70 dark:bg-sky-950/40 dark:text-sky-100",
-      sexToneClassName: "text-rose-600 dark:text-rose-300",
+      sexToneClassName: "text-current",
     };
   }
 
-  if (normalized.includes("touro")) {
+  if (normalized.includes("touro") || normalized.includes("reprodutor")) {
     return {
       profile: "touro",
-      label: "Touro reprodutor",
+      label: categoriaLabel?.trim() || "Touro reprodutor",
       frameClassName:
         "border-sky-200 bg-sky-50 text-sky-950 dark:border-sky-800/70 dark:bg-sky-950/40 dark:text-sky-100",
       sexToneClassName: "text-sky-700 dark:text-sky-300",
     };
   }
 
-  if (normalized.includes("boi") || normalized.includes("terminacao")) {
+  if (normalized.includes("boi") || normalized.includes("engorda") || normalized.includes("terminacao")) {
     return {
       profile: "boi",
-      label: "Boi engorda",
+      label: categoriaLabel?.trim() || "Boi engorda",
       frameClassName:
         "border-sky-200 bg-sky-50 text-sky-950 dark:border-sky-800/70 dark:bg-sky-950/40 dark:text-sky-100",
       sexToneClassName: "text-sky-700 dark:text-sky-300",
     };
   }
 
-  if (normalized.includes("vaca")) {
+  if (normalized.includes("vaca") || normalized.includes("matriz")) {
     return {
       profile: "vaca",
-      label: "Vaca",
+      label: categoriaLabel?.trim() || "Vaca",
       frameClassName:
         "border-sky-200 bg-sky-50 text-sky-950 dark:border-sky-800/70 dark:bg-sky-950/40 dark:text-sky-100",
       sexToneClassName: "text-rose-600 dark:text-rose-300",

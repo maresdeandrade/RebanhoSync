@@ -1370,7 +1370,6 @@ export default function Animais() {
 
                     <TableCell className="align-top">
                       <AnimalCategoryBadge
-                        animal={animal}
                         categoriaLabel={categoriaLabel}
                       />
                     </TableCell>

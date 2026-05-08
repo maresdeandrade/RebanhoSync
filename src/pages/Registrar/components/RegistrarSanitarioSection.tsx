@@ -49,11 +49,11 @@ type RegistrarSanitarioSectionProps = {
 
 export function RegistrarSanitarioSection(props: RegistrarSanitarioSectionProps) {
   return (
-    <div className="space-y-4 border-t pt-4">
+    <div className="space-y-4 rounded-xl border border-border/70 bg-muted/20 p-4">
       <div className="space-y-2">
         <Label>Tipo</Label>
         <select
-          className="flex h-11 w-full rounded-xl border border-border/80 bg-background px-3.5 py-2 text-sm shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] focus:outline-none focus:ring-2 focus:ring-ring/30"
+          className="flex h-11 w-full rounded-xl border border-border/80 bg-background px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring/30"
           onChange={(event) => props.onSanitarioTipoChange(event.target.value as SanitarioTipoEnum)}
           value={props.sanitarioTipo}
         >
@@ -127,7 +127,7 @@ export function RegistrarSanitarioSection(props: RegistrarSanitarioSectionProps)
       <div className="space-y-2">
         <Label>Protocolo (opcional)</Label>
         <select
-          className="flex h-11 w-full rounded-xl border border-border/80 bg-background px-3.5 py-2 text-sm shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] focus:outline-none focus:ring-2 focus:ring-ring/30"
+          className="flex h-11 w-full rounded-xl border border-border/80 bg-background px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring/30"
           onChange={(event) => props.onProtocoloChange(event.target.value)}
           value={props.protocoloId || "none"}
         >
@@ -144,7 +144,7 @@ export function RegistrarSanitarioSection(props: RegistrarSanitarioSectionProps)
         <div className="space-y-2">
           <Label>Item do Protocolo</Label>
           <select
-            className="flex h-11 w-full rounded-xl border border-border/80 bg-background px-3.5 py-2 text-sm shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] focus:outline-none focus:ring-2 focus:ring-ring/30 disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex h-11 w-full rounded-xl border border-border/80 bg-background px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring/30 disabled:cursor-not-allowed disabled:opacity-50"
             onChange={(event) => props.onProtocoloItemChange(event.target.value)}
             value={props.protocoloItemId}
           >

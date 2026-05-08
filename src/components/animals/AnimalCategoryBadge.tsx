@@ -1,6 +1,5 @@
 import { Badge } from "@/components/ui/badge";
 import { resolveAnimalVisualDescriptor } from "@/components/animals/animalVisualProfile";
-import type { Animal } from "@/lib/offline/types";
 import { cn } from "@/lib/utils";
 
 function getCategoryDescriptor(
@@ -47,7 +46,6 @@ function getDotClassName(
 export function AnimalCategoryBadge({
   categoriaLabel,
 }: {
-  animal: Animal;
   categoriaLabel?: string | null;
 }) {
   const visual = resolveAnimalVisualDescriptor(categoriaLabel);
