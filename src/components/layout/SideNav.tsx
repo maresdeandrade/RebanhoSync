@@ -84,7 +84,7 @@ export const SideNav = ({ mobile = false }: SideNavProps) => {
       nested && "pl-4",
       active
         ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
-        : "text-sidebar-foreground/72 hover:bg-sidebar-accent/80 hover:text-sidebar-foreground",
+        : "text-sidebar-foreground/78 hover:bg-sidebar-accent/80 hover:text-sidebar-foreground",
     );
 
   const indicatorClasses = (active: boolean) =>
@@ -101,7 +101,7 @@ export const SideNav = ({ mobile = false }: SideNavProps) => {
         "flex flex-col",
         mobile
           ? "w-full bg-transparent"
-          : "hidden w-[272px] shrink-0 border-r border-sidebar-border/80 bg-sidebar/90 md:flex",
+          : "hidden w-[272px] shrink-0 border-r border-sidebar-border/80 bg-sidebar md:flex",
       )}
       aria-label="Navegacao principal"
     >
@@ -109,7 +109,7 @@ export const SideNav = ({ mobile = false }: SideNavProps) => {
         <div className="space-y-6">
           {visibleSections.map((section) => (
             <div key={section.key} className="space-y-1.5">
-              <p className="px-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-sidebar-foreground/55">
+              <p className="px-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-sidebar-foreground/62">
                 {section.label}
               </p>
               {section.items.map((item) => {
