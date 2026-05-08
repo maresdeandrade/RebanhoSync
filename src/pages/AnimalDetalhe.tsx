@@ -24,6 +24,7 @@ import {
 } from "recharts";
 import { AnimalCategoryBadge } from "@/components/animals/AnimalCategoryBadge";
 import { AnimalKinshipBadges } from "@/components/animals/AnimalKinshipBadges";
+import { AnimalVisualAvatar } from "@/components/animals/AnimalVisualAvatar";
 import { MoverAnimalLote } from "@/components/manejo/MoverAnimalLote";
 import {
   AlertDialog,
@@ -787,37 +788,67 @@ const AnimalDetalhe = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Link to="/animais">
-          <Button variant="ghost" size="icon" className="rounded-full">
-            <ChevronLeft className="h-5 w-5" />
-          </Button>
-        </Link>
-        <div className="flex-1">
-          <div className="flex flex-wrap items-center gap-3">
-            <h1 className="text-3xl font-bold">{animal.identificacao}</h1>
-            <AnimalCategoryBadge animal={animal} categoriaLabel={categoriaLabel} />
-            <Badge
-              variant="outline"
-              className={
-                animal.sexo === "F"
-                  ? "border-rose-200 bg-rose-50 text-rose-700"
-                  : "border-sky-200 bg-sky-50 text-sky-700"
-              }
-            >
-              {animal.sexo === "M" ? "Macho" : "Femea"}
-            </Badge>
+      <div className="rounded-xl border border-sky-900/20 bg-gradient-to-br from-[#002B45] to-sky-950 p-4 text-white shadow-sm dark:border-sky-400/20">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
+          <div className="flex items-start gap-3 sm:gap-4">
+            <Link to="/animais">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="rounded-full text-white hover:bg-white/10 hover:text-white"
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </Button>
+            </Link>
+            <AnimalVisualAvatar
+              categoriaLabel={categoriaLabel}
+              sexo={animal.sexo}
+              size="lg"
+              className="border-white/70 bg-white text-[#002B45]"
+            />
+            <div className="min-w-0 flex-1 space-y-3">
+              <div className="space-y-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h1 className="text-3xl font-bold tracking-normal text-white">
+                    {animal.identificacao}
+                  </h1>
+                  <Badge
+                    variant="outline"
+                    className="border-white/30 bg-white/10 text-white"
+                  >
+                    {animal.sexo === "M" ? "Macho" : "Femea"}
+                  </Badge>
+                </div>
+                <p className="text-sm text-sky-100">
+                  {[
+                    animal.raca ? getAnimalBreedLabel(animal.raca) : null,
+                    lote ? `Lote: ${lote.nome}` : "Sem lote definido",
+                    animal.nome ? `Nome: ${animal.nome}` : null,
+                  ]
+                    .filter(Boolean)
+                    .join(" - ")}
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <AnimalCategoryBadge
+                  animal={animal}
+                  categoriaLabel={categoriaLabel}
+                />
+                <Badge
+                  variant="outline"
+                  className="border-white/30 bg-white/10 text-white"
+                >
+                  Status: {animal.status}
+                </Badge>
+              </div>
+            </div>
           </div>
-          <p className="text-muted-foreground">
-            {lote ? `Lote: ${lote.nome}` : "Sem lote definido"}
-          </p>
-        </div>
-        <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2 lg:ml-auto lg:justify-end">
           {hasMovementBlockedSanitaryAlert ? (
             <Button
               size="sm"
               variant="outline"
-              className="border-amber-300 text-amber-800 hover:bg-amber-50"
+              className="border-amber-300 bg-white text-amber-800 hover:bg-amber-50"
               onClick={() => setShowCloseSanitaryAlertDialog(true)}
               disabled={animal.status !== "ativo"}
             >
@@ -828,7 +859,7 @@ const AnimalDetalhe = () => {
             <Button
               size="sm"
               variant="outline"
-              className="border-amber-300 text-amber-800 hover:bg-amber-50"
+              className="border-amber-300 bg-white text-amber-800 hover:bg-amber-50"
               onClick={() => setShowSanitaryAlertDialog(true)}
               disabled={animal.status !== "ativo"}
             >
@@ -878,20 +909,26 @@ const AnimalDetalhe = () => {
             size="sm"
             onClick={() => setShowMoverLote(true)}
             disabled={hasMovementBlockedSanitaryAlert}
+            className="bg-background text-foreground hover:bg-muted"
           >
             <ArrowLeftRight className="mr-2 h-4 w-4" />
             Mover lote
           </Button>
           <Link to={`/animais/${id}/editar`}>
-            <Button variant="outline" size="sm">
+            <Button
+              variant="outline"
+              size="sm"
+              className="bg-background text-foreground hover:bg-muted"
+            >
               Editar
             </Button>
           </Link>
+          </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <Card className="border-none bg-primary/5 shadow-none">
+        <Card className="border-sky-200/70 bg-card shadow-sm dark:border-sky-900/60">
           <CardHeader className="pb-2">
             <CardTitle className="text-xs uppercase tracking-wider text-muted-foreground">
               Peso atual
@@ -1650,7 +1687,7 @@ const AnimalDetalhe = () => {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2">
-              <Dna className="h-4 w-4 text-slate-600" />
+              <Dna className="h-4 w-4 text-muted-foreground" />
               Vinculos familiares
             </CardTitle>
           </CardHeader>

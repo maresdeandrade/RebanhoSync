@@ -15,6 +15,7 @@ import {
 
 import { EmptyState } from "@/components/EmptyState";
 import { AnimalCategoryBadge } from "@/components/animals/AnimalCategoryBadge";
+import { AnimalVisualAvatar } from "@/components/animals/AnimalVisualAvatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -1236,7 +1237,7 @@ export default function Animais() {
         </Card>
       ) : null}
 
-      <Card className="overflow-hidden">
+      <Card className="overflow-hidden border-sky-200/70 bg-card shadow-sm dark:border-sky-900/60">
         <CardHeader>
           <CardTitle>Leitura operacional do rebanho</CardTitle>
           <CardDescription>
@@ -1245,7 +1246,7 @@ export default function Animais() {
           </CardDescription>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="flex flex-col gap-2 border-b bg-muted/20 px-6 py-4 text-sm md:flex-row md:items-center md:justify-between">
+          <div className="flex flex-col gap-2 border-b border-sky-100 bg-sky-50/70 px-6 py-4 text-sm dark:border-sky-900/50 dark:bg-sky-950/20 md:flex-row md:items-center md:justify-between">
             <div className="space-y-1">
               <p className="font-medium text-foreground">
                 {totalAnimalRows === 0
@@ -1263,10 +1264,11 @@ export default function Animais() {
               </StatusBadge>
             ) : null}
           </div>
+          <div className="overflow-x-auto pb-4 md:pb-0">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[250px]">Animal</TableHead>
+                <TableHead className="w-[310px]">Animal</TableHead>
                 <TableHead>Categoria</TableHead>
                 <TableHead>Lote</TableHead>
                 <TableHead>Peso atual</TableHead>
@@ -1302,6 +1304,7 @@ export default function Animais() {
                   <TableRow
                     key={animal.id}
                     className={cn(
+                      "border-b border-border/70 transition-colors hover:bg-sky-50/60 dark:hover:bg-sky-950/20",
                       depth > 0 && "bg-muted/15",
                       lifecyclePending && "bg-warning-muted/50",
                       regulatoryProfile.hasBlockingIssues && "bg-danger-muted/35",
@@ -1315,39 +1318,51 @@ export default function Animais() {
                         {depth > 0 ? (
                           <div className="mt-2 h-[1px] w-4 bg-border/80 shrink-0" />
                         ) : null}
-                        <div className={cn("space-y-1", depth > 0 && "border-l-2 border-border/50 pl-2")}>
-                          <div className="flex flex-wrap items-center gap-2">
-                            <Link
-                              to={`/animais/${animal.id}`}
-                              className="font-semibold tabular-nums text-foreground hover:text-primary hover:underline"
-                            >
-                              {animal.identificacao}
-                            </Link>
-                            {animal.nome ? (
-                              <span className="text-xs text-muted-foreground">
-                                {animal.nome}
-                              </span>
-                            ) : null}
-                            {depth > 0 ? (
-                              <StatusBadge tone="info">Cria</StatusBadge>
-                            ) : null}
-                            {depth === 0 && calves.length > 0 ? (
-                              <StatusBadge tone="neutral">
-                                {calves.length} cria(s)
-                              </StatusBadge>
-                            ) : null}
-                          </div>
-                          <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                            <span>{calcularIdade(animal.data_nascimento) || "Sem idade"}</span>
-                            <span>{animal.sexo === "F" ? "Femea" : "Macho"}</span>
-                            {depth > 0 && mother ? (
+                        <div
+                          className={cn(
+                            "flex min-w-0 items-start gap-3",
+                            depth > 0 && "border-l-2 border-border/50 pl-2",
+                          )}
+                        >
+                          <AnimalVisualAvatar
+                            categoriaLabel={categoriaLabel}
+                            sexo={animal.sexo}
+                            size="sm"
+                          />
+                          <div className="min-w-0 space-y-1.5">
+                            <div className="flex flex-wrap items-center gap-2">
                               <Link
-                                to={`/animais/${mother.id}`}
-                                className="hover:text-foreground hover:underline"
+                                to={`/animais/${animal.id}`}
+                                className="text-base font-bold tabular-nums text-foreground hover:text-primary hover:underline"
                               >
-                                Abrir matriz
+                                {animal.identificacao}
                               </Link>
-                            ) : null}
+                              {animal.nome ? (
+                                <span className="text-xs text-muted-foreground">
+                                  {animal.nome}
+                                </span>
+                              ) : null}
+                              {depth > 0 ? (
+                                <StatusBadge tone="info">Cria</StatusBadge>
+                              ) : null}
+                              {depth === 0 && calves.length > 0 ? (
+                                <StatusBadge tone="neutral">
+                                  {calves.length} cria(s)
+                                </StatusBadge>
+                              ) : null}
+                            </div>
+                            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                              <span>{calcularIdade(animal.data_nascimento) || "Sem idade"}</span>
+                              <span>{animal.sexo === "F" ? "Femea" : "Macho"}</span>
+                              {depth > 0 && mother ? (
+                                <Link
+                                  to={`/animais/${mother.id}`}
+                                  className="hover:text-foreground hover:underline"
+                                >
+                                  Abrir matriz
+                                </Link>
+                              ) : null}
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -1528,6 +1543,7 @@ export default function Animais() {
               ) : null}
             </TableBody>
           </Table>
+          </div>
 
           {hasPagination ? (
             <div className="flex flex-col gap-3 border-t px-6 py-4 md:flex-row md:items-center md:justify-between">
