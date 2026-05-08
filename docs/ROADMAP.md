@@ -10,7 +10,7 @@
 
 ## Contexto
 
-Todos os milestones do roadmap anterior (M0, M1, M2) foram concluidos via migrations de marco/2026. O capability score analitico permanece em 19/19 = 100%. O projeto segue em fase de **beta interno**.
+Todos os milestones do roadmap anterior (M0, M1, M2) foram concluidos via migrations de marco/2026. O capability score analitico permanece em 21/21 = 100%. O projeto segue em fase de **beta interno**.
 
 O roadmap atual cobre a consolidacao de observabilidade, cobertura E2E dos fluxos mais recentes, refinamentos de UX operacional da agenda e a reestruturacao da biblioteca sanitaria base.
 Com o hardening estrutural principal de `Registrar` e `Agenda` concluido, o repositorio entra em fase de consolidacao MVP -> SLC.
@@ -36,6 +36,11 @@ Atualizacao Central Operacional 2026-05-07:
 - O escopo atual e apenas leitura: cards de pendencias, rebanho por estagio, KPIs mensais e sinais operacionais auxiliares, com estados bloqueado/vazio/parcial/completo.
 - Refino inicial de UX/copy concluido: atrasadas e vencendo hoje foram priorizadas, estados ganharam microcopy operacional e limitacoes ficaram compactas sem serem escondidas.
 - A Central nao e motor de decisao e nao executa agenda, eventos, tags persistidas, carencia, venda/abate, peso atual confiavel ou IATF amplo.
+
+Atualizacao Pastagens 2026-05-08:
+- P0/P1/P2/P3/P4 de pastos foram consolidados como base incremental: movimentacao lote->pasto factual, ocupacoes materializadas, ficha agronomica, infraestrutura local sem curral ativo e avaliacao/ronda de pasto como evento historico.
+- A ronda usa `dominio='pastagem'`, `eventos_pasto_avaliacao`, Dexie `event_eventos_pasto_avaliacao`, `TABLE_MAP` e UI minima em `PastoDetalhe`.
+- Fora de escopo preservado: dashboard de pastagem, recomendacao agronomica, motor de UA/lotacao ideal, agenda automatica e grafico.
 
 ---
 
@@ -239,6 +244,7 @@ Atualizacao Central Operacional 2026-05-07:
 | TD-030 (CLOSED) | `infra.test_reliability_act_flaky` | Reliability | Milestone 10 |
 | N/A | `sanitario.saneamento_p0_p3` | Domain/Architecture | Milestone 11 |
 | N/A | `central_operacional.readonly` | UX/Read Model | Milestone 12 |
+| N/A | `pastagem.avaliacao_evento` | Domain/Offline | Milestone 13 |
 
 ---
 
@@ -342,6 +348,33 @@ Atualizacao Central Operacional 2026-05-07:
 - Ampliar testes de contrato do adapter para novos read models antes de adicionar outra superficie.
 - Avaliar uma pagina dedicada da Central somente se a Home ficar densa demais, mantendo a UI read-only.
 - Reavaliar densidade visual com dados reais de beta interno, sem adicionar CTAs operacionais.
+
+---
+
+## Milestone 13: Pastagens — Historico e Ronda de Campo
+
+**Objetivo:** consolidar o manejo de pastagens sem misturar cadastro estatico, estado materializado e fatos historicos.
+
+**Status:** Concluido em 2026-05-08
+
+### Entregaveis
+
+- [x] Registrar movimentacao lote -> pasto como evento factual com origem/destino de pasto.
+- [x] Materializar `pasto_ocupacoes` como read model operacional de ocupacao atual.
+- [x] Evoluir cadastro de pastos com ficha tecnica agronomica e importacao CSV compativel.
+- [x] Remover curral/brete/balanca da infraestrutura ativa do pasto, mantendo tolerancia passiva a legado.
+- [x] Criar `dominio='pastagem'` e detalhe `eventos_pasto_avaliacao` para ronda/avaliacao.
+- [x] Adicionar store Dexie, TABLE_MAP, builder, validator e testes focados.
+- [x] Expor registro minimo e ultima avaliacao em `PastoDetalhe`.
+
+### Fora de escopo mantido
+
+- Dashboard de pastagem.
+- Graficos de descanso/pressao de pastejo.
+- Recomendacao automatica de manejo.
+- Calculo automatico de UA ou lotacao ideal.
+- Agenda automatica ou alertas automaticos.
+- Motor agronomico.
 
 ---
 

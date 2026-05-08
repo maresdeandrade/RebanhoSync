@@ -11,7 +11,7 @@ Este documento registra o estado efetivo do RebanhoSync na fase atual de consoli
 
 - **Estagio do produto:** Beta interno — MVP completo e operacional.
 - **Fase de engenharia/produto:** transicao de MVP funcional para SLC (Simple, Lovable, Complete) em consolidacao.
-- **Core operacional:** sanitário, pesagem, movimentação, nutrição, reprodução, financeiro e agenda estão implementados e usáveis.
+- **Core operacional:** sanitário, pesagem, movimentação, nutrição, pastagem/rondas, reprodução, financeiro e agenda estão implementados e usáveis.
 - **Camadas consolidadas:** onboarding guiado, importação CSV, relatórios operacionais, telemetria de piloto com flush remoto, modo de experiência da fazenda, dashboard e ficha reprodutiva dedicada, pós-parto neonatal, cria inicial, transições de rebanho.
 - **Central Operacional passiva:** primeira integração read-only concluída na Home, consumindo `src/lib/insights/` por `src/features/operationalInsights/` sem ações de domínio.
 - **Motor sanitário endurecido:** catalogo conservador, calendario TS->SQL alinhado, dedup canonico TS/SQL, brucelose por janela/sexo/especie transicional, bloqueio historico de reabertura via `sanitary_completion`, raiva sequencial D1/D2/anual por risco/configuracao/ativacao explicita e tecnicos por ativacao operacional explicita com alvo de especie quando informado.
@@ -41,7 +41,7 @@ Este documento registra o estado efetivo do RebanhoSync na fase atual de consoli
 
 ### Offline-First ✅ COMPLETO
 
-- Dexie v11 com stores de estado, eventos, fila, métricas locais, cache do catálogo veterinário e cache do catálogo regulatório oficial.
+- Dexie v13 com stores de estado, eventos, fila, métricas locais, cache do catálogo veterinário, cache do catálogo regulatório oficial, `state_pasto_ocupacoes` e `event_eventos_pasto_avaliacao`.
 - Gestos atômicos com `queue_gestures` e `queue_ops`.
 - Aplicação otimista, rollback e DLQ.
 - Worker de sync com `sync-batch`.
@@ -49,7 +49,7 @@ Este documento registra o estado efetivo do RebanhoSync na fase atual de consoli
 - Store `metrics_events` como buffer local append-only para telemetria de piloto, com flush remoto periódico.
 
 **Evidência principal:**
-- `src/lib/offline/db.ts` — 20+ stores Dexie (v11 com `metrics_events`, `catalog_produtos_veterinarios`, `catalogo_protocolos_oficiais*` e `state_fazenda_sanidade_config`)
+- `src/lib/offline/db.ts` — 20+ stores Dexie (v13 com `metrics_events`, `catalog_produtos_veterinarios`, `catalogo_protocolos_oficiais*`, `state_fazenda_sanidade_config`, `state_pasto_ocupacoes` e `event_eventos_pasto_avaliacao`)
 - `src/lib/offline/syncWorker.ts` — pipeline completo + auto-purge
 - `src/lib/offline/rejections.ts` — API DLQ index-backed
 - `src/lib/offline/pull.ts` — reconciliação remota
@@ -67,6 +67,8 @@ Este documento registra o estado efetivo do RebanhoSync na fase atual de consoli
 | `pesagem.historico` | Completo — **TD-015 CLOSED** via artefatos SQL consolidados na baseline | `supabase/migrations/00000000000000_rebuild_base_schema_sanitario.sql` |
 | `nutricao.registro` | Completo | `src/pages/Registrar/index.tsx`, `src/pages/Eventos.tsx` |
 | `nutricao.historico` | Completo | `src/pages/Eventos.tsx` |
+| `pastagem.avaliacao_evento` | Completo — ronda/avaliação de pasto registrada como evento histórico append-only, sem alterar pastos, lotes, ocupações ou agenda | `src/pages/PastoDetalhe.tsx`, `src/lib/events/buildEventGesture.ts`, `src/lib/events/validators/pastagem.ts`, `supabase/migrations/20260508005000_eventos_pasto_avaliacao.sql` |
+| `pastagem.historico` | Completo — última avaliação exibida no detalhe do pasto via `event_eventos_pasto_avaliacao` | `src/pages/PastoDetalhe.tsx`, `src/lib/offline/db.ts`, `src/lib/offline/tableMap.ts` |
 | `movimentacao.registro` | Completo — **TD-019 CLOSED** | `supabase/migrations/00000000000000_rebuild_base_schema_sanitario.sql` |
 | `movimentacao.historico` | Completo | `src/pages/Eventos.tsx` |
 | `movimentacao.anti_teleport_client` | Completo | `src/pages/Registrar/index.tsx`, `src/lib/offline/syncWorker.ts` |
@@ -80,7 +82,7 @@ Este documento registra o estado efetivo do RebanhoSync na fase atual de consoli
 | `agenda.dedup` | Completo — contrato canonico estruturado TS/SQL | `src/lib/sanitario/engine/dedup.ts`, `supabase/migrations/00000000000000_rebuild_base_schema_sanitario.sql` |
 | `agenda.recalculo` | Completo — recompute limpa e reconstrui pendencias automaticas do escopo antes de reaplicar o motor | `supabase/migrations/00000000000000_rebuild_base_schema_sanitario.sql` |
 
-**Capability Score:** 19/19 = **100%** ✅
+**Capability Score:** 21/21 = **100%** ✅
 
 ---
 
@@ -90,6 +92,7 @@ Este documento registra o estado efetivo do RebanhoSync na fase atual de consoli
 - Importação CSV de animais: `src/pages/AnimaisImportar.tsx`
 - Importação CSV de lotes: `src/pages/LotesImportar.tsx`
 - Importação CSV de pastos: `src/pages/PastosImportar.tsx`
+- Detalhe de pasto com ronda/avaliação histórica: `src/pages/PastoDetalhe.tsx`
 - Relatórios operacionais: `src/pages/Relatorios.tsx`
 - Dashboard reprodutivo: `src/pages/ReproductionDashboard.tsx`
 - Ficha reprodutiva por matriz: `src/pages/AnimalReproducao.tsx`
@@ -105,6 +108,7 @@ Este documento registra o estado efetivo do RebanhoSync na fase atual de consoli
 - Modo de experiência por fazenda: `src/lib/farms/experienceMode.ts`
 - Taxonomia canônica bovina: `src/lib/animals/taxonomy.ts` + contrato v1 + fixtures canônicas
 - Central Operacional passiva na Home: `src/lib/insights/**`, `src/features/operationalInsights/operationalInsightsAdapter.ts`, `src/features/operationalInsights/useOperationalInsights.ts`, `src/features/operationalInsights/OperationalInsightsPanel.tsx`, `src/pages/Home.tsx`
+- Avaliação/ronda de pasto como evento histórico: `src/lib/events/validators/pastagem.ts`, `src/lib/events/__tests__/pastoAvaliacao.test.ts`, `src/pages/__tests__/PastoAvaliacao.test.tsx`
 
 ### Central Operacional passiva
 
@@ -179,6 +183,8 @@ Este documento registra o estado efetivo do RebanhoSync na fase atual de consoli
 | movimentacao | `movimentacao.registro` | Registro de movimentação |
 | movimentacao | `movimentacao.historico` | Histórico/leitura de movimentação |
 | movimentacao | `movimentacao.anti_teleport_client` | Validação client-side origem≠destino |
+| pastagem | `pastagem.avaliacao_evento` | Registro de avaliação/ronda de pasto como evento histórico |
+| pastagem | `pastagem.historico` | Leitura da última avaliação/ronda no detalhe do pasto |
 | reproducao | `reproducao.registro` | Registro de reprodução |
 | reproducao | `reproducao.historico` | Histórico/leitura de reprodução |
 | reproducao | `reproducao.episode_linking` | Linking episódios (cobertura→diagnóstico→parto) |
@@ -190,7 +196,7 @@ Este documento registra o estado efetivo do RebanhoSync na fase atual de consoli
 | agenda | `agenda.recalculo` | Recalculo automático via engine sanitária |
 | sanitario| `sanitario.regime_sequencial`| Motor de sequência de doses, dependência de milestone e catch-up |
 
-**Total: 19 capabilities**
+**Total: 21 capabilities**
 
 ---
 

@@ -39,7 +39,13 @@ O MVP cobre o núcleo operacional necessário para uso interno controlado.
   - pesagem
   - nutrição
   - movimentação
+  - avaliação/ronda de pasto
+  - reprodução
   - financeiro
+- Manejo de pastagens:
+  - ficha técnica agronômica do pasto
+  - ocupações materializadas para leitura operacional
+  - ronda de campo como evento histórico
 - Agenda sanitária automática com protocolos, deduplicação e recálculo
 - Onboarding guiado da fazenda
 - Importação CSV de animais, lotes e pastos

@@ -129,6 +129,7 @@ Regras:
 - `Registrar` e `Executar` escrevem evento.
 - `Encerrar` e `Cancelar` atuam em pendencia de agenda.
 - `Aplicar protocolo` recalcula/materializa agenda e nao cria evento diretamente.
+- Avaliacao/ronda de pasto usa `dominio='pastagem'` e detalhe `eventos_pasto_avaliacao`; e historico factual append-only, nao atualiza `pastos`, `lotes`, `pasto_ocupacoes` e nao gera agenda.
 - Correcao historica por `corrige_evento_id` esta parcialmente validada: o campo existe, mas o fluxo completo de correcao nao foi confirmado no codigo inspecionado.
 - Agenda concluida sem evento vinculado nao deve ser tratada como execucao factual.
 - Necessidade futura deve partir de agenda materializada valida quando o dominio tiver agenda confirmada; regra mais validada para sanitario e cria/pos-parto.

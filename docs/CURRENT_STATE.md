@@ -31,6 +31,7 @@ Consolidacoes recentes da fase SLC:
 - Shims de migrations pos-squash removidos da pasta ativa; testes de contrato leem a baseline canonica ou fixtures canonicas.
 - `docs/review/RebanhoSync_auditoria.md` foi ajustado pos-validacao como contrato documental de fontes de verdade para orientar uso de `insights` e marcadores sem transformar sinal auxiliar em fonte primaria ou comportamento operacional.
 - `src/lib/insights/` foi consolidado como core puro/read-only de composicao operacional; a primeira integracao passiva foi conectada na Home por `src/features/operationalInsights/` sem IO no core, sem persistencia, sem eventos e sem acoes de dominio.
+- Pastagens passaram a ter trilho historico proprio para avaliacao/ronda: `dominio='pastagem'`, detalhe `eventos_pasto_avaliacao`, store local `event_eventos_pasto_avaliacao` e registro minimo em `PastoDetalhe`, sem atualizar `pastos`, `lotes`, `pasto_ocupacoes` ou agenda.
 
 ---
 
@@ -133,6 +134,22 @@ Limites preservados:
 - agenda continua intencao operacional, nao fato historico;
 - protocolo configurado continua regra, nao execucao.
 - o painel permanece sem botao, link, `onClick` ou CTA de dominio.
+
+---
+
+### Pastagens e rondas de campo
+
+Consolidacao recente no dominio de pastos:
+- P0/P1 preservam a separacao entre movimentacao factual (`eventos_movimentacao`) e estado/materializacao operacional (`lotes.pasto_id`, `pasto_ocupacoes`).
+- P2 adicionou ficha tecnica agronomica do pasto (`tipo_area`, forrageira/cultivar, metas de altura e capacidade UA alvo), mantendo `tipo_pasto` legado.
+- P3 removeu curral/brete/balanca da infraestrutura ativa do pasto; `infraestrutura.curral` permanece apenas como legado tolerado.
+- P4 registra avaliacao/ronda de pasto como evento historico append-only (`eventos` + `eventos_pasto_avaliacao`), usando `createGesture`/Dexie/TABLE_MAP e exibindo a ultima avaliacao em `PastoDetalhe`.
+
+Limites preservados:
+- ronda de pasto nao atualiza cadastro estatico de `pastos`;
+- nao altera `lotes`;
+- nao altera `pasto_ocupacoes`;
+- nao gera agenda, alerta, recomendacao automatica, dashboard ou motor agronomico.
 
 ---
 
