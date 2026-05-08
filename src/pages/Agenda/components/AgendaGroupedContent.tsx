@@ -77,7 +77,7 @@ export function AgendaGroupedContent({
   return (
     <>
       {criticalTargets.length > 0 ? (
-        <Card className="border-destructive/15 bg-destructive/5 shadow-none">
+        <Card className="border-destructive/25 bg-destructive/10 shadow-none">
           <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="space-y-1">
               <div className="flex flex-wrap items-center gap-2">

@@ -17,33 +17,28 @@ Estes documentos não substituem o código atual, não alteram regra de negócio
 - `STITCH_PROMPTS.md` — prompts versionados para gerar novas variações visuais no Stitch.
 - `references/` — imagens de referência visual.
 
-## Direção visual vigente
+## Direção visual implementada
 
-Versão atual: **Azul Sync Técnico**.
+Versão atual: **Azul Sync Técnico (Consolidada)**.
 
-Princípios:
+Princípios realizados:
 
-- mobile-first;
-- offline-first;
-- clareza operacional;
-- identidade azul;
-- cards brancos em fundo claro;
-- header azul petróleo;
-- ícones lineares estilo Lucide;
-- bottom navigation mobile;
-- perfil/lista de animais sem foto real como avatar padrão;
-- estados claros para sync, offline, pendente e rejeitado.
+- **Contraste Corretivo**: Ajustes em `light/dark mode` para legibilidade de estados críticos.
+- **Mobile-first**: Bottom navigation como âncora mobile.
+- **Desktop-first**: SideNav preservada em telas grandes.
+- **Identidade**: Azul petróleo e cards operacionais com bordas visíveis.
+- **Clareza de Sync**: Estados de pendência e rejeição com badges semânticos.
 
-## Direção UX vigente
+## Direção UX implementada
 
-A evolução de UX deve ser incremental, orientada ao uso em campo e sem alterar regras de negócio.
-
-Prioridades:
-
-1. **Bottom Navigation mobile** preservando SideNav desktop.
-2. **Home como Hoje / Central Operacional**.
-3. **Registro contexto-primeiro** por lote, pasto, animal ou item de agenda.
-4. **Bandeja de seleção** apenas como evolução futura.
+1. **Home como Central Operacional**: Validada como "Hoje", priorizando atrasos e sync.
+2. **Agenda como Intenção**: Preservada para filtros e gestão de pendências.
+3. **Eventos como Fato**: Fonte da verdade histórica append-only.
+4. **Registro Contextual Seguro**:
+   - Entrada via Lote, Pasto, Animal ou Agenda.
+   - `pastoId` como contexto informativo (sem inferência automática de animais).
+   - CTAs contextuais apenas para navegação/pré-preenchimento.
+   - Revisão obrigatória antes de salvar.
 
 Separação recomendada:
 

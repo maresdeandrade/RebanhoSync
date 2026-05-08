@@ -584,7 +584,7 @@ const Home = () => {
         <Card
           className={
             overdueItems.length > 0
-              ? "border-destructive/15 bg-destructive/5"
+              ? "border-destructive/25 bg-destructive/10"
               : undefined
           }
         >
@@ -611,7 +611,7 @@ const Home = () => {
               overdueItems.map((item) => (
                 <div
                   key={item.id}
-                  className="rounded-2xl border border-destructive/15 bg-background/70 p-4"
+                  className="rounded-2xl border border-destructive/20 bg-background/70 p-4"
                 >
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div className="space-y-1">

@@ -38,20 +38,19 @@ Elas não substituem a estrutura real do app e não autorizam criação de funci
 
 Se alguma imagem ainda não existir, manter o nome como referência esperada.
 
-## 3. Aprovado
+## 3. Implementado e Aprovado
 
-- Identidade azul.
-- Header azul petróleo.
-- Cards brancos.
-- Fundo claro.
-- Bottom navigation mobile.
-- Ícones lineares.
-- Estados de sync/offline/rejeição.
-- Perfil animal sem foto real.
-- Lista de animais sem foto real.
-- Logo em escudo/hexágono com boi branco.
-- Densidade operacional moderada.
-- Visual técnico, limpo e legível.
+- **Identidade Azul**: Aplicada (`Sync Técnico`).
+- **Header**: Azul petróleo profundo.
+- **Cards**: Brancos em light mode; tons de cinza/azul profundo em dark mode.
+- **Contraste**: Revisado para legibilidade técnica em ambos os temas.
+- **Navegação Híbrida**: 
+  - `Bottom Navigation` mobile (Hoje, Rebanho, Manejo, Estrutura, Mais).
+  - `SideNav` desktop/tablet preservada.
+- **Home**: Consolidada como Central Operacional ("Hoje").
+- **Ícones**: Lineares Lucide.
+- **Logo**: Escudo/hexágono com boi branco.
+- **Fichas**: Sem foto real de animal como avatar padrão.
 
 ## 4. Não aprovado automaticamente
 

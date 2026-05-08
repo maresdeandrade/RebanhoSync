@@ -1,7 +1,7 @@
 # Current State (Snapshot Operacional)
 
 > **Status:** Snapshot vivo
-> **Ultima atualizacao:** 2026-05-07
+> **Ultima atualizacao:** 2026-05-08
 > **Estado do produto:** Beta interno
 > **Fase atual:** MVP funcional completo -> **SLC (Simple, Lovable, Complete) em consolidacao**
 
@@ -32,6 +32,14 @@ Consolidacoes recentes da fase SLC:
 - `docs/review/RebanhoSync_auditoria.md` foi ajustado pos-validacao como contrato documental de fontes de verdade para orientar uso de `insights` e marcadores sem transformar sinal auxiliar em fonte primaria ou comportamento operacional.
 - `src/lib/insights/` foi consolidado como core puro/read-only de composicao operacional; a primeira integracao passiva foi conectada na Home por `src/features/operationalInsights/` sem IO no core, sem persistencia, sem eventos e sem acoes de dominio.
 - Pastagens passaram a ter trilho historico proprio para avaliacao/ronda: `dominio='pastagem'`, detalhe `eventos_pasto_avaliacao`, store local `event_eventos_pasto_avaliacao` e registro minimo em `PastoDetalhe`, sem atualizar `pastos`, `lotes`, `pasto_ocupacoes` ou agenda.
+
+### ✅ Refinamentos Recentes (Maio/2026)
+- **Identidade Azul Sync Técnico**: Implementada e consolidada em runtime.
+- **Contraste Corretivo**: Light/Dark mode validados para legibilidade em campo (red-400 p/ perigo, cards com 10% opacidade).
+- **Navegação Híbrida**: Bottom Nav (mobile) e SideNav (desktop) operacionais.
+- **Home Operacional**: Validada como central "Hoje", priorizando atrasos e sync.
+- **Fluxo de Registro**: Entrada contextual segura por Lote/Pasto/Animal/Agenda, sem inferência automática destrutiva.
+- **Handoff Design**: Documentado em `docs/design/HANDOFF_VISUAL_UX_20260508.md`.
 
 ---
 
@@ -150,45 +158,6 @@ Limites preservados:
 - nao altera `lotes`;
 - nao altera `pasto_ocupacoes`;
 - nao gera agenda, alerta, recomendacao automatica, dashboard ou motor agronomico.
-
----
-
-## 2.1 Invariantes operacionais consolidados
-
-- idempotencia de execucao: `1 acao -> 1 createGesture`;
-- guards de reentrada/concorrencia ativos nos fluxos operacionais criticos para evitar dupla execucao;
-- regressao semantica travada por `tests/smoke/semantic_terms_guard.smoke.test.ts`.
-
----
-
-## 2.2 Baseline Supabase validada
-
-Estado real validado em 2026-04-29:
-
-- `supabase/migrations/00000000000000_rebuild_base_schema_sanitario.sql` e a baseline canonica atual de desenvolvimento.
-- `supabase/seed.sql` repopula catalogos sanitarios canonicos conservadores e idempotentes: somente brucelose PNCEBT entra como agenda automatica; raiva, PNEFA/aftosa, notificaveis, GTA, biosseguranca e tecnicos recomendados nao geram agenda por seed.
-- `supabase/migrations_legacy_pre_baseline/` preserva a cadeia antiga como backup documental.
-- Shims de compatibilidade pos-squash foram removidos da pasta ativa de migrations; testes de contrato passaram a ler a baseline canonica ou fixtures canonicas de dominio.
-- `supabase db reset` passou em rodada dupla; seed idempotente passou.
-- RLS funcional passou para `owner`, `manager`, `cowboy` e usuario sem vinculo.
-- FK composta bloqueou cruzamento entre fazendas.
-- Fluxo minimo agenda sanitaria -> `eventos` -> `eventos_sanitario` passou via RPC.
-- `sync-batch` foi validado com handler real; o gateway local rodou com `functions serve --no-verify-jwt`, mas `auth.getUser(jwt)` e RLS foram exercitados dentro do handler.
-- Validador funcional: `node scripts/codex/validate-supabase-baseline-functional.mjs`.
-
-Limites explicitamente mantidos:
-- raiva sequencial D1/D2/anual esta materializada na baseline SQL apenas via protocolo operacional tenant-scoped; catalogo global/seed continuam sem gerar agenda automatica;
-- `animais.especie` existe como campo canonico nullable minimo (`bovino`/`bubalino`/`null`) e atua como gate sanitario transicional, sem backfill obrigatorio e sem obrigatoriedade de preenchimento;
-- nao ha indice JSONB para `payload.sanitary_completion`; este e o risco remanescente principal da sequencia de raiva quando o volume historico crescer;
-- o seed sanitario permanece conservador e nao e catalogo normativo completo.
-- eventos possuem protecao contra update destrutivo de negocio, com excecoes tecnicas controladas; correcao por `corrige_evento_id` segue parcialmente validada como contrato/campo, sem fluxo completo confirmado.
-- ha RPC/funcoes de recompute sanitario por animal, mas disparo automatico por mutacao do animal nao ficou confirmado no codigo inspecionado; recompute por protocolo/config esta mais claramente validado.
-
-Riscos remanescentes:
-- validar caminho completo do gateway JWT local sem `--no-verify-jwt`;
-- manter o seed sanitario como catalogo tecnico conservador, nao fonte normativa completa;
-- sanear legado com `animais.especie is null` e decidir futuramente se `null` deve bloquear agenda sanitaria ou exigir preenchimento antes de aplicar protocolo;
-- acompanhar historico de timeout intermitente em testes UI longos.
 
 ---
 

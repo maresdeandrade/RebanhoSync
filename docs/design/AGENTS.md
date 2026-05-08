@@ -256,13 +256,12 @@ pnpm run build
 git status --short --untracked-files=all
 ```
 
-## 8. Primeiro patch UX recomendado
+## 8. Primeiro patch UX realizado (Maio/2026)
 
-Ordem recomendada:
+O primeiro ciclo de refinamento visual e UX foi concluído:
 
-1. Bottom Navigation mobile preservando SideNav desktop.
-2. Home como Central Operacional sem remover Agenda.
-3. Manejo contextual por Lote/Pasto/Animal/Agenda.
-4. Bandeja de seleção apenas depois.
-
-Motivo: maximiza ganho de usabilidade com baixo risco arquitetural inicial.
+1. **Navegação**: Bottom Navigation mobile e SideNav desktop operacionais.
+2. **Central Operacional**: Home (Hoje) consolidada com foco em execução e sync.
+3. **Contraste**: Revisão completa de `light/dark mode` para legibilidade técnica.
+4. **Contexto**: Manejo contextual via alvos operacionais implementado.
+5. **Próximo Passo**: Avaliar necessidade de bandeja de seleção (apenas se houver demanda operacional clara).

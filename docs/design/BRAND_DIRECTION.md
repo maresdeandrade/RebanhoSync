@@ -1,8 +1,8 @@
 # Brand Direction — RebanhoSync
 
-Status: Direção visual aprovada  
-Tipo: Referência de marca para evolução incremental do produto  
-Versão: v1 — Azul Sync Técnico
+Status: Implementado e validado em runtime  
+Tipo: Referência de marca e UX real  
+Versão: v1 — Azul Sync Técnico (Pós-Revisão de Contraste)
 
 ## 1. Posicionamento
 
@@ -28,7 +28,7 @@ A marca não deve parecer:
 
 ## 2. Conceito visual
 
-Direção: **Azul Sync Técnico**.
+Direção: **Azul Sync Técnico (Implementado)**.
 
 A identidade combina:
 
@@ -163,25 +163,18 @@ Componentes devem favorecer operação rápida:
 - alertas claros, sem alarmismo excessivo;
 - feedback explícito de sync/offline.
 
-## 9. Direção UX vinculada à marca
+## 9. Estado Real (Maio/2026)
 
-A marca azul “Sync Técnico” deve reforçar:
+A identidade “Sync Técnico” foi consolidada com os seguintes refinamentos:
 
-- operação diária;
-- confiança no dado local;
-- sincronização segura;
-- foco no que precisa ser feito agora.
-
-Essa direção se conecta à reorganização de fluxos:
-
-```txt
-Hoje = central operacional
-Agenda = gestão completa de pendências
-Manejo = ação rápida contextual
-Rebanho = busca e consulta
-Estrutura = lotes/pastos/fazenda
-Mais = relatórios/configurações/equipe
-```
+- **Contraste Aprimorado**: Badges e estados críticos (`danger`) ajustados para legibilidade em light e dark mode (uso de `dark:text-red-400`).
+- **Cards Operacionais**: Opacidade de fundo e borda em cards de pendências/atrasos elevada para 10% e 25% respectivamente, garantindo visibilidade em telas OLED/campo.
+- **SideNav Desktop**: Preservada como âncora de navegação em telas grandes.
+- **Bottom Navigation**: Implementada como padrão para mobile.
+- **Home**: Consolidada como Central Operacional (Hoje).
+- **Contexto de Manejo**: Implementado acesso via Lote, Pasto, Animal e Agenda.
+- **PastoId**: Tratado como contexto informativo na UI, sem inferência automática de animais (preservando integridade).
+- **Intenção vs Fato**: Agenda preservada como intenção operacional; Eventos como fatos históricos.
 
 ## 10. Microcopy preferencial
 
