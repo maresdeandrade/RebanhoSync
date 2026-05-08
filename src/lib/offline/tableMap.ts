@@ -21,6 +21,7 @@ export const TABLE_MAP: Record<string, string> = {
   eventos_pesagem: "event_eventos_pesagem",
   eventos_nutricao: "event_eventos_nutricao",
   eventos_movimentacao: "event_eventos_movimentacao",
+  eventos_pasto_avaliacao: "event_eventos_pasto_avaliacao",
   eventos_reproducao: "event_eventos_reproducao",
   eventos_financeiro: "event_eventos_financeiro",
 };

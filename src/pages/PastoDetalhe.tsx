@@ -1,17 +1,90 @@
+import { useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
-import { ChevronLeft, Map as MapIcon, PawPrint, Pencil, Ruler, Trees } from "lucide-react";
+import {
+  ChevronLeft,
+  ClipboardCheck,
+  Map as MapIcon,
+  PawPrint,
+  Pencil,
+  Ruler,
+  Trees,
+} from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
 import { EmptyState } from "@/components/EmptyState";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { MetricCard } from "@/components/ui/metric-card";
 import { PageIntro } from "@/components/ui/page-intro";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { buildEventGesture } from "@/lib/events/buildEventGesture";
 import { db } from "@/lib/offline/db";
+import { createGesture } from "@/lib/offline/ops";
+import type {
+  PastoAguaStatusEnum,
+  PastoAvaliacaoMomentoEnum,
+  PastoCoberturaSoloEnum,
+  PastoFezesScoreEnum,
+  PastoInvasorasNivelEnum,
+  SuplementoUnidadeEnum,
+} from "@/lib/offline/types";
+import { showError, showSuccess } from "@/utils/toast";
+
+function parseOptionalNumber(value: string) {
+  const normalized = value.trim().replace(",", ".");
+  if (!normalized) return { value: null, valid: true };
+
+  const parsed = Number(normalized);
+  return {
+    value: Number.isFinite(parsed) ? parsed : null,
+    valid: Number.isFinite(parsed),
+  };
+}
+
+function formatDateTime(value?: string | null) {
+  if (!value) return "Data nao informada";
+
+  return new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "short",
+    timeStyle: "short",
+  }).format(new Date(value));
+}
+
+const labelize = (value?: string | null) =>
+  value ? value.replaceAll("_", " ") : "Nao informado";
 
 const PastoDetalhe = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [rondaOpen, setRondaOpen] = useState(false);
+  const [momento, setMomento] = useState<PastoAvaliacaoMomentoEnum>("ronda");
+  const [alturaCm, setAlturaCm] = useState("");
+  const [coberturaSolo, setCoberturaSolo] = useState<PastoCoberturaSoloEnum | "">("");
+  const [invasorasNivel, setInvasorasNivel] = useState<PastoInvasorasNivelEnum | "">("");
+  const [aguaStatus, setAguaStatus] = useState<PastoAguaStatusEnum | "">("");
+  const [eccLoteMedio, setEccLoteMedio] = useState("");
+  const [fezesScore, setFezesScore] = useState<PastoFezesScoreEnum | "">("");
+  const [suplementoTipo, setSuplementoTipo] = useState("");
+  const [suplementoQuantidade, setSuplementoQuantidade] = useState("");
+  const [suplementoUnidade, setSuplementoUnidade] =
+    useState<SuplementoUnidadeEnum | "">("");
+  const [rondaObservacoes, setRondaObservacoes] = useState("");
 
   const pasto = useLiveQuery(() => (id ? db.state_pastos.get(id) : undefined), [id]);
   const lotes = useLiveQuery(
@@ -27,6 +100,43 @@ const PastoDetalhe = () => {
       total += await db.state_animais.where("lote_id").equals(lote.id).count();
     }
     return total;
+  }, [id]);
+  const ocupacaoAberta = useLiveQuery(
+    () =>
+      id
+        ? db.state_pasto_ocupacoes
+            .where("pasto_id")
+            .equals(id)
+            .filter((ocupacao) => ocupacao.status === "aberta" && !ocupacao.deleted_at)
+            .first()
+        : undefined,
+    [id],
+  );
+  const avaliacoesPasto = useLiveQuery(async () => {
+    if (!id) return [];
+
+    const detalhes = await db.event_eventos_pasto_avaliacao
+      .where("pasto_id")
+      .equals(id)
+      .toArray();
+    const ativos = detalhes.filter((avaliacao) => !avaliacao.deleted_at);
+    const eventos = await db.event_eventos.bulkGet(
+      ativos.map((avaliacao) => avaliacao.evento_id),
+    );
+    const eventosById = new Map(
+      eventos.filter(Boolean).map((evento) => [evento!.id, evento!]),
+    );
+
+    return ativos
+      .map((avaliacao) => ({
+        avaliacao,
+        evento: eventosById.get(avaliacao.evento_id) ?? null,
+      }))
+      .sort((a, b) => {
+        const aDate = a.evento?.occurred_at ?? a.avaliacao.created_at;
+        const bDate = b.evento?.occurred_at ?? b.avaliacao.created_at;
+        return bDate.localeCompare(aDate);
+      });
   }, [id]);
 
   if (!id || !pasto) {
@@ -56,6 +166,85 @@ const PastoDetalhe = () => {
     pasto.tipo_area ||
     pasto.tipo_pasto ||
     "Nao informado";
+  const ultimaAvaliacao = avaliacoesPasto?.[0] ?? null;
+
+  const resetRondaForm = () => {
+    setMomento("ronda");
+    setAlturaCm("");
+    setCoberturaSolo("");
+    setInvasorasNivel("");
+    setAguaStatus("");
+    setEccLoteMedio("");
+    setFezesScore("");
+    setSuplementoTipo("");
+    setSuplementoQuantidade("");
+    setSuplementoUnidade("");
+    setRondaObservacoes("");
+  };
+
+  const handleSalvarRonda = async () => {
+    const alturaParsed = parseOptionalNumber(alturaCm);
+    const eccParsed = parseOptionalNumber(eccLoteMedio);
+    const suplementoParsed = parseOptionalNumber(suplementoQuantidade);
+
+    if (!alturaParsed.valid) {
+      showError("Altura do capim deve ser um numero valido.");
+      return;
+    }
+    if (alturaParsed.value !== null && alturaParsed.value <= 0) {
+      showError("Altura do capim deve ser maior que zero.");
+      return;
+    }
+    if (!eccParsed.valid) {
+      showError("ECC medio deve ser um numero valido.");
+      return;
+    }
+    if (
+      eccParsed.value !== null &&
+      (eccParsed.value < 1 || eccParsed.value > 5)
+    ) {
+      showError("ECC medio deve estar entre 1 e 5.");
+      return;
+    }
+    if (!suplementoParsed.valid) {
+      showError("Quantidade de suplemento deve ser um numero valido.");
+      return;
+    }
+    if (suplementoParsed.value !== null && suplementoParsed.value < 0) {
+      showError("Quantidade de suplemento deve ser maior ou igual a zero.");
+      return;
+    }
+
+    try {
+      const { ops } = buildEventGesture({
+        dominio: "pastagem",
+        fazendaId: pasto.fazenda_id,
+        pastoId: pasto.id,
+        loteId: ocupacaoAberta?.lote_id ?? null,
+        ocupacaoId: ocupacaoAberta?.id ?? null,
+        momento,
+        alturaCm: alturaParsed.value,
+        coberturaSolo: coberturaSolo || null,
+        invasorasNivel: invasorasNivel || null,
+        eccLoteMedio: eccParsed.value,
+        aguaStatus: aguaStatus || null,
+        fezesScore: fezesScore || null,
+        suplementoTipo: suplementoTipo.trim() || null,
+        suplementoQuantidade: suplementoParsed.value,
+        suplementoUnidade: suplementoUnidade || null,
+        observacoes: rondaObservacoes.trim() || null,
+        payload: {},
+      });
+
+      await createGesture(pasto.fazenda_id, ops);
+      showSuccess("Ronda registrada localmente.");
+      resetRondaForm();
+      setRondaOpen(false);
+    } catch (error) {
+      console.error(error);
+      showError("Nao foi possivel registrar a ronda.");
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -76,6 +265,10 @@ const PastoDetalhe = () => {
                 Editar cadastro
               </Button>
             </Link>
+            <Button variant="outline" onClick={() => setRondaOpen(true)}>
+              <ClipboardCheck className="mr-2 h-4 w-4" />
+              Registrar ronda
+            </Button>
           </>
         }
       />
@@ -148,6 +341,53 @@ const PastoDetalhe = () => {
             </div>
           </div>
         </div>
+      </section>
+
+      <section className="app-surface space-y-4 p-5 sm:p-6">
+        <div className="space-y-1">
+          <h2 className="text-lg font-semibold tracking-[-0.01em] text-foreground">
+            Ultima ronda
+          </h2>
+          <p className="text-sm leading-6 text-muted-foreground">
+            Registro historico mais recente da avaliacao de campo deste pasto.
+          </p>
+        </div>
+
+        {ultimaAvaliacao ? (
+          <div className="rounded-2xl border border-border/70 bg-muted/20 p-4">
+            <div className="mb-3 flex flex-wrap items-center gap-2">
+              <StatusBadge tone="info">
+                {labelize(ultimaAvaliacao.avaliacao.momento)}
+              </StatusBadge>
+              <span className="text-sm text-muted-foreground">
+                {formatDateTime(
+                  ultimaAvaliacao.evento?.occurred_at ??
+                    ultimaAvaliacao.avaliacao.created_at,
+                )}
+              </span>
+            </div>
+            <div className="grid gap-2 text-sm text-muted-foreground sm:grid-cols-2 lg:grid-cols-3">
+              <span>
+                Altura:{" "}
+                {ultimaAvaliacao.avaliacao.altura_cm
+                  ? `${ultimaAvaliacao.avaliacao.altura_cm} cm`
+                  : "Nao informado"}
+              </span>
+              <span>
+                Cobertura: {labelize(ultimaAvaliacao.avaliacao.cobertura_solo)}
+              </span>
+              <span>Agua: {labelize(ultimaAvaliacao.avaliacao.agua_status)}</span>
+              <span>
+                ECC: {ultimaAvaliacao.avaliacao.ecc_lote_medio ?? "Nao informado"}
+              </span>
+              <span>Fezes: {labelize(ultimaAvaliacao.avaliacao.fezes_score)}</span>
+            </div>
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            Nenhuma ronda registrada para este pasto.
+          </p>
+        )}
       </section>
 
       {infraestrutura ? (
@@ -272,6 +512,210 @@ const PastoDetalhe = () => {
           description="Vincule um lote ao pasto para acompanhar ocupacao e lotacao diretamente por aqui."
         />
       )}
+
+      <Dialog open={rondaOpen} onOpenChange={setRondaOpen}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Registrar ronda</DialogTitle>
+          </DialogHeader>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label>Momento</Label>
+              <Select
+                value={momento}
+                onValueChange={(value) =>
+                  setMomento(value as PastoAvaliacaoMomentoEnum)
+                }
+              >
+                <SelectTrigger aria-label="Momento da ronda">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="entrada">Entrada</SelectItem>
+                  <SelectItem value="saida">Saida</SelectItem>
+                  <SelectItem value="ronda">Ronda</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="altura-cm">Altura do capim (cm)</Label>
+              <Input
+                id="altura-cm"
+                value={alturaCm}
+                onChange={(event) => setAlturaCm(event.target.value)}
+                inputMode="decimal"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Cobertura do solo</Label>
+              <Select
+                value={coberturaSolo || "nao_informado"}
+                onValueChange={(value) =>
+                  setCoberturaSolo(
+                    value === "nao_informado"
+                      ? ""
+                      : (value as PastoCoberturaSoloEnum),
+                  )
+                }
+              >
+                <SelectTrigger aria-label="Cobertura do solo">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="nao_informado">Nao informado</SelectItem>
+                  <SelectItem value="excelente">Excelente</SelectItem>
+                  <SelectItem value="media">Media</SelectItem>
+                  <SelectItem value="ruim">Ruim</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Invasoras</Label>
+              <Select
+                value={invasorasNivel || "nao_informado"}
+                onValueChange={(value) =>
+                  setInvasorasNivel(
+                    value === "nao_informado"
+                      ? ""
+                      : (value as PastoInvasorasNivelEnum),
+                  )
+                }
+              >
+                <SelectTrigger aria-label="Nivel de invasoras">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="nao_informado">Nao informado</SelectItem>
+                  <SelectItem value="nenhuma">Nenhuma</SelectItem>
+                  <SelectItem value="leve">Leve</SelectItem>
+                  <SelectItem value="moderada">Moderada</SelectItem>
+                  <SelectItem value="alta">Alta</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Agua</Label>
+              <Select
+                value={aguaStatus || "nao_informado"}
+                onValueChange={(value) =>
+                  setAguaStatus(
+                    value === "nao_informado" ? "" : (value as PastoAguaStatusEnum),
+                  )
+                }
+              >
+                <SelectTrigger aria-label="Status da agua">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="nao_informado">Nao informado</SelectItem>
+                  <SelectItem value="limpo">Limpo</SelectItem>
+                  <SelectItem value="sujo">Sujo</SelectItem>
+                  <SelectItem value="nivel_baixo">Nivel baixo</SelectItem>
+                  <SelectItem value="seco">Seco</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="ecc-medio">ECC medio do lote</Label>
+              <Input
+                id="ecc-medio"
+                value={eccLoteMedio}
+                onChange={(event) => setEccLoteMedio(event.target.value)}
+                inputMode="decimal"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Escore de fezes</Label>
+              <Select
+                value={fezesScore || "nao_informado"}
+                onValueChange={(value) =>
+                  setFezesScore(
+                    value === "nao_informado" ? "" : (value as PastoFezesScoreEnum),
+                  )
+                }
+              >
+                <SelectTrigger aria-label="Escore de fezes">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="nao_informado">Nao informado</SelectItem>
+                  <SelectItem value="aneladas">Aneladas</SelectItem>
+                  <SelectItem value="ressecadas_empilhadas">
+                    Ressecadas empilhadas
+                  </SelectItem>
+                  <SelectItem value="liquidas">Liquidas</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="suplemento-tipo">Suplemento tipo</Label>
+              <Input
+                id="suplemento-tipo"
+                value={suplementoTipo}
+                onChange={(event) => setSuplementoTipo(event.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="suplemento-quantidade">Suplemento quantidade</Label>
+              <Input
+                id="suplemento-quantidade"
+                value={suplementoQuantidade}
+                onChange={(event) => setSuplementoQuantidade(event.target.value)}
+                inputMode="decimal"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Suplemento unidade</Label>
+              <Select
+                value={suplementoUnidade || "nao_informado"}
+                onValueChange={(value) =>
+                  setSuplementoUnidade(
+                    value === "nao_informado"
+                      ? ""
+                      : (value as SuplementoUnidadeEnum),
+                  )
+                }
+              >
+                <SelectTrigger aria-label="Suplemento unidade">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="nao_informado">Nao informado</SelectItem>
+                  <SelectItem value="kg">kg</SelectItem>
+                  <SelectItem value="sacos">Sacos</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2 sm:col-span-2">
+              <Label htmlFor="ronda-observacoes">Observacoes</Label>
+              <Textarea
+                id="ronda-observacoes"
+                value={rondaObservacoes}
+                onChange={(event) => setRondaObservacoes(event.target.value)}
+                rows={3}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRondaOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSalvarRonda}>Salvar ronda</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

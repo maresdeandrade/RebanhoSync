@@ -141,12 +141,30 @@ export type DominioEnum =
   | "pesagem"
   | "nutricao"
   | "movimentacao"
+  | "pastagem"
   | "reproducao"
   | "financeiro"
   | "obito";
 export type AgendaStatusEnum = "agendado" | "concluido" | "cancelado";
 export type AgendaSourceKindEnum = "manual" | "automatico";
 export type SanitarioTipoEnum = "vacinacao" | "vermifugacao" | "medicamento";
+export type PastoAvaliacaoMomentoEnum = "entrada" | "saida" | "ronda";
+export type PastoCoberturaSoloEnum = "excelente" | "media" | "ruim";
+export type PastoInvasorasNivelEnum =
+  | "nenhuma"
+  | "leve"
+  | "moderada"
+  | "alta";
+export type PastoFezesScoreEnum =
+  | "aneladas"
+  | "ressecadas_empilhadas"
+  | "liquidas";
+export type PastoAguaStatusEnum =
+  | "limpo"
+  | "sujo"
+  | "nivel_baixo"
+  | "seco";
+export type SuplementoUnidadeEnum = "kg" | "sacos";
 export type SanitaryOfficialScopeEnum = "federal" | "estadual";
 export type SanitaryOfficialAptidaoEnum = "corte" | "leite" | "misto" | "all";
 export type SanitaryOfficialSistemaEnum =
@@ -846,6 +864,40 @@ export interface EventoMovimentacao {
   deleted_at: string | null;
 }
 
+export interface EventoPastoAvaliacao {
+  evento_id: string;
+  fazenda_id: string;
+  pasto_id: string;
+  lote_id: string | null;
+  ocupacao_id: string | null;
+
+  momento: PastoAvaliacaoMomentoEnum;
+  altura_cm: number | null;
+  cobertura_solo: PastoCoberturaSoloEnum | null;
+  invasoras_nivel: PastoInvasorasNivelEnum | null;
+
+  ecc_lote_medio: number | null;
+  ecc_escala: "1_5";
+  fezes_score: PastoFezesScoreEnum | null;
+
+  agua_status: PastoAguaStatusEnum | null;
+  suplemento_tipo: string | null;
+  suplemento_quantidade: number | null;
+  suplemento_unidade: SuplementoUnidadeEnum | null;
+
+  observacoes: string | null;
+  payload: Record<string, unknown>;
+
+  client_id: string;
+  client_op_id: string;
+  client_tx_id: string | null;
+  client_recorded_at: string;
+  server_received_at: string;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+}
+
 // ---------------------------------------------------------
 // REPRODUÇÃO - PAYLOAD V1 CONTRACT
 // ---------------------------------------------------------
@@ -1006,6 +1058,7 @@ export interface EventoWithDetails extends Evento {
   details_pesagem?: EventoPesagem;
   details_nutricao?: EventoNutricao;
   details_movimentacao?: EventoMovimentacao;
+  details_pasto_avaliacao?: EventoPastoAvaliacao;
   details_reproducao?: EventoReproducao;
   details_financeiro?: EventoFinanceiro;
 }

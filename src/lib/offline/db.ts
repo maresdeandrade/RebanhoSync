@@ -8,6 +8,7 @@ import {
   type EventoFinanceiro,
   type EventoMovimentacao,
   type EventoNutricao,
+  type EventoPastoAvaliacao,
   type EventoPesagem,
   type EventoReproducao,
   type EventoSanitario,
@@ -48,6 +49,7 @@ export class OfflineDB extends Dexie {
   event_eventos_pesagem!: Table<EventoPesagem, string>;
   event_eventos_nutricao!: Table<EventoNutricao, string>;
   event_eventos_movimentacao!: Table<EventoMovimentacao, string>;
+  event_eventos_pasto_avaliacao!: Table<EventoPastoAvaliacao, string>;
   event_eventos_reproducao!: Table<EventoReproducao, string>;
   event_eventos_financeiro!: Table<EventoFinanceiro, string>;
 
@@ -388,6 +390,53 @@ export class OfflineDB extends Dexie {
       event_eventos_pesagem: "evento_id, fazenda_id, deleted_at",
       event_eventos_nutricao: "evento_id, fazenda_id, deleted_at",
       event_eventos_movimentacao: "evento_id, fazenda_id, deleted_at",
+      event_eventos_reproducao: "evento_id, fazenda_id, deleted_at",
+      event_eventos_financeiro: "evento_id, fazenda_id, deleted_at",
+
+      queue_gestures: "client_tx_id, status, [status+created_at], fazenda_id",
+      queue_ops: "client_op_id, client_tx_id, fazenda_id",
+      queue_rejections:
+        "++id, client_tx_id, fazenda_id, created_at, [fazenda_id+created_at]",
+      metrics_events:
+        "id, fazenda_id, event_name, status, route, entity, created_at, [fazenda_id+created_at]",
+      catalog_produtos_veterinarios:
+        "id, nome, categoria, updated_at, [categoria+nome]",
+      catalog_protocolos_oficiais:
+        "id, slug, escopo, uf, status_legal, versao, [escopo+uf], [status_legal+aptidao]",
+      catalog_protocolos_oficiais_itens:
+        "id, template_id, area, gatilho_tipo, requires_vet, requires_gta, gera_agenda",
+      catalog_doencas_notificaveis:
+        "codigo, nome, especie_alvo, tipo_notificacao, updated_at",
+    });
+
+    // Version 13: eventos_pasto_avaliacao — registro historico de ronda/avaliacao de pasto.
+    this.version(13).stores({
+      state_animais:
+        "id, fazenda_id, [fazenda_id+lote_id], [fazenda_id+status], lote_id, deleted_at",
+      state_lotes: "id, fazenda_id, pasto_id, deleted_at",
+      state_pastos: "id, fazenda_id, deleted_at",
+      state_pasto_ocupacoes:
+        "id, fazenda_id, pasto_id, lote_id, status, [fazenda_id+pasto_id], [fazenda_id+lote_id], deleted_at",
+      state_agenda_itens:
+        "id, fazenda_id, [fazenda_id+data_prevista], [fazenda_id+status], animal_id, lote_id, deleted_at",
+      state_contrapartes: "id, fazenda_id, deleted_at",
+      state_animais_sociedade:
+        "id, [fazenda_id+animal_id], fazenda_id, animal_id, contraparte_id, deleted_at, fim",
+      state_categorias_zootecnicas: "id, fazenda_id, deleted_at",
+      state_protocolos_sanitarios: "id, fazenda_id, deleted_at",
+      state_protocolos_sanitarios_itens:
+        "id, fazenda_id, protocolo_id, deleted_at",
+      state_fazenda_sanidade_config:
+        "fazenda_id, modo_calendario, uf, aptidao, sistema, deleted_at",
+
+      event_eventos:
+        "id, fazenda_id, [fazenda_id+dominio], [fazenda_id+occurred_at], animal_id, lote_id, deleted_at",
+      event_eventos_sanitario: "evento_id, fazenda_id, deleted_at",
+      event_eventos_pesagem: "evento_id, fazenda_id, deleted_at",
+      event_eventos_nutricao: "evento_id, fazenda_id, deleted_at",
+      event_eventos_movimentacao: "evento_id, fazenda_id, deleted_at",
+      event_eventos_pasto_avaliacao:
+        "evento_id, fazenda_id, pasto_id, lote_id, ocupacao_id, deleted_at",
       event_eventos_reproducao: "evento_id, fazenda_id, deleted_at",
       event_eventos_financeiro: "evento_id, fazenda_id, deleted_at",
 

@@ -37,6 +37,7 @@ export const validateBaseEventInput = (
 
   if (
     input.dominio !== "conformidade" &&
+    input.dominio !== "pastagem" &&
     !input.animalId &&
     !input.loteId
   ) {

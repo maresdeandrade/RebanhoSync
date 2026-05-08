@@ -7,6 +7,7 @@ export type EventDomain =
   | "conformidade"
   | "pesagem"
   | "movimentacao"
+  | "pastagem"
   | "nutricao"
   | "financeiro"
   | "reproducao"
@@ -80,6 +81,24 @@ export interface NutricaoEventInput extends BaseEventInput {
   quantidadeKg: number;
 }
 
+export interface PastoAvaliacaoEventInput extends BaseEventInput {
+  dominio: "pastagem";
+  pastoId: string;
+  loteId?: string | null;
+  ocupacaoId?: string | null;
+  momento: "entrada" | "saida" | "ronda";
+  alturaCm?: number | null;
+  coberturaSolo?: "excelente" | "media" | "ruim" | null;
+  invasorasNivel?: "nenhuma" | "leve" | "moderada" | "alta" | null;
+  eccLoteMedio?: number | null;
+  eccEscala?: "1_5";
+  fezesScore?: "aneladas" | "ressecadas_empilhadas" | "liquidas" | null;
+  aguaStatus?: "limpo" | "sujo" | "nivel_baixo" | "seco" | null;
+  suplementoTipo?: string | null;
+  suplementoQuantidade?: number | null;
+  suplementoUnidade?: "kg" | "sacos" | null;
+}
+
 export interface ObitoEventInput extends BaseEventInput {
   dominio: "obito";
   causa?: CausaObitoEnum;
@@ -133,6 +152,7 @@ export type EventInput =
   | PesagemEventInput
   | MovimentacaoEventInput
   | NutricaoEventInput
+  | PastoAvaliacaoEventInput
   | FinanceiroEventInput
   | ObitoEventInput
   | ReproductionEventInput;
