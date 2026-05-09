@@ -1,21 +1,47 @@
-## O que foi feito
-- [ ] Resumo do change
+## Resumo
+
+<!-- Descreva o delta real do PR em 2-5 linhas. Evite repetir o título. -->
+
+- 
+- 
+
+## Tipo de mudança
+
+- [ ] Correção
+- [ ] Refatoração
+- [ ] Feature
+- [ ] Documentação
+- [ ] Infra / CI
+- [ ] Segurança / RLS / RPC
+- [ ] Sync / Offline-first
+- [ ] Outro: 
 
 ## Capability / Infra
-- [ ] capability_id ou infra_id: `<capability_id>`
-- [ ] Issue vinculada: #<id>
+
+- `capability_id` ou `infra_id`: `<capability_id | infra.*>`
+- Issue vinculada: `closes #<id>`
+- Track:
+  - [ ] Catalog
+  - [ ] Infra / Out-of-catalog
+  - [ ] Não aplicável
+
+## Escopo alterado
+
+- [ ] UI / UX
+- [ ] Domínio / regra de negócio
+- [ ] Dexie / offline local
+- [ ] Supabase / SQL / migrations
+- [ ] RLS / RPC / Edge Functions
+- [ ] Sync / queue / rollback
+- [ ] Testes
+- [ ] Docs derivados
+- [ ] CI / GitHub Actions
 
 ## Evidência / Governança
-- [ ] Se mudou schema (migrations): evidência PM adicionada/atualizada nos docs derivados
-- [ ] Se mudou sync/functions: evidência PM adicionada/atualizada e Data Contract Audit revisado
-- [ ] Se mudou RLS/RPC: policy/rpc evidenciado e risco avaliado
 
-## Gates (obrigatório)
-- [ ] Regen de derivados rodou (se código mudou)
-- [ ] `gap_set == TECH_DEBT OPEN (Catalog)` (consistência)
-- [ ] `ROADMAP == TECH_DEBT OPEN (total)` (consistência)
-- [ ] RECONCILIACAO_REPORT confirma hard checks
+<!-- Use PM = evidência por path/linha. Use P = prova reproduzível por comando. -->
 
-## Risco e rollback
-- [ ] Risco principal:
-- [ ] Rollback:
+### Evidência PM
+
+```txt
+PM: path/do/arquivo.ts:~L10-L40 — descrição objetiva

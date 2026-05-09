@@ -1,8 +1,8 @@
-# Roadmap do Produto
+﻿# Roadmap do Produto
 
 > **Status:** Derivado (Rev D+)
-> **Baseline:** `b69d35f`
-> **Ultima Atualizacao:** 2026-05-07
+> **Baseline:** `3664395`
+> **Ultima Atualizacao:** 2026-05-09
 > **Derivado por:** Auditoria tecnica - estado pos-fechamento dos TDs originais e evolucao funcional de UX operacional
 > **Fonte:** `TECH_DEBT.md`, `IMPLEMENTATION_STATUS.md`
 
@@ -264,18 +264,18 @@ Atualizacao Pastagens 2026-05-08:
 - [ ] Reduzir wiring/read-model residual do shell de `Agenda` apos cortes `useAgendaPageData`, `pageSummaries` e `rowMeta`
 - [ ] Limpar wiring local remanescente de hotspots sem alterar semantica
 
-### Frente B — UX/experiencia
+### Frente B — UX/experiencia
 
 - [ ] Uniformizar feedbacks de sucesso/erro/loading nos fluxos centrais
 - [ ] Refinar empty/loading/error states para reduzir ambiguidade
-- [ ] Revisar consistencia visual entre `Agenda`, `Registrar` e `ProtocolosSanitarios`
-- [ ] Reduzir carga cognitiva de fluxo em campo (menos passos ambiguos)
+- [ ] Reduzir carga cognitiva de fluxo em campo (progresso parcial: Animais e AnimalNovo refatorados)
 
-### Frente C — Produto operacional
+### Frente C — Produto operacional
 
 - [ ] Alinhar continuidade de fluxo entre agenda -> registrar -> historico/protocolos
 - [ ] Garantir completude percebida nas rotinas centrais do recorte-alvo
 - [ ] Revisar friccoes recorrentes de uso em beta interno e fechar lacunas priorizadas
+- [ ] Revisar consistencia visual entre `Agenda`, `Registrar` e `ProtocolosSanitarios`
 
 ### Frente D — Confiabilidade
 

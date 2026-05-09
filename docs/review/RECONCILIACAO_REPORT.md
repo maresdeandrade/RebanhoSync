@@ -1,7 +1,7 @@
-# Relatório de Reconciliação — Documentos de Governança
+﻿# Relatório de Reconciliação — Documentos de Governança
 
 **Status:** Derivado (Rev D+ — Pós-Fechamento)
-**Baseline:** `b69d35f`
+**Baseline:** `3664395`
 **Última Atualização:** 2026-04-19
 **Derivado por:** Antigravity — Auditoria Técnica Completa Abril/2026
 
@@ -10,7 +10,7 @@
 ## 1. Baseline Integrity
 
 **Status:** CLEAN  
-**Baseline Commit:** `b69d35f`  
+**Baseline Commit:** `3664395`  
 **Data de Execução:** 2026-04-12
 
 Working tree verificado limpo. Múltiplos updates de Abril fechados no fluxo de MVP.
@@ -58,7 +58,7 @@ Recente adição da feature do Motor Sanitário Sequencial (Mid-Month Abril).
 
 ```
 IMPLEMENTATION_STATUS (Matriz Analítica)
-  → gap(capability_id) = (E2E ≠ PASS) OR (camada aplicável ∈ {⚠️, ❌})
+  → gap(capability_id) = (E2E ≠ PASS) OR (camada aplicável ∈ {⚠️, âŒ})
     → TECH_DEBT OPEN (Catalog)
       → ROADMAP items
 ```
@@ -98,7 +98,7 @@ IMPLEMENTATION_STATUS (Matriz Analítica)
 
 | TD | capability_id | Track | Status |
 | --- | --- | --- | --- |
-| TD-025| `sanitario.regime_sequencial` | UX | ⚠️ OPEN |
+| TD-025| `sanitario.regime_sequencial` | UX | ⚠️ OPEN |
 
 ### 3.4 Mapping Ambiguity
 

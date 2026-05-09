@@ -1,7 +1,7 @@
-# Auditoria de Capacidades - RebanhoSync
+﻿# Auditoria de Capacidades - RebanhoSync
 
 > **Status:** Derivado (Rev D+ — Pós-Fechamento)
-> **Baseline:** `b69d35f`
+> **Baseline:** `3664395`
 > **Última Atualização:** 2026-04-07
 
 ---
@@ -28,8 +28,8 @@ Todos os gaps não-bloqueantes do baseline anterior foram fechados via migration
 **Legenda:**
 
 - ✅ = Completo
-- ⚠️ = Funcional com gaps não-bloqueantes
-- ❌ = Missing/Bloqueador
+- ⚠️ = Funcional com gaps não-bloqueantes
+- âŒ = Missing/Bloqueador
 
 ---
 
@@ -76,7 +76,7 @@ Todos os gaps não-bloqueantes do baseline anterior foram fechados via migration
 **UI Read:** Histórico funcional  
 **E2E:** Fluxo 3 (Anti-Teleporte) — PASS
 
-**TD-008:** ✅ CLOSED — useEffect desabilita `toLoteId` quando igual à origem (`Registrar.tsx:387-396`)  
+**TD-008:** ✅ CLOSED — useEffect desabilita `toLoteId` quando igual í  origem (`Registrar.tsx:387-396`)  
 **TD-019:** ✅ CLOSED — FKs `from_lote_id` e `to_lote_id` adicionadas com limpeza de órfãos (`20260308230735_foreign_keys_movimentacao_reproducao.sql`)
 
 ---
@@ -198,8 +198,8 @@ else if (tipoManejo === "nutricao") {
 | Operação                       | Implementado? | Evidência                                           | Status  |
 | ------------------------------ | ------------- | --------------------------------------------------- | ------- |
 | Registrar eventos (7 domínios) | ✅            | INSERT/UPDATE em animais, todos os eventos          | OK      |
-| DELETE animais                 | ❌ Bloqueado  | `animais_delete_by_role` bloqueia cowboy            | TD-003 ✅ CLOSED |
-| CRUD lotes/pastos              | ❌ Bloqueado  | RLS restringe (correto)                             | OK      |
+| DELETE animais                 | âŒ Bloqueado  | `animais_delete_by_role` bloqueia cowboy            | TD-003 ✅ CLOSED |
+| CRUD lotes/pastos              | âŒ Bloqueado  | RLS restringe (correto)                             | OK      |
 
 ---
 
@@ -231,7 +231,7 @@ Nenhum gap residual permanece aberto nesta revisão.
 
 ## Assinatura
 
-**Baseline:** `b69d35f`  
+**Baseline:** `3664395`  
 **Data:** 2026-04-07  
 **Capability Score:** 100% MVP (7/7 domínios operacionais)  
 **Gaps originais:** 10 → 0 CLOSED  

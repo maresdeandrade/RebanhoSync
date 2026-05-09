@@ -112,7 +112,7 @@ src/lib/offline/db.ts:event_eventos_nutricao
 # Event Builder existe
 src/lib/events/buildEventGesture.ts:L87-97 (nutricao branch)
 
-# UI Write NÃO existe
+# UI Write NíO existe
 grep "tipoManejo === \"nutricao\"" src/pages/Registrar.tsx → 0 resultados
 grep "NutricaoForm" src/components → 0 resultados
 ```
@@ -130,7 +130,7 @@ grep "NutricaoForm" src/components → 0 resultados
 | TD-003 | RBAC         | Cowboy pode deletar animais                  | ✅ Funciona (risco perda dados) |
 | TD-001 | Offline      | Sem cleanup queue_rejections                 | ✅ Funciona (risco storage)     |
 
-**Todos esses gaps NÃO impedem uso** - apenas degradam UX ou aumentam risco operacional.
+**Todos esses gaps NíO impedem uso** - apenas degradam UX ou aumentam risco operacional.
 
 ---
 

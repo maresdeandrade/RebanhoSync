@@ -788,7 +788,7 @@ Status: ✅ ATIVO (aplicável aos 247 animais)
 
 **O Quê**
 - Protocolos que você cria ou importa e personaliza
-- Podem cobrir aquilo que a lei NÃO cobre
+- Podem cobrir aquilo que a lei NíO cobre
 - Exemplos: "Vermifugação 6/6m", "Terapia Probiótica Bezerros", "Nutrição Especializada"
 
 **Função**
@@ -853,7 +853,7 @@ Você verá três seções:
 │ NOME* [_________________________________]                   │
 │ Ex: "Vacinação Complementar Criação Extensiva"              │
 │                                                               │
-│ DESCRIÇÃO (opcional)                                        │
+│ DESCRIÇíO (opcional)                                        │
 │ [_________________________________________________]          │
 │ [_________________________________________________]          │
 │ Ex: "Protocolos adicionais recomendados para fazendas"       │
@@ -877,7 +877,7 @@ Você verá três seções:
 │ REQUER RESPONSÁVEL TÉCNICO?                                 │
 │ ☐ Sim (precisa assinar)  ☐ Não                              │
 │                                                               │
-│ REQUER DOCUMENTO DE COMPROVAÇÃO?                            │
+│ REQUER DOCUMENTO DE COMPROVAÇíO?                            │
 │ ☐ Sim (GTA, NF, etc)     ☐ Não                              │
 │                                                               │
 ├─────────────────────────────────────────────────────────────┤
@@ -890,7 +890,7 @@ Você verá três seções:
 | Campo | Valor | Motivo |
 | :--- | :--- | :--- |
 | NOME | "Reforço anual de Raiva" | Identificar o protocolo |
-| DESCRIÇÃO | "Dose de reforço para manutenção de imunidade em zona de risco" | Documentar intenção |
+| DESCRIÇíO | "Dose de reforço para manutenção de imunidade em zona de risco" | Documentar intenção |
 | SEXO ALVO | Sem restrição | Raiva afeta machos e fêmeas |
 | IDADE MÍNIMA | (vázio) | Pode começar depois da dose inicial |
 | IDADE MÁXIMA | (vázio) | Sem limite de idade |
@@ -912,7 +912,7 @@ Você verá três seções:
 │ Protocolo: "Reforço anual de Raiva"                      │
 ├──────────────────────────────────────────────────────────┤
 │                                                            │
-│ [1. IDENTIFICAÇÃO DA ETAPA]                              │
+│ [1. IDENTIFICAÇíO DA ETAPA]                              │
 │                                                            │
 │ PRODUTO *                   [Procurar: Raiva...] 🔍       │
 │ (Previamente: "Vacina Raiva Inativada" selecionada)      │
@@ -923,7 +923,7 @@ Você verá três seções:
 │ ORDEM/DOSE                  [1]                           │
 │ (Sequência: 1ª dose, 2ª dose, reforço, etc)              │
 │                                                            │
-│ VERSÃO DO PROTOCOLO         [1]                          │
+│ VERSíO DO PROTOCOLO         [1]                          │
 │ (Incrementado se você editar este item)                  │
 │                                                            │
 ├──────────────────────────────────────────────────────────┤
@@ -1198,7 +1198,7 @@ Você verá feedback:
 - **Requisito:** Máxz 100 caracteres, não podem ser iguais em mesma fazenda
 - **Dica:** Seja específico. Não use "Protocolo 1" ou "Customizado"
 
-#### DESCRIÇÃO (opcional)
+#### DESCRIÇíO (opcional)
 - **O que é:** Contexto, justificativa, links para legislação
 - **Exemplo:** "Lei 1234/2015 do Estado + OIE recomendação para rebanho leiteiro"
 - **Requisito:** Até 500 caracteres
@@ -1256,7 +1256,7 @@ Você verá feedback:
   - Etapa 2 (Reforço 30 dias depois): "2"
   - Etapa 3 (Reforço 365 dias depois): "3"
 
-#### VERSÃO DO PROTOCOLO
+#### VERSíO DO PROTOCOLO
 - **O que é:** Número de versão desta etapa
 - **Padrão:** "1" para nova, incrementa se você editar
 - **Função:** Rastreamento de mudanças ao longo do tempo

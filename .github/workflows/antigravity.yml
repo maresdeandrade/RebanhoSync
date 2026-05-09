@@ -2,32 +2,55 @@ name: antigravity-validate
 
 on:
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: antigravity-validate-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
 
 jobs:
   validate:
+    name: Validate repository
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+
     env:
-      VITE_SUPABASE_URL: https://example.supabase.co
-      VITE_SUPABASE_ANON_KEY: example-anon-key
-      VITE_SUPABASE_FUNCTIONS_URL: https://example.supabase.co/functions/v1
+      CI: true
+      VITE_SUPABASE_URL: ${{ vars.CI_SUPABASE_URL || 'https://example.supabase.co' }}
+      VITE_SUPABASE_ANON_KEY: ${{ vars.CI_SUPABASE_ANON_KEY || 'example-anon-key' }}
+      VITE_SUPABASE_FUNCTIONS_URL: ${{ vars.CI_SUPABASE_FUNCTIONS_URL || 'https://example.supabase.co/functions/v1' }}
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
           version: 9
+          run_install: false
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --prefer-offline
 
       - name: Lint
         run: pnpm run lint
@@ -38,16 +61,26 @@ jobs:
       - name: Build
         run: pnpm run build
 
-      - name: Basic repo sanity
+      - name: Detect changed files
         run: |
           set -euo pipefail
-          echo "Git status:"
-          git status -sb
 
-      - name: Header baseline consistency (derived docs)
+          BASE_SHA="${{ github.event.pull_request.base.sha || '' }}"
+          HEAD_SHA="${{ github.event.pull_request.head.sha || github.sha }}"
+
+          if [[ -n "$BASE_SHA" ]]; then
+            git diff --name-only "$BASE_SHA...$HEAD_SHA" > /tmp/changed-files.txt
+          else
+            git diff --name-only HEAD~1...HEAD > /tmp/changed-files.txt || true
+          fi
+
+          echo "Changed files:"
+          sed 's/^/changed: /' /tmp/changed-files.txt
+
+      - name: Header baseline consistency in derived docs
         run: |
           set -euo pipefail
-          # Valida que os arquivos derivados (se alterados) têm Baseline e que é consistente entre si.
+
           files=(
             "docs/IMPLEMENTATION_STATUS.md"
             "docs/TECH_DEBT.md"
@@ -55,49 +88,116 @@ jobs:
             "docs/review/RECONCILIACAO_REPORT.md"
           )
 
-          changed="$(git diff --name-only origin/${{ github.base_ref }}...HEAD || true)"
-          echo "$changed" | sed 's/^/changed: /'
+          any_changed=false
 
-          # se nenhum dos arquivos acima mudou, não checa baseline
-          any=false
-          for f in "${files[@]}"; do
-            if echo "$changed" | grep -qx "$f"; then any=true; fi
+          for file in "${files[@]}"; do
+            if grep -Fxq -- "$file" /tmp/changed-files.txt; then
+              any_changed=true
+              break
+            fi
           done
-          if [ "$any" = false ]; then
+
+          if [[ "$any_changed" == "false" ]]; then
             echo "No derived docs changed; skipping baseline header checks."
             exit 0
           fi
 
-          # extrai baseline de cada arquivo que mudou e valida igualdade
-          baseline=""
-          for f in "${files[@]}"; do
-            if echo "$changed" | grep -qx "$f"; then
-              b=$(grep -En "^> \*\*Baseline:\*\* \`.*\`$|^\*\*Baseline:\*\* \`.*\`$|^> \*\*Baseline:\*\*|^Baseline:" "$f" | head -1 || true)
-              if [ -z "$b" ]; then
-                echo "Missing Baseline header in $f"
-                exit 1
-              fi
-              # tenta capturar o hash entre backticks
-              bhash=$(echo "$b" | sed -n 's/.*`\(.*\)`.*/\1/p')
-              if [ -z "$bhash" ]; then
-                # fallback: última palavra
-                bhash=$(echo "$b" | awk '{print $NF}' | tr -d '`')
-              fi
-              echo "$f baseline=$bhash"
-              if [ -z "$baseline" ]; then baseline="$bhash"; fi
-              if [ "$baseline" != "$bhash" ]; then
-                echo "Baseline mismatch: expected=$baseline got=$bhash in $f"
-                exit 1
-              fi
+          extract_baseline() {
+            local file="$1"
+            local line=""
+            local hash=""
+
+            line="$(grep -Em1 '^(> )?\*\*Baseline:\*\* `[^`]+`$|^Baseline: .+$' "$file" || true)"
+
+            if [[ -z "$line" ]]; then
+              echo "Missing Baseline header in $file" >&2
+              return 1
+            fi
+
+            hash="$(sed -nE 's/.*`([^`]+)`.*/\1/p' <<< "$line")"
+
+            if [[ -z "$hash" ]]; then
+              hash="$(sed -E 's/^>[[:space:]]*//; s/^\*\*Baseline:\*\*[[:space:]]*//; s/^Baseline:[[:space:]]*//; s/[[:space:]]+$//' <<< "$line")"
+            fi
+
+            if [[ -z "$hash" ]]; then
+              echo "Could not extract Baseline value from $file" >&2
+              return 1
+            fi
+
+            printf '%s\n' "$hash"
+          }
+
+          expected_baseline=""
+
+          for file in "${files[@]}"; do
+            if ! grep -Fxq -- "$file" /tmp/changed-files.txt; then
+              continue
+            fi
+
+            baseline="$(extract_baseline "$file")"
+            echo "$file baseline=$baseline"
+
+            if [[ -z "$expected_baseline" ]]; then
+              expected_baseline="$baseline"
+            fi
+
+            if [[ "$baseline" != "$expected_baseline" ]]; then
+              echo "Baseline mismatch: expected=$expected_baseline got=$baseline in $file" >&2
+              exit 1
             fi
           done
 
-      - name: Derivation sanity (presence of capability_id in derived docs)
+      - name: Derivation sanity in derived docs
         run: |
           set -euo pipefail
-          # Checks leves: garante que os docs derivativos carregam o conceito de capability_id
-          grep -En "capability_id" docs/IMPLEMENTATION_STATUS.md
-          grep -En "capability_id" docs/TECH_DEBT.md
-          grep -En "capability_id" docs/ROADMAP.md
-          grep -En "gap_set|gap.capability_id." docs/IMPLEMENTATION_STATUS.md || true
-          grep -Fn "Match: ✅" docs/review/RECONCILIACAO_REPORT.md || true
+
+          require_contains() {
+            local file="$1"
+            local pattern="$2"
+
+            if [[ ! -f "$file" ]]; then
+              echo "Missing required derived doc: $file" >&2
+              exit 1
+            fi
+
+            if ! grep -Enq "$pattern" "$file"; then
+              echo "Missing required pattern '$pattern' in $file" >&2
+              exit 1
+            fi
+
+            echo "OK: $file contains '$pattern'"
+          }
+
+          advisory_contains() {
+            local file="$1"
+            local pattern="$2"
+
+            if [[ ! -f "$file" ]]; then
+              echo "Advisory skipped; file not found: $file"
+              return 0
+            fi
+
+            echo "Advisory check: $file / $pattern"
+            grep -En "$pattern" "$file" || true
+          }
+
+          require_contains "docs/IMPLEMENTATION_STATUS.md" "capability_id"
+          require_contains "docs/TECH_DEBT.md" "capability_id"
+          require_contains "docs/ROADMAP.md" "capability_id"
+
+          advisory_contains "docs/IMPLEMENTATION_STATUS.md" "gap_set|gap\.capability_id"
+          advisory_contains "docs/review/RECONCILIACAO_REPORT.md" "Match: ✅"
+
+      - name: Repository must remain clean
+        run: |
+          set -euo pipefail
+
+          echo "Git status:"
+          git status -sb
+
+          if [[ -n "$(git status --porcelain=v1)" ]]; then
+            echo "Repository is dirty after validation. Generated or modified files must be committed." >&2
+            git status --porcelain=v1
+            exit 1
+          fi

@@ -745,10 +745,6 @@ export default function Animais() {
     [lifecyclePendings],
   );
   const lifecycleBiologicalCount = lifecyclePendingCount - lifecycleStrategicCount;
-  const semLoteCount = useMemo(
-    () => filteredAnimals.filter((animal) => !animal.lote_id).length,
-    [filteredAnimals],
-  );
   const activeAnimalsCount = useMemo(
     () => (animaisFamilia ?? []).filter((animal) => animal.status === "ativo").length,
     [animaisFamilia],
@@ -948,34 +944,34 @@ export default function Animais() {
         }
       />
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <section className="grid grid-cols-2 gap-2 md:grid-cols-4">
         {sexoFilter === "F" ? (
           <>
             <MetricCard
               label="Vacas que pariram"
               value={femaleMetrics.vacasParidas}
-              hint="Femeas que ja pariram na fazenda."
+              
               icon={<Milk className="h-5 w-5" />}
               tone={femaleMetrics.vacasParidas > 0 ? "info" : "default"}
             />
             <MetricCard
               label="Vacas secas"
               value={femaleMetrics.vacasSecas}
-              hint="Vacas em periodo seco."
+              
               icon={<MilkOff className="h-5 w-5" />}
               tone={femaleMetrics.vacasSecas > 0 ? "warning" : "default"}
             />
             <MetricCard
               label="Novilhas"
               value={femaleMetrics.novilhas}
-              hint="Femeas jovens em desenvolvimento."
+              
               icon={<Activity className="h-5 w-5" />}
               tone={femaleMetrics.novilhas > 0 ? "success" : "default"}
             />
             <MetricCard
               label="Bezerras"
               value={femaleMetrics.bezerras}
-              hint="Femeas em fase de aleitamento."
+              
               icon={<Baby className="h-5 w-5" />}
             />
           </>
@@ -984,58 +980,51 @@ export default function Animais() {
             <MetricCard
               label="Touros"
               value={maleMetrics.touros}
-              hint="Reprodutores ativos na fazenda."
+              
               icon={<Beef className="h-5 w-5" />}
               tone={maleMetrics.touros > 0 ? "info" : "default"}
             />
             <MetricCard
               label="Novilhos"
               value={maleMetrics.novilhos}
-              hint="Machos em desenvolvimento."
+              
               icon={<Activity className="h-5 w-5" />}
             />
             <MetricCard
               label="Bois"
               value={maleMetrics.bois}
-              hint="Machos em fase de terminacao."
+              
               icon={<Beef className="h-5 w-5" />}
               tone={maleMetrics.bois > 0 ? "success" : "default"}
             />
             <MetricCard
               label="Bezerros"
               value={maleMetrics.bezerros}
-              hint="Machos em fase de aleitamento."
+              
               icon={<Baby className="h-5 w-5" />}
             />
           </>
         ) : (
           <>
             <MetricCard
-              label="Base ativa"
+              label="Animais ativos"
               value={activeAnimalsCount}
-              hint="Animais ativos cadastrados na fazenda."
             />
             <MetricCard
               label="No recorte atual"
               value={animalRows.length}
-              hint={`${animalsWithWeightCount} com pesagem registrada no recorte.`}
             />
             <MetricCard
-              label="Sem lote"
-              value={semLoteCount}
-              hint="Animais sem lote definido continuam pedindo ajuste estrutural."
-              tone={semLoteCount > 0 ? "warning" : "default"}
-            />
-            <MetricCard
-              label="Agenda no radar"
+              label="Eventos próximos"
               value={agendaRadarCount}
-              hint={
-                animalsWithNextAgendaCount > 0
-                  ? `${animalsWithNextAgendaCount} com proximo evento mapeado.`
-                  : "Nenhum proximo evento aberto para o recorte."
-              }
               tone={agendaRadarCount > 0 ? "warning" : "info"}
               icon={<CalendarClock className="h-5 w-5" />}
+            />
+            <MetricCard
+              label="Pendências"
+              value={lifecyclePendingCount}
+              tone={lifecyclePendingCount > 0 ? "warning" : "default"}
+              icon={<Activity className="h-5 w-5" />}
             />
           </>
         )}
@@ -1044,13 +1033,15 @@ export default function Animais() {
 
       <div className="space-y-4">
         <div className="flex items-center gap-2">
-          <Input
-            placeholder="Buscar animal..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full md:max-w-sm"
-            icon={<Search className="h-4 w-4" />}
-          />
+          <div className="relative w-full md:max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar animal..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-9"
+            />
+          </div>
           <Button variant="outline" onClick={() => setShowFilters(!showFilters)}>
             <Filter className="mr-2 h-4 w-4" />
             <span className="hidden sm:inline">{showFilters ? "Ocultar filtros" : "Mostrar filtros"}</span>

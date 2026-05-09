@@ -1,8 +1,8 @@
 # Implementation Status Matrix
 
 > **Status:** Derivado (Rev D+)
-> **Baseline:** `e459de8`
-> **Ultima Atualizacao:** 2026-05-07
+> **Baseline:** `3664395`
+> **Ultima Atualizacao:** 2026-05-09
 > **Derivado por:** Auditoria técnica completa — código + migrations + testes como fonte de verdade
 
 Este documento registra o estado efetivo do RebanhoSync na fase atual de consolidacao SLC, pós-fechamento de todos os TDs da lista aberta original.
@@ -406,3 +406,9 @@ This update turned `agenda.*` from a flat list into an operational triage surfac
 **Recommended next increments**
 
 - Add keyboard shortcuts for the critical shortcut bar.
+
+### Animal UX Modernization
+
+- **Formulário de Cadastro (AnimalNovo.tsx):** Substituição de seletores tradicionais (Select) por grupos de botões interativos (ToggleGroup) de acesso em único clique para campos-chave (Sexo, Espécie, Origem, Fatos Taxonômicos e Perfil Reprodutivo). Implementação de seleção de Raça com UI híbrida (atalhos + combobox contextual).
+- **Dashboard de Animais (Animais.tsx):** Compactação agressiva de MetricCards em grid 100% lado a lado (grid-cols-2 base, reduzindo scroll vertical) e limpeza de strings redundantes. Adição de card específico para acompanhamento global de Pendências a partir do lifecyclePendingCount.
+- Esta intervenção cumpre a frente de redução de carga cognitiva operacional do roadmap UX.

@@ -180,7 +180,7 @@ catalog_doenças_notificáveis;
 | -------- | ---------------------------------------------------------------- | ------------ | ----------------------------------------- |
 | **OM-1** | Registro rápido via scanner de código de barras (produto)        | Média        | Reduz tempo de preenchimento em 60%       |
 | **OM-2** | Preenchimento automático de produto via autocomplete offline     | Baixa        | Usa cache Dexie para sugestão instantânea |
-| **OM-3** | Registro em lote (múltiplos animais) com dedup automático        | Alta         | Otimiza VACINAÇÃO EM LOTE                 |
+| **OM-3** | Registro em lote (múltiplos animais) com dedup automático        | Alta         | Otimiza VACINAÇíO EM LOTE                 |
 | **OM-4** | Histórico inline no momento do registro (exibe última aplicação) | Baixa        | Melhora decisão do usuário                |
 | **OM-5** | Smart defaults baseados no protocolo (dose anterior)             | Média        | Previne erros de intervalo                |
 
@@ -220,7 +220,7 @@ catalog_doenças_notificáveis;
 └─────────────────────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│  CAMADA DE APRESENTAÇÃO                                                     │
+│  CAMADA DE APRESENTAÇíO                                                     │
 │  ┌─────────────────┐  ┌──────────────────┐  ┌──────────────────────────┐ │
 │  │ QuickRegister   │  │ BatchEntry       │  │ SmartAutoComplete        │ │
 │  │ (1-click)       │  │ (lote animals)   │  │ (offline products)       │ │
@@ -327,7 +327,7 @@ catalog_doenças_notificáveis;
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│              DIAGRAMA DE SEQUÊNCIA - REGISTRO DE VACINAÇÃO                  │
+│              DIAGRAMA DE SEQUÊNCIA - REGISTRO DE VACINAÇíO                  │
 └─────────────────────────────────────────────────────────────────────────────┘
 
 actor "Usuário" as user
@@ -571,7 +571,7 @@ ui -> ui: refreshView()
                                     │
                                     ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│ FASE 5: ESTABILIZAÇÃO (Semanas 9-10)                                       │
+│ FASE 5: ESTABILIZAÇíO (Semanas 9-10)                                       │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
 │ [5.1] Monitoramento e Métricas                                              │

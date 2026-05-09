@@ -15,7 +15,7 @@ Este documento é a **fonte canônica do baseline Fase 0** para a estrutura de e
 
 - Baseline de migrations: `0001` (init) + `0023-0037` (hardenings eventos) + `20260308*` (fechamento TDs março/2026)
 - Fonte primária: `supabase/migrations/*.sql`
-- Este documento NÃO prescreve mudanças futuras (ver `PLANO_UNIFICACAO_EVENTOS.md` para v2)
+- Este documento NíO prescreve mudanças futuras (ver `PLANO_UNIFICACAO_EVENTOS.md` para v2)
 
 ---
 

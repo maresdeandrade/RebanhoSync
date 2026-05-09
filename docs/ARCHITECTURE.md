@@ -1,8 +1,8 @@
-# Arquitetura Operacional (Two Rails)
+﻿# Arquitetura Operacional (Two Rails)
 
 > **Status:** Normativo
 > **Fonte de Verdade:** Codigo fonte e migrations
-> **Ultima Atualizacao:** 2026-05-06
+> **Ultima Atualizacao:** 2026-05-09
 
 Documento normativo enxuto para semantica operacional transversal e invariantes de execucao. Complementa `docs/SYSTEM.md`.
 

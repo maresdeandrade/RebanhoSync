@@ -1,8 +1,8 @@
-# Divida Tecnica
+﻿# Divida Tecnica
 
 > **Status:** Derivado (Rev D+)
-> **Baseline:** `b69d35f`
-> **Ultima Atualizacao:** 2026-05-08
+> **Baseline:** `3664395`
+> **Ultima Atualizacao:** 2026-05-09
 > **Derivado por:** Auditoria tecnica - codigo + migrations como fonte de verdade
 > **Fonte:** `IMPLEMENTATION_STATUS.md`, `src/`, `supabase/`
 

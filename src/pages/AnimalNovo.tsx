@@ -42,6 +42,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { showSuccess, showError } from "@/utils/toast";
 import { ChevronLeft, Save, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
@@ -76,6 +77,7 @@ const AnimalNovo = () => {
     "nascimento" | "compra" | "doacao" | "arrendamento" | "sociedade" | "null"
   >("null");
   const [raca, setRaca] = useState("null");
+  const [isSelectingOutraRaca, setIsSelectingOutraRaca] = useState(false);
 
   // Estados da Fase 2.2: Sociedade (quando origem='sociedade')
   const [sociedadeContraparteId, setSociedadeContraparteId] =
@@ -391,7 +393,6 @@ const AnimalNovo = () => {
       <PageIntro
         eyebrow="Cadastro animal"
         title="Novo animal"
-        description="O formulario foi reorganizado em blocos operacionais mais claros, preservando o comportamento atual do cadastro."
         actions={
           <>
             <Button variant="outline" onClick={() => navigate("/animais")}>
@@ -409,28 +410,6 @@ const AnimalNovo = () => {
           </>
         }
       />
-
-      <div className="grid gap-4 md:grid-cols-3">
-        <MetricCard
-          label="Sexo"
-          value={sexo === "M" ? "Macho" : "Femea"}
-          hint={idadeMeses !== null ? `${idadeMeses} mes(es) estimados.` : "Sem idade calculada."}
-        />
-        <MetricCard
-          label="Origem"
-          value={origem === "null" ? "Nao informada" : origem}
-          hint="A origem organiza o restante do fluxo de entrada."
-        />
-        <MetricCard
-          label="Lote inicial"
-          value={
-            loteId === "null"
-              ? "Sem lote"
-              : lotes?.find((lote) => lote.id === loteId)?.nome ?? "Selecionado"
-          }
-          hint="Pode ser ajustado sem reabrir o cadastro."
-        />
-      </div>
 
       <Card>
         <CardHeader>
@@ -688,43 +667,33 @@ const AnimalNovo = () => {
           <CardTitle>Fatos Taxon√¥micos</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="space-y-2">
+          <div className="space-y-3">
             <Label>Puberdade confirmada</Label>
-            <Select
+            <ToggleGroup
+              type="single"
               value={puberdadeConfirmada}
-              onValueChange={(value: "null" | "true" | "false") =>
-                setPuberdadeConfirmada(value)
-              }
+              onValueChange={(value) => setPuberdadeConfirmada((value || "null") as "null" | "true" | "false")}
+              className="justify-start flex-wrap"
             >
-              <SelectTrigger>
-                <SelectValue placeholder="Nao informado" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="null">Nao informado</SelectItem>
-                <SelectItem value="true">Sim</SelectItem>
-                <SelectItem value="false">Nao</SelectItem>
-              </SelectContent>
-            </Select>
+              <ToggleGroupItem value="null">N„o informado</ToggleGroupItem>
+              <ToggleGroupItem value="true">Sim</ToggleGroupItem>
+              <ToggleGroupItem value="false">N„o</ToggleGroupItem>
+            </ToggleGroup>
           </div>
 
           {sexo === "M" && (
-            <div className="space-y-2">
+            <div className="space-y-3">
               <Label>Castrado</Label>
-              <Select
+              <ToggleGroup
+                type="single"
                 value={castrado}
-                onValueChange={(value: "null" | "true" | "false") =>
-                  setCastrado(value)
-                }
+                onValueChange={(value) => setCastrado((value || "null") as "null" | "true" | "false")}
+                className="justify-start flex-wrap"
               >
-                <SelectTrigger>
-                  <SelectValue placeholder="Nao informado" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="null">Nao informado</SelectItem>
-                  <SelectItem value="true">Sim</SelectItem>
-                  <SelectItem value="false">Nao</SelectItem>
-                </SelectContent>
-              </Select>
+                <ToggleGroupItem value="null">N„o informado</ToggleGroupItem>
+                <ToggleGroupItem value="true">Sim</ToggleGroupItem>
+                <ToggleGroupItem value="false">N„o</ToggleGroupItem>
+              </ToggleGroup>
             </div>
           )}
 
@@ -749,21 +718,18 @@ const AnimalNovo = () => {
                 </Select>
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <Label>Secagem realizada</Label>
-                <Select
+                <ToggleGroup
+                  type="single"
                   value={secagemRealizada}
-                  onValueChange={handleSecagemRealizadaChange}
+                  onValueChange={(value) => handleSecagemRealizadaChange(value || "null")}
+                  className="justify-start flex-wrap"
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Nao informado" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="null">Nao informado</SelectItem>
-                    <SelectItem value="true">Sim</SelectItem>
-                    <SelectItem value="false">Nao</SelectItem>
-                  </SelectContent>
-                </Select>
+                  <ToggleGroupItem value="null">N„o informado</ToggleGroupItem>
+                  <ToggleGroupItem value="true">Sim</ToggleGroupItem>
+                  <ToggleGroupItem value="false">N„o</ToggleGroupItem>
+                </ToggleGroup>
               </div>
             </div>
           )}
@@ -825,55 +791,39 @@ const AnimalNovo = () => {
             </p>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
+            <div className="space-y-3">
               <Label>Destino Produtivo</Label>
-              <Select
+              <ToggleGroup
+                type="single"
                 value={destinoProdutivo}
-                onValueChange={(value: DestinoProdutivoAnimalEnum | "null") =>
-                  handleDestinoProdutivoChange(value)
-                }
+                onValueChange={(value) => handleDestinoProdutivoChange((value || "null") as DestinoProdutivoAnimalEnum | "null")}
+                className="justify-start flex-wrap"
               >
-                <SelectTrigger>
-                  <SelectValue placeholder="Como este macho sera conduzido?" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="null">Nao definido</SelectItem>
-                  <SelectItem value="reprodutor">Reprodutor</SelectItem>
-                  <SelectItem value="rufiao">Rufiao</SelectItem>
-                  <SelectItem value="engorda">Engorda</SelectItem>
-                  <SelectItem value="abate">Abate</SelectItem>
-                  <SelectItem value="venda">Venda</SelectItem>
-                  <SelectItem value="descarte">Descarte</SelectItem>
-                </SelectContent>
-              </Select>
+                <ToggleGroupItem value="null">N„o definido</ToggleGroupItem>
+                <ToggleGroupItem value="reprodutor">Reprodutor</ToggleGroupItem>
+                <ToggleGroupItem value="rufiao">Rufi„o</ToggleGroupItem>
+                <ToggleGroupItem value="engorda">Engorda</ToggleGroupItem>
+                <ToggleGroupItem value="abate">Abate</ToggleGroupItem>
+                <ToggleGroupItem value="venda">Venda</ToggleGroupItem>
+                <ToggleGroupItem value="descarte">Descarte</ToggleGroupItem>
+              </ToggleGroup>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-3">
               <Label>Status Reprodutivo</Label>
-              <Select
+              <ToggleGroup
+                type="single"
                 value={statusReprodutivoMacho}
-                onValueChange={(
-                  value: StatusReprodutivoMachoEnum | "null",
-                ) => setStatusReprodutivoMacho(value)}
+                onValueChange={(value) => setStatusReprodutivoMacho((value || "null") as StatusReprodutivoMachoEnum | "null")}
                 disabled={!maleBreedingSelected}
+                className="justify-start flex-wrap"
               >
-                <SelectTrigger>
-                  <SelectValue
-                    placeholder={
-                      destinoProdutivo === "null"
-                        ? "Defina primeiro o destino"
-                        : "Selecione o status"
-                    }
-                  />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="null">Nao definido</SelectItem>
-                  <SelectItem value="candidato">Candidato</SelectItem>
-                  <SelectItem value="apto">Apto</SelectItem>
-                  <SelectItem value="suspenso">Suspenso</SelectItem>
-                  <SelectItem value="inativo">Inativo</SelectItem>
-                </SelectContent>
-              </Select>
+                <ToggleGroupItem value="null">N„o definido</ToggleGroupItem>
+                <ToggleGroupItem value="candidato">Candidato</ToggleGroupItem>
+                <ToggleGroupItem value="apto">Apto</ToggleGroupItem>
+                <ToggleGroupItem value="suspenso">Suspenso</ToggleGroupItem>
+                <ToggleGroupItem value="inativo">Inativo</ToggleGroupItem>
+              </ToggleGroup>
               {!maleBreedingSelected && destinoProdutivo !== "null" && (
                   <p className="text-xs text-muted-foreground">
                     Destinos nao reprodutivos mantem o manejo reprodutivo como
