@@ -9,6 +9,7 @@ import {
   Beef,
   CalendarClock,
   CornerDownRight,
+  Filter,
   FilterX,
   Milk,
   MilkOff,
@@ -21,6 +22,7 @@ import {
 import { EmptyState } from "@/components/EmptyState";
 import { AnimalCategoryBadge } from "@/components/animals/AnimalCategoryBadge";
 import { AnimalVisualAvatar } from "@/components/animals/AnimalVisualAvatar";
+import { AnimalDemographicsCard } from "@/components/animals/AnimalDemographicsCard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -294,6 +296,7 @@ function buildAnimalExportFilename(input: {
 
 export default function Animais() {
   const navigate = useNavigate();
+  const [showFilters, setShowFilters] = useState(false);
   const [searchParams] = useSearchParams();
   const regulatoryImpactFromQuery =
     parseRegulatoryAnalyticsImpactKey(searchParams.get("overlayImpact")) ?? "all";
@@ -926,44 +929,7 @@ export default function Animais() {
   return (
     <div className="space-y-5">
       <PageIntro
-        eyebrow="Rebanho"
         title="Animais"
-        description="Leitura operacional do rebanho com categoria, hierarquia materna, peso atual, ganho e proximo evento na mesma superficie."
-        meta={
-          <>
-            <StatusBadge tone="neutral">
-              {totalAnimalRows} animal(is) no recorte
-            </StatusBadge>
-            {hasFilters ? <StatusBadge tone="info">Filtros ativos</StatusBadge> : null}
-            {hasPagination ? (
-              <StatusBadge tone="neutral">
-                Pagina {currentPage} de {totalPages}
-              </StatusBadge>
-            ) : null}
-            {lifecyclePendingCount > 0 ? (
-              <StatusBadge tone="warning">
-                {lifecyclePendingCount} transicao(oes) pendente(s)
-              </StatusBadge>
-            ) : null}
-            {regulatoryReadModel.hasOpenIssues ? (
-              <StatusBadge
-                tone={regulatoryReadModel.hasBlockingIssues ? "danger" : "warning"}
-              >
-                {regulatoryImpactedAnimals.length} com restricao regulatoria
-              </StatusBadge>
-            ) : null}
-            {regulatoryFilterLabels.map((label) => (
-              <StatusBadge key={label} tone="info">
-                {label}
-              </StatusBadge>
-            ))}
-            {calendarFilterLabels.map((label) => (
-              <StatusBadge key={label} tone="info">
-                {label}
-              </StatusBadge>
-            ))}
-          </>
-        }
         actions={
           <>
             <Button asChild variant="outline">
@@ -1075,268 +1041,201 @@ export default function Animais() {
         )}
       </section>
 
-      {regulatoryReadModel.hasOpenIssues ? (
-        <Card className="border-amber-200 bg-amber-50/60">
-          <CardHeader>
-            <CardTitle>Restricoes regulatorias no rebanho</CardTitle>
-            <CardDescription>
-              A mesma leitura compartilhada do overlay oficial agora tambem
-              recorta a lista animal-centric e a exportacao dedicada por
-              impacto operacional.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex flex-wrap gap-2">
-              <StatusBadge
-                tone={regulatoryReadModel.hasBlockingIssues ? "danger" : "warning"}
-              >
-                {regulatoryImpactedAnimals.length} animal(is) impactado(s)
-              </StatusBadge>
-              {regulatoryBlockingAnimalsCount > 0 ? (
-                <StatusBadge tone="danger">
-                  {regulatoryBlockingAnimalsCount} com bloqueio operacional
-                </StatusBadge>
-              ) : null}
-              {regulatoryReadModel.analytics.subareas.map((cut) => (
-                <StatusBadge key={cut.key} tone={cut.tone}>
-                  {cut.label} {cut.openCount}
-                </StatusBadge>
-              ))}
-            </div>
 
-            <div className="flex flex-wrap gap-2">
-              {regulatoryReadModel.analytics.impacts
-                .filter((impact) => impact.totalCount > 0)
-                .map((impact) => (
-                  <Button
-                    key={impact.key}
-                    type="button"
-                    size="sm"
-                    variant={
-                      regulatoryImpactFilter === impact.key ? "default" : "outline"
-                    }
-                    onClick={() => {
-                      setRegulatoryImpactFilter(impact.key);
-                      setRegulatorySubareaFilter("all");
-                    }}
-                  >
-                    {impact.label}
-                  </Button>
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+          <Input
+            placeholder="Buscar animal..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full md:max-w-sm"
+            icon={<Search className="h-4 w-4" />}
+          />
+          <Button variant="outline" onClick={() => setShowFilters(!showFilters)}>
+            <Filter className="mr-2 h-4 w-4" />
+            <span className="hidden sm:inline">{showFilters ? "Ocultar filtros" : "Mostrar filtros"}</span>
+            <span className="sm:hidden">Filtros</span>
+          </Button>
+        </div>
+
+      {showFilters && (
+        <Toolbar>
+          <ToolbarGroup className="flex-1 gap-2">
+            <Select value={loteFilter} onValueChange={setLoteFilter}>
+              <SelectTrigger className="w-full sm:w-auto min-w-[140px] bg-transparent border-transparent hover:border-border hover:bg-muted/30 transition-colors">
+                <SelectValue placeholder="Lote" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os lotes</SelectItem>
+                <SelectItem value="none">Sem lote</SelectItem>
+                {lotes?.map((lote) => (
+                  <SelectItem key={lote.id} value={lote.id}>
+                    {lote.nome}
+                  </SelectItem>
                 ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={sexoFilter} onValueChange={setSexoFilter}>
+              <SelectTrigger className="w-full sm:w-auto min-w-[120px] bg-transparent border-transparent hover:border-border hover:bg-muted/30 transition-colors">
+                <SelectValue placeholder="Sexo" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Ambos</SelectItem>
+                <SelectItem value="M">Macho</SelectItem>
+                <SelectItem value="F">Femea</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-full sm:w-auto min-w-[120px] bg-transparent border-transparent hover:border-border hover:bg-muted/30 transition-colors">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="ativo">Ativo</SelectItem>
+                <SelectItem value="vendido">Vendido</SelectItem>
+                <SelectItem value="morto">Morto</SelectItem>
+              </SelectContent>
+            </Select>
+          </ToolbarGroup>
+
+          <ToolbarGroup className="gap-2">
+            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+              <SelectTrigger className="w-full sm:w-auto min-w-[140px] bg-transparent border-transparent hover:border-border hover:bg-muted/30 transition-colors">
+                <SelectValue placeholder="Categoria" />
+              </SelectTrigger>
+              <SelectContent>
+                {CATEGORY_FILTERS.map((item) => (
+                  <SelectItem key={item.value} value={item.value}>
+                    {item.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select
+              value={productiveStateFilter}
+              onValueChange={setProductiveStateFilter}
+            >
+              <SelectTrigger className="w-full sm:w-auto min-w-[160px] bg-transparent border-transparent hover:border-border hover:bg-muted/30 transition-colors">
+                <SelectValue placeholder="Estado produtivo" />
+              </SelectTrigger>
+              <SelectContent>
+                {PRODUCTIVE_STATE_FILTERS.map((item) => (
+                  <SelectItem key={item.value} value={item.value}>
+                    {item.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select
+              value={regulatoryImpactFilter}
+              onValueChange={(value) =>
+                setRegulatoryImpactFilter(value as RegulatoryImpactFilter)
+              }
+            >
+              <SelectTrigger className="w-full sm:w-auto min-w-[180px] bg-transparent border-transparent hover:border-border hover:bg-muted/30 transition-colors">
+                <SelectValue placeholder="Impacto regulatorio" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todo impacto regulatorio</SelectItem>
+                <SelectItem value="nutrition">Nutricao</SelectItem>
+                <SelectItem value="movementInternal">Movimentacao interna</SelectItem>
+                <SelectItem value="sale">Venda/transito</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select
+              value={regulatorySubareaFilter}
+              onValueChange={(value) =>
+                setRegulatorySubareaFilter(value as RegulatorySubareaFilter)
+              }
+            >
+              <SelectTrigger className="w-full sm:w-auto min-w-[180px] bg-transparent border-transparent hover:border-border hover:bg-muted/30 transition-colors">
+                <SelectValue placeholder="Subarea regulatoria" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas as subareas</SelectItem>
+                <SelectItem value="feed_ban">Feed-ban</SelectItem>
+                <SelectItem value="quarentena">Quarentena</SelectItem>
+                <SelectItem value="documental">Documental</SelectItem>
+                <SelectItem value="agua_limpeza">Agua e limpeza</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select
+              value={calendarModeFilter}
+              onValueChange={(value) =>
+                setCalendarModeFilter(value as AnimalCalendarModeFilter)
+              }
+            >
+              <SelectTrigger className="w-full sm:w-auto min-w-[170px] bg-transparent border-transparent hover:border-border hover:bg-muted/30 transition-colors">
+                <SelectValue placeholder="Calendario" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todo calendario</SelectItem>
+                <SelectItem value="campaign">Campanha</SelectItem>
+                <SelectItem value="age_window">Janela etaria</SelectItem>
+                <SelectItem value="rolling_interval">Recorrente</SelectItem>
+                <SelectItem value="immediate">Uso imediato</SelectItem>
+                <SelectItem value="clinical_protocol">Protocolo clinico</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select
+              value={calendarAnchorFilter}
+              onValueChange={(value) =>
+                setCalendarAnchorFilter(value as AnimalCalendarAnchorFilter)
+              }
+            >
+              <SelectTrigger className="w-full sm:w-auto min-w-[170px] bg-transparent border-transparent hover:border-border hover:bg-muted/30 transition-colors">
+                <SelectValue placeholder="Ancora" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas as ancoras</SelectItem>
+                <SelectItem value="calendar_month">Calendario</SelectItem>
+                <SelectItem value="birth">Nascimento</SelectItem>
+                <SelectItem value="weaning">Desmama</SelectItem>
+                <SelectItem value="pre_breeding_season">Pre-estacao</SelectItem>
+                <SelectItem value="clinical_need">Necessidade clinica</SelectItem>
+                <SelectItem value="dry_off">Secagem</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {hasFilters ? (
               <Button
-                type="button"
+                aria-label="Limpar filtros"
+                variant="outline"
                 size="sm"
-                variant="ghost"
                 onClick={() => {
+                  setSearch("");
+                  setLoteFilter("all");
+                  setSexoFilter("all");
+                  setStatusFilter("ativo");
+                  setCategoryFilter("all");
+                  setProductiveStateFilter("all");
+                  setCalendarModeFilter("all");
+                  setCalendarAnchorFilter("all");
                   setRegulatoryImpactFilter("all");
                   setRegulatorySubareaFilter("all");
                 }}
               >
-                Limpar recorte regulatorio
+                <FilterX className="h-4 w-4" />
+                Limpar
               </Button>
-            </div>
+            ) : null}
+          </ToolbarGroup>
+        </Toolbar>
+      )}
+      </div>
 
-            <div className="flex flex-wrap gap-2">
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={handleExportRegulatoryCut}
-                disabled={regulatoryImpactedAnimals.length === 0}
-              >
-                Exportar recorte regulatorio
-              </Button>
-              <Button asChild size="sm" variant="outline">
-                <Link to="/protocolos-sanitarios">Abrir overlay oficial</Link>
-              </Button>
-              <Button asChild size="sm" variant="ghost">
-                <Link to="/eventos?dominio=conformidade">Ver historico</Link>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      ) : null}
-
-      <Toolbar>
-        <ToolbarGroup className="flex-1 gap-2">
-          <div className="relative min-w-[220px] flex-1">
-            <Search className="absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              aria-label="Buscar animais por identificacao"
-              placeholder="Buscar por identificacao"
-              className="pl-9 bg-surface"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-            />
-          </div>
-
-          <Select value={loteFilter} onValueChange={setLoteFilter}>
-            <SelectTrigger className="w-full sm:w-auto min-w-[140px] bg-transparent border-transparent hover:border-border hover:bg-muted/30 transition-colors">
-              <SelectValue placeholder="Lote" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos os lotes</SelectItem>
-              <SelectItem value="none">Sem lote</SelectItem>
-              {lotes?.map((lote) => (
-                <SelectItem key={lote.id} value={lote.id}>
-                  {lote.nome}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select value={sexoFilter} onValueChange={setSexoFilter}>
-            <SelectTrigger className="w-full sm:w-auto min-w-[120px] bg-transparent border-transparent hover:border-border hover:bg-muted/30 transition-colors">
-              <SelectValue placeholder="Sexo" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Ambos</SelectItem>
-              <SelectItem value="M">Macho</SelectItem>
-              <SelectItem value="F">Femea</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-full sm:w-auto min-w-[120px] bg-transparent border-transparent hover:border-border hover:bg-muted/30 transition-colors">
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos</SelectItem>
-              <SelectItem value="ativo">Ativo</SelectItem>
-              <SelectItem value="vendido">Vendido</SelectItem>
-              <SelectItem value="morto">Morto</SelectItem>
-            </SelectContent>
-          </Select>
-        </ToolbarGroup>
-
-        <ToolbarGroup className="gap-2">
-          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-            <SelectTrigger className="w-full sm:w-auto min-w-[140px] bg-transparent border-transparent hover:border-border hover:bg-muted/30 transition-colors">
-              <SelectValue placeholder="Categoria" />
-            </SelectTrigger>
-            <SelectContent>
-              {CATEGORY_FILTERS.map((item) => (
-                <SelectItem key={item.value} value={item.value}>
-                  {item.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select
-            value={productiveStateFilter}
-            onValueChange={setProductiveStateFilter}
-          >
-            <SelectTrigger className="w-full sm:w-auto min-w-[160px] bg-transparent border-transparent hover:border-border hover:bg-muted/30 transition-colors">
-              <SelectValue placeholder="Estado produtivo" />
-            </SelectTrigger>
-            <SelectContent>
-              {PRODUCTIVE_STATE_FILTERS.map((item) => (
-                <SelectItem key={item.value} value={item.value}>
-                  {item.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select
-            value={regulatoryImpactFilter}
-            onValueChange={(value) =>
-              setRegulatoryImpactFilter(value as RegulatoryImpactFilter)
-            }
-          >
-            <SelectTrigger className="w-full sm:w-auto min-w-[180px] bg-transparent border-transparent hover:border-border hover:bg-muted/30 transition-colors">
-              <SelectValue placeholder="Impacto regulatorio" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todo impacto regulatorio</SelectItem>
-              <SelectItem value="nutrition">Nutricao</SelectItem>
-              <SelectItem value="movementInternal">Movimentacao interna</SelectItem>
-              <SelectItem value="sale">Venda/transito</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Select
-            value={regulatorySubareaFilter}
-            onValueChange={(value) =>
-              setRegulatorySubareaFilter(value as RegulatorySubareaFilter)
-            }
-          >
-            <SelectTrigger className="w-full sm:w-auto min-w-[180px] bg-transparent border-transparent hover:border-border hover:bg-muted/30 transition-colors">
-              <SelectValue placeholder="Subarea regulatoria" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todas as subareas</SelectItem>
-              <SelectItem value="feed_ban">Feed-ban</SelectItem>
-              <SelectItem value="quarentena">Quarentena</SelectItem>
-              <SelectItem value="documental">Documental</SelectItem>
-              <SelectItem value="agua_limpeza">Agua e limpeza</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Select
-            value={calendarModeFilter}
-            onValueChange={(value) =>
-              setCalendarModeFilter(value as AnimalCalendarModeFilter)
-            }
-          >
-            <SelectTrigger className="w-full sm:w-auto min-w-[170px] bg-transparent border-transparent hover:border-border hover:bg-muted/30 transition-colors">
-              <SelectValue placeholder="Calendario" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todo calendario</SelectItem>
-              <SelectItem value="campaign">Campanha</SelectItem>
-              <SelectItem value="age_window">Janela etaria</SelectItem>
-              <SelectItem value="rolling_interval">Recorrente</SelectItem>
-              <SelectItem value="immediate">Uso imediato</SelectItem>
-              <SelectItem value="clinical_protocol">Protocolo clinico</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Select
-            value={calendarAnchorFilter}
-            onValueChange={(value) =>
-              setCalendarAnchorFilter(value as AnimalCalendarAnchorFilter)
-            }
-          >
-            <SelectTrigger className="w-full sm:w-auto min-w-[170px] bg-transparent border-transparent hover:border-border hover:bg-muted/30 transition-colors">
-              <SelectValue placeholder="Ancora" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todas as ancoras</SelectItem>
-              <SelectItem value="calendar_month">Calendario</SelectItem>
-              <SelectItem value="birth">Nascimento</SelectItem>
-              <SelectItem value="weaning">Desmama</SelectItem>
-              <SelectItem value="pre_breeding_season">Pre-estacao</SelectItem>
-              <SelectItem value="clinical_need">Necessidade clinica</SelectItem>
-              <SelectItem value="dry_off">Secagem</SelectItem>
-            </SelectContent>
-          </Select>
-
-          {hasFilters ? (
-            <Button
-              aria-label="Limpar filtros"
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setSearch("");
-                setLoteFilter("all");
-                setSexoFilter("all");
-                setStatusFilter("ativo");
-                setCategoryFilter("all");
-                setProductiveStateFilter("all");
-                setCalendarModeFilter("all");
-                setCalendarAnchorFilter("all");
-                setRegulatoryImpactFilter("all");
-                setRegulatorySubareaFilter("all");
-              }}
-            >
-              <FilterX className="h-4 w-4" />
-              Limpar
-            </Button>
-          ) : null}
-        </ToolbarGroup>
-      </Toolbar>
+      <AnimalDemographicsCard 
+        animalRows={animalRows} 
+        taxonomyByAnimal={taxonomyByAnimal} 
+        sexoFilter={sexoFilter} 
+      />
 
       {lifecyclePendingCount > 0 ? (
         <Card className="border-warning/20 bg-warning-muted/70 shadow-none">
@@ -1360,34 +1259,9 @@ export default function Animais() {
         </Card>
       ) : null}
 
-      <Card className="overflow-hidden border-sky-200/70 bg-card shadow-sm dark:border-sky-900/60">
-        <CardHeader>
-          <CardTitle>Leitura operacional do rebanho</CardTitle>
-          <CardDescription>
-            A tabela prioriza categoria, localizacao, peso, ganho e proximo evento.
-            Hierarquia mae &gt; cria continua visivel sem ocupar coluna exclusiva.
-          </CardDescription>
-        </CardHeader>
+      <Card className="overflow-hidden border-transparent shadow-none bg-transparent md:border-sky-200/70 md:bg-card md:shadow-sm dark:md:border-sky-900/60">
         <CardContent className="p-0">
-          <div className="flex flex-col gap-2 border-b border-sky-100 bg-sky-50/70 px-6 py-4 text-sm dark:border-sky-900/50 dark:bg-sky-950/20 md:flex-row md:items-center md:justify-between">
-            <div className="space-y-1">
-              <p className="font-medium text-foreground">
-                {totalAnimalRows === 0
-                  ? "Nenhum animal no recorte atual."
-                  : `Mostrando ${firstVisibleRow}-${lastVisibleRow} de ${totalAnimalRows} animais do recorte.`}
-              </p>
-              <p className="text-muted-foreground">
-                As metricas continuam considerando todo o recorte filtrado, nao
-                apenas a pagina visivel.
-              </p>
-            </div>
-            {hasPagination ? (
-              <StatusBadge tone="neutral">
-                {ANIMAL_ROWS_PAGE_SIZE} por pagina
-              </StatusBadge>
-            ) : null}
-          </div>
-          <div className="overflow-x-auto pb-4 md:pb-0">
+          <div className="hidden md:block overflow-x-auto pb-4 md:pb-0">
           <Table>
             <TableHeader>
               <TableRow>
@@ -1665,6 +1539,55 @@ export default function Animais() {
               ) : null}
             </TableBody>
           </Table>
+          </div>
+
+          <div className="block md:hidden space-y-4">
+             {visibleAnimalRows.map(({ animal }) => {
+                 const taxonomy = taxonomyByAnimal.get(animal.id);
+                 const categoriaLabel = taxonomy?.display.categoria ?? null;
+                 const weightSummary = weightSummaryByAnimal.get(animal.id);
+                 const nextAgenda = nextAgendaByAnimal.get(animal.id);
+                 return (
+                   <Card key={animal.id} className="overflow-hidden border-border/70 shadow-sm">
+                     <CardContent className="p-4 flex flex-col gap-4">
+                       <div className="flex items-start justify-between gap-3">
+                         <div className="flex items-center gap-3">
+                           <AnimalVisualAvatar categoriaLabel={categoriaLabel} sexo={animal.sexo} size="sm" />
+                           <div>
+                             <Link to={`/animais/${animal.id}`} className="font-bold text-base hover:underline text-foreground">{animal.identificacao}</Link>
+                             {animal.nome && <p className="text-sm text-muted-foreground">{animal.nome}</p>}
+                           </div>
+                         </div>
+                         <AnimalCategoryBadge categoriaLabel={categoriaLabel} />
+                       </div>
+                       <div className="grid grid-cols-2 gap-3 text-sm border-t border-border/50 pt-3">
+                         <div>
+                           <p className="text-muted-foreground text-[11px] uppercase tracking-wider font-semibold mb-1">Peso</p>
+                           <p className="font-medium text-foreground">{weightSummary ? formatWeight(weightSummary.ultimoPesoKg, farmMeasurementConfig.weight_unit) : "---"}</p>
+                         </div>
+                         <div>
+                           <p className="text-muted-foreground text-[11px] uppercase tracking-wider font-semibold mb-1">Próximo Evento</p>
+                           <p className="font-medium text-foreground truncate">{nextAgenda ? nextAgenda.titulo : "---"}</p>
+                         </div>
+                         <div>
+                           <p className="text-muted-foreground text-[11px] uppercase tracking-wider font-semibold mb-1">Lote</p>
+                           <p className="font-medium text-foreground truncate">{animal.lote_id ? lotesMap.get(animal.lote_id)?.nome : "---"}</p>
+                         </div>
+                         <div>
+                           <p className="text-muted-foreground text-[11px] uppercase tracking-wider font-semibold mb-1">Status</p>
+                           <StatusBadge tone={animal.status === "ativo" ? "neutral" : "warning"}>{animal.status}</StatusBadge>
+                         </div>
+                       </div>
+                       <Button asChild variant="outline" size="sm" className="w-full mt-2">
+                         <Link to={`/animais/${animal.id}`}>Abrir ficha do animal</Link>
+                       </Button>
+                     </CardContent>
+                   </Card>
+                 );
+             })}
+             {animalRows.length === 0 && hasFilters ? (
+               <div className="text-center text-muted-foreground py-8 bg-card rounded-lg border">Nenhum animal encontrado com os filtros aplicados.</div>
+             ) : null}
           </div>
 
           {hasPagination ? (
