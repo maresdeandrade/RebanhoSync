@@ -72,7 +72,7 @@ jobs:
           baseline=""
           for f in "${files[@]}"; do
             if echo "$changed" | grep -qx "$f"; then
-              b=$(rg -n "^> \*\*Baseline:\*\* `.*`$|^\*\*Baseline:\*\* `.*`$|^> \*\*Baseline:\*\*|^Baseline:" "$f" -m 1 || true)
+              b=$(grep -En "^> \*\*Baseline:\*\* \`.*\`$|^\*\*Baseline:\*\* \`.*\`$|^> \*\*Baseline:\*\*|^Baseline:" "$f" | head -1 || true)
               if [ -z "$b" ]; then
                 echo "Missing Baseline header in $f"
                 exit 1
@@ -96,8 +96,8 @@ jobs:
         run: |
           set -euo pipefail
           # Checks leves: garante que os docs derivativos carregam o conceito de capability_id
-          rg -n "capability_id" docs/IMPLEMENTATION_STATUS.md
-          rg -n "capability_id" docs/TECH_DEBT.md
-          rg -n "capability_id" docs/ROADMAP.md
-          rg -n "gap_set|gap\(capability_id\)" docs/IMPLEMENTATION_STATUS.md || true
-          rg -n "Match: ✅" docs/review/RECONCILIACAO_REPORT.md || true
+          grep -En "capability_id" docs/IMPLEMENTATION_STATUS.md
+          grep -En "capability_id" docs/TECH_DEBT.md
+          grep -En "capability_id" docs/ROADMAP.md
+          grep -En "gap_set|gap.capability_id." docs/IMPLEMENTATION_STATUS.md || true
+          grep -Fn "Match: ✅" docs/review/RECONCILIACAO_REPORT.md || true

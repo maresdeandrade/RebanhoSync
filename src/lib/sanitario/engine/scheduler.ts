@@ -155,6 +155,10 @@ export function computeProtocolAgendaEligibility(
  * Se não, retorna não-acionável imediatamente.
  */
 function step1CheckGeneratesAgenda(item: SanitaryProtocolItemDomain): OccurrenceBlockReason | "continue" {
+  // Guard defensivo: item sem schedule (fixture incompleta / dado corrompido) trata como agenda desabilitada
+  if (!item?.schedule) {
+    return "agenda_disabled";
+  }
   if (!item.schedule.generatesAgenda) {
     return "agenda_disabled";
   }
