@@ -3,10 +3,15 @@ import { type Collection } from "dexie";
 import { useLiveQuery } from "dexie-react-hooks";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
+  Activity,
   AlertTriangle,
+  Baby,
+  Beef,
   CalendarClock,
   CornerDownRight,
   FilterX,
+  Milk,
+  MilkOff,
   PawPrint,
   Plus,
   Search,
@@ -763,6 +768,61 @@ export default function Animais() {
       }).length,
     [animalRows, nextAgendaByAnimal],
   );
+  const femaleMetrics = useMemo(() => {
+    let vacasParidas = 0;
+    let vacasSecas = 0;
+    let novilhas = 0;
+    let bezerras = 0;
+
+    for (const { animal } of animalRows) {
+      if (animal.sexo !== "F") continue;
+      const taxonomy = taxonomyByAnimal.get(animal.id);
+      if (!taxonomy) continue;
+
+      if (taxonomy.categoria_zootecnica === "vaca" && taxonomy.facts.pariu_alguma_vez) {
+        vacasParidas++;
+      }
+      if (taxonomy.estado_produtivo_reprodutivo === "seca") {
+        vacasSecas++;
+      }
+      if (taxonomy.categoria_zootecnica === "novilha") {
+        novilhas++;
+      }
+      if (taxonomy.categoria_zootecnica === "bezerra") {
+        bezerras++;
+      }
+    }
+
+    return { vacasParidas, vacasSecas, novilhas, bezerras };
+  }, [animalRows, taxonomyByAnimal]);
+
+  const maleMetrics = useMemo(() => {
+    let touros = 0;
+    let novilhos = 0;
+    let bois = 0;
+    let bezerros = 0;
+
+    for (const { animal } of animalRows) {
+      if (animal.sexo !== "M") continue;
+      const taxonomy = taxonomyByAnimal.get(animal.id);
+      if (!taxonomy) continue;
+
+      if (taxonomy.categoria_zootecnica === "touro") {
+        touros++;
+      }
+      if (taxonomy.categoria_zootecnica === "garrote") {
+        novilhos++;
+      }
+      if (taxonomy.categoria_zootecnica === "boi_terminacao") {
+        bois++;
+      }
+      if (taxonomy.categoria_zootecnica === "bezerro") {
+        bezerros++;
+      }
+    }
+
+    return { touros, novilhos, bois, bezerros };
+  }, [animalRows, taxonomyByAnimal]);
   const regulatoryImpactedAnimals = useMemo(
     () =>
       filteredAnimals.filter(
@@ -923,33 +983,96 @@ export default function Animais() {
       />
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <MetricCard
-          label="Base ativa"
-          value={activeAnimalsCount}
-          hint="Animais ativos cadastrados na fazenda."
-        />
-        <MetricCard
-          label="No recorte atual"
-          value={animalRows.length}
-          hint={`${animalsWithWeightCount} com pesagem registrada no recorte.`}
-        />
-        <MetricCard
-          label="Sem lote"
-          value={semLoteCount}
-          hint="Animais sem lote definido continuam pedindo ajuste estrutural."
-          tone={semLoteCount > 0 ? "warning" : "default"}
-        />
-        <MetricCard
-          label="Agenda no radar"
-          value={agendaRadarCount}
-          hint={
-            animalsWithNextAgendaCount > 0
-              ? `${animalsWithNextAgendaCount} com proximo evento mapeado.`
-              : "Nenhum proximo evento aberto para o recorte."
-          }
-          tone={agendaRadarCount > 0 ? "warning" : "info"}
-          icon={<CalendarClock className="h-5 w-5" />}
-        />
+        {sexoFilter === "F" ? (
+          <>
+            <MetricCard
+              label="Vacas que pariram"
+              value={femaleMetrics.vacasParidas}
+              hint="Femeas que ja pariram na fazenda."
+              icon={<Milk className="h-5 w-5" />}
+              tone={femaleMetrics.vacasParidas > 0 ? "info" : "default"}
+            />
+            <MetricCard
+              label="Vacas secas"
+              value={femaleMetrics.vacasSecas}
+              hint="Vacas em periodo seco."
+              icon={<MilkOff className="h-5 w-5" />}
+              tone={femaleMetrics.vacasSecas > 0 ? "warning" : "default"}
+            />
+            <MetricCard
+              label="Novilhas"
+              value={femaleMetrics.novilhas}
+              hint="Femeas jovens em desenvolvimento."
+              icon={<Activity className="h-5 w-5" />}
+              tone={femaleMetrics.novilhas > 0 ? "success" : "default"}
+            />
+            <MetricCard
+              label="Bezerras"
+              value={femaleMetrics.bezerras}
+              hint="Femeas em fase de aleitamento."
+              icon={<Baby className="h-5 w-5" />}
+            />
+          </>
+        ) : sexoFilter === "M" ? (
+          <>
+            <MetricCard
+              label="Touros"
+              value={maleMetrics.touros}
+              hint="Reprodutores ativos na fazenda."
+              icon={<Beef className="h-5 w-5" />}
+              tone={maleMetrics.touros > 0 ? "info" : "default"}
+            />
+            <MetricCard
+              label="Novilhos"
+              value={maleMetrics.novilhos}
+              hint="Machos em desenvolvimento."
+              icon={<Activity className="h-5 w-5" />}
+            />
+            <MetricCard
+              label="Bois"
+              value={maleMetrics.bois}
+              hint="Machos em fase de terminacao."
+              icon={<Beef className="h-5 w-5" />}
+              tone={maleMetrics.bois > 0 ? "success" : "default"}
+            />
+            <MetricCard
+              label="Bezerros"
+              value={maleMetrics.bezerros}
+              hint="Machos em fase de aleitamento."
+              icon={<Baby className="h-5 w-5" />}
+            />
+          </>
+        ) : (
+          <>
+            <MetricCard
+              label="Base ativa"
+              value={activeAnimalsCount}
+              hint="Animais ativos cadastrados na fazenda."
+            />
+            <MetricCard
+              label="No recorte atual"
+              value={animalRows.length}
+              hint={`${animalsWithWeightCount} com pesagem registrada no recorte.`}
+            />
+            <MetricCard
+              label="Sem lote"
+              value={semLoteCount}
+              hint="Animais sem lote definido continuam pedindo ajuste estrutural."
+              tone={semLoteCount > 0 ? "warning" : "default"}
+            />
+            <MetricCard
+              label="Agenda no radar"
+              value={agendaRadarCount}
+              hint={
+                animalsWithNextAgendaCount > 0
+                  ? `${animalsWithNextAgendaCount} com proximo evento mapeado.`
+                  : "Nenhum proximo evento aberto para o recorte."
+              }
+              tone={agendaRadarCount > 0 ? "warning" : "info"}
+              icon={<CalendarClock className="h-5 w-5" />}
+            />
+          </>
+        )}
       </section>
 
       {regulatoryReadModel.hasOpenIssues ? (
