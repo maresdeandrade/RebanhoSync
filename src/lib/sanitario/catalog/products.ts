@@ -50,8 +50,8 @@ const CATEGORY_HINTS: Record<SanitarioTipoEnum, string[]> = {
   ],
 };
 
-const normalizeText = (value: string): string =>
-  value
+const normalizeText = (value: unknown): string =>
+  (typeof value === "string" ? value : "")
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
@@ -167,7 +167,10 @@ export const searchVeterinaryProducts = (
       if (right.score !== left.score) {
         return right.score - left.score;
       }
-      return left.product.nome.localeCompare(right.product.nome);
+      const leftName = typeof left.product.nome === "string" ? left.product.nome : "";
+      const rightName =
+        typeof right.product.nome === "string" ? right.product.nome : "";
+      return leftName.localeCompare(rightName);
     })
     .slice(0, limit)
     .map(({ product }) => product);

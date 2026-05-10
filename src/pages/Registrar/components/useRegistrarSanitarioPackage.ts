@@ -102,18 +102,26 @@ export function useRegistrarSanitarioPackage(input: {
   const [transitChecklist, setTransitChecklist] = useState<TransitChecklistDraft>(
     DEFAULT_TRANSIT_CHECKLIST_DRAFT,
   );
+
+  const handleProtocoloChange = useCallback((id: string) => {
+    const newId = id === "none" ? "" : id;
+    setProtocoloId(newId);
+    setProtocoloItemId("");
+    setSanitarioData((prev) => ({ ...prev, produto: "" }));
+    setSelectedVeterinaryProductId("");
+  }, []);
+
   const applySanitaryQuickAction = useCallback((tipo: "vacinacao" | "vermifugacao") => {
-    setSanitarioData((prev) => ({
-      ...prev,
-      tipo,
-      produto: prev.tipo === tipo ? prev.produto : "",
-    }));
+    setSanitarioData((prev) => (prev.tipo === tipo ? prev : { ...prev, tipo, produto: "" }));
+    setProtocoloId("");
+    setProtocoloItemId("");
+    setSelectedVeterinaryProductId("");
   }, []);
   const handleSanitarioTipoChange = useCallback((tipo: SanitarioTipoEnum) => {
-    setSanitarioData((prev) => ({
-      ...prev,
-      tipo,
-    }));
+    setSanitarioData((prev) => (prev.tipo === tipo ? prev : { ...prev, tipo, produto: "" }));
+    setProtocoloId("");
+    setProtocoloItemId("");
+    setSelectedVeterinaryProductId("");
   }, []);
   const handleSanitarioProdutoChange = useCallback((produto: string) => {
     setSanitarioData((prev) => ({
@@ -145,6 +153,67 @@ export function useRegistrarSanitarioPackage(input: {
     [],
   );
 
+  const filteredProtocolos = useMemo(() => {
+    if (!protocolos) return [];
+    const tipo = sanitarioData.tipo;
+
+    // Deduplica protocolos para não renderizar duas vezes o mesmo balão
+    const uniqueProtocolos = Array.from(
+      new Map(protocolos.map((p) => [       p.id, p])).values()
+    );
+
+    return uniqueProtocolos.filter(p => {
+      const name = (p.nome || "").toLowerCase();
+      const family = ("familia_sanitaria" in p && typeof p.familia_sanitaria === "string" ? p.familia_sanitaria : "").toLowerCase();
+      
+      const isVacina = name.includes("vacina") || name.includes("raiva") || name.includes("brucelose") || name.includes("clostridiose") || name.includes("aftosa") || name.includes("bvd") || name.includes("ibr") || family.includes("vacina");
+      
+      const isTristeza = name.includes("tristeza") || name.includes("tpb");
+      const isVermi = name.includes("verm") || name.includes("endect") || (name.includes("parasit") && !isTristeza) || name.includes("carrapat") || name.includes("mosca") || name.includes("estrategico") || name.includes("5-7-9") || family.includes("verm");
+
+      if (tipo === "vacinacao") return isVacina || (!isVermi && !isTristeza && name.includes("oficial"));
+      if (tipo === "vermifugacao") return isVermi;
+      if (tipo === "medicamento") return !isVacina && !isVermi;
+      
+      return true;
+    });
+  }, [protocolos, sanitarioData.tipo]);
+
+  const filteredVeterinaryProducts = useMemo(() => {
+    if (!veterinaryProducts) return undefined;
+    const tipo = sanitarioData.tipo;
+
+    const uniqueProducts = Array.from(
+      new Map(veterinaryProducts.map((p) => [                                                                        (p.nome || "").trim().toLowerCase(), p])).values()
+    );
+
+    return uniqueProducts.filter((p) => {
+      const cat = (p.categoria || "").toLowerCase();
+      const nome = (p.nome || "").toLowerCase();
+      const isTristeza = nome.includes("tristeza") || nome.includes("tpb");
+      const isEstrategico = nome.includes("estrategico") || nome.includes("5-7-9");
+
+      if (tipo === "vacinacao") {
+        return cat.includes("vacina") || nome.includes("vacina") || cat.includes("biol");
+      }
+      if (tipo === "vermifugacao") {
+        return (
+          cat.includes("verm") ||
+          cat.includes("anti") ||
+          cat.includes("endect") ||
+          (cat.includes("parasit") && !isTristeza) ||
+          nome.includes("verm") ||
+          nome.includes("mectina") ||
+          isEstrategico
+        );
+      }
+      if (tipo === "medicamento") {
+        return !cat.includes("vacina") && !nome.includes("vacina") && !cat.includes("verm") && !nome.includes("verm") && !isEstrategico;
+      }
+      return true;
+    });
+  }, [veterinaryProducts, sanitarioData.tipo]);
+
   const resolveProtocolProductSelection = useCallback(
     (
       payload: Record<string, unknown> | null | undefined,
@@ -155,9 +224,9 @@ export function useRegistrarSanitarioPackage(input: {
         payload,
         productName,
         sanitaryType,
-        veterinaryProducts,
+          veterinaryProducts: filteredVeterinaryProducts,
       }),
-    [veterinaryProducts],
+    [filteredVeterinaryProducts],
   );
 
   const selectVeterinaryProduct = useCallback(
@@ -189,7 +258,7 @@ export function useRegistrarSanitarioPackage(input: {
         protocoloItemId: protocoloItemId || null,
         sanitarioData,
         selectedVeterinaryProductId,
-        veterinaryProducts,
+        veterinaryProducts: filteredVeterinaryProducts,
         transitChecklist,
         asOfDate: new Date().toISOString().slice(0, 10),
       }),
@@ -206,7 +275,7 @@ export function useRegistrarSanitarioPackage(input: {
       sanitarioData,
       selectedVeterinaryProductId,
       transitChecklist,
-      veterinaryProducts,
+      filteredVeterinaryProducts,
     ],
   );
 
@@ -368,8 +437,13 @@ export function useRegistrarSanitarioPackage(input: {
     produto?: string | null;
     sanitarioTipo?: string | null;
   }) => {
+    // Apply type first because changing type clears selected protocol/item.
+    // Then restore query-selected protocol and item.
+    if (query.sanitarioTipo && SANITARIO_TYPES.includes(query.sanitarioTipo as SanitarioTipoEnum)) {
+      handleSanitarioTipoChange(query.sanitarioTipo as SanitarioTipoEnum);
+    }
     if (query.protocoloId) {
-      setProtocoloId(query.protocoloId);
+      handleProtocoloChange(query.protocoloId);
     }
     if (query.protocoloItemId) {
       setProtocoloItemId(query.protocoloItemId);
@@ -377,10 +451,46 @@ export function useRegistrarSanitarioPackage(input: {
     if (query.produto) {
       handleSanitarioProdutoChange(query.produto);
     }
-    if (query.sanitarioTipo && SANITARIO_TYPES.includes(query.sanitarioTipo as SanitarioTipoEnum)) {
-      handleSanitarioTipoChange(query.sanitarioTipo as SanitarioTipoEnum);
-    }
-  }, [handleSanitarioProdutoChange, handleSanitarioTipoChange]);
+  }, [handleProtocoloChange, handleSanitarioProdutoChange, handleSanitarioTipoChange]);
+
+  const finalProductSuggestions = useMemo(() => {
+    const suggestions = sanitaryPackage.veterinaryProductSuggestions || [];
+    const tipo = sanitarioData.tipo;
+    const selectedProtocol = protocolos?.find(p => p.id === protocoloId);
+    const protocolName = (selectedProtocol?.nome || "").toLowerCase();
+
+    const uniqueSuggestions = Array.from(
+      new Map(suggestions.map((p) => [(p.nome || "").trim().toLowerCase(), p])).values()
+    );
+
+    return uniqueSuggestions.filter((p) => {
+      const cat = (p.categoria || "").toLowerCase();
+      const nome = (p.nome || "").toLowerCase();
+      
+      const isTristeza = nome.includes("tristeza") || nome.includes("tpb");
+      const isEstrategico = nome.includes("estrategico") || nome.includes("5-7-9");
+
+      let matchTipo = true;
+      if (tipo === "vacinacao") {
+        matchTipo = cat.includes("vacina") || nome.includes("vacina") || cat.includes("biol");
+      } else if (tipo === "vermifugacao") {
+        matchTipo = cat.includes("verm") || cat.includes("anti") || cat.includes("endect") || (cat.includes("parasit") && !isTristeza) || nome.includes("verm") || nome.includes("mectina") || isEstrategico;
+      } else if (tipo === "medicamento") {
+        matchTipo = !cat.includes("vacina") && !nome.includes("vacina") && !cat.includes("verm") && !nome.includes("verm") && !isEstrategico;
+      }
+
+      if (!matchTipo) return false;
+
+      if (protocoloId && protocolName) {
+        if (protocolName.includes("raiva")) return nome.includes("raiva");
+        if (protocolName.includes("brucelose")) return nome.includes("brucelose") || nome.includes("b19") || nome.includes("rb51") || nome.includes("cepa");
+        if (protocolName.includes("clostridiose")) return nome.includes("clostridiose") || nome.includes("polivalente") || nome.includes("sintomatica");
+        if (protocolName.includes("aftosa")) return nome.includes("aftosa");
+      }
+
+      return true;
+    });
+  }, [sanitaryPackage.veterinaryProductSuggestions, sanitarioData.tipo, protocoloId, protocolos]);
 
   return {
     sanitarioData,
@@ -396,11 +506,11 @@ export function useRegistrarSanitarioPackage(input: {
       sanitaryPackage.selectedVeterinaryProductSelection,
     hasVeterinaryProducts: sanitaryPackage.hasVeterinaryProducts,
     isVeterinaryProductsEmpty: sanitaryPackage.isVeterinaryProductsEmpty,
-    veterinaryProductSuggestions: sanitaryPackage.veterinaryProductSuggestions,
+    veterinaryProductSuggestions: finalProductSuggestions,
     selectVeterinaryProduct,
-    protocolos,
+    protocolos: filteredProtocolos,
     protocoloId,
-    setProtocoloId,
+    setProtocoloId: handleProtocoloChange,
     protocoloItemId,
     setProtocoloItemId,
     protocoloItensEvaluated: sanitaryPackage.protocoloItensEvaluated,

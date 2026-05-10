@@ -11,14 +11,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { RegistrarAnimalSelectionPanel } from "@/pages/Registrar/components/RegistrarAnimalSelectionPanel";
-import {
-  RegistrarQuickActionsGrid,
-  type RegistrarQuickActionOption,
-} from "@/pages/Registrar/components/RegistrarQuickActionsGrid";
 
 type RegistrarSelectTargetStepProps<QuickActionKey extends string = string> = {
   quickAction: QuickActionKey | null;
-  quickActions: RegistrarQuickActionOption<QuickActionKey>[];
   onApplyQuickAction: (action: QuickActionKey) => void;
   onClearQuickAction: () => void;
   selectedLoteId: string;
@@ -50,30 +45,6 @@ export function RegistrarSelectTargetStep<QuickActionKey extends string = string
         <CardTitle className="text-base">1. Selecionar alvo</CardTitle>
       </CardHeader>
       <CardContent className="space-y-5">
-        <div className="space-y-3">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="text-sm font-medium">Manejos mais usados</p>
-              <p className="text-sm text-muted-foreground">
-                Escolha um atalho e depois selecione o lote e os animais.
-              </p>
-            </div>
-            {props.quickAction ? (
-              <Button type="button" variant="outline" size="sm" onClick={props.onClearQuickAction}>
-                Limpar atalho
-              </Button>
-            ) : null}
-          </div>
-
-          <RegistrarQuickActionsGrid
-            actions={props.quickActions}
-            activeAction={props.quickAction}
-            selectedAnimalsCount={props.selectedAnimaisCount}
-            disableRequiresAnimals={false}
-            onSelectAction={props.onApplyQuickAction}
-          />
-        </div>
-
         <div className="space-y-2 rounded-xl border border-border/70 bg-card p-4">
           <Label>Lote</Label>
           <Select onValueChange={props.onSelectedLoteIdChange} value={props.selectedLoteId}>

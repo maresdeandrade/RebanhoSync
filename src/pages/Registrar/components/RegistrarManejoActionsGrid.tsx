@@ -20,14 +20,14 @@ type RegistrarManejoActionsGridProps = {
 export function RegistrarManejoActionsGrid(props: RegistrarManejoActionsGridProps) {
   const getActionClassName = (active: boolean) =>
     cn(
-      "h-24 flex-col gap-2 rounded-xl border text-center shadow-sm transition-colors",
+      "h-20 sm:h-24 px-1 sm:px-4 flex-col gap-1.5 sm:gap-2 rounded-xl border text-center shadow-sm transition-colors text-[10px] sm:text-sm",
       active
         ? "border-[#0057C2] bg-sky-50 text-[#002B45] ring-1 ring-[#0057C2] hover:bg-sky-100 dark:border-sky-500 dark:bg-sky-950/50 dark:text-sky-100"
         : "border-border/70 bg-card text-foreground hover:border-sky-300 hover:bg-sky-50 dark:hover:border-sky-800 dark:hover:bg-sky-950/30",
     );
 
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+    <div className="grid grid-cols-3 gap-2 sm:gap-3 lg:grid-cols-6">
       <Button
         variant="outline"
         className={getActionClassName(props.tipoManejo === "sanitario")}

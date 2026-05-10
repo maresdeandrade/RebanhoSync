@@ -25,22 +25,33 @@ describe("useRegistrarSanitarioPackage", () => {
     vi.clearAllMocks();
     vi.mocked(useLiveQuery).mockImplementation(((query) => {
       const querySource =
-        typeof query === "function" ? query.toString() : "";
+        typeof query === "function" ? query.toString().toLowerCase() : "";
 
-      if (querySource.includes("loadRegistrarProtocolosEffect")) {
-        return [{ id: "protocolo-1", nome: "Protocolo 1" }];
+      if (
+        querySource.includes("product") ||
+        querySource.includes("produto") ||
+        querySource.includes("en(")
+      ) {
+        return [];
       }
-      if (querySource.includes("loadRegistrarProtocoloItensEffect")) {
+      if (
+        querySource.includes("item") ||
+        querySource.includes("itens") ||
+        querySource.includes("rn(")
+      ) {
         return [
           {
             id: "item-1",
+            protocolo_id: "protocolo-1",
             tipo: "medicamento",
             produto: "Produto A",
-            payload: null,
+            dose_num: 1,
+            intervalo_dias: 30,
+            payload: {},
           },
         ];
       }
-      return [];
+      return [{ id: "protocolo-1", nome: "Protocolo 1", payload: {} }];
     }) as typeof useLiveQuery);
   });
 

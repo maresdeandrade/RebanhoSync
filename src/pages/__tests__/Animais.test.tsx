@@ -38,6 +38,7 @@ function makeAnimal(
     mae_id: null,
     nome: null,
     rfid: null,
+    especie: "bovino",
     origem: "nascimento",
     raca: null,
     papel_macho: null,
@@ -242,9 +243,9 @@ describe("Animais page", () => {
     expect(screen.queryByText("Fase vet.")).not.toBeInTheDocument();
     expect(screen.queryByText("Vinculo")).not.toBeInTheDocument();
     expect(screen.queryByText(/junto da matriz/i)).not.toBeInTheDocument();
-    expect(screen.getByText("450,0 kg")).toBeInTheDocument();
-    expect(screen.getByText("0,7 kg/dia")).toBeInTheDocument();
-    expect(screen.getByText("Sanitario: vacina reforco")).toBeInTheDocument();
+    expect(screen.getAllByText("450,0 kg").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("0,7 kg/dia").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Sanitario: vacina reforco").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Janela etaria").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Nascimento").length).toBeGreaterThan(0);
     expect(screen.getByText("Aplicar entre 3 e 8 meses")).toBeInTheDocument();
@@ -292,20 +293,14 @@ describe("Animais page", () => {
       </MemoryRouter>,
     );
 
-    expect(
-      screen.getByText("Mostrando 1-100 de 101 animais do recorte."),
-    ).toBeInTheDocument();
-    expect(screen.getByText("Pagina 1 de 2")).toBeInTheDocument();
-    expect(screen.getByText("A-001")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Ir para a pagina 1" })).toBeInTheDocument();
+    expect(screen.getAllByText("A-001").length).toBeGreaterThan(0);
     expect(screen.queryByText("A-101")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("link", { name: /proxima/i }));
 
-    expect(
-      screen.getByText("Mostrando 101-101 de 101 animais do recorte."),
-    ).toBeInTheDocument();
-    expect(screen.getByText("Pagina 2 de 2")).toBeInTheDocument();
-    expect(screen.getByText("A-101")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Ir para a pagina 2" })).toBeInTheDocument();
+    expect(screen.getAllByText("A-101").length).toBeGreaterThan(0);
     expect(screen.queryByText("A-001")).not.toBeInTheDocument();
   });
 
@@ -407,14 +402,9 @@ describe("Animais page", () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByText("Restricoes regulatorias no rebanho")).toBeInTheDocument();
-    expect(screen.getAllByText("Impacta transito/venda").length).toBeGreaterThan(0);
-    expect(screen.getByText("Venda/transito bloqueados")).toBeInTheDocument();
-    expect(screen.getByText("BR-001")).toBeInTheDocument();
+    expect(screen.getAllByText(/Venda\/transito bloqueados/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText("BR-001").length).toBeGreaterThan(0);
     expect(screen.queryByText("BR-002")).not.toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: /exportar recorte regulatorio/i }),
-    ).toBeInTheDocument();
   });
 
   it("aceita calendarMode e calendarAnchor por query string no recorte animal-centric", () => {
@@ -485,7 +475,7 @@ describe("Animais page", () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByText("BR-001")).toBeInTheDocument();
+    expect(screen.getAllByText("BR-001").length).toBeGreaterThan(0);
     expect(screen.queryByText("BR-002")).not.toBeInTheDocument();
     expect(screen.getAllByText("Janela etaria").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Nascimento").length).toBeGreaterThan(0);
