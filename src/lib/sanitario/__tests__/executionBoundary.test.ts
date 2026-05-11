@@ -59,7 +59,7 @@ describe("executeSanitaryCompletion", () => {
     ]);
   });
 
-  it("fallback: refresh/pull falha mesmo com RPC concluida (servidor pode ter criado evento)", async () => {
+  it("handled_refresh_failed: RPC sucesso mas refresh falha, preserva evento_id", async () => {
     const completeAgendaWithEvent = vi.fn(async () => "evt-1");
     const refreshError = new Error("pull down failed");
     const refreshStateAfterCompletion = vi.fn(async () => {
@@ -72,19 +72,17 @@ describe("executeSanitaryCompletion", () => {
       refreshStateAfterCompletion,
     });
 
-    // CONTRATO CRÍTICO: boundary não diferencia "RPC ok mas refresh falhou" de "RPC falhou".
-    // Se o RPC resolve (retorna evt-1), mas o refresh rejeita:
-    // - Servidor: evento INSERT OK, agenda atualizada, recompute executado.
-    // - Cliente: UI percebe fallback/erro.
-    // - Risco: inconsistência percetível — pendência sanitária pode estar concluída no servidor,
-    //   mas usuário vê "Falha ao concluir" na tela e pode tentar novamente.
+    // NOVO CONTRATO: RPC executou com sucesso (evento criado no servidor), mas refresh falhou.
+    // - Servidor: evento INSERT OK, agenda atualizada.
+    // - Cliente: UI pode mostrar sucesso com aviso de sincronização pendente.
+    // - evento_id preservado para referência.
     expect(completeAgendaWithEvent).toHaveBeenCalledTimes(1);
     expect(refreshStateAfterCompletion).toHaveBeenCalledWith("farm-1", [
       "agenda_itens",
       "eventos",
       "eventos_sanitario",
     ]);
-    expect(result).toEqual({ status: "fallback", error: refreshError });
+    expect(result).toEqual({ status: "handled_refresh_failed", eventoId: "evt-1", error: refreshError });
   });
 
   it("fallback: retorna fallback quando RPC falha de forma recuperavel", async () => {
@@ -177,7 +175,7 @@ describe("executeSanitaryCompletion", () => {
     expect(completeAgendaWithEvent).not.toHaveBeenCalled();
   });
 
-  it("contrato: RPC sucesso + refresh timeout = fallback, mas evento ja existe no servidor", async () => {
+  it("contrato: RPC sucesso + refresh timeout = handled_refresh_failed, evento ja existe no servidor", async () => {
     const completeAgendaWithEvent = vi.fn(async () => "evt-network-123");
     const timeoutError = new Error("Request timeout");
     const refreshStateAfterCompletion = vi.fn(async () => {
@@ -191,11 +189,12 @@ describe("executeSanitaryCompletion", () => {
     });
 
     // Mesmo com falha de refresh (timeout ou conexão), o evento foi criado no servidor.
-    // A UI tratará como fallback/erro, mas a próxima sincronização (offline) recuperará o evento.
+    // A UI tratará como sucesso com aviso de sincronização pendente.
     // Este cenário é especialmente crítico em conexão fraca ou móvel.
-    expect(result.status).toBe("fallback");
+    expect(result.status).toBe("handled_refresh_failed");
+    expect(result.eventoId).toBe("evt-network-123");
+    expect(result.error).toBe(timeoutError);
     expect(completeAgendaWithEvent).toHaveBeenCalledTimes(1);
-    // Nota: completou, mas refresh falhou → estado inconsistente temporariamente.
   });
 
   it("contrato: segunda chamada da RPC para mesmo agendaItemId com novo client_op_id", async () => {

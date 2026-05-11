@@ -19,6 +19,7 @@ export async function tryRegistrarSanitaryRpcFinalizeEffect(input: {
 }): Promise<
   | { status: "skip" }
   | { status: "handled"; eventoId: string }
+  | { status: "handled_refresh_failed"; eventoId: string; error: unknown }
   | { status: "fallback"; error: unknown }
 > {
   const result = await executeSanitaryCompletion({

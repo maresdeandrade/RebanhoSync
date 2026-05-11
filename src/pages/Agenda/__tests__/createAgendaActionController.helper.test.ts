@@ -112,7 +112,7 @@ describe("createAgendaActionController", () => {
     );
   });
 
-  it("agenda: se concluirPendenciaSanitaria resolve, mas pullDataForFarm falha, trata como erro de conclusão", async () => {
+  it("agenda: se concluirPendenciaSanitaria resolve, mas pullDataForFarm falha, trata como sucesso com aviso", async () => {
     const pullError = new Error("pull down failed");
     const deps = createDeps({
       pullDataForFarm: vi.fn().mockRejectedValue(pullError),
@@ -126,19 +126,16 @@ describe("createAgendaActionController", () => {
       "concluido",
     );
 
-    // CONTRATO CRÍTICO: Agenda não diferencia "RPC OK, refresh falhou" de "RPC falhou".
-    // Se a RPC concluir com sucesso (evento criado, agenda atualizada no servidor),
-    // mas o pull falhar:
-    // - Servidor: evento está consolidado, agenda_itens.status = 'concluido' + source_evento_id preenchido.
-    // - Cliente: UI mostra erro "Falha ao concluir pendência sanitária com evento."
-    // - Risco: usuário percebe falha, pode tentar novamente em nova aba/dispositivo,
-    //   potencialmente criando segundo evento (dependendo de dedup servidor).
+    // NOVO CONTRATO: RPC OK, refresh falhou ≠ execução falhou.
+    // - Servidor: evento criado, agenda atualizada.
+    // - Cliente: UI mostra sucesso com aviso de sincronização pendente.
+    // - evento_id preservado.
     expect(deps.concludePendingSanitary).toHaveBeenCalledTimes(1);
     expect(deps.pullDataForFarm).toHaveBeenCalledTimes(1);
-    expect(deps.showError).toHaveBeenCalledWith(
-      "Falha ao concluir pendência sanitária com evento.",
+    expect(deps.showSuccess).toHaveBeenCalledWith(
+      "Execução registrada. A atualização local falhou; sincronize/atualize para refletir o novo estado. Evento evento-1.",
     );
-    expect(deps.showSuccess).not.toHaveBeenCalled();
+    expect(deps.showError).not.toHaveBeenCalled();
   });
 
   it("updates locally through gesture for non-sanitary branches", async () => {
@@ -205,9 +202,9 @@ describe("createAgendaActionController", () => {
     expect(deps.pullDataForFarm).not.toHaveBeenCalled();
   });
 
-  it("regressão: não exibe sucesso se refresh/pullDataForFarm falhar após RPC", async () => {
-    // Já existe teste similar acima, mas este garante proteção contra regressão
-    // onde showSuccess pudesse vazar por erro no pull.
+  it("contrato: RPC sucesso + refresh falha = sucesso com aviso, não erro", async () => {
+    // Novo contrato: RPC OK + refresh falha ≠ execução falhou.
+    // UI deve mostrar sucesso com aviso de sincronização pendente.
     const pullError = new Error("network down");
     const deps = createDeps({
       pullDataForFarm: vi.fn().mockRejectedValue(pullError),
@@ -223,7 +220,9 @@ describe("createAgendaActionController", () => {
     );
 
     expect(deps.concludePendingSanitary).toHaveBeenCalledTimes(1);
-    expect(deps.showSuccess).not.toHaveBeenCalled();
-    expect(deps.showError).toHaveBeenCalled();
+    expect(deps.showSuccess).toHaveBeenCalledWith(
+      "Execução registrada. A atualização local falhou; sincronize/atualize para refletir o novo estado. Evento evento-1.",
+    );
+    expect(deps.showError).not.toHaveBeenCalled();
   });
 });

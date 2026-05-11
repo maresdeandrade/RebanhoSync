@@ -23,6 +23,7 @@ export type RefreshSanitaryExecutionStateFn = (
 export type SanitaryExecutionBoundaryResult =
   | { status: "skip" }
   | { status: "handled"; eventoId: string }
+  | { status: "handled_refresh_failed"; eventoId: string; error: unknown }
   | { status: "fallback"; error: unknown }
   | { status: "error"; error: unknown; message: string };
 
@@ -67,15 +68,23 @@ export async function executeSanitaryCompletion(
       },
     });
 
-    await refreshStateAfterCompletion(
-      input.fazendaId,
-      SANITARY_COMPLETION_REFRESH_TABLES,
-    );
+    try {
+      await refreshStateAfterCompletion(
+        input.fazendaId,
+        SANITARY_COMPLETION_REFRESH_TABLES,
+      );
 
-    return {
-      status: "handled",
-      eventoId,
-    };
+      return {
+        status: "handled",
+        eventoId,
+      };
+    } catch (refreshError) {
+      return {
+        status: "handled_refresh_failed",
+        eventoId,
+        error: refreshError,
+      };
+    }
   } catch (error) {
     const shouldFallback = input.shouldFallbackOnError?.(error) ?? true;
 

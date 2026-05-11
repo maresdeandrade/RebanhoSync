@@ -104,15 +104,22 @@ export function createAgendaActionController(deps: AgendaActionControllerDeps) {
             },
           });
 
-          await deps.pullDataForFarm(
-            deps.activeFarmId,
-            ["agenda_itens", "eventos", "eventos_sanitario"],
-            { mode: "merge" },
-          );
+          try {
+            await deps.pullDataForFarm(
+              deps.activeFarmId,
+              ["agenda_itens", "eventos", "eventos_sanitario"],
+              { mode: "merge" },
+            );
 
-          deps.showSuccess(
-            `Concluído direto na agenda com evento sanitário. Evento ${eventoId.slice(0, 8)}.`,
-          );
+            deps.showSuccess(
+              `Concluído direto na agenda com evento sanitário. Evento ${eventoId.slice(0, 8)}.`,
+            );
+          } catch (pullError) {
+            deps.logError("[agenda] pull failed after sanitary RPC success", pullError);
+            deps.showSuccess(
+              `Execução registrada. A atualização local falhou; sincronize/atualize para refletir o novo estado. Evento ${eventoId.slice(0, 8)}.`,
+            );
+          }
           return;
         } catch (error) {
           deps.logError("[agenda] failed to conclude sanitary item with event", error);

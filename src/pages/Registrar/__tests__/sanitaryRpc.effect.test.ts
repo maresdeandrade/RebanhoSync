@@ -18,9 +18,12 @@ describe("tryRegistrarSanitaryRpcFinalizeEffect", () => {
     expect(result).toEqual({ status: "skip" });
   });
 
-  it("retorna handled quando RPC e pull concluem", async () => {
+  it("retorna handled_refresh_failed quando RPC sucesso mas pull falha", async () => {
     const concluirSpy = vi.fn(async () => "evt-1");
-    const pullSpy = vi.fn(async () => undefined);
+    const pullError = new Error("pull failed");
+    const pullSpy = vi.fn(async () => {
+      throw pullError;
+    });
 
     const result = await tryRegistrarSanitaryRpcFinalizeEffect({
       tipoManejo: "sanitario",
@@ -29,12 +32,12 @@ describe("tryRegistrarSanitaryRpcFinalizeEffect", () => {
       occurredAt: nowIso,
       tipo: "vacinacao",
       sanitaryProductName: "Vacina X",
-      sanitaryProductMetadata: { lote: "A1" },
+      sanitaryProductMetadata: {},
       concluirPendenciaSanitariaFn: concluirSpy,
       pullDataForFarmFn: pullSpy,
     });
 
-    expect(result).toEqual({ status: "handled", eventoId: "evt-1" });
+    expect(result).toEqual({ status: "handled_refresh_failed", eventoId: "evt-1", error: pullError });
     expect(concluirSpy).toHaveBeenCalledTimes(1);
     expect(pullSpy).toHaveBeenCalledWith("farm-1", [
       "agenda_itens",
