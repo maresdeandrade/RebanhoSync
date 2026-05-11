@@ -175,4 +175,25 @@ describe("useRegistrarSanitarioPackage", () => {
     expect(result.current.veterinaryProductSuggestions).toHaveLength(1);
     expect(result.current.veterinaryProductSuggestions[0].nome).toBe("Vacina Raiva Inativada");
   });
+
+  it("deduplica protocolos semanticamente iguais (mesmo nome, IDs diferentes)", () => {
+    mockProtocolos = [
+      { id: "1", nome: "Vacina Brucelose", familia_sanitaria: "vacina" },
+      { id: "2", nome: "VACINA BRUCELOSE ", familia_sanitaria: "vacina" },
+      { id: "3", nome: "Outro Protocolo", familia_sanitaria: "vacina" },
+    ];
+
+    const { result } = renderHook(() => useRegistrarSanitarioPackage(defaultProps));
+
+    act(() => {
+      result.current.handleSanitarioTipoChange("vacinacao");
+    });
+
+    const renderizedProtocols = result.current.protocolos;
+
+    expect(renderizedProtocols).toHaveLength(2);
+    expect(renderizedProtocols.some(p => p.nome.trim().toLowerCase() === "vacina brucelose")).toBe(true);
+    expect(renderizedProtocols.some(p => p.nome === "Outro Protocolo")).toBe(true);
+  });
+
 });

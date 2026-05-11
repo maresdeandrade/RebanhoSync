@@ -160,7 +160,7 @@ export function useRegistrarSanitarioPackage(input: {
 
     // Deduplica protocolos para não renderizar duas vezes o mesmo balão
     const uniqueProtocolos = Array.from(
-      new Map(protocolos.map((p) => [       p.id, p])).values()
+      new Map(protocolos.map((p) => [(p.nome || "").trim().toLowerCase(), p])).values()
     );
 
     return uniqueProtocolos.filter(p => {
