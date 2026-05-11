@@ -341,6 +341,17 @@ export function createRegistrarFinalizeController(
         deps.feedback.showSuccess(
           `Aplicacao sanitaria confirmada no servidor. Evento ${sanitaryRpc.eventoId.slice(0, 8)}.`,
         );
+        if (context.sourceTaskId) {
+          await deps.commit.runFinalizeGesture({
+            fazendaId,
+            ops: [
+              deps.commit.buildAgendaCompletionOp({
+                sourceTaskId: context.sourceTaskId,
+                linkedEventId: sanitaryRpc.eventoId,
+              }),
+            ],
+          });
+        }
         deps.feedback.navigate(
           deps.feedback.buildPostFinalizeNavigationPath(
             null,
@@ -355,6 +366,17 @@ export function createRegistrarFinalizeController(
         deps.feedback.showSuccess(
           `Aplicacao sanitaria registrada no servidor. Evento ${sanitaryRpc.eventoId.slice(0, 8)}. A atualizacao local falhou; sincronize para refletir o novo estado.`,
         );
+        if (context.sourceTaskId) {
+          await deps.commit.runFinalizeGesture({
+            fazendaId,
+            ops: [
+              deps.commit.buildAgendaCompletionOp({
+                sourceTaskId: context.sourceTaskId,
+                linkedEventId: sanitaryRpc.eventoId,
+              }),
+            ],
+          });
+        }
         deps.feedback.navigate(
           deps.feedback.buildPostFinalizeNavigationPath(
             null,

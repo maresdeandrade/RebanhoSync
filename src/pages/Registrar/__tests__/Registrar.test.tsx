@@ -230,6 +230,26 @@ describe("Registrar Page - Anti-Teleport", () => {
     expect(runRegistrarFinalizeGestureEffect).not.toHaveBeenCalled();
   });
 
+  it("renders sanitary registrar from agenda sourceTaskId without render loop", async () => {
+    render(
+      <MemoryRouter
+        initialEntries={[
+          "/registrar?sourceTaskId=agenda-1&dominio=sanitario&animalId=animal-1&protocoloId=proto-1&protocoloItemId=item-1",
+        ]}
+        future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+      >
+        <Registrar />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("Selecionar alvo")).toBeInTheDocument();
+    });
+
+    expect(mockNavigate).not.toHaveBeenCalled();
+    expect(runRegistrarFinalizeGestureEffect).not.toHaveBeenCalled();
+  });
+
   it("keeps pastoId as informative context without selecting animals", () => {
     render(
       <MemoryRouter

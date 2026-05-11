@@ -572,14 +572,21 @@ const Registrar = () => {
       isReproTipoEnum,
     });
 
-    if (parsedQuery.sourceTaskId) {
+    if (
+      parsedQuery.sourceTaskId &&
+      parsedQuery.sourceTaskId !== sourceTaskId
+    ) {
       setSourceTaskId(parsedQuery.sourceTaskId);
     }
-    if (parsedQuery.loteId) {
+    if (parsedQuery.loteId && parsedQuery.loteId !== selectedLoteId) {
       setSelectedLoteId(parsedQuery.loteId);
     }
-    setContextLoteId(parsedQuery.loteId ?? "");
-    setContextPastoId(parsedQuery.pastoId ?? "");
+    if (parsedQuery.loteId !== contextLoteId) {
+      setContextLoteId(parsedQuery.loteId ?? "");
+    }
+    if (parsedQuery.pastoId !== contextPastoId) {
+      setContextPastoId(parsedQuery.pastoId ?? "");
+    }
     if (parsedQuery.animalId) {
       setSelectedAnimais((prev) =>
         prev.length === 1 && prev[0] === parsedQuery.animalId
@@ -587,7 +594,9 @@ const Registrar = () => {
           : [parsedQuery.animalId],
       );
     }
-    setContextAnimalId(parsedQuery.animalId ?? "");
+    if (parsedQuery.animalId !== contextAnimalId) {
+      setContextAnimalId(parsedQuery.animalId ?? "");
+    }
     if (parsedQuery.quickAction) {
       applyQuickAction(parsedQuery.quickAction);
     }
@@ -599,7 +608,8 @@ const Registrar = () => {
         "movimentacao",
         "nutricao",
         "financeiro",
-      ].includes(parsedQuery.domain)
+      ].includes(parsedQuery.domain) &&
+      parsedQuery.domain !== tipoManejo
     ) {
       setTipoManejo(parsedQuery.domain);
     }
@@ -635,6 +645,12 @@ const Registrar = () => {
     setSelectedLoteId,
     setSourceTaskId,
     setTipoManejo,
+    sourceTaskId,
+    selectedLoteId,
+    contextLoteId,
+    contextPastoId,
+    contextAnimalId,
+    tipoManejo,
   ]);
 
   // UX Improvement: Auto-select bull if present in the selected lote

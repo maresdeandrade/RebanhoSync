@@ -107,8 +107,10 @@ export function useRegistrarSanitarioPackage(input: {
     const newId = id === "none" ? "" : id;
     setProtocoloId(newId);
     setProtocoloItemId("");
-    setSanitarioData((prev) => ({ ...prev, produto: "" }));
-    setSelectedVeterinaryProductId("");
+    setSanitarioData((prev) =>
+      prev.produto === "" ? prev : { ...prev, produto: "" },
+    );
+    setSelectedVeterinaryProductId((prev) => (prev === "" ? prev : ""));
   }, []);
 
   const applySanitaryQuickAction = useCallback((tipo: "vacinacao" | "vermifugacao") => {
@@ -124,10 +126,9 @@ export function useRegistrarSanitarioPackage(input: {
     setSelectedVeterinaryProductId("");
   }, []);
   const handleSanitarioProdutoChange = useCallback((produto: string) => {
-    setSanitarioData((prev) => ({
-      ...prev,
-      produto,
-    }));
+    setSanitarioData((prev) =>
+      prev.produto === produto ? prev : { ...prev, produto },
+    );
   }, []);
 
   const protocolos = useLiveQuery(

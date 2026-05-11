@@ -182,7 +182,11 @@ describe("createRegistrarFinalizeController", () => {
     );
     expect(deps.feedback.navigate).toHaveBeenCalledTimes(1);
     expect(deps.feedback.navigate).toHaveBeenCalledWith("/agenda");
-    expect(deps.commit.runFinalizeGesture).not.toHaveBeenCalled();
+    expect(deps.commit.runFinalizeGesture).toHaveBeenCalledTimes(1);
+    expect(deps.commit.buildAgendaCompletionOp).toHaveBeenCalledWith({
+      sourceTaskId: "agenda-1",
+      linkedEventId: "evt-server-1234",
+    });
   });
 
   it("encerra no caminho de RPC sanitário quando refresh falha apos registro no servidor", async () => {
@@ -213,6 +217,41 @@ describe("createRegistrarFinalizeController", () => {
     expect(deps.feedback.navigate).toHaveBeenCalledWith("/home");
     expect(input.onFinalizeHandled).toHaveBeenCalledTimes(1);
     expect(deps.commit.runFinalizeGesture).not.toHaveBeenCalled();
+  });
+
+  it("encerra no caminho de RPC sanitário com sourceTaskId quando refresh falha apos registro no servidor", async () => {
+    const deps = buildControllerDeps();
+    deps.sanitary.trySanitaryRpcFinalize.mockResolvedValue({
+      status: "handled_refresh_failed",
+      eventoId: "evt-server-1234",
+      error: new Error("pull failed"),
+    });
+    const finalize = createRegistrarFinalizeController(deps);
+    const input = buildFinalizeInput();
+    input.context.tipoManejo = "sanitario";
+    input.context.sourceTaskId = "agenda-1";
+    input.onFinalizeHandled = vi.fn();
+
+    await finalize(input);
+
+    expect(deps.feedback.showSuccess).toHaveBeenCalledTimes(1);
+    expect(deps.feedback.showSuccess).toHaveBeenCalledWith(
+      expect.stringContaining("registrada no servidor"),
+    );
+    expect(deps.feedback.showSuccess).toHaveBeenCalledWith(
+      expect.stringContaining("atualizacao local falhou"),
+    );
+    expect(deps.feedback.buildPostFinalizeNavigationPath).toHaveBeenCalledWith(
+      null,
+      "agenda-1",
+    );
+    expect(deps.feedback.navigate).toHaveBeenCalledWith("/home");
+    expect(input.onFinalizeHandled).toHaveBeenCalledTimes(1);
+    expect(deps.commit.buildAgendaCompletionOp).toHaveBeenCalledWith({
+      sourceTaskId: "agenda-1",
+      linkedEventId: "evt-server-1234",
+    });
+    expect(deps.commit.runFinalizeGesture).toHaveBeenCalledTimes(1);
   });
 
   it("monta commit offline no trilho financeiro quando RPC não trata", async () => {
