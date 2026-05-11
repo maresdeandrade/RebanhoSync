@@ -112,6 +112,35 @@ describe("createAgendaActionController", () => {
     );
   });
 
+  it("agenda: se concluirPendenciaSanitaria resolve, mas pullDataForFarm falha, trata como erro de conclusão", async () => {
+    const pullError = new Error("pull down failed");
+    const deps = createDeps({
+      pullDataForFarm: vi.fn().mockRejectedValue(pullError),
+    });
+    const controller = createAgendaActionController(deps);
+
+    await controller.updateStatus(
+      createAgendaItem({
+        source_ref: { tipo: "vacinacao", produto: "Vacina X" },
+      }),
+      "concluido",
+    );
+
+    // CONTRATO CRÍTICO: Agenda não diferencia "RPC OK, refresh falhou" de "RPC falhou".
+    // Se a RPC concluir com sucesso (evento criado, agenda atualizada no servidor),
+    // mas o pull falhar:
+    // - Servidor: evento está consolidado, agenda_itens.status = 'concluido' + source_evento_id preenchido.
+    // - Cliente: UI mostra erro "Falha ao concluir pendência sanitária com evento."
+    // - Risco: usuário percebe falha, pode tentar novamente em nova aba/dispositivo,
+    //   potencialmente criando segundo evento (dependendo de dedup servidor).
+    expect(deps.concludePendingSanitary).toHaveBeenCalledTimes(1);
+    expect(deps.pullDataForFarm).toHaveBeenCalledTimes(1);
+    expect(deps.showError).toHaveBeenCalledWith(
+      "Falha ao concluir pendência sanitária com evento.",
+    );
+    expect(deps.showSuccess).not.toHaveBeenCalled();
+  });
+
   it("updates locally through gesture for non-sanitary branches", async () => {
     const deps = createDeps();
     const controller = createAgendaActionController(deps);
@@ -153,5 +182,48 @@ describe("createAgendaActionController", () => {
 
     expect(deps.showError).toHaveBeenCalledWith("Fazenda ativa não encontrada.");
     expect(deps.createGesture).not.toHaveBeenCalled();
+  });
+
+  it("regressão: não exibe sucesso se concluirPendenciaSanitaria falhar", async () => {
+    const rpcError = new Error("RPC unauthorized");
+    const deps = createDeps({
+      concludePendingSanitary: vi.fn().mockRejectedValue(rpcError),
+    });
+    const controller = createAgendaActionController(deps);
+
+    await controller.updateStatus(
+      createAgendaItem({
+        source_ref: { tipo: "vacinacao", produto: "Vacina X" },
+      }),
+      "concluido",
+    );
+
+    expect(deps.showError).toHaveBeenCalledWith(
+      "Falha ao concluir pendência sanitária com evento.",
+    );
+    expect(deps.showSuccess).not.toHaveBeenCalled();
+    expect(deps.pullDataForFarm).not.toHaveBeenCalled();
+  });
+
+  it("regressão: não exibe sucesso se refresh/pullDataForFarm falhar após RPC", async () => {
+    // Já existe teste similar acima, mas este garante proteção contra regressão
+    // onde showSuccess pudesse vazar por erro no pull.
+    const pullError = new Error("network down");
+    const deps = createDeps({
+      pullDataForFarm: vi.fn().mockRejectedValue(pullError),
+    });
+    const controller = createAgendaActionController(deps);
+
+    await controller.updateStatus(
+      createAgendaItem({
+        dominio: "sanitario",
+        source_ref: { tipo: "vacinacao", produto: "Vacina X" },
+      }),
+      "concluido",
+    );
+
+    expect(deps.concludePendingSanitary).toHaveBeenCalledTimes(1);
+    expect(deps.showSuccess).not.toHaveBeenCalled();
+    expect(deps.showError).toHaveBeenCalled();
   });
 });
