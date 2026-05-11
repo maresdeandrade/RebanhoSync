@@ -79,6 +79,7 @@ type RegistrarFinalizeSanitaryDeps = {
   }) => Promise<
     | { status: "skip" }
     | { status: "handled"; eventoId: string }
+    | { status: "handled_refresh_failed"; eventoId: string; error: unknown }
     | { status: "fallback" }
   >;
 };
@@ -339,6 +340,20 @@ export function createRegistrarFinalizeController(
       if (sanitaryRpc.status === "handled") {
         deps.feedback.showSuccess(
           `Aplicacao sanitaria confirmada no servidor. Evento ${sanitaryRpc.eventoId.slice(0, 8)}.`,
+        );
+        deps.feedback.navigate(
+          deps.feedback.buildPostFinalizeNavigationPath(
+            null,
+            context.sourceTaskId || null,
+          ),
+        );
+        input.onFinalizeHandled?.();
+        return;
+      }
+
+      if (sanitaryRpc.status === "handled_refresh_failed") {
+        deps.feedback.showSuccess(
+          `Aplicacao sanitaria registrada no servidor. Evento ${sanitaryRpc.eventoId.slice(0, 8)}. A atualizacao local falhou; sincronize para refletir o novo estado.`,
         );
         deps.feedback.navigate(
           deps.feedback.buildPostFinalizeNavigationPath(

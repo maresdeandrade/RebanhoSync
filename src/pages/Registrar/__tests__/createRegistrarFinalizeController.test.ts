@@ -185,6 +185,36 @@ describe("createRegistrarFinalizeController", () => {
     expect(deps.commit.runFinalizeGesture).not.toHaveBeenCalled();
   });
 
+  it("encerra no caminho de RPC sanitário quando refresh falha apos registro no servidor", async () => {
+    const deps = buildControllerDeps();
+    deps.sanitary.trySanitaryRpcFinalize.mockResolvedValue({
+      status: "handled_refresh_failed",
+      eventoId: "evt-server-1234",
+      error: new Error("pull failed"),
+    });
+    const finalize = createRegistrarFinalizeController(deps);
+    const input = buildFinalizeInput();
+    input.context.tipoManejo = "sanitario";
+    input.onFinalizeHandled = vi.fn();
+
+    await finalize(input);
+
+    expect(deps.feedback.showSuccess).toHaveBeenCalledTimes(1);
+    expect(deps.feedback.showSuccess).toHaveBeenCalledWith(
+      expect.stringContaining("registrada no servidor"),
+    );
+    expect(deps.feedback.showSuccess).toHaveBeenCalledWith(
+      expect.stringContaining("atualizacao local falhou"),
+    );
+    expect(deps.feedback.buildPostFinalizeNavigationPath).toHaveBeenCalledWith(
+      null,
+      null,
+    );
+    expect(deps.feedback.navigate).toHaveBeenCalledWith("/home");
+    expect(input.onFinalizeHandled).toHaveBeenCalledTimes(1);
+    expect(deps.commit.runFinalizeGesture).not.toHaveBeenCalled();
+  });
+
   it("monta commit offline no trilho financeiro quando RPC não trata", async () => {
     const deps = buildControllerDeps();
     deps.tracks.isFinancialFlow.mockReturnValue(true);
