@@ -255,7 +255,7 @@ async function main() {
       ]);
     });
     const eventoId2 = result2.rows[0].evento_id;
-    console.log(`✅ Chamada 2: evento criado ${eventoId2}`);
+    console.log(`✅ Chamada 2: retorno evento ${eventoId2}`);
 
     // Verificar após segunda chamada
     const afterSecondEvents = await dbClient.query(`
@@ -267,28 +267,12 @@ async function main() {
     const eventCount = Number(afterSecondEvents.rows[0].count);
     console.log(`✅ Após chamada 2: ${eventCount} eventos, agenda status=${afterSecondAgenda.rows[0].status}, source_evento_id=${afterSecondAgenda.rows[0].source_evento_id}`);
 
-    // RESULTADO DO TESTE
-    console.log(`\n🎯 RESULTADO DO TESTE DE CONTRATO:`);
-    if (eventCount === 1) {
-      console.log(`✅ IDEMPOTENTE: Segunda chamada retornou mesmo evento ou falhou`);
-      console.log(`   - Evento único: ${eventoId1}`);
-      console.log(`   - Agenda aponta para: ${afterSecondAgenda.rows[0].source_evento_id}`);
-    } else if (eventCount === 2) {
-      console.log(`❌ DUPLICIDADE CONFIRMADA: Segunda chamada criou novo evento`);
-      console.log(`   - Evento 1: ${eventoId1}`);
-      console.log(`   - Evento 2: ${eventoId2}`);
-      console.log(`   - Agenda aponta para: ${afterSecondAgenda.rows[0].source_evento_id} (último)`);
-      console.log(`   - Evento órfão: ${eventoId1 === afterSecondAgenda.rows[0].source_evento_id ? eventoId2 : eventoId1}`);
-    } else {
-      console.log(`⚠️  INESPERADO: ${eventCount} eventos`);
-    }
+    assert(eventCount === 1, 'A segunda chamada deve manter apenas 1 evento para o mesmo agenda_item_id');
+    assert(eventoId2 === eventoId1, 'A segunda chamada deve retornar o evento atual vinculado');
+    assert(afterSecondAgenda.rows[0].source_evento_id === eventoId1, 'A agenda deve continuar apontando para o mesmo evento');
 
-    // Verificar se eventos são distintos
-    if (eventoId1 !== eventoId2) {
-      console.log(`✅ Eventos distintos: ${eventoId1} vs ${eventoId2}`);
-    } else {
-      console.log(`⚠️  Mesmo evento retornado: ${eventoId1}`);
-    }
+    console.log(`\n🎯 RESULTADO DO TESTE DE CONTRATO:`);
+    console.log(`✅ IDEMPOTENTE: Segunda chamada retornou o mesmo evento ${eventoId1}, sem duplicidade.`);
 
     console.log(`\n🏁 Teste concluído com sucesso`);
 
