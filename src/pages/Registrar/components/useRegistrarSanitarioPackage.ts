@@ -307,16 +307,17 @@ export function useRegistrarSanitarioPackage(input: {
 
   useEffect(() => {
     if (!protocoloItemId) return;
+    if (!protocoloId || protocoloItens === undefined) return;
     const stillExists = (protocoloItens ?? []).some((item) => item.id === protocoloItemId);
     if (!stillExists) {
       setProtocoloItemId("");
     }
-  }, [protocoloItemId, protocoloItens]);
+  }, [protocoloId, protocoloItemId, protocoloItens]);
 
   useEffect(() => {
     if (!protocoloItemId) return;
     const selectedItem = (protocoloItens ?? []).find((item) => item.id === protocoloItemId);
-    if (!selectedItem) return;
+    if (!selectedItem?.produto?.trim()) return;
 
     const productSelection = resolveProtocolProductSelection(
       selectedItem.payload,
@@ -330,7 +331,9 @@ export function useRegistrarSanitarioPackage(input: {
     });
 
     if (productSelection) {
-      setSelectedVeterinaryProductId((currentId) => currentId || productSelection.id);
+      setSelectedVeterinaryProductId((currentId) =>
+        currentId === productSelection.id ? currentId : productSelection.id,
+      );
     }
   }, [protocoloItemId, protocoloItens, resolveProtocolProductSelection]);
 
@@ -440,19 +443,31 @@ export function useRegistrarSanitarioPackage(input: {
   }) => {
     // Apply type first because changing type clears selected protocol/item.
     // Then restore query-selected protocol and item.
-    if (query.sanitarioTipo && SANITARIO_TYPES.includes(query.sanitarioTipo as SanitarioTipoEnum)) {
+    if (
+      query.sanitarioTipo &&
+      SANITARIO_TYPES.includes(query.sanitarioTipo as SanitarioTipoEnum) &&
+      query.sanitarioTipo !== sanitarioData.tipo
+    ) {
       handleSanitarioTipoChange(query.sanitarioTipo as SanitarioTipoEnum);
     }
-    if (query.protocoloId) {
+    if (query.protocoloId && query.protocoloId !== protocoloId) {
       handleProtocoloChange(query.protocoloId);
     }
-    if (query.protocoloItemId) {
+    if (query.protocoloItemId && query.protocoloItemId !== protocoloItemId) {
       setProtocoloItemId(query.protocoloItemId);
     }
-    if (query.produto) {
+    if (query.produto && query.produto !== sanitarioData.produto) {
       handleSanitarioProdutoChange(query.produto);
     }
-  }, [handleProtocoloChange, handleSanitarioProdutoChange, handleSanitarioTipoChange]);
+  }, [
+    handleProtocoloChange,
+    handleSanitarioProdutoChange,
+    handleSanitarioTipoChange,
+    protocoloId,
+    protocoloItemId,
+    sanitarioData.produto,
+    sanitarioData.tipo,
+  ]);
 
   const finalProductSuggestions = useMemo(() => {
     const suggestions = sanitaryPackage.veterinaryProductSuggestions || [];

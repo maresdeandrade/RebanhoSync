@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { Animal } from "@/lib/offline/types";
 import { DEFAULT_FARM_LIFECYCLE_CONFIG } from "@/lib/farms/lifecycleConfig";
 import { resolveRegistrarNonFinancialFinalizePlan } from "@/pages/Registrar/effects/nonFinancialFinalize";
@@ -77,6 +77,84 @@ describe("resolveRegistrarNonFinancialFinalizePlan", () => {
     expect(result.issue).toBeNull();
     expect(result.linkedEventId).toBe("evt-1");
     expect(result.ops.length).toBe(1);
+  });
+
+  it("conclui pendencia sanitaria correspondente quando registro manual bate com agenda aberta", async () => {
+    const animal = buildAnimal("a-1");
+    const resolveManualSanitaryAgendaCompletionOps = vi.fn(async () => [
+      {
+        table: "agenda_itens",
+        action: "UPDATE" as const,
+        record: {
+          id: "agenda-1",
+          status: "concluido",
+          source_evento_id: "evt-manual-1",
+        },
+      },
+    ]);
+
+    const result = await resolveRegistrarNonFinancialFinalizePlan({
+      ...baseInput(),
+      tipoManejo: "sanitario",
+      targetAnimalIds: ["a-1"],
+      animalsMap: new Map([["a-1", animal]]),
+      protocoloItem: {
+        id: "item-1",
+        fazenda_id: "farm-1",
+        protocolo_id: "protocolo-1",
+        protocol_item_id: "version-1",
+        version: 1,
+        tipo: "vacinacao",
+        produto: "Vacina Raiva Herbivoros",
+        intervalo_dias: 365,
+        dose_num: 1,
+        gera_agenda: true,
+        dedup_template: null,
+        payload: {},
+        client_id: "client-1",
+        client_op_id: "op-item-1",
+        client_tx_id: null,
+        client_recorded_at: nowIso,
+        server_received_at: nowIso,
+        created_at: nowIso,
+        updated_at: nowIso,
+        deleted_at: null,
+      },
+      sanitaryProductName: "Vacina Raiva Herbivoros",
+      buildGesture: () => ({
+        eventId: "evt-manual-1",
+        ops: [
+          {
+            table: "eventos",
+            action: "INSERT",
+            record: { id: "evt-manual-1" },
+          },
+        ],
+      }),
+      resolveManualSanitaryAgendaCompletionOps,
+    });
+
+    expect(result.issue).toBeNull();
+    expect(resolveManualSanitaryAgendaCompletionOps).toHaveBeenCalledWith({
+      fazendaId: "farm-1",
+      linkedEventId: "evt-manual-1",
+      animalId: "a-1",
+      sanitarioTipo: "vacinacao",
+      sanitaryProductName: "Vacina Raiva Herbivoros",
+      protocoloItem: expect.objectContaining({ id: "item-1" }),
+    });
+    expect(result.ops).toEqual([
+      { table: "eventos", action: "INSERT", record: { id: "evt-manual-1" } },
+      {
+        table: "agenda_itens",
+        action: "UPDATE",
+        record: {
+          id: "agenda-1",
+          status: "concluido",
+          source_evento_id: "evt-manual-1",
+        },
+      },
+    ]);
   });
 
   it("retorna issue no fallback de reproducao quando dados estao invalidos", async () => {

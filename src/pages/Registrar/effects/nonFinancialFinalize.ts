@@ -20,6 +20,7 @@ import {
   runRegistrarReproductionFinalizeEffect,
   type RegistrarPostPartoRedirect,
 } from "@/pages/Registrar/effects/reproductionFinalize";
+import { resolveManualSanitaryAgendaCompletionOpsEffect } from "@/pages/Registrar/effects/sanitaryAgendaReconciliation";
 
 type RegistrarNonFinancialDomain =
   | "sanitario"
@@ -80,6 +81,14 @@ export async function resolveRegistrarNonFinancialFinalizePlan(input: {
   farmLifecycleConfig: FarmLifecycleConfig;
   parseUserWeight: (value: string) => number | null;
   buildGesture?: (input: EventInput) => { eventId: string; ops: OperationInput[] };
+  resolveManualSanitaryAgendaCompletionOps?: (input: {
+    fazendaId: string;
+    linkedEventId: string;
+    animalId: string | null;
+    sanitarioTipo: SanitarioTipoEnum;
+    sanitaryProductName: string;
+    protocoloItem: ProtocoloSanitarioItem | null;
+  }) => Promise<OperationInput[]>;
 }): Promise<
   | { issue: string; linkedEventId: null; postPartoRedirect: null; ops: [] }
   | {
@@ -90,6 +99,9 @@ export async function resolveRegistrarNonFinancialFinalizePlan(input: {
     }
 > {
   const buildGesture = input.buildGesture ?? buildEventGesture;
+  const resolveManualSanitaryAgendaCompletionOps =
+    input.resolveManualSanitaryAgendaCompletionOps ??
+    resolveManualSanitaryAgendaCompletionOpsEffect;
   const ops: OperationInput[] = [];
   let linkedEventId: string | null = null;
   let postPartoRedirect: RegistrarPostPartoRedirect | null = null;
@@ -220,6 +232,19 @@ export async function resolveRegistrarNonFinancialFinalizePlan(input: {
       linkedEventId = built.eventId;
     }
     ops.push(...built.ops);
+
+    if (input.tipoManejo === "sanitario" && !input.sourceTaskId) {
+      ops.push(
+        ...(await resolveManualSanitaryAgendaCompletionOps({
+          fazendaId: input.fazendaId,
+          linkedEventId: built.eventId,
+          animalId: animalId ?? null,
+          sanitarioTipo: input.sanitarioData.tipo,
+          sanitaryProductName: input.sanitaryProductName,
+          protocoloItem: input.protocoloItem,
+        })),
+      );
+    }
   }
 
   return {

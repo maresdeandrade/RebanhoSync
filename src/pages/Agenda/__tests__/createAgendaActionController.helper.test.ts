@@ -90,6 +90,27 @@ describe("createAgendaActionController", () => {
     expect(deps.concludePendingSanitary).not.toHaveBeenCalled();
   });
 
+  it("navigates with protocol_item_id legacy key from source_ref", () => {
+    const deps = createDeps();
+    const controller = createAgendaActionController(deps);
+
+    controller.goToRegistrar(
+      createAgendaItem({
+        protocol_item_version_id: null,
+        source_ref: {
+          protocolo_id: "protocolo-1",
+          protocol_item_id: "protocolo-item-1",
+          tipo: "vacinacao",
+        },
+      }),
+    );
+
+    expect(deps.navigate).toHaveBeenCalledWith(
+      "/registrar?sourceTaskId=agenda-1&dominio=sanitario&animalId=animal-1&loteId=lote-1&protocoloId=protocolo-1&protocoloItemId=protocolo-item-1&sanitarioTipo=vacinacao",
+    );
+  });
+
+
   it("routes generic conclude to sanitary event and refresh", async () => {
     const deps = createDeps();
     const controller = createAgendaActionController(deps);

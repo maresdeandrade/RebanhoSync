@@ -42,6 +42,7 @@ export function parseRegistrarQueryState<QuickActionKey extends string>(input: {
   const domainParam = input.searchParams.get("dominio");
   const quickParam = input.searchParams.get("quick");
   const animalId = input.searchParams.get("animalId");
+  const loteId = input.searchParams.get("loteId");
 
   const domain = isRegistrarQueryDomain(domainParam) ? domainParam : null;
   const quickAction = input.isQuickActionKey(quickParam) ? quickParam : null;
@@ -54,7 +55,7 @@ export function parseRegistrarQueryState<QuickActionKey extends string>(input: {
     natureza: input.searchParams.get("natureza"),
     quickAction,
     animalId,
-    loteId: input.searchParams.get("loteId"),
+    loteId,
     pastoId: input.searchParams.get("pastoId"),
     sanitaryPrefill: {
       protocoloId: input.searchParams.get("protocoloId"),
@@ -63,6 +64,9 @@ export function parseRegistrarQueryState<QuickActionKey extends string>(input: {
       sanitarioTipo: input.searchParams.get("sanitarioTipo"),
     },
     reproTipo,
-    shouldOpenChooseActionStep: Boolean((domain && animalId) || (quickAction && animalId)),
+    shouldOpenChooseActionStep: Boolean(
+      (domain && (sourceTaskId || animalId || input.searchParams.get("loteId"))) ||
+        (quickAction && (animalId || loteId)),
+    ),
   };
 }

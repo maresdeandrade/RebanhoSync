@@ -25,7 +25,22 @@ describe("flow: registro sanitario com dependencias", () => {
         tipo: "vacinacao",
       }),
     );
-    expect(deps.commit.runFinalizeGesture).not.toHaveBeenCalled();
+    expect(deps.commit.runFinalizeGesture).toHaveBeenCalledWith(
+      expect.objectContaining({
+        fazendaId: "farm-1",
+        ops: [
+          {
+            table: "agenda_itens",
+            action: "UPDATE",
+            record: {
+              id: "agenda-1",
+              status: "concluido",
+              source_evento_id: "evt-srv-1234",
+            },
+          },
+        ],
+      }),
+    );
     expect(deps.feedback.navigate).toHaveBeenCalledTimes(1);
     expect(deps.feedback.navigate).toHaveBeenCalledWith("/agenda");
   });

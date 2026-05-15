@@ -1,5 +1,5 @@
 import { db } from "@/lib/offline/db";
-import type { AgendaItem } from "@/lib/offline/types";
+import type { AgendaItem, ProtocoloSanitarioItem } from "@/lib/offline/types";
 
 export type RegistrarSourceTaskPrefill = {
   protocoloIdFromTask: string | null;
@@ -11,6 +11,9 @@ export type RegistrarSourceTaskPrefill = {
 };
 
 type LoadAgendaItemFn = (taskId: string) => Promise<AgendaItem | undefined>;
+type LoadProtocolItemFn = (
+  protocolItemId: string,
+) => Promise<ProtocoloSanitarioItem | undefined>;
 
 const readString = (
   record: Record<string, unknown> | null | undefined,
@@ -24,6 +27,7 @@ export async function loadRegistrarSourceTaskPrefillEffect(input: {
   sourceTaskId: string;
   tipoManejo: string | null;
   loadAgendaItem?: LoadAgendaItemFn;
+  loadProtocolItem?: LoadProtocolItemFn;
 }): Promise<RegistrarSourceTaskPrefill | null> {
   if (!input.sourceTaskId) {
     return null;
@@ -41,13 +45,30 @@ export async function loadRegistrarSourceTaskPrefillEffect(input: {
   }
 
   const sourceRef = sourceTask.source_ref;
+  const protocoloItemIdFromTask =
+    readString(sourceRef, "protocolo_item_id") ??
+    readString(sourceRef, "protocol_item_id") ??
+    sourceTask.protocol_item_version_id;
+  const protocoloIdFromRef = readString(sourceRef, "protocolo_id");
+  const produtoFromRefOrPayload =
+    readString(sourceRef, "produto") ?? readString(sourceTask.payload, "produto");
+  const tipoFromRef = readString(sourceRef, "tipo");
+  const shouldLoadProtocolItem =
+    protocoloItemIdFromTask &&
+    (!protocoloIdFromRef || !produtoFromRefOrPayload || !tipoFromRef);
+  const loadProtocolItem =
+    input.loadProtocolItem ??
+    ((protocolItemId: string) =>
+      db.state_protocolos_sanitarios_itens.get(protocolItemId));
+  const protocoloItem = shouldLoadProtocolItem
+    ? await loadProtocolItem(protocoloItemIdFromTask)
+    : undefined;
+
   return {
-    protocoloIdFromTask: readString(sourceRef, "protocolo_id"),
-    protocoloItemIdFromTask:
-      readString(sourceRef, "protocolo_item_id") ?? sourceTask.protocol_item_version_id,
-    produtoFromTask:
-      readString(sourceRef, "produto") ?? readString(sourceTask.payload, "produto"),
-    tipoFromTask: readString(sourceRef, "tipo"),
+    protocoloIdFromTask: protocoloIdFromRef ?? protocoloItem?.protocolo_id ?? null,
+    protocoloItemIdFromTask,
+    produtoFromTask: produtoFromRefOrPayload ?? protocoloItem?.produto ?? null,
+    tipoFromTask: tipoFromRef ?? protocoloItem?.tipo ?? null,
     sourceRef,
     payload: sourceTask.payload,
   };

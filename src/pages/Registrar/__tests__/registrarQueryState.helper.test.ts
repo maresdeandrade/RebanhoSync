@@ -61,4 +61,22 @@ describe("parseRegistrarQueryState", () => {
     expect(parsed.pastoId).toBeNull();
     expect(parsed.shouldOpenChooseActionStep).toBe(false);
   });
+
+  it("abre etapa de acao quando a agenda informa sourceTaskId sem animal", () => {
+    const searchParams = new URLSearchParams(
+      "sourceTaskId=agenda-1&dominio=sanitario&loteId=lote-1",
+    );
+
+    const parsed = parseRegistrarQueryState({
+      searchParams,
+      isQuickActionKey,
+      isReproTipoEnum,
+    });
+
+    expect(parsed.sourceTaskId).toBe("agenda-1");
+    expect(parsed.domain).toBe("sanitario");
+    expect(parsed.animalId).toBeNull();
+    expect(parsed.loteId).toBe("lote-1");
+    expect(parsed.shouldOpenChooseActionStep).toBe(true);
+  });
 });

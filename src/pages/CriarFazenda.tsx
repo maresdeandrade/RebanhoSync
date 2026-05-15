@@ -69,6 +69,10 @@ const CriarFazenda = () => {
   }, [navigate, user]);
 
   const onSubmit = async (data: CriarFazendaForm) => {
+    if (isLoading) {
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
 
