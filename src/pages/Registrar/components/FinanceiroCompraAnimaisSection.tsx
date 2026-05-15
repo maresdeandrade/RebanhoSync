@@ -7,7 +7,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ANIMAL_BREED_OPTIONS, type AnimalBreedEnum } from "@/lib/animals/catalogs";
+import {
+  ANIMAL_BREED_OPTIONS,
+  type AnimalBreedEnum,
+} from "@/lib/animals/catalogs";
 import type {
   CompraNovoAnimalDraft,
   RegistrarSexo,
@@ -32,9 +35,6 @@ export function FinanceiroCompraAnimaisSection(
     <div className="space-y-3 rounded-md border p-3">
       <div>
         <Label>Animais gerados pela entrada</Label>
-        <p className="text-xs text-muted-foreground">
-          Identificacao pode ficar vazia. O sistema gera automaticamente.
-        </p>
       </div>
 
       {props.drafts.map((draft, index) => (
@@ -96,7 +96,9 @@ export function FinanceiroCompraAnimaisSection(
             step={props.weightInputStep}
             value={draft.pesoKg}
             disabled={!props.isIndividualWeightMode}
-            onChange={(event) => props.onPesoChange(draft.localId, event.target.value)}
+            onChange={(event) =>
+              props.onPesoChange(draft.localId, event.target.value)
+            }
             placeholder={`Peso ${props.weightUnitLabel}`}
           />
         </div>

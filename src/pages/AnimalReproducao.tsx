@@ -1,7 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
-import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { CalendarClock, ChevronLeft, Dna, HeartPulse, History } from "lucide-react";
+import {
+  Link,
+  useNavigate,
+  useParams,
+  useSearchParams,
+} from "react-router-dom";
+import {
+  CalendarClock,
+  ChevronLeft,
+  Dna,
+  HeartPulse,
+  History,
+} from "lucide-react";
 
 import {
   ReproductionForm,
@@ -10,7 +21,7 @@ import {
 import { AnimalCategoryBadge } from "@/components/animals/AnimalCategoryBadge";
 import { AnimalKinshipBadges } from "@/components/animals/AnimalKinshipBadges";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MetricCard } from "@/components/ui/metric-card";
 import { PageIntro } from "@/components/ui/page-intro";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -20,7 +31,11 @@ import { deriveAnimalTaxonomy } from "@/lib/animals/taxonomy";
 import { isFemaleReproductionEligible } from "@/lib/animals/presentation";
 import { EventValidationError } from "@/lib/events/validators";
 import { db } from "@/lib/offline/db";
-import type { Evento, EventoReproducao, ReproTipoEnum } from "@/lib/offline/types";
+import type {
+  Evento,
+  EventoReproducao,
+  ReproTipoEnum,
+} from "@/lib/offline/types";
 import { buildReproductionDashboard } from "@/lib/reproduction/dashboard";
 import { registerReproductionGesture } from "@/lib/reproduction/register";
 import { showError, showSuccess } from "@/utils/toast";
@@ -126,7 +141,9 @@ export default function AnimalReproducao() {
     return await db.state_animais
       .where("fazenda_id")
       .equals(animal.fazenda_id)
-      .filter((candidate) => candidate.mae_id === animal.id && !candidate.deleted_at)
+      .filter(
+        (candidate) => candidate.mae_id === animal.id && !candidate.deleted_at,
+      )
       .sortBy("identificacao");
   }, [animal?.id, animal?.fazenda_id]);
   const eventos = useLiveQuery<EnrichedEvent[]>(async () => {
@@ -219,7 +236,9 @@ export default function AnimalReproducao() {
       navigate(`/animais/${animal.id}`);
     } catch (error) {
       if (error instanceof EventValidationError) {
-        showError(error.issues[0]?.message ?? "Dados invalidos para reproducao.");
+        showError(
+          error.issues[0]?.message ?? "Dados invalidos para reproducao.",
+        );
       } else {
         showError("Erro ao salvar evento reprodutivo.");
       }
@@ -252,7 +271,9 @@ export default function AnimalReproducao() {
             ciclo de cobertura, diagnostico ou parto.
           </p>
           <Button asChild>
-            <Link to={`/animais/${animal.id}`}>Voltar para a ficha do animal</Link>
+            <Link to={`/animais/${animal.id}`}>
+              Voltar para a ficha do animal
+            </Link>
           </Button>
         </CardContent>
       </Card>
@@ -264,14 +285,13 @@ export default function AnimalReproducao() {
       <PageIntro
         eyebrow="Fluxo dedicado da matriz"
         title={`Reproducao da matriz ${animal.identificacao}`}
-        description="Contexto do ciclo, formulario concentrado e historico recente na mesma tela para registrar o proximo passo sem dispersao."
         meta={
           <>
             <AnimalCategoryBadge categoriaLabel={categoriaLabel} />
             <StatusBadge tone={getStatusTone(reproResumo?.reproStatus.status)}>
               {reproResumo
-                ? REPRO_STATUS_LABEL[reproResumo.reproStatus.status] ??
-                  reproResumo.reproStatus.status
+                ? (REPRO_STATUS_LABEL[reproResumo.reproStatus.status] ??
+                  reproResumo.reproStatus.status)
                 : "Sem leitura"}
             </StatusBadge>
             <StatusBadge tone={getUrgencyTone(reproResumo?.urgency)}>
@@ -308,8 +328,14 @@ export default function AnimalReproducao() {
           <Button
             type="button"
             size="sm"
-            variant={data.tipo === "cobertura" || data.tipo === "IA" ? "default" : "outline"}
-            onClick={() => setData((previous) => withTipo(previous, "cobertura"))}
+            variant={
+              data.tipo === "cobertura" || data.tipo === "IA"
+                ? "default"
+                : "outline"
+            }
+            onClick={() =>
+              setData((previous) => withTipo(previous, "cobertura"))
+            }
           >
             <Dna className="h-4 w-4" />
             Cobertura / IA
@@ -318,7 +344,9 @@ export default function AnimalReproducao() {
             type="button"
             size="sm"
             variant={data.tipo === "diagnostico" ? "default" : "outline"}
-            onClick={() => setData((previous) => withTipo(previous, "diagnostico"))}
+            onClick={() =>
+              setData((previous) => withTipo(previous, "diagnostico"))
+            }
           >
             <HeartPulse className="h-4 w-4" />
             Diagnostico
@@ -345,8 +373,8 @@ export default function AnimalReproducao() {
           label="Status atual"
           value={
             reproResumo
-              ? REPRO_STATUS_LABEL[reproResumo.reproStatus.status] ??
-                reproResumo.reproStatus.status
+              ? (REPRO_STATUS_LABEL[reproResumo.reproStatus.status] ??
+                reproResumo.reproStatus.status)
               : "Sem leitura"
           }
           hint={lote ? `Lote ${lote.nome}` : "Sem lote definido"}
@@ -385,10 +413,6 @@ export default function AnimalReproducao() {
         <Card>
           <CardHeader>
             <CardTitle>Registrar evento reprodutivo</CardTitle>
-            <CardDescription>
-              Campos organizados por bloco logico, com um unico CTA final para
-              gravar o evento da matriz.
-            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-5">
             <ReproductionForm
@@ -402,7 +426,9 @@ export default function AnimalReproducao() {
 
             <div className="flex flex-wrap items-center justify-end gap-2">
               <Button variant="ghost" asChild>
-                <Link to={`/registrar?dominio=reproducao&animalId=${animal.id}`}>
+                <Link
+                  to={`/registrar?dominio=reproducao&animalId=${animal.id}`}
+                >
                   Modo completo
                 </Link>
               </Button>
@@ -420,10 +446,6 @@ export default function AnimalReproducao() {
           <Card>
             <CardHeader>
               <CardTitle>Contexto operacional</CardTitle>
-              <CardDescription>
-                Leitura rapida do ciclo, parentesco e sinais que influenciam o
-                registro atual.
-              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-3 sm:grid-cols-2">
@@ -457,7 +479,7 @@ export default function AnimalReproducao() {
                     ? `Matriz de origem: ${mae.identificacao}.`
                     : "Sem matriz de origem registrada."}{" "}
                   {(crias?.length ?? 0) > 0
-                    ? `${animal.identificacao} possui ${(crias?.length ?? 0)} cria(s) vinculada(s).`
+                    ? `${animal.identificacao} possui ${crias?.length ?? 0} cria(s) vinculada(s).`
                     : "Nenhuma cria vinculada ate o momento."}
                 </p>
               </div>
@@ -470,10 +492,6 @@ export default function AnimalReproducao() {
                 <History className="h-5 w-5 text-muted-foreground" />
                 <CardTitle>Historico reprodutivo recente</CardTitle>
               </div>
-              <CardDescription>
-                Sequencia real dos ultimos registros da matriz, sem transformar a
-                timeline em formulario.
-              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
               {(eventos ?? []).length === 0 ? (
@@ -504,7 +522,8 @@ export default function AnimalReproducao() {
                     </p>
                     {event.details?.macho_id ? (
                       <p className="mt-2 text-xs text-muted-foreground">
-                        Reprodutor: {event.machoIdentificacao || event.details.macho_id}
+                        Reprodutor:{" "}
+                        {event.machoIdentificacao || event.details.macho_id}
                       </p>
                     ) : null}
                   </div>
@@ -512,7 +531,9 @@ export default function AnimalReproducao() {
               )}
 
               <Button variant="outline" asChild className="w-full">
-                <Link to={`/animais/${animal.id}`}>Abrir timeline completa</Link>
+                <Link to={`/animais/${animal.id}`}>
+                  Abrir timeline completa
+                </Link>
               </Button>
             </CardContent>
           </Card>

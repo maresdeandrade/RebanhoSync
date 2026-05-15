@@ -1,15 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import {
-  CheckCircle,
-  Clock3,
-  Loader2,
-  UserRound,
-  XCircle,
-} from "lucide-react";
+import { CheckCircle, Clock3, Loader2, UserRound, XCircle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MetricCard } from "@/components/ui/metric-card";
 import { PageIntro } from "@/components/ui/page-intro";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -174,7 +167,8 @@ export const AcceptInvite = () => {
 
       toast({
         title: "Convite recusado",
-        description: "O convite foi recusado e nao aparecera mais como pendente.",
+        description:
+          "O convite foi recusado e nao aparecera mais como pendente.",
       });
       navigate("/");
     } catch (rejectError: unknown) {
@@ -207,7 +201,7 @@ export const AcceptInvite = () => {
           <PageIntro
             eyebrow="Convite"
             title="Convite indisponivel"
-            description={error || "Este link de convite nao esta mais disponivel."}
+            description={error || undefined}
             meta={<StatusBadge tone="danger">Convite invalido</StatusBadge>}
             actions={
               <Button onClick={() => navigate("/")}>
@@ -215,11 +209,6 @@ export const AcceptInvite = () => {
               </Button>
             }
           />
-          <Card>
-            <CardContent className="p-5 text-sm text-muted-foreground">
-              Confira se o link foi copiado corretamente ou solicite um novo convite ao responsavel pela fazenda.
-            </CardContent>
-          </Card>
         </div>
       </div>
     );
@@ -232,7 +221,6 @@ export const AcceptInvite = () => {
           <PageIntro
             eyebrow="Convite"
             title="Convite expirado ou ja utilizado"
-            description="Este link nao pode mais ser usado. Se ainda precisar acessar a fazenda, solicite um novo convite."
             meta={
               <>
                 <StatusBadge tone="danger">{invite.status}</StatusBadge>
@@ -247,21 +235,15 @@ export const AcceptInvite = () => {
           />
 
           <div className="grid gap-4 md:grid-cols-3">
-            <MetricCard
-              label="Fazenda"
-              value={invite.fazenda_nome}
-              hint="Operacao vinculada a este convite."
-            />
+            <MetricCard label="Fazenda" value={invite.fazenda_nome} />
             <MetricCard
               label="Perfil"
               value={roleLabelMap[invite.role] ?? invite.role}
-              hint="Papel previsto para este acesso."
               tone={roleMetricToneMap[invite.role] ?? "default"}
             />
             <MetricCard
               label="Expiracao"
               value={formatDate(invite.expires_at)}
-              hint="O convite precisa ser reemitido depois desse prazo."
               icon={<Clock3 className="h-5 w-5" />}
             />
           </div>
@@ -276,14 +258,15 @@ export const AcceptInvite = () => {
         <PageIntro
           eyebrow="Convite"
           title="Voce foi convidado para entrar em uma fazenda"
-          description="Revise a operacao, o papel e o responsavel pelo convite antes de aceitar. O acesso entra no mesmo fluxo seguro de membership."
           meta={
             <>
               <StatusBadge tone={roleToneMap[invite.role] ?? "neutral"}>
                 {roleLabelMap[invite.role] ?? invite.role}
               </StatusBadge>
               <StatusBadge tone="info">{invite.fazenda_nome}</StatusBadge>
-              <StatusBadge tone="neutral">Expira em {formatDate(invite.expires_at)}</StatusBadge>
+              <StatusBadge tone="neutral">
+                Expira em {formatDate(invite.expires_at)}
+              </StatusBadge>
             </>
           }
           actions={
@@ -323,35 +306,18 @@ export const AcceptInvite = () => {
         />
 
         <div className="grid gap-4 md:grid-cols-3">
-          <MetricCard
-            label="Fazenda"
-            value={invite.fazenda_nome}
-            hint="Operacao que sera adicionada a sua conta."
-          />
+          <MetricCard label="Fazenda" value={invite.fazenda_nome} />
           <MetricCard
             label="Papel"
             value={roleLabelMap[invite.role] ?? invite.role}
-            hint="Permissoes previstas para sua rotina dentro da fazenda."
             tone={roleMetricToneMap[invite.role] ?? "default"}
           />
           <MetricCard
             label="Convidado por"
             value={invite.inviter_nome}
-            hint="Responsavel que compartilhou este acesso."
             icon={<UserRound className="h-5 w-5" />}
           />
         </div>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Antes de confirmar</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3 text-sm text-muted-foreground">
-            <p>Se voce ainda nao estiver autenticado, o sistema pedira login antes de concluir o aceite.</p>
-            <p>Ao aceitar, a fazenda passa a fazer parte da sua conta e podera ser selecionada no fluxo operacional.</p>
-            <p>Se o convite tiver sido enviado para outro e-mail ou telefone, use a conta correta para evitar rejeicao de seguranca.</p>
-          </CardContent>
-        </Card>
       </div>
     </div>
   );

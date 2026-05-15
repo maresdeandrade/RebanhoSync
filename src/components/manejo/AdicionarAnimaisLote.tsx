@@ -15,7 +15,6 @@ import {
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -73,15 +72,16 @@ export function AdicionarAnimaisLote({
     ) || [];
   const regulatoryReadModel = useMemo(
     () =>
-      buildRegulatoryOperationalReadModel(
-        regulatorySurfaceSource ?? undefined,
-      ),
+      buildRegulatoryOperationalReadModel(regulatorySurfaceSource ?? undefined),
     [regulatorySurfaceSource],
   );
   const movementComplianceGuards = regulatoryReadModel.flows.movementInternal;
-  const complianceBlockReason = movementComplianceGuards.blockers[0]?.message ?? null;
+  const complianceBlockReason =
+    movementComplianceGuards.blockers[0]?.message ?? null;
   const blockedAnimals = listAnimalsBlockedBySanitaryAlert(animais ?? []);
-  const blockedAnimalIds = new Set(blockedAnimals.map(({ animal }) => animal.id));
+  const blockedAnimalIds = new Set(
+    blockedAnimals.map(({ animal }) => animal.id),
+  );
   const blockedAnimalReasonById = new Map(
     blockedAnimals.map(({ animal, alert }) => [
       animal.id,
@@ -113,7 +113,9 @@ export function AdicionarAnimaisLote({
     setIsSubmitting(true);
     const now = new Date().toISOString();
 
-    const animaisPorId = new Map((animais ?? []).map((animal) => [animal.id, animal]));
+    const animaisPorId = new Map(
+      (animais ?? []).map((animal) => [animal.id, animal]),
+    );
     const ops: OperationInput[] = [];
 
     for (const animalId of selectedAnimais) {
@@ -157,7 +159,9 @@ export function AdicionarAnimaisLote({
       onOpenChange(false);
     } catch (error: unknown) {
       if (error instanceof EventValidationError) {
-        showError(error.issues[0]?.message ?? "Dados invalidos para movimentacao.");
+        showError(
+          error.issues[0]?.message ?? "Dados invalidos para movimentacao.",
+        );
         return;
       }
       showError("Erro ao adicionar animais ao lote.");
@@ -171,15 +175,10 @@ export function AdicionarAnimaisLote({
       <DialogContent className="max-w-3xl">
         <DialogHeader>
           <DialogTitle>Adicionar animais ao lote</DialogTitle>
-          <DialogDescription>
-            Monte a lista de entrada para <strong>{lote.nome}</strong> sem perder
-            contexto do lote de origem.
-          </DialogDescription>
         </DialogHeader>
 
         <FormSection
-          title="Selecao de animais"
-          description="Busque por identificacao e marque apenas os animais que devem entrar neste lote."
+          title={lote.nome}
           actions={
             <StatusBadge tone="info">
               {selectedAnimais.size} selecionado(s)
@@ -230,7 +229,8 @@ export function AdicionarAnimaisLote({
                         {blockedAnimalIds.has(animal.id) ? (
                           <StatusBadge tone="danger">
                             Bloqueado:{" "}
-                            {blockedAnimalReasonById.get(animal.id) ?? "suspeita"}
+                            {blockedAnimalReasonById.get(animal.id) ??
+                              "suspeita"}
                           </StatusBadge>
                         ) : null}
                       </div>
@@ -248,9 +248,7 @@ export function AdicionarAnimaisLote({
 
           {selectedAnimais.size > 0 ? (
             <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-border/70 bg-muted/20 px-4 py-3">
-              <p className="text-sm text-muted-foreground">
-                Revise a selecao antes de confirmar a movimentacao em massa.
-              </p>
+              <StatusBadge tone="neutral">Entrada em massa</StatusBadge>
               <Button
                 variant="ghost"
                 size="sm"
@@ -269,7 +267,11 @@ export function AdicionarAnimaisLote({
         </FormSection>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={isSubmitting}
+          >
             Cancelar
           </Button>
           <Button
@@ -280,7 +282,9 @@ export function AdicionarAnimaisLote({
               Boolean(complianceBlockReason)
             }
           >
-            {isSubmitting ? "Adicionando..." : `Adicionar ${selectedAnimais.size}`}
+            {isSubmitting
+              ? "Adicionando..."
+              : `Adicionar ${selectedAnimais.size}`}
           </Button>
         </DialogFooter>
       </DialogContent>

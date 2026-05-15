@@ -22,24 +22,10 @@ import {
 import { trackPilotMetric } from "@/lib/telemetry/pilotMetrics";
 import { showError, showSuccess } from "@/utils/toast";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 
 const TEMPLATE_CSV = [
   "identificacao;sexo;especie;lote;data_nascimento;data_entrada;origem;raca;nome;rfid",
@@ -152,7 +138,8 @@ const AnimaisImportar = () => {
           status: "ativo",
           especie: row.especie,
           lote_id: row.loteNome
-            ? validation.loteMap.get(normalizeLookupValue(row.loteNome)) ?? null
+            ? (validation.loteMap.get(normalizeLookupValue(row.loteNome)) ??
+              null)
             : null,
           data_nascimento: row.dataNascimento,
           data_entrada: row.dataEntrada,
@@ -199,23 +186,21 @@ const AnimaisImportar = () => {
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => navigate("/animais")}>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => navigate("/animais")}
+        >
           <ChevronLeft className="h-5 w-5" />
         </Button>
         <div>
           <h1 className="text-2xl font-bold">Importar animais por planilha</h1>
-          <p className="text-sm text-muted-foreground">
-            Aceita CSV exportado do Excel com delimitador `;`, `,` ou tab.
-          </p>
         </div>
       </div>
 
       <Card>
         <CardHeader>
           <CardTitle>Modelo recomendado</CardTitle>
-          <CardDescription>
-            Comece pelo modelo abaixo para evitar erro de cabecalho.
-          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="rounded-lg border bg-muted/30 p-4 text-sm font-mono whitespace-pre-wrap">
@@ -246,12 +231,10 @@ const AnimaisImportar = () => {
 
       <Card>
         <CardHeader>
-          <CardTitle>Conteudo da planilha</CardTitle>
-          <CardDescription>
-            {fileName
-              ? `Arquivo atual: ${fileName}`
-              : "Cole o CSV aqui ou envie um arquivo."}
-          </CardDescription>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <CardTitle>Conteudo da planilha</CardTitle>
+            {fileName ? <Badge variant="outline">{fileName}</Badge> : null}
+          </div>
         </CardHeader>
         <CardContent>
           <Textarea
@@ -266,43 +249,46 @@ const AnimaisImportar = () => {
       <section className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
         <Card>
           <CardHeader>
-            <CardTitle>Preview da importacao</CardTitle>
-            <CardDescription>
-              {parsed.rows.length} linha(s) valida(s) pronta(s) para importar.
-            </CardDescription>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <CardTitle>Preview</CardTitle>
+              <Badge variant="secondary">
+                {parsed.rows.length} linha(s) valida(s)
+              </Badge>
+            </div>
           </CardHeader>
           <CardContent>
             {parsed.rows.length === 0 ? (
               <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
-                Nenhuma linha valida encontrada ainda. Use o modelo de cabecalho
-                e revise os campos obrigatorios.
+                Nenhuma linha valida encontrada.
               </div>
             ) : (
-              <div className="overflow-x-auto rounded-xl border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Linha</TableHead>
-                      <TableHead>Identificacao</TableHead>
-                      <TableHead>Sexo</TableHead>
-                      <TableHead>Lote</TableHead>
-                      <TableHead>Origem</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {parsed.rows.slice(0, 12).map((row) => (
-                      <TableRow key={`${row.lineNumber}-${row.identificacao}`}>
-                        <TableCell>{row.lineNumber}</TableCell>
-                        <TableCell className="font-medium">
+              <div className="grid gap-3">
+                {parsed.rows.slice(0, 12).map((row) => (
+                  <div
+                    key={`${row.lineNumber}-${row.identificacao}`}
+                    className="rounded-xl border border-border/70 bg-background p-3"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="font-medium text-foreground">
                           {row.identificacao}
-                        </TableCell>
-                        <TableCell>{row.sexo}</TableCell>
-                        <TableCell>{row.loteNome ?? "Sem lote"}</TableCell>
-                        <TableCell>{row.origem ?? "Nao informada"}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Linha {row.lineNumber}
+                        </p>
+                      </div>
+                      <Badge variant="outline">{row.sexo}</Badge>
+                    </div>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <Badge variant="secondary">
+                        {row.loteNome ?? "Sem lote"}
+                      </Badge>
+                      <Badge variant="outline">
+                        {row.origem ?? "Origem nao informada"}
+                      </Badge>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </CardContent>
@@ -311,14 +297,17 @@ const AnimaisImportar = () => {
         <Card>
           <CardHeader>
             <CardTitle>Validacao</CardTitle>
-            <CardDescription>
-              A importacao so libera quando o arquivo esta consistente.
-            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex flex-wrap gap-2">
-              <Badge variant={validation.issues.length === 0 ? "secondary" : "destructive"}>
-                {validation.issues.length === 0 ? "Sem erros" : `${validation.issues.length} erro(s)`}
+              <Badge
+                variant={
+                  validation.issues.length === 0 ? "secondary" : "destructive"
+                }
+              >
+                {validation.issues.length === 0
+                  ? "Sem erros"
+                  : `${validation.issues.length} erro(s)`}
               </Badge>
               <Badge variant="outline">
                 {lotes?.length ?? 0} lote(s) disponivel(is) para vinculo
@@ -332,8 +321,7 @@ const AnimaisImportar = () => {
                   Arquivo pronto para importacao.
                 </div>
                 <p className="mt-2 text-emerald-800">
-                  Os animais serao criados localmente e entram na fila normal de
-                  sincronizacao.
+                  Os animais serao criados localmente.
                 </p>
               </div>
             ) : (
@@ -352,13 +340,18 @@ const AnimaisImportar = () => {
                 ))}
                 {validation.issues.length > 8 && (
                   <p className="text-sm text-muted-foreground">
-                    Mais {validation.issues.length - 8} erro(s) oculto(s) no preview.
+                    Mais {validation.issues.length - 8} erro(s) oculto(s) no
+                    preview.
                   </p>
                 )}
               </div>
             )}
 
-            <Button onClick={handleImport} disabled={!canImport} className="w-full">
+            <Button
+              onClick={handleImport}
+              disabled={!canImport}
+              className="w-full"
+            >
               {isImporting ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />

@@ -59,7 +59,10 @@ const SelectFazenda = () => {
         const { data, error } = await supabase.rpc("can_create_farm");
 
         if (error) {
-          console.error("[SelectFazenda] ERROR checking can_create_farm:", error);
+          console.error(
+            "[SelectFazenda] ERROR checking can_create_farm:",
+            error,
+          );
           setCanCreateFarm(false);
           return;
         }
@@ -109,10 +112,11 @@ const SelectFazenda = () => {
         <PageIntro
           eyebrow="Acesso"
           title="Escolha a fazenda"
-          description="Selecione a operacao ativa para abrir a rotina do dia com o contexto certo. A troca continua leve e previsivel."
           meta={
             <>
-              <StatusBadge tone="neutral">{user?.email ?? "Conta sem e-mail"}</StatusBadge>
+              <StatusBadge tone="neutral">
+                {user?.email ?? "Conta sem e-mail"}
+              </StatusBadge>
               <StatusBadge tone={memberships.length > 0 ? "info" : "warning"}>
                 {memberships.length} fazenda(s) disponivel(is)
               </StatusBadge>
@@ -121,12 +125,19 @@ const SelectFazenda = () => {
           actions={
             <>
               {canCreateFarm === true ? (
-                <Button variant="outline" onClick={() => navigate("/criar-fazenda")}>
+                <Button
+                  variant="outline"
+                  onClick={() => navigate("/criar-fazenda")}
+                >
                   <Plus className="mr-2 h-4 w-4" />
                   Criar nova fazenda
                 </Button>
               ) : null}
-              <Button variant="outline" onClick={() => void signOut()} disabled={loading}>
+              <Button
+                variant="outline"
+                onClick={() => void signOut()}
+                disabled={loading}
+              >
                 <LogOut className="mr-2 h-4 w-4" />
                 Sair da conta
               </Button>
@@ -149,12 +160,14 @@ const SelectFazenda = () => {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <p className="text-sm text-muted-foreground">
-                    Voce ainda nao esta vinculado a nenhuma fazenda. Aceite um
-                    convite ou crie a primeira operacao para comecar.
+                    Aceite um convite ou crie a primeira operacao.
                   </p>
 
                   {canCreateFarm === true ? (
-                    <Button onClick={() => navigate("/criar-fazenda")} className="w-full">
+                    <Button
+                      onClick={() => navigate("/criar-fazenda")}
+                      className="w-full"
+                    >
                       <Plus className="mr-2 h-4 w-4" />
                       Criar nova fazenda
                     </Button>
@@ -162,14 +175,18 @@ const SelectFazenda = () => {
 
                   {canCreateFarm === false ? (
                     <p className="text-xs text-muted-foreground">
-                      Sua conta nao tem permissao para criar fazendas neste momento.
+                      Sua conta nao tem permissao para criar fazendas neste
+                      momento.
                     </p>
                   ) : null}
                 </CardContent>
               </Card>
             ) : (
               memberships.map((fazenda) => (
-                <Card key={fazenda.id} className="transition-colors hover:border-primary/60">
+                <Card
+                  key={fazenda.id}
+                  className="transition-colors hover:border-primary/60"
+                >
                   <CardContent className="p-4">
                     <button
                       type="button"
@@ -188,7 +205,9 @@ const SelectFazenda = () => {
                               Entrar na rotina da fazenda
                             </p>
                           </div>
-                          <StatusBadge tone={roleToneMap[fazenda.role] ?? "neutral"}>
+                          <StatusBadge
+                            tone={roleToneMap[fazenda.role] ?? "neutral"}
+                          >
                             {roleLabelMap[fazenda.role] ?? fazenda.role}
                           </StatusBadge>
                         </div>
@@ -205,26 +224,14 @@ const SelectFazenda = () => {
             <MetricCard
               label="Fazendas disponiveis"
               value={memberships.length}
-              hint="Selecione uma operacao para abrir a rotina diaria com o contexto correto."
               icon={<Tractor className="h-5 w-5" />}
               tone={memberships.length > 0 ? "info" : "warning"}
             />
             <MetricCard
               label="Criacao permitida"
               value={canCreateFarm === false ? "Nao" : "Sim"}
-              hint="A criacao de novas fazendas segue a permissao da sua conta."
               tone={canCreateFarm === false ? "warning" : "success"}
             />
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Como esta tela funciona</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3 text-sm text-muted-foreground">
-                <p>A fazenda escolhida vira o contexto ativo da navegacao e da rotina operacional.</p>
-                <p>Se voce recebeu um convite, aceite-o primeiro para que a fazenda apareca aqui.</p>
-                <p>A troca de fazenda nao altera dados locais ja sincronizados; ela apenas muda o escopo da sessao.</p>
-              </CardContent>
-            </Card>
           </aside>
         </div>
       </div>

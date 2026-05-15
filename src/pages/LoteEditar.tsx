@@ -26,7 +26,10 @@ const LoteEditar = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
-  const lote = useLiveQuery(() => (id ? db.state_lotes.get(id) : undefined), [id]);
+  const lote = useLiveQuery(
+    () => (id ? db.state_lotes.get(id) : undefined),
+    [id],
+  );
   const animaisNoLote = useLiveQuery(
     () => (id ? db.state_animais.where("lote_id").equals(id).count() : 0),
     [id],
@@ -54,7 +57,8 @@ const LoteEditar = () => {
             .equals(lote.fazenda_id)
             .filter(
               (animal) =>
-                animal.sexo === "M" && (!animal.deleted_at || animal.deleted_at === null),
+                animal.sexo === "M" &&
+                (!animal.deleted_at || animal.deleted_at === null),
             )
             .toArray()
         : [],
@@ -107,7 +111,6 @@ const LoteEditar = () => {
         <PageIntro
           eyebrow="Estrutura do rebanho"
           title="Editar lote"
-          description="Carregando os dados operacionais do lote."
           actions={
             <Button variant="outline" onClick={() => navigate("/lotes")}>
               <ChevronLeft className="mr-2 h-4 w-4" />
@@ -124,7 +127,6 @@ const LoteEditar = () => {
       <PageIntro
         eyebrow="Estrutura do rebanho"
         title={`Editar ${lote.nome}`}
-        description="Ajuste nome, status e vinculos atuais sem alterar o fluxo operacional do lote."
         actions={
           <>
             <Button variant="outline" onClick={() => navigate(`/lotes/${id}`)}>
@@ -143,19 +145,16 @@ const LoteEditar = () => {
         <MetricCard
           label="Animais no lote"
           value={animaisNoLote ?? 0}
-          hint="Total atual usado na rotina de manejo."
           icon={<Users className="h-4 w-4" />}
         />
         <MetricCard
           label="Pasto atual"
           value={pastoAtual?.nome ?? "Sem pasto"}
-          hint="Para alterar o pasto, use a acao Mudar pasto no detalhe do lote."
           icon={<Layers className="h-4 w-4" />}
         />
         <MetricCard
           label="Reprodutor"
           value={touroAtual?.identificacao ?? "Sem vinculo"}
-          hint={status === "ativo" ? "Lote em operacao." : "Lote fora da rotina principal."}
           tone={status === "ativo" ? "success" : "default"}
         />
       </div>
@@ -167,10 +166,7 @@ const LoteEditar = () => {
           void handleSave();
         }}
       >
-        <FormSection
-          title="Identidade do lote"
-          description="Esses campos controlam como o lote aparece para toda a fazenda."
-        >
+        <FormSection title="Identidade do lote">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2 md:col-span-2">
               <Label htmlFor="nome">Nome do lote</Label>
@@ -200,10 +196,7 @@ const LoteEditar = () => {
           </div>
         </FormSection>
 
-        <FormSection
-          title="Vinculos operacionais"
-          description="O reprodutor pode ser revisado aqui. Para alterar o pasto, use a acao Mudar pasto no detalhe do lote."
-        >
+        <FormSection title="Vinculos operacionais">
           <div className="grid gap-4 md:grid-cols-1">
             <div className="space-y-2">
               <Label>Reprodutor vinculado</Label>

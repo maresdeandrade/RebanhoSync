@@ -33,7 +33,6 @@ const ProtocolosSanitarios = () => {
         <EmptyState
           icon={ShieldCheck}
           title="Fazenda nao selecionada"
-          description="Selecione uma fazenda para abrir os protocolos e o overlay sanitario."
           action={{
             label: "Selecionar fazenda",
             onClick: () => navigate("/select-fazenda"),
@@ -53,17 +52,10 @@ const ProtocolosSanitarios = () => {
           </h1>
         </div>
         <p className="max-w-3xl text-muted-foreground">
-          Estrutura sanitaria animal-centric com tres camadas claras. Pack
-          oficial = o que sua fazenda precisa cumprir. Template canonico =
-          modelos padrao recomendados pelo sistema. Customizado = como sua
-          fazenda escolhe operar sem recriar, em paralelo, o mesmo tronco
-          obrigatorio ja coberto pelo pack oficial.
+          Regras sanitarias, protocolos e verificacoes da fazenda.
         </p>
         {!canManageProtocols ? (
-          <p className="text-sm text-muted-foreground">
-            Seu perfil esta em modo leitura para protocolos. Edicao estrutural e
-            liberada para manager e owner.
-          </p>
+          <p className="text-sm text-muted-foreground">Somente leitura.</p>
         ) : null}
         <div className="flex flex-wrap gap-2">
           <Button
@@ -83,7 +75,10 @@ const ProtocolosSanitarios = () => {
           <Button onClick={() => scrollToSection("protocolos-aplicar")}>
             Aplicar protocolo
           </Button>
-          <Button variant="ghost" onClick={() => navigate("/agenda?dominio=sanitario")}>
+          <Button
+            variant="ghost"
+            onClick={() => navigate("/agenda?dominio=sanitario")}
+          >
             Voltar para agenda
           </Button>
         </div>
@@ -100,11 +95,7 @@ const ProtocolosSanitarios = () => {
         </div>
       ) : null}
       {isLoading ? (
-        <EmptyState
-          icon={ShieldCheck}
-          title="Carregando protocolos"
-          description="Estamos preparando o catalogo e as configuracoes da fazenda."
-        />
+        <EmptyState icon={ShieldCheck} title="Carregando protocolos" />
       ) : null}
 
       {!isLoading ? (

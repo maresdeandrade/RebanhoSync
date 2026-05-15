@@ -19,13 +19,7 @@ import { db } from "@/lib/offline/db";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 type FarmSummary = {
   nome: string;
@@ -86,33 +80,29 @@ const OnboardingInicial = () => {
     loadFarm();
   }, [activeFarmId]);
 
-  const snapshot = useLiveQuery(
-    async () => {
-      if (!activeFarmId) return null;
+  const snapshot = useLiveQuery(async () => {
+    if (!activeFarmId) return null;
 
-      const [pastos, lotes, animais, protocolos, eventos] = await Promise.all([
-        db.state_pastos.where("fazenda_id").equals(activeFarmId).toArray(),
-        db.state_lotes.where("fazenda_id").equals(activeFarmId).toArray(),
-        db.state_animais.where("fazenda_id").equals(activeFarmId).toArray(),
-        db.state_protocolos_sanitarios
-          .where("fazenda_id")
-          .equals(activeFarmId)
-          .toArray(),
-        db.event_eventos.where("fazenda_id").equals(activeFarmId).toArray(),
-      ]);
+    const [pastos, lotes, animais, protocolos, eventos] = await Promise.all([
+      db.state_pastos.where("fazenda_id").equals(activeFarmId).toArray(),
+      db.state_lotes.where("fazenda_id").equals(activeFarmId).toArray(),
+      db.state_animais.where("fazenda_id").equals(activeFarmId).toArray(),
+      db.state_protocolos_sanitarios
+        .where("fazenda_id")
+        .equals(activeFarmId)
+        .toArray(),
+      db.event_eventos.where("fazenda_id").equals(activeFarmId).toArray(),
+    ]);
 
-      return {
-        pastos: pastos.filter((item) => !item.deleted_at).length,
-        lotes: lotes.filter((item) => !item.deleted_at).length,
-        animais: animais.filter((item) => !item.deleted_at).length,
-        protocolos: protocolos.filter(
-          (item) => !item.deleted_at && item.ativo,
-        ).length,
-        eventos: eventos.filter((item) => !item.deleted_at).length,
-      };
-    },
-    [activeFarmId],
-  );
+    return {
+      pastos: pastos.filter((item) => !item.deleted_at).length,
+      lotes: lotes.filter((item) => !item.deleted_at).length,
+      animais: animais.filter((item) => !item.deleted_at).length,
+      protocolos: protocolos.filter((item) => !item.deleted_at && item.ativo)
+        .length,
+      eventos: eventos.filter((item) => !item.deleted_at).length,
+    };
+  }, [activeFarmId]);
 
   const counts = snapshot ?? EMPTY_SNAPSHOT;
 
@@ -285,7 +275,14 @@ const OnboardingInicial = () => {
         icon: CheckCircle2,
       },
     ];
-  }, [counts.animais, counts.eventos, counts.lotes, counts.pastos, counts.protocolos, farm]);
+  }, [
+    counts.animais,
+    counts.eventos,
+    counts.lotes,
+    counts.pastos,
+    counts.protocolos,
+    farm,
+  ]);
 
   const completedSteps = steps.filter((step) => step.done).length;
   const recommendedStepIndex = useMemo(() => {
@@ -318,9 +315,6 @@ const OnboardingInicial = () => {
       <Card>
         <CardHeader>
           <CardTitle>Selecione uma fazenda</CardTitle>
-          <CardDescription>
-            O onboarding inicial depende de uma fazenda ativa.
-          </CardDescription>
         </CardHeader>
         <CardContent>
           <Button asChild>
@@ -341,10 +335,6 @@ const OnboardingInicial = () => {
               <h1 className="text-3xl font-bold tracking-tight">
                 Implantacao guiada da fazenda
               </h1>
-              <p className="text-sm text-muted-foreground">
-                {farm?.nome ?? "Fazenda ativa"} · siga a ordem abaixo para sair
-                do cadastro solto e entrar na rotina diaria.
-              </p>
             </div>
           </div>
 
@@ -356,12 +346,6 @@ const OnboardingInicial = () => {
               </span>
             </div>
             <Progress value={progressValue} className="mt-3 h-3" />
-            <p className="mt-3 text-sm text-muted-foreground">
-              Proxima recomendacao:{" "}
-              <span className="font-medium text-foreground">
-                {steps[recommendedStepIndex]?.shortTitle}
-              </span>
-            </p>
           </div>
         </div>
       </section>
@@ -370,10 +354,6 @@ const OnboardingInicial = () => {
         <Card>
           <CardHeader>
             <CardTitle>Sequencia recomendada</CardTitle>
-            <CardDescription>
-              O foco inicial e construir estrutura, trazer o rebanho e validar
-              um manejo real.
-            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             {steps.map((step, index) => {
@@ -395,14 +375,20 @@ const OnboardingInicial = () => {
                         <step.icon className="h-4 w-4" />
                       </div>
                       <div className="space-y-1">
-                        <div className="text-sm font-medium">{step.shortTitle}</div>
+                        <div className="text-sm font-medium">
+                          {step.shortTitle}
+                        </div>
                         <div className="text-xs text-muted-foreground">
                           {step.currentState}
                         </div>
                       </div>
                     </div>
                     <Badge variant={step.done ? "secondary" : "outline"}>
-                      {step.done ? "OK" : index === recommendedStepIndex ? "Agora" : "Pendente"}
+                      {step.done
+                        ? "OK"
+                        : index === recommendedStepIndex
+                          ? "Agora"
+                          : "Pendente"}
                     </Badge>
                   </div>
                 </button>
@@ -420,26 +406,20 @@ const OnboardingInicial = () => {
                     {selectedStep.done ? "Etapa concluida" : "Etapa em foco"}
                   </Badge>
                   <div>
-                    <CardTitle className="text-2xl">{selectedStep.title}</CardTitle>
-                    <CardDescription className="mt-2 text-sm">
-                      {selectedStep.description}
-                    </CardDescription>
+                    <CardTitle className="text-2xl">
+                      {selectedStep.title}
+                    </CardTitle>
                   </div>
                 </div>
                 <div className="rounded-xl border bg-muted/30 px-4 py-3 text-sm">
                   <div className="text-muted-foreground">Estado atual</div>
-                  <div className="mt-1 font-medium">{selectedStep.currentState}</div>
+                  <div className="mt-1 font-medium">
+                    {selectedStep.currentState}
+                  </div>
                 </div>
               </div>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="rounded-xl border bg-muted/30 p-4">
-                <div className="text-sm font-medium">Por que essa etapa importa</div>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  {selectedStep.impact}
-                </p>
-              </div>
-
               <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
                 <div className="rounded-xl border p-4">
                   <div className="text-sm font-medium">Concluida quando</div>
@@ -460,7 +440,11 @@ const OnboardingInicial = () => {
                   <div className="text-sm font-medium">Acoes desta etapa</div>
                   <div className="mt-3 flex flex-wrap gap-3">
                     {selectedStep.actions.map((action) => (
-                      <Button key={action.path} asChild variant={action.variant}>
+                      <Button
+                        key={action.path}
+                        asChild
+                        variant={action.variant}
+                      >
                         <Link to={action.path}>
                           {action.path.endsWith("/importar") && (
                             <Upload className="h-4 w-4" />
@@ -478,7 +462,9 @@ const OnboardingInicial = () => {
                   <Button
                     variant="outline"
                     onClick={() =>
-                      setSelectedStepIndex((current) => Math.max(0, current - 1))
+                      setSelectedStepIndex((current) =>
+                        Math.max(0, current - 1),
+                      )
                     }
                     disabled={!canGoBack}
                   >
@@ -514,31 +500,31 @@ const OnboardingInicial = () => {
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
             <Card>
               <CardHeader className="pb-2">
-                <CardDescription>Pastos</CardDescription>
+                <p className="text-sm text-muted-foreground">Pastos</p>
                 <CardTitle>{counts.pastos}</CardTitle>
               </CardHeader>
             </Card>
             <Card>
               <CardHeader className="pb-2">
-                <CardDescription>Lotes</CardDescription>
+                <p className="text-sm text-muted-foreground">Lotes</p>
                 <CardTitle>{counts.lotes}</CardTitle>
               </CardHeader>
             </Card>
             <Card>
               <CardHeader className="pb-2">
-                <CardDescription>Animais</CardDescription>
+                <p className="text-sm text-muted-foreground">Animais</p>
                 <CardTitle>{counts.animais}</CardTitle>
               </CardHeader>
             </Card>
             <Card>
               <CardHeader className="pb-2">
-                <CardDescription>Protocolos</CardDescription>
+                <p className="text-sm text-muted-foreground">Protocolos</p>
                 <CardTitle>{counts.protocolos}</CardTitle>
               </CardHeader>
             </Card>
             <Card>
               <CardHeader className="pb-2">
-                <CardDescription>Manejos</CardDescription>
+                <p className="text-sm text-muted-foreground">Manejos</p>
                 <CardTitle>{counts.eventos}</CardTitle>
               </CardHeader>
             </Card>

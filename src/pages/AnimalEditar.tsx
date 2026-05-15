@@ -9,7 +9,10 @@ import type {
   StatusReprodutivoMachoEnum,
 } from "@/lib/offline/types";
 import { ANIMAL_BREED_OPTIONS, parseAnimalBreed } from "@/lib/animals/catalogs";
-import { ANIMAL_SPECIES_OPTIONS, formatAnimalSpecies } from "@/lib/animals/species";
+import {
+  ANIMAL_SPECIES_OPTIONS,
+  formatAnimalSpecies,
+} from "@/lib/animals/species";
 import type { AnimalSpeciesEnum } from "@/lib/animals/species";
 import {
   buildAnimalClassificationPayload,
@@ -101,20 +104,21 @@ const AnimalEditar = () => {
   >("null");
   const lotes = useLotes(animal?.fazenda_id);
 
-  const temCriaRecente = useLiveQuery(async () => {
-    if (!animal?.id || !animal.fazenda_id) return false;
-    const crias = await db.state_animais
-      .where("fazenda_id")
-      .equals(animal.fazenda_id)
-      .filter((a) => a.mae_id === animal.id && !a.deleted_at)
-      .toArray();
-      
-    const umAnoAtras = Date.now() - 365 * 24 * 60 * 60 * 1000;
-    return crias.some((c) => {
-      if (!c.data_nascimento) return true; // se nao tem data, por precaucao consideramos vinculo valido
-      return new Date(c.data_nascimento).getTime() > umAnoAtras;
-    });
-  }, [animal?.id]) ?? false;
+  const temCriaRecente =
+    useLiveQuery(async () => {
+      if (!animal?.id || !animal.fazenda_id) return false;
+      const crias = await db.state_animais
+        .where("fazenda_id")
+        .equals(animal.fazenda_id)
+        .filter((a) => a.mae_id === animal.id && !a.deleted_at)
+        .toArray();
+
+      const umAnoAtras = Date.now() - 365 * 24 * 60 * 60 * 1000;
+      return crias.some((c) => {
+        if (!c.data_nascimento) return true; // se nao tem data, por precaucao consideramos vinculo valido
+        return new Date(c.data_nascimento).getTime() > umAnoAtras;
+      });
+    }, [animal?.id]) ?? false;
 
   const dataUltimoParto = animal?.payload?.data_ultimo_parto;
   let tevePartoRecente = false;
@@ -122,45 +126,39 @@ const AnimalEditar = () => {
     const umAnoAtras = Date.now() - 365 * 24 * 60 * 60 * 1000;
     tevePartoRecente = new Date(dataUltimoParto).getTime() > umAnoAtras;
   }
-  
-  const isLactationEligible = (tevePartoRecente || temCriaRecente || animal?.payload?.em_lactacao === true);
 
+  const isLactationEligible =
+    tevePartoRecente || temCriaRecente || animal?.payload?.em_lactacao === true;
 
   // Query para machos (potenciais pais) - excluir o próprio animal se for macho
-  const machos = useLiveQuery(
-    () => {
-      if (!animal?.fazenda_id) return [];
-      return db.state_animais
-        .where("fazenda_id")
-        .equals(animal.fazenda_id)
-        .filter(
-          (a) =>
-            a.sexo === "M" &&
-            (!a.deleted_at || a.deleted_at === null) &&
-            a.id !== id,
-        )
-        .toArray();
-    },
-    [animal?.fazenda_id, id],
-  );
+  const machos = useLiveQuery(() => {
+    if (!animal?.fazenda_id) return [];
+    return db.state_animais
+      .where("fazenda_id")
+      .equals(animal.fazenda_id)
+      .filter(
+        (a) =>
+          a.sexo === "M" &&
+          (!a.deleted_at || a.deleted_at === null) &&
+          a.id !== id,
+      )
+      .toArray();
+  }, [animal?.fazenda_id, id]);
 
   // Query para fêmeas (potenciais mães) - excluir o próprio animal se for fêmea
-  const femeas = useLiveQuery(
-    () => {
-      if (!animal?.fazenda_id) return [];
-      return db.state_animais
-        .where("fazenda_id")
-        .equals(animal.fazenda_id)
-        .filter(
-          (a) =>
-            a.sexo === "F" &&
-            (!a.deleted_at || a.deleted_at === null) &&
-            a.id !== id,
-        )
-        .toArray();
-    },
-    [animal?.fazenda_id, id],
-  );
+  const femeas = useLiveQuery(() => {
+    if (!animal?.fazenda_id) return [];
+    return db.state_animais
+      .where("fazenda_id")
+      .equals(animal.fazenda_id)
+      .filter(
+        (a) =>
+          a.sexo === "F" &&
+          (!a.deleted_at || a.deleted_at === null) &&
+          a.id !== id,
+      )
+      .toArray();
+  }, [animal?.fazenda_id, id]);
 
   // Preencher formul ário quando animal carregar
   useEffect(() => {
@@ -176,7 +174,9 @@ const AnimalEditar = () => {
       setNome(animal.nome ?? "");
       setRfid(animal.rfid ?? "");
       setOrigem((animal.origem as typeof origem) ?? "null");
-      setRaca(parseAnimalBreed(animal.raca) ?? (animal.raca ? "outra" : "null"));
+      setRaca(
+        parseAnimalBreed(animal.raca) ?? (animal.raca ? "outra" : "null"),
+      );
       setDestinoProdutivo(getAnimalProductiveDestination(animal) ?? "null");
       setStatusReprodutivoMacho(getMaleReproductiveStatus(animal) ?? "null");
       const taxonomyFacts = getAnimalTaxonomyFacts(animal.payload);
@@ -304,11 +304,10 @@ const AnimalEditar = () => {
       statusReprodutivoMacho: statusReprodutivoValue,
     });
     payload = buildAnimalTaxonomyFactsPayload(payload, {
-      castrado: sexo === "M" && castrado !== "null" ? castrado === "true" : null,
+      castrado:
+        sexo === "M" && castrado !== "null" ? castrado === "true" : null,
       puberdade_confirmada:
-        puberdadeConfirmada !== "null"
-          ? puberdadeConfirmada === "true"
-          : null,
+        puberdadeConfirmada !== "null" ? puberdadeConfirmada === "true" : null,
       em_lactacao:
         sexo === "F" && emLactacao !== "null" ? emLactacao === "true" : null,
       secagem_realizada:
@@ -390,17 +389,23 @@ const AnimalEditar = () => {
   const handleDelete = async () => {
     if (!animal || !id) return;
 
-    if (!window.confirm("ATENÇÃO: Você está prestes a excluir este animal de todos os registros da Gestão Agro. Esta ação o removerá dos relatórios passados e cancelará sua vida ativa na fazenda. Deseja mesmo excluir este animal?")) {
+    if (
+      !window.confirm(
+        "ATENÇÃO: Você está prestes a excluir este animal de todos os registros da Gestão Agro. Esta ação o removerá dos relatórios passados e cancelará sua vida ativa na fazenda. Deseja mesmo excluir este animal?",
+      )
+    ) {
       return;
     }
 
     setIsSaving(true);
     try {
-      await createGesture(animal.fazenda_id, [{
-        table: "animais",
-        action: "DELETE",
-        record: { id: animal.id }
-      }]);
+      await createGesture(animal.fazenda_id, [
+        {
+          table: "animais",
+          action: "DELETE",
+          record: { id: animal.id },
+        },
+      ]);
       await db.state_animais.delete(animal.id);
       showSuccess("Animal excluído com sucesso.");
       navigate("/animais");
@@ -417,7 +422,6 @@ const AnimalEditar = () => {
         <PageIntro
           eyebrow="Cadastro animal"
           title="Editar animal"
-          description="Carregando os dados do cadastro selecionado."
           actions={
             <Button variant="outline" onClick={() => navigate("/animais")}>
               <ChevronLeft className="mr-2 h-4 w-4" />
@@ -434,10 +438,12 @@ const AnimalEditar = () => {
       <PageIntro
         eyebrow="Cadastro animal"
         title="Editar animal"
-        description="Os blocos principais continuam os mesmos, agora com uma leitura mais previsivel para revisar o cadastro."
         actions={
           <>
-            <Button variant="outline" onClick={() => navigate(`/animais/${id}`)}>
+            <Button
+              variant="outline"
+              onClick={() => navigate(`/animais/${id}`)}
+            >
               <ChevronLeft className="mr-2 h-4 w-4" />
               Voltar
             </Button>
@@ -454,24 +460,19 @@ const AnimalEditar = () => {
       />
 
       <div className="grid gap-4 md:grid-cols-3">
-        <MetricCard
-          label="Sexo"
-          value={sexo === "M" ? "Macho" : "Femea"}
-          hint={idadeMeses !== null ? `${idadeMeses} mes(es) estimados.` : "Sem idade calculada."}
-        />
+        <MetricCard label="Sexo" value={sexo === "M" ? "Macho" : "Femea"} />
         <MetricCard
           label="Origem"
           value={origem === "null" ? "Nao informada" : origem}
-          hint="Contexto atual do animal dentro do cadastro."
         />
         <MetricCard
           label="Lote atual"
           value={
             loteId === "null"
               ? "Sem lote"
-              : lotes?.find((loteAtual) => loteAtual.id === loteId)?.nome ?? "Selecionado"
+              : (lotes?.find((loteAtual) => loteAtual.id === loteId)?.nome ??
+                "Selecionado")
           }
-          hint="Pode ser alterado sem expor acoes destrutivas."
         />
       </div>
 
@@ -527,11 +528,13 @@ const AnimalEditar = () => {
 
           <div className="space-y-2">
             <Label>Lote</Label>
-            <Input 
-              value={lotes?.find((l) => l.id === loteId)?.nome ?? "Sem lote"} 
-              disabled 
+            <Input
+              value={lotes?.find((l) => l.id === loteId)?.nome ?? "Sem lote"}
+              disabled
             />
-            <p className="text-xs text-muted-foreground mt-1">Para alterar o lote, utilize o recurso de Movimentação do Animal.</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Para alterar o lote, utilize o recurso de Movimentação do Animal.
+            </p>
           </div>
         </CardContent>
       </Card>
@@ -553,7 +556,9 @@ const AnimalEditar = () => {
             </div>
 
             {/* Data de entrada apenas para origem externa (sociedade, doação, compra) */}
-            {(origem === "sociedade" || origem === "doacao" || origem === "compra") && (
+            {(origem === "sociedade" ||
+              origem === "doacao" ||
+              origem === "compra") && (
               <div className="space-y-2">
                 <Label htmlFor="dataEntrada">Data de Entrada</Label>
                 <Input
@@ -568,7 +573,10 @@ const AnimalEditar = () => {
 
           <div className="space-y-2">
             <Label>Origem</Label>
-            <Select value={origem} onValueChange={(v: typeof origem) => setOrigem(v)}>
+            <Select
+              value={origem}
+              onValueChange={(v: typeof origem) => setOrigem(v)}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Como chegou à fazenda?" />
               </SelectTrigger>
@@ -608,24 +616,24 @@ const AnimalEditar = () => {
         </CardHeader>
         <CardContent className="space-y-4">
           {(idadeMeses === null || (idadeMeses >= 7 && idadeMeses <= 12)) && (
-          <div className="space-y-2">
-            <Label>Puberdade confirmada</Label>
-            <Select
-              value={puberdadeConfirmada}
-              onValueChange={(value: "null" | "true" | "false") =>
-                setPuberdadeConfirmada(value)
-              }
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Nao informado" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="null">Nao informado</SelectItem>
-                <SelectItem value="true">Sim</SelectItem>
-                <SelectItem value="false">Nao</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+            <div className="space-y-2">
+              <Label>Puberdade confirmada</Label>
+              <Select
+                value={puberdadeConfirmada}
+                onValueChange={(value: "null" | "true" | "false") =>
+                  setPuberdadeConfirmada(value)
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Nao informado" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="null">Nao informado</SelectItem>
+                  <SelectItem value="true">Sim</SelectItem>
+                  <SelectItem value="false">Nao</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           )}
 
           {sexo === "M" && (
@@ -765,11 +773,11 @@ const AnimalEditar = () => {
         <Card>
           <CardHeader>
             <CardTitle>Perfil do Macho</CardTitle>
-            <p className="text-xs text-muted-foreground">
-              Ajuste o destino do animal e a liberacao reprodutiva. O modo de
-              transicao agora vem das configuracoes gerais da fazenda.
-              {idadeMeses !== null ? ` Idade atual: ${idadeMeses} meses.` : ""}
-            </p>
+            {idadeMeses !== null ? (
+              <p className="text-xs text-muted-foreground">
+                {idadeMeses} meses.
+              </p>
+            ) : null}
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
@@ -799,9 +807,9 @@ const AnimalEditar = () => {
               <Label>Status Reprodutivo</Label>
               <Select
                 value={statusReprodutivoMacho}
-                onValueChange={(
-                  value: StatusReprodutivoMachoEnum | "null",
-                ) => setStatusReprodutivoMacho(value)}
+                onValueChange={(value: StatusReprodutivoMachoEnum | "null") =>
+                  setStatusReprodutivoMacho(value)
+                }
                 disabled={!maleBreedingSelected}
               >
                 <SelectTrigger>
@@ -822,11 +830,10 @@ const AnimalEditar = () => {
                 </SelectContent>
               </Select>
               {!maleBreedingSelected && destinoProdutivo !== "null" && (
-                  <p className="text-xs text-muted-foreground">
-                    Destinos nao reprodutivos mantem o manejo reprodutivo como
-                    inativo.
-                  </p>
-                )}
+                <p className="text-xs text-muted-foreground">
+                  Destino nao reprodutivo.
+                </p>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -839,9 +846,6 @@ const AnimalEditar = () => {
               <Trash2 className="h-5 w-5 mr-2" />
               Zona de Perigo
             </CardTitle>
-            <p className="text-sm text-muted-foreground">
-              A exclusão remove este animal dos relatórios, contadores do painel e registros visuais. Para preservar a consistência causal, esta ação aplica um silenciamento permanente (soft-delete).
-            </p>
           </CardHeader>
           <CardContent>
             <Button

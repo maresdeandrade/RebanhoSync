@@ -42,7 +42,10 @@ export default function LoteDetalhe() {
   const [showMudarPasto, setShowMudarPasto] = useState(false);
   const [showTrocarTouro, setShowTrocarTouro] = useState(false);
 
-  const lote = useLiveQuery(() => (id ? db.state_lotes.get(id) : undefined), [id]);
+  const lote = useLiveQuery(
+    () => (id ? db.state_lotes.get(id) : undefined),
+    [id],
+  );
   const pasto = useLiveQuery(
     () => (lote?.pasto_id ? db.state_pastos.get(lote.pasto_id) : undefined),
     [lote?.pasto_id],
@@ -72,9 +75,7 @@ export default function LoteDetalhe() {
   );
   const regulatoryReadModel = useMemo(
     () =>
-      buildRegulatoryOperationalReadModel(
-        regulatorySurfaceSource ?? undefined,
-      ),
+      buildRegulatoryOperationalReadModel(regulatorySurfaceSource ?? undefined),
     [regulatorySurfaceSource],
   );
 
@@ -84,7 +85,6 @@ export default function LoteDetalhe() {
         <PageIntro
           eyebrow="Estrutura"
           title="Lote nao encontrado"
-          description="Verifique se o lote ainda existe na fazenda ativa ou volte para a listagem."
           actions={
             <Button variant="outline" onClick={() => navigate("/lotes")}>
               Voltar para lotes
@@ -108,12 +108,15 @@ export default function LoteDetalhe() {
       <PageIntro
         eyebrow="Estrutura"
         title={lote.nome}
-        description="Resumo do lote com localizacao, reprodutor e leitura rapida do rebanho alocado."
         meta={
           <>
-            <StatusBadge tone="neutral">{lote.status ?? "Sem status"}</StatusBadge>
+            <StatusBadge tone="neutral">
+              {lote.status ?? "Sem status"}
+            </StatusBadge>
             <StatusBadge tone="info">{animaisCount} animal(is)</StatusBadge>
-            {pasto ? <StatusBadge tone="neutral">Pasto {pasto.nome}</StatusBadge> : null}
+            {pasto ? (
+              <StatusBadge tone="neutral">Pasto {pasto.nome}</StatusBadge>
+            ) : null}
             {movementBlocked ? (
               <StatusBadge tone="danger">Movimentacao restrita</StatusBadge>
             ) : movementWarning ? (
@@ -177,7 +180,7 @@ export default function LoteDetalhe() {
               <div className="flex items-center gap-2">
                 <AlertTriangle className="h-4 w-4 text-warning" />
                 <p className="font-medium text-foreground">
-                  Overlay regulatorio impacta este lote
+                  Conformidade impacta este lote
                 </p>
               </div>
               <p className="text-sm text-muted-foreground">{movementMessage}</p>
@@ -186,7 +189,7 @@ export default function LoteDetalhe() {
               variant="outline"
               onClick={() => navigate("/protocolos-sanitarios")}
             >
-              Abrir overlay de conformidade
+              Abrir conformidade
             </Button>
           </CardContent>
         </Card>
@@ -200,8 +203,8 @@ export default function LoteDetalhe() {
             ocupacaoAberta
               ? `Desde ${new Date(ocupacaoAberta.entrada_em).toLocaleDateString("pt-BR")} · ${Math.floor((Date.now() - new Date(ocupacaoAberta.entrada_em).getTime()) / 86_400_000)} dias`
               : pasto?.area_ha
-              ? `${pasto.area_ha} ha cadastrados nesta area.`
-              : "Sem area vinculada ao lote."
+                ? `${pasto.area_ha} ha cadastrados nesta area.`
+                : "Sem area vinculada ao lote."
           }
           icon={<MapPin className="h-5 w-5" />}
         />
@@ -219,7 +222,6 @@ export default function LoteDetalhe() {
         <MetricCard
           label="Animais"
           value={animaisCount}
-          hint="Total atual de animais alocados neste lote."
           icon={<PawPrint className="h-5 w-5" />}
         />
       </div>
@@ -228,7 +230,6 @@ export default function LoteDetalhe() {
         <EmptyState
           icon={PawPrint}
           title="Lote sem animais"
-          description="Use a acao principal para trazer animais para este lote e conectar a estrutura com a rotina."
           action={{
             label: "Adicionar animais",
             onClick: () => setShowAdicionarAnimais(true),
@@ -244,7 +245,9 @@ export default function LoteDetalhe() {
                 className="flex flex-col gap-3 rounded-2xl border border-border/70 bg-background/80 p-4 transition-colors hover:bg-muted/20 sm:flex-row sm:items-center sm:justify-between"
               >
                 <div className="space-y-1">
-                  <p className="font-medium text-foreground">{animal.identificacao}</p>
+                  <p className="font-medium text-foreground">
+                    {animal.identificacao}
+                  </p>
                   <div className="flex flex-wrap gap-2">
                     <StatusBadge tone="neutral">
                       {animal.sexo === "M" ? "Macho" : "Femea"}

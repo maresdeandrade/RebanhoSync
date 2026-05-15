@@ -77,11 +77,9 @@ function ensureCalfDraft(
 
 function FormSection({
   title,
-  description,
   children,
 }: {
   title: string;
-  description?: string;
   children: ReactNode;
 }) {
   return (
@@ -90,11 +88,6 @@ function FormSection({
         <h3 className="text-base font-semibold tracking-[-0.01em] text-foreground">
           {title}
         </h3>
-        {description ? (
-          <p className="text-sm leading-6 text-muted-foreground">
-            {description}
-          </p>
-        ) : null}
       </div>
       <div className="space-y-4">{children}</div>
     </section>
@@ -107,8 +100,6 @@ export function ReproductionForm({
   data,
   onChange,
 }: ReproductionFormProps) {
-  
-  
   const animalReproStatus = useLiveQuery(async () => {
     if (!animalId) return null;
     const services = await db.event_eventos
@@ -127,14 +118,16 @@ export function ReproductionForm({
     return computeReproStatus(joined);
   }, [animalId]);
 
-  
   const machos = useLiveQuery(() => {
     return db.state_animais
       .where("fazenda_id")
       .equals(fazendaId)
       .filter(
         (animal) =>
-          animal.sexo === "M" && animal.status === "ativo" && animal.habilitado_monta === true && (!animal.deleted_at || animal.deleted_at === null),
+          animal.sexo === "M" &&
+          animal.status === "ativo" &&
+          animal.habilitado_monta === true &&
+          (!animal.deleted_at || animal.deleted_at === null),
       )
       .toArray();
   }, [fazendaId]);
@@ -154,7 +147,10 @@ export function ReproductionForm({
     const enriched: Array<CandidateEpisode | null> = await Promise.all(
       services.map(async (event) => {
         const details = await db.event_eventos_reproducao.get(event.id);
-        if (details && (details.tipo === "cobertura" || details.tipo === "IA")) {
+        if (
+          details &&
+          (details.tipo === "cobertura" || details.tipo === "IA")
+        ) {
           return {
             id: event.id,
             occurred_at: event.occurred_at,
@@ -167,7 +163,9 @@ export function ReproductionForm({
       }),
     );
 
-    return enriched.filter((event): event is CandidateEpisode => event !== null);
+    return enriched.filter(
+      (event): event is CandidateEpisode => event !== null,
+    );
   }, [animalId, data.tipo]);
 
   const updateField = (
@@ -202,7 +200,12 @@ export function ReproductionForm({
   }, [data, onChange]);
 
   useEffect(() => {
-    if (data.tipo === "cobertura" && data.machoId && data.machoId !== "none" && data.reprodutorTag !== "cadastrado_no_rebanho") {
+    if (
+      data.tipo === "cobertura" &&
+      data.machoId &&
+      data.machoId !== "none" &&
+      data.reprodutorTag !== "cadastrado_no_rebanho"
+    ) {
       const timer = setTimeout(() => {
         onChange({ ...data, reprodutorTag: "cadastrado_no_rebanho" });
       }, 0);
@@ -216,19 +219,22 @@ export function ReproductionForm({
 
   return (
     <div className="space-y-4">
-      <FormSection
-        title="Contexto do registro"
-        description="Defina o momento do ciclo e, quando necessario, vincule o diagnostico ou parto ao servico de origem."
-      >
+      <FormSection title="Contexto do registro">
         <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2">
             <Label className="mb-3 block">Estagio do Ciclo</Label>
-            
+
             {(() => {
               const statusFemea = animalReproStatus?.status;
-              const showService = !statusFemea || statusFemea !== "SERVIDA" && statusFemea !== "PRENHA";
-              const showDiagnostico = statusFemea === "SERVIDA" || statusFemea === "PRENHA" || data.tipo === "diagnostico";
-              const showParto = statusFemea === "PRENHA" || data.tipo === "parto";
+              const showService =
+                !statusFemea ||
+                (statusFemea !== "SERVIDA" && statusFemea !== "PRENHA");
+              const showDiagnostico =
+                statusFemea === "SERVIDA" ||
+                statusFemea === "PRENHA" ||
+                data.tipo === "diagnostico";
+              const showParto =
+                statusFemea === "PRENHA" || data.tipo === "parto";
 
               return (
                 <div className="grid grid-cols-2 gap-2">
@@ -236,37 +242,57 @@ export function ReproductionForm({
                     <>
                       <Button
                         type="button"
-                        variant={data.tipo === "cobertura" ? "default" : "outline"}
-                        className={cn("h-auto py-3", data.tipo === "cobertura" && "bg-emerald-600 hover:bg-emerald-700")}
+                        variant={
+                          data.tipo === "cobertura" ? "default" : "outline"
+                        }
+                        className={cn(
+                          "h-auto py-3",
+                          data.tipo === "cobertura" &&
+                            "bg-emerald-600 hover:bg-emerald-700",
+                        )}
                         onClick={() => {
-                          const dpp = new Date(Date.now() + 283 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+                          const dpp = new Date(
+                            Date.now() + 283 * 24 * 60 * 60 * 1000,
+                          )
+                            .toISOString()
+                            .split("T")[0];
                           onChange({
                             ...data,
                             tipo: "cobertura",
                             episodeEventoId: null,
                             episodeLinkMethod: undefined,
-                            dataPrevistaParto: data.dataPrevistaParto || dpp
+                            dataPrevistaParto: data.dataPrevistaParto || dpp,
                           });
                         }}
                       >
                         <div className="text-left">
                           <div className="font-semibold">Cobertura</div>
-                          <div className="text-xs opacity-80">(Monta natural)</div>
+                          <div className="text-xs opacity-80">
+                            (Monta natural)
+                          </div>
                         </div>
                       </Button>
 
                       <Button
                         type="button"
                         variant={data.tipo === "IA" ? "default" : "outline"}
-                        className={cn("h-auto py-3", data.tipo === "IA" && "bg-emerald-600 hover:bg-emerald-700")}
+                        className={cn(
+                          "h-auto py-3",
+                          data.tipo === "IA" &&
+                            "bg-emerald-600 hover:bg-emerald-700",
+                        )}
                         onClick={() => {
-                          const dpp = new Date(Date.now() + 283 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+                          const dpp = new Date(
+                            Date.now() + 283 * 24 * 60 * 60 * 1000,
+                          )
+                            .toISOString()
+                            .split("T")[0];
                           onChange({
                             ...data,
                             tipo: "IA",
                             episodeEventoId: null,
                             episodeLinkMethod: undefined,
-                            dataPrevistaParto: data.dataPrevistaParto || dpp
+                            dataPrevistaParto: data.dataPrevistaParto || dpp,
                           });
                         }}
                       >
@@ -281,12 +307,16 @@ export function ReproductionForm({
                   {showDiagnostico && (
                     <Button
                       type="button"
-                      variant={data.tipo === "diagnostico" ? "default" : "outline"}
+                      variant={
+                        data.tipo === "diagnostico" ? "default" : "outline"
+                      }
                       className="h-auto py-3"
                       onClick={() => {
                         onChange({
                           ...data,
-                          tipo: "diagnostico", episodeEventoId: null, episodeLinkMethod: "auto_last_open_service",
+                          tipo: "diagnostico",
+                          episodeEventoId: null,
+                          episodeLinkMethod: "auto_last_open_service",
                         });
                       }}
                     >
@@ -305,7 +335,9 @@ export function ReproductionForm({
                       onClick={() => {
                         onChange({
                           ...data,
-                          tipo: "parto", episodeEventoId: null, episodeLinkMethod: "auto_last_open_service",
+                          tipo: "parto",
+                          episodeEventoId: null,
+                          episodeLinkMethod: "auto_last_open_service",
                         });
                       }}
                     >
@@ -319,11 +351,17 @@ export function ReproductionForm({
                   <Button
                     type="button"
                     variant={data.tipo === "aborto" ? "default" : "outline"}
-                    className={cn("h-auto py-3", data.tipo === "aborto" && "bg-destructive text-destructive-foreground hover:bg-destructive/90")}
+                    className={cn(
+                      "h-auto py-3",
+                      data.tipo === "aborto" &&
+                        "bg-destructive text-destructive-foreground hover:bg-destructive/90",
+                    )}
                     onClick={() => {
                       onChange({
                         ...data,
-                        tipo: "aborto", episodeEventoId: null, episodeLinkMethod: "auto_last_open_service",
+                        tipo: "aborto",
+                        episodeEventoId: null,
+                        episodeLinkMethod: "auto_last_open_service",
                       });
                     }}
                   >
@@ -335,23 +373,22 @@ export function ReproductionForm({
                 </div>
               );
             })()}
-            
+
             {(data.tipo === "cobertura" || data.tipo === "IA") && (
-               <div className="mt-3 rounded border border-emerald-100 bg-emerald-50 p-3 text-sm text-emerald-900">
-                 <strong>Data Provavel de Parto (DPP):</strong> {data.dataPrevistaParto ? new Date(data.dataPrevistaParto).toLocaleDateString('pt-BR') : 'Calculando...'} (projetada 283 dias)
-               </div>
+              <div className="mt-3 rounded border border-emerald-100 bg-emerald-50 p-3 text-sm text-emerald-900">
+                <strong>Data Provavel de Parto (DPP):</strong>{" "}
+                {data.dataPrevistaParto
+                  ? new Date(data.dataPrevistaParto).toLocaleDateString("pt-BR")
+                  : "Calculando..."}{" "}
+                (projetada 283 dias)
+              </div>
             )}
           </div>
         </div>
-
-        
       </FormSection>
 
       {data.tipo === "cobertura" || data.tipo === "IA" ? (
-        <FormSection
-          title="Servico e reprodutor"
-          description="Registre a tecnica usada e a referencia do reprodutor para manter a rastreabilidade do ciclo."
-        >
+        <FormSection title="Servico e reprodutor">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="repro-macho">
@@ -370,7 +407,8 @@ export function ReproductionForm({
                   <SelectItem value="none">Nao informado / outro</SelectItem>
                   {machos?.map((macho) => (
                     <SelectItem key={macho.id} value={macho.id}>
-                      {macho.identificacao} {macho.nome ? `(${macho.nome})` : ""}
+                      {macho.identificacao}{" "}
+                      {macho.nome ? `(${macho.nome})` : ""}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -382,7 +420,10 @@ export function ReproductionForm({
               <Select
                 value={data.tecnicaLivre || "none"}
                 onValueChange={(value) =>
-                  updateField("tecnicaLivre", value === "none" ? undefined : value)
+                  updateField(
+                    "tecnicaLivre",
+                    value === "none" ? undefined : value,
+                  )
                 }
               >
                 <SelectTrigger id="repro-tecnica">
@@ -390,13 +431,18 @@ export function ReproductionForm({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">Nao informada</SelectItem>
-                  {REPRODUCTION_TECHNIQUE_OPTIONS
-                    .filter(opt => {
-                       if (data.tipo === "cobertura") return opt.value.includes("monta") || opt.value.includes("repasse");
-                       if (data.tipo === "IA") return opt.value.includes("ia") || opt.value.includes("semen");
-                       return true;
-                    })
-                    .map((option) => (
+                  {REPRODUCTION_TECHNIQUE_OPTIONS.filter((opt) => {
+                    if (data.tipo === "cobertura")
+                      return (
+                        opt.value.includes("monta") ||
+                        opt.value.includes("repasse")
+                      );
+                    if (data.tipo === "IA")
+                      return (
+                        opt.value.includes("ia") || opt.value.includes("semen")
+                      );
+                    return true;
+                  }).map((option) => (
                     <SelectItem key={option.value} value={option.value}>
                       {option.label}
                     </SelectItem>
@@ -411,7 +457,10 @@ export function ReproductionForm({
                 value={data.reprodutorTag || "none"}
                 disabled={!!(data.machoId && data.machoId !== "none")}
                 onValueChange={(value) =>
-                  updateField("reprodutorTag", value === "none" ? undefined : value)
+                  updateField(
+                    "reprodutorTag",
+                    value === "none" ? undefined : value,
+                  )
                 }
               >
                 <SelectTrigger id="repro-tag">
@@ -419,13 +468,13 @@ export function ReproductionForm({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">Nao informado</SelectItem>
-                  {REPRODUCTION_BULL_REFERENCE_OPTIONS
-                    .filter(opt => {
-                       if (data.tipo === "cobertura") return !opt.value.includes("semen_lote");
-                       if (data.tipo === "IA") return opt.value.includes("semen_lote");
-                       return true;
-                    })
-                    .map((option) => (
+                  {REPRODUCTION_BULL_REFERENCE_OPTIONS.filter((opt) => {
+                    if (data.tipo === "cobertura")
+                      return !opt.value.includes("semen_lote");
+                    if (data.tipo === "IA")
+                      return opt.value.includes("semen_lote");
+                    return true;
+                  }).map((option) => (
                     <SelectItem key={option.value} value={option.value}>
                       {option.label}
                     </SelectItem>
@@ -438,16 +487,15 @@ export function ReproductionForm({
       ) : null}
 
       {data.tipo === "diagnostico" ? (
-        <FormSection
-          title="Resultado do diagnostico"
-          description="Quando o diagnostico for positivo, registre a previsao do parto para alimentar a leitura operacional."
-        >
+        <FormSection title="Resultado do diagnostico">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="repro-resultado">Resultado</Label>
               <Select
                 value={data.resultadoDiagnostico || "inconclusivo"}
-                onValueChange={(value) => updateField("resultadoDiagnostico", value)}
+                onValueChange={(value) =>
+                  updateField("resultadoDiagnostico", value)
+                }
               >
                 <SelectTrigger id="repro-resultado">
                   <SelectValue />
@@ -462,7 +510,9 @@ export function ReproductionForm({
 
             {data.resultadoDiagnostico === "positivo" ? (
               <div className="space-y-2">
-                <Label htmlFor="repro-previsto-parto">Data prevista do parto</Label>
+                <Label htmlFor="repro-previsto-parto">
+                  Data prevista do parto
+                </Label>
                 <Input
                   id="repro-previsto-parto"
                   type="date"
@@ -478,10 +528,7 @@ export function ReproductionForm({
       ) : null}
 
       {data.tipo === "parto" ? (
-        <FormSection
-          title="Parto e crias"
-          description="Confirme a data real do parto e as crias geradas. A identificacao pode ficar vazia para geracao automatica."
-        >
+        <FormSection title="Parto e crias">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="repro-data-parto">Data real do parto</Label>
@@ -489,7 +536,9 @@ export function ReproductionForm({
                 id="repro-data-parto"
                 type="date"
                 value={data.dataParto || today}
-                onChange={(event) => updateField("dataParto", event.target.value)}
+                onChange={(event) =>
+                  updateField("dataParto", event.target.value)
+                }
               />
             </div>
 
@@ -519,9 +568,6 @@ export function ReproductionForm({
                 <div className="mb-3 flex items-center justify-between gap-3">
                   <p className="text-sm font-medium text-foreground">
                     Cria {index + 1}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Registro individual do parto
                   </p>
                 </div>
 
@@ -597,10 +643,7 @@ export function ReproductionForm({
         </FormSection>
       ) : null}
 
-      <FormSection
-        title="Observacoes"
-        description="Use este campo apenas para contexto adicional que nao cabe nos campos estruturados."
-      >
+      <FormSection title="Observacoes">
         <div className="space-y-2">
           <Label htmlFor="repro-observacoes">Detalhes adicionais</Label>
           <Textarea

@@ -28,7 +28,10 @@ function PastoCard({ pasto }: { pasto: Pasto }) {
     [pasto.id],
   );
   const animaisNoPasto = useLiveQuery(async () => {
-    const lotes = await db.state_lotes.where("pasto_id").equals(pasto.id).toArray();
+    const lotes = await db.state_lotes
+      .where("pasto_id")
+      .equals(pasto.id)
+      .toArray();
     if (lotes.length === 0) return 0;
 
     let total = 0;
@@ -42,34 +45,47 @@ function PastoCard({ pasto }: { pasto: Pasto }) {
   return (
     <Link
       to={`/pastos/${pasto.id}`}
-      className="app-surface flex flex-col gap-4 p-4 transition-shadow hover:shadow-soft"
+      className="app-surface flex flex-col gap-3 p-4 transition-shadow hover:shadow-soft"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="space-y-1">
-          <p className="text-base font-semibold text-foreground">{pasto.nome}</p>
-          <p className="text-sm text-muted-foreground">
-            {pasto.area_ha} ha {pasto.capacidade_ua ? `| ${pasto.capacidade_ua} UA` : ""}
-            {` | ${labels.tipoArea}`}
+          <p className="text-base font-semibold text-foreground">
+            {pasto.nome}
           </p>
+          <p className="text-sm text-muted-foreground">{labels.tipoArea}</p>
         </div>
-        <StatusBadge tone="neutral">
-          {labels.forrageira}
-        </StatusBadge>
+        <StatusBadge tone="neutral">{labels.forrageira}</StatusBadge>
       </div>
 
-      <div className="grid gap-3 text-sm text-muted-foreground sm:grid-cols-2">
+      <div className="grid grid-cols-4 gap-2 rounded-lg border border-border/60 bg-muted/25 p-3 text-sm">
         <div>
-          <p className="font-medium text-foreground">{lotesNoPasto ?? 0}</p>
-          <p>Lote(s) alocados</p>
+          <p className="font-semibold tabular-nums text-foreground">
+            {pasto.area_ha ?? 0}
+          </p>
+          <p className="text-xs text-muted-foreground">ha</p>
         </div>
         <div>
-          <p className="font-medium text-foreground">{animaisNoPasto ?? 0}</p>
-          <p>Animal(is) no pasto</p>
+          <p className="font-semibold tabular-nums text-foreground">
+            {pasto.capacidade_ua ?? "-"}
+          </p>
+          <p className="text-xs text-muted-foreground">UA</p>
+        </div>
+        <div>
+          <p className="font-semibold tabular-nums text-foreground">
+            {lotesNoPasto ?? 0}
+          </p>
+          <p className="text-xs text-muted-foreground">lotes</p>
+        </div>
+        <div>
+          <p className="font-semibold tabular-nums text-foreground">
+            {animaisNoPasto ?? 0}
+          </p>
+          <p className="text-xs text-muted-foreground">animais</p>
         </div>
       </div>
 
       <div className="flex items-center justify-between border-t border-border/70 pt-3 text-sm">
-        <span className="text-muted-foreground">Abrir detalhes e infraestrutura</span>
+        <span className="text-muted-foreground">Lotacao e estrutura</span>
         <span className="inline-flex items-center gap-1 font-medium text-foreground">
           Ver pasto
           <ChevronRight className="h-4 w-4" />
@@ -104,9 +120,15 @@ const Pastos = () => {
 
     let total = 0;
     for (const pasto of pastos) {
-      const lotes = await db.state_lotes.where("pasto_id").equals(pasto.id).toArray();
+      const lotes = await db.state_lotes
+        .where("pasto_id")
+        .equals(pasto.id)
+        .toArray();
       for (const lote of lotes) {
-        total += await db.state_animais.where("lote_id").equals(lote.id).count();
+        total += await db.state_animais
+          .where("lote_id")
+          .equals(lote.id)
+          .count();
       }
     }
 
@@ -118,7 +140,7 @@ const Pastos = () => {
       <PageIntro
         eyebrow="Estrutura do rebanho"
         title="Pastos"
-        description="Centralize area, lotacao e infraestrutura em uma leitura simples para decidir movimentacoes sem ruido visual."
+        description="Area, lotacao e ocupacao para decidir movimentacoes."
         actions={
           <>
             <Link to="/pastos/importar">
@@ -139,18 +161,18 @@ const Pastos = () => {
         <MetricCard
           label="Pastos cadastrados"
           value={pastos?.length ?? 0}
-          hint={`${areaTotal.toFixed(1)} ha em area total cadastrada.`}
+          hint={`${areaTotal.toFixed(1)} ha cadastrados.`}
           icon={<MapIcon className="h-4 w-4" />}
         />
         <MetricCard
           label="Capacidade declarada"
           value={capacidadeTotal.toFixed(1)}
-          hint="UA usadas como referencia de lotacao."
+          hint="Referencia em UA."
         />
         <MetricCard
           label="Animais no campo"
           value={animaisNoCampo ?? 0}
-          hint="Total distribuido nos lotes alocados aos pastos."
+          hint="Distribuidos por lote."
         />
       </div>
 

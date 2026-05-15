@@ -9,7 +9,14 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { Badge } from "@/components/ui/badge";
 import { showSuccess, showError } from "@/utils/toast";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ChevronRight, ChevronLeft, Check, ClipboardCheck, Info, MapPin } from "lucide-react";
+import {
+  ChevronRight,
+  ChevronLeft,
+  Check,
+  ClipboardCheck,
+  Info,
+  MapPin,
+} from "lucide-react";
 import { useLotes } from "@/hooks/useLotes";
 import { useAuth } from "@/hooks/useAuth";
 import { db } from "@/lib/offline/db";
@@ -224,33 +231,42 @@ const Registrar = () => {
   const hasRegistrarDisplayContext = Boolean(
     sourceTaskId || contextAnimalId || contextLoteId || contextPastoId,
   );
-  const registrarContextRecords = useLiveQuery(
-    async () => {
-      if (!hasRegistrarDisplayContext) {
-        return {
-          agendaItem: null,
-          animal: null,
-          lote: null,
-          pasto: null,
-        };
-      }
-
-      const [agendaItem, animal, lote, pasto] = await Promise.all([
-        sourceTaskId ? db.state_agenda_itens.get(sourceTaskId) : Promise.resolve(null),
-        contextAnimalId ? db.state_animais.get(contextAnimalId) : Promise.resolve(null),
-        contextLoteId ? db.state_lotes.get(contextLoteId) : Promise.resolve(null),
-        contextPastoId ? db.state_pastos.get(contextPastoId) : Promise.resolve(null),
-      ]);
-
+  const registrarContextRecords = useLiveQuery(async () => {
+    if (!hasRegistrarDisplayContext) {
       return {
-        agendaItem: agendaItem ?? null,
-        animal: animal ?? null,
-        lote: lote ?? null,
-        pasto: pasto ?? null,
+        agendaItem: null,
+        animal: null,
+        lote: null,
+        pasto: null,
       };
-    },
-    [sourceTaskId, contextAnimalId, contextLoteId, contextPastoId, hasRegistrarDisplayContext],
-  );
+    }
+
+    const [agendaItem, animal, lote, pasto] = await Promise.all([
+      sourceTaskId
+        ? db.state_agenda_itens.get(sourceTaskId)
+        : Promise.resolve(null),
+      contextAnimalId
+        ? db.state_animais.get(contextAnimalId)
+        : Promise.resolve(null),
+      contextLoteId ? db.state_lotes.get(contextLoteId) : Promise.resolve(null),
+      contextPastoId
+        ? db.state_pastos.get(contextPastoId)
+        : Promise.resolve(null),
+    ]);
+
+    return {
+      agendaItem: agendaItem ?? null,
+      animal: animal ?? null,
+      lote: lote ?? null,
+      pasto: pasto ?? null,
+    };
+  }, [
+    sourceTaskId,
+    contextAnimalId,
+    contextLoteId,
+    contextPastoId,
+    hasRegistrarDisplayContext,
+  ]);
   const registrarDisplayContext = useMemo(
     () =>
       registrarContextRecords
@@ -572,10 +588,7 @@ const Registrar = () => {
       isReproTipoEnum,
     });
 
-    if (
-      parsedQuery.sourceTaskId &&
-      parsedQuery.sourceTaskId !== sourceTaskId
-    ) {
+    if (parsedQuery.sourceTaskId && parsedQuery.sourceTaskId !== sourceTaskId) {
       setSourceTaskId(parsedQuery.sourceTaskId);
     }
     if (parsedQuery.loteId && parsedQuery.loteId !== selectedLoteId) {
@@ -860,34 +873,52 @@ const Registrar = () => {
                 </h1>
               </div>
             </div>
-            <StatusBadge tone="info" className="w-fit border-white/20 bg-white/10 text-white">
+            <StatusBadge
+              tone="info"
+              className="w-fit border-white/20 bg-white/10 text-white"
+            >
               Etapa {step}/3: {STEP_LABEL[step]}
             </StatusBadge>
           </div>
 
           <div className="flex flex-wrap gap-2">
             {sourceTaskId ? (
-              <StatusBadge tone="neutral" className="border-white/20 bg-white/10 text-white">
+              <StatusBadge
+                tone="neutral"
+                className="border-white/20 bg-white/10 text-white"
+              >
                 Origem agenda {sourceTaskId.slice(0, 8)}
               </StatusBadge>
             ) : null}
             {quickActionConfig ? (
-              <StatusBadge tone="neutral" className="border-white/20 bg-white/10 text-white">
+              <StatusBadge
+                tone="neutral"
+                className="border-white/20 bg-white/10 text-white"
+              >
                 {quickActionConfig.label}
               </StatusBadge>
             ) : null}
             {selectedLoteLabel !== "-" ? (
-              <StatusBadge tone="neutral" className="border-white/20 bg-white/10 text-white">
+              <StatusBadge
+                tone="neutral"
+                className="border-white/20 bg-white/10 text-white"
+              >
                 {selectedLoteLabel}
               </StatusBadge>
             ) : null}
             {selectedAnimais.length > 0 ? (
-              <StatusBadge tone="neutral" className="border-white/20 bg-white/10 text-white">
+              <StatusBadge
+                tone="neutral"
+                className="border-white/20 bg-white/10 text-white"
+              >
                 {selectedAnimais.length} animal(is) selecionado(s)
               </StatusBadge>
             ) : null}
             {hasRegistrarDisplayContext ? (
-              <StatusBadge tone="neutral" className="border-white/20 bg-white/10 text-white">
+              <StatusBadge
+                tone="neutral"
+                className="border-white/20 bg-white/10 text-white"
+              >
                 Contexto recebido
               </StatusBadge>
             ) : null}
@@ -903,14 +934,20 @@ const Registrar = () => {
                 <Info className="h-4 w-4" />
               </div>
               <div>
-                <p className="font-medium text-foreground">Contexto do manejo</p>
-                <p className="text-muted-foreground">
-                  Alvo pré-selecionado para este registro.
+                <p className="font-medium text-foreground">
+                  Contexto do manejo
                 </p>
               </div>
             </div>
-            <Button variant="ghost" size="sm" onClick={() => setShowTechDetails(!showTechDetails)} className="h-8 text-xs text-muted-foreground">
-              {showTechDetails ? "Ocultar detalhes técnicos" : "Ver detalhes técnicos"}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowTechDetails(!showTechDetails)}
+              className="h-8 text-xs text-muted-foreground"
+            >
+              {showTechDetails
+                ? "Ocultar detalhes técnicos"
+                : "Ver detalhes técnicos"}
             </Button>
           </div>
           {registrarContextRecords === undefined ? (
@@ -922,12 +959,19 @@ const Registrar = () => {
                   key={`${entry.kind}-${entry.id}`}
                   className={cn(
                     "flex flex-col gap-1 rounded-xl border p-2 px-3",
-                    entry.found ? "bg-background" : "border-warning/30 bg-warning/10"
+                    entry.found
+                      ? "bg-background"
+                      : "border-warning/30 bg-warning/10",
                   )}
                 >
-                  <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">{entry.title}</span>
+                  <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                    {entry.title}
+                  </span>
                   <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="text-foreground bg-muted/50 font-normal">
+                    <Badge
+                      variant="outline"
+                      className="text-foreground bg-muted/50 font-normal"
+                    >
                       {entry.description}
                     </Badge>
                   </div>
@@ -955,7 +999,7 @@ const Registrar = () => {
                 isActive || isCompleted
                   ? "border-sky-300 bg-sky-50 dark:border-sky-800 dark:bg-sky-950/40"
                   : "border-border/70 bg-card text-muted-foreground",
-                isActive ? "flex-1 sm:flex-none" : "shrink-0"
+                isActive ? "flex-1 sm:flex-none" : "shrink-0",
               )}
             >
               <div className="flex items-center gap-2 sm:gap-3">
@@ -964,12 +1008,17 @@ const Registrar = () => {
                     "grid h-7 w-7 sm:h-8 sm:w-8 shrink-0 place-items-center rounded-full text-xs sm:text-sm",
                     isActive || isCompleted
                       ? "bg-sky-700 font-bold text-white"
-                      : "border border-border font-semibold text-muted-foreground"
+                      : "border border-border font-semibold text-muted-foreground",
                   )}
                 >
                   {isCompleted ? <Check className="h-4 w-4" /> : currentStep}
                 </span>
-                <div className={cn("min-w-0", isActive ? "block" : "hidden sm:block")}>
+                <div
+                  className={cn(
+                    "min-w-0",
+                    isActive ? "block" : "hidden sm:block",
+                  )}
+                >
                   <p className="truncate text-[10px] font-semibold uppercase tracking-[0.14em] sm:text-xs">
                     Etapa {currentStep}
                   </p>
@@ -1012,11 +1061,11 @@ const Registrar = () => {
       {step === RegistrationStep.CHOOSE_ACTION && (
         <Card className="border-sky-200/70 shadow-sm dark:border-sky-900/60">
           <CardHeader className="rounded-t-xl border-b border-sky-100 bg-sky-50/70 dark:border-sky-900/50 dark:bg-sky-950/20">
-            <CardTitle className="text-base">2. Escolher acao</CardTitle>
+            <CardTitle className="text-base">2. Intencao do registro</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6 pt-6">
             <div>
-              <p className="mb-3 text-sm font-medium">Todos os registros</p>
+              <p className="mb-3 text-sm font-medium">Escolha o manejo</p>
               <RegistrarManejoActionsGrid
                 tipoManejo={tipoManejo}
                 selectedAnimaisCount={selectedAnimais.length}
@@ -1026,9 +1075,8 @@ const Registrar = () => {
 
             {selectedAnimais.length === 0 && (
               <p className="text-sm text-muted-foreground">
-                Sem animais selecionados: use Financeiro para compra, doacao,
-                arrendamento ou sociedade por lote. Saida exige selecao de
-                animal.
+                Sem animais selecionados: Financeiro permite compra, doacao,
+                arrendamento ou sociedade por lote. Saida exige animal.
               </p>
             )}
 
@@ -1098,8 +1146,8 @@ const Registrar = () => {
           </CardHeader>
           <CardContent className="space-y-6 pt-6">
             <div className="rounded-xl border border-sky-200/70 bg-sky-50/80 p-4 text-sm text-sky-950 dark:border-sky-900/60 dark:bg-sky-950/30 dark:text-sky-100">
-              Ao confirmar, o manejo fica salvo imediatamente neste aparelho. A
-              confirmacao autoritativa aparece depois na fila de sync.
+              Ao confirmar, o manejo fica salvo neste aparelho. A fila de sync
+              confirma com o servidor depois.
             </div>
             <div className="space-y-2 rounded-xl border border-border/70 bg-muted/30 p-4">
               <ConfirmacaoResumoBase

@@ -241,12 +241,13 @@ export default function Membros() {
       <PageIntro
         eyebrow="Equipe"
         title="Pessoas e convites da fazenda"
-        description="Gestao de acesso com leitura mais limpa: o membro aparece primeiro, e os comandos secundarios ficam concentrados no menu contextual."
         meta={
           <>
             <StatusBadge tone="neutral">{counts.total} pessoa(s)</StatusBadge>
             <StatusBadge tone="success">{counts.active} ativa(s)</StatusBadge>
-            <StatusBadge tone="warning">{counts.pending} convite(s)</StatusBadge>
+            <StatusBadge tone="warning">
+              {counts.pending} convite(s)
+            </StatusBadge>
           </>
         }
         actions={
@@ -263,21 +264,18 @@ export default function Membros() {
         <MetricCard
           label="Ativos"
           value={counts.active}
-          hint="Membros que ja aceitaram e podem operar na fazenda."
           tone="success"
           icon={<Users className="h-5 w-5" />}
         />
         <MetricCard
           label="Pendentes"
           value={counts.pending}
-          hint="Convites aguardando aceite."
           tone="warning"
           icon={<Mail className="h-5 w-5" />}
         />
         <MetricCard
           label="Inativos"
           value={counts.inactive}
-          hint="Vinculos encerrados ou removidos."
           tone={counts.inactive > 0 ? "danger" : "default"}
           icon={<Shield className="h-5 w-5" />}
         />
@@ -294,7 +292,9 @@ export default function Membros() {
           </div>
           <Select
             value={statusFilter}
-            onValueChange={(value) => setStatusFilter(value as "all" | MemberStatus)}
+            onValueChange={(value) =>
+              setStatusFilter(value as "all" | MemberStatus)
+            }
           >
             <SelectTrigger className="w-full sm:w-[180px]">
               <SelectValue />
@@ -346,7 +346,9 @@ export default function Membros() {
             const status = getStatus(member);
             const memberName = member.display_name || "Nome nao informado";
             const canEditRole =
-              canManageMembers && status === "active" && member.role !== "owner";
+              canManageMembers &&
+              status === "active" &&
+              member.role !== "owner";
             const canRemoveMember = canManageMembers && status === "pending";
 
             return (
@@ -362,7 +364,9 @@ export default function Membros() {
 
                     <div className="min-w-0 space-y-2">
                       <div className="flex flex-wrap items-center gap-2">
-                        <p className="truncate font-medium text-foreground">{memberName}</p>
+                        <p className="truncate font-medium text-foreground">
+                          {memberName}
+                        </p>
                         <RoleBadge role={member.role} />
                         <StatusBadge tone={getStatusTone(status)}>
                           {status === "active"
@@ -390,7 +394,11 @@ export default function Membros() {
 
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="outline" size="icon" aria-label="Acoes do membro">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        aria-label="Acoes do membro"
+                      >
                         <MoreHorizontal className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
@@ -422,14 +430,20 @@ export default function Membros() {
                         </DropdownMenuItem>
                       ) : null}
                       {member.phone ? (
-                        <DropdownMenuItem onClick={() => handleOpenWhatsApp(member.phone)}>
+                        <DropdownMenuItem
+                          onClick={() => handleOpenWhatsApp(member.phone)}
+                        >
                           <MessageSquare className="mr-2 h-4 w-4" />
                           Abrir WhatsApp
                         </DropdownMenuItem>
                       ) : null}
-                      {canEditRole || canRemoveMember ? <DropdownMenuSeparator /> : null}
+                      {canEditRole || canRemoveMember ? (
+                        <DropdownMenuSeparator />
+                      ) : null}
                       {canEditRole ? (
-                        <DropdownMenuItem onClick={() => setEditingMember(member)}>
+                        <DropdownMenuItem
+                          onClick={() => setEditingMember(member)}
+                        >
                           <Shield className="mr-2 h-4 w-4" />
                           Ajustar papel
                         </DropdownMenuItem>

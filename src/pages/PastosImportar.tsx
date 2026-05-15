@@ -12,26 +12,12 @@ import {
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FormSection } from "@/components/ui/form-section";
 import { Input } from "@/components/ui/input";
 import { MetricCard } from "@/components/ui/metric-card";
 import { PageIntro } from "@/components/ui/page-intro";
 import { StatusBadge } from "@/components/ui/status-badge";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/useAuth";
 import { normalizeLookupValue } from "@/lib/import/animaisCsv";
@@ -179,13 +165,14 @@ const PastosImportar = () => {
       <PageIntro
         eyebrow="Estrutura"
         title="Importar pastos por planilha"
-        description="Traga a malha territorial da fazenda em lote. Area, capacidade e tipo de pasto entram no mesmo gesto local antes da sincronizacao."
         meta={
           <>
             <StatusBadge tone={parsed.rows.length > 0 ? "info" : "neutral"}>
               {parsed.rows.length} linha(s) valida(s)
             </StatusBadge>
-            <StatusBadge tone={validation.issues.length === 0 ? "success" : "warning"}>
+            <StatusBadge
+              tone={validation.issues.length === 0 ? "success" : "warning"}
+            >
               {validation.issues.length === 0
                 ? "Planilha pronta para importar"
                 : `${validation.issues.length} alerta(s) para revisar`}
@@ -210,27 +197,26 @@ const PastosImportar = () => {
         <MetricCard
           label="Linhas validas"
           value={parsed.rows.length}
-          hint="Cada linha valida gera um pasto local antes da sincronizacao."
           tone={parsed.rows.length > 0 ? "info" : "default"}
         />
         <MetricCard
           label="Alertas"
           value={validation.issues.length}
-          hint="Pastos duplicados bloqueiam a importacao."
           tone={validation.issues.length === 0 ? "success" : "warning"}
         />
         <MetricCard
           label="Pastos existentes"
           value={pastosExistentes?.length ?? 0}
-          hint="A checagem impede duplicar nomes ja cadastrados na fazenda ativa."
         />
       </div>
 
       <FormSection
         title="Modelo e arquivo"
-        description="Use o cabecalho recomendado para importar nome, area, capacidade e tipo do pasto."
         actions={
-          <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
+          <Button
+            variant="outline"
+            onClick={() => fileInputRef.current?.click()}
+          >
             <Upload className="mr-2 h-4 w-4" />
             Enviar arquivo CSV
           </Button>
@@ -247,18 +233,11 @@ const PastosImportar = () => {
           <div className="rounded-xl border bg-muted/20 p-4 font-mono text-sm whitespace-pre-wrap">
             {TEMPLATE_CSV}
           </div>
-          <p className="text-sm text-muted-foreground">
-            {fileName
-              ? `Arquivo atual: ${fileName}`
-              : "Cole o CSV abaixo ou envie um arquivo para revisar a importacao."}
-          </p>
+          {fileName ? <Badge variant="outline">{fileName}</Badge> : null}
         </div>
       </FormSection>
 
-      <FormSection
-        title="Conteudo da planilha"
-        description="Revise o CSV exatamente como sera validado antes de enviar para a fila local."
-      >
+      <FormSection title="Conteudo da planilha">
         <Textarea
           value={csvText}
           onChange={(event) => setCsvText(event.target.value)}
@@ -270,47 +249,48 @@ const PastosImportar = () => {
       <section className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
         <Card>
           <CardHeader>
-            <CardTitle>Preview da importacao</CardTitle>
-            <CardDescription>
-              {parsed.rows.length} linha(s) valida(s) pronta(s) para importar.
-            </CardDescription>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <CardTitle>Preview</CardTitle>
+              <Badge variant="secondary">
+                {parsed.rows.length} linha(s) valida(s)
+              </Badge>
+            </div>
           </CardHeader>
           <CardContent>
             {parsed.rows.length === 0 ? (
               <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
-                Nenhuma linha valida encontrada ainda. Revise os campos
-                obrigatorios da planilha.
+                Nenhuma linha valida encontrada.
               </div>
             ) : (
-              <div className="overflow-x-auto rounded-xl border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Linha</TableHead>
-                      <TableHead>Nome</TableHead>
-                      <TableHead>Area (ha)</TableHead>
-                      <TableHead>Forrageira/Cultivar</TableHead>
-                      <TableHead>Alturas (In/Out)</TableHead>
-                      <TableHead>UA Alvo</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {parsed.rows.slice(0, 12).map((row) => (
-                      <TableRow key={`${row.lineNumber}-${row.nome}`}>
-                        <TableCell>{row.lineNumber}</TableCell>
-                        <TableCell className="font-medium">{row.nome}</TableCell>
-                        <TableCell>{row.areaHa}</TableCell>
-                        <TableCell>
-                          {row.forrageiraCultivar || row.forrageiraNome || row.tipoPasto}
-                        </TableCell>
-                        <TableCell>
-                          {row.alturaEntrada || "?"} / {row.alturaSaida || "?"}
-                        </TableCell>
-                        <TableCell>{row.capacidadeUaAlvo || row.capacidadeUa || "-"}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+              <div className="grid gap-3">
+                {parsed.rows.slice(0, 12).map((row) => (
+                  <div
+                    key={`${row.lineNumber}-${row.nome}`}
+                    className="rounded-xl border border-border/70 bg-background p-3"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="font-medium text-foreground">
+                          {row.nome}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Linha {row.lineNumber}
+                        </p>
+                      </div>
+                      <Badge variant="outline">{row.areaHa} ha</Badge>
+                    </div>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <Badge variant="secondary">
+                        {row.forrageiraCultivar ||
+                          row.forrageiraNome ||
+                          row.tipoPasto}
+                      </Badge>
+                      <Badge variant="outline">
+                        UA {row.capacidadeUaAlvo || row.capacidadeUa || "-"}
+                      </Badge>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </CardContent>
@@ -319,9 +299,6 @@ const PastosImportar = () => {
         <Card>
           <CardHeader>
             <CardTitle>Validacao</CardTitle>
-            <CardDescription>
-              A importacao so libera quando a estrutura estiver consistente.
-            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex flex-wrap gap-2">
@@ -346,8 +323,7 @@ const PastosImportar = () => {
                   Arquivo pronto para importacao.
                 </div>
                 <p className="mt-2 text-emerald-800">
-                  Os pastos serao criados localmente e entram na fila normal de
-                  sincronizacao.
+                  Os pastos serao criados localmente.
                 </p>
               </div>
             ) : (
@@ -373,7 +349,11 @@ const PastosImportar = () => {
               </div>
             )}
 
-            <Button onClick={handleImport} disabled={!canImport} className="w-full">
+            <Button
+              onClick={handleImport}
+              disabled={!canImport}
+              className="w-full"
+            >
               {isImporting ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />

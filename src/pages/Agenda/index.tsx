@@ -55,7 +55,9 @@ export default function Agenda() {
   const queryCalendarAnchorFilter = parseCalendarAnchorQuickFilter(
     searchParams.get("calendarAnchor"),
   );
-  const queryDominioFilter = parseAgendaDominioFilter(searchParams.get("dominio"));
+  const queryDominioFilter = parseAgendaDominioFilter(
+    searchParams.get("dominio"),
+  );
   const {
     search,
     setSearch,
@@ -115,12 +117,14 @@ export default function Agenda() {
       {
         mode: "merge",
       },
-    ).catch((error) => {
-      console.warn("[agenda] failed to refresh agenda_itens", error);
-      setRefreshError("Falha ao atualizar agenda local.");
-    }).finally(() => {
-      setIsRefreshing(false);
-    });
+    )
+      .catch((error) => {
+        console.warn("[agenda] failed to refresh agenda_itens", error);
+        setRefreshError("Falha ao atualizar agenda local.");
+      })
+      .finally(() => {
+        setIsRefreshing(false);
+      });
   }, [activeFarmId]);
 
   const data = useAgendaPageData(activeFarmId);
@@ -350,7 +354,6 @@ export default function Agenda() {
         <PageIntro
           eyebrow="Rotina planejada"
           title="Fazenda não selecionada"
-          description="Selecione uma fazenda para abrir a agenda operacional."
           actions={
             <Button size="sm" onClick={() => navigate("/select-fazenda")}>
               Selecionar fazenda
@@ -367,7 +370,6 @@ export default function Agenda() {
         <PageIntro
           eyebrow="Rotina planejada"
           title="Agenda de manejo"
-          description="Carregando itens manuais e automáticos da rotina."
           actions={
             <Button size="sm" onClick={() => navigate("/registrar")}>
               <Plus className="h-4 w-4" />
@@ -379,7 +381,6 @@ export default function Agenda() {
         <EmptyState
           icon={Calendar}
           title="Carregando agenda"
-          description="Estamos preparando o recorte operacional desta fazenda."
           action={{
             label: "Registrar",
             onClick: () => navigate("/registrar"),
@@ -438,13 +439,11 @@ export default function Agenda() {
           title="Agenda vazia"
           description={
             hasComplianceAttention
-              ? "A agenda ainda não tem tarefas abertas, mas o overlay regulatório da fazenda segue com pendências operacionais."
-              : "A agenda ainda não tem tarefas abertas. Registre eventos ou ative protocolos para alimentar a rotina."
+              ? "Ha pendencias de conformidade fora da agenda."
+              : "Registre eventos ou ative protocolos para alimentar a rotina."
           }
           action={{
-            label: hasComplianceAttention
-              ? "Abrir protocolos"
-              : "Registrar",
+            label: hasComplianceAttention ? "Abrir protocolos" : "Registrar",
             onClick: () =>
               navigate(
                 hasComplianceAttention

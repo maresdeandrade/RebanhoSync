@@ -30,14 +30,16 @@ describe("Agenda macro panels", () => {
     expect(onGoToRegistrar).toHaveBeenCalledTimes(1);
   });
 
-  it("renders compliance panel and triggers overlay navigation", () => {
+  it("renders compliance panel and triggers compliance navigation", () => {
     const onOpenComplianceOverlay = vi.fn();
 
     render(
       <AgendaComplianceSummaryPanel
         openCount={2}
         blockingCount={1}
-        badges={[{ key: "feed-ban", label: "Feed-ban", count: 2, tone: "danger" }]}
+        badges={[
+          { key: "feed-ban", label: "Feed-ban", count: 2, tone: "danger" },
+        ]}
         topItems={[
           {
             key: "item-1",
@@ -53,10 +55,12 @@ describe("Agenda macro panels", () => {
       />,
     );
 
-    expect(screen.getByText("Restricoes de conformidade em aberto")).toBeInTheDocument();
+    expect(screen.getByText("Restricoes em aberto")).toBeInTheDocument();
     expect(screen.getByText("Feed-ban 2")).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: /abrir overlay de conformidade/i }));
+    fireEvent.click(
+      screen.getByRole("button", { name: /abrir conformidade/i }),
+    );
     expect(onOpenComplianceOverlay).toHaveBeenCalledTimes(1);
   });
 
@@ -84,10 +88,17 @@ describe("Agenda macro panels", () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByText("Transicoes de estagio no radar")).toBeInTheDocument();
+    expect(
+      screen.getByText("Transicoes de estagio no radar"),
+    ).toBeInTheDocument();
     expect(screen.getByText("Matriz 001")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /abrir ficha/i })).toHaveAttribute("href", "/animais/animal-1");
-    expect(screen.getByRole("link", { name: /tratar na fila/i })).toHaveAttribute("href", "/animais/transicoes");
+    expect(screen.getByRole("link", { name: /abrir ficha/i })).toHaveAttribute(
+      "href",
+      "/animais/animal-1",
+    );
+    expect(
+      screen.getByRole("link", { name: /tratar na fila/i }),
+    ).toHaveAttribute("href", "/animais/transicoes");
   });
 
   it("renders status metrics counters", () => {

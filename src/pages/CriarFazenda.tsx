@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Loader2, MapPinned, Tractor } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
 
 import { FormSection } from "@/components/ui/form-section";
 import { PageIntro } from "@/components/ui/page-intro";
@@ -58,7 +58,10 @@ const CriarFazenda = () => {
 
         setCanCreate(data === true);
       } catch (requestError) {
-        console.error("[CriarFazenda] EXCEPTION checking permission:", requestError);
+        console.error(
+          "[CriarFazenda] EXCEPTION checking permission:",
+          requestError,
+        );
         setCanCreate(false);
       } finally {
         setCheckingPermission(false);
@@ -140,9 +143,11 @@ const CriarFazenda = () => {
           <PageIntro
             eyebrow="Provisionamento"
             title="Sem permissao para criar fazenda"
-            description="Este fluxo continua protegido por permissao. Se precisar abrir uma nova operacao, solicite liberacao ou aceite um convite existente."
             actions={
-              <Button variant="outline" onClick={() => navigate("/select-fazenda")}>
+              <Button
+                variant="outline"
+                onClick={() => navigate("/select-fazenda")}
+              >
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Voltar
               </Button>
@@ -159,9 +164,11 @@ const CriarFazenda = () => {
         <PageIntro
           eyebrow="Provisionamento"
           title="Criar nova fazenda"
-          description="Cadastre a operacao com o minimo necessario para iniciar. O restante pode ser refinado depois dentro das configuracoes e estruturas."
           actions={
-            <Button variant="outline" onClick={() => navigate("/select-fazenda")}>
+            <Button
+              variant="outline"
+              onClick={() => navigate("/select-fazenda")}
+            >
               <ArrowLeft className="mr-2 h-4 w-4" />
               Voltar
             </Button>
@@ -169,10 +176,7 @@ const CriarFazenda = () => {
         />
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-          <FormSection
-            title="Identidade da operacao"
-            description="Nome, codigo e localizacao basica para identificar a fazenda no seletor e na rotina diaria."
-          >
+          <FormSection title="Identidade da operacao">
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2 md:col-span-2">
                 <Label htmlFor="nome">Nome da fazenda</Label>
@@ -183,7 +187,9 @@ const CriarFazenda = () => {
                   {...register("nome", { required: "Nome e obrigatorio" })}
                 />
                 {errors.nome ? (
-                  <p className="text-sm text-destructive">{errors.nome.message}</p>
+                  <p className="text-sm text-destructive">
+                    {errors.nome.message}
+                  </p>
                 ) : null}
               </div>
 
@@ -280,16 +286,15 @@ const CriarFazenda = () => {
                   }}
                 />
                 {errors.cep ? (
-                  <p className="text-sm text-destructive">{errors.cep.message}</p>
+                  <p className="text-sm text-destructive">
+                    {errors.cep.message}
+                  </p>
                 ) : null}
               </div>
             </div>
           </FormSection>
 
-          <FormSection
-            title="Perfil produtivo"
-            description="Informacoes iniciais para encaixar a fazenda no modo de operacao certo desde o onboarding."
-          >
+          <FormSection title="Perfil produtivo">
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="tipo_producao">Tipo de producao</Label>
@@ -319,27 +324,6 @@ const CriarFazenda = () => {
                   <option value="semi_confinamento">Semi-confinamento</option>
                   <option value="confinamento">Confinamento</option>
                 </select>
-              </div>
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="rounded-2xl border border-border/70 bg-muted/20 p-4">
-                <div className="mb-2 flex items-center gap-2 text-foreground">
-                  <MapPinned className="h-4 w-4" />
-                  <p className="font-medium">Operacao localizada</p>
-                </div>
-                <p className="text-sm leading-6 text-muted-foreground">
-                  Municipio e estado ajudam a distinguir rapidamente fazendas da mesma conta.
-                </p>
-              </div>
-              <div className="rounded-2xl border border-border/70 bg-muted/20 p-4">
-                <div className="mb-2 flex items-center gap-2 text-foreground">
-                  <Tractor className="h-4 w-4" />
-                  <p className="font-medium">Cadastro enxuto</p>
-                </div>
-                <p className="text-sm leading-6 text-muted-foreground">
-                  Estruturas, membros e regras de classificacao continuam em fluxos dedicados depois da criacao.
-                </p>
               </div>
             </div>
           </FormSection>

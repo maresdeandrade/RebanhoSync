@@ -17,13 +17,7 @@ import { FormSection } from "@/components/ui/form-section";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -156,7 +150,10 @@ const CALENDAR_ANCHOR_OPTIONS: Array<{
   { value: "movimentacao", label: "Movimentacao" },
   { value: "diagnostico_evento", label: "Diagnostico de evento" },
   { value: "conclusao_etapa_dependente", label: "Conclusao de etapa anterior" },
-  { value: "ultima_conclusao_mesma_familia", label: "Ultima conclusao da mesma familia" },
+  {
+    value: "ultima_conclusao_mesma_familia",
+    label: "Ultima conclusao da mesma familia",
+  },
 ];
 
 const TYPE_META: Record<
@@ -215,10 +212,14 @@ function readString(
   key: string,
 ) {
   const value = record?.[key];
-  return typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
+  return typeof value === "string" && value.trim().length > 0
+    ? value.trim()
+    : null;
 }
 
-function getStandardProtocolLegalStatusLabel(status: StandardProtocolLegalStatus) {
+function getStandardProtocolLegalStatusLabel(
+  status: StandardProtocolLegalStatus,
+) {
   return status === "boa_pratica" ? "Boa pratica" : "Recomendado";
 }
 
@@ -291,7 +292,9 @@ function getFamilyConflictMessage(
   return `A familia protocolar "${familyCode}" ja esta ativa.`;
 }
 
-function buildDefaultMilestoneCode(sequenceOrder: number | string | null | undefined) {
+function buildDefaultMilestoneCode(
+  sequenceOrder: number | string | null | undefined,
+) {
   const numeric =
     typeof sequenceOrder === "number"
       ? sequenceOrder
@@ -390,9 +393,13 @@ function resolveProductSelection(
     };
   }
 
-  const resolved = resolveVeterinaryProductByName(trimmedName, catalogProducts, {
-    sanitaryType: draft.tipo,
-  });
+  const resolved = resolveVeterinaryProductByName(
+    trimmedName,
+    catalogProducts,
+    {
+      sanitaryType: draft.tipo,
+    },
+  );
 
   const automaticSelection = resolved.product
     ? createProductSelection(resolved.product, resolved.matchMode)
@@ -443,11 +450,15 @@ function ProtocolBadges({
 }) {
   return (
     <>
-      {draft.obrigatorio ? <Badge variant="destructive">Obrigatorio</Badge> : null}
+      {draft.obrigatorio ? (
+        <Badge variant="destructive">Obrigatorio</Badge>
+      ) : null}
       {draft.obrigatorioPorRisco ? (
         <Badge variant="secondary">Sensivel a risco</Badge>
       ) : null}
-      {draft.requiresVet ? <Badge variant="outline">Requer veterinario</Badge> : null}
+      {draft.requiresVet ? (
+        <Badge variant="outline">Requer veterinario</Badge>
+      ) : null}
       {draft.requiresComplianceDocument ? (
         <Badge variant="outline">Exige documento</Badge>
       ) : null}
@@ -463,9 +474,8 @@ export function FarmProtocolManager({
   protocolItems,
   canManage,
 }: FarmProtocolManagerProps) {
-  const [protocolEditor, setProtocolEditor] = useState<ProtocolEditorState | null>(
-    null,
-  );
+  const [protocolEditor, setProtocolEditor] =
+    useState<ProtocolEditorState | null>(null);
   const [itemEditor, setItemEditor] = useState<ItemEditorState | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ProtocoloSanitario | null>(
     null,
@@ -478,7 +488,8 @@ export function FarmProtocolManager({
       [...protocols]
         .filter((protocol) => !protocol.deleted_at)
         .sort((left, right) => {
-          const sourceOrder = getProtocolSourceOrder(left) - getProtocolSourceOrder(right);
+          const sourceOrder =
+            getProtocolSourceOrder(left) - getProtocolSourceOrder(right);
           if (sourceOrder !== 0) return sourceOrder;
           return left.nome.localeCompare(right.nome);
         }),
@@ -489,7 +500,9 @@ export function FarmProtocolManager({
     return Object.entries(TEMPLATE_CATEGORY_META).map(([category, meta]) => ({
       category: category as StandardProtocolCategory,
       meta,
-      protocols: STANDARD_PROTOCOLS.filter((protocol) => protocol.categoria === category),
+      protocols: STANDARD_PROTOCOLS.filter(
+        (protocol) => protocol.categoria === category,
+      ),
     }));
   }, []);
 
@@ -532,14 +545,15 @@ export function FarmProtocolManager({
 
     return findSanitaryFamilyConflict({
       protocols: activeProtocols,
-      candidateFamilyCode: protocolEditor.draft.familyCode || protocolEditor.draft.nome,
+      candidateFamilyCode:
+        protocolEditor.draft.familyCode || protocolEditor.draft.nome,
       candidateLayer: protocolEditorLayer,
       ignoreProtocolId: protocolEditor.protocol?.id ?? null,
     });
   }, [activeProtocols, protocolEditor, protocolEditorLayer]);
 
   const itemEditorProtocol = itemEditor
-    ? protocolById.get(itemEditor.protocolId) ?? null
+    ? (protocolById.get(itemEditor.protocolId) ?? null)
     : null;
 
   const itemEditorProtocolDraft = itemEditorProtocol
@@ -547,7 +561,7 @@ export function FarmProtocolManager({
     : null;
 
   const itemEditorSiblingItems = itemEditor
-    ? itemsByProtocol.get(itemEditor.protocolId) ?? []
+    ? (itemsByProtocol.get(itemEditor.protocolId) ?? [])
     : [];
 
   const groupedActiveProtocols = useMemo(
@@ -617,7 +631,9 @@ export function FarmProtocolManager({
     const protocolDraft = protocol ? readProtocolDraft(protocol) : null;
     const currentItems = itemsByProtocol.get(protocolId) ?? [];
     const previousItem = currentItems.at(-1) ?? null;
-    const previousItemDraft = previousItem ? readProtocolItemDraft(previousItem) : null;
+    const previousItemDraft = previousItem
+      ? readProtocolItemDraft(previousItem)
+      : null;
     const nextDose = nextDoseNumber(currentItems);
 
     setItemEditor({
@@ -668,7 +684,11 @@ export function FarmProtocolManager({
     });
     if (familyConflict) {
       showError(
-        getFamilyConflictMessage("standard", familyConflict.familyCode, familyConflict),
+        getFamilyConflictMessage(
+          "standard",
+          familyConflict.familyCode,
+          familyConflict,
+        ),
       );
       return;
     }
@@ -696,7 +716,10 @@ export function FarmProtocolManager({
         },
       );
       const automaticSelection = resolvedProduct.product
-        ? createProductSelection(resolvedProduct.product, resolvedProduct.matchMode)
+        ? createProductSelection(
+            resolvedProduct.product,
+            resolvedProduct.matchMode,
+          )
         : null;
 
       return {
@@ -753,13 +776,16 @@ export function FarmProtocolManager({
     const familyConflict = protocolEditorFamilyConflict;
     if (familyConflict) {
       showError(
-        getFamilyConflictMessage(candidateLayer, familyConflict.familyCode, familyConflict),
+        getFamilyConflictMessage(
+          candidateLayer,
+          familyConflict.familyCode,
+          familyConflict,
+        ),
       );
       return;
     }
 
-    const nextProtocolId =
-      protocolEditor.protocol?.id ?? crypto.randomUUID();
+    const nextProtocolId = protocolEditor.protocol?.id ?? crypto.randomUUID();
     const operation: OperationInput = protocolEditor.protocol
       ? {
           table: "protocolos_sanitarios",
@@ -904,17 +930,10 @@ export function FarmProtocolManager({
     }
   };
 
-  const managementHint = canManage
-    ? hasAdvancedFields
-      ? "Modo completo: inclui familia protocolar, dependencias, deduplicacao e exigencias regulatorias."
-      : "Modo essencial: edite o necessario para a rotina sem expor campos tecnicos."
-    : "Apenas manager e owner podem customizar protocolos da fazenda.";
-
   return (
     <>
       <FormSection
         title="Gerenciar protocolos da fazenda"
-        description="Customizado = como a fazenda escolhe operar em cima da base regulatoria, sem duplicar o mesmo tronco oficial por familia protocolar."
         actions={
           <>
             <Badge variant="outline">{activeProtocols.length} protocolos</Badge>
@@ -929,32 +948,12 @@ export function FarmProtocolManager({
         }
         contentClassName="space-y-4"
       >
-        <div className="rounded-2xl border border-border/70 bg-muted/20 p-4 text-sm text-muted-foreground">
-          {managementHint}
-        </div>
-
         <Card className="border-dashed border-primary/30 bg-primary/5">
           <CardHeader className="space-y-3">
-            <div className="space-y-1">
-              <CardTitle className="text-lg">
-                Templates canonicos da fazenda
-              </CardTitle>
-              <CardDescription>
-                Template canonico = modelos padrao recomendados pelo sistema.
-                Eles entram direto na camada ativa da fazenda, mas nao podem
-                duplicar familias ja cobertas pelo pack oficial.
-              </CardDescription>
-            </div>
+            <CardTitle className="text-lg">Modelos da fazenda</CardTitle>
           </CardHeader>
 
           <CardContent className="space-y-4">
-            <div className="rounded-2xl border border-border/70 bg-background/80 px-4 py-3 text-sm text-muted-foreground">
-              Esta biblioteca nao cria uma quarta camada. Cada importacao vira
-              um `protocolo_sanitario` normal da fazenda, mas a familia
-              protocolar continua unica para evitar agendas paralelas da mesma
-              obrigacao central.
-            </div>
-
             <div className="grid gap-4 xl:grid-cols-3">
               {groupedStandardTemplates.map((group) => {
                 const GroupIcon = group.meta.icon;
@@ -970,7 +969,9 @@ export function FarmProtocolManager({
                         <p className="font-medium text-foreground">
                           {group.meta.label}
                         </p>
-                        <Badge variant="outline">{group.protocols.length}</Badge>
+                        <Badge variant="outline">
+                          {group.protocols.length}
+                        </Badge>
                       </div>
                       <p className="text-sm text-muted-foreground">
                         {group.meta.description}
@@ -993,25 +994,29 @@ export function FarmProtocolManager({
                           alreadyImported || templateFamilyCovered;
 
                         return (
-                          <Card key={template.id} className="border-border/70 shadow-none">
+                          <Card
+                            key={template.id}
+                            className="border-border/70 shadow-none"
+                          >
                             <CardHeader className="space-y-3 pb-3">
                               <div className="flex items-start justify-between gap-3">
                                 <div className="space-y-1">
                                   <CardTitle className="text-base">
                                     {template.nome}
                                   </CardTitle>
-                                  <CardDescription className="text-sm">
-                                    {template.descricao}
-                                  </CardDescription>
                                 </div>
 
                                 <Button
-                                  variant={importBlocked ? "outline" : "default"}
+                                  variant={
+                                    importBlocked ? "outline" : "default"
+                                  }
                                   size="sm"
                                   onClick={() =>
                                     handleImportStandardTemplate(template)
                                   }
-                                  disabled={!canManage || importBlocked || isSaving}
+                                  disabled={
+                                    !canManage || importBlocked || isSaving
+                                  }
                                 >
                                   {alreadyImported
                                     ? "Ja importado"
@@ -1045,7 +1050,8 @@ export function FarmProtocolManager({
                                     Coberta pelo pack oficial
                                   </Badge>
                                 ) : null}
-                                {templateFamilyCovered && !coveredByOfficialPack ? (
+                                {templateFamilyCovered &&
+                                !coveredByOfficialPack ? (
                                   <Badge variant="secondary">
                                     Familia ja ativa na fazenda
                                   </Badge>
@@ -1086,7 +1092,9 @@ export function FarmProtocolManager({
             <div key={group.key} className="space-y-3">
               <div className="space-y-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <p className="font-medium text-foreground">{group.meta.label}</p>
+                  <p className="font-medium text-foreground">
+                    {group.meta.label}
+                  </p>
                   <Badge variant="outline">{group.protocols.length}</Badge>
                 </div>
                 <p className="text-sm text-muted-foreground">
@@ -1097,10 +1105,14 @@ export function FarmProtocolManager({
               <div className="grid gap-4 xl:grid-cols-2">
                 {group.protocols.map((protocol) => {
                   const draft = readProtocolDraft(protocol);
-                  const protocolItemsList = itemsByProtocol.get(protocol.id) ?? [];
+                  const protocolItemsList =
+                    itemsByProtocol.get(protocol.id) ?? [];
                   const sourceGroup = resolveProtocolSourceGroup(protocol);
                   const sourceMeta = getProtocolSourceMeta(sourceGroup);
-                  const legalStatus = readString(protocol.payload, "status_legal");
+                  const legalStatus = readString(
+                    protocol.payload,
+                    "status_legal",
+                  );
                   const familyCode =
                     readSanitaryProtocolFamilyCode(protocol.payload) ??
                     draft.familyCode;
@@ -1113,14 +1125,15 @@ export function FarmProtocolManager({
                       <CardHeader className="space-y-3">
                         <div className="flex items-start justify-between gap-3">
                           <div className="space-y-1">
-                            <CardTitle className="text-lg">{protocol.nome}</CardTitle>
-                            <CardDescription>
-                              {protocol.descricao || "Sem descricao operacional."}
-                            </CardDescription>
+                            <CardTitle className="text-lg">
+                              {protocol.nome}
+                            </CardTitle>
                           </div>
 
                           <div className="flex flex-wrap gap-2">
-                            <Badge variant={protocol.ativo ? "secondary" : "outline"}>
+                            <Badge
+                              variant={protocol.ativo ? "secondary" : "outline"}
+                            >
                               {protocol.ativo ? "Ativo" : "Inativo"}
                             </Badge>
                             <Button
@@ -1145,7 +1158,9 @@ export function FarmProtocolManager({
                         <div className="flex flex-wrap gap-2">
                           <Badge variant="outline">{sourceMeta.label}</Badge>
                           {familyCode ? (
-                            <Badge variant="outline">familia: {familyCode}</Badge>
+                            <Badge variant="outline">
+                              familia: {familyCode}
+                            </Badge>
                           ) : null}
                           {legalStatus ? (
                             <Badge variant="outline">
@@ -1167,7 +1182,8 @@ export function FarmProtocolManager({
                           </Badge>
                           {draft.validoDe || draft.validoAte ? (
                             <Badge variant="outline">
-                              Vigencia {draft.validoDe || "..."} ate {draft.validoAte || "..."}
+                              Vigencia {draft.validoDe || "..."} ate{" "}
+                              {draft.validoAte || "..."}
                             </Badge>
                           ) : null}
                         </div>
@@ -1180,7 +1196,8 @@ export function FarmProtocolManager({
                               {protocolItemsList.length} etapas configuradas
                             </p>
                             <p className="text-muted-foreground">
-                              Produtos, deduplicacao e elegibilidade ficam por etapa.
+                              Produtos, deduplicacao e elegibilidade ficam por
+                              etapa.
                             </p>
                           </div>
                           <Button
@@ -1199,10 +1216,10 @@ export function FarmProtocolManager({
                             const itemDraft = readProtocolItemDraft(item);
                             const typeMeta = TYPE_META[item.tipo];
                             const TypeIcon = typeMeta.icon;
-                            const linkedProduct = readVeterinaryProductSelection(
-                              item.payload,
-                            );
-                            const milestoneCode = resolveDraftMilestoneCode(itemDraft);
+                            const linkedProduct =
+                              readVeterinaryProductSelection(item.payload);
+                            const milestoneCode =
+                              resolveDraftMilestoneCode(itemDraft);
 
                             return (
                               <div
@@ -1219,7 +1236,9 @@ export function FarmProtocolManager({
                                         {typeMeta.label}
                                       </span>
                                       {item.dose_num ? (
-                                        <Badge variant="outline">Dose {item.dose_num}</Badge>
+                                        <Badge variant="outline">
+                                          Dose {item.dose_num}
+                                        </Badge>
                                       ) : null}
                                       {milestoneCode ? (
                                         <Badge variant="outline">
@@ -1232,9 +1251,13 @@ export function FarmProtocolManager({
                                         </Badge>
                                       ) : null}
                                       {item.gera_agenda ? (
-                                        <Badge variant="secondary">Gera agenda</Badge>
+                                        <Badge variant="secondary">
+                                          Gera agenda
+                                        </Badge>
                                       ) : (
-                                        <Badge variant="outline">Sem agenda</Badge>
+                                        <Badge variant="outline">
+                                          Sem agenda
+                                        </Badge>
                                       )}
                                       {linkedProduct ? (
                                         <Badge variant="outline">
@@ -1267,7 +1290,10 @@ export function FarmProtocolManager({
                                 </div>
 
                                 <div className="mt-3 grid gap-2 text-sm text-muted-foreground">
-                                  <p>{itemDraft.indicacao || "Sem indicacao operacional."}</p>
+                                  <p>
+                                    {itemDraft.indicacao ||
+                                      "Sem indicacao operacional."}
+                                  </p>
                                   <div className="flex flex-wrap gap-2">
                                     <Badge variant="outline">
                                       {summarizeTarget(
@@ -1277,13 +1303,19 @@ export function FarmProtocolManager({
                                       )}
                                     </Badge>
                                     {itemDraft.obrigatorio ? (
-                                      <Badge variant="destructive">Obrigatorio</Badge>
+                                      <Badge variant="destructive">
+                                        Obrigatorio
+                                      </Badge>
                                     ) : null}
                                     {itemDraft.obrigatorioPorRisco ? (
-                                      <Badge variant="secondary">Por risco</Badge>
+                                      <Badge variant="secondary">
+                                        Por risco
+                                      </Badge>
                                     ) : null}
                                     {itemDraft.requiresVet ? (
-                                      <Badge variant="outline">Veterinario</Badge>
+                                      <Badge variant="outline">
+                                        Veterinario
+                                      </Badge>
                                     ) : null}
                                     {itemDraft.dedupTemplate ? (
                                       <Badge variant="outline">
@@ -1335,7 +1367,9 @@ export function FarmProtocolManager({
             : null
         }
         onDraftChange={(draft) =>
-          setProtocolEditor((current) => (current ? { ...current, draft } : current))
+          setProtocolEditor((current) =>
+            current ? { ...current, draft } : current,
+          )
         }
         isSaving={isSaving}
         hasAdvancedFields={hasAdvancedFields}
@@ -1360,7 +1394,9 @@ export function FarmProtocolManager({
         isSaving={isSaving}
         isEditing={Boolean(itemEditor?.item)}
         onDraftChange={(draft) =>
-          setItemEditor((current) => (current ? { ...current, draft } : current))
+          setItemEditor((current) =>
+            current ? { ...current, draft } : current,
+          )
         }
         onSelectedProductChange={(selectedProduct) =>
           setItemEditor((current) =>
@@ -1370,13 +1406,16 @@ export function FarmProtocolManager({
         onSave={handleSaveItem}
       />
 
-      <Dialog open={Boolean(deleteTarget)} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+      <Dialog
+        open={Boolean(deleteTarget)}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+      >
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>Remover protocolo?</DialogTitle>
             <DialogDescription>
-              O protocolo e todas as etapas locais serao marcados como removidos.
-              Os eventos ja realizados permanecem no historico.
+              O protocolo e todas as etapas locais serao marcados como
+              removidos. Os eventos ja realizados permanecem no historico.
             </DialogDescription>
           </DialogHeader>
 
@@ -1385,8 +1424,8 @@ export function FarmProtocolManager({
               {deleteTarget?.nome ?? "Protocolo"}
             </p>
             <p className="mt-1">
-              {itemsByProtocol.get(deleteTarget?.id ?? "")?.length ?? 0} etapas serao
-              desativadas junto com o cabecalho do protocolo.
+              {itemsByProtocol.get(deleteTarget?.id ?? "")?.length ?? 0} etapas
+              serao desativadas junto com o cabecalho do protocolo.
             </p>
           </div>
 
@@ -1398,7 +1437,11 @@ export function FarmProtocolManager({
             >
               Cancelar
             </Button>
-            <Button variant="destructive" onClick={handleDeleteProtocol} disabled={isDeleting}>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteProtocol}
+              disabled={isDeleting}
+            >
               {isDeleting ? "Removendo..." : "Remover protocolo"}
             </Button>
           </DialogFooter>
@@ -1523,7 +1566,9 @@ function ProtocolEditorDialog({
                 </p>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="protocol-regimen-version">Versao do regime</Label>
+                <Label htmlFor="protocol-regimen-version">
+                  Versao do regime
+                </Label>
                 <Input
                   id="protocol-regimen-version"
                   inputMode="numeric"
@@ -1537,8 +1582,9 @@ function ProtocolEditorDialog({
                   placeholder="1"
                 />
                 <p className="text-xs text-muted-foreground">
-                  Use a mesma versao enquanto o tronco continuar semanticamente o
-                  mesmo. Mude apenas quando a sequencia ou regra do regime mudar.
+                  Use a mesma versao enquanto o tronco continuar semanticamente
+                  o mesmo. Mude apenas quando a sequencia ou regra do regime
+                  mudar.
                 </p>
               </div>
             </>
@@ -1551,7 +1597,8 @@ function ProtocolEditorDialog({
               onValueChange={(value) =>
                 onDraftChange({
                   ...draft,
-                  sexoAlvo: value === "__empty__" ? "" : (value as "M" | "F" | "todos"),
+                  sexoAlvo:
+                    value === "__empty__" ? "" : (value as "M" | "F" | "todos"),
                 })
               }
             >
@@ -1682,11 +1729,22 @@ function ProtocolEditorDialog({
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSaving}>
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={isSaving}
+          >
             Cancelar
           </Button>
-          <Button onClick={onSave} disabled={isSaving || Boolean(familyConflict)}>
-            {isSaving ? "Salvando..." : isEditing ? "Salvar protocolo" : "Criar protocolo"}
+          <Button
+            onClick={onSave}
+            disabled={isSaving || Boolean(familyConflict)}
+          >
+            {isSaving
+              ? "Salvando..."
+              : isEditing
+                ? "Salvar protocolo"
+                : "Criar protocolo"}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -1709,7 +1767,9 @@ interface ItemEditorDialogProps {
   isSaving: boolean;
   isEditing: boolean;
   onDraftChange: (draft: SanitaryProtocolItemDraft) => void;
-  onSelectedProductChange: (selection: VeterinaryProductSelection | null) => void;
+  onSelectedProductChange: (
+    selection: VeterinaryProductSelection | null,
+  ) => void;
   onSave: () => void;
 }
 
@@ -1752,7 +1812,9 @@ function ItemEditorDialog({
   const dependencySelectOptions = useMemo(() => {
     if (
       draft.dependsOnItemCode.trim().length > 0 &&
-      !dependencyOptions.some((option) => option.code === draft.dependsOnItemCode)
+      !dependencyOptions.some(
+        (option) => option.code === draft.dependsOnItemCode,
+      )
     ) {
       return [
         {
@@ -1781,9 +1843,13 @@ function ItemEditorDialog({
       dependsOnMilestone: draft.dependsOnItemCode || null,
       sexoAlvo: draft.sexoAlvo,
       idadeMinDias:
-        draft.idadeMinDias.trim().length > 0 ? Number(draft.idadeMinDias) : null,
+        draft.idadeMinDias.trim().length > 0
+          ? Number(draft.idadeMinDias)
+          : null,
       idadeMaxDias:
-        draft.idadeMaxDias.trim().length > 0 ? Number(draft.idadeMaxDias) : null,
+        draft.idadeMaxDias.trim().length > 0
+          ? Number(draft.idadeMaxDias)
+          : null,
       requiresComplianceDocument: draft.requiresComplianceDocument,
       payload:
         draft.calendarMode && draft.calendarAnchor
@@ -1830,7 +1896,9 @@ function ItemEditorDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl">
         <DialogHeader>
-          <DialogTitle>{isEditing ? "Editar etapa" : "Nova etapa sanitaria"}</DialogTitle>
+          <DialogTitle>
+            {isEditing ? "Editar etapa" : "Nova etapa sanitaria"}
+          </DialogTitle>
           <DialogDescription>
             Configure produto, agenda, alvo e vinculo ao catalogo global de
             produtos veterinarios.
@@ -1846,12 +1914,20 @@ function ItemEditorDialog({
               {protocolFamilyCode ? (
                 <Badge variant="outline">familia: {protocolFamilyCode}</Badge>
               ) : (
-                <Badge variant="outline">familia nao definida no protocolo</Badge>
+                <Badge variant="outline">
+                  familia nao definida no protocolo
+                </Badge>
               )}
-              <Badge variant="outline">regime v{protocolRegimenVersion || "1"}</Badge>
-              <Badge variant="outline">milestone: {effectiveMilestoneCode}</Badge>
+              <Badge variant="outline">
+                regime v{protocolRegimenVersion || "1"}
+              </Badge>
+              <Badge variant="outline">
+                milestone: {effectiveMilestoneCode}
+              </Badge>
               {draft.dependsOnItemCode ? (
-                <Badge variant="outline">depende de: {draft.dependsOnItemCode}</Badge>
+                <Badge variant="outline">
+                  depende de: {draft.dependsOnItemCode}
+                </Badge>
               ) : null}
             </div>
             <p className="mt-2">
@@ -1891,7 +1967,8 @@ function ItemEditorDialog({
               value={draft.produto}
               onChange={(event) => {
                 const nextValue = event.target.value;
-                const normalizedValue = normalizeVeterinaryProductText(nextValue);
+                const normalizedValue =
+                  normalizeVeterinaryProductText(nextValue);
                 const keepSelection =
                   selectedProduct && normalizedSelected === normalizedValue
                     ? selectedProduct
@@ -1981,7 +2058,10 @@ function ItemEditorDialog({
                 onValueChange={(value) =>
                   onDraftChange({
                     ...draft,
-                    sexoAlvo: value === "__empty__" ? "" : (value as "M" | "F" | "todos"),
+                    sexoAlvo:
+                      value === "__empty__"
+                        ? ""
+                        : (value as "M" | "F" | "todos"),
                   })
                 }
               >
@@ -2033,10 +2113,13 @@ function ItemEditorDialog({
 
           <div className="rounded-2xl border border-border/70 bg-muted/10 p-4 md:col-span-2">
             <div className="flex flex-wrap gap-2">
-              <Badge variant="outline">Milestone final: {effectiveMilestoneCode}</Badge>
+              <Badge variant="outline">
+                Milestone final: {effectiveMilestoneCode}
+              </Badge>
               {regimenPreview?.schedule_rule.kind ? (
                 <Badge variant="outline">
-                  agenda: {regimenPreview.schedule_rule.kind.replaceAll("_", " ")}
+                  agenda:{" "}
+                  {regimenPreview.schedule_rule.kind.replaceAll("_", " ")}
                 </Badge>
               ) : null}
               {dedupPreview ? (
@@ -2122,7 +2205,9 @@ function ItemEditorDialog({
 
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="item-calendar-label">Rotulo operacional</Label>
+                  <Label htmlFor="item-calendar-label">
+                    Rotulo operacional
+                  </Label>
                   <Input
                     id="item-calendar-label"
                     value={draft.calendarLabel}
@@ -2137,7 +2222,9 @@ function ItemEditorDialog({
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="item-calendar-months">Meses da campanha</Label>
+                  <Label htmlFor="item-calendar-months">
+                    Meses da campanha
+                  </Label>
                   <Input
                     id="item-calendar-months"
                     value={draft.calendarMonths}
@@ -2256,13 +2343,18 @@ function ItemEditorDialog({
                   id="item-dedup"
                   value={draft.dedupTemplate}
                   onChange={(event) =>
-                    onDraftChange({ ...draft, dedupTemplate: event.target.value })
+                    onDraftChange({
+                      ...draft,
+                      dedupTemplate: event.target.value,
+                    })
                   }
                   placeholder="Ex: vacina:brucelose:{animal_id}"
                 />
                 <p className="text-xs text-muted-foreground">
                   Se ficar vazio, sera usado o dedup semantico do regime:
-                  {dedupPreview ? ` ${dedupPreview}` : " defina familia no protocolo."}
+                  {dedupPreview
+                    ? ` ${dedupPreview}`
+                    : " defina familia no protocolo."}
                 </p>
               </div>
               <div className="space-y-2">
@@ -2316,11 +2408,19 @@ function ItemEditorDialog({
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSaving}>
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={isSaving}
+          >
             Cancelar
           </Button>
           <Button onClick={onSave} disabled={isSaving}>
-            {isSaving ? "Salvando..." : isEditing ? "Salvar etapa" : "Criar etapa"}
+            {isSaving
+              ? "Salvando..."
+              : isEditing
+                ? "Salvar etapa"
+                : "Criar etapa"}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -2338,12 +2438,11 @@ function sanitizeMonthListInput(value: string) {
 
 function SwitchRow({
   label,
-  description,
   checked,
   onCheckedChange,
 }: {
   label: string;
-  description: string;
+  description?: string;
   checked: boolean;
   onCheckedChange: (checked: boolean) => void;
 }) {
@@ -2351,7 +2450,6 @@ function SwitchRow({
     <div className="flex items-start justify-between gap-4">
       <div className="space-y-1">
         <p className="text-sm font-medium text-foreground">{label}</p>
-        <p className="text-sm text-muted-foreground">{description}</p>
       </div>
       <Switch checked={checked} onCheckedChange={onCheckedChange} />
     </div>

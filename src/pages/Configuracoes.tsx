@@ -25,7 +25,7 @@ import {
   resolveFarmMeasurementConfig,
   withFarmMeasurementConfig,
 } from "@/lib/farms/measurementConfig";
-import { formatWeight, getWeightUnitLabel } from "@/lib/format/weight";
+import { getWeightUnitLabel } from "@/lib/format/weight";
 import { supabase } from "@/lib/supabase";
 import { showError, showSuccess } from "@/utils/toast";
 import {
@@ -48,7 +48,8 @@ const TRANSITION_LABEL = {
 } as const;
 
 export default function Configuracoes() {
-  const { activeFarmId, role, refreshSettings, farmMeasurementConfig } = useAuth();
+  const { activeFarmId, role, refreshSettings, farmMeasurementConfig } =
+    useAuth();
   const [farmName, setFarmName] = useState<string>("");
   const [farmMetadata, setFarmMetadata] = useState<Record<string, unknown>>({});
   const [isLoading, setIsLoading] = useState(true);
@@ -87,7 +88,9 @@ export default function Configuracoes() {
         );
       } catch (error) {
         const message =
-          error instanceof Error ? error.message : "Nao foi possivel carregar configuracoes.";
+          error instanceof Error
+            ? error.message
+            : "Nao foi possivel carregar configuracoes.";
         showError(message);
       } finally {
         setIsLoading(false);
@@ -133,7 +136,9 @@ export default function Configuracoes() {
       showSuccess("Regras de estagio atualizadas.");
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : "Nao foi possivel salvar as configuracoes.";
+        error instanceof Error
+          ? error.message
+          : "Nao foi possivel salvar as configuracoes.";
       showError(message);
     } finally {
       setIsSavingLifecycle(false);
@@ -165,7 +170,9 @@ export default function Configuracoes() {
       showSuccess("Unidade de peso atualizada.");
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : "Nao foi possivel salvar a unidade.";
+        error instanceof Error
+          ? error.message
+          : "Nao foi possivel salvar a unidade.";
       showError(message);
     } finally {
       setIsSavingMeasurement(false);
@@ -178,7 +185,6 @@ export default function Configuracoes() {
         <PageIntro
           eyebrow="Configuracoes"
           title="Sem fazenda ativa"
-          description="Selecione uma fazenda para ajustar regras de classificacao e transicao do rebanho."
           actions={
             <Button asChild>
               <Link to="/select-fazenda">Escolher fazenda</Link>
@@ -194,10 +200,11 @@ export default function Configuracoes() {
       <PageIntro
         eyebrow="Configuracoes"
         title="Regras e parametros operacionais"
-        description="Central unico para ajustes que alteram leitura, classificacao e fila operacional do rebanho. As regras de estagio de vida saem da edicao cadastral e ficam somente aqui."
         meta={
           <>
-            <StatusBadge tone="neutral">{farmName || "Fazenda ativa"}</StatusBadge>
+            <StatusBadge tone="neutral">
+              {farmName || "Fazenda ativa"}
+            </StatusBadge>
             <StatusBadge tone={canManageFarmSettings ? "info" : "warning"}>
               {canManageFarmSettings ? "Edicao liberada" : "Somente leitura"}
             </StatusBadge>
@@ -222,30 +229,26 @@ export default function Configuracoes() {
         <MetricCard
           label="Base de classificacao"
           value={BASIS_LABEL[lifecycleConfig.stage_classification_basis]}
-          hint="Determina se idade ou peso lidera a classificacao inicial."
           icon={<SlidersHorizontal className="h-5 w-5" />}
         />
         <MetricCard
           label="Modo padrao"
           value={TRANSITION_LABEL[lifecycleConfig.default_transition_mode]}
-          hint="Controla se as transicoes sao manuais, automaticas ou mistas."
           tone="info"
           icon={<Workflow className="h-5 w-5" />}
         />
         <MetricCard
           label="Marco de desmame"
           value={`${lifecycleConfig.weaning_days}d`}
-          hint={`${formatWeight(
-            lifecycleConfig.weaning_weight_kg,
-            measurementConfig.weight_unit,
-          )} como referencia secundaria.`}
           icon={<Settings2 className="h-5 w-5" />}
         />
       </div>
 
       <Card className="shadow-none">
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">Leitura e metragens operacionais</CardTitle>
+          <CardTitle className="text-base">
+            Leitura e metragens operacionais
+          </CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
           <div className="space-y-4">
@@ -255,11 +258,6 @@ export default function Configuracoes() {
                 <div className="space-y-1">
                   <p className="text-sm font-medium text-foreground">
                     Unidade de peso da fazenda
-                  </p>
-                  <p className="text-sm leading-6 text-muted-foreground">
-                    O sistema continua persistindo peso em kg para manter contratos,
-                    sync e regras canônicas. A preferencia abaixo muda apenas como o
-                    produtor enxerga e digita peso nas telas.
                   </p>
                 </div>
               </div>
@@ -304,12 +302,6 @@ export default function Configuracoes() {
               <p className="text-sm font-medium text-foreground">
                 Categorias zootecnicas agora sao derivadas
               </p>
-              <p className="text-sm leading-6 text-muted-foreground">
-                O cadastro separado de categorias deixou de ser a fonte de verdade.
-                A leitura do rebanho passa a sair somente das regras desta pagina,
-                combinando sexo, idade, peso, destino produtivo e contexto
-                reprodutivo.
-              </p>
             </div>
 
             <div className="mt-4 grid gap-3 md:grid-cols-2">
@@ -320,9 +312,6 @@ export default function Configuracoes() {
                 <p className="mt-1 text-sm font-medium text-foreground">
                   Bezerra, novilha e vaca
                 </p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  A transicao respeita desmame, maturidade e eventos reprodutivos.
-                </p>
               </div>
               <div className="rounded-xl border border-border/70 bg-muted/20 p-3">
                 <p className="text-xs uppercase tracking-wide text-muted-foreground">
@@ -330,9 +319,6 @@ export default function Configuracoes() {
                 </p>
                 <p className="mt-1 text-sm font-medium text-foreground">
                   Bezerro, garrote, boi e touro
-                </p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  O destino produtivo e a aptidao reprodutiva definem a leitura final.
                 </p>
               </div>
             </div>

@@ -17,12 +17,14 @@ type AgendaOverviewHeaderProps = {
   onGoToRegistrar: () => void;
 };
 
-export function AgendaOverviewHeader({ badges, onGoToRegistrar }: AgendaOverviewHeaderProps) {
+export function AgendaOverviewHeader({
+  badges,
+  onGoToRegistrar,
+}: AgendaOverviewHeaderProps) {
   return (
     <PageIntro
       eyebrow="Rotina planejada"
       title="Agenda de manejo"
-      description="Itens manuais e automáticos vinculados ao fluxo de eventos, com leitura clara do próximo passo e do estado de sync."
       meta={
         <>
           {badges.map((badge) => (

@@ -14,7 +14,6 @@ import {
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -71,13 +70,12 @@ export function MoverAnimalLote({
     : null;
   const regulatoryReadModel = useMemo(
     () =>
-      buildRegulatoryOperationalReadModel(
-        regulatorySurfaceSource ?? undefined,
-      ),
+      buildRegulatoryOperationalReadModel(regulatorySurfaceSource ?? undefined),
     [regulatorySurfaceSource],
   );
   const movementComplianceGuards = regulatoryReadModel.flows.movementInternal;
-  const complianceBlockReason = movementComplianceGuards.blockers[0]?.message ?? null;
+  const complianceBlockReason =
+    movementComplianceGuards.blockers[0]?.message ?? null;
 
   const handleConfirm = async () => {
     if (sanitaryBlockReason) {
@@ -117,7 +115,9 @@ export function MoverAnimalLote({
       onOpenChange(false);
     } catch (error: unknown) {
       if (error instanceof EventValidationError) {
-        showError(error.issues[0]?.message ?? "Dados invalidos para movimentacao.");
+        showError(
+          error.issues[0]?.message ?? "Dados invalidos para movimentacao.",
+        );
         return;
       }
       showError("Erro ao mover animal.");
@@ -131,15 +131,10 @@ export function MoverAnimalLote({
       <DialogContent className="max-w-xl">
         <DialogHeader>
           <DialogTitle>Mover animal</DialogTitle>
-          <DialogDescription>
-            Ajuste o lote de <strong>{animal.identificacao}</strong> com contexto
-            claro de origem e destino.
-          </DialogDescription>
         </DialogHeader>
 
         <FormSection
-          title="Destino operacional"
-          description="Use esse dialog quando o ajuste for pontual. Para movimento em massa, prefira o detalhe do lote."
+          title={animal.identificacao}
           actions={
             loteAtual ? (
               <StatusBadge tone="neutral">Atual: {loteAtual.nome}</StatusBadge>
@@ -178,7 +173,11 @@ export function MoverAnimalLote({
         </FormSection>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={isSubmitting}
+          >
             Cancelar
           </Button>
           <Button

@@ -2,13 +2,18 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import Dexie from "dexie";
 import { useLiveQuery } from "dexie-react-hooks";
-import { Calendar, MoreHorizontal, PlusCircle, RefreshCw, Search } from "lucide-react";
+import {
+  Calendar,
+  MoreHorizontal,
+  PlusCircle,
+  RefreshCw,
+  Search,
+} from "lucide-react";
 import { db } from "@/lib/offline/db";
 import { createGesture } from "@/lib/offline/ops";
 import {
   getGestureSyncStage,
   getSyncStageLabel,
-  getSyncStageTone,
   type SyncStage,
 } from "@/lib/offline/syncPresentation";
 import { useAuth } from "@/hooks/useAuth";
@@ -26,7 +31,7 @@ import type {
 import { buildEventGesture } from "@/lib/events/buildEventGesture";
 import type { EventInput } from "@/lib/events/types";
 import { EventValidationError } from "@/lib/events/validators";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -81,7 +86,9 @@ const DOMAIN_LABEL: Record<DominioEnum, string> = {
   obito: "Óbito",
 };
 
-function parseDomainFilter(value: string | null | undefined): "all" | DominioEnum {
+function parseDomainFilter(
+  value: string | null | undefined,
+): "all" | DominioEnum {
   if (
     value === "sanitario" ||
     value === "alerta_sanitario" ||
@@ -138,16 +145,19 @@ const Eventos = () => {
   const highlightedEventId = searchParams.get("eventoId");
   const domainFilterFromQuery = parseDomainFilter(searchParams.get("dominio"));
   const regulatorySubareaFromQuery =
-    parseRegulatoryAnalyticsSubareaKey(searchParams.get("overlaySubarea")) ?? "all";
+    parseRegulatoryAnalyticsSubareaKey(searchParams.get("overlaySubarea")) ??
+    "all";
   const regulatoryImpactFromQuery =
-    parseRegulatoryAnalyticsImpactKey(searchParams.get("overlayImpact")) ?? "all";
+    parseRegulatoryAnalyticsImpactKey(searchParams.get("overlayImpact")) ??
+    "all";
   const { activeFarmId, farmMeasurementConfig } = useAuth();
 
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebouncedValue(search, 300);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
-  const [domainFilter, setDomainFilter] =
-    useState<"all" | DominioEnum>(domainFilterFromQuery);
+  const [domainFilter, setDomainFilter] = useState<"all" | DominioEnum>(
+    domainFilterFromQuery,
+  );
   const [animalFilter, setAnimalFilter] = useState("all");
   const [loteFilter, setLoteFilter] = useState("all");
   const [syncFilter, setSyncFilter] = useState<SyncFilter>("all");
@@ -250,11 +260,17 @@ const Eventos = () => {
 
           const subarea = resolveRegulatoryAnalyticsSubareaFromAttributes({
             subarea: readPayloadString(evento.payload, "subarea"),
-            complianceKind: readPayloadString(evento.payload, "compliance_kind"),
+            complianceKind: readPayloadString(
+              evento.payload,
+              "compliance_kind",
+            ),
           });
           const impacts = resolveRegulatoryAnalyticsImpactsFromAttributes({
             subarea: readPayloadString(evento.payload, "subarea"),
-            complianceKind: readPayloadString(evento.payload, "compliance_kind"),
+            complianceKind: readPayloadString(
+              evento.payload,
+              "compliance_kind",
+            ),
           });
 
           if (
@@ -293,8 +309,8 @@ const Eventos = () => {
         if (dateTo && occurredOn > dateTo) return false;
 
         // Partial Search (only fields available in event_eventos + state_animais/lotes)
-          if (debouncedSearch.trim()) {
-            const searchLower = debouncedSearch.trim().toLowerCase();
+        if (debouncedSearch.trim()) {
+          const searchLower = debouncedSearch.trim().toLowerCase();
           const animal = evento.animal_id
             ? animalById.get(evento.animal_id)
             : null;
@@ -563,7 +579,9 @@ const Eventos = () => {
           : null;
         const lote = evento.lote_id ? loteById.get(evento.lote_id) : null;
         const syncStage = getGestureSyncStage(
-          evento.client_tx_id ? gestoByTx.get(evento.client_tx_id) ?? null : null,
+          evento.client_tx_id
+            ? (gestoByTx.get(evento.client_tx_id) ?? null)
+            : null,
         );
 
         let detail = "";
@@ -634,9 +652,10 @@ const Eventos = () => {
               ? `${evento.payload.official_item_label} - ${evento.payload.status ?? "pendente"}`
               : "Checklist de conformidade";
         } else if (evento.dominio === "obito") {
-          const causa = evento.payload && typeof evento.payload.causa === "string" 
-            ? (evento.payload.causa as string) 
-            : null;
+          const causa =
+            evento.payload && typeof evento.payload.causa === "string"
+              ? (evento.payload.causa as string)
+              : null;
           detail = causa ? `Óbito: ${causa}` : "Registro de óbito";
         }
 
@@ -686,13 +705,19 @@ const Eventos = () => {
     () =>
       timeline.reduce(
         (summary, row) => {
-          if (row.syncStage === "local_pending" || row.syncStage === "syncing") {
+          if (
+            row.syncStage === "local_pending" ||
+            row.syncStage === "syncing"
+          ) {
             summary.pending += 1;
           }
           if (row.syncStage === "rejected" || row.syncStage === "error") {
             summary.errors += 1;
           }
-          if (row.syncStage === "synced" || row.syncStage === "synced_altered") {
+          if (
+            row.syncStage === "synced" ||
+            row.syncStage === "synced_altered"
+          ) {
             summary.synced += 1;
           }
           return summary;
@@ -729,8 +754,7 @@ const Eventos = () => {
     <div className="space-y-5">
       <PageIntro
         eyebrow="Historico operacional"
-        title="Eventos da fazenda"
-        description="Timeline unificada por dominio com filtros compactos e rastreio de sincronizacao sem competir com o conteudo principal."
+        title="Eventos"
         meta={
           <>
             <StatusBadge tone="neutral">
@@ -741,14 +765,17 @@ const Eventos = () => {
             ) : null}
             {syncSummary.errors > 0 ? (
               <StatusBadge tone="danger">
-                {syncSummary.errors} falha(s) visiveis
+                {syncSummary.errors} registro(s) para revisar
               </StatusBadge>
             ) : null}
             {regulatoryReadModel.attention.openCount > 0 ? (
               <StatusBadge
-                tone={regulatoryReadModel.hasBlockingIssues ? "danger" : "warning"}
+                tone={
+                  regulatoryReadModel.hasBlockingIssues ? "danger" : "warning"
+                }
               >
-                {regulatoryReadModel.attention.openCount} pendencia(s) regulatoria(s)
+                {regulatoryReadModel.attention.openCount} pendencia(s) de
+                conformidade
               </StatusBadge>
             ) : null}
             {regulatoryFilterSummary.map((label) => (
@@ -766,25 +793,19 @@ const Eventos = () => {
         }
       />
 
-      <section className="grid gap-4 md:grid-cols-4">
+      <section className="grid gap-4 md:grid-cols-3">
         <MetricCard
           label="Eventos filtrados"
           value={data?.totalCount ?? 0}
-          hint={`${timeline.length} carregado(s) nesta leitura.`}
+          hint={`${timeline.length} visiveis agora.`}
         />
         <MetricCard
-          label="Pendentes de sync"
-          value={syncSummary.pending}
-          hint="Inclui registros pendentes e sincronizando."
-          tone={syncSummary.pending > 0 ? "warning" : "default"}
-        />
-        <MetricCard
-          label="Falhas visiveis"
+          label="Para revisar"
           value={syncSummary.errors}
           hint={
             syncSummary.errors > 0
-              ? "Revise rejeicoes e erros do recorte atual."
-              : "Nenhuma falha aparente nos itens carregados."
+              ? "Registros que precisam de atencao no envio."
+              : "Nenhum registro exige revisao."
           }
           tone={syncSummary.errors > 0 ? "danger" : "success"}
         />
@@ -797,8 +818,8 @@ const Eventos = () => {
               : regulatoryReadModel.flows.nutrition.blockerCount > 0
                 ? `${regulatoryReadModel.flows.nutrition.blockerCount} bloqueio(s) em nutricao.`
                 : regulatoryReadModel.attention.openCount > 0
-                  ? "Ha pendencias procedurais abertas no overlay oficial."
-                  : "Sem pendencias regulatorias abertas."
+                  ? "Ha pendencias abertas."
+                  : "Sem pendencias abertas."
           }
           tone={
             regulatoryReadModel.hasBlockingIssues
@@ -813,11 +834,7 @@ const Eventos = () => {
       {regulatoryReadModel.attention.openCount > 0 ? (
         <Card className="border-amber-200 bg-amber-50/60">
           <CardHeader>
-            <CardTitle>Overlay regulatorio ativo</CardTitle>
-            <CardDescription>
-              O historico reconhece o estado regulatorio atual da fazenda para
-              evitar leitura isolada dos eventos de conformidade.
-            </CardDescription>
+            <CardTitle>Atenção de conformidade</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex flex-wrap gap-2">
@@ -843,7 +860,9 @@ const Eventos = () => {
                   <p className="font-medium">{item.label}</p>
                   <StatusBadge tone={item.tone}>{item.statusLabel}</StatusBadge>
                 </div>
-                <p className="mt-2 text-sm text-muted-foreground">{item.recommendation}</p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  {item.recommendation}
+                </p>
               </div>
             ))}
 
@@ -852,7 +871,7 @@ const Eventos = () => {
                 variant="outline"
                 onClick={() => navigate("/protocolos-sanitarios")}
               >
-                Abrir overlay de conformidade
+                Abrir conformidade
               </Button>
               <Button
                 variant="ghost"
@@ -869,11 +888,6 @@ const Eventos = () => {
         <Card className="border-sky-200 bg-sky-50/60">
           <CardHeader>
             <CardTitle>Recorte regulatorio ativo</CardTitle>
-            <CardDescription>
-              Este historico foi aberto com foco analitico pronto. O recorte
-              mantem apenas eventos de conformidade alinhados a subarea ou
-              impacto operacional selecionado.
-            </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-wrap items-center gap-2">
             {regulatorySubareaFilter !== "all" ? (
@@ -914,9 +928,14 @@ const Eventos = () => {
 
           <Select
             value={domainFilter}
-            onValueChange={(value) => setDomainFilter(value as "all" | DominioEnum)}
+            onValueChange={(value) =>
+              setDomainFilter(value as "all" | DominioEnum)
+            }
           >
-            <SelectTrigger aria-label="Filtrar por dominio" className="w-full sm:w-[180px]">
+            <SelectTrigger
+              aria-label="Filtrar por dominio"
+              className="w-full sm:w-[180px]"
+            >
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -934,7 +953,10 @@ const Eventos = () => {
           </Select>
 
           <Select value={animalFilter} onValueChange={setAnimalFilter}>
-            <SelectTrigger aria-label="Filtrar por animal" className="w-full sm:w-[180px]">
+            <SelectTrigger
+              aria-label="Filtrar por animal"
+              className="w-full sm:w-[180px]"
+            >
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -948,7 +970,10 @@ const Eventos = () => {
           </Select>
 
           <Select value={loteFilter} onValueChange={setLoteFilter}>
-            <SelectTrigger aria-label="Filtrar por lote" className="w-full sm:w-[180px]">
+            <SelectTrigger
+              aria-label="Filtrar por lote"
+              className="w-full sm:w-[180px]"
+            >
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -965,15 +990,18 @@ const Eventos = () => {
             value={syncFilter}
             onValueChange={(value) => setSyncFilter(value as SyncFilter)}
           >
-            <SelectTrigger aria-label="Filtrar por sincronizacao" className="w-full sm:w-[180px]">
+            <SelectTrigger
+              aria-label="Filtrar por envio"
+              className="w-full sm:w-[180px]"
+            >
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Todo sync</SelectItem>
-              <SelectItem value="SYNCED">Sincronizado</SelectItem>
-              <SelectItem value="PENDING">Pendente</SelectItem>
-              <SelectItem value="SYNCING">Sincronizando</SelectItem>
-              <SelectItem value="ERROR">Erro</SelectItem>
+              <SelectItem value="all">Todo envio</SelectItem>
+              <SelectItem value="SYNCED">Enviado</SelectItem>
+              <SelectItem value="PENDING">Aguardando envio</SelectItem>
+              <SelectItem value="SYNCING">Enviando</SelectItem>
+              <SelectItem value="ERROR">Erro no envio</SelectItem>
               <SelectItem value="REJECTED">Rejeitado</SelectItem>
             </SelectContent>
           </Select>
@@ -1043,12 +1071,11 @@ const Eventos = () => {
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                   <div className="min-w-0 flex-1 space-y-3">
                     <div className="flex flex-wrap items-center gap-2">
-                      <p className="font-medium">{DOMAIN_LABEL[row.evento.dominio]}</p>
+                      <p className="font-medium">
+                        {DOMAIN_LABEL[row.evento.dominio]}
+                      </p>
                       <StatusBadge tone="neutral">{row.animalNome}</StatusBadge>
                       <StatusBadge tone="neutral">{row.loteNome}</StatusBadge>
-                      <StatusBadge tone={getSyncStageTone(row.syncStage)}>
-                        {getSyncStageLabel(row.syncStage)}
-                      </StatusBadge>
                       {isHighlighted ? (
                         <StatusBadge tone="info">Em foco</StatusBadge>
                       ) : null}
@@ -1060,14 +1087,12 @@ const Eventos = () => {
 
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
                       <span>{toDateTime(row.evento.occurred_at)}</span>
-                      <span>ID {row.id.slice(0, 8)}</span>
+                      <span>Envio: {getSyncStageLabel(row.syncStage)}</span>
                       {row.evento.source_task_id ? (
-                        <span>Agenda {row.evento.source_task_id.slice(0, 8)}</span>
+                        <span>Origem: agenda</span>
                       ) : null}
                       {row.evento.corrige_evento_id ? (
-                        <span>
-                          Complementa {row.evento.corrige_evento_id.slice(0, 8)}
-                        </span>
+                        <span>Complemento</span>
                       ) : null}
                     </div>
                   </div>
@@ -1093,7 +1118,9 @@ const Eventos = () => {
                       <DropdownMenuContent align="end">
                         {row.evento.animal_id ? (
                           <DropdownMenuItem
-                            onClick={() => navigate(`/animais/${row.evento.animal_id}`)}
+                            onClick={() =>
+                              navigate(`/animais/${row.evento.animal_id}`)
+                            }
                           >
                             Abrir ficha do animal
                           </DropdownMenuItem>
@@ -1107,7 +1134,9 @@ const Eventos = () => {
                         ) : (
                           <DropdownMenuItem
                             onClick={() => {
-                              setComplementTargetId(isComplementOpen ? null : row.id);
+                              setComplementTargetId(
+                                isComplementOpen ? null : row.id,
+                              );
                               setComplementText("");
                             }}
                           >
@@ -1138,7 +1167,9 @@ const Eventos = () => {
                       className="mt-3"
                       placeholder="Descreva informacoes adicionais deste evento..."
                       value={complementText}
-                      onChange={(event) => setComplementText(event.target.value)}
+                      onChange={(event) =>
+                        setComplementText(event.target.value)
+                      }
                       rows={3}
                     />
 
@@ -1159,7 +1190,9 @@ const Eventos = () => {
                         onClick={() => handleSaveComplement(row.evento)}
                         disabled={isSavingComplement}
                       >
-                        {isSavingComplement ? "Salvando..." : "Salvar complemento"}
+                        {isSavingComplement
+                          ? "Salvando..."
+                          : "Salvar complemento"}
                       </Button>
                     </div>
                   </div>

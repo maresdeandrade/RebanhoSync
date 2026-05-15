@@ -32,13 +32,7 @@ import {
 import { showError, showSuccess } from "@/utils/toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -139,7 +133,10 @@ function getLegalStatusLabel(status: SanitaryOfficialLegalStatusEnum) {
   return "Boa pratica";
 }
 
-function readArrayLength(payload: Record<string, unknown> | null | undefined, key: string) {
+function readArrayLength(
+  payload: Record<string, unknown> | null | undefined,
+  key: string,
+) {
   const value = payload?.[key];
   return Array.isArray(value) ? value.length : 0;
 }
@@ -148,8 +145,12 @@ export function OfficialSanitaryPackManager({
   activeFarmId,
   canManage,
 }: OfficialSanitaryPackManagerProps) {
-  const [farmProfile, setFarmProfile] = useState<FarmSanitaryProfile | null>(null);
-  const [form, setForm] = useState<OfficialSanitaryPackConfigInput | null>(null);
+  const [farmProfile, setFarmProfile] = useState<FarmSanitaryProfile | null>(
+    null,
+  );
+  const [form, setForm] = useState<OfficialSanitaryPackConfigInput | null>(
+    null,
+  );
   const [isLoadingFarmProfile, setIsLoadingFarmProfile] = useState(false);
   const [isRefreshingCatalog, setIsRefreshingCatalog] = useState(false);
   const [isApplyingPack, setIsApplyingPack] = useState(false);
@@ -381,14 +382,6 @@ export function OfficialSanitaryPackManager({
                 </Badge>
               ) : null}
             </div>
-            <CardDescription className="max-w-3xl text-sm leading-6">
-              Pack oficial = o que sua fazenda precisa cumprir. Ele ativa um
-              nucleo federal versionado, aplica overlay estadual por UF e
-              ajusta a selecao conforme perfil produtivo e risco da fazenda. O
-              calendario nao e fixo nacional: o pack materializa so o tronco
-              regulatorio central e delega os fluxos procedurais para o overlay
-              operacional abaixo.
-            </CardDescription>
           </div>
 
           <div className="flex flex-wrap gap-2">
@@ -450,7 +443,10 @@ export function OfficialSanitaryPackManager({
                       current
                         ? {
                             ...current,
-                            uf: value === "__none__" ? null : (value as EstadoUFEnum),
+                            uf:
+                              value === "__none__"
+                                ? null
+                                : (value as EstadoUFEnum),
                           }
                         : current,
                     )
@@ -480,7 +476,8 @@ export function OfficialSanitaryPackManager({
                       current
                         ? {
                             ...current,
-                            modoCalendario: value as FazendaSanitaryCalendarModeEnum,
+                            modoCalendario:
+                              value as FazendaSanitaryCalendarModeEnum,
                           }
                         : current,
                     )
@@ -569,7 +566,8 @@ export function OfficialSanitaryPackManager({
                       current
                         ? {
                             ...current,
-                            zonaRaivaRisco: value as FazendaSanitaryRiskLevelEnum,
+                            zonaRaivaRisco:
+                              value as FazendaSanitaryRiskLevelEnum,
                           }
                         : current,
                     )
@@ -598,7 +596,8 @@ export function OfficialSanitaryPackManager({
                       current
                         ? {
                             ...current,
-                            pressaoCarrapato: value as FazendaSanitaryRiskLevelEnum,
+                            pressaoCarrapato:
+                              value as FazendaSanitaryRiskLevelEnum,
                           }
                         : current,
                     )
@@ -627,7 +626,8 @@ export function OfficialSanitaryPackManager({
                       current
                         ? {
                             ...current,
-                            pressaoHelmintos: value as FazendaSanitaryRiskLevelEnum,
+                            pressaoHelmintos:
+                              value as FazendaSanitaryRiskLevelEnum,
                           }
                         : current,
                     )
@@ -651,11 +651,7 @@ export function OfficialSanitaryPackManager({
             {!form.uf ? (
               <div className="flex items-start gap-3 rounded-xl border border-warning/30 bg-warning/10 px-4 py-3 text-sm text-warning">
                 <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0" />
-                <div>
-                  Sem UF definida, o pack aplica somente o nucleo federal.
-                  Overlays estaduais so entram depois que a fazenda ou esta tela
-                  tiverem a UF configurada.
-                </div>
+                <div>Sem UF definida, entram apenas regras federais.</div>
               </div>
             ) : null}
 
@@ -667,8 +663,8 @@ export function OfficialSanitaryPackManager({
                   </Badge>
                   <Badge variant="outline">
                     {stateOverlayCount > 0
-                      ? `${stateOverlayCount} overlays estaduais`
-                      : "Somente camada federal"}
+                      ? `${stateOverlayCount} regra(s) estaduais`
+                      : "Somente federal"}
                   </Badge>
                   <Badge variant="outline">
                     {selection?.diseases.length ?? 0} doencas notificaveis
@@ -679,20 +675,14 @@ export function OfficialSanitaryPackManager({
                   <p className="text-sm font-medium text-foreground">
                     Preview do pack oficial
                   </p>
-                  <p className="text-sm text-muted-foreground">
-                    O app materializa no modelo atual apenas o que cabe em
-                    `protocolos_sanitarios` e `agenda_itens`. Itens como
-                    feed-ban e checklists operacionais seguem para o overlay
-                    regulatorio executavel; transito/GTA e suspeita
-                    notificavel ja usam fluxos dedicados.
-                  </p>
                 </div>
 
                 <div className="space-y-3">
                   {selectedPreview.length === 0 ? (
                     <div className="flex items-start gap-3 rounded-xl border border-border/70 bg-muted/20 px-4 py-3 text-sm text-muted-foreground">
                       <ShieldAlert className="mt-0.5 h-4 w-4 flex-shrink-0" />
-                      Nenhuma frente oficial compativel com a configuracao atual.
+                      Nenhuma frente oficial compativel com a configuracao
+                      atual.
                     </div>
                   ) : (
                     selectedPreview.map((entry) => (
@@ -708,7 +698,7 @@ export function OfficialSanitaryPackManager({
                             <p className="text-xs text-muted-foreground">
                               {entry.template.escopo === "federal"
                                 ? "Nucleo federal"
-                                : `Overlay estadual ${entry.template.uf ?? ""}`}
+                                : `Regra estadual ${entry.template.uf ?? ""}`}
                             </p>
                           </div>
                           <div className="flex flex-wrap gap-2">
@@ -720,7 +710,8 @@ export function OfficialSanitaryPackManager({
                               {getLegalStatusLabel(entry.template.status_legal)}
                             </Badge>
                             <Badge variant="outline">
-                              {entry.materializableItems.length} materializavel(is)
+                              {entry.materializableItems.length}{" "}
+                              materializavel(is)
                             </Badge>
                             {entry.skippedItems.length > 0 ? (
                               <Badge variant="outline">
@@ -780,19 +771,12 @@ export function OfficialSanitaryPackManager({
                       </Badge>
                       {skippedCount > 0 ? (
                         <Badge variant="outline">
-                          {skippedCount} itens em overlay
+                          {skippedCount} checklist(s)
                         </Badge>
                       ) : null}
                     </div>
                   </div>
                 </div>
-
-                <p className="text-xs text-muted-foreground">
-                  O pack oficial nao substitui protocolos privados da fazenda.
-                  Ele cria a base regulatoria e animal-centric; o overlay
-                  operacional e o editor abaixo continuam disponiveis para
-                  complementar a execucao local.
-                </p>
               </div>
             </div>
           </>

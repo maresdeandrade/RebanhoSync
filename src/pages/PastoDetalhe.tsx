@@ -69,7 +69,17 @@ function formatDateTime(value?: string | null) {
 const labelize = (value?: string | null) =>
   value ? value.replaceAll("_", " ") : "Nao informado";
 
-const ECC_OPTIONS = ["1.0", "1.5", "2.0", "2.5", "3.0", "3.5", "4.0", "4.5", "5.0"];
+const ECC_OPTIONS = [
+  "1.0",
+  "1.5",
+  "2.0",
+  "2.5",
+  "3.0",
+  "3.5",
+  "4.0",
+  "4.5",
+  "5.0",
+];
 
 const SUPLEMENTO_OPTIONS = [
   { value: "nenhum", label: "Nenhum", unidade: "" },
@@ -100,8 +110,12 @@ const PastoDetalhe = () => {
   const [rondaOpen, setRondaOpen] = useState(false);
   const [momento, setMomento] = useState<PastoAvaliacaoMomentoEnum>("ronda");
   const [alturaCm, setAlturaCm] = useState("");
-  const [coberturaSolo, setCoberturaSolo] = useState<PastoCoberturaSoloEnum | "">("");
-  const [invasorasNivel, setInvasorasNivel] = useState<PastoInvasorasNivelEnum | "">("");
+  const [coberturaSolo, setCoberturaSolo] = useState<
+    PastoCoberturaSoloEnum | ""
+  >("");
+  const [invasorasNivel, setInvasorasNivel] = useState<
+    PastoInvasorasNivelEnum | ""
+  >("");
   const [aguaStatus, setAguaStatus] = useState<PastoAguaStatusEnum | "">("");
   const [eccLoteMedio, setEccLoteMedio] = useState("");
   const [fezesScore, setFezesScore] = useState<PastoFezesScoreEnum | "">("");
@@ -110,7 +124,10 @@ const PastoDetalhe = () => {
   const [suplementoQuantidade, setSuplementoQuantidade] = useState("");
   const [rondaObservacoes, setRondaObservacoes] = useState("");
 
-  const pasto = useLiveQuery(() => (id ? db.state_pastos.get(id) : undefined), [id]);
+  const pasto = useLiveQuery(
+    () => (id ? db.state_pastos.get(id) : undefined),
+    [id],
+  );
   const lotes = useLiveQuery(
     () => (id ? db.state_lotes.where("pasto_id").equals(id).toArray() : []),
     [id],
@@ -118,7 +135,10 @@ const PastoDetalhe = () => {
   const animaisCount = useLiveQuery(async () => {
     if (!id) return 0;
 
-    const lotesNoPasto = await db.state_lotes.where("pasto_id").equals(id).toArray();
+    const lotesNoPasto = await db.state_lotes
+      .where("pasto_id")
+      .equals(id)
+      .toArray();
     let total = 0;
     for (const lote of lotesNoPasto) {
       total += await db.state_animais.where("lote_id").equals(lote.id).count();
@@ -131,7 +151,10 @@ const PastoDetalhe = () => {
         ? db.state_pasto_ocupacoes
             .where("pasto_id")
             .equals(id)
-            .filter((ocupacao) => ocupacao.status === "aberta" && !ocupacao.deleted_at)
+            .filter(
+              (ocupacao) =>
+                ocupacao.status === "aberta" && !ocupacao.deleted_at,
+            )
             .first()
         : undefined,
     [id],
@@ -169,7 +192,6 @@ const PastoDetalhe = () => {
         <PageIntro
           eyebrow="Estrutura do rebanho"
           title="Pasto nao encontrado"
-          description="O registro nao esta mais disponivel ou ainda nao foi sincronizado neste dispositivo."
           actions={
             <Button variant="outline" onClick={() => navigate("/pastos")}>
               <ChevronLeft className="mr-2 h-4 w-4" />
@@ -193,8 +215,9 @@ const PastoDetalhe = () => {
   const ultimaAvaliacao = avaliacoesPasto?.[0] ?? null;
   const suplementoSelecionado =
     SUPLEMENTO_BY_VALUE.get(suplementoTipo) ?? SUPLEMENTO_OPTIONS[0];
-  const suplementoUnidade =
-    suplementoSelecionado.unidade as SuplementoUnidadeEnum | "";
+  const suplementoUnidade = suplementoSelecionado.unidade as
+    | SuplementoUnidadeEnum
+    | "";
 
   const resetRondaForm = () => {
     setMomento("ronda");
@@ -282,8 +305,11 @@ const PastoDetalhe = () => {
       <PageIntro
         eyebrow="Estrutura do rebanho"
         title={pasto.nome}
-        description="Leia area, lotacao e infraestrutura do pasto em uma unica superficie de consulta."
-        meta={<StatusBadge tone="neutral">{pasto.tipo_pasto ?? "Tipo nao informado"}</StatusBadge>}
+        meta={
+          <StatusBadge tone="neutral">
+            {pasto.tipo_pasto ?? "Tipo nao informado"}
+          </StatusBadge>
+        }
         actions={
           <>
             <Button variant="outline" onClick={() => navigate("/pastos")}>
@@ -314,19 +340,16 @@ const PastoDetalhe = () => {
         <MetricCard
           label="Area"
           value={pasto.area_ha}
-          hint="Hectares declarados para o piquete."
           icon={<MapIcon className="h-4 w-4" />}
         />
         <MetricCard
           label="Capacidade"
           value={pasto.capacidade_ua ?? "Nao informada"}
-          hint="UA usadas como referencia de lotacao."
           icon={<Ruler className="h-4 w-4" />}
         />
         <MetricCard
           label="Animais no pasto"
           value={animaisCount ?? 0}
-          hint={`${lotes?.length ?? 0} lote(s) vinculados a este pasto.`}
           icon={<PawPrint className="h-4 w-4" />}
         />
       </div>
@@ -336,18 +359,13 @@ const PastoDetalhe = () => {
           <h2 className="text-lg font-semibold tracking-[-0.01em] text-foreground">
             Manejo e Forrageira
           </h2>
-          <p className="text-sm leading-6 text-muted-foreground">
-            Metas de altura e detalhes da pastagem para decisao de entrada e saida de lotes.
-          </p>
         </div>
 
         <div className="grid gap-4 lg:grid-cols-2">
           <div className="rounded-2xl border border-border/70 bg-muted/20 p-4">
             <p className="mb-3 font-medium text-foreground">Pastagem</p>
             <div className="grid gap-2 text-sm text-muted-foreground sm:grid-cols-2">
-              <span>
-                Tipo de pastagem: {tipoAreaLabel}
-              </span>
+              <span>Tipo de pastagem: {tipoAreaLabel}</span>
               <span>Forrageira / cultivar: {forrageiraLabel}</span>
             </div>
           </div>
@@ -369,7 +387,8 @@ const PastoDetalhe = () => {
               </span>
               <span>
                 Capacidade Alvo:{" "}
-                {pasto.capacidade_ua_alvo !== null && pasto.capacidade_ua_alvo !== undefined
+                {pasto.capacidade_ua_alvo !== null &&
+                pasto.capacidade_ua_alvo !== undefined
                   ? `${pasto.capacidade_ua_alvo} UA`
                   : "Nao informado"}
               </span>
@@ -383,9 +402,6 @@ const PastoDetalhe = () => {
           <h2 className="text-lg font-semibold tracking-[-0.01em] text-foreground">
             Ultima ronda
           </h2>
-          <p className="text-sm leading-6 text-muted-foreground">
-            Registro historico mais recente da avaliacao de campo deste pasto.
-          </p>
         </div>
 
         {ultimaAvaliacao ? (
@@ -409,13 +425,19 @@ const PastoDetalhe = () => {
                   : "Nao informado"}
               </span>
               <span>
-                Cobertura/aspecto: {labelize(ultimaAvaliacao.avaliacao.cobertura_solo)}
+                Cobertura/aspecto:{" "}
+                {labelize(ultimaAvaliacao.avaliacao.cobertura_solo)}
               </span>
-              <span>Agua: {labelize(ultimaAvaliacao.avaliacao.agua_status)}</span>
               <span>
-                ECC: {ultimaAvaliacao.avaliacao.ecc_lote_medio ?? "Nao informado"}
+                Agua: {labelize(ultimaAvaliacao.avaliacao.agua_status)}
               </span>
-              <span>Fezes: {labelize(ultimaAvaliacao.avaliacao.fezes_score)}</span>
+              <span>
+                ECC:{" "}
+                {ultimaAvaliacao.avaliacao.ecc_lote_medio ?? "Nao informado"}
+              </span>
+              <span>
+                Fezes: {labelize(ultimaAvaliacao.avaliacao.fezes_score)}
+              </span>
             </div>
           </div>
         ) : (
@@ -431,9 +453,6 @@ const PastoDetalhe = () => {
             <h2 className="text-lg font-semibold tracking-[-0.01em] text-foreground">
               Infraestrutura
             </h2>
-            <p className="text-sm leading-6 text-muted-foreground">
-              Leitura objetiva dos recursos de suporte ao manejo neste pasto.
-            </p>
           </div>
 
           <div className="grid gap-4 lg:grid-cols-2">
@@ -442,7 +461,9 @@ const PastoDetalhe = () => {
                 <p className="font-medium text-foreground">Cochos</p>
                 <StatusBadge
                   tone={
-                    infraestrutura.cochos?.estado === "ruim" ? "danger" : "neutral"
+                    infraestrutura.cochos?.estado === "ruim"
+                      ? "danger"
+                      : "neutral"
                   }
                 >
                   {infraestrutura.cochos?.estado || "Sem estado"}
@@ -450,8 +471,12 @@ const PastoDetalhe = () => {
               </div>
               <div className="grid gap-2 text-sm text-muted-foreground sm:grid-cols-3">
                 <span>Qtd: {infraestrutura.cochos?.quantidade || 0}</span>
-                <span>Tipo: {infraestrutura.cochos?.tipo || "Nao informado"}</span>
-                <span>Capacidade: {infraestrutura.cochos?.capacidade || 0} m</span>
+                <span>
+                  Tipo: {infraestrutura.cochos?.tipo || "Nao informado"}
+                </span>
+                <span>
+                  Capacidade: {infraestrutura.cochos?.capacidade || 0} m
+                </span>
               </div>
             </div>
 
@@ -470,8 +495,12 @@ const PastoDetalhe = () => {
               </div>
               <div className="grid gap-2 text-sm text-muted-foreground sm:grid-cols-3">
                 <span>Qtd: {infraestrutura.bebedouros?.quantidade || 0}</span>
-                <span>Tipo: {infraestrutura.bebedouros?.tipo || "Nao informado"}</span>
-                <span>Capacidade: {infraestrutura.bebedouros?.capacidade || 0} L</span>
+                <span>
+                  Tipo: {infraestrutura.bebedouros?.tipo || "Nao informado"}
+                </span>
+                <span>
+                  Capacidade: {infraestrutura.bebedouros?.capacidade || 0} L
+                </span>
               </div>
             </div>
 
@@ -479,13 +508,19 @@ const PastoDetalhe = () => {
               <div className="mb-3 flex items-center justify-between gap-3">
                 <p className="font-medium text-foreground">Cerca</p>
                 <StatusBadge
-                  tone={infraestrutura.cerca?.estado === "ruim" ? "danger" : "neutral"}
+                  tone={
+                    infraestrutura.cerca?.estado === "ruim"
+                      ? "danger"
+                      : "neutral"
+                  }
                 >
                   {infraestrutura.cerca?.estado || "Sem estado"}
                 </StatusBadge>
               </div>
               <div className="grid gap-2 text-sm text-muted-foreground sm:grid-cols-3">
-                <span>Tipo: {infraestrutura.cerca?.tipo || "Nao informado"}</span>
+                <span>
+                  Tipo: {infraestrutura.cerca?.tipo || "Nao informado"}
+                </span>
                 <span>
                   Extensao: {infraestrutura.cerca?.comprimento_metros || 0} m
                 </span>
@@ -495,14 +530,26 @@ const PastoDetalhe = () => {
             <div className="rounded-2xl border border-border/70 bg-muted/20 p-4">
               <div className="mb-3 flex items-center justify-between gap-3">
                 <p className="font-medium text-foreground">Saleiros</p>
-                <StatusBadge tone={infraestrutura.saleiros?.estado === "ruim" ? "danger" : "neutral"}>
+                <StatusBadge
+                  tone={
+                    infraestrutura.saleiros?.estado === "ruim"
+                      ? "danger"
+                      : "neutral"
+                  }
+                >
                   {infraestrutura.saleiros?.estado || "Sem estado"}
                 </StatusBadge>
               </div>
               <div className="grid gap-2 text-sm text-muted-foreground sm:grid-cols-3">
-                <span>Saleiros: {infraestrutura.saleiros?.quantidade || 0}</span>
-                <span>Tipo: {infraestrutura.saleiros?.tipo || "Nao informado"}</span>
-                <span>Capacidade: {infraestrutura.saleiros?.capacidade || 0}</span>
+                <span>
+                  Saleiros: {infraestrutura.saleiros?.quantidade || 0}
+                </span>
+                <span>
+                  Tipo: {infraestrutura.saleiros?.tipo || "Nao informado"}
+                </span>
+                <span>
+                  Capacidade: {infraestrutura.saleiros?.capacidade || 0}
+                </span>
               </div>
             </div>
           </div>
@@ -515,9 +562,6 @@ const PastoDetalhe = () => {
             <h2 className="text-lg font-semibold tracking-[-0.01em] text-foreground">
               Lotes neste pasto
             </h2>
-            <p className="text-sm leading-6 text-muted-foreground">
-              Acesse rapidamente os grupos vinculados e a lotacao atual do campo.
-            </p>
           </div>
 
           <div className="grid gap-3">
@@ -530,10 +574,14 @@ const PastoDetalhe = () => {
                 <div className="space-y-1">
                   <p className="font-medium text-foreground">{lote.nome}</p>
                   <p className="text-sm text-muted-foreground">
-                    {lote.status === "ativo" ? "Em operacao" : "Fora da rotina principal"}
+                    {lote.status === "ativo"
+                      ? "Em operacao"
+                      : "Fora da rotina principal"}
                   </p>
                 </div>
-                <StatusBadge tone={lote.status === "ativo" ? "success" : "neutral"}>
+                <StatusBadge
+                  tone={lote.status === "ativo" ? "success" : "neutral"}
+                >
                   {lote.status}
                 </StatusBadge>
               </Link>
@@ -541,11 +589,7 @@ const PastoDetalhe = () => {
           </div>
         </section>
       ) : (
-        <EmptyState
-          icon={Trees}
-          title="Nenhum lote neste pasto"
-          description="Vincule um lote ao pasto para acompanhar ocupacao e lotacao diretamente por aqui."
-        />
+        <EmptyState icon={Trees} title="Nenhum lote neste pasto" />
       )}
 
       <Dialog open={rondaOpen} onOpenChange={setRondaOpen}>
@@ -643,7 +687,9 @@ const PastoDetalhe = () => {
                 value={aguaStatus || "nao_informado"}
                 onValueChange={(value) =>
                   setAguaStatus(
-                    value === "nao_informado" ? "" : (value as PastoAguaStatusEnum),
+                    value === "nao_informado"
+                      ? ""
+                      : (value as PastoAguaStatusEnum),
                   )
                 }
               >
@@ -688,7 +734,9 @@ const PastoDetalhe = () => {
                 value={fezesScore || "nao_informado"}
                 onValueChange={(value) =>
                   setFezesScore(
-                    value === "nao_informado" ? "" : (value as PastoFezesScoreEnum),
+                    value === "nao_informado"
+                      ? ""
+                      : (value as PastoFezesScoreEnum),
                   )
                 }
               >
@@ -739,7 +787,9 @@ const PastoDetalhe = () => {
               <Input
                 id="suplemento-quantidade"
                 value={suplementoQuantidade}
-                onChange={(event) => setSuplementoQuantidade(event.target.value)}
+                onChange={(event) =>
+                  setSuplementoQuantidade(event.target.value)
+                }
                 inputMode="decimal"
                 disabled={suplementoTipo === "nenhum"}
               />

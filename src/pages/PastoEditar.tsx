@@ -77,7 +77,10 @@ const PastoEditar = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
-  const pasto = useLiveQuery(() => (id ? db.state_pastos.get(id) : undefined), [id]);
+  const pasto = useLiveQuery(
+    () => (id ? db.state_pastos.get(id) : undefined),
+    [id],
+  );
   const lotesNoPasto = useLiveQuery(
     () => (id ? db.state_lotes.where("pasto_id").equals(id).count() : 0),
     [id],
@@ -117,7 +120,8 @@ const PastoEditar = () => {
     setAlturaSaida(pasto.altura_saida_alvo_cm?.toString() ?? "");
     setObservacoes(pasto.observacoes ?? "");
     if (pasto.infraestrutura) {
-      const { curral: _legacyCurral, ...infraLocalPasto } = pasto.infraestrutura;
+      const { curral: _legacyCurral, ...infraLocalPasto } =
+        pasto.infraestrutura;
       setInfra(infraLocalPasto);
     }
   }, [pasto]);
@@ -139,7 +143,9 @@ const PastoEditar = () => {
   const handleTipoPastoChange = (value: TipoPastoEnum) => {
     setTipoPasto(value);
     setForrageiraCultivar((current) =>
-      current && !FORRAGEIRA_OPTIONS_BY_TIPO[value].includes(current) ? "" : current,
+      current && !FORRAGEIRA_OPTIONS_BY_TIPO[value].includes(current)
+        ? ""
+        : current,
     );
   };
 
@@ -237,7 +243,6 @@ const PastoEditar = () => {
         <PageIntro
           eyebrow="Estrutura do rebanho"
           title="Editar pasto"
-          description="Carregando dados do pasto selecionado."
           actions={
             <Button variant="outline" onClick={() => navigate("/pastos")}>
               <ChevronLeft className="mr-2 h-4 w-4" />
@@ -254,7 +259,6 @@ const PastoEditar = () => {
       <PageIntro
         eyebrow="Estrutura do rebanho"
         title={`Editar ${pasto.nome}`}
-        description="Revise area, capacidade e infraestrutura mantendo a mesma leitura operacional usada na listagem."
         actions={
           <>
             <Button variant="outline" onClick={() => navigate(`/pastos/${id}`)}>
@@ -273,20 +277,14 @@ const PastoEditar = () => {
         <MetricCard
           label="Tipo de pastagem"
           value={tipoPasto}
-          hint="Mantem a leitura comparativa entre areas."
           icon={<Trees className="h-4 w-4" />}
         />
         <MetricCard
           label="Area informada"
           value={areaHa || "0"}
-          hint="Hectares declarados no cadastro."
           icon={<MapIcon className="h-4 w-4" />}
         />
-        <MetricCard
-          label="Lotes vinculados"
-          value={lotesNoPasto ?? 0}
-          hint="Quantidade atual de grupos alocados ao pasto."
-        />
+        <MetricCard label="Lotes vinculados" value={lotesNoPasto ?? 0} />
       </div>
 
       <form
@@ -296,10 +294,7 @@ const PastoEditar = () => {
           void handleSave();
         }}
       >
-        <FormSection
-          title="Identidade e capacidade"
-          description="Atualize os dados principais do pasto sem sobrecarregar a superficie com elementos secundarios."
-        >
+        <FormSection title="Identidade e capacidade">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2 md:col-span-2">
               <Label htmlFor="nome">Nome do pasto</Label>
@@ -315,7 +310,9 @@ const PastoEditar = () => {
               <Label>Tipo de pastagem</Label>
               <Select
                 value={tipoPasto}
-                onValueChange={(value: TipoPastoEnum) => handleTipoPastoChange(value)}
+                onValueChange={(value: TipoPastoEnum) =>
+                  handleTipoPastoChange(value)
+                }
               >
                 <SelectTrigger aria-label="Tipo de pastagem">
                   <SelectValue />
@@ -324,7 +321,9 @@ const PastoEditar = () => {
                   <SelectItem value="nativo">Nativo</SelectItem>
                   <SelectItem value="cultivado">Cultivado</SelectItem>
                   <SelectItem value="integracao">ILPF / Integracao</SelectItem>
-                  <SelectItem value="degradado">Degradado / Recuperacao</SelectItem>
+                  <SelectItem value="degradado">
+                    Degradado / Recuperacao
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -350,14 +349,10 @@ const PastoEditar = () => {
                 onChange={(event) => setCapacidadeUa(event.target.value)}
               />
             </div>
-
           </div>
         </FormSection>
 
-        <FormSection
-          title="Manejo da pastagem"
-          description="Escolha uma forrageira coerente com o tipo de pastagem e registre metas de campo."
-        >
+        <FormSection title="Manejo da pastagem">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="cultivar">Forrageira / cultivar</Label>
@@ -372,11 +367,13 @@ const PastoEditar = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">Nao informado</SelectItem>
-                  {getForrageiraOptions(tipoPasto, forrageiraCultivar).map((option) => (
-                    <SelectItem key={option} value={option}>
-                      {option}
-                    </SelectItem>
-                  ))}
+                  {getForrageiraOptions(tipoPasto, forrageiraCultivar).map(
+                    (option) => (
+                      <SelectItem key={option} value={option}>
+                        {option}
+                      </SelectItem>
+                    ),
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -418,17 +415,11 @@ const PastoEditar = () => {
           </div>
         </FormSection>
 
-        <FormSection
-          title="Infraestrutura"
-          description="Reorganize os recursos por grupo funcional para facilitar auditoria e revisoes futuras."
-        >
+        <FormSection title="Infraestrutura">
           <div className="grid gap-4 lg:grid-cols-2">
             <div className="rounded-2xl border border-border/70 bg-muted/20 p-4">
               <div className="mb-4 space-y-1">
                 <p className="font-medium text-foreground">Cochos</p>
-                <p className="text-sm text-muted-foreground">
-                  Quantidade, tipo predominante e metragem linear.
-                </p>
               </div>
               <div className="grid gap-3 md:grid-cols-2">
                 <div className="space-y-2">
@@ -473,7 +464,9 @@ const PastoEditar = () => {
                   <Label>Estado</Label>
                   <Select
                     value={infra.cochos?.estado || "bom"}
-                    onValueChange={(value) => handleInfraChange("cochos", "estado", value)}
+                    onValueChange={(value) =>
+                      handleInfraChange("cochos", "estado", value)
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -493,9 +486,6 @@ const PastoEditar = () => {
             <div className="rounded-2xl border border-border/70 bg-muted/20 p-4">
               <div className="mb-4 space-y-1">
                 <p className="font-medium text-foreground">Bebedouros</p>
-                <p className="text-sm text-muted-foreground">
-                  Volume de agua e condicao da estrutura disponivel.
-                </p>
               </div>
               <div className="grid gap-3 md:grid-cols-2">
                 <div className="space-y-2">
@@ -517,7 +507,11 @@ const PastoEditar = () => {
                   <Input
                     value={infra.bebedouros?.tipo || ""}
                     onChange={(event) =>
-                      handleInfraChange("bebedouros", "tipo", event.target.value)
+                      handleInfraChange(
+                        "bebedouros",
+                        "tipo",
+                        event.target.value,
+                      )
                     }
                     placeholder="Ex: australiano, concreto"
                   />
@@ -562,9 +556,6 @@ const PastoEditar = () => {
             <div className="rounded-2xl border border-border/70 bg-muted/20 p-4">
               <div className="mb-4 space-y-1">
                 <p className="font-medium text-foreground">Cercas</p>
-                <p className="text-sm text-muted-foreground">
-                  Tipo predominante, metragem e estado da divisao do campo.
-                </p>
               </div>
               <div className="grid gap-3 md:grid-cols-2">
                 <div className="space-y-2">
@@ -581,7 +572,9 @@ const PastoEditar = () => {
                   <Label>Estado</Label>
                   <Select
                     value={infra.cerca?.estado || "bom"}
-                    onValueChange={(value) => handleInfraChange("cerca", "estado", value)}
+                    onValueChange={(value) =>
+                      handleInfraChange("cerca", "estado", value)
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -615,9 +608,6 @@ const PastoEditar = () => {
             <div className="rounded-2xl border border-border/70 bg-muted/20 p-4">
               <div className="mb-4 space-y-1">
                 <p className="font-medium text-foreground">Saleiros</p>
-                <p className="text-sm text-muted-foreground">
-                  Itens locais de apoio a suplementacao no piquete.
-                </p>
               </div>
               <div className="grid gap-3 md:grid-cols-2">
                 <div className="space-y-2">
@@ -638,7 +628,9 @@ const PastoEditar = () => {
                   <Label>Estado</Label>
                   <Select
                     value={infra.saleiros?.estado || "bom"}
-                    onValueChange={(value) => handleInfraChange("saleiros", "estado", value)}
+                    onValueChange={(value) =>
+                      handleInfraChange("saleiros", "estado", value)
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue />

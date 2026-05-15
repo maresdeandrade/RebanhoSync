@@ -6,7 +6,6 @@ import {
   BarChart3,
   Beef,
   Calendar,
-  CheckCircle2,
   FileText,
   MousePointerClick,
   RefreshCw,
@@ -24,9 +23,14 @@ import {
   YAxis,
 } from "recharts";
 
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MetricCard } from "@/components/ui/metric-card";
 import { PageIntro } from "@/components/ui/page-intro";
 import { Progress } from "@/components/ui/progress";
@@ -175,7 +179,9 @@ const Dashboard = () => {
       }
 
       const [recentPage, stats] = await Promise.all([
-        listRejections(activeFarmId, { limit: DASHBOARD_REJECTION_SAMPLE_LIMIT }),
+        listRejections(activeFarmId, {
+          limit: DASHBOARD_REJECTION_SAMPLE_LIMIT,
+        }),
         getRejectionStats(activeFarmId),
       ]);
 
@@ -304,30 +310,30 @@ const Dashboard = () => {
   const adminPriorityActions = useMemo(
     () => [
       {
-        title: "DLQ local",
+        title: "Registros para revisar",
         tone: totalRejections > 0 ? "danger" : "success",
         value: totalRejections,
         helper:
           totalRejections > 0
-            ? "Rejeicoes e rollbacks pedem revisao antes de novo retrabalho."
-            : "Nenhuma rejeicao local aberta neste momento.",
+            ? "Ha registros que precisam de correcao antes de reenviar."
+            : "Nenhum registro aguardando revisao.",
         path: totalRejections > 0 ? "/reconciliacao" : "/home",
-        actionLabel: totalRejections > 0 ? "Abrir reconciliacao" : "Ver status de sync",
+        actionLabel: totalRejections > 0 ? "Revisar registros" : "Ver inicio",
       },
       {
-        title: "Fila de sync",
+        title: "Envio pendente",
         tone: operationalStats.backlog > 0 ? "warning" : "success",
         value: operationalStats.backlog,
         helper:
           operationalStats.backlog > 0
-            ? "Gestos ainda aguardam worker, rede ou confirmacao do servidor."
-            : "Fila local estabilizada para a fazenda ativa.",
+            ? "Acoes locais ainda aguardam conexao ou confirmacao."
+            : "Tudo enviado para a fazenda ativa.",
         path: "/home",
         actionLabel:
-          operationalStats.backlog > 0 ? "Acompanhar fila" : "Abrir painel inicial",
+          operationalStats.backlog > 0 ? "Acompanhar envio" : "Abrir inicio",
       },
       {
-        title: "Conformidade regulatoria",
+        title: "Conformidade",
         tone: regulatoryReadModel.hasBlockingIssues
           ? "danger"
           : regulatoryReadModel.attention.openCount > 0
@@ -336,7 +342,7 @@ const Dashboard = () => {
         value: regulatoryReadModel.attention.openCount,
         helper:
           regulatoryReadModel.flows.sale.blockerCount > 0
-            ? "Venda/transito estao restritos ate regularizar o overlay oficial."
+            ? "Venda/transito estao restritos ate regularizar pendencias."
             : regulatoryReadModel.flows.nutrition.blockerCount > 0
               ? "Nutricao segue bloqueada por feed-ban ou checklist critico."
               : regulatoryReadModel.attention.openCount > 0
@@ -345,8 +351,8 @@ const Dashboard = () => {
         path: "/protocolos-sanitarios",
         actionLabel:
           regulatoryReadModel.attention.openCount > 0
-            ? "Abrir overlay"
-            : "Revisar pack oficial",
+            ? "Abrir conformidade"
+            : "Revisar protocolos",
       },
       {
         title: "Sanitario critico",
@@ -368,7 +374,12 @@ const Dashboard = () => {
           sanitaryAttention.totalOpen > 0 ? "Abrir agenda" : "Ver agenda",
       },
     ],
-    [operationalStats.backlog, regulatoryReadModel, sanitaryAttention, totalRejections],
+    [
+      operationalStats.backlog,
+      regulatoryReadModel,
+      sanitaryAttention,
+      totalRejections,
+    ],
   );
 
   const routeLabel = (route: string) => {
@@ -390,21 +401,20 @@ const Dashboard = () => {
     <div className="space-y-5">
       <PageIntro
         eyebrow="Saude operacional"
-        title="Dashboard administrativo"
-        description="Monitoramento do sync, rejeicoes e adocao do produto. A rotina operacional continua protagonista; analytics entram como camada secundaria para gestao."
+        title="Painel gerencial"
+        description="Indicadores para revisar pendencias, agenda e conformidade."
         meta={
           <>
-            <StatusBadge tone="neutral">{operationalStats.processed} gestos processados</StatusBadge>
             {operationalStats.backlog > 0 ? (
               <StatusBadge tone="warning">
-                {operationalStats.backlog} na fila
+                {operationalStats.backlog} envio(s) pendente(s)
               </StatusBadge>
             ) : (
-              <StatusBadge tone="success">Fila sob controle</StatusBadge>
+              <StatusBadge tone="success">Envios em dia</StatusBadge>
             )}
             {totalRejections > 0 ? (
               <StatusBadge tone="danger">
-                {totalRejections} rejeicoes locais
+                {totalRejections} registro(s) para revisar
               </StatusBadge>
             ) : null}
             {sanitaryAttention.criticalCount > 0 ? (
@@ -414,16 +424,19 @@ const Dashboard = () => {
             ) : null}
             {regulatoryReadModel.attention.openCount > 0 ? (
               <StatusBadge
-                tone={regulatoryReadModel.hasBlockingIssues ? "danger" : "warning"}
+                tone={
+                  regulatoryReadModel.hasBlockingIssues ? "danger" : "warning"
+                }
               >
-                {regulatoryReadModel.attention.openCount} pendencia(s) regulatoria(s)
+                {regulatoryReadModel.attention.openCount} pendencia(s)
+                regulatoria(s)
               </StatusBadge>
             ) : null}
           </>
         }
       />
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-6">
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <MetricCard
           label="Animais"
           value={totalAnimais}
@@ -433,22 +446,8 @@ const Dashboard = () => {
         <MetricCard
           label="Agenda aberta"
           value={pendenciasAgenda}
-          hint="Itens agendados ativos."
+          hint="Tarefas ativas."
           icon={<Calendar className="h-4 w-4" />}
-        />
-        <MetricCard
-          label="Backlog de sync"
-          value={operationalStats.backlog}
-          hint="Gestos em PENDING ou SYNCING."
-          icon={<AlertTriangle className="h-4 w-4" />}
-          tone={operationalStats.backlog > 0 ? "warning" : "success"}
-        />
-        <MetricCard
-          label="Taxa de sucesso"
-          value={`${operationalStats.successRate.toFixed(1)}%`}
-          hint={`${operationalStats.successful} sucesso(s) de ${operationalStats.processed} processado(s).`}
-          icon={<CheckCircle2 className="h-4 w-4" />}
-          tone={operationalStats.successRate < 95 ? "warning" : "success"}
         />
         <MetricCard
           label="Sanitario critico"
@@ -466,7 +465,7 @@ const Dashboard = () => {
               ? "danger"
               : sanitaryAttention.warningCount > 0
                 ? "warning"
-            : "success"
+                : "success"
           }
         />
         <MetricCard
@@ -495,11 +494,6 @@ const Dashboard = () => {
       <Card>
         <CardHeader>
           <CardTitle>Prioridades administrativas</CardTitle>
-          <CardDescription>
-            Comece pela fila, pela DLQ, pela conformidade regulatoria e pelo
-            sanitario critico. A telemetria detalhada fica recolhida para nao
-            competir com a operacao.
-          </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-0 lg:grid-cols-4 lg:divide-x divide-y lg:divide-y-0 rounded-2xl border border-border overflow-hidden bg-card">
           {adminPriorityActions.map((action) => (
@@ -510,7 +504,9 @@ const Dashboard = () => {
               <div>
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <p className="text-sm font-medium text-foreground">{action.title}</p>
+                    <p className="text-sm font-medium text-foreground">
+                      {action.title}
+                    </p>
                     <strong className="mt-2 block text-3xl tracking-[-0.02em] tabular-nums">
                       {action.value}
                     </strong>
@@ -521,7 +517,12 @@ const Dashboard = () => {
                   {action.helper}
                 </p>
               </div>
-              <Button asChild variant="outline" size="sm" className="mt-4 self-start bg-transparent border-transparent hover:border-border hover:bg-muted/30">
+              <Button
+                asChild
+                variant="outline"
+                size="sm"
+                className="mt-4 self-start bg-transparent border-transparent hover:border-border hover:bg-muted/30"
+              >
                 <Link to={action.path}>{action.actionLabel}</Link>
               </Button>
             </div>
@@ -532,59 +533,53 @@ const Dashboard = () => {
       {sanitaryAttention.scheduleModes.length > 0 ? (
         <section className="grid gap-4 xl:grid-cols-2">
           <Card>
-          <CardHeader>
-            <CardTitle>Agenda sanitaria por calendario</CardTitle>
-            <CardDescription>
-              Recorte declarativo do `calendario_base` para abrir a agenda ja filtrada por campanha, janela etaria, recorrencia ou uso imediato.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-            {sanitaryAttention.scheduleModes.map((mode) => (
-              <div
-                key={mode.key}
-                className="rounded-2xl border border-border/70 bg-muted/35 p-4"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="font-medium">{mode.label}</p>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      {mode.count} item(ns) aberto(s) neste recorte.
-                    </p>
+            <CardHeader>
+              <CardTitle>Agenda sanitaria por calendario</CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+              {sanitaryAttention.scheduleModes.map((mode) => (
+                <div
+                  key={mode.key}
+                  className="rounded-2xl border border-border/70 bg-muted/35 p-4"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-medium">{mode.label}</p>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        {mode.count} item(ns) aberto(s) neste recorte.
+                      </p>
+                    </div>
+                    <StatusBadge tone="info">{mode.count}</StatusBadge>
                   </div>
-                  <StatusBadge tone="info">{mode.count}</StatusBadge>
+                  <Button
+                    asChild
+                    variant="outline"
+                    size="sm"
+                    className="mt-4 bg-transparent"
+                  >
+                    <Link to={buildAgendaCalendarModePath(mode.key)}>
+                      Abrir {mode.label.toLowerCase()}
+                    </Link>
+                  </Button>
+                  <Button
+                    asChild
+                    variant="ghost"
+                    size="sm"
+                    className="mt-2 px-0"
+                  >
+                    <Link to={buildAnimalsCalendarModePath(mode.key)}>
+                      Ver animais
+                    </Link>
+                  </Button>
                 </div>
-                <Button
-                  asChild
-                  variant="outline"
-                  size="sm"
-                  className="mt-4 bg-transparent"
-                >
-                  <Link to={buildAgendaCalendarModePath(mode.key)}>
-                    Abrir {mode.label.toLowerCase()}
-                  </Link>
-                </Button>
-                <Button
-                  asChild
-                  variant="ghost"
-                  size="sm"
-                  className="mt-2 px-0"
-                >
-                  <Link to={buildAnimalsCalendarModePath(mode.key)}>
-                    Ver animais
-                  </Link>
-                </Button>
-              </div>
-            ))}
-          </CardContent>
+              ))}
+            </CardContent>
           </Card>
 
           {sanitaryAttention.scheduleAnchors.length > 0 ? (
             <Card>
               <CardHeader>
                 <CardTitle>Agenda sanitaria por ancora</CardTitle>
-                <CardDescription>
-                  Recortes por ancora operacional para abrir diretamente nascimento, desmama, secagem, calendario ou necessidade clinica.
-                </CardDescription>
               </CardHeader>
               <CardContent className="grid gap-3 md:grid-cols-2">
                 {sanitaryAttention.scheduleAnchors.map((anchor) => (
@@ -633,11 +628,7 @@ const Dashboard = () => {
         <section className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
           <Card>
             <CardHeader>
-              <CardTitle>Pendencias regulatorias por subarea</CardTitle>
-              <CardDescription>
-                Recorte do overlay oficial por frente operacional para acelerar
-                a triagem de feed-ban, quarentena, documental e agua/limpeza.
-              </CardDescription>
+              <CardTitle>Pendencias regulatorias por area</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               {regulatoryReadModel.analytics.subareas.map((cut) => (
@@ -676,8 +667,10 @@ const Dashboard = () => {
                     </div>
                     <div className="flex flex-wrap gap-2 self-start">
                       <Button asChild variant="outline" size="sm">
-                        <Link to={`/protocolos-sanitarios?overlaySubarea=${cut.key}`}>
-                          Abrir overlay filtrado
+                        <Link
+                          to={`/protocolos-sanitarios?overlaySubarea=${cut.key}`}
+                        >
+                          Abrir area
                         </Link>
                       </Button>
                       <Button asChild variant="ghost" size="sm">
@@ -694,11 +687,7 @@ const Dashboard = () => {
 
           <Card>
             <CardHeader>
-              <CardTitle>Impacto operacional da conformidade</CardTitle>
-              <CardDescription>
-                Corte por efeito real no fluxo: nutricao, movimentacao interna
-                e transito/venda.
-              </CardDescription>
+              <CardTitle>Impacto da conformidade</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               {regulatoryReadModel.analytics.impacts.map((impact) => (
@@ -732,7 +721,9 @@ const Dashboard = () => {
                     </div>
                     <div className="flex flex-wrap gap-2 self-start">
                       <Button asChild variant="ghost" size="sm">
-                        <Link to={`/protocolos-sanitarios?overlayImpact=${impact.key}`}>
+                        <Link
+                          to={`/protocolos-sanitarios?overlayImpact=${impact.key}`}
+                        >
                           Abrir recorte
                         </Link>
                       </Button>
@@ -753,11 +744,7 @@ const Dashboard = () => {
       <section className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
         <Card>
           <CardHeader>
-            <CardTitle>Leitura do sync</CardTitle>
-            <CardDescription>
-              Backlog, taxa de sucesso e concentracao das rejeicoes por regra de
-              negocio no recorte mais recente da DLQ local.
-            </CardDescription>
+            <CardTitle>Envio e revisao tecnica</CardTitle>
           </CardHeader>
           <CardContent className="space-y-5">
             <div className="app-surface-muted p-4">
@@ -792,9 +779,9 @@ const Dashboard = () => {
               <div className="space-y-3">
                 {rejectionSampleIsPartial ? (
                   <div className="rounded-2xl border border-border/70 bg-muted/35 p-4 text-sm text-muted-foreground">
-                    Graficos baseados nas ultimas {recentRejections.length} rejeicoes locais
-                    para manter a leitura administrativa leve. Total em fila/DLQ:
-                    {" "}{totalRejections}.
+                    Graficos baseados nas ultimas {recentRejections.length}{" "}
+                    rejeicoes locais para manter a leitura administrativa leve.
+                    Total para revisao: {totalRejections}.
                   </div>
                 ) : null}
                 {rejectionByRuleData.map((item) => (
@@ -816,10 +803,6 @@ const Dashboard = () => {
         <Card>
           <CardHeader>
             <CardTitle>Rejeicoes por dominio</CardTitle>
-            <CardDescription>
-              Onde o fluxo esta acumulando mais friccao no recorte recente da
-              DLQ local.
-            </CardDescription>
           </CardHeader>
           <CardContent className="h-[340px]">
             {rejectionByDomainData.length === 0 ? (
@@ -833,7 +816,11 @@ const Dashboard = () => {
                   <XAxis dataKey="domain" />
                   <YAxis />
                   <Tooltip />
-                  <Bar dataKey="total" fill="hsl(var(--destructive))" radius={[8, 8, 0, 0]} />
+                  <Bar
+                    dataKey="total"
+                    fill="hsl(var(--destructive))"
+                    radius={[8, 8, 0, 0]}
+                  />
                 </BarChart>
               </ResponsiveContainer>
             )}
@@ -847,16 +834,28 @@ const Dashboard = () => {
             <CardTitle className="flex items-center gap-2">
               Evolucao de peso
             </CardTitle>
-            <CardDescription>
-              Serie curta para leitura rapida das ultimas pesagens.
-            </CardDescription>
           </CardHeader>
           <CardContent className="h-[320px]">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={pesagemData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
-                <XAxis dataKey="data" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  vertical={false}
+                  stroke="hsl(var(--border))"
+                />
+                <XAxis
+                  dataKey="data"
+                  stroke="hsl(var(--muted-foreground))"
+                  fontSize={12}
+                  tickLine={false}
+                  axisLine={false}
+                />
+                <YAxis
+                  stroke="hsl(var(--muted-foreground))"
+                  fontSize={12}
+                  tickLine={false}
+                  axisLine={false}
+                />
                 <Tooltip />
                 <Line
                   type="monotone"
@@ -873,18 +872,34 @@ const Dashboard = () => {
         <Card>
           <CardHeader>
             <CardTitle>Agenda por categoria</CardTitle>
-            <CardDescription>
-              Distribuicao dos itens abertos para leitura de carga operacional.
-            </CardDescription>
           </CardHeader>
           <CardContent className="h-[320px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={agendaData}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
-                  <XAxis dataKey="nome" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
-                  <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  vertical={false}
+                  stroke="hsl(var(--border))"
+                />
+                <XAxis
+                  dataKey="nome"
+                  stroke="hsl(var(--muted-foreground))"
+                  fontSize={12}
+                  tickLine={false}
+                  axisLine={false}
+                />
+                <YAxis
+                  stroke="hsl(var(--muted-foreground))"
+                  fontSize={12}
+                  tickLine={false}
+                  axisLine={false}
+                />
                 <Tooltip />
-                  <Bar dataKey="qtd" fill="hsl(var(--success))" radius={[4, 4, 0, 0]} />
+                <Bar
+                  dataKey="qtd"
+                  fill="hsl(var(--success))"
+                  radius={[4, 4, 0, 0]}
+                />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -901,8 +916,8 @@ const Dashboard = () => {
                     Telemetria de piloto
                   </p>
                   <p className="text-sm font-normal text-muted-foreground">
-                    Expanda apenas quando precisar analisar adocao, rotas e falhas
-                    instrumentadas.
+                    Expanda apenas quando precisar analisar adocao, rotas e
+                    falhas instrumentadas.
                   </p>
                 </div>
               </AccordionTrigger>
@@ -911,15 +926,12 @@ const Dashboard = () => {
                   <Card>
                     <CardHeader>
                       <CardTitle>Indicadores do piloto</CardTitle>
-                      <CardDescription>
-                        Resumo dos ultimos 7 dias para acompanhar uso e falhas.
-                      </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                       {pilotMetrics.totalEvents === 0 ? (
                         <div className="rounded-2xl border border-dashed border-border/70 p-4 text-sm text-muted-foreground">
-                          Ainda nao ha telemetria local suficiente para resumir uso e
-                          falhas desta fazenda.
+                          Ainda nao ha telemetria local suficiente para resumir
+                          uso e falhas desta fazenda.
                         </div>
                       ) : (
                         <>
@@ -946,7 +958,8 @@ const Dashboard = () => {
                                 {pilotMetrics.importedRecords}
                               </strong>
                               <span className="text-xs text-muted-foreground">
-                                {pilotMetrics.importsCompleted} carga(s) concluida(s)
+                                {pilotMetrics.importsCompleted} carga(s)
+                                concluida(s)
                               </span>
                             </div>
 
@@ -967,20 +980,21 @@ const Dashboard = () => {
                             <div className="app-surface-muted p-4">
                               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                 <AlertTriangle className="h-4 w-4" />
-                                Falhas de sync
+                                Falhas de envio
                               </div>
                               <strong className="mt-3 block text-2xl">
                                 {pilotMetrics.syncFailures}
                               </strong>
                               <span className="text-xs text-muted-foreground">
-                                {pilotMetrics.syncSuccesses} sucesso(s) no periodo
+                                {pilotMetrics.syncSuccesses} sucesso(s) no
+                                periodo
                               </span>
                             </div>
                           </div>
 
                           <div className="rounded-2xl border border-border/70 bg-muted/35 p-4 text-sm text-muted-foreground">
-                            {pilotMetrics.totalEvents} evento(s) de telemetria local
-                            agregados no periodo.
+                            {pilotMetrics.totalEvents} evento(s) de telemetria
+                            local agregados no periodo.
                           </div>
                         </>
                       )}
@@ -989,23 +1003,27 @@ const Dashboard = () => {
                   <Card>
                     <CardHeader>
                       <CardTitle>Rotas e alertas</CardTitle>
-                      <CardDescription>
-                        Como o produto esta sendo usado e onde surgem desvios.
-                      </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-5">
                       <div className="space-y-3">
-                        <div className="text-sm font-medium">Rotas mais usadas</div>
+                        <div className="text-sm font-medium">
+                          Rotas mais usadas
+                        </div>
                         {pilotMetrics.topRoutes.length === 0 ? (
                           <p className="text-sm text-muted-foreground">
                             Sem navegacao registrada ainda.
                           </p>
                         ) : (
                           pilotMetrics.topRoutes.map((item) => (
-                            <div key={item.label} className="app-surface-muted p-4">
+                            <div
+                              key={item.label}
+                              className="app-surface-muted p-4"
+                            >
                               <div className="flex items-center justify-between gap-3 text-sm">
                                 <span>{routeLabel(item.label)}</span>
-                                <span className="text-muted-foreground">{item.count}</span>
+                                <span className="text-muted-foreground">
+                                  {item.count}
+                                </span>
                               </div>
                               <Progress
                                 value={
@@ -1024,7 +1042,9 @@ const Dashboard = () => {
                       </div>
 
                       <div className="space-y-3">
-                        <div className="text-sm font-medium">Importacoes por entidade</div>
+                        <div className="text-sm font-medium">
+                          Importacoes por entidade
+                        </div>
                         {pilotMetrics.importsByEntity.length === 0 ? (
                           <p className="text-sm text-muted-foreground">
                             Nenhuma importacao concluida no periodo.
@@ -1043,7 +1063,9 @@ const Dashboard = () => {
                       </div>
 
                       <div className="space-y-3">
-                        <div className="text-sm font-medium">Falhas registradas</div>
+                        <div className="text-sm font-medium">
+                          Falhas registradas
+                        </div>
                         {pilotMetrics.failuresByType.length === 0 ? (
                           <p className="text-sm text-muted-foreground">
                             Nenhuma falha instrumentada nos ultimos 7 dias.

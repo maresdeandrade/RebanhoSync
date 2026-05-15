@@ -70,36 +70,42 @@ const Financeiro = () => {
   const saleBlockingMessage =
     saleCompliance.firstBlockerMessage ?? saleCompliance.firstWarningMessage;
 
-  const data = useLiveQuery(
-    async () => {
-      if (!activeFarmId) {
-        return {
-          eventosBase: [],
-          detalhes: [],
-          contrapartes: [],
-          animais: [],
-          lotes: [],
-        };
-      }
+  const data = useLiveQuery(async () => {
+    if (!activeFarmId) {
+      return {
+        eventosBase: [],
+        detalhes: [],
+        contrapartes: [],
+        animais: [],
+        lotes: [],
+      };
+    }
 
-      const [eventosBase, detalhes, contrapartes, animais, lotes] = await Promise.all([
+    const [eventosBase, detalhes, contrapartes, animais, lotes] =
+      await Promise.all([
         db.event_eventos.where("fazenda_id").equals(activeFarmId).toArray(),
-        db.event_eventos_financeiro.where("fazenda_id").equals(activeFarmId).toArray(),
-        db.state_contrapartes.where("fazenda_id").equals(activeFarmId).toArray(),
+        db.event_eventos_financeiro
+          .where("fazenda_id")
+          .equals(activeFarmId)
+          .toArray(),
+        db.state_contrapartes
+          .where("fazenda_id")
+          .equals(activeFarmId)
+          .toArray(),
         db.state_animais.where("fazenda_id").equals(activeFarmId).toArray(),
         db.state_lotes.where("fazenda_id").equals(activeFarmId).toArray(),
       ]);
 
-      return {
-        eventosBase: eventosBase.filter((e) => e.dominio === "financeiro" && !e.deleted_at),
-        detalhes: detalhes.filter((d) => !d.deleted_at),
-        contrapartes: contrapartes.filter((c) => !c.deleted_at),
-        animais: animais.filter((a) => !a.deleted_at),
-        lotes: lotes.filter((l) => !l.deleted_at),
-      };
-    },
-    [activeFarmId],
-  );
+    return {
+      eventosBase: eventosBase.filter(
+        (e) => e.dominio === "financeiro" && !e.deleted_at,
+      ),
+      detalhes: detalhes.filter((d) => !d.deleted_at),
+      contrapartes: contrapartes.filter((c) => !c.deleted_at),
+      animais: animais.filter((a) => !a.deleted_at),
+      lotes: lotes.filter((l) => !l.deleted_at),
+    };
+  }, [activeFarmId]);
 
   const rows = useMemo(() => {
     if (!data) return [];
@@ -118,7 +124,9 @@ const Financeiro = () => {
         const contraparte = detalhe.contraparte_id
           ? contraparteById.get(detalhe.contraparte_id)
           : null;
-        const animal = evento.animal_id ? animalById.get(evento.animal_id) : null;
+        const animal = evento.animal_id
+          ? animalById.get(evento.animal_id)
+          : null;
         const lote = evento.lote_id ? loteById.get(evento.lote_id) : null;
         const occurredOn = evento.occurred_at.slice(0, 10);
 
@@ -127,7 +135,8 @@ const Financeiro = () => {
             ? (evento.payload.kind as string)
             : "";
         const quantidadeAnimais =
-          evento.payload && typeof evento.payload.quantidade_animais === "number"
+          evento.payload &&
+          typeof evento.payload.quantidade_animais === "number"
             ? (evento.payload.quantidade_animais as number)
             : animal
               ? 1
@@ -157,9 +166,11 @@ const Financeiro = () => {
               ? isSociedade
               : detalhe.tipo === tipoFilter && !isSociedade;
         const contraparteMatch =
-          contraparteFilter === "all" || detalhe.contraparte_id === contraparteFilter;
+          contraparteFilter === "all" ||
+          detalhe.contraparte_id === contraparteFilter;
         const dateMatch =
-          (!dateFrom || occurredOn >= dateFrom) && (!dateTo || occurredOn <= dateTo);
+          (!dateFrom || occurredOn >= dateFrom) &&
+          (!dateTo || occurredOn <= dateTo);
 
         const textIndex = [
           detalhe.tipo,
@@ -174,7 +185,8 @@ const Financeiro = () => {
           .toLowerCase();
         const searchMatch = !searchLower || textIndex.includes(searchLower);
 
-        if (!tipoMatch || !contraparteMatch || !dateMatch || !searchMatch) return null;
+        if (!tipoMatch || !contraparteMatch || !dateMatch || !searchMatch)
+          return null;
 
         return {
           id: detalhe.evento_id,
@@ -248,13 +260,17 @@ const Financeiro = () => {
           </Button>
           <Button
             variant="outline"
-            onClick={() => navigate("/registrar?dominio=financeiro&natureza=compra")}
+            onClick={() =>
+              navigate("/registrar?dominio=financeiro&natureza=compra")
+            }
           >
             <PlusCircle className="mr-2 h-4 w-4" />
             Nova compra
           </Button>
           <Button
-            onClick={() => navigate("/registrar?dominio=financeiro&natureza=venda")}
+            onClick={() =>
+              navigate("/registrar?dominio=financeiro&natureza=venda")
+            }
             disabled={saleCompliance.blockerCount > 0}
           >
             <PlusCircle className="mr-2 h-4 w-4" />
@@ -281,15 +297,17 @@ const Financeiro = () => {
               {saleCompliance.blockerCount > 0 ? (
                 <StatusBadge tone="danger">Bloqueia nova venda</StatusBadge>
               ) : saleCompliance.warningCount > 0 ? (
-                <StatusBadge tone="warning">Exige revisao antes da venda</StatusBadge>
+                <StatusBadge tone="warning">
+                  Exige revisao antes da venda
+                </StatusBadge>
               ) : null}
             </div>
             {saleBlockingMessage ? (
               <p className="text-sm text-amber-950">{saleBlockingMessage}</p>
             ) : (
               <p className="text-sm text-amber-950">
-                O overlay oficial segue aberto. Revise quarentena, documentacao e
-                demais checklists antes de liberar venda com transito.
+                Revise quarentena, documentacao e checklists antes de liberar
+                venda com transito.
               </p>
             )}
             <div className="flex flex-wrap gap-2">
@@ -297,11 +315,13 @@ const Financeiro = () => {
                 variant="outline"
                 onClick={() => navigate("/protocolos-sanitarios")}
               >
-                Abrir overlay de conformidade
+                Abrir conformidade
               </Button>
               <Button
                 variant="ghost"
-                onClick={() => navigate("/registrar?dominio=financeiro&natureza=compra")}
+                onClick={() =>
+                  navigate("/registrar?dominio=financeiro&natureza=compra")
+                }
               >
                 Registrar compra
               </Button>
@@ -404,7 +424,10 @@ const Financeiro = () => {
 
           <div className="space-y-2">
             <Label>Contraparte</Label>
-            <Select value={contraparteFilter} onValueChange={setContraparteFilter}>
+            <Select
+              value={contraparteFilter}
+              onValueChange={setContraparteFilter}
+            >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -421,12 +444,20 @@ const Financeiro = () => {
 
           <div className="space-y-2">
             <Label>Data de</Label>
-            <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
+            <Input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+            />
           </div>
 
           <div className="space-y-2">
             <Label>Data ate</Label>
-            <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
+            <Input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+            />
           </div>
 
           <div className="flex items-end">
@@ -470,8 +501,12 @@ const Financeiro = () => {
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-lg font-bold">{money.format(row.valorTotal)}</div>
-                    <div className="text-xs text-muted-foreground">{toDateTime(row.occurredAt)}</div>
+                    <div className="text-lg font-bold">
+                      {money.format(row.valorTotal)}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {toDateTime(row.occurredAt)}
+                    </div>
                   </div>
                 </div>
 
@@ -488,14 +523,20 @@ const Financeiro = () => {
                     {row.naturezaLabel}
                   </Badge>
                   {row.quantidadeAnimais > 1 && (
-                    <Badge variant="outline">{row.quantidadeAnimais} animais</Badge>
+                    <Badge variant="outline">
+                      {row.quantidadeAnimais} animais
+                    </Badge>
                   )}
                   <Badge variant="outline">
-                    Evento: <span className="font-mono ml-1">{row.id.slice(0, 8)}</span>
+                    Evento:{" "}
+                    <span className="font-mono ml-1">{row.id.slice(0, 8)}</span>
                   </Badge>
                   {row.sourceTaskId && (
                     <Badge variant="outline">
-                      Agenda: <span className="font-mono ml-1">{row.sourceTaskId.slice(0, 8)}</span>
+                      Agenda:{" "}
+                      <span className="font-mono ml-1">
+                        {row.sourceTaskId.slice(0, 8)}
+                      </span>
                     </Badge>
                   )}
                 </div>

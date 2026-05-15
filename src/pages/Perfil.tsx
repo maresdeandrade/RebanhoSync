@@ -122,7 +122,9 @@ export const Perfil = () => {
       if (settings) {
         setTheme(settings.theme || "system");
 
-        const notifications = resolveNotificationPreferences(settings.notifications || {});
+        const notifications = resolveNotificationPreferences(
+          settings.notifications || {},
+        );
         setNotificationsEnabled(notifications.enabled);
         setAgendaReminders(notifications.agendaReminders);
         setQuietHoursEnabled(Boolean(notifications.quietHours?.start));
@@ -290,7 +292,9 @@ export const Perfil = () => {
   const handleReminderDayToggle = (day: number, checked: boolean) => {
     setReminderDays((current) => {
       if (checked) {
-        return Array.from(new Set([...current, day])).sort((left, right) => right - left);
+        return Array.from(new Set([...current, day])).sort(
+          (left, right) => right - left,
+        );
       }
 
       const next = current.filter((entry) => entry !== day);
@@ -332,10 +336,11 @@ export const Perfil = () => {
       <PageIntro
         eyebrow="Conta"
         title="Meu perfil"
-        description="Gerencie dados pessoais, preferências de interface e ações de conta em uma estrutura previsível."
         meta={
           <StatusBadge tone={notificationsEnabled ? "info" : "neutral"}>
-            {notificationsEnabled ? "Notificacoes ativas" : "Notificacoes desativadas"}
+            {notificationsEnabled
+              ? "Notificacoes ativas"
+              : "Notificacoes desativadas"}
           </StatusBadge>
         }
       />
@@ -343,10 +348,19 @@ export const Perfil = () => {
       <div className="grid gap-4 md:grid-cols-3">
         <MetricCard
           label="Tema"
-          value={theme === "system" ? "Sistema" : theme === "light" ? "Claro" : "Escuro"}
-          hint="Preferencia aplicada na interface."
+          value={
+            theme === "system"
+              ? "Sistema"
+              : theme === "light"
+                ? "Claro"
+                : "Escuro"
+          }
           icon={
-            theme === "dark" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />
+            theme === "dark" ? (
+              <Moon className="h-4 w-4" />
+            ) : (
+              <Sun className="h-4 w-4" />
+            )
           }
         />
         <MetricCard
@@ -361,8 +375,11 @@ export const Perfil = () => {
         />
         <MetricCard
           label="Horario de silencio"
-          value={quietHoursEnabled ? `${quietHoursStart} - ${quietHoursEnd}` : "Desligado"}
-          hint="Usado para reduzir ruido fora da rotina operacional."
+          value={
+            quietHoursEnabled
+              ? `${quietHoursStart} - ${quietHoursEnd}`
+              : "Desligado"
+          }
         />
         <MetricCard
           label="Sanitario inteligente"
@@ -376,7 +393,11 @@ export const Perfil = () => {
         />
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+      <Tabs
+        value={activeTab}
+        onValueChange={setActiveTab}
+        className="space-y-6"
+      >
         <div className="app-surface p-2">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="profile" className="flex items-center gap-2">
@@ -391,10 +412,7 @@ export const Perfil = () => {
         </div>
 
         <TabsContent value="profile" className="space-y-6">
-          <FormSection
-            title="Identidade"
-            description="Atualize foto, nome e telefone. O e-mail continua apenas para consulta."
-          >
+          <FormSection title="Identidade">
             <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
               <div className="flex items-center gap-4 lg:min-w-[240px] lg:flex-col lg:items-start">
                 {avatarUrl ? (
@@ -430,7 +448,11 @@ export const Perfil = () => {
                     {avatarUrl ? "Alterar foto" : "Adicionar foto"}
                   </Button>
                   {avatarUrl ? (
-                    <Button variant="ghost" size="sm" onClick={handleRemoveAvatar}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleRemoveAvatar}
+                    >
                       <Trash2 className="mr-2 h-4 w-4" />
                       Remover
                     </Button>
@@ -441,7 +463,13 @@ export const Perfil = () => {
               <div className="grid flex-1 gap-4 md:grid-cols-2">
                 <div className="space-y-2 md:col-span-2">
                   <Label htmlFor="email">E-mail</Label>
-                  <Input id="email" type="email" value={email} disabled className="bg-muted/30" />
+                  <Input
+                    id="email"
+                    type="email"
+                    value={email}
+                    disabled
+                    className="bg-muted/30"
+                  />
                   <p className="text-xs text-muted-foreground">
                     O e-mail nao pode ser alterado neste fluxo.
                   </p>
@@ -472,7 +500,11 @@ export const Perfil = () => {
             </div>
 
             <div className="pt-2">
-              <Button onClick={handleSaveProfile} disabled={isSaving} className="w-full sm:w-auto">
+              <Button
+                onClick={handleSaveProfile}
+                disabled={isSaving}
+                className="w-full sm:w-auto"
+              >
                 {isSaving ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -487,20 +519,16 @@ export const Perfil = () => {
         </TabsContent>
 
         <TabsContent value="settings" className="space-y-6">
-          <FormSection
-            title="Aparencia"
-            description="Escolha como a interface deve se comportar neste dispositivo."
-          >
+          <FormSection title="Aparencia">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div className="space-y-1">
                 <Label>Tema</Label>
-                <p className="text-sm leading-6 text-muted-foreground">
-                  Sistema, claro ou escuro. A aplicacao usa esta preferencia imediatamente.
-                </p>
               </div>
               <Select
                 value={theme}
-                onValueChange={(value: "system" | "light" | "dark") => setTheme(value)}
+                onValueChange={(value: "system" | "light" | "dark") =>
+                  setTheme(value)
+                }
               >
                 <SelectTrigger className="w-full lg:w-52">
                   <SelectValue />
@@ -514,17 +542,11 @@ export const Perfil = () => {
             </div>
           </FormSection>
 
-          <FormSection
-            title="Notificacoes"
-            description="Mantenha somente os lembretes realmente uteis na rotina e esconda o resto fora de horario."
-          >
+          <FormSection title="Notificacoes">
             <div className="space-y-5">
               <div className="flex flex-col gap-3 rounded-2xl border border-border/70 bg-muted/20 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="space-y-1">
                   <Label>Notificacoes gerais</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Ativa ou pausa os avisos do aplicativo neste dispositivo.
-                  </p>
                 </div>
                 <Switch
                   checked={notificationsEnabled}
@@ -537,20 +559,17 @@ export const Perfil = () => {
                   <div className="flex flex-col gap-3 rounded-2xl border border-border/70 bg-background/80 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
                     <div className="space-y-1">
                       <Label>Lembretes de agenda</Label>
-                      <p className="text-sm text-muted-foreground">
-                        Mantem avisos de tarefas e vencimentos proximos.
-                      </p>
                     </div>
-                    <Switch checked={agendaReminders} onCheckedChange={setAgendaReminders} />
+                    <Switch
+                      checked={agendaReminders}
+                      onCheckedChange={setAgendaReminders}
+                    />
                   </div>
 
                   <div className="space-y-4 rounded-2xl border border-border/70 bg-background/80 px-4 py-4">
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                       <div className="space-y-1">
                         <Label>Horario de silencio</Label>
-                        <p className="text-sm text-muted-foreground">
-                          Suspende notificacoes entre os horarios configurados.
-                        </p>
                       </div>
                       <Switch
                         checked={quietHoursEnabled}
@@ -565,7 +584,9 @@ export const Perfil = () => {
                           id="quietHoursStart"
                           type="time"
                           value={quietHoursStart}
-                          onChange={(event) => setQuietHoursStart(event.target.value)}
+                          onChange={(event) =>
+                            setQuietHoursStart(event.target.value)
+                          }
                           disabled={!quietHoursEnabled}
                         />
                       </div>
@@ -575,7 +596,9 @@ export const Perfil = () => {
                           id="quietHoursEnd"
                           type="time"
                           value={quietHoursEnd}
-                          onChange={(event) => setQuietHoursEnd(event.target.value)}
+                          onChange={(event) =>
+                            setQuietHoursEnd(event.target.value)
+                          }
                           disabled={!quietHoursEnabled}
                         />
                       </div>
@@ -584,10 +607,6 @@ export const Perfil = () => {
                     <div className="space-y-3 rounded-2xl border border-border/70 bg-muted/20 px-4 py-4">
                       <div className="space-y-1">
                         <Label>Notificacoes sanitarias inteligentes</Label>
-                        <p className="text-sm text-muted-foreground">
-                          Priorizam protocolos criticos, obrigatorios e, no modo completo,
-                          tambem proximo procedimento e janela antecipada.
-                        </p>
                       </div>
 
                       <div className="grid gap-3 md:grid-cols-2">
@@ -600,9 +619,6 @@ export const Perfil = () => {
                             <span className="text-sm font-medium text-foreground">
                               Criticos e atrasados
                             </span>
-                            <p className="text-sm text-muted-foreground">
-                              Avisa quando ha item sanitario vencido com risco alto.
-                            </p>
                           </div>
                         </label>
 
@@ -615,9 +631,6 @@ export const Perfil = () => {
                             <span className="text-sm font-medium text-foreground">
                               Obrigatorios do dia
                             </span>
-                            <p className="text-sm text-muted-foreground">
-                              Destaca protocolo legal ou obrigatorio vencendo hoje.
-                            </p>
                           </div>
                         </label>
 
@@ -631,9 +644,6 @@ export const Perfil = () => {
                             <span className="text-sm font-medium text-foreground">
                               Proximo procedimento
                             </span>
-                            <p className="text-sm text-muted-foreground">
-                              No modo completo, avisa quando a proxima etapa ja entrou na janela curta.
-                            </p>
                           </div>
                         </label>
 
@@ -647,9 +657,6 @@ export const Perfil = () => {
                             <span className="text-sm font-medium text-foreground">
                               Janela antecipada
                             </span>
-                            <p className="text-sm text-muted-foreground">
-                              Usa os dias configurados abaixo para antecipar a rotina.
-                            </p>
                           </div>
                         </label>
                       </div>
@@ -673,7 +680,8 @@ export const Perfil = () => {
                           ))}
                         </div>
                         <p className="text-xs text-muted-foreground">
-                          Pelo menos uma janela permanece ativa para evitar silencio total por engano.
+                          Pelo menos uma janela permanece ativa para evitar
+                          silencio total por engano.
                         </p>
                       </div>
                     </div>
@@ -683,7 +691,11 @@ export const Perfil = () => {
             </div>
 
             <div className="pt-2">
-              <Button onClick={handleSaveSettings} disabled={isSaving} className="w-full sm:w-auto">
+              <Button
+                onClick={handleSaveSettings}
+                disabled={isSaving}
+                className="w-full sm:w-auto"
+              >
                 {isSaving ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -698,17 +710,22 @@ export const Perfil = () => {
         </TabsContent>
       </Tabs>
 
-      <FormSection
-        title="Conta e acesso"
-        description="Acoes sensiveis ficam fora do conteudo principal para reduzir risco e ruido."
-      >
+      <FormSection title="Conta e acesso">
         <div className="flex flex-col gap-3 sm:flex-row">
-          <Button variant="outline" onClick={handleSwitchFarm} className="sm:w-auto">
+          <Button
+            variant="outline"
+            onClick={handleSwitchFarm}
+            className="sm:w-auto"
+          >
             <Building2 className="mr-2 h-4 w-4" />
             Trocar de fazenda
           </Button>
 
-          <Button variant="destructive" onClick={handleLogout} className="sm:w-auto">
+          <Button
+            variant="destructive"
+            onClick={handleLogout}
+            className="sm:w-auto"
+          >
             <LogOut className="mr-2 h-4 w-4" />
             Sair
           </Button>

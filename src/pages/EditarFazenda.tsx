@@ -81,13 +81,19 @@ const ESTADOS = [
 ] as const;
 
 export default function EditarFazenda() {
-  const { activeFarmId, role, loading: authLoading, refreshSettings } = useAuth();
+  const {
+    activeFarmId,
+    role,
+    loading: authLoading,
+    refreshSettings,
+  } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState<FarmFormState>(EMPTY_FORM);
   const [farmMetadata, setFarmMetadata] = useState<Record<string, unknown>>({});
   const [essentialModeEnabled, setEssentialModeEnabled] = useState(true);
   const [strictRulesEnabled, setStrictRulesEnabled] = useState(true);
-  const [strictAntiTeleportEnabled, setStrictAntiTeleportEnabled] = useState(true);
+  const [strictAntiTeleportEnabled, setStrictAntiTeleportEnabled] =
+    useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -207,7 +213,9 @@ export default function EditarFazenda() {
           municipio: form.municipio.trim() || null,
           estado: form.estado || null,
           cep: form.cep.trim() || null,
-          area_total_ha: form.areaTotalHa ? Number.parseFloat(form.areaTotalHa) : null,
+          area_total_ha: form.areaTotalHa
+            ? Number.parseFloat(form.areaTotalHa)
+            : null,
           tipo_producao: form.tipoProducao || null,
           sistema_manejo: form.sistemaManejo || null,
           metadata: updatedMetadata,
@@ -263,14 +271,15 @@ export default function EditarFazenda() {
       <PageIntro
         eyebrow="Cadastro da fazenda"
         title="Editar dados estruturais"
-        description="Tela focada no cadastro-base da fazenda. Regras de classificacao e transicao do rebanho ficam em Configuracoes para nao misturar operacao com identidade cadastral."
         meta={
           <>
             <StatusBadge tone="neutral">
               {essentialModeEnabled ? "Modo essencial" : "Modo completo"}
             </StatusBadge>
             <StatusBadge tone={canManageRolloutFlags ? "info" : "neutral"}>
-              {canManageRolloutFlags ? "Rollout editavel" : "Rollout somente owner"}
+              {canManageRolloutFlags
+                ? "Rollout editavel"
+                : "Rollout somente owner"}
             </StatusBadge>
           </>
         }
@@ -287,11 +296,12 @@ export default function EditarFazenda() {
         }
       />
 
-      <form id="farm-profile-form" className="space-y-6" onSubmit={handleSubmit}>
-        <FormSection
-          title="Identificacao e localizacao"
-          description="Dados que identificam a fazenda e alimentam cabecalhos, onboarding e exportacoes."
-        >
+      <form
+        id="farm-profile-form"
+        className="space-y-6"
+        onSubmit={handleSubmit}
+      >
+        <FormSection title="Identificacao e localizacao">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2 md:col-span-2">
               <Label htmlFor="farm-name">Nome da fazenda</Label>
@@ -338,7 +348,9 @@ export default function EditarFazenda() {
               <Input
                 id="farm-city"
                 value={form.municipio}
-                onChange={(event) => updateField("municipio", event.target.value)}
+                onChange={(event) =>
+                  updateField("municipio", event.target.value)
+                }
                 placeholder="Cidade"
                 disabled={isSaving}
               />
@@ -369,10 +381,7 @@ export default function EditarFazenda() {
           </div>
         </FormSection>
 
-        <FormSection
-          title="Perfil produtivo"
-          description="Parametros de producao usados para contexto, filtros e relatorios administrativos."
-        >
+        <FormSection title="Perfil produtivo">
           <div className="grid gap-4 md:grid-cols-3">
             <div className="space-y-2">
               <Label htmlFor="farm-area">Area total (ha)</Label>
@@ -382,7 +391,9 @@ export default function EditarFazenda() {
                 min="0"
                 step="0.01"
                 value={form.areaTotalHa}
-                onChange={(event) => updateField("areaTotalHa", event.target.value)}
+                onChange={(event) =>
+                  updateField("areaTotalHa", event.target.value)
+                }
                 placeholder="150.50"
                 disabled={isSaving}
               />
@@ -434,7 +445,9 @@ export default function EditarFazenda() {
                 <SelectContent>
                   <SelectItem value="none">Nao informado</SelectItem>
                   <SelectItem value="confinamento">Confinamento</SelectItem>
-                  <SelectItem value="semi_confinamento">Semi-confinamento</SelectItem>
+                  <SelectItem value="semi_confinamento">
+                    Semi-confinamento
+                  </SelectItem>
                   <SelectItem value="pastagem">Pastagem</SelectItem>
                 </SelectContent>
               </Select>
@@ -444,7 +457,6 @@ export default function EditarFazenda() {
 
         <FormSection
           title="Experiencia do aplicativo"
-          description="Ajusta a densidade da navegacao e o quanto de modulos estruturais ficam disponiveis no dia a dia."
           actions={
             <StatusBadge tone={essentialModeEnabled ? "info" : "neutral"}>
               {essentialModeEnabled ? "Fluxo enxuto" : "Fluxo completo"}
@@ -455,10 +467,6 @@ export default function EditarFazenda() {
             <div className="flex items-start justify-between gap-3">
               <div className="space-y-1">
                 <p className="text-sm font-medium">Modo essencial</p>
-                <p className="text-sm leading-6 text-muted-foreground">
-                  Foca em hoje, agenda, registrar, animais, financeiro basico e
-                  resumo operacional.
-                </p>
               </div>
               <Switch
                 checked={essentialModeEnabled}
@@ -471,7 +479,6 @@ export default function EditarFazenda() {
 
         <FormSection
           title="Governanca de eventos"
-          description="Flags de rollout da fazenda para regras estritas do pipeline offline-first."
           actions={
             <StatusBadge tone={canManageRolloutFlags ? "info" : "neutral"}>
               {canManageRolloutFlags ? "Owner pode ajustar" : "Somente leitura"}
@@ -483,9 +490,6 @@ export default function EditarFazenda() {
               <div className="flex items-start justify-between gap-3">
                 <div className="space-y-1">
                   <p className="text-sm font-medium">Regras estritas</p>
-                  <p className="text-sm leading-6 text-muted-foreground">
-                    Liga validacoes mais rigidas da unificacao de eventos.
-                  </p>
                 </div>
                 <Switch
                   checked={strictRulesEnabled}
@@ -504,10 +508,6 @@ export default function EditarFazenda() {
               <div className="flex items-start justify-between gap-3">
                 <div className="space-y-1">
                   <p className="text-sm font-medium">Anti-teleporte estrito</p>
-                  <p className="text-sm leading-6 text-muted-foreground">
-                    Exige movimentacao registrada no mesmo gesto para atualizar
-                    lote ou pasto.
-                  </p>
                 </div>
                 <Switch
                   checked={strictRulesEnabled && strictAntiTeleportEnabled}
@@ -521,27 +521,11 @@ export default function EditarFazenda() {
           </div>
         </FormSection>
 
-        <Card className="shadow-none">
-          <CardContent className="flex flex-col gap-3 py-5 sm:flex-row sm:items-center sm:justify-between">
-            <div className="space-y-1">
-              <p className="text-sm font-medium text-foreground">
-                Regras de estagio migradas
-              </p>
-              <p className="text-sm leading-6 text-muted-foreground">
-                A classificacao e as transicoes do rebanho agora ficam apenas em
-                `Configuracoes`, separando cadastro da fazenda de politica
-                operacional.
-              </p>
-            </div>
-            <Button variant="outline" asChild>
-              <Link to="/configuracoes">Abrir configuracoes</Link>
-            </Button>
-          </CardContent>
-        </Card>
-
         {error ? (
           <Card className="border-destructive/30 shadow-none">
-            <CardContent className="py-4 text-sm text-destructive">{error}</CardContent>
+            <CardContent className="py-4 text-sm text-destructive">
+              {error}
+            </CardContent>
           </Card>
         ) : null}
       </form>

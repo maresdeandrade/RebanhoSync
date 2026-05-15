@@ -313,7 +313,6 @@ export default function Contrapartes() {
       <PageIntro
         eyebrow="Financeiro"
         title="Parceiros e contrapartes"
-        description="Cadastro limpo para compra, venda e sociedade, com exclusao protegida e edicao separada do fluxo principal."
         meta={
           <>
             <StatusBadge tone="neutral">{counts.total} cadastro(s)</StatusBadge>
@@ -327,19 +326,16 @@ export default function Contrapartes() {
         <MetricCard
           label="Total"
           value={counts.total}
-          hint="Base unica de parceiros disponiveis para eventos financeiros."
           icon={<Building2 className="h-5 w-5" />}
         />
         <MetricCard
           label="Pessoas"
           value={counts.pessoas}
-          hint="Cadastros individuais para compra, venda ou sociedade."
           icon={<UserRound className="h-5 w-5" />}
         />
         <MetricCard
           label="Empresas"
           value={counts.empresas}
-          hint="Parceiros juridicos e fornecedores recorrentes."
           tone="info"
           icon={<Building2 className="h-5 w-5" />}
         />
@@ -347,7 +343,6 @@ export default function Contrapartes() {
 
       <FormSection
         title="Nova contraparte"
-        description="Cadastre apenas os campos necessarios para a rotina. O restante pode ser complementado depois."
         actions={
           <StatusBadge tone={canManage ? "info" : "warning"}>
             {canManage ? "Edicao liberada" : "Somente leitura"}
@@ -377,7 +372,9 @@ export default function Contrapartes() {
             <Label>Nome</Label>
             <Input
               value={form.nome}
-              onChange={(event) => setFormField(setForm, "nome", event.target.value)}
+              onChange={(event) =>
+                setFormField(setForm, "nome", event.target.value)
+              }
               placeholder="Nome da contraparte"
             />
           </div>
@@ -408,7 +405,9 @@ export default function Contrapartes() {
             <Label>Email</Label>
             <Input
               value={form.email}
-              onChange={(event) => setFormField(setForm, "email", event.target.value)}
+              onChange={(event) =>
+                setFormField(setForm, "email", event.target.value)
+              }
               placeholder="contato@dominio.com"
             />
           </div>
@@ -428,14 +427,13 @@ export default function Contrapartes() {
         <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           {!canManage ? (
             <p className="text-sm text-muted-foreground">
-              Apenas owner/manager pode criar contrapartes.
+              Somente owner/manager.
             </p>
-          ) : (
-            <p className="text-sm text-muted-foreground">
-              Priorize nome, contato e documento para manter a operacao leve.
-            </p>
-          )}
-          <Button onClick={handleCreate} disabled={!canManage || isSavingCreate}>
+          ) : null}
+          <Button
+            onClick={handleCreate}
+            disabled={!canManage || isSavingCreate}
+          >
             <PlusCircle className="mr-2 h-4 w-4" />
             {isSavingCreate ? "Salvando..." : "Salvar contraparte"}
           </Button>
@@ -445,7 +443,6 @@ export default function Contrapartes() {
       {editingId ? (
         <FormSection
           title="Edicao em andamento"
-          description="Revise os dados da contraparte selecionada e confirme para aplicar o ajuste."
           actions={<StatusBadge tone="warning">Edicao ativa</StatusBadge>}
         >
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -526,7 +523,11 @@ export default function Contrapartes() {
               <Save className="mr-2 h-4 w-4" />
               {updatingId === editingId ? "Salvando..." : "Salvar alteracoes"}
             </Button>
-            <Button variant="outline" onClick={cancelEdit} disabled={updatingId === editingId}>
+            <Button
+              variant="outline"
+              onClick={cancelEdit}
+              disabled={updatingId === editingId}
+            >
               <X className="mr-2 h-4 w-4" />
               Cancelar
             </Button>
@@ -552,15 +553,7 @@ export default function Contrapartes() {
       </Toolbar>
 
       {filtered.length === 0 ? (
-        <EmptyState
-          icon={Building2}
-          title="Nenhuma contraparte encontrada"
-          description={
-            search
-              ? "Ajuste a busca para localizar parceiros ja cadastrados."
-              : "Cadastre a primeira contraparte para destravar compra, venda e sociedade."
-          }
-        />
+        <EmptyState icon={Building2} title="Nenhuma contraparte encontrada" />
       ) : (
         <div className="space-y-3">
           {filtered.map((item) => (
@@ -579,7 +572,9 @@ export default function Contrapartes() {
                       .join(" · ") || "Sem contato informado"}
                   </p>
                   {item.endereco ? (
-                    <p className="text-sm text-muted-foreground">{item.endereco}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {item.endereco}
+                    </p>
                   ) : null}
                 </div>
 
@@ -593,7 +588,11 @@ export default function Contrapartes() {
                   {canManage ? (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="icon" aria-label="Acoes da contraparte">
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          aria-label="Acoes da contraparte"
+                        >
                           <MoreHorizontal className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
@@ -633,7 +632,9 @@ export default function Contrapartes() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={!!deletingId}>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel disabled={!!deletingId}>
+              Cancelar
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               disabled={!!deletingId}

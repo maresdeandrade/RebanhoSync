@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/useAuth";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Activity } from "lucide-react";
 
@@ -52,23 +52,27 @@ export function SyncHealthPanel() {
       <CardHeader className="pb-3">
         <div className="flex items-center gap-2">
           <Activity className="h-5 w-5 text-destructive" />
-          <CardTitle className="text-base text-destructive">Saúde do Sync (Operacional)</CardTitle>
+          <CardTitle className="text-base text-destructive">
+            Falhas recentes
+          </CardTitle>
         </div>
-        <CardDescription>
-          Últimos erros de sincronização e rejeições da fazenda detectados pela telemetria.
-        </CardDescription>
       </CardHeader>
       <CardContent>
         {loading ? (
-          <p className="text-sm text-muted-foreground">Carregando métricas...</p>
+          <p className="text-sm text-muted-foreground">Carregando...</p>
         ) : metrics.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Nenhum erro de sync recente detectado.</p>
+          <p className="text-sm text-muted-foreground">Sem falhas recentes.</p>
         ) : (
           <div className="space-y-3">
             {metrics.map((m) => (
-              <div key={m.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-lg bg-background/60 border border-border/50 text-sm">
+              <div
+                key={m.id}
+                className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-lg bg-background/60 border border-border/50 text-sm"
+              >
                 <div className="flex items-center gap-3">
-                  <StatusBadge tone={m.status === "error" ? "critical" : "warning"}>
+                  <StatusBadge
+                    tone={m.status === "error" ? "critical" : "warning"}
+                  >
                     {m.event_name}
                   </StatusBadge>
                   {m.reason_code && (

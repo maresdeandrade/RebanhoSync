@@ -85,13 +85,20 @@ const PastoNovo = () => {
   const [capacidadeUa, setCapacidadeUa] = useState("");
   const [tipoPasto, setTipoPasto] = useState<TipoPastoEnum>("nativo");
   const [forrageiraCultivar, setForrageiraCultivar] = useState("");
-  const [coberturaSolo, setCoberturaSolo] = useState<PastoCoberturaSoloEnum | "">("");
+  const [coberturaSolo, setCoberturaSolo] = useState<
+    PastoCoberturaSoloEnum | ""
+  >("");
   const [alturaEntrada, setAlturaEntrada] = useState("");
   const [alturaSaida, setAlturaSaida] = useState("");
   const [observacoes, setObservacoes] = useState("");
   const [infra, setInfra] = useState<InfraestruturaPasto>({
     cochos: { quantidade: 0, tipo: "madeira", capacidade: 0, estado: "bom" },
-    bebedouros: { quantidade: 0, tipo: "natural", capacidade: 0, estado: "bom" },
+    bebedouros: {
+      quantidade: 0,
+      tipo: "natural",
+      capacidade: 0,
+      estado: "bom",
+    },
     saleiros: { quantidade: 0, tipo: "coberto", capacidade: 0, estado: "bom" },
     cerca: { tipo: "arame_liso", comprimento_metros: 0, estado: "bom" },
   });
@@ -115,7 +122,9 @@ const PastoNovo = () => {
   const handleTipoPastoChange = (value: TipoPastoEnum) => {
     setTipoPasto(value);
     setForrageiraCultivar((current) =>
-      current && !FORRAGEIRA_OPTIONS_BY_TIPO[value].includes(current) ? "" : current,
+      current && !FORRAGEIRA_OPTIONS_BY_TIPO[value].includes(current)
+        ? ""
+        : current,
     );
   };
 
@@ -233,7 +242,6 @@ const PastoNovo = () => {
       <PageIntro
         eyebrow="Estrutura do rebanho"
         title="Novo pasto"
-        description="Cadastre area, capacidade e infraestrutura em blocos objetivos, sem transformar a tela em planilha."
         actions={
           <>
             <Button variant="outline" onClick={() => navigate("/pastos")}>
@@ -252,19 +260,16 @@ const PastoNovo = () => {
         <MetricCard
           label="Tipo de pastagem"
           value={tipoPasto}
-          hint="Usado para leitura operacional e comparacao entre areas."
           icon={<Trees className="h-4 w-4" />}
         />
         <MetricCard
           label="Area informada"
           value={areaHa || "0"}
-          hint="Hectares cadastrados para este pasto."
           icon={<MapIcon className="h-4 w-4" />}
         />
         <MetricCard
           label="Capacidade declarada"
           value={capacidadeUa || "Nao informada"}
-          hint="UA de referencia para lotacao."
         />
       </div>
 
@@ -275,10 +280,7 @@ const PastoNovo = () => {
           void handleSave();
         }}
       >
-        <FormSection
-          title="Identidade e capacidade"
-          description="Identifique o pasto, classifique a area e registre os numeros que definem a lotacao."
-        >
+        <FormSection title="Identidade e capacidade">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2 md:col-span-2">
               <Label htmlFor="nome">Nome do pasto</Label>
@@ -294,7 +296,9 @@ const PastoNovo = () => {
               <Label>Tipo de pastagem</Label>
               <Select
                 value={tipoPasto}
-                onValueChange={(value: TipoPastoEnum) => handleTipoPastoChange(value)}
+                onValueChange={(value: TipoPastoEnum) =>
+                  handleTipoPastoChange(value)
+                }
               >
                 <SelectTrigger aria-label="Tipo de pastagem">
                   <SelectValue placeholder="Selecione..." />
@@ -303,7 +307,9 @@ const PastoNovo = () => {
                   <SelectItem value="nativo">Nativo</SelectItem>
                   <SelectItem value="cultivado">Cultivado</SelectItem>
                   <SelectItem value="integracao">ILPF / Integracao</SelectItem>
-                  <SelectItem value="degradado">Degradado / Recuperacao</SelectItem>
+                  <SelectItem value="degradado">
+                    Degradado / Recuperacao
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -331,14 +337,10 @@ const PastoNovo = () => {
                 placeholder="Ex: 25"
               />
             </div>
-
           </div>
         </FormSection>
 
-        <FormSection
-          title="Manejo da pastagem"
-          description="Escolha uma forrageira coerente com o tipo de pastagem e registre metas de campo."
-        >
+        <FormSection title="Manejo da pastagem">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="cultivar">Forrageira / cultivar</Label>
@@ -353,11 +355,13 @@ const PastoNovo = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">Nao informado</SelectItem>
-                  {getForrageiraOptions(tipoPasto, forrageiraCultivar).map((option) => (
-                    <SelectItem key={option} value={option}>
-                      {option}
-                    </SelectItem>
-                  ))}
+                  {getForrageiraOptions(tipoPasto, forrageiraCultivar).map(
+                    (option) => (
+                      <SelectItem key={option} value={option}>
+                        {option}
+                      </SelectItem>
+                    ),
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -427,17 +431,11 @@ const PastoNovo = () => {
           </div>
         </FormSection>
 
-        <FormSection
-          title="Infraestrutura"
-          description="Agrupe benfeitorias por bloco para manter o cadastro legivel e facilitar revisoes futuras."
-        >
+        <FormSection title="Infraestrutura">
           <div className="grid gap-4 lg:grid-cols-2">
             <div className="rounded-2xl border border-border/70 bg-muted/20 p-4">
               <div className="mb-4 space-y-1">
                 <p className="font-medium text-foreground">Cochos</p>
-                <p className="text-sm text-muted-foreground">
-                  Quantidade, tipo predominante e metragem linear.
-                </p>
               </div>
               <div className="grid gap-3 md:grid-cols-2">
                 <div className="space-y-2">
@@ -458,14 +456,18 @@ const PastoNovo = () => {
                   <Label>Tipo</Label>
                   <Select
                     value={infra.cochos?.tipo || "madeira"}
-                    onValueChange={(value) => handleInfraChange("cochos", "tipo", value)}
+                    onValueChange={(value) =>
+                      handleInfraChange("cochos", "tipo", value)
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="madeira">Madeira coberto</SelectItem>
-                      <SelectItem value="plastico">Plastico / tambor</SelectItem>
+                      <SelectItem value="plastico">
+                        Plastico / tambor
+                      </SelectItem>
                       <SelectItem value="concreto">Concreto</SelectItem>
                       <SelectItem value="bags">Bags / movel</SelectItem>
                     </SelectContent>
@@ -489,7 +491,9 @@ const PastoNovo = () => {
                   <Label>Estado</Label>
                   <Select
                     value={infra.cochos?.estado || "bom"}
-                    onValueChange={(value) => handleInfraChange("cochos", "estado", value)}
+                    onValueChange={(value) =>
+                      handleInfraChange("cochos", "estado", value)
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -509,9 +513,6 @@ const PastoNovo = () => {
             <div className="rounded-2xl border border-border/70 bg-muted/20 p-4">
               <div className="mb-4 space-y-1">
                 <p className="font-medium text-foreground">Bebedouros</p>
-                <p className="text-sm text-muted-foreground">
-                  Registre a estrutura que sustenta disponibilidade de agua.
-                </p>
               </div>
               <div className="grid gap-3 md:grid-cols-2">
                 <div className="space-y-2">
@@ -586,23 +587,24 @@ const PastoNovo = () => {
             <div className="rounded-2xl border border-border/70 bg-muted/20 p-4">
               <div className="mb-4 space-y-1">
                 <p className="font-medium text-foreground">Cercas</p>
-                <p className="text-sm text-muted-foreground">
-                  Tipo predominante, estado e metragem de referencia.
-                </p>
               </div>
               <div className="grid gap-3 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label>Tipo predominante</Label>
                   <Select
                     value={infra.cerca?.tipo || "arame_liso"}
-                    onValueChange={(value) => handleInfraChange("cerca", "tipo", value)}
+                    onValueChange={(value) =>
+                      handleInfraChange("cerca", "tipo", value)
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="arame_liso">Arame liso</SelectItem>
-                      <SelectItem value="arame_farpado">Arame farpado</SelectItem>
+                      <SelectItem value="arame_farpado">
+                        Arame farpado
+                      </SelectItem>
                       <SelectItem value="eletrica">Eletrica</SelectItem>
                     </SelectContent>
                   </Select>
@@ -611,7 +613,9 @@ const PastoNovo = () => {
                   <Label>Estado</Label>
                   <Select
                     value={infra.cerca?.estado || "bom"}
-                    onValueChange={(value) => handleInfraChange("cerca", "estado", value)}
+                    onValueChange={(value) =>
+                      handleInfraChange("cerca", "estado", value)
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -645,9 +649,6 @@ const PastoNovo = () => {
             <div className="rounded-2xl border border-border/70 bg-muted/20 p-4">
               <div className="mb-4 space-y-1">
                 <p className="font-medium text-foreground">Saleiros</p>
-                <p className="text-sm text-muted-foreground">
-                  Itens locais de apoio a suplementacao no piquete.
-                </p>
               </div>
               <div className="grid gap-3 md:grid-cols-2">
                 <div className="space-y-2">
@@ -668,7 +669,9 @@ const PastoNovo = () => {
                   <Label>Estado</Label>
                   <Select
                     value={infra.saleiros?.estado || "bom"}
-                    onValueChange={(value) => handleInfraChange("saleiros", "estado", value)}
+                    onValueChange={(value) =>
+                      handleInfraChange("saleiros", "estado", value)
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue />

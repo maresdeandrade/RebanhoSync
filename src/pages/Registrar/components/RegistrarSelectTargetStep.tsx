@@ -22,7 +22,11 @@ type RegistrarSelectTargetStepProps<QuickActionKey extends string = string> = {
   lotes: Array<{ id: string; nome: string }>;
   selectedAnimaisCount: number;
   selectedVisibleCount: number;
-  filteredAnimaisNoLote: Array<{ id: string; identificacao: string; sexo: "M" | "F" }>;
+  filteredAnimaisNoLote: Array<{
+    id: string;
+    identificacao: string;
+    sexo: "M" | "F";
+  }>;
   visibleAnimalIds: string[];
   selectedAnimais: string[];
   animalSearch: string;
@@ -36,18 +40,26 @@ type RegistrarSelectTargetStepProps<QuickActionKey extends string = string> = {
   onNext: () => void;
 };
 
-export function RegistrarSelectTargetStep<QuickActionKey extends string = string>(
-  props: RegistrarSelectTargetStepProps<QuickActionKey>,
-) {
+export function RegistrarSelectTargetStep<
+  QuickActionKey extends string = string,
+>(props: RegistrarSelectTargetStepProps<QuickActionKey>) {
   return (
     <Card className="overflow-hidden border-sky-200/70 shadow-sm dark:border-sky-900/60">
       <CardHeader className="border-b border-sky-100 bg-sky-50/70 dark:border-sky-900/50 dark:bg-sky-950/20">
-        <CardTitle className="text-base">1. Selecionar alvo</CardTitle>
+        <CardTitle className="text-base">1. Alvo do manejo</CardTitle>
       </CardHeader>
       <CardContent className="space-y-5">
-        <div className="space-y-2 rounded-xl border border-border/70 bg-card p-4">
-          <Label>Lote</Label>
-          <Select onValueChange={props.onSelectedLoteIdChange} value={props.selectedLoteId}>
+        <div className="space-y-3 rounded-xl border border-border/70 bg-card p-4">
+          <div className="flex items-center justify-between gap-3">
+            <Label>Lote</Label>
+            <span className="text-xs text-muted-foreground">
+              {props.animaisNoLoteCount} animal(is)
+            </span>
+          </div>
+          <Select
+            onValueChange={props.onSelectedLoteIdChange}
+            value={props.selectedLoteId}
+          >
             <SelectTrigger className="min-h-11">
               <SelectValue placeholder="Selecione o lote" />
             </SelectTrigger>
@@ -80,12 +92,13 @@ export function RegistrarSelectTargetStep<QuickActionKey extends string = string
             {props.animaisNoLoteCount === 0 ? (
               <p className="text-sm text-muted-foreground">
                 {props.selectedLoteId === props.semLoteOption
-                  ? "Nao ha animais sem lote cadastrados."
-                  : "Este lote ainda nao possui animais. Voce pode registrar compra ou sociedade por lote."}
+                  ? "Nao ha animais sem lote."
+                  : "Lote vazio. Compra ou sociedade podem ser registradas pelo financeiro."}
               </p>
             ) : null}
 
-            {props.animaisNoLoteCount > 0 && props.filteredAnimaisNoLote.length === 0 ? (
+            {props.animaisNoLoteCount > 0 &&
+            props.filteredAnimaisNoLote.length === 0 ? (
               <p className="text-sm text-muted-foreground">
                 Nenhum animal encontrado com este filtro.
               </p>
@@ -101,10 +114,14 @@ export function RegistrarSelectTargetStep<QuickActionKey extends string = string
 
         <Button
           className="min-h-12 w-full bg-[#0057C2] text-base font-semibold text-white hover:bg-[#00479f]"
-          disabled={!props.selectedLoteId || props.requiresAnimalsForQuickAction}
+          disabled={
+            !props.selectedLoteId || props.requiresAnimalsForQuickAction
+          }
           onClick={props.onNext}
         >
-          {props.quickActionLabel ? `Continuar para ${props.quickActionLabel}` : "Próximo"}{" "}
+          {props.quickActionLabel
+            ? `Continuar para ${props.quickActionLabel}`
+            : "Escolher manejo"}{" "}
           <ChevronRight className="ml-2 h-4 w-4" />
         </Button>
       </CardContent>

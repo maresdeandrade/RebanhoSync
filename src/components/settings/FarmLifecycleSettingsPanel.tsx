@@ -59,7 +59,10 @@ function toFormState(
       weightUnit,
     ),
     maleAdultDays: String(config.male_adult_days),
-    maleAdultWeightKg: formatWeightInput(config.male_adult_weight_kg, weightUnit),
+    maleAdultWeightKg: formatWeightInput(
+      config.male_adult_weight_kg,
+      weightUnit,
+    ),
     femaleAdultDays: String(config.female_adult_days),
     femaleAdultWeightKg: formatWeightInput(
       config.female_adult_weight_kg,
@@ -119,7 +122,10 @@ export function FarmLifecycleSettingsPanel({
 
   const handleSave = async () => {
     await onSave({
-      neonatal_days: parsePositiveInteger(form.neonatalDays, config.neonatal_days),
+      neonatal_days: parsePositiveInteger(
+        form.neonatalDays,
+        config.neonatal_days,
+      ),
       weaning_days: parsePositiveInteger(form.weaningDays, config.weaning_days),
       weaning_weight_kg: parsePositiveWeight(
         form.weaningWeightKg,
@@ -160,18 +166,20 @@ export function FarmLifecycleSettingsPanel({
   };
 
   const setNumericField =
-    (field: keyof Pick<
-      LifecycleFormState,
-      | "neonatalDays"
-      | "weaningDays"
-      | "weaningWeightKg"
-      | "maleBreedingCandidateDays"
-      | "maleBreedingCandidateWeightKg"
-      | "maleAdultDays"
-      | "maleAdultWeightKg"
-      | "femaleAdultDays"
-      | "femaleAdultWeightKg"
-    >) =>
+    (
+      field: keyof Pick<
+        LifecycleFormState,
+        | "neonatalDays"
+        | "weaningDays"
+        | "weaningWeightKg"
+        | "maleBreedingCandidateDays"
+        | "maleBreedingCandidateWeightKg"
+        | "maleAdultDays"
+        | "maleAdultWeightKg"
+        | "femaleAdultDays"
+        | "femaleAdultWeightKg"
+      >,
+    ) =>
     (value: string) => {
       setForm((current) => ({ ...current, [field]: value }));
     };
@@ -179,7 +187,6 @@ export function FarmLifecycleSettingsPanel({
   return (
     <FormSection
       title="Regras de estagio de vida"
-      description="Concentre aqui os marcos que alimentam classificacao, sugestao e aplicacao de transicoes no rebanho."
       actions={
         <>
           <StatusBadge tone="neutral">
@@ -188,7 +195,9 @@ export function FarmLifecycleSettingsPanel({
           <StatusBadge tone="info">
             Modo {TRANSITION_MODE_LABEL[form.defaultTransitionMode]}
           </StatusBadge>
-          <StatusBadge tone="neutral">Peso em {getWeightUnitLabel(weightUnit)}</StatusBadge>
+          <StatusBadge tone="neutral">
+            Peso em {getWeightUnitLabel(weightUnit)}
+          </StatusBadge>
         </>
       }
     >
@@ -198,10 +207,6 @@ export function FarmLifecycleSettingsPanel({
             <div className="space-y-1">
               <p className="text-sm font-medium text-foreground">
                 Politica de transicao
-              </p>
-              <p className="text-sm leading-6 text-muted-foreground">
-                Define qual criterio domina a classificacao e quando marcos por
-                idade podem ser aplicados automaticamente.
               </p>
             </div>
 
@@ -259,10 +264,6 @@ export function FarmLifecycleSettingsPanel({
                     <p className="text-sm font-medium text-foreground">
                       Autoaplicar marcos por idade no modo hibrido
                     </p>
-                    <p className="text-sm leading-6 text-muted-foreground">
-                      Mantem decisoes estrategicas sob confirmacao manual e
-                      libera apenas transicoes biologicas previsiveis.
-                    </p>
                   </div>
                   <Switch
                     checked={form.hybridAutoApplyAgeStages}
@@ -285,9 +286,6 @@ export function FarmLifecycleSettingsPanel({
                 <p className="text-sm font-medium text-foreground">
                   Marcos iniciais
                 </p>
-                <p className="text-sm leading-6 text-muted-foreground">
-                  Ajusta janela neonatal e alvo de desmame.
-                </p>
               </div>
               <div className="grid gap-3">
                 <div className="space-y-2">
@@ -297,7 +295,9 @@ export function FarmLifecycleSettingsPanel({
                     type="number"
                     min="1"
                     value={form.neonatalDays}
-                    onChange={(event) => setNumericField("neonatalDays")(event.target.value)}
+                    onChange={(event) =>
+                      setNumericField("neonatalDays")(event.target.value)
+                    }
                     disabled={!canManage || isSaving}
                   />
                 </div>
@@ -308,7 +308,9 @@ export function FarmLifecycleSettingsPanel({
                     type="number"
                     min="1"
                     value={form.weaningDays}
-                    onChange={(event) => setNumericField("weaningDays")(event.target.value)}
+                    onChange={(event) =>
+                      setNumericField("weaningDays")(event.target.value)
+                    }
                     disabled={!canManage || isSaving}
                   />
                 </div>
@@ -336,20 +338,21 @@ export function FarmLifecycleSettingsPanel({
                 <p className="text-sm font-medium text-foreground">
                   Machos reprodutivos
                 </p>
-                <p className="text-sm leading-6 text-muted-foreground">
-                  Separa candidato e adulto para entrada em cobertura.
-                </p>
               </div>
               <div className="grid gap-3">
                 <div className="space-y-2">
-                  <Label htmlFor="male-candidate-days">Macho candidato (dias)</Label>
+                  <Label htmlFor="male-candidate-days">
+                    Macho candidato (dias)
+                  </Label>
                   <Input
                     id="male-candidate-days"
                     type="number"
                     min="1"
                     value={form.maleBreedingCandidateDays}
                     onChange={(event) =>
-                      setNumericField("maleBreedingCandidateDays")(event.target.value)
+                      setNumericField("maleBreedingCandidateDays")(
+                        event.target.value,
+                      )
                     }
                     disabled={!canManage || isSaving}
                   />
@@ -365,7 +368,9 @@ export function FarmLifecycleSettingsPanel({
                     step={getWeightInputStep(weightUnit)}
                     value={form.maleBreedingCandidateWeightKg}
                     onChange={(event) =>
-                      setNumericField("maleBreedingCandidateWeightKg")(event.target.value)
+                      setNumericField("maleBreedingCandidateWeightKg")(
+                        event.target.value,
+                      )
                     }
                     disabled={!canManage || isSaving}
                   />
@@ -377,7 +382,9 @@ export function FarmLifecycleSettingsPanel({
                     type="number"
                     min="1"
                     value={form.maleAdultDays}
-                    onChange={(event) => setNumericField("maleAdultDays")(event.target.value)}
+                    onChange={(event) =>
+                      setNumericField("maleAdultDays")(event.target.value)
+                    }
                     disabled={!canManage || isSaving}
                   />
                 </div>
@@ -404,9 +411,6 @@ export function FarmLifecycleSettingsPanel({
               <div className="mb-4 space-y-1">
                 <p className="text-sm font-medium text-foreground">
                   Adulto feminino
-                </p>
-                <p className="text-sm leading-6 text-muted-foreground">
-                  Marco usado para diferenciar femeas jovens de matrizes aptas.
                 </p>
               </div>
               <div className="grid gap-3 md:grid-cols-2">
@@ -445,10 +449,6 @@ export function FarmLifecycleSettingsPanel({
         </div>
 
         <div className="flex flex-col gap-3 border-t border-border/70 pt-4 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm text-muted-foreground">
-            Essas regras afetam classificacao, fila de transicoes e leituras em
-            `Animais`, `Agenda`, `Reproducao` e detalhes individuais.
-          </p>
           <div className="flex flex-col gap-2 sm:flex-row">
             <Button
               variant="outline"
@@ -458,7 +458,11 @@ export function FarmLifecycleSettingsPanel({
             >
               Reverter
             </Button>
-            <Button type="button" onClick={handleSave} disabled={!canManage || isSaving}>
+            <Button
+              type="button"
+              onClick={handleSave}
+              disabled={!canManage || isSaving}
+            >
               {isSaving ? "Salvando..." : "Salvar regras"}
             </Button>
           </div>

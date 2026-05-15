@@ -102,7 +102,6 @@ const LoteNovo = () => {
       <PageIntro
         eyebrow="Estrutura do rebanho"
         title="Novo lote"
-        description="Crie o agrupamento operacional e defina apenas o basico para iniciar o manejo. Pasto e reprodutor seguem como contexto opcional."
         actions={
           <>
             <Button variant="outline" onClick={() => navigate("/lotes")}>
@@ -121,19 +120,16 @@ const LoteNovo = () => {
         <MetricCard
           label="Pastos ativos"
           value={pastos?.length ?? 0}
-          hint="Locais disponiveis para alocacao inicial."
           icon={<Layers className="h-4 w-4" />}
         />
         <MetricCard
           label="Machos disponiveis"
           value={touros?.length ?? 0}
-          hint="Reprodutores que podem ser vinculados ao lote."
           icon={<Users className="h-4 w-4" />}
         />
         <MetricCard
           label="Status inicial"
           value={status === "ativo" ? "Ativo" : "Inativo"}
-          hint="Pode ser ajustado depois sem alterar o historico do lote."
           tone={status === "ativo" ? "success" : "default"}
         />
       </div>
@@ -145,10 +141,7 @@ const LoteNovo = () => {
           void handleSave();
         }}
       >
-        <FormSection
-          title="Identidade do lote"
-          description="Defina o nome e a situacao operacional usada nas listagens e rotinas diarias."
-        >
+        <FormSection title="Identidade do lote">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2 md:col-span-2">
               <Label htmlFor="nome">Nome do lote</Label>
@@ -178,10 +171,7 @@ const LoteNovo = () => {
           </div>
         </FormSection>
 
-        <FormSection
-          title="Contexto inicial"
-          description="Esses vinculos sao opcionais e servem para deixar a operacao pronta logo no cadastro."
-        >
+        <FormSection title="Contexto inicial">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label>Pasto</Label>

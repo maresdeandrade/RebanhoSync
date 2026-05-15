@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -95,15 +94,10 @@ export const MemberRoleDialog = ({
       <DialogContent className="max-w-xl">
         <DialogHeader>
           <DialogTitle>Ajustar papel do membro</DialogTitle>
-          <DialogDescription>
-            Revise o papel atual e defina o nivel de acesso operacional deste
-            membro na fazenda.
-          </DialogDescription>
         </DialogHeader>
 
         <FormSection
           title={member?.display_name ?? "Membro"}
-          description="Mudancas entram em vigor assim que o convite estiver aceito ou o membro ja estiver ativo."
           actions={
             member ? (
               <StatusBadge tone="neutral">Atual: {member.role}</StatusBadge>
@@ -132,7 +126,11 @@ export const MemberRoleDialog = ({
         </FormSection>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={isLoading}
+          >
             Cancelar
           </Button>
           <Button onClick={handleChangeRole} disabled={isLoading || !newRole}>

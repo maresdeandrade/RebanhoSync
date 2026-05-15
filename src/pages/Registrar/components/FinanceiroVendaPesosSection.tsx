@@ -19,13 +19,12 @@ export function FinanceiroVendaPesosSection(
     <div className="space-y-3 rounded-md border p-3">
       <div>
         <Label>Pesos individuais da venda</Label>
-        <p className="text-xs text-muted-foreground">
-          Esses pesos geram pesagens no mesmo gesto da saida.
-        </p>
       </div>
 
       {props.selectedAnimalIds.map((animalId, index) => {
-        const animal = props.animaisNoLote?.find((item) => item.id === animalId);
+        const animal = props.animaisNoLote?.find(
+          (item) => item.id === animalId,
+        );
         const currentDraft = props.drafts[index];
 
         return (

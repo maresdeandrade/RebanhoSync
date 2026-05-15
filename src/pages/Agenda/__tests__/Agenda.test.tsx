@@ -312,7 +312,9 @@ describe("Agenda page", () => {
       expect(screen.getByText("Prazo: Atrasado")).toBeInTheDocument();
     });
 
-    expect(screen.getByRole("button", { name: /ocultar itens/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /ocultar itens/i }),
+    ).toBeInTheDocument();
     expect(screen.getByText("1 de 2 item(ns) visíveis")).toBeInTheDocument();
     expect(screen.getByText("Vacina Brucelose")).toBeInTheDocument();
     expect(screen.getByText("Janela etaria oficial")).toBeInTheDocument();
@@ -341,11 +343,15 @@ describe("Agenda page", () => {
     await renderAgenda();
 
     await waitFor(() => {
-      expect(screen.getAllByText("2 item(ns) no recorte").length).toBeGreaterThan(0);
+      expect(
+        screen.getAllByText("2 item(ns) no recorte").length,
+      ).toBeGreaterThan(0);
     });
 
     expect(screen.queryByText("Filtros ativos")).not.toBeInTheDocument();
-    expect(screen.queryByText("Calendário: Janela etaria")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Calendário: Janela etaria"),
+    ).not.toBeInTheDocument();
   });
 
   it("accepts calendarMode from query params and overrides the current recorte", async () => {
@@ -408,7 +414,9 @@ describe("Agenda page", () => {
     await renderAgenda(["/agenda?dominio=sanitario"]);
 
     await waitFor(() => {
-      expect(screen.getAllByText("1 item(ns) no recorte").length).toBeGreaterThan(0);
+      expect(
+        screen.getAllByText("1 item(ns) no recorte").length,
+      ).toBeGreaterThan(0);
       expect(screen.getByText("Filtros ativos")).toBeInTheDocument();
     });
 
@@ -422,7 +430,9 @@ describe("Agenda page", () => {
     const user = userEvent.setup();
     await renderAgenda();
 
-    expect(screen.getByRole("button", { name: /ver itens/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /ver itens/i }),
+    ).toBeInTheDocument();
     expect(screen.queryByText("Vacina Brucelose")).not.toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Atrasado 1" }));
@@ -431,13 +441,17 @@ describe("Agenda page", () => {
       expect(screen.getByText("Prazo: Atrasado")).toBeInTheDocument();
     });
 
-    expect(screen.getByRole("button", { name: /ocultar itens/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /ocultar itens/i }),
+    ).toBeInTheDocument();
     expect(screen.getByText("1 de 2 item(ns) visíveis")).toBeInTheDocument();
     expect(screen.getByText("Vacina Brucelose")).toBeInTheDocument();
     expect(screen.getByText("Janela etaria oficial")).toBeInTheDocument();
     expect(screen.queryByText("Vermifugo Rotacao")).not.toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: /ver grupo completo/i }));
+    await user.click(
+      screen.getByRole("button", { name: /ver grupo completo/i }),
+    );
 
     expect(screen.getByText("Vermifugo Rotacao")).toBeInTheDocument();
 
@@ -521,7 +535,7 @@ describe("Agenda page", () => {
     expect(screen.getByText("Vacina Reforco")).toBeInTheDocument();
   });
 
-  it("surfaces compliance restrictions from the official overlay in the agenda", async () => {
+  it("surfaces compliance restrictions in the agenda", async () => {
     mockedUseLiveQuery.mockReturnValue({
       itens: [createAgendaItem()],
       animais: [createAnimal()],
@@ -537,12 +551,12 @@ describe("Agenda page", () => {
     await renderAgenda();
 
     expect(screen.getAllByText("Feed-ban 1").length).toBeGreaterThan(0);
+    expect(screen.getByText("Restricoes em aberto")).toBeInTheDocument();
     expect(
-      screen.getByText("Restricoes de conformidade em aberto"),
-    ).toBeInTheDocument();
-    expect(screen.getAllByText("Restricao de conformidade").length).toBeGreaterThan(0);
+      screen.getAllByText("Restricao de conformidade").length,
+    ).toBeGreaterThan(0);
     expect(
-      screen.getByRole("button", { name: /abrir overlay de conformidade/i }),
+      screen.getByRole("button", { name: /abrir conformidade/i }),
     ).toBeInTheDocument();
   });
 });

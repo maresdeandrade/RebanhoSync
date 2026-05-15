@@ -28,13 +28,13 @@ function LoteCard({ lote }: { lote: Lote }) {
   return (
     <Link
       to={`/lotes/${lote.id}`}
-      className="app-surface flex flex-col gap-4 p-4 transition-shadow hover:shadow-soft"
+      className="app-surface flex flex-col gap-3 p-4 transition-shadow hover:shadow-soft"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="space-y-1">
           <p className="text-base font-semibold text-foreground">{lote.nome}</p>
           <p className="text-sm text-muted-foreground">
-            {pasto?.nome ? `Pasto ${pasto.nome}` : "Sem pasto vinculado"}
+            {pasto?.nome ?? "Sem pasto"}
           </p>
         </div>
         <StatusBadge tone={lote.status === "ativo" ? "success" : "neutral"}>
@@ -42,23 +42,29 @@ function LoteCard({ lote }: { lote: Lote }) {
         </StatusBadge>
       </div>
 
-      <div className="grid gap-3 text-sm text-muted-foreground sm:grid-cols-2">
-        <div className="flex items-center gap-2">
-          <MapPin className="h-4 w-4" />
-          <span>{pasto?.nome ?? "Sem pasto"}</span>
+      <div className="grid grid-cols-3 gap-2 rounded-lg border border-border/60 bg-muted/25 p-3 text-sm">
+        <div>
+          <p className="text-lg font-semibold tabular-nums text-foreground">
+            {typeof totalAnimais === "number" ? totalAnimais : "-"}
+          </p>
+          <p className="text-xs text-muted-foreground">animais</p>
         </div>
-        <div className="flex items-center gap-2">
-          <Beef className="h-4 w-4" />
-          <span>{touro?.identificacao ?? "Sem reprodutor"}</span>
+        <div className="min-w-0">
+          <MapPin className="mb-1 h-4 w-4 text-muted-foreground" />
+          <p className="truncate text-xs text-muted-foreground">
+            {pasto?.nome ?? "Sem pasto"}
+          </p>
+        </div>
+        <div className="min-w-0">
+          <Beef className="mb-1 h-4 w-4 text-muted-foreground" />
+          <p className="truncate text-xs text-muted-foreground">
+            {touro?.identificacao ?? "Sem reprodutor"}
+          </p>
         </div>
       </div>
 
       <div className="flex items-center justify-between border-t border-border/70 pt-3 text-sm">
-        <span className="text-muted-foreground">
-          {typeof totalAnimais === "number"
-            ? `${totalAnimais} animal(is) no lote`
-            : "Carregando ocupacao"}
-        </span>
+        <span className="text-muted-foreground">Ficha e manejo</span>
         <span className="inline-flex items-center gap-1 font-medium text-foreground">
           Ver lote
           <ChevronRight className="h-4 w-4" />
@@ -90,7 +96,7 @@ const Lotes = () => {
       <PageIntro
         eyebrow="Estrutura do rebanho"
         title="Lotes"
-        description="Agrupe animais por manejo, fase ou local de permanencia sem poluir a rotina com excesso de controles."
+        description="Grupos de manejo para localizar animais rapido."
         actions={
           <>
             <Link to="/lotes/importar">
@@ -111,18 +117,18 @@ const Lotes = () => {
         <MetricCard
           label="Lotes cadastrados"
           value={lotes?.length ?? 0}
-          hint={`${ativos} ativo(s) na rotina atual.`}
+          hint={`${ativos} ativo(s).`}
           icon={<Layers className="h-4 w-4" />}
         />
         <MetricCard
           label="Animais alocados"
           value={totalAnimais ?? 0}
-          hint="Total somado entre todos os lotes ativos e inativos."
+          hint="Total nos lotes."
         />
         <MetricCard
           label="Com pasto vinculado"
           value={comPasto}
-          hint="Mostra quantos grupos ja estao posicionados no campo."
+          hint="Posicionados no campo."
         />
       </div>
 

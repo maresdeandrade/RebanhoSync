@@ -65,24 +65,22 @@ describe("SelectFazenda", () => {
     );
 
     expect(
-      await screen.findByText(/Voce ainda nao esta vinculado a nenhuma fazenda/i),
+      await screen.findByText(/Aceite um convite ou crie a primeira operacao/i),
     ).toBeInTheDocument();
     expect(screen.getByText(/Criacao permitida/i)).toBeInTheDocument();
     expect(screen.getByText(/^Sim$/i)).toBeInTheDocument();
   });
 
   it("seleciona a fazenda e navega para a rotina quando houver membership", async () => {
-    mockedUseLiveQuery.mockReturnValue(
-      [
-        {
-          role: "manager",
-          fazendas: {
-            id: "farm-1",
-            nome: "Fazenda Boa Vista",
-          },
+    mockedUseLiveQuery.mockReturnValue([
+      {
+        role: "manager",
+        fazendas: {
+          id: "farm-1",
+          nome: "Fazenda Boa Vista",
         },
-      ] as ReturnType<typeof useLiveQuery>,
-    );
+      },
+    ] as ReturnType<typeof useLiveQuery>);
     mockedSupabaseRpc.mockResolvedValue({
       data: false,
       error: null,
@@ -97,7 +95,9 @@ describe("SelectFazenda", () => {
       </MemoryRouter>,
     );
 
-    fireEvent.click(await screen.findByRole("button", { name: /Fazenda Boa Vista/i }));
+    fireEvent.click(
+      await screen.findByRole("button", { name: /Fazenda Boa Vista/i }),
+    );
 
     await waitFor(() => {
       expect(setActiveFarm).toHaveBeenCalledWith("farm-1");

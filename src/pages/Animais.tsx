@@ -24,7 +24,7 @@ import { AnimalCategoryBadge } from "@/components/animals/AnimalCategoryBadge";
 import { AnimalVisualAvatar } from "@/components/animals/AnimalVisualAvatar";
 import { AnimalDemographicsCard } from "@/components/animals/AnimalDemographicsCard";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { MetricCard } from "@/components/ui/metric-card";
 import { PageIntro } from "@/components/ui/page-intro";
@@ -45,33 +45,19 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { StatusBadge } from "@/components/ui/status-badge";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Toolbar, ToolbarGroup } from "@/components/ui/toolbar";
 import { useAuth } from "@/hooks/useAuth";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { useLotes } from "@/hooks/useLotes";
 import {
   getAnimalLifeStageLabel,
-  getPendingAnimalLifecycleKindLabel,
   getPendingAnimalLifecycleTransitions,
-  resolveAnimalLifecycleSnapshot,
 } from "@/lib/animals/lifecycle";
 import { buildAnimalFamilyRows } from "@/lib/animals/familyOrder";
 import {
   buildAnimalTaxonomyReproContextMap,
   deriveAnimalTaxonomy,
 } from "@/lib/animals/taxonomy";
-import {
-  formatWeight,
-  formatWeightPerDay,
-} from "@/lib/format/weight";
+import { formatWeight, formatWeightPerDay } from "@/lib/format/weight";
 import { db } from "@/lib/offline/db";
 import { triggerDownload } from "@/lib/offline/rejections";
 import { type AgendaItem, type Animal } from "@/lib/offline/types";
@@ -168,6 +154,61 @@ type AnimalCalendarAnchorFilter = "all" | SanitaryBaseCalendarAnchor;
 
 type PaginationToken = number | "ellipsis-left" | "ellipsis-right";
 
+type FilterOption<Value extends string = string> = {
+  value: Value;
+  label: string;
+};
+
+const SEX_FILTERS: FilterOption[] = [
+  { value: "all", label: "Ambos" },
+  { value: "M", label: "Macho" },
+  { value: "F", label: "Femea" },
+];
+
+const STATUS_FILTERS: FilterOption[] = [
+  { value: "all", label: "Todos" },
+  { value: "ativo", label: "Ativo" },
+  { value: "vendido", label: "Vendido" },
+  { value: "morto", label: "Morto" },
+];
+
+const REGULATORY_IMPACT_FILTERS: FilterOption<RegulatoryImpactFilter>[] = [
+  { value: "all", label: "Todo impacto" },
+  { value: "nutrition", label: "Nutricao" },
+  { value: "movementInternal", label: "Mov. interna" },
+  { value: "sale", label: "Venda/transito" },
+];
+
+const REGULATORY_SUBAREA_FILTERS: FilterOption<RegulatorySubareaFilter>[] = [
+  { value: "all", label: "Todas" },
+  { value: "feed_ban", label: "Feed-ban" },
+  { value: "quarentena", label: "Quarentena" },
+  { value: "documental", label: "Documental" },
+  { value: "agua_limpeza", label: "Agua e limpeza" },
+];
+
+const CALENDAR_MODE_FILTERS: FilterOption<AnimalCalendarModeFilter>[] = [
+  { value: "all", label: "Todo calendario" },
+  { value: "campanha", label: "Campanha" },
+  { value: "janela_etaria", label: "Janela etaria" },
+  { value: "rotina_recorrente", label: "Recorrente" },
+  { value: "procedimento_imediato", label: "Uso imediato" },
+  { value: "nao_estruturado", label: "Nao estruturado" },
+];
+
+const CALENDAR_ANCHOR_FILTERS: FilterOption<AnimalCalendarAnchorFilter>[] = [
+  { value: "all", label: "Todas" },
+  { value: "nascimento", label: "Nascimento" },
+  { value: "desmama", label: "Desmama" },
+  { value: "parto_previsto", label: "Parto previsto" },
+  { value: "entrada_fazenda", label: "Entrada" },
+  { value: "movimentacao", label: "Movimentacao" },
+  { value: "diagnostico_evento", label: "Diagnostico" },
+  { value: "conclusao_etapa_dependente", label: "Etapa dependente" },
+  { value: "ultima_conclusao_mesma_familia", label: "Ultima conclusao" },
+  { value: "sem_ancora", label: "Sem ancora" },
+];
+
 const calcularIdade = (
   dataNascimento: string | null | undefined,
 ): string | null => {
@@ -216,7 +257,55 @@ function getAgendaStatusLabel(status: AnimalNextAgendaSummary["status"]) {
   return "Proximo";
 }
 
-function parseCalendarModeFilter(value: string | null): AnimalCalendarModeFilter {
+type FilterChipGroupProps<Value extends string> = {
+  label: string;
+  value: Value;
+  options: FilterOption<Value>[];
+  onChange: (value: Value) => void;
+  className?: string;
+};
+
+function FilterChipGroup<Value extends string>({
+  label,
+  value,
+  options,
+  onChange,
+  className,
+}: FilterChipGroupProps<Value>) {
+  return (
+    <div className={cn("space-y-2", className)}>
+      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        {label}
+      </p>
+      <div className="flex flex-wrap gap-2">
+        {options.map((option) => {
+          const active = value === option.value;
+
+          return (
+            <Button
+              key={option.value}
+              type="button"
+              variant={active ? "default" : "outline"}
+              size="sm"
+              aria-pressed={active}
+              className={cn(
+                "h-9 rounded-full px-3 text-sm font-medium",
+                !active && "bg-background hover:bg-muted/70",
+              )}
+              onClick={() => onChange(option.value)}
+            >
+              {option.label}
+            </Button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function parseCalendarModeFilter(
+  value: string | null,
+): AnimalCalendarModeFilter {
   if (
     value === "campanha" ||
     value === "janela_etaria" ||
@@ -299,16 +388,19 @@ export default function Animais() {
   const [showFilters, setShowFilters] = useState(false);
   const [searchParams] = useSearchParams();
   const regulatoryImpactFromQuery =
-    parseRegulatoryAnalyticsImpactKey(searchParams.get("overlayImpact")) ?? "all";
+    parseRegulatoryAnalyticsImpactKey(searchParams.get("overlayImpact")) ??
+    "all";
   const regulatorySubareaFromQuery =
-    parseRegulatoryAnalyticsSubareaKey(searchParams.get("overlaySubarea")) ?? "all";
+    parseRegulatoryAnalyticsSubareaKey(searchParams.get("overlaySubarea")) ??
+    "all";
   const calendarModeFromQuery = parseCalendarModeFilter(
     searchParams.get("calendarMode"),
   );
   const calendarAnchorFromQuery = parseCalendarAnchorFilter(
     searchParams.get("calendarAnchor"),
   );
-  const { activeFarmId, farmLifecycleConfig, farmMeasurementConfig } = useAuth();
+  const { activeFarmId, farmLifecycleConfig, farmMeasurementConfig } =
+    useAuth();
   const [search, setSearch] = useState("");
   const [loteFilter, setLoteFilter] = useState<string>("all");
   const [sexoFilter, setSexoFilter] = useState<string>("all");
@@ -368,10 +460,7 @@ export default function Animais() {
       db.event_eventos
         .where("[fazenda_id+dominio]")
         .equals([activeFarmId, "pesagem"])
-        .filter(
-          (event) =>
-            !event.deleted_at && Boolean(event.animal_id),
-        )
+        .filter((event) => !event.deleted_at && Boolean(event.animal_id))
         .toArray(),
       db.event_eventos_pesagem
         .where("fazenda_id")
@@ -412,7 +501,8 @@ export default function Animais() {
         const diasEntreRegistros = Math.max(
           1,
           Math.round(
-            (new Date(ultimo.data).getTime() - new Date(primeiro.data).getTime()) /
+            (new Date(ultimo.data).getTime() -
+              new Date(primeiro.data).getTime()) /
               (1000 * 60 * 60 * 24),
           ),
         );
@@ -439,10 +529,7 @@ export default function Animais() {
     const items = await db.state_agenda_itens
       .where("[fazenda_id+status]")
       .equals([activeFarmId, "agendado"])
-      .filter(
-        (item) =>
-          !item.deleted_at && Boolean(item.animal_id),
-      )
+      .filter((item) => !item.deleted_at && Boolean(item.animal_id))
       .toArray();
 
     const byAnimal = new Map<string, AgendaItem>();
@@ -459,7 +546,10 @@ export default function Animais() {
       new Set(
         Array.from(byAnimal.values())
           .map((item) => item.protocol_item_version_id)
-          .filter((value): value is string => typeof value === "string" && value.length > 0),
+          .filter(
+            (value): value is string =>
+              typeof value === "string" && value.length > 0,
+          ),
       ),
     );
     const protocolItems =
@@ -468,16 +558,17 @@ export default function Animais() {
         : [];
     const protocolItemById = new Map(
       protocolItems
-        .filter((item): item is NonNullable<(typeof protocolItems)[number]> => Boolean(item))
+        .filter((item): item is NonNullable<(typeof protocolItems)[number]> =>
+          Boolean(item),
+        )
         .map((item) => [item.id, item]),
     );
 
     return Array.from(byAnimal.entries()).map(
       ([animalId, item]): AnimalNextAgendaSummary => {
-        const protocolItem =
-          item.protocol_item_version_id
-            ? protocolItemById.get(item.protocol_item_version_id) ?? null
-            : null;
+        const protocolItem = item.protocol_item_version_id
+          ? (protocolItemById.get(item.protocol_item_version_id) ?? null)
+          : null;
         const scheduleMeta = resolveSanitaryAgendaItemScheduleMeta(
           item,
           protocolItem,
@@ -523,7 +614,8 @@ export default function Animais() {
     [weightSummaries],
   );
   const nextAgendaByAnimal = useMemo(
-    () => new Map((nextAgendaSummaries ?? []).map((item) => [item.animalId, item])),
+    () =>
+      new Map((nextAgendaSummaries ?? []).map((item) => [item.animalId, item])),
     [nextAgendaSummaries],
   );
 
@@ -577,7 +669,9 @@ export default function Animais() {
       collection = collection.filter((animal) => animal.sexo === sexoFilter);
     }
     if (statusFilter !== "all" && !statusHandledByIndex) {
-      collection = collection.filter((animal) => animal.status === statusFilter);
+      collection = collection.filter(
+        (animal) => animal.status === statusFilter,
+      );
     }
 
     return await collection.toArray();
@@ -702,7 +796,10 @@ export default function Animais() {
   ]);
 
   const totalAnimalRows = animalRows.length;
-  const totalPages = Math.max(1, Math.ceil(totalAnimalRows / ANIMAL_ROWS_PAGE_SIZE));
+  const totalPages = Math.max(
+    1,
+    Math.ceil(totalAnimalRows / ANIMAL_ROWS_PAGE_SIZE),
+  );
 
   useEffect(() => {
     if (page > totalPages) {
@@ -715,10 +812,7 @@ export default function Animais() {
     totalAnimalRows === 0 ? 0 : (currentPage - 1) * ANIMAL_ROWS_PAGE_SIZE;
   const visibleAnimalRows = useMemo(
     () =>
-      animalRows.slice(
-        pageStartIndex,
-        pageStartIndex + ANIMAL_ROWS_PAGE_SIZE,
-      ),
+      animalRows.slice(pageStartIndex, pageStartIndex + ANIMAL_ROWS_PAGE_SIZE),
     [animalRows, pageStartIndex],
   );
   const firstVisibleRow = totalAnimalRows === 0 ? 0 : pageStartIndex + 1;
@@ -744,19 +838,24 @@ export default function Animais() {
       ).length,
     [lifecyclePendings],
   );
-  const lifecycleBiologicalCount = lifecyclePendingCount - lifecycleStrategicCount;
+  const lifecycleBiologicalCount =
+    lifecyclePendingCount - lifecycleStrategicCount;
   const activeAnimalsCount = useMemo(
-    () => (animaisFamilia ?? []).filter((animal) => animal.status === "ativo").length,
+    () =>
+      (animaisFamilia ?? []).filter((animal) => animal.status === "ativo")
+        .length,
     [animaisFamilia],
   );
   const animalsWithWeightCount = useMemo(
     () =>
-      animalRows.filter(({ animal }) => weightSummaryByAnimal.has(animal.id)).length,
+      animalRows.filter(({ animal }) => weightSummaryByAnimal.has(animal.id))
+        .length,
     [animalRows, weightSummaryByAnimal],
   );
   const animalsWithNextAgendaCount = useMemo(
     () =>
-      animalRows.filter(({ animal }) => nextAgendaByAnimal.has(animal.id)).length,
+      animalRows.filter(({ animal }) => nextAgendaByAnimal.has(animal.id))
+        .length,
     [animalRows, nextAgendaByAnimal],
   );
   const agendaRadarCount = useMemo(
@@ -778,7 +877,10 @@ export default function Animais() {
       const taxonomy = taxonomyByAnimal.get(animal.id);
       if (!taxonomy) continue;
 
-      if (taxonomy.categoria_zootecnica === "vaca" && taxonomy.facts.pariu_alguma_vez) {
+      if (
+        taxonomy.categoria_zootecnica === "vaca" &&
+        taxonomy.facts.pariu_alguma_vez
+      ) {
         vacasParidas++;
       }
       if (taxonomy.estado_produtivo_reprodutivo === "seca") {
@@ -855,18 +957,61 @@ export default function Animais() {
       labels.push(describeSanitaryCalendarMode(calendarModeFilter));
     }
     if (calendarAnchorFilter !== "all") {
-      labels.push(describeSanitaryCalendarAnchor(calendarAnchorFilter) ?? "Sem ancora");
+      labels.push(
+        describeSanitaryCalendarAnchor(calendarAnchorFilter) ?? "Sem ancora",
+      );
     }
 
     return labels;
   }, [calendarAnchorFilter, calendarModeFilter]);
+  const activeFilterLabels = useMemo(() => {
+    const labels: string[] = [];
+
+    if (search) labels.push(`Busca: ${search}`);
+    if (loteFilter !== "all") {
+      labels.push(
+        loteFilter === "none"
+          ? "Sem lote"
+          : (lotesMap.get(loteFilter)?.nome ?? "Lote filtrado"),
+      );
+    }
+    if (sexoFilter !== "all")
+      labels.push(sexoFilter === "M" ? "Machos" : "Femeas");
+    if (statusFilter !== "ativo")
+      labels.push(statusFilter === "all" ? "Todos os status" : statusFilter);
+    if (categoryFilter !== "all") {
+      labels.push(
+        CATEGORY_FILTERS.find((item) => item.value === categoryFilter)?.label ??
+          "Categoria filtrada",
+      );
+    }
+    if (productiveStateFilter !== "all") {
+      labels.push(
+        PRODUCTIVE_STATE_FILTERS.find(
+          (item) => item.value === productiveStateFilter,
+        )?.label ?? "Estado produtivo filtrado",
+      );
+    }
+
+    return [...labels, ...regulatoryFilterLabels, ...calendarFilterLabels];
+  }, [
+    calendarFilterLabels,
+    categoryFilter,
+    loteFilter,
+    lotesMap,
+    productiveStateFilter,
+    regulatoryFilterLabels,
+    search,
+    sexoFilter,
+    statusFilter,
+  ]);
 
   function handleExportRegulatoryCut() {
     const csv = buildAnimalRegulatoryExportCsv({
       animals: filteredAnimals,
       profilesByAnimalId: regulatoryProfileByAnimal,
       resolveLoteName: (loteId) =>
-        loteId ? lotesMap.get(loteId)?.nome ?? "Lote sem nome" : "Sem lote",
+        loteId ? (lotesMap.get(loteId)?.nome ?? "Lote sem nome") : "Sem lote",
       resolveCategoryLabel: (animalId) =>
         taxonomyByAnimal.get(animalId)?.display.categoria ?? "",
     });
@@ -950,28 +1095,24 @@ export default function Animais() {
             <MetricCard
               label="Vacas que pariram"
               value={femaleMetrics.vacasParidas}
-              
               icon={<Milk className="h-5 w-5" />}
               tone={femaleMetrics.vacasParidas > 0 ? "info" : "default"}
             />
             <MetricCard
               label="Vacas secas"
               value={femaleMetrics.vacasSecas}
-              
               icon={<MilkOff className="h-5 w-5" />}
               tone={femaleMetrics.vacasSecas > 0 ? "warning" : "default"}
             />
             <MetricCard
               label="Novilhas"
               value={femaleMetrics.novilhas}
-              
               icon={<Activity className="h-5 w-5" />}
               tone={femaleMetrics.novilhas > 0 ? "success" : "default"}
             />
             <MetricCard
               label="Bezerras"
               value={femaleMetrics.bezerras}
-              
               icon={<Baby className="h-5 w-5" />}
             />
           </>
@@ -980,40 +1121,30 @@ export default function Animais() {
             <MetricCard
               label="Touros"
               value={maleMetrics.touros}
-              
               icon={<Beef className="h-5 w-5" />}
               tone={maleMetrics.touros > 0 ? "info" : "default"}
             />
             <MetricCard
               label="Novilhos"
               value={maleMetrics.novilhos}
-              
               icon={<Activity className="h-5 w-5" />}
             />
             <MetricCard
               label="Bois"
               value={maleMetrics.bois}
-              
               icon={<Beef className="h-5 w-5" />}
               tone={maleMetrics.bois > 0 ? "success" : "default"}
             />
             <MetricCard
               label="Bezerros"
               value={maleMetrics.bezerros}
-              
               icon={<Baby className="h-5 w-5" />}
             />
           </>
         ) : (
           <>
-            <MetricCard
-              label="Animais ativos"
-              value={activeAnimalsCount}
-            />
-            <MetricCard
-              label="No recorte atual"
-              value={animalRows.length}
-            />
+            <MetricCard label="Animais ativos" value={activeAnimalsCount} />
+            <MetricCard label="No recorte atual" value={animalRows.length} />
             <MetricCard
               label="Eventos próximos"
               value={agendaRadarCount}
@@ -1030,7 +1161,6 @@ export default function Animais() {
         )}
       </section>
 
-
       <div className="space-y-4">
         <div className="flex items-center gap-2">
           <div className="relative w-full md:max-w-sm">
@@ -1039,193 +1169,233 @@ export default function Animais() {
               placeholder="Buscar animal..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9"
+              className="min-h-11 w-full pl-9"
             />
           </div>
-          <Button variant="outline" onClick={() => setShowFilters(!showFilters)}>
+          <Button
+            variant="outline"
+            className="min-h-11"
+            aria-expanded={showFilters}
+            onClick={() => setShowFilters(!showFilters)}
+          >
             <Filter className="mr-2 h-4 w-4" />
-            <span className="hidden sm:inline">{showFilters ? "Ocultar filtros" : "Mostrar filtros"}</span>
+            <span className="hidden sm:inline">
+              {showFilters ? "Ocultar filtros" : "Mostrar filtros"}
+            </span>
             <span className="sm:hidden">Filtros</span>
           </Button>
         </div>
 
-      {showFilters && (
-        <Toolbar>
-          <ToolbarGroup className="flex-1 gap-2">
-            <Select value={loteFilter} onValueChange={setLoteFilter}>
-              <SelectTrigger className="w-full sm:w-auto min-w-[140px] bg-transparent border-transparent hover:border-border hover:bg-muted/30 transition-colors">
-                <SelectValue placeholder="Lote" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os lotes</SelectItem>
-                <SelectItem value="none">Sem lote</SelectItem>
-                {lotes?.map((lote) => (
-                  <SelectItem key={lote.id} value={lote.id}>
-                    {lote.nome}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        {activeFilterLabels.length > 0 ? (
+          <div className="flex flex-wrap gap-2">
+            {activeFilterLabels.map((label) => (
+              <StatusBadge key={label} tone="neutral">
+                {label}
+              </StatusBadge>
+            ))}
+          </div>
+        ) : null}
 
-            <Select value={sexoFilter} onValueChange={setSexoFilter}>
-              <SelectTrigger className="w-full sm:w-auto min-w-[120px] bg-transparent border-transparent hover:border-border hover:bg-muted/30 transition-colors">
-                <SelectValue placeholder="Sexo" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Ambos</SelectItem>
-                <SelectItem value="M">Macho</SelectItem>
-                <SelectItem value="F">Femea</SelectItem>
-              </SelectContent>
-            </Select>
+        {showFilters && (
+          <div className="rounded-xl border border-border/70 bg-card p-3 shadow-sm">
+            <div className="grid gap-3">
+              <div className="grid gap-3 lg:grid-cols-[minmax(180px,220px)_1fr]">
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Lote
+                  </p>
+                  <Select value={loteFilter} onValueChange={setLoteFilter}>
+                    <SelectTrigger className="h-9 w-full bg-background">
+                      <SelectValue placeholder="Lote" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos os lotes</SelectItem>
+                      <SelectItem value="none">Sem lote</SelectItem>
+                      {lotes?.map((lote) => (
+                        <SelectItem key={lote.id} value={lote.id}>
+                          {lote.nome}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full sm:w-auto min-w-[120px] bg-transparent border-transparent hover:border-border hover:bg-muted/30 transition-colors">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                <SelectItem value="ativo">Ativo</SelectItem>
-                <SelectItem value="vendido">Vendido</SelectItem>
-                <SelectItem value="morto">Morto</SelectItem>
-              </SelectContent>
-            </Select>
-          </ToolbarGroup>
+                <div className="grid gap-3 md:grid-cols-2">
+                  <FilterChipGroup
+                    label="Sexo"
+                    value={sexoFilter}
+                    options={SEX_FILTERS}
+                    onChange={setSexoFilter}
+                  />
+                  <FilterChipGroup
+                    label="Status"
+                    value={statusFilter}
+                    options={STATUS_FILTERS}
+                    onChange={setStatusFilter}
+                  />
+                </div>
+              </div>
 
-          <ToolbarGroup className="gap-2">
-            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-              <SelectTrigger className="w-full sm:w-auto min-w-[140px] bg-transparent border-transparent hover:border-border hover:bg-muted/30 transition-colors">
-                <SelectValue placeholder="Categoria" />
-              </SelectTrigger>
-              <SelectContent>
-                {CATEGORY_FILTERS.map((item) => (
-                  <SelectItem key={item.value} value={item.value}>
-                    {item.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              <FilterChipGroup
+                label="Categoria"
+                value={categoryFilter}
+                options={[...CATEGORY_FILTERS]}
+                onChange={setCategoryFilter}
+              />
 
-            <Select
-              value={productiveStateFilter}
-              onValueChange={setProductiveStateFilter}
-            >
-              <SelectTrigger className="w-full sm:w-auto min-w-[160px] bg-transparent border-transparent hover:border-border hover:bg-muted/30 transition-colors">
-                <SelectValue placeholder="Estado produtivo" />
-              </SelectTrigger>
-              <SelectContent>
-                {PRODUCTIVE_STATE_FILTERS.map((item) => (
-                  <SelectItem key={item.value} value={item.value}>
-                    {item.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Estado produtivo
+                  </p>
+                  <Select
+                    value={productiveStateFilter}
+                    onValueChange={setProductiveStateFilter}
+                  >
+                    <SelectTrigger className="h-9 w-full bg-background">
+                      <SelectValue placeholder="Estado produtivo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PRODUCTIVE_STATE_FILTERS.map((item) => (
+                        <SelectItem key={item.value} value={item.value}>
+                          {item.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-            <Select
-              value={regulatoryImpactFilter}
-              onValueChange={(value) =>
-                setRegulatoryImpactFilter(value as RegulatoryImpactFilter)
-              }
-            >
-              <SelectTrigger className="w-full sm:w-auto min-w-[180px] bg-transparent border-transparent hover:border-border hover:bg-muted/30 transition-colors">
-                <SelectValue placeholder="Impacto regulatorio" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todo impacto regulatorio</SelectItem>
-                <SelectItem value="nutrition">Nutricao</SelectItem>
-                <SelectItem value="movementInternal">Movimentacao interna</SelectItem>
-                <SelectItem value="sale">Venda/transito</SelectItem>
-              </SelectContent>
-            </Select>
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Impacto regulatorio
+                  </p>
+                  <Select
+                    value={regulatoryImpactFilter}
+                    onValueChange={(value) =>
+                      setRegulatoryImpactFilter(value as RegulatoryImpactFilter)
+                    }
+                  >
+                    <SelectTrigger className="h-9 w-full bg-background">
+                      <SelectValue placeholder="Impacto regulatorio" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {REGULATORY_IMPACT_FILTERS.map((item) => (
+                        <SelectItem key={item.value} value={item.value}>
+                          {item.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-            <Select
-              value={regulatorySubareaFilter}
-              onValueChange={(value) =>
-                setRegulatorySubareaFilter(value as RegulatorySubareaFilter)
-              }
-            >
-              <SelectTrigger className="w-full sm:w-auto min-w-[180px] bg-transparent border-transparent hover:border-border hover:bg-muted/30 transition-colors">
-                <SelectValue placeholder="Subarea regulatoria" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas as subareas</SelectItem>
-                <SelectItem value="feed_ban">Feed-ban</SelectItem>
-                <SelectItem value="quarentena">Quarentena</SelectItem>
-                <SelectItem value="documental">Documental</SelectItem>
-                <SelectItem value="agua_limpeza">Agua e limpeza</SelectItem>
-              </SelectContent>
-            </Select>
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Subarea regulatoria
+                  </p>
+                  <Select
+                    value={regulatorySubareaFilter}
+                    onValueChange={(value) =>
+                      setRegulatorySubareaFilter(
+                        value as RegulatorySubareaFilter,
+                      )
+                    }
+                  >
+                    <SelectTrigger className="h-9 w-full bg-background">
+                      <SelectValue placeholder="Subarea regulatoria" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {REGULATORY_SUBAREA_FILTERS.map((item) => (
+                        <SelectItem key={item.value} value={item.value}>
+                          {item.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-            <Select
-              value={calendarModeFilter}
-              onValueChange={(value) =>
-                setCalendarModeFilter(value as AnimalCalendarModeFilter)
-              }
-            >
-              <SelectTrigger className="w-full sm:w-auto min-w-[170px] bg-transparent border-transparent hover:border-border hover:bg-muted/30 transition-colors">
-                <SelectValue placeholder="Calendario" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todo calendario</SelectItem>
-                <SelectItem value="campaign">Campanha</SelectItem>
-                <SelectItem value="age_window">Janela etaria</SelectItem>
-                <SelectItem value="rolling_interval">Recorrente</SelectItem>
-                <SelectItem value="immediate">Uso imediato</SelectItem>
-                <SelectItem value="clinical_protocol">Protocolo clinico</SelectItem>
-              </SelectContent>
-            </Select>
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Calendario
+                  </p>
+                  <Select
+                    value={calendarModeFilter}
+                    onValueChange={(value) =>
+                      setCalendarModeFilter(value as AnimalCalendarModeFilter)
+                    }
+                  >
+                    <SelectTrigger className="h-9 w-full bg-background">
+                      <SelectValue placeholder="Calendario" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CALENDAR_MODE_FILTERS.map((item) => (
+                        <SelectItem key={item.value} value={item.value}>
+                          {item.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-            <Select
-              value={calendarAnchorFilter}
-              onValueChange={(value) =>
-                setCalendarAnchorFilter(value as AnimalCalendarAnchorFilter)
-              }
-            >
-              <SelectTrigger className="w-full sm:w-auto min-w-[170px] bg-transparent border-transparent hover:border-border hover:bg-muted/30 transition-colors">
-                <SelectValue placeholder="Ancora" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas as ancoras</SelectItem>
-                <SelectItem value="calendar_month">Calendario</SelectItem>
-                <SelectItem value="birth">Nascimento</SelectItem>
-                <SelectItem value="weaning">Desmama</SelectItem>
-                <SelectItem value="pre_breeding_season">Pre-estacao</SelectItem>
-                <SelectItem value="clinical_need">Necessidade clinica</SelectItem>
-                <SelectItem value="dry_off">Secagem</SelectItem>
-              </SelectContent>
-            </Select>
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Ancora
+                  </p>
+                  <Select
+                    value={calendarAnchorFilter}
+                    onValueChange={(value) =>
+                      setCalendarAnchorFilter(
+                        value as AnimalCalendarAnchorFilter,
+                      )
+                    }
+                  >
+                    <SelectTrigger className="h-9 w-full bg-background">
+                      <SelectValue placeholder="Ancora" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CALENDAR_ANCHOR_FILTERS.map((item) => (
+                        <SelectItem key={item.value} value={item.value}>
+                          {item.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
 
-            {hasFilters ? (
-              <Button
-                aria-label="Limpar filtros"
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setSearch("");
-                  setLoteFilter("all");
-                  setSexoFilter("all");
-                  setStatusFilter("ativo");
-                  setCategoryFilter("all");
-                  setProductiveStateFilter("all");
-                  setCalendarModeFilter("all");
-                  setCalendarAnchorFilter("all");
-                  setRegulatoryImpactFilter("all");
-                  setRegulatorySubareaFilter("all");
-                }}
-              >
-                <FilterX className="h-4 w-4" />
-                Limpar
-              </Button>
-            ) : null}
-          </ToolbarGroup>
-        </Toolbar>
-      )}
+              {hasFilters ? (
+                <div className="flex justify-end border-t border-border/60 pt-2">
+                  <Button
+                    aria-label="Limpar filtros"
+                    variant="ghost"
+                    size="sm"
+                    className="min-h-9"
+                    onClick={() => {
+                      setSearch("");
+                      setLoteFilter("all");
+                      setSexoFilter("all");
+                      setStatusFilter("ativo");
+                      setCategoryFilter("all");
+                      setProductiveStateFilter("all");
+                      setCalendarModeFilter("all");
+                      setCalendarAnchorFilter("all");
+                      setRegulatoryImpactFilter("all");
+                      setRegulatorySubareaFilter("all");
+                    }}
+                  >
+                    <FilterX className="mr-2 h-4 w-4" />
+                    Limpar filtros
+                  </Button>
+                </div>
+              ) : null}
+            </div>
+          </div>
+        )}
       </div>
 
-      <AnimalDemographicsCard 
-        animalRows={animalRows} 
-        taxonomyByAnimal={taxonomyByAnimal} 
-        sexoFilter={sexoFilter} 
+      <AnimalDemographicsCard
+        animalRows={animalRows}
+        taxonomyByAnimal={taxonomyByAnimal}
+        sexoFilter={sexoFilter}
       />
 
       {lifecyclePendingCount > 0 ? (
@@ -1235,11 +1405,17 @@ export default function Animais() {
               <AlertTriangle className="h-4 w-4 text-warning" />
               Transicoes de estagio no radar
             </CardTitle>
-            <CardDescription>
-              {lifecyclePendingCount} animal(is) com ajuste pendente. {lifecycleStrategicCount} decisao(oes) estrategica(s) e {lifecycleBiologicalCount} marco(s) biologico(s).
-            </CardDescription>
           </CardHeader>
-          <CardContent className="flex flex-wrap items-center gap-2">
+          <CardContent className="flex flex-wrap items-center gap-2 pt-0">
+            <StatusBadge tone="warning">
+              {lifecyclePendingCount} ajuste(s)
+            </StatusBadge>
+            <StatusBadge tone="neutral">
+              {lifecycleStrategicCount} decisao(oes)
+            </StatusBadge>
+            <StatusBadge tone="neutral">
+              {lifecycleBiologicalCount} marco(s)
+            </StatusBadge>
             <Button asChild size="sm">
               <Link to="/animais/transicoes">Abrir mutacao em lote</Link>
             </Button>
@@ -1250,342 +1426,239 @@ export default function Animais() {
         </Card>
       ) : null}
 
-      <Card className="overflow-hidden border-transparent shadow-none bg-transparent md:border-sky-200/70 md:bg-card md:shadow-sm dark:md:border-sky-900/60">
+      <Card className="overflow-hidden border-transparent bg-transparent shadow-none">
         <CardContent className="p-0">
-          <div className="hidden md:block overflow-x-auto pb-4 md:pb-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[310px]">Animal</TableHead>
-                <TableHead>Categoria</TableHead>
-                <TableHead>Lote</TableHead>
-                <TableHead>Peso atual</TableHead>
-                <TableHead>Ganho</TableHead>
-                <TableHead>Proximo evento</TableHead>
-                <TableHead>Estagio</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Abrir</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {visibleAnimalRows.map(({ animal, depth }) => {
-                const taxonomy = taxonomyByAnimal.get(animal.id);
-                const categoriaLabel = taxonomy?.display.categoria ?? null;
-                const mother = animal.mae_id
-                  ? animaisMap.get(animal.mae_id) ?? null
-                  : null;
-                const calves = calvesByMother.get(animal.id) ?? [];
-                const lifecyclePending = lifecyclePendings.get(animal.id);
-                const weightSummary = weightSummaryByAnimal.get(animal.id);
-                const nextAgenda = nextAgendaByAnimal.get(animal.id);
-                const regulatoryProfile =
-                  regulatoryProfileByAnimal.get(animal.id) ??
-                  ({
-                    animalId: animal.id,
-                    restrictions: [],
-                    activeSubareas: [],
-                    hasIssues: false,
-                    hasBlockingIssues: false,
-                  } satisfies AnimalRegulatoryProfile);
+          <div className="mb-3 flex flex-wrap gap-2 text-xs font-medium text-muted-foreground">
+            <span>Peso atual</span>
+            <span>Ganho</span>
+            <span>Proximo evento</span>
+          </div>
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            {visibleAnimalRows.map(({ animal, depth }) => {
+              const taxonomy = taxonomyByAnimal.get(animal.id);
+              const categoriaLabel = taxonomy?.display.categoria ?? null;
+              const mother = animal.mae_id
+                ? (animaisMap.get(animal.mae_id) ?? null)
+                : null;
+              const calves = calvesByMother.get(animal.id) ?? [];
+              const lifecyclePending = lifecyclePendings.get(animal.id);
+              const weightSummary = weightSummaryByAnimal.get(animal.id);
+              const nextAgenda = nextAgendaByAnimal.get(animal.id);
+              const regulatoryProfile =
+                regulatoryProfileByAnimal.get(animal.id) ??
+                ({
+                  animalId: animal.id,
+                  restrictions: [],
+                  activeSubareas: [],
+                  hasIssues: false,
+                  hasBlockingIssues: false,
+                } satisfies AnimalRegulatoryProfile);
 
-                return (
-                  <TableRow
-                    key={animal.id}
-                    className={cn(
-                      "border-b border-border/70 transition-colors hover:bg-sky-50/60 dark:hover:bg-sky-950/20",
-                      depth > 0 && "bg-muted/15",
-                      lifecyclePending && "bg-warning-muted/50",
-                      regulatoryProfile.hasBlockingIssues && "bg-danger-muted/35",
-                    )}
-                  >
-                    <TableCell className="align-top">
-                      <div
-                        className="flex items-start gap-2"
-                        style={{ paddingLeft: `${depth * 18}px` }}
-                      >
-                        {depth > 0 ? (
-                          <div className="mt-2 h-[1px] w-4 bg-border/80 shrink-0" />
-                        ) : null}
-                        <div
-                          className={cn(
-                            "flex min-w-0 items-start gap-3",
-                            depth > 0 && "border-l-2 border-border/50 pl-2",
-                          )}
-                        >
-                          <AnimalVisualAvatar
-                            categoriaLabel={categoriaLabel}
-                            sexo={animal.sexo}
-                            size="sm"
-                          />
-                          <div className="min-w-0 space-y-1.5">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <Link
-                                to={`/animais/${animal.id}`}
-                                className="text-base font-bold tabular-nums text-foreground hover:text-primary hover:underline"
-                              >
-                                {animal.identificacao}
-                              </Link>
-                              {animal.nome ? (
-                                <span className="text-xs text-muted-foreground">
-                                  {animal.nome}
-                                </span>
-                              ) : null}
-                              {depth > 0 ? (
-                                <StatusBadge tone="info">Cria</StatusBadge>
-                              ) : null}
-                              {depth === 0 && calves.length > 0 ? (
-                                <StatusBadge tone="neutral">
-                                  {calves.length} cria(s)
-                                </StatusBadge>
-                              ) : null}
-                            </div>
-                            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                              <span>{calcularIdade(animal.data_nascimento) || "Sem idade"}</span>
-                              <span>{animal.sexo === "F" ? "Femea" : "Macho"}</span>
-                              {depth > 0 && mother ? (
-                                <Link
-                                  to={`/animais/${mother.id}`}
-                                  className="hover:text-foreground hover:underline"
-                                >
-                                  Abrir matriz
-                                </Link>
-                              ) : null}
-                            </div>
+              return (
+                <Card
+                  key={animal.id}
+                  className={cn(
+                    "overflow-hidden border-border/70 shadow-sm",
+                    lifecyclePending && "border-warning/30 bg-warning-muted/40",
+                    regulatoryProfile.hasBlockingIssues &&
+                      "border-destructive/30 bg-destructive/10",
+                  )}
+                >
+                  <CardContent className="flex h-full flex-col gap-4 p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex min-w-0 items-start gap-3">
+                        <AnimalVisualAvatar
+                          categoriaLabel={categoriaLabel}
+                          sexo={animal.sexo}
+                          size="sm"
+                        />
+                        <div className="min-w-0">
+                          <Link
+                            to={`/animais/${animal.id}`}
+                            className="text-lg font-bold tabular-nums text-foreground hover:underline"
+                          >
+                            {animal.identificacao}
+                          </Link>
+                          {animal.nome ? (
+                            <p className="truncate text-sm text-muted-foreground">
+                              {animal.nome}
+                            </p>
+                          ) : null}
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            <AnimalCategoryBadge
+                              categoriaLabel={categoriaLabel}
+                            />
+                            {depth > 0 ? (
+                              <StatusBadge tone="info">Cria</StatusBadge>
+                            ) : null}
+                            {depth === 0 && calves.length > 0 ? (
+                              <StatusBadge tone="neutral">
+                                {calves.length} cria(s)
+                              </StatusBadge>
+                            ) : null}
                           </div>
                         </div>
                       </div>
-                    </TableCell>
+                      <StatusBadge
+                        tone={animal.status === "ativo" ? "success" : "warning"}
+                      >
+                        {animal.status}
+                      </StatusBadge>
+                    </div>
 
-                    <TableCell className="align-top">
-                      <AnimalCategoryBadge
-                        categoriaLabel={categoriaLabel}
-                      />
-                    </TableCell>
-
-                    <TableCell className="align-top">
-                      {animal.lote_id ? (
-                        <p className="text-sm font-medium">
-                          {lotesMap.get(animal.lote_id)?.nome || "..."}
+                    <div className="grid grid-cols-2 gap-3 border-t border-border/50 pt-3 text-sm">
+                      <div>
+                        <p className="mb-1 text-xs font-medium text-muted-foreground">
+                          Peso
                         </p>
-                      ) : (
-                        <span className="text-xs italic text-muted-foreground">
-                          Sem lote
-                        </span>
-                      )}
-                    </TableCell>
+                        <p className="font-semibold tabular-nums text-foreground">
+                          {weightSummary
+                            ? formatWeight(
+                                weightSummary.ultimoPesoKg,
+                                farmMeasurementConfig.weight_unit,
+                              )
+                            : "Sem pesagem"}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="mb-1 text-xs font-medium text-muted-foreground">
+                          Ganho/dia
+                        </p>
+                        <p className="font-semibold tabular-nums text-foreground">
+                          {weightSummary
+                            ? formatWeightPerDay(
+                                weightSummary.ganhoMedioDiaKg,
+                                farmMeasurementConfig.weight_unit,
+                              )
+                            : "Aguardando serie"}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="mb-1 text-xs font-medium text-muted-foreground">
+                          Lote
+                        </p>
+                        <p className="truncate font-medium text-foreground">
+                          {animal.lote_id
+                            ? (lotesMap.get(animal.lote_id)?.nome ?? "Lote")
+                            : "Sem lote"}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="mb-1 text-xs font-medium text-muted-foreground">
+                          Idade
+                        </p>
+                        <p className="font-medium text-foreground">
+                          {calcularIdade(animal.data_nascimento) || "Sem idade"}
+                        </p>
+                      </div>
+                    </div>
 
-                    <TableCell className="align-top">
-                      {weightSummary ? (
-                        <div className="space-y-1">
-                          <p className="text-sm font-semibold tabular-nums">
-                            {formatWeight(
-                              weightSummary.ultimoPesoKg,
-                              farmMeasurementConfig.weight_unit,
-                            )}
-                          </p>
-                          <p className="text-xs tabular-nums text-muted-foreground">
-                            {formatDate(weightSummary.ultimoPesoData)}
-                          </p>
-                        </div>
-                      ) : (
-                        <span className="text-xs italic text-muted-foreground">
-                          Sem pesagem
-                        </span>
-                      )}
-                    </TableCell>
-
-                    <TableCell className="align-top">
-                      {weightSummary ? (
-                        <div className="space-y-1">
-                          <p className="text-sm font-medium tabular-nums">
-                            {formatWeightPerDay(
-                              weightSummary.ganhoMedioDiaKg,
-                              farmMeasurementConfig.weight_unit,
-                            )}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {weightSummary.totalPesagens} pesagem(ns)
-                          </p>
-                        </div>
-                      ) : (
-                        <span className="text-xs italic text-muted-foreground">
-                          Aguardando serie
-                        </span>
-                      )}
-                    </TableCell>
-
-                    <TableCell className="align-top">
-                      {nextAgenda ? (
-                        <div className="space-y-1">
+                    <div className="rounded-xl border border-border/70 bg-muted/25 p-3">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="text-sm font-medium">Agenda</p>
+                        {nextAgenda ? (
                           <StatusBadge tone={getAgendaTone(nextAgenda.status)}>
                             {getAgendaStatusLabel(nextAgenda.status)}
                           </StatusBadge>
-                          <p className="text-sm font-medium">{nextAgenda.titulo}</p>
+                        ) : null}
+                      </div>
+                      {nextAgenda ? (
+                        <div className="mt-2 space-y-1">
+                          <p className="truncate text-sm font-semibold text-foreground">
+                            {nextAgenda.titulo}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {formatDate(nextAgenda.data)}
+                          </p>
                           {nextAgenda.scheduleLabel ? (
                             <p className="text-xs text-muted-foreground">
                               {nextAgenda.scheduleLabel}
                             </p>
                           ) : null}
-                          {nextAgenda.scheduleModeLabel ? (
-                            <div className="flex flex-wrap gap-2">
+                          <div className="flex flex-wrap gap-2">
+                            {nextAgenda.scheduleModeLabel ? (
                               <StatusBadge tone="info">
                                 {nextAgenda.scheduleModeLabel}
                               </StatusBadge>
-                              {nextAgenda.scheduleAnchorLabel ? (
-                                <StatusBadge tone="neutral">
-                                  {nextAgenda.scheduleAnchorLabel}
-                                </StatusBadge>
-                              ) : null}
-                            </div>
-                          ) : null}
-                          <p className="text-xs text-muted-foreground">
-                            {formatDate(nextAgenda.data)}
-                          </p>
+                            ) : null}
+                            {nextAgenda.scheduleAnchorLabel ? (
+                              <StatusBadge tone="neutral">
+                                {nextAgenda.scheduleAnchorLabel}
+                              </StatusBadge>
+                            ) : null}
+                          </div>
                         </div>
                       ) : (
-                        <span className="text-xs italic text-muted-foreground">
-                          Sem agenda
-                        </span>
+                        <p className="mt-2 text-sm text-muted-foreground">
+                          Sem agenda aberta.
+                        </p>
                       )}
-                    </TableCell>
+                    </div>
 
-                    <TableCell className="align-top">
+                    <div className="flex flex-wrap gap-2">
                       {lifecyclePending ? (
-                        <div className="space-y-2">
-                          <StatusBadge tone={getLifecycleTone(lifecyclePending.canAutoApply)}>
-                            {getAnimalLifeStageLabel(lifecyclePending.currentStage)} para{" "}
-                            {getAnimalLifeStageLabel(lifecyclePending.targetStage)}
-                          </StatusBadge>
-                          <p className="text-xs text-muted-foreground">
-                            {getPendingAnimalLifecycleKindLabel(
-                              lifecyclePending.queueKind,
-                            )}
-                          </p>
-                        </div>
-                      ) : (
-                        <StatusBadge tone="neutral">
+                        <StatusBadge
+                          tone={getLifecycleTone(lifecyclePending.canAutoApply)}
+                        >
                           {getAnimalLifeStageLabel(
-                            resolveAnimalLifecycleSnapshot(animal, farmLifecycleConfig)
-                              .currentStage,
+                            lifecyclePending.currentStage,
+                          )}{" "}
+                          para{" "}
+                          {getAnimalLifeStageLabel(
+                            lifecyclePending.targetStage,
                           )}
                         </StatusBadge>
-                      )}
-                    </TableCell>
+                      ) : taxonomy ? (
+                        <StatusBadge tone="neutral">
+                          {taxonomy.display.estado_alias}
+                        </StatusBadge>
+                      ) : null}
+                      {regulatoryProfile.restrictions.map((restriction) => (
+                        <StatusBadge
+                          key={restriction.key}
+                          tone={restriction.tone}
+                        >
+                          {restriction.label}
+                        </StatusBadge>
+                      ))}
+                      {depth > 0 && mother ? (
+                        <Button
+                          asChild
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 px-2"
+                        >
+                          <Link to={`/animais/${mother.id}`}>Abrir matriz</Link>
+                        </Button>
+                      ) : null}
+                    </div>
 
-                    <TableCell className="align-top">
-                      {taxonomy ? (
-                        <div className="space-y-1">
-                          <StatusBadge tone="neutral">
-                            {taxonomy.display.estado_alias}
-                          </StatusBadge>
-                          {animal.status !== "ativo" ? (
-                            <StatusBadge tone={animal.status === "vendido" ? "neutral" : getProductiveTone(animal.status)}>
-                              {animal.status}
-                            </StatusBadge>
-                          ) : null}
-                          {regulatoryProfile.restrictions.map((restriction) => (
-                            <StatusBadge
-                              key={restriction.key}
-                              tone={restriction.tone}
-                            >
-                              {restriction.label}
-                            </StatusBadge>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="space-y-1">
-                          <StatusBadge tone={animal.status === "vendido" ? "neutral" : getProductiveTone(animal.status)}>
-                            {animal.status}
-                          </StatusBadge>
-                          {regulatoryProfile.restrictions.map((restriction) => (
-                            <StatusBadge
-                              key={restriction.key}
-                              tone={restriction.tone}
-                            >
-                              {restriction.label}
-                            </StatusBadge>
-                          ))}
-                        </div>
-                      )}
-                    </TableCell>
-
-                    <TableCell className="text-right align-top">
-                      <Button asChild size="sm" variant="ghost">
-                        <Link to={`/animais/${animal.id}`}>Abrir ficha</Link>
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-
-              {animalRows.length === 0 && hasFilters ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={9}
-                    className="h-32 text-center text-muted-foreground"
-                  >
-                    Nenhum animal encontrado com os filtros aplicados.
-                  </TableCell>
-                </TableRow>
-              ) : null}
-            </TableBody>
-          </Table>
-          </div>
-
-          <div className="block md:hidden space-y-4">
-             {visibleAnimalRows.map(({ animal }) => {
-                 const taxonomy = taxonomyByAnimal.get(animal.id);
-                 const categoriaLabel = taxonomy?.display.categoria ?? null;
-                 const weightSummary = weightSummaryByAnimal.get(animal.id);
-                 const nextAgenda = nextAgendaByAnimal.get(animal.id);
-                 return (
-                   <Card key={animal.id} className="overflow-hidden border-border/70 shadow-sm">
-                     <CardContent className="p-4 flex flex-col gap-4">
-                       <div className="flex items-start justify-between gap-3">
-                         <div className="flex items-center gap-3">
-                           <AnimalVisualAvatar categoriaLabel={categoriaLabel} sexo={animal.sexo} size="sm" />
-                           <div>
-                             <Link to={`/animais/${animal.id}`} className="font-bold text-base hover:underline text-foreground">{animal.identificacao}</Link>
-                             {animal.nome && <p className="text-sm text-muted-foreground">{animal.nome}</p>}
-                           </div>
-                         </div>
-                         <AnimalCategoryBadge categoriaLabel={categoriaLabel} />
-                       </div>
-                       <div className="grid grid-cols-2 gap-3 text-sm border-t border-border/50 pt-3">
-                         <div>
-                           <p className="text-muted-foreground text-[11px] uppercase tracking-wider font-semibold mb-1">Peso</p>
-                           <p className="font-medium text-foreground">{weightSummary ? formatWeight(weightSummary.ultimoPesoKg, farmMeasurementConfig.weight_unit) : "---"}</p>
-                         </div>
-                         <div>
-                           <p className="text-muted-foreground text-[11px] uppercase tracking-wider font-semibold mb-1">Próximo Evento</p>
-                           <p className="font-medium text-foreground truncate">{nextAgenda ? nextAgenda.titulo : "---"}</p>
-                         </div>
-                         <div>
-                           <p className="text-muted-foreground text-[11px] uppercase tracking-wider font-semibold mb-1">Lote</p>
-                           <p className="font-medium text-foreground truncate">{animal.lote_id ? lotesMap.get(animal.lote_id)?.nome : "---"}</p>
-                         </div>
-                         <div>
-                           <p className="text-muted-foreground text-[11px] uppercase tracking-wider font-semibold mb-1">Status</p>
-                           <StatusBadge tone={animal.status === "ativo" ? "neutral" : "warning"}>{animal.status}</StatusBadge>
-                         </div>
-                       </div>
-                       <Button asChild variant="outline" size="sm" className="w-full mt-2">
-                         <Link to={`/animais/${animal.id}`}>Abrir ficha do animal</Link>
-                       </Button>
-                     </CardContent>
-                   </Card>
-                 );
-             })}
-             {animalRows.length === 0 && hasFilters ? (
-               <div className="text-center text-muted-foreground py-8 bg-card rounded-lg border">Nenhum animal encontrado com os filtros aplicados.</div>
-             ) : null}
+                    <Button
+                      asChild
+                      variant="outline"
+                      size="sm"
+                      className="mt-auto min-h-10 w-full"
+                    >
+                      <Link to={`/animais/${animal.id}`}>
+                        Abrir ficha do animal
+                      </Link>
+                    </Button>
+                  </CardContent>
+                </Card>
+              );
+            })}
+            {animalRows.length === 0 && hasFilters ? (
+              <div className="rounded-lg border bg-card py-8 text-center text-muted-foreground md:col-span-2 xl:col-span-3">
+                Nenhum animal encontrado com os filtros aplicados.
+              </div>
+            ) : null}
           </div>
 
           {hasPagination ? (
             <div className="flex flex-col gap-3 border-t px-6 py-4 md:flex-row md:items-center md:justify-between">
               <p className="text-sm text-muted-foreground">
-                Exibindo {visibleAnimalRows.length} linha(s) por vez para manter a
-                leitura fluida em bases grandes.
+                Exibindo {visibleAnimalRows.length} linha(s) por vez para manter
+                a leitura fluida em bases grandes.
               </p>
 
               <Pagination className="mx-0 w-full justify-start md:w-auto md:justify-end">
@@ -1594,7 +1667,11 @@ export default function Animais() {
                     <PaginationPrevious
                       href="#"
                       aria-disabled={currentPage === 1}
-                      className={currentPage === 1 ? "pointer-events-none opacity-50" : undefined}
+                      className={
+                        currentPage === 1
+                          ? "pointer-events-none opacity-50"
+                          : undefined
+                      }
                       onClick={(event) => {
                         event.preventDefault();
                         handlePageChange(currentPage - 1);

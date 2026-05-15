@@ -1,6 +1,9 @@
 import type { ComponentProps } from "react";
 
-import { RegistrarComplianceBlockSection, RegistrarSanitaryMovementBlockSection } from "@/pages/Registrar/components/RegistrarComplianceBlocks";
+import {
+  RegistrarComplianceBlockSection,
+  RegistrarSanitaryMovementBlockSection,
+} from "@/pages/Registrar/components/RegistrarComplianceBlocks";
 import { RegistrarTransitChecklistSection } from "@/pages/Registrar/components/RegistrarTransitChecklistSection";
 import {
   TRANSIT_CHECKLIST_UF_OPTIONS,
@@ -13,12 +16,22 @@ type ComplianceGuardProps = {
 };
 
 export type RegistrarActionSectionSlotsInput = {
-  transitChecklist: ComponentProps<typeof RegistrarTransitChecklistSection>["transitChecklist"];
-  onTransitChecklistChange: ComponentProps<typeof RegistrarTransitChecklistSection>["onTransitChecklistChange"];
-  officialTransitChecklistEnabled: ComponentProps<typeof RegistrarTransitChecklistSection>["officialTransitChecklistEnabled"];
-  transitChecklistIssues: ComponentProps<typeof RegistrarTransitChecklistSection>["transitChecklistIssues"];
+  transitChecklist: ComponentProps<
+    typeof RegistrarTransitChecklistSection
+  >["transitChecklist"];
+  onTransitChecklistChange: ComponentProps<
+    typeof RegistrarTransitChecklistSection
+  >["onTransitChecklistChange"];
+  officialTransitChecklistEnabled: ComponentProps<
+    typeof RegistrarTransitChecklistSection
+  >["officialTransitChecklistEnabled"];
+  transitChecklistIssues: ComponentProps<
+    typeof RegistrarTransitChecklistSection
+  >["transitChecklistIssues"];
   showsTransitChecklist: boolean;
-  blockedAnimals: ComponentProps<typeof RegistrarSanitaryMovementBlockSection>["blockedAnimals"];
+  blockedAnimals: ComponentProps<
+    typeof RegistrarSanitaryMovementBlockSection
+  >["blockedAnimals"];
   movementComplianceGuards: ComplianceGuardProps;
   nutritionComplianceGuards: ComplianceGuardProps;
 };
@@ -39,13 +52,15 @@ export function buildRegistrarActionSectionSlots(
 
   const sanitaryMovementBlockSection =
     input.showsTransitChecklist && input.blockedAnimals.length > 0 ? (
-      <RegistrarSanitaryMovementBlockSection blockedAnimals={input.blockedAnimals} />
+      <RegistrarSanitaryMovementBlockSection
+        blockedAnimals={input.blockedAnimals}
+      />
     ) : null;
 
   const movementComplianceBlockSection = (
     <RegistrarComplianceBlockSection
-      title="Restricoes regulatorias de movimentacao"
-      description="O overlay oficial detectou pendencias que afetam este fluxo de movimentacao."
+      title="Restricoes de movimentacao"
+      description="Pendencias afetam este fluxo."
       blockers={input.movementComplianceGuards.blockers}
       warnings={input.movementComplianceGuards.warnings}
     />
@@ -53,8 +68,8 @@ export function buildRegistrarActionSectionSlots(
 
   const nutritionComplianceBlockSection = (
     <RegistrarComplianceBlockSection
-      title="Restricoes regulatorias de nutricao"
-      description="O overlay oficial detectou risco alimentar ou operacional antes do lancamento deste manejo."
+      title="Restricoes de nutricao"
+      description="Risco alimentar ou operacional antes do lancamento."
       blockers={input.nutritionComplianceGuards.blockers}
       warnings={input.nutritionComplianceGuards.warnings}
     />

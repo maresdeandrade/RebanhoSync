@@ -1,7 +1,7 @@
 import { AlertTriangle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { cn } from "@/lib/utils";
 
@@ -59,15 +59,13 @@ export function AgendaComplianceSummaryPanel({
             )}
           />
           {blockingCount > 0
-            ? "Restricoes de conformidade em aberto"
+            ? "Restricoes em aberto"
             : "Conformidade operacional pendente"}
         </CardTitle>
-        <CardDescription>
-          {openCount} frente(s) do overlay oficial ainda pedem acao na fazenda.
-        </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent className="space-y-3 pt-0">
         <div className="flex flex-wrap gap-2">
+          <StatusBadge tone={alertTone}>{openCount} frente(s)</StatusBadge>
           {badges.map((badge) => (
             <StatusBadge key={badge.key} tone={badge.tone}>
               {badge.label} {badge.count}
@@ -77,21 +75,25 @@ export function AgendaComplianceSummaryPanel({
 
         <div className="grid gap-3 lg:grid-cols-2">
           {topItems.map((item) => (
-            <div key={item.key} className="rounded-2xl border border-border/70 bg-background/90 p-4">
+            <div
+              key={item.key}
+              className="rounded-2xl border border-border/70 bg-background/90 p-4"
+            >
               <div className="flex flex-wrap items-center gap-2">
                 <p className="font-medium">{item.label}</p>
                 <StatusBadge tone={item.tone}>{item.statusLabel}</StatusBadge>
                 <StatusBadge tone={item.tone}>{item.kindLabel}</StatusBadge>
               </div>
-              <p className="mt-2 text-sm text-muted-foreground">{item.detail}</p>
-              <p className="mt-1 text-sm text-muted-foreground">{item.recommendation}</p>
+              <p className="mt-2 text-sm text-muted-foreground">
+                {item.recommendation || item.detail}
+              </p>
             </div>
           ))}
         </div>
 
         <div className="flex flex-wrap gap-2">
           <Button type="button" size="sm" onClick={onOpenComplianceOverlay}>
-            Abrir overlay de conformidade
+            Abrir conformidade
           </Button>
         </div>
       </CardContent>

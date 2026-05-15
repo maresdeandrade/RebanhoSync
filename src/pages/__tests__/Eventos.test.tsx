@@ -48,7 +48,8 @@ describe("Eventos page", () => {
           label: "Quarentena de entrada",
           tone: "danger",
           statusLabel: "Ajuste necessario",
-          recommendation: "Revisar a quarentena antes de liberar venda ou transito.",
+          recommendation:
+            "Revisar a quarentena antes de liberar venda ou transito.",
         },
       ],
       groupBadge: {
@@ -95,7 +96,8 @@ describe("Eventos page", () => {
         blockers: [
           {
             entryKey: "gta-1",
-            message: "Transito externo bloqueado ate concluir o checklist documental.",
+            message:
+              "Transito externo bloqueado ate concluir o checklist documental.",
           },
         ],
         warnings: [],
@@ -112,7 +114,8 @@ describe("Eventos page", () => {
         blockers: [
           {
             entryKey: "gta-1",
-            message: "Transito externo bloqueado ate concluir o checklist documental.",
+            message:
+              "Transito externo bloqueado ate concluir o checklist documental.",
           },
         ],
         warnings: [],
@@ -138,7 +141,10 @@ describe("Eventos page", () => {
     const responses = [createRegulatoryReadModel(), dataResponse];
     let callCount = 0;
     mockedUseLiveQuery.mockImplementation(
-      () => responses[Math.min(callCount++, responses.length - 1)] as ReturnType<typeof useLiveQuery>,
+      () =>
+        responses[Math.min(callCount++, responses.length - 1)] as ReturnType<
+          typeof useLiveQuery
+        >,
     );
   };
 
@@ -166,19 +172,19 @@ describe("Eventos page", () => {
     });
   });
 
-  it("projeta conformidade aberta e CTA do overlay no historico", () => {
+  it("projeta conformidade aberta e CTA no historico", () => {
     render(
       <MemoryRouter>
         <Eventos />
       </MemoryRouter>,
     );
 
-    expect(screen.getByText("Overlay regulatorio ativo")).toBeInTheDocument();
+    expect(screen.getByText("Atenção de conformidade")).toBeInTheDocument();
     expect(screen.getByText("Conformidade aberta")).toBeInTheDocument();
     expect(screen.getByText("Bloqueia nutricao")).toBeInTheDocument();
     expect(screen.getByText("Bloqueia venda/transito")).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: /abrir overlay de conformidade/i }),
+      screen.getByRole("button", { name: /abrir conformidade/i }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: /filtrar conformidade/i }),
@@ -228,14 +234,20 @@ describe("Eventos page", () => {
     });
 
     render(
-      <MemoryRouter initialEntries={["/eventos?dominio=conformidade&overlayImpact=sale"]}>
+      <MemoryRouter
+        initialEntries={["/eventos?dominio=conformidade&overlayImpact=sale"]}
+      >
         <Eventos />
       </MemoryRouter>,
     );
 
     expect(screen.getByText("Recorte regulatorio ativo")).toBeInTheDocument();
-    expect(screen.getAllByText("Impacta transito/venda").length).toBeGreaterThan(0);
-    expect(screen.getByText("Atualizacao documental - pendente")).toBeInTheDocument();
+    expect(
+      screen.getAllByText("Impacta transito/venda").length,
+    ).toBeGreaterThan(0);
+    expect(
+      screen.getByText("Atualizacao documental - pendente"),
+    ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: /limpar recorte regulatorio/i }),
     ).toBeInTheDocument();

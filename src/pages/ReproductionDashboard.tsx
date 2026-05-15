@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -126,10 +126,14 @@ function formatTimelineDetail(event: ReproEventJoined) {
     detailParts.push(`${numeroCrias} cria(s)`);
   }
   if (typeof payload.data_prevista_parto === "string") {
-    detailParts.push(`Parto previsto ${formatDate(payload.data_prevista_parto)}`);
+    detailParts.push(
+      `Parto previsto ${formatDate(payload.data_prevista_parto)}`,
+    );
   }
 
-  return detailParts.join(" | ") || event.observacoes || "Sem detalhe adicional.";
+  return (
+    detailParts.join(" | ") || event.observacoes || "Sem detalhe adicional."
+  );
 }
 
 function getStatusTone(status: string) {
@@ -211,7 +215,9 @@ function EmptyMessage({
         <div className="space-y-2">
           <p className="font-medium text-foreground">{title}</p>
           <p className="leading-6">{description}</p>
-          {actions ? <div className="flex flex-wrap gap-2">{actions}</div> : null}
+          {actions ? (
+            <div className="flex flex-wrap gap-2">{actions}</div>
+          ) : null}
         </div>
       </div>
     </div>
@@ -225,44 +231,41 @@ export default function ReproductionDashboard() {
     useState<ReproDashboardFilter>("todas");
   const [selectedAnimalId, setSelectedAnimalId] = useState<string | null>(null);
 
-  const reproductionData = useLiveQuery(
-    async () => {
-      if (!activeFarmId) return null;
+  const reproductionData = useLiveQuery(async () => {
+    if (!activeFarmId) return null;
 
-      const [animals, lotes, events] = await Promise.all([
-        db.state_animais
-          .where("fazenda_id")
-          .equals(activeFarmId)
-          .and(
-            (animal) =>
-              animal.sexo === "F" &&
-              animal.status === "ativo" &&
-              (!animal.deleted_at || animal.deleted_at === null),
-          )
-          .toArray(),
-        db.state_lotes.where("fazenda_id").equals(activeFarmId).toArray(),
-        getReproductionEventsJoined(activeFarmId),
-      ]);
+    const [animals, lotes, events] = await Promise.all([
+      db.state_animais
+        .where("fazenda_id")
+        .equals(activeFarmId)
+        .and(
+          (animal) =>
+            animal.sexo === "F" &&
+            animal.status === "ativo" &&
+            (!animal.deleted_at || animal.deleted_at === null),
+        )
+        .toArray(),
+      db.state_lotes.where("fazenda_id").equals(activeFarmId).toArray(),
+      getReproductionEventsJoined(activeFarmId),
+    ]);
 
-      const eligibleAnimals = animals.filter((animal) => {
-        const categoriaLabel = deriveAnimalTaxonomy(animal, {
-          config: farmLifecycleConfig,
-        }).display.categoria;
-        return isFemaleReproductionEligible(animal, categoriaLabel);
-      });
+    const eligibleAnimals = animals.filter((animal) => {
+      const categoriaLabel = deriveAnimalTaxonomy(animal, {
+        config: farmLifecycleConfig,
+      }).display.categoria;
+      return isFemaleReproductionEligible(animal, categoriaLabel);
+    });
 
-      return {
-        dashboard: buildReproductionDashboard({
-          animals: eligibleAnimals,
-          lotes,
-          events,
-        }),
+    return {
+      dashboard: buildReproductionDashboard({
+        animals: eligibleAnimals,
+        lotes,
         events,
-        eligibleAnimals,
-      };
-    },
-    [activeFarmId, farmLifecycleConfig],
-  );
+      }),
+      events,
+      eligibleAnimals,
+    };
+  }, [activeFarmId, farmLifecycleConfig]);
 
   const dashboardData = reproductionData?.dashboard ?? null;
   const lifecycleQueue = useMemo(() => {
@@ -340,10 +343,10 @@ export default function ReproductionDashboard() {
   const selectedAnimal =
     filteredAnimals.find((animal) => animal.id === selectedAnimalId) ?? null;
   const selectedLifecyclePending = selectedAnimalId
-    ? lifecycleByAnimal.get(selectedAnimalId) ?? null
+    ? (lifecycleByAnimal.get(selectedAnimalId) ?? null)
     : null;
   const selectedHistory = selectedAnimalId
-    ? historyByAnimal.get(selectedAnimalId) ?? []
+    ? (historyByAnimal.get(selectedAnimalId) ?? [])
     : [];
   const visibleAnimalIds = new Set(filteredAnimals.map((animal) => animal.id));
   const visibleAgenda = dashboardData
@@ -357,19 +360,23 @@ export default function ReproductionDashboard() {
       ["atencao", dashboardData.totals.atencao],
       [
         "vazias",
-        dashboardData.animals.filter((animal) => animal.lane === "vazias").length,
+        dashboardData.animals.filter((animal) => animal.lane === "vazias")
+          .length,
       ],
       [
         "servidas",
-        dashboardData.animals.filter((animal) => animal.lane === "servidas").length,
+        dashboardData.animals.filter((animal) => animal.lane === "servidas")
+          .length,
       ],
       [
         "prenhas",
-        dashboardData.animals.filter((animal) => animal.lane === "prenhas").length,
+        dashboardData.animals.filter((animal) => animal.lane === "prenhas")
+          .length,
       ],
       [
         "paridas",
-        dashboardData.animals.filter((animal) => animal.lane === "paridas").length,
+        dashboardData.animals.filter((animal) => animal.lane === "paridas")
+          .length,
       ],
     ]);
   }, [dashboardData]);
@@ -379,9 +386,6 @@ export default function ReproductionDashboard() {
       <Card>
         <CardHeader>
           <CardTitle>Selecione uma fazenda</CardTitle>
-          <CardDescription>
-            O painel reprodutivo depende de uma fazenda ativa.
-          </CardDescription>
         </CardHeader>
         <CardContent>
           <Button asChild>
@@ -397,9 +401,6 @@ export default function ReproductionDashboard() {
       <Card>
         <CardHeader>
           <CardTitle>Carregando ciclo reprodutivo</CardTitle>
-          <CardDescription>
-            Buscando femeas ativas, historico reprodutivo e proximos marcos.
-          </CardDescription>
         </CardHeader>
       </Card>
     );
@@ -410,7 +411,6 @@ export default function ReproductionDashboard() {
       <PageIntro
         eyebrow="Ciclo reprodutivo"
         title="Reproducao das matrizes"
-        description="Painel operacional para acompanhar servico, diagnostico, prenhez, parto e retorno ao ciclo com foco no proximo passo por animal."
         meta={
           <>
             <StatusBadge tone="neutral">
@@ -453,30 +453,25 @@ export default function ReproductionDashboard() {
         <MetricCard
           label="Femeas ativas"
           value={dashboardData.totals.femeasAtivas}
-          hint="Base apta para leitura do ciclo."
         />
         <MetricCard
           label="Servidas"
           value={dashboardData.totals.servidas}
-          hint="Aguardando diagnostico."
           tone="info"
         />
         <MetricCard
           label="Prenhas"
           value={dashboardData.totals.prenhas}
-          hint="Com parto no radar."
           tone="success"
         />
         <MetricCard
           label="Paridas"
           value={dashboardData.totals.paridas}
-          hint="Puerperio e retorno ao ciclo."
           tone="warning"
         />
         <MetricCard
           label="Vazias / abertas"
           value={dashboardData.totals.abertas}
-          hint="Prontas para nova cobertura."
         />
       </section>
 
@@ -484,9 +479,6 @@ export default function ReproductionDashboard() {
         <Card>
           <CardHeader>
             <CardTitle>Acompanhamento por animal</CardTitle>
-            <CardDescription>
-              Uma leitura compacta do ciclo com busca, filtro e proximo passo.
-            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <Toolbar className="border-0 bg-transparent p-0 shadow-none">
@@ -506,7 +498,9 @@ export default function ReproductionDashboard() {
                   <Button
                     key={filter.key}
                     type="button"
-                    variant={activeFilter === filter.key ? "default" : "outline"}
+                    variant={
+                      activeFilter === filter.key ? "default" : "outline"
+                    }
                     size="sm"
                     onClick={() => setActiveFilter(filter.key)}
                   >
@@ -556,7 +550,9 @@ export default function ReproductionDashboard() {
                             <p className="text-lg font-semibold tracking-[-0.01em]">
                               {animal.identificacao}
                             </p>
-                            <StatusBadge tone={getStatusTone(animal.reproStatus.status)}>
+                            <StatusBadge
+                              tone={getStatusTone(animal.reproStatus.status)}
+                            >
                               {STATUS_LABEL[animal.reproStatus.status]}
                             </StatusBadge>
                             <StatusBadge tone={getUrgencyTone(animal.urgency)}>
@@ -569,7 +565,8 @@ export default function ReproductionDashboard() {
                             {lifecyclePending ? (
                               <StatusBadge
                                 tone={
-                                  lifecyclePending.queueKind === "decisao_estrategica"
+                                  lifecyclePending.queueKind ===
+                                  "decisao_estrategica"
                                     ? "warning"
                                     : "info"
                                 }
@@ -591,7 +588,9 @@ export default function ReproductionDashboard() {
                               <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                                 Ultimo marco
                               </p>
-                              <p className="mt-2 font-medium">{animal.lastEventLabel}</p>
+                              <p className="mt-2 font-medium">
+                                {animal.lastEventLabel}
+                              </p>
                               <p className="mt-1 text-sm text-muted-foreground">
                                 {animal.lastEventDateLabel
                                   ? formatDate(animal.lastEventDateLabel)
@@ -603,7 +602,9 @@ export default function ReproductionDashboard() {
                               <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                                 Proximo passo
                               </p>
-                              <p className="mt-2 font-medium">{animal.nextActionLabel}</p>
+                              <p className="mt-2 font-medium">
+                                {animal.nextActionLabel}
+                              </p>
                               <p className="mt-1 text-sm text-muted-foreground">
                                 {formatDate(animal.nextActionDate)}
                               </p>
@@ -612,9 +613,14 @@ export default function ReproductionDashboard() {
 
                           {lifecyclePending ? (
                             <p className="text-sm leading-6 text-muted-foreground">
-                              {getAnimalLifeStageLabel(lifecyclePending.currentStage)} para{" "}
-                              {getAnimalLifeStageLabel(lifecyclePending.targetStage)} |{" "}
-                              {lifecyclePending.reason}
+                              {getAnimalLifeStageLabel(
+                                lifecyclePending.currentStage,
+                              )}{" "}
+                              para{" "}
+                              {getAnimalLifeStageLabel(
+                                lifecyclePending.targetStage,
+                              )}{" "}
+                              | {lifecyclePending.reason}
                             </p>
                           ) : null}
                         </div>
@@ -638,7 +644,9 @@ export default function ReproductionDashboard() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => setSelectedAnimalId(animal.id)}>
+                              <DropdownMenuItem
+                                onClick={() => setSelectedAnimalId(animal.id)}
+                              >
                                 <History className="mr-2 h-4 w-4" />
                                 Focar timeline
                               </DropdownMenuItem>
@@ -663,9 +671,6 @@ export default function ReproductionDashboard() {
         <Card>
           <CardHeader>
             <CardTitle>Em foco agora</CardTitle>
-            <CardDescription>
-              Pendencias e marcos que merecem acompanhamento dedicado.
-            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <FocusMetric
@@ -714,10 +719,6 @@ export default function ReproductionDashboard() {
               <ListTodo className="h-5 w-5 text-muted-foreground" />
               <CardTitle>Agenda reprodutiva automatica</CardTitle>
             </div>
-            <CardDescription>
-              Lista derivada do estagio atual de cada matriz, sem depender de
-              cadastro manual para mostrar o proximo passo.
-            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             {visibleAgenda.length === 0 ? (
@@ -749,7 +750,8 @@ export default function ReproductionDashboard() {
                           {lifecyclePending ? (
                             <StatusBadge
                               tone={
-                                lifecyclePending.queueKind === "decisao_estrategica"
+                                lifecyclePending.queueKind ===
+                                "decisao_estrategica"
                                   ? "warning"
                                   : "info"
                               }
@@ -765,8 +767,13 @@ export default function ReproductionDashboard() {
                         </p>
                         {lifecyclePending ? (
                           <p className="text-sm text-muted-foreground">
-                            {getAnimalLifeStageLabel(lifecyclePending.currentStage)} para{" "}
-                            {getAnimalLifeStageLabel(lifecyclePending.targetStage)}
+                            {getAnimalLifeStageLabel(
+                              lifecyclePending.currentStage,
+                            )}{" "}
+                            para{" "}
+                            {getAnimalLifeStageLabel(
+                              lifecyclePending.targetStage,
+                            )}
                           </p>
                         ) : null}
                         <p className="text-sm text-muted-foreground">
@@ -805,9 +812,6 @@ export default function ReproductionDashboard() {
               <History className="h-5 w-5 text-muted-foreground" />
               <CardTitle>Timeline da matriz em foco</CardTitle>
             </div>
-            <CardDescription>
-              Sequencia cronologica real do ciclo, sem ruido de formulario.
-            </CardDescription>
           </CardHeader>
           <CardContent>
             {!selectedAnimal ? (
@@ -823,13 +827,16 @@ export default function ReproductionDashboard() {
                     <p className="text-lg font-semibold tracking-[-0.01em]">
                       {selectedAnimal.identificacao}
                     </p>
-                    <StatusBadge tone={getStatusTone(selectedAnimal.reproStatus.status)}>
+                    <StatusBadge
+                      tone={getStatusTone(selectedAnimal.reproStatus.status)}
+                    >
                       {STATUS_LABEL[selectedAnimal.reproStatus.status]}
                     </StatusBadge>
                     {selectedLifecyclePending ? (
                       <StatusBadge
                         tone={
-                          selectedLifecyclePending.queueKind === "decisao_estrategica"
+                          selectedLifecyclePending.queueKind ===
+                          "decisao_estrategica"
                             ? "warning"
                             : "info"
                         }
@@ -846,9 +853,14 @@ export default function ReproductionDashboard() {
                   </p>
                   {selectedLifecyclePending ? (
                     <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                      {getAnimalLifeStageLabel(selectedLifecyclePending.currentStage)} para{" "}
-                      {getAnimalLifeStageLabel(selectedLifecyclePending.targetStage)} |{" "}
-                      {selectedLifecyclePending.reason}
+                      {getAnimalLifeStageLabel(
+                        selectedLifecyclePending.currentStage,
+                      )}{" "}
+                      para{" "}
+                      {getAnimalLifeStageLabel(
+                        selectedLifecyclePending.targetStage,
+                      )}{" "}
+                      | {selectedLifecyclePending.reason}
                     </p>
                   ) : null}
                 </div>
@@ -867,9 +879,13 @@ export default function ReproductionDashboard() {
                           <div className="absolute -left-[1.15rem] top-1.5 h-2.5 w-2.5 rounded-full bg-primary" />
                           <div className="rounded-2xl border border-border/70 bg-background/80 p-4">
                             <div className="flex flex-wrap items-center justify-between gap-2">
-                              <p className="font-medium">{formatTimelineTitle(event)}</p>
+                              <p className="font-medium">
+                                {formatTimelineTitle(event)}
+                              </p>
                               <span className="text-xs text-muted-foreground">
-                                {new Date(event.occurred_at).toLocaleDateString("pt-BR")}
+                                {new Date(event.occurred_at).toLocaleDateString(
+                                  "pt-BR",
+                                )}
                               </span>
                             </div>
                             <p className="mt-2 text-sm leading-6 text-muted-foreground">

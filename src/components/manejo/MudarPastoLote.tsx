@@ -9,7 +9,6 @@ import { buildPastoOcupacaoOps } from "@/lib/pastos/pastoOcupacoes";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -77,7 +76,8 @@ export function MudarPastoLote({
     animaisLote > pastoSelecionado.capacidade_ua;
 
   // Resolve o toPastoId efetivo (null = remover do pasto)
-  const toPastoIdEfetivo: string | null = novoPastoId === "null" ? null : novoPastoId;
+  const toPastoIdEfetivo: string | null =
+    novoPastoId === "null" ? null : novoPastoId;
 
   // Bloqueia se o destino for o mesmo pasto atual (incluindo null→null)
   const isMesmoPasto = toPastoIdEfetivo === (lote.pasto_id ?? null);
@@ -90,10 +90,8 @@ export function MudarPastoLote({
       const now = new Date().toISOString();
 
       // Buscar contagem atual de animais do lote (para snapshot)
-      const animaisCount = (await db.state_animais
-        .where("lote_id")
-        .equals(lote.id)
-        .count()) ?? 0;
+      const animaisCount =
+        (await db.state_animais.where("lote_id").equals(lote.id).count()) ?? 0;
 
       // Buscar ocupação aberta atual do lote (se houver)
       const ocupacaoAberta = await db.state_pasto_ocupacoes
@@ -150,15 +148,10 @@ export function MudarPastoLote({
       <DialogContent className="max-w-xl">
         <DialogHeader>
           <DialogTitle>Mudar pasto do lote</DialogTitle>
-          <DialogDescription>
-            Realoque <strong>{lote.nome}</strong> com uma leitura mais clara de
-            capacidade e ocupacao.
-          </DialogDescription>
         </DialogHeader>
 
         <FormSection
-          title="Novo pasto"
-          description="Se necessario, remova o lote do pasto atual antes de reorganizar a ocupacao."
+          title={lote.nome}
           actions={
             pastoAtual ? (
               <StatusBadge tone="neutral">Atual: {pastoAtual.nome}</StatusBadge>
@@ -201,11 +194,15 @@ export function MudarPastoLote({
                       Capacidade {pastoSelecionado.capacidade_ua} UA
                     </StatusBadge>
                   </div>
-                  <p className="text-sm text-muted-foreground">
-                    {exceedsCapacity
-                      ? "A ocupacao estimada excede a capacidade informada do pasto."
-                      : "A capacidade do pasto suporta a ocupacao atual do lote."}
-                  </p>
+                  {exceedsCapacity ? (
+                    <StatusBadge tone="warning">
+                      Acima da capacidade
+                    </StatusBadge>
+                  ) : (
+                    <StatusBadge tone="success">
+                      Dentro da capacidade
+                    </StatusBadge>
+                  )}
                 </div>
               </div>
             </div>
@@ -213,7 +210,11 @@ export function MudarPastoLote({
         </FormSection>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={isSubmitting}
+          >
             Cancelar
           </Button>
           <Button

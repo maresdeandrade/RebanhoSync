@@ -6,7 +6,6 @@ import { createGesture } from "@/lib/offline/ops";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -98,15 +97,10 @@ export function TrocarTouroLote({
       <DialogContent className="max-w-xl">
         <DialogHeader>
           <DialogTitle>Trocar reprodutor do lote</DialogTitle>
-          <DialogDescription>
-            Ajuste o macho responsavel pela cobertura do lote{" "}
-            <strong>{lote.nome}</strong>.
-          </DialogDescription>
         </DialogHeader>
 
         <FormSection
-          title="Reprodutor ativo"
-          description="Somente machos elegiveis e presentes no lote aparecem como opcao para evitar configuracoes incoerentes."
+          title={lote.nome}
           actions={
             touroAtual ? (
               <StatusBadge tone="neutral">
@@ -138,14 +132,17 @@ export function TrocarTouroLote({
 
           {touros && touros.length === 0 ? (
             <div className="rounded-2xl border border-border/70 bg-muted/20 p-4 text-sm text-muted-foreground">
-              Nenhum macho elegivel foi encontrado neste lote. Ajuste o perfil
-              do animal antes de defini-lo como reprodutor.
+              Nenhum macho elegivel neste lote.
             </div>
           ) : null}
         </FormSection>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={isSubmitting}
+          >
             Cancelar
           </Button>
           <Button

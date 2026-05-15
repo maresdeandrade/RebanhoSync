@@ -20,10 +20,15 @@ export function RegistrarTransitChecklistSection(input: {
   onTransitChecklistChange: (next: TransitChecklistDraft) => void;
   officialTransitChecklistEnabled: boolean;
   transitChecklistIssues: string[];
-  transitPurposeOptions: Array<{ value: TransitChecklistPurpose; label: string }>;
+  transitPurposeOptions: Array<{
+    value: TransitChecklistPurpose;
+    label: string;
+  }>;
   ufOptions: EstadoUFEnum[];
 }) {
-  const setTransitChecklist = (updater: (prev: TransitChecklistDraft) => TransitChecklistDraft) => {
+  const setTransitChecklist = (
+    updater: (prev: TransitChecklistDraft) => TransitChecklistDraft,
+  ) => {
     input.onTransitChecklistChange(updater(input.transitChecklist));
   };
 
@@ -31,14 +36,14 @@ export function RegistrarTransitChecklistSection(input: {
     <div className="space-y-4 rounded-lg border border-amber-200/70 bg-amber-50/60 p-4 dark:border-amber-900/50 dark:bg-amber-950/20">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="space-y-1">
-          <p className="text-sm font-medium text-foreground">Transito externo e checklist GTA</p>
-          <p className="text-xs text-muted-foreground">
-            Use apenas quando houver saida para outra localizacao. Manejo interno entre
-            lotes da mesma fazenda nao exige GTA por padrao.
+          <p className="text-sm font-medium text-foreground">
+            Transito externo
           </p>
         </div>
-        <StatusBadge tone={input.officialTransitChecklistEnabled ? "warning" : "neutral"}>
-          {input.officialTransitChecklistEnabled ? "Overlay oficial ativo" : "Checklist manual"}
+        <StatusBadge
+          tone={input.officialTransitChecklistEnabled ? "warning" : "neutral"}
+        >
+          {input.officialTransitChecklistEnabled ? "Regras oficiais" : "Manual"}
         </StatusBadge>
       </div>
 
@@ -56,10 +61,6 @@ export function RegistrarTransitChecklistSection(input: {
           <span className="text-sm font-medium text-foreground">
             Este manejo representa transito externo
           </span>
-          <p className="text-sm text-muted-foreground">
-            Ao ativar, o fluxo passa a exigir GTA/e-GTA e, em reproducao interestadual,
-            os atestados sanitarios do PNCEBT.
-          </p>
         </div>
       </label>
 
@@ -117,9 +118,6 @@ export function RegistrarTransitChecklistSection(input: {
               <span className="text-sm font-medium text-foreground">
                 Checklist de GTA/e-GTA concluido
               </span>
-              <p className="text-sm text-muted-foreground">
-                Confirma a revisao documental minima antes de liberar o transito.
-              </p>
             </div>
           </label>
 
@@ -135,11 +133,9 @@ export function RegistrarTransitChecklistSection(input: {
               }
             />
             <div className="space-y-1">
-              <span className="text-sm font-medium text-foreground">Transito interestadual</span>
-              <p className="text-sm text-muted-foreground">
-                Habilita UF de destino e, para reproducao, a validacao dos atestados
-                negativos com janela de 60 dias.
-              </p>
+              <span className="text-sm font-medium text-foreground">
+                Transito interestadual
+              </span>
             </div>
           </label>
 
@@ -151,7 +147,8 @@ export function RegistrarTransitChecklistSection(input: {
                 onValueChange={(value) =>
                   setTransitChecklist((prev) => ({
                     ...prev,
-                    destinationUf: value === "__none__" ? null : (value as EstadoUFEnum),
+                    destinationUf:
+                      value === "__none__" ? null : (value as EstadoUFEnum),
                   }))
                 }
               >
@@ -170,7 +167,8 @@ export function RegistrarTransitChecklistSection(input: {
             </div>
           ) : null}
 
-          {input.transitChecklist.purpose === "reproducao" && input.transitChecklist.isInterstate ? (
+          {input.transitChecklist.purpose === "reproducao" &&
+          input.transitChecklist.isInterstate ? (
             <>
               <label className="flex items-start gap-3 rounded-xl border border-border/70 bg-background/80 p-3 md:col-span-2">
                 <Checkbox
@@ -183,11 +181,9 @@ export function RegistrarTransitChecklistSection(input: {
                   }
                 />
                 <div className="space-y-1">
-                  <span className="text-sm font-medium text-foreground">Atestados PNCEBT conferidos</span>
-                  <p className="text-sm text-muted-foreground">
-                    Confirmar brucelose e tuberculose negativas antes do transito para
-                    reproducao interestadual.
-                  </p>
+                  <span className="text-sm font-medium text-foreground">
+                    Atestados PNCEBT conferidos
+                  </span>
                 </div>
               </label>
 

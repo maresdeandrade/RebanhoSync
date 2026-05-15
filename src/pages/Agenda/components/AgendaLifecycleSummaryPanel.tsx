@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { AlertTriangle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
 
 type AgendaLifecyclePanelItem = {
@@ -37,19 +37,28 @@ export function AgendaLifecycleSummaryPanel({
           <AlertTriangle className="h-4 w-4 text-amber-700 dark:text-amber-200" />
           Transicoes de estagio no radar
         </CardTitle>
-        <CardDescription>
-          {total} pendencia(s), com {strategic} estrategica(s) e {biological} biologica(s).
-        </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent className="space-y-3 pt-0">
+        <div className="flex flex-wrap gap-2">
+          <StatusBadge tone="warning">{total} pendencia(s)</StatusBadge>
+          <StatusBadge tone="neutral">{strategic} estrategica(s)</StatusBadge>
+          <StatusBadge tone="neutral">{biological} biologica(s)</StatusBadge>
+        </div>
         {items.map((item) => (
-          <div key={item.animalId} className="rounded-2xl border border-border/70 bg-background/90 p-4">
+          <div
+            key={item.animalId}
+            className="rounded-2xl border border-border/70 bg-background/90 p-4"
+          >
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
               <div className="space-y-2">
                 <div className="flex flex-wrap items-center gap-2">
                   <p className="font-medium">{item.identificacao}</p>
-                  <StatusBadge tone={item.kindTone}>{item.kindLabel}</StatusBadge>
-                  <StatusBadge tone={item.autoApplyTone}>{item.autoApplyLabel}</StatusBadge>
+                  <StatusBadge tone={item.kindTone}>
+                    {item.kindLabel}
+                  </StatusBadge>
+                  <StatusBadge tone={item.autoApplyTone}>
+                    {item.autoApplyLabel}
+                  </StatusBadge>
                 </div>
                 <p className="text-sm leading-6 text-muted-foreground">
                   {item.stageLabel} | {item.loteNome}

@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -132,17 +131,12 @@ export const InviteMemberDialog = ({
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>Convidar membro</DialogTitle>
-          <DialogDescription>
-            Gere um convite com papel definido e envie o link por email, telefone
-            ou outro canal da rotina.
-          </DialogDescription>
         </DialogHeader>
 
         {!inviteLink ? (
           <div className="space-y-4">
             <FormSection
               title="Contato e permissao"
-              description="Basta um contato valido. O papel define o nivel de acesso assim que o convite for aceito."
               contentClassName="space-y-4"
             >
               <div className="grid gap-4 md:grid-cols-2">
@@ -207,7 +201,6 @@ export const InviteMemberDialog = ({
         ) : (
           <FormSection
             title="Convite pronto"
-            description="Use o link abaixo para compartilhar o acesso. O membro entra direto no fluxo de aceite."
             actions={<StatusBadge tone="success">Link gerado</StatusBadge>}
             contentClassName="space-y-4"
           >
@@ -216,7 +209,12 @@ export const InviteMemberDialog = ({
               <div className="mt-2 flex gap-2">
                 <div className="relative flex-1">
                   <Link2 className="absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
-                  <Input id="invite-link" value={inviteLink} readOnly className="pl-9" />
+                  <Input
+                    id="invite-link"
+                    value={inviteLink}
+                    readOnly
+                    className="pl-9"
+                  />
                 </div>
                 <Button variant="outline" onClick={handleCopyLink}>
                   {copied ? (
@@ -234,7 +232,11 @@ export const InviteMemberDialog = ({
         <DialogFooter>
           {!inviteLink ? (
             <>
-              <Button variant="outline" onClick={() => handleClose(false)} disabled={isLoading}>
+              <Button
+                variant="outline"
+                onClick={() => handleClose(false)}
+                disabled={isLoading}
+              >
                 Cancelar
               </Button>
               <Button onClick={handleSubmit} disabled={isLoading}>
