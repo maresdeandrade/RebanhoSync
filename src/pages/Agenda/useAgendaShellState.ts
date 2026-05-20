@@ -8,6 +8,7 @@ import type {
   AgendaContextualFocus,
   AgendaCalendarAnchorQuickFilter,
   AgendaCalendarModeQuickFilter,
+  AgendaOperationalClassQuickFilter,
   AgendaRow,
   AgendaStatusFilter,
   AnimalQuickFilter,
@@ -26,6 +27,7 @@ export const DEFAULT_AGENDA_SHELL_STATE = {
   quickScheduleFilter: "all" as AgendaScheduleQuickFilter,
   quickCalendarModeFilter: "all" as AgendaCalendarModeQuickFilter,
   quickCalendarAnchorFilter: "all" as AgendaCalendarAnchorQuickFilter,
+  quickOperationalClassFilter: "all" as AgendaOperationalClassQuickFilter,
   quickAnimalFilter: "all" as AnimalQuickFilter,
 };
 
@@ -34,6 +36,7 @@ type UseAgendaShellStateInput = {
   userId: string | undefined;
   queryCalendarModeFilter: AgendaCalendarModeQuickFilter | null;
   queryCalendarAnchorFilter: AgendaCalendarAnchorQuickFilter | null;
+  queryOperationalClassFilter: AgendaOperationalClassQuickFilter | null;
   queryDominioFilter: string | null;
 };
 
@@ -46,6 +49,7 @@ export function useAgendaShellState({
   userId,
   queryCalendarModeFilter,
   queryCalendarAnchorFilter,
+  queryOperationalClassFilter,
   queryDominioFilter,
 }: UseAgendaShellStateInput) {
   const previousGroupModeRef = useRef<GroupMode | null>(null);
@@ -68,6 +72,10 @@ export function useAgendaShellState({
   const [quickCalendarAnchorFilter, setQuickCalendarAnchorFilter] =
     useState<AgendaCalendarAnchorQuickFilter>(
       DEFAULT_AGENDA_SHELL_STATE.quickCalendarAnchorFilter,
+    );
+  const [quickOperationalClassFilter, setQuickOperationalClassFilter] =
+    useState<AgendaOperationalClassQuickFilter>(
+      DEFAULT_AGENDA_SHELL_STATE.quickOperationalClassFilter,
     );
   const [quickAnimalFilter, setQuickAnimalFilter] =
     useState<AnimalQuickFilter>(DEFAULT_AGENDA_SHELL_STATE.quickAnimalFilter);
@@ -93,6 +101,7 @@ export function useAgendaShellState({
     setQuickScheduleFilter(DEFAULT_AGENDA_SHELL_STATE.quickScheduleFilter);
     setQuickCalendarModeFilter(DEFAULT_AGENDA_SHELL_STATE.quickCalendarModeFilter);
     setQuickCalendarAnchorFilter(DEFAULT_AGENDA_SHELL_STATE.quickCalendarAnchorFilter);
+    setQuickOperationalClassFilter(DEFAULT_AGENDA_SHELL_STATE.quickOperationalClassFilter);
     setQuickAnimalFilter(DEFAULT_AGENDA_SHELL_STATE.quickAnimalFilter);
     clearContextualState();
   };
@@ -167,6 +176,10 @@ export function useAgendaShellState({
       persistedState?.quickCalendarAnchorFilter ??
         DEFAULT_AGENDA_SHELL_STATE.quickCalendarAnchorFilter,
     );
+    setQuickOperationalClassFilter(
+      persistedState?.quickOperationalClassFilter ??
+        DEFAULT_AGENDA_SHELL_STATE.quickOperationalClassFilter,
+    );
     setQuickAnimalFilter(
       persistedState?.quickAnimalFilter ?? DEFAULT_AGENDA_SHELL_STATE.quickAnimalFilter,
     );
@@ -198,6 +211,7 @@ export function useAgendaShellState({
       quickScheduleFilter,
       quickCalendarModeFilter,
       quickCalendarAnchorFilter,
+      quickOperationalClassFilter,
       quickAnimalFilter,
       expandedGroups,
       revealedGroups,
@@ -221,6 +235,7 @@ export function useAgendaShellState({
     quickAnimalFilter,
     quickCalendarAnchorFilter,
     quickCalendarModeFilter,
+    quickOperationalClassFilter,
     quickScheduleFilter,
     quickTypeFilter,
     revealedGroups,
@@ -259,6 +274,13 @@ export function useAgendaShellState({
   }, [hasHydratedUiState, queryCalendarAnchorFilter]);
 
   useEffect(() => {
+    if (!hasHydratedUiState || queryOperationalClassFilter === null) return;
+
+    setQuickOperationalClassFilter(queryOperationalClassFilter);
+    clearContextualState();
+  }, [hasHydratedUiState, queryOperationalClassFilter]);
+
+  useEffect(() => {
     if (!hasHydratedUiState || queryDominioFilter === null) return;
 
     setDominioFilter(queryDominioFilter);
@@ -286,6 +308,8 @@ export function useAgendaShellState({
     setQuickCalendarModeFilter,
     quickCalendarAnchorFilter,
     setQuickCalendarAnchorFilter,
+    quickOperationalClassFilter,
+    setQuickOperationalClassFilter,
     quickAnimalFilter,
     setQuickAnimalFilter,
     contextualFocus,

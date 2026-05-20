@@ -25,6 +25,15 @@ export type PersistedAgendaCalendarAnchorQuickFilter =
   | "pre_breeding_season"
   | "clinical_need"
   | "dry_off";
+export type PersistedAgendaOperationalClassQuickFilter =
+  | "all"
+  | "operational_protocol"
+  | "clinical_protocol"
+  | "notifiable_suspicion"
+  | "compliance_check"
+  | "execution_only"
+  | "inventory_signal"
+  | "unknown";
 
 export interface PersistedAgendaContextualFocus {
   groupKey: string;
@@ -43,6 +52,7 @@ export interface PersistedAgendaUiState {
   quickScheduleFilter: PersistedAgendaScheduleQuickFilter;
   quickCalendarModeFilter: PersistedAgendaCalendarModeQuickFilter;
   quickCalendarAnchorFilter: PersistedAgendaCalendarAnchorQuickFilter;
+  quickOperationalClassFilter: PersistedAgendaOperationalClassQuickFilter;
   quickAnimalFilter: PersistedAgendaAnimalQuickFilter;
   expandedGroups: string[];
   revealedGroups: string[];
@@ -106,6 +116,20 @@ function asAnimalQuickFilter(value: unknown): PersistedAgendaAnimalQuickFilter {
     : "all";
 }
 
+function asOperationalClassQuickFilter(
+  value: unknown,
+): PersistedAgendaOperationalClassQuickFilter {
+  return value === "operational_protocol" ||
+    value === "clinical_protocol" ||
+    value === "notifiable_suspicion" ||
+    value === "compliance_check" ||
+    value === "execution_only" ||
+    value === "inventory_signal" ||
+    value === "unknown"
+    ? value
+    : "all";
+}
+
 function asContextualFocus(value: unknown): PersistedAgendaContextualFocus | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
 
@@ -150,6 +174,9 @@ export function readAgendaUiState(
       quickScheduleFilter: asScheduleQuickFilter(parsed.quickScheduleFilter),
       quickCalendarModeFilter: asCalendarModeQuickFilter(parsed.quickCalendarModeFilter),
       quickCalendarAnchorFilter: asCalendarAnchorQuickFilter(parsed.quickCalendarAnchorFilter),
+      quickOperationalClassFilter: asOperationalClassQuickFilter(
+        parsed.quickOperationalClassFilter,
+      ),
       quickAnimalFilter: asAnimalQuickFilter(parsed.quickAnimalFilter),
       expandedGroups: isStringArray(parsed.expandedGroups) ? parsed.expandedGroups : [],
       revealedGroups: isStringArray(parsed.revealedGroups) ? parsed.revealedGroups : [],

@@ -33,6 +33,8 @@ function createRow(
     scheduleModeLabel: null,
     scheduleAnchor: null,
     scheduleAnchorLabel: null,
+    operationalClass: "operational_protocol",
+    operationalClassLabel: "Protocolo operacional",
     protocol: null,
     protocolItem: null,
     priority: null,
@@ -73,6 +75,7 @@ describe("agenda derivations", () => {
       quickScheduleFilter: "overdue",
       quickCalendarModeFilter: "janela_etaria",
       quickCalendarAnchorFilter: "nascimento",
+      quickOperationalClassFilter: "operational_protocol",
       quickAnimalFilter: "F",
     });
 
@@ -137,6 +140,7 @@ describe("agenda derivations", () => {
         quickScheduleFilter: "all",
         quickCalendarModeFilter: "all",
         quickCalendarAnchorFilter: "all",
+        quickOperationalClassFilter: "all",
         quickAnimalFilter: "all",
       }),
     ).toBe(false);
@@ -147,6 +151,7 @@ describe("agenda derivations", () => {
         quickScheduleFilter: "all",
         quickCalendarModeFilter: "all",
         quickCalendarAnchorFilter: "all",
+        quickOperationalClassFilter: "clinical_protocol",
         quickAnimalFilter: "all",
       }),
     ).toBe(true);

@@ -82,6 +82,9 @@ export function AgendaItemRowCard({
             <StatusBadge tone={rowMeta.statusTone}>{rowMeta.statusLabel}</StatusBadge>
             <StatusBadge tone={rowMeta.syncTone}>{rowMeta.syncLabel}</StatusBadge>
             {row.scheduleModeLabel ? <StatusBadge tone="info">{row.scheduleModeLabel}</StatusBadge> : null}
+            {row.operationalClassLabel ? (
+              <StatusBadge tone="neutral">{row.operationalClassLabel}</StatusBadge>
+            ) : null}
           </div>
 
           <p className="text-sm leading-6 text-muted-foreground">

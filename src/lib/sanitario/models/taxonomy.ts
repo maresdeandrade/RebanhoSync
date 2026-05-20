@@ -47,6 +47,16 @@ const OPERATIONAL_CLASSES: readonly SanitaryItemOperationalClass[] = [
   "unknown",
 ];
 
+const OPERATIONAL_CLASS_LABELS: Record<SanitaryItemOperationalClass, string> = {
+  operational_protocol: "Protocolo operacional",
+  clinical_protocol: "Protocolo clinico",
+  notifiable_suspicion: "Suspeita notificavel",
+  compliance_check: "Compliance/checklist",
+  execution_only: "Execucao avulsa",
+  inventory_signal: "Sinal de insumo",
+  unknown: "Nao classificado",
+};
+
 const VACCINATION_FAMILIES = new Set([
   "brucelose",
   "raiva_herbivoros",
@@ -377,4 +387,10 @@ export function resolveSanitaryItemOperationalClass(
   if (materializationMode === "execution_only") return "execution_only";
 
   return "unknown";
+}
+
+export function getSanitaryItemOperationalClassLabel(
+  operationalClass: SanitaryItemOperationalClass,
+): string {
+  return OPERATIONAL_CLASS_LABELS[operationalClass];
 }

@@ -23,6 +23,7 @@ const DEFAULT_FILTERS: AgendaPageSummaryFilters = {
   quickScheduleFilter: "all",
   quickCalendarModeFilter: "all",
   quickCalendarAnchorFilter: "all",
+  quickOperationalClassFilter: "all",
   quickAnimalFilter: "all",
 };
 
@@ -69,6 +70,7 @@ describe("agenda page summaries", () => {
         quickScheduleFilter: "overdue",
         quickCalendarModeFilter: "janela_etaria",
         quickCalendarAnchorFilter: "nascimento",
+        quickOperationalClassFilter: "operational_protocol",
         quickAnimalFilter: "F",
       },
       complianceSummary: {
@@ -91,6 +93,7 @@ describe("agenda page summaries", () => {
       "quick-schedule",
       "quick-calendar-mode",
       "quick-calendar-anchor",
+      "quick-operational-class",
       "quick-animal",
       "compliance-feed-ban",
       "lifecycle",
@@ -102,6 +105,7 @@ describe("agenda page summaries", () => {
       "Prazo: Atrasado",
       "Calendário: Janela etaria",
       "Âncora: Nascimento",
+      "Classe: Protocolo operacional",
       "Animal: Fêmeas",
       "Feed-ban 2",
       "3 transição(ões) no radar",

@@ -23,6 +23,10 @@ import type {
 import { getSanitaryAgendaPriority } from "@/lib/sanitario/engine/protocolRules";
 import { resolveSanitaryAgendaItemScheduleMeta } from "@/lib/sanitario/infrastructure/agendaSchedule";
 import {
+  getSanitaryItemOperationalClassLabel,
+  resolveSanitaryItemOperationalClass,
+} from "@/lib/sanitario/models/taxonomy";
+import {
   formatAnimalAge,
   readString,
 } from "@/pages/Agenda/helpers/formatting";
@@ -32,6 +36,7 @@ import type {
   AgendaCalendarAnchorQuickFilter,
   AgendaCalendarModeQuickFilter,
   AgendaEventGroup,
+  AgendaOperationalClassQuickFilter,
   AgendaRow,
   AgendaScheduleQuickFilter,
   AgendaStatusFilter,
@@ -118,6 +123,16 @@ export function buildAgendaBaseRows(
         readString(typed.item.payload, "produto") ??
         typed.item.tipo.replaceAll("_", " ");
       const scheduleMeta = resolveSanitaryAgendaItemScheduleMeta(typed.item, typed.protocolItem);
+      const operationalClass =
+        typed.item.dominio === "sanitario"
+          ? resolveSanitaryItemOperationalClass(
+              typed.protocolItem ?? {
+                tipo: typed.item.tipo,
+                gera_agenda: true,
+                payload: typed.item.payload,
+              },
+            )
+          : null;
 
       return {
         ...typed,
@@ -128,6 +143,10 @@ export function buildAgendaBaseRows(
         scheduleModeLabel: scheduleMeta?.modeLabel ?? null,
         scheduleAnchor: scheduleMeta?.anchor ?? null,
         scheduleAnchorLabel: scheduleMeta?.anchorLabel ?? null,
+        operationalClass,
+        operationalClassLabel: operationalClass
+          ? getSanitaryItemOperationalClassLabel(operationalClass)
+          : null,
         priority:
           typed.item.dominio === "sanitario"
             ? getSanitaryAgendaPriority({
@@ -145,6 +164,7 @@ export type AgendaQuickFilters = {
   quickScheduleFilter: AgendaScheduleQuickFilter;
   quickCalendarModeFilter: AgendaCalendarModeQuickFilter;
   quickCalendarAnchorFilter: AgendaCalendarAnchorQuickFilter;
+  quickOperationalClassFilter: AgendaOperationalClassQuickFilter;
   quickAnimalFilter: AnimalQuickFilter;
 };
 
@@ -159,6 +179,9 @@ export function applyAgendaQuickFilters(rows: AgendaRow[], filters: AgendaQuickF
     const calendarAnchorMatch =
       filters.quickCalendarAnchorFilter === "all" ||
       row.scheduleAnchor === filters.quickCalendarAnchorFilter;
+    const operationalClassMatch =
+      filters.quickOperationalClassFilter === "all" ||
+      row.operationalClass === filters.quickOperationalClassFilter;
     const animalQuickMatch = matchesAnimalQuickFilter(row.item, row.animal, filters.quickAnimalFilter);
 
     return (
@@ -166,6 +189,7 @@ export function applyAgendaQuickFilters(rows: AgendaRow[], filters: AgendaQuickF
       scheduleMatch &&
       calendarModeMatch &&
       calendarAnchorMatch &&
+      operationalClassMatch &&
       animalQuickMatch
     );
   });
@@ -292,6 +316,7 @@ export function hasAgendaQuickFiltersActive(filters: AgendaQuickFilters) {
     filters.quickScheduleFilter !== "all" ||
     filters.quickCalendarModeFilter !== "all" ||
     filters.quickCalendarAnchorFilter !== "all" ||
+    filters.quickOperationalClassFilter !== "all" ||
     filters.quickAnimalFilter !== "all"
   );
 }

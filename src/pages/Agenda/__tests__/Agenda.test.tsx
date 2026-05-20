@@ -300,6 +300,7 @@ describe("Agenda page", () => {
       quickScheduleFilter: "overdue",
       quickCalendarModeFilter: "all",
       quickCalendarAnchorFilter: "all",
+      quickOperationalClassFilter: "all",
       quickAnimalFilter: "all",
       expandedGroups: ["animal:animal-1"],
       revealedGroups: [],
@@ -334,6 +335,7 @@ describe("Agenda page", () => {
       quickScheduleFilter: "all",
       quickCalendarModeFilter: "janela_etaria",
       quickCalendarAnchorFilter: "all",
+      quickOperationalClassFilter: "all",
       quickAnimalFilter: "all",
       expandedGroups: ["animal:animal-1"],
       revealedGroups: [],
@@ -380,6 +382,16 @@ describe("Agenda page", () => {
 
     expect(screen.getByText("Vacina Brucelose")).toBeInTheDocument();
     expect(screen.queryByText("Vermifugo Rotacao")).not.toBeInTheDocument();
+  });
+
+  it("accepts operationalClass from query params", async () => {
+    await renderAgenda(["/agenda?operationalClass=operational_protocol"]);
+
+    await waitFor(() => {
+      expect(screen.getByText("Classe: Protocolo operacional")).toBeInTheDocument();
+    });
+
+    expect(screen.getAllByText("Protocolo operacional").length).toBeGreaterThan(0);
   });
 
   it("accepts dominio from query params and opens agenda sanitaria from cross-flow", async () => {

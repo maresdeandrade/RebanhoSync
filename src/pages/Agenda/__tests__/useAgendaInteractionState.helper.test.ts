@@ -27,6 +27,8 @@ function createRow(id: string, overrides: Partial<AgendaRow> = {}): AgendaRow {
     scheduleModeLabel: null,
     scheduleAnchor: null,
     scheduleAnchorLabel: null,
+    operationalClass: "operational_protocol",
+    operationalClassLabel: "Protocolo operacional",
     protocol: null,
     protocolItem: null,
     priority: null,

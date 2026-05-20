@@ -20,6 +20,7 @@ import {
   parseAgendaDominioFilter,
   parseCalendarAnchorQuickFilter,
   parseCalendarModeQuickFilter,
+  parseOperationalClassQuickFilter,
 } from "@/pages/Agenda/helpers/quickFilters";
 import { AgendaComplianceSummaryPanel } from "@/pages/Agenda/components/AgendaComplianceSummaryPanel";
 import { AgendaFiltersToolbar } from "@/pages/Agenda/components/AgendaFiltersToolbar";
@@ -55,6 +56,9 @@ export default function Agenda() {
   const queryCalendarAnchorFilter = parseCalendarAnchorQuickFilter(
     searchParams.get("calendarAnchor"),
   );
+  const queryOperationalClassFilter = parseOperationalClassQuickFilter(
+    searchParams.get("operationalClass"),
+  );
   const queryDominioFilter = parseAgendaDominioFilter(
     searchParams.get("dominio"),
   );
@@ -79,6 +83,8 @@ export default function Agenda() {
     setQuickCalendarModeFilter,
     quickCalendarAnchorFilter,
     setQuickCalendarAnchorFilter,
+    quickOperationalClassFilter,
+    setQuickOperationalClassFilter,
     quickAnimalFilter,
     setQuickAnimalFilter,
     contextualFocus,
@@ -96,6 +102,7 @@ export default function Agenda() {
     userId: user?.id,
     queryCalendarModeFilter,
     queryCalendarAnchorFilter,
+    queryOperationalClassFilter,
     queryDominioFilter,
   });
 
@@ -160,12 +167,14 @@ export default function Agenda() {
         quickScheduleFilter,
         quickCalendarModeFilter,
         quickCalendarAnchorFilter,
+        quickOperationalClassFilter,
         quickAnimalFilter,
       }),
     [
       baseRows,
       quickCalendarModeFilter,
       quickCalendarAnchorFilter,
+      quickOperationalClassFilter,
       quickAnimalFilter,
       quickScheduleFilter,
       quickTypeFilter,
@@ -177,6 +186,7 @@ export default function Agenda() {
     quickScheduleFilter,
     quickCalendarModeFilter,
     quickCalendarAnchorFilter,
+    quickOperationalClassFilter,
     quickAnimalFilter,
   });
 
@@ -250,6 +260,7 @@ export default function Agenda() {
           quickScheduleFilter,
           quickCalendarModeFilter,
           quickCalendarAnchorFilter,
+          quickOperationalClassFilter,
           quickAnimalFilter,
         },
         complianceSummary,
@@ -268,6 +279,7 @@ export default function Agenda() {
       quickAnimalFilter,
       quickCalendarAnchorFilter,
       quickCalendarModeFilter,
+      quickOperationalClassFilter,
       quickScheduleFilter,
       quickTypeFilter,
       search,
@@ -469,6 +481,8 @@ export default function Agenda() {
             onQuickCalendarModeFilterChange={setQuickCalendarModeFilter}
             quickCalendarAnchorFilter={quickCalendarAnchorFilter}
             onQuickCalendarAnchorFilterChange={setQuickCalendarAnchorFilter}
+            quickOperationalClassFilter={quickOperationalClassFilter}
+            onQuickOperationalClassFilterChange={setQuickOperationalClassFilter}
             dateFrom={dateFrom}
             onDateFromChange={setDateFrom}
             dateTo={dateTo}

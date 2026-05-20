@@ -5,6 +5,7 @@ import type {
   AgendaEventGroupSummary,
 } from "@/lib/agenda/groupSummaries";
 import type { SanitaryAgendaPriority } from "@/lib/sanitario/engine/protocolRules";
+import type { SanitaryItemOperationalClass } from "@/lib/sanitario/models/domain";
 import type {
   AgendaItem,
   Animal,
@@ -33,6 +34,10 @@ export type AgendaCalendarModeQuickFilter = "all" | SanitaryBaseCalendarMode;
 export type AgendaCalendarAnchorQuickFilter =
   | "all"
   | SanitaryBaseCalendarAnchor;
+
+export type AgendaOperationalClassQuickFilter =
+  | "all"
+  | SanitaryItemOperationalClass;
 
 export type QuickFilterTone =
   | "neutral"
@@ -66,6 +71,8 @@ export type AgendaRow = {
   scheduleModeLabel: string | null;
   scheduleAnchor: SanitaryBaseCalendarAnchor | null;
   scheduleAnchorLabel: string | null;
+  operationalClass: SanitaryItemOperationalClass | null;
+  operationalClassLabel: string | null;
   protocol: ProtocoloSanitario | null;
   protocolItem: ProtocoloSanitarioItem | null;
   priority: SanitaryAgendaPriority | null;

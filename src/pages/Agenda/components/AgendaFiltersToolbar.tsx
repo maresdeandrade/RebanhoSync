@@ -13,6 +13,7 @@ import { Toolbar, ToolbarGroup } from "@/components/ui/toolbar";
 import type {
   AgendaCalendarAnchorQuickFilter,
   AgendaCalendarModeQuickFilter,
+  AgendaOperationalClassQuickFilter,
   AgendaStatusFilter,
   GroupMode,
 } from "@/pages/Agenda/types";
@@ -28,6 +29,8 @@ type AgendaFiltersToolbarProps = {
   onQuickCalendarModeFilterChange: (value: AgendaCalendarModeQuickFilter) => void;
   quickCalendarAnchorFilter: AgendaCalendarAnchorQuickFilter;
   onQuickCalendarAnchorFilterChange: (value: AgendaCalendarAnchorQuickFilter) => void;
+  quickOperationalClassFilter: AgendaOperationalClassQuickFilter;
+  onQuickOperationalClassFilterChange: (value: AgendaOperationalClassQuickFilter) => void;
   dateFrom: string;
   onDateFromChange: (value: string) => void;
   dateTo: string;
@@ -48,6 +51,8 @@ export function AgendaFiltersToolbar({
   onQuickCalendarModeFilterChange,
   quickCalendarAnchorFilter,
   onQuickCalendarAnchorFilterChange,
+  quickOperationalClassFilter,
+  onQuickOperationalClassFilterChange,
   dateFrom,
   onDateFromChange,
   dateTo,
@@ -138,6 +143,27 @@ export function AgendaFiltersToolbar({
             <SelectItem value="diagnostico_evento">Diagnóstico de evento</SelectItem>
             <SelectItem value="conclusao_etapa_dependente">Conclusão de etapa anterior</SelectItem>
             <SelectItem value="ultima_conclusao_mesma_familia">Última conclusão da mesma família</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Select
+          value={quickOperationalClassFilter}
+          onValueChange={(value) =>
+            onQuickOperationalClassFilterChange(value as AgendaOperationalClassQuickFilter)
+          }
+        >
+          <SelectTrigger className="w-full sm:w-[210px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todas as classes</SelectItem>
+            <SelectItem value="operational_protocol">Protocolo operacional</SelectItem>
+            <SelectItem value="clinical_protocol">Protocolo clinico</SelectItem>
+            <SelectItem value="notifiable_suspicion">Suspeita notificavel</SelectItem>
+            <SelectItem value="compliance_check">Compliance/checklist</SelectItem>
+            <SelectItem value="execution_only">Execucao avulsa</SelectItem>
+            <SelectItem value="inventory_signal">Sinal de insumo</SelectItem>
+            <SelectItem value="unknown">Nao classificado</SelectItem>
           </SelectContent>
         </Select>
       </ToolbarGroup>

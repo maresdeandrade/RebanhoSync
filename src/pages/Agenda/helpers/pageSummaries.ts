@@ -10,11 +10,13 @@ import {
   getAnimalQuickFilterLabel,
   getCalendarAnchorQuickFilterLabel,
   getCalendarModeQuickFilterLabel,
+  getOperationalClassQuickFilterLabel,
   getScheduleQuickFilterLabel,
 } from "@/pages/Agenda/helpers/quickFilters";
 import type {
   AgendaCalendarAnchorQuickFilter,
   AgendaCalendarModeQuickFilter,
+  AgendaOperationalClassQuickFilter,
   AgendaScheduleQuickFilter,
   AnimalQuickFilter,
   GroupMode,
@@ -54,6 +56,7 @@ export type AgendaPageSummaryFilters = {
   quickScheduleFilter: AgendaScheduleQuickFilter;
   quickCalendarModeFilter: AgendaCalendarModeQuickFilter;
   quickCalendarAnchorFilter: AgendaCalendarAnchorQuickFilter;
+  quickOperationalClassFilter: AgendaOperationalClassQuickFilter;
   quickAnimalFilter: AnimalQuickFilter;
 };
 
@@ -83,6 +86,7 @@ export function hasAgendaPageActiveFilters(filters: AgendaPageSummaryFilters) {
     filters.quickScheduleFilter !== "all" ||
     filters.quickCalendarModeFilter !== "all" ||
     filters.quickCalendarAnchorFilter !== "all" ||
+    filters.quickOperationalClassFilter !== "all" ||
     filters.quickAnimalFilter !== "all"
   );
 }
@@ -146,6 +150,13 @@ export function buildAgendaOverviewBadges({
     badges.push({
       key: "quick-calendar-anchor",
       label: `Âncora: ${getCalendarAnchorQuickFilterLabel(filters.quickCalendarAnchorFilter)}`,
+      tone: "info",
+    });
+  }
+  if (filters.quickOperationalClassFilter !== "all") {
+    badges.push({
+      key: "quick-operational-class",
+      label: `Classe: ${getOperationalClassQuickFilterLabel(filters.quickOperationalClassFilter)}`,
       tone: "info",
     });
   }

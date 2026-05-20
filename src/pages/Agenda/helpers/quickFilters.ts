@@ -1,9 +1,11 @@
 import type { AgendaScheduleBucket } from "@/lib/agenda/groupOrdering";
 import { describeSanitaryCalendarAnchor, describeSanitaryCalendarMode } from "@/lib/sanitario/engine/calendar";
+import { getSanitaryItemOperationalClassLabel } from "@/lib/sanitario/models/taxonomy";
 import type { AgendaItem, Animal } from "@/lib/offline/types";
 import type {
   AgendaCalendarAnchorQuickFilter,
   AgendaCalendarModeQuickFilter,
+  AgendaOperationalClassQuickFilter,
   AnimalQuickFilter,
   QuickFilterTone,
 } from "@/pages/Agenda/types";
@@ -38,6 +40,13 @@ export function getCalendarAnchorQuickFilterLabel(
   return describeSanitaryCalendarAnchor(value) ?? "Sem âncora";
 }
 
+export function getOperationalClassQuickFilterLabel(
+  value: AgendaOperationalClassQuickFilter,
+) {
+  if (value === "all") return "Todas";
+  return getSanitaryItemOperationalClassLabel(value);
+}
+
 export function parseCalendarModeQuickFilter(
   value: string | null,
 ): AgendaCalendarModeQuickFilter | null {
@@ -70,6 +79,25 @@ export function parseCalendarAnchorQuickFilter(
     value === "diagnostico_evento" ||
     value === "conclusao_etapa_dependente" ||
     value === "ultima_conclusao_mesma_familia"
+  ) {
+    return value;
+  }
+  return null;
+}
+
+export function parseOperationalClassQuickFilter(
+  value: string | null,
+): AgendaOperationalClassQuickFilter | null {
+  if (value === null) return null;
+  if (
+    value === "all" ||
+    value === "operational_protocol" ||
+    value === "clinical_protocol" ||
+    value === "notifiable_suspicion" ||
+    value === "compliance_check" ||
+    value === "execution_only" ||
+    value === "inventory_signal" ||
+    value === "unknown"
   ) {
     return value;
   }

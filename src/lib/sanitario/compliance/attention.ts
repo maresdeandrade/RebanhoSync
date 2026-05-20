@@ -16,7 +16,10 @@ import {
   type SanitaryAgendaPriority,
 } from "@/lib/sanitario/engine/protocolRules";
 import type { SanitaryItemOperationalClass } from "@/lib/sanitario/models/domain";
-import { resolveSanitaryItemOperationalClass } from "@/lib/sanitario/models/taxonomy";
+import {
+  getSanitaryItemOperationalClassLabel,
+  resolveSanitaryItemOperationalClass,
+} from "@/lib/sanitario/models/taxonomy";
 
 type AgendaStatusLabel = "atrasado" | "hoje" | "proximo";
 
@@ -79,20 +82,10 @@ const TONE_RANK: Record<SanitaryAgendaPriority["tone"], number> = {
   neutral: 3,
 };
 
-const OPERATIONAL_CLASS_LABELS: Record<SanitaryItemOperationalClass, string> = {
-  operational_protocol: "Protocolo operacional",
-  clinical_protocol: "Protocolo clinico",
-  notifiable_suspicion: "Suspeita notificavel",
-  compliance_check: "Compliance/checklist",
-  execution_only: "Execucao avulsa",
-  inventory_signal: "Sinal de insumo",
-  unknown: "Nao classificado",
-};
-
 export function getSanitaryAttentionOperationalClassLabel(
   operationalClass: SanitaryItemOperationalClass,
 ): string {
-  return OPERATIONAL_CLASS_LABELS[operationalClass];
+  return getSanitaryItemOperationalClassLabel(operationalClass);
 }
 
 export const EMPTY_SANITARY_ATTENTION_SUMMARY: SanitaryAttentionSummary = {
@@ -334,7 +327,7 @@ export function summarizeSanitaryAgendaAttention(input: {
       } else {
         acc.set(row.operationalClass, {
           key: row.operationalClass,
-          label: OPERATIONAL_CLASS_LABELS[row.operationalClass],
+          label: getSanitaryItemOperationalClassLabel(row.operationalClass),
           count: 1,
         });
       }

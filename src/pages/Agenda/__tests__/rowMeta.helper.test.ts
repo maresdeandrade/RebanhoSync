@@ -35,6 +35,8 @@ function createRow(overrides: Partial<AgendaRow> = {}): AgendaRow {
     scheduleModeLabel: "Janela etaria",
     scheduleAnchor: "nascimento",
     scheduleAnchorLabel: "Nascimento",
+    operationalClass: "operational_protocol",
+    operationalClassLabel: "Protocolo operacional",
     protocol: {
       id: "protocol-1",
       nome: "PNCEBT",
@@ -149,6 +151,8 @@ describe("buildAgendaRowMeta", () => {
         scheduleModeLabel: null,
         scheduleAnchor: null,
         scheduleAnchorLabel: null,
+        operationalClass: null,
+        operationalClassLabel: null,
         priority: null,
       }),
     );
