@@ -11,6 +11,7 @@ const buildBaseEventOp = (
   input: EventInput,
   eventId: string,
   occurredAt: string,
+  sanitarioCasoId?: string | null,
 ): OperationInput => {
   return {
     table: "eventos",
@@ -23,6 +24,7 @@ const buildBaseEventOp = (
       lote_id: input.loteId ?? null,
       source_task_id: input.sourceTaskId ?? null,
       corrige_evento_id: input.corrigeEventoId ?? null,
+      sanitario_caso_id: sanitarioCasoId ?? null,
       observacoes: input.observacoes ?? null,
       payload: input.payload ?? {},
     },
@@ -34,7 +36,43 @@ export const buildEventGesture = (input: EventInput): EventGestureBuildResult =>
 
   const eventId = crypto.randomUUID();
   const occurredAt = input.occurredAt ?? new Date().toISOString();
-  const ops: OperationInput[] = [buildBaseEventOp(input, eventId, occurredAt)];
+  const sanitarioCasoId =
+    input.dominio === "alerta_sanitario" && input.sanitarioCaso
+      ? input.sanitarioCaso.action === "open"
+        ? crypto.randomUUID()
+        : input.sanitarioCaso.id
+      : null;
+  const ops: OperationInput[] = [];
+
+  if (
+    input.dominio === "alerta_sanitario" &&
+    input.sanitarioCaso?.action === "open"
+  ) {
+    ops.push({
+      table: "sanitario_casos",
+      action: "INSERT",
+      record: {
+        id: sanitarioCasoId,
+        animal_id: input.animalId,
+        tipo: input.sanitarioCaso.tipo,
+        status: input.sanitarioCaso.status ?? "aberto",
+        opened_at: occurredAt,
+        closed_at: null,
+        disease_code: input.sanitarioCaso.diseaseCode ?? null,
+        disease_name: input.sanitarioCaso.diseaseName ?? null,
+        notification_type: input.sanitarioCaso.notificationType ?? null,
+        requires_immediate_notification:
+          input.sanitarioCaso.requiresImmediateNotification ?? false,
+        movement_blocked: input.sanitarioCaso.movementBlocked ?? false,
+        source_alert_evento_id: null,
+        closure_reason: null,
+        observacoes: input.sanitarioCaso.observacoes ?? null,
+        payload: input.sanitarioCaso.payload ?? {},
+      },
+    });
+  }
+
+  ops.push(buildBaseEventOp(input, eventId, occurredAt, sanitarioCasoId));
 
   if (input.dominio === "sanitario") {
     ops.push({
@@ -51,6 +89,25 @@ export const buildEventGesture = (input: EventInput): EventGestureBuildResult =>
       },
     });
   } else if (input.dominio === "alerta_sanitario") {
+    if (input.sanitarioCaso?.action === "close") {
+      const caseClosed =
+        input.sanitarioCaso.status === "encerrado" ||
+        input.sanitarioCaso.status === "cancelado";
+
+      ops.push({
+        table: "sanitario_casos",
+        action: "UPDATE",
+        record: {
+          id: input.sanitarioCaso.id,
+          status: input.sanitarioCaso.status,
+          closed_at: caseClosed ? occurredAt : null,
+          closure_reason: input.sanitarioCaso.closureReason ?? null,
+          observacoes: input.sanitarioCaso.observacoes ?? null,
+          movement_blocked: input.sanitarioCaso.movementBlocked ?? false,
+        },
+      });
+    }
+
     if (input.animalId) {
       ops.push({
         table: "animais",

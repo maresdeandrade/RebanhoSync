@@ -223,7 +223,7 @@ Entregas já realizadas:
 - o detalhe do animal passou a projetar suspeita sanitária como caso sanitário mínimo derivado do alerta, sem criar entidade persistida nem alterar o contrato de eventos.
 
 O que ainda falta:
-- abrir tarefa estrutural para casos sanitários persistidos, com migration, RLS, offline/sync e vínculo longitudinal de eventos auditados.
+- conectar manejo clínico registrado pelo `Registrar` ao caso sanitário persistido.
 
 Critério de aceite:
 - sem regra forte na UI;
@@ -234,12 +234,20 @@ Critério de aceite:
 
 Objetivo: criar contexto longitudinal por animal.
 
+Status: iniciado.
+
+Entregas realizadas:
+- tabela `sanitario_casos` tenant-scoped, com RLS por membership, FK composta para animal e vínculo opcional em `eventos.sanitario_caso_id`;
+- store offline `state_sanitario_casos`, pull inicial e sync-batch alinhados ao novo contrato;
+- detalhe do animal passa a consumir caso persistido quando houver, mantendo alerta legado como fallback.
+- abertura de suspeita notificável cria caso sanitário persistido no mesmo gesto do evento de alerta e já grava o evento com `sanitario_caso_id`;
+- encerramento de suspeita notificável atualiza o caso no mesmo gesto do evento de encerramento, mantendo o evento como fato append-only.
+
 Entregas futuras:
-- abrir caso notificável;
 - abrir caso clínico;
 - listar casos no animal;
-- vincular eventos sanitários ao caso;
-- status mínimo: `aberto`, `em_acompanhamento`, `encerrado`, `descartado`.
+- vincular eventos sanitários ao caso no fluxo de registro;
+- encerrar caso com motivo.
 
 Requisitos:
 - migration própria;

@@ -1,4 +1,5 @@
 import type { AnimalSanitaryAlertState } from "@/lib/sanitario/compliance/alerts";
+import type { SanitarioCaso } from "@/lib/offline/types";
 
 export type SanitaryCaseFlowStatus =
   | "case_open"
@@ -17,9 +18,36 @@ export interface SanitaryCaseFlowSummary {
 }
 
 export function buildSanitaryCaseFlowSummary(input: {
+  caseRecord?: SanitarioCaso | null;
   alert: AnimalSanitaryAlertState | null;
   clinicalFollowupCount?: number;
 }): SanitaryCaseFlowSummary | null {
+  if (input.caseRecord) {
+    const isOpen =
+      input.caseRecord.status === "aberto" ||
+      input.caseRecord.status === "em_acompanhamento";
+
+    return {
+      status: isOpen ? "case_open" : "case_closed",
+      statusLabel: isOpen ? "Caso aberto" : "Caso encerrado",
+      scopeLabel:
+        input.caseRecord.tipo === "notificavel"
+          ? (input.caseRecord.notification_type
+              ? `Notificacao ${input.caseRecord.notification_type}`
+              : "Caso notificavel")
+          : "Caso clinico",
+      primaryLabel:
+        input.caseRecord.disease_name ??
+        (input.caseRecord.tipo === "notificavel"
+          ? "Suspeita sanitaria"
+          : "Manejo clinico"),
+      secondaryLabel: input.caseRecord.closure_reason ?? null,
+      blocked: isOpen && input.caseRecord.movement_blocked,
+      openedAt: input.caseRecord.opened_at,
+      closedAt: input.caseRecord.closed_at,
+    };
+  }
+
   if (input.alert) {
     const isOpen = input.alert.status === "suspeita_aberta";
 

@@ -139,6 +139,13 @@ type SanitaryAlertResolutionState = {
   closureNotes: string;
 };
 
+const resolveSanitaryCaseStatusOnAlertClosure = (
+  closureReason: SanitaryAlertClosureReason,
+) =>
+  closureReason === "notificada_em_acompanhamento"
+    ? "em_acompanhamento"
+    : "encerrado";
+
 type AnimalAgendaRow = {
   item: AgendaItem;
   scheduleLabel: string | null;
@@ -414,9 +421,32 @@ const AnimalDetalhe = () => {
     () => readAnimalSanitaryAlert(animal?.payload),
     [animal?.payload],
   );
+  const activeSanitaryCase = useLiveQuery(async () => {
+    if (!animal?.id || !animal.fazenda_id) return null;
+    const cases = await db.state_sanitario_casos
+      .where("[fazenda_id+animal_id]")
+      .equals([animal.fazenda_id, animal.id])
+      .and(
+        (caseRecord) =>
+          !caseRecord.deleted_at &&
+          (caseRecord.status === "aberto" ||
+            caseRecord.status === "em_acompanhamento"),
+      )
+      .toArray();
+
+    return (
+      cases.sort((left, right) =>
+        right.opened_at.localeCompare(left.opened_at),
+      )[0] ?? null
+    );
+  }, [animal?.fazenda_id, animal?.id]);
   const sanitaryCaseFlowSummary = useMemo(
-    () => buildSanitaryCaseFlowSummary({ alert: activeSanitaryAlert }),
-    [activeSanitaryAlert],
+    () =>
+      buildSanitaryCaseFlowSummary({
+        caseRecord: activeSanitaryCase ?? null,
+        alert: activeSanitaryAlert,
+      }),
+    [activeSanitaryAlert, activeSanitaryCase],
   );
   const hasMovementBlockedSanitaryAlert = hasOpenSanitaryAlert(animal?.payload);
   const selectedOfficialDisease = useMemo(() => {
@@ -731,6 +761,22 @@ const AnimalDetalhe = () => {
         payload: eventPayload,
         alertKind: "suspeita_aberta",
         animalPayload,
+        sanitarioCaso: {
+          action: "open",
+          tipo: "notificavel",
+          diseaseCode: selectedOfficialDisease.codigo,
+          diseaseName: selectedOfficialDisease.nome,
+          notificationType: selectedOfficialDisease.tipo_notificacao,
+          requiresImmediateNotification:
+            selectedOfficialDisease.tipo_notificacao === "imediata",
+          movementBlocked: true,
+          observacoes: sanitaryAlertForm.observacoes,
+          payload: {
+            route_label: routeLabel,
+            immediate_actions: selectedOfficialDiseaseActions,
+            alert_signals: alertSignals,
+          },
+        },
       });
 
       await createGesture(animal.fazenda_id, ops);
@@ -794,6 +840,18 @@ const AnimalDetalhe = () => {
         payload: eventPayload,
         alertKind: "suspeita_encerrada",
         animalPayload,
+        sanitarioCaso: activeSanitaryCase
+          ? {
+              action: "close",
+              id: activeSanitaryCase.id,
+              status: resolveSanitaryCaseStatusOnAlertClosure(
+                sanitaryAlertResolution.closureReason,
+              ),
+              closureReason: sanitaryAlertResolution.closureReason,
+              observacoes: sanitaryAlertResolution.closureNotes,
+              movementBlocked: false,
+            }
+          : undefined,
       });
 
       await createGesture(animal.fazenda_id, ops);
@@ -809,7 +867,7 @@ const AnimalDetalhe = () => {
     } finally {
       setIsClosingSanitaryAlert(false);
     }
-  }, [activeSanitaryAlert, animal, sanitaryAlertResolution]);
+  }, [activeSanitaryAlert, activeSanitaryCase, animal, sanitaryAlertResolution]);
 
   if (!animal) {
     return (

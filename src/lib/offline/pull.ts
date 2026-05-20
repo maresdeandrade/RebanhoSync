@@ -10,6 +10,7 @@ const DEFAULT_REMOTE_TABLES = [
   "protocolos_sanitarios",
   "protocolos_sanitarios_itens",
   "fazenda_sanidade_config",
+  "sanitario_casos",
   "contrapartes",
 ] as const;
 

@@ -148,6 +148,12 @@ export type DominioEnum =
 export type AgendaStatusEnum = "agendado" | "concluido" | "cancelado";
 export type AgendaSourceKindEnum = "manual" | "automatico";
 export type SanitarioTipoEnum = "vacinacao" | "vermifugacao" | "medicamento";
+export type SanitarioCasoTipoEnum = "notificavel" | "clinico";
+export type SanitarioCasoStatusEnum =
+  | "aberto"
+  | "em_acompanhamento"
+  | "encerrado"
+  | "cancelado";
 export type PastoAvaliacaoMomentoEnum = "entrada" | "saida" | "ronda";
 export type PastoCoberturaSoloEnum = "excelente" | "media" | "ruim";
 export type PastoInvasorasNivelEnum =
@@ -766,6 +772,34 @@ export interface FazendaSanidadeConfig {
   deleted_at: string | null;
 }
 
+export interface SanitarioCaso {
+  id: string;
+  fazenda_id: string;
+  animal_id: string;
+  tipo: SanitarioCasoTipoEnum;
+  status: SanitarioCasoStatusEnum;
+  opened_at: string;
+  closed_at: string | null;
+  disease_code: string | null;
+  disease_name: string | null;
+  notification_type: string | null;
+  requires_immediate_notification: boolean;
+  movement_blocked: boolean;
+  source_alert_evento_id: string | null;
+  closure_reason: string | null;
+  observacoes: string | null;
+  payload: Record<string, unknown>;
+
+  client_id: string;
+  client_op_id: string;
+  client_tx_id: string | null;
+  client_recorded_at: string;
+  server_received_at: string;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+}
+
 export interface Evento {
   id: string;
   fazenda_id: string;
@@ -778,6 +812,7 @@ export interface Evento {
   source_tx_id: string | null;
   source_client_op_id: string | null;
   corrige_evento_id: string | null;
+  sanitario_caso_id?: string | null;
   observacoes: string | null;
   payload: Record<string, unknown>;
 

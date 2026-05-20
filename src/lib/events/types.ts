@@ -1,4 +1,13 @@
-import type { AnimalStatusEnum, FinanceiroTipoEnum, OperationInput, SanitarioTipoEnum, ReproTipoEnum, CausaObitoEnum } from "@/lib/offline/types";
+import type {
+  AnimalStatusEnum,
+  FinanceiroTipoEnum,
+  OperationInput,
+  SanitarioCasoStatusEnum,
+  SanitarioCasoTipoEnum,
+  SanitarioTipoEnum,
+  ReproTipoEnum,
+  CausaObitoEnum,
+} from "@/lib/offline/types";
 import type { VeterinaryProductSelection } from "@/lib/sanitario/catalog/products";
 
 export type EventDomain =
@@ -25,6 +34,31 @@ export interface BaseEventInput {
   payload?: Record<string, unknown>;
 }
 
+export interface SanitarioCasoOpenInput {
+  action: "open";
+  tipo: SanitarioCasoTipoEnum;
+  status?: Extract<SanitarioCasoStatusEnum, "aberto" | "em_acompanhamento">;
+  diseaseCode?: string | null;
+  diseaseName?: string | null;
+  notificationType?: string | null;
+  requiresImmediateNotification?: boolean;
+  movementBlocked?: boolean;
+  observacoes?: string | null;
+  payload?: Record<string, unknown>;
+}
+
+export interface SanitarioCasoCloseInput {
+  action: "close";
+  id: string;
+  status: Extract<
+    SanitarioCasoStatusEnum,
+    "em_acompanhamento" | "encerrado" | "cancelado"
+  >;
+  closureReason?: string | null;
+  observacoes?: string | null;
+  movementBlocked?: boolean;
+}
+
 export interface ProtocoloAgendaRefInput {
   id: string;
   intervalDays: number;
@@ -44,6 +78,7 @@ export interface AlertaSanitarioEventInput extends BaseEventInput {
   dominio: "alerta_sanitario";
   alertKind: "suspeita_aberta" | "suspeita_encerrada";
   animalPayload: Record<string, unknown>;
+  sanitarioCaso?: SanitarioCasoOpenInput | SanitarioCasoCloseInput;
 }
 
 export interface ConformidadeEventInput extends BaseEventInput {

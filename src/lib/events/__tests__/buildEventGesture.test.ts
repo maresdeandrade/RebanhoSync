@@ -103,6 +103,91 @@ describe("buildEventGesture", () => {
     });
   });
 
+  it("opens sanitary case before linked sanitary alert event", () => {
+    const result = buildEventGesture({
+      dominio: "alerta_sanitario",
+      fazendaId: "farm-1",
+      animalId: "animal-1",
+      loteId: "lote-1",
+      alertKind: "suspeita_aberta",
+      payload: { kind: "suspeita_aberta" },
+      animalPayload: {
+        sanidade_alerta: {
+          status: "suspeita_aberta",
+          movement_blocked: true,
+        },
+      },
+      sanitarioCaso: {
+        action: "open",
+        tipo: "notificavel",
+        diseaseCode: "AFTOSA",
+        diseaseName: "Febre aftosa",
+        notificationType: "imediata",
+        requiresImmediateNotification: true,
+        movementBlocked: true,
+        observacoes: "Sinais compativeis",
+      },
+    });
+
+    expect(result.ops.map((o) => o.table)).toEqual([
+      "sanitario_casos",
+      "eventos",
+      "animais",
+    ]);
+    expect(result.ops[0].record).toMatchObject({
+      animal_id: "animal-1",
+      tipo: "notificavel",
+      status: "aberto",
+      disease_code: "AFTOSA",
+      disease_name: "Febre aftosa",
+      notification_type: "imediata",
+      movement_blocked: true,
+    });
+    expect(result.ops[1].record.sanitario_caso_id).toBe(
+      result.ops[0].record.id,
+    );
+  });
+
+  it("closes sanitary case in the same gesture as sanitary alert closure", () => {
+    const result = buildEventGesture({
+      dominio: "alerta_sanitario",
+      fazendaId: "farm-1",
+      animalId: "animal-1",
+      loteId: "lote-1",
+      occurredAt: "2026-05-20T12:00:00.000Z",
+      alertKind: "suspeita_encerrada",
+      payload: { kind: "suspeita_encerrada" },
+      animalPayload: {
+        sanidade_alerta: {
+          status: "encerrada",
+          movement_blocked: false,
+        },
+      },
+      sanitarioCaso: {
+        action: "close",
+        id: "caso-1",
+        status: "encerrado",
+        closureReason: "descartada",
+        observacoes: "Exame descartou suspeita",
+        movementBlocked: false,
+      },
+    });
+
+    expect(result.ops.map((o) => o.table)).toEqual([
+      "eventos",
+      "sanitario_casos",
+      "animais",
+    ]);
+    expect(result.ops[0].record.sanitario_caso_id).toBe("caso-1");
+    expect(result.ops[1].record).toMatchObject({
+      id: "caso-1",
+      status: "encerrado",
+      closed_at: "2026-05-20T12:00:00.000Z",
+      closure_reason: "descartada",
+      movement_blocked: false,
+    });
+  });
+
   it("builds compliance event without animal or lote target", () => {
     const result = buildEventGesture({
       dominio: "conformidade",

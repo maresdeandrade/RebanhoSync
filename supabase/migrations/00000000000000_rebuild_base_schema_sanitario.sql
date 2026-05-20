@@ -56,6 +56,8 @@ do $$ begin create type public.dominio_enum as enum ('sanitario','pesagem','nutr
 do $$ begin create type public.agenda_status_enum as enum ('agendado','concluido','cancelado'); exception when duplicate_object then null; end $$;
 do $$ begin create type public.agenda_source_kind_enum as enum ('manual','automatico'); exception when duplicate_object then null; end $$;
 do $$ begin create type public.sanitario_tipo_enum as enum ('vacinacao','vermifugacao','medicamento'); exception when duplicate_object then null; end $$;
+do $$ begin create type public.sanitario_caso_tipo_enum as enum ('notificavel','clinico'); exception when duplicate_object then null; end $$;
+do $$ begin create type public.sanitario_caso_status_enum as enum ('aberto','em_acompanhamento','encerrado','cancelado'); exception when duplicate_object then null; end $$;
 do $$ begin create type public.repro_tipo_enum as enum ('cobertura','IA','diagnostico','parto','aborto'); exception when duplicate_object then null; end $$;
 do $$ begin create type public.financeiro_tipo_enum as enum ('compra','venda'); exception when duplicate_object then null; end $$;
 do $$ begin create type public.causa_obito_enum as enum ('doenca','acidente','predador','outro'); exception when duplicate_object then null; end $$;
@@ -535,6 +537,44 @@ create table public.eventos (
 alter table public.agenda_itens
   add constraint fk_agenda_source_evento_fazenda foreign key (source_evento_id, fazenda_id) references public.eventos(id, fazenda_id) on delete set null;
 
+create table public.sanitario_casos (
+  id uuid primary key default gen_random_uuid(),
+  fazenda_id uuid not null references public.fazendas(id) on delete cascade,
+  animal_id uuid not null,
+  tipo public.sanitario_caso_tipo_enum not null,
+  status public.sanitario_caso_status_enum not null default 'aberto',
+  opened_at timestamptz not null default now(),
+  closed_at timestamptz,
+  disease_code text,
+  disease_name text,
+  notification_type text,
+  requires_immediate_notification boolean not null default false,
+  movement_blocked boolean not null default false,
+  source_alert_evento_id uuid,
+  closure_reason text,
+  observacoes text,
+  payload jsonb not null default '{}'::jsonb,
+  client_id text not null default 'server',
+  client_op_id uuid not null default gen_random_uuid(),
+  client_tx_id uuid,
+  client_recorded_at timestamptz not null default now(),
+  server_received_at timestamptz not null default now(),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  deleted_at timestamptz,
+  unique (id, fazenda_id),
+  constraint ck_sanitario_casos_closed_at check (
+    (status in ('encerrado','cancelado') and closed_at is not null)
+    or (status in ('aberto','em_acompanhamento') and closed_at is null)
+  ),
+  constraint fk_sanitario_casos_animal_fazenda foreign key (animal_id, fazenda_id) references public.animais(id, fazenda_id),
+  constraint fk_sanitario_casos_source_alert_evento_fazenda foreign key (source_alert_evento_id, fazenda_id) references public.eventos(id, fazenda_id)
+);
+
+alter table public.eventos
+  add column sanitario_caso_id uuid,
+  add constraint fk_eventos_sanitario_caso_fazenda foreign key (sanitario_caso_id, fazenda_id) references public.sanitario_casos(id, fazenda_id);
+
 create table public.eventos_sanitario (
   evento_id uuid primary key,
   fazenda_id uuid not null,
@@ -686,11 +726,14 @@ create index idx_protocolos_sanitarios_itens_fazenda on public.protocolos_sanita
 create index idx_agenda_fazenda_data_status on public.agenda_itens(fazenda_id, data_prevista, status);
 create index idx_agenda_animal on public.agenda_itens(animal_id);
 create index idx_agenda_lote on public.agenda_itens(lote_id);
+create index idx_sanitario_casos_fazenda_animal_status on public.sanitario_casos(fazenda_id, animal_id, status);
+create index idx_sanitario_casos_source_alert on public.sanitario_casos(source_alert_evento_id);
 create index idx_eventos_fazenda_dominio on public.eventos(fazenda_id, dominio);
 create index idx_eventos_fazenda_occurred_at on public.eventos(fazenda_id, occurred_at desc);
 create index idx_eventos_fazenda_occurred_on on public.eventos(fazenda_id, occurred_on desc);
 create index idx_eventos_animal on public.eventos(animal_id);
 create index idx_eventos_lote on public.eventos(lote_id);
+create index idx_eventos_sanitario_caso on public.eventos(sanitario_caso_id);
 create index idx_catalogo_protocolos_slug on public.catalogo_protocolos_oficiais(slug);
 create index idx_catalogo_itens_codigo on public.catalogo_protocolos_oficiais_itens(codigo);
 create index idx_catalogo_doencas_nome on public.catalogo_doencas_notificaveis(nome);
@@ -1972,7 +2015,7 @@ begin
     'fazendas','user_profiles','user_settings','user_fazendas','farm_invites',
     'pastos','lotes','animais','contrapartes','animais_sociedade','categorias_zootecnicas',
     'fazenda_sanidade_config','protocolos_sanitarios','protocolos_sanitarios_itens',
-    'agenda_itens','eventos','eventos_sanitario','eventos_pesagem','eventos_nutricao',
+    'agenda_itens','sanitario_casos','eventos','eventos_sanitario','eventos_pesagem','eventos_nutricao',
     'eventos_movimentacao','eventos_reproducao','eventos_financeiro','metrics_events',
     'produtos_veterinarios','catalogo_protocolos_oficiais','catalogo_protocolos_oficiais_itens',
     'catalogo_doencas_notificaveis'
@@ -2032,6 +2075,8 @@ create policy protocolo_itens_select_member on public.protocolos_sanitarios_iten
 create policy protocolo_itens_write_manager on public.protocolos_sanitarios_itens for all using (public.role_in_fazenda(fazenda_id, array['owner','manager']::public.farm_role_enum[])) with check (public.role_in_fazenda(fazenda_id, array['owner','manager']::public.farm_role_enum[]));
 create policy agenda_select_member on public.agenda_itens for select using (public.has_membership(fazenda_id));
 create policy agenda_write_member on public.agenda_itens for all using (public.has_membership(fazenda_id)) with check (public.has_membership(fazenda_id));
+create policy sanitario_casos_select_member on public.sanitario_casos for select using (public.has_membership(fazenda_id));
+create policy sanitario_casos_write_member on public.sanitario_casos for all using (public.has_membership(fazenda_id)) with check (public.has_membership(fazenda_id));
 create policy eventos_select_member on public.eventos for select using (public.has_membership(fazenda_id));
 create policy eventos_insert_member on public.eventos for insert with check (public.has_membership(fazenda_id));
 create policy eventos_soft_delete_manager on public.eventos for update using (public.role_in_fazenda(fazenda_id, array['owner','manager']::public.farm_role_enum[])) with check (public.role_in_fazenda(fazenda_id, array['owner','manager']::public.farm_role_enum[]));
@@ -2057,7 +2102,7 @@ begin
     'fazendas','user_profiles','user_settings','user_fazendas',
     'pastos','lotes','animais','contrapartes','animais_sociedade','categorias_zootecnicas',
     'fazenda_sanidade_config','protocolos_sanitarios','protocolos_sanitarios_itens',
-    'agenda_itens','eventos','eventos_sanitario','eventos_pesagem','eventos_nutricao',
+    'agenda_itens','sanitario_casos','eventos','eventos_sanitario','eventos_pesagem','eventos_nutricao',
     'eventos_movimentacao','eventos_reproducao','eventos_financeiro'
   ] loop
     execute format('create unique index if not exists ux_%I_client_op_id on public.%I(client_op_id)', t, t);
@@ -2074,7 +2119,7 @@ begin
     'fazendas','user_profiles','user_settings','user_fazendas','farm_invites',
     'pastos','lotes','animais','contrapartes','animais_sociedade','categorias_zootecnicas',
     'fazenda_sanidade_config','protocolos_sanitarios','protocolos_sanitarios_itens',
-    'agenda_itens','produtos_veterinarios','catalogo_protocolos_oficiais',
+    'agenda_itens','sanitario_casos','produtos_veterinarios','catalogo_protocolos_oficiais',
     'catalogo_protocolos_oficiais_itens','catalogo_doencas_notificaveis'
   ] loop
     execute format('create trigger trg_%I_updated_at before update on public.%I for each row execute function public.set_updated_at()', t, t);

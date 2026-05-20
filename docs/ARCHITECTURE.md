@@ -44,6 +44,8 @@ Boundary `Registrar` <-> sanitario:
 - `src/lib/sanitario/infrastructure/**` concentra boundary RPC/fallback de execucao sanitaria.
 - SQL/RPC fecha agenda sanitaria de forma transacional e recalcula agenda operacional.
 - Compliance sanitario esta parcialmente validado por overlays, views e regras sanitarias, mas nao deve ser tratado como bloqueio operacional completo e universal sem nova validacao.
+- `sanitario_casos` e o contexto mutavel por animal para acompanhamento longitudinal de suspeitas notificaveis e manejo clinico. Ele nao substitui eventos: cada registro operacional continua em `eventos`/`eventos_*`, com vinculo opcional por `eventos.sanitario_caso_id`.
+- Casos sanitarios sao tenant-scoped por `fazenda_id`, protegidos por RLS de membership, sincronizados offline como `state_sanitario_casos` e devem preservar FK composta com `animais` e `eventos` quando houver vinculo.
 
 Contratos disponiveis para consumo:
 

@@ -190,6 +190,7 @@ Deno.serve(async (req: Request) => {
       'animais', 'lotes', 'pastos', 'agenda_itens', 'eventos',
       'contrapartes', 'protocolos_sanitarios', 'protocolos_sanitarios_itens',
       'fazenda_sanidade_config',
+      'sanitario_casos',
       'eventos_sanitario', 'eventos_pesagem', 'eventos_nutricao',
       'eventos_movimentacao', 'eventos_reproducao', 'eventos_financeiro'
     ]);
