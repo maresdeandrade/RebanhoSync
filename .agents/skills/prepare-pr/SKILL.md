@@ -38,7 +38,7 @@ Nesses casos, usar:
 - `repository-context-retrieval`;
 - `harden-module`;
 - skill de domínio correspondente;
-- `repository-verification-gate`.
+- `rebanhosync-verification-gate`.
 ---
 
 ## Ler primeiro
@@ -85,7 +85,7 @@ Abrir apenas se a mudança tiver impacto funcional real:
 - Não misturar correção estrutural, limpeza e feature nova sem declarar.
 - Preferir PR pequeno, coerente e alinhado a uma capability ou trilha `infra.*`.
 - Não tratar ausência de validação como detalhe irrelevante.
-- Não apresentar PR como pronto se `repository-verification-gate` terminou em `NOT READY`.
+- Não apresentar PR como pronto se `rebanhosync-verification-gate` terminou em `NOT READY`.
 ---
 
 ## Procedimento
@@ -99,7 +99,7 @@ Definir:
 ---
 
 ### 2. Confirmar o verification gate
-Usar o resultado de `repository-verification-gate`.
+Usar o resultado de `rebanhosync-verification-gate`.
 Verificar:
 - status final:
   - READY;
@@ -196,7 +196,7 @@ Outros:
 - `validate-supabase-baseline-functional.mjs`: ...
 
 ## Gate final
-- `repository-verification-gate`: READY / READY WITH CAVEAT / NOT READY
+- `rebanhosync-verification-gate`: READY / READY WITH CAVEAT / NOT READY
 
 ## Docs
 - atualizados:

@@ -154,7 +154,7 @@ The main hotspot file should move toward **orchestrator**, not concentrator.
 
 ### 6. Validate the hardening round
 For an implemented change, run the validation required by the task and then close with:
-- `repository-verification-gate`
+- `rebanhosync-verification-gate`
 
 The gate must confirm:
 - diff scope;
@@ -183,7 +183,7 @@ Escalate to:
 - a domain skill if the work narrows into an operational flow;
 - `sync-offline-rollback` if the hardening touches queue, rollback, retry or Dexie;
 - `migrations-rls-contracts` if it reaches schema, RLS or RPC;
-- `repository-verification-gate` after implementation;
+- `rebanhosync-verification-gate` after implementation;
 - `prepare-pr` only after the gate is complete.
 ---
 
@@ -213,7 +213,7 @@ Return:
 - what still remains.
 
 ### 5. Verification handoff
-- whether `repository-verification-gate` is required now;
+- whether `rebanhosync-verification-gate` is required now;
 - key validation focus;
 - caveats already known.
 

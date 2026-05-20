@@ -1,5 +1,5 @@
 ---
-name: repository-verification-gate
+name: rebanhosync-verification-gate
 description: Use when a change is complete and you need to verify repository state, diff scope, applicable validation commands, warnings, and delivery readiness before handoff or PR preparation.
 ---
 

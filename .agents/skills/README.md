@@ -63,7 +63,7 @@ Não usar para:
 
 ---
 
-### 3) `repository-verification-gate`
+### 3) `rebanhosync-verification-gate`
 
 Use quando a tarefa for sobre:
 - fechamento técnico de alteração concluída;
@@ -280,7 +280,7 @@ Não usar para:
 - hotspot com mistura de camadas -> `harden-module`
 
 ### Fechamento técnico
-- alteração concluída / validação objetiva / status READY -> `repository-verification-gate`
+- alteração concluída / validação objetiva / status READY -> `rebanhosync-verification-gate`
 
 ### Fechamento de entrega
 - revisão final e corpo de PR -> `prepare-pr`
@@ -307,7 +307,7 @@ Se a tarefa começar em uma skill e tocar outra fronteira:
 
 - de descoberta de contexto para refatoração -> escalar para `harden-module`
 - de descoberta de contexto para domínio claro -> escalar para a skill especializada correspondente
-- de hardening concluído para fechamento técnico -> escalar para `repository-verification-gate`
+- de hardening concluído para fechamento técnico -> escalar para `rebanhosync-verification-gate`
 - de alteração concluída e gate READY para PR -> escalar para `prepare-pr`
 - de hardening para docs -> escalar para `reconcile-docs`
 - de sanitário operacional para regulatório -> escalar para `sanitario-catalogo-regulatorio-compliance`
