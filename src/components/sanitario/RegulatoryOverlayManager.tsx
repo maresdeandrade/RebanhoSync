@@ -26,6 +26,11 @@ import {
   parseRegulatoryAnalyticsImpactKey,
   parseRegulatoryAnalyticsSubareaKey,
 } from "@/lib/sanitario/compliance/regulatoryReadModel";
+import {
+  getRegulatoryOverlayOperationalKindLabel,
+  resolveRegulatoryOverlayOperationalKind,
+  summarizeRegulatoryOverlayOperationalKinds,
+} from "@/lib/sanitario/compliance/overlayPresentation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -400,6 +405,10 @@ export function RegulatoryOverlayManager({
     }),
     [visibleEntries],
   );
+  const operationalKindSummary = useMemo(
+    () => summarizeRegulatoryOverlayOperationalKinds(visibleEntries),
+    [visibleEntries],
+  );
   const hasActiveAnalyticalCut = Boolean(
     activeSubareaFilter || activeImpactFilter,
   );
@@ -652,6 +661,11 @@ export function RegulatoryOverlayManager({
                   {customEntryCount} fazenda
                 </StatusBadge>
               ) : null}
+              {operationalKindSummary.map((item) => (
+                <StatusBadge key={item.key} tone="neutral">
+                  {item.count} {item.label.toLowerCase()}
+                </StatusBadge>
+              ))}
               {canManage ? (
                 <Button
                   variant="outline"
@@ -704,100 +718,112 @@ export function RegulatoryOverlayManager({
             </div>
           ) : (
             <div className="grid gap-4 xl:grid-cols-2">
-              {visibleEntries.map((entry) => (
-                <Card
-                  key={`${entry.template.id}:${entry.item.id}`}
-                  className="border-border/70"
-                >
-                  <CardHeader className="space-y-2 px-4 py-3">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="space-y-1">
-                        <CardTitle className="text-base">{entry.label}</CardTitle>
+              {visibleEntries.map((entry) => {
+                const operationalKind =
+                  resolveRegulatoryOverlayOperationalKind(entry);
+
+                return (
+                  <Card
+                    key={`${entry.template.id}:${entry.item.id}`}
+                    className="border-border/70"
+                  >
+                    <CardHeader className="space-y-2 px-4 py-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="space-y-1">
+                          <CardTitle className="text-base">
+                            {entry.label}
+                          </CardTitle>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          <Badge
+                            variant={
+                              entry.sourceScope === "oficial"
+                                ? "outline"
+                                : "secondary"
+                            }
+                          >
+                            {getOverlaySourceLabel(entry)}
+                          </Badge>
+                          <StatusBadge
+                            tone={getRegulatoryOverlayStatusTone(entry.status)}
+                          >
+                            {getRegulatoryOverlayStatusLabel(entry.status)}
+                          </StatusBadge>
+                        </div>
                       </div>
+
                       <div className="flex flex-wrap gap-2">
-                        <Badge
-                          variant={
-                            entry.sourceScope === "oficial"
-                              ? "outline"
-                              : "secondary"
-                          }
-                        >
-                          {getOverlaySourceLabel(entry)}
+                        <Badge variant="secondary">
+                          {getRegulatoryOverlayOperationalKindLabel(
+                            operationalKind,
+                          )}
                         </Badge>
-                        <StatusBadge
-                          tone={getRegulatoryOverlayStatusTone(entry.status)}
+                        <Badge variant="outline">{entry.item.area}</Badge>
+                        {entry.subarea ? (
+                          <Badge variant="outline">{entry.subarea}</Badge>
+                        ) : null}
+                      </div>
+                    </CardHeader>
+
+                    <CardContent className="space-y-3 px-4 pt-0">
+                      {entry.runtime ? (
+                        <div className="rounded-xl border border-border/70 bg-muted/20 p-3 text-sm">
+                          <p className="font-medium text-foreground">
+                            Verificado em{" "}
+                            {entry.runtime.checkedAt.slice(0, 10)}
+                          </p>
+                          {entry.runtime.responsible ? (
+                            <p className="text-muted-foreground">
+                              Responsavel: {entry.runtime.responsible}
+                            </p>
+                          ) : null}
+                          {entry.runtime.notes ? (
+                            <p className="text-muted-foreground">
+                              {entry.runtime.notes}
+                            </p>
+                          ) : null}
+                        </div>
+                      ) : (
+                        <div className="rounded-xl border border-dashed border-border/70 bg-muted/10 p-3 text-sm text-muted-foreground">
+                          Sem verificação registrada.
+                        </div>
+                      )}
+
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          onClick={() => openEntry(entry)}
+                          disabled={!canManage}
                         >
-                          {getRegulatoryOverlayStatusLabel(entry.status)}
-                        </StatusBadge>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-wrap gap-2">
-                      <Badge variant="outline">{entry.item.area}</Badge>
-                      {entry.subarea ? (
-                        <Badge variant="outline">{entry.subarea}</Badge>
-                      ) : null}
-                    </div>
-                  </CardHeader>
-
-                  <CardContent className="space-y-3 px-4 pt-0">
-                    {entry.runtime ? (
-                      <div className="rounded-xl border border-border/70 bg-muted/20 p-3 text-sm">
-                        <p className="font-medium text-foreground">
-                          Verificado em{" "}
-                          {entry.runtime.checkedAt.slice(0, 10)}
-                        </p>
-                        {entry.runtime.responsible ? (
-                          <p className="text-muted-foreground">
-                            Responsavel: {entry.runtime.responsible}
-                          </p>
-                        ) : null}
-                        {entry.runtime.notes ? (
-                          <p className="text-muted-foreground">
-                            {entry.runtime.notes}
-                          </p>
+                          {entry.complianceKind === "feed_ban" ? (
+                            <WheatOff className="mr-2 h-4 w-4" />
+                          ) : (
+                            <ShieldCheck className="mr-2 h-4 w-4" />
+                          )}
+                          Registrar
+                        </Button>
+                        {entry.editable ? (
+                          <>
+                            <Button
+                              variant="outline"
+                              onClick={() => openEditStructure(entry)}
+                              disabled={!canManage}
+                            >
+                              Editar complemento
+                            </Button>
+                            <Button
+                              variant="outline"
+                              onClick={() => setDeleteTarget(entry)}
+                              disabled={!canManage}
+                            >
+                              Remover
+                            </Button>
+                          </>
                         ) : null}
                       </div>
-                    ) : (
-                      <div className="rounded-xl border border-dashed border-border/70 bg-muted/10 p-3 text-sm text-muted-foreground">
-                        Sem verificação registrada.
-                      </div>
-                    )}
-
-                    <div className="flex flex-wrap gap-2">
-                      <Button
-                        onClick={() => openEntry(entry)}
-                        disabled={!canManage}
-                      >
-                        {entry.complianceKind === "feed_ban" ? (
-                          <WheatOff className="mr-2 h-4 w-4" />
-                        ) : (
-                          <ShieldCheck className="mr-2 h-4 w-4" />
-                        )}
-                        Registrar
-                      </Button>
-                      {entry.editable ? (
-                        <>
-                          <Button
-                            variant="outline"
-                            onClick={() => openEditStructure(entry)}
-                            disabled={!canManage}
-                          >
-                            Editar complemento
-                          </Button>
-                          <Button
-                            variant="outline"
-                            onClick={() => setDeleteTarget(entry)}
-                            disabled={!canManage}
-                          >
-                            Remover
-                          </Button>
-                        </>
-                      ) : null}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           )}
         </CardContent>

@@ -29,6 +29,10 @@ import {
   selectOfficialSanitaryPack,
   type OfficialSanitaryPackConfigInput,
 } from "@/lib/sanitario/catalog/officialCatalog";
+import {
+  summarizeOfficialPackSelectionPresentation,
+  summarizeOfficialPackTemplatePresentation,
+} from "@/lib/sanitario/catalog/officialPackPresentation";
 import { showError, showSuccess } from "@/utils/toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -304,6 +308,9 @@ export function OfficialSanitaryPackManager({
   const hiddenPreviewCount = Math.max(
     0,
     (selection?.templates.length ?? 0) - selectedPreview.length,
+  );
+  const selectionPresentation = summarizeOfficialPackSelectionPresentation(
+    selection?.templates ?? [],
   );
   const appliedTemplateCount = readArrayLength(
     savedConfig?.payload ?? null,
@@ -680,38 +687,43 @@ export function OfficialSanitaryPackManager({
                       Nenhuma regra compativel.
                     </div>
                   ) : (
-                    selectedPreview.map((entry) => (
-                      <div
-                        key={entry.template.id}
-                        className="rounded-xl border border-border/70 bg-muted/20 px-4 py-3"
-                      >
-                        <div className="flex flex-wrap items-start justify-between gap-3">
-                          <div className="space-y-1">
-                            <p className="text-sm font-medium text-foreground">
-                              {entry.template.nome}
-                            </p>
-                          </div>
-                          <div className="flex flex-wrap gap-2">
-                            <Badge
-                              variant={getLegalStatusBadgeVariant(
-                                entry.template.status_legal,
-                              )}
-                            >
-                              {getLegalStatusLabel(entry.template.status_legal)}
-                            </Badge>
-                            <Badge variant="outline">
-                              {entry.materializableItems.length}{" "}
-                              materializavel(is)
-                            </Badge>
-                            {entry.skippedItems.length > 0 ? (
-                              <Badge variant="outline">
-                                {entry.skippedItems.length} procedural(is)
+                    selectedPreview.map((entry) => {
+                      const presentation =
+                        summarizeOfficialPackTemplatePresentation(entry);
+
+                      return (
+                        <div
+                          key={entry.template.id}
+                          className="rounded-xl border border-border/70 bg-muted/20 px-4 py-3"
+                        >
+                          <div className="flex flex-wrap items-start justify-between gap-3">
+                            <div className="space-y-1">
+                              <p className="text-sm font-medium text-foreground">
+                                {entry.template.nome}
+                              </p>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              <Badge
+                                variant={getLegalStatusBadgeVariant(
+                                  entry.template.status_legal,
+                                )}
+                              >
+                                {getLegalStatusLabel(entry.template.status_legal)}
                               </Badge>
-                            ) : null}
+                              <Badge variant="outline">
+                                {presentation.agendaOperationalCount} agenda
+                                operacional
+                              </Badge>
+                              {presentation.nonAgendaCounts.map((item) => (
+                                <Badge key={item.key} variant="outline">
+                                  {item.count} {item.label.toLowerCase()}
+                                </Badge>
+                              ))}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))
+                      );
+                    })
                   )}
                 </div>
 
@@ -753,17 +765,18 @@ export function OfficialSanitaryPackManager({
                   <div className="rounded-xl border border-border/70 bg-muted/20 px-4 py-3">
                     <div className="flex items-center gap-2 text-sm font-medium text-foreground">
                       <ClipboardList className="h-4 w-4 text-primary" />
-                      Agenda
+                      Separacao operacional
                     </div>
                     <div className="mt-2 flex flex-wrap gap-2">
                       <Badge variant="outline">
-                        {materializableCount} itens em protocolos/agendas
+                        {selectionPresentation.agendaOperationalCount} agenda
+                        operacional
                       </Badge>
-                      {skippedCount > 0 ? (
-                        <Badge variant="outline">
-                          {skippedCount} checklist(s)
+                      {selectionPresentation.nonAgendaCounts.map((item) => (
+                        <Badge key={item.key} variant="outline">
+                          {item.count} {item.label.toLowerCase()}
                         </Badge>
-                      ) : null}
+                      ))}
                     </div>
                   </div>
                 </div>

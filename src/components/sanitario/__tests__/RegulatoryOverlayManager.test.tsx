@@ -168,6 +168,9 @@ describe("RegulatoryOverlayManager", () => {
 
     expect(screen.getByText("Impacto: Impacta nutricao")).toBeInTheDocument();
     expect(screen.getByText("Feed-ban de ruminantes")).toBeInTheDocument();
+    expect(screen.getAllByText(/bloqueio operacional/i).length).toBeGreaterThan(
+      0,
+    );
     expect(
       screen.queryByText("Atualizacao documental"),
     ).not.toBeInTheDocument();
@@ -232,6 +235,9 @@ describe("RegulatoryOverlayManager", () => {
     expect(
       screen.getByText("Checklist pre-lote maternidade"),
     ).toBeInTheDocument();
+    expect(
+      screen.getAllByText(/checklist operacional/i).length,
+    ).toBeGreaterThan(0);
     expect(screen.getByText("Fazenda")).toBeInTheDocument();
     expect(screen.queryByText("1 oficial(is)")).not.toBeInTheDocument();
     expect(screen.getByText("0 oficial(is)")).toBeInTheDocument();

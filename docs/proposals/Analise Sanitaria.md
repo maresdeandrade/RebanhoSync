@@ -216,9 +216,10 @@ Entregas já realizadas:
 - rótulos de classe sanitária passaram a vir de helper central, não de reconstrução local em UI.
 - Protocolos Sanitários passou a expor navegação separada para pack oficial, conformidade e protocolos da fazenda;
 - etapas dos protocolos da fazenda exibem a classe operacional sanitária calculada centralmente.
+- o pack oficial passou a separar visualmente itens de agenda operacional de itens não agendáveis como compliance/checklist e suspeita notificável, usando helper central de apresentação.
+- o overlay/conformidade passou a destacar bloqueio operacional, checklist documental, checklist operacional e sinal de notificacao como classes visuais derivadas do read model.
 
 O que ainda falta:
-- separar internamente, nos gerenciadores de catálogo/pack, o que é rotina agendável, suspeita notificável, checklist/compliance e protocolo clínico;
 - mover suspeitas/notificáveis para ação de registro/caso, sem apresentá-las como rotina recorrente;
 - posicionar itens clínicos no fluxo futuro de caso/manejo clínico, não como agenda operacional comum.
 
