@@ -22,7 +22,7 @@ export function BrandMark({
         "flex min-w-0 items-center gap-2 rounded-md text-sidebar-foreground outline-none transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-sidebar-ring",
         className,
       )}
-      aria-label="Ir para Hoje - RebanhoSync"
+      aria-label="Ir para RebanhoSync"
     >
       <span className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-xl border border-white/20 bg-white shadow-sm">
         <img

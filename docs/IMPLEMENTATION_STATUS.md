@@ -2,7 +2,7 @@
 
 > **Status:** Derivado (Rev D+)
 > **Baseline:** `3664395`
-> **Ultima Atualizacao:** 2026-05-09
+> **Ultima Atualizacao:** 2026-05-20
 > **Derivado por:** Auditoria técnica completa — código + migrations + testes como fonte de verdade
 
 Este documento registra o estado efetivo do RebanhoSync na fase atual de consolidacao SLC, pós-fechamento de todos os TDs da lista aberta original.
@@ -14,6 +14,7 @@ Este documento registra o estado efetivo do RebanhoSync na fase atual de consoli
 - **Core operacional:** sanitário, pesagem, movimentação, nutrição, pastagem/rondas, reprodução, financeiro e agenda estão implementados e usáveis.
 - **Camadas consolidadas:** onboarding guiado, importação CSV, relatórios operacionais, telemetria de piloto com flush remoto, modo de experiência da fazenda, dashboard e ficha reprodutiva dedicada, pós-parto neonatal, cria inicial, transições de rebanho.
 - **Central Operacional passiva:** primeira integração read-only concluída na Home, consumindo `src/lib/insights/` por `src/features/operationalInsights/` sem ações de domínio.
+- **UX operacional mobile-first:** refatoração visual SLC concluída no recorte atual, com Home tática, Registrar orientado por intenção, Animais card-first, Lotes/Pastos/Reprodução/Relatórios mais objetivos, seleção de fazenda contextual, filtros compactos e status técnicos rebaixados.
 - **Motor sanitário endurecido:** catalogo conservador, calendario TS->SQL alinhado, dedup canonico TS/SQL, brucelose por janela/sexo/especie transicional, bloqueio historico de reabertura via `sanitary_completion`, raiva sequencial D1/D2/anual por risco/configuracao/ativacao explicita e tecnicos por ativacao operacional explicita com alvo de especie quando informado.
 - **Qualidade local:** `lint`, `test:unit`, `test:integration`, `test:smoke`, `quality:gate` e `build` verdes.
 - **TDs originalmente abertos (M0-M2):** fechados e consolidados na baseline Supabase pos-squash.
@@ -100,7 +101,7 @@ Este documento registra o estado efetivo do RebanhoSync na fase atual de consoli
 - Cria inicial pós-parto: `src/pages/AnimalCriaInicial.tsx`
 - Transições do rebanho: `src/pages/AnimaisTransicoes.tsx`
 - Apresentação visual por categoria/estágio: `src/components/animals/`
-- Agrupamento matriz-cria na listagem: `src/pages/Animais.tsx`, `src/lib/animals/familyOrder.ts`
+- Agrupamento matriz-cria e listagem card-first de animais: `src/pages/Animais.tsx`, `src/lib/animals/familyOrder.ts`
 - Elegibilidade reprodutiva por categoria: `src/lib/animals/presentation.ts`
 - Telemetria de piloto com buffer local + flush remoto: `src/lib/telemetry/`, `supabase/functions/telemetry-ingest/`, `src/components/settings/SyncHealthPanel.tsx`
 - Overlay regulatorio operacional guiado: `src/components/sanitario/RegulatoryOverlayManager.tsx`, `src/lib/sanitario/compliance/compliance.ts`
@@ -108,6 +109,7 @@ Este documento registra o estado efetivo do RebanhoSync na fase atual de consoli
 - Modo de experiência por fazenda: `src/lib/farms/experienceMode.ts`
 - Taxonomia canônica bovina: `src/lib/animals/taxonomy.ts` + contrato v1 + fixtures canônicas
 - Central Operacional passiva na Home: `src/lib/insights/**`, `src/features/operationalInsights/operationalInsightsAdapter.ts`, `src/features/operationalInsights/useOperationalInsights.ts`, `src/features/operationalInsights/OperationalInsightsPanel.tsx`, `src/pages/Home.tsx`
+- Compactação visual SLC: `src/pages/Home.tsx`, `src/pages/Registrar/**`, `src/pages/Animais.tsx`, `src/pages/Lotes.tsx`, `src/pages/Pastos.tsx`, `src/pages/ReproductionDashboard.tsx`, `src/pages/Dashboard.tsx`, `src/pages/Eventos.tsx`, `src/pages/Financeiro.tsx`, `src/pages/Relatorios.tsx`, `src/pages/Reconciliacao.tsx`, `src/pages/Configuracoes.tsx`, `src/pages/SelectFazenda.tsx` e cadastros/fluxos auxiliares.
 - Avaliação/ronda de pasto como evento histórico: `src/lib/events/validators/pastagem.ts`, `src/lib/events/__tests__/pastoAvaliacao.test.ts`, `src/pages/__tests__/PastoAvaliacao.test.tsx`
 
 ### Central Operacional passiva
@@ -115,7 +117,8 @@ Este documento registra o estado efetivo do RebanhoSync na fase atual de consoli
 - `src/lib/insights/` atua como core puro/read-only de composição operacional.
 - `src/features/operationalInsights/` adapta fontes já carregadas para o core, preservando `answerability`, `resultStatus`, `source`, `limitations` e `primarySource`.
 - `src/pages/Home.tsx` monta input estável para `useOperationalInsights` a partir de `state_agenda_itens`, `state_animais`, `event_eventos`/eventos mensais e `state_protocolos_sanitarios_itens`.
-- A UI mostra cards de pendências abertas, vencem hoje, atrasadas, pendências sanitárias, rebanho por estágio, KPIs mensais e sinais operacionais auxiliares.
+- A UI da Home foi reposicionada como painel tático: atrasadas, agenda de hoje e ação imediata aparecem antes de leituras passivas.
+- O painel read-only preserva pendências abertas, vencem hoje, atrasadas, pendências sanitárias, rebanho por estágio, KPIs mensais e sinais operacionais auxiliares como contexto secundário, sem competir com CTAs operacionais.
 - Estados exibidos: `Bloqueado` (fonte obrigatoria ausente), `Vazio` (fonte carregada sem itens), `Parcial` (fonte carregada com limitacao) e `Completo` (leitura completa).
 - Refino visual posterior priorizou atrasadas e vencem hoje, compactou limitacoes, reduziu ruido de fonte/texto e reforcou que sinais auxiliares nao persistem tags.
 - Limites preservados: sem concluir/gerar agenda, sem criar evento, sem persistir tag, sem carência, sem pronto venda/abate, sem peso atual confiável e sem IATF amplo.
@@ -165,7 +168,7 @@ Este documento registra o estado efetivo do RebanhoSync na fase atual de consoli
 | Residual `Registrar`: volume de composicao/JSX no shell | Estrutural local UI | Mantem custo de leitura/manutencao acima do ideal para evolucao de UX | Fatiar blocos de composicao restantes por recortes pequenos |
 | Residual `Agenda`: wiring/read-model local remanescente no shell | Estrutural local UI | Leitura inicial, resumos visuais e metadados de linha ja foram extraidos; shell ainda acumula wiring de filtros, grupos, alvos criticos e efeitos existentes | Avaliar proximos cortes locais sem mover dominio nem alterar comportamento |
 | Ruido tecnico residual de testes/build (router future flags, logs negativos esperados, circular chunks) | Confiabilidade | Aumenta ruído operacional e dificulta leitura de regressao real | Tratar warning-by-warning por criticidade, sem mascaramento de erro |
-| Acabamento de experiencia cross-flow | UX/produto | Fluxos centrais funcionam, mas com friccao e inconsistencia de feedback | Consolidar backlog MVP -> SLC por frentes de UX operacional |
+| Acabamento de experiencia cross-flow | UX/produto | Refatoracao visual SLC foi aplicada no recorte atual; risco remanescente e calibragem com dados reais, consistencia fina entre fluxos e regressao visual | Validar com beta interno e decompor ajustes restantes por tela/fluxo |
 
 ---
 
@@ -365,6 +368,17 @@ Este documento registra o estado efetivo do RebanhoSync na fase atual de consoli
 - Focused page/reporting coverage now also validates lote-level anticipation of regulatory movement restrictions in `src/pages/__tests__/LoteDetalhe.test.tsx`, the regulatory overlay projection and query-driven analytical recorte inside `src/pages/__tests__/Eventos.test.tsx`, dashboard analytical cuts in `src/pages/__tests__/Dashboard.test.tsx`, query-driven overlay filtering in `src/components/sanitario/__tests__/RegulatoryOverlayManager.test.tsx` and analytical export rows in `src/lib/reports/__tests__/operationalSummary.test.ts`.
 - Focused animal/regulatory coverage now also validates animal-centric restriction projection and dedicated export in `src/lib/sanitario/__tests__/regulatoryAnimals.test.ts` plus the query-driven restricted list in `src/pages/__tests__/Animais.test.tsx`.
 - Local validation for this update: `pnpm exec eslint` (changed files), `pnpm exec tsc --noEmit`, `pnpm run build`, `pnpm run lint`, and focused `vitest` suites for agenda/sanitario/relatorios.
+
+## 8.1 Update 2026-05-20 (Refatoracao Visual SLC / Carga Cognitiva)
+
+- Refatoracao visual SLC aplicada como mudanca de apresentacao, sem alterar regra de negocio, contratos de dados, offline/sync, Supabase, RLS, migrations ou seed.
+- Home reposicionada como painel tatico: prioridade operacional, agenda do dia e acao imediata antes de contexto passivo.
+- Animais consolidado como lista card-first, removendo duplicidade visual entre cards e tabela tecnica; filtros ficaram compactos, com chips/baloes apenas para `Sexo`, `Status` e `Categoria`.
+- Registrar compactado em intencao -> alvo -> essencial -> salvar, com descricoes redundantes removidas e CTA final mais evidente.
+- Dashboard, Eventos, Financeiro, Relatorios, Reconciliacao, Configuracoes, ProtocolosSanitarios, Lotes, Pastos, Reproducao, selecao de fazenda e cadastros de apoio tiveram textos, badges tecnicos e leitura passiva rebaixados para reduzir densidade.
+- Selecao de fazenda passou a exibir municipio/UF, area, tipo de producao e manejo quando disponiveis, sem solicitar dado fiscal novo nem alterar o fluxo de escolha.
+- Limite preservado: a Central Operacional continua read-only; sinais auxiliares nao viraram fonte primaria, acao automatica ou camada persistida de marcadores.
+- Validacoes executadas durante a rodada visual: `pnpm run lint`, `pnpm run build`, `git diff --check` e checagens focadas/browser conforme escopo das telas alteradas.
 
 ## 9. Update 2026-04-12 (Sanitary Regimen & Compliance Engine)
 

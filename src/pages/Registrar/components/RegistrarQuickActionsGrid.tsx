@@ -37,10 +37,10 @@ export function RegistrarQuickActionsGrid<Key extends string = string>(
             type="button"
             variant="outline"
             className={cn(
-              "h-auto min-h-24 flex-col items-start gap-2 rounded-xl border p-4 text-left shadow-sm transition-colors",
+              "h-auto min-h-24 flex-col items-start gap-2 rounded-xl border p-4 text-left shadow-none transition-colors",
               props.activeAction === action.key
-                ? "border-[#0057C2] bg-sky-50 text-[#002B45] ring-1 ring-[#0057C2] hover:bg-sky-100 dark:border-sky-500 dark:bg-sky-950/50 dark:text-sky-100"
-                : "border-border/70 bg-card text-foreground hover:border-sky-300 hover:bg-sky-50 dark:hover:border-sky-800 dark:hover:bg-sky-950/30",
+                ? "border-primary/30 bg-primary/10 text-primary ring-1 ring-primary/25 hover:bg-primary/15"
+                : "border-border/70 bg-card text-foreground hover:border-primary/25 hover:bg-muted/60",
             )}
             disabled={disabled}
             onClick={() => props.onSelectAction(action.key)}
@@ -56,3 +56,4 @@ export function RegistrarQuickActionsGrid<Key extends string = string>(
     </div>
   );
 }
+

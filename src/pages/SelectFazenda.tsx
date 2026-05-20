@@ -1,11 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useNavigate } from "react-router-dom";
-import { ChevronRight, LogOut, MapPin, Plus, Tractor } from "lucide-react";
+import { ChevronRight, LogOut, MapPin, Plus } from "lucide-react";
 
+import { EmptyState } from "@/components/EmptyState";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { MetricCard } from "@/components/ui/metric-card";
 import { PageIntro } from "@/components/ui/page-intro";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { useAuth } from "@/hooks/useAuth";
@@ -14,6 +13,11 @@ import { supabase } from "@/lib/supabase";
 interface FazendaData {
   id: string;
   nome: string;
+  municipio: string | null;
+  estado: string | null;
+  area_total_ha: number | null;
+  tipo_producao: "corte" | "leite" | "mista" | null;
+  sistema_manejo: "confinamento" | "semi_confinamento" | "pastagem" | null;
 }
 
 interface UserFazenda {
@@ -33,6 +37,40 @@ const roleToneMap: Record<string, "success" | "info" | "neutral"> = {
   cowboy: "neutral",
 };
 
+const productionLabelMap: Record<
+  NonNullable<FazendaData["tipo_producao"]>,
+  string
+> = {
+  corte: "Corte",
+  leite: "Leite",
+  mista: "Mista",
+};
+
+const managementLabelMap: Record<
+  NonNullable<FazendaData["sistema_manejo"]>,
+  string
+> = {
+  confinamento: "Confinamento",
+  semi_confinamento: "Semi-confinamento",
+  pastagem: "Pastagem",
+};
+
+function formatArea(area: number | null) {
+  if (typeof area !== "number" || Number.isNaN(area)) return null;
+
+  return `${new Intl.NumberFormat("pt-BR", {
+    maximumFractionDigits: area % 1 === 0 ? 0 : 1,
+  }).format(area)} ha`;
+}
+
+function formatLocation(fazenda: FazendaData) {
+  if (fazenda.municipio && fazenda.estado) {
+    return `${fazenda.municipio} - ${fazenda.estado}`;
+  }
+
+  return fazenda.municipio || fazenda.estado || "Localizacao nao informada";
+}
+
 const SelectFazenda = () => {
   const { user, signOut, setActiveFarm } = useAuth();
   const navigate = useNavigate();
@@ -44,7 +82,9 @@ const SelectFazenda = () => {
 
     const { data } = await supabase
       .from("user_fazendas")
-      .select("role, fazendas(id, nome)")
+      .select(
+        "role, fazendas(id, nome, municipio, estado, area_total_ha, tipo_producao, sistema_manejo)",
+      )
       .eq("user_id", user.id)
       .is("deleted_at", null);
 
@@ -94,6 +134,11 @@ const SelectFazenda = () => {
         {
           id: fazenda.id,
           nome: fazenda.nome,
+          municipio: fazenda.municipio ?? null,
+          estado: fazenda.estado ?? null,
+          area_total_ha: fazenda.area_total_ha ?? null,
+          tipo_producao: fazenda.tipo_producao ?? null,
+          sistema_manejo: fazenda.sistema_manejo ?? null,
           role: membership.role,
         },
       ];
@@ -108,8 +153,9 @@ const SelectFazenda = () => {
 
   return (
     <div className="min-h-screen bg-muted/20 px-4 py-8">
-      <div className="mx-auto max-w-5xl space-y-6">
+      <div className="mx-auto max-w-5xl space-y-5">
         <PageIntro
+          variant="plain"
           eyebrow="Acesso"
           title="Escolha a fazenda"
           meta={
@@ -145,94 +191,100 @@ const SelectFazenda = () => {
           }
         />
 
-        <div className="grid gap-4 md:grid-cols-[1.15fr_0.85fr]">
+        <div>
           <section className="space-y-3">
             {!fazendas ? (
-              <Card>
-                <CardContent className="p-8 text-center text-muted-foreground">
-                  Carregando fazendas...
-                </CardContent>
-              </Card>
+              <div className="rounded-xl border border-border/70 bg-card p-6 text-sm text-muted-foreground shadow-none">
+                Carregando fazendas...
+              </div>
             ) : memberships.length === 0 ? (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Nenhuma fazenda vinculada</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <p className="text-sm text-muted-foreground">
-                    Aceite um convite ou crie a primeira operacao.
-                  </p>
-
-                  {canCreateFarm === true ? (
-                    <Button
-                      onClick={() => navigate("/criar-fazenda")}
-                      className="w-full"
-                    >
-                      <Plus className="mr-2 h-4 w-4" />
-                      Criar nova fazenda
-                    </Button>
-                  ) : null}
-
-                  {canCreateFarm === false ? (
-                    <p className="text-xs text-muted-foreground">
-                      Sua conta nao tem permissao para criar fazendas neste
-                      momento.
-                    </p>
-                  ) : null}
-                </CardContent>
-              </Card>
+              <EmptyState
+                icon={MapPin}
+                title="Nenhuma fazenda vinculada"
+                description="Aceite um convite ou crie a primeira fazenda para iniciar a rotina."
+                action={
+                  canCreateFarm === true
+                    ? {
+                        label: "Criar nova fazenda",
+                        onClick: () => navigate("/criar-fazenda"),
+                      }
+                    : undefined
+                }
+              />
             ) : (
-              memberships.map((fazenda) => (
-                <Card
-                  key={fazenda.id}
-                  className="transition-colors hover:border-primary/60"
-                >
-                  <CardContent className="p-4">
+              memberships.map((fazenda) => {
+                const areaLabel = formatArea(fazenda.area_total_ha);
+                const profileItems = [
+                  areaLabel ? { label: "Area", value: areaLabel } : null,
+                  fazenda.tipo_producao
+                    ? {
+                        label: "Producao",
+                        value: productionLabelMap[fazenda.tipo_producao],
+                      }
+                    : null,
+                  fazenda.sistema_manejo
+                    ? {
+                        label: "Manejo",
+                        value: managementLabelMap[fazenda.sistema_manejo],
+                      }
+                    : null,
+                ].filter(Boolean) as Array<{ label: string; value: string }>;
+
+                return (
+                  <div
+                    key={fazenda.id}
+                    className="rounded-xl border border-border/70 bg-card p-4 shadow-none transition-colors hover:border-primary/50"
+                  >
                     <button
                       type="button"
                       className="flex w-full items-center justify-between gap-4 text-left"
                       onClick={() => void handleSelect(fazenda.id)}
                       disabled={loading}
                     >
-                      <div className="flex items-start gap-3">
-                        <div className="rounded-2xl border border-primary/10 bg-primary/5 p-2.5 text-primary">
-                          <MapPin className="h-5 w-5" />
-                        </div>
-                        <div className="space-y-2">
-                          <div className="space-y-1">
-                            <p className="font-semibold">{fazenda.nome}</p>
-                            <p className="text-sm text-muted-foreground">
-                              Entrar na rotina da fazenda
-                            </p>
+                      <div className="min-w-0 flex-1 space-y-4">
+                        <div className="flex items-start gap-3">
+                          <div className="rounded-xl border border-primary/10 bg-primary/5 p-2.5 text-primary">
+                            <MapPin className="h-5 w-5" />
                           </div>
-                          <StatusBadge
-                            tone={roleToneMap[fazenda.role] ?? "neutral"}
-                          >
-                            {roleLabelMap[fazenda.role] ?? fazenda.role}
-                          </StatusBadge>
+                          <div className="min-w-0 space-y-2">
+                            <div className="space-y-1">
+                              <p className="truncate text-base font-semibold text-foreground">
+                                {fazenda.nome}
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                {formatLocation(fazenda)}
+                              </p>
+                            </div>
+                            <StatusBadge
+                              tone={roleToneMap[fazenda.role] ?? "neutral"}
+                            >
+                              {roleLabelMap[fazenda.role] ?? fazenda.role}
+                            </StatusBadge>
+                          </div>
                         </div>
+
+                        {profileItems.length > 0 ? (
+                          <div className="grid gap-3 border-t border-border/70 pt-3 sm:grid-cols-3">
+                            {profileItems.map((item) => (
+                              <div key={item.label} className="min-w-0">
+                                <p className="text-xs font-semibold uppercase text-muted-foreground">
+                                  {item.label}
+                                </p>
+                                <p className="mt-1 truncate text-sm font-medium text-foreground">
+                                  {item.value}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        ) : null}
                       </div>
                       <ChevronRight className="h-5 w-5 text-muted-foreground" />
                     </button>
-                  </CardContent>
-                </Card>
-              ))
+                  </div>
+                );
+              })
             )}
           </section>
-
-          <aside className="space-y-4">
-            <MetricCard
-              label="Fazendas disponiveis"
-              value={memberships.length}
-              icon={<Tractor className="h-5 w-5" />}
-              tone={memberships.length > 0 ? "info" : "warning"}
-            />
-            <MetricCard
-              label="Criacao permitida"
-              value={canCreateFarm === false ? "Nao" : "Sim"}
-              tone={canCreateFarm === false ? "warning" : "success"}
-            />
-          </aside>
         </div>
       </div>
     </div>
@@ -240,3 +292,4 @@ const SelectFazenda = () => {
 };
 
 export default SelectFazenda;
+

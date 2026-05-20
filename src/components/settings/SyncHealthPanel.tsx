@@ -3,7 +3,6 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { Activity } from "lucide-react";
 
 interface HealthMetric {
   id: string;
@@ -11,6 +10,13 @@ interface HealthMetric {
   status: string;
   reason_code: string | null;
   created_at: string;
+}
+
+function getMetricLabel(eventName: string) {
+  if (eventName === "sync_error") return "Falha de envio";
+  if (eventName === "sync_rejected") return "Registro rejeitado";
+  if (eventName === "sync_backlog") return "Envio acumulado";
+  return "Ocorrencia";
 }
 
 export function SyncHealthPanel() {
@@ -45,43 +51,38 @@ export function SyncHealthPanel() {
     loadMetrics();
   }, [activeFarmId]);
 
-  if (!activeFarmId) return null;
+  if (!activeFarmId || (!loading && metrics.length === 0)) return null;
 
   return (
-    <Card className="shadow-none border-destructive/20 bg-destructive/5">
-      <CardHeader className="pb-3">
-        <div className="flex items-center gap-2">
-          <Activity className="h-5 w-5 text-destructive" />
-          <CardTitle className="text-base text-destructive">
-            Falhas recentes
-          </CardTitle>
-        </div>
+    <Card className="border-destructive/20 bg-destructive/5 shadow-none">
+      <CardHeader className="px-4 py-3">
+        <CardTitle className="text-base text-destructive">
+          Envios para revisar
+        </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-4 pt-0">
         {loading ? (
-          <p className="text-sm text-muted-foreground">Carregando...</p>
-        ) : metrics.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Sem falhas recentes.</p>
+          <p className="text-sm text-muted-foreground">Verificando...</p>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-2">
             {metrics.map((m) => (
               <div
                 key={m.id}
-                className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-lg bg-background/60 border border-border/50 text-sm"
+                className="flex flex-col justify-between gap-2 rounded-lg border border-border/50 bg-background/70 p-3 text-sm sm:flex-row sm:items-center"
               >
                 <div className="flex items-center gap-3">
                   <StatusBadge
                     tone={m.status === "error" ? "critical" : "warning"}
                   >
-                    {m.event_name}
+                    {getMetricLabel(m.event_name)}
                   </StatusBadge>
                   {m.reason_code && (
-                    <span className="font-mono text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
+                    <span className="rounded bg-muted px-2 py-1 text-xs text-muted-foreground">
                       {m.reason_code}
                     </span>
                   )}
                 </div>
-                <span className="text-xs text-muted-foreground mt-2 sm:mt-0">
+                <span className="text-xs text-muted-foreground">
                   {new Date(m.created_at).toLocaleString()}
                 </span>
               </div>

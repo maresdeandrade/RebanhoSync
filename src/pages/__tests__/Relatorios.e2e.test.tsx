@@ -205,9 +205,7 @@ describe("Relatorios flow", () => {
       await screen.findByRole("heading", { name: /Fazenda Boa Vista/i }),
     ).toBeInTheDocument();
     expect(screen.getByText(/Resumo operacional/i)).toBeInTheDocument();
-    expect(
-      screen.getByText(/Periodo analisado: 28\/02\/2026 a 29\/03\/2026\./i),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/28\/02\/2026 a 29\/03\/2026/i)).toBeInTheDocument();
     expect(screen.getAllByText(/R\$ 3\.500,00/i).length).toBeGreaterThan(0);
 
     fireEvent.click(screen.getByRole("button", { name: /Exportar CSV/i }));
@@ -241,3 +239,4 @@ describe("Relatorios flow", () => {
     );
   });
 });
+

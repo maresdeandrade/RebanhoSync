@@ -31,7 +31,6 @@ import {
 } from "@/lib/offline/syncQueries";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/useAuth";
-import { BrandMark } from "./BrandMark";
 
 interface TopBarProps {
   onMenuClick?: () => void;
@@ -114,29 +113,18 @@ export const TopBar = ({ onMenuClick }: TopBarProps) => {
   };
 
   return (
-    <header className="sticky top-0 z-40 border-b border-sidebar-border bg-sidebar text-sidebar-foreground shadow-soft">
+    <header className="sticky top-0 z-40 border-b border-border/70 bg-card/95 text-foreground shadow-[0_1px_0_rgba(15,23,42,0.04)] backdrop-blur">
       <div className="flex h-14 items-center justify-between gap-3 px-4 lg:px-6">
         <div className="flex min-w-0 items-center gap-3">
           <Button
             variant="ghost"
             size="icon"
-            className="text-sidebar-foreground/85 hover:bg-white/10 hover:text-sidebar-foreground md:hidden"
+            className="md:hidden"
             onClick={onMenuClick}
             aria-label="Abrir navegacao"
           >
             <Menu className="h-5 w-5" />
           </Button>
-
-          <BrandMark
-            className="max-w-[180px] sm:max-w-[220px]"
-            showSubtitle
-          />
-
-          <div className="hidden min-w-0 lg:block">
-            <p className="truncate text-sm font-medium text-sidebar-foreground/90">
-              Operacao offline-first da fazenda
-            </p>
-          </div>
 
           {activeFarmName ? (
             <DropdownMenu>
@@ -144,10 +132,10 @@ export const TopBar = ({ onMenuClick }: TopBarProps) => {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="min-w-0 max-w-[320px] justify-between rounded-full border-sidebar-border/80 bg-white/10 px-3.5 text-sidebar-foreground hover:bg-white/15 hover:text-sidebar-foreground"
+                  className="min-w-0 max-w-[360px] justify-between rounded-full border-border/80 bg-background px-3.5 text-foreground hover:bg-muted/70"
                 >
                   <span className="flex min-w-0 items-center gap-2">
-                    <Building2 className="h-4 w-4 text-sidebar-foreground/70" />
+                    <Building2 className="h-4 w-4 text-muted-foreground" />
                     <span className="truncate">{activeFarmName}</span>
                   </span>
                 </Button>
@@ -238,9 +226,9 @@ export const TopBar = ({ onMenuClick }: TopBarProps) => {
           ) : null}
 
           <Link to="/perfil" aria-label="Abrir perfil">
-            <Avatar className="h-9 w-9 border border-sidebar-border/80 shadow-soft transition-transform hover:scale-[1.02]">
+            <Avatar className="h-9 w-9 border border-border/80 shadow-soft transition-transform hover:scale-[1.02]">
               <AvatarImage src={userAvatar || undefined} />
-              <AvatarFallback className="bg-white/12 text-sm font-medium text-sidebar-foreground">
+              <AvatarFallback className="bg-primary text-sm font-medium text-primary-foreground">
                 {getInitials(userName)}
               </AvatarFallback>
             </Avatar>

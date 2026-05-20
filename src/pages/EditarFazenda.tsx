@@ -267,8 +267,9 @@ export default function EditarFazenda() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <PageIntro
+        variant="plain"
         eyebrow="Cadastro da fazenda"
         title="Editar dados estruturais"
         meta={
@@ -298,10 +299,10 @@ export default function EditarFazenda() {
 
       <form
         id="farm-profile-form"
-        className="space-y-6"
+        className="space-y-5"
         onSubmit={handleSubmit}
       >
-        <FormSection title="Identificacao e localizacao">
+        <FormSection title="Dados da fazenda">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2 md:col-span-2">
               <Label htmlFor="farm-name">Nome da fazenda</Label>
@@ -456,14 +457,14 @@ export default function EditarFazenda() {
         </FormSection>
 
         <FormSection
-          title="Experiencia do aplicativo"
+          title="Modo de uso"
           actions={
             <StatusBadge tone={essentialModeEnabled ? "info" : "neutral"}>
               {essentialModeEnabled ? "Fluxo enxuto" : "Fluxo completo"}
             </StatusBadge>
           }
         >
-          <div className="rounded-2xl border border-border/70 bg-muted/20 p-4">
+          <div className="rounded-xl border border-border/70 bg-muted/20 p-4">
             <div className="flex items-start justify-between gap-3">
               <div className="space-y-1">
                 <p className="text-sm font-medium">Modo essencial</p>
@@ -478,7 +479,7 @@ export default function EditarFazenda() {
         </FormSection>
 
         <FormSection
-          title="Governanca de eventos"
+          title="Seguranca dos registros"
           actions={
             <StatusBadge tone={canManageRolloutFlags ? "info" : "neutral"}>
               {canManageRolloutFlags ? "Owner pode ajustar" : "Somente leitura"}
@@ -486,10 +487,10 @@ export default function EditarFazenda() {
           }
         >
           <div className="grid gap-4">
-            <div className="rounded-2xl border border-border/70 bg-muted/20 p-4">
+            <div className="rounded-xl border border-border/70 bg-muted/20 p-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="space-y-1">
-                  <p className="text-sm font-medium">Regras estritas</p>
+                  <p className="text-sm font-medium">Validacao forte</p>
                 </div>
                 <Switch
                   checked={strictRulesEnabled}
@@ -504,10 +505,10 @@ export default function EditarFazenda() {
               </div>
             </div>
 
-            <div className="rounded-2xl border border-border/70 bg-background/80 p-4">
+            <div className="rounded-xl border border-border/70 bg-background/80 p-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="space-y-1">
-                  <p className="text-sm font-medium">Anti-teleporte estrito</p>
+                  <p className="text-sm font-medium">Movimentacao consistente</p>
                 </div>
                 <Switch
                   checked={strictRulesEnabled && strictAntiTeleportEnabled}
@@ -532,3 +533,5 @@ export default function EditarFazenda() {
     </div>
   );
 }
+
+

@@ -49,7 +49,7 @@ type RegistrarSanitarioSectionProps = {
 
 export function RegistrarSanitarioSection(props: RegistrarSanitarioSectionProps) {
   return (
-    <div className="space-y-5 rounded-xl border border-border/70 bg-muted/20 p-4">
+    <div className="space-y-4 rounded-xl border border-border/70 bg-muted/20 p-3 sm:p-4">
       <div className="space-y-3">
         <Label>Tipo</Label>
         <div className="flex flex-wrap gap-2">
@@ -127,55 +127,49 @@ export function RegistrarSanitarioSection(props: RegistrarSanitarioSectionProps)
           </select>
 
           {props.selectedProtocolRestrictionsText || !props.selectedProtocolCompatibleWithAll ? (
-            <div className="space-y-1 text-xs text-muted-foreground">
+            <div className="flex flex-wrap gap-2 text-xs">
               {props.selectedProtocolRestrictionsText ? (
-                <p>Regras: {props.selectedProtocolRestrictionsText}</p>
+                <Badge variant="outline">Regras aplicadas</Badge>
               ) : null}
               {props.selectedProtocolCompatibleWithAll === false && props.selectedProtocolPrimaryReason ? (
-                <p className="text-destructive">{props.selectedProtocolPrimaryReason}</p>
+                <Badge variant="destructive">
+                  {props.selectedProtocolPrimaryReason}
+                </Badge>
               ) : null}
             </div>
           ) : null}
 
           {props.allProtocolItemsIneligible ? (
             <p className="text-xs text-muted-foreground">
-              Nenhum item deste protocolo atende todos os animais selecionados. Ajuste a selecao ou
-              troque o protocolo.
+              Nenhum item atende todos os animais.
             </p>
           ) : null}
         </div>
       ) : null}
 
-      <div className="space-y-3 pt-2 border-t border-border/50">
+      <div className="space-y-3 pt-1">
         <Label>Produto</Label>
         <Input
           className={cn(
             "bg-background",
             props.sanitatioProductMissing && "border-destructive focus-visible:ring-destructive/30",
           )}
-          placeholder="Digite o nome ou use uma sugestao do catalogo"
+          placeholder="Produto"
           value={props.produto}
           onChange={(event) => props.onProdutoChange(event.target.value)}
         />
         {props.sanitatioProductMissing ? (
           <p className="text-xs text-destructive">
-            Informe o produto ou selecione um item de protocolo antes de continuar.
+            Informe o produto ou selecione um protocolo.
           </p>
         ) : props.selectedVeterinaryProduct ? (
-          <p className="text-xs text-muted-foreground">
-            Catalogo vinculado: {props.selectedVeterinaryProduct.nome}
-            {props.selectedVeterinaryProduct.categoria
-              ? ` | ${props.selectedVeterinaryProduct.categoria}`
-              : ""}
-          </p>
+          <Badge variant="outline">
+            Catálogo: {props.selectedVeterinaryProduct.nome}
+          </Badge>
         ) : props.produto.trim() ? (
-          <p className="text-xs text-muted-foreground">
-            Texto livre: o evento sera salvo sem vinculo direto ao catalogo.
-          </p>
+          <Badge variant="secondary">Texto livre</Badge>
         ) : props.hasVeterinaryProducts ? (
-          <p className="text-xs text-muted-foreground">
-            Sugestoes do catalogo aparecem abaixo para acelerar o registro.
-          </p>
+          null
         ) : null}
 
         {props.veterinaryProductSuggestions.length > 0 ? (
@@ -203,10 +197,11 @@ export function RegistrarSanitarioSection(props: RegistrarSanitarioSectionProps)
           </div>
         ) : props.isVeterinaryProductsEmpty ? (
           <p className="text-xs text-muted-foreground">
-            Catalogo veterinario indisponivel offline neste aparelho.
+            Catálogo indisponível offline.
           </p>
         ) : null}
       </div>
     </div>
   );
 }
+

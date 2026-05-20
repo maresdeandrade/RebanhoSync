@@ -18,6 +18,7 @@ Prioridade do momento:
 - preservar comportamento atual
 - reduzir friccao de uso nos fluxos centrais
 - aumentar consistencia visual e de feedback
+- manter a refatoracao visual orientada a acao: execucao primeiro, gestao/telemetria depois
 - estabilizar confiabilidade e regressao nos fluxos de producao
 - remover residuos estruturais pontuais sem reabrir monolitos
 
@@ -57,6 +58,7 @@ Regra de regressao semantica:
 - Módulo reprodutivo completo: cobertura/IA → diagnóstico → parto → pós-parto → cria inicial.
 - Ficha do animal com vínculos mãe/cria, curva de peso e timeline de eventos.
 - Lista de animais agrupando matriz e cria com badge visual por estágio de vida.
+- Refatoração visual SLC aplicada em duas passagens: Home tática, Registrar orientado por intenção, Animais card-first, Lotes/Pastos/Reprodução/Relatórios mais objetivos, seleção de fazenda contextual, filtros compactos e status técnicos rebaixados.
 - Transições do rebanho com histórico consolidado.
 - Dashboard reprodutivo dedicado e relatórios operacionais com exportação.
 - Telemetria de piloto com buffer local em `metrics_events` e flush remoto periódico.
@@ -116,11 +118,12 @@ Frentes prioritarias atuais:
 
 - carencia/rastreabilidade sanitaria como frente pequena e separada
 - residuos estruturais locais de `Registrar`/`Agenda` sem reabrir fronteiras ja fechadas
+- ajustes incrementais de UX operacional agora devem partir do padrão visual SLC ja aplicado, com validacao em dados reais de beta interno
 
 A ordem atual é:
 1. manter guardrails documentais locais e validacao minima continua
 2. tratar carencia/rastreabilidade sem misturar com estoque/SISBOV/fiscal
-3. consolidar UX operacional de fluxos centrais para reduzir carga cognitiva
+3. validar e lapidar a UX operacional dos fluxos centrais ja compactados
 4. estabilizar cobertura de regressao dos fluxos criticos
 
 ---

@@ -1,0 +1,323 @@
+# Análise Sanitária — Agenda, Clínica e Estoque
+
+> Status: proposta revisada contra o estado real do repositório em 2026-05-20.  
+> Escopo desta revisão: documentação/proposta. Nenhuma mudança de código, migration, seed, RLS ou RPC foi feita.  
+> Capability principal: `sanitario.agenda_clinica_estoque`. Trilhos relacionados: `sanitario.catalogo_regulatorio`, `sanitario.registro`, `agenda.recalculo`, `infra.docs`.
+
+## 1. Veredito executivo
+
+A direção central da proposta deve ser mantida: o bloco amplo chamado de "protocolos sanitários" precisa continuar separado em camadas distintas para evitar que agenda, suspeita clínica, checklist regulatório, tratamento e estoque sejam tratados como a mesma coisa.
+
+O ajuste necessário é de escopo e sequência. O repositório já tem uma agenda sanitária madura, com SQL/Supabase liderando materialização/recompute, `agenda_itens` como intenção futura, `eventos`/`eventos_sanitario` como fato executado e protocolos da fazenda em `protocolos_sanitarios`/`protocolos_sanitarios_itens`. Portanto, a evolução não deve começar por uma reestruturação ampla de banco e UI. Deve começar por correção conceitual, guardrails, leitura compartilhada e somente depois avançar para casos clínicos e estoque.
+
+## 2. O que manter
+
+| Direção | Decisão |
+|---|---|
+| Separar protocolos operacionais, casos sanitários, protocolos clínicos e estoque | Manter. Essa é a correção conceitual mais importante. |
+| Agenda como intenção futura | Manter e reforçar. Agenda não prova execução. |
+| Evento sanitário como fato executado | Manter. Registro real vive em `eventos` + `eventos_sanitario`. |
+| Doença notificável como fluxo de suspeita/caso, não rotina periódica | Manter. Não deve virar agenda recorrente. |
+| TPB como protocolo clínico de apoio | Manter. No código atual, TPB já aparece com `gera_agenda=false` e `calendario_base.mode = clinical_protocol`. |
+| Estoque só baixa por fato executado | Manter. Agenda pode estimar demanda, mas saldo real só muda por movimentação vinculada a evento confirmado. |
+| Terapia de Vaca Seca como domínio operacional relevante | Manter como objetivo, mas corrigir a formulação: hoje ela ainda não está efetivamente consolidada como agenda operacional automática. |
+
+## 3. O que precisa ser otimizado
+
+### 3.1. Evitar big bang
+
+A proposta original colocava seed, migrations, nova modelagem de protocolos, agenda, UI, casos clínicos e estoque na mesma cadeia de refatoração. Isso é grande demais para a fase atual do RebanhoSync.
+
+Direção corrigida:
+- tratar uma capacidade principal por vez;
+- preservar a agenda sanitária atual;
+- adicionar estruturas novas de forma expansiva;
+- validar cada etapa antes de mudar origem de agenda ou UI crítica;
+- não alterar `supabase/seed.sql` sem tarefa explícita.
+
+### 3.2. Usar a arquitetura atual como base
+
+Não criar uma árvore nova como `src/features/sanitaryProtocols` como primeiro passo. O estado real já tem fronteiras relevantes:
+
+| Responsabilidade | Local atual preferencial |
+|---|---|
+| Tipos, payload, preflight e pacote sanitário | `src/lib/sanitario/models/**` |
+| Calendário, dedup, scheduler e regime | `src/lib/sanitario/engine/**` |
+| Catálogo base/oficial e produtos | `src/lib/sanitario/catalog/**` |
+| Compliance, alerts, read model regulatório | `src/lib/sanitario/compliance/**` |
+| RPC/fallback e serviço sanitário | `src/lib/sanitario/infrastructure/**` |
+| Customização por fazenda | `src/lib/sanitario/customization/**` |
+| UI de protocolos | `src/components/sanitario/**` e `src/pages/ProtocolosSanitarios/**` |
+| Fluxo operacional | `src/pages/Registrar/**` e `src/pages/Agenda/**` |
+
+Novos módulos de caso clínico e estoque podem nascer depois, mas devem nascer integrados a esses boundaries, não como substitutos imediatos.
+
+### 3.3. Corrigir a tese "agenda depende de biblioteca TypeScript solta"
+
+Essa frase não deve guiar a implementação. O estado atual documentado é:
+- SQL/Supabase lidera a materialização e recompute da agenda sanitária;
+- TypeScript mantém contratos, adapters, suporte offline/local, testes de paridade e golden tests;
+- dedup sanitário existe em TS/SQL;
+- `sanitario_complete_agenda_with_event` conclui agenda sanitária vinculando evento.
+
+Formulação corrigida: a agenda sanitária deve continuar tendo SQL como motor líder, TS como camada de contrato/paridade e UI sem regra de negócio forte.
+
+### 3.4. Separar catálogo oficial, overlay e rotina operacional
+
+Itens como biossegurança, GTA/e-GTA, feed-ban, quarentena, água/limpeza, doença notificável e protocolo operacional não devem competir na mesma lista visual como se todos fossem "protocolo agendável".
+
+Direção corrigida:
+- catálogo oficial/global: conteúdo regulatório ou técnico mínimo;
+- overlay/config da fazenda: `fazenda_sanidade_config` e runtime de compliance;
+- protocolo operacional da fazenda: regra que pode materializar agenda;
+- caso sanitário: acompanhamento longitudinal por animal;
+- protocolo clínico: roteiro de apoio, sem evento automático.
+
+## 4. Gaps e falhas identificadas
+
+| Gap/falha | Impacto | Correção proposta |
+|---|---|---|
+| Mistura visual e conceitual entre protocolo, checklist, alerta e tratamento | Usuário interpreta itens não agendáveis como rotina operacional | Criar classificação explícita por tipo de item e esconder/rebaixar itens não agendáveis nas telas de agenda operacional. |
+| Síndrome vesicular aparece como item próprio além do catálogo de notificáveis | Redundância e dupla entrada para suspeita notificável | Tratar como doença dentro de `catalogo_doencas_notificaveis`, mantendo ação única de registrar suspeita notificável. |
+| Biossegurança aparece dentro do mesmo universo de protocolos | Checklist/compliance parece rotina sanitária animal | Reposicionar como compliance/checklist operacional, sem agenda animal automática. |
+| TPB é descrito como algo a migrar, mas o código já o marca como clínico sem agenda | A proposta cria trabalho duplicado | Trocar "migrar TPB" por "proteger TPB contra regressão para agenda". |
+| Terapia de Vaca Seca é proposta como agendável, mas no estado atual ainda está como roteiro clínico sem agenda | Gap funcional real | Abrir recorte próprio para definir elegibilidade, fonte de data/âncora e regra de materialização antes de torná-la agenda. |
+| Estoque é colocado cedo demais no plano | Alto acoplamento com evento, produto, lote, validade, offline e sync | Primeiro estabilizar consumo conceitual por evento; implementar estoque MVP depois de casos/protocolos clínicos mínimos. |
+| Casos sanitários não existem como fonte consolidada na baseline ativa | Eventos clínicos ficam sem contexto longitudinal | Propor tabela/fluxo de casos apenas em task separada com migration/RLS/offline auditados. |
+| Plano original altera seed/migrations cedo demais | Risco contra regra do projeto e baseline Supabase | Transformar seed/migration em etapas futuras explícitas, não ação desta revisão. |
+
+## 5. Contrato conceitual revisado
+
+| Camada | Fonte/estrutura atual ou futura | Regra |
+|---|---|---|
+| Protocolo operacional da fazenda | `protocolos_sanitarios` + `protocolos_sanitarios_itens` | Regra configurada; pode gerar agenda quando ativo, elegível e `gera_agenda=true`. |
+| Catálogo oficial/técnico | `catalogo_protocolos_oficiais`, `catalogo_protocolos_oficiais_itens`, `catalogo_doencas_notificaveis`, `produtos_veterinarios` | Base de referência; não prova execução e não deve virar configuração tenant-scoped por acidente. |
+| Agenda | `agenda_itens` / `state_agenda_itens` | Intenção futura mutável; não é histórico. |
+| Evento sanitário | `eventos` + `eventos_sanitario` | Fato executado; base para histórico e consumo real. |
+| Caso sanitário | Futuro `casos_sanitarios` ou equivalente | Contexto longitudinal por animal; não substitui evento. |
+| Protocolo clínico | Futuro catálogo/modelo clínico ou extensão bem tipada da biblioteca atual | Roteiro de apoio; não gera agenda nem evento sozinho. |
+| Estoque | Futuro módulo de insumos/lotes/movimentações | Entrada/saída física/econômica; consumo real nasce de evento confirmado ou movimentação explícita. |
+
+## 6. Reclassificação corrigida dos itens citados
+
+| Item atual/proposto | Destino correto | Ação recomendada |
+|---|---|---|
+| Brucelose PNCEBT | Protocolo operacional/regulatório agendável sob regra validada | Manter e proteger gates de elegibilidade, dedup e conclusão factual. |
+| Raiva dos herbívoros | Protocolo operacional condicionado a risco médio/alto e ativação explícita | Manter sem vacinação universal. |
+| Clostridioses, vermifugação, carrapato | Protocolos técnicos recomendados ativáveis pela fazenda | Manter como agenda somente após ativação/configuração explícita. |
+| Doenças notificáveis - registrar suspeita | Ação única de abertura de suspeita/caso | Manter como entrada operacional, sem agenda periódica. |
+| Síndrome vesicular | Doença dentro do catálogo de notificáveis | Remover como entrada visual independente quando houver tarefa de UI/catálogo. |
+| Biossegurança operacional | Compliance/checklist operacional | Não exibir como protocolo animal agendável. |
+| GTA/e-GTA pre-check | Checklist/documental de trânsito | Não modelar como emissão fiscal; manter como pre-check/bloqueio contextual quando validado. |
+| TPB | Protocolo clínico de apoio | Proteger `gera_agenda=false`; registrar apenas condutas executadas. |
+| Mastite clínica | Caso sanitário individual + protocolo clínico de apoio | Implementar futuramente no trilho de casos clínicos. |
+| Terapia de Vaca Seca | Candidata a protocolo operacional por elegibilidade reprodutiva/lactação | Não tornar agendável sem definir âncora, fonte de elegibilidade e vínculo com evento. |
+
+## 7. Fluxos alvo corrigidos
+
+### 7.1. Protocolo operacional agendável
+
+```text
+Catálogo/template disponível
+-> fazenda ativa/configura protocolo
+-> motor SQL/RPC materializa agenda elegível
+-> usuário executa ou registra pelo fluxo correto
+-> evento sanitário é criado
+-> agenda vinculada é concluída
+-> recompute/dedup reconcilia próximas pendências
+```
+
+Regra: protocolo ativo não é execução. Agenda aberta não é execução. Execução exige evento.
+
+### 7.2. Suspeita notificável
+
+```text
+Usuário escolhe "Registrar suspeita notificável"
+-> seleciona um animal
+-> escolhe doença do catálogo
+-> registra sinais/observações
+-> sistema cria evento de alerta/suspeita e, futuramente, caso sanitário
+-> read model/compliance sinaliza bloqueios quando validado
+```
+
+Regra: suspeita notificável não deve virar agenda periódica. O caso futuro agrupa acompanhamento; o evento continua comprovando cada fato registrado.
+
+### 7.3. Manejo clínico com TPB
+
+```text
+Usuário identifica suspeita clínica em um animal
+-> abre caso clínico ou registra evento clínico no fluxo atual
+-> consulta roteiro TPB
+-> registra produto/procedimento efetivamente aplicado
+-> evento sanitário é salvo
+-> estoque futuro baixa apenas o item realmente registrado
+```
+
+Regra: protocolo clínico não prescreve automaticamente, não cria evento sozinho e não baixa estoque sem confirmação.
+
+### 7.4. Terapia de Vaca Seca
+
+```text
+Read model futuro identifica fêmea elegível para secagem
+-> protocolo operacional ativo avalia âncora e janela
+-> agenda é materializada se a regra estiver completa
+-> usuário executa procedimento
+-> evento sanitário/produtivo é registrado
+-> estoque futuro baixa antibiótico/selante confirmado
+```
+
+Regra: antes de implementar agenda, a tarefa precisa definir fonte de elegibilidade, âncora temporal, relação com reprodução/lactação e dedup.
+
+## 8. Plano incremental revisado
+
+### Fase 0 — Fechar contrato documental
+
+Objetivo: estabilizar a taxonomia sem código.
+
+Entregas:
+- matriz "manter / otimizar / gap" deste documento;
+- definição explícita de itens agendáveis, não agendáveis, clínicos e compliance;
+- lista do que exige task separada: seed, migrations, UI e estoque.
+
+Critério de aceite:
+- nenhuma mudança funcional;
+- proposta alinhada a Two Rails, SQL como motor líder e offline-first.
+
+### Fase 1 — Guardrail de classificação sanitária
+
+Objetivo: impedir regressões conceituais antes de mexer em banco.
+
+Entregas futuras:
+- testes ou helpers que classifiquem itens como `operational_protocol`, `clinical_protocol`, `notifiable_suspicion`, `compliance_check` ou `inventory_signal`;
+- validação de que `clinical_protocol` e `notifiable_suspicion` não geram agenda;
+- validação de que TPB permanece sem agenda automática.
+
+Sem migration nesta fase.
+
+### Fase 2 — UX/read model de separação visual
+
+Objetivo: reduzir confusão sem alterar o motor de agenda.
+
+Entregas futuras:
+- Protocolos da Fazenda mostra rotinas agendáveis e ativáveis;
+- suspeitas/notificáveis aparecem como ação de registro, não como protocolo recorrente;
+- compliance/checklists ficam em seção própria ou contexto regulatório;
+- itens clínicos ficam no fluxo de manejo clínico/caso, não na agenda.
+
+Critério de aceite:
+- sem regra forte na UI;
+- UI consome classificação central;
+- termos operacionais respeitam `Registrar`, `Executar`, `Encerrar`, `Cancelar` e `Aplicar protocolo`.
+
+### Fase 3 — Casos sanitários mínimos
+
+Objetivo: criar contexto longitudinal por animal.
+
+Entregas futuras:
+- abrir caso notificável;
+- abrir caso clínico;
+- listar casos no animal;
+- vincular eventos sanitários ao caso;
+- status mínimo: `aberto`, `em_acompanhamento`, `encerrado`, `descartado`.
+
+Requisitos:
+- migration própria;
+- RLS por `fazenda_id`;
+- FKs compostas;
+- compatibilidade offline/sync;
+- eventos continuam append-only.
+
+### Fase 4 — Protocolos clínicos de apoio
+
+Objetivo: estruturar roteiros clínicos sem automação indevida.
+
+Entregas futuras:
+- catálogo/modelo clínico para TPB e mastite;
+- visualização contextual dentro do caso;
+- ação explícita para registrar conduta executada;
+- nenhum evento ou estoque gerado por simples visualização do roteiro.
+
+### Fase 5 — Terapia de Vaca Seca como recorte próprio
+
+Objetivo: decidir se e como vira protocolo operacional agendável.
+
+Pré-condições:
+- fonte de elegibilidade validada;
+- âncora temporal definida;
+- relação com reprodução/lactação definida;
+- dedup e recompute definidos;
+- teste contra agenda zumbi.
+
+Critério de aceite:
+- agenda só nasce quando a elegibilidade é explicável;
+- evento de secagem comprova execução;
+- estoque futuro consome apenas por evento.
+
+### Fase 6 — Estoque MVP
+
+Objetivo: controlar insumos sem acoplamento precoce.
+
+Escopo mínimo futuro:
+- catálogo de insumos;
+- apresentações;
+- lotes e validade;
+- movimentações de entrada/ajuste/saída;
+- consumo por evento sanitário confirmado;
+- demanda futura estimada por agenda válida.
+
+Requisitos:
+- não fazer estoque fiscal/contábil avançado;
+- não baixar saldo por agenda;
+- não baixar saldo por protocolo clínico visualizado;
+- offline/sync e rollback auditados.
+
+## 9. Ordem recomendada de execução
+
+| Ordem | Bloco | Tipo de mudança |
+|---:|---|---|
+| 1 | Guardrail documental e classificação sanitária | docs/testes puros |
+| 2 | Separação visual entre agendável, clínico, notificável e compliance | UI + helpers centrais |
+| 3 | Auditoria específica de seed/catálogo para itens redundantes | seed/catálogo, tarefa explícita |
+| 4 | Casos sanitários mínimos | migration + RLS + offline |
+| 5 | Protocolos clínicos de apoio | domínio + UI de caso |
+| 6 | Terapia de Vaca Seca como recorte agendável | agenda/recompute |
+| 7 | Estoque MVP | domínio transversal + sync |
+
+## 10. Fora do escopo desta proposta
+
+- prontuário veterinário completo;
+- prescrição automática;
+- diagnóstico automatizado;
+- estoque contábil/fiscal avançado;
+- emissão GTA/e-GTA;
+- carência ativa operacional universal;
+- pronto para venda/abate;
+- SISBOV/fiscal completo;
+- IA gerando agenda ou concluindo execução;
+- mudança em migrations, seed, RLS ou RPC sem task explícita.
+
+## 11. Critérios de aceite para qualquer implementação futura
+
+- Preservar `fazenda_id` como fronteira de isolamento.
+- Preservar Two Rails: agenda é intenção, evento é fato.
+- Preservar `1 acao -> 1 createGesture`.
+- Não colocar regra de negócio forte em componente React.
+- Não expor `service_role` no client.
+- Não transformar protocolo clínico em prescrição.
+- Não gerar evento por simples agenda, roteiro, checklist ou protocolo ativo.
+- Não baixar estoque sem evento/movimentação confirmada.
+- Não tratar compliance sanitário como bloqueio universal sem read model/guard validado.
+- Rodar validações focadas do hotspot tocado, incluindo `scripts/codex/validate.ps1` quando a área for crítica.
+
+## 12. Decisão final
+
+A proposta deve seguir adiante, mas rebaixada de "reestruturação ampla imediata" para "plano incremental de consolidação sanitária".
+
+O núcleo a preservar é:
+- protocolos operacionais geram agenda quando elegíveis;
+- casos sanitários organizam contexto longitudinal por animal;
+- protocolos clínicos orientam, mas não executam;
+- estoque registra insumo real e só baixa por fato/movimentação;
+- catálogo oficial, overlay regulatório e protocolo da fazenda continuam separados.
+
+O próximo passo mais seguro não é migration nem seed. É criar a classificação central dos itens sanitários e usá-la para impedir que clínico, notificável e compliance apareçam como agenda operacional comum.

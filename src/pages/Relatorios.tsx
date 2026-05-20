@@ -30,7 +30,9 @@ import { formatWeight } from "@/lib/format/weight";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageIntro } from "@/components/ui/page-intro";
 import { Progress } from "@/components/ui/progress";
+import { StatusBadge } from "@/components/ui/status-badge";
 import {
   Select,
   SelectContent,
@@ -246,19 +248,24 @@ const Relatorios = () => {
 
   if (!activeFarmId) {
     return (
-      <div className="space-y-6">
-        <Card className="border-dashed">
-          <CardHeader>
-            <CardTitle>Selecione uma fazenda para gerar o resumo</CardTitle>
-          </CardHeader>
-        </Card>
+      <div className="space-y-5">
+        <PageIntro
+          variant="plain"
+          eyebrow="Resumo"
+          title="Selecione uma fazenda"
+          actions={
+            <Button asChild>
+              <Link to="/select-fazenda">Escolher fazenda</Link>
+            </Button>
+          }
+        />
       </div>
     );
   }
 
   if (!report) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-5">
         <Card>
           <CardHeader>
             <CardTitle>Carregando resumo operacional</CardTitle>
@@ -269,25 +276,19 @@ const Relatorios = () => {
   }
 
   return (
-    <div className="space-y-6">
-      <section className="flex flex-col gap-4 rounded-2xl border bg-card p-6 shadow-sm lg:flex-row lg:items-end lg:justify-between">
-        <div className="space-y-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge variant="secondary">Resumo operacional</Badge>
-            <Badge variant="outline">{report.range.label}</Badge>
-          </div>
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">
-              {farm?.nome ?? "Sua fazenda"}
-            </h1>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            Periodo analisado: {formatDate(report.range.from)} a{" "}
-            {formatDate(report.range.to)}.
-          </p>
-        </div>
-
-        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+    <div className="space-y-5">
+      <PageIntro
+       variant="plain"
+        title="Relatorios"
+        description="Cada relatorio indica sua fonte primaria: eventos, estado atual ou agenda."
+        meta={
+          <>
+            <StatusBadge tone="neutral">{farm?.nome ?? "Sua fazenda"}</StatusBadge>
+            <StatusBadge tone="neutral">{report.range.label}</StatusBadge>
+          </>
+        }
+        actions={
+          <>
           <Select
             value={preset}
             onValueChange={(value) => setPreset(value as ReportPreset)}
@@ -311,54 +312,136 @@ const Relatorios = () => {
             <Printer className="h-4 w-4" />
             Imprimir
           </Button>
+          </>
+        }
+      />
+
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {[
+          {
+            title: "Relatorio Sanitario",
+            description: "Aplicacoes no periodo e cobertura por categoria.",
+            source: "Fonte: eventos sanitarios",
+            icon: FileText,
+          },
+          {
+            title: "Pesagem & GMD",
+            description: "Ganho medio diario por lote e categoria.",
+            source: "Fonte: eventos de pesagem",
+            icon: Scale,
+          },
+          {
+            title: "Movimentacao",
+            description: "Entradas, saidas e transferencias de pasto.",
+            source: "Fonte: eventos + estado atual",
+            icon: Beef,
+          },
+          {
+            title: "Reproducao",
+            description: "Estacao de monta, prenhez, partos e pos-parto.",
+            source: "Fonte: eventos reprodutivos",
+            icon: CalendarClock,
+          },
+          {
+            title: "Financeiro",
+            description: "Receita, despesa e saldo por periodo.",
+            source: "Fonte: lancamentos financeiros",
+            icon: Receipt,
+          },
+          {
+            title: "Visao operacional",
+            description: "Pendencias fechadas, atrasos e produtividade.",
+            source: "Fonte: agenda + eventos",
+            icon: RefreshCw,
+          },
+        ].map((item) => (
+          <Card key={item.title} className="shadow-none">
+            <CardContent className="flex min-h-[190px] flex-col gap-4 p-5">
+              <div className="flex items-start justify-between gap-3">
+                <div className="grid h-11 w-11 place-items-center rounded-xl bg-success-muted text-success">
+                  <item.icon className="h-5 w-5" />
+                </div>
+                <StatusBadge tone="neutral">{item.source}</StatusBadge>
+              </div>
+              <div className="space-y-1">
+                <h2 className="text-lg font-semibold">{item.title}</h2>
+                <p className="text-sm leading-6 text-muted-foreground">
+                  {item.description}
+                </p>
+              </div>
+              <div className="mt-auto flex flex-wrap gap-2">
+                <Button size="sm" variant="outline">
+                  Visualizar
+                </Button>
+                <Button size="sm" variant="ghost" onClick={handleExportCsv}>
+                  <Download className="h-4 w-4" />
+                  CSV
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </section>
+
+      <section>
+        <div className="mb-3 flex flex-wrap items-end justify-between gap-2">
+          <div>
+            <p className="text-xs font-semibold uppercase text-muted-foreground">
+              Resumo operacional
+            </p>
+            <h2 className="text-xl font-semibold">{farm?.nome ?? "Sua fazenda"}</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {formatDate(report.range.from)} a {formatDate(report.range.to)}
+            </p>
+          </div>
         </div>
       </section>
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
+        <Card className="shadow-none">
+          <CardContent className="space-y-3 p-4">
+            <p className="flex items-center justify-between text-sm font-medium text-muted-foreground">
               Rebanho ativo
-            </CardTitle>
-            <Beef className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
+              <Beef className="h-4 w-4" />
+            </p>
             <div className="text-3xl font-bold">
               {report.summary.animaisAtivos}
             </div>
-            <p className="text-sm text-muted-foreground">
-              {report.summary.lotesAtivos} lote(s) e{" "}
-              {report.summary.pastosAtivos} pasto(s) ativos.
-            </p>
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="outline">{report.summary.lotesAtivos} lotes</Badge>
+              <Badge variant="outline">
+                {report.summary.pastosAtivos} pastos
+              </Badge>
+            </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
+        <Card className="shadow-none">
+          <CardContent className="space-y-3 p-4">
+            <p className="flex items-center justify-between text-sm font-medium text-muted-foreground">
               Agenda aberta
-            </CardTitle>
-            <CalendarClock className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
+              <CalendarClock className="h-4 w-4" />
+            </p>
             <div className="text-3xl font-bold">
               {report.summary.agendaAberta}
             </div>
-            <p className="text-sm text-muted-foreground">
-              {report.summary.agendaHoje} para hoje e{" "}
-              {report.summary.agendaAtrasada} em atraso.
-            </p>
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="outline">{report.summary.agendaHoje} hoje</Badge>
+              {report.summary.agendaAtrasada > 0 ? (
+                <Badge variant="destructive">
+                  {report.summary.agendaAtrasada} atrasadas
+                </Badge>
+              ) : null}
+            </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
+        <Card className="shadow-none">
+          <CardContent className="space-y-3 p-4">
+            <p className="flex items-center justify-between text-sm font-medium text-muted-foreground">
               Saldo no periodo
-            </CardTitle>
-            <Receipt className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
+              <Receipt className="h-4 w-4" />
+            </p>
             <div
               className={`text-3xl font-bold ${
                 report.financeiro.saldo >= 0
@@ -368,37 +451,38 @@ const Relatorios = () => {
             >
               {money.format(report.financeiro.saldo)}
             </div>
-            <p className="text-sm text-muted-foreground">
-              {report.financeiro.transacoes} transacao(oes) financeiras no
-              periodo.
-            </p>
+            <div className="mt-3">
+              <Badge variant="outline">
+                {report.financeiro.transacoes} transacoes
+              </Badge>
+            </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
+        <Card className="shadow-none">
+          <CardContent className="space-y-3 p-4">
+            <p className="flex items-center justify-between text-sm font-medium text-muted-foreground">
               Envio
-            </CardTitle>
-            <RefreshCw className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
+              <RefreshCw className="h-4 w-4" />
+            </p>
             <div className="text-3xl font-bold">
               {report.summary.pendenciasSync}
             </div>
-            <p className="text-sm text-muted-foreground">
-              {report.summary.errosSync > 0
-                ? `${report.summary.errosSync} erro(s) para revisar.`
-                : "Sem erros pendentes na fila."}
-            </p>
+            {report.summary.errosSync > 0 ? (
+              <div className="mt-3">
+                <Badge variant="destructive">
+                  {report.summary.errosSync} para revisar
+                </Badge>
+              </div>
+            ) : null}
           </CardContent>
         </Card>
       </section>
 
       <section className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-xl">Manejos no periodo</CardTitle>
+        <Card className="shadow-none">
+          <CardHeader className="px-4 pb-2 pt-4 sm:px-5">
+            <CardTitle className="text-base">Manejos no periodo</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {report.manejoByDomain.map((item) => (
@@ -410,24 +494,24 @@ const Relatorios = () => {
                 <Progress value={(item.value / maxDomainCount) * 100} />
               </div>
             ))}
-            <div className="rounded-xl border border-dashed p-4 text-sm text-muted-foreground">
+            <div className="rounded-xl border border-dashed border-border/70 bg-muted/20 p-4 text-sm text-muted-foreground">
               {report.summary.eventosPeriodo} evento(s) registrados no total.
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-xl">Financeiro e pesagem</CardTitle>
+        <Card className="shadow-none">
+          <CardHeader className="px-4 pb-2 pt-4 sm:px-5">
+            <CardTitle className="text-base">Financeiro e pesagem</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-3 sm:grid-cols-2">
-              <div className="rounded-xl border p-4">
+              <div className="rounded-xl border border-border/70 bg-muted/20 p-4">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <TrendingUp className="h-4 w-4 text-emerald-600" />
                   Entradas
                 </div>
-                <p className="mt-2 text-2xl font-bold">
+                <p className="mt-2 text-2xl font-semibold">
                   {money.format(report.financeiro.entradas)}
                 </p>
                 <p className="text-sm text-muted-foreground">
@@ -435,12 +519,12 @@ const Relatorios = () => {
                 </p>
               </div>
 
-              <div className="rounded-xl border p-4">
+              <div className="rounded-xl border border-border/70 bg-muted/20 p-4">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <TrendingDown className="h-4 w-4 text-red-600" />
                   Saidas
                 </div>
-                <p className="mt-2 text-2xl font-bold">
+                <p className="mt-2 text-2xl font-semibold">
                   {money.format(report.financeiro.saidas)}
                 </p>
                 <p className="text-sm text-muted-foreground">
@@ -449,12 +533,12 @@ const Relatorios = () => {
               </div>
             </div>
 
-            <div className="rounded-xl border p-4">
+            <div className="rounded-xl border border-border/70 bg-muted/20 p-4">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Scale className="h-4 w-4" />
                 Pesagem no periodo
               </div>
-              <p className="mt-2 text-2xl font-bold">
+              <p className="mt-2 text-2xl font-semibold">
                 {report.pesagem.pesoMedioKg == null
                   ? "Sem dados"
                   : formatWeight(
@@ -475,9 +559,9 @@ const Relatorios = () => {
 
       {report.regulatoryCompliance.openCount > 0 ? (
         <section>
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-xl">
+          <Card className="shadow-none">
+            <CardHeader className="px-4 pb-2 pt-4 sm:px-5">
+              <CardTitle className="text-base">
                 Conformidade regulatoria
               </CardTitle>
             </CardHeader>
@@ -506,27 +590,27 @@ const Relatorios = () => {
               </div>
 
               <div className="grid gap-3 sm:grid-cols-3">
-                <div className="rounded-xl border p-4">
+                <div className="rounded-xl border border-border/70 bg-muted/20 p-4">
                   <p className="text-sm text-muted-foreground">
                     Pendencias abertas
                   </p>
-                  <p className="mt-2 text-2xl font-bold">
+                  <p className="mt-2 text-2xl font-semibold">
                     {report.regulatoryCompliance.openCount}
                   </p>
                 </div>
-                <div className="rounded-xl border p-4">
+                <div className="rounded-xl border border-border/70 bg-muted/20 p-4">
                   <p className="text-sm text-muted-foreground">
                     Bloqueios ativos
                   </p>
-                  <p className="mt-2 text-2xl font-bold">
+                  <p className="mt-2 text-2xl font-semibold">
                     {report.regulatoryCompliance.blockingCount}
                   </p>
                 </div>
-                <div className="rounded-xl border p-4">
+                <div className="rounded-xl border border-border/70 bg-muted/20 p-4">
                   <p className="text-sm text-muted-foreground">
                     Venda/transito
                   </p>
-                  <p className="mt-2 text-2xl font-bold">
+                  <p className="mt-2 text-2xl font-semibold">
                     {report.regulatoryCompliance.saleBlockers}
                   </p>
                 </div>
@@ -534,7 +618,10 @@ const Relatorios = () => {
 
               <div className="space-y-3">
                 {report.regulatoryCompliance.topItems.map((item) => (
-                  <div key={item.key} className="rounded-xl border p-4">
+                  <div
+                    key={item.key}
+                    className="rounded-xl border border-border/70 bg-muted/20 p-4"
+                  >
                     <div className="flex flex-wrap items-center gap-2">
                       <p className="font-medium">{item.label}</p>
                       <Badge
@@ -549,9 +636,6 @@ const Relatorios = () => {
                         {item.statusLabel}
                       </Badge>
                     </div>
-                    <p className="mt-2 text-sm text-muted-foreground">
-                      {item.detail}
-                    </p>
                     <p className="mt-1 text-sm text-muted-foreground">
                       {item.recommendation}
                     </p>
@@ -567,7 +651,10 @@ const Relatorios = () => {
                     </h3>
                   </div>
                   {report.regulatoryCompliance.subareas.map((item) => (
-                    <div key={item.key} className="rounded-xl border p-4">
+                    <div
+                      key={item.key}
+                      className="rounded-xl border border-border/70 bg-muted/20 p-4"
+                    >
                       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                         <div className="space-y-2">
                           <div className="flex flex-wrap items-center gap-2">
@@ -629,7 +716,10 @@ const Relatorios = () => {
                   </div>
                   <div className="grid gap-3 sm:grid-cols-3">
                     {report.regulatoryCompliance.impacts.map((item) => (
-                      <div key={item.key} className="rounded-xl border p-4">
+                      <div
+                        key={item.key}
+                        className="rounded-xl border border-border/70 bg-muted/20 p-4"
+                      >
                         <div className="space-y-2">
                           <div className="flex flex-wrap items-center gap-2">
                             <p className="font-medium">{item.label}</p>
@@ -683,20 +773,20 @@ const Relatorios = () => {
       ) : null}
 
       <section className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-xl">Agenda que exige atencao</CardTitle>
+        <Card className="shadow-none">
+          <CardHeader className="px-4 pb-2 pt-4 sm:px-5">
+            <CardTitle className="text-base">Agenda que exige atencao</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             {report.agendaAttention.length === 0 ? (
-              <div className="rounded-xl border border-dashed p-4 text-sm text-muted-foreground">
+              <div className="rounded-xl border border-dashed border-border/70 bg-muted/20 p-4 text-sm text-muted-foreground">
                 Nenhuma tarefa aberta na agenda.
               </div>
             ) : (
               report.agendaAttention.map((item) => (
                 <div
                   key={item.id}
-                  className="flex flex-col gap-3 rounded-xl border p-4 sm:flex-row sm:items-center sm:justify-between"
+                  className="flex flex-col gap-3 rounded-xl border border-border/70 bg-muted/20 p-4 sm:flex-row sm:items-center sm:justify-between"
                 >
                   <div className="space-y-1">
                     <div className="flex flex-wrap items-center gap-2">
@@ -735,19 +825,6 @@ const Relatorios = () => {
                     <p className="text-sm text-muted-foreground">
                       {item.contexto}
                     </p>
-                    {item.scheduleLabel ? (
-                      <p className="text-sm text-muted-foreground">
-                        Periodicidade: {item.scheduleLabel}
-                      </p>
-                    ) : null}
-                    {item.scheduleModeLabel ? (
-                      <p className="text-sm text-muted-foreground">
-                        Tipo de agenda: {item.scheduleModeLabel}
-                        {item.scheduleAnchorLabel
-                          ? ` | Ancora: ${item.scheduleAnchorLabel}`
-                          : ""}
-                      </p>
-                    ) : null}
                   </div>
                   <span className="text-sm text-muted-foreground">
                     {formatDate(item.data)}
@@ -758,20 +835,20 @@ const Relatorios = () => {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-xl">Eventos recentes</CardTitle>
+        <Card className="shadow-none">
+          <CardHeader className="px-4 pb-2 pt-4 sm:px-5">
+            <CardTitle className="text-base">Eventos recentes</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             {report.recentEvents.length === 0 ? (
-              <div className="rounded-xl border border-dashed p-4 text-sm text-muted-foreground">
+              <div className="rounded-xl border border-dashed border-border/70 bg-muted/20 p-4 text-sm text-muted-foreground">
                 Nenhum evento encontrado para o periodo selecionado.
               </div>
             ) : (
               report.recentEvents.map((item) => (
                 <div
                   key={item.id}
-                  className="flex items-start justify-between gap-3 rounded-xl border p-4"
+                  className="flex items-start justify-between gap-3 rounded-xl border border-border/70 bg-muted/20 p-4"
                 >
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
@@ -796,3 +873,5 @@ const Relatorios = () => {
 };
 
 export default Relatorios;
+
+

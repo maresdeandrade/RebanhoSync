@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 
 import { EmptyState } from "@/components/EmptyState";
 import { Button } from "@/components/ui/button";
+import { PageIntro } from "@/components/ui/page-intro";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { FarmProtocolManager } from "@/components/sanitario/FarmProtocolManager";
 import { OfficialSanitaryPackManager } from "@/components/sanitario/OfficialSanitaryPackManager";
 import { RegulatoryOverlayManager } from "@/components/sanitario/RegulatoryOverlayManager";
@@ -29,7 +31,7 @@ const ProtocolosSanitarios = () => {
 
   if (!activeFarmId) {
     return (
-      <div className="container mx-auto space-y-6 pb-10">
+      <div className="container mx-auto space-y-5 pb-10">
         <EmptyState
           icon={ShieldCheck}
           title="Fazenda nao selecionada"
@@ -43,21 +45,22 @@ const ProtocolosSanitarios = () => {
   }
 
   return (
-    <div className="container mx-auto space-y-6 pb-10">
-      <div className="flex flex-col gap-2">
-        <div className="flex items-center gap-3">
-          <ShieldCheck className="h-8 w-8 text-primary" />
-          <h1 className="text-3xl font-bold tracking-tight">
-            Protocolos Sanitarios
-          </h1>
-        </div>
-        <p className="max-w-3xl text-muted-foreground">
-          Regras sanitarias, protocolos e verificacoes da fazenda.
-        </p>
-        {!canManageProtocols ? (
-          <p className="text-sm text-muted-foreground">Somente leitura.</p>
-        ) : null}
-        <div className="flex flex-wrap gap-2">
+    <div className="container mx-auto space-y-5 pb-10">
+      <PageIntro
+        eyebrow="Sanitário"
+        title="Protocolos"
+        meta={
+          <>
+            {!canManageProtocols ? (
+              <StatusBadge tone="neutral">Somente leitura</StatusBadge>
+            ) : null}
+            {isRefreshing ? (
+              <StatusBadge tone="info">Atualizando</StatusBadge>
+            ) : null}
+          </>
+        }
+        actions={
+          <>
           <Button
             variant="outline"
             onClick={() => scrollToSection("protocolos-gerenciar")}
@@ -73,21 +76,20 @@ const ProtocolosSanitarios = () => {
             Criar protocolo
           </Button>
           <Button onClick={() => scrollToSection("protocolos-aplicar")}>
-            Aplicar protocolo
+            Aplicar oficial
           </Button>
           <Button
             variant="ghost"
             onClick={() => navigate("/agenda?dominio=sanitario")}
           >
-            Voltar para agenda
+            Agenda
           </Button>
-        </div>
-      </div>
+          </>
+        }
+      />
 
       {isRefreshing ? (
-        <div className="rounded-lg border border-info/20 bg-info/5 p-3 text-sm text-muted-foreground">
-          Atualizando dados locais de protocolos...
-        </div>
+        null
       ) : null}
       {refreshError ? (
         <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-3 text-sm text-destructive">
@@ -131,3 +133,5 @@ const ProtocolosSanitarios = () => {
 };
 
 export default ProtocolosSanitarios;
+
+

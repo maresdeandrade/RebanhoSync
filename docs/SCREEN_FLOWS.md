@@ -69,36 +69,35 @@
 
 ---
 
-## Módulo 2: Home - Dashboard Central
+## Módulo 2: Home - Painel Tático
 
 ### 2.1 Home (`/home`)
-**Objetivo:** Painel central operacional com visão consolidada  
+**Objetivo:** Responder rapidamente "o que exige atenção agora?" e "qual ação registrar?"
+
 **Elementos de Interface:**
 
-**Seção 1 - Header com Métricas:**
+**Seção 1 - Header operacional:**
 - Nome da fazenda + subtítulo (tipo produção | localização)
-- Badges: role (Proprietário/Gestão/Operação), quantidade na fila local, atrasos, alertas sanitários críticos
+- Badges compactos de perfil, fila local e atenção operacional
 
-**Seção 2 - Sync Status Panel:**
-- Status de sincronização em tempo real
+**Seção 2 - Prioridade operacional:**
+- Pendências atrasadas
+- Agenda de hoje
+- Estados vazios/limitados com microcopy curta
 
-**Seção 3 - Grid de Cards (3 colunas):**
-1. **Pendências Atrasadas** - Itens com data vencida
-2. **Agenda de Hoje** - Itens vencendo hoje
-3. **Ações Seguras** - Atalhos para registrar/vizualizar agenda/rebanho
+**Seção 3 - Ação imediata:**
+- Registrar manejo
+- Abrir agenda
+- Ações secundárias rebaixadas
 
-**Seção 4 - Toolbar de Ações Rápidas:**
-- Botões: Vacinação, Vermifugação, Pesagem, Movimentação, Compra, Venda
-
-**Seção 5 - Métricas do Rebanho:**
-- Animais ativos, agenda de hoje, fila local, estrutura mínima, transições de estágio
-
-**Seção 6 - Operational Insights Panel:**
-- Cards de pendências, alertas sanitários, pendências regulatórias
+**Seção 4 - Contexto secundário:**
+- Transições de estágio quando relevantes
+- Central Operacional passiva/read-only
+- Sync e telemetria em leitura discreta
 
 **Interações:**
-- Todos os botões são links navegacionais para outras telas
-- Cards clicáveis levam aos detalhes correspondentes
+- CTAs principais levam para registro ou agenda
+- Leituras passivas não geram evento, agenda ou alteração de domínio
 
 **Transições:**
 - → `/registrar` (botão principal)
@@ -112,24 +111,22 @@
 ## Módulo 3: Registro de Manejo
 
 ### 3.1 Registrar (`/registrar`)
-**Objetivo:** Fluxo guiado para registrar eventos de manejo (3 etapas)
+**Objetivo:** Fluxo guiado para escolher intenção, selecionar alvo, preencher o essencial e salvar
 
-**Fluxo em 3 Etapas:**
-1. **Etapa 1: Selecionar Animais**
-   - Filtro por lote (dropdown)
-   - Busca por identificação
-   - Lista de animais disponíveis com checkboxes
-   - Botão "Selecionar visíveis"
-   - Botão "Próximo"
+**Fluxo principal:**
+1. **Escolher intenção**
+   - Tiles compactos por tipo de manejo: sanitário, pesagem, movimentação, nutrição, reprodução e financeiro
+   - Estado selecionado evidente, sem descrições longas
 
-2. **Etapa 2: Escolher Ação**
-   - Grid de "Ações mais usados" (vacinação, vermifugação, pesagem, compra, venda)
-   - Grid de "Todos os registros" (sanitário, financeiro, reprodução, etc.)
-   - Seções condicionais baseadas no tipo de manejo
+2. **Selecionar alvo**
+   - Busca como controle principal
+   - Seleção por animal/lote/pasto conforme tipo de manejo
+   - Contagem de selecionados visível
 
-3. **Etapa 3: Confirmar e Registrar**
-   - Resumo do registro
-   - Botão "Registrar execução"
+3. **Preencher essencial e salvar**
+   - Campos agrupados por tarefa
+   - Contexto técnico apenas quando ajuda a decisão
+   - Resumo final compacto e CTA primário claro
 
 **Tipos de Manejo Disponíveis:**
 - Sanitário (com protocolos e produtos)
@@ -206,31 +203,26 @@
 **Elementos de Interface:**
 
 **Header:**
-- Total de animais, filtros ativos, paginação, status de conformidade
+- Total de animais, filtros ativos e ações de cadastro/importação
 
-**Cards de Métricas:**
-- Base ativa, no recorte atual, sem lote, agenda no radar
+**Resumo compacto:**
+- Base ativa, recorte atual e principais pendências sem competir com a lista
 
 **Card de Restrições Regulatórias:**
 - Alertas de compliance (se houver)
 
 **Toolbar de Filtros:**
 - Busca por identificação
-- Filtro por lote
-- Filtro por sexo
-- Filtro por status
-- Filtro por categoria (bezerra, novilha, vaca, bezerro, garrote, boi, touro)
-- Filtro por estado produtivo
-- Filtro por impacto regulatório
-- Filtro por subárea regulatória
-- Filtro por modo de calendário
-- Filtro por âncora de calendário
+- Chips/balões apenas para Sexo, Status e Categoria
+- Seletores compactos para lote, estado produtivo, impacto regulatório, subárea regulatória, modo de calendário e âncora de calendário
 - Botão limpar filtros
 
-**Tabela de Animais:**
-- Colunas: Animal, Categoria, Lote, Peso atual, Ganho/dia, Próximo evento, Estágio, Status, Ações
-- Linha pais/filhos com indentação visual
-- Cores indicam status (ativo/vendido/morto)
+**Lista de Animais:**
+- Cards escaneáveis como visual primário
+- Identificação em destaque
+- Categoria/estágio, lote/pasto e badges essenciais
+- CTA simples para abrir ficha
+- Tabela técnica duplicada não é padrão primário da tela
 
 **Transições:**
 - → `/animais/:id` (ficha do animal)

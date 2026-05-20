@@ -504,3 +504,4 @@ describe("P3 pasture infrastructure scope", () => {
     expect(screen.queryByText(/balan[cç]a/i)).not.toBeInTheDocument();
   });
 });
+

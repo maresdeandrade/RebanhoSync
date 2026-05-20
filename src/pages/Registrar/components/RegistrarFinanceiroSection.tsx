@@ -86,7 +86,7 @@ export function RegistrarFinanceiroSection(input: {
           <TabsTrigger value="envolvidos" className="rounded-md">Envolvidos & Detalhes</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="operacao" className="space-y-6 focus-visible:outline-none">
+        <TabsContent value="operacao" className="space-y-5 focus-visible:outline-none">
           <div className="space-y-3">
             <Label>Natureza</Label>
             <div className="flex flex-wrap gap-2">
@@ -230,7 +230,7 @@ export function RegistrarFinanceiroSection(input: {
           ) : null}
         </TabsContent>
 
-        <TabsContent value="envolvidos" className="space-y-6 focus-visible:outline-none">
+        <TabsContent value="envolvidos" className="space-y-5 focus-visible:outline-none">
           <FinanceiroContraparteSection
             isFinanceiroSociedade={input.isFinanceiroSociedade}
             financeiroContraparteId={input.financeiroData.contraparteId}
@@ -279,3 +279,5 @@ export function RegistrarFinanceiroSection(input: {
     </div>
   );
 }
+
+

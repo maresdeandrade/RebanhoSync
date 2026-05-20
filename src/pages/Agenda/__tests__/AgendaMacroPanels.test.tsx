@@ -112,3 +112,4 @@ describe("Agenda macro panels", () => {
     expect(screen.getByText("2")).toBeInTheDocument();
   });
 });
+

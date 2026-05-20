@@ -1,9 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { CheckCircle, Clock3, Loader2, UserRound, XCircle } from "lucide-react";
+import { CheckCircle, Loader2, XCircle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { MetricCard } from "@/components/ui/metric-card";
 import { PageIntro } from "@/components/ui/page-intro";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { useToast } from "@/hooks/use-toast";
@@ -28,12 +27,6 @@ const roleToneMap: Record<string, "success" | "info" | "neutral"> = {
   owner: "success",
   manager: "info",
   cowboy: "neutral",
-};
-
-const roleMetricToneMap: Record<string, "success" | "info" | "default"> = {
-  owner: "success",
-  manager: "info",
-  cowboy: "default",
 };
 
 function formatDate(dateString: string) {
@@ -197,8 +190,9 @@ export const AcceptInvite = () => {
   if (error || !invite) {
     return (
       <div className="min-h-screen bg-muted/20 px-4 py-8">
-        <div className="mx-auto max-w-3xl space-y-6">
+        <div className="mx-auto max-w-3xl space-y-5">
           <PageIntro
+            variant="plain"
             eyebrow="Convite"
             title="Convite indisponivel"
             description={error || undefined}
@@ -217,8 +211,9 @@ export const AcceptInvite = () => {
   if (!invite.is_valid) {
     return (
       <div className="min-h-screen bg-muted/20 px-4 py-8">
-        <div className="mx-auto max-w-4xl space-y-6">
+        <div className="mx-auto max-w-4xl space-y-5">
           <PageIntro
+            variant="plain"
             eyebrow="Convite"
             title="Convite expirado ou ja utilizado"
             meta={
@@ -233,20 +228,6 @@ export const AcceptInvite = () => {
               </Button>
             }
           />
-
-          <div className="grid gap-4 md:grid-cols-3">
-            <MetricCard label="Fazenda" value={invite.fazenda_nome} />
-            <MetricCard
-              label="Perfil"
-              value={roleLabelMap[invite.role] ?? invite.role}
-              tone={roleMetricToneMap[invite.role] ?? "default"}
-            />
-            <MetricCard
-              label="Expiracao"
-              value={formatDate(invite.expires_at)}
-              icon={<Clock3 className="h-5 w-5" />}
-            />
-          </div>
         </div>
       </div>
     );
@@ -254,10 +235,11 @@ export const AcceptInvite = () => {
 
   return (
     <div className="min-h-screen bg-muted/20 px-4 py-8">
-      <div className="mx-auto max-w-4xl space-y-6">
+      <div className="mx-auto max-w-4xl space-y-5">
         <PageIntro
+          variant="plain"
           eyebrow="Convite"
-          title="Voce foi convidado para entrar em uma fazenda"
+          title="Entrar na fazenda"
           meta={
             <>
               <StatusBadge tone={roleToneMap[invite.role] ?? "neutral"}>
@@ -267,6 +249,7 @@ export const AcceptInvite = () => {
               <StatusBadge tone="neutral">
                 Expira em {formatDate(invite.expires_at)}
               </StatusBadge>
+              <StatusBadge tone="neutral">Por {invite.inviter_nome}</StatusBadge>
             </>
           }
           actions={
@@ -304,23 +287,11 @@ export const AcceptInvite = () => {
             </>
           }
         />
-
-        <div className="grid gap-4 md:grid-cols-3">
-          <MetricCard label="Fazenda" value={invite.fazenda_nome} />
-          <MetricCard
-            label="Papel"
-            value={roleLabelMap[invite.role] ?? invite.role}
-            tone={roleMetricToneMap[invite.role] ?? "default"}
-          />
-          <MetricCard
-            label="Convidado por"
-            value={invite.inviter_nome}
-            icon={<UserRound className="h-5 w-5" />}
-          />
-        </div>
       </div>
     </div>
   );
 };
 
 export default AcceptInvite;
+
+

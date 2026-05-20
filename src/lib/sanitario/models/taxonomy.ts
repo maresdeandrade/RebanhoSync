@@ -2,6 +2,7 @@ import type {
   ComplianceKind,
   MaterializationMode,
   ProtocolKind,
+  SanitaryItemOperationalClass,
   SanitaryProtocolItemDomain,
 } from "@/lib/sanitario/models/domain";
 
@@ -34,6 +35,16 @@ const COMPLIANCE_KINDS: readonly ComplianceKind[] = [
   "withholding_period",
   "quarantine",
   "none",
+];
+
+const OPERATIONAL_CLASSES: readonly SanitaryItemOperationalClass[] = [
+  "operational_protocol",
+  "clinical_protocol",
+  "notifiable_suspicion",
+  "compliance_check",
+  "execution_only",
+  "inventory_signal",
+  "unknown",
 ];
 
 const VACCINATION_FAMILIES = new Set([
@@ -93,6 +104,28 @@ function getField(input: TaxonomyInput, ...keys: string[]): unknown {
   return undefined;
 }
 
+function getNestedField(
+  input: TaxonomyInput,
+  objectKey: string,
+  ...keys: string[]
+): unknown {
+  const direct = getField(input, objectKey);
+  if (isRecord(direct)) {
+    for (const key of keys) {
+      if (key in direct) return direct[key];
+    }
+  }
+
+  const payload = getField(input, "payload");
+  if (!isRecord(payload)) return undefined;
+  const nested = payload[objectKey];
+  if (!isRecord(nested)) return undefined;
+  for (const key of keys) {
+    if (key in nested) return nested[key];
+  }
+  return undefined;
+}
+
 function readBoolean(input: TaxonomyInput, ...keys: string[]): boolean | null {
   const value = getField(input, ...keys);
   if (typeof value === "boolean") return value;
@@ -127,6 +160,9 @@ function readTextTokens(input: TaxonomyInput): Set<string> {
     getField(input, "subarea"),
     getField(input, "execution_mode", "executionMode"),
     getField(input, "protocol_kind", "protocolKind"),
+    getNestedField(input, "calendario_base", "mode"),
+    getNestedField(input, "target_policy", "mode"),
+    getNestedField(input, "target_policy", "condition_code"),
   ]
     .map(normalizeToken)
     .filter((entry): entry is string => Boolean(entry));
@@ -165,12 +201,13 @@ export function resolveProtocolKind(input: TaxonomyInput): ProtocolKind {
   ) {
     return "antiparasitario";
   }
-  if (tokens.has("medicamento") || tokens.has("medicamentos")) {
-    return "medicamento";
-  }
   if (tokens.has("nutricao")) return "nutricao";
   if (tokens.has("biosseguranca")) return "biosseguranca";
   if (tokens.has("notificacao")) return "notificacao";
+  if (tokens.has("clinico") || tokens.has("clinical_protocol")) return "clinico";
+  if (tokens.has("medicamento") || tokens.has("medicamentos")) {
+    return "medicamento";
+  }
   if (
     tokens.has("documental") ||
     tokens.has("documento") ||
@@ -179,8 +216,6 @@ export function resolveProtocolKind(input: TaxonomyInput): ProtocolKind {
   ) {
     return "documental";
   }
-  if (tokens.has("clinico") || tokens.has("clinical_protocol")) return "clinico";
-
   const familyKind = resolveProtocolKindFromFamily(input);
   return familyKind ?? "outro";
 }
@@ -242,6 +277,15 @@ export function resolveComplianceKind(input: TaxonomyInput): ComplianceKind {
   return "none";
 }
 
+function hasOfficialNotificationSignal(input: TaxonomyInput): boolean {
+  return (
+    readBoolean(input, "requires_official_notification", "requiresOfficialNotification") ===
+      true ||
+    readBoolean(input, "requires_immediate_notification", "requiresImmediateNotification") ===
+      true
+  );
+}
+
 export function resolveMaterializationMode(
   input: TaxonomyInput,
 ): MaterializationMode {
@@ -281,4 +325,56 @@ export function isComplianceOnly(input: TaxonomyInput): boolean {
 
 export function isExecutionOnly(input: TaxonomyInput): boolean {
   return resolveMaterializationMode(input) === "execution_only";
+}
+
+export function resolveSanitaryItemOperationalClass(
+  input: TaxonomyInput,
+): SanitaryItemOperationalClass {
+  const explicit = readKind(
+    input,
+    OPERATIONAL_CLASSES,
+    "operational_class",
+    "operationalClass",
+    "item_operational_class",
+    "itemOperationalClass",
+  );
+  if (explicit) return explicit;
+
+  const materializationMode = resolveMaterializationMode(input);
+  if (materializationMode === "agenda") return "operational_protocol";
+
+  const protocolKind = resolveProtocolKind(input);
+  const tokens = readTextTokens(input);
+
+  if (
+    protocolKind === "notificacao" ||
+    tokens.has("doencas_notificaveis") ||
+    tokens.has("notificaveis") ||
+    tokens.has("notificacao_suspeita") ||
+    tokens.has("sindrome_vesicular") ||
+    hasOfficialNotificationSignal(input)
+  ) {
+    return "notifiable_suspicion";
+  }
+
+  if (
+    protocolKind === "clinico" ||
+    tokens.has("clinical_protocol") ||
+    tokens.has("suspected_animal_required") ||
+    tokens.has("dry_off_required") ||
+    tokens.has("tristeza_parasitaria_bovina") ||
+    tokens.has("secagem_lactacao")
+  ) {
+    return "clinical_protocol";
+  }
+
+  if (materializationMode === "compliance_only") return "compliance_check";
+
+  if (resolveComplianceKind(input) === "withholding_period") {
+    return "inventory_signal";
+  }
+
+  if (materializationMode === "execution_only") return "execution_only";
+
+  return "unknown";
 }

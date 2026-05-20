@@ -96,18 +96,11 @@ const SignUp = () => {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="flex justify-center">
-            <img
-              src="/logo.png"
-              alt="RebanhoSync"
-              className="h-12 w-auto"
-            />
+            <img src="/logo.png" alt="RebanhoSync" className="h-12 w-auto" />
           </div>
           <CardTitle className="mt-4 text-2xl font-bold">
             Cadastro - RebanhoSync
           </CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Crie sua conta gratuitamente
-          </p>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -240,3 +233,4 @@ const SignUp = () => {
 };
 
 export default SignUp;
+

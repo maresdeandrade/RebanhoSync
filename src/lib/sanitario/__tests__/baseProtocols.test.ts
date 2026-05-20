@@ -9,6 +9,7 @@ import {
 } from "@/lib/sanitario/catalog/baseProtocols";
 import { readSanitaryBaseCalendar } from "@/lib/sanitario/engine/calendar";
 import { readSanitaryRegimen } from "@/lib/sanitario/engine/regimen";
+import { resolveSanitaryItemOperationalClass } from "@/lib/sanitario/models/taxonomy";
 
 describe("standard sanitary protocol library", () => {
   it("keeps protocol ids unique and item dependencies internally consistent", () => {
@@ -254,6 +255,9 @@ describe("standard sanitary protocol library", () => {
         anchor: "calendar_month",
       });
       expect(item.calendario_base.months).toHaveLength(1);
+      expect(resolveSanitaryItemOperationalClass(item)).toBe(
+        "operational_protocol",
+      );
     }
   });
 
@@ -297,6 +301,7 @@ describe("standard sanitary protocol library", () => {
 
     for (const item of protocol!.itens) {
       expect(item.gera_agenda).toBe(false);
+      expect(resolveSanitaryItemOperationalClass(item)).toBe("clinical_protocol");
       expect(item.target_policy).toEqual({
         mode: "suspected_animal_required",
         target_scope: "animal",
@@ -329,6 +334,7 @@ describe("standard sanitary protocol library", () => {
         condition_code: "secagem_lactacao",
       },
     });
+    expect(resolveSanitaryItemOperationalClass(item)).toBe("clinical_protocol");
 
     const payload = buildStandardProtocolItemPayload(protocol!, item!);
     expect(payload).toMatchObject({

@@ -241,3 +241,4 @@ export function RegistrarTransitChecklistSection(input: {
     </div>
   );
 }
+

@@ -95,10 +95,11 @@ export function EventGroupCard({
     <Card
       key={group.key}
       className={cn(
-        isContextualGroup ? "border-info/25 shadow-sm shadow-info/10" : null,
+        "shadow-none",
+        isContextualGroup ? "border-info/25 bg-info-muted/20" : null,
       )}
     >
-      <CardHeader className="space-y-3">
+      <CardHeader className="space-y-3 px-4 pb-2 pt-4 sm:px-5">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
           <div className="space-y-3">
             <div className="flex flex-wrap items-center gap-2">
@@ -211,3 +212,4 @@ export function EventGroupCard({
     </Card>
   );
 }
+

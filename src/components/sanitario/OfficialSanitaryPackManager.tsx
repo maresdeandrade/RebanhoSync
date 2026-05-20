@@ -367,18 +367,17 @@ export function OfficialSanitaryPackManager({
 
   return (
     <Card className="border-primary/20 bg-primary/5">
-      <CardHeader className="gap-4">
+      <CardHeader className="gap-3 px-4 py-3 sm:px-5">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
           <div className="space-y-2">
             <div className="flex flex-wrap items-center gap-2">
               <ShieldCheck className="h-5 w-5 text-primary" />
-              <CardTitle className="text-xl">
-                Base regulatoria oficial da fazenda
+              <CardTitle className="text-lg">
+                Protocolo oficial
               </CardTitle>
-              <Badge variant="outline">Animal-centric</Badge>
               {appliedTemplateCount > 0 ? (
                 <Badge variant="secondary">
-                  {appliedTemplateCount} frentes ativas
+                  {appliedTemplateCount} ativo(s)
                 </Badge>
               ) : null}
             </div>
@@ -396,7 +395,7 @@ export function OfficialSanitaryPackManager({
               ) : (
                 <RefreshCw className="mr-2 h-4 w-4" />
               )}
-              Atualizar catalogo
+              Atualizar
             </Button>
             <Button
               type="button"
@@ -412,24 +411,23 @@ export function OfficialSanitaryPackManager({
               {isApplyingPack ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : null}
-              Aplicar protocolo oficial
+              Aplicar oficial
             </Button>
           </div>
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-5">
+      <CardContent className="space-y-4 px-4 pt-0 sm:px-5">
         {!canManage ? (
           <div className="rounded-xl border border-border/70 bg-background/80 px-4 py-3 text-sm text-muted-foreground">
-            Seu perfil esta em modo leitura. Manager e owner podem alterar a
-            configuracao regulatoria da fazenda.
+            Seu perfil esta em modo leitura.
           </div>
         ) : null}
 
         {!form ? (
           <div className="flex items-center gap-2 rounded-xl border border-border/70 bg-background/80 px-4 py-3 text-sm text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" />
-            Carregando contexto sanitario da fazenda...
+            Carregando...
           </div>
         ) : (
           <>
@@ -672,17 +670,14 @@ export function OfficialSanitaryPackManager({
                 </div>
 
                 <div className="space-y-2">
-                  <p className="text-sm font-medium text-foreground">
-                    Preview do pack oficial
-                  </p>
+                <p className="text-sm font-medium text-foreground">Itens</p>
                 </div>
 
                 <div className="space-y-3">
                   {selectedPreview.length === 0 ? (
                     <div className="flex items-start gap-3 rounded-xl border border-border/70 bg-muted/20 px-4 py-3 text-sm text-muted-foreground">
                       <ShieldAlert className="mt-0.5 h-4 w-4 flex-shrink-0" />
-                      Nenhuma frente oficial compativel com a configuracao
-                      atual.
+                      Nenhuma regra compativel.
                     </div>
                   ) : (
                     selectedPreview.map((entry) => (
@@ -694,11 +689,6 @@ export function OfficialSanitaryPackManager({
                           <div className="space-y-1">
                             <p className="text-sm font-medium text-foreground">
                               {entry.template.nome}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {entry.template.escopo === "federal"
-                                ? "Nucleo federal"
-                                : `Regra estadual ${entry.template.uf ?? ""}`}
                             </p>
                           </div>
                           <div className="flex flex-wrap gap-2">
@@ -727,21 +717,21 @@ export function OfficialSanitaryPackManager({
 
                 {hiddenPreviewCount > 0 ? (
                   <p className="text-xs text-muted-foreground">
-                    +{hiddenPreviewCount} frente(s) adicional(is) no pack atual.
+                    +{hiddenPreviewCount} item(ns).
                   </p>
                 ) : null}
               </div>
 
               <div className="space-y-3 rounded-2xl border border-border/70 bg-background/80 p-4">
                 <p className="text-sm font-medium text-foreground">
-                  Resumo de ativacao
+                  Resumo
                 </p>
 
                 <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
                   <div className="rounded-xl border border-border/70 bg-muted/20 px-4 py-3">
                     <div className="flex items-center gap-2 text-sm font-medium text-foreground">
                       <ShieldCheck className="h-4 w-4 text-primary" />
-                      Obrigacoes e recomendacoes
+                      Exigências
                     </div>
                     <div className="mt-2 flex flex-wrap gap-2">
                       <Badge variant="destructive">
@@ -763,7 +753,7 @@ export function OfficialSanitaryPackManager({
                   <div className="rounded-xl border border-border/70 bg-muted/20 px-4 py-3">
                     <div className="flex items-center gap-2 text-sm font-medium text-foreground">
                       <ClipboardList className="h-4 w-4 text-primary" />
-                      Materializacao
+                      Agenda
                     </div>
                     <div className="mt-2 flex flex-wrap gap-2">
                       <Badge variant="outline">

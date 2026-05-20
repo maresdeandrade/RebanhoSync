@@ -68,7 +68,7 @@ export function AgendaItemRowCard({
       ref={(node) => registerRowRef(row.item.id, node)}
       tabIndex={-1}
       className={cn(
-        "scroll-mt-24 rounded-2xl border border-border/70 bg-muted/50 p-4 transition-all",
+        "scroll-mt-24 rounded-xl border border-border/70 bg-muted/25 p-4 transition-colors hover:border-primary/25",
         isContextualMatch ? "border-info/30 bg-info-muted/30" : null,
         isContextualFocusRow ? "ring-2 ring-info/25 ring-offset-2 ring-offset-background" : null,
       )}
@@ -88,7 +88,7 @@ export function AgendaItemRowCard({
             {rowMeta.dateLabel} | {row.animalNome} ({row.idadeLabel}) | {row.loteNome}
           </p>
 
-          <div className="grid gap-2 text-sm md:grid-cols-2">
+          <div className="grid gap-2 border-t border-border/50 pt-3 text-sm md:grid-cols-2">
             <p className="text-muted-foreground">
               Produto: <span className="font-medium text-foreground">{row.produtoLabel}</span>
             </p>
@@ -161,3 +161,4 @@ export function AgendaItemRowCard({
     </article>
   );
 }
+

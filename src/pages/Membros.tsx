@@ -13,7 +13,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { EmptyState } from "@/components/EmptyState";
 import { Input } from "@/components/ui/input";
-import { MetricCard } from "@/components/ui/metric-card";
 import { PageIntro } from "@/components/ui/page-intro";
 import {
   Select,
@@ -237,8 +236,9 @@ export default function Membros() {
   }, [members, searchTerm, statusFilter]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <PageIntro
+        variant="plain"
         eyebrow="Equipe"
         title="Pessoas e convites da fazenda"
         meta={
@@ -248,6 +248,9 @@ export default function Membros() {
             <StatusBadge tone="warning">
               {counts.pending} convite(s)
             </StatusBadge>
+            {counts.inactive > 0 ? (
+              <StatusBadge tone="danger">{counts.inactive} inativa(s)</StatusBadge>
+            ) : null}
           </>
         }
         actions={
@@ -259,27 +262,6 @@ export default function Membros() {
           ) : null
         }
       />
-
-      <div className="grid gap-4 md:grid-cols-3">
-        <MetricCard
-          label="Ativos"
-          value={counts.active}
-          tone="success"
-          icon={<Users className="h-5 w-5" />}
-        />
-        <MetricCard
-          label="Pendentes"
-          value={counts.pending}
-          tone="warning"
-          icon={<Mail className="h-5 w-5" />}
-        />
-        <MetricCard
-          label="Inativos"
-          value={counts.inactive}
-          tone={counts.inactive > 0 ? "danger" : "default"}
-          icon={<Shield className="h-5 w-5" />}
-        />
-      </div>
 
       <Toolbar>
         <ToolbarGroup className="flex-1 gap-2">
@@ -326,11 +308,6 @@ export default function Membros() {
         <EmptyState
           icon={Users}
           title="Nenhum membro neste recorte"
-          description={
-            searchTerm || statusFilter !== "all"
-              ? "Ajuste a busca ou o filtro para ver a equipe."
-              : "Convide a primeira pessoa para compartilhar a rotina operacional."
-          }
           action={
             canManageMembers
               ? {
@@ -510,3 +487,5 @@ export default function Membros() {
     </div>
   );
 }
+
+

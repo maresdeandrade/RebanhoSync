@@ -36,7 +36,7 @@ insert into public.catalogo_protocolos_oficiais (
 ) values
   (
     'brucelose-pncebt',
-    'Brucelose PNCEBT - femeas 3 a 8 meses',
+    'Brucelose PNCEBT',
     1,
     'federal',
     null,
@@ -48,7 +48,7 @@ insert into public.catalogo_protocolos_oficiais (
   ),
   (
     'raiva-herbivoros-risco',
-    'Raiva dos herbivoros - vigilancia e risco configurado',
+    'Raiva dos Herbivoros',
     1,
     'federal',
     null,

@@ -1,9 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, Map as MapIcon, Save, Trees } from "lucide-react";
+import { ChevronLeft, Save } from "lucide-react";
 
 import { FormSection } from "@/components/ui/form-section";
-import { MetricCard } from "@/components/ui/metric-card";
 import { PageIntro } from "@/components/ui/page-intro";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -238,10 +237,23 @@ const PastoNovo = () => {
   };
 
   return (
-    <div className="space-y-6 pb-16">
+    <div className="space-y-5 pb-16">
       <PageIntro
+        variant="plain"
         eyebrow="Estrutura do rebanho"
         title="Novo pasto"
+        meta={
+          <>
+            <span className="inline-flex items-center rounded-full border border-border/80 bg-background/75 px-2.5 py-1 text-[11px] font-medium leading-none text-muted-foreground">
+              {tipoPasto}
+            </span>
+            {areaHa ? (
+              <span className="inline-flex items-center rounded-full border border-border/80 bg-background/75 px-2.5 py-1 text-[11px] font-medium leading-none text-muted-foreground">
+                {areaHa} ha
+              </span>
+            ) : null}
+          </>
+        }
         actions={
           <>
             <Button variant="outline" onClick={() => navigate("/pastos")}>
@@ -256,25 +268,8 @@ const PastoNovo = () => {
         }
       />
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <MetricCard
-          label="Tipo de pastagem"
-          value={tipoPasto}
-          icon={<Trees className="h-4 w-4" />}
-        />
-        <MetricCard
-          label="Area informada"
-          value={areaHa || "0"}
-          icon={<MapIcon className="h-4 w-4" />}
-        />
-        <MetricCard
-          label="Capacidade declarada"
-          value={capacidadeUa || "Nao informada"}
-        />
-      </div>
-
       <form
-        className="space-y-6"
+        className="space-y-5"
         onSubmit={(event) => {
           event.preventDefault();
           void handleSave();
@@ -433,7 +428,7 @@ const PastoNovo = () => {
 
         <FormSection title="Infraestrutura">
           <div className="grid gap-4 lg:grid-cols-2">
-            <div className="rounded-2xl border border-border/70 bg-muted/20 p-4">
+            <div className="rounded-xl border border-border/70 bg-muted/20 p-4">
               <div className="mb-4 space-y-1">
                 <p className="font-medium text-foreground">Cochos</p>
               </div>
@@ -510,7 +505,7 @@ const PastoNovo = () => {
               </div>
             </div>
 
-            <div className="rounded-2xl border border-border/70 bg-muted/20 p-4">
+            <div className="rounded-xl border border-border/70 bg-muted/20 p-4">
               <div className="mb-4 space-y-1">
                 <p className="font-medium text-foreground">Bebedouros</p>
               </div>
@@ -584,7 +579,7 @@ const PastoNovo = () => {
               </div>
             </div>
 
-            <div className="rounded-2xl border border-border/70 bg-muted/20 p-4">
+            <div className="rounded-xl border border-border/70 bg-muted/20 p-4">
               <div className="mb-4 space-y-1">
                 <p className="font-medium text-foreground">Cercas</p>
               </div>
@@ -646,7 +641,7 @@ const PastoNovo = () => {
               </div>
             </div>
 
-            <div className="rounded-2xl border border-border/70 bg-muted/20 p-4">
+            <div className="rounded-xl border border-border/70 bg-muted/20 p-4">
               <div className="mb-4 space-y-1">
                 <p className="font-medium text-foreground">Saleiros</p>
               </div>
@@ -705,3 +700,4 @@ const PastoNovo = () => {
 };
 
 export default PastoNovo;
+

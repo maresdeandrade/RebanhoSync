@@ -9,6 +9,7 @@ interface PageIntroProps
   description?: React.ReactNode;
   meta?: React.ReactNode;
   actions?: React.ReactNode;
+  variant?: "surface" | "plain";
 }
 
 export function PageIntro({
@@ -17,13 +18,16 @@ export function PageIntro({
   description,
   meta,
   actions,
+  variant = "surface",
   className,
   ...props
 }: PageIntroProps) {
   return (
     <section
       className={cn(
-        "app-surface flex flex-col gap-5 p-5 sm:p-6 xl:flex-row xl:items-end xl:justify-between",
+        "flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between",
+        variant === "surface" && "app-surface p-5 sm:p-6",
+        variant === "plain" && "py-1",
         className,
       )}
       {...props}

@@ -60,7 +60,6 @@ export function buildRegistrarActionSectionSlots(
   const movementComplianceBlockSection = (
     <RegistrarComplianceBlockSection
       title="Restricoes de movimentacao"
-      description="Pendencias afetam este fluxo."
       blockers={input.movementComplianceGuards.blockers}
       warnings={input.movementComplianceGuards.warnings}
     />
@@ -69,7 +68,6 @@ export function buildRegistrarActionSectionSlots(
   const nutritionComplianceBlockSection = (
     <RegistrarComplianceBlockSection
       title="Restricoes de nutricao"
-      description="Risco alimentar ou operacional antes do lancamento."
       blockers={input.nutritionComplianceGuards.blockers}
       warnings={input.nutritionComplianceGuards.warnings}
     />
@@ -82,3 +80,4 @@ export function buildRegistrarActionSectionSlots(
     nutritionComplianceBlockSection,
   };
 }
+

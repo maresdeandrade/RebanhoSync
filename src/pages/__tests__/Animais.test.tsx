@@ -481,3 +481,4 @@ describe("Animais page", () => {
     expect(screen.getAllByText("Nascimento").length).toBeGreaterThan(0);
   });
 });
+

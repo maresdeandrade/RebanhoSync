@@ -57,7 +57,7 @@ export function AgendaFiltersToolbar({
   onClearFilters,
 }: AgendaFiltersToolbarProps) {
   return (
-    <Toolbar>
+    <Toolbar className="bg-muted/20 shadow-none">
       <ToolbarGroup className="flex-1 gap-2">
         <div className="relative min-w-[220px] flex-1">
           <Search className="absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
@@ -173,3 +173,4 @@ export function AgendaFiltersToolbar({
     </Toolbar>
   );
 }
+

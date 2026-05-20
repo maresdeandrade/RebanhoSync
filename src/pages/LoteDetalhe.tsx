@@ -4,9 +4,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   AlertTriangle,
   ArrowRightLeft,
-  Beef,
   ClipboardCheck,
-  MapPin,
   MoreHorizontal,
   PawPrint,
   Repeat,
@@ -25,7 +23,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MetricCard } from "@/components/ui/metric-card";
 import { PageIntro } from "@/components/ui/page-intro";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { db } from "@/lib/offline/db";
@@ -81,8 +78,9 @@ export default function LoteDetalhe() {
 
   if (!id || !lote) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-5">
         <PageIntro
+         variant="plain"
           eyebrow="Estrutura"
           title="Lote nao encontrado"
           actions={
@@ -104,8 +102,9 @@ export default function LoteDetalhe() {
     movementCompliance.firstWarningMessage;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <PageIntro
+       variant="plain"
         eyebrow="Estrutura"
         title={lote.nome}
         meta={
@@ -195,37 +194,6 @@ export default function LoteDetalhe() {
         </Card>
       ) : null}
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <MetricCard
-          label="Pasto"
-          value={pasto?.nome ?? "Sem pasto"}
-          hint={
-            ocupacaoAberta
-              ? `Desde ${new Date(ocupacaoAberta.entrada_em).toLocaleDateString("pt-BR")} · ${Math.floor((Date.now() - new Date(ocupacaoAberta.entrada_em).getTime()) / 86_400_000)} dias`
-              : pasto?.area_ha
-                ? `${pasto.area_ha} ha cadastrados nesta area.`
-                : "Sem area vinculada ao lote."
-          }
-          icon={<MapPin className="h-5 w-5" />}
-        />
-        <MetricCard
-          label="Reprodutor"
-          value={touro?.identificacao ?? "Nao definido"}
-          hint={
-            touro?.nome
-              ? `Nome de manejo: ${touro.nome}.`
-              : "Sem touro responsavel pelo lote."
-          }
-          tone={touro ? "info" : "default"}
-          icon={<Beef className="h-5 w-5" />}
-        />
-        <MetricCard
-          label="Animais"
-          value={animaisCount}
-          icon={<PawPrint className="h-5 w-5" />}
-        />
-      </div>
-
       {animaisCount === 0 ? (
         <EmptyState
           icon={PawPrint}
@@ -237,12 +205,23 @@ export default function LoteDetalhe() {
         />
       ) : (
         <Card className="shadow-none">
-          <CardContent className="space-y-3 p-4">
+          <CardContent className="space-y-4 p-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h2 className="text-base font-semibold text-foreground">
+                  Animais do lote
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  {animaisCount} registro(s) vinculados a este agrupamento.
+                </p>
+              </div>
+              <StatusBadge tone="neutral">{lote.status}</StatusBadge>
+            </div>
             {animais?.map((animal) => (
               <Link
                 key={animal.id}
                 to={`/animais/${animal.id}`}
-                className="flex flex-col gap-3 rounded-2xl border border-border/70 bg-background/80 p-4 transition-colors hover:bg-muted/20 sm:flex-row sm:items-center sm:justify-between"
+                className="flex flex-col gap-3 rounded-xl border border-border/70 bg-background/80 p-4 transition-colors hover:border-primary/25 hover:bg-muted/20 sm:flex-row sm:items-center sm:justify-between"
               >
                 <div className="space-y-1">
                   <p className="font-medium text-foreground">
@@ -283,3 +262,5 @@ export default function LoteDetalhe() {
     </div>
   );
 }
+
+

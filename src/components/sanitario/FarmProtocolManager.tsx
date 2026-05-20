@@ -186,21 +186,21 @@ const TEMPLATE_CATEGORY_META: Record<
   }
 > = {
   vacinas: {
-    label: "Vacinas tecnicas",
+    label: "Vacinas",
     description:
-      "Protocolos preventivos recomendados que nao pertencem ao pack oficial.",
+      "Rotinas preventivas da fazenda.",
     icon: Syringe,
   },
   vermifugacao: {
     label: "Parasitas",
     description:
-      "Rotinas de controle estrategico por categoria, estacao e pressao parasitaria.",
+      "Controle por categoria e estação.",
     icon: Bug,
   },
   medicamentos: {
-    label: "Protocolos clinicos e de manejo",
+    label: "Clínico",
     description:
-      "Fluxos terapeuticos e boas praticas operacionais materializados como protocolo.",
+      "Tratamentos e rotinas operacionais.",
     icon: Pill,
   },
 };
@@ -933,7 +933,7 @@ export function FarmProtocolManager({
   return (
     <>
       <FormSection
-        title="Gerenciar protocolos da fazenda"
+        title="Protocolos da fazenda"
         actions={
           <>
             <Badge variant="outline">{activeProtocols.length} protocolos</Badge>
@@ -950,7 +950,7 @@ export function FarmProtocolManager({
       >
         <Card className="border-dashed border-primary/30 bg-primary/5">
           <CardHeader className="space-y-3">
-            <CardTitle className="text-lg">Modelos da fazenda</CardTitle>
+            <CardTitle className="text-lg">Modelos</CardTitle>
           </CardHeader>
 
           <CardContent className="space-y-4">
@@ -973,9 +973,6 @@ export function FarmProtocolManager({
                           {group.protocols.length}
                         </Badge>
                       </div>
-                      <p className="text-sm text-muted-foreground">
-                        {group.meta.description}
-                      </p>
                     </div>
 
                     <div className="space-y-3">
@@ -1159,7 +1156,7 @@ export function FarmProtocolManager({
                           <Badge variant="outline">{sourceMeta.label}</Badge>
                           {familyCode ? (
                             <Badge variant="outline">
-                              familia: {familyCode}
+                              Família {familyCode}
                             </Badge>
                           ) : null}
                           {legalStatus ? (
@@ -1194,10 +1191,6 @@ export function FarmProtocolManager({
                           <div className="text-sm">
                             <p className="font-medium text-foreground">
                               {protocolItemsList.length} etapas configuradas
-                            </p>
-                            <p className="text-muted-foreground">
-                              Produtos, deduplicacao e elegibilidade ficam por
-                              etapa.
                             </p>
                           </div>
                           <Button
@@ -1242,7 +1235,7 @@ export function FarmProtocolManager({
                                       ) : null}
                                       {milestoneCode ? (
                                         <Badge variant="outline">
-                                          milestone: {milestoneCode}
+                                          Marco {milestoneCode}
                                         </Badge>
                                       ) : null}
                                       {itemDraft.dependsOnItemCode ? (
@@ -1292,7 +1285,7 @@ export function FarmProtocolManager({
                                 <div className="mt-3 grid gap-2 text-sm text-muted-foreground">
                                   <p>
                                     {itemDraft.indicacao ||
-                                      "Sem indicacao operacional."}
+                                      "Sem indicação."}
                                   </p>
                                   <div className="flex flex-wrap gap-2">
                                     <Badge variant="outline">
@@ -1414,8 +1407,7 @@ export function FarmProtocolManager({
           <DialogHeader>
             <DialogTitle>Remover protocolo?</DialogTitle>
             <DialogDescription>
-              O protocolo e todas as etapas locais serao marcados como
-              removidos. Os eventos ja realizados permanecem no historico.
+              Remove o protocolo e suas etapas locais.
             </DialogDescription>
           </DialogHeader>
 
@@ -1485,11 +1477,6 @@ function ProtocolEditorDialog({
           <DialogTitle>
             {isEditing ? "Editar protocolo" : "Criar protocolo customizado"}
           </DialogTitle>
-          <DialogDescription>
-            Customizado = como sua fazenda escolhe operar. Use outra familia
-            protocolar para complementos locais e nao duplique o mesmo tronco
-            oficial em paralelo.
-          </DialogDescription>
         </DialogHeader>
 
         <Alert
@@ -1653,7 +1640,7 @@ function ProtocolEditorDialog({
           <div className="space-y-3 rounded-2xl border border-border/70 p-4 md:col-span-2">
             <SwitchRow
               label="Ativo"
-              description="Protocolos inativos deixam de ser usados para novas configuracoes."
+              description="Usado em novos agendamentos."
               checked={draft.ativo}
               onCheckedChange={(checked) =>
                 onDraftChange({ ...draft, ativo: checked })
@@ -1661,7 +1648,7 @@ function ProtocolEditorDialog({
             />
             <SwitchRow
               label="Obrigatorio"
-              description="Use para regra legal ou sanitariamente mandataria."
+              description="Regra obrigatória."
               checked={draft.obrigatorio}
               onCheckedChange={(checked) =>
                 onDraftChange({ ...draft, obrigatorio: checked })
@@ -1669,7 +1656,7 @@ function ProtocolEditorDialog({
             />
             <SwitchRow
               label="Obrigatorio por risco"
-              description="Ative quando o protocolo so se torna mandatorio em regioes ou cenarios especificos."
+              description="Só em cenário de risco."
               checked={draft.obrigatorioPorRisco}
               onCheckedChange={(checked) =>
                 onDraftChange({ ...draft, obrigatorioPorRisco: checked })
@@ -1679,7 +1666,7 @@ function ProtocolEditorDialog({
               <>
                 <SwitchRow
                   label="Requer veterinario"
-                  description="Marca o protocolo como dependente de supervisao tecnica."
+                  description="Precisa responsável técnico."
                   checked={draft.requiresVet}
                   onCheckedChange={(checked) =>
                     onDraftChange({ ...draft, requiresVet: checked })
@@ -1687,7 +1674,7 @@ function ProtocolEditorDialog({
                 />
                 <SwitchRow
                   label="Exige documento"
-                  description="Usado quando ha certificado, receita ou comprovacao obrigatoria."
+                  description="Precisa comprovante."
                   checked={draft.requiresComplianceDocument}
                   onCheckedChange={(checked) =>
                     onDraftChange({
@@ -1899,10 +1886,6 @@ function ItemEditorDialog({
           <DialogTitle>
             {isEditing ? "Editar etapa" : "Nova etapa sanitaria"}
           </DialogTitle>
-          <DialogDescription>
-            Configure produto, agenda, alvo e vinculo ao catalogo global de
-            produtos veterinarios.
-          </DialogDescription>
         </DialogHeader>
 
         <Alert className="border-border/70 bg-muted/20">
@@ -2288,7 +2271,7 @@ function ItemEditorDialog({
           <div className="space-y-3 rounded-2xl border border-border/70 p-4 md:col-span-2">
             <SwitchRow
               label="Gera agenda"
-              description="Desative para procedimento imediato sem proxima tarefa automatica."
+              description="Cria próxima tarefa."
               checked={draft.geraAgenda}
               onCheckedChange={(checked) =>
                 onDraftChange({ ...draft, geraAgenda: checked })
@@ -2296,7 +2279,7 @@ function ItemEditorDialog({
             />
             <SwitchRow
               label="Obrigatorio"
-              description="Marca a etapa como mandataria no fluxo da fazenda."
+              description="Etapa obrigatória."
               checked={draft.obrigatorio}
               onCheckedChange={(checked) =>
                 onDraftChange({ ...draft, obrigatorio: checked })
@@ -2304,7 +2287,7 @@ function ItemEditorDialog({
             />
             <SwitchRow
               label="Obrigatorio por risco"
-              description="Ative para janelas condicionais de surto, regiao ou lote."
+              description="Só em cenário de risco."
               checked={draft.obrigatorioPorRisco}
               onCheckedChange={(checked) =>
                 onDraftChange({ ...draft, obrigatorioPorRisco: checked })
@@ -2314,7 +2297,7 @@ function ItemEditorDialog({
               <>
                 <SwitchRow
                   label="Requer veterinario"
-                  description="Usado quando a etapa nao pode ser executada sem responsavel tecnico."
+                  description="Precisa responsável técnico."
                   checked={draft.requiresVet}
                   onCheckedChange={(checked) =>
                     onDraftChange({ ...draft, requiresVet: checked })
@@ -2322,7 +2305,7 @@ function ItemEditorDialog({
                 />
                 <SwitchRow
                   label="Exige documento"
-                  description="Ative para certificado, receita ou comprovacao."
+                  description="Precisa comprovante."
                   checked={draft.requiresComplianceDocument}
                   onCheckedChange={(checked) =>
                     onDraftChange({

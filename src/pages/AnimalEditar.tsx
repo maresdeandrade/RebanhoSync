@@ -32,8 +32,8 @@ import {
 import { buildEventGesture } from "@/lib/events/buildEventGesture";
 import { EventValidationError } from "@/lib/events/validators";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { MetricCard } from "@/components/ui/metric-card";
 import { PageIntro } from "@/components/ui/page-intro";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -418,8 +418,9 @@ const AnimalEditar = () => {
 
   if (!animal) {
     return (
-      <div className="space-y-6 pb-16">
+      <div className="space-y-5 pb-16">
         <PageIntro
+         variant="plain"
           eyebrow="Cadastro animal"
           title="Editar animal"
           actions={
@@ -434,10 +435,27 @@ const AnimalEditar = () => {
   }
 
   return (
-    <div className="space-y-6 pb-16">
+    <div className="space-y-5 pb-8">
       <PageIntro
+       variant="plain"
         eyebrow="Cadastro animal"
         title="Editar animal"
+        meta={
+          <>
+            <StatusBadge tone="neutral">
+              {sexo === "M" ? "Macho" : "Femea"}
+            </StatusBadge>
+            <StatusBadge tone="neutral">
+              {origem === "null" ? "Origem nao informada" : origem}
+            </StatusBadge>
+            <StatusBadge tone="neutral">
+              {loteId === "null"
+                ? "Sem lote"
+                : (lotes?.find((loteAtual) => loteAtual.id === loteId)?.nome ??
+                  "Lote selecionado")}
+            </StatusBadge>
+          </>
+        }
         actions={
           <>
             <Button
@@ -459,28 +477,11 @@ const AnimalEditar = () => {
         }
       />
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <MetricCard label="Sexo" value={sexo === "M" ? "Macho" : "Femea"} />
-        <MetricCard
-          label="Origem"
-          value={origem === "null" ? "Nao informada" : origem}
-        />
-        <MetricCard
-          label="Lote atual"
-          value={
-            loteId === "null"
-              ? "Sem lote"
-              : (lotes?.find((loteAtual) => loteAtual.id === loteId)?.nome ??
-                "Selecionado")
-          }
-        />
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Dados Básicos</CardTitle>
+      <Card className="shadow-none">
+        <CardHeader className="px-4 py-3 sm:px-5">
+          <CardTitle className="text-base">Dados básicos</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="grid gap-3 p-4 pt-0 sm:p-5 sm:pt-0 md:grid-cols-2">
           <div className="space-y-2">
             <Label htmlFor="identificacao">Identificação *</Label>
             <Input
@@ -533,18 +534,18 @@ const AnimalEditar = () => {
               disabled
             />
             <p className="text-xs text-muted-foreground mt-1">
-              Para alterar o lote, utilize o recurso de Movimentação do Animal.
+              Altere pelo manejo Movimentação.
             </p>
           </div>
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Rastreabilidade</CardTitle>
+      <Card className="shadow-none">
+        <CardHeader className="px-4 py-3 sm:px-5">
+          <CardTitle className="text-base">Rastreabilidade</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+        <CardContent className="grid gap-3 p-4 pt-0 sm:p-5 sm:pt-0 md:grid-cols-2">
+          <div className="grid gap-3 md:col-span-2 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="dataNascimento">Data de Nascimento</Label>
               <Input
@@ -610,11 +611,11 @@ const AnimalEditar = () => {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Fatos Taxonômicos</CardTitle>
+      <Card className="shadow-none">
+        <CardHeader className="px-4 py-3 sm:px-5">
+          <CardTitle className="text-base">Fatos taxonômicos</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-3 p-4 pt-0 sm:p-5 sm:pt-0">
           {(idadeMeses === null || (idadeMeses >= 7 && idadeMeses <= 12)) && (
             <div className="space-y-2">
               <Label>Puberdade confirmada</Label>
@@ -699,11 +700,11 @@ const AnimalEditar = () => {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Genealogia</CardTitle>
+      <Card className="shadow-none">
+        <CardHeader className="px-4 py-3 sm:px-5">
+          <CardTitle className="text-base">Genealogia</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="grid gap-3 p-4 pt-0 sm:p-5 sm:pt-0 md:grid-cols-2">
           <div className="space-y-2">
             <Label>Pai (Opcional)</Label>
             <Select value={paiId} onValueChange={setPaiId}>
@@ -742,11 +743,11 @@ const AnimalEditar = () => {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Informações Adicionais</CardTitle>
+      <Card className="shadow-none">
+        <CardHeader className="px-4 py-3 sm:px-5">
+          <CardTitle className="text-base">Informações adicionais</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="grid gap-3 p-4 pt-0 sm:p-5 sm:pt-0 md:grid-cols-2">
           <div className="space-y-2">
             <Label htmlFor="nome">Nome</Label>
             <Input
@@ -770,16 +771,16 @@ const AnimalEditar = () => {
       </Card>
 
       {sexo === "M" && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Perfil do Macho</CardTitle>
+        <Card className="shadow-none">
+          <CardHeader className="px-4 py-3 sm:px-5">
+            <CardTitle className="text-base">Perfil do macho</CardTitle>
             {idadeMeses !== null ? (
               <p className="text-xs text-muted-foreground">
                 {idadeMeses} meses.
               </p>
             ) : null}
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-3 p-4 pt-0 sm:p-5 sm:pt-0">
             <div className="space-y-2">
               <Label>Destino Produtivo</Label>
               <Select
@@ -840,9 +841,9 @@ const AnimalEditar = () => {
       )}
 
       {role === "owner" && (
-        <Card className="border-destructive/50 shadow-sm mb-6">
-          <CardHeader>
-            <CardTitle className="text-destructive flex items-center">
+        <Card className="mb-6 border-destructive/40 shadow-none">
+          <CardHeader className="px-4 py-3 sm:px-5">
+            <CardTitle className="text-base text-destructive flex items-center">
               <Trash2 className="h-5 w-5 mr-2" />
               Zona de Perigo
             </CardTitle>
@@ -864,17 +865,10 @@ const AnimalEditar = () => {
           </CardContent>
         </Card>
       )}
-
-      <Button onClick={handleSave} className="w-full" disabled={isSaving}>
-        {isSaving ? (
-          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-        ) : (
-          <Save className="h-4 w-4 mr-2" />
-        )}
-        {isSaving ? "Salvando..." : "Salvar Alterações"}
-      </Button>
     </div>
   );
 };
 
 export default AnimalEditar;
+
+

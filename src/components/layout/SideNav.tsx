@@ -8,6 +8,7 @@ import {
 
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
+import { BrandMark } from "./BrandMark";
 import { navigationItems, navigationSections } from "./navigationConfig";
 
 interface SideNavProps {
@@ -105,6 +106,12 @@ export const SideNav = ({ mobile = false }: SideNavProps) => {
       )}
       aria-label="Navegacao principal"
     >
+      {!mobile ? (
+        <div className="border-b border-sidebar-border/80 px-5 py-4">
+          <BrandMark showSubtitle />
+        </div>
+      ) : null}
+
       <div className={cn("flex-1 overflow-y-auto", mobile ? "px-4 py-4" : "px-4 py-5")}>
         <div className="space-y-6">
           {visibleSections.map((section) => (

@@ -1,4 +1,3 @@
-import { AlertTriangle, CheckCircle2, Clock3, RefreshCw } from "lucide-react";
 import { Link } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
@@ -75,46 +74,25 @@ export function SyncStatusPanel({ summary }: SyncStatusPanelProps) {
         ) : null}
       </CardHeader>
 
-      <CardContent className="grid gap-3 md:grid-cols-4">
-        <div className="rounded-2xl border border-border/70 bg-muted/35 p-4">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Clock3 className="h-4 w-4" />
-            Salvos no aparelho
-          </div>
-          <p className="mt-3 text-2xl font-semibold">
-            {summary.savedLocalCount}
-          </p>
-        </div>
-
-        <div className="rounded-2xl border border-border/70 bg-muted/35 p-4">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <RefreshCw className="h-4 w-4" />
-            Sincronizando
-          </div>
-          <p className="mt-3 text-2xl font-semibold">{summary.syncingCount}</p>
-        </div>
-
-        <div className="rounded-2xl border border-border/70 bg-muted/35 p-4">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <AlertTriangle className="h-4 w-4" />
-            Rejeicoes
-          </div>
-          <p className="mt-3 text-2xl font-semibold">
-            {summary.rejectionCount}
-          </p>
-        </div>
-
-        <div className="rounded-2xl border border-border/70 bg-muted/35 p-4">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <CheckCircle2 className="h-4 w-4" />
-            Ultima confirmacao
-          </div>
-          <p className="mt-3 text-sm font-semibold text-foreground">
-            {summary.lastCompletedAt
-              ? formatDateTime(summary.lastCompletedAt)
-              : "Sem confirmacao"}
-          </p>
-        </div>
+      <CardContent className="flex flex-wrap items-center gap-2">
+        {summary.savedLocalCount > 0 ? (
+          <StatusBadge tone="warning">
+            {summary.savedLocalCount} no aparelho
+          </StatusBadge>
+        ) : null}
+        {summary.syncingCount > 0 ? (
+          <StatusBadge tone="info">{summary.syncingCount} enviando</StatusBadge>
+        ) : null}
+        {summary.rejectionCount > 0 ? (
+          <StatusBadge tone="danger">
+            {summary.rejectionCount} para revisar
+          </StatusBadge>
+        ) : null}
+        <span className="text-sm text-muted-foreground">
+          {summary.lastCompletedAt
+            ? `Ultima confirmacao: ${formatDateTime(summary.lastCompletedAt)}`
+            : "Sem confirmacao"}
+        </span>
       </CardContent>
     </Card>
   );

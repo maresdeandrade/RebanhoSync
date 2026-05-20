@@ -101,3 +101,4 @@ describe("OnboardingInicial wizard", () => {
     expect(screen.getAllByText(/0 animal\(is\) cadastrados/i).length).toBeGreaterThan(0);
   });
 });
+

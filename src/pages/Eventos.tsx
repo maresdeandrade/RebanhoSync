@@ -41,7 +41,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MetricCard } from "@/components/ui/metric-card";
 import { PageIntro } from "@/components/ui/page-intro";
 import {
   Select,
@@ -753,6 +752,7 @@ const Eventos = () => {
   return (
     <div className="space-y-5">
       <PageIntro
+        variant="plain"
         eyebrow="Historico operacional"
         title="Eventos"
         meta={
@@ -762,6 +762,9 @@ const Eventos = () => {
             </StatusBadge>
             {hasActiveFilters ? (
               <StatusBadge tone="info">Filtros ativos</StatusBadge>
+            ) : null}
+            {hasRegulatoryAnalyticalFilters ? (
+              <StatusBadge tone="info">Recorte regulatorio ativo</StatusBadge>
             ) : null}
             {syncSummary.errors > 0 ? (
               <StatusBadge tone="danger">
@@ -793,48 +796,13 @@ const Eventos = () => {
         }
       />
 
-      <section className="grid gap-4 md:grid-cols-3">
-        <MetricCard
-          label="Eventos filtrados"
-          value={data?.totalCount ?? 0}
-          hint={`${timeline.length} visiveis agora.`}
-        />
-        <MetricCard
-          label="Para revisar"
-          value={syncSummary.errors}
-          hint={
-            syncSummary.errors > 0
-              ? "Registros que precisam de atencao no envio."
-              : "Nenhum registro exige revisao."
-          }
-          tone={syncSummary.errors > 0 ? "danger" : "success"}
-        />
-        <MetricCard
-          label="Conformidade aberta"
-          value={regulatoryReadModel.attention.openCount}
-          hint={
-            regulatoryReadModel.flows.sale.blockerCount > 0
-              ? `${regulatoryReadModel.flows.sale.blockerCount} bloqueio(s) para venda/transito.`
-              : regulatoryReadModel.flows.nutrition.blockerCount > 0
-                ? `${regulatoryReadModel.flows.nutrition.blockerCount} bloqueio(s) em nutricao.`
-                : regulatoryReadModel.attention.openCount > 0
-                  ? "Ha pendencias abertas."
-                  : "Sem pendencias abertas."
-          }
-          tone={
-            regulatoryReadModel.hasBlockingIssues
-              ? "danger"
-              : regulatoryReadModel.attention.openCount > 0
-                ? "warning"
-                : "success"
-          }
-        />
-      </section>
-
       {regulatoryReadModel.attention.openCount > 0 ? (
-        <Card className="border-amber-200 bg-amber-50/60">
-          <CardHeader>
-            <CardTitle>Atenção de conformidade</CardTitle>
+        <Card className="border-warning/25 bg-warning-muted/50 shadow-none">
+          <CardHeader className="px-4 pb-2 pt-4 sm:px-5">
+            <CardTitle className="text-base">Atenção de conformidade</CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Conformidade aberta
+            </p>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex flex-wrap gap-2">
@@ -854,7 +822,7 @@ const Eventos = () => {
             {regulatoryReadModel.attention.topItems.slice(0, 2).map((item) => (
               <div
                 key={item.key}
-                className="rounded-2xl border border-border/70 bg-background/80 p-4"
+                className="rounded-xl border border-border/70 bg-background/80 p-4"
               >
                 <div className="flex flex-wrap items-center gap-2">
                   <p className="font-medium">{item.label}</p>
@@ -884,37 +852,7 @@ const Eventos = () => {
         </Card>
       ) : null}
 
-      {hasRegulatoryAnalyticalFilters ? (
-        <Card className="border-sky-200 bg-sky-50/60">
-          <CardHeader>
-            <CardTitle>Recorte regulatorio ativo</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-wrap items-center gap-2">
-            {regulatorySubareaFilter !== "all" ? (
-              <StatusBadge tone="info">
-                {getRegulatoryAnalyticsSubareaLabel(regulatorySubareaFilter)}
-              </StatusBadge>
-            ) : null}
-            {regulatoryImpactFilter !== "all" ? (
-              <StatusBadge tone="info">
-                {getRegulatoryAnalyticsImpactLabel(regulatoryImpactFilter)}
-              </StatusBadge>
-            ) : null}
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => {
-                setRegulatorySubareaFilter("all");
-                setRegulatoryImpactFilter("all");
-              }}
-            >
-              Limpar recorte regulatorio
-            </Button>
-          </CardContent>
-        </Card>
-      ) : null}
-
-      <Toolbar>
+      <Toolbar className="bg-muted/20 shadow-none">
         <ToolbarGroup className="flex-1 gap-2">
           <div className="relative min-w-[220px] flex-1">
             <Search className="absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
@@ -1039,19 +977,18 @@ const Eventos = () => {
             }}
           >
             <RefreshCw className="h-4 w-4" />
-            Limpar filtros
+            {hasRegulatoryAnalyticalFilters
+              ? "Limpar recorte regulatorio"
+              : "Limpar filtros"}
           </Button>
         </ToolbarGroup>
       </Toolbar>
 
       {timeline.length === 0 ? (
-        <Card>
+        <Card className="shadow-none">
           <CardContent className="p-10 text-center">
             <Calendar className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
             <p className="font-medium">Nenhum evento encontrado</p>
-            <p className="text-sm text-muted-foreground">
-              Ajuste o recorte atual ou registre um novo evento.
-            </p>
           </CardContent>
         </Card>
       ) : (
@@ -1064,7 +1001,7 @@ const Eventos = () => {
               <article
                 key={row.id}
                 className={cn(
-                  "rounded-2xl border border-border/70 bg-background/95 p-4 shadow-soft",
+                  "rounded-xl border border-border/70 bg-background/95 p-4 shadow-none transition-colors hover:border-primary/25",
                   isHighlighted && "border-primary/30 bg-primary/5",
                 )}
               >
@@ -1087,7 +1024,10 @@ const Eventos = () => {
 
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
                       <span>{toDateTime(row.evento.occurred_at)}</span>
-                      <span>Envio: {getSyncStageLabel(row.syncStage)}</span>
+                      {row.syncStage !== "synced" &&
+                      row.syncStage !== "synced_altered" ? (
+                        <span>Envio: {getSyncStageLabel(row.syncStage)}</span>
+                      ) : null}
                       {row.evento.source_task_id ? (
                         <span>Origem: agenda</span>
                       ) : null}
@@ -1151,14 +1091,10 @@ const Eventos = () => {
                 </div>
 
                 {isComplementOpen ? (
-                  <div className="mt-4 rounded-2xl border border-border/70 bg-muted/30 p-4">
+                  <div className="mt-4 rounded-xl border border-border/70 bg-muted/30 p-4">
                     <div className="space-y-1">
                       <p className="text-sm font-medium text-foreground">
                         Complemento do evento
-                      </p>
-                      <p className="text-sm leading-6 text-muted-foreground">
-                        Acrescente contexto sem alterar o fato original ja
-                        registrado.
                       </p>
                     </div>
 
@@ -1218,3 +1154,4 @@ const Eventos = () => {
 };
 
 export default Eventos;
+

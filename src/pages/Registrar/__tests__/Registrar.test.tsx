@@ -265,3 +265,4 @@ describe("Registrar Page - Anti-Teleport", () => {
     expect(runRegistrarFinalizeGestureEffect).not.toHaveBeenCalled();
   });
 });
+

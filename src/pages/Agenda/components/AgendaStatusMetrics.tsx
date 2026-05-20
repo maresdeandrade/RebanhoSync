@@ -1,4 +1,4 @@
-import { MetricCard } from "@/components/ui/metric-card";
+import { StatusBadge } from "@/components/ui/status-badge";
 
 type AgendaStatusMetricsProps = {
   agendado: number;
@@ -6,27 +6,29 @@ type AgendaStatusMetricsProps = {
   cancelado: number;
 };
 
-export function AgendaStatusMetrics({ agendado, concluido, cancelado }: AgendaStatusMetricsProps) {
+export function AgendaStatusMetrics({
+  agendado,
+  concluido,
+  cancelado,
+}: AgendaStatusMetricsProps) {
   return (
-    <section className="grid gap-4 md:grid-cols-3">
-      <MetricCard
-        label="Agendados"
-        value={agendado}
-        hint="Itens que ainda pedem ação."
-        tone={agendado > 0 ? "warning" : "default"}
-      />
-      <MetricCard
-        label="Concluídos"
-        value={concluido}
-        hint="Já resolvidos no recorte atual."
-        tone="success"
-      />
-      <MetricCard
-        label="Cancelados"
-        value={cancelado}
-        hint="Itens encerrados sem execução."
-        tone={cancelado > 0 ? "danger" : "default"}
-      />
+    <section
+      aria-label="Resumo da agenda"
+      className="flex flex-wrap items-center gap-2"
+    >
+      <StatusBadge tone={agendado > 0 ? "warning" : "neutral"}>
+        <span>Agendados</span>
+        <span>{agendado}</span>
+      </StatusBadge>
+      <StatusBadge tone="success">
+        <span>Concluídos</span>
+        <span>{concluido}</span>
+      </StatusBadge>
+      <StatusBadge tone={cancelado > 0 ? "danger" : "neutral"}>
+        <span>Cancelados</span>
+        <span>{cancelado}</span>
+      </StatusBadge>
     </section>
   );
 }
+

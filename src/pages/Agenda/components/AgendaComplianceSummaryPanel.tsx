@@ -77,7 +77,7 @@ export function AgendaComplianceSummaryPanel({
           {topItems.map((item) => (
             <div
               key={item.key}
-              className="rounded-2xl border border-border/70 bg-background/90 p-4"
+              className="rounded-xl border border-border/70 bg-background/90 p-4"
             >
               <div className="flex flex-wrap items-center gap-2">
                 <p className="font-medium">{item.label}</p>
@@ -100,3 +100,5 @@ export function AgendaComplianceSummaryPanel({
     </Card>
   );
 }
+
+

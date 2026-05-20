@@ -71,10 +71,11 @@ export const RemoveMemberDialog = ({
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Remover acesso de {member?.display_name}?</AlertDialogTitle>
+          <AlertDialogTitle>
+            Remover acesso de {member?.display_name}?
+          </AlertDialogTitle>
           <AlertDialogDescription>
-            Essa acao encerra o acesso deste membro a fazenda atual. Use apenas
-            quando o convite ou o vinculo nao devem continuar ativos.
+            Encerra o acesso deste membro a fazenda atual.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

@@ -44,12 +44,12 @@ export function RegistrarSelectTargetStep<
   QuickActionKey extends string = string,
 >(props: RegistrarSelectTargetStepProps<QuickActionKey>) {
   return (
-    <Card className="overflow-hidden border-sky-200/70 shadow-sm dark:border-sky-900/60">
-      <CardHeader className="border-b border-sky-100 bg-sky-50/70 dark:border-sky-900/50 dark:bg-sky-950/20">
-        <CardTitle className="text-base">1. Alvo do manejo</CardTitle>
+    <Card className="overflow-hidden border-border/70 shadow-sm">
+      <CardHeader className="px-4 pb-2 pt-4 sm:px-5">
+        <CardTitle className="text-base">Alvo</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-5">
-        <div className="space-y-3 rounded-xl border border-border/70 bg-card p-4">
+      <CardContent className="space-y-4 p-4 sm:p-5">
+        <div className="space-y-2 rounded-xl border border-border/70 bg-muted/20 p-3">
           <div className="flex items-center justify-between gap-3">
             <Label>Lote</Label>
             <span className="text-xs text-muted-foreground">
@@ -92,8 +92,8 @@ export function RegistrarSelectTargetStep<
             {props.animaisNoLoteCount === 0 ? (
               <p className="text-sm text-muted-foreground">
                 {props.selectedLoteId === props.semLoteOption
-                  ? "Nao ha animais sem lote."
-                  : "Lote vazio. Compra ou sociedade podem ser registradas pelo financeiro."}
+                  ? "Sem animais fora de lote."
+                  : "Lote vazio."}
               </p>
             ) : null}
 
@@ -113,7 +113,7 @@ export function RegistrarSelectTargetStep<
         ) : null}
 
         <Button
-          className="min-h-12 w-full bg-[#0057C2] text-base font-semibold text-white hover:bg-[#00479f]"
+          className="min-h-12 w-full text-base font-semibold"
           disabled={
             !props.selectedLoteId || props.requiresAnimalsForQuickAction
           }
@@ -128,3 +128,4 @@ export function RegistrarSelectTargetStep<
     </Card>
   );
 }
+

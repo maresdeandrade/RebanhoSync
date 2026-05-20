@@ -3,16 +3,10 @@ import { type Collection } from "dexie";
 import { useLiveQuery } from "dexie-react-hooks";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
-  Activity,
   AlertTriangle,
-  Baby,
-  Beef,
-  CalendarClock,
   CornerDownRight,
   Filter,
   FilterX,
-  Milk,
-  MilkOff,
   PawPrint,
   Plus,
   Search,
@@ -26,7 +20,6 @@ import { AnimalDemographicsCard } from "@/components/animals/AnimalDemographicsC
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { MetricCard } from "@/components/ui/metric-card";
 import { PageIntro } from "@/components/ui/page-intro";
 import {
   Pagination,
@@ -274,7 +267,7 @@ function FilterChipGroup<Value extends string>({
 }: FilterChipGroupProps<Value>) {
   return (
     <div className={cn("space-y-2", className)}>
-      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+      <p className="text-xs font-semibold uppercase text-muted-foreground">
         {label}
       </p>
       <div className="flex flex-wrap gap-2">
@@ -840,90 +833,6 @@ export default function Animais() {
   );
   const lifecycleBiologicalCount =
     lifecyclePendingCount - lifecycleStrategicCount;
-  const activeAnimalsCount = useMemo(
-    () =>
-      (animaisFamilia ?? []).filter((animal) => animal.status === "ativo")
-        .length,
-    [animaisFamilia],
-  );
-  const animalsWithWeightCount = useMemo(
-    () =>
-      animalRows.filter(({ animal }) => weightSummaryByAnimal.has(animal.id))
-        .length,
-    [animalRows, weightSummaryByAnimal],
-  );
-  const animalsWithNextAgendaCount = useMemo(
-    () =>
-      animalRows.filter(({ animal }) => nextAgendaByAnimal.has(animal.id))
-        .length,
-    [animalRows, nextAgendaByAnimal],
-  );
-  const agendaRadarCount = useMemo(
-    () =>
-      animalRows.filter(({ animal }) => {
-        const nextAgenda = nextAgendaByAnimal.get(animal.id);
-        return nextAgenda && nextAgenda.status !== "proximo";
-      }).length,
-    [animalRows, nextAgendaByAnimal],
-  );
-  const femaleMetrics = useMemo(() => {
-    let vacasParidas = 0;
-    let vacasSecas = 0;
-    let novilhas = 0;
-    let bezerras = 0;
-
-    for (const { animal } of animalRows) {
-      if (animal.sexo !== "F") continue;
-      const taxonomy = taxonomyByAnimal.get(animal.id);
-      if (!taxonomy) continue;
-
-      if (
-        taxonomy.categoria_zootecnica === "vaca" &&
-        taxonomy.facts.pariu_alguma_vez
-      ) {
-        vacasParidas++;
-      }
-      if (taxonomy.estado_produtivo_reprodutivo === "seca") {
-        vacasSecas++;
-      }
-      if (taxonomy.categoria_zootecnica === "novilha") {
-        novilhas++;
-      }
-      if (taxonomy.categoria_zootecnica === "bezerra") {
-        bezerras++;
-      }
-    }
-
-    return { vacasParidas, vacasSecas, novilhas, bezerras };
-  }, [animalRows, taxonomyByAnimal]);
-
-  const maleMetrics = useMemo(() => {
-    let touros = 0;
-    let novilhos = 0;
-    let bois = 0;
-    let bezerros = 0;
-
-    for (const { animal } of animalRows) {
-      if (animal.sexo !== "M") continue;
-      const taxonomy = taxonomyByAnimal.get(animal.id);
-      if (!taxonomy) continue;
-
-      if (taxonomy.categoria_zootecnica === "touro") {
-        touros++;
-      }
-      if (taxonomy.categoria_zootecnica === "garrote") {
-        novilhos++;
-      }
-      if (taxonomy.categoria_zootecnica === "boi_terminacao") {
-        bois++;
-      }
-      if (taxonomy.categoria_zootecnica === "bezerro") {
-        bezerros++;
-      }
-    }
-
-    return { touros, novilhos, bois, bezerros };
-  }, [animalRows, taxonomyByAnimal]);
   const regulatoryImpactedAnimals = useMemo(
     () =>
       filteredAnimals.filter(
@@ -1033,9 +942,9 @@ export default function Animais() {
     return (
       <div className="space-y-5">
         <PageIntro
-          eyebrow="Rebanho"
+          variant="plain"
           title="Animais"
-          description="Cadastro e leitura operacional do rebanho, com foco em estrutura, categoria, peso e proximo passo por animal."
+          description="Lista operacional do rebanho, com filtros compactos e proximo evento em destaque."
           actions={
             <>
               <Button asChild variant="outline">
@@ -1057,7 +966,6 @@ export default function Animais() {
         <EmptyState
           icon={PawPrint}
           title="Nenhum animal cadastrado"
-          description="Comece cadastrando os primeiros animais da fazenda para liberar agenda, historico, peso e acompanhamento do rebanho."
           action={{
             label: "Cadastrar primeiro animal",
             onClick: () => navigate("/animais/novo"),
@@ -1068,9 +976,21 @@ export default function Animais() {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="mx-auto max-w-7xl space-y-5">
       <PageIntro
+        variant="plain"
         title="Animais"
+        description="Lista operacional do rebanho, com filtros compactos e proximo evento em destaque."
+        meta={
+          <>
+            <StatusBadge tone="neutral">{animalRows.length} animais</StatusBadge>
+            {lifecyclePendingCount > 0 ? (
+              <StatusBadge tone="warning">
+                {lifecyclePendingCount} transicao(oes)
+              </StatusBadge>
+            ) : null}
+          </>
+        }
         actions={
           <>
             <Button asChild variant="outline">
@@ -1088,78 +1008,6 @@ export default function Animais() {
           </>
         }
       />
-
-      <section className="grid grid-cols-2 gap-2 md:grid-cols-4">
-        {sexoFilter === "F" ? (
-          <>
-            <MetricCard
-              label="Vacas que pariram"
-              value={femaleMetrics.vacasParidas}
-              icon={<Milk className="h-5 w-5" />}
-              tone={femaleMetrics.vacasParidas > 0 ? "info" : "default"}
-            />
-            <MetricCard
-              label="Vacas secas"
-              value={femaleMetrics.vacasSecas}
-              icon={<MilkOff className="h-5 w-5" />}
-              tone={femaleMetrics.vacasSecas > 0 ? "warning" : "default"}
-            />
-            <MetricCard
-              label="Novilhas"
-              value={femaleMetrics.novilhas}
-              icon={<Activity className="h-5 w-5" />}
-              tone={femaleMetrics.novilhas > 0 ? "success" : "default"}
-            />
-            <MetricCard
-              label="Bezerras"
-              value={femaleMetrics.bezerras}
-              icon={<Baby className="h-5 w-5" />}
-            />
-          </>
-        ) : sexoFilter === "M" ? (
-          <>
-            <MetricCard
-              label="Touros"
-              value={maleMetrics.touros}
-              icon={<Beef className="h-5 w-5" />}
-              tone={maleMetrics.touros > 0 ? "info" : "default"}
-            />
-            <MetricCard
-              label="Novilhos"
-              value={maleMetrics.novilhos}
-              icon={<Activity className="h-5 w-5" />}
-            />
-            <MetricCard
-              label="Bois"
-              value={maleMetrics.bois}
-              icon={<Beef className="h-5 w-5" />}
-              tone={maleMetrics.bois > 0 ? "success" : "default"}
-            />
-            <MetricCard
-              label="Bezerros"
-              value={maleMetrics.bezerros}
-              icon={<Baby className="h-5 w-5" />}
-            />
-          </>
-        ) : (
-          <>
-            <MetricCard label="Animais ativos" value={activeAnimalsCount} />
-            <MetricCard label="No recorte atual" value={animalRows.length} />
-            <MetricCard
-              label="Eventos próximos"
-              value={agendaRadarCount}
-              tone={agendaRadarCount > 0 ? "warning" : "info"}
-              icon={<CalendarClock className="h-5 w-5" />}
-            />
-            <MetricCard
-              label="Pendências"
-              value={lifecyclePendingCount}
-              tone={lifecyclePendingCount > 0 ? "warning" : "default"}
-              icon={<Activity className="h-5 w-5" />}
-            />
-          </>
-        )}
-      </section>
 
       <div className="space-y-4">
         <div className="flex items-center gap-2">
@@ -1197,11 +1045,11 @@ export default function Animais() {
         ) : null}
 
         {showFilters && (
-          <div className="rounded-xl border border-border/70 bg-card p-3 shadow-sm">
+          <div className="rounded-xl border border-border/70 bg-muted/20 p-3 shadow-none">
             <div className="grid gap-3">
               <div className="grid gap-3 lg:grid-cols-[minmax(180px,220px)_1fr]">
                 <div className="space-y-2">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  <p className="text-xs font-semibold uppercase text-muted-foreground">
                     Lote
                   </p>
                   <Select value={loteFilter} onValueChange={setLoteFilter}>
@@ -1245,7 +1093,7 @@ export default function Animais() {
 
               <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
                 <div className="space-y-2">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  <p className="text-xs font-semibold uppercase text-muted-foreground">
                     Estado produtivo
                   </p>
                   <Select
@@ -1266,7 +1114,7 @@ export default function Animais() {
                 </div>
 
                 <div className="space-y-2">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  <p className="text-xs font-semibold uppercase text-muted-foreground">
                     Impacto regulatorio
                   </p>
                   <Select
@@ -1289,7 +1137,7 @@ export default function Animais() {
                 </div>
 
                 <div className="space-y-2">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  <p className="text-xs font-semibold uppercase text-muted-foreground">
                     Subarea regulatoria
                   </p>
                   <Select
@@ -1314,7 +1162,7 @@ export default function Animais() {
                 </div>
 
                 <div className="space-y-2">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  <p className="text-xs font-semibold uppercase text-muted-foreground">
                     Calendario
                   </p>
                   <Select
@@ -1337,7 +1185,7 @@ export default function Animais() {
                 </div>
 
                 <div className="space-y-2">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  <p className="text-xs font-semibold uppercase text-muted-foreground">
                     Ancora
                   </p>
                   <Select
@@ -1458,7 +1306,7 @@ export default function Animais() {
                 <Card
                   key={animal.id}
                   className={cn(
-                    "overflow-hidden border-border/70 shadow-sm",
+                    "overflow-hidden border-border/70 shadow-none transition-colors hover:border-primary/25",
                     lifecyclePending && "border-warning/30 bg-warning-muted/40",
                     regulatoryProfile.hasBlockingIssues &&
                       "border-destructive/30 bg-destructive/10",
@@ -1475,7 +1323,7 @@ export default function Animais() {
                         <div className="min-w-0">
                           <Link
                             to={`/animais/${animal.id}`}
-                            className="text-lg font-bold tabular-nums text-foreground hover:underline"
+                            className="text-lg font-semibold tabular-nums text-foreground hover:underline"
                           >
                             {animal.identificacao}
                           </Link>
@@ -1508,7 +1356,7 @@ export default function Animais() {
 
                     <div className="grid grid-cols-2 gap-3 border-t border-border/50 pt-3 text-sm">
                       <div>
-                        <p className="mb-1 text-xs font-medium text-muted-foreground">
+                        <p className="mb-1 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                           Peso
                         </p>
                         <p className="font-semibold tabular-nums text-foreground">
@@ -1521,7 +1369,7 @@ export default function Animais() {
                         </p>
                       </div>
                       <div>
-                        <p className="mb-1 text-xs font-medium text-muted-foreground">
+                        <p className="mb-1 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                           Ganho/dia
                         </p>
                         <p className="font-semibold tabular-nums text-foreground">
@@ -1534,7 +1382,7 @@ export default function Animais() {
                         </p>
                       </div>
                       <div>
-                        <p className="mb-1 text-xs font-medium text-muted-foreground">
+                        <p className="mb-1 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                           Lote
                         </p>
                         <p className="truncate font-medium text-foreground">
@@ -1544,7 +1392,7 @@ export default function Animais() {
                         </p>
                       </div>
                       <div>
-                        <p className="mb-1 text-xs font-medium text-muted-foreground">
+                        <p className="mb-1 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                           Idade
                         </p>
                         <p className="font-medium text-foreground">
@@ -1553,9 +1401,11 @@ export default function Animais() {
                       </div>
                     </div>
 
-                    <div className="rounded-xl border border-border/70 bg-muted/25 p-3">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <p className="text-sm font-medium">Agenda</p>
+                    <div className="border-t border-border/50 pt-3">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                          Agenda
+                        </p>
                         {nextAgenda ? (
                           <StatusBadge tone={getAgendaTone(nextAgenda.status)}>
                             {getAgendaStatusLabel(nextAgenda.status)}
@@ -1723,3 +1573,5 @@ export default function Animais() {
     </div>
   );
 }
+
+

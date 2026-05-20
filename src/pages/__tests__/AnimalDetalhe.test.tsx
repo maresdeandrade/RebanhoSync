@@ -154,3 +154,4 @@ describe("AnimalDetalhe", () => {
     ).toHaveAttribute("href", "/registrar?animalId=animal-1");
   });
 });
+

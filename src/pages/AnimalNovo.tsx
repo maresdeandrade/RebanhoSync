@@ -24,7 +24,6 @@ import { buildAnimalTaxonomyFactsPayload } from "@/lib/animals/taxonomy";
 import { buildEventGesture } from "@/lib/events/buildEventGesture";
 import { EventValidationError } from "@/lib/events/validators";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { MetricCard } from "@/components/ui/metric-card";
 import { PageIntro } from "@/components/ui/page-intro";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -389,8 +388,9 @@ const AnimalNovo = () => {
   };
 
   return (
-    <div className="space-y-6 pb-16">
+    <div className="space-y-5 pb-8">
       <PageIntro
+        variant="plain"
         eyebrow="Cadastro animal"
         title="Novo animal"
         actions={
@@ -411,11 +411,11 @@ const AnimalNovo = () => {
         }
       />
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Dados Básicos</CardTitle>
+      <Card className="shadow-none">
+        <CardHeader className="px-4 py-3 sm:px-5">
+          <CardTitle className="text-base">Dados basicos</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="grid gap-3 p-4 pt-0 sm:p-5 sm:pt-0 md:grid-cols-2">
           <div className="space-y-2">
             <Label htmlFor="identificacao">Identificação (Brinco/Nome) *</Label>
             <Input
@@ -478,7 +478,7 @@ const AnimalNovo = () => {
             </Select>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid gap-3 md:col-span-2 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="data_nascimento">Data de Nascimento</Label>
               <Input
@@ -505,11 +505,11 @@ const AnimalNovo = () => {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Rastreabilidade</CardTitle>
+      <Card className="shadow-none">
+        <CardHeader className="px-4 py-3 sm:px-5">
+          <CardTitle className="text-base">Rastreabilidade</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="grid gap-3 p-4 pt-0 sm:p-5 sm:pt-0 md:grid-cols-2">
           <div className="space-y-2">
             <Label>Origem</Label>
             <Select value={origem} onValueChange={(v: typeof origem) => setOrigem(v)}>
@@ -518,7 +518,7 @@ const AnimalNovo = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="null">Não informado</SelectItem>
-                <SelectItem value="nascimento">Nasc imento</SelectItem>
+                <SelectItem value="nascimento">Nascimento</SelectItem>
                 <SelectItem value="compra">Compra</SelectItem>
                 <SelectItem value="doacao">Doação</SelectItem>
                 <SelectItem value="arrendamento">Arrendamento</SelectItem>
@@ -548,11 +548,11 @@ const AnimalNovo = () => {
 
       {/* Card condicional: Detalhes da Sociedade */}
       {origem === "sociedade" && (
-        <Card className="border-blue-200 bg-blue-50/50">
-          <CardHeader>
-            <CardTitle className="text-blue-900">Detalhes da Sociedade</CardTitle>
+        <Card className="border-border/70 bg-card shadow-none">
+          <CardHeader className="px-4 py-3 sm:px-5">
+            <CardTitle className="text-base">Sociedade</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="grid gap-3 p-4 pt-0 sm:p-5 sm:pt-0 md:grid-cols-3">
             <div className="space-y-2">
               <Label>
                 Contraparte <span className="text-red-500">*</span>
@@ -573,9 +573,6 @@ const AnimalNovo = () => {
                   ))}
                 </SelectContent>
               </Select>
-              <p className="text-xs text-muted-foreground">
-                Dono/parceiro do animal em sociedade
-              </p>
             </div>
 
             <div className="space-y-2">
@@ -589,9 +586,6 @@ const AnimalNovo = () => {
                 onChange={(e) => setPercentualSociedade(e.target.value)}
                 placeholder="Ex: 50"
               />
-              <p className="text-xs text-muted-foreground">
-                Participação da fazenda na sociedade (opcional)
-              </p>
             </div>
 
             <div className="space-y-2">
@@ -601,9 +595,6 @@ const AnimalNovo = () => {
                 value={inicioSociedade}
                 onChange={(e) => setInicioSociedade(e.target.value)}
               />
-              <p className="text-xs text-muted-foreground">
-                Se não informado, usa a data de entrada ou data atual
-              </p>
             </div>
           </CardContent>
         </Card>
@@ -611,11 +602,11 @@ const AnimalNovo = () => {
 
       {/* Card condicional: Detalhes da Compra */}
       {origem === "compra" && (
-        <Card className="border-emerald-200 bg-emerald-50/40">
-          <CardHeader>
-            <CardTitle className="text-emerald-900">Detalhes da Compra</CardTitle>
+        <Card className="border-border/70 bg-card shadow-none">
+          <CardHeader className="px-4 py-3 sm:px-5">
+            <CardTitle className="text-base">Compra</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="grid gap-3 p-4 pt-0 sm:p-5 sm:pt-0 md:grid-cols-3">
             <div className="space-y-2">
               <Label>
                 Valor Total (R$) <span className="text-red-500">*</span>
@@ -662,11 +653,11 @@ const AnimalNovo = () => {
         </Card>
       )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Fatos Taxonômicos</CardTitle>
+      <Card className="shadow-none">
+        <CardHeader className="px-4 py-3 sm:px-5">
+          <CardTitle className="text-base">Fatos taxonomicos</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-3 p-4 pt-0 sm:p-5 sm:pt-0">
           <div className="space-y-3">
             <Label>Puberdade confirmada</Label>
             <ToggleGroup
@@ -675,9 +666,9 @@ const AnimalNovo = () => {
               onValueChange={(value) => setPuberdadeConfirmada((value || "null") as "null" | "true" | "false")}
               className="justify-start flex-wrap"
             >
-              <ToggleGroupItem value="null">N�o informado</ToggleGroupItem>
+              <ToggleGroupItem value="null">Não informado</ToggleGroupItem>
               <ToggleGroupItem value="true">Sim</ToggleGroupItem>
-              <ToggleGroupItem value="false">N�o</ToggleGroupItem>
+              <ToggleGroupItem value="false">Não</ToggleGroupItem>
             </ToggleGroup>
           </div>
 
@@ -690,9 +681,9 @@ const AnimalNovo = () => {
                 onValueChange={(value) => setCastrado((value || "null") as "null" | "true" | "false")}
                 className="justify-start flex-wrap"
               >
-                <ToggleGroupItem value="null">N�o informado</ToggleGroupItem>
+                <ToggleGroupItem value="null">Não informado</ToggleGroupItem>
                 <ToggleGroupItem value="true">Sim</ToggleGroupItem>
-                <ToggleGroupItem value="false">N�o</ToggleGroupItem>
+                <ToggleGroupItem value="false">Não</ToggleGroupItem>
               </ToggleGroup>
             </div>
           )}
@@ -726,9 +717,9 @@ const AnimalNovo = () => {
                   onValueChange={(value) => handleSecagemRealizadaChange(value || "null")}
                   className="justify-start flex-wrap"
                 >
-                  <ToggleGroupItem value="null">N�o informado</ToggleGroupItem>
+                  <ToggleGroupItem value="null">Não informado</ToggleGroupItem>
                   <ToggleGroupItem value="true">Sim</ToggleGroupItem>
-                  <ToggleGroupItem value="false">N�o</ToggleGroupItem>
+                  <ToggleGroupItem value="false">Não</ToggleGroupItem>
                 </ToggleGroup>
               </div>
             </div>
@@ -736,11 +727,11 @@ const AnimalNovo = () => {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Genealogia</CardTitle>
+      <Card className="shadow-none">
+        <CardHeader className="px-4 py-3 sm:px-5">
+          <CardTitle className="text-base">Genealogia</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="grid gap-3 p-4 pt-0 sm:p-5 sm:pt-0 md:grid-cols-2">
           <div className="space-y-2">
             <Label>Pai (Opcional)</Label>
             <Select value={paiId} onValueChange={setPaiId}>
@@ -780,17 +771,11 @@ const AnimalNovo = () => {
       </Card>
 
       {sexo === "M" && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Perfil do Macho</CardTitle>
-            <p className="text-xs text-muted-foreground">
-              Defina o destino do animal e, quando for o caso, o status
-              reprodutivo. O modo de transicao fica nas configuracoes gerais
-              da fazenda.
-              {idadeMeses !== null ? ` Idade atual: ${idadeMeses} meses.` : ""}
-            </p>
+        <Card className="shadow-none">
+          <CardHeader className="px-4 py-3 sm:px-5">
+            <CardTitle className="text-base">Perfil do macho</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-3 p-4 pt-0 sm:p-5 sm:pt-0">
             <div className="space-y-3">
               <Label>Destino Produtivo</Label>
               <ToggleGroup
@@ -799,9 +784,9 @@ const AnimalNovo = () => {
                 onValueChange={(value) => handleDestinoProdutivoChange((value || "null") as DestinoProdutivoAnimalEnum | "null")}
                 className="justify-start flex-wrap"
               >
-                <ToggleGroupItem value="null">N�o definido</ToggleGroupItem>
+                <ToggleGroupItem value="null">Não definido</ToggleGroupItem>
                 <ToggleGroupItem value="reprodutor">Reprodutor</ToggleGroupItem>
-                <ToggleGroupItem value="rufiao">Rufi�o</ToggleGroupItem>
+                <ToggleGroupItem value="rufiao">Rufião</ToggleGroupItem>
                 <ToggleGroupItem value="engorda">Engorda</ToggleGroupItem>
                 <ToggleGroupItem value="abate">Abate</ToggleGroupItem>
                 <ToggleGroupItem value="venda">Venda</ToggleGroupItem>
@@ -818,7 +803,7 @@ const AnimalNovo = () => {
                 disabled={!maleBreedingSelected}
                 className="justify-start flex-wrap"
               >
-                <ToggleGroupItem value="null">N�o definido</ToggleGroupItem>
+                <ToggleGroupItem value="null">Não definido</ToggleGroupItem>
                 <ToggleGroupItem value="candidato">Candidato</ToggleGroupItem>
                 <ToggleGroupItem value="apto">Apto</ToggleGroupItem>
                 <ToggleGroupItem value="suspenso">Suspenso</ToggleGroupItem>
@@ -826,8 +811,7 @@ const AnimalNovo = () => {
               </ToggleGroup>
               {!maleBreedingSelected && destinoProdutivo !== "null" && (
                   <p className="text-xs text-muted-foreground">
-                    Destinos nao reprodutivos mantem o manejo reprodutivo como
-                    inativo.
+                    Status reprodutivo inativo.
                   </p>
                 )}
             </div>
@@ -836,7 +820,7 @@ const AnimalNovo = () => {
       )}
 
       <Accordion type="single" collapsible>
-        <AccordionItem value="advanced">
+        <AccordionItem value="advanced" className="rounded-xl border border-border/70 bg-card px-4 shadow-none">
           <AccordionTrigger>Informações Adicionais (Opcional)</AccordionTrigger>
           <AccordionContent className="space-y-4 pt-4">
             <div className="space-y-2">
@@ -862,16 +846,11 @@ const AnimalNovo = () => {
         </AccordionItem>
       </Accordion>
 
-      <Button className="w-full" onClick={handleSave} disabled={isSaving}>
-        {isSaving ? (
-          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-        ) : (
-          <Save className="mr-2 h-4 w-4" />
-        )}
-        {isSaving ? "Salvando..." : "Salvar Animal"}
-      </Button>
     </div>
   );
 };
 
 export default AnimalNovo;
+
+
+

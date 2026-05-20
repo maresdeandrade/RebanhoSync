@@ -77,9 +77,7 @@ describe("AcceptInvite", () => {
       </MemoryRouter>,
     );
 
-    expect(
-      await screen.findByText(/Voce foi convidado para entrar em uma fazenda/i),
-    ).toBeInTheDocument();
+    expect(await screen.findByText(/Entrar na fazenda/i)).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: /Aceitar convite/i }),
     ).toBeInTheDocument();
@@ -125,3 +123,4 @@ describe("AcceptInvite", () => {
     expect(mockNavigate).toHaveBeenCalledWith("/login?redirect=/invites/token-123");
   });
 });
+

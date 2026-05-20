@@ -192,3 +192,4 @@ describe("LoteDetalhe page", () => {
     ).toHaveAttribute("href", "/registrar?loteId=lote-1");
   });
 });
+

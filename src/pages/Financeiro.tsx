@@ -4,7 +4,6 @@ import { useNavigate } from "react-router-dom";
 import {
   BadgeDollarSign,
   AlertTriangle,
-  Filter,
   Handshake,
   PlusCircle,
   Receipt,
@@ -22,8 +21,8 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { PageIntro } from "@/components/ui/page-intro";
 import {
   Select,
   SelectContent,
@@ -32,6 +31,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { Toolbar, ToolbarGroup } from "@/components/ui/toolbar";
 
 const money = new Intl.NumberFormat("pt-BR", {
   style: "currency",
@@ -245,44 +245,53 @@ const Financeiro = () => {
   const contrapartes = data?.contrapartes ?? [];
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold">Financeiro</h1>
-          <p className="text-sm text-muted-foreground">
-            Lancamentos financeiros vinculados aos eventos.
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => navigate("/contrapartes")}>
-            <Handshake className="mr-2 h-4 w-4" />
-            Parceiros
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() =>
-              navigate("/registrar?dominio=financeiro&natureza=compra")
-            }
-          >
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Nova compra
-          </Button>
-          <Button
-            onClick={() =>
-              navigate("/registrar?dominio=financeiro&natureza=venda")
-            }
-            disabled={saleCompliance.blockerCount > 0}
-          >
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Nova venda
-          </Button>
-        </div>
-      </div>
+    <div className="space-y-5">
+      <PageIntro
+        variant="plain"
+        eyebrow="Gestao"
+        title="Financeiro"
+        meta={
+          <>
+            <StatusBadge tone="neutral">{rows.length} lancamento(s)</StatusBadge>
+            {saleCompliance.blockerCount > 0 ? (
+              <StatusBadge tone="danger">Venda bloqueada</StatusBadge>
+            ) : saleCompliance.warningCount > 0 ? (
+              <StatusBadge tone="warning">Venda exige revisao</StatusBadge>
+            ) : null}
+          </>
+        }
+        actions={
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={() => navigate("/contrapartes")}>
+              <Handshake className="h-4 w-4" />
+              Parceiros
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() =>
+                navigate("/registrar?dominio=financeiro&natureza=compra")
+              }
+            >
+              <PlusCircle className="h-4 w-4" />
+              Nova compra
+            </Button>
+            <Button
+              onClick={() =>
+                navigate("/registrar?dominio=financeiro&natureza=venda")
+              }
+              disabled={saleCompliance.blockerCount > 0}
+            >
+              <PlusCircle className="h-4 w-4" />
+              Nova venda
+            </Button>
+          </div>
+        }
+      />
 
       {regulatoryReadModel.attention.openCount > 0 ? (
-        <Card className="border-amber-200 bg-amber-50/60">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-amber-950">
+        <Card className="border-warning/25 bg-warning-muted/50 shadow-none">
+          <CardHeader className="px-4 pb-2 pt-4 sm:px-5">
+            <CardTitle className="flex items-center gap-2 text-base">
               <AlertTriangle className="h-4 w-4" />
               Venda e transito sob leitura regulatoria
             </CardTitle>
@@ -303,13 +312,10 @@ const Financeiro = () => {
               ) : null}
             </div>
             {saleBlockingMessage ? (
-              <p className="text-sm text-amber-950">{saleBlockingMessage}</p>
-            ) : (
-              <p className="text-sm text-amber-950">
-                Revise quarentena, documentacao e checklists antes de liberar
-                venda com transito.
+              <p className="text-sm leading-6 text-muted-foreground">
+                {saleBlockingMessage}
               </p>
-            )}
+            ) : null}
             <div className="flex flex-wrap gap-2">
               <Button
                 variant="outline"
@@ -330,69 +336,68 @@ const Financeiro = () => {
         </Card>
       ) : null}
 
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground flex items-center gap-2">
+      <div className="grid gap-3 md:grid-cols-4">
+        <Card className="border-border/70 shadow-none">
+          <CardContent className="space-y-3 p-4">
+            <p className="flex items-center justify-between text-xs font-medium uppercase text-muted-foreground">
+              <span>Compras</span>
               <TrendingDown className="h-4 w-4 text-red-500" />
-              Compras
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="text-2xl font-bold">
-            {money.format(summary.compras)}
+            </p>
+            <p className="text-2xl font-semibold tracking-tight">
+              {money.format(summary.compras)}
+            </p>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground flex items-center gap-2">
+        <Card className="border-border/70 shadow-none">
+          <CardContent className="space-y-3 p-4">
+            <p className="flex items-center justify-between text-xs font-medium uppercase text-muted-foreground">
+              <span>Vendas</span>
               <TrendingUp className="h-4 w-4 text-emerald-500" />
-              Vendas
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="text-2xl font-bold">
-            {money.format(summary.vendas)}
+            </p>
+            <p className="text-2xl font-semibold tracking-tight">
+              {money.format(summary.vendas)}
+            </p>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground flex items-center gap-2">
-              <BadgeDollarSign className="h-4 w-4 text-blue-500" />
-              Saldo
-            </CardTitle>
-          </CardHeader>
-          <CardContent
-            className={`text-2xl font-bold ${summary.saldo >= 0 ? "text-emerald-600" : "text-red-600"}`}
-          >
-            {money.format(summary.saldo)}
+        <Card className="border-border/70 shadow-none">
+          <CardContent className="space-y-3 p-4">
+            <p className="flex items-center justify-between text-xs font-medium uppercase text-muted-foreground">
+              <span>Saldo</span>
+              <BadgeDollarSign className="h-4 w-4 text-primary" />
+            </p>
+            <p
+              className={`text-2xl font-semibold tracking-tight ${
+                summary.saldo >= 0 ? "text-emerald-600" : "text-red-600"
+              }`}
+            >
+              {money.format(summary.saldo)}
+            </p>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground flex items-center gap-2">
-              <Handshake className="h-4 w-4 text-violet-500" />
-              Sociedade
-            </CardTitle>
-          </CardHeader>
-          <CardContent
-            className={`text-2xl font-bold ${summary.saldoSociedade >= 0 ? "text-emerald-600" : "text-red-600"}`}
-          >
-            {money.format(summary.saldoSociedade)}
+        <Card className="border-border/70 shadow-none">
+          <CardContent className="space-y-3 p-4">
+            <p className="flex items-center justify-between text-xs font-medium uppercase text-muted-foreground">
+              <span>Sociedade</span>
+              <Handshake className="h-4 w-4 text-muted-foreground" />
+            </p>
+            <p
+              className={`text-2xl font-semibold tracking-tight ${
+                summary.saldoSociedade >= 0
+                  ? "text-emerald-600"
+                  : "text-red-600"
+              }`}
+            >
+              {money.format(summary.saldoSociedade)}
+            </p>
           </CardContent>
         </Card>
       </div>
 
-      <Card>
-        <CardHeader className="pb-4">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Filter className="h-4 w-4" />
-            Filtros
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <div className="space-y-2">
-            <Label>Busca</Label>
+      <Toolbar className="bg-muted/20 shadow-none">
+        <ToolbarGroup className="flex-1 gap-2">
+          <div className="relative min-w-[220px] flex-1">
             <div className="relative">
-              <Search className="h-4 w-4 text-muted-foreground absolute left-3 top-3" />
+              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
                 className="pl-9"
                 placeholder="Contraparte, animal, lote..."
@@ -402,146 +407,128 @@ const Financeiro = () => {
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label>Tipo</Label>
-            <Select
-              value={tipoFilter}
-              onValueChange={(value) =>
-                setTipoFilter(value as "all" | "compra" | "venda" | "sociedade")
-              }
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                <SelectItem value="compra">Compra</SelectItem>
-                <SelectItem value="venda">Venda</SelectItem>
-                <SelectItem value="sociedade">Sociedade</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <Select
+            value={tipoFilter}
+            onValueChange={(value) =>
+              setTipoFilter(value as "all" | "compra" | "venda" | "sociedade")
+            }
+          >
+            <SelectTrigger className="w-full sm:w-[150px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos</SelectItem>
+              <SelectItem value="compra">Compra</SelectItem>
+              <SelectItem value="venda">Venda</SelectItem>
+              <SelectItem value="sociedade">Sociedade</SelectItem>
+            </SelectContent>
+          </Select>
 
-          <div className="space-y-2">
-            <Label>Contraparte</Label>
-            <Select
-              value={contraparteFilter}
-              onValueChange={setContraparteFilter}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas</SelectItem>
-                {contrapartes.map((contraparte) => (
-                  <SelectItem key={contraparte.id} value={contraparte.id}>
-                    {contraparte.nome}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          <Select
+            value={contraparteFilter}
+            onValueChange={setContraparteFilter}
+          >
+            <SelectTrigger className="w-full sm:w-[190px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas</SelectItem>
+              {contrapartes.map((contraparte) => (
+                <SelectItem key={contraparte.id} value={contraparte.id}>
+                  {contraparte.nome}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </ToolbarGroup>
 
-          <div className="space-y-2">
-            <Label>Data de</Label>
-            <Input
-              type="date"
-              value={dateFrom}
-              onChange={(e) => setDateFrom(e.target.value)}
-            />
-          </div>
+        <ToolbarGroup className="gap-2">
+          <Input
+            type="date"
+            aria-label="Data inicial"
+            value={dateFrom}
+            onChange={(e) => setDateFrom(e.target.value)}
+            className="w-full sm:w-[150px]"
+          />
 
-          <div className="space-y-2">
-            <Label>Data ate</Label>
-            <Input
-              type="date"
-              value={dateTo}
-              onChange={(e) => setDateTo(e.target.value)}
-            />
-          </div>
+          <Input
+            type="date"
+            aria-label="Data final"
+            value={dateTo}
+            onChange={(e) => setDateTo(e.target.value)}
+            className="w-full sm:w-[150px]"
+          />
 
-          <div className="flex items-end">
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={() => {
-                setSearch("");
-                setTipoFilter("all");
-                setContraparteFilter("all");
-                setDateFrom("");
-                setDateTo("");
-              }}
-            >
-              Limpar filtros
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+          <Button
+            variant="outline"
+            onClick={() => {
+              setSearch("");
+              setTipoFilter("all");
+              setContraparteFilter("all");
+              setDateFrom("");
+              setDateTo("");
+            }}
+          >
+            Limpar filtros
+          </Button>
+        </ToolbarGroup>
+      </Toolbar>
 
       {rows.length === 0 ? (
-        <Card>
+        <Card className="shadow-none">
           <CardContent className="p-10 text-center">
-            <Receipt className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+            <Receipt className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
             <p className="font-medium">Sem lancamentos no filtro atual</p>
-            <p className="text-sm text-muted-foreground">
-              Registre uma compra/venda ou ajuste os filtros.
-            </p>
           </CardContent>
         </Card>
       ) : (
         <div className="space-y-3">
           {rows.map((row) => (
-            <Card key={row.id}>
-              <CardContent className="p-4 space-y-3">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <div className="font-semibold">{row.contraparteNome}</div>
-                    <div className="text-sm text-muted-foreground">
-                      {row.animalNome} - {row.loteNome}
-                    </div>
+            <article
+              key={row.id}
+              className="rounded-xl border border-border/70 bg-background/95 p-4 shadow-none transition-colors hover:border-primary/25"
+            >
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0 space-y-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="font-medium">{row.contraparteNome}</p>
+                    <Badge
+                      className={
+                        row.isSociedade
+                          ? "border-violet-200 bg-violet-100 text-violet-700"
+                          : row.tipo === "compra"
+                            ? "border-red-200 bg-red-100 text-red-700"
+                            : "border-emerald-200 bg-emerald-100 text-emerald-700"
+                      }
+                    >
+                      {row.naturezaLabel}
+                    </Badge>
                   </div>
-                  <div className="text-right">
-                    <div className="text-lg font-bold">
-                      {money.format(row.valorTotal)}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {toDateTime(row.occurredAt)}
-                    </div>
+                  <p className="text-sm text-muted-foreground">
+                    {row.animalNome} - {row.loteNome}
+                  </p>
+                  <div className="flex flex-wrap gap-2 text-xs">
+                    {row.quantidadeAnimais > 1 ? (
+                      <Badge variant="outline">
+                        {row.quantidadeAnimais} animais
+                      </Badge>
+                    ) : null}
+                    {row.sourceTaskId ? (
+                      <Badge variant="outline">Agenda</Badge>
+                    ) : null}
                   </div>
                 </div>
 
-                <div className="flex flex-wrap gap-2 text-xs">
-                  <Badge
-                    className={
-                      row.isSociedade
-                        ? "bg-violet-100 text-violet-700 border-violet-200"
-                        : row.tipo === "compra"
-                          ? "bg-red-100 text-red-700 border-red-200"
-                          : "bg-emerald-100 text-emerald-700 border-emerald-200"
-                    }
-                  >
-                    {row.naturezaLabel}
-                  </Badge>
-                  {row.quantidadeAnimais > 1 && (
-                    <Badge variant="outline">
-                      {row.quantidadeAnimais} animais
-                    </Badge>
-                  )}
-                  <Badge variant="outline">
-                    Evento:{" "}
-                    <span className="font-mono ml-1">{row.id.slice(0, 8)}</span>
-                  </Badge>
-                  {row.sourceTaskId && (
-                    <Badge variant="outline">
-                      Agenda:{" "}
-                      <span className="font-mono ml-1">
-                        {row.sourceTaskId.slice(0, 8)}
-                      </span>
-                    </Badge>
-                  )}
+                <div className="sm:text-right">
+                  <p className="text-lg font-semibold tracking-tight">
+                    {money.format(row.valorTotal)}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {toDateTime(row.occurredAt)}
+                  </p>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </article>
           ))}
         </div>
       )}
@@ -550,3 +537,4 @@ const Financeiro = () => {
 };
 
 export default Financeiro;
+

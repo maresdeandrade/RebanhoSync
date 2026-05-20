@@ -23,6 +23,7 @@ export function AgendaOverviewHeader({
 }: AgendaOverviewHeaderProps) {
   return (
     <PageIntro
+      variant="plain"
       eyebrow="Rotina planejada"
       title="Agenda de manejo"
       meta={
@@ -43,3 +44,4 @@ export function AgendaOverviewHeader({
     />
   );
 }
+

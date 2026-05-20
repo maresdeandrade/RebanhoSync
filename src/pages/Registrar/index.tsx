@@ -13,7 +13,6 @@ import {
   ChevronRight,
   ChevronLeft,
   Check,
-  ClipboardCheck,
   Info,
   MapPin,
 } from "lucide-react";
@@ -833,6 +832,7 @@ const Registrar = () => {
     return (
       <div className="mx-auto max-w-5xl space-y-5">
         <PageIntro
+          variant="plain"
           eyebrow="Fluxo operacional"
           title="Registrar execução"
           description="Selecione uma fazenda para iniciar um registro."
@@ -857,87 +857,51 @@ const Registrar = () => {
 
   return (
     <div className="mx-auto max-w-5xl space-y-5 pb-8">
-      <section className="overflow-hidden rounded-2xl border border-sky-900/20 bg-gradient-to-br from-[#002B45] via-sky-950 to-[#004264] text-white shadow-sm dark:border-sky-400/20">
-        <div className="space-y-5 p-5 sm:p-6">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-            <div className="flex min-w-0 gap-3">
-              <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-white/20 bg-white/10">
-                <ClipboardCheck className="h-5 w-5" />
-              </div>
-              <div className="min-w-0 space-y-1">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-sky-100/80">
-                  Fluxo operacional
-                </p>
-                <h1 className="text-2xl font-bold tracking-normal text-white sm:text-3xl">
-                  Registrar manejo
-                </h1>
-              </div>
-            </div>
-            <StatusBadge
-              tone="info"
-              className="w-fit border-white/20 bg-white/10 text-white"
-            >
+      <PageIntro
+        variant="plain"
+        eyebrow="Fluxo operacional"
+        title="Registrar manejo"
+        description="Escolha o alvo, informe o manejo e revise antes de registrar."
+        meta={
+          <>
+            <StatusBadge tone="info">
               Etapa {step}/3: {STEP_LABEL[step]}
             </StatusBadge>
-          </div>
-
-          <div className="flex flex-wrap gap-2">
             {sourceTaskId ? (
-              <StatusBadge
-                tone="neutral"
-                className="border-white/20 bg-white/10 text-white"
-              >
+              <StatusBadge tone="neutral">
                 Origem agenda {sourceTaskId.slice(0, 8)}
               </StatusBadge>
             ) : null}
             {quickActionConfig ? (
-              <StatusBadge
-                tone="neutral"
-                className="border-white/20 bg-white/10 text-white"
-              >
+              <StatusBadge tone="neutral">
                 {quickActionConfig.label}
               </StatusBadge>
             ) : null}
             {selectedLoteLabel !== "-" ? (
-              <StatusBadge
-                tone="neutral"
-                className="border-white/20 bg-white/10 text-white"
-              >
+              <StatusBadge tone="neutral">
                 {selectedLoteLabel}
               </StatusBadge>
             ) : null}
             {selectedAnimais.length > 0 ? (
-              <StatusBadge
-                tone="neutral"
-                className="border-white/20 bg-white/10 text-white"
-              >
+              <StatusBadge tone="neutral">
                 {selectedAnimais.length} animal(is) selecionado(s)
               </StatusBadge>
             ) : null}
             {hasRegistrarDisplayContext ? (
-              <StatusBadge
-                tone="neutral"
-                className="border-white/20 bg-white/10 text-white"
-              >
+              <StatusBadge tone="neutral">
                 Contexto recebido
               </StatusBadge>
             ) : null}
-          </div>
-        </div>
-      </section>
+          </>
+        }
+      />
 
       {hasRegistrarDisplayContext ? (
-        <div className="space-y-3 rounded-2xl border border-border bg-muted/30 p-4 text-sm text-foreground shadow-sm">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div className="flex gap-3">
-              <div className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-full bg-muted text-muted-foreground border">
-                <Info className="h-4 w-4" />
-              </div>
-              <div>
-                <p className="font-medium text-foreground">
-                  Contexto do manejo
-                </p>
-              </div>
+        <div className="space-y-3 rounded-xl border border-border bg-muted/20 p-3 text-sm text-foreground">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-2 font-medium">
+              <Info className="h-4 w-4 text-muted-foreground" />
+              Contexto
             </div>
             <Button
               variant="ghost"
@@ -958,13 +922,13 @@ const Registrar = () => {
                 <div
                   key={`${entry.kind}-${entry.id}`}
                   className={cn(
-                    "flex flex-col gap-1 rounded-xl border p-2 px-3",
+                    "flex flex-col gap-1 rounded-lg border px-3 py-2",
                     entry.found
                       ? "bg-background"
                       : "border-warning/30 bg-warning/10",
                   )}
                 >
-                  <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                  <span className="text-[10px] font-medium uppercase text-muted-foreground">
                     {entry.title}
                   </span>
                   <div className="flex items-center gap-2">
@@ -987,7 +951,7 @@ const Registrar = () => {
         </div>
       ) : null}
 
-      <div className="flex gap-2 sm:grid sm:grid-cols-3 sm:gap-3">
+      <div className="grid grid-cols-3 gap-2">
         {REGISTRATION_STEPS.map((currentStep) => {
           const isActive = step === currentStep;
           const isCompleted = step > currentStep;
@@ -995,31 +959,25 @@ const Registrar = () => {
             <div
               key={currentStep}
               className={cn(
-                "flex items-center rounded-full sm:rounded-2xl border px-2 py-1.5 sm:px-4 sm:py-3 shadow-sm transition-all duration-300",
+                "flex min-w-0 items-center rounded-xl border px-2 py-2 transition-colors sm:px-3",
                 isActive || isCompleted
-                  ? "border-sky-300 bg-sky-50 dark:border-sky-800 dark:bg-sky-950/40"
+                  ? "border-primary/25 bg-primary/5"
                   : "border-border/70 bg-card text-muted-foreground",
-                isActive ? "flex-1 sm:flex-none" : "shrink-0",
               )}
             >
-              <div className="flex items-center gap-2 sm:gap-3">
+              <div className="flex min-w-0 items-center gap-2 sm:gap-3">
                 <span
                   className={cn(
-                    "grid h-7 w-7 sm:h-8 sm:w-8 shrink-0 place-items-center rounded-full text-xs sm:text-sm",
+                    "grid h-7 w-7 shrink-0 place-items-center rounded-full text-xs sm:h-8 sm:w-8 sm:text-sm",
                     isActive || isCompleted
-                      ? "bg-sky-700 font-bold text-white"
+                      ? "bg-primary font-bold text-primary-foreground"
                       : "border border-border font-semibold text-muted-foreground",
                   )}
                 >
                   {isCompleted ? <Check className="h-4 w-4" /> : currentStep}
                 </span>
-                <div
-                  className={cn(
-                    "min-w-0",
-                    isActive ? "block" : "hidden sm:block",
-                  )}
-                >
-                  <p className="truncate text-[10px] font-semibold uppercase tracking-[0.14em] sm:text-xs">
+                <div className="min-w-0">
+                  <p className="hidden truncate text-[10px] font-semibold uppercase text-muted-foreground sm:block">
                     Etapa {currentStep}
                   </p>
                   <p className="truncate text-xs font-medium text-foreground sm:mt-0.5 sm:text-sm">
@@ -1059,13 +1017,12 @@ const Registrar = () => {
       )}
 
       {step === RegistrationStep.CHOOSE_ACTION && (
-        <Card className="border-sky-200/70 shadow-sm dark:border-sky-900/60">
-          <CardHeader className="rounded-t-xl border-b border-sky-100 bg-sky-50/70 dark:border-sky-900/50 dark:bg-sky-950/20">
-            <CardTitle className="text-base">2. Intencao do registro</CardTitle>
+        <Card className="border-border/70 shadow-sm">
+          <CardHeader className="px-4 pb-2 pt-4 sm:px-5">
+            <CardTitle className="text-base">Manejo</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-6 pt-6">
+          <CardContent className="space-y-5 p-4 sm:p-5">
             <div>
-              <p className="mb-3 text-sm font-medium">Escolha o manejo</p>
               <RegistrarManejoActionsGrid
                 tipoManejo={tipoManejo}
                 selectedAnimaisCount={selectedAnimais.length}
@@ -1075,8 +1032,7 @@ const Registrar = () => {
 
             {selectedAnimais.length === 0 && (
               <p className="text-sm text-muted-foreground">
-                Sem animais selecionados: Financeiro permite compra, doacao,
-                arrendamento ou sociedade por lote. Saida exige animal.
+                Sem animais: use Financeiro para entrada por lote.
               </p>
             )}
 
@@ -1116,7 +1072,7 @@ const Registrar = () => {
               />
             )}
 
-            <div className="sticky bottom-0 z-40 bg-card py-4 border-t mt-4 -mx-6 px-6 -mb-6 rounded-b-xl shadow-[0_-10px_20px_-10px_rgba(0,0,0,0.1)]">
+            <div className="sticky bottom-0 z-40 bg-card py-3 border-t mt-4 -mx-4 px-4 -mb-4 rounded-b-xl shadow-[0_-10px_20px_-10px_rgba(0,0,0,0.1)] sm:-mx-5 sm:px-5 sm:-mb-5">
               {actionStepIssues.length > 0 ? (
                 <div className="mb-4 rounded-xl border border-destructive/25 bg-destructive/10 p-3 text-sm font-medium text-destructive">
                   {actionStepIssues[0]}
@@ -1127,7 +1083,7 @@ const Registrar = () => {
                   <ChevronLeft className="mr-2 h-4 w-4" /> Voltar
                 </Button>
                 <Button
-                  className="flex-1 bg-[#0057C2] text-white hover:bg-[#00479f]"
+                  className="flex-1"
                   disabled={!tipoManejo || !canAdvanceToConfirm}
                   onClick={goToConfirm}
                 >
@@ -1140,15 +1096,11 @@ const Registrar = () => {
       )}
 
       {step === RegistrationStep.CONFIRM && (
-        <Card className="border-sky-200/70 shadow-sm dark:border-sky-900/60">
-          <CardHeader className="rounded-t-xl border-b border-sky-100 bg-sky-50/70 dark:border-sky-900/50 dark:bg-sky-950/20">
-            <CardTitle className="text-base">3. Revisar e salvar</CardTitle>
+        <Card className="border-border/70 shadow-sm">
+          <CardHeader className="px-4 pb-2 pt-4 sm:px-5">
+            <CardTitle className="text-base">Revisar</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-6 pt-6">
-            <div className="rounded-xl border border-sky-200/70 bg-sky-50/80 p-4 text-sm text-sky-950 dark:border-sky-900/60 dark:bg-sky-950/30 dark:text-sky-100">
-              Ao confirmar, o manejo fica salvo neste aparelho. A fila de sync
-              confirma com o servidor depois.
-            </div>
+          <CardContent className="space-y-5 p-4 sm:p-5">
             <div className="space-y-2 rounded-xl border border-border/70 bg-muted/30 p-4">
               <ConfirmacaoResumoBase
                 manejoLabel={confirmacaoManejoLabel}
@@ -1194,13 +1146,13 @@ const Registrar = () => {
               )}
             </div>
 
-            <div className="sticky bottom-0 z-40 bg-card py-4 border-t mt-4 -mx-6 px-6 -mb-6 rounded-b-xl shadow-[0_-10px_20px_-10px_rgba(0,0,0,0.1)]">
+            <div className="sticky bottom-0 z-40 bg-card py-3 border-t mt-4 -mx-4 px-4 -mb-4 rounded-b-xl shadow-[0_-10px_20px_-10px_rgba(0,0,0,0.1)] sm:-mx-5 sm:px-5 sm:-mb-5">
               <div className="flex flex-col gap-3 sm:flex-row">
                 <Button variant="outline" onClick={goToChooseAction}>
                   <ChevronLeft className="mr-2 h-4 w-4" /> Voltar
                 </Button>
                 <Button
-                  className="min-h-12 flex-1 bg-[#0057C2] text-base font-semibold text-white shadow-sm hover:bg-[#00479f]"
+                  className="min-h-12 flex-1 text-base font-semibold shadow-sm"
                   onClick={handleFinalize}
                   disabled={isFinalizing}
                 >
@@ -1221,3 +1173,5 @@ const Registrar = () => {
 };
 
 export default Registrar;
+
+

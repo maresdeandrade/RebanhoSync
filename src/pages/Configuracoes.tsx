@@ -1,18 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import {
-  ArrowRight,
-  Ruler,
-  Settings2,
-  SlidersHorizontal,
-  Workflow,
-} from "lucide-react";
+import { ArrowRight, Ruler } from "lucide-react";
 
 import { FarmLifecycleSettingsPanel } from "@/components/settings/FarmLifecycleSettingsPanel";
 import { SyncHealthPanel } from "@/components/settings/SyncHealthPanel";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { MetricCard } from "@/components/ui/metric-card";
 import { PageIntro } from "@/components/ui/page-intro";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { useAuth } from "@/hooks/useAuth";
@@ -181,8 +174,9 @@ export default function Configuracoes() {
 
   if (!activeFarmId) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-5">
         <PageIntro
+          variant="plain"
           eyebrow="Configuracoes"
           title="Sem fazenda ativa"
           actions={
@@ -196,8 +190,9 @@ export default function Configuracoes() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <PageIntro
+        variant="plain"
         eyebrow="Configuracoes"
         title="Regras e parametros operacionais"
         meta={
@@ -207,6 +202,15 @@ export default function Configuracoes() {
             </StatusBadge>
             <StatusBadge tone={canManageFarmSettings ? "info" : "warning"}>
               {canManageFarmSettings ? "Edicao liberada" : "Somente leitura"}
+            </StatusBadge>
+            <StatusBadge tone="neutral">
+              Base: {BASIS_LABEL[lifecycleConfig.stage_classification_basis]}
+            </StatusBadge>
+            <StatusBadge tone="neutral">
+              Modo: {TRANSITION_LABEL[lifecycleConfig.default_transition_mode]}
+            </StatusBadge>
+            <StatusBadge tone="neutral">
+              Desmame: {lifecycleConfig.weaning_days}d
             </StatusBadge>
           </>
         }
@@ -225,25 +229,6 @@ export default function Configuracoes() {
         }
       />
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <MetricCard
-          label="Base de classificacao"
-          value={BASIS_LABEL[lifecycleConfig.stage_classification_basis]}
-          icon={<SlidersHorizontal className="h-5 w-5" />}
-        />
-        <MetricCard
-          label="Modo padrao"
-          value={TRANSITION_LABEL[lifecycleConfig.default_transition_mode]}
-          tone="info"
-          icon={<Workflow className="h-5 w-5" />}
-        />
-        <MetricCard
-          label="Marco de desmame"
-          value={`${lifecycleConfig.weaning_days}d`}
-          icon={<Settings2 className="h-5 w-5" />}
-        />
-      </div>
-
       <Card className="shadow-none">
         <CardHeader className="pb-3">
           <CardTitle className="text-base">
@@ -252,7 +237,7 @@ export default function Configuracoes() {
         </CardHeader>
         <CardContent className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
           <div className="space-y-4">
-            <div className="rounded-2xl border border-border/70 bg-muted/20 p-4">
+            <div className="rounded-xl border border-border/70 bg-muted/20 p-4">
               <div className="flex items-start gap-3">
                 <Ruler className="mt-0.5 h-5 w-5 text-primary" />
                 <div className="space-y-1">
@@ -297,16 +282,16 @@ export default function Configuracoes() {
             </div>
           </div>
 
-          <div className="rounded-2xl border border-border/70 bg-background/80 p-4">
+          <div className="rounded-xl border border-border/70 bg-background/80 p-4">
             <div className="space-y-2">
               <p className="text-sm font-medium text-foreground">
-                Categorias zootecnicas agora sao derivadas
+                Categorias zootecnicas
               </p>
             </div>
 
             <div className="mt-4 grid gap-3 md:grid-cols-2">
               <div className="rounded-xl border border-border/70 bg-muted/20 p-3">
-                <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                <p className="text-xs uppercase text-muted-foreground">
                   Femeas
                 </p>
                 <p className="mt-1 text-sm font-medium text-foreground">
@@ -314,7 +299,7 @@ export default function Configuracoes() {
                 </p>
               </div>
               <div className="rounded-xl border border-border/70 bg-muted/20 p-3">
-                <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                <p className="text-xs uppercase text-muted-foreground">
                   Machos
                 </p>
                 <p className="mt-1 text-sm font-medium text-foreground">
@@ -336,11 +321,7 @@ export default function Configuracoes() {
 
       <SyncHealthPanel />
 
-      <Card className="shadow-none">
-        <CardHeader>
-          <CardTitle className="text-base">Acesso rapido</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+      <section className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
           <Button variant="outline" asChild>
             <Link to="/dashboard">Dashboard</Link>
           </Button>
@@ -350,8 +331,7 @@ export default function Configuracoes() {
           <Button variant="outline" asChild>
             <Link to="/reconciliacao">Reconciliacao</Link>
           </Button>
-        </CardContent>
-      </Card>
+      </section>
 
       {isLoading ? (
         <Card className="shadow-none">
@@ -363,3 +343,4 @@ export default function Configuracoes() {
     </div>
   );
 }
+

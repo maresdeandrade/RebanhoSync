@@ -47,7 +47,7 @@ export function AgendaLifecycleSummaryPanel({
         {items.map((item) => (
           <div
             key={item.animalId}
-            className="rounded-2xl border border-border/70 bg-background/90 p-4"
+            className="rounded-xl border border-border/70 bg-background/90 p-4"
           >
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
               <div className="space-y-2">
@@ -80,3 +80,5 @@ export function AgendaLifecycleSummaryPanel({
     </Card>
   );
 }
+
+

@@ -228,17 +228,16 @@ describe("RegulatoryOverlayManager", () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByText("Complementos operacionais")).toBeInTheDocument();
+    expect(screen.getByText("Verificações")).toBeInTheDocument();
     expect(
       screen.getByText("Checklist pre-lote maternidade"),
     ).toBeInTheDocument();
     expect(screen.getByText("Fazenda")).toBeInTheDocument();
+    expect(screen.queryByText("1 oficial(is)")).not.toBeInTheDocument();
+    expect(screen.getByText("0 oficial(is)")).toBeInTheDocument();
+    expect(screen.getByText("1 fazenda")).toBeInTheDocument();
     expect(
-      screen.queryByText("1 oficial(is) | 0 fazenda"),
-    ).not.toBeInTheDocument();
-    expect(screen.getByText("0 oficial(is) | 1 fazenda")).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: /novo complemento da fazenda/i }),
+      screen.getByRole("button", { name: /nova verificação/i }),
     ).toBeInTheDocument();
   });
 });

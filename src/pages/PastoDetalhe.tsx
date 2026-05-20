@@ -6,7 +6,6 @@ import {
   Map as MapIcon,
   PawPrint,
   Pencil,
-  Ruler,
   Trees,
 } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router-dom";
@@ -21,7 +20,6 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { MetricCard } from "@/components/ui/metric-card";
 import { PageIntro } from "@/components/ui/page-intro";
 import {
   Select,
@@ -188,8 +186,9 @@ const PastoDetalhe = () => {
 
   if (!id || !pasto) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-5">
         <PageIntro
+         variant="plain"
           eyebrow="Estrutura do rebanho"
           title="Pasto nao encontrado"
           actions={
@@ -301,14 +300,24 @@ const PastoDetalhe = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <PageIntro
+       variant="plain"
         eyebrow="Estrutura do rebanho"
         title={pasto.nome}
         meta={
-          <StatusBadge tone="neutral">
-            {pasto.tipo_pasto ?? "Tipo nao informado"}
-          </StatusBadge>
+          <>
+            <StatusBadge tone="neutral">
+              {pasto.tipo_pasto ?? "Tipo nao informado"}
+            </StatusBadge>
+            <StatusBadge tone="neutral">{pasto.area_ha ?? 0} ha</StatusBadge>
+            <StatusBadge tone="neutral">
+              {pasto.capacidade_ua ?? "Sem capacidade"} UA
+            </StatusBadge>
+            <StatusBadge tone="neutral">
+              {animaisCount ?? 0} animal(is)
+            </StatusBadge>
+          </>
         }
         actions={
           <>
@@ -336,25 +345,7 @@ const PastoDetalhe = () => {
         }
       />
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <MetricCard
-          label="Area"
-          value={pasto.area_ha}
-          icon={<MapIcon className="h-4 w-4" />}
-        />
-        <MetricCard
-          label="Capacidade"
-          value={pasto.capacidade_ua ?? "Nao informada"}
-          icon={<Ruler className="h-4 w-4" />}
-        />
-        <MetricCard
-          label="Animais no pasto"
-          value={animaisCount ?? 0}
-          icon={<PawPrint className="h-4 w-4" />}
-        />
-      </div>
-
-      <section className="app-surface space-y-5 p-5 sm:p-6">
+      <section className="rounded-xl border border-border/70 bg-card p-5 shadow-none sm:p-6">
         <div className="space-y-1">
           <h2 className="text-lg font-semibold tracking-[-0.01em] text-foreground">
             Manejo e Forrageira
@@ -362,7 +353,7 @@ const PastoDetalhe = () => {
         </div>
 
         <div className="grid gap-4 lg:grid-cols-2">
-          <div className="rounded-2xl border border-border/70 bg-muted/20 p-4">
+          <div className="rounded-xl border border-border/70 bg-muted/20 p-4">
             <p className="mb-3 font-medium text-foreground">Pastagem</p>
             <div className="grid gap-2 text-sm text-muted-foreground sm:grid-cols-2">
               <span>Tipo de pastagem: {tipoAreaLabel}</span>
@@ -370,7 +361,7 @@ const PastoDetalhe = () => {
             </div>
           </div>
 
-          <div className="rounded-2xl border border-border/70 bg-muted/20 p-4">
+          <div className="rounded-xl border border-border/70 bg-muted/20 p-4">
             <p className="mb-3 font-medium text-foreground">Metas de Manejo</p>
             <div className="grid gap-2 text-sm text-muted-foreground sm:grid-cols-2">
               <span>
@@ -397,7 +388,7 @@ const PastoDetalhe = () => {
         </div>
       </section>
 
-      <section className="app-surface space-y-4 p-5 sm:p-6">
+      <section className="rounded-xl border border-border/70 bg-card p-5 shadow-none sm:p-6">
         <div className="space-y-1">
           <h2 className="text-lg font-semibold tracking-[-0.01em] text-foreground">
             Ultima ronda
@@ -405,7 +396,7 @@ const PastoDetalhe = () => {
         </div>
 
         {ultimaAvaliacao ? (
-          <div className="rounded-2xl border border-border/70 bg-muted/20 p-4">
+          <div className="rounded-xl border border-border/70 bg-muted/20 p-4">
             <div className="mb-3 flex flex-wrap items-center gap-2">
               <StatusBadge tone="info">
                 {labelize(ultimaAvaliacao.avaliacao.momento)}
@@ -448,7 +439,7 @@ const PastoDetalhe = () => {
       </section>
 
       {infraestrutura ? (
-        <section className="app-surface space-y-5 p-5 sm:p-6">
+        <section className="rounded-xl border border-border/70 bg-card p-5 shadow-none sm:p-6">
           <div className="space-y-1">
             <h2 className="text-lg font-semibold tracking-[-0.01em] text-foreground">
               Infraestrutura
@@ -456,7 +447,7 @@ const PastoDetalhe = () => {
           </div>
 
           <div className="grid gap-4 lg:grid-cols-2">
-            <div className="rounded-2xl border border-border/70 bg-muted/20 p-4">
+            <div className="rounded-xl border border-border/70 bg-muted/20 p-4">
               <div className="mb-3 flex items-center justify-between gap-3">
                 <p className="font-medium text-foreground">Cochos</p>
                 <StatusBadge
@@ -480,7 +471,7 @@ const PastoDetalhe = () => {
               </div>
             </div>
 
-            <div className="rounded-2xl border border-border/70 bg-muted/20 p-4">
+            <div className="rounded-xl border border-border/70 bg-muted/20 p-4">
               <div className="mb-3 flex items-center justify-between gap-3">
                 <p className="font-medium text-foreground">Bebedouros</p>
                 <StatusBadge
@@ -504,7 +495,7 @@ const PastoDetalhe = () => {
               </div>
             </div>
 
-            <div className="rounded-2xl border border-border/70 bg-muted/20 p-4">
+            <div className="rounded-xl border border-border/70 bg-muted/20 p-4">
               <div className="mb-3 flex items-center justify-between gap-3">
                 <p className="font-medium text-foreground">Cerca</p>
                 <StatusBadge
@@ -527,7 +518,7 @@ const PastoDetalhe = () => {
               </div>
             </div>
 
-            <div className="rounded-2xl border border-border/70 bg-muted/20 p-4">
+            <div className="rounded-xl border border-border/70 bg-muted/20 p-4">
               <div className="mb-3 flex items-center justify-between gap-3">
                 <p className="font-medium text-foreground">Saleiros</p>
                 <StatusBadge
@@ -557,7 +548,7 @@ const PastoDetalhe = () => {
       ) : null}
 
       {lotes && lotes.length > 0 ? (
-        <section className="app-surface space-y-4 p-5 sm:p-6">
+        <section className="rounded-xl border border-border/70 bg-card p-5 shadow-none sm:p-6">
           <div className="space-y-1">
             <h2 className="text-lg font-semibold tracking-[-0.01em] text-foreground">
               Lotes neste pasto
@@ -569,7 +560,7 @@ const PastoDetalhe = () => {
               <Link
                 key={lote.id}
                 to={`/lotes/${lote.id}`}
-                className="flex items-center justify-between rounded-2xl border border-border/70 bg-background/70 px-4 py-3 transition-colors hover:bg-muted/30"
+                className="flex items-center justify-between rounded-xl border border-border/70 bg-background/70 px-4 py-3 transition-colors hover:border-primary/25 hover:bg-muted/30"
               >
                 <div className="space-y-1">
                   <p className="font-medium text-foreground">{lote.nome}</p>
@@ -819,3 +810,5 @@ const PastoDetalhe = () => {
 };
 
 export default PastoDetalhe;
+
+

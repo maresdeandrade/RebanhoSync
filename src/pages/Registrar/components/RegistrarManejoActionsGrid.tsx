@@ -30,10 +30,10 @@ export function RegistrarManejoActionsGrid(
 ) {
   const getActionClassName = (active: boolean) =>
     cn(
-      "relative h-24 px-3 sm:h-24 sm:px-4 flex-col gap-2 rounded-xl border text-center shadow-sm transition-colors text-sm",
+      "relative h-20 px-3 sm:px-4 flex-col gap-2 rounded-xl border text-center shadow-none transition-colors text-sm",
       active
-        ? "border-[#0057C2] bg-sky-50 text-[#002B45] ring-2 ring-[#0057C2] hover:bg-sky-100 dark:border-sky-500 dark:bg-sky-950/50 dark:text-sky-100"
-        : "border-border/70 bg-card text-foreground hover:border-sky-300 hover:bg-sky-50 dark:hover:border-sky-800 dark:hover:bg-sky-950/30",
+        ? "border-primary/30 bg-primary/10 text-primary ring-1 ring-primary/25 hover:bg-primary/15"
+        : "border-border/70 bg-card text-foreground hover:border-primary/25 hover:bg-muted/60",
     );
 
   const actions = [
@@ -78,11 +78,11 @@ export function RegistrarManejoActionsGrid(
             onClick={() => props.onSelectAction(action.key)}
           >
             {active ? (
-              <span className="absolute right-2 top-2 rounded-full bg-[#0057C2] p-0.5 text-white">
+              <span className="absolute right-2 top-2 rounded-full bg-primary p-0.5 text-primary-foreground">
                 <Check className="h-3 w-3" />
               </span>
             ) : null}
-            <Icon className="h-6 w-6" />
+            <Icon className="h-5 w-5" />
             <span className="font-semibold leading-tight">{action.label}</span>
           </Button>
         );
@@ -90,3 +90,4 @@ export function RegistrarManejoActionsGrid(
     </div>
   );
 }
+

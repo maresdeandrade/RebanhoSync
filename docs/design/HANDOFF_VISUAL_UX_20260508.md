@@ -1,4 +1,4 @@
-# Handoff Visual/UX — RebanhoSync — 2026-05-08
+# Handoff Visual/UX — RebanhoSync — 2026-05-20
 
 Status: Handoff operacional  
 Tipo: Registro do estado real + referências aprovadas  
@@ -8,7 +8,7 @@ Escopo: Visual Sync Técnico, navegação mobile, UX contextual e referências d
 
 A frente Visual/UX consolidou a direção **Sync Técnico / Campo Operacional** para o RebanhoSync.
 
-Foram aplicados patches de navegação, tema, contraste e entrada contextual segura no Registrar. As referências visuais em `docs/design/references/` expandem a direção para telas e perfis animais, mas não representam implementação automática nem especificação pixel-perfect.
+Foram aplicados patches de navegação, tema, contraste, entrada contextual segura no Registrar e compactação visual SLC nas principais superfícies operacionais. As referências visuais em `docs/design/references/` expandem a direção para telas e perfis animais, mas não representam implementação automática nem especificação pixel-perfect.
 
 ## 2. Estado real implementado
 
@@ -25,6 +25,8 @@ Foram aplicados patches de navegação, tema, contraste e entrada contextual seg
 | Resolver de contexto do Registrar | Implementado como read-only |
 | CTAs contextuais | Apenas navegam; não executam ação automática |
 | `pastoId` | Contexto informativo; não infere animais |
+| Compactação visual SLC | Aplicada em Home, Registrar, Animais, Lotes, Pastos, Reproducao, Relatorios, Reconciliacao, Configuracoes, selecao de fazenda e cadastros/fluxos auxiliares |
+| Seleção de fazenda | Cards enriquecidos com municipio/UF, area, producao e manejo quando disponiveis |
 
 ## 3. Referências visuais aprovadas
 
@@ -55,7 +57,7 @@ As referências em `docs/design/references/` orientam a evolução visual futura
 | Bottom Nav | Implementada | Referência usa navegação mobile clara | Estado alinhado |
 | Perfil Animal | Parcialmente alinhado | Ilustração por perfil, código forte, abas, métricas e eventos | Futuro patch deve evitar foto real e não criar regra automática |
 | Lista de Animais | Parcial/pendente conforme código atual | Cards com ícone por perfil, sexo, categoria, peso/status | Implementar em patch específico |
-| Lote | Parcial/pendente conforme código atual | Header azul, métricas, atividades, agenda e CTAs | CTA deve só navegar |
+| Lote/Pasto | Parcialmente alinhado no padrão SLC atual | Header forte, métricas, atividades, agenda e CTAs | CTA deve só navegar |
 | Offline/Sync | Parcial/pendente conforme estrutura atual | Tela dedicada de status e sincronização | Não altera motor de sync |
 | Relatórios/Insights | Parcial/pendente conforme estrutura atual | KPIs simples/read-only | Não criar BI complexo |
 
@@ -136,16 +138,16 @@ Status: **Referência visual aprovada; não implementação automática**.
 Ordem sugerida:
 
 1. **Auditoria de aderência visual por tela**  
-   Comparar UI real com `docs/design/references/` e gerar matriz de gaps.
+   Comparar o padrão SLC implementado com `docs/design/references/` e registrar apenas gaps que ainda reduzam legibilidade, foco ou consistência.
 
 2. **Perfil Animal**  
    Aplicar avatar/ilustração por perfil sem usar foto real e sem inferência automática.
 
 3. **Lista de Animais**  
-   Aproximar cards da referência, mantendo dados reais e status seguros.
+   Manter leitura card-first e evoluir avatares/ícones por perfil somente como camada visual segura.
 
 4. **LoteDetalhe / PastoDetalhe**  
-   Alinhar headers, métricas e CTAs à referência, sem ação automática.
+   Refinar headers, métricas e CTAs à referência, sem ação automática.
 
 5. **Registrar Manejo**  
    Refinar stepper, cards de tipo e bloco de contexto.

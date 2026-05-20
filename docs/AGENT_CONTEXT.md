@@ -9,6 +9,7 @@ Estado operacional:
 - MVP completo e operacional;
 - fase atual: consolidacao SLC;
 - prioridade: patches pequenos, locais, reversiveis e testaveis;
+- refatoracao visual SLC aplicada em maio/2026; manter execucao primeiro, leitura/telemetria depois e superficies com headers/cards/badges consistentes;
 - evolucao enquadrada por `capability_id` ou `infra.*`.
 
 Stack confirmada em `package.json` e `README.md`:
@@ -138,8 +139,12 @@ Regras:
 
 - `src/lib/insights/` existe como core puro/read-only de composicao operacional, sem IO, Supabase, Dexie, UI, persistencia ou relogio interno. Ele nao e fonte primaria nem motor de regra critica.
 - `src/features/operationalInsights/` e a primeira integracao passiva: adapter, hook e painel read-only para a Central Operacional na Home.
-- A Home consome dados ja carregados de `state_agenda_itens`, `state_animais`, `event_eventos`/eventos e `state_protocolos_sanitarios_itens` para exibir pendencias abertas, vencendo hoje, atrasadas, pendencias sanitarias, rebanho por estagio, KPIs mensais e sinais operacionais auxiliares.
-- O painel prioriza atrasadas e vencendo hoje, usa microcopy explicita para `Bloqueado`/`Vazio`/`Parcial`/`Completo`, compacta limitacoes e deve permanecer sem botao, link, `onClick` ou CTA de dominio.
+- A Home consome dados ja carregados de `state_agenda_itens`, `state_animais`, `event_eventos`/eventos e `state_protocolos_sanitarios_itens`, mas a apresentacao atual e tática: atrasadas, agenda de hoje e acao imediata aparecem antes de leituras passivas.
+- O painel read-only deve permanecer como contexto secundario: estados `Bloqueado`/`Vazio`/`Parcial`/`Completo`, limitacoes compactas e nenhum botao, link, `onClick` ou CTA de dominio.
+- A listagem de Animais usa leitura card-first e filtros compactos; nao reintroduzir tabela tecnica duplicada como visual primario sem tarefa explicita.
+- Em filtros de Animais, chips/baloes ficam restritos ao que ajuda decisao rapida (`Sexo`, `Status`, `Categoria`); demais filtros devem permanecer como seletores compactos ou controles equivalentes.
+- Lotes, Pastos, Relatorios, Reproducao, Reconciliacao, Configuracoes, onboarding/cadastros e selecao de fazenda seguem o padrao visual SLC: PageIntro simples, cards objetivos, menor densidade, badges subordinados e superficies sem sombra pesada.
+- A selecao de fazenda pode exibir metadados cadastrais existentes (municipio/UF, area, tipo de producao e manejo), mas nao deve solicitar nem inferir dado fiscal/oficial novo nesse fluxo.
 - Nao existe camada real de marcadores/tags persistidos como fonte primaria; termos como tag, label, badge, chip, status e classificacao aparecem em UI, identificacao ou dominio, mas nao constituem camada persistida de marcadores operacionais.
 - Sinais/marcadores, quando derivados por insights, devem ser auxiliares, recalculaveis ou auditaveis, nunca fonte primaria.
 - Peso atual confiavel, carencia ativa operacional, pronto para venda/abate, `commercialReadiness.ts` conclusivo, tags/marcadores persistidos como fonte primaria, consulta em linguagem natural, IA gerando agenda, IA concluindo execucao e motor geral IATF permanecem bloqueados ate nova validacao.

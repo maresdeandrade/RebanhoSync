@@ -8,10 +8,11 @@
 import type { ProtocolItemDraft } from "@/lib/sanitario/models/draft";
 import { getVisibleFieldsByMode } from "@/lib/sanitario/models/draft";
 import { buildSanitaryDedupKey } from "@/lib/sanitario/engine/dedup";
-import type { SanitaryCalendarAnchor, SanitaryCalendarMode } from "@/lib/sanitario/models/domain";
-import {
-  FormSection,
-} from "@/components/ui/form-section";
+import type {
+  SanitaryCalendarAnchor,
+  SanitaryCalendarMode,
+} from "@/lib/sanitario/models/domain";
+import { FormSection } from "@/components/ui/form-section";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import {
@@ -29,7 +30,7 @@ interface ProtocolItemDraftEditorProps {
   draft: ProtocolItemDraft;
   onUpdateDraft: <K extends keyof ProtocolItemDraft>(
     key: K,
-    value: ProtocolItemDraft[K]
+    value: ProtocolItemDraft[K],
   ) => void;
   errors: string[];
 }
@@ -51,8 +52,14 @@ const ANCHOR_OPTIONS: Array<{
 }> = [
   { value: "nascimento", label: "Nascimento" },
   { value: "entrada_fazenda", label: "Entrada na fazenda" },
-  { value: "conclusao_etapa_dependente", label: "Conclusão de etapa dependente" },
-  { value: "ultima_conclusao_mesma_familia", label: "Última conclusão da família" },
+  {
+    value: "conclusao_etapa_dependente",
+    label: "Conclusão de etapa dependente",
+  },
+  {
+    value: "ultima_conclusao_mesma_familia",
+    label: "Última conclusão da família",
+  },
   { value: "desmama", label: "Desmama" },
   { value: "parto_previsto", label: "Parto previsto" },
   { value: "movimentacao", label: "Movimentação" },
@@ -114,10 +121,7 @@ export function ProtocolItemDraftEditor({
       )}
 
       {/* Identity Fields */}
-      <FormSection
-        title="Identificação"
-        description="Código de família, item e versão do regime"
-      >
+      <FormSection title="Identificação">
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="familyCode">Código da família</Label>
@@ -145,17 +149,16 @@ export function ProtocolItemDraftEditor({
               max="99"
               min="1"
               value={draft.regimenVersion || 1}
-              onChange={(e) => onUpdateDraft("regimenVersion", parseInt(e.target.value))}
+              onChange={(e) =>
+                onUpdateDraft("regimenVersion", parseInt(e.target.value))
+              }
             />
           </div>
         </div>
       </FormSection>
 
       {/* Layer & Scope */}
-      <FormSection
-        title="Localização"
-        description="Camada de domínio e escopo de aplicação"
-      >
+      <FormSection title="Localização">
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="layer">Camada de domínio</Label>
@@ -197,10 +200,7 @@ export function ProtocolItemDraftEditor({
       </FormSection>
 
       {/* Schedule Mode & Anchor */}
-      <FormSection
-        title="Agendamento"
-        description="Modo e âncora de agendamento"
-      >
+      <FormSection title="Agendamento">
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="mode">Modo de agendamento</Label>
@@ -246,10 +246,7 @@ export function ProtocolItemDraftEditor({
 
       {/* Campanha */}
       {visibleFields.campaignFields && (
-        <FormSection
-          title="Campanha Sazonal"
-          description="Meses de ocorrência da campanha"
-        >
+        <FormSection title="Campanha Sazonal">
           <div className="space-y-4">
             <div className="space-y-2">
               <Label>Meses da campanha (1-12)</Label>
@@ -257,9 +254,7 @@ export function ProtocolItemDraftEditor({
                 type="text"
                 placeholder="ex: 5,6,7 para maio-julho"
                 value={
-                  draft.campaignMonths
-                    ? draft.campaignMonths.join(", ")
-                    : ""
+                  draft.campaignMonths ? draft.campaignMonths.join(", ") : ""
                 }
                 onChange={(e) => {
                   const months = e.target.value
@@ -288,10 +283,7 @@ export function ProtocolItemDraftEditor({
 
       {/* Janela Etária */}
       {visibleFields.ageWindowFields && (
-        <FormSection
-          title="Janela Etária"
-          description="Intervalo de idade em dias"
-        >
+        <FormSection title="Janela Etária">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="ageStartDays">Idade inicial (dias)</Label>
@@ -301,7 +293,10 @@ export function ProtocolItemDraftEditor({
                 min="0"
                 value={draft.ageStartDays || ""}
                 onChange={(e) =>
-                  onUpdateDraft("ageStartDays", parseInt(e.target.value) || undefined)
+                  onUpdateDraft(
+                    "ageStartDays",
+                    parseInt(e.target.value) || undefined,
+                  )
                 }
                 placeholder="0"
               />
@@ -314,7 +309,10 @@ export function ProtocolItemDraftEditor({
                 min="0"
                 value={draft.ageEndDays || ""}
                 onChange={(e) =>
-                  onUpdateDraft("ageEndDays", parseInt(e.target.value) || undefined)
+                  onUpdateDraft(
+                    "ageEndDays",
+                    parseInt(e.target.value) || undefined,
+                  )
                 }
                 placeholder="999"
               />
@@ -325,10 +323,7 @@ export function ProtocolItemDraftEditor({
 
       {/* Rotina Recorrente */}
       {visibleFields.intervalFields && (
-        <FormSection
-          title="Rotina Recorrente"
-          description="Intervalo em dias entre execuções"
-        >
+        <FormSection title="Rotina Recorrente">
           <div className="space-y-2">
             <Label htmlFor="intervalDays">Intervalo (dias)</Label>
             <Input
@@ -337,7 +332,10 @@ export function ProtocolItemDraftEditor({
               min="1"
               value={draft.intervalDays || ""}
               onChange={(e) =>
-                onUpdateDraft("intervalDays", parseInt(e.target.value) || undefined)
+                onUpdateDraft(
+                  "intervalDays",
+                  parseInt(e.target.value) || undefined,
+                )
               }
               placeholder="90"
             />
@@ -347,10 +345,7 @@ export function ProtocolItemDraftEditor({
 
       {/* Procedimento Imediato */}
       {visibleFields.triggerEventField && (
-        <FormSection
-          title="Procedimento Imediato"
-          description="Evento disparador"
-        >
+        <FormSection title="Procedimento Imediato">
           <div className="space-y-2">
             <Label htmlFor="triggerEvent">Tipo de evento</Label>
             <Input
@@ -365,10 +360,7 @@ export function ProtocolItemDraftEditor({
 
       {/* Dedup Preview */}
       {dedupPreview && (
-        <FormSection
-          title="Preview de Dedup (Somente Leitura)"
-          description="Chave determinística para deduplicação"
-        >
+        <FormSection title="Preview de Dedup (Somente Leitura)">
           <div className="bg-gray-50 p-4 rounded border border-gray-200">
             <code className="text-xs leading-relaxed break-all text-gray-700">
               {dedupPreview}
@@ -378,10 +370,7 @@ export function ProtocolItemDraftEditor({
       )}
 
       {/* Outros Campos */}
-      <FormSection
-        title="Metadados"
-        description="Produto, dose e informações adicionais"
-      >
+      <FormSection title="Metadados">
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">

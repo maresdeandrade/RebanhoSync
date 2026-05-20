@@ -5,15 +5,12 @@ import {
   Building2,
   Loader2,
   LogOut,
-  Moon,
-  Sun,
   Trash2,
   Upload,
   User,
 } from "lucide-react";
 
 import { FormSection } from "@/components/ui/form-section";
-import { MetricCard } from "@/components/ui/metric-card";
 import { PageIntro } from "@/components/ui/page-intro";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Button } from "@/components/ui/button";
@@ -332,73 +329,42 @@ export const Perfil = () => {
   }
 
   return (
-    <div className="space-y-6 pb-16">
+    <div className="space-y-5 pb-16">
       <PageIntro
+        variant="plain"
         eyebrow="Conta"
         title="Meu perfil"
         meta={
-          <StatusBadge tone={notificationsEnabled ? "info" : "neutral"}>
-            {notificationsEnabled
-              ? "Notificacoes ativas"
-              : "Notificacoes desativadas"}
-          </StatusBadge>
+          <>
+            <StatusBadge tone={notificationsEnabled ? "info" : "neutral"}>
+              {notificationsEnabled
+                ? "Notificacoes ativas"
+                : "Notificacoes desativadas"}
+            </StatusBadge>
+            <StatusBadge tone="neutral">
+              Tema{" "}
+              {theme === "system"
+                ? "Sistema"
+                : theme === "light"
+                  ? "Claro"
+                  : "Escuro"}
+            </StatusBadge>
+            <StatusBadge tone={agendaReminders ? "info" : "neutral"}>
+              Lembretes {agendaReminders ? "ativos" : "pausados"}
+            </StatusBadge>
+            <StatusBadge tone="neutral">
+              {farmExperienceMode === "completo" ? "Completo" : "Essencial"}
+            </StatusBadge>
+          </>
         }
       />
-
-      <div className="grid gap-4 md:grid-cols-3">
-        <MetricCard
-          label="Tema"
-          value={
-            theme === "system"
-              ? "Sistema"
-              : theme === "light"
-                ? "Claro"
-                : "Escuro"
-          }
-          icon={
-            theme === "dark" ? (
-              <Moon className="h-4 w-4" />
-            ) : (
-              <Sun className="h-4 w-4" />
-            )
-          }
-        />
-        <MetricCard
-          label="Lembretes"
-          value={agendaReminders ? "Ativos" : "Pausados"}
-          hint={
-            notificationsEnabled
-              ? `${reminderDays.join(", ")} dia(s) antes | ${sanitaryCriticalAlerts ? "criticos" : "sem criticos"}.`
-              : "Dependem das notificacoes gerais."
-          }
-          tone={agendaReminders ? "info" : "default"}
-        />
-        <MetricCard
-          label="Horario de silencio"
-          value={
-            quietHoursEnabled
-              ? `${quietHoursStart} - ${quietHoursEnd}`
-              : "Desligado"
-          }
-        />
-        <MetricCard
-          label="Sanitario inteligente"
-          value={farmExperienceMode === "completo" ? "Completo" : "Essencial"}
-          hint={
-            farmExperienceMode === "completo"
-              ? "Pode avisar criticidade, follow-up e janelas antecipadas."
-              : "Foca em criticos e obrigatorios."
-          }
-          tone="warning"
-        />
-      </div>
 
       <Tabs
         value={activeTab}
         onValueChange={setActiveTab}
-        className="space-y-6"
+        className="space-y-5"
       >
-        <div className="app-surface p-2">
+        <div className="rounded-xl border border-border/70 bg-card p-2 shadow-none">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="profile" className="flex items-center gap-2">
               <User className="h-4 w-4" />
@@ -411,7 +377,7 @@ export const Perfil = () => {
           </TabsList>
         </div>
 
-        <TabsContent value="profile" className="space-y-6">
+        <TabsContent value="profile" className="space-y-5">
           <FormSection title="Identidade">
             <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
               <div className="flex items-center gap-4 lg:min-w-[240px] lg:flex-col lg:items-start">
@@ -518,7 +484,7 @@ export const Perfil = () => {
           </FormSection>
         </TabsContent>
 
-        <TabsContent value="settings" className="space-y-6">
+        <TabsContent value="settings" className="space-y-5">
           <FormSection title="Aparencia">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div className="space-y-1">
@@ -544,7 +510,7 @@ export const Perfil = () => {
 
           <FormSection title="Notificacoes">
             <div className="space-y-5">
-              <div className="flex flex-col gap-3 rounded-2xl border border-border/70 bg-muted/20 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-col gap-3 rounded-xl border border-border/70 bg-muted/20 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="space-y-1">
                   <Label>Notificacoes gerais</Label>
                 </div>
@@ -556,7 +522,7 @@ export const Perfil = () => {
 
               {notificationsEnabled ? (
                 <>
-                  <div className="flex flex-col gap-3 rounded-2xl border border-border/70 bg-background/80 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex flex-col gap-3 rounded-xl border border-border/70 bg-background/80 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
                     <div className="space-y-1">
                       <Label>Lembretes de agenda</Label>
                     </div>
@@ -566,7 +532,7 @@ export const Perfil = () => {
                     />
                   </div>
 
-                  <div className="space-y-4 rounded-2xl border border-border/70 bg-background/80 px-4 py-4">
+                  <div className="space-y-4 rounded-xl border border-border/70 bg-background/80 px-4 py-4">
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                       <div className="space-y-1">
                         <Label>Horario de silencio</Label>
@@ -604,7 +570,7 @@ export const Perfil = () => {
                       </div>
                     </div>
 
-                    <div className="space-y-3 rounded-2xl border border-border/70 bg-muted/20 px-4 py-4">
+                    <div className="space-y-3 rounded-xl border border-border/70 bg-muted/20 px-4 py-4">
                       <div className="space-y-1">
                         <Label>Notificacoes sanitarias inteligentes</Label>
                       </div>
@@ -736,3 +702,4 @@ export const Perfil = () => {
 };
 
 export default Perfil;
+

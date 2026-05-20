@@ -42,7 +42,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -177,12 +176,15 @@ const AnimalDetalhe = () => {
   const navigate = useNavigate();
   const { farmLifecycleConfig, farmMeasurementConfig } = useAuth();
   const [showMoverLote, setShowMoverLote] = useState(false);
-  const [showCloseSociedadeDialog, setShowCloseSociedadeDialog] = useState(false);
+  const [showCloseSociedadeDialog, setShowCloseSociedadeDialog] =
+    useState(false);
   const [isApplyingLifecycle, setIsApplyingLifecycle] = useState(false);
   const [isClosingSociedade, setIsClosingSociedade] = useState(false);
   const [showObitoDialog, setShowObitoDialog] = useState(false);
   const [isRegisteringObito, setIsRegisteringObito] = useState(false);
-  const [obitoData, setObitoData] = useState(new Date().toISOString().split("T")[0]);
+  const [obitoData, setObitoData] = useState(
+    new Date().toISOString().split("T")[0],
+  );
   const [obitoCausa, setObitoCausa] = useState<CausaObitoEnum>("outro");
   const [obitoObs, setObitoObs] = useState("");
   const [showSanitaryAlertDialog, setShowSanitaryAlertDialog] = useState(false);
@@ -225,7 +227,9 @@ const AnimalDetalhe = () => {
     return await db.state_animais
       .where("fazenda_id")
       .equals(animal.fazenda_id)
-      .filter((candidate) => candidate.mae_id === animal.id && !candidate.deleted_at)
+      .filter(
+        (candidate) => candidate.mae_id === animal.id && !candidate.deleted_at,
+      )
       .sortBy("identificacao");
   }, [animal?.id, animal?.fazenda_id]);
 
@@ -265,7 +269,10 @@ const AnimalDetalhe = () => {
       new Set(
         items
           .map((item) => item.protocol_item_version_id)
-          .filter((value): value is string => typeof value === "string" && value.length > 0),
+          .filter(
+            (value): value is string =>
+              typeof value === "string" && value.length > 0,
+          ),
       ),
     );
     const protocolItems =
@@ -274,18 +281,21 @@ const AnimalDetalhe = () => {
         : [];
     const protocolItemById = new Map(
       protocolItems
-        .filter((item): item is NonNullable<(typeof protocolItems)[number]> => Boolean(item))
+        .filter((item): item is NonNullable<(typeof protocolItems)[number]> =>
+          Boolean(item),
+        )
         .map((item) => [item.id, item]),
     );
 
     return items
       .slice()
-      .sort((left, right) => left.data_prevista.localeCompare(right.data_prevista))
+      .sort((left, right) =>
+        left.data_prevista.localeCompare(right.data_prevista),
+      )
       .map((item): AnimalAgendaRow => {
-        const protocolItem =
-          item.protocol_item_version_id
-            ? protocolItemById.get(item.protocol_item_version_id) ?? null
-            : null;
+        const protocolItem = item.protocol_item_version_id
+          ? (protocolItemById.get(item.protocol_item_version_id) ?? null)
+          : null;
         const scheduleMeta = resolveSanitaryAgendaItemScheduleMeta(
           item,
           protocolItem,
@@ -407,17 +417,21 @@ const AnimalDetalhe = () => {
   const selectedOfficialDisease = useMemo(() => {
     const diseases = officialDiseases ?? [];
     return (
-      diseases.find((disease) => disease.codigo === sanitaryAlertForm.diseaseCode) ??
+      diseases.find(
+        (disease) => disease.codigo === sanitaryAlertForm.diseaseCode,
+      ) ??
       diseases[0] ??
       null
     );
   }, [officialDiseases, sanitaryAlertForm.diseaseCode]);
   const selectedOfficialDiseaseSignals = useMemo(
-    () => readStringArray(selectedOfficialDisease?.sinais_alerta_json, "sinais"),
+    () =>
+      readStringArray(selectedOfficialDisease?.sinais_alerta_json, "sinais"),
     [selectedOfficialDisease],
   );
   const selectedOfficialDiseaseActions = useMemo(
-    () => readStringArray(selectedOfficialDisease?.acao_imediata_json, "passos"),
+    () =>
+      readStringArray(selectedOfficialDisease?.acao_imediata_json, "passos"),
     [selectedOfficialDisease],
   );
 
@@ -437,12 +451,15 @@ const AnimalDetalhe = () => {
   const lifecycleSnapshot = animal
     ? resolveAnimalLifecycleSnapshot(animal, farmLifecycleConfig)
     : null;
-  const maleDestination = animal ? getAnimalProductiveDestination(animal) : null;
+  const maleDestination = animal
+    ? getAnimalProductiveDestination(animal)
+    : null;
   const maleReproductiveStatus = animal
     ? getMaleReproductiveStatus(animal)
     : null;
   const transitionMode = animal ? getAnimalTransitionMode(animal) : null;
-  const effectiveTransitionMode = lifecycleSnapshot?.transitionMode ?? transitionMode;
+  const effectiveTransitionMode =
+    lifecycleSnapshot?.transitionMode ?? transitionMode;
   const isBreedingMale = animal ? isAnimalBreedingEligible(animal) : false;
   const reproResumo = useMemo(() => {
     if (!animal || !isReproductionEligible) return null;
@@ -486,7 +503,8 @@ const AnimalDetalhe = () => {
   }, [historicoPeso]);
   const pendingNeonatalCount = useMemo(
     () =>
-      (crias ?? []).filter((calf) => hasPendingNeonatalSetup(calf.payload)).length,
+      (crias ?? []).filter((calf) => hasPendingNeonatalSetup(calf.payload))
+        .length,
     [crias],
   );
   const calfJourneyPendingCount = useMemo(() => {
@@ -515,45 +533,45 @@ const AnimalDetalhe = () => {
       : `/animais/${animal.id}/cria-inicial`;
   }, [animal, mae?.id]);
 
-  const applyLifecycleTransition = useCallback(async (
-    source: "manual" | "automatico",
-    silent = false,
-  ) => {
-    if (!animal || !lifecycleSnapshot) return;
+  const applyLifecycleTransition = useCallback(
+    async (source: "manual" | "automatico", silent = false) => {
+      if (!animal || !lifecycleSnapshot) return;
 
-    setIsApplyingLifecycle(true);
-    try {
-      await createGesture(animal.fazenda_id, [
-        {
-          table: "animais",
-          action: "UPDATE",
-          record: {
-            id: animal.id,
-            payload: buildAnimalLifecyclePayload(
-              animal.payload,
-              lifecycleSnapshot.targetStage,
-              source,
-            ),
-            updated_at: new Date().toISOString(),
+      setIsApplyingLifecycle(true);
+      try {
+        await createGesture(animal.fazenda_id, [
+          {
+            table: "animais",
+            action: "UPDATE",
+            record: {
+              id: animal.id,
+              payload: buildAnimalLifecyclePayload(
+                animal.payload,
+                lifecycleSnapshot.targetStage,
+                source,
+              ),
+              updated_at: new Date().toISOString(),
+            },
           },
-        },
-      ]);
+        ]);
 
-      if (!silent) {
-        showSuccess(
-          `Estagio atualizado para ${getAnimalLifeStageLabel(
-            lifecycleSnapshot.targetStage,
-          ).toLowerCase()}.`,
-        );
+        if (!silent) {
+          showSuccess(
+            `Estagio atualizado para ${getAnimalLifeStageLabel(
+              lifecycleSnapshot.targetStage,
+            ).toLowerCase()}.`,
+          );
+        }
+      } catch (error) {
+        if (!silent) {
+          showError("Nao foi possivel atualizar o estagio de vida.");
+        }
+      } finally {
+        setIsApplyingLifecycle(false);
       }
-    } catch (error) {
-      if (!silent) {
-        showError("Nao foi possivel atualizar o estagio de vida.");
-      }
-    } finally {
-      setIsApplyingLifecycle(false);
-    }
-  }, [animal, lifecycleSnapshot]);
+    },
+    [animal, lifecycleSnapshot],
+  );
 
   useEffect(() => {
     if (!animal || !lifecycleSnapshot?.canAutoApply || isApplyingLifecycle) {
@@ -566,7 +584,12 @@ const AnimalDetalhe = () => {
 
     autoAppliedStageRef.current = lifecycleSnapshot.targetStage;
     void applyLifecycleTransition("automatico", true);
-  }, [animal, applyLifecycleTransition, isApplyingLifecycle, lifecycleSnapshot]);
+  }, [
+    animal,
+    applyLifecycleTransition,
+    isApplyingLifecycle,
+    lifecycleSnapshot,
+  ]);
 
   useEffect(() => {
     if (!officialDiseases || officialDiseases.length === 0) {
@@ -618,7 +641,10 @@ const AnimalDetalhe = () => {
     setIsRegisteringObito(true);
     try {
       // Find pending agenda items for this animal to cancel them
-      const pendingTasks = agenda?.filter(item => item.status === "agendado").map(item => item.id) || [];
+      const pendingTasks =
+        agenda
+          ?.filter((item) => item.status === "agendado")
+          .map((item) => item.id) || [];
 
       const { ops } = buildEventGesture({
         dominio: "obito",
@@ -646,7 +672,9 @@ const AnimalDetalhe = () => {
   const handleOpenSanitaryAlert = useCallback(async () => {
     if (!animal) return;
     if (!selectedOfficialDisease) {
-      showError("Catalogo oficial de doencas notificaveis ainda nao esta disponivel.");
+      showError(
+        "Catalogo oficial de doencas notificaveis ainda nao esta disponivel.",
+      );
       return;
     }
 
@@ -708,7 +736,9 @@ const AnimalDetalhe = () => {
         sinaisDesconhecidos: false,
         mortalidadeAlta: false,
       }));
-      showSuccess("Suspeita sanitaria aberta com bloqueio local de movimentacao.");
+      showSuccess(
+        "Suspeita sanitaria aberta com bloqueio local de movimentacao.",
+      );
     } catch (error) {
       console.error(error);
       showError("Nao foi possivel abrir a suspeita sanitaria.");
@@ -787,15 +817,15 @@ const AnimalDetalhe = () => {
   const registrarAnimalPath = `/registrar?animalId=${encodeURIComponent(animal.id)}`;
 
   return (
-    <div className="space-y-6">
-      <div className="rounded-xl border border-sky-900/20 bg-gradient-to-br from-[#002B45] to-sky-950 p-4 text-white shadow-sm dark:border-sky-400/20">
+    <div className="space-y-5">
+      <div className="rounded-xl border border-border/70 bg-card p-4 shadow-none">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
           <div className="flex items-start gap-3 sm:gap-4">
             <Link to="/animais">
               <Button
                 variant="ghost"
                 size="icon"
-                className="rounded-full text-white hover:bg-white/10 hover:text-white"
+                className="rounded-full"
               >
                 <ChevronLeft className="h-5 w-5" />
               </Button>
@@ -804,22 +834,19 @@ const AnimalDetalhe = () => {
               categoriaLabel={categoriaLabel}
               sexo={animal.sexo}
               size="lg"
-              className="border-white/70 bg-white text-[#002B45]"
+              className="border-border bg-muted text-primary"
             />
             <div className="min-w-0 flex-1 space-y-3">
               <div className="space-y-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <h1 className="text-3xl font-bold tracking-normal text-white">
+                  <h1 className="text-3xl font-semibold tracking-normal text-foreground">
                     {animal.identificacao}
                   </h1>
-                  <Badge
-                    variant="outline"
-                    className="border-white/30 bg-white/10 text-white"
-                  >
+                  <Badge variant="outline">
                     {animal.sexo === "M" ? "Macho" : "Femea"}
                   </Badge>
                 </div>
-                <p className="text-sm text-sky-100">
+                <p className="text-sm text-muted-foreground">
                   {[
                     animal.raca ? getAnimalBreedLabel(animal.raca) : null,
                     lote ? `Lote: ${lote.nome}` : "Sem lote definido",
@@ -830,106 +857,98 @@ const AnimalDetalhe = () => {
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">
-                <AnimalCategoryBadge
-                  categoriaLabel={categoriaLabel}
-                />
-                <Badge
-                  variant="outline"
-                  className="border-white/30 bg-white/10 text-white"
-                >
+                <AnimalCategoryBadge categoriaLabel={categoriaLabel} />
+                <Badge variant="outline">
                   Status: {animal.status}
                 </Badge>
               </div>
             </div>
           </div>
           <div className="flex flex-wrap gap-2 lg:ml-auto lg:justify-end">
-          {hasMovementBlockedSanitaryAlert ? (
+            {hasMovementBlockedSanitaryAlert ? (
+              <Button
+                size="sm"
+                variant="outline"
+                className="border-warning/40 text-warning-foreground hover:bg-warning-muted"
+                onClick={() => setShowCloseSanitaryAlertDialog(true)}
+                disabled={animal.status !== "ativo"}
+              >
+                <AlertTriangle className="mr-2 h-4 w-4" />
+                Encerrar suspeita
+              </Button>
+            ) : (
+              <Button
+                size="sm"
+                variant="outline"
+                className="border-warning/40 text-warning-foreground hover:bg-warning-muted"
+                onClick={() => setShowSanitaryAlertDialog(true)}
+                disabled={animal.status !== "ativo"}
+              >
+                <AlertTriangle className="mr-2 h-4 w-4" />
+                Abrir suspeita sanitaria
+              </Button>
+            )}
             <Button
               size="sm"
-              variant="outline"
-              className="border-amber-300 bg-white text-amber-800 hover:bg-amber-50"
-              onClick={() => setShowCloseSanitaryAlertDialog(true)}
+              variant="destructive"
+              onClick={() => setShowObitoDialog(true)}
               disabled={animal.status !== "ativo"}
             >
-              <AlertTriangle className="mr-2 h-4 w-4" />
-              Encerrar suspeita
+              <Skull className="mr-2 h-4 w-4" />
+              Registrar obito
             </Button>
-          ) : (
-            <Button
-              size="sm"
-              variant="outline"
-              className="border-amber-300 bg-white text-amber-800 hover:bg-amber-50"
-              onClick={() => setShowSanitaryAlertDialog(true)}
-              disabled={animal.status !== "ativo"}
-            >
-              <AlertTriangle className="mr-2 h-4 w-4" />
-              Abrir suspeita sanitaria
-            </Button>
-          )}
-          <Button
-            size="sm"
-            variant="destructive"
-            onClick={() => setShowObitoDialog(true)}
-            disabled={animal.status !== "ativo"}
-          >
-            <Skull className="mr-2 h-4 w-4" />
-            Registrar obito
-          </Button>
-          {animal.status === "ativo" && !hasMovementBlockedSanitaryAlert ? (
-            <Button size="sm" asChild>
-              <Link to={registrarAnimalPath}>
+            {animal.status === "ativo" && !hasMovementBlockedSanitaryAlert ? (
+              <Button size="sm" asChild>
+                <Link to={registrarAnimalPath}>
+                  <ClipboardCheck className="mr-2 h-4 w-4" />
+                  Registrar manejo deste animal
+                </Link>
+              </Button>
+            ) : (
+              <Button size="sm" disabled>
                 <ClipboardCheck className="mr-2 h-4 w-4" />
                 Registrar manejo deste animal
-              </Link>
-            </Button>
-          ) : (
-            <Button size="sm" disabled>
-              <ClipboardCheck className="mr-2 h-4 w-4" />
-              Registrar manejo deste animal
-            </Button>
-          )}
-          <Button
-            size="sm"
-            onClick={() => {
-              const params = new URLSearchParams();
-              params.set("dominio", "financeiro");
-              params.set("animalId", animal.id);
-              if (animal.lote_id) {
-                params.set("loteId", animal.lote_id);
+              </Button>
+            )}
+            <Button
+              size="sm"
+              onClick={() => {
+                const params = new URLSearchParams();
+                params.set("dominio", "financeiro");
+                params.set("animalId", animal.id);
+                if (animal.lote_id) {
+                  params.set("loteId", animal.lote_id);
+                }
+                navigate(`/registrar?${params.toString()}`);
+              }}
+              disabled={
+                animal.status !== "ativo" || hasMovementBlockedSanitaryAlert
               }
-              navigate(`/registrar?${params.toString()}`);
-            }}
-            disabled={animal.status !== "ativo" || hasMovementBlockedSanitaryAlert}
-          >
-            Registrar venda
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowMoverLote(true)}
-            disabled={hasMovementBlockedSanitaryAlert}
-            className="bg-background text-foreground hover:bg-muted"
-          >
-            <ArrowLeftRight className="mr-2 h-4 w-4" />
-            Mover lote
-          </Button>
-          <Link to={`/animais/${id}/editar`}>
+            >
+              Registrar venda
+            </Button>
             <Button
               variant="outline"
               size="sm"
-              className="bg-background text-foreground hover:bg-muted"
+              onClick={() => setShowMoverLote(true)}
+              disabled={hasMovementBlockedSanitaryAlert}
             >
-              Editar
+              <ArrowLeftRight className="mr-2 h-4 w-4" />
+              Mover lote
             </Button>
-          </Link>
+            <Link to={`/animais/${id}/editar`}>
+              <Button variant="outline" size="sm">
+                Editar
+              </Button>
+            </Link>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <Card className="border-sky-200/70 bg-card shadow-sm dark:border-sky-900/60">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <Card className="border-border/70 shadow-none">
           <CardHeader className="pb-2">
-            <CardTitle className="text-xs uppercase tracking-wider text-muted-foreground">
+            <CardTitle className="text-xs uppercase text-muted-foreground">
               Peso atual
             </CardTitle>
           </CardHeader>
@@ -956,7 +975,7 @@ const AnimalDetalhe = () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-border/70 shadow-none">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">
               Informacoes basicas
@@ -981,10 +1000,15 @@ const AnimalDetalhe = () => {
               </Badge>
             )}
             {animal.raca && (
-              <Badge variant="outline">{getAnimalBreedLabel(animal.raca)}</Badge>
+              <Badge variant="outline">
+                {getAnimalBreedLabel(animal.raca)}
+              </Badge>
             )}
             {animal.sexo === "M" && maleDestination && (
-              <Badge variant="outline" className="border-sky-200 bg-sky-50 text-sky-800 dark:border-sky-800 dark:bg-sky-950/40 dark:text-sky-200">
+              <Badge
+                variant="outline"
+                className="border-sky-200 bg-sky-50 text-sky-800 dark:border-sky-800 dark:bg-sky-950/40 dark:text-sky-200"
+              >
                 {getAnimalProductiveDestinationLabel(maleDestination)}
               </Badge>
             )}
@@ -1008,21 +1032,24 @@ const AnimalDetalhe = () => {
             {animal.origem === "sociedade" && sociedadeAtiva && contraparte && (
               <Badge variant="default" className="bg-blue-600">
                 {contraparte.nome}
-                {sociedadeAtiva.percentual && ` (${sociedadeAtiva.percentual}%)`}
+                {sociedadeAtiva.percentual &&
+                  ` (${sociedadeAtiva.percentual}%)`}
               </Badge>
             )}
           </CardContent>
         </Card>
 
-        <Card className="border-none bg-primary/5 shadow-none">
+        <Card className="border-border/70 bg-card shadow-none">
           <CardHeader className="pb-2">
-            <CardTitle className="text-xs uppercase tracking-wider text-muted-foreground">
+            <CardTitle className="text-xs uppercase text-muted-foreground">
               Proximo manejo
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-amber-600">
-              {proximaAgenda ? formatDate(proximaAgenda.item.data_prevista) : "Sem agenda"}
+            <div className="text-2xl font-semibold tracking-tight">
+              {proximaAgenda
+                ? formatDate(proximaAgenda.item.data_prevista)
+                : "Sem agenda"}
             </div>
             {proximaAgenda ? (
               <div className="mt-3 space-y-2">
@@ -1034,7 +1061,8 @@ const AnimalDetalhe = () => {
                     {proximaAgenda.scheduleLabel}
                   </p>
                 ) : null}
-                {proximaAgenda.scheduleModeLabel || proximaAgenda.scheduleAnchorLabel ? (
+                {proximaAgenda.scheduleModeLabel ||
+                proximaAgenda.scheduleAnchorLabel ? (
                   <div className="flex flex-wrap gap-2">
                     {proximaAgenda.scheduleModeLabel ? (
                       <Badge variant="outline" className="text-[10px]">
@@ -1055,17 +1083,19 @@ const AnimalDetalhe = () => {
       </div>
 
       {activeSanitaryAlert?.status === "suspeita_aberta" ? (
-        <Card className="border-amber-200 bg-amber-50/40">
+        <Card className="border-warning/25 bg-warning-muted/50 shadow-none">
           <CardHeader className="pb-3">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <CardTitle className="flex items-center gap-2 text-amber-900">
+              <CardTitle className="flex items-center gap-2 text-base">
                 <AlertTriangle className="h-4 w-4" />
                 Suspeita sanitaria aberta
               </CardTitle>
               <div className="flex flex-wrap gap-2">
-                <Badge className="bg-amber-600 text-white">Movimentacao bloqueada</Badge>
+                <Badge className="bg-warning text-warning-foreground">
+                  Movimentacao bloqueada
+                </Badge>
                 {activeSanitaryAlert.notificationType ? (
-                  <Badge variant="outline" className="border-amber-300 text-amber-900">
+                  <Badge variant="outline">
                     Notificacao {activeSanitaryAlert.notificationType}
                   </Badge>
                 ) : null}
@@ -1074,35 +1104,36 @@ const AnimalDetalhe = () => {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-3 sm:grid-cols-3">
-              <div className="rounded-lg border border-amber-200 bg-background/80 p-3 dark:border-amber-900/60">
-                <p className="text-xs uppercase tracking-wide text-muted-foreground">
+              <div className="rounded-xl border border-border/70 bg-background/80 p-3">
+                <p className="text-xs uppercase text-muted-foreground">
                   Doenca / suspeita
                 </p>
-                <p className="mt-1 font-semibold text-amber-950">
+                <p className="mt-1 font-semibold text-foreground">
                   {activeSanitaryAlert.diseaseName ?? "Suspeita sanitaria"}
                 </p>
               </div>
-              <div className="rounded-lg border border-amber-200 bg-background/80 p-3 dark:border-amber-900/60">
-                <p className="text-xs uppercase tracking-wide text-muted-foreground">
+              <div className="rounded-xl border border-border/70 bg-background/80 p-3">
+                <p className="text-xs uppercase text-muted-foreground">
                   Aberta em
                 </p>
-                <p className="mt-1 font-semibold text-amber-950">
+                <p className="mt-1 font-semibold text-foreground">
                   {formatDate(activeSanitaryAlert.openedAt)}
                 </p>
               </div>
-              <div className="rounded-lg border border-amber-200 bg-background/80 p-3 dark:border-amber-900/60">
-                <p className="text-xs uppercase tracking-wide text-muted-foreground">
+              <div className="rounded-xl border border-border/70 bg-background/80 p-3">
+                <p className="text-xs uppercase text-muted-foreground">
                   Rota imediata
                 </p>
-                <p className="mt-1 text-sm text-amber-950">
-                  {activeSanitaryAlert.routeLabel ?? "Acionar SVO e registrar rota local"}
+                <p className="mt-1 text-sm text-foreground">
+                  {activeSanitaryAlert.routeLabel ??
+                    "Acionar SVO e registrar rota local"}
                 </p>
               </div>
             </div>
 
             {activeSanitaryAlert.alertSignals.length > 0 ? (
               <div className="space-y-2">
-                <p className="text-sm font-medium text-amber-950">
+                <p className="text-sm font-medium text-foreground">
                   Sinais que motivaram o bloqueio
                 </p>
                 <div className="flex flex-wrap gap-2">
@@ -1121,10 +1152,10 @@ const AnimalDetalhe = () => {
 
             {activeSanitaryAlert.immediateActions.length > 0 ? (
               <div className="space-y-2">
-                <p className="text-sm font-medium text-amber-950">
+                <p className="text-sm font-medium text-foreground">
                   Passos imediatos recomendados
                 </p>
-                <ul className="space-y-1 text-sm text-amber-900">
+                <ul className="space-y-1 text-sm text-muted-foreground">
                   {activeSanitaryAlert.immediateActions.map((action) => (
                     <li key={action}>- {action}</li>
                   ))}
@@ -1133,7 +1164,7 @@ const AnimalDetalhe = () => {
             ) : null}
 
             {activeSanitaryAlert.notes ? (
-              <div className="rounded-lg border border-amber-200 bg-background/80 p-3 text-sm text-amber-950 dark:border-amber-900/60 dark:text-amber-100">
+              <div className="rounded-xl border border-border/70 bg-background/80 p-3 text-sm text-muted-foreground">
                 {activeSanitaryAlert.notes}
               </div>
             ) : null}
@@ -1142,7 +1173,7 @@ const AnimalDetalhe = () => {
               <Button
                 size="sm"
                 variant="outline"
-                className="border-amber-300 text-amber-800 hover:bg-amber-50"
+                className="border-warning/40 text-warning-foreground hover:bg-warning-muted"
                 onClick={() => setShowCloseSanitaryAlertDialog(true)}
               >
                 Encerrar suspeita
@@ -1153,31 +1184,36 @@ const AnimalDetalhe = () => {
       ) : null}
 
       {taxonomySnapshot && (
-        <Card>
+        <Card className="shadow-none">
           <CardHeader className="pb-3">
             <CardTitle className="text-base">Taxonomia canônica</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-3 sm:grid-cols-3">
-              <div className="rounded-lg border bg-muted/30 p-3">
-                <p className="text-xs uppercase tracking-wide text-muted-foreground">
+              <div className="rounded-xl border border-border/70 bg-muted/20 p-3">
+                <p className="text-xs uppercase text-muted-foreground">
                   Categoria zootécnica
                 </p>
-                <p className="mt-1 font-semibold">{taxonomySnapshot.display.categoria}</p>
+                <p className="mt-1 font-semibold">
+                  {taxonomySnapshot.display.categoria}
+                </p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Aliases: {getCategoriaZootecnicaAliases(taxonomySnapshot.categoria_zootecnica).join(", ")}
+                  Aliases:{" "}
+                  {getCategoriaZootecnicaAliases(
+                    taxonomySnapshot.categoria_zootecnica,
+                  ).join(", ")}
                 </p>
               </div>
-              <div className="rounded-lg border bg-muted/30 p-3">
-                <p className="text-xs uppercase tracking-wide text-muted-foreground">
+              <div className="rounded-xl border border-border/70 bg-muted/20 p-3">
+                <p className="text-xs uppercase text-muted-foreground">
                   Fase veterinária
                 </p>
                 <p className="mt-1 font-semibold">
                   {taxonomySnapshot.display.fase_veterinaria}
                 </p>
               </div>
-              <div className="rounded-lg border bg-muted/30 p-3">
-                <p className="text-xs uppercase tracking-wide text-muted-foreground">
+              <div className="rounded-xl border border-border/70 bg-muted/20 p-3">
+                <p className="text-xs uppercase text-muted-foreground">
                   Estado produtivo/reprodutivo
                 </p>
                 <p className="mt-1 font-semibold">
@@ -1199,13 +1235,17 @@ const AnimalDetalhe = () => {
                 </Badge>
               )}
               {taxonomySnapshot.facts.prenhez_confirmada && (
-                <Badge variant="outline" className="border-emerald-200 bg-emerald-50 text-emerald-800">
+                <Badge
+                  variant="outline"
+                  className="border-emerald-200 bg-emerald-50 text-emerald-800"
+                >
                   Prenhez confirmada
                 </Badge>
               )}
               {taxonomySnapshot.facts.data_ultimo_parto && (
                 <Badge variant="outline">
-                  Último parto: {formatDate(taxonomySnapshot.facts.data_ultimo_parto)}
+                  Último parto:{" "}
+                  {formatDate(taxonomySnapshot.facts.data_ultimo_parto)}
                 </Badge>
               )}
               {taxonomySnapshot.facts.secagem_realizada && (
@@ -1223,13 +1263,17 @@ const AnimalDetalhe = () => {
       )}
 
       {lifecycleSnapshot && (
-        <Card>
+        <Card className="border-border/70 shadow-none">
           <CardHeader className="pb-3">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <CardTitle className="text-base">Estagio de vida</CardTitle>
               <div className="flex flex-wrap gap-2">
-                <Badge variant="outline" className="border-border bg-background/80 text-foreground">
-                  Atual: {getAnimalLifeStageLabel(lifecycleSnapshot.currentStage)}
+                <Badge
+                  variant="outline"
+                  className="border-border bg-background/80 text-foreground"
+                >
+                  Atual:{" "}
+                  {getAnimalLifeStageLabel(lifecycleSnapshot.currentStage)}
                 </Badge>
                 <Badge variant="secondary">
                   {getTransitionModeLabel(lifecycleSnapshot.transitionMode)}
@@ -1242,24 +1286,24 @@ const AnimalDetalhe = () => {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-3 sm:grid-cols-3">
-              <div className="rounded-lg border bg-muted/30 p-3">
-                <p className="text-xs uppercase tracking-wide text-muted-foreground">
+              <div className="rounded-xl border border-border/70 bg-muted/20 p-3">
+                <p className="text-xs uppercase text-muted-foreground">
                   Estagio atual
                 </p>
                 <p className="mt-1 font-semibold">
                   {getAnimalLifeStageLabel(lifecycleSnapshot.currentStage)}
                 </p>
               </div>
-              <div className="rounded-lg border bg-muted/30 p-3">
-                <p className="text-xs uppercase tracking-wide text-muted-foreground">
+              <div className="rounded-xl border border-border/70 bg-muted/20 p-3">
+                <p className="text-xs uppercase text-muted-foreground">
                   Alvo calculado
                 </p>
                 <p className="mt-1 font-semibold">
                   {getAnimalLifeStageLabel(lifecycleSnapshot.targetStage)}
                 </p>
               </div>
-              <div className="rounded-lg border bg-muted/30 p-3">
-                <p className="text-xs uppercase tracking-wide text-muted-foreground">
+              <div className="rounded-xl border border-border/70 bg-muted/20 p-3">
+                <p className="text-xs uppercase text-muted-foreground">
                   Regra usada
                 </p>
                 <p className="mt-1 text-sm text-muted-foreground">
@@ -1269,15 +1313,15 @@ const AnimalDetalhe = () => {
             </div>
 
             {lifecycleSnapshot.shouldSuggestTransition ? (
-              <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+              <div className="rounded-xl border border-warning/25 bg-warning-muted/50 p-4">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div className="space-y-1">
-                    <p className="font-medium text-amber-900">
+                    <p className="font-medium text-foreground">
                       {lifecycleSnapshot.suggestionKind === "initialize"
                         ? "Registrar estagio inicial"
                         : "Transicao sugerida"}
                     </p>
-                    <p className="text-sm text-amber-800">
+                    <p className="text-sm text-muted-foreground">
                       {lifecycleSnapshot.suggestionKind === "initialize"
                         ? `Salvar ${getAnimalLifeStageLabel(
                             lifecycleSnapshot.targetStage,
@@ -1295,27 +1339,24 @@ const AnimalDetalhe = () => {
                       onClick={() => void applyLifecycleTransition("manual")}
                       disabled={isApplyingLifecycle}
                     >
-                      {isApplyingLifecycle ? "Aplicando..." : "Confirmar transicao"}
+                      {isApplyingLifecycle
+                        ? "Aplicando..."
+                        : "Confirmar transicao"}
                     </Button>
                   )}
                 </div>
-                {lifecycleSnapshot.canAutoApply && (
-                  <p className="mt-3 text-sm text-amber-800">
-                    Este marco sera aplicado automaticamente pelo modo{" "}
-                    {lifecycleSnapshot.transitionMode}.
-                  </p>
-                )}
               </div>
             ) : (
               <p className="text-sm text-muted-foreground">
-                O estagio registrado ja esta alinhado com as regras atuais da fazenda.
+                O estagio registrado ja esta alinhado com as regras atuais da
+                fazenda.
               </p>
             )}
           </CardContent>
         </Card>
       )}
 
-      <Card>
+      <Card className="border-border/70 shadow-none">
         <CardHeader className="pb-3">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <CardTitle className="text-base">Evolucao de peso</CardTitle>
@@ -1359,16 +1400,16 @@ const AnimalDetalhe = () => {
           {historicoPeso && historicoPeso.length > 0 ? (
             <>
               <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                <div className="rounded-xl border bg-muted/30 p-3">
-                  <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                <div className="rounded-xl border border-border/70 bg-muted/20 p-3">
+                  <p className="text-xs uppercase text-muted-foreground">
                     Pesagens
                   </p>
                   <p className="mt-1 text-xl font-semibold">
                     {resumoPeso?.totalPesagens ?? 0}
                   </p>
                 </div>
-                <div className="rounded-xl border bg-muted/30 p-3">
-                  <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                <div className="rounded-xl border border-border/70 bg-muted/20 p-3">
+                  <p className="text-xs uppercase text-muted-foreground">
                     Primeiro registro
                   </p>
                   <p className="mt-1 text-xl font-semibold">
@@ -1383,8 +1424,8 @@ const AnimalDetalhe = () => {
                     {resumoPeso?.primeiro.dataLabel ?? "Sem data"}
                   </p>
                 </div>
-                <div className="rounded-xl border bg-muted/30 p-3">
-                  <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                <div className="rounded-xl border border-border/70 bg-muted/20 p-3">
+                  <p className="text-xs uppercase text-muted-foreground">
                     Ultimo registro
                   </p>
                   <p className="mt-1 text-xl font-semibold">
@@ -1399,8 +1440,8 @@ const AnimalDetalhe = () => {
                     {resumoPeso?.ultimo.dataLabel ?? "Sem data"}
                   </p>
                 </div>
-                <div className="rounded-xl border bg-muted/30 p-3">
-                  <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                <div className="rounded-xl border border-border/70 bg-muted/20 p-3">
+                  <p className="text-xs uppercase text-muted-foreground">
                     GMD
                   </p>
                   <p className="mt-1 text-xl font-semibold">
@@ -1419,7 +1460,11 @@ const AnimalDetalhe = () => {
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={historicoPeso}>
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="dataLabel" tickLine={false} axisLine={false} />
+                    <XAxis
+                      dataKey="dataLabel"
+                      tickLine={false}
+                      axisLine={false}
+                    />
                     <YAxis
                       tickLine={false}
                       axisLine={false}
@@ -1460,10 +1505,10 @@ const AnimalDetalhe = () => {
 
       <div className="grid gap-4 lg:grid-cols-2">
         {animal.sexo === "F" && (
-          <Card className="border-rose-200 bg-rose-50/40">
+          <Card className="border-border/70 bg-card shadow-none">
             <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-rose-900">
-                <HeartPulse className="h-4 w-4" />
+              <CardTitle className="flex items-center gap-2 text-base">
+                <HeartPulse className="h-4 w-4 text-muted-foreground" />
                 Ciclo reprodutivo
               </CardTitle>
             </CardHeader>
@@ -1475,7 +1520,8 @@ const AnimalDetalhe = () => {
                       variant="outline"
                       className="border-rose-200 bg-rose-50 text-rose-800 dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-200"
                     >
-                      Status: {getReproStatusLabel(reproResumo.reproStatus.status)}
+                      Status:{" "}
+                      {getReproStatusLabel(reproResumo.reproStatus.status)}
                     </Badge>
                     <Badge
                       variant="outline"
@@ -1489,14 +1535,19 @@ const AnimalDetalhe = () => {
                         ? "Acao prioritaria"
                         : "Fluxo sob controle"}
                     </Badge>
-                    <Badge variant="outline" className="border-border bg-background/80 text-foreground">
-                      {reproResumo.loteNome ? `Lote ${reproResumo.loteNome}` : "Sem lote"}
+                    <Badge
+                      variant="outline"
+                      className="border-border bg-background/80 text-foreground"
+                    >
+                      {reproResumo.loteNome
+                        ? `Lote ${reproResumo.loteNome}`
+                        : "Sem lote"}
                     </Badge>
                   </div>
 
                   <div className="grid gap-3 sm:grid-cols-3">
-                    <div className="rounded-lg border border-border/70 bg-background/80 p-3">
-                      <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                    <div className="rounded-xl border border-border/70 bg-muted/20 p-3">
+                      <p className="text-xs uppercase text-muted-foreground">
                         Ultimo marco
                       </p>
                       <p className="mt-1 font-semibold text-foreground">
@@ -1509,8 +1560,8 @@ const AnimalDetalhe = () => {
                       </p>
                     </div>
 
-                    <div className="rounded-lg border border-border/70 bg-background/80 p-3">
-                      <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                    <div className="rounded-xl border border-border/70 bg-muted/20 p-3">
+                      <p className="text-xs uppercase text-muted-foreground">
                         Proximo passo
                       </p>
                       <p className="mt-1 font-semibold text-foreground">
@@ -1523,8 +1574,8 @@ const AnimalDetalhe = () => {
                       </p>
                     </div>
 
-                    <div className="rounded-lg border border-border/70 bg-background/80 p-3">
-                      <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                    <div className="rounded-xl border border-border/70 bg-muted/20 p-3">
+                      <p className="text-xs uppercase text-muted-foreground">
                         Faixa do ciclo
                       </p>
                       <p className="mt-1 font-semibold capitalize text-foreground">
@@ -1537,13 +1588,19 @@ const AnimalDetalhe = () => {
                   </div>
 
                   <div className="flex flex-wrap gap-2">
-                    {reproResumo.reproStatus.status !== "SERVIDA" && reproResumo.reproStatus.status !== "PRENHA" && (
-                      <Link to={`/animais/${animal.id}/reproducao?tipo=cobertura`}>
-                        <Button size="sm">Cobertura / IA</Button>
-                      </Link>
-                    )}
-                    {(reproResumo.reproStatus.status === "SERVIDA" || reproResumo.reproStatus.status === "PRENHA") && (
-                      <Link to={`/animais/${animal.id}/reproducao?tipo=diagnostico`}>
+                    {reproResumo.reproStatus.status !== "SERVIDA" &&
+                      reproResumo.reproStatus.status !== "PRENHA" && (
+                        <Link
+                          to={`/animais/${animal.id}/reproducao?tipo=cobertura`}
+                        >
+                          <Button size="sm">Cobertura / IA</Button>
+                        </Link>
+                      )}
+                    {(reproResumo.reproStatus.status === "SERVIDA" ||
+                      reproResumo.reproStatus.status === "PRENHA") && (
+                      <Link
+                        to={`/animais/${animal.id}/reproducao?tipo=diagnostico`}
+                      >
                         <Button variant="outline" size="sm">
                           Diagnóstico
                         </Button>
@@ -1577,10 +1634,6 @@ const AnimalDetalhe = () => {
                   >
                     Categoria atual: {categoriaLabel ?? "Nao classificada"}
                   </Badge>
-                  <p className="text-sm text-muted-foreground">
-                    Esta femea ainda nao esta em fase reprodutiva. O fluxo de
-                    reproducao so fica disponivel para novilhas e vacas.
-                  </p>
                 </div>
               )}
             </CardContent>
@@ -1588,10 +1641,10 @@ const AnimalDetalhe = () => {
         )}
 
         {animal.sexo === "M" && (
-          <Card className="border-sky-200 bg-sky-50/40">
+          <Card className="border-border/70 bg-card shadow-none">
             <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-sky-900">
-                <HeartPulse className="h-4 w-4" />
+              <CardTitle className="flex items-center gap-2 text-base">
+                <HeartPulse className="h-4 w-4 text-muted-foreground" />
                 Perfil de manejo do macho
               </CardTitle>
             </CardHeader>
@@ -1637,8 +1690,8 @@ const AnimalDetalhe = () => {
               </div>
 
               <div className="grid gap-3 sm:grid-cols-3">
-                <div className="rounded-lg border border-border/70 bg-background/80 p-3">
-                  <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                <div className="rounded-xl border border-border/70 bg-muted/20 p-3">
+                  <p className="text-xs uppercase text-muted-foreground">
                     Destino
                   </p>
                   <p className="mt-1 font-semibold text-foreground">
@@ -1649,8 +1702,8 @@ const AnimalDetalhe = () => {
                   </p>
                 </div>
 
-                <div className="rounded-lg border border-border/70 bg-background/80 p-3">
-                  <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                <div className="rounded-xl border border-border/70 bg-muted/20 p-3">
+                  <p className="text-xs uppercase text-muted-foreground">
                     Status reprodutivo
                   </p>
                   <p className="mt-1 font-semibold text-foreground">
@@ -1661,8 +1714,8 @@ const AnimalDetalhe = () => {
                   </p>
                 </div>
 
-                <div className="rounded-lg border border-border/70 bg-background/80 p-3">
-                  <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                <div className="rounded-xl border border-border/70 bg-muted/20 p-3">
+                  <p className="text-xs uppercase text-muted-foreground">
                     Modo de transicao
                   </p>
                   <p className="mt-1 font-semibold text-foreground">
@@ -1683,7 +1736,7 @@ const AnimalDetalhe = () => {
           </Card>
         )}
 
-        <Card>
+        <Card className="border-border/70 shadow-none">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2">
               <Dna className="h-4 w-4 text-muted-foreground" />
@@ -1691,16 +1744,23 @@ const AnimalDetalhe = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <AnimalKinshipBadges mother={mae} father={pai} calves={crias ?? []} />
+            <AnimalKinshipBadges
+              mother={mae}
+              father={pai}
+              calves={crias ?? []}
+            />
             <div className="space-y-1 text-sm text-muted-foreground">
               {mae && <p>Matriz de origem: {mae.identificacao}</p>}
               {pai && <p>Pai vinculado: {pai.identificacao}</p>}
               {calfJourneyPendingCount > 0 && (
-                <p>{calfJourneyPendingCount} marco(s) da jornada da cria em aberto.</p>
+                <p>
+                  {calfJourneyPendingCount} marco(s) da jornada da cria em
+                  aberto.
+                </p>
               )}
               {(crias?.length ?? 0) > 0 && (
                 <p>
-                  {animal.identificacao} tem {(crias?.length ?? 0)} cria(s)
+                  {animal.identificacao} tem {crias?.length ?? 0} cria(s)
                   vinculada(s).
                 </p>
               )}
@@ -1724,13 +1784,11 @@ const AnimalDetalhe = () => {
       </div>
 
       {animal.origem === "sociedade" && sociedadeAtiva && contraparte && (
-        <Card className="border-blue-200 bg-blue-50/30">
+        <Card className="border-border/70 bg-card shadow-none">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-blue-900">
-                Detalhes da sociedade
-              </CardTitle>
-              <Badge variant="default" className="bg-blue-600">
+              <CardTitle className="text-base">Detalhes da sociedade</CardTitle>
+              <Badge variant="default">
                 {sociedadeAtiva.fim ? "Encerrada" : "Ativa"}
               </Badge>
             </div>
@@ -1739,13 +1797,15 @@ const AnimalDetalhe = () => {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <p className="text-xs text-muted-foreground">Contraparte</p>
-                <p className="font-semibold text-blue-900">{contraparte.nome}</p>
+                <p className="font-semibold">{contraparte.nome}</p>
               </div>
 
               {sociedadeAtiva.percentual && (
                 <div>
-                  <p className="text-xs text-muted-foreground">Participacao da fazenda</p>
-                  <p className="font-semibold text-blue-900">
+                  <p className="text-xs text-muted-foreground">
+                    Participacao da fazenda
+                  </p>
+                  <p className="font-semibold">
                     {sociedadeAtiva.percentual}%
                   </p>
                 </div>
@@ -1755,23 +1815,29 @@ const AnimalDetalhe = () => {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <p className="text-xs text-muted-foreground">Data de inicio</p>
-                <p className="font-medium">{formatDate(sociedadeAtiva.inicio)}</p>
+                <p className="font-medium">
+                  {formatDate(sociedadeAtiva.inicio)}
+                </p>
               </div>
 
               {sociedadeAtiva.fim && (
                 <div>
-                  <p className="text-xs text-muted-foreground">Data de encerramento</p>
-                  <p className="font-medium">{formatDate(sociedadeAtiva.fim)}</p>
+                  <p className="text-xs text-muted-foreground">
+                    Data de encerramento
+                  </p>
+                  <p className="font-medium">
+                    {formatDate(sociedadeAtiva.fim)}
+                  </p>
                 </div>
               )}
             </div>
 
             {!sociedadeAtiva.fim && (
-              <div className="border-t border-blue-200 pt-2">
+              <div className="border-t border-border/70 pt-2">
                 <Button
                   variant="outline"
                   size="sm"
-                  className="border-red-300 text-red-600 hover:bg-red-50"
+                  className="border-destructive/30 text-destructive hover:bg-destructive/10"
                   onClick={() => setShowCloseSociedadeDialog(true)}
                 >
                   Encerrar sociedade
@@ -1783,7 +1849,7 @@ const AnimalDetalhe = () => {
       )}
 
       <Tabs defaultValue="timeline" className="w-full">
-        <TabsList className="grid max-w-[400px] w-full grid-cols-2 bg-muted/50 p-1">
+        <TabsList className="grid w-full max-w-[400px] grid-cols-2 bg-muted/40 p-1">
           <TabsTrigger value="timeline" className="gap-2 rounded-md">
             <History className="h-4 w-4" /> Timeline
           </TabsTrigger>
@@ -1793,36 +1859,26 @@ const AnimalDetalhe = () => {
         </TabsList>
 
         <TabsContent value="timeline" className="mt-6">
-          <div className="ml-4 space-y-6 border-l-2 border-muted pl-4">
+          <div className="space-y-3">
             {eventos?.length === 0 ? (
               <p className="py-4 text-muted-foreground">
                 Nenhum evento registrado.
               </p>
             ) : (
               eventos?.map((evt) => (
-                <div key={evt.id} className="relative">
-                  <div
-                    className={`absolute -left-[25px] h-4 w-4 rounded-full border-2 border-background ${
-                      evt.dominio === "sanitario"
-                        ? "bg-blue-500"
-                        : evt.dominio === "alerta_sanitario"
-                          ? "bg-amber-500"
-                        : evt.dominio === "pesagem"
-                          ? "bg-emerald-500"
-                          : evt.dominio === "reproducao"
-                            ? "bg-rose-500"
-                            : "bg-slate-500"
-                    }`}
-                  />
+                <article
+                  key={evt.id}
+                  className="rounded-xl border border-border/70 bg-background/95 p-4 shadow-none"
+                >
                   <div className="mb-1 flex items-start justify-between">
-                    <h4 className="text-sm font-bold capitalize">
+                    <h4 className="text-sm font-semibold capitalize">
                       {evt.dominio === "reproducao" && evt.details
                         ? `Reproducao: ${evt.details.tipo}`
                         : evt.dominio === "alerta_sanitario"
                           ? "Alerta sanitario"
-                        : evt.dominio}
+                          : evt.dominio}
                     </h4>
-                    <span className="rounded bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
+                    <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
                       {formatDate(evt.occurred_at)}
                     </span>
                   </div>
@@ -1832,7 +1888,7 @@ const AnimalDetalhe = () => {
                       : evt.observacoes || "Manejo realizado no campo."}
                   </p>
                   {evt.dominio === "alerta_sanitario" && (
-                    <div className="mt-1 rounded border border-amber-100 bg-amber-50/50 p-2 text-xs">
+                    <div className="mt-3 rounded-xl border border-border/70 bg-muted/20 p-3 text-xs text-muted-foreground">
                       {(() => {
                         const immediateActions = readStringArray(
                           evt.payload,
@@ -1851,7 +1907,9 @@ const AnimalDetalhe = () => {
                           <>
                             {routeLabel ? <p>Rota: {routeLabel}</p> : null}
                             {closureReason ? (
-                              <p>Desfecho: {closureReason.replaceAll("_", " ")}</p>
+                              <p>
+                                Desfecho: {closureReason.replaceAll("_", " ")}
+                              </p>
                             ) : null}
                             {immediateActions.length > 0 ? (
                               <p>Passos: {immediateActions.join(" | ")}</p>
@@ -1862,14 +1920,17 @@ const AnimalDetalhe = () => {
                     </div>
                   )}
                   {evt.dominio === "reproducao" && evt.details && (
-                    <div className="mt-1 rounded border border-rose-100 bg-rose-50/50 p-2 text-xs">
+                    <div className="mt-3 rounded-xl border border-border/70 bg-muted/20 p-3 text-xs text-muted-foreground">
                       {evt.details.macho_id && (
-                        <p>Reprodutor: {evt.machoIdentificacao || evt.details.macho_id}</p>
+                        <p>
+                          Reprodutor:{" "}
+                          {evt.machoIdentificacao || evt.details.macho_id}
+                        </p>
                       )}
                       {evt.details.payload && (
                         <>
-                          {typeof (evt.details.payload as ReproDetailsPayload).diagnostico_resultado ===
-                            "string" && (
+                          {typeof (evt.details.payload as ReproDetailsPayload)
+                            .diagnostico_resultado === "string" && (
                             <p>
                               Diagnostico:{" "}
                               {
@@ -1878,17 +1939,18 @@ const AnimalDetalhe = () => {
                               }
                             </p>
                           )}
-                          {typeof (evt.details.payload as ReproDetailsPayload).resultado ===
-                            "string" && (
+                          {typeof (evt.details.payload as ReproDetailsPayload)
+                            .resultado === "string" && (
                             <p>
                               Diagnostico:{" "}
                               {
-                                (evt.details.payload as ReproDetailsPayload).resultado as string
+                                (evt.details.payload as ReproDetailsPayload)
+                                  .resultado as string
                               }
                             </p>
                           )}
-                          {typeof (evt.details.payload as ReproDetailsPayload).numero_crias ===
-                            "number" && (
+                          {typeof (evt.details.payload as ReproDetailsPayload)
+                            .numero_crias === "number" && (
                             <p>
                               Crias:{" "}
                               {
@@ -1901,7 +1963,7 @@ const AnimalDetalhe = () => {
                       )}
                     </div>
                   )}
-                </div>
+                </article>
               ))
             )}
           </div>
@@ -1914,8 +1976,8 @@ const AnimalDetalhe = () => {
                 key={entry.item.id}
                 className={
                   entry.item.status === "agendado"
-                    ? "border-amber-200 bg-amber-50/30"
-                    : ""
+                    ? "border-warning/25 bg-warning-muted/40 shadow-none"
+                    : "shadow-none"
                 }
               >
                 <CardContent className="flex items-center justify-between p-4">
@@ -1972,17 +2034,16 @@ const AnimalDetalhe = () => {
         onSuccess={() => {}}
       />
 
-      <Dialog open={showSanitaryAlertDialog} onOpenChange={setShowSanitaryAlertDialog}>
+      <Dialog
+        open={showSanitaryAlertDialog}
+        onOpenChange={setShowSanitaryAlertDialog}
+      >
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-amber-900">
               <AlertTriangle className="h-5 w-5" />
               Abrir suspeita sanitaria para {animal.identificacao}
             </DialogTitle>
-            <DialogDescription>
-              Este fluxo registra a suspeita como evento append-only e congela a
-              movimentacao do animal ate o desfecho local.
-            </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
@@ -1990,9 +2051,15 @@ const AnimalDetalhe = () => {
               <div className="space-y-2">
                 <Label>Doenca / suspeita oficial</Label>
                 <Select
-                  value={selectedOfficialDisease?.codigo ?? sanitaryAlertForm.diseaseCode}
+                  value={
+                    selectedOfficialDisease?.codigo ??
+                    sanitaryAlertForm.diseaseCode
+                  }
                   onValueChange={(value) =>
-                    setSanitaryAlertForm((prev) => ({ ...prev, diseaseCode: value }))
+                    setSanitaryAlertForm((prev) => ({
+                      ...prev,
+                      diseaseCode: value,
+                    }))
                   }
                 >
                   <SelectTrigger>
@@ -2010,7 +2077,9 @@ const AnimalDetalhe = () => {
               <div className="space-y-2">
                 <Label>Tipo de notificacao</Label>
                 <Input
-                  value={selectedOfficialDisease?.tipo_notificacao ?? "imediata"}
+                  value={
+                    selectedOfficialDisease?.tipo_notificacao ?? "imediata"
+                  }
                   readOnly
                 />
               </div>
@@ -2094,7 +2163,9 @@ const AnimalDetalhe = () => {
             ) : null}
 
             <div className="space-y-2">
-              <Label htmlFor="sanitary_alert_route">Rota imediata / contato</Label>
+              <Label htmlFor="sanitary_alert_route">
+                Rota imediata / contato
+              </Label>
               <Input
                 id="sanitary_alert_route"
                 value={sanitaryAlertForm.routeLabel}
@@ -2153,10 +2224,6 @@ const AnimalDetalhe = () => {
               <AlertTriangle className="h-5 w-5" />
               Encerrar suspeita sanitaria
             </DialogTitle>
-            <DialogDescription>
-              O bloqueio local de movimentacao sera removido, mas o historico do
-              alerta continuara append-only na timeline.
-            </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
@@ -2190,7 +2257,9 @@ const AnimalDetalhe = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="sanitary_alert_close_notes">Observacoes de encerramento</Label>
+              <Label htmlFor="sanitary_alert_close_notes">
+                Observacoes de encerramento
+              </Label>
               <Textarea
                 id="sanitary_alert_close_notes"
                 value={sanitaryAlertResolution.closureNotes}
@@ -2217,7 +2286,9 @@ const AnimalDetalhe = () => {
               onClick={() => void handleCloseSanitaryAlert()}
               disabled={isClosingSanitaryAlert || !activeSanitaryAlert}
             >
-              {isClosingSanitaryAlert ? "Encerrando..." : "Confirmar encerramento"}
+              {isClosingSanitaryAlert
+                ? "Encerrando..."
+                : "Confirmar encerramento"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -2231,7 +2302,7 @@ const AnimalDetalhe = () => {
               Registrar obito de {animal.identificacao}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Esta acao marcara o animal como morto, removendo-o de lotes ativos e cancelando todas as tarefas agendadas. Esta operacao e irreversivel.
+              Remove o animal da operacao ativa. Acao irreversivel.
             </AlertDialogDescription>
           </AlertDialogHeader>
 
@@ -2297,8 +2368,7 @@ const AnimalDetalhe = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Encerrar sociedade?</AlertDialogTitle>
             <AlertDialogDescription>
-              O vinculo societario deste animal sera encerrado na fazenda ativa.
-              Use apenas quando o compartilhamento realmente terminou.
+              Encerra o vinculo deste animal na fazenda ativa.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -2320,3 +2390,4 @@ const AnimalDetalhe = () => {
 };
 
 export default AnimalDetalhe;
+

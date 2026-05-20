@@ -1,6 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
-import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import {
+  Link,
+  useNavigate,
+  useParams,
+  useSearchParams,
+} from "react-router-dom";
 import {
   ChevronLeft,
   ClipboardCheck,
@@ -28,7 +33,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { MetricCard } from "@/components/ui/metric-card";
 import { PageIntro } from "@/components/ui/page-intro";
 import {
   Select,
@@ -116,9 +120,14 @@ export default function AnimalCriaInicial() {
   const [processingJourneyItemIds, setProcessingJourneyItemIds] = useState<
     Set<string>
   >(new Set());
-  const [actionDrafts, setActionDrafts] = useState<Record<string, JourneyActionDraft>>({});
+  const [actionDrafts, setActionDrafts] = useState<
+    Record<string, JourneyActionDraft>
+  >({});
 
-  const calf = useLiveQuery(() => (id ? db.state_animais.get(id) : undefined), [id]);
+  const calf = useLiveQuery(
+    () => (id ? db.state_animais.get(id) : undefined),
+    [id],
+  );
   const mother = useLiveQuery(
     () => (calf?.mae_id ? db.state_animais.get(calf.mae_id) : null),
     [calf?.mae_id],
@@ -242,7 +251,8 @@ export default function AnimalCriaInicial() {
               details?.produto === "Cura de umbigo"
                 ? "Cura do umbigo"
                 : "Manejo sanitario",
-            detail: details?.produto || event.observacoes || "Sem detalhe adicional.",
+            detail:
+              details?.produto || event.observacoes || "Sem detalhe adicional.",
             tone: "bg-blue-500",
           } satisfies TimelineItem;
         }
@@ -253,9 +263,13 @@ export default function AnimalCriaInicial() {
             id: event.id,
             occurredAt: event.occurred_at,
             title:
-              details?.alimento_nome === "Desmame" ? "Desmame" : "Manejo nutricional",
+              details?.alimento_nome === "Desmame"
+                ? "Desmame"
+                : "Manejo nutricional",
             detail:
-              details?.alimento_nome || event.observacoes || "Sem detalhe adicional.",
+              details?.alimento_nome ||
+              event.observacoes ||
+              "Sem detalhe adicional.",
             tone: "bg-amber-500",
           } satisfies TimelineItem;
         }
@@ -275,7 +289,8 @@ export default function AnimalCriaInicial() {
     );
   }, [calf?.id, calf?.payload, mother?.identificacao]);
 
-  const fallbackLoteId = calf?.lote_id ?? mother?.lote_id ?? lotes?.[0]?.id ?? null;
+  const fallbackLoteId =
+    calf?.lote_id ?? mother?.lote_id ?? lotes?.[0]?.id ?? null;
   const pastoById = useMemo(
     () => new Map((pastos ?? []).map((pasto) => [pasto.id, pasto])),
     [pastos],
@@ -341,7 +356,8 @@ export default function AnimalCriaInicial() {
     if (!mother) return "/animais";
 
     const params = new URLSearchParams();
-    const eventId = searchParams.get("eventoId") ?? getBirthEventId(calf?.payload ?? {});
+    const eventId =
+      searchParams.get("eventoId") ?? getBirthEventId(calf?.payload ?? {});
     if (eventId) {
       params.set("eventoId", eventId);
     }
@@ -379,19 +395,20 @@ export default function AnimalCriaInicial() {
     try {
       const occurredAt = new Date().toISOString();
       const birthEventId = getBirthEventId(calf.payload);
-      const { ops, weighedCount, umbigoCount, agendaCount } = buildPostPartumOps({
-        fazendaId: calf.fazenda_id,
-        weightUnit: farmMeasurementConfig.weight_unit,
-        mother: {
-          id: mother.id,
-          identificacao: mother.identificacao,
-        },
-        calves: [calf],
-        drafts: [draft],
-        occurredAt,
-        birthEventId,
-        existingAgendaItems: journeyAgendaItems ?? [],
-      });
+      const { ops, weighedCount, umbigoCount, agendaCount } =
+        buildPostPartumOps({
+          fazendaId: calf.fazenda_id,
+          weightUnit: farmMeasurementConfig.weight_unit,
+          mother: {
+            id: mother.id,
+            identificacao: mother.identificacao,
+          },
+          calves: [calf],
+          drafts: [draft],
+          occurredAt,
+          birthEventId,
+          existingAgendaItems: journeyAgendaItems ?? [],
+        });
 
       if (ops.length === 0) {
         showError("Nenhuma atualizacao valida para salvar.");
@@ -405,7 +422,9 @@ export default function AnimalCriaInicial() {
         }${
           umbigoCount > 0 ? `${umbigoCount} cura de umbigo registrada. ` : ""
         }${
-          agendaCount > 0 ? `${agendaCount} etapa(s) ate o desmame criada(s). ` : ""
+          agendaCount > 0
+            ? `${agendaCount} etapa(s) ate o desmame criada(s). `
+            : ""
         }Sincronizacao pendente.`,
       );
     } catch {
@@ -445,7 +464,9 @@ export default function AnimalCriaInicial() {
           farmMeasurementConfig.weight_unit,
         ),
         destinationLoteId:
-          itemDraft.loteId === KEEP_CURRENT_LOTE ? calf.lote_id : itemDraft.loteId,
+          itemDraft.loteId === KEEP_CURRENT_LOTE
+            ? calf.lote_id
+            : itemDraft.loteId,
       });
 
       await createGesture(calf.fazenda_id, built.ops);
@@ -477,14 +498,15 @@ export default function AnimalCriaInicial() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Ficha inicial disponivel apenas para crias vinculadas</CardTitle>
+          <CardTitle>
+            Ficha inicial disponivel apenas para crias vinculadas
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            Esta tela foi pensada para a cria gerada no parto e vinculada a uma matriz.
-          </p>
           <Button asChild>
-            <Link to={`/animais/${calf.id}`}>Voltar para a ficha do animal</Link>
+            <Link to={`/animais/${calf.id}`}>
+              Voltar para a ficha do animal
+            </Link>
           </Button>
         </CardContent>
       </Card>
@@ -492,22 +514,26 @@ export default function AnimalCriaInicial() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <PageIntro
+        variant="plain"
         eyebrow="Cria"
         title={`Jornada inicial da cria ${calf.identificacao}`}
-        description="Finalize identificacao, lote inicial, primeira pesagem e cuidados neonatais sem sair do fluxo matriz > cria."
         meta={
           <>
             <StatusBadge tone="neutral">Rotina dedicada da cria</StatusBadge>
             <StatusBadge
-              tone={hasPendingNeonatalSetup(calf.payload) ? "warning" : "success"}
+              tone={
+                hasPendingNeonatalSetup(calf.payload) ? "warning" : "success"
+              }
             >
               {hasPendingNeonatalSetup(calf.payload)
                 ? "Ajustes iniciais pendentes"
                 : "Crescimento inicial em acompanhamento"}
             </StatusBadge>
-            {journeyStage ? <StatusBadge tone="info">{journeyStage.label}</StatusBadge> : null}
+            {journeyStage ? (
+              <StatusBadge tone="info">{journeyStage.label}</StatusBadge>
+            ) : null}
           </>
         }
         actions={
@@ -522,36 +548,6 @@ export default function AnimalCriaInicial() {
           </>
         }
       />
-
-      <div className="grid gap-4 md:grid-cols-3">
-        <MetricCard
-          label="Matriz"
-          value={mother?.identificacao ?? "Nao informada"}
-          hint={mother ? "Vinculo herdado do parto" : "Sem matriz carregada"}
-          icon={<HeartPulse className="h-5 w-5" />}
-        />
-        <MetricCard
-          label="Pai"
-          value={father?.identificacao ?? "Nao informado"}
-          hint={father ? "Vinculo reaproveitado do episodio" : "Sem pai no parto"}
-          icon={<Dna className="h-5 w-5" />}
-        />
-        <MetricCard
-          label="Status neonatal"
-          value={
-            journeyStage?.label ??
-            (neonatalSetup?.completed_at ? "Fechado" : "Pendente")
-          }
-          hint={
-            journeyStage?.helper ??
-            (neonatalSetup?.completed_at
-              ? `Concluido em ${formatDate(neonatalSetup.completed_at)}`
-              : "Aguardando conferencia inicial")
-          }
-          tone={journeyStage ? "info" : neonatalSetup?.completed_at ? "success" : "warning"}
-          icon={<ClipboardCheck className="h-5 w-5" />}
-        />
-      </div>
 
       <section className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
         <Card>
@@ -573,7 +569,9 @@ export default function AnimalCriaInicial() {
                 pastoById={pastoById}
                 weightUnit={farmMeasurementConfig.weight_unit}
                 onChange={(patch) =>
-                  setDraft((current) => (current ? { ...current, ...patch } : current))
+                  setDraft((current) =>
+                    current ? { ...current, ...patch } : current,
+                  )
                 }
                 action={
                   <div className="flex flex-wrap gap-2">
@@ -581,7 +579,9 @@ export default function AnimalCriaInicial() {
                       {isSaving ? "Salvando..." : "Salvar ficha inicial"}
                     </Button>
                     <Button variant="outline" asChild>
-                      <Link to={`/animais/${calf.id}`}>Abrir ficha completa</Link>
+                      <Link to={`/animais/${calf.id}`}>
+                        Abrir ficha completa
+                      </Link>
                     </Button>
                   </div>
                 }
@@ -606,13 +606,11 @@ export default function AnimalCriaInicial() {
             <div className="space-y-2 text-sm text-muted-foreground">
               {mother && <p>Matriz: {mother.identificacao}</p>}
               {father && <p>Pai: {father.identificacao}</p>}
-              <p>
-                Categoria atual: {categoriaLabel ?? "Nao classificada"}
-              </p>
+              <p>Categoria atual: {categoriaLabel ?? "Nao classificada"}</p>
             </div>
 
             <div className="rounded-xl border bg-muted/20 p-4">
-              <p className="text-xs uppercase tracking-wide text-muted-foreground">
+              <p className="text-xs uppercase text-muted-foreground">
                 Resumo neonatal
               </p>
               <div className="mt-2 space-y-1 text-sm">
@@ -631,9 +629,7 @@ export default function AnimalCriaInicial() {
                     ? formatDate(neonatalSetup.umbigo_curado_at)
                     : "Nao registrada"}
                 </p>
-                <p>
-                  Marcos na agenda: {(journeyAgendaItems ?? []).length}
-                </p>
+                <p>Marcos na agenda: {(journeyAgendaItems ?? []).length}</p>
               </div>
             </div>
           </CardContent>
@@ -661,11 +657,15 @@ export default function AnimalCriaInicial() {
                   loteId: KEEP_CURRENT_LOTE,
                 };
                 const requiresWeight =
-                  milestoneKey === "pesagem_d7" || milestoneKey === "pesagem_d30";
+                  milestoneKey === "pesagem_d7" ||
+                  milestoneKey === "pesagem_d30";
                 const isWeaning = milestoneKey === "desmame";
 
                 return (
-                  <div key={item.id} className="rounded-xl border p-4 space-y-3">
+                  <div
+                    key={item.id}
+                    className="rounded-xl border p-4 space-y-3"
+                  >
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div>
                         <p className="font-medium">
@@ -695,13 +695,19 @@ export default function AnimalCriaInicial() {
                     {requiresWeight && item.status === "agendado" && (
                       <div className="space-y-2">
                         <Label htmlFor={`journey-weight-${item.id}`}>
-                          Peso ({getWeightUnitLabel(farmMeasurementConfig.weight_unit)})
+                          Peso (
+                          {getWeightUnitLabel(
+                            farmMeasurementConfig.weight_unit,
+                          )}
+                          )
                         </Label>
                         <Input
                           id={`journey-weight-${item.id}`}
                           type="number"
                           min="0"
-                          step={getWeightInputStep(farmMeasurementConfig.weight_unit)}
+                          step={getWeightInputStep(
+                            farmMeasurementConfig.weight_unit,
+                          )}
                           inputMode="decimal"
                           value={itemDraft.pesoKg}
                           onChange={(event) =>
@@ -741,7 +747,9 @@ export default function AnimalCriaInicial() {
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value={KEEP_CURRENT_LOTE}>Manter lote atual</SelectItem>
+                            <SelectItem value={KEEP_CURRENT_LOTE}>
+                              Manter lote atual
+                            </SelectItem>
                             {(lotes ?? []).map((lote) => (
                               <SelectItem key={lote.id} value={lote.id}>
                                 {lote.nome}
@@ -765,7 +773,9 @@ export default function AnimalCriaInicial() {
                         </Button>
                       ) : item.source_evento_id ? (
                         <Button variant="outline" size="sm" asChild>
-                          <Link to={`/eventos?eventoId=${item.source_evento_id}`}>
+                          <Link
+                            to={`/eventos?eventoId=${item.source_evento_id}`}
+                          >
                             Ver evento gerado
                           </Link>
                         </Button>
@@ -788,37 +798,40 @@ export default function AnimalCriaInicial() {
           <CardContent className="space-y-4">
             {journeyStage && (
               <div className="rounded-xl border bg-muted/20 p-4">
-                <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                <p className="text-xs uppercase text-muted-foreground">
                   Estagio de vida da jornada
                 </p>
-                <p className="mt-1 text-xl font-semibold">{journeyStage.label}</p>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  {journeyStage.helper}
+                <p className="mt-1 text-xl font-semibold">
+                  {journeyStage.label}
                 </p>
               </div>
             )}
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="rounded-xl border bg-muted/20 p-4">
-                <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                <p className="text-xs uppercase text-muted-foreground">
                   Pendentes abertas
                 </p>
                 <p className="mt-1 text-xl font-semibold">
-                  {(journeyAgendaItems ?? []).filter((item) => item.status === "agendado").length}
+                  {
+                    (journeyAgendaItems ?? []).filter(
+                      (item) => item.status === "agendado",
+                    ).length
+                  }
                 </p>
               </div>
               <div className="rounded-xl border bg-muted/20 p-4">
-                <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                <p className="text-xs uppercase text-muted-foreground">
                   Marcos concluidos
                 </p>
                 <p className="mt-1 text-xl font-semibold">
-                  {(journeyAgendaItems ?? []).filter((item) => item.status === "concluido").length}
+                  {
+                    (journeyAgendaItems ?? []).filter(
+                      (item) => item.status === "concluido",
+                    ).length
+                  }
                 </p>
               </div>
             </div>
-            <p className="text-sm text-muted-foreground">
-              A trilha nasce no fechamento inicial da cria e segue aberta ate o
-              desmame, sempre com agenda mutavel e eventos imutaveis ao concluir cada marco.
-            </p>
           </CardContent>
         </Card>
       </section>
@@ -855,7 +868,7 @@ export default function AnimalCriaInicial() {
               <>
                 <div className="grid gap-3 sm:grid-cols-3">
                   <div className="rounded-xl border bg-muted/20 p-3">
-                    <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                    <p className="text-xs uppercase text-muted-foreground">
                       Pesagens
                     </p>
                     <p className="mt-1 text-xl font-semibold">
@@ -863,7 +876,7 @@ export default function AnimalCriaInicial() {
                     </p>
                   </div>
                   <div className="rounded-xl border bg-muted/20 p-3">
-                    <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                    <p className="text-xs uppercase text-muted-foreground">
                       Primeiro registro
                     </p>
                     <p className="mt-1 text-xl font-semibold">
@@ -879,7 +892,7 @@ export default function AnimalCriaInicial() {
                     </p>
                   </div>
                   <div className="rounded-xl border bg-muted/20 p-3">
-                    <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                    <p className="text-xs uppercase text-muted-foreground">
                       GMD
                     </p>
                     <p className="mt-1 text-xl font-semibold">
@@ -895,7 +908,11 @@ export default function AnimalCriaInicial() {
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={historicoPeso}>
                       <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="dataLabel" tickLine={false} axisLine={false} />
+                      <XAxis
+                        dataKey="dataLabel"
+                        tickLine={false}
+                        axisLine={false}
+                      />
                       <YAxis
                         tickLine={false}
                         axisLine={false}
@@ -909,7 +926,10 @@ export default function AnimalCriaInicial() {
                       />
                       <Tooltip
                         formatter={(value: number) => [
-                          formatWeight(value, farmMeasurementConfig.weight_unit),
+                          formatWeight(
+                            value,
+                            farmMeasurementConfig.weight_unit,
+                          ),
                           "Peso",
                         ]}
                         labelFormatter={(label) => `Data: ${label}`}
@@ -942,7 +962,7 @@ export default function AnimalCriaInicial() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="ml-4 space-y-6 border-l-2 border-muted pl-4">
+            <div className="ml-4 space-y-5 border-l-2 border-muted pl-4">
               {(timeline ?? []).length === 0 ? (
                 <p className="py-4 text-sm text-muted-foreground">
                   Nenhum marco registrado ainda.
@@ -959,7 +979,9 @@ export default function AnimalCriaInicial() {
                         {formatDate(item.occurredAt)}
                       </span>
                     </div>
-                    <p className="text-xs text-muted-foreground">{item.detail}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {item.detail}
+                    </p>
                   </div>
                 ))
               )}
@@ -970,4 +992,5 @@ export default function AnimalCriaInicial() {
     </div>
   );
 }
+
 

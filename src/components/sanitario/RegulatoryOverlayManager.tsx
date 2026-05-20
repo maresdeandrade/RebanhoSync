@@ -616,15 +616,12 @@ export function RegulatoryOverlayManager({
   return (
     <>
       <Card className="border-amber-200/70 bg-amber-50/30">
-        <CardHeader className="gap-3">
+        <CardHeader className="gap-3 px-4 py-3 sm:px-5">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
             <div className="space-y-2">
               <div className="flex flex-wrap items-center gap-2">
                 <ClipboardCheck className="h-5 w-5 text-amber-700" />
-                <CardTitle className="text-xl">
-                  Complementos operacionais
-                </CardTitle>
-                <Badge variant="outline">Procedural</Badge>
+                <CardTitle className="text-lg">Verificações</CardTitle>
               </div>
             </div>
 
@@ -648,22 +645,27 @@ export function RegulatoryOverlayManager({
                 </StatusBadge>
               ) : null}
               <StatusBadge tone="info">
-                {officialEntryCount} oficial(is) | {customEntryCount} fazenda
+                {officialEntryCount} oficial(is)
               </StatusBadge>
+              {customEntryCount > 0 ? (
+                <StatusBadge tone="neutral">
+                  {customEntryCount} fazenda
+                </StatusBadge>
+              ) : null}
               {canManage ? (
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={openCreateStructure}
                 >
-                  Novo complemento da fazenda
+                  Nova verificação
                 </Button>
               ) : null}
             </div>
           </div>
         </CardHeader>
 
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4 px-4 pt-0 sm:px-5">
           {hasActiveAnalyticalCut ? (
             <div className="flex flex-col gap-3 rounded-2xl border border-border/70 bg-background/80 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="space-y-2">
@@ -707,10 +709,10 @@ export function RegulatoryOverlayManager({
                   key={`${entry.template.id}:${entry.item.id}`}
                   className="border-border/70"
                 >
-                  <CardHeader className="space-y-3">
+                  <CardHeader className="space-y-2 px-4 py-3">
                     <div className="flex items-start justify-between gap-3">
                       <div className="space-y-1">
-                        <CardTitle className="text-lg">{entry.label}</CardTitle>
+                        <CardTitle className="text-base">{entry.label}</CardTitle>
                       </div>
                       <div className="flex flex-wrap gap-2">
                         <Badge
@@ -727,11 +729,6 @@ export function RegulatoryOverlayManager({
                         >
                           {getRegulatoryOverlayStatusLabel(entry.status)}
                         </StatusBadge>
-                        <Badge variant="outline">
-                          {entry.complianceKind === "feed_ban"
-                            ? "Feed-ban"
-                            : "Checklist"}
-                        </Badge>
                       </div>
                     </div>
 
@@ -740,25 +737,14 @@ export function RegulatoryOverlayManager({
                       {entry.subarea ? (
                         <Badge variant="outline">{entry.subarea}</Badge>
                       ) : null}
-                      <Badge variant="outline">
-                        {entry.template.status_legal.replaceAll("_", " ")}
-                      </Badge>
-                      {entry.animalCentric ? (
-                        <Badge variant="secondary">Animal-centric</Badge>
-                      ) : (
-                        <Badge variant="outline">Nivel fazenda</Badge>
-                      )}
-                      {entry.editable ? (
-                        <Badge variant="secondary">Editavel</Badge>
-                      ) : null}
                     </div>
                   </CardHeader>
 
-                  <CardContent className="space-y-3">
+                  <CardContent className="space-y-3 px-4 pt-0">
                     {entry.runtime ? (
                       <div className="rounded-xl border border-border/70 bg-muted/20 p-3 text-sm">
                         <p className="font-medium text-foreground">
-                          Ultima verificacao:{" "}
+                          Verificado em{" "}
                           {entry.runtime.checkedAt.slice(0, 10)}
                         </p>
                         {entry.runtime.responsible ? (
@@ -774,7 +760,7 @@ export function RegulatoryOverlayManager({
                       </div>
                     ) : (
                       <div className="rounded-xl border border-dashed border-border/70 bg-muted/10 p-3 text-sm text-muted-foreground">
-                        Sem execucao registrada ainda.
+                        Sem verificação registrada.
                       </div>
                     )}
 
@@ -788,7 +774,7 @@ export function RegulatoryOverlayManager({
                         ) : (
                           <ShieldCheck className="mr-2 h-4 w-4" />
                         )}
-                        Registrar verificacao
+                        Registrar
                       </Button>
                       {entry.editable ? (
                         <>
@@ -828,9 +814,6 @@ export function RegulatoryOverlayManager({
                 ? "Registrar feed-ban de ruminantes"
                 : "Registrar checklist operacional"}
             </DialogTitle>
-            <DialogDescription>
-              {selectedEntry?.template.nome}
-            </DialogDescription>
           </DialogHeader>
 
           {selectedEntry && form ? (
@@ -1041,11 +1024,6 @@ export function RegulatoryOverlayManager({
                 ? "Editar complemento operacional"
                 : "Novo complemento operacional da fazenda"}
             </DialogTitle>
-            <DialogDescription>
-              Crie um checklist adicional de boa pratica, recomendacao tecnica
-              ou obrigacao interna sem abrir outra tela e sem misturar isso ao
-              pack oficial.
-            </DialogDescription>
           </DialogHeader>
 
           {structureDraft ? (
@@ -1187,8 +1165,7 @@ export function RegulatoryOverlayManager({
           <DialogHeader>
             <DialogTitle>Remover complemento operacional?</DialogTitle>
             <DialogDescription>
-              A definicao estrutural sera removida da fazenda. Eventos
-              append-only ja registrados permanecem no historico.
+              Remove este complemento da fazenda.
             </DialogDescription>
           </DialogHeader>
 

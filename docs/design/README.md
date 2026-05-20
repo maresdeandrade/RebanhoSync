@@ -3,7 +3,7 @@
 Status: Informativo  
 Escopo: Direção visual, referências de UI, prompts de geração visual e orientação UX incremental  
 Produto: RebanhoSync — gestão simples e offline-first para pecuária de corte  
-Última atualização: 2026-05-08
+Última atualização: 2026-05-20
 
 ## 1. Objetivo
 
@@ -78,6 +78,7 @@ Implementado no app atual, conforme frente de UX/visual concluída:
 - cards operacionais com bordas visíveis;
 - estados de pendência, rejeição, sucesso, aviso e erro com badges semânticos;
 - ajustes pontuais de legibilidade em Home, Agenda, Registrar e Animal.
+- segunda passagem de compactação visual SLC em Lotes, Pastos, Reprodução, Relatórios, Reconciliacao, Configuracoes, seleção de fazenda, onboarding/cadastros, importações e detalhes.
 
 Não significa que todas as referências visuais estejam implementadas pixel-perfect.
 
@@ -102,6 +103,9 @@ Não significa que todas as referências visuais estejam implementadas pixel-per
 
 5. **CTAs contextuais**  
    Navegam/pré-preenchem contexto. Não salvam, não executam, não concluem agenda e não geram evento automaticamente.
+
+6. **Seleção de fazenda contextual**  
+   O card de fazenda pode mostrar município/UF, área total, tipo de produção e sistema de manejo quando esses dados já existem no cadastro. Esse contexto ajuda a diferenciar fazendas sem transformar a tela em relatório nem solicitar dados fiscais adicionais.
 
 Separação recomendada:
 

@@ -15,7 +15,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FormSection } from "@/components/ui/form-section";
 import { Input } from "@/components/ui/input";
-import { MetricCard } from "@/components/ui/metric-card";
 import { PageIntro } from "@/components/ui/page-intro";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Textarea } from "@/components/ui/textarea";
@@ -161,8 +160,9 @@ const PastosImportar = () => {
   };
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
+    <div className="mx-auto max-w-6xl space-y-5">
       <PageIntro
+       variant="plain"
         eyebrow="Estrutura"
         title="Importar pastos por planilha"
         meta={
@@ -192,23 +192,6 @@ const PastosImportar = () => {
           </>
         }
       />
-
-      <div className="grid gap-4 md:grid-cols-3">
-        <MetricCard
-          label="Linhas validas"
-          value={parsed.rows.length}
-          tone={parsed.rows.length > 0 ? "info" : "default"}
-        />
-        <MetricCard
-          label="Alertas"
-          value={validation.issues.length}
-          tone={validation.issues.length === 0 ? "success" : "warning"}
-        />
-        <MetricCard
-          label="Pastos existentes"
-          value={pastosExistentes?.length ?? 0}
-        />
-      </div>
 
       <FormSection
         title="Modelo e arquivo"
@@ -374,3 +357,5 @@ const PastosImportar = () => {
 };
 
 export default PastosImportar;
+
+

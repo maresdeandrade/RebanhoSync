@@ -38,7 +38,6 @@ import { EmptyState } from "@/components/EmptyState";
 import { FormSection } from "@/components/ui/form-section";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { MetricCard } from "@/components/ui/metric-card";
 import { PageIntro } from "@/components/ui/page-intro";
 import {
   Select,
@@ -309,8 +308,9 @@ export default function Contrapartes() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <PageIntro
+        variant="plain"
         eyebrow="Financeiro"
         title="Parceiros e contrapartes"
         meta={
@@ -322,31 +322,14 @@ export default function Contrapartes() {
         }
       />
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <MetricCard
-          label="Total"
-          value={counts.total}
-          icon={<Building2 className="h-5 w-5" />}
-        />
-        <MetricCard
-          label="Pessoas"
-          value={counts.pessoas}
-          icon={<UserRound className="h-5 w-5" />}
-        />
-        <MetricCard
-          label="Empresas"
-          value={counts.empresas}
-          tone="info"
-          icon={<Building2 className="h-5 w-5" />}
-        />
-      </div>
-
       <FormSection
         title="Nova contraparte"
         actions={
+          !canManage ? (
           <StatusBadge tone={canManage ? "info" : "warning"}>
-            {canManage ? "Edicao liberada" : "Somente leitura"}
+            Somente leitura
           </StatusBadge>
+          ) : null
         }
       >
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -426,9 +409,7 @@ export default function Contrapartes() {
 
         <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           {!canManage ? (
-            <p className="text-sm text-muted-foreground">
-              Somente owner/manager.
-            </p>
+            <StatusBadge tone="warning">Somente owner/manager</StatusBadge>
           ) : null}
           <Button
             onClick={handleCreate}
@@ -566,14 +547,13 @@ export default function Contrapartes() {
                       {item.tipo === "empresa" ? "Empresa" : "Pessoa"}
                     </StatusBadge>
                   </div>
-                  <p className="text-sm text-muted-foreground">
-                    {[item.documento, item.telefone, item.email]
-                      .filter(Boolean)
-                      .join(" · ") || "Sem contato informado"}
-                  </p>
-                  {item.endereco ? (
+                  {[item.documento, item.telefone, item.email, item.endereco]
+                    .filter(Boolean)
+                    .length > 0 ? (
                     <p className="text-sm text-muted-foreground">
-                      {item.endereco}
+                      {[item.documento, item.telefone, item.email, item.endereco]
+                        .filter(Boolean)
+                        .join(" · ")}
                     </p>
                   ) : null}
                 </div>
@@ -648,3 +628,5 @@ export default function Contrapartes() {
     </div>
   );
 }
+
+

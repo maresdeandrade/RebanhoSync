@@ -6,7 +6,7 @@ const Placeholder = () => {
   const pageName = location.pathname.split("/").pop() || "Página";
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <h1 className="text-2xl font-bold capitalize">
         {pageName.replace("-", " ")}
       </h1>
@@ -26,3 +26,5 @@ const Placeholder = () => {
 };
 
 export default Placeholder;
+
+

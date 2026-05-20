@@ -560,3 +560,4 @@ describe("Agenda page", () => {
     ).toBeInTheDocument();
   });
 });
+

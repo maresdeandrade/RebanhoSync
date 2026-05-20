@@ -9,7 +9,7 @@ export function Toolbar({
   return (
     <div
       className={cn(
-        "app-surface flex flex-col gap-3 p-3 sm:p-4 lg:flex-row lg:items-center lg:justify-between",
+        "flex flex-col gap-3 rounded-xl border border-border/70 bg-card p-3 shadow-none sm:p-4 lg:flex-row lg:items-center lg:justify-between",
         className,
       )}
       {...props}

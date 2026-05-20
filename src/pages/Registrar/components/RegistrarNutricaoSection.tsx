@@ -50,3 +50,4 @@ export function RegistrarNutricaoSection(props: RegistrarNutricaoSectionProps) {
     </div>
   );
 }
+

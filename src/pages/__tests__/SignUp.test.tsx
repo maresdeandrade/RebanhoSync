@@ -127,3 +127,4 @@ describe("SignUp", () => {
     expect(screen.getByText("Selecionar fazenda")).toBeInTheDocument();
   });
 });
+

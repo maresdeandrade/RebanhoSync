@@ -22,7 +22,6 @@ import { AnimalCategoryBadge } from "@/components/animals/AnimalCategoryBadge";
 import { AnimalKinshipBadges } from "@/components/animals/AnimalKinshipBadges";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { MetricCard } from "@/components/ui/metric-card";
 import { PageIntro } from "@/components/ui/page-intro";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Toolbar, ToolbarGroup } from "@/components/ui/toolbar";
@@ -283,6 +282,7 @@ export default function AnimalReproducao() {
   return (
     <div className="space-y-5">
       <PageIntro
+        variant="plain"
         eyebrow="Fluxo dedicado da matriz"
         title={`Reproducao da matriz ${animal.identificacao}`}
         meta={
@@ -368,47 +368,6 @@ export default function AnimalReproducao() {
         </ToolbarGroup>
       </Toolbar>
 
-      <section className="grid gap-4 md:grid-cols-3">
-        <MetricCard
-          label="Status atual"
-          value={
-            reproResumo
-              ? (REPRO_STATUS_LABEL[reproResumo.reproStatus.status] ??
-                reproResumo.reproStatus.status)
-              : "Sem leitura"
-          }
-          hint={lote ? `Lote ${lote.nome}` : "Sem lote definido"}
-          tone={
-            reproResumo?.reproStatus.status === "PRENHA"
-              ? "success"
-              : reproResumo?.reproStatus.status === "SERVIDA"
-                ? "info"
-                : reproResumo?.reproStatus.status?.startsWith("PARIDA")
-                  ? "warning"
-                  : "default"
-          }
-        />
-        <MetricCard
-          label="Ultimo marco"
-          value={reproResumo?.lastEventLabel ?? "Sem historico"}
-          hint={
-            reproResumo?.lastEventDateLabel
-              ? formatDate(reproResumo.lastEventDateLabel)
-              : "Sem data registrada"
-          }
-        />
-        <MetricCard
-          label="Proximo passo"
-          value={reproResumo?.nextActionLabel ?? "Registrar primeiro evento"}
-          hint={
-            reproResumo?.nextActionDate
-              ? formatDate(reproResumo.nextActionDate)
-              : "Sem data prevista"
-          }
-          tone={reproResumo?.urgency === "atencao" ? "warning" : "info"}
-        />
-      </section>
-
       <section className="grid gap-4 xl:grid-cols-[1.08fr_0.92fr]">
         <Card>
           <CardHeader>
@@ -449,16 +408,16 @@ export default function AnimalReproducao() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-3 sm:grid-cols-2">
-                <div className="app-surface-muted p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                <div className="rounded-xl border border-border/70 bg-muted/20 p-4 shadow-none">
+                  <p className="text-xs font-semibold uppercase text-muted-foreground">
                     Lote atual
                   </p>
                   <p className="mt-2 font-medium">
                     {lote?.nome ?? "Sem lote definido"}
                   </p>
                 </div>
-                <div className="app-surface-muted p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                <div className="rounded-xl border border-border/70 bg-muted/20 p-4 shadow-none">
+                  <p className="text-xs font-semibold uppercase text-muted-foreground">
                     Nivel de atencao
                   </p>
                   <p className="mt-2 font-medium">
@@ -495,14 +454,14 @@ export default function AnimalReproducao() {
             </CardHeader>
             <CardContent className="space-y-3">
               {(eventos ?? []).length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-border/70 p-4 text-sm text-muted-foreground">
+                <div className="rounded-xl border border-dashed border-border/70 p-4 text-sm text-muted-foreground">
                   Nenhum evento reprodutivo registrado para esta matriz.
                 </div>
               ) : (
                 (eventos ?? []).slice(0, 6).map((event) => (
                   <div
                     key={event.id}
-                    className="rounded-2xl border border-border/70 bg-muted/30 p-4"
+                    className="rounded-xl border border-border/70 bg-muted/30 p-4"
                   >
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <div className="flex flex-wrap items-center gap-2">
@@ -542,3 +501,5 @@ export default function AnimalReproducao() {
     </div>
   );
 }
+
+

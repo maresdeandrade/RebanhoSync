@@ -326,8 +326,8 @@ const OnboardingInicial = () => {
   }
 
   return (
-    <div className="space-y-6">
-      <section className="rounded-2xl border bg-card p-6 shadow-sm">
+    <div className="space-y-5">
+      <section className="rounded-xl border bg-card p-6 shadow-sm">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div className="space-y-3">
             <Badge variant="secondary">Wizard de implantacao</Badge>
@@ -397,7 +397,7 @@ const OnboardingInicial = () => {
           </CardContent>
         </Card>
 
-        <div className="space-y-6">
+        <div className="space-y-5">
           <Card>
             <CardHeader>
               <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -419,7 +419,7 @@ const OnboardingInicial = () => {
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="space-y-5">
               <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
                 <div className="rounded-xl border p-4">
                   <div className="text-sm font-medium">Concluida quando</div>
@@ -486,12 +486,17 @@ const OnboardingInicial = () => {
                 </div>
 
                 {nextAction && (
-                  <Button asChild>
-                    <Link to={nextAction.path}>
-                      Abrir proximo passo
-                      <ArrowRight className="h-4 w-4" />
-                    </Link>
-                  </Button>
+                  <div className="flex flex-col gap-2 sm:items-end">
+                    <span className="text-xs font-medium uppercase text-muted-foreground">
+                      Proxima recomendacao:
+                    </span>
+                    <Button asChild>
+                      <Link to={nextAction.path}>
+                        Abrir proximo passo
+                        <ArrowRight className="h-4 w-4" />
+                      </Link>
+                    </Button>
+                  </div>
                 )}
               </div>
             </CardContent>
@@ -536,3 +541,5 @@ const OnboardingInicial = () => {
 };
 
 export default OnboardingInicial;
+
+

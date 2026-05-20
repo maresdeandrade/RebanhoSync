@@ -58,3 +58,4 @@ describe("useRegistrarFinanceiroPackage", () => {
     expect(result.current.financeiroData).toBe(stateBefore);
   });
 });
+

@@ -89,6 +89,15 @@ export type ComplianceKind =
   | "quarantine"
   | "none";
 
+export type SanitaryItemOperationalClass =
+  | "operational_protocol"
+  | "clinical_protocol"
+  | "notifiable_suspicion"
+  | "compliance_check"
+  | "execution_only"
+  | "inventory_signal"
+  | "unknown";
+
 // ============================================================================
 // CAMADA 1: IDENTITY
 // ============================================================================

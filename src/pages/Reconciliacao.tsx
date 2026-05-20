@@ -3,9 +3,7 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { Link } from "react-router-dom";
 import {
   AlertCircle,
-  AlertTriangle,
   ChevronDown,
-  Clock,
   Download,
   Info,
   MoreHorizontal,
@@ -31,7 +29,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MetricCard } from "@/components/ui/metric-card";
 import { PageIntro } from "@/components/ui/page-intro";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Toolbar, ToolbarGroup } from "@/components/ui/toolbar";
@@ -89,13 +86,20 @@ function shortId(value?: string | null) {
 }
 
 function readStringValue(record: unknown, key: string): string | null {
-  if (!record || typeof record !== "object" || Array.isArray(record)) return null;
+  if (!record || typeof record !== "object" || Array.isArray(record))
+    return null;
   const value = (record as Record<string, unknown>)[key];
-  return typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
+  return typeof value === "string" && value.trim().length > 0
+    ? value.trim()
+    : null;
 }
 
-function readNullableId(record: unknown, key: string): string | null | undefined {
-  if (!record || typeof record !== "object" || Array.isArray(record)) return undefined;
+function readNullableId(
+  record: unknown,
+  key: string,
+): string | null | undefined {
+  if (!record || typeof record !== "object" || Array.isArray(record))
+    return undefined;
   const value = (record as Record<string, unknown>)[key];
   if (value === null) return null;
   return typeof value === "string" ? value : undefined;
@@ -109,6 +113,17 @@ function describeRollback(action: string) {
     return "Rollback local aplicado: o registro voltou ao estado visivel neste aparelho.";
   }
   return "Rollback local aplicado: o estado anterior foi restaurado neste aparelho.";
+}
+
+function describeRejectionReasonLabel(reasonCode: string) {
+  const reason = reasonCode.toUpperCase();
+
+  if (reason.includes("ANTI_TELEPORTE")) return "Movimentacao invalida";
+  if (reason.includes("PERMISSION")) return "Permissao";
+  if (reason.includes("EPISODE")) return "Vinculo reprodutivo";
+  if (reason.includes("TAXONOMY")) return "Categoria derivada";
+  if (reason.includes("VALIDATION")) return "Dados invalidos";
+  return "Revisao operacional";
 }
 
 function describeNextStep(rejection: Rejection) {
@@ -186,11 +201,13 @@ function describeOperation(
       const beforeLabel =
         beforeLoteId === null
           ? "Sem lote"
-          : lotesById.get(beforeLoteId ?? "") ?? `Lote ${shortId(beforeLoteId)}`;
+          : (lotesById.get(beforeLoteId ?? "") ??
+            `Lote ${shortId(beforeLoteId)}`);
       const afterLabel =
         afterLoteId === null
           ? "Sem lote"
-          : lotesById.get(afterLoteId ?? "") ?? `Lote ${shortId(afterLoteId)}`;
+          : (lotesById.get(afterLoteId ?? "") ??
+            `Lote ${shortId(afterLoteId)}`);
 
       return {
         title: identificacao,
@@ -278,7 +295,9 @@ export default function Reconciliacao() {
   const [nextCursor, setNextCursor] = useState<string | undefined>();
   const [stats, setStats] = useState<RejectionStats>({ count: 0 });
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedRejection, setSelectedRejection] = useState<Rejection | null>(null);
+  const [selectedRejection, setSelectedRejection] = useState<Rejection | null>(
+    null,
+  );
   const [purgeDialogOpen, setPurgeDialogOpen] = useState(false);
   const [purgeDryRunCount, setPurgeDryRunCount] = useState<number | null>(null);
   const [isPurging, setIsPurging] = useState(false);
@@ -287,13 +306,18 @@ export default function Reconciliacao() {
 
   const hydrateOperations = useCallback(
     async (rejections: Rejection[], replace = false) => {
-      const txIds = Array.from(new Set(rejections.map((item) => item.client_tx_id)));
+      const txIds = Array.from(
+        new Set(rejections.map((item) => item.client_tx_id)),
+      );
       if (txIds.length === 0) {
         if (replace) setOperationsById(new Map());
         return;
       }
 
-      const ops = await db.queue_ops.where("client_tx_id").anyOf(txIds).toArray();
+      const ops = await db.queue_ops
+        .where("client_tx_id")
+        .anyOf(txIds)
+        .toArray();
       setOperationsById((current) => {
         const next = replace ? new Map<string, Operation>() : new Map(current);
         for (const op of ops) {
@@ -318,7 +342,8 @@ export default function Reconciliacao() {
       setNextCursor(page.nextCursor);
       setStats(summary);
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "Falha ao carregar rejeicoes.";
+      const message =
+        error instanceof Error ? error.message : "Falha ao carregar rejeicoes.";
       showError(message);
     } finally {
       setIsLoading(false);
@@ -341,7 +366,10 @@ export default function Reconciliacao() {
       setItems((current) => [...current, ...page.items]);
       setNextCursor(page.nextCursor);
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "Falha ao carregar mais itens.";
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Falha ao carregar mais itens.";
       showError(message);
     } finally {
       setIsLoading(false);
@@ -353,7 +381,8 @@ export default function Reconciliacao() {
     [lotes],
   );
   const canRetryRejection = useCallback(
-    (rejection: Rejection) => !NON_RETRYABLE_REASON_CODES.has(rejection.reason_code),
+    (rejection: Rejection) =>
+      !NON_RETRYABLE_REASON_CODES.has(rejection.reason_code),
     [],
   );
   const retryableCount = useMemo(
@@ -362,7 +391,7 @@ export default function Reconciliacao() {
   );
   const correctionRequiredCount = items.length - retryableCount;
   const selectedOperation = selectedRejection
-    ? operationsById.get(selectedRejection.client_op_id) ?? null
+    ? (operationsById.get(selectedRejection.client_op_id) ?? null)
     : null;
   const selectedPresentation = selectedRejection
     ? describeOperation(selectedRejection, selectedOperation, lotesById)
@@ -387,7 +416,8 @@ export default function Reconciliacao() {
       triggerDownload(blob, filename);
       showSuccess(`Exportado: ${filename}`);
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "Falha ao exportar.";
+      const message =
+        error instanceof Error ? error.message : "Falha ao exportar.";
       showError(`Erro ao exportar: ${message}`);
     }
   };
@@ -403,7 +433,10 @@ export default function Reconciliacao() {
       setPurgeDryRunCount(result.deletedCount);
       setPurgeDialogOpen(true);
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "Falha ao verificar rejeicoes.";
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Falha ao verificar rejeicoes.";
       showError(`Erro ao verificar: ${message}`);
     }
   };
@@ -421,7 +454,8 @@ export default function Reconciliacao() {
       setPurgeDryRunCount(null);
       await loadFirstPage();
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "Falha ao limpar rejeicoes.";
+      const message =
+        error instanceof Error ? error.message : "Falha ao limpar rejeicoes.";
       showError(`Erro ao limpar: ${message}`);
     } finally {
       setIsPurging(false);
@@ -439,7 +473,9 @@ export default function Reconciliacao() {
       await loadFirstPage();
     } catch (error: unknown) {
       const message =
-        error instanceof Error ? error.message : "Falha ao resetar estado offline.";
+        error instanceof Error
+          ? error.message
+          : "Falha ao resetar estado offline.";
       showError(`Erro ao resetar estado offline: ${message}`);
     } finally {
       setIsResetting(false);
@@ -455,7 +491,10 @@ export default function Reconciliacao() {
     const existingGesture = await db.queue_gestures
       .where("fazenda_id")
       .equals(rejection.fazenda_id)
-      .and((gesture) => gesture.status === "PENDING" || gesture.status === "SYNCING")
+      .and(
+        (gesture) =>
+          gesture.status === "PENDING" || gesture.status === "SYNCING",
+      )
       .first();
 
     if (existingGesture) {
@@ -505,7 +544,9 @@ export default function Reconciliacao() {
     if (rejection.id != null) {
       await db.queue_rejections.delete(rejection.id);
     }
-    showSuccess("Operacao reenfileirada neste aparelho. Sincronizacao pendente.");
+    showSuccess(
+      "Operacao reenfileirada neste aparelho. Sincronizacao pendente.",
+    );
     await loadFirstPage();
   };
 
@@ -517,18 +558,28 @@ export default function Reconciliacao() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <PageIntro
+        variant="plain"
         eyebrow="Suporte operacional"
         title="Reconciliacao offline"
-        description="Cada rejeicao mostra o que o servidor recusou, o rollback local ja aplicado e o proximo passo seguro para corrigir o fluxo."
         meta={
           <>
             <StatusBadge tone={stats.count > 0 ? "danger" : "success"}>
               {stats.count} rejeicao(oes)
             </StatusBadge>
             {stats.oldestAt ? (
-              <StatusBadge tone="warning">Mais antiga {daysAgo(stats.oldestAt)}</StatusBadge>
+              <StatusBadge tone="warning">
+                Mais antiga {daysAgo(stats.oldestAt)}
+              </StatusBadge>
+            ) : null}
+            {correctionRequiredCount > 0 ? (
+              <StatusBadge tone="warning">
+                {correctionRequiredCount} corrigir no fluxo
+              </StatusBadge>
+            ) : null}
+            {retryableCount > 0 ? (
+              <StatusBadge tone="info">{retryableCount} para reenviar</StatusBadge>
             ) : null}
           </>
         }
@@ -550,47 +601,13 @@ export default function Reconciliacao() {
         }
       />
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <MetricCard
-          label="Rejeicoes"
-          value={stats.count}
-          hint="Volume atual de itens que exigem atencao."
-          tone={stats.count > 0 ? "danger" : "default"}
-          icon={<AlertCircle className="h-5 w-5" />}
-        />
-        <MetricCard
-          label="Corrigir no fluxo"
-          value={correctionRequiredCount}
-          hint="Erros previsiveis que nao devem ser reenfileirados sem ajuste."
-          tone={correctionRequiredCount > 0 ? "warning" : "default"}
-          icon={<AlertTriangle className="h-5 w-5" />}
-        />
-        <MetricCard
-          label="Prontas para retry"
-          value={retryableCount}
-          hint="Itens que podem voltar para a fila local sem violacao previsivel."
-          tone={retryableCount > 0 ? "info" : "default"}
-          icon={<RefreshCw className="h-5 w-5" />}
-        />
-        <MetricCard
-          label="Mais antiga"
-          value={stats.oldestAt ? formatDate(stats.oldestAt) : "-"}
-          hint={stats.oldestAt ? daysAgo(stats.oldestAt) : "Sem itens pendentes."}
-          tone="warning"
-          icon={<Clock className="h-5 w-5" />}
-        />
-      </div>
-
       <Toolbar>
         <ToolbarGroup className="flex-1 gap-2">
-          <div className="rounded-2xl border border-warning/30 bg-warning-muted/80 px-4 py-3 text-sm text-muted-foreground">
-            O servidor rejeitou estas operacoes e o rollback local ja foi aplicado.
-            Reenfileire apenas quando a causa estiver resolvida. Rejeicoes sao
-            removidas automaticamente apos 7 dias.
-          </div>
+          <StatusBadge tone="info">
+            {items.length} item(ns) carregado(s)
+          </StatusBadge>
         </ToolbarGroup>
         <ToolbarGroup className="gap-2">
-          <StatusBadge tone="info">{items.length} item(ns) carregado(s)</StatusBadge>
           {correctionRequiredCount > 0 ? (
             <StatusBadge tone="warning">
               {correctionRequiredCount} exigem correcao manual
@@ -619,135 +636,157 @@ export default function Reconciliacao() {
       </Toolbar>
 
       {items.length === 0 && !isLoading ? (
-        <EmptyState
-          icon={AlertCircle}
-          title="Fila limpa"
-          description="Nenhuma rejeicao foi encontrada para a fazenda ativa."
-        />
+        <EmptyState icon={AlertCircle} title="Fila limpa" />
       ) : (
         <div className="space-y-3">
           {items.map((rejection) => {
-            const operation = operationsById.get(rejection.client_op_id) ?? null;
-            const presentation = describeOperation(rejection, operation, lotesById);
-            const rollbackDescription = describeRollback(rejection.action);
+            const operation =
+              operationsById.get(rejection.client_op_id) ?? null;
+            const presentation = describeOperation(
+              rejection,
+              operation,
+              lotesById,
+            );
             const nextStep = describeNextStep(rejection);
             const canRetry = canRetryRejection(rejection);
             const correctionAction = getCorrectionAction(rejection);
 
             return (
               <Card key={rejection.id} className="shadow-none">
-              <CardContent className="space-y-4 p-4">
-                <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                  <button
-                    type="button"
-                    className="min-w-0 flex-1 space-y-3 text-left"
-                    onClick={() => setSelectedRejection(rejection)}
-                  >
-                    <div className="flex flex-wrap items-center gap-2">
-                      <StatusBadge tone="danger">{rejection.reason_code}</StatusBadge>
-                      <StatusBadge tone="warning">Rollback aplicado</StatusBadge>
-                      <StatusBadge tone={canRetry ? "info" : "warning"}>
-                        {canRetry ? "Pode reenfileirar" : "Corrigir no fluxo"}
-                      </StatusBadge>
-                      <StatusBadge tone="neutral">{rejection.action}</StatusBadge>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="font-medium text-foreground">{presentation.title}</p>
-                      <p className="text-sm leading-6 text-muted-foreground">
-                        {presentation.context}
-                      </p>
-                    </div>
-                  <p className="hidden text-xs text-muted-foreground">
-                    {formatDate(rejection.created_at)} · {daysAgo(rejection.created_at)}
-                  </p>
-                </button>
-
-                  <div className="flex shrink-0 items-center gap-2 lg:flex-col lg:items-end">
-                    <p className="text-xs text-muted-foreground">
-                      {formatDate(rejection.created_at)}
-                    </p>
-                    <StatusBadge tone="neutral">{daysAgo(rejection.created_at)}</StatusBadge>
-                  </div>
-                </div>
-
-                <div className="grid gap-3 lg:grid-cols-2">
-                  <div className="rounded-2xl border border-border/70 bg-muted/25 p-4">
-                    <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
-                      Servidor rejeitou
-                    </p>
-                    <p className="mt-2 text-sm leading-6 text-foreground">
-                      {rejection.reason_message}
-                    </p>
-                  </div>
-
-                  <div className="rounded-2xl border border-info/20 bg-info-muted/60 p-4">
-                    <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
-                      Proximo passo seguro
-                    </p>
-                    <p className="mt-2 text-sm leading-6 text-foreground">{nextStep}</p>
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-3 border-t border-border/70 pt-4 lg:flex-row lg:items-center lg:justify-between">
-                  <p className="text-sm leading-6 text-muted-foreground">
-                    {rollbackDescription}
-                  </p>
-
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
+                <CardContent className="space-y-4 p-4">
+                  <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                    <button
+                      type="button"
+                      className="min-w-0 flex-1 space-y-3 text-left"
                       onClick={() => setSelectedRejection(rejection)}
                     >
-                      <Info className="mr-2 h-4 w-4" />
-                      Ver detalhes
-                    </Button>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <StatusBadge tone="danger">
+                          {describeRejectionReasonLabel(rejection.reason_code)}
+                        </StatusBadge>
+                        <StatusBadge tone="warning">
+                          Rollback aplicado
+                        </StatusBadge>
+                        <StatusBadge tone={canRetry ? "info" : "warning"}>
+                          {canRetry ? "Pode reenfileirar" : "Corrigir no fluxo"}
+                        </StatusBadge>
+                        <StatusBadge tone="neutral">
+                          {rejection.action}
+                        </StatusBadge>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="font-medium text-foreground">
+                          {presentation.title}
+                        </p>
+                      </div>
+                      <p className="hidden text-xs text-muted-foreground">
+                        {formatDate(rejection.created_at)} ·{" "}
+                        {daysAgo(rejection.created_at)}
+                      </p>
+                    </button>
 
-                    {canRetry ? (
-                      <Button size="sm" onClick={() => handleRetry(rejection)}>
-                        <RefreshCw className="mr-2 h-4 w-4" />
-                        Re-enfileirar
-                      </Button>
-                    ) : correctionAction ? (
-                      <Button asChild size="sm">
-                        <Link to={correctionAction.href}>{correctionAction.label}</Link>
-                      </Button>
-                    ) : (
-                      <Button size="sm" disabled>
-                        Corrigir fora desta tela
-                      </Button>
-                    )}
-
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="icon" aria-label="Acoes da rejeicao">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => setSelectedRejection(rejection)}>
-                      <Info className="mr-2 h-4 w-4" />
-                      Ver detalhes
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      className="text-destructive focus:text-destructive"
-                      onClick={() => handleClear(rejection)}
-                    >
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Remover
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                    <div className="flex shrink-0 items-center gap-2 lg:flex-col lg:items-end">
+                      <p className="text-xs text-muted-foreground">
+                        {formatDate(rejection.created_at)}
+                      </p>
+                      <StatusBadge tone="neutral">
+                        {daysAgo(rejection.created_at)}
+                      </StatusBadge>
+                    </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+
+                  <div className="grid gap-3 lg:grid-cols-2">
+                    <div className="rounded-xl border border-border/70 bg-muted/20 p-4">
+                      <p className="text-xs uppercase text-muted-foreground">
+                        Servidor rejeitou
+                      </p>
+                      <p className="mt-2 text-sm leading-6 text-foreground">
+                        {rejection.reason_message}
+                      </p>
+                    </div>
+
+                    <div className="rounded-xl border border-border/70 bg-muted/20 p-4">
+                      <p className="text-xs uppercase text-muted-foreground">
+                        Proximo passo seguro
+                      </p>
+                      <p className="mt-2 text-sm leading-6 text-foreground">
+                        {nextStep}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-3 border-t border-border/70 pt-4 lg:flex-row lg:items-center lg:justify-between">
+                    <div className="flex flex-wrap items-center gap-2 lg:ml-auto">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setSelectedRejection(rejection)}
+                      >
+                        <Info className="mr-2 h-4 w-4" />
+                        Ver detalhes
+                      </Button>
+
+                      {canRetry ? (
+                        <Button
+                          size="sm"
+                          onClick={() => handleRetry(rejection)}
+                        >
+                          <RefreshCw className="mr-2 h-4 w-4" />
+                          Re-enfileirar
+                        </Button>
+                      ) : correctionAction ? (
+                        <Button asChild size="sm">
+                          <Link to={correctionAction.href}>
+                            {correctionAction.label}
+                          </Link>
+                        </Button>
+                      ) : (
+                        <Button size="sm" disabled>
+                          Corrigir fora desta tela
+                        </Button>
+                      )}
+
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            aria-label="Acoes da rejeicao"
+                          >
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onClick={() => setSelectedRejection(rejection)}
+                          >
+                            <Info className="mr-2 h-4 w-4" />
+                            Ver detalhes
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            className="text-destructive focus:text-destructive"
+                            onClick={() => handleClear(rejection)}
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Remover
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             );
           })}
 
           {nextCursor ? (
-            <Button variant="outline" className="w-full" onClick={loadMore} disabled={isLoading}>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={loadMore}
+              disabled={isLoading}
+            >
               <ChevronDown className="mr-2 h-4 w-4" />
               {isLoading ? "Carregando..." : "Carregar mais"}
             </Button>
@@ -762,42 +801,52 @@ export default function Reconciliacao() {
         <DialogContent className="max-w-xl">
           <DialogHeader>
             <DialogTitle>Detalhe da rejeicao</DialogTitle>
-            <DialogDescription>
-              Informacoes completas do registro rejeitado para orientar a correcao.
+            <DialogDescription className="sr-only">
+              Dados de revisao do registro rejeitado.
             </DialogDescription>
           </DialogHeader>
 
           {selectedRejection && selectedPresentation ? (
-            <div className="space-y-4 rounded-2xl border border-border/70 bg-background/80 p-4 text-sm">
+            <div className="space-y-4 rounded-xl border border-border/70 bg-background/80 p-4 text-sm">
               <div className="grid gap-3 md:grid-cols-2">
                 <div className="space-y-1">
-                  <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
-                    Codigo
+                  <p className="text-xs uppercase text-muted-foreground">
+                    Motivo
                   </p>
-                  <StatusBadge tone="danger">{selectedRejection.reason_code}</StatusBadge>
+                  <StatusBadge tone="danger">
+                    {describeRejectionReasonLabel(
+                      selectedRejection.reason_code,
+                    )}
+                  </StatusBadge>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
+                  <p className="text-xs uppercase text-muted-foreground">
                     Data
                   </p>
-                  <p className="text-foreground">{formatDate(selectedRejection.created_at)}</p>
+                  <p className="text-foreground">
+                    {formatDate(selectedRejection.created_at)}
+                  </p>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
+                  <p className="text-xs uppercase text-muted-foreground">
                     Registro afetado
                   </p>
-                  <p className="text-foreground">{selectedPresentation.title}</p>
+                  <p className="text-foreground">
+                    {selectedPresentation.title}
+                  </p>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
+                  <p className="text-xs uppercase text-muted-foreground">
                     Acao
                   </p>
-                  <StatusBadge tone="neutral">{selectedRejection.action}</StatusBadge>
+                  <StatusBadge tone="neutral">
+                    {selectedRejection.action}
+                  </StatusBadge>
                 </div>
               </div>
 
               <div className="space-y-1">
-                <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
+                <p className="text-xs uppercase text-muted-foreground">
                   Contexto
                 </p>
                 <p className="leading-6 text-muted-foreground">
@@ -806,7 +855,7 @@ export default function Reconciliacao() {
               </div>
 
               <div className="space-y-1">
-                <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
+                <p className="text-xs uppercase text-muted-foreground">
                   Mensagem do servidor
                 </p>
                 <p className="leading-6 text-muted-foreground">
@@ -815,7 +864,7 @@ export default function Reconciliacao() {
               </div>
 
               <div className="space-y-1">
-                <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
+                <p className="text-xs uppercase text-muted-foreground">
                   Rollback local
                 </p>
                 <p className="leading-6 text-muted-foreground">
@@ -824,15 +873,17 @@ export default function Reconciliacao() {
               </div>
 
               <div className="space-y-1">
-                <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
+                <p className="text-xs uppercase text-muted-foreground">
                   Proximo passo seguro
                 </p>
-                <p className="leading-6 text-muted-foreground">{selectedNextStep}</p>
+                <p className="leading-6 text-muted-foreground">
+                  {selectedNextStep}
+                </p>
               </div>
 
               <div className="grid gap-3">
                 <div className="space-y-1">
-                  <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
+                  <p className="text-xs uppercase text-muted-foreground">
                     TX ID
                   </p>
                   <p className="break-all font-mono text-xs text-foreground">
@@ -840,7 +891,7 @@ export default function Reconciliacao() {
                   </p>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
+                  <p className="text-xs uppercase text-muted-foreground">
                     OP ID
                   </p>
                   <p className="break-all font-mono text-xs text-foreground">
@@ -867,7 +918,10 @@ export default function Reconciliacao() {
               </Button>
             ) : selectedCorrectionAction ? (
               <Button asChild variant="outline">
-                <Link to={selectedCorrectionAction.href} onClick={() => setSelectedRejection(null)}>
+                <Link
+                  to={selectedCorrectionAction.href}
+                  onClick={() => setSelectedRejection(null)}
+                >
                   {selectedCorrectionAction.label}
                 </Link>
               </Button>
@@ -897,11 +951,10 @@ export default function Reconciliacao() {
           <DialogHeader>
             <DialogTitle>Limpar rejeicoes antigas</DialogTitle>
             <DialogDescription>
-              Essa acao remove registros locais com mais de 7 dias. Exporte antes
-              se precisar manter o historico.
+              Remove registros locais com mais de 7 dias.
             </DialogDescription>
           </DialogHeader>
-          <div className="rounded-2xl border border-border/70 bg-muted/20 p-4 text-center">
+          <div className="rounded-xl border border-border/70 bg-muted/20 p-4 text-center">
             <p className="text-3xl font-semibold text-foreground">
               {purgeDryRunCount ?? 0}
             </p>
@@ -935,14 +988,9 @@ export default function Reconciliacao() {
           <DialogHeader>
             <DialogTitle>Resetar estado offline</DialogTitle>
             <DialogDescription>
-              Isso remove dados locais, fila de sincronizacao e rejeicoes da
-              fazenda ativa neste navegador.
+              Remove dados locais desta fazenda neste navegador.
             </DialogDescription>
           </DialogHeader>
-          <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-muted-foreground">
-            Use apenas em ambiente de suporte ou teste. O servidor nao e alterado;
-            apenas o estado offline local sera limpo.
-          </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setResetDialogOpen(false)}>
               Cancelar
@@ -960,3 +1008,4 @@ export default function Reconciliacao() {
     </div>
   );
 }
+

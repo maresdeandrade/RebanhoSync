@@ -28,17 +28,11 @@ export function RegistrarAnimalSelectionPanel(
 ) {
   return (
     <>
-      <div className="rounded-xl border border-sky-200/70 bg-sky-50/60 p-3 dark:border-sky-900/60 dark:bg-sky-950/20">
+      <div className="rounded-xl border border-border/70 bg-muted/25 p-3">
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div className="space-y-1.5">
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-sky-900/70 dark:text-sky-100/70">
-              Animais
-            </p>
-            <p className="text-lg font-semibold tabular-nums text-sky-950 dark:text-sky-50">
+          <div>
+            <p className="text-lg font-semibold tabular-nums text-foreground">
               {props.selectedAnimaisCount} selecionado(s)
-            </p>
-            <p className="text-sm text-muted-foreground">
-              Busque e marque os animais do manejo.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -86,7 +80,7 @@ export function RegistrarAnimalSelectionPanel(
           <label
             key={animal.id}
             htmlFor={`registrar-animal-${animal.id}`}
-            className="flex min-h-14 cursor-pointer items-center gap-3 p-3 transition-colors hover:bg-sky-50/70 dark:hover:bg-sky-950/30"
+            className="flex min-h-14 cursor-pointer items-center gap-3 p-3 transition-colors hover:bg-muted/60"
           >
             <Checkbox
               id={`registrar-animal-${animal.id}`}
@@ -108,3 +102,4 @@ export function RegistrarAnimalSelectionPanel(
     </>
   );
 }
+

@@ -2,21 +2,12 @@ import { useEffect, useMemo, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { Link } from "react-router-dom";
 import {
-  Activity,
   AlertTriangle,
   Beef,
   CalendarClock,
   CheckCircle2,
   Clock3,
-  Handshake,
-  History,
-  Layers,
-  Map,
-  Move,
   PlusCircle,
-  RefreshCw,
-  Scale,
-  Syringe,
 } from "lucide-react";
 
 import { useAuth } from "@/hooks/useAuth";
@@ -32,7 +23,6 @@ import type { FarmSyncSummary } from "@/lib/offline/syncPresentation";
 import { loadFarmSyncSummary } from "@/lib/offline/syncQueries";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { MetricCard } from "@/components/ui/metric-card";
 import { PageIntro } from "@/components/ui/page-intro";
 import {
   summarizeSanitaryAgendaAttention,
@@ -44,7 +34,6 @@ import {
   type RegulatoryOperationalReadModel,
 } from "@/lib/sanitario/compliance/regulatoryReadModel";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { Toolbar, ToolbarGroup } from "@/components/ui/toolbar";
 import { OperationalInsightsPanel } from "@/features/operationalInsights/OperationalInsightsPanel";
 import { useOperationalInsights } from "@/features/operationalInsights/useOperationalInsights";
 import type {
@@ -110,12 +99,6 @@ type HomeSnapshot = {
   }[];
 };
 
-const ROLE_LABEL: Record<string, string> = {
-  cowboy: "Operacao",
-  manager: "Gestao",
-  owner: "Proprietario",
-};
-
 const PRODUCTION_LABEL: Record<string, string> = {
   corte: "Pecuaria de corte",
   leite: "Pecuaria de leite",
@@ -132,39 +115,6 @@ const DOMAIN_LABEL: Record<string, string> = {
   financeiro: "Financeiro",
   reproducao: "Reproducao",
 };
-
-const QUICK_ACTIONS = [
-  {
-    href: "/registrar?quick=vacinacao",
-    label: "Vacinacao",
-    icon: Syringe,
-  },
-  {
-    href: "/registrar?quick=vermifugacao",
-    label: "Vermifugacao",
-    icon: Syringe,
-  },
-  {
-    href: "/registrar?quick=pesagem",
-    label: "Pesagem",
-    icon: Scale,
-  },
-  {
-    href: "/registrar?quick=movimentacao",
-    label: "Movimentacao",
-    icon: Move,
-  },
-  {
-    href: "/registrar?quick=compra",
-    label: "Compra",
-    icon: Handshake,
-  },
-  {
-    href: "/registrar?quick=venda",
-    label: "Venda",
-    icon: Handshake,
-  },
-] as const;
 
 const dateFormatter = new Intl.DateTimeFormat("pt-BR", {
   day: "2-digit",
@@ -203,7 +153,7 @@ function formatDay(date: string) {
 }
 
 const Home = () => {
-  const { activeFarmId, role, farmLifecycleConfig } = useAuth();
+  const { activeFarmId, farmLifecycleConfig } = useAuth();
   const [farm, setFarm] = useState<FarmSummary | null>(null);
 
   useEffect(() => {
@@ -460,11 +410,6 @@ const Home = () => {
       : "Rotina operacional da fazenda";
   }, [farm]);
 
-  const checklistDone = useMemo(() => {
-    if (!snapshot) return 0;
-    return snapshot.checklist.filter((item) => item.done).length;
-  }, [snapshot]);
-
   const operationalInsightsInput = useMemo<BuildOperationalInsightsInput>(
     () => ({
       generatedAt: snapshot?.generatedAt ?? "1970-01-01T00:00:00.000Z",
@@ -482,7 +427,7 @@ const Home = () => {
 
   if (!activeFarmId) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-5">
         <Card className="border-dashed">
           <CardHeader>
             <CardTitle>Escolha uma fazenda para comecar</CardTitle>
@@ -502,7 +447,7 @@ const Home = () => {
 
   if (!snapshot) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-5">
         <Card>
           <CardHeader>
             <CardTitle>Carregando a rotina da fazenda</CardTitle>
@@ -525,14 +470,11 @@ const Home = () => {
   return (
     <div className="space-y-5">
       <PageIntro
-        eyebrow="Hoje"
-        title={farm?.nome ?? "Sua fazenda"}
-        description="Veja atrasos, o que vence hoje e registre o manejo sem abrir visoes amplas."
+        variant="plain"
+        title="Central Operacional"
+        description="O que precisa ser feito, o que ja aconteceu e o estado atual do rebanho."
         meta={
           <>
-            {role ? (
-              <StatusBadge tone="info">{ROLE_LABEL[role] ?? role}</StatusBadge>
-            ) : null}
             <StatusBadge tone="neutral">{farmSubtitle}</StatusBadge>
             {snapshot.syncSummary.pendingCount > 0 ? (
               <StatusBadge tone="warning">
@@ -580,109 +522,123 @@ const Home = () => {
             <Button asChild variant="outline">
               <Link to="/agenda">
                 <CalendarClock className="h-4 w-4" />
-                Ver agenda
+                Ver agenda completa
+              </Link>
+            </Button>
+            <Button asChild variant="ghost">
+              <Link to="/animais">
+                <Beef className="h-4 w-4" />
+                Ver rebanho
               </Link>
             </Button>
           </>
         }
       />
 
-      <section className="overflow-hidden rounded-3xl border border-sky-200/70 bg-sky-50/80 shadow-sm dark:border-sky-900/50 dark:bg-sky-950/25">
-        <div className="grid gap-0 lg:grid-cols-[1.1fr_1.1fr_0.9fr]">
-          <div
+      <section className="grid gap-3 md:grid-cols-3 xl:grid-cols-6">
+        {[
+          {
+            label: "Atrasadas",
+            value: overdueItems.length,
+            hint: "Pendencias vencidas",
+            tone: overdueItems.length > 0 ? "danger" : "neutral",
+            icon: AlertTriangle,
+          },
+          {
+            label: "Hoje",
+            value: todayItems.length,
+            hint: "Agenda do dia",
+            tone: todayItems.length > 0 ? "warning" : "neutral",
+            icon: CalendarClock,
+          },
+          {
+            label: "Animais ativos",
+            value: snapshot.animais,
+            hint: `${snapshot.lotes} lotes`,
+            tone: "success",
+            icon: Beef,
+          },
+          {
+            label: "Fila local",
+            value: snapshot.syncSummary.pendingCount,
+            hint: "A sincronizar",
+            tone: snapshot.syncSummary.pendingCount > 0 ? "warning" : "neutral",
+            icon: Clock3,
+          },
+          {
+            label: "Estrutura",
+            value: `${snapshot.lotes}L`,
+            hint: `${snapshot.pastos} pastos`,
+            tone: "neutral",
+            icon: CheckCircle2,
+          },
+          {
+            label: "Alertas sanitarios",
+            value: snapshot.sanitaryAttention.criticalCount,
+            hint: "Criticos no horizonte",
+            tone:
+              snapshot.sanitaryAttention.criticalCount > 0 ? "danger" : "neutral",
+            icon: AlertTriangle,
+          },
+        ].map((item) => (
+          <Card
+            key={item.label}
             className={cn(
-              "border-b border-sky-200/70 p-5 lg:border-b-0 lg:border-r dark:border-sky-900/50",
-              overdueItems.length > 0 && "bg-destructive/10",
+              "shadow-none",
+              item.tone === "danger" && "border-destructive/25 bg-destructive/10",
+              item.tone === "warning" && "border-warning/20 bg-warning-muted/60",
+              item.tone === "success" && "border-success/20 bg-success-muted/60",
             )}
           >
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-                  Primeiro
+            <CardContent className="space-y-3 p-4">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-xs font-semibold uppercase text-muted-foreground">
+                  {item.label}
                 </p>
-                <h2 className="mt-2 text-2xl font-bold tracking-normal">
-                  {overdueItems.length > 0
-                    ? "Resolver atrasos"
-                    : todayItems.length > 0
-                      ? "Tocar agenda de hoje"
-                      : "Registrar rotina"}
-                </h2>
+                <item.icon className="h-4 w-4 text-muted-foreground" />
               </div>
-              <StatusBadge
-                tone={overdueItems.length > 0 ? "danger" : "success"}
-              >
-                {overdueItems.length} atraso
-                {overdueItems.length === 1 ? "" : "s"}
-              </StatusBadge>
-            </div>
-            <p className="mt-4 text-sm leading-6 text-muted-foreground">
-              {overdueItems.length > 0
-                ? "Comece pelo que passou do prazo antes de abrir leituras gerenciais."
-                : todayItems.length > 0
-                  ? "Execute ou revise o que vence hoje."
-                  : "Sem urgencia no recorte carregado."}
-            </p>
-          </div>
-
-          <div className="border-b border-sky-200/70 p-5 lg:border-b-0 lg:border-r dark:border-sky-900/50">
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-              Hoje
-            </p>
-            <div className="mt-3 flex items-end gap-3">
-              <strong className="text-5xl font-bold tracking-normal">
-                {todayItems.length}
-              </strong>
-              <span className="pb-2 text-sm font-medium text-muted-foreground">
-                manejo(s)
-              </span>
-            </div>
-            <div className="mt-4 flex flex-wrap gap-2">
-              {snapshot.sanitaryAttention.criticalCount > 0 ? (
-                <StatusBadge tone="danger">
-                  {snapshot.sanitaryAttention.criticalCount} sanitario(s)
-                  critico(s)
-                </StatusBadge>
-              ) : null}
-              {snapshot.lifecyclePendingCount > 0 ? (
-                <StatusBadge tone="warning">
-                  {snapshot.lifecyclePendingCount} transicao(oes)
-                </StatusBadge>
-              ) : null}
-              {todayItems.length === 0 &&
-              snapshot.lifecyclePendingCount === 0 ? (
-                <StatusBadge tone="success">Rotina leve</StatusBadge>
-              ) : null}
-            </div>
-          </div>
-
-          <div className="p-5">
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-              Acao
-            </p>
-            <div className="mt-4 grid gap-2">
-              <Button asChild size="lg" className="justify-start">
-                <Link to="/registrar">
-                  <PlusCircle className="h-4 w-4" />
-                  Registrar manejo
-                </Link>
-              </Button>
-              <Button
-                asChild
-                size="lg"
-                variant="outline"
-                className="justify-start"
-              >
-                <Link to="/agenda">
-                  <CalendarClock className="h-4 w-4" />
-                  Abrir agenda
-                </Link>
-              </Button>
-            </div>
-          </div>
-        </div>
+              <p className="text-3xl font-semibold tabular-nums text-foreground">
+                {item.value}
+              </p>
+              <p className="text-sm text-muted-foreground">{item.hint}</p>
+            </CardContent>
+          </Card>
+        ))}
       </section>
 
-      <section className="grid gap-4 xl:grid-cols-[1fr_1fr_0.82fr]">
+      <Card>
+        <CardHeader>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <CardTitle>Acoes rapidas</CardTitle>
+            <span className="text-sm text-muted-foreground">
+              Salvo neste aparelho · sincroniza depois
+            </span>
+          </div>
+        </CardHeader>
+        <CardContent className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+          {[
+            ["Vacinacao", "/registrar?dominio=sanitario"],
+            ["Pesagem", "/registrar?dominio=pesagem"],
+            ["Movimentacao", "/registrar?dominio=movimentacao"],
+            ["Compra", "/registrar?dominio=financeiro&natureza=compra"],
+            ["Venda", "/registrar?dominio=financeiro&natureza=venda"],
+          ].map(([label, href]) => (
+            <Button
+              key={label}
+              asChild
+              variant="outline"
+              className="h-20 flex-col gap-2 rounded-xl"
+            >
+              <Link to={href}>
+                <PlusCircle className="h-5 w-5 text-primary" />
+                {label}
+              </Link>
+            </Button>
+          ))}
+        </CardContent>
+      </Card>
+
+      <section className="grid gap-4 xl:grid-cols-2">
         <Card
           className={
             overdueItems.length > 0
@@ -705,14 +661,14 @@ const Home = () => {
           </CardHeader>
           <CardContent className="space-y-3">
             {overdueItems.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-border/70 bg-background/60 p-4 text-sm text-muted-foreground">
+              <div className="rounded-xl border border-dashed border-border/70 bg-background/60 p-4 text-sm text-muted-foreground">
                 Sem pendencias atrasadas no recorte carregado.
               </div>
             ) : (
               overdueItems.map((item) => (
                 <div
                   key={item.id}
-                  className="rounded-2xl border border-destructive/20 bg-background/70 p-4"
+                  className="rounded-xl border border-destructive/20 bg-background/70 p-4"
                 >
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div className="space-y-1">
@@ -748,14 +704,14 @@ const Home = () => {
           </CardHeader>
           <CardContent className="space-y-3">
             {todayItems.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-border/70 bg-muted/20 p-4 text-sm text-muted-foreground">
+              <div className="rounded-xl border border-dashed border-border/70 bg-muted/20 p-4 text-sm text-muted-foreground">
                 Nada vence hoje no recorte carregado.
               </div>
             ) : (
               todayItems.map((item) => (
                 <div
                   key={item.id}
-                  className="rounded-2xl border border-info/15 bg-info-muted/35 p-4"
+                  className="rounded-xl border border-info/15 bg-info-muted/35 p-4"
                 >
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div className="space-y-1">
@@ -778,129 +734,9 @@ const Home = () => {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Agir agora</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <Button asChild className="w-full justify-start">
-              <Link to="/registrar">
-                <PlusCircle className="h-4 w-4" />
-                Registrar manejo
-              </Link>
-            </Button>
-            <Button asChild variant="outline" className="w-full justify-start">
-              <Link to="/agenda">
-                <CalendarClock className="h-4 w-4" />
-                Ver agenda completa
-              </Link>
-            </Button>
-            <Button asChild variant="ghost" className="w-full justify-start">
-              <Link to="/animais">
-                <Beef className="h-4 w-4" />
-                Ver rebanho
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
       </section>
-
-      <Toolbar>
-        <ToolbarGroup className="gap-2">
-          {QUICK_ACTIONS.map((action) => (
-            <Button
-              key={action.href}
-              asChild
-              size="sm"
-              variant="outline"
-              className="justify-start"
-            >
-              <Link to={action.href}>
-                <action.icon className="h-4 w-4" />
-                {action.label}
-              </Link>
-            </Button>
-          ))}
-        </ToolbarGroup>
-        <ToolbarGroup className="gap-2">
-          <Button asChild size="sm" variant="ghost">
-            <Link to="/animais">Rebanho</Link>
-          </Button>
-          <Button asChild size="sm" variant="ghost">
-            <Link to="/onboarding-inicial">Guia inicial</Link>
-          </Button>
-        </ToolbarGroup>
-      </Toolbar>
 
       <OperationalInsightsPanel viewModel={operationalInsights} />
-
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-        <MetricCard
-          label="Animais ativos"
-          value={snapshot.animais}
-          hint="Base pronta para manejo e historico."
-          icon={<Beef className="h-4 w-4" />}
-        />
-        <MetricCard
-          label="Agenda de hoje"
-          value={snapshot.agendaHoje}
-          hint={
-            snapshot.sanitaryAttention.criticalCount > 0
-              ? `${snapshot.sanitaryAttention.criticalCount} sanitario(s) critico(s) na agenda.`
-              : snapshot.agendaAtrasada > 0
-                ? `${snapshot.agendaAtrasada} item(ns) atrasado(s).`
-                : "Sem atraso acumulado."
-          }
-          icon={<CalendarClock className="h-4 w-4" />}
-          tone={
-            snapshot.sanitaryAttention.criticalCount > 0
-              ? "danger"
-              : snapshot.agendaAtrasada > 0
-                ? "warning"
-                : "default"
-          }
-        />
-        <MetricCard
-          label="Fila local"
-          value={snapshot.syncSummary.pendingCount}
-          hint={
-            snapshot.syncSummary.rejectionCount > 0
-              ? `${snapshot.syncSummary.rejectionCount} rejeicao(oes) para revisar.`
-              : snapshot.syncSummary.syncingCount > 0
-                ? `${snapshot.syncSummary.syncingCount} gesto(s) em sincronizacao.`
-                : snapshot.syncSummary.savedLocalCount > 0
-                  ? `${snapshot.syncSummary.savedLocalCount} gesto(s) aguardando rede/worker.`
-                  : snapshot.syncSummary.lastCompletedStage === "synced_altered"
-                    ? "Ultima confirmacao teve ajuste do servidor."
-                    : "Sem fila local pendente."
-          }
-          icon={<RefreshCw className="h-4 w-4" />}
-          tone={
-            snapshot.syncSummary.rejectionCount > 0
-              ? "danger"
-              : snapshot.syncSummary.pendingCount > 0
-                ? "warning"
-                : "success"
-          }
-        />
-        <MetricCard
-          label="Estrutura minima"
-          value={`${checklistDone}/${snapshot.checklist.length}`}
-          hint="Pastos, lotes, protocolos e primeiros registros."
-          icon={<Activity className="h-4 w-4" />}
-        />
-        <MetricCard
-          label="Transicoes de estagio"
-          value={snapshot.lifecyclePendingCount}
-          hint={
-            snapshot.lifecyclePendingCount > 0
-              ? `${snapshot.lifecycleStrategicCount} decisao(oes) e ${snapshot.lifecycleBiologicalCount} marco(s) biologico(s).`
-              : "Sem transicoes pendentes."
-          }
-          icon={<AlertTriangle className="h-4 w-4" />}
-          tone={snapshot.lifecyclePendingCount > 0 ? "warning" : "default"}
-        />
-      </section>
 
       {snapshot.sanitaryAttention.totalOpen > 0 ? (
         <Card>
@@ -953,14 +789,14 @@ const Home = () => {
             </div>
 
             {snapshot.sanitaryAttention.topItems.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-border/70 p-4 text-sm text-muted-foreground">
+              <div className="rounded-xl border border-dashed border-border/70 p-4 text-sm text-muted-foreground">
                 Nenhum item sanitario com criticidade destacada no momento.
               </div>
             ) : (
               snapshot.sanitaryAttention.topItems.map((item) => (
                 <div
                   key={item.id}
-                  className="rounded-2xl border border-border/70 bg-muted/35 p-4"
+                  className="rounded-xl border border-border/70 bg-muted/35 p-4"
                 >
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div className="space-y-1">
@@ -979,7 +815,7 @@ const Home = () => {
                       <p className="text-sm leading-6 text-muted-foreground">
                         {item.contexto}
                       </p>
-                      <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
+                      <p className="text-xs uppercase text-muted-foreground">
                         Produto {item.produto}
                         {item.scheduleModeLabel
                           ? ` | ${item.scheduleModeLabel}`
@@ -1040,7 +876,7 @@ const Home = () => {
             {snapshot.regulatoryCompliance.attention.topItems.map((item) => (
               <div
                 key={item.key}
-                className="rounded-2xl border border-border/70 bg-muted/35 p-4"
+                className="rounded-xl border border-border/70 bg-muted/35 p-4"
               >
                 <div className="flex flex-wrap items-center gap-2">
                   <p className="font-medium">{item.label}</p>
@@ -1077,14 +913,14 @@ const Home = () => {
           </CardHeader>
           <CardContent className="space-y-3">
             {upcomingItems.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-border/70 p-4 text-sm text-muted-foreground">
+              <div className="rounded-xl border border-dashed border-border/70 p-4 text-sm text-muted-foreground">
                 Nenhum manejo futuro no recorte carregado.
               </div>
             ) : (
               upcomingItems.map((item) => (
                 <div
                   key={item.id}
-                  className="rounded-2xl border border-border/70 bg-muted/35 p-4"
+                  className="rounded-xl border border-border/70 bg-muted/35 p-4"
                 >
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div className="space-y-1">
@@ -1128,14 +964,14 @@ const Home = () => {
           </CardHeader>
           <CardContent className="space-y-3">
             {snapshot.lifecyclePendings.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-border/70 p-4 text-sm text-muted-foreground">
+              <div className="rounded-xl border border-dashed border-border/70 p-4 text-sm text-muted-foreground">
                 Nenhum animal precisa de transicao de estagio neste momento.
               </div>
             ) : (
               snapshot.lifecyclePendings.map((item) => (
                 <div
                   key={item.animalId}
-                  className="rounded-2xl border border-border/70 bg-muted/35 p-4"
+                  className="rounded-xl border border-border/70 bg-muted/35 p-4"
                 >
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <p className="font-medium">{item.identificacao}</p>
@@ -1148,7 +984,7 @@ const Home = () => {
                   <p className="mt-2 text-sm text-foreground">
                     {item.currentStageLabel} para {item.targetStageLabel}
                   </p>
-                  <p className="mt-1 text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">
+                  <p className="mt-1 text-xs font-medium uppercase text-muted-foreground">
                     {item.queueKindLabel}
                   </p>
                   <p className="mt-2 text-sm leading-6 text-muted-foreground">
@@ -1188,7 +1024,7 @@ const Home = () => {
             {snapshot.checklist.map((item) => (
               <div
                 key={item.label}
-                className="rounded-2xl border border-border/70 bg-muted/35 p-4"
+                className="rounded-xl border border-border/70 bg-muted/35 p-4"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="space-y-1">
@@ -1220,87 +1056,12 @@ const Home = () => {
         </Card>
       </section>
 
-      <section className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
-        <Card>
-          <CardHeader>
-            <CardTitle>Manejo recente</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {snapshot.eventosRecentes.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-border/70 p-4 text-sm text-muted-foreground">
-                Ainda nao ha eventos registrados. Use o fluxo de registro rapido
-                para comecar pelo primeiro manejo.
-              </div>
-            ) : (
-              snapshot.eventosRecentes.map((evento) => (
-                <div
-                  key={evento.id}
-                  className="rounded-2xl border border-border/70 bg-muted/35 p-4"
-                >
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <History className="h-4 w-4 text-muted-foreground" />
-                        <p className="font-medium">{evento.titulo}</p>
-                      </div>
-                      <p className="text-sm leading-6 text-muted-foreground">
-                        {evento.contexto}
-                      </p>
-                    </div>
-                    <span className="text-sm text-muted-foreground">
-                      {formatDay(evento.data)}
-                    </span>
-                  </div>
-                </div>
-              ))
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Resumo da base</CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-3 sm:grid-cols-2">
-            <div className="rounded-2xl border border-border/70 bg-muted/35 p-4">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Layers className="h-4 w-4" />
-                Lotes ativos
-              </div>
-              <p className="mt-3 text-2xl font-semibold">{snapshot.lotes}</p>
-            </div>
-            <div className="rounded-2xl border border-border/70 bg-muted/35 p-4">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Map className="h-4 w-4" />
-                Pastos
-              </div>
-              <p className="mt-3 text-2xl font-semibold">{snapshot.pastos}</p>
-            </div>
-            <div className="rounded-2xl border border-border/70 bg-muted/35 p-4">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Activity className="h-4 w-4" />
-                Protocolos ativos
-              </div>
-              <p className="mt-3 text-2xl font-semibold">
-                {snapshot.protocolos}
-              </p>
-            </div>
-            <div className="rounded-2xl border border-border/70 bg-muted/35 p-4">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <RefreshCw className="h-4 w-4" />
-                Erros de sync
-              </div>
-              <p className="mt-3 text-2xl font-semibold">
-                {snapshot.syncSummary.rejectionCount}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      </section>
-
       <SyncStatusPanel summary={snapshot.syncSummary} />
     </div>
   );
 };
 
 export default Home;
+
+
+

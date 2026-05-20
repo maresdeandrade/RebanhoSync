@@ -25,6 +25,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { PageIntro } from "@/components/ui/page-intro";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { Textarea } from "@/components/ui/textarea";
 
 const TEMPLATE_CSV = [
@@ -184,19 +186,38 @@ const AnimaisImportar = () => {
   };
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
-      <div className="flex items-center gap-4">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => navigate("/animais")}
-        >
-          <ChevronLeft className="h-5 w-5" />
-        </Button>
-        <div>
-          <h1 className="text-2xl font-bold">Importar animais por planilha</h1>
-        </div>
-      </div>
+    <div className="mx-auto max-w-6xl space-y-5">
+      <PageIntro
+        variant="plain"
+        eyebrow="Rebanho"
+        title="Importar animais por planilha"
+        meta={
+          <>
+            <StatusBadge tone={parsed.rows.length > 0 ? "info" : "neutral"}>
+              {parsed.rows.length} linha(s) valida(s)
+            </StatusBadge>
+            <StatusBadge
+              tone={validation.issues.length === 0 ? "success" : "warning"}
+            >
+              {validation.issues.length === 0
+                ? "Planilha pronta para importar"
+                : `${validation.issues.length} alerta(s) para revisar`}
+            </StatusBadge>
+          </>
+        }
+        actions={
+          <>
+            <Button variant="outline" onClick={() => navigate("/animais")}>
+              <ChevronLeft className="h-4 w-4" />
+              Voltar para animais
+            </Button>
+            <Button variant="outline" onClick={handleTemplateDownload}>
+              <Download className="h-4 w-4" />
+              Baixar modelo CSV
+            </Button>
+          </>
+        }
+      />
 
       <Card>
         <CardHeader>
@@ -207,10 +228,6 @@ const AnimaisImportar = () => {
             {TEMPLATE_CSV}
           </div>
           <div className="flex flex-wrap gap-3">
-            <Button variant="outline" onClick={handleTemplateDownload}>
-              <Download className="h-4 w-4" />
-              Baixar modelo CSV
-            </Button>
             <Button
               variant="outline"
               onClick={() => fileInputRef.current?.click()}
@@ -372,3 +389,4 @@ const AnimaisImportar = () => {
 };
 
 export default AnimaisImportar;
+

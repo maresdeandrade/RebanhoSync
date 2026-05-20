@@ -21,7 +21,10 @@ export function FormSection({
 }: FormSectionProps) {
   return (
     <section
-      className={cn("app-surface overflow-hidden p-0", className)}
+      className={cn(
+        "overflow-hidden rounded-xl border border-border/70 bg-card p-0 shadow-none",
+        className,
+      )}
       {...props}
     >
       <div className="flex flex-col gap-3 border-b border-border/70 px-5 py-4 sm:flex-row sm:items-start sm:justify-between">

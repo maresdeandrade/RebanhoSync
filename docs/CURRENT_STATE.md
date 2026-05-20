@@ -1,7 +1,7 @@
 ﻿# Current State (Snapshot Operacional)
 
 > **Status:** Snapshot vivo
-> **Ultima Atualizacao:** 2026-05-09
+> **Ultima Atualizacao:** 2026-05-20
 > **Estado do produto:** Beta interno
 > **Fase atual:** MVP funcional completo -> **SLC (Simple, Lovable, Complete) em consolidacao**
 
@@ -32,13 +32,16 @@ Consolidacoes recentes da fase SLC:
 - `docs/review/RebanhoSync_auditoria.md` foi ajustado pos-validacao como contrato documental de fontes de verdade para orientar uso de `insights` e marcadores sem transformar sinal auxiliar em fonte primaria ou comportamento operacional.
 - `src/lib/insights/` foi consolidado como core puro/read-only de composicao operacional; a primeira integracao passiva foi conectada na Home por `src/features/operationalInsights/` sem IO no core, sem persistencia, sem eventos e sem acoes de dominio.
 - Pastagens passaram a ter trilho historico proprio para avaliacao/ronda: `dominio='pastagem'`, detalhe `eventos_pasto_avaliacao`, store local `event_eventos_pasto_avaliacao` e registro minimo em `PastoDetalhe`, sem atualizar `pastos`, `lotes`, `pasto_ocupacoes` ou agenda.
+- Refatoracao visual SLC aplicada em duas passagens: Home virou painel tatico, Animais ficou card-first sem tabela tecnica duplicada, Registrar foi compactado por intencao/alvo/essencial/salvar e telas operacionais, gerenciais, auxiliares e cadastros passaram a usar headers, cards, badges e espacamentos mais consistentes, sem alterar regras de negocio.
 
 ### ✅ Refinamentos Recentes (Maio/2026)
 - **Identidade Azul Sync Técnico**: Implementada e consolidada em runtime.
 - **Contraste Corretivo**: Light/Dark mode validados para legibilidade em campo (red-400 p/ perigo, cards com 10% opacidade).
 - **Navegação Híbrida**: Bottom Nav (mobile) e SideNav (desktop) operacionais.
-- **Home Operacional**: Validada como central "Hoje", priorizando atrasos e sync.
+- **Home Operacional**: Validada como painel tatico "Hoje", priorizando atrasos, agenda do dia e acoes imediatas; leituras passivas foram removidas ou rebaixadas.
 - **Fluxo de Registro**: Entrada contextual segura por Lote/Pasto/Animal/Agenda, sem inferência automática destrutiva.
+- **Refatoracao visual SLC**: Reducao agressiva de cards, descricoes redundantes, tabelas densas e status tecnicos em Home, Registrar, Animais, Lotes, Pastos, Reproducao, Dashboard, Eventos, Financeiro, Relatorios, Reconciliacao, Configuracoes, selecao de fazenda e cadastros de apoio.
+- **Selecao de fazenda contextual**: cards de fazenda agora exibem municipio/UF, area, producao e manejo quando disponiveis, mantendo o fluxo de selecao sem nova regra de negocio.
 - **Handoff Design**: Documentado em `docs/design/HANDOFF_VISUAL_UX_20260508.md`.
 
 ---
@@ -112,17 +115,14 @@ Primeira integracao read-only concluida:
 - `src/features/operationalInsights/operationalInsightsAdapter.ts` normaliza dados ja carregados em memoria/read models para os modulos puros de insights.
 - `src/features/operationalInsights/useOperationalInsights.ts` memoiza o consumo do adapter.
 - `src/features/operationalInsights/OperationalInsightsPanel.tsx` expõe painel somente leitura.
-- `src/pages/Home.tsx` e a primeira superficie da Central Operacional passiva.
-- O painel foi refinado para priorizar visualmente atrasadas e vencendo hoje, reduzir ruido textual, compactar limitacoes e deixar estados de resposta mais claros.
+- `src/pages/Home.tsx` e a primeira superficie da Central Operacional passiva, agora organizada como painel tatico em camadas: prioridade operacional, acao imediata e contexto secundario.
+- A Home prioriza atrasadas, agenda de hoje e registro rapido; leituras passivas como resumo de base e manejo recente foram removidas/rebaixadas para reduzir densidade.
+- O painel read-only foi mantido como contexto secundario, com estados mais compactos e sem competir com a acao primaria.
 
-Cards expostos na Home:
-- pendencias abertas;
-- vencem hoje;
-- atrasadas;
-- pendencias sanitarias;
-- rebanho por estagio;
-- KPIs mensais;
-- sinais operacionais auxiliares.
+Leituras preservadas ou rebaixadas conforme contexto:
+- pendencias abertas, vencem hoje e atrasadas;
+- pendencias sanitarias e sinais operacionais auxiliares;
+- rebanho por estagio e KPIs mensais apenas como contexto, nao como prioridade operacional da Home.
 
 Estados exibidos:
 - `Bloqueado`: fonte obrigatoria ausente;
@@ -173,8 +173,8 @@ Limites preservados:
 - SISBOV/fiscal continuam fora do core sanitario atual;
 - peso atual confiavel, carencia ativa operacional e pronto para venda/abate continuam bloqueados como decisoes automatizadas por falta de fonte composta/read model consolidado;
 - camada real de marcadores/tags persistidos como fonte primaria, consulta em linguagem natural, IA gerando agenda, IA concluindo execucao e motor geral IATF permanecem nao implementados/bloqueados;
-- acabamento de UX para reduzir ambiguidade e carga cognitiva;
-- maior consistencia cross-flow (agenda <-> registrar <-> protocolos).
+- validacao de UX com dados reais de beta interno apos a refatoracao visual SLC;
+- maior consistencia cross-flow fina (agenda <-> registrar <-> protocolos) e ajustes residuais por tela.
 
 Esses pontos impedem declarar SLC consolidado neste momento.
 

@@ -4,8 +4,6 @@ import { Link } from "react-router-dom";
 import {
   AlertTriangle,
   BarChart3,
-  Beef,
-  Calendar,
   FileText,
   MousePointerClick,
   RefreshCw,
@@ -31,7 +29,6 @@ import {
 } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { MetricCard } from "@/components/ui/metric-card";
 import { PageIntro } from "@/components/ui/page-intro";
 import { Progress } from "@/components/ui/progress";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -100,6 +97,19 @@ function resolveRejectionDomain(table: string, reasonCode?: string): string {
   }
 
   return "geral";
+}
+
+function resolveRejectionReasonLabel(reasonCode?: string): string {
+  const reason = (reasonCode || "").toUpperCase();
+
+  if (reason.includes("ANTI_TELEPORTE")) return "Movimentacao invalida";
+  if (reason.includes("PERMISSION")) return "Permissao";
+  if (reason.includes("EPISODE")) return "Vinculo reprodutivo";
+  if (reason.includes("TAXONOMY")) return "Categoria derivada";
+  if (reason.includes("VALIDATION")) return "Dados invalidos";
+  if (reason.includes("SANITARIO")) return "Sanitario";
+  if (reason.includes("FINANCEIRO")) return "Financeiro";
+  return "Revisao operacional";
 }
 
 const Dashboard = () => {
@@ -286,7 +296,7 @@ const Dashboard = () => {
     const total = recentRejections.length;
     const grouped = recentRejections.reduce(
       (acc: Record<string, number>, rejection) => {
-        const reason = rejection.reason_code || "UNKNOWN";
+        const reason = resolveRejectionReasonLabel(rejection.reason_code);
         acc[reason] = (acc[reason] || 0) + 1;
         return acc;
       },
@@ -400,11 +410,16 @@ const Dashboard = () => {
   return (
     <div className="space-y-5">
       <PageIntro
+        variant="plain"
         eyebrow="Saude operacional"
         title="Painel gerencial"
-        description="Indicadores para revisar pendencias, agenda e conformidade."
         meta={
           <>
+            <StatusBadge tone="info">{totalAnimais} animais</StatusBadge>
+            <StatusBadge tone={pendenciasAgenda > 0 ? "warning" : "success"}>
+              <span>Agenda aberta</span>
+              <span>{pendenciasAgenda}</span>
+            </StatusBadge>
             {operationalStats.backlog > 0 ? (
               <StatusBadge tone="warning">
                 {operationalStats.backlog} envio(s) pendente(s)
@@ -436,70 +451,15 @@ const Dashboard = () => {
         }
       />
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <MetricCard
-          label="Animais"
-          value={totalAnimais}
-          hint="Cabecas ativas no rebanho."
-          icon={<Beef className="h-4 w-4" />}
-        />
-        <MetricCard
-          label="Agenda aberta"
-          value={pendenciasAgenda}
-          hint="Tarefas ativas."
-          icon={<Calendar className="h-4 w-4" />}
-        />
-        <MetricCard
-          label="Sanitario critico"
-          value={sanitaryAttention.criticalCount}
-          hint={
-            sanitaryAttention.criticalCount > 0
-              ? `${sanitaryAttention.mandatoryCount} obrigatorio(s) e ${sanitaryAttention.requiresVetCount} com veterinario.`
-              : sanitaryAttention.warningCount > 0
-                ? `${sanitaryAttention.warningCount} item(ns) na janela curta.`
-                : "Sem protocolo sanitario urgente."
-          }
-          icon={<AlertTriangle className="h-4 w-4" />}
-          tone={
-            sanitaryAttention.criticalCount > 0
-              ? "danger"
-              : sanitaryAttention.warningCount > 0
-                ? "warning"
-                : "success"
-          }
-        />
-        <MetricCard
-          label="Conformidade aberta"
-          value={regulatoryReadModel.attention.openCount}
-          hint={
-            regulatoryReadModel.flows.sale.blockerCount > 0
-              ? `${regulatoryReadModel.flows.sale.blockerCount} bloqueio(s) para venda/transito.`
-              : regulatoryReadModel.flows.nutrition.blockerCount > 0
-                ? `${regulatoryReadModel.flows.nutrition.blockerCount} bloqueio(s) em nutricao.`
-                : regulatoryReadModel.attention.openCount > 0
-                  ? `${regulatoryReadModel.attention.openCount} pendencia(s) procedurais em aberto.`
-                  : "Sem pendencia regulatoria aberta."
-          }
-          icon={<AlertTriangle className="h-4 w-4" />}
-          tone={
-            regulatoryReadModel.hasBlockingIssues
-              ? "danger"
-              : regulatoryReadModel.attention.openCount > 0
-                ? "warning"
-                : "success"
-          }
-        />
-      </section>
-
-      <Card>
-        <CardHeader>
+      <Card className="shadow-none">
+        <CardHeader className="px-4 pb-2 pt-4 sm:px-5">
           <CardTitle>Prioridades administrativas</CardTitle>
         </CardHeader>
-        <CardContent className="grid gap-0 lg:grid-cols-4 lg:divide-x divide-y lg:divide-y-0 rounded-2xl border border-border overflow-hidden bg-card">
+        <CardContent className="grid gap-0 divide-y overflow-hidden rounded-xl border border-border/70 bg-card p-0 lg:grid-cols-4 lg:divide-x lg:divide-y-0">
           {adminPriorityActions.map((action) => (
             <div
               key={action.title}
-              className="p-5 flex flex-col justify-between hover:bg-muted/10 transition-colors"
+              className="flex flex-col justify-between p-5 transition-colors hover:bg-muted/10"
             >
               <div>
                 <div className="flex items-start justify-between gap-3">
@@ -511,7 +471,9 @@ const Dashboard = () => {
                       {action.value}
                     </strong>
                   </div>
-                  <StatusBadge tone={action.tone}>{action.title}</StatusBadge>
+                  <StatusBadge tone={action.tone}>
+                    {action.tone === "success" ? "Em dia" : "Atenção"}
+                  </StatusBadge>
                 </div>
                 <p className="mt-3 text-sm text-muted-foreground">
                   {action.helper}
@@ -521,7 +483,7 @@ const Dashboard = () => {
                 asChild
                 variant="outline"
                 size="sm"
-                className="mt-4 self-start bg-transparent border-transparent hover:border-border hover:bg-muted/30"
+                className="mt-4 self-start border-transparent bg-transparent hover:border-border hover:bg-muted/30"
               >
                 <Link to={action.path}>{action.actionLabel}</Link>
               </Button>
@@ -532,15 +494,15 @@ const Dashboard = () => {
 
       {sanitaryAttention.scheduleModes.length > 0 ? (
         <section className="grid gap-4 xl:grid-cols-2">
-          <Card>
-            <CardHeader>
+          <Card className="shadow-none">
+            <CardHeader className="px-4 pb-2 pt-4 sm:px-5">
               <CardTitle>Agenda sanitaria por calendario</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
               {sanitaryAttention.scheduleModes.map((mode) => (
                 <div
                   key={mode.key}
-                  className="rounded-2xl border border-border/70 bg-muted/35 p-4"
+                  className="rounded-xl border border-border/70 bg-muted/20 p-4"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
@@ -577,15 +539,15 @@ const Dashboard = () => {
           </Card>
 
           {sanitaryAttention.scheduleAnchors.length > 0 ? (
-            <Card>
-              <CardHeader>
+            <Card className="shadow-none">
+              <CardHeader className="px-4 pb-2 pt-4 sm:px-5">
                 <CardTitle>Agenda sanitaria por ancora</CardTitle>
               </CardHeader>
               <CardContent className="grid gap-3 md:grid-cols-2">
                 {sanitaryAttention.scheduleAnchors.map((anchor) => (
                   <div
                     key={anchor.key}
-                    className="rounded-2xl border border-border/70 bg-muted/35 p-4"
+                    className="rounded-xl border border-border/70 bg-muted/20 p-4"
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div>
@@ -626,15 +588,15 @@ const Dashboard = () => {
 
       {regulatoryReadModel.attention.openCount > 0 ? (
         <section className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
-          <Card>
-            <CardHeader>
+          <Card className="shadow-none">
+            <CardHeader className="px-4 pb-2 pt-4 sm:px-5">
               <CardTitle>Pendencias regulatorias por area</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               {regulatoryReadModel.analytics.subareas.map((cut) => (
                 <div
                   key={cut.key}
-                  className="rounded-2xl border border-border/70 bg-muted/35 p-4"
+                  className="rounded-xl border border-border/70 bg-muted/20 p-4"
                 >
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div className="space-y-2">
@@ -685,15 +647,15 @@ const Dashboard = () => {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
+          <Card className="shadow-none">
+            <CardHeader className="px-4 pb-2 pt-4 sm:px-5">
               <CardTitle>Impacto da conformidade</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               {regulatoryReadModel.analytics.impacts.map((impact) => (
                 <div
                   key={impact.key}
-                  className="rounded-2xl border border-border/70 bg-muted/35 p-4"
+                  className="rounded-xl border border-border/70 bg-muted/20 p-4"
                 >
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div className="space-y-2">
@@ -742,16 +704,16 @@ const Dashboard = () => {
       ) : null}
 
       <section className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
-        <Card>
-          <CardHeader>
-            <CardTitle>Envio e revisao tecnica</CardTitle>
+        <Card className="shadow-none">
+          <CardHeader className="px-4 pb-2 pt-4 sm:px-5">
+            <CardTitle>Envio e revisao</CardTitle>
           </CardHeader>
           <CardContent className="space-y-5">
-            <div className="app-surface-muted p-4">
+            <div className="rounded-xl border border-border/70 bg-muted/20 p-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">
-                    Taxa global de rejeicao
+                    Registros para revisar
                   </p>
                   <p className="mt-2 text-3xl font-semibold tracking-[-0.02em]">
                     {operationalStats.rejectionRate.toFixed(1)}%
@@ -772,22 +734,26 @@ const Dashboard = () => {
             </div>
 
             {rejectionByRuleData.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-border/70 p-4 text-sm text-muted-foreground">
+              <div className="rounded-xl border border-dashed border-border/70 p-4 text-sm text-muted-foreground">
                 Nenhuma rejeicao por regra no historico local.
               </div>
             ) : (
               <div className="space-y-3">
                 {rejectionSampleIsPartial ? (
-                  <div className="rounded-2xl border border-border/70 bg-muted/35 p-4 text-sm text-muted-foreground">
-                    Graficos baseados nas ultimas {recentRejections.length}{" "}
-                    rejeicoes locais para manter a leitura administrativa leve.
-                    Total para revisao: {totalRejections}.
+                  <div className="rounded-xl border border-border/70 bg-muted/20 p-4 text-sm text-muted-foreground">
+                    Ultimas {recentRejections.length} revisoes locais. Total
+                    para revisao: {totalRejections}.
                   </div>
                 ) : null}
                 {rejectionByRuleData.map((item) => (
-                  <div key={item.reason} className="app-surface-muted p-4">
+                  <div
+                    key={item.reason}
+                    className="rounded-xl border border-border/70 bg-muted/20 p-4"
+                  >
                     <div className="flex items-center justify-between gap-3 text-sm">
-                      <span className="truncate font-mono">{item.reason}</span>
+                      <span className="truncate font-medium">
+                        {item.reason}
+                      </span>
                       <span className="text-muted-foreground">
                         {item.count} ({item.rate.toFixed(1)}%)
                       </span>
@@ -800,13 +766,13 @@ const Dashboard = () => {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
+        <Card className="shadow-none">
+          <CardHeader className="px-4 pb-2 pt-4 sm:px-5">
             <CardTitle>Rejeicoes por dominio</CardTitle>
           </CardHeader>
           <CardContent className="h-[340px]">
             {rejectionByDomainData.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-border/70 p-4 text-sm text-muted-foreground">
+              <div className="rounded-xl border border-dashed border-border/70 p-4 text-sm text-muted-foreground">
                 Sem rejeicoes registradas nesta fazenda.
               </div>
             ) : (
@@ -829,8 +795,8 @@ const Dashboard = () => {
       </section>
 
       <section className="grid gap-4 xl:grid-cols-2">
-        <Card>
-          <CardHeader>
+        <Card className="shadow-none">
+          <CardHeader className="px-4 pb-2 pt-4 sm:px-5">
             <CardTitle className="flex items-center gap-2">
               Evolucao de peso
             </CardTitle>
@@ -869,8 +835,8 @@ const Dashboard = () => {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
+        <Card className="shadow-none">
+          <CardHeader className="px-4 pb-2 pt-4 sm:px-5">
             <CardTitle>Agenda por categoria</CardTitle>
           </CardHeader>
           <CardContent className="h-[320px]">
@@ -906,7 +872,7 @@ const Dashboard = () => {
         </Card>
       </section>
 
-      <Card>
+      <Card className="shadow-none">
         <CardContent className="p-0">
           <Accordion type="single" collapsible>
             <AccordionItem value="pilot-metrics" className="border-b-0">
@@ -923,20 +889,20 @@ const Dashboard = () => {
               </AccordionTrigger>
               <AccordionContent className="px-6 pb-6">
                 <section className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
-                  <Card>
-                    <CardHeader>
+                  <Card className="shadow-none">
+                    <CardHeader className="px-4 pb-2 pt-4 sm:px-5">
                       <CardTitle>Indicadores do piloto</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
                       {pilotMetrics.totalEvents === 0 ? (
-                        <div className="rounded-2xl border border-dashed border-border/70 p-4 text-sm text-muted-foreground">
+                        <div className="rounded-xl border border-dashed border-border/70 p-4 text-sm text-muted-foreground">
                           Ainda nao ha telemetria local suficiente para resumir
                           uso e falhas desta fazenda.
                         </div>
                       ) : (
                         <>
                           <div className="grid gap-3 sm:grid-cols-2">
-                            <div className="app-surface-muted p-4">
+                            <div className="rounded-xl border border-border/70 bg-muted/20 p-4">
                               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                 <MousePointerClick className="h-4 w-4" />
                                 Paginas abertas
@@ -949,7 +915,7 @@ const Dashboard = () => {
                               </span>
                             </div>
 
-                            <div className="app-surface-muted p-4">
+                            <div className="rounded-xl border border-border/70 bg-muted/20 p-4">
                               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                 <Upload className="h-4 w-4" />
                                 Importacoes
@@ -963,7 +929,7 @@ const Dashboard = () => {
                               </span>
                             </div>
 
-                            <div className="app-surface-muted p-4">
+                            <div className="rounded-xl border border-border/70 bg-muted/20 p-4">
                               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                 <FileText className="h-4 w-4" />
                                 Relatorios compartilhados
@@ -977,7 +943,7 @@ const Dashboard = () => {
                               </span>
                             </div>
 
-                            <div className="app-surface-muted p-4">
+                            <div className="rounded-xl border border-border/70 bg-muted/20 p-4">
                               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                 <AlertTriangle className="h-4 w-4" />
                                 Falhas de envio
@@ -992,7 +958,7 @@ const Dashboard = () => {
                             </div>
                           </div>
 
-                          <div className="rounded-2xl border border-border/70 bg-muted/35 p-4 text-sm text-muted-foreground">
+                          <div className="rounded-xl border border-border/70 bg-muted/20 p-4 text-sm text-muted-foreground">
                             {pilotMetrics.totalEvents} evento(s) de telemetria
                             local agregados no periodo.
                           </div>
@@ -1000,8 +966,8 @@ const Dashboard = () => {
                       )}
                     </CardContent>
                   </Card>
-                  <Card>
-                    <CardHeader>
+                  <Card className="shadow-none">
+                    <CardHeader className="px-4 pb-2 pt-4 sm:px-5">
                       <CardTitle>Rotas e alertas</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-5">
@@ -1017,7 +983,7 @@ const Dashboard = () => {
                           pilotMetrics.topRoutes.map((item) => (
                             <div
                               key={item.label}
-                              className="app-surface-muted p-4"
+                              className="rounded-xl border border-border/70 bg-muted/20 p-4"
                             >
                               <div className="flex items-center justify-between gap-3 text-sm">
                                 <span>{routeLabel(item.label)}</span>
@@ -1053,7 +1019,7 @@ const Dashboard = () => {
                           pilotMetrics.importsByEntity.map((item) => (
                             <div
                               key={item.label}
-                              className="flex items-center justify-between rounded-2xl border border-border/70 bg-muted/35 p-4 text-sm"
+                              className="flex items-center justify-between rounded-xl border border-border/70 bg-muted/20 p-4 text-sm"
                             >
                               <span className="capitalize">{item.label}</span>
                               <strong>{item.count}</strong>
@@ -1074,7 +1040,7 @@ const Dashboard = () => {
                           pilotMetrics.failuresByType.map((item) => (
                             <div
                               key={item.label}
-                              className="flex items-center justify-between rounded-2xl border border-border/70 bg-muted/35 p-4 text-sm"
+                              className="flex items-center justify-between rounded-xl border border-border/70 bg-muted/20 p-4 text-sm"
                             >
                               <span className="font-mono">{item.label}</span>
                               <strong>{item.count}</strong>
@@ -1095,3 +1061,4 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
+

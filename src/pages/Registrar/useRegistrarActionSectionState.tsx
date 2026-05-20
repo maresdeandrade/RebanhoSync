@@ -350,3 +350,4 @@ export function useRegistrarActionSectionState(
     reproducaoSectionProps,
   };
 }
+

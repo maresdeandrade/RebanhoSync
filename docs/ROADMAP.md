@@ -2,7 +2,7 @@
 
 > **Status:** Derivado (Rev D+)
 > **Baseline:** `3664395`
-> **Ultima Atualizacao:** 2026-05-09
+> **Ultima Atualizacao:** 2026-05-20
 > **Derivado por:** Auditoria tecnica - estado pos-fechamento dos TDs originais e evolucao funcional de UX operacional
 > **Fonte:** `TECH_DEBT.md`, `IMPLEMENTATION_STATUS.md`
 
@@ -45,6 +45,11 @@ Atualizacao Pastagens 2026-05-08:
 - P0/P1/P2/P3/P4 de pastos foram consolidados como base incremental: movimentacao lote->pasto factual, ocupacoes materializadas, ficha agronomica, infraestrutura local sem curral ativo e avaliacao/ronda de pasto como evento historico.
 - A ronda usa `dominio='pastagem'`, `eventos_pasto_avaliacao`, Dexie `event_eventos_pasto_avaliacao`, `TABLE_MAP` e UI minima em `PastoDetalhe`.
 - Fora de escopo preservado: dashboard de pastagem, recomendacao agronomica, motor de UA/lotacao ideal, agenda automatica e grafico.
+
+Atualizacao visual SLC 2026-05-20:
+- Segunda passagem de refatoracao visual aplicada em paginas centrais e auxiliares: Lotes, Pastos, Reproducao, Relatorios, Reconciliacao, Configuracoes, selecao de fazenda, onboarding/cadastros, importacoes e detalhes.
+- O padrao operacional agora prioriza `PageIntro` simples, cards objetivos, badges subordinados, menos sombra, menos tracking visual e grids mais previsiveis.
+- Selecao de fazenda passou a exibir metadados cadastrais existentes (municipio/UF, area, tipo de producao e manejo), sem alterar regra de negocio ou solicitar dado fiscal novo.
 
 ---
 
@@ -268,14 +273,15 @@ Atualizacao Pastagens 2026-05-08:
 
 - [ ] Uniformizar feedbacks de sucesso/erro/loading nos fluxos centrais
 - [ ] Refinar empty/loading/error states para reduzir ambiguidade
-- [ ] Reduzir carga cognitiva de fluxo em campo (progresso parcial: Animais e AnimalNovo refatorados)
+- [x] Reduzir carga cognitiva de fluxo em campo — refatoracao visual SLC aplicada em Home, Registrar, Animais, Lotes, Pastos, Reproducao, Dashboard/Relatorios/Eventos/Financeiro/Reconciliacao, Configuracoes, selecao de fazenda e cadastros de apoio
+- [ ] Validar o corte visual com dados reais de beta interno e ajustar excesso remanescente por tela
 
 ### Frente C — Produto operacional
 
 - [ ] Alinhar continuidade de fluxo entre agenda -> registrar -> historico/protocolos
 - [ ] Garantir completude percebida nas rotinas centrais do recorte-alvo
 - [ ] Revisar friccoes recorrentes de uso em beta interno e fechar lacunas priorizadas
-- [ ] Revisar consistencia visual entre `Agenda`, `Registrar` e `ProtocolosSanitarios`
+- [x] Revisar consistencia visual entre `Agenda`, `Registrar` e `ProtocolosSanitarios` no nivel de classes/superficies, sem reabrir comportamento
 
 ### Frente D — Confiabilidade
 

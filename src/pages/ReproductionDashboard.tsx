@@ -24,10 +24,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { MetricCard } from "@/components/ui/metric-card";
 import { PageIntro } from "@/components/ui/page-intro";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { Toolbar, ToolbarGroup } from "@/components/ui/toolbar";
+import { Toolbar } from "@/components/ui/toolbar";
 import { useAuth } from "@/hooks/useAuth";
 import { deriveAnimalTaxonomy } from "@/lib/animals/taxonomy";
 import {
@@ -49,15 +48,6 @@ import {
   type ReproEventJoined,
 } from "@/lib/reproduction/selectors";
 import { cn } from "@/lib/utils";
-
-const FILTERS: Array<{ key: ReproDashboardFilter; label: string }> = [
-  { key: "todas", label: "Todas" },
-  { key: "atencao", label: "Em atencao" },
-  { key: "vazias", label: "Vazias / abertas" },
-  { key: "servidas", label: "Servidas" },
-  { key: "prenhas", label: "Prenhas" },
-  { key: "paridas", label: "Paridas" },
-];
 
 const STATUS_LABEL: Record<string, string> = {
   VAZIA: "Vazia / aberta",
@@ -149,54 +139,6 @@ function getUrgencyTone(urgency: ReproActionUrgency) {
   return "neutral";
 }
 
-function FocusMetric({
-  title,
-  value,
-  helper,
-  active,
-  onClick,
-}: {
-  title: string;
-  value: number;
-  helper: string;
-  active?: boolean;
-  onClick?: () => void;
-}) {
-  const content = (
-    <>
-      <p className="text-sm text-muted-foreground">{title}</p>
-      <p className="mt-2 text-3xl font-semibold tracking-[-0.02em]">{value}</p>
-      <p className="mt-3 text-sm leading-6 text-muted-foreground">{helper}</p>
-    </>
-  );
-
-  if (onClick) {
-    return (
-      <button
-        type="button"
-        onClick={onClick}
-        className={cn(
-          "app-surface-muted w-full p-4 text-left transition-colors",
-          active && "border-primary/30 bg-primary/5",
-        )}
-      >
-        {content}
-      </button>
-    );
-  }
-
-  return (
-    <div
-      className={cn(
-        "app-surface-muted w-full p-4 text-left transition-colors",
-        active && "border-primary/30 bg-primary/5",
-      )}
-    >
-      {content}
-    </div>
-  );
-}
-
 function EmptyMessage({
   icon: Icon,
   title,
@@ -209,7 +151,7 @@ function EmptyMessage({
   actions?: ReactNode;
 }) {
   return (
-    <div className="rounded-2xl border border-dashed border-border/70 p-5 text-sm text-muted-foreground">
+    <div className="rounded-xl border border-dashed border-border/70 p-5 text-sm text-muted-foreground">
       <div className="flex items-start gap-3">
         {Icon ? <Icon className="mt-0.5 h-4 w-4" /> : null}
         <div className="space-y-2">
@@ -228,7 +170,7 @@ export default function ReproductionDashboard() {
   const { activeFarmId, farmLifecycleConfig } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [activeFilter, setActiveFilter] =
-    useState<ReproDashboardFilter>("todas");
+    useState<ReproDashboardFilter>("atencao");
   const [selectedAnimalId, setSelectedAnimalId] = useState<string | null>(null);
 
   const reproductionData = useLiveQuery(async () => {
@@ -352,35 +294,6 @@ export default function ReproductionDashboard() {
   const visibleAgenda = dashboardData
     ? dashboardData.agenda.filter((item) => visibleAnimalIds.has(item.animalId))
     : [];
-  const filterCounts = useMemo(() => {
-    if (!dashboardData) return new Map<ReproDashboardFilter, number>();
-
-    return new Map<ReproDashboardFilter, number>([
-      ["todas", dashboardData.animals.length],
-      ["atencao", dashboardData.totals.atencao],
-      [
-        "vazias",
-        dashboardData.animals.filter((animal) => animal.lane === "vazias")
-          .length,
-      ],
-      [
-        "servidas",
-        dashboardData.animals.filter((animal) => animal.lane === "servidas")
-          .length,
-      ],
-      [
-        "prenhas",
-        dashboardData.animals.filter((animal) => animal.lane === "prenhas")
-          .length,
-      ],
-      [
-        "paridas",
-        dashboardData.animals.filter((animal) => animal.lane === "paridas")
-          .length,
-      ],
-    ]);
-  }, [dashboardData]);
-
   if (!activeFarmId) {
     return (
       <Card>
@@ -409,13 +322,11 @@ export default function ReproductionDashboard() {
   return (
     <div className="space-y-5">
       <PageIntro
-        eyebrow="Ciclo reprodutivo"
-        title="Reproducao das matrizes"
+        variant="plain"
+        title="Reproducao"
+        description="Matrizes, prenhez, partos e pos-parto. IATF assistida permanece sem decisao automatica."
         meta={
           <>
-            <StatusBadge tone="neutral">
-              {dashboardData.totals.femeasAtivas} femeas acompanhadas
-            </StatusBadge>
             {dashboardData.totals.atencao > 0 ? (
               <StatusBadge tone="warning">
                 {dashboardData.totals.atencao} ponto(s) em atencao
@@ -449,74 +360,75 @@ export default function ReproductionDashboard() {
         }
       />
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-        <MetricCard
-          label="Femeas ativas"
-          value={dashboardData.totals.femeasAtivas}
-        />
-        <MetricCard
-          label="Servidas"
-          value={dashboardData.totals.servidas}
-          tone="info"
-        />
-        <MetricCard
-          label="Prenhas"
-          value={dashboardData.totals.prenhas}
-          tone="success"
-        />
-        <MetricCard
-          label="Paridas"
-          value={dashboardData.totals.paridas}
-          tone="warning"
-        />
-        <MetricCard
-          label="Vazias / abertas"
-          value={dashboardData.totals.abertas}
-        />
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <Card className="shadow-none">
+          <CardContent className="space-y-2 p-4">
+            <p className="text-xs font-semibold uppercase text-muted-foreground">
+              Matrizes
+            </p>
+            <p className="text-3xl font-semibold tabular-nums">
+              {dashboardData.totals.femeasAtivas}
+            </p>
+          </CardContent>
+        </Card>
+        <Card className="shadow-none">
+          <CardContent className="space-y-2 p-4">
+            <p className="text-xs font-semibold uppercase text-muted-foreground">
+              Prenhez confirmada
+            </p>
+            <p className="text-3xl font-semibold tabular-nums text-success">
+              {dashboardData.totals.prenhas}
+            </p>
+          </CardContent>
+        </Card>
+        <Card className="shadow-none">
+          <CardContent className="space-y-2 p-4">
+            <p className="text-xs font-semibold uppercase text-muted-foreground">
+              Servidas
+            </p>
+            <p className="text-3xl font-semibold tabular-nums">
+              {dashboardData.totals.servidas}
+            </p>
+          </CardContent>
+        </Card>
+        <Card className="shadow-none">
+          <CardContent className="space-y-2 p-4">
+            <p className="text-xs font-semibold uppercase text-muted-foreground">
+              Em atencao
+            </p>
+            <p className="text-3xl font-semibold tabular-nums text-warning">
+              {dashboardData.totals.atencao}
+            </p>
+          </CardContent>
+        </Card>
       </section>
 
-      <section className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
+      <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_300px]">
         <Card>
           <CardHeader>
-            <CardTitle>Acompanhamento por animal</CardTitle>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <CardTitle>Matrizes</CardTitle>
+              <span className="text-sm text-muted-foreground">
+                {filteredAnimals.length} em exibicao
+              </span>
+            </div>
           </CardHeader>
           <CardContent className="space-y-4">
             <Toolbar className="border-0 bg-transparent p-0 shadow-none">
-              <ToolbarGroup className="flex-1">
-                <div className="relative min-w-0 flex-1">
-                  <Search className="absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    value={searchTerm}
-                    onChange={(event) => setSearchTerm(event.target.value)}
-                    className="pl-9"
-                    placeholder="Buscar por identificacao, nome ou lote"
-                  />
-                </div>
-              </ToolbarGroup>
-              <ToolbarGroup className="gap-2">
-                {FILTERS.map((filter) => (
-                  <Button
-                    key={filter.key}
-                    type="button"
-                    variant={
-                      activeFilter === filter.key ? "default" : "outline"
-                    }
-                    size="sm"
-                    onClick={() => setActiveFilter(filter.key)}
-                  >
-                    <span>{filter.label}</span>
-                    <span className="ml-1 text-xs opacity-80">
-                      {filterCounts.get(filter.key) ?? 0}
-                    </span>
-                  </Button>
-                ))}
-              </ToolbarGroup>
+              <div className="relative min-w-0 flex-1">
+                <Search className="absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  value={searchTerm}
+                  onChange={(event) => setSearchTerm(event.target.value)}
+                  className="pl-9"
+                  placeholder="Buscar por identificacao, nome ou lote"
+                />
+              </div>
             </Toolbar>
 
             {filteredAnimals.length === 0 ? (
               <EmptyMessage
                 title="Nenhuma matriz encontrada"
-                description="Ajuste o filtro atual ou traga o rebanho inicial para comecar o acompanhamento reprodutivo."
                 actions={
                   <>
                     <Button asChild size="sm" variant="outline">
@@ -540,7 +452,7 @@ export default function ReproductionDashboard() {
                     <article
                       key={animal.id}
                       className={cn(
-                        "rounded-2xl border border-border/70 bg-muted/30 p-4 transition-colors",
+                        "rounded-xl border border-border/70 bg-muted/30 p-4 transition-colors",
                         isSelected && "border-primary/30 bg-primary/5",
                       )}
                     >
@@ -584,8 +496,8 @@ export default function ReproductionDashboard() {
                           </p>
 
                           <div className="grid gap-3 md:grid-cols-2">
-                            <div className="rounded-2xl border border-border/70 bg-background/80 p-4">
-                              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                            <div className="rounded-xl border border-border/70 bg-background/80 p-4">
+                              <p className="text-xs font-semibold uppercase text-muted-foreground">
                                 Ultimo marco
                               </p>
                               <p className="mt-2 font-medium">
@@ -598,8 +510,8 @@ export default function ReproductionDashboard() {
                               </p>
                             </div>
 
-                            <div className="rounded-2xl border border-border/70 bg-background/80 p-4">
-                              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                            <div className="rounded-xl border border-border/70 bg-background/80 p-4">
+                              <p className="text-xs font-semibold uppercase text-muted-foreground">
                                 Proximo passo
                               </p>
                               <p className="mt-2 font-medium">
@@ -668,49 +580,67 @@ export default function ReproductionDashboard() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Em foco agora</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <FocusMetric
-              title="Diagnosticos pendentes"
-              value={dashboardData.focus.diagnosticosPendentes}
-              helper="Servidas cujo diagnostico ja deveria estar registrado."
-              active={activeFilter === "atencao"}
-              onClick={() => setActiveFilter("atencao")}
-            />
-            <FocusMetric
-              title="Partos proximos"
-              value={dashboardData.focus.partosProximos}
-              helper="Prenhas com parto previsto nas proximas semanas."
-              active={activeFilter === "prenhas"}
-              onClick={() => setActiveFilter("prenhas")}
-            />
-            <FocusMetric
-              title="Puerperio ativo"
-              value={dashboardData.focus.puerperioAtivo}
-              helper="Paridas recentes que ainda pedem acompanhamento."
-              active={activeFilter === "paridas"}
-              onClick={() => setActiveFilter("paridas")}
-            />
-            <FocusMetric
-              title="Femeas aptas"
-              value={dashboardData.focus.femeasAptas}
-              helper="Vazias ou abertas, prontas para nova cobertura."
-              active={activeFilter === "vazias"}
-              onClick={() => setActiveFilter("vazias")}
-            />
-            <FocusMetric
-              title="Marcos de vida pendentes"
-              value={lifecycleSummary.total}
-              helper={`${lifecycleSummary.strategic} estrategica(s) e ${lifecycleSummary.biological} biologica(s) entre as femeas acompanhadas.`}
-            />
-            <Button asChild variant="outline" size="sm" className="w-full">
-              <Link to="/animais/transicoes">Abrir fila de estagios</Link>
-            </Button>
-          </CardContent>
-        </Card>
+        <aside className="space-y-4 xl:sticky xl:top-24 xl:self-start">
+          <Card>
+            <CardHeader>
+              <CardTitle>Em foco agora</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {[
+                {
+                  label: "Diagnosticos pendentes",
+                  value: dashboardData.focus.diagnosticosPendentes,
+                  filter: "atencao" as ReproDashboardFilter,
+                },
+                {
+                  label: "Partos proximos",
+                  value: dashboardData.focus.partosProximos,
+                  filter: "prenhas" as ReproDashboardFilter,
+                },
+                {
+                  label: "Puerperio ativo",
+                  value: dashboardData.focus.puerperioAtivo,
+                  filter: "paridas" as ReproDashboardFilter,
+                },
+                {
+                  label: "Femeas aptas",
+                  value: dashboardData.focus.femeasAptas,
+                  filter: "vazias" as ReproDashboardFilter,
+                },
+              ].map((item) => (
+                <button
+                  key={item.label}
+                  type="button"
+                  onClick={() => setActiveFilter(item.filter)}
+                  className={cn(
+                    "flex w-full items-center justify-between gap-3 rounded-xl border border-border/70 bg-muted/30 px-4 py-3 text-left transition-colors hover:bg-muted/70",
+                    activeFilter === item.filter &&
+                      "border-primary/30 bg-primary/5 text-primary",
+                  )}
+                >
+                  <span className="text-sm font-medium">{item.label}</span>
+                  <span className="rounded-full bg-background px-2.5 py-1 text-xs font-semibold tabular-nums text-muted-foreground">
+                    {item.value}
+                  </span>
+                </button>
+              ))}
+
+              {lifecycleSummary.total > 0 ? (
+                <Button
+                  asChild
+                  variant="outline"
+                  size="sm"
+                  className="mt-2 w-full justify-between rounded-xl"
+                >
+                  <Link to="/animais/transicoes">
+                    <span>Marcos de vida</span>
+                    <span>{lifecycleSummary.total}</span>
+                  </Link>
+                </Button>
+              ) : null}
+            </CardContent>
+          </Card>
+        </aside>
       </section>
       <section className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
         <Card>
@@ -725,7 +655,6 @@ export default function ReproductionDashboard() {
               <EmptyMessage
                 icon={ListTodo}
                 title="Nenhuma recomendacao encontrada"
-                description="O filtro atual nao produziu novas recomendacoes automatizadas."
               />
             ) : (
               visibleAgenda.slice(0, 12).map((item) => {
@@ -734,7 +663,7 @@ export default function ReproductionDashboard() {
                 return (
                   <div
                     key={item.id}
-                    className="rounded-2xl border border-border/70 bg-muted/30 p-4"
+                    className="rounded-xl border border-border/70 bg-muted/30 p-4"
                   >
                     <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                       <div className="space-y-2">
@@ -815,14 +744,10 @@ export default function ReproductionDashboard() {
           </CardHeader>
           <CardContent>
             {!selectedAnimal ? (
-              <EmptyMessage
-                icon={History}
-                title="Selecione uma matriz"
-                description="Use a lista da esquerda ou a agenda automatica para abrir a timeline."
-              />
+              <EmptyMessage icon={History} title="Selecione uma matriz" />
             ) : (
               <div className="space-y-4">
-                <div className="rounded-2xl border border-border/70 bg-muted/30 p-4">
+                <div className="rounded-xl border border-border/70 bg-muted/30 p-4">
                   <div className="flex flex-wrap items-center gap-2">
                     <p className="text-lg font-semibold tracking-[-0.01em]">
                       {selectedAnimal.identificacao}
@@ -866,10 +791,7 @@ export default function ReproductionDashboard() {
                 </div>
 
                 {selectedHistory.length === 0 ? (
-                  <EmptyMessage
-                    title="Sem eventos reprodutivos"
-                    description="Ainda nao ha registros reprodutivos para esta matriz."
-                  />
+                  <EmptyMessage title="Sem eventos reprodutivos" />
                 ) : (
                   <div className="relative pl-5">
                     <div className="absolute bottom-1 left-[0.45rem] top-1 w-px bg-border/80" />
@@ -877,7 +799,7 @@ export default function ReproductionDashboard() {
                       {selectedHistory.map((event) => (
                         <div key={event.id} className="relative">
                           <div className="absolute -left-[1.15rem] top-1.5 h-2.5 w-2.5 rounded-full bg-primary" />
-                          <div className="rounded-2xl border border-border/70 bg-background/80 p-4">
+                          <div className="rounded-xl border border-border/70 bg-background/80 p-4">
                             <div className="flex flex-wrap items-center justify-between gap-2">
                               <p className="font-medium">
                                 {formatTimelineTitle(event)}
@@ -918,3 +840,6 @@ export default function ReproductionDashboard() {
     </div>
   );
 }
+
+
+

@@ -50,3 +50,4 @@ export function RegistrarMovimentacaoSection(props: RegistrarMovimentacaoSection
     </div>
   );
 }
+

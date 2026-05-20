@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useLiveQuery } from "dexie-react-hooks";
-import { ChevronLeft, Layers, Save, Users } from "lucide-react";
+import { ChevronLeft, Save } from "lucide-react";
 
 import { FormSection } from "@/components/ui/form-section";
-import { MetricCard } from "@/components/ui/metric-card";
 import { PageIntro } from "@/components/ui/page-intro";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -107,8 +107,9 @@ const LoteEditar = () => {
 
   if (!lote || !isLoaded) {
     return (
-      <div className="space-y-6 pb-16">
+      <div className="space-y-5 pb-16">
         <PageIntro
+          variant="plain"
           eyebrow="Estrutura do rebanho"
           title="Editar lote"
           actions={
@@ -123,10 +124,24 @@ const LoteEditar = () => {
   }
 
   return (
-    <div className="space-y-6 pb-16">
+    <div className="space-y-5 pb-16">
       <PageIntro
+        variant="plain"
         eyebrow="Estrutura do rebanho"
         title={`Editar ${lote.nome}`}
+        meta={
+          <>
+            <StatusBadge tone="neutral">
+              {animaisNoLote ?? 0} animal(is)
+            </StatusBadge>
+            <StatusBadge tone="neutral">
+              {pastoAtual?.nome ?? "Sem pasto"}
+            </StatusBadge>
+            <StatusBadge tone="neutral">
+              {touroAtual?.identificacao ?? "Sem reprodutor"}
+            </StatusBadge>
+          </>
+        }
         actions={
           <>
             <Button variant="outline" onClick={() => navigate(`/lotes/${id}`)}>
@@ -141,26 +156,8 @@ const LoteEditar = () => {
         }
       />
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <MetricCard
-          label="Animais no lote"
-          value={animaisNoLote ?? 0}
-          icon={<Users className="h-4 w-4" />}
-        />
-        <MetricCard
-          label="Pasto atual"
-          value={pastoAtual?.nome ?? "Sem pasto"}
-          icon={<Layers className="h-4 w-4" />}
-        />
-        <MetricCard
-          label="Reprodutor"
-          value={touroAtual?.identificacao ?? "Sem vinculo"}
-          tone={status === "ativo" ? "success" : "default"}
-        />
-      </div>
-
       <form
-        className="space-y-6"
+        className="space-y-5"
         onSubmit={(event) => {
           event.preventDefault();
           void handleSave();
@@ -222,3 +219,4 @@ const LoteEditar = () => {
 };
 
 export default LoteEditar;
+

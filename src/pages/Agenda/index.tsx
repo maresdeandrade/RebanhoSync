@@ -352,6 +352,7 @@ export default function Agenda() {
     return (
       <div className="space-y-5">
         <PageIntro
+          variant="plain"
           eyebrow="Rotina planejada"
           title="Fazenda não selecionada"
           actions={
@@ -368,6 +369,7 @@ export default function Agenda() {
     return (
       <div className="space-y-5">
         <PageIntro
+          variant="plain"
           eyebrow="Rotina planejada"
           title="Agenda de manejo"
           actions={
@@ -509,3 +511,4 @@ export default function Agenda() {
     </div>
   );
 }
+

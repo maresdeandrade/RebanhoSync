@@ -65,10 +65,11 @@ describe("SelectFazenda", () => {
     );
 
     expect(
-      await screen.findByText(/Aceite um convite ou crie a primeira operacao/i),
+      await screen.findByText(/Aceite um convite ou crie a primeira fazenda/i),
     ).toBeInTheDocument();
-    expect(screen.getByText(/Criacao permitida/i)).toBeInTheDocument();
-    expect(screen.getByText(/^Sim$/i)).toBeInTheDocument();
+    expect(
+      screen.getAllByRole("button", { name: /Criar nova fazenda/i }).length,
+    ).toBeGreaterThan(0);
   });
 
   it("seleciona a fazenda e navega para a rotina quando houver membership", async () => {
@@ -78,6 +79,11 @@ describe("SelectFazenda", () => {
         fazendas: {
           id: "farm-1",
           nome: "Fazenda Boa Vista",
+          municipio: "Rio Verde",
+          estado: "GO",
+          area_total_ha: 1280,
+          tipo_producao: "corte",
+          sistema_manejo: "pastagem",
         },
       },
     ] as ReturnType<typeof useLiveQuery>);
@@ -99,9 +105,15 @@ describe("SelectFazenda", () => {
       await screen.findByRole("button", { name: /Fazenda Boa Vista/i }),
     );
 
+    expect(screen.getByText("Rio Verde - GO")).toBeInTheDocument();
+    expect(screen.getByText("1.280 ha")).toBeInTheDocument();
+    expect(screen.getByText("Corte")).toBeInTheDocument();
+    expect(screen.getByText("Pastagem")).toBeInTheDocument();
+
     await waitFor(() => {
       expect(setActiveFarm).toHaveBeenCalledWith("farm-1");
     });
     expect(mockNavigate).toHaveBeenCalledWith("/home", { replace: true });
   });
 });
+

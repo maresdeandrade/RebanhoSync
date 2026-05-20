@@ -53,16 +53,9 @@ const Login = () => {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="flex justify-center">
-            <img
-              src="/logo.png"
-              alt="RebanhoSync"
-              className="h-12 w-auto"
-            />
+            <img src="/logo.png" alt="RebanhoSync" className="h-12 w-auto" />
           </div>
           <CardTitle className="mt-4 text-2xl font-bold">RebanhoSync</CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Entre para gerenciar sua fazenda
-          </p>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -109,7 +102,9 @@ const Login = () => {
                 })}
                 disabled={isLoading}
                 aria-invalid={!!errors.password}
-                aria-describedby={errors.password ? "password-error" : undefined}
+                aria-describedby={
+                  errors.password ? "password-error" : undefined
+                }
               />
               {errors.password && (
                 <p
@@ -149,3 +144,4 @@ const Login = () => {
 };
 
 export default Login;
+

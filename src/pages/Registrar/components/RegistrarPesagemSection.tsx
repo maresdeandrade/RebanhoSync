@@ -41,3 +41,4 @@ export function RegistrarPesagemSection(props: RegistrarPesagemSectionProps) {
     </div>
   );
 }
+

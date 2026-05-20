@@ -171,7 +171,7 @@ describe("Dashboard page", () => {
     expect(screen.getAllByText("Envio pendente").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Conformidade").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Agenda aberta").length).toBeGreaterThan(0);
-    expect(screen.getByText("Envio e revisao tecnica")).toBeInTheDocument();
+    expect(screen.getByText("Envio e revisao")).toBeInTheDocument();
     expect(screen.queryByText("Indicadores do piloto")).not.toBeInTheDocument();
 
     fireEvent.click(
@@ -502,3 +502,4 @@ describe("Dashboard page", () => {
     ).not.toBeNull();
   });
 });
+

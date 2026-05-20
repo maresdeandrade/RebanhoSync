@@ -1,14 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
-import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { ChevronLeft, ClipboardCheck, History, MapPin } from "lucide-react";
+import {
+  Link,
+  useNavigate,
+  useParams,
+  useSearchParams,
+} from "react-router-dom";
+import { ChevronLeft } from "lucide-react";
 import {
   CalfInitialEditor,
   type CalfInitialDraft,
 } from "@/components/animals/CalfInitialEditor";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { MetricCard } from "@/components/ui/metric-card";
 import { PageIntro } from "@/components/ui/page-intro";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { useAuth } from "@/hooks/useAuth";
@@ -16,9 +20,7 @@ import { formatWeightInput } from "@/lib/format/weight";
 import { db } from "@/lib/offline/db";
 import { createGesture } from "@/lib/offline/ops";
 import type { Animal } from "@/lib/offline/types";
-import {
-  buildPostPartumOps,
-} from "@/lib/reproduction/postPartum";
+import { buildPostPartumOps } from "@/lib/reproduction/postPartum";
 import {
   getBirthEventId,
   getNeonatalSetup,
@@ -73,7 +75,10 @@ export default function AnimalPosParto() {
   );
   const calfIdsKey = calfIds.join(",");
 
-  const mother = useLiveQuery(() => (id ? db.state_animais.get(id) : undefined), [id]);
+  const mother = useLiveQuery(
+    () => (id ? db.state_animais.get(id) : undefined),
+    [id],
+  );
   const motherLote = useLiveQuery(
     () => (mother?.lote_id ? db.state_lotes.get(mother.lote_id) : null),
     [mother?.lote_id],
@@ -102,7 +107,9 @@ export default function AnimalPosParto() {
     const herd = await db.state_animais
       .where("fazenda_id")
       .equals(mother.fazenda_id)
-      .filter((candidate) => candidate.mae_id === mother.id && !candidate.deleted_at)
+      .filter(
+        (candidate) => candidate.mae_id === mother.id && !candidate.deleted_at,
+      )
       .toArray();
 
     let filtered = herd;
@@ -156,7 +163,8 @@ export default function AnimalPosParto() {
       .equals(mother.fazenda_id)
       .filter(
         (item) =>
-          Boolean(item.animal_id && calfIds.has(item.animal_id)) && !item.deleted_at,
+          Boolean(item.animal_id && calfIds.has(item.animal_id)) &&
+          !item.deleted_at,
       )
       .toArray();
   }, [mother?.fazenda_id, calves]);
@@ -170,11 +178,17 @@ export default function AnimalPosParto() {
     if (!calves || calves.length === 0) return;
 
     setDrafts((previous) => {
-      const previousMap = new Map(previous.map((draft) => [draft.calfId, draft]));
+      const previousMap = new Map(
+        previous.map((draft) => [draft.calfId, draft]),
+      );
       return calves.map(
         (calf) =>
           previousMap.get(calf.id) ??
-          getInitialDraft(calf, fallbackLoteId, farmMeasurementConfig.weight_unit),
+          getInitialDraft(
+            calf,
+            fallbackLoteId,
+            farmMeasurementConfig.weight_unit,
+          ),
       );
     });
   }, [calves, fallbackLoteId, farmMeasurementConfig.weight_unit]);
@@ -185,10 +199,7 @@ export default function AnimalPosParto() {
       ? pastoById.get(motherLote.pasto_id)
       : null;
 
-  const updateDraft = (
-    calfId: string,
-    patch: Partial<CalfInitialDraft>,
-  ) => {
+  const updateDraft = (calfId: string, patch: Partial<CalfInitialDraft>) => {
     setDrafts((current) =>
       current.map((draft) =>
         draft.calfId === calfId ? { ...draft, ...patch } : draft,
@@ -222,19 +233,20 @@ export default function AnimalPosParto() {
     setIsSaving(true);
     try {
       const occurredAt = new Date().toISOString();
-      const { ops, weighedCount, umbigoCount, agendaCount } = buildPostPartumOps({
-        fazendaId: mother.fazenda_id,
-        weightUnit: farmMeasurementConfig.weight_unit,
-        mother: {
-          id: mother.id,
-          identificacao: mother.identificacao,
-        },
-        calves,
-        drafts,
-        occurredAt,
-        birthEventId: eventId,
-        existingAgendaItems: journeyAgendaItems ?? [],
-      });
+      const { ops, weighedCount, umbigoCount, agendaCount } =
+        buildPostPartumOps({
+          fazendaId: mother.fazenda_id,
+          weightUnit: farmMeasurementConfig.weight_unit,
+          mother: {
+            id: mother.id,
+            identificacao: mother.identificacao,
+          },
+          calves,
+          drafts,
+          occurredAt,
+          birthEventId: eventId,
+          existingAgendaItems: journeyAgendaItems ?? [],
+        });
 
       if (ops.length === 0) {
         showError("Nenhuma atualizacao valida para salvar.");
@@ -244,15 +256,19 @@ export default function AnimalPosParto() {
       await createGesture(mother.fazenda_id, ops);
       showSuccess(
         `Execução registrada com sucesso. Pós-parto finalizado para ${calves.length} cria(s). ${
-          weighedCount > 0 ? `${weighedCount} pesagem(ns) neonatal(is) registrada(s). ` : ""
-        }${
-          umbigoCount > 0 ? `${umbigoCount} cura(s) de umbigo registrada(s). ` : ""
-        }${
-          agendaCount > 0 ? `${agendaCount} etapa(s) ate o desmame criada(s). ` : ""
-        }${
-          calves.length > 1
-            ? "Seguindo a rotina da primeira cria. "
+          weighedCount > 0
+            ? `${weighedCount} pesagem(ns) neonatal(is) registrada(s). `
             : ""
+        }${
+          umbigoCount > 0
+            ? `${umbigoCount} cura(s) de umbigo registrada(s). `
+            : ""
+        }${
+          agendaCount > 0
+            ? `${agendaCount} etapa(s) ate o desmame criada(s). `
+            : ""
+        }${
+          calves.length > 1 ? "Seguindo a rotina da primeira cria. " : ""
         }Sincronizacao pendente.`,
       );
 
@@ -288,11 +304,10 @@ export default function AnimalPosParto() {
           <CardTitle>Pos-parto disponivel apenas para matrizes</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            Esta etapa serve para finalizar as crias logo apos o parto.
-          </p>
           <Button asChild>
-            <Link to={`/animais/${mother.id}`}>Voltar para a ficha do animal</Link>
+            <Link to={`/animais/${mother.id}`}>
+              Voltar para a ficha do animal
+            </Link>
           </Button>
         </CardContent>
       </Card>
@@ -306,10 +321,6 @@ export default function AnimalPosParto() {
           <CardTitle>Nenhuma cria encontrada para este parto</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            Evidencia insuficiente para recuperar as crias geradas neste parto.
-            Reabra o fluxo pela ficha da matriz ou confira se o parto foi salvo.
-          </p>
           <Button asChild>
             <Link to={`/animais/${mother.id}/reproducao?tipo=parto`}>
               Voltar ao fluxo reprodutivo
@@ -321,11 +332,11 @@ export default function AnimalPosParto() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <PageIntro
+        variant="plain"
         eyebrow="Fechamento do parto"
         title={`Pos-parto da matriz ${mother.identificacao}`}
-        description="Revise as crias recem-geradas, confirme a identificacao final, ajuste o lote inicial e distribua a rotina dedicada de crescimento sem voltar ao Registrar."
         meta={
           <>
             <StatusBadge tone="neutral">Fluxo neonatal em lote</StatusBadge>
@@ -333,7 +344,9 @@ export default function AnimalPosParto() {
               {selectedCount} cria(s) pronta(s) para revisar
             </StatusBadge>
             {motherLote ? (
-              <StatusBadge tone="info">Lote sugerido: {motherLote.nome}</StatusBadge>
+              <StatusBadge tone="info">
+                Lote sugerido: {motherLote.nome}
+              </StatusBadge>
             ) : null}
           </>
         }
@@ -341,7 +354,9 @@ export default function AnimalPosParto() {
           <>
             <Button
               variant="outline"
-              onClick={() => navigate(`/animais/${mother.id}/reproducao?tipo=parto`)}
+              onClick={() =>
+                navigate(`/animais/${mother.id}/reproducao?tipo=parto`)
+              }
             >
               <ChevronLeft className="mr-2 h-4 w-4" />
               Voltar ao parto
@@ -353,37 +368,13 @@ export default function AnimalPosParto() {
         }
       />
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <MetricCard
-          label="Matriz"
-          value={mother.identificacao}
-          hint={`Ultima atualizacao em ${formatDate(mother.updated_at)}`}
-          icon={<ClipboardCheck className="h-5 w-5" />}
-        />
-        <MetricCard
-          label="Lote inicial"
-          value={motherLote?.nome ?? "Sem lote definido"}
-          hint={suggestedPasto ? `Pasto ${suggestedPasto.nome}` : "Sem pasto vinculado"}
-          tone={motherLote ? "info" : "warning"}
-          icon={<MapPin className="h-5 w-5" />}
-        />
-        <MetricCard
-          label="Evento de origem"
-          value={eventId ? eventId.slice(0, 8) : "Parto atual"}
-          hint="As crias avancam sem esperar sincronizacao."
-          icon={<History className="h-5 w-5" />}
-        />
-      </div>
-
       <Card>
         <CardHeader className="pb-3">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
-              <CardTitle className="text-base">Hub do pos-parto neonatal</CardTitle>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Aplique o lote sugerido em lote e, quando precisar, abra a
-                ficha dedicada da cria para concluir peso, umbigo e timeline.
-              </p>
+              <CardTitle className="text-base">
+                Hub do pos-parto neonatal
+              </CardTitle>
             </div>
             <Button
               type="button"
@@ -399,24 +390,12 @@ export default function AnimalPosParto() {
         <CardContent className="grid gap-4 md:grid-cols-3">
           <div className="rounded-xl border bg-muted/20 p-4">
             <div className="text-sm font-medium">Identificacao final</div>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Cada cria pode ser fechada aqui e depois seguir para a rotina
-              individual de acompanhamento.
-            </p>
           </div>
           <div className="rounded-xl border bg-muted/20 p-4">
             <div className="text-sm font-medium">Lote e pasto inicial</div>
-            <p className="mt-2 text-sm text-muted-foreground">
-              O lote da matriz segue como sugestao para acelerar a largada da
-              cria no rebanho.
-            </p>
           </div>
           <div className="rounded-xl border bg-muted/20 p-4">
             <div className="text-sm font-medium">Ficha da cria</div>
-            <p className="mt-2 text-sm text-muted-foreground">
-              A tela dedicada da cria concentra pai, matriz, peso inicial,
-              cura do umbigo e timeline do nascimento.
-            </p>
           </div>
         </CardContent>
       </Card>
@@ -425,7 +404,9 @@ export default function AnimalPosParto() {
         {(calves ?? []).map((calf) => {
           const draft = drafts.find((item) => item.calfId === calf.id);
           if (!draft) return null;
-          const father = calf.pai_id ? fathers?.get(calf.pai_id) ?? null : null;
+          const father = calf.pai_id
+            ? (fathers?.get(calf.pai_id) ?? null)
+            : null;
           const nextParams = new URLSearchParams();
           if (eventId) {
             nextParams.set("eventoId", eventId);
@@ -435,9 +416,7 @@ export default function AnimalPosParto() {
           return (
             <Card key={calf.id} className="border-slate-200 bg-white/95">
               <CardHeader className="pb-0">
-                <CardTitle className="text-base">
-                  Conferencia inicial
-                </CardTitle>
+                <CardTitle className="text-base">Conferencia inicial</CardTitle>
               </CardHeader>
               <CardContent>
                 <CalfInitialEditor
@@ -451,7 +430,9 @@ export default function AnimalPosParto() {
                   onChange={(patch) => updateDraft(calf.id, patch)}
                   action={
                     <Button variant="outline" size="sm" asChild>
-                      <Link to={`/animais/${calf.id}/cria-inicial?${nextParams.toString()}`}>
+                      <Link
+                        to={`/animais/${calf.id}/cria-inicial?${nextParams.toString()}`}
+                      >
                         Seguir rotina da cria
                       </Link>
                     </Button>
@@ -463,16 +444,18 @@ export default function AnimalPosParto() {
         })}
       </div>
 
-      <div className="flex flex-col gap-3 rounded-2xl border bg-white/90 p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm text-muted-foreground">
-          O salvamento continua atomico: identificacao, lote, primeira pesagem e
-          cura do umbigo entram no mesmo gesto offline-first.
-        </p>
+      <div className="flex flex-col gap-3 rounded-xl border bg-white/90 p-4 shadow-sm sm:flex-row sm:items-center sm:justify-end">
         <div className="flex flex-wrap gap-2">
-          <Button variant="ghost" onClick={() => navigate(`/animais/${mother.id}`)}>
+          <Button
+            variant="ghost"
+            onClick={() => navigate(`/animais/${mother.id}`)}
+          >
             Revisar depois
           </Button>
-          <Button onClick={handleSave} disabled={isSaving || drafts.length === 0}>
+          <Button
+            onClick={handleSave}
+            disabled={isSaving || drafts.length === 0}
+          >
             {isSaving ? "Registrando..." : "Registrar pós-parto"}
           </Button>
         </div>
@@ -480,3 +463,5 @@ export default function AnimalPosParto() {
     </div>
   );
 }
+
+

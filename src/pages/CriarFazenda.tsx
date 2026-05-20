@@ -139,8 +139,9 @@ const CriarFazenda = () => {
   if (canCreate === false) {
     return (
       <div className="min-h-screen bg-muted/20 px-4 py-10">
-        <div className="mx-auto max-w-3xl space-y-6">
+        <div className="mx-auto max-w-3xl space-y-5">
           <PageIntro
+            variant="plain"
             eyebrow="Provisionamento"
             title="Sem permissao para criar fazenda"
             actions={
@@ -160,8 +161,9 @@ const CriarFazenda = () => {
 
   return (
     <div className="min-h-screen bg-muted/20 px-4 py-10">
-      <div className="mx-auto max-w-4xl space-y-6">
+      <div className="mx-auto max-w-4xl space-y-5">
         <PageIntro
+          variant="plain"
           eyebrow="Provisionamento"
           title="Criar nova fazenda"
           actions={
@@ -175,8 +177,8 @@ const CriarFazenda = () => {
           }
         />
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-          <FormSection title="Identidade da operacao">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+          <FormSection title="Dados da fazenda">
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2 md:col-span-2">
                 <Label htmlFor="nome">Nome da fazenda</Label>
@@ -329,7 +331,7 @@ const CriarFazenda = () => {
           </FormSection>
 
           {error ? (
-            <div className="rounded-2xl border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+            <div className="rounded-xl border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm text-destructive">
               {error}
             </div>
           ) : null}
@@ -351,3 +353,5 @@ const CriarFazenda = () => {
 };
 
 export default CriarFazenda;
+
+
