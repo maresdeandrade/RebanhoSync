@@ -821,6 +821,11 @@ const Relatorios = () => {
                           {item.priorityLabel}
                         </Badge>
                       ) : null}
+                      {item.operationalClassLabel ? (
+                        <Badge variant="outline">
+                          {item.operationalClassLabel}
+                        </Badge>
+                      ) : null}
                     </div>
                     <p className="text-sm text-muted-foreground">
                       {item.contexto}

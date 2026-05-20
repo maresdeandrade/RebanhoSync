@@ -244,6 +244,13 @@ describe("summarizeSanitaryAgendaAttention", () => {
           count: 1,
         },
       ],
+      operationalClasses: [
+        {
+          key: "operational_protocol",
+          label: "Protocolo operacional",
+          count: 3,
+        },
+      ],
     });
     expect(summary.topItems).toHaveLength(2);
     expect(summary.topItems[0]).toMatchObject({
@@ -254,6 +261,7 @@ describe("summarizeSanitaryAgendaAttention", () => {
       produto: "Vacina Aftosa",
       scheduleModeLabel: "Rotina recorrente",
       scheduleAnchor: null,
+      operationalClass: "operational_protocol",
     });
     expect(summary.topItems[1]).toMatchObject({
       id: "agenda-2",
@@ -263,6 +271,7 @@ describe("summarizeSanitaryAgendaAttention", () => {
       titulo: "Calendario oficial: Endectocida",
       scheduleModeLabel: "Rotina recorrente",
       scheduleAnchor: null,
+      operationalClass: "operational_protocol",
     });
   });
 
@@ -289,6 +298,7 @@ describe("summarizeSanitaryAgendaAttention", () => {
       requiresVetCount: 0,
       scheduleModes: [],
       scheduleAnchors: [],
+      operationalClasses: [],
       topItems: [],
     });
   });

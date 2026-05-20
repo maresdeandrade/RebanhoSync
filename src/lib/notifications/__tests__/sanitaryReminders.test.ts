@@ -16,6 +16,13 @@ const baseSummary: SanitaryAttentionSummary = {
   dueTodayCount: 1,
   mandatoryCount: 2,
   requiresVetCount: 1,
+  operationalClasses: [
+    {
+      key: "operational_protocol",
+      label: "Protocolo operacional",
+      count: 3,
+    },
+  ],
   scheduleModes: [
     {
       key: "rolling_interval",
@@ -36,6 +43,7 @@ const baseSummary: SanitaryAttentionSummary = {
       scheduleModeLabel: "Recorrente",
       scheduleAnchor: null,
       scheduleAnchorLabel: null,
+      operationalClass: "operational_protocol",
       status: "atrasado",
       priorityLabel: "Critico 2d",
       priorityTone: "danger",
@@ -54,6 +62,7 @@ const baseSummary: SanitaryAttentionSummary = {
       scheduleModeLabel: "Recorrente",
       scheduleAnchor: null,
       scheduleAnchorLabel: null,
+      operationalClass: "operational_protocol",
       status: "proximo",
       priorityLabel: "Obrigatorio em 2d",
       priorityTone: "warning",
@@ -72,6 +81,7 @@ const baseSummary: SanitaryAttentionSummary = {
       scheduleModeLabel: "Recorrente",
       scheduleAnchor: null,
       scheduleAnchorLabel: null,
+      operationalClass: "operational_protocol",
       status: "proximo",
       priorityLabel: "Rotina",
       priorityTone: "neutral",
@@ -172,5 +182,23 @@ describe("buildSanitaryReminderPlan", () => {
       level: "upcoming",
       title: "Lembrete sanitario",
     });
+  });
+
+  it("ignores non-operational sanitary rows for reminders", () => {
+    const plan = buildSanitaryReminderPlan({
+      summary: {
+        ...baseSummary,
+        topItems: [
+          {
+            ...baseSummary.topItems[0]!,
+            operationalClass: "clinical_protocol",
+          },
+        ],
+      },
+      preferences: DEFAULT_NOTIFICATION_PREFERENCES,
+      experienceMode: "completo",
+    });
+
+    expect(plan).toBeNull();
   });
 });

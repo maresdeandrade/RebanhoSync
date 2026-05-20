@@ -17,7 +17,10 @@ import type {
   Rejection,
 } from "@/lib/offline/types";
 import { describeSanitaryAgendaScheduleMeta } from "@/lib/sanitario/engine/calendar";
-import { summarizeSanitaryAgendaAttention } from "@/lib/sanitario/compliance/attention";
+import {
+  getSanitaryAttentionOperationalClassLabel,
+  summarizeSanitaryAgendaAttention,
+} from "@/lib/sanitario/compliance/attention";
 import type {
   RegulatoryComplianceAttentionBadge,
   RegulatoryComplianceAttentionItem,
@@ -68,6 +71,7 @@ export interface AgendaAttentionRow {
   scheduleLabel?: string;
   scheduleModeLabel?: string;
   scheduleAnchorLabel?: string;
+  operationalClassLabel?: string;
   status: "atrasado" | "hoje" | "proximo";
   priorityLabel?: string;
   priorityTone?: "neutral" | "info" | "warning" | "danger";
@@ -403,6 +407,9 @@ export function buildOperationalSummary(
         scheduleLabel: scheduleMeta?.label,
         scheduleModeLabel: scheduleMeta?.modeLabel,
         scheduleAnchorLabel: scheduleMeta?.anchorLabel ?? undefined,
+        operationalClassLabel: sanitaryItem
+          ? getSanitaryAttentionOperationalClassLabel(sanitaryItem.operationalClass)
+          : undefined,
         status: resolveAgendaStatus(item, todayKey),
         priorityLabel: sanitaryItem?.priorityLabel,
         priorityTone: sanitaryItem?.priorityTone,
@@ -564,7 +571,7 @@ export function buildOperationalSummaryCsv(
     pushRow(
       "agenda",
       item.data,
-      `${item.titulo} | ${item.contexto}${item.scheduleLabel ? ` | ${item.scheduleLabel}` : ""}${item.scheduleModeLabel ? ` | ${item.scheduleModeLabel}` : ""}${item.scheduleAnchorLabel ? ` | ${item.scheduleAnchorLabel}` : ""} | ${item.status}${item.priorityLabel ? ` | ${item.priorityLabel}` : ""}`,
+      `${item.titulo} | ${item.contexto}${item.operationalClassLabel ? ` | ${item.operationalClassLabel}` : ""}${item.scheduleLabel ? ` | ${item.scheduleLabel}` : ""}${item.scheduleModeLabel ? ` | ${item.scheduleModeLabel}` : ""}${item.scheduleAnchorLabel ? ` | ${item.scheduleAnchorLabel}` : ""} | ${item.status}${item.priorityLabel ? ` | ${item.priorityLabel}` : ""}`,
     );
   }
 
@@ -620,6 +627,7 @@ export function buildOperationalSummaryPrintHtml(
                 <td>${escapeHtml(
                   [
                     item.contexto,
+                    item.operationalClassLabel,
                     item.scheduleLabel,
                     item.scheduleModeLabel,
                     item.scheduleAnchorLabel,

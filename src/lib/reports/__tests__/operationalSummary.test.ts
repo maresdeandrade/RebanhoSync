@@ -442,10 +442,11 @@ describe("buildOperationalSummary", () => {
     expect(report.manejoByDomain.find((item) => item.label === "Sanitario")?.value).toBe(1);
     expect(report.agendaAttention[0]?.status).toBe("atrasado");
     expect(report.agendaAttention[0]?.priorityLabel).toBe("Critico 19d");
-	    expect(report.agendaAttention[0]?.titulo).toBe("Calendario oficial: Endectocida");
-	    expect(report.agendaAttention[0]?.scheduleLabel).toBe("Campanha oficial de novembro");
-	    expect(report.agendaAttention[0]?.scheduleModeLabel).toBe("Campanha");
-	    expect(report.agendaAttention[0]?.scheduleAnchorLabel).toBe("Sem ancora");
+    expect(report.agendaAttention[0]?.titulo).toBe("Calendario oficial: Endectocida");
+    expect(report.agendaAttention[0]?.scheduleLabel).toBe("Campanha oficial de novembro");
+    expect(report.agendaAttention[0]?.scheduleModeLabel).toBe("Campanha");
+    expect(report.agendaAttention[0]?.scheduleAnchorLabel).toBe("Sem ancora");
+    expect(report.agendaAttention[0]?.operationalClassLabel).toBe("Protocolo operacional");
     expect(report.regulatoryCompliance).toMatchObject({
       openCount: 1,
       blockingCount: 1,

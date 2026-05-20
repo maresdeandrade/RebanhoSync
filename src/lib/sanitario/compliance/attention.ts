@@ -15,6 +15,8 @@ import {
   readSanitaryProtocolRestrictions,
   type SanitaryAgendaPriority,
 } from "@/lib/sanitario/engine/protocolRules";
+import type { SanitaryItemOperationalClass } from "@/lib/sanitario/models/domain";
+import { resolveSanitaryItemOperationalClass } from "@/lib/sanitario/models/taxonomy";
 
 type AgendaStatusLabel = "atrasado" | "hoje" | "proximo";
 
@@ -29,6 +31,7 @@ export interface SanitaryAttentionRow {
   scheduleModeLabel: string;
   scheduleAnchor: SanitaryBaseCalendarAnchor | null;
   scheduleAnchorLabel: string | null;
+  operationalClass: SanitaryItemOperationalClass;
   status: AgendaStatusLabel;
   priorityLabel: string;
   priorityTone: SanitaryAgendaPriority["tone"];
@@ -49,6 +52,12 @@ export interface SanitaryAttentionScheduleAnchorCount {
   count: number;
 }
 
+export interface SanitaryAttentionOperationalClassCount {
+  key: SanitaryItemOperationalClass;
+  label: string;
+  count: number;
+}
+
 export interface SanitaryAttentionSummary {
   totalOpen: number;
   criticalCount: number;
@@ -59,6 +68,7 @@ export interface SanitaryAttentionSummary {
   requiresVetCount: number;
   scheduleModes: SanitaryAttentionScheduleModeCount[];
   scheduleAnchors: SanitaryAttentionScheduleAnchorCount[];
+  operationalClasses: SanitaryAttentionOperationalClassCount[];
   topItems: SanitaryAttentionRow[];
 }
 
@@ -68,6 +78,22 @@ const TONE_RANK: Record<SanitaryAgendaPriority["tone"], number> = {
   info: 2,
   neutral: 3,
 };
+
+const OPERATIONAL_CLASS_LABELS: Record<SanitaryItemOperationalClass, string> = {
+  operational_protocol: "Protocolo operacional",
+  clinical_protocol: "Protocolo clinico",
+  notifiable_suspicion: "Suspeita notificavel",
+  compliance_check: "Compliance/checklist",
+  execution_only: "Execucao avulsa",
+  inventory_signal: "Sinal de insumo",
+  unknown: "Nao classificado",
+};
+
+export function getSanitaryAttentionOperationalClassLabel(
+  operationalClass: SanitaryItemOperationalClass,
+): string {
+  return OPERATIONAL_CLASS_LABELS[operationalClass];
+}
 
 export const EMPTY_SANITARY_ATTENTION_SUMMARY: SanitaryAttentionSummary = {
   totalOpen: 0,
@@ -79,6 +105,7 @@ export const EMPTY_SANITARY_ATTENTION_SUMMARY: SanitaryAttentionSummary = {
   requiresVetCount: 0,
   scheduleModes: [],
   scheduleAnchors: [],
+  operationalClasses: [],
   topItems: [],
 };
 
@@ -141,6 +168,24 @@ function resolveContexto(
   );
 }
 
+function resolveAttentionOperationalClass(
+  item: Pick<AgendaItem, "tipo" | "payload">,
+  protocolItem: Pick<
+    ProtocoloSanitarioItem,
+    "tipo" | "gera_agenda" | "payload"
+  > | null,
+): SanitaryItemOperationalClass {
+  if (protocolItem) {
+    return resolveSanitaryItemOperationalClass(protocolItem);
+  }
+
+  return resolveSanitaryItemOperationalClass({
+    tipo: item.tipo,
+    gera_agenda: true,
+    payload: item.payload,
+  });
+}
+
 function compareSanitaryAttentionRows(
   left: SanitaryAttentionRow,
   right: SanitaryAttentionRow,
@@ -162,7 +207,13 @@ export function summarizeSanitaryAgendaAttention(input: {
   protocolItems?: Array<
     Pick<
       ProtocoloSanitarioItem,
-      "id" | "protocolo_id" | "produto" | "payload" | "intervalo_dias"
+      | "id"
+      | "protocolo_id"
+      | "tipo"
+      | "produto"
+      | "gera_agenda"
+      | "payload"
+      | "intervalo_dias"
     >
   >;
   limit?: number;
@@ -218,6 +269,7 @@ export function summarizeSanitaryAgendaAttention(input: {
       item,
       protocolItem,
     );
+    const operationalClass = resolveAttentionOperationalClass(item, protocolItem);
 
     return {
       id: item.id,
@@ -230,6 +282,7 @@ export function summarizeSanitaryAgendaAttention(input: {
       scheduleModeLabel: scheduleMeta?.modeLabel ?? "Uso imediato",
       scheduleAnchor: scheduleMeta?.anchor ?? null,
       scheduleAnchorLabel: scheduleMeta?.anchorLabel ?? null,
+      operationalClass,
       status: resolveAgendaStatus(item, todayKey),
       priorityLabel: priority.label,
       priorityTone: priority.tone,
@@ -273,6 +326,21 @@ export function summarizeSanitaryAgendaAttention(input: {
       return acc;
     }, new Map<SanitaryBaseCalendarAnchor, SanitaryAttentionScheduleAnchorCount>()).values(),
   ).sort((left, right) => right.count - left.count || left.label.localeCompare(right.label));
+  const operationalClasses = Array.from(
+    rows.reduce((acc, row) => {
+      const current = acc.get(row.operationalClass);
+      if (current) {
+        current.count += 1;
+      } else {
+        acc.set(row.operationalClass, {
+          key: row.operationalClass,
+          label: OPERATIONAL_CLASS_LABELS[row.operationalClass],
+          count: 1,
+        });
+      }
+      return acc;
+    }, new Map<SanitaryItemOperationalClass, SanitaryAttentionOperationalClassCount>()).values(),
+  ).sort((left, right) => right.count - left.count || left.label.localeCompare(right.label));
 
   return {
     totalOpen: rows.length,
@@ -284,6 +352,7 @@ export function summarizeSanitaryAgendaAttention(input: {
     requiresVetCount: rows.filter((row) => row.requiresVet).length,
     scheduleModes,
     scheduleAnchors,
+    operationalClasses,
     topItems: sortedRows.slice(0, limit),
   };
 }

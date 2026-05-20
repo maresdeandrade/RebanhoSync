@@ -160,6 +160,12 @@ function filterMatchingDays(
   );
 }
 
+function filterOperationalProtocolRows(
+  rows: SanitaryAttentionRow[],
+): SanitaryAttentionRow[] {
+  return rows.filter((row) => row.operationalClass === "operational_protocol");
+}
+
 export function buildSanitaryReminderPlan(input: {
   summary: SanitaryAttentionSummary;
   preferences: NotificationPreferences;
@@ -176,7 +182,10 @@ export function buildSanitaryReminderPlan(input: {
     return null;
   }
 
-  const criticalItems = summary.topItems.filter(
+  const reminderRows = filterOperationalProtocolRows(summary.topItems);
+  if (reminderRows.length === 0) return null;
+
+  const criticalItems = reminderRows.filter(
     (item) => item.priorityTone === "danger" && item.daysDelta < 0,
   );
   if (preferences.sanitaryCritical && criticalItems.length > 0) {
@@ -188,7 +197,7 @@ export function buildSanitaryReminderPlan(input: {
     );
   }
 
-  const mandatoryNow = summary.topItems.filter(
+  const mandatoryNow = reminderRows.filter(
     (item) => item.mandatory && item.daysDelta === 0,
   );
   if (preferences.sanitaryMandatory && mandatoryNow.length > 0) {
@@ -200,7 +209,7 @@ export function buildSanitaryReminderPlan(input: {
   }
 
   if (experienceMode === "completo" && preferences.sanitaryFollowups) {
-    const followups = summary.topItems.filter(
+    const followups = reminderRows.filter(
       (item) => item.mandatory && item.daysDelta > 0 && item.daysDelta <= 3,
     );
     if (followups.length > 0) {
@@ -213,7 +222,7 @@ export function buildSanitaryReminderPlan(input: {
   }
 
   if (experienceMode === "completo" && preferences.sanitaryUpcoming) {
-    const upcoming = filterMatchingDays(summary.topItems, preferences.daysBefore);
+    const upcoming = filterMatchingDays(reminderRows, preferences.daysBefore);
     if (upcoming.length > 0) {
       return makeDigest(
         "upcoming",

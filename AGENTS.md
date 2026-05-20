@@ -129,13 +129,13 @@ Skills locais:
 - use skill especializada para offline/sync, sanitario, reproducao, migrations/RLS, hardening, prepare-pr ou reconciliacao documental.
 
 ## 8) Alteracao segura
+Se o ponto correto de intervencao ainda nao estiver evidente, use repository-context-retrieval antes de editar.
 
 Antes de editar:
 - declarar escopo permitido e proibido;
 - listar arquivos provaveis;
-- checar `git status --short`;
-- rodar preflight se houver risco de path restrito:
-
+- checar git status --short --untracked-files=all;
+rodar preflight se houver risco de path restrito:
 ```powershell
 powershell -File scripts/codex/preflight.ps1 -Paths "<path1>","<path2>"
 ```
@@ -144,15 +144,14 @@ Durante a tarefa:
 - atacar no maximo 1 capability principal;
 - manter diff minimo;
 - nao editar docs derivados sem mudanca funcional real;
-- nao usar `docs/archive/**` como autoridade;
-- se algo nao for encontrado, registrar: `nao encontrado - locais inspecionados: ...`;
-- se um comando for inferido, registrar: `inferido - confirmar antes de usar`.
+- nao usar docs/archive/** como autoridade;
+- se algo nao for encontrado, registrar: nao encontrado - locais inspecionados: ...;
+- se um comando for inferido, registrar: inferido - confirmar antes de usar.
 
 Depois de tocar area critica:
-
-```powershell
+``` 
 powershell -File scripts/codex/validate.ps1 -TouchedPaths "<path1>","<path2>"
-```
+``` 
 
 Areas criticas:
 - `src/lib/offline/**`
@@ -210,14 +209,16 @@ Responder por padrao:
 Para tarefas de codigo, incluir ate 5 arquivos principais afetados e testes/comandos realmente necessarios.
 
 ## 11) Checklist antes de finalizar
-
-- Li `README.md`, `docs/CURRENT_STATE.md`, `docs/PROCESS.md` e `docs/AGENT_CONTEXT.md`.
+- Li README.md, docs/CURRENT_STATE.md, docs/PROCESS.md e docs/AGENT_CONTEXT.md.
 - Verifiquei contexto local/skill quando a area exigiu.
+- Se a tarefa exigia descoberta de contexto, usei repository-context-retrieval antes de concluir analise, plano ou recomendacao.
 - Confirmei que o diff toca apenas o escopo permitido.
-- Nao usei `docs/archive/**` como fonte normativa.
+- Nao usei docs/archive/** como fonte normativa.
 - Nao alterei migrations/seed/RLS sem pedido explicito.
 - Rodei validacoes aplicaveis ou declarei motivo para nao rodar.
-- Executei `git diff --name-only` e `git diff --stat`.
+- Executei git status --short --untracked-files=all, git diff --name-only e git diff --stat.
+- Se a alteracao terminou em entrega revisavel, usei rebanhosync-verification-gate.
+- Se a entrega seguiu para PR, usei prepare-pr apos o gate tecnico.
 - Listei incertezas com locais inspecionados.
 
 ## graphify
@@ -225,7 +226,8 @@ Para tarefas de codigo, incluir ate 5 arquivos principais afetados e testes/coma
 This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.
 
 Rules:
-- ALWAYS read graphify-out/GRAPH_REPORT.md before reading any source files, running grep/glob searches, or answering codebase questions. The graph is your primary map of the codebase.
-- IF graphify-out/wiki/index.md EXISTS, navigate it instead of reading raw files
-- For cross-module "how does X relate to Y" questions, prefer `graphify query "<question>"`, `graphify path "<A>" "<B>"`, or `graphify explain "<concept>"` over grep — these traverse the graph's EXTRACTED + INFERRED edges instead of scanning files
-- After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).
+
+ALWAYS read graphify-out/GRAPH_REPORT.md before reading any source files, running grep/glob searches, or answering codebase questions. The graph is your primary map of the codebase.
+IF graphify-out/wiki/index.md EXISTS, navigate it instead of reading raw files
+For cross-module "how does X relate to Y" questions, prefer graphify query "<question>", graphify path "<A>" "<B>", or graphify explain "<concept>" over grep — these traverse the graph's EXTRACTED + INFERRED edges instead of scanning files
+After modifying code, run graphify update . to keep the graph current (AST-only, no API cost).
