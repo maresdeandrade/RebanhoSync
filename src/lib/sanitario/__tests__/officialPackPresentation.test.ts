@@ -58,9 +58,9 @@ describe("official pack presentation", () => {
     });
 
     expect(result.agendaOperationalCount).toBe(1);
+    expect(result.notifiableActionCount).toBe(1);
     expect(result.nonAgendaCounts).toEqual([
       { key: "compliance_check", label: "Compliance/checklist", count: 1 },
-      { key: "notifiable_suspicion", label: "Suspeita notificavel", count: 1 },
     ]);
   });
 
@@ -90,9 +90,9 @@ describe("official pack presentation", () => {
     ]);
 
     expect(result.agendaOperationalCount).toBe(2);
+    expect(result.notifiableActionCount).toBe(1);
     expect(result.nonAgendaCounts).toEqual([
       { key: "compliance_check", label: "Compliance/checklist", count: 1 },
-      { key: "notifiable_suspicion", label: "Suspeita notificavel", count: 1 },
     ]);
   });
 });

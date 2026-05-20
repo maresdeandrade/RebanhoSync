@@ -106,6 +106,7 @@ import {
   readStringArray,
   type SanitaryAlertClosureReason,
 } from "@/lib/sanitario/compliance/alerts";
+import { buildSanitaryCaseFlowSummary } from "@/lib/sanitario/compliance/caseFlow";
 import {
   formatWeight,
   formatWeightPerDay,
@@ -412,6 +413,10 @@ const AnimalDetalhe = () => {
   const activeSanitaryAlert = useMemo(
     () => readAnimalSanitaryAlert(animal?.payload),
     [animal?.payload],
+  );
+  const sanitaryCaseFlowSummary = useMemo(
+    () => buildSanitaryCaseFlowSummary({ alert: activeSanitaryAlert }),
+    [activeSanitaryAlert],
   );
   const hasMovementBlockedSanitaryAlert = hasOpenSanitaryAlert(animal?.payload);
   const selectedOfficialDisease = useMemo(() => {
@@ -1091,6 +1096,11 @@ const AnimalDetalhe = () => {
                 Suspeita sanitaria aberta
               </CardTitle>
               <div className="flex flex-wrap gap-2">
+                {sanitaryCaseFlowSummary ? (
+                  <Badge variant="secondary">
+                    {sanitaryCaseFlowSummary.statusLabel}
+                  </Badge>
+                ) : null}
                 <Badge className="bg-warning text-warning-foreground">
                   Movimentacao bloqueada
                 </Badge>
@@ -1103,7 +1113,7 @@ const AnimalDetalhe = () => {
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid gap-3 sm:grid-cols-3">
+            <div className="grid gap-3 sm:grid-cols-4">
               <div className="rounded-xl border border-border/70 bg-background/80 p-3">
                 <p className="text-xs uppercase text-muted-foreground">
                   Doenca / suspeita
@@ -1120,6 +1130,16 @@ const AnimalDetalhe = () => {
                   {formatDate(activeSanitaryAlert.openedAt)}
                 </p>
               </div>
+              {sanitaryCaseFlowSummary ? (
+                <div className="rounded-xl border border-border/70 bg-background/80 p-3">
+                  <p className="text-xs uppercase text-muted-foreground">
+                    Fluxo
+                  </p>
+                  <p className="mt-1 font-semibold text-foreground">
+                    {sanitaryCaseFlowSummary.scopeLabel}
+                  </p>
+                </div>
+              ) : null}
               <div className="rounded-xl border border-border/70 bg-background/80 p-3">
                 <p className="text-xs uppercase text-muted-foreground">
                   Rota imediata

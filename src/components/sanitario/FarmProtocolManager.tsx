@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   AlertTriangle,
   Bug,
@@ -204,7 +205,7 @@ const TEMPLATE_CATEGORY_META: Record<
   medicamentos: {
     label: "Clínico",
     description:
-      "Tratamentos e rotinas operacionais.",
+      "Tratamentos e apoio clinico.",
     icon: Pill,
   },
 };
@@ -478,6 +479,7 @@ export function FarmProtocolManager({
   protocolItems,
   canManage,
 }: FarmProtocolManagerProps) {
+  const navigate = useNavigate();
   const [protocolEditor, setProtocolEditor] =
     useState<ProtocolEditorState | null>(null);
   const [itemEditor, setItemEditor] = useState<ItemEditorState | null>(null);
@@ -1219,6 +1221,8 @@ export function FarmProtocolManager({
                               resolveDraftMilestoneCode(itemDraft);
                             const operationalClass =
                               resolveSanitaryItemOperationalClass(item);
+                            const isClinicalProtocol =
+                              operationalClass === "clinical_protocol";
 
                             return (
                               <div
@@ -1263,6 +1267,11 @@ export function FarmProtocolManager({
                                           operationalClass,
                                         )}
                                       </Badge>
+                                      {isClinicalProtocol ? (
+                                        <Badge variant="secondary">
+                                          Apoio clinico
+                                        </Badge>
+                                      ) : null}
                                       {linkedProduct ? (
                                         <Badge variant="outline">
                                           Catalogo vinculado
@@ -1292,6 +1301,23 @@ export function FarmProtocolManager({
                                     <PencilLine className="h-4 w-4" />
                                   </Button>
                                 </div>
+
+                                {isClinicalProtocol ? (
+                                  <div className="mt-3 flex flex-wrap gap-2">
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() =>
+                                        navigate(
+                                          "/registrar?dominio=sanitario&sanitarioTipo=medicamento",
+                                        )
+                                      }
+                                    >
+                                      Registrar manejo clinico
+                                    </Button>
+                                  </div>
+                                ) : null}
 
                                 <div className="mt-3 grid gap-2 text-sm text-muted-foreground">
                                   <p>

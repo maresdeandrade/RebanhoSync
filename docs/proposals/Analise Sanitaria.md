@@ -218,10 +218,12 @@ Entregas já realizadas:
 - etapas dos protocolos da fazenda exibem a classe operacional sanitária calculada centralmente.
 - o pack oficial passou a separar visualmente itens de agenda operacional de itens não agendáveis como compliance/checklist e suspeita notificável, usando helper central de apresentação.
 - o overlay/conformidade passou a destacar bloqueio operacional, checklist documental, checklist operacional e sinal de notificacao como classes visuais derivadas do read model.
+- suspeitas/notificáveis no pack oficial passaram a aparecer como ação por animal, com navegação para escolha do animal, e não como rotina recorrente.
+- itens clínicos em protocolos da fazenda passaram a aparecer como apoio clínico, com ação de registro sanitário, sem serem apresentados como agenda operacional comum.
+- o detalhe do animal passou a projetar suspeita sanitária como caso sanitário mínimo derivado do alerta, sem criar entidade persistida nem alterar o contrato de eventos.
 
 O que ainda falta:
-- mover suspeitas/notificáveis para ação de registro/caso, sem apresentá-las como rotina recorrente;
-- posicionar itens clínicos no fluxo futuro de caso/manejo clínico, não como agenda operacional comum.
+- abrir tarefa estrutural para casos sanitários persistidos, com migration, RLS, offline/sync e vínculo longitudinal de eventos auditados.
 
 Critério de aceite:
 - sem regra forte na UI;

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
+import { useNavigate } from "react-router-dom";
 import {
   AlertTriangle,
   ClipboardList,
@@ -149,6 +150,7 @@ export function OfficialSanitaryPackManager({
   activeFarmId,
   canManage,
 }: OfficialSanitaryPackManagerProps) {
+  const navigate = useNavigate();
   const [farmProfile, setFarmProfile] = useState<FarmSanitaryProfile | null>(
     null,
   );
@@ -714,6 +716,12 @@ export function OfficialSanitaryPackManager({
                                 {presentation.agendaOperationalCount} agenda
                                 operacional
                               </Badge>
+                              {presentation.notifiableActionCount > 0 ? (
+                                <Badge variant="outline">
+                                  {presentation.notifiableActionCount} acao de
+                                  suspeita
+                                </Badge>
+                              ) : null}
                               {presentation.nonAgendaCounts.map((item) => (
                                 <Badge key={item.key} variant="outline">
                                   {item.count} {item.label.toLowerCase()}
@@ -772,6 +780,12 @@ export function OfficialSanitaryPackManager({
                         {selectionPresentation.agendaOperationalCount} agenda
                         operacional
                       </Badge>
+                      {selectionPresentation.notifiableActionCount > 0 ? (
+                        <Badge variant="outline">
+                          {selectionPresentation.notifiableActionCount} acao de
+                          suspeita
+                        </Badge>
+                      ) : null}
                       {selectionPresentation.nonAgendaCounts.map((item) => (
                         <Badge key={item.key} variant="outline">
                           {item.count} {item.label.toLowerCase()}
@@ -779,6 +793,35 @@ export function OfficialSanitaryPackManager({
                       ))}
                     </div>
                   </div>
+
+                  {selectionPresentation.notifiableActionCount > 0 ? (
+                    <div className="rounded-xl border border-border/70 bg-muted/20 px-4 py-3">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                            <ShieldAlert className="h-4 w-4 text-warning" />
+                            Suspeita notificavel
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            <Badge variant="outline">
+                              {selectionPresentation.notifiableActionCount} acao
+                              por animal
+                            </Badge>
+                            <Badge variant="secondary">
+                              Nao gera rotina recorrente
+                            </Badge>
+                          </div>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => navigate("/animais")}
+                        >
+                          Escolher animal
+                        </Button>
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
               </div>
             </div>

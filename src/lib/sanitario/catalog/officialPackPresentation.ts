@@ -14,11 +14,13 @@ export interface OfficialPackClassCount {
 
 export interface OfficialPackTemplatePresentation {
   agendaOperationalCount: number;
+  notifiableActionCount: number;
   nonAgendaCounts: OfficialPackClassCount[];
 }
 
 export interface OfficialPackSelectionPresentation {
   agendaOperationalCount: number;
+  notifiableActionCount: number;
   nonAgendaCounts: OfficialPackClassCount[];
 }
 
@@ -82,13 +84,21 @@ export function summarizeOfficialPackTemplatePresentation(
     SanitaryItemOperationalClass,
     OfficialPackClassCount
   >();
+  let notifiableActionCount = 0;
 
   for (const item of template.skippedItems) {
-    incrementClassCount(nonAgendaCounts, resolveOfficialItemOperationalClass(item));
+    const operationalClass = resolveOfficialItemOperationalClass(item);
+    if (operationalClass === "notifiable_suspicion") {
+      notifiableActionCount += 1;
+      continue;
+    }
+
+    incrementClassCount(nonAgendaCounts, operationalClass);
   }
 
   return {
     agendaOperationalCount: template.materializableItems.length,
+    notifiableActionCount,
     nonAgendaCounts: sortClassCounts(nonAgendaCounts),
   };
 }
@@ -103,16 +113,24 @@ export function summarizeOfficialPackSelectionPresentation(
     OfficialPackClassCount
   >();
   let agendaOperationalCount = 0;
+  let notifiableActionCount = 0;
 
   for (const template of templates) {
     agendaOperationalCount += template.materializableItems.length;
     for (const item of template.skippedItems) {
-      incrementClassCount(nonAgendaCounts, resolveOfficialItemOperationalClass(item));
+      const operationalClass = resolveOfficialItemOperationalClass(item);
+      if (operationalClass === "notifiable_suspicion") {
+        notifiableActionCount += 1;
+        continue;
+      }
+
+      incrementClassCount(nonAgendaCounts, operationalClass);
     }
   }
 
   return {
     agendaOperationalCount,
+    notifiableActionCount,
     nonAgendaCounts: sortClassCounts(nonAgendaCounts),
   };
 }

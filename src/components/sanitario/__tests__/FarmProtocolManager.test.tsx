@@ -1,7 +1,9 @@
 /** @vitest-environment jsdom */
 import "@testing-library/jest-dom";
+import type { ReactElement } from "react";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { MemoryRouter } from "react-router-dom";
 
 import { FarmProtocolManager } from "@/components/sanitario/FarmProtocolManager";
 import type {
@@ -74,6 +76,10 @@ describe("FarmProtocolManager", () => {
     vi.clearAllMocks();
   });
 
+  function renderManager(ui: ReactElement) {
+    return render(<MemoryRouter>{ui}</MemoryRouter>);
+  }
+
   it("mostra conflito inline ao editar um protocolo com familia ja coberta pelo pack oficial", () => {
     const officialProtocol = buildProtocol({
       id: "official-brucelose",
@@ -84,7 +90,7 @@ describe("FarmProtocolManager", () => {
       },
     });
 
-    render(
+    renderManager(
       <FarmProtocolManager
         activeFarmId="farm-1"
         farmExperienceMode="completo"
@@ -132,7 +138,7 @@ describe("FarmProtocolManager", () => {
       },
     });
 
-    render(
+    renderManager(
       <FarmProtocolManager
         activeFarmId="farm-1"
         farmExperienceMode="completo"
@@ -178,7 +184,7 @@ describe("FarmProtocolManager", () => {
       },
     });
 
-    render(
+    renderManager(
       <FarmProtocolManager
         activeFarmId="farm-1"
         farmExperienceMode="completo"
@@ -190,6 +196,10 @@ describe("FarmProtocolManager", () => {
     );
 
     expect(screen.getByText("Protocolo clinico")).toBeInTheDocument();
+    expect(screen.getByText("Apoio clinico")).toBeInTheDocument();
     expect(screen.getByText("Sem agenda")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /registrar manejo clinico/i }),
+    ).toBeInTheDocument();
   });
 });
