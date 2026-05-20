@@ -25,6 +25,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageIntro } from "@/components/ui/page-intro";
 import {
+  getSanitaryAttentionOperationalClassLabel,
   summarizeSanitaryAgendaAttention,
   type SanitaryAttentionSummary,
 } from "@/lib/sanitario/compliance/attention";
@@ -41,6 +42,10 @@ import type {
   OperationalInsightsLoadedSources,
 } from "@/features/operationalInsights/operationalInsightsAdapter";
 import { cn } from "@/lib/utils";
+import {
+  buildAgendaCalendarModePath,
+  buildAgendaOperationalClassPath,
+} from "@/lib/agenda/navigation";
 
 type FarmSummary = {
   nome: string;
@@ -126,10 +131,6 @@ const EMPTY_MONTHLY_PERIOD = {
   start: "1970-01-01",
   end: "1970-01-31",
 };
-
-function buildAgendaCalendarModePath(mode: string) {
-  return `/agenda?calendarMode=${mode}`;
-}
 
 function getTodayKey() {
   const now = new Date();
@@ -786,6 +787,19 @@ const Home = () => {
                   </Link>
                 </Button>
               ))}
+              {snapshot.sanitaryAttention.operationalClasses.map((item) => (
+                <Button
+                  key={item.key}
+                  asChild
+                  variant="outline"
+                  size="sm"
+                  className="h-auto rounded-full px-3 py-1 text-[11px] leading-none"
+                >
+                  <Link to={buildAgendaOperationalClassPath(item.key)}>
+                    {item.label} {item.count}
+                  </Link>
+                </Button>
+              ))}
             </div>
 
             {snapshot.sanitaryAttention.topItems.length === 0 ? (
@@ -811,6 +825,11 @@ const Home = () => {
                         {item.requiresVet ? (
                           <StatusBadge tone="info">Veterinario</StatusBadge>
                         ) : null}
+                        <StatusBadge tone="neutral">
+                          {getSanitaryAttentionOperationalClassLabel(
+                            item.operationalClass,
+                          )}
+                        </StatusBadge>
                       </div>
                       <p className="text-sm leading-6 text-muted-foreground">
                         {item.contexto}

@@ -154,4 +154,42 @@ describe("FarmProtocolManager", () => {
       /dedup sugerido: sanitario:raiva_herbivoros:\{animal_id\}:milestone:dose_2/i,
     );
   });
+
+  it("exibe classe operacional da etapa sanitaria", () => {
+    const protocol = buildProtocol({
+      id: "tpb-protocol",
+      nome: "TPB",
+      payload: {
+        origem: "customizado_fazenda",
+        family_code: "tpb",
+      },
+    });
+    const clinicalItem = buildProtocolItem({
+      id: "tpb-item",
+      protocolo_id: "tpb-protocol",
+      tipo: "medicamento",
+      produto: "Roteiro TPB",
+      gera_agenda: false,
+      payload: {
+        calendario_base: {
+          mode: "clinical_protocol",
+          anchor: "clinical_need",
+        },
+      },
+    });
+
+    render(
+      <FarmProtocolManager
+        activeFarmId="farm-1"
+        farmExperienceMode="completo"
+        catalogProducts={[] satisfies ProdutoVeterinarioCatalogEntry[]}
+        protocols={[protocol]}
+        protocolItems={[clinicalItem]}
+        canManage
+      />,
+    );
+
+    expect(screen.getByText("Protocolo clinico")).toBeInTheDocument();
+    expect(screen.getByText("Sem agenda")).toBeInTheDocument();
+  });
 });

@@ -44,6 +44,7 @@ type HomeSnapshotStub = {
     mandatoryCount: number;
     requiresVetCount: number;
     scheduleModes: Array<{ key: string; label: string; count: number }>;
+    operationalClasses: Array<{ key: string; label: string; count: number }>;
     topItems: unknown[];
   };
   regulatoryCompliance: {
@@ -167,6 +168,7 @@ function createSnapshot(
       mandatoryCount: 0,
       requiresVetCount: 0,
       scheduleModes: [],
+      operationalClasses: [],
       topItems: [],
     },
     regulatoryCompliance: {
@@ -258,6 +260,47 @@ describe("Home", () => {
       "href",
       "/animais",
     );
+  });
+
+  it("links sanitary operational classes to the filtered agenda", () => {
+    currentSnapshot = createSnapshot({
+      sanitaryAttention: {
+        criticalCount: 1,
+        warningCount: 0,
+        totalOpen: 1,
+        mandatoryCount: 1,
+        requiresVetCount: 0,
+        scheduleModes: [],
+        operationalClasses: [
+          {
+            key: "operational_protocol",
+            label: "Protocolo operacional",
+            count: 1,
+          },
+        ],
+        topItems: [
+          {
+            id: "agenda-sanitaria-1",
+            data: "2026-05-08",
+            titulo: "Calendario oficial: Endectocida",
+            contexto: "Matrizes",
+            produto: "Endectocida",
+            priorityLabel: "Critico hoje",
+            priorityTone: "danger",
+            mandatory: true,
+            requiresVet: false,
+            operationalClass: "operational_protocol",
+          },
+        ],
+      },
+    });
+
+    renderHome();
+
+    expect(
+      screen.getByRole("link", { name: /protocolo operacional 1/i }),
+    ).toHaveAttribute("href", "/agenda?operationalClass=operational_protocol");
+    expect(screen.getAllByText("Protocolo operacional").length).toBeGreaterThan(0);
   });
 
   it("keeps sync status visible", () => {

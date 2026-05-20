@@ -61,29 +61,28 @@ const ProtocolosSanitarios = () => {
         }
         actions={
           <>
-          <Button
-            variant="outline"
-            onClick={() => scrollToSection("protocolos-gerenciar")}
-            disabled={!canManageProtocols}
-          >
-            Gerenciar protocolos
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => scrollToSection("protocolos-gerenciar")}
-            disabled={!canManageProtocols}
-          >
-            Criar protocolo
-          </Button>
-          <Button onClick={() => scrollToSection("protocolos-aplicar")}>
-            Aplicar oficial
-          </Button>
-          <Button
-            variant="ghost"
-            onClick={() => navigate("/agenda?dominio=sanitario")}
-          >
-            Agenda
-          </Button>
+            <Button onClick={() => scrollToSection("protocolos-aplicar")}>
+              Pack oficial
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => scrollToSection("protocolos-conformidade")}
+            >
+              Conformidade
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => scrollToSection("protocolos-gerenciar")}
+              disabled={!canManageProtocols}
+            >
+              Protocolos da fazenda
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={() => navigate("/agenda?dominio=sanitario")}
+            >
+              Agenda
+            </Button>
           </>
         }
       />
@@ -110,10 +109,12 @@ const ProtocolosSanitarios = () => {
       ) : null}
 
       {!isLoading ? (
-        <RegulatoryOverlayManager
-          activeFarmId={activeFarmId}
-          canManage={canManageProtocols}
-        />
+        <div id="protocolos-conformidade">
+          <RegulatoryOverlayManager
+            activeFarmId={activeFarmId}
+            canManage={canManageProtocols}
+          />
+        </div>
       ) : null}
 
       {!isLoading ? (

@@ -449,6 +449,13 @@ describe("Dashboard page", () => {
                 count: 1,
               },
             ],
+            operationalClasses: [
+              {
+                key: "operational_protocol",
+                label: "Protocolo operacional",
+                count: 3,
+              },
+            ],
             topItems: [],
           },
           buildRegulatoryReadModel(),
@@ -485,15 +492,20 @@ describe("Dashboard page", () => {
       screen.getByText("Agenda sanitaria por calendario"),
     ).toBeInTheDocument();
     expect(screen.getByText("Agenda sanitaria por ancora")).toBeInTheDocument();
+    expect(screen.getByText("Agenda sanitaria por classe")).toBeInTheDocument();
     expect(screen.getByText("Campanha")).toBeInTheDocument();
     expect(screen.getByText("Janela etaria")).toBeInTheDocument();
     expect(screen.getByText("Nascimento")).toBeInTheDocument();
+    expect(screen.getByText("Protocolo operacional")).toBeInTheDocument();
     expect(
       screen.getByRole("link", { name: /abrir campanha/i }),
     ).toHaveAttribute("href", "/agenda?calendarMode=campaign");
     expect(
       screen.getByRole("link", { name: /abrir nascimento/i }),
     ).toHaveAttribute("href", "/agenda?calendarAnchor=birth");
+    expect(
+      screen.getByRole("link", { name: /abrir protocolo operacional/i }),
+    ).toHaveAttribute("href", "/agenda?operationalClass=operational_protocol");
     expect(
       document.querySelector('a[href="/animais?calendarMode=campaign"]'),
     ).not.toBeNull();

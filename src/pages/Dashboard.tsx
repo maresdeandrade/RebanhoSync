@@ -51,22 +51,13 @@ import {
   loadRegulatorySurfaceSource,
 } from "@/lib/sanitario/compliance/regulatoryReadModel";
 import { buildPilotMetricsSummary } from "@/lib/telemetry/pilotMetrics";
-
-function buildAgendaCalendarModePath(mode: string) {
-  return `/agenda?calendarMode=${mode}`;
-}
-
-function buildAgendaCalendarAnchorPath(anchor: string) {
-  return `/agenda?calendarAnchor=${anchor}`;
-}
-
-function buildAnimalsCalendarModePath(mode: string) {
-  return `/animais?calendarMode=${mode}`;
-}
-
-function buildAnimalsCalendarAnchorPath(anchor: string) {
-  return `/animais?calendarAnchor=${anchor}`;
-}
+import {
+  buildAgendaCalendarAnchorPath,
+  buildAgendaCalendarModePath,
+  buildAgendaOperationalClassPath,
+  buildAnimalsCalendarAnchorPath,
+  buildAnimalsCalendarModePath,
+} from "@/lib/agenda/navigation";
 
 const EMPTY_LIST: never[] = [];
 const DASHBOARD_REJECTION_SAMPLE_LIMIT = 120;
@@ -181,6 +172,7 @@ const Dashboard = () => {
         await loadRegulatorySurfaceSource(activeFarmId),
       );
     }, [activeFarmId]) || EMPTY_REGULATORY_OPERATIONAL_READ_MODEL;
+  const sanitaryOperationalClasses = sanitaryAttention.operationalClasses ?? [];
 
   const rejectionSnapshot =
     useLiveQuery(async () => {
@@ -492,8 +484,9 @@ const Dashboard = () => {
         </CardContent>
       </Card>
 
-      {sanitaryAttention.scheduleModes.length > 0 ? (
-        <section className="grid gap-4 xl:grid-cols-2">
+      {sanitaryAttention.scheduleModes.length > 0 ||
+      sanitaryOperationalClasses.length > 0 ? (
+        <section className="grid gap-4 xl:grid-cols-3">
           <Card className="shadow-none">
             <CardHeader className="px-4 pb-2 pt-4 sm:px-5">
               <CardTitle>Agenda sanitaria por calendario</CardTitle>
@@ -537,6 +530,42 @@ const Dashboard = () => {
               ))}
             </CardContent>
           </Card>
+
+          {sanitaryOperationalClasses.length > 0 ? (
+            <Card className="shadow-none">
+              <CardHeader className="px-4 pb-2 pt-4 sm:px-5">
+                <CardTitle>Agenda sanitaria por classe</CardTitle>
+              </CardHeader>
+              <CardContent className="grid gap-3 md:grid-cols-2">
+                {sanitaryOperationalClasses.map((item) => (
+                  <div
+                    key={item.key}
+                    className="rounded-xl border border-border/70 bg-muted/20 p-4"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="font-medium">{item.label}</p>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          {item.count} item(ns) aberto(s) nesta classe.
+                        </p>
+                      </div>
+                      <StatusBadge tone="info">{item.count}</StatusBadge>
+                    </div>
+                    <Button
+                      asChild
+                      variant="outline"
+                      size="sm"
+                      className="mt-4 bg-transparent"
+                    >
+                      <Link to={buildAgendaOperationalClassPath(item.key)}>
+                        Abrir {item.label.toLowerCase()}
+                      </Link>
+                    </Button>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          ) : null}
 
           {sanitaryAttention.scheduleAnchors.length > 0 ? (
             <Card className="shadow-none">

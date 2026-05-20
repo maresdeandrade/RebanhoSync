@@ -98,6 +98,10 @@ import {
   type SanitaryFamilyConflict,
   type SanitaryProtocolLayer,
 } from "@/lib/sanitario/engine/protocolLayers";
+import {
+  getSanitaryItemOperationalClassLabel,
+  resolveSanitaryItemOperationalClass,
+} from "@/lib/sanitario/models/taxonomy";
 import { showError, showSuccess } from "@/utils/toast";
 
 interface FarmProtocolManagerProps {
@@ -1213,6 +1217,8 @@ export function FarmProtocolManager({
                               readVeterinaryProductSelection(item.payload);
                             const milestoneCode =
                               resolveDraftMilestoneCode(itemDraft);
+                            const operationalClass =
+                              resolveSanitaryItemOperationalClass(item);
 
                             return (
                               <div
@@ -1252,6 +1258,11 @@ export function FarmProtocolManager({
                                           Sem agenda
                                         </Badge>
                                       )}
+                                      <Badge variant="outline">
+                                        {getSanitaryItemOperationalClassLabel(
+                                          operationalClass,
+                                        )}
+                                      </Badge>
                                       {linkedProduct ? (
                                         <Badge variant="outline">
                                           Catalogo vinculado

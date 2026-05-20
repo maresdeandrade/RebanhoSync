@@ -1,7 +1,7 @@
 # Análise Sanitária — Agenda, Clínica e Estoque
 
-> Status: proposta revisada contra o estado real do repositório em 2026-05-20.  
-> Escopo desta revisão: documentação/proposta. Nenhuma mudança de código, migration, seed, RLS ou RPC foi feita.  
+> Status: proposta revisada contra o estado real do repositório em 2026-05-20, com primeiros recortes de implementação iniciados.
+> Escopo atual: documentação/proposta, classificação sanitária central e projeção visual em Agenda/Home/Dashboard. Nenhuma migration, seed, RLS ou RPC foi feita.
 > Capability principal: `sanitario.agenda_clinica_estoque`. Trilhos relacionados: `sanitario.catalogo_regulatorio`, `sanitario.registro`, `agenda.recalculo`, `infra.docs`.
 
 ## 1. Veredito executivo
@@ -187,10 +187,18 @@ Critério de aceite:
 
 Objetivo: impedir regressões conceituais antes de mexer em banco.
 
-Entregas futuras:
-- testes ou helpers que classifiquem itens como `operational_protocol`, `clinical_protocol`, `notifiable_suspicion`, `compliance_check` ou `inventory_signal`;
-- validação de que `clinical_protocol` e `notifiable_suspicion` não geram agenda;
-- validação de que TPB permanece sem agenda automática.
+Status: iniciado.
+
+Entregas já realizadas:
+- helper central para classificar itens sanitários como `operational_protocol`, `clinical_protocol`, `notifiable_suspicion`, `compliance_check`, `execution_record`, `inventory_signal` ou `unknown`;
+- testes de taxonomia para proteger TPB como protocolo clínico sem agenda operacional;
+- read model de atenção sanitária expondo a classe operacional de cada item e os agregados por classe;
+- lembretes sanitários filtrando apenas protocolos operacionais agendáveis;
+- relatórios operacionais exibindo a classe sanitária de itens de agenda.
+
+O que ainda falta:
+- auditar seed/catálogo com tarefa própria antes de remover entradas redundantes;
+- expandir a proteção para qualquer novo template sanitário criado no catálogo oficial ou da fazenda.
 
 Sem migration nesta fase.
 
@@ -198,11 +206,21 @@ Sem migration nesta fase.
 
 Objetivo: reduzir confusão sem alterar o motor de agenda.
 
-Entregas futuras:
-- Protocolos da Fazenda mostra rotinas agendáveis e ativáveis;
-- suspeitas/notificáveis aparecem como ação de registro, não como protocolo recorrente;
-- compliance/checklists ficam em seção própria ou contexto regulatório;
-- itens clínicos ficam no fluxo de manejo clínico/caso, não na agenda.
+Status: iniciado.
+
+Entregas já realizadas:
+- Agenda passou a filtrar por classe operacional sanitária;
+- Home e Dashboard passaram a expor atalhos por classe para a Agenda filtrada;
+- Dashboard adicionou leitura "Agenda sanitária por classe";
+- navegação filtrada por calendário/classe foi centralizada em helper compartilhado;
+- rótulos de classe sanitária passaram a vir de helper central, não de reconstrução local em UI.
+- Protocolos Sanitários passou a expor navegação separada para pack oficial, conformidade e protocolos da fazenda;
+- etapas dos protocolos da fazenda exibem a classe operacional sanitária calculada centralmente.
+
+O que ainda falta:
+- separar internamente, nos gerenciadores de catálogo/pack, o que é rotina agendável, suspeita notificável, checklist/compliance e protocolo clínico;
+- mover suspeitas/notificáveis para ação de registro/caso, sem apresentá-las como rotina recorrente;
+- posicionar itens clínicos no fluxo futuro de caso/manejo clínico, não como agenda operacional comum.
 
 Critério de aceite:
 - sem regra forte na UI;
@@ -277,11 +295,12 @@ Requisitos:
 |---:|---|---|
 | 1 | Guardrail documental e classificação sanitária | docs/testes puros |
 | 2 | Separação visual entre agendável, clínico, notificável e compliance | UI + helpers centrais |
-| 3 | Auditoria específica de seed/catálogo para itens redundantes | seed/catálogo, tarefa explícita |
-| 4 | Casos sanitários mínimos | migration + RLS + offline |
-| 5 | Protocolos clínicos de apoio | domínio + UI de caso |
-| 6 | Terapia de Vaca Seca como recorte agendável | agenda/recompute |
-| 7 | Estoque MVP | domínio transversal + sync |
+| 3 | Protocolos Sanitários: separar rotinas, notificáveis, clínicos e compliance | UI + read model central |
+| 4 | Auditoria específica de seed/catálogo para itens redundantes | seed/catálogo, tarefa explícita |
+| 5 | Casos sanitários mínimos | migration + RLS + offline |
+| 6 | Protocolos clínicos de apoio | domínio + UI de caso |
+| 7 | Terapia de Vaca Seca como recorte agendável | agenda/recompute |
+| 8 | Estoque MVP | domínio transversal + sync |
 
 ## 10. Fora do escopo desta proposta
 
