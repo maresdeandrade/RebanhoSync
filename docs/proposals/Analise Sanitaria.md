@@ -1,7 +1,7 @@
 # Análise Sanitária — Agenda, Clínica e Estoque
 
 > Status: proposta revisada contra o estado real do repositório em 2026-05-20, com primeiros recortes de implementação iniciados.
-> Escopo atual: documentação/proposta, classificação sanitária central e projeção visual em Agenda/Home/Dashboard. Nenhuma migration, seed, RLS ou RPC foi feita.
+> Escopo atual: documentação/proposta, classificação sanitária central, projeção visual em Agenda/Home/Dashboard/Protocolos e casos sanitários mínimos já integrados ao registro de suspeita e ao manejo clínico no `Registrar`.
 > Capability principal: `sanitario.agenda_clinica_estoque`. Trilhos relacionados: `sanitario.catalogo_regulatorio`, `sanitario.registro`, `agenda.recalculo`, `infra.docs`.
 
 ## 1. Veredito executivo
@@ -83,7 +83,7 @@ Direção corrigida:
 | TPB é descrito como algo a migrar, mas o código já o marca como clínico sem agenda | A proposta cria trabalho duplicado | Trocar "migrar TPB" por "proteger TPB contra regressão para agenda". |
 | Terapia de Vaca Seca é proposta como agendável, mas no estado atual ainda está como roteiro clínico sem agenda | Gap funcional real | Abrir recorte próprio para definir elegibilidade, fonte de data/âncora e regra de materialização antes de torná-la agenda. |
 | Estoque é colocado cedo demais no plano | Alto acoplamento com evento, produto, lote, validade, offline e sync | Primeiro estabilizar consumo conceitual por evento; implementar estoque MVP depois de casos/protocolos clínicos mínimos. |
-| Casos sanitários não existem como fonte consolidada na baseline ativa | Eventos clínicos ficam sem contexto longitudinal | Propor tabela/fluxo de casos apenas em task separada com migration/RLS/offline auditados. |
+| Casos sanitários não existiam como fonte consolidada na baseline ativa | Eventos clínicos ficavam sem contexto longitudinal | Corrigido no recorte mínimo: `sanitario_casos`, store offline, sync, detalhe do animal, suspeita notificável e vínculo/abertura no `Registrar`. |
 | Plano original altera seed/migrations cedo demais | Risco contra regra do projeto e baseline Supabase | Transformar seed/migration em etapas futuras explícitas, não ação desta revisão. |
 
 ## 5. Contrato conceitual revisado
@@ -94,7 +94,7 @@ Direção corrigida:
 | Catálogo oficial/técnico | `catalogo_protocolos_oficiais`, `catalogo_protocolos_oficiais_itens`, `catalogo_doencas_notificaveis`, `produtos_veterinarios` | Base de referência; não prova execução e não deve virar configuração tenant-scoped por acidente. |
 | Agenda | `agenda_itens` / `state_agenda_itens` | Intenção futura mutável; não é histórico. |
 | Evento sanitário | `eventos` + `eventos_sanitario` | Fato executado; base para histórico e consumo real. |
-| Caso sanitário | Futuro `casos_sanitarios` ou equivalente | Contexto longitudinal por animal; não substitui evento. |
+| Caso sanitário | `sanitario_casos` / `state_sanitario_casos` | Contexto longitudinal por animal; não substitui evento. Eventos podem apontar para o caso por `eventos.sanitario_caso_id`. |
 | Protocolo clínico | Futuro catálogo/modelo clínico ou extensão bem tipada da biblioteca atual | Roteiro de apoio; não gera agenda nem evento sozinho. |
 | Estoque | Futuro módulo de insumos/lotes/movimentações | Entrada/saída física/econômica; consumo real nasce de evento confirmado ou movimentação explícita. |
 
@@ -223,7 +223,8 @@ Entregas já realizadas:
 - o detalhe do animal passou a projetar suspeita sanitária como caso sanitário mínimo derivado do alerta, sem criar entidade persistida nem alterar o contrato de eventos.
 
 O que ainda falta:
-- conectar manejo clínico registrado pelo `Registrar` ao caso sanitário persistido.
+- listar casos clínicos no detalhe do animal;
+- criar encerramento de caso clínico com motivo.
 
 Critério de aceite:
 - sem regra forte na UI;
@@ -242,12 +243,17 @@ Entregas realizadas:
 - detalhe do animal passa a consumir caso persistido quando houver, mantendo alerta legado como fallback.
 - abertura de suspeita notificável cria caso sanitário persistido no mesmo gesto do evento de alerta e já grava o evento com `sanitario_caso_id`;
 - encerramento de suspeita notificável atualiza o caso no mesmo gesto do evento de encerramento, mantendo o evento como fato append-only.
+- `Registrar` permite vincular manejo sanitário a um caso clínico ativo de um animal selecionado;
+- `Registrar` permite abrir novo caso clínico no mesmo gesto do evento sanitário executado, gerando `sanitario_casos` antes do evento vinculado;
+- o caminho de RPC sanitário é bypassado quando há vínculo/criação de caso, preservando atomicidade local/offline do gesto com caso + evento.
+- detalhe do animal lista casos sanitários persistidos, mostra eventos vinculados por caso e permite seguir registrando manejo no caso aberto;
+- detalhe do animal permite encerrar manualmente caso clínico com validação de desfecho, observação obrigatória quando aplicável e atualização de `sanitario_casos` como estado mutável sem criar evento artificial.
+- detalhe do animal mostra timeline filtrada por caso usando `eventos.sanitario_caso_id`, sem alterar a timeline geral nem o contrato append-only de eventos.
 
 Entregas futuras:
-- abrir caso clínico;
-- listar casos no animal;
-- vincular eventos sanitários ao caso no fluxo de registro;
-- encerrar caso com motivo.
+- integrar encerramento clínico a uma fonte veterinária consolidada quando esse contrato existir.
+
+Progresso estimado da Fase 3: aproximadamente 95% concluída. Falta apenas integração veterinária futura quando houver fonte consolidada.
 
 Requisitos:
 - migration própria;
@@ -313,6 +319,21 @@ Requisitos:
 | 7 | Terapia de Vaca Seca como recorte agendável | agenda/recompute |
 | 8 | Estoque MVP | domínio transversal + sync |
 
+## 9.1. Estimativa de término do refatoramento sanitário
+
+Considerando o recorte desta proposta, não o produto sanitário completo:
+
+| Frente | Status estimado | Falta principal |
+|---|---:|---|
+| Contrato conceitual e classificação | 90% | auditoria específica de seed/catálogo redundante. |
+| Separação visual operacional | 85% | ajustes finos de UX e consistência cross-flow. |
+| Casos sanitários mínimos | 95% | integração veterinária futura quando houver fonte consolidada. |
+| Protocolos clínicos de apoio | 25% | modelo/visualização contextual para TPB, mastite e condutas. |
+| Terapia de Vaca Seca | 10% | definir elegibilidade, âncora, dedup e materialização. |
+| Estoque MVP sanitário | 0% | criar módulo de insumos/lotes/movimentações e consumo por evento. |
+
+Estimativa objetiva: o refatoramento estrutural sanitário está entre 65% e 70% concluído. Para fechar o núcleo mínimo sem estoque avançado, faltam cerca de 2 a 3 recortes pequenos. Para fechar a visão completa com protocolos clínicos, Terapia de Vaca Seca e estoque MVP, faltam cerca de 7 a 10 recortes revisáveis.
+
 ## 10. Fora do escopo desta proposta
 
 - prontuário veterinário completo;
@@ -350,4 +371,4 @@ O núcleo a preservar é:
 - estoque registra insumo real e só baixa por fato/movimentação;
 - catálogo oficial, overlay regulatório e protocolo da fazenda continuam separados.
 
-O próximo passo mais seguro não é migration nem seed. É criar a classificação central dos itens sanitários e usá-la para impedir que clínico, notificável e compliance apareçam como agenda operacional comum.
+O próximo passo mais seguro é iniciar o recorte de protocolos clínicos de apoio, começando por um modelo visual/contextual simples para TPB ou mastite, sem gerar evento, agenda ou consumo de estoque por simples visualização.

@@ -41,6 +41,8 @@ describe("parseRegistrarQueryState", () => {
       protocoloItemId: null,
       produto: null,
       sanitarioTipo: "vacinacao",
+      sanitarioCasoId: null,
+      abrirCasoClinico: false,
     });
     expect(parsed.shouldOpenChooseActionStep).toBe(true);
   });
@@ -78,5 +80,19 @@ describe("parseRegistrarQueryState", () => {
     expect(parsed.animalId).toBeNull();
     expect(parsed.loteId).toBe("lote-1");
     expect(parsed.shouldOpenChooseActionStep).toBe(true);
+  });
+
+  it("normaliza parametros de caso clinico sanitario", () => {
+    const searchParams = new URLSearchParams(
+      "dominio=sanitario&animalId=a-1&sanitarioCasoId=caso-1&abrirCasoClinico=1",
+    );
+    const parsed = parseRegistrarQueryState({
+      searchParams,
+      isQuickActionKey,
+      isReproTipoEnum,
+    });
+
+    expect(parsed.sanitaryPrefill.sanitarioCasoId).toBe("caso-1");
+    expect(parsed.sanitaryPrefill.abrirCasoClinico).toBe(true);
   });
 });

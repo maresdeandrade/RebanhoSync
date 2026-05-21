@@ -4,7 +4,7 @@ import type {
   ReproTipoEnum,
   SanitarioTipoEnum,
 } from "@/lib/offline/types";
-import type { EventInput } from "@/lib/events/types";
+import type { EventInput, SanitarioCasoOpenInput } from "@/lib/events/types";
 import type { VeterinaryProductSelection } from "@/lib/sanitario/catalog/products";
 import { buildRegistrarFinanceiroPayloadBase } from "@/pages/Registrar/helpers/payload";
 import {
@@ -52,6 +52,12 @@ type BuildRegistrarEventInputParams = {
     protocoloItem: ProtocoloSanitarioItem | null;
     produtoRef: VeterinaryProductSelection | null;
     payload: Record<string, unknown>;
+    sanitarioCaso?:
+      | SanitarioCasoOpenInput
+      | {
+          action: "link";
+          id: string;
+        };
   };
   pesagem?: {
     pesoKg: number | null;
@@ -104,6 +110,7 @@ export function buildRegistrarEventInput(
           }
         : undefined,
       produtoRef: params.sanitario?.produtoRef ?? undefined,
+      sanitarioCaso: params.sanitario?.sanitarioCaso,
       payload: params.sanitario?.payload ?? {},
     };
   }

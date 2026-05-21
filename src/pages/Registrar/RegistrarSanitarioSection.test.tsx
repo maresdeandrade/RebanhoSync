@@ -33,6 +33,11 @@ const defaultProps: SanitarioProps = {
   selectedProtocolPrimaryReason: null,
   selectedProtocolCompatibleWithAll: null,
   allProtocolItemsIneligible: false,
+  clinicalCases: [],
+  selectedClinicalCaseId: "",
+  onClinicalCaseChange: vi.fn(),
+  createClinicalCase: false,
+  onCreateClinicalCaseChange: vi.fn(),
 };
 
 describe("RegistrarSanitarioSection", () => {
@@ -78,5 +83,34 @@ describe("RegistrarSanitarioSection", () => {
     const prodButton = screen.getByRole("button", { name: /Vacina Brucelose/i });
     fireEvent.click(prodButton);
     expect(mockSelectProduct).toHaveBeenCalledWith(expect.objectContaining({ id: "prod-1" }));
+  });
+
+  it("deve permitir abrir novo caso clinico", () => {
+    const mockCreateClinicalCase = vi.fn();
+    render(
+      <RegistrarSanitarioSection
+        {...defaultProps}
+        onCreateClinicalCaseChange={mockCreateClinicalCase}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /Abrir novo caso clínico/i }));
+    expect(mockCreateClinicalCase).toHaveBeenCalledWith(true);
+  });
+
+  it("deve permitir selecionar caso clinico existente", () => {
+    const mockClinicalCaseChange = vi.fn();
+    render(
+      <RegistrarSanitarioSection
+        {...defaultProps}
+        clinicalCases={[{ id: "caso-1", label: "TPB em acompanhamento" }]}
+        onClinicalCaseChange={mockClinicalCaseChange}
+      />,
+    );
+
+    fireEvent.change(screen.getByRole("combobox"), {
+      target: { value: "caso-1" },
+    });
+    expect(mockClinicalCaseChange).toHaveBeenCalledWith("caso-1");
   });
 });

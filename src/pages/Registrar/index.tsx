@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
-import type { ReproTipoEnum, Animal } from "@/lib/offline/types";
+import type { ReproTipoEnum, Animal, SanitarioCaso } from "@/lib/offline/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/EmptyState";
@@ -125,6 +125,8 @@ const Registrar = () => {
   const [contextAnimalId, setContextAnimalId] = useState("");
   const [contextLoteId, setContextLoteId] = useState("");
   const [contextPastoId, setContextPastoId] = useState("");
+  const [sanitarioCasoId, setSanitarioCasoId] = useState("");
+  const [abrirCasoClinico, setAbrirCasoClinico] = useState(false);
   const [showTechDetails, setShowTechDetails] = useState(false);
   const { activeFarmId, role, farmMeasurementConfig, farmLifecycleConfig } =
     useAuth();
@@ -226,6 +228,37 @@ const Registrar = () => {
         selectedIds: selectedAnimais,
       }),
     [animaisNoLote, selectedAnimais],
+  );
+  const activeClinicalCases = useLiveQuery(async () => {
+    if (!activeFarmId || tipoManejo !== "sanitario" || selectedAnimais.length !== 1) {
+      return [] as SanitarioCaso[];
+    }
+
+    const animalId = selectedAnimais[0];
+    const cases = await db.state_sanitario_casos
+      .where("[fazenda_id+animal_id]")
+      .equals([activeFarmId, animalId])
+      .toArray();
+
+    return cases
+      .filter(
+        (item) =>
+          item.tipo === "clinico" &&
+          (item.status === "aberto" || item.status === "em_acompanhamento") &&
+          !item.deleted_at,
+      )
+      .sort((a, b) => b.opened_at.localeCompare(a.opened_at));
+  }, [activeFarmId, selectedAnimais, tipoManejo]);
+  const clinicalCaseOptions = useMemo(
+    () =>
+      (activeClinicalCases ?? []).map((item) => ({
+        id: item.id,
+        label:
+          item.disease_name ||
+          item.observacoes ||
+          `Caso ${item.id.slice(0, 8)}`,
+      })),
+    [activeClinicalCases],
   );
   const hasRegistrarDisplayContext = Boolean(
     sourceTaskId || contextAnimalId || contextLoteId || contextPastoId,
@@ -467,6 +500,17 @@ const Registrar = () => {
       selectedProtocolCompatibleWithAll:
         selectedProtocoloItemEvaluation?.eligibility.compatibleWithAll ?? null,
       allProtocolItemsIneligible,
+      clinicalCases: clinicalCaseOptions,
+      selectedClinicalCaseId: sanitarioCasoId,
+      onClinicalCaseChange: (value) => {
+        setSanitarioCasoId(value);
+        if (value) setAbrirCasoClinico(false);
+      },
+      createClinicalCase: abrirCasoClinico,
+      onCreateClinicalCaseChange: (value) => {
+        setAbrirCasoClinico(value);
+        if (value) setSanitarioCasoId("");
+      },
     },
     transitChecklistState: {
       transitChecklistSection: transitChecklist,
@@ -567,6 +611,23 @@ const Registrar = () => {
     ],
   );
   const canAdvanceToConfirm = actionStepIssues.length === 0;
+
+  useEffect(() => {
+    if (tipoManejo !== "sanitario") {
+      setSanitarioCasoId("");
+      setAbrirCasoClinico(false);
+      return;
+    }
+
+    if (
+      sanitarioCasoId &&
+      activeClinicalCases !== undefined &&
+      !clinicalCaseOptions.some((item) => item.id === sanitarioCasoId)
+    ) {
+      setSanitarioCasoId("");
+    }
+  }, [activeClinicalCases, clinicalCaseOptions, sanitarioCasoId, tipoManejo]);
+
   const {
     step,
     advanceFromSelect,
@@ -626,6 +687,13 @@ const Registrar = () => {
       setTipoManejo(parsedQuery.domain);
     }
     applySanitaryQueryPrefill(parsedQuery.sanitaryPrefill);
+    if (parsedQuery.sanitaryPrefill.sanitarioCasoId) {
+      setSanitarioCasoId(parsedQuery.sanitaryPrefill.sanitarioCasoId);
+      setAbrirCasoClinico(false);
+    } else if (parsedQuery.sanitaryPrefill.abrirCasoClinico) {
+      setAbrirCasoClinico(true);
+      setSanitarioCasoId("");
+    }
     applyFinanceiroNaturezaQueryPrefill(parsedQuery.natureza);
     if (parsedQuery.domain === "reproducao") {
       setTipoManejo("reproducao");
@@ -657,6 +725,8 @@ const Registrar = () => {
     setSelectedLoteId,
     setSourceTaskId,
     setTipoManejo,
+    setSanitarioCasoId,
+    setAbrirCasoClinico,
     sourceTaskId,
     selectedLoteId,
     contextLoteId,
@@ -766,6 +836,10 @@ const Registrar = () => {
             tipo: sanitarioData.tipo,
             produto: sanitarioData.produto,
           },
+          caseLink: {
+            selectedCaseId: sanitarioCasoId || null,
+            createClinicalCase: abrirCasoClinico,
+          },
           selectedVeterinaryProductSelection,
           resolveProtocolProductSelection,
           transit: {
@@ -788,6 +862,7 @@ const Registrar = () => {
     }
   }, [
     activeFarmId,
+    abrirCasoClinico,
     compraNovosAnimais,
     complianceFlowIssues,
     farmLifecycleConfig,
@@ -816,6 +891,7 @@ const Registrar = () => {
     resolveProtocolProductSelection,
     sanitarioData.produto,
     sanitarioData.tipo,
+    sanitarioCasoId,
     selectedAnimais,
     selectedLoteId,
     selectedLoteIdNormalized,

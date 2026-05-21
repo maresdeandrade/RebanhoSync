@@ -72,6 +72,8 @@ export async function resolveRegistrarNonFinancialFinalizePlan(input: {
   sanitaryProductMetadata: Record<string, unknown>;
   protocoloItem: ProtocoloSanitarioItem | null;
   sanitarioData: NonFinancialSanitarioData;
+  sanitarioCasoId?: string | null;
+  abrirCasoClinico?: boolean;
   pesagemData: Record<string, string>;
   movimentacaoData: NonFinancialMovimentacaoData;
   nutricaoData: NonFinancialNutricaoData;
@@ -106,6 +108,19 @@ export async function resolveRegistrarNonFinancialFinalizePlan(input: {
   let linkedEventId: string | null = null;
   let postPartoRedirect: RegistrarPostPartoRedirect | null = null;
 
+  if (
+    input.tipoManejo === "sanitario" &&
+    input.sanitarioCasoId &&
+    input.targetAnimalIds.filter(Boolean).length !== 1
+  ) {
+    return {
+      issue: "Selecione apenas um animal para vincular um caso clinico existente.",
+      linkedEventId: null,
+      postPartoRedirect: null,
+      ops: [],
+    };
+  }
+
   for (const animalId of input.targetAnimalIds) {
     const animal = animalId ? input.animalsMap.get(animalId) : null;
     if (animalId && !animal) continue;
@@ -137,6 +152,22 @@ export async function resolveRegistrarNonFinancialFinalizePlan(input: {
                 produto: input.sanitaryProductName,
                 protocoloItem: input.protocoloItem,
                 produtoRef: input.sanitaryProductSelection,
+                sanitarioCaso: input.abrirCasoClinico
+                  ? {
+                      action: "open",
+                      tipo: "clinico",
+                      status: "em_acompanhamento",
+                      observacoes: null,
+                      payload: {
+                        source: "registrar",
+                        sanitario_tipo: input.sanitarioData.tipo,
+                        produto: input.sanitaryProductName,
+                        protocolo_item_id: input.protocoloItem?.id ?? null,
+                      },
+                    }
+                  : input.sanitarioCasoId
+                    ? { action: "link", id: input.sanitarioCasoId }
+                    : undefined,
                 payload: input.sanitaryProductMetadata,
               }
             : undefined,

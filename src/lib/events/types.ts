@@ -59,6 +59,11 @@ export interface SanitarioCasoCloseInput {
   movementBlocked?: boolean;
 }
 
+export interface SanitarioCasoLinkInput {
+  action: "link";
+  id: string;
+}
+
 export interface ProtocoloAgendaRefInput {
   id: string;
   intervalDays: number;
@@ -72,6 +77,7 @@ export interface SanitarioEventInput extends BaseEventInput {
   produto: string;
   protocoloItem?: ProtocoloAgendaRefInput;
   produtoRef?: VeterinaryProductSelection;
+  sanitarioCaso?: SanitarioCasoOpenInput | SanitarioCasoLinkInput;
 }
 
 export interface AlertaSanitarioEventInput extends BaseEventInput {

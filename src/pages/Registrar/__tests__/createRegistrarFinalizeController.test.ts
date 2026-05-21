@@ -95,6 +95,10 @@ function buildFinalizeInput() {
         tipo: "vacinacao" as const,
         produto: "",
       },
+      caseLink: {
+        selectedCaseId: null,
+        createClinicalCase: false,
+      },
       selectedVeterinaryProductSelection: null,
       resolveProtocolProductSelection: vi.fn(() => null),
       transit: {
@@ -267,5 +271,23 @@ describe("createRegistrarFinalizeController", () => {
     expect(deps.commit.runFinalizeGesture).toHaveBeenCalled();
     expect(deps.feedback.showSuccess).toHaveBeenCalledWith("ok");
     expect(deps.feedback.navigate).toHaveBeenCalledWith("/home");
+  });
+
+  it("usa fallback offline quando registro sanitario precisa vincular caso", async () => {
+    const deps = buildControllerDeps();
+    const finalize = createRegistrarFinalizeController(deps);
+    const input = buildFinalizeInput();
+    input.context.tipoManejo = "sanitario";
+    input.sanitary.caseLink.selectedCaseId = "caso-1";
+
+    await finalize(input);
+
+    expect(deps.sanitary.trySanitaryRpcFinalize).not.toHaveBeenCalled();
+    expect(deps.tracks.resolveNonFinancialFinalizePlan).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sanitarioCasoId: "caso-1",
+        abrirCasoClinico: false,
+      }),
+    );
   });
 });

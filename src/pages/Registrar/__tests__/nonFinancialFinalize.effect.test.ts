@@ -65,18 +65,70 @@ function baseInput() {
 
 describe("resolveRegistrarNonFinancialFinalizePlan", () => {
   it("monta plano para manejo sanitario com builder de gesture injetado", async () => {
+    const buildGesture = vi.fn(() => ({
+      eventId: "evt-1",
+      ops: [{ table: "eventos", action: "INSERT", record: { id: "evt-1" } }],
+    }));
     const result = await resolveRegistrarNonFinancialFinalizePlan({
       ...baseInput(),
       tipoManejo: "sanitario",
-      buildGesture: () => ({
-        eventId: "evt-1",
-        ops: [{ table: "eventos", action: "INSERT", record: { id: "evt-1" } }],
-      }),
+      targetAnimalIds: ["a-1"],
+      animalsMap: new Map([["a-1", buildAnimal("a-1")]]),
+      sanitarioCasoId: "caso-1",
+      buildGesture,
+      resolveManualSanitaryAgendaCompletionOps: vi.fn(async () => []),
     });
 
     expect(result.issue).toBeNull();
     expect(result.linkedEventId).toBe("evt-1");
     expect(result.ops.length).toBe(1);
+    expect(buildGesture).toHaveBeenCalledWith(
+      expect.objectContaining({
+        dominio: "sanitario",
+        sanitarioCaso: { action: "link", id: "caso-1" },
+      }),
+    );
+  });
+
+  it("abre caso clinico junto do manejo sanitario quando solicitado", async () => {
+    const buildGesture = vi.fn(() => ({
+      eventId: "evt-1",
+      ops: [{ table: "eventos", action: "INSERT", record: { id: "evt-1" } }],
+    }));
+
+    const result = await resolveRegistrarNonFinancialFinalizePlan({
+      ...baseInput(),
+      tipoManejo: "sanitario",
+      targetAnimalIds: ["a-1"],
+      animalsMap: new Map([["a-1", buildAnimal("a-1")]]),
+      abrirCasoClinico: true,
+      buildGesture,
+      resolveManualSanitaryAgendaCompletionOps: vi.fn(async () => []),
+    });
+
+    expect(result.issue).toBeNull();
+    expect(buildGesture).toHaveBeenCalledWith(
+      expect.objectContaining({
+        dominio: "sanitario",
+        sanitarioCaso: expect.objectContaining({
+          action: "open",
+          tipo: "clinico",
+          status: "em_acompanhamento",
+        }),
+      }),
+    );
+  });
+
+  it("bloqueia vinculo de caso clinico existente para multiplos animais", async () => {
+    const result = await resolveRegistrarNonFinancialFinalizePlan({
+      ...baseInput(),
+      tipoManejo: "sanitario",
+      targetAnimalIds: ["a-1", "a-2"],
+      sanitarioCasoId: "caso-1",
+    });
+
+    expect(result.issue).toContain("apenas um animal");
+    expect(result.ops).toEqual([]);
   });
 
   it("conclui pendencia sanitaria correspondente quando registro manual bate com agenda aberta", async () => {

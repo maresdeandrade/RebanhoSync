@@ -1,6 +1,6 @@
 /** @vitest-environment jsdom */
 import "@testing-library/jest-dom";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { useLiveQuery } from "dexie-react-hooks";
@@ -8,8 +8,14 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { useAuth } from "@/hooks/useAuth";
 import { DEFAULT_FARM_LIFECYCLE_CONFIG } from "@/lib/farms/lifecycleConfig";
 import { DEFAULT_FARM_MEASUREMENT_CONFIG } from "@/lib/farms/measurementConfig";
-import type { AgendaItem, Animal } from "@/lib/offline/types";
-import AnimalDetalhe from "@/pages/AnimalDetalhe";
+import type {
+  AgendaItem,
+  Animal,
+  Evento,
+  SanitarioCaso,
+} from "@/lib/offline/types";
+import { validateClinicalCaseClosureInput } from "@/pages/animalDetalheClinicalCase";
+import AnimalDetalhe, { AnimalSanitaryCasesPanel } from "@/pages/AnimalDetalhe";
 
 vi.mock("@/hooks/useAuth");
 vi.mock("dexie-react-hooks", () => ({
@@ -84,6 +90,65 @@ function makeAgendaItem(
   };
 }
 
+function makeSanitarioCaso(overrides: Partial<SanitarioCaso> = {}): SanitarioCaso {
+  return {
+    id: "caso-1",
+    fazenda_id: "farm-1",
+    animal_id: "animal-1",
+    tipo: "clinico",
+    status: "em_acompanhamento",
+    opened_at: "2026-05-20T12:00:00.000Z",
+    closed_at: null,
+    disease_code: null,
+    disease_name: null,
+    notification_type: null,
+    requires_immediate_notification: false,
+    movement_blocked: false,
+    source_alert_evento_id: null,
+    closure_reason: null,
+    observacoes: "Tratamento em acompanhamento",
+    payload: {},
+    client_id: "client-1",
+    client_op_id: "case-op-1",
+    client_tx_id: null,
+    client_recorded_at: "2026-05-20T12:00:00.000Z",
+    server_received_at: "2026-05-20T12:00:00.000Z",
+    created_at: "2026-05-20T12:00:00.000Z",
+    updated_at: "2026-05-20T12:00:00.000Z",
+    deleted_at: null,
+    ...overrides,
+  };
+}
+
+function makeEvento(overrides: Partial<Evento> = {}): Evento {
+  return {
+    id: "evento-1",
+    fazenda_id: "farm-1",
+    dominio: "sanitario",
+    occurred_at: "2026-05-21T09:30:00.000Z",
+    animal_id: "animal-1",
+    lote_id: null,
+    source_task_id: null,
+    source_tx_id: null,
+    source_client_op_id: null,
+    corrige_evento_id: null,
+    sanitario_caso_id: "caso-1",
+    observacoes: "Aplicado anti-inflamatorio e reavaliar em 48h",
+    payload: {
+      tipo: "medicamento",
+    },
+    client_id: "client-1",
+    client_op_id: "event-op-1",
+    client_tx_id: null,
+    client_recorded_at: "2026-05-21T09:30:00.000Z",
+    server_received_at: "2026-05-21T09:30:00.000Z",
+    created_at: "2026-05-21T09:30:00.000Z",
+    updated_at: "2026-05-21T09:30:00.000Z",
+    deleted_at: null,
+    ...overrides,
+  };
+}
+
 describe("AnimalDetalhe", () => {
   const mockedUseAuth = vi.mocked(useAuth);
   const mockedUseLiveQuery = vi.mocked(useLiveQuery);
@@ -152,6 +217,77 @@ describe("AnimalDetalhe", () => {
     expect(
       screen.getByRole("link", { name: /Registrar manejo deste animal/i }),
     ).toHaveAttribute("href", "/registrar?animalId=animal-1");
+  });
+
+  it("lista casos sanitarios persistidos do animal", () => {
+    const clinicalCase = makeSanitarioCaso();
+    const sanitaryEvent = makeEvento();
+    const onCloseClinicalCase = vi.fn();
+
+    render(
+      <MemoryRouter
+        initialEntries={["/animais/animal-1/casos"]}
+        future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+      >
+        <AnimalSanitaryCasesPanel
+          animalId="animal-1"
+          cases={[clinicalCase]}
+          eventsByCase={new Map([["caso-1", [sanitaryEvent]]])}
+          onCloseClinicalCase={onCloseClinicalCase}
+        />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText("Manejo clinico")).toBeInTheDocument();
+    expect(screen.getByText("em acompanhamento")).toBeInTheDocument();
+    expect(screen.getByText("Tratamento em acompanhamento")).toBeInTheDocument();
+    expect(screen.getByText("Timeline do caso")).toBeInTheDocument();
+    expect(screen.getByText("medicamento")).toBeInTheDocument();
+    expect(
+      screen.getByText("Aplicado anti-inflamatorio e reavaliar em 48h"),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Registrar manejo/i })).toHaveAttribute(
+      "href",
+      "/registrar?dominio=sanitario&animalId=animal-1&sanitarioTipo=medicamento&sanitarioCasoId=caso-1",
+    );
+    fireEvent.click(screen.getByRole("button", { name: /Encerrar caso/i }));
+    expect(onCloseClinicalCase).toHaveBeenCalledWith(clinicalCase);
+  });
+
+  it("valida encerramento de caso clinico antes de atualizar estado", () => {
+    const openClinicalCase = makeSanitarioCaso();
+
+    expect(
+      validateClinicalCaseClosureInput({
+        caseRecord: openClinicalCase,
+        reason: "resolvido",
+        notes: "",
+      }),
+    ).toBeNull();
+
+    expect(
+      validateClinicalCaseClosureInput({
+        caseRecord: openClinicalCase,
+        reason: "sem_resposta",
+        notes: "curto",
+      }),
+    ).toBe("Informe observacoes de encerramento com pelo menos 10 caracteres.");
+
+    expect(
+      validateClinicalCaseClosureInput({
+        caseRecord: makeSanitarioCaso({ status: "encerrado" }),
+        reason: "resolvido",
+        notes: "",
+      }),
+    ).toBe("Este caso clinico ja esta encerrado ou indisponivel.");
+
+    expect(
+      validateClinicalCaseClosureInput({
+        caseRecord: makeSanitarioCaso({ tipo: "notificavel" }),
+        reason: "resolvido",
+        notes: "",
+      }),
+    ).toBe("Apenas casos clinicos podem ser encerrados por este fluxo.");
   });
 });
 

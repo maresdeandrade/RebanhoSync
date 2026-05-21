@@ -50,6 +50,54 @@ describe("buildEventGesture", () => {
     });
   });
 
+  it("links sanitario event to existing clinical case", () => {
+    const result = buildEventGesture({
+      dominio: "sanitario",
+      fazendaId: "farm-1",
+      animalId: "animal-1",
+      tipo: "medicamento",
+      produto: "Medicamento A",
+      sanitarioCaso: { action: "link", id: "caso-1" },
+    });
+
+    expect(result.ops.map((o) => o.table)).toEqual([
+      "eventos",
+      "eventos_sanitario",
+    ]);
+    expect(result.ops[0].record.sanitario_caso_id).toBe("caso-1");
+  });
+
+  it("opens clinical case before linked sanitario event", () => {
+    const result = buildEventGesture({
+      dominio: "sanitario",
+      fazendaId: "farm-1",
+      animalId: "animal-1",
+      tipo: "medicamento",
+      produto: "Medicamento A",
+      sanitarioCaso: {
+        action: "open",
+        tipo: "clinico",
+        status: "em_acompanhamento",
+        payload: { source: "registrar" },
+      },
+    });
+
+    expect(result.ops.map((o) => o.table)).toEqual([
+      "sanitario_casos",
+      "eventos",
+      "eventos_sanitario",
+    ]);
+    expect(result.ops[0].record).toMatchObject({
+      animal_id: "animal-1",
+      tipo: "clinico",
+      status: "em_acompanhamento",
+      payload: { source: "registrar" },
+    });
+    expect(result.ops[1].record.sanitario_caso_id).toBe(
+      result.ops[0].record.id,
+    );
+  });
+
   it("builds movimentacao with animal update (including null destination when allowed)", () => {
     const result = buildEventGesture({
       dominio: "movimentacao",

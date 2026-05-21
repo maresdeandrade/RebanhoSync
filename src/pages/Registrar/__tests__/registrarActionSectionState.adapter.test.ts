@@ -55,6 +55,11 @@ describe("useRegistrarActionSectionState", () => {
           selectedProtocolPrimaryReason: null,
           selectedProtocolCompatibleWithAll: null,
           allProtocolItemsIneligible: false,
+          clinicalCases: [],
+          selectedClinicalCaseId: "",
+          onClinicalCaseChange: vi.fn(),
+          createClinicalCase: false,
+          onCreateClinicalCaseChange: vi.fn(),
         },
         transitChecklistState: {
           transitChecklistSection: {

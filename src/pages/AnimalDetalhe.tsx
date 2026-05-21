@@ -87,6 +87,7 @@ import type {
   Evento,
   EventoReproducao,
   CausaObitoEnum,
+  SanitarioCaso,
 } from "@/lib/offline/types";
 import { buildEventGesture } from "@/lib/events/buildEventGesture";
 import { buildReproductionDashboard } from "@/lib/reproduction/dashboard";
@@ -114,6 +115,13 @@ import {
 } from "@/lib/format/weight";
 import { resolveSanitaryAgendaItemScheduleMeta } from "@/lib/sanitario/infrastructure/agendaSchedule";
 import { showError, showSuccess } from "@/utils/toast";
+import {
+  CLINICAL_CASE_CLOSURE_REASONS,
+  getClinicalCaseClosureReason,
+  isOpenSanitaryCase,
+  validateClinicalCaseClosureInput,
+  type ClinicalCaseClosureReason,
+} from "./animalDetalheClinicalCase";
 
 type EnrichedEvent = Evento & {
   details?: EventoReproducao;
@@ -137,6 +145,12 @@ type SanitaryAlertFormState = {
 type SanitaryAlertResolutionState = {
   closureReason: SanitaryAlertClosureReason;
   closureNotes: string;
+};
+
+type ClinicalCaseClosureState = {
+  caseId: string | null;
+  reason: ClinicalCaseClosureReason;
+  notes: string;
 };
 
 const resolveSanitaryCaseStatusOnAlertClosure = (
@@ -179,6 +193,200 @@ function formatAgendaTipoLabel(value: string) {
   return value.replaceAll("_", " ");
 }
 
+function formatSanitaryCaseStatus(value: SanitarioCaso["status"]) {
+  return value.replaceAll("_", " ");
+}
+
+function formatSanitaryCaseScope(value: SanitarioCaso) {
+  if (value.tipo === "notificavel") {
+    return value.notification_type
+      ? `Notificacao ${value.notification_type}`
+      : "Caso notificavel";
+  }
+
+  return "Caso clinico";
+}
+
+function formatCaseTimelineEventLabel(event: EnrichedEvent) {
+  const payloadTipo = event.payload.tipo;
+
+  if (typeof payloadTipo === "string" && payloadTipo.length > 0) {
+    return formatAgendaTipoLabel(payloadTipo);
+  }
+
+  return formatAgendaTipoLabel(event.dominio);
+}
+
+type AnimalSanitaryCasesPanelProps = {
+  animalId: string;
+  cases: SanitarioCaso[] | undefined;
+  eventsByCase: Map<string, EnrichedEvent[]>;
+  onCloseClinicalCase: (caseRecord: SanitarioCaso) => void;
+};
+
+export function AnimalSanitaryCasesPanel({
+  animalId,
+  cases,
+  eventsByCase,
+  onCloseClinicalCase,
+}: AnimalSanitaryCasesPanelProps) {
+  return (
+    <div className="grid gap-3">
+      {(cases ?? []).map((caseRecord) => {
+        const summary = buildSanitaryCaseFlowSummary({
+          caseRecord,
+          alert: null,
+        });
+        const linkedEvents = eventsByCase.get(caseRecord.id) ?? [];
+        const timelineEvents = linkedEvents
+          .slice()
+          .sort((left, right) => right.occurred_at.localeCompare(left.occurred_at));
+        const isOpen = isOpenSanitaryCase(caseRecord);
+
+        return (
+          <Card
+            key={caseRecord.id}
+            className={
+              isOpen
+                ? "border-warning/25 bg-warning-muted/30 shadow-none"
+                : "shadow-none"
+            }
+          >
+            <CardContent className="space-y-4 p-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div className="space-y-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-sm font-semibold">
+                      {summary?.primaryLabel ??
+                        caseRecord.disease_name ??
+                        "Caso sanitario"}
+                    </p>
+                    <Badge variant={isOpen ? "default" : "secondary"}>
+                      {formatSanitaryCaseStatus(caseRecord.status)}
+                    </Badge>
+                    <Badge variant="outline">
+                      {formatSanitaryCaseScope(caseRecord)}
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Aberto em {formatDate(caseRecord.opened_at)}
+                    {caseRecord.closed_at
+                      ? ` | Encerrado em ${formatDate(caseRecord.closed_at)}`
+                      : ""}
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {isOpen ? (
+                    <Button size="sm" variant="outline" asChild>
+                      <Link
+                        to={`/registrar?dominio=sanitario&animalId=${encodeURIComponent(
+                          animalId,
+                        )}&sanitarioTipo=medicamento&sanitarioCasoId=${encodeURIComponent(
+                          caseRecord.id,
+                        )}`}
+                      >
+                        Registrar manejo
+                      </Link>
+                    </Button>
+                  ) : null}
+                  {isOpen && caseRecord.tipo === "clinico" ? (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="border-destructive/30 text-destructive hover:bg-destructive/10"
+                      onClick={() => onCloseClinicalCase(caseRecord)}
+                    >
+                      Encerrar caso
+                    </Button>
+                  ) : null}
+                </div>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-3">
+                <div className="rounded-xl border border-border/70 bg-background/80 p-3">
+                  <p className="text-xs uppercase text-muted-foreground">
+                    Eventos vinculados
+                  </p>
+                  <p className="mt-1 font-semibold">{linkedEvents.length}</p>
+                </div>
+                <div className="rounded-xl border border-border/70 bg-background/80 p-3">
+                  <p className="text-xs uppercase text-muted-foreground">
+                    Bloqueio
+                  </p>
+                  <p className="mt-1 font-semibold">
+                    {caseRecord.movement_blocked ? "Ativo" : "Inativo"}
+                  </p>
+                </div>
+                <div className="rounded-xl border border-border/70 bg-background/80 p-3">
+                  <p className="text-xs uppercase text-muted-foreground">
+                    Desfecho
+                  </p>
+                  <p className="mt-1 font-semibold">
+                    {caseRecord.closure_reason
+                      ? caseRecord.closure_reason.replaceAll("_", " ")
+                      : "-"}
+                  </p>
+                </div>
+              </div>
+
+              {caseRecord.observacoes ? (
+                <p className="rounded-xl border border-border/70 bg-muted/20 p-3 text-sm text-muted-foreground">
+                  {caseRecord.observacoes}
+                </p>
+              ) : null}
+
+              <div className="space-y-3 rounded-xl border border-border/70 bg-background/80 p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-xs font-semibold uppercase text-muted-foreground">
+                    Timeline do caso
+                  </p>
+                  <Badge variant="outline" className="text-[10px]">
+                    {timelineEvents.length}
+                  </Badge>
+                </div>
+
+                {timelineEvents.length > 0 ? (
+                  <div className="space-y-3">
+                    {timelineEvents.map((event) => (
+                      <div
+                        key={event.id}
+                        className="border-l-2 border-primary/30 pl-3"
+                      >
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="text-sm font-medium">
+                            {formatCaseTimelineEventLabel(event)}
+                          </p>
+                          <Badge variant="secondary" className="text-[10px]">
+                            {formatDate(event.occurred_at)}
+                          </Badge>
+                        </div>
+                        {event.observacoes ? (
+                          <p className="mt-1 text-sm text-muted-foreground">
+                            {event.observacoes}
+                          </p>
+                        ) : null}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    Nenhum evento vinculado a este caso.
+                  </p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        );
+      })}
+      {cases?.length === 0 && (
+        <p className="py-8 text-center text-muted-foreground">
+          Sem casos sanitarios registrados.
+        </p>
+      )}
+    </div>
+  );
+}
+
 const AnimalDetalhe = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -214,6 +422,13 @@ const AnimalDetalhe = () => {
       closureReason: "descartada",
       closureNotes: "",
     });
+  const [clinicalCaseClosure, setClinicalCaseClosure] =
+    useState<ClinicalCaseClosureState>({
+      caseId: null,
+      reason: "resolvido",
+      notes: "",
+    });
+  const [isClosingClinicalCase, setIsClosingClinicalCase] = useState(false);
   const autoAppliedStageRef = useRef<string | null>(null);
 
   const animal = useLiveQuery(() => db.state_animais.get(id!), [id]);
@@ -421,6 +636,19 @@ const AnimalDetalhe = () => {
     () => readAnimalSanitaryAlert(animal?.payload),
     [animal?.payload],
   );
+  const sanitaryCases = useLiveQuery(async () => {
+    if (!animal?.id || !animal.fazenda_id) return [] as SanitarioCaso[];
+
+    const cases = await db.state_sanitario_casos
+      .where("[fazenda_id+animal_id]")
+      .equals([animal.fazenda_id, animal.id])
+      .filter((caseRecord) => !caseRecord.deleted_at)
+      .toArray();
+
+    return cases.sort((left, right) =>
+      right.opened_at.localeCompare(left.opened_at),
+    );
+  }, [animal?.fazenda_id, animal?.id]);
   const activeSanitaryCase = useLiveQuery(async () => {
     if (!animal?.id || !animal.fazenda_id) return null;
     const cases = await db.state_sanitario_casos
@@ -448,6 +676,18 @@ const AnimalDetalhe = () => {
       }),
     [activeSanitaryAlert, activeSanitaryCase],
   );
+  const sanitaryEventsByCase = useMemo(() => {
+    const byCase = new Map<string, EnrichedEvent[]>();
+
+    for (const event of eventos ?? []) {
+      if (!event.sanitario_caso_id) continue;
+      const current = byCase.get(event.sanitario_caso_id) ?? [];
+      current.push(event);
+      byCase.set(event.sanitario_caso_id, current);
+    }
+
+    return byCase;
+  }, [eventos]);
   const hasMovementBlockedSanitaryAlert = hasOpenSanitaryAlert(animal?.payload);
   const selectedOfficialDisease = useMemo(() => {
     const diseases = officialDiseases ?? [];
@@ -869,6 +1109,67 @@ const AnimalDetalhe = () => {
     }
   }, [activeSanitaryAlert, activeSanitaryCase, animal, sanitaryAlertResolution]);
 
+  const handleOpenCloseClinicalCaseDialog = useCallback(
+    (caseRecord: SanitarioCaso) => {
+      setClinicalCaseClosure({
+        caseId: caseRecord.id,
+        reason: "resolvido",
+        notes: "",
+      });
+    },
+    [],
+  );
+
+  const handleCloseClinicalCase = useCallback(async () => {
+    if (!animal || !clinicalCaseClosure.caseId) return;
+
+    const caseToClose =
+      sanitaryCases?.find((caseRecord) => caseRecord.id === clinicalCaseClosure.caseId) ??
+      null;
+    const reason = clinicalCaseClosure.reason;
+    const notes = clinicalCaseClosure.notes.trim();
+    const validationMessage = validateClinicalCaseClosureInput({
+      caseRecord: caseToClose,
+      reason,
+      notes,
+    });
+
+    if (validationMessage) {
+      showError(validationMessage);
+      return;
+    }
+
+    setIsClosingClinicalCase(true);
+    try {
+      await createGesture(animal.fazenda_id, [
+        {
+          table: "sanitario_casos",
+          action: "UPDATE",
+          record: {
+            id: clinicalCaseClosure.caseId,
+            status: "encerrado",
+            closed_at: new Date().toISOString(),
+            closure_reason: reason,
+            observacoes: notes || caseToClose?.observacoes || null,
+            movement_blocked: false,
+          },
+        },
+      ]);
+
+      setClinicalCaseClosure({
+        caseId: null,
+        reason: "resolvido",
+        notes: "",
+      });
+      showSuccess("Caso clinico encerrado.");
+    } catch (error) {
+      console.error(error);
+      showError("Nao foi possivel encerrar o caso clinico.");
+    } finally {
+      setIsClosingClinicalCase(false);
+    }
+  }, [animal, clinicalCaseClosure, sanitaryCases]);
+
   if (!animal) {
     return (
       <div className="p-12 text-center text-muted-foreground">
@@ -878,6 +1179,15 @@ const AnimalDetalhe = () => {
   }
 
   const registrarAnimalPath = `/registrar?animalId=${encodeURIComponent(animal.id)}`;
+  const selectedClinicalCaseClosureReason = getClinicalCaseClosureReason(
+    clinicalCaseClosure.reason,
+  );
+  const clinicalCaseClosureNotesLength = clinicalCaseClosure.notes.trim().length;
+  const canConfirmClinicalCaseClosure =
+    Boolean(clinicalCaseClosure.caseId) &&
+    (!selectedClinicalCaseClosureReason.requiresNotes ||
+      clinicalCaseClosureNotesLength >= 10) &&
+    clinicalCaseClosureNotesLength <= 1000;
 
   return (
     <div className="space-y-5">
@@ -1927,9 +2237,12 @@ const AnimalDetalhe = () => {
       )}
 
       <Tabs defaultValue="timeline" className="w-full">
-        <TabsList className="grid w-full max-w-[400px] grid-cols-2 bg-muted/40 p-1">
+        <TabsList className="grid w-full max-w-[540px] grid-cols-3 bg-muted/40 p-1">
           <TabsTrigger value="timeline" className="gap-2 rounded-md">
             <History className="h-4 w-4" /> Timeline
+          </TabsTrigger>
+          <TabsTrigger value="casos" className="gap-2 rounded-md">
+            <HeartPulse className="h-4 w-4" /> Casos
           </TabsTrigger>
           <TabsTrigger value="agenda" className="gap-2 rounded-md">
             <Calendar className="h-4 w-4" /> Agenda
@@ -2047,6 +2360,15 @@ const AnimalDetalhe = () => {
           </div>
         </TabsContent>
 
+        <TabsContent value="casos" className="mt-6">
+          <AnimalSanitaryCasesPanel
+            animalId={animal.id}
+            cases={sanitaryCases}
+            eventsByCase={sanitaryEventsByCase}
+            onCloseClinicalCase={handleOpenCloseClinicalCaseDialog}
+          />
+        </TabsContent>
+
         <TabsContent value="agenda" className="mt-6">
           <div className="grid gap-3">
             {agenda?.map((entry) => (
@@ -2111,6 +2433,113 @@ const AnimalDetalhe = () => {
         onOpenChange={setShowMoverLote}
         onSuccess={() => {}}
       />
+
+      <Dialog
+        open={Boolean(clinicalCaseClosure.caseId)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setClinicalCaseClosure({
+              caseId: null,
+              reason: "resolvido",
+              notes: "",
+            });
+          }
+        }}
+      >
+        <DialogContent className="max-w-xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <HeartPulse className="h-5 w-5" />
+              Encerrar caso clinico
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Motivo</Label>
+              <Select
+                value={clinicalCaseClosure.reason}
+                onValueChange={(value) =>
+                  setClinicalCaseClosure((prev) => ({
+                    ...prev,
+                    reason: value as ClinicalCaseClosureReason,
+                  }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o motivo" />
+                </SelectTrigger>
+                <SelectContent>
+                  {CLINICAL_CASE_CLOSURE_REASONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                {selectedClinicalCaseClosureReason.helper}
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between gap-3">
+                <Label htmlFor="clinical_case_close_notes">
+                  Observacoes de encerramento
+                </Label>
+                <span className="text-xs text-muted-foreground">
+                  {clinicalCaseClosureNotesLength}/1000
+                </span>
+              </div>
+              <Textarea
+                id="clinical_case_close_notes"
+                value={clinicalCaseClosure.notes}
+                onChange={(event) =>
+                  setClinicalCaseClosure((prev) => ({
+                    ...prev,
+                    notes: event.target.value,
+                  }))
+                }
+                maxLength={1000}
+                placeholder="Descreva resposta ao manejo, orientacao veterinaria ou motivo do encerramento."
+              />
+              {selectedClinicalCaseClosureReason.requiresNotes &&
+              clinicalCaseClosureNotesLength < 10 ? (
+                <p className="text-xs text-destructive">
+                  Este desfecho exige observacao com pelo menos 10 caracteres.
+                </p>
+              ) : null}
+            </div>
+
+            <div className="rounded-xl border border-border/70 bg-muted/20 p-3 text-sm text-muted-foreground">
+              O encerramento atualiza apenas o estado do caso clinico. Manejos
+              realizados continuam registrados pela timeline de eventos.
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() =>
+                setClinicalCaseClosure({
+                  caseId: null,
+                  reason: "resolvido",
+                  notes: "",
+                })
+              }
+              disabled={isClosingClinicalCase}
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={() => void handleCloseClinicalCase()}
+              disabled={isClosingClinicalCase || !canConfirmClinicalCaseClosure}
+            >
+              {isClosingClinicalCase ? "Encerrando..." : "Confirmar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog
         open={showSanitaryAlertDialog}

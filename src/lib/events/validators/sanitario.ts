@@ -40,6 +40,34 @@ export const validateSanitarioInput = (
     }
   }
 
+  if (input.sanitarioCaso) {
+    if (input.sanitarioCaso.action === "link" && !input.sanitarioCaso.id) {
+      issues.push({
+        code: "REQUIRED",
+        field: "sanitarioCaso.id",
+        message: "Caso sanitario invalido.",
+      });
+    }
+
+    if (!input.animalId) {
+      issues.push({
+        code: "REQUIRED",
+        field: "animalId",
+        message: "Caso sanitario exige um animal vinculado.",
+      });
+    }
+
+    if (
+      input.sanitarioCaso.action === "open" &&
+      input.sanitarioCaso.tipo !== "clinico"
+    ) {
+      issues.push({
+        code: "INVALID_ENUM",
+        field: "sanitarioCaso.tipo",
+        message: "Registro sanitario operacional so pode abrir caso clinico.",
+      });
+    }
+  }
+
   return issues;
 };
-

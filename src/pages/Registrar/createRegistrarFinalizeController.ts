@@ -238,6 +238,10 @@ export type RegistrarFinalizeControllerInput = {
   sanitary: {
     protocoloItemId: string;
     data: { tipo: SanitarioTipoEnum; produto: string };
+    caseLink: {
+      selectedCaseId: string | null;
+      createClinicalCase: boolean;
+    };
     selectedVeterinaryProductSelection: VeterinaryProductSelection | null;
     resolveProtocolProductSelection: (
       payload: Record<string, unknown> | null | undefined,
@@ -328,15 +332,20 @@ export function createRegistrarFinalizeController(
           sanitary.transit.officialTransitChecklistEnabled,
       });
 
-      const sanitaryRpc = await deps.sanitary.trySanitaryRpcFinalize({
-        tipoManejo: context.tipoManejo,
-        sourceTaskId: context.sourceTaskId,
-        fazendaId,
-        occurredAt: now,
-        tipo: sanitary.data.tipo,
-        sanitaryProductName,
-        sanitaryProductMetadata,
-      });
+      const shouldTrySanitaryRpc =
+        !sanitary.caseLink.selectedCaseId &&
+        !sanitary.caseLink.createClinicalCase;
+      const sanitaryRpc = shouldTrySanitaryRpc
+        ? await deps.sanitary.trySanitaryRpcFinalize({
+            tipoManejo: context.tipoManejo,
+            sourceTaskId: context.sourceTaskId,
+            fazendaId,
+            occurredAt: now,
+            tipo: sanitary.data.tipo,
+            sanitaryProductName,
+            sanitaryProductMetadata,
+          })
+        : ({ status: "skip" } as const);
       if (sanitaryRpc.status === "handled") {
         deps.feedback.showSuccess(
           `Aplicacao sanitaria confirmada no servidor. Evento ${sanitaryRpc.eventoId.slice(0, 8)}.`,
@@ -459,6 +468,8 @@ export function createRegistrarFinalizeController(
             sanitaryProductMetadata,
             protocoloItem,
             sanitarioData: { tipo: sanitary.data.tipo },
+            sanitarioCasoId: sanitary.caseLink.selectedCaseId,
+            abrirCasoClinico: sanitary.caseLink.createClinicalCase,
             pesagemData: operationData.pesagemData,
             movimentacaoData: operationData.movimentacaoData,
             nutricaoData: operationData.nutricaoData,

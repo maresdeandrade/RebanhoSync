@@ -31,21 +31,29 @@ const buildBaseEventOp = (
   };
 };
 
+const resolveSanitarioCasoId = (input: EventInput): string | null => {
+  if (
+    (input.dominio !== "sanitario" && input.dominio !== "alerta_sanitario") ||
+    !input.sanitarioCaso
+  ) {
+    return null;
+  }
+
+  return input.sanitarioCaso.action === "open"
+    ? crypto.randomUUID()
+    : input.sanitarioCaso.id;
+};
+
 export const buildEventGesture = (input: EventInput): EventGestureBuildResult => {
   assertValidEventInput(input);
 
   const eventId = crypto.randomUUID();
   const occurredAt = input.occurredAt ?? new Date().toISOString();
-  const sanitarioCasoId =
-    input.dominio === "alerta_sanitario" && input.sanitarioCaso
-      ? input.sanitarioCaso.action === "open"
-        ? crypto.randomUUID()
-        : input.sanitarioCaso.id
-      : null;
+  const sanitarioCasoId = resolveSanitarioCasoId(input);
   const ops: OperationInput[] = [];
 
   if (
-    input.dominio === "alerta_sanitario" &&
+    (input.dominio === "sanitario" || input.dominio === "alerta_sanitario") &&
     input.sanitarioCaso?.action === "open"
   ) {
     ops.push({

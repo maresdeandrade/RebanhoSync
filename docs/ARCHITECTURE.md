@@ -46,6 +46,7 @@ Boundary `Registrar` <-> sanitario:
 - Compliance sanitario esta parcialmente validado por overlays, views e regras sanitarias, mas nao deve ser tratado como bloqueio operacional completo e universal sem nova validacao.
 - `sanitario_casos` e o contexto mutavel por animal para acompanhamento longitudinal de suspeitas notificaveis e manejo clinico. Ele nao substitui eventos: cada registro operacional continua em `eventos`/`eventos_*`, com vinculo opcional por `eventos.sanitario_caso_id`.
 - Casos sanitarios sao tenant-scoped por `fazenda_id`, protegidos por RLS de membership, sincronizados offline como `state_sanitario_casos` e devem preservar FK composta com `animais` e `eventos` quando houver vinculo.
+- O fluxo operacional do `Registrar` pode vincular manejo sanitario a um caso clinico existente ou abrir um caso clinico no mesmo gesto do evento, mantendo `1 acao -> 1 createGesture`.
 
 Contratos disponiveis para consumo:
 
