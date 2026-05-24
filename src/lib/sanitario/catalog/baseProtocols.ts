@@ -561,6 +561,196 @@ export const STANDARD_PROTOCOLS: StandardProtocol[] = [
       },
     ],
   },
+  {
+    id: "med-diarreia-neonatal",
+    canonical_key: "diarreia_neonatal",
+    family_code: "diarreia_neonatal",
+    nome: "Suporte Clinico para Diarreia Neonatal",
+    descricao:
+      "Roteiro de apoio para manejo clinico de bezerros jovens com diarreia, desidratacao ou apatia.",
+    categoria: "medicamentos",
+    scope: "fazenda",
+    status_legal: "recomendado",
+    source_origin: "biblioteca_canonica_fazenda",
+    activation_mode: "materializar_protocolo",
+    referencia: "Protocolo Clinico Veterinario",
+    calendario_base: {
+      profile: "terapeutico",
+      label: "Uso sob criterio clinico",
+    },
+    itens: [
+      {
+        item_code: "diarreia-neonatal-reidratacao",
+        tipo: "medicamento",
+        produto: "Soro Oral / Reidratacao Eletrolitica",
+        intervalo_dias: 0,
+        dose_num: 1,
+        gera_agenda: false,
+        indicacao:
+          "Suporte hidroeletrolitico em bezerros com diarreia, conforme avaliacao clinica.",
+        idade_min_dias: 0,
+        idade_max_dias: 60,
+        target_policy: {
+          mode: "suspected_animal_required",
+          target_scope: "animal",
+          condition_code: "diarreia_neonatal",
+        },
+        observacoes:
+          "Priorizar avaliacao de desidratacao, sucção, temperatura e necessidade de atendimento veterinario.",
+        calendario_base: {
+          mode: "clinical_protocol",
+          anchor: "clinical_need",
+          label: "Uso terapeutico sob criterio clinico",
+        },
+      },
+      {
+        item_code: "diarreia-neonatal-suporte",
+        tipo: "medicamento",
+        produto: "Suporte Clinico / Anti-inflamatorio conforme avaliacao",
+        intervalo_dias: 0,
+        dose_num: 2,
+        gera_agenda: false,
+        indicacao:
+          "Conduta complementar apenas quando indicada por avaliacao clinica ou orientacao veterinaria.",
+        idade_min_dias: 0,
+        idade_max_dias: 60,
+        target_policy: {
+          mode: "suspected_animal_required",
+          target_scope: "animal",
+          condition_code: "diarreia_neonatal",
+        },
+        calendario_base: {
+          mode: "clinical_protocol",
+          anchor: "clinical_need",
+          label: "Uso terapeutico sob criterio clinico",
+        },
+      },
+    ],
+  },
+  {
+    id: "med-respiratorio-pneumonia",
+    canonical_key: "sindrome_respiratoria",
+    family_code: "sindrome_respiratoria",
+    nome: "Suporte Clinico Respiratorio / Pneumonia",
+    descricao:
+      "Roteiro de apoio para casos clinicos com tosse, secrecao nasal, febre, dispneia ou suspeita de pneumonia.",
+    categoria: "medicamentos",
+    scope: "fazenda",
+    status_legal: "recomendado",
+    source_origin: "biblioteca_canonica_fazenda",
+    activation_mode: "materializar_protocolo",
+    referencia: "Protocolo Clinico Veterinario",
+    calendario_base: {
+      profile: "terapeutico",
+      label: "Uso sob criterio clinico",
+    },
+    itens: [
+      {
+        item_code: "respiratorio-antibiotico",
+        tipo: "medicamento",
+        produto: "Antibiotico Respiratorio conforme avaliacao",
+        intervalo_dias: 0,
+        dose_num: 1,
+        gera_agenda: false,
+        indicacao:
+          "Conduta antimicrobiana apenas quando indicada por avaliacao clinica ou orientacao veterinaria.",
+        target_policy: {
+          mode: "suspected_animal_required",
+          target_scope: "animal",
+          condition_code: "sindrome_respiratoria",
+        },
+        observacoes:
+          "Registrar principio/produto efetivamente aplicado, dose e carencia conforme bula.",
+        calendario_base: {
+          mode: "clinical_protocol",
+          anchor: "clinical_need",
+          label: "Uso terapeutico sob criterio clinico",
+        },
+      },
+      {
+        item_code: "respiratorio-suporte",
+        tipo: "medicamento",
+        produto: "Anti-inflamatorio / Suporte Respiratorio",
+        intervalo_dias: 0,
+        dose_num: 2,
+        gera_agenda: false,
+        indicacao:
+          "Suporte clinico para febre, dor, dispneia ou queda de desempenho quando indicado.",
+        target_policy: {
+          mode: "suspected_animal_required",
+          target_scope: "animal",
+          condition_code: "sindrome_respiratoria",
+        },
+        calendario_base: {
+          mode: "clinical_protocol",
+          anchor: "clinical_need",
+          label: "Uso terapeutico sob criterio clinico",
+        },
+      },
+    ],
+  },
+  {
+    id: "med-ferida-miiase",
+    canonical_key: "ferida_miiase",
+    family_code: "ferida_miiase",
+    nome: "Manejo Clinico de Feridas / Miiase",
+    descricao:
+      "Roteiro de apoio para feridas, abscessos, lesoes cutaneas e suspeita de miiase/bicheira.",
+    categoria: "medicamentos",
+    scope: "fazenda",
+    status_legal: "recomendado",
+    source_origin: "biblioteca_canonica_fazenda",
+    activation_mode: "materializar_protocolo",
+    referencia: "Protocolo Clinico Veterinario",
+    calendario_base: {
+      profile: "terapeutico",
+      label: "Uso sob criterio clinico",
+    },
+    itens: [
+      {
+        item_code: "ferida-limpeza-curativo",
+        tipo: "medicamento",
+        produto: "Limpeza / Antisseptico / Curativo local",
+        intervalo_dias: 0,
+        dose_num: 1,
+        gera_agenda: false,
+        indicacao:
+          "Limpeza, avaliacao da extensao da lesao e curativo local quando aplicavel.",
+        target_policy: {
+          mode: "suspected_animal_required",
+          target_scope: "animal",
+          condition_code: "ferida_miiase",
+        },
+        observacoes:
+          "Registrar material/produto usado e acompanhar sinais de infeccao ou piora.",
+        calendario_base: {
+          mode: "clinical_protocol",
+          anchor: "clinical_need",
+          label: "Uso terapeutico sob criterio clinico",
+        },
+      },
+      {
+        item_code: "ferida-larvicida-repelente",
+        tipo: "medicamento",
+        produto: "Larvicida / Repelente para miiase",
+        intervalo_dias: 0,
+        dose_num: 2,
+        gera_agenda: false,
+        indicacao:
+          "Uso local em suspeita de miiase/bicheira, conforme avaliacao e bula.",
+        target_policy: {
+          mode: "suspected_animal_required",
+          target_scope: "animal",
+          condition_code: "ferida_miiase",
+        },
+        calendario_base: {
+          mode: "clinical_protocol",
+          anchor: "clinical_need",
+          label: "Uso terapeutico sob criterio clinico",
+        },
+      },
+    ],
+  },
 ];
 
 export function normalizeStandardProtocolInterval(item: StandardProtocolItem) {

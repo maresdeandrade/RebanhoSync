@@ -1,7 +1,7 @@
 # Análise Sanitária — Agenda, Clínica e Estoque
 
 > Status: proposta revisada contra o estado real do repositório em 2026-05-20, com primeiros recortes de implementação iniciados.
-> Escopo atual: documentação/proposta, classificação sanitária central, projeção visual em Agenda/Home/Dashboard/Protocolos e casos sanitários mínimos já integrados ao registro de suspeita e ao manejo clínico no `Registrar`.
+> Escopo atual: documentação/proposta, classificação sanitária central, projeção visual em Agenda/Home/Dashboard/Protocolos, casos sanitários mínimos integrados ao registro de suspeita/manejo clínico e apoio clínico read-only inicial no detalhe do animal.
 > Capability principal: `sanitario.agenda_clinica_estoque`. Trilhos relacionados: `sanitario.catalogo_regulatorio`, `sanitario.registro`, `agenda.recalculo`, `infra.docs`.
 
 ## 1. Veredito executivo
@@ -223,8 +223,7 @@ Entregas já realizadas:
 - o detalhe do animal passou a projetar suspeita sanitária como caso sanitário mínimo derivado do alerta, sem criar entidade persistida nem alterar o contrato de eventos.
 
 O que ainda falta:
-- listar casos clínicos no detalhe do animal;
-- criar encerramento de caso clínico com motivo.
+- integrar encerramento clínico a uma fonte veterinária consolidada quando esse contrato existir.
 
 Critério de aceite:
 - sem regra forte na UI;
@@ -266,10 +265,24 @@ Requisitos:
 
 Objetivo: estruturar roteiros clínicos sem automação indevida.
 
+Entregas realizadas:
+- helper puro `buildClinicalProtocolSupport` em `src/lib/sanitario/compliance/clinicalProtocols.ts`;
+- detecção contextual inicial de TPB e mastite a partir do caso clínico e dos eventos vinculados;
+- seleção/override explícito do roteiro por `clinical_protocol_id`, aliases compatíveis ou código clínico estruturado;
+- visualização read-only no detalhe do animal, dentro do caso sanitário;
+- indicação visual da origem da seleção (`Contexto` ou `Selecionado`);
+- ação explícita por item do roteiro para abrir o `Registrar` com `produto`, `sanitarioTipo=medicamento` e `sanitarioCasoId` pré-preenchidos;
+- referência `clinical_protocol` persistida no payload do evento sanitário somente após salvamento explícito no `Registrar`;
+- contrato público versionado `payload.clinical_protocol` com `schema_version=1`, helper único de build/read em `src/lib/sanitario/compliance/clinicalProtocols.ts` e testes de compatibilidade;
+- timeline do caso sanitário mostrando leitura operacional read-only do roteiro/conduta quando o evento vinculado possui `payload.clinical_protocol`;
+- filtro auxiliar no painel de casos por roteiro clínico derivado do caso/eventos vinculados;
+- roteiro clínico read-only de diarreia neonatal (`med-diarreia-neonatal`) adicionado sob o mesmo contrato, com `gera_agenda=false` e sem impacto em estoque;
+- roteiros clínicos read-only de suporte respiratório/pneumonia (`med-respiratorio-pneumonia`) e feridas/miíase (`med-ferida-miiase`) adicionados com o mesmo contrato, `gera_agenda=false` e leitura por contexto/código clínico;
+- travas explícitas: a visualização não gera agenda, evento, prescrição ou baixa de estoque.
+
 Entregas futuras:
-- catálogo/modelo clínico para TPB e mastite;
-- visualização contextual dentro do caso;
-- ação explícita para registrar conduta executada;
+- consolidar governança da biblioteca clínica mínima e critérios para novos roteiros sob `clinical_protocol`;
+- suporte a mais roteiros clínicos quando houver biblioteca/fonte veterinária validada;
 - nenhum evento ou estoque gerado por simples visualização do roteiro.
 
 ### Fase 5 — Terapia de Vaca Seca como recorte próprio
@@ -328,11 +341,11 @@ Considerando o recorte desta proposta, não o produto sanitário completo:
 | Contrato conceitual e classificação | 90% | auditoria específica de seed/catálogo redundante. |
 | Separação visual operacional | 85% | ajustes finos de UX e consistência cross-flow. |
 | Casos sanitários mínimos | 95% | integração veterinária futura quando houver fonte consolidada. |
-| Protocolos clínicos de apoio | 25% | modelo/visualização contextual para TPB, mastite e condutas. |
+| Protocolos clínicos de apoio | 92% | governança da biblioteca clínica mínima e critérios de expansão. |
 | Terapia de Vaca Seca | 10% | definir elegibilidade, âncora, dedup e materialização. |
 | Estoque MVP sanitário | 0% | criar módulo de insumos/lotes/movimentações e consumo por evento. |
 
-Estimativa objetiva: o refatoramento estrutural sanitário está entre 65% e 70% concluído. Para fechar o núcleo mínimo sem estoque avançado, faltam cerca de 2 a 3 recortes pequenos. Para fechar a visão completa com protocolos clínicos, Terapia de Vaca Seca e estoque MVP, faltam cerca de 7 a 10 recortes revisáveis.
+Estimativa objetiva: o refatoramento estrutural sanitário está entre 80% e 84% concluído. Para fechar o núcleo mínimo sem estoque avançado, falta cerca de 1 recorte pequeno. Para fechar a visão completa com protocolos clínicos, Terapia de Vaca Seca e estoque MVP, faltam cerca de 4 a 6 recortes revisáveis.
 
 ## 10. Fora do escopo desta proposta
 
@@ -371,4 +384,4 @@ O núcleo a preservar é:
 - estoque registra insumo real e só baixa por fato/movimentação;
 - catálogo oficial, overlay regulatório e protocolo da fazenda continuam separados.
 
-O próximo passo mais seguro é iniciar o recorte de protocolos clínicos de apoio, começando por um modelo visual/contextual simples para TPB ou mastite, sem gerar evento, agenda ou consumo de estoque por simples visualização.
+O próximo passo mais seguro é consolidar governança da biblioteca clínica mínima: critérios de inclusão, limites read-only e regra explícita para não converter roteiro clínico em agenda, prescrição ou estoque.

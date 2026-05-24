@@ -109,6 +109,10 @@ import {
 } from "@/lib/sanitario/compliance/alerts";
 import { buildSanitaryCaseFlowSummary } from "@/lib/sanitario/compliance/caseFlow";
 import {
+  buildClinicalProtocolSupport,
+  buildClinicalProtocolTimelineSummary,
+} from "@/lib/sanitario/compliance/clinicalProtocols";
+import {
   formatWeight,
   formatWeightPerDay,
   formatWeightValue,
@@ -224,20 +228,165 @@ type AnimalSanitaryCasesPanelProps = {
   onCloseClinicalCase: (caseRecord: SanitarioCaso) => void;
 };
 
+function buildClinicalGuidanceRegisterUrl(input: {
+  animalId: string;
+  caseId: string;
+  protocolId: string;
+  itemId: string;
+  productName: string;
+}) {
+  const params = new URLSearchParams({
+    dominio: "sanitario",
+    animalId: input.animalId,
+    sanitarioTipo: "medicamento",
+    sanitarioCasoId: input.caseId,
+    produto: input.productName,
+    clinicalProtocolId: input.protocolId,
+    clinicalProtocolItemId: input.itemId,
+  });
+
+  return `/registrar?${params.toString()}`;
+}
+
 export function AnimalSanitaryCasesPanel({
   animalId,
   cases,
   eventsByCase,
   onCloseClinicalCase,
 }: AnimalSanitaryCasesPanelProps) {
+  const [clinicalProtocolFilter, setClinicalProtocolFilter] = useState("todos");
+  const caseEntries = useMemo(
+    () =>
+      (cases ?? []).map((caseRecord) => {
+        const linkedEvents = eventsByCase.get(caseRecord.id) ?? [];
+        const clinicalProtocolSupport = buildClinicalProtocolSupport({
+          caseRecord,
+          events: linkedEvents,
+        });
+        const timelineSummaries = linkedEvents
+          .map((event) => buildClinicalProtocolTimelineSummary(event.payload))
+          .filter(
+            (
+              summary,
+            ): summary is NonNullable<ReturnType<typeof buildClinicalProtocolTimelineSummary>> =>
+              Boolean(summary),
+          );
+
+        return {
+          caseRecord,
+          linkedEvents,
+          clinicalProtocolSupport,
+          timelineSummaries,
+        };
+      }),
+    [cases, eventsByCase],
+  );
+  const clinicalProtocolFilterOptions = useMemo(() => {
+    const byProtocol = new Map<
+      string,
+      { protocolId: string; title: string; caseIds: Set<string> }
+    >();
+
+    for (const entry of caseEntries) {
+      const summaries = [
+        entry.clinicalProtocolSupport
+          ? {
+              protocolId: entry.clinicalProtocolSupport.protocolId,
+              title: entry.clinicalProtocolSupport.title,
+            }
+          : null,
+        ...entry.timelineSummaries.map((summary) => ({
+          protocolId: summary.protocolId,
+          title: summary.protocolTitle,
+        })),
+      ].filter(
+        (
+          summary,
+        ): summary is { protocolId: string; title: string } => summary !== null,
+      );
+
+      for (const summary of summaries) {
+        const current =
+          byProtocol.get(summary.protocolId) ??
+          {
+            protocolId: summary.protocolId,
+            title: summary.title,
+            caseIds: new Set<string>(),
+          };
+        current.caseIds.add(entry.caseRecord.id);
+        byProtocol.set(summary.protocolId, current);
+      }
+    }
+
+    return Array.from(byProtocol.values()).sort((left, right) =>
+      left.title.localeCompare(right.title),
+    );
+  }, [caseEntries]);
+  const filteredCaseEntries =
+    clinicalProtocolFilter === "todos"
+      ? caseEntries
+      : caseEntries.filter((entry) => {
+          if (
+            entry.clinicalProtocolSupport?.protocolId === clinicalProtocolFilter
+          ) {
+            return true;
+          }
+
+          return entry.timelineSummaries.some(
+            (summary) => summary.protocolId === clinicalProtocolFilter,
+          );
+        });
+
   return (
     <div className="grid gap-3">
-      {(cases ?? []).map((caseRecord) => {
+      {clinicalProtocolFilterOptions.length > 0 ? (
+        <div className="rounded-xl border border-border/70 bg-background/80 p-3">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase text-muted-foreground">
+                Roteiro clinico
+              </p>
+              <p className="text-sm text-muted-foreground">
+                {filteredCaseEntries.length} de {caseEntries.length} casos
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant={
+                  clinicalProtocolFilter === "todos" ? "default" : "outline"
+                }
+                onClick={() => setClinicalProtocolFilter("todos")}
+              >
+                Todos
+              </Button>
+              {clinicalProtocolFilterOptions.map((option) => (
+                <Button
+                  key={option.protocolId}
+                  type="button"
+                  size="sm"
+                  variant={
+                    clinicalProtocolFilter === option.protocolId
+                      ? "default"
+                      : "outline"
+                  }
+                  onClick={() => setClinicalProtocolFilter(option.protocolId)}
+                >
+                  {option.title} ({option.caseIds.size})
+                </Button>
+              ))}
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {filteredCaseEntries.map((entry) => {
+        const { caseRecord, linkedEvents, clinicalProtocolSupport } = entry;
         const summary = buildSanitaryCaseFlowSummary({
           caseRecord,
           alert: null,
         });
-        const linkedEvents = eventsByCase.get(caseRecord.id) ?? [];
         const timelineEvents = linkedEvents
           .slice()
           .sort((left, right) => right.occurred_at.localeCompare(left.occurred_at));
@@ -335,6 +484,73 @@ export function AnimalSanitaryCasesPanel({
                 </p>
               ) : null}
 
+              {clinicalProtocolSupport ? (
+                <div className="space-y-3 rounded-xl border border-sky-200 bg-sky-50/60 p-3 dark:border-sky-900/60 dark:bg-sky-950/30">
+                  <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                      <p className="text-xs font-semibold uppercase text-sky-900 dark:text-sky-200">
+                        Apoio clinico
+                      </p>
+                      <p className="text-sm font-semibold text-sky-950 dark:text-sky-100">
+                        {clinicalProtocolSupport.title}
+                      </p>
+                    </div>
+                    <Badge variant="outline" className="border-sky-300 text-sky-900">
+                      {clinicalProtocolSupport.sourceLabel}
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-sky-950/80 dark:text-sky-100/80">
+                    {clinicalProtocolSupport.summary}
+                  </p>
+                  {clinicalProtocolSupport.reference ? (
+                    <p className="text-xs text-sky-900/75 dark:text-sky-200/80">
+                      Referencia: {clinicalProtocolSupport.reference}
+                    </p>
+                  ) : null}
+                  <div className="grid gap-2">
+                    {clinicalProtocolSupport.guidanceItems.map((item) => (
+                      <div
+                        key={item.id}
+                        className="rounded-lg border border-sky-200/80 bg-background/80 p-3 dark:border-sky-900/50"
+                      >
+                        <p className="text-sm font-medium">{item.label}</p>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          {item.detail}
+                        </p>
+                        {item.note ? (
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            {item.note}
+                          </p>
+                        ) : null}
+                        <Button
+                          asChild
+                          size="sm"
+                          variant="outline"
+                          className="mt-3 h-8 rounded-full border-sky-300 text-xs text-sky-900 shadow-none"
+                        >
+                          <Link
+                            to={buildClinicalGuidanceRegisterUrl({
+                              animalId,
+                              caseId: caseRecord.id,
+                              protocolId: clinicalProtocolSupport.protocolId,
+                              itemId: item.id,
+                              productName: item.label,
+                            })}
+                          >
+                            Registrar conduta
+                          </Link>
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="space-y-1 text-xs text-sky-900/80 dark:text-sky-200/80">
+                    {clinicalProtocolSupport.safetyNotes.map((note) => (
+                      <p key={note}>- {note}</p>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+
               <div className="space-y-3 rounded-xl border border-border/70 bg-background/80 p-3">
                 <div className="flex items-center justify-between gap-3">
                   <p className="text-xs font-semibold uppercase text-muted-foreground">
@@ -347,26 +563,44 @@ export function AnimalSanitaryCasesPanel({
 
                 {timelineEvents.length > 0 ? (
                   <div className="space-y-3">
-                    {timelineEvents.map((event) => (
-                      <div
-                        key={event.id}
-                        className="border-l-2 border-primary/30 pl-3"
-                      >
-                        <div className="flex flex-wrap items-center gap-2">
-                          <p className="text-sm font-medium">
-                            {formatCaseTimelineEventLabel(event)}
-                          </p>
-                          <Badge variant="secondary" className="text-[10px]">
-                            {formatDate(event.occurred_at)}
-                          </Badge>
+                    {timelineEvents.map((event) => {
+                      const clinicalTimelineSummary =
+                        buildClinicalProtocolTimelineSummary(event.payload);
+
+                      return (
+                        <div
+                          key={event.id}
+                          className="border-l-2 border-primary/30 pl-3"
+                        >
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="text-sm font-medium">
+                              {formatCaseTimelineEventLabel(event)}
+                            </p>
+                            <Badge variant="secondary" className="text-[10px]">
+                              {formatDate(event.occurred_at)}
+                            </Badge>
+                            {clinicalTimelineSummary ? (
+                              <Badge variant="outline" className="text-[10px]">
+                                Roteiro clinico
+                              </Badge>
+                            ) : null}
+                          </div>
+                          {event.observacoes ? (
+                            <p className="mt-1 text-sm text-muted-foreground">
+                              {event.observacoes}
+                            </p>
+                          ) : null}
+                          {clinicalTimelineSummary ? (
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              Roteiro: {clinicalTimelineSummary.protocolTitle}
+                              {clinicalTimelineSummary.itemLabel
+                                ? ` | Conduta: ${clinicalTimelineSummary.itemLabel}`
+                                : ""}
+                            </p>
+                          ) : null}
                         </div>
-                        {event.observacoes ? (
-                          <p className="mt-1 text-sm text-muted-foreground">
-                            {event.observacoes}
-                          </p>
-                        ) : null}
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 ) : (
                   <p className="text-sm text-muted-foreground">
@@ -383,6 +617,11 @@ export function AnimalSanitaryCasesPanel({
           Sem casos sanitarios registrados.
         </p>
       )}
+      {(cases?.length ?? 0) > 0 && filteredCaseEntries.length === 0 ? (
+        <p className="py-8 text-center text-muted-foreground">
+          Nenhum caso sanitario encontrado para este roteiro clinico.
+        </p>
+      ) : null}
     </div>
   );
 }

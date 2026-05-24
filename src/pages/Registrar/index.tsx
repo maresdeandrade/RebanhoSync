@@ -127,6 +127,10 @@ const Registrar = () => {
   const [contextPastoId, setContextPastoId] = useState("");
   const [sanitarioCasoId, setSanitarioCasoId] = useState("");
   const [abrirCasoClinico, setAbrirCasoClinico] = useState(false);
+  const [clinicalProtocolRef, setClinicalProtocolRef] = useState<{
+    protocolId: string | null;
+    itemId: string | null;
+  }>({ protocolId: null, itemId: null });
   const [showTechDetails, setShowTechDetails] = useState(false);
   const { activeFarmId, role, farmMeasurementConfig, farmLifecycleConfig } =
     useAuth();
@@ -687,6 +691,16 @@ const Registrar = () => {
       setTipoManejo(parsedQuery.domain);
     }
     applySanitaryQueryPrefill(parsedQuery.sanitaryPrefill);
+    const nextClinicalProtocolRef = {
+      protocolId: parsedQuery.sanitaryPrefill.clinicalProtocolId,
+      itemId: parsedQuery.sanitaryPrefill.clinicalProtocolItemId,
+    };
+    setClinicalProtocolRef((prev) =>
+      prev.protocolId === nextClinicalProtocolRef.protocolId &&
+      prev.itemId === nextClinicalProtocolRef.itemId
+        ? prev
+        : nextClinicalProtocolRef,
+    );
     if (parsedQuery.sanitaryPrefill.sanitarioCasoId) {
       setSanitarioCasoId(parsedQuery.sanitaryPrefill.sanitarioCasoId);
       setAbrirCasoClinico(false);
@@ -840,6 +854,7 @@ const Registrar = () => {
             selectedCaseId: sanitarioCasoId || null,
             createClinicalCase: abrirCasoClinico,
           },
+          clinicalProtocolRef,
           selectedVeterinaryProductSelection,
           resolveProtocolProductSelection,
           transit: {
@@ -863,6 +878,7 @@ const Registrar = () => {
   }, [
     activeFarmId,
     abrirCasoClinico,
+    clinicalProtocolRef,
     compraNovosAnimais,
     complianceFlowIssues,
     farmLifecycleConfig,

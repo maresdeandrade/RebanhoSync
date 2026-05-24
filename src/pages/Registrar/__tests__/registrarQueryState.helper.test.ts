@@ -43,6 +43,8 @@ describe("parseRegistrarQueryState", () => {
       sanitarioTipo: "vacinacao",
       sanitarioCasoId: null,
       abrirCasoClinico: false,
+      clinicalProtocolId: null,
+      clinicalProtocolItemId: null,
     });
     expect(parsed.shouldOpenChooseActionStep).toBe(true);
   });
@@ -84,7 +86,7 @@ describe("parseRegistrarQueryState", () => {
 
   it("normaliza parametros de caso clinico sanitario", () => {
     const searchParams = new URLSearchParams(
-      "dominio=sanitario&animalId=a-1&sanitarioCasoId=caso-1&abrirCasoClinico=1",
+      "dominio=sanitario&animalId=a-1&sanitarioCasoId=caso-1&abrirCasoClinico=1&clinicalProtocolId=med-tpb&clinicalProtocolItemId=tpb-diminazeno",
     );
     const parsed = parseRegistrarQueryState({
       searchParams,
@@ -94,5 +96,7 @@ describe("parseRegistrarQueryState", () => {
 
     expect(parsed.sanitaryPrefill.sanitarioCasoId).toBe("caso-1");
     expect(parsed.sanitaryPrefill.abrirCasoClinico).toBe(true);
+    expect(parsed.sanitaryPrefill.clinicalProtocolId).toBe("med-tpb");
+    expect(parsed.sanitaryPrefill.clinicalProtocolItemId).toBe("tpb-diminazeno");
   });
 });

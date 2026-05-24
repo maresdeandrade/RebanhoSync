@@ -14,6 +14,7 @@ import type {
   Evento,
   SanitarioCaso,
 } from "@/lib/offline/types";
+import { buildClinicalProtocolEventPayload } from "@/lib/sanitario/compliance/clinicalProtocols";
 import { validateClinicalCaseClosureInput } from "@/pages/animalDetalheClinicalCase";
 import AnimalDetalhe, { AnimalSanitaryCasesPanel } from "@/pages/AnimalDetalhe";
 
@@ -133,7 +134,7 @@ function makeEvento(overrides: Partial<Evento> = {}): Evento {
     source_client_op_id: null,
     corrige_evento_id: null,
     sanitario_caso_id: "caso-1",
-    observacoes: "Aplicado anti-inflamatorio e reavaliar em 48h",
+    observacoes: "Suspeita TPB: aplicado anti-inflamatorio e reavaliar em 48h",
     payload: {
       tipo: "medicamento",
     },
@@ -244,14 +245,190 @@ describe("AnimalDetalhe", () => {
     expect(screen.getByText("Timeline do caso")).toBeInTheDocument();
     expect(screen.getByText("medicamento")).toBeInTheDocument();
     expect(
-      screen.getByText("Aplicado anti-inflamatorio e reavaliar em 48h"),
+      screen.getByText("Suspeita TPB: aplicado anti-inflamatorio e reavaliar em 48h"),
     ).toBeInTheDocument();
+    expect(screen.getByText("Apoio clinico")).toBeInTheDocument();
+    expect(screen.getByText("Contexto")).toBeInTheDocument();
+    expect(
+      screen.getByText("Terapia de Tristeza Parasitaria Bovina (TPB)"),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Diminazeno (Ganaseg/Outros)")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        /Apoio clinico informativo; nao gera agenda, evento ou baixa de estoque\./i,
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getAllByRole("link", { name: /Registrar conduta/i })[0]).toHaveAttribute(
+      "href",
+      expect.stringContaining("produto=Diminazeno"),
+    );
+    expect(screen.getAllByRole("link", { name: /Registrar conduta/i })[0]).toHaveAttribute(
+      "href",
+      expect.stringContaining("clinicalProtocolId=med-tpb"),
+    );
+    expect(screen.getAllByRole("link", { name: /Registrar conduta/i })[0]).toHaveAttribute(
+      "href",
+      expect.stringContaining("clinicalProtocolItemId=tpb-diminazeno"),
+    );
     expect(screen.getByRole("link", { name: /Registrar manejo/i })).toHaveAttribute(
       "href",
       "/registrar?dominio=sanitario&animalId=animal-1&sanitarioTipo=medicamento&sanitarioCasoId=caso-1",
     );
     fireEvent.click(screen.getByRole("button", { name: /Encerrar caso/i }));
     expect(onCloseClinicalCase).toHaveBeenCalledWith(clinicalCase);
+  });
+
+  it("mostra roteiro clinico selecionado explicitamente no payload do caso", () => {
+    render(
+      <MemoryRouter
+        initialEntries={["/animais/animal-1/casos"]}
+        future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+      >
+        <AnimalSanitaryCasesPanel
+          animalId="animal-1"
+          cases={[
+            makeSanitarioCaso({
+              payload: { clinical_protocol_id: "med-mastite-seca" },
+              observacoes: "Secagem planejada com risco de mastite.",
+            }),
+          ]}
+          eventsByCase={new Map()}
+          onCloseClinicalCase={vi.fn()}
+        />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText("Selecionado")).toBeInTheDocument();
+    expect(screen.getByText("Terapia de Vaca Seca (Mastite)")).toBeInTheDocument();
+    expect(
+      screen.getByText("Antibiotico Intramamario (Vaca Seca)"),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Registrar conduta/i })).toHaveAttribute(
+      "href",
+      expect.stringContaining("produto=Antibiotico+Intramamario"),
+    );
+    expect(screen.getByRole("link", { name: /Registrar conduta/i })).toHaveAttribute(
+      "href",
+      expect.stringContaining("clinicalProtocolId=med-mastite-seca"),
+    );
+    expect(
+      screen.queryByText("Terapia de Tristeza Parasitaria Bovina (TPB)"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("mostra referencia de roteiro clinico no evento da timeline do caso", () => {
+    render(
+      <MemoryRouter
+        initialEntries={["/animais/animal-1/casos"]}
+        future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+      >
+        <AnimalSanitaryCasesPanel
+          animalId="animal-1"
+          cases={[
+            makeSanitarioCaso({
+              observacoes: "Caso clinico em acompanhamento.",
+            }),
+          ]}
+          eventsByCase={
+            new Map([
+              [
+                "caso-1",
+                [
+                  makeEvento({
+                    observacoes: "Conduta registrada pelo roteiro selecionado.",
+                    payload: buildClinicalProtocolEventPayload({
+                      protocolId: "med-tpb",
+                      itemId: "tpb-diminazeno",
+                    }),
+                  }),
+                ],
+              ],
+            ])
+          }
+          onCloseClinicalCase={vi.fn()}
+        />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getAllByText("Roteiro clinico").length).toBeGreaterThan(0);
+    expect(
+      screen.getByText(
+        "Roteiro: Terapia de Tristeza Parasitaria Bovina (TPB) | Conduta: Diminazeno (Ganaseg/Outros)",
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it("filtra casos sanitarios por roteiro clinico derivado", () => {
+    render(
+      <MemoryRouter
+        initialEntries={["/animais/animal-1/casos"]}
+        future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+      >
+        <AnimalSanitaryCasesPanel
+          animalId="animal-1"
+          cases={[
+            makeSanitarioCaso({
+              id: "caso-tpb",
+              observacoes: "Caso com conduta TPB.",
+            }),
+            makeSanitarioCaso({
+              id: "caso-mastite",
+              observacoes: "Caso com conduta de mastite.",
+              payload: { clinical_protocol_id: "med-mastite-seca" },
+            }),
+          ]}
+          eventsByCase={
+            new Map([
+              [
+                "caso-tpb",
+                [
+                  makeEvento({
+                    sanitario_caso_id: "caso-tpb",
+                    observacoes: "Conduta TPB registrada.",
+                    payload: buildClinicalProtocolEventPayload({
+                      protocolId: "med-tpb",
+                      itemId: "tpb-diminazeno",
+                    }),
+                  }),
+                ],
+              ],
+              [
+                "caso-mastite",
+                [
+                  makeEvento({
+                    id: "evento-mastite",
+                    sanitario_caso_id: "caso-mastite",
+                    observacoes: "Conduta mastite registrada.",
+                    payload: buildClinicalProtocolEventPayload({
+                      protocolId: "med-mastite-seca",
+                      itemId: "secagem-intramamario",
+                    }),
+                  }),
+                ],
+              ],
+            ])
+          }
+          onCloseClinicalCase={vi.fn()}
+        />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText("2 de 2 casos")).toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: /Terapia de Vaca Seca \(Mastite\) \(1\)/i,
+      }),
+    );
+
+    expect(screen.getByText("1 de 2 casos")).toBeInTheDocument();
+    expect(screen.getByText("Caso com conduta de mastite.")).toBeInTheDocument();
+    expect(screen.queryByText("Caso com conduta TPB.")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /^Todos$/i }));
+
+    expect(screen.getByText("2 de 2 casos")).toBeInTheDocument();
+    expect(screen.getByText("Caso com conduta TPB.")).toBeInTheDocument();
   });
 
   it("valida encerramento de caso clinico antes de atualizar estado", () => {

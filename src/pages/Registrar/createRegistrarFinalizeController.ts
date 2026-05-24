@@ -9,6 +9,10 @@ import type {
   ProtocoloSanitarioItem,
   SanitarioTipoEnum,
 } from "@/lib/offline/types";
+import {
+  buildClinicalProtocolEventPayload,
+  type ClinicalProtocolRef,
+} from "@/lib/sanitario/compliance/clinicalProtocols";
 
 type ProtocolItemLike = Pick<
   ProtocoloSanitarioItem,
@@ -133,6 +137,7 @@ type RegistrarFinalizeTrackDeps = {
     sanitaryProductMetadata: Record<string, unknown>;
     protocoloItem: ProtocoloSanitarioItem | null;
     sanitarioData: { tipo: SanitarioTipoEnum };
+    clinicalProtocolRef?: ClinicalProtocolRef | null;
     pesagemData: Record<string, string>;
     movimentacaoData: { toLoteId: string };
     nutricaoData: { alimentoNome: string; quantidadeKg: string };
@@ -243,6 +248,7 @@ export type RegistrarFinalizeControllerInput = {
       createClinicalCase: boolean;
     };
     selectedVeterinaryProductSelection: VeterinaryProductSelection | null;
+    clinicalProtocolRef?: ClinicalProtocolRef | null;
     resolveProtocolProductSelection: (
       payload: Record<string, unknown> | null | undefined,
       productName: string,
@@ -331,6 +337,10 @@ export function createRegistrarFinalizeController(
         officialTransitChecklistEnabled:
           sanitary.transit.officialTransitChecklistEnabled,
       });
+      const sanitaryProductMetadataWithClinical = {
+        ...sanitaryProductMetadata,
+        ...buildClinicalProtocolEventPayload(sanitary.clinicalProtocolRef),
+      };
 
       const shouldTrySanitaryRpc =
         !sanitary.caseLink.selectedCaseId &&
@@ -343,7 +353,7 @@ export function createRegistrarFinalizeController(
             occurredAt: now,
             tipo: sanitary.data.tipo,
             sanitaryProductName,
-            sanitaryProductMetadata,
+            sanitaryProductMetadata: sanitaryProductMetadataWithClinical,
           })
         : ({ status: "skip" } as const);
       if (sanitaryRpc.status === "handled") {
@@ -465,9 +475,10 @@ export function createRegistrarFinalizeController(
             transitChecklistPayload,
             sanitaryProductName,
             sanitaryProductSelection,
-            sanitaryProductMetadata,
+            sanitaryProductMetadata: sanitaryProductMetadataWithClinical,
             protocoloItem,
             sanitarioData: { tipo: sanitary.data.tipo },
+            clinicalProtocolRef: sanitary.clinicalProtocolRef,
             sanitarioCasoId: sanitary.caseLink.selectedCaseId,
             abrirCasoClinico: sanitary.caseLink.createClinicalCase,
             pesagemData: operationData.pesagemData,

@@ -8,6 +8,10 @@ import type {
   ProtocoloSanitarioItem,
   SanitarioTipoEnum,
 } from "@/lib/offline/types";
+import {
+  buildClinicalProtocolEventPayload,
+  type ClinicalProtocolRef,
+} from "@/lib/sanitario/compliance/clinicalProtocols";
 import type { VeterinaryProductSelection } from "@/lib/sanitario/catalog/products";
 import type { FarmLifecycleConfig } from "@/lib/farms/lifecycleConfig";
 import {
@@ -74,6 +78,7 @@ export async function resolveRegistrarNonFinancialFinalizePlan(input: {
   sanitarioData: NonFinancialSanitarioData;
   sanitarioCasoId?: string | null;
   abrirCasoClinico?: boolean;
+  clinicalProtocolRef?: ClinicalProtocolRef | null;
   pesagemData: Record<string, string>;
   movimentacaoData: NonFinancialMovimentacaoData;
   nutricaoData: NonFinancialNutricaoData;
@@ -107,6 +112,9 @@ export async function resolveRegistrarNonFinancialFinalizePlan(input: {
   const ops: OperationInput[] = [];
   let linkedEventId: string | null = null;
   let postPartoRedirect: RegistrarPostPartoRedirect | null = null;
+  const clinicalProtocolPayload = buildClinicalProtocolEventPayload(
+    input.clinicalProtocolRef,
+  );
 
   if (
     input.tipoManejo === "sanitario" &&
@@ -163,12 +171,16 @@ export async function resolveRegistrarNonFinancialFinalizePlan(input: {
                         sanitario_tipo: input.sanitarioData.tipo,
                         produto: input.sanitaryProductName,
                         protocolo_item_id: input.protocoloItem?.id ?? null,
+                        ...clinicalProtocolPayload,
                       },
                     }
                   : input.sanitarioCasoId
                     ? { action: "link", id: input.sanitarioCasoId }
                     : undefined,
-                payload: input.sanitaryProductMetadata,
+                payload: {
+                  ...input.sanitaryProductMetadata,
+                  ...clinicalProtocolPayload,
+                },
               }
             : undefined,
         pesagem:

@@ -75,6 +75,10 @@ describe("resolveRegistrarNonFinancialFinalizePlan", () => {
       targetAnimalIds: ["a-1"],
       animalsMap: new Map([["a-1", buildAnimal("a-1")]]),
       sanitarioCasoId: "caso-1",
+      clinicalProtocolRef: {
+        protocolId: "med-tpb",
+        itemId: "tpb-diminazeno",
+      },
       buildGesture,
       resolveManualSanitaryAgendaCompletionOps: vi.fn(async () => []),
     });
@@ -86,6 +90,14 @@ describe("resolveRegistrarNonFinancialFinalizePlan", () => {
       expect.objectContaining({
         dominio: "sanitario",
         sanitarioCaso: { action: "link", id: "caso-1" },
+        payload: {
+          clinical_protocol: {
+            schema_version: 1,
+            protocol_id: "med-tpb",
+            item_id: "tpb-diminazeno",
+            source: "registrar_query_prefill",
+          },
+        },
       }),
     );
   });

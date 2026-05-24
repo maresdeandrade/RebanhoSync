@@ -30,6 +30,8 @@ export type RegistrarParsedQueryState<QuickActionKey extends string> = {
     sanitarioTipo: string | null;
     sanitarioCasoId: string | null;
     abrirCasoClinico: boolean;
+    clinicalProtocolId: string | null;
+    clinicalProtocolItemId: string | null;
   };
   reproTipo: ReproTipoEnum | null;
   shouldOpenChooseActionStep: boolean;
@@ -66,6 +68,8 @@ export function parseRegistrarQueryState<QuickActionKey extends string>(input: {
       sanitarioTipo: input.searchParams.get("sanitarioTipo"),
       sanitarioCasoId: input.searchParams.get("sanitarioCasoId"),
       abrirCasoClinico: input.searchParams.get("abrirCasoClinico") === "1",
+      clinicalProtocolId: input.searchParams.get("clinicalProtocolId"),
+      clinicalProtocolItemId: input.searchParams.get("clinicalProtocolItemId"),
     },
     reproTipo,
     shouldOpenChooseActionStep: Boolean(
