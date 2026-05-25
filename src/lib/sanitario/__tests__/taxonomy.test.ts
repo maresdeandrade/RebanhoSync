@@ -187,10 +187,10 @@ describe("sanitary passive taxonomy", () => {
   it("classifies notifiable suspicion separately from agenda protocols", () => {
     const notifiableSuspicion = {
       area: "notificacao",
-      codigo: "sindrome-vesicular-alerta",
+      codigo: "doencas-notificaveis-alerta",
       gera_agenda: false,
       payload: {
-        family_code: "febre_aftosa_vigilancia",
+        family_code: "doencas_notificaveis",
         requires_official_notification: true,
       },
     };

@@ -59,18 +59,6 @@ insert into public.catalogo_protocolos_oficiais (
     '{"family_code":"raiva_herbivoros","fonte_base":"PNCRH/premissa_projeto","descricao_operacional":"Vigilancia e vacinacao estrategica condicionada a risco/configuracao da fazenda.","depends_on_config":["fazenda_sanidade_config.zona_raiva_risco","ativacao_operacional_explicita"],"nao_universal":true,"matriz_p6_1":true}'::jsonb
   ),
   (
-    'pnefa-sindrome-vesicular',
-    'PNEFA - vigilancia de sindrome vesicular',
-    1,
-    'federal',
-    null,
-    'all',
-    'all',
-    'obrigatorio',
-    '{"fonte":"premissa_projeto","programa":"PNEFA"}'::jsonb,
-    '{"family_code":"febre_aftosa_vigilancia","fonte_base":"PNEFA/premissa_projeto","descricao_operacional":"Vigilancia, alerta e bloqueio operacional futuro para suspeita de sindrome vesicular.","nao_criar_vacinacao_rotineira":true,"matriz_p6_1":true}'::jsonb
-  ),
-  (
     'in50-doencas-notificaveis',
     'IN MAPA 50/2013 - doencas notificaveis',
     1,
@@ -178,6 +166,12 @@ set nome = excluded.nome,
     payload = excluded.payload,
     updated_at = now();
 
+-- Sindrome vesicular e tratada como doenca notificavel selecionavel no fluxo
+-- "Doencas notificaveis - registrar suspeita e orientar notificacao".
+-- Remover o legado evita dupla entrada como verificacao PNEFA independente.
+delete from public.catalogo_protocolos_oficiais
+where slug = 'pnefa-sindrome-vesicular';
+
 with templates as (
   select id, slug from public.catalogo_protocolos_oficiais
 )
@@ -217,20 +211,6 @@ join (values
     '{}'::jsonb,
     false,
     '{"produto":"Vacina Raiva Herbivoros","label":"Raiva dos herbivoros - avaliar risco/configuracao","tipo_evento_sanitario":"vacinacao","family_code":"raiva_herbivoros","dedup_strategy":"activation_required","motivo_nao_gerar_agenda":"Depende de risco/configuracao e ativacao operacional explicita; nao aplicar universalmente."}'::jsonb
-  ),
-  (
-    'pnefa-sindrome-vesicular',
-    'notificacao',
-    'sindrome-vesicular-alerta',
-    null,
-    'risco',
-    '{"event_code":"suspeita_sindrome_vesicular"}'::jsonb,
-    '{}'::jsonb,
-    false,
-    false,
-    '{}'::jsonb,
-    false,
-    '{"label":"Suspeita de sindrome vesicular - alerta/notificacao","tipo_evento_sanitario":"alerta_sanitario","family_code":"febre_aftosa_vigilancia","dedup_strategy":"animal_disease_event","bloqueia_movimentacao":true,"requires_technical_guidance":true,"requires_official_notification":true,"nao_criar_vacinacao_rotineira":true,"motivo_nao_gerar_agenda":"PNEFA entra como vigilancia/notificacao, nao como calendario vacinal default."}'::jsonb
   ),
   (
     'in50-doencas-notificaveis',

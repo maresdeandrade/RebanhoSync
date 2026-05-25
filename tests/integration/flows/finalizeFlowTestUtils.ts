@@ -111,6 +111,10 @@ export function createBaseFinalizeInput(
         tipo: "vacinacao",
         produto: "Vacina X",
       },
+      caseLink: {
+        selectedCaseId: null,
+        createClinicalCase: false,
+      },
       selectedVeterinaryProductSelection: null,
       resolveProtocolProductSelection: vi.fn(() => null),
       transit: {

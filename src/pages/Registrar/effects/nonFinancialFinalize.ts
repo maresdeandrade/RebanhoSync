@@ -12,6 +12,12 @@ import {
   buildClinicalProtocolEventPayload,
   type ClinicalProtocolRef,
 } from "@/lib/sanitario/compliance/clinicalProtocols";
+import {
+  buildDryCowTherapyAnimalPayload,
+  buildDryCowTherapyEventPayload,
+  evaluateDryCowTherapyReadiness,
+  isDryCowTherapyClinicalRef,
+} from "@/lib/sanitario/compliance/dryCowTherapy";
 import type { VeterinaryProductSelection } from "@/lib/sanitario/catalog/products";
 import type { FarmLifecycleConfig } from "@/lib/farms/lifecycleConfig";
 import {
@@ -115,6 +121,7 @@ export async function resolveRegistrarNonFinancialFinalizePlan(input: {
   const clinicalProtocolPayload = buildClinicalProtocolEventPayload(
     input.clinicalProtocolRef,
   );
+  const isDryCowTherapy = isDryCowTherapyClinicalRef(input.clinicalProtocolRef);
 
   if (
     input.tipoManejo === "sanitario" &&
@@ -180,6 +187,16 @@ export async function resolveRegistrarNonFinancialFinalizePlan(input: {
                 payload: {
                   ...input.sanitaryProductMetadata,
                   ...clinicalProtocolPayload,
+                  ...(isDryCowTherapy && animalId && animal
+                    ? buildDryCowTherapyEventPayload({
+                        animalId,
+                        performedAt: input.occurredAt,
+                        readiness: evaluateDryCowTherapyReadiness({
+                          animal,
+                          referenceDate: input.occurredAt.slice(0, 10),
+                        }),
+                      })
+                    : {}),
                 },
               }
             : undefined,
@@ -275,6 +292,20 @@ export async function resolveRegistrarNonFinancialFinalizePlan(input: {
       linkedEventId = built.eventId;
     }
     ops.push(...built.ops);
+
+    if (input.tipoManejo === "sanitario" && isDryCowTherapy && animalId && animal) {
+      ops.push({
+        table: "animais",
+        action: "UPDATE",
+        record: {
+          id: animalId,
+          payload: buildDryCowTherapyAnimalPayload({
+            animal,
+            performedAt: input.occurredAt,
+          }),
+        },
+      });
+    }
 
     if (input.tipoManejo === "sanitario" && !input.sourceTaskId) {
       ops.push(

@@ -1,5 +1,8 @@
 import type { Evento, SanitarioCaso } from "@/lib/offline/types";
-import { STANDARD_PROTOCOLS } from "@/lib/sanitario/catalog/baseProtocols";
+import {
+  STANDARD_PROTOCOLS,
+  type StandardProtocol,
+} from "@/lib/sanitario/catalog/baseProtocols";
 
 export const CLINICAL_PROTOCOL_PAYLOAD_KEY = "clinical_protocol";
 export const CLINICAL_PROTOCOL_PAYLOAD_SCHEMA_VERSION = 1;
@@ -39,6 +42,15 @@ export type ClinicalProtocolTimelineSummary = {
   protocolTitle: string;
   itemId: string | null;
   itemLabel: string | null;
+};
+
+export type ClinicalProtocolLibraryGovernance = {
+  capabilityId: "sanitario.historico";
+  policyVersion: 1;
+  scope: "clinical_support_read_model";
+  inclusionCriteria: string[];
+  prohibitedEffects: string[];
+  requiredItemRules: string[];
 };
 
 const CLINICAL_PROTOCOL_MATCHERS = [
@@ -103,6 +115,34 @@ const CLINICAL_PROTOCOL_MATCHERS = [
   },
 ];
 
+const CLINICAL_PROTOCOL_IDS = CLINICAL_PROTOCOL_MATCHERS.map(
+  (matcher) => matcher.protocolId,
+);
+
+export const CLINICAL_PROTOCOL_LIBRARY_GOVERNANCE: ClinicalProtocolLibraryGovernance =
+  {
+    capabilityId: "sanitario.historico",
+    policyVersion: 1,
+    scope: "clinical_support_read_model",
+    inclusionCriteria: [
+      "Uso apenas para caso sanitario do tipo clinico.",
+      "Condicao clinica reconhecida por codigo explicito, payload versionado ou contexto textual.",
+      "Roteiro deve orientar conduta registrada manualmente, sem decidir tratamento automaticamente.",
+    ],
+    prohibitedEffects: [
+      "Nao materializa agenda.",
+      "Nao cria evento sem acao explicita do usuario.",
+      "Nao prescreve tratamento automaticamente.",
+      "Nao baixa estoque ou movimenta insumo.",
+      "Nao substitui avaliacao veterinaria.",
+    ],
+    requiredItemRules: [
+      "Todo item clinico deve manter gera_agenda=false.",
+      "Todo item clinico deve usar calendario_base.mode=clinical_protocol.",
+      "Todo item clinico deve declarar target_policy por animal.",
+    ],
+  };
+
 const EXPLICIT_PROTOCOL_KEYS = [
   "clinical_protocol_id",
   "clinicalProtocolId",
@@ -111,6 +151,46 @@ const EXPLICIT_PROTOCOL_KEYS = [
   "protocol_id",
   "protocolId",
 ];
+
+export function isClinicalSupportProtocol(protocolId: string | null | undefined) {
+  return Boolean(protocolId && CLINICAL_PROTOCOL_IDS.includes(protocolId));
+}
+
+export function validateClinicalProtocolLibraryGovernance(
+  protocols: StandardProtocol[] = STANDARD_PROTOCOLS,
+): string[] {
+  return protocols
+    .filter((protocol) => isClinicalSupportProtocol(protocol.id))
+    .flatMap((protocol) => {
+      const violations: string[] = [];
+
+      if (protocol.categoria !== "medicamentos") {
+        violations.push(`${protocol.id}: categoria deve ser medicamentos`);
+      }
+
+      if (protocol.calendario_base.profile !== "terapeutico") {
+        violations.push(`${protocol.id}: profile deve ser terapeutico`);
+      }
+
+      for (const item of protocol.itens) {
+        if (item.gera_agenda) {
+          violations.push(`${protocol.id}/${item.item_code}: nao pode gerar agenda`);
+        }
+
+        if (item.calendario_base.mode !== "clinical_protocol") {
+          violations.push(
+            `${protocol.id}/${item.item_code}: calendario deve ser clinical_protocol`,
+          );
+        }
+
+        if (item.target_policy?.target_scope !== "animal") {
+          violations.push(`${protocol.id}/${item.item_code}: alvo deve ser animal`);
+        }
+      }
+
+      return violations;
+    });
+}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -316,6 +396,7 @@ export function buildClinicalProtocolSupport(input: {
     safetyNotes: [
       "Apoio clinico informativo; nao gera agenda, evento ou baixa de estoque.",
       "Registrar apenas condutas realmente executadas no fluxo de manejo sanitario.",
+      "Este roteiro nao substitui avaliacao veterinaria.",
     ],
   };
 }

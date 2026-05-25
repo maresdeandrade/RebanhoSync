@@ -56,14 +56,15 @@ describe("P6.1 conservative sanitary seed catalog", () => {
     expect(seedSql).not.toContain("raiva-anual");
   });
 
-  it("keeps PNEFA/aftosa as vesicular-syndrome vigilance, not routine vaccination", () => {
-    const item = sqlItemTuple("pnefa-sindrome-vesicular", "sindrome-vesicular-alerta");
-    expect(item).toContain("'notificacao'");
-    expect(item).toContain('"nao_criar_vacinacao_rotineira":true');
-    expect(item).toContain('"bloqueia_movimentacao":true');
-    expect(item).toContain('"requires_technical_guidance":true');
-    expect(item).toContain('"requires_official_notification":true');
-    expect(compact(item)).toContain("false, false, '{}'::jsonb, false,");
+  it("keeps vesicular syndrome only inside the notifiable diseases catalog", () => {
+    expect(seedSql).not.toMatch(/\(\s*'pnefa-sindrome-vesicular',/);
+    expect(seedSql).not.toContain("sindrome-vesicular-alerta");
+    expect(seedSql).not.toContain("febre_aftosa_vigilancia");
+    expect(seedSql).toContain("delete from public.catalogo_protocolos_oficiais");
+    expect(seedSql).toContain("'sindrome-vesicular'");
+    expect(seedSql).toContain(
+      "Sindrome vesicular / suspeita compativel com febre aftosa",
+    );
     expect(seedSql).not.toMatch(/aftosa[^']*vacinacao-rotineira/i);
   });
 

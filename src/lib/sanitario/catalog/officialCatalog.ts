@@ -290,9 +290,6 @@ function buildOfficialRegimenMilestone(
 function resolveOfficialFamilyCode(template: CatalogoProtocoloOficial) {
   if (template.slug.includes("brucelose")) return "brucelose";
   if (template.slug.includes("raiva")) return "raiva_herbivoros";
-  if (template.slug.includes("pnefa") || template.slug.includes("aftosa")) {
-    return "febre_aftosa_vigilancia";
-  }
   if (template.slug.includes("in50") || template.slug.includes("notificaveis")) {
     return "doencas_notificaveis";
   }

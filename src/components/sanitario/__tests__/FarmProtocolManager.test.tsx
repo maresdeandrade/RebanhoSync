@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 
 import { FarmProtocolManager } from "@/components/sanitario/FarmProtocolManager";
+import { createGesture } from "@/lib/offline/ops";
 import type {
   ProdutoVeterinarioCatalogEntry,
   ProtocoloSanitario,
@@ -201,5 +202,76 @@ describe("FarmProtocolManager", () => {
     expect(
       screen.getByRole("button", { name: /registrar manejo clinico/i }),
     ).toBeInTheDocument();
+  });
+
+  it("ativa agenda operacional de Vaca Seca somente na copia da fazenda", () => {
+    const protocol = buildProtocol({
+      id: "dry-cow-protocol",
+      nome: "Terapia de Vaca Seca",
+      payload: {
+        origem: "biblioteca_canonica_fazenda",
+        standard_id: "med-mastite-seca",
+        family_code: "terapia_vaca_seca",
+      },
+    });
+    const clinicalItem = buildProtocolItem({
+      id: "dry-cow-item",
+      protocolo_id: "dry-cow-protocol",
+      tipo: "medicamento",
+      produto: "Antibiotico Intramamario (Vaca Seca)",
+      intervalo_dias: 0,
+      gera_agenda: false,
+      payload: {
+        standard_id: "med-mastite-seca",
+        family_code: "terapia_vaca_seca",
+        item_code: "secagem-intramamario",
+        calendario_base: {
+          mode: "clinical_protocol",
+          anchor: "dry_off",
+        },
+      },
+    });
+
+    renderManager(
+      <FarmProtocolManager
+        activeFarmId="farm-1"
+        farmExperienceMode="completo"
+        catalogProducts={[] satisfies ProdutoVeterinarioCatalogEntry[]}
+        protocols={[protocol]}
+        protocolItems={[clinicalItem]}
+        canManage
+      />,
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", { name: /ativar agenda de vaca seca/i }),
+    );
+
+    expect(createGesture).toHaveBeenCalledWith("farm-1", [
+      expect.objectContaining({
+        table: "protocolos_sanitarios_itens",
+        action: "UPDATE",
+        record: expect.objectContaining({
+          id: "dry-cow-item",
+          gera_agenda: true,
+          intervalo_dias: 60,
+          payload: expect.objectContaining({
+            family_code: "terapia_vaca_seca",
+            item_code: "secagem-intramamario",
+            protocol_id: "med-mastite-seca",
+            materialization_contract_version: 1,
+            agenda_activation: expect.objectContaining({
+              mode: "dry_off_reproductive_window",
+              source: "farm_protocol_explicit_activation",
+              contract_version: 1,
+            }),
+            dry_cow_therapy: expect.objectContaining({
+              activation_status: "operational_agenda_enabled",
+              materialization_contract_version: 1,
+            }),
+          }),
+        }),
+      }),
+    ]);
   });
 });

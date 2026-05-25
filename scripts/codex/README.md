@@ -9,6 +9,7 @@ Guia operacional para agentes de IA no RebanhoSync. Esta pasta concentra scripts
 - Rodar o gate padrao de validacao para areas criticas.
 - Preparar resumo de PR.
 - Validar funcionalmente a baseline Supabase atual.
+- Validar funcionalmente recortes Supabase incrementais quando houver migration ativa nova.
 
 Nao criar scripts novos sem tarefa explicita.
 
@@ -23,6 +24,7 @@ powershell -File scripts/codex/prepare-pr.ps1
 
 ```bash
 node scripts/codex/validate-supabase-baseline-functional.mjs
+node scripts/codex/validate-dry-cow-therapy-functional.mjs
 ```
 
 Resumo:
@@ -31,6 +33,7 @@ Resumo:
 - `validate.ps1`: roda `pnpm run lint`, `pnpm test` e `pnpm run build`; tambem imprime lembretes se path critico foi tocado.
 - `prepare-pr.ps1`: imprime estrutura de titulo, contexto, arquivos, riscos, docs e validacao.
 - `validate-supabase-baseline-functional.mjs`: valida baseline Supabase funcional com banco local, RLS, FK composta, agenda sanitaria e `sync-batch`.
+- `validate-dry-cow-therapy-functional.mjs`: valida Terapia de Vaca Seca ponta a ponta no Supabase local: item clinico sem ativacao, ativacao operacional, recompute, dedup, conclusao por evento, bloqueio de recriacao e cancelamento anti-agenda-zumbi.
 
 ## Baseline Supabase documentada
 
@@ -177,6 +180,12 @@ Para Supabase baseline:
 
 ```bash
 node scripts/codex/validate-supabase-baseline-functional.mjs
+```
+
+Para Terapia de Vaca Seca:
+
+```bash
+node scripts/codex/validate-dry-cow-therapy-functional.mjs
 ```
 
 Se nao rodar um comando, registrar:

@@ -20,7 +20,7 @@ O ajuste necessário é de escopo e sequência. O repositório já tem uma agend
 | Doença notificável como fluxo de suspeita/caso, não rotina periódica | Manter. Não deve virar agenda recorrente. |
 | TPB como protocolo clínico de apoio | Manter. No código atual, TPB já aparece com `gera_agenda=false` e `calendario_base.mode = clinical_protocol`. |
 | Estoque só baixa por fato executado | Manter. Agenda pode estimar demanda, mas saldo real só muda por movimentação vinculada a evento confirmado. |
-| Terapia de Vaca Seca como domínio operacional relevante | Manter como objetivo, mas corrigir a formulação: hoje ela ainda não está efetivamente consolidada como agenda operacional automática. |
+| Terapia de Vaca Seca como domínio operacional relevante | Manter como objetivo. Hoje já há evento manual estruturado no Registrar, recompute SQL condicionado, ativação/desativação explícita na UI de protocolos da fazenda e validação funcional Supabase do contrato de agenda. |
 
 ## 3. O que precisa ser otimizado
 
@@ -78,10 +78,10 @@ Direção corrigida:
 | Gap/falha | Impacto | Correção proposta |
 |---|---|---|
 | Mistura visual e conceitual entre protocolo, checklist, alerta e tratamento | Usuário interpreta itens não agendáveis como rotina operacional | Criar classificação explícita por tipo de item e esconder/rebaixar itens não agendáveis nas telas de agenda operacional. |
-| Síndrome vesicular aparece como item próprio além do catálogo de notificáveis | Redundância e dupla entrada para suspeita notificável | Tratar como doença dentro de `catalogo_doencas_notificaveis`, mantendo ação única de registrar suspeita notificável. |
+| Síndrome vesicular aparecia como item próprio além do catálogo de notificáveis | Redundância e dupla entrada para suspeita notificável | Corrigido: removida a verificação PNEFA independente do seed; síndrome vesicular permanece como doença em `catalogo_doencas_notificaveis`, pelo fluxo único de registrar suspeita e orientar notificação. |
 | Biossegurança aparece dentro do mesmo universo de protocolos | Checklist/compliance parece rotina sanitária animal | Reposicionar como compliance/checklist operacional, sem agenda animal automática. |
 | TPB é descrito como algo a migrar, mas o código já o marca como clínico sem agenda | A proposta cria trabalho duplicado | Trocar "migrar TPB" por "proteger TPB contra regressão para agenda". |
-| Terapia de Vaca Seca é proposta como agendável, mas no estado atual ainda está como roteiro clínico sem agenda | Gap funcional real | Abrir recorte próprio para definir elegibilidade, fonte de data/âncora e regra de materialização antes de torná-la agenda. |
+| Terapia de Vaca Seca é proposta como agendável e agora possui ativação controlada na UI de protocolos da fazenda | Gap funcional corrigido no contrato mínimo | Manter evento manual e recompute SQL com ativação explícita; antes de uso amplo, falta apenas revisão de exposição controlada e smoke visual/operacional em ambiente de app. |
 | Estoque é colocado cedo demais no plano | Alto acoplamento com evento, produto, lote, validade, offline e sync | Primeiro estabilizar consumo conceitual por evento; implementar estoque MVP depois de casos/protocolos clínicos mínimos. |
 | Casos sanitários não existiam como fonte consolidada na baseline ativa | Eventos clínicos ficavam sem contexto longitudinal | Corrigido no recorte mínimo: `sanitario_casos`, store offline, sync, detalhe do animal, suspeita notificável e vínculo/abertura no `Registrar`. |
 | Plano original altera seed/migrations cedo demais | Risco contra regra do projeto e baseline Supabase | Transformar seed/migration em etapas futuras explícitas, não ação desta revisão. |
@@ -106,12 +106,12 @@ Direção corrigida:
 | Raiva dos herbívoros | Protocolo operacional condicionado a risco médio/alto e ativação explícita | Manter sem vacinação universal. |
 | Clostridioses, vermifugação, carrapato | Protocolos técnicos recomendados ativáveis pela fazenda | Manter como agenda somente após ativação/configuração explícita. |
 | Doenças notificáveis - registrar suspeita | Ação única de abertura de suspeita/caso | Manter como entrada operacional, sem agenda periódica. |
-| Síndrome vesicular | Doença dentro do catálogo de notificáveis | Remover como entrada visual independente quando houver tarefa de UI/catálogo. |
+| Síndrome vesicular | Doença dentro do catálogo de notificáveis | Corrigido: sem entrada visual/pack independente; usar "Doenças notificáveis - registrar suspeita". |
 | Biossegurança operacional | Compliance/checklist operacional | Não exibir como protocolo animal agendável. |
 | GTA/e-GTA pre-check | Checklist/documental de trânsito | Não modelar como emissão fiscal; manter como pre-check/bloqueio contextual quando validado. |
 | TPB | Protocolo clínico de apoio | Proteger `gera_agenda=false`; registrar apenas condutas executadas. |
 | Mastite clínica | Caso sanitário individual + protocolo clínico de apoio | Implementar futuramente no trilho de casos clínicos. |
-| Terapia de Vaca Seca | Candidata a protocolo operacional por elegibilidade reprodutiva/lactação | Não tornar agendável sem definir âncora, fonte de elegibilidade e vínculo com evento. |
+| Terapia de Vaca Seca | Evento manual estruturado, recompute SQL condicionado, ativação operacional explícita na cópia da fazenda e validação funcional Supabase | Não promover uso amplo sem smoke visual/operacional e decisão explícita de exposição controlada. |
 
 ## 7. Fluxos alvo corrigidos
 
@@ -158,7 +158,7 @@ Regra: protocolo clínico não prescreve automaticamente, não cria evento sozin
 ### 7.4. Terapia de Vaca Seca
 
 ```text
-Read model futuro identifica fêmea elegível para secagem
+Recompute SQL identifica fêmea elegível para secagem
 -> protocolo operacional ativo avalia âncora e janela
 -> agenda é materializada se a regra estiver completa
 -> usuário executa procedimento
@@ -166,7 +166,7 @@ Read model futuro identifica fêmea elegível para secagem
 -> estoque futuro baixa antibiótico/selante confirmado
 ```
 
-Regra: antes de implementar agenda, a tarefa precisa definir fonte de elegibilidade, âncora temporal, relação com reprodução/lactação e dedup.
+Regra: a agenda automática de Vaca Seca só pode nascer de protocolo operacional da fazenda com ativação explícita. O SQL já materializa esse contrato via wrapper de `sanitario_recompute_agenda_core`: fonte de elegibilidade em `taxonomy_facts`, âncora em `data_prevista_parto`, vencimento alvo em parto previsto - 60 dias, clamp por `_as_of`, dedup por ciclo de parto previsto e bloqueios anti-agenda-zumbi. O item clínico padrão permanece `gera_agenda=false`; a UI de protocolos da fazenda permite converter explicitamente a cópia tenant-scoped do item para `gera_agenda=true` com `agenda_activation.mode=dry_off_reproductive_window`. O evento manual estruturado pelo `Registrar` continua sendo a comprovação factual da secagem.
 
 ## 8. Plano incremental revisado
 
@@ -278,11 +278,15 @@ Entregas realizadas:
 - filtro auxiliar no painel de casos por roteiro clínico derivado do caso/eventos vinculados;
 - roteiro clínico read-only de diarreia neonatal (`med-diarreia-neonatal`) adicionado sob o mesmo contrato, com `gera_agenda=false` e sem impacto em estoque;
 - roteiros clínicos read-only de suporte respiratório/pneumonia (`med-respiratorio-pneumonia`) e feridas/miíase (`med-ferida-miiase`) adicionados com o mesmo contrato, `gera_agenda=false` e leitura por contexto/código clínico;
+- governança mínima implementada como contrato TS testável em `CLINICAL_PROTOCOL_LIBRARY_GOVERNANCE` e `validateClinicalProtocolLibraryGovernance`;
+- critérios de inclusão formalizados: caso sanitário clínico, condição reconhecida por código/payload/contexto e roteiro apenas orientativo;
+- efeitos proibidos formalizados: não materializar agenda, não criar evento sem ação explícita, não prescrever automaticamente, não baixar estoque e não substituir avaliação veterinária;
+- regra de item clínico protegida por teste: `gera_agenda=false`, `calendario_base.mode=clinical_protocol` e `target_policy.target_scope=animal`;
 - travas explícitas: a visualização não gera agenda, evento, prescrição ou baixa de estoque.
 
 Entregas futuras:
-- consolidar governança da biblioteca clínica mínima e critérios para novos roteiros sob `clinical_protocol`;
 - suporte a mais roteiros clínicos quando houver biblioteca/fonte veterinária validada;
+- revisar UX fina do card clínico com dados reais de beta interno;
 - nenhum evento ou estoque gerado por simples visualização do roteiro.
 
 ### Fase 5 — Terapia de Vaca Seca como recorte próprio
@@ -290,15 +294,38 @@ Entregas futuras:
 Objetivo: decidir se e como vira protocolo operacional agendável.
 
 Pré-condições:
-- fonte de elegibilidade validada;
-- âncora temporal definida;
-- relação com reprodução/lactação definida;
-- dedup e recompute definidos;
+- fonte de elegibilidade mínima mapeada em read model puro (`sexo=F`, `status=ativo`, `em_lactacao=true`, `secagem_realizada=false`);
+- âncora temporal preliminar definida por `data_prevista_parto`;
+- relação com reprodução/lactação definida como dependência de fatos de taxonomia/reprodução, não de texto livre;
+- dedup TS definido por animal + ciclo de parto previsto;
+- recompute SQL definido;
 - teste contra agenda zumbi.
+
+Entregas realizadas:
+- `evaluateDryCowTherapyReadiness` criado em `src/lib/sanitario/compliance/dryCowTherapy.ts`;
+- janela candidata parametrizada, por padrão 45-75 dias antes do parto previsto;
+- decisão explícita entre `keep_as_clinical_protocol` e `candidate_for_future_agenda_contract`;
+- `agendaMaterializationAllowed=false` fixo, inclusive para candidatas, até existir contrato de agenda/recompute;
+- payload versionado `dry_cow_therapy` definido para evento manual, com `schema_version=1`, `performed_at`, parto previsto, decisão de prontidão e `agenda_materialization_allowed=false`;
+- dedup canônico TS definido por `buildDryCowTherapyDedupKey`: `sanitario:animal:<animal_id>:terapia_vaca_seca:secagem-intramamario:v1:window:<data_prevista_parto>`;
+- reconhecimento central de `clinical_protocol` da terapia de vaca seca para o fluxo operacional;
+- `Registrar` conectado ao recorte manual: evento sanitário grava `payload.dry_cow_therapy` e mantém `agenda_materialization_allowed=false`;
+- fallback offline forçado para secagem manual, preservando `1 acao -> 1 createGesture` com evento e atualização do animal no mesmo gesto;
+- atualização restrita de `taxonomy_facts` do animal no evento manual (`secagem_realizada=true`, `data_secagem`, `em_lactacao=false`), sem agenda, RPC, estoque ou schema novo;
+- contrato TS de materialização definido em `DRY_COW_THERAPY_MATERIALIZATION_CONTRACT`, com `status=sql_contract_implemented_activation_required`;
+- preview determinístico de candidato em `buildDryCowTherapyAgendaCandidatePreview`, sem criar agenda por si só;
+- contrato de agenda fixado: owner SQL `sanitario_recompute_agenda_core`, âncora `taxonomy_facts.data_prevista_parto`, due date `max(as_of, data_prevista_parto - 60 days)`, dedup `window:<data_prevista_parto>` e conclusão por `dry_off_dedup_key`;
+- regras anti-agenda-zumbi formalizadas: cancelar pendência automática se elegibilidade cair, não criar fora da janela 75-45 dias, não criar se `secagem_realizada=true`, não recriar quando evento `dry_cow_therapy` ou agenda concluída com evento válido já existir;
+- migration `20260524000000_dry_cow_therapy_agenda_recompute.sql` adicionada com recompute incremental por wrapper: preserva a lógica base em `sanitario_recompute_agenda_core_without_dry_cow`, adiciona `sanitario_recompute_dry_cow_therapy_agenda` e mantém `sanitario_recompute_agenda_core` como owner público do recompute;
+- materialização SQL condicionada a protocolo operacional da fazenda com `gera_agenda=true`, `family_code=terapia_vaca_seca`, `item_code=secagem-intramamario` e `agenda_activation.mode=dry_off_reproductive_window`;
+- payload da agenda materializada inclui `materialization_contract_version=1`, `anchor_fact`, `expected_calving_date`, `dry_off_target_date`, `dry_off_dedup_key` e `source=dry_cow_therapy_sql_recompute`;
+- UI de protocolos da fazenda adiciona ação explícita no item de Vaca Seca para ativar/desativar agenda na cópia tenant-scoped, emitindo `createGesture` de update em `protocolos_sanitarios_itens` sem alterar a biblioteca canônica, sem criar evento e sem tocar estoque;
+- script funcional `scripts/codex/validate-dry-cow-therapy-functional.mjs` valida no Supabase local: item clínico sem ativação não materializa agenda, ativação operacional materializa uma única agenda, recompute repetido não duplica, conclusão por `sanitario_complete_agenda_with_event` grava `dry_off_dedup_key` em `eventos`/`eventos_sanitario`, recompute pós-evento não recria agenda e pendência aberta é cancelada quando `secagem_realizada=true`;
+- testes cobrindo candidata válida, ausência de parto previsto, macho/inativo/não lactante/já seco, janela inválida, payload legado plano, dedup estável/nulo, payload de evento, reconhecimento do protocolo clínico, payload de taxonomia, plano offline do Registrar, contrato TS, preview de agenda e contrato textual da migration SQL.
 
 Critério de aceite:
 - agenda só nasce quando a elegibilidade é explicável;
-- evento de secagem comprova execução;
+- evento de secagem comprova execução e carrega `payload.dry_cow_therapy`;
 - estoque futuro consome apenas por evento.
 
 ### Fase 6 — Estoque MVP
@@ -341,11 +368,11 @@ Considerando o recorte desta proposta, não o produto sanitário completo:
 | Contrato conceitual e classificação | 90% | auditoria específica de seed/catálogo redundante. |
 | Separação visual operacional | 85% | ajustes finos de UX e consistência cross-flow. |
 | Casos sanitários mínimos | 95% | integração veterinária futura quando houver fonte consolidada. |
-| Protocolos clínicos de apoio | 92% | governança da biblioteca clínica mínima e critérios de expansão. |
-| Terapia de Vaca Seca | 10% | definir elegibilidade, âncora, dedup e materialização. |
+| Protocolos clínicos de apoio | 96% | UX fina com dados reais e expansão somente quando houver fonte veterinária validada. |
+| Terapia de Vaca Seca | 90% | faltam smoke visual/operacional em app real e decisão de exposição controlada; estoque segue fora do recorte. |
 | Estoque MVP sanitário | 0% | criar módulo de insumos/lotes/movimentações e consumo por evento. |
 
-Estimativa objetiva: o refatoramento estrutural sanitário está entre 80% e 84% concluído. Para fechar o núcleo mínimo sem estoque avançado, falta cerca de 1 recorte pequeno. Para fechar a visão completa com protocolos clínicos, Terapia de Vaca Seca e estoque MVP, faltam cerca de 4 a 6 recortes revisáveis.
+Estimativa objetiva: o refatoramento estrutural sanitário está entre 94% e 95% concluído. Para fechar o núcleo mínimo sem estoque avançado, falta um recorte pequeno: smoke visual/operacional da Vaca Seca em app real e decisão de exposição controlada. Para fechar a visão completa com estoque MVP, faltam cerca de 2 a 3 recortes revisáveis.
 
 ## 10. Fora do escopo desta proposta
 
@@ -384,4 +411,4 @@ O núcleo a preservar é:
 - estoque registra insumo real e só baixa por fato/movimentação;
 - catálogo oficial, overlay regulatório e protocolo da fazenda continuam separados.
 
-O próximo passo mais seguro é consolidar governança da biblioteca clínica mínima: critérios de inclusão, limites read-only e regra explícita para não converter roteiro clínico em agenda, prescrição ou estoque.
+O próximo passo mais seguro é fazer smoke visual/operacional em app real para a ativação de Vaca Seca na tela de protocolos e decidir a exposição controlada do recurso, ainda sem estoque e sem prescrição automática.

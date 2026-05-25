@@ -262,7 +262,7 @@ Este documento registra o estado efetivo do RebanhoSync na fase atual de consoli
 
 ## 7.6 Update 2026-04-29 (Contrato Sanitario P6.1-P6.4b)
 
-- P6.1 consolidou o catalogo sanitario conservador no seed: brucelose PNCEBT e o unico item oficial com agenda automatica por seed; raiva, PNEFA/aftosa, IN50/doencas notificaveis, GTA, checklists, biosseguranca e tecnicos recomendados permanecem sem agenda automatica por simples presenca no catalogo global.
+- P6.1 consolidou o catalogo sanitario conservador no seed: brucelose PNCEBT e o unico item oficial com agenda automatica por seed; raiva, IN50/doencas notificaveis, GTA, checklists, biosseguranca e tecnicos recomendados permanecem sem agenda automatica por simples presenca no catalogo global. Sindrome vesicular/aftosa nao aparece mais como verificacao PNEFA independente; fica dentro de `catalogo_doencas_notificaveis`.
 - P6.2.1 endureceu `sanitario_recompute_agenda_core` para brucelose PNCEBT: animal ativo, femea, nascimento obrigatorio, janela 90-240 dias, sem backfill expirado e dedup canonico por janela.
 - P6.2.2a/P6.2.2b impediram reabertura de brucelose concluida: recompute bloqueia por agenda concluida com evento sanitario valido e por historico `payload.sanitary_completion` preservado em `eventos_sanitario.payload` e espelhado em `eventos.payload`.
 - P6.2.3 bloqueou vacinacao universal de raiva: agenda exige protocolo/item operacional ativo, `gera_agenda=true`, `family_code='raiva_herbivoros'`, risco medio/alto em `fazenda_sanidade_config.zona_raiva_risco`, `risk_values` e ativacao explicita.

@@ -4,9 +4,12 @@ import {
   buildClinicalProtocolEventPayload,
   buildClinicalProtocolSupport,
   buildClinicalProtocolTimelineSummary,
+  CLINICAL_PROTOCOL_LIBRARY_GOVERNANCE,
   readClinicalProtocolEventPayload,
+  validateClinicalProtocolLibraryGovernance,
 } from "@/lib/sanitario/compliance/clinicalProtocols";
 import type { Evento, SanitarioCaso } from "@/lib/offline/types";
+import { STANDARD_PROTOCOLS } from "@/lib/sanitario/catalog/baseProtocols";
 
 const baseCase: SanitarioCaso = {
   id: "caso-1",
@@ -36,6 +39,46 @@ const baseCase: SanitarioCaso = {
 };
 
 describe("clinical protocol support", () => {
+  it("documents the clinical library governance boundaries", () => {
+    expect(CLINICAL_PROTOCOL_LIBRARY_GOVERNANCE).toMatchObject({
+      capabilityId: "sanitario.historico",
+      scope: "clinical_support_read_model",
+      prohibitedEffects: expect.arrayContaining([
+        "Nao materializa agenda.",
+        "Nao cria evento sem acao explicita do usuario.",
+        "Nao prescreve tratamento automaticamente.",
+        "Nao baixa estoque ou movimenta insumo.",
+      ]),
+      requiredItemRules: expect.arrayContaining([
+        "Todo item clinico deve manter gera_agenda=false.",
+        "Todo item clinico deve usar calendario_base.mode=clinical_protocol.",
+      ]),
+    });
+  });
+
+  it("keeps every supported clinical protocol read-only and animal-scoped", () => {
+    expect(validateClinicalProtocolLibraryGovernance()).toEqual([]);
+  });
+
+  it("reports governance violations when a clinical protocol starts generating agenda", () => {
+    const protocol = STANDARD_PROTOCOLS.find((entry) => entry.id === "med-tpb");
+    expect(protocol).toBeDefined();
+
+    const violations = validateClinicalProtocolLibraryGovernance([
+      {
+        ...protocol!,
+        itens: [
+          {
+            ...protocol!.itens[0],
+            gera_agenda: true,
+          },
+        ],
+      },
+    ]);
+
+    expect(violations).toContain("med-tpb/tpb-diminazeno: nao pode gerar agenda");
+  });
+
   it("suggests TPB support from linked clinical event context", () => {
     const support = buildClinicalProtocolSupport({
       caseRecord: baseCase,

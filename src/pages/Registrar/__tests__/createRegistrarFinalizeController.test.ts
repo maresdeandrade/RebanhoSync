@@ -290,4 +290,29 @@ describe("createRegistrarFinalizeController", () => {
       }),
     );
   });
+
+  it("usa fallback offline para secagem manual mesmo sem caso clinico", async () => {
+    const deps = buildControllerDeps();
+    const finalize = createRegistrarFinalizeController(deps);
+    const input = buildFinalizeInput();
+    input.context.tipoManejo = "sanitario";
+    input.sanitary.data.tipo = "medicamento";
+    input.sanitary.data.produto = "Antibiotico Intramamario (Vaca Seca)";
+    input.sanitary.clinicalProtocolRef = {
+      protocolId: "med-mastite-seca",
+      itemId: "secagem-intramamario",
+    };
+
+    await finalize(input);
+
+    expect(deps.sanitary.trySanitaryRpcFinalize).not.toHaveBeenCalled();
+    expect(deps.tracks.resolveNonFinancialFinalizePlan).toHaveBeenCalledWith(
+      expect.objectContaining({
+        clinicalProtocolRef: {
+          protocolId: "med-mastite-seca",
+          itemId: "secagem-intramamario",
+        },
+      }),
+    );
+  });
 });

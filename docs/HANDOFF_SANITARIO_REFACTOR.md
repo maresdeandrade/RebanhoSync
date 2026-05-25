@@ -56,7 +56,7 @@ Contrato de agenda sanitaria pos-P6.4b:
 - Contrato TS P6.4a da raiva operacional usa D1 `raiva_d1` com `unknown_history_policy='start_from_d1'`, D2 canonico `raiva_d2` dependente de D1 apos 30 dias e anual `raiva_anual` dependente de D2 com `rolling_from_last_completion`; `raiva_reforco_30d` permanece apenas como alias legado de leitura e normaliza para `raiva_d2`.
 - Materializacao SQL P6.4b aplica a sequencia na agenda: D1 nasce somente com risco medio/alto, ativacao explicita e politica de historico desconhecido; D2 nasce somente se houver evento sanitario D1 valido; anual nasce somente se houver D2 valida e ancora na ultima anual valida ou, se ainda nao existir anual, na D2.
 - Tecnicos recomendados (`clostridioses`, `leptospirose_ibr_bvd`, `controle_parasitario`, `controle_carrapato`) exigem protocolo/item operacional ativo, `gera_agenda=true` e ativacao explicita. Quando o payload traz alvo explicito de especie (`species`, `especies_alvo` ou `gatilho_json.species`), especie conhecida precisa bater; `especie=null` passa transicionalmente. Sem alvo explicito, `bovino`, `bubalino` e `null` permanecem elegiveis. `controle_parasitario` exige `pressao_helmintos` em `medio|alto`; `controle_carrapato` exige `pressao_carrapato` em `medio|alto`.
-- PNEFA/aftosa, IN50/doencas notificaveis, GTA, suspeitas, checklists, biosseguranca e itens dependentes de avaliacao manual continuam sem agenda automatica.
+- Sindrome vesicular/aftosa fica no catalogo de doencas notificaveis e nao deve aparecer como verificacao PNEFA independente; IN50/doencas notificaveis, GTA, suspeitas, checklists, biosseguranca e itens dependentes de avaliacao manual continuam sem agenda automatica.
 
 ## Baseline Supabase sanitaria
 

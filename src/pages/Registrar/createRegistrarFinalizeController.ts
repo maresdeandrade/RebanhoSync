@@ -13,6 +13,7 @@ import {
   buildClinicalProtocolEventPayload,
   type ClinicalProtocolRef,
 } from "@/lib/sanitario/compliance/clinicalProtocols";
+import { isDryCowTherapyClinicalRef } from "@/lib/sanitario/compliance/dryCowTherapy";
 
 type ProtocolItemLike = Pick<
   ProtocoloSanitarioItem,
@@ -344,7 +345,8 @@ export function createRegistrarFinalizeController(
 
       const shouldTrySanitaryRpc =
         !sanitary.caseLink.selectedCaseId &&
-        !sanitary.caseLink.createClinicalCase;
+        !sanitary.caseLink.createClinicalCase &&
+        !isDryCowTherapyClinicalRef(sanitary.clinicalProtocolRef);
       const sanitaryRpc = shouldTrySanitaryRpc
         ? await deps.sanitary.trySanitaryRpcFinalize({
             tipoManejo: context.tipoManejo,

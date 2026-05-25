@@ -25,7 +25,10 @@ export type StandardProtocolFamilyCode =
   | "vermifugacao_desmama"
   | "cura_umbigo"
   | "tristeza_parasitaria_bovina"
-  | "terapia_vaca_seca";
+  | "terapia_vaca_seca"
+  | "diarreia_neonatal"
+  | "sindrome_respiratoria"
+  | "ferida_miiase";
 
 export type StandardProtocolScheduleKind =
   | "calendar_base"
@@ -48,7 +51,12 @@ export interface StandardProtocolDependsOn {
 export interface StandardProtocolTargetPolicy {
   mode: "suspected_animal_required" | "dry_off_required";
   target_scope: "animal";
-  condition_code: "tristeza_parasitaria_bovina" | "secagem_lactacao";
+  condition_code:
+    | "tristeza_parasitaria_bovina"
+    | "secagem_lactacao"
+    | "diarreia_neonatal"
+    | "sindrome_respiratoria"
+    | "ferida_miiase";
 }
 
 export interface StandardProtocolItem {

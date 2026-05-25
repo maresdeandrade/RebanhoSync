@@ -221,6 +221,83 @@ describe("resolveRegistrarNonFinancialFinalizePlan", () => {
     ]);
   });
 
+  it("registra secagem manual com payload dry_cow_therapy e atualiza taxonomia do animal", async () => {
+    const animal = buildAnimal("a-1", {
+      payload: {
+        taxonomy_facts: {
+          schema_version: 1,
+          em_lactacao: true,
+          secagem_realizada: false,
+          data_prevista_parto: "2026-03-01",
+        },
+      },
+    });
+    const buildGesture = vi.fn(() => ({
+      eventId: "evt-secagem-1",
+      ops: [
+        {
+          table: "eventos",
+          action: "INSERT" as const,
+          record: { id: "evt-secagem-1" },
+        },
+      ],
+    }));
+
+    const result = await resolveRegistrarNonFinancialFinalizePlan({
+      ...baseInput(),
+      tipoManejo: "sanitario",
+      occurredAt: "2026-01-01T12:00:00.000Z",
+      targetAnimalIds: ["a-1"],
+      animalsMap: new Map([["a-1", animal]]),
+      sanitarioData: { tipo: "medicamento" },
+      sanitaryProductName: "Antibiotico Intramamario (Vaca Seca)",
+      clinicalProtocolRef: {
+        protocolId: "med-mastite-seca",
+        itemId: "secagem-intramamario",
+      },
+      buildGesture,
+      resolveManualSanitaryAgendaCompletionOps: vi.fn(async () => []),
+    });
+
+    expect(result.issue).toBeNull();
+    expect(buildGesture).toHaveBeenCalledWith(
+      expect.objectContaining({
+        dominio: "sanitario",
+        payload: expect.objectContaining({
+          dry_cow_therapy: expect.objectContaining({
+            schema_version: 1,
+            protocol_id: "med-mastite-seca",
+            item_id: "secagem-intramamario",
+            performed_at: "2026-01-01T12:00:00.000Z",
+            expected_calving_date: "2026-03-01",
+            agenda_materialization_allowed: false,
+            dry_off_dedup_key:
+              "sanitario:animal:a-1:terapia_vaca_seca:secagem-intramamario:v1:window:2026-03-01",
+          }),
+        }),
+      }),
+    );
+    expect(result.ops).toEqual([
+      { table: "eventos", action: "INSERT", record: { id: "evt-secagem-1" } },
+      {
+        table: "animais",
+        action: "UPDATE",
+        record: {
+          id: "a-1",
+          payload: expect.objectContaining({
+            taxonomy_facts: expect.objectContaining({
+              schema_version: 1,
+              em_lactacao: false,
+              secagem_realizada: true,
+              data_secagem: "2026-01-01",
+              data_prevista_parto: "2026-03-01",
+            }),
+          }),
+        },
+      },
+    ]);
+  });
+
   it("retorna issue no fallback de reproducao quando dados estao invalidos", async () => {
     const result = await resolveRegistrarNonFinancialFinalizePlan({
       ...baseInput(),

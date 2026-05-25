@@ -7,6 +7,13 @@ const baselineSql = readFileSync(
   resolve(process.cwd(), "supabase/migrations/00000000000000_rebuild_base_schema_sanitario.sql"),
   "utf8",
 );
+const dryCowTherapyAgendaSql = readFileSync(
+  resolve(
+    process.cwd(),
+    "supabase/migrations/20260524000000_dry_cow_therapy_agenda_recompute.sql",
+  ),
+  "utf8",
+);
 
 function extractRecomputeCore() {
   const match = baselineSql.match(
@@ -1199,5 +1206,81 @@ describe("P6.2.1 sanitario_recompute_agenda_core brucellosis contract", () => {
         ...overrides,
       }),
     ).toBeNull();
+  });
+});
+
+describe("dry cow therapy SQL recompute contract", () => {
+  it("wraps sanitario_recompute_agenda_core instead of replacing the baseline logic inline", () => {
+    expect(dryCowTherapyAgendaSql).toContain(
+      "sanitario_recompute_agenda_core_without_dry_cow",
+    );
+    expect(dryCowTherapyAgendaSql).toContain(
+      "alter function public.sanitario_recompute_agenda_core(uuid, uuid, date)",
+    );
+    expect(dryCowTherapyAgendaSql).toContain(
+      "create or replace function public.sanitario_recompute_agenda_core",
+    );
+    expect(dryCowTherapyAgendaSql).toContain(
+      "base_inserted_count + dry_cow_inserted_count",
+    );
+  });
+
+  it("requires explicit farm operational activation before materializing dry cow therapy", () => {
+    expect(dryCowTherapyAgendaSql).toContain(
+      "create or replace function public.sanitario_recompute_dry_cow_therapy_agenda",
+    );
+    expect(dryCowTherapyAgendaSql).toContain("psi.gera_agenda");
+    expect(dryCowTherapyAgendaSql).toContain(
+      "rule.family_code = 'terapia_vaca_seca'",
+    );
+    expect(dryCowTherapyAgendaSql).toContain(
+      "rule.item_code = 'secagem-intramamario'",
+    );
+    expect(dryCowTherapyAgendaSql).toContain(
+      "rule.agenda_activation_mode = 'dry_off_reproductive_window'",
+    );
+  });
+
+  it("keeps the dry cow eligibility anchored on animal taxonomy facts", () => {
+    expect(dryCowTherapyAgendaSql).toContain(
+      "a.payload #>> '{taxonomy_facts,em_lactacao}'",
+    );
+    expect(dryCowTherapyAgendaSql).toContain(
+      "a.payload #>> '{taxonomy_facts,secagem_realizada}'",
+    );
+    expect(dryCowTherapyAgendaSql).toContain(
+      "a.payload #>> '{taxonomy_facts,data_prevista_parto}'",
+    );
+    expect(dryCowTherapyAgendaSql).toContain("a.status = 'ativo'");
+    expect(dryCowTherapyAgendaSql).toContain("a.sexo = 'F'::public.sexo_enum");
+    expect(dryCowTherapyAgendaSql).toContain(
+      "and (facts.expected_calving_date - _as_of) between 45 and 75",
+    );
+  });
+
+  it("uses the same canonical dedup shape as the TypeScript contract", () => {
+    expect(dryCowTherapyAgendaSql).toContain(
+      "public.render_sanitario_canonical_dedup_key",
+    );
+    expect(dryCowTherapyAgendaSql).toContain("'terapia_vaca_seca'");
+    expect(dryCowTherapyAgendaSql).toContain("'secagem-intramamario'");
+    expect(dryCowTherapyAgendaSql).toContain("'window'");
+    expect(dryCowTherapyAgendaSql).toContain("facts.expected_calving_date::text");
+  });
+
+  it("keeps anti-zombie gates for completed agendas and manual dry-off events", () => {
+    expect(dryCowTherapyAgendaSql).toContain(
+      "dry_cow_therapy_recompute_invalidated",
+    );
+    expect(dryCowTherapyAgendaSql).toContain(
+      "e.payload #>> '{dry_cow_therapy,dry_off_dedup_key}'",
+    );
+    expect(dryCowTherapyAgendaSql).toContain(
+      "es.payload #>> '{dry_cow_therapy,dry_off_dedup_key}'",
+    );
+    expect(dryCowTherapyAgendaSql).toContain("ai.status = 'concluido'");
+    expect(dryCowTherapyAgendaSql).toContain(
+      "and ai.source_evento_id is not null",
+    );
   });
 });

@@ -435,7 +435,6 @@ describe("sanitario engine golden/parity contracts", () => {
   });
 
   it.each([
-    ["PNEFA/aftosa", "febre_aftosa_vigilancia", "sindrome_vesicular_alerta"],
     ["IN50/notificaveis", "doencas_notificaveis", "doencas_notificaveis_alerta"],
     ["GTA/checklist", "transito_documental", "gta_checklist"],
   ])("contract: %s remains compliance-only and does not enter agenda", (_label, familyCode, itemCode) => {

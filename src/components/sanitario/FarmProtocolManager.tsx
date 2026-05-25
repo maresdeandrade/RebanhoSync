@@ -103,6 +103,12 @@ import {
   getSanitaryItemOperationalClassLabel,
   resolveSanitaryItemOperationalClass,
 } from "@/lib/sanitario/models/taxonomy";
+import {
+  buildDryCowTherapyClinicalSupportItemPayload,
+  buildDryCowTherapyOperationalAgendaItemPayload,
+  DRY_COW_THERAPY_DEFAULT_DUE_DAYS_BEFORE_CALVING,
+  isDryCowTherapyProtocolItem,
+} from "@/lib/sanitario/compliance/dryCowTherapy";
 import { showError, showSuccess } from "@/utils/toast";
 
 interface FarmProtocolManagerProps {
@@ -906,6 +912,53 @@ export function FarmProtocolManager({
     }
   };
 
+  const handleToggleDryCowTherapyAgenda = async (
+    item: ProtocoloSanitarioItem,
+    enabled: boolean,
+  ) => {
+    if (isSaving) return;
+    if (!canManage) {
+      showError("Sem permissao para alterar protocolos da fazenda.");
+      return;
+    }
+
+    const payload = enabled
+      ? buildDryCowTherapyOperationalAgendaItemPayload(item.payload)
+      : buildDryCowTherapyClinicalSupportItemPayload(item.payload);
+
+    const operation: OperationInput = {
+      table: "protocolos_sanitarios_itens",
+      action: "UPDATE",
+      record: {
+        id: item.id,
+        tipo: item.tipo,
+        produto: item.produto,
+        intervalo_dias: enabled
+          ? DRY_COW_THERAPY_DEFAULT_DUE_DAYS_BEFORE_CALVING
+          : item.intervalo_dias,
+        dose_num: item.dose_num,
+        gera_agenda: enabled,
+        dedup_template: item.dedup_template ?? null,
+        payload,
+      },
+    };
+
+    setIsSaving(true);
+    try {
+      await createGesture(activeFarmId, [operation]);
+      showSuccess(
+        enabled
+          ? "Agenda de Vaca Seca ativada no protocolo da fazenda."
+          : "Agenda de Vaca Seca desativada no protocolo da fazenda.",
+      );
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      showError(err.message);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const handleDeleteProtocol = async () => {
     if (isDeleting) return;
     if (!deleteTarget) return;
@@ -1223,6 +1276,8 @@ export function FarmProtocolManager({
                               resolveSanitaryItemOperationalClass(item);
                             const isClinicalProtocol =
                               operationalClass === "clinical_protocol";
+                            const isDryCowTherapy =
+                              isDryCowTherapyProtocolItem(item);
 
                             return (
                               <div
@@ -1302,20 +1357,45 @@ export function FarmProtocolManager({
                                   </Button>
                                 </div>
 
-                                {isClinicalProtocol ? (
+                                {isClinicalProtocol || isDryCowTherapy ? (
                                   <div className="mt-3 flex flex-wrap gap-2">
-                                    <Button
-                                      type="button"
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() =>
-                                        navigate(
-                                          "/registrar?dominio=sanitario&sanitarioTipo=medicamento",
-                                        )
-                                      }
-                                    >
-                                      Registrar manejo clinico
-                                    </Button>
+                                    {isClinicalProtocol ? (
+                                      <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() =>
+                                          navigate(
+                                            "/registrar?dominio=sanitario&sanitarioTipo=medicamento",
+                                          )
+                                        }
+                                      >
+                                        Registrar manejo clinico
+                                      </Button>
+                                    ) : null}
+                                    {isDryCowTherapy ? (
+                                      <Button
+                                        type="button"
+                                        variant={
+                                          item.gera_agenda
+                                            ? "outline"
+                                            : "secondary"
+                                        }
+                                        size="sm"
+                                        onClick={() =>
+                                          handleToggleDryCowTherapyAgenda(
+                                            item,
+                                            !item.gera_agenda,
+                                          )
+                                        }
+                                        disabled={!canManage || isSaving}
+                                      >
+                                        <CheckCircle2 className="mr-2 h-4 w-4" />
+                                        {item.gera_agenda
+                                          ? "Desativar agenda de Vaca Seca"
+                                          : "Ativar agenda de Vaca Seca"}
+                                      </Button>
+                                    ) : null}
                                   </div>
                                 ) : null}
 
