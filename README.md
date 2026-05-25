@@ -64,6 +64,8 @@ Regra de regressao semantica:
 - Telemetria de piloto com buffer local em `metrics_events` e flush remoto periódico.
 - Taxonomia canônica bovina: 3 eixos derivados em TypeScript, contrato v1 e fixtures canônicas de regressão.
 - Central Operacional passiva na Home, consumindo `src/lib/insights/` via adapter/hook read-only em `src/features/operationalInsights/`.
+- Módulo de inventário de insumos com tela `/insumos`, entrada inicial/complementar, ajuste auditável, consumo manual vinculado a evento, edição inline, relatórios com CSV/impressão e estoque mínimo/ponto de ressuprimento.
+- Terapia de Vaca Seca com elegibilidade mínima, evento manual estruturado, payload `dry_cow_therapy`, recompute SQL condicionado, ativação explícita em protocolo da fazenda, dedup e anti-agenda-zumbi.
 - Sistema de convites e gestão de membros.
 - Catálogo global de produtos veterinários com seed básico.
 

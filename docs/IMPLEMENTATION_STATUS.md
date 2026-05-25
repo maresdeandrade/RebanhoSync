@@ -83,7 +83,7 @@ Este documento registra o estado efetivo do RebanhoSync na fase atual de consoli
 | `agenda.dedup` | Completo — contrato canonico estruturado TS/SQL | `src/lib/sanitario/engine/dedup.ts`, `supabase/migrations/00000000000000_rebuild_base_schema_sanitario.sql` |
 | `agenda.recalculo` | Completo — recompute limpa e reconstrui pendencias automaticas do escopo antes de reaplicar o motor | `supabase/migrations/00000000000000_rebuild_base_schema_sanitario.sql` |
 
-**Capability Score:** 21/21 = **100%** ✅
+**Capability Score:** 23/25 = **92%** ✅
 
 ---
 
@@ -203,8 +203,12 @@ Este documento registra o estado efetivo do RebanhoSync na fase atual de consoli
 | agenda | `agenda.dedup` | Deduplicação via `dedup_key` e assinatura semântica de família |
 | agenda | `agenda.recalculo` | Recalculo automático via engine sanitária |
 | sanitario| `sanitario.regime_sequencial`| Motor de sequência de doses, dependência de milestone e catch-up |
+| sanitario | `sanitario.casos` | Casos sanitários por animal com abertura/vínculo pelo Registrar, timeline por caso, vínculo de eventos por sanitario_caso_id e encerramento manual. |
+| sanitario | `sanitario.protocolos_clinicos_readonly` | Biblioteca clínica orientativa com contrato testável, sem agenda automática, sem prescrição automática, sem criação de evento sem ação explícita e sem baixa automática de estoque. |
 
-**Total: 23 capabilities**
+**Total: 25 capabilities**
+**Completas: 23**
+**Pendentes: 2**
 
 ---
 
