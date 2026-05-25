@@ -2,11 +2,14 @@ import { useEffect, useMemo, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import {
   Boxes,
+  Pencil,
   PackagePlus,
   Search,
+  Save,
   ShoppingCart,
   SlidersHorizontal,
   Syringe,
+  X,
 } from "lucide-react";
 
 import { EmptyState } from "@/components/EmptyState";
@@ -42,7 +45,9 @@ import type {
   EventoPastoAvaliacao,
   EventoSanitario,
   Insumo,
+  InsumoApresentacao,
   InsumoLote,
+  InsumoLoteStatusEnum,
   InsumoMovimentacao,
   InsumoMovimentacaoTipoEnum,
   InsumoTipoEnum,
@@ -87,8 +92,23 @@ type ManualMovementForm = {
   observacoes: string;
 };
 
+type LotEditForm = {
+  lotId: string;
+  insumoNome: string;
+  categoria: string;
+  ativo: boolean;
+  apresentacaoNome: string;
+  apresentacaoFabricante: string;
+  identificacaoLote: string;
+  validade: string;
+  fabricante: string;
+  localArmazenamento: string;
+  status: InsumoLoteStatusEnum;
+};
+
 type InventorySnapshot = {
   insumos: Insumo[];
+  apresentacoes: InsumoApresentacao[];
   lotes: InsumoLote[];
   movimentacoes: InsumoMovimentacao[];
   eventos: Evento[];
@@ -163,6 +183,13 @@ const unidadeCompraOptions: Array<{
   { value: "unidade", label: "Unidade" },
   { value: "dose", label: "Dose" },
   { value: "outro", label: "Outro" },
+];
+
+const loteStatusOptions: Array<{ value: InsumoLoteStatusEnum; label: string }> = [
+  { value: "ativo", label: "Ativo" },
+  { value: "esgotado", label: "Esgotado" },
+  { value: "vencido", label: "Vencido" },
+  { value: "bloqueado", label: "Bloqueado" },
 ];
 
 function parsePositiveNumber(value: string): number | null {
@@ -289,6 +316,26 @@ function computeLotBalance(
     saldoAtualBase: lot.saldo_atual_base,
     movements: pendingMovements,
   });
+}
+
+function buildLotEditForm(
+  lot: InsumoLote,
+  insumo: Insumo | undefined,
+  apresentacao: InsumoApresentacao | undefined,
+): LotEditForm {
+  return {
+    lotId: lot.id,
+    insumoNome: insumo?.nome ?? "",
+    categoria: insumo?.categoria ?? "",
+    ativo: insumo?.ativo ?? true,
+    apresentacaoNome: apresentacao?.nome ?? "",
+    apresentacaoFabricante: apresentacao?.fabricante ?? "",
+    identificacaoLote: lot.identificacao_lote ?? "",
+    validade: lot.validade ?? "",
+    fabricante: lot.fabricante ?? "",
+    localArmazenamento: lot.local_armazenamento ?? "",
+    status: lot.status,
+  };
 }
 
 export default function Insumos() {

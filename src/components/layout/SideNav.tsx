@@ -81,19 +81,19 @@ export const SideNav = ({ mobile = false }: SideNavProps) => {
     nested?: boolean;
   }) =>
     cn(
-      "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors",
-      nested && "pl-4",
+      "group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold transition-colors",
+      nested && "pl-6",
       active
-        ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
-        : "text-sidebar-foreground/78 hover:bg-sidebar-accent/80 hover:text-sidebar-foreground",
+        ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm"
+        : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
     );
 
   const indicatorClasses = (active: boolean) =>
     cn(
-      "h-1.5 w-1.5 rounded-full transition-colors",
+      "h-2 w-2 rounded-full transition-colors",
       active
         ? "bg-sidebar-primary"
-        : "bg-sidebar-foreground/25 group-hover:bg-sidebar-foreground/45",
+        : "bg-sidebar-foreground/50 group-hover:bg-sidebar-foreground/75",
     );
 
   return (

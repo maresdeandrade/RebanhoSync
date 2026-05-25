@@ -282,8 +282,9 @@ function FilterChipGroup<Value extends string>({
               size="sm"
               aria-pressed={active}
               className={cn(
-                "h-9 rounded-full px-3 text-sm font-medium",
-                !active && "bg-background hover:bg-muted/70",
+                "h-11 rounded-full px-4 text-sm font-bold",
+                !active && "bg-background hover:bg-muted/70 border-border",
+                active && "shadow-md"
               )}
               onClick={() => onChange(option.value)}
             >

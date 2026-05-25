@@ -4,107 +4,133 @@
 
 @layer base {
   :root {
-    --background: 200 23% 97%;
-    --foreground: 222 47% 11%;
+    /* Base surfaces - low-glare, warm neutrals */
+    --background: 45 20% 96%;
+    --foreground: 200 50% 10%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card: 45 15% 98%;
+    --card-foreground: 200 50% 10%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover: 45 15% 98%;
+    --popover-foreground: 200 50% 10%;
 
-    --primary: 213 100% 38%;
-    --primary-foreground: 0 0% 98%;
+    /* Primary color - deep petroleum blue for high visibility */
+    --primary: 200 100% 15%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 200 23% 97%;
-    --secondary-foreground: 222 47% 11%;
+    /* Secondary - muted surface */
+    --secondary: 45 20% 96%;
+    --secondary-foreground: 200 50% 10%;
 
-    --muted: 200 23% 97%;
-    --muted-foreground: 215 16% 47%;
+    /* Muted - for secondary text and backgrounds */
+    --muted: 45 15% 92%;
+    --muted-foreground: 200 20% 35%;
 
-    --accent: 213 100% 96%;
-    --accent-foreground: 213 100% 26%;
+    /* Accent - warm operational accent */
+    --accent: 35 92% 30%;
+    --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 0 0% 98%;
+    /* Destructive - red/rust for errors */
+    --destructive: 0 84% 40%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 213 100% 38%;
+    /* Border and input - strong, visible */
+    --border: 45 15% 80%;
+    --input: 45 15% 80%;
+    --ring: 200 100% 25%;
 
     --radius: 1rem;
 
-    --success: 142 76% 36%;
+    /* Status colors - saturated, not pastel */
+    --success: 142 76% 25%;
     --success-foreground: 0 0% 100%;
-    --success-muted: 142 40% 95%;
-    --warning: 38 92% 50%;
-    --warning-foreground: 38 100% 12%;
-    --warning-muted: 38 92% 95%;
-    --info: 221 83% 53%;
-    --info-foreground: 0 0% 100%;
-    --info-muted: 217 91% 96%;
-    --surface: 0 0% 100%;
-    --surface-muted: 200 23% 97%;
+    --success-muted: 142 50% 90%;
+    
+    --warning: 35 92% 30%;
+    --warning-foreground: 0 0% 100%;
+    --warning-muted: 35 90% 90%;
+    --warning-strong: 35 92% 25%;
 
-    --sidebar-background: 203 100% 14%;
+    --info: 200 100% 25%;
+    --info-foreground: 0 0% 100%;
+    --info-muted: 200 50% 90%;
+    
+    --surface: 45 15% 98%;
+    --surface-muted: 45 10% 92%;
+
+    /* Sidebar - high contrast dark */
+    --sidebar-background: 200 50% 12%;
     --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 213 100% 38%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 203 80% 20%;
+    --sidebar-primary: 200 100% 25%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 35 92% 30%;
     --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 202 54% 26%;
-    --sidebar-ring: 217 91% 60%;
+    --sidebar-border: 200 40% 25%;
+    --sidebar-ring: 200 100% 35%;
   }
 
   .dark {
-    --background: 222 47% 7%;
-    --foreground: 210 40% 98%;
+    /* Dark mode - high contrast for field use */
+    --background: 200 50% 8%;
+    --foreground: 45 20% 96%;
 
-    --card: 222 47% 9%;
-    --card-foreground: 210 40% 98%;
+    --card: 200 40% 12%;
+    --card-foreground: 45 20% 96%;
 
-    --popover: 222 47% 9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 200 40% 12%;
+    --popover-foreground: 45 20% 96%;
 
-    --primary: 217 91% 60%;
-    --primary-foreground: 222 47% 11%;
+    /* Primary - bright blue for visibility */
+    --primary: 200 100% 35%;
+    --primary-foreground: 200 50% 8%;
 
-    --secondary: 215 28% 17%;
-    --secondary-foreground: 210 40% 98%;
+    /* Secondary */
+    --secondary: 200 30% 18%;
+    --secondary-foreground: 45 20% 96%;
 
-    --muted: 215 28% 17%;
-    --muted-foreground: 215 20% 65%;
+    /* Muted */
+    --muted: 200 30% 18%;
+    --muted-foreground: 45 20% 70%;
 
-    --accent: 203 80% 20%;
-    --accent-foreground: 210 40% 98%;
+    /* Accent */
+    --accent: 35 92% 50%;
+    --accent-foreground: 200 50% 8%;
 
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 0 0% 98%;
+    /* Destructive */
+    --destructive: 0 84% 50%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 215 25% 22%;
-    --input: 215 25% 22%;
-    --ring: 217 91% 60%;
+    /* Border and input */
+    --border: 200 30% 25%;
+    --input: 200 30% 25%;
+    --ring: 200 100% 45%;
 
-    --success: 142 76% 36%;
+    /* Status colors */
+    --success: 142 76% 40%;
     --success-foreground: 0 0% 100%;
-    --success-muted: 142 40% 16%;
-    --warning: 38 92% 50%;
-    --warning-foreground: 38 100% 12%;
-    --warning-muted: 38 92% 16%;
-    --info: 217 91% 60%;
-    --info-foreground: 222 47% 11%;
-    --info-muted: 217 60% 18%;
-    --surface: 222 47% 9%;
-    --surface-muted: 215 28% 17%;
+    --success-muted: 142 50% 20%;
+    
+    --warning: 35 92% 50%;
+    --warning-foreground: 200 50% 8%;
+    --warning-muted: 35 90% 20%;
+    --warning-strong: 35 92% 40%;
 
-    --sidebar-background: 203 100% 14%;
-    --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 217 91% 60%;
-    --sidebar-primary-foreground: 222 47% 11%;
-    --sidebar-accent: 203 80% 25%;
-    --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 202 54% 26%;
-    --sidebar-ring: 217 91% 60%;
+    --info: 200 100% 35%;
+    --info-foreground: 0 0% 100%;
+    --info-muted: 200 50% 20%;
+    
+    --surface: 200 40% 12%;
+    --surface-muted: 200 30% 18%;
+
+    /* Sidebar */
+    --sidebar-background: 200 50% 10%;
+    --sidebar-foreground: 45 20% 96%;
+    --sidebar-primary: 200 100% 40%;
+    --sidebar-primary-foreground: 200 50% 8%;
+    --sidebar-accent: 35 92% 50%;
+    --sidebar-accent-foreground: 200 50% 8%;
+    --sidebar-border: 200 30% 25%;
+    --sidebar-ring: 200 100% 45%;
   }
 }
 
@@ -130,14 +156,14 @@
   }
 
   .app-surface {
-    @apply rounded-2xl border border-border/50 bg-card shadow-soft;
+    @apply rounded-2xl border border-border bg-card shadow-soft;
   }
 
   .app-surface-muted {
-    @apply rounded-2xl border border-border/50 bg-muted/30 shadow-soft;
+    @apply rounded-2xl border border-border bg-muted shadow-soft;
   }
 
   .app-divider {
-    @apply border-t border-border/50;
+    @apply border-t border-border;
   }
 }

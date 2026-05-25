@@ -21,22 +21,22 @@ export function MobileBottomNav({ onOpenMenu }: MobileBottomNavProps) {
     const featured = "featured" in item && item.featured;
 
     return cn(
-      "flex min-w-0 flex-col items-center justify-center gap-1 rounded-xl px-2 py-1 text-[11px] font-medium transition-colors",
+      "flex min-w-0 flex-col items-center justify-center gap-1 rounded-xl px-2 py-1 text-[12px] font-bold transition-colors min-h-[44px]",
       isActive
         ? "text-primary"
-        : "text-muted-foreground hover:text-foreground",
+        : "text-foreground hover:text-primary",
       featured &&
-        "mx-auto -mt-4 h-14 w-14 rounded-full border border-primary/20 bg-primary text-primary-foreground shadow-crisp hover:bg-primary/95 hover:text-primary-foreground",
-      featured && isActive && "ring-2 ring-primary/20 ring-offset-2 ring-offset-background",
+        "mx-auto -mt-6 h-16 w-16 rounded-full border-2 border-primary bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 active:scale-95",
+      featured && isActive && "ring-4 ring-primary/30 ring-offset-2 ring-offset-background",
     );
   };
 
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-border/70 bg-card/95 px-2 pb-[env(safe-area-inset-bottom)] pt-2 shadow-[0_-8px_24px_rgba(15,23,42,0.08)] backdrop-blur md:hidden"
+      className="fixed inset-x-0 bottom-0 z-40 border-t-2 border-border bg-card px-2 pb-[env(safe-area-inset-bottom)] pt-2 shadow-[0_-8px_24px_rgba(0,0,0,0.15)] md:hidden"
       aria-label="Navegacao mobile"
     >
-      <div className="mx-auto grid h-16 max-w-md grid-cols-5 items-center gap-1">
+      <div className="mx-auto grid h-20 max-w-md grid-cols-5 items-center gap-1">
         {bottomNavigationItems.map((item) => {
           const isActive = activeKey === item.key;
           const Icon = item.icon;
