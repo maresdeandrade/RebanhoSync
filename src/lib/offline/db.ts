@@ -24,6 +24,10 @@ import {
   type CatalogoProtocoloOficialItem,
   type CatalogoDoencaNotificavel,
   type FazendaSanidadeConfig,
+  type Insumo,
+  type InsumoApresentacao,
+  type InsumoLote,
+  type InsumoMovimentacao,
   type CategoriaZootecnica,
   type PilotMetricEvent,
   type Rejection,
@@ -44,6 +48,10 @@ export class OfflineDB extends Dexie {
   state_protocolos_sanitarios_itens!: Table<ProtocoloSanitarioItem, string>;
   state_fazenda_sanidade_config!: Table<FazendaSanidadeConfig, string>;
   state_sanitario_casos!: Table<SanitarioCaso, string>;
+  state_insumos!: Table<Insumo, string>;
+  state_insumo_apresentacoes!: Table<InsumoApresentacao, string>;
+  state_insumo_lotes!: Table<InsumoLote, string>;
+  state_insumo_movimentacoes!: Table<InsumoMovimentacao, string>;
 
   // Event Stores (Log local)
   event_eventos!: Table<Evento, string>;
@@ -479,6 +487,63 @@ export class OfflineDB extends Dexie {
         "fazenda_id, modo_calendario, uf, aptidao, sistema, deleted_at",
       state_sanitario_casos:
         "id, fazenda_id, animal_id, status, tipo, [fazenda_id+animal_id], [fazenda_id+status], source_alert_evento_id, deleted_at",
+
+      event_eventos:
+        "id, fazenda_id, [fazenda_id+dominio], [fazenda_id+occurred_at], animal_id, lote_id, sanitario_caso_id, deleted_at",
+      event_eventos_sanitario: "evento_id, fazenda_id, deleted_at",
+      event_eventos_pesagem: "evento_id, fazenda_id, deleted_at",
+      event_eventos_nutricao: "evento_id, fazenda_id, deleted_at",
+      event_eventos_movimentacao: "evento_id, fazenda_id, deleted_at",
+      event_eventos_pasto_avaliacao:
+        "evento_id, fazenda_id, pasto_id, lote_id, ocupacao_id, deleted_at",
+      event_eventos_reproducao: "evento_id, fazenda_id, deleted_at",
+      event_eventos_financeiro: "evento_id, fazenda_id, deleted_at",
+
+      queue_gestures: "client_tx_id, status, [status+created_at], fazenda_id",
+      queue_ops: "client_op_id, client_tx_id, fazenda_id",
+      queue_rejections:
+        "++id, client_tx_id, fazenda_id, created_at, [fazenda_id+created_at]",
+      metrics_events:
+        "id, fazenda_id, event_name, status, route, entity, created_at, [fazenda_id+created_at]",
+      catalog_produtos_veterinarios:
+        "id, nome, categoria, updated_at, [categoria+nome]",
+      catalog_protocolos_oficiais:
+        "id, slug, escopo, uf, status_legal, versao, [escopo+uf], [status_legal+aptidao]",
+      catalog_protocolos_oficiais_itens:
+        "id, template_id, area, gatilho_tipo, requires_vet, requires_gta, gera_agenda",
+      catalog_doencas_notificaveis:
+        "codigo, nome, especie_alvo, tipo_notificacao, updated_at",
+    });
+
+    // Version 15: inventario tenant-scoped de insumos, apresentacoes, lotes e movimentacoes.
+    this.version(15).stores({
+      state_animais:
+        "id, fazenda_id, [fazenda_id+lote_id], [fazenda_id+status], lote_id, deleted_at",
+      state_lotes: "id, fazenda_id, pasto_id, deleted_at",
+      state_pastos: "id, fazenda_id, deleted_at",
+      state_pasto_ocupacoes:
+        "id, fazenda_id, pasto_id, lote_id, status, [fazenda_id+pasto_id], [fazenda_id+lote_id], deleted_at",
+      state_agenda_itens:
+        "id, fazenda_id, [fazenda_id+data_prevista], [fazenda_id+status], animal_id, lote_id, deleted_at",
+      state_contrapartes: "id, fazenda_id, deleted_at",
+      state_animais_sociedade:
+        "id, [fazenda_id+animal_id], fazenda_id, animal_id, contraparte_id, deleted_at, fim",
+      state_categorias_zootecnicas: "id, fazenda_id, deleted_at",
+      state_protocolos_sanitarios: "id, fazenda_id, deleted_at",
+      state_protocolos_sanitarios_itens:
+        "id, fazenda_id, protocolo_id, deleted_at",
+      state_fazenda_sanidade_config:
+        "fazenda_id, modo_calendario, uf, aptidao, sistema, deleted_at",
+      state_sanitario_casos:
+        "id, fazenda_id, animal_id, status, tipo, [fazenda_id+animal_id], [fazenda_id+status], source_alert_evento_id, deleted_at",
+      state_insumos:
+        "id, fazenda_id, tipo, produto_veterinario_id, ativo, deleted_at, [fazenda_id+tipo]",
+      state_insumo_apresentacoes:
+        "id, fazenda_id, insumo_id, unidade_compra, deleted_at, [fazenda_id+insumo_id]",
+      state_insumo_lotes:
+        "id, fazenda_id, insumo_id, apresentacao_id, status, validade, deleted_at, [fazenda_id+insumo_id], [fazenda_id+status]",
+      state_insumo_movimentacoes:
+        "id, fazenda_id, insumo_id, insumo_lote_id, tipo, occurred_at, source_evento_id, deleted_at, [fazenda_id+insumo_lote_id], [fazenda_id+source_evento_id]",
 
       event_eventos:
         "id, fazenda_id, [fazenda_id+dominio], [fazenda_id+occurred_at], animal_id, lote_id, sanitario_caso_id, deleted_at",

@@ -12,6 +12,7 @@ import {
   ListTree,
   Map,
   Menu,
+  PackageSearch,
   PlusCircle,
   SlidersHorizontal,
   Settings,
@@ -91,6 +92,7 @@ export const navigationItems: NavigationItem[] = [
     section: "gestao",
     children: [
       { icon: DollarSign, label: "Lancamentos", path: "/financeiro" },
+      { icon: PackageSearch, label: "Inventario", path: "/insumos" },
       { icon: Handshake, label: "Parceiros", path: "/contrapartes" },
     ],
   },

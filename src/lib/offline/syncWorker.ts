@@ -372,6 +372,10 @@ export async function processGesture(gesture: Gesture) {
         refreshTables.add("agenda_itens");
         refreshTables.add("fazenda_sanidade_config");
       }
+      if (remoteTablesTouched.has("insumo_movimentacoes")) {
+        refreshTables.add("insumo_lotes");
+        refreshTables.add("insumo_movimentacoes");
+      }
 
       if (refreshTables.size > 0) {
         try {

@@ -191,6 +191,7 @@ Deno.serve(async (req: Request) => {
       'contrapartes', 'protocolos_sanitarios', 'protocolos_sanitarios_itens',
       'fazenda_sanidade_config',
       'sanitario_casos',
+      'insumos', 'insumo_apresentacoes', 'insumo_lotes', 'insumo_movimentacoes',
       'eventos_sanitario', 'eventos_pesagem', 'eventos_nutricao',
       'eventos_movimentacao', 'eventos_reproducao', 'eventos_financeiro'
     ]);

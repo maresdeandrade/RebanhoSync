@@ -193,13 +193,15 @@ Este documento registra o estado efetivo do RebanhoSync na fase atual de consoli
 | reproducao | `reproducao.episode_linking` | Linking episódios (cobertura→diagnóstico→parto) |
 | financeiro | `financeiro.registro` | Registro financeiro |
 | financeiro | `financeiro.historico` | Histórico/leitura financeiro |
+| inventario | `inventario.insumos` | Cadastro inicial de insumo/apresentação/lote |
+| inventario | `inventario.movimentacao` | Entrada inicial, entrada em lote existente, ajuste auditável e consumo manual vinculado a evento confirmado, validado em smoke real local |
 | agenda | `agenda.gerar` | Geração/criação de agenda items |
 | agenda | `agenda.concluir` | Conclusão/cancelamento de agenda items |
 | agenda | `agenda.dedup` | Deduplicação via `dedup_key` e assinatura semântica de família |
 | agenda | `agenda.recalculo` | Recalculo automático via engine sanitária |
 | sanitario| `sanitario.regime_sequencial`| Motor de sequência de doses, dependência de milestone e catch-up |
 
-**Total: 21 capabilities**
+**Total: 23 capabilities**
 
 ---
 
@@ -258,7 +260,7 @@ Este documento registra o estado efetivo do RebanhoSync na fase atual de consoli
 - P3.1A-P3.2 reduziram acoplamento do `Registrar` via `buildSanitaryExecutionPayload`, `executeSanitaryCompletion`, `validateSanitaryExecutionPreflight` e `resolveRegistrarSanitaryPackage`.
 - P3.3-P3.4 documentaram o boundary local e removeram o import direto de `engine/protocolRules` do Registrar.
 - P5 removeu o ultimo import direto de `@/lib/sanitario/engine/*` em `src/pages/Registrar/**`; labels visuais de calendario agora passam por `src/lib/sanitario/models/calendarDisplay.ts`.
-- Residuos conhecidos: carencia ainda nao e motor pleno de withholding; produto/lote/estoque ainda nao formam rastreabilidade sanitaria completa; SISBOV/fiscal seguem fora do core.
+- Residuos conhecidos: carencia ainda nao e motor pleno de withholding; produto/lote/estoque ja possuem base estrutural e UI minima com entradas, ajustes, consumo manual e smoke real local, mas ainda faltam edicao e relatorios; SISBOV/fiscal seguem fora do core.
 
 ## 7.6 Update 2026-04-29 (Contrato Sanitario P6.1-P6.4b)
 

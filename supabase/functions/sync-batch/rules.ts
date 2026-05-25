@@ -17,10 +17,20 @@ const CHECK_CONSTRAINT_REASON: Record<string, string> = {
   ck_evt_nutricao_quantidade_pos_nullable: 'VALIDATION_NUTRICAO_QUANTIDADE',
   ck_evt_mov_destino_required: 'VALIDATION_MOVIMENTACAO_DESTINO',
   ck_evt_mov_from_to_diff: 'VALIDATION_MOVIMENTACAO_ORIGEM_DESTINO',
+  ck_insumos_tipo: 'VALIDATION_INSUMO_TIPO',
+  ck_insumos_unidade_base: 'VALIDATION_INSUMO_UNIDADE',
+  ck_insumo_apresentacoes_quantidade_pos: 'VALIDATION_INSUMO_APRESENTACAO_QUANTIDADE',
+  ck_insumo_lotes_saldo_non_negative: 'VALIDATION_INSUMO_SALDO_INSUFICIENTE',
+  ck_insumo_movimentacoes_tipo: 'VALIDATION_INSUMO_MOVIMENTACAO_TIPO',
+  ck_insumo_movimentacoes_quantidade_pos: 'VALIDATION_INSUMO_MOVIMENTACAO_QUANTIDADE',
+  ck_insumo_movimentacoes_consumo_source: 'VALIDATION_INSUMO_CONSUMO_SOURCE',
+  ck_insumo_movimentacoes_append_only: 'VALIDATION_INSUMO_MOVIMENTACAO_APPEND_ONLY',
 };
 
 const FK_CONSTRAINT_REASON: Record<string, string> = {
   fk_evt_fin_contraparte_fazenda: 'VALIDATION_FINANCEIRO_CONTRAPARTE',
+  fk_insumo_movimentacoes_lote_fazenda: 'VALIDATION_INSUMO_LOTE',
+  fk_insumo_movimentacoes_source_evento_fazenda: 'VALIDATION_INSUMO_SOURCE_EVENTO',
 };
 
 const TABLE_PRIMARY_KEY: Record<string, 'id' | 'evento_id' | 'user_id' | 'fazenda_id'> = {

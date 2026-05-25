@@ -2,15 +2,23 @@ import { supabase } from "@/lib/supabase";
 import { db } from "./db";
 import { getLocalStoreName } from "./tableMap";
 
-const DEFAULT_REMOTE_TABLES = [
+export const DEFAULT_REMOTE_TABLES = [
   "pastos",
   "lotes",
   "animais",
   "agenda_itens",
+  "eventos",
+  "eventos_sanitario",
+  "eventos_nutricao",
+  "eventos_pasto_avaliacao",
   "protocolos_sanitarios",
   "protocolos_sanitarios_itens",
   "fazenda_sanidade_config",
   "sanitario_casos",
+  "insumos",
+  "insumo_apresentacoes",
+  "insumo_lotes",
+  "insumo_movimentacoes",
   "contrapartes",
 ] as const;
 

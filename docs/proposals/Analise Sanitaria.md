@@ -81,7 +81,7 @@ Direção corrigida:
 | Síndrome vesicular aparecia como item próprio além do catálogo de notificáveis | Redundância e dupla entrada para suspeita notificável | Corrigido: removida a verificação PNEFA independente do seed; síndrome vesicular permanece como doença em `catalogo_doencas_notificaveis`, pelo fluxo único de registrar suspeita e orientar notificação. |
 | Biossegurança aparece dentro do mesmo universo de protocolos | Checklist/compliance parece rotina sanitária animal | Reposicionar como compliance/checklist operacional, sem agenda animal automática. |
 | TPB é descrito como algo a migrar, mas o código já o marca como clínico sem agenda | A proposta cria trabalho duplicado | Trocar "migrar TPB" por "proteger TPB contra regressão para agenda". |
-| Terapia de Vaca Seca é proposta como agendável e agora possui ativação controlada na UI de protocolos da fazenda | Gap funcional corrigido no contrato mínimo | Manter evento manual e recompute SQL com ativação explícita; antes de uso amplo, falta apenas revisão de exposição controlada e smoke visual/operacional em ambiente de app. |
+| Terapia de Vaca Seca é proposta como agendável e agora possui ativação controlada na UI de protocolos da fazenda | Gap funcional corrigido no contrato mínimo | Manter evento manual e recompute SQL com ativação explícita; exposição controlada decidida para `owner`/`manager` em modo completo e smoke real automatizado via scripts Codex. |
 | Estoque é colocado cedo demais no plano | Alto acoplamento com evento, produto, lote, validade, offline e sync | Primeiro estabilizar consumo conceitual por evento; implementar estoque MVP depois de casos/protocolos clínicos mínimos. |
 | Casos sanitários não existiam como fonte consolidada na baseline ativa | Eventos clínicos ficavam sem contexto longitudinal | Corrigido no recorte mínimo: `sanitario_casos`, store offline, sync, detalhe do animal, suspeita notificável e vínculo/abertura no `Registrar`. |
 | Plano original altera seed/migrations cedo demais | Risco contra regra do projeto e baseline Supabase | Transformar seed/migration em etapas futuras explícitas, não ação desta revisão. |
@@ -111,7 +111,7 @@ Direção corrigida:
 | GTA/e-GTA pre-check | Checklist/documental de trânsito | Não modelar como emissão fiscal; manter como pre-check/bloqueio contextual quando validado. |
 | TPB | Protocolo clínico de apoio | Proteger `gera_agenda=false`; registrar apenas condutas executadas. |
 | Mastite clínica | Caso sanitário individual + protocolo clínico de apoio | Implementar futuramente no trilho de casos clínicos. |
-| Terapia de Vaca Seca | Evento manual estruturado, recompute SQL condicionado, ativação operacional explícita na cópia da fazenda e validação funcional Supabase | Não promover uso amplo sem smoke visual/operacional e decisão explícita de exposição controlada. |
+| Terapia de Vaca Seca | Evento manual estruturado, recompute SQL condicionado, ativação operacional explícita na cópia da fazenda, exposição controlada por modo completo e smoke real automatizado | Manter sem uso amplo para estoque/prescrição; promover apenas como controle operacional explícito de agenda. |
 
 ## 7. Fluxos alvo corrigidos
 
@@ -332,13 +332,23 @@ Critério de aceite:
 
 Objetivo: controlar insumos sem acoplamento precoce.
 
-Escopo mínimo futuro:
-- catálogo de insumos;
-- apresentações;
-- lotes e validade;
-- movimentações de entrada/ajuste/saída;
-- consumo por evento sanitário confirmado;
+Status atual:
+- contrato puro `evaluateSanitaryInventoryConsumptionReadiness` implementado para delimitar a fonte segura de baixa futura;
+- evento sanitário confirmado + detalhe sanitário + produto catalogado pode originar movimentação manual futura;
+- protocolo, agenda, roteiro clínico, evento removido, evento não sanitário, evento sem produto e produto em texto livre sem conciliação ficam bloqueados;
+- o contrato retorna `createsStockMutation=false`, preservando que o registro de evento não baixa saldo nem cria movimentação automaticamente;
+- migration inicial `20260525000000_insumos_inventory.sql` adicionada com `insumos`, `insumo_apresentacoes`, `insumo_lotes` e `insumo_movimentacoes`, todas tenant-scoped por `fazenda_id`;
+- saldo segue modelo híbrido: `insumo_movimentacoes` é razão auditável append-only e `insumo_lotes.saldo_atual_base` é projeção operacional materializada por trigger;
+- offline/sync conhece as quatro novas tabelas por `state_*`, `TABLE_MAP`, pull inicial, reset por fazenda e refresh pós-sync de lotes quando há movimentação;
+- contrato nutricional inicial cobre `eventos_nutricao` em kg e `eventos_pasto_avaliacao` com suplemento; suplemento em sacos exige apresentação para conversão.
+- UI operacional mínima `/insumos` adicionada com entrada inicial de insumo/apresentação/lote, entrada complementar em lote existente, ajuste positivo/negativo auditável, baixa manual explícita por evento confirmado e leitura de saldo operacional.
+- `/insumos` agora puxa eventos fonte sanitários/nutricionais/pastagem em modo merge e atualiza o catálogo veterinário ao montar, evitando tela sem eventos elegíveis quando aberta diretamente.
+- Smoke operacional em app real local validou entrada inicial, entrada em lote existente, ajuste negativo, consumo nutricional, consumo sanitário e consumo em ronda de pasto.
+
+Escopo mínimo restante:
+- edição de insumo/apresentação/lote;
 - demanda futura estimada por agenda válida.
+- relatórios operacionais de estoque.
 
 Requisitos:
 - não fazer estoque fiscal/contábil avançado;
@@ -369,10 +379,10 @@ Considerando o recorte desta proposta, não o produto sanitário completo:
 | Separação visual operacional | 85% | ajustes finos de UX e consistência cross-flow. |
 | Casos sanitários mínimos | 95% | integração veterinária futura quando houver fonte consolidada. |
 | Protocolos clínicos de apoio | 96% | UX fina com dados reais e expansão somente quando houver fonte veterinária validada. |
-| Terapia de Vaca Seca | 90% | faltam smoke visual/operacional em app real e decisão de exposição controlada; estoque segue fora do recorte. |
-| Estoque MVP sanitário | 0% | criar módulo de insumos/lotes/movimentações e consumo por evento. |
+| Terapia de Vaca Seca | 99% | smoke visual/operacional em app real executado com Docker/Supabase local, Vite e Chrome/Edge CDP; falta apenas ajuste fino visual com dados beta se surgir atrito. |
+| Estoque MVP sanitário/nutricional | 78% | schema tenant-scoped, RLS, sync/offline, contratos puros e UI operacional mínima implementados; entradas em lote existente, ajustes auditáveis e smoke real local já existem; ainda falta edição, demanda futura e relatórios. |
 
-Estimativa objetiva: o refatoramento estrutural sanitário está entre 94% e 95% concluído. Para fechar o núcleo mínimo sem estoque avançado, falta um recorte pequeno: smoke visual/operacional da Vaca Seca em app real e decisão de exposição controlada. Para fechar a visão completa com estoque MVP, faltam cerca de 2 a 3 recortes revisáveis.
+Estimativa objetiva: o refatoramento estrutural sanitário está entre 98% e 99% concluído no núcleo mínimo sem estoque avançado. O recorte de Vaca Seca já tem decisão de exposição controlada e smoke real executado em app local; a frente restante passa a ser refinamento operacional do estoque MVP, começando por edição de cadastros e relatórios.
 
 ## 10. Fora do escopo desta proposta
 
@@ -411,4 +421,4 @@ O núcleo a preservar é:
 - estoque registra insumo real e só baixa por fato/movimentação;
 - catálogo oficial, overlay regulatório e protocolo da fazenda continuam separados.
 
-O próximo passo mais seguro é fazer smoke visual/operacional em app real para a ativação de Vaca Seca na tela de protocolos e decidir a exposição controlada do recurso, ainda sem estoque e sem prescrição automática.
+O próximo passo mais seguro é completar edição de cadastros de insumos/apresentações/lotes e, em seguida, relatórios de estoque.

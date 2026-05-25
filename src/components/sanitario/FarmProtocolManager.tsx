@@ -623,6 +623,7 @@ export function FarmProtocolManager({
   }, [catalogProducts, itemEditor]);
 
   const hasAdvancedFields = farmExperienceMode === "completo";
+  const canExposeDryCowTherapyAgendaControl = canManage && hasAdvancedFields;
 
   const openCreateProtocol = () => {
     setProtocolEditor({
@@ -917,7 +918,7 @@ export function FarmProtocolManager({
     enabled: boolean,
   ) => {
     if (isSaving) return;
-    if (!canManage) {
+    if (!canExposeDryCowTherapyAgendaControl) {
       showError("Sem permissao para alterar protocolos da fazenda.");
       return;
     }
@@ -1332,6 +1333,11 @@ export function FarmProtocolManager({
                                           Catalogo vinculado
                                         </Badge>
                                       ) : null}
+                                      {isDryCowTherapy ? (
+                                        <Badge variant="outline">
+                                          Exposicao controlada
+                                        </Badge>
+                                      ) : null}
                                     </div>
                                     <div>
                                       <p className="font-medium text-foreground">
@@ -1373,7 +1379,8 @@ export function FarmProtocolManager({
                                         Registrar manejo clinico
                                       </Button>
                                     ) : null}
-                                    {isDryCowTherapy ? (
+                                    {isDryCowTherapy &&
+                                    canExposeDryCowTherapyAgendaControl ? (
                                       <Button
                                         type="button"
                                         variant={

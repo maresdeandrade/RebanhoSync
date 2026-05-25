@@ -15,6 +15,10 @@ export const TABLE_MAP: Record<string, string> = {
   fazenda_sanidade_config: "state_fazenda_sanidade_config",
   sanitario_casos: "state_sanitario_casos",
   pasto_ocupacoes: "state_pasto_ocupacoes",
+  insumos: "state_insumos",
+  insumo_apresentacoes: "state_insumo_apresentacoes",
+  insumo_lotes: "state_insumo_lotes",
+  insumo_movimentacoes: "state_insumo_movimentacoes",
 
   // Event Rails (Append-Only)
   eventos: "event_eventos",

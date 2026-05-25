@@ -205,6 +205,34 @@ export type FazendaSanitaryCalendarModeEnum =
 export type FazendaSanitaryRiskLevelEnum = "baixo" | "medio" | "alto";
 export type ReproTipoEnum = "cobertura" | "IA" | "diagnostico" | "parto" | "aborto";
 export type FinanceiroTipoEnum = "compra" | "venda";
+export type InsumoTipoEnum = "sanitario" | "nutricional" | "outro";
+export type InsumoUnidadeBaseEnum = "ml" | "l" | "g" | "kg" | "un" | "dose";
+export type InsumoUnidadeCompraEnum =
+  | "frasco"
+  | "saco"
+  | "bombona"
+  | "caixa"
+  | "unidade"
+  | "dose"
+  | "outro";
+export type InsumoLoteStatusEnum =
+  | "ativo"
+  | "esgotado"
+  | "vencido"
+  | "bloqueado";
+export type InsumoMovimentacaoTipoEnum =
+  | "entrada"
+  | "ajuste_positivo"
+  | "ajuste_negativo"
+  | "consumo_sanitario"
+  | "consumo_nutricao"
+  | "perda"
+  | "transferencia_entrada"
+  | "transferencia_saida";
+export type InsumoMovimentacaoSourceDominioEnum =
+  | "sanitario"
+  | "nutricao"
+  | "pastagem";
 export type PilotMetricStatus = "info" | "success" | "error";
 export type PilotMetricEventName =
   | "page_view"
@@ -760,6 +788,101 @@ export interface FazendaSanidadeConfig {
   pressao_carrapato: FazendaSanitaryRiskLevelEnum;
   pressao_helmintos: FazendaSanitaryRiskLevelEnum;
   modo_calendario: FazendaSanitaryCalendarModeEnum;
+  payload: Record<string, unknown>;
+
+  client_id: string;
+  client_op_id: string;
+  client_tx_id: string | null;
+  client_recorded_at: string;
+  server_received_at: string;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+}
+
+export interface Insumo {
+  id: string;
+  fazenda_id: string;
+  nome: string;
+  tipo: InsumoTipoEnum;
+  categoria: string | null;
+  produto_veterinario_id: string | null;
+  unidade_base: InsumoUnidadeBaseEnum;
+  ativo: boolean;
+  payload: Record<string, unknown>;
+
+  client_id: string;
+  client_op_id: string;
+  client_tx_id: string | null;
+  client_recorded_at: string;
+  server_received_at: string;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+}
+
+export interface InsumoApresentacao {
+  id: string;
+  fazenda_id: string;
+  insumo_id: string;
+  nome: string;
+  unidade_compra: InsumoUnidadeCompraEnum;
+  quantidade_base: number;
+  unidade_base: InsumoUnidadeBaseEnum;
+  codigo_barras: string | null;
+  fabricante: string | null;
+  payload: Record<string, unknown>;
+
+  client_id: string;
+  client_op_id: string;
+  client_tx_id: string | null;
+  client_recorded_at: string;
+  server_received_at: string;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+}
+
+export interface InsumoLote {
+  id: string;
+  fazenda_id: string;
+  insumo_id: string;
+  apresentacao_id: string | null;
+  identificacao_lote: string | null;
+  validade: string | null;
+  fabricante: string | null;
+  local_armazenamento: string | null;
+  quantidade_inicial_base: number;
+  saldo_atual_base: number;
+  unidade_base: InsumoUnidadeBaseEnum;
+  status: InsumoLoteStatusEnum;
+  payload: Record<string, unknown>;
+
+  client_id: string;
+  client_op_id: string;
+  client_tx_id: string | null;
+  client_recorded_at: string;
+  server_received_at: string;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+}
+
+export interface InsumoMovimentacao {
+  id: string;
+  fazenda_id: string;
+  insumo_id: string;
+  insumo_lote_id: string;
+  tipo: InsumoMovimentacaoTipoEnum;
+  quantidade_base: number;
+  unidade_base: InsumoUnidadeBaseEnum;
+  occurred_at: string;
+  source_evento_id: string | null;
+  source_evento_dominio: InsumoMovimentacaoSourceDominioEnum | null;
+  animal_id: string | null;
+  rebanho_lote_id: string | null;
+  pasto_id: string | null;
+  observacoes: string | null;
   payload: Record<string, unknown>;
 
   client_id: string;

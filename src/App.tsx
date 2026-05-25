@@ -29,6 +29,7 @@ const Agenda = lazy(() => import("./pages/Agenda"));
 const Registrar = lazy(() => import("./pages/Registrar"));
 const Eventos = lazy(() => import("./pages/Eventos"));
 const Financeiro = lazy(() => import("./pages/Financeiro"));
+const Insumos = lazy(() => import("./pages/Insumos"));
 const Relatorios = lazy(() => import("./pages/Relatorios"));
 const Contrapartes = lazy(() => import("./pages/Contrapartes"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
@@ -115,6 +116,7 @@ const App = () => (
           <Route path="/registrar" element={<Registrar />} />
           <Route path="/eventos" element={<Eventos />} />
           <Route path="/financeiro" element={<Financeiro />} />
+          <Route path="/insumos" element={<Insumos />} />
           <Route path="/relatorios" element={<Relatorios />} />
           <Route path="/contrapartes" element={<Contrapartes />} />
           <Route path="/dashboard" element={<Dashboard />} />

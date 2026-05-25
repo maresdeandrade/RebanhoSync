@@ -5,18 +5,33 @@ import { useAuth } from "@/hooks/useAuth";
 export const RequireFarm = ({ children }: { children: React.ReactNode }) => {
   const { session, activeFarmId, loading, role, refreshSettings } = useAuth();
   const [isRecoveringFarm, setIsRecoveringFarm] = useState(false);
+  const [hasAttemptedFarmRecovery, setHasAttemptedFarmRecovery] =
+    useState(false);
 
   useEffect(() => {
-    if (!session || !activeFarmId || role || loading || isRecoveringFarm) {
+    setHasAttemptedFarmRecovery(false);
+  }, [activeFarmId, session?.user.id]);
+
+  useEffect(() => {
+    if (
+      !session ||
+      !activeFarmId ||
+      role ||
+      loading ||
+      isRecoveringFarm ||
+      hasAttemptedFarmRecovery
+    ) {
       return;
     }
 
     setIsRecoveringFarm(true);
     void refreshSettings().finally(() => {
+      setHasAttemptedFarmRecovery(true);
       setIsRecoveringFarm(false);
     });
   }, [
     activeFarmId,
+    hasAttemptedFarmRecovery,
     isRecoveringFarm,
     loading,
     refreshSettings,
@@ -24,7 +39,11 @@ export const RequireFarm = ({ children }: { children: React.ReactNode }) => {
     session,
   ]);
 
-  if (loading || isRecoveringFarm) {
+  if (
+    loading ||
+    isRecoveringFarm ||
+    (session && activeFarmId && !role && !hasAttemptedFarmRecovery)
+  ) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         Carregando...

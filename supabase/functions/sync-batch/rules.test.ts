@@ -69,6 +69,34 @@ describe('sync-batch rules: normalizeDbError', () => {
       expect(result.reason_code).toBe('VALIDATION_FINANCEIRO_CONTRAPARTE');
     }
   });
+
+  it('maps inventory balance and source constraints to deterministic reason_code', () => {
+    const saldo = normalizeDbError(
+      {
+        code: '23514',
+        message:
+          'new row for relation "insumo_lotes" violates check constraint "ck_insumo_lotes_saldo_non_negative"',
+      },
+      op({ table: 'insumo_movimentacoes' }),
+    );
+    const source = normalizeDbError(
+      {
+        code: '23503',
+        message:
+          'insert or update on table "insumo_movimentacoes" violates foreign key constraint "fk_insumo_movimentacoes_source_evento_fazenda"',
+      },
+      op({ table: 'insumo_movimentacoes' }),
+    );
+
+    expect(saldo.status).toBe('REJECTED');
+    if (saldo.status === 'REJECTED') {
+      expect(saldo.reason_code).toBe('VALIDATION_INSUMO_SALDO_INSUFICIENTE');
+    }
+    expect(source.status).toBe('REJECTED');
+    if (source.status === 'REJECTED') {
+      expect(source.reason_code).toBe('VALIDATION_INSUMO_SOURCE_EVENTO');
+    }
+  });
 });
 
 describe('sync-batch rules: mutation key resolution', () => {

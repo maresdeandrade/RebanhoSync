@@ -25,6 +25,8 @@ powershell -File scripts/codex/prepare-pr.ps1
 ```bash
 node scripts/codex/validate-supabase-baseline-functional.mjs
 node scripts/codex/validate-dry-cow-therapy-functional.mjs
+node scripts/codex/prepare-dry-cow-ui-smoke.mjs
+node scripts/codex/run-dry-cow-ui-smoke-cdp.mjs
 ```
 
 Resumo:
@@ -34,6 +36,8 @@ Resumo:
 - `prepare-pr.ps1`: imprime estrutura de titulo, contexto, arquivos, riscos, docs e validacao.
 - `validate-supabase-baseline-functional.mjs`: valida baseline Supabase funcional com banco local, RLS, FK composta, agenda sanitaria e `sync-batch`.
 - `validate-dry-cow-therapy-functional.mjs`: valida Terapia de Vaca Seca ponta a ponta no Supabase local: item clinico sem ativacao, ativacao operacional, recompute, dedup, conclusao por evento, bloqueio de recriacao e cancelamento anti-agenda-zumbi.
+- `prepare-dry-cow-ui-smoke.mjs`: prepara usuario/fazenda/protocolo real no Supabase local para smoke visual/operacional da ativacao de Vaca Seca; aceita `UI_SMOKE_EMAIL` e `UI_SMOKE_PASSWORD`.
+- `run-dry-cow-ui-smoke-cdp.mjs`: executa smoke no app real via Chrome/Edge headless e CDP; valida badge de exposicao controlada, botao de ativacao em modo completo, troca para `Gera agenda`/desativacao e salva screenshot em `tmp/dry-cow-ui-smoke.png`.
 
 ## Baseline Supabase documentada
 
@@ -186,6 +190,17 @@ Para Terapia de Vaca Seca:
 
 ```bash
 node scripts/codex/validate-dry-cow-therapy-functional.mjs
+```
+
+Para smoke visual/operacional da ativacao controlada de Vaca Seca:
+
+```powershell
+$env:UI_SMOKE_EMAIL="<email>"
+$env:UI_SMOKE_PASSWORD="<senha>"
+node scripts/codex/prepare-dry-cow-ui-smoke.mjs
+pnpm run dev
+$env:APP_URL="http://127.0.0.1:8080"
+node scripts/codex/run-dry-cow-ui-smoke-cdp.mjs
 ```
 
 Se nao rodar um comando, registrar:

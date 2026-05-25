@@ -287,7 +287,30 @@
 
 ---
 
-## Módulo 10: Configurações e Administração
+## Módulo 10: Inventário
+
+### 10.1 Inventário (`/insumos`)
+**Objetivo:** Registrar insumos, entradas/ajustes auditáveis e consumo manual vinculado a evento confirmado
+
+**Elementos de Interface:**
+- Formulário de entrada inicial com insumo, apresentação, lote, validade e local
+- Formulário de entrada complementar ou ajuste positivo/negativo em lote existente
+- Formulário de consumo por evento sanitário, nutrição ou ronda de pasto elegível
+- Lista de lotes físicos com saldo operacional
+
+**Interações:**
+- Entrada inicial cria insumo, apresentação, lote físico e movimentação de entrada em um gesto
+- Entrada complementar e ajuste criam movimentação append-only no lote físico selecionado
+- Consumo cria movimentação append-only vinculada ao evento fonte
+- Eventos e protocolos não baixam estoque automaticamente
+
+**Transições:**
+- → `/eventos` (histórico operacional usado como fonte de consumo)
+- → `/registrar` (registro de eventos que podem originar baixa manual)
+
+---
+
+## Módulo 11: Configurações e Administração
 
 - `/configuracoes`
 - `/perfil`
@@ -295,6 +318,7 @@
 - `/relatorios`
 - `/dashboard`
 - `/financeiro`
+- `/insumos`
 - `/eventos`
 - `/contrapartes`
 - `/categorias`

@@ -274,4 +274,50 @@ describe("FarmProtocolManager", () => {
       }),
     ]);
   });
+
+  it("mantem ativacao de Vaca Seca oculta fora do modo completo", () => {
+    const protocol = buildProtocol({
+      id: "dry-cow-protocol",
+      nome: "Terapia de Vaca Seca",
+      payload: {
+        origem: "biblioteca_canonica_fazenda",
+        standard_id: "med-mastite-seca",
+        family_code: "terapia_vaca_seca",
+      },
+    });
+    const clinicalItem = buildProtocolItem({
+      id: "dry-cow-item",
+      protocolo_id: "dry-cow-protocol",
+      tipo: "medicamento",
+      produto: "Antibiotico Intramamario (Vaca Seca)",
+      intervalo_dias: 0,
+      gera_agenda: false,
+      payload: {
+        standard_id: "med-mastite-seca",
+        family_code: "terapia_vaca_seca",
+        item_code: "secagem-intramamario",
+        calendario_base: {
+          mode: "clinical_protocol",
+          anchor: "dry_off",
+        },
+      },
+    });
+
+    renderManager(
+      <FarmProtocolManager
+        activeFarmId="farm-1"
+        farmExperienceMode="essencial"
+        catalogProducts={[] satisfies ProdutoVeterinarioCatalogEntry[]}
+        protocols={[protocol]}
+        protocolItems={[clinicalItem]}
+        canManage
+      />,
+    );
+
+    expect(screen.getByText("Exposicao controlada")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /ativar agenda de vaca seca/i }),
+    ).not.toBeInTheDocument();
+    expect(createGesture).not.toHaveBeenCalled();
+  });
 });
