@@ -293,20 +293,30 @@
 **Objetivo:** Registrar insumos, entradas/ajustes auditáveis e consumo manual vinculado a evento confirmado
 
 **Elementos de Interface:**
+- Leitura principal de itens em estoque segmentada por abas de categoria
+- Filtros secundários por tipo de insumo, período e busca textual
+- Cards de item/lote com quantidade atual, entradas e saídas do período
+- Indicador de ressuprimento por item, baseado em estoque mínimo e ponto de ressuprimento configurados no cadastro do insumo
 - Formulário de entrada inicial com insumo, apresentação, lote, validade e local
 - Formulário de entrada complementar ou ajuste positivo/negativo em lote existente
 - Formulário de consumo por evento sanitário, nutrição ou ronda de pasto elegível
-- Lista de lotes físicos com saldo operacional
+- Edição inline de cadastro no card de item/lote
+- Relatórios exibem demanda futura estimada por agenda sanitária aberta válida nos próximos 30 dias, com necessidade, saldo e gap por produto
 
 **Interações:**
+- Categoria define a primeira segmentação visual; tipo de insumo é filtro secundário
+- Período recalcula somente os lançamentos `+/-`; o saldo permanece a projeção operacional do lote
 - Entrada inicial cria insumo, apresentação, lote físico e movimentação de entrada em um gesto
 - Entrada complementar e ajuste criam movimentação append-only no lote físico selecionado
 - Consumo cria movimentação append-only vinculada ao evento fonte
+- Edição altera apenas metadados de insumo/apresentação/lote; saldo continua vindo de movimentações
+- Edição de estoque mínimo e ponto de ressuprimento altera apenas `payload.inventory_policy` do insumo; não cria movimentação nem baixa automática
 - Eventos e protocolos não baixam estoque automaticamente
 
 **Transições:**
 - → `/eventos` (histórico operacional usado como fonte de consumo)
 - → `/registrar` (registro de eventos que podem originar baixa manual)
+- → `/relatorios` (resumo operacional de estoque, demanda futura por agenda válida, CSV e impressão)
 
 ---
 

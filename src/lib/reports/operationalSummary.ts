@@ -10,12 +10,25 @@ import type {
   FazendaSanidadeConfig,
   FinanceiroTipoEnum,
   Gesture,
+  Insumo,
+  InsumoApresentacao,
+  InsumoLote,
+  InsumoMovimentacao,
   Lote,
   Pasto,
   ProtocoloSanitario,
   ProtocoloSanitarioItem,
   Rejection,
 } from "@/lib/offline/types";
+import {
+  createSanitarySupplyNeedsInsight,
+  type SanitarySupplyNeedGroup,
+} from "@/lib/insights/sanitarySupplyNeeds";
+import {
+  evaluateInventoryResupply,
+  parseInventoryResupplyPolicy,
+  type InventoryResupplyStatus,
+} from "@/lib/inventory/resupplyPolicy";
 import { describeSanitaryAgendaScheduleMeta } from "@/lib/sanitario/engine/calendar";
 import {
   getSanitaryAttentionOperationalClassLabel,
@@ -56,6 +69,10 @@ export interface OperationalSummaryInput {
   fazendaSanidadeConfig?: FazendaSanidadeConfig | null;
   catalogoProtocolosOficiais?: CatalogoProtocoloOficial[];
   catalogoProtocolosOficiaisItens?: CatalogoProtocoloOficialItem[];
+  insumos?: Insumo[];
+  insumoApresentacoes?: InsumoApresentacao[];
+  insumoLotes?: InsumoLote[];
+  insumoMovimentacoes?: InsumoMovimentacao[];
 }
 
 export interface SummaryMetric {
@@ -84,6 +101,50 @@ export interface RecentEventRow {
   data: string;
   dominio: string;
   contexto: string;
+}
+
+export interface InventoryReportCategoryRow {
+  categoria: string;
+  itens: number;
+  lotes: number;
+  saldo: number;
+  entradas: number;
+  saidas: number;
+  resupplyWarningCount: number;
+  resupplyCriticalCount: number;
+}
+
+export interface InventoryReportItemRow {
+  id: string;
+  categoria: string;
+  insumo: string;
+  tipo: string;
+  lote: string;
+  apresentacao: string;
+  unidadeBase: string;
+  saldo: number;
+  entradas: number;
+  saidas: number;
+  status: string;
+  validade: string | null;
+  local: string | null;
+  resupplyStatus: InventoryResupplyStatus;
+  minimumStockBase: number | null;
+  reorderPointBase: number | null;
+  resupplyGap: number | null;
+}
+
+export interface InventoryFutureDemandRow {
+  productKey: string;
+  productId?: string;
+  productName: string;
+  productUnit: string;
+  agendaItemCount: number;
+  animalCount: number;
+  estimatedQuantity: number | null;
+  missingQuantityCount: number;
+  availableBalance: number;
+  balanceGap: number | null;
 }
 
 export interface OperationalSummaryReport {
@@ -127,6 +188,25 @@ export interface OperationalSummaryReport {
     topItems: RegulatoryComplianceAttentionItem[];
     subareas: RegulatorySubareaAnalyticalCut[];
     impacts: RegulatoryImpactAnalyticalCut[];
+  };
+  inventory: {
+    itensAtivos: number;
+    lotesAtivos: number;
+    saldoTotal: number;
+    entradasPeriodo: number;
+    saidasPeriodo: number;
+    resupplyConfiguredItems: number;
+    resupplyWarningItems: number;
+    resupplyCriticalItems: number;
+    categorias: InventoryReportCategoryRow[];
+    items: InventoryReportItemRow[];
+    futureDemand: {
+      horizonDays: number;
+      status: "complete" | "partial" | "empty";
+      missingProductCount: number;
+      missingQuantityCount: number;
+      groups: InventoryFutureDemandRow[];
+    };
   };
   agendaAttention: AgendaAttentionRow[];
   recentEvents: RecentEventRow[];
@@ -221,6 +301,109 @@ function toCsvCell(value: string | number | null): string {
   return text;
 }
 
+function normalizeInventoryCategory(value: string | null | undefined): string {
+  const category = value?.trim();
+  return category || "Sem categoria";
+}
+
+function readStringPayload(
+  payload: Record<string, unknown> | null | undefined,
+  key: string,
+): string | null {
+  const value = payload?.[key];
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+function readNumberPayload(
+  payload: Record<string, unknown> | null | undefined,
+  key: string,
+): number | null {
+  const value = payload?.[key];
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function getFutureDemandProductId(
+  item: AgendaItem,
+  protocolItem: ProtocoloSanitarioItem | null,
+): string | null {
+  return (
+    readStringPayload(item.source_ref, "produto_veterinario_id") ??
+    readStringPayload(item.payload, "produto_veterinario_id") ??
+    readStringPayload(protocolItem?.payload, "produto_veterinario_id")
+  );
+}
+
+function getFutureDemandProductName(
+  item: AgendaItem,
+  protocolItem: ProtocoloSanitarioItem | null,
+): string | null {
+  return (
+    readStringPayload(item.source_ref, "produto_nome_catalogo") ??
+    readStringPayload(item.payload, "produto_nome_catalogo") ??
+    readStringPayload(protocolItem?.payload, "produto_nome_catalogo") ??
+    readStringPayload(item.source_ref, "produto") ??
+    readStringPayload(item.payload, "produto") ??
+    protocolItem?.produto ??
+    null
+  );
+}
+
+function getFutureDemandQuantityPerAnimal(
+  item: AgendaItem,
+  protocolItem: ProtocoloSanitarioItem | null,
+): number | null {
+  return (
+    readNumberPayload(item.payload, "quantityPerAnimal") ??
+    readNumberPayload(item.payload, "quantity_per_animal") ??
+    readNumberPayload(item.payload, "quantidade_por_animal") ??
+    readNumberPayload(item.source_ref, "quantityPerAnimal") ??
+    readNumberPayload(item.source_ref, "quantity_per_animal") ??
+    readNumberPayload(item.source_ref, "quantidade_por_animal") ??
+    readNumberPayload(protocolItem?.payload, "quantityPerAnimal") ??
+    readNumberPayload(protocolItem?.payload, "quantity_per_animal") ??
+    readNumberPayload(protocolItem?.payload, "quantidade_por_animal")
+  );
+}
+
+function getFutureDemandUnit(
+  item: AgendaItem,
+  protocolItem: ProtocoloSanitarioItem | null,
+): string {
+  return (
+    readStringPayload(item.payload, "productUnit") ??
+    readStringPayload(item.payload, "unidade_base") ??
+    readStringPayload(item.source_ref, "productUnit") ??
+    readStringPayload(item.source_ref, "unidade_base") ??
+    readStringPayload(protocolItem?.payload, "productUnit") ??
+    readStringPayload(protocolItem?.payload, "unidade_base") ??
+    "dose"
+  );
+}
+
+function getInventoryMovementSignal(
+  tipo: InsumoMovimentacao["tipo"],
+): "entrada" | "saida" | null {
+  if (
+    tipo === "entrada" ||
+    tipo === "ajuste_positivo" ||
+    tipo === "transferencia_entrada"
+  ) {
+    return "entrada";
+  }
+
+  if (
+    tipo === "ajuste_negativo" ||
+    tipo === "consumo_sanitario" ||
+    tipo === "consumo_nutricao" ||
+    tipo === "perda" ||
+    tipo === "transferencia_saida"
+  ) {
+    return "saida";
+  }
+
+  return null;
+}
+
 function resolveAgendaStatus(
   item: AgendaItem,
   todayKey: string,
@@ -296,6 +479,215 @@ export function buildOperationalSummary(
     input.eventosPesagem
       .filter((item) => !item.deleted_at)
       .map((item) => [item.evento_id, item]),
+  );
+  const insumos = (input.insumos ?? []).filter((item) => !item.deleted_at);
+  const insumoById = new Map(insumos.map((item) => [item.id, item]));
+  const apresentacaoById = new Map(
+    (input.insumoApresentacoes ?? [])
+      .filter((item) => !item.deleted_at)
+      .map((item) => [item.id, item]),
+  );
+  const inventoryMovements = (input.insumoMovimentacoes ?? []).filter(
+    (movement) =>
+      !movement.deleted_at &&
+      movement.occurred_at.slice(0, 10) >= range.from &&
+      movement.occurred_at.slice(0, 10) <= range.to,
+  );
+  const movementsByLot = new Map<string, InsumoMovimentacao[]>();
+  const inventorySaldoByInsumo = new Map<string, number>();
+
+  for (const lot of input.insumoLotes ?? []) {
+    if (lot.deleted_at) continue;
+    inventorySaldoByInsumo.set(
+      lot.insumo_id,
+      (inventorySaldoByInsumo.get(lot.insumo_id) ?? 0) + lot.saldo_atual_base,
+    );
+  }
+
+  for (const movement of inventoryMovements) {
+    const current = movementsByLot.get(movement.insumo_lote_id) ?? [];
+    current.push(movement);
+    movementsByLot.set(movement.insumo_lote_id, current);
+  }
+
+  const inventoryItems = (input.insumoLotes ?? [])
+    .filter((lot) => !lot.deleted_at)
+    .map<InventoryReportItemRow>((lot) => {
+      const insumo = insumoById.get(lot.insumo_id);
+      const apresentacao = lot.apresentacao_id
+        ? apresentacaoById.get(lot.apresentacao_id)
+        : undefined;
+      const movements = movementsByLot.get(lot.id) ?? [];
+      const movementTotals = movements.reduce(
+        (acc, movement) => {
+          const signal = getInventoryMovementSignal(movement.tipo);
+          if (signal === "entrada") acc.entradas += movement.quantidade_base;
+          if (signal === "saida") acc.saidas += movement.quantidade_base;
+          return acc;
+        },
+        { entradas: 0, saidas: 0 },
+      );
+      const resupply = evaluateInventoryResupply(
+        inventorySaldoByInsumo.get(lot.insumo_id) ?? lot.saldo_atual_base,
+        parseInventoryResupplyPolicy(insumo?.payload),
+      );
+
+      return {
+        id: lot.id,
+        categoria: normalizeInventoryCategory(insumo?.categoria),
+        insumo: insumo?.nome ?? "Insumo sem cadastro",
+        tipo:
+          insumo?.tipo === "sanitario"
+            ? "Sanitario"
+            : insumo?.tipo === "nutricional"
+              ? "Nutricional"
+              : "Outro",
+        lote: lot.identificacao_lote ?? "Sem identificacao",
+        apresentacao: apresentacao?.nome ?? "Sem apresentacao",
+        unidadeBase: lot.unidade_base,
+        saldo: lot.saldo_atual_base,
+        entradas: movementTotals.entradas,
+        saidas: movementTotals.saidas,
+        status: lot.status,
+        validade: lot.validade,
+        local: lot.local_armazenamento,
+        resupplyStatus: resupply.status,
+        minimumStockBase: resupply.minimumStockBase,
+        reorderPointBase: resupply.reorderPointBase,
+        resupplyGap:
+          resupply.status === "critical"
+            ? resupply.gapToMinimum
+            : resupply.status === "warning"
+              ? resupply.gapToReorderPoint
+              : 0,
+      };
+    })
+    .sort((left, right) =>
+      `${left.categoria} ${left.insumo} ${left.lote}`.localeCompare(
+        `${right.categoria} ${right.insumo} ${right.lote}`,
+      ),
+    );
+
+  const inventoryCategoryMap = new Map<string, InventoryReportCategoryRow>();
+  for (const item of inventoryItems) {
+    const row =
+      inventoryCategoryMap.get(item.categoria) ??
+      ({
+        categoria: item.categoria,
+        itens: 0,
+        lotes: 0,
+        saldo: 0,
+        entradas: 0,
+        saidas: 0,
+        resupplyWarningCount: 0,
+        resupplyCriticalCount: 0,
+      } satisfies InventoryReportCategoryRow);
+
+    row.itens += 1;
+    row.lotes += 1;
+    row.saldo += item.saldo;
+    row.entradas += item.entradas;
+    row.saidas += item.saidas;
+    if (item.resupplyStatus === "warning") row.resupplyWarningCount += 1;
+    if (item.resupplyStatus === "critical") row.resupplyCriticalCount += 1;
+    inventoryCategoryMap.set(item.categoria, row);
+  }
+  const inventoryCategories = Array.from(inventoryCategoryMap.values()).sort(
+    (left, right) => left.categoria.localeCompare(right.categoria),
+  );
+  const inventoryLotById = new Map(
+    (input.insumoLotes ?? [])
+      .filter((lot) => !lot.deleted_at)
+      .map((lot) => [lot.id, lot]),
+  );
+
+  const protocolItemByIdForDemand = new Map(
+    (input.protocoloItensSanitarios ?? [])
+      .filter((item) => !item.deleted_at)
+      .map((item) => [item.id, item]),
+  );
+  const animalCountByLote = new Map<string, number>();
+  for (const animal of animals) {
+    if (!animal.lote_id) continue;
+    animalCountByLote.set(
+      animal.lote_id,
+      (animalCountByLote.get(animal.lote_id) ?? 0) + 1,
+    );
+  }
+  const demandHorizonDays = 30;
+  const supplyAgendaItems = agendaAberta.map((item) => {
+    const protocolItem = item.protocol_item_version_id
+      ? protocolItemByIdForDemand.get(item.protocol_item_version_id) ?? null
+      : null;
+
+    return {
+      id: item.id,
+      status: item.status,
+      dueDate: item.data_prevista,
+      deletedAt: item.deleted_at,
+      domain: item.dominio,
+      animalId: item.animal_id,
+      loteId: item.lote_id,
+      protocolId: protocolItem?.protocolo_id ?? null,
+      protocolItemId: protocolItem?.id ?? item.protocol_item_version_id,
+      productId: getFutureDemandProductId(item, protocolItem),
+      productName: getFutureDemandProductName(item, protocolItem),
+      productUnit: getFutureDemandUnit(item, protocolItem),
+      quantityPerAnimal: getFutureDemandQuantityPerAnimal(item, protocolItem),
+      animalCount: item.animal_id
+        ? 1
+        : item.lote_id
+          ? animalCountByLote.get(item.lote_id) ?? 1
+          : 1,
+    };
+  });
+  const futureSupplyNeeds = createSanitarySupplyNeedsInsight({
+    questionKind: "future_need",
+    question: "Demanda futura de insumos sanitarios por agenda valida",
+    generatedAt: new Date().toISOString(),
+    items: supplyAgendaItems,
+    scope: "due_within_days",
+    referenceDate: todayKey,
+    days: demandHorizonDays,
+  });
+  const getAvailableInventoryBalance = (group: SanitarySupplyNeedGroup) => {
+    const productName = group.productName?.trim().toLowerCase();
+    return inventoryItems.reduce((acc, item) => {
+      const insumo = insumoById.get(inventoryLotById.get(item.id)?.insumo_id ?? "");
+      const matchesById =
+        group.productId && insumo?.produto_veterinario_id === group.productId;
+      const matchesByName =
+        productName &&
+        (item.insumo.trim().toLowerCase() === productName ||
+          item.insumo.trim().toLowerCase().includes(productName));
+      return matchesById || matchesByName ? acc + item.saldo : acc;
+    }, 0);
+  };
+  const futureDemandGroups =
+    futureSupplyNeeds.answerability === "answerable"
+      ? futureSupplyNeeds.data.groups.map<InventoryFutureDemandRow>((group) => {
+          const availableBalance = getAvailableInventoryBalance(group);
+          const estimatedQuantity = group.estimatedQuantity ?? null;
+          return {
+            productKey: group.productKey,
+            productId: group.productId,
+            productName: group.productName ?? "Produto sem nome",
+            productUnit: group.productUnit ?? "dose",
+            agendaItemCount: group.agendaItemCount,
+            animalCount: group.animalCount,
+            estimatedQuantity,
+            missingQuantityCount: group.missingQuantityCount,
+            availableBalance,
+            balanceGap:
+              estimatedQuantity == null
+                ? null
+                : Math.max(estimatedQuantity - availableBalance, 0),
+          };
+        })
+      : [];
+  const futureDemandMissingQuantity = futureDemandGroups.reduce(
+    (acc, group) => acc + group.missingQuantityCount,
+    0,
   );
   const sanitaryAttention = summarizeSanitaryAgendaAttention({
     agenda: agendaAberta,
@@ -472,6 +864,40 @@ export function buildOperationalSummary(
       subareas: regulatoryReadModel.analytics.subareas,
       impacts: regulatoryReadModel.analytics.impacts,
     },
+    inventory: {
+      itensAtivos: insumos.filter((item) => item.ativo).length,
+      lotesAtivos: inventoryItems.filter((item) => item.status === "ativo").length,
+      saldoTotal: inventoryItems.reduce((acc, item) => acc + item.saldo, 0),
+      entradasPeriodo: inventoryItems.reduce(
+        (acc, item) => acc + item.entradas,
+        0,
+      ),
+      saidasPeriodo: inventoryItems.reduce((acc, item) => acc + item.saidas, 0),
+      resupplyConfiguredItems: inventoryItems.filter(
+        (item) => item.resupplyStatus !== "unconfigured",
+      ).length,
+      resupplyWarningItems: inventoryItems.filter(
+        (item) => item.resupplyStatus === "warning",
+      ).length,
+      resupplyCriticalItems: inventoryItems.filter(
+        (item) => item.resupplyStatus === "critical",
+      ).length,
+      categorias: inventoryCategories,
+      items: inventoryItems,
+      futureDemand: {
+        horizonDays: demandHorizonDays,
+        status:
+          futureSupplyNeeds.answerability === "answerable"
+            ? futureSupplyNeeds.resultStatus
+            : "empty",
+        missingProductCount:
+          futureSupplyNeeds.answerability === "answerable"
+            ? futureSupplyNeeds.data.incompleteAgendaItemIds.length
+            : 0,
+        missingQuantityCount: futureDemandMissingQuantity,
+        groups: futureDemandGroups,
+      },
+    },
     agendaAttention,
     recentEvents,
   };
@@ -538,6 +964,79 @@ export function buildOperationalSummaryCsv(
     "bloqueios_venda",
     report.regulatoryCompliance.saleBlockers,
   );
+  pushRow("estoque", "insumos_ativos", report.inventory.itensAtivos);
+  pushRow("estoque", "lotes_ativos", report.inventory.lotesAtivos);
+  pushRow("estoque", "saldo_total", report.inventory.saldoTotal.toFixed(3));
+  pushRow(
+    "estoque",
+    "entradas_periodo",
+    report.inventory.entradasPeriodo.toFixed(3),
+  );
+  pushRow(
+    "estoque",
+    "saidas_periodo",
+    report.inventory.saidasPeriodo.toFixed(3),
+  );
+  pushRow(
+    "estoque",
+    "ressuprimento_parametrizado",
+    report.inventory.resupplyConfiguredItems,
+  );
+  pushRow(
+    "estoque",
+    "ressuprimento_atencao",
+    report.inventory.resupplyWarningItems,
+  );
+  pushRow(
+    "estoque",
+    "ressuprimento_critico",
+    report.inventory.resupplyCriticalItems,
+  );
+
+  for (const item of report.inventory.categorias) {
+    pushRow(
+      "estoque_categoria",
+      item.categoria,
+      `${item.itens} item(ns) | ${item.lotes} lote(s) | saldo ${item.saldo.toFixed(3)} | +${item.entradas.toFixed(3)} | -${item.saidas.toFixed(3)} | ressuprir ${item.resupplyWarningCount} | critico ${item.resupplyCriticalCount}`,
+    );
+  }
+
+  for (const item of report.inventory.items) {
+    pushRow(
+      "estoque_item",
+      item.insumo,
+      `${item.categoria} | ${item.tipo} | lote ${item.lote} | ${item.apresentacao} | saldo ${item.saldo.toFixed(3)} ${item.unidadeBase} | +${item.entradas.toFixed(3)} | -${item.saidas.toFixed(3)} | ${item.status} | ressuprimento ${item.resupplyStatus} | minimo ${item.minimumStockBase == null ? "" : item.minimumStockBase.toFixed(3)} | ponto ${item.reorderPointBase == null ? "" : item.reorderPointBase.toFixed(3)} | gap ${item.resupplyGap == null ? "" : item.resupplyGap.toFixed(3)}${item.local ? ` | ${item.local}` : ""}`,
+    );
+  }
+
+  pushRow(
+    "estoque_demanda_futura",
+    "horizonte_dias",
+    report.inventory.futureDemand.horizonDays,
+  );
+  pushRow(
+    "estoque_demanda_futura",
+    "status",
+    report.inventory.futureDemand.status,
+  );
+  pushRow(
+    "estoque_demanda_futura",
+    "agendas_sem_produto",
+    report.inventory.futureDemand.missingProductCount,
+  );
+  pushRow(
+    "estoque_demanda_futura",
+    "agendas_sem_quantidade",
+    report.inventory.futureDemand.missingQuantityCount,
+  );
+
+  for (const item of report.inventory.futureDemand.groups) {
+    pushRow(
+      "estoque_demanda_item",
+      item.productName,
+      `${item.agendaItemCount} agenda(s) | ${item.animalCount} animal(is) | demanda ${item.estimatedQuantity == null ? "sem quantidade" : item.estimatedQuantity.toFixed(3)} ${item.productUnit} | saldo ${item.availableBalance.toFixed(3)} | gap ${item.balanceGap == null ? "sem quantidade" : item.balanceGap.toFixed(3)}`,
+    );
+  }
 
   for (const item of report.regulatoryCompliance.subareas) {
     pushRow(
@@ -615,6 +1114,48 @@ export function buildOperationalSummaryPrintHtml(
       `,
     )
     .join("");
+
+  const inventoryRows =
+    report.inventory.items.length > 0
+      ? report.inventory.items
+          .map(
+            (item) => `
+              <tr>
+                <td>${escapeHtml(item.categoria)}</td>
+                <td>${escapeHtml(item.insumo)}</td>
+                <td>${escapeHtml(item.lote)}</td>
+                <td>${item.saldo.toLocaleString("pt-BR")} ${escapeHtml(item.unidadeBase)}</td>
+                <td>+${item.entradas.toLocaleString("pt-BR")} / -${item.saidas.toLocaleString("pt-BR")} | ${escapeHtml(item.resupplyStatus)}</td>
+              </tr>
+            `,
+          )
+          .join("")
+      : `
+          <tr>
+            <td colspan="5">Sem itens de estoque cadastrados.</td>
+          </tr>
+        `;
+
+  const futureDemandRows =
+    report.inventory.futureDemand.groups.length > 0
+      ? report.inventory.futureDemand.groups
+          .map(
+            (item) => `
+              <tr>
+                <td>${escapeHtml(item.productName)}</td>
+                <td>${item.agendaItemCount} agenda(s) / ${item.animalCount} animal(is)</td>
+                <td>${item.estimatedQuantity == null ? "Sem quantidade" : `${item.estimatedQuantity.toLocaleString("pt-BR")} ${escapeHtml(item.productUnit)}`}</td>
+                <td>${item.availableBalance.toLocaleString("pt-BR")} ${escapeHtml(item.productUnit)}</td>
+                <td>${item.balanceGap == null ? "Sem quantidade" : item.balanceGap.toLocaleString("pt-BR")}</td>
+              </tr>
+            `,
+          )
+          .join("")
+      : `
+          <tr>
+            <td colspan="5">Sem demanda futura calculavel nos proximos ${report.inventory.futureDemand.horizonDays} dias.</td>
+          </tr>
+        `;
 
   const agendaRows =
     report.agendaAttention.length > 0
@@ -852,6 +1393,49 @@ export function buildOperationalSummaryPrintHtml(
           <p class="meta" style="margin-top: 12px;">
             ${report.financeiro.transacoes} transacao(oes) no periodo. Pesagens: ${report.pesagem.totalPesagens}.
           </p>
+        </section>
+
+        <section>
+          <h2>Estoque operacional</h2>
+          <p class="meta">
+            ${report.inventory.itensAtivos} insumo(s) ativo(s) |
+            ${report.inventory.lotesAtivos} lote(s) ativo(s) |
+            +${report.inventory.entradasPeriodo.toLocaleString("pt-BR")} /
+            -${report.inventory.saidasPeriodo.toLocaleString("pt-BR")} no periodo
+            | ${report.inventory.resupplyWarningItems} ressuprimento(s) |
+            ${report.inventory.resupplyCriticalItems} critico(s)
+          </p>
+          <table>
+            <thead>
+              <tr>
+                <th>Categoria</th>
+                <th>Insumo</th>
+                <th>Lote</th>
+                <th>Saldo</th>
+                <th>+/- periodo</th>
+              </tr>
+            </thead>
+            <tbody>${inventoryRows}</tbody>
+          </table>
+          <h3>Demanda futura por agenda valida</h3>
+          <p class="meta">
+            Horizonte: ${report.inventory.futureDemand.horizonDays} dias |
+            Status: ${escapeHtml(report.inventory.futureDemand.status)} |
+            ${report.inventory.futureDemand.missingProductCount} agenda(s) sem produto |
+            ${report.inventory.futureDemand.missingQuantityCount} agenda(s) sem quantidade
+          </p>
+          <table>
+            <thead>
+              <tr>
+                <th>Produto</th>
+                <th>Origem</th>
+                <th>Demanda</th>
+                <th>Saldo</th>
+                <th>Gap</th>
+              </tr>
+            </thead>
+            <tbody>${futureDemandRows}</tbody>
+          </table>
         </section>
 
         <section>

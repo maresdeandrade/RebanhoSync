@@ -59,7 +59,7 @@ describe("SideNav", () => {
       "/pastos",
     );
     expect(screen.getByRole("link", { name: /agenda/i })).toHaveClass(
-      "bg-sidebar-accent",
+      "bg-sidebar-primary",
     );
   });
 

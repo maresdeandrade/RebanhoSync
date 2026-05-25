@@ -6,6 +6,7 @@ import {
   CalendarClock,
   Download,
   FileText,
+  PackageSearch,
   Printer,
   Receipt,
   RefreshCw,
@@ -67,6 +68,12 @@ function formatDate(dateKey: string): string {
   return dateFormatter.format(new Date(`${dateKey}T00:00:00`));
 }
 
+function formatQuantity(value: number): string {
+  return new Intl.NumberFormat("pt-BR", {
+    maximumFractionDigits: 3,
+  }).format(value);
+}
+
 function slugify(value: string): string {
   return value
     .normalize("NFD")
@@ -123,6 +130,10 @@ const Relatorios = () => {
       eventos,
       eventosPesagem,
       eventosFinanceiro,
+      insumos,
+      insumoApresentacoes,
+      insumoLotes,
+      insumoMovimentacoes,
       gestures,
       rejections,
     ] = await Promise.all([
@@ -150,6 +161,16 @@ const Relatorios = () => {
         .where("fazenda_id")
         .equals(activeFarmId)
         .toArray(),
+      db.state_insumos.where("fazenda_id").equals(activeFarmId).toArray(),
+      db.state_insumo_apresentacoes
+        .where("fazenda_id")
+        .equals(activeFarmId)
+        .toArray(),
+      db.state_insumo_lotes.where("fazenda_id").equals(activeFarmId).toArray(),
+      db.state_insumo_movimentacoes
+        .where("fazenda_id")
+        .equals(activeFarmId)
+        .toArray(),
       db.queue_gestures.where("fazenda_id").equals(activeFarmId).toArray(),
       db.queue_rejections.where("fazenda_id").equals(activeFarmId).toArray(),
     ]);
@@ -170,6 +191,10 @@ const Relatorios = () => {
       eventos,
       eventosPesagem,
       eventosFinanceiro,
+      insumos,
+      insumoApresentacoes,
+      insumoLotes,
+      insumoMovimentacoes,
       gestures,
       rejections,
     };
@@ -553,6 +578,292 @@ const Relatorios = () => {
                   : ""}
               </p>
             </div>
+          </CardContent>
+        </Card>
+      </section>
+
+      <section>
+        <Card className="shadow-none">
+          <CardHeader className="px-4 pb-2 pt-4 sm:px-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <PackageSearch className="h-4 w-4" />
+                Estoque operacional
+              </CardTitle>
+              <StatusBadge tone="neutral">
+                Fonte: inventario de insumos
+              </StatusBadge>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-3 md:grid-cols-4">
+              <div className="rounded-xl border border-border/70 bg-muted/20 p-4">
+                <p className="text-sm text-muted-foreground">Insumos ativos</p>
+                <p className="mt-2 text-2xl font-semibold">
+                  {report.inventory.itensAtivos}
+                </p>
+              </div>
+              <div className="rounded-xl border border-border/70 bg-muted/20 p-4">
+                <p className="text-sm text-muted-foreground">Lotes ativos</p>
+                <p className="mt-2 text-2xl font-semibold">
+                  {report.inventory.lotesAtivos}
+                </p>
+              </div>
+              <div className="rounded-xl border border-border/70 bg-muted/20 p-4">
+                <p className="text-sm text-muted-foreground">
+                  Entradas no periodo
+                </p>
+                <p className="mt-2 text-2xl font-semibold text-emerald-700">
+                  +{formatQuantity(report.inventory.entradasPeriodo)}
+                </p>
+              </div>
+              <div className="rounded-xl border border-border/70 bg-muted/20 p-4">
+                <p className="text-sm text-muted-foreground">
+                  Saidas no periodo
+                </p>
+                <p className="mt-2 text-2xl font-semibold text-red-700">
+                  -{formatQuantity(report.inventory.saidasPeriodo)}
+                </p>
+              </div>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div className="rounded-xl border border-border/70 bg-muted/20 p-4">
+                <p className="text-sm text-muted-foreground">
+                  Parametrizados
+                </p>
+                <p className="mt-2 text-2xl font-semibold">
+                  {report.inventory.resupplyConfiguredItems}
+                </p>
+              </div>
+              <div className="rounded-xl border border-border/70 bg-muted/20 p-4">
+                <p className="text-sm text-muted-foreground">Ressuprir</p>
+                <p className="mt-2 text-2xl font-semibold text-amber-700">
+                  {report.inventory.resupplyWarningItems}
+                </p>
+              </div>
+              <div className="rounded-xl border border-border/70 bg-muted/20 p-4">
+                <p className="text-sm text-muted-foreground">
+                  Abaixo do minimo
+                </p>
+                <p className="mt-2 text-2xl font-semibold text-red-700">
+                  {report.inventory.resupplyCriticalItems}
+                </p>
+              </div>
+            </div>
+
+            {report.inventory.categorias.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-border/70 bg-muted/20 p-4 text-sm text-muted-foreground">
+                Nenhum item de estoque cadastrado.
+              </div>
+            ) : (
+              <div className="grid gap-3 lg:grid-cols-2">
+                {report.inventory.categorias.map((category) => (
+                  <div
+                    key={category.categoria}
+                    className="rounded-xl border border-border/70 bg-muted/20 p-4"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div>
+                        <p className="font-medium">{category.categoria}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {category.itens} item(ns) · {category.lotes} lote(s)
+                        </p>
+                      </div>
+                      <StatusBadge tone="neutral">
+                        Saldo {formatQuantity(category.saldo)}
+                      </StatusBadge>
+                    </div>
+                    <div className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
+                      <span className="text-emerald-700">
+                        +{formatQuantity(category.entradas)} entrada(s)
+                      </span>
+                      <span className="text-red-700">
+                        -{formatQuantity(category.saidas)} saida(s)
+                      </span>
+                      <span className="text-amber-700">
+                        {category.resupplyWarningCount} ressuprir
+                      </span>
+                      <span className="text-red-700">
+                        {category.resupplyCriticalCount} abaixo minimo
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="space-y-3 rounded-xl border border-border/70 bg-muted/20 p-4">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <h3 className="text-base font-semibold">
+                    Demanda futura por agenda valida
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    Proximos {report.inventory.futureDemand.horizonDays} dias,
+                    com base em agenda sanitaria aberta.
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <StatusBadge
+                    tone={
+                      report.inventory.futureDemand.status === "complete"
+                        ? "success"
+                        : report.inventory.futureDemand.status === "partial"
+                          ? "warning"
+                          : "neutral"
+                    }
+                  >
+                    {report.inventory.futureDemand.status === "complete"
+                      ? "Completo"
+                      : report.inventory.futureDemand.status === "partial"
+                        ? "Parcial"
+                        : "Sem demanda"}
+                  </StatusBadge>
+                  {report.inventory.futureDemand.missingProductCount > 0 ? (
+                    <Badge variant="secondary">
+                      {report.inventory.futureDemand.missingProductCount} sem
+                      produto
+                    </Badge>
+                  ) : null}
+                  {report.inventory.futureDemand.missingQuantityCount > 0 ? (
+                    <Badge variant="secondary">
+                      {report.inventory.futureDemand.missingQuantityCount} sem
+                      quantidade
+                    </Badge>
+                  ) : null}
+                </div>
+              </div>
+
+              {report.inventory.futureDemand.groups.length === 0 ? (
+                <div className="rounded-lg border border-dashed border-border/70 bg-background p-3 text-sm text-muted-foreground">
+                  Sem demanda futura calculavel nos proximos{" "}
+                  {report.inventory.futureDemand.horizonDays} dias.
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {report.inventory.futureDemand.groups.slice(0, 6).map((item) => (
+                    <div
+                      key={item.productKey}
+                      className="grid gap-3 rounded-lg border border-border/70 bg-background p-3 md:grid-cols-[1.3fr_0.7fr_0.7fr_0.7fr]"
+                    >
+                      <div>
+                        <p className="font-medium">{item.productName}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {item.agendaItemCount} agenda(s) · {item.animalCount}{" "}
+                          animal(is)
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">
+                          Demanda
+                        </p>
+                        <p className="font-semibold">
+                          {item.estimatedQuantity == null
+                            ? "Sem quantidade"
+                            : `${formatQuantity(item.estimatedQuantity)} ${item.productUnit}`}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Saldo</p>
+                        <p className="font-semibold">
+                          {formatQuantity(item.availableBalance)}{" "}
+                          {item.productUnit}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Gap</p>
+                        <Badge
+                          variant={
+                            item.balanceGap != null && item.balanceGap > 0
+                              ? "destructive"
+                              : "outline"
+                          }
+                        >
+                          {item.balanceGap == null
+                            ? "Sem quantidade"
+                            : formatQuantity(item.balanceGap)}
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {report.inventory.items.length > 0 ? (
+              <div className="space-y-3">
+                <h3 className="text-base font-semibold">Itens e lotes</h3>
+                <div className="space-y-2">
+                  {report.inventory.items.slice(0, 8).map((item) => (
+                    <div
+                      key={item.id}
+                      className="grid gap-3 rounded-xl border border-border/70 bg-background p-4 md:grid-cols-[1.2fr_0.65fr_0.65fr_0.8fr]"
+                    >
+                      <div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="font-medium">{item.insumo}</p>
+                          <Badge variant="outline">{item.categoria}</Badge>
+                          <Badge variant="outline">{item.tipo}</Badge>
+                          {item.resupplyStatus !== "unconfigured" ? (
+                            <Badge
+                              variant={
+                                item.resupplyStatus === "critical"
+                                  ? "destructive"
+                                  : item.resupplyStatus === "warning"
+                                    ? "secondary"
+                                    : "outline"
+                              }
+                            >
+                              {item.resupplyStatus === "critical"
+                                ? "Abaixo minimo"
+                                : item.resupplyStatus === "warning"
+                                  ? "Ressuprir"
+                                  : "Adequado"}
+                            </Badge>
+                          ) : null}
+                        </div>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          {item.lote} · {item.apresentacao}
+                          {item.local ? ` · ${item.local}` : ""}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Saldo</p>
+                        <p className="font-semibold">
+                          {formatQuantity(item.saldo)} {item.unidadeBase}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">
+                          Periodo
+                        </p>
+                        <p className="font-semibold">
+                          <span className="text-emerald-700">
+                            +{formatQuantity(item.entradas)}
+                          </span>{" "}
+                          <span className="text-red-700">
+                            -{formatQuantity(item.saidas)}
+                          </span>
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">
+                          Ressuprimento
+                        </p>
+                        <p className="font-semibold">
+                          {item.resupplyStatus === "unconfigured"
+                            ? "Sem parametro"
+                            : item.resupplyGap == null
+                              ? "Sem gap"
+                              : formatQuantity(item.resupplyGap)}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
           </CardContent>
         </Card>
       </section>
