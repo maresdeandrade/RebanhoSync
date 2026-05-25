@@ -262,9 +262,25 @@
 
 **Transições:**
 - → `/pastos/novo`
-- → `/pastos/:id`
+- → `/pastos/:id` (Detalhe do Pasto)
 - → `/pastos/:id/editar`
 - → `/pastos/importar`
+
+---
+
+### 7.2 Detalhe do Pasto (`/pastos/:id`)
+**Objetivo:** Visualizar métricas operacionais, histórico e manejo de um pasto específico.
+
+**Elementos de Interface:**
+- **Métricas de Ocupação**: Cards com lotação atual, tempo médio de ocupação, ganho médio de peso (GMD) e ECC médio.
+- **Histórico de Movimentação**: Tabela detalhada da trajetória dos animais no pasto.
+- **Manejo e Forrageira**: Dados técnicos sobre tipo de pastagem e metas de manejo.
+- **Última Ronda**: Resumo da avaliação de pasto mais recente.
+
+**Interações:**
+- Registrar ronda
+- Manejar no pasto (atalho para Registrar)
+- Editar cadastro
 
 ---
 
@@ -275,8 +291,25 @@
 
 **Transições:**
 - → `/lotes/novo`
-- → `/lotes/:id`
+- → `/lotes/:id` (Detalhe do Lote)
 - → `/lotes/importar`
+
+---
+
+### 8.2 Detalhe do Lote (`/lotes/:id`)
+**Objetivo:** Gerenciar animais do lote e visualizar desempenho operacional.
+
+**Elementos de Interface:**
+- **Métricas de Ocupação**: Cards com quantidade atual, tempo de permanência, peso médio inicial/final, GMD estimado e cobertura de ECC.
+- **Histórico de Movimentação**: Tabela da trajetória dos animais deste lote.
+- **Conformidade**: Alertas de restrição de movimentação.
+- **Lista de Animais**: Cards dos animais vinculados ao lote.
+
+**Interações:**
+- Adicionar animais
+- Mudar pasto
+- Trocar touro
+- Manejar lote (atalho para Registrar)
 
 ---
 

@@ -41,9 +41,10 @@ Atualizacao Central Operacional 2026-05-07:
 - Refino inicial de UX/copy concluido: atrasadas e vencendo hoje foram priorizadas, estados ganharam microcopy operacional e limitacoes ficaram compactas sem serem escondidas.
 - A Central nao e motor de decisao e nao executa agenda, eventos, tags persistidas, carencia, venda/abate, peso atual confiavel ou IATF amplo.
 
-Atualizacao Pastagens 2026-05-08:
+Atualizacao Pastagens 2026-05-25:
 - P0/P1/P2/P3/P4 de pastos foram consolidados como base incremental: movimentacao lote->pasto factual, ocupacoes materializadas, ficha agronomica, infraestrutura local sem curral ativo e avaliacao/ronda de pasto como evento historico.
-- A ronda usa `dominio='pastagem'`, `eventos_pasto_avaliacao`, Dexie `event_eventos_pasto_avaliacao`, `TABLE_MAP` e UI minima em `PastoDetalhe`.
+- Métricas de ocupação (Fase 3 e 4) concluídas: camada de derivadores puros (`src/features/occupancy/`) calcula tempo de permanência, GMD e variação de ECC de forma retroativa.
+- UI integrada em `LoteDetalhe` e `PastoDetalhe` com cards de métricas operacionais e tabela de histórico de movimentação detalhada.
 - Fora de escopo preservado: dashboard de pastagem, recomendacao agronomica, motor de UA/lotacao ideal, agenda automatica e grafico.
 
 Atualizacao visual SLC 2026-05-20:
