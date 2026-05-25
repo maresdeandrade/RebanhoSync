@@ -20,6 +20,7 @@ A fase corrente e de **consolidacao operacional**:
 - estabilizar qualidade para evolucao incremental sem regressao estrutural.
 
 Consolidacoes recentes da fase SLC:
+- métricas de ocupação integradas em Lotes e Pastos: tempo de lotação, histórico de movimentação, ganho de peso (GMD) e ECC agora são calculados de forma derivada a partir de eventos históricos e exibidos em `LoteDetalhe` e `PastoDetalhe`.
 - semantica transversal padronizada: `Registrar`, `Executar`, `Encerrar`, `Aplicar protocolo`, `Seguir fluxo` (reproducao);
 - remocao de termos ambiguos legados da UI operacional;
 - reforco do modelo Two Rails: Agenda (`agenda_itens`) != Eventos (`eventos`);
@@ -35,6 +36,7 @@ Consolidacoes recentes da fase SLC:
 - Refatoracao visual SLC aplicada em duas passagens: Home virou painel tatico, Animais ficou card-first sem tabela tecnica duplicada, Registrar foi compactado por intencao/alvo/essencial/salvar e telas operacionais, gerenciais, auxiliares e cadastros passaram a usar headers, cards, badges e espacamentos mais consistentes, sem alterar regras de negocio.
 
 ### ✅ Refinamentos Recentes (Maio/2026)
+- **Métricas de Ocupação**: Camada de derivadores puros (`src/features/occupancy/`) e componentes de UI integrados para visualização de desempenho de lotes e pastos.
 - **Identidade Azul Sync Técnico**: Implementada e consolidada em runtime.
 - **Contraste Corretivo**: Light/Dark mode validados para legibilidade em campo (red-400 p/ perigo, cards com 10% opacidade).
 - **Navegação Híbrida**: Bottom Nav (mobile) e SideNav (desktop) operacionais.

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import {
   ChevronLeft,
@@ -43,6 +43,9 @@ import type {
   SuplementoUnidadeEnum,
 } from "@/lib/offline/types";
 import { showError, showSuccess } from "@/utils/toast";
+import { useOccupancyData } from "@/features/occupancy/useOccupancyData";
+import { OccupancyMetricCards } from "@/features/occupancy/OccupancyMetricCards";
+import { AnimalMovementHistoryTable } from "@/features/occupancy/AnimalMovementHistoryTable";
 
 function parseOptionalNumber(value: string) {
   const normalized = value.trim().replace(",", ".");
@@ -183,6 +186,21 @@ const PastoDetalhe = () => {
         return bDate.localeCompare(aDate);
       });
   }, [id]);
+
+  const { getPastoMetrics, allAnimalPeriods } = useOccupancyData(
+    pasto?.fazenda_id ?? "",
+    new Date().toISOString(),
+  );
+
+  const pastoMetrics = useMemo(
+    () => (id ? getPastoMetrics(id) : null),
+    [id, getPastoMetrics],
+  );
+
+  const pastoAnimalPeriods = useMemo(
+    () => allAnimalPeriods.filter((p) => p.pastoId === id),
+    [allAnimalPeriods, id],
+  );
 
   if (!id || !pasto) {
     return (
@@ -343,6 +361,14 @@ const PastoDetalhe = () => {
             </Button>
           </>
         }
+      />
+
+      <OccupancyMetricCards metrics={pastoMetrics} type="pasto" />
+
+      <AnimalMovementHistoryTable
+        periods={pastoAnimalPeriods}
+        title="Histórico de Movimentação do Pasto"
+        description="Trajetória dos animais neste pasto"
       />
 
       <section className="rounded-xl border border-border/70 bg-card p-5 shadow-none sm:p-6">

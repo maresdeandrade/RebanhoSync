@@ -78,6 +78,7 @@ Subáreas críticas:
 - `telemetry/` — métricas de piloto e flush remoto
 - `events/` — builders, tipos, validações
 - `insights/` — core puro/read-only de composição operacional
+- `features/occupancy/` — derivadores de métricas de ocupação, ganho de peso e ECC
 
 ### `src/features/operationalInsights/`
 Primeira integração passiva da Central Operacional.
@@ -119,7 +120,9 @@ Automações operacionais e gates documentais.
 
 ### Estrutura de rebanho
 - `/lotes`
+- `/lotes/:id` — Detalhe do lote com métricas de ocupação
 - `/pastos`
+- `/pastos/:id` — Detalhe do pasto com métricas de ocupação e rondas
 
 ### Domínios auxiliares
 - `/protocolos-sanitarios`

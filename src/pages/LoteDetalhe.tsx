@@ -30,6 +30,9 @@ import {
   buildRegulatoryOperationalReadModel,
   loadRegulatorySurfaceSource,
 } from "@/lib/sanitario/compliance/regulatoryReadModel";
+import { useOccupancyData } from "@/features/occupancy/useOccupancyData";
+import { OccupancyMetricCards } from "@/features/occupancy/OccupancyMetricCards";
+import { AnimalMovementHistoryTable } from "@/features/occupancy/AnimalMovementHistoryTable";
 
 export default function LoteDetalhe() {
   const { id } = useParams<{ id: string }>();
@@ -74,6 +77,21 @@ export default function LoteDetalhe() {
     () =>
       buildRegulatoryOperationalReadModel(regulatorySurfaceSource ?? undefined),
     [regulatorySurfaceSource],
+  );
+
+  const { getLoteMetrics, allAnimalPeriods } = useOccupancyData(
+    lote?.fazenda_id ?? "",
+    new Date().toISOString(),
+  );
+
+  const loteMetrics = useMemo(
+    () => (id ? getLoteMetrics(id) : null),
+    [id, getLoteMetrics],
+  );
+
+  const loteAnimalPeriods = useMemo(
+    () => allAnimalPeriods.filter((p) => p.loteId === id),
+    [allAnimalPeriods, id],
   );
 
   if (!id || !lote) {
@@ -194,6 +212,14 @@ export default function LoteDetalhe() {
         </Card>
       ) : null}
 
+      <OccupancyMetricCards metrics={loteMetrics} type="lote" />
+
+      <AnimalMovementHistoryTable
+        periods={loteAnimalPeriods}
+        title="Histórico de Movimentação do Lote"
+        description="Trajetória dos animais neste lote entre pastos"
+      />
+
       {animaisCount === 0 ? (
         <EmptyState
           icon={PawPrint}
@@ -262,5 +288,3 @@ export default function LoteDetalhe() {
     </div>
   );
 }
-
-
