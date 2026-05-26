@@ -8,8 +8,11 @@ import {
   ChevronLeft,
   ClipboardCheck,
   Dna,
+  DollarSign,
   HeartPulse,
   History,
+  MoreHorizontal,
+  Pencil,
   Scale,
   Skull,
 } from "lucide-react";
@@ -37,6 +40,13 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -1425,7 +1435,7 @@ const AnimalDetalhe = () => {
     );
   }
 
-  const registrarAnimalPath = `/registrar?animalId=${encodeURIComponent(animal.id)}`;
+  const registrarAnimalPath = `/registrar?animalId=${encodeURIComponent(animal.id)}${animal.lote_id ? `&loteId=${encodeURIComponent(animal.lote_id)}` : ""}`;
   const selectedClinicalCaseClosureReason = getClinicalCaseClosureReason(
     clinicalCaseClosure.reason,
   );
@@ -1485,7 +1495,7 @@ const AnimalDetalhe = () => {
             </div>
           </div>
           <div className="flex flex-wrap gap-2 lg:ml-auto lg:justify-end">
-            {hasMovementBlockedSanitaryAlert ? (
+            {hasMovementBlockedSanitaryAlert && (
               <Button
                 size="sm"
                 variant="outline"
@@ -1496,71 +1506,68 @@ const AnimalDetalhe = () => {
                 <AlertTriangle className="mr-2 h-4 w-4" />
                 Encerrar suspeita
               </Button>
-            ) : (
-              <Button
-                size="sm"
-                variant="outline"
-                className="border-warning/40 text-warning-foreground hover:bg-warning-muted"
-                onClick={() => setShowSanitaryAlertDialog(true)}
-                disabled={animal.status !== "ativo"}
-              >
-                <AlertTriangle className="mr-2 h-4 w-4" />
-                Abrir suspeita sanitaria
-              </Button>
             )}
-            <Button
-              size="sm"
-              variant="destructive"
-              onClick={() => setShowObitoDialog(true)}
-              disabled={animal.status !== "ativo"}
-            >
-              <Skull className="mr-2 h-4 w-4" />
-              Registrar obito
-            </Button>
             {animal.status === "ativo" && !hasMovementBlockedSanitaryAlert ? (
               <Button size="sm" asChild>
                 <Link to={registrarAnimalPath}>
                   <ClipboardCheck className="mr-2 h-4 w-4" />
-                  Registrar manejo deste animal
+                  Registrar manejo
                 </Link>
               </Button>
             ) : (
               <Button size="sm" disabled>
                 <ClipboardCheck className="mr-2 h-4 w-4" />
-                Registrar manejo deste animal
+                Registrar manejo
               </Button>
             )}
-            <Button
-              size="sm"
-              onClick={() => {
-                const params = new URLSearchParams();
-                params.set("dominio", "financeiro");
-                params.set("animalId", animal.id);
-                if (animal.lote_id) {
-                  params.set("loteId", animal.lote_id);
-                }
-                navigate(`/registrar?${params.toString()}`);
-              }}
-              disabled={
-                animal.status !== "ativo" || hasMovementBlockedSanitaryAlert
-              }
-            >
-              Registrar venda
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowMoverLote(true)}
-              disabled={hasMovementBlockedSanitaryAlert}
-            >
-              <ArrowLeftRight className="mr-2 h-4 w-4" />
-              Mover lote
-            </Button>
-            <Link to={`/animais/${id}/editar`}>
-              <Button variant="outline" size="sm">
-                Editar
-              </Button>
-            </Link>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <MoreHorizontal className="mr-2 h-4 w-4" />
+                  Mais acoes
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  onClick={() => {
+                    const params = new URLSearchParams();
+                    params.set("dominio", "financeiro");
+                    params.set("animalId", animal.id);
+                    if (animal.lote_id) {
+                      params.set("loteId", animal.lote_id);
+                    }
+                    navigate(`/registrar?${params.toString()}`);
+                  }}
+                  disabled={
+                    animal.status !== "ativo" || hasMovementBlockedSanitaryAlert
+                  }
+                >
+                  <DollarSign className="mr-2 h-4 w-4" />
+                  Registrar venda
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => setShowObitoDialog(true)}
+                  disabled={animal.status !== "ativo"}
+                >
+                  <Skull className="mr-2 h-4 w-4" />
+                  Registrar obito
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => setShowMoverLote(true)}
+                  disabled={hasMovementBlockedSanitaryAlert}
+                >
+                  <ArrowLeftRight className="mr-2 h-4 w-4" />
+                  Mover lote
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to={`/animais/${id}/editar`}>
+                    <Pencil className="mr-2 h-4 w-4" />
+                    Editar cadastro
+                  </Link>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </div>
@@ -2660,6 +2667,19 @@ const AnimalDetalhe = () => {
         </TabsContent>
 
         <TabsContent value="casos" className="mt-6">
+          {!hasMovementBlockedSanitaryAlert && animal.status === "ativo" && (
+            <div className="mb-4">
+              <Button
+                size="sm"
+                variant="outline"
+                className="border-warning/40 text-warning-foreground hover:bg-warning-muted"
+                onClick={() => setShowSanitaryAlertDialog(true)}
+              >
+                <AlertTriangle className="mr-2 h-4 w-4" />
+                Abrir suspeita sanitaria
+              </Button>
+            </div>
+          )}
           <AnimalSanitaryCasesPanel
             animalId={animal.id}
             cases={sanitaryCases}
