@@ -1,8 +1,9 @@
 import type { RegulatoryOverlayEntry } from "@/lib/sanitario/compliance/compliance";
+import type { ActiveWithdrawal } from "@/lib/sanitario/compliance/activeWithdrawal";
 
 export type ComplianceGuardTone = "danger" | "warning" | "info";
 export type ComplianceGuardSeverity = "block" | "warning";
-export type ComplianceGuardContext = "nutrition" | "movement";
+export type ComplianceGuardContext = "nutrition" | "movement" | "sanitario";
 
 export interface ComplianceFlowGuard {
   key: string;
@@ -141,4 +142,38 @@ export function resolveComplianceFlowGuards(input: {
   });
 
   return splitGuards(guards);
+}
+
+export function withdrawalPeriodWarning(
+  withdrawals: ActiveWithdrawal[],
+): ComplianceFlowGuard[] {
+  if (withdrawals.length === 0) return [];
+
+  const grouped = new Map<string, ActiveWithdrawal[]>();
+  for (const w of withdrawals) {
+    if (!w.ativa) continue;
+    const key = `${w.produto}:${w.tipo_carencia}`;
+    const existing = grouped.get(key);
+    if (existing) {
+      existing.push(w);
+    } else {
+      grouped.set(key, [w]);
+    }
+  }
+
+  const guards: ComplianceFlowGuard[] = [];
+  for (const [, items] of grouped) {
+    const latest = items.reduce((a, b) =>
+      a.fim_carencia > b.fim_carencia ? a : b,
+    );
+    guards.push({
+      key: `carencia:${latest.produto}:${latest.tipo_carencia}`,
+      label: `Carencia ${latest.tipo_carencia} — ${latest.produto}`,
+      severity: "warning",
+      tone: "warning",
+      message: `Animal com carencia de ${latest.tipo_carencia} ativa para ${latest.produto} ate ${latest.fim_carencia}. Verifique antes de prosseguir.`,
+    });
+  }
+
+  return guards;
 }
