@@ -7,7 +7,9 @@ describe("cn", () => {
   });
 
   it("handles conditional classes", () => {
-    expect(cn("foo", true && "bar", false && "baz")).toBe("foo bar");
+    const showBar = true;
+    const showBaz = false;
+    expect(cn("foo", showBar && "bar", showBaz && "baz")).toBe("foo bar");
   });
 
   it("handles arrays", () => {
@@ -25,8 +27,10 @@ describe("cn", () => {
   });
 
   it("merges tailwind classes with conditionals", () => {
-    expect(cn("p-4", true && "p-2")).toBe("p-2");
-    expect(cn("p-4", false && "p-2")).toBe("p-4");
+    const enabled = true;
+    const disabled = false;
+    expect(cn("p-4", enabled && "p-2")).toBe("p-2");
+    expect(cn("p-4", disabled && "p-2")).toBe("p-4");
   });
 
   it("merges tailwind classes with arrays", () => {
