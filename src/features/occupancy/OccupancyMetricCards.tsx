@@ -41,11 +41,11 @@ function MetricCard({
   };
 
   return (
-    <div className="flex flex-col gap-2 rounded-lg border border-border/50 bg-muted/30 p-4">
+    <div className="flex flex-col gap-3 rounded-lg border border-border/50 bg-gradient-to-br from-muted/40 to-muted/20 p-4 transition-all hover:border-border hover:shadow-sm">
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-2">
-          {icon && <div className="text-muted-foreground">{icon}</div>}
-          <p className="text-sm font-medium text-muted-foreground">{label}</p>
+          {icon && <div className="text-primary/60">{icon}</div>}
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</p>
         </div>
         {status && (
           <div
@@ -56,9 +56,9 @@ function MetricCard({
           </div>
         )}
       </div>
-      <p className="text-2xl font-semibold text-foreground">
+      <p className="text-3xl font-bold text-foreground">
         {typeof value === "number" ? value.toFixed(2) : value}
-        {unit && <span className="text-sm font-normal text-muted-foreground ml-1">{unit}</span>}
+        {unit && <span className="text-sm font-medium text-muted-foreground ml-2">{unit}</span>}
       </p>
     </div>
   );
@@ -106,16 +106,14 @@ export function OccupancyMetricCards({
     return (
       <Card className="shadow-none">
         <CardContent className="space-y-4 p-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <h3 className="text-base font-semibold text-foreground">
-                Métricas de Ocupação
-              </h3>
-              <p className="text-sm text-muted-foreground">
-                Dados operacionais do lote
-              </p>
-            </div>
-          </div>
+          <div className="space-y-2 border-b border-border/50 pb-4">
+          <h3 className="text-lg font-bold text-foreground">
+            Métricas de Ocupação
+          </h3>
+          <p className="text-sm text-muted-foreground">
+            Dados operacionais do lote
+          </p>
+        </div>
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <MetricCard
@@ -202,15 +200,13 @@ export function OccupancyMetricCards({
   return (
     <Card className="shadow-none">
       <CardContent className="space-y-4 p-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h3 className="text-base font-semibold text-foreground">
-              Métricas de Ocupação
-            </h3>
-            <p className="text-sm text-muted-foreground">
-              Dados operacionais do pasto
-            </p>
-          </div>
+        <div className="space-y-2 border-b border-border/50 pb-4">
+          <h3 className="text-lg font-bold text-foreground">
+            Métricas de Ocupação
+          </h3>
+          <p className="text-sm text-muted-foreground">
+            Dados operacionais do pasto
+          </p>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { differenceInDays, parseISO } from "date-fns";
 import { useLiveQuery } from "dexie-react-hooks";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
@@ -9,6 +10,9 @@ import {
   PawPrint,
   Repeat,
   UserPlus,
+  Pencil,
+  Search,
+  X
 } from "lucide-react";
 
 import { EmptyState } from "@/components/EmptyState";
@@ -33,6 +37,8 @@ import {
 import { useOccupancyData } from "@/features/occupancy/useOccupancyData";
 import { OccupancyMetricCards } from "@/features/occupancy/OccupancyMetricCards";
 import { AnimalMovementHistoryTable } from "@/features/occupancy/AnimalMovementHistoryTable";
+import { OccupancyEntryInfo } from "@/features/occupancy";
+import { Input } from "@/components/ui/input";
 
 export default function LoteDetalhe() {
   const { id } = useParams<{ id: string }>();
@@ -41,6 +47,7 @@ export default function LoteDetalhe() {
   const [showAdicionarAnimais, setShowAdicionarAnimais] = useState(false);
   const [showMudarPasto, setShowMudarPasto] = useState(false);
   const [showTrocarTouro, setShowTrocarTouro] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
 
   const lote = useLiveQuery(
     () => (id ? db.state_lotes.get(id) : undefined),
@@ -93,6 +100,38 @@ export default function LoteDetalhe() {
     () => allAnimalPeriods.filter((p) => p.loteId === id),
     [allAnimalPeriods, id],
   );
+
+  // Mapa de data de entrada por animal para fácil acesso
+  const animalEntradaMap = useMemo(() => {
+    const map = new Map<string, string>();
+    loteAnimalPeriods.forEach((period) => {
+      if (period.saidaAt === null) { // Apenas animais ativos
+        map.set(period.animalId, period.entradaAt);
+      }
+    });
+    return map;
+  }, [loteAnimalPeriods]);
+
+  const formatDate = (dateString: string): string => {
+    return new Intl.DateTimeFormat("pt-BR", {
+      dateStyle: "short",
+    }).format(new Date(dateString));
+  };
+
+  const getDiasNoLote = (dataEntrada: string): number => {
+    return differenceInDays(new Date(), parseISO(dataEntrada));
+  };
+
+  // Filtrar animais baseado no termo de busca
+  const animaisFiltrados = useMemo(() => {
+    if (!animais) return [];
+    if (!searchTerm.trim()) return animais;
+    
+    const termo = searchTerm.toLowerCase().trim();
+    return animais.filter((animal) =>
+      animal.identificacao?.toLowerCase().includes(termo)
+    );
+  }, [animais, searchTerm]);
 
   if (!id || !lote) {
     return (
@@ -152,17 +191,21 @@ export default function LoteDetalhe() {
                 Manejar este lote
               </Link>
             </Button>
+            <Button
+              onClick={() => setShowAdicionarAnimais(true)}
+              disabled={movementBlocked}
+            >
+              <UserPlus className="mr-2 h-4 w-4" />
+              Adicionar animais
+            </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline">
                   <MoreHorizontal className="mr-2 h-4 w-4" />
-                  Acoes do lote
+                  Mais ações
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem asChild>
-                  <Link to={`/lotes/${id}/editar`}>Editar cadastro</Link>
-                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setShowMudarPasto(true)}>
                   <ArrowRightLeft className="mr-2 h-4 w-4" />
                   Mudar pasto
@@ -171,15 +214,14 @@ export default function LoteDetalhe() {
                   <Repeat className="mr-2 h-4 w-4" />
                   Trocar reprodutor
                 </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to={`/lotes/${id}/editar`}>
+                    <Pencil className="mr-2 h-4 w-4" />
+                    Editar cadastro
+                  </Link>
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            <Button
-              onClick={() => setShowAdicionarAnimais(true)}
-              disabled={movementBlocked}
-            >
-              <UserPlus className="mr-2 h-4 w-4" />
-              Adicionar animais
-            </Button>
           </>
         }
       />
@@ -232,37 +274,80 @@ export default function LoteDetalhe() {
       ) : (
         <Card className="shadow-none">
           <CardContent className="space-y-4 p-4">
-            <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="space-y-3 border-b border-border/50 pb-4">
               <div>
-                <h2 className="text-base font-semibold text-foreground">
+                <h2 className="text-lg font-bold text-foreground">
                   Animais do lote
                 </h2>
                 <p className="text-sm text-muted-foreground">
-                  {animaisCount} registro(s) vinculados a este agrupamento.
+                  {animaisFiltrados.length} de {animaisCount} registro(s).
                 </p>
               </div>
-              <StatusBadge tone="neutral">{lote.status}</StatusBadge>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar por identificação..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 pr-10"
+                />
+                {searchTerm && (
+                  <button
+                    onClick={() => setSearchTerm("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
             </div>
-            {animais?.map((animal) => (
-              <Link
-                key={animal.id}
-                to={`/animais/${animal.id}`}
-                className="flex flex-col gap-3 rounded-xl border border-border/70 bg-background/80 p-4 transition-colors hover:border-primary/25 hover:bg-muted/20 sm:flex-row sm:items-center sm:justify-between"
-              >
-                <div className="space-y-1">
-                  <p className="font-medium text-foreground">
-                    {animal.identificacao}
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    <StatusBadge tone="neutral">
-                      {animal.sexo === "M" ? "Macho" : "Femea"}
-                    </StatusBadge>
-                    <StatusBadge tone="neutral">{animal.status}</StatusBadge>
+            {animaisFiltrados.length === 0 ? (
+              <div className="py-8 text-center">
+                <p className="text-sm text-muted-foreground">
+                  {searchTerm ? "Nenhum animal encontrado com esse termo de busca." : "Nenhum animal neste lote."}
+                </p>
+              </div>
+            ) : (
+              animaisFiltrados.map((animal) => {
+              const dataEntrada = animalEntradaMap.get(animal.id);
+              const diasNoLote = dataEntrada ? getDiasNoLote(dataEntrada) : null;
+              const isRecente = diasNoLote !== null && diasNoLote <= 7;
+
+              return (
+                <Link
+                  key={animal.id}
+                  to={`/animais/${animal.id}`}
+                  className="flex flex-col gap-3 rounded-xl border border-border/70 bg-background/80 p-4 transition-colors hover:border-primary/25 hover:bg-muted/20 sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium text-foreground">
+                        {animal.identificacao}
+                      </p>
+                      {isRecente && (
+                        <StatusBadge tone="success" className="text-xs">Novo</StatusBadge>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <StatusBadge tone="neutral">
+                        {animal.sexo === "M" ? "Macho" : "Femea"}
+                      </StatusBadge>
+                      <StatusBadge tone="neutral">{animal.status}</StatusBadge>
+                    </div>
+                    {dataEntrada && (
+                      <OccupancyEntryInfo
+                        dataEntrada={dataEntrada}
+                        label="Entrada"
+                        showDays={true}
+                        showBadge={false}
+                      />
+                    )}
                   </div>
-                </div>
-                <StatusBadge tone="info">Abrir animal</StatusBadge>
-              </Link>
-            ))}
+                  <StatusBadge tone="info">Abrir animal</StatusBadge>
+                </Link>
+              );
+            })
+            )}
           </CardContent>
         </Card>
       )}

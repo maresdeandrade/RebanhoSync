@@ -1,10 +1,12 @@
 import { useMemo, useState } from "react";
+import { differenceInDays, parseISO } from "date-fns";
 import { useLiveQuery } from "dexie-react-hooks";
 import {
   ChevronLeft,
   ClipboardCheck,
   Map as MapIcon,
   PawPrint,
+  MoreHorizontal,
   Pencil,
   Trees,
 } from "lucide-react";
@@ -29,6 +31,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { StatusBadge } from "@/components/ui/status-badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { buildEventGesture } from "@/lib/events/buildEventGesture";
@@ -46,6 +54,8 @@ import { showError, showSuccess } from "@/utils/toast";
 import { useOccupancyData } from "@/features/occupancy/useOccupancyData";
 import { OccupancyMetricCards } from "@/features/occupancy/OccupancyMetricCards";
 import { AnimalMovementHistoryTable } from "@/features/occupancy/AnimalMovementHistoryTable";
+import { OccupancyEntryInfo, OccupancyTimeline, CollapsibleInfrastructure, OccupancyAlert } from "@/features/occupancy";
+import { InfrastructureCard } from "@/features/occupancy";
 
 function parseOptionalNumber(value: string) {
   const normalized = value.trim().replace(",", ".");
@@ -125,6 +135,7 @@ const PastoDetalhe = () => {
   const [suplementoQuantidade, setSuplementoQuantidade] = useState("");
   const [rondaObservacoes, setRondaObservacoes] = useState("");
 
+
   const pasto = useLiveQuery(
     () => (id ? db.state_pastos.get(id) : undefined),
     [id],
@@ -160,6 +171,23 @@ const PastoDetalhe = () => {
         : undefined,
     [id],
   );
+  const ocupacoesPorLote = useMemo(() => {
+    if (!lotes) return new Map();
+    const map = new Map();
+    // Será preenchido com ocupações quando disponível
+    return map;
+  }, [lotes]);
+
+  const formatDate = (dateString: string | null | undefined): string => {
+    if (!dateString) return "Data nao informada";
+    return new Intl.DateTimeFormat("pt-BR", {
+      dateStyle: "short",
+    }).format(new Date(dateString));
+  };
+
+  const getDiasOcupacao = (dataEntrada: string): number => {
+    return differenceInDays(new Date(), parseISO(dataEntrada));
+  };
   const avaliacoesPasto = useLiveQuery(async () => {
     if (!id) return [];
 
@@ -343,12 +371,6 @@ const PastoDetalhe = () => {
               <ChevronLeft className="mr-2 h-4 w-4" />
               Voltar
             </Button>
-            <Link to={`/pastos/${id}/editar`}>
-              <Button>
-                <Pencil className="mr-2 h-4 w-4" />
-                Editar cadastro
-              </Button>
-            </Link>
             <Button asChild>
               <Link to={`/registrar?pastoId=${encodeURIComponent(id)}`}>
                 <ClipboardCheck className="mr-2 h-4 w-4" />
@@ -359,6 +381,22 @@ const PastoDetalhe = () => {
               <ClipboardCheck className="mr-2 h-4 w-4" />
               Registrar ronda
             </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline">
+                  <MoreHorizontal className="mr-2 h-4 w-4" />
+                  Mais ações
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem asChild>
+                  <Link to={`/pastos/${id}/editar`}>
+                    <Pencil className="mr-2 h-4 w-4" />
+                    Editar cadastro
+                  </Link>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </>
         }
       />
@@ -465,144 +503,74 @@ const PastoDetalhe = () => {
       </section>
 
       {infraestrutura ? (
-        <section className="rounded-xl border border-border/70 bg-card p-5 shadow-none sm:p-6">
-          <div className="space-y-1">
-            <h2 className="text-lg font-semibold tracking-[-0.01em] text-foreground">
-              Infraestrutura
-            </h2>
-          </div>
-
-          <div className="grid gap-4 lg:grid-cols-2">
-            <div className="rounded-xl border border-border/70 bg-muted/20 p-4">
-              <div className="mb-3 flex items-center justify-between gap-3">
-                <p className="font-medium text-foreground">Cochos</p>
-                <StatusBadge
-                  tone={
-                    infraestrutura.cochos?.estado === "ruim"
-                      ? "danger"
-                      : "neutral"
-                  }
-                >
-                  {infraestrutura.cochos?.estado || "Sem estado"}
-                </StatusBadge>
-              </div>
-              <div className="grid gap-2 text-sm text-muted-foreground sm:grid-cols-3">
-                <span>Qtd: {infraestrutura.cochos?.quantidade || 0}</span>
-                <span>
-                  Tipo: {infraestrutura.cochos?.tipo || "Nao informado"}
-                </span>
-                <span>
-                  Capacidade: {infraestrutura.cochos?.capacidade || 0} m
-                </span>
-              </div>
-            </div>
-
-            <div className="rounded-xl border border-border/70 bg-muted/20 p-4">
-              <div className="mb-3 flex items-center justify-between gap-3">
-                <p className="font-medium text-foreground">Bebedouros</p>
-                <StatusBadge
-                  tone={
-                    infraestrutura.bebedouros?.estado === "ruim"
-                      ? "danger"
-                      : "neutral"
-                  }
-                >
-                  {infraestrutura.bebedouros?.estado || "Sem estado"}
-                </StatusBadge>
-              </div>
-              <div className="grid gap-2 text-sm text-muted-foreground sm:grid-cols-3">
-                <span>Qtd: {infraestrutura.bebedouros?.quantidade || 0}</span>
-                <span>
-                  Tipo: {infraestrutura.bebedouros?.tipo || "Nao informado"}
-                </span>
-                <span>
-                  Capacidade: {infraestrutura.bebedouros?.capacidade || 0} L
-                </span>
-              </div>
-            </div>
-
-            <div className="rounded-xl border border-border/70 bg-muted/20 p-4">
-              <div className="mb-3 flex items-center justify-between gap-3">
-                <p className="font-medium text-foreground">Cerca</p>
-                <StatusBadge
-                  tone={
-                    infraestrutura.cerca?.estado === "ruim"
-                      ? "danger"
-                      : "neutral"
-                  }
-                >
-                  {infraestrutura.cerca?.estado || "Sem estado"}
-                </StatusBadge>
-              </div>
-              <div className="grid gap-2 text-sm text-muted-foreground sm:grid-cols-3">
-                <span>
-                  Tipo: {infraestrutura.cerca?.tipo || "Nao informado"}
-                </span>
-                <span>
-                  Extensao: {infraestrutura.cerca?.comprimento_metros || 0} m
-                </span>
-              </div>
-            </div>
-
-            <div className="rounded-xl border border-border/70 bg-muted/20 p-4">
-              <div className="mb-3 flex items-center justify-between gap-3">
-                <p className="font-medium text-foreground">Saleiros</p>
-                <StatusBadge
-                  tone={
-                    infraestrutura.saleiros?.estado === "ruim"
-                      ? "danger"
-                      : "neutral"
-                  }
-                >
-                  {infraestrutura.saleiros?.estado || "Sem estado"}
-                </StatusBadge>
-              </div>
-              <div className="grid gap-2 text-sm text-muted-foreground sm:grid-cols-3">
-                <span>
-                  Saleiros: {infraestrutura.saleiros?.quantidade || 0}
-                </span>
-                <span>
-                  Tipo: {infraestrutura.saleiros?.tipo || "Nao informado"}
-                </span>
-                <span>
-                  Capacidade: {infraestrutura.saleiros?.capacidade || 0}
-                </span>
-              </div>
-            </div>
-          </div>
-        </section>
+        <CollapsibleInfrastructure infraestrutura={infraestrutura} />
       ) : null}
 
       {lotes && lotes.length > 0 ? (
         <section className="rounded-xl border border-border/70 bg-card p-5 shadow-none sm:p-6">
-          <div className="space-y-1">
-            <h2 className="text-lg font-semibold tracking-[-0.01em] text-foreground">
+          <div className="space-y-2 border-b border-border/50 pb-4">
+            <h2 className="text-lg font-bold text-foreground">
               Lotes neste pasto
             </h2>
+            <p className="text-sm text-muted-foreground">
+              {lotes.length} lote(s) ocupando este pasto
+            </p>
           </div>
 
-          <div className="grid gap-3">
-            {lotes.map((lote) => (
-              <Link
-                key={lote.id}
-                to={`/lotes/${lote.id}`}
-                className="flex items-center justify-between rounded-xl border border-border/70 bg-background/70 px-4 py-3 transition-colors hover:border-primary/25 hover:bg-muted/30"
-              >
-                <div className="space-y-1">
-                  <p className="font-medium text-foreground">{lote.nome}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {lote.status === "ativo"
-                      ? "Em operacao"
-                      : "Fora da rotina principal"}
-                  </p>
-                </div>
-                <StatusBadge
-                  tone={lote.status === "ativo" ? "success" : "neutral"}
+          <div className="grid gap-3 mt-4">
+            {lotes.map((lote) => {
+              // animaisCount total não é breakdown por lote aqui; exibimos sem contagem individual
+              const lotesAnimaisCount = 0;
+              const ocupacaoInfo = ocupacoesPorLote.get(lote.id);
+              
+              return (
+                <Link
+                  key={lote.id}
+                  to={`/lotes/${lote.id}`}
+                  className="flex flex-col gap-3 rounded-xl border border-border/70 bg-background/70 px-4 py-3 transition-colors hover:border-primary/25 hover:bg-muted/30"
                 >
-                  {lote.status}
-                </StatusBadge>
-              </Link>
-            ))}
+                  <div className="flex items-start justify-between">
+                    <div className="space-y-1 flex-1">
+                      <p className="font-medium text-foreground">{lote.nome}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {lote.status === "ativo"
+                          ? "Em operacao"
+                          : "Fora da rotina principal"}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {lotesAnimaisCount} animal(is) neste lote
+                      </p>
+                      {ocupacaoInfo?.dataEntrada && (
+                        <div className="mt-2 w-full space-y-2">
+                          <OccupancyTimeline
+                            dataEntrada={ocupacaoInfo.dataEntrada}
+                            diasEsperados={30}
+                            label="Tempo no pasto"
+                          />
+                          <OccupancyAlert
+                            dataEntrada={ocupacaoInfo.dataEntrada}
+                            diasEsperados={30}
+                            tipo="lote"
+                          />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex flex-col items-end gap-2">
+                      {(ocupacaoInfo?.diasOcupacao ?? null) !== null && (ocupacaoInfo?.diasOcupacao ?? Infinity) <= 7 && (
+                        <StatusBadge tone="warning" className="text-xs">
+                          Novo
+                        </StatusBadge>
+                      )}
+                      <StatusBadge
+                        tone={lote.status === "ativo" ? "success" : "neutral"}
+                      >
+                        {lote.status}
+                      </StatusBadge>
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
           </div>
         </section>
       ) : (
