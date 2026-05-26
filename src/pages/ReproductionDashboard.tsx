@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { PageIntro } from "@/components/ui/page-intro";
+import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Toolbar } from "@/components/ui/toolbar";
 import { useAuth } from "@/hooks/useAuth";
@@ -147,7 +148,7 @@ function EmptyMessage({
 }: {
   icon?: LucideIcon;
   title: string;
-  description: string;
+  description?: string;
   actions?: ReactNode;
 }) {
   return (
@@ -156,7 +157,7 @@ function EmptyMessage({
         {Icon ? <Icon className="mt-0.5 h-4 w-4" /> : null}
         <div className="space-y-2">
           <p className="font-medium text-foreground">{title}</p>
-          <p className="leading-6">{description}</p>
+          {description ? <p className="leading-6">{description}</p> : null}
           {actions ? (
             <div className="flex flex-wrap gap-2">{actions}</div>
           ) : null}
@@ -172,6 +173,7 @@ export default function ReproductionDashboard() {
   const [activeFilter, setActiveFilter] =
     useState<ReproDashboardFilter>("atencao");
   const [selectedAnimalId, setSelectedAnimalId] = useState<string | null>(null);
+  const [agendaLimit, setAgendaLimit] = useState(12);
 
   const reproductionData = useLiveQuery(async () => {
     if (!activeFarmId) return null;
@@ -311,11 +313,29 @@ export default function ReproductionDashboard() {
 
   if (!dashboardData) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Carregando ciclo reprodutivo</CardTitle>
-        </CardHeader>
-      </Card>
+      <div className="space-y-5">
+        <div className="space-y-2">
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-4 w-96" />
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Card key={i} className="shadow-none">
+              <CardContent className="space-y-2 p-4">
+                <Skeleton className="h-3 w-20" />
+                <Skeleton className="h-9 w-16" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+        <Card>
+          <CardContent className="space-y-3 p-6">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <Skeleton key={i} className="h-24 w-full rounded-xl" />
+            ))}
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
@@ -409,7 +429,11 @@ export default function ReproductionDashboard() {
             <div className="flex flex-wrap items-center justify-between gap-3">
               <CardTitle>Matrizes</CardTitle>
               <span className="text-sm text-muted-foreground">
-                {filteredAnimals.length} em exibicao
+                {filteredAnimals.length}
+                {dashboardData.totals.femeasAtivas !== filteredAnimals.length
+                  ? ` de ${dashboardData.totals.femeasAtivas}`
+                  : ""}
+                {" "}em exibicao
               </span>
             </div>
           </CardHeader>
@@ -429,6 +453,7 @@ export default function ReproductionDashboard() {
             {filteredAnimals.length === 0 ? (
               <EmptyMessage
                 title="Nenhuma matriz encontrada"
+                description="Nenhuma femea elegivel encontrada com os filtros atuais."
                 actions={
                   <>
                     <Button asChild size="sm" variant="outline">
@@ -451,8 +476,17 @@ export default function ReproductionDashboard() {
                   return (
                     <article
                       key={animal.id}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => setSelectedAnimalId(animal.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          setSelectedAnimalId(animal.id);
+                        }
+                      }}
                       className={cn(
-                        "rounded-xl border border-border/70 bg-muted/30 p-4 transition-colors",
+                        "cursor-pointer rounded-xl border border-border/70 bg-muted/30 p-4 transition-colors hover:bg-muted/50",
                         isSelected && "border-primary/30 bg-primary/5",
                       )}
                     >
@@ -588,6 +622,11 @@ export default function ReproductionDashboard() {
             <CardContent className="space-y-2">
               {[
                 {
+                  label: "Todas as matrizes",
+                  value: dashboardData.totals.femeasAtivas,
+                  filter: "todas" as ReproDashboardFilter,
+                },
+                {
                   label: "Diagnosticos pendentes",
                   value: dashboardData.focus.diagnosticosPendentes,
                   filter: "atencao" as ReproDashboardFilter,
@@ -655,9 +694,10 @@ export default function ReproductionDashboard() {
               <EmptyMessage
                 icon={ListTodo}
                 title="Nenhuma recomendacao encontrada"
+                description="A agenda sera preenchida conforme eventos reprodutivos forem registrados."
               />
             ) : (
-              visibleAgenda.slice(0, 12).map((item) => {
+              visibleAgenda.slice(0, agendaLimit).map((item) => {
                 const lifecyclePending = lifecycleByAnimal.get(item.animalId);
 
                 return (
@@ -732,6 +772,18 @@ export default function ReproductionDashboard() {
                 );
               })
             )}
+
+            {visibleAgenda.length > agendaLimit && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full"
+                onClick={() => setAgendaLimit((current) => current + 12)}
+              >
+                Ver mais ({visibleAgenda.length - agendaLimit} restante
+                {visibleAgenda.length - agendaLimit > 1 ? "s" : ""})
+              </Button>
+            )}
           </CardContent>
         </Card>
 
@@ -744,7 +796,11 @@ export default function ReproductionDashboard() {
           </CardHeader>
           <CardContent>
             {!selectedAnimal ? (
-              <EmptyMessage icon={History} title="Selecione uma matriz" />
+              <EmptyMessage
+                icon={History}
+                title="Selecione uma matriz"
+                description="Clique em uma matriz na lista ao lado para ver a timeline."
+              />
             ) : (
               <div className="space-y-4">
                 <div className="rounded-xl border border-border/70 bg-muted/30 p-4">
@@ -791,7 +847,10 @@ export default function ReproductionDashboard() {
                 </div>
 
                 {selectedHistory.length === 0 ? (
-                  <EmptyMessage title="Sem eventos reprodutivos" />
+                  <EmptyMessage
+                title="Sem eventos reprodutivos"
+                description="Esta matriz nao possui registros reprodutivos no historico."
+              />
                 ) : (
                   <div className="relative pl-5">
                     <div className="absolute bottom-1 left-[0.45rem] top-1 w-px bg-border/80" />

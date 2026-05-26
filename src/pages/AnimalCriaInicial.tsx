@@ -41,6 +41,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { useAuth } from "@/hooks/useAuth";
 import { deriveAnimalTaxonomy } from "@/lib/animals/taxonomy";
@@ -488,8 +489,19 @@ export default function AnimalCriaInicial() {
 
   if (!calf) {
     return (
-      <div className="p-12 text-center text-muted-foreground">
-        Carregando cria...
+      <div className="space-y-5">
+        <div className="space-y-2">
+          <Skeleton className="h-4 w-24" />
+          <Skeleton className="h-8 w-64" />
+          <div className="flex gap-2">
+            <Skeleton className="h-6 w-32 rounded-full" />
+            <Skeleton className="h-6 w-40 rounded-full" />
+          </div>
+        </div>
+        <div className="grid gap-4 xl:grid-cols-2">
+          <Skeleton className="h-48 rounded-xl" />
+          <Skeleton className="h-48 rounded-xl" />
+        </div>
       </div>
     );
   }
@@ -574,16 +586,9 @@ export default function AnimalCriaInicial() {
                   )
                 }
                 action={
-                  <div className="flex flex-wrap gap-2">
-                    <Button onClick={handleSave} disabled={isSaving}>
-                      {isSaving ? "Salvando..." : "Salvar ficha inicial"}
-                    </Button>
-                    <Button variant="outline" asChild>
-                      <Link to={`/animais/${calf.id}`}>
-                        Abrir ficha completa
-                      </Link>
-                    </Button>
-                  </div>
+                  <Button onClick={handleSave} disabled={isSaving}>
+                    {isSaving ? "Salvando..." : "Salvar ficha inicial"}
+                  </Button>
                 }
               />
             ) : (
@@ -686,7 +691,13 @@ export default function AnimalCriaInicial() {
                               : "border-amber-200 bg-amber-50 text-amber-800"
                           }
                         >
-                          {item.status}
+                          {item.status === "concluido"
+                            ? "Concluido"
+                            : item.status === "agendado"
+                              ? "Agendado"
+                              : item.status === "cancelado"
+                                ? "Cancelado"
+                                : item.status}
                         </Badge>
                         <Badge variant="outline">{item.dominio}</Badge>
                       </div>

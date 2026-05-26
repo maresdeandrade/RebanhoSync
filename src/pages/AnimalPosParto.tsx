@@ -368,13 +368,19 @@ export default function AnimalPosParto() {
         }
       />
 
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <div>
-              <CardTitle className="text-base">
-                Hub do pos-parto neonatal
-              </CardTitle>
+      {drafts.length > 1 && (
+        <Card>
+          <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="space-y-1">
+              <p className="text-sm font-medium">
+                {drafts.length} cria(s) para revisar
+              </p>
+              <div className="flex h-2 w-48 overflow-hidden rounded-full bg-muted">
+                <div
+                  className="bg-primary transition-all"
+                  style={{ width: `${(drafts.filter((d) => d.identificacao.trim()).length / drafts.length) * 100}%` }}
+                />
+              </div>
             </div>
             <Button
               type="button"
@@ -385,20 +391,9 @@ export default function AnimalPosParto() {
             >
               Aplicar lote sugerido a todas
             </Button>
-          </div>
-        </CardHeader>
-        <CardContent className="grid gap-4 md:grid-cols-3">
-          <div className="rounded-xl border bg-muted/20 p-4">
-            <div className="text-sm font-medium">Identificacao final</div>
-          </div>
-          <div className="rounded-xl border bg-muted/20 p-4">
-            <div className="text-sm font-medium">Lote e pasto inicial</div>
-          </div>
-          <div className="rounded-xl border bg-muted/20 p-4">
-            <div className="text-sm font-medium">Ficha da cria</div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid gap-4 xl:grid-cols-2">
         {(calves ?? []).map((calf) => {
@@ -450,7 +445,7 @@ export default function AnimalPosParto() {
             variant="ghost"
             onClick={() => navigate(`/animais/${mother.id}`)}
           >
-            Revisar depois
+            Revisar depois (voltar a ficha)
           </Button>
           <Button
             onClick={handleSave}
