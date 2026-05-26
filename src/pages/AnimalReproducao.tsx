@@ -6,13 +6,7 @@ import {
   useParams,
   useSearchParams,
 } from "react-router-dom";
-import {
-  CalendarClock,
-  ChevronLeft,
-  Dna,
-  HeartPulse,
-  History,
-} from "lucide-react";
+import { ChevronLeft, History } from "lucide-react";
 
 import {
   ReproductionForm,
@@ -23,8 +17,8 @@ import { AnimalKinshipBadges } from "@/components/animals/AnimalKinshipBadges";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageIntro } from "@/components/ui/page-intro";
+import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { Toolbar, ToolbarGroup } from "@/components/ui/toolbar";
 import { useAuth } from "@/hooks/useAuth";
 import { deriveAnimalTaxonomy } from "@/lib/animals/taxonomy";
 import { isFemaleReproductionEligible } from "@/lib/animals/presentation";
@@ -124,6 +118,7 @@ export default function AnimalReproducao() {
   const [data, setData] = useState<ReproductionEventData>(INITIAL_FORM);
   const [initializedTipo, setInitializedTipo] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [showAllHistory, setShowAllHistory] = useState(false);
 
   const animal = useLiveQuery(() => db.state_animais.get(id!), [id]);
   const lote = useLiveQuery(
@@ -248,8 +243,19 @@ export default function AnimalReproducao() {
 
   if (!animal) {
     return (
-      <div className="p-12 text-center text-muted-foreground">
-        Carregando matriz...
+      <div className="space-y-5">
+        <div className="space-y-2">
+          <Skeleton className="h-4 w-40" />
+          <Skeleton className="h-8 w-72" />
+          <div className="flex gap-2">
+            <Skeleton className="h-6 w-20 rounded-full" />
+            <Skeleton className="h-6 w-28 rounded-full" />
+          </div>
+        </div>
+        <div className="grid gap-4 xl:grid-cols-[1.08fr_0.92fr]">
+          <Skeleton className="h-64 rounded-xl" />
+          <Skeleton className="h-64 rounded-xl" />
+        </div>
       </div>
     );
   }
@@ -305,68 +311,16 @@ export default function AnimalReproducao() {
           </>
         }
         actions={
-          <>
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => navigate(`/animais/${animal.id}`)}
-            >
-              <ChevronLeft className="h-4 w-4" />
-              Voltar para ficha
-            </Button>
-            <Button asChild variant="outline">
-              <Link to={`/registrar?dominio=reproducao&animalId=${animal.id}`}>
-                Abrir modo completo
-              </Link>
-            </Button>
-          </>
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => navigate(`/animais/${animal.id}`)}
+          >
+            <ChevronLeft className="h-4 w-4" />
+            Voltar para ficha
+          </Button>
         }
       />
-
-      <Toolbar>
-        <ToolbarGroup className="gap-2">
-          <Button
-            type="button"
-            size="sm"
-            variant={
-              data.tipo === "cobertura" || data.tipo === "IA"
-                ? "default"
-                : "outline"
-            }
-            onClick={() =>
-              setData((previous) => withTipo(previous, "cobertura"))
-            }
-          >
-            <Dna className="h-4 w-4" />
-            Cobertura / IA
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            variant={data.tipo === "diagnostico" ? "default" : "outline"}
-            onClick={() =>
-              setData((previous) => withTipo(previous, "diagnostico"))
-            }
-          >
-            <HeartPulse className="h-4 w-4" />
-            Diagnostico
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            variant={data.tipo === "parto" ? "default" : "outline"}
-            onClick={() => setData((previous) => withTipo(previous, "parto"))}
-          >
-            <CalendarClock className="h-4 w-4" />
-            Parto
-          </Button>
-        </ToolbarGroup>
-        <ToolbarGroup className="gap-2">
-          <Button asChild size="sm" variant="ghost">
-            <Link to={`/animais/${animal.id}`}>Abrir ficha completa</Link>
-          </Button>
-        </ToolbarGroup>
-      </Toolbar>
 
       <section className="grid gap-4 xl:grid-cols-[1.08fr_0.92fr]">
         <Card>
@@ -458,16 +412,13 @@ export default function AnimalReproducao() {
                   Nenhum evento reprodutivo registrado para esta matriz.
                 </div>
               ) : (
-                (eventos ?? []).slice(0, 6).map((event) => (
+                (eventos ?? []).slice(0, showAllHistory ? undefined : 6).map((event) => (
                   <div
                     key={event.id}
                     className="rounded-xl border border-border/70 bg-muted/30 p-4"
                   >
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <div className="flex flex-wrap items-center gap-2">
-                        <p className="font-medium">
-                          {formatEventLabel(event.details?.tipo)}
-                        </p>
                         <StatusBadge tone={getEventTone(event.details?.tipo)}>
                           {formatEventLabel(event.details?.tipo)}
                         </StatusBadge>
@@ -489,11 +440,17 @@ export default function AnimalReproducao() {
                 ))
               )}
 
-              <Button variant="outline" asChild className="w-full">
-                <Link to={`/animais/${animal.id}`}>
-                  Abrir timeline completa
-                </Link>
-              </Button>
+              {(eventos ?? []).length > 6 && !showAllHistory && (
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => setShowAllHistory(true)}
+                >
+                  Ver mais ({(eventos ?? []).length - 6} evento
+                  {(eventos ?? []).length - 6 > 1 ? "s" : ""} anterior
+                  {(eventos ?? []).length - 6 > 1 ? "es" : ""})
+                </Button>
+              )}
             </CardContent>
           </Card>
         </div>
