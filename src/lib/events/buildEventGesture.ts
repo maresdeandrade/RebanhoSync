@@ -80,6 +80,21 @@ export const buildEventGesture = (input: EventInput): EventGestureBuildResult =>
     });
   }
 
+  // F9: When correcting an event, mark original with superseded_by metadata
+  if (input.corrigeEventoId) {
+    ops.push({
+      table: "eventos",
+      action: "UPDATE",
+      record: {
+        id: input.corrigeEventoId,
+        payload: {
+          superseded_by: eventId,
+          superseded_at: occurredAt,
+        },
+      },
+    });
+  }
+
   ops.push(buildBaseEventOp(input, eventId, occurredAt, sanitarioCasoId));
 
   if (input.dominio === "sanitario") {

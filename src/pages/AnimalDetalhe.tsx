@@ -118,6 +118,7 @@ import {
   formatWeightValue,
 } from "@/lib/format/weight";
 import { resolveSanitaryAgendaItemScheduleMeta } from "@/lib/sanitario/infrastructure/agendaSchedule";
+import { resolveCurrentWeight } from "@/lib/insights/pesoAtual";
 import { showError, showSuccess } from "@/utils/toast";
 import {
   CLINICAL_CASE_CLOSURE_REASONS,
@@ -782,28 +783,35 @@ const AnimalDetalhe = () => {
     const registros = await db.event_eventos
       .where("animal_id")
       .equals(id)
-      .filter((event) => event.dominio === "pesagem")
+      .filter((event) => event.dominio === "pesagem" && !event.deleted_at)
       .toArray();
 
     if (!registros.length) return null;
 
-    const ultimo = registros.reduce((best, current) => {
-      const bestTimestamp = new Date(
-        best.server_received_at ?? best.occurred_at,
-      ).getTime();
-      const currentTimestamp = new Date(
-        current.server_received_at ?? current.occurred_at,
-      ).getTime();
-      return currentTimestamp > bestTimestamp ? current : best;
-    }, registros[0]);
+    const withDetails = await Promise.all(
+      registros.map(async (event) => {
+        const detail = await db.event_eventos_pesagem.get(event.id);
+        return detail?.peso_kg != null
+          ? {
+              animal_id: event.animal_id ?? null,
+              fazenda_id: event.fazenda_id,
+              dominio: event.dominio,
+              occurred_at: event.occurred_at,
+              deleted_at: event.deleted_at ?? null,
+              detail_deleted_at: detail.deleted_at ?? null,
+              peso_kg: detail.peso_kg,
+            }
+          : null;
+      }),
+    );
 
-    const details = await db.event_eventos_pesagem.get(ultimo.id);
+    const eligible = withDetails.filter(
+      (e): e is NonNullable<typeof e> => e !== null,
+    );
 
-    return details?.peso_kg
-      ? {
-          peso_kg: details.peso_kg,
-          data: ultimo.server_received_at || ultimo.occurred_at,
-        }
+    const resolved = resolveCurrentWeight(eligible);
+    return resolved
+      ? { peso_kg: resolved.peso_kg, data: resolved.pesado_em }
       : null;
   }, [id]);
   const historicoPeso = useLiveQuery(async () => {
@@ -1693,6 +1701,58 @@ const AnimalDetalhe = () => {
           </CardContent>
         </Card>
       </div>
+
+      {(animal.payload as Record<string, unknown> | undefined)?.compliance_state === "catch_up_required" ||
+      (animal.payload as Record<string, unknown> | undefined)?.history_confidence === "unknown" ? (
+        <Card className="border-amber-200 bg-amber-50/50 shadow-none dark:border-amber-800 dark:bg-amber-950/30">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <ClipboardCheck className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+              Catch-up sanitario necessario
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              {(animal.payload as Record<string, unknown> | undefined)?.history_confidence === "unknown"
+                ? "Este animal entrou sem historico sanitario confirmado. Documente o atestado de compra ou execute o protocolo de entrada para estabilizar a agenda."
+                : "A conformidade sanitaria deste animal esta pendente de atualizacao. Execute as acoes recomendadas para regularizar."}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  const params = new URLSearchParams();
+                  params.set("dominio", "sanitario");
+                  params.set("animalId", animal.id);
+                  if (animal.lote_id) {
+                    params.set("loteId", animal.lote_id);
+                  }
+                  navigate(`/registrar?${params.toString()}`);
+                }}
+                disabled={animal.status !== "ativo"}
+              >
+                <HeartPulse className="mr-2 h-4 w-4" />
+                Registrar manejo sanitario
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  const params = new URLSearchParams();
+                  params.set("dominio", "conformidade");
+                  params.set("animalId", animal.id);
+                  navigate(`/registrar?${params.toString()}`);
+                }}
+                disabled={animal.status !== "ativo"}
+              >
+                <ClipboardCheck className="mr-2 h-4 w-4" />
+                Documentar atestado
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      ) : null}
 
       {activeSanitaryAlert?.status === "suspeita_aberta" ? (
         <Card className="border-warning/25 bg-warning-muted/50 shadow-none">

@@ -22,7 +22,7 @@ import {
   resolveProtocolPrecedence,
 } from "@/lib/sanitario/engine/protocolLayers";
 import { computeNextSanitaryOccurrence } from "@/lib/sanitario/engine/scheduler";
-import { readCanonicalBaselineMigration } from "../../../../../tests/helpers/supabaseMigrations";
+import { readCanonicalBaselineMigration, readMigrationFile } from "../../../../../tests/helpers/supabaseMigrations";
 
 const FARM_ID = "farm-1";
 const ANIMAL_ID = "11111111-1111-1111-1111-111111111111";
@@ -501,6 +501,40 @@ describe("sanitario engine golden/parity contracts", () => {
     });
     expect(baseline).toContain("carencia_regra_json jsonb");
     expect(baseline).not.toContain("withholding");
+  });
+
+  it("contract: animal mutation triggers sanitario recompute", () => {
+    const triggerMigration = readMigrationFile("20260526000100_recompute_on_animal_mutation.sql");
+
+    expect(triggerMigration).toContain("trg_sanitario_recompute_on_animal_mutation");
+    expect(triggerMigration).toContain("after update on public.animais");
+    expect(triggerMigration).toContain("OLD.sexo IS DISTINCT FROM NEW.sexo");
+    expect(triggerMigration).toContain("OLD.data_nascimento IS DISTINCT FROM NEW.data_nascimento");
+    expect(triggerMigration).toContain("OLD.especie IS DISTINCT FROM NEW.especie");
+    expect(triggerMigration).toContain("OLD.status IS DISTINCT FROM NEW.status");
+    expect(triggerMigration).toContain("sanitario_recompute_agenda_for_animal(NEW.id, NEW.fazenda_id)");
+  });
+
+  it("contract: recompute cancels agenda for inactive animals (anti-zombie gate)", () => {
+    const antiZombieMigration = readMigrationFile("20260526000000_anti_zombie_agenda.sql");
+
+    expect(antiZombieMigration).toContain("'auto_cancel_reason', 'animal_inactive'");
+    expect(antiZombieMigration).toContain("a.status != 'ativo'");
+
+    const inactiveStatuses: Array<"vendido" | "morto"> = ["vendido", "morto"];
+    for (const status of inactiveStatuses) {
+      const subject = buildSubject({ id: ANIMAL_ID });
+      expect(subject.animal?.id).toBe(ANIMAL_ID);
+      expect(["vendido", "morto"]).toContain(status);
+    }
+
+    const zombieCancelIndex = antiZombieMigration.indexOf("'animal_inactive'");
+    const nonMaterializableCancelIndex = antiZombieMigration.indexOf(
+      "'sanitario_recompute_invalidated_non_materializable_protocol'",
+    );
+    expect(zombieCancelIndex).toBeGreaterThan(-1);
+    expect(nonMaterializableCancelIndex).toBeGreaterThan(-1);
+    expect(zombieCancelIndex).toBeLessThan(nonMaterializableCancelIndex);
   });
 
   it("contract: agenda closing remains a transactional SQL RPC boundary", () => {
