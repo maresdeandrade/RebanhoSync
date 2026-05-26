@@ -26,6 +26,7 @@ import {
   getSanitaryItemOperationalClassLabel,
   resolveSanitaryItemOperationalClass,
 } from "@/lib/sanitario/models/taxonomy";
+import { buildSanitaryOperationalStatuses } from "@/lib/sanitario/operations/agendaDiagnostics";
 import {
   formatAnimalAge,
   readString,
@@ -155,6 +156,13 @@ export function buildAgendaBaseRows(
                 protocolItem: typed.protocolItem,
               })
             : null,
+        operationalStatuses:
+          typed.item.dominio === "sanitario" && typed.protocol
+            ? buildSanitaryOperationalStatuses({
+                protocol: typed.protocol,
+                items: typed.protocolItem ? [typed.protocolItem] : [],
+              })
+            : [],
       };
     }) as AgendaRow[];
 }

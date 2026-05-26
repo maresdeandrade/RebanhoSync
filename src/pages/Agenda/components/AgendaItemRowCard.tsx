@@ -85,6 +85,11 @@ export function AgendaItemRowCard({
             {row.operationalClassLabel ? (
               <StatusBadge tone="neutral">{row.operationalClassLabel}</StatusBadge>
             ) : null}
+            {row.operationalStatuses.map((status) => (
+              <StatusBadge key={status.code} tone={status.tone} title={status.description}>
+                {status.label}
+              </StatusBadge>
+            ))}
           </div>
 
           <p className="text-sm leading-6 text-muted-foreground">
@@ -111,6 +116,11 @@ export function AgendaItemRowCard({
             <p className="text-muted-foreground">
               Origem: <span className="font-medium text-foreground">{row.item.source_kind}</span>
             </p>
+            {row.protocol ? (
+              <p className="text-muted-foreground">
+                Protocolo: <span className="font-medium text-foreground">{row.protocol.nome}</span>
+              </p>
+            ) : null}
             {row.priority ? (
               <p className="text-muted-foreground">
                 Prioridade: <span className="font-medium text-foreground">{row.priority.label}</span>
@@ -164,4 +174,3 @@ export function AgendaItemRowCard({
     </article>
   );
 }
-

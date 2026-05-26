@@ -28,6 +28,8 @@ import { AgendaGroupedContent } from "@/pages/Agenda/components/AgendaGroupedCon
 import { AgendaLifecycleSummaryPanel } from "@/pages/Agenda/components/AgendaLifecycleSummaryPanel";
 import { AgendaOverviewHeader } from "@/pages/Agenda/components/AgendaOverviewHeader";
 import { AgendaStatusMetrics } from "@/pages/Agenda/components/AgendaStatusMetrics";
+import { SanitaryAgendaDiagnosticsPanel } from "@/components/sanitario/SanitaryAgendaDiagnosticsPanel";
+import { buildSanitaryAgendaDiagnostics } from "@/lib/sanitario/operations/agendaDiagnostics";
 import {
   applyAgendaQuickFilters,
   buildAgendaBaseRows,
@@ -147,6 +149,19 @@ export default function Agenda() {
   );
 
   const complianceSummary = regulatoryReadModel.attention;
+  const sanitaryDiagnostics = useMemo(
+    () =>
+      data
+        ? buildSanitaryAgendaDiagnostics({
+            config: data.sanidadeConfig,
+            protocols: data.protocolos,
+            protocolItems: data.protocoloItens,
+            animals: data.animais,
+            agendaItems: data.itens,
+          })
+        : [],
+    [data],
+  );
 
   const baseRows = useMemo(
     () =>
@@ -243,6 +258,13 @@ export default function Agenda() {
   const counts = useMemo(
     () => summarizeAgendaRowsByStatus(filtered),
     [filtered],
+  );
+  const pendingSanitaryCount = useMemo(
+    () =>
+      baseRows.filter(
+        (row) => row.item.dominio === "sanitario" && row.item.status === "agendado",
+      ).length,
+    [baseRows],
   );
 
   const pageSummaries = useMemo(
@@ -428,6 +450,14 @@ export default function Agenda() {
         cancelado={counts.cancelado}
       />
 
+      {dominioFilter === "sanitario" || pendingSanitaryCount === 0 ? (
+        <SanitaryAgendaDiagnosticsPanel
+          diagnostics={sanitaryDiagnostics}
+          pendingSanitaryCount={pendingSanitaryCount}
+          onOpenProtocols={() => navigate("/protocolos-sanitarios")}
+        />
+      ) : null}
+
       {hasComplianceAttention ? (
         <AgendaComplianceSummaryPanel
           openCount={complianceSummary.openCount}
@@ -525,4 +555,3 @@ export default function Agenda() {
     </div>
   );
 }
-

@@ -6,6 +6,7 @@ import type {
 } from "@/lib/agenda/groupSummaries";
 import type { SanitaryAgendaPriority } from "@/lib/sanitario/engine/protocolRules";
 import type { SanitaryItemOperationalClass } from "@/lib/sanitario/models/domain";
+import type { SanitaryOperationalStatus } from "@/lib/sanitario/operations/agendaDiagnostics";
 import type {
   AgendaItem,
   Animal,
@@ -76,6 +77,7 @@ export type AgendaRow = {
   protocol: ProtocoloSanitario | null;
   protocolItem: ProtocoloSanitarioItem | null;
   priority: SanitaryAgendaPriority | null;
+  operationalStatuses: SanitaryOperationalStatus[];
 };
 
 export type AgendaAnimalGroup = {

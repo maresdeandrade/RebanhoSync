@@ -740,11 +740,22 @@ export default function Insumos() {
     const expectedType =
       selectedSource.dominio === "sanitario" ? "sanitario" : "nutricional";
 
-    return snapshot.lotes.filter((lot) => {
-      const insumo = insumoById.get(lot.insumo_id);
-      return lot.status === "ativo" && insumo?.tipo === expectedType;
-    });
+    return snapshot.lotes
+      .filter((lot) => {
+        const insumo = insumoById.get(lot.insumo_id);
+        return lot.status === "ativo" && insumo?.tipo === expectedType;
+      })
+      .sort((left, right) => {
+        const leftValidity = left.validade ?? "9999-12-31";
+        const rightValidity = right.validade ?? "9999-12-31";
+        if (leftValidity !== rightValidity) {
+          return leftValidity.localeCompare(rightValidity);
+        }
+        return left.id.localeCompare(right.id);
+      });
   }, [insumoById, selectedSource, snapshot]);
+  const suggestedConsumptionLot = filteredLotesForConsumption[0] ?? null;
+  const hasConsumptionStockOptions = filteredLotesForConsumption.length > 0;
 
   function setEntryField<K extends keyof EntryForm>(field: K, value: EntryForm[K]) {
     setEntryForm((prev) => ({ ...prev, [field]: value }));
@@ -1439,6 +1450,7 @@ export default function Insumos() {
                                 ? "nao definido"
                                 : `${formatNumber(resupply.reorderPointBase)} ${lot.unidade_base}`}
                             </span>
+                            <span>Uso sugerido: FEFO por validade</span>
                           </div>
                         ) : null}
 
@@ -1978,6 +1990,13 @@ export default function Insumos() {
 
       <FormSection title="Consumo por evento">
         <div className="grid gap-4 lg:grid-cols-4">
+          <div className="rounded-lg border border-border/70 bg-muted/20 p-3 text-sm leading-6 text-muted-foreground lg:col-span-4">
+            Consumo integrado baixa o lote selecionado e preserva vínculo com o
+            evento. Para sanitário, os lotes são ordenados por FEFO; quando não
+            houver estoque ativo, cadastre entrada ou ajuste antes de concluir a
+            baixa.
+          </div>
+
           <div className="space-y-2 lg:col-span-2">
             <Label>Evento</Label>
             <Select
@@ -2029,13 +2048,28 @@ export default function Insumos() {
                   );
                   return (
                     <SelectItem key={lot.id} value={lot.id}>
-                      {insumo?.nome ?? "Insumo"} · {formatNumber(saldo)}{" "}
-                      {lot.unidade_base}
+                      {lot.id === suggestedConsumptionLot?.id ? "FEFO · " : ""}
+                      {insumo?.nome ?? "Insumo"} ·{" "}
+                      {lot.identificacao_lote || "sem lote"} ·{" "}
+                      {formatNumber(saldo)} {lot.unidade_base}
                     </SelectItem>
                   );
                 })}
               </SelectContent>
             </Select>
+            {selectedSource && !hasConsumptionStockOptions ? (
+              <p className="text-xs leading-5 text-destructive">
+                Sem lote ativo compatível. Cadastre entrada ou ajuste o estoque
+                antes de registrar consumo.
+              </p>
+            ) : null}
+            {suggestedConsumptionLot ? (
+              <p className="text-xs leading-5 text-muted-foreground">
+                Sugerido FEFO:{" "}
+                {suggestedConsumptionLot.identificacao_lote || "sem lote"} ·{" "}
+                {formatDate(suggestedConsumptionLot.validade)}
+              </p>
+            ) : null}
           </div>
 
           <div className="space-y-2">

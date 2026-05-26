@@ -104,6 +104,10 @@ import {
   resolveSanitaryItemOperationalClass,
 } from "@/lib/sanitario/models/taxonomy";
 import {
+  buildSanitaryOperationalStatuses,
+  type SanitaryAgendaDiagnostic,
+} from "@/lib/sanitario/operations/agendaDiagnostics";
+import {
   buildDryCowTherapyClinicalSupportItemPayload,
   buildDryCowTherapyOperationalAgendaItemPayload,
   DRY_COW_THERAPY_DEFAULT_DUE_DAYS_BEFORE_CALVING,
@@ -117,6 +121,7 @@ interface FarmProtocolManagerProps {
   catalogProducts: ProdutoVeterinarioCatalogEntry[];
   protocols: ProtocoloSanitario[];
   protocolItems: ProtocoloSanitarioItem[];
+  agendaDiagnostics?: SanitaryAgendaDiagnostic[];
   canManage: boolean;
 }
 
@@ -483,6 +488,7 @@ export function FarmProtocolManager({
   catalogProducts,
   protocols,
   protocolItems,
+  agendaDiagnostics = [],
   canManage,
 }: FarmProtocolManagerProps) {
   const navigate = useNavigate();
@@ -1176,6 +1182,11 @@ export function FarmProtocolManager({
                   const duplicatesOfficialFamily =
                     sourceGroup !== "official" &&
                     hasOfficialFamilyCoverage(familyCoverage, familyCode);
+                  const operationalStatuses = buildSanitaryOperationalStatuses({
+                    protocol,
+                    items: protocolItemsList,
+                    diagnostics: agendaDiagnostics,
+                  });
 
                   return (
                     <Card key={protocol.id} className="border-border/70">
@@ -1210,6 +1221,17 @@ export function FarmProtocolManager({
                               <Trash2 className="h-4 w-4 text-destructive" />
                             </Button>
                           </div>
+                        </div>
+
+                        <div className="grid gap-2 rounded-2xl border border-border/70 bg-muted/10 p-3 text-sm md:grid-cols-2">
+                          {operationalStatuses.map((status) => (
+                            <div key={status.code} className="space-y-1">
+                              <Badge variant="outline">{status.label}</Badge>
+                              <p className="text-xs leading-5 text-muted-foreground">
+                                {status.description}
+                              </p>
+                            </div>
+                          ))}
                         </div>
 
                         <div className="flex flex-wrap gap-2">
