@@ -7,6 +7,7 @@ import type {
   Evento,
   EventoFinanceiro,
   EventoPesagem,
+  EventoSanitario,
   FazendaSanidadeConfig,
   FinanceiroTipoEnum,
   Gesture,
@@ -62,6 +63,7 @@ export interface OperationalSummaryInput {
   pastos: Pasto[];
   agenda: AgendaItem[];
   eventos: Evento[];
+  eventosSanitario?: EventoSanitario[];
   eventosPesagem: EventoPesagem[];
   eventosFinanceiro: EventoFinanceiro[];
   gestures: Gesture[];
@@ -229,6 +231,18 @@ export interface OperationalSummaryReport {
       missingProductCount: number;
       missingQuantityCount: number;
       groups: InventoryFutureDemandRow[];
+    };
+    sanitaryPhase3Prerequisites: {
+      sanitaryEvents: number;
+      catalogLinkedEvents: number;
+      unmappedCatalogProducts: number;
+      activeLotMappedCatalogProducts: number;
+      presentationMappedCatalogProducts: number;
+      reliablyMappedCatalogProducts: number;
+      assistedConsumptionEvents: number;
+      assistedConsumptionMovements: number;
+      assistedConsumptionCoveragePct: number | null;
+      readyForAutoReview: boolean;
     };
   };
   agendaAttention: AgendaAttentionRow[];
@@ -503,6 +517,11 @@ export function buildOperationalSummary(
       .filter((item) => !item.deleted_at)
       .map((item) => [item.evento_id, item]),
   );
+  const sanitaryDetailByEventId = new Map(
+    (input.eventosSanitario ?? [])
+      .filter((item) => !item.deleted_at)
+      .map((item) => [item.evento_id, item]),
+  );
   const insumos = (input.insumos ?? []).filter((item) => !item.deleted_at);
   const insumoById = new Map(insumos.map((item) => [item.id, item]));
   const apresentacaoById = new Map(
@@ -526,6 +545,9 @@ export function buildOperationalSummary(
       (inventorySaldoByInsumo.get(lot.insumo_id) ?? 0) + lot.saldo_atual_base,
     );
   }
+  const activeInventoryLots = (input.insumoLotes ?? []).filter(
+    (lot) => !lot.deleted_at && lot.status === "ativo",
+  );
 
   for (const movement of inventoryMovements) {
     const current = movementsByLot.get(movement.insumo_lote_id) ?? [];
@@ -780,6 +802,88 @@ export function buildOperationalSummary(
 
       return left.insumo.localeCompare(right.insumo);
     });
+
+  const sanitaryEvents = eventos.filter((evento) => evento.dominio === "sanitario");
+  const sanitaryCatalogProductIds = new Set<string>();
+  let catalogLinkedEvents = 0;
+  for (const event of sanitaryEvents) {
+    const detail = sanitaryDetailByEventId.get(event.id);
+    const catalogProductId =
+      readStringPayload(detail?.payload, "produto_veterinario_id") ??
+      readStringPayload(event.payload, "produto_veterinario_id");
+
+    if (catalogProductId) {
+      catalogLinkedEvents += 1;
+      sanitaryCatalogProductIds.add(catalogProductId);
+    }
+  }
+
+  let activeLotMappedCatalogProducts = 0;
+  let presentationMappedCatalogProducts = 0;
+  let reliablyMappedCatalogProducts = 0;
+  for (const productId of sanitaryCatalogProductIds) {
+    const matchingInsumos = insumos.filter(
+      (insumo) =>
+        insumo.ativo &&
+        insumo.tipo === "sanitario" &&
+        insumo.produto_veterinario_id === productId,
+    );
+    if (matchingInsumos.length !== 1) continue;
+
+    const mappedInsumo = matchingInsumos[0];
+    const hasActiveLot = activeInventoryLots.some(
+      (lot) => lot.insumo_id === mappedInsumo.id,
+    );
+    if (hasActiveLot) activeLotMappedCatalogProducts += 1;
+
+    const hasCompatiblePresentation = Array.from(apresentacaoById.values()).some(
+      (presentation) =>
+        presentation.insumo_id === mappedInsumo.id &&
+        presentation.unidade_base === mappedInsumo.unidade_base &&
+        presentation.quantidade_base > 0,
+    );
+    if (hasCompatiblePresentation) presentationMappedCatalogProducts += 1;
+
+    if (hasActiveLot && hasCompatiblePresentation) {
+      reliablyMappedCatalogProducts += 1;
+    }
+  }
+
+  const assistedSanitaryConsumptionMovements = inventoryMovements.filter(
+    (movement) =>
+      movement.tipo === "consumo_sanitario" &&
+      movement.source_evento_id &&
+      movement.source_evento_dominio === "sanitario",
+  );
+  const assistedSanitaryConsumedEventIds = new Set(
+    assistedSanitaryConsumptionMovements
+      .map((movement) => movement.source_evento_id)
+      .filter((id): id is string => Boolean(id)),
+  );
+  const assistedConsumptionCoveragePct =
+    catalogLinkedEvents > 0
+      ? Math.round(
+          (assistedSanitaryConsumedEventIds.size / catalogLinkedEvents) * 100,
+        )
+      : null;
+  const unmappedCatalogProducts =
+    sanitaryCatalogProductIds.size - reliablyMappedCatalogProducts;
+  const sanitaryPhase3Prerequisites = {
+    sanitaryEvents: sanitaryEvents.length,
+    catalogLinkedEvents,
+    unmappedCatalogProducts,
+    activeLotMappedCatalogProducts,
+    presentationMappedCatalogProducts,
+    reliablyMappedCatalogProducts,
+    assistedConsumptionEvents: assistedSanitaryConsumedEventIds.size,
+    assistedConsumptionMovements: assistedSanitaryConsumptionMovements.length,
+    assistedConsumptionCoveragePct,
+    readyForAutoReview:
+      sanitaryEvents.length > 0 &&
+      catalogLinkedEvents === sanitaryEvents.length &&
+      unmappedCatalogProducts === 0 &&
+      assistedSanitaryConsumedEventIds.size > 0,
+  };
   const sanitaryAttention = summarizeSanitaryAgendaAttention({
     agenda: agendaAberta,
     animals,
@@ -989,6 +1093,7 @@ export function buildOperationalSummary(
         missingQuantityCount: futureDemandMissingQuantity,
         groups: futureDemandGroups,
       },
+      sanitaryPhase3Prerequisites,
     },
     agendaAttention,
     recentEvents,
@@ -1088,6 +1193,46 @@ export function buildOperationalSummaryCsv(
     "estoque",
     "alertas_reposicao",
     report.inventory.replenishmentAlerts.length,
+  );
+  pushRow(
+    "estoque",
+    "fase3_eventos_sanitarios",
+    report.inventory.sanitaryPhase3Prerequisites.sanitaryEvents,
+  );
+  pushRow(
+    "estoque",
+    "fase3_eventos_com_produto_catalogado",
+    report.inventory.sanitaryPhase3Prerequisites.catalogLinkedEvents,
+  );
+  pushRow(
+    "estoque",
+    "fase3_produtos_mapeados",
+    report.inventory.sanitaryPhase3Prerequisites.reliablyMappedCatalogProducts,
+  );
+  pushRow(
+    "estoque",
+    "fase3_produtos_com_lote_ativo",
+    report.inventory.sanitaryPhase3Prerequisites.activeLotMappedCatalogProducts,
+  );
+  pushRow(
+    "estoque",
+    "fase3_produtos_com_apresentacao_compativel",
+    report.inventory.sanitaryPhase3Prerequisites.presentationMappedCatalogProducts,
+  );
+  pushRow(
+    "estoque",
+    "fase3_produtos_sem_mapeamento_confiavel",
+    report.inventory.sanitaryPhase3Prerequisites.unmappedCatalogProducts,
+  );
+  pushRow(
+    "estoque",
+    "fase3_eventos_com_consumo_assistido",
+    report.inventory.sanitaryPhase3Prerequisites.assistedConsumptionEvents,
+  );
+  pushRow(
+    "estoque",
+    "fase3_cobertura_consumo_assistido_pct",
+    report.inventory.sanitaryPhase3Prerequisites.assistedConsumptionCoveragePct,
   );
 
   for (const item of report.inventory.categorias) {

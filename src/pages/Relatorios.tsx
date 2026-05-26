@@ -129,6 +129,7 @@ const Relatorios = () => {
       catalogoProtocolosOficiaisItens,
       eventos,
       eventosPesagem,
+      eventosSanitario,
       eventosFinanceiro,
       insumos,
       insumoApresentacoes,
@@ -154,6 +155,10 @@ const Relatorios = () => {
       db.catalog_protocolos_oficiais_itens.toArray(),
       db.event_eventos.where("fazenda_id").equals(activeFarmId).toArray(),
       db.event_eventos_pesagem
+        .where("fazenda_id")
+        .equals(activeFarmId)
+        .toArray(),
+      db.event_eventos_sanitario
         .where("fazenda_id")
         .equals(activeFarmId)
         .toArray(),
@@ -190,6 +195,7 @@ const Relatorios = () => {
       catalogoProtocolosOficiaisItens,
       eventos,
       eventosPesagem,
+      eventosSanitario,
       eventosFinanceiro,
       insumos,
       insumoApresentacoes,
@@ -650,6 +656,98 @@ const Relatorios = () => {
                   {report.inventory.resupplyCriticalItems}
                 </p>
               </div>
+            </div>
+
+            <div className="space-y-3 rounded-xl border border-border/70 bg-muted/20 p-4">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <h3 className="text-base font-semibold">
+                    Pre-requisitos da fase 3
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    Produto catalogado, mapeamento para insumo/lote e uso do consumo assistido.
+                  </p>
+                </div>
+                <StatusBadge
+                  tone={
+                    report.inventory.sanitaryPhase3Prerequisites.readyForAutoReview
+                      ? "success"
+                      : "warning"
+                  }
+                >
+                  {report.inventory.sanitaryPhase3Prerequisites.readyForAutoReview
+                    ? "Apto para revisao"
+                    : "Coletando evidencias"}
+                </StatusBadge>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-5">
+                <div className="rounded-lg border border-border/70 bg-background p-3">
+                  <p className="text-xs text-muted-foreground">
+                    Eventos sanitarios
+                  </p>
+                  <p className="mt-1 text-xl font-semibold">
+                    {report.inventory.sanitaryPhase3Prerequisites.sanitaryEvents}
+                  </p>
+                </div>
+                <div className="rounded-lg border border-border/70 bg-background p-3">
+                  <p className="text-xs text-muted-foreground">
+                    Produto catalogado
+                  </p>
+                  <p className="mt-1 text-xl font-semibold">
+                    {report.inventory.sanitaryPhase3Prerequisites.catalogLinkedEvents}
+                  </p>
+                </div>
+                <div className="rounded-lg border border-border/70 bg-background p-3">
+                  <p className="text-xs text-muted-foreground">
+                    Produto mapeado
+                  </p>
+                  <p className="mt-1 text-xl font-semibold">
+                    {
+                      report.inventory.sanitaryPhase3Prerequisites
+                        .reliablyMappedCatalogProducts
+                    }
+                  </p>
+                </div>
+                <div className="rounded-lg border border-border/70 bg-background p-3">
+                  <p className="text-xs text-muted-foreground">
+                    Apresentacao ok
+                  </p>
+                  <p className="mt-1 text-xl font-semibold">
+                    {
+                      report.inventory.sanitaryPhase3Prerequisites
+                        .presentationMappedCatalogProducts
+                    }
+                  </p>
+                </div>
+                <div className="rounded-lg border border-border/70 bg-background p-3">
+                  <p className="text-xs text-muted-foreground">
+                    Consumo assistido
+                  </p>
+                  <p className="mt-1 text-xl font-semibold">
+                    {
+                      report.inventory.sanitaryPhase3Prerequisites
+                        .assistedConsumptionEvents
+                    }
+                    {report.inventory.sanitaryPhase3Prerequisites
+                      .assistedConsumptionCoveragePct == null
+                      ? ""
+                      : ` (${report.inventory.sanitaryPhase3Prerequisites.assistedConsumptionCoveragePct}%)`}
+                  </p>
+                </div>
+              </div>
+
+              {report.inventory.sanitaryPhase3Prerequisites
+                .unmappedCatalogProducts > 0 ? (
+                <p className="text-sm text-amber-700">
+                  {
+                    report.inventory.sanitaryPhase3Prerequisites
+                      .unmappedCatalogProducts
+                  }{" "}
+                  produto(s) catalogado(s) ainda sem mapeamento confiavel para
+                  insumo sanitario com lote ativo.
+                </p>
+              ) : null}
             </div>
 
             <div className="space-y-3 rounded-xl border border-border/70 bg-muted/20 p-4">

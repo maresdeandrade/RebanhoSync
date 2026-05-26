@@ -1,6 +1,7 @@
 /** @vitest-environment jsdom */
 import "@testing-library/jest-dom";
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 import { useLiveQuery } from "dexie-react-hooks";
@@ -250,6 +251,89 @@ describe("Eventos page", () => {
     ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: /limpar recorte regulatorio/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("oferece baixa assistida de estoque para evento sanitario com produto catalogado", async () => {
+    const user = userEvent.setup();
+
+    queueLiveQueryResponses({
+      eventos: [
+        {
+          id: "evento-sanitario-1",
+          dominio: "sanitario",
+          animal_id: "animal-1",
+          lote_id: null,
+          source_task_id: null,
+          source_tx_id: null,
+          source_client_op_id: null,
+          corrige_evento_id: null,
+          occurred_at: "2026-05-10T08:00:00.000Z",
+          observacoes: "Vacina aplicada.",
+          payload: { produto_veterinario_id: "produto-1" },
+          client_id: "client-1",
+          client_op_id: "op-1",
+          client_tx_id: null,
+          client_recorded_at: "2026-05-10T08:00:00.000Z",
+          server_received_at: "2026-05-10T08:00:00.000Z",
+          created_at: "2026-05-10T08:00:00.000Z",
+          updated_at: "2026-05-10T08:00:00.000Z",
+          deleted_at: null,
+        },
+      ],
+      totalCount: 1,
+      sanitarios: [
+        {
+          evento_id: "evento-sanitario-1",
+          fazenda_id: "farm-1",
+          tipo: "vacinacao",
+          produto: "Vacina Raiva",
+          dose: null,
+          carencia_dias: null,
+          payload: {
+            produto_veterinario_id: "produto-1",
+            produto_nome_catalogo: "Vacina Raiva",
+          },
+          client_id: "client-1",
+          client_op_id: "op-detail-1",
+          client_tx_id: null,
+          client_recorded_at: "2026-05-10T08:00:00.000Z",
+          server_received_at: "2026-05-10T08:00:00.000Z",
+          created_at: "2026-05-10T08:00:00.000Z",
+          updated_at: "2026-05-10T08:00:00.000Z",
+          deleted_at: null,
+        },
+      ],
+      pesagens: [],
+      nutricao: [],
+      movimentacoes: [],
+      financeiro: [],
+      reproducao: [],
+      animais: [
+        {
+          id: "animal-1",
+          identificacao: "Animal 001",
+          deleted_at: null,
+        },
+      ],
+      lotes: [],
+      gestos: [],
+    });
+
+    render(
+      <MemoryRouter>
+        <Eventos />
+      </MemoryRouter>,
+    );
+
+    await user.click(
+      screen.getByRole("button", {
+        name: /mais acoes para o evento evento-sanitario-1/i,
+      }),
+    );
+
+    expect(
+      screen.getByRole("menuitem", { name: /baixar do estoque/i }),
     ).toBeInTheDocument();
   });
 });

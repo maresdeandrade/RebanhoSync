@@ -46,7 +46,7 @@
 - **Residuos registrados:**
   - helpers de compliance/transito ainda existem no `Registrar`;
   - carencia permanece como metadata/compliance parcial, nao como motor pleno de withholding;
-  - produto/lote/estoque ainda nao sao entidades completas de rastreabilidade sanitaria;
+  - estoque ja possui base operacional, consumo assistido e medicao de pre-requisitos da Fase 3, mas automacao/rastreabilidade sanitaria fina ainda depende de mapeamento produto -> insumo/apresentacao/lote e validacao de uso real;
   - SISBOV/fiscal permanecem fora do core.
 
 ## CLOSED (Historico Completo)

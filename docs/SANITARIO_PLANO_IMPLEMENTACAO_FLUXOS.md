@@ -35,7 +35,7 @@ Este recorte implementa a primeira onda operacional do plano sanitário sem alte
 2. A linha mostra protocolo, produto, periodicidade, status operacional e próximo passo.
 3. Executar conclui via serviço sanitário e cria evento.
 4. Recompute cria próximas doses/ocorrências.
-5. Consumo de estoque pode ser registrado em Insumos com vínculo ao evento sanitário.
+5. Consumo de estoque pode ser registrado em Insumos com vínculo ao evento sanitário; eventos com produto catalogado podem abrir `/insumos` com a fonte pré-selecionada, mas a baixa permanece gesto separado.
 
 ### 4. Registro manual no Registrar
 
@@ -51,6 +51,14 @@ Este recorte implementa a primeira onda operacional do plano sanitário sem alte
 3. Ajustes manuais corrigem saldo operacional.
 4. Consumo por evento baixa lote específico e preserva vínculo com `source_evento_id`.
 5. Cartões de lote destacam validade, saldo, estoque mínimo e ponto de ressuprimento.
+
+### 6. Pré-requisitos da Fase 3 de estoque
+
+1. Relatórios medem eventos sanitários com produto veterinário catalogado.
+2. Produto catalogado só conta como mapeado de forma confiável quando aponta para exatamente um insumo sanitário ativo.
+3. O insumo mapeado precisa ter lote ativo e apresentação compatível com a unidade base.
+4. A cobertura de consumo assistido é medida por movimentações reais vinculadas a evento sanitário.
+5. A baixa automática permanece desabilitada até esses critérios estarem validados em uso real.
 
 ## Glossário operacional
 
@@ -79,6 +87,7 @@ Este recorte implementa a primeira onda operacional do plano sanitário sem alte
 | Agenda | Lista o que executar | `agenda_itens` | Vencidas, hoje, futuras, canceladas |
 | Evento | Registra execução concluída | `eventos` + especializadas | Eventos vinculados à agenda/protocolo |
 | Estoque | Controla item/lote/saldo/validade | `insumos`, lotes e movimentações | Baixo estoque, vencido, consumo vinculado |
+| Pré-requisito Fase 3 | Mede prontidão para futura automação | Relatórios + eventos sanitários + inventário | Produto catalogado, insumo único, lote ativo, apresentação compatível, consumo assistido |
 | Compliance | Aponta bloqueios e evidências | Configuração sanitária + catálogo | Bloqueios, documentos, alertas |
 
 ## Reason codes implementados

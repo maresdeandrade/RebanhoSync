@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useLiveQuery } from "dexie-react-hooks";
 import {
   Boxes,
@@ -134,6 +135,7 @@ type SourceOption = {
   eventoId: string;
   dominio: "sanitario" | "nutricao" | "pastagem";
   label: string;
+  catalogProductId: string | null;
   quantityBase: number | null;
   unidadeBase: InsumoUnidadeBaseEnum | null;
   animalId: string | null;
@@ -357,6 +359,7 @@ function buildSourceOptions(snapshot: InventorySnapshot): SourceOption[] {
             eventoId: event.id,
             dominio: "sanitario",
             label: `${formatEventDate(event.occurred_at)} · Sanitario · ${readiness.productName}`,
+            catalogProductId: readiness.catalogProductId,
             quantityBase: null,
             unidadeBase: null,
             animalId: event.animal_id,
@@ -379,6 +382,7 @@ function buildSourceOptions(snapshot: InventorySnapshot): SourceOption[] {
             eventoId: event.id,
             dominio: "nutricao",
             label: `${formatEventDate(event.occurred_at)} · Nutricao · ${formatNumber(readiness.quantityBase)} kg`,
+            catalogProductId: null,
             quantityBase: readiness.quantityBase,
             unidadeBase: readiness.unidadeBase,
             animalId: event.animal_id,
@@ -402,6 +406,7 @@ function buildSourceOptions(snapshot: InventorySnapshot): SourceOption[] {
             eventoId: event.id,
             dominio: "pastagem",
             label: `${formatEventDate(event.occurred_at)} · Pasto · ${formatNumber(readiness.quantityBase)} kg`,
+            catalogProductId: null,
             quantityBase: readiness.quantityBase,
             unidadeBase: readiness.unidadeBase,
             animalId: event.animal_id,
@@ -466,6 +471,8 @@ function buildLotEditForm(
 
 export default function Insumos() {
   const { activeFarmId, role } = useAuth();
+  const [searchParams] = useSearchParams();
+  const sourceEventoId = searchParams.get("sourceEventoId");
   const canManage = role === "owner" || role === "manager";
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState(ALL_CATEGORIES_VALUE);
@@ -583,6 +590,23 @@ export default function Insumos() {
     () => (snapshot ? buildSourceOptions(snapshot) : []),
     [snapshot],
   );
+
+  useEffect(() => {
+    if (!sourceEventoId || consumptionForm.sourceKey !== NONE_VALUE) return;
+
+    const source = sourceOptions.find(
+      (option) => option.eventoId === sourceEventoId,
+    );
+    if (!source) return;
+
+    setConsumptionForm((prev) => ({
+      ...prev,
+      sourceKey: source.key,
+      quantidadeBase:
+        prev.quantidadeBase ||
+        (source.quantityBase == null ? "" : String(source.quantityBase)),
+    }));
+  }, [consumptionForm.sourceKey, sourceEventoId, sourceOptions]);
   const periodDays = useMemo(
     () =>
       periodOptions.find((option) => option.value === selectedPeriod)?.days ??
@@ -743,7 +767,18 @@ export default function Insumos() {
     return snapshot.lotes
       .filter((lot) => {
         const insumo = insumoById.get(lot.insumo_id);
-        return lot.status === "ativo" && insumo?.tipo === expectedType;
+        if (lot.status !== "ativo" || insumo?.tipo !== expectedType) {
+          return false;
+        }
+
+        if (
+          selectedSource.catalogProductId &&
+          insumo.produto_veterinario_id !== selectedSource.catalogProductId
+        ) {
+          return false;
+        }
+
+        return true;
       })
       .sort((left, right) => {
         const leftValidity = left.validade ?? "9999-12-31";

@@ -334,8 +334,10 @@
 - Formulário de entrada inicial com insumo, apresentação, lote, validade e local
 - Formulário de entrada complementar ou ajuste positivo/negativo em lote existente
 - Formulário de consumo por evento sanitário, nutrição ou ronda de pasto elegível
+- Pré-seleção de evento via `/insumos?sourceEventoId=...`, usada pelo atalho "Baixar do estoque" no histórico de Eventos
 - Edição inline de cadastro no card de item/lote
 - Relatórios exibem demanda futura estimada por agenda sanitária aberta válida nos próximos 30 dias, com necessidade, saldo, gap por produto e alerta operacional de reposição combinando saldo atual, parâmetros do insumo e demanda futura
+- Relatórios exibem medição dos pré-requisitos da Fase 3: eventos sanitários com produto catalogado, produtos com mapeamento confiável para insumo/lote ativo/apresentação compatível e cobertura de consumo assistido já registrada
 
 **Interações:**
 - Categoria define a primeira segmentação visual; tipo de insumo é filtro secundário
@@ -343,6 +345,7 @@
 - Entrada inicial cria insumo, apresentação, lote físico e movimentação de entrada em um gesto
 - Entrada complementar e ajuste criam movimentação append-only no lote físico selecionado
 - Consumo cria movimentação append-only vinculada ao evento fonte
+- Evento sanitário com produto catalogado filtra lotes sanitários pelo mesmo `produto_veterinario_id` antes da baixa assistida
 - Edição altera apenas metadados de insumo/apresentação/lote; saldo continua vindo de movimentações
 - Edição de estoque mínimo e ponto de ressuprimento altera apenas `payload.inventory_policy` do insumo; não cria movimentação nem baixa automática
 - Eventos e protocolos não baixam estoque automaticamente

@@ -5,6 +5,7 @@ import { useLiveQuery } from "dexie-react-hooks";
 import {
   Calendar,
   MoreHorizontal,
+  PackageMinus,
   PlusCircle,
   RefreshCw,
   Search,
@@ -53,6 +54,7 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { Toolbar, ToolbarGroup } from "@/components/ui/toolbar";
 import { formatWeight } from "@/lib/format/weight";
 import { describeSanitaryAlertEvent } from "@/lib/sanitario/compliance/alerts";
+import { evaluateSanitaryInventoryConsumptionReadiness } from "@/lib/sanitario/compliance/inventoryConsumption";
 import {
   buildRegulatoryOperationalReadModel,
   EMPTY_REGULATORY_OPERATIONAL_READ_MODEL,
@@ -585,10 +587,16 @@ const Eventos = () => {
 
         let detail = "";
         let amount: number | null = null;
+        let canCreateInventoryConsumption = false;
 
         if (evento.dominio === "sanitario") {
           const d = sanitarioByEvento.get(evento.id);
           detail = d ? `${d.tipo} - ${d.produto}` : "Sem detalhe sanitario";
+          canCreateInventoryConsumption =
+            evaluateSanitaryInventoryConsumptionReadiness({
+              event: evento,
+              sanitaryDetail: d,
+            }).canCreateManualMovement;
         } else if (evento.dominio === "pesagem") {
           const d = pesagemByEvento.get(evento.id);
           detail = d
@@ -683,6 +691,7 @@ const Eventos = () => {
           detail,
           amount,
           syncStage,
+          canCreateInventoryConsumption,
         };
       })
       .filter(Boolean) as Array<{
@@ -693,6 +702,7 @@ const Eventos = () => {
       detail: string;
       amount: number | null;
       syncStage: SyncStage;
+      canCreateInventoryConsumption: boolean;
     }>;
 
     return rows;
@@ -1063,6 +1073,18 @@ const Eventos = () => {
                             }
                           >
                             Abrir ficha do animal
+                          </DropdownMenuItem>
+                        ) : null}
+                        {row.canCreateInventoryConsumption ? (
+                          <DropdownMenuItem
+                            onClick={() =>
+                              navigate(
+                                `/insumos?sourceEventoId=${encodeURIComponent(row.evento.id)}`,
+                              )
+                            }
+                          >
+                            <PackageMinus className="mr-2 h-4 w-4" />
+                            Baixar do estoque
                           </DropdownMenuItem>
                         ) : null}
                         {row.evento.dominio === "reproducao" ||

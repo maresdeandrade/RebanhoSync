@@ -196,11 +196,12 @@ Este documento registra o estado efetivo do RebanhoSync na fase atual de consoli
 | financeiro | `financeiro.registro` | Registro financeiro |
 | financeiro | `financeiro.historico` | Histórico/leitura financeiro |
 | inventario | `inventario.insumos` | Leitura por categoria, cadastro inicial e edição de metadados de insumo/apresentação/lote |
-| inventario | `inventario.movimentacao` | Entrada inicial, entrada em lote existente, ajuste auditável e consumo manual vinculado a evento confirmado, validado em smoke real local |
+| inventario | `inventario.movimentacao` | Entrada inicial, entrada em lote existente, ajuste auditável e consumo manual vinculado a evento confirmado, com atalho assistido a partir de evento sanitário catalogado |
 | inventario | `inventario.relatorios` | Resumo operacional em Relatorios com categorias, itens/lotes, entradas/saidas do periodo, demanda futura por agenda valida, CSV e impressao |
 | inventario | `inventario.ressuprimento` | Estoque minimo/ponto de ressuprimento configuravel por insumo via `payload.inventory_policy`, exibido em Inventario e Relatorios |
 | inventario | `inventario.alerta_reposicao` | Alerta operacional em Relatorios combinando saldo, estoque minimo/ponto de ressuprimento e demanda futura compativel por insumo, sem baixa automatica |
 | inventario | `inventario.alerta_home` | Sinal passivo/read-only na Central Operacional/Home para alertas de reposicao derivados do mesmo resumo operacional, sem CTA de dominio |
+| inventario | `inventario.fase3_prerequisitos` | Medicao em Relatorios/CSV de produto sanitario catalogado, mapeamento produto -> insumo/lote ativo/apresentacao compativel e uso real de consumo assistido, sem habilitar consumo automatico |
 | agenda | `agenda.gerar` | Geração/criação de agenda items |
 | agenda | `agenda.concluir` | Conclusão/cancelamento de agenda items |
 | agenda | `agenda.dedup` | Deduplicação via `dedup_key` e assinatura semântica de família |
@@ -209,8 +210,8 @@ Este documento registra o estado efetivo do RebanhoSync na fase atual de consoli
 | sanitario | `sanitario.casos` | Casos sanitários por animal com abertura/vínculo pelo Registrar, timeline por caso, vínculo de eventos por sanitario_caso_id e encerramento manual. |
 | sanitario | `sanitario.protocolos_clinicos_readonly` | Biblioteca clínica orientativa com contrato testável, sem agenda automática, sem prescrição automática, sem criação de evento sem ação explícita e sem baixa automática de estoque. |
 
-**Total: 25 capabilities**
-**Completas: 23**
+**Total: 26 capabilities**
+**Completas: 24**
 **Pendentes: 2**
 
 ---

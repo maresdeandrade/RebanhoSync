@@ -150,6 +150,7 @@ Regras:
 - Peso atual confiavel, carencia ativa operacional, pronto para venda/abate, `commercialReadiness.ts` conclusivo, tags/marcadores persistidos como fonte primaria, consulta em linguagem natural, IA gerando agenda, IA concluindo execucao e motor geral IATF permanecem bloqueados ate nova validacao.
 - Compliance sanitario esta parcialmente validado por overlays, views e regras sanitarias, mas nao e bloqueio operacional completo e universal.
 - Ha RPC/funcoes de recompute sanitario por animal, mas disparo automatico por mutacao do animal nao foi confirmado; recompute por protocolo/config esta mais claramente validado.
+- Inventario ja possui insumos, apresentacoes, lotes e movimentacoes tenant-scoped, com consumo manual vinculado a evento confirmado. Eventos sanitarios com `produto_veterinario_id` catalogado podem abrir `/insumos` com fonte pre-selecionada e lotes filtrados pelo mesmo produto. Relatorios medem demanda futura por agenda sanitaria aberta valida e pre-requisitos da Fase 3: produto catalogado, mapeamento para exatamente um insumo sanitario ativo, lote ativo, apresentacao compativel e consumo assistido real. Baixa automatica ao registrar evento segue desabilitada.
 
 ## 7. Offline-first e sync gestures
 

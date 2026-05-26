@@ -33,7 +33,12 @@ Atualizacao sanitaria 2026-04-27:
 
 Atualizacao sanitaria 2026-04-28:
 - P5 removeu o ultimo import direto de `@/lib/sanitario/engine/*` em `src/pages/Registrar/**`; labels visuais de calendario passam por `src/lib/sanitario/models/calendarDisplay.ts`.
-- Proximas frentes sanitarias devem ser pequenas e separadas: carencia/rastreabilidade leve ou modelagem produto/lote, sem misturar estoque completo, SISBOV ou fiscal.
+- Proximas frentes sanitarias devem ser pequenas e separadas: carencia/rastreabilidade leve, validacao operacional da ponte assistida com inventario ou automacao de estoque, sem misturar com SISBOV ou fiscal.
+
+Atualizacao inventario/sanitario 2026-05-26:
+- Ponte assistida concluida: evento sanitario catalogado pode abrir `/insumos` com fonte pre-selecionada; o consumo continua gesto separado e append-only.
+- Relatorios medem pre-requisitos da Fase 3 de consumo automatico: produto sanitario catalogado, mapeamento produto -> exatamente um insumo sanitario ativo, lote ativo, apresentacao compativel e cobertura de consumo assistido real.
+- Consumo automatico permanece fora de escopo ate haver evidencia operacional suficiente desses pre-requisitos.
 
 Atualizacao Central Operacional 2026-05-07:
 - Primeira integracao read-only concluida: `src/lib/insights/` como core puro, `src/features/operationalInsights/` como adapter/hook/painel e Home como primeira superficie passiva.
@@ -318,7 +323,7 @@ Atualizacao visual SLC 2026-05-20:
 ### Fora de escopo mantido
 
 - Motor pleno de withholding/carencia.
-- Entidades completas de produto/lote/estoque para rastreabilidade sanitaria.
+- Automacao de estoque sanitario e rastreabilidade fina de produto/lote ainda dependem de validacao real da ponte assistida, mapeamento confiavel produto -> insumo/apresentacao/lote e cobertura de consumo assistido.
 - SISBOV/fiscal.
 
 ---

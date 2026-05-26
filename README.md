@@ -64,7 +64,7 @@ Regra de regressao semantica:
 - Telemetria de piloto com buffer local em `metrics_events` e flush remoto periódico.
 - Taxonomia canônica bovina: 3 eixos derivados em TypeScript, contrato v1 e fixtures canônicas de regressão.
 - Central Operacional passiva na Home, consumindo `src/lib/insights/` via adapter/hook read-only em `src/features/operationalInsights/`.
-- Módulo de inventário de insumos com tela `/insumos`, entrada inicial/complementar, ajuste auditável, consumo manual vinculado a evento, edição inline, relatórios com CSV/impressão e estoque mínimo/ponto de ressuprimento.
+- Módulo de inventário de insumos com tela `/insumos`, entrada inicial/complementar, ajuste auditável, consumo manual vinculado a evento, atalho assistido a partir de evento sanitário catalogado, edição inline, relatórios com CSV/impressão, estoque mínimo/ponto de ressuprimento, demanda futura por agenda sanitária válida e medição dos pré-requisitos da Fase 3 sem baixa automática.
 - Terapia de Vaca Seca com elegibilidade mínima, evento manual estruturado, payload `dry_cow_therapy`, recompute SQL condicionado, ativação explícita em protocolo da fazenda, dedup e anti-agenda-zumbi.
 - Sistema de convites e gestão de membros.
 - Catálogo global de produtos veterinários com seed básico.
@@ -124,7 +124,7 @@ Frentes prioritarias atuais:
 
 A ordem atual é:
 1. manter guardrails documentais locais e validacao minima continua
-2. tratar carencia/rastreabilidade sem misturar com estoque/SISBOV/fiscal
+2. tratar carencia/rastreabilidade e automação de estoque como frentes separadas, sem misturar com SISBOV/fiscal
 3. validar e lapidar a UX operacional dos fluxos centrais ja compactados
 4. estabilizar cobertura de regressao dos fluxos criticos
 
