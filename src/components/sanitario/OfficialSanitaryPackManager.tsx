@@ -359,11 +359,11 @@ export function OfficialSanitaryPackManager({
 
       if (!result.operationCount || result.operationCount === 0) {
         showSuccess(
-          `Agenda atualizada. Protocolo oficial aplicado com ${result.selection.templates.length} frente(s). Nenhuma mudanca materializada (operationCount=0).`,
+          `Pack oficial ativado com ${result.selection.templates.length} frente(s). Nenhuma etapa operacional nova foi materializada; confira Protocolos da fazenda para ver o que gera agenda.`,
         );
       } else {
         showSuccess(
-          `Agenda atualizada. Protocolo oficial aplicado com ${result.selection.templates.length} frente(s). ${result.operationCount} operacoes enfileiradas.`,
+          `Pack oficial ativado com ${result.selection.templates.length} frente(s). ${result.operationCount} operacoes enfileiradas; confira status operacional e agenda gerada.`,
         );
       }
     } catch (error) {
@@ -427,6 +427,12 @@ export function OfficialSanitaryPackManager({
       </CardHeader>
 
       <CardContent className="space-y-4 px-4 pt-0 sm:px-5">
+        <div className="rounded-xl border border-border/70 bg-background/80 px-4 py-3 text-sm leading-6 text-muted-foreground">
+          O pack oficial define a camada regulatória. Agenda automática depende
+          de protocolos operacionais materializados, ativos, com etapa
+          configurada como gera agenda e configuração sanitária compatível.
+        </div>
+
         {!canManage ? (
           <div className="rounded-xl border border-border/70 bg-background/80 px-4 py-3 text-sm text-muted-foreground">
             Seu perfil esta em modo leitura.

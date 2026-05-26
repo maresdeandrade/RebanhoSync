@@ -8,7 +8,9 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { FarmProtocolManager } from "@/components/sanitario/FarmProtocolManager";
 import { OfficialSanitaryPackManager } from "@/components/sanitario/OfficialSanitaryPackManager";
 import { RegulatoryOverlayManager } from "@/components/sanitario/RegulatoryOverlayManager";
+import { SanitaryAgendaDiagnosticsPanel } from "@/components/sanitario/SanitaryAgendaDiagnosticsPanel";
 import { useAuth } from "@/hooks/useAuth";
+import { buildSanitaryAgendaDiagnostics } from "@/lib/sanitario/operations/agendaDiagnostics";
 import { useProtocolosData } from "@/pages/ProtocolosSanitarios/helpers/useProtocolosData";
 
 const ProtocolosSanitarios = () => {
@@ -24,10 +26,23 @@ const ProtocolosSanitarios = () => {
     catalogProducts,
     protocolosExistentes,
     protocolosItensExistentes,
+    agendaItens,
+    animais,
+    sanidadeConfig,
     isRefreshing,
     refreshError,
     isLoading,
   } = useProtocolosData({ activeFarmId });
+  const agendaDiagnostics = buildSanitaryAgendaDiagnostics({
+    config: sanidadeConfig,
+    protocols: protocolosExistentes,
+    protocolItems: protocolosItensExistentes,
+    animals: animais,
+    agendaItems: agendaItens,
+  });
+  const pendingSanitaryCount = agendaItens.filter(
+    (item) => item.dominio === "sanitario" && item.status === "agendado",
+  ).length;
 
   if (!activeFarmId) {
     return (
@@ -100,6 +115,14 @@ const ProtocolosSanitarios = () => {
       ) : null}
 
       {!isLoading ? (
+        <SanitaryAgendaDiagnosticsPanel
+          diagnostics={agendaDiagnostics}
+          pendingSanitaryCount={pendingSanitaryCount}
+          onOpenProtocols={() => scrollToSection("protocolos-gerenciar")}
+        />
+      ) : null}
+
+      {!isLoading ? (
         <div id="protocolos-aplicar">
           <OfficialSanitaryPackManager
             activeFarmId={activeFarmId}
@@ -125,6 +148,7 @@ const ProtocolosSanitarios = () => {
             catalogProducts={catalogProducts}
             protocols={protocolosExistentes}
             protocolItems={protocolosItensExistentes}
+            agendaDiagnostics={agendaDiagnostics}
             canManage={canManageProtocols}
           />
         </div>
@@ -134,5 +158,4 @@ const ProtocolosSanitarios = () => {
 };
 
 export default ProtocolosSanitarios;
-
 

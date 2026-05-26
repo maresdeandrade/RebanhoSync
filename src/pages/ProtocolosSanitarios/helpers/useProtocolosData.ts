@@ -21,6 +21,8 @@ export function useProtocolosData({ activeFarmId }: UseProtocolosDataInput) {
     pullDataForFarm(
       activeFarmId,
       [
+        "agenda_itens",
+        "animais",
         "protocolos_sanitarios",
         "protocolos_sanitarios_itens",
         "fazenda_sanidade_config",
@@ -67,15 +69,47 @@ export function useProtocolosData({ activeFarmId }: UseProtocolosDataInput) {
       .toArray();
   }, [activeFarmId]);
 
+  const agendaItens = useLiveQuery(() => {
+    if (!activeFarmId) return [];
+
+    return db.state_agenda_itens
+      .where("fazenda_id")
+      .equals(activeFarmId)
+      .filter((item) => !item.deleted_at)
+      .toArray();
+  }, [activeFarmId]);
+
+  const animais = useLiveQuery(() => {
+    if (!activeFarmId) return [];
+
+    return db.state_animais
+      .where("fazenda_id")
+      .equals(activeFarmId)
+      .filter((animal) => !animal.deleted_at)
+      .toArray();
+  }, [activeFarmId]);
+
+  const sanidadeConfig = useLiveQuery(() => {
+    if (!activeFarmId) return null;
+
+    return db.state_fazenda_sanidade_config.get(activeFarmId);
+  }, [activeFarmId]);
+
   return {
     catalogProducts: catalogProducts ?? [],
     protocolosExistentes: protocolosExistentes ?? [],
     protocolosItensExistentes: protocolosItensExistentes ?? [],
+    agendaItens: agendaItens ?? [],
+    animais: animais ?? [],
+    sanidadeConfig: sanidadeConfig ?? null,
     isRefreshing,
     refreshError,
     isLoading:
       catalogProducts === undefined ||
       protocolosExistentes === undefined ||
-      protocolosItensExistentes === undefined,
+      protocolosItensExistentes === undefined ||
+      agendaItens === undefined ||
+      animais === undefined ||
+      sanidadeConfig === undefined,
   };
 }
