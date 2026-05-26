@@ -29,6 +29,7 @@ const RECOVERABLE_ERROR_MARKERS = [
   "fetch failed",
   "name resolution failed",
 ];
+const AGENDA_ALREADY_COMPLETED_REASON = "agenda_already_completed_by_event";
 
 // Auto-purge: run at most once every 6 hours, persisted across reloads
 const PURGE_INTERVAL_MS = 6 * 60 * 60 * 1000;
@@ -461,6 +462,25 @@ export async function processGesture(gesture: Gesture) {
           await rollbackOpLocal(op);
         }
       });
+
+      if (
+        rejectedResults.some(
+          (result) => result.reason_code === AGENDA_ALREADY_COMPLETED_REASON,
+        )
+      ) {
+        try {
+          await pullDataForFarm(gesture.fazenda_id, [
+            "agenda_itens",
+            "eventos",
+            "eventos_sanitario",
+          ]);
+        } catch (refreshError) {
+          console.warn(
+            `[sync-worker] reconciliation pull failed for TX ${gesture.client_tx_id}:`,
+            refreshError,
+          );
+        }
+      }
 
       console.warn(
         `[sync-worker] TX ${gesture.client_tx_id} had rejections (rolled back locally)`,

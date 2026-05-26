@@ -60,6 +60,23 @@ type HomeSnapshotStub = {
       movementInternal: { warningCount: number };
     };
   };
+  replenishmentAlerts: Array<{
+    insumoId: string;
+    productId: string | null;
+    insumo: string;
+    categoria: string;
+    tipo: string;
+    unidadeBase: string;
+    severity: "warning" | "critical";
+    currentBalanceBase: number;
+    futureDemandBase: number;
+    projectedBalanceBase: number;
+    minimumStockBase: number | null;
+    reorderPointBase: number | null;
+    currentGapBase: number | null;
+    projectedGapBase: number | null;
+    reasons: string[];
+  }>;
   proximosItens: Array<{
     id: string;
     data: string;
@@ -184,6 +201,7 @@ function createSnapshot(
         movementInternal: { warningCount: 0 },
       },
     },
+    replenishmentAlerts: [],
     proximosItens: [],
     eventosRecentes: [],
     checklist: [],
@@ -320,6 +338,38 @@ describe("Home", () => {
     expect(
       screen.getByRole("region", { name: /estado de sync/i }),
     ).toHaveTextContent("Rejeicoes 2");
+  });
+
+  it("renders passive inventory replenishment alerts", () => {
+    currentSnapshot = createSnapshot({
+      replenishmentAlerts: [
+        {
+          insumoId: "insumo-sal",
+          productId: "produto-sal",
+          insumo: "Sal mineral",
+          categoria: "suplemento",
+          tipo: "nutricional",
+          unidadeBase: "kg",
+          severity: "warning",
+          currentBalanceBase: 30,
+          futureDemandBase: 12,
+          projectedBalanceBase: 18,
+          minimumStockBase: 20,
+          reorderPointBase: 50,
+          currentGapBase: 20,
+          projectedGapBase: 2,
+          reasons: ["Demanda futura projeta saldo abaixo do estoque minimo."],
+        },
+      ],
+    });
+
+    renderHome();
+
+    expect(screen.getByText("Reposicao de estoque")).toBeInTheDocument();
+    expect(screen.getByText("Sal mineral")).toBeInTheDocument();
+    expect(
+      screen.getByText(/demanda futura projeta saldo abaixo do estoque minimo/i),
+    ).toBeInTheDocument();
   });
 
   it("renders loading state without showing empty agenda states", () => {

@@ -193,6 +193,34 @@ describe("createRegistrarFinalizeController", () => {
     });
   });
 
+  it("faz um retry idempotente quando o RPC sanitario retorna ambiguous", async () => {
+    const deps = buildControllerDeps();
+    deps.sanitary.trySanitaryRpcFinalize
+      .mockResolvedValueOnce({
+        status: "ambiguous",
+        error: new Error("Request timeout"),
+      })
+      .mockResolvedValueOnce({
+        status: "handled",
+        eventoId: "evt-server-1234",
+      });
+    deps.feedback.buildPostFinalizeNavigationPath.mockReturnValue("/agenda");
+    const finalize = createRegistrarFinalizeController(deps);
+    const input = buildFinalizeInput();
+    input.context.tipoManejo = "sanitario";
+    input.context.sourceTaskId = "agenda-1";
+
+    await finalize(input);
+
+    expect(deps.sanitary.trySanitaryRpcFinalize).toHaveBeenCalledTimes(2);
+    expect(deps.commit.runFinalizeGesture).toHaveBeenCalledTimes(1);
+    expect(deps.commit.buildAgendaCompletionOp).toHaveBeenCalledWith({
+      sourceTaskId: "agenda-1",
+      linkedEventId: "evt-server-1234",
+    });
+    expect(deps.feedback.navigate).toHaveBeenCalledWith("/agenda");
+  });
+
   it("encerra no caminho de RPC sanitário quando refresh falha apos registro no servidor", async () => {
     const deps = buildControllerDeps();
     deps.sanitary.trySanitaryRpcFinalize.mockResolvedValue({

@@ -45,6 +45,7 @@ vi.mock("@/lib/telemetry/pilotMetrics", () => ({
 
 import { createGesture } from "../ops";
 import { db } from "../db";
+import { pullDataForFarm } from "../pull";
 import { processGesture } from "../syncWorker";
 
 function dateDaysAgo(days: number) {
@@ -97,6 +98,7 @@ async function getGesture(txId: string) {
 
 describe("sync partial batch (multi-op): cliente rollback total vs servidor possivelmente parcial", () => {
   beforeEach(async () => {
+    vi.clearAllMocks();
     vi.stubGlobal("localStorage", {
       getItem: () => null,
       setItem: () => undefined,
@@ -105,6 +107,8 @@ describe("sync partial batch (multi-op): cliente rollback total vs servidor poss
     vi.stubGlobal("fetch", vi.fn());
     await Promise.all([
       db.state_animais.clear(),
+      db.state_agenda_itens.clear(),
+      db.event_eventos.clear(),
       db.queue_gestures.clear(),
       db.queue_ops.clear(),
       db.queue_rejections.clear(),
@@ -115,6 +119,8 @@ describe("sync partial batch (multi-op): cliente rollback total vs servidor poss
     vi.unstubAllGlobals();
     await Promise.all([
       db.state_animais.clear(),
+      db.state_agenda_itens.clear(),
+      db.event_eventos.clear(),
       db.queue_gestures.clear(),
       db.queue_ops.clear(),
       db.queue_rejections.clear(),
@@ -202,5 +208,64 @@ describe("sync partial batch (multi-op): cliente rollback total vs servidor poss
     expect((firstOp.before_snapshot as { observacoes?: string })?.observacoes).toBe(
       "seed-obs",
     );
+  });
+
+  it("em duplicidade de agenda sanitaria, faz rollback local e puxa agenda/eventos do servidor", async () => {
+    const txId = await createGesture("farm-partial", [
+      {
+        table: "eventos",
+        action: "INSERT",
+        record: {
+          id: "evt-dup-local",
+          fazenda_id: "farm-partial",
+          dominio: "sanitario",
+          occurred_at: "2026-05-26T10:00:00.000Z",
+          occurred_on: "2026-05-26",
+          animal_id: "animal-dup",
+          lote_id: null,
+          source_task_id: "agenda-ja-concluida",
+          source_tx_id: null,
+          source_client_op_id: null,
+          corrige_evento_id: null,
+          sanitario_caso_id: null,
+          observacoes: null,
+          payload: {},
+          deleted_at: null,
+        },
+      },
+    ]);
+
+    const [eventOp] = await db.queue_ops.where("client_tx_id").equals(txId).toArray();
+    expect(await db.event_eventos.get("evt-dup-local")).toBeDefined();
+
+    vi.mocked(fetch).mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          results: [
+            {
+              op_id: eventOp.client_op_id,
+              status: "REJECTED",
+              reason_code: "agenda_already_completed_by_event",
+              reason_message: "Agenda item already completed by event evt-server",
+            },
+          ],
+        }),
+        { status: 200 },
+      ),
+    );
+
+    await processGesture(await getGesture(txId));
+
+    expect(await db.event_eventos.get("evt-dup-local")).toBeUndefined();
+    expect(pullDataForFarm).toHaveBeenCalledWith("farm-partial", [
+      "agenda_itens",
+      "eventos",
+      "eventos_sanitario",
+    ]);
+
+    const rejections = await db.queue_rejections.toArray();
+    expect(rejections[0]).toMatchObject({
+      reason_code: "agenda_already_completed_by_event",
+    });
   });
 });

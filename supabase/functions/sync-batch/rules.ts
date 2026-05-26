@@ -33,6 +33,10 @@ const FK_CONSTRAINT_REASON: Record<string, string> = {
   fk_insumo_movimentacoes_source_evento_fazenda: 'VALIDATION_INSUMO_SOURCE_EVENTO',
 };
 
+const UNIQUE_CONSTRAINT_REASON: Record<string, string> = {
+  idx_eventos_unique_source_task: 'agenda_already_completed_by_event',
+};
+
 const TABLE_PRIMARY_KEY: Record<string, 'id' | 'evento_id' | 'user_id' | 'fazenda_id'> = {
   eventos_sanitario: 'evento_id',
   eventos_pesagem: 'evento_id',
@@ -64,6 +68,18 @@ export function normalizeDbError(
   | { status: 'APPLIED' }
   | { status: 'REJECTED'; reason_code: string; reason_message: string } {
   const dbCode = error.code ?? 'UNKNOWN_DB_ERROR';
+
+  if (dbCode === '23505') {
+    const constraint = extractConstraintName(error);
+    const reasonCode = constraint ? UNIQUE_CONSTRAINT_REASON[constraint] : undefined;
+    if (reasonCode) {
+      return {
+        status: 'REJECTED',
+        reason_code: reasonCode,
+        reason_message: buildReasonMessage(error),
+      };
+    }
+  }
 
   if (dbCode === '23505' && op.table === 'agenda_itens') {
     return { status: 'APPLIED_ALTERED', altered: { dedup: 'collision_noop' } };
@@ -155,6 +171,34 @@ export function buildMutationMatch(
   const pk = resolveOperationPrimaryKey(op);
   if (!pk) return null;
   return { [pk.field]: pk.value, fazenda_id };
+}
+
+export function inferAgendaSourceTaskIdForEventInsert(
+  op: Operation,
+  ops: Operation[],
+): string | null {
+  if (op.table !== 'eventos' || op.action !== 'INSERT') return null;
+
+  const directSourceTaskId = op.record?.source_task_id;
+  if (typeof directSourceTaskId === 'string' && directSourceTaskId.length > 0) {
+    return directSourceTaskId;
+  }
+
+  const eventId = op.record?.id;
+  if (typeof eventId !== 'string' || eventId.length === 0) return null;
+
+  const agendaUpdate = ops.find((candidate) => {
+    const candidateRecord = candidate.record ?? {};
+    return (
+      candidate.table === 'agenda_itens' &&
+      candidate.action === 'UPDATE' &&
+      typeof candidateRecord.id === 'string' &&
+      typeof candidateRecord.source_evento_id === 'string' &&
+      candidateRecord.source_evento_id === eventId
+    );
+  });
+
+  return typeof agendaUpdate?.record?.id === 'string' ? agendaUpdate.record.id : null;
 }
 
 export function prevalidateAntiTeleport(ops: Operation[]):

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   buildInventoryResupplyPayload,
+  evaluateInventoryReplenishmentAlert,
   evaluateInventoryResupply,
   parseInventoryResupplyPolicy,
 } from "@/lib/inventory/resupplyPolicy";
@@ -60,5 +61,24 @@ describe("inventory resupply policy", () => {
         { minimumStockBase: null, reorderPointBase: null },
       ),
     ).toEqual({ origem: "test" });
+  });
+
+  it("raises a critical replenishment alert when future demand crosses minimum stock", () => {
+    expect(
+      evaluateInventoryReplenishmentAlert({
+        currentBalanceBase: 30,
+        futureDemandBase: 22,
+        policy: {
+          minimumStockBase: 10,
+          reorderPointBase: 25,
+        },
+      }),
+    ).toMatchObject({
+      severity: "critical",
+      currentStatus: "ok",
+      projectedBalanceBase: 8,
+      projectedGapBase: 2,
+      reasons: ["demanda futura projeta saldo abaixo do estoque minimo"],
+    });
   });
 });

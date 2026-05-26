@@ -20,6 +20,7 @@ export async function tryRegistrarSanitaryRpcFinalizeEffect(input: {
   | { status: "skip" }
   | { status: "handled"; eventoId: string }
   | { status: "handled_refresh_failed"; eventoId: string; error: unknown }
+  | { status: "ambiguous"; error: unknown }
   | { status: "fallback"; error: unknown }
 > {
   const result = await executeSanitaryCompletion({

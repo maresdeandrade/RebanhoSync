@@ -652,6 +652,90 @@ const Relatorios = () => {
               </div>
             </div>
 
+            <div className="space-y-3 rounded-xl border border-border/70 bg-muted/20 p-4">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <h3 className="text-base font-semibold">
+                    Alertas de reposicao
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    Saldo atual, parametros de ressuprimento e demanda futura.
+                  </p>
+                </div>
+                <StatusBadge
+                  tone={
+                    report.inventory.replenishmentAlerts.some(
+                      (item) => item.severity === "critical",
+                    )
+                      ? "danger"
+                      : report.inventory.replenishmentAlerts.length > 0
+                        ? "warning"
+                        : "success"
+                  }
+                >
+                  {report.inventory.replenishmentAlerts.length} alerta(s)
+                </StatusBadge>
+              </div>
+
+              {report.inventory.replenishmentAlerts.length === 0 ? (
+                <div className="rounded-lg border border-dashed border-border/70 bg-background p-3 text-sm text-muted-foreground">
+                  Sem alerta operacional de reposicao.
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {report.inventory.replenishmentAlerts.slice(0, 6).map((item) => (
+                    <div
+                      key={item.insumoId}
+                      className="grid gap-3 rounded-lg border border-border/70 bg-background p-3 md:grid-cols-[1.1fr_0.7fr_0.7fr_1fr]"
+                    >
+                      <div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="font-medium">{item.insumo}</p>
+                          <Badge
+                            variant={
+                              item.severity === "critical"
+                                ? "destructive"
+                                : "secondary"
+                            }
+                          >
+                            {item.severity === "critical"
+                              ? "Critico"
+                              : "Atencao"}
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          {item.categoria} · {item.tipo}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Saldo</p>
+                        <p className="font-semibold">
+                          {formatQuantity(item.currentBalanceBase)}{" "}
+                          {item.unidadeBase}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">
+                          Demanda futura
+                        </p>
+                        <p className="font-semibold">
+                          {item.futureDemandBase == null
+                            ? "Sem demanda"
+                            : `${formatQuantity(item.futureDemandBase)} ${item.unidadeBase}`}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Motivo</p>
+                        <p className="text-sm font-medium">
+                          {item.reasons.join(" + ")}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             {report.inventory.categorias.length === 0 ? (
               <div className="rounded-xl border border-dashed border-border/70 bg-muted/20 p-4 text-sm text-muted-foreground">
                 Nenhum item de estoque cadastrado.

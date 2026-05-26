@@ -184,7 +184,12 @@ describe("Relatorios flow", () => {
           produto_veterinario_id: "prod-sal",
           unidade_base: "kg",
           ativo: true,
-          payload: {},
+          payload: {
+            inventory_policy: {
+              estoque_minimo_base: 20,
+              ponto_ressuprimento_base: 50,
+            },
+          },
           client_id: "client-1",
           client_op_id: "op-1",
           client_tx_id: null,
@@ -339,7 +344,11 @@ describe("Relatorios flow", () => {
     expect(
       screen.getByText(/Demanda futura por agenda valida/i),
     ).toBeInTheDocument();
+    expect(screen.getByText(/Alertas de reposicao/i)).toBeInTheDocument();
     expect(screen.getAllByText(/Ressuprir/i).length).toBeGreaterThan(0);
+    expect(
+      screen.getByText(/saldo atual abaixo do ponto de ressuprimento/i),
+    ).toBeInTheDocument();
     expect(screen.getAllByText(/Sal mineral/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/2 kg/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/\+50/i).length).toBeGreaterThan(0);

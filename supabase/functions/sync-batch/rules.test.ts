@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildMutationMatch,
+  inferAgendaSourceTaskIdForEventInsert,
   normalizeDbError,
   prevalidateAntiTeleport,
   resolveOperationPrimaryKey,
@@ -52,6 +53,22 @@ describe('sync-batch rules: normalizeDbError', () => {
     );
 
     expect(result).toEqual({ status: 'APPLIED' });
+  });
+
+  it('maps duplicate agenda source event to deterministic rejection', () => {
+    const result = normalizeDbError(
+      {
+        code: '23505',
+        message:
+          'duplicate key value violates unique constraint "idx_eventos_unique_source_task"',
+      },
+      op({ table: 'eventos' }),
+    );
+
+    expect(result.status).toBe('REJECTED');
+    if (result.status === 'REJECTED') {
+      expect(result.reason_code).toBe('agenda_already_completed_by_event');
+    }
   });
 
   it('maps known FK constraint to domain reason_code', () => {
@@ -158,6 +175,35 @@ describe('sync-batch rules: mutation key resolution', () => {
     });
 
     expect(buildMutationMatch(operation, 'faz-1')).toBeNull();
+  });
+});
+
+describe('sync-batch rules: agenda source inference', () => {
+  it('uses direct source_task_id on event insert', () => {
+    const operation = op({
+      table: 'eventos',
+      action: 'INSERT',
+      record: { id: 'evt-1', source_task_id: 'agenda-1' },
+    });
+
+    expect(inferAgendaSourceTaskIdForEventInsert(operation, [operation])).toBe('agenda-1');
+  });
+
+  it('infers agenda source from same-batch agenda completion update', () => {
+    const eventOp = op({
+      table: 'eventos',
+      action: 'INSERT',
+      record: { id: 'evt-1', source_task_id: null },
+    });
+    const agendaOp = op({
+      table: 'agenda_itens',
+      action: 'UPDATE',
+      record: { id: 'agenda-1', status: 'concluido', source_evento_id: 'evt-1' },
+    });
+
+    expect(inferAgendaSourceTaskIdForEventInsert(eventOp, [eventOp, agendaOp])).toBe(
+      'agenda-1',
+    );
   });
 });
 

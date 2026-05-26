@@ -93,6 +93,7 @@
 **Seção 4 - Contexto secundário:**
 - Transições de estágio quando relevantes
 - Central Operacional passiva/read-only
+- Alerta passivo de reposição de estoque quando demanda futura e política de ressuprimento indicarem atenção
 - Sync e telemetria em leitura discreta
 
 **Interações:**
@@ -334,7 +335,7 @@
 - Formulário de entrada complementar ou ajuste positivo/negativo em lote existente
 - Formulário de consumo por evento sanitário, nutrição ou ronda de pasto elegível
 - Edição inline de cadastro no card de item/lote
-- Relatórios exibem demanda futura estimada por agenda sanitária aberta válida nos próximos 30 dias, com necessidade, saldo e gap por produto
+- Relatórios exibem demanda futura estimada por agenda sanitária aberta válida nos próximos 30 dias, com necessidade, saldo, gap por produto e alerta operacional de reposição combinando saldo atual, parâmetros do insumo e demanda futura
 
 **Interações:**
 - Categoria define a primeira segmentação visual; tipo de insumo é filtro secundário

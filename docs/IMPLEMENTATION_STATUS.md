@@ -62,6 +62,7 @@ Este documento registra o estado efetivo do RebanhoSync na fase atual de consoli
 | Domínio | Estado | Evidência principal |
 | --- | --- | --- |
 | `sanitario.registro` | Completo — catálogo `produtos_veterinarios`, biblioteca canônica de protocolos, payload/preflight/package sanitário extraídos e boundary RPC/fallback isolado | `src/pages/Registrar/**`, `src/pages/ProtocolosSanitarios/**`, `src/lib/sanitario/models/**`, `src/lib/sanitario/infrastructure/**`, `src/lib/sanitario/catalog/baseProtocols.ts` |
+| `sanitario.registro_idempotente` | Completo — timeout ambíguo no RPC faz retry idempotente antes de fallback; sync-batch rejeita duplicidade de agenda já concluída; Dexie faz rollback e pull seletivo | `src/lib/sanitario/infrastructure/executionBoundary.ts`, `src/pages/Registrar/createRegistrarFinalizeController.ts`, `supabase/functions/sync-batch/**`, `supabase/migrations/20260526000600_idx_eventos_unique_source_task.sql` |
 | `sanitario.historico` | Completo | `src/pages/Eventos.tsx` |
 | `sanitario.agenda_link` | Completo — SQL/Supabase e motor lider de recompute; TS mantem contratos/adapters/golden tests e suporte offline; agenda automatica exige gates canonicos por janela, risco/configuracao, ativacao operacional ou especie transicional; raiva operacional segue sequencia D1/D2/anual | `supabase/migrations/00000000000000_rebuild_base_schema_sanitario.sql`, `src/lib/sanitario/engine/**` |
 | `pesagem.registro` | Completo | `src/pages/Registrar/index.tsx`, `src/pages/AnimalDetalhe.tsx` |
@@ -81,10 +82,10 @@ Este documento registra o estado efetivo do RebanhoSync na fase atual de consoli
 | `financeiro.historico` | Completo | `src/pages/Financeiro.tsx` |
 | `agenda.gerar` | Completo | `src/pages/Agenda/index.tsx`, `supabase/migrations/00000000000000_rebuild_base_schema_sanitario.sql` |
 | `agenda.concluir` | Completo | `src/pages/Agenda/index.tsx`, `src/lib/sanitario/infrastructure/service.ts` |
-| `agenda.dedup` | Completo — contrato canonico estruturado TS/SQL | `src/lib/sanitario/engine/dedup.ts`, `supabase/migrations/00000000000000_rebuild_base_schema_sanitario.sql` |
+| `agenda.dedup` | Completo — contrato canonico estruturado TS/SQL com validação de dimensões obrigatórias e parse resiliente de `periodKey` | `src/lib/sanitario/engine/dedup.ts`, `supabase/migrations/00000000000000_rebuild_base_schema_sanitario.sql` |
 | `agenda.recalculo` | Completo — recompute limpa e reconstrui pendencias automaticas do escopo antes de reaplicar o motor | `supabase/migrations/00000000000000_rebuild_base_schema_sanitario.sql` |
 
-**Capability Score:** 23/25 = **92%** ✅
+**Capability Score:** 24/26 = **92%** ✅
 
 ---
 
@@ -198,7 +199,8 @@ Este documento registra o estado efetivo do RebanhoSync na fase atual de consoli
 | inventario | `inventario.movimentacao` | Entrada inicial, entrada em lote existente, ajuste auditável e consumo manual vinculado a evento confirmado, validado em smoke real local |
 | inventario | `inventario.relatorios` | Resumo operacional em Relatorios com categorias, itens/lotes, entradas/saidas do periodo, demanda futura por agenda valida, CSV e impressao |
 | inventario | `inventario.ressuprimento` | Estoque minimo/ponto de ressuprimento configuravel por insumo via `payload.inventory_policy`, exibido em Inventario e Relatorios |
-| inventario | `inventario.alerta_reposicao` | Pendente — consolidar alerta operacional de reposicao combinando ressuprimento parametrizado, saldo e demanda futura |
+| inventario | `inventario.alerta_reposicao` | Alerta operacional em Relatorios combinando saldo, estoque minimo/ponto de ressuprimento e demanda futura compativel por insumo, sem baixa automatica |
+| inventario | `inventario.alerta_home` | Sinal passivo/read-only na Central Operacional/Home para alertas de reposicao derivados do mesmo resumo operacional, sem CTA de dominio |
 | agenda | `agenda.gerar` | Geração/criação de agenda items |
 | agenda | `agenda.concluir` | Conclusão/cancelamento de agenda items |
 | agenda | `agenda.dedup` | Deduplicação via `dedup_key` e assinatura semântica de família |

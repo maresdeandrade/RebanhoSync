@@ -85,7 +85,8 @@ type RegistrarFinalizeSanitaryDeps = {
     | { status: "skip" }
     | { status: "handled"; eventoId: string }
     | { status: "handled_refresh_failed"; eventoId: string; error: unknown }
-    | { status: "fallback" }
+    | { status: "ambiguous"; error: unknown }
+    | { status: "fallback"; error?: unknown }
   >;
 };
 
@@ -347,16 +348,17 @@ export function createRegistrarFinalizeController(
         !sanitary.caseLink.selectedCaseId &&
         !sanitary.caseLink.createClinicalCase &&
         !isDryCowTherapyClinicalRef(sanitary.clinicalProtocolRef);
+      const sanitaryRpcInput = {
+        tipoManejo: context.tipoManejo,
+        sourceTaskId: context.sourceTaskId,
+        fazendaId,
+        occurredAt: now,
+        tipo: sanitary.data.tipo,
+        sanitaryProductName,
+        sanitaryProductMetadata: sanitaryProductMetadataWithClinical,
+      };
       const sanitaryRpc = shouldTrySanitaryRpc
-        ? await deps.sanitary.trySanitaryRpcFinalize({
-            tipoManejo: context.tipoManejo,
-            sourceTaskId: context.sourceTaskId,
-            fazendaId,
-            occurredAt: now,
-            tipo: sanitary.data.tipo,
-            sanitaryProductName,
-            sanitaryProductMetadata: sanitaryProductMetadataWithClinical,
-          })
+        ? await deps.sanitary.trySanitaryRpcFinalize(sanitaryRpcInput)
         : ({ status: "skip" } as const);
       if (sanitaryRpc.status === "handled") {
         deps.feedback.showSuccess(
@@ -406,6 +408,59 @@ export function createRegistrarFinalizeController(
         );
         input.onFinalizeHandled?.();
         return;
+      }
+
+      if (sanitaryRpc.status === "ambiguous") {
+        const retry = await deps.sanitary.trySanitaryRpcFinalize(sanitaryRpcInput);
+        if (retry.status === "handled") {
+          deps.feedback.showSuccess(
+            `Aplicacao sanitaria confirmada no servidor. Evento ${retry.eventoId.slice(0, 8)}.`,
+          );
+          if (context.sourceTaskId) {
+            await deps.commit.runFinalizeGesture({
+              fazendaId,
+              ops: [
+                deps.commit.buildAgendaCompletionOp({
+                  sourceTaskId: context.sourceTaskId,
+                  linkedEventId: retry.eventoId,
+                }),
+              ],
+            });
+          }
+          deps.feedback.navigate(
+            deps.feedback.buildPostFinalizeNavigationPath(
+              null,
+              context.sourceTaskId || null,
+            ),
+          );
+          input.onFinalizeHandled?.();
+          return;
+        }
+
+        if (retry.status === "handled_refresh_failed") {
+          deps.feedback.showSuccess(
+            `Aplicacao sanitaria registrada no servidor. Evento ${retry.eventoId.slice(0, 8)}. A atualizacao local falhou; sincronize para refletir o novo estado.`,
+          );
+          if (context.sourceTaskId) {
+            await deps.commit.runFinalizeGesture({
+              fazendaId,
+              ops: [
+                deps.commit.buildAgendaCompletionOp({
+                  sourceTaskId: context.sourceTaskId,
+                  linkedEventId: retry.eventoId,
+                }),
+              ],
+            });
+          }
+          deps.feedback.navigate(
+            deps.feedback.buildPostFinalizeNavigationPath(
+              null,
+              context.sourceTaskId || null,
+            ),
+          );
+          input.onFinalizeHandled?.();
+          return;
+        }
       }
 
       const ops: OperationInput[] = [];

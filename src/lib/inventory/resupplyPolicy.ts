@@ -13,6 +13,23 @@ export interface InventoryResupplyEvaluation {
   gapToReorderPoint: number | null;
 }
 
+export type InventoryReplenishmentAlertSeverity = "warning" | "critical";
+
+export interface InventoryReplenishmentAlertInput {
+  currentBalanceBase: number;
+  futureDemandBase: number | null;
+  policy: InventoryResupplyPolicy;
+}
+
+export interface InventoryReplenishmentAlertEvaluation {
+  severity: InventoryReplenishmentAlertSeverity | null;
+  currentStatus: InventoryResupplyStatus;
+  projectedBalanceBase: number | null;
+  currentGapBase: number | null;
+  projectedGapBase: number | null;
+  reasons: string[];
+}
+
 const POLICY_KEY = "inventory_policy";
 
 function asRecord(value: unknown): Record<string, unknown> | null {
@@ -94,5 +111,60 @@ export function evaluateInventoryResupply(
     reorderPointBase,
     gapToMinimum,
     gapToReorderPoint,
+  };
+}
+
+export function evaluateInventoryReplenishmentAlert(
+  input: InventoryReplenishmentAlertInput,
+): InventoryReplenishmentAlertEvaluation {
+  const current = evaluateInventoryResupply(input.currentBalanceBase, input.policy);
+  const projectedBalanceBase =
+    input.futureDemandBase == null
+      ? null
+      : input.currentBalanceBase - input.futureDemandBase;
+  const projected =
+    projectedBalanceBase == null
+      ? null
+      : evaluateInventoryResupply(projectedBalanceBase, input.policy);
+  const reasons: string[] = [];
+
+  if (current.status === "critical") {
+    reasons.push("saldo atual abaixo do estoque minimo");
+  } else if (current.status === "warning") {
+    reasons.push("saldo atual abaixo do ponto de ressuprimento");
+  }
+
+  if (projected?.status === "critical") {
+    reasons.push("demanda futura projeta saldo abaixo do estoque minimo");
+  } else if (projected?.status === "warning") {
+    reasons.push("demanda futura projeta saldo abaixo do ponto de ressuprimento");
+  }
+
+  const severity =
+    current.status === "critical" || projected?.status === "critical"
+      ? "critical"
+      : current.status === "warning" || projected?.status === "warning"
+        ? "warning"
+        : null;
+
+  return {
+    severity,
+    currentStatus: current.status,
+    projectedBalanceBase,
+    currentGapBase:
+      current.status === "critical"
+        ? current.gapToMinimum
+        : current.status === "warning"
+          ? current.gapToReorderPoint
+          : 0,
+    projectedGapBase:
+      projected?.status === "critical"
+        ? projected.gapToMinimum
+        : projected?.status === "warning"
+          ? projected.gapToReorderPoint
+          : projected
+            ? 0
+            : null,
+    reasons,
   };
 }

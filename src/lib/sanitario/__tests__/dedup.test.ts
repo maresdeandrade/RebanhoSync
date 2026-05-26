@@ -58,4 +58,46 @@ describe("sanitary dedup canonical contract", () => {
       jurisdiction: undefined,
     });
   });
+
+  it("parses period keys containing colons without shifting dimensions", () => {
+    expect(
+      parseDedupKey(
+        "sanitario:fazenda:faz-1:notificacao:notificacao_svo:v1:event:evt:legacy:77",
+      ),
+    ).toEqual({
+      scopeType: "fazenda",
+      scopeId: "faz-1",
+      familyCode: "notificacao",
+      itemCode: "notificacao_svo",
+      regimenVersion: 1,
+      periodType: "event",
+      periodKey: "evt:legacy:77",
+      jurisdiction: undefined,
+    });
+  });
+
+  it("keeps jurisdiction when present after the period key", () => {
+    expect(
+      parseDedupKey(
+        "sanitario:lote:lote-1:campanha_estadual:maio_go:v1:campaign:2026-05:GO",
+      ),
+    ).toMatchObject({
+      periodKey: "2026-05",
+      jurisdiction: "GO",
+    });
+  });
+
+  it("rejects empty semantic dimensions before building a key", () => {
+    expect(() =>
+      buildSanitaryDedupKey({
+        scopeType: "animal",
+        scopeId: "",
+        familyCode: "raiva",
+        itemCode: "d1",
+        regimenVersion: 1,
+        mode: "campanha",
+        periodKey: "2026-05",
+      }),
+    ).toThrow("scopeId vazio");
+  });
 });

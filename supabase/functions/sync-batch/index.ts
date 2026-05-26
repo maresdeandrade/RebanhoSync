@@ -2,6 +2,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0'
 import {
   type Operation,
   buildMutationMatch,
+  inferAgendaSourceTaskIdForEventInsert,
   normalizeDbError,
   prevalidateAntiTeleport,
 } from './rules.ts'
@@ -352,6 +353,50 @@ Deno.serve(async (req: Request) => {
                    }
                 }
              }
+          }
+        }
+
+        if (
+          op.table === 'eventos' &&
+          op.action === 'INSERT'
+        ) {
+          const agendaSourceTaskId = inferAgendaSourceTaskIdForEventInsert(
+            { ...op, record },
+            ops,
+          );
+
+          if (agendaSourceTaskId) {
+            const { data: agendaItem, error: agendaError } = await supabase
+              .from('agenda_itens')
+              .select('id, status, source_evento_id')
+              .eq('id', agendaSourceTaskId)
+              .eq('fazenda_id', fazenda_id)
+              .is('deleted_at', null)
+              .maybeSingle();
+
+            if (agendaError) {
+              results.push({
+                op_id: op.client_op_id,
+                status: 'REJECTED',
+                reason_code: 'AGENDA_SOURCE_LOOKUP_FAILED',
+                reason_message: agendaError.message,
+              });
+              continue;
+            }
+
+            if (
+              agendaItem?.status === 'concluido' &&
+              typeof agendaItem.source_evento_id === 'string' &&
+              agendaItem.source_evento_id.length > 0
+            ) {
+              results.push({
+                op_id: op.client_op_id,
+                status: 'REJECTED',
+                reason_code: 'agenda_already_completed_by_event',
+                reason_message: `Agenda item already completed by event ${agendaItem.source_evento_id}`,
+              });
+              continue;
+            }
           }
         }
 

@@ -68,4 +68,27 @@ describe("tryRegistrarSanitaryRpcFinalizeEffect", () => {
     expect(result.status).toBe("fallback");
     expect(logSpy).toHaveBeenCalledWith(error);
   });
+
+  it("retorna ambiguous quando RPC falha por timeout/network", async () => {
+    const error = new Error("Request timeout");
+    const concluirSpy = vi.fn(async () => {
+      throw error;
+    });
+    const logSpy = vi.fn();
+
+    const result = await tryRegistrarSanitaryRpcFinalizeEffect({
+      tipoManejo: "sanitario",
+      sourceTaskId: "agenda-1",
+      fazendaId: "farm-1",
+      occurredAt: nowIso,
+      tipo: "vacinacao",
+      sanitaryProductName: "Vacina X",
+      sanitaryProductMetadata: {},
+      concluirPendenciaSanitariaFn: concluirSpy,
+      onFallbackLog: logSpy,
+    });
+
+    expect(result).toEqual({ status: "ambiguous", error });
+    expect(logSpy).not.toHaveBeenCalled();
+  });
 });

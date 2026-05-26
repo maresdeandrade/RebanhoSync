@@ -58,6 +58,20 @@ export function buildSanitaryDedupKey(input: DedupKeyInput): string {
   const { scopeType, scopeId, familyCode, itemCode, regimenVersion, mode, periodKey, jurisdiction } =
     input;
 
+  for (const [field, value] of [
+    ["scopeId", scopeId],
+    ["familyCode", familyCode],
+    ["itemCode", itemCode],
+    ["periodKey", periodKey],
+  ] as const) {
+    if (!value.trim()) {
+      throw new Error(`Dedup key invalida: ${field} vazio.`);
+    }
+  }
+  if (!Number.isInteger(regimenVersion) || regimenVersion <= 0) {
+    throw new Error("Dedup key invalida: regimenVersion deve ser inteiro positivo.");
+  }
+
   // Normalizar strings
   const normalized = [
     "sanitario",
@@ -119,15 +133,28 @@ export function parseDedupKey(
   }
 
   const periodType = parts[6];
-  const periodKey = parts[7];
-  const jurisdiction = parts[8];
+  const periodParts = parts.slice(7);
+  const lastPeriodPart = periodParts.at(-1);
+  const hasJurisdiction =
+    periodParts.length > 1 &&
+    typeof lastPeriodPart === "string" &&
+    /^[A-Z]{2,5}$/.test(lastPeriodPart);
+  const jurisdiction = hasJurisdiction ? lastPeriodPart : undefined;
+  const periodKey = (hasJurisdiction ? periodParts.slice(0, -1) : periodParts).join(":");
+  const regimenVersion = /^v\d+$/.test(parts[5])
+    ? parseInt(parts[5].substring(1), 10)
+    : undefined;
+
+  if (!parts[1] || !parts[2] || !parts[3] || !parts[4] || !regimenVersion || !periodKey) {
+    return {};
+  }
 
   return {
     scopeType: parts[1] as SanitaryScopeType,
     scopeId: parts[2],
     familyCode: parts[3],
     itemCode: parts[4],
-    regimenVersion: parseInt(parts[5].substring(1), 10),
+    regimenVersion,
     periodType,
     periodKey,
     jurisdiction,

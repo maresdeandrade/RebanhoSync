@@ -7,6 +7,7 @@ import {
   CalendarClock,
   CheckCircle2,
   Clock3,
+  PackageSearch,
   PlusCircle,
 } from "lucide-react";
 
@@ -46,6 +47,10 @@ import {
   buildAgendaCalendarModePath,
   buildAgendaOperationalClassPath,
 } from "@/lib/agenda/navigation";
+import {
+  buildOperationalSummary,
+  type InventoryReplenishmentAlertRow,
+} from "@/lib/reports/operationalSummary";
 
 type FarmSummary = {
   nome: string;
@@ -83,6 +88,7 @@ type HomeSnapshot = {
   lifecycleBiologicalCount: number;
   sanitaryAttention: SanitaryAttentionSummary;
   regulatoryCompliance: RegulatoryOperationalReadModel;
+  replenishmentAlerts: InventoryReplenishmentAlertRow[];
   proximosItens: {
     id: string;
     data: string;
@@ -196,6 +202,10 @@ const Home = () => {
       agendaItens,
       eventos,
       eventosMensais,
+      insumos,
+      insumoLotes,
+      insumoApresentacoes,
+      insumoMovimentacoes,
       syncSummary,
       regulatorySource,
     ] = await Promise.all([
@@ -231,6 +241,16 @@ const Home = () => {
           true,
         )
         .filter((evento) => !evento.deleted_at)
+        .toArray(),
+      db.state_insumos.where("fazenda_id").equals(activeFarmId).toArray(),
+      db.state_insumo_lotes.where("fazenda_id").equals(activeFarmId).toArray(),
+      db.state_insumo_apresentacoes
+        .where("fazenda_id")
+        .equals(activeFarmId)
+        .toArray(),
+      db.state_insumo_movimentacoes
+        .where("fazenda_id")
+        .equals(activeFarmId)
         .toArray(),
       loadFarmSyncSummary(activeFarmId),
       loadRegulatorySurfaceSource(activeFarmId),
@@ -272,6 +292,33 @@ const Home = () => {
     });
     const regulatoryCompliance =
       buildRegulatoryOperationalReadModel(regulatorySource);
+    const operationalSummary = buildOperationalSummary(
+      {
+        animals: animaisDisponiveis,
+        lotes: lotesDisponiveis,
+        pastos: pastosAtivos,
+        agenda: agendaAberta,
+        eventos: eventosMensais,
+        eventosPesagem: [],
+        eventosFinanceiro: [],
+        gestures: [],
+        rejections: [],
+        protocolosSanitarios: protocolosDisponiveis,
+        protocoloItensSanitarios: protocoloItensDisponiveis,
+        insumos,
+        insumoApresentacoes,
+        insumoLotes,
+        insumoMovimentacoes,
+      },
+      {
+        preset: "30d",
+        from: monthlyPeriod.start,
+        to: monthlyPeriod.end,
+        label: "Mes atual",
+        filenameTag: monthlyPeriod.start.slice(0, 7),
+      },
+      new Date(`${todayKey}T12:00:00`),
+    );
     const proximosItens = agendaAberta
       .slice()
       .sort((left, right) =>
@@ -376,6 +423,7 @@ const Home = () => {
       lifecycleBiologicalCount,
       sanitaryAttention,
       regulatoryCompliance,
+      replenishmentAlerts: operationalSummary.inventory.replenishmentAlerts.slice(0, 5),
       proximosItens,
       eventosRecentes: eventosRecentes.map((evento) => {
         const animal = animaisAtivos.find(
@@ -510,6 +558,19 @@ const Home = () => {
                 regulatoria(s)
               </StatusBadge>
             ) : null}
+            {snapshot.replenishmentAlerts.length > 0 ? (
+              <StatusBadge
+                tone={
+                  snapshot.replenishmentAlerts.some(
+                    (item) => item.severity === "critical",
+                  )
+                    ? "danger"
+                    : "warning"
+                }
+              >
+                {snapshot.replenishmentAlerts.length} reposicao
+              </StatusBadge>
+            ) : null}
           </>
         }
         actions={
@@ -536,7 +597,7 @@ const Home = () => {
         }
       />
 
-      <section className="grid gap-3 md:grid-cols-3 xl:grid-cols-6">
+      <section className="grid gap-3 md:grid-cols-3 xl:grid-cols-7">
         {[
           {
             label: "Atrasadas",
@@ -580,6 +641,19 @@ const Home = () => {
             tone:
               snapshot.sanitaryAttention.criticalCount > 0 ? "danger" : "neutral",
             icon: AlertTriangle,
+          },
+          {
+            label: "Reposicao",
+            value: snapshot.replenishmentAlerts.length,
+            hint: "Estoque no radar",
+            tone: snapshot.replenishmentAlerts.some(
+              (item) => item.severity === "critical",
+            )
+              ? "danger"
+              : snapshot.replenishmentAlerts.length > 0
+                ? "warning"
+                : "neutral",
+            icon: PackageSearch,
           },
         ].map((item) => (
           <Card
@@ -738,6 +812,69 @@ const Home = () => {
       </section>
 
       <OperationalInsightsPanel viewModel={operationalInsights} />
+
+      {snapshot.replenishmentAlerts.length > 0 ? (
+        <Card>
+          <CardHeader>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <CardTitle>Reposicao de estoque</CardTitle>
+              <StatusBadge
+                tone={
+                  snapshot.replenishmentAlerts.some(
+                    (item) => item.severity === "critical",
+                  )
+                    ? "danger"
+                    : "warning"
+                }
+              >
+                {snapshot.replenishmentAlerts.length} alerta
+                {snapshot.replenishmentAlerts.length === 1 ? "" : "s"}
+              </StatusBadge>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {snapshot.replenishmentAlerts.map((item) => (
+              <div
+                key={item.insumoId}
+                className={cn(
+                  "rounded-xl border p-4",
+                  item.severity === "critical"
+                    ? "border-destructive/25 bg-destructive/10"
+                    : "border-warning/20 bg-warning-muted/60",
+                )}
+              >
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="space-y-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="font-medium">{item.insumo}</p>
+                      <StatusBadge
+                        tone={item.severity === "critical" ? "danger" : "warning"}
+                      >
+                        {item.severity === "critical" ? "Critico" : "Atencao"}
+                      </StatusBadge>
+                    </div>
+                    <p className="text-sm leading-6 text-muted-foreground">
+                      {item.reasons.join(" + ")}
+                    </p>
+                  </div>
+                  <div className="text-sm text-muted-foreground sm:text-right">
+                    <p className="font-medium text-foreground">
+                      {item.currentBalanceBase.toLocaleString("pt-BR")}{" "}
+                      {item.unidadeBase}
+                    </p>
+                    <p>
+                      Demanda{" "}
+                      {item.futureDemandBase == null
+                        ? "nao calculada"
+                        : `${item.futureDemandBase.toLocaleString("pt-BR")} ${item.unidadeBase}`}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      ) : null}
 
       {snapshot.sanitaryAttention.totalOpen > 0 ? (
         <Card>

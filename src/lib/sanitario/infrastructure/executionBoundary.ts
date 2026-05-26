@@ -24,6 +24,7 @@ export type SanitaryExecutionBoundaryResult =
   | { status: "skip" }
   | { status: "handled"; eventoId: string }
   | { status: "handled_refresh_failed"; eventoId: string; error: unknown }
+  | { status: "ambiguous"; error: unknown }
   | { status: "fallback"; error: unknown }
   | { status: "error"; error: unknown; message: string };
 
@@ -43,6 +44,20 @@ export type ExecuteSanitaryCompletionInput = {
 
 const getErrorMessage = (error: unknown): string =>
   error instanceof Error ? error.message : String(error);
+
+export function isLikelyCommittedTimeout(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  const message = error.message.toLowerCase();
+
+  return (
+    message.includes("timeout") ||
+    message.includes("timed out") ||
+    message.includes("aborted") ||
+    message.includes("network") ||
+    message.includes("failed to fetch") ||
+    message.includes("load failed")
+  );
+}
 
 export async function executeSanitaryCompletion(
   input: ExecuteSanitaryCompletionInput,
@@ -86,6 +101,13 @@ export async function executeSanitaryCompletion(
       };
     }
   } catch (error) {
+    if (isLikelyCommittedTimeout(error)) {
+      return {
+        status: "ambiguous",
+        error,
+      };
+    }
+
     const shouldFallback = input.shouldFallbackOnError?.(error) ?? true;
 
     if (!shouldFallback) {

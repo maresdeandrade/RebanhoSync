@@ -344,12 +344,14 @@ Status atual:
 - UI operacional `/insumos` adicionada com leitura principal por categorias em abas, filtros secundários por tipo/período/busca, cards com quantidade atual e lançamentos `+/-` do período, entrada inicial de insumo/apresentação/lote, entrada complementar em lote existente, ajuste positivo/negativo auditável e baixa manual explícita por evento confirmado.
 - `/insumos` agora puxa eventos fonte sanitários/nutricionais/pastagem em modo merge e atualiza o catálogo veterinário ao montar, evitando tela sem eventos elegíveis quando aberta diretamente.
 - edição inline de cadastro em `/insumos` permite corrigir nome/categoria/ativo do insumo, nome/fabricante da apresentação e identificação/validade/fabricante/local/status do lote sem alterar saldo, quantidade inicial, unidade base ou movimentações históricas.
-- `Relatorios` inclui resumo operacional de estoque com insumos/lotes ativos, entradas e saídas do período, agregação por categoria, lista de itens/lotes, ressuprimento parametrizado, demanda futura estimada por agenda sanitária aberta válida, saldo/gap por produto e exportação por CSV/impressão.
+- `Relatorios` inclui resumo operacional de estoque com insumos/lotes ativos, entradas e saídas do período, agregação por categoria, lista de itens/lotes, ressuprimento parametrizado, demanda futura estimada por agenda sanitária aberta válida, alerta operacional de reposição, saldo/gap por produto e exportação por CSV/impressão.
 - `/insumos` permite configurar estoque mínimo e ponto de ressuprimento por insumo em `payload.inventory_policy`, preservando saldo como projeção de movimentações e sem criar baixa automática.
+- o fluxo Registrar Sanitário -> Agenda recebeu hardening de idempotência contra double-write: timeouts/network no RPC viram estado ambíguo com retry idempotente, `sync-batch` rejeita duplicidade por agenda já concluída com `agenda_already_completed_by_event`, Dexie faz rollback e pull seletivo de agenda/eventos, e o banco ganhou índice único parcial em `eventos(fazenda_id, source_task_id)` para eventos ativos.
+- o dedup sanitário TS foi endurecido contra dimensões vazias e `parseDedupKey` preserva `periodKey` com `:`, evitando corrupção silenciosa em chaves de evento.
 - Smoke operacional em app real local validou entrada inicial, entrada em lote existente, ajuste negativo, consumo nutricional, consumo sanitário e consumo em ronda de pasto.
 
 Escopo mínimo restante:
-- alerta operacional consolidado de reposição combinando saldo, ressuprimento parametrizado e demanda futura.
+- exposição do alerta de reposição como sinal passivo na Central Operacional/Home.
 
 Requisitos:
 - não fazer estoque fiscal/contábil avançado;
@@ -381,9 +383,9 @@ Considerando o recorte desta proposta, não o produto sanitário completo:
 | Casos sanitários mínimos | 95% | integração veterinária futura quando houver fonte consolidada. |
 | Protocolos clínicos de apoio | 96% | UX fina com dados reais e expansão somente quando houver fonte veterinária validada. |
 | Terapia de Vaca Seca | 99% | smoke visual/operacional em app real executado com Docker/Supabase local, Vite e Chrome/Edge CDP; falta apenas ajuste fino visual com dados beta se surgir atrito. |
-| Estoque MVP sanitário/nutricional | 98% | schema tenant-scoped, RLS, sync/offline, contratos puros, UI operacional por categoria, entradas, ajustes, consumo manual, edição de cadastro, estoque mínimo/ponto de ressuprimento por insumo, relatórios CSV/impressão, demanda futura por agenda válida e smoke real local já existem; ainda falta alerta operacional consolidado de reposição. |
+| Estoque MVP sanitário/nutricional | 100% no recorte MVP | schema tenant-scoped, RLS, sync/offline, contratos puros, UI operacional por categoria, entradas, ajustes, consumo manual, edição de cadastro, estoque mínimo/ponto de ressuprimento por insumo, relatórios CSV/impressão, demanda futura por agenda válida, alerta operacional de reposição e exposição passiva na Home/Central já existem. |
 
-Estimativa objetiva: o refatoramento estrutural sanitário está entre 99% e 100% concluído no núcleo mínimo sem estoque avançado. O recorte de Vaca Seca já tem decisão de exposição controlada e smoke real executado em app local; a frente restante passa a ser refinamento operacional do estoque MVP, começando por alerta operacional consolidado de reposição.
+Estimativa objetiva: o refatoramento estrutural sanitário está entre 99% e 100% concluído no núcleo mínimo sem estoque avançado. O recorte de Vaca Seca já tem decisão de exposição controlada e smoke real executado em app local; o estoque MVP também ficou fechado no recorte passivo/assistido, sem consumo automático.
 
 ## 10. Fora do escopo desta proposta
 
@@ -422,4 +424,4 @@ O núcleo a preservar é:
 - estoque registra insumo real e só baixa por fato/movimentação;
 - catálogo oficial, overlay regulatório e protocolo da fazenda continuam separados.
 
-O próximo passo mais seguro é consolidar alerta operacional de reposição combinando saldo, ponto de ressuprimento e demanda futura.
+O próximo passo mais seguro passa a ser estabilização em uso real do estoque MVP passivo/assistido, antes de qualquer consumo automático configurável.

@@ -25,8 +25,10 @@ import {
   type SanitarySupplyNeedGroup,
 } from "@/lib/insights/sanitarySupplyNeeds";
 import {
+  evaluateInventoryReplenishmentAlert,
   evaluateInventoryResupply,
   parseInventoryResupplyPolicy,
+  type InventoryReplenishmentAlertSeverity,
   type InventoryResupplyStatus,
 } from "@/lib/inventory/resupplyPolicy";
 import { describeSanitaryAgendaScheduleMeta } from "@/lib/sanitario/engine/calendar";
@@ -116,6 +118,8 @@ export interface InventoryReportCategoryRow {
 
 export interface InventoryReportItemRow {
   id: string;
+  insumoId: string | null;
+  productId: string | null;
   categoria: string;
   insumo: string;
   tipo: string;
@@ -132,6 +136,24 @@ export interface InventoryReportItemRow {
   minimumStockBase: number | null;
   reorderPointBase: number | null;
   resupplyGap: number | null;
+}
+
+export interface InventoryReplenishmentAlertRow {
+  insumoId: string;
+  productId: string | null;
+  insumo: string;
+  categoria: string;
+  tipo: string;
+  unidadeBase: string;
+  severity: InventoryReplenishmentAlertSeverity;
+  currentBalanceBase: number;
+  futureDemandBase: number | null;
+  projectedBalanceBase: number | null;
+  minimumStockBase: number | null;
+  reorderPointBase: number | null;
+  currentGapBase: number | null;
+  projectedGapBase: number | null;
+  reasons: string[];
 }
 
 export interface InventoryFutureDemandRow {
@@ -198,6 +220,7 @@ export interface OperationalSummaryReport {
     resupplyConfiguredItems: number;
     resupplyWarningItems: number;
     resupplyCriticalItems: number;
+    replenishmentAlerts: InventoryReplenishmentAlertRow[];
     categorias: InventoryReportCategoryRow[];
     items: InventoryReportItemRow[];
     futureDemand: {
@@ -534,6 +557,8 @@ export function buildOperationalSummary(
 
       return {
         id: lot.id,
+        insumoId: insumo?.id ?? null,
+        productId: insumo?.produto_veterinario_id ?? null,
         categoria: normalizeInventoryCategory(insumo?.categoria),
         insumo: insumo?.nome ?? "Insumo sem cadastro",
         tipo:
@@ -689,6 +714,72 @@ export function buildOperationalSummary(
     (acc, group) => acc + group.missingQuantityCount,
     0,
   );
+  const futureDemandByInventoryItem = new Map<string, number>();
+  for (const demand of futureDemandGroups) {
+    if (demand.estimatedQuantity == null) continue;
+    const demandName = demand.productName.trim().toLowerCase();
+
+    for (const insumo of insumos) {
+      const matchesProduct =
+        demand.productId && insumo.produto_veterinario_id === demand.productId;
+      const matchesName =
+        demandName.length > 0 &&
+        (insumo.nome.trim().toLowerCase() === demandName ||
+          insumo.nome.trim().toLowerCase().includes(demandName));
+      const sameUnit = insumo.unidade_base === demand.productUnit;
+
+      if ((matchesProduct || matchesName) && sameUnit) {
+        futureDemandByInventoryItem.set(
+          insumo.id,
+          (futureDemandByInventoryItem.get(insumo.id) ?? 0) +
+            demand.estimatedQuantity,
+        );
+      }
+    }
+  }
+  const replenishmentAlerts = insumos
+    .filter((insumo) => insumo.ativo)
+    .map<InventoryReplenishmentAlertRow | null>((insumo) => {
+      const currentBalanceBase = inventorySaldoByInsumo.get(insumo.id) ?? 0;
+      const alert = evaluateInventoryReplenishmentAlert({
+        currentBalanceBase,
+        futureDemandBase: futureDemandByInventoryItem.get(insumo.id) ?? null,
+        policy: parseInventoryResupplyPolicy(insumo.payload),
+      });
+
+      if (!alert.severity) return null;
+
+      return {
+        insumoId: insumo.id,
+        productId: insumo.produto_veterinario_id,
+        insumo: insumo.nome,
+        categoria: normalizeInventoryCategory(insumo.categoria),
+        tipo:
+          insumo.tipo === "sanitario"
+            ? "Sanitario"
+            : insumo.tipo === "nutricional"
+              ? "Nutricional"
+              : "Outro",
+        unidadeBase: insumo.unidade_base,
+        severity: alert.severity,
+        currentBalanceBase,
+        futureDemandBase: futureDemandByInventoryItem.get(insumo.id) ?? null,
+        projectedBalanceBase: alert.projectedBalanceBase,
+        minimumStockBase: parseInventoryResupplyPolicy(insumo.payload).minimumStockBase,
+        reorderPointBase: parseInventoryResupplyPolicy(insumo.payload).reorderPointBase,
+        currentGapBase: alert.currentGapBase,
+        projectedGapBase: alert.projectedGapBase,
+        reasons: alert.reasons,
+      };
+    })
+    .filter((item): item is InventoryReplenishmentAlertRow => Boolean(item))
+    .sort((left, right) => {
+      if (left.severity !== right.severity) {
+        return left.severity === "critical" ? -1 : 1;
+      }
+
+      return left.insumo.localeCompare(right.insumo);
+    });
   const sanitaryAttention = summarizeSanitaryAgendaAttention({
     agenda: agendaAberta,
     animals,
@@ -882,6 +973,7 @@ export function buildOperationalSummary(
       resupplyCriticalItems: inventoryItems.filter(
         (item) => item.resupplyStatus === "critical",
       ).length,
+      replenishmentAlerts,
       categorias: inventoryCategories,
       items: inventoryItems,
       futureDemand: {
@@ -992,6 +1084,11 @@ export function buildOperationalSummaryCsv(
     "ressuprimento_critico",
     report.inventory.resupplyCriticalItems,
   );
+  pushRow(
+    "estoque",
+    "alertas_reposicao",
+    report.inventory.replenishmentAlerts.length,
+  );
 
   for (const item of report.inventory.categorias) {
     pushRow(
@@ -1006,6 +1103,14 @@ export function buildOperationalSummaryCsv(
       "estoque_item",
       item.insumo,
       `${item.categoria} | ${item.tipo} | lote ${item.lote} | ${item.apresentacao} | saldo ${item.saldo.toFixed(3)} ${item.unidadeBase} | +${item.entradas.toFixed(3)} | -${item.saidas.toFixed(3)} | ${item.status} | ressuprimento ${item.resupplyStatus} | minimo ${item.minimumStockBase == null ? "" : item.minimumStockBase.toFixed(3)} | ponto ${item.reorderPointBase == null ? "" : item.reorderPointBase.toFixed(3)} | gap ${item.resupplyGap == null ? "" : item.resupplyGap.toFixed(3)}${item.local ? ` | ${item.local}` : ""}`,
+    );
+  }
+
+  for (const item of report.inventory.replenishmentAlerts) {
+    pushRow(
+      "estoque_alerta_reposicao",
+      item.insumo,
+      `${item.severity} | saldo ${item.currentBalanceBase.toFixed(3)} ${item.unidadeBase} | demanda ${item.futureDemandBase == null ? "" : item.futureDemandBase.toFixed(3)} | projetado ${item.projectedBalanceBase == null ? "" : item.projectedBalanceBase.toFixed(3)} | minimo ${item.minimumStockBase == null ? "" : item.minimumStockBase.toFixed(3)} | ponto ${item.reorderPointBase == null ? "" : item.reorderPointBase.toFixed(3)} | ${item.reasons.join(" + ")}`,
     );
   }
 
@@ -1154,6 +1259,27 @@ export function buildOperationalSummaryPrintHtml(
       : `
           <tr>
             <td colspan="5">Sem demanda futura calculavel nos proximos ${report.inventory.futureDemand.horizonDays} dias.</td>
+          </tr>
+        `;
+
+  const replenishmentAlertRows =
+    report.inventory.replenishmentAlerts.length > 0
+      ? report.inventory.replenishmentAlerts
+          .map(
+            (item) => `
+              <tr>
+                <td>${escapeHtml(item.insumo)}</td>
+                <td>${escapeHtml(item.severity === "critical" ? "Critico" : "Atencao")}</td>
+                <td>${item.currentBalanceBase.toLocaleString("pt-BR")} ${escapeHtml(item.unidadeBase)}</td>
+                <td>${item.futureDemandBase == null ? "Sem demanda" : `${item.futureDemandBase.toLocaleString("pt-BR")} ${escapeHtml(item.unidadeBase)}`}</td>
+                <td>${escapeHtml(item.reasons.join(" + "))}</td>
+              </tr>
+            `,
+          )
+          .join("")
+      : `
+          <tr>
+            <td colspan="5">Sem alerta operacional de reposicao.</td>
           </tr>
         `;
 
@@ -1435,6 +1561,19 @@ export function buildOperationalSummaryPrintHtml(
               </tr>
             </thead>
             <tbody>${futureDemandRows}</tbody>
+          </table>
+          <h3>Alertas de reposicao</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Insumo</th>
+                <th>Severidade</th>
+                <th>Saldo atual</th>
+                <th>Demanda futura</th>
+                <th>Motivo</th>
+              </tr>
+            </thead>
+            <tbody>${replenishmentAlertRows}</tbody>
           </table>
         </section>
 
