@@ -108,11 +108,13 @@ Status: **Implementado parcialmente no app** e **referência visual aprovada**.
 
 ## 7. Tipografia
 
-Status: **Referência visual aprovada**.
+Status: **Implementado no app**.
 
-Direção recomendada:
+Direção aplicada:
 
-- fonte principal: Inter ou equivalente sans-serif de alta legibilidade;
+- fonte principal: Inter variable font (via `@fontsource-variable/inter` offline-safe);
+- fonte mono/tabular: JetBrains Mono para IDs, brincos e pesos;
+- escala tipográfica nomeada no `tailwind.config.ts` (`text-display`, `text-h1` a `text-caption`, `text-kicker`);
 - títulos com peso 600/700;
 - métricas com peso alto e tamanho ampliado;
 - labels e metadados com contraste suficiente;
@@ -185,14 +187,16 @@ Status: **Referência visual aprovada**.
 
 ### Cards
 
-Status: **Implementado parcialmente**.
+Status: **Implementado no app**.
 
 - Cards brancos sobre fundo claro;
 - borda suave;
 - sombra discreta;
 - raio arredondado;
 - informação escaneável;
-- hierarquia entre métrica principal e metadados.
+- hierarquia entre métrica principal e metadados;
+- variante `CardField` para listas densas mobile;
+- variante `CardStatus` para estados coloridos (`success | warning | info | danger`).
 
 ### Badges e status
 

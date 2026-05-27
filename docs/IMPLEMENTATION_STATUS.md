@@ -381,6 +381,13 @@ Este documento registra o estado efetivo do RebanhoSync na fase atual de consoli
 - Focused animal/regulatory coverage now also validates animal-centric restriction projection and dedicated export in `src/lib/sanitario/__tests__/regulatoryAnimals.test.ts` plus the query-driven restricted list in `src/pages/__tests__/Animais.test.tsx`.
 - Local validation for this update: `pnpm exec eslint` (changed files), `pnpm exec tsc --noEmit`, `pnpm run build`, `pnpm run lint`, and focused `vitest` suites for agenda/sanitario/relatorios.
 
+## 8.2 Update 2026-05-26 (Design System Fase 1–3)
+- **Tipografia e Tokens:** Fonte Inter offline-safe (`@fontsource-variable/inter`) integrada. Escala tipográfica nomeada (mobile-first) e família monospace (JetBrains Mono) consolidadas no `tailwind.config.ts`.
+- **Primitivos:** Componente `Button` atualizado com nova variant `accent` e área de toque expandida (`h-12` padrão, `h-14` large).
+- **Superfícies:** Componente `Card` estendido com variantes `CardField` (listas densas mobile) e `CardStatus` (comunicação de estado com bordas coloridas).
+- **Padronização:** Implementado plugin ESLint local (`eslint-plugin-ds-tokens`) com a regra `no-hardcoded-colors` para banir cores hex/rgb inline ou em classes utilitárias fora da paleta semântica.
+- **Resíduo:** Documentação interativa via Storybook movida para Tech Debt (TD-032).
+
 ## 8.1 Update 2026-05-20 (Refatoracao Visual SLC / Carga Cognitiva)
 
 - Refatoracao visual SLC aplicada como mudanca de apresentacao, sem alterar regra de negocio, contratos de dados, offline/sync, Supabase, RLS, migrations ou seed.

@@ -49,6 +49,13 @@
   - produto/lote/estoque ainda nao sao entidades completas de rastreabilidade sanitaria;
   - SISBOV/fiscal permanecem fora do core.
 
+### TD-032: Documentação interativa do Design System (Storybook/MDX)
+
+- **Status:** OPEN
+- **Origem:** Implementação do Design System Fase 1–3 (Milestone 14)
+- **Impacto:** Os tokens, primitivos e componentes foram implementados no código (`tailwind.config.ts`, `button.tsx`, `card.tsx`, etc.), mas o item de documentação viva num ambiente como Storybook ficou fora do escopo do Milestone 14 para focar na entrega técnica principal.
+- **Próximo corte:** Configurar Storybook e documentar `Button`, `Card`, `FilterChips`, `SyncStatusBadge` e paleta de cores.
+
 ## CLOSED (Historico Completo)
 
 ### Saneamento sanitario P0-P3
@@ -164,9 +171,9 @@
 
 ## Resumo
 
-- OPEN: `TD-025`, `TD-026`, `TD-027`, `TD-029`, `TD-031`
+- OPEN: `TD-025`, `TD-026`, `TD-027`, `TD-029`, `TD-031`, `TD-032`
 - CLOSED: `TD-001`, `TD-003`, `TD-004`, `TD-006`, `TD-008`, `TD-011`, `TD-014`, `TD-015`, `TD-019`, `TD-020`, `TD-021`, `TD-022`, `TD-023`, `TD-024`, `TD-028`, `TD-030`
-- Total OPEN: `5`
+- Total OPEN: `6`
 
 ## Veja Tambem
 

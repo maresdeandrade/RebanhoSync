@@ -389,6 +389,23 @@ Atualizacao visual SLC 2026-05-20:
 
 ---
 
+## Milestone 14: Design System e Padronização Visual
+
+**Objetivo:** Consolidar a fundação do Design System para garantir consistência tipográfica, acessibilidade, primitivos alinhados com o uso em campo e regras automatizadas de qualidade visual.
+
+**Status:** Concluído em 2026-05-26
+
+### Entregáveis
+
+- [x] Fonte Inter offline-safe via `@fontsource-variable/inter` (DS §3.1).
+- [x] Escala tipográfica nomeada (`text-display`, `text-h1` a `text-caption`) e família mono para dados tabulares no `tailwind.config.ts` (DS §3.2).
+- [x] Variante `accent` no botão e tamanhos base ajustados para alvo de toque mínimo (`h-12` padrão, `h-14` para campos) (DS §7.1, §7.2).
+- [x] Componentes de densidade e status (`CardField`, `CardStatus`) (DS §9.2, §9.3).
+- [x] Regra ESLint customizada (`ds-tokens/no-hardcoded-colors`) para proibir cores hex/rgb hardcoded fora dos tokens semânticos em JSX/TSX.
+- [ ] Documentação interativa em Storybook ou MDX (movido para Tech Debt TD-032).
+
+---
+
 ## Historico de Milestones Concluidos
 
 | Milestone | Escopo | Status |

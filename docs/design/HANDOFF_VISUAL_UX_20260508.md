@@ -14,7 +14,11 @@ Foram aplicados patches de navegação, tema, contraste, entrada contextual segu
 
 | Área | Estado |
 |---|---|
-| Identidade azul Sync Técnico | Aplicada parcialmente via tokens e ajustes visuais |
+| Design System: Tokens e Tipografia | Implementado (Inter font offline-safe, escala nomeada, tokens HSL) |
+| Design System: Primitivos | Implementado (Button com variant accent e alvos de toque ajustados) |
+| Design System: Componentes | Implementado (CardField, CardStatus, SyncStatusBadge, OfflineIndicator, FieldCombobox, FilterChips) |
+| Design System: Padronização | Implementado (ESLint plugin local proíbe hex/rgb hardcoded) |
+| Identidade azul Sync Técnico | Aplicada via tokens e ajustes visuais |
 | Contraste light/dark | Revisado em componentes e telas críticas |
 | Bottom Navigation mobile | Implementada |
 | SideNav desktop/tablet | Preservada |
