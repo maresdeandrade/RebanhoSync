@@ -1,0 +1,12 @@
+{
+  "name": "eslint-plugin-ds-tokens",
+  "version": "1.0.0",
+  "description": "ESLint plugin — proíbe cores hex/rgb hardcoded em JSX (DS RebanhoSync §3 Fase 3)",
+  "type": "module",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js"
+  },
+  "keywords": ["eslint", "eslint-plugin", "design-system", "rebanhosync"],
+  "license": "MIT"
+}

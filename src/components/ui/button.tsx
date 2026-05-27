@@ -11,6 +11,9 @@ const buttonVariants = cva(
       variant: {
         default:
           "bg-primary text-primary-foreground shadow-soft hover:bg-primary/90 active:bg-primary/85",
+        // DS §7.2 — variant accent: ação operacional positiva (registrar evento)
+        accent:
+          "bg-accent text-accent-foreground shadow-soft hover:bg-accent/90 active:bg-accent/85",
         destructive:
           "bg-destructive text-destructive-foreground shadow-soft hover:bg-destructive/90 active:bg-destructive/85",
         outline:
@@ -21,10 +24,12 @@ const buttonVariants = cva(
         link: "text-primary underline-offset-4 hover:underline font-semibold",
       },
       size: {
-        default: "h-11 px-5 py-2.5",
+        // DS §7.1 — default sobe de h-11 (44 px) para h-12 (48 px) — alvo de toque mínimo
+        default: "h-12 px-5 py-2.5",
         sm: "h-9 rounded-lg px-3.5 text-xs",
-        lg: "h-12 rounded-xl px-6 text-base",
-        icon: "h-11 w-11 rounded-xl",
+        // DS §7.1 — lg: 56 px — ação primária em formulário de campo
+        lg: "h-14 rounded-xl px-6 text-base",
+        icon: "h-12 w-12 rounded-xl",
       },
     },
     defaultVariants: {
