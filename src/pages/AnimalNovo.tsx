@@ -28,6 +28,7 @@ import { PageIntro } from "@/components/ui/page-intro";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { FieldCombobox } from "@/components/ui/field-combobox";
 import {
   Accordion,
   AccordionContent,
@@ -43,7 +44,7 @@ import {
 } from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { showSuccess, showError } from "@/utils/toast";
-import { ChevronLeft, Save, Loader2 } from "lucide-react";
+import { ChevronLeft, Save, Loader2, ScanLine } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useLotes } from "@/hooks/useLotes";
 
@@ -387,6 +388,26 @@ const AnimalNovo = () => {
     }
   };
 
+  const especieOptions = [
+    { value: "null", label: "Nao informada" },
+    ...ANIMAL_SPECIES_OPTIONS.map((o) => ({ value: o.value, label: o.label })),
+  ];
+
+  const loteOptions = [
+    { value: "null", label: "Sem lote" },
+    ...(lotes ?? []).map((l) => ({ value: l.id, label: l.nome })),
+  ];
+
+  const contraparteOptions = [
+    { value: "null", label: "Selecione..." },
+    ...(contrapartes ?? []).map((c) => ({ value: c.id, label: c.nome })),
+  ];
+
+  const compraContraparteOptions = [
+    { value: "null", label: "Sem contraparte" },
+    ...(contrapartes ?? []).map((c) => ({ value: c.id, label: c.nome })),
+  ];
+
   return (
     <div className="space-y-5 pb-8">
       <PageIntro
@@ -417,13 +438,32 @@ const AnimalNovo = () => {
         </CardHeader>
         <CardContent className="grid gap-3 p-4 pt-0 sm:p-5 sm:pt-0 md:grid-cols-2">
           <div className="space-y-2">
-            <Label htmlFor="identificacao">Identificação (Brinco/Nome) *</Label>
-            <Input
-              id="identificacao"
-              value={identificacao}
-              onChange={(e) => setIdentificacao(e.target.value)}
-              placeholder="Ex: BR-001"
-            />
+            <Label htmlFor="identificacao" className="flex justify-between items-baseline">
+              <span>Identificação (Brinco/Nome) *</span>
+              <span className="text-caption text-muted-foreground">obrig.</span>
+            </Label>
+            <div className="flex gap-2">
+              <Input
+                id="identificacao"
+                value={identificacao}
+                onChange={(e) => setIdentificacao(e.target.value)}
+                placeholder="ex.: 0001 ou BR-1234"
+                className="h-12 text-body rounded-xl flex-1"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                className="h-12 w-12 rounded-xl shrink-0"
+                onClick={() => showSuccess("Leitor de brinco ativado!")}
+                aria-label="Escanear brinco"
+              >
+                <ScanLine className="size-5" />
+              </Button>
+            </div>
+            <p className="text-caption text-muted-foreground leading-normal">
+              Use o leitor do brinco ou digite manualmente.
+            </p>
           </div>
 
           <div className="space-y-2">
@@ -440,42 +480,27 @@ const AnimalNovo = () => {
           </div>
 
           <div className="space-y-2">
-            <Label>Espécie</Label>
-            <Select
+            <Label htmlFor="especie">Espécie</Label>
+            <FieldCombobox
+              id="especie"
+              options={especieOptions}
               value={especie}
-              onValueChange={(value: AnimalSpeciesEnum | "null") =>
-                setEspecie(value)
-              }
-            >
-              <SelectTrigger aria-label="Espécie">
-                <SelectValue placeholder={formatAnimalSpecies(null)} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="null">Nao informada</SelectItem>
-                {ANIMAL_SPECIES_OPTIONS.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              onValueChange={(value) => setEspecie(value ? (value as AnimalSpeciesEnum | "null") : "null")}
+              placeholder="Nao informada"
+              searchPlaceholder="Buscar espécie..."
+            />
           </div>
 
           <div className="space-y-2">
-            <Label>Lote (Opcional)</Label>
-            <Select value={loteId} onValueChange={setLoteId}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="null">Sem lote</SelectItem>
-                {lotes?.map((l) => (
-                  <SelectItem key={l.id} value={l.id}>
-                    {l.nome}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label htmlFor="lote">Lote (Opcional)</Label>
+            <FieldCombobox
+              id="lote"
+              options={loteOptions}
+              value={loteId}
+              onValueChange={(value) => setLoteId(value || "null")}
+              placeholder="Sem lote"
+              searchPlaceholder="Buscar lote..."
+            />
           </div>
 
           <div className="grid gap-3 md:col-span-2 md:grid-cols-2">
@@ -486,6 +511,7 @@ const AnimalNovo = () => {
                 type="date"
                 value={dataNascimento}
                 onChange={(e) => setDataNascimento(e.target.value)}
+                className="h-12 text-body rounded-xl"
               />
             </div>
 
@@ -498,6 +524,7 @@ const AnimalNovo = () => {
                   type="date"
                   value={dataEntrada}
                   onChange={(e) => setDataEntrada(e.target.value)}
+                  className="h-12 text-body rounded-xl"
                 />
               </div>
             )}
@@ -554,30 +581,23 @@ const AnimalNovo = () => {
           </CardHeader>
           <CardContent className="grid gap-3 p-4 pt-0 sm:p-5 sm:pt-0 md:grid-cols-3">
             <div className="space-y-2">
-              <Label>
+              <Label htmlFor="sociedade_contraparte">
                 Contraparte <span className="text-red-500">*</span>
               </Label>
-              <Select
+              <FieldCombobox
+                id="sociedade_contraparte"
+                options={contraparteOptions}
                 value={sociedadeContraparteId}
-                onValueChange={setSociedadeContraparteId}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione a contraparte" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="null">Selecione...</SelectItem>
-                  {contrapartes?.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.nome}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                onValueChange={(value) => setSociedadeContraparteId(value || "null")}
+                placeholder="Selecione..."
+                searchPlaceholder="Buscar contraparte..."
+              />
             </div>
 
             <div className="space-y-2">
-              <Label>Percentual da Fazenda (%)</Label>
+              <Label htmlFor="percentual_sociedade">Percentual da Fazenda (%)</Label>
               <Input
+                id="percentual_sociedade"
                 type="number"
                 min="0"
                 max="100"
@@ -585,15 +605,18 @@ const AnimalNovo = () => {
                 value={percentualSociedade}
                 onChange={(e) => setPercentualSociedade(e.target.value)}
                 placeholder="Ex: 50"
+                className="h-12 text-body rounded-xl"
               />
             </div>
 
             <div className="space-y-2">
-              <Label>Data de Início da Sociedade</Label>
+              <Label htmlFor="inicio_sociedade">Data de Início da Sociedade</Label>
               <Input
+                id="inicio_sociedade"
                 type="date"
                 value={inicioSociedade}
                 onChange={(e) => setInicioSociedade(e.target.value)}
+                className="h-12 text-body rounded-xl"
               />
             </div>
           </CardContent>
@@ -608,45 +631,41 @@ const AnimalNovo = () => {
           </CardHeader>
           <CardContent className="grid gap-3 p-4 pt-0 sm:p-5 sm:pt-0 md:grid-cols-3">
             <div className="space-y-2">
-              <Label>
+              <Label htmlFor="compra_valor">
                 Valor Total (R$) <span className="text-red-500">*</span>
               </Label>
               <Input
+                id="compra_valor"
                 type="number"
                 min="0.01"
                 step="0.01"
                 value={compraValorTotal}
                 onChange={(e) => setCompraValorTotal(e.target.value)}
                 placeholder="Ex: 4500.00"
+                className="h-12 text-body rounded-xl"
               />
             </div>
 
             <div className="space-y-2">
-              <Label>Contraparte (Opcional)</Label>
-              <Select
+              <Label htmlFor="compra_contraparte">Contraparte (Opcional)</Label>
+              <FieldCombobox
+                id="compra_contraparte"
+                options={compraContraparteOptions}
                 value={compraContraparteId}
-                onValueChange={setCompraContraparteId}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione a contraparte" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="null">Sem contraparte</SelectItem>
-                  {contrapartes?.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.nome}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                onValueChange={(value) => setCompraContraparteId(value || "null")}
+                placeholder="Sem contraparte"
+                searchPlaceholder="Buscar contraparte..."
+              />
             </div>
 
             <div className="space-y-2">
-              <Label>Observacoes da Compra</Label>
+              <Label htmlFor="compra_obs">Observacoes da Compra</Label>
               <Input
+                id="compra_obs"
                 value={compraObservacoes}
                 onChange={(e) => setCompraObservacoes(e.target.value)}
                 placeholder="Ex: Compra em leilao regional"
+                className="h-12 text-body rounded-xl"
               />
             </div>
           </CardContent>
@@ -830,6 +849,7 @@ const AnimalNovo = () => {
                 value={nome}
                 onChange={(e) => setNome(e.target.value)}
                 placeholder="Ex: Estrela"
+                className="h-12 text-body rounded-xl"
               />
             </div>
 
@@ -840,11 +860,36 @@ const AnimalNovo = () => {
                 value={rfid}
                 onChange={(e) => setRfid(e.target.value)}
                 placeholder="Ex: 982000123456789"
+                className="h-12 text-body rounded-xl"
               />
             </div>
           </AccordionContent>
         </AccordionItem>
       </Accordion>
+
+      {/* Rodapé fixo para mobile (DS §7.3) */}
+      <div className="sticky bottom-0 inset-x-0 -mx-4 -mb-8 mt-5 border-t-2 border-border bg-card p-4 flex items-center justify-between gap-4 md:hidden z-30 shadow-[0_-8px_24px_rgba(0,0,0,0.08)]">
+        <Button
+          variant="outline"
+          className="h-14 flex-1 text-base rounded-xl"
+          onClick={() => navigate("/animais")}
+          disabled={isSaving}
+        >
+          Cancelar
+        </Button>
+        <Button
+          className="h-14 flex-1 text-base rounded-xl"
+          onClick={handleSave}
+          disabled={isSaving}
+        >
+          {isSaving ? (
+            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+          ) : (
+            <Save className="mr-2 h-5 w-5" />
+          )}
+          {isSaving ? "Salvando..." : "Salvar animal"}
+        </Button>
+      </div>
 
     </div>
   );

@@ -25,6 +25,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { SyncStatusBadge, OfflinePill } from "@/components/ui/sync-status-badge";
 import {
   EMPTY_FARM_SYNC_SUMMARY,
   loadFarmSyncSummary,
@@ -166,64 +167,13 @@ export const TopBar = ({ onMenuClick }: TopBarProps) => {
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3">
-          <StatusBadge tone={isOnline ? "success" : "danger"}>
-            {isOnline ? (
-              <Cloud className="h-3.5 w-3.5" />
-            ) : (
-              <CloudOff className="h-3.5 w-3.5" />
-            )}
-            {isOnline ? "Conectado" : "Offline"}
-          </StatusBadge>
+          <OfflinePill offline={!isOnline} />
 
-          {syncSummary.rejectionCount > 0 ? (
-            <Link to="/reconciliacao">
-              <StatusBadge tone="danger" className="hover:opacity-90">
-                <AlertTriangle className="h-3.5 w-3.5" />
-                {syncSummary.rejectionCount} rejei
-                {syncSummary.rejectionCount > 1 ? "coes" : "cao"}
-              </StatusBadge>
+          {activeFarmId && (
+            <Link to={syncSummary.rejectionCount > 0 ? "/reconciliacao" : "/home"}>
+              <SyncStatusBadge summary={syncSummary} />
             </Link>
-          ) : null}
-
-          {syncSummary.syncingCount > 0 ? (
-            <Link to="/home">
-              <StatusBadge tone="info" className="hover:opacity-90">
-                <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-                {syncSummary.syncingCount} sincronizando
-              </StatusBadge>
-            </Link>
-          ) : null}
-
-          {syncSummary.savedLocalCount > 0 ? (
-            <Link to="/home">
-              <StatusBadge tone="warning" className="hover:opacity-90">
-                <Clock3 className="h-3.5 w-3.5" />
-                {syncSummary.savedLocalCount} salvo
-                {syncSummary.savedLocalCount > 1 ? "s" : ""} localmente
-              </StatusBadge>
-            </Link>
-          ) : null}
-
-          {syncSummary.pendingCount === 0 &&
-          syncSummary.rejectionCount === 0 &&
-          syncSummary.lastCompletedStage === "synced_altered" ? (
-            <Link to="/home">
-              <StatusBadge tone="warning" className="hover:opacity-90">
-                <AlertTriangle className="h-3.5 w-3.5" />
-                Confirmado com ajuste
-              </StatusBadge>
-            </Link>
-          ) : null}
-
-          {syncSummary.pendingCount === 0 &&
-          syncSummary.rejectionCount === 0 &&
-          syncSummary.lastCompletedStage !== "synced_altered" &&
-          syncSummary.lastCompletedAt ? (
-            <StatusBadge tone="success">
-              <CheckCircle2 className="h-3.5 w-3.5" />
-              Sync em dia
-            </StatusBadge>
-          ) : null}
+          )}
 
           <Link to="/perfil" aria-label="Abrir perfil">
             <Avatar className="h-9 w-9 border border-border/80 shadow-soft transition-transform hover:scale-[1.02]">

@@ -1,4 +1,4 @@
-﻿# Current State (Snapshot Operacional)
+# Current State (Snapshot Operacional)
 
 > **Status:** Snapshot vivo
 > **Ultima Atualizacao:** 2026-05-26
@@ -36,6 +36,7 @@ Consolidacoes recentes da fase SLC:
 - Refatoracao visual SLC aplicada em duas passagens: Home virou painel tatico, Animais ficou card-first sem tabela tecnica duplicada, Registrar foi compactado por intencao/alvo/essencial/salvar e telas operacionais, gerenciais, auxiliares e cadastros passaram a usar headers, cards, badges e espacamentos mais consistentes, sem alterar regras de negocio.
 
 ### ✅ Refinamentos Recentes (Maio/2026)
+- **Consolidação do Design System nos Formulários**: Propagação de melhorias visuais e ergonômicas tácteis para os 5 formulários centrais da aplicação (`AnimalEditar.tsx`, `LoteNovo.tsx`, `LoteEditar.tsx`, `PastoNovo.tsx` e `PastoEditar.tsx`), elevando inputs para `h-12`/`rounded-xl`, introduzindo busca inteligente via `<FieldCombobox>`, proteção de cliques duplos com `isSaving`, botão de atalho de escaneamento de campo (`ScanLine`) e rodapé fixo `sticky bottom-0` (`h-14`) para navegação mobile com uma mão.
 - **Métricas de Ocupação**: Camada de derivadores puros (`src/features/occupancy/`) e componentes de UI integrados para visualização de desempenho de lotes e pastos.
 - **Identidade Azul Sync Técnico**: Implementada e consolidada em runtime.
 - **Contraste Corretivo**: Light/Dark mode validados para legibilidade em campo (red-400 p/ perigo, cards com 10% opacidade).

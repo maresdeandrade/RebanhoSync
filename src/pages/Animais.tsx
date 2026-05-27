@@ -613,6 +613,25 @@ export default function Animais() {
     [nextAgendaSummaries],
   );
 
+  const pendingOps = useLiveQuery(async () => {
+    if (!activeFarmId) return [];
+    return db.queue_ops.where("fazenda_id").equals(activeFarmId).toArray();
+  }, [activeFarmId]);
+
+  const pendingAnimalIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const op of pendingOps ?? []) {
+      if (op.table === "animais") {
+        const id = op.record?.id ?? op.before_snapshot?.id;
+        if (id) ids.add(id);
+      } else {
+        const animalId = op.record?.animal_id ?? op.before_snapshot?.animal_id;
+        if (animalId) ids.add(animalId);
+      }
+    }
+    return ids;
+  }, [pendingOps]);
+
   const calvesByMother = useMemo(() => {
     const map = new Map<string, Animal[]>();
 
@@ -1348,11 +1367,18 @@ export default function Animais() {
                           </div>
                         </div>
                       </div>
-                      <StatusBadge
-                        tone={animal.status === "ativo" ? "success" : "warning"}
-                      >
-                        {animal.status}
-                      </StatusBadge>
+                      <div className="flex flex-col items-end gap-1.5 shrink-0">
+                        <StatusBadge
+                          tone={animal.status === "ativo" ? "success" : "warning"}
+                        >
+                          {animal.status}
+                        </StatusBadge>
+                        {pendingAnimalIds.has(animal.id) && (
+                          <StatusBadge tone="warning">
+                            No aparelho
+                          </StatusBadge>
+                        )}
+                      </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-3 border-t border-border/50 pt-3 text-sm">

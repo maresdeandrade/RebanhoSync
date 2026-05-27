@@ -44,8 +44,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { FieldCombobox } from "@/components/ui/field-combobox";
 import { showSuccess, showError } from "@/utils/toast";
-import { ChevronLeft, Save, Loader2, Trash2 } from "lucide-react";
+import { ChevronLeft, Save, Loader2, Trash2, ScanLine } from "lucide-react";
 import { useLotes } from "@/hooks/useLotes";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -160,7 +161,7 @@ const AnimalEditar = () => {
       .toArray();
   }, [animal?.fazenda_id, id]);
 
-  // Preencher formul ário quando animal carregar
+  // Preencher formulário quando animal carregar
   useEffect(() => {
     if (animal) {
       setIdentificacao(animal.identificacao ?? "");
@@ -210,6 +211,56 @@ const AnimalEditar = () => {
       );
     }
   }, [animal]);
+
+  // Combobox Options Mapping
+  const especieOptions = [
+    { value: "null", label: "Nao informada" },
+    ...ANIMAL_SPECIES_OPTIONS.map((opt) => ({ value: opt.value, label: opt.label }))
+  ];
+
+  const origemOptions = [
+    { value: "null", label: "Não informado" },
+    { value: "nascimento", label: "Nascimento" },
+    { value: "compra", label: "Compra" },
+    { value: "doacao", label: "Doação" },
+    { value: "arrendamento", label: "Arrendamento" },
+    { value: "sociedade", label: "Sociedade" }
+  ];
+
+  const racaOptions = [
+    { value: "null", label: "Nao informada" },
+    ...ANIMAL_BREED_OPTIONS.map((breed) => ({ value: breed.value, label: breed.label }))
+  ];
+
+  const paiOptions = [
+    { value: "null", label: "Desconhecido" },
+    { value: "externo", label: "Externo/IA" },
+    ...(machos?.map((m) => ({ value: m.id, label: m.identificacao })) ?? [])
+  ];
+
+  const maeOptions = [
+    { value: "null", label: "Desconhecido" },
+    { value: "externo", label: "Externa" },
+    ...(femeas?.map((f) => ({ value: f.id, label: f.identificacao })) ?? [])
+  ];
+
+  const destinoProdutivoOptions = [
+    { value: "null", label: "Nao definido" },
+    { value: "reprodutor", label: "Reprodutor" },
+    { value: "rufiao", label: "Rufiao" },
+    { value: "engorda", label: "Engorda" },
+    { value: "abate", label: "Abate" },
+    { value: "venda", label: "Venda" },
+    { value: "descarte", label: "Descarte" }
+  ];
+
+  const statusReprodutivoOptions = [
+    { value: "null", label: "Nao definido" },
+    { value: "candidato", label: "Candidato" },
+    { value: "apto", label: "Apto" },
+    { value: "suspenso", label: "Suspenso" },
+    { value: "inativo", label: "Inativo" }
+  ];
 
   const handleDestinoProdutivoChange = (
     value: DestinoProdutivoAnimalEnum | "null",
@@ -280,9 +331,6 @@ const AnimalEditar = () => {
     }
 
     const now = new Date().toISOString();
-
-    // Lote alterado removido (read-only na UI)
-    const novoLoteId = animal.lote_id ?? null;
 
     setIsSaving(true);
 
@@ -383,6 +431,8 @@ const AnimalEditar = () => {
         return;
       }
       showError("Erro ao atualizar animal.");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -413,6 +463,8 @@ const AnimalEditar = () => {
       setIsSaving(false);
       showError("Erro ao excluir animal.");
       console.error(e);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -420,7 +472,7 @@ const AnimalEditar = () => {
     return (
       <div className="space-y-5 pb-16">
         <PageIntro
-         variant="plain"
+          variant="plain"
           eyebrow="Cadastro animal"
           title="Editar animal"
           actions={
@@ -435,9 +487,9 @@ const AnimalEditar = () => {
   }
 
   return (
-    <div className="space-y-5 pb-8">
+    <div className="space-y-5 pb-16">
       <PageIntro
-       variant="plain"
+        variant="plain"
         eyebrow="Cadastro animal"
         title="Editar animal"
         meta={
@@ -461,6 +513,7 @@ const AnimalEditar = () => {
             <Button
               variant="outline"
               onClick={() => navigate(`/animais/${id}`)}
+              disabled={isSaving}
             >
               <ChevronLeft className="mr-2 h-4 w-4" />
               Voltar
@@ -489,13 +542,15 @@ const AnimalEditar = () => {
               value={identificacao}
               onChange={(e) => setIdentificacao(e.target.value)}
               placeholder="Ex: 001, Brinco 123..."
+              className="h-12 text-body rounded-xl"
+              disabled={isSaving}
             />
           </div>
 
           <div className="space-y-2">
-            <Label>Sexo</Label>
-            <Select value={sexo} onValueChange={(v: "M" | "F") => setSexo(v)}>
-              <SelectTrigger>
+            <Label htmlFor="sexo">Sexo</Label>
+            <Select value={sexo} onValueChange={(v: "M" | "F") => setSexo(v)} disabled={isSaving}>
+              <SelectTrigger id="sexo" className="h-12 rounded-xl">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -506,32 +561,25 @@ const AnimalEditar = () => {
           </div>
 
           <div className="space-y-2">
-            <Label>Espécie</Label>
-            <Select
+            <Label htmlFor="especie">Espécie</Label>
+            <FieldCombobox
+              id="especie"
+              options={especieOptions}
               value={especie}
-              onValueChange={(value: AnimalSpeciesEnum | "null") =>
-                setEspecie(value)
-              }
-            >
-              <SelectTrigger aria-label="Espécie">
-                <SelectValue placeholder={formatAnimalSpecies(null)} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="null">Nao informada</SelectItem>
-                {ANIMAL_SPECIES_OPTIONS.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              onValueChange={(value) => setEspecie(value as AnimalSpeciesEnum || "null")}
+              placeholder="Nao informada"
+              searchPlaceholder="Buscar espécie..."
+              disabled={isSaving}
+            />
           </div>
 
           <div className="space-y-2">
-            <Label>Lote</Label>
+            <Label htmlFor="lote">Lote</Label>
             <Input
+              id="lote"
               value={lotes?.find((l) => l.id === loteId)?.nome ?? "Sem lote"}
               disabled
+              className="h-12 text-body rounded-xl bg-muted/40"
             />
             <p className="text-xs text-muted-foreground mt-1">
               Altere pelo manejo Movimentação.
@@ -553,6 +601,8 @@ const AnimalEditar = () => {
                 type="date"
                 value={dataNascimento}
                 onChange={(e) => setDataNascimento(e.target.value)}
+                className="h-12 text-body rounded-xl"
+                disabled={isSaving}
               />
             </div>
 
@@ -567,46 +617,37 @@ const AnimalEditar = () => {
                   type="date"
                   value={dataEntrada}
                   onChange={(e) => setDataEntrada(e.target.value)}
+                  className="h-12 text-body rounded-xl"
+                  disabled={isSaving}
                 />
               </div>
             )}
           </div>
 
           <div className="space-y-2">
-            <Label>Origem</Label>
-            <Select
+            <Label htmlFor="origem">Origem</Label>
+            <FieldCombobox
+              id="origem"
+              options={origemOptions}
               value={origem}
-              onValueChange={(v: typeof origem) => setOrigem(v)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Como chegou à fazenda?" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="null">Não informado</SelectItem>
-                <SelectItem value="nascimento">Nascimento</SelectItem>
-                <SelectItem value="compra">Compra</SelectItem>
-                <SelectItem value="doacao">Doação</SelectItem>
-                <SelectItem value="arrendamento">Arrendamento</SelectItem>
-                <SelectItem value="sociedade">Sociedade</SelectItem>
-              </SelectContent>
-            </Select>
+              onValueChange={(value) => setOrigem(value as typeof origem || "null")}
+              placeholder="Como chegou à fazenda?"
+              searchPlaceholder="Buscar origem..."
+              disabled={isSaving}
+            />
           </div>
 
           <div className="space-y-2">
-            <Label>Raça</Label>
-            <Select value={raca} onValueChange={setRaca}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione a raca" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="null">Nao informada</SelectItem>
-                {ANIMAL_BREED_OPTIONS.map((breed) => (
-                  <SelectItem key={breed.value} value={breed.value}>
-                    {breed.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label htmlFor="raca">Raça</Label>
+            <FieldCombobox
+              id="raca"
+              options={racaOptions}
+              value={raca}
+              onValueChange={(value) => setRaca(value || "null")}
+              placeholder="Selecione a raça"
+              searchPlaceholder="Buscar raça..."
+              disabled={isSaving}
+            />
           </div>
         </CardContent>
       </Card>
@@ -618,14 +659,15 @@ const AnimalEditar = () => {
         <CardContent className="space-y-3 p-4 pt-0 sm:p-5 sm:pt-0">
           {(idadeMeses === null || (idadeMeses >= 7 && idadeMeses <= 12)) && (
             <div className="space-y-2">
-              <Label>Puberdade confirmada</Label>
+              <Label htmlFor="puberdade">Puberdade confirmada</Label>
               <Select
                 value={puberdadeConfirmada}
                 onValueChange={(value: "null" | "true" | "false") =>
                   setPuberdadeConfirmada(value)
                 }
+                disabled={isSaving}
               >
-                <SelectTrigger>
+                <SelectTrigger id="puberdade" className="h-12 rounded-xl">
                   <SelectValue placeholder="Nao informado" />
                 </SelectTrigger>
                 <SelectContent>
@@ -639,14 +681,15 @@ const AnimalEditar = () => {
 
           {sexo === "M" && (
             <div className="space-y-2">
-              <Label>Castrado</Label>
+              <Label htmlFor="castrado">Castrado</Label>
               <Select
                 value={castrado}
                 onValueChange={(value: "null" | "true" | "false") =>
                   setCastrado(value)
                 }
+                disabled={isSaving}
               >
-                <SelectTrigger>
+                <SelectTrigger id="castrado" className="h-12 rounded-xl">
                   <SelectValue placeholder="Nao informado" />
                 </SelectTrigger>
                 <SelectContent>
@@ -661,14 +704,15 @@ const AnimalEditar = () => {
           {sexo === "F" && isLactationEligible && (
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label>Em lactação</Label>
+                <Label htmlFor="lactacao">Em lactação</Label>
                 <Select
                   value={emLactacao}
                   onValueChange={(value: "null" | "true" | "false") =>
                     setEmLactacao(value)
                   }
+                  disabled={isSaving}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger id="lactacao" className="h-12 rounded-xl">
                     <SelectValue placeholder="Nao informado" />
                   </SelectTrigger>
                   <SelectContent>
@@ -680,12 +724,13 @@ const AnimalEditar = () => {
               </div>
 
               <div className="space-y-2">
-                <Label>Secagem realizada</Label>
+                <Label htmlFor="secagem">Secagem realizada</Label>
                 <Select
                   value={secagemRealizada}
                   onValueChange={handleSecagemRealizadaChange}
+                  disabled={isSaving}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger id="secagem" className="h-12 rounded-xl">
                     <SelectValue placeholder="Nao informado" />
                   </SelectTrigger>
                   <SelectContent>
@@ -706,39 +751,29 @@ const AnimalEditar = () => {
         </CardHeader>
         <CardContent className="grid gap-3 p-4 pt-0 sm:p-5 sm:pt-0 md:grid-cols-2">
           <div className="space-y-2">
-            <Label>Pai (Opcional)</Label>
-            <Select value={paiId} onValueChange={setPaiId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione o pai" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="null">Desconhecido</SelectItem>
-                <SelectItem value="externo">Externo/IA</SelectItem>
-                {machos?.map((m) => (
-                  <SelectItem key={m.id} value={m.id}>
-                    {m.identificacao}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label htmlFor="pai">Pai (Opcional)</Label>
+            <FieldCombobox
+              id="pai"
+              options={paiOptions}
+              value={paiId}
+              onValueChange={(value) => setPaiId(value || "null")}
+              placeholder="Desconhecido"
+              searchPlaceholder="Buscar pai..."
+              disabled={isSaving}
+            />
           </div>
 
           <div className="space-y-2">
-            <Label>Mãe (Opcional)</Label>
-            <Select value={maeId} onValueChange={setMaeId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione a mãe" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="null">Desconhecido</SelectItem>
-                <SelectItem value="externo">Externa</SelectItem>
-                {femeas?.map((f) => (
-                  <SelectItem key={f.id} value={f.id}>
-                    {f.identificacao}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label htmlFor="mae">Mãe (Opcional)</Label>
+            <FieldCombobox
+              id="mae"
+              options={maeOptions}
+              value={maeId}
+              onValueChange={(value) => setMaeId(value || "null")}
+              placeholder="Desconhecido"
+              searchPlaceholder="Buscar mãe..."
+              disabled={isSaving}
+            />
           </div>
         </CardContent>
       </Card>
@@ -749,23 +784,40 @@ const AnimalEditar = () => {
         </CardHeader>
         <CardContent className="grid gap-3 p-4 pt-0 sm:p-5 sm:pt-0 md:grid-cols-2">
           <div className="space-y-2">
-            <Label htmlFor="nome">Nome</Label>
+            <Label htmlFor="nome_popular">Nome</Label>
             <Input
-              id="nome"
+              id="nome_popular"
               value={nome}
               onChange={(e) => setNome(e.target.value)}
               placeholder="Nome popular do animal"
+              className="h-12 text-body rounded-xl"
+              disabled={isSaving}
             />
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="rfid">RFID</Label>
-            <Input
-              id="rfid"
-              value={rfid}
-              onChange={(e) => setRfid(e.target.value)}
-              placeholder="Código RFID"
-            />
+            <div className="flex gap-2">
+              <Input
+                id="rfid"
+                value={rfid}
+                onChange={(e) => setRfid(e.target.value)}
+                placeholder="Código RFID"
+                className="h-12 text-body rounded-xl flex-1"
+                disabled={isSaving}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                className="h-12 w-12 rounded-xl p-0 flex items-center justify-center border-2 border-primary/20 hover:border-primary/50"
+                onClick={() => {
+                  showSuccess("Scanner de campo ativado (Simulação).");
+                }}
+                disabled={isSaving}
+              >
+                <ScanLine className="h-5 w-5 text-primary" />
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -782,56 +834,35 @@ const AnimalEditar = () => {
           </CardHeader>
           <CardContent className="space-y-3 p-4 pt-0 sm:p-5 sm:pt-0">
             <div className="space-y-2">
-              <Label>Destino Produtivo</Label>
-              <Select
+              <Label htmlFor="destino_produtivo">Destino Produtivo</Label>
+              <FieldCombobox
+                id="destino_produtivo"
+                options={destinoProdutivoOptions}
                 value={destinoProdutivo}
-                onValueChange={(value: DestinoProdutivoAnimalEnum | "null") =>
-                  handleDestinoProdutivoChange(value)
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Como este macho sera conduzido?" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="null">Nao definido</SelectItem>
-                  <SelectItem value="reprodutor">Reprodutor</SelectItem>
-                  <SelectItem value="rufiao">Rufiao</SelectItem>
-                  <SelectItem value="engorda">Engorda</SelectItem>
-                  <SelectItem value="abate">Abate</SelectItem>
-                  <SelectItem value="venda">Venda</SelectItem>
-                  <SelectItem value="descarte">Descarte</SelectItem>
-                </SelectContent>
-              </Select>
+                onValueChange={(value) => handleDestinoProdutivoChange(value as DestinoProdutivoAnimalEnum || "null")}
+                placeholder="Como este macho sera conduzido?"
+                searchPlaceholder="Buscar destino..."
+                disabled={isSaving}
+              />
             </div>
 
             <div className="space-y-2">
-              <Label>Status Reprodutivo</Label>
-              <Select
+              <Label htmlFor="status_reprodutivo">Status Reprodutivo</Label>
+              <FieldCombobox
+                id="status_reprodutivo"
+                options={statusReprodutivoOptions}
                 value={statusReprodutivoMacho}
-                onValueChange={(value: StatusReprodutivoMachoEnum | "null") =>
-                  setStatusReprodutivoMacho(value)
+                onValueChange={(value) => setStatusReprodutivoMacho(value as StatusReprodutivoMachoEnum || "null")}
+                placeholder={
+                  destinoProdutivo === "null"
+                    ? "Defina primeiro o destino"
+                    : "Selecione o status"
                 }
-                disabled={!maleBreedingSelected}
-              >
-                <SelectTrigger>
-                  <SelectValue
-                    placeholder={
-                      destinoProdutivo === "null"
-                        ? "Defina primeiro o destino"
-                        : "Selecione o status"
-                    }
-                  />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="null">Nao definido</SelectItem>
-                  <SelectItem value="candidato">Candidato</SelectItem>
-                  <SelectItem value="apto">Apto</SelectItem>
-                  <SelectItem value="suspenso">Suspenso</SelectItem>
-                  <SelectItem value="inativo">Inativo</SelectItem>
-                </SelectContent>
-              </Select>
+                searchPlaceholder="Buscar status..."
+                disabled={isSaving || !maleBreedingSelected}
+              />
               {!maleBreedingSelected && destinoProdutivo !== "null" && (
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-muted-foreground mt-1">
                   Destino nao reprodutivo.
                 </p>
               )}
@@ -853,7 +884,7 @@ const AnimalEditar = () => {
               variant="destructive"
               onClick={handleDelete}
               disabled={isSaving}
-              className="w-full sm:w-auto"
+              className="w-full sm:w-auto h-12 rounded-xl"
             >
               {isSaving ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -865,10 +896,33 @@ const AnimalEditar = () => {
           </CardContent>
         </Card>
       )}
+
+      {/* Rodapé fixo para mobile (DS §7.3) */}
+      <div className="sticky bottom-0 inset-x-0 -mx-4 -mb-16 mt-5 border-t-2 border-border bg-card p-4 flex items-center justify-between gap-4 md:hidden z-30 shadow-[0_-8px_24px_rgba(0,0,0,0.08)]">
+        <Button
+          variant="outline"
+          className="h-14 flex-1 text-base rounded-xl"
+          onClick={() => navigate(`/animais/${id}`)}
+          disabled={isSaving}
+        >
+          Cancelar
+        </Button>
+        <Button
+          className="h-14 flex-1 text-base rounded-xl"
+          onClick={handleSave}
+          disabled={isSaving}
+        >
+          {isSaving ? (
+            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+          ) : (
+            <Save className="mr-2 h-5 w-5" />
+          )}
+          {isSaving ? "Salvando..." : "Salvar alterações"}
+        </Button>
+      </div>
+
     </div>
   );
 };
 
 export default AnimalEditar;
-
-

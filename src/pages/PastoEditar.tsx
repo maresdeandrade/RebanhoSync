@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useLiveQuery } from "dexie-react-hooks";
-import { ChevronLeft, Save } from "lucide-react";
+import { ChevronLeft, Save, Loader2 } from "lucide-react";
 
 import { FormSection } from "@/components/ui/form-section";
 import { PageIntro } from "@/components/ui/page-intro";
@@ -16,6 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { FieldCombobox } from "@/components/ui/field-combobox";
 import { db } from "@/lib/offline/db";
 import { createGesture } from "@/lib/offline/ops";
 import { TipoPastoEnum, InfraestruturaPasto } from "@/lib/offline/types";
@@ -93,6 +94,7 @@ const PastoEditar = () => {
   const [alturaEntrada, setAlturaEntrada] = useState("");
   const [alturaSaida, setAlturaSaida] = useState("");
   const [observacoes, setObservacoes] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
   const [infra, setInfra] = useState<InfraestruturaPasto>({
     cochos: { quantidade: 0, tipo: "", estado: "bom" },
     bebedouros: { quantidade: 0, tipo: "", estado: "bom" },
@@ -124,6 +126,21 @@ const PastoEditar = () => {
       setInfra(infraLocalPasto);
     }
   }, [pasto]);
+
+  const tipoPastoOptions = [
+    { value: "nativo", label: "Nativo" },
+    { value: "cultivado", label: "Cultivado" },
+    { value: "integracao", label: "ILPF / Integracao" },
+    { value: "degradado", label: "Degradado / Recuperacao" },
+  ];
+
+  const forrageiraOptions = [
+    { value: "none", label: "Nao informado" },
+    ...getForrageiraOptions(tipoPasto, forrageiraCultivar).map((opt) => ({
+      value: opt,
+      label: opt,
+    })),
+  ];
 
   const handleInfraChange = (
     category: keyof InfraestruturaPasto,
@@ -203,6 +220,7 @@ const PastoEditar = () => {
       return;
     }
 
+    setIsSaving(true);
     const now = new Date().toISOString();
     const { curral: _legacyCurral, ...infraLocalPasto } = infra;
     const op = {
@@ -233,6 +251,8 @@ const PastoEditar = () => {
       navigate(`/pastos/${id}`);
     } catch {
       showError("Erro ao atualizar pasto.");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -277,13 +297,17 @@ const PastoEditar = () => {
         }
         actions={
           <>
-            <Button variant="outline" onClick={() => navigate(`/pastos/${id}`)}>
+            <Button variant="outline" onClick={() => navigate(`/pastos/${id}`)} disabled={isSaving}>
               <ChevronLeft className="mr-2 h-4 w-4" />
               Voltar
             </Button>
-            <Button onClick={handleSave}>
-              <Save className="mr-2 h-4 w-4" />
-              Salvar alteracoes
+            <Button onClick={handleSave} disabled={isSaving}>
+              {isSaving ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="mr-2 h-4 w-4" />
+              )}
+              {isSaving ? "Salvando..." : "Salvar alteracoes"}
             </Button>
           </>
         }
@@ -305,29 +329,22 @@ const PastoEditar = () => {
                 value={nome}
                 onChange={(event) => setNome(event.target.value)}
                 placeholder="Ex: piquete 1, descanso, reserva..."
+                className="h-12 text-body rounded-xl"
+                disabled={isSaving}
               />
             </div>
 
             <div className="space-y-2">
-              <Label>Tipo de pastagem</Label>
-              <Select
+              <Label htmlFor="tipoPasto">Tipo de pastagem</Label>
+              <FieldCombobox
+                id="tipoPasto"
+                options={tipoPastoOptions}
                 value={tipoPasto}
-                onValueChange={(value: TipoPastoEnum) =>
-                  handleTipoPastoChange(value)
-                }
-              >
-                <SelectTrigger aria-label="Tipo de pastagem">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="nativo">Nativo</SelectItem>
-                  <SelectItem value="cultivado">Cultivado</SelectItem>
-                  <SelectItem value="integracao">ILPF / Integracao</SelectItem>
-                  <SelectItem value="degradado">
-                    Degradado / Recuperacao
-                  </SelectItem>
-                </SelectContent>
-              </Select>
+                onValueChange={(value) => handleTipoPastoChange(value as TipoPastoEnum)}
+                placeholder="Selecione..."
+                searchPlaceholder="Buscar tipo..."
+                disabled={isSaving}
+              />
             </div>
 
             <div className="space-y-2">
@@ -338,6 +355,8 @@ const PastoEditar = () => {
                 step="0.01"
                 value={areaHa}
                 onChange={(event) => setAreaHa(event.target.value)}
+                className="h-12 text-body rounded-xl"
+                disabled={isSaving}
               />
             </div>
 
@@ -349,6 +368,8 @@ const PastoEditar = () => {
                 step="0.1"
                 value={capacidadeUa}
                 onChange={(event) => setCapacidadeUa(event.target.value)}
+                className="h-12 text-body rounded-xl"
+                disabled={isSaving}
               />
             </div>
           </div>
@@ -358,26 +379,15 @@ const PastoEditar = () => {
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="cultivar">Forrageira / cultivar</Label>
-              <Select
+              <FieldCombobox
+                id="cultivar"
+                options={forrageiraOptions}
                 value={forrageiraCultivar || "none"}
-                onValueChange={(value) =>
-                  setForrageiraCultivar(value === "none" ? "" : value)
-                }
-              >
-                <SelectTrigger id="cultivar" aria-label="Forrageira / cultivar">
-                  <SelectValue placeholder="Selecione..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Nao informado</SelectItem>
-                  {getForrageiraOptions(tipoPasto, forrageiraCultivar).map(
-                    (option) => (
-                      <SelectItem key={option} value={option}>
-                        {option}
-                      </SelectItem>
-                    ),
-                  )}
-                </SelectContent>
-              </Select>
+                onValueChange={(value) => setForrageiraCultivar(value === "none" ? "" : value)}
+                placeholder="Selecione..."
+                searchPlaceholder="Buscar forrageira..."
+                disabled={isSaving}
+              />
             </div>
 
             <div className="grid gap-4 grid-cols-2 md:col-span-2">
@@ -390,6 +400,8 @@ const PastoEditar = () => {
                   value={alturaEntrada}
                   onChange={(event) => setAlturaEntrada(event.target.value)}
                   placeholder="Ex: 30"
+                  className="h-12 text-body rounded-xl"
+                  disabled={isSaving}
                 />
               </div>
               <div className="space-y-2">
@@ -401,6 +413,8 @@ const PastoEditar = () => {
                   value={alturaSaida}
                   onChange={(event) => setAlturaSaida(event.target.value)}
                   placeholder="Ex: 15"
+                  className="h-12 text-body rounded-xl"
+                  disabled={isSaving}
                 />
               </div>
             </div>
@@ -412,6 +426,8 @@ const PastoEditar = () => {
                 value={observacoes}
                 onChange={(event) => setObservacoes(event.target.value)}
                 placeholder="Notas operacionais, limites ou contexto de uso."
+                className="min-h-24 rounded-xl text-body"
+                disabled={isSaving}
               />
             </div>
           </div>
@@ -660,6 +676,32 @@ const PastoEditar = () => {
             </div>
           </div>
         </FormSection>
+
+        {/* Rodapé fixo para mobile (DS §7.3) */}
+        <div className="sticky bottom-0 inset-x-0 -mx-4 -mb-16 mt-5 border-t-2 border-border bg-card p-4 flex items-center justify-between gap-4 md:hidden z-30 shadow-[0_-8px_24px_rgba(0,0,0,0.08)]">
+          <Button
+            type="button"
+            variant="outline"
+            className="h-14 flex-1 text-base rounded-xl"
+            onClick={() => navigate(`/pastos/${id}`)}
+            disabled={isSaving}
+          >
+            Cancelar
+          </Button>
+          <Button
+            type="button"
+            className="h-14 flex-1 text-base rounded-xl"
+            onClick={handleSave}
+            disabled={isSaving}
+          >
+            {isSaving ? (
+              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+            ) : (
+              <Save className="mr-2 h-5 w-5" />
+            )}
+            {isSaving ? "Salvando..." : "Salvar alteracoes"}
+          </Button>
+        </div>
       </form>
     </div>
   );
