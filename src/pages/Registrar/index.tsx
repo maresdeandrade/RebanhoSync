@@ -805,6 +805,18 @@ const Registrar = () => {
     [navigate],
   );
 
+  const handleBackFromStep1 = useCallback(() => {
+    if (sourceTaskId) {
+      navigate("/agenda");
+    } else {
+      if (window.history.state && window.history.length > 1) {
+        navigate(-1);
+      } else {
+        navigate("/home");
+      }
+    }
+  }, [navigate, sourceTaskId]);
+
   const handleFinalize = useCallback(async () => {
     if (isFinalizing) return;
 
@@ -1105,6 +1117,7 @@ const Registrar = () => {
           requiresAnimalsForQuickAction={quickActionRequiresAnimals}
           quickActionLabel={quickActionConfig?.label ?? null}
           onNext={advanceFromSelect}
+          onBack={handleBackFromStep1}
         />
       )}
 

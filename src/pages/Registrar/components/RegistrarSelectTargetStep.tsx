@@ -1,4 +1,4 @@
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, ChevronLeft } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -38,6 +38,7 @@ type RegistrarSelectTargetStepProps<QuickActionKey extends string = string> = {
   requiresAnimalsForQuickAction: boolean;
   quickActionLabel: string | null;
   onNext: () => void;
+  onBack: () => void;
 };
 
 export function RegistrarSelectTargetStep<
@@ -112,18 +113,27 @@ export function RegistrarSelectTargetStep<
           </p>
         ) : null}
 
-        <Button
-          className="min-h-12 w-full text-base font-semibold"
-          disabled={
-            !props.selectedLoteId || props.requiresAnimalsForQuickAction
-          }
-          onClick={props.onNext}
-        >
-          {props.quickActionLabel
-            ? `Continuar para ${props.quickActionLabel}`
-            : "Escolher manejo"}{" "}
-          <ChevronRight className="ml-2 h-4 w-4" />
-        </Button>
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <Button
+            variant="outline"
+            className="min-h-12 rounded-xl border-2 px-6"
+            onClick={props.onBack}
+          >
+            <ChevronLeft className="mr-2 h-4 w-4" /> Voltar
+          </Button>
+          <Button
+            className="min-h-12 flex-1 rounded-xl text-base font-semibold"
+            disabled={
+              !props.selectedLoteId || props.requiresAnimalsForQuickAction
+            }
+            onClick={props.onNext}
+          >
+            {props.quickActionLabel
+              ? `Continuar para ${props.quickActionLabel}`
+              : "Escolher manejo"}{" "}
+            <ChevronRight className="ml-2 h-4 w-4" />
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );
