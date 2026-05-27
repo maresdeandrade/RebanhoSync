@@ -18,7 +18,7 @@ export * from "./switch";
 export * from "./form";
 
 // Superfícies / containers
-export * from "./card";        // inclui CardField e CardStatus
+export * from "./card";        // Card, CardField, CardStatus (DS §9.1, §9.2, §9.3)
 export * from "./dialog";
 export * from "./sheet";
 export * from "./popover";

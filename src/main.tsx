@@ -1,4 +1,6 @@
 import { createRoot } from "react-dom/client";
+// DS §3.1 — Inter variable font (offline-safe, via @fontsource-variable/inter)
+import "@fontsource-variable/inter";
 import App from "./App.tsx";
 import "./globals.css";
 import { AuthProvider } from "@/hooks/useAuth";
