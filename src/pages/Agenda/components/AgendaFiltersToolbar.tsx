@@ -62,24 +62,40 @@ export function AgendaFiltersToolbar({
   onClearFilters,
 }: AgendaFiltersToolbarProps) {
   return (
-    <Toolbar className="bg-muted/20 shadow-none">
-      <ToolbarGroup className="flex-1 gap-2">
-        <div className="relative min-w-[220px] flex-1">
-          <Search className="absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            className="pl-9"
-            placeholder="Buscar por tipo, animal ou lote"
-            value={search}
-            onChange={(event) => onSearchChange(event.target.value)}
-          />
-        </div>
+    <div className="space-y-3">
+      <Toolbar className="bg-muted/20 shadow-none border-none p-0">
+        <ToolbarGroup className="flex-1 gap-2">
+          <div className="relative min-w-[220px] flex-1">
+            <Search className="absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              className="pl-9 bg-background"
+              placeholder="Buscar por tipo, animal ou lote"
+              value={search}
+              onChange={(event) => onSearchChange(event.target.value)}
+            />
+          </div>
+          <Select value={groupMode} onValueChange={(value) => onGroupModeChange(value as GroupMode)}>
+            <SelectTrigger className="w-[180px] bg-background">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="animal">Agrupar por animal</SelectItem>
+              <SelectItem value="evento">Agrupar por evento</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button variant="ghost" size="sm" onClick={onClearFilters} className="text-muted-foreground hover:text-foreground">
+            Limpar
+          </Button>
+        </ToolbarGroup>
+      </Toolbar>
 
+      <div className="flex flex-wrap items-center gap-2">
         <Select
           value={statusFilter}
           onValueChange={(value) => onStatusFilterChange(value as AgendaStatusFilter)}
         >
-          <SelectTrigger className="w-full sm:w-[170px]">
-            <SelectValue />
+          <SelectTrigger className="h-8 w-fit min-w-[140px] border-none bg-muted/50 hover:bg-muted text-xs">
+            <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todos os status</SelectItem>
@@ -90,8 +106,8 @@ export function AgendaFiltersToolbar({
         </Select>
 
         <Select value={dominioFilter} onValueChange={onDominioFilterChange}>
-          <SelectTrigger className="w-full sm:w-[170px]">
-            <SelectValue />
+          <SelectTrigger className="h-8 w-fit min-w-[140px] border-none bg-muted/50 hover:bg-muted text-xs">
+            <SelectValue placeholder="Domínio" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todos os domínios</SelectItem>
@@ -110,8 +126,8 @@ export function AgendaFiltersToolbar({
             onQuickCalendarModeFilterChange(value as AgendaCalendarModeQuickFilter)
           }
         >
-          <SelectTrigger className="w-full sm:w-[190px]">
-            <SelectValue />
+          <SelectTrigger className="h-8 w-fit min-w-[140px] border-none bg-muted/50 hover:bg-muted text-xs">
+            <SelectValue placeholder="Calendário" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todos os calendários</SelectItem>
@@ -123,80 +139,25 @@ export function AgendaFiltersToolbar({
           </SelectContent>
         </Select>
 
-        <Select
-          value={quickCalendarAnchorFilter}
-          onValueChange={(value) =>
-            onQuickCalendarAnchorFilterChange(value as AgendaCalendarAnchorQuickFilter)
-          }
-        >
-          <SelectTrigger className="w-full sm:w-[190px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todas as âncoras</SelectItem>
-            <SelectItem value="sem_ancora">Sem âncora</SelectItem>
-            <SelectItem value="nascimento">Nascimento</SelectItem>
-            <SelectItem value="desmama">Desmama</SelectItem>
-            <SelectItem value="parto_previsto">Parto previsto</SelectItem>
-            <SelectItem value="entrada_fazenda">Entrada na fazenda</SelectItem>
-            <SelectItem value="movimentacao">Movimentação</SelectItem>
-            <SelectItem value="diagnostico_evento">Diagnóstico de evento</SelectItem>
-            <SelectItem value="conclusao_etapa_dependente">Conclusão de etapa anterior</SelectItem>
-            <SelectItem value="ultima_conclusao_mesma_familia">Última conclusão da mesma família</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <Select
-          value={quickOperationalClassFilter}
-          onValueChange={(value) =>
-            onQuickOperationalClassFilterChange(value as AgendaOperationalClassQuickFilter)
-          }
-        >
-          <SelectTrigger className="w-full sm:w-[210px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todas as classes</SelectItem>
-            <SelectItem value="operational_protocol">Protocolo operacional</SelectItem>
-            <SelectItem value="clinical_protocol">Protocolo clinico</SelectItem>
-            <SelectItem value="notifiable_suspicion">Suspeita notificavel</SelectItem>
-            <SelectItem value="compliance_check">Compliance/checklist</SelectItem>
-            <SelectItem value="execution_only">Execucao avulsa</SelectItem>
-            <SelectItem value="inventory_signal">Sinal de insumo</SelectItem>
-            <SelectItem value="unknown">Nao classificado</SelectItem>
-          </SelectContent>
-        </Select>
-      </ToolbarGroup>
-
-      <ToolbarGroup className="gap-2">
-        <Input
-          type="date"
-          value={dateFrom}
-          onChange={(event) => onDateFromChange(event.target.value)}
-          className="w-full sm:w-[160px]"
-          aria-label="Data inicial"
-        />
-        <Input
-          type="date"
-          value={dateTo}
-          onChange={(event) => onDateToChange(event.target.value)}
-          className="w-full sm:w-[160px]"
-          aria-label="Data final"
-        />
-        <Select value={groupMode} onValueChange={(value) => onGroupModeChange(value as GroupMode)}>
-          <SelectTrigger className="w-full sm:w-[170px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="animal">Agrupar por animal</SelectItem>
-            <SelectItem value="evento">Agrupar por evento</SelectItem>
-          </SelectContent>
-        </Select>
-        <Button variant="outline" size="sm" onClick={onClearFilters}>
-          Limpar filtros
-        </Button>
-      </ToolbarGroup>
-    </Toolbar>
+        <div className="flex items-center gap-1 bg-muted/50 rounded-md px-2 py-1">
+          <Input
+            type="date"
+            value={dateFrom}
+            onChange={(event) => onDateFromChange(event.target.value)}
+            className="h-6 w-[120px] border-none bg-transparent p-0 text-xs focus-visible:ring-0"
+            aria-label="Data inicial"
+          />
+          <span className="text-[10px] text-muted-foreground">até</span>
+          <Input
+            type="date"
+            value={dateTo}
+            onChange={(event) => onDateToChange(event.target.value)}
+            className="h-6 w-[120px] border-none bg-transparent p-0 text-xs focus-visible:ring-0"
+            aria-label="Data final"
+          />
+        </div>
+      </div>
+    </div>
   );
 }
 

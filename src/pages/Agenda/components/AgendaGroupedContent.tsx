@@ -77,28 +77,25 @@ export function AgendaGroupedContent({
   return (
     <>
       {criticalTargets.length > 0 ? (
-        <Card className="border-destructive/25 bg-destructive/10 shadow-none">
+        <Card className="border-destructive/20 bg-destructive/5 shadow-none overflow-hidden">
           <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="space-y-1">
               <div className="flex flex-wrap items-center gap-2">
-                <StatusBadge tone="danger">{criticalTargets.length} grupo(s) atrasado(s)</StatusBadge>
+                <StatusBadge tone="danger" className="font-bold">{criticalTargets.length} grupo(s) com tarefas atrasadas</StatusBadge>
                 {currentCriticalTarget ? (
-                  <StatusBadge tone="info">Foco: {currentCriticalTarget.groupTitle}</StatusBadge>
+                  <StatusBadge tone="info" className="font-medium">Foco: {currentCriticalTarget.groupTitle}</StatusBadge>
                 ) : null}
               </div>
-              <p className="text-sm text-muted-foreground">
-                Use os atalhos para saltar entre os grupos mais urgentes do recorte atual.
-              </p>
-              <p className="text-xs text-muted-foreground">
-                "Registrar" abre o formulário completo; "Executar" gera evento imediato; "Encerrar" fecha a pendência.
+              <p className="text-sm text-muted-foreground leading-tight">
+                Há manejos pendentes que precisam de atenção imediata.
               </p>
             </div>
-            <div className="flex flex-wrap gap-2">
-              <Button type="button" variant="outline" size="sm" onClick={() => onNavigateCriticalGroup("previous")}>
-                Crítico anterior
+            <div className="flex items-center gap-2">
+              <Button type="button" variant="outline" size="sm" onClick={() => onNavigateCriticalGroup("previous")} className="flex-1 sm:flex-none">
+                Anterior
               </Button>
-              <Button type="button" size="sm" onClick={() => onNavigateCriticalGroup("next")}>
-                Próximo crítico
+              <Button type="button" size="sm" onClick={() => onNavigateCriticalGroup("next")} className="flex-1 sm:flex-none">
+                Próximo
               </Button>
             </div>
           </CardContent>
@@ -106,11 +103,15 @@ export function AgendaGroupedContent({
       ) : null}
 
       {filteredLength === 0 ? (
-        <Card>
-          <CardContent className="p-10 text-center">
-            <ClipboardCheck className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
-            <p className="font-medium">Nenhum item encontrado</p>
-            <p className="text-sm text-muted-foreground">Ajuste os filtros para localizar tarefas da agenda.</p>
+        <Card className="border-dashed bg-muted/10">
+          <CardContent className="p-12 text-center">
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+              <ClipboardCheck className="h-6 w-6 text-muted-foreground" />
+            </div>
+            <p className="font-semibold text-lg">Nenhuma tarefa encontrada</p>
+            <p className="text-sm text-muted-foreground max-w-[280px] mx-auto mt-1">
+              Não há manejos agendados para os filtros selecionados no momento.
+            </p>
           </CardContent>
         </Card>
       ) : (
