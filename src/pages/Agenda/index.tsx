@@ -28,6 +28,7 @@ import { AgendaGroupedContent } from "@/pages/Agenda/components/AgendaGroupedCon
 import { AgendaLifecycleSummaryPanel } from "@/pages/Agenda/components/AgendaLifecycleSummaryPanel";
 import { AgendaOverviewHeader } from "@/pages/Agenda/components/AgendaOverviewHeader";
 import { AgendaStatusMetrics } from "@/pages/Agenda/components/AgendaStatusMetrics";
+import { AgendaEmptyState } from "@/pages/Agenda/components/AgendaEmptyState";
 import { SanitaryAgendaDiagnosticsPanel } from "@/components/sanitario/SanitaryAgendaDiagnosticsPanel";
 import { buildSanitaryAgendaDiagnostics } from "@/lib/sanitario/operations/agendaDiagnostics";
 import {
@@ -477,28 +478,14 @@ export default function Agenda() {
         />
       ) : null}
 
-      {data.itens.length === 0 ? (
-        <EmptyState
-          icon={Calendar}
-          title="Agenda vazia"
-          description={
-            hasComplianceAttention
-              ? "Ha pendencias de conformidade fora da agenda."
-              : "Registre eventos ou ative protocolos para alimentar a rotina."
-          }
-          action={{
-            label: hasComplianceAttention ? "Abrir protocolos" : "Registrar",
-            onClick: () =>
-              navigate(
-                hasComplianceAttention
-                  ? "/protocolos-sanitarios"
-                  : "/registrar",
-              ),
-          }}
-        />
-      ) : null}
+      <AgendaEmptyState
+        hasItems={data.itens.length > 0}
+        hasComplianceAttention={hasComplianceAttention}
+        onOpenProtocols={() => navigate("/protocolos-sanitarios")}
+        onGoToRegistrar={() => navigate("/registrar")}
+      />
 
-      {data.itens.length === 0 ? null : (
+      {data.itens.length > 0 && (
         <>
           <AgendaFiltersToolbar
             search={search}

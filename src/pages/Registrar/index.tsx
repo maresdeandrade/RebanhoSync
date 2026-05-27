@@ -94,6 +94,9 @@ import {
 } from "@/pages/Registrar/helpers/financialNature";
 import { useRegistrarActionSectionState } from "@/pages/Registrar/useRegistrarActionSectionState";
 import { useRegistrarShellState } from "@/pages/Registrar/useRegistrarShellState";
+import { RegistrarContextSummary } from "@/pages/Registrar/components/RegistrarContextSummary";
+import { RegistrarStickyActionBar } from "@/pages/Registrar/components/RegistrarStickyActionBar";
+import { RegistrarStepIndicator } from "@/pages/Registrar/components/RegistrarStepIndicator";
 
 const SEM_LOTE_OPTION = "__sem_lote__";
 
@@ -1000,99 +1003,19 @@ const Registrar = () => {
         }
       />
 
-      {hasRegistrarDisplayContext ? (
-        <div className="space-y-3 rounded-xl border border-border bg-muted/20 p-3 text-sm text-foreground">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-2 font-medium">
-              <Info className="h-4 w-4 text-muted-foreground" />
-              Contexto
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowTechDetails(!showTechDetails)}
-              className="h-8 text-xs text-muted-foreground"
-            >
-              {showTechDetails
-                ? "Ocultar detalhes técnicos"
-                : "Ver detalhes técnicos"}
-            </Button>
-          </div>
-          {registrarContextRecords === undefined ? (
-            <p className="text-muted-foreground">Carregando contexto...</p>
-          ) : (
-            <div className="flex flex-wrap gap-2">
-              {registrarDisplayContext.map((entry) => (
-                <div
-                  key={`${entry.kind}-${entry.id}`}
-                  className={cn(
-                    "flex flex-col gap-1 rounded-lg border px-3 py-2",
-                    entry.found
-                      ? "bg-background"
-                      : "border-warning/30 bg-warning/10",
-                  )}
-                >
-                  <span className="text-[10px] font-medium uppercase text-muted-foreground">
-                    {entry.title}
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <Badge
-                      variant="outline"
-                      className="text-foreground bg-muted/50 font-normal"
-                    >
-                      {entry.description}
-                    </Badge>
-                  </div>
-                  {showTechDetails && (
-                    <span className="text-[10px] text-muted-foreground/70 font-mono mt-1">
-                      ID: {entry.id}
-                    </span>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      ) : null}
+      <RegistrarContextSummary
+        hasRegistrarDisplayContext={hasRegistrarDisplayContext}
+        registrarContextRecords={registrarContextRecords}
+        registrarDisplayContext={registrarDisplayContext}
+        showTechDetails={showTechDetails}
+        setShowTechDetails={setShowTechDetails}
+      />
 
-      <div className="grid grid-cols-3 gap-2">
-        {REGISTRATION_STEPS.map((currentStep) => {
-          const isActive = step === currentStep;
-          const isCompleted = step > currentStep;
-          return (
-            <div
-              key={currentStep}
-              className={cn(
-                "flex min-w-0 items-center rounded-xl border px-2 py-2 transition-colors sm:px-3",
-                isActive || isCompleted
-                  ? "border-primary/25 bg-primary/5"
-                  : "border-border/70 bg-card text-muted-foreground",
-              )}
-            >
-              <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-                <span
-                  className={cn(
-                    "grid h-7 w-7 shrink-0 place-items-center rounded-full text-xs sm:h-8 sm:w-8 sm:text-sm",
-                    isActive || isCompleted
-                      ? "bg-primary font-bold text-primary-foreground"
-                      : "border border-border font-semibold text-muted-foreground",
-                  )}
-                >
-                  {isCompleted ? <Check className="h-4 w-4" /> : currentStep}
-                </span>
-                <div className="min-w-0">
-                  <p className="hidden truncate text-[10px] font-semibold uppercase text-muted-foreground sm:block">
-                    Etapa {currentStep}
-                  </p>
-                  <p className="truncate text-xs font-medium text-foreground sm:mt-0.5 sm:text-sm">
-                    {STEP_LABEL[currentStep]}
-                  </p>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
+      <RegistrarStepIndicator
+        step={step}
+        registrationSteps={REGISTRATION_STEPS}
+        stepLabels={STEP_LABEL}
+      />
 
       {step === RegistrationStep.SELECT_ANIMALS && (
         <RegistrarSelectTargetStep
@@ -1177,25 +1100,17 @@ const Registrar = () => {
               />
             )}
 
-            <div className="sticky bottom-0 z-40 bg-card py-3 border-t mt-4 -mx-4 px-4 -mb-4 rounded-b-xl shadow-[0_-10px_20px_-10px_rgba(0,0,0,0.1)] sm:-mx-5 sm:px-5 sm:-mb-5">
-              {actionStepIssues.length > 0 ? (
-                <div className="mb-4 rounded-xl border border-destructive/25 bg-destructive/10 p-3 text-sm font-medium text-destructive">
-                  {actionStepIssues[0]}
-                </div>
-              ) : null}
-              <div className="flex flex-col gap-3 sm:flex-row">
-                <Button variant="outline" onClick={goToSelectAnimals}>
-                  <ChevronLeft className="mr-2 h-4 w-4" /> Voltar
-                </Button>
-                <Button
-                  className="flex-1"
-                  disabled={!tipoManejo || !canAdvanceToConfirm}
-                  onClick={goToConfirm}
-                >
-                  Revisar informações <ChevronRight className="ml-2 h-4 w-4" />
-                </Button>
-              </div>
-            </div>
+            <RegistrarStickyActionBar
+              step={step}
+              isFinalizing={isFinalizing}
+              canAdvanceToConfirm={canAdvanceToConfirm}
+              tipoManejo={tipoManejo}
+              sourceTaskId={sourceTaskId}
+              actionStepIssues={actionStepIssues}
+              onBack={goToSelectAnimals}
+              onNext={goToConfirm}
+              onFinalize={handleFinalize}
+            />
           </CardContent>
         </Card>
       )}
@@ -1251,25 +1166,17 @@ const Registrar = () => {
               )}
             </div>
 
-            <div className="sticky bottom-0 z-40 bg-card py-3 border-t mt-4 -mx-4 px-4 -mb-4 rounded-b-xl shadow-[0_-10px_20px_-10px_rgba(0,0,0,0.1)] sm:-mx-5 sm:px-5 sm:-mb-5">
-              <div className="flex flex-col gap-3 sm:flex-row">
-                <Button variant="outline" onClick={goToChooseAction}>
-                  <ChevronLeft className="mr-2 h-4 w-4" /> Voltar
-                </Button>
-                <Button
-                  className="min-h-12 flex-1 text-base font-semibold shadow-sm"
-                  onClick={handleFinalize}
-                  disabled={isFinalizing}
-                >
-                  <Check className="mr-2 h-4 w-4" />{" "}
-                  {isFinalizing
-                    ? "Registrando..."
-                    : sourceTaskId
-                      ? "Registrar manejo e voltar para agenda"
-                      : "Registrar manejo"}
-                </Button>
-              </div>
-            </div>
+            <RegistrarStickyActionBar
+              step={step}
+              isFinalizing={isFinalizing}
+              canAdvanceToConfirm={canAdvanceToConfirm}
+              tipoManejo={tipoManejo}
+              sourceTaskId={sourceTaskId}
+              actionStepIssues={actionStepIssues}
+              onBack={goToChooseAction}
+              onNext={goToConfirm}
+              onFinalize={handleFinalize}
+            />
           </CardContent>
         </Card>
       )}
