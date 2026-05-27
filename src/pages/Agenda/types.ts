@@ -1,4 +1,7 @@
-import type { AgendaScheduleBucket } from "@/lib/agenda/groupOrdering";
+import type {
+  AgendaScheduleBucket,
+  AgendaGroupSortMeta,
+} from "@/lib/agenda/groupOrdering";
 import type {
   AgendaSummaryBadge,
   AgendaAnimalGroupSummary,
@@ -87,14 +90,7 @@ export type AgendaAnimalGroup = {
   visibleRows: AgendaRow[];
   animal: Animal | null;
   summary: AgendaAnimalGroupSummary;
-  sortMeta: {
-    hasOverdue: boolean;
-    hasToday: boolean;
-    pendingCount: number;
-    firstPendingDate: string | null;
-    firstDate: string | null;
-    severityRank: number;
-  };
+  sortMeta: AgendaGroupSortMeta;
 };
 
 export type AgendaEventGroup = {
@@ -105,12 +101,5 @@ export type AgendaEventGroup = {
   visibleRows: AgendaRow[];
   earliestDate: string;
   summary: AgendaEventGroupSummary;
-  sortMeta: {
-    hasOverdue: boolean;
-    hasToday: boolean;
-    pendingCount: number;
-    firstPendingDate: string | null;
-    firstDate: string | null;
-    severityRank: number;
-  };
+  sortMeta: AgendaGroupSortMeta;
 };
