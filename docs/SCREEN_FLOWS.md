@@ -161,32 +161,32 @@
 - Badges: total de itens, conformidade, transições de estágio
 
 **Métricas de Status:**
-- Agendado, Concluído, Cancelado
+- Grid compacto de Agendados, Concluídos e Cancelados com destaque numérico e visual.
 
 **Painel de Compliance:**
-- Alertas regulatórios
-- Botão "Abrir overlay de conformidade"
+- Alertas regulatórios e pendências de conformidade integradas.
 
 **Painel de Lifecycle:**
-- Transições de estágio pendentes
+- Transições de estágio e alertas biológicos/estratégicos.
 
-**Toolbar de Filtros:**
-- Busca por texto
-- Filtro por status (agendado/concluído/cancelado)
-- Filtro por domínio (sanitário/pesagem/movimentação/etc.)
-- Filtro por calendário (campanha/janela etária/recorrente)
-- Filtro de data (de/até)
-- Modo de agrupamento (por animal/por evento)
+**Toolbar de Filtros (Compacta):**
+- Busca por texto (tipo, animal ou lote).
+- Modo de agrupamento (animal/evento) em destaque.
+- Filtros secundários sutis: Status, Domínio, Calendário.
+- Seletor de período (De/Até) integrado e simplificado.
 
-**Conteúdo Agrupado:**
-- Itens de agenda agrupados por animal ou evento
-- Cada item mostra: data, título, contexto, status, indicação, produto
-- Ações: Executar, Navegar para evento, Navegar para animal
+**Conteúdo Agrupado e Cards de Manejo:**
+- Barra de navegação crítica para saltar entre grupos atrasados.
+- Cards com hierarquia clara: Tipo de manejo como título, contexto de animal/lote/data com ícones.
+- Destaque visual para prazos (atrasado/vencendo).
+- Detalhes técnicos (IDs, protocolos, origem) recolhidos por padrão (*Progressive Disclosure*).
+- Ações primárias claras: "Revisar no Registrar" e "Concluir tarefa".
 
 **Interações:**
-- Clique em item → expande detalhes
-- Botão "Executar" → marca como concluído (com gesture)
-- Clique em animal → navega para `/animais/:id`
+- Clique em "Ver detalhes técnicos" → expande metadados de auditoria.
+- Botão "Revisar no Registrar" → abre fluxo completo preservando `sourceTaskId`.
+- Botão "Concluir tarefa" → conclusão direta (gera evento sanitário se aplicável).
+- Menu de ações secundárias (Dropdown): cancelar, ver evento original, abrir ficha do animal.
 
 **Transições:**
 - → `/registrar?sourceTaskId=xxx` (executar da agenda)
