@@ -1,5 +1,6 @@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -49,20 +50,24 @@ export function FinanceiroCompraAnimaisSection(
             }
             placeholder={`Identificacao do animal ${index + 1}`}
           />
-          <Select
-            value={draft.sexo}
-            onValueChange={(value) =>
-              props.onSexoChange(draft.localId, value as RegistrarSexo)
-            }
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="F">Femea</SelectItem>
-              <SelectItem value="M">Macho</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="grid grid-cols-2 gap-1">
+            <Button
+              type="button"
+              variant={draft.sexo === "F" ? "default" : "outline"}
+              className="h-10 text-xs px-1 rounded-lg"
+              onClick={() => props.onSexoChange(draft.localId, "F")}
+            >
+              F
+            </Button>
+            <Button
+              type="button"
+              variant={draft.sexo === "M" ? "default" : "outline"}
+              className="h-10 text-xs px-1 rounded-lg"
+              onClick={() => props.onSexoChange(draft.localId, "M")}
+            >
+              M
+            </Button>
+          </div>
           <Select
             value={draft.raca ?? "null"}
             onValueChange={(value) =>

@@ -21,6 +21,7 @@ export function RegistrarNutricaoSection(props: RegistrarNutricaoSectionProps) {
         <Label>Alimento</Label>
         <Input
           className={cn(
+            "h-12 rounded-xl bg-background",
             props.nutricaoAlimentoMissing && "border-destructive focus-visible:ring-destructive/30",
           )}
           value={props.alimentoNome}
@@ -35,6 +36,7 @@ export function RegistrarNutricaoSection(props: RegistrarNutricaoSectionProps) {
         <Label>Quantidade (kg)</Label>
         <Input
           className={cn(
+            "h-12 rounded-xl bg-background",
             props.nutricaoQuantidadeInvalida && "border-destructive focus-visible:ring-destructive/30",
           )}
           type="number"

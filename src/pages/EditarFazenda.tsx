@@ -22,6 +22,7 @@ import {
   resolveEventosRolloutFlags,
   withEventosRolloutFlags,
 } from "@/lib/events/featureFlags";
+import { cn } from "@/lib/utils";
 import {
   resolveFarmExperienceMode,
   withFarmExperienceMode,
@@ -308,6 +309,7 @@ export default function EditarFazenda() {
               <Label htmlFor="farm-name">Nome da fazenda</Label>
               <Input
                 id="farm-name"
+                className="h-12 rounded-xl bg-background"
                 value={form.nome}
                 onChange={(event) => updateField("nome", event.target.value)}
                 placeholder="Ex.: Fazenda Santa Clara"
@@ -319,6 +321,7 @@ export default function EditarFazenda() {
               <Label htmlFor="farm-code">Codigo interno</Label>
               <Input
                 id="farm-code"
+                className="h-12 rounded-xl bg-background"
                 value={form.codigo}
                 onChange={(event) => updateField("codigo", event.target.value)}
                 placeholder="Ex.: FSC-001"
@@ -330,6 +333,7 @@ export default function EditarFazenda() {
               <Label htmlFor="farm-cep">CEP</Label>
               <Input
                 id="farm-cep"
+                className="h-12 rounded-xl bg-background"
                 value={form.cep}
                 onChange={(event) => {
                   let value = event.target.value.replace(/\D/g, "");
@@ -348,6 +352,7 @@ export default function EditarFazenda() {
               <Label htmlFor="farm-city">Municipio</Label>
               <Input
                 id="farm-city"
+                className="h-12 rounded-xl bg-background"
                 value={form.municipio}
                 onChange={(event) =>
                   updateField("municipio", event.target.value)
@@ -366,7 +371,7 @@ export default function EditarFazenda() {
                 }
                 disabled={isSaving}
               >
-                <SelectTrigger>
+                <SelectTrigger className="h-12 rounded-xl bg-background">
                   <SelectValue placeholder="Selecione o estado" />
                 </SelectTrigger>
                 <SelectContent>
@@ -391,6 +396,7 @@ export default function EditarFazenda() {
                 type="number"
                 min="0"
                 step="0.01"
+                className="h-12 rounded-xl bg-background"
                 value={form.areaTotalHa}
                 onChange={(event) =>
                   updateField("areaTotalHa", event.target.value)
@@ -402,56 +408,64 @@ export default function EditarFazenda() {
 
             <div className="space-y-2">
               <Label>Tipo de producao</Label>
-              <Select
-                value={form.tipoProducao || "none"}
-                onValueChange={(value) =>
-                  updateField(
-                    "tipoProducao",
-                    value === "none"
-                      ? ""
-                      : (value as FarmFormState["tipoProducao"]),
-                  )
-                }
-                disabled={isSaving}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Nao informado</SelectItem>
-                  <SelectItem value="corte">Corte</SelectItem>
-                  <SelectItem value="leite">Leite</SelectItem>
-                  <SelectItem value="mista">Mista</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="grid grid-cols-4 gap-2">
+                {[
+                  { value: "", label: "N/I" },
+                  { value: "corte", label: "Corte" },
+                  { value: "leite", label: "Leite" },
+                  { value: "mista", label: "Mista" },
+                ].map((opt) => {
+                  const isSelected = (form.tipoProducao || "") === opt.value;
+                  return (
+                    <Button
+                      key={opt.value}
+                      type="button"
+                      variant={isSelected ? "default" : "outline"}
+                      disabled={isSaving}
+                      onClick={() => updateField("tipoProducao", opt.value as FarmFormState["tipoProducao"])}
+                      className={cn(
+                        "h-12 rounded-xl transition-all border-2 bg-background text-xs px-1",
+                        isSelected
+                          ? "border-primary bg-primary text-primary-foreground font-semibold shadow-sm"
+                          : "border-primary/20 hover:border-primary/50 text-foreground"
+                      )}
+                    >
+                      {opt.label}
+                    </Button>
+                  );
+                })}
+              </div>
             </div>
 
             <div className="space-y-2">
               <Label>Sistema de manejo</Label>
-              <Select
-                value={form.sistemaManejo || "none"}
-                onValueChange={(value) =>
-                  updateField(
-                    "sistemaManejo",
-                    value === "none"
-                      ? ""
-                      : (value as FarmFormState["sistemaManejo"]),
-                  )
-                }
-                disabled={isSaving}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Nao informado</SelectItem>
-                  <SelectItem value="confinamento">Confinamento</SelectItem>
-                  <SelectItem value="semi_confinamento">
-                    Semi-confinamento
-                  </SelectItem>
-                  <SelectItem value="pastagem">Pastagem</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="grid grid-cols-4 gap-2">
+                {[
+                  { value: "", label: "N/I" },
+                  { value: "pastagem", label: "Pastagem" },
+                  { value: "semi_confinamento", label: "Semi-conf." },
+                  { value: "confinamento", label: "Confinam." },
+                ].map((opt) => {
+                  const isSelected = (form.sistemaManejo || "") === opt.value;
+                  return (
+                    <Button
+                      key={opt.value}
+                      type="button"
+                      variant={isSelected ? "default" : "outline"}
+                      disabled={isSaving}
+                      onClick={() => updateField("sistemaManejo", opt.value as FarmFormState["sistemaManejo"])}
+                      className={cn(
+                        "h-12 rounded-xl transition-all border-2 bg-background text-xs px-1",
+                        isSelected
+                          ? "border-primary bg-primary text-primary-foreground font-semibold shadow-sm"
+                          : "border-primary/20 hover:border-primary/50 text-foreground"
+                      )}
+                    >
+                      {opt.label}
+                    </Button>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </FormSection>

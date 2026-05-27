@@ -26,7 +26,7 @@ export function RegistrarMovimentacaoSection(props: RegistrarMovimentacaoSection
       <div className="space-y-2">
         <Label>Lote Destino</Label>
         <Select onValueChange={props.onMovimentacaoDestinoChange} value={props.movimentacaoDestinoId}>
-          <SelectTrigger className="min-h-11 bg-background">
+          <SelectTrigger className="h-12 rounded-xl bg-background">
             <SelectValue placeholder="Selecione o destino" />
           </SelectTrigger>
           <SelectContent>

@@ -31,6 +31,7 @@ import { useToast } from "@/hooks/use-toast";
 import { resolveNotificationPreferences } from "@/lib/notifications/sanitaryReminders";
 import { applyTheme } from "@/lib/theme";
 import { supabase } from "@/lib/supabase";
+import { cn } from "@/lib/utils";
 
 const REMINDER_DAY_OPTIONS = [7, 3, 1] as const;
 
@@ -446,6 +447,7 @@ export const Perfil = () => {
                   <Input
                     id="displayName"
                     type="text"
+                    className="h-12 rounded-xl bg-background"
                     value={displayName}
                     onChange={(event) => setDisplayName(event.target.value)}
                     placeholder="Seu nome"
@@ -457,6 +459,7 @@ export const Perfil = () => {
                   <Input
                     id="phone"
                     type="tel"
+                    className="h-12 rounded-xl bg-background"
                     value={phone}
                     onChange={(event) => setPhone(event.target.value)}
                     placeholder="+55 11 99999-9999"
@@ -490,21 +493,31 @@ export const Perfil = () => {
               <div className="space-y-1">
                 <Label>Tema</Label>
               </div>
-              <Select
-                value={theme}
-                onValueChange={(value: "system" | "light" | "dark") =>
-                  setTheme(value)
-                }
-              >
-                <SelectTrigger className="w-full lg:w-52">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="system">Sistema</SelectItem>
-                  <SelectItem value="light">Claro</SelectItem>
-                  <SelectItem value="dark">Escuro</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="grid grid-cols-3 gap-2 w-full lg:w-72">
+                {[
+                  { value: "system", label: "Sistema" },
+                  { value: "light", label: "Claro" },
+                  { value: "dark", label: "Escuro" },
+                ].map((opt) => {
+                  const isSelected = theme === opt.value;
+                  return (
+                    <Button
+                      key={opt.value}
+                      type="button"
+                      variant={isSelected ? "default" : "outline"}
+                      onClick={() => setTheme(opt.value as "system" | "light" | "dark")}
+                      className={cn(
+                        "h-12 rounded-xl transition-all border-2 bg-background",
+                        isSelected
+                          ? "border-primary bg-primary text-primary-foreground font-semibold shadow-sm"
+                          : "border-primary/20 hover:border-primary/50 text-foreground"
+                      )}
+                    >
+                      {opt.label}
+                    </Button>
+                  );
+                })}
+              </div>
             </div>
           </FormSection>
 

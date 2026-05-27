@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/lib/supabase";
+import { cn } from "@/lib/utils";
 
 type CriarFazendaForm = {
   nome: string;
@@ -23,7 +24,7 @@ type CriarFazendaForm = {
 };
 
 const selectClassName =
-  "flex h-11 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm text-foreground shadow-none ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50";
+  "flex h-12 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm text-foreground shadow-none ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50";
 
 const CriarFazenda = () => {
   const { user, setActiveFarm } = useAuth();
@@ -36,8 +37,13 @@ const CriarFazenda = () => {
   const {
     register,
     handleSubmit,
+    setValue,
+    watch,
     formState: { errors },
   } = useForm<CriarFazendaForm>();
+
+  const tipoProducao = watch("tipo_producao");
+  const sistemaManejo = watch("sistema_manejo");
 
   useEffect(() => {
     const checkPermission = async () => {
@@ -184,6 +190,7 @@ const CriarFazenda = () => {
                 <Label htmlFor="nome">Nome da fazenda</Label>
                 <Input
                   id="nome"
+                  className="h-12 rounded-xl bg-background"
                   placeholder="Ex: Fazenda Santa Clara"
                   disabled={isLoading}
                   {...register("nome", { required: "Nome e obrigatorio" })}
@@ -199,6 +206,7 @@ const CriarFazenda = () => {
                 <Label htmlFor="codigo">Codigo</Label>
                 <Input
                   id="codigo"
+                  className="h-12 rounded-xl bg-background"
                   placeholder="Ex: FSC-001"
                   disabled={isLoading}
                   {...register("codigo")}
@@ -211,6 +219,7 @@ const CriarFazenda = () => {
                   id="area_total_ha"
                   type="number"
                   step="0.01"
+                  className="h-12 rounded-xl bg-background"
                   placeholder="Ex: 450"
                   disabled={isLoading}
                   {...register("area_total_ha", { valueAsNumber: true })}
@@ -221,6 +230,7 @@ const CriarFazenda = () => {
                 <Label htmlFor="municipio">Municipio</Label>
                 <Input
                   id="municipio"
+                  className="h-12 rounded-xl bg-background"
                   placeholder="Ex: Goiania"
                   disabled={isLoading}
                   {...register("municipio")}
@@ -270,6 +280,7 @@ const CriarFazenda = () => {
                 <Label htmlFor="cep">CEP</Label>
                 <Input
                   id="cep"
+                  className="h-12 rounded-xl bg-background"
                   placeholder="12345-678"
                   maxLength={9}
                   disabled={isLoading}
@@ -299,33 +310,67 @@ const CriarFazenda = () => {
           <FormSection title="Perfil produtivo">
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="tipo_producao">Tipo de producao</Label>
-                <select
-                  id="tipo_producao"
-                  className={selectClassName}
-                  disabled={isLoading}
-                  {...register("tipo_producao")}
-                >
-                  <option value="">Selecione...</option>
-                  <option value="corte">Corte</option>
-                  <option value="leite">Leite</option>
-                  <option value="mista">Mista</option>
-                </select>
+                <Label>Tipo de producao</Label>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { value: "corte", label: "Corte" },
+                    { value: "leite", label: "Leite" },
+                    { value: "mista", label: "Mista" },
+                  ].map((opt) => {
+                    const isSelected = tipoProducao === opt.value;
+                    return (
+                      <Button
+                        key={opt.value}
+                        type="button"
+                        variant={isSelected ? "default" : "outline"}
+                        disabled={isLoading}
+                        onClick={() =>
+                          setValue("tipo_producao", opt.value as "corte" | "leite" | "mista")
+                        }
+                        className={cn(
+                          "h-12 rounded-xl transition-all border-2 bg-background",
+                          isSelected
+                            ? "border-primary bg-primary text-primary-foreground font-semibold shadow-sm"
+                            : "border-primary/20 hover:border-primary/50 text-foreground"
+                        )}
+                      >
+                        {opt.label}
+                      </Button>
+                    );
+                  })}
+                </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="sistema_manejo">Sistema de manejo</Label>
-                <select
-                  id="sistema_manejo"
-                  className={selectClassName}
-                  disabled={isLoading}
-                  {...register("sistema_manejo")}
-                >
-                  <option value="">Selecione...</option>
-                  <option value="pastagem">Pastagem</option>
-                  <option value="semi_confinamento">Semi-confinamento</option>
-                  <option value="confinamento">Confinamento</option>
-                </select>
+                <Label>Sistema de manejo</Label>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { value: "pastagem", label: "Pastagem" },
+                    { value: "semi_confinamento", label: "Semi-conf." },
+                    { value: "confinamento", label: "Confinam." },
+                  ].map((opt) => {
+                    const isSelected = sistemaManejo === opt.value;
+                    return (
+                      <Button
+                        key={opt.value}
+                        type="button"
+                        variant={isSelected ? "default" : "outline"}
+                        disabled={isLoading}
+                        onClick={() =>
+                          setValue("sistema_manejo", opt.value as "pastagem" | "semi_confinamento" | "confinamento")
+                        }
+                        className={cn(
+                          "h-12 rounded-xl transition-all border-2 bg-background text-xs sm:text-sm px-1",
+                          isSelected
+                            ? "border-primary bg-primary text-primary-foreground font-semibold shadow-sm"
+                            : "border-primary/20 hover:border-primary/50 text-foreground"
+                        )}
+                      >
+                        {opt.label}
+                      </Button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           </FormSection>

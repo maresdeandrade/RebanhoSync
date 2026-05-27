@@ -45,6 +45,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { FieldCombobox } from "@/components/ui/field-combobox";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { showSuccess, showError } from "@/utils/toast";
 import { ChevronLeft, Save, Loader2, Trash2, ScanLine } from "lucide-react";
 import { useLotes } from "@/hooks/useLotes";
@@ -530,372 +531,498 @@ const AnimalEditar = () => {
         }
       />
 
-      <Card className="shadow-none">
-        <CardHeader className="px-4 py-3 sm:px-5">
-          <CardTitle className="text-base">Dados básicos</CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-3 p-4 pt-0 sm:p-5 sm:pt-0 md:grid-cols-2">
-          <div className="space-y-2">
-            <Label htmlFor="identificacao">Identificação *</Label>
-            <Input
-              id="identificacao"
-              value={identificacao}
-              onChange={(e) => setIdentificacao(e.target.value)}
-              placeholder="Ex: 001, Brinco 123..."
-              className="h-12 text-body rounded-xl"
-              disabled={isSaving}
-            />
-          </div>
+      <Tabs defaultValue="basic" className="w-full space-y-4">
+        <TabsList className="grid w-full grid-cols-3 h-12 rounded-xl mb-6 bg-muted/60 p-1">
+          <TabsTrigger value="basic" className="rounded-lg py-2 text-sm font-semibold">Geral</TabsTrigger>
+          <TabsTrigger value="trace" className="rounded-lg py-2 text-sm font-semibold">Origem</TabsTrigger>
+          <TabsTrigger value="field" className="rounded-lg py-2 text-sm font-semibold">Campo</TabsTrigger>
+        </TabsList>
 
-          <div className="space-y-2">
-            <Label htmlFor="sexo">Sexo</Label>
-            <Select value={sexo} onValueChange={(v: "M" | "F") => setSexo(v)} disabled={isSaving}>
-              <SelectTrigger id="sexo" className="h-12 rounded-xl">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="M">Macho</SelectItem>
-                <SelectItem value="F">Fêmea</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="especie">Espécie</Label>
-            <FieldCombobox
-              id="especie"
-              options={especieOptions}
-              value={especie}
-              onValueChange={(value) => setEspecie(value as AnimalSpeciesEnum || "null")}
-              placeholder="Nao informada"
-              searchPlaceholder="Buscar espécie..."
-              disabled={isSaving}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="lote">Lote</Label>
-            <Input
-              id="lote"
-              value={lotes?.find((l) => l.id === loteId)?.nome ?? "Sem lote"}
-              disabled
-              className="h-12 text-body rounded-xl bg-muted/40"
-            />
-            <p className="text-xs text-muted-foreground mt-1">
-              Altere pelo manejo Movimentação.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card className="shadow-none">
-        <CardHeader className="px-4 py-3 sm:px-5">
-          <CardTitle className="text-base">Rastreabilidade</CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-3 p-4 pt-0 sm:p-5 sm:pt-0 md:grid-cols-2">
-          <div className="grid gap-3 md:col-span-2 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="dataNascimento">Data de Nascimento</Label>
-              <Input
-                id="dataNascimento"
-                type="date"
-                value={dataNascimento}
-                onChange={(e) => setDataNascimento(e.target.value)}
-                className="h-12 text-body rounded-xl"
-                disabled={isSaving}
-              />
-            </div>
-
-            {/* Data de entrada apenas para origem externa (sociedade, doação, compra) */}
-            {(origem === "sociedade" ||
-              origem === "doacao" ||
-              origem === "compra") && (
+        <TabsContent value="basic" className="space-y-5">
+          <Card className="shadow-none">
+            <CardHeader className="px-4 py-3 sm:px-5">
+              <CardTitle className="text-base">Dados básicos</CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-3 p-4 pt-0 sm:p-5 sm:pt-0 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="dataEntrada">Data de Entrada</Label>
+                <Label htmlFor="identificacao">Identificação *</Label>
                 <Input
-                  id="dataEntrada"
-                  type="date"
-                  value={dataEntrada}
-                  onChange={(e) => setDataEntrada(e.target.value)}
+                  id="identificacao"
+                  value={identificacao}
+                  onChange={(e) => setIdentificacao(e.target.value)}
+                  placeholder="Ex: 001, Brinco 123..."
                   className="h-12 text-body rounded-xl"
                   disabled={isSaving}
                 />
               </div>
-            )}
-          </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="origem">Origem</Label>
-            <FieldCombobox
-              id="origem"
-              options={origemOptions}
-              value={origem}
-              onValueChange={(value) => setOrigem(value as typeof origem || "null")}
-              placeholder="Como chegou à fazenda?"
-              searchPlaceholder="Buscar origem..."
-              disabled={isSaving}
-            />
-          </div>
+              <div className="space-y-2">
+                <Label htmlFor="sexo">Sexo *</Label>
+                <div className="grid grid-cols-2 gap-2" id="sexo">
+                  <Button
+                    type="button"
+                    variant={sexo === "M" ? "default" : "outline"}
+                    className="h-12 text-base rounded-xl border-2"
+                    onClick={() => setSexo("M")}
+                    disabled={isSaving}
+                  >
+                    Macho
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={sexo === "F" ? "default" : "outline"}
+                    className="h-12 text-base rounded-xl border-2"
+                    onClick={() => setSexo("F")}
+                    disabled={isSaving}
+                  >
+                    Fêmea
+                  </Button>
+                </div>
+              </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="raca">Raça</Label>
-            <FieldCombobox
-              id="raca"
-              options={racaOptions}
-              value={raca}
-              onValueChange={(value) => setRaca(value || "null")}
-              placeholder="Selecione a raça"
-              searchPlaceholder="Buscar raça..."
-              disabled={isSaving}
-            />
-          </div>
-        </CardContent>
-      </Card>
+              <div className="space-y-2">
+                <Label htmlFor="especie">Espécie</Label>
+                <FieldCombobox
+                  id="especie"
+                  options={especieOptions}
+                  value={especie}
+                  onValueChange={(value) => setEspecie(value as AnimalSpeciesEnum || "null")}
+                  placeholder="Nao informada"
+                  searchPlaceholder="Buscar espécie..."
+                  disabled={isSaving}
+                />
+              </div>
 
-      <Card className="shadow-none">
-        <CardHeader className="px-4 py-3 sm:px-5">
-          <CardTitle className="text-base">Fatos taxonômicos</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3 p-4 pt-0 sm:p-5 sm:pt-0">
-          {(idadeMeses === null || (idadeMeses >= 7 && idadeMeses <= 12)) && (
-            <div className="space-y-2">
-              <Label htmlFor="puberdade">Puberdade confirmada</Label>
-              <Select
-                value={puberdadeConfirmada}
-                onValueChange={(value: "null" | "true" | "false") =>
-                  setPuberdadeConfirmada(value)
-                }
-                disabled={isSaving}
-              >
-                <SelectTrigger id="puberdade" className="h-12 rounded-xl">
-                  <SelectValue placeholder="Nao informado" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="null">Nao informado</SelectItem>
-                  <SelectItem value="true">Sim</SelectItem>
-                  <SelectItem value="false">Nao</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          )}
+              <div className="space-y-2">
+                <Label htmlFor="lote">Lote</Label>
+                <Input
+                  id="lote"
+                  value={lotes?.find((l) => l.id === loteId)?.nome ?? "Sem lote"}
+                  disabled
+                  className="h-12 text-body rounded-xl bg-muted/40"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Altere pelo manejo Movimentação.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-none">
+            <CardHeader className="px-4 py-3 sm:px-5">
+              <CardTitle className="text-base">Genealogia</CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-3 p-4 pt-0 sm:p-5 sm:pt-0 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="pai">Pai (Opcional)</Label>
+                <FieldCombobox
+                  id="pai"
+                  options={paiOptions}
+                  value={paiId}
+                  onValueChange={(value) => setPaiId(value || "null")}
+                  placeholder="Desconhecido"
+                  searchPlaceholder="Buscar pai..."
+                  disabled={isSaving}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="mae">Mãe (Opcional)</Label>
+                <FieldCombobox
+                  id="mae"
+                  options={maeOptions}
+                  value={maeId}
+                  onValueChange={(value) => setMaeId(value || "null")}
+                  placeholder="Desconhecido"
+                  searchPlaceholder="Buscar mãe..."
+                  disabled={isSaving}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-none">
+            <CardHeader className="px-4 py-3 sm:px-5">
+              <CardTitle className="text-base">Informações adicionais</CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-3 p-4 pt-0 sm:p-5 sm:pt-0 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="nome_popular">Nome</Label>
+                <Input
+                  id="nome_popular"
+                  value={nome}
+                  onChange={(e) => setNome(e.target.value)}
+                  placeholder="Nome popular do animal"
+                  className="h-12 text-body rounded-xl"
+                  disabled={isSaving}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="rfid">RFID</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="rfid"
+                    value={rfid}
+                    onChange={(e) => setRfid(e.target.value)}
+                    placeholder="Código RFID"
+                    className="h-12 text-body rounded-xl flex-1"
+                    disabled={isSaving}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-12 w-12 rounded-xl p-0 flex items-center justify-center border-2 border-primary/20 hover:border-primary/50"
+                    onClick={() => {
+                      showSuccess("Scanner de campo ativado (Simulação).");
+                    }}
+                    disabled={isSaving}
+                  >
+                    <ScanLine className="h-5 w-5 text-primary" />
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="trace" className="space-y-5">
+          <Card className="shadow-none">
+            <CardHeader className="px-4 py-3 sm:px-5">
+              <CardTitle className="text-base">Rastreabilidade</CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-3 p-4 pt-0 sm:p-5 sm:pt-0 md:grid-cols-2">
+              <div className="space-y-2 col-span-1 md:col-span-2">
+                <Label htmlFor="origem">Origem</Label>
+                <div className="grid grid-cols-3 gap-2" id="origem">
+                  <Button
+                    type="button"
+                    variant={origem === "nascimento" ? "default" : "outline"}
+                    className="h-12 text-sm rounded-xl border-2 px-1"
+                    onClick={() => setOrigem("nascimento")}
+                    disabled={isSaving}
+                  >
+                    Nascimento
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={origem === "compra" ? "default" : "outline"}
+                    className="h-12 text-sm rounded-xl border-2 px-1"
+                    onClick={() => setOrigem("compra")}
+                    disabled={isSaving}
+                  >
+                    Compra
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={origem === "doacao" ? "default" : "outline"}
+                    className="h-12 text-sm rounded-xl border-2 px-1"
+                    onClick={() => setOrigem("doacao")}
+                    disabled={isSaving}
+                  >
+                    Doação
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={origem === "arrendamento" ? "default" : "outline"}
+                    className="h-12 text-sm rounded-xl border-2 px-1"
+                    onClick={() => setOrigem("arrendamento")}
+                    disabled={isSaving}
+                  >
+                    Arrendamento
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={origem === "sociedade" ? "default" : "outline"}
+                    className="h-12 text-sm rounded-xl border-2 px-1"
+                    onClick={() => setOrigem("sociedade")}
+                    disabled={isSaving}
+                  >
+                    Sociedade
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={origem === "null" ? "default" : "outline"}
+                    className="h-12 text-sm rounded-xl border-2 px-1"
+                    onClick={() => setOrigem("null")}
+                    disabled={isSaving}
+                  >
+                    Não inf.
+                  </Button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="raca">Raça</Label>
+                <FieldCombobox
+                  id="raca"
+                  options={racaOptions}
+                  value={raca}
+                  onValueChange={(value) => setRaca(value || "null")}
+                  placeholder="Selecione a raça"
+                  searchPlaceholder="Buscar raça..."
+                  disabled={isSaving}
+                />
+              </div>
+
+              <div className="grid gap-3 md:col-span-2 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="dataNascimento">Data de Nascimento</Label>
+                  <Input
+                    id="dataNascimento"
+                    type="date"
+                    value={dataNascimento}
+                    onChange={(e) => setDataNascimento(e.target.value)}
+                    className="h-12 text-body rounded-xl"
+                    disabled={isSaving}
+                  />
+                </div>
+
+                {/* Data de entrada apenas para origem externa (sociedade, doação, compra) */}
+                {(origem === "sociedade" ||
+                  origem === "doacao" ||
+                  origem === "compra") && (
+                  <div className="space-y-2">
+                    <Label htmlFor="dataEntrada">Data de Entrada</Label>
+                    <Input
+                      id="dataEntrada"
+                      type="date"
+                      value={dataEntrada}
+                      onChange={(e) => setDataEntrada(e.target.value)}
+                      className="h-12 text-body rounded-xl"
+                      disabled={isSaving}
+                    />
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="field" className="space-y-5">
+          <Card className="shadow-none">
+            <CardHeader className="px-4 py-3 sm:px-5">
+              <CardTitle className="text-base">Fatos taxonômicos</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4 p-4 pt-0 sm:p-5 sm:pt-0">
+              {(idadeMeses === null || (idadeMeses >= 7 && idadeMeses <= 12)) && (
+                <div className="space-y-2">
+                  <Label htmlFor="puberdade">Puberdade confirmada</Label>
+                  <div className="grid grid-cols-3 gap-2" id="puberdade">
+                    <Button
+                      type="button"
+                      variant={puberdadeConfirmada === "true" ? "default" : "outline"}
+                      className="h-12 text-base rounded-xl border-2"
+                      onClick={() => setPuberdadeConfirmada("true")}
+                      disabled={isSaving}
+                    >
+                      Sim
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={puberdadeConfirmada === "false" ? "default" : "outline"}
+                      className="h-12 text-base rounded-xl border-2"
+                      onClick={() => setPuberdadeConfirmada("false")}
+                      disabled={isSaving}
+                    >
+                      Não
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={puberdadeConfirmada === "null" ? "default" : "outline"}
+                      className="h-12 text-base rounded-xl border-2"
+                      onClick={() => setPuberdadeConfirmada("null")}
+                      disabled={isSaving}
+                    >
+                      Não inf.
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {sexo === "M" && (
+                <div className="space-y-2">
+                  <Label htmlFor="castrado">Castrado</Label>
+                  <div className="grid grid-cols-3 gap-2" id="castrado">
+                    <Button
+                      type="button"
+                      variant={castrado === "true" ? "default" : "outline"}
+                      className="h-12 text-base rounded-xl border-2"
+                      onClick={() => setCastrado("true")}
+                      disabled={isSaving}
+                    >
+                      Sim
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={castrado === "false" ? "default" : "outline"}
+                      className="h-12 text-base rounded-xl border-2"
+                      onClick={() => setCastrado("false")}
+                      disabled={isSaving}
+                    >
+                      Não
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={castrado === "null" ? "default" : "outline"}
+                      className="h-12 text-base rounded-xl border-2"
+                      onClick={() => setCastrado("null")}
+                      disabled={isSaving}
+                    >
+                      Não inf.
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {sexo === "F" && isLactationEligible && (
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="lactacao">Em lactação</Label>
+                    <div className="grid grid-cols-3 gap-2" id="lactacao">
+                      <Button
+                        type="button"
+                        variant={emLactacao === "true" ? "default" : "outline"}
+                        className="h-12 text-base rounded-xl border-2"
+                        onClick={() => setEmLactacao("true")}
+                        disabled={isSaving}
+                      >
+                        Sim
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={emLactacao === "false" ? "default" : "outline"}
+                        className="h-12 text-base rounded-xl border-2"
+                        onClick={() => setEmLactacao("false")}
+                        disabled={isSaving}
+                      >
+                        Não
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={emLactacao === "null" ? "default" : "outline"}
+                        className="h-12 text-base rounded-xl border-2"
+                        onClick={() => setEmLactacao("null")}
+                        disabled={isSaving}
+                      >
+                        Não inf.
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="secagem">Secagem realizada</Label>
+                    <div className="grid grid-cols-3 gap-2" id="secagem">
+                      <Button
+                        type="button"
+                        variant={secagemRealizada === "true" ? "default" : "outline"}
+                        className="h-12 text-base rounded-xl border-2"
+                        onClick={() => handleSecagemRealizadaChange("true")}
+                        disabled={isSaving}
+                      >
+                        Sim
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={secagemRealizada === "false" ? "default" : "outline"}
+                        className="h-12 text-base rounded-xl border-2"
+                        onClick={() => handleSecagemRealizadaChange("false")}
+                        disabled={isSaving}
+                      >
+                        Não
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={secagemRealizada === "null" ? "default" : "outline"}
+                        className="h-12 text-base rounded-xl border-2"
+                        onClick={() => handleSecagemRealizadaChange("null")}
+                        disabled={isSaving}
+                      >
+                        Não inf.
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
           {sexo === "M" && (
-            <div className="space-y-2">
-              <Label htmlFor="castrado">Castrado</Label>
-              <Select
-                value={castrado}
-                onValueChange={(value: "null" | "true" | "false") =>
-                  setCastrado(value)
-                }
-                disabled={isSaving}
-              >
-                <SelectTrigger id="castrado" className="h-12 rounded-xl">
-                  <SelectValue placeholder="Nao informado" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="null">Nao informado</SelectItem>
-                  <SelectItem value="true">Sim</SelectItem>
-                  <SelectItem value="false">Nao</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            <Card className="shadow-none">
+              <CardHeader className="px-4 py-3 sm:px-5">
+                <CardTitle className="text-base">Perfil do macho</CardTitle>
+                {idadeMeses !== null ? (
+                  <p className="text-xs text-muted-foreground">
+                    {idadeMeses} meses.
+                  </p>
+                ) : null}
+              </CardHeader>
+              <CardContent className="space-y-3 p-4 pt-0 sm:p-5 sm:pt-0">
+                <div className="space-y-2">
+                  <Label htmlFor="destino_produtivo">Destino Produtivo</Label>
+                  <FieldCombobox
+                    id="destino_produtivo"
+                    options={destinoProdutivoOptions}
+                    value={destinoProdutivo}
+                    onValueChange={(value) => handleDestinoProdutivoChange(value as DestinoProdutivoAnimalEnum || "null")}
+                    placeholder="Como este macho sera conduzido?"
+                    searchPlaceholder="Buscar destino..."
+                    disabled={isSaving}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="status_reprodutivo">Status Reprodutivo</Label>
+                  <FieldCombobox
+                    id="status_reprodutivo"
+                    options={statusReprodutivoOptions}
+                    value={statusReprodutivoMacho}
+                    onValueChange={(value) => setStatusReprodutivoMacho(value as StatusReprodutivoMachoEnum || "null")}
+                    placeholder={
+                      destinoProdutivo === "null"
+                        ? "Defina primeiro o destino"
+                        : "Selecione o status"
+                    }
+                    searchPlaceholder="Buscar status..."
+                    disabled={isSaving || !maleBreedingSelected}
+                  />
+                  {!maleBreedingSelected && destinoProdutivo !== "null" && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Destino nao reprodutivo.
+                    </p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
           )}
 
-          {sexo === "F" && isLactationEligible && (
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="lactacao">Em lactação</Label>
-                <Select
-                  value={emLactacao}
-                  onValueChange={(value: "null" | "true" | "false") =>
-                    setEmLactacao(value)
-                  }
+          {role === "owner" && (
+            <Card className="mb-6 border-destructive/40 shadow-none">
+              <CardHeader className="px-4 py-3 sm:px-5">
+                <CardTitle className="text-base text-destructive flex items-center">
+                  <Trash2 className="h-5 w-5 mr-2" />
+                  Zona de Perigo
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Button
+                  variant="destructive"
+                  onClick={handleDelete}
                   disabled={isSaving}
+                  className="w-full sm:w-auto h-12 rounded-xl"
                 >
-                  <SelectTrigger id="lactacao" className="h-12 rounded-xl">
-                    <SelectValue placeholder="Nao informado" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="null">Nao informado</SelectItem>
-                    <SelectItem value="true">Sim</SelectItem>
-                    <SelectItem value="false">Nao</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="secagem">Secagem realizada</Label>
-                <Select
-                  value={secagemRealizada}
-                  onValueChange={handleSecagemRealizadaChange}
-                  disabled={isSaving}
-                >
-                  <SelectTrigger id="secagem" className="h-12 rounded-xl">
-                    <SelectValue placeholder="Nao informado" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="null">Nao informado</SelectItem>
-                    <SelectItem value="true">Sim</SelectItem>
-                    <SelectItem value="false">Nao</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+                  {isSaving ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Trash2 className="h-4 w-4 mr-2" />
+                  )}
+                  Excluir animal permanentemente
+                </Button>
+              </CardContent>
+            </Card>
           )}
-        </CardContent>
-      </Card>
-
-      <Card className="shadow-none">
-        <CardHeader className="px-4 py-3 sm:px-5">
-          <CardTitle className="text-base">Genealogia</CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-3 p-4 pt-0 sm:p-5 sm:pt-0 md:grid-cols-2">
-          <div className="space-y-2">
-            <Label htmlFor="pai">Pai (Opcional)</Label>
-            <FieldCombobox
-              id="pai"
-              options={paiOptions}
-              value={paiId}
-              onValueChange={(value) => setPaiId(value || "null")}
-              placeholder="Desconhecido"
-              searchPlaceholder="Buscar pai..."
-              disabled={isSaving}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="mae">Mãe (Opcional)</Label>
-            <FieldCombobox
-              id="mae"
-              options={maeOptions}
-              value={maeId}
-              onValueChange={(value) => setMaeId(value || "null")}
-              placeholder="Desconhecido"
-              searchPlaceholder="Buscar mãe..."
-              disabled={isSaving}
-            />
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card className="shadow-none">
-        <CardHeader className="px-4 py-3 sm:px-5">
-          <CardTitle className="text-base">Informações adicionais</CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-3 p-4 pt-0 sm:p-5 sm:pt-0 md:grid-cols-2">
-          <div className="space-y-2">
-            <Label htmlFor="nome_popular">Nome</Label>
-            <Input
-              id="nome_popular"
-              value={nome}
-              onChange={(e) => setNome(e.target.value)}
-              placeholder="Nome popular do animal"
-              className="h-12 text-body rounded-xl"
-              disabled={isSaving}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="rfid">RFID</Label>
-            <div className="flex gap-2">
-              <Input
-                id="rfid"
-                value={rfid}
-                onChange={(e) => setRfid(e.target.value)}
-                placeholder="Código RFID"
-                className="h-12 text-body rounded-xl flex-1"
-                disabled={isSaving}
-              />
-              <Button
-                type="button"
-                variant="outline"
-                className="h-12 w-12 rounded-xl p-0 flex items-center justify-center border-2 border-primary/20 hover:border-primary/50"
-                onClick={() => {
-                  showSuccess("Scanner de campo ativado (Simulação).");
-                }}
-                disabled={isSaving}
-              >
-                <ScanLine className="h-5 w-5 text-primary" />
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {sexo === "M" && (
-        <Card className="shadow-none">
-          <CardHeader className="px-4 py-3 sm:px-5">
-            <CardTitle className="text-base">Perfil do macho</CardTitle>
-            {idadeMeses !== null ? (
-              <p className="text-xs text-muted-foreground">
-                {idadeMeses} meses.
-              </p>
-            ) : null}
-          </CardHeader>
-          <CardContent className="space-y-3 p-4 pt-0 sm:p-5 sm:pt-0">
-            <div className="space-y-2">
-              <Label htmlFor="destino_produtivo">Destino Produtivo</Label>
-              <FieldCombobox
-                id="destino_produtivo"
-                options={destinoProdutivoOptions}
-                value={destinoProdutivo}
-                onValueChange={(value) => handleDestinoProdutivoChange(value as DestinoProdutivoAnimalEnum || "null")}
-                placeholder="Como este macho sera conduzido?"
-                searchPlaceholder="Buscar destino..."
-                disabled={isSaving}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="status_reprodutivo">Status Reprodutivo</Label>
-              <FieldCombobox
-                id="status_reprodutivo"
-                options={statusReprodutivoOptions}
-                value={statusReprodutivoMacho}
-                onValueChange={(value) => setStatusReprodutivoMacho(value as StatusReprodutivoMachoEnum || "null")}
-                placeholder={
-                  destinoProdutivo === "null"
-                    ? "Defina primeiro o destino"
-                    : "Selecione o status"
-                }
-                searchPlaceholder="Buscar status..."
-                disabled={isSaving || !maleBreedingSelected}
-              />
-              {!maleBreedingSelected && destinoProdutivo !== "null" && (
-                <p className="text-xs text-muted-foreground mt-1">
-                  Destino nao reprodutivo.
-                </p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {role === "owner" && (
-        <Card className="mb-6 border-destructive/40 shadow-none">
-          <CardHeader className="px-4 py-3 sm:px-5">
-            <CardTitle className="text-base text-destructive flex items-center">
-              <Trash2 className="h-5 w-5 mr-2" />
-              Zona de Perigo
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Button
-              variant="destructive"
-              onClick={handleDelete}
-              disabled={isSaving}
-              className="w-full sm:w-auto h-12 rounded-xl"
-            >
-              {isSaving ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <Trash2 className="h-4 w-4 mr-2" />
-              )}
-              Excluir animal permanentemente
-            </Button>
-          </CardContent>
-        </Card>
-      )}
+        </TabsContent>
+      </Tabs>
 
       {/* Rodapé fixo para mobile (DS §7.3) */}
       <div className="sticky bottom-0 inset-x-0 -mx-4 -mb-16 mt-5 border-t-2 border-border bg-card p-4 flex items-center justify-between gap-4 md:hidden z-30 shadow-[0_-8px_24px_rgba(0,0,0,0.08)]">

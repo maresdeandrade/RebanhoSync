@@ -1621,48 +1621,59 @@ export default function Insumos() {
                               </div>
                               <div className="space-y-2">
                                 <Label>Status do lote</Label>
-                                <Select
-                                  value={editForm.status}
-                                  onValueChange={(value) =>
-                                    setEditField(
-                                      "status",
-                                      value as InsumoLoteStatusEnum,
-                                    )
-                                  }
-                                >
-                                  <SelectTrigger>
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {loteStatusOptions.map((option) => (
-                                      <SelectItem
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                  {loteStatusOptions.map((option) => {
+                                    const isSelected = editForm.status === option.value;
+                                    return (
+                                      <Button
                                         key={option.value}
-                                        value={option.value}
+                                        type="button"
+                                        variant={isSelected ? "default" : "outline"}
+                                        onClick={() =>
+                                          setEditField(
+                                            "status",
+                                            option.value as InsumoLoteStatusEnum,
+                                          )
+                                        }
+                                        className={cn(
+                                          "h-12 rounded-xl transition-all border-2 text-xs px-1 bg-background",
+                                          isSelected
+                                            ? "border-primary bg-primary text-primary-foreground font-semibold shadow-sm animate-none"
+                                            : "border-primary/20 hover:border-primary/50 text-foreground"
+                                        )}
                                       >
                                         {option.label}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
+                                      </Button>
+                                    );
+                                  })}
+                                </div>
                               </div>
                               <div className="space-y-2">
                                 <Label>Cadastro do insumo</Label>
-                                <Select
-                                  value={editForm.ativo ? "ativo" : "inativo"}
-                                  onValueChange={(value) =>
-                                    setEditField("ativo", value === "ativo")
-                                  }
-                                >
-                                  <SelectTrigger>
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="ativo">Ativo</SelectItem>
-                                    <SelectItem value="inativo">
-                                      Inativo
-                                    </SelectItem>
-                                  </SelectContent>
-                                </Select>
+                                <div className="grid grid-cols-2 gap-2">
+                                  {[
+                                    { value: "ativo", label: "Ativo" },
+                                    { value: "inativo", label: "Inativo" },
+                                  ].map((opt) => {
+                                    const isSelected = (editForm.ativo ? "ativo" : "inativo") === opt.value;
+                                    return (
+                                      <Button
+                                        key={opt.value}
+                                        type="button"
+                                        variant={isSelected ? "default" : "outline"}
+                                        onClick={() => setEditField("ativo", opt.value === "ativo")}
+                                        className={cn(
+                                          "h-12 rounded-xl transition-all border-2 bg-background",
+                                          isSelected
+                                            ? "border-primary bg-primary text-primary-foreground font-semibold shadow-sm"
+                                            : "border-primary/20 hover:border-primary/50 text-foreground"
+                                        )}
+                                      >
+                                        {opt.label}
+                                      </Button>
+                                    );
+                                  })}
+                                </div>
                               </div>
                             </div>
                             <div className="mt-3 flex flex-wrap justify-end gap-2">
@@ -1714,22 +1725,32 @@ export default function Insumos() {
         <div className="grid gap-4 lg:grid-cols-3">
           <div className="space-y-2">
             <Label>Tipo</Label>
-            <Select
-              value={entryForm.tipo}
-              onValueChange={(value) =>
-                setEntryField("tipo", value as InsumoTipoEnum)
-              }
-              disabled={!canManage}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="nutricional">Nutricional</SelectItem>
-                <SelectItem value="sanitario">Sanitario</SelectItem>
-                <SelectItem value="outro">Outro</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { value: "nutricional", label: "Nutricional" },
+                { value: "sanitario", label: "Sanitário" },
+                { value: "outro", label: "Outro" },
+              ].map((opt) => {
+                const isSelected = entryForm.tipo === opt.value;
+                return (
+                  <Button
+                    key={opt.value}
+                    type="button"
+                    variant={isSelected ? "default" : "outline"}
+                    disabled={!canManage}
+                    onClick={() => setEntryField("tipo", opt.value as InsumoTipoEnum)}
+                    className={cn(
+                      "h-12 rounded-xl transition-all border-2 text-xs sm:text-sm px-1",
+                      isSelected
+                        ? "border-primary bg-primary text-primary-foreground font-semibold shadow-sm"
+                        : "border-primary/20 hover:border-primary/50 text-foreground bg-background"
+                    )}
+                  >
+                    {opt.label}
+                  </Button>
+                );
+              })}
+            </div>
           </div>
 
           <div className="space-y-2">
@@ -1959,25 +1980,37 @@ export default function Insumos() {
 
           <div className="space-y-2">
             <Label>Movimento</Label>
-            <Select
-              value={manualMovementForm.tipo}
-              onValueChange={(value) =>
-                setManualMovementField(
-                  "tipo",
-                  value as ManualMovementForm["tipo"],
-                )
-              }
-              disabled={!canManage}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="entrada">Entrada</SelectItem>
-                <SelectItem value="ajuste_positivo">Ajuste positivo</SelectItem>
-                <SelectItem value="ajuste_negativo">Ajuste negativo</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { value: "entrada", label: "Entrada" },
+                { value: "ajuste_positivo", label: "Ajuste +" },
+                { value: "ajuste_negativo", label: "Ajuste -" },
+              ].map((opt) => {
+                const isSelected = manualMovementForm.tipo === opt.value;
+                return (
+                  <Button
+                    key={opt.value}
+                    type="button"
+                    variant={isSelected ? "default" : "outline"}
+                    disabled={!canManage}
+                    onClick={() =>
+                      setManualMovementField(
+                        "tipo",
+                        opt.value as ManualMovementForm["tipo"],
+                      )
+                    }
+                    className={cn(
+                      "h-12 rounded-xl transition-all border-2 text-xs sm:text-sm px-1 bg-background",
+                      isSelected
+                        ? "border-primary bg-primary text-primary-foreground font-semibold shadow-sm animate-none"
+                        : "border-primary/20 hover:border-primary/50 text-foreground"
+                    )}
+                  >
+                    {opt.label}
+                  </Button>
+                );
+              })}
+            </div>
           </div>
 
           <div className="space-y-2">

@@ -193,19 +193,26 @@ const LoteEditar = () => {
 
             <div className="space-y-2">
               <Label htmlFor="status">Status</Label>
-              <Select
-                value={status}
-                onValueChange={(value: "ativo" | "inativo") => setStatus(value)}
-                disabled={isSaving}
-              >
-                <SelectTrigger id="status" className="h-12 rounded-xl">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ativo">Ativo</SelectItem>
-                  <SelectItem value="inativo">Inativo</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="grid grid-cols-2 gap-2" id="status">
+                <Button
+                  type="button"
+                  variant={status === "ativo" ? "default" : "outline"}
+                  className="h-12 text-base rounded-xl border-2"
+                  onClick={() => setStatus("ativo")}
+                  disabled={isSaving}
+                >
+                  Ativo
+                </Button>
+                <Button
+                  type="button"
+                  variant={status === "inativo" ? "default" : "outline"}
+                  className="h-12 text-base rounded-xl border-2"
+                  onClick={() => setStatus("inativo")}
+                  disabled={isSaving}
+                >
+                  Inativo
+                </Button>
+              </div>
             </div>
           </div>
         </FormSection>

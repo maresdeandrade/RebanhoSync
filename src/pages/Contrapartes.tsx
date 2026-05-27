@@ -48,6 +48,7 @@ import {
 } from "@/components/ui/select";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Toolbar, ToolbarGroup } from "@/components/ui/toolbar";
+import { cn } from "@/lib/utils";
 
 type ContraparteTipo = "pessoa" | "empresa";
 
@@ -335,25 +336,38 @@ export default function Contrapartes() {
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           <div className="space-y-2">
             <Label>Tipo</Label>
-            <Select
-              value={form.tipo}
-              onValueChange={(value) =>
-                setFormField(setForm, "tipo", value as ContraparteTipo)
-              }
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="pessoa">Pessoa</SelectItem>
-                <SelectItem value="empresa">Empresa</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { value: "pessoa", label: "Pessoa" },
+                { value: "empresa", label: "Empresa" },
+              ].map((opt) => {
+                const isSelected = form.tipo === opt.value;
+                return (
+                  <Button
+                    key={opt.value}
+                    type="button"
+                    variant={isSelected ? "default" : "outline"}
+                    onClick={() =>
+                      setFormField(setForm, "tipo", opt.value as ContraparteTipo)
+                    }
+                    className={cn(
+                      "h-12 rounded-xl transition-all border-2 bg-background",
+                      isSelected
+                        ? "border-primary bg-primary text-primary-foreground font-semibold shadow-sm"
+                        : "border-primary/20 hover:border-primary/50 text-foreground"
+                    )}
+                  >
+                    {opt.label}
+                  </Button>
+                );
+              })}
+            </div>
           </div>
 
           <div className="space-y-2">
             <Label>Nome</Label>
             <Input
+              className="h-12 rounded-xl bg-background"
               value={form.nome}
               onChange={(event) =>
                 setFormField(setForm, "nome", event.target.value)
@@ -365,6 +379,7 @@ export default function Contrapartes() {
           <div className="space-y-2">
             <Label>Documento</Label>
             <Input
+              className="h-12 rounded-xl bg-background"
               value={form.documento}
               onChange={(event) =>
                 setFormField(setForm, "documento", event.target.value)
@@ -376,6 +391,7 @@ export default function Contrapartes() {
           <div className="space-y-2">
             <Label>Telefone</Label>
             <Input
+              className="h-12 rounded-xl bg-background"
               value={form.telefone}
               onChange={(event) =>
                 setFormField(setForm, "telefone", event.target.value)
@@ -387,6 +403,7 @@ export default function Contrapartes() {
           <div className="space-y-2">
             <Label>Email</Label>
             <Input
+              className="h-12 rounded-xl bg-background"
               value={form.email}
               onChange={(event) =>
                 setFormField(setForm, "email", event.target.value)
@@ -398,6 +415,7 @@ export default function Contrapartes() {
           <div className="space-y-2">
             <Label>Endereco</Label>
             <Input
+              className="h-12 rounded-xl bg-background"
               value={form.endereco}
               onChange={(event) =>
                 setFormField(setForm, "endereco", event.target.value)
@@ -414,6 +432,7 @@ export default function Contrapartes() {
           <Button
             onClick={handleCreate}
             disabled={!canManage || isSavingCreate}
+            className="h-12 rounded-xl"
           >
             <PlusCircle className="mr-2 h-4 w-4" />
             {isSavingCreate ? "Salvando..." : "Salvar contraparte"}
@@ -429,25 +448,38 @@ export default function Contrapartes() {
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             <div className="space-y-2">
               <Label>Tipo</Label>
-              <Select
-                value={editForm.tipo}
-                onValueChange={(value) =>
-                  setFormField(setEditForm, "tipo", value as ContraparteTipo)
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="pessoa">Pessoa</SelectItem>
-                  <SelectItem value="empresa">Empresa</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { value: "pessoa", label: "Pessoa" },
+                  { value: "empresa", label: "Empresa" },
+                ].map((opt) => {
+                  const isSelected = editForm.tipo === opt.value;
+                  return (
+                    <Button
+                      key={opt.value}
+                      type="button"
+                      variant={isSelected ? "default" : "outline"}
+                      onClick={() =>
+                        setFormField(setEditForm, "tipo", opt.value as ContraparteTipo)
+                      }
+                      className={cn(
+                        "h-12 rounded-xl transition-all border-2 bg-background",
+                        isSelected
+                          ? "border-primary bg-primary text-primary-foreground font-semibold shadow-sm"
+                          : "border-primary/20 hover:border-primary/50 text-foreground"
+                      )}
+                    >
+                      {opt.label}
+                    </Button>
+                  );
+                })}
+              </div>
             </div>
 
             <div className="space-y-2">
               <Label>Nome</Label>
               <Input
+                className="h-12 rounded-xl bg-background"
                 value={editForm.nome}
                 onChange={(event) =>
                   setFormField(setEditForm, "nome", event.target.value)
@@ -458,6 +490,7 @@ export default function Contrapartes() {
             <div className="space-y-2">
               <Label>Documento</Label>
               <Input
+                className="h-12 rounded-xl bg-background"
                 value={editForm.documento}
                 onChange={(event) =>
                   setFormField(setEditForm, "documento", event.target.value)
@@ -468,6 +501,7 @@ export default function Contrapartes() {
             <div className="space-y-2">
               <Label>Telefone</Label>
               <Input
+                className="h-12 rounded-xl bg-background"
                 value={editForm.telefone}
                 onChange={(event) =>
                   setFormField(setEditForm, "telefone", event.target.value)
@@ -478,6 +512,7 @@ export default function Contrapartes() {
             <div className="space-y-2">
               <Label>Email</Label>
               <Input
+                className="h-12 rounded-xl bg-background"
                 value={editForm.email}
                 onChange={(event) =>
                   setFormField(setEditForm, "email", event.target.value)
@@ -488,6 +523,7 @@ export default function Contrapartes() {
             <div className="space-y-2">
               <Label>Endereco</Label>
               <Input
+                className="h-12 rounded-xl bg-background"
                 value={editForm.endereco}
                 onChange={(event) =>
                   setFormField(setEditForm, "endereco", event.target.value)

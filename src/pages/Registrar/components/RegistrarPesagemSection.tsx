@@ -26,7 +26,7 @@ export function RegistrarPesagemSection(props: RegistrarPesagemSectionProps) {
             <Label className="w-24 pt-2">{animal?.identificacao}</Label>
             <div className="flex-1 space-y-1">
               <Input
-                className={cn(isInvalid && "border-destructive focus-visible:ring-destructive/30")}
+                className={cn("h-12 rounded-xl bg-background", isInvalid && "border-destructive focus-visible:ring-destructive/30")}
                 type="number"
                 step={props.weightInputStep}
                 placeholder={`Peso (${props.weightUnitLabel})`}

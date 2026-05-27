@@ -28,6 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 
 const BASIS_LABEL = {
   idade: "Idade",
@@ -251,21 +252,31 @@ export default function Configuracoes() {
                   <StatusBadge tone="neutral">
                     Atual: {getWeightUnitLabel(measurementConfig.weight_unit)}
                   </StatusBadge>
-                  <Select
-                    value={pendingWeightUnit}
-                    onValueChange={(value) =>
-                      setPendingWeightUnit(value as FarmWeightUnit)
-                    }
-                    disabled={!canManageFarmSettings || isSavingMeasurement}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="kg">Quilograma (kg)</SelectItem>
-                      <SelectItem value="arroba">Arroba</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { value: "kg", label: "Quilograma (kg)" },
+                      { value: "arroba", label: "Arroba" },
+                    ].map((opt) => {
+                      const isSelected = pendingWeightUnit === opt.value;
+                      return (
+                        <Button
+                          key={opt.value}
+                          type="button"
+                          variant={isSelected ? "default" : "outline"}
+                          disabled={!canManageFarmSettings || isSavingMeasurement}
+                          onClick={() => setPendingWeightUnit(opt.value as FarmWeightUnit)}
+                          className={cn(
+                            "h-12 rounded-xl transition-all border-2",
+                            isSelected
+                              ? "border-primary bg-primary text-primary-foreground font-semibold shadow-sm"
+                              : "border-primary/20 hover:border-primary/50 text-foreground"
+                          )}
+                        >
+                          {opt.label}
+                        </Button>
+                      );
+                    })}
+                  </div>
                 </div>
                 <Button
                   type="button"
@@ -275,6 +286,7 @@ export default function Configuracoes() {
                     isSavingMeasurement ||
                     pendingWeightUnit === measurementConfig.weight_unit
                   }
+                  className="h-12 rounded-xl"
                 >
                   {isSavingMeasurement ? "Salvando..." : "Salvar unidade"}
                 </Button>

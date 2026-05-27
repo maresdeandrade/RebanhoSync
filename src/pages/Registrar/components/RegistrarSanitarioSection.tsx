@@ -105,7 +105,7 @@ export function RegistrarSanitarioSection(props: RegistrarSanitarioSectionProps)
         <div className="space-y-3 rounded-lg border bg-background/50 p-3">
           <Label>Item do Protocolo</Label>
           <select
-            className="flex h-11 w-full rounded-xl border border-border/80 bg-background px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring/30 disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex h-12 w-full rounded-xl border border-input bg-background px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring/30 disabled:cursor-not-allowed disabled:opacity-50"
             onChange={(event) => props.onProtocoloItemChange(event.target.value)}
             value={props.protocoloItemId}
           >
@@ -156,7 +156,7 @@ export function RegistrarSanitarioSection(props: RegistrarSanitarioSectionProps)
         <Label>Produto</Label>
         <Input
           className={cn(
-            "bg-background",
+            "h-12 rounded-xl bg-background",
             props.sanitatioProductMissing && "border-destructive focus-visible:ring-destructive/30",
           )}
           placeholder="Produto"
@@ -211,7 +211,7 @@ export function RegistrarSanitarioSection(props: RegistrarSanitarioSectionProps)
         <Label>Caso clínico (opcional)</Label>
         {props.clinicalCases.length > 0 ? (
           <select
-            className="flex h-11 w-full rounded-xl border border-border/80 bg-background px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring/30 disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex h-12 w-full rounded-xl border border-input bg-background px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring/30 disabled:cursor-not-allowed disabled:opacity-50"
             value={props.selectedClinicalCaseId}
             disabled={props.createClinicalCase}
             onChange={(event) => props.onClinicalCaseChange(event.target.value)}

@@ -21,6 +21,7 @@ import {
   getWeightUnitLabel,
   parseWeightInput,
 } from "@/lib/format/weight";
+import { cn } from "@/lib/utils";
 
 interface FarmLifecycleSettingsPanelProps {
   canManage: boolean;
@@ -213,49 +214,73 @@ export function FarmLifecycleSettingsPanel({
             <div className="mt-4 grid gap-4">
               <div className="space-y-2">
                 <Label>Base principal</Label>
-                <Select
-                  value={form.stageClassificationBasis}
-                  onValueChange={(value) =>
-                    setForm((current) => ({
-                      ...current,
-                      stageClassificationBasis:
-                        value as FarmLifecycleConfig["stage_classification_basis"],
-                    }))
-                  }
-                  disabled={!canManage || isSaving}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="idade">Idade</SelectItem>
-                    <SelectItem value="peso">Peso</SelectItem>
-                  </SelectContent>
-                </Select>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { value: "idade", label: "Idade" },
+                    { value: "peso", label: "Peso" },
+                  ].map((opt) => {
+                    const isSelected = form.stageClassificationBasis === opt.value;
+                    return (
+                      <Button
+                        key={opt.value}
+                        type="button"
+                        variant={isSelected ? "default" : "outline"}
+                        disabled={!canManage || isSaving}
+                        onClick={() =>
+                          setForm((current) => ({
+                            ...current,
+                            stageClassificationBasis:
+                              opt.value as FarmLifecycleConfig["stage_classification_basis"],
+                          }))
+                        }
+                        className={cn(
+                          "h-12 rounded-xl transition-all border-2",
+                          isSelected
+                            ? "border-primary bg-primary text-primary-foreground font-semibold shadow-sm"
+                            : "border-primary/20 hover:border-primary/50 text-foreground bg-background"
+                        )}
+                      >
+                        {opt.label}
+                      </Button>
+                    );
+                  })}
+                </div>
               </div>
 
               <div className="space-y-2">
                 <Label>Modo padrao</Label>
-                <Select
-                  value={form.defaultTransitionMode}
-                  onValueChange={(value) =>
-                    setForm((current) => ({
-                      ...current,
-                      defaultTransitionMode:
-                        value as FarmLifecycleConfig["default_transition_mode"],
-                    }))
-                  }
-                  disabled={!canManage || isSaving}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="manual">Manual</SelectItem>
-                    <SelectItem value="hibrido">Hibrido</SelectItem>
-                    <SelectItem value="automatico">Automatico</SelectItem>
-                  </SelectContent>
-                </Select>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { value: "manual", label: "Manual" },
+                    { value: "hibrido", label: "Híbrido" },
+                    { value: "automatico", label: "Automático" },
+                  ].map((opt) => {
+                    const isSelected = form.defaultTransitionMode === opt.value;
+                    return (
+                      <Button
+                        key={opt.value}
+                        type="button"
+                        variant={isSelected ? "default" : "outline"}
+                        disabled={!canManage || isSaving}
+                        onClick={() =>
+                          setForm((current) => ({
+                            ...current,
+                            defaultTransitionMode:
+                              opt.value as FarmLifecycleConfig["default_transition_mode"],
+                          }))
+                        }
+                        className={cn(
+                          "h-12 rounded-xl transition-all border-2 text-xs sm:text-sm px-1",
+                          isSelected
+                            ? "border-primary bg-primary text-primary-foreground font-semibold shadow-sm"
+                            : "border-primary/20 hover:border-primary/50 text-foreground bg-background"
+                        )}
+                      >
+                        {opt.label}
+                      </Button>
+                    );
+                  })}
+                </div>
               </div>
 
               <div className="rounded-2xl border border-border/70 bg-background/80 p-4">
@@ -294,6 +319,7 @@ export function FarmLifecycleSettingsPanel({
                     id="neonatal-days"
                     type="number"
                     min="1"
+                    className="h-12 rounded-xl bg-background"
                     value={form.neonatalDays}
                     onChange={(event) =>
                       setNumericField("neonatalDays")(event.target.value)
@@ -307,6 +333,7 @@ export function FarmLifecycleSettingsPanel({
                     id="weaning-days"
                     type="number"
                     min="1"
+                    className="h-12 rounded-xl bg-background"
                     value={form.weaningDays}
                     onChange={(event) =>
                       setNumericField("weaningDays")(event.target.value)
@@ -323,6 +350,7 @@ export function FarmLifecycleSettingsPanel({
                     type="number"
                     min="1"
                     step={getWeightInputStep(weightUnit)}
+                    className="h-12 rounded-xl bg-background"
                     value={form.weaningWeightKg}
                     onChange={(event) =>
                       setNumericField("weaningWeightKg")(event.target.value)
@@ -348,6 +376,7 @@ export function FarmLifecycleSettingsPanel({
                     id="male-candidate-days"
                     type="number"
                     min="1"
+                    className="h-12 rounded-xl bg-background"
                     value={form.maleBreedingCandidateDays}
                     onChange={(event) =>
                       setNumericField("maleBreedingCandidateDays")(
@@ -366,6 +395,7 @@ export function FarmLifecycleSettingsPanel({
                     type="number"
                     min="1"
                     step={getWeightInputStep(weightUnit)}
+                    className="h-12 rounded-xl bg-background"
                     value={form.maleBreedingCandidateWeightKg}
                     onChange={(event) =>
                       setNumericField("maleBreedingCandidateWeightKg")(
@@ -381,6 +411,7 @@ export function FarmLifecycleSettingsPanel({
                     id="male-adult-days"
                     type="number"
                     min="1"
+                    className="h-12 rounded-xl bg-background"
                     value={form.maleAdultDays}
                     onChange={(event) =>
                       setNumericField("maleAdultDays")(event.target.value)
@@ -397,6 +428,7 @@ export function FarmLifecycleSettingsPanel({
                     type="number"
                     min="1"
                     step={getWeightInputStep(weightUnit)}
+                    className="h-12 rounded-xl bg-background"
                     value={form.maleAdultWeightKg}
                     onChange={(event) =>
                       setNumericField("maleAdultWeightKg")(event.target.value)
@@ -420,6 +452,7 @@ export function FarmLifecycleSettingsPanel({
                     id="female-adult-days"
                     type="number"
                     min="1"
+                    className="h-12 rounded-xl bg-background"
                     value={form.femaleAdultDays}
                     onChange={(event) =>
                       setNumericField("femaleAdultDays")(event.target.value)
@@ -436,6 +469,7 @@ export function FarmLifecycleSettingsPanel({
                     type="number"
                     min="1"
                     step={getWeightInputStep(weightUnit)}
+                    className="h-12 rounded-xl bg-background"
                     value={form.femaleAdultWeightKg}
                     onChange={(event) =>
                       setNumericField("femaleAdultWeightKg")(event.target.value)

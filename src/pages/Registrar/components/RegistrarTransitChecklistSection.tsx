@@ -77,7 +77,7 @@ export function RegistrarTransitChecklistSection(input: {
                 }))
               }
             >
-              <SelectTrigger>
+              <SelectTrigger className="h-12 rounded-xl bg-background">
                 <SelectValue placeholder="Selecione a finalidade" />
               </SelectTrigger>
               <SelectContent>
@@ -93,6 +93,7 @@ export function RegistrarTransitChecklistSection(input: {
           <div className="space-y-2">
             <Label>Numero/protocolo GTA</Label>
             <Input
+              className="h-12 rounded-xl bg-background"
               value={input.transitChecklist.gtaNumber}
               onChange={(event) =>
                 setTransitChecklist((prev) => ({
@@ -152,7 +153,7 @@ export function RegistrarTransitChecklistSection(input: {
                   }))
                 }
               >
-                <SelectTrigger>
+                <SelectTrigger className="h-12 rounded-xl bg-background">
                   <SelectValue placeholder="Selecione a UF" />
                 </SelectTrigger>
                 <SelectContent>
@@ -190,6 +191,7 @@ export function RegistrarTransitChecklistSection(input: {
               <div className="space-y-2">
                 <Label>Atestado negativo de brucelose</Label>
                 <Input
+                  className="h-12 rounded-xl bg-background"
                   type="date"
                   value={input.transitChecklist.brucellosisExamDate}
                   onChange={(event) =>
@@ -204,6 +206,7 @@ export function RegistrarTransitChecklistSection(input: {
               <div className="space-y-2">
                 <Label>Atestado negativo de tuberculose</Label>
                 <Input
+                  className="h-12 rounded-xl bg-background"
                   type="date"
                   value={input.transitChecklist.tuberculosisExamDate}
                   onChange={(event) =>
@@ -220,6 +223,7 @@ export function RegistrarTransitChecklistSection(input: {
           <div className="space-y-2 md:col-span-2">
             <Label>Observacoes do transito</Label>
             <Input
+              className="h-12 rounded-xl bg-background"
               value={input.transitChecklist.notes}
               onChange={(event) =>
                 setTransitChecklist((prev) => ({

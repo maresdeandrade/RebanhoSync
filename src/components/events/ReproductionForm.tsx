@@ -490,22 +490,33 @@ export function ReproductionForm({
         <FormSection title="Resultado do diagnostico">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="repro-resultado">Resultado</Label>
-              <Select
-                value={data.resultadoDiagnostico || "inconclusivo"}
-                onValueChange={(value) =>
-                  updateField("resultadoDiagnostico", value)
-                }
-              >
-                <SelectTrigger id="repro-resultado">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="positivo">Positivo (prenha)</SelectItem>
-                  <SelectItem value="negativo">Negativo (vazia)</SelectItem>
-                  <SelectItem value="inconclusivo">Inconclusivo</SelectItem>
-                </SelectContent>
-              </Select>
+              <Label>Resultado</Label>
+              <div className="grid grid-cols-3 gap-2" id="repro-resultado">
+                <Button
+                  type="button"
+                  variant={data.resultadoDiagnostico === "positivo" ? "default" : "outline"}
+                  className="h-12 text-sm rounded-xl border-2"
+                  onClick={() => updateField("resultadoDiagnostico", "positivo")}
+                >
+                  Positivo
+                </Button>
+                <Button
+                  type="button"
+                  variant={data.resultadoDiagnostico === "negativo" ? "default" : "outline"}
+                  className="h-12 text-sm rounded-xl border-2"
+                  onClick={() => updateField("resultadoDiagnostico", "negativo")}
+                >
+                  Negativo
+                </Button>
+                <Button
+                  type="button"
+                  variant={!data.resultadoDiagnostico || data.resultadoDiagnostico === "inconclusivo" ? "default" : "outline"}
+                  className="h-12 text-sm rounded-xl border-2"
+                  onClick={() => updateField("resultadoDiagnostico", "inconclusivo")}
+                >
+                  Inconclusivo
+                </Button>
+              </div>
             </div>
 
             {data.resultadoDiagnostico === "positivo" ? (
@@ -594,28 +605,43 @@ export function ReproductionForm({
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor={`cria-sexo-${cria.localId}`}>Sexo</Label>
-                    <Select
-                      value={cria.sexo}
-                      onValueChange={(value) =>
-                        updateField(
-                          "crias",
-                          (data.crias ?? []).map((item) =>
-                            item.localId === cria.localId
-                              ? { ...item, sexo: value as "M" | "F" }
-                              : item,
-                          ),
-                        )
-                      }
-                    >
-                      <SelectTrigger id={`cria-sexo-${cria.localId}`}>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="F">Femea</SelectItem>
-                        <SelectItem value="M">Macho</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <Label>Sexo</Label>
+                    <div className="grid grid-cols-2 gap-2" id={`cria-sexo-${cria.localId}`}>
+                      <Button
+                        type="button"
+                        variant={cria.sexo === "F" ? "default" : "outline"}
+                        className="h-12 text-sm rounded-xl border-2"
+                        onClick={() =>
+                          updateField(
+                            "crias",
+                            (data.crias ?? []).map((item) =>
+                              item.localId === cria.localId
+                                ? { ...item, sexo: "F" }
+                                : item,
+                            ),
+                          )
+                        }
+                      >
+                        Fêmea
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={cria.sexo === "M" ? "default" : "outline"}
+                        className="h-12 text-sm rounded-xl border-2"
+                        onClick={() =>
+                          updateField(
+                            "crias",
+                            (data.crias ?? []).map((item) =>
+                              item.localId === cria.localId
+                                ? { ...item, sexo: "M" }
+                                : item,
+                            ),
+                          )
+                        }
+                      >
+                        Macho
+                      </Button>
+                    </div>
                   </div>
 
                   <div className="space-y-2">
