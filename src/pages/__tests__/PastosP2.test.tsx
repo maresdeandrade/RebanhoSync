@@ -495,6 +495,10 @@ describe("P3 pasture infrastructure scope", () => {
       </MemoryRouter>,
     );
 
+    // O painel começa colapsado — precisa expandir antes de verificar os itens
+    const infraButton = await screen.findByRole("button", { name: /infraestrutura/i });
+    fireEvent.click(infraButton);
+
     expect(await screen.findByText("Cochos")).toBeInTheDocument();
     expect(screen.getByText("Bebedouros")).toBeInTheDocument();
     expect(screen.getByText("Cerca")).toBeInTheDocument();

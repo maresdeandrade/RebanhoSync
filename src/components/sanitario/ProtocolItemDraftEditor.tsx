@@ -86,20 +86,22 @@ export function ProtocolItemDraftEditor({
   errors,
 }: ProtocolItemDraftEditorProps) {
   const visibleFields = getVisibleFieldsByMode(draft.mode);
-  const dedupPreview = draft.mode
-    ? buildSanitaryDedupKey({
-        layer: draft.layer,
-        scopeType: draft.scopeType,
-        mode: draft.mode,
-        familyCode: draft.familyCode || `family-${draft.itemId}`,
-        itemCode: draft.itemCode || `item-${draft.itemId}`,
-        animalId: "PREVIEW",
-        loteId: "PREVIEW",
-        fazendaId: "PREVIEW",
-        campaignMonths: draft.campaignMonths,
-        ageStartDays: draft.ageStartDays,
-        now: new Date(),
-      })
+  const dedupPreview = draft.mode && draft.layer && draft.scopeType
+    ? (() => {
+        try {
+          return buildSanitaryDedupKey({
+            scopeType: draft.scopeType,
+            scopeId: "PREVIEW",
+            familyCode: draft.familyCode || `family-${draft.itemId}`,
+            itemCode: draft.itemCode || `item-${draft.itemId}`,
+            regimenVersion: draft.regimenVersion ?? 1,
+            mode: draft.mode,
+            periodKey: "PREVIEW",
+          });
+        } catch {
+          return null;
+        }
+      })()
     : null;
 
   return (

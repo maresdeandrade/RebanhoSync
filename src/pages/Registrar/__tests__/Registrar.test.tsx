@@ -116,6 +116,37 @@ describe("Registrar Page - Anti-Teleport", () => {
       }
 
       if (
+        querySource.includes("loadRegistrarProtocolosEffect") ||
+        querySource.includes("state_protocolos_sanitarios")
+      ) {
+        return [
+          {
+            id: "proto-1",
+            nome: "Protocolo Teste",
+            ativo: true,
+            fazenda_id: "farm-1",
+            deleted_at: null,
+          },
+        ] as ReturnType<typeof useLiveQuery>;
+      }
+
+      if (
+        querySource.includes("loadRegistrarProtocoloItensEffect") ||
+        querySource.includes("state_protocolos_sanitarios_itens")
+      ) {
+        return [
+          {
+            id: "item-1",
+            protocolo_id: "proto-1",
+            fazenda_id: "farm-1",
+            tipo: "vacinacao",
+            produto: "Vacina Teste",
+            deleted_at: null,
+          },
+        ] as ReturnType<typeof useLiveQuery>;
+      }
+
+      if (
         querySource.includes("state_animais") ||
         querySource.includes("loadRegistrarAnimaisNoLoteEffect")
       ) {
@@ -147,8 +178,8 @@ describe("Registrar Page - Anti-Teleport", () => {
     const checkbox = await screen.findByRole("checkbox");
     fireEvent.click(checkbox);
 
-    // 2. Click "Próximo"
-    const nextButton1 = screen.getByText("Próximo");
+    // 2. Click "Escolher manejo"
+    const nextButton1 = screen.getByText("Escolher manejo");
     fireEvent.click(nextButton1);
 
     // 3. Select "Mover" (Movimentacao)
@@ -180,7 +211,7 @@ describe("Registrar Page - Anti-Teleport", () => {
     fireEvent.click(optionB_Source);
 
     // 7. Go to step 2 again
-    const nextButton2 = screen.getAllByText("Próximo")[0]; // Should be the visible one
+    const nextButton2 = screen.getAllByText("Escolher manejo")[0]; // Should be the visible one
     fireEvent.click(nextButton2);
     
     // 8. Select "Mover" again?
@@ -217,9 +248,7 @@ describe("Registrar Page - Anti-Teleport", () => {
       </MemoryRouter>
     );
 
-    await waitFor(() => {
-      expect(screen.getAllByText("Lote A").length).toBeGreaterThan(0);
-    });
+    await screen.findByText("Contexto");
 
     expect(screen.getAllByText(/1 animal\(is\) selecionado\(s\)/i).length)
       .toBeGreaterThan(0);
@@ -243,7 +272,7 @@ describe("Registrar Page - Anti-Teleport", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText("Selecionar alvo")).toBeInTheDocument();
+      expect(screen.getAllByText(/Escolher ação/i).length).toBeGreaterThan(0);
     });
 
     expect(mockNavigate).not.toHaveBeenCalled();

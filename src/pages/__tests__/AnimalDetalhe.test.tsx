@@ -216,8 +216,8 @@ describe("AnimalDetalhe", () => {
 
     expect(screen.getByRole("tab", { name: /agenda/i })).toBeInTheDocument();
     expect(
-      screen.getByRole("link", { name: /Registrar manejo deste animal/i }),
-    ).toHaveAttribute("href", "/registrar?animalId=animal-1");
+      screen.getByRole("link", { name: /Registrar manejo/i }),
+    ).toHaveAttribute("href", "/registrar?animalId=animal-1&loteId=lote-1");
   });
 
   it("lista casos sanitarios persistidos do animal", () => {

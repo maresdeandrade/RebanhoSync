@@ -44,7 +44,7 @@ jobs:
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
         with:
-          version: 9
+          version: 10
           run_install: false
 
       - name: Setup Node.js
@@ -61,7 +61,8 @@ jobs:
         run: pnpm run lint
 
       - name: Test
-        run: pnpm test
+        timeout-minutes: 20
+        run: pnpm exec vitest run --bail=1 --maxWorkers=50% --testTimeout=15000 --reporter=verbose
 
       - name: Build
         run: pnpm run build
