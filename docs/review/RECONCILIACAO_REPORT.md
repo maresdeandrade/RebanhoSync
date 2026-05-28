@@ -1,8 +1,8 @@
-﻿# Relatório de Reconciliação — Documentos de Governança
+# Relatório de Reconciliação — Documentos de Governança
 
 **Status:** Derivado (Rev D+ — Pós-Fechamento)
 **Baseline:** `3664395`
-**Última Atualização:** 2026-04-19
+**Última Atualização:** 2026-05-28
 **Derivado por:** Antigravity — Auditoria Técnica Completa Abril/2026
 
 ---
@@ -19,6 +19,14 @@ Recente adição da feature do Motor Sanitário Sequencial (Mid-Month Abril).
 ---
 
 ## 2. Summary
+
+### Delta 2026-05-28 (Fase 1 — Consolidação Operacional)
+
+- **Correção de Falhas de Teste Históricas**: Resolvidas 6 falhas pré-existentes de testes unitários devido a desalinhamento de mocks de `useLiveQuery` e Shadcn/Combobox (`Animais.test.tsx`, `AnimalSpeciesForms.test.tsx`, `LoteDetalhe.test.tsx`, `PastosP2.test.tsx`, `semantic_terms_guard.smoke.test.ts`).
+- **Suíte de Testes de Fluxo e Fumaça**:
+  - Criados 5 novos testes de integração de fluxo sob `tests/integration/flows/` cobrindo cenários com/sem agenda de pesagem, movimentação e tratativa de erros no planejamento do evento.
+  - Criado 1 novo teste de fumaça sob `tests/smoke/` validando o comportamento de `buildEventGesture` de forma avulsa para múltiplos domínios (pesagem, movimentação, nutrição, sanitário) assegurando `source_task_id: null`.
+- **Integridade da Suite**: Linter, build e testes unitários/integração rodando 100% verdes sem warnings na baseline local.
 
 ### Delta 2026-04-19 (Hotspot `Registrar`)
 
@@ -71,13 +79,13 @@ IMPLEMENTATION_STATUS (Matriz Analítica)
 
 | Métrica | Valor |
 | --- | --- |
-| Capabilities no Catalog | 20 |
+| Capabilities no Catalog | 26 |
 | TDs OPEN (lista original) | 0 (todos CLOSED) |
-| TDs OPEN residuais (novos) | 1 (TD-025) |
+| TDs OPEN residuais (novos) | 2 (TD-025, TD-032) |
 | TDs CLOSED da lista original | 10/10 (100%) |
-| Catálogo coberto na Matriz | 20/20 (100%) |
+| Catálogo coberto na Matriz | 26/26 (100%) |
 | Gaps originais fechados | 10/10 (100%) |
-| Capability Score (Analítico) | 20/20 (100%) |
+| Capability Score (Analítico) | 24/26 (92%) |
 
 ### 3.2 Mapping Completo: TD → capability_id (Pós-Fechamento)
 
@@ -98,7 +106,8 @@ IMPLEMENTATION_STATUS (Matriz Analítica)
 
 | TD | capability_id | Track | Status |
 | --- | --- | --- | --- |
-| TD-025| `sanitario.regime_sequencial` | UX | ⚠️ OPEN |
+| TD-025| `sanitario.regime_sequencial` | UX | ⚠️  OPEN |
+| TD-032| `sanitario.data_prevista_prefill` | UX | ⚠️  OPEN |
 
 ### 3.4 Mapping Ambiguity
 

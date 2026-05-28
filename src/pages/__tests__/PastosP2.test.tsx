@@ -82,6 +82,36 @@ vi.mock("@/components/ui/select", async () => {
   };
 });
 
+vi.mock("@/components/ui/field-combobox", async () => {
+  const React = await import("react");
+
+  return {
+    FieldCombobox: ({
+      id,
+      value,
+      onValueChange,
+      options,
+    }: {
+      id?: string;
+      value?: string;
+      onValueChange?: (value: string) => void;
+      options: { value: string; label: string }[];
+    }) =>
+      React.createElement(
+        "select",
+        {
+          id,
+          value: value ?? "",
+          onChange: (event: React.ChangeEvent<HTMLSelectElement>) =>
+            onValueChange?.(event.target.value),
+        },
+        options.map((opt) =>
+          React.createElement("option", { key: opt.value, value: opt.value }, opt.label),
+        ),
+      ),
+  };
+});
+
 const mockNavigate = vi.fn();
 vi.mock("react-router-dom", async () => {
   const actual = await vi.importActual("react-router-dom");

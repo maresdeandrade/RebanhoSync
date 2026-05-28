@@ -1,9 +1,9 @@
 # Current State (Snapshot Operacional)
 
 > **Status:** Snapshot vivo
-> **Ultima Atualizacao:** 2026-05-26
+> **Ultima Atualizacao:** 2026-05-28
 > **Estado do produto:** Beta interno
-> **Fase atual:** MVP funcional completo -> **SLC (Simple, Lovable, Complete) em consolidacao**
+> **Fase atual:** MVP funcional completo -> **SLC (Simple, Lovable, Complete) em consolidacao** (Fase 1 de Consolidação Operacional Concluída)
 
 ---
 
@@ -36,6 +36,7 @@ Consolidacoes recentes da fase SLC:
 - Refatoracao visual SLC aplicada: Home virou painel tatico, Animais ficou card-first, Registrar foi compactado e a **Agenda** foi otimizada para campo com nova hierarquia de informacao, progressive disclosure de metadados, acoes criticas diferenciadas e responsividade mobile-first, sem alterar regras de negocio.
 
 ### ✅ Refinamentos Recentes (Maio/2026)
+- **Fase 1 — Consolidação Operacional Concluída**: Estabilização e blindagem completa da cadeia de execução de manejos (**Agenda aberta → Registrar manejo → Evento factual → Reconcile/fechamento da agenda**). Corrigimos as 6 falhas pré-existentes de testes unitários de página (`Animais`, `LoteDetalhe`, `PastosP2`, `AnimalSpeciesForms`). Introduzimos uma suite robusta de testes de integração e fumaça em `tests/integration/flows/` e `tests/smoke/` cobrindo fluxos de pesagem/movimentação avulsas e baseadas em agenda, garantindo comportamento idempotente e eliminando drift cronológico de tarefas.
 - **Consolidação do Design System nos Formulários**: Propagação de melhorias visuais e ergonômicas tácteis para os 5 formulários centrais da aplicação (`AnimalEditar.tsx`, `LoteNovo.tsx`, `LoteEditar.tsx`, `PastoNovo.tsx` e `PastoEditar.tsx`), elevando inputs para `h-12`/`rounded-xl`, introduzindo busca inteligente via `<FieldCombobox>`, proteção de cliques duplos com `isSaving`, botão de atalho de escaneamento de campo (`ScanLine`) e rodapé fixo `sticky bottom-0` (`h-14`) para navegação mobile com uma mão.
 - **Métricas de Ocupação**: Camada de derivadores puros (`src/features/occupancy/`) e componentes de UI integrados para visualização de desempenho de lotes e pastos.
 - **Identidade Azul Sync Técnico**: Implementada e consolidada em runtime.

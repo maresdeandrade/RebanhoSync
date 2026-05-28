@@ -1,8 +1,8 @@
-﻿# Divida Tecnica
+# Divida Tecnica
 
 > **Status:** Derivado (Rev D+)
 > **Baseline:** `3664395`
-> **Ultima Atualizacao:** 2026-05-09
+> **Ultima Atualizacao:** 2026-05-28
 > **Derivado por:** Auditoria tecnica - codigo + migrations como fonte de verdade
 > **Fonte:** `IMPLEMENTATION_STATUS.md`, `src/`, `supabase/`
 
@@ -10,7 +10,14 @@
 
 ## OPEN (Residual Pos-MVP)
 
-> Itens identificados na auditoria de abril/2026 como proximos passos relevantes.
+> Itens identificados na auditoria de abril/2026 e sprints de consolidação de maio/2026 como proximos passos relevantes.
+
+### TD-032: data_prevista não propagada ao Registrar
+
+- **Status:** OPEN
+- **Origem:** Fase 1 — Consolidação Operacional (Maio/2026)
+- **Impacto:** O Registrar recebe o `sourceTaskId` e preenche o contexto da agenda (produto, tipo) via query params, mas a data prevista original da tarefa não é propagada. O contexto visual na UI do Registrar fica ligeiramente incompleto. Baixo impacto de UX, sem impacto funcional de domínio.
+
 
 ### TD-026: Residual estrutural de shell em `Agenda`
 
@@ -160,13 +167,19 @@
 - **Fechado por:** `src/pages/__tests__/AnimalPosParto.e2e.test.tsx`, `src/pages/Agenda/__tests__/Agenda.test.tsx`, `src/lib/offline/__tests__/pull.test.ts`, `tests/integration/flows/sync_rollback_retry.flow.test.ts`
 - **Detalhe:** warnings `act(...)` foram tratados na causa (sincronizacao de updates async), sem mascaramento por `console.spy/filter`; baseline local da rodada com `ACT_WARN_COUNT=0` nos fluxos criticos e `pnpm test` verde.
 
+### Estabilização de Suítes de Teste fora de Hotspots
+
+- **Status:** CLOSED
+- **Fechado por:** Correção de mocks de `useLiveQuery` e Shadcn/Combobox em `Animais.test.tsx`, `AnimalSpeciesForms.test.tsx`, `LoteDetalhe.test.tsx` e `PastosP2.test.tsx`.
+- **Detalhe:** Eliminou as 6 falhas históricas recorrentes nos testes unitários e restabeleceu a integridade verde das suítes de páginas.
+
 ---
 
 ## Resumo
 
-- OPEN: `TD-025`, `TD-026`, `TD-027`, `TD-029`, `TD-031`
-- CLOSED: `TD-001`, `TD-003`, `TD-004`, `TD-006`, `TD-008`, `TD-011`, `TD-014`, `TD-015`, `TD-019`, `TD-020`, `TD-021`, `TD-022`, `TD-023`, `TD-024`, `TD-028`, `TD-030`
-- Total OPEN: `5`
+- OPEN: `TD-025`, `TD-026`, `TD-027`, `TD-029`, `TD-031`, `TD-032`
+- CLOSED: `TD-001`, `TD-003`, `TD-004`, `TD-006`, `TD-008`, `TD-011`, `TD-014`, `TD-015`, `TD-019`, `TD-020`, `TD-021`, `TD-022`, `TD-023`, `TD-024`, `TD-028`, `TD-030`, `Estabilização de Suítes de Teste`
+- Total OPEN: `6`
 
 ## Veja Tambem
 

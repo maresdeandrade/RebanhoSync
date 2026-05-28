@@ -2,7 +2,7 @@
 
 > **Status:** Derivado (Rev D+)
 > **Baseline:** `3664395`
-> **Ultima Atualizacao:** 2026-05-20
+> **Ultima Atualizacao:** 2026-05-28
 > **Derivado por:** Auditoria técnica completa — código + migrations + testes como fonte de verdade
 
 Este documento registra o estado efetivo do RebanhoSync na fase atual de consolidacao SLC, pós-fechamento de todos os TDs da lista aberta original.
@@ -11,14 +11,15 @@ Este documento registra o estado efetivo do RebanhoSync na fase atual de consoli
 
 - **Estagio do produto:** Beta interno — MVP completo e operacional.
 - **Fase de engenharia/produto:** transicao de MVP funcional para SLC (Simple, Lovable, Complete) em consolidacao.
+- **Consolidação Operacional (Fase 1 Concluída)**: Cadeia completa de execução (**Agenda aberta → Registrar manejo → Evento factual → Reconcile/fechamento da agenda**) 100% blindada, com a correção de 6 falhas históricas de testes unitários e criação de 5 novos testes de integração de fluxo + 1 teste de fumaça multi-domínios avulso.
 - **Core operacional:** sanitário, pesagem, movimentação, nutrição, pastagem/rondas, reprodução, financeiro e agenda estão implementados e usáveis.
 - **Camadas consolidadas:** onboarding guiado, importação CSV, relatórios operacionais, telemetria de piloto com flush remoto, modo de experiência da fazenda, dashboard e ficha reprodutiva dedicada, pós-parto neonatal, cria inicial, transições de rebanho.
 - **Central Operacional passiva:** primeira integração read-only concluída na Home, consumindo `src/lib/insights/` por `src/features/operationalInsights/` sem ações de domínio.
 - **UX operacional mobile-first:** refatoração visual SLC concluída no recorte atual, com Home tática, Registrar orientado por intenção, Animais card-first, Lotes/Pastos/Reprodução/Relatórios mais objetivos, seleção de fazenda contextual, filtros compactos e status técnicos rebaixados.
 - **Motor sanitário endurecido:** catalogo conservador, calendario TS->SQL alinhado, dedup canonico TS/SQL, brucelose por janela/sexo/especie transicional, bloqueio historico de reabertura via `sanitary_completion`, raiva sequencial D1/D2/anual por risco/configuracao/ativacao explicita e tecnicos por ativacao operacional explicita com alvo de especie quando informado.
-- **Qualidade local:** `lint`, `test:unit`, `test:integration`, `test:smoke`, `quality:gate` e `build` verdes.
+- **Qualidade local:** `lint`, `test:unit`, `test:integration`, `test:smoke`, `quality:gate` e `build` 100% verdes, com zero warnings/erros.
 - **TDs originalmente abertos (M0-M2):** fechados e consolidados na baseline Supabase pos-squash.
-- **Gaps residuais:** sem gap funcional critico aberto; permanecem residuos estruturais locais e consolidacao de experiencia/confiabilidade.
+- **Gaps residuais:** sem gap funcional critico aberto; sem falhas em testes unitários ou de integração; linter e build de produção sem erros.
 
 ---
 
@@ -392,6 +393,15 @@ Este documento registra o estado efetivo do RebanhoSync na fase atual de consoli
 - Selecao de fazenda passou a exibir municipio/UF, area, tipo de producao e manejo quando disponiveis, sem solicitar dado fiscal novo nem alterar o fluxo de escolha.
 - Limite preservado: a Central Operacional continua read-only; sinais auxiliares nao viraram fonte primaria, acao automatica ou camada persistida de marcadores.
 - Validacoes executadas durante a rodada visual: `pnpm run lint`, `pnpm run build`, `git diff --check` e checagens focadas/browser conforme escopo das telas alteradas.
+
+## 8.2 Update 2026-05-28 (Fase 1 — Consolidação Operacional Concluída)
+
+- **Cadeia Operacional Estabilizada**: A cadeia completa de execução (**Agenda aberta → Registrar manejo → Evento factual → Reconcile/fechamento da agenda**) está plenamente robusta e testada.
+- **6 Falhas de Testes Históricas Corrigidas**: Corrigidas falhas pré-existentes de testes causadas por desalinhamento em chamadas a mocks de `useLiveQuery` e Shadcn/Combobox, afetando `Animais.test.tsx`, `AnimalSpeciesForms.test.tsx`, `LoteDetalhe.test.tsx` e `PastosP2.test.tsx`.
+- **Nova Cobertura de Fluxo (Integration & Smoke)**:
+  - Adicionados 5 testes de integração de fluxos sob `tests/integration/flows/` cobrindo cenários com e sem agenda para pesagem, movimentação e falhas de planejamento (ex: restrições sanitárias que impedem a transição).
+  - Adicionado 1 teste de fumaça sob `tests/smoke/` validando `buildEventGesture` para múltiplos domínios avulsos e assegurando `source_task_id: null` na tabela `eventos`.
+- **Qualidade e Confiabilidade Estritas**: `eslint` 100% limpo, suite de testes de integração e smoke passando em 1.1s e build de produção verificado com sucesso.
 
 ## 9. Update 2026-04-12 (Sanitary Regimen & Compliance Engine)
 

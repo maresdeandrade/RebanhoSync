@@ -1,0 +1,69 @@
+import { describe, expect, it } from "vitest";
+
+import { createRegistrarFinalizeController } from "@/pages/Registrar/createRegistrarFinalizeController";
+import {
+  createBaseFinalizeDeps,
+  createBaseFinalizeInput,
+} from "./finalizeFlowTestUtils";
+
+describe("flow: agenda de movimentacao conclusao", () => {
+  it("conclui agenda de movimentacao ao finalizar o registro", async () => {
+    const deps = createBaseFinalizeDeps();
+
+    const finalize = createRegistrarFinalizeController(deps);
+
+    const input = createBaseFinalizeInput({
+      context: {
+        ...createBaseFinalizeInput().context,
+        tipoManejo: "movimentacao",
+        sourceTaskId: "agenda-movi-123",
+      },
+      operationData: {
+        ...createBaseFinalizeInput().operationData,
+        movimentacaoData: { toLoteId: "lote-2" },
+      },
+    });
+
+    await finalize(input);
+
+    // Deve chamar resolveNonFinancialFinalizePlan com sourceTaskId preenchido
+    expect(deps.tracks.resolveNonFinancialFinalizePlan).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tipoManejo: "movimentacao",
+        sourceTaskId: "agenda-movi-123",
+      }),
+    );
+
+    // Deve construir o update de conclusao da agenda
+    expect(deps.commit.buildAgendaCompletionOp).toHaveBeenCalledWith({
+      sourceTaskId: "agenda-movi-123",
+      linkedEventId: "evt-1",
+    });
+
+    // Deve commitar o evento e o update da agenda
+    expect(deps.commit.runFinalizeGesture).toHaveBeenCalledWith(
+      expect.objectContaining({
+        fazendaId: "farm-1",
+        ops: expect.arrayContaining([
+          expect.objectContaining({
+            table: "eventos",
+            action: "INSERT",
+            record: expect.objectContaining({ id: "evt-1" }),
+          }),
+          expect.objectContaining({
+            table: "agenda_itens",
+            action: "UPDATE",
+            record: expect.objectContaining({
+              id: "agenda-movi-123",
+              status: "concluido",
+              source_evento_id: "evt-1",
+            }),
+          }),
+        ]),
+      }),
+    );
+
+    // Deve navegar para agenda
+    expect(deps.feedback.navigate).toHaveBeenCalledWith("/agenda");
+  });
+});

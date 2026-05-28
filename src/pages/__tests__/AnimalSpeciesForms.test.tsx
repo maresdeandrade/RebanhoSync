@@ -77,6 +77,38 @@ vi.mock("@/components/ui/select", async () => {
   };
 });
 
+vi.mock("@/components/ui/field-combobox", async () => {
+  const React = await import("react");
+
+  return {
+    FieldCombobox: ({
+      id,
+      value,
+      onValueChange,
+      options,
+      placeholder,
+    }: {
+      id?: string;
+      value?: string;
+      onValueChange?: (value: string) => void;
+      options: { value: string; label: string }[];
+      placeholder?: string;
+    }) =>
+      React.createElement(
+        "select",
+        {
+          id,
+          value: value ?? "",
+          onChange: (event: React.ChangeEvent<HTMLSelectElement>) =>
+            onValueChange?.(event.target.value),
+        },
+        options.map((opt) =>
+          React.createElement("option", { key: opt.value, value: opt.value }, opt.label),
+        ),
+      ),
+  };
+});
+
 const mockNavigate = vi.fn();
 vi.mock("react-router-dom", async () => {
   const actual = await vi.importActual("react-router-dom");
@@ -127,7 +159,7 @@ function makeAnimal(overrides: Partial<Animal> = {}): Animal {
 
 async function chooseSpecies(label: string) {
   const value = label === "Bubalino" ? "bubalino" : "bovino";
-  fireEvent.change(screen.getByRole("combobox", { name: "Espécie" }), {
+  fireEvent.change(screen.getByRole("combobox", { name: /Esp.cie/i }), {
     target: { value },
   });
 }
@@ -216,12 +248,12 @@ describe("animal species in create/edit forms", () => {
     );
 
     await waitFor(() =>
-      expect(screen.getByRole("combobox", { name: "Espécie" })).toHaveValue(
+      expect(screen.getByRole("combobox", { name: /Esp.cie/i })).toHaveValue(
         "bovino",
       ),
     );
     await chooseSpecies("Bubalino");
-    expect(screen.getByRole("combobox", { name: "Espécie" })).toHaveValue(
+    expect(screen.getByRole("combobox", { name: /Esp.cie/i })).toHaveValue(
       "bubalino",
     );
     fireEvent.click(

@@ -1,8 +1,8 @@
-﻿# Roadmap do Produto
+# Roadmap do Produto
 
 > **Status:** Derivado (Rev D+)
 > **Baseline:** `3664395`
-> **Ultima Atualizacao:** 2026-05-20
+> **Ultima Atualizacao:** 2026-05-28
 > **Derivado por:** Auditoria tecnica - estado pos-fechamento dos TDs originais e evolucao funcional de UX operacional
 > **Fonte:** `TECH_DEBT.md`, `IMPLEMENTATION_STATUS.md`
 
@@ -11,6 +11,10 @@
 ## Contexto
 
 Todos os milestones do roadmap anterior (M0, M1, M2) foram concluidos via migrations de marco/2026. O capability score analitico permanece em 21/21 = 100%. O projeto segue em fase de **beta interno**.
+
+Atualização de Consolidação Operacional 2026-05-28 (Fase 1 Concluída):
+- A robustez da cadeia completa de execução (**Agenda aberta → Registrar manejo → Evento factual → Reconcile/fechamento da agenda**) foi blindada através de uma nova suíte de testes de integração de fluxos e testes de fumaça avulsos.
+- Corrigimos as 6 falhas históricas em testes unitários fora dos recortes de hotspots de página, garantindo estabilização absoluta.
 
 O roadmap atual cobre a consolidacao de observabilidade, cobertura E2E dos fluxos mais recentes, refinamentos de UX operacional da agenda e a reestruturacao da biblioteca sanitaria base.
 Com o hardening estrutural principal de `Registrar` e `Agenda` concluido, o repositorio entra em fase de consolidacao MVP -> SLC.
@@ -291,7 +295,7 @@ Atualizacao visual SLC 2026-05-20:
 
 ### Frente D — Confiabilidade
 
-- [ ] Estabilizar suites fora de recortes locais de hotspot
+- [x] Estabilizar suites fora de recortes locais de hotspot (Animais, AnimalSpeciesForms, LoteDetalhe, PastosP2 - Fase 1 Concluída)
 - [x] Definir smoke critico minimo por fluxo de producao
 - [x] Definir suite de integracao de fluxo em `tests/integration/flows/**`
 - [x] Manter suite `tests/smoke/**` com execucao rapida (<= 2 min)

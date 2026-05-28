@@ -19,6 +19,14 @@ vi.mock("@/components/manejo/MudarPastoLote", () => ({
 vi.mock("@/components/manejo/TrocarTouroLote", () => ({
   TrocarTouroLote: () => null,
 }));
+vi.mock("@/features/occupancy/useOccupancyData", () => ({
+  useOccupancyData: () => ({
+    allAnimalPeriods: [],
+    getLoteMetrics: () => null,
+    getPastoMetrics: () => null,
+    animalsMap: new Map(),
+  }),
+}));
 
 describe("LoteDetalhe page", () => {
   const mockedUseLiveQuery = vi.mocked(useLiveQuery);

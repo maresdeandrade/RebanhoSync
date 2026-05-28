@@ -181,7 +181,7 @@ describe("Animais page", () => {
     mockedUseLiveQuery.mockImplementation((() => {
       let callCount = 0;
       return () => {
-        const index = callCount % 6;
+        const index = callCount % 7;
         callCount += 1;
 
         switch (index) {
@@ -223,6 +223,9 @@ describe("Animais page", () => {
           case 4:
             return emptyRegulatoryReadModel as ReturnType<typeof useLiveQuery>;
           case 5:
+            // pendingOps — adicionado em Animais.tsx (6ª chamada useLiveQuery)
+            return [] as ReturnType<typeof useLiveQuery>;
+          case 6:
           default:
             return [mother] as ReturnType<typeof useLiveQuery>;
         }
@@ -264,7 +267,7 @@ describe("Animais page", () => {
     mockedUseLiveQuery.mockImplementation((() => {
       let callCount = 0;
       return () => {
-        const index = callCount % 6;
+        const index = callCount % 7;
         callCount += 1;
 
         switch (index) {
@@ -279,6 +282,9 @@ describe("Animais page", () => {
           case 4:
             return emptyRegulatoryReadModel as ReturnType<typeof useLiveQuery>;
           case 5:
+            // pendingOps — adicionado em Animais.tsx (6ª chamada useLiveQuery)
+            return [] as ReturnType<typeof useLiveQuery>;
+          case 6:
           default:
             return animaisBase as ReturnType<typeof useLiveQuery>;
         }
@@ -320,7 +326,7 @@ describe("Animais page", () => {
     mockedUseLiveQuery.mockImplementation((() => {
       let callCount = 0;
       return () => {
-        const index = callCount % 6;
+        const index = callCount % 7;
         callCount += 1;
 
         switch (index) {
@@ -387,6 +393,9 @@ describe("Animais page", () => {
               hasBlockingIssues: true,
             } as ReturnType<typeof useLiveQuery>;
           case 5:
+            // pendingOps — adicionado em Animais.tsx (6ª chamada useLiveQuery)
+            return [] as ReturnType<typeof useLiveQuery>;
+          case 6:
           default:
             return [activeAnimal, soldAnimal] as ReturnType<typeof useLiveQuery>;
         }
@@ -422,7 +431,7 @@ describe("Animais page", () => {
     mockedUseLiveQuery.mockImplementation((() => {
       let callCount = 0;
       return () => {
-        const index = callCount % 6;
+        const index = callCount % 7;
         callCount += 1;
 
         switch (index) {
@@ -460,6 +469,9 @@ describe("Animais page", () => {
           case 4:
             return emptyRegulatoryReadModel as ReturnType<typeof useLiveQuery>;
           case 5:
+            // pendingOps — adicionado em Animais.tsx (6ª chamada useLiveQuery)
+            return [] as ReturnType<typeof useLiveQuery>;
+          case 6:
           default:
             return [animalJanela, animalRecorrente] as ReturnType<typeof useLiveQuery>;
         }
