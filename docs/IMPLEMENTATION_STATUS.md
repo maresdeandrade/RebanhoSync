@@ -72,7 +72,7 @@ Este documento registra o estado efetivo do RebanhoSync na fase atual de consoli
 | `nutricao.historico` | Completo | `src/pages/Eventos.tsx` |
 | `pastagem.avaliacao_evento` | Completo — ronda/avaliação de pasto registrada como evento histórico append-only, sem alterar pastos, lotes, ocupações ou agenda | `src/pages/PastoDetalhe.tsx`, `src/lib/events/buildEventGesture.ts`, `src/lib/events/validators/pastagem.ts`, `supabase/migrations/20260508005000_eventos_pasto_avaliacao.sql` |
 | `pastagem.historico` | Completo — última avaliação exibida no detalhe do pasto via `event_eventos_pasto_avaliacao` | `src/pages/PastoDetalhe.tsx`, `src/lib/offline/db.ts`, `src/lib/offline/tableMap.ts` |
-| `pastagem.occupancy_metrics` | Completo — métricas de ocupação, ganho de peso e ECC derivadas para lotes e pastos | `src/features/occupancy/**`, `src/pages/LoteDetalhe.tsx`, `src/pages/PastoDetalhe.tsx` |
+| `pastagem.occupancy_metrics` | Completo — métricas de ocupação, tempo de lotação baseado em movimentações factuais, GMD bloqueado com <2 pesagens, e média de ECC e cobertura derivadas de eventos factuais de ECC com lista colapsável de animais sem ECC sob demanda | `src/features/occupancy/**`, `src/pages/LoteDetalhe.tsx`, `src/pages/PastoDetalhe.tsx` |
 | `movimentacao.registro` | Completo — **TD-019 CLOSED** | `supabase/migrations/00000000000000_rebuild_base_schema_sanitario.sql` |
 | `movimentacao.historico` | Completo | `src/pages/Eventos.tsx` |
 | `movimentacao.anti_teleport_client` | Completo | `src/pages/Registrar/index.tsx`, `src/lib/offline/syncWorker.ts` |

@@ -13,6 +13,7 @@ import { validateSanitarioInput } from "./sanitario";
 import { validateObitoInput } from "./obito";
 import { validateAlertaSanitarioInput } from "./alertaSanitario";
 import { validateConformidadeInput } from "./conformidade";
+import { validateEccInput } from "./ecc";
 
 export const validateEventInput = (input: EventInput): EventValidationIssue[] => {
   const issues = [...validateBaseEventInput(input)];
@@ -35,6 +36,8 @@ export const validateEventInput = (input: EventInput): EventValidationIssue[] =>
     issues.push(...validateFinanceiroInput(input));
   } else if (input.dominio === "obito") {
     issues.push(...validateObitoInput(input));
+  } else if (input.dominio === "ecc") {
+    issues.push(...validateEccInput(input));
   }
 
   return issues;

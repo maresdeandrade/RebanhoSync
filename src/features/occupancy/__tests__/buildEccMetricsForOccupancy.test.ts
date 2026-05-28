@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { buildEccMetricsForOccupancy } from "../buildEccMetricsForOccupancy";
 import type { AnimalOccupancyPeriod } from "../occupancyTypes";
-import type { Evento, EventoReproducao } from "@/lib/offline/types";
+import type { Evento, EventoEcc } from "@/lib/offline/types";
 
 describe("buildEccMetricsForOccupancy", () => {
   const animalId = "animal-1";
@@ -22,7 +22,7 @@ describe("buildEccMetricsForOccupancy", () => {
       {
         id: "event-ecc-1",
         fazenda_id: farmId,
-        dominio: "reproducao",
+        dominio: "ecc",
         occurred_at: "2026-01-05T00:00:00.000Z",
         animal_id: animalId,
         lote_id: "lote-A",
@@ -38,7 +38,7 @@ describe("buildEccMetricsForOccupancy", () => {
       {
         id: "event-ecc-2",
         fazenda_id: farmId,
-        dominio: "reproducao",
+        dominio: "ecc",
         occurred_at: "2026-01-25T00:00:00.000Z",
         animal_id: animalId,
         lote_id: "lote-A",
@@ -52,40 +52,50 @@ describe("buildEccMetricsForOccupancy", () => {
         deleted_at: null,
       },
     ];
-    const reproducoes = new Map<string, EventoReproducao>([
+    const eccs = new Map<string, EventoEcc>([
       [
         "event-ecc-1",
         {
-          evento_id: "event-ecc-1",
+          event_id: "event-ecc-1",
           fazenda_id: farmId,
-          payload: { escore_condicao_corporal: 3 },
+          animal_id: animalId,
+          ecc: 3,
+          escala_min: 1,
+          escala_max: 5,
+          escala_passo: 0.25,
+          payload: {},
           client_id: "client-1",
           client_op_id: "op-1",
           client_recorded_at: "2026-01-05T00:00:00.000Z",
-          server_received_at: "2026-01-05T00:00:00.000Z",
           created_at: "2026-01-05T00:00:00.000Z",
           updated_at: "2026-01-05T00:00:00.000Z",
           deleted_at: null,
+          client_tx_id: null,
         },
       ],
       [
         "event-ecc-2",
         {
-          evento_id: "event-ecc-2",
+          event_id: "event-ecc-2",
           fazenda_id: farmId,
-          payload: { escore_condicao_corporal: 4 },
+          animal_id: animalId,
+          ecc: 4,
+          escala_min: 1,
+          escala_max: 5,
+          escala_passo: 0.25,
+          payload: {},
           client_id: "client-1",
           client_op_id: "op-2",
           client_recorded_at: "2026-01-25T00:00:00.000Z",
-          server_received_at: "2026-01-25T00:00:00.000Z",
           created_at: "2026-01-25T00:00:00.000Z",
           updated_at: "2026-01-25T00:00:00.000Z",
           deleted_at: null,
+          client_tx_id: null,
         },
       ],
     ]);
 
-    const result = buildEccMetricsForOccupancy({ period, events, reproducoes });
+    const result = buildEccMetricsForOccupancy({ period, events, eccs });
 
     expect(result.eccInicial).toBe(3);
     expect(result.eccFinal).toBe(4);
@@ -105,9 +115,9 @@ describe("buildEccMetricsForOccupancy", () => {
       eccStatus: { status: "empty" },
     };
     const events: Evento[] = [];
-    const reproducoes = new Map<string, EventoReproducao>();
+    const eccs = new Map<string, EventoEcc>();
 
-    const result = buildEccMetricsForOccupancy({ period, events, reproducoes });
+    const result = buildEccMetricsForOccupancy({ period, events, eccs });
 
     expect(result.eccStatus.status).toBe("empty");
     expect(result.eccStatus.reason).toBe("Sem ECC individual registrado para o animal no periodo.");
@@ -128,7 +138,7 @@ describe("buildEccMetricsForOccupancy", () => {
       {
         id: "event-ecc-1",
         fazenda_id: farmId,
-        dominio: "reproducao",
+        dominio: "ecc",
         occurred_at: "2026-01-15T00:00:00.000Z",
         animal_id: animalId,
         lote_id: "lote-A",
@@ -142,25 +152,30 @@ describe("buildEccMetricsForOccupancy", () => {
         deleted_at: null,
       },
     ];
-    const reproducoes = new Map<string, EventoReproducao>([
+    const eccs = new Map<string, EventoEcc>([
       [
         "event-ecc-1",
         {
-          evento_id: "event-ecc-1",
+          event_id: "event-ecc-1",
           fazenda_id: farmId,
-          payload: { escore_condicao_corporal: 3.5 },
+          animal_id: animalId,
+          ecc: 3.5,
+          escala_min: 1,
+          escala_max: 5,
+          escala_passo: 0.25,
+          payload: {},
           client_id: "client-1",
           client_op_id: "op-1",
           client_recorded_at: "2026-01-15T00:00:00.000Z",
-          server_received_at: "2026-01-15T00:00:00.000Z",
           created_at: "2026-01-15T00:00:00.000Z",
           updated_at: "2026-01-15T00:00:00.000Z",
           deleted_at: null,
+          client_tx_id: null,
         },
       ],
     ]);
 
-    const result = buildEccMetricsForOccupancy({ period, events, reproducoes });
+    const result = buildEccMetricsForOccupancy({ period, events, eccs });
 
     expect(result.eccInicial).toBe(3.5);
     expect(result.eccFinal).toBeUndefined();
@@ -184,7 +199,7 @@ describe("buildEccMetricsForOccupancy", () => {
       {
         id: "event-ecc-1",
         fazenda_id: farmId,
-        dominio: "reproducao",
+        dominio: "ecc",
         occurred_at: "2026-01-05T00:00:00.000Z", // Before entry
         animal_id: animalId,
         lote_id: "lote-A",
@@ -200,7 +215,7 @@ describe("buildEccMetricsForOccupancy", () => {
       {
         id: "event-ecc-2",
         fazenda_id: farmId,
-        dominio: "reproducao",
+        dominio: "ecc",
         occurred_at: "2026-01-25T00:00:00.000Z", // After exit
         animal_id: animalId,
         lote_id: "lote-A",
@@ -214,40 +229,50 @@ describe("buildEccMetricsForOccupancy", () => {
         deleted_at: null,
       },
     ];
-    const reproducoes = new Map<string, EventoReproducao>([
+    const eccs = new Map<string, EventoEcc>([
       [
         "event-ecc-1",
         {
-          evento_id: "event-ecc-1",
+          event_id: "event-ecc-1",
           fazenda_id: farmId,
-          payload: { escore_condicao_corporal: 3 },
+          animal_id: animalId,
+          ecc: 3,
+          escala_min: 1,
+          escala_max: 5,
+          escala_passo: 0.25,
+          payload: {},
           client_id: "client-1",
           client_op_id: "op-1",
           client_recorded_at: "2026-01-05T00:00:00.000Z",
-          server_received_at: "2026-01-05T00:00:00.000Z",
           created_at: "2026-01-05T00:00:00.000Z",
           updated_at: "2026-01-05T00:00:00.000Z",
           deleted_at: null,
+          client_tx_id: null,
         },
       ],
       [
         "event-ecc-2",
         {
-          evento_id: "event-ecc-2",
+          event_id: "event-ecc-2",
           fazenda_id: farmId,
-          payload: { escore_condicao_corporal: 4 },
+          animal_id: animalId,
+          ecc: 4,
+          escala_min: 1,
+          escala_max: 5,
+          escala_passo: 0.25,
+          payload: {},
           client_id: "client-1",
           client_op_id: "op-2",
           client_recorded_at: "2026-01-25T00:00:00.000Z",
-          server_received_at: "2026-01-25T00:00:00.000Z",
           created_at: "2026-01-25T00:00:00.000Z",
           updated_at: "2026-01-25T00:00:00.000Z",
           deleted_at: null,
+          client_tx_id: null,
         },
       ],
     ]);
 
-    const result = buildEccMetricsForOccupancy({ period, events, reproducoes });
+    const result = buildEccMetricsForOccupancy({ period, events, eccs });
 
     expect(result.eccInicial).toBe(3);
     expect(result.eccFinal).toBe(4);

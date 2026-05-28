@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
   TrendingUp,
   Calendar,
@@ -6,9 +6,10 @@ import {
   AlertCircle,
   CheckCircle2,
   HelpCircle,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { StatusBadge } from "@/components/ui/status-badge";
 import type { LoteOccupancyMetrics, PastoOccupancyMetrics } from "./occupancyTypes";
 
 interface MetricCardProps {
@@ -18,6 +19,7 @@ interface MetricCardProps {
   icon?: React.ReactNode;
   status?: "complete" | "partial" | "empty";
   tooltip?: string;
+  extraContent?: React.ReactNode;
 }
 
 function MetricCard({
@@ -27,6 +29,7 @@ function MetricCard({
   icon,
   status,
   tooltip,
+  extraContent,
 }: MetricCardProps) {
   const statusColor = {
     complete: "text-green-600",
@@ -60,6 +63,7 @@ function MetricCard({
         {typeof value === "number" ? value.toFixed(2) : value}
         {unit && <span className="text-sm font-medium text-muted-foreground ml-2">{unit}</span>}
       </p>
+      {extraContent}
     </div>
   );
 }
@@ -74,6 +78,7 @@ export function OccupancyMetricCards({
   type,
 }: OccupancyMetricCardsProps) {
   const hasData = useMemo(() => metrics !== null, [metrics]);
+  const [showSemEcc, setShowSemEcc] = useState(false);
 
   if (!hasData || !metrics) {
     return (
@@ -89,17 +94,55 @@ export function OccupancyMetricCards({
 
   const weightStatusTooltip =
     metrics.weightStatus.status === "empty"
-      ? "Sem pesagens suficientes para calcular ganho de peso"
+      ? "Sem pesagens suficientes para calcular ganho de peso. GMD indisponível."
       : metrics.weightStatus.status === "partial"
-        ? "Dados parciais de peso disponíveis"
-        : "Ganho de peso calculado com dados completos";
+        ? "Apenas uma pesagem disponível no período. GMD indisponível."
+        : "GMD calculado com base em pelo menos duas pesagens válidas no período.";
 
   const eccStatusTooltip =
     metrics.eccStatus.status === "empty"
-      ? "Sem avaliações de ECC disponíveis"
+      ? "Sem avaliações de ECC factual registradas para este grupo."
       : metrics.eccStatus.status === "partial"
-        ? "Apenas uma avaliação de ECC disponível"
-        : "ECC calculado com dados completos";
+        ? "Cobertura de ECC parcial. Alguns animais não possuem ECC factual."
+        : "Cobertura completa. Todos os animais possuem ECC factual.";
+
+  const formatMovementDate = (dateStr: string | null) => {
+    if (!dateStr) return "Nenhum histórico";
+    return new Date(dateStr).toLocaleDateString("pt-BR", {
+      dateStyle: "short",
+    });
+  };
+
+  const semEccListContent = metrics.animaisSemEcc.length > 0 && (
+    <div className="mt-2 pt-2 border-t border-border/40 text-xs">
+      <button
+        onClick={() => setShowSemEcc(!showSemEcc)}
+        className="flex items-center gap-1 font-semibold text-primary hover:underline"
+      >
+        {showSemEcc ? (
+          <>
+            <EyeOff className="h-3 w-3" /> Ocultar animais sem ECC
+          </>
+        ) : (
+          <>
+            <Eye className="h-3 w-3" /> Ver {metrics.animaisSemEcc.length} animais sem ECC
+          </>
+        )}
+      </button>
+      {showSemEcc && (
+        <div className="mt-2 max-h-24 overflow-y-auto rounded bg-background/60 p-2 border border-border/30 space-y-1">
+          <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider mb-1">
+            Sem ECC factual registrado:
+          </p>
+          {metrics.animaisSemEcc.map((identificacao) => (
+            <div key={identificacao} className="font-mono text-muted-foreground py-0.5">
+              • {identificacao}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 
   if (type === "lote") {
     const loteMetrics = metrics as LoteOccupancyMetrics;
@@ -107,13 +150,13 @@ export function OccupancyMetricCards({
       <Card className="shadow-none">
         <CardContent className="space-y-4 p-4">
           <div className="space-y-2 border-b border-border/50 pb-4">
-          <h3 className="text-lg font-bold text-foreground">
-            Métricas de Ocupação
-          </h3>
-          <p className="text-sm text-muted-foreground">
-            Dados operacionais do lote
-          </p>
-        </div>
+            <h3 className="text-lg font-bold text-foreground">
+              Métricas de Ocupação
+            </h3>
+            <p className="text-sm text-muted-foreground">
+              Dados operacionais do lote
+            </p>
+          </div>
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <MetricCard
@@ -121,12 +164,24 @@ export function OccupancyMetricCards({
               value={loteMetrics.quantidadeAtual}
               unit="animais"
               icon={<Calendar className="h-4 w-4" />}
+              extraContent={
+                <p className="text-xs text-muted-foreground mt-1">
+                  Predomina: <span className="font-semibold text-foreground">{loteMetrics.categoriaPredominante || "Não classificada"}</span>
+                </p>
+              }
             />
             <MetricCard
               label="Tempo Médio"
               value={loteMetrics.tempoMedioPermanencia}
               unit="dias"
               icon={<Calendar className="h-4 w-4" />}
+              status={loteMetrics.tempoLotacaoStatus.status}
+              tooltip={loteMetrics.tempoLotacaoStatus.reason}
+              extraContent={
+                <p className="text-xs text-muted-foreground mt-1">
+                  Movimentação: <span className="font-semibold text-foreground">{formatMovementDate(loteMetrics.ultimaMovimentacao)}</span>
+                </p>
+              }
             />
             <MetricCard
               label="Tempo Máximo"
@@ -151,20 +206,19 @@ export function OccupancyMetricCards({
               tooltip={weightStatusTooltip}
             />
             <MetricCard
-              label="Ganho Médio"
-              value={loteMetrics.ganhoMedio}
-              unit="kg"
-              icon={<TrendingUp className="h-4 w-4" />}
-              status={loteMetrics.weightStatus.status}
-              tooltip={weightStatusTooltip}
-            />
-            <MetricCard
               label="GMD Estimado"
               value={loteMetrics.gmdEstimado}
               unit="kg/dia"
               icon={<TrendingUp className="h-4 w-4" />}
               status={loteMetrics.weightStatus.status}
               tooltip={weightStatusTooltip}
+              extraContent={
+                loteMetrics.weightStatus.status !== "complete" && (
+                  <p className="text-[10px] text-yellow-600 font-semibold mt-1">
+                    ⚠️ Requer ≥2 pesagens no período
+                  </p>
+                )
+              }
             />
             <MetricCard
               label="ECC Médio Atual"
@@ -177,16 +231,25 @@ export function OccupancyMetricCards({
               label="Cobertura ECC"
               value={`${loteMetrics.eccCobertura.avaliados}/${loteMetrics.eccCobertura.total}`}
               icon={<CheckCircle2 className="h-4 w-4" />}
+              extraContent={semEccListContent}
             />
           </div>
 
           {(loteMetrics.weightStatus.status !== "complete" ||
-            loteMetrics.eccStatus.status !== "complete") && (
+            loteMetrics.eccStatus.status !== "complete" ||
+            loteMetrics.tempoLotacaoStatus.status !== "complete") && (
             <div className="rounded-lg border border-yellow-200 bg-yellow-50/50 p-3">
-              <p className="text-sm text-yellow-800">
-                <strong>Nota:</strong> Alguns dados estão incompletos. Métricas
-                com status "parcial" ou "vazio" podem não refletir a realidade
-                completa do lote.
+              <p className="text-xs text-yellow-800 space-y-1">
+                <strong>Limitações e Cobertura:</strong>
+                {loteMetrics.tempoLotacaoStatus.status !== "complete" && (
+                  <span> • Tempo de permanência estimado por ausência de histórico de movimentação factual.</span>
+                )}
+                {loteMetrics.weightStatus.status !== "complete" && (
+                  <span> • Ganho de peso e GMD indisponíveis por pesagens insuficientes no lote.</span>
+                )}
+                {loteMetrics.eccStatus.status !== "complete" && (
+                  <span> • Média de ECC parcial por falta de avaliações factuais para {loteMetrics.animaisSemEcc.length} animais.</span>
+                )}
               </p>
             </div>
           )}
@@ -215,20 +278,24 @@ export function OccupancyMetricCards({
             value={pastoMetrics.lotacaoAtual}
             unit="animais"
             icon={<Calendar className="h-4 w-4" />}
+            extraContent={
+              <p className="text-xs text-muted-foreground mt-1">
+                Predomina: <span className="font-semibold text-foreground">{pastoMetrics.categoriaPredominante || "Não classificada"}</span>
+              </p>
+            }
           />
           <MetricCard
             label="Tempo Médio de Ocupação"
             value={pastoMetrics.tempoMedioOcupacao}
             unit="dias"
             icon={<Calendar className="h-4 w-4" />}
-          />
-          <MetricCard
-            label="Ganho Médio de Peso"
-            value={pastoMetrics.ganhoMedioPeso}
-            unit="kg"
-            icon={<TrendingUp className="h-4 w-4" />}
-            status={pastoMetrics.weightStatus.status}
-            tooltip={weightStatusTooltip}
+            status={pastoMetrics.tempoLotacaoStatus.status}
+            tooltip={pastoMetrics.tempoLotacaoStatus.reason}
+            extraContent={
+              <p className="text-xs text-muted-foreground mt-1">
+                Movimentação: <span className="font-semibold text-foreground">{formatMovementDate(pastoMetrics.ultimaMovimentacao)}</span>
+              </p>
+            }
           />
           <MetricCard
             label="GMD Estimado"
@@ -237,6 +304,13 @@ export function OccupancyMetricCards({
             icon={<TrendingUp className="h-4 w-4" />}
             status={pastoMetrics.weightStatus.status}
             tooltip={weightStatusTooltip}
+            extraContent={
+              pastoMetrics.weightStatus.status !== "complete" && (
+                <p className="text-[10px] text-yellow-600 font-semibold mt-1">
+                  ⚠️ Requer ≥2 pesagens no período
+                </p>
+              )
+            }
           />
           <MetricCard
             label="ECC Médio Atual"
@@ -244,6 +318,12 @@ export function OccupancyMetricCards({
             icon={<AlertCircle className="h-4 w-4" />}
             status={pastoMetrics.eccStatus.status}
             tooltip={eccStatusTooltip}
+          />
+          <MetricCard
+            label="Cobertura ECC"
+            value={`${pastoMetrics.eccCobertura.avaliados}/${pastoMetrics.eccCobertura.total}`}
+            icon={<CheckCircle2 className="h-4 w-4" />}
+            extraContent={semEccListContent}
           />
           <MetricCard
             label="Variação Média de ECC"
@@ -255,12 +335,20 @@ export function OccupancyMetricCards({
         </div>
 
         {(pastoMetrics.weightStatus.status !== "complete" ||
-          pastoMetrics.eccStatus.status !== "complete") && (
+          pastoMetrics.eccStatus.status !== "complete" ||
+          pastoMetrics.tempoLotacaoStatus.status !== "complete") && (
           <div className="rounded-lg border border-yellow-200 bg-yellow-50/50 p-3">
-            <p className="text-sm text-yellow-800">
-              <strong>Nota:</strong> Alguns dados estão incompletos. Métricas
-              com status "parcial" ou "vazio" podem não refletir a realidade
-              completa do pasto.
+            <p className="text-xs text-yellow-800 space-y-1">
+              <strong>Limitações e Cobertura:</strong>
+              {pastoMetrics.tempoLotacaoStatus.status !== "complete" && (
+                <span> • Tempo de ocupação estimado por ausência de histórico de movimentação factual.</span>
+              )}
+              {pastoMetrics.weightStatus.status !== "complete" && (
+                <span> • GMD indisponível por pesagens insuficientes dos animais no pasto.</span>
+              )}
+              {pastoMetrics.eccStatus.status !== "complete" && (
+                <span> • Média de ECC parcial por falta de avaliações factuais para {pastoMetrics.animaisSemEcc.length} animais.</span>
+              )}
             </p>
           </div>
         )}

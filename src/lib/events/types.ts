@@ -20,7 +20,8 @@ export type EventDomain =
   | "nutricao"
   | "financeiro"
   | "reproducao"
-  | "obito";
+  | "obito"
+  | "ecc";
 
 export interface BaseEventInput {
   dominio: EventDomain;
@@ -186,6 +187,15 @@ export interface ReproductionEventInput extends BaseEventInput {
   };
 }
 
+export interface EccEventInput extends BaseEventInput {
+  dominio: "ecc";
+  animalId: string;
+  ecc: number;
+  escalaMin?: number;
+  escalaMax?: number;
+  escalaPasso?: number;
+}
+
 export type EventInput =
   | SanitarioEventInput
   | AlertaSanitarioEventInput
@@ -196,7 +206,8 @@ export type EventInput =
   | PastoAvaliacaoEventInput
   | FinanceiroEventInput
   | ObitoEventInput
-  | ReproductionEventInput;
+  | ReproductionEventInput
+  | EccEventInput;
 
 export interface EventGestureBuildResult {
   eventId: string;

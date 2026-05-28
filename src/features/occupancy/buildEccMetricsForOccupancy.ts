@@ -1,29 +1,32 @@
 import { parseISO } from "date-fns";
-import type { Evento, EventoReproducao } from "@/lib/offline/types";
+import type { Evento, EventoEcc } from "@/lib/offline/types";
 import type { AnimalOccupancyPeriod } from "./occupancyTypes";
 
 export interface EccMetricsInput {
   period: AnimalOccupancyPeriod;
   events: Evento[];
-  reproducoes: Map<string, EventoReproducao>;
+  eccs: Map<string, EventoEcc>;
 }
 
 export function buildEccMetricsForOccupancy({
   period,
   events,
-  reproducoes,
+  eccs,
 }: EccMetricsInput): AnimalOccupancyPeriod {
   const animalEccEvents = events
     .filter(
       (e) =>
-        e.dominio === "reproducao" &&
+        e.dominio === "ecc" &&
         !e.deleted_at &&
         e.animal_id === period.animalId,
     )
-    .map((e) => ({
-      occurredAt: e.occurred_at,
-      ecc: reproducoes.get(e.id)?.payload?.escore_condicao_corporal || 0,
-    }))
+    .map((e) => {
+      const eccDetail = eccs.get(e.id);
+      return {
+        occurredAt: e.occurred_at,
+        ecc: eccDetail && !eccDetail.deleted_at ? eccDetail.ecc : 0,
+      };
+    })
     .filter((e) => e.ecc > 0)
     .sort((a, b) => parseISO(a.occurredAt).getTime() - parseISO(b.occurredAt).getTime());
 

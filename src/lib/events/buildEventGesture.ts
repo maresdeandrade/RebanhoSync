@@ -276,6 +276,22 @@ export const buildEventGesture = (input: EventInput): EventGestureBuildResult =>
         payload: input.payloadData ?? {},
       },
     });
+  } else if (input.dominio === "ecc") {
+    ops.push({
+      table: "eventos_ecc",
+      action: "INSERT",
+      record: {
+        event_id: eventId,
+        fazenda_id: input.fazendaId,
+        animal_id: input.animalId,
+        ecc: input.ecc,
+        escala_min: input.escalaMin ?? 1.00,
+        escala_max: input.escalaMax ?? 5.00,
+        escala_passo: input.escalaPasso ?? 0.25,
+        observacoes: input.observacoes ?? null,
+        payload: input.payload ?? {},
+      },
+    });
   } else if (input.dominio === "obito") {
     // Note: óbito is stored in the base 'eventos' table with payload including causa.
     // We add an UPDATE to the animal record to mark it as dead.

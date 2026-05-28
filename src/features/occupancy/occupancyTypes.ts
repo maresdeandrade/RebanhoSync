@@ -35,6 +35,10 @@ export interface LoteOccupancyMetrics {
   eccMedioAtual: number;
   eccCobertura: { avaliados: number; total: number };
   eccStatus: DataStatus;
+  animaisSemEcc: string[];
+  tempoLotacaoStatus: DataStatus;
+  ultimaMovimentacao: string | null;
+  categoriaPredominante?: string;
 }
 
 export interface PastoOccupancyMetrics {
@@ -47,4 +51,9 @@ export interface PastoOccupancyMetrics {
   eccMedioAtual: number;
   eccVariacaoMedia: number;
   eccStatus: DataStatus;
+  eccCobertura: { avaliados: number; total: number };
+  animaisSemEcc: string[];
+  tempoLotacaoStatus: DataStatus;
+  ultimaMovimentacao: string | null;
+  categoriaPredominante?: string;
 }

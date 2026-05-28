@@ -20,8 +20,15 @@ Recente adição da feature do Motor Sanitário Sequencial (Mid-Month Abril).
 
 ## 2. Summary
 
-### Delta 2026-05-28 (Fase 1 — Consolidação Operacional)
+### Delta 2026-05-28 (Fase 1 & 2 — Consolidação Operacional e Métricas de Lote/Pasto com ECC Factual)
 
+- **Fase 2 — Métricas de Lote/Pasto e ECC Factual**:
+  - Modelado domínio `"ecc"` no pipeline factual (`EccEventInput` -> `validateEccInput` -> `buildEventGesture` -> `eventos_ecc` detail table).
+  - Implementado read-model factual e helper puro `getLatestValidEcc` em `eccHelpers.ts` ignorando eventos soft-deletados e consultando a data factual (`occurred_at`).
+  - Atualizados `buildLoteOccupancyMetrics` e `buildPastoOccupancyMetrics` para obter médias e frações de cobertura reais, baseados estritamente nos últimos registros factuais dos animais ativos do grupo.
+  - Implementada a contagem sempre visível e a lista colapsável de animais sem ECC factual sob demanda (`animaisSemEcc` no accordion/details) nas telas de Lotes e Pastos.
+  - Adicionado suporte a limitações e alertas para tempos de lotação baseados em movimentações factuais e GMD bloqueado com 0 ou 1 pesagem (calculável apenas com pelo menos 2 pesagens).
+  - Criada nova suíte de testes de fumaça e de integração `eccManejo.test.ts` cobrindo todos os cenários com 100% de sucesso.
 - **Correção de Falhas de Teste Históricas**: Resolvidas 6 falhas pré-existentes de testes unitários devido a desalinhamento de mocks de `useLiveQuery` e Shadcn/Combobox (`Animais.test.tsx`, `AnimalSpeciesForms.test.tsx`, `LoteDetalhe.test.tsx`, `PastosP2.test.tsx`, `semantic_terms_guard.smoke.test.ts`).
 - **Suíte de Testes de Fluxo e Fumaça**:
   - Criados 5 novos testes de integração de fluxo sob `tests/integration/flows/` cobrindo cenários com/sem agenda de pesagem, movimentação e tratativa de erros no planejamento do evento.

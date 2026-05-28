@@ -144,7 +144,8 @@ export type DominioEnum =
   | "pastagem"
   | "reproducao"
   | "financeiro"
-  | "obito";
+  | "obito"
+  | "ecc";
 export type AgendaStatusEnum = "agendado" | "concluido" | "cancelado";
 export type AgendaSourceKindEnum = "manual" | "automatico";
 export type SanitarioTipoEnum = "vacinacao" | "vermifugacao" | "medicamento";
