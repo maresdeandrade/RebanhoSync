@@ -267,11 +267,11 @@ Atualizacao visual SLC 2026-05-20:
 
 ---
 
-## Milestone 10: Consolidacao MVP -> SLC (Fase 1 & 2 Concluídas)
+## Milestone 10: Consolidacao MVP -> SLC (Fase 1, 2 e 3 Concluídas)
 
 **Objetivo:** consolidar previsibilidade de fluxo, reduzir friccao operacional e fechar residuos estruturais sem reabrir fronteiras de dominio.
 
-**Status:** Fase 1 (Consolidação de fluxos de agenda/manejo) e Fase 2 (ECC individual factual, GMD estrito, tempos de permanência e UI de cobertura com popover) 100% concluídas. Todos os 1426 testes integrados estão verdes.
+**Status:** Fase 1 (Consolidação de fluxos de agenda/manejo), Fase 2 (ECC individual factual, GMD estrito e tempos de permanência) e Fase 3 (Fechamento do ciclo do ECC factual individual com registro avulso/lote e histórico visual) 100% concluídas. Todos os testes estão 100% verdes, build de produção e linter passando com sucesso.
 
 ### Frente A — Estrutural residual
 

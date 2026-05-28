@@ -193,7 +193,11 @@ describe("AnimalDetalhe", () => {
         [],
         null,
         [],
+        null, // ultimoEcc
+        [], // historicoEcc
         null,
+        null,
+        [],
         null,
       ];
       let callCount = 0;
@@ -465,6 +469,137 @@ describe("AnimalDetalhe", () => {
         notes: "",
       }),
     ).toBe("Apenas casos clinicos podem ser encerrados por este fluxo.");
+  });
+
+  it("exibe estado vazio de ECC quando nao ha registros factuais", () => {
+    const animal = makeAnimal({
+      id: "animal-1",
+      identificacao: "BR-001",
+      sexo: "F",
+    });
+
+    mockedUseLiveQuery.mockImplementation((() => {
+      const responses = [
+        animal, // 1 (animal)
+        null, // 2 (lote)
+        null, // 3 (mae)
+        null, // 4 (pai)
+        [], // 5 (crias)
+        [], // 6 (eventos)
+        [], // 7 (agenda)
+        [], // 8 (officialDiseases)
+        null, // 9 (ultimoPeso)
+        [], // 10 (historicoPeso)
+        null, // 11 (ultimoEcc) - empty!
+        [], // 12 (historicoEcc) - empty!
+        null, // 13 (sociedadeAtiva)
+        null, // 14 (contraparte)
+        [], // 15 (sanitaryCases)
+        null, // 16 (activeSanitaryCase)
+      ];
+      let callCount = 0;
+      return () =>
+        (responses[callCount++] ?? null) as ReturnType<typeof useLiveQuery>;
+    })());
+
+    render(
+      <MemoryRouter
+        initialEntries={["/animais/animal-1"]}
+        future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+      >
+        <Routes>
+          <Route path="/animais/:id" element={<AnimalDetalhe />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText("Sem ECC factual registrado")).toBeInTheDocument();
+  });
+
+  it("exibe ultimo ECC e historico em ordem decrescente de data", () => {
+    const animal = makeAnimal({
+      id: "animal-1",
+      identificacao: "BR-001",
+      sexo: "F",
+    });
+
+    const mockUltimoEcc = {
+      event_id: "evt-ecc-2",
+      occurred_at: "2026-05-25T10:00:00.000Z",
+      deleted_at: null,
+      ecc: 4.25,
+      escala_min: 1.0,
+      escala_max: 5.0,
+      escala_passo: 0.25,
+      observacoes: "Gorda",
+    };
+
+    const mockHistoricoEcc = [
+      {
+        id: "evt-ecc-2",
+        data: "2026-05-25",
+        dataLabel: "25/05/2026",
+        occurred_at: "2026-05-25T10:00:00.000Z",
+        ecc: 4.25,
+        escalaMin: 1.0,
+        escalaMax: 5.0,
+        escalaPasso: 0.25,
+        observacoes: "Gorda",
+      },
+      {
+        id: "evt-ecc-1",
+        data: "2026-05-10",
+        dataLabel: "10/05/2026",
+        occurred_at: "2026-05-10T14:30:00.000Z",
+        ecc: 3.5,
+        escalaMin: 1.0,
+        escalaMax: 5.0,
+        escalaPasso: 0.25,
+        observacoes: "Escore bom",
+      },
+    ];
+
+    mockedUseLiveQuery.mockImplementation((() => {
+      const responses = [
+        animal, // 1 (animal)
+        null, // 2 (lote)
+        null, // 3 (mae)
+        null, // 4 (pai)
+        [], // 5 (crias)
+        [], // 6 (eventos)
+        [], // 7 (agenda)
+        [], // 8 (officialDiseases)
+        null, // 9 (ultimoPeso)
+        [], // 10 (historicoPeso)
+        mockUltimoEcc, // 11 (ultimoEcc)
+        mockHistoricoEcc, // 12 (historicoEcc)
+        null, // 13 (sociedadeAtiva)
+        null, // 14 (contraparte)
+        [], // 15 (sanitaryCases)
+        null, // 16 (activeSanitaryCase)
+      ];
+      let callCount = 0;
+      return () =>
+        (responses[callCount++] ?? null) as ReturnType<typeof useLiveQuery>;
+    })());
+
+    render(
+      <MemoryRouter
+        initialEntries={["/animais/animal-1"]}
+        future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+      >
+        <Routes>
+          <Route path="/animais/:id" element={<AnimalDetalhe />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(screen.getAllByText("4.25").length).toBeGreaterThan(0);
+    expect(screen.getByText("Último ECC Factual")).toBeInTheDocument();
+    expect(screen.getAllByText("25/05/2026").length).toBeGreaterThan(0);
+    expect(screen.getByText("10/05/2026")).toBeInTheDocument();
+    expect(screen.getAllByText(/obs: "Gorda"/i).length).toBeGreaterThan(0);
+    expect(screen.getByText("Escore bom")).toBeInTheDocument();
   });
 });
 

@@ -10,11 +10,16 @@ import { RegistrarPesagemSection } from "@/pages/Registrar/components/RegistrarP
 import { RegistrarReproducaoSection } from "@/pages/Registrar/components/RegistrarReproducaoSection";
 import { RegistrarSanitarioSection } from "@/pages/Registrar/components/RegistrarSanitarioSection";
 import { RegistrarTransitChecklistSection } from "@/pages/Registrar/components/RegistrarTransitChecklistSection";
+import { RegistrarEccSection } from "@/pages/Registrar/components/RegistrarEccSection";
 import {
   RegistrarComplianceBlockSection,
   RegistrarSanitaryMovementBlockSection,
 } from "@/pages/Registrar/components/RegistrarComplianceBlocks";
 import { buildRegistrarActionSectionSlots } from "@/pages/Registrar/buildRegistrarActionSectionSlots";
+
+type RegistrarEccSectionProps = ComponentProps<
+  typeof RegistrarEccSection
+>;
 
 type RegistrarSanitarioSectionProps = ComponentProps<
   typeof RegistrarSanitarioSection
@@ -160,6 +165,14 @@ type RegistrarActionSectionStateInput = {
     partoRequiresSingleMatrix: boolean;
     reproducaoData: RegistrarReproducaoSectionProps["data"];
     setReproducaoData: RegistrarReproducaoSectionProps["onChange"];
+  };
+
+  eccSection: {
+    invalidAnimalIds: string[];
+    eccData: Record<string, string>;
+    eccObservacoes: Record<string, string>;
+    onEccChange: (animalId: string, value: string) => void;
+    onObservacoesChange: (animalId: string, value: string) => void;
   };
 };
 
@@ -341,6 +354,16 @@ export function useRegistrarActionSectionState(
     onChange: input.reproducaoSection.setReproducaoData,
   };
 
+  const eccSectionProps: RegistrarEccSectionProps = {
+    selectedAnimalIds: input.selectedAnimais,
+    animaisNoLote: input.animaisNoLote,
+    invalidAnimalIds: input.eccSection.invalidAnimalIds,
+    eccData: input.eccSection.eccData,
+    eccObservacoes: input.eccSection.eccObservacoes,
+    onEccChange: input.eccSection.onEccChange,
+    onObservacoesChange: input.eccSection.onObservacoesChange,
+  };
+
   return {
     sanitarioSectionProps,
     pesagemSectionProps,
@@ -348,6 +371,7 @@ export function useRegistrarActionSectionState(
     nutricaoSectionProps,
     financeiroSectionProps,
     reproducaoSectionProps,
+    eccSectionProps,
   };
 }
 

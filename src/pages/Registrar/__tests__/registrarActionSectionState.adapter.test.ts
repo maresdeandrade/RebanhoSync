@@ -133,6 +133,13 @@ describe("useRegistrarActionSectionState", () => {
           reproducaoData: { tipo: "cobertura", machoId: null },
           setReproducaoData,
         },
+        eccSection: {
+          invalidAnimalIds: [],
+          eccData: {},
+          eccObservacoes: {},
+          onEccChange: vi.fn(),
+          onObservacoesChange: vi.fn(),
+        },
       }),
     );
 

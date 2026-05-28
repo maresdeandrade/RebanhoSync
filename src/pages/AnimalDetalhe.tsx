@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useLiveQuery } from "dexie-react-hooks";
 import {
+  Activity,
   AlertTriangle,
   ArrowLeftRight,
   Calendar,
@@ -860,6 +861,76 @@ const AnimalDetalhe = () => {
         } => ponto !== null,
       )
       .sort((left, right) => left.data.localeCompare(right.data));
+  }, [id]);
+
+  const ultimoEcc = useLiveQuery(async () => {
+    if (!id) return null;
+
+    const registros = await db.event_eventos
+      .where("animal_id")
+      .equals(id)
+      .filter((event) => event.dominio === "ecc" && !event.deleted_at)
+      .toArray();
+
+    if (!registros.length) return null;
+
+    const withDetails = await Promise.all(
+      registros.map(async (event) => {
+        const detail = await db.event_eventos_ecc.get(event.id);
+        return detail?.ecc != null
+          ? {
+              event_id: event.id,
+              occurred_at: event.occurred_at,
+              deleted_at: event.deleted_at ?? null,
+              ecc: detail.ecc,
+              escala_min: detail.escala_min,
+              escala_max: detail.escala_max,
+              escala_passo: detail.escala_passo,
+              observacoes: detail.observacoes,
+            }
+          : null;
+      }),
+    );
+
+    const eligible = withDetails
+      .filter((e): e is NonNullable<typeof e> => e !== null)
+      .sort((a, b) => b.occurred_at.localeCompare(a.occurred_at));
+
+    return eligible[0] ?? null;
+  }, [id]);
+
+  const historicoEcc = useLiveQuery(async () => {
+    if (!id) return [];
+
+    const registros = await db.event_eventos
+      .where("animal_id")
+      .equals(id)
+      .filter((event) => event.dominio === "ecc" && !event.deleted_at)
+      .toArray();
+
+    const pontos = await Promise.all(
+      registros.map(async (event) => {
+        const details = await db.event_eventos_ecc.get(event.id);
+        if (!details?.ecc) return null;
+
+        const dataReferencia = event.occurred_at;
+        return {
+          id: event.id,
+          data: dataReferencia.slice(0, 10),
+          dataLabel: formatDate(dataReferencia),
+          occurred_at: event.occurred_at,
+          ecc: details.ecc,
+          escalaMin: details.escala_min,
+          escalaMax: details.escala_max,
+          escalaPasso: details.escala_passo,
+          observacoes: details.observacoes,
+        };
+      }),
+    );
+
+    return pontos
+      .filter((ponto): ponto is NonNullable<typeof ponto> => ponto !== null)
+      .sort((left, right) => right.occurred_at.localeCompare(left.occurred_at));
   }, [id]);
 
   const proximaAgenda = useMemo(() => {
@@ -2193,6 +2264,104 @@ const AnimalDetalhe = () => {
             <p className="text-sm text-muted-foreground">
               Sem historico de pesagem para acompanhar a evolucao deste animal.
             </p>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card className="border-border/70 shadow-none">
+        <CardHeader className="pb-3">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Activity className="h-4 w-4 text-muted-foreground" />
+              Escore de Condição Corporal (ECC)
+            </CardTitle>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                navigate(`/registrar?dominio=ecc&animalId=${encodeURIComponent(animal.id)}`);
+              }}
+            >
+              Registrar ECC
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {ultimoEcc ? (
+            <>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="rounded-xl border border-border/70 bg-muted/20 p-3 flex flex-col justify-between">
+                  <div>
+                    <p className="text-xs uppercase text-muted-foreground font-semibold">
+                      Último ECC Factual
+                    </p>
+                    <p className="mt-2 text-3xl font-extrabold text-primary">
+                      {ultimoEcc.ecc.toFixed(2)}
+                    </p>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Escala: {ultimoEcc.escala_min.toFixed(1)} a {ultimoEcc.escala_max.toFixed(1)} (passo {ultimoEcc.escala_passo.toFixed(2)})
+                  </p>
+                </div>
+
+                <div className="rounded-xl border border-border/70 bg-muted/20 p-3 flex flex-col justify-between">
+                  <div>
+                    <p className="text-xs uppercase text-muted-foreground font-semibold">
+                      Data da Avaliação
+                    </p>
+                    <p className="mt-2 text-xl font-bold text-foreground">
+                      {formatDate(ultimoEcc.occurred_at)}
+                    </p>
+                  </div>
+                  {ultimoEcc.observacoes ? (
+                    <p className="text-xs text-muted-foreground mt-2 italic truncate">
+                      obs: "{ultimoEcc.observacoes}"
+                    </p>
+                  ) : (
+                    <p className="text-xs text-muted-foreground mt-2">Sem observações</p>
+                  )}
+                </div>
+              </div>
+
+              {historicoEcc && historicoEcc.length > 0 && (
+                <div className="space-y-2 pt-2">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Histórico de Avaliações ({historicoEcc.length})
+                  </p>
+                  <div className="rounded-xl border border-border/40 overflow-hidden bg-background">
+                    <div className="max-h-60 overflow-y-auto divide-y divide-border/40">
+                      {historicoEcc.map((item) => (
+                        <div key={item.id} className="flex justify-between items-start gap-4 p-3 hover:bg-muted/10 transition-colors">
+                          <div className="space-y-0.5">
+                            <p className="text-sm font-medium">{item.dataLabel}</p>
+                            {item.observacoes && (
+                              <p className="text-xs text-muted-foreground italic leading-relaxed">
+                                {item.observacoes}
+                              </p>
+                            )}
+                          </div>
+                          <div className="text-right">
+                            <span className="text-sm font-semibold text-primary">
+                              {item.ecc.toFixed(2)}
+                            </span>
+                            <p className="text-[10px] text-muted-foreground">
+                              escala: {item.escalaMin.toFixed(0)}-{item.escalaMax.toFixed(0)}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-6 text-center">
+              <p className="text-sm text-muted-foreground">Sem ECC factual registrado</p>
+              <p className="text-xs text-muted-foreground/60 mt-1 max-w-xs">
+                Registre avaliações regulares de escore de condição corporal para acompanhar a evolução nutricional.
+              </p>
+            </div>
           )}
         </CardContent>
       </Card>

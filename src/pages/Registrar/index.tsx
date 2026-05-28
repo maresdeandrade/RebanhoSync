@@ -59,6 +59,7 @@ import { RegistrarPesagemSection } from "@/pages/Registrar/components/RegistrarP
 import { RegistrarMovimentacaoSection } from "@/pages/Registrar/components/RegistrarMovimentacaoSection";
 import { RegistrarNutricaoSection } from "@/pages/Registrar/components/RegistrarNutricaoSection";
 import { RegistrarReproducaoSection } from "@/pages/Registrar/components/RegistrarReproducaoSection";
+import { RegistrarEccSection } from "@/pages/Registrar/components/RegistrarEccSection";
 import { useRegistrarSanitarioPackage } from "@/pages/Registrar/components/useRegistrarSanitarioPackage";
 import { useRegistrarFinanceiroPackage } from "@/pages/Registrar/components/useRegistrarFinanceiroPackage";
 import {
@@ -154,6 +155,10 @@ const Registrar = () => {
     setSourceTaskId,
     pesagemData,
     setPesagemData,
+    eccData,
+    setEccData,
+    eccObservacoes,
+    setEccObservacoes,
     movimentacaoData,
     setMovimentacaoData,
     nutricaoData,
@@ -208,6 +213,31 @@ const Registrar = () => {
     if (!weightStr || weightStr.trim() === "") return true;
     const weight = parseUserWeight(weightStr);
     return weight === null || weight <= 0;
+  });
+  const isSingleAnimal = selectedAnimais.length === 1;
+  const validateLocalEccValue = (valStr: string) => {
+    if (!valStr || valStr.trim() === "") return { isValid: true, isEmpty: true };
+    const num = Number(valStr);
+    if (isNaN(num) || num < 1.0 || num > 5.0) {
+      return { isValid: false, isEmpty: false };
+    }
+    const diff = (num - 1.0) / 0.25;
+    const stepDiff = Math.abs(diff - Math.round(diff));
+    return { isValid: stepDiff <= 1e-9, isEmpty: false };
+  };
+  const eccAnimaisInvalidos = selectedAnimais.filter((id) => {
+    const val = eccData[id] || "";
+    const { isValid, isEmpty } = validateLocalEccValue(val);
+    if (isSingleAnimal) {
+      return isEmpty || !isValid;
+    } else {
+      return !isEmpty && !isValid;
+    }
+  });
+  const hasAtLeastOneValidEcc = selectedAnimais.some((id) => {
+    const val = eccData[id] || "";
+    const { isValid, isEmpty } = validateLocalEccValue(val);
+    return !isEmpty && isValid;
   });
   const animaisNoLote = useLiveQuery(
     () =>
@@ -469,7 +499,9 @@ const Registrar = () => {
   );
   const transitChecklistGtaLabel =
     transitChecklist.gtaNumber || "Checklist concluido";
-  const confirmacaoManejoLabel = quickActionConfig?.label ?? tipoManejo ?? "-";
+  const confirmacaoManejoLabel =
+    quickActionConfig?.label ??
+    (tipoManejo === "ecc" ? "Escore de Condição Corporal (ECC)" : tipoManejo ?? "-");
   const showConfirmacaoAlvoLote = selectedAnimais.length === 0;
   const showConfirmacaoDestinoMovimentacao = tipoManejo === "movimentacao";
   const confirmacaoDestinoMovimentacaoLabel =
@@ -571,6 +603,15 @@ const Registrar = () => {
       reproducaoData,
       setReproducaoData,
     },
+    eccSection: {
+      invalidAnimalIds: eccAnimaisInvalidos,
+      eccData,
+      eccObservacoes,
+      onEccChange: (animalId, value) =>
+        setEccData((prev) => ({ ...prev, [animalId]: value })),
+      onObservacoesChange: (animalId, value) =>
+        setEccObservacoes((prev) => ({ ...prev, [animalId]: value })),
+    },
   });
 
   const baseActionStepIssues = useMemo(
@@ -586,6 +627,9 @@ const Registrar = () => {
         isFinanceiroSociedade,
         financeiroContraparteId: financeiroData.contraparteId,
         partoRequiresSingleMatrix,
+        eccAnimaisInvalidosCount: eccAnimaisInvalidos.length,
+        isSingleAnimal,
+        hasAtLeastOneValidEcc,
       }),
     [
       financeiroData.contraparteId,
@@ -598,6 +642,9 @@ const Registrar = () => {
       pesagemAnimaisInvalidos.length,
       sanitatioProductMissing,
       tipoManejo,
+      eccAnimaisInvalidos.length,
+      isSingleAnimal,
+      hasAtLeastOneValidEcc,
     ],
   );
   const actionStepIssues = useMemo(
@@ -882,6 +929,8 @@ const Registrar = () => {
         },
         operationData: {
           pesagemData,
+          eccData,
+          eccObservacoes,
           movimentacaoData,
           nutricaoData,
           reproducaoData,
@@ -917,6 +966,8 @@ const Registrar = () => {
     parseUserWeight,
     partoRequiresSingleMatrix,
     pesagemData,
+    eccData,
+    eccObservacoes,
     protocoloItemId,
     reproducaoData,
     resolveProtocolProductSelection,
@@ -1100,6 +1151,12 @@ const Registrar = () => {
               />
             )}
 
+            {tipoManejo === "ecc" && (
+              <RegistrarEccSection
+                {...actionSectionState.eccSectionProps}
+              />
+            )}
+
             <RegistrarStickyActionBar
               step={step}
               isFinalizing={isFinalizing}
@@ -1163,6 +1220,40 @@ const Registrar = () => {
                   reprodutorLabel={reproducaoResumoReprodutorLabel}
                   observacoes={reproducaoData.observacoes}
                 />
+              )}
+              {tipoManejo === "ecc" && (
+                <div className="space-y-3 rounded-xl border border-border/70 bg-card p-4 shadow-sm">
+                  <p className="text-xs uppercase text-muted-foreground font-semibold tracking-wider">
+                    Resumo do Registro de ECC
+                  </p>
+                  <div className="grid gap-2 grid-cols-2">
+                    <div className="rounded-lg bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 p-3 text-center">
+                      <p className="text-[11px] uppercase tracking-wider text-emerald-800 dark:text-emerald-300 font-medium">Eventos a gerar</p>
+                      <p className="text-2xl font-bold text-emerald-900 dark:text-emerald-200 mt-0.5">{selectedAnimais.filter(id => eccData[id] && eccData[id].trim() !== "").length}</p>
+                    </div>
+                    <div className="rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/30 p-3 text-center">
+                      <p className="text-[11px] uppercase tracking-wider text-amber-800 dark:text-amber-300 font-medium">Animais sem ECC</p>
+                      <p className="text-2xl font-bold text-amber-900 dark:text-amber-200 mt-0.5">{selectedAnimais.length - selectedAnimais.filter(id => eccData[id] && eccData[id].trim() !== "").length}</p>
+                    </div>
+                  </div>
+                  <div className="max-h-40 overflow-y-auto space-y-1.5 pt-1 pr-1 border-t border-border/40">
+                    {selectedAnimais.map((animalId) => {
+                      const animalIdent = animaisNoLote?.find(a => a.id === animalId)?.identificacao ?? "Animal";
+                      const val = eccData[animalId];
+                      const obs = eccObservacoes[animalId];
+                      const hasValue = val && val.trim() !== "";
+                      return (
+                        <div key={animalId} className="flex justify-between items-center text-sm py-1 border-b border-border/20 last:border-b-0">
+                          <span className="text-muted-foreground font-medium">{animalIdent}</span>
+                          <span className={cn("font-semibold", hasValue ? "text-primary" : "text-muted-foreground italic")}>
+                            {hasValue ? `${Number(val).toFixed(2)}` : "Não avaliado"}
+                            {hasValue && obs ? ` (${obs})` : ""}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
               )}
             </div>
 

@@ -3,7 +3,7 @@
 > **Status:** Snapshot vivo
 > **Ultima Atualizacao:** 2026-05-28
 > **Estado do produto:** Beta interno
-> **Fase atual:** MVP funcional completo -> **SLC (Simple, Lovable, Complete) em consolidacao** (Fase 1 de Consolidação Operacional Concluída)
+> **Fase atual:** MVP funcional completo -> **SLC (Simple, Lovable, Complete) em consolidacao** (Fase 1, 2 e 3 de Consolidação Operacional Concluídas)
 
 ---
 
@@ -16,7 +16,7 @@ Os hotspots criticos de UI (`Registrar` e `Agenda`) passaram pelo hardening estr
 A fase corrente e de **consolidacao operacional**:
 - preservar previsibilidade dos fluxos centrais;
 - reduzir friccao de uso em campo;
-- aumentar consistencia de experiencia;
+- aumentar consistencia de experiência;
 - estabilizar qualidade para evolucao incremental sem regressao estrutural.
 
 Consolidacoes recentes da fase SLC:
@@ -26,16 +26,17 @@ Consolidacoes recentes da fase SLC:
 - reforco do modelo Two Rails: Agenda (`agenda_itens`) != Eventos (`eventos`);
 - `Aplicar protocolo` atua apenas na agenda (materializacao/recalculo), sem gerar evento.
 - saneamento sanitario P0-P6.4b concluido no recorte atual: SQL/Supabase permanece motor lider de materializacao/recompute; TypeScript preserva contratos, adapters, golden tests e suporte offline.
-- calendario sanitario TS->SQL alinhado; dedup sanitario canonico estruturado em TS/SQL; agenda sanitaria canonica agora bloqueia geracao indevida por catalogo global e exige gates explicitos por janela, risco, configuracao, ativacao operacional ou especie canonica transicional.
+- calendario sanitario TS->SQL alinhado; dedup sanitario canonico estruturado in TS/SQL; agenda sanitaria canonica agora bloqueia geracao indevida por catalogo global e exige gates explicitos por janela, risco, configuracao, ativacao operacional ou especie canonica transicional.
 - taxonomia sanitaria passiva introduzida (`ProtocolKind`, `MaterializationMode`, `ComplianceKind`) sem mudanca de comportamento.
 - `src/lib/sanitario/**` reorganizado por responsabilidade e boundary `Registrar` <-> sanitario documentado.
 - Shims de migrations pos-squash removidos da pasta ativa; testes de contrato leem a baseline canonica ou fixtures canonicas.
 - `docs/review/RebanhoSync_auditoria.md` foi ajustado pos-validacao como contrato documental de fontes de verdade para orientar uso de `insights` e marcadores sem transformar sinal auxiliar em fonte primaria ou comportamento operacional.
 - `src/lib/insights/` foi consolidado como core puro/read-only de composicao operacional; a primeira integracao passiva foi conectada na Home por `src/features/operationalInsights/` sem IO no core, sem persistencia, sem eventos e sem acoes de dominio.
-- Pastagens passaram a ter trilho historico proprio para avaliacao/ronda: `dominio='pastagem'`, detalhe `eventos_pasto_avaliacao`, store local `event_eventos_pasto_avaliacao` e registro minimo em `PastoDetalhe`, sem atualizar `pastos`, `lotes`, `pasto_ocupacoes` ou agenda.
+- Pastagens passaram a ter trilho historico proprio para avaliacao/ronda: `dominio='pastagem'`, detalhe `eventos_pasto_avaliacao`, store local `event_eventos_pasto_avaliacao` e registro minimo in `PastoDetalhe`, sem atualizar `pastos`, `lotes`, `pasto_ocupacoes` ou agenda.
 - Refatoracao visual SLC aplicada: Home virou painel tatico, Animais ficou card-first, Registrar foi compactado e a **Agenda** foi otimizada para campo com nova hierarquia de informacao, progressive disclosure de metadados, acoes criticas diferenciadas e responsividade mobile-first, sem alterar regras de negocio.
 
 ### ✅ Refinamentos Recentes (Maio/2026)
+- **Fase 3 — Fechamento do Ciclo Operacional do ECC Factual Individual Concluída**: Adicionado o fluxo visual completo de registro de ECC individual e lote no `Registrar` (com suporte a inputs vazios no modo lote indicando "não avaliado nesta rodada", validação rígida de passo de 0.25 e range 1.0 a 5.0, e lógica "tudo-ou-nada" onde qualquer entrada inválida bloqueia o salvamento). Cada animal avaliado gera um evento factual individual independente com `source_task_id = null`. Na ficha do animal (`AnimalDetalhe`), é exibido um card simples com o último ECC factual registrado (escala, data e observação) e o histórico completo em ordem decrescente de `occurred_at`. Casos sem registro mostram "Sem ECC factual registrado". Os derivadores de lote e pasto recalculam a média e a cobertura reativamente.
 - **Fase 2 — Métricas de Lote/Pasto e ECC Factual Concluída**: Modelagem do domínio `"ecc"` no pipeline factual (`EccEventInput` -> `validateEccInput` -> `buildEventGesture` -> `eventos_ecc` detail table). A média de ECC de lotes/pastos é calculada dinamicamente com base nos últimos registros factuais válidos de ECC dos animais ativos (excluindo mortos/vendidos e soft-deletados). Implementação da lista colapsável de animais sem ECC sob demanda nas telas de Lote/Pasto, tempo de lotação baseado em movimentações factuais e GMD bloqueado com 0 ou 1 pesagem e calculável apenas com pelo menos 2 pesagens válidas. Cobertura completa de 28 testes de unidade/integração para os derivadores e linter/build 100% verdes.
 - **Fase 1 — Consolidação Operacional Concluída**: Estabilização e blindagem completa da cadeia de execução de manejos (**Agenda aberta → Registrar manejo → Evento factual → Reconcile/fechamento da agenda**). Corrigimos as 6 falhas históricas de testes unitários de página (`Animais`, `LoteDetalhe`, `PastosP2`, `AnimalSpeciesForms`). Introduzimos uma suite robusta de testes de integração e fumaça em `tests/integration/flows/` e `tests/smoke/` cobrindo fluxos de pesagem/movimentação avulsas e baseadas em agenda, garantindo comportamento idempotente e eliminando drift cronológico de tarefas.
 - **Consolidação do Design System nos Formulários**: Propagação de melhorias visuais e ergonômicas tácteis para os 5 formulários centrais da aplicação (`AnimalEditar.tsx`, `LoteNovo.tsx`, `LoteEditar.tsx`, `PastoNovo.tsx` e `PastoEditar.tsx`), elevando inputs para `h-12`/`rounded-xl`, introduzindo busca inteligente via `<FieldCombobox>`, proteção de cliques duplos com `isSaving`, botão de atalho de escaneamento de campo (`ScanLine`) e rodapé fixo `sticky bottom-0` (`h-14`) para navegacao mobile com uma mão.

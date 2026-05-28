@@ -79,6 +79,29 @@ describe("buildBaseActionStepIssues", () => {
       "Quantidade de nutricao deve ser maior que zero.",
     ]);
   });
+
+  it("retorna issues de ECC quando há animais inválidos ou nenhum válido no modo lote", () => {
+    const issues = buildBaseActionStepIssues({
+      tipoManejo: "ecc",
+      sanitatioProductMissing: false,
+      pesagemAnimaisInvalidosCount: 0,
+      movimentacaoSemDestino: false,
+      movimentacaoDestinoIgualOrigem: false,
+      nutricaoAlimentoMissing: false,
+      nutricaoQuantidadeInvalida: false,
+      isFinanceiroSociedade: false,
+      financeiroContraparteId: "x",
+      partoRequiresSingleMatrix: false,
+      eccAnimaisInvalidosCount: 1,
+      isSingleAnimal: false,
+      hasAtLeastOneValidEcc: false,
+    });
+
+    expect(issues).toEqual([
+      "ECC deve estar entre 1.0 e 5.0 com passo de 0.25.",
+      "Pelo menos 1 ECC válido deve ser preenchido para salvar.",
+    ]);
+  });
 });
 
 describe("composeRegistrarActionStepIssues", () => {

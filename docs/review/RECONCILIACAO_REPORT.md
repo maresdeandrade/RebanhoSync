@@ -20,8 +20,13 @@ Recente adição da feature do Motor Sanitário Sequencial (Mid-Month Abril).
 
 ## 2. Summary
 
-### Delta 2026-05-28 (Fase 1 & 2 — Consolidação Operacional e Métricas de Lote/Pasto com ECC Factual)
+### Delta 2026-05-28 (Fase 1, 2 & 3 — Consolidação Operacional e Métricas de Lote/Pasto com ECC Factual)
 
+- **Fase 3 — Fechamento do Ciclo Operacional do ECC Factual Individual**:
+  - Implementado registro visual de ECC individual e lote no Registrar (com suporte a inputs vazios no modo lote indicando "não avaliado nesta rodada", validação rígida de passo de 0.25 e range 1.0 a 5.0, e lógica "tudo-ou-nada" onde qualquer entrada inválida bloqueia o salvamento).
+  - Cada animal avaliado gera um evento factual individual independente com `source_task_id = null`.
+  - Na ficha do animal (`AnimalDetalhe`), é exibido um card simples com o último ECC factual registrado (escala, data e observação) e o histórico completo em ordem decrescente de `occurred_at`. Casos vazios mostram "Sem ECC factual registrado".
+  - Corrigidas ambiguidades em testes de renderização na ficha do animal para múltiplas instâncias de datas/valores de ECC repetidos.
 - **Fase 2 — Métricas de Lote/Pasto e ECC Factual**:
   - Modelado domínio `"ecc"` no pipeline factual (`EccEventInput` -> `validateEccInput` -> `buildEventGesture` -> `eventos_ecc` detail table).
   - Implementado read-model factual e helper puro `getLatestValidEcc` em `eccHelpers.ts` ignorando eventos soft-deletados e consultando a data factual (`occurred_at`).

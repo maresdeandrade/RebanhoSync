@@ -141,6 +141,8 @@ type RegistrarFinalizeTrackDeps = {
     sanitarioData: { tipo: SanitarioTipoEnum };
     clinicalProtocolRef?: ClinicalProtocolRef | null;
     pesagemData: Record<string, string>;
+    eccData: Record<string, string>;
+    eccObservacoes: Record<string, string>;
     movimentacaoData: { toLoteId: string };
     nutricaoData: { alimentoNome: string; quantidadeKg: string };
     financeiroData: {
@@ -266,6 +268,8 @@ export type RegistrarFinalizeControllerInput = {
   };
   operationData: {
     pesagemData: Record<string, string>;
+    eccData: Record<string, string>;
+    eccObservacoes: Record<string, string>;
     movimentacaoData: { toLoteId: string };
     nutricaoData: { alimentoNome: string; quantidadeKg: string };
     reproducaoData: ReproductionEventData;
@@ -539,6 +543,8 @@ export function createRegistrarFinalizeController(
             sanitarioCasoId: sanitary.caseLink.selectedCaseId,
             abrirCasoClinico: sanitary.caseLink.createClinicalCase,
             pesagemData: operationData.pesagemData,
+            eccData: operationData.eccData,
+            eccObservacoes: operationData.eccObservacoes,
             movimentacaoData: operationData.movimentacaoData,
             nutricaoData: operationData.nutricaoData,
             financeiroData: {

@@ -12,6 +12,9 @@ type BuildBaseActionStepIssuesInput = {
   isFinanceiroSociedade: boolean;
   financeiroContraparteId: string;
   partoRequiresSingleMatrix: boolean;
+  eccAnimaisInvalidosCount?: number;
+  isSingleAnimal?: boolean;
+  hasAtLeastOneValidEcc?: boolean;
 };
 
 export function buildBaseActionStepIssues(
@@ -35,6 +38,15 @@ export function buildBaseActionStepIssues(
     input.pesagemAnimaisInvalidosCount > 0
   ) {
     issues.push("Informe peso maior que zero para todos os animais selecionados.");
+  }
+
+  if (input.tipoManejo === "ecc") {
+    if (input.eccAnimaisInvalidosCount > 0) {
+      issues.push("ECC deve estar entre 1.0 e 5.0 com passo de 0.25.");
+    }
+    if (!input.isSingleAnimal && !input.hasAtLeastOneValidEcc) {
+      issues.push("Pelo menos 1 ECC válido deve ser preenchido para salvar.");
+    }
   }
 
   if (input.tipoManejo === "movimentacao") {

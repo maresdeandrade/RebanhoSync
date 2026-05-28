@@ -49,6 +49,8 @@ function baseInput() {
     protocoloItem: null,
     sanitarioData: { tipo: "vacinacao" as const },
     pesagemData: {} as Record<string, string>,
+    eccData: {} as Record<string, string>,
+    eccObservacoes: {} as Record<string, string>,
     movimentacaoData: { toLoteId: "lote-2" },
     nutricaoData: { alimentoNome: "Silagem", quantidadeKg: "20" },
     financeiroData: {
@@ -322,5 +324,78 @@ describe("resolveRegistrarNonFinancialFinalizePlan", () => {
 
     expect(result.issue).toBeTruthy();
     expect(result.ops).toEqual([]);
+  });
+
+  it("monta plano para manejo de ECC individual", async () => {
+    const buildGesture = vi.fn(() => ({
+      eventId: "evt-ecc-1",
+      ops: [{ table: "eventos", action: "INSERT", record: { id: "evt-ecc-1" } }],
+    }));
+    const result = await resolveRegistrarNonFinancialFinalizePlan({
+      ...baseInput(),
+      tipoManejo: "ecc",
+      targetAnimalIds: ["a-1"],
+      animalsMap: new Map([["a-1", buildAnimal("a-1")]]),
+      eccData: { "a-1": "3.5" },
+      eccObservacoes: { "a-1": "Bem nutrido" },
+      buildGesture,
+    });
+
+    expect(result.issue).toBeNull();
+    expect(result.linkedEventId).toBe("evt-ecc-1");
+    expect(result.ops.length).toBe(1);
+    expect(buildGesture).toHaveBeenCalledWith(
+      expect.objectContaining({
+        dominio: "ecc",
+        animalId: "a-1",
+        ecc: 3.5,
+        escalaMin: 1.0,
+        escalaMax: 5.0,
+        escalaPasso: 0.25,
+        observacoes: "Bem nutrido",
+      }),
+    );
+  });
+
+  it("monta plano para manejo de ECC em lote (multi-animal) pulando vazios", async () => {
+    const buildGesture = vi.fn((input) => ({
+      eventId: `evt-ecc-${input.animalId}`,
+      ops: [{ table: "eventos", action: "INSERT", record: { id: `evt-ecc-${input.animalId}` } }],
+    }));
+    const result = await resolveRegistrarNonFinancialFinalizePlan({
+      ...baseInput(),
+      tipoManejo: "ecc",
+      targetAnimalIds: ["a-1", "a-2", "a-3"],
+      animalsMap: new Map([
+        ["a-1", buildAnimal("a-1")],
+        ["a-2", buildAnimal("a-2")],
+        ["a-3", buildAnimal("a-3")],
+      ]),
+      eccData: { "a-1": "3.5", "a-2": "", "a-3": "4.25" },
+      eccObservacoes: { "a-1": "Bem nutrido", "a-3": "Excelente" },
+      buildGesture,
+    });
+
+    expect(result.issue).toBeNull();
+    expect(result.ops.length).toBe(2);
+    expect(buildGesture).toHaveBeenCalledTimes(2);
+    expect(buildGesture).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        dominio: "ecc",
+        animalId: "a-1",
+        ecc: 3.5,
+        observacoes: "Bem nutrido",
+      }),
+    );
+    expect(buildGesture).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        dominio: "ecc",
+        animalId: "a-3",
+        ecc: 4.25,
+        observacoes: "Excelente",
+      }),
+    );
   });
 });

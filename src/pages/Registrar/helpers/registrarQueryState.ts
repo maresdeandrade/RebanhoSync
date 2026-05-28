@@ -8,6 +8,7 @@ const REGISTRAR_QUERY_DOMAINS: EventDomain[] = [
   "nutricao",
   "financeiro",
   "reproducao",
+  "ecc",
 ];
 
 export function isRegistrarQueryDomain(value: string | null): value is EventDomain {

@@ -1,4 +1,5 @@
 import {
+  Activity,
   Banknote,
   Check,
   HeartPulse,
@@ -21,7 +22,8 @@ type RegistrarManejoActionsGridProps = {
       | "movimentacao"
       | "nutricao"
       | "financeiro"
-      | "reproducao",
+      | "reproducao"
+      | "ecc",
   ) => void;
 };
 
@@ -56,6 +58,12 @@ export function RegistrarManejoActionsGrid(
       key: "reproducao",
       label: "Reproducao",
       icon: HeartPulse,
+      requiresAnimals: true,
+    },
+    {
+      key: "ecc",
+      label: "ECC",
+      icon: Activity,
       requiresAnimals: true,
     },
   ] as const;

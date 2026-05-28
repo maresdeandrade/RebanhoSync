@@ -25,6 +25,8 @@ export function useRegistrarShellState({
   const [sourceTaskId, setSourceTaskId] = useState<string>("");
 
   const [pesagemData, setPesagemData] = useState<Record<string, string>>({});
+  const [eccData, setEccData] = useState<Record<string, string>>({});
+  const [eccObservacoes, setEccObservacoes] = useState<Record<string, string>>({});
   const [movimentacaoData, setMovimentacaoData] = useState({ toLoteId: "" });
   const [nutricaoData, setNutricaoData] = useState({
     alimentoNome: "",
@@ -104,6 +106,10 @@ export function useRegistrarShellState({
     setSourceTaskId,
     pesagemData,
     setPesagemData,
+    eccData,
+    setEccData,
+    eccObservacoes,
+    setEccObservacoes,
     movimentacaoData,
     setMovimentacaoData,
     nutricaoData,

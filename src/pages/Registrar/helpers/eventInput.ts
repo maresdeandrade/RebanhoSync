@@ -4,7 +4,7 @@ import type {
   ReproTipoEnum,
   SanitarioTipoEnum,
 } from "@/lib/offline/types";
-import type { EventInput, SanitarioCasoOpenInput } from "@/lib/events/types";
+import type { EventInput, SanitarioCasoOpenInput, EccEventInput } from "@/lib/events/types";
 import type { VeterinaryProductSelection } from "@/lib/sanitario/catalog/products";
 import { buildRegistrarFinanceiroPayloadBase } from "@/pages/Registrar/helpers/payload";
 import {
@@ -18,7 +18,8 @@ type RegistrarEventDomain =
   | "pesagem"
   | "movimentacao"
   | "nutricao"
-  | "financeiro";
+  | "financeiro"
+  | "ecc";
 
 type ReproducaoFallbackData = {
   tipo: ReproTipoEnum;
@@ -61,6 +62,13 @@ type BuildRegistrarEventInputParams = {
   };
   pesagem?: {
     pesoKg: number | null;
+  };
+  ecc?: {
+    ecc: number;
+    escalaMin?: number;
+    escalaMax?: number;
+    escalaPasso?: number;
+    observacoes?: string | null;
   };
   movimentacao?: {
     toLoteId: string | null;
@@ -121,6 +129,19 @@ export function buildRegistrarEventInput(
       ...base,
       pesoKg: params.pesagem?.pesoKg ?? 0,
     };
+  }
+
+  if (params.tipoManejo === "ecc") {
+    return {
+      dominio: "ecc",
+      ...base,
+      animalId: params.animalId || "",
+      ecc: params.ecc?.ecc ?? 0,
+      escalaMin: params.ecc?.escalaMin ?? 1.00,
+      escalaMax: params.ecc?.escalaMax ?? 5.00,
+      escalaPasso: params.ecc?.escalaPasso ?? 0.25,
+      observacoes: params.ecc?.observacoes ?? null,
+    } as EccEventInput;
   }
 
   if (params.tipoManejo === "movimentacao") {

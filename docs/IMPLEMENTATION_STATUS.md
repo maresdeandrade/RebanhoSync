@@ -11,7 +11,7 @@ Este documento registra o estado efetivo do RebanhoSync na fase atual de consoli
 
 - **Estagio do produto:** Beta interno — MVP completo e operacional.
 - **Fase de engenharia/produto:** transicao de MVP funcional para SLC (Simple, Lovable, Complete) em consolidacao.
-- **Consolidação Operacional (Fase 1 Concluída)**: Cadeia completa de execução (**Agenda aberta → Registrar manejo → Evento factual → Reconcile/fechamento da agenda**) 100% blindada, com a correção de 6 falhas históricas de testes unitários e criação de 5 novos testes de integração de fluxo + 1 teste de fumaça multi-domínios avulso.
+- **Consolidação Operacional (Fase 1, 2 e 3 Concluídas)**: Cadeia completa de execução (**Agenda aberta → Registrar manejo → Evento factual → Reconcile/fechamento da agenda**) 100% blindada, com a correção de 6 falhas históricas de testes unitários e criação de testes de integração e fumaça. O ciclo do **ECC Factual Individual** está operacional, incluindo registro avulso/lote tudo-ou-nada, validação rigorosa (1.0-5.0, passo 0.25), histórico cronológico decrescente na ficha do animal e médias derivadas reativas nos lotes e pastos.
 - **Core operacional:** sanitário, pesagem, movimentação, nutrição, pastagem/rondas, reprodução, financeiro e agenda estão implementados e usáveis.
 - **Camadas consolidadas:** onboarding guiado, importação CSV, relatórios operacionais, telemetria de piloto com flush remoto, modo de experiência da fazenda, dashboard e ficha reprodutiva dedicada, pós-parto neonatal, cria inicial, transições de rebanho.
 - **Central Operacional passiva:** primeira integração read-only concluída na Home, consumindo `src/lib/insights/` por `src/features/operationalInsights/` sem ações de domínio.
@@ -85,8 +85,10 @@ Este documento registra o estado efetivo do RebanhoSync na fase atual de consoli
 | `agenda.concluir` | Completo | `src/pages/Agenda/index.tsx`, `src/lib/sanitario/infrastructure/service.ts` |
 | `agenda.dedup` | Completo — contrato canonico estruturado TS/SQL com validação de dimensões obrigatórias e parse resiliente de `periodKey` | `src/lib/sanitario/engine/dedup.ts`, `supabase/migrations/00000000000000_rebuild_base_schema_sanitario.sql` |
 | `agenda.recalculo` | Completo — recompute limpa e reconstrui pendencias automaticas do escopo antes de reaplicar o motor | `supabase/migrations/00000000000000_rebuild_base_schema_sanitario.sql` |
+| `ecc.registro` | Completo — registro visual de ECC individual e lote no Registrar com lógica tudo-ou-nada e validação estrita (passo 0.25, range 1-5, e ignorando campos vazios em lote) | `src/pages/Registrar/components/RegistrarEccSection.tsx`, `src/pages/Registrar/index.tsx`, `src/pages/Registrar/createRegistrarFinalizeController.ts` |
+| `ecc.historico` | Completo — exibição do último ECC factual (escala, data, observação) e histórico cronológico decrescente na ficha do animal | `src/pages/AnimalDetalhe.tsx`, `src/lib/offline/db.ts` |
 
-**Capability Score:** 24/26 = **92%** ✅
+**Capability Score:** 26/28 = **93%** ✅
 
 ---
 
@@ -210,9 +212,11 @@ Este documento registra o estado efetivo do RebanhoSync na fase atual de consoli
 | sanitario| `sanitario.regime_sequencial`| Motor de sequência de doses, dependência de milestone e catch-up |
 | sanitario | `sanitario.casos` | Casos sanitários por animal com abertura/vínculo pelo Registrar, timeline por caso, vínculo de eventos por sanitario_caso_id e encerramento manual. |
 | sanitario | `sanitario.protocolos_clinicos_readonly` | Biblioteca clínica orientativa com contrato testável, sem agenda automática, sem prescrição automática, sem criação de evento sem ação explícita e sem baixa automática de estoque. |
+| ecc | `ecc.registro` | Registro de ECC individual e lote no Registrar com lógica tudo-ou-nada e validação estrita (passo 0.25, range 1-5, e ignorando campos vazios em lote) |
+| ecc | `ecc.historico` | Exibição do último ECC factual (escala, data, observação) e histórico cronológico decrescente na ficha do animal |
 
-**Total: 26 capabilities**
-**Completas: 24**
+**Total: 28 capabilities**
+**Completas: 26**
 **Pendentes: 2**
 
 ---

@@ -1,0 +1,5 @@
+nome;area_ha;capacidade_ua;tipo_pasto;tipo_area;forrageira_genero;forrageira;cultivar;altura_entrada;altura_saida;capacidade_ua_alvo;observacoes
+P_01;28.0;7;nativo;nativo;;;;;;;Pasto 1
+P_02;25.2;8;cultivado;cultivado;panico;capim-panao;massai;27;16;16;Pasto 2
+P_03;28.4;16;integracao;nativo;;;;;;;Pasto 3
+P_04;12.6;10;degradado;nativo;;;;;;;Pasto 4

@@ -38,7 +38,8 @@ type RegistrarNonFinancialDomain =
   | "movimentacao"
   | "nutricao"
   | "financeiro"
-  | "reproducao";
+  | "reproducao"
+  | "ecc";
 
 type NonFinancialSanitarioData = {
   tipo: SanitarioTipoEnum;
@@ -86,6 +87,8 @@ export async function resolveRegistrarNonFinancialFinalizePlan(input: {
   abrirCasoClinico?: boolean;
   clinicalProtocolRef?: ClinicalProtocolRef | null;
   pesagemData: Record<string, string>;
+  eccData: Record<string, string>;
+  eccObservacoes: Record<string, string>;
   movimentacaoData: NonFinancialMovimentacaoData;
   nutricaoData: NonFinancialNutricaoData;
   financeiroData: NonFinancialFinanceiroData;
@@ -137,6 +140,14 @@ export async function resolveRegistrarNonFinancialFinalizePlan(input: {
   }
 
   for (const animalId of input.targetAnimalIds) {
+    if (input.tipoManejo === "ecc" && animalId) {
+      const eccVal = input.eccData[animalId];
+      if (!eccVal || eccVal.trim() === "") {
+        // Skip this animal as it wasn't evaluated
+        continue;
+      }
+    }
+
     const animal = animalId ? input.animalsMap.get(animalId) : null;
     if (animalId && !animal) continue;
     const targetLoteId = animal?.lote_id ?? input.selectedLoteIdNormalized;
@@ -148,7 +159,8 @@ export async function resolveRegistrarNonFinancialFinalizePlan(input: {
       input.tipoManejo === "pesagem" ||
       input.tipoManejo === "movimentacao" ||
       input.tipoManejo === "nutricao" ||
-      input.tipoManejo === "financeiro"
+      input.tipoManejo === "financeiro" ||
+      input.tipoManejo === "ecc"
     ) {
       eventInput = buildRegistrarEventInput({
         tipoManejo: input.tipoManejo,
@@ -206,6 +218,16 @@ export async function resolveRegistrarNonFinancialFinalizePlan(input: {
                 pesoKg: input.parseUserWeight(
                   animalId ? input.pesagemData[animalId] || "" : "",
                 ),
+              }
+            : undefined,
+        ecc:
+          input.tipoManejo === "ecc" && animalId
+            ? {
+                ecc: Number(input.eccData[animalId]),
+                escalaMin: 1.00,
+                escalaMax: 5.00,
+                escalaPasso: 0.25,
+                observacoes: input.eccObservacoes[animalId] || null,
               }
             : undefined,
         movimentacao:
