@@ -29,6 +29,7 @@ export const TABLE_MAP: Record<string, string> = {
   eventos_pasto_avaliacao: "event_eventos_pasto_avaliacao",
   eventos_reproducao: "event_eventos_reproducao",
   eventos_financeiro: "event_eventos_financeiro",
+  eventos_ecc: "event_eventos_ecc",
 };
 
 // Reverse map (localStore -> remoteTable) calculado 1x
