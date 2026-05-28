@@ -297,6 +297,78 @@ const Registrar = () => {
       })),
     [activeClinicalCases],
   );
+  // Pre-fill previous ECC for selected animals to ease field recording
+  const lastEccsForSelected = useLiveQuery(async () => {
+    if (tipoManejo !== "ecc" || selectedAnimais.length === 0) {
+      return {} as Record<string, number>;
+    }
+    const events = await db.event_eventos
+      .where("animal_id")
+      .anyOf(selectedAnimais)
+      .toArray();
+    const activeEvents = events.filter((e) => !e.deleted_at && e.dominio === "ecc");
+    if (activeEvents.length === 0) return {} as Record<string, number>;
+
+    const eventIds = activeEvents.map((e) => e.id);
+    const eccDetails = await db.event_eventos_ecc
+      .where("event_id")
+      .anyOf(eventIds)
+      .toArray();
+
+    const eccMap = new Map(eccDetails.map((d) => [d.event_id, d.ecc]));
+    const latestEccByAnimal: Record<string, number> = {};
+    const latestEventByAnimal: Record<string, typeof activeEvents[0]> = {};
+
+    for (const event of activeEvents) {
+      const eccVal = eccMap.get(event.id);
+      if (eccVal === undefined || eccVal === null) continue;
+
+      const currentLatest = latestEventByAnimal[event.animal_id!];
+      if (
+        !currentLatest ||
+        new Date(event.occurred_at) > new Date(currentLatest.occurred_at)
+      ) {
+        latestEventByAnimal[event.animal_id!] = event;
+        latestEccByAnimal[event.animal_id!] = eccVal;
+      }
+    }
+    return latestEccByAnimal;
+  }, [selectedAnimais, tipoManejo]);
+
+  const [eccInitializedIds, setEccInitializedIds] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    if (tipoManejo === "ecc" && lastEccsForSelected && Object.keys(lastEccsForSelected).length > 0) {
+      setEccData((prev) => {
+        const next = { ...prev };
+        let changed = false;
+        for (const [animalId, ecc] of Object.entries(lastEccsForSelected)) {
+          if (!eccInitializedIds[animalId]) {
+            next[animalId] = String(ecc);
+            setEccInitializedIds((p) => ({ ...p, [animalId]: true }));
+            changed = true;
+          }
+        }
+        return changed ? next : prev;
+      });
+    }
+  }, [tipoManejo, lastEccsForSelected, eccInitializedIds, setEccData]);
+
+  useEffect(() => {
+    setEccInitializedIds((prev) => {
+      const next = { ...prev };
+      let changed = false;
+      const selectedSet = new Set(selectedAnimais);
+      for (const id of Object.keys(next)) {
+        if (!selectedSet.has(id)) {
+          delete next[id];
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+  }, [selectedAnimais]);
+
   const hasRegistrarDisplayContext = Boolean(
     sourceTaskId || contextAnimalId || contextLoteId || contextPastoId,
   );

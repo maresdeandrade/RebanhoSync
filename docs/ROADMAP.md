@@ -398,6 +398,39 @@ Atualizacao visual SLC 2026-05-20:
 
 ---
 
+## Milestone 14: Cockpits de Manejo de Lotes e Pastos (Fase 5)
+
+**Objetivo:** Evoluir as páginas de detalhes de Lote e Pasto em cockpits operacionais analíticos passivos.
+
+**Status:** Concluido em 2026-05-28
+
+### Entregaveis
+
+- [x] Adaptador de métricas puro (`cockpitManejoAdapter.ts`) que calcula de forma determinística cobertura de dados, recência de pesagem (`weightFreshnessDays`), GMD factual, lotação e pendências.
+- [x] Componente de timeline factual unificada visual (`TimelineFactual.tsx`) cronológica decrescente.
+- [x] Refatoração incremental de `LoteDetalhe.tsx` integrando grid de cartões e linha do tempo.
+- [x] Refatoração incremental de `PastoDetalhe.tsx` agregando lotes vinculados, uso e pendências do pasto.
+- [x] CTAs de painel estritamente de navegação, mantendo os cards read-only.
+- [x] Cobertura de testes unitários verdes para o adaptador e mocks estruturados nos testes de página.
+
+### Fora de escopo mantido
+
+- Carência sanitária.
+- Decisões comerciais/críticas de venda ou abate.
+- Estoque de produtos veterinários.
+- Marcador crítico persistido.
+- Migrações de banco de dados.
+
+---
+
+## Milestone 15: Produtos + Estoque Sanitário + Snapshot de Produto em Eventos (Fase 6)
+
+**Objetivo:** Catálogo e controle de lote/estoque de vacinas, vermífugos, medicamentos e suplementos, e snapshot de consumo do produto diretamente nos fatos operacionais reais.
+
+**Status:** Planejado
+
+---
+
 ## Historico de Milestones Concluidos
 
 | Milestone | Escopo | Status |
@@ -407,6 +440,14 @@ Atualizacao visual SLC 2026-05-20:
 | M2 | Indices (TD-004), GMD view (TD-015) | Concluido |
 | M3 | Observabilidade remota com flush de `metrics_events` e painel de sync health | Concluido |
 | M4 | Integracao do catalogo `produtos_veterinarios` ao fluxo sanitario | Concluido |
+| M5 | Cobertura E2E do fluxo reprodutivo completo | Concluido |
+| M6 | Agenda operacional e triagem contextual | Concluido |
+| M7 | Reestruturacao de protocolos e calendario base | Concluido |
+| M8 | Catalogo regulatorio oficial e overlay estadual | Concluido |
+| M11 | Saneamento sanitario P0-P3 | Concluido |
+| M12 | Central operacional read-only | Concluido |
+| M13 | Pastagens — Historico e Ronda de campo | Concluido |
+| M14 | Cockpits de Lotes e Pastos (Fase 5) | Concluido |
 
 ---
 

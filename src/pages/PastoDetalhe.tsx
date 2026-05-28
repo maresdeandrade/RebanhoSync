@@ -9,6 +9,16 @@ import {
   MoreHorizontal,
   Pencil,
   Trees,
+  Scale,
+  TrendingUp,
+  Layers,
+  Calendar as CalendarIcon,
+  ChevronDown,
+  ChevronUp,
+  Eye,
+  EyeOff,
+  Clock,
+  ArrowRightLeft,
 } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
@@ -51,11 +61,15 @@ import type {
   SuplementoUnidadeEnum,
 } from "@/lib/offline/types";
 import { showError, showSuccess } from "@/utils/toast";
-import { useOccupancyData } from "@/features/occupancy/useOccupancyData";
-import { OccupancyMetricCards } from "@/features/occupancy/OccupancyMetricCards";
+import { Card, CardContent } from "@/components/ui/card";
 import { AnimalMovementHistoryTable } from "@/features/occupancy/AnimalMovementHistoryTable";
 import { OccupancyEntryInfo, OccupancyTimeline, CollapsibleInfrastructure, OccupancyAlert } from "@/features/occupancy";
-import { InfrastructureCard } from "@/features/occupancy";
+
+import { calculatePastoMetrics } from "@/features/occupancy/cockpitManejoAdapter";
+import { TimelineFactual } from "@/components/timeline/TimelineFactual";
+import { useAuth } from "@/hooks/useAuth";
+
+const EMPTY_ARRAY: never[] = [];
 
 function parseOptionalNumber(value: string) {
   const normalized = value.trim().replace(",", ".");
@@ -115,27 +129,139 @@ const SUPLEMENTO_BY_VALUE = new Map(
   SUPLEMENTO_OPTIONS.map((option) => [option.value, option]),
 );
 
+interface CockpitCardProps {
+  title: string;
+  value: string | number | null;
+  unit?: string;
+  icon: React.ReactNode;
+  status: "empty" | "partial" | "complete" | "blocked";
+  reason?: string;
+  source?: string;
+  limitation?: string;
+  extraContent?: React.ReactNode;
+}
+
+function CockpitCard({
+  title,
+  value,
+  unit,
+  icon,
+  status,
+  reason,
+  source,
+  limitation,
+  extraContent,
+}: CockpitCardProps) {
+  const getStatusStyles = (s: typeof status) => {
+    switch (s) {
+      case "complete":
+        return "border-emerald-200 bg-emerald-50/20 text-emerald-800 dark:border-emerald-800/20 dark:bg-emerald-950/10 dark:text-emerald-300";
+      case "partial":
+        return "border-amber-200 bg-amber-50/20 text-amber-800 dark:border-amber-800/20 dark:bg-amber-950/10 dark:text-amber-300";
+      case "blocked":
+        return "border-rose-200 bg-rose-50/20 text-rose-800 dark:border-rose-800/20 dark:bg-rose-950/10 dark:text-rose-300";
+      default:
+        return "border-slate-200 bg-slate-50/20 text-slate-800 dark:border-slate-800/20 dark:bg-slate-900/10 dark:text-slate-400";
+    }
+  };
+
+  const getStatusLabel = (s: typeof status) => {
+    switch (s) {
+      case "complete":
+        return "Completo";
+      case "partial":
+        return "Parcial";
+      case "blocked":
+        return "Bloqueado";
+      default:
+        return "Vazio";
+    }
+  };
+
+  const getStatusBadgeStyles = (s: typeof status) => {
+    switch (s) {
+      case "complete":
+        return "bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-900/50 dark:text-emerald-300 dark:border-emerald-800";
+      case "partial":
+        return "bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-900/50 dark:text-amber-300 dark:border-amber-800";
+      case "blocked":
+        return "bg-rose-100 text-rose-800 border-rose-300 dark:bg-rose-900/50 dark:text-rose-300 dark:border-rose-800";
+      default:
+        return "bg-slate-100 text-slate-800 border-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700";
+    }
+  };
+
+  return (
+    <div className={`flex flex-col justify-between rounded-xl border p-4 shadow-sm transition-all hover:shadow-md ${getStatusStyles(status)}`}>
+      <div className="space-y-3">
+        <div className="flex items-start justify-between">
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 rounded-lg bg-background/50 border border-current/10">
+              {icon}
+            </div>
+            <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+              {title}
+            </h4>
+          </div>
+          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${getStatusBadgeStyles(status)}`}>
+            {getStatusLabel(status)}
+          </span>
+        </div>
+
+        <div className="space-y-1">
+          <p className="text-2xl font-extrabold tracking-tight text-foreground">
+            {value !== null ? (typeof value === "number" ? value.toFixed(1) : value) : "—"}
+            {value !== null && unit && (
+              <span className="text-xs font-semibold text-muted-foreground ml-1.5 uppercase tracking-wide">
+                {unit}
+              </span>
+            )}
+          </p>
+          {reason && (
+            <p className="text-xs font-medium text-foreground/80 leading-snug">
+              {reason}
+            </p>
+          )}
+        </div>
+      </div>
+
+      <div className="mt-3 pt-3 border-t border-current/10 space-y-1.5 text-[11px] text-muted-foreground">
+        {source && (
+          <p>
+            <span className="font-semibold text-foreground/75">Fonte:</span> {source}
+          </p>
+        )}
+        {limitation && (
+          <p className="text-amber-700/90 dark:text-amber-400/90 font-medium">
+            <span className="font-semibold">Nota:</span> {limitation}
+          </p>
+        )}
+        {extraContent}
+      </div>
+    </div>
+  );
+}
+
 const PastoDetalhe = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [rondaOpen, setRondaOpen] = useState(false);
   const [momento, setMomento] = useState<PastoAvaliacaoMomentoEnum>("ronda");
   const [alturaCm, setAlturaCm] = useState("");
-  const [coberturaSolo, setCoberturaSolo] = useState<
-    PastoCoberturaSoloEnum | ""
-  >("");
-  const [invasorasNivel, setInvasorasNivel] = useState<
-    PastoInvasorasNivelEnum | ""
-  >("");
+  const [coberturaSolo, setCoberturaSolo] = useState<PastoCoberturaSoloEnum | "">("");
+  const [invasorasNivel, setInvasorasNivel] = useState<PastoInvasorasNivelEnum | "">("");
   const [aguaStatus, setAguaStatus] = useState<PastoAguaStatusEnum | "">("");
   const [eccLoteMedio, setEccLoteMedio] = useState("");
   const [fezesScore, setFezesScore] = useState<PastoFezesScoreEnum | "">("");
-  const [suplementoTipo, setSuplementoTipo] =
-    useState<SuplementoTipoValue>("nenhum");
+  const [suplementoTipo, setSuplementoTipo] = useState<SuplementoTipoValue>("nenhum");
   const [suplementoQuantidade, setSuplementoQuantidade] = useState("");
   const [rondaObservacoes, setRondaObservacoes] = useState("");
+  const [showSemEcc, setShowSemEcc] = useState(false);
 
+  const { farmLifecycleConfig } = useAuth();
+  const weightFreshnessDays = farmLifecycleConfig?.weightFreshnessDays;
 
+  // Dexie Reactive Queries
   const pasto = useLiveQuery(
     () => (id ? db.state_pastos.get(id) : undefined),
     [id],
@@ -144,50 +270,151 @@ const PastoDetalhe = () => {
     () => (id ? db.state_lotes.where("pasto_id").equals(id).toArray() : []),
     [id],
   );
-  const animaisCount = useLiveQuery(async () => {
-    if (!id) return 0;
 
-    const lotesNoPasto = await db.state_lotes
-      .where("pasto_id")
-      .equals(id)
-      .toArray();
-    let total = 0;
-    for (const lote of lotesNoPasto) {
-      total += await db.state_animais.where("lote_id").equals(lote.id).count();
-    }
-    return total;
-  }, [id]);
+  const pastos = useLiveQuery(() => db.state_pastos.toArray()) ?? EMPTY_ARRAY;
+  const animals = useLiveQuery(() => db.state_animais.toArray()) ?? EMPTY_ARRAY;
+  const events = useLiveQuery(() => db.event_eventos.toArray()) ?? EMPTY_ARRAY;
+  const pesagens = useLiveQuery(() => db.event_eventos_pesagem.toArray()) ?? EMPTY_ARRAY;
+  const eccs = useLiveQuery(() => db.event_eventos_ecc.toArray()) ?? EMPTY_ARRAY;
+  const movimentacoes = useLiveQuery(() => db.event_eventos_movimentacao.toArray()) ?? EMPTY_ARRAY;
+  const agendaItens = useLiveQuery(() => db.state_agenda_itens.toArray()) ?? EMPTY_ARRAY;
+
+  const referenceDate = useMemo(() => new Date().toISOString(), []);
+
+  // Pasto Cockpit Metrics Calculation
+  const pastoMetrics = useMemo(() => {
+    if (!id || !lotes || !animals) return null;
+    return calculatePastoMetrics(
+      id,
+      referenceDate,
+      weightFreshnessDays,
+      animals,
+      lotes,
+      pastos,
+      events,
+      pesagens,
+      eccs,
+      movimentacoes,
+      agendaItens
+    );
+  }, [id, referenceDate, weightFreshnessDays, animals, lotes, pastos, events, pesagens, eccs, movimentacoes, agendaItens]);
+
+  // Unified Timeline for Pasto
+  const timelineItems = useMemo(() => {
+    if (!id || !events || !lotes || !animals) return [];
+    const loteIdsInPasto = new Set(lotes.map(l => l.id));
+    const activeAnimals = animals.filter(a => a.lote_id && loteIdsInPasto.has(a.lote_id) && a.status === "ativo");
+    const activeAnimalIds = new Set(activeAnimals.map(a => a.id));
+    const animalMap = new Map(activeAnimals.map(a => [a.id, a.identificacao]));
+
+    const pastoEvents = events.filter(e => {
+      if (e.deleted_at) return false;
+      const isAnimalTarget = e.animal_id && activeAnimalIds.has(e.animal_id);
+      
+      if (e.dominio === "movimentacao") {
+        const m = movimentacoes.find(x => x.evento_id === e.id);
+        const touchesPasto = m && (m.from_pasto_id === id || m.to_pasto_id === id);
+        return touchesPasto || isAnimalTarget;
+      }
+      
+      return isAnimalTarget;
+    });
+
+    return pastoEvents.map(e => {
+      let desc = "";
+      const detail = e.observacoes || "";
+      
+      switch (e.dominio) {
+        case "pesagem": {
+          const p = pesagens.find(x => x.evento_id === e.id);
+          desc = p ? `Pesagem registrada: ${p.peso_kg} kg` : "Pesagem registrada";
+          break;
+        }
+        case "ecc": {
+          const ecc = eccs.find(x => x.event_id === e.id);
+          desc = ecc ? `Escore de Condição Corporal (ECC) avaliado: ${ecc.ecc}` : "ECC avaliado";
+          break;
+        }
+        case "movimentacao": {
+          const m = movimentacoes.find(x => x.evento_id === e.id);
+          if (m) {
+            if (m.to_pasto_id === id) {
+              desc = "Entrada no Pasto";
+            } else if (m.from_pasto_id === id) {
+              desc = "Saída do Pasto";
+            } else {
+              desc = "Movimentação de pastagem";
+            }
+          } else {
+            desc = "Movimentação registrada";
+          }
+          break;
+        }
+        case "sanitario": {
+          desc = "Manejo sanitário realizado";
+          break;
+        }
+        case "reproducao": {
+          desc = "Manejo reprodutivo realizado";
+          break;
+        }
+        default:
+          desc = `${e.dominio.charAt(0).toUpperCase() + e.dominio.slice(1)} registrado`;
+      }
+
+      return {
+        id: e.id,
+        dominio: e.dominio,
+        occurred_at: e.occurred_at,
+        animalId: e.animal_id,
+        animalIdentificacao: e.animal_id ? animalMap.get(e.animal_id) : null,
+        descricao: desc,
+        detalhe: detail,
+      };
+    });
+  }, [id, events, pesagens, eccs, movimentacoes, lotes, animals]);
+
+  // Historical trajectories for the table
+  const pastoAnimalPeriods = useMemo(() => {
+    if (!id || !movimentacoes || !events || !animals) return [];
+    const pastoMovs = movimentacoes.filter(m => m.to_pasto_id === id || m.from_pasto_id === id);
+    return pastoMovs.map(m => {
+      const ev = events.find(e => e.id === m.evento_id);
+      const anim = animals.find(a => a.id === ev?.animal_id);
+      return {
+        id: m.id,
+        loteId: m.to_lote_id || "",
+        pastoId: id,
+        animalId: ev?.animal_id || "",
+        animalIdentificacao: anim?.identificacao || "",
+        entradaAt: ev?.occurred_at || "",
+        saidaAt: m.from_pasto_id === id ? ev?.occurred_at : null,
+      };
+    });
+  }, [id, movimentacoes, events, animals]);
+
+  const animaisCount = useMemo(() => {
+    if (!lotes || !animals) return 0;
+    const loteIds = new Set(lotes.map(l => l.id));
+    return animals.filter(a => a.lote_id && loteIds.has(a.lote_id) && a.status === "ativo").length;
+  }, [lotes, animals]);
+
   const ocupacaoAberta = useLiveQuery(
     () =>
       id
         ? db.state_pasto_ocupacoes
             .where("pasto_id")
             .equals(id)
-            .filter(
-              (ocupacao) =>
-                ocupacao.status === "aberta" && !ocupacao.deleted_at,
-            )
+            .filter((o) => !o.saida_em)
             .first()
         : undefined,
     [id],
   );
+
   const ocupacoesPorLote = useMemo(() => {
-    if (!lotes) return new Map();
-    const map = new Map();
-    // Será preenchido com ocupações quando disponível
-    return map;
-  }, [lotes]);
+    return new Map();
+  }, []);
 
-  const formatDate = (dateString: string | null | undefined): string => {
-    if (!dateString) return "Data nao informada";
-    return new Intl.DateTimeFormat("pt-BR", {
-      dateStyle: "short",
-    }).format(new Date(dateString));
-  };
-
-  const getDiasOcupacao = (dataEntrada: string): number => {
-    return differenceInDays(new Date(), parseISO(dataEntrada));
-  };
   const avaliacoesPasto = useLiveQuery(async () => {
     if (!id) return [];
 
@@ -215,26 +442,11 @@ const PastoDetalhe = () => {
       });
   }, [id]);
 
-  const { getPastoMetrics, allAnimalPeriods } = useOccupancyData(
-    pasto?.fazenda_id ?? "",
-    new Date().toISOString(),
-  );
-
-  const pastoMetrics = useMemo(
-    () => (id ? getPastoMetrics(id) : null),
-    [id, getPastoMetrics],
-  );
-
-  const pastoAnimalPeriods = useMemo(
-    () => allAnimalPeriods.filter((p) => p.pastoId === id),
-    [allAnimalPeriods, id],
-  );
-
   if (!id || !pasto) {
     return (
       <div className="space-y-5">
         <PageIntro
-         variant="plain"
+          variant="plain"
           eyebrow="Estrutura do rebanho"
           title="Pasto nao encontrado"
           actions={
@@ -318,8 +530,8 @@ const PastoDetalhe = () => {
         dominio: "pastagem",
         fazendaId: pasto.fazenda_id,
         pastoId: pasto.id,
-        loteId: ocupacaoAberta?.lote_id ?? null,
-        ocupacaoId: ocupacaoAberta?.id ?? null,
+        loteId: ocupacaoAberta?.lote_id || null,
+        ocupacaoId: ocupacaoAberta?.id || null,
         momento,
         alturaCm: alturaParsed.value,
         coberturaSolo: coberturaSolo || null,
@@ -348,7 +560,7 @@ const PastoDetalhe = () => {
   return (
     <div className="space-y-5">
       <PageIntro
-       variant="plain"
+        variant="plain"
         eyebrow="Estrutura do rebanho"
         title={pasto.nome}
         meta={
@@ -401,13 +613,216 @@ const PastoDetalhe = () => {
         }
       />
 
-      <OccupancyMetricCards metrics={pastoMetrics} type="pasto" />
+      {/* Cockpit Actions / Navigation CTAs */}
+      <div className="flex flex-wrap gap-2.5 items-center bg-slate-50/50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800/80 rounded-xl p-3.5 shadow-sm">
+        <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground mr-1.5">Ações Rápidas:</span>
+        <Button asChild variant="outline" size="sm" className="h-9">
+          <Link to={`/registrar?dominio=ecc&pastoId=${encodeURIComponent(id)}`}>
+            <Layers className="mr-1.5 h-4 w-4 text-purple-500" />
+            Registrar ECC
+          </Link>
+        </Button>
+        <Button asChild variant="outline" size="sm" className="h-9">
+          <Link to={`/registrar?dominio=pesagem&pastoId=${encodeURIComponent(id)}`}>
+            <Scale className="mr-1.5 h-4 w-4 text-emerald-500" />
+            Registrar Pesagem
+          </Link>
+        </Button>
+        <Button asChild variant="outline" size="sm" className="h-9">
+          <Link to={`/registrar?dominio=movimentacao&pastoId=${encodeURIComponent(id)}`}>
+            <ArrowRightLeft className="mr-1.5 h-4 w-4 text-blue-500" />
+            Registrar Movimentação
+          </Link>
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-9"
+          onClick={() => {
+            const el = document.getElementById("lotes-secao");
+            el?.scrollIntoView({ behavior: "smooth" });
+          }}
+        >
+          <PawPrint className="mr-1.5 h-4 w-4 text-indigo-500" />
+          Ver Lotes
+        </Button>
+        <Button asChild variant="outline" size="sm" className="h-9">
+          <Link to={`/agenda?pastoId=${encodeURIComponent(id)}`}>
+            <CalendarIcon className="mr-1.5 h-4 w-4 text-amber-500" />
+            Ver Agenda
+          </Link>
+        </Button>
+      </div>
 
-      <AnimalMovementHistoryTable
-        periods={pastoAnimalPeriods}
-        title="Histórico de Movimentação do Pasto"
-        description="Trajetória dos animais neste pasto"
-      />
+      {/* Cockpit Manejo Metrics Grid */}
+      {pastoMetrics ? (
+        <div className="space-y-4">
+          <div className="border-b border-border/50 pb-2">
+            <h3 className="text-lg font-bold text-foreground">Cockpit de Manejo</h3>
+            <p className="text-sm text-muted-foreground">Indicadores analíticos agregados de ocupação e cobertura do pasto</p>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {/* Peso Médio Confiável */}
+            <CockpitCard
+              title="Peso Médio Confiável"
+              value={pastoMetrics.pesoMedio}
+              unit="kg"
+              icon={<Scale className="h-4 w-4" />}
+              status={pastoMetrics.pesoStatus.status}
+              reason={pastoMetrics.pesoStatus.reason}
+              source={pastoMetrics.pesoStatus.source}
+              limitation={pastoMetrics.pesoStatus.limitation}
+            />
+
+            {/* GMD Médio */}
+            <CockpitCard
+              title="GMD Médio"
+              value={pastoMetrics.gmdMedio}
+              unit="kg/dia"
+              icon={<TrendingUp className="h-4 w-4" />}
+              status={pastoMetrics.gmdStatus.status}
+              reason={pastoMetrics.gmdStatus.reason}
+              source={pastoMetrics.gmdStatus.source}
+              limitation={pastoMetrics.gmdStatus.limitation}
+            />
+
+            {/* ECC Médio Factual */}
+            <CockpitCard
+              title="ECC Médio Factual"
+              value={pastoMetrics.eccMedio}
+              icon={<Layers className="h-4 w-4" />}
+              status={pastoMetrics.eccStatus.status}
+              reason={pastoMetrics.eccStatus.reason}
+              source={pastoMetrics.eccStatus.source}
+              limitation={pastoMetrics.eccStatus.limitation}
+              extraContent={
+                <div className="mt-2 space-y-2">
+                  <p>
+                    <span className="font-semibold text-foreground/75">Cobertura:</span> {pastoMetrics.eccCobertura.avaliados}/{pastoMetrics.eccCobertura.total} avaliados
+                  </p>
+                  {pastoMetrics.animaisSemEcc.length > 0 && (
+                    <div className="pt-1.5 border-t border-current/10">
+                      <button
+                        onClick={() => setShowSemEcc(!showSemEcc)}
+                        className="flex items-center gap-1 font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"
+                      >
+                        {showSemEcc ? (
+                          <>
+                            <EyeOff className="h-3 w-3" /> Ocultar sem ECC
+                          </>
+                        ) : (
+                          <>
+                            <Eye className="h-3 w-3" /> Ver {pastoMetrics.animaisSemEcc.length} sem ECC
+                          </>
+                        )}
+                      </button>
+                      {showSemEcc && (
+                        <div className="mt-1.5 max-h-24 overflow-y-auto rounded bg-background/50 p-2 border border-current/10 space-y-1 font-mono text-[10px]">
+                          {pastoMetrics.animaisSemEcc.map((identificacao) => (
+                            <div key={identificacao} className="text-foreground/70">• {identificacao}</div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              }
+            />
+
+            {/* Uso do Pasto */}
+            <CockpitCard
+              title="Tempo de Uso do Pasto"
+              value={pastoMetrics.tempoUsoDias}
+              unit="dias"
+              icon={<CalendarIcon className="h-4 w-4" />}
+              status={pastoMetrics.tempoLotacaoStatus.status}
+              reason={`Permanência Média Atual: ${pastoMetrics.tempoUsoDias.toFixed(0)} dias no pasto`}
+              source={pastoMetrics.tempoLotacaoStatus.source}
+              limitation={pastoMetrics.tempoLotacaoStatus.limitation}
+              extraContent={
+                pastoMetrics.ultimaMovimentacao && (
+                  <p className="mt-1">
+                    <span className="font-semibold text-foreground/75">Última Movimentação:</span> {new Date(pastoMetrics.ultimaMovimentacao).toLocaleDateString("pt-BR")}
+                  </p>
+                )
+              }
+            />
+
+            {/* Pendências de Agenda */}
+            <CockpitCard
+              title="Pendências da Agenda"
+              value={pastoMetrics.agendaItensAbertos.total}
+              unit="itens"
+              icon={<ClipboardCheck className="h-4 w-4" />}
+              status={pastoMetrics.agendaItensAbertos.total > 0 ? "partial" : "complete"}
+              reason={`${pastoMetrics.agendaItensAbertos.total} pendências agregadas ativas`}
+              source="state_agenda_itens"
+              extraContent={
+                <div className="grid grid-cols-3 gap-1 mt-2 text-center text-[10px] font-bold">
+                  <div className="p-1 rounded bg-rose-500/10 text-rose-700 border border-rose-200/20">
+                    <div>{pastoMetrics.agendaItensAbertos.atrasados}</div>
+                    <div className="uppercase text-[8px] opacity-75">Atrasados</div>
+                  </div>
+                  <div className="p-1 rounded bg-amber-500/10 text-amber-700 border border-amber-200/20">
+                    <div>{pastoMetrics.agendaItensAbertos.hoje}</div>
+                    <div className="uppercase text-[8px] opacity-75">Hoje</div>
+                  </div>
+                  <div className="p-1 rounded bg-blue-500/10 text-blue-700 border border-blue-200/20">
+                    <div>{pastoMetrics.agendaItensAbertos.proximos}</div>
+                    <div className="uppercase text-[8px] opacity-75">Próximos</div>
+                  </div>
+                </div>
+              }
+            />
+
+            {/* Perfil Zootécnico */}
+            <div className="flex flex-col justify-between rounded-xl border p-4 shadow-sm border-slate-200 bg-slate-50/20 dark:border-slate-800/20 dark:bg-slate-900/10">
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 rounded-lg bg-background/50 border border-slate-200 dark:border-slate-800">
+                    <Clock className="h-4 w-4 text-indigo-500" />
+                  </div>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                    Perfil Zootécnico
+                  </h4>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-lg font-extrabold tracking-tight text-foreground">
+                    {pastoMetrics.categoriaPredominante}
+                  </p>
+                  <p className="text-xs text-muted-foreground leading-snug">
+                    Categoria zootécnica predominante no pasto
+                  </p>
+                </div>
+              </div>
+              <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800/80 text-[11px] text-muted-foreground">
+                <p>
+                  <span className="font-semibold text-foreground/75">Total de Animais:</span> {pastoMetrics.lotacaoAtual} ativos
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <Card className="shadow-none">
+          <CardContent className="p-4 text-center text-sm text-muted-foreground">
+            Calculando métricas do pasto...
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Histórico de Movimentações */}
+      {pastoAnimalPeriods.length > 0 && (
+        <AnimalMovementHistoryTable
+          periods={pastoAnimalPeriods}
+          title="Histórico de Movimentação do Pasto"
+          description="Trajetória dos animais neste pasto"
+        />
+      )}
+
+      {/* Timeline Factual do Pasto */}
+      <TimelineFactual items={timelineItems} title="Linha do Tempo Factual do Pasto" />
 
       <section className="rounded-xl border border-border/70 bg-card p-5 shadow-none sm:p-6">
         <div className="space-y-1">
@@ -506,76 +921,57 @@ const PastoDetalhe = () => {
         <CollapsibleInfrastructure infraestrutura={infraestrutura} />
       ) : null}
 
-      {lotes && lotes.length > 0 ? (
-        <section className="rounded-xl border border-border/70 bg-card p-5 shadow-none sm:p-6">
-          <div className="space-y-2 border-b border-border/50 pb-4">
-            <h2 className="text-lg font-bold text-foreground">
-              Lotes neste pasto
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              {lotes.length} lote(s) ocupando este pasto
-            </p>
-          </div>
+      <section id="lotes-secao" className="scroll-mt-5">
+        {lotes && lotes.length > 0 ? (
+          <div className="rounded-xl border border-border/70 bg-card p-5 shadow-none sm:p-6">
+            <div className="space-y-2 border-b border-border/50 pb-4">
+              <h2 className="text-lg font-bold text-foreground">
+                Lotes neste pasto
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                {lotes.length} lote(s) ocupando este pasto
+              </p>
+            </div>
 
-          <div className="grid gap-3 mt-4">
-            {lotes.map((lote) => {
-              // animaisCount total não é breakdown por lote aqui; exibimos sem contagem individual
-              const lotesAnimaisCount = 0;
-              const ocupacaoInfo = ocupacoesPorLote.get(lote.id);
-              
-              return (
-                <Link
-                  key={lote.id}
-                  to={`/lotes/${lote.id}`}
-                  className="flex flex-col gap-3 rounded-xl border border-border/70 bg-background/70 px-4 py-3 transition-colors hover:border-primary/25 hover:bg-muted/30"
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="space-y-1 flex-1">
-                      <p className="font-medium text-foreground">{lote.nome}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {lote.status === "ativo"
-                          ? "Em operacao"
-                          : "Fora da rotina principal"}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {lotesAnimaisCount} animal(is) neste lote
-                      </p>
-                      {ocupacaoInfo?.dataEntrada && (
-                        <div className="mt-2 w-full space-y-2">
-                          <OccupancyTimeline
-                            dataEntrada={ocupacaoInfo.dataEntrada}
-                            diasEsperados={30}
-                            label="Tempo no pasto"
-                          />
-                          <OccupancyAlert
-                            dataEntrada={ocupacaoInfo.dataEntrada}
-                            diasEsperados={30}
-                            tipo="lote"
-                          />
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex flex-col items-end gap-2">
-                      {(ocupacaoInfo?.diasOcupacao ?? null) !== null && (ocupacaoInfo?.diasOcupacao ?? Infinity) <= 7 && (
-                        <StatusBadge tone="warning" className="text-xs">
-                          Novo
+            <div className="grid gap-3 mt-4">
+              {lotes.map((lote) => {
+                const lotesAnimaisCount = animals.filter(a => a.lote_id === lote.id && a.status === "ativo").length;
+                
+                return (
+                  <Link
+                    key={lote.id}
+                    to={`/lotes/${lote.id}`}
+                    className="flex flex-col gap-3 rounded-xl border border-border/70 bg-background/70 px-4 py-3 transition-colors hover:border-primary/25 hover:bg-muted/30"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-1 flex-1">
+                        <p className="font-medium text-foreground">{lote.nome}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {lote.status === "ativo"
+                            ? "Em operacao"
+                            : "Fora da rotina principal"}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {lotesAnimaisCount} animal(is) neste lote
+                        </p>
+                      </div>
+                      <div className="flex flex-col items-end gap-2">
+                        <StatusBadge
+                          tone={lote.status === "ativo" ? "success" : "neutral"}
+                        >
+                          {lote.status}
                         </StatusBadge>
-                      )}
-                      <StatusBadge
-                        tone={lote.status === "ativo" ? "success" : "neutral"}
-                      >
-                        {lote.status}
-                      </StatusBadge>
+                      </div>
                     </div>
-                  </div>
-                </Link>
-              );
-            })}
+                  </Link>
+                );
+              })}
+            </div>
           </div>
-        </section>
-      ) : (
-        <EmptyState icon={Trees} title="Nenhum lote neste pasto" />
-      )}
+        ) : (
+          <EmptyState icon={Trees} title="Nenhum lote neste pasto" />
+        )}
+      </section>
 
       <Dialog open={rondaOpen} onOpenChange={setRondaOpen}>
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
@@ -804,5 +1200,3 @@ const PastoDetalhe = () => {
 };
 
 export default PastoDetalhe;
-
-

@@ -19,6 +19,14 @@
 - **Impacto:** O Registrar recebe o `sourceTaskId` e preenche o contexto da agenda (produto, tipo) via query params, mas a data prevista original da tarefa não é propagada. O contexto visual na UI do Registrar fica ligeiramente incompleto. Baixo impacto de UX, sem impacto funcional de domínio.
 
 
+### TD-033: Dexie MissingAPIError in Test Environments
+
+- **Status:** OPEN
+- **Origem:** Fase 5 — Lotes e Pastos como Cockpit de Manejo (Maio/2026)
+- **Impacto:** Durante a suíte global de testes, `useRegistrarSanitarioPackage.ts` ocasionalmente emite `DexieError [MissingAPIError]: IndexedDB API missing` no stderr ao tentar buscar produtos em caminhos de renderização assíncronos após o encerramento ou mock do IndexedDB do test runner (fake-indexeddb). Não causa falha de testes nem impede a compilação, mas gera ruído técnico em stderr.
+- **Próxima ação:** Blindar o carregamento assíncrono com guardas de presença do IndexedDB ou ajustar o tearDown dos testes.
+
+
 ### TD-026: Residual estrutural de shell em `Agenda`
 
 - **Status:** OPEN

@@ -74,7 +74,7 @@ export function parseRegistrarQueryState<QuickActionKey extends string>(input: {
     },
     reproTipo,
     shouldOpenChooseActionStep: Boolean(
-      (domain && (sourceTaskId || animalId || input.searchParams.get("loteId"))) ||
+      (domain && (sourceTaskId || animalId)) ||
         (quickAction && (animalId || loteId)),
     ),
   };

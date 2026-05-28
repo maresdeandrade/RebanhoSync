@@ -42,6 +42,7 @@ import type {
   BuildOperationalInsightsInput,
   OperationalInsightsLoadedSources,
 } from "@/features/operationalInsights/operationalInsightsAdapter";
+import { computeHomeIndicators, type HomeIndicatorsResult } from "@/features/operationalInsights/operationalHomeIndicatorsAdapter";
 import { cn } from "@/lib/utils";
 import {
   buildAgendaCalendarModePath,
@@ -67,6 +68,7 @@ type HomeSnapshot = {
     end: string;
   };
   operationalInsightSources: OperationalInsightsLoadedSources;
+  homeIndicators: HomeIndicatorsResult;
   animais: number;
   lotes: number;
   pastos: number;
@@ -208,6 +210,10 @@ const Home = () => {
       insumoMovimentacoes,
       syncSummary,
       regulatorySource,
+      eventosPesagem,
+      eventosEcc,
+      eventosMovimentacao,
+      eventosTodos,
     ] = await Promise.all([
       db.state_animais.where("fazenda_id").equals(activeFarmId).toArray(),
       db.state_lotes.where("fazenda_id").equals(activeFarmId).toArray(),
@@ -254,6 +260,14 @@ const Home = () => {
         .toArray(),
       loadFarmSyncSummary(activeFarmId),
       loadRegulatorySurfaceSource(activeFarmId),
+      db.event_eventos_pesagem.where("fazenda_id").equals(activeFarmId).toArray(),
+      db.event_eventos_ecc.where("fazenda_id").equals(activeFarmId).toArray(),
+      db.event_eventos_movimentacao.where("fazenda_id").equals(activeFarmId).toArray(),
+      db.event_eventos
+        .where("[fazenda_id+occurred_at]")
+        .between([activeFarmId, ""], [activeFarmId, "\uffff"], true, true)
+        .filter((evento) => !evento.deleted_at)
+        .toArray(),
     ]);
 
     const animaisDisponiveis = animais.filter((animal) => !animal.deleted_at);
@@ -400,6 +414,19 @@ const Home = () => {
     const lifecycleBiologicalCount =
       lifecycleQueue.length - lifecycleStrategicCount;
 
+    const homeIndicators = computeHomeIndicators({
+      referenceDate: todayKey,
+      animals: animaisDisponiveis,
+      lotes: lotesDisponiveis,
+      pastos: pastosAtivos,
+      agenda: agendaAberta,
+      events: eventosTodos,
+      pesagens: eventosPesagem,
+      eccs: eventosEcc,
+      movimentacoes: eventosMovimentacao,
+      weightFreshnessDays: farmLifecycleConfig?.weightFreshnessDays,
+    });
+
     return {
       generatedAt: new Date().toISOString(),
       referenceDate: todayKey,
@@ -410,6 +437,7 @@ const Home = () => {
         events: eventosMensais,
         protocolItems: protocoloItensDisponiveis,
       },
+      homeIndicators,
       animais: animaisAtivos.length,
       lotes: lotesAtivos.length,
       pastos: pastosAtivos.length,
@@ -811,7 +839,7 @@ const Home = () => {
 
       </section>
 
-      <OperationalInsightsPanel viewModel={operationalInsights} />
+      <OperationalInsightsPanel viewModel={operationalInsights} homeIndicators={snapshot.homeIndicators} />
 
       {snapshot.replenishmentAlerts.length > 0 ? (
         <Card>

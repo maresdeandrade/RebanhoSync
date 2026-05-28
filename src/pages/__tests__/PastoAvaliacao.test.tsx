@@ -13,10 +13,12 @@ import type {
   PastoOcupacao,
 } from "@/lib/offline/types";
 import PastoDetalhe from "@/pages/PastoDetalhe";
+import { useAuth } from "@/hooks/useAuth";
 
 vi.mock("dexie-react-hooks", () => ({
   useLiveQuery: vi.fn(),
 }));
+vi.mock("@/hooks/useAuth");
 vi.mock("@/lib/offline/ops", () => ({
   createGesture: vi.fn(async () => "tx-1"),
 }));
@@ -255,9 +257,17 @@ function renderPastoDetalhe() {
 
 describe("PastoDetalhe avaliacao/ronda", () => {
   const mockedCreateGesture = vi.mocked(createGesture);
+  const mockedUseAuth = vi.mocked(useAuth);
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockedUseAuth.mockReturnValue({
+      farmLifecycleConfig: { weightFreshnessDays: 90 },
+      session: { user: { id: "user-1" } },
+      loading: false,
+      activeFarmId: "farm-1",
+      role: "owner",
+    } as unknown as ReturnType<typeof useAuth>);
     mockPastoDetalheQueries();
   });
 

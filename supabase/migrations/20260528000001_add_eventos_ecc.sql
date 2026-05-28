@@ -1,6 +1,9 @@
 -- Migration: add_eventos_ecc
 -- Adds detail table for individual ECC scores
 
+-- Add ecc domain value to dominio_enum
+ALTER TYPE public.dominio_enum ADD VALUE IF NOT EXISTS 'ecc';
+
 CREATE TABLE public.eventos_ecc (
   event_id uuid PRIMARY KEY REFERENCES public.eventos(id) ON DELETE CASCADE,
   fazenda_id uuid NOT NULL,
@@ -11,6 +14,11 @@ CREATE TABLE public.eventos_ecc (
   escala_passo numeric(3,2) NOT NULL DEFAULT 0.25,
   observacoes text,
   payload jsonb NOT NULL DEFAULT '{}'::jsonb,
+  client_id text NOT NULL DEFAULT 'server',
+  client_op_id uuid NOT NULL DEFAULT gen_random_uuid(),
+  client_tx_id uuid,
+  client_recorded_at timestamptz NOT NULL DEFAULT now(),
+  server_received_at timestamptz NOT NULL DEFAULT now(),
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now(),
   deleted_at timestamptz,

@@ -6,6 +6,11 @@ import {
   Layers,
   Signal,
   Syringe,
+  Scale,
+  TrendingUp,
+  Gauge,
+  ShieldCheck,
+  Beef,
 } from "lucide-react";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,6 +20,13 @@ import type {
   OperationalInsightsViewModel,
   OperationalSignal,
 } from "@/features/operationalInsights/operationalInsightsAdapter";
+import type { HomeIndicatorsResult } from "@/features/operationalInsights/operationalHomeIndicatorsAdapter";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 type StatusTone = "neutral" | "info" | "success" | "warning" | "danger";
 
@@ -403,24 +415,390 @@ function SignalsCard({ viewModel }: { viewModel: OperationalInsightsViewModel })
 
 export function OperationalInsightsPanel({
   viewModel,
+  homeIndicators,
 }: {
   viewModel: OperationalInsightsViewModel;
+  homeIndicators?: HomeIndicatorsResult;
 }) {
   return (
-    <section className="space-y-4">
+    <section className="space-y-6">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">
             Central Operacional
           </p>
           <h2 className="text-xl font-semibold tracking-normal">
-            Leitura passiva da operacao
+            Leitura passiva da operação
           </h2>
         </div>
         <div className="flex flex-wrap gap-2">
           <StatusBadge tone="neutral">Referencia {viewModel.referenceDate}</StatusBadge>
           <StatusBadge tone="neutral">Mes {viewModel.monthlyPeriod.start.slice(0, 7)}</StatusBadge>
         </div>
+      </div>
+
+      {homeIndicators && (
+        <div className="space-y-4">
+          <div className="border-b pb-2">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/80">
+              Indicadores Fácticos Operacionais
+            </h3>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {/* Card 1: Agenda Operacional */}
+            <Card className={`shadow-none transition-all duration-300 hover:scale-[1.01] hover:shadow-md ${cardToneStyles[getStatusCardTone(homeIndicators.agenda.status)]}`}>
+              <CardHeader className="space-y-3 p-4 pb-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 space-y-2">
+                    <CardDescription className="text-xs font-medium uppercase tracking-[0.12em]">
+                      Agenda de Manejo
+                    </CardDescription>
+                    <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                      <CardTitle className="text-3xl tabular-nums tracking-normal">
+                        {homeIndicators.agenda.totalOpen}
+                      </CardTitle>
+                      <span className="text-sm text-muted-foreground">itens em aberto</span>
+                    </div>
+                  </div>
+                  <div className={iconToneStyles[getStatusCardTone(homeIndicators.agenda.status)]}>
+                    <CalendarClock className="h-5 w-5" />
+                  </div>
+                </div>
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                  <StatusBadge tone={getStatusTone(homeIndicators.agenda.status)}>
+                    {getStatusLabel(homeIndicators.agenda.status)}
+                  </StatusBadge>
+                </div>
+                <p className="truncate text-xs text-muted-foreground">
+                  Fonte: state_agenda_itens
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-3 px-4 pb-4 text-sm">
+                <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                  <div className="rounded-md bg-background/50 p-2 border border-border/40">
+                    <span className="block font-semibold text-destructive">{homeIndicators.agenda.overdue}</span>
+                    <span className="text-[10px] text-muted-foreground">Atrasados</span>
+                  </div>
+                  <div className="rounded-md bg-background/50 p-2 border border-border/40">
+                    <span className="block font-semibold text-warning">{homeIndicators.agenda.dueToday}</span>
+                    <span className="text-[10px] text-muted-foreground">Hoje</span>
+                  </div>
+                  <div className="rounded-md bg-background/50 p-2 border border-border/40">
+                    <span className="block font-semibold text-info">{homeIndicators.agenda.upcoming}</span>
+                    <span className="text-[10px] text-muted-foreground">Próximos</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Card 2: Escore de Condição Corporal (ECC) */}
+            <Card className={`shadow-none transition-all duration-300 hover:scale-[1.01] hover:shadow-md ${cardToneStyles[getStatusCardTone(homeIndicators.ecc.status)]}`}>
+              <CardHeader className="space-y-3 p-4 pb-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 space-y-2">
+                    <CardDescription className="text-xs font-medium uppercase tracking-[0.12em]">
+                      Escore Corporal (ECC)
+                    </CardDescription>
+                    <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                      <CardTitle className="text-3xl tabular-nums tracking-normal">
+                        {homeIndicators.ecc.eccMedioGlobal > 0 ? homeIndicators.ecc.eccMedioGlobal.toFixed(2) : "-"}
+                      </CardTitle>
+                      <span className="text-sm text-muted-foreground">ECC Médio Global</span>
+                    </div>
+                  </div>
+                  <div className={iconToneStyles[getStatusCardTone(homeIndicators.ecc.status)]}>
+                    <Beef className="h-5 w-5" />
+                  </div>
+                </div>
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                  <StatusBadge tone={getStatusTone(homeIndicators.ecc.status)}>
+                    {getStatusLabel(homeIndicators.ecc.status)}
+                  </StatusBadge>
+                  <span className="text-xs text-muted-foreground">
+                    Cobertura: {homeIndicators.ecc.coberturaAtiva.percentage}% ({homeIndicators.ecc.coberturaAtiva.evaluated}/{homeIndicators.ecc.coberturaAtiva.total})
+                  </span>
+                </div>
+                <p className="truncate text-xs text-muted-foreground">
+                  Fonte: event_eventos_ecc
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-3 px-4 pb-4 text-sm">
+                {homeIndicators.ecc.lotesComMenorCobertura.length > 0 && (
+                  <div className="space-y-1">
+                    <p className="text-xs font-semibold text-muted-foreground">Lotes com menor cobertura:</p>
+                    <div className="space-y-1 text-xs">
+                      {homeIndicators.ecc.lotesComMenorCobertura.slice(0, 2).map(l => (
+                        <div key={l.loteId} className="flex justify-between items-center text-muted-foreground">
+                          <span className="truncate max-w-[120px] font-medium">{l.nome}</span>
+                          <span>{l.percentage}% cob. ({l.eccMedio > 0 ? `Med: ${l.eccMedio.toFixed(1)}` : 'Sem méd.'})</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {homeIndicators.ecc.animaisSemEccCount > 0 && (
+                  <Accordion type="single" collapsible className="w-full border-t border-border/40 mt-1">
+                    <AccordionItem value="sem-ecc" className="border-0">
+                      <AccordionTrigger className="p-0 py-2 text-xs text-muted-foreground hover:no-underline">
+                        Ver {homeIndicators.ecc.animaisSemEccCount} animal(is) sem ECC factual registrado
+                      </AccordionTrigger>
+                      <AccordionContent className="pt-1 text-xs">
+                        <ul className="max-h-24 overflow-y-auto space-y-1 pr-1 border rounded bg-background/40 p-1.5">
+                          {homeIndicators.ecc.animaisSemEccList.map(a => (
+                            <li key={a.id} className="flex justify-between py-0.5 border-b border-border/20 last:border-0 font-mono text-[11px]">
+                              <span>{a.identificacao}</span>
+                              <span className="text-[9px] text-muted-foreground/80 uppercase">Sem registro</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </AccordionContent>
+                    </AccordionItem>
+                  </Accordion>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Card 3: Desempenho (GMD) */}
+            <Card className={`shadow-none transition-all duration-300 hover:scale-[1.01] hover:shadow-md ${cardToneStyles[getStatusCardTone(homeIndicators.gmd.status)]}`}>
+              <CardHeader className="space-y-3 p-4 pb-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 space-y-2">
+                    <CardDescription className="text-xs font-medium uppercase tracking-[0.12em]">
+                      Desempenho de Ganho (GMD)
+                    </CardDescription>
+                    <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                      <CardTitle className="text-3xl tabular-nums tracking-normal">
+                        {homeIndicators.gmd.lotesComGmd.length}
+                      </CardTitle>
+                      <span className="text-sm text-muted-foreground">lotes com GMD calculável</span>
+                    </div>
+                  </div>
+                  <div className={iconToneStyles[getStatusCardTone(homeIndicators.gmd.status)]}>
+                    <TrendingUp className="h-5 w-5" />
+                  </div>
+                </div>
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                  <StatusBadge tone={getStatusTone(homeIndicators.gmd.status)}>
+                    {getStatusLabel(homeIndicators.gmd.status)}
+                  </StatusBadge>
+                  {homeIndicators.gmd.animaisComApenasUmaPesagemCount > 0 && (
+                    <span className="text-xs text-muted-foreground">
+                      {homeIndicators.gmd.animaisComApenasUmaPesagemCount} animal(is) com pesagem única
+                    </span>
+                  )}
+                </div>
+                <p className="truncate text-xs text-muted-foreground">
+                  Fonte: event_eventos_pesagem
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-3 px-4 pb-4 text-sm">
+                {homeIndicators.gmd.lotesComGmd.length > 0 ? (
+                  <div className="space-y-1.5">
+                    <p className="text-xs font-semibold text-muted-foreground">GMD por lote:</p>
+                    <div className="space-y-1 text-xs">
+                      {homeIndicators.gmd.lotesComGmd.slice(0, 3).map(l => (
+                        <div key={l.loteId} className="flex justify-between items-center text-muted-foreground">
+                          <span className="truncate max-w-[120px] font-medium">{l.nome}</span>
+                          <span className="font-mono text-success font-semibold">+{l.gmdMedio.toFixed(2)} kg ({l.animaisCount} an.)</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="rounded bg-muted/40 p-2 text-xs text-muted-foreground border border-border/30">
+                    Nenhum lote possui pesagens suficientes (&ge; 2 pesagens) para cálculo de ganho diário.
+                  </div>
+                )}
+
+                {homeIndicators.gmd.lotesSemPesagemSuficiente.length > 0 && (
+                  <div className="space-y-1 border-t border-border/40 pt-2">
+                    <p className="text-[11px] font-semibold text-muted-foreground">Lotes sem dados suficientes:</p>
+                    <div className="space-y-0.5 text-[11px] text-muted-foreground">
+                      {homeIndicators.gmd.lotesSemPesagemSuficiente.slice(0, 2).map(l => (
+                        <div key={l.loteId} className="flex justify-between truncate">
+                          <span>{l.nome}</span>
+                          <span className="text-[10px] italic">Dados insuficientes</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Card 4: Tempo de Lotação */}
+            <Card className={`shadow-none transition-all duration-300 hover:scale-[1.01] hover:shadow-md ${cardToneStyles[getStatusCardTone(homeIndicators.lotacao.status)]}`}>
+              <CardHeader className="space-y-3 p-4 pb-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 space-y-2">
+                    <CardDescription className="text-xs font-medium uppercase tracking-[0.12em]">
+                      Tempo de Lotação
+                    </CardDescription>
+                    <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                      <CardTitle className="text-3xl tabular-nums tracking-normal">
+                        {homeIndicators.lotacao.lotePermanencia.length}
+                      </CardTitle>
+                      <span className="text-sm text-muted-foreground">lotes monitorados</span>
+                    </div>
+                  </div>
+                  <div className={iconToneStyles[getStatusCardTone(homeIndicators.lotacao.status)]}>
+                    <Gauge className="h-5 w-5" />
+                  </div>
+                </div>
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                  <StatusBadge tone={getStatusTone(homeIndicators.lotacao.status)}>
+                    {getStatusLabel(homeIndicators.lotacao.status)}
+                  </StatusBadge>
+                </div>
+                <p className="truncate text-xs text-muted-foreground">
+                  Fonte: event_eventos_movimentacao
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-3 px-4 pb-4 text-sm">
+                {homeIndicators.lotacao.lotePermanencia.length > 0 ? (
+                  <div className="space-y-1.5">
+                    <p className="text-xs font-semibold text-muted-foreground">Permanência média por lote:</p>
+                    <div className="space-y-1 text-xs">
+                      {homeIndicators.lotacao.lotePermanencia.slice(0, 3).map(p => (
+                        <div key={p.loteId} className="space-y-0.5">
+                          <div className="flex justify-between items-center text-muted-foreground">
+                            <span className="truncate max-w-[120px] font-medium">{p.nome}</span>
+                            <span className="font-mono font-semibold">{p.permanenciaMediaDias} dias</span>
+                          </div>
+                          {p.isPartial && (
+                            <p className="text-[10px] text-amber-600 font-medium leading-none">
+                              ⚠ Entrada inicial ausente (calculado a partir de {p.ultimaMovimentacao || 'sem data'})
+                            </p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="rounded bg-muted/40 p-2 text-xs text-muted-foreground border border-border/30">
+                    Nenhuma movimentação registrada.
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Card 5: Manejo Sanitário */}
+            <Card className={`shadow-none transition-all duration-300 hover:scale-[1.01] hover:shadow-md ${cardToneStyles[getStatusCardTone(homeIndicators.sanitario.status)]}`}>
+              <CardHeader className="space-y-3 p-4 pb-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 space-y-2">
+                    <CardDescription className="text-xs font-medium uppercase tracking-[0.12em]">
+                      Manejo Sanitário
+                    </CardDescription>
+                    <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                      <CardTitle className="text-3xl tabular-nums tracking-normal">
+                        {homeIndicators.sanitario.totalOpen}
+                      </CardTitle>
+                      <span className="text-sm text-muted-foreground">itens pendentes</span>
+                    </div>
+                  </div>
+                  <div className={iconToneStyles[getStatusCardTone(homeIndicators.sanitario.status)]}>
+                    <ShieldCheck className="h-5 w-5" />
+                  </div>
+                </div>
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                  <StatusBadge tone={getStatusTone(homeIndicators.sanitario.status)}>
+                    {getStatusLabel(homeIndicators.sanitario.status)}
+                  </StatusBadge>
+                </div>
+                <p className="truncate text-xs text-muted-foreground">
+                  Fonte: state_agenda_itens
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-3 px-4 pb-4 text-sm">
+                <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                  <div className="rounded-md bg-background/50 p-2 border border-border/40">
+                    <span className="block font-semibold text-destructive">{homeIndicators.sanitario.overdue}</span>
+                    <span className="text-[10px] text-muted-foreground">Atrasados</span>
+                  </div>
+                  <div className="rounded-md bg-background/50 p-2 border border-border/40">
+                    <span className="block font-semibold text-warning">{homeIndicators.sanitario.dueToday}</span>
+                    <span className="text-[10px] text-muted-foreground">Hoje</span>
+                  </div>
+                  <div className="rounded-md bg-background/50 p-2 border border-border/40">
+                    <span className="block font-semibold text-info">{homeIndicators.sanitario.upcoming}</span>
+                    <span className="text-[10px] text-muted-foreground">Próximos</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Card 6: Peso Atual Confiável */}
+            <Card className={`shadow-none transition-all duration-300 hover:scale-[1.01] hover:shadow-md ${cardToneStyles[getStatusCardTone(homeIndicators.pesoConfiavel.status)]}`}>
+              <CardHeader className="space-y-3 p-4 pb-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 space-y-2">
+                    <CardDescription className="text-xs font-medium uppercase tracking-[0.12em]">
+                      {homeIndicators.pesoConfiavel.label}
+                    </CardDescription>
+                    <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                      <CardTitle className="text-3xl tabular-nums tracking-normal">
+                        {homeIndicators.pesoConfiavel.pesoMedioGlobal > 0 ? `${homeIndicators.pesoConfiavel.pesoMedioGlobal.toFixed(1)}` : "-"}
+                      </CardTitle>
+                      <span className="text-sm text-muted-foreground">kg (Peso Médio Global)</span>
+                    </div>
+                  </div>
+                  <div className={iconToneStyles[getStatusCardTone(homeIndicators.pesoConfiavel.status)]}>
+                    <Scale className="h-5 w-5" />
+                  </div>
+                </div>
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                  <StatusBadge tone={getStatusTone(homeIndicators.pesoConfiavel.status)}>
+                    {getStatusLabel(homeIndicators.pesoConfiavel.status)}
+                  </StatusBadge>
+                  <span className="text-xs text-muted-foreground">
+                    Cobertura: {homeIndicators.pesoConfiavel.coberturaAtiva.percentage}%
+                  </span>
+                </div>
+                <p className="truncate text-xs text-muted-foreground">
+                  Fonte: event_eventos_pesagem
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-3 px-4 pb-4 text-sm">
+                <div className="space-y-1 text-xs text-muted-foreground">
+                  <div className="flex justify-between">
+                    <span>Animais com peso confiável:</span>
+                    <span className="font-semibold text-foreground">{homeIndicators.pesoConfiavel.animaisConfiaveisCount}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Animais com peso desatualizado:</span>
+                    <span className="font-semibold text-foreground">{homeIndicators.pesoConfiavel.animaisDesatualizadosCount}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Animais sem nenhuma pesagem:</span>
+                    <span className="font-semibold text-foreground">{homeIndicators.pesoConfiavel.animaisSemPesagemCount}</span>
+                  </div>
+                </div>
+
+                {homeIndicators.pesoConfiavel.lotesBaixaCobertura.length > 0 && (
+                  <div className="space-y-1 border-t border-border/40 pt-2 mt-1">
+                    <p className="text-[11px] font-semibold text-muted-foreground">Lotes com baixa cobertura (&lt;80%):</p>
+                    <div className="space-y-0.5 text-[11px] text-muted-foreground">
+                      {homeIndicators.pesoConfiavel.lotesBaixaCobertura.slice(0, 3).map(l => (
+                        <div key={l.loteId} className="flex justify-between">
+                          <span className="truncate max-w-[120px]">{l.nome}</span>
+                          <span className="text-destructive font-medium">{l.percentage}% cob.</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      )}
+
+      <div className="border-b pb-2">
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/80">
+          Sinais e Alertas Auxiliares
+        </h3>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-4">
