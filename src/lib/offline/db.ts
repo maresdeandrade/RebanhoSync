@@ -5,6 +5,7 @@ import {
   type AnimaisSociedade,
   type Contraparte,
   type Evento,
+  type EventoEcc,
   type EventoFinanceiro,
   type EventoMovimentacao,
   type EventoNutricao,
@@ -62,6 +63,7 @@ export class OfflineDB extends Dexie {
   event_eventos_pasto_avaliacao!: Table<EventoPastoAvaliacao, string>;
   event_eventos_reproducao!: Table<EventoReproducao, string>;
   event_eventos_financeiro!: Table<EventoFinanceiro, string>;
+  event_eventos_ecc!: Table<EventoEcc, string>;
 
   // Queue Stores
   queue_gestures!: Table<Gesture, string>;
@@ -570,6 +572,11 @@ export class OfflineDB extends Dexie {
         "id, template_id, area, gatilho_tipo, requires_vet, requires_gta, gera_agenda",
       catalog_doencas_notificaveis:
         "codigo, nome, especie_alvo, tipo_notificacao, updated_at",
+    });
+
+    // Version 16: ECC individual event detail store
+    this.version(16).stores({
+      event_eventos_ecc: "event_id, fazenda_id, animal_id, deleted_at",
     });
   }
 }

@@ -985,6 +985,27 @@ export interface EventoPesagem {
   deleted_at: string | null;
 }
 
+export interface EventoEcc {
+  event_id: string;
+  fazenda_id: string;
+  animal_id: string;
+  ecc: number;
+  escala_min: number;
+  escala_max: number;
+  escala_passo: number;
+  observacoes?: string | null;
+  payload: Record<string, unknown>;
+
+  // Sync metadata
+  client_id: string;
+  client_op_id: string;
+  client_tx_id: string | null;
+  client_recorded_at: string;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+}
+
 export interface EventoNutricao {
   evento_id: string;
   fazenda_id: string;

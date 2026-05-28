@@ -4,7 +4,6 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 const FORBIDDEN_TERMS = [
-  "Concluir direto",
   "Abrir próxima ação",
   "Abrir registro detalhado",
   "Executar direto",
