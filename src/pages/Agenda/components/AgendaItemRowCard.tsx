@@ -59,7 +59,7 @@ export function AgendaItemRowCard({
     : "Revisar no Registrar";
   const directCompleteLabel = isSanitary
     ? "Concluir tarefa"
-    : "Concluir direto";
+    : "Concluir";
   
   const nextStepHint = isCalfJourney
     ? "Próximo passo: seguir a rotina guiada da cria."
