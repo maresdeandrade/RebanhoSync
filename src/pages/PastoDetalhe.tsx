@@ -68,6 +68,8 @@ import { OccupancyEntryInfo, OccupancyTimeline, CollapsibleInfrastructure, Occup
 import { calculatePastoMetrics } from "@/features/occupancy/cockpitManejoAdapter";
 import { TimelineFactual } from "@/components/timeline/TimelineFactual";
 import { useAuth } from "@/hooks/useAuth";
+import { usePastoWithdrawal } from "@/lib/sanitario/hooks/useWithdrawal";
+import { WithdrawalBadgePanel } from "@/components/sanitario/WithdrawalBadgePanel";
 
 const EMPTY_ARRAY: never[] = [];
 
@@ -258,8 +260,9 @@ const PastoDetalhe = () => {
   const [rondaObservacoes, setRondaObservacoes] = useState("");
   const [showSemEcc, setShowSemEcc] = useState(false);
 
-  const { farmLifecycleConfig } = useAuth();
+  const { farmLifecycleConfig, activeFarmId } = useAuth();
   const weightFreshnessDays = farmLifecycleConfig?.weightFreshnessDays;
+  const carenciaModel = usePastoWithdrawal(id ?? null, activeFarmId ?? null);
 
   // Dexie Reactive Queries
   const pasto = useLiveQuery(
@@ -614,6 +617,8 @@ const PastoDetalhe = () => {
           </>
         }
       />
+
+      <WithdrawalBadgePanel readModel={carenciaModel} />
 
       {/* Cockpit Actions / Navigation CTAs */}
       <div className="flex flex-wrap gap-2.5 items-center bg-slate-50/50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800/80 rounded-xl p-3.5 shadow-sm">

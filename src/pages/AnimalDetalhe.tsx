@@ -123,6 +123,8 @@ import {
   buildClinicalProtocolSupport,
   buildClinicalProtocolTimelineSummary,
 } from "@/lib/sanitario/compliance/clinicalProtocols";
+import { useAnimalWithdrawal } from "@/lib/sanitario/hooks/useWithdrawal";
+import { WithdrawalBadgePanel } from "@/components/sanitario/WithdrawalBadgePanel";
 import {
   formatWeight,
   formatWeightPerDay,
@@ -641,7 +643,8 @@ export function AnimalSanitaryCasesPanel({
 const AnimalDetalhe = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { farmLifecycleConfig, farmMeasurementConfig } = useAuth();
+  const { farmLifecycleConfig, farmMeasurementConfig, activeFarmId } = useAuth();
+  const carenciaModel = useAnimalWithdrawal(id ?? null, activeFarmId ?? null);
   const [showMoverLote, setShowMoverLote] = useState(false);
   const [showCloseSociedadeDialog, setShowCloseSociedadeDialog] =
     useState(false);
@@ -2710,6 +2713,8 @@ const AnimalDetalhe = () => {
           </CardContent>
         </Card>
       )}
+
+      <WithdrawalBadgePanel readModel={carenciaModel} className="mb-6" />
 
       <Tabs defaultValue="timeline" className="w-full">
         <TabsList className="grid w-full max-w-[540px] grid-cols-3 bg-muted/40 p-1">
