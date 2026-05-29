@@ -143,7 +143,7 @@ describe("operationalHomeIndicatorsAdapter", () => {
       expect(res.gmd.status).toBe("completo");
       expect(res.gmd.animaisComApenasUmaPesagemCount).toBe(1);
       // Lote A has only 1 animal (a1) with sufficient weights. Weight gain for a1 is 20 kg
-      expect(res.gmd.lotesComGmd).toContainEqual({ loteId: "l1", nome: "Lote A", gmdMedio: 20, animaisCount: 1 });
+      expect(res.gmd.lotesComGmd).toContainEqual({ loteId: "l1", nome: "Lote A", gmdMedio: 1.43, ganhoMedio: 20, animaisCount: 1 });
     });
   });
 

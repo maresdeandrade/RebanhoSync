@@ -1,7 +1,9 @@
-import type { OperationInput } from "@/lib/offline/types";
+import type { OperationInput, InsumoUnidadeBaseEnum } from "@/lib/offline/types";
 import type { EventGestureBuildResult, EventInput } from "./types";
 import { assertValidEventInput } from "./validators";
 import { buildVeterinaryProductMetadata } from "@/lib/sanitario/catalog/products";
+import { buildProdutoInsumoSnapshot } from "@/lib/inventory/snapshotBuilder";
+import { buildConsumoMovimentacaoOp } from "@/lib/inventory/consumoGesture";
 
 const toIsoDate = (value: string): string => {
   return value.split("T")[0];
@@ -98,6 +100,17 @@ export const buildEventGesture = (input: EventInput): EventGestureBuildResult =>
   ops.push(buildBaseEventOp(input, eventId, occurredAt, sanitarioCasoId));
 
   if (input.dominio === "sanitario") {
+    const insumoSnapshot = buildProdutoInsumoSnapshot({
+      produtoNome: input.produto,
+      insumo: input.insumoRef,
+      lote: input.loteRef,
+      dose: input.dose,
+      doseUnidade: input.doseUnidade,
+      quantidadeConsumida: input.quantidadeConsumida,
+      quantidadeUnidade: input.quantidadeUnidade,
+      viaAplicacao: input.viaAplicacao,
+    });
+
     ops.push({
       table: "eventos_sanitario",
       action: "INSERT",
@@ -105,12 +118,38 @@ export const buildEventGesture = (input: EventInput): EventGestureBuildResult =>
         evento_id: eventId,
         tipo: input.tipo,
         produto: input.produto.trim(),
-        payload: buildVeterinaryProductMetadata({
-          selectedProduct: input.produtoRef,
-          typedName: input.produto,
-        }),
+        payload: {
+          ...buildVeterinaryProductMetadata({
+            selectedProduct: input.produtoRef,
+            typedName: input.produto,
+          }),
+          insumo_snapshot: insumoSnapshot,
+        },
       },
     });
+
+    if (
+      input.gerarBaixaEstoque &&
+      input.insumoId &&
+      input.insumoLoteId &&
+      input.quantidadeConsumida
+    ) {
+      ops.push(
+        buildConsumoMovimentacaoOp({
+          eventId,
+          dominio: "sanitario",
+          insumoId: input.insumoId,
+          insumoLoteId: input.insumoLoteId,
+          quantidadeBase: input.quantidadeConsumida,
+          unidadeBase: (input.loteRef?.unidade_base || "ml") as InsumoUnidadeBaseEnum,
+          occurredAt,
+          custoUnitario: input.loteRef?.custo_unitario ?? null,
+          animalId: input.animalId,
+          loteId: input.loteId,
+          observacoes: input.observacoes,
+        })
+      );
+    }
   } else if (input.dominio === "alerta_sanitario") {
     if (input.sanitarioCaso?.action === "close") {
       const caseClosed =
@@ -200,6 +239,14 @@ export const buildEventGesture = (input: EventInput): EventGestureBuildResult =>
       });
     }
   } else if (input.dominio === "nutricao") {
+    const insumoSnapshot = buildProdutoInsumoSnapshot({
+      produtoNome: input.alimentoNome,
+      insumo: input.insumoRef,
+      lote: input.loteRef,
+      quantidadeConsumida: input.quantidadeConsumida || input.quantidadeKg,
+      quantidadeUnidade: input.quantidadeUnidade || "kg",
+    });
+
     ops.push({
       table: "eventos_nutricao",
       action: "INSERT",
@@ -207,9 +254,33 @@ export const buildEventGesture = (input: EventInput): EventGestureBuildResult =>
         evento_id: eventId,
         alimento_nome: input.alimentoNome.trim(),
         quantidade_kg: input.quantidadeKg,
-        payload: {},
+        payload: {
+          insumo_snapshot: insumoSnapshot,
+        },
       },
     });
+
+    if (
+      input.gerarBaixaEstoque &&
+      input.insumoId &&
+      input.insumoLoteId &&
+      (input.quantidadeConsumida || input.quantidadeKg)
+    ) {
+      ops.push(
+        buildConsumoMovimentacaoOp({
+          eventId,
+          dominio: "nutricao",
+          insumoId: input.insumoId,
+          insumoLoteId: input.insumoLoteId,
+          quantidadeBase: input.quantidadeConsumida || input.quantidadeKg,
+          unidadeBase: (input.loteRef?.unidade_base || "kg") as InsumoUnidadeBaseEnum,
+          occurredAt,
+          custoUnitario: input.loteRef?.custo_unitario ?? null,
+          loteId: input.loteId,
+          observacoes: input.observacoes,
+        })
+      );
+    }
   } else if (input.dominio === "pastagem") {
     ops.push({
       table: "eventos_pasto_avaliacao",

@@ -1,24 +1,26 @@
+// src/features/occupancy/useOccupancyData.ts
+
 import { useLiveQuery } from "dexie-react-hooks";
 import { useMemo } from "react";
 import { db } from "@/lib/offline/db";
-import type { Evento, EventoMovimentacao, EventoPesagem, EventoEcc, Animal, Lote } from "@/lib/offline/types";
+import type { Evento, EventoMovimentacao, EventoPesagem, EventoEcc, Animal, Lote, Pasto, PastoOcupacao } from "@/lib/offline/types";
 import { buildAnimalOccupancyTimeline } from "./buildAnimalOccupancyTimeline";
 import { buildWeightGainForOccupancy } from "./buildWeightGainForOccupancy";
 import { buildEccMetricsForOccupancy } from "./buildEccMetricsForOccupancy";
 import { buildLoteOccupancyMetrics } from "./buildLoteOccupancyMetrics";
 import { buildPastoOccupancyMetrics } from "./buildPastoOccupancyMetrics";
 import { getLatestValidEcc } from "./eccHelpers";
-import { deriveAnimalTaxonomy } from "@/lib/animals/taxonomy";
+import { getCategoriaAtual } from "@/lib/animals/categoriaHelper";
 import type { AnimalOccupancyPeriod, LoteOccupancyMetrics, PastoOccupancyMetrics } from "./occupancyTypes";
 
 function getPredominantCategory(animals: Animal[]): string {
-  if (animals.length === 0) return "Nenhum animal";
+  if (animals.length === 0) return "Categoria desconhecida";
   const counts = new Map<string, number>();
   for (const animal of animals) {
-    const cat = deriveAnimalTaxonomy(animal).display.categoria || "Não classificada";
+    const cat = getCategoriaAtual(animal);
     counts.set(cat, (counts.get(cat) || 0) + 1);
   }
-  let predominant = "Não classificada";
+  let predominant = "Categoria desconhecida";
   let max = 0;
   for (const [cat, count] of counts.entries()) {
     if (count > max) {
@@ -62,6 +64,16 @@ export function useOccupancyData(fazendaId: string, referenceDate: string) {
 
   const allLotes = useLiveQuery(
     () => db.state_lotes.where("fazenda_id").equals(fazendaId).toArray(),
+    [fazendaId],
+  ) || [];
+
+  const allPastos = useLiveQuery(
+    () => db.state_pastos.where("fazenda_id").equals(fazendaId).toArray(),
+    [fazendaId],
+  ) || [];
+
+  const allPastoOcupacoes = useLiveQuery(
+    () => db.state_pasto_ocupacoes.where("fazenda_id").equals(fazendaId).toArray(),
     [fazendaId],
   ) || [];
 
@@ -183,6 +195,8 @@ export function useOccupancyData(fazendaId: string, referenceDate: string) {
     );
 
     const categoriaPredominante = getPredominantCategory(activeAnimals);
+    const pastoObj = allPastos.find(p => p.id === pastoId);
+    const areaHa = pastoObj?.area_ha;
 
     return buildPastoOccupancyMetrics({
       pastoId,
@@ -191,6 +205,7 @@ export function useOccupancyData(fazendaId: string, referenceDate: string) {
       latestEccsMap,
       lastMovementDate,
       categoriaPredominante,
+      areaHa,
     });
   };
 
@@ -200,5 +215,6 @@ export function useOccupancyData(fazendaId: string, referenceDate: string) {
     getPastoMetrics,
     animalsMap,
     latestEccsMap,
+    allPastoOcupacoes,
   };
 }

@@ -1,6 +1,10 @@
+// src/features/occupancy/occupancyTypes.ts
+
 export type DataStatus = {
-  status: "empty" | "partial" | "complete";
+  status: "empty" | "partial" | "complete" | "bloqueado";
   reason?: string;
+  source?: string;
+  limitation?: string;
 };
 
 export interface AnimalOccupancyPeriod {
@@ -36,9 +40,12 @@ export interface LoteOccupancyMetrics {
   eccCobertura: { avaliados: number; total: number };
   eccStatus: DataStatus;
   animaisSemEcc: string[];
-  tempoLotacaoStatus: DataStatus;
+  permanenciaStatus: DataStatus;
+  tempoLotacaoStatus?: DataStatus; // Alias para compatibilidade legada
   ultimaMovimentacao: string | null;
   categoriaPredominante?: string;
+  uaTotal: number;
+  lotacaoStatus: DataStatus;
 }
 
 export interface PastoOccupancyMetrics {
@@ -53,7 +60,11 @@ export interface PastoOccupancyMetrics {
   eccStatus: DataStatus;
   eccCobertura: { avaliados: number; total: number };
   animaisSemEcc: string[];
-  tempoLotacaoStatus: DataStatus;
+  permanenciaStatus: DataStatus;
+  tempoLotacaoStatus?: DataStatus; // Alias para compatibilidade legada
   ultimaMovimentacao: string | null;
   categoriaPredominante?: string;
+  uaTotal: number;
+  taxaLotacaoUaHa: number | null;
+  taxaLotacaoStatus: DataStatus;
 }

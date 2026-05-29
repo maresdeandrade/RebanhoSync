@@ -8,6 +8,8 @@ import type {
   OperationInput,
   ProtocoloSanitarioItem,
   SanitarioTipoEnum,
+  Insumo,
+  InsumoLote,
 } from "@/lib/offline/types";
 import {
   buildClinicalProtocolEventPayload,
@@ -152,6 +154,29 @@ type RegistrarFinalizeTrackDeps = {
     };
     financeiroTipo: FinanceiroTipoEnum;
     reproducaoData: ReproductionEventData;
+    sanitaryInventory?: {
+      insumoId?: string | null;
+      insumoLoteId?: string | null;
+      insumoRef?: Insumo | null;
+      loteRef?: InsumoLote | null;
+      dose?: number | null;
+      doseUnidade?: string | null;
+      quantidadeConsumida?: number | null;
+      quantidadeUnidade?: string | null;
+      viaAplicacao?: string | null;
+      custoUnitarioSnapshot?: number | null;
+      gerarBaixaEstoque?: boolean;
+    } | null;
+    nutricaoInventory?: {
+      insumoId?: string | null;
+      insumoLoteId?: string | null;
+      insumoRef?: Insumo | null;
+      loteRef?: InsumoLote | null;
+      quantidadeConsumida?: number | null;
+      quantidadeUnidade?: string | null;
+      custoUnitarioSnapshot?: number | null;
+      gerarBaixaEstoque?: boolean;
+    } | null;
     farmLifecycleConfig: FarmLifecycleConfig;
     parseUserWeight: (value: string) => number | null;
   }) => Promise<
@@ -274,6 +299,31 @@ export type RegistrarFinalizeControllerInput = {
     nutricaoData: { alimentoNome: string; quantidadeKg: string };
     reproducaoData: ReproductionEventData;
   };
+  inventory?: {
+    sanitary?: {
+      insumoId?: string | null;
+      insumoLoteId?: string | null;
+      insumoRef?: Insumo | null;
+      loteRef?: InsumoLote | null;
+      dose?: number | null;
+      doseUnidade?: string | null;
+      quantidadeConsumida?: number | null;
+      quantidadeUnidade?: string | null;
+      viaAplicacao?: string | null;
+      custoUnitarioSnapshot?: number | null;
+      gerarBaixaEstoque?: boolean;
+    } | null;
+    nutricao?: {
+      insumoId?: string | null;
+      insumoLoteId?: string | null;
+      insumoRef?: Insumo | null;
+      loteRef?: InsumoLote | null;
+      quantidadeConsumida?: number | null;
+      quantidadeUnidade?: string | null;
+      custoUnitarioSnapshot?: number | null;
+      gerarBaixaEstoque?: boolean;
+    } | null;
+  } | null;
   onFinalizeHandled?: () => void;
 };
 
@@ -542,6 +592,8 @@ export function createRegistrarFinalizeController(
             clinicalProtocolRef: sanitary.clinicalProtocolRef,
             sanitarioCasoId: sanitary.caseLink.selectedCaseId,
             abrirCasoClinico: sanitary.caseLink.createClinicalCase,
+            sanitaryInventory: input.inventory?.sanitary,
+            nutricaoInventory: input.inventory?.nutricao,
             pesagemData: operationData.pesagemData,
             eccData: operationData.eccData,
             eccObservacoes: operationData.eccObservacoes,

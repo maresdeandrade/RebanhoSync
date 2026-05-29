@@ -600,7 +600,7 @@ export function OperationalInsightsPanel({
                       {homeIndicators.gmd.lotesComGmd.slice(0, 3).map(l => (
                         <div key={l.loteId} className="flex justify-between items-center text-muted-foreground">
                           <span className="truncate max-w-[120px] font-medium">{l.nome}</span>
-                          <span className="font-mono text-success font-semibold">+{l.gmdMedio.toFixed(2)} kg ({l.animaisCount} an.)</span>
+                          <span className="font-mono text-success font-semibold">+{l.gmdMedio.toFixed(2)} kg/dia ({l.animaisCount} an.)</span>
                         </div>
                       ))}
                     </div>

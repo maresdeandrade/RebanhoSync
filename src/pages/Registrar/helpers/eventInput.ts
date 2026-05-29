@@ -3,6 +3,8 @@ import type {
   ProtocoloSanitarioItem,
   ReproTipoEnum,
   SanitarioTipoEnum,
+  Insumo,
+  InsumoLote,
 } from "@/lib/offline/types";
 import type { EventInput, SanitarioCasoOpenInput, EccEventInput } from "@/lib/events/types";
 import type { VeterinaryProductSelection } from "@/lib/sanitario/catalog/products";
@@ -59,6 +61,17 @@ type BuildRegistrarEventInputParams = {
           action: "link";
           id: string;
         };
+    insumoId?: string | null;
+    insumoLoteId?: string | null;
+    insumoRef?: Insumo | null;
+    loteRef?: InsumoLote | null;
+    dose?: number | null;
+    doseUnidade?: string | null;
+    quantidadeConsumida?: number | null;
+    quantidadeUnidade?: string | null;
+    viaAplicacao?: string | null;
+    custoUnitarioSnapshot?: number | null;
+    gerarBaixaEstoque?: boolean;
   };
   pesagem?: {
     pesoKg: number | null;
@@ -76,6 +89,14 @@ type BuildRegistrarEventInputParams = {
   nutricao?: {
     alimentoNome: string;
     quantidadeKg: number;
+    insumoId?: string | null;
+    insumoLoteId?: string | null;
+    insumoRef?: Insumo | null;
+    loteRef?: InsumoLote | null;
+    quantidadeConsumida?: number | null;
+    quantidadeUnidade?: string | null;
+    custoUnitarioSnapshot?: number | null;
+    gerarBaixaEstoque?: boolean;
   };
   financeiro?: {
     natureza:
@@ -119,6 +140,17 @@ export function buildRegistrarEventInput(
         : undefined,
       produtoRef: params.sanitario?.produtoRef ?? undefined,
       sanitarioCaso: params.sanitario?.sanitarioCaso,
+      insumoId: params.sanitario?.insumoId,
+      insumoLoteId: params.sanitario?.insumoLoteId,
+      insumoRef: params.sanitario?.insumoRef,
+      loteRef: params.sanitario?.loteRef,
+      dose: params.sanitario?.dose,
+      doseUnidade: params.sanitario?.doseUnidade,
+      quantidadeConsumida: params.sanitario?.quantidadeConsumida,
+      quantidadeUnidade: params.sanitario?.quantidadeUnidade,
+      viaAplicacao: params.sanitario?.viaAplicacao,
+      custoUnitarioSnapshot: params.sanitario?.custoUnitarioSnapshot,
+      gerarBaixaEstoque: params.sanitario?.gerarBaixaEstoque,
       payload: params.sanitario?.payload ?? {},
     };
   }
@@ -160,6 +192,14 @@ export function buildRegistrarEventInput(
       ...base,
       alimentoNome: params.nutricao?.alimentoNome ?? "",
       quantidadeKg: params.nutricao?.quantidadeKg ?? 0,
+      insumoId: params.nutricao?.insumoId,
+      insumoLoteId: params.nutricao?.insumoLoteId,
+      insumoRef: params.nutricao?.insumoRef,
+      loteRef: params.nutricao?.loteRef,
+      quantidadeConsumida: params.nutricao?.quantidadeConsumida,
+      quantidadeUnidade: params.nutricao?.quantidadeUnidade,
+      custoUnitarioSnapshot: params.nutricao?.custoUnitarioSnapshot,
+      gerarBaixaEstoque: params.nutricao?.gerarBaixaEstoque,
     };
   }
 

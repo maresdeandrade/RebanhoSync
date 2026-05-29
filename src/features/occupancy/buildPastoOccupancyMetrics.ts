@@ -1,5 +1,8 @@
+// src/features/occupancy/buildPastoOccupancyMetrics.ts
+
 import type { Animal } from "@/lib/offline/types";
 import type { AnimalOccupancyPeriod, PastoOccupancyMetrics, DataStatus } from "./occupancyTypes";
+import { calculateUaLotacao } from "../../lib/animals/kpiHelpers";
 
 interface BuildPastoOccupancyMetricsInput {
   pastoId: string;
@@ -8,6 +11,7 @@ interface BuildPastoOccupancyMetricsInput {
   latestEccsMap?: Map<string, number>;
   lastMovementDate?: string | null;
   categoriaPredominante?: string;
+  areaHa?: number | null;
 }
 
 export function buildPastoOccupancyMetrics({
@@ -16,7 +20,8 @@ export function buildPastoOccupancyMetrics({
   activeAnimals = [],
   latestEccsMap = new Map(),
   lastMovementDate = null,
-  categoriaPredominante = "Não classificada",
+  categoriaPredominante = "Categoria desconhecida",
+  areaHa = null,
 }: BuildPastoOccupancyMetricsInput): PastoOccupancyMetrics {
   const periodsInPasto = animalPeriods.filter((p) => p.pastoId === pastoId);
 
@@ -34,6 +39,15 @@ export function buildPastoOccupancyMetrics({
 
     const animaisSemEcc = activeAnimals.filter((a) => !latestEccsMap.has(a.id)).map((a) => a.identificacao);
 
+    const animalWeights = activeAnimals.map(() => ({ pesoKg: 0, isConfiavel: false, isMissing: true }));
+    const uaResult = calculateUaLotacao(animalWeights, areaHa);
+
+    const permanenciaStatus: DataStatus = {
+      status: "empty",
+      reason: "Sem histórico de movimentação (tempo de lotação estimado).",
+      source: "Sem dados",
+    };
+
     return {
       pastoId,
       lotacaoAtual: activeAnimals.length,
@@ -46,14 +60,23 @@ export function buildPastoOccupancyMetrics({
       eccStatus,
       eccCobertura: { avaliados: evaluatedCount, total: activeAnimals.length },
       animaisSemEcc,
-      tempoLotacaoStatus: { status: "empty", reason: "Sem histórico de movimentação (tempo de lotação estimado)." },
+      permanenciaStatus,
+      tempoLotacaoStatus: permanenciaStatus,
       ultimaMovimentacao: lastMovementDate,
       categoriaPredominante,
+      uaTotal: uaResult.uaTotal,
+      taxaLotacaoUaHa: uaResult.taxaLotacaoUaHa,
+      taxaLotacaoStatus: {
+        status: uaResult.status,
+        reason: uaResult.reason,
+        source: uaResult.source,
+        limitation: uaResult.limitation,
+      },
     };
   }
 
   const lotacaoAtual = activeAnimals.length || periodsInPasto.filter((p) => p.saidaAt === null).length;
-  const tempoMedioOcupacao = periodsInPasto.reduce((sum, p) => sum + p.dias, 0) / periodsInPasto.length;
+  const tempoMedioOcupacao = periodsInPasto.reduce((sum, p) => sum + p.dias, 0) / (periodsInPasto.length || 1);
 
   const periodsWithWeight = periodsInPasto.filter((p) => p.weightStatus.status === "complete");
   const ganhoMedioPeso = periodsWithWeight.reduce((sum, p) => sum + (p.ganho || 0), 0) / (periodsWithWeight.length || 1);
@@ -92,10 +115,28 @@ export function buildPastoOccupancyMetrics({
     eccStatus = periodsWithEcc.length > 0 ? { status: "complete" } : { status: "empty" };
   }
 
-  const tempoLotacaoStatus: DataStatus =
+  const permanenciaStatus: DataStatus =
     lastMovementDate === null
-      ? { status: "empty", reason: "Sem histórico de movimentação (tempo de lotação estimado)." }
-      : { status: "complete" };
+      ? {
+          status: "empty",
+          reason: "Sem histórico de movimentação (tempo de lotação estimado).",
+          source: "Sem dados",
+        }
+      : {
+          status: "complete",
+          source: "Movimentações factuais",
+        };
+
+  // UA Lotacao real
+  const animalWeights = activeAnimals.map(animal => {
+    const p = periodsInPasto.find(per => per.animalId === animal.id && per.saidaAt === null);
+    const pesoKg = p?.pesoFinal || 0;
+    const isConfiavel = p?.weightStatus.status === "complete";
+    const isMissing = !p || p.weightStatus.status === "empty";
+    return { pesoKg, isConfiavel, isMissing };
+  });
+
+  const uaResult = calculateUaLotacao(animalWeights, areaHa);
 
   return {
     pastoId,
@@ -109,8 +150,17 @@ export function buildPastoOccupancyMetrics({
     eccStatus,
     eccCobertura: { avaliados: evaluatedCount, total: activeAnimals.length || lotacaoAtual },
     animaisSemEcc,
-    tempoLotacaoStatus,
+    permanenciaStatus,
+    tempoLotacaoStatus: permanenciaStatus,
     ultimaMovimentacao: lastMovementDate,
     categoriaPredominante,
+    uaTotal: uaResult.uaTotal,
+    taxaLotacaoUaHa: uaResult.taxaLotacaoUaHa,
+    taxaLotacaoStatus: {
+      status: uaResult.status,
+      reason: uaResult.reason,
+      source: uaResult.source,
+      limitation: uaResult.limitation,
+    },
   };
 }

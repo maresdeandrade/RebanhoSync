@@ -7,6 +7,8 @@ import type {
   OperationInput,
   ProtocoloSanitarioItem,
   SanitarioTipoEnum,
+  Insumo,
+  InsumoLote,
 } from "@/lib/offline/types";
 import {
   buildClinicalProtocolEventPayload,
@@ -92,6 +94,29 @@ export async function resolveRegistrarNonFinancialFinalizePlan(input: {
   movimentacaoData: NonFinancialMovimentacaoData;
   nutricaoData: NonFinancialNutricaoData;
   financeiroData: NonFinancialFinanceiroData;
+  sanitaryInventory?: {
+    insumoId?: string | null;
+    insumoLoteId?: string | null;
+    insumoRef?: Insumo | null;
+    loteRef?: InsumoLote | null;
+    dose?: number | null;
+    doseUnidade?: string | null;
+    quantidadeConsumida?: number | null;
+    quantidadeUnidade?: string | null;
+    viaAplicacao?: string | null;
+    custoUnitarioSnapshot?: number | null;
+    gerarBaixaEstoque?: boolean;
+  } | null;
+  nutricaoInventory?: {
+    insumoId?: string | null;
+    insumoLoteId?: string | null;
+    insumoRef?: Insumo | null;
+    loteRef?: InsumoLote | null;
+    quantidadeConsumida?: number | null;
+    quantidadeUnidade?: string | null;
+    custoUnitarioSnapshot?: number | null;
+    gerarBaixaEstoque?: boolean;
+  } | null;
   financeiroTipo: FinanceiroTipoEnum;
   reproducaoData: ReproductionEventData;
   farmLifecycleConfig: FarmLifecycleConfig;
@@ -196,6 +221,17 @@ export async function resolveRegistrarNonFinancialFinalizePlan(input: {
                   : input.sanitarioCasoId
                     ? { action: "link", id: input.sanitarioCasoId }
                     : undefined,
+                insumoId: input.sanitaryInventory?.insumoId,
+                insumoLoteId: input.sanitaryInventory?.insumoLoteId,
+                insumoRef: input.sanitaryInventory?.insumoRef,
+                loteRef: input.sanitaryInventory?.loteRef,
+                dose: input.sanitaryInventory?.dose,
+                doseUnidade: input.sanitaryInventory?.doseUnidade,
+                quantidadeConsumida: input.sanitaryInventory?.quantidadeConsumida,
+                quantidadeUnidade: input.sanitaryInventory?.quantidadeUnidade,
+                viaAplicacao: input.sanitaryInventory?.viaAplicacao,
+                custoUnitarioSnapshot: input.sanitaryInventory?.custoUnitarioSnapshot,
+                gerarBaixaEstoque: input.sanitaryInventory?.gerarBaixaEstoque,
                 payload: {
                   ...input.sanitaryProductMetadata,
                   ...clinicalProtocolPayload,
@@ -241,6 +277,14 @@ export async function resolveRegistrarNonFinancialFinalizePlan(input: {
             ? {
                 alimentoNome: input.nutricaoData.alimentoNome,
                 quantidadeKg: parseRegistrarNumeric(input.nutricaoData.quantidadeKg),
+                insumoId: input.nutricaoInventory?.insumoId,
+                insumoLoteId: input.nutricaoInventory?.insumoLoteId,
+                insumoRef: input.nutricaoInventory?.insumoRef,
+                loteRef: input.nutricaoInventory?.loteRef,
+                quantidadeConsumida: input.nutricaoInventory?.quantidadeConsumida,
+                quantidadeUnidade: input.nutricaoInventory?.quantidadeUnidade,
+                custoUnitarioSnapshot: input.nutricaoInventory?.custoUnitarioSnapshot,
+                gerarBaixaEstoque: input.nutricaoInventory?.gerarBaixaEstoque,
               }
             : undefined,
         financeiro:

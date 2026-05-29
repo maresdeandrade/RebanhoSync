@@ -206,6 +206,7 @@ export default function LoteDetalhe() {
   const eccs = useLiveQuery(() => db.event_eventos_ecc.toArray()) ?? EMPTY_ARRAY;
   const movimentacoes = useLiveQuery(() => db.event_eventos_movimentacao.toArray()) ?? EMPTY_ARRAY;
   const agendaItens = useLiveQuery(() => db.state_agenda_itens.toArray()) ?? EMPTY_ARRAY;
+  const pastoOcupacoes = useLiveQuery(() => db.state_pasto_ocupacoes.toArray()) ?? EMPTY_ARRAY;
 
   const referenceDate = useMemo(() => new Date().toISOString(), []);
 
@@ -228,9 +229,10 @@ export default function LoteDetalhe() {
       pesagens,
       eccs,
       movimentacoes,
-      agendaItens
+      agendaItens,
+      pastoOcupacoes
     );
-  }, [id, referenceDate, weightFreshnessDays, animais, events, pesagens, eccs, movimentacoes, agendaItens]);
+  }, [id, referenceDate, weightFreshnessDays, animais, events, pesagens, eccs, movimentacoes, agendaItens, pastoOcupacoes]);
 
   // Unified Timeline selector
   const timelineItems = useMemo(() => {
@@ -526,6 +528,13 @@ export default function LoteDetalhe() {
               reason={loteMetrics.gmdStatus.reason}
               source={loteMetrics.gmdStatus.source}
               limitation={loteMetrics.gmdStatus.limitation}
+              extraContent={
+                loteMetrics.ganhoMedio !== null && (
+                  <p className="mt-1">
+                    <span className="font-semibold text-foreground/75">Ganho Acumulado:</span> {loteMetrics.ganhoMedio.toFixed(1)} kg
+                  </p>
+                )
+              }
             />
 
             {/* ECC Médio Factual */}
@@ -577,16 +586,24 @@ export default function LoteDetalhe() {
               value={loteMetrics.tempoMedioPermanencia}
               unit="dias"
               icon={<CalendarIcon className="h-4 w-4" />}
-              status={loteMetrics.tempoLotacaoStatus.status}
+              status={loteMetrics.permanenciaStatus.status}
               reason={`Permanência Média: ${loteMetrics.tempoMedioPermanencia.toFixed(0)} dias (Máx: ${loteMetrics.tempoMaximoPermanencia} dias)`}
-              source={loteMetrics.tempoLotacaoStatus.source}
-              limitation={loteMetrics.tempoLotacaoStatus.limitation}
+              source={loteMetrics.permanenciaStatus.source}
+              limitation={loteMetrics.permanenciaStatus.limitation}
               extraContent={
-                loteMetrics.ultimaMovimentacao && (
-                  <p className="mt-1">
-                    <span className="font-semibold text-foreground/75">Última Movimentação:</span> {new Date(loteMetrics.ultimaMovimentacao).toLocaleDateString("pt-BR")}
+                <div className="mt-2 space-y-1">
+                  {loteMetrics.ultimaMovimentacao && (
+                    <p>
+                      <span className="font-semibold text-foreground/75">Última Movimentação:</span> {new Date(loteMetrics.ultimaMovimentacao).toLocaleDateString("pt-BR")}
+                    </p>
+                  )}
+                  <p>
+                    <span className="font-semibold text-foreground/75">UAs Totais:</span> {loteMetrics.uaTotal.toFixed(2)} UA
                   </p>
-                )
+                  <p className="text-[10px] text-muted-foreground">
+                    Fonte do peso: {loteMetrics.lotacaoStatus.source}
+                  </p>
+                </div>
               }
             />
 

@@ -1,4 +1,6 @@
-import { differenceInDays, parseISO, isBefore, isAfter } from "date-fns";
+// src/features/occupancy/cockpitManejoAdapter.ts
+
+import { differenceInDays, parseISO } from "date-fns";
 import type {
   Animal,
   Lote,
@@ -8,10 +10,13 @@ import type {
   EventoEcc,
   EventoMovimentacao,
   AgendaItem,
+  PastoOcupacao,
 } from "@/lib/offline/types";
+import { getCategoriaAtual } from "@/lib/animals/categoriaHelper";
+import { calculateIndividualGmd, calculateUaLotacao } from "@/lib/animals/kpiHelpers";
 
 export interface DataStatus {
-  status: "empty" | "partial" | "complete";
+  status: "empty" | "partial" | "complete" | "bloqueado";
   reason?: string;
   source?: string;
   limitation?: string;
@@ -23,6 +28,7 @@ export interface CockpitLoteMetrics {
   pesoMedio: number | null;
   pesoStatus: DataStatus;
   gmdMedio: number | null;
+  ganhoMedio: number | null;
   gmdStatus: DataStatus;
   eccMedio: number | null;
   eccStatus: DataStatus;
@@ -31,7 +37,7 @@ export interface CockpitLoteMetrics {
   dataEntradaLote: string | null;
   tempoMedioPermanencia: number;
   tempoMaximoPermanencia: number;
-  tempoLotacaoStatus: DataStatus;
+  permanenciaStatus: DataStatus;
   ultimaMovimentacao: string | null;
   agendaItensAbertos: {
     total: number;
@@ -40,6 +46,8 @@ export interface CockpitLoteMetrics {
     proximos: number;
   };
   categoriaPredominante: string;
+  uaTotal: number;
+  lotacaoStatus: DataStatus;
 }
 
 export interface CockpitPastoMetrics {
@@ -48,13 +56,14 @@ export interface CockpitPastoMetrics {
   pesoMedio: number | null;
   pesoStatus: DataStatus;
   gmdMedio: number | null;
+  ganhoMedioPeso: number | null;
   gmdStatus: DataStatus;
   eccMedio: number | null;
   eccStatus: DataStatus;
   eccCobertura: { avaliados: number; total: number };
   animaisSemEcc: string[];
   tempoUsoDias: number;
-  tempoLotacaoStatus: DataStatus;
+  permanenciaStatus: DataStatus;
   ultimaMovimentacao: string | null;
   agendaItensAbertos: {
     total: number;
@@ -63,6 +72,9 @@ export interface CockpitPastoMetrics {
     proximos: number;
   };
   categoriaPredominante: string;
+  uaTotal: number;
+  taxaLotacaoUaHa: number | null;
+  taxaLotacaoStatus: DataStatus;
 }
 
 // Utility to parse ISO date string safely and strip time if only comparing dates
@@ -71,13 +83,13 @@ function safeParseDate(dStr: string): Date {
 }
 
 function getPredominantCategory(animals: Animal[]): string {
-  if (animals.length === 0) return "Nenhum animal";
+  if (animals.length === 0) return "Categoria desconhecida";
   const counts = new Map<string, number>();
   for (const animal of animals) {
-    const cat = animal.categoria_zootecnica || "Não classificada";
+    const cat = getCategoriaAtual(animal);
     counts.set(cat, (counts.get(cat) || 0) + 1);
   }
-  let predominant = "Não classificada";
+  let predominant = "Categoria desconhecida";
   let max = 0;
   for (const [cat, count] of counts.entries()) {
     if (count > max) {
@@ -97,7 +109,8 @@ export function calculateLoteMetrics(
   pesagensInput: EventoPesagem[],
   eccsInput: EventoEcc[],
   movimentacoesInput: EventoMovimentacao[],
-  agendaItensInput: AgendaItem[]
+  agendaItensInput: AgendaItem[],
+  pastoOcupacoesInput?: PastoOcupacao[]
 ): CockpitLoteMetrics {
   const animals = Array.isArray(animalsInput) ? animalsInput : [];
   const events = Array.isArray(eventsInput) ? eventsInput : [];
@@ -108,9 +121,9 @@ export function calculateLoteMetrics(
 
   const refDateObj = safeParseDate(referenceDate);
 
-  // Active animals in this lote
+  // Active animals in this lote (exclude mortos/vendidos)
   const activeAnimals = animals.filter(
-    (a) => a.lote_id === loteId && a.status === "ativo"
+    (a) => a.lote_id === loteId && a.status === "ativo" && !a.deleted_at
   );
   const activeAnimalIds = new Set(activeAnimals.map((a) => a.id));
 
@@ -127,6 +140,7 @@ export function calculateLoteMetrics(
 
   const animalPesagensMap = new Map<string, EventoPesagem[]>();
   pesagens.forEach((p) => {
+    if (p.deleted_at) return;
     const ev = validEvents.find((e) => e.id === p.evento_id);
     if (ev && ev.animal_id) {
       if (!animalPesagensMap.has(ev.animal_id)) {
@@ -138,7 +152,6 @@ export function calculateLoteMetrics(
 
   activeAnimals.forEach((animal) => {
     const animalPes = animalPesagensMap.get(animal.id) || [];
-    // Sort desc to get latest
     const validPes = animalPes
       .map((p) => {
         const ev = validEvents.find((e) => e.id === p.evento_id)!;
@@ -161,7 +174,6 @@ export function calculateLoteMetrics(
           countExpired++;
         }
       } else {
-        // Without freshness, we use the latest weight but mark as partial
         sumWeight += latest.p.peso_kg;
         countWeightUsed++;
       }
@@ -196,7 +208,6 @@ export function calculateLoteMetrics(
       };
     }
   } else {
-    // Freshness not configured
     if (countWeightUsed > 0) {
       pesoStatus = {
         status: "partial",
@@ -207,36 +218,32 @@ export function calculateLoteMetrics(
     }
   }
 
-  // 2. GMD (≥2 valid factual weights)
+  // 2. GMD (Média dos GMDs individuais reais válidos)
   let sumGmd = 0;
+  let sumGanho = 0;
   let countGmdCalculated = 0;
 
   activeAnimals.forEach((animal) => {
     const animalPes = animalPesagensMap.get(animal.id) || [];
-    // Sort asc to get oldest and newest
-    const validPesSorted = animalPes
-      .map((p) => {
-        const ev = validEvents.find((e) => e.id === p.evento_id)!;
-        return { p, ev };
-      })
-      .sort((a, b) => a.ev.occurred_at.localeCompare(b.ev.occurred_at));
+    const mappedPes = animalPes.map(p => {
+      const ev = validEvents.find((e) => e.id === p.evento_id)!;
+      return {
+        peso_kg: p.peso_kg,
+        occurred_at: ev.occurred_at,
+        deleted_at: p.deleted_at,
+      };
+    });
 
-    if (validPesSorted.length >= 2) {
-      const first = validPesSorted[0];
-      const last = validPesSorted[validPesSorted.length - 1];
-      const days = differenceInDays(
-        safeParseDate(last.ev.occurred_at),
-        safeParseDate(first.ev.occurred_at)
-      );
-      if (days > 0) {
-        const gain = last.p.peso_kg - first.p.peso_kg;
-        sumGmd += gain / days;
-        countGmdCalculated++;
-      }
+    const gmdResult = calculateIndividualGmd(mappedPes);
+    if (gmdResult.isValid) {
+      sumGmd += gmdResult.gmdKgDia;
+      sumGanho += gmdResult.ganhoKg;
+      countGmdCalculated++;
     }
   });
 
   const gmdMedio = countGmdCalculated > 0 ? sumGmd / countGmdCalculated : null;
+  const ganhoMedio = countGmdCalculated > 0 ? sumGanho / countGmdCalculated : null;
   let gmdStatus: DataStatus = { status: "empty", reason: "Sem histórico de GMD" };
 
   if (activeAnimals.length === 0) {
@@ -252,14 +259,14 @@ export function calculateLoteMetrics(
       status: "partial",
       reason: `${countGmdCalculated} de ${activeAnimals.length} animais com GMD`,
       source: "GMD factual",
-      limitation: `${activeAnimals.length - countGmdCalculated} animais com dados insuficientes (exige ≥2 pesagens)`,
+      limitation: `${activeAnimals.length - countGmdCalculated} animais com dados insuficientes (exige ≥2 pesagens em dias distintos)`,
     };
   } else {
     gmdStatus = {
       status: "empty",
       reason: "Dados insuficientes para calcular GMD",
       source: "GMD factual",
-      limitation: "Todos os animais têm menos de 2 pesagens registradas",
+      limitation: "Todos os animais têm menos de 2 pesagens ou intervalo inválido",
     };
   }
 
@@ -270,6 +277,7 @@ export function calculateLoteMetrics(
 
   const animalEccsMap = new Map<string, EventoEcc[]>();
   eccs.forEach((e) => {
+    if (e.deleted_at) return;
     const ev = validEvents.find((v) => v.id === e.event_id);
     if (ev && ev.animal_id) {
       if (!animalEccsMap.has(ev.animal_id)) {
@@ -323,14 +331,19 @@ export function calculateLoteMetrics(
     };
   }
 
-  // 4. Lotação / Permanência / Entrada
-  let sumPermanenciaDays = 0;
-  let countWithEntry = 0;
-  let maxPermanencia = 0;
+  // 4. Permanência com prioridade de state_pasto_ocupacoes
   let dataEntradaLote: string | null = null;
+  let tempoMedioPermanencia = 0;
+  let maxPermanencia = 0;
+  let permanenciaStatus: DataStatus = { status: "empty", reason: "Sem histórico de permanência", source: "Sem dados" };
+
+  const ocupacoesLote = Array.isArray(pastoOcupacoesInput)
+    ? pastoOcupacoesInput.filter((o) => o.lote_id === loteId)
+    : [];
 
   const animalMovMap = new Map<string, EventoMovimentacao[]>();
   movimentacoes.forEach((m) => {
+    if (m.deleted_at) return;
     const ev = validEvents.find((v) => v.id === m.evento_id);
     if (ev && ev.animal_id) {
       if (!animalMovMap.has(ev.animal_id)) {
@@ -340,59 +353,85 @@ export function calculateLoteMetrics(
     }
   });
 
-  activeAnimals.forEach((animal) => {
-    const animalM = animalMovMap.get(animal.id) || [];
-    // Latest movement desc
-    const validM = animalM
-      .map((m) => {
-        const ev = validEvents.find((v) => v.id === m.evento_id)!;
-        return { m, ev };
-      })
-      .sort((a, b) => b.ev.occurred_at.localeCompare(a.ev.occurred_at));
-
-    if (validM.length > 0 && validM[0].m.to_lote_id === loteId) {
-      const entryDate = validM[0].ev.occurred_at;
-      const days = differenceInDays(refDateObj, safeParseDate(entryDate));
-      const validDays = days >= 0 ? days : 0;
-      sumPermanenciaDays += validDays;
-      countWithEntry++;
-      if (validDays > maxPermanencia) {
-        maxPermanencia = validDays;
-      }
-      if (!dataEntradaLote || entryDate > dataEntradaLote) {
-        dataEntradaLote = entryDate;
-      }
+  if (ocupacoesLote.length > 0) {
+    const ocupacaoAtiva = ocupacoesLote.find((o) => o.saida_em === null);
+    if (ocupacaoAtiva) {
+      dataEntradaLote = ocupacaoAtiva.entrada_em;
+      const days = differenceInDays(refDateObj, safeParseDate(dataEntradaLote));
+      tempoMedioPermanencia = days >= 0 ? days : 0;
+      maxPermanencia = tempoMedioPermanencia;
+      permanenciaStatus = {
+        status: "complete",
+        reason: "Permanência ativa mapeada",
+        source: "state_pasto_ocupacoes",
+      };
+    } else {
+      const sorted = [...ocupacoesLote].sort((a, b) => b.entrada_em.localeCompare(a.entrada_em));
+      dataEntradaLote = sorted[0].entrada_em;
+      const days = differenceInDays(refDateObj, safeParseDate(dataEntradaLote));
+      tempoMedioPermanencia = days >= 0 ? days : 0;
+      maxPermanencia = tempoMedioPermanencia;
+      permanenciaStatus = {
+        status: "partial",
+        reason: "Ocupação anterior encerrada",
+        source: "state_pasto_ocupacoes",
+        limitation: "Não há registro de ocupação aberta atualmente no pasto",
+      };
     }
-  });
-
-  const tempoMedioPermanencia = countWithEntry > 0 ? sumPermanenciaDays / countWithEntry : 0;
-  let tempoLotacaoStatus: DataStatus = { status: "empty" };
-
-  if (activeAnimals.length === 0) {
-    tempoLotacaoStatus = {
-      status: "empty",
-      reason: "Sem animais ativos",
-    };
-  } else if (countWithEntry === activeAnimals.length) {
-    tempoLotacaoStatus = {
-      status: "complete",
-      reason: "Histórico de permanência completo",
-      source: "Movimentações factuais",
-    };
-  } else if (countWithEntry > 0) {
-    tempoLotacaoStatus = {
-      status: "partial",
-      reason: "Permanência parcial (alguns animais sem movimentação de entrada)",
-      source: "Movimentações factuais",
-      limitation: `${activeAnimals.length - countWithEntry} animais sem movimentação de entrada registrada`,
-    };
   } else {
-    tempoLotacaoStatus = {
-      status: "partial",
-      reason: "Permanência desconhecida (todos os animais sem movimentação de entrada)",
-      source: "Movimentações factuais",
-      limitation: "Movimentação inicial ausente para todos os animais",
-    };
+    // Fallback: eventos_movimentacao
+    let sumPermanenciaDays = 0;
+    let countWithEntry = 0;
+
+    activeAnimals.forEach((animal) => {
+      const animalM = animalMovMap.get(animal.id) || [];
+      const validM = animalM
+        .map((m) => {
+          const ev = validEvents.find((v) => v.id === m.evento_id)!;
+          return { m, ev };
+        })
+        .sort((a, b) => b.ev.occurred_at.localeCompare(a.ev.occurred_at));
+
+      if (validM.length > 0 && validM[0].m.to_lote_id === loteId) {
+        const entryDate = validM[0].ev.occurred_at;
+        const days = differenceInDays(refDateObj, safeParseDate(entryDate));
+        const validDays = days >= 0 ? days : 0;
+        sumPermanenciaDays += validDays;
+        countWithEntry++;
+        if (validDays > maxPermanencia) {
+          maxPermanencia = validDays;
+        }
+        if (!dataEntradaLote || entryDate > dataEntradaLote) {
+          dataEntradaLote = entryDate;
+        }
+      }
+    });
+
+    tempoMedioPermanencia = countWithEntry > 0 ? sumPermanenciaDays / countWithEntry : 0;
+
+    if (activeAnimals.length === 0) {
+      permanenciaStatus = { status: "empty", reason: "Sem animais ativos no lote", source: "Sem dados" };
+    } else if (countWithEntry === activeAnimals.length) {
+      permanenciaStatus = {
+        status: "complete",
+        reason: "Histórico de permanência completo por movimentações factuais",
+        source: "eventos_movimentacao",
+      };
+    } else if (countWithEntry > 0) {
+      permanenciaStatus = {
+        status: "partial",
+        reason: "Permanência calculada parcialmente via movimentações",
+        source: "eventos_movimentacao",
+        limitation: `${activeAnimals.length - countWithEntry} animais sem movimentação de entrada registrada`,
+      };
+    } else {
+      permanenciaStatus = {
+        status: "partial",
+        reason: "Permanência desconhecida (todos os animais sem movimentação de entrada)",
+        source: "eventos_movimentacao",
+        limitation: "Movimentação inicial ausente para todos os animais",
+      };
+    }
   }
 
   // Ultima movimentação que tocou este lote
@@ -404,8 +443,6 @@ export function calculateLoteMetrics(
     : null;
 
   // 5. Pendências (Agenda)
-  // Lote: agenda aberta do lote + agenda aberta dos animais ativos do lote.
-  // Ignorar agenda concluída, cancelada, deletada.
   const openLoteAgendaItens = agendaItens.filter((item) => {
     if (item.deleted_at || item.status === "concluido" || item.status === "cancelado") {
       return false;
@@ -438,12 +475,36 @@ export function calculateLoteMetrics(
 
   const categoriaPredominante = getPredominantCategory(activeAnimals);
 
+  // UA Lotacao real do Lote (sem area do pasto direta, areaHa = undefined)
+  const loteAnimalWeights = activeAnimals.map(animal => {
+    const animalPes = animalPesagensMap.get(animal.id) || [];
+    const validPes = animalPes
+      .map((p) => {
+        const ev = validEvents.find((e) => e.id === p.evento_id)!;
+        return { p, ev };
+      })
+      .sort((a, b) => b.ev.occurred_at.localeCompare(a.ev.occurred_at));
+
+    const latest = validPes[0];
+    const pesoKg = latest?.p.peso_kg || 0;
+    const isConfiavel = latest 
+      ? (weightFreshnessDays !== undefined && weightFreshnessDays !== null 
+          ? differenceInDays(refDateObj, safeParseDate(latest.ev.occurred_at)) <= weightFreshnessDays
+          : true)
+      : false;
+    const isMissing = !latest;
+    return { pesoKg, isConfiavel, isMissing };
+  });
+
+  const uaResult = calculateUaLotacao(loteAnimalWeights, undefined);
+
   return {
     loteId,
     quantidadeAtual: activeAnimals.length,
     pesoMedio,
     pesoStatus,
     gmdMedio,
+    ganhoMedio,
     gmdStatus,
     eccMedio,
     eccStatus,
@@ -452,10 +513,17 @@ export function calculateLoteMetrics(
     dataEntradaLote,
     tempoMedioPermanencia,
     tempoMaximoPermanencia: maxPermanencia,
-    tempoLotacaoStatus,
+    permanenciaStatus,
     ultimaMovimentacao,
     agendaItensAbertos,
     categoriaPredominante,
+    uaTotal: uaResult.uaTotal,
+    lotacaoStatus: {
+      status: uaResult.status,
+      reason: uaResult.reason,
+      source: uaResult.source,
+      limitation: uaResult.limitation,
+    },
   };
 }
 
@@ -470,7 +538,8 @@ export function calculatePastoMetrics(
   pesagensInput: EventoPesagem[],
   eccsInput: EventoEcc[],
   movimentacoesInput: EventoMovimentacao[],
-  agendaItensInput: AgendaItem[]
+  agendaItensInput: AgendaItem[],
+  pastoOcupacoesInput?: PastoOcupacao[]
 ): CockpitPastoMetrics {
   const animals = Array.isArray(animalsInput) ? animalsInput : [];
   const lotes = Array.isArray(lotesInput) ? lotesInput : [];
@@ -487,9 +556,9 @@ export function calculatePastoMetrics(
   const lotesInPasto = lotes.filter((l) => l.pasto_id === pastoId);
   const loteIdsInPasto = new Set(lotesInPasto.map((l) => l.id));
 
-  // Active animals currently in those lotes
+  // Active animals currently in those lotes (exclude mortos/vendidos)
   const activeAnimals = animals.filter(
-    (a) => a.lote_id && loteIdsInPasto.has(a.lote_id) && a.status === "ativo"
+    (a) => a.lote_id && loteIdsInPasto.has(a.lote_id) && a.status === "ativo" && !a.deleted_at
   );
   const activeAnimalIds = new Set(activeAnimals.map((a) => a.id));
 
@@ -506,6 +575,7 @@ export function calculatePastoMetrics(
 
   const animalPesagensMap = new Map<string, EventoPesagem[]>();
   pesagens.forEach((p) => {
+    if (p.deleted_at) return;
     const ev = validEvents.find((e) => e.id === p.evento_id);
     if (ev && ev.animal_id) {
       if (!animalPesagensMap.has(ev.animal_id)) {
@@ -583,35 +653,32 @@ export function calculatePastoMetrics(
     }
   }
 
-  // 2. GMD
+  // 2. GMD (Média dos GMDs individuais reais válidos)
   let sumGmd = 0;
+  let sumGanho = 0;
   let countGmdCalculated = 0;
 
   activeAnimals.forEach((animal) => {
     const animalPes = animalPesagensMap.get(animal.id) || [];
-    const validPesSorted = animalPes
-      .map((p) => {
-        const ev = validEvents.find((e) => e.id === p.evento_id)!;
-        return { p, ev };
-      })
-      .sort((a, b) => a.ev.occurred_at.localeCompare(b.ev.occurred_at));
+    const mappedPes = animalPes.map(p => {
+      const ev = validEvents.find((e) => e.id === p.evento_id)!;
+      return {
+        peso_kg: p.peso_kg,
+        occurred_at: ev.occurred_at,
+        deleted_at: p.deleted_at,
+      };
+    });
 
-    if (validPesSorted.length >= 2) {
-      const first = validPesSorted[0];
-      const last = validPesSorted[validPesSorted.length - 1];
-      const days = differenceInDays(
-        safeParseDate(last.ev.occurred_at),
-        safeParseDate(first.ev.occurred_at)
-      );
-      if (days > 0) {
-        const gain = last.p.peso_kg - first.p.peso_kg;
-        sumGmd += gain / days;
-        countGmdCalculated++;
-      }
+    const gmdResult = calculateIndividualGmd(mappedPes);
+    if (gmdResult.isValid) {
+      sumGmd += gmdResult.gmdKgDia;
+      sumGanho += gmdResult.ganhoKg;
+      countGmdCalculated++;
     }
   });
 
   const gmdMedio = countGmdCalculated > 0 ? sumGmd / countGmdCalculated : null;
+  const ganhoMedioPeso = countGmdCalculated > 0 ? sumGanho / countGmdCalculated : null;
   let gmdStatus: DataStatus = { status: "empty", reason: "Sem histórico de GMD" };
 
   if (activeAnimals.length === 0) {
@@ -627,14 +694,14 @@ export function calculatePastoMetrics(
       status: "partial",
       reason: `${countGmdCalculated} de ${activeAnimals.length} animais com GMD`,
       source: "GMD factual",
-      limitation: `${activeAnimals.length - countGmdCalculated} animais com dados insuficientes (exige ≥2 pesagens)`,
+      limitation: `${activeAnimals.length - countGmdCalculated} animais com dados insuficientes (exige ≥2 pesagens em dias distintos)`,
     };
   } else {
     gmdStatus = {
       status: "empty",
       reason: "Dados insuficientes para calcular GMD",
       source: "GMD factual",
-      limitation: "Todos os animais têm menos de 2 pesagens registradas",
+      limitation: "Todos os animais têm menos de 2 pesagens ou intervalo inválido",
     };
   }
 
@@ -645,6 +712,7 @@ export function calculatePastoMetrics(
 
   const animalEccsMap = new Map<string, EventoEcc[]>();
   eccs.forEach((e) => {
+    if (e.deleted_at) return;
     const ev = validEvents.find((v) => v.id === e.event_id);
     if (ev && ev.animal_id) {
       if (!animalEccsMap.has(ev.animal_id)) {
@@ -698,12 +766,17 @@ export function calculatePastoMetrics(
     };
   }
 
-  // 4. Lotação / Uso do Pasto
-  let sumUsoDays = 0;
-  let countWithPastoEntry = 0;
+  // 4. Lotação / Uso do Pasto com prioridade de state_pasto_ocupacoes
+  let tempoUsoDias = 0;
+  let permanenciaStatus: DataStatus = { status: "empty", reason: "Sem histórico de uso", source: "Sem dados" };
+
+  const ocupacoesPasto = Array.isArray(pastoOcupacoesInput)
+    ? pastoOcupacoesInput.filter((o) => o.pasto_id === pastoId)
+    : [];
 
   const animalMovMap = new Map<string, EventoMovimentacao[]>();
   movimentacoes.forEach((m) => {
+    if (m.deleted_at) return;
     const ev = validEvents.find((v) => v.id === m.evento_id);
     if (ev && ev.animal_id) {
       if (!animalMovMap.has(ev.animal_id)) {
@@ -713,52 +786,83 @@ export function calculatePastoMetrics(
     }
   });
 
-  activeAnimals.forEach((animal) => {
-    const animalM = animalMovMap.get(animal.id) || [];
-    const validM = animalM
-      .map((m) => {
-        const ev = validEvents.find((v) => v.id === m.evento_id)!;
-        return { m, ev };
-      })
-      .sort((a, b) => b.ev.occurred_at.localeCompare(a.ev.occurred_at));
-
-    if (validM.length > 0 && validM[0].m.to_pasto_id === pastoId) {
-      const entryDate = validM[0].ev.occurred_at;
-      const days = differenceInDays(refDateObj, safeParseDate(entryDate));
-      const validDays = days >= 0 ? days : 0;
-      sumUsoDays += validDays;
-      countWithPastoEntry++;
+  if (ocupacoesPasto.length > 0) {
+    const ocupacoesAtivas = ocupacoesPasto.filter((o) => o.saida_em === null);
+    if (ocupacoesAtivas.length > 0) {
+      const sumDays = ocupacoesAtivas.reduce((sum, o) => {
+        const days = differenceInDays(refDateObj, safeParseDate(o.entrada_em));
+        return sum + (days >= 0 ? days : 0);
+      }, 0);
+      tempoUsoDias = sumDays / ocupacoesAtivas.length;
+      permanenciaStatus = {
+        status: "complete",
+        reason: "Tempo de uso ativo mapeado",
+        source: "state_pasto_ocupacoes",
+      };
+    } else {
+      const sorted = [...ocupacoesPasto].sort((a, b) => b.entrada_em.localeCompare(a.entrada_em));
+      const latest = sorted[0];
+      const days = differenceInDays(refDateObj, safeParseDate(latest.entrada_em));
+      tempoUsoDias = days >= 0 ? days : 0;
+      permanenciaStatus = {
+        status: "partial",
+        reason: "Última ocupação encerrada",
+        source: "state_pasto_ocupacoes",
+        limitation: "Não há registro de lote ativo atualmente no pasto",
+      };
     }
-  });
-
-  const tempoUsoDias = countWithPastoEntry > 0 ? sumUsoDays / countWithPastoEntry : 0;
-  let tempoLotacaoStatus: DataStatus = { status: "empty" };
-
-  if (activeAnimals.length === 0) {
-    tempoLotacaoStatus = {
-      status: "empty",
-      reason: "Sem animais ativos no pasto",
-    };
-  } else if (countWithPastoEntry === activeAnimals.length) {
-    tempoLotacaoStatus = {
-      status: "complete",
-      reason: "Tempo de uso completo do pasto",
-      source: "Movimentações factuais",
-    };
-  } else if (countWithPastoEntry > 0) {
-    tempoLotacaoStatus = {
-      status: "partial",
-      reason: "Tempo de uso parcial (alguns animais sem movimentação de entrada)",
-      source: "Movimentações factuais",
-      limitation: `${activeAnimals.length - countWithPastoEntry} animais sem movimentação de entrada registrada`,
-    };
   } else {
-    tempoLotacaoStatus = {
-      status: "partial",
-      reason: "Tempo de uso desconhecido (todos os animais sem movimentação de entrada)",
-      source: "Movimentações factuais",
-      limitation: "Movimentação inicial ausente para todos os animais",
-    };
+    // Fallback: eventos_movimentacao
+    let sumUsoDays = 0;
+    let countWithPastoEntry = 0;
+
+    activeAnimals.forEach((animal) => {
+      const animalM = animalMovMap.get(animal.id) || [];
+      const validM = animalM
+        .map((m) => {
+          const ev = validEvents.find((v) => v.id === m.evento_id)!;
+          return { m, ev };
+        })
+        .sort((a, b) => b.ev.occurred_at.localeCompare(a.ev.occurred_at));
+
+      if (validM.length > 0 && validM[0].m.to_pasto_id === pastoId) {
+        const entryDate = validM[0].ev.occurred_at;
+        const days = differenceInDays(refDateObj, safeParseDate(entryDate));
+        const validDays = days >= 0 ? days : 0;
+        sumUsoDays += validDays;
+        countWithPastoEntry++;
+      }
+    });
+
+    tempoUsoDias = countWithPastoEntry > 0 ? sumUsoDays / countWithPastoEntry : 0;
+
+    if (activeAnimals.length === 0) {
+      permanenciaStatus = {
+        status: "empty",
+        reason: "Sem animais ativos no pasto",
+        source: "Sem dados",
+      };
+    } else if (countWithPastoEntry === activeAnimals.length) {
+      permanenciaStatus = {
+        status: "complete",
+        reason: "Tempo de uso completo por movimentações factuais",
+        source: "eventos_movimentacao",
+      };
+    } else if (countWithPastoEntry > 0) {
+      permanenciaStatus = {
+        status: "partial",
+        reason: "Tempo de uso parcial via movimentações",
+        source: "eventos_movimentacao",
+        limitation: `${activeAnimals.length - countWithPastoEntry} animais sem movimentação de entrada registrada`,
+      };
+    } else {
+      permanenciaStatus = {
+        status: "partial",
+        reason: "Tempo de uso desconhecido (todos os animais sem movimentação de entrada)",
+        source: "eventos_movimentacao",
+        limitation: "Movimentação inicial ausente para todos os animais",
+      };
+    }
   }
 
   // Ultima movimentação que tocou este pasto
@@ -772,8 +876,6 @@ export function calculatePastoMetrics(
     : null;
 
   // 5. Pendências (Agenda)
-  // Pasto: agenda aberta dos lotes do pasto + agenda aberta dos animais ativos desses lotes.
-  // Ignorar agenda concluída, cancelada, deletada.
   const openPastoAgendaItens = agendaItens.filter((item) => {
     if (item.deleted_at || item.status === "concluido" || item.status === "cancelado") {
       return false;
@@ -806,21 +908,56 @@ export function calculatePastoMetrics(
 
   const categoriaPredominante = getPredominantCategory(activeAnimals);
 
+  // 6. UA e Taxa de lotação real UA/ha
+  const pastoObj = pastosInput.find(p => p.id === pastoId);
+  const areaHa = pastoObj?.area_ha ?? null;
+
+  const pastoAnimalWeights = activeAnimals.map(animal => {
+    const animalPes = animalPesagensMap.get(animal.id) || [];
+    const validPes = animalPes
+      .map((p) => {
+        const ev = validEvents.find((e) => e.id === p.evento_id)!;
+        return { p, ev };
+      })
+      .sort((a, b) => b.ev.occurred_at.localeCompare(a.ev.occurred_at));
+
+    const latest = validPes[0];
+    const pesoKg = latest?.p.peso_kg || 0;
+    const isConfiavel = latest 
+      ? (weightFreshnessDays !== undefined && weightFreshnessDays !== null 
+          ? differenceInDays(refDateObj, safeParseDate(latest.ev.occurred_at)) <= weightFreshnessDays
+          : true)
+      : false;
+    const isMissing = !latest;
+    return { pesoKg, isConfiavel, isMissing };
+  });
+
+  const uaResult = calculateUaLotacao(pastoAnimalWeights, areaHa);
+
   return {
     pastoId,
     lotacaoAtual: activeAnimals.length,
     pesoMedio,
     pesoStatus,
     gmdMedio,
+    ganhoMedioPeso,
     gmdStatus,
     eccMedio,
     eccStatus,
     eccCobertura: { avaliados: countEccEvaluated, total: activeAnimals.length },
     animaisSemEcc,
     tempoUsoDias,
-    tempoLotacaoStatus,
+    permanenciaStatus,
     ultimaMovimentacao,
     agendaItensAbertos,
     categoriaPredominante,
+    uaTotal: uaResult.uaTotal,
+    taxaLotacaoUaHa: uaResult.taxaLotacaoUaHa,
+    taxaLotacaoStatus: {
+      status: uaResult.status,
+      reason: uaResult.reason,
+      source: uaResult.source,
+      limitation: uaResult.limitation,
+    },
   };
 }

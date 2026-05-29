@@ -1,5 +1,7 @@
 // src/features/operationalInsights/operationalHomeIndicatorsAdapter.ts
 
+import { calculateIndividualGmd } from "../../lib/animals/kpiHelpers";
+
 /**
  * Pure deterministic adapter to compute operational home indicators from factual data.
  * No direct IO (Dexie/Supabase) – all data is supplied via the input parameter.
@@ -249,8 +251,8 @@ function computeGmd(input: HomeIndicatorsInput) {
   }
 
   // Only consider animals with >=2 valid pesagens
-  const lotesMap = new Map<string, { gmdSum: number; animaisCount: number; nome: string }>();
-  for (const lote of input.lotes) lotesMap.set(lote.id, { gmdSum: 0, animaisCount: 0, nome: lote.nome });
+  const lotesMap = new Map<string, { gmdSum: number; ganhoSum: number; animaisCount: number; nome: string }>();
+  for (const lote of input.lotes) lotesMap.set(lote.id, { gmdSum: 0, ganhoSum: 0, animaisCount: 0, nome: lote.nome });
 
   const lotesSemPesagemSuficiente: { loteId: string; nome: string; reason: string }[] = [];
   let animaisComApenasUmaPesagemCount = 0;
@@ -260,34 +262,39 @@ function computeGmd(input: HomeIndicatorsInput) {
     const pesagens = pesagensByAnimal[animal.id] ?? [];
     if (pesagens.length < 2) {
       if (pesagens.length === 1) animaisComApenasUmaPesagemCount++;
-      // add to lote missing info if animal belongs to a lote
-      if (animal.lote_id && lotesMap.has(animal.lote_id)) {
-        const loteEntry = lotesMap.get(animal.lote_id)!;
-        // note that this lote has insufficient data via later processing
-      }
       continue;
     }
-    // Sort by occurrence date to compute simple gain
-    const sorted = pesagens
-      .map(p => {
-        const ev = input.events.find(e => e.id === p.evento_id)!;
-        return { date: ev.occurred_at, peso: p.peso_kg };
-      })
-      .sort((a, b) => a.date.localeCompare(b.date));
-    const first = sorted[0].peso;
-    const last = sorted[sorted.length - 1].peso;
-    const gain = last - first;
-    const loteId = animal.lote_id;
-    if (loteId && lotesMap.has(loteId)) {
-      const entry = lotesMap.get(loteId)!;
-      entry.gmdSum += gain;
-      entry.animaisCount += 1;
+
+    const mappedPesagens = pesagens.map(p => {
+      const ev = input.events.find(e => e.id === p.evento_id)!;
+      return {
+        peso_kg: p.peso_kg,
+        occurred_at: ev.occurred_at,
+        deleted_at: p.deleted_at,
+      };
+    });
+
+    const gmdResult = calculateIndividualGmd(mappedPesagens);
+    if (gmdResult.isValid) {
+      const loteId = animal.lote_id;
+      if (loteId && lotesMap.has(loteId)) {
+        const entry = lotesMap.get(loteId)!;
+        entry.gmdSum += gmdResult.gmdKgDia;
+        entry.ganhoSum += gmdResult.ganhoKg;
+        entry.animaisCount += 1;
+      }
     }
   }
 
   const lotesComGmd = Array.from(lotesMap.entries())
     .filter(([, v]) => v.animaisCount > 0)
-    .map(([id, v]) => ({ loteId: id, nome: v.nome, gmdMedio: Number((v.gmdSum / v.animaisCount).toFixed(2)), animaisCount: v.animaisCount }));
+    .map(([id, v]) => ({
+      loteId: id,
+      nome: v.nome,
+      gmdMedio: Number((v.gmdSum / v.animaisCount).toFixed(2)),
+      ganhoMedio: Number((v.ganhoSum / v.animaisCount).toFixed(2)),
+      animaisCount: v.animaisCount,
+    }));
 
   // Identify lotes with insufficient pesagens
   for (const lote of input.lotes) {

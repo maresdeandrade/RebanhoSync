@@ -141,7 +141,7 @@ Este documento registra o estado efetivo do RebanhoSync na fase atual de consoli
 - `pnpm run quality:gate`: verde (`lint` + `test:hotspots` + `test:integration` + `test:smoke`)
 - `pnpm run build`: verde
 - `pnpm run test:e2e`: cobre onboarding, importações, relatorios e fluxo parto -> pos-parto -> cria inicial
-- Unitários: `src/lib/animals/__tests__/` (7 arquivos), `src/lib/offline/__tests__/` (6 arquivos), `src/pages/__tests__/` (12 arquivos)
+- Unitários: `src/lib/animals/__tests__/` (8 arquivos), `src/lib/offline/__tests__/` (6 arquivos), `src/pages/__tests__/` (12 arquivos)
 
 ---
 
@@ -407,7 +407,14 @@ Este documento registra o estado efetivo do RebanhoSync na fase atual de consoli
   - Adicionado 1 teste de fumaça sob `tests/smoke/` validando `buildEventGesture` para múltiplos domínios avulsos e assegurando `source_task_id: null` na tabela `eventos`.
 - **Qualidade e Confiabilidade Estritas**: `eslint` 100% limpo, suite de testes de integração e smoke passando em 1.1s e build de produção verificado com sucesso.
 
-## 9. Update 2026-04-12 (Sanitary Regimen & Compliance Engine)
+## 8.3 Update 2026-05-29 (Fase 5.1 — KPIs Produtivos Consolidados via Testes)
+
+- **Escopo**: consolidação e blindagem dos invariantes dos KPIs produtivos já expostos em Home, LoteDetalhe e PastoDetalhe. Sem alteração de lógica de produção, migrations, seed, RLS ou contrato de sync.
+- **Novos testes — `kpiHelpers.test.ts`** (15 casos): cobre `calculateIndividualGmd` (occurred_at como fonte temporal, soft-delete ignorado, peso ≤ 0 ignorado, < 2 pesagens bloqueia, mesmo dia bloqueia, ganho negativo válido, ordem de entrada irrelevante) e `calculateUaLotacao` (uaTotal = soma/450, bloqueio com areaHa ≤ 0 ou null, taxaLotacaoUaHa = uaTotal/areaHa, status parcial com pesos ausentes/desatualizados, empty sem animais, taxaLotacaoUaHa null sem área).
+- **Testes expandidos — `cockpitManejoAdapter.test.ts`** (+11 casos): invariantes de produção cobertos — GMD usa `occurred_at`; soft delete ignorado; animal morto excluído; animal vendido excluído; intervalo 0 dias bloqueia GMD; UA/ha bloqueado com area\_ha = 0; UA/ha bloqueado com area\_ha = null; `state_pasto_ocupacoes` tem precedência sobre `eventos_movimentacao`; `categoriaPredominante` nunca exibe snake\_case; `getCategoriaAtual` retorna `"Categoria desconhecida"` (não `"categoria_desconhecida"`).
+- **Qualidade**: `pnpm run lint` PASS (0 erros), `pnpm test -- --run` PASS (**231 arquivos / 1.492 testes**), `pnpm run build` PASS (2.310 módulos), `validate-supabase-baseline-functional.mjs` PASS (5/5).
+- **Unitários atualizados**: `src/lib/animals/__tests__/` agora conta **8 arquivos** (+1 `kpiHelpers.test.ts`); `src/features/occupancy/__tests__/cockpitManejoAdapter.test.ts` expandido de 16 para **27 casos**.
+
 
 - Motor de **regime sequencial e histórico de entrada** do escopo sanitário consolidado na baseline canônica `00000000000000_rebuild_base_schema_sanitario.sql`.
 - Deduplicação semântica refinada por **família protocolar** (`family_code`), `milestone_code` e `sequence_order`.

@@ -278,6 +278,7 @@ const PastoDetalhe = () => {
   const eccs = useLiveQuery(() => db.event_eventos_ecc.toArray()) ?? EMPTY_ARRAY;
   const movimentacoes = useLiveQuery(() => db.event_eventos_movimentacao.toArray()) ?? EMPTY_ARRAY;
   const agendaItens = useLiveQuery(() => db.state_agenda_itens.toArray()) ?? EMPTY_ARRAY;
+  const pastoOcupacoes = useLiveQuery(() => db.state_pasto_ocupacoes.toArray()) ?? EMPTY_ARRAY;
 
   const referenceDate = useMemo(() => new Date().toISOString(), []);
 
@@ -295,9 +296,10 @@ const PastoDetalhe = () => {
       pesagens,
       eccs,
       movimentacoes,
-      agendaItens
+      agendaItens,
+      pastoOcupacoes
     );
-  }, [id, referenceDate, weightFreshnessDays, animals, lotes, pastos, events, pesagens, eccs, movimentacoes, agendaItens]);
+  }, [id, referenceDate, weightFreshnessDays, animals, lotes, pastos, events, pesagens, eccs, movimentacoes, agendaItens, pastoOcupacoes]);
 
   // Unified Timeline for Pasto
   const timelineItems = useMemo(() => {
@@ -685,6 +687,13 @@ const PastoDetalhe = () => {
               reason={pastoMetrics.gmdStatus.reason}
               source={pastoMetrics.gmdStatus.source}
               limitation={pastoMetrics.gmdStatus.limitation}
+              extraContent={
+                pastoMetrics.ganhoMedioPeso !== null && (
+                  <p className="mt-1">
+                    <span className="font-semibold text-foreground/75">Ganho Acumulado:</span> {pastoMetrics.ganhoMedioPeso.toFixed(1)} kg
+                  </p>
+                )
+              }
             />
 
             {/* ECC Médio Factual */}
@@ -736,16 +745,38 @@ const PastoDetalhe = () => {
               value={pastoMetrics.tempoUsoDias}
               unit="dias"
               icon={<CalendarIcon className="h-4 w-4" />}
-              status={pastoMetrics.tempoLotacaoStatus.status}
+              status={pastoMetrics.permanenciaStatus.status}
               reason={`Permanência Média Atual: ${pastoMetrics.tempoUsoDias.toFixed(0)} dias no pasto`}
-              source={pastoMetrics.tempoLotacaoStatus.source}
-              limitation={pastoMetrics.tempoLotacaoStatus.limitation}
+              source={pastoMetrics.permanenciaStatus.source}
+              limitation={pastoMetrics.permanenciaStatus.limitation}
               extraContent={
                 pastoMetrics.ultimaMovimentacao && (
                   <p className="mt-1">
                     <span className="font-semibold text-foreground/75">Última Movimentação:</span> {new Date(pastoMetrics.ultimaMovimentacao).toLocaleDateString("pt-BR")}
                   </p>
                 )
+              }
+            />
+
+            {/* Taxa de Lotação UA/ha */}
+            <CockpitCard
+              title="Taxa de Lotação"
+              value={pastoMetrics.taxaLotacaoUaHa}
+              unit="UA/ha"
+              icon={<Scale className="h-4 w-4 text-emerald-500" />}
+              status={pastoMetrics.taxaLotacaoStatus.status}
+              reason={pastoMetrics.taxaLotacaoStatus.reason || `${pastoMetrics.taxaLotacaoUaHa?.toFixed(2) ?? 0} UA/ha de taxa de lotação`}
+              source={pastoMetrics.taxaLotacaoStatus.source}
+              limitation={pastoMetrics.taxaLotacaoStatus.limitation}
+              extraContent={
+                <div className="mt-2 space-y-1">
+                  <p>
+                    <span className="font-semibold text-foreground/75">UAs Totais:</span> {pastoMetrics.uaTotal.toFixed(2)} UA
+                  </p>
+                  <p>
+                    <span className="font-semibold text-foreground/75">Área do Pasto:</span> {pasto?.area_ha ? `${pasto.area_ha.toFixed(1)} ha` : "Não informada"}
+                  </p>
+                </div>
               }
             />
 

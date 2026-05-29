@@ -16,6 +16,11 @@ Atualização de Consolidação Operacional 2026-05-28 (Fase 1 Concluída):
 - A robustez da cadeia completa de execução (**Agenda aberta → Registrar manejo → Evento factual → Reconcile/fechamento da agenda**) foi blindada através de uma nova suíte de testes de integração de fluxos e testes de fumaça avulsos.
 - Corrigimos as 6 falhas históricas em testes unitários fora dos recortes de hotspots de página, garantindo estabilização absoluta.
 
+Atualização KPIs 2026-05-29 (Fase 5.1 Concluída):
+- Invariantes dos KPIs produtivos (GMD, UA/ha, permanência, categoria) blindados via 26 novos testes unitários sem alteração de lógica de produção.
+- `src/lib/animals/__tests__/kpiHelpers.test.ts` (15 casos) e `cockpitManejoAdapter.test.ts` expandido (+11 casos).
+- Suite global: 231 arquivos / 1.492 testes passando.
+
 O roadmap atual cobre a consolidacao de observabilidade, cobertura E2E dos fluxos mais recentes, refinamentos de UX operacional da agenda e a reestruturacao da biblioteca sanitaria base.
 Com o hardening estrutural principal de `Registrar` e `Agenda` concluido, o repositorio entra em fase de consolidacao MVP -> SLC.
 

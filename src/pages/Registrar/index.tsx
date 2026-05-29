@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
-import type { ReproTipoEnum, Animal, SanitarioCaso } from "@/lib/offline/types";
+import type { ReproTipoEnum, Animal, SanitarioCaso, Insumo, InsumoLote } from "@/lib/offline/types";
+import { RegistrarInventorySection } from "@/pages/Registrar/components/RegistrarInventorySection";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/EmptyState";
@@ -136,6 +137,17 @@ const Registrar = () => {
     itemId: string | null;
   }>({ protocolId: null, itemId: null });
   const [showTechDetails, setShowTechDetails] = useState(false);
+  // Estados para Baixa Automática de Insumos/Estoque
+  const [gerarBaixaEstoque, setGerarBaixaEstoque] = useState(false);
+  const [selectedInsumoId, setSelectedInsumoId] = useState("");
+  const [selectedInsumoLoteId, setSelectedInsumoLoteId] = useState("");
+  const [quantidadeConsumida, setQuantidadeConsumida] = useState("");
+  const [doseSanitaria, setDoseSanitaria] = useState("");
+  const [insumoRef, setInsumoRef] = useState<Insumo | null>(null);
+  const [loteRef, setLoteRef] = useState<InsumoLote | null>(null);
+
+  // Resetar estados de estoque ao mudar tipoManejo (movido abaixo para evitar TDZ)
+
   const { activeFarmId, role, farmMeasurementConfig, farmLifecycleConfig } =
     useAuth();
   const shellState = useRegistrarShellState({
@@ -175,6 +187,26 @@ const Registrar = () => {
     onToggleAnimalSelection,
     clearSelectedAnimais,
   } = shellState;
+
+  // Resetar estados de estoque ao mudar tipoManejo
+  useEffect(() => {
+    setGerarBaixaEstoque(false);
+    setSelectedInsumoId("");
+    setSelectedInsumoLoteId("");
+    setQuantidadeConsumida("");
+    setDoseSanitaria("");
+    setInsumoRef(null);
+    setLoteRef(null);
+  }, [
+    tipoManejo,
+    setGerarBaixaEstoque,
+    setSelectedInsumoId,
+    setSelectedInsumoLoteId,
+    setQuantidadeConsumida,
+    setDoseSanitaria,
+    setInsumoRef,
+    setLoteRef,
+  ]);
 
   const parseUserWeight = useCallback(
     (value: string) =>
@@ -1007,6 +1039,31 @@ const Registrar = () => {
           nutricaoData,
           reproducaoData,
         },
+        inventory: {
+          sanitary: tipoManejo === "sanitario" ? {
+            insumoId: selectedInsumoId || null,
+            insumoLoteId: selectedInsumoLoteId || null,
+            insumoRef,
+            loteRef,
+            dose: parseFloat(doseSanitaria.replace(",", ".")) || null,
+            doseUnidade: loteRef?.unidade_base || null,
+            quantidadeConsumida: parseFloat(quantidadeConsumida.replace(",", ".")) || null,
+            quantidadeUnidade: loteRef?.unidade_base || null,
+            viaAplicacao: null,
+            custoUnitarioSnapshot: loteRef?.custo_unitario ?? null,
+            gerarBaixaEstoque,
+          } : null,
+          nutricao: tipoManejo === "nutricao" ? {
+            insumoId: selectedInsumoId || null,
+            insumoLoteId: selectedInsumoLoteId || null,
+            insumoRef,
+            loteRef,
+            quantidadeConsumida: parseFloat(quantidadeConsumida.replace(",", ".")) || null,
+            quantidadeUnidade: loteRef?.unidade_base || null,
+            custoUnitarioSnapshot: loteRef?.custo_unitario ?? null,
+            gerarBaixaEstoque,
+          } : null,
+        },
       });
     } finally {
       setIsFinalizing(false);
@@ -1056,6 +1113,13 @@ const Registrar = () => {
     transitChecklist,
     transitChecklistIssues,
     isFinalizing,
+    gerarBaixaEstoque,
+    selectedInsumoId,
+    selectedInsumoLoteId,
+    quantidadeConsumida,
+    doseSanitaria,
+    insumoRef,
+    loteRef,
   ]);
 
   if (!activeFarmId) {
@@ -1188,9 +1252,28 @@ const Registrar = () => {
             )}
 
             {tipoManejo === "sanitario" && (
-              <RegistrarSanitarioSection
-                {...actionSectionState.sanitarioSectionProps}
-              />
+              <>
+                <RegistrarSanitarioSection
+                  {...actionSectionState.sanitarioSectionProps}
+                />
+                <RegistrarInventorySection
+                  activeFarmId={activeFarmId ?? ""}
+                  tipoManejo="sanitario"
+                  selectedAnimalCount={selectedAnimais.length}
+                  gerarBaixaEstoque={gerarBaixaEstoque}
+                  onGerarBaixaEstoqueChange={setGerarBaixaEstoque}
+                  selectedInsumoId={selectedInsumoId}
+                  onSelectedInsumoIdChange={setSelectedInsumoId}
+                  selectedLoteId={selectedInsumoLoteId}
+                  onSelectedLoteIdChange={setSelectedInsumoLoteId}
+                  quantidadeConsumida={quantidadeConsumida}
+                  onQuantidadeConsumidaChange={setQuantidadeConsumida}
+                  doseSanitaria={doseSanitaria}
+                  onDoseSanitariaChange={setDoseSanitaria}
+                  onInsumoRefChange={setInsumoRef}
+                  onLoteRefChange={setLoteRef}
+                />
+              </>
             )}
 
             {tipoManejo === "pesagem" && (
@@ -1206,9 +1289,27 @@ const Registrar = () => {
             )}
 
             {tipoManejo === "nutricao" && (
-              <RegistrarNutricaoSection
-                {...actionSectionState.nutricaoSectionProps}
-              />
+              <>
+                <RegistrarNutricaoSection
+                  {...actionSectionState.nutricaoSectionProps}
+                />
+                <RegistrarInventorySection
+                  activeFarmId={activeFarmId ?? ""}
+                  tipoManejo="nutricao"
+                  selectedAnimalCount={selectedAnimais.length}
+                  gerarBaixaEstoque={gerarBaixaEstoque}
+                  onGerarBaixaEstoqueChange={setGerarBaixaEstoque}
+                  selectedInsumoId={selectedInsumoId}
+                  onSelectedInsumoIdChange={setSelectedInsumoId}
+                  selectedLoteId={selectedInsumoLoteId}
+                  onSelectedLoteIdChange={setSelectedInsumoLoteId}
+                  quantidadeConsumida={quantidadeConsumida}
+                  onQuantidadeConsumidaChange={setQuantidadeConsumida}
+                  onInsumoRefChange={setInsumoRef}
+                  onLoteRefChange={setLoteRef}
+                  quantidadeExternaKg={nutricaoData.quantidadeKg}
+                />
+              </>
             )}
 
             {tipoManejo === "financeiro" && (

@@ -1,5 +1,8 @@
+// src/features/occupancy/buildLoteOccupancyMetrics.ts
+
 import type { Animal } from "@/lib/offline/types";
 import type { AnimalOccupancyPeriod, LoteOccupancyMetrics, DataStatus } from "./occupancyTypes";
+import { calculateUaLotacao } from "../../lib/animals/kpiHelpers";
 
 interface BuildLoteOccupancyMetricsInput {
   loteId: string;
@@ -18,7 +21,7 @@ export function buildLoteOccupancyMetrics({
   activeAnimals = [],
   latestEccsMap = new Map(),
   lastMovementDate = null,
-  categoriaPredominante = "Não classificada",
+  categoriaPredominante = "Categoria desconhecida",
 }: BuildLoteOccupancyMetricsInput): LoteOccupancyMetrics {
   const periodsInLote = animalPeriods.filter((p) => p.loteId === loteId);
 
@@ -36,6 +39,15 @@ export function buildLoteOccupancyMetrics({
 
     const animaisSemEcc = activeAnimals.filter((a) => !latestEccsMap.has(a.id)).map((a) => a.identificacao);
 
+    const animalWeights = activeAnimals.map(() => ({ pesoKg: 0, isConfiavel: false, isMissing: true }));
+    const uaResult = calculateUaLotacao(animalWeights, undefined);
+
+    const permanenciaStatus: DataStatus = {
+      status: "empty",
+      reason: "Sem histórico de movimentação (tempo de lotação estimado).",
+      source: "Sem dados",
+    };
+
     return {
       loteId,
       quantidadeAtual: activeAnimals.length,
@@ -51,9 +63,17 @@ export function buildLoteOccupancyMetrics({
       eccCobertura: { avaliados: evaluatedCount, total: activeAnimals.length || totalAnimalsInLote },
       eccStatus,
       animaisSemEcc,
-      tempoLotacaoStatus: { status: "empty", reason: "Sem histórico de movimentação (tempo de lotação estimado)." },
+      permanenciaStatus,
+      tempoLotacaoStatus: permanenciaStatus,
       ultimaMovimentacao: lastMovementDate,
       categoriaPredominante,
+      uaTotal: uaResult.uaTotal,
+      lotacaoStatus: {
+        status: uaResult.status,
+        reason: uaResult.reason,
+        source: uaResult.source,
+        limitation: uaResult.limitation,
+      },
     };
   }
 
@@ -85,7 +105,7 @@ export function buildLoteOccupancyMetrics({
     weightStatus = { status: "complete" };
   }
 
-  // Factual ECC calculations (fall back to period logic if activeAnimals not passed)
+  // Factual ECC calculations
   let evaluatedCount = 0;
   let eccMedioAtual = 0;
   let animaisSemEcc: string[] = [];
@@ -110,10 +130,28 @@ export function buildLoteOccupancyMetrics({
     eccStatus = periodsWithEcc.length > 0 ? { status: "complete" } : { status: "empty" };
   }
 
-  const tempoLotacaoStatus: DataStatus =
+  const permanenciaStatus: DataStatus =
     lastMovementDate === null
-      ? { status: "empty", reason: "Sem histórico de movimentação (tempo de lotação estimado)." }
-      : { status: "complete" };
+      ? {
+          status: "empty",
+          reason: "Sem histórico de movimentação (tempo de lotação estimado).",
+          source: "Sem dados",
+        }
+      : {
+          status: "complete",
+          source: "Movimentações factuais",
+        };
+
+  // UA Lotacao real
+  const animalWeights = activeAnimals.map(animal => {
+    const p = periodsInLote.find(per => per.animalId === animal.id && per.saidaAt === null);
+    const pesoKg = p?.pesoFinal || 0;
+    const isConfiavel = p?.weightStatus.status === "complete";
+    const isMissing = !p || p.weightStatus.status === "empty";
+    return { pesoKg, isConfiavel, isMissing };
+  });
+
+  const uaResult = calculateUaLotacao(animalWeights, undefined);
 
   return {
     loteId,
@@ -130,8 +168,16 @@ export function buildLoteOccupancyMetrics({
     eccCobertura: { avaliados: evaluatedCount, total: activeAnimals.length || totalAnimalsInLote },
     eccStatus,
     animaisSemEcc,
-    tempoLotacaoStatus,
+    permanenciaStatus,
+    tempoLotacaoStatus: permanenciaStatus,
     ultimaMovimentacao: lastMovementDate,
     categoriaPredominante,
+    uaTotal: uaResult.uaTotal,
+    lotacaoStatus: {
+      status: uaResult.status,
+      reason: uaResult.reason,
+      source: uaResult.source,
+      limitation: uaResult.limitation,
+    },
   };
 }

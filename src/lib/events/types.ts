@@ -7,6 +7,8 @@ import type {
   SanitarioTipoEnum,
   ReproTipoEnum,
   CausaObitoEnum,
+  Insumo,
+  InsumoLote,
 } from "@/lib/offline/types";
 import type { VeterinaryProductSelection } from "@/lib/sanitario/catalog/products";
 
@@ -79,6 +81,17 @@ export interface SanitarioEventInput extends BaseEventInput {
   protocoloItem?: ProtocoloAgendaRefInput;
   produtoRef?: VeterinaryProductSelection;
   sanitarioCaso?: SanitarioCasoOpenInput | SanitarioCasoLinkInput;
+  insumoId?: string | null;
+  insumoLoteId?: string | null;
+  insumoRef?: Insumo | null;
+  loteRef?: InsumoLote | null;
+  dose?: number | null;
+  doseUnidade?: string | null;
+  quantidadeConsumida?: number | null;
+  quantidadeUnidade?: string | null;
+  viaAplicacao?: string | null;
+  custoUnitarioSnapshot?: number | null;
+  gerarBaixaEstoque?: boolean;
 }
 
 export interface AlertaSanitarioEventInput extends BaseEventInput {
@@ -121,6 +134,14 @@ export interface NutricaoEventInput extends BaseEventInput {
   dominio: "nutricao";
   alimentoNome: string;
   quantidadeKg: number;
+  insumoId?: string | null;
+  insumoLoteId?: string | null;
+  insumoRef?: Insumo | null;
+  loteRef?: InsumoLote | null;
+  quantidadeConsumida?: number | null;
+  quantidadeUnidade?: string | null;
+  custoUnitarioSnapshot?: number | null;
+  gerarBaixaEstoque?: boolean;
 }
 
 export interface PastoAvaliacaoEventInput extends BaseEventInput {

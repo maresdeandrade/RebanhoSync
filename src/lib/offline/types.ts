@@ -810,6 +810,10 @@ export interface Insumo {
   produto_veterinario_id: string | null;
   unidade_base: InsumoUnidadeBaseEnum;
   ativo: boolean;
+  principio_ativo?: string | null;
+  concentracao?: string | null;
+  carencia_carne_dias?: number | null;
+  carencia_leite_dias?: number | null;
   payload: Record<string, unknown>;
 
   client_id: string;
@@ -857,6 +861,8 @@ export interface InsumoLote {
   saldo_atual_base: number;
   unidade_base: InsumoUnidadeBaseEnum;
   status: InsumoLoteStatusEnum;
+  custo_total?: number | null;
+  custo_unitario?: number | null;
   payload: Record<string, unknown>;
 
   client_id: string;
@@ -884,6 +890,8 @@ export interface InsumoMovimentacao {
   rebanho_lote_id: string | null;
   pasto_id: string | null;
   observacoes: string | null;
+  custo_unitario_snapshot?: number | null;
+  custo_total_snapshot?: number | null;
   payload: Record<string, unknown>;
 
   client_id: string;
