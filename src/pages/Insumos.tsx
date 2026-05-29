@@ -67,6 +67,7 @@ import type {
 import { evaluateSanitaryInventoryConsumptionReadiness } from "@/lib/sanitario/compliance/inventoryConsumption";
 import { refreshVeterinaryProductsCatalog } from "@/lib/sanitario/catalog/products";
 import { showError, showSuccess } from "@/utils/toast";
+import { cn } from "@/lib/utils";
 
 type EntryForm = {
   tipo: InsumoTipoEnum;
@@ -221,6 +222,33 @@ const loteStatusOptions: Array<{ value: InsumoLoteStatusEnum; label: string }> =
   { value: "vencido", label: "Vencido" },
   { value: "bloqueado", label: "Bloqueado" },
 ];
+
+const CATEGORIES_BY_TYPE: Record<InsumoTipoEnum, Array<{ value: string; label: string }>> = {
+  nutricional: [
+    { value: "Sal Mineral", label: "Sal Mineral" },
+    { value: "Ração", label: "Ração" },
+    { value: "Suplemento", label: "Suplemento" },
+    { value: "Proteico", label: "Proteico" },
+    { value: "Energético", label: "Energético" },
+    { value: "Volumoso", label: "Volumoso" },
+    { value: "Silagem", label: "Silagem" },
+    { value: "outro_personalizado", label: "Outra categoria (Digitar...)" },
+  ],
+  sanitario: [
+    { value: "Vacina", label: "Vacina" },
+    { value: "Vermífugo", label: "Vermífugo / Antiparasitário" },
+    { value: "Antibiótico", label: "Antibiótico" },
+    { value: "Anti-inflamatório", label: "Anti-inflamatório" },
+    { value: "Vitamina", label: "Vitamina / Suplemento" },
+    { value: "outro_personalizado", label: "Outra categoria (Digitar...)" },
+  ],
+  outro: [
+    { value: "Brinco", label: "Brinco de Identificação" },
+    { value: "Ferramental", label: "Ferramental / Equipamento" },
+    { value: "Combustível", label: "Combustível" },
+    { value: "outro_personalizado", label: "Outra categoria (Digitar...)" },
+  ],
+};
 
 const periodOptions: Array<{ value: string; label: string; days: number | null }> = [
   { value: "7", label: "7 dias", days: 7 },
@@ -485,6 +513,8 @@ export default function Insumos() {
   const [manualMovementForm, setManualMovementForm] =
     useState<ManualMovementForm>(EMPTY_MANUAL_MOVEMENT_FORM);
   const [editForm, setEditForm] = useState<LotEditForm | null>(null);
+  const [isCustomCategory, setIsCustomCategory] = useState(false);
+  const [isEditCustomCategory, setIsEditCustomCategory] = useState(false);
   const [savingEntry, setSavingEntry] = useState(false);
   const [savingManualMovement, setSavingManualMovement] = useState(false);
   const [savingConsumption, setSavingConsumption] = useState(false);
@@ -822,7 +852,15 @@ export default function Insumos() {
     insumo: Insumo | undefined,
     apresentacao: InsumoApresentacao | undefined,
   ) {
-    setEditForm(buildLotEditForm(lot, insumo, apresentacao));
+    const form = buildLotEditForm(lot, insumo, apresentacao);
+    setEditForm(form);
+    if (insumo?.tipo) {
+      const categories = CATEGORIES_BY_TYPE[insumo.tipo] || [];
+      const isStandard = categories.some((c) => c.value === form.categoria);
+      setIsEditCustomCategory(!isStandard && !!form.categoria);
+    } else {
+      setIsEditCustomCategory(false);
+    }
   }
 
   async function handleSaveLotEdit() {
@@ -1493,24 +1531,51 @@ export default function Insumos() {
                           <div className="rounded-md border border-border/70 p-3">
                             <div className="grid gap-3 sm:grid-cols-2">
                               <div className="space-y-2">
+                                <Label>Categoria</Label>
+                                <Select
+                                  value={isEditCustomCategory ? "outro_personalizado" : editForm.categoria}
+                                  onValueChange={(value) => {
+                                    if (value === "outro_personalizado") {
+                                      setIsEditCustomCategory(true);
+                                      setEditField("categoria", "");
+                                    } else {
+                                      setIsEditCustomCategory(false);
+                                      setEditField("categoria", value);
+                                    }
+                                  }}
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Selecione uma categoria" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {(insumo?.tipo ? CATEGORIES_BY_TYPE[insumo.tipo] : []).map((opt) => (
+                                      <SelectItem key={opt.value} value={opt.value}>
+                                        {opt.label}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                                {isEditCustomCategory && (
+                                  <Input
+                                    value={editForm.categoria}
+                                    onChange={(event) =>
+                                      setEditField(
+                                        "categoria",
+                                        event.target.value,
+                                      )
+                                    }
+                                    placeholder="Digite a categoria personalizada"
+                                    className="mt-2"
+                                  />
+                                )}
+                              </div>
+                              <div className="space-y-2">
                                 <Label>Insumo</Label>
                                 <Input
                                   value={editForm.insumoNome}
                                   onChange={(event) =>
                                     setEditField(
                                       "insumoNome",
-                                      event.target.value,
-                                    )
-                                  }
-                                />
-                              </div>
-                              <div className="space-y-2">
-                                <Label>Categoria</Label>
-                                <Input
-                                  value={editForm.categoria}
-                                  onChange={(event) =>
-                                    setEditField(
-                                      "categoria",
                                       event.target.value,
                                     )
                                   }
@@ -1738,7 +1803,16 @@ export default function Insumos() {
                     type="button"
                     variant={isSelected ? "default" : "outline"}
                     disabled={!canManage}
-                    onClick={() => setEntryField("tipo", opt.value as InsumoTipoEnum)}
+                    onClick={() => {
+                      const novoTipo = opt.value as InsumoTipoEnum;
+                      setEntryForm((prev) => ({
+                        ...prev,
+                        tipo: novoTipo,
+                        categoria: "",
+                        produtoVeterinarioId: NONE_VALUE,
+                      }));
+                      setIsCustomCategory(false);
+                    }}
                     className={cn(
                       "h-12 rounded-xl transition-all border-2 text-xs sm:text-sm px-1",
                       isSelected
@@ -1754,35 +1828,64 @@ export default function Insumos() {
           </div>
 
           <div className="space-y-2">
-            <Label>Insumo</Label>
-            <Input
-              value={entryForm.nome}
-              onChange={(event) => setEntryField("nome", event.target.value)}
-              disabled={!canManage}
-              placeholder="Ex.: Sal mineral, vacina, vermifugo"
-            />
-          </div>
-
-          <div className="space-y-2">
             <Label>Categoria</Label>
-            <Input
-              value={entryForm.categoria}
-              onChange={(event) =>
-                setEntryField("categoria", event.target.value)
-              }
+            <Select
+              value={isCustomCategory ? "outro_personalizado" : entryForm.categoria}
+              onValueChange={(value) => {
+                if (value === "outro_personalizado") {
+                  setIsCustomCategory(true);
+                  setEntryField("categoria", "");
+                } else {
+                  setIsCustomCategory(false);
+                  setEntryField("categoria", value);
+                }
+              }}
               disabled={!canManage}
-              placeholder="Ex.: suplemento, vacina"
-            />
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione uma categoria" />
+              </SelectTrigger>
+              <SelectContent>
+                {(CATEGORIES_BY_TYPE[entryForm.tipo] || []).map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {isCustomCategory && (
+              <Input
+                value={entryForm.categoria}
+                onChange={(event) => setEntryField("categoria", event.target.value)}
+                disabled={!canManage}
+                placeholder="Digite a categoria personalizada"
+                className="mt-2"
+              />
+            )}
           </div>
 
           {entryForm.tipo === "sanitario" ? (
             <div className="space-y-2">
-              <Label>Produto veterinario</Label>
+              <Label>Produto veterinário</Label>
               <Select
                 value={entryForm.produtoVeterinarioId}
-                onValueChange={(value) =>
-                  setEntryField("produtoVeterinarioId", value)
-                }
+                onValueChange={(value) => {
+                  setEntryField("produtoVeterinarioId", value);
+                  if (value !== NONE_VALUE) {
+                    const product = snapshot?.produtos?.find((p) => p.id === value);
+                    if (product) {
+                      setEntryForm((prev) => ({
+                        ...prev,
+                        produtoVeterinarioId: value,
+                        nome: product.nome,
+                        categoria: product.categoria || "Vacina",
+                      }));
+                      const categories = CATEGORIES_BY_TYPE.sanitario;
+                      const hasStandard = categories.some((c) => c.value === product.categoria);
+                      setIsCustomCategory(!hasStandard && !!product.categoria);
+                    }
+                  }
+                }}
                 disabled={!canManage}
               >
                 <SelectTrigger>
@@ -1799,6 +1902,16 @@ export default function Insumos() {
               </Select>
             </div>
           ) : null}
+
+          <div className="space-y-2">
+            <Label>Insumo</Label>
+            <Input
+              value={entryForm.nome}
+              onChange={(event) => setEntryField("nome", event.target.value)}
+              disabled={!canManage}
+              placeholder="Ex.: Sal mineral, vacina, vermífugo"
+            />
+          </div>
 
           <div className="space-y-2">
             <Label>Unidade base</Label>

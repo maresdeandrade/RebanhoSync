@@ -206,6 +206,35 @@ export type FazendaSanitaryCalendarModeEnum =
 export type FazendaSanitaryRiskLevelEnum = "baixo" | "medio" | "alto";
 export type ReproTipoEnum = "cobertura" | "IA" | "diagnostico" | "parto" | "aborto";
 export type FinanceiroTipoEnum = "compra" | "venda";
+export type FinanceCategoryTipoEnum = "receita" | "custo_variavel" | "custo_fixo" | "investimento";
+export type FinanceCategoryGrupoEnum =
+  | "venda_animais"
+  | "compra_animais"
+  | "sanidade"
+  | "nutricao"
+  | "mao_obra"
+  | "combustivel"
+  | "manutencao"
+  | "arrendamento"
+  | "infraestrutura"
+  | "reproducao"
+  | "administrativo"
+  | "outros";
+export type FinanceTransactionDirectionEnum = "entrada" | "saida";
+export type FinanceTransactionStatusEnum = "previsto" | "realizado" | "cancelado";
+export type FinanceTransactionCentroCustoTipoEnum = "fazenda" | "animal" | "lote" | "pasto";
+export type FinanceTransactionRateioMetodoEnum =
+  | "direto"
+  | "por_cabeca"
+  | "por_peso_vivo"
+  | "por_dias"
+  | "por_area";
+export type FinanceTransactionOrigemEnum =
+  | "manual"
+  | "evento_financeiro"
+  | "insumo_movimentacao"
+  | "compra_animal"
+  | "venda_animal";
 export type InsumoTipoEnum = "sanitario" | "nutricional" | "outro";
 export type InsumoUnidadeBaseEnum = "ml" | "l" | "g" | "kg" | "un" | "dose";
 export type InsumoUnidadeCompraEnum =
@@ -894,6 +923,65 @@ export interface InsumoMovimentacao {
   custo_total_snapshot?: number | null;
   payload: Record<string, unknown>;
 
+  client_id: string;
+  client_op_id: string;
+  client_tx_id: string | null;
+  client_recorded_at: string;
+  server_received_at: string;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+}
+
+export interface FinanceCategory {
+  id: string;
+  fazenda_id: string;
+  nome: string;
+  tipo: FinanceCategoryTipoEnum;
+  grupo: FinanceCategoryGrupoEnum;
+  slug: string;
+  is_default: boolean;
+  ativo: boolean;
+  observacoes: string | null;
+
+  // Sync metadata
+  client_id: string;
+  client_op_id: string;
+  client_tx_id: string | null;
+  client_recorded_at: string;
+  server_received_at: string;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+}
+
+export interface FinanceTransaction {
+  id: string;
+  fazenda_id: string;
+  occurred_at: string;
+  competence_date: string | null;
+  due_date: string | null;
+  paid_at: string | null;
+  direction: FinanceTransactionDirectionEnum;
+  status: FinanceTransactionStatusEnum;
+  category_id: string;
+  valor_total: number;
+  quantidade: number | null;
+  unidade: string | null;
+  valor_unitario: number | null;
+  contraparte_id: string | null;
+  animal_id: string | null;
+  lote_id: string | null;
+  pasto_id: string | null;
+  centro_custo_tipo: FinanceTransactionCentroCustoTipoEnum | null;
+  centro_custo_id: string | null;
+  rateio_metodo: FinanceTransactionRateioMetodoEnum | null;
+  origem: FinanceTransactionOrigemEnum | null;
+  source_event_id: string | null;
+  source_inventory_movement_id: string | null;
+  observacoes: string | null;
+
+  // Sync metadata
   client_id: string;
   client_op_id: string;
   client_tx_id: string | null;

@@ -458,5 +458,28 @@ This update turned `agenda.*` from a flat list into an operational triage surfac
 ### Animal UX Modernization
 
 - **Formulário de Cadastro (AnimalNovo.tsx):** Substituição de seletores tradicionais (Select) por grupos de botões interativos (ToggleGroup) de acesso em único clique para campos-chave (Sexo, Espécie, Origem, Fatos Taxonômicos e Perfil Reprodutivo). Implementação de seleção de Raça com UI híbrida (atalhos + combobox contextual).
-- **Dashboard de Animais (Animais.tsx):** Compactação agressiva de MetricCards em grid 100% lado a lado (grid-cols-2 base, reduzindo scroll vertical) e limpeza de strings redundantes. Adição de card específico para acompanhamento global de Pendências a partir do lifecyclePendingCount.
+- **Dashboard de Animais (Animais.tsx):** Compactação agressiva de MetricCards in grid 100% lado a lado (grid-cols-2 base, reduzindo scroll vertical) e limpeza de strings redundantes. Adição de card específico para acompanhamento global de Pendências a partir do lifecyclePendingCount.
 - Esta intervenção cumpre a frente de redução de carga cognitiva operacional do roadmap UX.
+
+### 9. Consolidação de Estoque de Insumos e Read Model de Carência Sanitária (Fase 6 a 7.1) ✅ COMPLETO
+
+- **Fase 6 — Insumos e Snapshot Imutável em Eventos:** Modelagem física e offline-first do estoque tenant-scoped (`insumos`, `insumo_apresentacoes`, `insumo_lotes`, `insumo_movimentacoes`). Implementação do snapshot persistido (`insumo_snapshot`) gravando imutavelmente o custo e o período de carência nos eventos sanitários e nutricionais de consumo no instante exato de sua aplicação.
+- **Fase 6.1 — Hardening de Sync, Idempotência e Saldo Local:** Auditoria e blindagem completa da sincronização via Dexie e edge function `sync-batch` no Supabase local, assegurando isolamento multi-tenant rígido por `fazenda_id` e paridade total de tipos de dados.
+- **Fase 7 — Cálculo de Carência Sanitária Assistivo:** Criação da engine de cálculo puro de período de retirada sanitária (`withdrawalReadModel.ts`) operando estritamente em datas nominais no fuso `'America/Sao_Paulo'` sem I/O ou uso de `Date.now()`. Desenvolvimento de hooks reativos Dexie (`useWithdrawal.ts`) para estimar carências ativas a nível de animais, lotes e pastos. Criação de componente premium HSL (`WithdrawalBadgePanel.tsx`) com avisos e microcopys regulatórios inserido reativamente em `AnimalDetalhe`, `LoteDetalhe` e `PastoDetalhe`.
+- **Fase 7.1 — Validação e Paridade TS x SQL:** Desenvolvimento de testes robustos de paridade matemática e fuso horário absoluto (`withdrawal_sql_parity.test.ts`) garantindo conformidade total da engine com a view remota do Supabase `vw_animais_carencia_ativa`.
+- **Refinamentos de Experiência e Correção de No-op (Dropdown de Categorias & Transições):**
+  - **Dropdown de Categoria Inteligente:** Transformação do campo de Categoria livre em um `Select` dinâmico e responsivo ao Tipo selecionado em `/insumos` e na edição rápida de lotes/insumos. Implementação de autopreenchimento de Nome de Insumo e Categoria oficial ao selecionar um Produto Veterinário do catálogo.
+  - **Bloqueio de No-ops de Estágio de Vida:** Criação de normalizador canônico (`normalizeStageCode`) no `lifecycle.ts` para ignorar capitalizações, acentuações e variações. Bloqueio completo de transições no-op redundantes (ex: *"Vaca adulta → Vaca adulta"*), removendo-as de contadores, alertas de agenda e radares visuais.
+  - **Baseline de Importação e Criação:** Ajuste na importação CSV (`AnimaisImportar.tsx`) para gravar o estágio inferido de baseline direto no payload inicial do animal, evitando falsas pendências operacionais pós-importação.
+  - **Deduplicação de Agenda de Transição:** Proteção rígida da `dedupKey` no formato `stage_transition:{animalId}:{fromStage}:{toStage}`, gerada estritamente para transições reais de estágio.
+
+### 10. Ledger Gerencial Administrativo e Lançamentos Financeiros (Fase 8) ✅ COMPLETO
+
+- **Fase 8 — Ledger Gerencial e Lançamentos Financeiros:**
+  - **Estrutura Física e Modelagem:** Implementação das tabelas aditivas `finance_categories` e `finance_transactions` no banco (Supabase) e lojas locais Dexie. Modelagem segura com isolamento multi-tenant rígido por `fazenda_id`, triggers de auditoria `set_updated_at` e trigger automatizado de auto-seeding de categorias gerenciais padrão (`Venda de Animais`, `Compra de Animais`, `Sanidade`, `Nutrição`, `Mão de Obra` etc.) para novas fazendas.
+  - **Políticas e RLS Sem Recursão:** RLS habilitado e testado para as novas tabelas gerenciais com as políticas de segurança baseadas em tenancy (`has_membership`) e privilégios (`role_in_fazenda`).
+  - **Camada Lógica de Negócios Pura (`gerencial.ts`):**
+    - Validador estrutural de transações (`validateFinanceTransaction`) que exige campos obrigatórios (`fazenda_id`, `category_id`, `occurred_at`, `direction`, `valor_total` estritamente positivo).
+    - Calculador de sumários gerenciais (`calculateGerencialSummary`) que desconsidera transações canceladas ou soft-deletadas, calcula fluxos previstos (a pagar/receber) e realizados (entradas/saídas) e computa o saldo líquido realizado.
+    - Agrupadores estatísticos analíticos por categoria (`groupGerencialByCategory`), contraparte (`groupGerencialByContraparte`) e centro de custo (`groupGerencialByCentroCusto`).
+  - **Suíte de Testes Focados:** Desenvolvimento de testes unitários (`gerencial.test.ts`) cobrindo exaustivamente validações, descarte de transações canceladas, cálculo de previstos vs realizados, tratamento de fuso horário nominal e agrupamento analítico por centro de custo/categoria.

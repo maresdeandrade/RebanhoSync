@@ -33,6 +33,8 @@ import {
   type PilotMetricEvent,
   type Rejection,
   type SanitarioCaso,
+  type FinanceCategory,
+  type FinanceTransaction,
 } from "./types";
 
 export class OfflineDB extends Dexie {
@@ -53,6 +55,8 @@ export class OfflineDB extends Dexie {
   state_insumo_apresentacoes!: Table<InsumoApresentacao, string>;
   state_insumo_lotes!: Table<InsumoLote, string>;
   state_insumo_movimentacoes!: Table<InsumoMovimentacao, string>;
+  state_finance_categories!: Table<FinanceCategory, string>;
+  state_finance_transactions!: Table<FinanceTransaction, string>;
 
   // Event Stores (Log local)
   event_eventos!: Table<Evento, string>;
@@ -577,6 +581,14 @@ export class OfflineDB extends Dexie {
     // Version 16: ECC individual event detail store
     this.version(16).stores({
       event_eventos_ecc: "event_id, fazenda_id, animal_id, deleted_at",
+    });
+
+    // Version 17: ledger gerencial administrativo / lançamento financeiro gerencial
+    this.version(17).stores({
+      state_finance_categories:
+        "id, fazenda_id, tipo, ativo, deleted_at, [fazenda_id+tipo]",
+      state_finance_transactions:
+        "id, fazenda_id, category_id, status, direction, occurred_at, source_event_id, deleted_at, [fazenda_id+status], [fazenda_id+category_id]",
     });
   }
 }

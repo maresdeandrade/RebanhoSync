@@ -154,6 +154,85 @@ describe("AnimalDetalhe", () => {
   const mockedUseAuth = vi.mocked(useAuth);
   const mockedUseLiveQuery = vi.mocked(useLiveQuery);
 
+  interface MockLiveQueryResponses {
+    animal?: unknown;
+    lote?: unknown;
+    mae?: unknown;
+    pai?: unknown;
+    crias?: unknown;
+    eventos?: unknown;
+    agenda?: unknown;
+    officialDiseases?: unknown;
+    ultimoPeso?: unknown;
+    historicoPeso?: unknown;
+    ultimoEcc?: unknown;
+    historicoEcc?: unknown;
+    sociedadeAtiva?: unknown;
+    contraparte?: unknown;
+    sanitaryCases?: unknown;
+    activeSanitaryCase?: unknown;
+  }
+
+  const setupMockLiveQuery = (mockResponses: MockLiveQueryResponses) => {
+    mockedUseLiveQuery.mockImplementation((fn: unknown) => {
+      if (typeof fn !== "function") return null;
+      const str = fn.toString();
+
+      if (str.includes("event_eventos")) {
+        if (str.includes("pesagem")) {
+          if (str.includes("resolveCurrentWeight")) {
+            return mockResponses.ultimoPeso ?? null;
+          }
+          return mockResponses.historicoPeso ?? [];
+        }
+        if (str.includes("ecc")) {
+          if (str.includes("eligible[0]")) {
+            return mockResponses.ultimoEcc ?? null;
+          }
+          return mockResponses.historicoEcc ?? [];
+        }
+        return mockResponses.eventos ?? [];
+      }
+      if (str.includes("state_agenda_itens")) {
+        return mockResponses.agenda ?? [];
+      }
+      if (str.includes("catalog_doencas_notificaveis")) {
+        return mockResponses.officialDiseases ?? [];
+      }
+      if (str.includes("state_animais_sociedade")) {
+        return mockResponses.sociedadeAtiva ?? null;
+      }
+      if (str.includes("state_contrapartes")) {
+        return mockResponses.contraparte ?? null;
+      }
+      if (str.includes("state_sanitario_casos")) {
+        if (str.includes("status === ")) {
+          return mockResponses.activeSanitaryCase ?? null;
+        }
+        return mockResponses.sanitaryCases ?? [];
+      }
+      if (str.includes("state_lotes")) {
+        if (str.includes(".get")) {
+          return mockResponses.lote ?? null;
+        }
+        return [];
+      }
+      if (str.includes("state_animais")) {
+        if (str.includes("mae_id === animal.id")) {
+          return mockResponses.crias ?? [];
+        }
+        if (str.includes("mae_id")) {
+          return mockResponses.mae ?? null;
+        }
+        if (str.includes("pai_id")) {
+          return mockResponses.pai ?? null;
+        }
+        return mockResponses.animal ?? null;
+      }
+      return null;
+    });
+  };
+
   beforeEach(() => {
     vi.clearAllMocks();
     mockedUseAuth.mockReturnValue({
@@ -170,40 +249,21 @@ describe("AnimalDetalhe", () => {
       sexo: "F",
     });
 
-    mockedUseLiveQuery.mockImplementation((() => {
-      const responses = [
-        animal,
-        null,
-        null,
-        null,
-        [],
-        [],
-        [
-          {
-            item: makeAgendaItem({
-              id: "agenda-1",
-              tipo: "vacina_brucelose",
-              data_prevista: "2026-04-15",
-            }),
-            scheduleLabel: "Aplicar entre 3 e 8 meses",
-            scheduleModeLabel: "Janela etaria",
-            scheduleAnchorLabel: "Nascimento",
-          },
-        ],
-        [],
-        null,
-        [],
-        null, // ultimoEcc
-        [], // historicoEcc
-        null,
-        null,
-        [],
-        null,
-      ];
-      let callCount = 0;
-      return () =>
-        (responses[callCount++] ?? null) as ReturnType<typeof useLiveQuery>;
-    })());
+    setupMockLiveQuery({
+      animal,
+      agenda: [
+        {
+          item: makeAgendaItem({
+            id: "agenda-1",
+            tipo: "vacina_brucelose",
+            data_prevista: "2026-04-15",
+          }),
+          scheduleLabel: "Aplicar entre 3 e 8 meses",
+          scheduleModeLabel: "Janela etaria",
+          scheduleAnchorLabel: "Nascimento",
+        },
+      ],
+    });
 
     render(
       <MemoryRouter
@@ -478,29 +538,9 @@ describe("AnimalDetalhe", () => {
       sexo: "F",
     });
 
-    mockedUseLiveQuery.mockImplementation((() => {
-      const responses = [
-        animal, // 1 (animal)
-        null, // 2 (lote)
-        null, // 3 (mae)
-        null, // 4 (pai)
-        [], // 5 (crias)
-        [], // 6 (eventos)
-        [], // 7 (agenda)
-        [], // 8 (officialDiseases)
-        null, // 9 (ultimoPeso)
-        [], // 10 (historicoPeso)
-        null, // 11 (ultimoEcc) - empty!
-        [], // 12 (historicoEcc) - empty!
-        null, // 13 (sociedadeAtiva)
-        null, // 14 (contraparte)
-        [], // 15 (sanitaryCases)
-        null, // 16 (activeSanitaryCase)
-      ];
-      let callCount = 0;
-      return () =>
-        (responses[callCount++] ?? null) as ReturnType<typeof useLiveQuery>;
-    })());
+    setupMockLiveQuery({
+      animal,
+    });
 
     render(
       <MemoryRouter
@@ -559,29 +599,11 @@ describe("AnimalDetalhe", () => {
       },
     ];
 
-    mockedUseLiveQuery.mockImplementation((() => {
-      const responses = [
-        animal, // 1 (animal)
-        null, // 2 (lote)
-        null, // 3 (mae)
-        null, // 4 (pai)
-        [], // 5 (crias)
-        [], // 6 (eventos)
-        [], // 7 (agenda)
-        [], // 8 (officialDiseases)
-        null, // 9 (ultimoPeso)
-        [], // 10 (historicoPeso)
-        mockUltimoEcc, // 11 (ultimoEcc)
-        mockHistoricoEcc, // 12 (historicoEcc)
-        null, // 13 (sociedadeAtiva)
-        null, // 14 (contraparte)
-        [], // 15 (sanitaryCases)
-        null, // 16 (activeSanitaryCase)
-      ];
-      let callCount = 0;
-      return () =>
-        (responses[callCount++] ?? null) as ReturnType<typeof useLiveQuery>;
-    })());
+    setupMockLiveQuery({
+      animal,
+      ultimoEcc: mockUltimoEcc,
+      historicoEcc: mockHistoricoEcc,
+    });
 
     render(
       <MemoryRouter

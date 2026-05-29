@@ -20,6 +20,29 @@ Recente adição da feature do Motor Sanitário Sequencial (Mid-Month Abril).
 
 ## 2. Summary
 
+### Delta 2026-05-29 (Fases 6 a 8 — Insumos/Estoque, Carência Sanitária, Ledger Gerencial e Hardening SLC)
+
+- **Fase 8 — Ledger Gerencial e Lançamentos Financeiros:**
+  - Criado o controle físico e offline-first do financeiro gerencial. Tabelas aditivas `finance_categories` e `finance_transactions` integradas via migração com RLS e triggers de auto-seeding.
+  - Implementado validador TypeScript de transações (`validateFinanceTransaction`), calculador de sumário de caixa (`calculateGerencialSummary`) ignorando transações canceladas, e agrupadores estatísticos analíticos em `gerencial.ts`.
+  - Escrita suíte robusta de testes unitários (`gerencial.test.ts`) cobrindo 100% dos invariantes financeiros e do caixa.
+- **Fase 6 — Insumos/Estoque e Snapshot Imutável:**
+  - Criado o controle tenant-scoped para `insumos`, `insumo_apresentacoes`, `insumo_lotes` e `insumo_movimentacoes` ( Dexie + RLS ).
+  - Implementado snapshot imutável (`insumo_snapshot`) gravando imutavelmente o custo e o período de retirada direto nos eventos sanitários e nutricionais de consumo no momento exato de sua aplicação.
+- **Fase 6.1 — Hardening de Sync e Saldo Local:**
+  - Sincronização offline validada de ponta a ponta com a Edge Function `sync-batch` e worker Dexie, com total isolamento multi-tenant por `fazenda_id` e paridade de tipagem.
+- **Fase 7 — Cálculo de Carência Sanitária Assistivo:**
+  - Engine de cálculo puro de retirada sanitária (`withdrawalReadModel.ts`) operando estritamente em datas nominais no fuso `'America/Sao_Paulo'` sem I/O ou `Date.now()`.
+  - Agrupamento offline reativo com hooks Dexie (`useWithdrawal.ts`) para expor períodos de carência ativas de animais, lotes e pastos.
+  - Componente premium HSL (`WithdrawalBadgePanel.tsx`) integrado na ficha de `AnimalDetalhe`, `LoteDetalhe` e `PastoDetalhe`.
+- **Fase 7.1 — Validação e Paridade TS x SQL:**
+  - Suíte de testes de paridade matemática e timezone absoluta (`withdrawal_sql_parity.test.ts`) em conformidade com a view do Supabase `vw_animais_carencia_ativa`.
+- **Ajustes e Correções de UI (Categorias & Transições no-op):**
+  - **Dropdown de Categoria Inteligente:** Transformação do campo de Categoria livre em um `Select` dinâmico e responsivo ao Tipo selecionado em `/insumos` e nos formulários de edição rápida. Mapeamento de categorias padrão e suporte a autopreenchimento com Produto Veterinário Oficial.
+  - **Bloqueio de No-ops de Estágio de Vida:** Criação de normalizador canônico (`normalizeStageCode`) no `lifecycle.ts` para ignorar capitalizações, acentuações e variações. Bloqueio completo de transições no-op redundantes (ex: *"Vaca adulta → Vaca adulta"*), removendo-as de contadores e agendas.
+  - **Baseline de Importação e Criação:** Ajuste na importação CSV (`AnimaisImportar.tsx`) para gravar o estágio inferido de baseline direto no payload inicial do animal, evitando falsas pendências operacionais pós-importação.
+  - **Deduplicação de Agenda de Transição:** Proteção rígida da `dedupKey` no formato `stage_transition:{animalId}:{fromStage}:{toStage}`, gerada estritamente para transições reais de estágio.
+
 ### Delta 2026-05-28 (Fase 1, 2 & 3 — Consolidação Operacional e Métricas de Lote/Pasto com ECC Factual)
 
 - **Fase 3 — Fechamento do Ciclo Operacional do ECC Factual Individual**:
@@ -53,25 +76,14 @@ Recente adição da feature do Motor Sanitário Sequencial (Mid-Month Abril).
 - Resultado observado: shell de `Registrar` reduzido para ~916 linhas, sem reintrodução de IO/regra de domínio na camada visual.
 - Estado de validação local da trilha: `pnpm run lint`, `pnpm test -- Registrar`, `pnpm run build` verdes nas rodadas de hardening.
 
-### Documentos Atualizados (Auditoria Abril/2026)
+### Documentos Atualizados (Consolidação Maio/2026)
 
 | Documento | Mudança Principal |
 | --- | --- |
-| `docs/IMPLEMENTATION_STATUS.md` | Reescrito — conflitos resolvidos, capability score ajustado p/ 20/20. Adicionado Update 2026-04-12 (Compliance/Regime). |
-| `docs/TECH_DEBT.md` | Atualizado — TD-021 fechado, e criado TD-025 (Catch up UX). |
-| `docs/ROADMAP.md` | Atualizado — Milestone 8 fechado, Milestone 9 criado (Sanitary Regimen & Catch-up Compliance UX). |
-| `docs/CURRENT_STATE.md` | Atualizado — fase beta interno, novas tabelas/stores documentadas |
-| `docs/ROUTES.md` | Adicionadas rotas `/animais/transicoes` e `/animais/:id/cria-inicial` |
-| `docs/OFFLINE.md` | Store `metrics_events` (Dexie v11) documentada com flush remoto |
-| `docs/DB.md` | `produtos_veterinarios` e `vw_animal_gmd` documentadas |
-| `docs/RLS.md` | TD-003 marcado RESOLVIDO; nota sobre tabela global |
-| `docs/E2E_MVP.md` | Fluxo 9 (pós-parto neonatal) adicionado |
-| `docs/STACK.md` | TanStack React Query adicionado |
-| `docs/00_MANIFESTO.md` | Escopo e data atualizados |
-| `docs/ADRs/ADR-0002-...` | Novo ADR para `produtos_veterinarios` global |
-| `README.md` | Fase beta interno, escopo completo, stack atualizada |
-| `AGENTS.md` | Reescrito — Dexie v8, TDs fechados, taxonomia, RBAC completo |
-| `AI_RULES.md` | Reescrito — estado atual completo com 7 domínios |
+| `docs/IMPLEMENTATION_STATUS.md` | Atualizado — Adicionada seção de Consolidação de Estoque (Fase 6 a 6.1), Read Model de Carência (Fase 7 a 7.1) e Ledger Gerencial (Fase 8) com os ajustes SLC. |
+| `docs/ROADMAP.md` | Atualizado — Milestones 15, 16 e 17 marcados como concluídos (Insumos, Carência e Ledger Gerencial). |
+| `docs/CURRENT_STATE.md` | Revisado — inseridos os refinamentos operacionais recentes, limites de carência, no-op de estágio e Ledger Gerencial. |
+| `docs/review/RECONCILIACAO_REPORT.md` | Atualizado — Registrado o Delta 2026-05-29 com a paridade absoluta TSxSQL, Ledger Gerencial (Fase 8) e correções SLC. |
 | `docs/review/AUDIT_CAPABILITY_MATRIX.md` | Todos os gaps fechados; 3 novos residuais mapeados |
 
 ### Modelo de Derivação (Rev D+)

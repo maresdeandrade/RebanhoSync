@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { Animal } from "@/lib/offline/types";
+import type { Animal, AnimalLifeStageEnum } from "@/lib/offline/types";
 import { DEFAULT_FARM_LIFECYCLE_CONFIG } from "@/lib/farms/lifecycleConfig";
 import {
   buildAnimalLifecyclePayload,
@@ -179,5 +179,103 @@ describe("animal lifecycle", () => {
       manual: 1,
       autoApply: 1,
     });
+  });
+
+  it("does not suggest same-stage no-op transitions", () => {
+    // Vaca adulta -> Vaca adulta
+    const vaca = createAnimal({
+      sexo: "F",
+      data_nascimento: "2015-01-01",
+      payload: {
+        lifecycle: {
+          estagio_vida: "vaca_adulta",
+        },
+      },
+    });
+    const snapshotVaca = resolveAnimalLifecycleSnapshot(vaca);
+    expect(snapshotVaca.shouldSuggestTransition).toBe(false);
+
+    // Boi adulto -> Boi adulto
+    const boi = createAnimal({
+      sexo: "M",
+      data_nascimento: "2015-01-01",
+      payload: {
+        lifecycle: {
+          estagio_vida: "boi_adulto",
+        },
+      },
+    });
+    const snapshotBoi = resolveAnimalLifecycleSnapshot(boi);
+    expect(snapshotBoi.shouldSuggestTransition).toBe(false);
+
+    // Labels/cases equivalentes (com capitalização/acentuação diferente)
+    const garrote = createAnimal({
+      sexo: "M",
+      data_nascimento: "2023-01-01",
+      payload: {
+        lifecycle: {
+          estagio_vida: "Garrote" as AnimalLifeStageEnum,
+        },
+      },
+    });
+    const snapshotGarrote = resolveAnimalLifecycleSnapshot(garrote);
+    expect(snapshotGarrote.shouldSuggestTransition).toBe(false);
+  });
+
+  it("does not suggest transitions when initial stage is unknown or missing from inferring context", () => {
+    const animalSemData = createAnimal({
+      sexo: "F",
+      data_nascimento: null,
+      payload: {},
+    });
+    const snapshot = resolveAnimalLifecycleSnapshot(animalSemData);
+    expect(snapshot.shouldSuggestTransition).toBe(false);
+  });
+
+  it("preserves real transitions (Bezerra -> Novilha)", () => {
+    const animal = createAnimal({
+      sexo: "F",
+      data_nascimento: "2024-05-01",
+      payload: {
+        lifecycle: {
+          estagio_vida: "cria_aleitamento",
+        },
+      },
+    });
+    const snapshot = resolveAnimalLifecycleSnapshot(animal);
+    expect(snapshot.shouldSuggestTransition).toBe(true);
+    expect(snapshot.targetStage).toBe("novilha");
+  });
+
+  it("manages dedupKey logic properly", () => {
+    const animals = [
+      // Transição real
+      createAnimal({
+        id: "real-1",
+        identificacao: "REAL-01",
+        sexo: "F",
+        data_nascimento: "2023-01-01",
+        payload: {
+          lifecycle: {
+            estagio_vida: "desmamado",
+          },
+        },
+      }),
+      // Criação/Importação baseline
+      createAnimal({
+        id: "imported-1",
+        identificacao: "IMP-01",
+        sexo: "F",
+        data_nascimento: "2023-01-01",
+        payload: {
+          import_source: "import.csv",
+        },
+      }),
+    ];
+
+    const transitions = getPendingAnimalLifecycleTransitions(animals);
+    expect(transitions).toHaveLength(1);
+    expect(transitions[0]?.animalId).toBe("real-1");
+    expect(transitions[0]?.dedupKey).toBe("stage_transition:real-1:desmamado:vaca_adulta");
   });
 });

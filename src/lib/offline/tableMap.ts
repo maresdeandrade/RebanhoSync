@@ -19,6 +19,8 @@ export const TABLE_MAP: Record<string, string> = {
   insumo_apresentacoes: "state_insumo_apresentacoes",
   insumo_lotes: "state_insumo_lotes",
   insumo_movimentacoes: "state_insumo_movimentacoes",
+  finance_categories: "state_finance_categories",
+  finance_transactions: "state_finance_transactions",
 
   // Event Rails (Append-Only)
   eventos: "event_eventos",

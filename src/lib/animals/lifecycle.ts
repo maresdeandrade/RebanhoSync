@@ -165,6 +165,16 @@ export function inferAnimalLifeStage(
   return "desmamado";
 }
 
+export function normalizeStageCode(stage: string | null | undefined): string {
+  if (!stage) return "";
+  return stage
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
 export interface AnimalLifecycleSnapshot {
   currentStage: AnimalLifeStageEnum;
   currentStageSource: LifecycleSource;
@@ -186,6 +196,7 @@ export interface PendingAnimalLifecycleTransition {
   suggestionKind: "initialize" | "transition";
   canAutoApply: boolean;
   reason: string;
+  dedupKey?: string | null;
 }
 
 export interface PendingAnimalLifecycleSummary {
@@ -263,8 +274,12 @@ export function resolveAnimalLifecycleSnapshot(
     getAnimalTransitionMode(animal) ?? config.default_transition_mode;
   const currentStage = storedStage ?? targetStage;
   const currentStageSource: LifecycleSource = storedStage ? "stored" : "inferred";
-  const shouldSuggestTransition =
-    storedStage === null ? true : storedStage !== targetStage;
+
+  const normalizedCurrent = normalizeStageCode(currentStage);
+  const normalizedTarget = normalizeStageCode(targetStage);
+  const isNoOp = normalizedCurrent === normalizedTarget || !normalizedCurrent || !normalizedTarget;
+
+  const shouldSuggestTransition = isNoOp ? false : (storedStage === null ? true : storedStage !== targetStage);
   const suggestionKind =
     shouldSuggestTransition && storedStage === null
       ? "initialize"
@@ -392,6 +407,23 @@ export function getPendingAnimalLifecycleTransitions(
         return null;
       }
 
+      const fromStage = snapshot.currentStage;
+      const toStage = snapshot.targetStage;
+
+      const isImportedOrCreated = animal.payload && (
+        asRecord(animal.payload).import_source !== undefined ||
+        asRecord(animal.payload).import_line !== undefined ||
+        getStoredLifeStage(animal.payload) === null
+      );
+
+      const hasInvalidStages = !fromStage || !toStage;
+      const isNoOp = normalizeStageCode(fromStage) === normalizeStageCode(toStage);
+      const shouldSkipDedup = isNoOp || hasInvalidStages || isImportedOrCreated;
+
+      const dedupKey = shouldSkipDedup
+        ? null
+        : `stage_transition:${animal.id}:${fromStage}:${toStage}`;
+
       return {
         animalId: animal.id,
         identificacao: animal.identificacao,
@@ -402,6 +434,7 @@ export function getPendingAnimalLifecycleTransitions(
         suggestionKind: snapshot.suggestionKind,
         canAutoApply: snapshot.canAutoApply,
         reason: snapshot.targetStageReason,
+        dedupKey,
       } satisfies PendingAnimalLifecycleTransition;
     })
     .filter(

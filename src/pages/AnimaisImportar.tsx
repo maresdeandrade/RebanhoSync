@@ -28,6 +28,10 @@ import { Input } from "@/components/ui/input";
 import { PageIntro } from "@/components/ui/page-intro";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  inferAnimalLifeStage,
+  buildAnimalLifecyclePayload,
+} from "@/lib/animals/lifecycle";
 
 const TEMPLATE_CSV = [
   "identificacao;sexo;especie;lote;data_nascimento;data_entrada;origem;raca;nome;rfid",
@@ -38,7 +42,7 @@ const TEMPLATE_CSV = [
 const AnimaisImportar = () => {
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const { activeFarmId } = useAuth();
+  const { activeFarmId, farmLifecycleConfig } = useAuth();
   const lotes = useLotes();
   const [csvText, setCsvText] = useState("");
   const [fileName, setFileName] = useState<string | null>(null);
@@ -129,41 +133,63 @@ const AnimaisImportar = () => {
 
     try {
       const now = new Date().toISOString();
-      const ops: OperationInput[] = parsed.rows.map((row) => ({
-        table: "animais",
-        action: "INSERT",
-        record: {
-          id: crypto.randomUUID(),
-          fazenda_id: activeFarmId,
-          identificacao: row.identificacao,
-          sexo: row.sexo,
-          status: "ativo",
-          especie: row.especie,
-          lote_id: row.loteNome
-            ? (validation.loteMap.get(normalizeLookupValue(row.loteNome)) ??
-              null)
-            : null,
-          data_nascimento: row.dataNascimento,
-          data_entrada: row.dataEntrada,
-          data_saida: null,
-          pai_id: null,
-          mae_id: null,
-          nome: row.nome,
-          rfid: row.rfid,
-          origem: row.origem,
-          raca: row.raca,
-          papel_macho: null,
-          habilitado_monta: false,
-          observacoes: null,
-          payload: {
-            import_source: fileName ?? "csv",
-            import_line: row.lineNumber,
+      const ops: OperationInput[] = parsed.rows.map((row) => {
+        const initialStage = inferAnimalLifeStage(
+          {
+            sexo: row.sexo,
+            data_nascimento: row.dataNascimento,
+            payload: {},
+            papel_macho: null,
+            habilitado_monta: false,
           },
-          created_at: now,
-          updated_at: now,
-          deleted_at: null,
-        },
-      }));
+          farmLifecycleConfig,
+        );
+
+        const initialPayload = {
+          import_source: fileName ?? "csv",
+          import_line: row.lineNumber,
+        };
+
+        const payload = buildAnimalLifecyclePayload(
+          initialPayload,
+          initialStage,
+          "automatico",
+          now,
+        );
+
+        return {
+          table: "animais",
+          action: "INSERT",
+          record: {
+            id: crypto.randomUUID(),
+            fazenda_id: activeFarmId,
+            identificacao: row.identificacao,
+            sexo: row.sexo,
+            status: "ativo",
+            especie: row.especie,
+            lote_id: row.loteNome
+              ? (validation.loteMap.get(normalizeLookupValue(row.loteNome)) ??
+                null)
+              : null,
+            data_nascimento: row.dataNascimento,
+            data_entrada: row.dataEntrada,
+            data_saida: null,
+            pai_id: null,
+            mae_id: null,
+            nome: row.nome,
+            rfid: row.rfid,
+            origem: row.origem,
+            raca: row.raca,
+            papel_macho: null,
+            habilitado_monta: false,
+            observacoes: null,
+            payload,
+            created_at: now,
+            updated_at: now,
+            deleted_at: null,
+          },
+        };
+      });
 
       await createGesture(activeFarmId, ops);
       await trackPilotMetric({

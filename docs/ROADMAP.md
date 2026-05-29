@@ -428,11 +428,48 @@ Atualizacao visual SLC 2026-05-20:
 
 ---
 
-## Milestone 15: Produtos + Estoque Sanitário + Snapshot de Produto em Eventos (Fase 6)
+## Milestone 15: Produtos + Estoque Sanitário + Snapshot de Produto em Eventos (Fase 6 & 6.1)
 
-**Objetivo:** Catálogo e controle de lote/estoque de vacinas, vermífugos, medicamentos e suplementos, e snapshot de consumo do produto diretamente nos fatos operacionais reais.
+**Objetivo:** Catálogo e controle de lote/estoque de vacinas, vermífugos, medicamentos e suplementos, e snapshot de consumo do produto diretamente nos fatos operacionais reais com sync-hardening.
 
-**Status:** Planejado
+**Status:** Concluido em 2026-05-29
+
+### Entregaveis
+
+- [x] Modelagem e stores de estoque tenant-scoped (`insumos`, `insumo_apresentacoes`, `insumo_lotes`, `insumo_movimentacoes`).
+- [x] Snapshot imutável de insumo em eventos de consumo sanitário e nutricional.
+- [x] Hardening de sync-batch com paridade Dexie e isolamento por fazenda_id.
+
+---
+
+## Milestone 16: Read Model de Carência Sanitária e Paridade (Fase 7 & 7.1)
+
+**Objetivo:** Cálculo assistivo seguro e visual de carência de descarte para abate/carne e leite a partir de eventos factuais e snapshots estruturados.
+
+**Status:** Concluido em 2026-05-29
+
+### Entregaveis
+
+- [x] Engine de cálculo de carência sem I/O ou `Date.now()` no fuso `'America/Sao_Paulo'`.
+- [x] Hooks reativos Dexie offline a nível de animal, lote e pasto.
+- [x] Badges visuais HSL regulatórios integrados nas fichas de Animal, Lote e Pasto.
+- [x] Suite de testes de paridade matemática e data nominal absoluta com a view SQL `vw_animais_carencia_ativa`.
+
+---
+
+## Milestone 17: Ledger Gerencial Administrativo e Lançamentos Financeiros (Fase 8)
+
+**Objetivo:** Modelagem física e lógica da fundação de finanças gerenciais, separando previstos/realizados/cancelados e agrupando análises por categoria, contraparte e centro de custo.
+
+**Status:** Concluido em 2026-05-29
+
+### Entregaveis
+
+- [x] Modelagem de banco de dados tenant-scoped com RLS aditivo (`finance_categories`, `finance_transactions`).
+- [x] Trigger de auto-seeding de categorias financeiras para novas fazendas e migration idempotente.
+- [x] Camada lógica de validação estrutural rígida em TypeScript (`gerencial.ts`).
+- [x] Calculadores puros de fluxo de caixa e acumulados/agrupadores analíticos para o cockpit.
+- [x] Suite de testes focados de unidade cobrindo todos os invariantes financeiros gerenciais.
 
 ---
 
@@ -453,6 +490,9 @@ Atualizacao visual SLC 2026-05-20:
 | M12 | Central operacional read-only | Concluido |
 | M13 | Pastagens — Historico e Ronda de campo | Concluido |
 | M14 | Cockpits de Lotes e Pastos (Fase 5) | Concluido |
+| M15 | Insumos, estoque, snapshot e sync hardening (Fase 6 & 6.1) | Concluido |
+| M16 | Carência sanitária, paridade TSxSQL e visual badges (Fase 7 & 7.1) | Concluido |
+| M17 | Ledger Gerencial e Lançamentos Financeiros (Fase 8) | Concluido |
 
 ---
 
