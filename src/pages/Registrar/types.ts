@@ -16,8 +16,6 @@ export interface CompraNovoAnimalDraft {
 }
 
 export type FinanceiroNatureza =
-  | "compra"
-  | "venda"
   | "sociedade_entrada"
   | "sociedade_saida"
   | "doacao_entrada"

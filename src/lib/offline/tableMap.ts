@@ -8,7 +8,10 @@ export const TABLE_MAP: Record<string, string> = {
   pastos: "state_pastos",
   agenda_itens: "state_agenda_itens",
   contrapartes: "state_contrapartes",
-  animais_sociedade: "state_animais_sociedade", // FASE 2.2
+  // Sociedade Pecuária (Patch Fase 9)
+  sociedades_pecuarias: "state_sociedades_pecuarias",
+  sociedade_animais: "state_sociedade_animais",
+  animais_sociedade: "state_animais_sociedade", // LEGACY FASE 2.2
   categorias_zootecnicas: "state_categorias_zootecnicas", // FASE 2.3
   protocolos_sanitarios: "state_protocolos_sanitarios",
   protocolos_sanitarios_itens: "state_protocolos_sanitarios_itens",
@@ -32,6 +35,7 @@ export const TABLE_MAP: Record<string, string> = {
   eventos_reproducao: "event_eventos_reproducao",
   eventos_financeiro: "event_eventos_financeiro",
   eventos_ecc: "event_eventos_ecc",
+  eventos_comercial: "event_eventos_comercial",
 };
 
 // Reverse map (localStore -> remoteTable) calculado 1x

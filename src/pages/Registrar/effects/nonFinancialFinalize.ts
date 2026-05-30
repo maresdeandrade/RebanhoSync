@@ -1,4 +1,5 @@
 import type { ReproductionEventData } from "@/components/events/ReproductionForm";
+import { db } from "@/lib/offline/db";
 import { buildEventGesture } from "@/lib/events/buildEventGesture";
 import type { EventDomain, EventInput } from "@/lib/events/types";
 import type {
@@ -39,7 +40,7 @@ type RegistrarNonFinancialDomain =
   | "pesagem"
   | "movimentacao"
   | "nutricao"
-  | "financeiro"
+  | "comercial"
   | "reproducao"
   | "ecc";
 
@@ -69,6 +70,27 @@ type NonFinancialFinanceiroData = {
   contraparteId: string;
 };
 
+type NonFinancialComercialData = {
+  operationType: "compra" | "venda" | "sociedade_entrada" | "sociedade_saida" | "doacao_entrada" | "doacao_saida" | "arrendamento";
+  scope: "animal" | "lote" | "rebanho";
+  quantidadeAnimais: number;
+  pesoVivoTotal: number | null;
+  pesoMedioDerivado: number | null;
+  valorBruto: number | null;
+  frete: number | null;
+  comissao: number | null;
+  descontos: number | null;
+  taxasImpostos: number | null;
+  valorLiquidoDerivado: number | null;
+  contraparteId: string | null;
+  contraparteNome: string | null;
+  animalIds: string[] | null;
+  loteId: string | null;
+  financeTransactionId: string | null;
+  snapshot: unknown | null;
+  calculationStatus: "draft" | "calculated" | "user_override";
+};
+
 export async function resolveRegistrarNonFinancialFinalizePlan(input: {
   tipoManejo: RegistrarNonFinancialDomain;
   fazendaId: string;
@@ -94,6 +116,7 @@ export async function resolveRegistrarNonFinancialFinalizePlan(input: {
   movimentacaoData: NonFinancialMovimentacaoData;
   nutricaoData: NonFinancialNutricaoData;
   financeiroData: NonFinancialFinanceiroData;
+  comercialData?: NonFinancialComercialData;
   sanitaryInventory?: {
     insumoId?: string | null;
     insumoLoteId?: string | null;
@@ -185,6 +208,7 @@ export async function resolveRegistrarNonFinancialFinalizePlan(input: {
       input.tipoManejo === "movimentacao" ||
       input.tipoManejo === "nutricao" ||
       input.tipoManejo === "financeiro" ||
+      input.tipoManejo === "comercial" ||
       input.tipoManejo === "ecc"
     ) {
       eventInput = buildRegistrarEventInput({
@@ -197,6 +221,7 @@ export async function resolveRegistrarNonFinancialFinalizePlan(input: {
         selectedLoteIsSemLote: input.selectedLoteIsSemLote,
         createdAnimalIds: input.createdAnimalIds,
         transitChecklistPayload: input.transitChecklistPayload,
+        comercial: input.comercialData,
         sanitario:
           input.tipoManejo === "sanitario"
             ? {
@@ -384,6 +409,31 @@ export async function resolveRegistrarNonFinancialFinalizePlan(input: {
           protocoloItem: input.protocoloItem,
         })),
       );
+    }
+    
+    if (input.tipoManejo === "comercial" && input.comercialData?.operationType === "venda" && animalId) {
+      const activeLinks = await db.state_sociedade_animais
+        .where("animal_id")
+        .equals(animalId)
+        .toArray();
+      const link = activeLinks.find(l => l.status === "ativo");
+      if (link) {
+        ops.push({
+          table: "sociedade_animais",
+          action: "UPDATE",
+          record: {
+            id: link.id,
+            status: "encerrado",
+            motivo_saida: "venda",
+            payload: {
+              ...(link.payload || {}),
+              encerradoPor: "venda_comercial",
+              eventoComercialId: built.eventId,
+              clientOpId: input.sourceTaskId
+            }
+          }
+        });
+      }
     }
   }
 

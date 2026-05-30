@@ -723,8 +723,8 @@ const Home = () => {
             ["Vacinacao", "/registrar?dominio=sanitario"],
             ["Pesagem", "/registrar?dominio=pesagem"],
             ["Movimentacao", "/registrar?dominio=movimentacao"],
-            ["Compra", "/registrar?dominio=financeiro&natureza=compra"],
-            ["Venda", "/registrar?dominio=financeiro&natureza=venda"],
+            ["Compra", "/registrar?quick=compra"],
+            ["Venda", "/registrar?quick=venda"],
           ].map(([label, href]) => (
             <Button
               key={label}

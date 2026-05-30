@@ -4,6 +4,8 @@ import {
   type Animal,
   type AnimaisSociedade,
   type Contraparte,
+  type SociedadePecuaria,
+  type SociedadeAnimal,
   type Evento,
   type EventoEcc,
   type EventoFinanceiro,
@@ -35,6 +37,7 @@ import {
   type SanitarioCaso,
   type FinanceCategory,
   type FinanceTransaction,
+  type EventoComercial,
 } from "./types";
 
 export class OfflineDB extends Dexie {
@@ -45,7 +48,9 @@ export class OfflineDB extends Dexie {
   state_pasto_ocupacoes!: Table<PastoOcupacao, string>;
   state_agenda_itens!: Table<AgendaItem, string>;
   state_contrapartes!: Table<Contraparte, string>;
-  state_animais_sociedade!: Table<AnimaisSociedade, string>; // FASE 2.2
+  state_animais_sociedade!: Table<AnimaisSociedade, string>; // LEGACY FASE 2.2
+  state_sociedades_pecuarias!: Table<SociedadePecuaria, string>; // PATCH FASE 9
+  state_sociedade_animais!: Table<SociedadeAnimal, string>; // PATCH FASE 9
   state_categorias_zootecnicas!: Table<CategoriaZootecnica, string>; // FASE 2.3
   state_protocolos_sanitarios!: Table<ProtocoloSanitario, string>;
   state_protocolos_sanitarios_itens!: Table<ProtocoloSanitarioItem, string>;
@@ -68,6 +73,7 @@ export class OfflineDB extends Dexie {
   event_eventos_reproducao!: Table<EventoReproducao, string>;
   event_eventos_financeiro!: Table<EventoFinanceiro, string>;
   event_eventos_ecc!: Table<EventoEcc, string>;
+  event_eventos_comercial!: Table<EventoComercial, string>;
 
   // Queue Stores
   queue_gestures!: Table<Gesture, string>;
@@ -589,6 +595,17 @@ export class OfflineDB extends Dexie {
         "id, fazenda_id, tipo, ativo, deleted_at, [fazenda_id+tipo]",
       state_finance_transactions:
         "id, fazenda_id, category_id, status, direction, occurred_at, source_event_id, deleted_at, [fazenda_id+status], [fazenda_id+category_id]",
+    });
+
+    // Version 18: eventos_comercial - compra/venda pecuaria estruturada detail store
+    this.version(18).stores({
+      event_eventos_comercial: "evento_id, fazenda_id, deleted_at",
+    });
+
+    // Version 19: Patch Fase 9 - Sociedades Pecuarias
+    this.version(19).stores({
+      state_sociedades_pecuarias: "id, fazenda_id, contraparte_id, status, deleted_at, [fazenda_id+contraparte_id], [fazenda_id+status]",
+      state_sociedade_animais: "id, fazenda_id, sociedade_id, animal_id, status, deleted_at, [fazenda_id+sociedade_id], [fazenda_id+animal_id], [fazenda_id+status]",
     });
   }
 }

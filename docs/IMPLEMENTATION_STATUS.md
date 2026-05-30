@@ -11,8 +11,8 @@ Este documento registra o estado efetivo do RebanhoSync na fase atual de consoli
 
 - **Estagio do produto:** Beta interno — MVP completo e operacional.
 - **Fase de engenharia/produto:** transicao de MVP funcional para SLC (Simple, Lovable, Complete) em consolidacao.
-- **Consolidação Operacional (Fase 1, 2, 3, 4 e 5 Concluídas)**: Cadeia completa de execução (**Agenda aberta → Registrar manejo → Evento factual → Reconcile/fechamento da agenda**) 100% blindada, com a correção de 6 falhas históricas de testes unitários e criação de testes de integração e fumaça. O ciclo do **ECC Factual Individual** está operacional, e os cockpits de **Lote e Pasto como Cockpit de Manejo** estão 100% concluídos, agregando cobertura de dados, recência de peso (`weightFreshnessDays`), GMD factual, lotação baseada em movimentações físicas e pendências ativas da agenda, juntamente com a timeline factual unificada compacta e expansível.
-- **Core operacional:** sanitário, pesagem, movimentação, nutrição, pastagem/rondas, reprodução, financeiro e agenda estão implementados e usáveis.
+- **Consolidação Operacional (Fases 1 a 8 e Patch 9 Concluídos)**: Cadeia completa de execução blindada. O módulo **Comercial** (Patch Fase 9) integrou a entrada e encerramento de vínculos patrimoniais como a "Sociedade Pecuária", conectando as vendas à respectiva resolução de inventário. O ciclo do **ECC Factual Individual** está operacional, e os cockpits de **Lote e Pasto** agregam métricas completas de cobertura e frescor de peso.
+- **Core operacional:** sanitário, comercial, pesagem, movimentação, nutrição, pastagem/rondas, reprodução, financeiro e agenda estão implementados e usáveis.
 - **Camadas consolidadas:** onboarding guiado, importação CSV, relatórios operacionais, telemetria de piloto com flush remoto, modo de experiência da fazenda, dashboard e ficha reprodutiva dedicada, pós-parto neonatal, cria inicial, transições de rebanho.
 - **Central Operacional passiva:** primeira integração read-only concluída na Home, consumindo `src/lib/insights/` por `src/features/operationalInsights/` sem ações de domínio.
 - **UX operacional mobile-first:** refatoração visual SLC concluída no recorte atual, com Home tática, Registrar orientado por intenção, Animais card-first, Lotes/Pastos/Reprodução/Relatórios mais objetivos, seleção de fazenda contextual, filtros compactos e status técnicos rebaixados.
@@ -79,6 +79,7 @@ Este documento registra o estado efetivo do RebanhoSync na fase atual de consoli
 | `reproducao.registro` | Completo — **TD-020 CLOSED** | `supabase/migrations/00000000000000_rebuild_base_schema_sanitario.sql` |
 | `reproducao.historico` | Completo | `src/pages/ReproductionDashboard.tsx`, `src/pages/AnimalDetalhe.tsx` |
 | `reproducao.episode_linking` | Completo | `src/lib/reproduction/linking.ts`, `src/lib/reproduction/status.ts` |
+| `comercial.registro` | Completo — **Patch Fase 9 CLOSED** inclui Sociedade, Compra e Venda patrimoniais | `src/pages/Registrar/index.tsx`, `src/lib/comercial/` |
 | `financeiro.registro` | Completo | `src/pages/Registrar/index.tsx`, `src/pages/Financeiro.tsx` |
 | `financeiro.historico` | Completo | `src/pages/Financeiro.tsx` |
 | `agenda.gerar` | Completo | `src/pages/Agenda/index.tsx`, `supabase/migrations/00000000000000_rebuild_base_schema_sanitario.sql` |
@@ -88,7 +89,7 @@ Este documento registra o estado efetivo do RebanhoSync na fase atual de consoli
 | `ecc.registro` | Completo — registro visual de ECC individual e lote no Registrar com lógica tudo-ou-nada e validação estrita (passo 0.25, range 1-5, e ignorando campos vazios em lote) | `src/pages/Registrar/components/RegistrarEccSection.tsx`, `src/pages/Registrar/index.tsx`, `src/pages/Registrar/createRegistrarFinalizeController.ts` |
 | `ecc.historico` | Completo — exibição do último ECC factual (escala, data, observação) e histórico cronológico decrescente na ficha do animal | `src/pages/AnimalDetalhe.tsx`, `src/lib/offline/db.ts` |
 
-**Capability Score:** 26/28 = **93%** ✅
+**Capability Score:** 27/29 = **93%** ✅
 
 ---
 

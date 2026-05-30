@@ -203,6 +203,31 @@ export function buildRegistrarEventInput(
     };
   }
 
+  if (params.tipoManejo === "comercial") {
+    return {
+      dominio: "comercial",
+      ...base,
+      operationType: params.comercial!.operationType,
+      scope: params.comercial!.scope,
+      quantidadeAnimais: params.comercial!.quantidadeAnimais,
+      pesoVivoTotal: params.comercial!.pesoVivoTotal ?? null,
+      pesoMedioDerivado: params.comercial!.pesoMedioDerivado ?? null,
+      valorBruto: params.comercial!.valorBruto ?? null,
+      frete: params.comercial!.frete ?? null,
+      comissao: params.comercial!.comissao ?? null,
+      descontos: params.comercial!.descontos ?? null,
+      taxasImpostos: params.comercial!.taxasImpostos ?? null,
+      valorLiquidoDerivado: params.comercial!.valorLiquidoDerivado ?? null,
+      contraparteId: params.comercial!.contraparteId ?? null,
+      contraparteNome: params.comercial!.contraparteNome ?? null,
+      animalIds: params.comercial!.animalIds ?? null,
+      loteId: params.comercial!.loteId ?? null,
+      financeTransactionId: params.comercial!.financeTransactionId ?? null,
+      snapshot: params.comercial!.snapshot,
+      calculationStatus: params.comercial!.calculationStatus,
+    };
+  }
+
   const natureza = params.financeiro?.natureza ?? "compra";
   const selectedLoteIsSemLote = params.selectedLoteIsSemLote === true;
   const createdAnimalIds = params.createdAnimalIds ?? [];

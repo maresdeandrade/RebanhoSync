@@ -473,6 +473,23 @@ Atualizacao visual SLC 2026-05-20:
 
 ---
 
+## Milestone 18: Sociedade Pecuária e Negócios Patrimoniais (Patch Fase 9)
+
+**Objetivo:** Integrar fluxo comercial patrimonial de forma limpa, consolidando as intenções de compra, venda e sociedade em `Registrar -> Negócios Patrimoniais`. Garantir encerramento automático do inventário de sociedades ativas em eventos de venda subsequentes, usando um modelo de dados determinístico sem ambiguidade.
+
+**Status:** Concluido em 2026-05-29
+
+### Entregaveis
+
+- [x] UI de `Registrar -> Negócios Patrimoniais` consolidando Compra, Venda e Sociedade.
+- [x] Tabela canônica de relacionamento `sociedade_animais`.
+- [x] Badge discreto em detalhes do animal indicando participação societária ativa.
+- [x] Finalizador do Registrar (`comercial`/`nonFinancialFinalize`) configurado para buscar e encerrar vínculo ativo caso ocorra a venda do animal englobado.
+- [x] Rastreabilidade transacional rigorosa garantida injetando o `clientOpId` no snapshot histórico `motivo_saida`.
+- [x] Testes E2E e unitários de idempotência do fechamento.
+
+---
+
 ## Historico de Milestones Concluidos
 
 | Milestone | Escopo | Status |
@@ -493,6 +510,7 @@ Atualizacao visual SLC 2026-05-20:
 | M15 | Insumos, estoque, snapshot e sync hardening (Fase 6 & 6.1) | Concluido |
 | M16 | Carência sanitária, paridade TSxSQL e visual badges (Fase 7 & 7.1) | Concluido |
 | M17 | Ledger Gerencial e Lançamentos Financeiros (Fase 8) | Concluido |
+| M18 | Sociedade Pecuária e Negócios Patrimoniais (Patch Fase 9) | Concluido |
 
 ---
 

@@ -10,12 +10,19 @@ import {
   ClipboardCheck,
   Dna,
   DollarSign,
+  FileText,
+  Handshake,
   HeartPulse,
   History,
+  Lock,
   MoreHorizontal,
+  MoreVertical,
+  MoveRight,
   Pencil,
   Scale,
   Skull,
+  Syringe,
+  Trash2,
 } from "lucide-react";
 import {
   CartesianGrid,
@@ -92,6 +99,7 @@ import {
 import { isFemaleReproductionEligible } from "@/lib/animals/presentation";
 import { db } from "@/lib/offline/db";
 import { createGesture } from "@/lib/offline/ops";
+import { cn } from "@/lib/utils";
 import type {
   AgendaItem,
   Animal,
@@ -99,6 +107,7 @@ import type {
   EventoReproducao,
   CausaObitoEnum,
   SanitarioCaso,
+  EventoComercial,
 } from "@/lib/offline/types";
 import { buildEventGesture } from "@/lib/events/buildEventGesture";
 import { buildReproductionDashboard } from "@/lib/reproduction/dashboard";
@@ -144,6 +153,7 @@ import {
 type EnrichedEvent = Evento & {
   details?: EventoReproducao;
   machoIdentificacao?: string;
+  detailsComercial?: EventoComercial;
 };
 
 type ReproDetailsPayload = {
@@ -643,8 +653,8 @@ export function AnimalSanitaryCasesPanel({
 const AnimalDetalhe = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { farmLifecycleConfig, farmMeasurementConfig, activeFarmId } = useAuth();
-  const carenciaModel = useAnimalWithdrawal(id ?? null, activeFarmId ?? null);
+  const { farmLifecycleConfig, farmMeasurementConfig, activeFarmId: fazendaId } = useAuth();
+  const carenciaModel = useAnimalWithdrawal(id ?? null, fazendaId ?? null);
   const [showMoverLote, setShowMoverLote] = useState(false);
   const [showCloseSociedadeDialog, setShowCloseSociedadeDialog] =
     useState(false);
@@ -686,10 +696,25 @@ const AnimalDetalhe = () => {
   const autoAppliedStageRef = useRef<string | null>(null);
 
   const animal = useLiveQuery(() => db.state_animais.get(id!), [id]);
-  const lote = useLiveQuery(
-    () => (animal?.lote_id ? db.state_lotes.get(animal.lote_id) : null),
-    [animal?.lote_id],
+  const animalLote = useLiveQuery(
+    () =>
+      animal?.lote_id && fazendaId
+        ? db.state_lotes.get({ id: animal.lote_id, fazenda_id: fazendaId })
+        : undefined,
+    [animal?.lote_id, fazendaId],
   );
+
+  const activeSocietyLink = useLiveQuery(
+    async () => {
+      if (!animal?.id || !fazendaId) return null;
+      const links = await db.state_sociedade_animais.where({ fazenda_id: fazendaId, animal_id: animal.id, status: "ativo" }).toArray();
+      if (links.length === 0) return null;
+      const society = await db.state_sociedades_pecuarias.get({ id: links[0].sociedade_id, fazenda_id: fazendaId });
+      return society ? { ...society, ...links[0] } : null;
+    },
+    [animal?.id, fazendaId]
+  );
+
   const mae = useLiveQuery(
     () => (animal?.mae_id ? db.state_animais.get(animal.mae_id) : null),
     [animal?.mae_id],
@@ -729,10 +754,21 @@ const AnimalDetalhe = () => {
           }
           return { ...evt, details, machoIdentificacao } as EnrichedEvent;
         }
+        if (evt.dominio === "comercial") {
+          const detailsComercial = await db.event_eventos_comercial.get(evt.id);
+          return { ...evt, detailsComercial } as EnrichedEvent;
+        }
         return evt as EnrichedEvent;
       }),
     );
   }, [id]);
+
+  const animalComerciais = useMemo(() => {
+    if (!eventos) return [];
+    return eventos
+      .filter((evt) => evt.dominio === "comercial" && evt.detailsComercial && !evt.deleted_at)
+      .map((evt) => evt.detailsComercial!);
+  }, [eventos]);
 
   const agenda = useLiveQuery(async () => {
     if (!id) return [];
@@ -1072,7 +1108,7 @@ const AnimalDetalhe = () => {
 
     const dashboard = buildReproductionDashboard({
       animals: [animal],
-      lotes: lote ? [lote] : [],
+      lotes: animalLote ? [animalLote] : [],
       events: (eventos ?? [])
         .filter((evt) => evt.dominio === "reproducao" && !evt.deleted_at)
         .map((evt) => ({
@@ -1082,7 +1118,7 @@ const AnimalDetalhe = () => {
     });
 
     return dashboard.animals[0] ?? null;
-  }, [animal, isReproductionEligible, lote, eventos]);
+  }, [animal, isReproductionEligible, animalLote, eventos]);
   const resumoPeso = useMemo(() => {
     if (!historicoPeso || historicoPeso.length === 0) return null;
 
@@ -1553,7 +1589,7 @@ const AnimalDetalhe = () => {
                 <p className="text-sm text-muted-foreground">
                   {[
                     animal.raca ? getAnimalBreedLabel(animal.raca) : null,
-                    lote ? `Lote: ${lote.nome}` : "Sem lote definido",
+                    animalLote ? `Lote: ${animalLote.nome}` : "Sem lote definido",
                     animal.nome ? `Nome: ${animal.nome}` : null,
                   ]
                     .filter(Boolean)
@@ -1605,7 +1641,7 @@ const AnimalDetalhe = () => {
                 <DropdownMenuItem
                   onClick={() => {
                     const params = new URLSearchParams();
-                    params.set("dominio", "financeiro");
+                    params.set("quick", "venda");
                     params.set("animalId", animal.id);
                     if (animal.lote_id) {
                       params.set("loteId", animal.lote_id);
@@ -1616,7 +1652,7 @@ const AnimalDetalhe = () => {
                     animal.status !== "ativo" || hasMovementBlockedSanitaryAlert
                   }
                 >
-                  <DollarSign className="mr-2 h-4 w-4" />
+                  <Handshake className="mr-2 h-4 w-4" />
                   Registrar venda
                 </DropdownMenuItem>
                 <DropdownMenuItem
@@ -1711,6 +1747,12 @@ const AnimalDetalhe = () => {
                 className="border-sky-200 bg-sky-50 text-sky-800 dark:border-sky-800 dark:bg-sky-950/40 dark:text-sky-200"
               >
                 {getAnimalProductiveDestinationLabel(maleDestination)}
+              </Badge>
+            )}
+            {activeSocietyLink && (
+              <Badge variant="outline" className="border-indigo-200 bg-indigo-50 text-indigo-800 dark:border-indigo-800 dark:bg-indigo-950/40 dark:text-indigo-200">
+                <Handshake className="h-3 w-3 mr-1" />
+                Sociedade {activeSocietyLink.percentual_fazenda}/{activeSocietyLink.percentual_parceiro}
               </Badge>
             )}
             {animal.sexo === "M" && maleReproductiveStatus && (
@@ -2717,7 +2759,7 @@ const AnimalDetalhe = () => {
       <WithdrawalBadgePanel readModel={carenciaModel} className="mb-6" />
 
       <Tabs defaultValue="timeline" className="w-full">
-        <TabsList className="grid w-full max-w-[540px] grid-cols-3 bg-muted/40 p-1">
+        <TabsList className="grid w-full max-w-[640px] grid-cols-4 bg-muted/40 p-1">
           <TabsTrigger value="timeline" className="gap-2 rounded-md">
             <History className="h-4 w-4" /> Timeline
           </TabsTrigger>
@@ -2726,6 +2768,9 @@ const AnimalDetalhe = () => {
           </TabsTrigger>
           <TabsTrigger value="agenda" className="gap-2 rounded-md">
             <Calendar className="h-4 w-4" /> Agenda
+          </TabsTrigger>
+          <TabsTrigger value="comercial" className="gap-2 rounded-md">
+            <DollarSign className="h-4 w-4" /> Comercial
           </TabsTrigger>
         </TabsList>
 
@@ -2747,7 +2792,9 @@ const AnimalDetalhe = () => {
                         ? `Reproducao: ${evt.details.tipo}`
                         : evt.dominio === "alerta_sanitario"
                           ? "Alerta sanitario"
-                          : evt.dominio}
+                          : evt.dominio === "comercial" && evt.detailsComercial
+                            ? `Operação Comercial: ${evt.detailsComercial.operation_type === "compra" ? "Compra" : "Venda"}`
+                            : evt.dominio}
                     </h4>
                     <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
                       {formatDate(evt.occurred_at)}
@@ -2756,7 +2803,9 @@ const AnimalDetalhe = () => {
                   <p className="text-xs text-muted-foreground">
                     {evt.dominio === "alerta_sanitario"
                       ? describeSanitaryAlertEvent(evt.payload)
-                      : evt.observacoes || "Manejo realizado no campo."}
+                      : evt.dominio === "comercial" && evt.detailsComercial
+                        ? `Operação comercial registrada: ${evt.detailsComercial.operation_type === "compra" ? "Compra" : "Venda"}. Contraparte: ${evt.detailsComercial.contraparte_nome || "Não informada"}.`
+                        : evt.observacoes || "Manejo realizado no campo."}
                   </p>
                   {evt.dominio === "alerta_sanitario" && (
                     <div className="mt-3 rounded-xl border border-border/70 bg-muted/20 p-3 text-xs text-muted-foreground">
@@ -2788,6 +2837,19 @@ const AnimalDetalhe = () => {
                           </>
                         );
                       })()}
+                    </div>
+                  )}
+                  {evt.dominio === "comercial" && evt.detailsComercial && (
+                    <div className="mt-3 rounded-xl border border-border/70 bg-muted/20 p-3 text-xs text-muted-foreground space-y-1">
+                      <div className="grid grid-cols-2 gap-2">
+                        <p>Quantidade: {evt.detailsComercial.quantidade_animais} cab.</p>
+                        <p>Peso Vivo Total: {evt.detailsComercial.peso_vivo_total ? `${evt.detailsComercial.peso_vivo_total} kg` : "—"}</p>
+                        <p>Valor Bruto: {evt.detailsComercial.valor_bruto ? `R$ ${evt.detailsComercial.valor_bruto.toFixed(2)}` : "—"}</p>
+                        <p>Valor Líquido: {evt.detailsComercial.valor_liquido_derivado ? `R$ ${evt.detailsComercial.valor_liquido_derivado.toFixed(2)}` : "—"}</p>
+                      </div>
+                      {evt.detailsComercial.observacoes && (
+                        <p className="border-t border-border/20 pt-1 italic">Obs: "{evt.detailsComercial.observacoes}"</p>
+                      )}
                     </div>
                   )}
                   {evt.dominio === "reproducao" && evt.details && (
@@ -2917,6 +2979,84 @@ const AnimalDetalhe = () => {
               </p>
             )}
           </div>
+        </TabsContent>
+
+        <TabsContent value="comercial" className="mt-6">
+          {animalComerciais.length > 0 ? (
+            <div className="grid gap-3 sm:grid-cols-2">
+              {animalComerciais.map((com) => {
+                const isCompra = com.operation_type === "compra";
+                return (
+                  <div key={com.evento_id} className="rounded-xl border p-4 bg-muted/10 space-y-3">
+                    <div className="flex items-center justify-between border-b pb-2 border-border/40">
+                      <span className={cn(
+                        "text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border",
+                        isCompra ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-blue-200 bg-blue-50 text-blue-800"
+                      )}>
+                        {com.operation_type}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {com.occurred_at ? new Date(com.occurred_at).toLocaleDateString("pt-BR") : "—"}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div>
+                        <span className="text-muted-foreground font-medium">Quantidade:</span>
+                        <p className="font-semibold mt-0.5">{com.quantidade_animais} cab.</p>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground font-medium">Peso Vivo Total:</span>
+                        <p className="font-semibold mt-0.5">{com.peso_vivo_total ? `${com.peso_vivo_total} kg` : "—"}</p>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground font-medium">Peso Médio:</span>
+                        <p className="font-semibold mt-0.5">
+                          {com.peso_medio_derivado ? `${com.peso_medio_derivado.toFixed(1)} kg` : "—"}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground font-medium">Valor Bruto:</span>
+                        <p className="font-semibold mt-0.5">{com.valor_bruto ? `R$ ${com.valor_bruto.toFixed(2)}` : "—"}</p>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground font-medium">Valor Líquido Estimado:</span>
+                        <p className="font-semibold mt-0.5">{com.valor_liquido_derivado ? `R$ ${com.valor_liquido_derivado.toFixed(2)}` : "—"}</p>
+                      </div>
+                      <div className="col-span-2 border-t pt-2 border-border/20">
+                        <span className="text-muted-foreground font-medium">Contraparte:</span>
+                        <p className="font-semibold mt-0.5">{com.contraparte_nome || "—"}</p>
+                      </div>
+                      {com.finance_transaction_id && (
+                        <div className="col-span-2">
+                          <span className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold">• Vínculo financeiro ativo</span>
+                        </div>
+                      )}
+                    </div>
+                    {com.limitations && com.limitations.length > 0 && (
+                      <div className="bg-amber-50/60 dark:bg-amber-950/10 border border-amber-100 rounded-lg p-2 text-[10px] text-amber-800 space-y-0.5">
+                        <span className="font-semibold">Notas de conformidade:</span>
+                        {com.limitations.map((lim, idx) => (
+                          <p key={idx}>- {lim}</p>
+                        ))}
+                      </div>
+                    )}
+                    {com.observacoes && (
+                      <p className="text-[10px] text-muted-foreground border-t pt-2 italic">
+                        {com.observacoes}
+                      </p>
+                    )}
+                    <div className="text-[9px] text-muted-foreground/60 text-right pt-1 uppercase">
+                      operação registrada conforme dados informados. não representa recomendação comercial ou substitui validação operacional/financeira.
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="py-8 text-center text-muted-foreground">
+              Sem operações comerciais registradas para este animal.
+            </p>
+          )}
         </TabsContent>
       </Tabs>
 

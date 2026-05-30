@@ -25,6 +25,8 @@ const CHECK_CONSTRAINT_REASON: Record<string, string> = {
   ck_insumo_movimentacoes_quantidade_pos: 'VALIDATION_INSUMO_MOVIMENTACAO_QUANTIDADE',
   ck_insumo_movimentacoes_consumo_source: 'VALIDATION_INSUMO_CONSUMO_SOURCE',
   ck_insumo_movimentacoes_append_only: 'VALIDATION_INSUMO_MOVIMENTACAO_APPEND_ONLY',
+  ck_eventos_comercial_quantidade_animais: 'VALIDATION_COMERCIAL_QUANTIDADE_ANIMAIS',
+  ck_eventos_comercial_valor_liquido_derivado: 'VALIDATION_COMERCIAL_VALOR_LIQUIDO_DERIVADO',
 };
 
 const FK_CONSTRAINT_REASON: Record<string, string> = {
@@ -44,6 +46,7 @@ const TABLE_PRIMARY_KEY: Record<string, 'id' | 'evento_id' | 'user_id' | 'fazend
   eventos_movimentacao: 'evento_id',
   eventos_reproducao: 'evento_id',
   eventos_financeiro: 'evento_id',
+  eventos_comercial: 'evento_id',
   user_profiles: 'user_id',
   user_settings: 'user_id',
   fazenda_sanidade_config: 'fazenda_id',

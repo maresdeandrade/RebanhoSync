@@ -23,6 +23,7 @@ import {
   EyeOff,
   Clock,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 import { EmptyState } from "@/components/EmptyState";
 import { AdicionarAnimaisLote } from "@/components/manejo/AdicionarAnimaisLote";
@@ -208,6 +209,7 @@ export default function LoteDetalhe() {
   const pesagens = useLiveQuery(() => db.event_eventos_pesagem.toArray()) ?? EMPTY_ARRAY;
   const eccs = useLiveQuery(() => db.event_eventos_ecc.toArray()) ?? EMPTY_ARRAY;
   const movimentacoes = useLiveQuery(() => db.event_eventos_movimentacao.toArray()) ?? EMPTY_ARRAY;
+  const comerciais = useLiveQuery(() => db.event_eventos_comercial.toArray()) ?? EMPTY_ARRAY;
   const agendaItens = useLiveQuery(() => db.state_agenda_itens.toArray()) ?? EMPTY_ARRAY;
   const pastoOcupacoes = useLiveQuery(() => db.state_pasto_ocupacoes.toArray()) ?? EMPTY_ARRAY;
 
@@ -277,6 +279,11 @@ export default function LoteDetalhe() {
           desc = "Manejo reprodutivo realizado";
           break;
         }
+        case "comercial": {
+          const com = comerciais.find(x => x.evento_id === e.id);
+          desc = com ? `Operação comercial registrada: ${com.operation_type === "compra" ? "Compra" : "Venda"} de ${com.quantidade_animais} cab.` : "Operação comercial registrada";
+          break;
+        }
         default:
           desc = `${e.dominio.charAt(0).toUpperCase() + e.dominio.slice(1)} registrado`;
       }
@@ -291,7 +298,7 @@ export default function LoteDetalhe() {
         detalhe: detail,
       };
     });
-  }, [id, events, pesagens, eccs, animais]);
+  }, [id, events, pesagens, eccs, comerciais, animais]);
 
   // Tempo de permanência histórico para a tabela antiga
   const loteAnimalPeriods = useMemo(() => {
@@ -313,6 +320,11 @@ export default function LoteDetalhe() {
       };
     });
   }, [id, movimentacoes, events, animais]);
+
+  const loteComerciais = useMemo(() => {
+    if (!id || !comerciais) return [];
+    return comerciais.filter((item) => item.lote_id === id && !item.deleted_at);
+  }, [id, comerciais]);
 
   const animalEntradaMap = useMemo(() => {
     const map = new Map<string, string>();
@@ -682,6 +694,78 @@ export default function LoteDetalhe() {
           title="Histórico de Movimentação do Lote"
           description="Trajetória dos animais neste lote entre pastos"
         />
+      )}
+
+      {/* Histórico de Operações Comerciais */}
+      {loteComerciais.length > 0 && (
+        <Card className="shadow-none">
+          <CardContent className="p-4 space-y-4">
+            <h3 className="text-lg font-bold text-foreground">Operações Comerciais do Lote</h3>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {loteComerciais.map((com) => {
+                const isCompra = com.operation_type === "compra";
+                return (
+                  <div key={com.evento_id} className="rounded-xl border p-4 bg-muted/10 space-y-3">
+                    <div className="flex items-center justify-between border-b pb-2 border-border/40">
+                      <span className={cn(
+                        "text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border",
+                        isCompra ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-blue-200 bg-blue-50 text-blue-800"
+                      )}>
+                        {com.operation_type}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {com.occurred_at ? new Date(com.occurred_at).toLocaleDateString("pt-BR") : "—"}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div>
+                        <span className="text-muted-foreground font-medium">Quantidade:</span>
+                        <p className="font-semibold mt-0.5">{com.quantidade_animais} cab.</p>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground font-medium">Peso Vivo Total:</span>
+                        <p className="font-semibold mt-0.5">{com.peso_vivo_total ? `${com.peso_vivo_total} kg` : "—"}</p>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground font-medium">Valor Bruto:</span>
+                        <p className="font-semibold mt-0.5">{com.valor_bruto ? `R$ ${com.valor_bruto.toFixed(2)}` : "—"}</p>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground font-medium">Valor Líquido:</span>
+                        <p className="font-semibold mt-0.5">{com.valor_liquido_derivado ? `R$ ${com.valor_liquido_derivado.toFixed(2)}` : "—"}</p>
+                      </div>
+                      <div className="col-span-2 border-t pt-2 border-border/20">
+                        <span className="text-muted-foreground font-medium">Contraparte:</span>
+                        <p className="font-semibold mt-0.5">{com.contraparte_nome || "—"}</p>
+                      </div>
+                      {com.finance_transaction_id && (
+                        <div className="col-span-2">
+                          <span className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold">• Vínculo financeiro ativo</span>
+                        </div>
+                      )}
+                    </div>
+                    {com.limitations && com.limitations.length > 0 && (
+                      <div className="bg-amber-50/60 dark:bg-amber-950/10 border border-amber-100 rounded-lg p-2 text-[10px] text-amber-800 space-y-0.5">
+                        <span className="font-semibold">Notas de conformidade:</span>
+                        {com.limitations.map((lim, idx) => (
+                          <p key={idx}>- {lim}</p>
+                        ))}
+                      </div>
+                    )}
+                    {com.observacoes && (
+                      <p className="text-[10px] text-muted-foreground border-t pt-2 italic">
+                        {com.observacoes}
+                      </p>
+                    )}
+                    <div className="text-[9px] text-muted-foreground/60 text-right pt-1 uppercase">
+                      Não representa recomendação comercial ou substitui validação operacional/financeira.
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* Timeline Factual Unificada */}

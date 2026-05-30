@@ -4,6 +4,12 @@ import type {
   ReproductionTechniqueEnum,
 } from "@/lib/animals/catalogs";
 import type { AnimalSpeciesEnum } from "@/lib/animals/species";
+import type {
+  CommercialOperationType,
+  CommercialOperationScope,
+  CommercialOperationCalculationStatus,
+  CommercialOperationIssue,
+} from "@/lib/comercial/commercialOperation";
 
 // =========================================================
 // ENUMS baseados no schema do banco de dados
@@ -469,7 +475,67 @@ export interface PastoOcupacao {
   deleted_at: string | null;
 }
 
-// FASE 2.2: Sociedade de Animais
+// FASE 9 (Patch): Sociedade Pecuária
+export type SociedadePecuariaStatus = "ativa" | "encerrada" | "suspensa";
+export type SociedadePecuariaRegra = "fazenda" | "parceiro" | "proporcional" | "manual";
+
+export interface SociedadePecuaria {
+  id: string;
+  fazenda_id: string;
+  contraparte_id: string;
+  nome: string;
+  status: SociedadePecuariaStatus;
+  data_inicio: string; // 'YYYY-MM-DD'
+  data_fim: string | null; // 'YYYY-MM-DD'
+  percentual_fazenda: number;
+  percentual_parceiro: number;
+  regra_custos: SociedadePecuariaRegra;
+  regra_perdas: SociedadePecuariaRegra;
+  regra_receita: SociedadePecuariaRegra;
+  observacoes: string | null;
+  payload: Record<string, unknown>;
+
+  // Sync metadata
+  client_id: string;
+  client_op_id: string;
+  client_tx_id: string | null;
+  client_recorded_at: string;
+  server_received_at?: string;
+
+  // Campos de sistema
+  created_at?: string;
+  updated_at?: string;
+  deleted_at: string | null;
+}
+
+export type SociedadeAnimalStatus = "ativo" | "encerrado";
+
+export interface SociedadeAnimal {
+  id: string;
+  fazenda_id: string;
+  sociedade_id: string;
+  animal_id: string;
+  data_entrada: string; // 'YYYY-MM-DD'
+  data_saida: string | null; // 'YYYY-MM-DD'
+  status: SociedadeAnimalStatus;
+  motivo_saida: string | null;
+  observacoes: string | null;
+  payload: Record<string, unknown>;
+
+  // Sync metadata
+  client_id: string;
+  client_op_id: string;
+  client_tx_id: string | null;
+  client_recorded_at: string;
+  server_received_at?: string;
+
+  // Campos de sistema
+  created_at?: string;
+  updated_at?: string;
+  deleted_at: string | null;
+}
+
+// LEGACY FASE 2.2: Sociedade de Animais (Deprecated in Patch Fase 9)
 export interface AnimaisSociedade {
   id: string;
   fazenda_id: string;
@@ -1244,6 +1310,43 @@ export interface EventoFinanceiro {
   deleted_at: string | null;
 }
 
+export interface EventoComercial {
+  evento_id: string;
+  fazenda_id: string;
+  operation_type: CommercialOperationType;
+  scope: CommercialOperationScope;
+  occurred_at: string;
+  quantidade_animais: number;
+  peso_vivo_total: number | null;
+  peso_medio_derivado: number | null;
+  valor_bruto: number | null;
+  frete: number | null;
+  comissao: number | null;
+  descontos: number | null;
+  taxas_impostos: number | null;
+  valor_liquido_derivado: number | null;
+  contraparte_id: string | null;
+  contraparte_nome: string | null;
+  animal_ids: string[] | null;
+  lote_id: string | null;
+  finance_transaction_id: string | null;
+  snapshot: Record<string, unknown>;
+  calculation_status: CommercialOperationCalculationStatus;
+  issues: CommercialOperationIssue[];
+  limitations: string[];
+  observacoes: string | null;
+
+  // Campos de sistema
+  client_id: string;
+  client_op_id: string;
+  client_tx_id: string | null;
+  client_recorded_at: string;
+  server_received_at?: string;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+}
+
 
 
 export interface Gesture {
@@ -1337,6 +1440,7 @@ export interface EventoWithDetails extends Evento {
   details_pasto_avaliacao?: EventoPastoAvaliacao;
   details_reproducao?: EventoReproducao;
   details_financeiro?: EventoFinanceiro;
+  details_comercial?: EventoComercial;
 }
 
 // =========================================================

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, expect, it } from "vitest";
 import type { ProtocoloSanitarioItem } from "@/lib/offline/types";
 import {
@@ -63,26 +64,26 @@ describe("buildRegistrarEventInput", () => {
     });
   });
 
-  it("monta evento financeiro de venda com flags de atualização do animal", () => {
+  it("monta evento comercial de venda", () => {
     const input = buildRegistrarEventInput({
       ...base,
-      tipoManejo: "financeiro",
-      financeiro: {
-        natureza: "venda",
-        tipo: "venda",
-        valorTotal: 5000,
+      tipoManejo: "comercial",
+      comercial: {
+        operationType: "venda",
+        scope: "animal",
+        quantidadeAnimais: 1,
+        valorBruto: "5000",
         contraparteId: "cp-1",
-      },
+        snapshot: { payload: {} }
+      } as any,
     });
 
     expect(input).toMatchObject({
-      dominio: "financeiro",
-      tipo: "venda",
-      valorTotal: 5000,
+      dominio: "comercial",
+      operationType: "venda",
+      scope: "animal",
+      valorBruto: "5000",
       contraparteId: "cp-1",
-      applyAnimalStateUpdate: true,
-      clearAnimalLoteOnSale: true,
-      payload: { kind: "venda_animal", origem: "registrar_manejo" },
     });
   });
 
@@ -90,24 +91,24 @@ describe("buildRegistrarEventInput", () => {
     const input = buildRegistrarEventInput({
       ...base,
       animalId: null,
-      tipoManejo: "financeiro",
+      tipoManejo: "comercial",
       selectedLoteIsSemLote: true,
       createdAnimalIds: ["novo-1"],
-      financeiro: {
-        natureza: "compra",
-        tipo: "compra",
-        valorTotal: 1000,
+      comercial: {
+        operationType: "compra",
+        scope: "lote",
+        quantidadeAnimais: 1,
+        valorBruto: "1000",
         contraparteId: null,
-      },
+        snapshot: { payload: {} },
+        animalIds: ["novo-1"],
+      } as any,
     });
 
     expect(input).toMatchObject({
-      dominio: "financeiro",
-      animalId: "novo-1",
-      payload: {
-        kind: "compra_lote_com_animais",
-        origem: "registrar_manejo",
-      },
+      dominio: "comercial",
+      animalIds: ["novo-1"],
+      operationType: "compra",
     });
   });
 

@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import type { ReproTipoEnum, Animal, SanitarioCaso, Insumo, InsumoLote } from "@/lib/offline/types";
 import { RegistrarInventorySection } from "@/pages/Registrar/components/RegistrarInventorySection";
+import { RegistrarComercialSection, type ComercialFormData } from "@/pages/Registrar/components/RegistrarComercialSection";
+import { calculateCommercialOperation } from "@/lib/comercial/commercialOperation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/EmptyState";
@@ -127,6 +129,23 @@ const Registrar = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [isFinalizing, setIsFinalizing] = useState(false);
+  const [comercialData, setComercialData] = useState<ComercialFormData>({
+    operationType: "compra",
+    scope: "lote",
+    occurredAt: new Date().toISOString().split("T")[0],
+    quantidadeAnimais: "",
+    pesoVivoTotal: "",
+    valorBruto: "",
+    frete: "",
+    comissao: "",
+    descontos: "",
+    taxasImpostos: "",
+    contraparteId: "none",
+    financeTransactionId: "none",
+    observacoes: "",
+    pesosPorAnimal: {},
+    valoresPorAnimal: {},
+  });
   const [contextAnimalId, setContextAnimalId] = useState("");
   const [contextLoteId, setContextLoteId] = useState("");
   const [contextPastoId, setContextPastoId] = useState("");
@@ -468,6 +487,127 @@ const Registrar = () => {
     [activeFarmId],
   );
 
+  // ---------------------------------------------------------------------------
+  // Busca o último peso de cada animal selecionado (usado na seção comercial)
+  // ---------------------------------------------------------------------------
+  const animaisComPesoComercial = useLiveQuery(async () => {
+    if (tipoManejo !== "comercial" || selectedAnimais.length === 0) {
+      return [] as Array<{ id: string; identificacao: string; nome: string | null; lastWeightKg: number | null }>;
+    }
+
+    // Busca todos os eventos de pesagem dos animais selecionados
+    const eventos = await db.event_eventos
+      .where("animal_id")
+      .anyOf(selectedAnimais)
+      .toArray();
+
+    const pesagemEventos = eventos.filter(
+      (e) => !e.deleted_at && e.dominio === "pesagem",
+    );
+
+    if (pesagemEventos.length === 0) {
+      // Retorna animais sem peso
+      const animals = await db.state_animais
+        .where("id")
+        .anyOf(selectedAnimais)
+        .toArray();
+      return animals.map((a) => ({
+        id: a.id,
+        identificacao: a.identificacao,
+        nome: a.nome,
+        lastWeightKg: null,
+      }));
+    }
+
+    const eventoIds = pesagemEventos.map((e) => e.id);
+    const pesagens = await db.event_eventos_pesagem
+      .where("evento_id")
+      .anyOf(eventoIds)
+      .toArray();
+
+    const pesoMap = new Map(pesagens.map((p) => [p.evento_id, p.peso_kg]));
+
+    // Para cada animal, encontra o evento de pesagem mais recente
+    const latestPesoByAnimal: Record<string, number> = {};
+    const latestEventByAnimal: Record<string, typeof pesagemEventos[0]> = {};
+
+    for (const evento of pesagemEventos) {
+      const pesoKg = pesoMap.get(evento.id);
+      if (pesoKg === undefined || pesoKg === null) continue;
+
+      const animalId = evento.animal_id!;
+      const current = latestEventByAnimal[animalId];
+      if (
+        !current ||
+        new Date(evento.occurred_at) > new Date(current.occurred_at)
+      ) {
+        latestEventByAnimal[animalId] = evento;
+        latestPesoByAnimal[animalId] = pesoKg;
+      }
+    }
+
+    const animals = await db.state_animais
+      .where("id")
+      .anyOf(selectedAnimais)
+      .toArray();
+
+    return animals.map((a) => ({
+      id: a.id,
+      identificacao: a.identificacao,
+      nome: a.nome,
+      lastWeightKg: latestPesoByAnimal[a.id] ?? null,
+    }));
+  }, [tipoManejo, selectedAnimais]);
+
+  const financeTransactions = useLiveQuery(async () => {
+    if (!activeFarmId) return [];
+    return db.state_finance_transactions
+      .where("fazenda_id")
+      .equals(activeFarmId)
+      .toArray();
+  }, [activeFarmId]);
+
+  const comercialCalculationSummary = useMemo(() => {
+    if (tipoManejo !== "comercial") return null;
+
+    const qty = selectedAnimais.length > 0 && comercialData.scope === "animal"
+      ? selectedAnimais.length
+      : (parseInt(comercialData.quantidadeAnimais, 10) || 0);
+
+    const peso = parseFloat(comercialData.pesoVivoTotal) || 0;
+    const bruto = parseFloat(comercialData.valorBruto) || 0;
+    const frete = parseFloat(comercialData.frete) || 0;
+    const comissao = parseFloat(comercialData.comissao) || 0;
+    const descontos = parseFloat(comercialData.descontos) || 0;
+    const taxas = parseFloat(comercialData.taxasImpostos) || 0;
+
+    const contraparte = contrapartes?.find(c => c.id === comercialData.contraparteId);
+
+    return calculateCommercialOperation({
+      operationType: comercialData.operationType,
+      scope: comercialData.scope,
+      occurredAt: comercialData.occurredAt,
+      quantidadeAnimais: qty > 0 ? qty : undefined,
+      pesoVivoTotal: comercialData.pesoVivoTotal !== "" ? peso : undefined,
+      valorBruto: comercialData.valorBruto !== "" ? bruto : undefined,
+      frete: comercialData.frete !== "" ? frete : undefined,
+      comissao: comercialData.comissao !== "" ? comissao : undefined,
+      descontos: comercialData.descontos !== "" ? descontos : undefined,
+      taxasImpostos: comercialData.taxasImpostos !== "" ? taxas : undefined,
+      contraparteId: comercialData.contraparteId !== "none" ? comercialData.contraparteId : undefined,
+      contraparteNome: contraparte?.nome,
+      financeTransactionId: comercialData.financeTransactionId !== "none" ? comercialData.financeTransactionId : undefined,
+      animalIds: comercialData.scope === "animal" ? selectedAnimais : undefined,
+    });
+  }, [tipoManejo, comercialData, selectedAnimais, contrapartes]);
+
+  const comercialBlockingIssues = useMemo(() => {
+    if (!comercialCalculationSummary) return [];
+    return comercialCalculationSummary.issues
+      .filter((i) => i.severity === "blocking")
+      .map((i) => i.message);
+  }, [comercialCalculationSummary]);
+
   const financeiroPackage = useRegistrarFinanceiroPackage({
     role,
     activeFarmId: activeFarmId ?? null,
@@ -605,7 +745,11 @@ const Registrar = () => {
     transitChecklist.gtaNumber || "Checklist concluido";
   const confirmacaoManejoLabel =
     quickActionConfig?.label ??
-    (tipoManejo === "ecc" ? "Escore de Condição Corporal (ECC)" : tipoManejo ?? "-");
+    (tipoManejo === "ecc"
+      ? "Escore de Condição Corporal (ECC)"
+      : tipoManejo === "comercial"
+      ? "Operação Comercial"
+      : tipoManejo ?? "-");
   const showConfirmacaoAlvoLote = selectedAnimais.length === 0;
   const showConfirmacaoDestinoMovimentacao = tipoManejo === "movimentacao";
   const confirmacaoDestinoMovimentacaoLabel =
@@ -754,6 +898,9 @@ const Registrar = () => {
   const actionStepIssues = useMemo(
     () =>
       composeRegistrarActionStepIssues({
+        // comercialBlockingIssues are intentionally excluded here:
+        // they should NOT block step 2→3 navigation (the user needs to reach
+        // step 3 to fill in the form). They are checked in handleFinalize instead.
         baseIssues: baseActionStepIssues,
         protocolEligibilityIssues,
         sanitaryMovementBlockIssues,
@@ -831,6 +978,13 @@ const Registrar = () => {
     if (parsedQuery.quickAction) {
       applyQuickAction(parsedQuery.quickAction);
     }
+    if (parsedQuery.quickAction === "compra" || parsedQuery.quickAction === "venda") {
+      setComercialData((prev) => ({
+        ...prev,
+        operationType: parsedQuery.quickAction as "compra" | "venda",
+        scope: parsedQuery.animalId ? "animal" : "lote",
+      }));
+    }
     if (
       parsedQuery.domain &&
       [
@@ -839,6 +993,7 @@ const Registrar = () => {
         "movimentacao",
         "nutricao",
         "financeiro",
+        "comercial",
       ].includes(parsedQuery.domain) &&
       parsedQuery.domain !== tipoManejo
     ) {
@@ -974,6 +1129,12 @@ const Registrar = () => {
   const handleFinalize = useCallback(async () => {
     if (isFinalizing) return;
 
+    // Guard: block finalize if there are unresolved commercial blocking issues
+    if (tipoManejo === "comercial" && comercialBlockingIssues.length > 0) {
+      showError(comercialBlockingIssues[0]);
+      return;
+    }
+
     setIsFinalizing(true);
     try {
       await finalizeController({
@@ -1039,6 +1200,27 @@ const Registrar = () => {
           nutricaoData,
           reproducaoData,
         },
+        comercial: tipoManejo === "comercial" ? {
+          operationType: comercialData.operationType,
+          scope: comercialData.scope,
+          quantidadeAnimais: comercialData.scope === "animal" && selectedAnimais.length > 0
+            ? selectedAnimais.length
+            : (parseInt(comercialData.quantidadeAnimais, 10) || 0),
+          pesoVivoTotal: comercialData.pesoVivoTotal !== "" ? parseFloat(comercialData.pesoVivoTotal) : null,
+          valorBruto: comercialData.valorBruto !== "" ? parseFloat(comercialData.valorBruto) : null,
+          frete: comercialData.frete !== "" ? parseFloat(comercialData.frete) : null,
+          comissao: comercialData.comissao !== "" ? parseFloat(comercialData.comissao) : null,
+          descontos: comercialData.descontos !== "" ? parseFloat(comercialData.descontos) : null,
+          taxasImpostos: comercialData.taxasImpostos !== "" ? parseFloat(comercialData.taxasImpostos) : null,
+          contraparteId: comercialData.contraparteId !== "none" ? comercialData.contraparteId : null,
+          contraparteNome: comercialData.contraparteId !== "none"
+            ? contrapartes?.find(c => c.id === comercialData.contraparteId)?.nome || null
+            : null,
+          animalIds: comercialData.scope === "animal" ? selectedAnimais : null,
+          loteId: comercialData.scope === "lote" && selectedLoteIdNormalized !== null ? selectedLoteIdNormalized : null,
+          financeTransactionId: comercialData.financeTransactionId !== "none" ? comercialData.financeTransactionId : null,
+          observacoes: comercialData.observacoes || null,
+        } : undefined,
         inventory: {
           sanitary: tipoManejo === "sanitario" ? {
             insumoId: selectedInsumoId || null,
@@ -1120,6 +1302,9 @@ const Registrar = () => {
     doseSanitaria,
     insumoRef,
     loteRef,
+    comercialData,
+    comercialBlockingIssues,
+    contrapartes,
   ]);
 
   if (!activeFarmId) {
@@ -1318,6 +1503,26 @@ const Registrar = () => {
               />
             )}
 
+            {tipoManejo === "comercial" && (
+              <RegistrarComercialSection
+                comercialData={comercialData}
+                updateComercialData={(field, val) => setComercialData(prev => ({ ...prev, [field]: val }))}
+                selectedAnimalIds={selectedAnimais}
+                animaisComPeso={animaisComPesoComercial ?? []}
+                contrapartes={contrapartes}
+                canManageContraparte={canManageContraparte}
+                showNovaContraparte={showNovaContraparte}
+                onToggleNovaContraparte={() => setShowNovaContraparte(p => !p)}
+                novaContraparte={novaContraparte}
+                onNovaContraparteFieldChange={(field, val) => setNovaContraparte(prev => ({ ...prev, [field]: val }))}
+                onCreateContraparte={handleCreateContraparte}
+                isSavingContraparte={isSavingContraparte}
+                onNavigateContrapartes={() => navigate("/contrapartes")}
+                financeTransactions={financeTransactions}
+                weightUnitLabel={farmMeasurementConfig.weight_unit}
+              />
+            )}
+
             {tipoManejo === "reproducao" && (
               <RegistrarReproducaoSection
                 {...actionSectionState.reproducaoSectionProps}
@@ -1384,6 +1589,60 @@ const Registrar = () => {
                   showAnimaisGerados={showFinanceiroAnimaisGeradosResumo}
                   animaisGeradosCount={compraNovosAnimais.length}
                 />
+              )}
+              {tipoManejo === "comercial" && (
+                <div className="space-y-3 rounded-xl border border-border/70 bg-card p-4 shadow-sm">
+                  <p className="text-xs uppercase text-muted-foreground font-semibold tracking-wider">
+                    Resumo da Operação Comercial
+                  </p>
+                  <div className="grid gap-2 grid-cols-2">
+                    <div className="rounded-lg bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 p-3 text-center">
+                      <p className="text-[11px] uppercase tracking-wider text-emerald-800 dark:text-emerald-300 font-medium">Tipo</p>
+                      <p className="text-2xl font-bold text-emerald-900 dark:text-emerald-200 mt-0.5 capitalize">{comercialData.operationType}</p>
+                    </div>
+                    <div className="rounded-lg bg-blue-50/50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/30 p-3 text-center">
+                      <p className="text-[11px] uppercase tracking-wider text-blue-800 dark:text-blue-300 font-medium">Valor Bruto</p>
+                      <p className="text-2xl font-bold text-blue-900 dark:text-blue-200 mt-0.5">
+                        {comercialData.valorBruto !== "" ? `R$ ${parseFloat(comercialData.valorBruto).toFixed(2)}` : "—"}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="space-y-1.5 pt-2 border-t border-border/40 text-sm">
+                    <div className="flex justify-between py-1 border-b border-border/20">
+                      <span className="text-muted-foreground">Escopo:</span>
+                      <span className="font-semibold capitalize">{comercialData.scope}</span>
+                    </div>
+                    <div className="flex justify-between py-1 border-b border-border/20">
+                      <span className="text-muted-foreground">Quantidade de Animais:</span>
+                      <span className="font-semibold">
+                        {comercialData.scope === "animal" && selectedAnimais.length > 0
+                          ? selectedAnimais.length
+                          : (parseInt(comercialData.quantidadeAnimais, 10) || "—")}
+                      </span>
+                    </div>
+                    {comercialData.pesoVivoTotal && (
+                      <div className="flex justify-between py-1 border-b border-border/20">
+                        <span className="text-muted-foreground">Peso Vivo Total:</span>
+                        <span className="font-semibold">{comercialData.pesoVivoTotal} {farmMeasurementConfig.weight_unit}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between py-1 border-b border-border/20">
+                      <span className="text-muted-foreground">Contraparte:</span>
+                      <span className="font-semibold">{contraparteSelecionadaNome}</span>
+                    </div>
+                    {comercialData.financeTransactionId !== "none" && (
+                      <div className="flex justify-between py-1 border-b border-border/20">
+                        <span className="text-muted-foreground">Vínculo Financeiro:</span>
+                        <span className="font-semibold text-emerald-600 dark:text-emerald-400">Vinculado</span>
+                      </div>
+                    )}
+                  </div>
+                  {comercialData.observacoes && (
+                    <div className="pt-2 text-xs text-muted-foreground">
+                      <span className="font-semibold text-foreground">Observações:</span> {comercialData.observacoes}
+                    </div>
+                  )}
+                </div>
               )}
               {tipoManejo === "reproducao" && (
                 <ReproducaoResumoConfirmacao

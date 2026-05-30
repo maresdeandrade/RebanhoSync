@@ -21,7 +21,7 @@ type RegistrarManejoActionsGridProps = {
       | "pesagem"
       | "movimentacao"
       | "nutricao"
-      | "financeiro"
+      | "comercial"
       | "reproducao"
       | "ecc",
   ) => void;
@@ -49,8 +49,8 @@ export function RegistrarManejoActionsGrid(
     { key: "movimentacao", label: "Mover", icon: Move, requiresAnimals: true },
     { key: "nutricao", label: "Nutricao", icon: Sprout, requiresAnimals: true },
     {
-      key: "financeiro",
-      label: "Financeiro",
+      key: "comercial",
+      label: "Negócios Patrimoniais",
       icon: Banknote,
       requiresAnimals: false,
     },

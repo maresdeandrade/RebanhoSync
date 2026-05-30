@@ -20,7 +20,7 @@ describe("RegistrarManejoActionsGrid", () => {
     expect(screen.getByText(/Pesagem/i)).toBeInTheDocument();
     expect(screen.getByText(/Mover/i)).toBeInTheDocument();
     expect(screen.getByText(/Nutricao/i)).toBeInTheDocument();
-    expect(screen.getByText(/Financeiro/i)).toBeInTheDocument();
+    expect(screen.getByText(/Negócios Patrimoniais/i)).toBeInTheDocument();
     expect(screen.getByText(/Reproducao/i)).toBeInTheDocument();
   });
 
@@ -41,7 +41,7 @@ describe("RegistrarManejoActionsGrid", () => {
     expect(screen.getByText(/Reproducao/i).closest("button")).toBeDisabled();
 
     // Financeiro (compra de lote novo) NÃO exige que animais prévios estejam selecionados
-    expect(screen.getByText(/Financeiro/i).closest("button")).not.toBeDisabled();
+    expect(screen.getByText(/Negócios Patrimoniais/i).closest("button")).not.toBeDisabled();
   });
 
   it("deve chamar onSelectAction com o tipo correto ao clicar na opcao", () => {
