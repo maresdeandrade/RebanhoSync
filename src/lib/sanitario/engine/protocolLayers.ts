@@ -53,12 +53,12 @@ export function readSanitaryProtocolFamilyCode(
 }
 
 export function buildSanitaryFamilyCoverageIndex(
-  protocols: Array<Pick<ProtocoloSanitario, "id" | "payload" | "deleted_at">>,
+  protocols: Array<Pick<ProtocoloSanitario, "id" | "payload" | "deleted_at" | "ativo">>,
 ) {
   const coverage = new Map<string, SanitaryFamilyCoverage>();
 
   for (const protocol of protocols) {
-    if (protocol.deleted_at) continue;
+    if (protocol.deleted_at || protocol.ativo === false) continue;
 
     const familyCode = readSanitaryProtocolFamilyCode(protocol.payload);
     if (!familyCode) continue;
@@ -78,7 +78,7 @@ export function buildSanitaryFamilyCoverageIndex(
 }
 
 export function findSanitaryFamilyConflict(input: {
-  protocols: Array<Pick<ProtocoloSanitario, "id" | "payload" | "deleted_at">>;
+  protocols: Array<Pick<ProtocoloSanitario, "id" | "payload" | "deleted_at" | "ativo">>;
   candidateFamilyCode: string | null | undefined;
   candidateLayer: SanitaryProtocolLayer;
   ignoreProtocolId?: string | null;
@@ -87,7 +87,7 @@ export function findSanitaryFamilyConflict(input: {
   if (!normalizedFamilyCode) return null;
 
   for (const protocol of input.protocols) {
-    if (protocol.deleted_at) continue;
+    if (protocol.deleted_at || protocol.ativo === false) continue;
     if (input.ignoreProtocolId && protocol.id === input.ignoreProtocolId) continue;
 
     const familyCode = readSanitaryProtocolFamilyCode(protocol.payload);
@@ -141,6 +141,10 @@ export interface SanitaryProtocolMetadata {
   operationalComplement: boolean;
 }
 
+function readOperationalComplement(payload: Record<string, unknown> | null | undefined): boolean {
+  return readBoolean(payload, "operational_complement") || readBoolean(payload, "is_operational_complement");
+}
+
 /**
  * Resolve o estado de ativação de um protocolo individual.
  * Determina se está ativo, supersedido, draft ou overlay-only.
@@ -155,7 +159,7 @@ export function resolveActivationState(
   const origem = readString(protocol.payload, "origem");
   if (origem === "catalogo_oficial") return "active_official";
   if (origem === "customizado_fazenda") {
-    const isOperationalComplement = readBoolean(protocol.payload, "operational_complement");
+    const isOperationalComplement = readOperationalComplement(protocol.payload);
     return isOperationalComplement ? "active_custom" : "draft_template";
   }
   if (origem === "template_padrao") return "draft_template";
@@ -200,15 +204,15 @@ function layerPrecedenceIndex(layer: SanitaryProtocolLayer): number {
  * - Perdedores são marcados como superseded
  */
 export function resolveProtocolPrecedence(
-  protocols: Array<Pick<ProtocoloSanitario, "id" | "payload" | "deleted_at">>,
+  protocols: Array<Pick<ProtocoloSanitario, "id" | "payload" | "deleted_at" | "ativo">>,
   familyCode: string | null | undefined,
 ): { winnerId: string | null; losers: string[] } {
   const normalized = normalizeSanitaryFamilyCode(familyCode);
   if (!normalized) return { winnerId: null, losers: [] };
 
-  // Filtrar protocolos da mesma família
+  // Filtrar protocols da mesma família
   const candidates = protocols.filter((p) => {
-    if (p.deleted_at) return false;
+    if (p.deleted_at || p.ativo === false) return false;
     return readSanitaryProtocolFamilyCode(p.payload) === normalized;
   });
 
@@ -231,7 +235,7 @@ export function resolveProtocolPrecedence(
       // Se custom, validar operational_complement
       if (layer === "custom") {
         const operationalComplement = group.find((p) =>
-          readBoolean(p.payload, "operational_complement"),
+          readOperationalComplement(p.payload),
         );
         if (operationalComplement) {
           const losers = candidates
@@ -262,7 +266,7 @@ export function resolveProtocolPrecedence(
  * Efeito colateral: popula metatados de superseded.
  */
 export function resolveEffectiveProtocolsByFamily(
-  protocols: Array<Pick<ProtocoloSanitario, "id" | "payload" | "deleted_at">>,
+  protocols: Array<Pick<ProtocoloSanitario, "id" | "payload" | "deleted_at" | "ativo">>,
 ): {
   effective: Map<string, string>;
   metadata: Map<string, SanitaryProtocolMetadata>;
@@ -271,7 +275,7 @@ export function resolveEffectiveProtocolsByFamily(
 
   // Coletar todas as families
   for (const protocol of protocols) {
-    if (protocol.deleted_at) continue;
+    if (protocol.deleted_at || protocol.ativo === false) continue;
     const family = readSanitaryProtocolFamilyCode(protocol.payload);
     if (family) families.add(family);
   }
@@ -289,7 +293,7 @@ export function resolveEffectiveProtocolsByFamily(
 
     // Popula metadados
     for (const protocol of protocols) {
-      if (protocol.deleted_at) continue;
+      if (protocol.deleted_at || protocol.ativo === false) continue;
       if (readSanitaryProtocolFamilyCode(protocol.payload) !== family) continue;
 
       const isSuperseded = losers.includes(protocol.id);
@@ -304,7 +308,7 @@ export function resolveEffectiveProtocolsByFamily(
         supersededByProtocolId: isSuperseded ? winnerId : null,
         supersededByFamilyCode: isSuperseded ? family : null,
         hiddenFromPrimaryList: isSuperseded,
-        operationalComplement: readBoolean(protocol.payload, "operational_complement"),
+        operationalComplement: readOperationalComplement(protocol.payload),
       });
     }
   }

@@ -232,9 +232,9 @@ describe("sanitary customization drafts", () => {
 
     expect(createEmptyProtocolItemDraft()).toMatchObject({
       tipo: "vacinacao",
-      intervaloDias: "1",
+      intervaloDias: "",
       doseNum: "1",
-      geraAgenda: true,
+      geraAgenda: false,
     });
 
     expect(
@@ -271,6 +271,7 @@ describe("sanitary customization drafts", () => {
           produto: "Vacina Regional",
           intervaloDias: "0",
           doseNum: "",
+          geraAgenda: true,
           calendarMode: "campaign",
           calendarAnchor: "calendar_month",
           calendarLabel: "Campanha regional",

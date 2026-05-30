@@ -96,9 +96,9 @@ export function createEmptyProtocolItemDraft(
   return {
     tipo: "vacinacao",
     produto: "",
-    intervaloDias: "1",
+    intervaloDias: "",
     doseNum: "1",
-    geraAgenda: true,
+    geraAgenda: false,
     indicacao: "",
     observacoes: "",
     sexoAlvo: "",
@@ -621,13 +621,72 @@ export function validateProtocolItemDraft(
     return "Meses do calendario-base invalidos.";
   }
 
+  if (draft.geraAgenda) {
+    const hasCalendar = draft.calendarMode.trim().length > 0 && draft.calendarAnchor.trim().length > 0;
+    const hasDependency = draft.dependsOnItemCode.trim().length > 0;
+    const hasItemCode = draft.itemCode.trim().length > 0;
+    
+    if (!hasCalendar && !hasDependency && !hasItemCode) {
+      return "Etapa com agenda ativada exige calendario-base, codigo da etapa ou dependencia configurados.";
+    }
+
+    const mode = toSqlCalendarMode(draft.calendarMode);
+    if (mode === "rolling_interval") {
+      const interval = Number(draft.intervaloDias.trim());
+      if (isNaN(interval) || interval <= 0) {
+        return "Rotina recorrente exige intervalo em dias valido.";
+      }
+    }
+  }
+
   return null;
+}
+
+export interface DeletionSafetyInput {
+  protocolId: string;
+  protocolItems: Array<{ id: string; protocolo_id: string }>;
+  agendaItems: Array<{ deleted_at: string | null; protocol_item_version_id: string | null }>;
+  events: Array<{ deleted_at: string | null; payload?: Record<string, unknown> }>;
+}
+
+export function checkSanitaryProtocolDeletionSafety(input: DeletionSafetyInput): { safe: boolean; reason: string | null } {
+  const itemIds = input.protocolItems
+    .filter((item) => item.protocolo_id === input.protocolId)
+    .map((item) => item.id);
+
+  // Check agenda items
+  const hasLinkedAgenda = input.agendaItems.some(
+    (item) => !item.deleted_at && item.protocol_item_version_id && itemIds.includes(item.protocol_item_version_id)
+  );
+  if (hasLinkedAgenda) {
+    return {
+      safe: false,
+      reason: "Não é possível excluir o protocolo pois existem tarefas ativas ou concluídas na agenda associadas a suas etapas.",
+    };
+  }
+
+  // Check events
+  const hasLinkedEvents = input.events.some(
+    (evt) => !evt.deleted_at && evt.payload?.protocolo_id === input.protocolId
+  );
+  if (hasLinkedEvents) {
+    return {
+      safe: false,
+      reason: "Não é possível excluir o protocolo pois existem eventos históricos de manejo vinculados a ele.",
+    };
+  }
+
+  return { safe: true, reason: null };
 }
 
 export function buildProtocolUpdateRecord(
   protocol: Pick<ProtocoloSanitario, "id" | "payload">,
   draft: SanitaryProtocolDraft,
 ) {
+  const origin = readString(protocol.payload, "origem");
+  if (origin === "catalogo_oficial") {
+    throw new Error("Protocolo oficial não pode ser editado diretamente.");
+  }
   return {
     id: protocol.id,
     nome: draft.nome.trim(),
@@ -656,6 +715,10 @@ export function buildProtocolItemUpdateRecord(
   extraPayload?: Record<string, unknown>,
   context?: { protocolPayload?: Record<string, unknown> | null | undefined },
 ) {
+  const protocolOrigin = readString(context?.protocolPayload, "origem");
+  if (protocolOrigin === "catalogo_oficial") {
+    throw new Error("Protocolo oficial não pode ser editado diretamente.");
+  }
   const normalizedDose = draft.doseNum.trim();
   const parsedDose = Number(normalizedDose);
   const payload = buildProtocolItemPayload(item.payload, draft, extraPayload, context);
@@ -688,6 +751,10 @@ export function buildProtocolItemInsertRecord(input: {
   extraPayload?: Record<string, unknown>;
   protocolPayload?: Record<string, unknown> | null | undefined;
 }) {
+  const protocolOrigin = readString(input.protocolPayload, "origem");
+  if (protocolOrigin === "catalogo_oficial") {
+    throw new Error("Protocolo oficial não pode ser editado diretamente.");
+  }
   const normalizedDose = input.draft.doseNum.trim();
   const parsedDose = Number(normalizedDose);
   const payload = buildProtocolItemPayload(

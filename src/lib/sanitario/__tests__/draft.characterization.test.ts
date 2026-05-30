@@ -6,39 +6,50 @@ import {
   validateProtocolDraft,
 } from "@/lib/sanitario/customization/customization";
 
-describe("Caracterizacao - Risco F: Defaults Perigosos de Agenda", () => {
-  it("CONFIRMADO: createEmptyProtocolItemDraft define geraAgenda = true e intervaloDias = '1' por padrao", () => {
+describe("Regressao - Risco F: Defaults Seguros e Validacoes de Agenda", () => {
+  it("REGRESSÃO FASE 1A: createEmptyProtocolItemDraft define geraAgenda = false e intervaloDias = '' por padrao", () => {
     const draft = createEmptyProtocolItemDraft();
-    expect(draft.geraAgenda).toBe(true);
-    expect(draft.intervaloDias).toBe("1");
+    expect(draft.geraAgenda).toBe(false);
+    expect(draft.intervaloDias).toBe("");
   });
 
-  it("CONFIRMADO: validateProtocolItemDraft permite salvar rascunho com geraAgenda = true e sem calendario estruturado ou ancora", () => {
+  it("REGRESSÃO FASE 1A: validateProtocolItemDraft BLOQUEIA salvamento com geraAgenda = true se nao houver regra de agendamento resolvel", () => {
     const draft = createEmptyProtocolItemDraft({
       produto: "Vacina A",
       geraAgenda: true,
       intervaloDias: "1",
       calendarMode: "", // Sem modo de calendario-base estruturado
       calendarAnchor: "", // Sem ancora estruturada
+      dependsOnItemCode: "", // Sem dependencia
+      itemCode: "", // Sem codigo da etapa
     });
 
     const error = validateProtocolItemDraft(draft);
-    expect(error).toBeNull(); // Sucesso, permite salvar!
+    expect(error).toBe("Etapa com agenda ativada exige calendario-base, codigo da etapa ou dependencia configurados.");
   });
-});
 
-describe("Caracterizacao - Risco G: Edicao de Protocolo Oficial", () => {
-  it("CONFIRMADO: validateProtocolDraft e fluxos de edicao do FarmProtocolManager tratam protocolos oficiais de forma identica aos customizados", () => {
-    // Roteiro de edicao de protocolo oficial:
-    // O FarmProtocolManager nao valida ou restringe se o protocolo editado eh de origem oficial ou customizada,
-    // e permite que qualquer protocolo passe pela validacao de draft e chame buildProtocolUpdateRecord.
-    const officialDraft = createEmptyProtocolDraft({
-      nome: "Brucelose - MAPA Oficial",
-      descricao: "Protocolo oficial do MAPA",
-      ativo: true,
+  it("REGRESSÃO FASE 1A: validateProtocolItemDraft PERMITE geraAgenda = true se houver dependecia sequencial resolvel", () => {
+    const draft = createEmptyProtocolItemDraft({
+      produto: "Vacina A",
+      geraAgenda: true,
+      dependsOnItemCode: "dose_1", // Dependencia setada!
+      itemCode: "dose_2", // Codigo da etapa setado!
     });
 
-    const error = validateProtocolDraft(officialDraft);
-    expect(error).toBeNull(); // Sucesso, permite salvar alteracoes locais de cabeçalho mesmo para protocolos oficiais!
+    const error = validateProtocolItemDraft(draft);
+    expect(error).toBeNull(); // Valido!
+  });
+
+  it("REGRESSÃO FASE 1A: validateProtocolItemDraft BLOQUEIA rotina recorrente sem intervalo valido", () => {
+    const draft = createEmptyProtocolItemDraft({
+      produto: "Vermifugo",
+      geraAgenda: true,
+      calendarMode: "rotina_recorrente",
+      calendarAnchor: "ultima_conclusao_mesma_familia",
+      intervaloDias: "", // Sem intervalo!
+    });
+
+    const error = validateProtocolItemDraft(draft);
+    expect(error).toBe("Rotina recorrente exige intervalo em dias valido.");
   });
 });

@@ -222,7 +222,7 @@ describe("official sanitary catalog ops", () => {
       regimen_version: 1,
     });
     expect(itemInsert?.record).toMatchObject({
-      dedup_template: null,
+      dedup_template: "sanitario:brucelose:{animal_id}:milestone:brucelose_b19",
       payload: {
         family_code: "brucelose",
         regimen_version: 1,

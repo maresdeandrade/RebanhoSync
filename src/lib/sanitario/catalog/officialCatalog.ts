@@ -23,6 +23,8 @@ import { buildSanitaryBaseCalendarPayload } from "@/lib/sanitario/engine/calenda
 import {
   buildSanitaryRegimenPayload,
   inferSanitaryRegimenMilestone,
+  buildSanitaryRegimenDedupTemplate,
+  readSanitaryRegimen,
   type SanitaryComplianceState,
   type SanitaryHistoryConfidence,
 } from "@/lib/sanitario/engine/regimen";
@@ -711,7 +713,12 @@ export async function buildOfficialSanitaryPackOps(input: {
           intervalo_dias: normalizeIntervalDays(item),
           dose_num: normalizeDoseNumber(item),
           gera_agenda: item.gera_agenda,
-          dedup_template: null,
+          dedup_template:
+            (readString(item.payload, "dedup_template") ??
+              (readSanitaryRegimen(itemPayload)
+                ? buildSanitaryRegimenDedupTemplate(readSanitaryRegimen(itemPayload)!)
+                : "")) ||
+            null,
           payload: {
             ...itemPayload,
             indicacao:
@@ -871,7 +878,10 @@ export async function reconcileFarmSanitaryFamiliesBeforePackReapply(input: {
       if (familyCode) {
         existingByLayer.official.set(familyCode, protocol);
       }
-    } else if (readBoolean(protocol.payload, "is_operational_complement")) {
+    } else if (
+      readBoolean(protocol.payload, "operational_complement") ||
+      readBoolean(protocol.payload, "is_operational_complement")
+    ) {
       const familyCode = readString(protocol.payload, "family_code");
       if (familyCode) {
         existingByLayer.custom.set(familyCode, protocol);

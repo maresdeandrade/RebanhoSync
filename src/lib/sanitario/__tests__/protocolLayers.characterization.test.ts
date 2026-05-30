@@ -30,17 +30,16 @@ const buildProtocol = (
   ...overrides,
 });
 
-describe("Caracterizacao - Risco A: Protocolo Ativo/Inativo e Familia Protocolar", () => {
-  it("CONFIRMADO: buildSanitaryFamilyCoverageIndex IGNORA ativo=false (considera-o como cobertura ativa)", () => {
+describe("Regressao - Risco A: Protocolo Ativo/Inativo e Familia Protocolar", () => {
+  it("REGRESSÃO FASE 1A: buildSanitaryFamilyCoverageIndex IGNORA CORRETAMENTE ativo=false (não considera como cobertura ativa)", () => {
     const protocols = [
       buildProtocol("p-inativo", { origem: "customizado_fazenda", family_code: "brucelose" }, { ativo: false }),
     ];
     const index = buildSanitaryFamilyCoverageIndex(protocols);
-    expect(index.has("brucelose")).toBe(true);
-    expect(Array.from(index.get("brucelose")!.layers)).toContain("custom");
+    expect(index.has("brucelose")).toBe(false);
   });
 
-  it("CONFIRMADO: buildSanitaryFamilyCoverageIndex considera deleted_at=not_null como deletado (ignora)", () => {
+  it("REGRESSÃO FASE 1A: buildSanitaryFamilyCoverageIndex considera deleted_at=not_null como deletado (ignora)", () => {
     const protocols = [
       buildProtocol("p-deletado", { origem: "customizado_fazenda", family_code: "brucelose" }, { deleted_at: "2026-04-12T12:00:00.000Z" }),
     ];
@@ -48,7 +47,7 @@ describe("Caracterizacao - Risco A: Protocolo Ativo/Inativo e Familia Protocolar
     expect(index.has("brucelose")).toBe(false);
   });
 
-  it("CONFIRMADO: findSanitaryFamilyConflict IGNORA ativo=false (protocolo inativo bloqueia a mesma familia)", () => {
+  it("REGRESSÃO FASE 1A: findSanitaryFamilyConflict IGNORA CORRETAMENTE ativo=false (protocolo inativo não bloqueia a mesma familia)", () => {
     const protocols = [
       buildProtocol("p-inativo", { origem: "customizado_fazenda", family_code: "brucelose" }, { ativo: false }),
     ];
@@ -57,20 +56,17 @@ describe("Caracterizacao - Risco A: Protocolo Ativo/Inativo e Familia Protocolar
       candidateFamilyCode: "brucelose",
       candidateLayer: "custom",
     });
-    expect(conflict).not.toBeNull();
-    expect(conflict?.reason).toBe("family_already_active");
-    expect(conflict?.protocolId).toBe("p-inativo");
+    expect(conflict).toBeNull();
   });
 
-  it("CONFIRMADO: resolveEffectiveProtocolsByFamily INCLUI protocolos inativos no calculo de efetivos (e eles vencem precedencia)", () => {
+  it("REGRESSÃO FASE 1A: resolveEffectiveProtocolsByFamily IGNORA protocolos inativos no calculo de efetivos (e eles não vencem precedencia)", () => {
     const protocols = [
       buildProtocol("p-official-inativo", { origem: "catalogo_oficial", family_code: "brucelose" }, { ativo: false }),
       buildProtocol("p-custom-ativo", { origem: "customizado_fazenda", family_code: "brucelose", operational_complement: true }),
     ];
-    const { effective, metadata } = resolveEffectiveProtocolsByFamily(protocols);
-    // O oficial inativo vence por precedencia da camada oficial
-    expect(effective.get("brucelose")).toBe("p-official-inativo");
-    expect(metadata.get("p-custom-ativo")?.activationState).toBe("superseded_legacy");
+    const { effective } = resolveEffectiveProtocolsByFamily(protocols);
+    // O oficial inativo foi ignorado, então o custom ativo vence
+    expect(effective.get("brucelose")).toBe("p-custom-ativo");
   });
 });
 
@@ -124,8 +120,8 @@ describe("Caracterizacao - Risco B: Resolucao de Protocolo Efetivo por Familia",
   });
 });
 
-describe("Caracterizacao - Risco C: Divergencia operational_complement vs is_operational_complement", () => {
-  it("CONFIRMADO: resolveActivationState nao reconhece is_operational_complement como complemento customizado (trata como draft_template)", () => {
+describe("Regressao - Risco C: Divergencia operational_complement vs is_operational_complement", () => {
+  it("REGRESSÃO FASE 1A: resolveActivationState RECONHECE CORRETAMENTE is_operational_complement como complemento customizado (active_custom)", () => {
     const protocolWithIsOp = buildProtocol("custom-is-op", {
       origem: "customizado_fazenda",
       family_code: "brucelose",
@@ -134,11 +130,11 @@ describe("Caracterizacao - Risco C: Divergencia operational_complement vs is_ope
     
     // Testamos a resolucao de estado
     const state = resolveActivationState(protocolWithIsOp, "custom", false);
-    // Como resolveActivationState le "operational_complement", "is_operational_complement" eh ignorado
-    expect(state).toBe("draft_template");
+    // Agora o is_operational_complement eh reconhecido como active_custom devido ao fallback tolerante
+    expect(state).toBe("active_custom");
   });
 
-  it("CONFIRMADO: resolveActivationState reconhece corretamente operational_complement como active_custom", () => {
+  it("REGRESSÃO FASE 1A: resolveActivationState reconhece corretamente operational_complement como active_custom", () => {
     const protocolWithOp = buildProtocol("custom-op", {
       origem: "customizado_fazenda",
       family_code: "brucelose",

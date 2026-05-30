@@ -39,6 +39,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import type { FarmExperienceMode } from "@/lib/farms/experienceMode";
+import { db } from "@/lib/offline/db";
 import { createGesture } from "@/lib/offline/ops";
 import { pullDataForFarm } from "@/lib/offline/pull";
 import type {
@@ -61,6 +62,7 @@ import {
   type SanitaryProtocolItemDraft,
   validateProtocolDraft,
   validateProtocolItemDraft,
+  checkSanitaryProtocolDeletionSafety,
 } from "@/lib/sanitario/customization/customization";
 import {
   STANDARD_PROTOCOLS,
@@ -804,6 +806,14 @@ export function FarmProtocolManager({
       return;
     }
 
+    if (protocolEditor.protocol) {
+      const origin = protocolEditor.protocol.payload?.origem;
+      if (origin === "catalogo_oficial") {
+        showError("Protocolo oficial não pode ser editado diretamente.");
+        return;
+      }
+    }
+
     const nextProtocolId = protocolEditor.protocol?.id ?? crypto.randomUUID();
     const operation: OperationInput = protocolEditor.protocol
       ? {
@@ -875,6 +885,13 @@ export function FarmProtocolManager({
       catalogProducts,
     );
     const protocol = protocolById.get(itemEditor.protocolId) ?? null;
+    if (protocol) {
+      const origin = protocol.payload?.origem;
+      if (origin === "catalogo_oficial") {
+        showError("Protocolo oficial não pode ser editado diretamente.");
+        return;
+      }
+    }
 
     const operation: OperationInput = itemEditor.item
       ? {
@@ -970,21 +987,38 @@ export function FarmProtocolManager({
     if (isDeleting) return;
     if (!deleteTarget) return;
 
-    const protocolOps: OperationInput[] = [
-      ...(itemsByProtocol.get(deleteTarget.id) ?? []).map((item) => ({
-        table: "protocolos_sanitarios_itens",
-        action: "DELETE",
-        record: { id: item.id },
-      })),
-      {
-        table: "protocolos_sanitarios",
-        action: "DELETE",
-        record: { id: deleteTarget.id },
-      },
-    ];
-
     setIsDeleting(true);
     try {
+      const linkedAgendaItems = await db.state_agenda_itens.toArray();
+      const linkedEvents = await db.event_eventos.toArray();
+      const items = itemsByProtocol.get(deleteTarget.id) ?? [];
+
+      const safety = checkSanitaryProtocolDeletionSafety({
+        protocolId: deleteTarget.id,
+        protocolItems: items,
+        agendaItems: linkedAgendaItems,
+        events: linkedEvents,
+      });
+
+      if (!safety.safe) {
+        showError(safety.reason ?? "Não é possível excluir o protocolo.");
+        setIsDeleting(false);
+        return;
+      }
+
+      const protocolOps: OperationInput[] = [
+        ...items.map((item) => ({
+          table: "protocolos_sanitarios_itens",
+          action: "DELETE",
+          record: { id: item.id },
+        })),
+        {
+          table: "protocolos_sanitarios",
+          action: "DELETE",
+          record: { id: deleteTarget.id },
+        },
+      ];
+
       await createGesture(activeFarmId, protocolOps);
       showSuccess("Protocolo removido da fazenda.");
       setDeleteTarget(null);
