@@ -28,6 +28,7 @@ export type LoteImportRow = {
   nome: string;
   status: LoteStatusEnum;
   pastoNome: string | null;
+  touroTag: string | null;
   observacoes: string | null;
 };
 
@@ -69,6 +70,7 @@ const LOTE_HEADER_ALIASES: Record<string, string[]> = {
   nome: ["nome", "lote", "nome_lote"],
   status: ["status", "situacao"],
   pastoNome: ["pasto", "nome_pasto", "pasto_nome"],
+  touroTag: ["touro", "touro_tag", "touro_identificacao", "reprodutor", "macho_vinculado"],
   observacoes: ["observacoes", "observacao", "obs", "descricao"],
 };
 
@@ -444,6 +446,7 @@ export function parseLoteImportCsv(
 
   const statusIndex = findHeaderIndex(headers, LOTE_HEADER_ALIASES, "status");
   const pastoIndex = findHeaderIndex(headers, LOTE_HEADER_ALIASES, "pastoNome");
+  const touroTagIndex = findHeaderIndex(headers, LOTE_HEADER_ALIASES, "touroTag");
   const observacoesIndex = findHeaderIndex(
     headers,
     LOTE_HEADER_ALIASES,
@@ -459,6 +462,7 @@ export function parseLoteImportCsv(
     const nome = readCell(cells, nomeIndex);
     const statusValue = readCell(cells, statusIndex);
     const pastoNome = readCell(cells, pastoIndex);
+    const touroTag = readCell(cells, touroTagIndex);
     const observacoes = readCell(cells, observacoesIndex);
 
     if (!nome) {
@@ -497,6 +501,7 @@ export function parseLoteImportCsv(
       nome,
       status,
       pastoNome: pastoNome || null,
+      touroTag: touroTag || null,
       observacoes: observacoes || null,
     });
   }

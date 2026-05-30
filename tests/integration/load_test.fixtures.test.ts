@@ -37,6 +37,8 @@ describe("fixtures - low volume", () => {
     const csv = fs.readFileSync("tests/fixtures/animais_low_volume.csv", "utf8");
     const result = parseAnimalImportCsv(csv);
     expect(result.rows.length).toBe(10);
+    expect(result.rows[0]).toHaveProperty("paiTag");
+    expect(result.rows[0]).toHaveProperty("maeTag");
   });
 
   it("parses low volume pastos CSV correctly", () => {
@@ -50,6 +52,7 @@ describe("fixtures - low volume", () => {
     const csv = fs.readFileSync("tests/fixtures/lotes_low_volume.csv", "utf8");
     const result = parseLoteImportCsv(csv);
     expect(result.rows.length).toBe(4);
+    expect(result.rows[0]).toHaveProperty("touroTag");
   });
 });
 
@@ -58,6 +61,8 @@ describe("fixtures - medium volume", () => {
     const csv = fs.readFileSync("tests/fixtures/animais_medium_volume.csv", "utf8");
     const result = parseAnimalImportCsv(csv);
     expect(result.rows.length).toBe(100);
+    expect(result.rows[0]).toHaveProperty("paiTag");
+    expect(result.rows[0]).toHaveProperty("maeTag");
   });
 
   it("parses medium volume pastos CSV correctly", () => {
@@ -70,6 +75,7 @@ describe("fixtures - medium volume", () => {
     const csv = fs.readFileSync("tests/fixtures/lotes_medium_volume.csv", "utf8");
     const result = parseLoteImportCsv(csv);
     expect(result.rows.length).toBe(10);
+    expect(result.rows[0]).toHaveProperty("touroTag");
   });
 
   it("maintains referential integrity for medium volume data", () => {
@@ -84,6 +90,8 @@ describe("fixtures - high volume", () => {
     const csv = fs.readFileSync("tests/fixtures/animais_high_volume.csv", "utf8");
     const result = parseAnimalImportCsv(csv);
     expect(result.rows.length).toBe(5000);
+    expect(result.rows[0]).toHaveProperty("paiTag");
+    expect(result.rows[0]).toHaveProperty("maeTag");
   });
 
   it("parses high volume pastos CSV correctly", () => {
@@ -96,6 +104,7 @@ describe("fixtures - high volume", () => {
     const csv = fs.readFileSync("tests/fixtures/lotes_high_volume.csv", "utf8");
     const result = parseLoteImportCsv(csv);
     expect(result.rows.length).toBe(100);
+    expect(result.rows[0]).toHaveProperty("touroTag");
   });
 
   it("maintains referential integrity for high volume data", () => {

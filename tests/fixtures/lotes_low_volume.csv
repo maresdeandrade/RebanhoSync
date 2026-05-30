@@ -1,5 +1,5 @@
-nome;status;pasto_nome;observacoes
-L_01;ativo;P_01;Lote 1
-L_02;ativo;P_02;Lote 2
-L_03;ativo;P_03;Lote 3
-L_04;ativo;P_04;Lote 4
+nome;status;pasto_nome;touro_tag;observacoes
+L_01;ativo;P_01;;Lote 1
+L_02;ativo;P_02;T102;Lote 2
+L_03;ativo;P_03;T103;Lote 3
+L_04;ativo;P_04;T104;Lote 4

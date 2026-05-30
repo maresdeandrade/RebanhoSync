@@ -41,7 +41,7 @@ export type FarmInviteStatusEnum =
 
 // Animal & Lote
 export type SexoEnum = "M" | "F";
-export type AnimalStatusEnum = "ativo" | "vendido" | "morto";
+export type AnimalStatusEnum = "ativo" | "vendido" | "morto" | "retirado";
 
 // Cause of death enum for óbito events
 export type CausaObitoEnum = "doenca" | "acidente" | "predador" | "outro";

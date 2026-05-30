@@ -179,6 +179,7 @@ type RegistrarFinalizeTrackDeps = {
     } | null;
     farmLifecycleConfig: FarmLifecycleConfig;
     parseUserWeight: (value: string) => number | null;
+    comercialData?: unknown;
   }) => Promise<
     | { issue: string; linkedEventId: null; postPartoRedirect: null; ops: [] }
     | {
@@ -324,6 +325,24 @@ export type RegistrarFinalizeControllerInput = {
       gerarBaixaEstoque?: boolean;
     } | null;
   } | null;
+  comercial?: {
+    operationType: "compra" | "venda" | "sociedade";
+    scope: "animal" | "lote";
+    quantidadeAnimais: number;
+    pesoVivoTotal: number | null;
+    valorBruto: number | null;
+    frete: number | null;
+    comissao: number | null;
+    descontos: number | null;
+    taxasImpostos: number | null;
+    contraparteId: string | null;
+    contraparteNome: string | null;
+    animalIds: string[] | null;
+    loteId: string | null;
+    financeTransactionId: string | null;
+    snapshot?: unknown;
+    calculationStatus?: string;
+  } | null;
   onFinalizeHandled?: () => void;
 };
 
@@ -333,7 +352,7 @@ export function createRegistrarFinalizeController(
   return async function finalize(
     input: RegistrarFinalizeControllerInput,
   ): Promise<void> {
-    const { context, selection, finance, sanitary, operationData } = input;
+    const { context, selection, finance, sanitary, operationData, comercial } = input;
     if (!context.tipoManejo) return;
 
     const fazendaId = context.activeFarmId ?? context.fallbackFarmId;
@@ -608,6 +627,7 @@ export function createRegistrarFinalizeController(
             reproducaoData: operationData.reproducaoData,
             farmLifecycleConfig: context.farmLifecycleConfig,
             parseUserWeight: context.parseUserWeight,
+            comercialData: comercial,
           });
         if (nonFinancialPlan.issue) {
           deps.feedback.showError(nonFinancialPlan.issue);
@@ -630,16 +650,19 @@ export function createRegistrarFinalizeController(
         );
       }
 
-      const opsIssue = deps.commit.resolveFinalizeOpsIssue(ops.length);
+      const isSociedade = context.tipoManejo === "comercial" && comercial?.operationType === "sociedade";
+      const opsIssue = isSociedade ? null : deps.commit.resolveFinalizeOpsIssue(ops.length);
       if (opsIssue) {
         deps.feedback.showError(opsIssue);
         return;
       }
 
-      const txId = await deps.commit.runFinalizeGesture({
-        fazendaId,
-        ops,
-      });
+      const txId = ops.length > 0 
+        ? await deps.commit.runFinalizeGesture({
+            fazendaId,
+            ops,
+          })
+        : "local-society-only";
       deps.feedback.showSuccess(
         deps.feedback.buildFinalizeSuccessMessage({
           compraGerandoAnimais,

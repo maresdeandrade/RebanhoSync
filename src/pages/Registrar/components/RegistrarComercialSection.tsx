@@ -15,6 +15,7 @@ import {
   Pencil,
 } from "lucide-react";
 import { FinanceiroContraparteSection } from "@/pages/Registrar/components/FinanceiroContraparteSection";
+import { RegistrarSociedadeSection } from "@/pages/Registrar/components/RegistrarSociedadeSection";
 import type { RegistrarNovaContraparteDraft } from "@/pages/Registrar/effects/contraparteCreate";
 import { calculateCommercialOperation } from "@/lib/comercial/commercialOperation";
 import { cn } from "@/lib/utils";

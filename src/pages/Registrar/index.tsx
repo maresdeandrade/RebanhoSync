@@ -570,6 +570,16 @@ const Registrar = () => {
   const comercialCalculationSummary = useMemo(() => {
     if (tipoManejo !== "comercial") return null;
 
+    if (comercialData.operationType === "sociedade") {
+      return {
+        calculationStatus: "complete",
+        issues: [],
+        limitations: [],
+        snapshot: {},
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any;
+    }
+
     const qty = selectedAnimais.length > 0 && comercialData.scope === "animal"
       ? selectedAnimais.length
       : (parseInt(comercialData.quantidadeAnimais, 10) || 0);
@@ -1505,6 +1515,7 @@ const Registrar = () => {
 
             {tipoManejo === "comercial" && (
               <RegistrarComercialSection
+                fazendaId={activeFarmId}
                 comercialData={comercialData}
                 updateComercialData={(field, val) => setComercialData(prev => ({ ...prev, [field]: val }))}
                 selectedAnimalIds={selectedAnimais}

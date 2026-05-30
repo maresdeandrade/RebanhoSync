@@ -196,7 +196,8 @@ Deno.serve(async (req: Request) => {
       'eventos_sanitario', 'eventos_pesagem', 'eventos_nutricao',
       'eventos_movimentacao', 'eventos_reproducao', 'eventos_financeiro', 'eventos_ecc',
       'eventos_comercial',
-      'finance_categories', 'finance_transactions'
+      'finance_categories', 'finance_transactions',
+      'sociedades_pecuarias', 'sociedade_animais'
     ]);
 
     const results = [];

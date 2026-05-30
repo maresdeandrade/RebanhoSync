@@ -15,6 +15,8 @@ export type AnimalImportRow = {
   origem: OrigemEnum | null;
   raca: string | null;
   rfid: string | null;
+  paiTag: string | null;
+  maeTag: string | null;
 };
 
 export type AnimalImportIssue = {
@@ -41,6 +43,8 @@ const HEADER_ALIASES: Record<string, string[]> = {
   origem: ["origem"],
   raca: ["raca"],
   rfid: ["rfid"],
+  paiTag: ["pai", "pai_tag", "pai_identificacao", "pai_brinco"],
+  maeTag: ["mae", "mae_tag", "mae_identificacao", "mae_brinco"],
 };
 
 function stripDiacritics(value: string) {
@@ -233,6 +237,8 @@ export function parseAnimalImportCsv(text: string): AnimalImportParseResult {
   const origemIndex = findHeaderIndex(headers, "origem");
   const racaIndex = findHeaderIndex(headers, "raca");
   const rfidIndex = findHeaderIndex(headers, "rfid");
+  const paiTagIndex = findHeaderIndex(headers, "paiTag");
+  const maeTagIndex = findHeaderIndex(headers, "maeTag");
 
   const rows: AnimalImportRow[] = [];
   const seenIdentifiers = new Map<string, number>();
@@ -250,6 +256,8 @@ export function parseAnimalImportCsv(text: string): AnimalImportParseResult {
     const origemValue = readCell(cells, origemIndex);
     const racaValue = readCell(cells, racaIndex);
     const rfid = readCell(cells, rfidIndex);
+    const paiTag = readCell(cells, paiTagIndex);
+    const maeTag = readCell(cells, maeTagIndex);
 
     if (!identificacao) {
       issues.push({
@@ -346,6 +354,8 @@ export function parseAnimalImportCsv(text: string): AnimalImportParseResult {
       origem,
       raca,
       rfid: rfid || null,
+      paiTag: paiTag || null,
+      maeTag: maeTag || null,
     });
   }
 

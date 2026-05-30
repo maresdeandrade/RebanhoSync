@@ -1,11 +1,11 @@
-nome;status;pasto_nome;observacoes
-L_01;ativo;P_09;Lote 1
-L_02;ativo;P_07;Lote 2
-L_03;ativo;P_09;Lote 3
-L_04;ativo;P_04;Lote 4
-L_05;ativo;P_05;Lote 5
-L_06;ativo;P_05;Lote 6
-L_07;ativo;P_09;Lote 7
-L_08;ativo;P_08;Lote 8
-L_09;ativo;P_05;Lote 9
-L_10;ativo;P_02;Lote 10
+nome;status;pasto_nome;touro_tag;observacoes
+L_01;ativo;P_01;T1001;Lote 1
+L_02;ativo;P_02;T1002;Lote 2
+L_03;ativo;P_03;T1003;Lote 3
+L_04;ativo;P_04;T1004;Lote 4
+L_05;ativo;P_05;;Lote 5
+L_06;ativo;P_06;;Lote 6
+L_07;ativo;P_07;;Lote 7
+L_08;ativo;P_08;T1008;Lote 8
+L_09;ativo;P_09;T1009;Lote 9
+L_10;ativo;P_10;T1010;Lote 10

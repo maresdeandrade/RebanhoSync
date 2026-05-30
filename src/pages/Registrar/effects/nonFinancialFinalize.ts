@@ -208,7 +208,7 @@ export async function resolveRegistrarNonFinancialFinalizePlan(input: {
       input.tipoManejo === "movimentacao" ||
       input.tipoManejo === "nutricao" ||
       input.tipoManejo === "financeiro" ||
-      input.tipoManejo === "comercial" ||
+      (input.tipoManejo === "comercial" && (input.comercialData?.operationType as string) !== "sociedade") ||
       input.tipoManejo === "ecc"
     ) {
       eventInput = buildRegistrarEventInput({

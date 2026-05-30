@@ -163,6 +163,7 @@ const STATUS_FILTERS: FilterOption[] = [
   { value: "ativo", label: "Ativo" },
   { value: "vendido", label: "Vendido" },
   { value: "morto", label: "Morto" },
+  { value: "retirado", label: "Retirado" },
 ];
 
 const REGULATORY_IMPACT_FILTERS: FilterOption<RegulatoryImpactFilter>[] = [

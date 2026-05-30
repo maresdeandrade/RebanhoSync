@@ -150,7 +150,7 @@ export function useOccupancyData(fazendaId: string, referenceDate: string) {
 
   const getLoteMetrics = (loteId: string): LoteOccupancyMetrics | null => {
     const activeAnimals = allAnimals.filter(
-      (a) => a.lote_id === loteId && a.status !== "vendido" && a.status !== "morto"
+      (a) => a.lote_id === loteId && a.status !== "vendido" && a.status !== "morto" && a.status !== "retirado"
     );
 
     // Encontrar última movimentação que tocou este lote
@@ -180,7 +180,7 @@ export function useOccupancyData(fazendaId: string, referenceDate: string) {
     const loteIds = lotesInPasto.map((l) => l.id);
 
     const activeAnimals = allAnimals.filter(
-      (a) => a.lote_id && loteIds.includes(a.lote_id) && a.status !== "vendido" && a.status !== "morto"
+      (a) => a.lote_id && loteIds.includes(a.lote_id) && a.status !== "vendido" && a.status !== "morto" && a.status !== "retirado"
     );
 
     // Encontrar última movimentação que tocou este pasto

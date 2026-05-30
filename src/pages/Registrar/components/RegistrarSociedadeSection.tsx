@@ -5,11 +5,24 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "@/lib/offline/db";
-import { useAuth } from "@/components/auth/AuthProvider";
-import { v4 as uuidv4 } from "uuid";
-import type { SociedadePecuaria } from "@/lib/offline/types";
-import { Check, Plus, ShieldAlert, X } from "lucide-react";
-import { buildEventGesture } from "@/lib/events/buildEventGesture";
+import { useAuth } from "@/hooks/useAuth";
+import type { OperationInput } from "@/lib/offline/types";
+import { 
+  Check, 
+  Plus, 
+  ShieldAlert, 
+  X, 
+  ArrowDownLeft, 
+  Link, 
+  ArrowUpRight, 
+  Archive,
+  Info,
+  Users
+} from "lucide-react";
+import { createGesture } from "@/lib/offline/ops";
+import { ANIMAL_BREED_OPTIONS, type AnimalBreedEnum } from "@/lib/animals/catalogs";
+
+type ActionType = "entrada" | "vincular" | "retirar" | "encerrar";
 
 export function RegistrarSociedadeSection(props: {
   selectedAnimalIds: string[];
@@ -17,7 +30,10 @@ export function RegistrarSociedadeSection(props: {
   fazendaId: string;
 }) {
   const { user } = useAuth();
-  const [view, setView] = useState<"list" | "create">("list");
+  const [actionType, setActionType] = useState<ActionType>("entrada");
+
+  // Sociedade selecionada (geral)
+  const [selectedSocId, setSelectedSocId] = useState("");
 
   // Formulário de Nova Sociedade
   const [nome, setNome] = useState("");
@@ -25,18 +41,60 @@ export function RegistrarSociedadeSection(props: {
   const [percFazenda, setPercFazenda] = useState("50");
   const [percParceiro, setPercParceiro] = useState("50");
 
-  // Formulário de Encerramento de Vínculo
+  // Formulário de Entrada (Novo Animal)
+  const [regMode, setRegMode] = useState<"individual" | "lote">("individual");
+  const [animalIdentificacao, setAnimalIdentificacao] = useState("");
+  const [animalSexo, setAnimalSexo] = useState<"F" | "M">("F");
+  const [animalRaca, setAnimalRaca] = useState<string>("null");
+  const [animalDataNascimento, setAnimalDataNascimento] = useState("");
+  const [selectedLoteId, setSelectedLoteId] = useState("");
+  const [loteQtd, setLoteQtd] = useState("1");
+  const [lotePrefixo, setLotePrefixo] = useState("SOC-");
+  const [dataEntrada, setDataEntrada] = useState(() => new Date().toISOString().slice(0, 10));
+
+  // Formulário de Retirada
+  const [physicalRemoval, setPhysicalRemoval] = useState(false);
   const [dataSaida, setDataSaida] = useState(() => new Date().toISOString().slice(0, 10));
   const [motivoSaida, setMotivoSaida] = useState("");
 
+  // Formulário de Encerramento
+  const [animalsRemain, setAnimalsRemain] = useState(true);
+  const [dataFim, setDataFim] = useState(() => new Date().toISOString().slice(0, 10));
+
+  // Live Queries
   const activeSocieties = useLiveQuery(
-    () => db.state_sociedades_pecuarias.where({ fazenda_id: props.fazendaId, status: "ativa" }).toArray(),
+    () => {
+      if (!props.fazendaId || typeof props.fazendaId !== "string" || props.fazendaId.trim() === "") return [];
+      return db.state_sociedades_pecuarias
+        .where("[fazenda_id+status]")
+        .equals([props.fazendaId, "ativa"])
+        .toArray();
+    },
     [props.fazendaId],
     []
   );
 
   const activeLinks = useLiveQuery(
-    () => db.state_sociedade_animais.where({ fazenda_id: props.fazendaId, status: "ativo" }).toArray(),
+    () => {
+      if (!props.fazendaId || typeof props.fazendaId !== "string" || props.fazendaId.trim() === "") return [];
+      return db.state_sociedade_animais
+        .where("[fazenda_id+status]")
+        .equals([props.fazendaId, "ativo"])
+        .toArray();
+    },
+    [props.fazendaId],
+    []
+  );
+
+  const activeLotes = useLiveQuery(
+    () => {
+      if (!props.fazendaId || typeof props.fazendaId !== "string" || props.fazendaId.trim() === "") return [];
+      return db.state_lotes
+        .where("fazenda_id")
+        .equals(props.fazendaId)
+        .filter(l => l.status === "ativo" && !l.deleted_at)
+        .toArray();
+    },
     [props.fazendaId],
     []
   );
@@ -44,359 +102,716 @@ export function RegistrarSociedadeSection(props: {
   const selectedAnimalsWithActiveLink = props.selectedAnimalIds.filter(id => activeLinks.some(link => link.animal_id === id));
   const selectedAnimalsWithoutLink = props.selectedAnimalIds.filter(id => !activeLinks.some(link => link.animal_id === id));
 
-  const handleCreateSociety = async () => {
-    if (!nome || !contraparteId || !percFazenda || !percParceiro) return;
-    
-    const fz = parseFloat(percFazenda);
-    const pa = parseFloat(percParceiro);
-    if (Math.abs((fz + pa) - 100) > 0.0001) {
-      alert("A soma dos percentuais deve ser 100%.");
-      return;
-    }
+  // Handlers
+  const handleEntradaSociedade = async () => {
+    let finalSocId = selectedSocId;
 
-    const newSocietyId = uuidv4();
-    const ops = [
-      {
+    const ops: OperationInput[] = [];
+
+    // 1. Criar sociedade se for nova
+    if (selectedSocId === "new") {
+      if (!nome || !contraparteId || !percFazenda || !percParceiro) {
+        alert("Preencha todos os campos da nova sociedade.");
+        return;
+      }
+      const fz = parseFloat(percFazenda);
+      const pa = parseFloat(percParceiro);
+      if (Math.abs((fz + pa) - 100) > 0.0001) {
+        alert("A soma dos percentuais da sociedade deve ser 100%.");
+        return;
+      }
+
+      finalSocId = crypto.randomUUID();
+      ops.push({
         table: "sociedades_pecuarias",
-        action: "INSERT" as const,
+        action: "INSERT",
         record: {
-          id: newSocietyId,
-          nome,
+          id: finalSocId,
+          fazenda_id: props.fazendaId,
           contraparte_id: contraparteId,
+          nome,
+          status: "ativa",
+          data_inicio: dataEntrada,
+          data_fim: null,
           percentual_fazenda: fz,
           percentual_parceiro: pa,
-          data_inicio: new Date().toISOString().slice(0, 10),
-          status: "ativa",
           regra_custos: "proporcional",
           regra_perdas: "proporcional",
           regra_receita: "proporcional",
+          observacoes: null,
           payload: {}
         }
+      });
+    }
+
+    if (!finalSocId || finalSocId === "new") {
+      alert("Selecione ou crie uma sociedade válida.");
+      return;
+    }
+
+    // 2. Criar animais e vínculos
+    if (regMode === "individual") {
+      if (!animalIdentificacao.trim()) {
+        alert("A identificação do animal é obrigatória.");
+        return;
       }
-    ];
 
-    const gesture = buildEventGesture({
-      fazendaId: props.fazendaId,
-      tipoManejo: "financeiro",
-      occurredAt: new Date().toISOString(),
-      sourceTaskId: null,
-      ops,
-      skipDbPut: true
-    });
-
-    await db.transaction("rw", [db.state_sociedades_pecuarias, db.queue_ops, db.queue_gestures], async () => {
-      await db.state_sociedades_pecuarias.put({
-        ...ops[0].record,
-        fazenda_id: props.fazendaId,
-        client_id: user?.id || "",
-        client_op_id: gesture.ops[0].client_op_id,
-        client_tx_id: gesture.client_tx_id,
-        client_recorded_at: new Date().toISOString()
-      } as unknown as SociedadePecuaria);
-
-      await db.queue_gestures.put({
-        client_tx_id: gesture.client_tx_id,
-        fazenda_id: props.fazendaId,
-        status: "PENDING",
-        created_at: new Date().toISOString()
+      const animalId = crypto.randomUUID();
+      ops.push({
+        table: "animais",
+        action: "INSERT",
+        record: {
+          id: animalId,
+          fazenda_id: props.fazendaId,
+          identificacao: animalIdentificacao.trim(),
+          sexo: animalSexo,
+          status: "ativo",
+          lote_id: selectedLoteId || null,
+          data_entrada: dataEntrada,
+          data_nascimento: animalDataNascimento || null,
+          origem: "sociedade",
+          raca: animalRaca === "null" ? null : (animalRaca as AnimalBreedEnum),
+          payload: {
+            tipo_entrada: "entrada_sociedade",
+            sociedadeId: finalSocId,
+            physicalEntry: true
+          }
+        }
       });
 
-      await db.queue_ops.bulkPut(gesture.ops);
-    });
+      ops.push({
+        table: "sociedade_animais",
+        action: "INSERT",
+        record: {
+          id: crypto.randomUUID(),
+          fazenda_id: props.fazendaId,
+          sociedade_id: finalSocId,
+          animal_id: animalId,
+          data_entrada: dataEntrada,
+          status: "ativo",
+          payload: {
+            tipo_acao: "entrada_sociedade"
+          }
+        }
+      });
+    } else {
+      const qty = parseInt(loteQtd, 10);
+      if (isNaN(qty) || qty <= 0) {
+        alert("A quantidade de animais deve ser maior que zero.");
+        return;
+      }
+      if (!lotePrefixo.trim()) {
+        alert("O prefixo de identificação é obrigatório.");
+        return;
+      }
 
-    setView("list");
+      for (let i = 1; i <= qty; i++) {
+        const animalId = crypto.randomUUID();
+        const ident = `${lotePrefixo.trim()}${i}`;
+        ops.push({
+          table: "animais",
+          action: "INSERT",
+          record: {
+            id: animalId,
+            fazenda_id: props.fazendaId,
+            identificacao: ident,
+            sexo: animalSexo,
+            status: "ativo",
+            lote_id: selectedLoteId || null,
+            data_entrada: dataEntrada,
+            data_nascimento: animalDataNascimento || null,
+            origem: "sociedade",
+            raca: animalRaca === "null" ? null : (animalRaca as AnimalBreedEnum),
+            payload: {
+              tipo_entrada: "entrada_sociedade",
+              sociedadeId: finalSocId,
+              physicalEntry: true
+            }
+          }
+        });
+
+        ops.push({
+          table: "sociedade_animais",
+          action: "INSERT",
+          record: {
+            id: crypto.randomUUID(),
+            fazenda_id: props.fazendaId,
+            sociedade_id: finalSocId,
+            animal_id: animalId,
+            data_entrada: dataEntrada,
+            status: "ativo",
+            payload: {
+              tipo_acao: "entrada_sociedade"
+            }
+          }
+        });
+      }
+    }
+
+    await createGesture(props.fazendaId, ops);
+    alert("Entrada em sociedade registrada com sucesso!");
+    
+    // Reset form
+    setAnimalIdentificacao("");
     setNome("");
     setPercFazenda("50");
     setPercParceiro("50");
+    setSelectedSocId("");
   };
 
-  const handleLinkAnimals = async (sociedadeId: string) => {
-    if (selectedAnimalsWithoutLink.length === 0) return;
+  const handleLinkAnimals = async () => {
+    if (!selectedSocId || selectedSocId === "new") {
+      alert("Selecione uma sociedade ativa.");
+      return;
+    }
+    if (selectedAnimalsWithoutLink.length === 0) {
+      alert("Selecione um ou mais animais sem vínculo societário.");
+      return;
+    }
 
-    const ops = selectedAnimalsWithoutLink.map(animalId => ({
+    const linkOps: OperationInput[] = selectedAnimalsWithoutLink.map(animalId => ({
       table: "sociedade_animais",
-      action: "INSERT" as const,
+      action: "INSERT",
       record: {
-        id: uuidv4(),
-        sociedade_id: sociedadeId,
+        id: crypto.randomUUID(),
+        fazenda_id: props.fazendaId,
+        sociedade_id: selectedSocId,
         animal_id: animalId,
         data_entrada: new Date().toISOString().slice(0, 10),
         status: "ativo",
-        payload: {}
+        payload: {
+          tipo_acao: "vinculo_existente",
+          physicalEntry: false
+        }
       }
     }));
 
-    const gesture = buildEventGesture({
-      fazendaId: props.fazendaId,
-      tipoManejo: "financeiro",
-      occurredAt: new Date().toISOString(),
-      sourceTaskId: null,
-      ops,
-      skipDbPut: true
-    });
-
-    await db.transaction("rw", [db.state_sociedade_animais, db.queue_ops, db.queue_gestures], async () => {
-      for (let i = 0; i < ops.length; i++) {
-        await db.state_sociedade_animais.put({
-          ...ops[i].record,
-          fazenda_id: props.fazendaId,
-          client_id: user?.id || "",
-          client_op_id: gesture.ops[i].client_op_id,
-          client_tx_id: gesture.client_tx_id,
-          client_recorded_at: new Date().toISOString()
-        } as unknown as typeof db.state_sociedade_animais.schema.instanceTemplate);
-      }
-
-      await db.queue_gestures.put({
-        client_tx_id: gesture.client_tx_id,
-        fazenda_id: props.fazendaId,
-        status: "PENDING",
-        created_at: new Date().toISOString()
-      });
-
-      await db.queue_ops.bulkPut(gesture.ops);
-    });
-    alert(`Animais vinculados com sucesso!`);
+    await createGesture(props.fazendaId, linkOps);
+    alert(`${linkOps.length} animais vinculados com sucesso!`);
   };
 
-  const handleUnlinkAnimals = async () => {
-    if (selectedAnimalsWithActiveLink.length === 0) return;
-    if (!dataSaida || !motivoSaida) {
-      alert("Data de saída e motivo de saída são obrigatórios para encerrar o vínculo.");
+  const handleRetiradaSociedade = async () => {
+    if (selectedAnimalsWithActiveLink.length === 0) {
+      alert("Selecione animais que possuam vínculo societário ativo.");
       return;
     }
-    if (!confirm("Deseja realmente encerrar o vínculo atual destes animais?")) return;
+    if (!dataSaida) {
+      alert("A data de saída é obrigatória.");
+      return;
+    }
+    if (!confirm("Deseja realmente retirar estes animais da sociedade?")) return;
 
+    const ops: OperationInput[] = [];
     const activeLinksToClose = activeLinks.filter(l => selectedAnimalsWithActiveLink.includes(l.animal_id));
-    
-    const ops = activeLinksToClose.map(link => ({
-      table: "sociedade_animais",
-      action: "UPDATE" as const,
-      record: {
-        id: link.id,
-        status: "encerrado",
-        data_saida: dataSaida,
-        motivo_saida: motivoSaida,
-        payload: { encerradoPor: "manual" }
-      }
-    }));
 
-    const gesture = buildEventGesture({
-      fazendaId: props.fazendaId,
-      tipoManejo: "financeiro",
-      occurredAt: new Date().toISOString(),
-      sourceTaskId: null,
-      ops,
-      skipDbPut: true
-    });
-
-    await db.transaction("rw", [db.state_sociedade_animais, db.queue_ops, db.queue_gestures], async () => {
-      for (let i = 0; i < ops.length; i++) {
-        const existing = activeLinksToClose[i];
-        await db.state_sociedade_animais.put({
-          ...existing,
-          ...ops[i].record,
-          client_id: user?.id || "",
-          client_op_id: gesture.ops[i].client_op_id,
-          client_tx_id: gesture.client_tx_id,
-          client_recorded_at: new Date().toISOString()
-        } as unknown as typeof db.state_sociedade_animais.schema.instanceTemplate);
-      }
-
-      await db.queue_gestures.put({
-        client_tx_id: gesture.client_tx_id,
-        fazenda_id: props.fazendaId,
-        status: "PENDING",
-        created_at: new Date().toISOString()
-      });
-
-      await db.queue_ops.bulkPut(gesture.ops);
-    });
-    alert(`Vínculos encerrados com sucesso!`);
-  };
-
-  const handleEndSociety = async (sociedadeId: string) => {
-    if (!confirm("Deseja realmente encerrar essa sociedade? Todos os vínculos ativos serão encerrados.")) return;
-
-    const linksToClose = activeLinks.filter(l => l.sociedade_id === sociedadeId);
-    
-    const ops = [
-      {
-        table: "sociedades_pecuarias",
-        action: "UPDATE" as const,
-        record: {
-          id: sociedadeId,
-          status: "encerrada",
-          data_fim: new Date().toISOString().slice(0, 10),
-        }
-      },
-      ...linksToClose.map(link => ({
+    for (const link of activeLinksToClose) {
+      // 1. Encerrar vínculo societário
+      ops.push({
         table: "sociedade_animais",
-        action: "UPDATE" as const,
+        action: "UPDATE",
         record: {
           id: link.id,
           status: "encerrado",
-          data_saida: new Date().toISOString().slice(0, 10),
-          motivo_saida: "encerramento_sociedade",
+          data_saida: dataSaida,
+          motivo_saida: "retirada_sociedade",
+          payload: {
+            tipo_acao: "retirada_sociedade"
+          }
         }
-      }))
-    ];
-
-    const gesture = buildEventGesture({
-      fazendaId: props.fazendaId,
-      tipoManejo: "financeiro",
-      occurredAt: new Date().toISOString(),
-      sourceTaskId: null,
-      ops,
-      skipDbPut: true
-    });
-
-    await db.transaction("rw", [db.state_sociedades_pecuarias, db.state_sociedade_animais, db.queue_ops, db.queue_gestures], async () => {
-      const society = activeSocieties.find(s => s.id === sociedadeId)!;
-      await db.state_sociedades_pecuarias.put({
-        ...society,
-        ...ops[0].record,
-        client_id: user?.id || "",
-        client_op_id: gesture.ops[0].client_op_id,
-        client_tx_id: gesture.client_tx_id,
-        client_recorded_at: new Date().toISOString()
-      } as unknown as SociedadePecuaria);
-
-      for (let i = 1; i < ops.length; i++) {
-        const link = linksToClose[i - 1];
-        await db.state_sociedade_animais.put({
-          ...link,
-          ...ops[i].record,
-          client_id: user?.id || "",
-          client_op_id: gesture.ops[i].client_op_id,
-          client_tx_id: gesture.client_tx_id,
-          client_recorded_at: new Date().toISOString()
-        } as unknown as typeof db.state_sociedade_animais.schema.instanceTemplate);
-      }
-
-      await db.queue_gestures.put({
-        client_tx_id: gesture.client_tx_id,
-        fazenda_id: props.fazendaId,
-        status: "PENDING",
-        created_at: new Date().toISOString()
       });
 
-      await db.queue_ops.bulkPut(gesture.ops);
+      // 2. Se retirada física, atualizar animal
+      if (physicalRemoval) {
+        const animal = await db.state_animais.get(link.animal_id);
+        ops.push({
+          table: "animais",
+          action: "UPDATE",
+          record: {
+            id: link.animal_id,
+            status: "retirado",
+            data_saida: dataSaida,
+            lote_id: null,
+            payload: {
+              ...(animal?.payload || {}),
+              tipo_saida: "retirada_sociedade",
+              sociedadeId: link.sociedade_id,
+              sociedadeAnimalId: link.id,
+              motivo_saida: motivoSaida,
+              physicalRemoval: true
+            }
+          }
+        });
+      }
+    }
+
+    await createGesture(props.fazendaId, ops);
+    alert(`Retirada de sociedade concluída para ${activeLinksToClose.length} animais!`);
+    setMotivoSaida("");
+  };
+
+  const handleEndSociety = async () => {
+    if (!selectedSocId || selectedSocId === "new") {
+      alert("Selecione a sociedade a ser encerrada.");
+      return;
+    }
+    if (!dataFim) {
+      alert("A data de encerramento é obrigatória.");
+      return;
+    }
+    if (!confirm("Deseja realmente encerrar essa sociedade?")) return;
+
+    const ops: OperationInput[] = [];
+    const linksToClose = activeLinks.filter(l => l.sociedade_id === selectedSocId);
+
+    // 1. Encerrar sociedade pecuária
+    ops.push({
+      table: "sociedades_pecuarias",
+      action: "UPDATE",
+      record: {
+        id: selectedSocId,
+        status: "encerrada",
+        data_fim: dataFim,
+      }
     });
-    alert("Sociedade encerrada!");
+
+    // 2. Encerrar todos os vínculos ativos
+    for (const link of linksToClose) {
+      ops.push({
+        table: "sociedade_animais",
+        action: "UPDATE",
+        record: {
+          id: link.id,
+          status: "encerrado",
+          data_saida: dataFim,
+          motivo_saida: "encerramento_sociedade",
+          payload: {
+            tipo_acao: "encerramento_sociedade"
+          }
+        }
+      });
+
+      // Se animais NÃO permanecem na fazenda (saída física), alterar status dos ativos para retirado
+      if (!animalsRemain) {
+        const animal = await db.state_animais.get(link.animal_id);
+        if (animal && animal.status === "ativo") {
+          ops.push({
+            table: "animais",
+            action: "UPDATE",
+            record: {
+              id: animal.id,
+              status: "retirado",
+              data_saida: dataFim,
+              lote_id: null,
+              payload: {
+                ...(animal.payload || {}),
+                tipo_saida: "encerramento_sociedade",
+                sociedadeId: selectedSocId,
+                sociedadeAnimalId: link.id,
+                physicalRemoval: true
+              }
+            }
+          });
+        }
+      }
+    }
+
+    await createGesture(props.fazendaId, ops);
+    alert("Sociedade encerrada com sucesso!");
+    setSelectedSocId("");
   };
 
   return (
-    <div className="space-y-6 mt-4 p-4 border rounded-xl bg-card">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold">Sociedade Pecuária</h3>
-        {view === "list" ? (
-          <Button size="sm" onClick={() => setView("create")}>
-            <Plus className="mr-2 h-4 w-4" /> Nova Sociedade
-          </Button>
-        ) : (
-          <Button variant="ghost" size="sm" onClick={() => setView("list")}>
-            Voltar
-          </Button>
-        )}
+    <div className="space-y-6 mt-4 p-5 border rounded-xl bg-card shadow-sm transition-all duration-300">
+      
+      {/* 1. Header do Painel */}
+      <div className="flex flex-col gap-1 border-b pb-4">
+        <div className="flex items-center gap-2 text-primary">
+          <Users className="h-5 w-5" />
+          <h3 className="text-lg font-semibold tracking-tight text-foreground">Gestão de Negócios Patrimoniais</h3>
+        </div>
+        <p className="text-xs text-muted-foreground">Sociedade Pecuária e Parcerias Compartilhadas</p>
       </div>
 
-      {view === "create" && (
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label>Nome da Sociedade</Label>
-              <Input value={nome} onChange={e => setNome(e.target.value)} placeholder="Ex: Sociedade Nelore" />
+      {/* 2. Seletor Visual de Ação E2E */}
+      <div className="space-y-2">
+        <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/80">O que deseja registrar?</Label>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {(
+            [
+              { id: "entrada", label: "Entrada em Sociedade", icon: ArrowDownLeft, desc: "Novos animais compartidos" },
+              { id: "vincular", label: "Vincular Existente", icon: Link, desc: "Formalizar sociedade no rebanho" },
+              { id: "retirar", label: "Retirar de Sociedade", icon: ArrowUpRight, desc: "Saída/acerto de animais" },
+              { id: "encerrar", label: "Encerrar Sociedade", icon: Archive, desc: "Finalizar contrato/parceria" },
+            ] as const
+          ).map((item) => {
+            const Icon = item.icon;
+            const active = actionType === item.id;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => setActionType(item.id)}
+                className={`flex flex-col items-start gap-2 p-3.5 text-left border rounded-xl shadow-sm transition-all duration-200 hover:-translate-y-0.5 ${
+                  active 
+                    ? "border-primary bg-primary/5 text-primary ring-1 ring-primary/30" 
+                    : "border-border hover:border-foreground/20 hover:bg-muted/30"
+                }`}
+              >
+                <div className={`p-2 rounded-lg ${active ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>
+                  <Icon className="h-4 w-4" />
+                </div>
+                <div className="space-y-0.5">
+                  <p className="text-xs font-semibold leading-none">{item.label}</p>
+                  <p className="text-[10px] text-muted-foreground leading-tight mt-1">{item.desc}</p>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* 3. Microcopy Informativo/Assistivo */}
+      <div className="flex items-start gap-2.5 rounded-lg border border-primary/25 bg-primary/5 p-3 text-[11px] text-primary/95 leading-relaxed shadow-sm">
+        <Info className="h-4 w-4 shrink-0 mt-0.5 text-primary" />
+        <div className="space-y-1">
+          {actionType === "entrada" && (
+            <p><strong>Entrada em sociedade:</strong> registra animais que passam a compor o rebanho da fazenda com vínculo patrimonial compartilhado. <em>Este fluxo não gera rateio ou lançamento financeiro automático.</em></p>
+          )}
+          {actionType === "vincular" && (
+            <p><strong>Vincular animal existente:</strong> formaliza a entrada de animal ativo da propriedade em uma sociedade específica, sem alterar a presença física ou lote. <em>Este fluxo não gera rateio ou lançamento financeiro automático.</em></p>
+          )}
+          {actionType === "retirar" && (
+            <p><strong>Retirada de sociedade:</strong> encerra a copropriedade de animais. Pode ou não representar a saída física da propriedade. Informe explicitamente. <em>Este fluxo não gera rateio ou lançamento financeiro automático.</em></p>
+          )}
+          {actionType === "encerrar" && (
+            <p><strong>Encerrar sociedade:</strong> finaliza a parceria/sociedade. É necessário escolher se os animais permanecem ativos na fazenda ou se saem fisicamente. <em>Este fluxo não gera rateio ou lançamento financeiro automático.</em></p>
+          )}
+        </div>
+      </div>
+
+      {/* 4. Fluxo Específico */}
+      <div className="border-t pt-5">
+        
+        {/* FLUXO 1: ENTRADA EM SOCIEDADE */}
+        {actionType === "entrada" && (
+          <div className="space-y-5">
+            <h4 className="text-sm font-semibold text-foreground/80">Registrar Entrada Física/Patrimonial</h4>
+            
+            {/* Seletor de Sociedade */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Sociedade Parceira</Label>
+                <Select value={selectedSocId} onValueChange={setSelectedSocId}>
+                  <SelectTrigger className="bg-background"><SelectValue placeholder="Selecione" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="new">Criar nova sociedade...</SelectItem>
+                    {activeSocieties.map(s => (
+                      <SelectItem key={s.id} value={s.id}>{s.nome} ({s.percentual_fazenda}%/{s.percentual_parceiro}%)</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Data de Entrada</Label>
+                <Input type="date" value={dataEntrada} onChange={e => setDataEntrada(e.target.value)} className="bg-background" />
+              </div>
             </div>
-            <div>
-              <Label>Contraparte</Label>
-              <Select value={contraparteId} onValueChange={setContraparteId}>
-                <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                <SelectContent>
-                  {props.contrapartes?.map(c => (
-                    <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+
+            {/* Criação de Nova Sociedade on the fly */}
+            {selectedSocId === "new" && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border rounded-xl bg-muted/20">
+                <div className="space-y-2">
+                  <Label>Nome da Sociedade</Label>
+                  <Input value={nome} onChange={e => setNome(e.target.value)} placeholder="Ex: Sociedade Nelore G1" className="bg-background" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Contraparte (Parceiro)</Label>
+                  <Select value={contraparteId} onValueChange={setContraparteId}>
+                    <SelectTrigger className="bg-background"><SelectValue placeholder="Selecione" /></SelectTrigger>
+                    <SelectContent>
+                      {props.contrapartes?.map(c => (
+                        <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>% Participação Fazenda</Label>
+                  <Input type="number" step="0.0001" value={percFazenda} onChange={e => setPercFazenda(e.target.value)} className="bg-background" />
+                </div>
+                <div className="space-y-2">
+                  <Label>% Participação Parceiro</Label>
+                  <Input type="number" step="0.0001" value={percParceiro} onChange={e => setPercParceiro(e.target.value)} className="bg-background" />
+                </div>
+              </div>
+            )}
+
+            {/* Seletor de Modo de Cadastro */}
+            <div className="space-y-2">
+              <Label>Modo de Cadastro</Label>
+              <div className="flex gap-2">
+                {[
+                  { id: "individual", label: "Animal Individual" },
+                  { id: "lote", label: "Múltiplos / Lote de Animais" },
+                ].map((opt) => (
+                  <Button
+                    key={opt.id}
+                    type="button"
+                    variant={regMode === opt.id ? "default" : "outline"}
+                    onClick={() => setRegMode(opt.id as "individual" | "lote")}
+                    className="rounded-full shadow-none flex-1 bg-background aria-selected:bg-primary"
+                  >
+                    {opt.label}
+                  </Button>
+                ))}
+              </div>
             </div>
-            <div>
-              <Label>% Fazenda</Label>
-              <Input type="number" step="0.0001" value={percFazenda} onChange={e => setPercFazenda(e.target.value)} />
+
+            {/* Dados do(s) Animal(is) */}
+            <div className="p-4 border rounded-xl space-y-4 bg-muted/10">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                
+                {regMode === "individual" ? (
+                  <div className="space-y-2">
+                    <Label>Identificação do Animal</Label>
+                    <Input value={animalIdentificacao} onChange={e => setAnimalIdentificacao(e.target.value)} placeholder="Ex: BR-1020" className="bg-background" />
+                  </div>
+                ) : (
+                  <>
+                    <div className="space-y-2">
+                      <Label>Quantidade de Animais</Label>
+                      <Input type="number" min="1" value={loteQtd} onChange={e => setLoteQtd(e.target.value)} className="bg-background" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Prefixo de Identificação</Label>
+                      <Input value={lotePrefixo} onChange={e => setLotePrefixo(e.target.value)} placeholder="Ex: SOC-" className="bg-background" />
+                    </div>
+                  </>
+                )}
+
+                <div className="space-y-2">
+                  <Label>Sexo</Label>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant={animalSexo === "F" ? "default" : "outline"}
+                      className="flex-1 bg-background"
+                      onClick={() => setAnimalSexo("F")}
+                    >
+                      Fêmea
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={animalSexo === "M" ? "default" : "outline"}
+                      className="flex-1 bg-background"
+                      onClick={() => setAnimalSexo("M")}
+                    >
+                      Macho
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Raça</Label>
+                  <Select value={animalRaca} onValueChange={setAnimalRaca}>
+                    <SelectTrigger className="bg-background"><SelectValue placeholder="Selecione" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="null">Raça não informada</SelectItem>
+                      {ANIMAL_BREED_OPTIONS.map((b) => (
+                        <SelectItem key={b.value} value={b.value}>{b.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Data Nascimento (Opcional)</Label>
+                  <Input type="date" value={animalDataNascimento} onChange={e => setAnimalDataNascimento(e.target.value)} className="bg-background" />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Lote Inicial</Label>
+                  <Select value={selectedLoteId} onValueChange={setSelectedLoteId}>
+                    <SelectTrigger className="bg-background"><SelectValue placeholder="Sem Lote" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="null">Sem Lote</SelectItem>
+                      {activeLotes.map(l => (
+                        <SelectItem key={l.id} value={l.id}>{l.nome}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+              </div>
             </div>
-            <div>
-              <Label>% Parceiro</Label>
-              <Input type="number" step="0.0001" value={percParceiro} onChange={e => setPercParceiro(e.target.value)} />
-            </div>
+
+            <Button onClick={handleEntradaSociedade} className="w-full">
+              Confirmar Registro de Entrada
+            </Button>
           </div>
-          <Button onClick={handleCreateSociety} className="w-full">
-            Criar e Salvar
-          </Button>
-        </div>
-      )}
+        )}
 
-      {view === "list" && (
-        <div className="space-y-4">
-          {activeSocieties.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Nenhuma sociedade ativa.</p>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {activeSocieties.map(s => (
-                <div key={s.id} className="border p-4 rounded-lg flex flex-col gap-2">
-                  <div className="flex justify-between items-start">
-                    <h4 className="font-semibold">{s.nome}</h4>
-                    <span className="text-xs bg-muted px-2 py-1 rounded-full">{s.percentual_fazenda}% / {s.percentual_parceiro}%</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Contraparte: {props.contrapartes?.find(c => c.id === s.contraparte_id)?.nome || s.contraparte_id}
-                  </p>
-                  <div className="flex gap-2 mt-2">
-                    <Button 
-                      size="sm" 
-                      variant="outline" 
-                      disabled={selectedAnimalsWithoutLink.length === 0}
-                      onClick={() => handleLinkAnimals(s.id)}
-                    >
-                      Vincular {selectedAnimalsWithoutLink.length} selecionados
-                    </Button>
-                    <Button 
-                      size="sm" 
-                      variant="destructive" 
-                      onClick={() => handleEndSociety(s.id)}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+        {/* FLUXO 2: VINCULAR ANIMAIS JÁ EXISTENTES */}
+        {actionType === "vincular" && (
+          <div className="space-y-5">
+            <h4 className="text-sm font-semibold text-foreground/80">Vincular Rebanho Ativo</h4>
 
-          {selectedAnimalsWithActiveLink.length > 0 && (
-            <div className="p-4 bg-orange-50 dark:bg-orange-950 border border-orange-200 dark:border-orange-800 rounded-lg">
-              <div className="flex items-center gap-2 text-orange-800 dark:text-orange-200 font-semibold mb-2">
-                <ShieldAlert className="h-5 w-5" />
-                <span>Animais já vinculados ({selectedAnimalsWithActiveLink.length})</span>
+            {selectedAnimalsWithoutLink.length === 0 ? (
+              <div className="p-4 border border-dashed rounded-xl bg-muted/10 text-center">
+                <p className="text-sm text-muted-foreground">Nenhum animal sem sociedade selecionado na lista do Registrar.</p>
+                <p className="text-xs text-muted-foreground/80 mt-1">Por favor, volte e selecione animais ativos na propriedade antes de vincular.</p>
               </div>
-              <p className="text-sm text-orange-700 dark:text-orange-300 mb-4">
-                Estes animais já estão em uma sociedade. Para encerrar o vínculo atual, informe a data e o motivo.
-              </p>
-              <div className="flex flex-col gap-3 mb-4 sm:flex-row sm:items-end">
-                <div className="flex-1">
-                  <Label className="text-orange-900 dark:text-orange-100">Data de Saída</Label>
-                  <Input type="date" value={dataSaida} onChange={e => setDataSaida(e.target.value)} className="bg-orange-100/50 dark:bg-orange-900/50 border-orange-200 dark:border-orange-800 text-orange-900 dark:text-orange-100" />
+            ) : (
+              <div className="space-y-4">
+                <div className="flex justify-between items-center bg-muted/20 p-3 rounded-lg border">
+                  <span className="text-xs font-semibold text-foreground">{selectedAnimalsWithoutLink.length} animal(is) prontos para receber sociedade.</span>
                 </div>
-                <div className="flex-[2]">
-                  <Label className="text-orange-900 dark:text-orange-100">Motivo</Label>
-                  <Input value={motivoSaida} onChange={e => setMotivoSaida(e.target.value)} placeholder="Ex: Substituição de parceria" className="bg-orange-100/50 dark:bg-orange-900/50 border-orange-200 dark:border-orange-800 text-orange-900 dark:text-orange-100" />
+
+                <div className="space-y-2">
+                  <Label>Escolha a Sociedade Receptora</Label>
+                  <Select value={selectedSocId} onValueChange={setSelectedSocId}>
+                    <SelectTrigger className="bg-background"><SelectValue placeholder="Selecione" /></SelectTrigger>
+                    <SelectContent>
+                      {activeSocieties.map(s => (
+                        <SelectItem key={s.id} value={s.id}>{s.nome} ({s.percentual_fazenda}%/{s.percentual_parceiro}%)</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
+
+                <Button onClick={handleLinkAnimals} className="w-full" disabled={!selectedSocId}>
+                  Vincular {selectedAnimalsWithoutLink.length} Animais à Sociedade
+                </Button>
               </div>
-              <Button size="sm" variant="outline" className="border-orange-300 text-orange-800 bg-orange-100/50" onClick={handleUnlinkAnimals}>
-                Confirmar e Encerrar Vínculos
-              </Button>
+            )}
+          </div>
+        )}
+
+        {/* FLUXO 3: RETIRADA DA SOCIEDADE */}
+        {actionType === "retirar" && (
+          <div className="space-y-5">
+            <h4 className="text-sm font-semibold text-foreground/80">Confirmar Retirada de Sociedade</h4>
+
+            {selectedAnimalsWithActiveLink.length === 0 ? (
+              <div className="p-4 border border-dashed rounded-xl bg-muted/10 text-center">
+                <p className="text-sm text-muted-foreground">Nenhum animal vinculado a sociedade ativo selecionado na lista.</p>
+              </div>
+            ) : (
+              <div className="space-y-4 p-4 border rounded-xl bg-orange-50/50 dark:bg-orange-950/20 border-orange-200 dark:border-orange-900/60">
+                <div className="flex items-center gap-2 text-orange-800 dark:text-orange-300 font-semibold text-sm">
+                  <ShieldAlert className="h-4 w-4 shrink-0" />
+                  <span>Retirada operacional para {selectedAnimalsWithActiveLink.length} animal(is)</span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Data de Saída / Acerto</Label>
+                    <Input type="date" value={dataSaida} onChange={e => setDataSaida(e.target.value)} className="bg-background text-foreground" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Motivo / Observações</Label>
+                    <Input value={motivoSaida} onChange={e => setMotivoSaida(e.target.value)} placeholder="Ex: Substituição ou acerto de partes" className="bg-background text-foreground" />
+                  </div>
+                </div>
+
+                <div className="space-y-2 border-t pt-3 mt-2">
+                  <Label className="text-orange-900 dark:text-orange-100 font-semibold">Os animais também saem fisicamente da fazenda?</Label>
+                  <div className="flex gap-2 mt-1.5">
+                    <Button
+                      type="button"
+                      variant={!physicalRemoval ? "default" : "outline"}
+                      className="flex-1 bg-background"
+                      onClick={() => setPhysicalRemoval(false)}
+                    >
+                      Não, apenas patrimonial (permanece ativo)
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={physicalRemoval ? "destructive" : "outline"}
+                      className="flex-1 bg-background"
+                      onClick={() => setPhysicalRemoval(true)}
+                    >
+                      Sim, saída física (status mudará para 'retirado')
+                    </Button>
+                  </div>
+                </div>
+
+                <Button 
+                  onClick={handleRetiradaSociedade} 
+                  variant={physicalRemoval ? "destructive" : "default"}
+                  className="w-full mt-2"
+                >
+                  Confirmar e Executar Retiradas
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* FLUXO 4: ENCERRAMENTO DA SOCIEDADE */}
+        {actionType === "encerrar" && (
+          <div className="space-y-5">
+            <h4 className="text-sm font-semibold text-foreground/80">Encerrar Parceria e Contratos</h4>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Selecione a Sociedade Ativa</Label>
+                <Select value={selectedSocId} onValueChange={setSelectedSocId}>
+                  <SelectTrigger className="bg-background"><SelectValue placeholder="Selecione" /></SelectTrigger>
+                  <SelectContent>
+                    {activeSocieties.map(s => (
+                      <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Data de Fim / Encerramento</Label>
+                <Input type="date" value={dataFim} onChange={e => setDataFim(e.target.value)} className="bg-background" />
+              </div>
             </div>
-          )}
-        </div>
-      )}
+
+            {selectedSocId && selectedSocId !== "new" && (
+              <div className="p-4 border rounded-xl bg-orange-50/50 dark:bg-orange-950/20 border-orange-200 dark:border-orange-900/60 space-y-4">
+                
+                <div className="space-y-2">
+                  <Label className="font-semibold text-orange-900 dark:text-orange-100">Ao encerrar a sociedade, os animais permanecem na fazenda?</Label>
+                  <div className="flex gap-2 mt-1">
+                    <Button
+                      type="button"
+                      variant={animalsRemain ? "default" : "outline"}
+                      className="flex-1 bg-background"
+                      onClick={() => setAnimalsRemain(true)}
+                    >
+                      Sim, permanecem na fazenda (ativos)
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={!animalsRemain ? "destructive" : "outline"}
+                      className="flex-1 bg-background"
+                      onClick={() => setAnimalsRemain(false)}
+                    >
+                      Não, saem da fazenda (retirados)
+                    </Button>
+                  </div>
+                </div>
+
+                <Button 
+                  onClick={handleEndSociety} 
+                  variant={!animalsRemain ? "destructive" : "default"}
+                  className="w-full"
+                >
+                  Finalizar Sociedade e Vínculos
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+
+      </div>
+
     </div>
   );
 }
