@@ -208,7 +208,7 @@ export function diagnosticWhichSchedulerWasUsed(
     }
   }
 
-  lines.push(`  Item: ${item.id}`);
+  lines.push(`  Item: ${item.id || item.protocol_item_id}`);
   lines.push(
     `  Result: ${result.result ? "Computed successfully" : "NULL (no occurrence)"}`,
   );

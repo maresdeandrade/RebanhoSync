@@ -229,7 +229,7 @@ describe("Next Occurrence Service", () => {
         metadata,
       );
 
-      expect(diagnostic).toContain(fixture.domain.id);
+      expect(diagnostic).toContain(fixture.domain.id || "");
     });
 
     it("diagnóstico contém timestamp", () => {
