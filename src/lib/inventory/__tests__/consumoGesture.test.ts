@@ -11,7 +11,11 @@ describe("consumoGesture", () => {
       quantidadeBase: 15,
       unidadeBase: "ml",
       occurredAt: "2026-05-28T20:00:00Z",
-      custoUnitario: 0.50,
+      lotRef: {
+        custo_unitario: 0.50,
+        custo_total: null,
+        quantidade_inicial_base: 100,
+      },
       animalId: "animal-123",
       observacoes: "Vacina de aftosa",
     });
@@ -30,6 +34,10 @@ describe("consumoGesture", () => {
       observacoes: "Vacina de aftosa",
       custo_unitario_snapshot: 0.50,
       custo_total_snapshot: 7.50, // 0.5 * 15
+      payload: {
+        origem_movimentacao: "baixa_automatica_evento",
+        custo_status: "informado",
+      },
     });
     expect(op.record.id).toBeDefined();
   });
@@ -43,7 +51,11 @@ describe("consumoGesture", () => {
       quantidadeBase: 50,
       unidadeBase: "kg",
       occurredAt: "2026-05-28T21:00:00Z",
-      custoUnitario: 2.25,
+      lotRef: {
+        custo_unitario: 2.25,
+        custo_total: null,
+        quantidade_inicial_base: 100,
+      },
       loteId: "lote-boi",
     });
 
@@ -60,6 +72,34 @@ describe("consumoGesture", () => {
       rebanho_lote_id: "lote-boi",
       custo_unitario_snapshot: 2.25,
       custo_total_snapshot: 112.50, // 2.25 * 50
+      payload: {
+        origem_movimentacao: "baixa_automatica_evento",
+        custo_status: "informado",
+      },
+    });
+  });
+
+  it("gera snapshot de custo ausente se lote nao possui custo", () => {
+    const op = buildConsumoMovimentacaoOp({
+      eventId: "evt-789",
+      dominio: "nutricao",
+      insumoId: "insumo-alimento",
+      insumoLoteId: "lote-alimento",
+      quantidadeBase: 10,
+      unidadeBase: "kg",
+      occurredAt: "2026-05-28T21:00:00Z",
+      lotRef: {
+        custo_unitario: null,
+        custo_total: null,
+        quantidade_inicial_base: 100,
+      },
+    });
+
+    expect(op.record.custo_unitario_snapshot).toBeNull();
+    expect(op.record.custo_total_snapshot).toBeNull();
+    expect(op.record.payload).toMatchObject({
+      custo_status: "ausente",
+      limitacoes: ["Sem custo unitario cadastrado no lote"],
     });
   });
 

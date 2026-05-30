@@ -176,7 +176,7 @@ describe("standard sanitary protocol library", () => {
       calendario_base: {
         version: STANDARD_PROTOCOL_LIBRARY_VERSION,
         profile: "preventivo_anual",
-        label: "Revisao anual preventiva",
+        label: "Clostridioses Anual (Manqueira/Polivalente)",
         categoria: "vacinas",
       },
     });

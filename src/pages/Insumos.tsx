@@ -40,6 +40,10 @@ import {
   projectInventoryLotBalance,
 } from "@/lib/inventory/inventoryContracts";
 import {
+  buildInventoryCostSnapshot,
+  resolveInventoryLotUnitCost,
+} from "@/lib/inventory/costing";
+import {
   buildInventoryResupplyPayload,
   evaluateInventoryResupply,
   parseInventoryResupplyPolicy,
@@ -83,6 +87,10 @@ type EntryForm = {
   validade: string;
   fabricante: string;
   localArmazenamento: string;
+  custoTotal: string;
+  custoUnitario: string;
+  origemCusto: "manual" | "ausente" | "financeiro_vinculado";
+  financeTransactionId: string | null;
 };
 
 type ConsumptionForm = {
@@ -116,6 +124,9 @@ type LotEditForm = {
   fabricante: string;
   localArmazenamento: string;
   status: InsumoLoteStatusEnum;
+  custoTotal: string;
+  custoUnitario: string;
+  origemCusto: "manual" | "ausente" | "financeiro_vinculado";
 };
 
 type InventorySnapshot = {
@@ -178,6 +189,10 @@ const EMPTY_ENTRY_FORM: EntryForm = {
   validade: "",
   fabricante: "",
   localArmazenamento: "",
+  custoTotal: "",
+  custoUnitario: "",
+  origemCusto: "ausente",
+  financeTransactionId: null,
 };
 
 const EMPTY_CONSUMPTION_FORM: ConsumptionForm = {
@@ -494,6 +509,9 @@ function buildLotEditForm(
     fabricante: lot.fabricante ?? "",
     localArmazenamento: lot.local_armazenamento ?? "",
     status: lot.status,
+    custoTotal: lot.custo_total == null ? "" : String(lot.custo_total),
+    custoUnitario: lot.custo_unitario == null ? "" : String(lot.custo_unitario),
+    origemCusto: (lot.payload?.origem_custo as "manual" | "ausente" | "financeiro_vinculado" | undefined) ?? (lot.custo_total != null || lot.custo_unitario != null ? "manual" : "ausente"),
   };
 }
 
@@ -911,6 +929,51 @@ export default function Insumos() {
       return;
     }
 
+    const quantidadeBase = lot.quantidade_inicial_base;
+    const hasCustoTotal = editForm.custoTotal.trim() !== "";
+    const hasCustoUnitario = editForm.custoUnitario.trim() !== "";
+
+    let resolvedCustoUnitario: number | null = null;
+    let resolvedCustoTotal: number | null = null;
+    let resolvedCustoStatus: "informado" | "ausente" = "ausente";
+
+    if (hasCustoTotal || hasCustoUnitario) {
+      const parsedCustoTotal = hasCustoTotal ? parseFloat(editForm.custoTotal.replace(",", ".")) : null;
+      const parsedCustoUnitario = hasCustoUnitario ? parseFloat(editForm.custoUnitario.replace(",", ".")) : null;
+
+      if (hasCustoTotal && (parsedCustoTotal === null || isNaN(parsedCustoTotal) || parsedCustoTotal < 0)) {
+        showError("Custo total informado é inválido.");
+        return;
+      }
+      if (hasCustoUnitario && (parsedCustoUnitario === null || isNaN(parsedCustoUnitario) || parsedCustoUnitario < 0)) {
+        showError("Custo unitário informado é inválido.");
+        return;
+      }
+
+      if (parsedCustoTotal !== null && parsedCustoUnitario !== null) {
+        const calculatedTotal = parsedCustoUnitario * quantidadeBase;
+        if (Math.abs(parsedCustoTotal - calculatedTotal) > 0.01) {
+          showError(`Coerência de custos inválida: custo total informado (${parsedCustoTotal.toFixed(2)}) diverge do calculado (${calculatedTotal.toFixed(2)}) com base no custo unitário.`);
+          return;
+        }
+        resolvedCustoTotal = parsedCustoTotal;
+        resolvedCustoUnitario = parsedCustoUnitario;
+        resolvedCustoStatus = "informado";
+      } else if (parsedCustoTotal !== null) {
+        resolvedCustoTotal = parsedCustoTotal;
+        resolvedCustoUnitario = parseFloat((parsedCustoTotal / quantidadeBase).toFixed(4));
+        resolvedCustoStatus = "informado";
+      } else if (parsedCustoUnitario !== null) {
+        resolvedCustoUnitario = parsedCustoUnitario;
+        resolvedCustoTotal = parseFloat((parsedCustoUnitario * quantidadeBase).toFixed(2));
+        resolvedCustoStatus = "informado";
+      }
+    }
+
+    const resolvedOrigemCusto = resolvedCustoStatus === "informado"
+      ? (editForm.origemCusto === "ausente" ? "manual" : editForm.origemCusto)
+      : "ausente";
+
     const ops = [
       {
         table: "insumos",
@@ -942,9 +1005,16 @@ export default function Insumos() {
           fabricante: editForm.fabricante.trim() || null,
           local_armazenamento: editForm.localArmazenamento.trim() || null,
           status: editForm.status,
+          custo_total: resolvedCustoTotal,
+          custo_unitario: resolvedCustoUnitario,
           payload: {
             ...lot.payload,
             origem_ultima_edicao: "inventario_ui_cadastro",
+            custo_status: resolvedCustoStatus,
+            origem_custo: resolvedOrigemCusto,
+            finance_transaction_id: lot.payload?.finance_transaction_id ?? null,
+            custo_total_informado: hasCustoTotal ? editForm.custoTotal.trim() : null,
+            custo_unitario_informado: hasCustoUnitario ? editForm.custoUnitario.trim() : null,
           },
         },
       },
@@ -1014,6 +1084,51 @@ export default function Insumos() {
       presentationQuantity: quantidadeEntrada,
       presentationBaseQuantity: quantidadePorApresentacao,
     });
+
+    const hasCustoTotal = entryForm.custoTotal.trim() !== "";
+    const hasCustoUnitario = entryForm.custoUnitario.trim() !== "";
+
+    let resolvedCustoUnitario: number | null = null;
+    let resolvedCustoTotal: number | null = null;
+    let resolvedCustoStatus: "informado" | "ausente" = "ausente";
+
+    if (hasCustoTotal || hasCustoUnitario) {
+      const parsedCustoTotal = hasCustoTotal ? parseFloat(entryForm.custoTotal.replace(",", ".")) : null;
+      const parsedCustoUnitario = hasCustoUnitario ? parseFloat(entryForm.custoUnitario.replace(",", ".")) : null;
+
+      if (hasCustoTotal && (parsedCustoTotal === null || isNaN(parsedCustoTotal) || parsedCustoTotal < 0)) {
+        showError("Custo total informado é inválido.");
+        return;
+      }
+      if (hasCustoUnitario && (parsedCustoUnitario === null || isNaN(parsedCustoUnitario) || parsedCustoUnitario < 0)) {
+        showError("Custo unitário informado é inválido.");
+        return;
+      }
+
+      if (parsedCustoTotal !== null && parsedCustoUnitario !== null) {
+        const calculatedTotal = parsedCustoUnitario * quantidadeBase;
+        if (Math.abs(parsedCustoTotal - calculatedTotal) > 0.01) {
+          showError(`Coerência de custos inválida: custo total informado (${parsedCustoTotal.toFixed(2)}) diverge do calculado (${calculatedTotal.toFixed(2)}) com base no custo unitário.`);
+          return;
+        }
+        resolvedCustoTotal = parsedCustoTotal;
+        resolvedCustoUnitario = parsedCustoUnitario;
+        resolvedCustoStatus = "informado";
+      } else if (parsedCustoTotal !== null) {
+        resolvedCustoTotal = parsedCustoTotal;
+        resolvedCustoUnitario = parseFloat((parsedCustoTotal / quantidadeBase).toFixed(4));
+        resolvedCustoStatus = "informado";
+      } else if (parsedCustoUnitario !== null) {
+        resolvedCustoUnitario = parsedCustoUnitario;
+        resolvedCustoTotal = parseFloat((parsedCustoUnitario * quantidadeBase).toFixed(2));
+        resolvedCustoStatus = "informado";
+      }
+    }
+
+    const resolvedOrigemCusto = resolvedCustoStatus === "informado"
+      ? (entryForm.origemCusto === "ausente" ? "manual" : entryForm.origemCusto)
+      : "ausente";
+
     const now = new Date().toISOString();
     const insumoId = crypto.randomUUID();
     const apresentacaoId = crypto.randomUUID();
@@ -1072,7 +1187,16 @@ export default function Insumos() {
             saldo_atual_base: 0,
             unidade_base: entryForm.unidadeBase,
             status: "ativo",
-            payload: { origem: "inventario_ui_mvp" },
+            custo_total: resolvedCustoTotal,
+            custo_unitario: resolvedCustoUnitario,
+            payload: {
+              origem: "inventario_ui_mvp",
+              custo_status: resolvedCustoStatus,
+              origem_custo: resolvedOrigemCusto,
+              finance_transaction_id: null,
+              custo_total_informado: hasCustoTotal ? entryForm.custoTotal.trim() : null,
+              custo_unitario_informado: hasCustoUnitario ? entryForm.custoUnitario.trim() : null,
+            },
           },
         },
         {
@@ -1092,11 +1216,15 @@ export default function Insumos() {
             rebanho_lote_id: null,
             pasto_id: null,
             observacoes: "Entrada inicial",
+            custo_unitario_snapshot: resolvedCustoUnitario,
+            custo_total_snapshot: resolvedCustoTotal,
             payload: {
               origem: "inventario_ui_mvp",
               quantidade_apresentacoes: quantidadeEntrada,
               unidade_compra: entryForm.unidadeCompra,
               quantidade_por_apresentacao: quantidadePorApresentacao,
+              custo_status: resolvedCustoStatus,
+              origem_custo: resolvedOrigemCusto,
             },
           },
         },
@@ -1191,7 +1319,7 @@ export default function Insumos() {
       return;
     }
     if (!selectedSource) {
-      showError("Selecione um evento confirmado.");
+      showError("Selecione um evento confirmed.");
       return;
     }
     if (!selectedLot) {
@@ -1217,6 +1345,11 @@ export default function Insumos() {
       return;
     }
 
+    const costSnapshot = buildInventoryCostSnapshot({
+      lot: selectedLot,
+      quantidadeBase,
+    });
+
     setSavingConsumption(true);
     try {
       await createGesture(activeFarmId, [
@@ -1240,7 +1373,13 @@ export default function Insumos() {
             rebanho_lote_id: selectedSource.rebanhoLoteId,
             pasto_id: selectedSource.pastoId,
             observacoes: consumptionForm.observacoes.trim() || null,
-            payload: { origem: "inventario_ui_mvp" },
+            custo_unitario_snapshot: costSnapshot.custo_unitario_snapshot,
+            custo_total_snapshot: costSnapshot.custo_total_snapshot,
+            payload: {
+              origem: "inventario_ui_mvp",
+              custo_status: costSnapshot.custo_status,
+              ...(costSnapshot.limitacoes.length > 0 ? { limitacoes: costSnapshot.limitacoes } : {}),
+            },
           },
         },
       ]);
@@ -1685,6 +1824,48 @@ export default function Insumos() {
                                 />
                               </div>
                               <div className="space-y-2">
+                                <Label>Custo Total (R$)</Label>
+                                <Input
+                                  inputMode="decimal"
+                                  value={editForm.custoTotal}
+                                  onChange={(event) =>
+                                    setEditField("custoTotal", event.target.value)
+                                  }
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label>Custo Unitário (R$)</Label>
+                                <Input
+                                  inputMode="decimal"
+                                  value={editForm.custoUnitario}
+                                  onChange={(event) =>
+                                    setEditField("custoUnitario", event.target.value)
+                                  }
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label>Origem do Custo</Label>
+                                <Select
+                                  value={editForm.origemCusto}
+                                  onValueChange={(value) =>
+                                    setEditField("origemCusto", value as "manual" | "ausente")
+                                  }
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="ausente">Ausente</SelectItem>
+                                    <SelectItem value="manual">Manual (Declarado)</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div className="rounded-md border border-warning/20 bg-warning/5 p-3 text-xs leading-5 text-warning-foreground sm:col-span-2 space-y-1">
+                                <p>⚠️ <strong>Avisos de alteração de custo:</strong></p>
+                                <p>• Alterar o custo do lote não altera consumos já registrados.</p>
+                                <p>• Alterar o custo do lote não altera a movimentação de entrada nem snapshots históricos.</p>
+                              </div>
+                              <div className="space-y-2">
                                 <Label>Status do lote</Label>
                                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                                   {loteStatusOptions.map((option) => {
@@ -2040,10 +2221,59 @@ export default function Insumos() {
             />
           </div>
 
-          <div className="flex items-end">
+          <div className="space-y-2">
+            <Label>Custo Total (R$)</Label>
+            <Input
+              inputMode="decimal"
+              value={entryForm.custoTotal}
+              onChange={(event) =>
+                setEntryField("custoTotal", event.target.value)
+              }
+              disabled={!canManage}
+              placeholder="Ex.: 250,00"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Custo Unitário (R$)</Label>
+            <Input
+              inputMode="decimal"
+              value={entryForm.custoUnitario}
+              onChange={(event) =>
+                setEntryField("custoUnitario", event.target.value)
+              }
+              disabled={!canManage}
+              placeholder="Ex.: 10,00"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Origem do Custo</Label>
+            <Select
+              value={entryForm.origemCusto}
+              onValueChange={(value) =>
+                setEntryField("origemCusto", value as "manual" | "ausente")
+              }
+              disabled={!canManage}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ausente">Ausente</SelectItem>
+                <SelectItem value="manual">Manual (Declarado)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="rounded-md border border-border/70 bg-muted/10 p-3 text-xs leading-5 text-muted-foreground lg:col-span-4">
+            ⚠️ <strong>Nota sobre lançamento financeiro:</strong> Custo de estoque não gera lançamento financeiro automaticamente. Use o Financeiro para registrar pagamento ou vincular no futuro.
+          </div>
+
+          <div className="flex items-end lg:col-span-4 justify-end mt-2">
             <Button
               type="button"
-              className="w-full gap-2"
+              className="gap-2 px-6"
               onClick={handleCreateEntry}
               disabled={!canManage || savingEntry}
             >

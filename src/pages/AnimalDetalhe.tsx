@@ -697,20 +697,27 @@ const AnimalDetalhe = () => {
 
   const animal = useLiveQuery(() => db.state_animais.get(id!), [id]);
   const animalLote = useLiveQuery(
-    () =>
-      animal?.lote_id && fazendaId
-        ? db.state_lotes.get({ id: animal.lote_id, fazenda_id: fazendaId })
-        : undefined,
+    async () => {
+      if (!animal?.lote_id || !fazendaId) return undefined;
+      const lote = await db.state_lotes.get(animal.lote_id);
+      return lote?.fazenda_id === fazendaId ? lote : undefined;
+    },
     [animal?.lote_id, fazendaId],
   );
 
   const activeSocietyLink = useLiveQuery(
     async () => {
       if (!animal?.id || !fazendaId) return null;
-      const links = await db.state_sociedade_animais.where({ fazenda_id: fazendaId, animal_id: animal.id, status: "ativo" }).toArray();
+      const links = await db.state_sociedade_animais
+        .where("[fazenda_id+animal_id]")
+        .equals([fazendaId, animal.id])
+        .filter((link) => link.status === "ativo" && !link.deleted_at)
+        .toArray();
       if (links.length === 0) return null;
-      const society = await db.state_sociedades_pecuarias.get({ id: links[0].sociedade_id, fazenda_id: fazendaId });
-      return society ? { ...society, ...links[0] } : null;
+      const society = await db.state_sociedades_pecuarias.get(links[0].sociedade_id);
+      return society && society.fazenda_id === fazendaId
+        ? { ...society, ...links[0] }
+        : null;
     },
     [animal?.id, fazendaId]
   );

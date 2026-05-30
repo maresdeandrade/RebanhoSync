@@ -1,4 +1,5 @@
-import type { OperationInput, InsumoUnidadeBaseEnum } from "@/lib/offline/types";
+import type { OperationInput, InsumoUnidadeBaseEnum, InsumoLote } from "@/lib/offline/types";
+import { buildInventoryCostSnapshot } from "./costing";
 
 export interface BuildConsumoMovimentacaoOpInput {
   eventId: string;
@@ -8,7 +9,7 @@ export interface BuildConsumoMovimentacaoOpInput {
   quantidadeBase: number;
   unidadeBase: InsumoUnidadeBaseEnum;
   occurredAt: string;
-  custoUnitario?: number | null;
+  lotRef?: Pick<InsumoLote, "custo_unitario" | "custo_total" | "quantidade_inicial_base"> | null;
   animalId?: string | null;
   loteId?: string | null;
   pastoId?: string | null;
@@ -27,7 +28,7 @@ export function buildConsumoMovimentacaoOp(input: BuildConsumoMovimentacaoOpInpu
     quantidadeBase,
     unidadeBase,
     occurredAt,
-    custoUnitario,
+    lotRef,
     animalId,
     loteId,
     pastoId,
@@ -43,14 +44,11 @@ export function buildConsumoMovimentacaoOp(input: BuildConsumoMovimentacaoOpInpu
 
   const tipo = dominio === "sanitario" ? "consumo_sanitario" : "consumo_nutricao";
 
-  // Calcular custos de snapshot
-  let custo_unitario_snapshot: number | null = null;
-  let custo_total_snapshot: number | null = null;
-
-  if (typeof custoUnitario === "number" && custoUnitario >= 0) {
-    custo_unitario_snapshot = custoUnitario;
-    custo_total_snapshot = parseFloat((custo_unitario_snapshot * quantidadeBase).toFixed(2));
-  }
+  // Calcular custos de snapshot usando o helper centralizado
+  const costSnapshot = buildInventoryCostSnapshot({
+    lot: lotRef,
+    quantidadeBase,
+  });
 
   return {
     table: "insumo_movimentacoes",
@@ -69,10 +67,12 @@ export function buildConsumoMovimentacaoOp(input: BuildConsumoMovimentacaoOpInpu
       rebanho_lote_id: loteId || null,
       pasto_id: pastoId || null,
       observacoes: observacoes || null,
-      custo_unitario_snapshot,
-      custo_total_snapshot,
+      custo_unitario_snapshot: costSnapshot.custo_unitario_snapshot,
+      custo_total_snapshot: costSnapshot.custo_total_snapshot,
       payload: {
         origem_movimentacao: "baixa_automatica_evento",
+        custo_status: costSnapshot.custo_status,
+        ...(costSnapshot.limitacoes.length > 0 ? { limitacoes: costSnapshot.limitacoes } : {}),
       },
     },
   };

@@ -1,4 +1,5 @@
 import type { Insumo, InsumoLote } from "@/lib/offline/types";
+import { resolveInventoryLotUnitCost } from "./costing";
 
 export interface ProdutoInsumoSnapshot {
   insumo_id?: string | null;
@@ -87,21 +88,10 @@ export function buildProdutoInsumoSnapshot(input: BuildSnapshotInput): ProdutoIn
   let custo_total_snapshot: number | null = null;
 
   if (lote) {
-    if (typeof lote.custo_unitario === "number" && lote.custo_unitario >= 0) {
-      custo_unitario_snapshot = lote.custo_unitario;
-    } else if (
-      typeof lote.custo_total === "number" &&
-      lote.custo_total > 0 &&
-      typeof lote.quantidade_inicial_base === "number" &&
-      lote.quantidade_inicial_base > 0
-    ) {
-      // Tenta derivar caso nao haja custo_unitario direto
-      custo_unitario_snapshot = parseFloat((lote.custo_total / lote.quantidade_inicial_base).toFixed(4));
+    custo_unitario_snapshot = resolveInventoryLotUnitCost(lote);
+    if (custo_unitario_snapshot !== null && typeof quantidadeConsumida === "number" && quantidadeConsumida >= 0) {
+      custo_total_snapshot = parseFloat((custo_unitario_snapshot * quantidadeConsumida).toFixed(2));
     }
-  }
-
-  if (custo_unitario_snapshot !== null && typeof quantidadeConsumida === "number" && quantidadeConsumida > 0) {
-    custo_total_snapshot = parseFloat((custo_unitario_snapshot * quantidadeConsumida).toFixed(2));
   }
 
   // Qualidade do dado e Rastreabilidade

@@ -17,12 +17,22 @@ import {
   ArrowUpRight, 
   Archive,
   Info,
-  Users
+  Users,
+  Scale
 } from "lucide-react";
 import { createGesture } from "@/lib/offline/ops";
 import { ANIMAL_BREED_OPTIONS, type AnimalBreedEnum } from "@/lib/animals/catalogs";
 
 type ActionType = "entrada" | "vincular" | "retirar" | "encerrar";
+
+interface AnimalDraft {
+  localId: string;
+  identificacao: string;
+  sexo: "F" | "M";
+  raca: string;
+  dataNascimento: string;
+  pesoKg: string;
+}
 
 export function RegistrarSociedadeSection(props: {
   selectedAnimalIds: string[];
@@ -41,16 +51,17 @@ export function RegistrarSociedadeSection(props: {
   const [percFazenda, setPercFazenda] = useState("50");
   const [percParceiro, setPercParceiro] = useState("50");
 
-  // Formulário de Entrada (Novo Animal)
+  // Formulário de Entrada (Animais da Sociedade)
   const [regMode, setRegMode] = useState<"individual" | "lote">("individual");
-  const [animalIdentificacao, setAnimalIdentificacao] = useState("");
-  const [animalSexo, setAnimalSexo] = useState<"F" | "M">("F");
-  const [animalRaca, setAnimalRaca] = useState<string>("null");
-  const [animalDataNascimento, setAnimalDataNascimento] = useState("");
-  const [selectedLoteId, setSelectedLoteId] = useState("");
-  const [loteQtd, setLoteQtd] = useState("1");
+  const [loteQtd, setLoteQtd] = useState("2");
   const [lotePrefixo, setLotePrefixo] = useState("SOC-");
+  const [selectedLoteId, setSelectedLoteId] = useState("");
   const [dataEntrada, setDataEntrada] = useState(() => new Date().toISOString().slice(0, 10));
+
+  // Lista de animais a serem cadastrados
+  const [drafts, setDrafts] = useState<AnimalDraft[]>([
+    { localId: crypto.randomUUID(), identificacao: "", sexo: "F", raca: "null", dataNascimento: "", pesoKg: "" }
+  ]);
 
   // Formulário de Retirada
   const [physicalRemoval, setPhysicalRemoval] = useState(false);
@@ -102,13 +113,76 @@ export function RegistrarSociedadeSection(props: {
   const selectedAnimalsWithActiveLink = props.selectedAnimalIds.filter(id => activeLinks.some(link => link.animal_id === id));
   const selectedAnimalsWithoutLink = props.selectedAnimalIds.filter(id => !activeLinks.some(link => link.animal_id === id));
 
-  // Handlers
+  // Manejo de alternância de modo (Individual vs Lote)
+  const handleModeChange = (mode: "individual" | "lote") => {
+    setRegMode(mode);
+    if (mode === "individual") {
+      setDrafts([{ localId: crypto.randomUUID(), identificacao: "", sexo: "F", raca: "null", dataNascimento: "", pesoKg: "" }]);
+      setLoteQtd("1");
+    } else {
+      const qty = parseInt(loteQtd, 10) || 2;
+      const newDrafts: AnimalDraft[] = Array.from({ length: qty }, (_, idx) => ({
+        localId: crypto.randomUUID(),
+        identificacao: lotePrefixo ? `${lotePrefixo.trim()}${idx + 1}` : `SOC-${idx + 1}`,
+        sexo: "F",
+        raca: "null",
+        dataNascimento: "",
+        pesoKg: ""
+      }));
+      setDrafts(newDrafts);
+    }
+  };
+
+  // Modificação de quantidade de animais
+  const handleQtyChange = (qtyStr: string) => {
+    setLoteQtd(qtyStr);
+    const qty = parseInt(qtyStr, 10);
+    if (isNaN(qty) || qty <= 0) return;
+    
+    setDrafts(prev => {
+      if (prev.length === qty) return prev;
+      if (prev.length < qty) {
+        const next = [...prev];
+        for (let i = prev.length; i < qty; i++) {
+          next.push({
+            localId: crypto.randomUUID(),
+            identificacao: lotePrefixo ? `${lotePrefixo.trim()}${i + 1}` : `SOC-${i + 1}`,
+            sexo: "F",
+            raca: "null",
+            dataNascimento: "",
+            pesoKg: ""
+          });
+        }
+        return next;
+      } else {
+        return prev.slice(0, qty);
+      }
+    });
+  };
+
+  // Modificação de prefixo de identificação em lote
+  const handlePrefixoChange = (prefix: string) => {
+    setLotePrefixo(prefix);
+    setDrafts(prev => prev.map((d, i) => {
+      // Sobrescrever se estiver vazio ou se começar com o prefixo antigo
+      if (!d.identificacao || d.identificacao.startsWith(lotePrefixo) || d.identificacao.startsWith("SOC-")) {
+        return { ...d, identificacao: `${prefix.trim()}${i + 1}` };
+      }
+      return d;
+    }));
+  };
+
+  // Atualização de campos individuais do rascunho
+  const updateDraftField = <K extends keyof AnimalDraft>(localId: string, field: K, value: AnimalDraft[K]) => {
+    setDrafts(prev => prev.map(d => d.localId === localId ? { ...d, [field]: value } : d));
+  };
+
+  // Confirmar Entrada de Animais
   const handleEntradaSociedade = async () => {
     let finalSocId = selectedSocId;
-
     const ops: OperationInput[] = [];
 
-    // 1. Criar sociedade se for nova
+    // 1. Validar e criar sociedade se for nova
     if (selectedSocId === "new") {
       if (!nome || !contraparteId || !percFazenda || !percParceiro) {
         alert("Preencha todos os campos da nova sociedade.");
@@ -149,28 +223,33 @@ export function RegistrarSociedadeSection(props: {
       return;
     }
 
-    // 2. Criar animais e vínculos
-    if (regMode === "individual") {
-      if (!animalIdentificacao.trim()) {
-        alert("A identificação do animal é obrigatória.");
+    // 2. Validar rascunhos de animais
+    for (const d of drafts) {
+      if (!d.identificacao.trim()) {
+        alert("A identificação é obrigatória para todos os animais.");
         return;
       }
+    }
 
+    // 3. Gerar operações de inserção
+    for (const d of drafts) {
       const animalId = crypto.randomUUID();
+      const weight = d.pesoKg.trim() ? parseFloat(d.pesoKg) : null;
+
       ops.push({
         table: "animais",
         action: "INSERT",
         record: {
           id: animalId,
           fazenda_id: props.fazendaId,
-          identificacao: animalIdentificacao.trim(),
-          sexo: animalSexo,
+          identificacao: d.identificacao.trim(),
+          sexo: d.sexo,
           status: "ativo",
           lote_id: selectedLoteId || null,
           data_entrada: dataEntrada,
-          data_nascimento: animalDataNascimento || null,
+          data_nascimento: d.dataNascimento || null,
           origem: "sociedade",
-          raca: animalRaca === "null" ? null : (animalRaca as AnimalBreedEnum),
+          raca: d.raca === "null" ? null : (d.raca as AnimalBreedEnum),
           payload: {
             tipo_entrada: "entrada_sociedade",
             sociedadeId: finalSocId,
@@ -194,55 +273,35 @@ export function RegistrarSociedadeSection(props: {
           }
         }
       });
-    } else {
-      const qty = parseInt(loteQtd, 10);
-      if (isNaN(qty) || qty <= 0) {
-        alert("A quantidade de animais deve ser maior que zero.");
-        return;
-      }
-      if (!lotePrefixo.trim()) {
-        alert("O prefixo de identificação é obrigatório.");
-        return;
-      }
 
-      for (let i = 1; i <= qty; i++) {
-        const animalId = crypto.randomUUID();
-        const ident = `${lotePrefixo.trim()}${i}`;
+      if (weight !== null) {
+        const pesoEventoId = crypto.randomUUID();
         ops.push({
-          table: "animais",
+          table: "eventos",
           action: "INSERT",
           record: {
-            id: animalId,
-            fazenda_id: props.fazendaId,
-            identificacao: ident,
-            sexo: animalSexo,
-            status: "ativo",
+            id: pesoEventoId,
+            dominio: "pesagem",
+            occurred_at: dataEntrada,
+            animal_id: animalId,
             lote_id: selectedLoteId || null,
-            data_entrada: dataEntrada,
-            data_nascimento: animalDataNascimento || null,
-            origem: "sociedade",
-            raca: animalRaca === "null" ? null : (animalRaca as AnimalBreedEnum),
+            source_task_id: null,
+            corrige_evento_id: null,
+            sanitario_caso_id: null,
+            observacoes: "Peso inicial registrado na entrada em sociedade",
             payload: {
-              tipo_entrada: "entrada_sociedade",
-              sociedadeId: finalSocId,
-              physicalEntry: true
+              tipo_acao: "entrada_sociedade"
             }
           }
         });
 
         ops.push({
-          table: "sociedade_animais",
+          table: "eventos_pesagem",
           action: "INSERT",
           record: {
-            id: crypto.randomUUID(),
-            fazenda_id: props.fazendaId,
-            sociedade_id: finalSocId,
-            animal_id: animalId,
-            data_entrada: dataEntrada,
-            status: "ativo",
-            payload: {
-              tipo_acao: "entrada_sociedade"
-            }
+            evento_id: pesoEventoId,
+            peso_kg: weight,
+            payload: {}
           }
         });
       }
@@ -251,12 +310,13 @@ export function RegistrarSociedadeSection(props: {
     await createGesture(props.fazendaId, ops);
     alert("Entrada em sociedade registrada com sucesso!");
     
-    // Reset form
-    setAnimalIdentificacao("");
+    // Reset forms
     setNome("");
     setPercFazenda("50");
     setPercParceiro("50");
     setSelectedSocId("");
+    setDrafts([{ localId: crypto.randomUUID(), identificacao: "", sexo: "F", raca: "null", dataNascimento: "", pesoKg: "" }]);
+    setRegMode("individual");
   };
 
   const handleLinkAnimals = async () => {
@@ -305,7 +365,6 @@ export function RegistrarSociedadeSection(props: {
     const activeLinksToClose = activeLinks.filter(l => selectedAnimalsWithActiveLink.includes(l.animal_id));
 
     for (const link of activeLinksToClose) {
-      // 1. Encerrar vínculo societário
       ops.push({
         table: "sociedade_animais",
         action: "UPDATE",
@@ -320,7 +379,6 @@ export function RegistrarSociedadeSection(props: {
         }
       });
 
-      // 2. Se retirada física, atualizar animal
       if (physicalRemoval) {
         const animal = await db.state_animais.get(link.animal_id);
         ops.push({
@@ -363,7 +421,6 @@ export function RegistrarSociedadeSection(props: {
     const ops: OperationInput[] = [];
     const linksToClose = activeLinks.filter(l => l.sociedade_id === selectedSocId);
 
-    // 1. Encerrar sociedade pecuária
     ops.push({
       table: "sociedades_pecuarias",
       action: "UPDATE",
@@ -374,7 +431,6 @@ export function RegistrarSociedadeSection(props: {
       }
     });
 
-    // 2. Encerrar todos os vínculos ativos
     for (const link of linksToClose) {
       ops.push({
         table: "sociedade_animais",
@@ -390,7 +446,6 @@ export function RegistrarSociedadeSection(props: {
         }
       });
 
-      // Se animais NÃO permanecem na fazenda (saída física), alterar status dos ativos para retirado
       if (!animalsRemain) {
         const animal = await db.state_animais.get(link.animal_id);
         if (animal && animal.status === "ativo") {
@@ -497,8 +552,8 @@ export function RegistrarSociedadeSection(props: {
           <div className="space-y-5">
             <h4 className="text-sm font-semibold text-foreground/80">Registrar Entrada Física/Patrimonial</h4>
             
-            {/* Seletor de Sociedade */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Seletor de Sociedade + Lote + Data */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label>Sociedade Parceira</Label>
                 <Select value={selectedSocId} onValueChange={setSelectedSocId}>
@@ -507,6 +562,19 @@ export function RegistrarSociedadeSection(props: {
                     <SelectItem value="new">Criar nova sociedade...</SelectItem>
                     {activeSocieties.map(s => (
                       <SelectItem key={s.id} value={s.id}>{s.nome} ({s.percentual_fazenda}%/{s.percentual_parceiro}%)</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Lote Inicial</Label>
+                <Select value={selectedLoteId} onValueChange={setSelectedLoteId}>
+                  <SelectTrigger className="bg-background"><SelectValue placeholder="Sem Lote" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="null">Sem Lote</SelectItem>
+                    {activeLotes.map(l => (
+                      <SelectItem key={l.id} value={l.id}>{l.nome}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -559,7 +627,7 @@ export function RegistrarSociedadeSection(props: {
                     key={opt.id}
                     type="button"
                     variant={regMode === opt.id ? "default" : "outline"}
-                    onClick={() => setRegMode(opt.id as "individual" | "lote")}
+                    onClick={() => handleModeChange(opt.id as "individual" | "lote")}
                     className="rounded-full shadow-none flex-1 bg-background aria-selected:bg-primary"
                   >
                     {opt.label}
@@ -568,82 +636,106 @@ export function RegistrarSociedadeSection(props: {
               </div>
             </div>
 
-            {/* Dados do(s) Animal(is) */}
-            <div className="p-4 border rounded-xl space-y-4 bg-muted/10">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                
-                {regMode === "individual" ? (
-                  <div className="space-y-2">
-                    <Label>Identificação do Animal</Label>
-                    <Input value={animalIdentificacao} onChange={e => setAnimalIdentificacao(e.target.value)} placeholder="Ex: BR-1020" className="bg-background" />
-                  </div>
-                ) : (
-                  <>
-                    <div className="space-y-2">
-                      <Label>Quantidade de Animais</Label>
-                      <Input type="number" min="1" value={loteQtd} onChange={e => setLoteQtd(e.target.value)} className="bg-background" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Prefixo de Identificação</Label>
-                      <Input value={lotePrefixo} onChange={e => setLotePrefixo(e.target.value)} placeholder="Ex: SOC-" className="bg-background" />
-                    </div>
-                  </>
-                )}
-
+            {/* Lote Config Panel se for modo Múltiplos */}
+            {regMode === "lote" && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border rounded-xl bg-muted/20">
                 <div className="space-y-2">
-                  <Label>Sexo</Label>
-                  <div className="flex gap-2">
-                    <Button
-                      type="button"
-                      variant={animalSexo === "F" ? "default" : "outline"}
-                      className="flex-1 bg-background"
-                      onClick={() => setAnimalSexo("F")}
-                    >
-                      Fêmea
-                    </Button>
-                    <Button
-                      type="button"
-                      variant={animalSexo === "M" ? "default" : "outline"}
-                      className="flex-1 bg-background"
-                      onClick={() => setAnimalSexo("M")}
-                    >
-                      Macho
-                    </Button>
-                  </div>
+                  <Label>Quantidade de Animais na Sociedade</Label>
+                  <Input type="number" min="1" value={loteQtd} onChange={e => handleQtyChange(e.target.value)} className="bg-background" />
                 </div>
-
                 <div className="space-y-2">
-                  <Label>Raça</Label>
-                  <Select value={animalRaca} onValueChange={setAnimalRaca}>
-                    <SelectTrigger className="bg-background"><SelectValue placeholder="Selecione" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="null">Raça não informada</SelectItem>
-                      {ANIMAL_BREED_OPTIONS.map((b) => (
-                        <SelectItem key={b.value} value={b.value}>{b.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Label>Prefixo de Identificação Automática</Label>
+                  <Input value={lotePrefixo} onChange={e => handlePrefixoChange(e.target.value)} placeholder="Ex: SOC-" className="bg-background" />
                 </div>
-
-                <div className="space-y-2">
-                  <Label>Data Nascimento (Opcional)</Label>
-                  <Input type="date" value={animalDataNascimento} onChange={e => setAnimalDataNascimento(e.target.value)} className="bg-background" />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Lote Inicial</Label>
-                  <Select value={selectedLoteId} onValueChange={setSelectedLoteId}>
-                    <SelectTrigger className="bg-background"><SelectValue placeholder="Sem Lote" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="null">Sem Lote</SelectItem>
-                      {activeLotes.map(l => (
-                        <SelectItem key={l.id} value={l.id}>{l.nome}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
               </div>
+            )}
+
+            {/* Dados do(s) Animal(is) - Editor Individual ou Grade para Múltiplos */}
+            <div className="space-y-3">
+              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/80">Dados dos Animais</Label>
+              
+              {drafts.map((draft, idx) => (
+                <div key={draft.localId} className="p-4 border rounded-xl space-y-4 bg-muted/10">
+                  <div className="flex items-center gap-2 border-b pb-2 mb-2 text-foreground/80 font-medium text-xs">
+                    <Users className="h-4.5 w-4.5 text-primary" />
+                    <span>Animal #{idx + 1}</span>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
+                    
+                    <div className="space-y-2">
+                      <Label>Identificação</Label>
+                      <Input 
+                        value={draft.identificacao} 
+                        onChange={e => updateDraftField(draft.localId, "identificacao", e.target.value)} 
+                        placeholder={`BR-${idx + 1}`}
+                        className="bg-background" 
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Sexo</Label>
+                      <div className="flex gap-1.5">
+                        <Button
+                          type="button"
+                          variant={draft.sexo === "F" ? "default" : "outline"}
+                          className="flex-1 bg-background h-10 px-2 text-xs"
+                          onClick={() => updateDraftField(draft.localId, "sexo", "F")}
+                        >
+                          Fêmea
+                        </Button>
+                        <Button
+                          type="button"
+                          variant={draft.sexo === "M" ? "default" : "outline"}
+                          className="flex-1 bg-background h-10 px-2 text-xs"
+                          onClick={() => updateDraftField(draft.localId, "sexo", "M")}
+                        >
+                          Macho
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Raça</Label>
+                      <Select value={draft.raca} onValueChange={v => updateDraftField(draft.localId, "raca", v)}>
+                        <SelectTrigger className="bg-background"><SelectValue placeholder="Raça" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="null">Não informada</SelectItem>
+                          {ANIMAL_BREED_OPTIONS.map((b) => (
+                            <SelectItem key={b.value} value={b.value}>{b.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Nascimento (Opcional)</Label>
+                      <Input 
+                        type="date" 
+                        value={draft.dataNascimento} 
+                        onChange={e => updateDraftField(draft.localId, "dataNascimento", e.target.value)} 
+                        className="bg-background" 
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="flex items-center gap-1">
+                        <Scale className="h-3.5 w-3.5 text-primary" />
+                        <span>Peso Inicial (kg)</span>
+                      </Label>
+                      <Input 
+                        type="number" 
+                        step="0.01" 
+                        value={draft.pesoKg} 
+                        onChange={e => updateDraftField(draft.localId, "pesoKg", e.target.value)} 
+                        placeholder="Ex: 180"
+                        className="bg-background" 
+                      />
+                    </div>
+
+                  </div>
+                </div>
+              ))}
             </div>
 
             <Button onClick={handleEntradaSociedade} className="w-full">

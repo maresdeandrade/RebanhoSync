@@ -127,7 +127,7 @@ export const STANDARD_PROTOCOLS: StandardProtocol[] = [
     id: "vac-raiva-herbivoros",
     canonical_key: "raiva_herbivoros",
     family_code: "raiva_herbivoros",
-    nome: "Raiva dos Herbivoros (D1/D2/Anual)",
+    nome: "Raiva dos Herbivoros",
     descricao:
       "Protocolo tecnico operacional condicionado a risco medio/alto e ativacao explicita pela fazenda.",
     categoria: "vacinas",
@@ -160,7 +160,7 @@ export const STANDARD_PROTOCOLS: StandardProtocol[] = [
         calendario_base: {
           mode: "clinical_protocol",
           anchor: "none",
-          label: "Raiva D1 - inicio operacional por risco",
+          label: "Raiva D1",
         },
       },
       {
@@ -183,7 +183,7 @@ export const STANDARD_PROTOCOLS: StandardProtocol[] = [
         calendario_base: {
           mode: "rolling_interval",
           anchor: "previous_completion",
-          label: "Raiva D2 - 30 dias apos D1",
+          label: "Raiva D2",
           intervalDays: 30,
         },
       },
@@ -207,7 +207,7 @@ export const STANDARD_PROTOCOLS: StandardProtocol[] = [
         calendario_base: {
           mode: "rolling_interval",
           anchor: "previous_completion",
-          label: "Raiva anual - 365 dias apos ultima conclusao valida",
+          label: "Raiva anual",
           intervalDays: 365,
         },
       },
@@ -229,7 +229,7 @@ export const STANDARD_PROTOCOLS: StandardProtocol[] = [
     referencia: "SBMV / Embrapa",
     calendario_base: {
       profile: "preventivo_anual",
-      label: "Revisao anual preventiva",
+      label: "Clostridioses Anual (Manqueira/Polivalente)",
     },
     itens: [
       {
@@ -247,7 +247,7 @@ export const STANDARD_PROTOCOLS: StandardProtocol[] = [
         calendario_base: {
           mode: "rolling_interval",
           anchor: "calendar_month",
-          label: "Revisao anual do rebanho",
+          label: "Clostridioses Anual (Manqueira/Polivalente)",
           intervalDays: 365,
         },
       },
@@ -257,7 +257,7 @@ export const STANDARD_PROTOCOLS: StandardProtocol[] = [
     id: "vac-reprodutiva",
     canonical_key: "reprodutiva",
     family_code: "reprodutiva",
-    nome: "Reprodutiva (IBR/BVD/Leptospirose)",
+    nome: "Manejo Vacinal - Reprodutivo (IBR/BVD/Lepto)",
     descricao:
       "Prevencao de perdas gestacionais e infertilidade causadas por virus e bacterias.",
     categoria: "vacinas",
@@ -287,7 +287,7 @@ export const STANDARD_PROTOCOLS: StandardProtocol[] = [
         calendario_base: {
           mode: "campaign",
           anchor: "pre_breeding_season",
-          label: "Aplicar 30 dias antes da estacao de monta",
+          label: "Vacina Reprodutiva (IBR/BVD/Lepto)",
           intervalDays: 365,
         },
       },

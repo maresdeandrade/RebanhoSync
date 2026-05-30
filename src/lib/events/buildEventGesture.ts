@@ -143,7 +143,7 @@ export const buildEventGesture = (input: EventInput): EventGestureBuildResult =>
           quantidadeBase: input.quantidadeConsumida,
           unidadeBase: (input.loteRef?.unidade_base || "ml") as InsumoUnidadeBaseEnum,
           occurredAt,
-          custoUnitario: input.loteRef?.custo_unitario ?? null,
+          lotRef: input.loteRef,
           animalId: input.animalId,
           loteId: input.loteId,
           observacoes: input.observacoes,
@@ -275,7 +275,7 @@ export const buildEventGesture = (input: EventInput): EventGestureBuildResult =>
           quantidadeBase: input.quantidadeConsumida || input.quantidadeKg,
           unidadeBase: (input.loteRef?.unidade_base || "kg") as InsumoUnidadeBaseEnum,
           occurredAt,
-          custoUnitario: input.loteRef?.custo_unitario ?? null,
+          lotRef: input.loteRef,
           loteId: input.loteId,
           observacoes: input.observacoes,
         })

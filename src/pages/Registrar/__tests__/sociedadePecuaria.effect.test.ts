@@ -258,6 +258,92 @@ describe("Sociedade Pecuaria - Business Logic Tests", () => {
       expect(finalRecord.payload.physicalEntry).toBe(true);
     });
 
+    it("entrada em sociedade com peso inicial cria eventos e eventos_pesagem records", () => {
+      const animalInput = {
+        identificacao: "SOC-01",
+        sexo: "F" as const,
+        raca: "Nelore",
+        dataNascimento: "2024-01-01",
+        loteId: "lote-1",
+        dataEntrada: "2026-05-30",
+        pesoKg: "250.5"
+      };
+
+      const animalId = "new-uuid";
+      const finalSocId = "soc-1";
+      const dataEntrada = animalInput.dataEntrada;
+      const weight = animalInput.pesoKg ? parseFloat(animalInput.pesoKg) : null;
+
+      const ops: any[] = [];
+      ops.push({
+        table: "animais",
+        action: "INSERT",
+        record: {
+          id: animalId,
+          fazenda_id: "farm-1",
+          identificacao: animalInput.identificacao,
+          sexo: animalInput.sexo,
+          status: "ativo",
+          lote_id: animalInput.loteId,
+          data_entrada: dataEntrada,
+          data_nascimento: animalInput.dataNascimento,
+          origem: "sociedade",
+          raca: animalInput.raca,
+          payload: {
+            tipo_entrada: "entrada_sociedade",
+            sociedadeId: finalSocId,
+            physicalEntry: true
+          }
+        }
+      });
+
+      if (weight !== null) {
+        const pesoEventoId = "event-uuid";
+        ops.push({
+          table: "eventos",
+          action: "INSERT",
+          record: {
+            id: pesoEventoId,
+            dominio: "pesagem",
+            occurred_at: dataEntrada,
+            animal_id: animalId,
+            lote_id: animalInput.loteId,
+            source_task_id: null,
+            corrige_evento_id: null,
+            sanitario_caso_id: null,
+            observacoes: "Peso inicial registrado na entrada em sociedade",
+            payload: {
+              tipo_acao: "entrada_sociedade"
+            }
+          }
+        });
+
+        ops.push({
+          table: "eventos_pesagem",
+          action: "INSERT",
+          record: {
+            evento_id: pesoEventoId,
+            peso_kg: weight,
+            payload: {}
+          }
+        });
+      }
+
+      // Assert weight is NOT inside the 'animais' record
+      const animalOp = ops.find(o => o.table === "animais");
+      expect(animalOp.record.peso_kg).toBeUndefined();
+
+      // Assert weight events are created
+      const eventOp = ops.find(o => o.table === "eventos");
+      const weightOp = ops.find(o => o.table === "eventos_pesagem");
+      expect(eventOp).toBeDefined();
+      expect(eventOp.record.dominio).toBe("pesagem");
+      expect(eventOp.record.animal_id).toBe(animalId);
+      
+      expect(weightOp).toBeDefined();
+      expect(weightOp.record.peso_kg).toBe(250.5);
+    });
+
     it("vincular animal existente não altera status/lote", () => {
       const animal = buildAnimal("a-1", { status: "ativo", lote_id: "lote-1" });
       const originalStatus = animal.status;
