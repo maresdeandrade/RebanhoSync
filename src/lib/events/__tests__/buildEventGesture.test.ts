@@ -300,16 +300,33 @@ describe("buildEventGesture", () => {
     ).toThrow(EventValidationError);
   });
 
-  it("rejects sanitary alert without animal target", () => {
+  it("rejects sanitary alert without animal or lote target", () => {
     expect(() =>
       buildEventGesture({
         dominio: "alerta_sanitario",
         fazendaId: "farm-1",
-        loteId: "lote-1",
         alertKind: "suspeita_aberta",
         animalPayload: {},
       }),
     ).toThrow(EventValidationError);
+  });
+
+  it("builds lote-linked sanitary alert without animal state update", () => {
+    const result = buildEventGesture({
+      dominio: "alerta_sanitario",
+      fazendaId: "farm-1",
+      loteId: "lote-1",
+      alertKind: "suspeita_aberta",
+      payload: { kind: "suspeita_aberta" },
+      animalPayload: {},
+    });
+
+    expect(result.ops.map((op) => op.table)).toEqual(["eventos"]);
+    expect(result.ops[0].record).toMatchObject({
+      dominio: "alerta_sanitario",
+      animal_id: null,
+      lote_id: "lote-1",
+    });
   });
 
   it("builds financeiro venda with animal exit update", () => {

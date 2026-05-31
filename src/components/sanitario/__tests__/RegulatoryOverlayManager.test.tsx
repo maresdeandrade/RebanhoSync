@@ -238,6 +238,12 @@ describe("RegulatoryOverlayManager", () => {
     expect(
       screen.getAllByText(/checklist operacional/i).length,
     ).toBeGreaterThan(0);
+    expect(
+      screen.getByText(/Checklist regulatório contextual/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /^registrar$/i }),
+    ).not.toBeInTheDocument();
     expect(screen.getByText("Fazenda")).toBeInTheDocument();
     expect(screen.queryByText("1 oficial(is)")).not.toBeInTheDocument();
     expect(screen.getByText("0 oficial(is)")).toBeInTheDocument();

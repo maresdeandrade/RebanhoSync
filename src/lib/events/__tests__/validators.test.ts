@@ -51,11 +51,22 @@ describe("event validators", () => {
     expect(issues.some((i) => i.field === "valorTotal")).toBe(true);
   });
 
-  it("rejects sanitary alert without animal target", () => {
+  it("allows lote-linked sanitary alert", () => {
     const issues = validateEventInput({
       dominio: "alerta_sanitario",
       fazendaId: "farm-1",
       loteId: "lote-1",
+      alertKind: "suspeita_aberta",
+      animalPayload: {},
+    });
+
+    expect(issues).toHaveLength(0);
+  });
+
+  it("rejects sanitary alert without animal or lote target", () => {
+    const issues = validateEventInput({
+      dominio: "alerta_sanitario",
+      fazendaId: "farm-1",
       alertKind: "suspeita_aberta",
       animalPayload: {},
     });

@@ -2,10 +2,12 @@ import { describe, expect, it } from "vitest";
 
 import {
   applyAgendaQuickFilters,
+  buildAgendaBaseRows,
   groupAgendaRowsByAnimal,
   hasAgendaQuickFiltersActive,
   summarizeAgendaRowsByStatus,
 } from "@/pages/Agenda/helpers/derivations";
+import type { AgendaPageData } from "@/pages/Agenda/helpers/derivations";
 import type { AgendaRow } from "@/pages/Agenda/types";
 
 function createRow(
@@ -43,6 +45,51 @@ function createRow(
 }
 
 describe("agenda derivations", () => {
+  it("resolves lote name from animal state when automatic agenda item has no lote_id", () => {
+    const data: AgendaPageData = {
+      itens: [
+        {
+          id: "agenda-1",
+          tipo: "vacinacao",
+          status: "agendado",
+          data_prevista: "2026-06-01",
+          animal_id: "animal-1",
+          lote_id: null,
+          dominio: "sanitario",
+          payload: {},
+          source_ref: {},
+        } as AgendaRow["item"],
+      ],
+      animais: [
+        {
+          id: "animal-1",
+          identificacao: "Matriz 001",
+          lote_id: "lote-1",
+          data_nascimento: null,
+        } as AgendaRow["animal"],
+      ].filter(Boolean) as AgendaPageData["animais"],
+      lotes: [{ id: "lote-1", nome: "Lote A" } as AgendaRow["lote"]].filter(
+        Boolean,
+      ) as AgendaPageData["lotes"],
+      protocolos: [],
+      protocoloItens: [],
+      gestos: [],
+      sanidadeConfig: null,
+      officialTemplates: [],
+      officialTemplateItems: [],
+    };
+
+    const rows = buildAgendaBaseRows(data, {
+      search: "",
+      statusFilter: "all",
+      dominioFilter: "all",
+      dateFrom: "",
+      dateTo: "",
+    });
+
+    expect(rows[0]?.loteNome).toBe("Lote A");
+  });
+
   it("applies quick filters without duplicating domain rules", () => {
     const rows: AgendaRow[] = [
       createRow("row-1", {

@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ClipboardCheck, ShieldCheck, WheatOff } from "lucide-react";
+import { ClipboardCheck, WheatOff } from "lucide-react";
 
 import { db } from "@/lib/offline/db";
 import { createGesture } from "@/lib/offline/ops";
@@ -324,6 +324,10 @@ function getOverlaySourceLabel(entry: RegulatoryOverlayEntry) {
   return entry.sourceScope === "oficial" ? "Oficial" : "Fazenda";
 }
 
+function canRegisterOverlayRuntime(entry: RegulatoryOverlayEntry) {
+  return entry.complianceKind === "feed_ban";
+}
+
 export function RegulatoryOverlayManager({
   activeFarmId,
   canManage,
@@ -420,6 +424,7 @@ export function RegulatoryOverlayManager({
   ).length;
 
   const openEntry = (entry: RegulatoryOverlayEntry) => {
+    if (!canRegisterOverlayRuntime(entry)) return;
     setSelectedEntry(entry);
     setForm(createDefaultForm(entry));
   };
@@ -790,17 +795,20 @@ export function RegulatoryOverlayManager({
                       )}
 
                       <div className="flex flex-wrap gap-2">
-                        <Button
-                          onClick={() => openEntry(entry)}
-                          disabled={!canManage}
-                        >
-                          {entry.complianceKind === "feed_ban" ? (
+                        {canRegisterOverlayRuntime(entry) ? (
+                          <Button
+                            onClick={() => openEntry(entry)}
+                            disabled={!canManage}
+                          >
                             <WheatOff className="mr-2 h-4 w-4" />
-                          ) : (
-                            <ShieldCheck className="mr-2 h-4 w-4" />
-                          )}
-                          Registrar
-                        </Button>
+                            Registrar
+                          </Button>
+                        ) : (
+                          <div className="rounded-xl border border-dashed border-border/70 bg-muted/10 px-3 py-2 text-sm text-muted-foreground">
+                            Checklist regulatório contextual. Registre ocorrência
+                            real no Registrar.
+                          </div>
+                        )}
                         {entry.editable ? (
                           <>
                             <Button

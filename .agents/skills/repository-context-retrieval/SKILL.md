@@ -42,18 +42,13 @@ Antes de abrir implementação:
 5. `docs/AGENT_CONTEXT.md`
 6. `graphify-out/GRAPH_REPORT.md`
 
-Se existir, usar também:
-```
-graphify-out/wiki/index.md
-```
----
 
 ## Graphify-first
 Usar Graphify como mapa primário antes de busca textual ampla:
 ```bash
-graphify query "<pergunta>"
-graphify path "<conceito A>" "<conceito B>"
-graphify explain "<conceito>"
+graphify query "<question>" --budget 3000
+graphify explain "<node>"
+graphify path "<A>" "<B>"
 ```
 Usar `rg`, busca textual ou leitura direta apenas para confirmar detalhe concreto ou preencher lacuna que o grafo não resolveu.
 ---

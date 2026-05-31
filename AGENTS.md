@@ -113,7 +113,6 @@ Não assumir script typecheck se não existir no package.json.
 
 Se graphify-out/ existir:
 - use graphify-out/GRAPH_REPORT.md antes de investigações amplas;
-- se graphify-out/wiki/index.md existir, prefira a wiki para navegação;
 - para relação entre módulos, prefira graphify query/path/explain;
 - para patch focal em arquivo já conhecido, não é obrigatório abrir Graphify antes;
 - após mudança estrutural relevante, rode graphify update . se disponível.
@@ -128,3 +127,12 @@ Formato:
 5. validações executadas;
 6. escopo confirmado;
 7. riscos/pendências, no máximo 3.
+
+## graphify
+
+This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.
+
+Rules:
+- ALWAYS read graphify-out/GRAPH_REPORT.md before reading any source files, running grep/glob searches, or answering codebase questions. The graph is your primary map of the codebase.
+- For cross-module "how does X relate to Y" questions, prefer `graphify query "<question>"`, `graphify path "<A>" "<B>"`, or `graphify explain "<concept>"` over grep — these traverse the graph's EXTRACTED + INFERRED edges instead of scanning files
+- After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).

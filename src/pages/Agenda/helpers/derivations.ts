@@ -80,7 +80,8 @@ export function buildAgendaBaseRows(
   return data.itens
     .map((item) => {
       const animal = item.animal_id ? animalById.get(item.animal_id) : null;
-      const lote = item.lote_id ? loteById.get(item.lote_id) : null;
+      const resolvedLoteId = item.lote_id ?? animal?.lote_id ?? null;
+      const lote = resolvedLoteId ? loteById.get(resolvedLoteId) : null;
       const syncStage = getGestureSyncStage(
         item.client_tx_id ? gestoByTx.get(item.client_tx_id) ?? null : null,
       );

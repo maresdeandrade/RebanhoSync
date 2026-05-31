@@ -6,11 +6,11 @@ export const validateAlertaSanitarioInput = (
 ): EventValidationIssue[] => {
   const issues: EventValidationIssue[] = [];
 
-  if (!input.animalId) {
+  if (!input.animalId && !input.loteId) {
     issues.push({
       code: "REQUIRED",
       field: "animalId",
-      message: "Alerta sanitario exige um animal vinculado.",
+      message: "Alerta sanitario exige animal ou lote vinculado.",
     });
   }
 

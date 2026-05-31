@@ -22,8 +22,12 @@ import {
 import { useLotes } from "@/hooks/useLotes";
 import { useAuth } from "@/hooks/useAuth";
 import { db } from "@/lib/offline/db";
+import { buildEventGesture } from "@/lib/events/buildEventGesture";
 import { parseWeightInput } from "@/lib/format/weight";
 import { cn } from "@/lib/utils";
+import {
+  buildBiosecurityOccurrenceEventInput,
+} from "@/lib/sanitario/compliance/biosecurityOccurrence";
 import { buildRegulatoryOperationalReadModel } from "@/lib/sanitario/compliance/regulatoryReadModel";
 import {
   filterRegistrarAnimalsBySearch,
@@ -129,6 +133,8 @@ const Registrar = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [isFinalizing, setIsFinalizing] = useState(false);
+  const [isRegisteringBiosecurityOccurrence, setIsRegisteringBiosecurityOccurrence] =
+    useState(false);
   const [comercialData, setComercialData] = useState<ComercialFormData>({
     operationType: "compra",
     scope: "lote",
@@ -265,6 +271,10 @@ const Registrar = () => {
     selectedLoteId === SEM_LOTE_OPTION
       ? "Sem lote"
       : (lotes?.find((l) => l.id === selectedLoteId)?.nome ?? "-");
+  const selectedLoteForBiosecurity =
+    selectedLoteIdNormalized && selectedLoteIdNormalized !== SEM_LOTE_OPTION
+      ? (lotes?.find((lote) => lote.id === selectedLoteIdNormalized) ?? null)
+      : null;
   const pesagemAnimaisInvalidos = selectedAnimais.filter((id) => {
     const weightStr = pesagemData[id];
     if (!weightStr || weightStr.trim() === "") return true;
@@ -484,6 +494,61 @@ const Registrar = () => {
       sourceTaskId,
     ],
   );
+
+  const biosecurityContext = useMemo(() => {
+    const animalById = new Map(
+      [
+        ...selectedAnimaisDetalhes,
+        registrarContextRecords?.animal ?? null,
+      ]
+        .filter((animal): animal is Animal => Boolean(animal))
+        .map((animal) => [animal.id, animal]),
+    );
+    const animalIds = Array.from(
+      new Set([
+        ...selectedAnimais,
+        contextAnimalId || null,
+        registrarContextRecords?.agendaItem?.animal_id ?? null,
+      ].filter((id): id is string => Boolean(id))),
+    );
+    const loteFromAgenda = registrarContextRecords?.agendaItem?.lote_id
+      ? lotes?.find(
+          (lote) => lote.id === registrarContextRecords.agendaItem?.lote_id,
+        ) ?? null
+      : null;
+    const lote =
+      selectedLoteForBiosecurity ??
+      registrarContextRecords?.lote ??
+      loteFromAgenda ??
+      null;
+
+    return {
+      animals: animalIds.map((id) => {
+        const animal = animalById.get(id);
+        return {
+          id,
+          label: animal?.identificacao ?? `Animal ${id.slice(0, 8)}`,
+        };
+      }),
+      lote: lote
+        ? {
+            id: lote.id,
+            label: lote.nome,
+          }
+        : null,
+      localId: contextPastoId || null,
+      agendaItemId: sourceTaskId || null,
+    };
+  }, [
+    contextAnimalId,
+    contextPastoId,
+    lotes,
+    registrarContextRecords,
+    selectedAnimais,
+    selectedAnimaisDetalhes,
+    selectedLoteForBiosecurity,
+    sourceTaskId,
+  ]);
 
   const contrapartes = useLiveQuery(
     () =>
@@ -814,6 +879,35 @@ const Registrar = () => {
         setAbrirCasoClinico(value);
         if (value) setSanitarioCasoId("");
       },
+      biosecurityContext,
+      onRegisterBiosecurityOccurrence: async (occurrence) => {
+        if (!activeFarmId) {
+          showError("Selecione uma fazenda antes de registrar.");
+          return;
+        }
+
+        setIsRegisteringBiosecurityOccurrence(true);
+        try {
+          const eventInput = buildBiosecurityOccurrenceEventInput({
+            fazendaId: activeFarmId,
+            occurredAt: new Date().toISOString(),
+            occurrence,
+          });
+          const built = buildEventGesture(eventInput);
+          await runRegistrarFinalizeGestureEffect({
+            fazendaId: activeFarmId,
+            ops: built.ops,
+          });
+          showSuccess("Ocorrência registrada.");
+        } catch (error) {
+          console.error(error);
+          showError("Não foi possível registrar a ocorrência.");
+          throw error;
+        } finally {
+          setIsRegisteringBiosecurityOccurrence(false);
+        }
+      },
+      isRegisteringBiosecurityOccurrence,
     },
     transitChecklistState: {
       transitChecklistSection: transitChecklist,
