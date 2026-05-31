@@ -68,7 +68,6 @@ Exemplos:
 - `docs/ARCHITECTURE.md`
 - `docs/OFFLINE.md`
 - `docs/CONTRACTS.md`
-- `docs/DB.md`
 - `docs/RLS.md`
 
 ### 3.3 Derivado

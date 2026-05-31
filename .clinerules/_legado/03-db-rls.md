@@ -2,7 +2,6 @@
 paths:
   - "supabase/migrations/**"
   - "supabase/functions/sync-batch/**"
-  - "docs/DB.md"
   - "docs/RLS.md"
   - "docs/CONTRACTS.md"
 ---
@@ -10,9 +9,8 @@ paths:
 # RebanhoSync — DB / RLS / Contracts Rules
 
 Leia:
-1. `docs/DB.md`
-2. `docs/RLS.md`
-3. `docs/CONTRACTS.md`
+1. `docs/RLS.md`
+2. `docs/CONTRACTS.md`
 
 Regras estruturais:
 - Tabela tenant-scoped deve carregar `fazenda_id` quando aplicável.
@@ -46,6 +44,5 @@ Checklist antes de migration:
 6. Precisa de ADR?
 
 Quando tocar estrutura, revisar:
-- `docs/DB.md`
 - `docs/RLS.md`
 - `docs/CONTRACTS.md`

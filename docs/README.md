@@ -35,7 +35,6 @@ Estes nomes não existem como documentos ativos em `docs/` na inspeção atual:
 
 - `docs/OFFLINE.md`
 - `docs/CONTRACTS.md`
-- `docs/DB.md`
 - `docs/RLS.md`
 - `docs/STACK.md`
 - `docs/ROUTES.md`

@@ -71,7 +71,6 @@ Nesses casos, usar:
 
 Ler só se necessário:
 - `docs/ARCHITECTURE.md`
-- `docs/DB.md`
 - `docs/RLS.md`
 
 Arquivos-alvo mais comuns:

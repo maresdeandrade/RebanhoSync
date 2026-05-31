@@ -69,7 +69,6 @@ Nesses casos, usar:
 
 1. `docs/CURRENT_STATE.md`
 2. `docs/ARCHITECTURE.md`
-3. `docs/DB.md`
 
 Ler só se necessário:
 - `docs/OFFLINE.md`

@@ -67,7 +67,6 @@ Nesses casos, usar:
 2. `docs/ARCHITECTURE.md`
 
 Ler só se necessário:
-- `docs/DB.md`
 - `docs/CONTRACTS.md`
 - `docs/OFFLINE.md`
 

@@ -13,7 +13,6 @@ Leia primeiro:
 
 Leia só se necessário:
 - `docs/ARCHITECTURE.md`
-- `docs/DB.md`
 - `docs/RLS.md`
 
 Foco deste diretório:

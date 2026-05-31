@@ -23,7 +23,7 @@
 
 ## Arquivos do repositorio analisados
 
-- Docs normativos: `docs/CURRENT_STATE.md`, `docs/ARCHITECTURE.md`, `docs/OFFLINE.md`, `docs/CONTRACTS.md`, `docs/DB.md`, `docs/RLS.md`, `docs/E2E_MVP.md`, `docs/ROUTES.md`, `docs/EVENTOS_AGENDA_SPEC.md`, `docs/00_MANIFESTO.md`
+- Docs normativos: `docs/CURRENT_STATE.md`, `docs/ARCHITECTURE.md`, `docs/OFFLINE.md`, `docs/CONTRACTS.md`, `docs/RLS.md`, `docs/E2E_MVP.md`, `docs/ROUTES.md`, `docs/EVENTOS_AGENDA_SPEC.md`, `docs/00_MANIFESTO.md`
 - Docs derivados e historicos relevantes: `docs/IMPLEMENTATION_STATUS.md`, `docs/TECH_DEBT.md`, `docs/ROADMAP.md`, `docs/archive/analysis/ANALISE_CAMPOS_FAZENDA.md`, `docs/archive/analysis/ANALISE_CAMPOS_REBANHO.md`, `docs/archive/analysis/ANALISE_EVENTOS_SANITARIOS.md`, `docs/review/AUDIT_CAPABILITY_MATRIX.md`
 - Schema e migrations: `supabase/migrations/0001_init.sql`, `supabase/migrations/0016_add_farm_location_area_production.sql`, `supabase/migrations/0021_add_animais_origem_raca.sql`, `supabase/migrations/20260409183000_official_sanitary_catalog_foundation.sql`
 - Tipos e contratos: `src/lib/offline/types.ts`, `src/lib/events/types.ts`, `src/lib/events/buildEventGesture.ts`, `src/lib/events/validators/sanitario.ts`, `src/lib/events/validators/movimentacao.ts`

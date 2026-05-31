@@ -12,7 +12,6 @@ Leia primeiro:
 
 Leia só se necessário:
 - `docs/OFFLINE.md`
-- `docs/DB.md`
 - `docs/CONTRACTS.md`
 
 Foco deste diretório:

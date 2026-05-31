@@ -70,7 +70,6 @@ Nesses casos, usar:
 
 Ler só se necessário:
 - `docs/OFFLINE.md`
-- `docs/DB.md`
 
 Arquivos-alvo mais comuns:
 - `src/lib/reproduction/linking.ts`

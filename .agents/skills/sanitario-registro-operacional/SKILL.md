@@ -71,7 +71,6 @@ Nesses casos, usar:
 Ler só se necessário:
 - `docs/OFFLINE.md`
 - `docs/CONTRACTS.md`
-- `docs/DB.md`
 
 Arquivos-alvo mais comuns:
 - `src/pages/Registrar.tsx`

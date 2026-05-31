@@ -1,30 +1,25 @@
-
----
-
-## `.github/ISSUE_TEMPLATE/capability-gap.yml`
-
-```yaml
 name: Capability Gap / Tech Debt
-description: Registrar gap ligado a capability_id do Catalog ou infra.* out-of-catalog
+description: Registrar gap ligado a capability_id do Catalog ou infra.* fora do catálogo funcional
 title: "[<capability_id>] <resumo curto>"
 labels: ["capability", "tech-debt"]
 body:
   - type: markdown
     attributes:
       value: |
-        Use este template para gaps rastreáveis de capacidade, infraestrutura ou governança.
-        
+        Use este template para registrar gaps rastreáveis de capacidade, infraestrutura, segurança, arquitetura ou governança.
+
         Regras:
-        - Use `capability_id` para itens do Catalog.
-        - Use `infra.*` para itens fora do catálogo funcional.
+        - Use capability_id para itens do Catalog.
+        - Use infra.* para itens fora do catálogo funcional.
         - Inclua evidência PM sempre que possível.
         - Critério de aceite deve ser mensurável.
+        - Não misture diagnóstico, solução e escopo de patch no mesmo campo.
 
   - type: input
     id: capability_id
     attributes:
       label: capability_id ou infra_id
-      description: Ex.: movimentacao.anti_teleport_client, pesagem.registro, infra.rbac_hardening
+      description: "Ex.: movimentacao.anti_teleport_client, pesagem.registro, infra.rbac_hardening"
       placeholder: "movimentacao.anti_teleport_client"
     validations:
       required: true
@@ -33,9 +28,10 @@ body:
     id: track
     attributes:
       label: Track
+      description: Informe se o gap pertence ao catálogo funcional ou à infraestrutura/governança.
       options:
         - Catalog
-        - Infra (Out-of-catalog)
+        - Infra (out-of-catalog)
     validations:
       required: true
 
@@ -43,7 +39,7 @@ body:
     id: severity
     attributes:
       label: Severidade
-      description: P0 bloqueia operação/segurança; P1 degrada fluxo crítico; P2 é dívida ou melhoria relevante.
+      description: P0 bloqueia operação/segurança; P1 degrada fluxo crítico; P2 é dívida técnica ou melhoria relevante.
       options:
         - P0
         - P1
@@ -57,10 +53,13 @@ body:
       label: Domínio principal
       options:
         - sanitario
+        - biosseguranca
         - pesagem
         - nutricao
         - movimentacao
         - reproducao
+        - compra_venda
+        - estoque_insumos
         - financeiro
         - agenda
         - insights
@@ -68,6 +67,7 @@ body:
         - security
         - platform
         - docs
+        - ci_governanca
     validations:
       required: true
 
@@ -75,6 +75,7 @@ body:
     id: affected_layers
     attributes:
       label: Camadas afetadas
+      description: Marque todas as camadas afetadas pelo gap.
       options:
         - label: UI / UX
         - label: Domínio / regra de negócio
@@ -90,7 +91,7 @@ body:
     id: current_behavior
     attributes:
       label: Comportamento atual
-      description: Descreva o que ocorre hoje. Evite solução aqui.
+      description: Descreva o que ocorre hoje. Evite propor solução neste campo.
       placeholder: |
         Hoje o sistema permite origem == destino na movimentação, gerando rejeição tardia no fluxo de sync.
     validations:
@@ -110,7 +111,7 @@ body:
     id: evidence
     attributes:
       label: Evidência PM / P
-      description: Inclua paths + linhas aproximadas (PM) e comandos reproduzíveis (P).
+      description: Inclua paths, linhas aproximadas, prints, comandos ou passos reproduzíveis.
       placeholder: |
         PM: src/pages/Registrar.tsx:~L1066 — não bloqueia origem == destino
         P: rg -n "toLote|fromLote|origem|destino" src/pages/Registrar.tsx src
@@ -120,7 +121,8 @@ body:
   - type: textarea
     id: impact
     attributes:
-      label: Risco / Impacto
+      label: Risco / impacto
+      description: Explique o risco operacional, técnico, de segurança, dados ou UX.
       placeholder: |
         - UX degradada
         - Rejeições no sync
@@ -128,6 +130,23 @@ body:
         - Potencial divergência entre UI otimista e estado reconciliado
     validations:
       required: true
+
+  - type: textarea
+    id: proposed_scope
+    attributes:
+      label: Escopo sugerido
+      description: Liste o que deve e o que não deve ser alterado.
+      placeholder: |
+        Incluir:
+        - Validação client-side antes de criar gesture
+        - Teste unitário/focal do fluxo inválido
+
+        Não incluir:
+        - Alteração em migrations
+        - Refatoração ampla do Registrar
+        - Mudança no contrato de sync
+    validations:
+      required: false
 
   - type: textarea
     id: acceptance
@@ -146,6 +165,7 @@ body:
     id: test_plan
     attributes:
       label: Plano mínimo de teste
+      description: Liste os comandos mínimos esperados para validar o fechamento.
       placeholder: |
         - pnpm run lint
         - pnpm test
@@ -158,7 +178,7 @@ body:
     id: docs_impact
     attributes:
       label: Impacto em documentação derivada
-      description: Informe se exige regen/atualização de IMPLEMENTATION_STATUS, TECH_DEBT, ROADMAP ou RECONCILIACAO_REPORT.
+      description: Informe se exige atualização de IMPLEMENTATION_STATUS, TECH_DEBT, ROADMAP ou RECONCILIACAO_REPORT.
       placeholder: |
         - IMPLEMENTATION_STATUS: sim/não
         - TECH_DEBT: sim/não
@@ -183,6 +203,7 @@ body:
     id: rollback
     attributes:
       label: Rollback / mitigação
+      description: Informe como reverter ou mitigar caso o patch gere regressão.
       placeholder: |
         - Reverter PR
         - Desabilitar CTA/fluxo afetado

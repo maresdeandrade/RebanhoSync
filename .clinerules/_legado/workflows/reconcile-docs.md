@@ -32,7 +32,6 @@ Não use se a mudança for apenas:
 - `docs/ARCHITECTURE.md`
 - `docs/OFFLINE.md`
 - `docs/CONTRACTS.md`
-- `docs/DB.md`
 - `docs/RLS.md`
 
 ### Derivados

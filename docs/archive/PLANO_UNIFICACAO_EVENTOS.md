@@ -30,7 +30,6 @@ Análise baseada em:
 
 1. **Documentação normativa:**
    - `docs/ARCHITECTURE.md`
-   - `docs/DB.md`
    - `docs/CONTRACTS.md`
    - `docs/OFFLINE.md`
    - `docs/EVENTOS_AGENDA_SPEC.md`
@@ -555,7 +554,7 @@ graph LR
 3. `docs/EVENTOS_MIGRACAO_V2.md` - runbook de migração/backfill/rollback.
 4. `docs/EVENTOS_OPERACAO_E_OBSERVABILIDADE.md` - monitoração, alertas e SLO.
 5. `docs/EVENTOS_TEST_PLAN_V2.md` - plano de testes completo.
-6. Atualização de `docs/CONTRACTS.md`, `docs/OFFLINE.md`, `docs/RLS.md`, `docs/DB.md`.
+6. Atualização de `docs/CONTRACTS.md`, `docs/OFFLINE.md`, `docs/RLS.md`.
 
 ---
 

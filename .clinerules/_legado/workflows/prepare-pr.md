@@ -21,7 +21,6 @@ Use este workflow quando:
 - `docs/CONTRACTS.md`
 
 ### Schema / RLS
-- `docs/DB.md`
 - `docs/RLS.md`
 
 ### Arquitetura

@@ -17,7 +17,6 @@ REQUIRED_FILES=(
   "docs/ARCHITECTURE.md"
   "docs/OFFLINE.md"
   "docs/CONTRACTS.md"
-  "docs/DB.md"
   "docs/RLS.md"
   "docs/E2E_MVP.md"
   "docs/PROCESS.md"

@@ -19,7 +19,6 @@ paths:
 Leia:
 1. `docs/CURRENT_STATE.md`
 2. `docs/ARCHITECTURE.md`
-3. `docs/DB.md` se houver impacto estrutural
 
 Separações obrigatórias:
 1. base regulatória oficial

@@ -1,5 +1,5 @@
 ---
-name: migrations-rls-contracts
+name: docs-reconciliation
 description: Use when the task is about migrations SQL, schema, FKs compostas, enums, views, triggers append-only, RLS, RBAC, RPCs SECURITY DEFINER, blocked tables, contratos versionados, catálogo global vs tenant-scoped, ou mudanças estruturais que exigem alinhar banco, sync e docs normativos.
 ---
 
@@ -29,7 +29,6 @@ Esta skill cobre a camada **estrutural e normativa**.
 Use esta skill quando a tarefa envolver:
 
 - `supabase/migrations/**`
-- `docs/DB.md`
 - `docs/RLS.md`
 - `docs/CONTRACTS.md`
 - `supabase/functions/sync-batch/**` se houver impacto contratual
@@ -63,7 +62,6 @@ Nesses casos, usar a skill do domínio correspondente.
 
 ## Ler primeiro
 
-1. `docs/DB.md`
 2. `docs/RLS.md`
 3. `docs/CONTRACTS.md`
 
@@ -75,7 +73,6 @@ Ler só se necessário:
 Arquivos-alvo mais comuns:
 - `supabase/migrations/**`
 - `supabase/functions/sync-batch/**`
-- `docs/DB.md`
 - `docs/RLS.md`
 - `docs/CONTRACTS.md`
 
@@ -205,7 +202,6 @@ Se tocar schema/contrato:
 ## Atualização documental obrigatória
 
 Quando houver impacto estrutural relevante, revisar:
-- `docs/DB.md`
 - `docs/RLS.md`
 - `docs/CONTRACTS.md`
 

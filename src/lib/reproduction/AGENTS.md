@@ -15,7 +15,6 @@ Leia primeiro:
 Leia só se necessário:
 - `docs/OFFLINE.md`
 - `docs/CONTRACTS.md`
-- `docs/DB.md`
 
 Foco deste diretório:
 - cobertura / IA

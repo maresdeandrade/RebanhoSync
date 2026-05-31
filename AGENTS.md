@@ -1,175 +1,93 @@
-# REBANHOSYNC - ENTRYPOINT RAPIDO PARA AGENTES
+# RebanhoSync — instruções para agentes
 
-Objetivo deste arquivo: reduzir prompt futuro. Use isto como dispatcher curto; detalhes versionados ficam em `docs/AGENT_CONTEXT.md`, docs locais e skills.
+Projeto: app agropecuário offline-first em beta interno. MVP operacional. Prioridade atual: consolidação SLC com patches pequenos, locais e revisáveis.
 
-Estado atual:
-- Beta interno.
-- MVP completo e operacional.
-- Fase: consolidacao SLC, com prioridade em patches pequenos, locais e revisaveis.
-- Mudancas devem ser enquadradas por `capability_id` ou `infra.*`.
+## Leitura inicial
 
-## 1) Leitura inicial obrigatoria
+Antes de agir, leia apenas o necessário.
 
-Leia nesta ordem antes de agir:
-1. `README.md`
-2. `docs/CURRENT_STATE.md`
-3. `docs/PROCESS.md`
-4. `docs/AGENT_CONTEXT.md`
+Para tarefa geral:
+1. README.md
+2. docs/CURRENT_STATE.md
+3. docs/PROCESS.md
+4. docs/AGENT_CONTEXT.md
 
-Objetivo:
-- alinhar snapshot operacional atual;
-- delimitar escopo;
-- evitar leitura historica desnecessaria;
-- nao reinventar invariantes ja documentadas.
+Para tarefa localizada:
+- primeiro procure AGENTS.md no diretório afetado;
+- use docs locais e skills específicas;
+- não abra docs/archive/** salvo pedido explícito.
 
-Se o ambiente precisar de orientacao rapida:
-
-```powershell
-powershell -File scripts/codex/bootstrap.ps1
-```
-
-## 2) Fontes de verdade
-
-Ordem de confianca em caso de conflito:
-1. codigo + migrations ativas;
-2. `docs/CURRENT_STATE.md`;
+Fonte de verdade em conflito:
+1. código + migrations ativas;
+2. docs/CURRENT_STATE.md;
 3. docs normativos;
 4. docs derivados;
-5. historico.
+5. histórico.
 
-Fontes atuais principais:
-- `README.md`: snapshot executivo e comandos principais.
-- `docs/CURRENT_STATE.md`: estado operacional vivo.
-- `docs/PROCESS.md`: processo normativo capability-centric.
-- `docs/ARCHITECTURE.md`: Two Rails, boundary sanitario, idempotencia e baseline Supabase.
-- `docs/AGENT_CONTEXT.md`: contexto ampliado para agentes.
-- `docs/PRODUCT.md`, `docs/SYSTEM.md`, `docs/REFERENCE.md`: dominio/produto.
-- `docs/IMPLEMENTATION_STATUS.md`, `docs/TECH_DEBT.md`, `docs/ROADMAP.md`, `docs/review/RECONCILIACAO_REPORT.md`: derivados, apenas quando houver delta real.
+## Regras absolutas
 
-Observacao: `docs/OFFLINE.md`, `docs/CONTRACTS.md`, `docs/DB.md` e `docs/RLS.md` nao estavam presentes na raiz de `docs/` na ultima inspecao; versoes em `docs/archive/**` sao historicas.
-
-## 3) Nao usar como fonte operacional
-
-Evite abrir por padrao:
-- `docs/archive/**`;
-- auditorias historicas;
-- relatorios temporarios;
-- arquivos gerados (`dist/**`, `coverage/**`, caches, `*.tsbuildinfo`);
-- dependencias instaladas (`node_modules/**`, `.kilo/node_modules/**`).
-
-## 4) Baseline Supabase atual
-
-Estado real inspecionado:
-- baseline canonica ativa: `supabase/migrations/00000000000000_rebuild_base_schema_sanitario.sql`;
-- pasta ativa de migrations contem a baseline e `supabase/migrations/AGENTS.md`;
-- migrations antigas preservadas em `supabase/migrations_legacy_pre_baseline/`;
-- shims pos-squash removidos da pasta ativa;
-- seed tecnico/minimo/idempotente: `supabase/seed.sql`;
-- seed sanitario nao e fonte normativa oficial.
-
-Validador funcional real:
-
-```bash
-node scripts/codex/validate-supabase-baseline-functional.mjs
-```
-
-Caveat documentado: o validador pode servir `sync-batch` local com `supabase functions serve --no-verify-jwt` por limitacao de CLI/runtime antiga, mas o handler ainda valida `auth.getUser(jwt)` e usa cliente user-scoped com RLS.
-
-## 5) Regras absolutas
-
-- Nao colocar regra de negocio forte em componente React.
-- Nao usar UI como unica fronteira de autorizacao.
-- Nao expor `service_role` no client.
-- Nao alterar migrations sem tarefa explicita.
-- Nao alterar `supabase/seed.sql` sem tarefa explicita.
-- Nao modificar RLS/policies/RPCs sem auditoria especifica.
-- Preservar `fazenda_id` como fronteira de isolamento.
+- Não colocar regra de negócio forte em componente React.
+- Não usar UI como única fronteira de autorização.
+- Não expor service_role no client.
+- Não alterar migrations, seed, RLS, policies ou RPCs sem tarefa explícita.
+- Preservar fazenda_id como fronteira de isolamento.
 - Preservar compatibilidade com dados legados.
-- Preservar separacao entre dominio, infraestrutura e apresentacao.
-- Preferir mudancas pequenas, reversiveis e testaveis.
-- Nao refatorar por conveniencia.
+- Preferir mudanças pequenas, reversíveis e testáveis.
+- Não refatorar por conveniência.
 
-## 6) Invariantes arquiteturais
+## Invariantes do domínio
 
-- Two Rails: `agenda_itens` e intencao futura mutavel; `eventos` e fatos passados append-only.
-- Correcao historica ocorre por contra-lancamento, nunca update destrutivo de negocio.
-- `Registrar` e `Executar` registram evento.
-- `Encerrar` e `Cancelar` atuam na agenda.
-- `Aplicar protocolo` materializa/recalcula agenda e nao gera evento diretamente.
-- Idempotencia operacional: `1 acao -> 1 createGesture`.
-- Offline-first: preservar gestures, rollback deterministico, metadata de sync, retries e compatibilidade de fila.
-- Sanitario: base oficial, overlay/config por fazenda e protocolo operacional nao devem virar uma unica fonte misturada.
-- Reproducao: preservar linking deterministico `parto -> pos-parto -> cria`.
+- Agenda = intenção/tarefa futura mutável.
+- Evento = fato histórico append-only.
+- state_* = estado atual/read model.
+- Protocolo = regra/configuração, não execução.
+- Tags, sinais e insights = auxiliares; nunca fonte primária nem regra crítica.
+- Registrar/Executar geram evento.
+- Encerrar/Cancelar atuam na agenda.
+- Aplicar protocolo materializa/recalcula agenda e não gera evento diretamente.
+- Correção histórica ocorre por contra-lançamento, não update destrutivo.
+- Idempotência operacional: 1 ação → 1 createGesture.
+- Offline-first: preservar gestures, rollback determinístico, metadata de sync, retries e fila.
+- Sanitário: base oficial, overlay por fazenda e protocolo operacional não devem virar fonte misturada.
+- Reprodução: preservar linking determinístico parto → pós-parto → cria.
 
-Pipeline desejada em hotspots:
-1. Normalize
-2. Select / Policy
-3. Payload
-4. Plan
-5. Effects
-6. Reconcile
+Pipeline preferida em hotspots:
+Normalize → Select/Policy → Payload → Plan → Effects → Reconcile.
 
-## 7) Contexto local
-
-Antes de abrir muitos arquivos, procure `AGENTS.md` local no caminho afetado.
-
-Escalar quando aplicavel:
-- `src/pages/AGENTS.md`
-- `src/pages/Registrar/AGENTS.md`
-- `src/pages/Agenda/AGENTS.md`
-- `src/pages/ProtocolosSanitarios/AGENTS.md`
-- `src/lib/offline/AGENTS.md`
-- `src/lib/sanitario/AGENTS.md`
-- `src/lib/reproduction/AGENTS.md`
-- `supabase/functions/sync-batch/AGENTS.md`
-- `supabase/migrations/AGENTS.md`
-
-Skills locais:
-- indice real: `.agents/skills/README.md`
-- use skill especializada para offline/sync, sanitario, reproducao, migrations/RLS, hardening, prepare-pr ou reconciliacao documental.
-
-## 8) Alteracao segura
-Se o ponto correto de intervencao ainda nao estiver evidente, use repository-context-retrieval antes de editar.
+## Escopo e edição segura
 
 Antes de editar:
-- declarar escopo permitido e proibido;
-- listar arquivos provaveis;
-- checar git status --short --untracked-files=all;
-rodar preflight se houver risco de path restrito:
-```powershell
+- declare escopo permitido/proibido;
+- liste arquivos prováveis;
+- rode git status --short --untracked-files=all;
+- use repository-context-retrieval se o ponto de intervenção não estiver claro.
+
+Durante:
+- atacar no máximo 1 capability principal;
+- manter diff mínimo;
+- não editar docs derivados sem mudança funcional real;
+- se algo não for encontrado, registrar locais inspecionados;
+- se comando for inferido, sinalizar antes de usar.
+
+Áreas críticas:
+- src/lib/offline/**
+- src/lib/sanitario/**
+- src/lib/reproduction/**
+- src/lib/animals/**
+- src/lib/events/**
+- src/pages/Registrar/**
+- src/pages/Agenda/**
+- src/pages/ProtocolosSanitarios/**
+- supabase/functions/sync-batch/**
+- supabase/migrations/**
+
+Para áreas críticas:
 powershell -File scripts/codex/preflight.ps1 -Paths "<path1>","<path2>"
-```
-
-Durante a tarefa:
-- atacar no maximo 1 capability principal;
-- manter diff minimo;
-- nao editar docs derivados sem mudanca funcional real;
-- nao usar docs/archive/** como autoridade;
-- se algo nao for encontrado, registrar: nao encontrado - locais inspecionados: ...;
-- se um comando for inferido, registrar: inferido - confirmar antes de usar.
-
-Depois de tocar area critica:
-``` 
 powershell -File scripts/codex/validate.ps1 -TouchedPaths "<path1>","<path2>"
-``` 
 
-Areas criticas:
-- `src/lib/offline/**`
-- `src/lib/sanitario/**`
-- `src/lib/reproduction/**`
-- `src/lib/animals/**`
-- `src/lib/events/**`
-- `src/pages/Registrar/**`
-- `src/pages/Agenda/**`
-- `src/pages/ProtocolosSanitarios/**`
-- `supabase/functions/sync-batch/**`
-- `supabase/migrations/**`
+## Validação
 
-## 9) Comandos de validacao reais
-
-Do `package.json`:
-
-```bash
+Comandos reais:
 pnpm run lint
 pnpm test
 pnpm run build
@@ -181,53 +99,32 @@ pnpm run quality:gate
 pnpm run test:e2e
 pnpm run gates
 pnpm run audit:data
-```
 
-Scripts Codex reais:
-
-```powershell
+Scripts Codex:
 powershell -File scripts/codex/bootstrap.ps1
 powershell -File scripts/codex/preflight.ps1 -Paths "<path1>","<path2>"
 powershell -File scripts/codex/validate.ps1 -TouchedPaths "<path1>","<path2>"
 powershell -File scripts/codex/prepare-pr.ps1
 node scripts/codex/validate-supabase-baseline-functional.mjs
-```
 
-Nao ha script `typecheck` em `package.json` na ultima inspecao.
+Não assumir script typecheck se não existir no package.json.
 
-## 10) Formato padrao de resposta
+## Graphify
 
-Responder por padrao:
+Se graphify-out/ existir:
+- use graphify-out/GRAPH_REPORT.md antes de investigações amplas;
+- se graphify-out/wiki/index.md existir, prefira a wiki para navegação;
+- para relação entre módulos, prefira graphify query/path/explain;
+- para patch focal em arquivo já conhecido, não é obrigatório abrir Graphify antes;
+- após mudança estrutural relevante, rode graphify update . se disponível.
+
+## Resposta final
+
+Formato:
 1. resumo executivo;
 2. arquivos criados/alterados;
-3. conteudo principal adicionado;
-4. baseline Supabase impactada ou confirmada;
-5. comandos de validacao executados;
-6. confirmacao de escopo;
-7. riscos ou pendencias, no maximo 3.
-
-Para tarefas de codigo, incluir ate 5 arquivos principais afetados e testes/comandos realmente necessarios.
-
-## 11) Checklist antes de finalizar
-- Li README.md, docs/CURRENT_STATE.md, docs/PROCESS.md e docs/AGENT_CONTEXT.md.
-- Verifiquei contexto local/skill quando a area exigiu.
-- Se a tarefa exigia descoberta de contexto, usei repository-context-retrieval antes de concluir analise, plano ou recomendacao.
-- Confirmei que o diff toca apenas o escopo permitido.
-- Nao usei docs/archive/** como fonte normativa.
-- Nao alterei migrations/seed/RLS sem pedido explicito.
-- Rodei validacoes aplicaveis ou declarei motivo para nao rodar.
-- Executei git status --short --untracked-files=all, git diff --name-only e git diff --stat.
-- Se a alteracao terminou em entrega revisavel, usei rebanhosync-verification-gate.
-- Se a entrega seguiu para PR, usei prepare-pr apos o gate tecnico.
-- Listei incertezas com locais inspecionados.
-
-## graphify
-
-This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.
-
-Rules:
-
-ALWAYS read graphify-out/GRAPH_REPORT.md before reading any source files, running grep/glob searches, or answering codebase questions. The graph is your primary map of the codebase.
-IF graphify-out/wiki/index.md EXISTS, navigate it instead of reading raw files
-For cross-module "how does X relate to Y" questions, prefer graphify query "<question>", graphify path "<A>" "<B>", or graphify explain "<concept>" over grep — these traverse the graph's EXTRACTED + INFERRED edges instead of scanning files
-After modifying code, run graphify update . to keep the graph current (AST-only, no API cost).
+3. conteúdo principal;
+4. impacto em Supabase/RLS/migrations, se houver;
+5. validações executadas;
+6. escopo confirmado;
+7. riscos/pendências, no máximo 3.

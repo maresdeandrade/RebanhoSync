@@ -43,7 +43,6 @@ Fontes principais:
 Inspecao de docs:
 - `docs/OFFLINE.md`: nao encontrado - locais inspecionados: `docs/`.
 - `docs/CONTRACTS.md`: nao encontrado - locais inspecionados: `docs/`.
-- `docs/DB.md`: nao encontrado - locais inspecionados: `docs/`.
 - `docs/RLS.md`: nao encontrado - locais inspecionados: `docs/`.
 - Versoes desses nomes em `docs/archive/**` existem, mas sao historicas e nao fonte normativa atual.
 

@@ -8,7 +8,6 @@ Escopo:
 Leia primeiro:
 1. `docs/CONTRACTS.md`
 2. `docs/RLS.md`
-3. `docs/DB.md`
 
 Leia só se necessário:
 - `docs/ARCHITECTURE.md`
