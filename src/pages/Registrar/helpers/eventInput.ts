@@ -10,6 +10,13 @@ import type { EventInput, SanitarioCasoOpenInput, EccEventInput } from "@/lib/ev
 import type { VeterinaryProductSelection } from "@/lib/sanitario/catalog/products";
 import { buildRegistrarFinanceiroPayloadBase } from "@/pages/Registrar/helpers/payload";
 import {
+  calculateCommercialOperation,
+  type CommercialOperationCalculationStatus,
+  type CommercialOperationIssue,
+  type CommercialOperationScope,
+  type CommercialOperationType,
+} from "@/lib/comercial/commercialOperation";
+import {
   isFinanceiroSaidaNatureza,
   isFinanceiroSociedadeNatureza,
   supportsDraftAnimalsInFinanceiroNatureza,
@@ -21,6 +28,7 @@ type RegistrarEventDomain =
   | "movimentacao"
   | "nutricao"
   | "financeiro"
+  | "comercial"
   | "ecc";
 
 type ReproducaoFallbackData = {
@@ -71,6 +79,8 @@ type BuildRegistrarEventInputParams = {
     quantidadeUnidade?: string | null;
     viaAplicacao?: string | null;
     custoUnitarioSnapshot?: number | null;
+    responsavelNome?: string | null;
+    responsavelTipo?: string | null;
     gerarBaixaEstoque?: boolean;
   };
   pesagem?: {
@@ -110,6 +120,29 @@ type BuildRegistrarEventInputParams = {
     tipo: FinanceiroTipoEnum;
     valorTotal: number;
     contraparteId: string | null;
+  };
+  comercial?: {
+    operationType: CommercialOperationType | "sociedade";
+    scope: CommercialOperationScope;
+    quantidadeAnimais: number;
+    pesoVivoTotal: number | null;
+    valorBruto: number | null;
+    frete: number | null;
+    comissao: number | null;
+    descontos: number | null;
+    taxasImpostos: number | null;
+    contraparteId: string | null;
+    contraparteNome: string | null;
+    animalIds: string[] | null;
+    loteId: string | null;
+    financeTransactionId: string | null;
+    observacoes?: string | null;
+    snapshot?: Record<string, unknown> | null;
+    calculationStatus?: CommercialOperationCalculationStatus;
+    issues?: CommercialOperationIssue[];
+    limitations?: string[];
+    animalStatusSnapshot?: "ativo" | "vendido" | "morto" | "retirado" | null;
+    commercialSignals?: string[];
   };
 };
 
@@ -168,6 +201,8 @@ export function buildRegistrarEventInput(
       quantidadeUnidade: params.sanitario?.quantidadeUnidade,
       viaAplicacao: params.sanitario?.viaAplicacao,
       custoUnitarioSnapshot: params.sanitario?.custoUnitarioSnapshot,
+      responsavelNome: params.sanitario?.responsavelNome,
+      responsavelTipo: params.sanitario?.responsavelTipo,
       gerarBaixaEstoque: params.sanitario?.gerarBaixaEstoque,
       payload: params.sanitario?.payload ?? {},
     };
@@ -222,27 +257,53 @@ export function buildRegistrarEventInput(
   }
 
   if (params.tipoManejo === "comercial") {
+    const operationType =
+      params.comercial?.operationType === "venda" ? "venda" : "compra";
+    const summary = calculateCommercialOperation({
+      operationType,
+      scope: params.comercial?.scope,
+      occurredAt: params.occurredAt,
+      quantidadeAnimais: params.comercial?.quantidadeAnimais,
+      pesoVivoTotal: params.comercial?.pesoVivoTotal ?? undefined,
+      valorBruto: params.comercial?.valorBruto ?? undefined,
+      frete: params.comercial?.frete ?? undefined,
+      comissao: params.comercial?.comissao ?? undefined,
+      descontos: params.comercial?.descontos ?? undefined,
+      taxasImpostos: params.comercial?.taxasImpostos ?? undefined,
+      contraparteId: params.comercial?.contraparteId ?? undefined,
+      contraparteNome: params.comercial?.contraparteNome ?? undefined,
+      animalIds: params.comercial?.animalIds ?? undefined,
+      loteId: params.comercial?.loteId ?? undefined,
+      financeTransactionId: params.comercial?.financeTransactionId ?? undefined,
+      observacoes: params.comercial?.observacoes ?? undefined,
+    });
+
     return {
       dominio: "comercial",
       ...base,
-      operationType: params.comercial!.operationType,
+      operationType,
       scope: params.comercial!.scope,
       quantidadeAnimais: params.comercial!.quantidadeAnimais,
       pesoVivoTotal: params.comercial!.pesoVivoTotal ?? null,
-      pesoMedioDerivado: params.comercial!.pesoMedioDerivado ?? null,
+      pesoMedioDerivado: summary.pesoMedioDerivado ?? null,
       valorBruto: params.comercial!.valorBruto ?? null,
       frete: params.comercial!.frete ?? null,
       comissao: params.comercial!.comissao ?? null,
       descontos: params.comercial!.descontos ?? null,
       taxasImpostos: params.comercial!.taxasImpostos ?? null,
-      valorLiquidoDerivado: params.comercial!.valorLiquidoDerivado ?? null,
+      valorLiquidoDerivado: summary.valorLiquidoDerivado ?? null,
       contraparteId: params.comercial!.contraparteId ?? null,
       contraparteNome: params.comercial!.contraparteNome ?? null,
       animalIds: params.comercial!.animalIds ?? null,
       loteId: params.comercial!.loteId ?? null,
       financeTransactionId: params.comercial!.financeTransactionId ?? null,
-      snapshot: params.comercial!.snapshot,
-      calculationStatus: params.comercial!.calculationStatus,
+      snapshot: params.comercial!.snapshot ?? summary.snapshot,
+      calculationStatus: params.comercial!.calculationStatus ?? summary.calculationStatus,
+      issues: params.comercial!.issues ?? summary.issues,
+      limitations: params.comercial!.limitations ?? summary.limitations,
+      animalStatusSnapshot: params.comercial!.animalStatusSnapshot ?? null,
+      commercialSignals: params.comercial!.commercialSignals ?? [],
+      observacoes: params.comercial!.observacoes ?? null,
     };
   }
 

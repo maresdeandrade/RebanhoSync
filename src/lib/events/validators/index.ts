@@ -14,6 +14,7 @@ import { validateObitoInput } from "./obito";
 import { validateAlertaSanitarioInput } from "./alertaSanitario";
 import { validateConformidadeInput } from "./conformidade";
 import { validateEccInput } from "./ecc";
+import { validateComercialInput } from "./comercial";
 
 export const validateEventInput = (input: EventInput): EventValidationIssue[] => {
   const issues = [...validateBaseEventInput(input)];
@@ -24,6 +25,8 @@ export const validateEventInput = (input: EventInput): EventValidationIssue[] =>
     issues.push(...validateAlertaSanitarioInput(input));
   } else if (input.dominio === "conformidade") {
     issues.push(...validateConformidadeInput(input));
+  } else if (input.dominio === "comercial") {
+    issues.push(...validateComercialInput(input));
   } else if (input.dominio === "pesagem") {
     issues.push(...validatePesagemInput(input));
   } else if (input.dominio === "movimentacao") {

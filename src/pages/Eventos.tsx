@@ -128,6 +128,66 @@ function toCurrency(value: number) {
   }).format(value);
 }
 
+function formatDateOnly(value: string | null | undefined): string | null {
+  if (!value) return null;
+  return new Date(`${value.slice(0, 10)}T00:00:00`).toLocaleDateString("pt-BR");
+}
+
+function readSnapshotString(snapshot: unknown, key: string): string | null {
+  if (!snapshot || typeof snapshot !== "object" || Array.isArray(snapshot)) {
+    return null;
+  }
+  const value = (snapshot as Record<string, unknown>)[key];
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+function formatSanitaryEventDetail(detail: EventoSanitario): string {
+  const product = detail.produto_nome_snapshot ?? detail.produto ?? detail.tipo;
+  const stockLot = detail.estoque_lote_codigo_snapshot
+    ? `lote ${detail.estoque_lote_codigo_snapshot}`
+    : detail.estoque_lote_id
+      ? "lote de estoque vinculado"
+      : "sem lote de estoque";
+  const validity = formatDateOnly(detail.validade_produto);
+  const dose =
+    detail.dose_quantidade != null
+      ? `${detail.dose_quantidade} ${detail.dose_unidade ?? ""}`.trim()
+      : null;
+  const withdrawal = [
+    detail.carencia_carne_ate
+      ? `carne ate ${formatDateOnly(detail.carencia_carne_ate)}`
+      : null,
+    detail.carencia_leite_ate
+      ? `leite ate ${formatDateOnly(detail.carencia_leite_ate)}`
+      : null,
+  ].filter(Boolean);
+  const protocolCode =
+    readSnapshotString(detail.protocol_item_snapshot, "item_code") ??
+    readSnapshotString(detail.protocol_item_snapshot, "itemCode");
+  const protocol =
+    protocolCode && detail.protocol_item_version
+      ? `${protocolCode} / v${detail.protocol_item_version}`
+      : detail.protocol_item_version
+        ? `item sanitario v${detail.protocol_item_version}`
+        : null;
+
+  return [
+    product,
+    stockLot,
+    validity ? `validade ${validity}` : null,
+    dose ? `dose ${dose}` : null,
+    detail.via_aplicacao ? `via ${detail.via_aplicacao}` : null,
+    detail.responsavel_nome ? `responsavel ${detail.responsavel_nome}` : null,
+    withdrawal.length > 0 ? `carencia ${withdrawal.join(" / ")}` : "sem carencia",
+    detail.custo_total_snapshot != null
+      ? `custo ${toCurrency(detail.custo_total_snapshot)}`
+      : "custo ausente",
+    protocol ? `protocolo ${protocol}` : null,
+  ]
+    .filter(Boolean)
+    .join(" | ");
+}
+
 function toDateTime(value: string) {
   return new Date(value).toLocaleString("pt-BR", {
     day: "2-digit",
@@ -591,7 +651,7 @@ const Eventos = () => {
 
         if (evento.dominio === "sanitario") {
           const d = sanitarioByEvento.get(evento.id);
-          detail = d ? `${d.tipo} - ${d.produto}` : "Sem detalhe sanitario";
+          detail = d ? formatSanitaryEventDetail(d) : "Sem detalhe sanitario";
           canCreateInventoryConsumption =
             evaluateSanitaryInventoryConsumptionReadiness({
               event: evento,
@@ -1176,4 +1236,3 @@ const Eventos = () => {
 };
 
 export default Eventos;
-

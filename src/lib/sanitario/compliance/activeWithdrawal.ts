@@ -5,11 +5,7 @@
  * Computes active withdrawal periods from sanitary events.
  */
 
-import {
-  resolveWithdrawalRule,
-  type OfficialItemWithdrawal,
-  type WithdrawalRule,
-} from "./withdrawalPeriod";
+import type { OfficialItemWithdrawal } from "./withdrawalPeriod";
 
 export interface SanitaryEventForWithdrawal {
   animal_id: string | null;
@@ -18,6 +14,10 @@ export interface SanitaryEventForWithdrawal {
   deleted_at?: string | null;
   produto: string;
   detail_deleted_at?: string | null;
+  carencia_carne_dias?: number | null;
+  carencia_leite_dias?: number | null;
+  carencia_carne_ate?: string | null;
+  carencia_leite_ate?: string | null;
   payload?: {
     carencia_regra_json?: {
       carne_dias?: number | null;
@@ -42,19 +42,13 @@ export interface ActiveWithdrawal {
   ativa: boolean;
 }
 
-function addDays(dateStr: string, days: number): string {
-  const d = new Date(dateStr);
-  d.setDate(d.getDate() + days);
-  return d.toISOString().split("T")[0];
-}
-
 function toDateStr(isoString: string): string {
   return isoString.split("T")[0];
 }
 
 export function computeActiveWithdrawals(
   events: SanitaryEventForWithdrawal[],
-  officialItems: OfficialItemLookup,
+  _officialItems: OfficialItemLookup,
   asOf: Date = new Date(),
 ): ActiveWithdrawal[] {
   const asOfDate = asOf.toISOString().split("T")[0];
@@ -65,28 +59,26 @@ export function computeActiveWithdrawals(
     if (event.deleted_at) continue;
     if (event.detail_deleted_at) continue;
 
-    const rule: WithdrawalRule | null = resolveWithdrawalRule({
-      officialItem: officialItems[event.produto] ?? null,
-      protocolItem: null,
-      eventPayload: event.payload ?? null,
-    });
-
-    if (!rule) continue;
-
     const inicio = toDateStr(event.occurred_at);
     const types: Array<{
-      key: "carne" | "leite" | "ovos" | "mel";
+      key: "carne" | "leite";
       dias: number | null;
+      fim: string | null;
     }> = [
-      { key: "carne", dias: rule.carne_dias },
-      { key: "leite", dias: rule.leite_dias },
-      { key: "ovos", dias: rule.ovos_dias },
-      { key: "mel", dias: rule.mel_dias },
+      {
+        key: "carne",
+        dias: event.carencia_carne_dias ?? null,
+        fim: event.carencia_carne_ate ?? null,
+      },
+      {
+        key: "leite",
+        dias: event.carencia_leite_dias ?? null,
+        fim: event.carencia_leite_ate ?? null,
+      },
     ];
 
-    for (const { key, dias } of types) {
-      if (dias == null || dias <= 0) continue;
-      const fim = addDays(inicio, dias);
+    for (const { key, dias, fim } of types) {
+      if (dias == null || dias <= 0 || !fim) continue;
       if (fim >= asOfDate) {
         results.push({
           animal_id: event.animal_id,

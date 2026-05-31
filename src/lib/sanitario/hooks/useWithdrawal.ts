@@ -55,6 +55,10 @@ export function useAnimalWithdrawal(
           occurred_at: e.occurred_at,
           deleted_at: e.deleted_at,
           produto: d ? d.produto : "",
+          carencia_carne_dias: d?.carencia_carne_dias ?? null,
+          carencia_leite_dias: d?.carencia_leite_dias ?? null,
+          carencia_carne_ate: d?.carencia_carne_ate ?? null,
+          carencia_leite_ate: d?.carencia_leite_ate ?? null,
           payload: d
             ? {
                 insumo_snapshot: d.payload?.insumo_snapshot,
@@ -131,6 +135,10 @@ export function useLoteWithdrawal(
         occurred_at: e.occurred_at,
         deleted_at: e.deleted_at,
         produto: d ? d.produto : "",
+        carencia_carne_dias: d?.carencia_carne_dias ?? null,
+        carencia_leite_dias: d?.carencia_leite_dias ?? null,
+        carencia_carne_ate: d?.carencia_carne_ate ?? null,
+        carencia_leite_ate: d?.carencia_leite_ate ?? null,
         payload: d
           ? {
               insumo_snapshot: d.payload?.insumo_snapshot,
@@ -186,6 +194,10 @@ export function useLoteWithdrawal(
           occurred_at: e.occurred_at,
           deleted_at: e.deleted_at,
           produto: d ? d.produto : "",
+          carencia_carne_dias: d?.carencia_carne_dias ?? null,
+          carencia_leite_dias: d?.carencia_leite_dias ?? null,
+          carencia_carne_ate: d?.carencia_carne_ate ?? null,
+          carencia_leite_ate: d?.carencia_leite_ate ?? null,
           payload: d
             ? {
                 insumo_snapshot: d.payload?.insumo_snapshot,
@@ -295,6 +307,10 @@ export function usePastoWithdrawal(
         occurred_at: e.occurred_at,
         deleted_at: e.deleted_at,
         produto: d ? d.produto : "",
+        carencia_carne_dias: d?.carencia_carne_dias ?? null,
+        carencia_leite_dias: d?.carencia_leite_dias ?? null,
+        carencia_carne_ate: d?.carencia_carne_ate ?? null,
+        carencia_leite_ate: d?.carencia_leite_ate ?? null,
         payload: d
           ? {
               insumo_snapshot: d.payload?.insumo_snapshot,

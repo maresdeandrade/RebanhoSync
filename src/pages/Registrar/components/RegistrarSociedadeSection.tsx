@@ -223,6 +223,8 @@ export function RegistrarSociedadeSection(props: {
       return;
     }
 
+    const normalizedLoteId = selectedLoteId === "null" || selectedLoteId === "" ? null : selectedLoteId;
+
     // 2. Validar rascunhos de animais
     for (const d of drafts) {
       if (!d.identificacao.trim()) {
@@ -245,7 +247,7 @@ export function RegistrarSociedadeSection(props: {
           identificacao: d.identificacao.trim(),
           sexo: d.sexo,
           status: "ativo",
-          lote_id: selectedLoteId || null,
+          lote_id: normalizedLoteId,
           data_entrada: dataEntrada,
           data_nascimento: d.dataNascimento || null,
           origem: "sociedade",
@@ -253,6 +255,7 @@ export function RegistrarSociedadeSection(props: {
           payload: {
             tipo_entrada: "entrada_sociedade",
             sociedadeId: finalSocId,
+            sociedade_id: finalSocId,
             physicalEntry: true
           }
         }
@@ -267,7 +270,9 @@ export function RegistrarSociedadeSection(props: {
           sociedade_id: finalSocId,
           animal_id: animalId,
           data_entrada: dataEntrada,
+          data_saida: null,
           status: "ativo",
+          motivo_saida: null,
           payload: {
             tipo_acao: "entrada_sociedade"
           }
@@ -284,7 +289,7 @@ export function RegistrarSociedadeSection(props: {
             dominio: "pesagem",
             occurred_at: dataEntrada,
             animal_id: animalId,
-            lote_id: selectedLoteId || null,
+            lote_id: normalizedLoteId,
             source_task_id: null,
             corrige_evento_id: null,
             sanitario_caso_id: null,
@@ -329,6 +334,15 @@ export function RegistrarSociedadeSection(props: {
       return;
     }
 
+    const selectedAnimals = await db.state_animais.bulkGet(selectedAnimalsWithoutLink);
+    const invalidAnimals = selectedAnimals.filter(
+      (animal) => !animal || animal.deleted_at || animal.status !== "ativo",
+    );
+    if (invalidAnimals.length > 0) {
+      alert("Somente animais ativos podem receber sociedade ativa.");
+      return;
+    }
+
     const linkOps: OperationInput[] = selectedAnimalsWithoutLink.map(animalId => ({
       table: "sociedade_animais",
       action: "INSERT",
@@ -338,7 +352,9 @@ export function RegistrarSociedadeSection(props: {
         sociedade_id: selectedSocId,
         animal_id: animalId,
         data_entrada: new Date().toISOString().slice(0, 10),
+        data_saida: null,
         status: "ativo",
+        motivo_saida: null,
         payload: {
           tipo_acao: "vinculo_existente",
           physicalEntry: false

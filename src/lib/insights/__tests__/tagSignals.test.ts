@@ -174,8 +174,6 @@ describe("operational tag signals", () => {
   });
 
   it.each([
-    "sanitario:livre_carencia",
-    "sanitario:carencia_ativa",
     "comercial:pronto_venda",
     "comercial:apto_abate",
     "peso:atual_confiavel",
@@ -216,8 +214,6 @@ describe("operational tag signals", () => {
     ]).map((signal) => signal.code);
 
     const forbidden: readonly OperationalSignalCode[] = [
-      "sanitario:livre_carencia",
-      "sanitario:carencia_ativa",
       "comercial:pronto_venda",
       "comercial:apto_abate",
       "peso:atual_confiavel",

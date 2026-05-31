@@ -617,6 +617,22 @@ export class OfflineDB extends Dexie {
       event_eventos_sanitario:
         "evento_id, fazenda_id, protocol_item_version_id, protocol_item_logical_key, deleted_at",
     });
+
+    // Version 21: rastreabilidade sanitaria operacional estruturada.
+    this.version(21).stores({
+      event_eventos_sanitario:
+        "evento_id, fazenda_id, produto_veterinario_id, estoque_lote_id, carencia_carne_ate, carencia_leite_ate, protocol_item_version_id, protocol_item_logical_key, deleted_at",
+    });
+
+    // Version 22: snapshots comerciais e consultas por contraparte/operacao.
+    this.version(22).stores({
+      event_eventos_comercial:
+        "evento_id, fazenda_id, operation_type, contraparte_id, lote_id, finance_transaction_id, deleted_at, [fazenda_id+operation_type], [fazenda_id+contraparte_id]",
+      state_sociedade_animais:
+        "id, fazenda_id, sociedade_id, animal_id, status, deleted_at, [fazenda_id+sociedade_id], [fazenda_id+animal_id], [fazenda_id+status]",
+      state_sociedades_pecuarias:
+        "id, fazenda_id, contraparte_id, status, deleted_at, [fazenda_id+contraparte_id], [fazenda_id+status]",
+    });
   }
 }
 

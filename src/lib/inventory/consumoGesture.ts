@@ -54,7 +54,7 @@ export function buildConsumoMovimentacaoOp(input: BuildConsumoMovimentacaoOpInpu
     table: "insumo_movimentacoes",
     action: "INSERT",
     record: {
-      id: crypto.randomUUID(),
+      id: eventId,
       insumo_id: insumoId,
       insumo_lote_id: insumoLoteId,
       tipo,

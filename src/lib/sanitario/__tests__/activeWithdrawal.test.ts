@@ -38,14 +38,15 @@ describe("computeActiveWithdrawals", () => {
     expect(computeActiveWithdrawals(events, {})).toEqual([]);
   });
 
-  it("computes active withdrawal from event payload", () => {
+  it("computes active withdrawal from structured event columns", () => {
     const events = [
       makeEvent({
         occurred_at: "2026-05-20T12:00:00Z",
         produto: "Oxitetraciclina L.A.",
-        payload: {
-          carencia_regra_json: { carne_dias: 28, leite_dias: 7 },
-        },
+        carencia_carne_dias: 28,
+        carencia_leite_dias: 7,
+        carencia_carne_ate: "2026-06-17",
+        carencia_leite_ate: "2026-05-27",
       }),
     ];
     const asOf = new Date("2026-05-25T12:00:00Z");
@@ -72,9 +73,10 @@ describe("computeActiveWithdrawals", () => {
       makeEvent({
         occurred_at: "2026-01-01T12:00:00Z",
         produto: "Oxitetraciclina L.A.",
-        payload: {
-          carencia_regra_json: { carne_dias: 28, leite_dias: 7 },
-        },
+        carencia_carne_dias: 28,
+        carencia_leite_dias: 7,
+        carencia_carne_ate: "2026-01-29",
+        carencia_leite_ate: "2026-01-08",
       }),
     ];
     const asOf = new Date("2026-05-01T12:00:00Z");
@@ -83,7 +85,7 @@ describe("computeActiveWithdrawals", () => {
     expect(result).toEqual([]);
   });
 
-  it("prefers official catalog data over event payload", () => {
+  it("does not infer withdrawal from official catalog or event payload", () => {
     const events = [
       makeEvent({
         occurred_at: "2026-05-20T12:00:00Z",
@@ -101,8 +103,7 @@ describe("computeActiveWithdrawals", () => {
     const asOf = new Date("2026-05-25T12:00:00Z");
     const result = computeActiveWithdrawals(events, officialItems, asOf);
 
-    expect(result).toHaveLength(2);
-    expect(result[0].fim_carencia).toBe("2026-06-17");
+    expect(result).toEqual([]);
   });
 
   it("filters out deleted events", () => {

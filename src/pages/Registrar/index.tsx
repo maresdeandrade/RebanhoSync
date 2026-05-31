@@ -162,12 +162,14 @@ const Registrar = () => {
   const [selectedInsumoLoteId, setSelectedInsumoLoteId] = useState("");
   const [quantidadeConsumida, setQuantidadeConsumida] = useState("");
   const [doseSanitaria, setDoseSanitaria] = useState("");
+  const [doseUnidadeSanitaria, setDoseUnidadeSanitaria] = useState("dose");
+  const [viaAplicacaoSanitaria, setViaAplicacaoSanitaria] = useState("");
   const [insumoRef, setInsumoRef] = useState<Insumo | null>(null);
   const [loteRef, setLoteRef] = useState<InsumoLote | null>(null);
 
   // Resetar estados de estoque ao mudar tipoManejo (movido abaixo para evitar TDZ)
 
-  const { activeFarmId, role, farmMeasurementConfig, farmLifecycleConfig } =
+  const { user, activeFarmId, role, farmMeasurementConfig, farmLifecycleConfig } =
     useAuth();
   const shellState = useRegistrarShellState({
     semLoteOption: SEM_LOTE_OPTION,
@@ -214,6 +216,8 @@ const Registrar = () => {
     setSelectedInsumoLoteId("");
     setQuantidadeConsumida("");
     setDoseSanitaria("");
+    setDoseUnidadeSanitaria("dose");
+    setViaAplicacaoSanitaria("");
     setInsumoRef(null);
     setLoteRef(null);
   }, [
@@ -223,6 +227,8 @@ const Registrar = () => {
     setSelectedInsumoLoteId,
     setQuantidadeConsumida,
     setDoseSanitaria,
+    setDoseUnidadeSanitaria,
+    setViaAplicacaoSanitaria,
     setInsumoRef,
     setLoteRef,
   ]);
@@ -1238,11 +1244,13 @@ const Registrar = () => {
             insumoRef,
             loteRef,
             dose: parseFloat(doseSanitaria.replace(",", ".")) || null,
-            doseUnidade: loteRef?.unidade_base || null,
+            doseUnidade: loteRef?.unidade_base || doseUnidadeSanitaria || null,
             quantidadeConsumida: parseFloat(quantidadeConsumida.replace(",", ".")) || null,
-            quantidadeUnidade: loteRef?.unidade_base || null,
-            viaAplicacao: null,
+            quantidadeUnidade: loteRef?.unidade_base || doseUnidadeSanitaria || null,
+            viaAplicacao: viaAplicacaoSanitaria || null,
             custoUnitarioSnapshot: loteRef?.custo_unitario ?? null,
+            responsavelNome: user?.email ?? null,
+            responsavelTipo: user ? "usuario" : null,
             gerarBaixaEstoque,
           } : null,
           nutricao: tipoManejo === "nutricao" ? {
@@ -1304,12 +1312,15 @@ const Registrar = () => {
     tipoManejo,
     transitChecklist,
     transitChecklistIssues,
+    user,
+    viaAplicacaoSanitaria,
     isFinalizing,
     gerarBaixaEstoque,
     selectedInsumoId,
     selectedInsumoLoteId,
     quantidadeConsumida,
     doseSanitaria,
+    doseUnidadeSanitaria,
     insumoRef,
     loteRef,
     comercialData,
@@ -1465,6 +1476,10 @@ const Registrar = () => {
                   onQuantidadeConsumidaChange={setQuantidadeConsumida}
                   doseSanitaria={doseSanitaria}
                   onDoseSanitariaChange={setDoseSanitaria}
+                  doseUnidadeSanitaria={doseUnidadeSanitaria}
+                  onDoseUnidadeSanitariaChange={setDoseUnidadeSanitaria}
+                  viaAplicacaoSanitaria={viaAplicacaoSanitaria}
+                  onViaAplicacaoSanitariaChange={setViaAplicacaoSanitaria}
                   onInsumoRefChange={setInsumoRef}
                   onLoteRefChange={setLoteRef}
                 />
@@ -1719,5 +1734,3 @@ const Registrar = () => {
 };
 
 export default Registrar;
-
-

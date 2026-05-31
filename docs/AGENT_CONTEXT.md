@@ -147,10 +147,19 @@ Regras:
 - A selecao de fazenda pode exibir metadados cadastrais existentes (municipio/UF, area, tipo de producao e manejo), mas nao deve solicitar nem inferir dado fiscal/oficial novo nesse fluxo.
 - Nao existe camada real de marcadores/tags persistidos como fonte primaria; termos como tag, label, badge, chip, status e classificacao aparecem em UI, identificacao ou dominio, mas nao constituem camada persistida de marcadores operacionais.
 - Sinais/marcadores, quando derivados por insights, devem ser auxiliares, recalculaveis ou auditaveis, nunca fonte primaria.
-- Peso atual confiavel, carencia ativa operacional, pronto para venda/abate, `commercialReadiness.ts` conclusivo, tags/marcadores persistidos como fonte primaria, consulta em linguagem natural, IA gerando agenda, IA concluindo execucao e motor geral IATF permanecem bloqueados ate nova validacao.
+- Peso atual confiavel, pronto para venda/abate, `commercialReadiness.ts` conclusivo, tags/marcadores persistidos como fonte primaria, consulta em linguagem natural, IA gerando agenda, IA concluindo execucao e motor geral IATF permanecem bloqueados ate nova validacao. Carencia ativa existe apenas como sinal sanitario factual derivado de `eventos_sanitario` estruturado e nao autoriza venda/abate.
 - Compliance sanitario esta parcialmente validado por overlays, views e regras sanitarias, mas nao e bloqueio operacional completo e universal.
 - Ha RPC/funcoes de recompute sanitario por animal, mas disparo automatico por mutacao do animal nao foi confirmado; recompute por protocolo/config esta mais claramente validado.
-- Inventario ja possui insumos, apresentacoes, lotes e movimentacoes tenant-scoped, com consumo manual vinculado a evento confirmado. Eventos sanitarios com `produto_veterinario_id` catalogado podem abrir `/insumos` com fonte pre-selecionada e lotes filtrados pelo mesmo produto. Relatorios medem demanda futura por agenda sanitaria aberta valida e pre-requisitos da Fase 3: produto catalogado, mapeamento para exatamente um insumo sanitario ativo, lote ativo, apresentacao compativel e consumo assistido real. Baixa automatica ao registrar evento segue desabilitada.
+- Inventario ja possui insumos, apresentacoes, lotes e movimentacoes tenant-scoped, com consumo manual vinculado a evento confirmado. Eventos sanitarios com `produto_veterinario_id` catalogado podem abrir `/insumos` com fonte pre-selecionada e lotes filtrados pelo mesmo produto. Relatorios medem demanda futura por agenda sanitaria aberta valida e consolidam rastreabilidade factual por `eventos_sanitario`: produto, lote, dose, via, responsavel, carencia, custo, lote de estoque, animal, lote pecuario e protocolo/version. Baixa automatica ao registrar evento segue desabilitada.
+
+### 6.2 Contrato sanitario consolidado
+
+- Historico sanitario auditavel usa `eventos` + `eventos_sanitario`, nunca agenda ou protocolo isolado como fato.
+- `eventos_sanitario` estruturado e fonte de produto/lote/dose/via/responsavel/carencia/custo.
+- `protocol_item_version_id` segue como detalhe tecnico; superficies humanas exibem `item_code` e versao quando disponiveis.
+- Sinais sanitarios disponiveis: `sanitario:carencia_ativa`, `sanitario:livre_carencia`, `sanitario:evento_sem_rastreabilidade`, `sanitario:produto_sem_lote`, `sanitario:estoque_inconsistente`, `sanitario:custo_ausente`.
+- Sinais bloqueados como decisao: `comercial:pronto_venda`, `comercial:apto_abate`, `peso:atual_confiavel`, `protocolo:executado`, `agenda:concluida_como_fato`.
+- Reset Supabase e baseline funcional passaram apos a consolidacao sanitaria (`validate-supabase-baseline-functional.mjs`, `run_id=c56ac0ce`).
 
 ## 7. Offline-first e sync gestures
 

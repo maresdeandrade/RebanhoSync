@@ -165,6 +165,8 @@ type RegistrarFinalizeTrackDeps = {
       quantidadeUnidade?: string | null;
       viaAplicacao?: string | null;
       custoUnitarioSnapshot?: number | null;
+      responsavelNome?: string | null;
+      responsavelTipo?: string | null;
       gerarBaixaEstoque?: boolean;
     } | null;
     nutricaoInventory?: {
@@ -312,6 +314,8 @@ export type RegistrarFinalizeControllerInput = {
       quantidadeUnidade?: string | null;
       viaAplicacao?: string | null;
       custoUnitarioSnapshot?: number | null;
+      responsavelNome?: string | null;
+      responsavelTipo?: string | null;
       gerarBaixaEstoque?: boolean;
     } | null;
     nutricao?: {
@@ -340,8 +344,10 @@ export type RegistrarFinalizeControllerInput = {
     animalIds: string[] | null;
     loteId: string | null;
     financeTransactionId: string | null;
-    snapshot?: unknown;
-    calculationStatus?: string;
+    observacoes?: string | null;
+    snapshot?: Record<string, unknown> | null;
+    animalStatusSnapshot?: "ativo" | "vendido" | "morto" | "retirado" | null;
+    commercialSignals?: string[];
   } | null;
   onFinalizeHandled?: () => void;
 };

@@ -192,6 +192,15 @@ export function RegistrarComercialSection(
   // Cálculo do resumo de operação
   // ---------------------------------------------------------------------------
   const calculationSummary = useMemo(() => {
+    if (comercialData.operationType === "sociedade") {
+      return {
+        calculationStatus: "complete" as const,
+        issues: [],
+        limitations: [],
+        snapshot: {},
+      };
+    }
+
     const qty =
       isAnimalScope && hasAnimals
         ? selectedAnimalIds.length

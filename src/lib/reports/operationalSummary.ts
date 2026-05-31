@@ -5,6 +5,7 @@ import type {
   CatalogoProtocoloOficialItem,
   DominioEnum,
   Evento,
+  EventoComercial,
   EventoFinanceiro,
   EventoPesagem,
   EventoSanitario,
@@ -20,6 +21,8 @@ import type {
   ProtocoloSanitario,
   ProtocoloSanitarioItem,
   Rejection,
+  SociedadeAnimal,
+  SociedadePecuaria,
 } from "@/lib/offline/types";
 import {
   createSanitarySupplyNeedsInsight,
@@ -64,8 +67,11 @@ export interface OperationalSummaryInput {
   agenda: AgendaItem[];
   eventos: Evento[];
   eventosSanitario?: EventoSanitario[];
+  eventosComercial?: EventoComercial[];
   eventosPesagem: EventoPesagem[];
   eventosFinanceiro: EventoFinanceiro[];
+  sociedadesPecuarias?: SociedadePecuaria[];
+  sociedadeAnimais?: SociedadeAnimal[];
   gestures: Gesture[];
   rejections: Rejection[];
   protocolosSanitarios?: ProtocoloSanitario[];
@@ -171,6 +177,39 @@ export interface InventoryFutureDemandRow {
   balanceGap: number | null;
 }
 
+export interface SanitaryTraceabilityCostRow {
+  key: string;
+  label: string;
+  eventCount: number;
+  totalCost: number;
+}
+
+export interface SanitaryTraceabilitySummary {
+  totalCost: number;
+  eventsWithStructuredProduct: number;
+  eventsWithStockLot: number;
+  eventsWithoutCompleteTraceability: number;
+  productsWithoutStockLot: number;
+  missingCostEvents: number;
+  stockInconsistencyEvents: number;
+  byProduct: SanitaryTraceabilityCostRow[];
+  byStockLot: SanitaryTraceabilityCostRow[];
+  byAnimal: SanitaryTraceabilityCostRow[];
+  byLote: SanitaryTraceabilityCostRow[];
+  byProtocol: SanitaryTraceabilityCostRow[];
+}
+
+export interface CommercialTraceabilitySummary {
+  totalReceita: number;
+  totalCusto: number;
+  operations: number;
+  byOperation: SanitaryTraceabilityCostRow[];
+  byCounterparty: SanitaryTraceabilityCostRow[];
+  byAnimal: SanitaryTraceabilityCostRow[];
+  byLote: SanitaryTraceabilityCostRow[];
+  bySociedade: SanitaryTraceabilityCostRow[];
+}
+
 export interface OperationalSummaryReport {
   generatedAt: string;
   range: ReportRange;
@@ -194,6 +233,7 @@ export interface OperationalSummaryReport {
     compras: number;
     vendas: number;
   };
+  comercial: CommercialTraceabilitySummary;
   pesagem: {
     totalPesagens: number;
     pesoMedioKg: number | null;
@@ -244,6 +284,7 @@ export interface OperationalSummaryReport {
       assistedConsumptionCoveragePct: number | null;
       readyForAutoReview: boolean;
     };
+    sanitaryTraceability: SanitaryTraceabilitySummary;
   };
   agendaAttention: AgendaAttentionRow[];
   recentEvents: RecentEventRow[];
@@ -253,24 +294,28 @@ const DOMAIN_LABEL: Record<DominioEnum, string> = {
   sanitario: "Sanitario",
   alerta_sanitario: "Alerta sanitario",
   conformidade: "Conformidade",
+  comercial: "Comercial",
   pesagem: "Pesagem",
   nutricao: "Nutricao",
   movimentacao: "Movimentacao",
   reproducao: "Reproducao",
   financeiro: "Financeiro",
   obito: "Obito",
+  ecc: "ECC",
 };
 
 const DOMAIN_ORDER: DominioEnum[] = [
   "sanitario",
   "alerta_sanitario",
   "conformidade",
+  "comercial",
   "pesagem",
   "movimentacao",
   "nutricao",
   "reproducao",
   "financeiro",
   "obito",
+  "ecc",
 ];
 
 const FINANCE_SIGNAL: Record<FinanceiroTipoEnum, "entrada" | "saida"> = {
@@ -441,6 +486,36 @@ function getInventoryMovementSignal(
   return null;
 }
 
+function addTraceabilityCost(
+  map: Map<string, SanitaryTraceabilityCostRow>,
+  key: string | null | undefined,
+  label: string | null | undefined,
+  cost: number,
+) {
+  const normalizedKey = key?.trim() || "sem_chave";
+  const row =
+    map.get(normalizedKey) ??
+    ({
+      key: normalizedKey,
+      label: label?.trim() || "Sem identificacao",
+      eventCount: 0,
+      totalCost: 0,
+    } satisfies SanitaryTraceabilityCostRow);
+
+  row.eventCount += 1;
+  row.totalCost = Number((row.totalCost + cost).toFixed(2));
+  map.set(normalizedKey, row);
+}
+
+function toSortedTraceabilityRows(
+  map: Map<string, SanitaryTraceabilityCostRow>,
+): SanitaryTraceabilityCostRow[] {
+  return Array.from(map.values()).sort((left, right) => {
+    if (right.totalCost !== left.totalCost) return right.totalCost - left.totalCost;
+    return left.label.localeCompare(right.label);
+  });
+}
+
 function resolveAgendaStatus(
   item: AgendaItem,
   todayKey: string,
@@ -501,7 +576,7 @@ export function buildOperationalSummary(
   );
 
   const animalById = new Map(
-    animals.map((animal) => [
+    input.animals.filter((animal) => !animal.deleted_at).map((animal) => [
       animal.id,
       animal.identificacao || animal.nome || "Animal sem identificacao",
     ]),
@@ -509,6 +584,11 @@ export function buildOperationalSummary(
   const loteById = new Map(lotes.map((lote) => [lote.id, lote.nome]));
   const financeByEventId = new Map(
     input.eventosFinanceiro
+      .filter((item) => !item.deleted_at)
+      .map((item) => [item.evento_id, item]),
+  );
+  const commercialByEventId = new Map(
+    (input.eventosComercial ?? [])
       .filter((item) => !item.deleted_at)
       .map((item) => [item.evento_id, item]),
   );
@@ -884,6 +964,105 @@ export function buildOperationalSummary(
       unmappedCatalogProducts === 0 &&
       assistedSanitaryConsumedEventIds.size > 0,
   };
+  const sanitaryTraceProduct = new Map<string, SanitaryTraceabilityCostRow>();
+  const sanitaryTraceStockLot = new Map<string, SanitaryTraceabilityCostRow>();
+  const sanitaryTraceAnimal = new Map<string, SanitaryTraceabilityCostRow>();
+  const sanitaryTraceLote = new Map<string, SanitaryTraceabilityCostRow>();
+  const sanitaryTraceProtocol = new Map<string, SanitaryTraceabilityCostRow>();
+  let sanitaryTraceTotalCost = 0;
+  let eventsWithStructuredProduct = 0;
+  let eventsWithStockLot = 0;
+  let eventsWithoutCompleteTraceability = 0;
+  let productsWithoutStockLot = 0;
+  let missingCostEvents = 0;
+  let stockInconsistencyEvents = 0;
+  const sanitaryProtocolItemById = new Map(
+    (input.protocoloItensSanitarios ?? [])
+      .filter((item) => !item.deleted_at)
+      .map((item) => [item.id, item]),
+  );
+
+  for (const event of sanitaryEvents) {
+    const detail = sanitaryDetailByEventId.get(event.id);
+    if (!detail) continue;
+
+    const cost = detail.custo_total_snapshot ?? 0;
+    sanitaryTraceTotalCost = Number((sanitaryTraceTotalCost + cost).toFixed(2));
+    if (detail.produto_veterinario_id) eventsWithStructuredProduct += 1;
+    if (detail.estoque_lote_id) eventsWithStockLot += 1;
+    const hasProduct = Boolean(detail.produto_veterinario_id || detail.produto_nome_snapshot || detail.produto);
+    const hasDoseVia = Boolean(
+      typeof detail.dose_quantidade === "number" &&
+      detail.dose_quantidade > 0 &&
+      detail.dose_unidade &&
+      detail.via_aplicacao,
+    );
+    if (!hasProduct || !hasDoseVia) eventsWithoutCompleteTraceability += 1;
+    if (hasProduct && !detail.estoque_lote_id) productsWithoutStockLot += 1;
+    if (hasProduct && detail.custo_total_snapshot == null) missingCostEvents += 1;
+    if (
+      detail.estoque_lote_id &&
+      (!detail.estoque_lote_codigo_snapshot ||
+        !detail.validade_produto ||
+        detail.validade_produto < getEventDateKey(event))
+    ) {
+      stockInconsistencyEvents += 1;
+    }
+    const protocolItem = detail.protocol_item_version_id
+      ? sanitaryProtocolItemById.get(detail.protocol_item_version_id) ?? null
+      : null;
+    const protocolLabel = protocolItem
+      ? `${protocolItem.item_code ?? protocolItem.tipo} / v${protocolItem.version}`
+      : detail.protocol_item_version
+        ? `Item sanitario v${detail.protocol_item_version}`
+        : "Sem protocolo";
+
+    addTraceabilityCost(
+      sanitaryTraceProduct,
+      detail.produto_veterinario_id ?? detail.produto_nome_snapshot ?? detail.produto,
+      detail.produto_nome_snapshot ?? detail.produto,
+      cost,
+    );
+    addTraceabilityCost(
+      sanitaryTraceStockLot,
+      detail.estoque_lote_id ?? detail.estoque_lote_codigo_snapshot,
+      detail.estoque_lote_codigo_snapshot ?? "Sem lote de estoque",
+      cost,
+    );
+    addTraceabilityCost(
+      sanitaryTraceAnimal,
+      event.animal_id,
+      animalById.get(event.animal_id ?? "") ?? "Sem animal",
+      cost,
+    );
+    addTraceabilityCost(
+      sanitaryTraceLote,
+      event.lote_id,
+      loteById.get(event.lote_id ?? "") ?? "Sem lote pecuario",
+      cost,
+    );
+    addTraceabilityCost(
+      sanitaryTraceProtocol,
+      detail.protocol_item_version_id ?? protocolItem?.logical_item_key,
+      protocolLabel,
+      cost,
+    );
+  }
+
+  const sanitaryTraceability: SanitaryTraceabilitySummary = {
+    totalCost: sanitaryTraceTotalCost,
+    eventsWithStructuredProduct,
+    eventsWithStockLot,
+    eventsWithoutCompleteTraceability,
+    productsWithoutStockLot,
+    missingCostEvents,
+    stockInconsistencyEvents,
+    byProduct: toSortedTraceabilityRows(sanitaryTraceProduct),
+    byStockLot: toSortedTraceabilityRows(sanitaryTraceStockLot),
+    byAnimal: toSortedTraceabilityRows(sanitaryTraceAnimal),
+    byLote: toSortedTraceabilityRows(sanitaryTraceLote),
+    byProtocol: toSortedTraceabilityRows(sanitaryTraceProtocol),
+  };
   const sanitaryAttention = summarizeSanitaryAgendaAttention({
     agenda: agendaAberta,
     animals,
@@ -903,12 +1082,6 @@ export function buildOperationalSummary(
   const sanitaryAttentionById = new Map(
     sanitaryAttention.topItems.map((item) => [item.id, item]),
   );
-  const sanitaryProtocolItemById = new Map(
-    (input.protocoloItensSanitarios ?? [])
-      .filter((item) => !item.deleted_at)
-      .map((item) => [item.id, item]),
-  );
-
   const domainCounts = DOMAIN_ORDER.map((dominio) => ({
     label: DOMAIN_LABEL[dominio],
     value: eventos.filter((evento) => evento.dominio === dominio).length,
@@ -941,6 +1114,101 @@ export function buildOperationalSummary(
     },
   );
   financeiro.saldo = financeiro.entradas - financeiro.saidas;
+
+  const commercialEvents = eventos
+    .filter((evento) => evento.dominio === "comercial")
+    .map((evento) => ({
+      evento,
+      detalhe: commercialByEventId.get(evento.id),
+    }))
+    .filter(
+      (item): item is { evento: Evento; detalhe: EventoComercial } =>
+        Boolean(item.detalhe),
+    );
+  const commercialOperation = new Map<string, SanitaryTraceabilityCostRow>();
+  const commercialCounterparty = new Map<string, SanitaryTraceabilityCostRow>();
+  const commercialAnimal = new Map<string, SanitaryTraceabilityCostRow>();
+  const commercialLote = new Map<string, SanitaryTraceabilityCostRow>();
+  const commercialSociedade = new Map<string, SanitaryTraceabilityCostRow>();
+  let commercialReceita = 0;
+  let commercialCusto = 0;
+
+  for (const { evento, detalhe } of commercialEvents) {
+    const amount = Number(detalhe.valor_liquido_derivado ?? detalhe.valor_bruto ?? 0);
+    const normalizedAmount = Number.isFinite(amount) ? amount : 0;
+
+    if (detalhe.operation_type === "venda") {
+      commercialReceita = Number((commercialReceita + normalizedAmount).toFixed(2));
+    } else {
+      commercialCusto = Number((commercialCusto + normalizedAmount).toFixed(2));
+    }
+
+    addTraceabilityCost(
+      commercialOperation,
+      detalhe.operation_type,
+      detalhe.operation_type === "venda" ? "Venda" : "Compra",
+      normalizedAmount,
+    );
+    addTraceabilityCost(
+      commercialCounterparty,
+      detalhe.contraparte_id,
+      detalhe.contraparte_nome,
+      normalizedAmount,
+    );
+
+    for (const animalId of detalhe.animal_ids ?? (evento.animal_id ? [evento.animal_id] : [])) {
+      addTraceabilityCost(
+        commercialAnimal,
+        animalId,
+        animalById.get(animalId) ?? animalId,
+        normalizedAmount,
+      );
+    }
+
+    addTraceabilityCost(
+      commercialLote,
+      detalhe.lote_id ?? evento.lote_id,
+      loteById.get(detalhe.lote_id ?? evento.lote_id ?? "") ?? detalhe.lote_id ?? evento.lote_id,
+      normalizedAmount,
+    );
+
+    const sociedadeSnapshot = detalhe.sociedade_snapshot;
+    if (sociedadeSnapshot && typeof sociedadeSnapshot === "object") {
+      const list = Array.isArray(sociedadeSnapshot)
+        ? sociedadeSnapshot
+        : [sociedadeSnapshot];
+      for (const raw of list) {
+        if (!raw || typeof raw !== "object" || Array.isArray(raw)) continue;
+        const record = raw as Record<string, unknown>;
+        const sociedadeId =
+          typeof record.sociedadeId === "string"
+            ? record.sociedadeId
+            : typeof record.sociedade_id === "string"
+              ? record.sociedade_id
+              : null;
+        if (!sociedadeId) continue;
+        addTraceabilityCost(
+          commercialSociedade,
+          sociedadeId,
+          typeof record.contraparteNome === "string"
+            ? record.contraparteNome
+            : sociedadeId,
+          normalizedAmount,
+        );
+      }
+    }
+  }
+
+  const comercial: CommercialTraceabilitySummary = {
+    totalReceita: commercialReceita,
+    totalCusto: commercialCusto,
+    operations: commercialEvents.length,
+    byOperation: toSortedTraceabilityRows(commercialOperation),
+    byCounterparty: toSortedTraceabilityRows(commercialCounterparty),
+    byAnimal: toSortedTraceabilityRows(commercialAnimal),
+    byLote: toSortedTraceabilityRows(commercialLote),
+    bySociedade: toSortedTraceabilityRows(commercialSociedade),
+  };
 
   const pesagens = eventos
     .filter((evento) => evento.dominio === "pesagem")
@@ -1038,6 +1306,7 @@ export function buildOperationalSummary(
     },
     manejoByDomain: domainCounts,
     financeiro,
+    comercial,
     pesagem: {
       totalPesagens: pesagens.length,
       pesoMedioKg: pesagens.length > 0 ? totalPeso / pesagens.length : null,
@@ -1094,6 +1363,7 @@ export function buildOperationalSummary(
         groups: futureDemandGroups,
       },
       sanitaryPhase3Prerequisites,
+      sanitaryTraceability,
     },
     agendaAttention,
     recentEvents,
@@ -1126,6 +1396,23 @@ export function buildOperationalSummaryCsv(
   pushRow("financeiro", "saidas", report.financeiro.saidas.toFixed(2));
   pushRow("financeiro", "saldo", report.financeiro.saldo.toFixed(2));
   pushRow("financeiro", "transacoes", report.financeiro.transacoes);
+  pushRow("comercial", "operacoes", report.comercial.operations);
+  pushRow("comercial", "receita", report.comercial.totalReceita.toFixed(2));
+  pushRow("comercial", "custo", report.comercial.totalCusto.toFixed(2));
+  for (const item of report.comercial.byCounterparty) {
+    pushRow(
+      "comercial_contraparte",
+      item.label,
+      `${item.eventCount} operacao(oes) | valor ${item.totalCost.toFixed(2)}`,
+    );
+  }
+  for (const item of report.comercial.bySociedade) {
+    pushRow(
+      "comercial_sociedade",
+      item.label,
+      `${item.eventCount} operacao(oes) | valor ${item.totalCost.toFixed(2)}`,
+    );
+  }
   pushRow("pesagem", "total_pesagens", report.pesagem.totalPesagens);
   pushRow(
     "pesagem",
@@ -1234,6 +1521,81 @@ export function buildOperationalSummaryCsv(
     "fase3_cobertura_consumo_assistido_pct",
     report.inventory.sanitaryPhase3Prerequisites.assistedConsumptionCoveragePct,
   );
+  pushRow(
+    "sanitario_rastreabilidade",
+    "custo_total",
+    report.inventory.sanitaryTraceability.totalCost.toFixed(2),
+  );
+  pushRow(
+    "sanitario_rastreabilidade",
+    "eventos_com_produto_estruturado",
+    report.inventory.sanitaryTraceability.eventsWithStructuredProduct,
+  );
+  pushRow(
+    "sanitario_rastreabilidade",
+    "eventos_com_lote_estoque",
+    report.inventory.sanitaryTraceability.eventsWithStockLot,
+  );
+  pushRow(
+    "sanitario_rastreabilidade",
+    "eventos_sem_rastreabilidade_completa",
+    report.inventory.sanitaryTraceability.eventsWithoutCompleteTraceability,
+  );
+  pushRow(
+    "sanitario_rastreabilidade",
+    "produtos_sem_lote_estoque",
+    report.inventory.sanitaryTraceability.productsWithoutStockLot,
+  );
+  pushRow(
+    "sanitario_rastreabilidade",
+    "eventos_sem_custo",
+    report.inventory.sanitaryTraceability.missingCostEvents,
+  );
+  pushRow(
+    "sanitario_rastreabilidade",
+    "eventos_com_estoque_inconsistente",
+    report.inventory.sanitaryTraceability.stockInconsistencyEvents,
+  );
+
+  for (const item of report.inventory.sanitaryTraceability.byProduct) {
+    pushRow(
+      "sanitario_custo_produto",
+      item.label,
+      `${item.eventCount} evento(s) | custo ${item.totalCost.toFixed(2)}`,
+    );
+  }
+
+  for (const item of report.inventory.sanitaryTraceability.byAnimal) {
+    pushRow(
+      "sanitario_custo_animal",
+      item.label,
+      `${item.eventCount} evento(s) | custo ${item.totalCost.toFixed(2)}`,
+    );
+  }
+
+  for (const item of report.inventory.sanitaryTraceability.byLote) {
+    pushRow(
+      "sanitario_custo_lote_pecuario",
+      item.label,
+      `${item.eventCount} evento(s) | custo ${item.totalCost.toFixed(2)}`,
+    );
+  }
+
+  for (const item of report.inventory.sanitaryTraceability.byStockLot) {
+    pushRow(
+      "sanitario_custo_lote_estoque",
+      item.label,
+      `${item.eventCount} evento(s) | custo ${item.totalCost.toFixed(2)}`,
+    );
+  }
+
+  for (const item of report.inventory.sanitaryTraceability.byProtocol) {
+    pushRow(
+      "sanitario_custo_protocolo",
+      item.label,
+      `${item.eventCount} evento(s) | custo ${item.totalCost.toFixed(2)}`,
+    );
+  }
 
   for (const item of report.inventory.categorias) {
     pushRow(

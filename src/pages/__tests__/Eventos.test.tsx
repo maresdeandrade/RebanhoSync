@@ -288,6 +288,19 @@ describe("Eventos page", () => {
           fazenda_id: "farm-1",
           tipo: "vacinacao",
           produto: "Vacina Raiva",
+          produto_nome_snapshot: "Vacina Raiva",
+          estoque_lote_id: "lote-estoque-1",
+          estoque_lote_codigo_snapshot: "VR-2026",
+          validade_produto: "2026-12-31",
+          dose_quantidade: 2,
+          dose_unidade: "mL",
+          via_aplicacao: "SC",
+          responsavel_nome: "Joao",
+          carencia_carne_ate: "2026-06-10",
+          carencia_leite_ate: null,
+          custo_total_snapshot: 18,
+          protocol_item_version: 1,
+          protocol_item_snapshot: { item_code: "raiva_d1" },
           dose: null,
           carencia_dias: null,
           payload: {
@@ -335,6 +348,11 @@ describe("Eventos page", () => {
     expect(
       screen.getByRole("menuitem", { name: /baixar do estoque/i }),
     ).toBeInTheDocument();
+    expect(screen.getByText(/Vacina Raiva \| lote VR-2026/i)).toBeInTheDocument();
+    expect(screen.getByText(/dose 2 mL/i)).toBeInTheDocument();
+    expect(screen.getByText(/via SC/i)).toBeInTheDocument();
+    expect(screen.getByText(/carencia carne ate 10\/06\/2026/i)).toBeInTheDocument();
+    expect(screen.getByText(/custo R\$\s?18,00/i)).toBeInTheDocument();
+    expect(screen.getByText(/protocolo raiva_d1 \/ v1/i)).toBeInTheDocument();
   });
 });
-

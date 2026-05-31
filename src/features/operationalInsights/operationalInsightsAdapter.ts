@@ -21,6 +21,14 @@ import {
   type SanitarySupplyNeedsSummary,
 } from "@/lib/insights/sanitarySupplyNeeds";
 import {
+  createSanitaryTraceabilitySignalsInsight,
+  createSanitaryWithdrawalSignalsInsight,
+  type SanitaryTraceabilityEventInput,
+  type SanitaryTraceabilitySignalSummary,
+  type SanitaryWithdrawalEventInput,
+  type SanitaryWithdrawalSignalSummary,
+} from "@/lib/insights/sanitaryWithdrawalSignals";
+import {
   createBlockedInsight,
   createBlockedSourceContract,
   isAnswerableInsight,
@@ -82,6 +90,35 @@ export type OperationalInsightsAnimalRow = {
   reproductiveStatus?: string | null;
   reproductive_status?: string | null;
   payload?: Record<string, unknown> | null;
+  produto?: string | null;
+  produto_veterinario_id?: string | null;
+  produtoVeterinarioId?: string | null;
+  produto_nome_snapshot?: string | null;
+  produtoNomeSnapshot?: string | null;
+  estoque_lote_id?: string | null;
+  estoqueLoteId?: string | null;
+  estoque_lote_codigo_snapshot?: string | null;
+  estoqueLoteCodigoSnapshot?: string | null;
+  validade_produto?: string | null;
+  validadeProduto?: string | null;
+  dose_quantidade?: number | null;
+  doseQuantidade?: number | null;
+  dose_unidade?: string | null;
+  doseUnidade?: string | null;
+  via_aplicacao?: string | null;
+  viaAplicacao?: string | null;
+  custo_unitario_snapshot?: number | null;
+  custoUnitarioSnapshot?: number | null;
+  custo_total_snapshot?: number | null;
+  custoTotalSnapshot?: number | null;
+  carencia_carne_ate?: string | null;
+  carenciaCarneAte?: string | null;
+  carencia_leite_ate?: string | null;
+  carenciaLeiteAte?: string | null;
+  carencia_carne_dias?: number | null;
+  carenciaCarneDias?: number | null;
+  carencia_leite_dias?: number | null;
+  carenciaLeiteDias?: number | null;
 };
 
 export type OperationalInsightsEventRow = {
@@ -153,6 +190,8 @@ export type OperationalInsightCardId =
   | "agendaNeeds.overdue"
   | "agendaNeeds.dueWithinDays"
   | "sanitarySupplyNeeds"
+  | "sanitaryWithdrawalSignals"
+  | "sanitaryTraceabilitySignals"
   | "herdStageSummary"
   | "monthlyOperationalKpis";
 
@@ -198,6 +237,8 @@ export type OperationalInsightsViewModel = {
     dueWithinDays: OperationalInsightCard<AgendaNeedItemInput[]>;
   };
   sanitarySupplyNeeds: OperationalInsightCard<SanitarySupplyNeedsSummary>;
+  sanitaryWithdrawalSignals: OperationalInsightCard<SanitaryWithdrawalSignalSummary>;
+  sanitaryTraceabilitySignals: OperationalInsightCard<SanitaryTraceabilitySignalSummary>;
   herdStageSummary: OperationalInsightCard<HerdStageSummary>;
   monthlyOperationalKpis: OperationalInsightCard<MonthlyOperationalKpiSummary>;
   tagSignals: OperationalSignalsView;
@@ -470,6 +511,86 @@ function normalizeEvents(
       deletedAt: normalizeString(event.deletedAt) ?? normalizeString(event.deleted_at),
     };
   });
+}
+
+function normalizeSanitaryWithdrawalEvents(
+  events: readonly OperationalInsightsEventRow[],
+): SanitaryWithdrawalEventInput[] {
+  return events
+    .filter((event) => {
+      const domain = normalizeString(event.domain) ?? normalizeString(event.dominio);
+      return domain === "sanitario";
+    })
+    .map((event) => ({
+      id: event.id,
+      animalId: normalizeString(event.animalId) ?? normalizeString(event.animal_id),
+      deletedAt: normalizeString(event.deletedAt) ?? normalizeString(event.deleted_at),
+      produto: normalizeString(event.produto),
+      carenciaCarneAte:
+        normalizeString(event.carenciaCarneAte) ??
+        normalizeString(event.carencia_carne_ate),
+      carenciaLeiteAte:
+        normalizeString(event.carenciaLeiteAte) ??
+        normalizeString(event.carencia_leite_ate),
+      carenciaCarneDias:
+        normalizeNumber(event.carenciaCarneDias) ??
+        normalizeNumber(event.carencia_carne_dias),
+      carenciaLeiteDias:
+        normalizeNumber(event.carenciaLeiteDias) ??
+        normalizeNumber(event.carencia_leite_dias),
+    }));
+}
+
+function normalizeSanitaryTraceabilityEvents(
+  events: readonly OperationalInsightsEventRow[],
+): SanitaryTraceabilityEventInput[] {
+  return events
+    .filter((event) => {
+      const domain = normalizeString(event.domain) ?? normalizeString(event.dominio);
+      return domain === "sanitario";
+    })
+    .map((event) => ({
+      id: event.id,
+      occurredAt:
+        normalizeString(event.occurredAt) ??
+        normalizeString(event.occurred_at) ??
+        normalizeString(event.occurredOn) ??
+        normalizeString(event.occurred_on),
+      animalId: normalizeString(event.animalId) ?? normalizeString(event.animal_id),
+      loteId: normalizeString(event.loteId) ?? normalizeString(event.lote_id),
+      deletedAt: normalizeString(event.deletedAt) ?? normalizeString(event.deleted_at),
+      produtoVeterinarioId:
+        normalizeString(event.produtoVeterinarioId) ??
+        normalizeString(event.produto_veterinario_id),
+      produtoNome:
+        normalizeString(event.produtoNomeSnapshot) ??
+        normalizeString(event.produto_nome_snapshot) ??
+        normalizeString(event.produto),
+      estoqueLoteId:
+        normalizeString(event.estoqueLoteId) ??
+        normalizeString(event.estoque_lote_id),
+      estoqueLoteCodigo:
+        normalizeString(event.estoqueLoteCodigoSnapshot) ??
+        normalizeString(event.estoque_lote_codigo_snapshot),
+      validadeProduto:
+        normalizeString(event.validadeProduto) ??
+        normalizeString(event.validade_produto),
+      doseQuantidade:
+        normalizeNumber(event.doseQuantidade) ??
+        normalizeNumber(event.dose_quantidade),
+      doseUnidade:
+        normalizeString(event.doseUnidade) ??
+        normalizeString(event.dose_unidade),
+      viaAplicacao:
+        normalizeString(event.viaAplicacao) ??
+        normalizeString(event.via_aplicacao),
+      custoUnitarioSnapshot:
+        normalizeNumber(event.custoUnitarioSnapshot) ??
+        normalizeNumber(event.custo_unitario_snapshot),
+      custoTotalSnapshot:
+        normalizeNumber(event.custoTotalSnapshot) ??
+        normalizeNumber(event.custo_total_snapshot),
+    }));
 }
 
 function createMissingSourceInsight<T>(input: {
@@ -777,6 +898,43 @@ export function buildOperationalInsights(
         ],
       });
 
+  const sanitaryWithdrawalInsight = isLoaded(input.sources.events)
+    ? createSanitaryWithdrawalSignalsInsight({
+        question: "Quais eventos sanitarios estruturados indicam carencia?",
+        generatedAt: input.generatedAt,
+        referenceDate: input.referenceDate,
+        events: normalizeSanitaryWithdrawalEvents(input.sources.events),
+      })
+    : createMissingSourceInsight<SanitaryWithdrawalSignalSummary>({
+        questionKind: "historical_kpi",
+        question: "Quais eventos sanitarios estruturados indicam carencia?",
+        generatedAt: input.generatedAt,
+        requiredSources: ["eventos_sanitario"],
+        reason: "Sinal de carencia exige evento sanitario executado com colunas estruturadas.",
+        excludedSources: ["agenda_itens", "protocolos_sanitarios", "tags/marcadores"],
+        limitations: [
+          "Agenda e protocolo isolado nao sao fonte de carencia operacional.",
+        ],
+      });
+
+  const sanitaryTraceabilityInsight = isLoaded(input.sources.events)
+    ? createSanitaryTraceabilitySignalsInsight({
+        question: "Quais eventos sanitarios estruturados têm falhas de rastreabilidade?",
+        generatedAt: input.generatedAt,
+        events: normalizeSanitaryTraceabilityEvents(input.sources.events),
+      })
+    : createMissingSourceInsight<SanitaryTraceabilitySignalSummary>({
+        questionKind: "historical_kpi",
+        question: "Quais eventos sanitarios estruturados têm falhas de rastreabilidade?",
+        generatedAt: input.generatedAt,
+        requiredSources: ["eventos_sanitario"],
+        reason: "Sinal de rastreabilidade exige evento sanitario executado com colunas estruturadas.",
+        excludedSources: ["agenda_itens", "protocolos_sanitarios", "tags/marcadores"],
+        limitations: [
+          "Agenda e protocolo isolado nao sao fonte de rastreabilidade sanitaria.",
+        ],
+      });
+
   const agendaNeeds = {
     allOpen: createCard(
       "agendaNeeds.allOpen",
@@ -804,6 +962,16 @@ export function buildOperationalInsights(
     "Pendencias sanitarias",
     sanitarySupplyInsight,
   );
+  const sanitaryWithdrawalSignals = createCard(
+    "sanitaryWithdrawalSignals",
+    "Carencia sanitaria",
+    sanitaryWithdrawalInsight,
+  );
+  const sanitaryTraceabilitySignals = createCard(
+    "sanitaryTraceabilitySignals",
+    "Rastreabilidade sanitaria",
+    sanitaryTraceabilityInsight,
+  );
   const herdStageSummary = createCard(
     "herdStageSummary",
     "Resumo por estagio",
@@ -820,6 +988,8 @@ export function buildOperationalInsights(
     agendaNeeds.dueToday,
     agendaNeeds.dueWithinDays,
     sanitarySupplyNeeds,
+    sanitaryWithdrawalSignals,
+    sanitaryTraceabilitySignals,
     herdStageSummary,
     monthlyOperationalKpis,
   ].map(toUnknownCard);
@@ -831,6 +1001,8 @@ export function buildOperationalInsights(
     monthlyPeriod: input.monthlyPeriod,
     agendaNeeds,
     sanitarySupplyNeeds,
+    sanitaryWithdrawalSignals,
+    sanitaryTraceabilitySignals,
     herdStageSummary,
     monthlyOperationalKpis,
     tagSignals: buildTagSignalsView({
@@ -839,6 +1011,8 @@ export function buildOperationalInsights(
         toUnknownCard(agendaNeeds.allOpen),
         toUnknownCard(agendaNeeds.dueToday),
         toUnknownCard(agendaNeeds.overdue),
+        toUnknownCard(sanitaryWithdrawalSignals),
+        toUnknownCard(sanitaryTraceabilitySignals),
         toUnknownCard(herdStageSummary),
       ],
     }),

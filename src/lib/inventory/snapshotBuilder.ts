@@ -10,6 +10,9 @@ export interface ProdutoInsumoSnapshot {
   produto_tipo_snapshot: "sanitario" | "nutricional" | "outro" | null;
   principio_ativo_snapshot?: string | null;
   fabricante_snapshot?: string | null;
+  estoque_lote_codigo_snapshot?: string | null;
+  lote_fabricante?: string | null;
+  validade_produto?: string | null;
   concentracao_snapshot?: string | null;
 
   // Dose e quantidade
@@ -117,6 +120,9 @@ export function buildProdutoInsumoSnapshot(input: BuildSnapshotInput): ProdutoIn
     produto_tipo_snapshot: insumo.tipo === "sanitario" ? "sanitario" : insumo.tipo === "nutricional" ? "nutricional" : "outro",
     principio_ativo_snapshot: insumo.principio_ativo ?? null,
     fabricante_snapshot,
+    estoque_lote_codigo_snapshot: lote?.identificacao_lote ?? null,
+    lote_fabricante: lote?.fabricante ?? null,
+    validade_produto: lote?.validade ?? null,
     concentracao_snapshot: insumo.concentracao ?? null,
     dose_aplicada: dose ?? null,
     dose_unidade: doseUnidade ?? null,

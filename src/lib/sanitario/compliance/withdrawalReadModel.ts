@@ -37,6 +37,10 @@ export interface SanitaryEventInputForReadModel {
   occurred_at: string;     // ISO String
   deleted_at?: string | null;
   produto: string;         // Nome textual informado
+  carencia_carne_dias?: number | null;
+  carencia_leite_dias?: number | null;
+  carencia_carne_ate?: string | null;
+  carencia_leite_ate?: string | null;
   payload?: {
     insumo_snapshot?: ProdutoInsumoSnapshot | null;
     carencia_regra_json?: {
@@ -95,33 +99,45 @@ function evaluateEventModalidade(
 ): WithdrawalItem {
   const insumoSnapshot = event.payload?.insumo_snapshot;
   const nominalDate = getNominalDate(event.occurred_at);
+  const structuredDias =
+    modalidade === "carne"
+      ? event.carencia_carne_dias
+      : event.carencia_leite_dias;
+  const structuredFim =
+    modalidade === "carne"
+      ? event.carencia_carne_ate
+      : event.carencia_leite_ate;
+
+  if (typeof structuredDias === "number" && structuredDias > 0 && structuredFim) {
+    const fim = structuredFim.split("T")[0];
+    const isAtiva = referenceDateStr <= fim;
+    return {
+      status: isAtiva ? "carencia_ativa" : "carencia_expirada",
+      inicio: nominalDate,
+      fim,
+      dias: structuredDias,
+      produtoNome: event.produto,
+      eventId: event.id,
+      source: "event_sanitario_snapshot",
+      limitations: [],
+    };
+  }
+
+  if (structuredDias === null || structuredDias === 0) {
+    return {
+      status: "sem_carencia_configurada",
+      produtoNome: event.produto,
+      source: "event_sanitario_snapshot",
+      limitations: [],
+    };
+  }
 
   // 1. Caso sem snapshot (evento antigo)
   if (!insumoSnapshot) {
-    // Tenta fallback para o carencia_regra_json legado se houver
-    const legacyDays =
-      modalidade === "carne"
-        ? event.payload?.carencia_regra_json?.carne_dias
-        : event.payload?.carencia_regra_json?.leite_dias;
-
-    if (typeof legacyDays === "number" && legacyDays > 0) {
-      const fim = addDaysNominal(nominalDate, legacyDays);
-      const isAtiva = referenceDateStr <= fim;
-      return {
-        status: isAtiva ? "carencia_ativa" : "carencia_expirada",
-        inicio: nominalDate,
-        fim,
-        dias: legacyDays,
-        produtoNome: event.produto,
-        source: "event_sanitario_snapshot",
-        limitations: ["Calculado de dados legados sem snapshot estruturado completo"],
-      };
-    }
-
     return {
       status: "sem_snapshot",
       source: "event_sanitario_snapshot",
-      limitations: ["Evento sem snapshot imutavel de insumos"],
+      limitations: ["Evento sem campos estruturados de carencia"],
     };
   }
 

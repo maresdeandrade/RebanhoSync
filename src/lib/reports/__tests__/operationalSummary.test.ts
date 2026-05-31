@@ -5,8 +5,10 @@ import type {
   CatalogoProtocoloOficial,
   CatalogoProtocoloOficialItem,
   Evento,
+  EventoComercial,
   EventoFinanceiro,
   EventoPesagem,
+  EventoSanitario,
   FazendaSanidadeConfig,
   Gesture,
   Lote,
@@ -475,6 +477,312 @@ describe("buildOperationalSummary", () => {
       ]),
     );
     expect(report.recentEvents[0]?.dominio).toBe("Sanitario");
+  });
+
+  it("groups structured sanitary cost by product, animal and livestock lot", () => {
+    const range = resolveReportRange("30d", new Date("2026-05-31T12:00:00.000Z"));
+    const eventos: Evento[] = [
+      {
+        ...baseEvento,
+        id: "evt-1",
+        dominio: "sanitario",
+        occurred_at: "2026-05-20T12:00:00.000Z",
+        animal_id: "animal-1",
+        lote_id: "lote-1",
+      },
+    ];
+    const eventosSanitario = [
+      {
+        evento_id: "evt-1",
+        fazenda_id: "farm-1",
+        tipo: "vacinacao",
+        produto: "Vacina A",
+        produto_veterinario_id: "prod-1",
+        produto_nome_snapshot: "Vacina A",
+        estoque_lote_id: "stock-lot-1",
+        estoque_lote_codigo_snapshot: "L-2026",
+        validade_produto: "2026-12-31",
+        dose_quantidade: 2,
+        dose_unidade: "mL",
+        via_aplicacao: "SC",
+        custo_total_snapshot: 9,
+        protocol_item_version_id: "protocol-item-1",
+        protocol_item_version: 1,
+        protocol_item_snapshot: { item_code: "vacina-a-d1" },
+        payload: {},
+        client_id: "client-1",
+        client_op_id: "op-1",
+        client_tx_id: null,
+        client_recorded_at: "2026-05-20T12:00:00.000Z",
+        server_received_at: "2026-05-20T12:00:00.000Z",
+        created_at: "2026-05-20T12:00:00.000Z",
+        updated_at: "2026-05-20T12:00:00.000Z",
+        deleted_at: null,
+      },
+    ] satisfies EventoSanitario[];
+
+    const report = buildOperationalSummary(
+      {
+        animals: [
+          { ...baseAnimal, id: "animal-1", identificacao: "BR-001", sexo: "F", status: "ativo" },
+        ],
+        lotes: [{ ...baseLote, id: "lote-1", nome: "Lote 1" }],
+        pastos: [],
+        agenda: [],
+        eventos,
+        eventosSanitario,
+        eventosPesagem: [],
+        eventosFinanceiro: [],
+        gestures: [],
+        rejections: [],
+        protocoloItensSanitarios: [
+          {
+            id: "protocol-item-1",
+            fazenda_id: "farm-1",
+            protocolo_id: "protocol-1",
+            logical_item_key: "logical-vacina-a",
+            item_code: "vacina-a-d1",
+            version: 1,
+            tipo: "vacinacao",
+            produto: "Vacina A",
+            intervalo_dias: null,
+            dose_num: 2,
+            gera_agenda: true,
+            dedup_template: null,
+            payload: {},
+            client_id: "client-1",
+            client_op_id: "op-1",
+            client_tx_id: null,
+            client_recorded_at: "2026-05-20T12:00:00.000Z",
+            server_received_at: "2026-05-20T12:00:00.000Z",
+            created_at: "2026-05-20T12:00:00.000Z",
+            updated_at: "2026-05-20T12:00:00.000Z",
+            deleted_at: null,
+          },
+        ],
+      },
+      range,
+      new Date("2026-05-31T12:00:00.000Z"),
+    );
+
+    expect(report.inventory.sanitaryTraceability.totalCost).toBe(9);
+    expect(report.inventory.sanitaryTraceability.byProduct[0]).toMatchObject({
+      key: "prod-1",
+      totalCost: 9,
+    });
+    expect(report.inventory.sanitaryTraceability.byAnimal[0]).toMatchObject({
+      key: "animal-1",
+      label: "BR-001",
+      totalCost: 9,
+    });
+    expect(report.inventory.sanitaryTraceability.byLote[0]).toMatchObject({
+      key: "lote-1",
+      label: "Lote 1",
+      totalCost: 9,
+    });
+    expect(report.inventory.sanitaryTraceability.byStockLot[0]).toMatchObject({
+      key: "stock-lot-1",
+      label: "L-2026",
+      totalCost: 9,
+    });
+    expect(report.inventory.sanitaryTraceability.byProtocol[0]).toMatchObject({
+      key: "protocol-item-1",
+      label: "vacina-a-d1 / v1",
+      totalCost: 9,
+    });
+    expect(report.inventory.sanitaryTraceability.eventsWithoutCompleteTraceability).toBe(0);
+    expect(report.inventory.sanitaryTraceability.productsWithoutStockLot).toBe(0);
+    expect(report.inventory.sanitaryTraceability.missingCostEvents).toBe(0);
+    expect(report.inventory.sanitaryTraceability.stockInconsistencyEvents).toBe(0);
+  });
+
+  it("identifies sanitary events without stock lot, cost and complete traceability", () => {
+    const range = resolveReportRange("30d", new Date("2026-05-31T12:00:00.000Z"));
+    const eventos: Evento[] = [
+      {
+        ...baseEvento,
+        id: "evt-missing",
+        dominio: "sanitario",
+        occurred_at: "2026-05-20T12:00:00.000Z",
+        animal_id: "animal-1",
+        lote_id: "lote-1",
+      },
+      {
+        ...baseEvento,
+        id: "evt-expired-lot",
+        dominio: "sanitario",
+        occurred_at: "2026-05-20T12:00:00.000Z",
+        animal_id: "animal-1",
+        lote_id: "lote-1",
+      },
+    ];
+    const eventosSanitario = [
+      {
+        evento_id: "evt-missing",
+        fazenda_id: "farm-1",
+        tipo: "medicacao",
+        produto: "Produto manual",
+        produto_nome_snapshot: "Produto manual",
+        dose_quantidade: null,
+        dose_unidade: null,
+        via_aplicacao: null,
+        custo_total_snapshot: null,
+        payload: {},
+        client_id: "client-1",
+        client_op_id: "op-1",
+        client_tx_id: null,
+        client_recorded_at: "2026-05-20T12:00:00.000Z",
+        server_received_at: "2026-05-20T12:00:00.000Z",
+        created_at: "2026-05-20T12:00:00.000Z",
+        updated_at: "2026-05-20T12:00:00.000Z",
+        deleted_at: null,
+      },
+      {
+        evento_id: "evt-expired-lot",
+        fazenda_id: "farm-1",
+        tipo: "vacinacao",
+        produto: "Vacina B",
+        produto_veterinario_id: "prod-2",
+        produto_nome_snapshot: "Vacina B",
+        estoque_lote_id: "stock-lot-expired",
+        estoque_lote_codigo_snapshot: "L-OLD",
+        validade_produto: "2026-05-01",
+        dose_quantidade: 1,
+        dose_unidade: "mL",
+        via_aplicacao: "IM",
+        custo_total_snapshot: 5,
+        payload: {},
+        client_id: "client-1",
+        client_op_id: "op-2",
+        client_tx_id: null,
+        client_recorded_at: "2026-05-20T12:00:00.000Z",
+        server_received_at: "2026-05-20T12:00:00.000Z",
+        created_at: "2026-05-20T12:00:00.000Z",
+        updated_at: "2026-05-20T12:00:00.000Z",
+        deleted_at: null,
+      },
+    ] satisfies EventoSanitario[];
+
+    const report = buildOperationalSummary(
+      {
+        animals: [
+          { ...baseAnimal, id: "animal-1", identificacao: "BR-001", sexo: "F", status: "ativo" },
+        ],
+        lotes: [{ ...baseLote, id: "lote-1", nome: "Lote 1" }],
+        pastos: [],
+        agenda: [],
+        eventos,
+        eventosSanitario,
+        eventosPesagem: [],
+        eventosFinanceiro: [],
+        gestures: [],
+        rejections: [],
+      },
+      range,
+      new Date("2026-05-31T12:00:00.000Z"),
+    );
+
+    expect(report.inventory.sanitaryTraceability.eventsWithoutCompleteTraceability).toBe(1);
+    expect(report.inventory.sanitaryTraceability.productsWithoutStockLot).toBe(1);
+    expect(report.inventory.sanitaryTraceability.missingCostEvents).toBe(1);
+    expect(report.inventory.sanitaryTraceability.stockInconsistencyEvents).toBe(1);
+  });
+
+  it("groups commercial revenue by operation, counterparty, animal, lot and society", () => {
+    const range = resolveReportRange("30d", new Date("2026-05-31T12:00:00.000Z"));
+    const eventos: Evento[] = [
+      {
+        ...baseEvento,
+        id: "evt-comercial-1",
+        dominio: "comercial",
+        occurred_at: "2026-05-30T12:00:00.000Z",
+        animal_id: "animal-1",
+        lote_id: "lote-1",
+      },
+    ];
+    const eventosComercial: EventoComercial[] = [
+      {
+        evento_id: "evt-comercial-1",
+        fazenda_id: "farm-1",
+        operation_type: "venda",
+        scope: "animal",
+        occurred_at: "2026-05-30T12:00:00.000Z",
+        quantidade_animais: 1,
+        peso_vivo_total: 420,
+        peso_medio_derivado: 420,
+        valor_bruto: 4500,
+        frete: 100,
+        comissao: 0,
+        descontos: 0,
+        taxas_impostos: 0,
+        valor_liquido_derivado: 4400,
+        contraparte_id: "cp-1",
+        contraparte_nome: "Comprador A",
+        animal_ids: ["animal-1"],
+        lote_id: "lote-1",
+        finance_transaction_id: null,
+        sociedade_snapshot: [
+          {
+            sociedadeId: "soc-1",
+            contraparteNome: "Socio A",
+            percentualFazenda: 60,
+            percentualParceiro: 40,
+          },
+        ],
+        snapshot: {},
+        calculation_status: "complete",
+        issues: [],
+        limitations: [],
+        observacoes: null,
+        client_id: "client-1",
+        client_op_id: "op-1",
+        client_tx_id: null,
+        client_recorded_at: "2026-05-30T12:00:00.000Z",
+        server_received_at: "2026-05-30T12:00:00.000Z",
+        created_at: "2026-05-30T12:00:00.000Z",
+        updated_at: "2026-05-30T12:00:00.000Z",
+        deleted_at: null,
+      },
+    ];
+
+    const report = buildOperationalSummary(
+      {
+        animals: [
+          { ...baseAnimal, id: "animal-1", identificacao: "BR-001", sexo: "F", status: "vendido" },
+        ],
+        lotes: [{ ...baseLote, id: "lote-1", nome: "Lote 1" }],
+        pastos: [],
+        agenda: [],
+        eventos,
+        eventosComercial,
+        eventosPesagem: [],
+        eventosFinanceiro: [],
+        gestures: [],
+        rejections: [],
+      },
+      range,
+      new Date("2026-05-31T12:00:00.000Z"),
+    );
+
+    expect(report.comercial.totalReceita).toBe(4400);
+    expect(report.comercial.byOperation[0]).toMatchObject({ key: "venda" });
+    expect(report.comercial.byCounterparty[0]).toMatchObject({
+      key: "cp-1",
+      label: "Comprador A",
+      totalCost: 4400,
+    });
+    expect(report.comercial.byAnimal[0]).toMatchObject({
+      key: "animal-1",
+      label: "BR-001",
+    });
+    expect(report.comercial.byLote[0]).toMatchObject({
+      key: "lote-1",
+      label: "Lote 1",
+    });
+    expect(report.comercial.bySociedade[0]).toMatchObject({
+      key: "soc-1",
+      label: "Socio A",
+    });
   });
 });
 

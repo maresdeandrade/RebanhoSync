@@ -5,6 +5,10 @@ import {
 } from "@/lib/insights/sourceContract";
 import type { HerdStageSummary } from "@/lib/insights/herdStageSummary";
 import type {
+  SanitaryTraceabilitySignalSummary,
+  SanitaryWithdrawalSignalSummary,
+} from "@/lib/insights/sanitaryWithdrawalSignals";
+import type {
   AnswerableOperationalInsight,
   BlockedOperationalInsight,
   InsightQuestionKind,
@@ -19,6 +23,12 @@ export type AllowedOperationalSignalCode =
   | "agenda:atrasada"
   | "sanitario:pendencia_aberta"
   | "sanitario:pendencia_atrasada"
+  | "sanitario:livre_carencia"
+  | "sanitario:carencia_ativa"
+  | "sanitario:evento_sem_rastreabilidade"
+  | "sanitario:produto_sem_lote"
+  | "sanitario:estoque_inconsistente"
+  | "sanitario:custo_ausente"
   | "animal:ativo"
   | "animal:vendido"
   | "animal:morto"
@@ -26,8 +36,6 @@ export type AllowedOperationalSignalCode =
   | "estagio:desconhecido";
 
 export type BlockedOperationalSignalCode =
-  | "sanitario:livre_carencia"
-  | "sanitario:carencia_ativa"
   | "comercial:pronto_venda"
   | "comercial:apto_abate"
   | "peso:atual_confiavel"
@@ -64,8 +72,6 @@ export type CreateOperationalSignalInput = {
 };
 
 const BLOCKED_SIGNAL_CODES: readonly BlockedOperationalSignalCode[] = [
-  "sanitario:livre_carencia",
-  "sanitario:carencia_ativa",
   "comercial:pronto_venda",
   "comercial:apto_abate",
   "peso:atual_confiavel",
@@ -79,6 +85,9 @@ const AGENDA_SIGNAL_LIMITATION =
 
 const HERD_STATE_SIGNAL_LIMITATION =
   "Sinal calculado a partir de insight de estado atual; nao altera regra tecnica nem substitui state_*.";
+
+const SANITARY_WITHDRAWAL_SIGNAL_LIMITATION =
+  "Sinal calculado exclusivamente a partir de eventos_sanitario estruturado; nao autoriza venda ou abate.";
 
 function assertNonEmptyString(value: string, fieldName: string): string {
   const trimmed = value.trim();
@@ -175,6 +184,30 @@ function isHerdStageSummary(value: unknown): value is HerdStageSummary {
     && Array.isArray(value.byStage)
     && Array.isArray(value.byLote)
     && Array.isArray(value.byStatus);
+}
+
+function isSanitaryWithdrawalSignalSummary(
+  value: unknown,
+): value is SanitaryWithdrawalSignalSummary {
+  return isRecord(value)
+    && value.source === "eventos_sanitario_structured"
+    && typeof value.activeCount === "number"
+    && typeof value.freeCount === "number"
+    && typeof value.evaluatedEventCount === "number"
+    && Array.isArray(value.activeEventIds)
+    && Array.isArray(value.freeEventIds);
+}
+
+function isSanitaryTraceabilitySignalSummary(
+  value: unknown,
+): value is SanitaryTraceabilitySignalSummary {
+  return isRecord(value)
+    && value.source === "eventos_sanitario_structured"
+    && typeof value.evaluatedEventCount === "number"
+    && typeof value.missingTraceabilityCount === "number"
+    && typeof value.productWithoutStockLotCount === "number"
+    && typeof value.stockInconsistencyCount === "number"
+    && typeof value.missingCostCount === "number";
 }
 
 export function createOperationalSignal(
@@ -410,6 +443,147 @@ export function createSignalsFromHerdStageInsight(
   return signals;
 }
 
+export function createSignalsFromSanitaryWithdrawalInsight(
+  insight: OperationalInsight<SanitaryWithdrawalSignalSummary>,
+): OperationalSignal[] {
+  if (isBlockedInsight(insight)) {
+    return rejectBlockedSignalInsight(insight);
+  }
+
+  assertAnswerableSourceInsight(insight);
+
+  if (insight.questionKind !== "historical_kpi") {
+    throw new Error("sanitary withdrawal signals require historical_kpi insight");
+  }
+
+  const limitations = mergeLimitations(
+    insight.source.limitations,
+    SANITARY_WITHDRAWAL_SIGNAL_LIMITATION,
+  );
+  const signals: OperationalSignal[] = [];
+
+  if (insight.data.activeCount > 0) {
+    signals.push(
+      createOperationalSignal({
+        code: "sanitario:carencia_ativa",
+        label: "Carencia sanitaria ativa",
+        severity: "critical",
+        primarySource: insight.source.primarySource,
+        questionKind: insight.questionKind,
+        limitations,
+        generatedAt: insight.generatedAt,
+        count: insight.data.activeCount,
+        sourceInsightQuestion: insight.question,
+      }),
+    );
+
+  }
+
+  if (insight.data.freeCount > 0) {
+    signals.push(
+      createOperationalSignal({
+        code: "sanitario:livre_carencia",
+        label: "Livre de carencia sanitaria",
+        severity: "info",
+        primarySource: insight.source.primarySource,
+        questionKind: insight.questionKind,
+        limitations,
+        generatedAt: insight.generatedAt,
+        count: insight.data.freeCount,
+        sourceInsightQuestion: insight.question,
+      }),
+    );
+  }
+
+  return signals;
+}
+
+export function createSignalsFromSanitaryTraceabilityInsight(
+  insight: OperationalInsight<SanitaryTraceabilitySignalSummary>,
+): OperationalSignal[] {
+  if (isBlockedInsight(insight)) {
+    return rejectBlockedSignalInsight(insight);
+  }
+
+  assertAnswerableSourceInsight(insight);
+
+  if (insight.questionKind !== "historical_kpi") {
+    throw new Error("sanitary traceability signals require historical_kpi insight");
+  }
+
+  const limitations = mergeLimitations(
+    insight.source.limitations,
+    SANITARY_WITHDRAWAL_SIGNAL_LIMITATION,
+  );
+  const signals: OperationalSignal[] = [];
+
+  if (insight.data.missingTraceabilityCount > 0) {
+    signals.push(
+      createOperationalSignal({
+        code: "sanitario:evento_sem_rastreabilidade",
+        label: "Evento sanitario sem rastreabilidade completa",
+        severity: "warning",
+        primarySource: insight.source.primarySource,
+        questionKind: insight.questionKind,
+        limitations,
+        generatedAt: insight.generatedAt,
+        count: insight.data.missingTraceabilityCount,
+        sourceInsightQuestion: insight.question,
+      }),
+    );
+  }
+
+  if (insight.data.productWithoutStockLotCount > 0) {
+    signals.push(
+      createOperationalSignal({
+        code: "sanitario:produto_sem_lote",
+        label: "Produto sanitario sem lote de estoque",
+        severity: "warning",
+        primarySource: insight.source.primarySource,
+        questionKind: insight.questionKind,
+        limitations,
+        generatedAt: insight.generatedAt,
+        count: insight.data.productWithoutStockLotCount,
+        sourceInsightQuestion: insight.question,
+      }),
+    );
+  }
+
+  if (insight.data.stockInconsistencyCount > 0) {
+    signals.push(
+      createOperationalSignal({
+        code: "sanitario:estoque_inconsistente",
+        label: "Estoque sanitario inconsistente",
+        severity: "critical",
+        primarySource: insight.source.primarySource,
+        questionKind: insight.questionKind,
+        limitations,
+        generatedAt: insight.generatedAt,
+        count: insight.data.stockInconsistencyCount,
+        sourceInsightQuestion: insight.question,
+      }),
+    );
+  }
+
+  if (insight.data.missingCostCount > 0) {
+    signals.push(
+      createOperationalSignal({
+        code: "sanitario:custo_ausente",
+        label: "Custo sanitario ausente",
+        severity: "warning",
+        primarySource: insight.source.primarySource,
+        questionKind: insight.questionKind,
+        limitations,
+        generatedAt: insight.generatedAt,
+        count: insight.data.missingCostCount,
+        sourceInsightQuestion: insight.question,
+      }),
+    );
+  }
+
+  return signals;
+}
+
 export function createOperationalSignalsFromInsights(
   insights: readonly OperationalInsight<unknown>[],
 ): OperationalSignal[] {
@@ -437,6 +611,26 @@ export function createOperationalSignalsFromInsights(
     if (insight.questionKind === "current_state" && isHerdStageSummary(insight.data)) {
       signals.push(
         ...createSignalsFromHerdStageInsight(insight),
+      );
+      continue;
+    }
+
+    if (
+      insight.questionKind === "historical_kpi" &&
+      isSanitaryWithdrawalSignalSummary(insight.data)
+    ) {
+      signals.push(
+        ...createSignalsFromSanitaryWithdrawalInsight(insight),
+      );
+      continue;
+    }
+
+    if (
+      insight.questionKind === "historical_kpi" &&
+      isSanitaryTraceabilitySignalSummary(insight.data)
+    ) {
+      signals.push(
+        ...createSignalsFromSanitaryTraceabilityInsight(insight),
       );
     }
   }

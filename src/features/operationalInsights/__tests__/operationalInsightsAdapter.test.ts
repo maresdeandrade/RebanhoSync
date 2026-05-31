@@ -169,6 +169,8 @@ describe("operational insights adapter", () => {
       "agendaNeeds.allOpen",
       "agendaNeeds.dueToday",
       "agendaNeeds.overdue",
+      "sanitaryWithdrawalSignals",
+      "sanitaryTraceabilitySignals",
       "herdStageSummary",
     ]);
     expect(

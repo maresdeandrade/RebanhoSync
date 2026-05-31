@@ -10,6 +10,8 @@ import type {
   SanitarioTipoEnum,
   Insumo,
   InsumoLote,
+  SociedadeAnimal,
+  SociedadePecuaria,
 } from "@/lib/offline/types";
 import {
   buildClinicalProtocolEventPayload,
@@ -71,24 +73,28 @@ type NonFinancialFinanceiroData = {
 };
 
 type NonFinancialComercialData = {
-  operationType: "compra" | "venda" | "sociedade_entrada" | "sociedade_saida" | "doacao_entrada" | "doacao_saida" | "arrendamento";
-  scope: "animal" | "lote" | "rebanho";
+  operationType: "compra" | "venda" | "sociedade";
+  scope: "animal" | "lote";
   quantidadeAnimais: number;
   pesoVivoTotal: number | null;
-  pesoMedioDerivado: number | null;
   valorBruto: number | null;
   frete: number | null;
   comissao: number | null;
   descontos: number | null;
   taxasImpostos: number | null;
-  valorLiquidoDerivado: number | null;
   contraparteId: string | null;
   contraparteNome: string | null;
   animalIds: string[] | null;
   loteId: string | null;
   financeTransactionId: string | null;
-  snapshot: unknown | null;
-  calculationStatus: "draft" | "calculated" | "user_override";
+  observacoes?: string | null;
+  snapshot?: Record<string, unknown> | null;
+  animalStatusSnapshot?: "ativo" | "vendido" | "morto" | "retirado" | null;
+  commercialSignals?: string[];
+};
+
+type ActiveSocietyLinkWithSociety = SociedadeAnimal & {
+  sociedade?: SociedadePecuaria | null;
 };
 
 export async function resolveRegistrarNonFinancialFinalizePlan(input: {
@@ -128,6 +134,8 @@ export async function resolveRegistrarNonFinancialFinalizePlan(input: {
     quantidadeUnidade?: string | null;
     viaAplicacao?: string | null;
     custoUnitarioSnapshot?: number | null;
+    responsavelNome?: string | null;
+    responsavelTipo?: string | null;
     gerarBaixaEstoque?: boolean;
   } | null;
   nutricaoInventory?: {
@@ -198,6 +206,19 @@ export async function resolveRegistrarNonFinancialFinalizePlan(input: {
 
     const animal = animalId ? input.animalsMap.get(animalId) : null;
     if (animalId && !animal) continue;
+    if (
+      input.tipoManejo === "comercial" &&
+      input.comercialData?.operationType === "venda" &&
+      animal &&
+      animal.status !== "ativo"
+    ) {
+      return {
+        issue: "Animal vendido, morto ou retirado não pode receber nova venda.",
+        linkedEventId: null,
+        postPartoRedirect: null,
+        ops: [],
+      };
+    }
     const targetLoteId = animal?.lote_id ?? input.selectedLoteIdNormalized;
 
     let eventInput: EventInput;
@@ -208,7 +229,7 @@ export async function resolveRegistrarNonFinancialFinalizePlan(input: {
       input.tipoManejo === "movimentacao" ||
       input.tipoManejo === "nutricao" ||
       input.tipoManejo === "financeiro" ||
-      (input.tipoManejo === "comercial" && (input.comercialData?.operationType as string) !== "sociedade") ||
+      (input.tipoManejo === "comercial" && input.comercialData?.operationType !== "sociedade") ||
       input.tipoManejo === "ecc"
     ) {
       eventInput = buildRegistrarEventInput({
@@ -221,7 +242,13 @@ export async function resolveRegistrarNonFinancialFinalizePlan(input: {
         selectedLoteIsSemLote: input.selectedLoteIsSemLote,
         createdAnimalIds: input.createdAnimalIds,
         transitChecklistPayload: input.transitChecklistPayload,
-        comercial: input.comercialData,
+        comercial:
+          input.tipoManejo === "comercial" && input.comercialData
+            ? {
+                ...input.comercialData,
+                animalStatusSnapshot: animal?.status ?? null,
+              }
+            : undefined,
         sanitario:
           input.tipoManejo === "sanitario"
             ? {
@@ -262,6 +289,8 @@ export async function resolveRegistrarNonFinancialFinalizePlan(input: {
                 quantidadeUnidade: input.sanitaryInventory?.quantidadeUnidade,
                 viaAplicacao: input.sanitaryInventory?.viaAplicacao,
                 custoUnitarioSnapshot: input.sanitaryInventory?.custoUnitarioSnapshot,
+                responsavelNome: input.sanitaryInventory?.responsavelNome,
+                responsavelTipo: input.sanitaryInventory?.responsavelTipo,
                 gerarBaixaEstoque: input.sanitaryInventory?.gerarBaixaEstoque,
                 payload: {
                   ...input.sanitaryProductMetadata,
@@ -422,7 +451,7 @@ export async function resolveRegistrarNonFinancialFinalizePlan(input: {
         .where("animal_id")
         .equals(animalId)
         .toArray();
-      const link = activeLinks.find(l => l.status === "ativo");
+      const link = activeLinks.find((l): l is ActiveSocietyLinkWithSociety => l.status === "ativo");
       if (link) {
         ops.push({
           table: "sociedade_animais",
@@ -430,6 +459,7 @@ export async function resolveRegistrarNonFinancialFinalizePlan(input: {
           record: {
             id: link.id,
             status: "encerrado",
+            data_saida: input.occurredAt.slice(0, 10),
             motivo_saida: "venda",
             payload: {
               ...(link.payload || {}),

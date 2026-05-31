@@ -42,6 +42,7 @@ Consolidacoes recentes da fase SLC:
 ### ✅ Refinamentos Recentes (Maio/2026)
 - **Patch Fase 9 — Sociedade Pecuária / Negócios Patrimoniais Concluída e Validada**: Implementação estrutural para registro e encerramento de sociedade vinculada a animais. Posicionada operacionalmente em `Registrar -> Negócios Patrimoniais -> Sociedade`. Preserva fechamento automatizado de vínculo quando o animal em sociedade é explicitamente englobado em uma operação de venda. Protege contra teleporte duplicado e introduz rastreabilidade via `clientOpId` em histórico append-only.
 - **Fase 8 — Ledger Gerencial e Lançamentos Financeiros Concluída e Validada**: Implementação física e lógica da fundação de finanças gerenciais, separando previstos e realizados e desconsiderando cancelados. Agrupadores analíticos puros desenvolvidos por categoria, contraparte e centro de custo em `gerencial.ts`.
+- **Fase 3 Sanitária — Consolidação Operacional Concluída e Validada**: Histórico sanitário auditável agora exibe produto aplicado, lote/partida, validade, dose, unidade, via, responsável, carência, custo e item/version de protocolo quando disponível. Relatórios/read models usam `eventos_sanitario` estruturado para custo por produto, animal, lote pecuário, lote de estoque e protocolo, além de inconsistências como produto sem lote, custo ausente e estoque inconsistente. Sinais sanitários (`carencia_ativa`, `livre_carencia`, `evento_sem_rastreabilidade`, `produto_sem_lote`, `estoque_inconsistente`, `custo_ausente`) vêm somente de eventos executados; agenda e protocolo isolado não são fonte de carência.
 - **Fase 7 e 7.1 — Carência Sanitária e Paridade TS x SQL Concluídas e Validadas**: Engine pura de retirada calculada por datas nominais e testada contra a view do banco remota `vw_animais_carencia_ativa`, com badges HSL e microcopys regulatórios aplicados de forma assistiva em Animal, Lote e Pasto.
 - **Fase 6 e 6.1 — Insumos/Estoque, Snapshot Imutável e Hardening Concluídas e Validadas**: Modelagem tenant-scoped do estoque, snapshot gravado em eventos, e sync validado offline via worker Dexie e `sync-batch` Supabase.
 - **Dropdown de Categoria & Bloqueio de No-ops de Estágio**: Dropdown dinâmico responsivo por Tipo de insumo em `/insumos` e bloqueio de pendências/agenda de transições sem mudança de estágio real.
@@ -162,7 +163,7 @@ Fontes lidas pela primeira integracao:
 Limites preservados:
 - a Central nao conclui agenda, nao gera agenda e nao cria evento;
 - nao persiste tag/marcador e nao transforma `tagSignals` em fonte primaria;
-- nao calcula carencia operacional, pronto para venda/abate, peso atual confiavel ou IATF amplo;
+- calcula sinais sanitarios de carencia/rastreabilidade apenas a partir de `eventos_sanitario` estruturado; pronto para venda/abate, peso atual confiavel e IATF amplo continuam bloqueados;
 - agenda continua intencao operacional, nao fato historico;
 - protocolo configurado continua regra, nao execucao.
 - o painel permanece sem botao, link, `onClick` ou CTA de dominio.
@@ -190,11 +191,11 @@ Limites preservados:
 - estabilizacao ampla de testes fora dos recortes locais de hotspot;
 - consolidacao da nova suite de integracao por fluxo (`tests/integration/flows/**`) como cobertura minima cross-flow;
 - cleanup residual de shell/read-model nos pontos restantes;
-- carencia ainda e metadata/compliance parcial, nao motor pleno de withholding;
+- carencia sanitaria operacional esta consolidada como sinal/read model baseado em evento estruturado; ainda nao e autorizacao comercial nem motor de venda/abate;
 - compliance sanitario esta parcialmente validado por overlays, views e regras sanitarias, mas nao e bloqueio operacional completo e universal;
-- produto/lote/estoque ja possuem base estrutural tenant-scoped, contratos offline iniciais, UI operacional validada em smoke real local para entradas, ajustes e consumos, edicao de cadastros sem saldo destrutivo, estoque minimo/ponto de ressuprimento por insumo via payload, relatorio operacional com CSV/impressao, demanda futura estimada por agenda valida, alerta operacional de reposicao combinando saldo, parametro e demanda futura e medicao dos pre-requisitos da Fase 3 de consumo automatico; a baixa automatica continua desabilitada e a Central Operacional/Home tambem expoe esse alerta como sinal passivo/read-only;
+- produto/lote/estoque ja possuem base estrutural tenant-scoped, contratos offline iniciais, UI operacional validada em smoke real local para entradas, ajustes e consumos, edicao de cadastros sem saldo destrutivo, estoque minimo/ponto de ressuprimento por insumo via payload, relatorio operacional com CSV/impressao, demanda futura estimada por agenda valida e sinais sanitarios de rastreabilidade/custo/estoque baseados em eventos executados; a baixa automatica continua desabilitada e a Central Operacional/Home tambem expoe alertas como sinais passivos/read-only;
 - SISBOV/fiscal continuam fora do core sanitario atual;
-- peso atual confiavel, carencia ativa operacional e pronto para venda/abate continuam bloqueados como decisoes automatizadas por falta de fonte composta/read model consolidado;
+- peso atual confiavel e pronto para venda/abate continuam bloqueados como decisoes automatizadas; carencia ativa existe como sinal sanitario factual, mas nao autoriza venda/abate;
 - camada real de marcadores/tags persistidos como fonte primaria, consulta em linguagem natural, IA gerando agenda, IA concluindo execucao e motor geral IATF permanecem nao implementados/bloqueados;
 - validacao de UX com dados reais de beta interno apos a refatoracao visual SLC;
 - maior consistencia cross-flow fina (agenda <-> registrar <-> protocolos) e ajustes residuais por tela.

@@ -30,6 +30,9 @@ describe("buildEventGesture", () => {
         categoria: "Vacina",
         origem: "catalogo",
       },
+      dose: 2,
+      doseUnidade: "ml",
+      viaAplicacao: "subcutanea",
       protocoloItem: {
         id: "piv-1",
         logicalItemKey: "11111111-1111-4111-8111-111111111111",
@@ -348,5 +351,69 @@ describe("buildEventGesture", () => {
       "eventos",
       "eventos_financeiro",
     ]);
+  });
+
+  it("builds comercial venda with economic snapshot and animal sale update", () => {
+    const result = buildEventGesture({
+      dominio: "comercial",
+      fazendaId: "farm-1",
+      animalId: "animal-1",
+      loteId: "lote-1",
+      occurredAt: "2026-02-11T12:00:00.000Z",
+      operationType: "venda",
+      scope: "animal",
+      quantidadeAnimais: 1,
+      valorBruto: 4500,
+      contraparteId: "cp-1",
+      contraparteNome: "Comprador A",
+      animalIds: ["animal-1"],
+      animalStatusSnapshot: "ativo",
+      sociedadeSnapshot: [
+        {
+          sociedadeId: "soc-1",
+          sociedadeAnimalId: "soc-animal-1",
+          contraparteId: "cp-socio",
+          contraparteNome: "Socio A",
+          percentualFazenda: 60,
+          percentualParceiro: 40,
+          status: "ativa",
+        },
+      ],
+    });
+
+    expect(result.ops.map((op) => op.table)).toEqual([
+      "eventos",
+      "eventos_comercial",
+      "animais",
+    ]);
+    expect(result.ops[1].record).toMatchObject({
+      operation_type: "venda",
+      contraparte_id: "cp-1",
+      valor_bruto: 4500,
+      titularidade_snapshot: {
+        animal_status: "ativo",
+      },
+    });
+    expect(result.ops[1].record.sociedade_snapshot).toHaveLength(1);
+    expect(result.ops[2].record).toEqual({
+      id: "animal-1",
+      status: "vendido",
+      data_saida: "2026-02-11",
+      lote_id: null,
+    });
+  });
+
+  it("rejects comercial venda without counterparty and sale value", () => {
+    expect(() =>
+      buildEventGesture({
+        dominio: "comercial",
+        fazendaId: "farm-1",
+        animalId: "animal-1",
+        operationType: "venda",
+        scope: "animal",
+        quantidadeAnimais: 1,
+        animalStatusSnapshot: "ativo",
+      }),
+    ).toThrow(EventValidationError);
   });
 });

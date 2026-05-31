@@ -109,6 +109,19 @@ describe("Sociedade Pecuaria - Business Logic Tests", () => {
     });
   });
 
+  it("bloqueia venda comercial de animal vendido", async () => {
+    const result = await resolveRegistrarNonFinancialFinalizePlan({
+      ...baseInput(),
+      tipoManejo: "comercial",
+      comercialData: { operationType: "venda" } as any,
+      targetAnimalIds: ["a-1"],
+      animalsMap: new Map([["a-1", buildAnimal("a-1", { status: "vendido" })]]),
+    });
+
+    expect(result.issue).toBe("Animal vendido, morto ou retirado não pode receber nova venda.");
+    expect(result.ops).toEqual([]);
+  });
+
   it("venda de lote só encerra vínculo dos animais explicitamente incluídos (snapshotados)", async () => {
     const buildGesture = vi.fn((input) => ({
       eventId: `evt-${input.animalId}`,

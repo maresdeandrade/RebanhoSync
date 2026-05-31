@@ -42,7 +42,7 @@ Atualizacao sanitaria 2026-04-27:
 
 Atualizacao sanitaria 2026-04-28:
 - P5 removeu o ultimo import direto de `@/lib/sanitario/engine/*` em `src/pages/Registrar/**`; labels visuais de calendario passam por `src/lib/sanitario/models/calendarDisplay.ts`.
-- Proximas frentes sanitarias devem ser pequenas e separadas: carencia/rastreabilidade leve, validacao operacional da ponte assistida com inventario ou automacao de estoque, sem misturar com SISBOV ou fiscal.
+- Proximas frentes sanitarias devem ser pequenas e separadas: revisao assistida de excecoes de rastreabilidade/estoque/custo, validacao operacional da ponte assistida com inventario ou automacao de estoque, sem misturar com SISBOV ou fiscal.
 
 Atualizacao inventario/sanitario 2026-05-26:
 - Ponte assistida concluida: evento sanitario catalogado pode abrir `/insumos` com fonte pre-selecionada; o consumo continua gesto separado e append-only.
@@ -361,7 +361,7 @@ Atualizacao visual SLC 2026-05-20:
 - Gerar agenda.
 - Criar evento.
 - Persistir tag/marcador.
-- Calcular carencia operacional.
+- Carencia operacional como sinal factual ja consolidada por `eventos_sanitario`; permanece fora do escopo transformar carencia em autorizacao comercial.
 - Calcular pronto para venda/abate.
 - Calcular peso atual confiavel.
 - Calcular IATF amplo.

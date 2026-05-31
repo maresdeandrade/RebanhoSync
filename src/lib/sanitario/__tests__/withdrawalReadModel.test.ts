@@ -69,7 +69,7 @@ describe("computeAnimalWithdrawal core calculations", () => {
     expect(rm.carne?.status).toBe("sem_snapshot");
   });
 
-  it("suporta fallback legado em payload se houver carencia_regra_json no evento antigo", () => {
+  it("nao usa fallback legado em payload para calcular carencia", () => {
     const events: SanitaryEventInputForReadModel[] = [
       {
         id: "evt-1",
@@ -84,12 +84,10 @@ describe("computeAnimalWithdrawal core calculations", () => {
         },
       },
     ];
-    // referenceDate 2026-05-20 (inicio: 2026-05-15, fim: 2026-05-25 => ativa!)
     const rm = computeAnimalWithdrawal("animal-1", events, "2026-05-20");
-    expect(rm.status).toBe("carencia_ativa");
-    expect(rm.carne?.status).toBe("carencia_ativa");
-    expect(rm.carne?.fim).toBe("2026-05-25");
-    expect(rm.carne?.limitations).toContain("Calculado de dados legados sem snapshot estruturado completo");
+    expect(rm.status).toBe("sem_snapshot");
+    expect(rm.carne?.status).toBe("sem_snapshot");
+    expect(rm.carne?.limitations).toContain("Evento sem campos estruturados de carencia");
   });
 
   it("retorna sem_carencia_configurada quando o snapshot de insumo existe mas nao tem dias de carencia", () => {

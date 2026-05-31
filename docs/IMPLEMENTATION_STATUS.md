@@ -64,7 +64,7 @@ Este documento registra o estado efetivo do RebanhoSync na fase atual de consoli
 | --- | --- | --- |
 | `sanitario.registro` | Completo — catálogo `produtos_veterinarios`, biblioteca canônica de protocolos, payload/preflight/package sanitário extraídos e boundary RPC/fallback isolado | `src/pages/Registrar/**`, `src/pages/ProtocolosSanitarios/**`, `src/lib/sanitario/models/**`, `src/lib/sanitario/infrastructure/**`, `src/lib/sanitario/catalog/baseProtocols.ts` |
 | `sanitario.registro_idempotente` | Completo — timeout ambíguo no RPC faz retry idempotente antes de fallback; sync-batch rejeita duplicidade de agenda já concluída; Dexie faz rollback e pull seletivo | `src/lib/sanitario/infrastructure/executionBoundary.ts`, `src/pages/Registrar/createRegistrarFinalizeController.ts`, `supabase/functions/sync-batch/**`, `supabase/migrations/20260526000600_idx_eventos_unique_source_task.sql` |
-| `sanitario.historico` | Completo | `src/pages/Eventos.tsx` |
+| `sanitario.historico` | Completo — histórico auditável exibe produto, lote, validade, dose, via, responsável, carência, custo e item/version de protocolo quando disponíveis | `src/pages/Eventos.tsx`, `src/lib/reports/operationalSummary.ts`, `src/lib/insights/sanitaryWithdrawalSignals.ts` |
 | `sanitario.agenda_link` | Completo — SQL/Supabase e motor lider de recompute; TS mantem contratos/adapters/golden tests e suporte offline; agenda automatica exige gates canonicos por janela, risco/configuracao, ativacao operacional ou especie transicional; raiva operacional segue sequencia D1/D2/anual | `supabase/migrations/00000000000000_rebuild_base_schema_sanitario.sql`, `src/lib/sanitario/engine/**` |
 | `pesagem.registro` | Completo | `src/pages/Registrar/index.tsx`, `src/pages/AnimalDetalhe.tsx` |
 | `pesagem.historico` | Completo — **TD-015 CLOSED** via artefatos SQL consolidados na baseline | `supabase/migrations/00000000000000_rebuild_base_schema_sanitario.sql` |
@@ -277,7 +277,7 @@ Este documento registra o estado efetivo do RebanhoSync na fase atual de consoli
 - P3.1A-P3.2 reduziram acoplamento do `Registrar` via `buildSanitaryExecutionPayload`, `executeSanitaryCompletion`, `validateSanitaryExecutionPreflight` e `resolveRegistrarSanitaryPackage`.
 - P3.3-P3.4 documentaram o boundary local e removeram o import direto de `engine/protocolRules` do Registrar.
 - P5 removeu o ultimo import direto de `@/lib/sanitario/engine/*` em `src/pages/Registrar/**`; labels visuais de calendario agora passam por `src/lib/sanitario/models/calendarDisplay.ts`.
-- Residuos conhecidos: carencia ainda nao e motor pleno de withholding; produto/lote/estoque ja possuem base estrutural e UI com entradas, ajustes, consumo manual, edicao de cadastro sem saldo destrutivo, relatorio operacional e smoke real local; SISBOV/fiscal seguem fora do core.
+- Residuos conhecidos: carencia sanitaria esta consolidada como sinal/read model factual baseado em `eventos_sanitario`, mas nao autoriza venda/abate; produto/lote/estoque ja possuem base estrutural e UI com entradas, ajustes, consumo manual, edicao de cadastro sem saldo destrutivo, relatorio operacional e smoke real local; SISBOV/fiscal seguem fora do core.
 
 ## 7.6 Update 2026-04-29 (Contrato Sanitario P6.1-P6.4b)
 

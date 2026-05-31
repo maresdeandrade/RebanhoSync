@@ -25,6 +25,10 @@ export interface RegistrarInventorySectionProps {
   onQuantidadeConsumidaChange?: (value: string) => void;
   doseSanitaria?: string;
   onDoseSanitariaChange?: (value: string) => void;
+  doseUnidadeSanitaria?: string;
+  onDoseUnidadeSanitariaChange?: (value: string) => void;
+  viaAplicacaoSanitaria?: string;
+  onViaAplicacaoSanitariaChange?: (value: string) => void;
 
   // Refs exportados para o pai passar no EventInput
   onInsumoRefChange?: (insumo: Insumo | null) => void;
@@ -49,6 +53,10 @@ export function RegistrarInventorySection(props: RegistrarInventorySectionProps)
     onQuantidadeConsumidaChange,
     doseSanitaria = "",
     onDoseSanitariaChange,
+    doseUnidadeSanitaria = "dose",
+    onDoseUnidadeSanitariaChange,
+    viaAplicacaoSanitaria = "",
+    onViaAplicacaoSanitariaChange,
     onInsumoRefChange,
     onLoteRefChange,
     quantidadeExternaKg,
@@ -179,6 +187,54 @@ export function RegistrarInventorySection(props: RegistrarInventorySectionProps)
 
   return (
     <div className="space-y-4 rounded-xl border border-dashed border-border/100 bg-background/30 p-3.5 mt-2">
+      {tipoManejo === "sanitario" && (
+        <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-3">
+          <div className="space-y-2">
+            <Label className="text-xs">Dose por Cabeca</Label>
+            <Input
+              type="number"
+              step="0.01"
+              placeholder="Ex.: 2"
+              className="h-11 rounded-xl bg-background"
+              value={doseSanitaria}
+              onChange={(e) => onDoseSanitariaChange?.(e.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label className="text-xs">Unidade</Label>
+            <select
+              className="flex h-11 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring/30"
+              value={activeLote?.unidade_base || doseUnidadeSanitaria}
+              onChange={(e) => onDoseUnidadeSanitariaChange?.(e.target.value)}
+              disabled={Boolean(activeLote)}
+            >
+              <option value="dose">dose</option>
+              <option value="ml">ml</option>
+              <option value="l">l</option>
+              <option value="g">g</option>
+              <option value="kg">kg</option>
+              <option value="un">un</option>
+            </select>
+          </div>
+          <div className="space-y-2">
+            <Label className="text-xs">Via de Aplicacao</Label>
+            <select
+              className="flex h-11 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring/30"
+              value={viaAplicacaoSanitaria}
+              onChange={(e) => onViaAplicacaoSanitariaChange?.(e.target.value)}
+            >
+              <option value="">Selecione...</option>
+              <option value="subcutanea">Subcutanea</option>
+              <option value="intramuscular">Intramuscular</option>
+              <option value="oral">Oral</option>
+              <option value="topica">Topica</option>
+              <option value="intramamaria">Intramamaria</option>
+              <option value="outra">Outra</option>
+            </select>
+          </div>
+        </div>
+      )}
+
       {/* Switch de ativacao de baixa */}
       <div className="flex items-center justify-between">
         <div className="space-y-0.5">
@@ -260,7 +316,7 @@ export function RegistrarInventorySection(props: RegistrarInventorySectionProps)
 
               {/* Quantidade/Dose */}
               {tipoManejo === "sanitario" ? (
-                <div className="grid grid-cols-2 gap-3.5">
+                <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-3">
                   <div className="space-y-2">
                     <Label className="text-xs">Dose por Cabeça</Label>
                     <div className="relative">
@@ -293,6 +349,22 @@ export function RegistrarInventorySection(props: RegistrarInventorySectionProps)
                     <span className="text-[10px] text-muted-foreground block pl-0.5">
                       Dose × {selectedAnimalCount} animal(is)
                     </span>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs">Via de Aplicacao</Label>
+                    <select
+                      className="flex h-11 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring/30"
+                      value={viaAplicacaoSanitaria}
+                      onChange={(e) => onViaAplicacaoSanitariaChange?.(e.target.value)}
+                    >
+                      <option value="">Selecione...</option>
+                      <option value="subcutanea">Subcutanea</option>
+                      <option value="intramuscular">Intramuscular</option>
+                      <option value="oral">Oral</option>
+                      <option value="topica">Topica</option>
+                      <option value="intramamaria">Intramamaria</option>
+                      <option value="outra">Outra</option>
+                    </select>
                   </div>
                 </div>
               ) : (

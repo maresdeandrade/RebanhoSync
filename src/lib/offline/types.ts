@@ -144,6 +144,7 @@ export type DominioEnum =
   | "sanitario"
   | "alerta_sanitario"
   | "conformidade"
+  | "comercial"
   | "pesagem"
   | "nutricao"
   | "movimentacao"
@@ -1125,6 +1126,23 @@ export interface EventoSanitario {
   fazenda_id: string;
   tipo: SanitarioTipoEnum;
   produto: string;
+  produto_veterinario_id?: string | null;
+  produto_nome_snapshot?: string | null;
+  estoque_lote_id?: string | null;
+  estoque_lote_codigo_snapshot?: string | null;
+  lote_fabricante?: string | null;
+  validade_produto?: string | null;
+  dose_quantidade?: number | null;
+  dose_unidade?: string | null;
+  via_aplicacao?: string | null;
+  responsavel_nome?: string | null;
+  responsavel_tipo?: string | null;
+  carencia_carne_dias?: number | null;
+  carencia_leite_dias?: number | null;
+  carencia_carne_ate?: string | null;
+  carencia_leite_ate?: string | null;
+  custo_unitario_snapshot?: number | null;
+  custo_total_snapshot?: number | null;
   protocol_item_version_id?: string | null;
   protocol_item_logical_key?: string | null;
   protocol_item_version?: number | null;
@@ -1341,6 +1359,10 @@ export interface EventoComercial {
   animal_ids: string[] | null;
   lote_id: string | null;
   finance_transaction_id: string | null;
+  titularidade_snapshot?: Record<string, unknown> | null;
+  sociedade_snapshot?: Record<string, unknown> | null;
+  commercial_signals?: string[] | null;
+  valor_por_animal?: Record<string, number> | null;
   snapshot: Record<string, unknown>;
   calculation_status: CommercialOperationCalculationStatus;
   issues: CommercialOperationIssue[];

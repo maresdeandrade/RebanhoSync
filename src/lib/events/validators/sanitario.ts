@@ -40,6 +40,72 @@ export const validateSanitarioInput = (
     }
   }
 
+  const hasStructuredProduct =
+    Boolean(input.produtoRef) ||
+    Boolean(input.insumoId) ||
+    Boolean(input.insumoRef) ||
+    Boolean(input.insumoLoteId);
+
+  if (hasStructuredProduct) {
+    if (typeof input.dose !== "number" || !Number.isFinite(input.dose) || input.dose <= 0) {
+      issues.push({
+        code: "REQUIRED",
+        field: "dose",
+        message: "Produto sanitario estruturado exige dose maior que zero.",
+      });
+    }
+
+    if (!input.doseUnidade?.trim()) {
+      issues.push({
+        code: "REQUIRED",
+        field: "doseUnidade",
+        message: "Produto sanitario estruturado exige unidade da dose.",
+      });
+    }
+
+    if (!input.viaAplicacao?.trim()) {
+      issues.push({
+        code: "REQUIRED",
+        field: "viaAplicacao",
+        message: "Produto sanitario estruturado exige via de aplicacao.",
+      });
+    }
+  }
+
+  if (input.insumoLoteId) {
+    if (!input.insumoId) {
+      issues.push({
+        code: "REQUIRED",
+        field: "insumoId",
+        message: "Baixa de estoque sanitario exige insumo associado.",
+      });
+    }
+
+    if (
+      typeof input.quantidadeConsumida !== "number" ||
+      !Number.isFinite(input.quantidadeConsumida) ||
+      input.quantidadeConsumida <= 0
+    ) {
+      issues.push({
+        code: "REQUIRED",
+        field: "quantidadeConsumida",
+        message: "Baixa de estoque sanitario exige quantidade maior que zero.",
+      });
+    }
+
+    if (
+      input.loteRef &&
+      typeof input.quantidadeConsumida === "number" &&
+      input.quantidadeConsumida > input.loteRef.saldo_atual_base
+    ) {
+      issues.push({
+        code: "INVALID_RANGE",
+        field: "quantidadeConsumida",
+        message: "Baixa de estoque sanitario nao pode deixar saldo negativo.",
+      });
+    }
+  }
+
   if (input.sanitarioCaso) {
     if (input.sanitarioCaso.action === "link" && !input.sanitarioCaso.id) {
       issues.push({

@@ -9,6 +9,7 @@ export const DEFAULT_REMOTE_TABLES = [
   "agenda_itens",
   "eventos",
   "eventos_sanitario",
+  "eventos_comercial",
   "eventos_nutricao",
   "eventos_pasto_avaliacao",
   "protocolos_sanitarios",
@@ -20,6 +21,10 @@ export const DEFAULT_REMOTE_TABLES = [
   "insumo_lotes",
   "insumo_movimentacoes",
   "contrapartes",
+  "sociedades_pecuarias",
+  "sociedade_animais",
+  "finance_categories",
+  "finance_transactions",
 ] as const;
 
 export interface PullOptions {

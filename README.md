@@ -65,6 +65,7 @@ Regra de regressao semantica:
 - Taxonomia canônica bovina: 3 eixos derivados em TypeScript, contrato v1 e fixtures canônicas de regressão.
 - Central Operacional passiva na Home, consumindo `src/lib/insights/` via adapter/hook read-only em `src/features/operationalInsights/`.
 - Módulo de inventário de insumos com tela `/insumos`, entrada inicial/complementar, ajuste auditável, consumo manual vinculado a evento, atalho assistido a partir de evento sanitário catalogado, edição inline, relatórios com CSV/impressão, estoque mínimo/ponto de ressuprimento, demanda futura por agenda sanitária válida e medição dos pré-requisitos da Fase 3 sem baixa automática.
+- Consolidação sanitária operacional concluída: histórico sanitário exibe produto/lote/dose/via/responsável/carência/custo e item/version de protocolo quando disponível; relatórios agrupam custo sanitário por produto, animal, lote pecuário, lote de estoque e protocolo; sinais sanitários de carência/rastreabilidade usam somente `eventos_sanitario` estruturado.
 - Terapia de Vaca Seca com elegibilidade mínima, evento manual estruturado, payload `dry_cow_therapy`, recompute SQL condicionado, ativação explícita em protocolo da fazenda, dedup e anti-agenda-zumbi.
 - Sistema de convites e gestão de membros.
 - Catálogo global de produtos veterinários com seed básico.
@@ -118,13 +119,13 @@ A frente atual de hardening estrutural principal em UI foi concluida para:
 
 Frentes prioritarias atuais:
 
-- carencia/rastreabilidade sanitaria como frente pequena e separada
+- revisão assistida de exceções sanitárias de rastreabilidade/estoque/custo, agora sobre eventos estruturados já consolidados
 - residuos estruturais locais de `Registrar`/`Agenda` sem reabrir fronteiras ja fechadas
 - ajustes incrementais de UX operacional agora devem partir do padrão visual SLC ja aplicado, com validacao em dados reais de beta interno
 
 A ordem atual é:
 1. manter guardrails documentais locais e validacao minima continua
-2. tratar carencia/rastreabilidade e automação de estoque como frentes separadas, sem misturar com SISBOV/fiscal
+2. tratar correção assistida de exceções sanitárias e automação de estoque como frentes separadas, sem misturar com SISBOV/fiscal
 3. validar e lapidar a UX operacional dos fluxos centrais ja compactados
 4. estabilizar cobertura de regressao dos fluxos criticos
 

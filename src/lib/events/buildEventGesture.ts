@@ -9,6 +9,24 @@ const toIsoDate = (value: string): string => {
   return value.split("T")[0];
 };
 
+const addDaysToDate = (dateKey: string, days: number): string => {
+  const [year, month, day] = dateKey.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().split("T")[0];
+};
+
+const buildWithdrawalEndDate = (
+  occurredAt: string,
+  days: number | null | undefined,
+): string | null => {
+  if (typeof days !== "number" || !Number.isFinite(days) || days <= 0) {
+    return null;
+  }
+
+  return addDaysToDate(toIsoDate(occurredAt), days);
+};
+
 const buildBaseEventOp = (
   input: EventInput,
   eventId: string,
@@ -110,6 +128,16 @@ export const buildEventGesture = (input: EventInput): EventGestureBuildResult =>
       quantidadeUnidade: input.quantidadeUnidade,
       viaAplicacao: input.viaAplicacao,
     });
+    const carenciaCarneDias = input.insumoRef?.carencia_carne_dias ?? null;
+    const carenciaLeiteDias = input.insumoRef?.carencia_leite_dias ?? null;
+    const custoUnitarioSnapshot =
+      input.custoUnitarioSnapshot ?? insumoSnapshot.custo_unitario_snapshot ?? null;
+    const custoTotalSnapshot =
+      insumoSnapshot.custo_total_snapshot ??
+      (typeof custoUnitarioSnapshot === "number" &&
+      typeof input.quantidadeConsumida === "number"
+        ? Number((custoUnitarioSnapshot * input.quantidadeConsumida).toFixed(2))
+        : null);
 
     ops.push({
       table: "eventos_sanitario",
@@ -118,6 +146,25 @@ export const buildEventGesture = (input: EventInput): EventGestureBuildResult =>
         evento_id: eventId,
         tipo: input.tipo,
         produto: input.produto.trim(),
+        produto_veterinario_id:
+          input.produtoRef?.id ?? input.insumoRef?.produto_veterinario_id ?? null,
+        produto_nome_snapshot: insumoSnapshot.produto_nome_snapshot,
+        estoque_lote_id: input.insumoLoteId ?? insumoSnapshot.insumo_lote_id ?? null,
+        estoque_lote_codigo_snapshot:
+          insumoSnapshot.estoque_lote_codigo_snapshot ?? null,
+        lote_fabricante: insumoSnapshot.lote_fabricante ?? null,
+        validade_produto: insumoSnapshot.validade_produto ?? null,
+        dose_quantidade: input.dose ?? null,
+        dose_unidade: input.doseUnidade ?? null,
+        via_aplicacao: input.viaAplicacao ?? null,
+        responsavel_nome: input.responsavelNome ?? null,
+        responsavel_tipo: input.responsavelTipo ?? null,
+        carencia_carne_dias: carenciaCarneDias,
+        carencia_leite_dias: carenciaLeiteDias,
+        carencia_carne_ate: buildWithdrawalEndDate(occurredAt, carenciaCarneDias),
+        carencia_leite_ate: buildWithdrawalEndDate(occurredAt, carenciaLeiteDias),
+        custo_unitario_snapshot: custoUnitarioSnapshot,
+        custo_total_snapshot: custoTotalSnapshot,
         protocol_item_version_id: input.protocoloItem?.id ?? null,
         protocol_item_logical_key: input.protocoloItem?.logicalItemKey ?? null,
         protocol_item_version: input.protocoloItem?.version ?? null,
@@ -191,6 +238,68 @@ export const buildEventGesture = (input: EventInput): EventGestureBuildResult =>
     }
   } else if (input.dominio === "conformidade") {
     // Compliance overlays live entirely in the base event payload for now.
+  } else if (input.dominio === "comercial") {
+    const titularidadeSnapshot = {
+      animal_status: input.animalStatusSnapshot ?? null,
+      sociedade_ativa:
+        input.sociedadeSnapshot && input.sociedadeSnapshot.length > 0
+          ? input.sociedadeSnapshot
+          : null,
+      signals: input.commercialSignals ?? [],
+    };
+
+    ops.push({
+      table: "eventos_comercial",
+      action: "INSERT",
+      record: {
+        evento_id: eventId,
+        operation_type: input.operationType,
+        scope: input.scope,
+        occurred_at: occurredAt,
+        quantidade_animais: input.quantidadeAnimais,
+        peso_vivo_total: input.pesoVivoTotal ?? null,
+        peso_medio_derivado: input.pesoMedioDerivado ?? null,
+        valor_bruto: input.valorBruto ?? null,
+        frete: input.frete ?? null,
+        comissao: input.comissao ?? null,
+        descontos: input.descontos ?? null,
+        taxas_impostos: input.taxasImpostos ?? null,
+        valor_liquido_derivado: input.valorLiquidoDerivado ?? null,
+        contraparte_id: input.contraparteId ?? null,
+        contraparte_nome: input.contraparteNome ?? null,
+        animal_ids: input.animalIds ?? null,
+        lote_id: input.loteId ?? null,
+        finance_transaction_id: input.financeTransactionId ?? null,
+        titularidade_snapshot: titularidadeSnapshot,
+        sociedade_snapshot: input.sociedadeSnapshot ?? null,
+        commercial_signals: input.commercialSignals ?? [],
+        snapshot: {
+          ...(input.snapshot ?? {}),
+          titularidade: titularidadeSnapshot,
+        },
+        calculation_status: input.calculationStatus ?? "partial",
+        issues: input.issues ?? [],
+        limitations: input.limitations ?? [],
+        observacoes: input.observacoes ?? null,
+      },
+    });
+
+    if (
+      input.operationType === "venda" &&
+      input.scope === "animal" &&
+      input.animalId
+    ) {
+      ops.push({
+        table: "animais",
+        action: "UPDATE",
+        record: {
+          id: input.animalId,
+          status: "vendido",
+          data_saida: toIsoDate(occurredAt),
+          lote_id: null,
+        },
+      });
+    }
   } else if (input.dominio === "pesagem") {
     ops.push({
       table: "eventos_pesagem",

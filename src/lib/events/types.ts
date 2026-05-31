@@ -16,6 +16,7 @@ export type EventDomain =
   | "sanitario"
   | "alerta_sanitario"
   | "conformidade"
+  | "comercial"
   | "pesagem"
   | "movimentacao"
   | "pastagem"
@@ -95,6 +96,8 @@ export interface SanitarioEventInput extends BaseEventInput {
   quantidadeUnidade?: string | null;
   viaAplicacao?: string | null;
   custoUnitarioSnapshot?: number | null;
+  responsavelNome?: string | null;
+  responsavelTipo?: string | null;
   gerarBaixaEstoque?: boolean;
 }
 
@@ -183,6 +186,42 @@ export interface FinanceiroEventInput extends BaseEventInput {
   animalSaleStatus?: Extract<AnimalStatusEnum, "vendido" | "morto">;
 }
 
+export interface ComercialSocietySnapshot {
+  sociedadeId: string;
+  sociedadeAnimalId?: string | null;
+  contraparteId: string;
+  contraparteNome?: string | null;
+  percentualFazenda: number;
+  percentualParceiro: number;
+  status: "ativa" | "encerrada" | "suspensa";
+}
+
+export interface ComercialEventInput extends BaseEventInput {
+  dominio: "comercial";
+  operationType: "compra" | "venda";
+  scope: "animal" | "lote";
+  quantidadeAnimais: number;
+  pesoVivoTotal?: number | null;
+  pesoMedioDerivado?: number | null;
+  valorBruto?: number | null;
+  frete?: number | null;
+  comissao?: number | null;
+  descontos?: number | null;
+  taxasImpostos?: number | null;
+  valorLiquidoDerivado?: number | null;
+  contraparteId?: string | null;
+  contraparteNome?: string | null;
+  animalIds?: string[] | null;
+  financeTransactionId?: string | null;
+  snapshot?: Record<string, unknown> | null;
+  calculationStatus?: "complete" | "partial" | "blocked";
+  issues?: Array<Record<string, unknown>>;
+  limitations?: string[];
+  animalStatusSnapshot?: "ativo" | "vendido" | "morto" | "retirado" | null;
+  sociedadeSnapshot?: ComercialSocietySnapshot[];
+  commercialSignals?: string[];
+}
+
 
 
 
@@ -225,6 +264,7 @@ export type EventInput =
   | SanitarioEventInput
   | AlertaSanitarioEventInput
   | ConformidadeEventInput
+  | ComercialEventInput
   | PesagemEventInput
   | MovimentacaoEventInput
   | NutricaoEventInput

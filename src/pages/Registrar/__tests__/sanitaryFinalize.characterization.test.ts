@@ -33,7 +33,7 @@ const buildAnimal = (id: string, overrides: Partial<Animal> = {}): Animal => ({
 });
 
 describe("Caracterizacao - Risco J: Rastreabilidade no Evento Sanitario", () => {
-  it("CONFIRMADO: buildEventGesture gera operacoes de eventos_sanitario onde metadados de rastreabilidade (insumo_snapshot, produtoRef) ficam confinados no payload JSONB", () => {
+  it("CONFIRMADO: buildEventGesture grava rastreabilidade sanitaria em colunas estruturadas e mantem snapshot no payload", () => {
     // 1. Prepara dados de entrada do evento sanitario contendo rastreabilidade estrita (lote, dose, carencias, etc.)
     const eventInput = {
       fazendaId: "farm-123",
@@ -83,17 +83,14 @@ describe("Caracterizacao - Risco J: Rastreabilidade no Evento Sanitario", () => 
     
     const record = evSanitarioOp!.record;
     
-    // CONFIRMACAO CONCRETA:
-    // A tabela eventos_sanitario no DDL NAO possui colunas estruturadas para:
-    // insumo_id, estoque_lote_id, fabricante, validade, dose, quantidade, carencias, etc.
-    // Todos eles estao no payload JSON ou nao_registrados diretamente.
-    expect(record.produto_veterinario_id).toBeUndefined();
-    expect(record.lote_fabricante).toBeUndefined();
-    expect(record.validade_produto).toBeUndefined();
-    expect(record.dose_quantidade).toBeUndefined();
-    expect(record.dose_unidade).toBeUndefined();
-    expect(record.via_aplicacao).toBeUndefined();
-    expect(record.carencia_carne_dias).toBeUndefined();
+    expect(record.produto_veterinario_id).toBe("prod-aftosa-uuid");
+    expect(record.estoque_lote_id).toBe("lote-insumo-456");
+    expect(record.lote_fabricante).toBe("BioVet");
+    expect(record.validade_produto).toBe("2027-12-31");
+    expect(record.dose_quantidade).toBe(2);
+    expect(record.dose_unidade).toBe("ml");
+    expect(record.via_aplicacao).toBe("subcutanea");
+    expect(record.carencia_carne_dias).toBe(30);
 
     // Verificamos que os snapshots residem na chave payload
     expect(record.payload).toBeDefined();
