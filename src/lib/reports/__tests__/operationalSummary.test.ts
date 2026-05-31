@@ -596,6 +596,88 @@ describe("buildOperationalSummary", () => {
     expect(report.inventory.sanitaryTraceability.stockInconsistencyEvents).toBe(0);
   });
 
+  it("adds biosecurity occurrence grouping from real event payloads", () => {
+    const range = resolveReportRange("30d", new Date("2026-05-31T12:00:00.000Z"));
+    const eventos: Evento[] = [
+      {
+        ...baseEvento,
+        id: "bio-evt-1",
+        dominio: "conformidade",
+        occurred_at: "2026-05-30T12:00:00.000Z",
+        animal_id: "animal-1",
+        lote_id: "lote-1",
+        payload: {
+          biosseguranca_ocorrencia: {
+            schema_version: 1,
+            categoria_ocorrencia: "biosseguranca",
+            tipo_ocorrencia: "falha_epi",
+            tipos_ocorrencia: ["falha_epi"],
+            escopo_tipo: "animal",
+            escopos_tipo: ["animal", "lote"],
+            animal_id: "animal-1",
+            animal_ids: ["animal-1"],
+            lote_id: "lote-1",
+            local_id: null,
+            evento_id: null,
+            agenda_item_id: null,
+            gravidade: "alta",
+            descricao: "Falha de EPI",
+            outro_relato: null,
+            acao_imediata: "Equipe orientada",
+            gera_pendencia: true,
+            prazo_correcao: "2026-06-01",
+            status: "aberta",
+          },
+        },
+      },
+    ];
+    const agenda: AgendaItem[] = [
+      {
+        ...baseAgenda,
+        id: "bio-agenda-1",
+        dominio: "conformidade",
+        tipo: "biosseguranca_acao_corretiva",
+        data_prevista: "2026-06-01",
+        animal_id: "animal-1",
+        lote_id: "lote-1",
+        source_evento_id: "bio-evt-1",
+      },
+    ];
+
+    const report = buildOperationalSummary(
+      {
+        animals: [],
+        lotes: [],
+        pastos: [],
+        agenda,
+        eventos,
+        eventosPesagem: [],
+        eventosFinanceiro: [],
+        gestures: [],
+        rejections: [],
+      },
+      range,
+      new Date("2026-05-31T12:00:00.000Z"),
+    );
+
+    expect(report.biosecurityOccurrences).toMatchObject({
+      total: 1,
+      openCount: 1,
+      pendingCount: 1,
+      byTipoOcorrencia: [{ key: "falha_epi", count: 1 }],
+      byGravidade: [{ key: "alta", count: 1 }],
+      byEscopo: [
+        { key: "animal", count: 1 },
+        { key: "lote", count: 1 },
+      ],
+      pendingAgendaItemIds: ["bio-agenda-1"],
+    });
+
+    expect(buildOperationalSummaryCsv(report, "Fazenda")).toContain(
+      "biosseguranca;ocorrencias_com_pendencia;1",
+    );
+  });
+
   it("identifies sanitary events without stock lot, cost and complete traceability", () => {
     const range = resolveReportRange("30d", new Date("2026-05-31T12:00:00.000Z"));
     const eventos: Evento[] = [

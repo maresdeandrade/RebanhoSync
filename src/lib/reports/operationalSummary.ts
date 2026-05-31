@@ -49,6 +49,10 @@ import {
   type RegulatoryImpactAnalyticalCut,
   type RegulatorySubareaAnalyticalCut,
 } from "@/lib/sanitario/compliance/regulatoryReadModel";
+import {
+  summarizeBiosecurityOccurrences,
+  type BiosecurityOccurrenceReportSummary,
+} from "@/lib/sanitario/compliance/biosecurityReadModel";
 
 export type ReportPreset = "7d" | "30d" | "90d" | "mes_atual";
 
@@ -253,6 +257,7 @@ export interface OperationalSummaryReport {
     subareas: RegulatorySubareaAnalyticalCut[];
     impacts: RegulatoryImpactAnalyticalCut[];
   };
+  biosecurityOccurrences: BiosecurityOccurrenceReportSummary;
   inventory: {
     itensAtivos: number;
     lotesAtivos: number;
@@ -1079,6 +1084,12 @@ export function buildOperationalSummary(
     templates: input.catalogoProtocolosOficiais ?? [],
     items: input.catalogoProtocolosOficiaisItens ?? [],
   });
+  const biosecurityOccurrences = summarizeBiosecurityOccurrences({
+    eventos,
+    agenda: agendaAberta,
+    from: range.from,
+    to: range.to,
+  });
   const sanitaryAttentionById = new Map(
     sanitaryAttention.topItems.map((item) => [item.id, item]),
   );
@@ -1328,6 +1339,7 @@ export function buildOperationalSummary(
       subareas: regulatoryReadModel.analytics.subareas,
       impacts: regulatoryReadModel.analytics.impacts,
     },
+    biosecurityOccurrences,
     inventory: {
       itensAtivos: insumos.filter((item) => item.ativo).length,
       lotesAtivos: inventoryItems.filter((item) => item.status === "ativo").length,
@@ -1448,6 +1460,27 @@ export function buildOperationalSummaryCsv(
     "bloqueios_venda",
     report.regulatoryCompliance.saleBlockers,
   );
+  pushRow("biosseguranca", "ocorrencias", report.biosecurityOccurrences.total);
+  pushRow("biosseguranca", "ocorrencias_abertas", report.biosecurityOccurrences.openCount);
+  pushRow(
+    "biosseguranca",
+    "ocorrencias_com_pendencia",
+    report.biosecurityOccurrences.pendingCount,
+  );
+  pushRow(
+    "biosseguranca",
+    "suspeitas_notificaveis_abertas",
+    report.biosecurityOccurrences.notifiableOpenCount,
+  );
+  for (const item of report.biosecurityOccurrences.byTipoOcorrencia) {
+    pushRow("biosseguranca_tipo", item.key, item.count);
+  }
+  for (const item of report.biosecurityOccurrences.byGravidade) {
+    pushRow("biosseguranca_gravidade", item.key, item.count);
+  }
+  for (const item of report.biosecurityOccurrences.byEscopo) {
+    pushRow("biosseguranca_escopo", item.key, item.count);
+  }
   pushRow("estoque", "insumos_ativos", report.inventory.itensAtivos);
   pushRow("estoque", "lotes_ativos", report.inventory.lotesAtivos);
   pushRow("estoque", "saldo_total", report.inventory.saldoTotal.toFixed(3));
@@ -1840,6 +1873,34 @@ export function buildOperationalSummaryPrintHtml(
           </tr>
         `;
 
+  const biosecurityRows =
+    report.biosecurityOccurrences.byTipoOcorrencia.length > 0
+      ? report.biosecurityOccurrences.byTipoOcorrencia
+          .map(
+            (item) => `
+              <tr>
+                <td>${escapeHtml(item.key)}</td>
+                <td>${item.count}</td>
+                <td>${escapeHtml(
+                  report.biosecurityOccurrences.byGravidade
+                    .map((group) => `${group.key}: ${group.count}`)
+                    .join(" | "),
+                )}</td>
+                <td>${escapeHtml(
+                  report.biosecurityOccurrences.byEscopo
+                    .map((group) => `${group.key}: ${group.count}`)
+                    .join(" | "),
+                )}</td>
+              </tr>
+            `,
+          )
+          .join("")
+      : `
+          <tr>
+            <td colspan="4">Sem ocorrencia real de biosseguranca ou suspeita notificavel no periodo.</td>
+          </tr>
+        `;
+
   const complianceSubareaRows =
     report.regulatoryCompliance.subareas.length > 0
       ? report.regulatoryCompliance.subareas
@@ -2101,6 +2162,27 @@ export function buildOperationalSummaryPrintHtml(
               </tr>
             </thead>
             <tbody>${complianceRows}</tbody>
+          </table>
+        </section>
+
+        <section>
+          <h2>Biosseguranca e ocorrencias sanitarias</h2>
+          <p class="meta">
+            Fonte: ${escapeHtml(report.biosecurityOccurrences.source)} |
+            ${report.biosecurityOccurrences.openCount} ocorrencia(s) aberta(s) |
+            ${report.biosecurityOccurrences.pendingCount} pendencia(s) especifica(s) |
+            ${report.biosecurityOccurrences.notifiableOpenCount} suspeita(s) notificavel(is) aberta(s)
+          </p>
+          <table>
+            <thead>
+              <tr>
+                <th>Tipo</th>
+                <th>Ocorrencias</th>
+                <th>Gravidade</th>
+                <th>Escopo</th>
+              </tr>
+            </thead>
+            <tbody>${biosecurityRows}</tbody>
           </table>
         </section>
 

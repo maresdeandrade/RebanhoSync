@@ -4,6 +4,10 @@ import { assertValidEventInput } from "./validators";
 import { buildVeterinaryProductMetadata } from "@/lib/sanitario/catalog/products";
 import { buildProdutoInsumoSnapshot } from "@/lib/inventory/snapshotBuilder";
 import { buildConsumoMovimentacaoOp } from "@/lib/inventory/consumoGesture";
+import {
+  buildBiosecurityOccurrenceAgendaItemOp,
+  readBiosecurityOccurrencePayload,
+} from "@/lib/sanitario/compliance/biosecurityOccurrence";
 
 const toIsoDate = (value: string): string => {
   return value.split("T")[0];
@@ -116,6 +120,20 @@ export const buildEventGesture = (input: EventInput): EventGestureBuildResult =>
   }
 
   ops.push(buildBaseEventOp(input, eventId, occurredAt, sanitarioCasoId));
+
+  const biosecurityOccurrence = readBiosecurityOccurrencePayload(input.payload);
+  const biosecurityAgendaOp = biosecurityOccurrence
+    ? buildBiosecurityOccurrenceAgendaItemOp({
+        eventId,
+        dominio: input.dominio,
+        occurredAt,
+        occurrence: biosecurityOccurrence,
+      })
+    : null;
+
+  if (biosecurityAgendaOp) {
+    ops.push(biosecurityAgendaOp);
+  }
 
   if (input.dominio === "sanitario") {
     const insumoSnapshot = buildProdutoInsumoSnapshot({

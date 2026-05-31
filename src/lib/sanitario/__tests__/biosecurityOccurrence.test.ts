@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  buildBiosecurityOccurrenceSignals,
+  summarizeBiosecurityOccurrences,
+} from "@/lib/sanitario/compliance/biosecurityReadModel";
+import { buildEventGesture } from "@/lib/events/buildEventGesture";
+import {
   buildBiosecurityOccurrenceEventInput,
   getAvailableBiosecurityLinkScopes,
   validateBiosecurityOccurrenceDraft,
@@ -229,5 +234,160 @@ describe("biosecurity occurrence contract", () => {
         outro_relato: "",
       }),
     ).toBe("Relate o que aconteceu quando selecionar outro.");
+  });
+
+  it("does not create agenda when gera_pendencia is false", () => {
+    const eventInput = buildBiosecurityOccurrenceEventInput({
+      fazendaId: "farm-1",
+      occurredAt: "2026-05-30T12:00:00.000Z",
+      occurrence: baseOccurrence,
+    });
+
+    const gesture = buildEventGesture(eventInput);
+
+    expect(gesture.ops.map((op) => op.table)).toEqual(["eventos"]);
+  });
+
+  it("creates specific agenda linked to the occurrence when gera_pendencia is true", () => {
+    const eventInput = buildBiosecurityOccurrenceEventInput({
+      fazendaId: "farm-1",
+      occurredAt: "2026-05-30T12:00:00.000Z",
+      occurrence: {
+        ...baseOccurrence,
+        escopo_tipo: "animal",
+        escopos_tipo: ["animal", "lote"],
+        animal_id: "animal-1",
+        animal_ids: ["animal-1", "animal-2"],
+        lote_id: "lote-1",
+        local_id: "local-1",
+        evento_id: "manejo-1",
+        gera_pendencia: true,
+        prazo_correcao: "2026-06-02",
+      },
+    });
+
+    const gesture = buildEventGesture(eventInput);
+    const eventOp = gesture.ops.find((op) => op.table === "eventos");
+    const agendaOp = gesture.ops.find((op) => op.table === "agenda_itens");
+
+    expect(agendaOp).toBeDefined();
+    expect(agendaOp?.record).toMatchObject({
+      dominio: "conformidade",
+      tipo: "biosseguranca_acao_corretiva",
+      status: "agendado",
+      data_prevista: "2026-06-02",
+      animal_id: "animal-1",
+      lote_id: "lote-1",
+      source_evento_id: eventOp?.record.id,
+      payload: {
+        occurrence_evento_id: eventOp?.record.id,
+        animal_ids: ["animal-1", "animal-2"],
+        local_id: "local-1",
+        evento_id: "manejo-1",
+        escopos_tipo: ["animal", "lote"],
+      },
+    });
+  });
+
+  it("creates notification agenda only for real notifiable occurrence with pending action", () => {
+    const eventInput = buildBiosecurityOccurrenceEventInput({
+      fazendaId: "farm-1",
+      occurredAt: "2026-05-30T12:00:00.000Z",
+      occurrence: {
+        ...baseOccurrence,
+        categoria_ocorrencia: "suspeita_doenca_notificavel",
+        escopo_tipo: "lote",
+        lote_id: "lote-1",
+        gravidade: "alta",
+        gera_pendencia: true,
+        prazo_correcao: "2026-05-31",
+      },
+    });
+
+    const gesture = buildEventGesture(eventInput);
+    const agendaOp = gesture.ops.find((op) => op.table === "agenda_itens");
+
+    expect(agendaOp?.record).toMatchObject({
+      dominio: "alerta_sanitario",
+      tipo: "sanitario_notificacao_pendente",
+      lote_id: "lote-1",
+      payload: {
+        requires_notification: true,
+      },
+    });
+  });
+
+  it("derives signals from real occurrence events and linked agenda only", () => {
+    const eventInput = buildBiosecurityOccurrenceEventInput({
+      fazendaId: "farm-1",
+      occurredAt: "2026-05-30T12:00:00.000Z",
+      occurrence: {
+        ...baseOccurrence,
+        categoria_ocorrencia: "suspeita_doenca_notificavel",
+        escopo_tipo: "animal",
+        animal_id: "animal-1",
+        gravidade: "alta",
+        gera_pendencia: true,
+        prazo_correcao: "2026-05-31",
+      },
+    });
+    const gesture = buildEventGesture(eventInput);
+    const eventRecord = gesture.ops.find((op) => op.table === "eventos")?.record;
+    const agendaRecord = gesture.ops.find((op) => op.table === "agenda_itens")?.record;
+
+    const signals = buildBiosecurityOccurrenceSignals({
+      eventos: [eventRecord],
+      agenda: [agendaRecord],
+    });
+
+    expect(signals.map((signal) => signal.code)).toEqual([
+      "biosseguranca:ocorrencia_aberta",
+      "biosseguranca:ocorrencia_com_pendencia",
+      "biosseguranca:alta_gravidade",
+      "sanitario:suspeita_notificavel",
+      "sanitario:notificacao_pendente",
+    ]);
+    expect(signals.every((signal) => signal.source === "eventos.payload.biosseguranca_ocorrencia")).toBe(true);
+  });
+
+  it("summarizes occurrences by type, severity and scope for reports", () => {
+    const eventInput = buildBiosecurityOccurrenceEventInput({
+      fazendaId: "farm-1",
+      occurredAt: "2026-05-30T12:00:00.000Z",
+      occurrence: {
+        ...baseOccurrence,
+        tipos_ocorrencia: ["falha_epi", "descarte_inadequado"],
+        tipo_ocorrencia: "falha_epi",
+        escopo_tipo: "animal",
+        escopos_tipo: ["animal", "lote"],
+        animal_id: "animal-1",
+        lote_id: "lote-1",
+        gravidade: "moderada",
+      },
+    });
+    const gesture = buildEventGesture(eventInput);
+    const eventRecord = gesture.ops.find((op) => op.table === "eventos")?.record;
+
+    const summary = summarizeBiosecurityOccurrences({
+      eventos: [eventRecord],
+      agenda: [],
+      from: "2026-05-01",
+      to: "2026-05-31",
+    });
+
+    expect(summary).toMatchObject({
+      total: 1,
+      openCount: 1,
+      pendingCount: 0,
+      byTipoOcorrencia: [
+        { key: "descarte_inadequado", count: 1 },
+        { key: "falha_epi", count: 1 },
+      ],
+      byGravidade: [{ key: "moderada", count: 1 }],
+      byEscopo: [
+        { key: "animal", count: 1 },
+        { key: "lote", count: 1 },
+      ],
+    });
   });
 });

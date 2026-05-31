@@ -1,4 +1,5 @@
 import type { EventInput } from "@/lib/events/types";
+import type { DominioEnum, OperationInput } from "@/lib/offline/types";
 
 export type BiosecurityOccurrenceCategory =
   | "biosseguranca"
@@ -76,6 +77,26 @@ export type BiosecurityOccurrenceBuildInput = {
   fazendaId: string;
   occurredAt: string;
   occurrence: BiosecurityOccurrenceDraft;
+};
+
+export type BiosecurityOccurrencePayload = BiosecurityOccurrenceDraft & {
+  schema_version: number;
+  categoria_ocorrencia: BiosecurityOccurrenceCategory;
+  tipos_ocorrencia: BiosecurityOccurrenceKind[];
+  escopos_tipo: BiosecurityOccurrenceScope[];
+  animal_id: string | null;
+  animal_ids: string[] | null;
+  descricao: string | null;
+  outro_relato: string | null;
+  acao_imediata: string;
+  prazo_correcao: string | null;
+};
+
+export type BiosecurityOccurrenceAgendaInput = {
+  eventId: string;
+  dominio: DominioEnum;
+  occurredAt: string;
+  occurrence: BiosecurityOccurrencePayload;
 };
 
 const BIOSECURITY_LINK_SCOPE_LABELS: Record<
@@ -335,6 +356,134 @@ export function buildBiosecurityOccurrenceEventInput({
   };
 }
 
+export function readBiosecurityOccurrencePayload(
+  payload: Record<string, unknown> | null | undefined,
+): BiosecurityOccurrencePayload | null {
+  const occurrence =
+    payload?.biosseguranca_ocorrencia;
+
+  if (!occurrence || typeof occurrence !== "object" || Array.isArray(occurrence)) {
+    return null;
+  }
+
+  const record = occurrence as Record<string, unknown>;
+  if (typeof record.tipo_ocorrencia !== "string") return null;
+
+  const category =
+    record.categoria_ocorrencia === "suspeita_doenca_notificavel"
+      ? "suspeita_doenca_notificavel"
+      : "biosseguranca";
+  const scopes = normalizeScopeList(record.escopos_tipo).length > 0
+    ? normalizeScopeList(record.escopos_tipo)
+    : typeof record.escopo_tipo === "string"
+      ? [record.escopo_tipo as BiosecurityOccurrenceScope]
+      : [];
+  const kinds = normalizeKindList(record.tipos_ocorrencia).length > 0
+    ? normalizeKindList(record.tipos_ocorrencia)
+    : record.tipo_ocorrencia !== "biosseguranca" &&
+        record.tipo_ocorrencia !== "suspeita_doenca_notificavel"
+      ? [record.tipo_ocorrencia as BiosecurityOccurrenceKind]
+      : [];
+
+  return {
+    ...(record as BiosecurityOccurrenceDraft),
+    schema_version:
+      typeof record.schema_version === "number" ? record.schema_version : 1,
+    categoria_ocorrencia: category,
+    tipo_ocorrencia: record.tipo_ocorrencia as BiosecurityOccurrenceType,
+    tipos_ocorrencia: kinds,
+    escopo_tipo:
+      scopes[0] ??
+      ((record.escopo_tipo as BiosecurityOccurrenceScope | undefined) ?? "fazenda"),
+    escopos_tipo: scopes,
+    animal_id: typeof record.animal_id === "string" ? record.animal_id : null,
+    animal_ids: normalizeStringList(record.animal_ids),
+    lote_id: typeof record.lote_id === "string" ? record.lote_id : null,
+    local_id: typeof record.local_id === "string" ? record.local_id : null,
+    evento_id: typeof record.evento_id === "string" ? record.evento_id : null,
+    agenda_item_id:
+      typeof record.agenda_item_id === "string" ? record.agenda_item_id : null,
+    gravidade:
+      record.gravidade === "alta" || record.gravidade === "moderada"
+        ? record.gravidade
+        : "leve",
+    descricao: typeof record.descricao === "string" ? record.descricao : null,
+    outro_relato:
+      typeof record.outro_relato === "string" ? record.outro_relato : null,
+    acao_imediata:
+      typeof record.acao_imediata === "string" ? record.acao_imediata : "",
+    gera_pendencia: record.gera_pendencia === true,
+    prazo_correcao:
+      typeof record.prazo_correcao === "string" ? record.prazo_correcao : null,
+    status:
+      record.status === "resolvida" || record.status === "cancelada"
+        ? record.status
+        : "aberta",
+  };
+}
+
+export function buildBiosecurityOccurrenceAgendaItemOp({
+  eventId,
+  dominio,
+  occurredAt,
+  occurrence,
+}: BiosecurityOccurrenceAgendaInput): OperationInput | null {
+  if (!occurrence.gera_pendencia) return null;
+  if (!occurrence.prazo_correcao) return null;
+
+  const isNotifiable =
+    occurrence.categoria_ocorrencia === "suspeita_doenca_notificavel";
+  const agendaType = isNotifiable
+    ? "sanitario_notificacao_pendente"
+    : "biosseguranca_acao_corretiva";
+
+  return {
+    table: "agenda_itens",
+    action: "INSERT",
+    record: {
+      id: crypto.randomUUID(),
+      dominio,
+      tipo: agendaType,
+      status: "agendado",
+      data_prevista: occurrence.prazo_correcao,
+      animal_id: occurrence.animal_id ?? null,
+      lote_id: occurrence.lote_id ?? null,
+      dedup_key: `biosseguranca_ocorrencia:${eventId}:${agendaType}`,
+      source_kind: "manual",
+      source_ref: {
+        kind: "biosseguranca_ocorrencia",
+        evento_id: eventId,
+        categoria_ocorrencia: occurrence.categoria_ocorrencia,
+        tipo_ocorrencia: occurrence.tipo_ocorrencia,
+        tipos_ocorrencia: occurrence.tipos_ocorrencia,
+      },
+      source_client_op_id: null,
+      source_tx_id: null,
+      source_evento_id: eventId,
+      protocol_item_version_id: null,
+      interval_days_applied: null,
+      payload: {
+        schema_version: 1,
+        source: "evento_biosseguranca_ocorrencia",
+        occurrence_evento_id: eventId,
+        occurred_at: occurredAt,
+        actionability: "actionable",
+        pendencia_tipo: agendaType,
+        requires_notification: isNotifiable,
+        animal_ids: occurrence.animal_ids,
+        local_id: occurrence.local_id,
+        evento_id: occurrence.evento_id,
+        agenda_item_id: occurrence.agenda_item_id,
+        escopo_tipo: occurrence.escopo_tipo,
+        escopos_tipo: occurrence.escopos_tipo,
+        gravidade: occurrence.gravidade,
+        acao_imediata: occurrence.acao_imediata,
+        biosseguranca_ocorrencia: occurrence,
+      },
+    },
+  };
+}
+
 function resolveBiosecurityOccurrenceCategory(
   occurrence: BiosecurityOccurrenceDraft,
 ): BiosecurityOccurrenceCategory {
@@ -374,6 +523,38 @@ function normalizeBiosecurityOccurrenceScopes(
   const scopes = occurrence.escopos_tipo ?? [];
   if (scopes.length > 0) return Array.from(new Set(scopes));
   return occurrence.escopo_tipo ? [occurrence.escopo_tipo] : [];
+}
+
+function normalizeStringList(value: unknown): string[] | null {
+  if (!Array.isArray(value)) return null;
+  const values = Array.from(
+    new Set(
+      value.filter((item): item is string => typeof item === "string" && item.trim().length > 0),
+    ),
+  );
+  return values.length > 0 ? values : null;
+}
+
+function normalizeScopeList(value: unknown): BiosecurityOccurrenceScope[] {
+  if (!Array.isArray(value)) return [];
+  return Array.from(
+    new Set(
+      value.filter((item): item is BiosecurityOccurrenceScope =>
+        ALL_BIOSECURITY_SCOPES.includes(item as BiosecurityOccurrenceScope),
+      ),
+    ),
+  );
+}
+
+function normalizeKindList(value: unknown): BiosecurityOccurrenceKind[] {
+  if (!Array.isArray(value)) return [];
+  return Array.from(
+    new Set(
+      value.filter((item): item is BiosecurityOccurrenceKind =>
+        Object.hasOwn(LINK_SCOPES_BY_OCCURRENCE_KIND, item as string),
+      ),
+    ),
+  );
 }
 
 function readOutroRelato(occurrence: BiosecurityOccurrenceDraft) {
