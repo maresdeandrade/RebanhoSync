@@ -1,4 +1,7 @@
-import type { RegulatoryOverlayEntry } from "@/lib/sanitario/compliance/compliance";
+import {
+  isRegulatoryOverlayActionable,
+  type RegulatoryOverlayEntry,
+} from "@/lib/sanitario/compliance/compliance";
 import type { ActiveWithdrawal } from "@/lib/sanitario/compliance/activeWithdrawal";
 
 export type ComplianceGuardTone = "danger" | "warning" | "info";
@@ -43,7 +46,7 @@ function hasAdjustment(entry: RegulatoryOverlayEntry) {
 }
 
 function isOpen(entry: RegulatoryOverlayEntry) {
-  return entry.status !== "conforme";
+  return isRegulatoryOverlayActionable(entry) && entry.status !== "conforme";
 }
 
 function buildFeedBanGuard(entry: RegulatoryOverlayEntry): ComplianceFlowGuard {

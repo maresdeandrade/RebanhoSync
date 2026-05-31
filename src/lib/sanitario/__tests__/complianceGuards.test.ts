@@ -45,7 +45,11 @@ function createEntry(overrides: Partial<RegulatoryOverlayEntry> = {}): Regulator
     complianceKind: "checklist",
     status: "pendente",
     runtime: null,
+    actionability: "actionable",
     animalCentric: false,
+    sourceScope: "oficial",
+    editable: false,
+    customOverlayId: null,
     ...overrides,
   };
 }
@@ -126,5 +130,23 @@ describe("compliance guards", () => {
 
     expect(adjusted.blockers).toHaveLength(1);
     expect(adjusted.blockers[0].key).toBe("quarentena");
+  });
+
+  it("does not block or warn for contextual checklist without runtime", () => {
+    const result = resolveComplianceFlowGuards({
+      entries: [
+        createEntry({
+          subarea: "quarentena",
+          label: "Quarentena/separacao de entrada",
+          actionability: "contextual",
+          runtime: null,
+        }),
+      ],
+      context: "movement",
+      isExternalTransit: false,
+    });
+
+    expect(result.blockers).toHaveLength(0);
+    expect(result.warnings).toHaveLength(0);
   });
 });

@@ -51,7 +51,11 @@ function createEntry(overrides: Partial<RegulatoryOverlayEntry> = {}): Regulator
     complianceKind: "feed_ban",
     status: "pendente",
     runtime: null,
+    actionability: "actionable",
     animalCentric: false,
+    sourceScope: "oficial",
+    editable: false,
+    customOverlayId: null,
     ...overrides,
   };
 }
@@ -139,6 +143,42 @@ describe("regulatory compliance attention", () => {
     });
 
     expect(summary.openCount).toBe(0);
+    expect(summary.badges).toHaveLength(0);
+    expect(summary.topItems).toHaveLength(0);
+    expect(summary.groupBadge).toBeNull();
+  });
+
+  it("does not count contextual checklists without runtime as actionable attention", () => {
+    const summary = summarizeRegulatoryComplianceAttention({
+      entries: [
+        createEntry({
+          template: {
+            ...createEntry().template,
+            slug: "biosseguranca-operacional",
+            nome: "Biosseguranca operacional - boas praticas",
+            status_legal: "boa_pratica",
+          },
+          item: {
+            ...createEntry().item,
+            codigo: "biosseguranca-checklist",
+            area: "biosseguranca",
+            payload: {
+              label: "Biosseguranca operacional - checklist",
+            },
+          },
+          label: "Biosseguranca operacional - checklist",
+          subarea: null,
+          complianceKind: "checklist",
+          status: "pendente",
+          runtime: null,
+          actionability: "contextual",
+        }),
+      ],
+    });
+
+    expect(summary.total).toBe(1);
+    expect(summary.openCount).toBe(0);
+    expect(summary.pendingCount).toBe(0);
     expect(summary.badges).toHaveLength(0);
     expect(summary.topItems).toHaveLength(0);
     expect(summary.groupBadge).toBeNull();

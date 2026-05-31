@@ -244,4 +244,141 @@ describe("buildRegulatoryOperationalReadModel", () => {
     ]);
     expect(summary.hasBlockingIssues).toBe(true);
   });
+
+  it("keeps biosseguranca and notifiable templates contextual when no runtime exists", () => {
+    const config = {
+      ...createConfig(),
+      payload: {
+        activated_template_slugs: [
+          "biosseguranca-operacional",
+          "in50-doencas-notificaveis",
+        ],
+        overlay_runtime: {
+          items: {},
+        },
+      },
+    } satisfies FazendaSanidadeConfig;
+    const templates = [
+      createTemplate({
+        id: "template-biosseguranca",
+        slug: "biosseguranca-operacional",
+        nome: "Biosseguranca operacional - boas praticas",
+        status_legal: "boa_pratica",
+      }),
+      createTemplate({
+        id: "template-notificaveis",
+        slug: "in50-doencas-notificaveis",
+        nome: "IN MAPA 50/2013 - doencas notificaveis",
+      }),
+    ];
+    const items = [
+      createItem({
+        id: "item-biosseguranca",
+        template_id: "template-biosseguranca",
+        area: "biosseguranca",
+        codigo: "biosseguranca-checklist",
+        payload: {
+          label: "Biosseguranca operacional - checklist",
+        },
+      }),
+      createItem({
+        id: "item-notificaveis",
+        template_id: "template-notificaveis",
+        area: "notificacao",
+        codigo: "doencas-notificaveis-alerta",
+        gatilho_tipo: "risco",
+        payload: {
+          label: "Doencas notificaveis - registrar suspeita e orientar notificacao",
+          family_code: "doencas_notificaveis",
+          requires_official_notification: true,
+        },
+      }),
+    ];
+
+    const summary = buildRegulatoryOperationalReadModel({
+      config,
+      templates,
+      items,
+    });
+
+    expect(summary.entries).toHaveLength(2);
+    expect(summary.entries).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          item: expect.objectContaining({ codigo: "biosseguranca-checklist" }),
+          actionability: "contextual",
+        }),
+        expect.objectContaining({
+          item: expect.objectContaining({ codigo: "doencas-notificaveis-alerta" }),
+          actionability: "contextual",
+        }),
+      ]),
+    );
+    expect(summary.attention.openCount).toBe(0);
+    expect(summary.attention.pendingCount).toBe(0);
+    expect(summary.attention.badges).toHaveLength(0);
+    expect(summary.flows.nutrition.totalCount).toBe(0);
+    expect(summary.flows.movementInternal.totalCount).toBe(0);
+    expect(summary.flows.movementExternal.totalCount).toBe(0);
+    expect(summary.analytics.subareas).toHaveLength(0);
+    expect(summary.hasOpenIssues).toBe(false);
+    expect(summary.hasBlockingIssues).toBe(false);
+  });
+
+  it("keeps runtime pending entries actionable", () => {
+    const config = {
+      ...createConfig(),
+      payload: {
+        activated_template_slugs: ["biosseguranca-operacional"],
+        overlay_runtime: {
+          items: {
+            "biosseguranca-checklist": {
+              template_slug: "biosseguranca-operacional",
+              template_name: "Biosseguranca operacional",
+              item_code: "biosseguranca-checklist",
+              item_label: "Biosseguranca operacional - checklist",
+              subarea: "quarentena",
+              compliance_kind: "checklist",
+              status: "pendente",
+              checked_at: now,
+              responsible: "Equipe",
+              notes: null,
+              source_evento_id: "event-bio-1",
+              answers: {},
+            },
+          },
+        },
+      },
+    } satisfies FazendaSanidadeConfig;
+
+    const summary = buildRegulatoryOperationalReadModel({
+      config,
+      templates: [
+        createTemplate({
+          id: "template-biosseguranca",
+          slug: "biosseguranca-operacional",
+          nome: "Biosseguranca operacional - boas praticas",
+        }),
+      ],
+      items: [
+        createItem({
+          id: "item-biosseguranca",
+          template_id: "template-biosseguranca",
+          area: "biosseguranca",
+          codigo: "biosseguranca-checklist",
+          payload: {
+            label: "Biosseguranca operacional - checklist",
+            subarea: "quarentena",
+          },
+        }),
+      ],
+    });
+
+    expect(summary.entries[0]).toMatchObject({
+      actionability: "actionable",
+      status: "pendente",
+    });
+    expect(summary.attention.openCount).toBe(1);
+    expect(summary.flows.movementInternal.warningCount).toBe(1);
+  });
 });

@@ -555,7 +555,29 @@ describe("Agenda page", () => {
       protocolos: [],
       protocoloItens: [],
       gestos: [],
-      sanidadeConfig: createSanidadeConfig(),
+      sanidadeConfig: createSanidadeConfig({
+        payload: {
+          activated_template_slugs: ["feed-ban-ruminantes"],
+          overlay_runtime: {
+            items: {
+              "feed-ban": {
+                template_slug: "feed-ban-ruminantes",
+                template_name: "Conformidade alimentar de ruminantes",
+                item_code: "feed-ban",
+                item_label: "Feed-ban 1",
+                subarea: "feed_ban",
+                compliance_kind: "feed_ban",
+                status: "pendente",
+                checked_at: "2026-04-10T09:00:00.000Z",
+                responsible: null,
+                notes: null,
+                source_evento_id: null,
+                answers: {},
+              },
+            },
+          },
+        },
+      }),
       officialTemplates: [createOfficialTemplate()],
       officialTemplateItems: [createOfficialTemplateItem()],
     } as ReturnType<typeof useLiveQuery>);
@@ -572,4 +594,3 @@ describe("Agenda page", () => {
     ).toBeInTheDocument();
   });
 });
-

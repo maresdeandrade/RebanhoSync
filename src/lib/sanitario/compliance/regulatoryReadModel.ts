@@ -6,6 +6,7 @@ import type {
 } from "@/lib/offline/types";
 import {
   buildActiveRegulatoryOverlayEntries,
+  isRegulatoryOverlayActionable,
   type RegulatoryOverlayEntry,
 } from "@/lib/sanitario/compliance/compliance";
 import {
@@ -293,7 +294,9 @@ function buildRegulatoryOperationalAnalytics(input: {
   entries: RegulatoryOverlayEntry[];
   flows: RegulatoryOperationalReadModel["flows"];
 }): RegulatoryOperationalAnalytics {
-  const openEntries = input.entries.filter((entry) => entry.status !== "conforme");
+  const openEntries = input.entries.filter(
+    (entry) => isRegulatoryOverlayActionable(entry) && entry.status !== "conforme",
+  );
 
   const subareas = REGULATORY_ANALYTICS_SUBAREA_KEYS.map((key) => {
     const groupedEntries = openEntries.filter((entry) =>

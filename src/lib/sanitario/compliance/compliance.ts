@@ -12,6 +12,7 @@ export type RegulatoryOverlayStatus =
 
 export type RegulatoryOverlayComplianceKind = "feed_ban" | "checklist";
 export type RegulatoryOverlaySourceScope = "oficial" | "fazenda";
+export type RegulatoryOverlayActionability = "contextual" | "actionable";
 
 export interface FarmCustomRegulatoryOverlayDefinition {
   id: string;
@@ -48,6 +49,7 @@ export interface RegulatoryOverlayEntry {
   complianceKind: RegulatoryOverlayComplianceKind;
   status: RegulatoryOverlayStatus;
   runtime: RegulatoryOverlayRuntimeRecord | null;
+  actionability: RegulatoryOverlayActionability;
   animalCentric: boolean;
   sourceScope: RegulatoryOverlaySourceScope;
   editable: boolean;
@@ -347,6 +349,20 @@ export function getRegulatoryOverlayStatusLabel(status: RegulatoryOverlayStatus)
   return "Pendente";
 }
 
+function resolveOverlayActionability(
+  runtime: RegulatoryOverlayRuntimeRecord | null,
+): RegulatoryOverlayActionability {
+  if (!runtime || runtime.status === "conforme") {
+    return "contextual";
+  }
+
+  return "actionable";
+}
+
+export function isRegulatoryOverlayActionable(entry: RegulatoryOverlayEntry) {
+  return entry.actionability === "actionable";
+}
+
 export function buildActiveRegulatoryOverlayEntries({
   config,
   templates,
@@ -390,6 +406,7 @@ export function buildActiveRegulatoryOverlayEntries({
           complianceKind,
           status: runtime?.status ?? "pendente",
           runtime,
+          actionability: resolveOverlayActionability(runtime),
           animalCentric: readBoolean(template.payload, "animal_centric"),
           sourceScope: "oficial",
           editable: false,
@@ -416,6 +433,7 @@ export function buildActiveRegulatoryOverlayEntries({
         complianceKind: "checklist",
         status: runtime?.status ?? "pendente",
         runtime,
+        actionability: resolveOverlayActionability(runtime),
         animalCentric: definition.animalCentric,
         sourceScope: "fazenda",
         editable: true,
@@ -520,5 +538,4 @@ export function buildRegulatoryOverlayConfigPayload(
     },
   };
 }
-
 

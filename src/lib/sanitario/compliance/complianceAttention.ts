@@ -1,5 +1,8 @@
 import type { RegulatoryOverlayEntry } from "@/lib/sanitario/compliance/compliance";
-import { getRegulatoryOverlayStatusLabel } from "@/lib/sanitario/compliance/compliance";
+import {
+  getRegulatoryOverlayStatusLabel,
+  isRegulatoryOverlayActionable,
+} from "@/lib/sanitario/compliance/compliance";
 
 type ComplianceAttentionTone = "danger" | "warning" | "info";
 
@@ -143,7 +146,9 @@ export function summarizeRegulatoryComplianceAttention(input: {
     return EMPTY_REGULATORY_COMPLIANCE_ATTENTION;
   }
 
-  const openEntries = input.entries.filter((entry) => entry.status !== "conforme");
+  const openEntries = input.entries.filter(
+    (entry) => isRegulatoryOverlayActionable(entry) && entry.status !== "conforme",
+  );
   if (openEntries.length === 0) {
     return {
       ...EMPTY_REGULATORY_COMPLIANCE_ATTENTION,
