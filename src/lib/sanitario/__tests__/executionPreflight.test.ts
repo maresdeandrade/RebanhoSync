@@ -22,7 +22,9 @@ describe("validateSanitaryExecutionPreflight", () => {
       requireSanitaryType: true,
       requireProduct: true,
       sanitaryProductMetadata: {
-        protocolo_item_id: "item-1",
+        protocol_item_version_id: "item-1",
+        protocol_item_logical_key: "logical-item-1",
+        protocol_item_version: 1,
         regime_sanitario: { family_code: "raiva_herbivoros" },
       },
     });
@@ -83,7 +85,9 @@ describe("validateSanitaryExecutionPreflight", () => {
       tipoManejo: "sanitario",
       sanitaryProductName: "Produto A",
       sanitaryProductMetadata: {
-        protocolo_item_id: "item-1",
+        protocol_item_version_id: "item-1",
+        protocol_item_logical_key: "logical-item-1",
+        protocol_item_version: 1,
         protocolo_id: "protocolo-1",
         family_code: "brucelose",
         regimen_version: 1,

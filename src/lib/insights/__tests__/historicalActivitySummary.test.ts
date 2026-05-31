@@ -28,7 +28,7 @@ function createEvent(
     currentLoteId: "lote-atual-1",
     detailType: "vacinacao",
     protocolId: "protocol-1",
-    protocolItemId: "protocol-item-1",
+    protocolItemVersionId: "protocol-item-version-1",
     productId: "product-1",
     productName: "Vacina A",
     status: "registrado",

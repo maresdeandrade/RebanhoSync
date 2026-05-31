@@ -5,10 +5,20 @@ import { resolveRegistrarSanitaryFinalizeContext } from "@/pages/Registrar/helpe
 
 const baseProtocolItem: Pick<
   ProtocoloSanitarioItem,
-  "id" | "protocolo_id" | "produto" | "tipo" | "payload"
+  | "id"
+  | "protocolo_id"
+  | "logical_item_key"
+  | "item_code"
+  | "version"
+  | "produto"
+  | "tipo"
+  | "payload"
 > = {
   id: "item-1",
   protocolo_id: "proto-1",
+  logical_item_key: "logical-item-1",
+  item_code: "dose_1",
+  version: 1,
   produto: "Produto Protocolo",
   tipo: "vacinacao",
   payload: {
@@ -74,7 +84,10 @@ describe("resolveRegistrarSanitaryFinalizeContext", () => {
     expect(result.sanitaryProductMetadata).toMatchObject({
       produto_veterinario_id: "prod-1",
       produto_nome_catalogo: "Produto Selecionado",
-      protocolo_item_id: "item-1",
+      protocol_item_version_id: "item-1",
+      protocol_item_logical_key: "logical-item-1",
+      protocol_item_version: 1,
+      protocol_item_code: "dose_1",
       protocolo_id: "proto-1",
       family_code: "aftosa",
       regimen_version: 2,

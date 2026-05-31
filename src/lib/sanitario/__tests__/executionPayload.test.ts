@@ -8,6 +8,9 @@ import {
 const protocolItem: SanitaryExecutionProtocolItem = {
   id: "item-1",
   protocolo_id: "proto-1",
+  logical_item_key: "11111111-1111-4111-8111-111111111111",
+  item_code: "raiva_d1",
+  version: 2,
   produto: "Vacina Protocolo",
   tipo: "vacinacao",
   payload: {
@@ -47,7 +50,10 @@ describe("buildSanitaryExecutionPayload", () => {
       produto_categoria: "vacina",
       produto_origem: "catalogo",
       produto_rotulo_informado: "Vacina Protocolo",
-      protocolo_item_id: "item-1",
+      protocol_item_version_id: "item-1",
+      protocol_item_logical_key: "11111111-1111-4111-8111-111111111111",
+      protocol_item_version: 2,
+      protocol_item_code: "raiva_d1",
       protocolo_id: "proto-1",
       family_code: "raiva_herbivoros",
       regimen_version: 1,
@@ -121,7 +127,7 @@ describe("buildSanitaryExecutionPayload", () => {
       produto_veterinario_id: "prod-protocol",
       produto_origem: "catalogo_automatico",
       produto_match_mode: "exact",
-      protocolo_item_id: "item-1",
+      protocol_item_version_id: "item-1",
     });
   });
 
@@ -154,7 +160,7 @@ describe("buildSanitaryExecutionPayload", () => {
     }).toMatchObject({
       origem: "registrar_manejo",
       produto_veterinario_id: "prod-1",
-      protocolo_item_id: "item-1",
+      protocol_item_version_id: "item-1",
       protocolo_id: "proto-1",
       regime_sanitario: expect.objectContaining({
         family_code: "raiva_herbivoros",

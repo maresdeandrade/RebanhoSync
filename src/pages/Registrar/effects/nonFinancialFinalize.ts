@@ -239,7 +239,13 @@ export async function resolveRegistrarNonFinancialFinalizePlan(input: {
                         source: "registrar",
                         sanitario_tipo: input.sanitarioData.tipo,
                         produto: input.sanitaryProductName,
-                        protocolo_item_id: input.protocoloItem?.id ?? null,
+                        protocol_item_version_id: input.protocoloItem?.id ?? null,
+                        protocol_item_logical_key:
+                          input.protocoloItem?.logical_item_key ?? null,
+                        protocol_item_version:
+                          input.protocoloItem?.version ?? null,
+                        protocol_item_code:
+                          input.protocoloItem?.item_code ?? null,
                         ...clinicalProtocolPayload,
                       },
                     }

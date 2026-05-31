@@ -37,7 +37,7 @@ export type AgendaNeedItemInput = {
   loteId?: string | null;
   domain?: string | null;
   protocolId?: string | null;
-  protocolItemId?: string | null;
+  protocolItemVersionId?: string | null;
   productId?: string | null;
   productName?: string | null;
   title?: string | null;

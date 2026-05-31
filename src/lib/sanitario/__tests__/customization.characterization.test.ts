@@ -14,7 +14,8 @@ const buildItem = (
 ): ProtocoloSanitarioItem => ({
   id,
   protocolo_id: "protocol-1",
-  protocol_item_id: "proto-item-uuid-123",
+  logical_item_key: "proto-item-uuid-123",
+  item_code: "dose_1",
   version: 1,
   tipo: "vacinacao",
   produto: "Vacina A",
@@ -41,7 +42,7 @@ describe("Caracterizacao - Risco D: Edicao de Item de Protocolo sem Versionament
       regimen_version: 1,
     }, {
       version: 1,
-      protocol_item_id: "proto-item-uuid-123",
+      logical_item_key: "proto-item-uuid-123",
     });
 
     const draft = createEmptyProtocolItemDraft({
@@ -56,9 +57,9 @@ describe("Caracterizacao - Risco D: Edicao de Item de Protocolo sem Versionament
       protocolPayload: { family_code: "brucelose", regimen_version: 1 },
     });
 
-    // O registro retornado para atualizacao nao possui protocol_item_id nem version,
+    // O registro retornado para atualizacao nao possui identidade logica nem version,
     // o que significa que o update do Dexie mantem a mesma versao (1) e id original do registro.
-    expect((updateRecord as Record<string, unknown>).protocol_item_id).toBeUndefined();
+    expect((updateRecord as Record<string, unknown>).logical_item_key).toBeUndefined();
     expect((updateRecord as Record<string, unknown>).version).toBeUndefined();
     
     // Os outros campos foram alterados com sucesso, mas no mesmo registro semântico.

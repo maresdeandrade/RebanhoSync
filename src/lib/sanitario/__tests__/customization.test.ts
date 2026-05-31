@@ -47,7 +47,8 @@ const baseItem: ProtocoloSanitarioItem = {
   id: "item-1",
   fazenda_id: "farm-1",
   protocolo_id: "protocol-1",
-  protocol_item_id: "rule-1",
+  logical_item_key: "logical-rule-1",
+  item_code: "dose-1",
   version: 1,
   tipo: "vacinacao",
   produto: "Vacina Aftosa",
@@ -266,7 +267,7 @@ describe("sanitary customization drafts", () => {
       buildProtocolItemInsertRecord({
         itemId: "item-new",
         protocoloId: "protocol-new",
-        protocolItemId: "rule-new",
+        logicalItemKey: "rule-new",
         draft: createEmptyProtocolItemDraft({
           produto: "Vacina Regional",
           intervaloDias: "0",
@@ -288,7 +289,7 @@ describe("sanitary customization drafts", () => {
     ).toMatchObject({
       id: "item-new",
       protocolo_id: "protocol-new",
-      protocol_item_id: "rule-new",
+      logical_item_key: "rule-new",
       version: 1,
       produto: "Vacina Regional",
       intervalo_dias: 1,

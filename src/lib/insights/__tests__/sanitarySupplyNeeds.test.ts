@@ -22,7 +22,7 @@ function createAgendaItem(
     animalId: "animal-1",
     loteId: "lote-1",
     protocolId: "protocol-1",
-    protocolItemId: "protocol-item-1",
+    protocolItemVersionId: "protocol-item-version-1",
     productId: "product-1",
     productName: "Vacina A",
     productUnit: "dose",
@@ -186,14 +186,14 @@ describe("sanitary supply needs insights", () => {
     expect(insight.data.groups[0].agendaItemIds).toEqual(["protocol-1-item"]);
   });
 
-  it("filters by protocolItemIds", () => {
+  it("filters by protocolItemVersionIds", () => {
     const item1 = createAgendaItem({
       id: "protocol-item-1-agenda",
-      protocolItemId: " protocol-item-1 ",
+      protocolItemVersionId: " protocol-item-version-1 ",
     });
     const item2 = createAgendaItem({
       id: "protocol-item-2-agenda",
-      protocolItemId: "protocol-item-2",
+      protocolItemVersionId: "protocol-item-version-2",
     });
 
     const insight = createSanitarySupplyNeedsInsight({
@@ -201,7 +201,7 @@ describe("sanitary supply needs insights", () => {
       question: "Quais insumos por item de protocolo?",
       generatedAt,
       scope: "all_open",
-      filters: { protocolItemIds: ["protocol-item-1"] },
+      filters: { protocolItemVersionIds: ["protocol-item-version-1"] },
       items: [item1, item2],
     });
 
@@ -259,7 +259,7 @@ describe("sanitary supply needs insights", () => {
         animalIds: ["animal-1"],
         domains: [],
         protocolIds: [" protocol-1 "],
-        protocolItemIds: ["protocol-item-1"],
+        protocolItemVersionIds: ["protocol-item-version-1"],
         productIds: ["product-1"],
         productNames: ["Vacina A"],
       },
@@ -271,7 +271,7 @@ describe("sanitary supply needs insights", () => {
       animalIds: ["animal-1"],
       domains: ["sanitario"],
       protocolIds: ["protocol-1"],
-      protocolItemIds: ["protocol-item-1"],
+      protocolItemVersionIds: ["protocol-item-version-1"],
       productIds: ["product-1"],
       productNames: ["Vacina A"],
     });

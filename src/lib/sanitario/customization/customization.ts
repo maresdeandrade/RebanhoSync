@@ -1,4 +1,5 @@
 import type {
+  OperationInput,
   ProtocoloSanitario,
   ProtocoloSanitarioItem,
   SanitarioTipoEnum,
@@ -393,6 +394,7 @@ export function readProtocolItemDraft(
     | "dose_num"
     | "gera_agenda"
     | "dedup_template"
+    | "item_code"
     | "payload"
   >,
 ): SanitaryProtocolItemDraft {
@@ -432,7 +434,7 @@ export function readProtocolItemDraft(
       "requires_compliance_document",
     ]),
     dedupTemplate: item.dedup_template ?? "",
-    itemCode: readString(item.payload, "item_code"),
+    itemCode: item.item_code ?? readString(item.payload, "item_code"),
     dependsOnItemCode: readString(item.payload, "depends_on_item_code"),
     calendarMode: normalizeCalendarMode(calendarRule?.mode),
     calendarAnchor: normalizeCalendarAnchor(calendarRule?.anchor),
@@ -726,6 +728,7 @@ export function buildProtocolItemUpdateRecord(
 
   return {
     id: item.id,
+    item_code: draft.itemCode.trim() || null,
     tipo: draft.tipo,
     produto: draft.produto.trim(),
     intervalo_dias: normalizeInterval(draft.intervaloDias),
@@ -745,7 +748,7 @@ export function buildProtocolItemUpdateRecord(
 export function buildProtocolItemInsertRecord(input: {
   itemId: string;
   protocoloId: string;
-  protocolItemId: string;
+  logicalItemKey: string;
   version?: number;
   draft: SanitaryProtocolItemDraft;
   extraPayload?: Record<string, unknown>;
@@ -770,8 +773,12 @@ export function buildProtocolItemInsertRecord(input: {
   return {
     id: input.itemId,
     protocolo_id: input.protocoloId,
-    protocol_item_id: input.protocolItemId,
+    logical_item_key: input.logicalItemKey,
+    item_code: input.draft.itemCode.trim() || null,
     version: input.version ?? 1,
+    ativo: true,
+    superseded_by_id: null,
+    superseded_at: null,
     tipo: input.draft.tipo,
     produto: input.draft.produto.trim(),
     intervalo_dias: normalizeInterval(input.draft.intervaloDias),
@@ -786,4 +793,133 @@ export function buildProtocolItemInsertRecord(input: {
       null,
     payload,
   };
+}
+
+export type ProtocolItemChangeClassification =
+  | "simple_update"
+  | "semantic_revision";
+
+export interface ProtocolItemChangeContext {
+  extraPayload?: Record<string, unknown>;
+  protocolPayload?: Record<string, unknown> | null | undefined;
+}
+
+const SIMPLE_ITEM_DRAFT_KEYS: Array<keyof SanitaryProtocolItemDraft> = [
+  "indicacao",
+  "observacoes",
+  "calendarLabel",
+  "calendarNotes",
+];
+
+function normalizeDraftComparableValue(value: unknown): unknown {
+  if (typeof value === "string") return value.trim();
+  return value;
+}
+
+function getSemanticDraftKeys(): Array<keyof SanitaryProtocolItemDraft> {
+  const simple = new Set<keyof SanitaryProtocolItemDraft>(SIMPLE_ITEM_DRAFT_KEYS);
+  return (Object.keys(createEmptyProtocolItemDraft()) as Array<
+    keyof SanitaryProtocolItemDraft
+  >).filter((key) => !simple.has(key));
+}
+
+export function classifyProtocolItemChange(
+  previous: ProtocoloSanitarioItem,
+  next: SanitaryProtocolItemDraft,
+  _context?: ProtocolItemChangeContext,
+): ProtocolItemChangeClassification {
+  const previousDraft = readProtocolItemDraft(previous);
+  for (const key of getSemanticDraftKeys()) {
+    if (
+      normalizeDraftComparableValue(previousDraft[key]) !==
+      normalizeDraftComparableValue(next[key])
+    ) {
+      return "semantic_revision";
+    }
+  }
+
+  return "simple_update";
+}
+
+export interface BuildProtocolItemRevisionOpsContext
+  extends ProtocolItemChangeContext {
+  now: string;
+  newItemId: string;
+}
+
+export function buildProtocolItemRevisionOps(
+  previousItem: ProtocoloSanitarioItem,
+  draft: SanitaryProtocolItemDraft,
+  context: BuildProtocolItemRevisionOpsContext,
+): OperationInput[] {
+  const logicalItemKey = previousItem.logical_item_key;
+  if (!logicalItemKey) {
+    throw new Error("Etapa sanitaria sem logical_item_key nao pode ser versionada.");
+  }
+
+  const nextVersion = (previousItem.version ?? 1) + 1;
+  const nextRecord = buildProtocolItemUpdateRecord(
+    previousItem,
+    draft,
+    context.extraPayload,
+    { protocolPayload: context.protocolPayload },
+  );
+
+  return [
+    {
+      table: "protocolos_sanitarios_itens",
+      action: "UPDATE",
+      record: {
+        id: previousItem.id,
+        ativo: false,
+        superseded_at: context.now,
+      },
+    },
+    {
+      table: "protocolos_sanitarios_itens",
+      action: "INSERT",
+      record: {
+        ...nextRecord,
+        id: context.newItemId,
+        protocolo_id: previousItem.protocolo_id,
+        logical_item_key: logicalItemKey,
+        version: nextVersion,
+        ativo: true,
+        superseded_by_id: null,
+        superseded_at: null,
+      },
+    },
+    {
+      table: "protocolos_sanitarios_itens",
+      action: "UPDATE",
+      record: {
+        id: previousItem.id,
+        superseded_by_id: context.newItemId,
+      },
+    },
+  ];
+}
+
+export function deterministicUuidFromText(value: string): string {
+  const input = value.trim().toLowerCase();
+  const bytes: number[] = [];
+  for (let block = 0; block < 4; block += 1) {
+    let hash = 0x811c9dc5 ^ (block * 0x9e3779b1);
+    for (let index = 0; index < input.length; index += 1) {
+      hash ^= input.charCodeAt(index);
+      hash = Math.imul(hash, 0x01000193);
+    }
+    bytes.push(
+      (hash >>> 24) & 0xff,
+      (hash >>> 16) & 0xff,
+      (hash >>> 8) & 0xff,
+      hash & 0xff,
+    );
+  }
+
+  bytes[6] = (bytes[6] & 0x0f) | 0x50;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+
+  const hex = bytes.map((byte) => byte.toString(16).padStart(2, "0")).join("");
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
 }

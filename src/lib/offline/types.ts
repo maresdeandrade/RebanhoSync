@@ -738,6 +738,9 @@ export interface AgendaItem {
   source_evento_id: string | null;
 
   protocol_item_version_id: string | null;
+  protocol_item_logical_key?: string | null;
+  protocol_item_version?: number | null;
+  protocol_item_code?: string | null;
   interval_days_applied: number | null;
 
   payload: Record<string, unknown>;
@@ -798,8 +801,12 @@ export interface ProtocoloSanitarioItem {
   id: string;
   fazenda_id: string;
   protocolo_id: string;
-  protocol_item_id: string;
+  logical_item_key?: string;
+  item_code?: string | null;
   version: number;
+  ativo?: boolean;
+  superseded_by_id?: string | null;
+  superseded_at?: string | null;
 
   tipo: SanitarioTipoEnum;
   produto: string;
@@ -1118,6 +1125,10 @@ export interface EventoSanitario {
   fazenda_id: string;
   tipo: SanitarioTipoEnum;
   produto: string;
+  protocol_item_version_id?: string | null;
+  protocol_item_logical_key?: string | null;
+  protocol_item_version?: number | null;
+  protocol_item_snapshot?: Record<string, unknown> | null;
   payload: Record<string, unknown>;
 
   // Campos de sistema

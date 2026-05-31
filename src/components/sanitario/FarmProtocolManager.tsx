@@ -53,9 +53,12 @@ import {
   buildProtocolInsertRecord,
   buildProtocolItemInsertRecord,
   buildProtocolItemUpdateRecord,
+  buildProtocolItemRevisionOps,
   buildProtocolUpdateRecord,
+  classifyProtocolItemChange,
   createEmptyProtocolDraft,
   createEmptyProtocolItemDraft,
+  deterministicUuidFromText,
   readProtocolDraft,
   readProtocolItemDraft,
   type SanitaryProtocolDraft,
@@ -729,6 +732,10 @@ export function FarmProtocolManager({
     };
 
     const itemOperations: OperationInput[] = protocol.itens.map((item) => {
+      const itemCode = item.item_code;
+      const logicalItemKey = deterministicUuidFromText(
+        `${protocol.family_code || protocol.nome}:${itemCode}`,
+      );
       const resolvedProduct = resolveVeterinaryProductByName(
         item.produto,
         catalogProducts,
@@ -749,8 +756,12 @@ export function FarmProtocolManager({
         record: {
           id: crypto.randomUUID(),
           protocolo_id: protocolId,
-          protocol_item_id: crypto.randomUUID(),
+          logical_item_key: logicalItemKey,
+          item_code: itemCode,
           version: 1,
+          ativo: true,
+          superseded_by_id: null,
+          superseded_at: null,
           tipo: item.tipo,
           produto: item.produto,
           intervalo_dias: normalizeStandardProtocolInterval(item),
@@ -893,38 +904,59 @@ export function FarmProtocolManager({
       }
     }
 
-    const operation: OperationInput = itemEditor.item
-      ? {
-          table: "protocolos_sanitarios_itens",
-          action: "UPDATE",
-          record: buildProtocolItemUpdateRecord(
-            itemEditor.item,
-            itemEditor.draft,
-            resolvedProduct.metadata,
+    const operationContext = {
+      extraPayload: resolvedProduct.metadata,
+      protocolPayload: protocol?.payload ?? null,
+    };
+    const operations: OperationInput[] = itemEditor.item
+      ? classifyProtocolItemChange(
+          itemEditor.item,
+          itemEditor.draft,
+          operationContext,
+        ) === "semantic_revision"
+        ? buildProtocolItemRevisionOps(itemEditor.item, itemEditor.draft, {
+            ...operationContext,
+            now: new Date().toISOString(),
+            newItemId: crypto.randomUUID(),
+          })
+        : [
             {
-              protocolPayload: protocol?.payload ?? null,
+              table: "protocolos_sanitarios_itens",
+              action: "UPDATE",
+              record: buildProtocolItemUpdateRecord(
+                itemEditor.item,
+                itemEditor.draft,
+                resolvedProduct.metadata,
+                {
+                  protocolPayload: protocol?.payload ?? null,
+                },
+              ),
             },
-          ),
-        }
-      : {
-          table: "protocolos_sanitarios_itens",
-          action: "INSERT",
-          record: buildProtocolItemInsertRecord({
-            itemId: crypto.randomUUID(),
-            protocoloId: itemEditor.protocolId,
-            protocolItemId: crypto.randomUUID(),
-            draft: itemEditor.draft,
-            extraPayload: resolvedProduct.metadata,
-            protocolPayload: protocol?.payload ?? null,
-          }),
-        };
+          ]
+      : [
+          {
+            table: "protocolos_sanitarios_itens",
+            action: "INSERT",
+            record: buildProtocolItemInsertRecord({
+              itemId: crypto.randomUUID(),
+              protocoloId: itemEditor.protocolId,
+              logicalItemKey: crypto.randomUUID(),
+              draft: itemEditor.draft,
+              extraPayload: resolvedProduct.metadata,
+              protocolPayload: protocol?.payload ?? null,
+            }),
+          },
+        ];
+    const isSemanticRevision = itemEditor.item && operations.length > 1;
 
     setIsSaving(true);
     try {
-      await createGesture(activeFarmId, [operation]);
+      await createGesture(activeFarmId, operations);
       showSuccess(
-        itemEditor.item
-          ? "Etapa sanitária atualizada."
+        isSemanticRevision
+          ? "Esta alteração muda a regra operacional da etapa. Foi criada uma nova versão; agendas já geradas continuam vinculadas à versão anterior."
+          : itemEditor.item
+            ? "Etapa sanitária atualizada."
           : "Etapa sanitária adicionada ao protocolo.",
       );
       setItemEditor(null);
@@ -950,26 +982,29 @@ export function FarmProtocolManager({
       ? buildDryCowTherapyOperationalAgendaItemPayload(item.payload)
       : buildDryCowTherapyClinicalSupportItemPayload(item.payload);
 
-    const operation: OperationInput = {
-      table: "protocolos_sanitarios_itens",
-      action: "UPDATE",
-      record: {
-        id: item.id,
-        tipo: item.tipo,
-        produto: item.produto,
-        intervalo_dias: enabled
+    const draft = {
+      ...readProtocolItemDraft(item),
+      intervaloDias: String(
+        enabled
           ? DRY_COW_THERAPY_DEFAULT_DUE_DAYS_BEFORE_CALVING
           : item.intervalo_dias,
-        dose_num: item.dose_num,
-        gera_agenda: enabled,
-        dedup_template: item.dedup_template ?? null,
-        payload,
-      },
+      ),
+      geraAgenda: enabled,
     };
+    const operation: OperationInput[] = buildProtocolItemRevisionOps(
+      item,
+      draft,
+      {
+        now: new Date().toISOString(),
+        newItemId: crypto.randomUUID(),
+        extraPayload: payload,
+        protocolPayload: protocolById.get(item.protocolo_id)?.payload ?? null,
+      },
+    );
 
     setIsSaving(true);
     try {
-      await createGesture(activeFarmId, [operation]);
+      await createGesture(activeFarmId, operation);
       showSuccess(
         enabled
           ? "Agenda de Vaca Seca ativada no protocolo da fazenda."
@@ -1399,6 +1434,13 @@ export function FarmProtocolManager({
                                       <p className="font-medium text-foreground">
                                         {item.produto}
                                       </p>
+                                      {item.item_code || item.version ? (
+                                        <p className="text-xs text-muted-foreground">
+                                          {[item.item_code, item.version ? `v${item.version}` : null]
+                                            .filter(Boolean)
+                                            .join(" / ")}
+                                        </p>
+                                      ) : null}
                                       <p className="text-sm text-muted-foreground">
                                         {summarizeInterval(
                                           item.intervalo_dias,

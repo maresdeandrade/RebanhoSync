@@ -5,7 +5,14 @@ import { readSanitaryRegimen } from "@/lib/sanitario/engine/regimen";
 
 export type SanitaryExecutionProtocolItem = Pick<
   ProtocoloSanitarioItem,
-  "id" | "protocolo_id" | "produto" | "tipo" | "payload"
+  | "id"
+  | "protocolo_id"
+  | "logical_item_key"
+  | "item_code"
+  | "version"
+  | "produto"
+  | "tipo"
+  | "payload"
 >;
 
 export type ResolveSanitaryProtocolProductSelection = (
@@ -65,7 +72,10 @@ export function buildSanitaryExecutionPayload(
     }),
     ...(protocoloItem
       ? {
-          protocolo_item_id: protocoloItem.id,
+          protocol_item_version_id: protocoloItem.id,
+          protocol_item_logical_key: protocoloItem.logical_item_key ?? null,
+          protocol_item_version: protocoloItem.version ?? null,
+          protocol_item_code: protocoloItem.item_code ?? null,
           protocolo_id: protocoloItem.protocolo_id,
         }
       : {}),

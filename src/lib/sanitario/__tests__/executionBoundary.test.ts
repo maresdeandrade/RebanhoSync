@@ -12,7 +12,9 @@ function baseInput() {
     tipo: "vacinacao" as const,
     sanitaryProductName: "Vacina X",
     sanitaryProductMetadata: {
-      protocolo_item_id: "item-1",
+      protocol_item_version_id: "item-1",
+      protocol_item_logical_key: "logical-item-1",
+      protocol_item_version: 1,
       protocolo_id: "proto-1",
       family_code: "raiva_herbivoros",
       regime_sanitario: {
@@ -43,7 +45,9 @@ describe("executeSanitaryCompletion", () => {
       produto: "Vacina X",
       payload: {
         origem: "registrar_manejo",
-        protocolo_item_id: "item-1",
+        protocol_item_version_id: "item-1",
+        protocol_item_logical_key: "logical-item-1",
+        protocol_item_version: 1,
         protocolo_id: "proto-1",
         family_code: "raiva_herbivoros",
         regime_sanitario: {

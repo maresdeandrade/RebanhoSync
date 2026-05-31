@@ -77,13 +77,13 @@ describe("sourceTaskPrefill effect", () => {
     });
   });
 
-  it("aceita protocol_item_id como chave alternativa do source_ref", async () => {
+  it("ignora chave legada do source_ref sem protocol_item_version_id estruturado", async () => {
     const loadAgendaItem = vi.fn(async () => ({
       id: "agenda-1",
       dominio: "sanitario",
       protocol_item_version_id: null,
       source_ref: {
-        protocol_item_id: "item-2",
+        item_code: "dose_1",
       },
       payload: {},
     }));
@@ -102,11 +102,12 @@ describe("sourceTaskPrefill effect", () => {
       loadProtocolItem,
     });
 
+    expect(loadProtocolItem).not.toHaveBeenCalled();
     expect(result).toMatchObject({
-      protocoloIdFromTask: "protocolo-2",
-      protocoloItemIdFromTask: "item-2",
-      produtoFromTask: "Vacina Raiva Herbivoros",
-      tipoFromTask: "vacinacao",
+      protocoloIdFromTask: null,
+      protocoloItemIdFromTask: null,
+      produtoFromTask: null,
+      tipoFromTask: null,
     });
   });
 });

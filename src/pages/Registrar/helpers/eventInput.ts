@@ -133,6 +133,24 @@ export function buildRegistrarEventInput(
       protocoloItem: params.sanitario?.protocoloItem
         ? {
             id: params.sanitario.protocoloItem.id,
+            logicalItemKey:
+              params.sanitario.protocoloItem.logical_item_key ?? null,
+            version: params.sanitario.protocoloItem.version ?? null,
+            itemCode: params.sanitario.protocoloItem.item_code ?? null,
+            snapshot: {
+              id: params.sanitario.protocoloItem.id,
+              logical_item_key:
+                params.sanitario.protocoloItem.logical_item_key ?? null,
+              item_code: params.sanitario.protocoloItem.item_code ?? null,
+              version: params.sanitario.protocoloItem.version ?? null,
+              tipo: params.sanitario.protocoloItem.tipo,
+              produto: params.sanitario.protocoloItem.produto,
+              intervalo_dias: params.sanitario.protocoloItem.intervalo_dias,
+              dose_num: params.sanitario.protocoloItem.dose_num,
+              gera_agenda: params.sanitario.protocoloItem.gera_agenda,
+              dedup_template: params.sanitario.protocoloItem.dedup_template,
+              payload: params.sanitario.protocoloItem.payload,
+            },
             intervalDays: params.sanitario.protocoloItem.intervalo_dias,
             doseNum: params.sanitario.protocoloItem.dose_num,
             geraAgenda: params.sanitario.protocoloItem.gera_agenda,

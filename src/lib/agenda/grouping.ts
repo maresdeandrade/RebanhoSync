@@ -18,6 +18,7 @@ interface BuildAgendaEventGroupMetaInput {
     | "source_ref"
     | "payload"
     | "protocol_item_version_id"
+    | "protocol_item_code"
     | "interval_days_applied"
     | "dedup_key"
   >;
@@ -63,15 +64,18 @@ function formatTypeLabel(value: string): string {
 }
 
 function buildSubtitle(input: BuildAgendaEventGroupMetaInput): string {
-  const protocolItemId = readString(input.item.source_ref, "protocolo_item_id");
+  const protocolItemVersionId = input.item.protocol_item_version_id;
+  const protocolItemCode = input.item.protocol_item_code;
   const milestoneKey = readString(input.item.source_ref, "milestone_key");
   const doseNum = readNumber(input.item.source_ref, "dose_num");
   const parts: string[] = [];
 
   if (input.protocol?.nome) {
     parts.push(input.protocol.nome);
-  } else if (protocolItemId) {
-    parts.push(`Item ${protocolItemId.slice(0, 8)}`);
+  } else if (protocolItemCode) {
+    parts.push(`Item ${protocolItemCode}`);
+  } else if (protocolItemVersionId) {
+    parts.push(`Versao ${protocolItemVersionId.slice(0, 8)}`);
   } else if (milestoneKey) {
     parts.push(`Marco ${milestoneKey.replaceAll("_", " ")}`);
   } else {
@@ -97,7 +101,6 @@ function buildSubtitle(input: BuildAgendaEventGroupMetaInput): string {
 export function buildAgendaEventGroupMeta(
   input: BuildAgendaEventGroupMetaInput,
 ): AgendaEventGroupMeta {
-  const protocolItemId = readString(input.item.source_ref, "protocolo_item_id");
   const protocolId =
     readString(input.item.source_ref, "protocolo_id") ?? input.protocol?.id ?? null;
   const milestoneKey = readString(input.item.source_ref, "milestone_key");
@@ -110,8 +113,6 @@ export function buildAgendaEventGroupMeta(
 
   if (input.item.protocol_item_version_id) {
     key = `protocol-version:${input.item.protocol_item_version_id}`;
-  } else if (protocolItemId) {
-    key = `protocol-item:${protocolItemId}`;
   } else if (milestoneKey) {
     key = `milestone:${normalizeToken(milestoneKey)}`;
   } else {

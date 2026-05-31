@@ -18,7 +18,7 @@ export type HistoricalActivityEventInput = {
   currentLoteId?: string | null;
   detailType?: string | null;
   protocolId?: string | null;
-  protocolItemId?: string | null;
+  protocolItemVersionId?: string | null;
   productId?: string | null;
   productName?: string | null;
   status?: string | null;

@@ -18,6 +18,7 @@ import type {
   SistemaManejoEnum,
   TipoProducaoEnum,
 } from "@/lib/offline/types";
+import { deterministicUuidFromText } from "@/lib/sanitario/customization/customization";
 import { supabase } from "@/lib/supabase";
 import { buildSanitaryBaseCalendarPayload } from "@/lib/sanitario/engine/calendar";
 import {
@@ -699,6 +700,15 @@ export async function buildOfficialSanitaryPackOps(input: {
       const trigger = item.gatilho_json;
       const sanitaryType = resolveMaterializableSanitaryType(item);
       if (!sanitaryType) continue;
+      const itemCode = item.codigo.trim();
+      if (!itemCode) {
+        throw new Error(
+          `Item oficial sem item_code estavel: ${selection.template.slug}`,
+        );
+      }
+      const logicalItemKey = deterministicUuidFromText(
+        `${selection.template.slug}:${itemCode}`,
+      );
 
       ops.push({
         table: "protocolos_sanitarios_itens",
@@ -706,10 +716,14 @@ export async function buildOfficialSanitaryPackOps(input: {
         record: {
           id: existingItem?.id ?? crypto.randomUUID(),
           protocolo_id: protocolId,
-          protocol_item_id: existingItem?.protocol_item_id ?? crypto.randomUUID(),
+          logical_item_key: existingItem?.logical_item_key ?? logicalItemKey,
+          item_code: itemCode,
           version: existingItem?.version ?? 1,
+          ativo: true,
+          superseded_by_id: existingItem?.superseded_by_id ?? null,
+          superseded_at: existingItem?.superseded_at ?? null,
           tipo: sanitaryType,
-          produto: readString(item.payload, "produto") ?? item.codigo,
+          produto: readString(item.payload, "produto") || itemCode,
           intervalo_dias: normalizeIntervalDays(item),
           dose_num: normalizeDoseNumber(item),
           gera_agenda: item.gera_agenda,

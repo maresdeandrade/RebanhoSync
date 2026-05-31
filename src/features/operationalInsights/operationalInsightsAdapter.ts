@@ -59,7 +59,6 @@ export type OperationalInsightsAgendaRow = {
   protocol_item_version_id?: string | null;
   protocolItemVersionId?: string | null;
   protocolId?: string | null;
-  protocolItemId?: string | null;
   productId?: string | null;
   productName?: string | null;
   productUnit?: string | null;
@@ -112,8 +111,9 @@ export type OperationalInsightsProtocolItemRow = {
   id: string;
   protocolo_id?: string | null;
   protocolId?: string | null;
-  protocol_item_id?: string | null;
-  protocolItemId?: string | null;
+  item_code?: string | null;
+  itemCode?: string | null;
+  version?: number | null;
   produto?: string | null;
   productName?: string | null;
   productUnit?: string | null;
@@ -210,7 +210,6 @@ type NormalizedAgendaInsightItem =
 
 type ProtocolItemIndexes = {
   byId: Map<string, OperationalInsightsProtocolItemRow>;
-  byProtocolItemId: Map<string, OperationalInsightsProtocolItemRow>;
 };
 
 const DEFAULT_UPCOMING_DAYS = 7;
@@ -280,38 +279,26 @@ function buildProtocolItemIndexes(
   protocolItems: readonly OperationalInsightsProtocolItemRow[] | null | undefined,
 ): ProtocolItemIndexes {
   const byId = new Map<string, OperationalInsightsProtocolItemRow>();
-  const byProtocolItemId = new Map<string, OperationalInsightsProtocolItemRow>();
 
   for (const item of protocolItems ?? []) {
     const id = normalizeString(item.id);
-    const protocolItemId =
-      normalizeString(item.protocol_item_id) ?? normalizeString(item.protocolItemId);
 
     if (id) byId.set(id, item);
-    if (protocolItemId) byProtocolItemId.set(protocolItemId, item);
   }
 
-  return { byId, byProtocolItemId };
+  return { byId };
 }
 
 function resolveProtocolItem(
   item: OperationalInsightsAgendaRow,
   indexes: ProtocolItemIndexes,
 ): OperationalInsightsProtocolItemRow | null {
-  const sourceRef = asRecord(item.source_ref);
   const versionId =
     normalizeString(item.protocol_item_version_id) ??
     normalizeString(item.protocolItemVersionId);
-  const sourceProtocolItemId =
-    normalizeString(item.protocolItemId) ??
-    readString(sourceRef, "protocolo_item_id", "protocol_item_id", "protocolItemId");
 
   if (versionId && indexes.byId.has(versionId)) {
     return indexes.byId.get(versionId) ?? null;
-  }
-
-  if (sourceProtocolItemId && indexes.byProtocolItemId.has(sourceProtocolItemId)) {
-    return indexes.byProtocolItemId.get(sourceProtocolItemId) ?? null;
   }
 
   return null;
@@ -333,13 +320,10 @@ function normalizeAgendaItems(input: {
       readString(sourceRef, "protocolo_id", "protocol_id", "protocolId") ??
       normalizeString(protocolItem?.protocolo_id) ??
       normalizeString(protocolItem?.protocolId);
-    const protocolItemId =
-      normalizeString(item.protocolItemId) ??
-      readString(sourceRef, "protocolo_item_id", "protocol_item_id", "protocolItemId") ??
-      normalizeString(protocolItem?.protocol_item_id) ??
-      normalizeString(protocolItem?.protocolItemId) ??
+    const protocolItemVersionId =
       normalizeString(item.protocol_item_version_id) ??
-      normalizeString(item.protocolItemVersionId);
+      normalizeString(item.protocolItemVersionId) ??
+      normalizeString(protocolItem?.id);
     const productId =
       normalizeString(item.productId) ??
       readString(
@@ -382,7 +366,7 @@ function normalizeAgendaItems(input: {
       loteId: normalizeString(item.loteId) ?? normalizeString(item.lote_id),
       domain: normalizeString(item.domain) ?? normalizeString(item.dominio),
       protocolId,
-      protocolItemId,
+      protocolItemVersionId,
       productId,
       productName,
       productUnit,

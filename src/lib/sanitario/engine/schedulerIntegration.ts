@@ -16,7 +16,7 @@ import {
 } from "@/lib/sanitario/models/adapters";
 import { shouldUseNewSanitaryScheduler } from "@/lib/sanitario/engine/featureFlags";
 
-function resolveLegacyIdentity(protocolItem: ProtocoloSanitarioItem) {
+function resolveProtocolIdentity(protocolItem: ProtocoloSanitarioItem) {
   const protocolId =
     (protocolItem as Partial<ProtocoloSanitarioItem> & { protocol_id?: string })
       .protocolo_id ??
@@ -24,8 +24,9 @@ function resolveLegacyIdentity(protocolItem: ProtocoloSanitarioItem) {
       .protocol_id ??
     "unknown_protocol";
   const itemId =
-    (protocolItem as Partial<ProtocoloSanitarioItem> & { protocol_item_id?: string })
-      .protocol_item_id ??
+    protocolItem.item_code ??
+    protocolItem.logical_item_key ??
+    protocolItem.id ??
     "unknown_item";
 
   return { protocolId, itemId };
@@ -78,7 +79,7 @@ export function computeNextSanitaryOccurrenceForItem(
 
   try {
     // 1. Parsear item legado para domínio novo
-    const { protocolId, itemId } = resolveLegacyIdentity(protocolItem);
+    const { protocolId, itemId } = resolveProtocolIdentity(protocolItem);
     const domain = parseLegacyProtocolItemToDomain(
       protocolId,
       itemId,
@@ -152,7 +153,7 @@ export function isProtocolItemCompatibleWithNewScheduler(
   protocolItem: ProtocoloSanitarioItem
 ): boolean {
   try {
-    const { protocolId, itemId } = resolveLegacyIdentity(protocolItem);
+    const { protocolId, itemId } = resolveProtocolIdentity(protocolItem);
     const domain = parseLegacyProtocolItemToDomain(
       protocolId,
       itemId,

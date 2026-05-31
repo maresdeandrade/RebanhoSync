@@ -54,10 +54,7 @@ export function createAgendaActionController(deps: AgendaActionControllerDeps) {
     if (item.lote_id) params.set("loteId", item.lote_id);
 
     const protocoloId = readString(item.source_ref, "protocolo_id");
-    const protocoloItemId =
-      readString(item.source_ref, "protocolo_item_id") ??
-      readString(item.source_ref, "protocol_item_id") ??
-      item.protocol_item_version_id;
+    const protocoloItemId = item.protocol_item_version_id;
     const produto =
       readString(item.source_ref, "produto") ?? readString(item.payload, "produto");
     const sanitarioTipo = asSanitarioTipo(readString(item.source_ref, "tipo"));

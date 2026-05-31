@@ -69,6 +69,10 @@ export interface SanitarioCasoLinkInput {
 
 export interface ProtocoloAgendaRefInput {
   id: string;
+  logicalItemKey?: string | null;
+  version?: number | null;
+  itemCode?: string | null;
+  snapshot?: Record<string, unknown> | null;
   intervalDays: number;
   doseNum?: number | null;
   geraAgenda: boolean;

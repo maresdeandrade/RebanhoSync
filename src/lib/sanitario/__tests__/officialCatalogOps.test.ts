@@ -214,6 +214,22 @@ describe("official sanitary catalog ops", () => {
     const itemInsert = ops.find(
       (op) => op.table === "protocolos_sanitarios_itens" && op.action === "INSERT",
     );
+    const secondOps = await buildOfficialSanitaryPackOps({
+      fazendaId: "farm-1",
+      config: {
+        uf: "SP",
+        aptidao: "corte",
+        sistema: "extensivo",
+        zonaRaivaRisco: "baixo",
+        pressaoCarrapato: "baixo",
+        pressaoHelmintos: "baixo",
+        modoCalendario: "minimo_legal",
+      },
+      selection,
+    });
+    const secondItemInsert = secondOps.find(
+      (op) => op.table === "protocolos_sanitarios_itens" && op.action === "INSERT",
+    );
 
     expect(protocolInsert?.record.payload).toMatchObject({
       status_legal: "obrigatorio",
@@ -222,6 +238,9 @@ describe("official sanitary catalog ops", () => {
       regimen_version: 1,
     });
     expect(itemInsert?.record).toMatchObject({
+      item_code: "brucelose-b19",
+      version: 1,
+      ativo: true,
       dedup_template: "sanitario:brucelose:{animal_id}:milestone:brucelose_b19",
       payload: {
         family_code: "brucelose",
@@ -233,6 +252,12 @@ describe("official sanitary catalog ops", () => {
         },
       },
     });
+    expect(itemInsert?.record.logical_item_key).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+    );
+    expect(itemInsert?.record.logical_item_key).toBe(
+      secondItemInsert?.record.logical_item_key,
+    );
     expect(
       ops.some(
         (op) => op.table === "eventos" || op.table.startsWith("eventos_"),

@@ -75,7 +75,8 @@ describe("operational insights adapter", () => {
       {
         id: "protocol-item-version-1",
         protocolo_id: "protocol-1",
-        protocol_item_id: "protocol-item-1",
+        item_code: "dose_1",
+        version: 1,
         produto: "Vacina Brucelose",
       },
     ];

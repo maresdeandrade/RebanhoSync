@@ -52,8 +52,12 @@ function buildProtocolItem(
     id: overrides?.id ?? "item-1",
     fazenda_id: overrides?.fazenda_id ?? "farm-1",
     protocolo_id: overrides?.protocolo_id ?? "protocol-1",
-    protocol_item_id: overrides?.protocol_item_id ?? "protocol-item-1",
+    logical_item_key: overrides?.logical_item_key ?? "logical-item-1",
+    item_code: overrides?.item_code ?? "dose_1",
     version: overrides?.version ?? 1,
+    ativo: overrides?.ativo ?? true,
+    superseded_by_id: overrides?.superseded_by_id ?? null,
+    superseded_at: overrides?.superseded_at ?? null,
     tipo: overrides?.tipo ?? "vacinacao",
     produto: overrides?.produto ?? "Vacina teste",
     intervalo_dias: overrides?.intervalo_dias ?? 30,
@@ -204,6 +208,37 @@ describe("FarmProtocolManager", () => {
     ).toBeInTheDocument();
   });
 
+  it("exibe codigo humano e versao da etapa", () => {
+    const protocol = buildProtocol({
+      id: "protocol-versioned",
+      nome: "Protocolo versionado",
+      payload: {
+        origem: "customizado_fazenda",
+        family_code: "raiva",
+      },
+    });
+    const item = buildProtocolItem({
+      id: "item-version-3",
+      protocolo_id: "protocol-versioned",
+      item_code: "raiva_d1",
+      version: 3,
+      produto: "Vacina antirrabica",
+    });
+
+    renderManager(
+      <FarmProtocolManager
+        activeFarmId="farm-1"
+        farmExperienceMode="completo"
+        catalogProducts={[] satisfies ProdutoVeterinarioCatalogEntry[]}
+        protocols={[protocol]}
+        protocolItems={[item]}
+        canManage
+      />,
+    );
+
+    expect(screen.getByText("raiva_d1 / v3")).toBeInTheDocument();
+  });
+
   it("ativa agenda operacional de Vaca Seca somente na copia da fazenda", () => {
     const protocol = buildProtocol({
       id: "dry-cow-protocol",
@@ -253,6 +288,17 @@ describe("FarmProtocolManager", () => {
         action: "UPDATE",
         record: expect.objectContaining({
           id: "dry-cow-item",
+          ativo: false,
+          superseded_at: expect.any(String),
+        }),
+      }),
+      expect.objectContaining({
+        table: "protocolos_sanitarios_itens",
+        action: "INSERT",
+        record: expect.objectContaining({
+          logical_item_key: "logical-item-1",
+          version: 2,
+          ativo: true,
           gera_agenda: true,
           intervalo_dias: 60,
           payload: expect.objectContaining({
@@ -270,6 +316,14 @@ describe("FarmProtocolManager", () => {
               materialization_contract_version: 1,
             }),
           }),
+        }),
+      }),
+      expect.objectContaining({
+        table: "protocolos_sanitarios_itens",
+        action: "UPDATE",
+        record: expect.objectContaining({
+          id: "dry-cow-item",
+          superseded_by_id: expect.any(String),
         }),
       }),
     ]);

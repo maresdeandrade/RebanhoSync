@@ -676,7 +676,7 @@ export function buildOperationalSummary(
       animalId: item.animal_id,
       loteId: item.lote_id,
       protocolId: protocolItem?.protocolo_id ?? null,
-      protocolItemId: protocolItem?.id ?? item.protocol_item_version_id,
+      protocolItemVersionId: protocolItem?.id ?? item.protocol_item_version_id,
       productId: getFutureDemandProductId(item, protocolItem),
       productName: getFutureDemandProductName(item, protocolItem),
       productUnit: getFutureDemandUnit(item, protocolItem),

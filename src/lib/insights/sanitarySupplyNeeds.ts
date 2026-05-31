@@ -24,7 +24,7 @@ export type SanitarySupplyAgendaItemInput = {
   loteId?: string | null;
 
   protocolId?: string | null;
-  protocolItemId?: string | null;
+  protocolItemVersionId?: string | null;
 
   productId?: string | null;
   productName?: string | null;
@@ -44,7 +44,7 @@ export type SanitarySupplyFilter = {
   animalIds?: readonly string[];
   domains?: readonly string[];
   protocolIds?: readonly string[];
-  protocolItemIds?: readonly string[];
+  protocolItemVersionIds?: readonly string[];
   productIds?: readonly string[];
   productNames?: readonly string[];
 };
@@ -123,7 +123,7 @@ function normalizeSanitarySupplyFilter(
   const animalIds = normalizeFilterValues(filter?.animalIds);
   const domains = normalizeFilterValues(filter?.domains);
   const protocolIds = normalizeFilterValues(filter?.protocolIds);
-  const protocolItemIds = normalizeFilterValues(filter?.protocolItemIds);
+  const protocolItemVersionIds = normalizeFilterValues(filter?.protocolItemVersionIds);
   const productIds = normalizeFilterValues(filter?.productIds);
   const productNames = normalizeFilterValues(filter?.productNames);
 
@@ -131,7 +131,9 @@ function normalizeSanitarySupplyFilter(
   if (animalIds.length > 0) normalized.animalIds = animalIds;
   normalized.domains = domains.length > 0 ? domains : [SANITARY_DOMAIN];
   if (protocolIds.length > 0) normalized.protocolIds = protocolIds;
-  if (protocolItemIds.length > 0) normalized.protocolItemIds = protocolItemIds;
+  if (protocolItemVersionIds.length > 0) {
+    normalized.protocolItemVersionIds = protocolItemVersionIds;
+  }
   if (productIds.length > 0) normalized.productIds = productIds;
   if (productNames.length > 0) normalized.productNames = productNames;
 
@@ -251,7 +253,7 @@ export function filterSanitarySupplyAgendaItems(input: {
       matchesFilterValue(item.loteId, filters.loteIds) &&
       matchesFilterValue(item.animalId, filters.animalIds) &&
       matchesFilterValue(item.protocolId, filters.protocolIds) &&
-      matchesFilterValue(item.protocolItemId, filters.protocolItemIds) &&
+      matchesFilterValue(item.protocolItemVersionId, filters.protocolItemVersionIds) &&
       matchesFilterValue(item.productId, filters.productIds) &&
       matchesFilterValue(item.productName, filters.productNames),
   );

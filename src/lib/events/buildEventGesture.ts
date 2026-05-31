@@ -118,12 +118,21 @@ export const buildEventGesture = (input: EventInput): EventGestureBuildResult =>
         evento_id: eventId,
         tipo: input.tipo,
         produto: input.produto.trim(),
+        protocol_item_version_id: input.protocoloItem?.id ?? null,
+        protocol_item_logical_key: input.protocoloItem?.logicalItemKey ?? null,
+        protocol_item_version: input.protocoloItem?.version ?? null,
+        protocol_item_snapshot: input.protocoloItem?.snapshot ?? null,
         payload: {
           ...buildVeterinaryProductMetadata({
             selectedProduct: input.produtoRef,
             typedName: input.produto,
           }),
           insumo_snapshot: insumoSnapshot,
+          protocol_item_version_id: input.protocoloItem?.id ?? null,
+          protocol_item_logical_key: input.protocoloItem?.logicalItemKey ?? null,
+          protocol_item_version: input.protocoloItem?.version ?? null,
+          protocol_item_code: input.protocoloItem?.itemCode ?? null,
+          protocol_item_snapshot: input.protocoloItem?.snapshot ?? null,
         },
       },
     });

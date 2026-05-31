@@ -450,7 +450,6 @@ create table public.protocolos_sanitarios_itens (
   id uuid primary key default gen_random_uuid(),
   fazenda_id uuid not null references public.fazendas(id) on delete cascade,
   protocolo_id uuid not null,
-  protocol_item_id uuid not null default gen_random_uuid(),
   version integer not null default 1 check (version > 0),
   tipo public.sanitario_tipo_enum not null,
   produto text not null,
@@ -468,7 +467,6 @@ create table public.protocolos_sanitarios_itens (
   updated_at timestamptz not null default now(),
   deleted_at timestamptz,
   unique (id, fazenda_id),
-  unique (fazenda_id, protocolo_id, protocol_item_id, version),
   constraint fk_protocolos_sanitarios_itens_protocolo_fazenda foreign key (protocolo_id, fazenda_id) references public.protocolos_sanitarios(id, fazenda_id) on delete cascade
 );
 
@@ -921,8 +919,8 @@ begin
       a.sexo,
       a.data_nascimento,
       ps.id as protocolo_id,
-      psi.id as protocolo_item_id,
-      psi.protocol_item_id as protocol_item_version_ref,
+      psi.id as protocol_item_version_id,
+      psi.id as protocol_item_version_ref,
       psi.tipo,
       psi.version,
       psi.intervalo_dias,
@@ -1473,8 +1471,8 @@ begin
     animal_id,
     candidate_dedup_key,
     'automatico'::public.agenda_source_kind_enum,
-    jsonb_build_object('protocolo_id', protocolo_id, 'protocol_item_id', protocolo_item_id),
-    protocolo_item_id,
+    jsonb_build_object('protocolo_id', protocolo_id, 'protocol_item_version_id', protocol_item_version_id),
+    protocol_item_version_id,
     planned_interval_days,
     planned_payload,
     'server',

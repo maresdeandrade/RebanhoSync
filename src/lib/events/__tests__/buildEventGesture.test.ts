@@ -32,6 +32,15 @@ describe("buildEventGesture", () => {
       },
       protocoloItem: {
         id: "piv-1",
+        logicalItemKey: "11111111-1111-4111-8111-111111111111",
+        version: 2,
+        itemCode: "dose-2",
+        snapshot: {
+          id: "piv-1",
+          logical_item_key: "11111111-1111-4111-8111-111111111111",
+          version: 2,
+          item_code: "dose-2",
+        },
         intervalDays: 30,
         doseNum: 2,
         geraAgenda: true,
@@ -47,6 +56,27 @@ describe("buildEventGesture", () => {
       produto_nome_catalogo: "Vacina A",
       produto_categoria: "Vacina",
       produto_origem: "catalogo",
+      protocol_item_version_id: "piv-1",
+      protocol_item_logical_key: "11111111-1111-4111-8111-111111111111",
+      protocol_item_version: 2,
+      protocol_item_code: "dose-2",
+      protocol_item_snapshot: {
+        id: "piv-1",
+        logical_item_key: "11111111-1111-4111-8111-111111111111",
+        version: 2,
+        item_code: "dose-2",
+      },
+    });
+    expect(result.ops[1].record).toMatchObject({
+      protocol_item_version_id: "piv-1",
+      protocol_item_logical_key: "11111111-1111-4111-8111-111111111111",
+      protocol_item_version: 2,
+      protocol_item_snapshot: {
+        id: "piv-1",
+        logical_item_key: "11111111-1111-4111-8111-111111111111",
+        version: 2,
+        item_code: "dose-2",
+      },
     });
   });
 

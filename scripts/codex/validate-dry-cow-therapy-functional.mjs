@@ -264,11 +264,11 @@ async function main() {
       await dbClient.query(
         `
           insert into public.protocolos_sanitarios_itens(
-            id, fazenda_id, protocolo_id, protocol_item_id, version, tipo, produto,
+            id, fazenda_id, protocolo_id, logical_item_key, item_code, version, ativo, tipo, produto,
             intervalo_dias, dose_num, gera_agenda, payload, client_id, client_op_id,
             client_recorded_at
           )
-          values ($1, $2, $3, $4, 1, 'medicamento', $5, 60, 1, false, $6,
+          values ($1, $2, $3, $4, 'secagem-intramamario', 1, true, 'medicamento', $5, 60, 1, false, $6,
                   'dry-cow-functional', $7, now())
         `,
         [

@@ -32,6 +32,10 @@ function readSupabaseStatusEnv() {
     }
   }
 
+  if (!env.FUNCTIONS_URL && env.API_URL) {
+    env.FUNCTIONS_URL = `${env.API_URL}/functions/v1`;
+  }
+
   for (const key of ["DB_URL", "API_URL", "FUNCTIONS_URL", "ANON_KEY", "SERVICE_ROLE_KEY"]) {
     if (!env[key]) {
       throw new Error(`supabase status -o env nao retornou ${key}`);
@@ -268,15 +272,22 @@ async function main() {
         "insert into public.protocolos_sanitarios(fazenda_id, nome, descricao) values ($1, $2, $3) returning id",
         [farmId, `Protocolo ${runId}`, "fixture funcional"],
       );
+      const logicalItemKey = randomUUID();
       const protocoloItem = await client.query(
         `
         insert into public.protocolos_sanitarios_itens(
-          fazenda_id, protocolo_id, tipo, produto, intervalo_dias, dose_num, gera_agenda, payload
+          fazenda_id, protocolo_id, logical_item_key, item_code, version, ativo,
+          tipo, produto, intervalo_dias, dose_num, gera_agenda, dedup_template, payload
         )
-        values ($1, $2, 'vacinacao', 'Produto baseline', 30, 1, true, '{"family_code":"baseline","official_item_code":"baseline-dose"}'::jsonb)
+        values (
+          $1, $2, $3, 'baseline-dose', 1, true,
+          'vacinacao', 'Produto baseline', 30, 1, true,
+          'sanitario:baseline:{animal_id}:baseline-dose',
+          '{"family_code":"baseline","official_item_code":"baseline-dose","item_code":"baseline-dose"}'::jsonb
+        )
         returning id
         `,
-        [farmId, protocolo.rows[0].id],
+        [farmId, protocolo.rows[0].id, logicalItemKey],
       );
       return {
         pastoId: pasto.rows[0].id,

@@ -84,8 +84,12 @@ const protocolItem = (
     id: overrides.id ?? "item-1",
     fazenda_id: "farm-1",
     protocolo_id: overrides.protocolo_id ?? "protocolo-1",
-    protocol_item_id: "canonical-item-1",
+    logical_item_key: "logical-item-1",
+    item_code: "dose_1",
     version: 1,
+    ativo: true,
+    superseded_by_id: null,
+    superseded_at: null,
     tipo: overrides.tipo ?? "vacinacao",
     produto: overrides.produto ?? "Vacina Protocolo",
     intervalo_dias: 365,
@@ -143,7 +147,10 @@ describe("resolveRegistrarSanitaryPackage", () => {
     expect(result.protocoloItem?.id).toBe("item-1");
     expect(result.sanitaryProductName).toBe("Vacina Digitada");
     expect(result.sanitaryProductMetadata).toMatchObject({
-      protocolo_item_id: "item-1",
+      protocol_item_version_id: "item-1",
+      protocol_item_logical_key: "logical-item-1",
+      protocol_item_version: 1,
+      protocol_item_code: "dose_1",
       protocolo_id: "protocolo-1",
     });
     expect(result.selectedProtocoloItemEvaluation?.item.id).toBe("item-1");

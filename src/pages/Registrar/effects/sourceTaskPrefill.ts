@@ -45,10 +45,7 @@ export async function loadRegistrarSourceTaskPrefillEffect(input: {
   }
 
   const sourceRef = sourceTask.source_ref;
-  const protocoloItemIdFromTask =
-    readString(sourceRef, "protocolo_item_id") ??
-    readString(sourceRef, "protocol_item_id") ??
-    sourceTask.protocol_item_version_id;
+  const protocoloItemIdFromTask = sourceTask.protocol_item_version_id;
   const protocoloIdFromRef = readString(sourceRef, "protocolo_id");
   const produtoFromRefOrPayload =
     readString(sourceRef, "produto") ?? readString(sourceTask.payload, "produto");

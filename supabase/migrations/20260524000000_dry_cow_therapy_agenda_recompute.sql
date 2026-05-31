@@ -137,8 +137,8 @@ begin
       a.fazenda_id,
       a.id as animal_id,
       ps.id as protocolo_id,
-      psi.id as protocolo_item_id,
-      psi.protocol_item_id as protocol_item_version_ref,
+      psi.id as protocol_item_version_id,
+      psi.id as protocol_item_version_ref,
       psi.tipo,
       psi.version,
       greatest(_as_of, facts.expected_calving_date - 60) as due_date,
@@ -220,8 +220,8 @@ begin
     c.animal_id,
     c.candidate_dedup_key,
     'automatico'::public.agenda_source_kind_enum,
-    jsonb_build_object('protocolo_id', c.protocolo_id, 'protocol_item_id', c.protocolo_item_id),
-    c.protocolo_item_id,
+    jsonb_build_object('protocolo_id', c.protocolo_id, 'protocol_item_version_id', c.protocol_item_version_id),
+    c.protocol_item_version_id,
     60,
     (c.payload - 'family_code') ||
       jsonb_build_object(

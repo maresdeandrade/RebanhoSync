@@ -74,9 +74,9 @@ describe("createAgendaActionController", () => {
 
     controller.goToRegistrar(
       createAgendaItem({
+        protocol_item_version_id: "protocolo-item-1",
         source_ref: {
           protocolo_id: "protocolo-1",
-          protocolo_item_id: "protocolo-item-1",
           produto: "Vacina X",
           tipo: "vacinacao",
         },
@@ -90,7 +90,7 @@ describe("createAgendaActionController", () => {
     expect(deps.concludePendingSanitary).not.toHaveBeenCalled();
   });
 
-  it("navigates with protocol_item_id legacy key from source_ref", () => {
+  it("does not use legacy source_ref key as protocol version id", () => {
     const deps = createDeps();
     const controller = createAgendaActionController(deps);
 
@@ -99,14 +99,14 @@ describe("createAgendaActionController", () => {
         protocol_item_version_id: null,
         source_ref: {
           protocolo_id: "protocolo-1",
-          protocol_item_id: "protocolo-item-1",
+          item_code: "dose_1",
           tipo: "vacinacao",
         },
       }),
     );
 
     expect(deps.navigate).toHaveBeenCalledWith(
-      "/registrar?sourceTaskId=agenda-1&dominio=sanitario&animalId=animal-1&loteId=lote-1&protocoloId=protocolo-1&protocoloItemId=protocolo-item-1&sanitarioTipo=vacinacao",
+      "/registrar?sourceTaskId=agenda-1&dominio=sanitario&animalId=animal-1&loteId=lote-1&protocoloId=protocolo-1&sanitarioTipo=vacinacao",
     );
   });
 

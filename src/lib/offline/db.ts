@@ -607,6 +607,16 @@ export class OfflineDB extends Dexie {
       state_sociedades_pecuarias: "id, fazenda_id, contraparte_id, status, deleted_at, [fazenda_id+contraparte_id], [fazenda_id+status]",
       state_sociedade_animais: "id, fazenda_id, sociedade_id, animal_id, status, deleted_at, [fazenda_id+sociedade_id], [fazenda_id+animal_id], [fazenda_id+status]",
     });
+
+    // Version 20: protocolos sanitarios com etapa logica e versao fisica imutavel.
+    this.version(20).stores({
+      state_agenda_itens:
+        "id, fazenda_id, [fazenda_id+data_prevista], [fazenda_id+status], animal_id, lote_id, protocol_item_version_id, protocol_item_logical_key, [fazenda_id+protocol_item_version_id], deleted_at",
+      state_protocolos_sanitarios_itens:
+        "id, fazenda_id, protocolo_id, logical_item_key, version, ativo, deleted_at, [fazenda_id+protocolo_id+logical_item_key], [fazenda_id+protocolo_id+logical_item_key+version], [fazenda_id+protocolo_id+ativo]",
+      event_eventos_sanitario:
+        "evento_id, fazenda_id, protocol_item_version_id, protocol_item_logical_key, deleted_at",
+    });
   }
 }
 
