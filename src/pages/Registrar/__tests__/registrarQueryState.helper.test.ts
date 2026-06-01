@@ -84,6 +84,24 @@ describe("parseRegistrarQueryState", () => {
     expect(parsed.shouldOpenChooseActionStep).toBe(true);
   });
 
+  it("abre etapa de acao para dominio com contexto de lote mesmo sem sourceTaskId", () => {
+    const searchParams = new URLSearchParams(
+      "dominio=sanitario&loteId=lote-1",
+    );
+
+    const parsed = parseRegistrarQueryState({
+      searchParams,
+      isQuickActionKey,
+      isReproTipoEnum,
+    });
+
+    expect(parsed.sourceTaskId).toBeNull();
+    expect(parsed.domain).toBe("sanitario");
+    expect(parsed.animalId).toBeNull();
+    expect(parsed.loteId).toBe("lote-1");
+    expect(parsed.shouldOpenChooseActionStep).toBe(true);
+  });
+
   it("normaliza parametros de caso clinico sanitario", () => {
     const searchParams = new URLSearchParams(
       "dominio=sanitario&animalId=a-1&sanitarioCasoId=caso-1&abrirCasoClinico=1&clinicalProtocolId=med-tpb&clinicalProtocolItemId=tpb-diminazeno",

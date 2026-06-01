@@ -74,6 +74,7 @@ describe("resolveManualSanitaryAgendaCompletionOpsEffect", () => {
       fazendaId: "farm-1",
       linkedEventId: "evt-1",
       animalId: "animal-1",
+      loteId: null,
       sanitarioTipo: "vacinacao",
       sanitaryProductName: "Vacina Raiva Herbivoros",
       protocoloItem: null,
@@ -84,6 +85,7 @@ describe("resolveManualSanitaryAgendaCompletionOpsEffect", () => {
     expect(loadPendingAgendaItems).toHaveBeenCalledWith({
       fazendaId: "farm-1",
       animalId: "animal-1",
+      loteId: null,
     });
     expect(ops).toEqual([
       {
@@ -110,6 +112,7 @@ describe("resolveManualSanitaryAgendaCompletionOpsEffect", () => {
       fazendaId: "farm-1",
       linkedEventId: "evt-1",
       animalId: "animal-1",
+      loteId: null,
       sanitarioTipo: "vacinacao",
       sanitaryProductName: "",
       protocoloItem: { id: "item-1" },
@@ -119,5 +122,72 @@ describe("resolveManualSanitaryAgendaCompletionOpsEffect", () => {
 
     expect(ops).toHaveLength(1);
     expect(ops[0].record.id).toBe("agenda-1");
+  });
+
+  it("conclui pendencias sanitarias dos animais do lote quando nao ha animal individual", async () => {
+    const loadPendingAgendaItems = vi.fn(async () => [
+      agendaItem({
+        id: "agenda-a1-recente",
+        animal_id: "animal-1",
+        lote_id: "lote-1",
+        data_prevista: "2026-05-10",
+        protocol_item_version_id: null,
+        source_ref: { produto: "Vacina Lote", tipo: "vacinacao" },
+      }),
+      agendaItem({
+        id: "agenda-a1-antiga",
+        animal_id: "animal-1",
+        lote_id: "lote-1",
+        data_prevista: "2026-05-01",
+        protocol_item_version_id: null,
+        source_ref: { produto: "Vacina Lote", tipo: "vacinacao" },
+      }),
+      agendaItem({
+        id: "agenda-a2",
+        animal_id: "animal-2",
+        lote_id: "lote-1",
+        data_prevista: "2026-05-03",
+        protocol_item_version_id: null,
+        source_ref: { produto: "Vacina Lote", tipo: "vacinacao" },
+      }),
+    ]);
+
+    const ops = await resolveManualSanitaryAgendaCompletionOpsEffect({
+      fazendaId: "farm-1",
+      linkedEventId: "evt-lote-1",
+      animalId: null,
+      loteId: "lote-1",
+      sanitarioTipo: "vacinacao",
+      sanitaryProductName: "Vacina Lote",
+      protocoloItem: null,
+      loadPendingAgendaItems,
+      loadProtocolItems: vi.fn(async () => []),
+    });
+
+    expect(loadPendingAgendaItems).toHaveBeenCalledWith({
+      fazendaId: "farm-1",
+      animalId: null,
+      loteId: "lote-1",
+    });
+    expect(ops).toEqual([
+      {
+        table: "agenda_itens",
+        action: "UPDATE",
+        record: {
+          id: "agenda-a1-antiga",
+          status: "concluido",
+          source_evento_id: "evt-lote-1",
+        },
+      },
+      {
+        table: "agenda_itens",
+        action: "UPDATE",
+        record: {
+          id: "agenda-a2",
+          status: "concluido",
+          source_evento_id: "evt-lote-1",
+        },
+      },
+    ]);
   });
 });
