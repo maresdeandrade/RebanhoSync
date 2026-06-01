@@ -157,6 +157,7 @@ export async function resolveRegistrarNonFinancialFinalizePlan(input: {
     fazendaId: string;
     linkedEventId: string;
     animalId: string | null;
+    loteId: string | null;
     sanitarioTipo: SanitarioTipoEnum;
     sanitaryProductName: string;
     protocoloItem: ProtocoloSanitarioItem | null;
@@ -439,6 +440,7 @@ export async function resolveRegistrarNonFinancialFinalizePlan(input: {
           fazendaId: input.fazendaId,
           linkedEventId: built.eventId,
           animalId: animalId ?? null,
+          loteId: targetLoteId,
           sanitarioTipo: input.sanitarioData.tipo,
           sanitaryProductName: input.sanitaryProductName,
           protocoloItem: input.protocoloItem,

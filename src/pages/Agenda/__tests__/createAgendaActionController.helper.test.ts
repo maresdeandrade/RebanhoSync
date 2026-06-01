@@ -90,6 +90,27 @@ describe("createAgendaActionController", () => {
     expect(deps.concludePendingSanitary).not.toHaveBeenCalled();
   });
 
+  it("navigates lote-only agenda item to Registrar with lote context", () => {
+    const deps = createDeps();
+    const controller = createAgendaActionController(deps);
+
+    controller.goToRegistrar(
+      createAgendaItem({
+        animal_id: null,
+        lote_id: "lote-1",
+        source_ref: {
+          protocolo_id: "protocolo-1",
+          produto: "Vacina Lote",
+          tipo: "vacinacao",
+        },
+      }),
+    );
+
+    expect(deps.navigate).toHaveBeenCalledWith(
+      "/registrar?sourceTaskId=agenda-1&dominio=sanitario&loteId=lote-1&protocoloId=protocolo-1&produto=Vacina+Lote&sanitarioTipo=vacinacao",
+    );
+  });
+
   it("does not use legacy source_ref key as protocol version id", () => {
     const deps = createDeps();
     const controller = createAgendaActionController(deps);

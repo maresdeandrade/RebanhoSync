@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { buildAgendaGroupRecommendation } from "@/lib/agenda/groupRecommendations";
+import {
+  buildAgendaGroupRecommendation,
+  canUseGroupedAnimalRegisterAction,
+  countAgendaRecommendationCandidates,
+} from "@/lib/agenda/groupRecommendations";
 
 function createRow(
   overrides: Partial<{
@@ -134,5 +138,22 @@ describe("agenda group recommendations", () => {
       targetLabel: "Lote Coletivo",
       tone: "warning",
     });
+  });
+
+  it("permite acao agrupada por animal somente com uma demanda aberta", () => {
+    expect(
+      canUseGroupedAnimalRegisterAction([
+        createRow({ id: "agenda-1" }),
+      ]),
+    ).toBe(true);
+
+    const rows = [
+      createRow({ id: "agenda-1", tipo: "vacinacao" }),
+      createRow({ id: "agenda-2", tipo: "vermifugacao" }),
+      createRow({ id: "agenda-3", status: "concluido" }),
+    ];
+
+    expect(countAgendaRecommendationCandidates(rows)).toBe(2);
+    expect(canUseGroupedAnimalRegisterAction(rows)).toBe(false);
   });
 });

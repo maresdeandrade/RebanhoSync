@@ -1,7 +1,10 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { buildAgendaBadgeOverflowLayout } from "@/lib/agenda/badgeOverflow";
-import { buildAgendaGroupRecommendation } from "@/lib/agenda/groupRecommendations";
+import {
+  buildAgendaGroupRecommendation,
+  canUseGroupedAnimalRegisterAction,
+} from "@/lib/agenda/groupRecommendations";
 import { getAnimalBreedLabel } from "@/lib/animals/catalogs";
 import { cn } from "@/lib/utils";
 import {
@@ -102,6 +105,7 @@ export function AnimalGroupCard({
     hasQuickFiltersActive && group.visibleRows.length < group.rows.length;
   const recommendation = buildAgendaGroupRecommendation(displayedRows);
   const recommendedRow = recommendation
+    && canUseGroupedAnimalRegisterAction(displayedRows)
     ? (displayedRows.find((row) => row.item.id === recommendation.rowId) ??
       null)
     : null;
@@ -218,4 +222,3 @@ export function AnimalGroupCard({
     </Card>
   );
 }
-

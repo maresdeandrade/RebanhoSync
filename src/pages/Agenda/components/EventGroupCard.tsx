@@ -116,6 +116,7 @@ export function EventGroupCard({
                 </StatusBadge>
               ) : null}
             </div>
+            <p className="text-sm text-muted-foreground">{group.subtitle}</p>
             <div className="flex flex-wrap gap-2">
               {group.summary.animalBadges.map((badge, index) => {
                 const animalFilter = mapAnimalBadgeToQuickFilter(badge.key);
@@ -212,4 +213,3 @@ export function EventGroupCard({
     </Card>
   );
 }
-

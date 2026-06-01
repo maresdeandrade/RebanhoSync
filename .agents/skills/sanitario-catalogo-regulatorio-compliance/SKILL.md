@@ -1,7 +1,6 @@
-```markdown
 ---
 name: sanitario-catalogo-regulatorio-compliance
-description: Use when a RebanhoSync task touches sanitary regulatory catalog, official rules, state overlays, compliance, feed-ban, suspected clinical cases, notifiable diseases, biosafety, or regulatory/documental checklists.
+description: Use when a RebanhoSync task touches sanitary regulatory catalog, official rules, state overlays, compliance, feed-ban, suspected clinical cases, notifiable diseases, biosafety, regulatory/documental checklists, regulatory read models, or compliance guards.
 ---
 
 # Sanitário Catálogo Regulatório Compliance
@@ -17,182 +16,261 @@ This skill is for regulatory/compliance intelligence, not routine manual sanitar
 ## When to use
 
 Use when task touches:
-* Catálogo oficial sanitário;
-* Base regulatória oficial;
-* Overlay estadual;
-* Compliance sanitário;
-* Feed-ban;
-* Doença notificável;
-* Suspeita clínica;
-* Checklist documental;
-* Biossegurança;
-* Alerta regulatório;
-* Terapia/protocolo clínico não recorrente;
-* Bloqueio regulatório;
-* Regulatory read model;
-* Farm sanitary configuration.
+
+- Catálogo oficial sanitário;
+- Base regulatória oficial;
+- Overlay estadual;
+- Compliance sanitário;
+- Feed-ban;
+- Doença notificável;
+- Suspeita clínica;
+- Checklist documental;
+- Biossegurança;
+- Alerta regulatório;
+- Terapia/protocolo clínico não recorrente;
+- Bloqueio regulatório;
+- Regulatory read model;
+- Farm sanitary configuration;
+- Regulatory overlay runtime;
+- Compliance guards;
+- Checklist contextual vs pendência acionável.
 
 ---
 
 ## Do not use when
 
-Do not use when the task is only:
-* Manual sanitary event registration;
-* Product autocomplete;
-* Dose field;
-* Stock lot consumption;
-* Routine agenda completion;
-* UI visual adjustment of a form.
+Do not use as primary skill when task is only about:
 
-### Use instead:
-* `sanitario-registro-operacional` for operational event/agenda/product flows;
-* `migrations-rls-contracts` if DB/RLS/RPC is touched;
-* `sync-offline-rollback` if offline/sync is touched.
+- Registro de vacinação/tratamento;
+- Dose/produto/lote de estoque;
+- Baixa de estoque;
+- Finalização de agenda sanitária;
+- Custo de aplicação;
+- Correção de evento sanitário executado.
+
+Use `sanitario-registro-operacional` for those cases.
 
 ---
 
-## Read first
+## Core separation
 
-1. `AGENTS.md`
-2. `.agents/rules/CORE_RULES.md`
-3. `.agents/rules/CONTEXT_LOADING.md`
-4. `.agents/rules/no-broad-context.md`
+Regulatory/compliance objects are not the same as operational facts.
 
-> ⚙️ **Execution Rule:** For commands and validation, follow `.agents/rules/rtk.md`.
-
-### Read as needed:
-* `docs/domain/SANITARIO.md`
-* `docs/context/SOURCE_OF_TRUTH.md`
-* `docs/technical/SUPABASE_RLS.md` if backend/RLS/RPC is involved;
-* Active official/regulatory data files if present;
-* Local `AGENTS.md` in affected folders.
-
----
-
-## Source of truth
-
-In case of conflict, trust:
-1. Code + active migrations;
-2. Official active regulatory catalog, if present;
-3. `docs/context/PROJECT_STATUS.md`;
-4. Active normative docs;
-5. Derived docs;
-6. Archive/history;
-7. This skill.
+| Conceito | Papel |
+|---|---|
+| Catálogo oficial | Base regulatória global |
+| Overlay da fazenda | Configuração/contexto tenant |
+| Checklist regulatório | Contexto ou apoio documental |
+| Runtime de compliance | Estado explícito registrado |
+| Pendência acionável | Ação real pendente |
+| Evento sanitário | Fato executado |
+| Ocorrência de biossegurança | Evento contextual real |
+| Suspeita notificável | Ocorrência/caso vinculado |
 
 ---
 
-## Hard constraints
+## Non-negotiable rules
 
-* Do not mix official regulatory base with farm protocol execution.
-* Do not reduce official calendar/rules to only `interval_days`.
-* Do not treat regulatory checklist availability as executed sanitary event.
-* Do not create event from checklist without real occurrence.
-* Do not make compliance warning a universal operational blocker unless explicitly modeled.
-* Do not infer carência active/free without explicit technical source.
-* Do not infer sale/slaughter readiness.
-* Keep regulatory signal separate from operational protocol and event.
-* Preserve tenant isolation and auditability.
-* Prefer explicit status: `confirmed`, `suspected`, `pending validation`, `blocked`, `not applicable`.
-
----
-
-## Conceptual separation
-
-* **Official Base:** Represents external/reference rule (disease, notification, rule, document, vaccine/calendar reference, feed-ban reference, biosafety requirement).
-* **Farm Overlay/Config:** Represents farm-specific configuration (enabled/disabled, state/region applicability, farm practice, local compliance setting).
-* **Operational Protocol:** Represents farm rule/configuration for future tasks.
-* **Operational Agenda:** Represents pending/intended task.
-* **Event:** Represents real executed occurrence.
-* **Compliance Signal/Checklist:** Represents support for decision and documentation, not execution.
+- Regulatory catalog activated ≠ pending task.
+- Checklist available ≠ mandatory routine task.
+- Missing runtime ≠ non-compliance.
+- No disease suspicion ≠ pending task.
+- Biosafety default = `sem_ocorrencia_informada`.
+- `sem_ocorrencia_informada` is not “conforme”.
+- Notifiable disease requires concrete suspicion/case.
+- Suspicion must link to animal, animals, lot or event.
+- Corrective pending action must link to real occurrence/event.
+- Protocol is rule/configuration, not execution.
+- Agenda is future intention, not historical proof.
+- Tags/signals are not primary truth.
 
 ---
 
-## Procedure
+## Overlay actionability
 
-### 1. Classify regulatory object
-Classify as: official catalog, state overlay, farm compliance config, checklist, suspected clinical case, notifiable disease, feed-ban, biosafety, non-recurring clinical protocol, or regulatory read model.
+Compliance/read models must distinguish:
 
-### 2. Check if it creates fact
-Ask: is there a real occurrence? Was there execution? Is there evidence? Should it create event? Should it create agenda? Should it only create signal/checklist?  
-> **Default:** Checklist/compliance does not create event.
+```ts
+RegulatoryOverlayActionability = "contextual" | "actionable"
 
-### 3. Check blocking semantics
-Classify: informational, warning, requires review, operational block, or regulatory block.  
-> **Constraint:** Do not promote warning to block without explicit rule.
+```
 
-### 4. Check source
-Verify official source field, version/date, applicability, state/region, farm override, and audit trail.
+Rules:
 
-### 5. Check UI language
-Avoid saying: “livre de carência” without source, “apto para abate” without source, “pronto para venda” without source, or “protocolo executado” if only checklist/protocol exists.
+* no `overlay_runtime` → `contextual`;
+* runtime conforme → `contextual` or `resolved`;
+* runtime pendente → `actionable`;
+* runtime `ajuste_necessario` → `actionable`;
+* occurrence/case/notificação real → `actionable`;
+* technical block explicitly defined → may be `actionable`.
 
----
+Contextual entries must not:
 
-## Edge cases
+* count as operational pending;
+* appear as overdue;
+* block routine handling;
+* generate agenda automatically;
+* be treated as proof of non-compliance.
 
-Consider:
-* Suspected disease without confirmation;
-* Notification required but not submitted;
-* Checklist available but unchanged;
-* Disease rule varies by state;
-* Farm overlay disables irrelevant requirement;
-* Old regulatory pack vs new pack;
-* Feed-ban affects product category but not event history;
-* Biosafety occurrence vs routine checklist.
+### Biosafety
 
----
+Biosafety must be modeled as contextual occurrence.
+
+Routine state:
+`sem_ocorrencia_informada`
+
+Allowed states:
+
+* `sem_ocorrencia_informada`
+* `ocorrencia_registrada`
+* `ocorrencia_com_pendencia`
+
+Do not use conforme as default.
+
+Biosafety form/wizard should open only by explicit user action.
+
+Biosafety may generate pending action only when:
+
+* real occurrence exists;
+* `gera_pendencia=true`;
+* correction deadline exists or explicit rule requires one.
+
+### Notifiable diseases
+
+Notifiable diseases must not be generated as a general farm pending task.
+
+Allowed behavior:
+
+* no suspicion → no pending task;
+* suspicion with animal → `alerta_sanitario` and `sanitario_casos`, when available;
+* suspicion with multiple animals → event payload preserves `animal_ids`;
+* suspicion with lot and no animal → event/payload until lot-level case exists;
+* notification pending → specific pending action linked to occurrence/event.
+
+Never create a task for “confirming absence of disease”.
+
+### Checklists
+
+Checklist can be:
+
+* contextual;
+* tied to transport/movement;
+* tied to product use;
+* tied to occurrence;
+* tied to feed-ban;
+* tied to corrective action.
+
+Checklist must not be:
+
+* generic farm pending task by default;
+* universal compliance proof;
+* replacement for event record;
+* source of withdrawal;
+* source of commercial eligibility.
+
+### Feed-ban and hard regulatory blocks
+
+Feed-ban may be treated as a specific regulatory guard when a technical rule exists.
+
+Do not generalize feed-ban behavior to all checklists.
+
+A hard block must declare:
+
+* source;
+* rule;
+* affected operation;
+* how user resolves it;
+* whether it creates a specific pending action.
+
+### Clinical suspicion and non-recurring clinical protocol
+
+Clinical suspicion is not routine recurring protocol by default.
+
+Use:
+
+* event/case;
+* occurrence;
+* alert;
+* optional corrective pending action.
+
+Do not use:
+
+* automatic general agenda;
+* checklist to confirm absence;
+* protocol execution without event.
+
+### Correction and reconciliation
+
+Compliance corrections must preserve auditability.
+
+Allowed:
+
+* event of resolution;
+* event of cancellation;
+* event of correction/complement;
+* linked agenda completion/cancellation.
+
+Forbidden:
+
+* destructive update of original fact;
+* deleting evidence silently;
+* turning contextual overlay into historical fact.
+
+### Tests expected
+
+When changing compliance behavior, test:
+
+* contextual overlay does not count as pending;
+* no runtime does not mean non-compliance;
+* biosafety checklist available does not block handling;
+* disease notification checklist does not create farm-level pending task;
+* suspicion without clinical link is blocked;
+* suspicion with animal/lot is accepted;
+* runtime pending becomes actionable;
+* occurrence with pending creates specific agenda;
+* checklist contextual does not create agenda.
 
 ## Validation
 
-Follow `.agents/rules/rtk.md`.
+Minimum:
 
-### Minimum check:
 ```bash
-git status --short --untracked-files=all
+pnpm test
+pnpm run lint
+pnpm run build
 
 ```
 
-* plus the related tests.
-
-### If DB/RLS/RPC is touched:
+If touching Supabase schema/RLS/RPC/seed:
 
 ```bash
-rtk node scripts/codex/validate-supabase-baseline-functional.mjs
+supabase db reset
+node scripts/codex/validate-supabase-baseline-functional.mjs
 
 ```
 
-### If UI/domain logic is touched:
+If touching regulatory/compliance flow:
 
 ```bash
-rtk pnpm run lint
-rtk pnpm test
-rtk pnpm run build
+powershell -File scripts/codex/validate.ps1 -TouchedPaths "src/lib/sanitario","src/components/sanitario","src/pages/Registrar","src/pages/Agenda","src/lib/events","src/lib/reports","src/lib/insights","src/features/operationalInsights","supabase/migrations"
+graphify update .
+git diff --check
 
 ```
+
+## Output expected
+
+Report:
+
+* Files changed.
+* Regulatory/compliance rule changed.
+* Whether entry is contextual or actionable.
+* Whether agenda/event/protocol contract was affected.
+* Tests added/updated.
+* Validation commands and results.
+* Risks remaining.
 
 ---
-
-## Expected output
-
-Return:
-
-1. **Regulatory/compliance object affected:** [Object identifier]
-2. **Source and applicability assessment:** [Context metadata status]
-3. **Fact, agenda, signal, or checklist boundary:** [Creation flow check]
-4. **Blocking semantics:** [Action constraint level]
-5. **Riscos/edge cases:** [List of exception pathways]
-6. **Tests required/executed:** [Scenarios covered]
-7. **Riscos/pendências:** [Up to 3 points]
-
----
-
-## Output rules
-
-* Do not convert compliance into event without real occurrence.
-* Do not infer carência/venda/abate.
-* Separate regulatory rule, farm overlay, operational protocol, agenda, and event.
-* Separate confirmed, inferred, and recommendation.
 
 ```
 

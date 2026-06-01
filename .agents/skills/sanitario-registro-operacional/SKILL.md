@@ -1,14 +1,14 @@
 ```markdown
 ---
 name: sanitario-registro-operacional
-description: Use when a RebanhoSync task touches operational sanitary registration, sanitary agenda completion, veterinary products, doses, stock lot consumption, or sanitary event creation.
+description: Use when a RebanhoSync task touches operational sanitary registration, sanitary agenda completion, veterinary products, doses, stock lot consumption, sanitary event creation, biosecurity occurrence recording, or corrective sanitary pending actions.
 ---
 
 # Sanitário Registro Operacional
 
 ## Mission
 
-Protect the operational sanitary flow of RebanhoSync: sanitary agenda, sanitary event registration, veterinary products, stock lots, doses, costs, and execution records.
+Protect the operational sanitary flow of RebanhoSync: sanitary agenda, sanitary event registration, veterinary products, stock lots, doses, costs, execution records, biosecurity occurrences and corrective sanitary pending actions.
 
 This skill is for operational sanitary execution, not regulatory catalog/compliance design.
 
@@ -17,187 +17,203 @@ This skill is for operational sanitary execution, not regulatory catalog/complia
 ## When to use
 
 Use when task touches:
-* Registro de evento sanitário;
-* Vacinação;
-* Vermifugação;
-* Tratamento;
-* Exame sanitário;
-* Conclusão de agenda sanitária;
-* Vínculo agenda sanitária → evento;
-* Produtos veterinários;
-* Dose/quantidade/unidade;
-* Lote de estoque;
-* Baixa de estoque por evento sanitário;
-* Snapshot econômico do consumo sanitário;
-* UI operacional de registrar sanitário.
+
+- Registro de evento sanitário;
+- Vacinação;
+- Vermifugação;
+- Tratamento;
+- Exame sanitário;
+- Conclusão de agenda sanitária;
+- Vínculo agenda sanitária → evento;
+- Produtos veterinários;
+- Dose/quantidade/unidade;
+- Lote de estoque;
+- Baixa de estoque por evento sanitário;
+- Snapshot econômico do consumo sanitário;
+- UI operacional de registrar sanitário;
+- Ocorrência de biossegurança;
+- Suspeita notificável no fluxo de registro;
+- Pendência corretiva sanitária vinculada a ocorrência;
+- Correção/complemento/estorno sanitário.
 
 ---
 
 ## Do not use when
 
-Do not use when task is mainly about:
-* Catálogo oficial regulatório;
-* Overlay estadual;
-* Feed-ban;
-* Doença notificável;
-* Suspeita clínica ampla;
-* Checklist de biossegurança;
-* Bloqueio regulatório;
-* Compliance documental.
+Do not use as primary skill when the task is only about:
 
-### Use instead:
-* `sanitario-catalogo-regulatorio-compliance` for regulatory/compliance work;
-* `sync-offline-rollback` if sync/rollback is main risk;
-* `migrations-rls-contracts` if DB/RLS/RPC is touched.
+- Catálogo oficial sanitário;
+- Overlay estadual;
+- Compliance regulatório puro;
+- Feed-ban conceitual;
+- Base legal/documental;
+- Redação de manual sem mudança operacional.
+
+Use `sanitario-catalogo-regulatorio-compliance` for those cases.
 
 ---
 
-## Read first
+## Core contract
 
-1. `AGENTS.md`
-2. `.agents/rules/CORE_RULES.md`
-3. `.agents/rules/CONTEXT_LOADING.md`
-4. `.agents/rules/no-broad-context.md`
-
-> ⚙️ **Execution Rule:** For commands and validation, follow `.agents/rules/rtk.md`.
-
-### Read as needed:
-* `docs/domain/SANITARIO.md`
-* `docs/context/SOURCE_OF_TRUTH.md`
-* `docs/technical/OFFLINE_SYNC.md` if sync/gesture is involved;
-* `docs/technical/SUPABASE_RLS.md` if backend/RPC/RLS is involved;
-* Local `AGENTS.md` in affected folders.
+- Agenda = intenção/tarefa futura.
+- Evento = fato executado append-only.
+- Protocolo = regra/configuração.
+- Produto aplicado = evento sanitário estruturado.
+- Baixa de estoque = movimento vinculado ao evento.
+- Carência = evento sanitário estruturado.
+- Ocorrência de biossegurança = evento append-only com payload estruturado.
+- Pendência corretiva = agenda específica vinculada ao evento de ocorrência.
+- Correção = novo evento vinculado, não edição destrutiva.
 
 ---
 
-## Source of truth
+## Required invariants
 
-In case of conflict, trust:
-1. Code + active migrations;
-2. `docs/context/PROJECT_STATUS.md`;
-3. Active normative docs;
-4. Derived docs;
-5. Archive/history;
-6. This skill.
+### Agenda
 
----
+- Agenda não é histórico.
+- Agenda não prova execução.
+- Agenda não prova ausência de doença.
+- Agenda corretiva só nasce de ocorrência real.
+- Pendência corretiva deve preservar `source_evento_id`.
 
-## Hard constraints
+### Evento sanitário
 
-* **Agenda:** Agenda sanitária remains intention/future task until event execution.
-* **Evento:** Evento sanitário is the executed fact.
-* **Protocolo:** Protocolo sanitário is rule/configuration, not execution.
-* **Garantia:** Do not treat checklist/regulatory availability as executed event.
-* **Limitação:** Do not use tags/signals as source of sanitary truth.
-* **Métricas:** Do not infer carência as active/free without explicit technical source.
-* **Métricas:** Do not infer animal is ready for sale/slaughter from sanitary markers.
-* Preserve stock lot consumption idempotency.
-* Preserve offline-first and rollback.
-* Preserve tenant isolation.
+- Evento sanitário é fonte factual.
+- Deve preservar `protocol_item_version_id` e `protocol_item_snapshot` quando vier de protocolo.
+- Deve preservar produto/lote/dose/via/responsável/carência/custo quando aplicável.
+- Não reinterpretar evento passado pela versão ativa atual do protocolo.
 
----
+### Produto e estoque
 
-## Operational flow checks
+- Se há produto estruturado, exigir dose, unidade e via.
+- Se há `estoque_lote_id`, copiar lote/validade/custo como snapshot quando disponível.
+- Baixa de estoque deve ser idempotente.
+- Retry/sync não pode duplicar baixa.
+- Saldo negativo não deve ser aceito silenciosamente.
 
-### Agenda completion
-Verify:
-* Agenda item is linked only when execution really occurs;
-* Direct completion without event is not treated as historical fact;
-* Sanitary RPC or flow creates/vinculates event when required;
-* Dedup prevents duplicate active agenda;
-* Canceled agenda is not event history.
+### Carência
 
-### Event creation
-Verify:
-* `eventos` base record exists when historical fact is created;
-* Sanitary detail table is populated when applicable;
-* Product, dose, unit, animal/lote, date, and responsible info are validated;
-* Correction uses proper correction/contra-launch pattern when applicable.
+- Carência só vem de evento sanitário estruturado.
+- Sem carência configurada deve ser registrado como `null`, não inferido.
+- Livre de carência não autoriza venda/abate.
 
-### Product / stock
-Verify:
-* Veterinary product is structured reference;
-* Stock lot reference is explicit when consumed;
-* Quantity and unit are coherent;
-* Cost snapshot is captured when relevant;
-* Automatic stock decrease is idempotent;
-* Missing cost/product/lote becomes exception, not silent truth.
+### Biossegurança
 
-### Offline/sync
-Verify:
-* Gesture is idempotent;
-* Rollback has enough data;
-* Retry does not duplicate event/stock decrease;
-* Partial success is reconciled.
+- Rotina normal = `sem_ocorrencia_informada`.
+- Esse estado não significa “conforme”.
+- Wizard não deve abrir automaticamente.
+- Ocorrência só existe quando usuário registra ocorrência real.
+- `gera_pendencia=false` não cria agenda.
+- `gera_pendencia=true` + `prazo_correcao` pode criar agenda específica.
+
+### Doença notificável
+
+- Não criar pendência geral para confirmar ausência de doença.
+- Suspeita notificável exige `animal_id`, `animal_ids` ou `lote_id`.
+- Com animal, pode abrir `alerta_sanitario` e `sanitario_casos`.
+- Com lote sem animal, registrar em evento/payload até existir caso coletivo por lote.
 
 ---
 
-## Edge cases
+## Correction/reconciliation rules
 
-Consider:
-* Agenda item already concluded;
-* Product without stock lot;
-* Missing dose;
-* Animal sold/dead/inactive;
-* Lote with mixed animals;
-* Retry after offline failure;
-* Duplicate tap/submit;
-* Stock insufficient;
-* Cost absent;
-* Event correction or reversal.
+When fixing a sanitary problem:
+
+- Do not update the original event destructively.
+- Create a linked correction/complement/reversal event.
+- Preserve original event auditability.
+- Use explicit reason/motivo.
+- Keep stock reversal/contra-lançamento idempotent.
+- Do not silently delete or overwrite stock movements.
+
+Allowed correction types:
+
+- `complemento_rastreabilidade`;
+- `correcao_custo`;
+- `correcao_lote_estoque`;
+- `estorno_baixa_estoque`;
+- `contra_lancamento_estoque`;
+- `resolucao_ocorrencia_biosseguranca`;
+- `cancelamento_ocorrencia_biosseguranca`;
+- `encerramento_pendencia_corretiva`.
+
+---
+
+## Forbidden patterns
+
+- Using agenda as event history.
+- Using protocol as execution.
+- Using regulatory checklist as a routine required task.
+- Creating general farm pending task for disease absence.
+- Inferring withdrawal from protocol/catalog.
+- Inferring commercial sale/slaughter eligibility.
+- Updating historical event destructively.
+- Duplicating stock consumption on retry.
+- Persisting a tag/signal as primary truth.
+- Putting critical sanitary rule only inside React UI.
+
+---
+
+## Expected implementation shape
+
+Prefer:
+
+- pure helpers for validation;
+- operation builders;
+- event payload contract tests;
+- small UI adapters;
+- focused tests by surface.
+
+Avoid:
+
+- broad refactors;
+- hidden side effects;
+- UI-only business rules;
+- cross-domain changes;
+- implicit corrections.
 
 ---
 
 ## Validation
 
-Follow `.agents/rules/rtk.md`.
+Minimum:
 
-### Minimum check:
 ```bash
-git status --short --untracked-files=all
+pnpm test
+pnpm run lint
+pnpm run build
 
 ```
 
-* plus the related tests.
-
-### If sync/stock/event flow is touched:
+If touching Supabase schema/RLS/RPC/seed/sync:
 
 ```bash
-rtk pnpm run lint
-rtk pnpm test
-rtk pnpm run build
+supabase db reset
+node scripts/codex/validate-supabase-baseline-functional.mjs
 
 ```
 
-### If Supabase/RPC/RLS is touched:
+If touching operational sanitary flow:
 
 ```bash
-rtk node scripts/codex/validate-supabase-baseline-functional.mjs
+powershell -File scripts/codex/validate.ps1 -TouchedPaths "src/lib/sanitario","src/lib/events","src/pages/Registrar","src/pages/Agenda","src/lib/offline","src/lib/reports","src/lib/insights","src/features/operationalInsights"
+graphify update .
+git diff --check
 
 ```
 
----
+## Output expected
 
-## Expected output
+Report:
 
-Return:
-
-1. **Sanitary operation affected:** [Flow identifier]
-2. **Source-of-truth assessment:** [Invariants status]
-3. **Agenda/event/protocol separation check:** [Contracts separation verification]
-4. **Stock/product/cost impact:** [Inventory adjustments status]
-5. **Sync/rollback risk:** [Idempotency status]
-6. **Tests required/executed:** [Scenarios covered]
-7. **Riscos/pendências:** [Up to 3 points]
-
----
-
-## Output rules
-
-* Do not treat agenda as historical fact.
-* Do not convert checklist into execution.
-* Do not infer carência/venda/abate.
-* Separate confirmed behavior, inference, and recommendation.
+* Files changed.
+* Operational rule changed.
+* Primary source used.
+* Tests added/updated.
+* Validation commands and results.
+* Risks remaining.
+* Whether agenda/event/protocol/compliance contracts were affected.
 
 ```
 

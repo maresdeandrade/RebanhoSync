@@ -15,6 +15,7 @@ function createAgendaInput() {
       },
       payload: {},
       protocol_item_version_id: null,
+      protocol_item_code: null,
       interval_days_applied: 180,
       dedup_key: null,
     },
@@ -38,7 +39,7 @@ describe("agenda grouping", () => {
 
     expect(meta).toEqual({
       key: "protocol-version:item-version-1",
-      title: "Vacina Brucelose B19",
+      title: "Brucelose oficial D1",
       subtitle: "Brucelose oficial | Dose 1 | 180d | Automatico",
     });
   });
@@ -92,5 +93,56 @@ describe("agenda grouping", () => {
     expect(left.subtitle).toBe("Vacinacao | 180d | Manual");
     expect(right.subtitle).toBe("Vacinacao | 180d | Manual");
     expect(left.key).not.toBe(right.key);
+  });
+
+  it("usa nome do protocolo e fase curta em vez de indicacao longa", () => {
+    const meta = buildAgendaEventGroupMeta({
+      ...createAgendaInput(),
+      produtoLabel: "Vacina",
+      item: {
+        ...createAgendaInput().item,
+        protocol_item_code: "raiva_d1",
+        source_ref: {
+          protocolo_id: "protocol-1",
+          indicacao:
+            "Dose inicial somente por protocolo operacional ativo, risco medio/alto e ativacao explicita.",
+          dose_num: 1,
+        },
+      },
+      protocol: {
+        id: "protocol-1",
+        nome: "Raiva dos Herbivoros",
+      },
+    });
+
+    expect(meta.title).toBe("Raiva dos Herbivoros D1");
+  });
+
+  it("normaliza controle estrategico de verminose sem anexar mes e instrucao", () => {
+    const meta = buildAgendaEventGroupMeta({
+      item: {
+        dominio: "sanitario",
+        tipo: "vermifugacao",
+        source_kind: "automatico",
+        source_ref: {
+          protocolo_id: "protocol-verm",
+          indicacao:
+            "Mes 5 (maio) - Inicio da seca. Reduzir carga parasitaria nos animais e pastagens.",
+          dose_num: 1,
+        },
+        payload: {},
+        protocol_item_version_id: null,
+        protocol_item_code: "seca-maio",
+        interval_days_applied: 60,
+        dedup_key: null,
+      },
+      produtoLabel: "vermifugacao",
+      protocol: {
+        id: "protocol-verm",
+        nome: "Controle Estrategico (5-7-9)",
+      },
+    });
+
+    expect(meta.title).toBe("Controle Estrategico de Verminose");
   });
 });

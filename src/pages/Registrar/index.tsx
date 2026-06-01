@@ -80,6 +80,7 @@ import {
   useRegistrarStepFlow,
 } from "@/pages/Registrar/useRegistrarStepFlow";
 import { parseRegistrarQueryState } from "@/pages/Registrar/helpers/registrarQueryState";
+import { resolveSanitaryDefaultDose } from "@/lib/inventory/sanitaryDefaults";
 import { resolveRegistrarDisplayContext } from "@/pages/Registrar/helpers/registrarContextResolver";
 import { createRegistrarFinalizeController } from "@/pages/Registrar/createRegistrarFinalizeController";
 import {
@@ -167,7 +168,7 @@ const Registrar = () => {
   const [selectedInsumoId, setSelectedInsumoId] = useState("");
   const [selectedInsumoLoteId, setSelectedInsumoLoteId] = useState("");
   const [quantidadeConsumida, setQuantidadeConsumida] = useState("");
-  const [doseSanitaria, setDoseSanitaria] = useState("");
+  const [doseSanitaria, setDoseSanitaria] = useState(resolveSanitaryDefaultDose);
   const [doseUnidadeSanitaria, setDoseUnidadeSanitaria] = useState("dose");
   const [viaAplicacaoSanitaria, setViaAplicacaoSanitaria] = useState("");
   const [insumoRef, setInsumoRef] = useState<Insumo | null>(null);
@@ -221,7 +222,7 @@ const Registrar = () => {
     setSelectedInsumoId("");
     setSelectedInsumoLoteId("");
     setQuantidadeConsumida("");
-    setDoseSanitaria("");
+    setDoseSanitaria(resolveSanitaryDefaultDose());
     setDoseUnidadeSanitaria("dose");
     setViaAplicacaoSanitaria("");
     setInsumoRef(null);
@@ -836,6 +837,10 @@ const Registrar = () => {
   const confirmacaoDestinoMovimentacaoLabel =
     lotes?.find((item) => item.id === movimentacaoData.toLoteId)?.nome ?? "-";
   const showConfirmacaoNutricaoAlimento = tipoManejo === "nutricao";
+  const sanitaryInventoryAnimalCount =
+    selectedAnimais.length > 0
+      ? selectedAnimais.length
+      : (animaisNoLote?.length ?? 0);
   const actionSectionState = useRegistrarActionSectionState({
     activeFarmId: activeFarmId ?? null,
     selectedAnimais,
@@ -1559,7 +1564,8 @@ const Registrar = () => {
                 <RegistrarInventorySection
                   activeFarmId={activeFarmId ?? ""}
                   tipoManejo="sanitario"
-                  selectedAnimalCount={selectedAnimais.length}
+                  selectedAnimalCount={sanitaryInventoryAnimalCount}
+                  sanitarioTipo={sanitarioData.tipo}
                   gerarBaixaEstoque={gerarBaixaEstoque}
                   onGerarBaixaEstoqueChange={setGerarBaixaEstoque}
                   selectedInsumoId={selectedInsumoId}

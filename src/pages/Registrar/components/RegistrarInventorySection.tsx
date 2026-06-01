@@ -1,8 +1,12 @@
 import { useEffect, useMemo } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "@/lib/offline/db";
-import type { Insumo, InsumoLote } from "@/lib/offline/types";
+import type { Insumo, InsumoLote, SanitarioTipoEnum } from "@/lib/offline/types";
 import { sortLotsFEFO, validateLotEligibility } from "@/lib/inventory/eligibility";
+import {
+  resolveSanitaryDefaultApplicationRoute,
+  resolveSanitaryDefaultDoseUnit,
+} from "@/lib/inventory/sanitaryDefaults";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -13,6 +17,7 @@ export interface RegistrarInventorySectionProps {
   activeFarmId: string;
   tipoManejo: "sanitario" | "nutricao";
   selectedAnimalCount: number;
+  sanitarioTipo?: SanitarioTipoEnum;
 
   // State controlado
   gerarBaixaEstoque: boolean;
@@ -43,6 +48,7 @@ export function RegistrarInventorySection(props: RegistrarInventorySectionProps)
     activeFarmId,
     tipoManejo,
     selectedAnimalCount,
+    sanitarioTipo = "vacinacao",
     gerarBaixaEstoque,
     onGerarBaixaEstoqueChange,
     selectedInsumoId,
@@ -145,6 +151,40 @@ export function RegistrarInventorySection(props: RegistrarInventorySectionProps)
   useEffect(() => {
     onLoteRefChange?.(activeLote);
   }, [activeLote, onLoteRefChange]);
+
+  useEffect(() => {
+    if (tipoManejo !== "sanitario") return;
+
+    const defaultDoseUnit = resolveSanitaryDefaultDoseUnit({
+      loteUnit: activeLote?.unidade_base ?? null,
+      insumo: activeInsumo,
+    });
+    if (
+      activeLote &&
+      defaultDoseUnit &&
+      doseUnidadeSanitaria !== defaultDoseUnit
+    ) {
+      onDoseUnidadeSanitariaChange?.(defaultDoseUnit);
+    }
+
+    if (!viaAplicacaoSanitaria) {
+      onViaAplicacaoSanitariaChange?.(
+        resolveSanitaryDefaultApplicationRoute({
+          sanitarioTipo,
+          insumo: activeInsumo,
+        }),
+      );
+    }
+  }, [
+    activeInsumo,
+    activeLote,
+    doseUnidadeSanitaria,
+    onDoseUnidadeSanitariaChange,
+    onViaAplicacaoSanitariaChange,
+    sanitarioTipo,
+    tipoManejo,
+    viaAplicacaoSanitaria,
+  ]);
 
   // Sugestao automatica de lote por FEFO
   useEffect(() => {

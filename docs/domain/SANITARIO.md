@@ -1,13 +1,16 @@
+```markdown
 # Sanitário — RebanhoSync
 
-Atualizado em: 2026-05-31  
+Atualizado em: 2026-06-01
 **Baseline Commit:** `32d7779`
 
 ## Objetivo
 
-Definir o contrato de domínio sanitário do RebanhoSync.
+Definir o contrato canônico do domínio sanitário do RebanhoSync.
 
-Este documento separa registro operacional, protocolo sanitário, agenda sanitária, evento sanitário, produto, estoque, compliance, suspeita clínica, biossegurança e carência.
+Este documento separa protocolo sanitário, agenda sanitária, evento sanitário, produto, estoque, compliance, suspeita clínica, biossegurança, carência, sinais sanitários e correções históricas.
+
+Este é o documento normativo principal do domínio sanitário. Não criar `SANITARIO_CONTRACT.md` separado enquanto este arquivo continuar claro e objetivo.
 
 ---
 
@@ -15,250 +18,495 @@ Este documento separa registro operacional, protocolo sanitário, agenda sanitá
 
 Este documento cobre:
 
-* protocolo sanitário;
-* agenda sanitária;
-* evento sanitário;
-* vacinação;
-* vermifugação;
-* tratamento;
-* exame;
-* produto veterinário;
-* dose;
-* lote de estoque;
-* baixa de estoque;
-* custo/snapshot sanitário;
-* compliance regulatório;
-* checklist;
-* suspeita clínica;
-* biossegurança;
-* carência como lacuna bloqueada.
+- protocolo sanitário;
+- agenda sanitária;
+- evento sanitário;
+- vacinação;
+- vermifugação;
+- tratamento;
+- exame;
+- produto veterinário;
+- dose;
+- lote de estoque;
+- baixa de estoque;
+- custo/snapshot sanitário;
+- compliance regulatório;
+- checklist documental/contextual;
+- suspeita clínica;
+- doença notificável;
+- biossegurança;
+- carência;
+- ocorrências sanitárias;
+- pendências corretivas;
+- exceções e reconciliação sanitária;
+- sinais sanitários e relatórios operacionais.
+
+Fora do escopo deste documento:
+
+- venda;
+- abate;
+- sociedade pecuária;
+- motor comercial;
+- autorização final de comercialização;
+- peso atual confiável;
+- resultado econômico global.
 
 ---
 
 ## Contrato central
 
-| Conceito | Fonte |
-| --- | --- |
-| **Regra sanitária** | Protocolo/configuração |
-| **Tarefa sanitária** | Agenda |
-| **Aplicação executada** | Evento sanitário |
-| **Produto aplicado** | Detail do evento sanitário |
-| **Estoque consumido** | Movimento/baixa vinculada ao evento |
-| **Checklist/compliance** | Camada auxiliar/regulatória |
-| **Carência** | Fonte técnica explícita, não inferida |
+| Conceito | Fonte primária |
+|---|---|
+| Regra sanitária | Protocolo/configuração |
+| Tarefa sanitária futura | Agenda |
+| Aplicação executada | Evento sanitário |
+| Produto aplicado | `eventos_sanitario` estruturado |
+| Estoque consumido | `insumo_movimentacoes` vinculada ao evento |
+| Custo sanitário | Snapshot no evento/movimento |
+| Carência | Colunas estruturadas de `eventos_sanitario` |
+| Compliance regulatório | Catálogo/overlay/read model contextual |
+| Checklist documental | Contexto ou fluxo específico, não pendência geral |
+| Biossegurança | Ocorrência contextual registrada em evento |
+| Doença notificável | Suspeita/caso vinculado a animal/lote/evento |
+| Pendência corretiva | Agenda específica vinculada a evento/ocorrência |
+| Correção histórica | Novo evento vinculado, não edição destrutiva |
+| Sinal/insight | Leitura auxiliar, nunca fonte primária |
 
 ---
 
-## Protocolo sanitário
+## Regras invioláveis
 
-Protocolo sanitário é regra/configuração.
+- Agenda é intenção/tarefa futura, não histórico.
+- Evento é fato executado, append-only.
+- Protocolo é regra/configuração, não execução.
+- Checklist regulatório disponível não é pendência.
+- Ausência de runtime de compliance não é não conformidade.
+- Ausência de suspeita clínica não gera tarefa.
+- Tags, sinais e insights são auxiliares, nunca fonte primária.
+- Carência só pode ser calculada a partir de evento sanitário estruturado.
+- Livre de carência não significa apto para venda ou abate.
+- Correção sanitária deve gerar novo fato vinculado, não editar destrutivamente o passado.
+- Doença notificável exige vínculo clínico com animal, animais, lote ou evento.
 
-Pode definir: tipo de manejo, produto previsto, intervalo, sequência, público-alvo, recorrência e regra de geração de agenda.
+---
 
-### Protocolo pode
+## Protocolos sanitários
 
-* gerar agenda;
-* orientar rotina;
-* padronizar manejo;
-* recalcular pendências.
+Protocolos sanitários são regras operacionais versionadas.
 
-### Protocolo não pode
+Um protocolo pode nascer de:
 
-* comprovar execução;
-* afirmar produto aplicado;
-* indicar que animal recebeu dose;
-* afirmar carência;
-* liberar venda/abate.
+1. base regulatória oficial;
+2. overlay operacional do pack;
+3. protocolo customizado da fazenda.
+
+Essas camadas não devem competir como se fossem a mesma coisa.
+
+### Contrato de versionamento
+
+- `logical_item_key` identifica a etapa lógica.
+- `protocolos_sanitarios_itens.id` identifica a versão física imutável da etapa.
+- `version` identifica a versão legível da etapa.
+- Apenas uma versão ativa deve existir por etapa lógica.
+- Mudança semântica cria nova versão física.
+- Mudança simples pode atualizar a versão ativa.
+
+Mudanças semânticas incluem:
+
+- produto;
+- dose;
+- unidade;
+- intervalo;
+- `gera_agenda`;
+- calendário/agendamento;
+- dependência;
+- `item_code`;
+- dedup;
+- regime/milestone;
+- carência;
+- tipo da etapa.
+
+Eventos e agendas antigas continuam vinculados à versão física usada na época.
 
 ---
 
 ## Agenda sanitária
 
-Agenda sanitária representa intenção/tarefa futura.
+Agenda sanitária representa intenção ou pendência futura.
 
-Pode responder: o que está pendente, o que vence hoje, o que está atrasado e qual manejo deve ser feito.
+Pode nascer de:
 
-Não pode responder: o que foi executado, qual produto foi aplicado, se o protocolo foi cumprido, se o animal está livre de carência ou se está apto para venda/abate.
+- protocolo operacional com `gera_agenda=true`;
+- recompute/scheduler sanitário;
+- pendência corretiva específica gerada por ocorrência real.
 
-> ⚠️ **Regra:** Agenda sanitária concluída sem evento vinculado não deve ser tratada como histórico confiável.
+Agenda não deve nascer de:
+
+- checklist regulatório apenas disponível;
+- ausência de runtime;
+- ausência de suspeita clínica;
+- necessidade de “confirmar que não há doença”;
+- protocolo isolado sem regra de agendamento;
+- sinal ou insight.
+
+### Agenda corretiva
+
+Uma pendência corretiva sanitária só deve ser criada quando houver:
+
+- ocorrência real registrada;
+- `gera_pendencia=true`;
+- `prazo_correcao` informado;
+- evento de origem criado no mesmo gesto ou fluxo transacional.
+
+A agenda corretiva deve preservar:
+
+- `source_evento_id`;
+- `animal_id`, quando houver;
+- `lote_id`, when houver;
+- vínculos adicionais no payload, como `animal_ids`, `local_id`, `evento_id`, `agenda_item_id`.
 
 ---
 
 ## Evento sanitário
 
-Evento sanitário representa execução real.
+Evento sanitário é fato histórico executado.
 
-Deve conter, conforme fluxo: animal ou lote, data, tipo de manejo, produto, dose, unidade, responsável, observação, protocolo vinculado (se aplicável), agenda vinculada (se aplicável) e lote de estoque (se consumido).
+Deve preservar, quando aplicável:
 
-### Evento sanitário pode responder
+- `protocol_item_version_id`;
+- `protocol_item_logical_key`;
+- `protocol_item_version`;
+- `protocol_item_snapshot`;
+- produto aplicado;
+- lote de estoque;
+- dose;
+- unidade;
+- via;
+- responsável;
+- carência;
+- custo;
+- baixa de estoque vinculada.
 
-* o que foi aplicado;
-* quando foi aplicado;
-* em quem foi aplicado;
-* quem registrou;
-* qual produto/dose foi usada;
-* se houve consumo de estoque.
-
----
-
-## Produto veterinário
-
-Produto veterinário é referência estruturada.
-
-Pode conter: nome, princípio ativo, concentração, unidade, fabricante, categoria, indicação, informações técnicas e restrições.
-
-> ⚠️ **Regra:** Produto cadastrado não significa produto aplicado. Produto previsto em protocolo não significa produto executado.
+O evento sanitário não deve depender da versão ativa atual do protocolo para explicar o passado.
 
 ---
 
-## Estoque e lote
+## Rastreabilidade sanitária
 
-Consumo sanitário deve ser rastreável quando houver baixa de estoque.
+`eventos_sanitario` deve ser a fonte factual para rastreabilidade de execução.
 
-Deve preservar: lote de estoque, quantidade, unidade, custo quando disponível, vínculo com evento, idempotência, rollback e sucesso parcial como exceção.
+Campos estruturados esperados:
 
-### Riscos
+- `produto_veterinario_id`;
+- `produto_nome_snapshot`;
+- `estoque_lote_id`;
+- `estoque_lote_codigo_snapshot`;
+- `lote_fabricante`;
+- `validade_produto`;
+- `dose_quantidade`;
+- `dose_unidade`;
+- `via_aplicacao`;
+- `responsavel_nome`;
+- `responsavel_tipo`;
+- `carencia_carne_dias`;
+- `carencia_leite_dias`;
+- `carencia_carne_ate`;
+- `carencia_leite_ate`;
+- `custo_unitario_snapshot`;
+- `custo_total_snapshot`.
 
-* baixa duplicada em retry;
-* evento sem baixa quando deveria consumir;
-* baixa sem evento;
-* produto sem lote;
-* custo ausente tratado como zero real;
-* estoque negativo sem regra explícita.
-
----
-
-## Custo/snapshot sanitário
-
-Quando houver custo vinculado ao consumo sanitário, o evento deve preservar snapshot econômico suficiente. Não depender apenas do estado atual do estoque para recompor custo histórico.
-
-> ⚠️ **Regra:** Custo histórico precisa ser auditável no momento da execução ou por fonte econômica explícita.
-
----
-
-## Compliance regulatório
-
-Compliance sanitário é camada separada.
-
-Pode envolver: catálogo oficial, overlay por fazenda/UF, feed-ban, doença notificável, suspeita clínica, checklist documental, biossegurança e alertas regulatórios.
-
-### Compliance pode
-
-* alertar;
-* indicar pendência;
-* orientar validação;
-* exigir revisão;
-* gerar checklist;
-* bloquear se houver regra explícita.
-
-### Compliance não pode
-
-* criar evento sem ocorrência real;
-* comprovar execução;
-* inferir carência;
-* liberar venda/abate;
-* substituir protocolo operacional.
+Payload pode existir como snapshot auxiliar, mas não deve ser a única fonte para campos críticos usados em filtro, relatório, carência, custo ou auditoria.
 
 ---
 
-## Suspeita clínica
+## Estoque sanitário
 
-Suspeita clínica não é diagnóstico final automaticamente.
+Quando houver `estoque_lote_id`, o evento sanitário deve gerar baixa idempotente de estoque.
 
-Deve declarar: ocorrência, sinais observados, data, animal/lote, responsável, status, necessidade de avaliação, evolução e eventual evento clínico ou sanitário.
+No registro operacional em lote, o formulário pode sugerir `1` dose por cabeça e a via base do produto/tipo sanitário. A quantidade consumida deve ser calculada por `dose × quantidade de animais manejados` e gravada junto do evento para rastreabilidade e baixa de estoque.
 
-> ⚠️ **Regra:** Suspeita pode gerar alerta/checklist/pendência, mas não deve virar diagnóstico ou evento executado sem fonte.
+Regras:
 
----
-
-## Biossegurança
-
-Biossegurança pode ser tratada como: checklist, ocorrência, pendência documental, alerta, rotina de verificação ou item de compliance.
-
-> ⚠️ **Regra:** Checklist de biossegurança deve ser simples, operacional e preenchido quando houver ocorrência ou alteração relevante. Não transformar checklist disponível em evento executado.
+- baixa vinculada ao evento;
+- sem duplicidade em retry/sync;
+- saldo negativo não deve ser aceito silenciosamente;
+- lote, validade e custo devem ser copiados como snapshot quando disponíveis;
+- estorno/contra-lançamento deve ser novo fato vinculado, não apagamento silencioso.
 
 ---
 
 ## Carência
 
-Carência é decisão bloqueada sem fonte técnica explícita.
+Carência é derivada exclusivamente de evento sanitário estruturado.
 
-### Não afirmar
+Permitido:
 
-* carência ativa;
-* livre de carência;
-* data segura de abate;
-* data segura de venda;
-* liberação sanitária.
+- `sanitario:carencia_ativa`;
+- `sanitario:livre_carencia`.
 
-### Fonte necessária
+Proibido:
 
-Uma fonte futura válida deve considerará, no mínimo: produto, espécie/categoria, dose, via, data de aplicação, regra técnica de carência, validade, exceções e fonte normativa/técnica.
+- calcular carência por agenda;
+- calcular carência por protocolo isolado;
+- calcular carência por catálogo oficial isolado;
+- usar ausência de carência como autorização comercial;
+- emitir `comercial:pronto_venda` ou `comercial:apto_abate` nesta camada.
 
-> ⚠️ Até existir essa fonte consolidada, a resposta deve ser bloqueada ou parcial.
-
----
-
-## Venda/abate
-
-Sanitário sozinho não deve liberar venda/abate. Venda/abate exige composição explícita com: status animal, peso confiável (se necessário), carência, sanidade, regra comercial, documentação e fonte técnica.
+Livre de carência é apenas uma evidência sanitária. Não é decisão comercial final.
 
 ---
 
-## Edge cases
+## Compliance regulatório
 
-Verificar:
+Compliance regulatório é camada contextual.
 
-* agenda sanitária vencida;
-* agenda concluída sem evento;
-* evento sem produto;
-* produto sem dose;
-* produto sem lote de estoque;
-* custo ausente;
-* retry duplicando baixa;
-* animal vendido/morto com pendência sanitária;
-* lote misto;
-* protocolo alterado após evento;
-* compliance regulatório sem aplicabilidade;
-* suspeita clínica sem confirmação;
-* checklist sem ocorrência.
+Itens do catálogo oficial/regulatório podem ficar disponíveis como orientação, checklist ou exigência documental, mas não viram pendência automaticamente.
 
----
+### Estados conceituais
 
-## Validação
+- `contextual`: contexto regulatório disponível.
+- `actionable`: pendência/ação real acionável.
+- `resolvido`: ação já tratada.
+- `bloqueado_por_regra`: bloqueio técnico explícito.
 
-Mudanças sanitárias devem validar conforme risco:
+Regras:
 
-* teste de domínio sanitário;
-* teste de agenda → evento;
-* teste de estoque/baixa;
-* teste de idempotência;
-* teste de rollback;
-* baseline Supabase se tocar RPC/RLS/migration.
-
-### Referências
-
-* `docs/technical/TESTING_GATES.md`
-* `.agents/skills/sanitario-registro-operacional/SKILL.md`
-* `.agents/skills/sanitario-catalogo-regulatorio-compliance/SKILL.md`
+- sem `overlay_runtime` = contexto, não pendência;
+- runtime conforme = contexto/resolvido;
+- runtime pendente ou ajuste necessário = acionável;
+- checklist disponível não bloqueia manejo por si só;
+- ausência de preenchimento não significa não conformidade.
 
 ---
 
-## Critério de aceite
+## Checklists
 
-Uma mudança sanitária é aceitável quando:
+Checklist é apoio operacional/documental.
 
-* separa protocolo, agenda, evento e compliance;
-* não trata agenda como histórico;
-* não trata protocolo como execução;
-* não infere carência;
-* não libera venda/abate;
-* preserva produto/dose/lote quando necessário;
-* mantém baixa de estoque idempotente;
-* declara limitações;
-* respeita offline-first e RLS.
+Checklist pode ser:
+
+- contextual;
+- acionado por evento;
+- acionado por movimento/transporte;
+- vinculado a ocorrência;
+- vinculado a pendência corretiva real.
+
+Checklist não deve ser:
+
+- pendência geral da fazenda;
+- tarefa para confirmar ausência de doença;
+- prova de conformidade universal;
+- fonte primária de evento sanitário;
+- substituto de registro factual.
+
+---
+
+## Biossegurança
+
+Biossegurança é ocorrência contextual, não checklist obrigatório geral.
+
+Rotina normal:
+
+```txt
+biosseguranca_status = "sem_ocorrencia_informada"
 
 ```
 
+Esse estado significa apenas ausência de ocorrência informada, não conformidade validada.
+
+### Ocorrência de biossegurança
+
+A ocorrência real é registrada em evento append-only com `payload.biosseguranca_ocorrencia`.
+
+Contrato esperado:
+
+* `schema_version`;
+* `categoria_ocorrencia`;
+* `tipo_ocorrencia`;
+* `tipos_ocorrencia`;
+* `escopo_tipo`;
+* `escopos_tipo`;
+* `animal_id`;
+* `animal_ids`;
+* `lote_id`;
+* `local_id`;
+* `evento_id`;
+* `agenda_item_id`;
+* `gravidade`;
+* `descricao`;
+* `outro_relato`;
+* `acao_imediata`;
+* `gera_pendencia`;
+* `prazo_correcao`;
+* `status`.
+
+Campos singulares permanecem por compatibilidade. Campos plurais representam o contrato novo.
+
+### Estados
+
+* `sem_ocorrencia_informada`
+* `ocorrencia_registrada`
+* `ocorrencia_com_pendencia`
+
+Não usar conforme como default.
+
+### Doenças notificáveis
+
+Doença notificável não é pendência geral.
+
+Deve existir como suspeita/caso vinculado a:
+
+* animal;
+* múltiplos animais;
+* lote;
+* evento;
+* ocorrência clínica.
+
+Regra:
+
+* sem suspeita concreta = não gera pendência;
+* suspeita com animal = pode abrir `alerta_sanitario` e `sanitario_casos`;
+* suspeita com lote sem animal = fica registrada em evento/payload até existir modelagem própria de caso por lote;
+* notificação pendente só nasce de ocorrência real com `gera_pendencia=true`.
+
+Nunca criar pendência geral da fazenda para confirmar ausência de doença.
+
+### Suspeita clínica e terapia não recorrente
+
+Suspeita clínica, tratamento terapêutico e protocolo clínico não recorrente não devem ser tratados como protocolo operacional recorrente por padrão.
+
+Regra:
+
+* suspeita clínica = evento/caso;
+* tratamento executado = evento;
+* terapia não recorrente = apoio clínico ou registro pontual;
+* protocolo clínico recorrente só deve existir se houver regra operacional explícita.
+
+### Exceções e reconciliação sanitária
+
+A Fase 5 deve tratar exceções e correções sem quebrar histórico.
+
+Exceções esperadas:
+
+* evento sanitário sem produto;
+* evento sem lote de estoque;
+* evento sem custo;
+* evento sem dose;
+* evento sem via;
+* estoque vencido na data do evento;
+* movimentação ausente;
+* movimentação duplicada;
+* custo inconsistente;
+* carência incompleta;
+* ocorrência de biossegurança aberta;
+* ocorrência com pendência aberta;
+* suspeita notificável aberta;
+* pendência corretiva vencida.
+
+Correções devem ser novos fatos vinculados:
+
+* `complemento_rastreabilidade`;
+* `correcao_custo`;
+* `correcao_lote_estoque`;
+* `estorno_baixa_estoque`;
+* `contra_lancamento_estoque`;
+* `resolucao_ocorrencia_biosseguranca`;
+* `cancelamento_ocorrencia_biosseguranca`;
+* `encerramento_pendencia_corretiva`.
+
+Proibido corrigir evento histórico por update destrutivo.
+
+### Sinais e insights sanitários
+
+Sinais sanitários são auxiliares e recalculáveis.
+
+Sinais permitidos quando houver fonte primária adequada:
+
+* `sanitario:carencia_ativa`;
+* `sanitario:livre_carencia`;
+* `sanitario:excecao_aberta`;
+* `sanitario:rastreabilidade_incompleta`;
+* `sanitario:estoque_inconsistente`;
+* `sanitario:custo_inconsistente`;
+* `biosseguranca:ocorrencia_aberta`;
+* `biosseguranca:ocorrencia_com_pendencia`;
+* `biosseguranca:alta_gravidade`;
+* `biosseguranca:pendencia_corretiva_vencida`;
+* `sanitario:suspeita_notificavel`;
+* `sanitario:notificacao_pendente`.
+
+Sinais proibidos nesta camada:
+
+* `comercial:pronto_venda`;
+* `comercial:apto_abate`;
+* `peso:atual_confiavel`;
+* `protocolo:executado`;
+* `agenda:concluida_como_fato`.
+
+### Relatórios sanitários
+
+Relatórios podem consolidar:
+
+* gasto sanitário por período;
+* gasto por animal;
+* gasto por lote pecuário;
+* gasto por lote de estoque;
+* uso por produto;
+* histórico por protocolo/item/version;
+* animais em carência ativa;
+* eventos sem rastreabilidade completa;
+* produtos aplicados sem lote de estoque;
+* eventos sem custo;
+* inconsistências de estoque;
+* ocorrências de biossegurança por tipo/gravidade/escopo/status;
+* suspeitas notificáveis abertas;
+* pendências corretivas abertas ou vencidas.
+
+Relatórios não devem transformar sinal em fonte primária.
+
+### Robustez e staging
+
+A Fase 6 deve validar:
+
+* multi-tenant;
+* concorrência;
+* sync;
+* RLS;
+* retry;
+* recompute;
+* baixa de estoque idempotente;
+* agenda corretiva;
+* ocorrência + pendência;
+* protocolos versionados;
+* eventos sanitários rastreáveis.
+
+Essa fase deve validar uso real, não criar novo domínio.
+
+### Roadmap sanitário consolidado
+
+| Fase | Escopo | Status esperado |
+| --- | --- | --- |
+| Fase 1 | Protocolos, versionamento, legado `protocol_item_id` | Encerrada |
+| Fase 2 | Rastreabilidade sanitária operacional | Encerrada |
+| Fase 3 | Consolidação de histórico, relatórios e sinais | Encerrada |
+| Fase 4 | Clínica, compliance, checklists, biossegurança, doenças notificáveis | Encerrada |
+| Fase 5 | Exceções, correções e reconciliação sanitária | Próxima |
+| Fase 6 | Robustez sanitária em staging | Pendente |
+
+### Antipadrões proibidos
+
+* Usar agenda como histórico.
+* Usar protocolo como execução.
+* Usar checklist como conformidade universal.
+* Usar ausência de pendência como prova sanitária.
+* Criar pendência geral para ausência de doença.
+* Criar carência por protocolo ou catálogo isolado.
+* Editar destrutivamente evento histórico.
+* Usar tag/sinal como fonte primária.
+* Autorizar venda/abate por sinal sanitário isolado.
+
+---
+
+```
 
 ```

@@ -1,7 +1,7 @@
 ```md
 # Events and Agenda Contract — RebanhoSync
 
-Atualizado em: 2026-05-31  
+Atualizado em: 2026-06-01
 **Baseline Commit:** `32d7779`
 
 ## Objetivo
@@ -55,6 +55,7 @@ Agenda representa:
 * calcular próximos manejos;
 * orientar ação operacional;
 * materializar tarefa derivada de protocolo.
+* reconciliar pendência aberta com evento executado quando escopo e manejo forem equivalentes.
 
 ### Proibido
 
@@ -63,6 +64,25 @@ Agenda representa:
 * calcular KPI histórico só com agenda;
 * inferir protocolo executado sem evento;
 * inferir carência/venda/abate.
+
+### Reconciliação Agenda -> Evento
+
+Uma pendência pode ser marcada como concluída por evento quando a execução real gera `source_evento_id` e o escopo é compatível.
+
+* Registro individual: reconciliar apenas com item do mesmo `animal_id`.
+* Registro por lote: tratar o lote como atalho de seleção e reconciliar itens individuais dos animais com o mesmo `lote_id`.
+* Registro por lote deve concluir no máximo o item compatível mais antigo de cada animal.
+* Item individual não deve ser concluído por evento de lote se tipo/produto ou protocolo não forem compatíveis.
+* Ação direta "Concluir tarefa" deve criar ou vincular evento conforme contrato do domínio, não apenas alterar status local.
+
+### Ação agrupada na Agenda
+
+O botão agregado "Registrar" depende do modo de agrupamento:
+
+* Agrupamento por tipo de demanda pode oferecer ação agrupada para registrar o mesmo manejo em múltiplos animais.
+* Agrupamento por animal só pode oferecer ação agrupada quando existir uma única demanda aberta no grupo.
+* Se o animal tiver múltiplas demandas abertas, cada item deve ser registrado individualmente para preservar produto, protocolo, dose, estoque e demais detalhes de execução.
+* Agrupamento por evento/demanda deve identificar produto, protocolo/marco e dose quando disponíveis; rótulos genéricos como "Vacina" não bastam quando houver múltiplas vacinas acumuladas.
 
 ---
 

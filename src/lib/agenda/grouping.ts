@@ -63,6 +63,48 @@ function formatTypeLabel(value: string): string {
     .join(" ");
 }
 
+function formatProtocolDisplayName(input: {
+  protocolName: string | null | undefined;
+  tipo: string;
+}) {
+  const name = input.protocolName?.trim();
+  if (!name) return null;
+
+  const normalized = normalizeToken(name);
+  if (
+    input.tipo === "vermifugacao" &&
+    normalized.startsWith("controle-estrategico")
+  ) {
+    return "Controle Estrategico de Verminose";
+  }
+
+  return name.replace(/\s*\([^)]*\)\s*$/g, "").trim();
+}
+
+function resolveShortPhaseLabel(input: {
+  tipo: string;
+  itemCode: string | null | undefined;
+  milestoneKey: string | null | undefined;
+  doseNum: number | null;
+}) {
+  if (input.tipo !== "vacinacao") return null;
+
+  const code = input.itemCode ?? input.milestoneKey ?? "";
+  const dMatch = code.match(/(?:^|[_-])d(\d+)$/i);
+  if (dMatch) return `D${dMatch[1]}`;
+
+  const doseMatch = code.match(/dose[_-]?(\d+)/i);
+  if (doseMatch) return `D${doseMatch[1]}`;
+
+  if (/anual/i.test(code)) return "Anual";
+
+  if (typeof input.doseNum === "number" && input.doseNum > 0) {
+    return `D${input.doseNum}`;
+  }
+
+  return null;
+}
+
 function buildSubtitle(input: BuildAgendaEventGroupMetaInput): string {
   const protocolItemVersionId = input.item.protocol_item_version_id;
   const protocolItemCode = input.item.protocol_item_code;
@@ -98,6 +140,32 @@ function buildSubtitle(input: BuildAgendaEventGroupMetaInput): string {
   return parts.join(" | ");
 }
 
+function buildTitle(input: BuildAgendaEventGroupMetaInput): string {
+  const product = input.produtoLabel.trim() || formatTypeLabel(input.item.tipo);
+  const protocolItemCode = input.item.protocol_item_code;
+  const milestoneKey = readString(input.item.source_ref, "milestone_key");
+  const doseNum = readNumber(input.item.source_ref, "dose_num");
+  const protocolDisplayName = formatProtocolDisplayName({
+    protocolName: input.protocol?.nome,
+    tipo: input.item.tipo,
+  });
+
+  if (protocolDisplayName) {
+    const phaseLabel = resolveShortPhaseLabel({
+      tipo: input.item.tipo,
+      itemCode: protocolItemCode,
+      milestoneKey,
+      doseNum,
+    });
+
+    return phaseLabel
+      ? `${protocolDisplayName} ${phaseLabel}`
+      : protocolDisplayName;
+  }
+
+  return product;
+}
+
 export function buildAgendaEventGroupMeta(
   input: BuildAgendaEventGroupMetaInput,
 ): AgendaEventGroupMeta {
@@ -130,7 +198,7 @@ export function buildAgendaEventGroupMeta(
 
   return {
     key,
-    title: input.produtoLabel,
+    title: buildTitle(input),
     subtitle: buildSubtitle(input),
   };
 }

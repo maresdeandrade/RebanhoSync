@@ -69,6 +69,16 @@ function getUrgencyMeta(row: AgendaRecommendationRow, today: Date) {
   return { label: "Fechado", tone: "neutral" as const, mandatory: false };
 }
 
+export function countAgendaRecommendationCandidates(rows: AgendaRecommendationRow[]) {
+  return rows.filter((row) => row.item.status === "agendado").length;
+}
+
+export function canUseGroupedAnimalRegisterAction(
+  rows: AgendaRecommendationRow[],
+) {
+  return countAgendaRecommendationCandidates(rows) === 1;
+}
+
 export function buildAgendaGroupRecommendation(
   rows: AgendaRecommendationRow[],
   today: Date = new Date(),

@@ -9,7 +9,8 @@ import { normalizeVeterinaryProductText } from "@/lib/sanitario/catalog/products
 
 type LoadPendingAgendaItemsFn = (input: {
   fazendaId: string;
-  animalId: string;
+  animalId: string | null;
+  loteId: string | null;
 }) => Promise<AgendaItem[]>;
 
 type LoadProtocolItemsFn = (
@@ -29,6 +30,7 @@ const readString = (
 const defaultLoadPendingAgendaItems: LoadPendingAgendaItemsFn = async ({
   fazendaId,
   animalId,
+  loteId,
 }) =>
   db.state_agenda_itens
     .where("fazenda_id")
@@ -37,7 +39,9 @@ const defaultLoadPendingAgendaItems: LoadPendingAgendaItemsFn = async ({
       (item) =>
         item.dominio === "sanitario" &&
         item.status === "agendado" &&
-        item.animal_id === animalId &&
+        (animalId
+          ? item.animal_id === animalId
+          : Boolean(loteId) && item.animal_id !== null && item.lote_id === loteId) &&
         !item.deleted_at &&
         !item.source_evento_id,
     )
@@ -85,17 +89,32 @@ function matchesManualSanitaryAgenda(input: {
   return Boolean(itemProduct && itemProduct === input.normalizedProductName);
 }
 
+function selectAgendaItemsToComplete(input: {
+  matched: AgendaItem[];
+  animalId: string | null;
+}) {
+  if (input.animalId) return input.matched.slice(0, 1);
+
+  const seenAnimalIds = new Set<string>();
+  return input.matched.filter((item) => {
+    if (!item.animal_id || seenAnimalIds.has(item.animal_id)) return false;
+    seenAnimalIds.add(item.animal_id);
+    return true;
+  });
+}
+
 export async function resolveManualSanitaryAgendaCompletionOpsEffect(input: {
   fazendaId: string;
   linkedEventId: string;
   animalId: string | null;
+  loteId: string | null;
   sanitarioTipo: SanitarioTipoEnum;
   sanitaryProductName: string;
   protocoloItem: Pick<ProtocoloSanitarioItem, "id"> | null;
   loadPendingAgendaItems?: LoadPendingAgendaItemsFn;
   loadProtocolItems?: LoadProtocolItemsFn;
 }): Promise<OperationInput[]> {
-  if (!input.animalId) return [];
+  if (!input.animalId && !input.loteId) return [];
 
   const normalizedProductName = normalizeVeterinaryProductText(
     input.sanitaryProductName,
@@ -108,6 +127,7 @@ export async function resolveManualSanitaryAgendaCompletionOpsEffect(input: {
   const pendingItems = await loadPendingAgendaItems({
     fazendaId: input.fazendaId,
     animalId: input.animalId,
+    loteId: input.loteId,
   });
 
   if (pendingItems.length === 0) return [];
@@ -144,11 +164,13 @@ export async function resolveManualSanitaryAgendaCompletionOpsEffect(input: {
         left.id.localeCompare(right.id),
     );
 
-  const agendaItem = matched[0];
-  if (!agendaItem) return [];
+  const agendaItems = selectAgendaItemsToComplete({
+    matched,
+    animalId: input.animalId,
+  });
+  if (agendaItems.length === 0) return [];
 
-  return [
-    {
+  return agendaItems.map((agendaItem) => ({
       table: "agenda_itens",
       action: "UPDATE",
       record: {
@@ -156,6 +178,5 @@ export async function resolveManualSanitaryAgendaCompletionOpsEffect(input: {
         status: "concluido",
         source_evento_id: input.linkedEventId,
       },
-    },
-  ];
+    }));
 }
