@@ -62,9 +62,9 @@ Este documento registra o estado efetivo do RebanhoSync na fase atual de consoli
 
 | Domínio | Estado | Evidência principal |
 | --- | --- | --- |
-| `sanitario.registro` | Completo — catálogo `produtos_veterinarios`, biblioteca canônica de protocolos, payload/preflight/package sanitário extraídos e boundary RPC/fallback isolado | `src/pages/Registrar/**`, `src/pages/ProtocolosSanitarios/**`, `src/lib/sanitario/models/**`, `src/lib/sanitario/infrastructure/**`, `src/lib/sanitario/catalog/baseProtocols.ts` |
+| `sanitario.registro` | Completo — catálogo `produtos_veterinarios`, biblioteca canônica de protocolos, payload/preflight/package sanitário extraídos e boundary RPC/fallback isolado; inclui registro de ocorrências de biossegurança com payload `biosseguranca_ocorrencia` e fluxo de doença notificável com vínculo animal/lote | `src/pages/Registrar/**`, `src/pages/ProtocolosSanitarios/**`, `src/lib/sanitario/models/**`, `src/lib/sanitario/infrastructure/**`, `src/lib/sanitario/catalog/baseProtocols.ts` |
 | `sanitario.registro_idempotente` | Completo — timeout ambíguo no RPC faz retry idempotente antes de fallback; sync-batch rejeita duplicidade de agenda já concluída; Dexie faz rollback e pull seletivo | `src/lib/sanitario/infrastructure/executionBoundary.ts`, `src/pages/Registrar/createRegistrarFinalizeController.ts`, `supabase/functions/sync-batch/**`, `supabase/migrations/20260526000600_idx_eventos_unique_source_task.sql` |
-| `sanitario.historico` | Completo — histórico auditável exibe produto, lote, validade, dose, via, responsável, carência, custo e item/version de protocolo quando disponíveis | `src/pages/Eventos.tsx`, `src/lib/reports/operationalSummary.ts`, `src/lib/insights/sanitaryWithdrawalSignals.ts` |
+| `sanitario.historico` | Completo — histórico auditável exibe produto, lote, validade, dose, via, responsável, carência, custo e item/version de protocolo quando disponíveis; relatório operacional agrupa ocorrências de biossegurança por tipo/gravidade/escopo/animal/lote/local/status, com tempo até resolução omitido sem data estruturada de encerramento | `src/pages/Eventos.tsx`, `src/lib/reports/operationalSummary.ts`, `src/lib/insights/sanitaryWithdrawalSignals.ts` |
 | `sanitario.agenda_link` | Completo — SQL/Supabase e motor lider de recompute; TS mantem contratos/adapters/golden tests e suporte offline; agenda automatica exige gates canonicos por janela, risco/configuracao, ativacao operacional ou especie transicional; raiva operacional segue sequencia D1/D2/anual | `supabase/migrations/00000000000000_rebuild_base_schema_sanitario.sql`, `src/lib/sanitario/engine/**` |
 | `pesagem.registro` | Completo | `src/pages/Registrar/index.tsx`, `src/pages/AnimalDetalhe.tsx` |
 | `pesagem.historico` | Completo — **TD-015 CLOSED** via artefatos SQL consolidados na baseline | `supabase/migrations/00000000000000_rebuild_base_schema_sanitario.sql` |
@@ -461,6 +461,18 @@ This update turned `agenda.*` from a flat list into an operational triage surfac
 - **Formulário de Cadastro (AnimalNovo.tsx):** Substituição de seletores tradicionais (Select) por grupos de botões interativos (ToggleGroup) de acesso em único clique para campos-chave (Sexo, Espécie, Origem, Fatos Taxonômicos e Perfil Reprodutivo). Implementação de seleção de Raça com UI híbrida (atalhos + combobox contextual).
 - **Dashboard de Animais (Animais.tsx):** Compactação agressiva de MetricCards in grid 100% lado a lado (grid-cols-2 base, reduzindo scroll vertical) e limpeza de strings redundantes. Adição de card específico para acompanhamento global de Pendências a partir do lifecyclePendingCount.
 - Esta intervenção cumpre a frente de redução de carga cognitiva operacional do roadmap UX.
+
+## 8.4 Update 2026-05-30 (Fase 4 — Biossegurança e Ocorrências Sanitárias Concluída)
+
+- **Escopo**: separação entre checklist regulatório e pendência acionável no fluxo sanitário de biossegurança e ocorrências. Sem alteração de migrations, RLS, RPCs ou seed.
+- **Checklist regulatório**: disponibilidade do catálogo oficial/overlay não gera pendência operacional; ausência de runtime não é não conformidade.
+- **Ocorrência real**: registrada como evento append-only com payload `biosseguranca_ocorrencia`; rotina normal é `sem_ocorrencia_informada`.
+- **Pendência específica**: nasce apenas de ocorrência real com `gera_pendencia=true` e `prazo_correcao` informado, gerando `agenda_itens` vinculada por `source_evento_id`.
+- **Doença notificável**: exige vínculo clínico com `animal_id`, `animal_ids` ou `lote_id`; com `animal_id` mantém `alerta_sanitario` + `sanitario_casos`; com `lote_id` sem animal, fica registrada no evento/payload.
+- **Sinais e read models**: derivam exclusivamente de `eventos.payload.biosseguranca_ocorrencia` e agenda específica por `source_evento_id`; nunca de protocolo, checklist ou overlay contextual.
+- **Relatórios operacionais**: agrupam ocorrências reais por tipo, gravidade, escopo, animal, lote, local, status, pendências abertas e suspeitas notificáveis abertas.
+- **Limitações conhecidas**: `sanitario_casos` ainda não suporta caso por lote; tempo até resolução omitido sem data estruturada de encerramento; execução/encerramento assistido de ocorrência é pendência específica mínima e pode evoluir.
+- **Validações**: `pnpm run lint`, `pnpm test`, `pnpm run build`, `pnpm run test:hotspots`, testes focais de biossegurança/eventos/relatório, `git diff --check`.
 
 ### 9. Consolidação de Estoque de Insumos e Read Model de Carência Sanitária (Fase 6 a 7.1) ✅ COMPLETO
 

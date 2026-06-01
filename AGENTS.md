@@ -1,138 +1,109 @@
-# RebanhoSync — instruções para agentes
+# RebanhoSync — AGENTS.md
 
-Projeto: app agropecuário offline-first em beta interno. MVP operacional. Prioridade atual: consolidação SLC com patches pequenos, locais e revisáveis.
+Dispatcher principal para agentes que atuam no RebanhoSync.
 
-## Leitura inicial
+Objetivo: carregar apenas o contexto necessário para cada tarefa, preservar as fontes de verdade do domínio e evitar leitura ampla desnecessária.
 
-Antes de agir, leia apenas o necessário.
+---
 
-Para tarefa geral:
-1. README.md
-2. docs/CURRENT_STATE.md
-3. docs/PROCESS.md
-4. docs/AGENT_CONTEXT.md
+## Leitura mínima
 
-Para tarefa localizada:
-- primeiro procure AGENTS.md no diretório afetado;
-- use docs locais e skills específicas;
-- não abra docs/archive/** salvo pedido explícito.
+Sempre leia:
 
-Fonte de verdade em conflito:
-1. código + migrations ativas;
-2. docs/CURRENT_STATE.md;
-3. docs normativos;
-4. docs derivados;
-5. histórico.
+1. `.agents/rules/CORE_RULES.md`
+2. `.agents/rules/CONTEXT_LOADING.md`
+3. `AGENTS.md` local da pasta afetada, se existir
 
-## Regras absolutas
+Não usar `docs/archive/**` como fonte operacional, salvo pedido explícito.
 
-- Não colocar regra de negócio forte em componente React.
+---
+
+## Fonte de verdade em conflito
+
+1. Código + migrations ativas
+2. `docs/context/PROJECT_STATUS.md`
+3. Docs normativos ativos
+4. Docs derivados
+5. Histórico em `docs/archive/**`
+
+---
+
+## Regras globais
+
+- Preservar offline-first.
+- Preservar RLS, multi-tenant e isolamento por `fazenda_id`.
+- Não criar fonte paralela de verdade.
+- Não colocar regra de negócio crítica em componente React.
 - Não usar UI como única fronteira de autorização.
-- Não expor service_role no client.
+- Não expor `service_role` no client.
 - Não alterar migrations, seed, RLS, policies ou RPCs sem tarefa explícita.
-- Preservar fazenda_id como fronteira de isolamento.
-- Preservar compatibilidade com dados legados.
-- Preferir mudanças pequenas, reversíveis e testáveis.
+- Preferir patch pequeno, reversível e testável.
 - Não refatorar por conveniência.
+- Separar fato confirmado, inferência e recomendação.
 
-## Invariantes do domínio
+---
 
-- Agenda = intenção/tarefa futura mutável.
-- Evento = fato histórico append-only.
-- state_* = estado atual/read model.
-- Protocolo = regra/configuração, não execução.
-- Tags, sinais e insights = auxiliares; nunca fonte primária nem regra crítica.
-- Registrar/Executar geram evento.
-- Encerrar/Cancelar atuam na agenda.
-- Aplicar protocolo materializa/recalcula agenda e não gera evento diretamente.
-- Correção histórica ocorre por contra-lançamento, não update destrutivo.
-- Idempotência operacional: 1 ação → 1 createGesture.
-- Offline-first: preservar gestures, rollback determinístico, metadata de sync, retries e fila.
-- Sanitário: base oficial, overlay por fazenda e protocolo operacional não devem virar fonte misturada.
-- Reprodução: preservar linking determinístico parto → pós-parto → cria.
+## Contratos do domínio
 
-Pipeline preferida em hotspots:
-Normalize → Select/Policy → Payload → Plan → Effects → Reconcile.
+Ver `.agents/rules/CORE_RULES.md` e `docs/context/SOURCE_OF_TRUTH.md`.
 
-## Escopo e edição segura
+Resumo:
 
-Antes de editar:
-- declare escopo permitido/proibido;
-- liste arquivos prováveis;
-- rode git status --short --untracked-files=all;
-- use repository-context-retrieval se o ponto de intervenção não estiver claro.
+- Agenda = intenção/tarefa futura.
+- Evento = fato executado.
+- `state_*` = estado atual/read model.
+- Protocolo = regra/configuração.
+- Tags, sinais e insights = auxiliares; nunca fonte primária.
+- Carência, peso confiável, venda/abate e aptidão operacional exigem fonte técnica explícita.
 
-Durante:
-- atacar no máximo 1 capability principal;
-- manter diff mínimo;
-- não editar docs derivados sem mudança funcional real;
-- se algo não for encontrado, registrar locais inspecionados;
-- se comando for inferido, sinalizar antes de usar.
+---
 
-Áreas críticas:
-- src/lib/offline/**
-- src/lib/sanitario/**
-- src/lib/reproduction/**
-- src/lib/animals/**
-- src/lib/events/**
-- src/pages/Registrar/**
-- src/pages/Agenda/**
-- src/pages/ProtocolosSanitarios/**
-- supabase/functions/sync-batch/**
-- supabase/migrations/**
+## Carregamento de contexto
 
-Para áreas críticas:
-powershell -File scripts/codex/preflight.ps1 -Paths "<path1>","<path2>"
-powershell -File scripts/codex/validate.ps1 -TouchedPaths "<path1>","<path2>"
+Use `.agents/rules/CONTEXT_LOADING.md`.
 
-## Validação
+Regra prática:
 
-Comandos reais:
-pnpm run lint
-pnpm test
-pnpm run build
-pnpm run test:unit
-pnpm run test:integration
-pnpm run test:hotspots
-pnpm run test:smoke
-pnpm run quality:gate
-pnpm run test:e2e
-pnpm run gates
-pnpm run audit:data
+- tarefa local: leia só arquivos-alvo, testes relacionados e AGENTS local;
+- tarefa UX/UI: leia contexto de UX e tela afetada;
+- tarefa sanitária: leia contexto sanitário e skill sanitária aplicável;
+- tarefa sync/offline: leia contexto técnico de sync;
+- tarefa documental: leia contexto de status e reconcile-docs;
+- auditoria ampla: comece por índices, depois expanda sob demanda.
 
-Scripts Codex:
-powershell -File scripts/codex/bootstrap.ps1
-powershell -File scripts/codex/preflight.ps1 -Paths "<path1>","<path2>"
-powershell -File scripts/codex/validate.ps1 -TouchedPaths "<path1>","<path2>"
-powershell -File scripts/codex/prepare-pr.ps1
-node scripts/codex/validate-supabase-baseline-functional.mjs
-
-Não assumir script typecheck se não existir no package.json.
+---
 
 ## Graphify
 
-Se graphify-out/ existir:
-- use graphify-out/GRAPH_REPORT.md antes de investigações amplas;
-- para relação entre módulos, prefira graphify query/path/explain;
-- para patch focal em arquivo já conhecido, não é obrigatório abrir Graphify antes;
-- após mudança estrutural relevante, rode graphify update . se disponível.
+Use Graphify quando a tarefa exigir relação entre módulos, dependências ou impacto transversal.
+
+Se `graphify-out/` existir, consulte `.agents/rules/GRAPHIFY_USAGE.md`.
+
+Não é obrigatório para patch local em arquivo já conhecido.
+
+---
+
+## Validação
+
+Use validação proporcional ao escopo:
+
+- patch local: teste específico do módulo;
+- domínio crítico: preflight + validate;
+- entrega ampla: `pnpm run lint`, `pnpm test`, `pnpm run build`;
+- Supabase/RLS: `node scripts/codex/validate-supabase-baseline-functional.mjs`.
+
+Não inventar scripts. Conferir `package.json` quando necessário.
+
+---
 
 ## Resposta final
 
-Formato:
-1. resumo executivo;
-2. arquivos criados/alterados;
-3. conteúdo principal;
-4. impacto em Supabase/RLS/migrations, se houver;
-5. validações executadas;
-6. escopo confirmado;
-7. riscos/pendências, no máximo 3.
+Formato preferido:
 
-## graphify
-
-This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.
-
-Rules:
-- ALWAYS read graphify-out/GRAPH_REPORT.md before reading any source files, running grep/glob searches, or answering codebase questions. The graph is your primary map of the codebase.
-- For cross-module "how does X relate to Y" questions, prefer `graphify query "<question>"`, `graphify path "<A>" "<B>"`, or `graphify explain "<concept>"` over grep — these traverse the graph's EXTRACTED + INFERRED edges instead of scanning files
-- After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).
+1. Resumo executivo
+2. Arquivos criados/alterados/movidos
+3. Conteúdo principal
+4. Impacto em Supabase/RLS/migrations, se houver
+5. Validações executadas
+6. Escopo confirmado
+7. Riscos/pendências, no máximo 3

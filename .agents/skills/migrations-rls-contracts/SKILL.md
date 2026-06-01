@@ -1,220 +1,184 @@
+```markdown
 ---
 name: migrations-rls-contracts
-description: Use when the task is about migrations SQL, schema, FKs compostas, enums, views, triggers append-only, RLS, RBAC, RPCs SECURITY DEFINER, blocked tables, contratos versionados, catálogo global vs tenant-scoped, ou mudanças estruturais que exigem alinhar banco, sync e docs normativos.
+description: Use when a RebanhoSync task touches Supabase migrations, RLS policies, RPCs, functions, composite foreign keys, tenant isolation, RBAC, or database contract changes.
 ---
 
-# Migrations — Schema, RLS e Contratos
+# Migrations RLS Contracts
 
-## Missão
+## Mission
 
-Orientar mudanças estruturais no banco e nos contratos normativos:
-- migrations SQL
-- schema lógico
-- FKs compostas com `fazenda_id`
-- enums e views
-- triggers append-only
-- RLS / RBAC
-- RPCs `SECURITY DEFINER`
-- blocked tables
-- contratos versionados do sync
-- fronteira entre catálogo global e tabela tenant-scoped
-- decisão de quando abrir ADR
-
-Esta skill cobre a camada **estrutural e normativa**.
+Protect RebanhoSync database contracts, RLS, tenant isolation, composite keys, RPC safety, and Supabase baseline integrity.
 
 ---
 
-## Quando usar
+## When to use
 
-Use esta skill quando a tarefa envolver:
-
-- `supabase/migrations/**`
-- `docs/RLS.md`
-- `docs/CONTRACTS.md`
-- `supabase/functions/sync-batch/**` se houver impacto contratual
-- novas tabelas
-- alteração de colunas / enums / constraints
-- mudança de FK
-- triggers append-only
-- policies RLS
-- RPCs privilegiadas
-- tabela global vs tenant-scoped
-- contrato canônico de payload
-
-Tracks prováveis:
-- `infra.db`
-- `infra.rls`
-- `infra.contracts`
-- qualquer capability que exija mudança estrutural
+Use when task touches:
+* `supabase/migrations/**`;
+* RLS policies;
+* Database functions;
+* RPCs;
+* Triggers;
+* Indexes;
+* Composite FKs;
+* `fazenda_id`;
+* `user_fazendas`;
+* RBAC/membership;
+* Sync-batch backend contract;
+* Database baseline validation;
+* Migrations consolidation.
 
 ---
 
-## Quando NÃO usar
+## Do not use when
 
-Não use esta skill para:
-- refino local de UI
-- ajustes de domínio que não alteram schema/contrato
-- simples leitura/projeção em client sem impacto estrutural
+Do not use when:
+* Task is UI-only;
+* No DB/RLS/RPC/schema contract is involved;
+* Task is local documentation only;
+* Task only changes client copy or styling.
 
-Nesses casos, usar a skill do domínio correspondente.
-
----
-
-## Ler primeiro
-1. `docs/RLS.md` 
-2. `docs/CONTRACTS.md`
-
-Ler só se necessário:
-- `docs/ARCHITECTURE.md`
-- `docs/OFFLINE.md`
-- `docs/CURRENT_STATE.md`
-
-Arquivos-alvo mais comuns:
-- `supabase/migrations/**`
-- `supabase/functions/sync-batch/**`
-- `docs/RLS.md`
-- `docs/CONTRACTS.md`
+### Use instead:
+* `sync-offline-rollback` if local sync is main risk;
+* `rebanhosync-verification-gate` after patch;
+* Domain skill for domain rules.
 
 ---
 
-## Modelo mental obrigatório
+## Read first
 
-Separar sempre:
+1. `AGENTS.md`
+2. `.agents/rules/CORE_RULES.md`
+3. `.agents/rules/CONTEXT_LOADING.md`
+4. `.agents/rules/no-broad-context.md`
+5. `.agents/rules/rtk.md`
 
-### A. Tabela tenant-scoped
-- carrega `fazenda_id`
-- isolada por RLS
-- pode exigir FK composta
-
-### B. Tabela global
-- exceção explícita
-- sem `fazenda_id`
-- precisa justificativa arquitetural clara
-- geralmente leitura compartilhada / seed / catálogo
-
-### C. Estado mutável vs fato append-only
-- estado atual: update permitido
-- evento/fato: append-only com trigger e correção por contra-lançamento quando aplicável
-
-### D. Contrato técnico
-- shape aceito no cliente
-- validação autoritativa no servidor
-- reason codes
-- compatibilidade offline
+### Read as needed:
+* `docs/technical/SUPABASE_RLS.md`
+* `docs/technical/EVENTS_AGENDA_CONTRACT.md`
+* `docs/technical/OFFLINE_SYNC.md`
+* `docs/technical/ARCHITECTURE.md`
+* `docs/context/SOURCE_OF_TRUTH.md`
+* Local `AGENTS.md` in `supabase/**`.
 
 ---
 
-## Decisão rápida
+## Source of truth
 
-### Caso A — nova tabela
-Perguntar:
-1. É tenant-scoped ou global?
-2. Precisa de `fazenda_id`?
-3. Precisa de RLS?
-4. Precisa de FK composta?
-5. É estado mutável ou histórico append-only?
-
-### Caso B — nova relação
-Se for relação interna multi-tenant:
-- presumir FK composta com `fazenda_id`
-- só abrir exceção se houver motivo claro e documentado
-
-### Caso C — nova operação privilegiada
-Se a operação não é segura/ergonômica via RLS simples:
-- avaliar RPC `SECURITY DEFINER`
-- com validação explícita
-- `search_path = public`
-
-### Caso D — novo campo/contrato em payload
-Separar:
-- schema TS central
-- validação local
-- validação autoritativa no servidor
-- docs normativos
-- testes
+In case of conflict, trust:
+1. Active migrations;
+2. Code using those contracts;
+3. `docs/context/PROJECT_STATUS.md`;
+4. Active normative docs;
+5. Derived docs;
+6. Archive/history;
+7. This skill.
 
 ---
 
-## Invariantes obrigatórias
+## Hard constraints
 
-- `fazenda_id` continua sendo fronteira de isolamento quando aplicável
-- FK composta com `fazenda_id` quando aplicável
-- tabelas de eventos/fatos continuam append-only
-- `user_fazendas` não ganha escrita direta
-- `SECURITY DEFINER` exige validação explícita e `search_path = public`
-- policies não devem abrir bypass cross-tenant
-- contrato versionado precisa ser validado localmente e no servidor
-- catálogo global não deve ser criado por conveniência sem justificativa real
-- mudanças estruturais relevantes exigem atualização normativa correspondente
-
----
-
-## Anti-padrões
-
-- criar FK simples onde a relação é multi-tenant
-- criar tabela tenant-scoped sem `fazenda_id`
-- usar label derivado como coluna persistida quando deveria ser projeção
-- editar eventos históricos via update de negócio
-- adicionar policy recursiva/ambígua que consulta a própria tabela de forma insegura
-- criar RPC privilegiada sem safeguards explícitos
-- mexer no contrato de sync sem alinhar cliente/servidor/docs/testes
+* Do not weaken RLS.
+* Do not bypass tenant isolation.
+* Preserve `fazenda_id` as isolation boundary.
+* Prefer composite FKs with `fazenda_id` when applicable.
+* Do not grant direct write to membership tables unless explicitly designed.
+* Do not expose `service_role` to client.
+* RPC with elevated privileges must validate user, role, tenant, and search path.
+* Use `search_path = public` or explicit schema where relevant.
+* Do not alter migrations or baseline without explicit task.
+* Do not use legacy migrations as current truth unless requested.
+* Do not introduce cross-tenant references.
 
 ---
 
-## Checklist antes de alterar
+## Required checks
 
-1. A entidade é global ou tenant-scoped?
-2. Precisa de `fazenda_id`?
-3. Precisa de RLS?
-4. Precisa de FK composta?
-5. É estado mutável ou evento append-only?
-6. Há impacto em cliente/offline/sync?
-7. Precisa atualizar docs normativos?
-8. Precisa abrir ADR?
+### RLS
+Verify:
+* Table has RLS enabled when needed;
+* Select/insert/update/delete policies are scoped;
+* Policies use membership/role correctly;
+* Outsider cannot access tenant data;
+* Owner/manager/cowboy roles behave as expected.
 
----
+### Tenant isolation
+Verify:
+* `fazenda_id` is included in relevant tables;
+* Relationships cannot cross farms;
+* Composite FK prevents cross-tenant linkage;
+* Client payload cannot spoof tenant access.
 
-## Forma de entrega
+### RPC / function safety
+Verify:
+* Authenticated user is checked;
+* Role/membership is checked;
+* Tenant is checked;
+* `search_path` is controlled;
+* Function does not use broad bypass;
+* Errors do not leak privileged data.
 
-Retornar:
-- migration mínima
-- justificativa da modelagem
-- impacto em RLS/FKs/views/contrato
-- até 3 riscos
-- docs que precisam ser atualizados
-
----
-
-## Validação mínima
-
-- `pnpm run lint`
-- `pnpm test`
-- `pnpm run build`
-
-Se tocar schema/contrato:
-- revisar alinhamento cliente-servidor
-- revisar tests SQL/TS quando aplicável
-- revisar fluxo offline/sync afetado
-
----
-
-## Atualização documental obrigatória
-
-Quando houver impacto estrutural relevante, revisar:
-- `docs/RLS.md`
-- `docs/CONTRACTS.md`
-
-Docs derivados:
-- só atualizar se a mudança alterar estado funcional real
+### Migration safety
+Verify:
+* Migration is idempotent where possible;
+* No destructive data loss without explicit plan;
+* Indexes and constraints match usage;
+* Backfill is safe;
+* Rollback/forward compatibility is considered.
 
 ---
 
-## Quando abrir ADR
+## RebanhoSync contracts
 
-Abrir ADR se a mudança alterar:
-- contrato do sync
-- ordering / deduplicação / status codes
-- modelo canônico de dados
-- invariantes de RLS / RBAC / RPC
-- arquitetura offline-first / Two Rails
-- regra normativa que passa a orientar o produto
+* **Agenda:** Intention/future task.
+* **Evento:** Executed fact.
+* **`state_*`:** Current state/read model.
+* **Protocolo:** Rule/configuration.
+* **Tags/signals/insights:** Auxiliary only.
+* **Métricas:** Critical operational eligibility requires explicit technical source.
+
+---
+
+## Validation
+
+Follow `.agents/rules/rtk.md`.
+
+### For schema/RLS/RPC/sync changes:
+```bash
+git status --short --untracked-files=all
+rtk pnpm run lint
+rtk pnpm test
+rtk pnpm run build
+rtk node scripts/codex/validate-supabase-baseline-functional.mjs
+
+```
+
+*Note: If a command cannot run, report why.*
+
+---
+
+## Expected output
+
+Return:
+
+1. **DB/RLS contract touched:** [Layers or tables list]
+2. **Tenant isolation assessment:** [Security status]
+3. **RPC/function safety assessment:** [Privileges and validations status]
+4. **Migration safety assessment:** [Idempotency and compatibility status]
+5. **Affected files:** [Paths list]
+6. **Validation executed:** [Commands output summary]
+7. **Blockers:** [If any]
+8. **Riscos/pendências:** [Up to 3 points]
+
+---
+
+## Output rules
+
+* Do not approve RLS change without outsider/role risk assessment.
+* Do not approve RPC change without tenant and role validation assessment.
+* Do not claim baseline valid without running or citing validation.
+
+```
+
+```

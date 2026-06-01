@@ -1,222 +1,178 @@
+```markdown
 ---
 name: animal-cadastro-origem-destino
-description: Use when the task is about cadastro de animal, origem, entrada, compra, venda, morte/saída, status do animal, criação manual, edição de cadastro, ou separação entre atributo-base do animal e projeção derivada do histórico/eventos.
+description: Use when a RebanhoSync task touches animal registration, editing, identification, origin, destination, entry, exit, purchase, sale, death status, or animal base data integrity.
 ---
 
-# Animal — Cadastro, Origem e Destino
+# Animal Cadastro Origem Destino
 
-## Missão
+## Mission
 
-Orientar mudanças e decisões no **cadastro-base** e nos fluxos de **origem/destino** do animal:
-- criação de animal
-- edição cadastral
-- entrada por compra/origem externa
-- saída, venda ou morte
-- status do animal
-- relação entre cadastro-base e eventos/financeiro
-- evitar mistura entre dado-base, evento operacional e projeção derivada
-
-Esta skill **não** é para o fluxo reprodutivo completo de parto/pós-parto/cria inicial.  
-Para isso, usar `reproducao-parto-posparto-cria`.
+Protect animal base registration, identity, origin/destination, entry/exit, and current state integrity in RebanhoSync.
 
 ---
 
-## Quando usar
+## When to use
 
-Use esta skill quando a tarefa envolver:
-
-- `src/pages/AnimalNovo.tsx`
-- `src/pages/AnimalEditar.tsx`
-- `src/pages/Animais.tsx`
-- `src/pages/AnimalDetalhe.tsx`
-- `src/pages/AnimaisImportar.tsx`
-- `src/lib/animals/**` quando tocar cadastro-base, apresentação ou ordenação ligada a status/origem/destino
-- fluxo de compra/venda/entrada/saída
-- vínculo com `financeiro` por compra/venda
-- distinção entre atributo-base e projeção derivada
-
-Capabilities/tracks prováveis:
-- cadastro de `animais`
-- `financeiro.registro` quando a tarefa tocar compra/venda
-- `movimentacao.registro` quando a entrada/saída tocar lote/origem/destino
-- `infra.compliance` só se houver bloqueio regulatório de venda/trânsito
-
----
-
-## Quando NÃO usar
-
-Não use esta skill para:
-- cobertura/IA/diagnóstico/parto
-- pós-parto neonatal
-- cria inicial
-- episode linking
-- ownership de `taxonomy_facts` event-driven
-- anti-teleporte/movimentação detalhada
-- catálogo sanitário/regulatório
-
-Nesses casos, usar:
-- `reproducao-parto-posparto-cria`
-- `movimentacao-transito-conformidade`
-- `sanitario-*`
+Use when task touches:
+* Cadastro de animal;
+* Edição de animal;
+* Identificação;
+* Origem;
+* Destino;
+* Entrada;
+* Saída;
+* Compra;
+* Venda;
+* Óbito;
+* Status atual;
+* Lote atual;
+* Animal base data;
+* Taxonomic/category fields;
+* Origem/destino provenance.
 
 ---
 
-## Ler primeiro
+## Do not use when
 
-1. `docs/CURRENT_STATE.md`
-2. `docs/ARCHITECTURE.md`
+Do not use when:
+* Task is only visual/copy;
+* Animal appears only as a filter in an unrelated flow;
+* Task is strictly sanitary execution;
+* Task is strictly reproductive birth/calf flow;
+* Task is only a financial KPI.
 
-Ler só se necessário:
-- `docs/CONTRACTS.md`
-- `docs/OFFLINE.md`
-
-Arquivos-alvo mais comuns:
-- `src/pages/AnimalNovo.tsx`
-- `src/pages/AnimalEditar.tsx`
-- `src/pages/Animais.tsx`
-- `src/pages/AnimalDetalhe.tsx`
-- `src/pages/AnimaisImportar.tsx`
-- `src/lib/animals/**`
-- `src/pages/Financeiro.tsx` se a tarefa tocar compra/venda
+### Use instead:
+* `reproducao-parto-posparto-cria` for birth/calf flow;
+* `sanitario-registro-operacional` for sanitary events;
+* `movimentacao-transito-conformidade` for movement/transit;
+* `sync-offline-rollback` if sync/rollback is main risk.
 
 ---
 
-## Modelo mental obrigatório
+## Read first
 
-Separar sempre:
+1. `AGENTS.md`
+2. `.agents/rules/CORE_RULES.md`
+3. `.agents/rules/CONTEXT_LOADING.md`
+4. `.agents/rules/no-broad-context.md`
 
-1. **cadastro-base do animal**
-   - identificação
-   - sexo
-   - datas/origem/status
-   - lote atual
-   - vínculos básicos quando aplicável
+> ⚙️ **Execution Rule:** For commands and validation, follow `.agents/rules/rtk.md`.
 
-2. **evento operacional**
-   - compra
-   - venda
-   - morte/saída
-   - movimentação
-   - reprodução
-   - sanitário
-
-3. **projeção derivada**
-   - faixa/categoria derivada
-   - peso atual derivado de pesagem
-   - estados de leitura
-   - parte da taxonomia canônica
-
-Nem tudo que o usuário vê na ficha do animal deve virar coluna/campo manual do cadastro.
+### Read as needed:
+* `docs/domain/ANIMAIS_TAXONOMIA.md`
+* `docs/context/SOURCE_OF_TRUTH.md`
+* `docs/domain/COMPRA_VENDA.md` if purchase/sale is involved;
+* `docs/domain/LOTES_PASTOS.md` if lote/pasto is involved;
+* `docs/technical/OFFLINE_SYNC.md` if sync is involved.
 
 ---
 
-## Decisão rápida
+## Source of truth
 
-### Caso A — Criação manual de animal
-Persistir só o necessário para o cadastro-base.
-
-Evitar colocar no cadastro:
-- próximo manejo
-- estado sanitário derivado
-- status reprodutivo derivado
-- peso atual como fonte primária
-
-### Caso B — Compra
-Separar:
-- inserção/ativação do animal
-- evento financeiro de compra
-- eventual origem/contraparte
-- eventual lote inicial
-
-### Caso C — Venda
-Separar:
-- evento financeiro de venda
-- mudança de status do animal
-- bloqueios regulatórios se existirem
-- não tratar exclusão física como regra normal
-
-### Caso D — Morte/Saída
-Separar:
-- status do animal
-- evento correspondente quando o fluxo atual exigir rastreabilidade
-- não inventar remoção destrutiva como regra operacional padrão
+In case of conflict, trust:
+1. Code + active migrations;
+2. `docs/context/PROJECT_STATUS.md`;
+3. Active normative docs;
+4. Derived docs;
+5. Archive/history;
+6. This skill.
 
 ---
 
-## Invariantes obrigatórias
+## Hard constraints
 
-- `animais` continua sendo estado atual do animal
-- não transformar evento operacional em simples edição silenciosa do cadastro quando o histórico importa
-- não usar `DELETE` como fluxo normal de saída/venda/morte
-- não persistir como atributo-base o que é projeção derivada do histórico
-- não misturar fluxo reprodutivo completo dentro da skill de cadastro
-- manter coerência entre status, lote atual, origem e histórico de eventos
-
----
-
-## Anti-padrões
-
-- salvar no cadastro-base:
-  - peso atual como fonte primária
-  - próxima dose
-  - categoria/faixa etária manual derivável
-  - estado reprodutivo como label fixa
-- tratar compra/venda como simples `UPDATE` sem evento quando o domínio exige histórico
-- hard-delete de animal como fluxo normal
-- misturar parto/cria inicial com simples cadastro manual sem respeitar o fluxo reprodutivo real
+* **Identidade:** Animal identity must remain stable and never be duplicated.
+* **Isolamento:** Do not break `fazenda_id` isolation.
+* **Métricas:** Do not infer current weight reliability without an explicit source.
+* **Métricas:** Do not infer sale/slaughter readiness.
+* **Limitação:** Do not treat tags/signals as a source of animal truth.
+* **Garantia:** Do not treat agenda as animal history.
+* **`state_*`:** Current state belongs in `state_*` or an equivalent read model.
+* **Evento:** Historical changes must be event-backed when factual.
+* Preserve offline-first and idempotency.
 
 ---
 
-## Checklist antes de alterar
+## Conceptual separation
 
-1. A mudança é de cadastro-base, compra/venda, ou visualização derivada?
-2. O dado deveria viver em `animais`, em `eventos_*`, ou só em projection?
-3. Há impacto em `status` do animal?
-4. Há impacto em lote atual/origem/destino?
-5. A tarefa deveria estar numa skill reprodutiva ou de movimentação em vez desta?
-
----
-
-## Forma de entrega
-
-Retornar:
-- diff mínimo
-- separação entre cadastro/evento/projeção
-- até 3 riscos
-- testes focados
+* **Animal Base:** Stable identity and descriptive data.
+* **Current State:** Current status/read model (active, sold, dead, current lote, current category/stage if modeled).
+* **Historical Fact:** Events (purchase, sale, movement, death, weighing, reproduction, sanitary event).
+* **Future Intention:** Agenda item.
 
 ---
 
-## Validação mínima
+## Procedure
 
-- `pnpm run lint`
-- `pnpm test`
-- `pnpm run build`
+### 1. Classify animal operation
+Classify as: create animal, edit base data, entry/purchase, sale/exit, death, origin/destination update, current state read, taxonomic/category adjustment, or UI display.
 
-Se tocar compra/venda/saída:
-- revisar impactos em financeiro
-- revisar bloqueios regulatórios de venda/trânsito quando aplicável
+### 2. Verify source-of-truth
+Check base table vs read model, event-backed history, and current state source. Ensure no agenda-as-history or tag-as-truth behaviors are introduced.
+
+### 3. Verify identity
+Check unique identifiers, farm isolation, duplicate creation risk, offline retry behavior, and the link to a purchase/birth event if applicable.
+
+### 4. Verify status transitions
+Check active → sold, active → dead, lote change, sale/exit, correction/rollback, and pending agenda cleanup if relevant and explicitly modeled.
+
+### 5. Verify edge cases
+Consider: duplicate animal, missing identifier, animal moved between farms, animal sold but still in active lote, animal dead but with active agenda, offline create then retry, and imported animal with incomplete origin.
 
 ---
 
-## Escalonamento
+## Validation
 
-Escalar para `reproducao-parto-posparto-cria` quando tocar:
-- parto
-- pós-parto
-- cria inicial
-- episode linking
-- fatos reprodutivos event-driven
+Follow `.agents/rules/rtk.md`.
 
-Escalar para `movimentacao-transito-conformidade` quando tocar:
-- mudança de lote
-- trânsito externo
-- anti-teleporte
-- GTA/e-GTA
-- PNCEBT
+### Minimum check:
+```bash
+git status --short --untracked-files=all
 
-Escalar para `migrations-rls-contracts` quando tocar:
-- schema de `animais`
-- FKs
-- status/enum estrutural
-- RLS
+```
+
+* plus the related animal tests.
+
+### For broader changes:
+
+```bash
+rtk pnpm run lint
+rtk pnpm test
+rtk pnpm run build
+
+```
+
+### If Supabase/RLS/RPC is touched:
+
+```bash
+rtk node scripts/codex/validate-supabase-baseline-functional.mjs
+
+```
+
+---
+
+## Expected output
+
+Return:
+
+1. **Animal operation affected:** [Flow identifier]
+2. **Source-of-truth assessment:** [Invariants status]
+3. **Identity / duplication risk:** [Uniqueness verification status]
+4. **Current state vs history assessment:** [Read model sync check]
+5. **Sync / rollback risk:** [Idempotency status]
+6. **Tests required/executed:** [Scenarios covered]
+7. **Riscos/pendências:** [Up to 3 points]
+
+---
+
+## Output rules
+
+* Do not infer weight reliability.
+* Do not infer sale/slaughter readiness.
+* Do not use tags/signals as truth.
+* Separate confirmed behavior, inference, and recommendation.
+
+```
+
+```

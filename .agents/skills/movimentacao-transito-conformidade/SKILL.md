@@ -1,248 +1,192 @@
+```markdown
 ---
 name: movimentacao-transito-conformidade
-description: Use when the task is about movimentação entre lotes/pastos, anti-teleporte, trânsito externo, GTA/e-GTA, PNCEBT, bloqueio por suspeita sanitária, bloqueio por compliance/overlay, venda com impacto regulatório, ou tracing operacional de origem-destino.
+description: Use when a RebanhoSync task touches animal movement, lote/pasto movement, origin/destination, transit, GTA/documentation, or compliance associated with movement.
 ---
 
-# Movimentação — Trânsito e Conformidade
+# Movimentação Trânsito Conformidade
 
-## Missão
+## Mission
 
-Orientar mudanças e decisões no domínio de movimentação, cobrindo:
-- movimentação interna entre lotes/pastos
-- anti-teleporte
-- trânsito externo
-- GTA/e-GTA como checklist operacional
-- pre-check PNCEBT
-- bloqueios por suspeita sanitária
-- bloqueios por compliance/overlay regulatório
-- interseção com venda/trânsito quando houver impacto operacional
-
-Esta skill substitui a visão antiga que tratava movimentação só como `evento_movimentacao + update lote`.
+Protect movement and transit flows in RebanhoSync, including lote/pasto movement, origin/destination, animal transfer, documentation, and movement-related compliance.
 
 ---
 
-## Quando usar
+## When to use
 
-Use esta skill quando a tarefa envolver:
-
-- `src/pages/Registrar.tsx`
-- `src/components/manejo/MoverAnimalLote.tsx`
-- `src/components/manejo/AdicionarAnimaisLote.tsx`
-- `src/pages/AnimaisTransicoes.tsx`
-- `src/pages/LoteDetalhe.tsx`
-- `src/lib/sanitario/transit.ts`
-- `src/lib/sanitario/alerts.ts`
-- `src/lib/sanitario/complianceGuards.ts`
-- `src/lib/sanitario/regulatoryReadModel.ts`
-- `src/lib/offline/**` se houver impacto em gesture/order/rollback
-- `supabase/functions/sync-batch/**` se houver impacto em validação autoritativa anti-teleporte
-
-Capabilities prováveis:
-- `movimentacao.registro`
-- `movimentacao.historico`
-- `movimentacao.anti_teleport_client`
-- faixas cross-cutting de `infra.compliance`
+Use when task touches:
+* Movimentação de animal;
+* Movimentação entre lotes;
+* Movimentação entre pastos;
+* Origem/destino;
+* Entrada/saída por movimentação;
+* Trânsito animal;
+* GTA or transport documentation;
+* Compliance related to movement;
+* Movement event;
+* Current lote/pasto state;
+* Historical movement report.
 
 ---
 
-## Quando NÃO usar
+## Do not use when
 
-Não use esta skill para:
-- cadastro-base simples do animal
-- fluxo reprodutivo de parto/pós-parto/cria
-- registro sanitário operacional simples
-- catálogo regulatório oficial fora do impacto em movimentação/trânsito
+Do not use when:
+* Task is simple visual adjustment in lote/pasto screen;
+* Task is only financial KPI without movement;
+* Task is sanitary compliance without movement/transit;
+* Task is generic animal registration without movement;
+* Task is only pasture visual card/copy.
 
-Nesses casos, usar:
-- `animal-cadastro-origem-destino`
-- `reproducao-parto-posparto-cria`
-- `sanitario-*`
-
----
-
-## Ler primeiro
-
-1. `docs/CURRENT_STATE.md`
-2. `docs/ARCHITECTURE.md`
-3. `docs/CONTRACTS.md`
-
-Ler só se necessário:
-- `docs/OFFLINE.md`
-- `docs/RLS.md`
-
-Arquivos-alvo mais comuns:
-- `src/pages/Registrar.tsx`
-- `src/components/manejo/MoverAnimalLote.tsx`
-- `src/components/manejo/AdicionarAnimaisLote.tsx`
-- `src/pages/AnimaisTransicoes.tsx`
-- `src/pages/LoteDetalhe.tsx`
-- `src/lib/sanitario/transit.ts`
-- `src/lib/sanitario/alerts.ts`
-- `src/lib/sanitario/complianceGuards.ts`
-- `src/lib/sanitario/regulatoryReadModel.ts`
-- `src/lib/offline/ops.ts`
-- `src/lib/offline/syncWorker.ts`
-- `supabase/functions/sync-batch/**`
-
-Evitar abrir por padrão:
-- docs derivados
-- catálogo sanitário completo se a tarefa for só fluxo operacional de movimento
-- histórico antigo do projeto
+### Use instead:
+* `animal-cadastro-origem-destino` for base animal registration;
+* `sanitario-catalogo-regulatorio-compliance` for pure sanitary compliance;
+* `sync-offline-rollback` if sync/rollback is main risk;
+* `migrations-rls-contracts` if DB/RLS/RPC is touched.
 
 ---
 
-## Modelo mental obrigatório
+## Read first
 
-Separar sempre:
+1. `AGENTS.md`
+2. `.agents/rules/CORE_RULES.md`
+3. `.agents/rules/CONTEXT_LOADING.md`
+4. `.agents/rules/no-broad-context.md`
 
-### A. Movimentação interna
-- troca de lote/pasto
-- histórico operacional
-- anti-teleporte
-- update do estado atual do animal
+> ⚙️ **Execution Rule:** For commands and validation, follow `.agents/rules/rtk.md`.
 
-### B. Trânsito externo
-- operação externa
-- checklist GTA/e-GTA
-- destino/finalidade
-- requisitos documentais/interestaduais
-- pode intersectar venda
-
-### C. Bloqueios sanitários/regulatórios
-- suspeita sanitária aberta
-- quarentena
-- documental
-- `feed-ban` / compliance runtime quando aplicável
-- leitura nasce do read model/guards compartilhados
-
-### D. Histórico vs estado atual
-- evento de movimentação = fato passado
-- `animais.lote_id` = estado atual
-- ambos precisam continuar coerentes
+### Read as needed:
+* `docs/context/SOURCE_OF_TRUTH.md`
+* `docs/domain/LOTES_PASTOS.md`
+* `docs/domain/COMPRA_VENDA.md` if sale/exit is involved;
+* `docs/domain/SANITARIO.md` if sanitary block/check is involved;
+* `docs/technical/OFFLINE_SYNC.md` if gesture/sync/rollback is involved;
+* `docs/technical/SUPABASE_RLS.md` if backend/RLS/RPC is involved.
 
 ---
 
-## Regra dura: anti-teleporte
+## Source of truth
 
-Você **não** pode atualizar `animais.lote_id` sem o evento correspondente no mesmo gesto quando o fluxo for movimentação interna com mudança de lote.
-
-Ordem lógica:
-1. criar evento base (`eventos`, domínio `movimentacao`)
-2. criar detalhe (`eventos_movimentacao`)
-3. atualizar `animais.lote_id`
-
-Não quebrar essa ordem sem justificativa muito forte e alinhamento com o `sync-batch`.
-
----
-
-## Decisão rápida
-
-### Caso A — Movimento interno entre lotes
-Exigir:
-- evento base
-- detalhe de movimentação
-- update do lote atual
-- tudo coerente no mesmo gesto
-
-### Caso B — Movimento entre pastos sem troca de lote
-Registrar o histórico adequado.
-Não assumir update de `lote_id` se o lote não mudou.
-
-### Caso C — Trânsito externo
-Separar:
-- não é só “movimentação interna mais campos”
-- pode exigir checklist GTA/e-GTA
-- pode exigir `destination_uf`
-- pode exigir pre-check PNCEBT no caso reprodutivo interestadual
-
-### Caso D — Animal com suspeita sanitária aberta
-Movimentação/venda/trânsito podem estar bloqueados.
-A regra deve nascer de `alerts` / `complianceGuards` / `regulatoryReadModel`, não de if solto na UI.
-
-### Caso E — Overlay/compliance bloqueando
-Bloqueios contextuais devem ser compartilhados entre:
-- `Registrar`
-- fluxo auxiliar de lote
-- transições em massa
-- superfícies derivadas como `LoteDetalhe`
+In case of conflict, trust:
+1. Code + active migrations;
+2. `docs/context/PROJECT_STATUS.md`;
+3. Active normative docs;
+4. Derived docs;
+5. Archive/history;
+6. This skill.
 
 ---
 
-## Invariantes obrigatórias
+## Hard constraints
 
-- evento + detalhe + update continuam coerentes
-- não quebrar anti-teleporte
-- não duplicar guardas regulatórias em várias telas sem usar o read model/guards compartilhados
-- trânsito externo continua distinto de movimentação interna
-- GTA/e-GTA permanece checklist operacional/documental, não emissão documental completa por padrão
-- suspeita sanitária aberta continua podendo bloquear movimento/venda
-- PNCEBT interestadual reprodutivo continua tratado como pre-check específico, não regra genérica em tudo
-
----
-
-## Anti-padrões
-
-- atualizar `lote_id` sem evento de movimentação correspondente
-- tratar trânsito externo como simples troca de lote
-- duplicar guardas de compliance em várias páginas
-- embutir regra interestadual rígida em todo movimento interno
-- contornar bloqueio sanitário/regulatório via fluxo auxiliar de lote
-- modelar GTA completa/fiscal completa dentro de um fluxo que hoje é checklist operacional
+* **Evento:** Movement event is historical fact.
+* **`state_*`:** Current lote/pasto belongs in current state/read model.
+* **Garantia:** Agenda is not movement history.
+* **Limitação:** Tags/signals are not movement truth.
+* **Métricas:** Do not infer transit compliance if documentation/source is missing.
+* **Métricas:** Do not infer sanitary clearance unless explicit technical source exists.
+* Preserve `fazenda_id` isolation.
+* Preserve offline-first and rollback.
+* Movement must not create cross-tenant relation.
+* Avoid duplicating movement fact and current state as competing truths.
 
 ---
 
-## Checklist antes de alterar
+## Conceptual separation
 
-1. É movimentação interna, pasto, ou trânsito externo?
-2. O fluxo exige update de `animais.lote_id`?
-3. Existe bloqueio sanitário aberto?
-4. Existe bloqueio regulatório/compliance ativo?
-5. Há impacto em venda/trânsito externo?
-6. A regra precisa viver em `transit.ts`, `alerts.ts`, `complianceGuards.ts`, `regulatoryReadModel.ts` ou no `sync-batch`?
+* **Historical Movement:** Event-backed fact (animal/lote moved, origin, destination, date, responsible user, reason, documentation if applicable).
+* **Current State:** Read model (current lote, current pasto, current status, current occupancy).
+* **Transit / Compliance:** Documental or regulatory support (GTA, transport info, destination documentation, compliance flags); not proof of movement unless event exists.
 
 ---
 
-## Forma de entrega
+## Procedure
 
-Retornar:
-- diff mínimo
-- fluxo afetado
-- invariantes preservadas
-- até 3 riscos
-- testes focados
+### 1. Classify movement
+Classify as: internal lote movement, internal pasto movement, farm entry, farm exit, sale-related exit, transfer, transport/transit, compliance/documentation, historical report, or current state display.
 
----
+### 2. Verify source-of-truth
+Check: event for history, `state_*` or equivalent for current state, document/checklist as support only, and ensure no agenda-as-history behavior.
 
-## Validação mínima
+### 3. Verify origin/destination
+Check if origin exists, destination exists, same farm/tenant when required, external destination is represented correctly, no cross-tenant FK bypass is present, and animal/lote active status is compatible.
 
-- `pnpm run lint`
-- `pnpm test`
-- `pnpm run build`
+### 4. Verify consistency
+Check that current lote/pasto is updated/recomputed, occupancy period closed/opened correctly, movement history preserved, no duplicate movement on retry occurs, rollback restores previous current state, and partial success is reconcilable.
 
-Se tocar anti-teleporte/sync:
-- revisar order do gesto
-- revisar rollback
-- revisar validação cliente/servidor
-
-Se tocar trânsito/compliance:
-- revisar bloqueios compartilhados
-- revisar CTA/sinalização em superfícies derivadas quando aplicável
+### 5. Verify compliance
+Check that GTA/document is required only when applicable, absence of document becomes pending/exception (not false compliance), compliance signal does not create movement fact, and sanitary block is not inferred without explicit source.
 
 ---
 
-## Escalonamento
+## Edge cases
 
-Escalar para `sync-offline-rollback` quando tocar:
-- gestures
-- rollback
-- order de ops
-- queue/sync worker
+Consider:
+* Animal already sold/dead;
+* Movement to same lote/pasto;
+* Missing destination;
+* External destination;
+* Multiple animals partially moved;
+* Offline retry;
+* Duplicate submit;
+* Rollback after current state update;
+* Document missing;
+* Sanitary pending item conflicting with movement.
 
-Escalar para `migrations-rls-contracts` quando tocar:
-- FK
-- schema
-- constraint
-- policy
-- enum
+---
 
-Escalar para `sanitario-catalogo-regulatorio-compliance` quando a mudança for principalmente sobre overlay, compliance runtime ou catálogo oficial
+## Validation
+
+Follow `.agents/rules/rtk.md`.
+
+### Minimum check:
+```bash
+git status --short --untracked-files=all
+
+```
+
+* plus the related movement tests.
+
+### For broader changes:
+
+```bash
+rtk pnpm run lint
+rtk pnpm test
+rtk pnpm run build
+
+```
+
+### If Supabase/RLS/RPC is touched:
+
+```bash
+rtk node scripts/codex/validate-supabase-baseline-functional.mjs
+
+```
+
+---
+
+## Expected output
+
+Return:
+
+1. **Movement type affected:** [Flow identifier]
+2. **Source-of-truth assessment:** [Invariants status]
+3. **Origin/destination assessment:** [Mapping logic verification]
+4. **Current state vs history assessment:** [Read model sync check]
+5. **Transit / compliance assessment:** [Documentation linkage check]
+6. **Sync / rollback risk:** [Idempotency status]
+7. **Tests required/executed:** [Scenarios covered]
+8. **Riscos/pendências:** [Up to 3 points]
+
+---
+
+## Output rules
+
+* Do not treat document/checklist as movement fact.
+* Do not infer sanitary clearance.
+* Do not use agenda as movement history.
+* Separate confirmed behavior, inference, and recommendation.
+
+```
+
+```

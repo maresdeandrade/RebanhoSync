@@ -1,215 +1,229 @@
+```markdown
 ---
 name: rebanhosync-verification-gate
-description: Use when a change is complete and you need to verify repository state, diff scope, applicable validation commands, warnings, and delivery readiness before handoff or PR preparation.
+description: Use to validate a completed RebanhoSync patch, inspect actual diff including untracked files, classify readiness, and identify blockers before PR or merge.
 ---
 
-# Repository Verification Gate
-## Missão
-Fechar uma tarefa com **evidência objetiva de validação**, confirmando:
-- estado real do diff;
-- arquivos rastreados e untracked;
-- comandos executados;
-- falhas, warnings e pendências;
-- prontidão ou não para handoff / PR.
-Esta skill não escreve narrativa de PR.
-Para isso, usar `prepare-pr` depois que o gate estiver concluído.
----
+# RebanhoSync Verification Gate
 
-## Quando usar
-Use quando:
-- a implementação terminou;
-- uma refatoração foi concluída;
-- houve alteração em código, docs normativos, skills, scripts ou governança;
-- a tarefa tocou área crítica;
-- for necessário declarar objetivamente se a entrega está pronta;
-- você pretende escalar para `prepare-pr`.
----
+## Mission
 
-## Quando NÃO usar
-Não use para:
-- exploração de contexto;
-- planejamento antes de alterar arquivos;
-- análise arquitetural sem patch;
-- escrever corpo de PR sem revisar o estado técnico;
-- investigação ainda aberta.
-Nesses casos, usar:
-- `repository-context-retrieval`;
-- `harden-module`;
-- skill de domínio correspondente.
+Verify a completed patch against RebanhoSync contracts, scope, files changed, tests, and operational risks.
+
+This skill classifies the delivery as:
+* 🟢 **READY**
+* 🟡 **READY WITH CAVEAT**
+* 🔴 **NOT READY**
 
 ---
-## Ler primeiro
+
+## When to use
+
+Use when:
+* A patch is complete;
+* The user asks to validate a phase;
+* Tests were executed and need interpretation;
+* There are modified or untracked files;
+* A PR is almost ready;
+* The task touches critical domain, sync, RLS, migrations, or documentation.
+
+---
+
+## Do not use when
+
+Do not use when:
+* The task is still planning;
+* The implementation has not started;
+* The correct files are still unknown;
+* The goal is only to write a PR body.
+
+### Use instead:
+* `repository-context-retrieval` for discovery;
+* `prepare-pr` after this gate passes;
+* Domain-specific skill for implementation guidance.
+
+---
+
+## Read first
+
 1. `AGENTS.md`
-2. `README.md`
-3. `docs/CURRENT_STATE.md`
-4. `docs/PROCESS.md`
-Se a tarefa tocou caminho crítico, ler também o `AGENTS.md` local aplicável.
+2. `.agents/rules/CORE_RULES.md`
+3. `.agents/rules/CONTEXT_LOADING.md`
+4. `.agents/rules/rtk.md`
+
+*Note: If the task touched a critical path, read the local `AGENTS.md` for that path.*
 
 ---
-## Regra central
-Nunca declarar uma entrega como:
-- “pronta”;
-- “validada”;
-- “sem pendências”;
-- “safe to merge”;
-sem verificar:
-1. estado do repositório;
-2. escopo real do diff;
-3. validações aplicáveis;
-4. pendências remanescentes.
 
----
-## Procedimento
-### 1. Confirmar escopo da entrega
-Registrar:
-- capability principal ou trilha `infra.*`, quando aplicável;
-- objetivo da alteração;
-- caminhos intencionalmente tocados;
-- caminhos que deveriam permanecer fora de escopo.
+## Required commands
 
-### 2. Inspecionar estado do repositório
-Executar:
-```
+Always inspect repository state:
+```bash
 git status --short --untracked-files=all
+
+```
+
+Then inspect tracked diff:
+
+```bash
 git diff --name-only
 git diff --stat
-``` 
 
-Usar esses comandos para confirmar:
-- arquivos modificados;
-- arquivos novos ainda não rastreados;
-- presença de mudanças fora do escopo;
-- se o diff real corresponde ao objetivo declarado.
-Se houver arquivos untracked, não assumir que `git diff` vazio significa ausência de mudança.
-
-### 3. Classificar o tipo de entrega
-Determinar se a alteração é:
-- código funcional
-- refatoração sem mudança de comportamento
-- docs/governança
-- schema/RLS/Supabase
-- infraestrutura de validação
-- mista
-Essa classificação define quais validações são obrigatórias.
-
-### 4. Executar validação aplicável
-Código ou refatoração
-Executar:
-``` 
-pnpm run lint
-pnpm test
-pnpm run build
 ```
 
-Área crítica
-Se tocar uma área crítica listada no `AGENTS.md`, executar também:
-powershell -File scripts/codex/validate.ps1 -TouchedPaths "<path1>","<path2>"
-Baseline Supabase / sync-batch / migrations
-Se a tarefa tocar baseline, função ou fluxo explicitamente coberto:
+> ⚠️ **Aviso:** `git diff` does not show new untracked files. Always use `git status --short --untracked-files=all`.
+
+---
+
+## Scope checks
+
+Verify:
+
+* Intended scope vs actual files changed;
+* Modified files;
+* Untracked files;
+* Deleted files;
+* Generated artifacts;
+* Accidental broad refactors;
+* Docs changed without functional delta;
+* Tests changed without justification.
+
+---
+
+## Domain checks
+
+Confirm that the patch did not violate:
+
+* **Agenda:** Intenção/future task, not history;
+* **Evento:** Executed fact;
+* **`state_*`:** Current state/read model;
+* **Protocolo:** Rule/configuration, not execution;
+* **Tags/signals/insights:** Auxiliary, not source of truth;
+* **Métricas:** Carência, reliable current weight, sale/slaughter readiness require explicit technical source;
+* **Arquitetura:** UI must not contain critical business rules;
+* **Garantia:** No parallel source of truth.
+
+---
+
+## Technical checks
+
+Verify impact on:
+
+* Offline-first;
+* Dexie/local state;
+* Gestures;
+* Sync queue;
+* Rollback;
+* Retry;
+* Partial success;
+* Supabase/RLS;
+* `fazenda_id` isolation;
+* Migrations/RPC/policies;
+* Tests and build.
+
+---
+
+## Validation
+
+Follow `.agents/rules/rtk.md`.
+
+### Minimum check:
+
+```bash
+git status --short --untracked-files=all
+
 ```
-node scripts/codex/validate-supabase-baseline-functional.mjs
-``` 
 
-Docs, skills ou governança sem impacto executável
-Pode dispensar lint/test/build somente quando:
-- nenhum código executável foi alterado;
-- isso for declarado explicitamente;
-- o diff tiver sido inspecionado;
-- o motivo da dispensa for registrado.
----
+### For local patch:
 
-## Leitura dos resultados
-Classificar cada validação como:
-- PASS
-- FAIL
-- NOT RUN — justified
-Para warnings:
-- não chamar de “conhecido” sem base recente;
-- registrar se foi: previamente conhecido, novo ou não investigado.
-Nunca esconder:
-- falha de comando;
-- comando não executado;
-- warning relevante;
-- mudança fora de escopo.
----
+* Related test command if available.
 
-## Critério de prontidão
-READY
-Quando:
-- diff corresponde ao escopo;
-- não há arquivo esquecido/untracked relevante;
-- validações aplicáveis passaram;
-- warnings foram classificados;
-- pendências restantes são inexistentes ou explicitamente aceitas.
-READY WITH CAVEAT
-Quando:
-- a entrega está tecnicamente consistente;
-- mas há aviso, limitação ou validação dispensada com justificativa objetiva.
-NOT READY
-Quando:
-- há falha de validação;
-- há diff fora de escopo;
-- há arquivos não analisados;
-- há incerteza técnica relevante;
-- faltou rodar gate obrigatório.
----
+### For broader patch:
 
-## Escalonamento
-Depois do gate:
-- usar `prepare-pr` se a entrega estiver pronta para revisão/PR;
-- voltar para a skill de domínio se o gate revelar bug funcional;
-- usar `harden-module` se surgir dívida estrutural não tratada;
-- usar `docs-reconciliation` se a alteração exigir atualização documental formal.
----
+```bash
+rtk pnpm run lint
+rtk pnpm test
+rtk pnpm run build
 
-## Formato de entrega
-Responder com:
 ```
-## Verification gate
 
-### Escopo revisado
-- objetivo:
-- capability / infra:
-- caminhos principais:
+### For Supabase/RLS/sync-batch:
 
-### Estado do repositório
-- modified:
-- untracked:
-- fora de escopo:
+```bash
+rtk node scripts/codex/validate-supabase-baseline-functional.mjs
 
-### Validações
-| Comando | Status | Observação |
-|---|---|---|
-| `pnpm run lint` | PASS / FAIL / NOT RUN | ... |
-| `pnpm test` | PASS / FAIL / NOT RUN | ... |
-| `pnpm run build` | PASS / FAIL / NOT RUN | ... |
+```
 
-### Warnings
-- warning 1:
-- warning 2:
+> ⚠️ **Restrição:** Do not claim validation passed unless command output confirms it.
 
-### Riscos ou pendências
-1. ...
-2. ...
-3. ...
-
-### Veredito
-- READY / READY WITH CAVEAT / NOT READY
-``` 
 ---
 
-## Regras finais
-- Não confundir git diff vazio com ausência de arquivo novo.
-- Não substituir comando real por inferência.
-- Não chamar validação de completa sem evidência.
-- Não absorver escopo extra durante o fechamento.
-- Não preparar PR “verde” se o gate terminou como NOT READY.
+## Readiness classification
+
+### 🟢 READY
+
+Use when:
+
+* Scope is clean;
+* Tests/validation proportional to risk passed;
+* No domain contract violation;
+* No critical untracked file missed;
+* No migration/RLS/sync risk remains.
+
+### 🟡 READY WITH CAVEAT
+
+Use when:
+
+* Patch is likely safe;
+* Validation was partial but justified;
+* Only non-blocking warnings remain;
+* Risks are explicit and acceptable.
+
+### 🔴 NOT READY
+
+Use when:
+
+* Tests fail;
+* Files are missing/untracked unexpectedly;
+* Scope expanded without justification;
+* Domain contract is violated;
+* RLS/sync/migration risk is unresolved;
+* Build/lint critical failure remains;
+* Docs claim behavior not implemented.
+
 ---
 
-## Definition of done
-- o escopo real do diff foi confirmado;
-- modified e untracked foram explicitados;
-- as validações corretas foram executadas ou justificadamente dispensadas;
-- warnings e pendências foram registrados;
-- o veredito final ficou claro;
-- o próximo passo ficou evidente.
+## Escalation
+
+* Use `reconcile-docs` if documentation needs formal alignment;
+* Use `prepare-pr` only after READY or READY WITH CAVEAT;
+* Use domain skill if a blocker requires implementation guidance.
+
+---
+
+## Expected output
+
+Return:
+
+1. **Classification:** [READY | READY WITH CAVEAT | NOT READY]
+2. **Summary of actual diff:** [Brief analysis]
+3. **Files changed and untracked:** [Paths list]
+4. **Scope confirmation:** [Scope matching verification]
+5. **Domain contract check:** [Invariants matching verification]
+6. **Validation commands and results:** [Output summary]
+7. **Blockers:** [If any]
+8. **Riscos/pendências:** [Up to 3 points]
+9. **Final recommendation:** [Next strategic action]
+
+---
+
+## Output rules
+
+* Separate confirmed facts, inferences, and recommendations.
+* Do not hide failed tests.
+* Do not treat old warnings as new failures without evidence.
+* Do not approve patch with unknown untracked files.
+
+```
+
+```

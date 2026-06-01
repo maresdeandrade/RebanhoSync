@@ -35,7 +35,7 @@ Em caso de conflito, a ordem de confiança é:
 4. docs derivados
 5. histórico
 
-Quando a tarefa envolver fontes de verdade operacionais, propostas de `src/lib/insights/`, marcadores/tags, relatórios de prontidão comercial ou decisões automatizadas, usar também `docs/review/RebanhoSync_auditoria.md` como contrato documental pós-validação. Ele não supera código/migrations, mas registra os bloqueios e limites atuais aprovados para orientar prompts futuros.
+Para contratos de domínio e bloqueios, consulte `docs/context/SOURCE_OF_TRUTH.md` e `docs/context/KNOWN_GAPS.md`.
 
 ### 2.3 Escopo estreito
 Mudanças devem, por padrão:
@@ -167,21 +167,7 @@ Quando os hotspots criticos de uma frente estiverem endurecidos (ex.: shell fino
 
 ### 4.2.4 Governanca semantica e idempotencia
 
-Em fluxos operacionais, manter as regras normativas:
-
-- Two Rails explicito: Agenda (intencao mutavel) != Eventos (fato historico protegido contra update destrutivo de negocio, com excecoes tecnicas controladas).
-- `Registrar` e `Executar` registram evento.
-- `Encerrar` e `Cancelar` atuam apenas na agenda.
-- `Aplicar protocolo` atua apenas na agenda (materializacao/recalculo), sem registrar evento.
-- `Seguir pos-parto` e `Seguir rotina da cria` identificam continuidade de fluxo guiado em reproducao.
-- `Concluir direto`, `Abrir proxima acao`, `Abrir registro detalhado` e `Executar direto` sao termos proibidos.
-- invariavel de execucao: `1 acao -> 1 createGesture` (sem duplicacao sequencial).
-- handlers de acao direta devem usar guarda de reentrada/concorrencia para evitar dupla submissao e navegacao duplicada.
-- agenda concluida sem evento vinculado nao deve ser tratada como execucao factual.
-- necessidade futura deve partir de agenda materializada valida quando o dominio tiver agenda confirmada; regra mais validada para sanitario e cria/pos-parto.
-- protocolo configurado nao e execucao realizada.
-- `state_*` e estado atual/read model, nao historico.
-- peso atual confiavel, carencia ativa operacional, pronto para venda/abate, `commercialReadiness.ts` conclusivo, tags/marcadores persistidos como fonte primaria, consulta em linguagem natural, IA gerando agenda, IA concluindo execucao e motor geral IATF permanecem bloqueados ate fonte consolidada e nova validacao.
+Em fluxos operacionais, as regras normativas e invariantes de domínio são definidas em `docs/context/CORE_RULES.md` e `docs/context/SOURCE_OF_TRUTH.md`. Consulte esses documentos para detalhes sobre Two Rails, eventos, agenda, protocolos, `state_*`, e bloqueios operacionais.
 
 ### 4.3 Validar
 Toda entrega deve, no mínimo, validar:
@@ -329,14 +315,16 @@ Abrir ADR se a mudança alterar:
 
 Em caso de dúvida, a ordem de consulta deve ser:
 
-1. `README.md`
-2. `docs/CURRENT_STATE.md`
+1. `../AGENTS.md`
+2. `docs/context/PROJECT_STATUS.md`
 3. `docs/PROCESS.md`
-4. `docs/PRODUCT.md`
-5. `docs/SYSTEM.md`
-6. `docs/REFERENCE.md`
-7. `docs/review/RebanhoSync_auditoria.md`, quando a pergunta envolver contrato de fontes de verdade, insights, marcadores ou decisoes bloqueadas
-8. documentos derivados (`IMPLEMENTATION_STATUS`, `TECH_DEBT`, `ROADMAP`)
+4. `docs/context/CORE_RULES.md`
+5. `docs/context/SOURCE_OF_TRUTH.md`
+6. `docs/context/KNOWN_GAPS.md`
+7. `docs/PRODUCT.md`
+8. `docs/SYSTEM.md`
+9. `docs/REFERENCE.md`
+10. documentos derivados (`IMPLEMENTATION_STATUS`, `TECH_DEBT`, `ROADMAP`)
 
 Esse encadeamento reduz confusão entre momento atual, processo, aprofundamento normativo e histórico.
 

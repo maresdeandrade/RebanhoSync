@@ -1,199 +1,146 @@
+```markdown
 ---
 name: repository-context-retrieval
-description: Use when a task requires understanding repository architecture, locating the correct intervention point, mapping cross-module impact, or producing a grounded technical analysis before planning or implementation.
+description: Use when the correct intervention point is unclear and you need to locate the minimal relevant files, flows, docs, or tests in RebanhoSync without reading the whole repository.
 ---
 
 # Repository Context Retrieval
 
-## Missão
-Recuperar o **mínimo contexto suficiente** do RebanhoSync para analisar, planejar ou orientar uma tarefa com segurança, sem abrir o repositório inteiro nem concluir a partir de suposições frágeis.
+## Mission
 
-Use esta skill para:
-- entender arquitetura e fluxos entre módulos;
-- localizar o melhor ponto de intervenção;
-- mapear impacto transversal;
-- preparar análise, refatoração ou prompt técnico baseado no repositório.
+Find the minimum necessary repository context for a RebanhoSync task without broad reading, unnecessary grep, or loading unrelated docs.
+
+This skill is for discovery only. It should identify where to work, not implement the patch.
 
 ---
-## Quando usar
-Use quando for preciso:
-- analisar módulo, fluxo, tela ou subsistema;
-- entender relação entre partes do repositório;
-- descobrir onde implementar algo;
-- avaliar impacto ainda não delimitado;
-- verificar o que já existe antes de sugerir mudança.
 
-Não use para:
-- typo, copy ou ajuste visual local;
-- correção pontual em arquivo já conhecido;
-- fechamento de PR;
-- execução já coberta por skill de domínio;
-- hardening de hotspot já identificado.
+## When to use
 
-Nesses casos, usar `prepare-pr`, `harden-module` ou a skill de domínio correspondente.
+Use when:
+* The affected files are not clear;
+* The user asks to map a flow or capability;
+* There may be cross-module impact;
+* Documentation and code may diverge;
+* The task needs repository orientation before planning;
+* There is risk of touching the wrong layer.
 
 ---
-## Ler primeiro
-Antes de abrir implementação:
+
+## Do not use when
+
+Do not use when:
+* The file or module is already known;
+* The task is a simple copy/microcopy change;
+* The task is a local visual adjustment;
+* The patch is already complete and needs verification;
+* The goal is PR preparation.
+
+### Use instead:
+* `rebanhosync-verification-gate` for final patch validation;
+* `prepare-pr` for PR narrative;
+* Domain-specific skill if the area is already known.
+
+---
+
+## Read first
+
 1. `AGENTS.md`
-2. `README.md`
-3. `docs/CURRENT_STATE.md`
-4. `docs/PROCESS.md`
-5. `docs/AGENT_CONTEXT.md`
-6. `graphify-out/GRAPH_REPORT.md`
+2. `.agents/rules/CORE_RULES.md`
+3. `.agents/rules/CONTEXT_LOADING.md`
+4. `.agents/rules/no-broad-context.md`
 
+> ⚙️ **Execution Rule:** For commands and validation, follow `.agents/rules/rtk.md`.
 
-## Graphify-first
-Usar Graphify como mapa primário antes de busca textual ampla:
-```bash
-graphify query "<question>" --budget 3000
-graphify explain "<node>"
-graphify path "<A>" "<B>"
+---
+
+## Hard constraints
+
+* Do not read the whole repository.
+* Do not open all docs.
+* Do not open all skills.
+* Do not use `docs/archive/**` as operational truth.
+* Do not propose implementation before locating the correct source.
+* Do not treat documentation as stronger than code or active migrations.
+* Prefer file-specific search over broad search.
+
+---
+
+## Source of truth
+
+In case of conflict, trust:
+1. Code + active migrations;
+2. `docs/context/PROJECT_STATUS.md`;
+3. Active normative docs;
+4. Derived docs;
+5. Archive/history;
+6. This skill.
+
+---
+
+## Procedure
+
+### 1. Classify the task
+Classify as one of:
+* UI/local component;
+* Domain flow;
+* Sync/offline;
+* Supabase/RLS/migration;
+* Documentation;
+* Test/validation;
+* Architecture/cross-module.
+
+### 2. Choose the minimal search path
+Start from one of:
+* File path given by user;
+* Feature name;
+* Route/screen name;
+* Domain term;
+* Test name;
+* Migration/RPC/function name.
+
+### 3. Inspect only likely targets
+Prefer:
+* Local `AGENTS.md`;
+* Nearby source files;
+* Directly related tests;
+* Relevant domain doc;
+* Relevant technical doc.
+
+> ⚠️ **Constraint:** Do not expand unless needed.
+
+### 4. Identify source-of-truth layer
+Determine whether the task relates to:
+* **Agenda:** Intenção/future task;
+* **Evento:** Executed fact;
+* **`state_*`:** Current state/read model;
+* **Protocolo:** Rule/configuration;
+* **Tags/signals/insights:** Auxiliary UX/query layer;
+* **Supabase/RLS/migrations:** Backend contract;
+* **Dexie/sync:** Offline contract.
+
+### 5. Report minimal context map
+Return likely files, why they matter, docs needed, tests likely affected, risks, and recommended next skill, if any.
+
+---
+
+## Expected output
+
+Return:
+1. **Task classification:** [Type of task]
+2. **Files or directories to inspect:** [List of paths]
+3. **Relevant docs:** [Only if strictly needed]
+4. **Tests likely related:** [Associated test files]
+5. **Source-of-truth layer involved:** [Domain layer identifier]
+6. **Riscos of wrong-context expansion:** [Potential context bloating pitfalls]
+7. **Recommended next action:** [Next step or skill to invoke]
+
+---
+
+## Output rules
+
+* Separate confirmed facts, inferences, and recommendations.
+* Do not implement patch.
+* Do not suggest reading the whole repo.
+* Limit risks to 3.
+
 ```
-Usar `rg`, busca textual ou leitura direta apenas para confirmar detalhe concreto ou preencher lacuna que o grafo não resolveu.
----
-
-## Método em 3 ciclos
-
-### 1. Enquadrar
-Definir:
-* problema técnico;
-* domínios candidatos;
-* hipóteses iniciais;
-* riscos de interpretação.
-
-Checar se a tarefa toca UI, regra de domínio, agenda/eventos, sync/offline, sanitário, reprodução, schema/RLS ou docs/governança.
----
-
-### 2. Localizar fontes
-
-Antes de ler código em profundidade:
-* procurar `AGENTS.md` local no caminho afetado;
-* verificar se há skill especializada aplicável;
-* localizar arquivos centrais e testes relevantes.
-
-AGENTS locais mais prováveis:
-* `src/pages/AGENTS.md`
-* `src/pages/Registrar/AGENTS.md`
-* `src/pages/Agenda/AGENTS.md`
-* `src/pages/ProtocolosSanitarios/AGENTS.md`
-* `src/lib/offline/AGENTS.md`
-* `src/lib/sanitario/AGENTS.md`
-* `src/lib/reproduction/AGENTS.md`
-* `supabase/functions/sync-batch/AGENTS.md`
-* `supabase/migrations/AGENTS.md`
-
-Classificar fontes:
-* **Alta**: comportamento, regra, contrato ou teste central;
-* **Média**: tipo, helper, adapter ou doc atual que esclarece a borda;
-* **Baixa**: histórico, duplicado ou periférico.
-Não abrir fontes de baixa relevância por padrão.
----
-
-### 3. Fechar lacunas
-
-Ler apenas:
-* fontes de alta relevância;
-* poucos arquivos médios indispensáveis;
-* testes que esclareçam comportamento esperado.
-
-Encerrar com:
-* contexto confirmado;
-* lacunas resolvidas e remanescentes;
-* arquivos que sustentam a conclusão.
----
-
-## Critério de suficiência
-
-Só concluir análise, propor arquitetura, indicar implementação ou montar prompt técnico depois de confirmar:
-* fonte de verdade;
-* módulos que governam o comportamento;
-* arquivos centrais;
-* AGENTS locais aplicáveis;
-* invariantes relevantes;
-* se a mudança é local, transversal, arquitetural ou documental.
-
-Se isso não estiver claro, explicitar a incerteza em vez de ampliar a leitura sem controle.
----
-
-## Invariantes a preservar
-
-Quando aplicável:
-* agenda = intenção futura mutável;
-* eventos = fatos append-only;
-* UI não carrega regra de negócio forte;
-* `fazenda_id` permanece fronteira de isolamento;
-* sync/offline preserva gestures, retries, rollback e idempotência;
-* sanitário operacional não se mistura com catálogo/regulatório;
-* insights permanecem read-only;
-* migrations, seed, RLS ou RPCs não são alterados sem pedido explícito.
----
-
-## Escalonamento
-
-Depois da recuperação:
-* `harden-module`: hotspot localizado com mistura de responsabilidades;
-* skill de domínio: borda já ficou clara;
-* `prepare-pr`: implementação concluída e precisa de revisão final;
-* skill documental: análise revela drift entre docs e estado real.
-
-Skills de domínio mais prováveis:
-* `sanitario-registro-operacional`
-* `sanitario-catalogo-regulatorio-compliance`
-* `animal-cadastro-origem-destino`
-* `reproducao-parto-posparto-cria`
-* `movimentacao-transito-conformidade`
-* `sync-offline-rollback`
-* `migrations-rls-contracts`
----
-
-## Formato de entrega
-
-Responder com:
-```
-## Conclusão executiva
-- síntese curta
-## O que foi confirmado
-- ponto 1
-- ponto 2
-- ponto 3
-
-## Arquivos centrais
-1. `path/file` — motivo
-2. `path/file` — motivo
-3. `path/file` — motivo
-
-## Melhor ponto de intervenção
-- onde agir
-- por que ali
-- o que fica fora de escopo
-
-## Riscos
-1. risco 1
-2. risco 2
-3. risco 3
-
-## Próximo passo recomendado
-- skill ou trilha seguinte
-```
----
-
-## Regras finais
-
-* Não abrir arquivos “por garantia”.
-* Não usar documentação histórica como autoridade operacional.
-* Não transformar hipótese em fato.
-* Não recomendar arquitetura antes de localizar a responsabilidade atual.
-* Não inventar módulo, contrato ou comportamento ausente.
-* Não ampliar escopo para limpeza oportunista.
----
-
-## Definition of done
-
-A skill foi bem aplicada quando:
-* o problema técnico foi enquadrado;
-* o domínio correto foi delimitado;
-* os arquivos centrais foram identificados;
-* as bordas arquiteturais foram preservadas;
-* a resposta ficou sustentada pelo estado real do repositório;
-* o próximo passo ficou claro.

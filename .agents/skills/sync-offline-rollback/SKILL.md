@@ -1,237 +1,222 @@
+```markdown
 ---
 name: sync-offline-rollback
-description: Use when the task is about Dexie, offline-first, gestures, queue_gestures, queue_ops, queue_rejections, rollback, before_snapshot, tableMap, pull, syncWorker, retry, idempotência, reason codes, telemetry de sync, ou alinhamento cliente-servidor do fluxo de sincronização.
+description: Use when a RebanhoSync task touches Dexie, offline-first behavior, sync queue, gestures, rollback, retry, reconcile, partial success, or local-remote conflict handling.
 ---
 
-# Sync — Offline, Rollback e Idempotência
+# Sync Offline Rollback
 
-## Missão
+## Mission
 
-Orientar mudanças e decisões na espinha dorsal offline-first do produto:
-- criação e aplicação de gestures
-- `queue_gestures`, `queue_ops`, `queue_rejections`
-- optimistic apply
-- rollback por `before_snapshot`
-- `tableMap`
-- pull seletivo
-- `syncWorker`
-- retry
-- reason codes e compatibilidade cliente-servidor
-- telemetria de sync
-- coerência entre Dexie, payload local e `sync-batch`
-
-Esta skill cobre o **núcleo de sincronização e consistência offline**.
+Protect RebanhoSync offline-first behavior, sync integrity, idempotency, rollback, and local-remote reconciliation.
 
 ---
 
-## Quando usar
+## When to use
 
-Use esta skill quando a tarefa envolver:
-
-- `src/lib/offline/**`
-- `src/lib/telemetry/**`
-- `src/lib/events/**` se tocar envelope do gesto
-- `src/lib/offline/db.ts`
-- `src/lib/offline/ops.ts`
-- `src/lib/offline/pull.ts`
-- `src/lib/offline/syncWorker.ts`
-- `src/lib/offline/tableMap.ts`
-- `src/lib/offline/rejections.ts`
-- alinhamento com `supabase/functions/sync-batch/**`
-- Dexie schema
-- filas locais
-- upload/flush de métricas
-- rollback local após `REJECTED`
-
-Tracks prováveis:
-- `infra.sync`
-- `infra.observabilidade`
-- qualquer capability afetada por sync/offline
+Use when task touches:
+* Dexie/IndexedDB;
+* Local state persistence;
+* Sync queue;
+* Gestures;
+* Optimistic operation;
+* Rollback;
+* Retry;
+* Reconcile;
+* Partial success;
+* Sync-batch;
+* Conflict local/remoto;
+* Metadata de sync;
+* Table maps;
+* Before snapshots.
 
 ---
 
-## Quando NÃO usar
+## Do not use when
 
-Não use esta skill para:
-- ajuste local de UI sem impacto em store/sync
-- regra sanitária/reprodutiva/movimentação puramente de domínio
-- migrations/RLS estruturais sem impacto no offline
+Do not use when:
+* Task is visual only;
+* No persistence or sync is involved;
+* Task is documentation-only;
+* Task is pure UI state without offline impact;
+* Issue is only Supabase/RLS without local sync.
 
-Nesses casos, usar:
-- skills de domínio específicas
-- `migrations-rls-contracts`
-
----
-
-## Ler primeiro
-
-1. `docs/CURRENT_STATE.md`
-2. `docs/OFFLINE.md`
-3. `docs/CONTRACTS.md`
-
-Ler só se necessário:
-- `docs/ARCHITECTURE.md`
-- `docs/RLS.md`
-
-Arquivos-alvo mais comuns:
-- `src/lib/offline/db.ts`
-- `src/lib/offline/ops.ts`
-- `src/lib/offline/pull.ts`
-- `src/lib/offline/syncWorker.ts`
-- `src/lib/offline/tableMap.ts`
-- `src/lib/offline/rejections.ts`
-- `src/lib/telemetry/**`
-- `supabase/functions/sync-batch/**`
-
-Evitar abrir por padrão:
-- docs derivados
-- pages/componentes sem necessidade explícita
-- histórico antigo do projeto
+### Use instead:
+* `migrations-rls-contracts` for DB/RLS/RPC contract;
+* `harden-module` for responsibility separation;
+* `rebanhosync-verification-gate` after patch.
 
 ---
 
-## Modelo mental obrigatório
+## Read first
 
-O fluxo offline-first tem 4 blocos:
+1. `AGENTS.md`
+2. `.agents/rules/CORE_RULES.md`
+3. `.agents/rules/CONTEXT_LOADING.md`
+4. `.agents/rules/no-broad-context.md`
+5. `.agents/rules/rtk.md`
 
-### A. Gesto / transação local
-- UI cria um gesto
-- gera `client_tx_id`
-- enfileira ops em `queue_*`
-
-### B. Aplicação otimista
-- estado local é atualizado antes da confirmação do servidor
-- `before_snapshot` é capturado para permitir rollback determinístico
-
-### C. Sincronização
-- worker envia lote ao `sync-batch`
-- servidor responde por op com:
-  - `APPLIED`
-  - `APPLIED_ALTERED`
-  - `REJECTED`
-
-### D. Recuperação
-- em `REJECTED`, cliente restaura `before_snapshot`
-- em falha de rede, retry respeita idempotência
-- pull seletivo reflete efeitos server-side/triggers
+### Then read as needed:
+* `docs/technical/OFFLINE_SYNC.md`
+* `docs/technical/ARCHITECTURE.md`
+* `docs/context/SOURCE_OF_TRUTH.md`
+* Local `AGENTS.md` in affected paths.
 
 ---
 
-## Metadata obrigatória
+## Source of truth
 
-Toda escrita sincronizável deve respeitar:
-
-- `fazenda_id`
-- `client_id`
-- `client_op_id`
-- `client_tx_id`
-- `client_recorded_at`
-
-Regra:
-- não enviar `created_at` / `updated_at` como campos de payload de escrita
+In case of conflict, trust:
+1. Code + active migrations;
+2. `docs/context/PROJECT_STATUS.md`;
+3. Active normative docs;
+4. Derived docs;
+5. Archive/history;
+6. This skill.
 
 ---
 
-## Decisão rápida
+## Hard constraints
 
-### Caso A — mudança só no estado local
-Verificar se:
-- é projeção efêmera de UI
-- ou precisa entrar na fila e sincronizar
-
-Não empurrar para `queue_ops` algo que não pertence ao modelo sincronizável.
-
-### Caso B — nova entidade/tabela sincronizada
-Verificar se precisa:
-- store Dexie
-- `tableMap`
-- lógica de apply local
-- pull
-- rollback
-- suporte no `sync-batch`
-
-### Caso C — novo reason code / validação
-Separar:
-- validação local defensiva
-- validação autoritativa no servidor
-- tratamento do rollback local
-
-### Caso D — upload de métricas/telemetria
-Separar:
-- buffer local append-only
-- cursor de envio
-- upload remoto idempotente
-- não misturar métricas com fila transacional de domínio
+* Preserve offline-first.
+* Preserve idempotency.
+* Preserve rollback determinism.
+* Preserve before snapshots when required.
+* Preserve `fazenda_id` isolation.
+* Preserve sync metadata.
+* Do not create duplicate local/remote truth.
+* Do not treat agenda as historical fact.
+* Do not silently drop failed operations.
+* Do not mask partial success.
+* Do not bypass RLS through sync.
+* Do not alter migrations/RLS/RPC unless explicit.
 
 ---
 
-## Invariantes obrigatórias
+## Domain invariants
 
-- rollback deve restaurar exatamente o `before_snapshot`
-- ordem reversa de rollback deve continuar segura
-- retry não pode quebrar idempotência
-- `tableMap` continua sendo fronteira entre nome remoto e store local
-- não misturar `state_*`, `event_*`, `queue_*` e `catalog_*`
-- pull seletivo não pode ser perdido ao tocar entidades sensíveis
-- telemetria não pode quebrar o fluxo principal de sync
-- cliente e servidor não podem divergir sobre payload versionado e reason codes
+* **Agenda:** Intention/future task.
+* **Evento:** Executed fact.
+* **`state_*`:** Current state/read model.
+* **Protocolo:** Rule/configuration.
+* **Tags/signals/insights:** Auxiliary only.
 
 ---
 
-## Anti-padrões
+## Procedure
 
-- aplicar update local sem snapshot restaurável quando a operação exige rollback
-- criar store/tabela sincronizável sem atualizar `tableMap` e reconciliação associada
-- mudar order de ops sem revisar implicações no servidor
-- aceitar shape inválido localmente e “deixar o servidor resolver”
-- duplicar lógica de sync em páginas/componentes
-- usar evento/queue para dado que deveria ser cache efêmero
-- acoplar flush de telemetria ao sucesso de fluxos críticos de domínio
+### 1. Identify operation type
+Classify:
+* Create gesture;
+* Update local state;
+* Enqueue;
+* Push;
+* Pull;
+* Reconcile;
+* Rollback;
+* Retry;
+* Sync-batch server handling;
+* Conflict resolution.
+
+### 2. Verify idempotency
+Check:
+* Operation ID;
+* Dedup key;
+* Retry safety;
+* Repeated sync behavior;
+* Partial success behavior;
+* Duplicate event/agenda prevention.
+
+### 3. Verify rollback
+Check:
+* Before snapshot;
+* Affected tables;
+* Rollback order;
+* Rollback after partial failure;
+* Cleanup of queue state;
+* User-visible state after failure.
+
+### 4. Verify local-remote boundary
+Check:
+* Local write source;
+* Remote payload;
+* Server validation;
+* RLS constraints;
+* Tenant/fazenda boundary;
+* Mapping between local and remote tables.
+
+### 5. Verify source-of-truth semantics
+Check that:
+* Agenda remains intention;
+* Event remains fact;
+* `state_*` remains read model;
+* Protocol remains rule;
+* No UI-only state becomes truth.
+
+### 6. Test edge cases
+Consider:
+* Offline operation then reconnect;
+* Duplicate retry;
+* Partial server acceptance;
+* Forbidden tenant;
+* Stale local state;
+* Deleted/archived entity;
+* Conflict between local and remote update;
+* Rollback after failed sync.
 
 ---
 
-## Checklist antes de alterar
+## Validation
 
-1. A mudança afeta store, queue, apply local, pull, rollback, ou servidor?
-2. Existe novo shape sincronizável?
-3. Precisa de `tableMap`?
-4. O rollback ainda recompõe o estado com fidelidade?
-5. Há impacto em retry e idempotência?
-6. Há impacto em reason codes e UX de erro?
+Follow `.agents/rules/rtk.md`.
 
----
+### Minimum for sync/offline task:
+```bash
+git status --short --untracked-files=all
 
-## Forma de entrega
+```
 
-Retornar:
-- diff mínimo
-- parte do pipeline afetada
-- invariantes preservadas
-- até 3 riscos
-- testes focados
+* plus the related test command.
 
----
+### For broader sync change:
 
-## Validação mínima
+```bash
+rtk pnpm run lint
+rtk pnpm test
+rtk pnpm run build
 
-- `pnpm run lint`
-- `pnpm test`
-- `pnpm run build`
+```
 
-Se tocar sync/rollback:
-- testar cenário `APPLIED`
-- testar cenário `REJECTED`
-- testar retry/falha de rede quando aplicável
+### If `sync-batch`, RLS, RPC, or Supabase contract is touched:
+
+```bash
+rtk node scripts/codex/validate-supabase-baseline-functional.mjs
+
+```
 
 ---
 
-## Escalonamento
+## Expected output
 
-Escalar para `migrations-rls-contracts` quando tocar:
-- schema
-- RLS
-- constraints
-- views
-- blocked tables
+Return:
 
-Escalar para skill de domínio quando a mudança for principalmente de regra sanitária/reprodutiva/movimentação, e não da infraestrutura offline
+1. **Operation type:** [Classification]
+2. **Affected local and remote layers:** [Layers map]
+3. **Idempotency assessment:** [Safety status]
+4. **Rollback assessment:** [Determinism status]
+5. **Source-of-truth assessment:** [Invariants status]
+6. **Edge cases:** [List of critical pathways]
+7. **Tests required/executed:** [Scenarios and results]
+8. **Riscos/pendências:** [Up to 3 points]
+
+---
+
+## Output rules
+
+* Separate confirmed facts, inferences, and recommendations.
+* Do not approve sync change without idempotency assessment.
+* Do not approve rollback change without failure-path test plan.
+
+```
+
+```

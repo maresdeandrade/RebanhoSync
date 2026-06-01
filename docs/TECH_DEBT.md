@@ -26,6 +26,23 @@
 - **Impacto:** Durante a suíte global de testes, `useRegistrarSanitarioPackage.ts` ocasionalmente emite `DexieError [MissingAPIError]: IndexedDB API missing` no stderr ao tentar buscar produtos em caminhos de renderização assíncronos após o encerramento ou mock do IndexedDB do test runner (fake-indexeddb). Não causa falha de testes nem impede a compilação, mas gera ruído técnico em stderr.
 - **Próxima ação:** Blindar o carregamento assíncrono com guardas de presença do IndexedDB ou ajustar o tearDown dos testes.
 
+### TD-034: Caso notificável por lote sem `sanitario_casos`
+- **Status:** OPEN
+- **Origem:** Fase 4 — Biossegurança e Ocorrências Sanitárias (Maio/2026)
+- **Impacto:** Doença notificável com `lote_id` sem `animal_id` ou `animal_ids` fica registrada no evento/payload, mas não gera `sanitario_casos` por lote. Há lacuna de agrupamento clínico em nível de lote.
+- **Próxima ação:** Avaliar necessidade de estrutura por lote ou manter no evento/payload conforme demanda operacional.
+
+### TD-035: Resolução estructurada de ocorrência
+- **Status:** OPEN
+- **Origem:** Fase 4 — Biossegurança e Ocorrências Sanitárias (Maio/2026)
+- **Impacto:** Tempo até resolução e data de encerramento/cancelamento estão omitidos porque o fluxo atual não grava data estruturada de acompanhamento. Relatório operacional não consegue calcular idade da ocorrência ou SLA corretivo.
+- **Próxima ação:** Criar fluxo de encerramento/resolução de ocorrência que registre data estruturada e atualize status da agenda/pendência específica.
+
+### TD-036: Execução/encerramento assistido de ocorrência
+- **Status:** OPEN
+- **Origem:** Fase 4 — Biossegurança e Ocorrências Sanitárias (Maio/2026)
+- **Impacto:** Agenda corretiva foi criada como pendência específica mínima (`biosseguranca_acao_corretiva` / `sanitario_notificacao_pendente`). Execução assistida do checklist corretivo e encerramento guiado ainda podem evoluir para melhorar completude operacional.
+- **Próxima ação:** Avaliar se a fase seguinte inclui fluxo assistido de execução e fechamento de ocorrência.
 
 ### TD-026: Residual estrutural de shell em `Agenda`
 

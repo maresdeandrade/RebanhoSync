@@ -1,227 +1,163 @@
+```markdown
 ---
 name: harden-module
-description: Use when a module or hotspot mixes normalization, policy, payload, mutation planning, side effects, and reconciliation, and you need an incremental architectural hardening plan or execution.
+description: Use when a RebanhoSync module or hotspot needs incremental hardening, responsibility separation, safer flow boundaries, or reduction of architectural risk without broad rewrite.
 ---
 
 # Harden Module
 
 ## Mission
-Restore architectural boundaries in a specific hotspot of RebanhoSync incrementally, safely, and reviewably, without big bang rewrite.
 
-This skill assumes the hotspot is already reasonably identified.  
-If the task still requires discovering the correct intervention point, mapping cross-module impact, or narrowing the relevant files, use `repository-context-retrieval` first.
+Harden a RebanhoSync module with small, safe, testable changes.
+
+The goal is to reduce operational risk without big-bang refactor.
+
 ---
 
 ## When to use
+
 Use when:
-- a module mixes normalization, rule/policy, payload, mutation plan, side effects, and reconciliation;
-- a flow is hard to test, review, or evolve;
-- there is architectural drift in a known hotspot;
-- the goal is incremental hardening, not redesigning the whole system.
+* A module mixes UI and business rule;
+* A hotspot has too many responsibilities;
+* A flow needs clearer boundaries;
+* Logic should be extracted to pure helpers;
+* Existing behavior must be preserved while reducing risk;
+* There is duplication in payload/plan/effects;
+* Sync/offline or domain contracts are at risk.
+
 ---
 
 ## Do not use when
-Do not use for:
-- discovering where the problem lives;
-- broad repository analysis;
-- local visual bug;
-- text tweak;
-- small operational change without real architectural debt.
 
-Use instead:
-- `repository-context-retrieval` when the hotspot is not yet clear;
-- a domain-specific skill when the change is operational and bounded;
-- `prepare-pr` only after implementation and technical gate are complete.
+Do not use when:
+* The task is simple copy/microcopy;
+* Only visual spacing/color is involved;
+* The correct intervention point is unknown;
+* The patch is complete and needs validation;
+* There is no architectural or operational risk.
+
+### Use instead:
+* `repository-context-retrieval` when target is unclear;
+* `rebanhosync-verification-gate` after patch;
+* Specific domain skill if the issue is domain-specific.
+
 ---
 
 ## Read first
 
 1. `AGENTS.md`
-2. `README.md`
-3. `docs/CURRENT_STATE.md`
-4. `docs/PROCESS.md`
+2. `.agents/rules/CORE_RULES.md`
+3. `.agents/rules/CONTEXT_LOADING.md`
+4. `.agents/rules/no-broad-context.md`
 
-Then read:
-- the local `AGENTS.md` for the affected path, when present;
-- only the hotspot and the minimum adjacent files required.
+### Then read:
+* Local `AGENTS.md`, if present;
+* Hotspot files;
+* Tests directly related to the hotspot.
+
+> ⚙️ **Execution Rule:** For commands and validation, follow `.agents/rules/rtk.md`.
+
 ---
 
-## Hard constraints
-- Work with narrow scope.
-- Attack at most 1 main capability or `infra.*` track per task.
-- Do not use `docs/archive/**` as operational truth.
-- Do not do big bang rewrite.
-- Do not expand into other domains without justification.
-- Preserve current behavior unless the task explicitly requests a functional correction.
-- Prefer minimal and reviewable diffs.
-- Do not convert a hardening task into opportunistic cleanup.
----
+## Preferred pipeline
 
-## Global invariants
-- Two Rails:
-  - `agenda_itens` = mutable future intention;
-  - `eventos` + `eventos_*` = append-only past facts.
-- `fazenda_id` is the isolation boundary.
-- sync/offline must preserve:
-  - idempotence;
-  - deterministic rollback via `before_snapshot`;
-  - coherence between `queue_*`, `tableMap`, `pull`, and `sync-batch`.
-- do not spread retry/replay/idempotence into UI;
-- do not turn historical facts into destructive business updates.
----
-
-## Target pipeline
-Whenever applicable, move the hotspot toward explicit separation between:
+Use this decomposition when applicable:
 1. Normalize
-2. Select / Policy
+2. Select/Policy
 3. Payload
 4. Plan
 5. Effects
 6. Reconcile
+
+*Note: Do not force the pipeline where it does not fit.*
+
 ---
 
-## Desired boundaries
-- `normalize` -> parsing, defaults, sanitation;
-- `policy` -> eligibility, selection, invariants;
-- `payload` -> persisted/business shape;
-- `plan` -> mutation/operation plan;
-- `effects` -> IO, Dexie, Supabase, queue, side effects;
-- `reconcile` -> rollback, dedupe, replay, refresh, merge;
-- `ui` -> presentation and screen state only.
+## Hard constraints
+
+* Preserve current behavior unless change is explicit.
+* Do not move critical domain rule into React component.
+* Do not create parallel source of truth.
+* Do not broaden scope.
+* Do not alter migrations/RLS/RPC/seed unless explicit.
+* Preserve offline-first and idempotency.
+* Preserve `fazenda_id` boundary.
+* Avoid large renames or folder moves unless required.
+
+---
+
+## Domain invariants
+
+Do not violate:
+* **Agenda:** Intention/future task;
+* **Evento:** Executed fact;
+* **`state_*`:** Current state/read model;
+* **Protocolo:** Rule/configuration;
+* **Tags/signals/insights:** Auxiliary;
+* **Critical Decisions:** Require explicit technical source.
+
 ---
 
 ## Procedure
 
-### 1. Delimit hotspot
-Define:
-- target files;
-- minimally allowed adjacent files;
-- files explicitly out of scope;
-- capability or `infra.*` track being attacked.
----
+### 1. Identify responsibility leak
+Classify the issue:
+* UI contains rule;
+* Service contains UI concern;
+* Payload construction duplicated;
+* Effect and validation mixed;
+* Sync/reconcile mixed with domain selection;
+* Tests only validate happy path.
 
-### 2. Diagnose
-Map:
-- mixed responsibilities;
-- coupling points;
-- risk points;
-- hidden dependencies;
-- which parts belong to:
-  - Normalize;
-  - Policy;
-  - Payload;
-  - Plan;
-  - Effects;
-  - Reconcile.
----
+### 2. Choose smallest extraction
+Prefer:
+* Pure helper;
+* Adapter;
+* Validator;
+* Builder;
+* Mapper;
+* Local domain function;
+* Test around extracted rule.
 
-### 3. Baseline before surgery
-Before moving code:
-- identify critical flows affected;
-- create characterization tests when appropriate;
-- document the current behavior that must be preserved;
-- call out edge cases:
-  - retry;
-  - rejection;
-  - rollback;
-  - replay;
-  - idempotence;
-  - post-sync refresh.
----
+### 3. Keep integration stable
+Preserve:
+* Function signatures when possible;
+* Existing UI behavior;
+* Existing data shape;
+* Existing test fixtures unless wrong.
 
-### 4. Choose the first intervention
-Pick the most critical and safest hotspot slice.
+### 4. Add tests
+Focus on:
+* Edge cases;
+* Invalid input;
+* Idempotency;
+* Source-of-truth contract;
+* No UI-only rule.
 
-The first round must:
-- reduce mixed responsibilities;
-- preserve behavior;
-- generate a small diff;
-- improve testability;
-- prepare the next extraction.
----
+### 5. Validate proportionally
+Use `.agents/rules/rtk.md`.
 
-### 5. Execute pilot refactor
-Extract or isolate, when appropriate:
-- normalization helpers;
-- validators / selectors / policy guards;
-- payload builders;
-- mutation-plan builders;
-- adapters / effects;
-- reconcile handlers.
-
-The main hotspot file should move toward **orchestrator**, not concentrator.
----
-
-### 6. Validate the hardening round
-For an implemented change, run the validation required by the task and then close with:
-- `rebanhosync-verification-gate`
-
-The gate must confirm:
-- diff scope;
-- modified and untracked files;
-- validations executed;
-- remaining warnings or caveats;
-- READY / READY WITH CAVEAT / NOT READY.
-
-Do not skip the gate when the task produced a reviewable code change.
----
-
-### 7. Governance
-At the end, propose anti-regression mechanisms when justified:
-- PR checklist;
-- import/boundary rule;
-- folder convention;
-- architectural definition of done;
-- ADR, if needed.
-
-Avoid inventing governance artifacts without a real regression risk.
----
-
-## Escalation
-Escalate to:
-- `repository-context-retrieval` if the hotspot stops being clear;
-- a domain skill if the work narrows into an operational flow;
-- `sync-offline-rollback` if the hardening touches queue, rollback, retry or Dexie;
-- `migrations-rls-contracts` if it reaches schema, RLS or RPC;
-- `rebanhosync-verification-gate` after implementation;
-- `prepare-pr` only after the gate is complete.
 ---
 
 ## Expected output
+
 Return:
+1. **Decision:** [Hardening approach chosen]
+2. **Confirmed facts:** [Validated technical observations]
+3. **Risk in current design:** [Architectural and operational flaws]
+4. **Minimal hardening proposal:** [Step-by-step containment layout]
+5. **Files affected:** [Paths list]
+6. **Tests required:** [Scenarios to cover]
+7. **Validation commands:** [Testing execution strings]
+8. **Riscos/pendências:** [Up to 3 points]
 
-### 1. Diagnosis
-- hotspot;
-- mixed responsibilities;
-- impact;
-- risks.
+---
 
-### 2. Plan
-- phases;
-- order of attack;
-- target boundaries;
-- acceptance criteria.
+## Output rules
 
-### 3. Proposed changes
-- what will be isolated or extracted;
-- what remains explicitly out of scope.
+* Do not propose broad rewrite first.
+* Prefer incremental patch.
+* Separate fact, inference, recommendation.
+* If scope expands, stop and report.
 
-### 4. Executed implementation
-- first real refactor round, if executed;
-- files touched;
-- what moved;
-- what still remains.
-
-### 5. Verification handoff
-- whether `rebanhosync-verification-gate` is required now;
-- key validation focus;
-- caveats already known.
-
-### 6. Risks / pending
-- up to 3 main risks;
-- remaining debt;
-- coupling not yet removed.
-
-### 7. Recommended next step
-- next incremental round;
-- without unnecessary scope expansion.
+```

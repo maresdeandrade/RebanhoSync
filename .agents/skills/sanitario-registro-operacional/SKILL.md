@@ -1,230 +1,204 @@
+```markdown
 ---
 name: sanitario-registro-operacional
-description: Use when the task is about registrar evento sanitário, concluir item de agenda sanitária, vacinar, vermifugar, aplicar medicamento, registrar exame sanitário, usar produtos_veterinarios, target por animal ou lote, ou corrigir fluxo operacional sanitário sem alterar o catálogo regulatório oficial.
+description: Use when a RebanhoSync task touches operational sanitary registration, sanitary agenda completion, veterinary products, doses, stock lot consumption, or sanitary event creation.
 ---
 
-# Sanitário — Registro Operacional
+# Sanitário Registro Operacional
 
-## Missão
+## Mission
 
-Orientar mudanças e decisões no fluxo **operacional** do sanitário:
-- registro manual de evento sanitário
-- conclusão/cancelamento de agenda sanitária
-- uso de `produtos_veterinarios`
-- alvo por `animal_id` ou `lote_id`
-- vínculo entre agenda, evento e payload sanitário
-- leitura operacional em `Registrar`, `Agenda`, `Eventos`, `Relatorios`
+Protect the operational sanitary flow of RebanhoSync: sanitary agenda, sanitary event registration, veterinary products, stock lots, doses, costs, and execution records.
 
-Esta skill **não** é para reestruturar o catálogo oficial/regulatório.  
-Para isso, usar `sanitario-catalogo-regulatorio-compliance`.
+This skill is for operational sanitary execution, not regulatory catalog/compliance design.
 
 ---
 
-## Quando usar
+## When to use
 
-Use esta skill quando a tarefa envolver:
-
-- `src/pages/Registrar.tsx`
-- `src/pages/Agenda.tsx`
-- `src/pages/Eventos.tsx`
-- `src/pages/Relatorios.tsx`
-- `src/lib/sanitario/products.ts`
-- `src/lib/sanitario/service.ts`
-- `src/lib/sanitario/attention.ts`
-- fluxo de registro sanitário manual ou a partir da agenda
-- sugestão/autocomplete de `produtos_veterinarios`
-- persistência de referência estruturada de produto no payload
-- conclusão de agenda sanitária com evento correspondente
-
-Capabilities mais prováveis:
-- `sanitario.registro`
-- `sanitario.historico`
-- `agenda.concluir`
+Use when task touches:
+* Registro de evento sanitário;
+* Vacinação;
+* Vermifugação;
+* Tratamento;
+* Exame sanitário;
+* Conclusão de agenda sanitária;
+* Vínculo agenda sanitária → evento;
+* Produtos veterinários;
+* Dose/quantidade/unidade;
+* Lote de estoque;
+* Baixa de estoque por evento sanitário;
+* Snapshot econômico do consumo sanitário;
+* UI operacional de registrar sanitário.
 
 ---
 
-## Quando NÃO usar
+## Do not use when
 
-Não use esta skill se a tarefa for principalmente sobre:
+Do not use when task is mainly about:
+* Catálogo oficial regulatório;
+* Overlay estadual;
+* Feed-ban;
+* Doença notificável;
+* Suspeita clínica ampla;
+* Checklist de biossegurança;
+* Bloqueio regulatório;
+* Compliance documental.
 
-- pack oficial regulatório
-- overlay estadual
-- `fazenda_sanidade_config`
-- `conformidade`
-- `feed-ban`
-- suspeita/notificação sanitária
-- seleção/materialização do catálogo oficial
-- engine declarativa de agenda por `calendario_base`
-
-Nesses casos, usar:
-- `sanitario-catalogo-regulatorio-compliance`
-- `migrations-rls-contracts`
-- `sync-offline-rollback` se houver impacto no sync
-
----
-
-## Ler primeiro
-
-1. `docs/CURRENT_STATE.md`
-2. `docs/ARCHITECTURE.md`
-
-Ler só se necessário:
-- `docs/OFFLINE.md`
-- `docs/CONTRACTS.md`
-
-Arquivos-alvo mais comuns:
-- `src/pages/Registrar.tsx`
-- `src/pages/Agenda.tsx`
-- `src/pages/Eventos.tsx`
-- `src/pages/Relatorios.tsx`
-- `src/lib/sanitario/products.ts`
-- `src/lib/sanitario/service.ts`
-- `src/lib/sanitario/attention.ts`
-- `src/lib/offline/db.ts` apenas se houver impacto de cache/local store
-
-Evitar abrir por padrão:
-- `docs/archive/**`
-- docs derivados (`IMPLEMENTATION_STATUS`, `ROADMAP`, `TECH_DEBT`) se a tarefa for só de implementação local
+### Use instead:
+* `sanitario-catalogo-regulatorio-compliance` for regulatory/compliance work;
+* `sync-offline-rollback` if sync/rollback is main risk;
+* `migrations-rls-contracts` if DB/RLS/RPC is touched.
 
 ---
 
-## Modelo mental
+## Read first
 
-Separar sempre:
+1. `AGENTS.md`
+2. `.agents/rules/CORE_RULES.md`
+3. `.agents/rules/CONTEXT_LOADING.md`
+4. `.agents/rules/no-broad-context.md`
 
-1. **evento sanitário**
-   - fato passado
-   - append-only
-   - vive em `eventos` + `eventos_sanitario`
+> ⚙️ **Execution Rule:** For commands and validation, follow `.agents/rules/rtk.md`.
 
-2. **agenda sanitária**
-   - intenção futura
-   - mutável
-   - vive em `agenda_itens`
-
-3. **produto veterinário**
-   - referência estruturada
-   - catálogo global com cache local
-   - não deve voltar a ser só string livre por padrão
-
-4. **semântica de calendário**
-   - próxima ação pertence à agenda
-   - não persistir `proxima_dose` ou `proximo_reforco` dentro do evento
+### Read as needed:
+* `docs/domain/SANITARIO.md`
+* `docs/context/SOURCE_OF_TRUTH.md`
+* `docs/technical/OFFLINE_SYNC.md` if sync/gesture is involved;
+* `docs/technical/SUPABASE_RLS.md` if backend/RPC/RLS is involved;
+* Local `AGENTS.md` in affected folders.
 
 ---
 
-## Decisão rápida
+## Source of truth
 
-### Caso A — Registro manual sem agenda
-Criar:
-- `eventos`
-- `eventos_sanitario`
-
-Não concluir agenda inexistente.
-
-### Caso B — Execução de item vindo da agenda
-Criar:
-- `eventos`
-- `eventos_sanitario`
-
-Atualizar:
-- `agenda_itens.status = concluido` ou regra equivalente do fluxo atual
-
-Manter vínculo lógico:
-- `source_task_id` / referência operacional equivalente do fluxo atual
-
-### Caso C — Registro por lote
-Verificar se o comportamento esperado é:
-- um evento por animal afetado
-- ou gesto em lote que se desdobra em múltiplos eventos
-
-Nunca assumir bulk simplificado sem conferir a superfície atual.
-
-### Caso D — Produto catalogado
-Preferir:
-- `produto_veterinario_id`
-- `produto_nome_catalogo`
-- `produto_categoria`
-- `produto_origem`
-
-Só cair para texto livre quando o fluxo explicitamente permitir fallback.
+In case of conflict, trust:
+1. Code + active migrations;
+2. `docs/context/PROJECT_STATUS.md`;
+3. Active normative docs;
+4. Derived docs;
+5. Archive/history;
+6. This skill.
 
 ---
 
-## Invariantes obrigatórias
+## Hard constraints
 
-- evento sanitário continua append-only
-- agenda continua separada do evento
-- `produtos_veterinarios` permanece referência canônica do produto
-- o payload do evento não deve carregar “próxima ação” como fonte de verdade
-- leitura operacional de agenda/home/dashboard/relatórios não deve duplicar regra localmente
-- não reintroduzir protocolo base hardcoded na UI
-- não reduzir tudo a string livre quando já existe referência estruturada
-
----
-
-## Anti-padrões
-
-- salvar `proxima_dose` ou `proximo_reforco` no evento sanitário
-- tratar produto catalogado como texto livre por default
-- duplicar regra de prioridade sanitária entre telas
-- concluir agenda sem registrar o fato correspondente quando o fluxo exige ambos
-- misturar lógica regulatória pesada no fluxo operacional comum
-- reintroduzir aftosa como default de biblioteca base
+* **Agenda:** Agenda sanitária remains intention/future task until event execution.
+* **Evento:** Evento sanitário is the executed fact.
+* **Protocolo:** Protocolo sanitário is rule/configuration, not execution.
+* **Garantia:** Do not treat checklist/regulatory availability as executed event.
+* **Limitação:** Do not use tags/signals as source of sanitary truth.
+* **Métricas:** Do not infer carência as active/free without explicit technical source.
+* **Métricas:** Do not infer animal is ready for sale/slaughter from sanitary markers.
+* Preserve stock lot consumption idempotency.
+* Preserve offline-first and rollback.
+* Preserve tenant isolation.
 
 ---
 
-## Checklist antes de alterar
+## Operational flow checks
 
-1. O alvo é `animal_id` ou `lote_id`?
-2. É registro manual, execução de agenda ou ambos?
-3. O produto vem do catálogo ou precisa fallback?
-4. A próxima ação pertence ao evento ou à agenda?
-5. A leitura compartilhada em agenda/relatórios/home vai continuar coerente?
+### Agenda completion
+Verify:
+* Agenda item is linked only when execution really occurs;
+* Direct completion without event is not treated as historical fact;
+* Sanitary RPC or flow creates/vinculates event when required;
+* Dedup prevents duplicate active agenda;
+* Canceled agenda is not event history.
+
+### Event creation
+Verify:
+* `eventos` base record exists when historical fact is created;
+* Sanitary detail table is populated when applicable;
+* Product, dose, unit, animal/lote, date, and responsible info are validated;
+* Correction uses proper correction/contra-launch pattern when applicable.
+
+### Product / stock
+Verify:
+* Veterinary product is structured reference;
+* Stock lot reference is explicit when consumed;
+* Quantity and unit are coherent;
+* Cost snapshot is captured when relevant;
+* Automatic stock decrease is idempotent;
+* Missing cost/product/lote becomes exception, not silent truth.
+
+### Offline/sync
+Verify:
+* Gesture is idempotent;
+* Rollback has enough data;
+* Retry does not duplicate event/stock decrease;
+* Partial success is reconciled.
 
 ---
 
-## Forma de entrega
+## Edge cases
 
-Retornar:
-- diff mínimo
-- arquivos afetados
-- regra alterada em 1 frase
-- até 3 riscos
-- testes focados
-
----
-
-## Validação mínima
-
-- `pnpm run lint`
-- `pnpm test`
-- `pnpm run build`
-
-Se tocar cache/offline:
-- revisar store local do catálogo
-- revisar fallback offline
-- revisar se o payload continua sincronizável
+Consider:
+* Agenda item already concluded;
+* Product without stock lot;
+* Missing dose;
+* Animal sold/dead/inactive;
+* Lote with mixed animals;
+* Retry after offline failure;
+* Duplicate tap/submit;
+* Stock insufficient;
+* Cost absent;
+* Event correction or reversal.
 
 ---
 
-## Escalonamento
+## Validation
 
-Escalar para `sanitario-catalogo-regulatorio-compliance` quando a tarefa tocar:
-- catálogo oficial
-- overlay
-- `fazenda_sanidade_config`
-- `conformidade`
-- bloqueios regulatórios
+Follow `.agents/rules/rtk.md`.
 
-Escalar para `sync-offline-rollback` quando tocar:
-- gestures
-- Dexie schema
-- rollback
-- `tableMap`
-- sync/pull
+### Minimum check:
+```bash
+git status --short --untracked-files=all
 
-Escalar para `migrations-rls-contracts` quando tocar:
-- schema SQL
-- catálogo global
-- enums/views/RLS
+```
+
+* plus the related tests.
+
+### If sync/stock/event flow is touched:
+
+```bash
+rtk pnpm run lint
+rtk pnpm test
+rtk pnpm run build
+
+```
+
+### If Supabase/RPC/RLS is touched:
+
+```bash
+rtk node scripts/codex/validate-supabase-baseline-functional.mjs
+
+```
+
+---
+
+## Expected output
+
+Return:
+
+1. **Sanitary operation affected:** [Flow identifier]
+2. **Source-of-truth assessment:** [Invariants status]
+3. **Agenda/event/protocol separation check:** [Contracts separation verification]
+4. **Stock/product/cost impact:** [Inventory adjustments status]
+5. **Sync/rollback risk:** [Idempotency status]
+6. **Tests required/executed:** [Scenarios covered]
+7. **Riscos/pendências:** [Up to 3 points]
+
+---
+
+## Output rules
+
+* Do not treat agenda as historical fact.
+* Do not convert checklist into execution.
+* Do not infer carência/venda/abate.
+* Separate confirmed behavior, inference, and recommendation.
+
+```
+
+```

@@ -1,251 +1,179 @@
+```markdown
 ---
 name: reproducao-parto-posparto-cria
-description: Use when the task is about cobertura, IA, diagnóstico de gestação, parto, pós-parto, cria inicial, ficha reprodutiva, episode linking, status reprodutivo derivado, ou fatos event-driven que projetam taxonomy_facts no fluxo reprodutivo.
+description: Use when a RebanhoSync task touches parto, pós-parto, cria creation, deterministic linking, reproductive event flow, or agenda derived from birth/calf lifecycle.
 ---
 
-# Reprodução — Parto, Pós-parto e Cria Inicial
+# Reprodução Parto Pós-parto Cria
 
-## Missão
+## Mission
 
-Orientar mudanças e decisões no fluxo reprodutivo completo:
-- cobertura / IA
-- diagnóstico
-- parto
-- pós-parto neonatal
-- cria inicial
-- ficha reprodutiva
-- episode linking
-- status reprodutivo derivado
-- projeção de fatos reprodutivos em `taxonomy_facts`
-
-Esta skill cobre o fluxo **operacional reprodutivo**.  
-Ela não é para cadastro-base simples do animal nem para movimentação/trânsito.
+Protect RebanhoSync reproductive flows involving birth, post-partum, calf creation, deterministic linking, event integrity, and derived agenda.
 
 ---
 
-## Quando usar
+## When to use
 
-Use esta skill quando a tarefa envolver:
-
-- `src/lib/reproduction/**`
-- `src/pages/AnimalReproducao.tsx`
-- `src/pages/ReproductionDashboard.tsx`
-- `src/pages/AnimalPosParto.tsx`
-- `src/pages/AnimalCriaInicial.tsx`
-- `src/pages/AnimalDetalhe.tsx` quando tocar leitura reprodutiva
-- `src/lib/animals/taxonomy.ts`
-- `src/lib/animals/taxonomyFactsContract.ts`
-- `src/lib/offline/ops.ts` se houver impacto na validação local de fatos reprodutivos
-- `supabase/functions/sync-batch/taxonomy.ts` se houver impacto na validação autoritativa
-
-Capabilities prováveis:
-- `reproducao.registro`
-- `reproducao.historico`
-- `reproducao.episode_linking`
+Use when task touches:
+* Parto;
+* Pós-parto;
+* Cria;
+* Nascimento;
+* Vínculo mãe → cria;
+* Reproductive event;
+* Agenda da cria;
+* Umbigo/D7/D30/desmame;
+* Episode linking;
+* Event-driven animal creation;
+* Cria initial state;
+* Reproductive follow-up after birth.
 
 ---
 
-## Quando NÃO usar
+## Do not use when
 
-Não use esta skill para:
-- simples criação/edição cadastral do animal
-- compra/venda/saída
-- movimentação entre lotes/pastos
-- trânsito externo/GTA/e-GTA
-- catálogo sanitário/regulatório
-- ajustes genéricos de UI sem impacto reprodutivo
+Do not use when:
+* Task is generic animal UI with no reproduction;
+* Task is generic IATF planning not tied to implemented flow;
+* Task is visual/copy only;
+* Task is only sanitary agenda unrelated to birth/calf flow.
 
-Nesses casos, usar:
-- `animal-cadastro-origem-destino`
-- `movimentacao-transito-conformidade`
-- `sanitario-*`
+### Use instead:
+* `animal-cadastro-origem-destino` for generic animal registration;
+* `sanitario-registro-operacional` for sanitary execution;
+* `sync-offline-rollback` if offline/sync is main risk.
 
 ---
 
-## Ler primeiro
+## Read first
 
-1. `docs/CURRENT_STATE.md`
-2. `docs/ARCHITECTURE.md`
-3. `docs/CONTRACTS.md`
+1. `AGENTS.md`
+2. `.agents/rules/CORE_RULES.md`
+3. `.agents/rules/CONTEXT_LOADING.md`
+4. `.agents/rules/no-broad-context.md`
 
-Ler só se necessário:
-- `docs/OFFLINE.md`
+> ⚙️ **Execution Rule:** For commands and validation, follow `.agents/rules/rtk.md`.
 
-Arquivos-alvo mais comuns:
-- `src/lib/reproduction/linking.ts`
-- `src/lib/reproduction/status.ts`
-- `src/lib/reproduction/selectors.ts`
-- `src/lib/reproduction/types.ts`
-- `src/pages/AnimalReproducao.tsx`
-- `src/pages/AnimalPosParto.tsx`
-- `src/pages/AnimalCriaInicial.tsx`
-- `src/pages/ReproductionDashboard.tsx`
-- `src/lib/animals/taxonomy.ts`
-- `src/lib/animals/taxonomyFactsContract.ts`
-
-Evitar abrir por padrão:
-- docs derivados
-- histórico/auditorias antigas
-- sanitário/movimentação sem necessidade explícita
+### Read as needed:
+* `docs/domain/REPRODUCAO.md`
+* `docs/context/SOURCE_OF_TRUTH.md`
+* `docs/technical/OFFLINE_SYNC.md` if sync/gesture is involved;
+* Local `AGENTS.md` in affected folders.
 
 ---
 
-## Modelo mental obrigatório
+## Source of truth
 
-Fluxo principal:
-1. cobertura / IA
-2. diagnóstico de gestação
-3. parto
-4. pós-parto
-5. cria inicial
-
-Separar sempre:
-
-### A. Evento reprodutivo
-- fato passado
-- append-only
-- vive em `eventos` + `eventos_reproducao`
-
-### B. Estado/visão derivada
-- status reprodutivo
-- leitura da ficha reprodutiva
-- projeção em `taxonomy_facts`
-
-### C. Episode linking
-- vínculo lógico e determinístico entre eventos do mesmo episódio
-- não depende de edição destrutiva do histórico
-
-### D. Fluxo mãe vs cria
-- parto pertence ao episódio reprodutivo da matriz
-- pós-parto e cria inicial expandem a jornada operacional
-- não colapsar tudo em “cadastro da cria”
+In case of conflict, trust:
+1. Code + active migrations;
+2. `docs/context/PROJECT_STATUS.md`;
+3. Active normative docs;
+4. Derived docs;
+5. Archive/history;
+6. This skill.
 
 ---
 
-## Decisão rápida
+## Hard constraints
 
-### Caso A — Cobertura / IA
-Criar evento reprodutivo adequado.
-Se houver linking/episode reference, preservar a lógica determinística.
-
-### Caso B — Diagnóstico
-O diagnóstico pode projetar fatos reprodutivos, inclusive:
-- `prenhez_confirmada`
-- `data_prevista_parto`
-
-Esses fatos não devem ser tratados como simples edição manual arbitrária.
-
-### Caso C — Parto
-Separar:
-- evento reprodutivo da matriz
-- efeitos derivados no status/taxonomia
-- transição para pós-parto
-- eventual criação da cria no fluxo apropriado
-
-### Caso D — Pós-parto neonatal
-Tratar como etapa operacional própria do fluxo, não como detalhe cosmético.
-
-### Caso E — Cria inicial
-Tratar como continuação do parto/pós-parto:
-- identificação final
-- lote inicial
-- pesagem neonatal
-- gesto atômico quando o fluxo exigir isso
+* **Evento:** Evento reprodutivo is the historical fact.
+* **Garantia:** Do not treat agenda as birth history.
+* **Integridade:** Do not overwrite manually curated event-driven critical facts without explicit correction flow.
+* **Vínculos:** Preserve deterministic linking mãe → parto → cria → pós-parto.
+* **Integridade:** Do not create orphan calf records.
+* **Idempotência:** Do not create duplicate calf records on retry.
+* **Limitação:** Do not infer broad IATF engine unless implemented.
+* Preserve offline-first/idempotency.
+* Preserve tenant isolation.
 
 ---
 
-## Ownership de fatos reprodutivos
+## Flow contracts
 
-Respeitar sempre o contrato atual:
+### Parto
+Should represent real occurrence: mother, date/time, result, calf/cria data when applicable, responsible user, event link, and farm/tenant.
 
-### Event-driven
-- `prenhez_confirmada`
-- `data_prevista_parto`
-- `data_ultimo_parto`
+### Cria
+Should be linked deterministically: mother ID, birth event ID, farm ID, initial status, initial taxonomic facts (if applicable), and lote/pasto if explicitly provided or properly derived.
 
-### Manual / híbrido conforme contrato
-- `puberdade_confirmada`
-- `secagem_realizada`
-- `data_secagem`
-- `em_lactacao`
+### Pós-parto
+Should be linked to mother, birth episode/event, calf when applicable, and follow-up agenda if generated.
 
-Regra central:
-- campos event-driven críticos não aceitam override manual arbitrário
-- correção deve acontecer por novo evento / fluxo apropriado
-- cliente e servidor validam o contrato
+### Agenda da cria
+Can represent future tasks (umbigo, D7, D30, desmame, or other configured follow-ups), but agenda is never proof of execution.
 
 ---
 
-## Invariantes obrigatórias
+## Procedure
 
-- não quebrar episode linking
-- não persistir label derivado como fonte de verdade
-- não substituir evento por simples update silencioso do status
-- não mover regra reprodutiva forte para página/UI dispersa
-- manter coerência entre histórico reprodutivo e estado derivado
-- não quebrar fluxo parto -> pós-parto -> cria inicial
-- respeitar `taxonomy_facts.schema_version = 1`
-- não introduzir conflito entre validação local e servidor
+### 1. Classify reproduction action
+Classify as: birth event, calf creation, post-partum follow-up, agenda generation, correction, UI display, or read model update.
 
----
+### 2. Verify linking
+Check if mother exists and belongs to farm, calf belongs to same farm, event links are deterministic, duplicate retry cannot create duplicate cria, and post-partum links to correct episode.
 
-## Anti-padrões
+### 3. Verify source-of-truth
+Check if historical fact is event, current state is `state_*`, future task is agenda, and protocol/config is not execution.
 
-- tratar parto como simples criação de animal sem jornada posterior
-- editar diretamente fatos event-driven para “corrigir” histórico
-- duplicar regra de status reprodutivo em várias telas
-- gravar labels derivados como se fossem fonte primária
-- separar demais mãe, parto, pós-parto e cria a ponto de perder o encadeamento operacional
-- misturar cadastro-base do animal com fluxo reprodutivo completo
+### 4. Verify sync/offline
+Check that one user action creates exactly one idempotent gesture, rollback can undo partial creation, retry does not duplicate event/cria/agenda, and failure leaves system reconcilable.
+
+### 5. Verify tests
+Cover scenarios: happy path parto + cria, duplicate retry, missing mother, calf already linked, rollback/partial failure, agenda creation after birth, and ensure no agenda-as-history behavior.
 
 ---
 
-## Checklist antes de alterar
+## Validation
 
-1. A mudança é de registro, linking, status ou apresentação?
-2. O dado pertence ao evento, ao payload derivado ou só à projeção?
-3. Existe risco de drift entre histórico e leitura atual?
-4. O fluxo pós-parto/cria inicial continua navegável e coerente?
-5. Há impacto em `taxonomyFactsContract`, `ops.ts` ou `sync-batch/taxonomy.ts`?
+Follow `.agents/rules/rtk.md`.
 
----
+### Minimum check:
+```bash
+git status --short --untracked-files=all
 
-## Forma de entrega
+```
 
-Retornar:
-- diff mínimo
-- impacto no fluxo em até 5 bullets
-- invariantes tocadas
-- até 3 riscos
-- testes focados
+* plus the related reproduction tests.
 
----
+### If sync/event creation is touched:
 
-## Validação mínima
+```bash
+rtk pnpm run lint
+rtk pnpm test
+rtk pnpm run build
 
-- `pnpm run lint`
-- `pnpm test`
-- `pnpm run build`
+```
 
-Se tocar jornada ou status:
-- rodar testes unitários/integrados do fluxo reprodutivo
-- rodar o E2E/guiado parto -> pós-parto -> cria inicial quando aplicável
+### If Supabase/RLS/RPC is touched:
+
+```bash
+rtk node scripts/codex/validate-supabase-baseline-functional.mjs
+
+```
 
 ---
 
-## Escalonamento
+## Expected output
 
-Escalar para `sync-offline-rollback` quando tocar:
-- gestures
-- rollback
-- stores locais
-- sync/pull
+Return:
 
-Escalar para `migrations-rls-contracts` quando tocar:
-- schema
-- FK
-- enum
-- view
-- contrato SQL/TS de taxonomia
+1. **Reproduction flow affected:** [Flow identifier]
+2. **Source-of-truth assessment:** [Invariants status]
+3. **Linking assessment:** [Mother-calf deterministic mapping check]
+4. **Duplicate / idempotency risk:** [Retry safety status]
+5. **Agenda / event separation check:** [Contracts separation verification]
+6. **Tests required/executed:** [Scenarios covered]
+7. **Riscos/pendências:** [Up to 3 points]
 
-Escalar para `animal-cadastro-origem-destino` quando a tarefa for só cadastro/base do animal
+---
+
+## Output rules
+
+* Do not infer broad IATF support.
+* Do not treat agenda as execution.
+* Do not allow orphan cria.
+* Separate confirmed behavior, inference, and recommendation.
+
+```
+
+```

@@ -1,230 +1,53 @@
-# Current State (Snapshot Operacional)
+# Current State (Snapshot Operacional) - RebanhoSync
 
-> **Status:** Snapshot vivo
-> **Ultima Atualizacao:** 2026-05-29
-> **Estado do produto:** Beta interno
-> **Fase atual:** MVP funcional completo -> **SLC (Simple, Lovable, Complete) em consolidacao** (Fases 1 a 8 Concluídas e Consolidadas)
+**Status:** Snapshot vivo
+**Última Atualização:** 2026-05-31
+**Estado do produto:** Beta interno
+**Fase atual:** SLC (Simple, Lovable, Complete) em consolidação
 
----
+Este documento apresenta um resumo executivo do estado operacional atual do projeto RebanhoSync, com foco nas consolidações recentes e na direção estratégica. Para detalhes aprofundados sobre regras, contratos e arquitetura, consulte os documentos de contexto específicos.
 
-## 1. Leitura de fase
+## 1. Leitura de Fase e Foco Atual
 
-O RebanhoSync nao esta mais na fase de organizar arvore e quebrar monolitos iniciais.
+O RebanhoSync está na fase de **consolidação operacional**, focando em:
+- Preservar a previsibilidade dos fluxos centrais.
+- Reduzir a fricção de uso em campo.
+- Aumentar a consistência da experiência.
+- Estabilizar a qualidade para evolução incremental sem regressão estrutural.
 
-Os hotspots criticos de UI (`Registrar` e `Agenda`) passaram pelo hardening estrutural principal, com shell mais fino e fronteiras locais mais claras entre composicao, estado, interacao, policy e efeitos.
+Os hotspots críticos de UI (`Registrar` e `Agenda`) passaram pelo hardening estrutural principal. A fase atual visa refinar e consolidar o que já foi construído.
 
-A fase corrente e de **consolidacao operacional**:
-- preservar previsibilidade dos fluxos centrais;
-- reduzir friccao de uso em campo;
-- aumentar consistencia de experiência;
-- estabilizar qualidade para evolucao incremental sem regressao estrutural.
+## 2. Consolidações Recentes (Maio/2026)
 
-Consolidacoes recentes da fase SLC:
-- **Ledger Gerencial Administrativo e Lançamentos Financeiros (Fase 8):** Implementação física e offline-first do financeiro gerencial. Tabelas `finance_categories` e `finance_transactions` adicionadas com RLS rígido, triggers de auto-seeding e isolamento por `fazenda_id`. Camada lógica pura com validações e sumários gerenciais de fluxo de caixa realizada/previsto.
-- **Read Model de Carência Sanitária (Fase 7 e 7.1):** Engine pura (`withdrawalReadModel.ts`) que calcula período de carência de carne/abate e leite nominal no fuso `'America/Sao_Paulo'` sem I/O ou relógio de fuso local. Testes robustos de paridade absoluta com a view remota `vw_animais_carencia_ativa`. Painel premium HSL de carência com microcopy regulatória integrado nas fichas de Animal, Lote e Pasto.
-- **Insumos, Estoque e Snapshot Imutável (Fase 6 e 6.1):** Controle de estoque tenant-scoped (`insumos`, `insumo_apresentacoes`, `insumo_lotes`, `insumo_movimentacoes`) via Dexie + Supabase `sync-batch`. Snapshot imutável gravado de forma definitiva em eventos sanitários e nutricionais de consumo no momento exato de sua aplicação.
-- **Refinamentos de Experiência e Bloqueio de No-ops:** Dropdown de categorias de insumo inteligente e dinâmico reordenado; bloqueio de transições no-op redundantes (ex: *"Vaca adulta → Vaca adulta"*) via normalizador de strings no `lifecycle.ts`; e baseline de estágio gravada direto na importação CSV de animais, saneando radares e alertas operacionais.
-- métricas de ocupação integradas em Lotes e Pastos: tempo de lotação, histórico de movimentação, ganho de peso (GMD) e ECC agora são calculados de forma derivada a partir de eventos históricos e exibidos em `LoteDetalhe` e `PastoDetalhe`.
-- semantica transversal padronizada: `Registrar`, `Executar`, `Encerrar`, `Aplicar protocolo`, `Seguir fluxo` (reproducao);
-- remocao de termos ambiguos legados da UI operacional;
-- reforco do modelo Two Rails: Agenda (`agenda_itens`) != Eventos (`eventos`);
-- `Aplicar protocolo` atua apenas na agenda (materializacao/recalculo), sem gerar evento.
-- saneamento sanitario P0-P6.4b concluido no recorte atual: SQL/Supabase permanece motor lider de materializacao/recompute; TypeScript preserva contratos, adapters, golden tests e suporte offline.
-- calendario sanitario TS->SQL alinhado; dedup sanitario canonico estruturado in TS/SQL; agenda sanitaria canonica agora bloqueia geracao indevida por catalogo global e exige gates explicitos por janela, risco, configuracao, ativacao operacional ou especie canonica transicional.
-- taxonomia sanitaria passiva introduzida (`ProtocolKind`, `MaterializationMode`, `ComplianceKind`) sem mudanca de comportamento.
-- `src/lib/sanitario/**` reorganizado por responsabilidade e boundary `Registrar` <-> sanitario documentado.
-- Shims de migrations pos-squash removidos da pasta ativa; testes de contrato leem a baseline canonica ou fixtures canonicas.
-- `docs/review/RebanhoSync_auditoria.md` foi ajustado pos-validacao como contrato documental de fontes de verdade para orientar uso de `insights` e marcadores sem transformar sinal auxiliar em fonte primaria ou comportamento operacional.
-- `src/lib/insights/` foi consolidado como core puro/read-only de composicao operacional; a primeira integracao passiva foi conectada na Home por `src/features/operationalInsights/` sem IO no core, sem persistencia, sem eventos e sem acoes de dominio.
-- Pastagens passaram a ter trilho historico proprio para avaliacao/ronda: `dominio='pastagem'`, detalhe `eventos_pasto_avaliacao`, store local `event_eventos_pasto_avaliacao` e registro minimo in `PastoDetalhe`, sem atualizar `pastos`, `lotes`, `pasto_ocupacoes` or agenda.
-- Refatoracao visual SLC aplicada: Home virou painel tatico, Animais ficou card-first, Registrar foi compactado e a **Agenda** foi otimizada para campo com nova hierarquia de informacao, progressive disclosure de metadados, acoes criticas diferenciadas e responsividade mobile-first, sem alterar regras de negocio.
+As principais consolidações e refinamentos incluem:
 
-### ✅ Refinamentos Recentes (Maio/2026)
-- **Patch Fase 9 — Sociedade Pecuária / Negócios Patrimoniais Concluída e Validada**: Implementação estrutural para registro e encerramento de sociedade vinculada a animais. Posicionada operacionalmente em `Registrar -> Negócios Patrimoniais -> Sociedade`. Preserva fechamento automatizado de vínculo quando o animal em sociedade é explicitamente englobado em uma operação de venda. Protege contra teleporte duplicado e introduz rastreabilidade via `clientOpId` em histórico append-only.
-- **Fase 8 — Ledger Gerencial e Lançamentos Financeiros Concluída e Validada**: Implementação física e lógica da fundação de finanças gerenciais, separando previstos e realizados e desconsiderando cancelados. Agrupadores analíticos puros desenvolvidos por categoria, contraparte e centro de custo em `gerencial.ts`.
-- **Fase 3 Sanitária — Consolidação Operacional Concluída e Validada**: Histórico sanitário auditável agora exibe produto aplicado, lote/partida, validade, dose, unidade, via, responsável, carência, custo e item/version de protocolo quando disponível. Relatórios/read models usam `eventos_sanitario` estruturado para custo por produto, animal, lote pecuário, lote de estoque e protocolo, além de inconsistências como produto sem lote, custo ausente e estoque inconsistente. Sinais sanitários (`carencia_ativa`, `livre_carencia`, `evento_sem_rastreabilidade`, `produto_sem_lote`, `estoque_inconsistente`, `custo_ausente`) vêm somente de eventos executados; agenda e protocolo isolado não são fonte de carência.
-- **Fase 7 e 7.1 — Carência Sanitária e Paridade TS x SQL Concluídas e Validadas**: Engine pura de retirada calculada por datas nominais e testada contra a view do banco remota `vw_animais_carencia_ativa`, com badges HSL e microcopys regulatórios aplicados de forma assistiva em Animal, Lote e Pasto.
-- **Fase 6 e 6.1 — Insumos/Estoque, Snapshot Imutável e Hardening Concluídas e Validadas**: Modelagem tenant-scoped do estoque, snapshot gravado em eventos, e sync validado offline via worker Dexie e `sync-batch` Supabase.
-- **Dropdown de Categoria & Bloqueio de No-ops de Estágio**: Dropdown dinâmico responsivo por Tipo de insumo em `/insumos` e bloqueio de pendências/agenda de transições sem mudança de estágio real.
-- **Fase 5 — Lotes e Pastos como Cockpit de Manejo Concluída e Validada**: Evolução incremental e reativa de `LoteDetalhe.tsx` e `PastoDetalhe.tsx` transformando-os em cockpits operacionais analíticos. Desenvolvimento do adaptador de métricas puro (`cockpitManejoAdapter.ts`) que calcula cobertura de ECC/peso, frescor de peso (`weightFreshnessDays`), GMD factual ($\ge 2$ pesagens), tempo de uso/lotação real e pendências ativas agregadas da agenda de forma determinística e resiliente. Introdução de linha do tempo factual unificada visual (`TimelineFactual.tsx`) cronológica decrescente (`occurred_at desc`), limitada a 15-20 itens com expansão progressiva por clique. CTAs são estritamente de navegação para registrar manejos, sem mutações nos cards.r manejos, sem mutações nos cards.
-- **Fase 5.1 — KPIs Produtivos Consolidados via Testes**: Consolidação e blindagem dos invariantes dos KPIs produtivos expostos em Home, LoteDetalhe e PastoDetalhe. Sem alteração de lógica de produção. Adicionados 15 testes unitários para `kpiHelpers.ts` (`calculateIndividualGmd` e `calculateUaLotacao`) e 11 testes adicionais ao `cockpitManejoAdapter.test.ts`, cobrindo: GMD calculado com base em `occurred_at` (não `created_at`); pesagens soft-deletadas ignoradas; animais mortos/vendidos excluídos; intervalo zero bloqueia GMD; `state_pasto_ocupacoes` tem precedência sobre `eventos_movimentacao`; UA/ha bloqueado se `area_ha <= 0` ou `null`; `categoriaPredominante` nunca exibe snake_case. Suite global: 231 arquivos, 1.492 testes passando.
-- **Fase 3 — Fechamento do Ciclo Operacional do ECC Factual Individual Concluída**: Adicionado o fluxo visual completo de registro de ECC individual e lote no `Registrar` (com suporte a inputs vazios no modo lote indicando "não avaliado nesta rodada", validação rígida de passo de 0.25 e range 1.0 a 5.0, e lógica "tudo-ou-nada" onde qualquer entrada inválida bloqueia o salvamento). Cada animal avaliado gera um evento factual individual independente com `source_task_id = null`. Na ficha do animal (`AnimalDetalhe`), é exibido um card simples com o último ECC factual registrado (escala, data e observação) e o histórico completo em ordem decrescente de `occurred_at`. Casos sem registro mostram "Sem ECC factual registrado". Os derivadores de lote e pasto recalculam a média e a cobertura reativamente.
-- **Fase 2 — Métricas de Lote/Pasto e ECC Factual Concluída**: Modelagem do domínio `"ecc"` no pipeline factual (`EccEventInput` -> `validateEccInput` -> `buildEventGesture` -> `eventos_ecc` detail table). A média de ECC de lotes/pastos é calculada dinamicamente com base nos últimos registros factuais válidos de ECC dos animais ativos (excluindo mortos/vendidos e soft-deletados). Implementação da lista colapsável de animais sem ECC sob demanda nas telas de Lote/Pasto, tempo de lotação baseado em movimentações factuais e GMD bloqueado com 0 ou 1 pesagem e calculável apenas com pelo menos 2 pesagens válidas. Cobertura completa de 28 testes de unidade/integração para os derivadores e linter/build 100% verdes.
-- **Fase 1 — Consolidação Operacional Concluída**: Estabilização e blindagem completa da cadeia de execução de manejos (**Agenda aberta → Registrar manejo → Evento factual → Reconcile/fechamento da agenda**). Corrigimos as 6 falhas históricas de testes unitários de página (`Animais`, `LoteDetalhe`, `PastosP2`, `AnimalSpeciesForms`). Introduzimos uma suite robusta de testes de integração e fumaça em `tests/integration/flows/` e `tests/smoke/` cobrindo fluxos de pesagem/movimentação avulsas e baseadas em agenda, garantindo comportamento idempotente e eliminando drift cronológico de tarefas.
-- **Consolidação do Design System nos Formulários**: Propagação de melhorias visuais e ergonômicas tácteis para os 5 formulários centrais da aplicação (`AnimalEditar.tsx`, `LoteNovo.tsx`, `LoteEditar.tsx`, `PastoNovo.tsx` e `PastoEditar.tsx`), elevando inputs para `h-12`/`rounded-xl`, introduzindo busca inteligente via `<FieldCombobox>`, proteção de cliques duplos com `isSaving`, botão de atalho de escaneamento de campo (`ScanLine`) e rodapé fixo `sticky bottom-0` (`h-14`) para navegacao mobile com uma mão.
-- **Métricas de Ocupação**: Camada de derivadores puros (`src/features/occupancy/`) e componentes de UI integrados para visualização de desempenho de lotes e pastos.
-- **Identidade Azul Sync Técnico**: Implementada e consolidada em runtime.
-- **Contraste Corretivo**: Light/Dark mode validados para legibilidade em campo (red-400 p/ perigo, cards com 10% opacidade).
-- **Navegação Híbrida**: Bottom Nav (mobile) e SideNav (desktop) operacionais.
-- **Home Operacional**: Validada como painel tatico "Hoje", priorizando atrasos, agenda do dia e acoes imediatas; leituras passivas foram removidas ou rebaixadas.
-- **Fluxo de Registro**: Entrada contextual segura por Lote/Pasto/Animal/Agenda, sem inferência automática destrutiva.
-- **Refatoracao visual SLC**: Reducao agressiva de cards, descricoes redundantes, tabelas densas e status tecnicos em Home, Registrar, Animais, Lotes, Pastos, Reproducao, Dashboard, Eventos, Financeiro, Relatorios, Reconciliacao, Configuracoes, selecao de fazenda e cadastros de apoio.
-- **Selecao de fazenda contextual**: cards de fazenda agora exibem municipio/UF, area, producao e manejo quando disponiveis, mantendo o fluxo de selecao sem nova regra de negocio.
-- **Handoff Design**: Documentado em `docs/design/HANDOFF_VISUAL_UX_20260508.md`.
+- **Ledger Gerencial Administrativo e Lançamentos Financeiros (Fase 8):** Implementação física e offline-first do financeiro gerencial, com tabelas `finance_categories` e `finance_transactions` e RLS rígido.
+- **Read Model de Carência Sanitária (Fase 7 e 7.1):** Engine pura (`withdrawalReadModel.ts`) para cálculo de período de carência, com testes robustos e painel premium HSL.
+- **Insumos, Estoque e Snapshot Imutável (Fase 6 e 6.1):** Controle de estoque tenant-scoped e snapshot imutável em eventos sanitários e nutricionais.
+- **Refinamentos de Experiência e Bloqueio de No-ops:** Dropdown de categorias de insumo inteligente, bloqueio de transições no-op e baseline de estágio na importação CSV.
+- **Métricas de Ocupação:** Métricas como tempo de lotação, histórico de movimentação, GMD e ECC calculadas a partir de eventos históricos e exibidas em `LoteDetalhe` e `PastoDetalhe`.
+- **Semântica Transversal Padronizada:** Padronização de termos como `Registrar`, `Executar`, `Encerrar`, `Aplicar protocolo`, `Seguir fluxo`.
+- **Reforço do Modelo Two Rails:** Clarificação de que Agenda (`agenda_itens`) é intenção e Eventos (`eventos`) são fatos.
+- **Saneamento Sanitário:** Consolidação do recorte sanitário, com SQL/Supabase como motor líder e TypeScript preservando contratos e testes.
+- **Taxonomia Sanitária Passiva:** Introdução de `ProtocolKind`, `MaterializationMode`, `ComplianceKind` sem mudança de comportamento.
+- **Reorganização de `src/lib/sanitario/**`:** Estrutura por responsabilidade e boundary `Registrar` <-> sanitário.
+- **Remoção de Shims de Migrations:** Shims pós-squash removidos da pasta ativa.
+- **Consolidação de `src/lib/insights/`:** Core puro/read-only de composição operacional, com integração passiva na Home.
+- **Pastagens com Trilho Histórico Próprio:** `eventos_pasto_avaliacao` para avaliação/ronda de campo.
+- **Refatoração Visual SLC:** Redução de complexidade visual em diversas telas.
+- **Seleção de Fazenda Contextual:** Cards de fazenda exibem metadados cadastrais.
+- **Handoff Design:** Documentado em `docs/design/HANDOFF_VISUAL_UX_20260508.md`.
 
----
+## 3. Hotspots Consolidados
 
-## 2. O que foi consolidado
+Os hotspots `src/pages/Registrar` e `src/pages/Agenda` tiveram seu hardening estrutural principal concluído, com IO, pacotes financeiros/sanitários, orquestração e estado de shell movidos para camadas mais apropriadas. O domínio `src/lib/sanitario` foi reorganizado em `models/`, `engine/`, `catalog/`, `compliance/`, `infrastructure/` e `customization/`.
 
-### Hotspot `src/pages/Registrar`
+## 4. Para Detalhes
 
-Hardening estrutural principal concluido:
-- IO saiu do shell;
-- pacotes financeiro/sanitario sairam do shell;
-- finalize orchestration saiu do shell;
-- step-flow saiu do shell;
-- query parsing saiu do shell;
-- quick action policy saiu do shell;
-- adapters de section/shell state sairam do shell.
+- **Regras de Domínio:** Consulte `docs/context/CORE_RULES.md` e `docs/context/SOURCE_OF_TRUTH.md`.
+- **Lacunas Conhecidas:** Consulte `docs/context/KNOWN_GAPS.md`.
+- **Arquitetura:** Consulte `docs/technical/ARCHITECTURE.md`.
+- **Processo de Engenharia:** Consulte `docs/PROCESS.md`.
+- **Carregamento de Contexto:** Consulte `../.agents/rules/CONTEXT_LOADING.md`.
 
-Residual dominante:
-- volume de composicao/JSX (sem orquestracao densa relevante).
-- no recorte sanitario, o `Registrar` atua como orquestrador: payload, preflight, pacote sanitario e boundary RPC/fallback estao delegados a `src/lib/sanitario/**`.
-- no recorte sanitario, `src/pages/Registrar/**` nao importa diretamente `@/lib/sanitario/engine/*`; labels visuais de calendario passam por `src/lib/sanitario/models/calendarDisplay.ts`.
-
-### Hotspot `src/pages/Agenda`
-
-Hardening estrutural principal concluido:
-- action controller saiu do shell;
-- shell state saiu do shell;
-- interaction state saiu do shell;
-- blocos macro de resumo/compliance/lifecycle sairam do shell;
-- componente visual monolitico principal foi fatiado.
-- TD-026 em reducao incremental: leitura/local data hook (`useAgendaPageData`), resumos visuais (`helpers/pageSummaries`) e metadados de linha (`helpers/rowMeta`) sairam do shell.
-
-Residual dominante:
-- wiring/orquestracao local de read-model, filtros, grupos, alvos criticos e efeitos existentes no shell.
-
-### Dominio `src/lib/sanitario`
-
-Estrutura fisica atual pos-P2:
-- `models/`: tipos, adapters de payload, taxonomia passiva, preflight e builders puros.
-- `engine/`: calendario, dedup, scheduler, regimen e precedencia de layers.
-- `catalog/`: protocolos base, catalogo oficial, produtos e operacoes de catalogo.
-- `compliance/`: read models, guards e regras regulatorio-documentais.
-- `infrastructure/`: service, agenda schedule e boundary RPC/fallback.
-- `customization/`: customizacao de protocolos por fazenda.
-
-Contratos sanitarios centrais:
-- `resolveRegistrarSanitaryPackage`
-- `buildSanitaryExecutionPayload`
-- `validateSanitaryExecutionPreflight`
-- `executeSanitaryCompletion`
-- `buildSanitaryDedupKey`
-- adapters `toSqlCalendarMode` / `fromSqlOrLegacyCalendarMode` e equivalentes de anchor
-- taxonomia passiva em `models/taxonomy.ts`
-
-Contrato atual de agenda sanitaria pos-P6.4b:
-- P6.1 consolidou o catalogo sanitario conservador: o seed e tecnico/idempotente, separa catalogo oficial, tecnicos recomendados, notificaveis e produtos, mas nao e fonte normativa completa.
-- P6.2.1 materializa brucelose PNCEBT apenas para femeas ativas, com nascimento conhecido, janela etaria 90-240 dias, `gera_agenda=true`, dedup canonico por janela e bloqueio de backfill expirado.
-- P6.2.2a/P6.2.2b impedem reabertura de brucelose concluida: primeiro por agenda concluida com evento sanitario valido e depois por `payload.sanitary_completion` espelhado em `eventos` e persistido canonicamente em `eventos_sanitario`.
-- P6.2.3 permite raiva dos herbivoros somente por protocolo operacional ativo, item `gera_agenda=true`, `family_code='raiva_herbivoros'`, `fazenda_sanidade_config.zona_raiva_risco` medio/alto e ativacao explicita no payload; nao ha vacinacao universal.
-- P6.2.4 permite agenda tecnica recomendada somente por protocolo operacional da fazenda, item `gera_agenda=true` e ativacao explicita no payload; `controle_parasitario` exige `pressao_helmintos` medio/alto e `controle_carrapato` exige `pressao_carrapato` medio/alto.
-- P6.3a adicionou `animais.especie` como campo canonico nullable minimo (`bovino` | `bubalino` | `null`), sem backfill obrigatorio e sem tornar especie obrigatoria.
-- P6.3b aplica gate sanitario transicional por especie na `sanitario_recompute_agenda_core`: `especie=null` continua elegivel temporariamente; brucelose e raiva permitem `bovino`, `bubalino` e `null`; tecnicos recomendados respeitam alvo explicito de especie quando existir e, sem alvo explicito, permitem as especies canonicas e `null`.
-- P6.4a fixou o contrato TS de raiva operacional D1/D2/anual em `baseProtocols`/regimen: `raiva_d1`, `raiva_d2`, `raiva_anual`, `schedule_kind`, `depends_on`, `agenda_activation` por risco medio/alto e `unknown_history_policy='start_from_d1'` para D1; alias legado `raiva_reforco_30d` normaliza para `raiva_d2` apenas como leitura compativel.
-- P6.4b materializou a sequencia de raiva na `sanitario_recompute_agenda_core`: D1 exige risco medio/alto, ativacao explicita e `unknown_history_policy='start_from_d1'`; D2 depende de evento sanitario D1 valido; anual exige D2 valida e ancora na ultima anual valida ou, na ausencia dela, em D2; datas vencidas sao clampadas para evitar backfill amplo.
-- Sindrome vesicular/aftosa deixou de aparecer como verificacao PNEFA independente no seed; deve ser tratada dentro de `catalogo_doencas_notificaveis` pelo fluxo unico "Doencas notificaveis - registrar suspeita e orientar notificacao". IN50/doencas notificaveis, GTA, suspeitas, checklists e biosseguranca continuam fora da agenda automatica.
-- Casos sanitarios estruturais foram introduzidos como estado mutavel por animal (`sanitario_casos` / `state_sanitario_casos`) para agrupar suspeita notificavel, manejo clinico e acompanhamento longitudinal. Eventos continuam fatos append-only e podem apontar para o caso por `sanitario_caso_id`; o alerta legado ainda funciona como fallback de leitura. O `Registrar` ja consegue vincular manejo sanitario a caso clinico ativo ou abrir novo caso clinico no mesmo gesto offline do evento, e o detalhe do animal lista os casos persistidos com timeline filtrada por caso, acao de manejo e encerramento manual validado para casos clinicos.
-- O detalhe do animal tambem exibe apoio clinico read-only para casos clinicos com contexto de TPB, mastite, diarreia neonatal, sindrome respiratoria/pneumonia ou feridas/miiase, derivado da biblioteca canonica atual. A selecao pode vir de contexto textual, codigo clinico ou contrato versionado `payload.clinical_protocol` (`schema_version=1`), com origem visivel no card. Cada item pode abrir o `Registrar` com conduta/produto pre-preenchido, caso vinculado e referencia `clinical_protocol` carregada para o payload do evento quando o usuario salvar explicitamente; a timeline do caso tambem mostra leitura operacional desse contrato por evento vinculado e o painel de casos permite filtrar casos por roteiro clinico derivado. Essa navegacao/leitura nao cria agenda, evento, prescricao ou baixa de estoque.
-- A governanca da biblioteca clinica minima agora e contrato TS testavel em `CLINICAL_PROTOCOL_LIBRARY_GOVERNANCE` e `validateClinicalProtocolLibraryGovernance`: todo roteiro clinico suportado deve ser `medicamentos`, `profile=terapeutico`, `gera_agenda=false`, `calendario_base.mode=clinical_protocol` e alvo por animal. O contrato tambem explicita efeitos proibidos: nao materializar agenda, nao criar evento sem acao explicita, nao prescrever automaticamente e nao baixar estoque.
-- Terapia de Vaca Seca deixou de ser apenas pre-contrato: `evaluateDryCowTherapyReadiness` classifica candidatas por femea ativa, em lactacao, ainda nao seca, `data_prevista_parto` e janela 45-75 dias antes do parto; o `Registrar` registra secagem manual em gesto offline unico, gravando `payload.dry_cow_therapy` no evento e atualizando apenas `taxonomy_facts` do animal (`secagem_realizada=true`, `data_secagem`, `em_lactacao=false`). A migration `20260524000000_dry_cow_therapy_agenda_recompute.sql` implementa recompute SQL incremental por wrapper de `sanitario_recompute_agenda_core`, com owner preservado, ativacao operacional obrigatoria (`gera_agenda=true`, `family_code=terapia_vaca_seca`, `item_code=secagem-intramamario`, `agenda_activation.mode=dry_off_reproductive_window`), ancora em `taxonomy_facts.data_prevista_parto`, vencimento alvo em parto previsto - 60 dias com clamp por `_as_of`, dedup por ciclo de parto previsto e bloqueios anti-agenda-zumbi por evento `dry_cow_therapy`/agenda concluida. O item clinico padrao continua `gera_agenda=false`; a UI de protocolos da fazenda permite ativar/desativar explicitamente a agenda de Vaca Seca na copia tenant-scoped do item, sem alterar o catalogo canonico, sem criar evento e sem baixar estoque. A exposicao do controle e deliberadamente limitada a usuarios `owner`/`manager` em fazenda com `app_experience.mode="completo"`; fora desse modo o item segue visivel como apoio clinico com badge de exposicao controlada, mas sem CTA de ativacao. O script `scripts/codex/validate-dry-cow-therapy-functional.mjs` valida o fluxo Supabase local com item clinico sem ativacao, ativacao operacional, recompute, dedup, conclusao por evento, bloqueio de recriacao e cancelamento anti-agenda-zumbi; `scripts/codex/prepare-dry-cow-ui-smoke.mjs` e `scripts/codex/run-dry-cow-ui-smoke-cdp.mjs` cobrem o smoke visual/operacional em app real via Supabase local, Vite e Chrome/Edge CDP.
-- O caminho Registrar Sanitário -> Agenda foi endurecido contra double-write: timeout/network no RPC vira estado ambiguo e dispara retry idempotente antes do fallback offline; `sync-batch` bloqueia evento duplicado quando a agenda ja esta concluida por outro evento; o cliente faz rollback local e pull seletivo de agenda/eventos para reconciliar o estado; e uma unique index parcial em `eventos(fazenda_id, source_task_id)` protege eventos ativos com origem em agenda. O dedup TS tambem valida dimensoes obrigatorias e faz parse sem corromper `periodKey` com `:`.
-- Estoque MVP deixou de ser apenas guardrail conceitual e ganhou contrato estrutural inicial: a migration `20260525000000_insumos_inventory.sql` cria `insumos`, `insumo_apresentacoes`, `insumo_lotes` e `insumo_movimentacoes` como tabelas tenant-scoped por `fazenda_id`, com RLS, FKs compostas, lotes fisicos, apresentacoes/volumes e saldo hibrido. `insumo_movimentacoes` e append-only, consumo exige evento fonte ativo, e saldo de lote e materializado por trigger sem baixa automatica ao registrar evento. O offline/sync ja conhece `state_insumos`, `state_insumo_apresentacoes`, `state_insumo_lotes` e `state_insumo_movimentacoes`; helpers puros cobrem conversao de apresentacao, projecao de saldo, bloqueio de saldo insuficiente, entrada/ajuste auditavel, elegibilidade nutricional por `eventos_nutricao` ou `eventos_pasto_avaliacao` e politica pura de ressuprimento via `insumos.payload.inventory_policy`. A tela `/insumos` prioriza a leitura de itens em estoque agrupados por categoria, com abas de categoria antes do filtro por tipo, busca, periodo, saldo filtrado e totais de entradas/saidas no periodo por movimentacoes. Abaixo da leitura, oferece entrada inicial de insumo/apresentacao/lote para `owner|manager`, entrada complementar em lote existente, ajuste positivo/negativo auditavel, consumo manual por evento sanitario/nutricional/pastagem elegivel e edicao inline de metadados de insumo/apresentacao/lote, incluindo estoque minimo e ponto de ressuprimento por insumo, sem alterar saldo ou historico. Eventos sanitarios com produto catalogado tambem expõem atalho em `Eventos` para abrir `/insumos` com a fonte pre-selecionada; o lote elegivel e filtrado por `produto_veterinario_id` quando disponivel e a baixa segue como gesto separado. `Relatorios` agora projeta o mesmo estoque operacional no resumo, CSV e impressao: insumos/lotes ativos, entradas/saidas do periodo, categorias, itens/lotes, status de ressuprimento, demanda futura estimada pelos proximos 30 dias a partir de agenda sanitaria aberta valida e medicao dos pre-requisitos da Fase 3 (evento sanitario com produto catalogado, produto mapeado para exatamente um insumo sanitario ativo com lote ativo, apresentacao compativel e consumo assistido ja realizado), comparando necessidade, saldo e gap por produto sem baixar estoque por agenda. Ao abrir, a tela de inventario mescla eventos fonte sanitarios/nutricionais/pastagem e atualiza o catalogo veterinario para permitir consumo direto a partir de eventos ja sincronizados.
-
-### Central Operacional passiva
-
-Primeira integracao read-only concluida:
-- `src/lib/insights/` atua como core puro de composicao operacional, com funcoes deterministicas e sem IO, Supabase, Dexie, UI, persistencia ou `Date.now`.
-- `src/features/operationalInsights/operationalInsightsAdapter.ts` normaliza dados ja carregados em memoria/read models para os modulos puros de insights.
-- `src/features/operationalInsights/useOperationalInsights.ts` memoiza o consumo do adapter.
-- `src/features/operationalInsights/OperationalInsightsPanel.tsx` expõe painel somente leitura.
-- `src/pages/Home.tsx` e a primeira superficie da Central Operacional passiva, agora organizada como painel tatico em camadas: prioridade operacional, acao imediata e contexto secundario.
-- A Home prioriza atrasadas, agenda de hoje e registro rapido; leituras passivas como resumo de base e manejo recente foram removidas/rebaixadas para reduzir densidade.
-- O painel read-only foi mantido como contexto secundario, com estados mais compactos e sem competir com a acao primaria.
-
-Leituras preservadas ou rebaixadas conforme contexto:
-- pendencias abertas, vencem hoje e atrasadas;
-- pendencias sanitarias e sinais operacionais auxiliares;
-- rebanho por estagio e KPIs mensais apenas como contexto, nao como prioridade operacional da Home.
-
-Estados exibidos:
-- `Bloqueado`: fonte obrigatoria ausente;
-- `Vazio`: fonte carregada, sem itens;
-- `Parcial`: fonte carregada com limitacao;
-- `Completo`: fonte carregada, leitura completa.
-
-Fontes lidas pela primeira integracao:
-- `state_agenda_itens`;
-- `state_animais`;
-- `event_eventos` / eventos factuais do periodo mensal;
-- `state_protocolos_sanitarios_itens` como apoio de produto/protocolo.
-
-Limites preservados:
-- a Central nao conclui agenda, nao gera agenda e nao cria evento;
-- nao persiste tag/marcador e nao transforma `tagSignals` em fonte primaria;
-- calcula sinais sanitarios de carencia/rastreabilidade apenas a partir de `eventos_sanitario` estruturado; pronto para venda/abate, peso atual confiavel e IATF amplo continuam bloqueados;
-- agenda continua intencao operacional, nao fato historico;
-- protocolo configurado continua regra, nao execucao.
-- o painel permanece sem botao, link, `onClick` ou CTA de dominio.
-
----
-
-### Pastagens e rondas de campo
-
-Consolidacao recente no dominio de pastos:
-- P0/P1 preservam a separacao entre movimentacao factual (`eventos_movimentacao`) e estado/materializacao operacional (`lotes.pasto_id`, `pasto_ocupacoes`).
-- P2 adicionou ficha tecnica agronomica do pasto (`tipo_area`, forrageira/cultivar, metas de altura e capacidade UA alvo), mantendo `tipo_pasto` legado.
-- P3 removeu curral/brete/balanca da infraestrutura ativa do pasto; `infraestrutura.curral` permanece apenas como legado tolerado.
-- P4 registra avaliacao/ronda de pasto como evento historico append-only (`eventos` + `eventos_pasto_avaliacao`), usando `createGesture`/Dexie/TABLE_MAP e exibindo a ultima avaliacao em `PastoDetalhe`.
-
-Limites preservados:
-- ronda de pasto nao atualiza cadastro estatico de `pastos`;
-- nao altera `lotes`;
-- nao altera `pasto_ocupacoes`;
-- nao gera agenda, alerta, recomendacao automatica, dashboard ou motor agronomico.
-
----
-
-## 3. O que ainda nao esta consolidado
-
-- estabilizacao ampla de testes fora dos recortes locais de hotspot;
-- consolidacao da nova suite de integracao por fluxo (`tests/integration/flows/**`) como cobertura minima cross-flow;
-- cleanup residual de shell/read-model nos pontos restantes;
-- carencia sanitaria operacional esta consolidada como sinal/read model baseado em evento estruturado; ainda nao e autorizacao comercial nem motor de venda/abate;
-- compliance sanitario esta parcialmente validado por overlays, views e regras sanitarias, mas nao e bloqueio operacional completo e universal;
-- produto/lote/estoque ja possuem base estrutural tenant-scoped, contratos offline iniciais, UI operacional validada em smoke real local para entradas, ajustes e consumos, edicao de cadastros sem saldo destrutivo, estoque minimo/ponto de ressuprimento por insumo via payload, relatorio operacional com CSV/impressao, demanda futura estimada por agenda valida e sinais sanitarios de rastreabilidade/custo/estoque baseados em eventos executados; a baixa automatica continua desabilitada e a Central Operacional/Home tambem expoe alertas como sinais passivos/read-only;
-- SISBOV/fiscal continuam fora do core sanitario atual;
-- peso atual confiavel e pronto para venda/abate continuam bloqueados como decisoes automatizadas; carencia ativa existe como sinal sanitario factual, mas nao autoriza venda/abate;
-- camada real de marcadores/tags persistidos como fonte primaria, consulta em linguagem natural, IA gerando agenda, IA concluindo execucao e motor geral IATF permanecem nao implementados/bloqueados;
-- validacao de UX com dados reais de beta interno apos a refatoracao visual SLC;
-- maior consistencia cross-flow fina (agenda <-> registrar <-> protocolos) e ajustes residuais por tela.
-
-Esses pontos impedem declarar SLC consolidado neste momento.
-
----
-
-## 4. Proximo estagio (MVP -> SLC)
-
-### Simple
-- manter fluxos criticos previsiveis e com menos ambiguidade;
-- remover residuos de shell pesado onde ainda houver.
-
-### Lovable
-- aumentar coesao visual e consistencia de feedback;
-- reduzir friccao entre intencao e execucao.
-
-### Complete
-- fechar buracos percebidos nas rotinas centrais do recorte-alvo;
-- consolidar confiabilidade para evolucao sem reabrir acoplamento estrutural.
-
----
-
-## 5. Referencias de acompanhamento
-
-- [README.md](../README.md)
-- [IMPLEMENTATION_STATUS.md](./IMPLEMENTATION_STATUS.md)
-- [TECH_DEBT.md](./TECH_DEBT.md)
-- [ROADMAP.md](./ROADMAP.md)
-- [PROCESS.md](./PROCESS.md)
-- [RebanhoSync_auditoria.md](./review/RebanhoSync_auditoria.md)
+**Observação:** Este documento é um snapshot de alto nível. Para informações operacionais detalhadas e contratos específicos, consulte os documentos referenciados acima e o código-fonte.

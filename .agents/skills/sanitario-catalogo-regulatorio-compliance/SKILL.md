@@ -1,218 +1,199 @@
+```markdown
 ---
 name: sanitario-catalogo-regulatorio-compliance
-description: Use when the task is about catálogo oficial sanitário, overlay estadual, fazenda_sanidade_config, pack oficial, conformidade, feed-ban, suspeita/notificação sanitária, bloqueios regulatórios, regulatory read model, ou materialização operacional do domínio sanitário regulatório.
+description: Use when a RebanhoSync task touches sanitary regulatory catalog, official rules, state overlays, compliance, feed-ban, suspected clinical cases, notifiable diseases, biosafety, or regulatory/documental checklists.
 ---
 
-# Sanitário — Catálogo Regulatório e Compliance
+# Sanitário Catálogo Regulatório Compliance
 
-## Missão
+## Mission
 
-Orientar mudanças e decisões na camada **regulatória e de conformidade** do sanitário:
-- catálogo oficial global
-- overlay estadual
-- ativação do pack por fazenda
-- `fazenda_sanidade_config`
-- runtime de `conformidade`
-- `feed-ban`
-- suspeita/notificação sanitária
-- bloqueios contextuais em movimentação, nutrição, venda/trânsito
-- `regulatoryReadModel`
+Protect the separation between official sanitary regulatory catalog, farm overlay/configuration, compliance, clinical suspicion, biosafety, and operational sanitary execution.
 
-Esta skill é para a frente **normativa/operacional regulatória**, não para o registro sanitário simples do dia a dia.
+This skill is for regulatory/compliance intelligence, not routine manual sanitary registration.
 
 ---
 
-## Quando usar
+## When to use
 
-Use esta skill quando a tarefa envolver:
-
-- `src/lib/sanitario/officialCatalog.ts`
-- `src/lib/sanitario/compliance.ts`
-- `src/lib/sanitario/complianceAttention.ts`
-- `src/lib/sanitario/complianceGuards.ts`
-- `src/lib/sanitario/regulatoryReadModel.ts`
-- `src/lib/sanitario/transit.ts`
-- `src/lib/sanitario/alerts.ts`
-- `src/components/sanitario/OfficialSanitaryPackManager.tsx`
-- `src/components/sanitario/RegulatoryOverlayManager.tsx`
-- `src/pages/ProtocolosSanitarios.tsx`
-- `src/pages/Registrar.tsx` quando houver bloqueio regulatório
-- `src/pages/Home.tsx`, `Dashboard.tsx`, `Eventos.tsx`, `Relatorios.tsx`, `Animais.tsx`, `LoteDetalhe.tsx` quando a tarefa tocar projeção regulatória compartilhada
-- tabelas:
-  - `catalogo_protocolos_oficiais`
-  - `catalogo_protocolos_oficiais_itens`
-  - `catalogo_doencas_notificaveis`
-  - `fazenda_sanidade_config`
-
-Capabilities/tracks prováveis:
-- `sanitario.agenda_link`
-- `sanitario.catalogo_regulatorio`
-- `infra.compliance`
-- `agenda.recalculo` quando houver materialização/recompute
+Use when task touches:
+* Catálogo oficial sanitário;
+* Base regulatória oficial;
+* Overlay estadual;
+* Compliance sanitário;
+* Feed-ban;
+* Doença notificável;
+* Suspeita clínica;
+* Checklist documental;
+* Biossegurança;
+* Alerta regulatório;
+* Terapia/protocolo clínico não recorrente;
+* Bloqueio regulatório;
+* Regulatory read model;
+* Farm sanitary configuration.
 
 ---
 
-## Quando NÃO usar
+## Do not use when
 
-Não use esta skill para:
-- simples registro de vacina/vermífugo/medicamento
-- autocomplete de produto
-- ajuste pequeno de formulário sanitário manual
-- fluxo sanitário puramente operacional sem impacto regulatório
+Do not use when the task is only:
+* Manual sanitary event registration;
+* Product autocomplete;
+* Dose field;
+* Stock lot consumption;
+* Routine agenda completion;
+* UI visual adjustment of a form.
 
-Nesses casos, usar:
-- `sanitario-registro-operacional`
-
----
-
-## Ler primeiro
-
-1. `docs/CURRENT_STATE.md`
-2. `docs/ARCHITECTURE.md`
-
-Ler só se necessário:
-- `docs/OFFLINE.md`
-- `docs/CONTRACTS.md`
-- `docs/RLS.md`
-
-Arquivos-alvo mais comuns:
-- `src/lib/sanitario/officialCatalog.ts`
-- `src/lib/sanitario/compliance.ts`
-- `src/lib/sanitario/complianceGuards.ts`
-- `src/lib/sanitario/regulatoryReadModel.ts`
-- `src/lib/sanitario/transit.ts`
-- `src/lib/sanitario/alerts.ts`
-- `src/components/sanitario/OfficialSanitaryPackManager.tsx`
-- `src/components/sanitario/RegulatoryOverlayManager.tsx`
-- `src/pages/ProtocolosSanitarios.tsx`
-- `supabase/migrations/**` quando houver mudança estrutural
+### Use instead:
+* `sanitario-registro-operacional` for operational event/agenda/product flows;
+* `migrations-rls-contracts` if DB/RLS/RPC is touched;
+* `sync-offline-rollback` if offline/sync is touched.
 
 ---
 
-## Modelo mental obrigatório
+## Read first
 
-O sanitário regulatório tem **3 camadas distintas**:
+1. `AGENTS.md`
+2. `.agents/rules/CORE_RULES.md`
+3. `.agents/rules/CONTEXT_LOADING.md`
+4. `.agents/rules/no-broad-context.md`
 
-1. **base regulatória oficial**
-   - conteúdo global e versionado
-   - não fica hardcoded na UI da fazenda
+> ⚙️ **Execution Rule:** For commands and validation, follow `.agents/rules/rtk.md`.
 
-2. **overlay operacional do pack**
-   - runtime/checklists/restrições
-   - `conformidade`
-   - `feed-ban`
-   - documental, quarentena, água/limpeza etc.
-
-3. **protocolos operacionais da fazenda**
-   - materialização prática e execução no dia a dia
-
-Essas camadas:
-- **não competem** como se fossem a mesma coisa
-- **não devem ser colapsadas** num único fluxo simplificado
-- devem alimentar leitura compartilhada nas superfícies operacionais
+### Read as needed:
+* `docs/domain/SANITARIO.md`
+* `docs/context/SOURCE_OF_TRUTH.md`
+* `docs/technical/SUPABASE_RLS.md` if backend/RLS/RPC is involved;
+* Active official/regulatory data files if present;
+* Local `AGENTS.md` in affected folders.
 
 ---
 
-## Decisão rápida
+## Source of truth
 
-### Caso A — Seleção do pack oficial
-A mudança deve viver na camada:
-- catálogo global
-- seleção por UF / risco / modo calendário / aptidão / sistema
-- ativação em `fazenda_sanidade_config`
-
-### Caso B — Bloqueio de fluxo operacional
-A regra deve entrar em:
-- `complianceGuards`
-- `regulatoryReadModel`
-- runtime de overlay
-- e só depois ser projetada em UI
-
-### Caso C — Suspeita/notificação sanitária
-Separar:
-- evento append-only de alerta/suspeita
-- estado mutável do bloqueio/contexto no payload/runtime adequado
-- leitura compartilhada das restrições
-
-### Caso D — Trânsito/GTA/e-GTA
-Separar:
-- checklist operacional/documental
-- bloqueio de continuidade
-- pre-check regulatório
-- sem transformar isso em emissão fiscal/documental completa por padrão
+In case of conflict, trust:
+1. Code + active migrations;
+2. Official active regulatory catalog, if present;
+3. `docs/context/PROJECT_STATUS.md`;
+4. Active normative docs;
+5. Derived docs;
+6. Archive/history;
+7. This skill.
 
 ---
 
-## Invariantes obrigatórias
+## Hard constraints
 
-- catálogo oficial global não vira configuração tenant-scoped por acidente
-- `fazenda_sanidade_config` continua sendo overlay da fazenda
-- `conformidade` é domínio append-only para eventos/checks relevantes
-- runtime mutável de overlay não deve ser confundido com evento histórico
-- bloqueios contextuais devem nascer do read model compartilhado, não de lógica duplicada por tela
-- `feed-ban`, quarentena, documental e água/limpeza mantêm semântica separada
-- não reintroduzir aftosa como base vacinal padrão
-- não inflar o registro sanitário operacional com exigência regulatória indevida
-
----
-
-## Anti-padrões
-
-- hardcode do pack oficial em UI local
-- duplicar lógica regulatória em `Home`, `Dashboard`, `Agenda`, `Eventos`, `Animais` e `Relatorios`
-- bloquear fluxo direto na página sem passar pelo read model/guards compartilhados
-- tratar checklist/overlay como se fosse protocolo operacional comum
-- usar regra estadual como default nacional
-- modelar GTA/NF completas quando o fluxo atual é checklist/vínculo documental operacional
+* Do not mix official regulatory base with farm protocol execution.
+* Do not reduce official calendar/rules to only `interval_days`.
+* Do not treat regulatory checklist availability as executed sanitary event.
+* Do not create event from checklist without real occurrence.
+* Do not make compliance warning a universal operational blocker unless explicitly modeled.
+* Do not infer carência active/free without explicit technical source.
+* Do not infer sale/slaughter readiness.
+* Keep regulatory signal separate from operational protocol and event.
+* Preserve tenant isolation and auditability.
+* Prefer explicit status: `confirmed`, `suspected`, `pending validation`, `blocked`, `not applicable`.
 
 ---
 
-## Checklist antes de alterar
+## Conceptual separation
 
-1. A mudança é de **conteúdo oficial**, **overlay runtime** ou **projeção compartilhada**?
-2. A regra nasce no catálogo, no runtime, no guard ou no read model?
-3. O bloqueio é de movimento, nutrição, venda/trânsito ou outro?
-4. A superfície derivada está consumindo regra central ou reinterpretando localmente?
-5. Há impacto em agenda/recompute/materialização?
-
----
-
-## Forma de entrega
-
-Retornar:
-- diff mínimo
-- camada afetada
-- invariante preservada
-- até 3 riscos
-- testes focados
+* **Official Base:** Represents external/reference rule (disease, notification, rule, document, vaccine/calendar reference, feed-ban reference, biosafety requirement).
+* **Farm Overlay/Config:** Represents farm-specific configuration (enabled/disabled, state/region applicability, farm practice, local compliance setting).
+* **Operational Protocol:** Represents farm rule/configuration for future tasks.
+* **Operational Agenda:** Represents pending/intended task.
+* **Event:** Represents real executed occurrence.
+* **Compliance Signal/Checklist:** Represents support for decision and documentation, not execution.
 
 ---
 
-## Validação mínima
+## Procedure
 
-- `pnpm run lint`
-- `pnpm test`
-- `pnpm run build`
+### 1. Classify regulatory object
+Classify as: official catalog, state overlay, farm compliance config, checklist, suspected clinical case, notifiable disease, feed-ban, biosafety, non-recurring clinical protocol, or regulatory read model.
 
-Se tocar materialização, catálogo ou schema:
-- revisar migração
-- revisar cache offline
-- revisar coerência entre pack oficial, overlay e protocolos da fazenda
+### 2. Check if it creates fact
+Ask: is there a real occurrence? Was there execution? Is there evidence? Should it create event? Should it create agenda? Should it only create signal/checklist?  
+> **Default:** Checklist/compliance does not create event.
+
+### 3. Check blocking semantics
+Classify: informational, warning, requires review, operational block, or regulatory block.  
+> **Constraint:** Do not promote warning to block without explicit rule.
+
+### 4. Check source
+Verify official source field, version/date, applicability, state/region, farm override, and audit trail.
+
+### 5. Check UI language
+Avoid saying: “livre de carência” without source, “apto para abate” without source, “pronto para venda” without source, or “protocolo executado” if only checklist/protocol exists.
 
 ---
 
-## Escalonamento
+## Edge cases
 
-Escalar para `migrations-rls-contracts` quando tocar:
-- tabelas globais
-- `fazenda_sanidade_config`
-- enums/views/RLS
-- decisão estrutural de catálogo
+Consider:
+* Suspected disease without confirmation;
+* Notification required but not submitted;
+* Checklist available but unchanged;
+* Disease rule varies by state;
+* Farm overlay disables irrelevant requirement;
+* Old regulatory pack vs new pack;
+* Feed-ban affects product category but not event history;
+* Biosafety occurrence vs routine checklist.
 
-Escalar para `sync-offline-rollback` quando tocar:
-- Dexie cache do catálogo
-- pull/sync
-- stores locais
-- rollback
+---
 
-Escalar para `sanitario-registro-operacional` quando a mudança for só no registro/evento do dia a dia
+## Validation
+
+Follow `.agents/rules/rtk.md`.
+
+### Minimum check:
+```bash
+git status --short --untracked-files=all
+
+```
+
+* plus the related tests.
+
+### If DB/RLS/RPC is touched:
+
+```bash
+rtk node scripts/codex/validate-supabase-baseline-functional.mjs
+
+```
+
+### If UI/domain logic is touched:
+
+```bash
+rtk pnpm run lint
+rtk pnpm test
+rtk pnpm run build
+
+```
+
+---
+
+## Expected output
+
+Return:
+
+1. **Regulatory/compliance object affected:** [Object identifier]
+2. **Source and applicability assessment:** [Context metadata status]
+3. **Fact, agenda, signal, or checklist boundary:** [Creation flow check]
+4. **Blocking semantics:** [Action constraint level]
+5. **Riscos/edge cases:** [List of exception pathways]
+6. **Tests required/executed:** [Scenarios covered]
+7. **Riscos/pendências:** [Up to 3 points]
+
+---
+
+## Output rules
+
+* Do not convert compliance into event without real occurrence.
+* Do not infer carência/venda/abate.
+* Separate regulatory rule, farm overlay, operational protocol, agenda, and event.
+* Separate confirmed, inferred, and recommendation.
+
+```
+
+```
