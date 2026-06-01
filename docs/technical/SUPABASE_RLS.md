@@ -1,6 +1,9 @@
 ```md
 # Supabase RLS — RebanhoSync
 
+Atualizado em: 2026-05-31  
+**Baseline Commit:** `32d7779`
+
 ## Objetivo
 
 Definir o contrato técnico para Supabase, RLS, isolamento multi-tenant, RPCs, policies e migrations.

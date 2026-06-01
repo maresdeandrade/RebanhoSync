@@ -1,6 +1,9 @@
 ```md
 # Events and Agenda Contract — RebanhoSync
 
+Atualizado em: 2026-05-31  
+**Baseline Commit:** `32d7779`
+
 ## Objetivo
 
 Definir o contrato técnico entre Agenda, Eventos, `state_*`, Protocolos, tags, sinais e insights.

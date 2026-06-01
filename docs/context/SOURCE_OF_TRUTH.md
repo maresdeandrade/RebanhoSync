@@ -1,7 +1,8 @@
 ```md
 # Source of Truth — RebanhoSync
 
-Atualizado em: 2026-05-31
+Atualizado em: 2026-05-31  
+**Baseline Commit:** `32d7779`
 
 ## Objetivo
 

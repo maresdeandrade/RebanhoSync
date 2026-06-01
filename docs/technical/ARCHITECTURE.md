@@ -1,6 +1,9 @@
 ﻿```markdown
 # Architecture — RebanhoSync
 
+Atualizado em: 2026-05-31  
+**Baseline Commit:** `32d7779`
+
 ## Visão Geral
 
 RebanhoSync é um aplicativo agropecuário offline-first voltado para a gestão de pecuária de corte.

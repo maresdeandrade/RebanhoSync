@@ -1,6 +1,9 @@
 ```md
 # Repo Map — RebanhoSync
 
+Atualizado em: 2026-05-31  
+**Baseline Commit:** `32d7779`
+
 ## Objetivo
 
 Mapa técnico curto do repositório para orientar agentes e revisões sem leitura ampla.

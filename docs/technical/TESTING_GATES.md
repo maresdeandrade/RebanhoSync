@@ -1,6 +1,9 @@
 ```md
 # Testing Gates — RebanhoSync
 
+Atualizado em: 2026-05-31  
+**Baseline Commit:** `32d7779`
+
 ## Objetivo
 
 Padronizar validações técnicas proporcionais ao risco da mudança.

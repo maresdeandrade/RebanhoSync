@@ -1,42 +1,83 @@
-# PAGES — LOCAL ENTRYPOINT FOR CODEX
+# Pages — Local Agent
 
-Escopo:
-- Dispatcher local para telas em `src/pages/**`.
-- Priorizar recortes pequenos, sem alterar comportamento por acidente.
-- Este arquivo so define trilhos da camada de paginas; regra global permanece no `AGENTS.md` raiz.
+Atualizado em: 2026-05-31  
+**Baseline Commit:** `32d7779`
 
-## Leitura minima
-1. `src/pages/AGENTS.md`
-2. `src/pages/<Hotspot>/README.md` (quando existir)
-3. `AGENTS.md` raiz (apenas para regras globais)
+## Escopo
 
-## Hotspots desta camada
-- `src/pages/Registrar/**`
-- `src/pages/Agenda/**`
-- `src/pages/ProtocolosSanitarios/**`
+Dispatcher local para telas em:
 
-Dispatch local por hotspot:
-- `src/pages/Registrar/AGENTS.md`
-- `src/pages/Agenda/AGENTS.md`
-- `src/pages/ProtocolosSanitarios/AGENTS.md`
+```txt
+src/pages/**
+```
 
-Entrypoints fisicos consolidados:
-- `src/pages/Registrar/index.tsx`
-- `src/pages/Agenda/index.tsx`
-- `src/pages/ProtocolosSanitarios/index.tsx`
+Use este arquivo para tarefas de UI, navegação, composição de tela e wiring leve.
+
+Regra global permanece no `AGENTS.md` da raiz.
+
+---
+
+## Leitura mínima
+
+1. `AGENTS.md` da raiz.
+2. `.agents/rules/CORE_RULES.md`.
+3. `.agents/rules/CONTEXT_LOADING.md`.
+4. `src/pages/AGENTS.md`.
+5. `AGENTS.md` do hotspot, se existir.
+
+---
+
+## Hotspots
+
+```txt
+src/pages/Registrar/AGENTS.md
+src/pages/Agenda/AGENTS.md
+src/pages/ProtocolosSanitarios/AGENTS.md
+```
+
+Entrypoints consolidados:
+
+```txt
+src/pages/Registrar/index.tsx
+src/pages/Agenda/index.tsx
+src/pages/ProtocolosSanitarios/index.tsx
+```
+
+---
 
 ## Regras locais
-- Nao misturar regra de negocio forte na UI quando ja existir servico em `src/lib/**`.
-- Preservar rotas e pontos de entrada (`index.tsx`) ao folderizar paginas.
-- Evitar refatoracao ampla de tela sem rodada propria.
-- Preferir colocalizacao incremental (`components/`, `helpers/`, `types.ts`) por hotspot.
+
+- Não misturar regra de negócio forte na UI quando já existir serviço em `src/lib/**`.
+- Preservar rotas e entrypoints.
+- Evitar refatoração ampla de tela sem tarefa própria.
+- Preferir colocalização incremental em `components/`, `helpers/` e `types.ts`.
+- UI pode orquestrar fluxo, mas não deve virar fonte primária de regra.
+- Não usar tela como fonte de verdade para domínio.
+- Não corrigir regra de domínio apenas com bloqueio visual.
+
+---
 
 ## Quando escalar
-- Se tocar offline/sync: consultar `src/lib/offline/AGENTS.md`.
-- Se tocar sanitario: consultar `src/lib/sanitario/AGENTS.md`.
-- Se tocar reproducao: consultar `src/lib/reproduction/AGENTS.md`.
 
-## Validacao minima
-- `pnpm run lint`
-- `pnpm test`
-- `pnpm run build`
+| Situação | Ler |
+|---|---|
+| Offline/sync | `src/lib/offline/AGENTS.md` |
+| Sanitário | `src/lib/sanitario/AGENTS.md` |
+| Reprodução | `src/lib/reproduction/AGENTS.md` |
+| UX/copy/visual | `docs/ux/UX_PRINCIPLES.md`, `docs/ux/COPY_GUIDELINES.md`, `docs/ux/VISUAL_TOKENS.md` |
+| Agenda/eventos | `docs/technical/EVENTS_AGENDA_CONTRACT.md` |
+| RLS/multi-tenant | `docs/technical/SUPABASE_RLS.md` |
+
+---
+
+## Validação
+
+Usar validação proporcional ao patch:
+
+```bash
+pnpm run lint
+pnpm test
+pnpm run build
+```
+
+Para patch pequeno e localizado, teste específico pode ser usado antes da suíte completa, mas não substitui a validação geral antes de PR/merge.
