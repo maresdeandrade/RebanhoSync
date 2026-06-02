@@ -52,7 +52,7 @@ export function AgendaItemRowCard({
   const isScheduled = row.item.status === "agendado";
   const isCalfJourney = isCalfJourneyAgendaItem(row.item);
   const isSanitary = row.item.dominio === "sanitario";
-  const canDirectComplete = isScheduled && !isCalfJourney;
+  const canDirectComplete = isScheduled && !isCalfJourney && !isSanitary;
 
   const registerCtaLabel = isCalfJourney
     ? "Seguir rotina da cria"
@@ -64,7 +64,7 @@ export function AgendaItemRowCard({
   const nextStepHint = isCalfJourney
     ? "Próximo passo: seguir a rotina guiada da cria."
     : isSanitary
-      ? "Próximo passo: usar Registrar para revisar dados ou Concluir para gerar evento sanitário."
+      ? "Próximo passo: usar Registrar para revisar dados, lote e baixa de estoque."
       : "Próximo passo: usar Registrar para gravar a execução completa; Concluir apenas fecha a pendência.";
 
   return (

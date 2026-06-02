@@ -46,12 +46,12 @@ export interface FactualAgendaItem {
 }
 
 export interface FactualAnimal {
-  id: string;
-  identificacao: string;
-  lote_id?: string | null;
-  status: string; // 'ativo' | 'morto' | 'vendido'
-  deleted_at?: string | null;
-}
+   id: string;
+   identificacao: string;
+   lote_id?: string | null;
+   status: string; // 'ativo' | 'morto' | 'vendido' | 'retirado'
+   deleted_at?: string | null;
+ }
 
 export interface FactualLote {
   id: string;
@@ -160,8 +160,8 @@ function computeAgenda(input: HomeIndicatorsInput) {
  * Compute ECC indicators respecting the business rules.
  */
 function computeEcc(input: HomeIndicatorsInput) {
-  // filter active animals (exclude morto/vendido and soft‑deleted)
-  const activeAnimals = input.animals.filter(a => a.status === 'ativo' && !a.deleted_at);
+   // filter active animals (exclude morto/vendido/retirado and soft‑deleted)
+const activeAnimals = input.animals.filter(a => a.status === 'ativo' && !a.deleted_at); // morto/vendido/retirado excluded
   const totalAnimals = activeAnimals.length;
 
   // map animalId -> latest ECC (by event occurrence)
@@ -257,8 +257,9 @@ function computeGmd(input: HomeIndicatorsInput) {
   const lotesSemPesagemSuficiente: { loteId: string; nome: string; reason: string }[] = [];
   let animaisComApenasUmaPesagemCount = 0;
 
-  for (const animal of input.animals) {
-    if (animal.status !== 'ativo' || animal.deleted_at) continue;
+for (const animal of input.animals) {
+     // morto/vendido/retirado animals are excluded by the status check above
+     if (animal.status !== 'ativo' || animal.deleted_at) continue;
     const pesagens = pesagensByAnimal[animal.id] ?? [];
     if (pesagens.length < 2) {
       if (pesagens.length === 1) animaisComApenasUmaPesagemCount++;

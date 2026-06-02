@@ -36,6 +36,7 @@ import {
 import { resolveSelectedRecordsByIds } from "@/pages/Registrar/helpers/selectContext";
 import {
   buildBaseActionStepIssues,
+  buildInventoryActionStepIssues,
   composeRegistrarActionStepIssues,
 } from "@/pages/Registrar/helpers/actionStepIssues";
 import { resolveRegistrarFinancialFinalizePlan } from "@/pages/Registrar/helpers/financialFinalize";
@@ -1010,6 +1011,23 @@ const Registrar = () => {
       hasAtLeastOneValidEcc,
     ],
   );
+  const inventoryActionStepIssues = useMemo(
+    () =>
+      buildInventoryActionStepIssues({
+        tipoManejo,
+        gerarBaixaEstoque,
+        selectedInsumoId,
+        selectedLoteId: selectedInsumoLoteId,
+        quantidadeConsumida,
+      }),
+    [
+      gerarBaixaEstoque,
+      quantidadeConsumida,
+      selectedInsumoId,
+      selectedInsumoLoteId,
+      tipoManejo,
+    ],
+  );
   const actionStepIssues = useMemo(
     () =>
       composeRegistrarActionStepIssues({
@@ -1017,6 +1035,7 @@ const Registrar = () => {
         // they should NOT block step 2→3 navigation (the user needs to reach
         // step 3 to fill in the form). They are checked in handleFinalize instead.
         baseIssues: baseActionStepIssues,
+        inventoryIssues: inventoryActionStepIssues,
         protocolEligibilityIssues,
         sanitaryMovementBlockIssues,
         complianceFlowIssues,
@@ -1025,6 +1044,7 @@ const Registrar = () => {
     [
       baseActionStepIssues,
       complianceFlowIssues,
+      inventoryActionStepIssues,
       protocolEligibilityIssues,
       sanitaryMovementBlockIssues,
       transitChecklistIssues,

@@ -121,10 +121,10 @@ export function calculateLoteMetrics(
 
   const refDateObj = safeParseDate(referenceDate);
 
-  // Active animals in this lote (exclude mortos/vendidos)
-  const activeAnimals = animals.filter(
-    (a) => a.lote_id === loteId && a.status === "ativo" && !a.deleted_at
-  );
+// Active animals in this lote (exclude mortos/vendidos/retirados)
+   const activeAnimals = animals.filter(
+     (a) => a.lote_id === loteId && a.status === "ativo" && !a.deleted_at
+   );
   const activeAnimalIds = new Set(activeAnimals.map((a) => a.id));
 
   // Non-deleted events on or before referenceDate
@@ -556,10 +556,10 @@ export function calculatePastoMetrics(
   const lotesInPasto = lotes.filter((l) => l.pasto_id === pastoId);
   const loteIdsInPasto = new Set(lotesInPasto.map((l) => l.id));
 
-  // Active animals currently in those lotes (exclude mortos/vendidos)
-  const activeAnimals = animals.filter(
-    (a) => a.lote_id && loteIdsInPasto.has(a.lote_id) && a.status === "ativo" && !a.deleted_at
-  );
+// Active animals currently in those lotes (exclude mortos/vendidos/retirados)
+   const activeAnimals = animals.filter(
+     (a) => a.lote_id && loteIdsInPasto.has(a.lote_id) && a.status === "ativo" && !a.deleted_at
+   );
   const activeAnimalIds = new Set(activeAnimals.map((a) => a.id));
 
   // Non-deleted events on or before referenceDate

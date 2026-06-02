@@ -44,6 +44,26 @@ import {
   resolveInventoryLotUnitCost,
 } from "@/lib/inventory/costing";
 import {
+  CUSTOM_CATEGORY_VALUE,
+  applyInventoryPreset,
+  buildInventoryPresentationName,
+  calculateBaseQuantity,
+  calculateInventoryCostSummary,
+  getInventoryCategoryOptions,
+  getInventoryCategoryPreset,
+  getInventoryProductPreset,
+  getInventoryTypeOptions,
+  isVeterinaryProductRequired,
+  resolveVeterinaryProductCategory,
+  shouldShowInventoryField,
+  type InventoryCostMode,
+  type InventoryFormField,
+} from "@/lib/inventory/inventoryFormPresets";
+import {
+  applyInventoryItemSelection,
+  getInventoryItemOptions,
+} from "@/lib/inventory/inventoryItemSuggestions";
+import {
   buildInventoryResupplyPayload,
   evaluateInventoryResupply,
   parseInventoryResupplyPolicy,
@@ -87,6 +107,7 @@ type EntryForm = {
   validade: string;
   fabricante: string;
   localArmazenamento: string;
+  costMode: InventoryCostMode;
   custoTotal: string;
   custoUnitario: string;
   origemCusto: "manual" | "ausente" | "financeiro_vinculado";
@@ -172,6 +193,7 @@ type LotRow = {
 };
 
 const NONE_VALUE = "__none__";
+const CUSTOM_ITEM_VALUE = "__custom_item__";
 const ALL_CATEGORIES_VALUE = "__all_categories__";
 const ALL_TYPES_VALUE = "__all_types__";
 
@@ -189,6 +211,7 @@ const EMPTY_ENTRY_FORM: EntryForm = {
   validade: "",
   fabricante: "",
   localArmazenamento: "",
+  costMode: "ausente",
   custoTotal: "",
   custoUnitario: "",
   origemCusto: "ausente",
@@ -209,7 +232,10 @@ const EMPTY_MANUAL_MOVEMENT_FORM: ManualMovementForm = {
   observacoes: "",
 };
 
-const unidadeBaseOptions: Array<{ value: InsumoUnidadeBaseEnum; label: string }> = [
+const unidadeBaseOptions: Array<{
+  value: InsumoUnidadeBaseEnum;
+  label: string;
+}> = [
   { value: "kg", label: "kg" },
   { value: "g", label: "g" },
   { value: "l", label: "L" },
@@ -231,41 +257,19 @@ const unidadeCompraOptions: Array<{
   { value: "outro", label: "Outro" },
 ];
 
-const loteStatusOptions: Array<{ value: InsumoLoteStatusEnum; label: string }> = [
-  { value: "ativo", label: "Ativo" },
-  { value: "esgotado", label: "Esgotado" },
-  { value: "vencido", label: "Vencido" },
-  { value: "bloqueado", label: "Bloqueado" },
-];
+const loteStatusOptions: Array<{ value: InsumoLoteStatusEnum; label: string }> =
+  [
+    { value: "ativo", label: "Ativo" },
+    { value: "esgotado", label: "Esgotado" },
+    { value: "vencido", label: "Vencido" },
+    { value: "bloqueado", label: "Bloqueado" },
+  ];
 
-const CATEGORIES_BY_TYPE: Record<InsumoTipoEnum, Array<{ value: string; label: string }>> = {
-  nutricional: [
-    { value: "Sal Mineral", label: "Sal Mineral" },
-    { value: "Ração", label: "Ração" },
-    { value: "Suplemento", label: "Suplemento" },
-    { value: "Proteico", label: "Proteico" },
-    { value: "Energético", label: "Energético" },
-    { value: "Volumoso", label: "Volumoso" },
-    { value: "Silagem", label: "Silagem" },
-    { value: "outro_personalizado", label: "Outra categoria (Digitar...)" },
-  ],
-  sanitario: [
-    { value: "Vacina", label: "Vacina" },
-    { value: "Vermífugo", label: "Vermífugo / Antiparasitário" },
-    { value: "Antibiótico", label: "Antibiótico" },
-    { value: "Anti-inflamatório", label: "Anti-inflamatório" },
-    { value: "Vitamina", label: "Vitamina / Suplemento" },
-    { value: "outro_personalizado", label: "Outra categoria (Digitar...)" },
-  ],
-  outro: [
-    { value: "Brinco", label: "Brinco de Identificação" },
-    { value: "Ferramental", label: "Ferramental / Equipamento" },
-    { value: "Combustível", label: "Combustível" },
-    { value: "outro_personalizado", label: "Outra categoria (Digitar...)" },
-  ],
-};
-
-const periodOptions: Array<{ value: string; label: string; days: number | null }> = [
+const periodOptions: Array<{
+  value: string;
+  label: string;
+  days: number | null;
+}> = [
   { value: "7", label: "7 dias", days: 7 },
   { value: "30", label: "30 dias", days: 30 },
   { value: "90", label: "90 dias", days: 90 },
@@ -417,7 +421,8 @@ function buildSourceOptions(snapshot: InventorySnapshot): SourceOption[] {
           event,
           nutricaoDetail: nutricaoByEvento.get(event.id),
         });
-        if (!readiness.canCreateManualMovement || !readiness.quantityBase) return [];
+        if (!readiness.canCreateManualMovement || !readiness.quantityBase)
+          return [];
 
         return [
           {
@@ -441,7 +446,8 @@ function buildSourceOptions(snapshot: InventorySnapshot): SourceOption[] {
           event,
           pastoDetail: detail,
         });
-        if (!readiness.canCreateManualMovement || !readiness.quantityBase) return [];
+        if (!readiness.canCreateManualMovement || !readiness.quantityBase)
+          return [];
 
         return [
           {
@@ -511,7 +517,15 @@ function buildLotEditForm(
     status: lot.status,
     custoTotal: lot.custo_total == null ? "" : String(lot.custo_total),
     custoUnitario: lot.custo_unitario == null ? "" : String(lot.custo_unitario),
-    origemCusto: (lot.payload?.origem_custo as "manual" | "ausente" | "financeiro_vinculado" | undefined) ?? (lot.custo_total != null || lot.custo_unitario != null ? "manual" : "ausente"),
+    origemCusto:
+      (lot.payload?.origem_custo as
+        | "manual"
+        | "ausente"
+        | "financeiro_vinculado"
+        | undefined) ??
+      (lot.custo_total != null || lot.custo_unitario != null
+        ? "manual"
+        : "ausente"),
   };
 }
 
@@ -521,7 +535,8 @@ export default function Insumos() {
   const sourceEventoId = searchParams.get("sourceEventoId");
   const canManage = role === "owner" || role === "manager";
   const [search, setSearch] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState(ALL_CATEGORIES_VALUE);
+  const [selectedCategory, setSelectedCategory] =
+    useState(ALL_CATEGORIES_VALUE);
   const [selectedType, setSelectedType] = useState<string>(ALL_TYPES_VALUE);
   const [selectedPeriod, setSelectedPeriod] = useState("30");
   const [entryForm, setEntryForm] = useState<EntryForm>(EMPTY_ENTRY_FORM);
@@ -531,7 +546,11 @@ export default function Insumos() {
   const [manualMovementForm, setManualMovementForm] =
     useState<ManualMovementForm>(EMPTY_MANUAL_MOVEMENT_FORM);
   const [editForm, setEditForm] = useState<LotEditForm | null>(null);
+  const [entryEditedFields, setEntryEditedFields] = useState<
+    Set<InventoryFormField>
+  >(new Set());
   const [isCustomCategory, setIsCustomCategory] = useState(false);
+  const [isCustomEntryItem, setIsCustomEntryItem] = useState(false);
   const [isEditCustomCategory, setIsEditCustomCategory] = useState(false);
   const [savingEntry, setSavingEntry] = useState(false);
   const [savingManualMovement, setSavingManualMovement] = useState(false);
@@ -581,7 +600,10 @@ export default function Insumos() {
           .where("fazenda_id")
           .equals(activeFarmId)
           .toArray(),
-        db.state_insumo_lotes.where("fazenda_id").equals(activeFarmId).toArray(),
+        db.state_insumo_lotes
+          .where("fazenda_id")
+          .equals(activeFarmId)
+          .toArray(),
         db.state_insumo_movimentacoes
           .where("fazenda_id")
           .equals(activeFarmId)
@@ -686,7 +708,8 @@ export default function Insumos() {
           snapshot.movimentacoes,
           snapshot.pendingTxIds,
         );
-        const saldoInsumo = saldoByInsumo.get(lot.insumo_id) ?? saldoOperacional;
+        const saldoInsumo =
+          saldoByInsumo.get(lot.insumo_id) ?? saldoOperacional;
         const category = normalizeCategory(insumo?.categoria);
         const movimentoPeriodo = summarizeLotMovements(
           lot,
@@ -722,7 +745,9 @@ export default function Insumos() {
           .toLowerCase()
           .includes(searchLower);
       })
-      .sort((a, b) => (a.insumo?.nome ?? "").localeCompare(b.insumo?.nome ?? ""));
+      .sort((a, b) =>
+        (a.insumo?.nome ?? "").localeCompare(b.insumo?.nome ?? ""),
+      );
   }, [apresentacaoById, insumoById, periodDays, search, snapshot]);
 
   const categoryOptions = useMemo(() => {
@@ -839,8 +864,82 @@ export default function Insumos() {
   }, [insumoById, selectedSource, snapshot]);
   const suggestedConsumptionLot = filteredLotesForConsumption[0] ?? null;
   const hasConsumptionStockOptions = filteredLotesForConsumption.length > 0;
+  const entryPreset = getInventoryCategoryPreset(
+    entryForm.tipo,
+    entryForm.categoria,
+  );
+  const entryBaseQuantity = calculateBaseQuantity(entryForm);
+  const entryCostSummary = calculateInventoryCostSummary(
+    entryForm,
+    entryForm.costMode,
+  );
+  const resolvedEntryPresentationName =
+    entryForm.apresentacaoNome.trim() ||
+    buildInventoryPresentationName(entryForm);
+  const entryRequiresVeterinaryProduct = isVeterinaryProductRequired(
+    entryForm.tipo,
+    entryForm.categoria,
+    entryForm.nome,
+  );
+  const entryItemOptions = getInventoryItemOptions(
+    entryForm.tipo,
+    entryForm.categoria,
+  );
+  const entryVeterinaryProductOptions = (snapshot?.produtos ?? []).filter(
+    (product) =>
+      !entryForm.categoria ||
+      resolveVeterinaryProductCategory(product) === entryForm.categoria,
+  );
+  const selectedEntryVeterinaryProduct = (snapshot?.produtos ?? []).find(
+    (product) => product.id === entryForm.produtoVeterinarioId,
+  );
+  const entryItemOptionsForSelect =
+    entryForm.tipo === "sanitario" && selectedEntryVeterinaryProduct
+      ? [
+          {
+            id: `produto-veterinario:${selectedEntryVeterinaryProduct.id}`,
+            tipo: "sanitario" as const,
+            categoria: entryForm.categoria,
+            nome: selectedEntryVeterinaryProduct.nome,
+          },
+          ...entryItemOptions.filter(
+            (item) => item.nome !== selectedEntryVeterinaryProduct.nome,
+          ),
+        ]
+      : entryItemOptions;
+  const selectedEntryItemOption = entryItemOptionsForSelect.find(
+    (item) => item.nome === entryForm.nome,
+  );
+  const entryItemSelectValue =
+    !isCustomEntryItem && selectedEntryItemOption
+      ? selectedEntryItemOption.id
+      : CUSTOM_ITEM_VALUE;
 
-  function setEntryField<K extends keyof EntryForm>(field: K, value: EntryForm[K]) {
+  function setEntryField<K extends keyof EntryForm>(
+    field: K,
+    value: EntryForm[K],
+  ) {
+    if (
+      [
+        "nome",
+        "categoria",
+        "unidadeBase",
+        "unidadeCompra",
+        "apresentacaoNome",
+        "quantidadePorApresentacao",
+        "quantidadeEntrada",
+        "identificacaoLote",
+        "validade",
+        "fabricante",
+        "localArmazenamento",
+        "custoTotal",
+        "custoUnitario",
+      ].includes(field)
+    ) {
+      setEntryEditedFields((prev) =>
+        new Set(prev).add(field as InventoryFormField),
+      );
+    }
     setEntryForm((prev) => ({ ...prev, [field]: value }));
   }
 
@@ -873,7 +972,7 @@ export default function Insumos() {
     const form = buildLotEditForm(lot, insumo, apresentacao);
     setEditForm(form);
     if (insumo?.tipo) {
-      const categories = CATEGORIES_BY_TYPE[insumo.tipo] || [];
+      const categories = getInventoryCategoryOptions(insumo.tipo);
       const isStandard = categories.some((c) => c.value === form.categoria);
       setIsEditCustomCategory(!isStandard && !!form.categoria);
     } else {
@@ -895,8 +994,9 @@ export default function Insumos() {
 
     const lot = snapshot?.lotes.find((item) => item.id === editForm.lotId);
     const insumo = lot ? insumoById.get(lot.insumo_id) : undefined;
-    const apresentacao =
-      lot?.apresentacao_id ? apresentacaoById.get(lot.apresentacao_id) : undefined;
+    const apresentacao = lot?.apresentacao_id
+      ? apresentacaoById.get(lot.apresentacao_id)
+      : undefined;
 
     if (!lot || !insumo) {
       showError("Cadastro de lote nao encontrado.");
@@ -916,7 +1016,10 @@ export default function Insumos() {
       showError("Estoque minimo deve ser maior que zero.");
       return;
     }
-    if (editForm.pontoRessuprimentoBase.trim() && pontoRessuprimentoBase == null) {
+    if (
+      editForm.pontoRessuprimentoBase.trim() &&
+      pontoRessuprimentoBase == null
+    ) {
       showError("Ponto de ressuprimento deve ser maior que zero.");
       return;
     }
@@ -925,7 +1028,9 @@ export default function Insumos() {
       pontoRessuprimentoBase != null &&
       pontoRessuprimentoBase < estoqueMinimoBase
     ) {
-      showError("Ponto de ressuprimento deve ser maior ou igual ao estoque minimo.");
+      showError(
+        "Ponto de ressuprimento deve ser maior ou igual ao estoque minimo.",
+      );
       return;
     }
 
@@ -938,14 +1043,28 @@ export default function Insumos() {
     let resolvedCustoStatus: "informado" | "ausente" = "ausente";
 
     if (hasCustoTotal || hasCustoUnitario) {
-      const parsedCustoTotal = hasCustoTotal ? parseFloat(editForm.custoTotal.replace(",", ".")) : null;
-      const parsedCustoUnitario = hasCustoUnitario ? parseFloat(editForm.custoUnitario.replace(",", ".")) : null;
+      const parsedCustoTotal = hasCustoTotal
+        ? parseFloat(editForm.custoTotal.replace(",", "."))
+        : null;
+      const parsedCustoUnitario = hasCustoUnitario
+        ? parseFloat(editForm.custoUnitario.replace(",", "."))
+        : null;
 
-      if (hasCustoTotal && (parsedCustoTotal === null || isNaN(parsedCustoTotal) || parsedCustoTotal < 0)) {
+      if (
+        hasCustoTotal &&
+        (parsedCustoTotal === null ||
+          isNaN(parsedCustoTotal) ||
+          parsedCustoTotal < 0)
+      ) {
         showError("Custo total informado é inválido.");
         return;
       }
-      if (hasCustoUnitario && (parsedCustoUnitario === null || isNaN(parsedCustoUnitario) || parsedCustoUnitario < 0)) {
+      if (
+        hasCustoUnitario &&
+        (parsedCustoUnitario === null ||
+          isNaN(parsedCustoUnitario) ||
+          parsedCustoUnitario < 0)
+      ) {
         showError("Custo unitário informado é inválido.");
         return;
       }
@@ -953,7 +1072,9 @@ export default function Insumos() {
       if (parsedCustoTotal !== null && parsedCustoUnitario !== null) {
         const calculatedTotal = parsedCustoUnitario * quantidadeBase;
         if (Math.abs(parsedCustoTotal - calculatedTotal) > 0.01) {
-          showError(`Coerência de custos inválida: custo total informado (${parsedCustoTotal.toFixed(2)}) diverge do calculado (${calculatedTotal.toFixed(2)}) com base no custo unitário.`);
+          showError(
+            `Coerência de custos inválida: custo total informado (${parsedCustoTotal.toFixed(2)}) diverge do calculado (${calculatedTotal.toFixed(2)}) com base no custo unitário.`,
+          );
           return;
         }
         resolvedCustoTotal = parsedCustoTotal;
@@ -961,18 +1082,25 @@ export default function Insumos() {
         resolvedCustoStatus = "informado";
       } else if (parsedCustoTotal !== null) {
         resolvedCustoTotal = parsedCustoTotal;
-        resolvedCustoUnitario = parseFloat((parsedCustoTotal / quantidadeBase).toFixed(4));
+        resolvedCustoUnitario = parseFloat(
+          (parsedCustoTotal / quantidadeBase).toFixed(4),
+        );
         resolvedCustoStatus = "informado";
       } else if (parsedCustoUnitario !== null) {
         resolvedCustoUnitario = parsedCustoUnitario;
-        resolvedCustoTotal = parseFloat((parsedCustoUnitario * quantidadeBase).toFixed(2));
+        resolvedCustoTotal = parseFloat(
+          (parsedCustoUnitario * quantidadeBase).toFixed(2),
+        );
         resolvedCustoStatus = "informado";
       }
     }
 
-    const resolvedOrigemCusto = resolvedCustoStatus === "informado"
-      ? (editForm.origemCusto === "ausente" ? "manual" : editForm.origemCusto)
-      : "ausente";
+    const resolvedOrigemCusto =
+      resolvedCustoStatus === "informado"
+        ? editForm.origemCusto === "ausente"
+          ? "manual"
+          : editForm.origemCusto
+        : "ausente";
 
     const ops = [
       {
@@ -1013,8 +1141,12 @@ export default function Insumos() {
             custo_status: resolvedCustoStatus,
             origem_custo: resolvedOrigemCusto,
             finance_transaction_id: lot.payload?.finance_transaction_id ?? null,
-            custo_total_informado: hasCustoTotal ? editForm.custoTotal.trim() : null,
-            custo_unitario_informado: hasCustoUnitario ? editForm.custoUnitario.trim() : null,
+            custo_total_informado: hasCustoTotal
+              ? editForm.custoTotal.trim()
+              : null,
+            custo_unitario_informado: hasCustoUnitario
+              ? editForm.custoUnitario.trim()
+              : null,
           },
         },
       },
@@ -1063,10 +1195,12 @@ export default function Insumos() {
       return;
     }
     if (
-      entryForm.tipo === "sanitario" &&
+      entryRequiresVeterinaryProduct &&
       entryForm.produtoVeterinarioId === NONE_VALUE
     ) {
-      showError("Insumo sanitario exige produto veterinario catalogado.");
+      showError(
+        "Categoria sanitaria clinica exige produto veterinario catalogado.",
+      );
       return;
     }
 
@@ -1076,7 +1210,9 @@ export default function Insumos() {
     const quantidadeEntrada = parsePositiveNumber(entryForm.quantidadeEntrada);
 
     if (!quantidadePorApresentacao || !quantidadeEntrada) {
-      showError("Quantidade de entrada e apresentacao devem ser maiores que zero.");
+      showError(
+        "Quantidade de entrada e apresentacao devem ser maiores que zero.",
+      );
       return;
     }
 
@@ -1085,49 +1221,38 @@ export default function Insumos() {
       presentationBaseQuantity: quantidadePorApresentacao,
     });
 
-    const hasCustoTotal = entryForm.custoTotal.trim() !== "";
-    const hasCustoUnitario = entryForm.custoUnitario.trim() !== "";
-
-    let resolvedCustoUnitario: number | null = null;
-    let resolvedCustoTotal: number | null = null;
-    let resolvedCustoStatus: "informado" | "ausente" = "ausente";
-
-    if (hasCustoTotal || hasCustoUnitario) {
-      const parsedCustoTotal = hasCustoTotal ? parseFloat(entryForm.custoTotal.replace(",", ".")) : null;
-      const parsedCustoUnitario = hasCustoUnitario ? parseFloat(entryForm.custoUnitario.replace(",", ".")) : null;
-
-      if (hasCustoTotal && (parsedCustoTotal === null || isNaN(parsedCustoTotal) || parsedCustoTotal < 0)) {
-        showError("Custo total informado é inválido.");
+    if (entryForm.costMode === "custo_total" && entryForm.custoTotal.trim()) {
+      const parsedCustoTotal = Number(entryForm.custoTotal.replace(",", "."));
+      if (!Number.isFinite(parsedCustoTotal) || parsedCustoTotal < 0) {
+        showError("Custo total informado e invalido.");
         return;
       }
-      if (hasCustoUnitario && (parsedCustoUnitario === null || isNaN(parsedCustoUnitario) || parsedCustoUnitario < 0)) {
-        showError("Custo unitário informado é inválido.");
+    }
+    if (
+      entryForm.costMode === "custo_unitario" &&
+      entryForm.custoUnitario.trim()
+    ) {
+      const parsedCustoUnitario = Number(
+        entryForm.custoUnitario.replace(",", "."),
+      );
+      if (!Number.isFinite(parsedCustoUnitario) || parsedCustoUnitario < 0) {
+        showError("Custo por entrada informado e invalido.");
         return;
-      }
-
-      if (parsedCustoTotal !== null && parsedCustoUnitario !== null) {
-        const calculatedTotal = parsedCustoUnitario * quantidadeBase;
-        if (Math.abs(parsedCustoTotal - calculatedTotal) > 0.01) {
-          showError(`Coerência de custos inválida: custo total informado (${parsedCustoTotal.toFixed(2)}) diverge do calculado (${calculatedTotal.toFixed(2)}) com base no custo unitário.`);
-          return;
-        }
-        resolvedCustoTotal = parsedCustoTotal;
-        resolvedCustoUnitario = parsedCustoUnitario;
-        resolvedCustoStatus = "informado";
-      } else if (parsedCustoTotal !== null) {
-        resolvedCustoTotal = parsedCustoTotal;
-        resolvedCustoUnitario = parseFloat((parsedCustoTotal / quantidadeBase).toFixed(4));
-        resolvedCustoStatus = "informado";
-      } else if (parsedCustoUnitario !== null) {
-        resolvedCustoUnitario = parsedCustoUnitario;
-        resolvedCustoTotal = parseFloat((parsedCustoUnitario * quantidadeBase).toFixed(2));
-        resolvedCustoStatus = "informado";
       }
     }
 
-    const resolvedOrigemCusto = resolvedCustoStatus === "informado"
-      ? (entryForm.origemCusto === "ausente" ? "manual" : entryForm.origemCusto)
-      : "ausente";
+    const resolvedCustoTotal = entryCostSummary.custoTotal;
+    const resolvedCustoUnitario =
+      resolvedCustoTotal == null
+        ? null
+        : parseFloat((resolvedCustoTotal / quantidadeBase).toFixed(4));
+    const resolvedCustoStatus = entryCostSummary.status;
+    const resolvedOrigemCusto =
+      resolvedCustoStatus === "informado"
+        ? entryForm.origemCusto === "ausente"
+          ? "manual"
+          : entryForm.origemCusto
+        : "ausente";
 
     const now = new Date().toISOString();
     const insumoId = crypto.randomUUID();
@@ -1147,7 +1272,8 @@ export default function Insumos() {
             tipo: entryForm.tipo,
             categoria: entryForm.categoria.trim() || null,
             produto_veterinario_id:
-              entryForm.tipo === "sanitario"
+              entryForm.tipo === "sanitario" &&
+              entryForm.produtoVeterinarioId !== NONE_VALUE
                 ? entryForm.produtoVeterinarioId
                 : null,
             unidade_base: entryForm.unidadeBase,
@@ -1162,7 +1288,7 @@ export default function Insumos() {
             id: apresentacaoId,
             insumo_id: insumoId,
             nome:
-              entryForm.apresentacaoNome.trim() ||
+              resolvedEntryPresentationName ||
               `${entryForm.unidadeCompra} ${formatNumber(quantidadePorApresentacao)} ${entryForm.unidadeBase}`,
             unidade_compra: entryForm.unidadeCompra,
             quantidade_base: quantidadePorApresentacao,
@@ -1194,8 +1320,14 @@ export default function Insumos() {
               custo_status: resolvedCustoStatus,
               origem_custo: resolvedOrigemCusto,
               finance_transaction_id: null,
-              custo_total_informado: hasCustoTotal ? entryForm.custoTotal.trim() : null,
-              custo_unitario_informado: hasCustoUnitario ? entryForm.custoUnitario.trim() : null,
+              custo_total_informado:
+                entryForm.costMode === "custo_total"
+                  ? entryForm.custoTotal.trim() || null
+                  : null,
+              custo_unitario_informado:
+                entryForm.costMode === "custo_unitario"
+                  ? entryForm.custoUnitario.trim() || null
+                  : null,
             },
           },
         },
@@ -1231,6 +1363,8 @@ export default function Insumos() {
       ]);
 
       setEntryForm(EMPTY_ENTRY_FORM);
+      setEntryEditedFields(new Set());
+      setIsCustomCategory(false);
       showSuccess("Entrada de insumo criada. Sincronizacao pendente.");
     } catch {
       showError("Falha ao criar entrada de insumo.");
@@ -1254,7 +1388,9 @@ export default function Insumos() {
       return;
     }
 
-    const quantidadeBase = parsePositiveNumber(manualMovementForm.quantidadeBase);
+    const quantidadeBase = parsePositiveNumber(
+      manualMovementForm.quantidadeBase,
+    );
     if (!quantidadeBase) {
       showError("Quantidade da movimentacao deve ser maior que zero.");
       return;
@@ -1298,13 +1434,18 @@ export default function Insumos() {
             rebanho_lote_id: null,
             pasto_id: null,
             observacoes: manualMovementForm.observacoes.trim() || null,
-            payload: { origem: "inventario_ui_mvp", fluxo: "movimentacao_manual" },
+            payload: {
+              origem: "inventario_ui_mvp",
+              fluxo: "movimentacao_manual",
+            },
           },
         },
       ]);
 
       setManualMovementForm(EMPTY_MANUAL_MOVEMENT_FORM);
-      showSuccess("Movimentacao de estoque registrada. Sincronizacao pendente.");
+      showSuccess(
+        "Movimentacao de estoque registrada. Sincronizacao pendente.",
+      );
     } catch {
       showError("Falha ao registrar movimentacao de estoque.");
     } finally {
@@ -1378,7 +1519,9 @@ export default function Insumos() {
             payload: {
               origem: "inventario_ui_mvp",
               custo_status: costSnapshot.custo_status,
-              ...(costSnapshot.limitacoes.length > 0 ? { limitacoes: costSnapshot.limitacoes } : {}),
+              ...(costSnapshot.limitacoes.length > 0
+                ? { limitacoes: costSnapshot.limitacoes }
+                : {}),
             },
           },
         },
@@ -1476,7 +1619,9 @@ export default function Insumos() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={ALL_TYPES_VALUE}>Todos os tipos</SelectItem>
+                  <SelectItem value={ALL_TYPES_VALUE}>
+                    Todos os tipos
+                  </SelectItem>
                   <SelectItem value="nutricional">Nutricional</SelectItem>
                   <SelectItem value="sanitario">Sanitario</SelectItem>
                   <SelectItem value="outro">Outro</SelectItem>
@@ -1505,7 +1650,9 @@ export default function Insumos() {
               </p>
             </div>
             <div className="rounded-md border border-border/70 px-3 py-2">
-              <p className="text-xs text-muted-foreground">Entradas no periodo</p>
+              <p className="text-xs text-muted-foreground">
+                Entradas no periodo
+              </p>
               <p className="text-lg font-semibold text-emerald-700">
                 +{formatNumber(filteredTotals.entradas)}
               </p>
@@ -1519,7 +1666,8 @@ export default function Insumos() {
             <div className="rounded-md border border-border/70 px-3 py-2">
               <p className="text-xs text-muted-foreground">Ressuprimento</p>
               <p className="text-lg font-semibold">
-                {filteredResupplyTotals.critical + filteredResupplyTotals.warning}
+                {filteredResupplyTotals.critical +
+                  filteredResupplyTotals.warning}
               </p>
               <p className="text-xs text-muted-foreground">
                 {filteredResupplyTotals.configured} parametrizado(s)
@@ -1557,7 +1705,9 @@ export default function Insumos() {
                               <h2 className="truncate text-base font-semibold text-foreground">
                                 {insumo?.nome ?? "Insumo sem cadastro"}
                               </h2>
-                              <StatusBadge tone="neutral">{category}</StatusBadge>
+                              <StatusBadge tone="neutral">
+                                {category}
+                              </StatusBadge>
                               <StatusBadge
                                 tone={
                                   insumo?.tipo === "sanitario"
@@ -1572,9 +1722,13 @@ export default function Insumos() {
                                     : "Outro"}
                               </StatusBadge>
                               {insumo?.ativo === false ? (
-                                <StatusBadge tone="warning">Inativo</StatusBadge>
+                                <StatusBadge tone="warning">
+                                  Inativo
+                                </StatusBadge>
                               ) : null}
-                              <StatusBadge tone={getResupplyTone(resupply.status)}>
+                              <StatusBadge
+                                tone={getResupplyTone(resupply.status)}
+                              >
                                 {getResupplyLabel(resupply.status)}
                               </StatusBadge>
                             </div>
@@ -1616,7 +1770,8 @@ export default function Insumos() {
                               Quantidade
                             </span>
                             <strong>
-                              {formatNumber(saldoOperacional)} {lot.unidade_base}
+                              {formatNumber(saldoOperacional)}{" "}
+                              {lot.unidade_base}
                             </strong>
                           </div>
                           <div>
@@ -1672,9 +1827,13 @@ export default function Insumos() {
                               <div className="space-y-2">
                                 <Label>Categoria</Label>
                                 <Select
-                                  value={isEditCustomCategory ? "outro_personalizado" : editForm.categoria}
+                                  value={
+                                    isEditCustomCategory
+                                      ? CUSTOM_CATEGORY_VALUE
+                                      : editForm.categoria
+                                  }
                                   onValueChange={(value) => {
-                                    if (value === "outro_personalizado") {
+                                    if (value === CUSTOM_CATEGORY_VALUE) {
                                       setIsEditCustomCategory(true);
                                       setEditField("categoria", "");
                                     } else {
@@ -1687,8 +1846,14 @@ export default function Insumos() {
                                     <SelectValue placeholder="Selecione uma categoria" />
                                   </SelectTrigger>
                                   <SelectContent>
-                                    {(insumo?.tipo ? CATEGORIES_BY_TYPE[insumo.tipo] : []).map((opt) => (
-                                      <SelectItem key={opt.value} value={opt.value}>
+                                    {(insumo?.tipo
+                                      ? getInventoryCategoryOptions(insumo.tipo)
+                                      : []
+                                    ).map((opt) => (
+                                      <SelectItem
+                                        key={opt.value}
+                                        value={opt.value}
+                                      >
                                         {opt.label}
                                       </SelectItem>
                                     ))}
@@ -1721,7 +1886,9 @@ export default function Insumos() {
                                 />
                               </div>
                               <div className="space-y-2">
-                                <Label>Estoque minimo ({lot.unidade_base})</Label>
+                                <Label>
+                                  Estoque minimo ({lot.unidade_base})
+                                </Label>
                                 <Input
                                   inputMode="decimal"
                                   value={editForm.estoqueMinimoBase}
@@ -1792,10 +1959,7 @@ export default function Insumos() {
                                   type="date"
                                   value={editForm.validade}
                                   onChange={(event) =>
-                                    setEditField(
-                                      "validade",
-                                      event.target.value,
-                                    )
+                                    setEditField("validade", event.target.value)
                                   }
                                 />
                               </div>
@@ -1829,7 +1993,10 @@ export default function Insumos() {
                                   inputMode="decimal"
                                   value={editForm.custoTotal}
                                   onChange={(event) =>
-                                    setEditField("custoTotal", event.target.value)
+                                    setEditField(
+                                      "custoTotal",
+                                      event.target.value,
+                                    )
                                   }
                                 />
                               </div>
@@ -1839,7 +2006,10 @@ export default function Insumos() {
                                   inputMode="decimal"
                                   value={editForm.custoUnitario}
                                   onChange={(event) =>
-                                    setEditField("custoUnitario", event.target.value)
+                                    setEditField(
+                                      "custoUnitario",
+                                      event.target.value,
+                                    )
                                   }
                                 />
                               </div>
@@ -1848,33 +2018,53 @@ export default function Insumos() {
                                 <Select
                                   value={editForm.origemCusto}
                                   onValueChange={(value) =>
-                                    setEditField("origemCusto", value as "manual" | "ausente")
+                                    setEditField(
+                                      "origemCusto",
+                                      value as "manual" | "ausente",
+                                    )
                                   }
                                 >
                                   <SelectTrigger>
                                     <SelectValue />
                                   </SelectTrigger>
                                   <SelectContent>
-                                    <SelectItem value="ausente">Ausente</SelectItem>
-                                    <SelectItem value="manual">Manual (Declarado)</SelectItem>
+                                    <SelectItem value="ausente">
+                                      Ausente
+                                    </SelectItem>
+                                    <SelectItem value="manual">
+                                      Manual (Declarado)
+                                    </SelectItem>
                                   </SelectContent>
                                 </Select>
                               </div>
                               <div className="rounded-md border border-warning/20 bg-warning/5 p-3 text-xs leading-5 text-warning-foreground sm:col-span-2 space-y-1">
-                                <p>⚠️ <strong>Avisos de alteração de custo:</strong></p>
-                                <p>• Alterar o custo do lote não altera consumos já registrados.</p>
-                                <p>• Alterar o custo do lote não altera a movimentação de entrada nem snapshots históricos.</p>
+                                <p>
+                                  ⚠️{" "}
+                                  <strong>Avisos de alteração de custo:</strong>
+                                </p>
+                                <p>
+                                  • Alterar o custo do lote não altera consumos
+                                  já registrados.
+                                </p>
+                                <p>
+                                  • Alterar o custo do lote não altera a
+                                  movimentação de entrada nem snapshots
+                                  históricos.
+                                </p>
                               </div>
                               <div className="space-y-2">
                                 <Label>Status do lote</Label>
                                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                                   {loteStatusOptions.map((option) => {
-                                    const isSelected = editForm.status === option.value;
+                                    const isSelected =
+                                      editForm.status === option.value;
                                     return (
                                       <Button
                                         key={option.value}
                                         type="button"
-                                        variant={isSelected ? "default" : "outline"}
+                                        variant={
+                                          isSelected ? "default" : "outline"
+                                        }
                                         onClick={() =>
                                           setEditField(
                                             "status",
@@ -1885,7 +2075,7 @@ export default function Insumos() {
                                           "h-12 rounded-xl transition-all border-2 text-xs px-1 bg-background",
                                           isSelected
                                             ? "border-primary bg-primary text-primary-foreground font-semibold shadow-sm animate-none"
-                                            : "border-primary/20 hover:border-primary/50 text-foreground"
+                                            : "border-primary/20 hover:border-primary/50 text-foreground",
                                         )}
                                       >
                                         {option.label}
@@ -1901,18 +2091,27 @@ export default function Insumos() {
                                     { value: "ativo", label: "Ativo" },
                                     { value: "inativo", label: "Inativo" },
                                   ].map((opt) => {
-                                    const isSelected = (editForm.ativo ? "ativo" : "inativo") === opt.value;
+                                    const isSelected =
+                                      (editForm.ativo ? "ativo" : "inativo") ===
+                                      opt.value;
                                     return (
                                       <Button
                                         key={opt.value}
                                         type="button"
-                                        variant={isSelected ? "default" : "outline"}
-                                        onClick={() => setEditField("ativo", opt.value === "ativo")}
+                                        variant={
+                                          isSelected ? "default" : "outline"
+                                        }
+                                        onClick={() =>
+                                          setEditField(
+                                            "ativo",
+                                            opt.value === "ativo",
+                                          )
+                                        }
                                         className={cn(
                                           "h-12 rounded-xl transition-all border-2 bg-background",
                                           isSelected
                                             ? "border-primary bg-primary text-primary-foreground font-semibold shadow-sm"
-                                            : "border-primary/20 hover:border-primary/50 text-foreground"
+                                            : "border-primary/20 hover:border-primary/50 text-foreground",
                                         )}
                                       >
                                         {opt.label}
@@ -1948,7 +2147,9 @@ export default function Insumos() {
 
                         <div className="grid gap-2 text-sm text-muted-foreground sm:grid-cols-4">
                           <span>{lot.status}</span>
-                          <span>{apresentacao?.nome || "Sem apresentacao"}</span>
+                          <span>
+                            {apresentacao?.nome || "Sem apresentacao"}
+                          </span>
                           <span>{lot.fabricante || "Sem fabricante"}</span>
                           <span>{lot.local_armazenamento || "Sem local"}</span>
                         </div>
@@ -1965,18 +2166,16 @@ export default function Insumos() {
       <FormSection
         title="Entrada inicial"
         actions={
-          !canManage ? <StatusBadge tone="warning">Somente leitura</StatusBadge> : null
+          !canManage ? (
+            <StatusBadge tone="warning">Somente leitura</StatusBadge>
+          ) : null
         }
       >
         <div className="grid gap-4 lg:grid-cols-3">
           <div className="space-y-2">
             <Label>Tipo</Label>
             <div className="grid grid-cols-3 gap-2">
-              {[
-                { value: "nutricional", label: "Nutricional" },
-                { value: "sanitario", label: "Sanitário" },
-                { value: "outro", label: "Outro" },
-              ].map((opt) => {
+              {getInventoryTypeOptions().map((opt) => {
                 const isSelected = entryForm.tipo === opt.value;
                 return (
                   <Button
@@ -1990,15 +2189,27 @@ export default function Insumos() {
                         ...prev,
                         tipo: novoTipo,
                         categoria: "",
+                        nome: "",
                         produtoVeterinarioId: NONE_VALUE,
                       }));
+                      setEntryEditedFields((prev) => {
+                        const next = new Set(prev);
+                        next.delete("categoria");
+                        next.delete("nome");
+                        next.delete("unidadeBase");
+                        next.delete("unidadeCompra");
+                        next.delete("apresentacaoNome");
+                        next.delete("quantidadePorApresentacao");
+                        return next;
+                      });
                       setIsCustomCategory(false);
+                      setIsCustomEntryItem(false);
                     }}
                     className={cn(
                       "h-12 rounded-xl transition-all border-2 text-xs sm:text-sm px-1",
                       isSelected
                         ? "border-primary bg-primary text-primary-foreground font-semibold shadow-sm"
-                        : "border-primary/20 hover:border-primary/50 text-foreground bg-background"
+                        : "border-primary/20 hover:border-primary/50 text-foreground bg-background",
                     )}
                   >
                     {opt.label}
@@ -2011,14 +2222,46 @@ export default function Insumos() {
           <div className="space-y-2">
             <Label>Categoria</Label>
             <Select
-              value={isCustomCategory ? "outro_personalizado" : entryForm.categoria}
+              value={
+                isCustomCategory ? CUSTOM_CATEGORY_VALUE : entryForm.categoria
+              }
               onValueChange={(value) => {
-                if (value === "outro_personalizado") {
+                if (value === CUSTOM_CATEGORY_VALUE) {
                   setIsCustomCategory(true);
-                  setEntryField("categoria", "");
+                  setIsCustomEntryItem(false);
+                  setEntryForm((prev) => ({
+                    ...prev,
+                    categoria: "",
+                    nome: "",
+                    produtoVeterinarioId: NONE_VALUE,
+                  }));
                 } else {
                   setIsCustomCategory(false);
-                  setEntryField("categoria", value);
+                  setIsCustomEntryItem(false);
+                  const preset = getInventoryCategoryPreset(
+                    entryForm.tipo,
+                    value,
+                  );
+                  const presetEditedFields = new Set(entryEditedFields);
+                  presetEditedFields.add("nome");
+                  setEntryForm((prev) =>
+                    applyInventoryPreset(
+                      {
+                        ...prev,
+                        categoria: value,
+                        nome: "",
+                        produtoVeterinarioId: isVeterinaryProductRequired(
+                          entryForm.tipo,
+                          value,
+                          prev.nome,
+                        )
+                          ? prev.produtoVeterinarioId
+                          : NONE_VALUE,
+                      },
+                      preset,
+                      presetEditedFields,
+                    ),
+                  );
                 }
               }}
               disabled={!canManage}
@@ -2027,7 +2270,7 @@ export default function Insumos() {
                 <SelectValue placeholder="Selecione uma categoria" />
               </SelectTrigger>
               <SelectContent>
-                {(CATEGORIES_BY_TYPE[entryForm.tipo] || []).map((opt) => (
+                {getInventoryCategoryOptions(entryForm.tipo).map((opt) => (
                   <SelectItem key={opt.value} value={opt.value}>
                     {opt.label}
                   </SelectItem>
@@ -2037,7 +2280,9 @@ export default function Insumos() {
             {isCustomCategory && (
               <Input
                 value={entryForm.categoria}
-                onChange={(event) => setEntryField("categoria", event.target.value)}
+                onChange={(event) =>
+                  setEntryField("categoria", event.target.value)
+                }
                 disabled={!canManage}
                 placeholder="Digite a categoria personalizada"
                 className="mt-2"
@@ -2045,121 +2290,119 @@ export default function Insumos() {
             )}
           </div>
 
-          {entryForm.tipo === "sanitario" ? (
+          {entryRequiresVeterinaryProduct ? (
             <div className="space-y-2">
               <Label>Produto veterinário</Label>
               <Select
                 value={entryForm.produtoVeterinarioId}
                 onValueChange={(value) => {
-                  setEntryField("produtoVeterinarioId", value);
+                  setEntryForm((prev) => ({
+                    ...prev,
+                    produtoVeterinarioId: value,
+                  }));
                   if (value !== NONE_VALUE) {
-                    const product = snapshot?.produtos?.find((p) => p.id === value);
+                    const product = snapshot?.produtos?.find(
+                      (p) => p.id === value,
+                    );
                     if (product) {
-                      setEntryForm((prev) => ({
-                        ...prev,
-                        produtoVeterinarioId: value,
-                        nome: product.nome,
-                        categoria: product.categoria || "Vacina",
-                      }));
-                      const categories = CATEGORIES_BY_TYPE.sanitario;
-                      const hasStandard = categories.some((c) => c.value === product.categoria);
-                      setIsCustomCategory(!hasStandard && !!product.categoria);
+                      setIsCustomEntryItem(false);
+                      const productPreset = getInventoryProductPreset(product);
+                      const presetEditedFields = new Set(entryEditedFields);
+                      presetEditedFields.delete("nome");
+                      setEntryForm((prev) =>
+                        applyInventoryPreset(
+                          { ...prev, produtoVeterinarioId: value },
+                          productPreset,
+                          presetEditedFields,
+                        ),
+                      );
+                      const categories =
+                        getInventoryCategoryOptions("sanitario");
+                      const hasStandard = categories.some(
+                        (c) => c.value === productPreset.categoria,
+                      );
+                      setIsCustomCategory(
+                        !hasStandard && !!productPreset.categoria,
+                      );
                     }
                   }
                 }}
                 disabled={!canManage}
               >
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue placeholder="Selecionar produto" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value={NONE_VALUE}>Selecionar</SelectItem>
-                  {(snapshot?.produtos ?? []).map((product) => (
+                  {entryVeterinaryProductOptions.map((product) => (
                     <SelectItem key={product.id} value={product.id}>
                       {product.nome}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+              <p className="text-xs leading-5 text-muted-foreground">
+                Categoria clinica/medicamentosa: selecione um produto
+                veterinario catalogado para manter rastreabilidade do estoque.
+              </p>
             </div>
           ) : null}
 
           <div className="space-y-2">
             <Label>Insumo</Label>
-            <Input
-              value={entryForm.nome}
-              onChange={(event) => setEntryField("nome", event.target.value)}
-              disabled={!canManage}
-              placeholder="Ex.: Sal mineral, vacina, vermífugo"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label>Unidade base</Label>
             <Select
-              value={entryForm.unidadeBase}
-              onValueChange={(value) =>
-                setEntryField("unidadeBase", value as InsumoUnidadeBaseEnum)
-              }
-              disabled={!canManage}
+              value={entryItemSelectValue}
+              onValueChange={(value) => {
+                if (value === CUSTOM_ITEM_VALUE) {
+                  setIsCustomEntryItem(true);
+                  setEntryField("nome", "");
+                  return;
+                }
+
+                const item = entryItemOptionsForSelect.find(
+                  (option) => option.id === value,
+                );
+                if (!item) return;
+
+                const presetEditedFields = new Set(entryEditedFields);
+                presetEditedFields.delete("nome");
+                setIsCustomEntryItem(false);
+                setEntryForm((prev) =>
+                  applyInventoryItemSelection(prev, item, presetEditedFields),
+                );
+              }}
+              disabled={!canManage || !entryForm.categoria}
             >
               <SelectTrigger>
-                <SelectValue />
+                <SelectValue
+                  placeholder={
+                    entryForm.categoria
+                      ? "Selecionar insumo"
+                      : "Selecione uma categoria"
+                  }
+                />
               </SelectTrigger>
               <SelectContent>
-                {unidadeBaseOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
+                {entryItemOptionsForSelect.map((item) => (
+                  <SelectItem key={item.id} value={item.id}>
+                    {item.nome}
                   </SelectItem>
                 ))}
+                <SelectItem value={CUSTOM_ITEM_VALUE}>
+                  Outro / digitar
+                </SelectItem>
               </SelectContent>
             </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Unidade de compra</Label>
-            <Select
-              value={entryForm.unidadeCompra}
-              onValueChange={(value) =>
-                setEntryField("unidadeCompra", value as InsumoUnidadeCompraEnum)
-              }
-              disabled={!canManage}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {unidadeCompraOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Apresentacao</Label>
-            <Input
-              value={entryForm.apresentacaoNome}
-              onChange={(event) =>
-                setEntryField("apresentacaoNome", event.target.value)
-              }
-              disabled={!canManage}
-              placeholder="Ex.: Saco 25 kg"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label>Qtd. por apresentacao</Label>
-            <Input
-              inputMode="decimal"
-              value={entryForm.quantidadePorApresentacao}
-              onChange={(event) =>
-                setEntryField("quantidadePorApresentacao", event.target.value)
-              }
-              disabled={!canManage}
-            />
+            {isCustomEntryItem ||
+            (!!entryForm.nome && !selectedEntryItemOption) ||
+            entryItemOptionsForSelect.length === 0 ? (
+              <Input
+                value={entryForm.nome}
+                onChange={(event) => setEntryField("nome", event.target.value)}
+                disabled={!canManage}
+                placeholder="Digite o insumo"
+              />
+            ) : null}
           </div>
 
           <div className="space-y-2">
@@ -2174,40 +2417,141 @@ export default function Insumos() {
             />
           </div>
 
-          <div className="space-y-2">
-            <Label>Lote</Label>
-            <Input
-              value={entryForm.identificacaoLote}
-              onChange={(event) =>
-                setEntryField("identificacaoLote", event.target.value)
-              }
-              disabled={!canManage}
-              placeholder="Ex.: fabricante/partida"
-            />
-          </div>
+          <details className="rounded-md border border-border/70 bg-muted/10 p-3 lg:col-span-3">
+            <summary className="cursor-pointer text-sm font-medium text-foreground">
+              Detalhes de apresentação
+            </summary>
+            <div className="mt-4 grid gap-4 lg:grid-cols-4">
+              <div className="space-y-2">
+                <Label>Unidade base</Label>
+                <Select
+                  value={entryForm.unidadeBase}
+                  onValueChange={(value) =>
+                    setEntryField("unidadeBase", value as InsumoUnidadeBaseEnum)
+                  }
+                  disabled={!canManage}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {unidadeBaseOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-          <div className="space-y-2">
-            <Label>Validade</Label>
-            <Input
-              type="date"
-              value={entryForm.validade}
-              onChange={(event) =>
-                setEntryField("validade", event.target.value)
-              }
-              disabled={!canManage}
-            />
-          </div>
+              <div className="space-y-2">
+                <Label>Unidade de compra</Label>
+                <Select
+                  value={entryForm.unidadeCompra}
+                  onValueChange={(value) =>
+                    setEntryField(
+                      "unidadeCompra",
+                      value as InsumoUnidadeCompraEnum,
+                    )
+                  }
+                  disabled={!canManage}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {unidadeCompraOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-          <div className="space-y-2">
-            <Label>Fabricante</Label>
-            <Input
-              value={entryForm.fabricante}
-              onChange={(event) =>
-                setEntryField("fabricante", event.target.value)
-              }
-              disabled={!canManage}
-            />
-          </div>
+              <div className="space-y-2">
+                <Label>Qtd. por apresentacao</Label>
+                <Input
+                  inputMode="decimal"
+                  value={entryForm.quantidadePorApresentacao}
+                  onChange={(event) =>
+                    setEntryField(
+                      "quantidadePorApresentacao",
+                      event.target.value,
+                    )
+                  }
+                  disabled={!canManage}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Apresentacao gerada</Label>
+                <Input
+                  value={buildInventoryPresentationName(entryForm)}
+                  disabled
+                  aria-readonly="true"
+                />
+              </div>
+
+              <details className="rounded-md border border-border/70 bg-background p-3 lg:col-span-4">
+                <summary className="cursor-pointer text-sm font-medium text-foreground">
+                  Editar apresentação
+                </summary>
+                <div className="mt-3 space-y-2">
+                  <Label>Apresentacao manual</Label>
+                  <Input
+                    value={entryForm.apresentacaoNome}
+                    onChange={(event) =>
+                      setEntryField("apresentacaoNome", event.target.value)
+                    }
+                    disabled={!canManage}
+                    placeholder="Ex.: Saco 25 kg"
+                  />
+                </div>
+              </details>
+            </div>
+          </details>
+
+          {shouldShowInventoryField("lote", entryForm, entryPreset) ? (
+            <div className="space-y-2">
+              <Label>Lote</Label>
+              <Input
+                value={entryForm.identificacaoLote}
+                onChange={(event) =>
+                  setEntryField("identificacaoLote", event.target.value)
+                }
+                disabled={!canManage}
+                placeholder="Ex.: fabricante/partida"
+              />
+            </div>
+          ) : null}
+
+          {shouldShowInventoryField("validade", entryForm, entryPreset) ? (
+            <div className="space-y-2">
+              <Label>Validade</Label>
+              <Input
+                type="date"
+                value={entryForm.validade}
+                onChange={(event) =>
+                  setEntryField("validade", event.target.value)
+                }
+                disabled={!canManage}
+              />
+            </div>
+          ) : null}
+
+          {shouldShowInventoryField("fabricante", entryForm, entryPreset) ? (
+            <div className="space-y-2">
+              <Label>Fabricante</Label>
+              <Input
+                value={entryForm.fabricante}
+                onChange={(event) =>
+                  setEntryField("fabricante", event.target.value)
+                }
+                disabled={!canManage}
+              />
+            </div>
+          ) : null}
 
           <div className="space-y-2 lg:col-span-2">
             <Label>Local</Label>
@@ -2222,38 +2566,20 @@ export default function Insumos() {
           </div>
 
           <div className="space-y-2">
-            <Label>Custo Total (R$)</Label>
-            <Input
-              inputMode="decimal"
-              value={entryForm.custoTotal}
-              onChange={(event) =>
-                setEntryField("custoTotal", event.target.value)
-              }
-              disabled={!canManage}
-              placeholder="Ex.: 250,00"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label>Custo Unitário (R$)</Label>
-            <Input
-              inputMode="decimal"
-              value={entryForm.custoUnitario}
-              onChange={(event) =>
-                setEntryField("custoUnitario", event.target.value)
-              }
-              disabled={!canManage}
-              placeholder="Ex.: 10,00"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label>Origem do Custo</Label>
+            <Label>Custo</Label>
             <Select
-              value={entryForm.origemCusto}
-              onValueChange={(value) =>
-                setEntryField("origemCusto", value as "manual" | "ausente")
-              }
+              value={entryForm.costMode}
+              onValueChange={(value) => {
+                const mode = value as InventoryCostMode;
+                setEntryForm((prev) => ({
+                  ...prev,
+                  costMode: mode,
+                  custoTotal: mode === "custo_unitario" ? "" : prev.custoTotal,
+                  custoUnitario:
+                    mode === "custo_total" ? "" : prev.custoUnitario,
+                  origemCusto: mode === "ausente" ? "ausente" : "manual",
+                }));
+              }}
               disabled={!canManage}
             >
               <SelectTrigger>
@@ -2261,14 +2587,102 @@ export default function Insumos() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="ausente">Ausente</SelectItem>
-                <SelectItem value="manual">Manual (Declarado)</SelectItem>
+                <SelectItem value="custo_total">Custo total</SelectItem>
+                <SelectItem value="custo_unitario">
+                  Custo por entrada
+                </SelectItem>
               </SelectContent>
             </Select>
           </div>
 
-          <div className="rounded-md border border-border/70 bg-muted/10 p-3 text-xs leading-5 text-muted-foreground lg:col-span-4">
-            ⚠️ <strong>Nota sobre lançamento financeiro:</strong> Custo de estoque não gera lançamento financeiro automaticamente. Use o Financeiro para registrar pagamento ou vincular no futuro.
+          {entryForm.costMode === "custo_total" ? (
+            <div className="space-y-2">
+              <Label>Custo total (R$)</Label>
+              <Input
+                inputMode="decimal"
+                value={entryForm.custoTotal}
+                onChange={(event) =>
+                  setEntryField("custoTotal", event.target.value)
+                }
+                disabled={!canManage}
+                placeholder="Ex.: 250,00"
+              />
+            </div>
+          ) : null}
+
+          {entryForm.costMode === "custo_unitario" ? (
+            <div className="space-y-2">
+              <Label>Custo por entrada (R$)</Label>
+              <Input
+                inputMode="decimal"
+                value={entryForm.custoUnitario}
+                onChange={(event) =>
+                  setEntryField("custoUnitario", event.target.value)
+                }
+                disabled={!canManage}
+                placeholder="Ex.: 10,00"
+              />
+            </div>
+          ) : null}
+
+          <div className="rounded-md border border-border/70 bg-muted/10 p-3 text-xs leading-5 text-muted-foreground lg:col-span-3">
+            <div className="font-medium text-foreground">Resumo da entrada</div>
+            <div>
+              {formatNumber(
+                parsePositiveNumber(entryForm.quantidadeEntrada) ?? 0,
+              )}{" "}
+              apresentacao(oes) ·{" "}
+              {resolvedEntryPresentationName || "sem apresentacao"}
+            </div>
+            <div>
+              Quantidade base:{" "}
+              {entryBaseQuantity == null
+                ? "incompleta"
+                : `${formatNumber(entryBaseQuantity)} ${entryForm.unidadeBase}`}
+            </div>
+            <div>
+              Custo por entrada:{" "}
+              {entryCostSummary.custoUnitario == null
+                ? "ausente"
+                : `R$ ${formatNumber(entryCostSummary.custoUnitario)}`}
+            </div>
+            <div>
+              Custo total:{" "}
+              {entryCostSummary.custoTotal == null
+                ? "ausente"
+                : `R$ ${formatNumber(entryCostSummary.custoTotal)}`}
+            </div>
           </div>
+
+          <details className="rounded-md border border-border/70 bg-muted/10 p-3 text-xs leading-5 text-muted-foreground lg:col-span-3">
+            <summary className="cursor-pointer text-sm font-medium text-foreground">
+              Detalhes de custo
+            </summary>
+            <div className="mt-3 grid gap-4 lg:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Origem do custo</Label>
+                <Select
+                  value={entryForm.origemCusto}
+                  onValueChange={(value) =>
+                    setEntryField("origemCusto", value as "manual" | "ausente")
+                  }
+                  disabled={!canManage || entryForm.costMode === "ausente"}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ausente">Ausente</SelectItem>
+                    <SelectItem value="manual">Manual declarado</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <p className="mt-3">
+              Custo de estoque nao gera lancamento financeiro automaticamente.
+              Use o Financeiro para registrar pagamento ou vincular no futuro.
+            </p>
+          </details>
 
           <div className="flex items-end lg:col-span-4 justify-end mt-2">
             <Button
@@ -2346,7 +2760,7 @@ export default function Insumos() {
                       "h-12 rounded-xl transition-all border-2 text-xs sm:text-sm px-1 bg-background",
                       isSelected
                         ? "border-primary bg-primary text-primary-foreground font-semibold shadow-sm animate-none"
-                        : "border-primary/20 hover:border-primary/50 text-foreground"
+                        : "border-primary/20 hover:border-primary/50 text-foreground",
                     )}
                   >
                     {opt.label}
@@ -2375,9 +2789,7 @@ export default function Insumos() {
               className="w-full gap-2"
               onClick={handleCreateManualMovement}
               disabled={
-                !canManage ||
-                savingManualMovement ||
-                !selectedManualMovementLot
+                !canManage || savingManualMovement || !selectedManualMovementLot
               }
             >
               <SlidersHorizontal className="h-4 w-4" />
@@ -2442,7 +2854,9 @@ export default function Insumos() {
             <Label>Lote de estoque</Label>
             <Select
               value={consumptionForm.insumoLoteId}
-              onValueChange={(value) => setConsumptionField("insumoLoteId", value)}
+              onValueChange={(value) =>
+                setConsumptionField("insumoLoteId", value)
+              }
               disabled={!selectedSource}
             >
               <SelectTrigger>
@@ -2518,7 +2932,6 @@ export default function Insumos() {
           </div>
         </div>
       </FormSection>
-
     </div>
   );
 }

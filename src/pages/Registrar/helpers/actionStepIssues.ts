@@ -83,6 +83,7 @@ export function buildBaseActionStepIssues(
 
 type ComposeRegistrarActionStepIssuesInput = {
   baseIssues: string[];
+  inventoryIssues?: string[];
   protocolEligibilityIssues: string[];
   sanitaryMovementBlockIssues: string[];
   complianceFlowIssues: string[];
@@ -94,11 +95,45 @@ export function composeRegistrarActionStepIssues(
 ) {
   return [
     ...input.baseIssues,
+    ...(input.inventoryIssues ?? []),
     ...input.protocolEligibilityIssues,
     ...input.sanitaryMovementBlockIssues,
     ...input.complianceFlowIssues,
     ...input.transitChecklistIssues,
   ];
+}
+
+export function buildInventoryActionStepIssues(input: {
+  tipoManejo: EventDomain | null;
+  gerarBaixaEstoque: boolean;
+  selectedInsumoId: string;
+  selectedLoteId: string;
+  quantidadeConsumida: string;
+}) {
+  if (
+    input.tipoManejo !== "sanitario" &&
+    input.tipoManejo !== "nutricao"
+  ) {
+    return [];
+  }
+  if (!input.gerarBaixaEstoque) return [];
+
+  const issues: string[] = [];
+  if (!input.selectedInsumoId) {
+    issues.push("Selecione o insumo do estoque antes de continuar.");
+  }
+  if (!input.selectedLoteId) {
+    issues.push("Selecione o lote de estoque antes de continuar.");
+  }
+
+  const quantidade = Number.parseFloat(
+    input.quantidadeConsumida.replace(",", "."),
+  );
+  if (!Number.isFinite(quantidade) || quantidade <= 0) {
+    issues.push("Informe quantidade de estoque maior que zero.");
+  }
+
+  return issues;
 }
 
 type BlockedAnimalLike = {

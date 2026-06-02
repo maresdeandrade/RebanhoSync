@@ -423,10 +423,13 @@ export function createRegistrarFinalizeController(
         ...buildClinicalProtocolEventPayload(sanitary.clinicalProtocolRef),
       };
 
+      const sanitaryInventoryRequiresOfflineStock =
+        Boolean(input.inventory?.sanitary?.gerarBaixaEstoque);
       const shouldTrySanitaryRpc =
         !sanitary.caseLink.selectedCaseId &&
         !sanitary.caseLink.createClinicalCase &&
-        !isDryCowTherapyClinicalRef(sanitary.clinicalProtocolRef);
+        !isDryCowTherapyClinicalRef(sanitary.clinicalProtocolRef) &&
+        !sanitaryInventoryRequiresOfflineStock;
       const sanitaryRpcInput = {
         tipoManejo: context.tipoManejo,
         sourceTaskId: context.sourceTaskId,

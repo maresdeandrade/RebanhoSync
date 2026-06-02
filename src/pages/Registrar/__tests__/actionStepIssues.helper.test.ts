@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildBaseActionStepIssues,
+  buildInventoryActionStepIssues,
   buildProtocolEligibilityIssues,
   buildSanitaryMovementBlockIssues,
   composeRegistrarActionStepIssues,
@@ -108,6 +109,7 @@ describe("composeRegistrarActionStepIssues", () => {
   it("concatena issues de todos os blocos na ordem do fluxo", () => {
     const issues = composeRegistrarActionStepIssues({
       baseIssues: ["base"],
+      inventoryIssues: ["inventory"],
       protocolEligibilityIssues: ["protocol"],
       sanitaryMovementBlockIssues: ["sanitary"],
       complianceFlowIssues: ["compliance"],
@@ -116,6 +118,7 @@ describe("composeRegistrarActionStepIssues", () => {
 
     expect(issues).toEqual([
       "base",
+      "inventory",
       "protocol",
       "sanitary",
       "compliance",
@@ -130,6 +133,35 @@ describe("composeRegistrarActionStepIssues", () => {
       sanitaryMovementBlockIssues: [],
       complianceFlowIssues: [],
       transitChecklistIssues: [],
+    });
+
+    expect(issues).toEqual([]);
+  });
+});
+
+describe("buildInventoryActionStepIssues", () => {
+  it("bloqueia avanço quando baixa sanitaria está marcada sem lote e quantidade", () => {
+    const issues = buildInventoryActionStepIssues({
+      tipoManejo: "sanitario",
+      gerarBaixaEstoque: true,
+      selectedInsumoId: "insumo-1",
+      selectedLoteId: "",
+      quantidadeConsumida: "",
+    });
+
+    expect(issues).toEqual([
+      "Selecione o lote de estoque antes de continuar.",
+      "Informe quantidade de estoque maior que zero.",
+    ]);
+  });
+
+  it("não exige estoque quando baixa não está marcada", () => {
+    const issues = buildInventoryActionStepIssues({
+      tipoManejo: "sanitario",
+      gerarBaixaEstoque: false,
+      selectedInsumoId: "",
+      selectedLoteId: "",
+      quantidadeConsumida: "",
     });
 
     expect(issues).toEqual([]);

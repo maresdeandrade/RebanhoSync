@@ -23,6 +23,14 @@ describe("offline inventory stores", () => {
     expect(TABLE_MAP.insumo_movimentacoes).toBe("state_insumo_movimentacoes");
   });
 
+  it("indexa lotes de insumo por fazenda e insumo para seleção no Registrar", () => {
+    const compoundIndexes = db.state_insumo_lotes.schema.indexes.map(
+      (index) => index.src,
+    );
+
+    expect(compoundIndexes).toContain("[fazenda_id+insumo_id]");
+  });
+
   it("mantem eventos fonte no contrato do pull inicial do inventario", () => {
     expect(DEFAULT_REMOTE_TABLES).toEqual(
       expect.arrayContaining([

@@ -235,5 +235,30 @@ describe("operationalHomeIndicatorsAdapter", () => {
       expect(res.sanitario.overdue).toBe(1);
       expect(res.sanitario.dueToday).toBe(1);
     });
-  });
 });
+
+   describe("retirado status handling", () => {
+     it("correctly excludes retirado animals from active indicators", () => {
+       const animals: FactualAnimal[] = [
+         { id: "a1", identificacao: "001", status: "ativo" },
+         { id: "a2", identificacao: "002", status: "retirado" }, // should be ignored
+         { id: "a3", identificacao: "003", status: "ativo" },
+       ];
+       const events: FactualEvent[] = [
+         { id: "e1", dominio: "ecc", animal_id: "a1", occurred_at: "2026-05-25T10:00:00Z" },
+         { id: "e2", dominio: "ecc", animal_id: "a3", occurred_at: "2026-05-25T10:00:00Z" },
+       ];
+       const eccs: FactualEcc[] = [
+         { event_id: "e1", ecc: 3.5 },
+         { event_id: "e2", ecc: 4.0 },
+       ];
+
+       const input = createMockInput({ animals, events, eccs });
+       const res = computeHomeIndicators(input);
+
+       // Only 2 active animals should be counted (retirado excluded)
+       expect(res.ecc.coberturaAtiva.total).toBe(2);
+       expect(res.gmd.lotesComGmd.length).toBeGreaterThanOrEqual(0);
+     });
+   });
+ });

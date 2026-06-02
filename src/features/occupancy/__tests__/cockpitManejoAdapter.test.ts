@@ -308,23 +308,41 @@ describe("cockpitManejoAdapter unit tests", () => {
       expect(metrics.gmdMedio).toBeNull();
     });
 
-    it("animal vendido é excluído do cálculo de GMD", () => {
-      const animals: Animal[] = [
-        { id: "ani-vendido", status: "vendido", lote_id: "lote-1", identificacao: "V1", sexo: "F", fazenda_id: "faz-1", payload: {} } as any,
-      ];
-      const events: Evento[] = [
-        { id: "evt-1", dominio: "pesagem", animal_id: "ani-vendido", occurred_at: "2026-05-18", deleted_at: null } as any,
-        { id: "evt-2", dominio: "pesagem", animal_id: "ani-vendido", occurred_at: "2026-05-28", deleted_at: null } as any,
-      ];
-      const pesagens: EventoPesagem[] = [
-        { evento_id: "evt-1", peso_kg: 200 } as any,
-        { evento_id: "evt-2", peso_kg: 210 } as any,
-      ];
+it("animal vendido é excluído do cálculo de GMD", () => {
+       const animals: Animal[] = [
+         { id: "ani-vendido", status: "vendido", lote_id: "lote-1", identificacao: "V1", sexo: "F", fazenda_id: "faz-1", payload: {} } as any,
+       ];
+       const events: Evento[] = [
+         { id: "evt-1", dominio: "pesagem", animal_id: "ani-vendido", occurred_at: "2026-05-18", deleted_at: null } as any,
+         { id: "evt-2", dominio: "pesagem", animal_id: "ani-vendido", occurred_at: "2026-05-28", deleted_at: null } as any,
+       ];
+       const pesagens: EventoPesagem[] = [
+         { evento_id: "evt-1", peso_kg: 200 } as any,
+         { evento_id: "evt-2", peso_kg: 210 } as any,
+       ];
 
-      const metrics = calculateLoteMetrics("lote-1", refDate, 30, animals, events, pesagens, [], [], []);
-      expect(metrics.quantidadeAtual).toBe(0);
-      expect(metrics.gmdMedio).toBeNull();
-    });
+       const metrics = calculateLoteMetrics("lote-1", refDate, 30, animals, events, pesagens, [], [], []);
+       expect(metrics.quantidadeAtual).toBe(0);
+       expect(metrics.gmdMedio).toBeNull();
+     });
+
+     it("animal retirado é excluído do cálculo de GMD", () => {
+       const animals: Animal[] = [
+         { id: "ani-retirado", status: "retirado", lote_id: "lote-1", identificacao: "R1", sexo: "F", fazenda_id: "faz-1", payload: {} } as any,
+       ];
+       const events: Evento[] = [
+         { id: "evt-1", dominio: "pesagem", animal_id: "ani-retirado", occurred_at: "2026-05-18", deleted_at: null } as any,
+         { id: "evt-2", dominio: "pesagem", animal_id: "ani-retirado", occurred_at: "2026-05-28", deleted_at: null } as any,
+       ];
+       const pesagens: EventoPesagem[] = [
+         { evento_id: "evt-1", peso_kg: 200 } as any,
+         { evento_id: "evt-2", peso_kg: 210 } as any,
+       ];
+
+       const metrics = calculateLoteMetrics("lote-1", refDate, 30, animals, events, pesagens, [], [], []);
+       expect(metrics.quantidadeAtual).toBe(0);
+       expect(metrics.gmdMedio).toBeNull();
+     });
 
     it("mesmo dia (intervalo 0) bloqueia GMD", () => {
       const animals: Animal[] = [

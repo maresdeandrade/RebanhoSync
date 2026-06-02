@@ -85,8 +85,8 @@ export function RegistrarInventorySection(props: RegistrarInventorySectionProps)
     
     const [lotesList, movements, gestures] = await Promise.all([
       db.state_insumo_lotes
-        .where("[insumo_id+fazenda_id]")
-        .equals([selectedInsumoId, activeFarmId])
+        .where("[fazenda_id+insumo_id]")
+        .equals([activeFarmId, selectedInsumoId])
         .toArray(),
       db.state_insumo_movimentacoes
         .where("fazenda_id")

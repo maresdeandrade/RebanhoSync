@@ -319,6 +319,44 @@ describe("createRegistrarFinalizeController", () => {
     );
   });
 
+  it("usa plano offline quando registro sanitário da agenda tem baixa de estoque marcada", async () => {
+    const deps = buildControllerDeps();
+    const finalize = createRegistrarFinalizeController(deps);
+    const input = buildFinalizeInput();
+    input.context.tipoManejo = "sanitario";
+    input.context.sourceTaskId = "agenda-1";
+    input.inventory = {
+      sanitary: {
+        insumoId: "insumo-1",
+        insumoLoteId: "lote-estoque-1",
+        quantidadeConsumida: 2,
+        quantidadeUnidade: "ml",
+        dose: 2,
+        doseUnidade: "ml",
+        viaAplicacao: "subcutanea",
+        gerarBaixaEstoque: true,
+      },
+    };
+
+    await finalize(input);
+
+    expect(deps.sanitary.trySanitaryRpcFinalize).not.toHaveBeenCalled();
+    expect(deps.tracks.resolveNonFinancialFinalizePlan).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sanitaryInventory: expect.objectContaining({
+          insumoId: "insumo-1",
+          insumoLoteId: "lote-estoque-1",
+          gerarBaixaEstoque: true,
+        }),
+      }),
+    );
+    expect(deps.commit.buildAgendaCompletionOp).toHaveBeenCalledWith({
+      sourceTaskId: "agenda-1",
+      linkedEventId: "evt-1",
+    });
+    expect(deps.commit.runFinalizeGesture).toHaveBeenCalledTimes(1);
+  });
+
   it("usa fallback offline para secagem manual mesmo sem caso clinico", async () => {
     const deps = buildControllerDeps();
     const finalize = createRegistrarFinalizeController(deps);
