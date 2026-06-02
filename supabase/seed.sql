@@ -108,7 +108,7 @@ insert into public.catalogo_protocolos_oficiais (
   ),
   (
     'vermifugacao-estrategica',
-    'Vermifugacao estrategica - recomendacao tecnica',
+    'Vermifugacao estrategica',
     1,
     'federal',
     null,
@@ -120,7 +120,7 @@ insert into public.catalogo_protocolos_oficiais (
   ),
   (
     'controle-carrapato',
-    'Controle de carrapato - recomendacao tecnica',
+    'Controle de carrapato',
     1,
     'federal',
     null,
@@ -132,7 +132,7 @@ insert into public.catalogo_protocolos_oficiais (
   ),
   (
     'biosseguranca-operacional',
-    'Biosseguranca operacional - boas praticas',
+    'Biosseguranca operacional',
     1,
     'federal',
     null,

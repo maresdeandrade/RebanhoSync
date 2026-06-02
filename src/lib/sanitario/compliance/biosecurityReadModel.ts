@@ -8,6 +8,7 @@ import {
   type BiosecurityOccurrenceSeverity,
   type BiosecurityOccurrenceStatus,
 } from "@/lib/sanitario/compliance/biosecurityOccurrence";
+import { readSanitaryCorrectionPayload } from "@/lib/sanitario/reconciliation/sanitaryCorrections";
 
 export type BiosecurityOccurrenceSignalCode =
   | "biosseguranca:ocorrencia_aberta"
@@ -79,12 +80,15 @@ export function buildBiosecurityOccurrenceReadModel({
   to,
 }: BuildBiosecurityOccurrenceReadModelInput): BiosecurityOccurrenceProjection[] {
   const openAgendaBySourceEvent = groupOpenAgendaBySourceEvent(agenda);
+  const correctionByOriginEvent = groupBiosecurityCorrectionsByOriginEvent(eventos);
 
   return eventos
     .filter((evento) => isWithinPeriod(evento.occurred_at, from, to))
     .map((evento) => {
       const occurrence = readBiosecurityOccurrencePayload(evento.payload);
       if (!occurrence) return null;
+      const correction = correctionByOriginEvent.get(evento.id);
+      const status = correction?.status ?? occurrence.status;
 
       const pendingAgendaItems = openAgendaBySourceEvent.get(evento.id) ?? [];
 
@@ -102,7 +106,7 @@ export function buildBiosecurityOccurrenceReadModel({
         escopoTipo: occurrence.escopo_tipo,
         escoposTipo: occurrence.escopos_tipo,
         gravidade: occurrence.gravidade,
-        status: occurrence.status,
+        status,
         geraPendencia: occurrence.gera_pendencia,
         prazoCorrecao: occurrence.prazo_correcao,
         pendingAgendaItemIds: pendingAgendaItems.map((item) => item.id),
@@ -175,8 +179,40 @@ export function summarizeBiosecurityOccurrences(
     byLote: countBy(projections.map((item) => item.loteId ?? "sem_lote")),
     byLocal: countBy(projections.map((item) => item.localId ?? "sem_local")),
     byStatus: countBy(projections.map((item) => item.status)),
-    pendingAgendaItemIds,
+  pendingAgendaItemIds,
   };
+}
+
+function groupBiosecurityCorrectionsByOriginEvent(
+  eventos: readonly Evento[],
+): Map<string, { status: BiosecurityOccurrenceStatus; resolvedAt: string | null }> {
+  const grouped = new Map<
+    string,
+    { status: BiosecurityOccurrenceStatus; resolvedAt: string | null }
+  >();
+
+  for (const event of eventos) {
+    const correction = readSanitaryCorrectionPayload(event.payload);
+    if (!correction) continue;
+    if (
+      correction.tipo_correcao !== "resolucao_ocorrencia_biosseguranca" &&
+      correction.tipo_correcao !== "cancelamento_ocorrencia_biosseguranca"
+    ) {
+      continue;
+    }
+
+    const status =
+      correction.tipo_correcao === "cancelamento_ocorrencia_biosseguranca"
+        ? "cancelada"
+        : "resolvida";
+    const resolvedAt =
+      typeof correction.payload_correcao.resolvida_em === "string"
+        ? correction.payload_correcao.resolvida_em
+        : correction.created_at;
+    grouped.set(correction.evento_origem_id, { status, resolvedAt });
+  }
+
+  return grouped;
 }
 
 function createSignal(

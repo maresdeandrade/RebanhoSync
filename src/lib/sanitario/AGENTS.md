@@ -110,7 +110,7 @@ Essas camadas não devem competir como se fossem a mesma coisa.
 * `protocolos_sanitarios_itens.id` identifica versão física.
 * `protocol_item_version_id` deve ser usado por agenda/evento.
 * `protocol_item_snapshot` preserva regra histórica.
-* Não reabrir fallback operacional para `protocol_item_id` legado.
+* Não reabrir fallback operacional para o campo legado de item de protocolo.
 * Mudança semântica em etapa de protocolo deve gerar nova versão.
 * Evento antigo nunca deve ser reinterpretado pela versão ativa atual.
 
@@ -215,7 +215,7 @@ Regra: correção é novo fato vinculado.
 * Existe risco de usar ausência de pendência como prova sanitária?
 * Existe risco de checklist contextual virar pendência operacional?
 * Existe risco de editar destrutivamente evento histórico?
-* Existe risco de reabrir `protocol_item_id` legado?
+* Existe risco de reabrir o campo legado de item de protocolo?
 
 ## Evitar
 

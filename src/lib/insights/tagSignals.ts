@@ -5,6 +5,9 @@ import {
 } from "@/lib/insights/sourceContract";
 import type { HerdStageSummary } from "@/lib/insights/herdStageSummary";
 import type {
+  SanitaryExceptionSignalSummary,
+} from "@/lib/insights/sanitaryExceptionSignals";
+import type {
   SanitaryTraceabilitySignalSummary,
   SanitaryWithdrawalSignalSummary,
 } from "@/lib/insights/sanitaryWithdrawalSignals";
@@ -29,6 +32,12 @@ export type AllowedOperationalSignalCode =
   | "sanitario:produto_sem_lote"
   | "sanitario:estoque_inconsistente"
   | "sanitario:custo_ausente"
+  | "sanitario:excecao_aberta"
+  | "sanitario:rastreabilidade_incompleta"
+  | "sanitario:custo_inconsistente"
+  | "biosseguranca:ocorrencia_aberta"
+  | "biosseguranca:ocorrencia_resolvida"
+  | "biosseguranca:pendencia_corretiva_vencida"
   | "animal:ativo"
   | "animal:vendido"
   | "animal:morto"
@@ -208,6 +217,17 @@ function isSanitaryTraceabilitySignalSummary(
     && typeof value.productWithoutStockLotCount === "number"
     && typeof value.stockInconsistencyCount === "number"
     && typeof value.missingCostCount === "number";
+}
+
+function isSanitaryExceptionSignalSummary(
+  value: unknown,
+): value is SanitaryExceptionSignalSummary {
+  return isRecord(value)
+    && value.source ===
+      "eventos+eventos_sanitario+insumo_movimentacoes+agenda_itens+eventos.payload.biosseguranca_ocorrencia"
+    && typeof value.totalOpen === "number"
+    && Array.isArray(value.byType)
+    && Array.isArray(value.bySeverity);
 }
 
 export function createOperationalSignal(
@@ -584,6 +604,152 @@ export function createSignalsFromSanitaryTraceabilityInsight(
   return signals;
 }
 
+export function createSignalsFromSanitaryExceptionInsight(
+  insight: OperationalInsight<SanitaryExceptionSignalSummary>,
+): OperationalSignal[] {
+  if (isBlockedInsight(insight)) {
+    return rejectBlockedSignalInsight(insight);
+  }
+
+  assertAnswerableSourceInsight(insight);
+
+  if (insight.questionKind !== "historical_kpi") {
+    throw new Error("sanitary exception signals require historical_kpi insight");
+  }
+
+  const limitations = mergeLimitations(
+    insight.source.limitations,
+    "Sinal calculado de excecoes sanitarias reais; nao autoriza venda, abate ou peso confiavel.",
+  );
+  const signals: OperationalSignal[] = [];
+
+  if (insight.data.totalOpen > 0) {
+    signals.push(
+      createOperationalSignal({
+        code: "sanitario:excecao_aberta",
+        label: "Excecao sanitaria aberta",
+        severity: "warning",
+        primarySource: insight.source.primarySource,
+        questionKind: insight.questionKind,
+        limitations,
+        generatedAt: insight.generatedAt,
+        count: insight.data.totalOpen,
+        sourceInsightQuestion: insight.question,
+      }),
+    );
+  }
+
+  const traceabilityOpen = insight.data.byType
+    .filter((item) =>
+      item.key === "evento_sanitario_sem_produto" ||
+      item.key === "evento_sanitario_sem_lote_estoque" ||
+      item.key === "evento_sanitario_sem_dose" ||
+      item.key === "evento_sanitario_sem_via" ||
+      item.key === "carencia_incompleta",
+    )
+    .reduce((acc, item) => acc + item.count, 0);
+  if (traceabilityOpen > 0) {
+    signals.push(
+      createOperationalSignal({
+        code: "sanitario:rastreabilidade_incompleta",
+        label: "Rastreabilidade sanitaria incompleta",
+        severity: "warning",
+        primarySource: insight.source.primarySource,
+        questionKind: insight.questionKind,
+        limitations,
+        generatedAt: insight.generatedAt,
+        count: traceabilityOpen,
+        sourceInsightQuestion: insight.question,
+      }),
+    );
+  }
+
+  if (insight.data.inconsistentStockCount > 0) {
+    signals.push(
+      createOperationalSignal({
+        code: "sanitario:estoque_inconsistente",
+        label: "Estoque sanitario inconsistente",
+        severity: "critical",
+        primarySource: insight.source.primarySource,
+        questionKind: insight.questionKind,
+        limitations,
+        generatedAt: insight.generatedAt,
+        count: insight.data.inconsistentStockCount,
+        sourceInsightQuestion: insight.question,
+      }),
+    );
+  }
+
+  const costInconsistencyCount =
+    insight.data.missingCostCount +
+    (insight.data.byType.find((item) => item.key === "custo_inconsistente")?.count ?? 0);
+  if (costInconsistencyCount > 0) {
+    signals.push(
+      createOperationalSignal({
+        code: "sanitario:custo_inconsistente",
+        label: "Custo sanitario inconsistente",
+        severity: "warning",
+        primarySource: insight.source.primarySource,
+        questionKind: insight.questionKind,
+        limitations,
+        generatedAt: insight.generatedAt,
+        count: costInconsistencyCount,
+        sourceInsightQuestion: insight.question,
+      }),
+    );
+  }
+
+  if (insight.data.openOccurrenceCount > 0) {
+    signals.push(
+      createOperationalSignal({
+        code: "biosseguranca:ocorrencia_aberta",
+        label: "Ocorrencia de biosseguranca aberta",
+        severity: "critical",
+        primarySource: insight.source.primarySource,
+        questionKind: insight.questionKind,
+        limitations,
+        generatedAt: insight.generatedAt,
+        count: insight.data.openOccurrenceCount,
+        sourceInsightQuestion: insight.question,
+      }),
+    );
+  }
+
+  if (insight.data.resolvedWithStructuredDateCount > 0) {
+    signals.push(
+      createOperationalSignal({
+        code: "biosseguranca:ocorrencia_resolvida",
+        label: "Ocorrencia de biosseguranca resolvida",
+        severity: "info",
+        primarySource: insight.source.primarySource,
+        questionKind: insight.questionKind,
+        limitations,
+        generatedAt: insight.generatedAt,
+        count: insight.data.resolvedWithStructuredDateCount,
+        sourceInsightQuestion: insight.question,
+      }),
+    );
+  }
+
+  if (insight.data.overdueCorrectivePendingCount > 0) {
+    signals.push(
+      createOperationalSignal({
+        code: "biosseguranca:pendencia_corretiva_vencida",
+        label: "Pendencia corretiva vencida",
+        severity: "critical",
+        primarySource: insight.source.primarySource,
+        questionKind: insight.questionKind,
+        limitations,
+        generatedAt: insight.generatedAt,
+        count: insight.data.overdueCorrectivePendingCount,
+        sourceInsightQuestion: insight.question,
+      }),
+    );
+  }
+
+  return signals;
+}
+
 export function createOperationalSignalsFromInsights(
   insights: readonly OperationalInsight<unknown>[],
 ): OperationalSignal[] {
@@ -631,6 +797,16 @@ export function createOperationalSignalsFromInsights(
     ) {
       signals.push(
         ...createSignalsFromSanitaryTraceabilityInsight(insight),
+      );
+      continue;
+    }
+
+    if (
+      insight.questionKind === "historical_kpi" &&
+      isSanitaryExceptionSignalSummary(insight.data)
+    ) {
+      signals.push(
+        ...createSignalsFromSanitaryExceptionInsight(insight),
       );
     }
   }

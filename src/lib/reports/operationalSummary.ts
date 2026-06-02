@@ -53,6 +53,12 @@ import {
   summarizeBiosecurityOccurrences,
   type BiosecurityOccurrenceReportSummary,
 } from "@/lib/sanitario/compliance/biosecurityReadModel";
+import {
+  buildSanitaryExceptionsReadModel,
+  summarizeSanitaryExceptions,
+  type SanitaryException,
+  type SanitaryExceptionSummary,
+} from "@/lib/sanitario/reconciliation/sanitaryExceptions";
 
 export type ReportPreset = "7d" | "30d" | "90d" | "mes_atual";
 
@@ -203,6 +209,10 @@ export interface SanitaryTraceabilitySummary {
   byProtocol: SanitaryTraceabilityCostRow[];
 }
 
+export interface SanitaryExceptionsReportSummary extends SanitaryExceptionSummary {
+  items: SanitaryException[];
+}
+
 export interface CommercialTraceabilitySummary {
   totalReceita: number;
   totalCusto: number;
@@ -258,6 +268,7 @@ export interface OperationalSummaryReport {
     impacts: RegulatoryImpactAnalyticalCut[];
   };
   biosecurityOccurrences: BiosecurityOccurrenceReportSummary;
+  sanitaryExceptions: SanitaryExceptionsReportSummary;
   inventory: {
     itensAtivos: number;
     lotesAtivos: number;
@@ -1090,6 +1101,18 @@ export function buildOperationalSummary(
     from: range.from,
     to: range.to,
   });
+  const sanitaryExceptions = buildSanitaryExceptionsReadModel({
+    eventos,
+    eventosSanitario: input.eventosSanitario ?? [],
+    insumoMovimentacoes: input.insumoMovimentacoes ?? [],
+    agendaItens: agendaAberta,
+    estoqueLotes: input.insumoLotes ?? [],
+    detectedAt: now.toISOString(),
+  });
+  const sanitaryExceptionSummary = summarizeSanitaryExceptions(
+    sanitaryExceptions,
+    eventos,
+  );
   const sanitaryAttentionById = new Map(
     sanitaryAttention.topItems.map((item) => [item.id, item]),
   );
@@ -1340,6 +1363,10 @@ export function buildOperationalSummary(
       impacts: regulatoryReadModel.analytics.impacts,
     },
     biosecurityOccurrences,
+    sanitaryExceptions: {
+      ...sanitaryExceptionSummary,
+      items: sanitaryExceptions,
+    },
     inventory: {
       itensAtivos: insumos.filter((item) => item.ativo).length,
       lotesAtivos: inventoryItems.filter((item) => item.status === "ativo").length,
@@ -1480,6 +1507,30 @@ export function buildOperationalSummaryCsv(
   }
   for (const item of report.biosecurityOccurrences.byEscopo) {
     pushRow("biosseguranca_escopo", item.key, item.count);
+  }
+  pushRow("sanitario_excecoes", "abertas", report.sanitaryExceptions.totalOpen);
+  pushRow("sanitario_excecoes", "resolvidas", report.sanitaryExceptions.totalResolved);
+  pushRow("sanitario_excecoes", "ignoradas", report.sanitaryExceptions.totalIgnored);
+  pushRow(
+    "sanitario_excecoes",
+    "estoque_inconsistente",
+    report.sanitaryExceptions.inconsistentStockCount,
+  );
+  pushRow(
+    "sanitario_excecoes",
+    "custo_ausente",
+    report.sanitaryExceptions.missingCostCount,
+  );
+  pushRow(
+    "sanitario_excecoes",
+    "tempo_medio_resolucao_dias",
+    report.sanitaryExceptions.averageResolutionDays ?? 0,
+  );
+  for (const item of report.sanitaryExceptions.byType) {
+    pushRow("sanitario_excecao_tipo", item.key, item.count);
+  }
+  for (const item of report.sanitaryExceptions.bySeverity) {
+    pushRow("sanitario_excecao_gravidade", item.key, item.count);
   }
   pushRow("estoque", "insumos_ativos", report.inventory.itensAtivos);
   pushRow("estoque", "lotes_ativos", report.inventory.lotesAtivos);

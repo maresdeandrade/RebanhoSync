@@ -390,4 +390,49 @@ describe("biosecurity occurrence contract", () => {
       ],
     });
   });
+
+  it("considera resolucao append-only vinculada sem editar a ocorrencia original", () => {
+    const eventInput = buildBiosecurityOccurrenceEventInput({
+      fazendaId: "farm-1",
+      occurredAt: "2026-05-30T12:00:00.000Z",
+      occurrence: {
+        ...baseOccurrence,
+        status: "aberta",
+      },
+    });
+    const gesture = buildEventGesture(eventInput);
+    const eventRecord = gesture.ops.find((op) => op.table === "eventos")?.record;
+    const resolutionRecord = {
+      id: "resolution-1",
+      dominio: "conformidade",
+      occurred_at: "2026-06-01T12:00:00.000Z",
+      animal_id: "animal-1",
+      lote_id: null,
+      source_task_id: null,
+      corrige_evento_id: eventRecord.id,
+      payload: {
+        sanitary_correction: {
+          schema_version: 1,
+          evento_origem_id: eventRecord.id,
+          corrige_evento_id: eventRecord.id,
+          tipo_correcao: "resolucao_ocorrencia_biosseguranca",
+          motivo: "Resolvida.",
+          payload_correcao: {
+            status: "resolvida",
+            resolvida_em: "2026-06-01T12:00:00.000Z",
+          },
+          created_by: "user-1",
+          created_at: "2026-06-01T12:00:00.000Z",
+        },
+      },
+    };
+
+    const summary = summarizeBiosecurityOccurrences({
+      eventos: [eventRecord, resolutionRecord],
+      agenda: [],
+    });
+
+    expect(summary.byStatus).toEqual([{ key: "resolvida", count: 1 }]);
+    expect(summary.openCount).toBe(0);
+  });
 });

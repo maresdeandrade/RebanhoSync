@@ -1,4 +1,5 @@
 import { createOperationalSignalsFromInsights } from "@/lib/insights/tagSignals";
+import { createSanitaryExceptionSignalsInsight } from "@/lib/insights/sanitaryExceptionSignals";
 import {
   createSanitaryTraceabilitySignalsInsight,
   createSanitaryWithdrawalSignalsInsight,
@@ -129,6 +130,61 @@ describe("sanitary withdrawal insight signals", () => {
     ]);
     expect(insight.source.primarySource).toBe("eventos_sanitario");
     expect(insight.source.excludedSources).toContain("agenda_itens");
+    expect(insight.source.excludedSources).toContain("protocolos_sanitarios");
+  });
+
+  it("emite sinais de excecao sanitaria sem liberar venda ou abate", () => {
+    const insight = createSanitaryExceptionSignalsInsight({
+      question: "Quais excecoes sanitarias reais estao abertas?",
+      generatedAt: "2026-06-01T12:00:00.000Z",
+      exceptions: [
+        {
+          id: "ex-1",
+          code: "evento_sanitario_sem_lote_estoque",
+          severity: "warning",
+          status: "open",
+          source: "eventos_sanitario",
+          evento_id: "evt-1",
+          source_evento_id: "evt-1",
+          animal_id: "animal-1",
+          lote_id: "lote-1",
+          title: "Sem lote",
+          description: "Sem lote",
+          recommended_action: "Corrigir lote",
+          limitations: [],
+          detected_at: "2026-06-01T12:00:00.000Z",
+        },
+        {
+          id: "ex-2",
+          code: "pendencia_corretiva_vencida",
+          severity: "critical",
+          status: "open",
+          source: "agenda_itens",
+          evento_id: "bio-1",
+          source_evento_id: "bio-1",
+          title: "Pendencia vencida",
+          description: "Pendencia vencida",
+          recommended_action: "Resolver ocorrencia",
+          limitations: [],
+          detected_at: "2026-06-01T12:00:00.000Z",
+        },
+      ],
+    });
+
+    const signals = createOperationalSignalsFromInsights([insight]);
+
+    expect(signals.map((signal) => signal.code)).toEqual([
+      "sanitario:excecao_aberta",
+      "sanitario:rastreabilidade_incompleta",
+      "biosseguranca:pendencia_corretiva_vencida",
+    ]);
+    expect(signals.map((signal) => signal.code)).not.toContain(
+      "comercial:pronto_venda",
+    );
+    expect(signals.map((signal) => signal.code)).not.toContain(
+      "comercial:apto_abate",
+    );
+    expect(insight.source.excludedSources).toContain("agenda geral");
     expect(insight.source.excludedSources).toContain("protocolos_sanitarios");
   });
 });

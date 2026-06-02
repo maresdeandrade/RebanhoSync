@@ -1,4 +1,8 @@
 import { readBiosecurityOccurrencePayload } from "@/lib/sanitario/compliance/biosecurityOccurrence";
+import {
+  readSanitaryCorrectionPayload,
+  type SanitaryCorrectionType,
+} from "@/lib/sanitario/reconciliation/sanitaryCorrections";
 
 export type SanitaryExceptionCode =
   | "evento_sanitario_sem_produto"
@@ -33,6 +37,7 @@ export type SanitaryExceptionEvent = {
   animal_id?: string | null;
   lote_id?: string | null;
   source_task_id?: string | null;
+  corrige_evento_id?: string | null;
   payload?: Record<string, unknown> | null;
   deleted_at?: string | null;
 };
@@ -113,6 +118,24 @@ export type SanitaryException = {
   detected_at: string;
 };
 
+export type SanitaryExceptionSummary = {
+  source:
+    "eventos+eventos_sanitario+insumo_movimentacoes+agenda_itens+eventos.payload.biosseguranca_ocorrencia";
+  totalOpen: number;
+  totalResolved: number;
+  totalIgnored: number;
+  byType: Array<{ key: SanitaryExceptionCode; count: number }>;
+  bySeverity: Array<{ key: SanitaryExceptionSeverity; count: number }>;
+  byAnimal: Array<{ key: string; count: number }>;
+  byLote: Array<{ key: string; count: number }>;
+  openOccurrenceCount: number;
+  overdueCorrectivePendingCount: number;
+  inconsistentStockCount: number;
+  missingCostCount: number;
+  resolvedWithStructuredDateCount: number;
+  averageResolutionDays: number | null;
+};
+
 export type BuildSanitaryExceptionsInput = {
   eventos?: readonly SanitaryExceptionEvent[];
   eventosSanitario?: readonly SanitaryExceptionEventDetail[];
@@ -147,6 +170,7 @@ export function buildSanitaryExceptionsReadModel({
   );
   const movementsByEvent = groupMovementsByEvent(insumoMovimentacoes);
   const correctiveAgendaByEvent = groupCorrectiveAgendaBySourceEvent(agendaItens);
+  const correctionsByOriginEvent = groupCorrectionsByOriginEvent(activeEvents);
   const exceptions: SanitaryException[] = [];
   const statusResolver = createStatusResolver({
     resolvedExceptionIds,
@@ -192,6 +216,11 @@ export function buildSanitaryExceptionsReadModel({
   for (const event of activeEvents) {
     const occurrence = readBiosecurityOccurrencePayload(event.payload);
     if (!occurrence) continue;
+    const effectiveOccurrenceStatus = resolveOccurrenceStatusFromCorrections(
+      event.id,
+      occurrence.status,
+      correctionsByOriginEvent,
+    );
 
     const agenda = correctiveAgendaByEvent.get(event.id) ?? [];
     const sourceFields = {
@@ -199,7 +228,7 @@ export function buildSanitaryExceptionsReadModel({
       lote_id: occurrence.lote_id ?? event.lote_id ?? undefined,
     };
 
-    if (occurrence.status === "aberta") {
+    if (effectiveOccurrenceStatus === "aberta") {
       exceptions.push(
         createException({
           code:
@@ -221,7 +250,7 @@ export function buildSanitaryExceptionsReadModel({
       );
     }
 
-    if (occurrence.status === "aberta" && agenda.length > 0) {
+    if (effectiveOccurrenceStatus === "aberta" && agenda.length > 0) {
       exceptions.push(
         createException({
           code: "ocorrencia_com_pendencia_aberta",
@@ -258,7 +287,65 @@ export function buildSanitaryExceptionsReadModel({
     }
   }
 
-  return dedupeExceptions(exceptions);
+  return applyCorrectionStatuses(dedupeExceptions(exceptions), correctionsByOriginEvent);
+}
+
+export function summarizeSanitaryExceptions(
+  exceptions: readonly SanitaryException[],
+  correctionEvents: readonly SanitaryExceptionEvent[] = [],
+): SanitaryExceptionSummary {
+  const open = exceptions.filter((item) => item.status === "open");
+  const resolvedCorrections = correctionEvents
+    .map((event) => readSanitaryCorrectionPayload(event.payload))
+    .filter((correction) => correction && correction.payload_correcao.resolvida_em);
+  const resolutionDays = resolvedCorrections
+    .map((correction) => {
+      const resolvedAt = correction?.payload_correcao.resolvida_em;
+      if (typeof resolvedAt !== "string") return null;
+      const createdAt = correction.created_at;
+      const diff = Date.parse(resolvedAt) - Date.parse(createdAt);
+      return Number.isFinite(diff) && diff >= 0 ? diff / 86_400_000 : null;
+    })
+    .filter((value): value is number => value !== null);
+
+  return {
+    source:
+      "eventos+eventos_sanitario+insumo_movimentacoes+agenda_itens+eventos.payload.biosseguranca_ocorrencia",
+    totalOpen: open.length,
+    totalResolved: exceptions.filter((item) => item.status === "resolved").length,
+    totalIgnored: exceptions.filter((item) => item.status === "ignored").length,
+    byType: countBy(open.map((item) => item.code)),
+    bySeverity: countBy(open.map((item) => item.severity)),
+    byAnimal: countBy(open.map((item) => item.animal_id ?? "sem_animal")),
+    byLote: countBy(open.map((item) => item.lote_id ?? "sem_lote")),
+    openOccurrenceCount: open.filter(
+      (item) =>
+        item.code === "ocorrencia_biosseguranca_aberta" ||
+        item.code === "suspeita_notificavel_aberta",
+    ).length,
+    overdueCorrectivePendingCount: open.filter(
+      (item) => item.code === "pendencia_corretiva_vencida",
+    ).length,
+    inconsistentStockCount: open.filter(
+      (item) =>
+        item.code === "estoque_movimentacao_ausente" ||
+        item.code === "estoque_movimentacao_duplicada" ||
+        item.code === "estoque_lote_vencido_na_data_evento" ||
+        item.code === "custo_inconsistente",
+    ).length,
+    missingCostCount: open.filter((item) => item.code === "evento_sanitario_sem_custo")
+      .length,
+    resolvedWithStructuredDateCount: resolutionDays.length,
+    averageResolutionDays:
+      resolutionDays.length > 0
+        ? Number(
+            (
+              resolutionDays.reduce((acc, value) => acc + value, 0) /
+              resolutionDays.length
+            ).toFixed(2),
+          )
+        : null,
+  };
 }
 
 function addTraceabilityExceptions({
@@ -549,6 +636,123 @@ function createStatusResolver({
     if (resolved.has(id)) return "resolved";
     return "open";
   };
+}
+
+function groupCorrectionsByOriginEvent(
+  eventos: readonly SanitaryExceptionEvent[],
+): Map<string, SanitaryCorrectionType[]> {
+  const grouped = new Map<string, SanitaryCorrectionType[]>();
+
+  for (const event of eventos) {
+    const correction = readSanitaryCorrectionPayload(event.payload);
+    const originId = correction?.evento_origem_id ?? event.corrige_evento_id ?? null;
+    if (!correction || !originId) continue;
+
+    const next = grouped.get(originId) ?? [];
+    next.push(correction.tipo_correcao);
+    grouped.set(originId, next);
+  }
+
+  return grouped;
+}
+
+function resolveOccurrenceStatusFromCorrections(
+  eventId: string,
+  originalStatus: "aberta" | "resolvida" | "cancelada",
+  correctionsByOriginEvent: Map<string, SanitaryCorrectionType[]>,
+): "aberta" | "resolvida" | "cancelada" {
+  const corrections = correctionsByOriginEvent.get(eventId) ?? [];
+  if (corrections.includes("cancelamento_ocorrencia_biosseguranca")) {
+    return "cancelada";
+  }
+  if (corrections.includes("resolucao_ocorrencia_biosseguranca")) {
+    return "resolvida";
+  }
+  return originalStatus;
+}
+
+function applyCorrectionStatuses(
+  exceptions: SanitaryException[],
+  correctionsByOriginEvent: Map<string, SanitaryCorrectionType[]>,
+): SanitaryException[] {
+  return exceptions.map((exception) => {
+    if (exception.status !== "open") return exception;
+    const corrections = correctionsByOriginEvent.get(exception.source_evento_id ?? "") ?? [];
+    if (!isExceptionResolvedByCorrection(exception.code, corrections)) {
+      return exception;
+    }
+    return { ...exception, status: "resolved" };
+  });
+}
+
+function isExceptionResolvedByCorrection(
+  code: SanitaryExceptionCode,
+  corrections: readonly SanitaryCorrectionType[],
+): boolean {
+  if (corrections.length === 0) return false;
+
+  if (
+    code === "evento_sanitario_sem_produto" ||
+    code === "evento_sanitario_sem_dose" ||
+    code === "evento_sanitario_sem_via" ||
+    code === "carencia_incompleta"
+  ) {
+    return corrections.includes("complemento_rastreabilidade");
+  }
+
+  if (code === "evento_sanitario_sem_custo" || code === "custo_inconsistente") {
+    return corrections.includes("correcao_custo");
+  }
+
+  if (
+    code === "evento_sanitario_sem_lote_estoque" ||
+    code === "estoque_lote_vencido_na_data_evento"
+  ) {
+    return corrections.includes("correcao_lote_estoque");
+  }
+
+  if (
+    code === "estoque_movimentacao_ausente" ||
+    code === "estoque_movimentacao_duplicada"
+  ) {
+    return (
+      corrections.includes("estorno_baixa_estoque") ||
+      corrections.includes("contra_lancamento_estoque")
+    );
+  }
+
+  if (
+    code === "ocorrencia_biosseguranca_aberta" ||
+    code === "suspeita_notificavel_aberta"
+  ) {
+    return (
+      corrections.includes("resolucao_ocorrencia_biosseguranca") ||
+      corrections.includes("cancelamento_ocorrencia_biosseguranca")
+    );
+  }
+
+  if (
+    code === "ocorrencia_com_pendencia_aberta" ||
+    code === "pendencia_corretiva_vencida"
+  ) {
+    return (
+      corrections.includes("encerramento_pendencia_corretiva") ||
+      corrections.includes("resolucao_ocorrencia_biosseguranca") ||
+      corrections.includes("cancelamento_ocorrencia_biosseguranca")
+    );
+  }
+
+  return false;
+}
+
+function countBy<T extends string>(values: readonly T[]): Array<{ key: T; count: number }> {
+  const map = new Map<T, number>();
+  for (const value of values) {
+    map.set(value, (map.get(value) ?? 0) + 1);
+  }
+  return Array.from(map.entries())
+    .map(([key, count]) => ({ key, count }))
+    .sort((left, right) => right.count - left.count || left.key.localeCompare(right.key));
 }
 
 function buildExceptionId(

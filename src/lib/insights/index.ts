@@ -6,3 +6,4 @@ export * from "./historicalActivitySummary";
 export * from "./monthlyOperationalKpis";
 export * from "./herdStageSummary";
 export * from "./tagSignals";
+export * from "./sanitaryExceptionSignals";

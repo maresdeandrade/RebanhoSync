@@ -83,6 +83,42 @@ describe("buildEventGesture", () => {
     });
   });
 
+  it("preserva evento original ao criar complemento vinculado", () => {
+    const result = buildEventGesture({
+      dominio: "conformidade",
+      fazendaId: "farm-1",
+      occurredAt: "2026-06-01T12:00:00.000Z",
+      corrigeEventoId: "evt-original",
+      complianceKind: "checklist",
+      observacoes: "Complemento auditavel",
+      payload: {
+        sanitary_correction: {
+          schema_version: 1,
+          evento_origem_id: "evt-original",
+          corrige_evento_id: "evt-original",
+          tipo_correcao: "complemento_rastreabilidade",
+          motivo: "Complemento auditavel",
+          payload_correcao: {},
+          created_by: "user-1",
+          created_at: "2026-06-01T12:00:00.000Z",
+        },
+      },
+    });
+
+    expect(result.ops).toHaveLength(1);
+    expect(result.ops).toEqual([
+      expect.objectContaining({
+        table: "eventos",
+        action: "INSERT",
+        record: expect.objectContaining({
+          corrige_evento_id: "evt-original",
+        }),
+      }),
+    ]);
+    expect(result.ops.some((op) => op.action === "UPDATE" && op.table === "eventos"))
+      .toBe(false);
+  });
+
   it("links sanitario event to existing clinical case", () => {
     const result = buildEventGesture({
       dominio: "sanitario",

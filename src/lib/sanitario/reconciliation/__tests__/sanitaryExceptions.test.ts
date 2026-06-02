@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   buildSanitaryExceptionsReadModel,
+  summarizeSanitaryExceptions,
   type SanitaryExceptionAgendaItem,
   type SanitaryExceptionEvent,
   type SanitaryExceptionEventDetail,
@@ -369,5 +370,134 @@ describe("buildSanitaryExceptionsReadModel", () => {
       id: firstRun[0].id,
       status: "ignored",
     });
+  });
+
+  it("evento de correcao vinculado resolve excecao sem editar evento original", () => {
+    const correction = event({
+      id: "correction-1",
+      dominio: "conformidade",
+      corrige_evento_id: "evt-1",
+      payload: {
+        sanitary_correction: {
+          schema_version: 1,
+          evento_origem_id: "evt-1",
+          corrige_evento_id: "evt-1",
+          tipo_correcao: "correcao_custo",
+          motivo: "Nota fiscal conferida.",
+          payload_correcao: {
+            custo_total_snapshot: 20,
+          },
+          created_by: "user-1",
+          created_at: detectedAt,
+        },
+      },
+    });
+
+    const exceptions = buildSanitaryExceptionsReadModel({
+      eventos: [event(), correction],
+      eventosSanitario: [
+        detail({
+          custo_unitario_snapshot: null,
+          custo_total_snapshot: null,
+        }),
+      ],
+      insumoMovimentacoes: [movement()],
+      detectedAt,
+    });
+
+    expect(exceptions).toEqual([
+      expect.objectContaining({
+        code: "evento_sanitario_sem_custo",
+        status: "resolved",
+      }),
+    ]);
+  });
+
+  it("resolucao vinculada fecha ocorrencia aberta e pendencia corretiva vencida", () => {
+    const bioEvent = event({
+      id: "bio-1",
+      dominio: "conformidade",
+      payload: {
+        biosseguranca_ocorrencia: {
+          schema_version: 1,
+          categoria_ocorrencia: "biosseguranca",
+          tipo_ocorrencia: "falha_epi",
+          tipos_ocorrencia: ["falha_epi"],
+          escopo_tipo: "animal",
+          escopos_tipo: ["animal"],
+          animal_id: "animal-1",
+          gravidade: "alta",
+          acao_imediata: "Isolamento.",
+          gera_pendencia: true,
+          prazo_correcao: "2026-05-31",
+          status: "aberta",
+        },
+      },
+    });
+    const resolution = event({
+      id: "bio-resolution-1",
+      dominio: "conformidade",
+      corrige_evento_id: "bio-1",
+      payload: {
+        sanitary_correction: {
+          schema_version: 1,
+          evento_origem_id: "bio-1",
+          corrige_evento_id: "bio-1",
+          tipo_correcao: "resolucao_ocorrencia_biosseguranca",
+          motivo: "Resolvida.",
+          payload_correcao: {
+            status: "resolvida",
+            resolvida_em: "2026-06-01T12:00:00.000Z",
+          },
+          created_by: "user-1",
+          created_at: "2026-06-01T12:00:00.000Z",
+        },
+      },
+    });
+
+    const exceptions = buildSanitaryExceptionsReadModel({
+      eventos: [bioEvent, resolution],
+      agendaItens: [
+        correctiveAgenda({
+          data_prevista: "2026-05-31",
+        }),
+      ],
+      detectedAt,
+    });
+
+    expect(exceptions).toEqual([
+      expect.objectContaining({
+        code: "pendencia_corretiva_vencida",
+        status: "resolved",
+      }),
+    ]);
+  });
+
+  it("relatorios agrupam excecoes por tipo, gravidade, animal e lote", () => {
+    const exceptions = buildSanitaryExceptionsReadModel({
+      eventos: [event()],
+      eventosSanitario: [
+        detail({
+          produto_veterinario_id: null,
+          estoque_lote_id: null,
+          custo_total_snapshot: null,
+          custo_unitario_snapshot: null,
+        }),
+      ],
+      detectedAt,
+    });
+
+    const summary = summarizeSanitaryExceptions(exceptions);
+
+    expect(summary.totalOpen).toBe(3);
+    expect(summary.byType.map((item) => item.key)).toEqual([
+      "evento_sanitario_sem_custo",
+      "evento_sanitario_sem_lote_estoque",
+      "evento_sanitario_sem_produto",
+    ]);
+    expect(summary.bySeverity).toContainEqual({ key: "warning", count: 2 });
+    expect(summary.bySeverity).toContainEqual({ key: "critical", count: 1 });
+    expect(summary.byAnimal).toEqual([{ key: "animal-1", count: 3 }]);
+    expect(summary.byLote).toEqual([{ key: "lote-rebanho-1", count: 3 }]);
   });
 });

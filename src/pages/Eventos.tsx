@@ -56,6 +56,11 @@ import { formatWeight } from "@/lib/format/weight";
 import { describeSanitaryAlertEvent } from "@/lib/sanitario/compliance/alerts";
 import { evaluateSanitaryInventoryConsumptionReadiness } from "@/lib/sanitario/compliance/inventoryConsumption";
 import {
+  buildSanitaryExceptionsReadModel,
+  summarizeSanitaryExceptions,
+} from "@/lib/sanitario/reconciliation/sanitaryExceptions";
+import { buildSanitaryOccurrenceResolutionGesture } from "@/lib/sanitario/reconciliation/sanitaryCorrections";
+import {
   buildRegulatoryOperationalReadModel,
   EMPTY_REGULATORY_OPERATIONAL_READ_MODEL,
   getRegulatoryAnalyticsImpactLabel,
@@ -282,14 +287,24 @@ const Eventos = () => {
         animais: [],
         lotes: [],
         gestos: [],
+        agenda: [],
+        insumoMovimentacoes: [],
+        insumoLotes: [],
       };
     }
 
-    const [animais, lotes, gestos] = await Promise.all([
-      db.state_animais.where("fazenda_id").equals(activeFarmId).toArray(),
-      db.state_lotes.where("fazenda_id").equals(activeFarmId).toArray(),
-      db.queue_gestures.where("fazenda_id").equals(activeFarmId).toArray(),
-    ]);
+    const [animais, lotes, gestos, agenda, insumoMovimentacoes, insumoLotes] =
+      await Promise.all([
+        db.state_animais.where("fazenda_id").equals(activeFarmId).toArray(),
+        db.state_lotes.where("fazenda_id").equals(activeFarmId).toArray(),
+        db.queue_gestures.where("fazenda_id").equals(activeFarmId).toArray(),
+        db.state_agenda_itens.where("fazenda_id").equals(activeFarmId).toArray(),
+        db.state_insumo_movimentacoes
+          .where("fazenda_id")
+          .equals(activeFarmId)
+          .toArray(),
+        db.state_insumo_lotes.where("fazenda_id").equals(activeFarmId).toArray(),
+      ]);
 
     const animalById = new Map(animais.map((a) => [a.id, a]));
     const loteById = new Map(lotes.map((l) => [l.id, l]));
@@ -429,6 +444,9 @@ const Eventos = () => {
       animais: animais.filter((a) => !a.deleted_at),
       lotes: lotes.filter((l) => !l.deleted_at),
       gestos,
+      agenda: agenda.filter((item) => !item.deleted_at),
+      insumoMovimentacoes: insumoMovimentacoes.filter((item) => !item.deleted_at),
+      insumoLotes: insumoLotes.filter((item) => !item.deleted_at),
     };
   }, [
     activeFarmId,
@@ -608,6 +626,63 @@ const Eventos = () => {
       }
     } finally {
       setIsSavingComplement(false);
+    }
+  };
+
+  const sanitaryExceptions = useMemo(() => {
+    if (!data) return [];
+    return buildSanitaryExceptionsReadModel({
+      eventos: data.eventos,
+      eventosSanitario: data.sanitarios,
+      insumoMovimentacoes: data.insumoMovimentacoes,
+      agendaItens: data.agenda,
+      estoqueLotes: data.insumoLotes,
+      detectedAt: new Date().toISOString(),
+    });
+  }, [data]);
+  const sanitaryExceptionSummary = useMemo(
+    () => summarizeSanitaryExceptions(sanitaryExceptions, data?.eventos ?? []),
+    [sanitaryExceptions, data?.eventos],
+  );
+
+  const handleResolveOccurrence = async (
+    eventoId: string,
+    action: "resolver" | "cancelar",
+  ) => {
+    if (!activeFarmId || !data) {
+      showError("Fazenda ativa obrigatoria.");
+      return;
+    }
+    const sourceEvent = data.eventos.find((evento) => evento.id === eventoId);
+    if (!sourceEvent) {
+      showError("Evento de origem nao encontrado.");
+      return;
+    }
+    const agendaItemIds = data.agenda
+      .filter((item) => item.status === "agendado" && item.source_evento_id === eventoId)
+      .map((item) => item.id);
+    const motivo =
+      action === "resolver"
+        ? "Ocorrencia sanitaria resolvida no painel de excecoes."
+        : "Ocorrencia sanitaria cancelada no painel de excecoes.";
+
+    try {
+      const built = buildSanitaryOccurrenceResolutionGesture({
+        fazendaId: activeFarmId,
+        eventoOrigemId: eventoId,
+        dominioOrigem: sourceEvent.dominio,
+        occurredAt: new Date().toISOString(),
+        action,
+        motivo,
+        animalId: sourceEvent.animal_id,
+        loteId: sourceEvent.lote_id,
+        agendaItemIds,
+        acaoRealizada: motivo,
+      });
+      await createGesture(activeFarmId, built.ops);
+      showSuccess("Resolucao registrada neste aparelho. Sincronizacao pendente.");
+    } catch {
+      showError("Falha ao registrar resolucao da ocorrencia.");
     }
   };
 
@@ -1053,6 +1128,110 @@ const Eventos = () => {
           </Button>
         </ToolbarGroup>
       </Toolbar>
+
+      <Card className="shadow-none">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Excecoes sanitarias</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex flex-wrap gap-2">
+            <StatusBadge
+              tone={sanitaryExceptionSummary.totalOpen > 0 ? "warning" : "success"}
+            >
+              {sanitaryExceptionSummary.totalOpen} abertas
+            </StatusBadge>
+            <StatusBadge tone="neutral">
+              {sanitaryExceptionSummary.inconsistentStockCount} estoque
+            </StatusBadge>
+            <StatusBadge tone="neutral">
+              {sanitaryExceptionSummary.missingCostCount} custo ausente
+            </StatusBadge>
+            <StatusBadge tone="neutral">
+              {sanitaryExceptionSummary.overdueCorrectivePendingCount} vencidas
+            </StatusBadge>
+          </div>
+
+          {sanitaryExceptions
+            .filter((item) => item.status === "open")
+            .slice(0, 5)
+            .map((exception) => (
+              <div
+                key={exception.id}
+                className="flex flex-col gap-3 rounded-lg border border-border/70 p-3 md:flex-row md:items-start md:justify-between"
+              >
+                <div className="min-w-0 space-y-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <StatusBadge
+                      tone={
+                        exception.severity === "critical"
+                          ? "danger"
+                          : exception.severity === "warning"
+                            ? "warning"
+                            : "neutral"
+                      }
+                    >
+                      {exception.code}
+                    </StatusBadge>
+                    <span className="text-xs text-muted-foreground">
+                      Fonte: {exception.source}
+                    </span>
+                  </div>
+                  <p className="text-sm font-medium">{exception.title}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {exception.recommended_action}
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {exception.evento_id ? (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setComplementTargetId(exception.evento_id ?? null);
+                        setComplementText("");
+                      }}
+                    >
+                      Complementar
+                    </Button>
+                  ) : null}
+                  {(exception.code === "ocorrencia_biosseguranca_aberta" ||
+                    exception.code === "suspeita_notificavel_aberta" ||
+                    exception.code === "ocorrencia_com_pendencia_aberta") &&
+                  exception.source_evento_id ? (
+                    <>
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={() =>
+                          handleResolveOccurrence(
+                            exception.source_evento_id!,
+                            "resolver",
+                          )
+                        }
+                      >
+                        Resolver
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() =>
+                          handleResolveOccurrence(
+                            exception.source_evento_id!,
+                            "cancelar",
+                          )
+                        }
+                      >
+                        Cancelar
+                      </Button>
+                    </>
+                  ) : null}
+                </div>
+              </div>
+            ))}
+        </CardContent>
+      </Card>
 
       {timeline.length === 0 ? (
         <Card className="shadow-none">
