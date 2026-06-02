@@ -1,15 +1,14 @@
 # Open Review Items — RebanhoSync
 
-Atualizado em: 2026-06-02
+Atualizado em: 2026-06-02  
 **Baseline Commit:** `32d7779`
 
 ## Objetivo
 
-Registrar pendências abertas identificadas durante a reorganização documental, auditoria de contexto/agentes e revisão do estado atual do RebanhoSync.
+Registrar apenas pendências abertas, acionáveis e ainda não resolvidas do RebanhoSync.
 
-Este documento deve conter apenas itens ainda acionáveis.
-
-Quando uma pendência for resolvida, mover para histórico ou registrar no relatório correspondente.
+Este arquivo não é histórico longo.  
+Itens resolvidos devem sair deste documento e permanecer registrados apenas no relatório correspondente em `docs/review/`.
 
 ---
 
@@ -18,8 +17,8 @@ Quando uma pendência for resolvida, mover para histórico ou registrar no relat
 | Prioridade | Critério |
 |---|---|
 | `P0` | Risco de erro operacional, segurança, RLS, perda de dados ou decisão crítica falsa. |
-| `P1` | Risco de drift documental, duplicidade de fonte ou alto consumo de contexto. |
-| `P2` | Melhoria de clareza, organização, suporte ou manutenção. |
+| `P1` | Risco de drift documental, duplicidade de fonte, regressão funcional ou alto consumo de contexto. |
+| `P2` | Melhoria de manutenção, DX, testes, build, clareza ou suporte. |
 | `P3` | Ajuste cosmético/documental não bloqueante. |
 
 ---
@@ -38,356 +37,326 @@ Quando uma pendência for resolvida, mover para histórico ou registrar no relat
 
 # Pendências abertas
 
-## P0 — Garantir baseline em todos os documentos ativos
+## P1 — Reconciliar continuidade final da Fase 7 antes de PR/merge
 
 **Status:** `ABERTO`  
-**Área:** documentação  
-**Risco:** perda de rastreabilidade pós-baseline.
+**Área:** documentação / preparação de PR  
+**Risco:** PR com documentação divergente entre resultado, handoff e pendências abertas.
 
 ### Descrição
 
-Todos os documentos ativos novos ou reconciliados devem conter:
+O diagnóstico pré-patch da Fase 7 identificou que a continuidade está funcional, mas ainda precisa de reconciliação final antes de PR/merge.
 
-```md
-Atualizado em: 2026-05-31  
-**Baseline Commit:** `3664395`
-```
+Pontos confirmados:
 
-### Áreas afetadas
+- `LAST_PHASE_RESULT.md` existe.
+- `CURRENT_PHASE_HANDOFF.md` existe.
+- `OPEN_REVIEW_ITEMS.md` existe.
+- `PROJECT_STATUS.md` existe.
+- `.agents/prompts/codex/SELF_UPDATE_CONTINUITY.md` existe.
+- Suite global passou: `259` arquivos / `1743` testes.
+- Worktree está suja.
+- Nada staged.
+- Nenhum arquivo untracked no status atual.
+- Branch atual: `main`.
 
-- `docs/context/`
-- `docs/technical/`
-- `docs/domain/`
-- `docs/product/`
-- `docs/ux/`
-- `docs/finance/`
-- `docs/manuals/`
-- `docs/review/`
-- `.agents/rules/`
-- `.agents/skills/`
-- `.agents/prompts/`
-- `AGENTS.md`
+### Ações esperadas
+
+- Corrigir `git diff --check`.
+- Garantir que `LAST_PHASE_RESULT.md` não aponte para pendências inexistentes.
+- Garantir que `OPEN_REVIEW_ITEMS.md` liste apenas pendências reais.
+- Atualizar `CURRENT_PHASE_HANDOFF.md` como próxima etapa de PR/merge, não como nova feature.
+- Reexecutar `lint` e `build` antes de PR/merge.
 
 ### Critério de aceite
 
-- `rg "Baseline Commit" docs .agents AGENTS.md` retorna todos os arquivos ativos esperados.
-- Nenhum documento ativo novo fica sem baseline.
-- Arquivos em `docs/archive/**` podem manter cabeçalho histórico próprio.
+- `git diff --check` passa.
+- `pnpm test -- --run` passa.
+- `pnpm run lint` passa.
+- `pnpm run build` passa.
+- `LAST_PHASE_RESULT.md`, `CURRENT_PHASE_HANDOFF.md`, `OPEN_REVIEW_ITEMS.md` e `PROJECT_STATUS.md` estão coerentes entre si.
+- Nenhuma nova feature foi criada.
 
 ---
 
-## P0 — Verificar contradições sobre carência sanitária
+## P1 — Evitar PR/commit direto em `main`
 
 **Status:** `ABERTO`  
-**Área:** sanitário / domínio / UX / produto  
-**Risco:** app ou agente interpretar carência como venda/abate/liberação final.
+**Área:** governança / Git  
+**Risco:** alteração direta em `main` sem isolamento de revisão.
 
 ### Descrição
 
-Garantir consistência em toda documentação:
+O diagnóstico da Fase 7 identificou que o trabalho está sendo feito diretamente na branch:
 
 ```txt
-Carência sanitária pode ser sinal limitado.
-Carência sanitária exige evento sanitário estruturado.
-Carência sanitária não libera venda.
-Carência sanitária não libera abate.
-Carência sanitária não é liberação sanitária final.
+main
 ```
 
-### Comandos sugeridos
+Para preparação de PR, o ideal é criar uma branch específica antes do commit.
+
+### Ação recomendada
+
+Criar branch de fechamento do gate:
 
 ```bash
-rg "livre de carência|livre_carencia|carencia_ativa|sem_carencia_vigente|apto para abate|pronto para venda|liberação sanitária" docs .agents
+git switch -c codex/fecha-fase-6-suite-global
 ```
+
+Ou, se já houver política local de branch:
 
 ```bash
-rg "Carência ativa.*Bloqueado|Livre de carência.*Bloqueado|sanitario:livre_carencia.*bloqueado|sanitario:carencia_ativa.*bloqueado" docs .agents
+git switch -c codex/fase-7-preparacao-pr
 ```
 
 ### Critério de aceite
 
-- `sanitario:carencia_ativa` e `sanitario:sem_carencia_vigente` aparecem como sinais permitidos com restrição.
-- `sanitario:liberacao_final`, `comercial:pronto_venda` e `comercial:apto_abate` seguem bloqueados.
-- Copy evita “livre de carência” como mensagem principal.
-- Manuais e UX explicam que carência não autoriza venda/abate.
+- Patch final está em branch dedicada.
+- `git status --short --untracked-files=all` revisado.
+- PR/merge preparado fora da `main`.
 
 ---
 
-## P1 — Consolidar `docs/archive/`
+## P2 — Ruído residual em `stderr/stdout` de testes
 
 **Status:** `ABERTO`  
-**Área:** documentação  
-**Risco:** agentes usarem auditorias antigas como fonte ativa.
+**Área:** testes / DX  
+**Risco:** ruído conhecido mascarar erro novo em execuções futuras.
 
 ### Descrição
 
-Criar/organizar `docs/archive/` para mover:
+Após o Gate de Higiene de Testes pós-Fase 6, os ruídos críticos foram reduzidos, mas ainda existem logs residuais fora do escopo do gate.
 
-- auditorias antigas;
-- handoffs fechados;
-- relatórios substituídos;
-- prompts antigos;
-- documentação superada;
-- outputs de fases encerradas.
+Ruídos conhecidos:
+
+- React Router Future Flag warnings em outros wrappers.
+- Avisos de Dialog/act.
+- Logs esperados de rollback/rejeição em testes de sync.
+- Logs informativos do sync worker em testes offline.
+
+### Regra de tratamento
+
+Não suprimir `console.error`, `console.warn`, `console.log` ou `console.debug` globalmente sem assertiva local.
+
+Logs esperados devem ser:
+
+- controlados localmente no teste;
+- assertados quando forem parte do comportamento;
+- preservados quando validarem rollback/rejeição;
+- removidos apenas se forem ruído sem valor de teste.
 
 ### Critério de aceite
 
-- `docs/archive/README.md` explica que archive não é fonte operacional.
-- `AGENTS.md` e `.agents/rules/CONTEXT_LOADING.md` instruem não abrir archive por padrão.
-- Docs ativos não dependem de archive como fonte principal.
+- Testes corrigidos continuam verdes.
+- Nenhum erro real é escondido globalmente.
+- Logs esperados de rollback/rejeição continuam testados.
+- `pnpm test -- --run` permanece verde.
 
 ---
 
-## P1 — Validar links internos da documentação reorganizada
+## P2 — Formalizar contrato mínimo do fallback legado sanitário
 
 **Status:** `ABERTO`  
-**Área:** documentação  
-**Risco:** docs apontarem para arquivos inexistentes ou renomeados.
+**Área:** sanitário / scheduler / contrato legado  
+**Risco:** fallback legado depender de shape implícito e voltar a gerar erro ruidoso ou comportamento parcial.
 
 ### Descrição
 
-Depois de criar as pastas novas, revisar links para:
+O Gate de Higiene de Testes corrigiu a fixture de `nextOccurrenceService.test.ts`, mas o fallback legado sanitário ainda depende de um shape mínimo esperado pelo scheduler.
 
-- `docs/context/`
-- `docs/technical/`
-- `docs/domain/`
-- `docs/product/`
-- `docs/ux/`
-- `docs/finance/`
-- `docs/manuals/`
-- `docs/review/`
+O patch atual estabilizou o teste sem alterar comportamento funcional.
+
+### Ação recomendada
+
+Formalizar o shape mínimo aceito pelo fallback legado do scheduler sanitário.
+
+Pontos a validar:
+
+- campos mínimos obrigatórios;
+- comportamento quando campo obrigatório está ausente;
+- retorno parcial/bloqueado em vez de erro não controlado;
+- compatibilidade com legado;
+- ausência de inferência sanitária crítica.
 
 ### Critério de aceite
 
-- Links internos relevantes existem.
-- Nomes seguem `UPPER_SNAKE_CASE.md` para arquivos normativos.
-- Pastas seguem lowercase.
+- Shape mínimo documentado ou tipado.
+- Teste cobrindo campo ausente.
+- Teste cobrindo fallback válido.
+- Nenhuma alteração indevida em materialização sanitária.
+- Nenhuma transformação de protocolo em execução.
 
 ---
 
-## P1 — Revisar `.agents/skills/` para evitar sobreposição
+## P2 — Warnings conhecidos de build
 
 **Status:** `ABERTO`  
-**Área:** agentes / skills  
-**Risco:** skill errada carregar contexto excessivo ou regra antiga.
+**Área:** build / performance  
+**Risco:** baixo no produto atual; médio para manutenção se ignorado por muito tempo.
 
 ### Descrição
 
-Validar que cada skill:
+O build permanece verde, mas mantém warnings conhecidos:
 
-- tem escopo claro;
-- não repete todo o contexto global;
-- aponta para `AGENTS.md` e `.agents/rules/`;
-- não carrega docs amplos por padrão;
-- não contradiz carência sanitária ponderada;
-- não usa archive como fonte ativa.
+- Browserslist/caniuse-lite desatualizado.
+- Chunks grandes no Vite.
+
+Esses avisos não bloqueiam a Fase 6 nem o Gate de Higiene de Testes.
+
+### Ação recomendada
+
+Tratar em tarefa própria de build/performance, sem misturar com sanitário, sync, RLS ou domínio comercial.
 
 ### Critério de aceite
 
-- `docs-reconciliation` legado arquivado ou removido se duplicar `reconcile-docs`.
-- Cada skill tem entrada no índice `.agents/skills/README.md`.
-- Skills sanitárias refletem carência como sinal, não autorização.
+- Warnings revisados em tarefa específica.
+- Nenhuma alteração funcional indevida.
+- Build permanece verde.
+- Se houver split de chunks, validar navegação e carregamento das telas principais.
 
 ---
 
-## P1 — Revisar `.agents/prompts/` para reduzir verbosidade
+## P2 — Revisar Future Flags do React Router em wrappers de teste
 
 **Status:** `ABERTO`  
-**Área:** prompts / agentes  
-**Risco:** prompts longos repetirem regras já centralizadas.
+**Área:** testes / roteamento  
+**Risco:** baixo agora; médio em futura migração para React Router v7.
 
 ### Descrição
 
-Prompts devem:
+Parte dos testes ainda emite avisos de Future Flags do React Router.
 
-- ser curtos;
-- referenciar `AGENTS.md`;
-- referenciar `.agents/rules/CONTEXT_LOADING.md`;
-- declarar arquivos-alvo;
-- declarar validações;
-- evitar repetir contexto amplo do RebanhoSync;
-- evitar instruções duplicadas entre prompts.
+Um teste específico de Pasto já recebeu ajuste local com future flags e rota stub. Outros wrappers podem precisar de padronização futura.
 
-### Critério de aceite
+### Ação recomendada
 
-- Prompts reutilizam blocos mínimos.
-- Não há prompt com contexto fixo excessivo.
-- Cada prompt tem escopo, restrições, validações e critérios de aceite.
+Mapear wrappers de teste que usam `MemoryRouter`, `RouterProvider` ou rotas customizadas e avaliar adoção controlada das flags:
 
----
-
-## P1 — Confirmar convenção de nomes em `docs/manuals/`
-
-**Status:** `ABERTO`  
-**Área:** manuais  
-**Risco:** inconsistência entre arquivos e links.
-
-### Decisão atual
-
-Pastas em lowercase.
-
-Arquivos em `UPPER_SNAKE_CASE.md`.
-
-Estrutura esperada:
-
-```txt
-docs/manuals/
-  README.md
-  USER_MANUAL_INDEX.md
-
-  screens/
-    AGENDA.md
-    ANIMAIS.md
-    LOTES_PASTOS.md
-    COMPRA_VENDA.md
-    REGISTRAR.md
-    SANITARIO.md
-
-  support/
-    FAQ_LOGIN.md
-    FAQ_SYNC.md
-    FAQ_AGENDA.md
-    FAQ_SANITARIO.md
-    TROUBLESHOOTING.md
+```tsx
+future={{
+  v7_startTransition: true,
+  v7_relativeSplatPath: true,
+}}
 ```
 
 ### Critério de aceite
 
-- Arquivos criados conforme estrutura.
-- Links no índice funcionam.
-- Manuais não viram fonte de regra técnica.
+- Warnings reduzidos sem alterar expectativa funcional dos testes.
+- Nenhuma navegação crítica quebrada.
+- Testes de Agenda, Registrar, Pasto, Lote e Relatórios continuam verdes.
 
 ---
 
-## P1 — Atualizar matriz de carregamento de contexto
+## P2 — Revisar avisos de Dialog/act em testes
 
 **Status:** `ABERTO`  
-**Área:** agentes / documentação  
-**Risco:** agentes ainda abrirem documentos grandes sem necessidade.
+**Área:** testes / UI  
+**Risco:** baixo funcional; médio para confiabilidade de teste.
 
 ### Descrição
 
-Atualizar referências para incluir:
+Persistem avisos relacionados a Dialog/act em alguns testes de UI.
 
-- `docs/finance/`
-- `docs/manuals/`
-- `docs/review/`
-- `docs/archive/`
+Esses avisos não quebraram a suite global, mas indicam que algum efeito assíncrono ou interação pode não estar completamente aguardado.
 
-### Critério de aceite
+### Ação recomendada
 
-- Tarefa simples usa só doc específico.
-- KPI usa `KPI_INDEX.md` antes de `KPI_MATRIX_FULL.md`.
-- Manual completo não é leitura padrão.
-- Review ativo não é usado como fonte final se já virou contrato estável.
+Tratar em gate futuro de higiene residual:
 
----
-
-## P2 — Criar checklist de revisão para PR documental
-
-**Status:** `ABERTO`  
-**Área:** revisão / PR  
-**Risco:** PR de documentação passar sem validar drift e baseline.
-
-### Descrição
-
-Criar template de PR ou checklist específico para documentação:
-
-- baseline presente;
-- links internos;
-- pasta correta;
-- sem duplicidade;
-- sem contradição com contratos;
-- archive separado.
+- identificar testes que emitem warning;
+- usar `await user.click(...)`, `waitFor(...)` ou `findBy...` quando apropriado;
+- evitar `act` manual sem necessidade;
+- não suprimir warning globalmente.
 
 ### Critério de aceite
 
-- Checklist incorporado em `REVIEW_CHECKLIST.md` ou template de PR.
-- Usado nas próximas revisões documentais.
+- Warnings reduzidos nos testes afetados.
+- Sem alteração funcional.
+- Suite global permanece verde.
 
 ---
 
-## P2 — Separar revisão ativa de contrato estável
+# Itens fechados nesta etapa
 
-**Status:** `ABERTO`  
-**Área:** docs/review  
-**Risco:** `docs/review/` virar fonte de verdade permanente.
+## FECHADO — Gate Suite Global Pós-Fase 6
 
-### Regra
+**Resultado:** fechado no relatório correspondente.  
+**Relatório:** `docs/review/RESULTADO_GATE_SUITE_GLOBAL_POS_FASE_6.md`
 
-```txt
-Review ativo → docs/review/
-Contrato estável → docs/context|technical|domain|product|ux|finance/
-Histórico fechado → docs/archive/
-```
+Consolidado:
 
-### Critério de aceite
-
-- `ACTIVE_REVIEW_INDEX.md` mostra data/status de cada revisão.
-- Revisões fechadas saem da pasta ou são arquivadas.
-- Docs de review não substituem `SOURCE_OF_TRUTH.md`.
+- suite global verde;
+- `259` arquivos de teste passaram;
+- `1743` testes passaram;
+- lint verde;
+- build verde;
+- `LoteEditarData.test.ts` estabilizado;
+- `vitest.config.ts` com `maxWorkers: 2`.
 
 ---
 
-## P2 — Validar comando de estado do repo após criação dos docs
+## FECHADO — Gate de Higiene de Testes pós-Fase 6
 
-**Status:** `ABERTO`  
-**Área:** validação  
-**Risco:** arquivos untracked ficarem fora de revisão.
+**Resultado:** fechado no `LAST_PHASE_RESULT.md`.
 
-### Comandos
+Consolidado:
+
+- mock de Supabase corrigido em teste de sync;
+- `fake-indexeddb/auto` adicionado ao teste do Registrar;
+- fixture segura criada para fallback legado sanitário;
+- rota stub `/registrar` adicionada ao teste de Pasto;
+- HTTP 503 esperado passou a ser controlado localmente;
+- sem alteração em regra de domínio, Supabase, migrations, RLS ou RPC.
+
+---
+
+# Checklist antes de PR/merge
+
+Executar:
 
 ```bash
 git status --short --untracked-files=all
 git diff --name-only
 git diff --stat
+git diff --check
+pnpm test -- --run
+pnpm run lint
+pnpm run build
 ```
 
-### Critério de aceite
+Se houver alteração posterior em Supabase, sync-batch, RLS, RPC, schema ou migration, executar também:
 
-- Arquivos novos aparecem no status.
-- PR inclui todos os arquivos criados.
-- Não depender apenas de `git diff` para arquivos untracked.
-
----
-
-# Itens fechados
-
-## Fase 6 — Sanitária em staging, sync/replay e RLS
-
-**Status:** `FECHADO`
-**Área:** sanitário / sync / RLS / sociedade
-**Relatório:** `docs/review/RESULTADO_FASE_6_SANITARIA_STAGING_SYNC_RLS.md`
-
-### Fechado nesta versão
-
-- Contrato de payload corretivo sanitario formalizado.
-- Replay corretivo idempotente validado.
-- Sociedade validada como patrimonial, sem sanitario/conformidade/financeiro automatico.
-- Baseline funcional Supabase ampliado e validado para sanitario, estoque e sociedade.
-
-## Gate Suite Global Pos-Fase 6
-
-**Status:** `FECHADO`
-**Área:** testes / UI
-**Relatório:** `docs/review/RESULTADO_GATE_SUITE_GLOBAL_POS_FASE_6.md`
-
-### Fechado nesta versão
-
-- `LoteEditarData.test.ts` isolado por banco Dexie unico e cleanup explicito.
-- Vitest configurado com `maxWorkers: 2` para estabilidade local.
-- `pnpm test -- --run` passou.
+```bash
+node scripts/codex/validate-supabase-baseline-functional.mjs
+```
 
 ---
 
-## Manutenção
+# Restrições permanentes
 
-Atualizar este arquivo quando:
+Não avançar para:
 
-- nova pendência for identificada;
-- pendência for resolvida;
-- risco mudar de prioridade;
-- revisão ativa for encerrada;
-- contrato sair de review para doc estável.
+- venda;
+- abate;
+- DRE;
+- ROI;
+- custo por arroba;
+- motor comercial avançado;
+- aptidão automática para venda;
+- aptidão automática para abate;
+- carência liberatória;
+- financeiro automático.
 
-Remover itens fechados em ciclos de limpeza e mover resumo para `docs/archive/` quando fizer sentido.
+Preservar:
+
+```txt
+Agenda = intenção/tarefa futura.
+Evento = fato histórico append-only.
+state_* = read model / estado atual.
+Protocolo = regra/configuração, não execução.
+Snapshot = evidência histórica congelada.
+Financeiro = ledger explícito separado.
+Sociedade = vínculo patrimonial.
+Classificação = leitura operacional, não autorização crítica.
+Tags/sinais/insights = auxiliares, nunca fonte primária.
+```

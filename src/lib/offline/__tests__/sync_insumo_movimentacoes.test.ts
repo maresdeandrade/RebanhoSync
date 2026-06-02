@@ -1,6 +1,6 @@
 /** @vitest-environment jsdom */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { vi, describe, expect, it, beforeAll, afterAll } from "vitest";
+import { vi, describe, expect, it, beforeAll, afterAll, beforeEach, afterEach } from "vitest";
 import "fake-indexeddb/auto";
 import { db } from "../db";
 import { processGesture } from "../syncWorker";
@@ -9,6 +9,11 @@ import { randomUUID } from "node:crypto";
 
 vi.mock("@/lib/supabase", () => ({
   supabase: {
+    from: vi.fn(() => ({
+      select: vi.fn(() => ({
+        eq: vi.fn().mockResolvedValue({ data: [], error: null }),
+      })),
+    })),
     auth: {
       getSession: vi.fn().mockResolvedValue({
         data: {
@@ -61,8 +66,21 @@ async function createInsumoMovimentacaoGesture(record: Record<string, unknown>) 
 }
 
 describe("syncWorker insumo_movimentacoes integration", () => {
+  let consoleDebugSpy: ReturnType<typeof vi.spyOn>;
+  let consoleLogSpy: ReturnType<typeof vi.spyOn>;
+
   beforeAll(async () => {
     await db.open();
+  });
+
+  beforeEach(() => {
+    consoleDebugSpy = vi.spyOn(console, "debug").mockImplementation(() => {});
+    consoleLogSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    consoleDebugSpy.mockRestore();
+    consoleLogSpy.mockRestore();
   });
 
   afterAll(async () => {
@@ -164,9 +182,23 @@ describe("syncWorker insumo_movimentacoes integration", () => {
           results: [{ status: "APPLIED", op_id: gesture.client_op_id }],
         }),
       } as any);
+    const consoleErrorSpy = vi
+      .spyOn(console, "error")
+      .mockImplementation((...args) => {
+        if (String(args[0]).startsWith("[sync-worker] HTTP Error:")) {
+          return;
+        }
+        console.warn(...args);
+      });
 
     // Primeira tentativa falha temporariamente
     await processGesture({ client_tx_id: gesture.client_tx_id, fazenda_id: gesture.fazenda_id } as any);
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      "[sync-worker] HTTP Error:",
+      503,
+      "Service Unavailable",
+      "- Unavailable",
+    );
     
     const gestureState = await db.queue_gestures.get(gesture.client_tx_id);
     expect(gestureState?.status).toBe("PENDING"); // Re-enfileirado para retry
@@ -184,5 +216,6 @@ describe("syncWorker insumo_movimentacoes integration", () => {
     expect(call2Body.ops[0].client_op_id).toBe(gesture.client_op_id);
 
     fetchMock.mockRestore();
+    consoleErrorSpy.mockRestore();
   });
 });

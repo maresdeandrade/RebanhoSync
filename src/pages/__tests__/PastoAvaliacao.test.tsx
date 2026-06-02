@@ -247,9 +247,13 @@ function mockPastoDetalheQueries({
 
 function renderPastoDetalhe() {
   render(
-    <MemoryRouter initialEntries={["/pastos/pasto-1"]}>
+    <MemoryRouter
+      initialEntries={["/pastos/pasto-1"]}
+      future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+    >
       <Routes>
         <Route path="/pastos/:id" element={<PastoDetalhe />} />
+        <Route path="/registrar" element={<div>Registrar route stub</div>} />
       </Routes>
     </MemoryRouter>,
   );
@@ -395,4 +399,3 @@ describe("PastoDetalhe avaliacao/ronda", () => {
     expect(ops[1].record.ocupacao_id).toBeNull();
   });
 });
-

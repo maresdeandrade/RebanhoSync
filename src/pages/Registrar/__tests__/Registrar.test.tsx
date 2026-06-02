@@ -2,6 +2,7 @@
  * @vitest-environment jsdom
  */
 import "@testing-library/jest-dom";
+import "fake-indexeddb/auto";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import Registrar from "@/pages/Registrar";
@@ -294,4 +295,3 @@ describe("Registrar Page - Anti-Teleport", () => {
     expect(runRegistrarFinalizeGestureEffect).not.toHaveBeenCalled();
   });
 });
-

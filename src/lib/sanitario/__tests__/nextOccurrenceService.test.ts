@@ -16,13 +16,32 @@ import { VALID_MODE_FIXTURES } from "../__fixtures__/scheduler.fixtures";
 import type { ProtocoloSanitarioItem, Animal } from "@/lib/offline/types";
 import type { ComputeNextOccurrenceContext } from "@/lib/sanitario/engine/schedulerIntegration";
 
+function makeLegacyFallbackSafeItem(
+  item: ProtocoloSanitarioItem,
+): ProtocoloSanitarioItem {
+  const itemWithLegacyFields = item as ProtocoloSanitarioItem & {
+    itemId?: string;
+  };
+  return {
+    ...item,
+    id: item.id ?? itemWithLegacyFields.itemId ?? "item-test",
+    schedule: {
+      generatesAgenda: false,
+    },
+    compliance: {
+      level: "recomendado",
+    },
+  } as unknown as ProtocoloSanitarioItem;
+}
+
 describe("Next Occurrence Service", () => {
   describe("computeNextOccurrence", () => {
     it("retorna null quando feature flag está desativado e fallback falha", () => {
       const fixture = VALID_MODE_FIXTURES[0];
+      const item = makeLegacyFallbackSafeItem(fixture.domain);
 
       const result = computeNextOccurrence(
-        fixture.domain,
+        item,
         fixture.subject as ComputeNextOccurrenceContext,
       );
 
@@ -33,10 +52,11 @@ describe("Next Occurrence Service", () => {
 
     it("não lança exceção com item válido", () => {
       const fixture = VALID_MODE_FIXTURES[0];
+      const item = makeLegacyFallbackSafeItem(fixture.domain);
 
       expect(() => {
         computeNextOccurrence(
-          fixture.domain,
+          item,
           fixture.subject as ComputeNextOccurrenceContext,
         );
       }).not.toThrow();
@@ -44,13 +64,14 @@ describe("Next Occurrence Service", () => {
 
     it("não lança exceção com context mínimo", () => {
       const fixture = VALID_MODE_FIXTURES[0];
+      const item = makeLegacyFallbackSafeItem(fixture.domain);
       const minimalContext: ComputeNextOccurrenceContext = {
         fazendaId: "farm-test",
         animalId: "animal-test",
       };
 
       expect(() => {
-        computeNextOccurrence(fixture.domain, minimalContext);
+        computeNextOccurrence(item, minimalContext);
       }).not.toThrow();
     });
   });
@@ -63,23 +84,26 @@ describe("Next Occurrence Service", () => {
       const context: Partial<ComputeNextOccurrenceContext> = {
         fazendaId: "farm-test",
       };
+      const item1 = makeLegacyFallbackSafeItem(fixture1.domain);
+      const item2 = makeLegacyFallbackSafeItem(fixture2.domain);
 
       const results = computeNextOccurrencesForAnimal(
-        [fixture1.domain, fixture2.domain],
+        [item1, item2],
         animal,
         context,
       );
 
       expect(results).toHaveLength(2);
-      expect(results[0].item).toBe(fixture1.domain);
-      expect(results[1].item).toBe(fixture2.domain);
+      expect(results[0].item).toBe(item1);
+      expect(results[1].item).toBe(item2);
     });
 
     it("cada resultado tem item e result", () => {
       const fixture = VALID_MODE_FIXTURES[0];
       const animal = fixture.subject.animal!;
+      const item = makeLegacyFallbackSafeItem(fixture.domain);
 
-      const results = computeNextOccurrencesForAnimal([fixture.domain], animal);
+      const results = computeNextOccurrencesForAnimal([item], animal);
 
       results.forEach((r) => {
         expect(r.item).toBeDefined();
@@ -103,8 +127,9 @@ describe("Next Occurrence Service", () => {
   describe("isItemCompatibleWithNewScheduler", () => {
     it("retorna false quando feature flag está desativado", () => {
       const fixture = VALID_MODE_FIXTURES[0];
+      const item = makeLegacyFallbackSafeItem(fixture.domain);
 
-      const compatible = isItemCompatibleWithNewScheduler(fixture.domain);
+      const compatible = isItemCompatibleWithNewScheduler(item);
 
       // Com feature flag desativado, sempre retorna false
       expect(compatible).toBe(false);
@@ -112,9 +137,10 @@ describe("Next Occurrence Service", () => {
 
     it("validação não lança exceção", () => {
       const fixture = VALID_MODE_FIXTURES[0];
+      const item = makeLegacyFallbackSafeItem(fixture.domain);
 
       expect(() => {
-        isItemCompatibleWithNewScheduler(fixture.domain);
+        isItemCompatibleWithNewScheduler(item);
       }).not.toThrow();
     });
   });
@@ -138,23 +164,25 @@ describe("Next Occurrence Service", () => {
   describe("computeWithMetadata", () => {
     it("retorna metadata com sourceScheduler = legacy quando flag desativado", () => {
       const fixture = VALID_MODE_FIXTURES[0];
+      const item = makeLegacyFallbackSafeItem(fixture.domain);
 
       const metadata = computeWithMetadata(
-        fixture.domain,
+        item,
         fixture.subject as ComputeNextOccurrenceContext,
       );
 
       expect(metadata.sourceScheduler).toBe("legacy");
       expect(metadata.computedAt).toBeInstanceOf(Date);
       expect(metadata.context).toBeDefined();
-      expect(metadata.item).toBe(fixture.domain);
+      expect(metadata.item).toBe(item);
     });
 
     it("metadata sempre tem result ou error", () => {
       const fixture = VALID_MODE_FIXTURES[0];
+      const item = makeLegacyFallbackSafeItem(fixture.domain);
 
       const metadata = computeWithMetadata(
-        fixture.domain,
+        item,
         fixture.subject as ComputeNextOccurrenceContext,
       );
 
@@ -166,9 +194,10 @@ describe("Next Occurrence Service", () => {
 
     it("error é undefined quando sucesso", () => {
       const fixture = VALID_MODE_FIXTURES[0];
+      const item = makeLegacyFallbackSafeItem(fixture.domain);
 
       const metadata = computeWithMetadata(
-        fixture.domain,
+        item,
         fixture.subject as ComputeNextOccurrenceContext,
       );
 
@@ -182,14 +211,15 @@ describe("Next Occurrence Service", () => {
   describe("diagnosticWhichSchedulerWasUsed", () => {
     it("retorna string diagnóstico", () => {
       const fixture = VALID_MODE_FIXTURES[0];
+      const item = makeLegacyFallbackSafeItem(fixture.domain);
 
       const metadata = computeWithMetadata(
-        fixture.domain,
+        item,
         fixture.subject as ComputeNextOccurrenceContext,
       );
 
       const diagnostic = diagnosticWhichSchedulerWasUsed(
-        fixture.domain,
+        item,
         fixture.subject as ComputeNextOccurrenceContext,
         metadata,
       );
@@ -200,14 +230,15 @@ describe("Next Occurrence Service", () => {
 
     it("diagnóstico contém sourceScheduler", () => {
       const fixture = VALID_MODE_FIXTURES[0];
+      const item = makeLegacyFallbackSafeItem(fixture.domain);
 
       const metadata = computeWithMetadata(
-        fixture.domain,
+        item,
         fixture.subject as ComputeNextOccurrenceContext,
       );
 
       const diagnostic = diagnosticWhichSchedulerWasUsed(
-        fixture.domain,
+        item,
         fixture.subject as ComputeNextOccurrenceContext,
         metadata,
       );
@@ -217,31 +248,33 @@ describe("Next Occurrence Service", () => {
 
     it("diagnóstico contém item ID", () => {
       const fixture = VALID_MODE_FIXTURES[0];
+      const item = makeLegacyFallbackSafeItem(fixture.domain);
 
       const metadata = computeWithMetadata(
-        fixture.domain,
+        item,
         fixture.subject as ComputeNextOccurrenceContext,
       );
 
       const diagnostic = diagnosticWhichSchedulerWasUsed(
-        fixture.domain,
+        item,
         fixture.subject as ComputeNextOccurrenceContext,
         metadata,
       );
 
-      expect(diagnostic).toContain(fixture.domain.id);
+      expect(diagnostic).toContain(item.id);
     });
 
     it("diagnóstico contém timestamp", () => {
       const fixture = VALID_MODE_FIXTURES[0];
+      const item = makeLegacyFallbackSafeItem(fixture.domain);
 
       const metadata = computeWithMetadata(
-        fixture.domain,
+        item,
         fixture.subject as ComputeNextOccurrenceContext,
       );
 
       const diagnostic = diagnosticWhichSchedulerWasUsed(
-        fixture.domain,
+        item,
         fixture.subject as ComputeNextOccurrenceContext,
         metadata,
       );
@@ -251,14 +284,15 @@ describe("Next Occurrence Service", () => {
 
     it("diagnóstico pode ser usado para debugging", () => {
       const fixture = VALID_MODE_FIXTURES[0];
+      const item = makeLegacyFallbackSafeItem(fixture.domain);
 
       const metadata = computeWithMetadata(
-        fixture.domain,
+        item,
         fixture.subject as ComputeNextOccurrenceContext,
       );
 
       const diagnostic = diagnosticWhichSchedulerWasUsed(
-        fixture.domain,
+        item,
         fixture.subject as ComputeNextOccurrenceContext,
         metadata,
       );
@@ -272,6 +306,7 @@ describe("Next Occurrence Service", () => {
   describe("Integration Readiness", () => {
     it("serviço é pronto para usar em componentes", () => {
       const fixture = VALID_MODE_FIXTURES[0];
+      const item = makeLegacyFallbackSafeItem(fixture.domain);
       const context: ComputeNextOccurrenceContext = {
         fazendaId: "farm-test",
         animalId: "animal-test",
@@ -279,13 +314,13 @@ describe("Next Occurrence Service", () => {
       };
 
       expect(() => {
-        computeNextOccurrence(fixture.domain, context);
+        computeNextOccurrence(item, context);
       }).not.toThrow();
     });
 
     it("batch é útil para agendamento em bulk", () => {
       const fixtures = VALID_MODE_FIXTURES.slice(0, 3);
-      const items = fixtures.map((f) => f.domain);
+      const items = fixtures.map((f) => makeLegacyFallbackSafeItem(f.domain));
       const animal = fixtures[0].subject.animal!;
 
       const results = computeNextOccurrencesForAnimal(items, animal);
@@ -306,9 +341,10 @@ describe("Next Occurrence Service", () => {
 
     it("metadata é útil para observability", () => {
       const fixture = VALID_MODE_FIXTURES[0];
+      const item = makeLegacyFallbackSafeItem(fixture.domain);
 
       const metadata = computeWithMetadata(
-        fixture.domain,
+        item,
         fixture.subject as ComputeNextOccurrenceContext,
       );
 
