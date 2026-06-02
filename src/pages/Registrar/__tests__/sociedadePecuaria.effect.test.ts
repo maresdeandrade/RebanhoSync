@@ -238,6 +238,54 @@ describe("Sociedade Pecuaria - Business Logic Tests", () => {
   });
 
   describe("Entrada e Vínculo Patrimonial de Animais", () => {
+    it("operações de sociedade não geram sanitário, conformidade ou financeiro automático", () => {
+      const patrimonialOps = [
+        {
+          table: "sociedades_pecuarias",
+          action: "INSERT",
+          record: {
+            id: "soc-1",
+            fazenda_id: "farm-1",
+            contraparte_id: "cp-1",
+            status: "ativa",
+          },
+        },
+        {
+          table: "animais",
+          action: "INSERT",
+          record: {
+            id: "animal-1",
+            fazenda_id: "farm-1",
+            origem: "sociedade",
+            status: "ativo",
+          },
+        },
+        {
+          table: "sociedade_animais",
+          action: "INSERT",
+          record: {
+            id: "link-1",
+            fazenda_id: "farm-1",
+            sociedade_id: "soc-1",
+            animal_id: "animal-1",
+            status: "ativo",
+          },
+        },
+      ];
+
+      const tables = patrimonialOps.map((op) => op.table);
+      const eventDomains = patrimonialOps
+        .filter((op) => op.table === "eventos")
+        .map((op) => (op.record as Record<string, unknown>).dominio);
+
+      expect(tables).not.toContain("eventos_sanitario");
+      expect(tables).not.toContain("eventos_financeiro");
+      expect(tables).not.toContain("finance_transactions");
+      expect(eventDomains).not.toContain("sanitario");
+      expect(eventDomains).not.toContain("conformidade");
+      expect(eventDomains).not.toContain("financeiro");
+    });
+
     it("entrada em sociedade cria animal ativo com origem = sociedade", () => {
       const animalInput = {
         identificacao: "SOC-01",

@@ -268,6 +268,10 @@ async function main() {
         "insert into public.animais(fazenda_id, identificacao, sexo, lote_id, data_nascimento) values ($1, $2, 'F', $3, current_date - 120) returning id",
         [farmId, `ANI-${runId}`, lote.rows[0].id],
       );
+      const contraparte = await client.query(
+        "insert into public.contrapartes(fazenda_id, tipo, nome) values ($1, 'pessoa', $2) returning id",
+        [farmId, `Parceiro ${runId}`],
+      );
       const protocolo = await client.query(
         "insert into public.protocolos_sanitarios(fazenda_id, nome, descricao) values ($1, $2, $3) returning id",
         [farmId, `Protocolo ${runId}`, "fixture funcional"],
@@ -293,6 +297,7 @@ async function main() {
         pastoId: pasto.rows[0].id,
         loteId: lote.rows[0].id,
         animalId: animal.rows[0].id,
+        contraparteId: contraparte.rows[0].id,
         protocoloId: protocolo.rows[0].id,
         protocoloItemId: protocoloItem.rows[0].id,
       };
@@ -401,6 +406,109 @@ async function main() {
     await expectCount(client, "select count(*) from public.eventos where id = $1 and source_task_id = $2 and dominio = 'sanitario' and fazenda_id = $3", [agendaResult.eventId, agendaResult.agendaId, farmId], 1, "evento sanitario base criado");
     await expectCount(client, "select count(*) from public.eventos_sanitario where evento_id = $1 and tipo = 'vacinacao' and produto = 'Produto baseline' and fazenda_id = $2", [agendaResult.eventId, farmId], 1, "detalhe sanitario criado");
 
+    const stagingFixtures = await withAuthenticatedUser(client, owner.id, async () => {
+      const insumo = await client.query(
+        "insert into public.insumos(fazenda_id, nome, tipo, unidade_base) values ($1, $2, 'sanitario', 'ml') returning id",
+        [farmId, `Insumo Sanitário ${runId}`],
+      );
+      const insumoLote = await client.query(
+        `
+        insert into public.insumo_lotes(
+          fazenda_id, insumo_id, identificacao_lote,
+          quantidade_inicial_base, saldo_atual_base, unidade_base
+        )
+        values ($1, $2, $3, 100, 100, 'ml')
+        returning id
+        `,
+        [farmId, insumo.rows[0].id, `LOT-${runId}`],
+      );
+      const movement = await client.query(
+        `
+        insert into public.insumo_movimentacoes(
+          fazenda_id, insumo_id, insumo_lote_id, tipo,
+          quantidade_base, unidade_base, source_evento_id, source_evento_dominio,
+          animal_id, rebanho_lote_id, payload
+        )
+        values ($1, $2, $3, 'consumo_sanitario', 1, 'ml', $4, 'sanitario', $5, $6, '{"origem":"baseline_fase_6"}'::jsonb)
+        returning id
+        `,
+        [
+          farmId,
+          insumo.rows[0].id,
+          insumoLote.rows[0].id,
+          agendaResult.eventId,
+          productive.animalId,
+          productive.loteId,
+        ],
+      );
+      const sociedade = await client.query(
+        `
+        insert into public.sociedades_pecuarias(
+          fazenda_id, contraparte_id, nome, status, data_inicio,
+          percentual_fazenda, percentual_parceiro
+        )
+        values ($1, $2, $3, 'ativa', current_date, 60, 40)
+        returning id
+        `,
+        [farmId, productive.contraparteId, `Sociedade ${runId}`],
+      );
+      const sociedadeAnimal = await client.query(
+        `
+        insert into public.sociedade_animais(
+          fazenda_id, sociedade_id, animal_id, data_entrada, status, payload
+        )
+        values ($1, $2, $3, current_date, 'ativo', '{"origem":"baseline_fase_6"}'::jsonb)
+        returning id
+        `,
+        [farmId, sociedade.rows[0].id, productive.animalId],
+      );
+      return {
+        insumoId: insumo.rows[0].id,
+        insumoLoteId: insumoLote.rows[0].id,
+        movementId: movement.rows[0].id,
+        sociedadeId: sociedade.rows[0].id,
+        sociedadeAnimalId: sociedadeAnimal.rows[0].id,
+      };
+    });
+
+    await expectCount(client, "select count(*) from public.insumo_movimentacoes where id = $1 and fazenda_id = $2 and source_evento_id = $3", [stagingFixtures.movementId, farmId, agendaResult.eventId], 1, "movimentacao sanitaria vinculada respeita tenant");
+    await expectCount(client, "select count(*) from public.sociedades_pecuarias where id = $1 and fazenda_id = $2", [stagingFixtures.sociedadeId, farmId], 1, "sociedade tenant-scoped criada");
+    await expectCount(client, "select count(*) from public.sociedade_animais where id = $1 and fazenda_id = $2 and animal_id = $3", [stagingFixtures.sociedadeAnimalId, farmId, productive.animalId], 1, "vinculo sociedade-animal tenant-scoped criado");
+
+    await withAuthenticatedUser(client, manager.id, async () => {
+      await expectCount(client, "select count(*) from public.eventos_sanitario where fazenda_id = $1", [farmId], 1, "manager le detalhes sanitarios da fazenda");
+      await expectCount(client, "select count(*) from public.insumo_movimentacoes where fazenda_id = $1", [farmId], 1, "manager le movimentacoes de estoque da fazenda");
+      await expectCount(client, "select count(*) from public.sociedades_pecuarias where fazenda_id = $1", [farmId], 1, "manager le sociedades da fazenda");
+    });
+
+    await withAuthenticatedUser(client, cowboy.id, async () => {
+      await expectCount(client, "select count(*) from public.eventos_sanitario where fazenda_id = $1", [farmId], 1, "cowboy le detalhes sanitarios da fazenda");
+      await expectCount(client, "select count(*) from public.insumo_movimentacoes where fazenda_id = $1", [farmId], 1, "cowboy le movimentacoes de estoque da fazenda");
+      await expectCount(client, "select count(*) from public.sociedades_pecuarias where fazenda_id = $1", [farmId], 1, "cowboy le sociedades da fazenda");
+      await expectError(
+        () =>
+          client.query(
+            `
+            insert into public.sociedades_pecuarias(
+              fazenda_id, contraparte_id, nome, status, data_inicio,
+              percentual_fazenda, percentual_parceiro
+            )
+            values ($1, $2, $3, 'ativa', current_date, 50, 50)
+            `,
+            [farmId, productive.contraparteId, `Sociedade Cowboy ${runId}`],
+          ),
+        "cowboy nao deve criar sociedade pelo contrato RLS atual",
+        ["42501"],
+      );
+    });
+
+    await withAuthenticatedUser(client, outsider.id, async () => {
+      await expectCount(client, "select count(*) from public.eventos_sanitario where fazenda_id = $1", [farmId], 0, "outsider nao le detalhes sanitarios");
+      await expectCount(client, "select count(*) from public.insumo_movimentacoes where fazenda_id = $1", [farmId], 0, "outsider nao le movimentacoes de estoque");
+      await expectCount(client, "select count(*) from public.sociedades_pecuarias where fazenda_id = $1", [farmId], 0, "outsider nao le sociedades");
+      await expectCount(client, "select count(*) from public.sociedade_animais where fazenda_id = $1", [farmId], 0, "outsider nao le vinculos societarios");
+    });
+
     console.log("5/5 sync-batch real");
     const functionsServe = await startFunctionsServeNoVerify();
 
@@ -497,6 +605,7 @@ async function main() {
       productive_structure: "passou",
       composite_fk_cross_tenant: "passou",
       sanitary_agenda_event_rpc: "passou",
+      sanitary_inventory_sociedade_rls: "passou",
       sync_batch_real_edge_function: "passou",
     }, null, 2));
   } finally {

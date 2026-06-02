@@ -34,6 +34,10 @@ describe("sanitary correction gestures", () => {
     const result = buildSanitaryCorrectionGesture({
       ...baseCorrection,
       tipoCorrecao: "complemento_rastreabilidade",
+      payloadOriginalSnapshot: {
+        evento_id: "evt-original",
+        produto_veterinario_id: null,
+      },
       payloadCorrecao: {
         dose_quantidade: 5,
         dose_unidade: "ml",
@@ -53,6 +57,11 @@ describe("sanitary correction gestures", () => {
             tipo_correcao: "complemento_rastreabilidade",
             motivo: "Fonte tecnica conferida.",
             created_by: "user-1",
+            fazenda_id: "farm-1",
+            payload_original_snapshot: {
+              evento_id: "evt-original",
+              produto_veterinario_id: null,
+            },
           },
         },
       },
@@ -60,6 +69,60 @@ describe("sanitary correction gestures", () => {
     expect(readSanitaryCorrectionPayload(result.ops[0].record.payload)).toMatchObject({
       tipo_correcao: "complemento_rastreabilidade",
       evento_origem_id: "evt-original",
+      fazenda_id: "farm-1",
+      contract_status: "complete",
+      contract_limitations: [],
+    });
+  });
+
+  it("replay do mesmo payload corretivo preserva eventId por idempotency_key", () => {
+    const input = {
+      ...baseCorrection,
+      tipoCorrecao: "correcao_custo" as const,
+      idempotencyKey: "farm-1:evt-original:correcao-custo:nota-123",
+      payloadOriginalSnapshot: {
+        custo_unitario_snapshot: null,
+        custo_total_snapshot: null,
+      },
+      payloadCorrecao: {
+        custo_unitario_snapshot: 3,
+        custo_total_snapshot: 15,
+      },
+    };
+
+    const first = buildSanitaryCorrectionGesture(input);
+    const replay = buildSanitaryCorrectionGesture(input);
+
+    expect(first.eventId).toBe(replay.eventId);
+    expect(first.ops[0].record.id).toBe(first.eventId);
+    expect(replay.ops[0].record.id).toBe(first.eventId);
+    expect(first.ops[0].record.corrige_evento_id).toBe("evt-original");
+    expect(first.ops.some((op) => op.action === "UPDATE" && op.table === "eventos"))
+      .toBe(false);
+  });
+
+  it("payload corretivo legado sem campos novos fica parcial", () => {
+    const legacyPayload = {
+      sanitary_correction: {
+        schema_version: 1,
+        evento_origem_id: "evt-original",
+        corrige_evento_id: "evt-original",
+        tipo_correcao: "correcao_custo",
+        motivo: "Legado.",
+        payload_correcao: {},
+        created_by: "user-1",
+        created_at: "2026-06-01T12:00:00.000Z",
+      },
+    };
+
+    expect(readSanitaryCorrectionPayload(legacyPayload)).toMatchObject({
+      evento_origem_id: "evt-original",
+      contract_status: "partial",
+      contract_limitations: [
+        "payload_original_snapshot ausente no payload corretivo legado.",
+        "fazenda_id ausente no payload corretivo legado.",
+        "idempotency_key ausente no payload corretivo legado.",
+      ],
     });
   });
 

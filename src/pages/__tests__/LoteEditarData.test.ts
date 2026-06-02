@@ -1,5 +1,5 @@
 /** @vitest-environment jsdom */
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import Dexie, { type Table } from "dexie";
 import { indexedDB, IDBKeyRange } from "fake-indexeddb";
 import { type Animal, type Pasto, type Lote } from "@/lib/offline/types";
@@ -14,8 +14,8 @@ class TestDB extends Dexie {
   state_pastos!: Table<Pasto, string>;
   state_lotes!: Table<Lote, string>;
 
-  constructor() {
-    super("TestDB", { indexedDB: indexedDB, IDBKeyRange: IDBKeyRange });
+  constructor(name: string) {
+    super(name, { indexedDB: indexedDB, IDBKeyRange: IDBKeyRange });
     this.version(6).stores({
       state_animais:
         "id, fazenda_id, [fazenda_id+lote_id], [fazenda_id+status], lote_id, deleted_at",
@@ -27,14 +27,13 @@ class TestDB extends Dexie {
 
 describe("LoteEditar Data Access", () => {
   let db: TestDB;
+  let dbName: string;
   const targetFarmId = "target-farm";
   const otherFarmId = "other-farm";
 
   beforeEach(async () => {
-    // Reset DB
-    db = new TestDB();
-    await db.delete();
-    db = new TestDB();
+    dbName = `LoteEditarData-${crypto.randomUUID()}`;
+    db = new TestDB(dbName);
     await db.open();
 
     // Populate DB
@@ -99,6 +98,12 @@ describe("LoteEditar Data Access", () => {
 
     await db.state_animais.bulkAdd(animals);
     await db.state_pastos.bulkAdd(pastos);
+  });
+
+  afterEach(async () => {
+    if (db) {
+      await db.delete();
+    }
   });
 
   it("retrieves only data for the target farm (optimized query)", async () => {

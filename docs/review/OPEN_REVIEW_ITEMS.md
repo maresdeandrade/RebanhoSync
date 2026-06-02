@@ -1,6 +1,6 @@
 # Open Review Items — RebanhoSync
 
-Atualizado em: 2026-05-31  
+Atualizado em: 2026-06-02
 **Baseline Commit:** `32d7779`
 
 ## Objetivo
@@ -353,7 +353,30 @@ git diff --stat
 
 # Itens fechados
 
-Nenhum item fechado registrado neste arquivo nesta versão.
+## Fase 6 — Sanitária em staging, sync/replay e RLS
+
+**Status:** `FECHADO`
+**Área:** sanitário / sync / RLS / sociedade
+**Relatório:** `docs/review/RESULTADO_FASE_6_SANITARIA_STAGING_SYNC_RLS.md`
+
+### Fechado nesta versão
+
+- Contrato de payload corretivo sanitario formalizado.
+- Replay corretivo idempotente validado.
+- Sociedade validada como patrimonial, sem sanitario/conformidade/financeiro automatico.
+- Baseline funcional Supabase ampliado e validado para sanitario, estoque e sociedade.
+
+## Gate Suite Global Pos-Fase 6
+
+**Status:** `FECHADO`
+**Área:** testes / UI
+**Relatório:** `docs/review/RESULTADO_GATE_SUITE_GLOBAL_POS_FASE_6.md`
+
+### Fechado nesta versão
+
+- `LoteEditarData.test.ts` isolado por banco Dexie unico e cleanup explicito.
+- Vitest configurado com `maxWorkers: 2` para estabilidade local.
+- `pnpm test -- --run` passou.
 
 ---
 

@@ -1,6 +1,6 @@
 # Project Status — RebanhoSync
 
-Atualizado em: 2026-05-31  
+Atualizado em: 2026-06-02
 **Baseline Commit:** `32d7779`
 
 ## Objetivo
@@ -24,6 +24,13 @@ A fase atual é consolidação SLC:
 - validação de contratos;
 - melhoria incremental de UX;
 - preservação do comportamento existente.
+
+Último gate validado:
+
+- Fase 6 sanitaria em staging, sync/replay e RLS/multi-tenant concluida nos gates focados;
+- baseline funcional Supabase passou para sanitario, estoque e sociedade;
+- suite global `pnpm test -- --run` passou apos estabilizacao do runner;
+- lint e build passaram.
 
 ---
 
@@ -155,6 +162,13 @@ Riscos principais:
 - carência inferida;
 - compliance como bloqueio universal sem fonte explícita.
 
+Estado validado em 2026-06-02:
+
+- correcao sanitaria permanece append-only;
+- replay corretivo usa `idempotency_key` deterministico;
+- evento original nao deve ser editado por correcao;
+- payload corretivo legado sem contrato completo fica parcial, com limitacoes explicitas.
+
 ---
 
 ### Reprodução
@@ -202,6 +216,12 @@ Riscos principais:
 
 - margem/custo consolidado sem fonte completa;
 - venda/abate como decisão automatizada sem fonte técnica explícita.
+
+Limite confirmado em 2026-06-02:
+
+- sociedade pecuaria permanece vinculo patrimonial;
+- sociedade nao gera sanitario, conformidade ou financeiro automatico;
+- nao houve avanco para venda, abate, DRE, ROI, custo por arroba ou motor comercial.
 
 ---
 
@@ -313,6 +333,13 @@ Validação proporcional ao escopo:
 - sync/offline: testes amplos + build;
 - Supabase/RLS: baseline funcional Supabase;
 - documentação: checagem de duplicidade e links ativos.
+
+Estado de gate em 2026-06-02:
+
+- `pnpm test -- --run` passou;
+- `pnpm run lint` passou;
+- `pnpm run build` passou;
+- Vitest usa `maxWorkers: 2` para reduzir timeouts falsos por concorrencia em testes de UI/IndexedDB fake.
 
 Detalhes:
 

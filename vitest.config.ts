@@ -7,6 +7,7 @@ export default defineConfig({
     globals: true,
     hookTimeout: 30000,
     testTimeout: 30000,
+    maxWorkers: 2,
     setupFiles: ["./vitest.setup.ts"],
   },
   resolve: {

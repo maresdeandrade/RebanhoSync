@@ -28,9 +28,14 @@ export type SanitaryCorrectionPayload = {
   corrige_evento_id: string;
   tipo_correcao: SanitaryCorrectionType;
   motivo: string;
+  payload_original_snapshot: Record<string, unknown> | null;
   payload_correcao: Record<string, unknown>;
   created_by: string | null;
   created_at: string;
+  fazenda_id: string;
+  idempotency_key: string;
+  contract_status: "complete" | "partial";
+  contract_limitations: string[];
 };
 
 export type SanitaryCorrectionEventInput = {
@@ -41,9 +46,11 @@ export type SanitaryCorrectionEventInput = {
   tipoCorrecao: SanitaryCorrectionType;
   motivo: string;
   payloadCorrecao?: Record<string, unknown>;
+  payloadOriginalSnapshot?: Record<string, unknown> | null;
   animalId?: string | null;
   loteId?: string | null;
   createdBy?: string | null;
+  idempotencyKey?: string | null;
 };
 
 export type BuildSanitaryOccurrenceResolutionGestureInput = Omit<
@@ -118,7 +125,14 @@ export function buildSanitaryCorrectionEventInput(
 export function buildSanitaryCorrectionGesture(
   input: SanitaryCorrectionEventInput,
 ): EventGestureBuildResult {
-  return buildEventGesture(buildSanitaryCorrectionEventInput(input));
+  const eventInput = buildSanitaryCorrectionEventInput(input);
+  const built = buildEventGesture(eventInput);
+  const payload = readSanitaryCorrectionPayload(eventInput.payload);
+  const stableEventId = buildDeterministicCorrectionEventId(
+    payload?.idempotency_key ?? buildSanitaryCorrectionIdempotencyKey(input),
+  );
+
+  return replaceGeneratedEventId(built, stableEventId);
 }
 
 export function buildSanitaryOccurrenceResolutionGesture(
@@ -266,6 +280,12 @@ export function readSanitaryCorrectionPayload(
     corrige_evento_id: record.corrige_evento_id,
     tipo_correcao: record.tipo_correcao,
     motivo: record.motivo,
+    payload_original_snapshot:
+      record.payload_original_snapshot &&
+      typeof record.payload_original_snapshot === "object" &&
+      !Array.isArray(record.payload_original_snapshot)
+        ? (record.payload_original_snapshot as Record<string, unknown>)
+        : null,
     payload_correcao:
       record.payload_correcao &&
       typeof record.payload_correcao === "object" &&
@@ -274,6 +294,16 @@ export function readSanitaryCorrectionPayload(
         : {},
     created_by: typeof record.created_by === "string" ? record.created_by : null,
     created_at: record.created_at,
+    fazenda_id: typeof record.fazenda_id === "string" ? record.fazenda_id : "",
+    idempotency_key:
+      typeof record.idempotency_key === "string" ? record.idempotency_key : "",
+    contract_status:
+      typeof record.fazenda_id === "string" &&
+      typeof record.idempotency_key === "string" &&
+      Object.prototype.hasOwnProperty.call(record, "payload_original_snapshot")
+        ? "complete"
+        : "partial",
+    contract_limitations: buildCorrectionContractLimitations(record),
   };
 }
 
@@ -287,13 +317,110 @@ function buildSanitaryCorrectionPayload(
     corrige_evento_id: input.eventoOrigemId,
     tipo_correcao: input.tipoCorrecao,
     motivo,
+    payload_original_snapshot: input.payloadOriginalSnapshot ?? null,
     payload_correcao: {
       ...(input.dominioOrigem ? { dominio_origem: input.dominioOrigem } : {}),
       ...(input.payloadCorrecao ?? {}),
     },
     created_by: input.createdBy ?? null,
     created_at: input.occurredAt,
+    fazenda_id: input.fazendaId,
+    idempotency_key: buildSanitaryCorrectionIdempotencyKey(input),
+    contract_status: "complete",
+    contract_limitations: [],
   };
+}
+
+function buildSanitaryCorrectionIdempotencyKey(input: SanitaryCorrectionEventInput): string {
+  const explicit = input.idempotencyKey?.trim();
+  if (explicit) return explicit;
+
+  return [
+    "sanitary_correction",
+    "v1",
+    input.fazendaId,
+    input.eventoOrigemId,
+    input.tipoCorrecao,
+    input.occurredAt,
+    input.createdBy ?? "anonymous",
+    input.motivo.trim(),
+  ].join(":");
+}
+
+function buildCorrectionContractLimitations(record: Record<string, unknown>): string[] {
+  const limitations: string[] = [];
+  if (!Object.prototype.hasOwnProperty.call(record, "payload_original_snapshot")) {
+    limitations.push("payload_original_snapshot ausente no payload corretivo legado.");
+  }
+  if (typeof record.fazenda_id !== "string") {
+    limitations.push("fazenda_id ausente no payload corretivo legado.");
+  }
+  if (typeof record.idempotency_key !== "string") {
+    limitations.push("idempotency_key ausente no payload corretivo legado.");
+  }
+  return limitations;
+}
+
+function buildDeterministicCorrectionEventId(idempotencyKey: string): string {
+  const normalized = idempotencyKey || "sanitary_correction:v1:missing";
+  const hex = deterministicHex(normalized);
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-4${hex.slice(13, 16)}-8${hex.slice(17, 20)}-${hex.slice(20, 32)}`;
+}
+
+function deterministicHex(value: string): string {
+  const seeds = [0x811c9dc5, 0x9e3779b9, 0x85ebca6b, 0xc2b2ae35];
+  const hashes = seeds.map((seed) => {
+    let hash = seed;
+    for (let index = 0; index < value.length; index += 1) {
+      hash ^= value.charCodeAt(index) + index;
+      hash = Math.imul(hash, 0x01000193);
+    }
+    return (hash >>> 0).toString(16).padStart(8, "0");
+  });
+  return hashes.join("");
+}
+
+function replaceGeneratedEventId(
+  result: EventGestureBuildResult,
+  stableEventId: string,
+): EventGestureBuildResult {
+  const generatedEventId = result.eventId;
+  return {
+    eventId: stableEventId,
+    ops: result.ops.map((op) => ({
+      ...op,
+      record: replaceRecordGeneratedEventId(op.record, generatedEventId, stableEventId),
+    })),
+  };
+}
+
+function replaceRecordGeneratedEventId(
+  record: OperationInput["record"],
+  generatedEventId: string,
+  stableEventId: string,
+): OperationInput["record"] {
+  const next: OperationInput["record"] = { ...record };
+  for (const field of ["id", "evento_id", "source_evento_id"] as const) {
+    if (next[field] === generatedEventId) {
+      next[field] = stableEventId;
+    }
+  }
+
+  const payload = next.payload;
+  if (payload && typeof payload === "object" && !Array.isArray(payload)) {
+    const payloadRecord = { ...payload };
+    const encerramento = payloadRecord.encerramento_corretivo;
+    if (encerramento && typeof encerramento === "object" && !Array.isArray(encerramento)) {
+      const encerramentoRecord = { ...encerramento };
+      if (encerramentoRecord.evento_resolucao_id === generatedEventId) {
+        encerramentoRecord.evento_resolucao_id = stableEventId;
+      }
+      payloadRecord.encerramento_corretivo = encerramentoRecord;
+    }
+    next.payload = payloadRecord;
+  }
+
+  return next;
 }
 
 function isSanitaryCorrectionType(value: unknown): value is SanitaryCorrectionType {
