@@ -23,6 +23,8 @@ describe("buildPastoOccupancyMetrics", () => {
       eccMedioAtual: 0,
       eccVariacaoMedia: 0,
       eccStatus: { status: "empty" },
+      categoriaPredominante: "Categoria desconhecida",
+      categoriaStatus: { status: "empty", source: "classificationSnapshot" },
     });
   });
 
@@ -87,6 +89,7 @@ describe("buildPastoOccupancyMetrics", () => {
     expect(result.eccMedioAtual).toBeCloseTo(4.5); // Only animal-2 is current and has final ecc
     expect(result.eccVariacaoMedia).toBeCloseTo((1 + 1) / 2);
     expect(result.eccStatus.status).toBe("complete");
+    expect(result.categoriaStatus?.source).toBe("classificationSnapshot");
   });
 
   it("should handle partial weight data", () => {

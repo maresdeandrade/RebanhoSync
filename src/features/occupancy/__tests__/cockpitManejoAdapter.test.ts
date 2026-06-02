@@ -3,64 +3,9 @@
 
 import { describe, it, expect } from "vitest";
 import { calculateLoteMetrics, calculatePastoMetrics } from "../cockpitManejoAdapter";
-import { getCategoriaAtual } from "../../../lib/animals/categoriaHelper";
 import type { Animal, Evento, EventoPesagem, EventoEcc, EventoMovimentacao, PastoOcupacao, Pasto, Lote } from "../../../lib/offline/types";
 
 describe("cockpitManejoAdapter unit tests", () => {
-  // Test category helper fallbacks
-  describe("getCategoriaAtual helper", () => {
-    it("uses direct field first", () => {
-      const animal = { categoria_zootecnica: "novilha" };
-      expect(getCategoriaAtual(animal)).toBe("Novilha");
-    });
-
-    it("falls back to payload.taxonomy_facts.categoria", () => {
-      const animal = {
-        payload: {
-          taxonomy_facts: { categoria: "vaca" }
-        }
-      };
-      expect(getCategoriaAtual(animal)).toBe("Vaca");
-    });
-
-    it("falls back to payload.taxonomy_facts.categoria_zootecnica", () => {
-      const animal = {
-        payload: {
-          taxonomy_facts: { categoria_zootecnica: "touro" }
-        }
-      };
-      expect(getCategoriaAtual(animal)).toBe("Touro");
-    });
-
-    it("falls back to payload.lifecycle.categoria", () => {
-      const animal = {
-        payload: {
-          lifecycle: { categoria: "bezerro" }
-        }
-      };
-      expect(getCategoriaAtual(animal)).toBe("Bezerro");
-    });
-
-    it("falls back to payload.lifecycle.stage", () => {
-      const animal = {
-        payload: {
-          lifecycle: { stage: "garrote" }
-        }
-      };
-      expect(getCategoriaAtual(animal)).toBe("Garrote");
-    });
-
-    it("returns Categoria desconhecida if no category fields exist", () => {
-      const animal = {};
-      expect(getCategoriaAtual(animal)).toBe("Categoria desconhecida");
-    });
-
-    it("formats snake_case nicely without exhibiting snake_case", () => {
-      const animal = { categoria_zootecnica: "boi_terminacao" };
-      expect(getCategoriaAtual(animal)).toBe("Boi Terminacao");
-    });
-  });
-
   // Test Lote cockpit metrics calculations
   describe("calculateLoteMetrics", () => {
     const refDate = "2026-05-28";
@@ -446,16 +391,33 @@ it("animal vendido é excluído do cálculo de GMD", () => {
       ];
 
       const metrics = calculateLoteMetrics("lote-1", refDate, 30, animals, [], [], [], [], []);
-      // Deve ser "Novilha Solteira", nunca "novilha_solteira"
-      expect(metrics.categoriaPredominante).toBe("Novilha Solteira");
+      // Usa classificationSnapshot como leitura operacional canonica, nunca snake_case cru.
+      expect(metrics.categoriaPredominante).toBe("Novilha");
       expect(metrics.categoriaPredominante).not.toContain("_");
+      expect(metrics.categoriaStatus.source).toContain("classificationSnapshot");
+      expect(metrics.categoriaStatus.status).toBe("partial");
+      expect(metrics.categoriaStatus.limitation).toContain("sem data de nascimento");
     });
 
-    it("getCategoriaAtual retorna 'Categoria desconhecida' (não snake_case) para animal sem categoria", () => {
-      const animal = {};
-      // getCategoriaAtual já está importado no topo do arquivo via import ESM
-      expect(getCategoriaAtual(animal)).toBe("Categoria desconhecida");
-      expect(getCategoriaAtual(animal)).not.toBe("categoria_desconhecida");
+    it("categoriaPredominante propaga limitacao quando a classificacao e parcial", () => {
+      const animals: Animal[] = [
+        {
+          id: "ani-1",
+          status: "ativo",
+          lote_id: "lote-1",
+          identificacao: "A1",
+          sexo: "F",
+          fazenda_id: "faz-1",
+          payload: {},
+        } as any,
+      ];
+
+      const metrics = calculateLoteMetrics("lote-1", refDate, 30, animals, [], [], [], [], []);
+      expect(metrics.categoriaPredominante).toBe("Categoria desconhecida");
+      expect(metrics.categoriaStatus.source).toBe("classificationSnapshot");
+      expect(metrics.categoriaStatus.status).toBe("empty");
+      expect(metrics.categoriaStatus.limitation).toContain("sem data de nascimento");
     });
+
   });
 });

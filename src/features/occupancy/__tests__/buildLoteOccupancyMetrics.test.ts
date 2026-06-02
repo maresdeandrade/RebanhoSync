@@ -29,6 +29,8 @@ describe("buildLoteOccupancyMetrics", () => {
       eccMedioAtual: 0,
       eccCobertura: { avaliados: 0, total: 3 },
       eccStatus: { status: "empty" },
+      categoriaPredominante: "Categoria desconhecida",
+      categoriaStatus: { status: "empty", source: "classificationSnapshot" },
     });
   });
 
@@ -98,6 +100,7 @@ describe("buildLoteOccupancyMetrics", () => {
     expect(result.eccMedioAtual).toBeCloseTo(4.5); // Only animal-2 is current and has final ecc
     expect(result.eccCobertura).toMatchObject({ avaliados: 2, total: 3 });
     expect(result.eccStatus.status).toBe("complete");
+    expect(result.categoriaStatus?.source).toBe("classificationSnapshot");
   });
 
   it("should handle partial weight data", () => {

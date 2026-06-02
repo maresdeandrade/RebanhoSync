@@ -11,6 +11,7 @@ interface BuildPastoOccupancyMetricsInput {
   latestEccsMap?: Map<string, number>;
   lastMovementDate?: string | null;
   categoriaPredominante?: string;
+  categoriaStatus?: DataStatus;
   areaHa?: number | null;
 }
 
@@ -21,6 +22,11 @@ export function buildPastoOccupancyMetrics({
   latestEccsMap = new Map(),
   lastMovementDate = null,
   categoriaPredominante = "Categoria desconhecida",
+  categoriaStatus = {
+    status: "empty",
+    reason: "Classificacao operacional nao informada",
+    source: "classificationSnapshot",
+  },
   areaHa = null,
 }: BuildPastoOccupancyMetricsInput): PastoOccupancyMetrics {
   const periodsInPasto = animalPeriods.filter((p) => p.pastoId === pastoId);
@@ -64,6 +70,7 @@ export function buildPastoOccupancyMetrics({
       tempoLotacaoStatus: permanenciaStatus,
       ultimaMovimentacao: lastMovementDate,
       categoriaPredominante,
+      categoriaStatus,
       uaTotal: uaResult.uaTotal,
       taxaLotacaoUaHa: uaResult.taxaLotacaoUaHa,
       taxaLotacaoStatus: {
@@ -154,6 +161,7 @@ export function buildPastoOccupancyMetrics({
     tempoLotacaoStatus: permanenciaStatus,
     ultimaMovimentacao: lastMovementDate,
     categoriaPredominante,
+    categoriaStatus,
     uaTotal: uaResult.uaTotal,
     taxaLotacaoUaHa: uaResult.taxaLotacaoUaHa,
     taxaLotacaoStatus: {

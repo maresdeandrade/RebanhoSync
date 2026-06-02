@@ -11,6 +11,7 @@ import { readTaxonomyFactsRecord } from "@/lib/animals/taxonomyFactsContract";
 import type { AnimalTaxonomyReproContext } from "@/lib/animals/taxonomy";
 
 export interface AnimalClassificationInput {
+  categoria_zootecnica?: string | null;
   sexo?: "M" | "F" | string | null;
   data_nascimento?: string | null;
   papel_macho?: "reprodutor" | "rufiao" | string | null;
@@ -308,7 +309,7 @@ export function resolveAnimalClassificationSnapshot(
   let categoria: CategoriaZootecnicaCanonicaEnum | "desconhecida" = "desconhecida";
 
   // Level 1: explicit facts in taxonomy_facts
-  const explCat = normalizeCategory(storedFacts.categoria || storedFacts.categoria_zootecnica);
+  const explCat = normalizeCategory(input.categoria_zootecnica || storedFacts.categoria || storedFacts.categoria_zootecnica);
   if (explCat) {
     categoria = explCat;
     srcCategoria = "stored";

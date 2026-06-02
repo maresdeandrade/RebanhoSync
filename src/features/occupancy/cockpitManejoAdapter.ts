@@ -12,8 +12,8 @@ import type {
   AgendaItem,
   PastoOcupacao,
 } from "@/lib/offline/types";
-import { getCategoriaAtual } from "@/lib/animals/categoriaHelper";
 import { calculateIndividualGmd, calculateUaLotacao } from "@/lib/animals/kpiHelpers";
+import { getPredominantCategorySnapshot } from "./classification";
 
 export interface DataStatus {
   status: "empty" | "partial" | "complete" | "bloqueado";
@@ -46,6 +46,7 @@ export interface CockpitLoteMetrics {
     proximos: number;
   };
   categoriaPredominante: string;
+  categoriaStatus: DataStatus;
   uaTotal: number;
   lotacaoStatus: DataStatus;
 }
@@ -72,6 +73,7 @@ export interface CockpitPastoMetrics {
     proximos: number;
   };
   categoriaPredominante: string;
+  categoriaStatus: DataStatus;
   uaTotal: number;
   taxaLotacaoUaHa: number | null;
   taxaLotacaoStatus: DataStatus;
@@ -80,24 +82,6 @@ export interface CockpitPastoMetrics {
 // Utility to parse ISO date string safely and strip time if only comparing dates
 function safeParseDate(dStr: string): Date {
   return parseISO(dStr);
-}
-
-function getPredominantCategory(animals: Animal[]): string {
-  if (animals.length === 0) return "Categoria desconhecida";
-  const counts = new Map<string, number>();
-  for (const animal of animals) {
-    const cat = getCategoriaAtual(animal);
-    counts.set(cat, (counts.get(cat) || 0) + 1);
-  }
-  let predominant = "Categoria desconhecida";
-  let max = 0;
-  for (const [cat, count] of counts.entries()) {
-    if (count > max) {
-      max = count;
-      predominant = cat;
-    }
-  }
-  return predominant;
 }
 
 export function calculateLoteMetrics(
@@ -473,7 +457,8 @@ export function calculateLoteMetrics(
     proximos,
   };
 
-  const categoriaPredominante = getPredominantCategory(activeAnimals);
+  const categoriaSnapshot = getPredominantCategorySnapshot(activeAnimals, referenceDate);
+  const categoriaPredominante = categoriaSnapshot.label;
 
   // UA Lotacao real do Lote (sem area do pasto direta, areaHa = undefined)
   const loteAnimalWeights = activeAnimals.map(animal => {
@@ -517,6 +502,7 @@ export function calculateLoteMetrics(
     ultimaMovimentacao,
     agendaItensAbertos,
     categoriaPredominante,
+    categoriaStatus: categoriaSnapshot.status,
     uaTotal: uaResult.uaTotal,
     lotacaoStatus: {
       status: uaResult.status,
@@ -906,7 +892,8 @@ export function calculatePastoMetrics(
     proximos,
   };
 
-  const categoriaPredominante = getPredominantCategory(activeAnimals);
+  const categoriaSnapshot = getPredominantCategorySnapshot(activeAnimals, referenceDate);
+  const categoriaPredominante = categoriaSnapshot.label;
 
   // 6. UA e Taxa de lotação real UA/ha
   const pastoObj = pastosInput.find(p => p.id === pastoId);
@@ -951,6 +938,7 @@ export function calculatePastoMetrics(
     ultimaMovimentacao,
     agendaItensAbertos,
     categoriaPredominante,
+    categoriaStatus: categoriaSnapshot.status,
     uaTotal: uaResult.uaTotal,
     taxaLotacaoUaHa: uaResult.taxaLotacaoUaHa,
     taxaLotacaoStatus: {

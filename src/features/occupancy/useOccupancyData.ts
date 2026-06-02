@@ -10,26 +10,8 @@ import { buildEccMetricsForOccupancy } from "./buildEccMetricsForOccupancy";
 import { buildLoteOccupancyMetrics } from "./buildLoteOccupancyMetrics";
 import { buildPastoOccupancyMetrics } from "./buildPastoOccupancyMetrics";
 import { getLatestValidEcc } from "./eccHelpers";
-import { getCategoriaAtual } from "@/lib/animals/categoriaHelper";
+import { getPredominantCategorySnapshot } from "./classification";
 import type { AnimalOccupancyPeriod, LoteOccupancyMetrics, PastoOccupancyMetrics } from "./occupancyTypes";
-
-function getPredominantCategory(animals: Animal[]): string {
-  if (animals.length === 0) return "Categoria desconhecida";
-  const counts = new Map<string, number>();
-  for (const animal of animals) {
-    const cat = getCategoriaAtual(animal);
-    counts.set(cat, (counts.get(cat) || 0) + 1);
-  }
-  let predominant = "Categoria desconhecida";
-  let max = 0;
-  for (const [cat, count] of counts.entries()) {
-    if (count > max) {
-      max = count;
-      predominant = cat;
-    }
-  }
-  return predominant;
-}
 
 export function useOccupancyData(fazendaId: string, referenceDate: string) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -162,7 +144,7 @@ export function useOccupancyData(fazendaId: string, referenceDate: string) {
       null as string | null
     );
 
-    const categoriaPredominante = getPredominantCategory(activeAnimals);
+    const categoriaSnapshot = getPredominantCategorySnapshot(activeAnimals, referenceDate);
 
     return buildLoteOccupancyMetrics({
       loteId,
@@ -171,7 +153,8 @@ export function useOccupancyData(fazendaId: string, referenceDate: string) {
       activeAnimals,
       latestEccsMap,
       lastMovementDate,
-      categoriaPredominante,
+      categoriaPredominante: categoriaSnapshot.label,
+      categoriaStatus: categoriaSnapshot.status,
     });
   };
 
@@ -194,7 +177,7 @@ export function useOccupancyData(fazendaId: string, referenceDate: string) {
       null as string | null
     );
 
-    const categoriaPredominante = getPredominantCategory(activeAnimals);
+    const categoriaSnapshot = getPredominantCategorySnapshot(activeAnimals, referenceDate);
     const pastoObj = allPastos.find(p => p.id === pastoId);
     const areaHa = pastoObj?.area_ha;
 
@@ -204,7 +187,8 @@ export function useOccupancyData(fazendaId: string, referenceDate: string) {
       activeAnimals,
       latestEccsMap,
       lastMovementDate,
-      categoriaPredominante,
+      categoriaPredominante: categoriaSnapshot.label,
+      categoriaStatus: categoriaSnapshot.status,
       areaHa,
     });
   };

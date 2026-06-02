@@ -12,6 +12,7 @@ interface BuildLoteOccupancyMetricsInput {
   latestEccsMap?: Map<string, number>;
   lastMovementDate?: string | null;
   categoriaPredominante?: string;
+  categoriaStatus?: DataStatus;
 }
 
 export function buildLoteOccupancyMetrics({
@@ -22,6 +23,11 @@ export function buildLoteOccupancyMetrics({
   latestEccsMap = new Map(),
   lastMovementDate = null,
   categoriaPredominante = "Categoria desconhecida",
+  categoriaStatus = {
+    status: "empty",
+    reason: "Classificacao operacional nao informada",
+    source: "classificationSnapshot",
+  },
 }: BuildLoteOccupancyMetricsInput): LoteOccupancyMetrics {
   const periodsInLote = animalPeriods.filter((p) => p.loteId === loteId);
 
@@ -67,6 +73,7 @@ export function buildLoteOccupancyMetrics({
       tempoLotacaoStatus: permanenciaStatus,
       ultimaMovimentacao: lastMovementDate,
       categoriaPredominante,
+      categoriaStatus,
       uaTotal: uaResult.uaTotal,
       lotacaoStatus: {
         status: uaResult.status,
@@ -172,6 +179,7 @@ export function buildLoteOccupancyMetrics({
     tempoLotacaoStatus: permanenciaStatus,
     ultimaMovimentacao: lastMovementDate,
     categoriaPredominante,
+    categoriaStatus,
     uaTotal: uaResult.uaTotal,
     lotacaoStatus: {
       status: uaResult.status,

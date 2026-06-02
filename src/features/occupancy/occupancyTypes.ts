@@ -44,6 +44,7 @@ export interface LoteOccupancyMetrics {
   tempoLotacaoStatus?: DataStatus; // Alias para compatibilidade legada
   ultimaMovimentacao: string | null;
   categoriaPredominante?: string;
+  categoriaStatus?: DataStatus;
   uaTotal: number;
   lotacaoStatus: DataStatus;
 }
@@ -64,6 +65,7 @@ export interface PastoOccupancyMetrics {
   tempoLotacaoStatus?: DataStatus; // Alias para compatibilidade legada
   ultimaMovimentacao: string | null;
   categoriaPredominante?: string;
+  categoriaStatus?: DataStatus;
   uaTotal: number;
   taxaLotacaoUaHa: number | null;
   taxaLotacaoStatus: DataStatus;
