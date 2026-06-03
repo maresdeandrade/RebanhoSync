@@ -1,17 +1,17 @@
 # Current Phase Handoff — RebanhoSync
 
-Atualizado em: 2026-06-02  
-**Baseline Commit:** `32d7779`
+Atualizado em: 2026-06-02
+**Baseline Commit:** `3fe7a81`
 
 ## 1. Fase atual
 
-Preparação de commit/PR — Fechamento Fase 6 + Gates Pós-Fase 6.
+Preparação de commit/PR — Fechamento Fase 6 + Gates Pós-Fase 6 + Fase 8.
 
 ---
 
 ## 2. Estado consolidado
 
-A Fase 6 sanitária foi executada e as pendências posteriores de suite global, higiene de testes e preparação de PR foram regularizadas localmente.
+A Fase 6 sanitária foi executada e as pendências posteriores de suite global, higiene de testes, preparação de PR e formalização do fallback foram regularizadas localmente.
 
 Consolidado:
 
@@ -24,13 +24,13 @@ Consolidado:
 - sociedade validada como vínculo patrimonial;
 - sociedade validada sem efeitos automáticos sanitários, de conformidade ou financeiros;
 - baseline funcional Supabase passou com RLS para sanitário, estoque e sociedade;
-- suite global `pnpm test -- --run` passou;
-- suite global final: `259` arquivos / `1743` testes;
+- suite global `pnpm test -- --run` passou (259 arquivos, 1744 tests);
 - lint passou;
 - build passou com warnings conhecidos não bloqueantes;
 - Vitest usa `maxWorkers: 2` para estabilizar execução global local;
 - Gate de Higiene de Testes pós-Fase 6 concluído;
 - Fase 7 Preparação de PR concluída localmente;
+- Fase 8 Formalização Fallback Sanitário concluída localmente;
 - continuidade documental reconciliada.
 
 Não houve alteração em:
@@ -61,7 +61,7 @@ Não refazer sem regressão comprovada:
 - estabilização da suite global via `vitest.config.ts`;
 - correção de mock Supabase em `sync_insumo_movimentacoes.test.ts`;
 - adição de `fake-indexeddb/auto` em `Registrar.test.tsx`;
-- fixture segura do fallback legado sanitário em `nextOccurrenceService.test.ts`;
+- formalização do contrato mínimo do fallback em `nextOccurrenceService.ts`;
 - rota stub `/registrar` em `PastoAvaliacao.test.tsx`.
 
 ---
@@ -78,15 +78,11 @@ docs/review/OPEN_REVIEW_ITEMS.md
 
 Itens residuais:
 
-1. Ruído residual em `stderr/stdout` fora do escopo do Gate de Higiene de Testes.
-2. Contrato mínimo do fallback legado sanitário.
-3. Warnings conhecidos de build:
-   - Browserslist/caniuse-lite desatualizado;
-   - chunks grandes no Vite.
-4. Padronização futura de Future Flags do React Router em wrappers de teste.
-5. Revisão futura de avisos de Dialog/act em testes.
+1. Ruído residual em `stderr/stdout` de testes.
+2. Warnings conhecidos de build.
+3. Revisão futura de avisos de Dialog/act em testes.
 
-Essas pendências não bloqueiam o fechamento da Fase 6, do Gate Suite Global, do Gate de Higiene de Testes ou da Fase 7.
+Essas pendências não bloqueiam o fechamento da Fase 6, dos Gates, da Fase 7 ou da Fase 8.
 
 ---
 
@@ -95,7 +91,7 @@ Essas pendências não bloqueiam o fechamento da Fase 6, do Gate Suite Global, d
 Preparar commit/PR do fechamento:
 
 ```txt
-Fase 6 sanitária + Gate Suite Global + Gate de Higiene de Testes + Fase 7
+Fase 6 sanitária + Gates + Fase 7 + Fase 8
 ```
 
 Antes do commit/PR:
@@ -169,15 +165,11 @@ Não transformar:
 Áreas principais:
 
 ```txt
-src/lib/sanitario/reconciliation
-src/lib/offline/__tests__
+src/lib/sanitario/engine
 src/lib/sanitario/__tests__
-src/pages/Registrar/__tests__
+src/components/sanitario/__tests__
 src/pages/__tests__
-scripts/codex
 docs/review
-docs/context
-vitest.config.ts
 ```
 
 Áreas que não devem ser tocadas sem regressão comprovada:
@@ -208,7 +200,7 @@ Resultado consolidado:
 
 ```txt
 Test Files  259 passed (259)
-Tests       1743 passed (1743)
+Tests       1744 passed (1744)
 Lint        passed
 Build       passed
 ```
@@ -280,6 +272,7 @@ Continue a partir de:
 - `docs/review/LAST_PHASE_RESULT.md`
 - `docs/review/OPEN_REVIEW_ITEMS.md`
 - `docs/review/RESULTADO_FASE_7_PREPARACAO_PR.md`
+- `docs/review/RESULTADO_FASE_8_FORMALIZACAO_FALLBACK_SANITARIO.md`
 - `docs/context/PROJECT_STATUS.md`
 - `AGENTS.md`
 - `.agents/rules/CORE_RULES.md`
@@ -287,7 +280,7 @@ Continue a partir de:
 
 Objetivo:
 
-Preparar commit/PR do fechamento da Fase 6 + Gate Suite Global + Gate de Higiene de Testes + Fase 7.
+Preparar commit/PR do fechamento da Fase 6 + Gates + Fase 7 + Fase 8.
 
 Antes de alterar qualquer arquivo, entregue:
 
@@ -333,5 +326,6 @@ Fase 6 sanitária: concluída localmente.
 Gate Suite Global: concluído.
 Gate de Higiene de Testes: concluído.
 Fase 7: concluída localmente.
+Fase 8: concluída localmente.
 Próxima etapa: commit/PR.
 ```

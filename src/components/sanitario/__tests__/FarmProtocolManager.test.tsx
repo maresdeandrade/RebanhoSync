@@ -82,7 +82,9 @@ describe("FarmProtocolManager", () => {
   });
 
   function renderManager(ui: ReactElement) {
-    return render(<MemoryRouter>{ui}</MemoryRouter>);
+    return render(
+      <MemoryRouter future={{ v7_startTransition: true }}>{ui}</MemoryRouter>,
+    );
   }
 
   it("mostra conflito inline ao editar um protocolo com familia ja coberta pelo pack oficial", () => {

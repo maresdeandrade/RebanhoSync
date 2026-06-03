@@ -174,9 +174,9 @@ describe("P2 pasture management fields", () => {
   });
 
   it("PastoNovo salva os novos campos", async () => {
-    render(
-      <MemoryRouter>
-        <PastoNovo />
+render(
+       <MemoryRouter future={{ v7_startTransition: true }}>
+         <PastoNovo />
       </MemoryRouter>,
     );
 
@@ -286,9 +286,9 @@ describe("P2 pasture management fields", () => {
     ).toBeUndefined();
   });
 
-  it("bloqueia altura de saida maior ou igual a entrada", async () => {
+it("bloqueia altura de saida maior ou igual a entrada", async () => {
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true }}>
         <PastoNovo />
       </MemoryRouter>,
     );
@@ -314,9 +314,9 @@ describe("P2 pasture management fields", () => {
   });
 
   it("bloqueia altura zero ou negativa quando preenchida", async () => {
-    render(
-      <MemoryRouter>
-        <PastoNovo />
+render(
+       <MemoryRouter future={{ v7_startTransition: true }}>
+         <PastoNovo />
       </MemoryRouter>,
     );
 
@@ -386,9 +386,9 @@ describe("P3 pasture infrastructure scope", () => {
   });
 
   it("PastoNovo nao renderiza curral, brete ou balanca", () => {
-    render(
-      <MemoryRouter>
-        <PastoNovo />
+render(
+       <MemoryRouter future={{ v7_startTransition: true }}>
+         <PastoNovo />
       </MemoryRouter>,
     );
 
@@ -398,9 +398,9 @@ describe("P3 pasture infrastructure scope", () => {
   });
 
   it("PastoNovo salva infraestrutura sem curral", async () => {
-    render(
-      <MemoryRouter>
-        <PastoNovo />
+render(
+       <MemoryRouter future={{ v7_startTransition: true }}>
+         <PastoNovo />
       </MemoryRouter>,
     );
 

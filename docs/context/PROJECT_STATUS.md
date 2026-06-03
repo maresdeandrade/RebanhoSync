@@ -1,7 +1,7 @@
 # Project Status — RebanhoSync
 
 Atualizado em: 2026-06-02
-**Baseline Commit:** `32d7779`
+**Baseline Commit:** `3fe7a81`
 
 ## Objetivo
 
@@ -29,7 +29,7 @@ A fase atual é consolidação SLC:
 
 - Fase 6 sanitaria em staging, sync/replay e RLS/multi-tenant concluida nos gates focados;
 - baseline funcional Supabase passou para sanitario, estoque e sociedade;
-- suite global `pnpm test -- --run` passou apos estabilizacao do runner;
+- suite global `pnpm test -- --run` passou (259 arquivos, 1744 testes) apos estabilizacao do runner;
 - lint e build passaram.
 
 ---

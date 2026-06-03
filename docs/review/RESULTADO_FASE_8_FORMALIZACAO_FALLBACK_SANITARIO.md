@@ -72,10 +72,9 @@ Campos obrigatórios no `payload` para `parseLegacyProtocolItemToDomain`:
 
 Pendências remanescentes em `docs/review/OPEN_REVIEW_ITEMS.md`:
 
-1. Ruído residual em `stderr/stdout` de testes (P2).
+1. Ruído residual em `stderr/stdout` de testes (P2), incluindo eventuais Future Flags restantes.
 2. Warnings conhecidos de build (P2).
-3. Revisar Future Flags do React Router em wrappers de teste (P2) — **parcialmente abordado**.
-4. Revisar avisos de Dialog/act em testes (P2).
+3. Revisar avisos de Dialog/act em testes (P2).
 
 ---
 

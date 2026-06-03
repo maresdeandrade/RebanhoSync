@@ -1,6 +1,6 @@
 /**
  * Próxima Ocorrência — Serviço de Integração
- * Usa novo scheduler com feature flag (fallback para legado)
+ * Usa novo scheduler com feature flag (fallback para adapter interno)
  * Ready para uso em componentes e serviços
  */
 
@@ -9,22 +9,121 @@ import {
   tryComputeNextSanitaryOccurrence,
   isProtocolItemCompatibleWithNewScheduler,
   type ComputeNextOccurrenceContext,
-  type ComputedOccurrence,
+  type NextSanitaryOccurrenceComputed,
 } from "@/lib/sanitario/engine/schedulerIntegration";
 import { shouldUseNewSanitaryScheduler } from "@/lib/sanitario/engine/featureFlags";
 import {
-  computeNextSanitaryOccurrence as legacyScheduler,
-  type ScheduleResult,
+  parseLegacyProtocolItemToDomain,
+} from "@/lib/sanitario/models/adapters";
+import {
+  computeNextSanitaryOccurrence,
 } from "@/lib/sanitario/engine/scheduler";
+import type {
+  SanitarySubjectContext,
+  SanitaryExecutionRecord,
+  SchedulerNowContext,
+} from "@/lib/sanitario/models/domain";
+
+/**
+ * Output compatível com chamadas externas ao serviço legado
+ */
+export interface LegacyScheduleResult {
+  materialize: boolean;
+  dueDate: string | null;
+  availableAt: string | null;
+  dedupKey: string | null;
+  reasonCode: string;
+  reasonMessage: string;
+  actionable: boolean;
+  complianceLevel: string;
+  blockedBy: string | null;
+}
+
+/**
+ * Adapter interno para chamar scheduler novo com input legado
+ * Este é o contrato mínimo do fallback - não altera regra sanitária
+ */
+function tryLegacyCompatibleCompute(
+  protocolItem: ProtocoloSanitarioItem,
+  context: ComputeNextOccurrenceContext,
+): LegacyScheduleResult | null {
+  if (!context.fazendaId) {
+    return null;
+  }
+
+  const now = context.now ?? new Date();
+  const animalId = context.animal?.id ?? context.animalId ?? "unknown";
+  const protocolId =
+    (protocolItem as Partial<ProtocoloSanitarioItem> & { protocol_id?: string })
+      .protocolo_id ??
+    (protocolItem as Partial<ProtocoloSanitarioItem> & { protocol_id?: string })
+      .protocol_id ??
+    "unknown_protocol";
+  const itemId =
+    protocolItem.item_code ??
+    protocolItem.logical_item_key ??
+    protocolItem.id ??
+    "unknown_item";
+
+  const domain = parseLegacyProtocolItemToDomain(protocolId, itemId, protocolItem.payload);
+  if (!domain) {
+    return null;
+  }
+
+  const subject: SanitarySubjectContext = {
+    scopeType: "animal",
+    scopeId: animalId,
+    animal: context.animal
+      ? {
+          id: context.animal.id,
+          birthDate: context.animal.data_nascimento,
+          sex: context.animal.sexo === "M" ? "macho" : "femea",
+          species: "bovino",
+          categoryCode: context.animal.categoria_zootecnica ?? null,
+        }
+      : null,
+    fazenda: {
+      id: context.fazendaId,
+      uf: null,
+      municipio: null,
+    },
+    activeRisks: [],
+    activeEvents: [],
+  };
+
+  const input = {
+    item: domain,
+    subject,
+    history: [] as SanitaryExecutionRecord[],
+    now: {
+      nowIso: now.toISOString().split("T")[0] ?? now.toISOString(),
+      timezone: "America/Sao_Paulo",
+    } as SchedulerNowContext,
+  };
+
+  const result = computeNextSanitaryOccurrence(input);
+
+  return {
+    materialize: result.materialize,
+    dueDate: result.dueDate,
+    availableAt: result.availableAt,
+    dedupKey: result.dedupKey,
+    reasonCode: result.reasonCode,
+    reasonMessage: result.reasonMessage,
+    actionable: result.actionable,
+    complianceLevel: result.complianceLevel,
+    blockedBy: result.blockedBy,
+  };
+}
 
 /**
  * Wrapper unificado para computar próxima ocorrência
- * Tenta novo scheduler (com feature flag), fallback para legado
+ * Tenta novo scheduler (com feature flag), fallback para adapter interno
  */
 export function computeNextOccurrence(
   protocolItem: ProtocoloSanitarioItem,
   context: ComputeNextOccurrenceContext,
-): ComputedOccurrence | ScheduleResult | null {
+): NextSanitaryOccurrenceComputed | LegacyScheduleResult | null {
   // Tentar novo scheduler (se feature flag ativado)
   if (shouldUseNewSanitaryScheduler()) {
     const newSchedulerResult = tryComputeNextSanitaryOccurrence(
@@ -38,25 +137,18 @@ export function computeNextOccurrence(
     }
   }
 
-  // Fallback: tentar legado scheduler
-  // (Legado espera estrutura diferente, adaptar conforme necessário)
+  // Fallback interno: usar adapter compatível
   const animalId = "animalId" in context ? context.animalId : context.animal?.id;
   if (!animalId) {
     return null;
   }
 
   try {
-    const legacyResult = legacyScheduler({
-      item: protocolItem,
-      animalId,
-      asOfDate: context.now ?? new Date(),
-    });
-
+    const legacyResult = tryLegacyCompatibleCompute(protocolItem, context);
     return legacyResult;
   } catch (e: unknown) {
-    // Log error (pode ser implementado com observability)
     console.warn(
-      "Legacy scheduler error for item:",
+      "Legacy fallback error for item:",
       protocolItem.id,
       "animal:",
       animalId,
@@ -76,7 +168,7 @@ export function computeNextOccurrencesForAnimal(
   context?: Partial<ComputeNextOccurrenceContext>,
 ): Array<{
   item: ProtocoloSanitarioItem;
-  result: ComputedOccurrence | ScheduleResult | null;
+  result: NextSanitaryOccurrenceComputed | LegacyScheduleResult | null;
 }> {
   const now = context?.now ?? new Date();
   const fullContext: ComputeNextOccurrenceContext = {
@@ -131,7 +223,7 @@ export interface NextOccurrenceMetadata {
   computedAt: Date;
   context: ComputeNextOccurrenceContext;
   item: ProtocoloSanitarioItem;
-  result: ComputedOccurrence | ScheduleResult | null;
+  result: NextSanitaryOccurrenceComputed | LegacyScheduleResult | null;
   error?: string;
 }
 
@@ -154,33 +246,17 @@ export function computeWithMetadata(
     }
   }
 
-  // Fallback
-  const animalId = "animalId" in context ? context.animalId : context.animal?.id;
-  try {
-    const legacyResult = legacyScheduler({
-      item,
-      animalId: animalId ?? "unknown",
-      asOfDate: context.now ?? new Date(),
-    });
+  // Fallback interno
+  const result = computeNextOccurrence(item, context);
 
-    return {
-      sourceScheduler: "legacy",
-      computedAt: new Date(),
-      context,
-      item,
-      result: legacyResult,
-    };
-  } catch (e: unknown) {
-    const errorMsg = e instanceof Error ? e.message : String(e);
-    return {
-      sourceScheduler: "legacy",
-      computedAt: new Date(),
-      context,
-      item,
-      result: null,
-      error: errorMsg,
-    };
-  }
+  return {
+    sourceScheduler: result === null ? "legacy" : "legacy",
+    computedAt: new Date(),
+    context,
+    item,
+    result: result,
+    error: result === null ? "No valid result computed" : undefined,
+  };
 }
 
 /**
