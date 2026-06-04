@@ -1,7 +1,7 @@
 ﻿# Project Status — RebanhoSync
 
 Atualizado em: 2026-06-04
-**Baseline Commit:** `8cd5534`
+**Baseline Commit:** `84383ab`
 
 ## Objetivo
 
@@ -15,7 +15,7 @@ Este documento não é changelog detalhado, auditoria histórica ou roadmap comp
 
 RebanhoSync está em beta interno, com MVP operacional.
 
-A fase atual é Fase 9 — Gate Pós-MVP Comercial/Patrimonial/Classificação/Custo.
+A fase atual/a iniciar é Fase 10 — UX Operacional dos Fluxos Centrais.
 
 Último gate validado:
 
@@ -40,11 +40,15 @@ A fase atual é Fase 9 — Gate Pós-MVP Comercial/Patrimonial/Classificação/C
 - `classificationSnapshot` revisado como leitura/snapshot com `source` e `limitations`;
 - teste de contrato adicionado para confirmar que classificação não expõe autorização de venda, abate ou carência;
 - nenhum avanço para DRE, ROI, margem, custo por arroba, motor comercial avançado, carência liberatória ou autorização crítica.
+- Subfase 9D — Fechamento do Gate Fase 9 e Handoff para Próxima Fase executada;
+- Fase 9 concluída localmente;
+- próxima fase definida como Fase 10 — UX Operacional dos Fluxos Centrais.
 
 Próximo foco:
 
-- executar Subfase 9D — Fechamento do Gate Fase 9 e Handoff para Próxima Fase;
-- não marcar a Fase 9 inteira como concluída antes da 9D.
+- iniciar Fase 10 por diagnóstico UX/produto dos fluxos centrais;
+- não iniciar por patch direto;
+- não criar regra crítica nova, autorização automática ou motor comercial/financeiro.
 
 Realidade validada para o roadmap pós-Fase 9:
 
@@ -54,17 +58,18 @@ Realidade validada para o roadmap pós-Fase 9:
 - Fase 8 Relatórios/Baseline: parcial; base para KPIs operacionais read-only ampliados.
 - Fase 9A e 9B: concluídas localmente.
 - Fase 9C: concluída localmente.
-- 9D: prevista para fechamento do gate e handoff; Fase 9 ainda em andamento.
+- 9D: executada.
+- Fase 9: concluída localmente.
 
-Sequência preliminar corrigida após 9D:
+Sequência corrigida pós-Fase 9:
 
-1. UX Operacional dos Fluxos Centrais.
-2. Lotes, Pastos e Desempenho Operacional Ampliado.
-3. Compra/Venda Operacional: Hardening e Lacunas.
-4. Relatórios/KPIs Operacionais Read-only Ampliados.
-5. Financeiro Gerencial Explícito.
-6. Motor de Decisão Assistida.
-7. Beta Externo / SLC / Hardening de Produto.
+1. Fase 10 — UX Operacional dos Fluxos Centrais.
+2. Fase 11 — Lotes, Pastos e Desempenho Operacional Ampliado.
+3. Fase 12 — Compra/Venda Operacional: Hardening e Lacunas.
+4. Fase 13 — Relatórios/KPIs Operacionais Read-only Ampliados.
+5. Fase 14 — Financeiro Gerencial Explícito.
+6. Fase 15 — Motor de Decisão Assistida.
+7. Fase 16 — Beta Externo / SLC / Hardening de Produto.
 
 ---
 

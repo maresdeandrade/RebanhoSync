@@ -26,17 +26,25 @@ Não deve substituir issues, tarefas técnicas ou prompts de implementação.
 
 ---
 
-## Fase atual — Fase 9 (Gate Pós-MVP Comercial/Patrimonial/Classificação/Custo)
+## Fase atual — Fase 10 (UX Operacional dos Fluxos Centrais)
 
-Subfase atual: **9D — Fechamento do Gate Fase 9 e Handoff para Próxima Fase**
-Subfase anterior: **9C — Sociedade Patrimonial e Classificação Operacional Read-only — concluída localmente**
+Status: **a iniciar**
+Fase anterior: **Fase 9 — Gate Pós-MVP Comercial/Patrimonial/Classificação/Custo — concluída localmente**
+
+### Conduta inicial
+
+A Fase 10 deve começar por diagnóstico UX/produto dos fluxos centrais, sem patch direto, sem regra crítica nova e sem antecipar motor comercial/financeiro.
+
+---
+
+## Fase 9 — concluída localmente
 
 ### Status das subfases
 
 - 9A — Inventário Operacional: concluída localmente.
 - 9B — Relatórios Operacionais de Custo Parcial: concluída localmente.
 - 9C — Sociedade Patrimonial e Classificação Operacional Read-only: concluída localmente.
-- 9D — Fechamento do Gate Fase 9 e Handoff para Próxima Fase: prevista.
+- 9D — Fechamento do Gate Fase 9 e Handoff para Próxima Fase: executada.
 
 ### Objetivo da Fase 9
 
@@ -55,7 +63,9 @@ Subfase anterior: **9C — Sociedade Patrimonial e Classificação Operacional R
 - nenhuma autorização automática de venda/abate é criada;
 - nenhum avanço indevido para DRE, ROI, margem, custo por arroba ou motor comercial avançado ocorre.
 
-Referência: `docs/review/ACTIVE_PHASE_PLAN.md` e `docs/review/PLANO_FASE_9_GATE_POS_MVP_COMERCIAL_PATRIMONIAL_CLASSIFICACAO_CUSTO.md`
+Status final: cumprido localmente.
+
+Referência: `docs/review/LAST_PHASE_RESULT.md` e `docs/review/PLANO_FASE_9_GATE_POS_MVP_COMERCIAL_PATRIMONIAL_CLASSIFICACAO_CUSTO.md`
 
 ---
 
@@ -86,14 +96,15 @@ Status real usa apenas: `CONCLUÍDA`, `PARCIAL`, `HARDENING_RESIDUAL`, `A_INICIA
 | Fase 8 — Relatórios/Baseline | Documentada como relatórios/baseline estável; 9B ampliou custo parcial. | `operationalSummary.ts`, `Relatorios.tsx`, `Home.tsx`, `finance/gerencial.ts` e testes de relatório. | `PARCIAL` | KPIs ampliados ainda exigem fonte/limitação explícita. | Base para próximos KPIs. |
 | Fase 9A — Inventário/Custo/Snapshot | Concluída localmente. | Handoff, `LAST_PHASE_RESULT`, plano da Fase 9 e validações registradas. | `CONCLUÍDA` | Nenhuma pendência específica aberta. | Manter concluída. |
 | Fase 9B — Custo parcial em relatórios | Concluída localmente. | `inventory.partialCost`, `operationalSummary.test`, `Relatorios.e2e` e validações registradas. | `CONCLUÍDA` | Nenhuma pendência específica aberta. | Manter concluída. |
-| Fase 9C — Sociedade/Classificação read-only | Concluída localmente. | `classificationSnapshot.ts`, teste de contrato, occupancy; sociedade em Dexie/migrations/UI/RLS. | `CONCLUÍDA` | Hardening futuro de UX/sync/relatórios. | Manter concluída; 9D fecha o gate. |
+| Fase 9C — Sociedade/Classificação read-only | Concluída localmente. | `classificationSnapshot.ts`, teste de contrato, occupancy; sociedade em Dexie/migrations/UI/RLS. | `CONCLUÍDA` | Hardening futuro de UX/sync/relatórios. | Manter concluída. |
+| Fase 9D — Fechamento do Gate | Executada. | `LAST_PHASE_RESULT`, `CURRENT_PHASE_HANDOFF`, `ACTIVE_PHASE_PLAN`, `PROJECT_STATUS`, `ROADMAP` e plano da Fase 9 alinhados. | `CONCLUÍDA` | Nenhuma P0/P1 aberta. | Gate fechado; handoff para Fase 10. |
 | Financeiro/DRE/Margem | Limites documentados; ledger gerencial existe, DRE/ROI/margem conclusivos não. | `finance_transactions`, `finance_categories`, docs financeiros e testes bloqueando métricas comerciais indevidas. | `PARCIAL` | Método, período, rateio, fonte explícita e limitações. | Fase futura explícita, sem prometer DRE/ROI agora. |
 | Lotes/Pastos/Desempenho | MVP/capability indicam base parcial. | `pastos`, `lotes`, occupancy, movimentação e relatórios. | `PARCIAL` | Desempenho ampliado/GMD por período e fonte declarada. | Fase futura ou hardening. |
 | KPIs operacionais | Relatórios operacionais existem; KPIs ampliados são planejados. | `operationalSummary`, `Relatorios`, `Home`, docs de KPI/limites financeiros. | `PARCIAL` | KPIs read-only ampliados com fonte, período e limitação. | Fase futura read-only. |
 
 ---
 
-## Sequência prevista pós-Fase 9
+## Sequência prevista a partir da Fase 10
 
 1. Fase 10 — UX Operacional dos Fluxos Centrais.
 2. Fase 11 — Lotes, Pastos e Desempenho Operacional Ampliado.
@@ -103,7 +114,7 @@ Status real usa apenas: `CONCLUÍDA`, `PARCIAL`, `HARDENING_RESIDUAL`, `A_INICIA
 6. Fase 15 — Motor de Decisão Assistida.
 7. Fase 16 — Beta Externo / SLC / Hardening de Produto.
 
-A próxima fase após 9D será nomeada no fechamento da 9D.
+Fase 10 é a próxima fase definida pelo fechamento da 9D.
 
 ---
 

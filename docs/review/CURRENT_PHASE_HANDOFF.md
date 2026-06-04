@@ -1,11 +1,11 @@
 # Current Phase Handoff — RebanhoSync
 
 Atualizado em: 2026-06-04
-**Baseline Commit:** `8cd5534`
+**Baseline Commit:** `84383ab`
 
 ## 1. Fase atual
 
-Fase 9 — Gate Pós-MVP Comercial/Patrimonial/Classificação/Custo.
+Fase 9 — Gate Pós-MVP Comercial/Patrimonial/Classificação/Custo — concluída localmente.
 
 Subfase 9A — Inventário Operacional — concluída localmente.
 
@@ -13,7 +13,9 @@ Subfase 9B — Relatórios Operacionais de Custo Parcial — concluída localmen
 
 Subfase 9C — Sociedade Patrimonial e Classificação Operacional Read-only — concluída localmente.
 
-Subfase 9D — Fechamento do Gate Fase 9 e Handoff para Próxima Fase — prevista.
+Subfase 9D — Fechamento do Gate Fase 9 e Handoff para Próxima Fase — executada.
+
+Próxima fase: Fase 10 — UX Operacional dos Fluxos Centrais.
 
 ---
 
@@ -60,10 +62,10 @@ Auditoria documental/local em 2026-06-04:
 - Fase 7 — Compra/Venda/Sociedade: `PARCIAL`; tratar como hardening e lacunas, não criação do zero.
 - Fase 8 — Relatórios/Baseline: `PARCIAL`; usar como base para KPIs operacionais ampliados.
 - Fase 9A e 9B: `CONCLUÍDA` localmente.
-- Fase 9C: `CONCLUÍDA` localmente; 9D permanece o próximo foco.
-- 9D: prevista para fechamento do gate e handoff da próxima fase.
+- Fase 9C: `CONCLUÍDA` localmente.
+- 9D: `CONCLUÍDA` localmente; gate da Fase 9 fechado.
 
-Conduta pós-Fase 9: usar a sequência corrigida do `docs/product/ROADMAP.md`, mantendo sanitário/reconciliação como trilha residual contínua e evitando antecipar DRE, ROI, margem, custo por arroba ou motor comercial.
+Conduta pós-Fase 9: iniciar Fase 10 por diagnóstico UX/produto, usando a sequência corrigida do `docs/product/ROADMAP.md`, mantendo sanitário/reconciliação como trilha residual contínua e evitando antecipar DRE, ROI, margem, custo por arroba ou motor comercial.
 
 ---
 
@@ -114,9 +116,9 @@ Pendências residuais não bloqueantes:
 
 ---
 
-## 5. Próximo objetivo
+## 5. Resultado da Fase 9
 
-Continuar a Fase 9 pela Subfase 9D — Fechamento do Gate Fase 9 e Handoff para Próxima Fase.
+Fase 9 concluída localmente pela Subfase 9D — Fechamento do Gate Fase 9 e Handoff para Próxima Fase.
 
 Resultado da 9C:
 
@@ -127,16 +129,24 @@ Resultado da 9C:
 - teste de contrato adicionado para impedir interpretação de classificação como autorização de venda, abate ou carência;
 - nenhuma regra de DRE, ROI, margem, custo por arroba, motor comercial avançado, carência liberatória ou autorização crítica criada.
 
+Resultado da 9D:
+
+- 9A, 9B e 9C preservadas como concluídas localmente;
+- ausência de P0/P1 bloqueante aberta em `docs/review/OPEN_REVIEW_ITEMS.md` confirmada;
+- riscos residuais P2 preservados;
+- Fase 10 nomeada como próxima fase.
+
 ---
 
 ## 6. Escopo permitido no próximo passo
 
-Permitido para continuidade da Fase 9 pela 9D:
+Permitido para início da Fase 10:
 
-- consolidar 9A, 9B e 9C no fechamento do gate;
-- revisar validações registradas;
-- preparar handoff para a próxima fase;
-- manter Fase 9 aberta até o fechamento explícito da 9D.
+- diagnosticar UX/produto dos fluxos centrais;
+- revisar telas, rotas e jornadas afetadas com evidência local;
+- propor patch pequeno, reversível e testável;
+- preservar regras críticas fora da UI;
+- não iniciar por patch direto.
 
 ---
 
@@ -144,7 +154,8 @@ Permitido para continuidade da Fase 9 pela 9D:
 
 Não fazer sem tarefa explícita:
 
-- marcar Fase 9 inteira como concluída;
+- reabrir ou alterar o fechamento da Fase 9 sem tarefa explícita;
+- reabrir Fase 9A, 9B ou 9C;
 - criar DRE, ROI, venda, abate ou custo por arroba;
 - transformar classificação operacional em autorização;
 - transformar snapshot/read model em fonte primária;
@@ -153,20 +164,16 @@ Não fazer sem tarefa explícita:
 
 ---
 
-## 8. Áreas candidatas para 9C
+## 8. Áreas candidatas para Fase 10
 
-Áreas candidatas para leitura inicial:
+Áreas candidatas para diagnóstico inicial devem ser definidas conforme o fluxo UX escolhido. Começar por documentos de UX e pela tela/rota afetada:
 
 ```txt
-src/lib/animals/classificationSnapshot.ts
-src/lib/animals/__tests__/classificationSnapshot.test.ts
-src/features/occupancy/classification.ts
-src/lib/reports/operationalSummary.ts
-src/pages/Relatorios.tsx
-src/lib/insights/herdStageSummary.ts
-src/lib/insights/tagSignals.ts
-supabase/migrations
-docs/review/PLANO_FASE_9_GATE_POS_MVP_COMERCIAL_PATRIMONIAL_CLASSIFICACAO_CUSTO.md
+docs/ux/UX_PRINCIPLES.md
+docs/ux/SCREEN_PATTERNS.md
+docs/ux/VISUAL_TOKENS.md
+src/pages
+src/components
 ```
 
 Áreas protegidas:
@@ -178,7 +185,7 @@ src/lib/sanitario
 src/lib/eventos
 ```
 
-Só tocar Supabase/migrations/RLS se o diagnóstico da 9C demonstrar lacuna objetiva de isolamento patrimonial e o plano ativo autorizar validação proporcional.
+Só tocar Supabase/migrations/RLS se houver tarefa explícita e validação proporcional.
 
 ---
 

@@ -1,9 +1,9 @@
 ﻿# PLANO_FASE_9_GATE_POS_MVP_COMERCIAL_PATRIMONIAL_CLASSIFICACAO_CUSTO
 
 Atualizado em: 2026-06-04  
-**Status:** Fase 9 em andamento  
-**Subfase atual:** 9D — Fechamento do Gate Fase 9 e Handoff para Próxima Fase — prevista
-**Commit Baseline:** `8cd5534`  
+**Status:** Fase 9 concluída localmente
+**Subfase final:** 9D — Fechamento do Gate Fase 9 e Handoff para Próxima Fase — executada
+**Commit Baseline:** `84383ab`
 **Baseline anterior consolidado:** `3fe7a81`
 
 ---
@@ -55,7 +55,8 @@ Status real usa apenas: `CONCLUÍDA`, `PARCIAL`, `HARDENING_RESIDUAL`, `A_INICIA
 | Fase 8 — Relatórios/Baseline | Documentada como relatórios/baseline estável; ampliada pela 9B. | `operationalSummary.ts`, `Relatorios.tsx`, `Home.tsx`, `finance/gerencial.ts` e testes. | `PARCIAL` | KPIs ampliados com fonte/limitação. | Base para próximos KPIs. |
 | Fase 9A — Inventário/Custo/Snapshot | Concluída localmente. | Handoff, `LAST_PHASE_RESULT`, validações globais e Supabase registradas. | `CONCLUÍDA` | Nenhuma pendência específica aberta. | Manter concluída. |
 | Fase 9B — Custo parcial em relatórios | Concluída localmente. | `inventory.partialCost`, testes de relatório e validações registradas. | `CONCLUÍDA` | Nenhuma pendência específica aberta. | Manter concluída. |
-| Fase 9C — Sociedade/Classificação read-only | Concluída localmente. | `classificationSnapshot.ts`, teste de contrato, occupancy; sociedade em Dexie/migrations/UI/RLS. | `CONCLUÍDA` | Hardening futuro de UX/sync/relatórios. | Manter concluída; 9D fecha o gate. |
+| Fase 9C — Sociedade/Classificação read-only | Concluída localmente. | `classificationSnapshot.ts`, teste de contrato, occupancy; sociedade em Dexie/migrations/UI/RLS. | `CONCLUÍDA` | Hardening futuro de UX/sync/relatórios. | Manter concluída. |
+| Fase 9D — Fechamento do Gate | Executada. | Documentos de continuidade e roadmap alinhados; próxima fase definida. | `CONCLUÍDA` | Nenhuma P0/P1 aberta. | Gate fechado; handoff para Fase 10. |
 | Financeiro/DRE/Margem | Ledger existe; DRE/ROI/margem conclusivos não. | `finance_transactions`, `finance_categories`, docs financeiros e testes comerciais bloqueando métricas indevidas. | `PARCIAL` | Método, período, rateio, fonte explícita e limitações. | Futuro explícito, sem antecipar DRE/ROI. |
 | Lotes/Pastos/Desempenho | Base parcial no MVP. | `pastos`, `lotes`, occupancy, movimentação e relatórios. | `PARCIAL` | Desempenho ampliado/GMD por período. | Fase futura ou hardening. |
 | KPIs operacionais | Relatórios existem; KPIs ampliados são planejados. | `operationalSummary`, `Relatorios`, `Home`, docs de KPI/limites. | `PARCIAL` | Fonte, período e limitação explícitos. | Fase futura read-only. |
@@ -311,24 +312,47 @@ A 9C só pode ser considerada avançada se:
 
 ## 7. Subfase 9D — Fechamento do Gate Fase 9 e Handoff para Próxima Fase
 
-**Status:** prevista
+**Status:** executada
 
 ### 7.1 Objetivo
 
-Fechar o Gate da Fase 9 em termos de planejamento, documentação e handoff para a próxima fase. A 9D deve consolidar o que foi aprendido em 9A/9B/9C e definir o nome e o foco da fase seguinte.
+Fechar o Gate da Fase 9 em termos de planejamento, documentação e handoff para a próxima fase. A 9D consolidou 9A/9B/9C e definiu o nome e o foco da fase seguinte.
 
-### 7.2 Escopo previsto
+### 7.2 Checklist 9D
 
-- validar que 9A e 9B estão concluídas localmente;
-- validar diagnóstico de 9C antes de patch;
-- documentar lacunas reais remanescentes;
-- definir critério de aceitação do gate;
-- preparar handoff para a fase seguinte;
-- não marcar Fase 9 como concluída até o fechamento da 9D.
+- [x] Validar que 9A está concluída localmente.
+- [x] Validar que 9B está concluída localmente.
+- [x] Validar que 9C está concluída localmente.
+- [x] Confirmar ausência de P0/P1 bloqueante em `OPEN_REVIEW_ITEMS.md`.
+- [x] Documentar riscos residuais P2 como aceitos.
+- [x] Fechar Fase 9 localmente.
+- [x] Definir próxima fase.
+- [x] Substituir plano ativo por Fase 10.
+- [x] Não alterar código.
+- [x] Não criar feature nova.
 
-### 7.3 Observação
+### 7.3 Validação 9D
 
-A próxima fase após 9D será nomeada no fechamento da 9D.
+```txt
+git status --short --untracked-files=all: passou antes do patch; worktree limpo.
+git diff --check: passou antes do patch.
+git rev-parse --short HEAD: 84383ab.
+```
+
+Validação final da 9D deve ser documental:
+
+```bash
+git diff --check
+git status --short --untracked-files=all
+```
+
+### 7.4 Resultado 9D
+
+Fase 9 concluída localmente.
+
+Próxima fase definida: Fase 10 — UX Operacional dos Fluxos Centrais.
+
+A Fase 10 deve iniciar por diagnóstico UX/produto, sem patch direto e sem regra crítica nova.
 
 ## 8. Sequência prevista pós-Fase 9
 
@@ -340,7 +364,7 @@ A próxima fase após 9D será nomeada no fechamento da 9D.
 6. Fase 15 — Motor de Decisão Assistida.
 7. Fase 16 — Beta Externo / SLC / Hardening de Produto.
 
-A próxima fase após 9D será nomeada no fechamento da 9D. A sequência acima é referência preliminar corrigida pela matriz de realidade; não reabre Fases 5/6 e não trata compra/venda, sociedade ou relatórios como inexistentes.
+Fase 10 foi nomeada no fechamento da 9D. A sequência acima é referência corrigida pela matriz de realidade; não reabre Fases 5/6 e não trata compra/venda, sociedade ou relatórios como inexistentes.
 
 ## 8.1 Trilhas residuais contínuas
 
@@ -358,6 +382,7 @@ Pendências reais da Fase 9 neste momento:
 | P1 | Diagnóstico da sociedade patrimonial na 9C | Fechado localmente | Evidência mapeada; manter hardening futuro fora da 9C. |
 | P1 | Diagnóstico da classificação operacional read-only na 9C | Fechado localmente | `classificationSnapshot` e usos mapeados; teste de contrato adicionado. |
 | P1 | Confirmar se há lacuna de isolamento por sócio/participação | Fechado localmente | Sem migration/RLS nova; isolamento por `fazenda_id` preservado. |
+| P1 | Fechamento do gate da Fase 9 | Fechado localmente | 9D executada; Fase 10 definida. |
 | P2 | Ruído residual em `stderr/stdout` de testes | Aberto | Tratar em gate próprio de higiene residual. |
 | P2 | Warnings conhecidos de build | Aberto | Tratar em tarefa própria de build/performance. |
 | P2 | Avisos de Dialog/act em testes | Aberto | Tratar em gate futuro de testes UI. |
@@ -430,15 +455,17 @@ node scripts/codex/validate-supabase-baseline-functional.mjs
 
 ---
 
-## 12. Resultado esperado ao fim da Fase 9
+## 12. Resultado final da Fase 9
 
-A Fase 9 só deve ser considerada concluída quando:
+A Fase 9 foi considerada concluída localmente porque:
 
-- 9A estiver consolidada e documentada;
-- 9B estiver consolidada e documentada;
-- 9C tiver mapeado sociedade patrimonial e classificação operacional;
-- lacunas reais estiverem resolvidas ou registradas como pendência explícita;
-- nenhuma autorização crítica indevida tiver sido criada;
-- todos os contratos obrigatórios da Fase 9 estiverem documentados;
-- validação proporcional tiver passado;
-- Fase 9 inteira for fechada em documento próprio, sem confundir fechamento de subfase com fechamento de fase.
+- 9A está consolidada e documentada;
+- 9B está consolidada e documentada;
+- 9C mapeou sociedade patrimonial e classificação operacional;
+- lacunas reais estão resolvidas ou registradas como pendência explícita;
+- nenhuma autorização crítica indevida foi criada;
+- todos os contratos obrigatórios da Fase 9 estão documentados;
+- validação proporcional passou;
+- 9D fechou a fase em documento próprio, sem confundir fechamento de subfase com fechamento de fase.
+
+Próxima fase: Fase 10 — UX Operacional dos Fluxos Centrais.

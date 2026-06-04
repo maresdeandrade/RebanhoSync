@@ -1,165 +1,150 @@
 # Last Phase Result — RebanhoSync
 
 Atualizado em: 2026-06-04
-**Baseline Commit documental:** `8cd5534`
-**Commit local observado na 9C:** `93d290c`
+**Baseline Commit documental anterior:** `8cd5534`
+**Commit local observado na 9D:** `84383ab`
 
 ## 1. Nome da fase
 
-Fase 9 — Subfase 9C: Sociedade Patrimonial e Classificação Operacional Read-only.
+Fase 9 — Gate Pós-MVP Comercial/Patrimonial/Classificação/Custo.
+
+Subfase final: 9D — Fechamento do Gate Fase 9 e Handoff para Próxima Fase.
 
 ---
 
 ## 2. Fonte de continuidade usada
 
-- `docs/review/CURRENT_PHASE_HANDOFF.md`
-- `docs/review/ACTIVE_PHASE_PLAN.md`
-- `docs/review/OPEN_REVIEW_ITEMS.md`
-- `docs/review/PLANO_FASE_9_GATE_POS_MVP_COMERCIAL_PATRIMONIAL_CLASSIFICACAO_CUSTO.md`
 - `docs/product/ROADMAP.md`
 - `docs/context/PROJECT_STATUS.md`
+- `docs/review/CURRENT_PHASE_HANDOFF.md`
+- `docs/review/ACTIVE_PHASE_PLAN.md`
+- `docs/review/LAST_PHASE_RESULT.md`
+- `docs/review/OPEN_REVIEW_ITEMS.md`
+- `docs/review/PLANO_FASE_9_GATE_POS_MVP_COMERCIAL_PATRIMONIAL_CLASSIFICACAO_CUSTO.md`
 - `.agents/rules/CORE_RULES.md`
 - `.agents/rules/CONTEXT_LOADING.md`
-- `.agents/rules/no-broad-context.md`
-- `.agents/rules/rtk.md`
 
 ---
 
-## 3. Objetivo
+## 3. Resultado final da Fase 9
 
-Fechar tecnicamente a Subfase 9C com diagnóstico local e hardening mínimo de contrato para:
+Fase 9 concluída localmente.
 
-- sociedade patrimonial;
-- classificação operacional read-only;
-- uso seguro de `classificationSnapshot`;
-- bloqueio contra interpretação de classificação como autorização comercial, venda, abate, carência ou decisão crítica.
+Consolidado:
 
----
+- 9A — Inventário Operacional: concluída localmente.
+- 9B — Relatórios Operacionais de Custo Parcial: concluída localmente.
+- 9C — Sociedade Patrimonial e Classificação Operacional Read-only: concluída localmente.
+- 9D — Fechamento do Gate Fase 9 e Handoff para Próxima Fase: executada.
 
-## 4. Resultado consolidado
-
-Subfase 9C concluída localmente no escopo técnico definido.
-
-Confirmado:
-
-- sociedade patrimonial existe como implementação parcial-real, não criação futura do zero;
-- tipos locais `SociedadePecuaria` e `SociedadeAnimal` incluem `fazenda_id`, percentuais e regras patrimoniais;
-- Dexie possui stores `state_sociedades_pecuarias` e `state_sociedade_animais`;
-- `tableMap` e `pull` incluem `sociedades_pecuarias` e `sociedade_animais`;
-- migrations ativas criam tabelas patrimoniais com FK composta por `fazenda_id`, índices por fazenda e RLS;
-- UI do Registrar cria/vincula/retira/encerra sociedade como vínculo patrimonial;
-- teste existente confirma que operação de sociedade não gera sanitário, conformidade, financeiro ou `finance_transactions` automaticamente;
-- `classificationSnapshot` é resolver/read model derivado com `source` e `limitations`;
-- classificação é consumida em ocupação como categoria predominante e status parcial/completo/empty;
-- sinais/insights mantêm guardrails de fonte e limitação;
-- teste de contrato foi adicionado para impedir que destino/classificação exponha autorização de venda, abate ou carência.
+A 9D validou localmente que não há P0/P1 bloqueante aberto em `docs/review/OPEN_REVIEW_ITEMS.md`, que os riscos residuais estão documentados e que a próxima fase está explicitamente definida.
 
 ---
 
-## 5. Arquivos principais alterados na 9C
+## 4. Entregas consolidadas
 
-| Arquivo | Motivo |
-|---|---|
-| `src/lib/animals/__tests__/classificationSnapshot.test.ts` | Adicionar teste de contrato read-only: classificação/destino produtivo não expõe autorização de venda, abate ou carência. |
-| `docs/review/LAST_PHASE_RESULT.md` | Registrar resultado consolidado da 9C. |
-| `docs/review/CURRENT_PHASE_HANDOFF.md` | Atualizar continuidade após 9C, mantendo 9D prevista. |
-| `docs/review/ACTIVE_PHASE_PLAN.md` | Registrar 9C concluída localmente e Fase 9 ainda em andamento. |
-| `docs/review/PLANO_FASE_9_GATE_POS_MVP_COMERCIAL_PATRIMONIAL_CLASSIFICACAO_CUSTO.md` | Fechar checklist/pendências da 9C e preservar gate 9D. |
-| `docs/context/PROJECT_STATUS.md` | Atualizar estado vivo do projeto. |
+9A consolidou inventário operacional com unidade de compra/apresentação, unidade base e unidade de consumo/evento separadas, custo total/custo por entrada/custo unitário separados, snapshot econômico read-only e baixa nutricional idempotente.
 
----
+9B consolidou `inventory.partialCost` como leitura derivada/read model em relatórios, separando custo conhecido de custo ausente e preservando `0` como custo válido.
 
-## 6. Validações executadas
+9C consolidou sociedade patrimonial e classificação operacional como leitura/snapshot:
 
-| Comando | Resultado |
-|---|---|
-| `git status --short --untracked-files=all` | Passou antes do patch: worktree limpo. |
-| `git diff --check` | Passou antes do patch. |
-| `pnpm test -- src/lib/animals/__tests__/classificationSnapshot.test.ts` | Passou: 25 testes. |
-| `pnpm test -- src/pages/Registrar/__tests__/sociedadePecuaria.effect.test.ts` | Passou: 16 testes. |
-| `pnpm run lint` | Passou. |
-| `pnpm run build` | Passou com warnings conhecidos de Browserslist/caniuse-lite e chunks grandes. |
-| `git diff --check` | Passou ao final do patch. |
-| `git status --short --untracked-files=all` | Alterações esperadas em docs da Fase 9/roadmap e teste de classificação. |
+- sociedade patrimonial mapeada em tipos, Dexie, pull/tableMap, migrations/RLS e Registrar;
+- isolamento por `fazenda_id` preservado;
+- `classificationSnapshot` mantido com `source` e `limitations`;
+- teste de contrato adicionado para impedir interpretação de classificação como autorização de venda, abate ou carência.
 
-Validação Supabase/RLS não é exigida nesta subfase porque não houve alteração em Supabase, migrations, RLS, RPC, edge functions, sync-batch ou baseline.
+9D fechou o gate documental e definiu a próxima fase.
 
 ---
 
-## 7. Resultado técnico da 9C
+## 5. Validações executadas
 
-Confirmado:
+Validações registradas nas subfases anteriores:
 
-- sociedade patrimonial está mapeada com evidência local;
-- isolamento por `fazenda_id` existe em tipos, stores, pull, FKs compostas, índices e policies RLS;
-- há participação patrimonial por percentuais e regras de custo/perda/receita, sem cálculo financeiro automático;
-- `classificationSnapshot` permanece leitura/snapshot derivado;
-- classificação não libera carência, venda, abate, comercialização ou decisão crítica;
-- Fase 9 continua em andamento;
-- 9D permanece apenas como próxima subfase prevista.
+```txt
+9A:
+pnpm test -- testes focados de inventário/sync/sync-batch: passou
+pnpm test: passou (260 arquivos, 1746 testes)
+pnpm run lint: passou
+pnpm run build: passou com warnings conhecidos
+supabase db reset: passou
+node scripts/codex/validate-supabase-baseline-functional.mjs: passou
+git diff --check: passou
+
+9B:
+git diff --check: passou
+pnpm test -- src/lib/reports/__tests__/operationalSummary.test.ts: passou
+pnpm test -- src/pages/__tests__/Relatorios.e2e.test.tsx: passou
+pnpm test: passou (260 arquivos, 1747 testes)
+pnpm run lint: passou
+pnpm run build: passou com warnings conhecidos de Browserslist/chunks
+
+9C:
+git diff --check: passou
+pnpm test -- src/lib/animals/__tests__/classificationSnapshot.test.ts: passou
+pnpm test -- src/pages/Registrar/__tests__/sociedadePecuaria.effect.test.ts: passou
+pnpm run lint: passou
+pnpm run build: passou com warnings conhecidos de Browserslist/caniuse-lite e chunks grandes
+```
+
+Validações executadas na 9D:
+
+```txt
+git status --short --untracked-files=all: passou antes do patch; worktree limpo.
+git diff --check: passou antes do patch.
+git rev-parse --short HEAD: 84383ab.
+```
+
+Como a 9D é documental, não foi rodada suite completa.
 
 ---
 
-## 8. Restrições preservadas
+## 6. Riscos residuais aceitos
+
+Pendências P2 permanecem abertas e não bloqueiam o fechamento local da Fase 9:
+
+1. Ruído residual em `stderr/stdout` de testes.
+2. Warnings conhecidos de build.
+3. Avisos de Dialog/act em testes.
+
+Não há pendência aberta conhecida para 9A, 9B ou 9C que impeça o fechamento do gate.
+
+---
+
+## 7. Restrições preservadas
 
 Não houve avanço para:
 
+- venda;
+- abate;
 - DRE;
 - ROI;
 - margem;
 - custo por arroba;
 - motor comercial avançado;
-- aptidão automática para venda;
-- aptidão automática para abate;
+- autorização automática;
 - carência liberatória;
-- financeiro automático;
-- migration/RLS nova;
-- alteração em Sanitário, Agenda, Evento ou Protocolo fora do escopo.
+- financeiro automático por sociedade;
+- regra crítica baseada em classificação.
 
-Contratos preservados:
+---
+
+## 8. Próxima fase
+
+Próxima fase definida: Fase 10 — UX Operacional dos Fluxos Centrais.
+
+A Fase 10 deve iniciar por diagnóstico UX/produto, sem patch direto e sem regra crítica nova.
+
+---
+
+## 9. Status final
 
 ```txt
-Agenda = intenção/tarefa futura.
-Evento = fato histórico append-only.
-state_* = estado atual/read model.
-Protocolo = regra/configuração, não execução.
-Snapshot = evidência histórica congelada/read model derivado.
-Financeiro = ledger explícito separado.
-Sociedade = vínculo patrimonial.
-Classificação = leitura operacional, não autorização crítica.
-Tags/sinais/insights = auxiliares, nunca fonte primária.
-```
-
----
-
-## 9. Pendências remanescentes
-
-Pendências não bloqueantes permanecem em `docs/review/OPEN_REVIEW_ITEMS.md`:
-
-1. Ruído residual em `stderr/stdout` de testes.
-2. Warnings conhecidos de build.
-3. Revisão futura de avisos de Dialog/act em testes.
-
-Pendências futuras fora da 9C:
-
-- hardening operacional/UX de compra, venda e sociedade na fase própria;
-- relatórios/KPIs patrimoniais ampliados apenas com fonte e limitação explícitas;
-- qualquer prontidão comercial deve ser pré-check futuro não conclusivo, nunca autorização por classificação isolada.
-
----
-
-## 10. Próximo passo recomendado
-
-Continuar Fase 9 pela Subfase 9D — Fechamento do Gate Fase 9 e Handoff para Próxima Fase.
-
-Não marcar a Fase 9 inteira como concluída antes da 9D.
-
----
-
-## 11. Status final
-
-```txt
-Fase 9C Sociedade Patrimonial e Classificação Operacional Read-only: concluída localmente.
-Fase 9 completa: ainda em andamento.
-Próxima subfase prevista: 9D.
+Fase 9A: concluída localmente.
+Fase 9B: concluída localmente.
+Fase 9C: concluída localmente.
+Fase 9D: executada.
+Fase 9 completa: concluída localmente.
+Próxima fase: Fase 10 — UX Operacional dos Fluxos Centrais.
 ```
