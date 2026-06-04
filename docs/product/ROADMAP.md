@@ -1,13 +1,13 @@
-# Roadmap — RebanhoSync
+﻿# Roadmap — RebanhoSync
 
-Atualizado em: 2026-05-31  
-**Baseline Commit:** `32d7779`
+Atualizado em: 2026-06-02
+**Baseline Commit:** `3fe7a81`
 
 ## Objetivo
 
 Definir os próximos focos de desenvolvimento do RebanhoSync em nível de produto.
 
-Este documento não é backlog detalhado.  
+Este documento não é backlog detalhado.
 Não deve substituir issues, tarefas técnicas ou prompts de implementação.
 
 ---
@@ -247,49 +247,3 @@ Requisito:
 ---
 
 ## Bloqueios estratégicos
-
-Não priorizar até contrato técnico e fonte explícita:
-
-- liberação sanitária final automática;
-- venda/abate baseado apenas em carência sanitária;
-- venda/abate automático;
-- peso atual confiável automático;
-- predição de lucro;
-- recomendação sanitária autônoma;
-- fiscal/contábil completo.
-
-Observação:
-
-Carência sanitária estruturada pode ser exibida como sinal sanitário.  
-Esse sinal não equivale a liberação final, aptidão comercial, venda ou abate.
-
----
-
-## Critério para avançar fase
-
-Antes de avançar para fase seguinte:
-
-- lint/test/build verdes;
-- baseline Supabase verde quando aplicável;
-- docs ativos atualizados;
-- archive separado;
-- riscos conhecidos registrados;
-- lacunas críticas bloqueadas ou condicionadas a fonte explícita;
-- UX principal validada;
-- sync/rollback sem regressão conhecida;
-- sinais sanitários diferenciados de decisões comerciais.
-
----
-
-## Manutenção
-
-Atualizar este roadmap quando:
-
-- prioridade de produto mudar;
-- fase for concluída;
-- capacidade sair do out-of-scope;
-- nova lacuna crítica surgir;
-- estratégia de MVP mudar;
-- carência sanitária, liberação sanitária, venda ou abate mudarem de contrato.
-
-Não transformar este documento em backlog granular.

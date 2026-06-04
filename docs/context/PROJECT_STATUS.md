@@ -1,4 +1,4 @@
-# Project Status — RebanhoSync
+﻿# Project Status — RebanhoSync
 
 Atualizado em: 2026-06-02
 **Baseline Commit:** `3fe7a81`
@@ -15,22 +15,22 @@ Este documento não é changelog detalhado, auditoria histórica ou roadmap comp
 
 RebanhoSync está em beta interno, com MVP operacional.
 
-A fase atual é consolidação SLC:
-
-- estabilidade;
-- legibilidade;
-- coerência de fluxo;
-- redução de risco operacional;
-- validação de contratos;
-- melhoria incremental de UX;
-- preservação do comportamento existente.
+A fase atual é Fase 9 — Gate Pós-MVP Comercial/Patrimonial/Classificação/Custo.
 
 Último gate validado:
 
-- Fase 6 sanitaria em staging, sync/replay e RLS/multi-tenant concluida nos gates focados;
-- baseline funcional Supabase passou para sanitario, estoque e sociedade;
-- suite global `pnpm test -- --run` passou (259 arquivos, 1744 testes) apos estabilizacao do runner;
+- Fase 6 sanitária em staging, sync/replay e RLS/multi-tenant concluída nos gates focados;
+- baseline funcional Supabase passou para sanitário, estoque e sociedade;
+- suite global `pnpm test -- --run` passou (259 arquivos, 1744 testes) após estabilização do runner;
 - lint e build passaram.
+
+Próximo foco:
+
+- consolidar base comercial/patrimonial;
+- validar custo operacional por inventário;
+- garantir idempotência de baixa;
+- isolar sociedade patrimonial;
+- validar leitura de classificação operacional sem alteração de estado.
 
 ---
 
@@ -164,10 +164,10 @@ Riscos principais:
 
 Estado validado em 2026-06-02:
 
-- correcao sanitaria permanece append-only;
-- replay corretivo usa `idempotency_key` deterministico;
-- evento original nao deve ser editado por correcao;
-- payload corretivo legado sem contrato completo fica parcial, com limitacoes explicitas.
+- correção sanitária permanece append-only;
+- replay corretivo usa `idempotency_key` determinístico;
+- evento original não deve ser editado por correção;
+- payload corretivo legado sem contrato completo fica parcial, com limitações explícitas.
 
 ---
 
@@ -219,9 +219,9 @@ Riscos principais:
 
 Limite confirmado em 2026-06-02:
 
-- sociedade pecuaria permanece vinculo patrimonial;
-- sociedade nao gera sanitario, conformidade ou financeiro automatico;
-- nao houve avanco para venda, abate, DRE, ROI, custo por arroba ou motor comercial.
+- sociedade pecuária permanece vínculo patrimonial;
+- sociedade não gera sanitário, conformidade ou financeiro automático;
+- não houve avanço para venda, abate, DRE, ROI, custo por arroba ou motor comercial.
 
 ---
 
@@ -339,7 +339,7 @@ Estado de gate em 2026-06-02:
 - `pnpm test -- --run` passou;
 - `pnpm run lint` passou;
 - `pnpm run build` passou;
-- Vitest usa `maxWorkers: 2` para reduzir timeouts falsos por concorrencia em testes de UI/IndexedDB fake.
+- Vitest usa `maxWorkers: 2` para reduzir timeouts falsos por concorrência em testes de UI/IndexedDB fake.
 
 Detalhes:
 

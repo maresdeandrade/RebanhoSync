@@ -1,331 +1,181 @@
-# Current Phase Handoff — RebanhoSync
+﻿# Current Phase Handoff — RebanhoSync
 
 Atualizado em: 2026-06-02
 **Baseline Commit:** `3fe7a81`
 
 ## 1. Fase atual
 
-Preparação de commit/PR — Fechamento Fase 6 + Gates Pós-Fase 6 + Fase 8.
+Fase 9 — Gate Pós-MVP Comercial/Patrimonial/Classificação/Custo / Subfase 9A — Inventário Operacional.
 
 ---
 
 ## 2. Estado consolidado
 
-A Fase 6 sanitária foi executada e as pendências posteriores de suite global, higiene de testes, preparação de PR e formalização do fallback foram regularizadas localmente.
+Fases 1-8 foram concluídas e consolidadas em baseline `3fe7a81` (2026-06-02).
 
-Consolidado:
+**Fase 6 (Sanitário):** Carência, protocolo, evento separados, append-only validada, replay corretivo com idempotência.
 
-- correção sanitária append-only validada;
-- replay corretivo com `idempotency_key` determinístico validado;
-- retry corretivo sem duplicidade validado;
-- evento original preservado;
-- payload corretivo mínimo formalizado no builder;
-- payload legado tratado como `partial`, com limitações explícitas;
-- sociedade validada como vínculo patrimonial;
-- sociedade validada sem efeitos automáticos sanitários, de conformidade ou financeiros;
-- baseline funcional Supabase passou com RLS para sanitário, estoque e sociedade;
-- suite global `pnpm test -- --run` passou (259 arquivos, 1744 tests);
-- lint passou;
-- build passou com warnings conhecidos não bloqueantes;
-- Vitest usa `maxWorkers: 2` para estabilizar execução global local;
-- Gate de Higiene de Testes pós-Fase 6 concluído;
-- Fase 7 Preparação de PR concluída localmente;
-- Fase 8 Formalização Fallback Sanitário concluída localmente;
-- continuidade documental reconciliada.
+**Fase 7 (Compra/Venda):** Sociedade validada como vínculo patrimonial, sem efeitos automáticos.
 
-Não houve alteração em:
+**Fase 8 (Relatórios + Higiene):** Suite global passa (259 arquivos, 1744 testes), lint limpo, build passa, baseline Supabase RLS funcional.
 
-- migrations;
-- schema;
-- policies RLS;
-- RPCs;
-- edge functions;
-- venda;
-- abate;
-- DRE;
-- ROI;
-- custo por arroba;
-- motor comercial.
+**Consolidado em 3fe7a81:**
+
+- Sanitário: append-only, payload mínimo corretivo, evento original preservado
+- Sociedade: vínculo patrimonial, sem autorização automática
+- Estoque/Inventário: básico, pronto para Fase 9 expansão
+- Testes: 1744 testes passando, RLS baseline validada
+- Sync: offline-first, Dexie + RPCs, idempotência confirmada
+
+Referência completa: Ler `docs/review/ACTIVE_PHASE_PLAN.md` e `docs/review/PLANO_FASE_9_GATE_POS_MVP_COMERCIAL_PATRIMONIAL_CLASSIFICACAO_CUSTO.md`.
 
 ---
 
-## 3. O que não deve ser refeito
+## 3. Objetivo de transição
 
-Não refazer sem regressão comprovada:
+Levar a linha de desenvolvimento à Subfase 9A com:
 
-- contrato de payload corretivo sanitário implementado em `sanitaryCorrections.ts`;
-- testes focados de replay/idempotência corretiva;
-- teste de isolamento patrimonial da sociedade no Registrar;
-- ampliação do baseline Supabase para sanitário, estoque e sociedade;
-- validações focadas de `src/lib/sanitario`, `src/lib/inventory`, `src/lib/events`, `src/lib/comercial` e `src/pages/Registrar`;
-- estabilização da suite global via `vitest.config.ts`;
-- correção de mock Supabase em `sync_insumo_movimentacoes.test.ts`;
-- adição de `fake-indexeddb/auto` em `Registrar.test.tsx`;
-- formalização do contrato mínimo do fallback em `nextOccurrenceService.ts`;
-- rota stub `/registrar` em `PastoAvaliacao.test.tsx`.
+- foco em inventário operacional;
+- unidade de compra/apresentação claramente convertida para base;
+- custo operacional registrado como valor conhecido ou ausência;
+- snapshot econômico preservado;
+- baixa idempotente;
+- sociedade patrimonial isolada por RLS;
+- classificação operacional apresentada como leitura apenas.
 
 ---
 
 ## 4. Pendências abertas
 
-Não há pendência bloqueante para commit/PR.
+Fases 6-8 estão fechadas sem pendências bloqueantes.
 
-Pendências residuais não bloqueantes estão registradas em:
+Itens residuais não bloqueantes (já documentados):
 
 ```txt
 docs/review/OPEN_REVIEW_ITEMS.md
 ```
 
-Itens residuais:
+P2 items (não bloqueiam Fase 9):
 
-1. Ruído residual em `stderr/stdout` de testes.
-2. Warnings conhecidos de build.
-3. Revisão futura de avisos de Dialog/act em testes.
-
-Essas pendências não bloqueiam o fechamento da Fase 6, dos Gates, da Fase 7 ou da Fase 8.
+1. Ruído residual em `stderr/stdout` de testes
+2. Warnings conhecidos de build
+3. Dialog/act avisos em testes
 
 ---
 
 ## 5. Próximo objetivo
 
-Preparar commit/PR do fechamento:
+Implementar Subfase 9A — Inventário Operacional.
+
+Referências obrigatórias:
+
+- `docs/review/ACTIVE_PHASE_PLAN.md` — diagnóstico rápido e checklist
+- `docs/review/PLANO_FASE_9_GATE_POS_MVP_COMERCIAL_PATRIMONIAL_CLASSIFICACAO_CUSTO.md` — especificação completa
+
+Antes de iniciar Subfase 9A:
+
+- Confirmar baseline `3fe7a81` está estável (testes, lint, build passam)
+- Ler `ACTIVE_PHASE_PLAN.md` para confirmações obrigatórias
+- Ler `PLANO_FASE_9_*.md` para contratos completos
+- Confirmar escopo (9A: unidade, custo, snapshot, baixa idempotente, isolamento sociedade, classificação read-only)
+
+---
+
+## 6. Escopo permitido em Fase 9A
+
+Permitido em Subfase 9A:
+
+- Leitura de `docs/review/ACTIVE_PHASE_PLAN.md` e `PLANO_FASE_9_*.md`
+- Implementação de conversão de unidade (apresentação -> base)
+- Implementação de custo operacional (ausência != zero)
+- Implementação de snapshot econômico (imutável)
+- Implementação de baixa idempotente (retry-safe)
+- Testes e validação de idempotência
+- Isolamento de sociedade patrimonial por RLS
+- Leitura de classificação operacional (read-only snapshot)
+
+Obrigatório:
+
+- Respeitar contrato de domínio (6 regras em `PLANO_FASE_9_*.md`)
+- Não alterar migrations/RLS/RPCs sem tarefa explícita
+- Executar validação completa antes de aceitar
+
+---
+
+## 7. Escopo proibido em Fase 9A
+
+Não fazer em Subfase 9A:
+
+- Feature nova fora de 9A (venda, abate, relatórios completos, KPIs avançados)
+- Alteração de contrato Sanitário, Agenda, Evento, Protocolo
+- Automação sem fonte técnica explícita
+- Edição destrutiva de histórico
+- Alteração de RLS/migrations/RPCs sem tarefa explícita
+- Transformações não permitidas (snapshot retroativo, custo ambíguo, duplicação de baixa)
+- Refatoração não solicitada
+
+---
+
+## 8. Áreas candidatas para trabalho em Fase 9A
+
+Áreas a trabalhar em Subfase 9A:
 
 ```txt
-Fase 6 sanitária + Gates + Fase 7 + Fase 8
+src/lib/inventory (conversão de unidade, custo, snapshot, baixa)
+src/lib/comercial (isolamento de sociedade patrimonial)
+src/features/inventario (UI para registros, leitura de classificação)
+src/pages/Registrar (fluxo de compra/inventário)
+tests/ (testes de idempotência, isolamento, snapshot)
+docs/domain/COMPRA_VENDA.md (atualizar com contratos 9A)
 ```
 
-Antes do commit/PR:
-
-- revisar branch atual;
-- evitar commit direto em `main`, se a política do projeto exigir PR;
-- criar branch dedicada, se necessário;
-- revisar arquivos alterados;
-- revisar diff por área;
-- montar mensagem de commit;
-- montar descrição de PR;
-- confirmar que nenhuma feature nova entrou no patch.
-
----
-
-## 6. Escopo permitido na próxima etapa
-
-Permitido:
-
-- revisar `git status`;
-- revisar `git diff --name-only`;
-- revisar `git diff --stat`;
-- revisar `git diff --check`;
-- confirmar se há arquivos staged;
-- criar branch dedicada;
-- preparar commit message;
-- preparar descrição de PR;
-- revisar se os 3 documentos de continuidade estão atualizados;
-- ajustar documentação apenas se houver inconsistência real.
-
----
-
-## 7. Escopo proibido
-
-Não criar feature nova.
-
-Não alterar sem autorização explícita:
-
-- regra de domínio;
-- domínio sanitário;
-- sync/offline;
-- Supabase;
-- migrations;
-- schema;
-- policies RLS;
-- RPCs;
-- edge functions;
-- venda;
-- abate;
-- DRE;
-- ROI;
-- custo por arroba;
-- motor comercial avançado;
-- aptidão automática para venda;
-- aptidão automática para abate;
-- carência liberatória;
-- financeiro automático.
-
-Não transformar:
-
-- agenda em histórico;
-- protocolo em execução;
-- tag/sinal/insight em fonte primária;
-- sociedade em conformidade sanitária;
-- snapshot em valor retroativo.
-
----
-
-## 8. Áreas alteradas no fechamento atual
-
-Áreas principais:
+Áreas protegidas (não tocar sem tarefa explícita):
 
 ```txt
-src/lib/sanitario/engine
-src/lib/sanitario/__tests__
-src/components/sanitario/__tests__
-src/pages/__tests__
-docs/review
-```
-
-Áreas que não devem ser tocadas sem regressão comprovada:
-
-```txt
-supabase/migrations
-supabase/functions
-src/features/occupancy
-src/lib/comercial
-src/lib/finance
+supabase/migrations (RLS existente é fonte de verdade)
+supabase/functions (sync, RPCs offline)
+src/lib/sanitario (Fase 6 consolidada)
+src/lib/eventos (Fase 6-8 consolidada)
 ```
 
 ---
 
-## 9. Validação já fechada
+## 9. Validação baseline (Fases 6-8)
 
-Validações já executadas e aprovadas:
+Fases 6-8 foram validadas e aprovadas em baseline `3fe7a81`:
 
 ```bash
-pnpm test -- --run
-pnpm run lint
-pnpm run build
-git diff --check
+pnpm test -- --run     # 259 files, 1744 tests passed
+pnpm run lint          # passed
+pnpm run build         # passed (known warnings)
+git diff --check       # passed
+```
+
+Baseline estável confirmado. Fase 9A começa a partir deste ponto.
+
+---
+
+## 10. Validação obrigatória para Subfase 9A
+
+Antes de aceitar Subfase 9A, executar:
+
+```bash
+pnpm test -- --run 2>&1 | tail -10        # Testes devem passar (1744+N)
+pnpm run lint 2>&1                        # Lint deve passar
+pnpm run build 2>&1                       # Build deve passar
+git diff --check                          # Sem trailing whitespace
+
+# Validação Supabase RLS (se disponível)
 node scripts/codex/validate-supabase-baseline-functional.mjs
+
+# Auditoria de contratos (commands de PLANO_FASE_9_*.md)
+git grep -n "multiplicador\|idempotent\|society" -- src/
 ```
 
-Resultado consolidado:
+Checklist de aceite (ver `docs/review/ACTIVE_PHASE_PLAN.md`):
 
-```txt
-Test Files  259 passed (259)
-Tests       1744 passed (1744)
-Lint        passed
-Build       passed
-```
-
-Build passou com warnings conhecidos não bloqueantes:
-
-- Browserslist/caniuse-lite desatualizado;
-- chunks acima de 500 kB.
-
----
-
-## 10. Validação recomendada antes do commit/PR
-
-Antes do commit/PR, rodar pelo menos:
-
-```bash
-git status --short --untracked-files=all
-git diff --name-only
-git diff --stat
-git diff --check
-```
-
-Se houver qualquer alteração posterior, reexecutar validação proporcional.
-
-Se tocar código runtime, runner ou testes:
-
-```bash
-pnpm test -- --run
-pnpm run lint
-pnpm run build
-```
-
-Se tocar Supabase, sync-batch, schema, RLS, RPC ou migration:
-
-```bash
-node scripts/codex/validate-supabase-baseline-functional.mjs
-```
-
----
-
-## 11. Critérios de aceite da próxima etapa
-
-Para considerar o commit/PR pronto:
-
-- branch dedicada criada ou risco de `main` aceito explicitamente;
-- `git status --short --untracked-files=all` revisado;
-- `git diff --name-only` revisado;
-- `git diff --stat` revisado;
-- `git diff --check` sem falhas;
-- arquivos staged conferidos;
-- mensagem de commit definida;
-- descrição de PR definida;
-- pendências residuais documentadas;
-- nenhuma feature nova adicionada;
-- nenhum avanço para escopo comercial proibido.
-
----
-
-## 12. Prompt recomendado para a próxima conversa
-
-Usar o prompt abaixo:
-
-```md
-Você é o arquiteto técnico sênior do RebanhoSync.
-
-Continue a partir de:
-
-- `docs/review/CURRENT_PHASE_HANDOFF.md`
-- `docs/review/LAST_PHASE_RESULT.md`
-- `docs/review/OPEN_REVIEW_ITEMS.md`
-- `docs/review/RESULTADO_FASE_7_PREPARACAO_PR.md`
-- `docs/review/RESULTADO_FASE_8_FORMALIZACAO_FALLBACK_SANITARIO.md`
-- `docs/context/PROJECT_STATUS.md`
-- `AGENTS.md`
-- `.agents/rules/CORE_RULES.md`
-- `.agents/rules/CONTEXT_LOADING.md`
-
-Objetivo:
-
-Preparar commit/PR do fechamento da Fase 6 + Gates + Fase 7 + Fase 8.
-
-Antes de alterar qualquer arquivo, entregue:
-
-1. branch atual;
-2. status do worktree;
-3. arquivos alterados;
-4. arquivos untracked;
-5. resumo do diff por área;
-6. se há risco de commit direto em `main`;
-7. plano mínimo para preparar PR.
-
-Escopo permitido:
-
-- revisar status/diff;
-- sugerir branch;
-- sugerir commit message;
-- sugerir descrição de PR;
-- ajustar documentação apenas se houver inconsistência real.
-
-Escopo proibido:
-
-- criar feature nova;
-- alterar regra de domínio;
-- alterar Supabase, migrations, RLS, RPC ou schema;
-- avançar para venda, abate, DRE, ROI, custo por arroba ou motor comercial.
-
-Validação esperada antes do PR:
-
-```bash
-git diff --check
-pnpm test -- --run
-pnpm run lint
-pnpm run build
-```
-```
-
----
-
-## 13. Status final do handoff
-
-```txt
-Fase 6 sanitária: concluída localmente.
-Gate Suite Global: concluído.
-Gate de Higiene de Testes: concluído.
-Fase 7: concluída localmente.
-Fase 8: concluída localmente.
-Próxima etapa: commit/PR.
-```
+- [ ] 7 confirmações de diagnóstico passam
+- [ ] 10 critérios de aceite de ACTIVE_PHASE_PLAN marcados
+- [ ] 6 contratos obrigatórios implementados
+- [ ] Todos os 11 critérios de PLANO_FASE_9_*.md marcados
+- [ ] Sem regressões em testes existentes
