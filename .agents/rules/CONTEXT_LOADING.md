@@ -75,6 +75,26 @@ Usar:
 
 ---
 
+### Geração de prompts para agentes
+
+Quando a tarefa for criar um prompt para Codex, Antigravity, Jules ou outro agente:
+
+- carregar apenas os documentos ativos necessários;
+- referenciar regras permanentes em vez de copiá-las;
+- referenciar escopo permitido/proibido em vez de duplicá-lo;
+- repetir apenas requisitos específicos que não estejam documentados;
+- incluir o caso de aceite específico da tarefa, se houver;
+- manter o prompt curto e executável.
+
+Regra prática:
+
+```txt
+Prompt de execução deve apontar para a fonte de verdade, não reproduzi-la.
+
+Se o usuário pedir “não repetir regras permanentes”, tratar isso como prioridade sobre qualquer lista de exemplos fornecida na mesma solicitação.
+```
+---
+
 ## Arquitetura
 
 ### Use:

@@ -17,6 +17,36 @@ Prompts reutilizáveis para reduzir contexto repetido e padronizar execução po
 
 ---
 
+## Economia de contexto em prompts gerados
+
+Quando a tarefa for gerar outro prompt para Codex, Antigravity ou outro agente:
+
+- gerar prompt referencial, não enciclopédico;
+- não repetir regras permanentes já presentes em `.agents/rules/**`;
+- não repetir escopo permitido/proibido já documentado em `docs/review/**`;
+- referenciar arquivos normativos em vez de copiar seu conteúdo;
+- repetir apenas:
+  - objetivo imediato;
+  - diagnóstico obrigatório;
+  - critério específico de aceite;
+  - validação específica não coberta por `.agents/rules/rtk.md`;
+- manter prompts de execução preferencialmente entre 400 e 700 palavras;
+- se o prompt passar de 900 palavras, justificar qual informação ainda não está documentada;
+- não listar proibições já documentadas, salvo se forem risco crítico específico do patch atual.
+
+Forma preferida:
+
+```txt
+Seguir integralmente o escopo permitido e proibido definido em:
+- docs/review/ACTIVE_PHASE_PLAN.md
+- plano específico da fase atual
+```
+
+Forma a evitar:
+- Repetir listas longas de escopo proibido já documentadas.
+
+---
+
 ## Estrutura
 
 ```txt

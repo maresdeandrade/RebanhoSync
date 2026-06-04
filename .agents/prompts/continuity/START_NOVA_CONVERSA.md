@@ -60,6 +60,38 @@ Antes de alterar qualquer arquivo, entregue diagnóstico inicial com:
 - Snapshot econômico não pode ser recalculado retroativamente.
 - Custo ausente não é zero.
 
+
+## Se o usuário pedir um prompt para Codex
+
+Quando o usuário pedir para gerar um prompt de execução para Codex a partir desta conversa:
+
+- produzir prompt curto e referencial;
+- não copiar conteúdo extenso dos documentos lidos;
+- não repetir escopo proibido já documentado;
+- não repetir regras permanentes de `.agents/rules/**`;
+- apontar para os documentos normativos necessários;
+- repetir somente o caso de aceite específico da tarefa;
+- exigir diagnóstico antes de patch;
+- exigir validação proporcional via `.agents/rules/rtk.md`;
+- declarar que escopo permitido/proibido deve ser seguido conforme plano ativo e plano específico da fase.
+
+Modelo de formulação:
+
+```md
+Escopo:
+Seguir integralmente o escopo permitido e proibido definido em:
+
+- `docs/review/ACTIVE_PHASE_PLAN.md`
+- `[PLANO_ESPECIFICO_DA_FASE]`
+
+Não ampliar escopo sem evidência objetiva.
+
+Evitar:
+
+Listas longas de proibições já documentadas no plano ativo.
+
+---
+
 ## Formato obrigatório da resposta
 
 ```md
