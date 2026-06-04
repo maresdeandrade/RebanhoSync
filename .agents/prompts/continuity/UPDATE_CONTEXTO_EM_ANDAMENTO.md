@@ -1,15 +1,15 @@
 # Update Contexto em Andamento — RebanhoSync
 
-Use este prompt quando a conversa ficou extensa, mas a fase ou tarefa ainda não foi concluída.
+Use este prompt quando a conversa ficou extensa, mas o trabalho ainda não foi concluído ou ainda não foi formalmente documentado.
 
-Este prompt não fecha fase. Ele apenas preserva contexto para continuar em nova conversa.
+Este prompt não fecha fase, não atualiza documentação permanente e não define como o contexto será usado depois. Ele apenas preserva o estado útil da conversa atual.
 
 ## Prompt
 
 Você é o assistente técnico do contexto atual.
 
 Objetivo:
-Gerar um contexto de continuidade para abrir uma nova conversa, sem encerrar a fase atual e sem assumir que houve conclusão.
+Gerar um bloco enxuto de continuidade para preservar o que está sendo tratado nesta conversa, especialmente aquilo que ainda não está documentado no repositório.
 
 ## Restrições
 
@@ -22,6 +22,8 @@ Gerar um contexto de continuidade para abrir uma nova conversa, sem encerrar a f
 - Não inventar arquivos alterados.
 - Não transformar intenção em fato concluído.
 - Não transformar discussão em decisão se não houve aceite.
+- Não gerar prompt de nova conversa.
+- Não explicar como o usuário deve usar o contexto.
 
 ## Tarefa
 
@@ -35,54 +37,93 @@ Produzir um resumo de continuidade da conversa atual, separando claramente:
 6. o que não deve ser refeito;
 7. quais dúvidas ou riscos continuam abertos.
 
+## Limite do contexto gerado
+
+Produzir apenas um bloco de continuidade da conversa atual.
+
+O bloco deve preservar:
+
+1. tema central da conversa;
+2. objetivo em andamento;
+3. decisões já aceitas;
+4. pontos ainda em discussão;
+5. fatos confirmados;
+6. inferências ou premissas;
+7. pendências reais;
+8. riscos ou cuidados;
+9. arquivos, documentos, prompts ou áreas citadas;
+10. ponto exato de retomada.
+
+## Limite do contexto gerado
+
+O resumo deve conter apenas o que agrega continuidade.
+
+
+Não repetir:
+
+- regras permanentes já documentadas;
+- escopo permitido/proibido já documentado;
+- roadmap completo;
+- histórico longo de fases fechadas;
+- listas extensas de validações já descritas em `.agents/rules/rtk.md`;
+- prompt completo de nova conversa;
+- instruções sobre como usar o contexto.
+
+Preferir referências:
+
+- “seguir `ACTIVE_PHASE_PLAN.md`”;
+- “seguir `.agents/rules/CORE_RULES.md`”;
+- “seguir `.agents/rules/rtk.md`”;
+- “ver documentos ativos em `docs/review/`”.
+
 ## Formato obrigatório
 
 ```md
 # Continuidade de Conversa — RebanhoSync
 
-## 1. Contexto atual
+## 1. Tema tratado
 
-Descreva o objetivo da conversa e o trabalho em andamento.
+[Resumo objetivo do assunto central da conversa.]
 
-## 2. Estado confirmado
+## 2. Objetivo em andamento
 
-Liste apenas fatos confirmados: arquivos, decisões, validações, resultados, commits ou documentos realmente citados.
+[O que estava sendo buscado/construído/analisado.]
 
-## 3. Trabalho em andamento
+## 3. Estado confirmado
 
-Explique o que ainda está sendo construído/analisado e não deve ser tratado como concluído.
+[Fatos confirmados na conversa. Não inventar validações, commits ou arquivos.]
 
-## 4. Decisões tomadas
+## 4. Decisões aceitas
 
-Liste decisões já alinhadas que a próxima conversa deve respeitar.
+[Decisões explicitamente alinhadas pelo usuário.]
 
-## 5. Pendências abertas
+## 5. Pontos ainda não documentados
 
-Liste pendências reais, dúvidas, riscos ou validações ainda não feitas.
+[Conteúdo relevante desta conversa que ainda não consta claramente na documentação do projeto.]
 
-## 6. Próxima ação recomendada
+## 6. Pendências e dúvidas
 
-Diga exatamente de onde a próxima conversa deve continuar.
+[O que ainda precisa ser confirmado, decidido ou validado.]
 
-## 7. Escopo permitido
+## 7. Riscos e cuidados
 
-Liste o que a próxima conversa pode fazer.
+[Riscos de interpretação, regressão, duplicidade, drift documental ou consumo excessivo de contexto.]
 
-## 8. Escopo proibido
+## 8. Ponto de retomada
 
-Liste o que a próxima conversa não deve fazer.
-
-## 9. Prompt para iniciar a nova conversa
-
-Crie um prompt curto e pronto para colar na nova conversa.
-```
+[Frase curta indicando de onde a conversa deve continuar.]
 
 ## Regras
 
 - Separar fato confirmado de inferência.
+- Priorizar o que ainda não está documentado.
+- Não repetir conteúdo já estável do repositório.
 - Não dizer que testes passaram se isso não foi informado.
 - Não dizer que arquivos foram alterados se isso não foi confirmado.
 - Não dizer que commit foi feito se isso não foi confirmado.
 - Não reabrir fase fechada sem evidência.
 - Não transformar roadmap em pendência técnica.
+- Não gerar prompt de nova conversa.
 - Ser objetivo e específico.
+- Alvo preferencial: até 300 palavras.
+- Máximo: 500 palavras, salvo se houver risco relevante ainda não documentado.

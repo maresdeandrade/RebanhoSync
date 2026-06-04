@@ -30,14 +30,13 @@ Antes de alterar qualquer arquivo, entregue diagnóstico inicial com:
 1. fase ou contexto atual;
 2. se a etapa está concluída ou em andamento;
 3. baseline/commit documentado, se houver;
-4. documentos ativos lidos;
+4. documentos ativos lidos ou pendentes de confirmação local;
 5. pendências abertas reais;
 6. decisões já tomadas;
 7. riscos de regressão;
-8. escopo permitido;
-9. escopo proibido;
-10. próximo passo mínimo;
-11. validação obrigatória.
+8. escopo permitido/proibido referenciado;
+9. próximo passo mínimo;
+10. validação obrigatória.
 
 ## Regras obrigatórias
 
@@ -47,19 +46,23 @@ Antes de alterar qualquer arquivo, entregue diagnóstico inicial com:
 - Não transformar roadmap em pendência técnica.
 - Não executar hardening genérico.
 - Não alterar Supabase, migrations, RLS, RPC, schema ou edge functions sem justificativa explícita.
-- Preservar offline-first.
-- Preservar RLS/multi-tenant.
-- Preservar idempotência e auditabilidade.
-- Agenda é intenção/tarefa futura.
-- Evento é fato histórico.
-- `state_*` é read model / estado atual.
-- Protocolo é regra/configuração.
-- Tags, sinais e insights são auxiliares, nunca fonte primária.
-- Sociedade é vínculo patrimonial, não conformidade sanitária nem financeiro automático.
-- `classificationSnapshot` é leitura operacional, não autorização crítica.
-- Snapshot econômico não pode ser recalculado retroativamente.
-- Custo ausente não é zero.
+- Seguir integralmente `.agents/rules/CORE_RULES.md`.
+- Seguir integralmente o escopo permitido/proibido definido no plano ativo e no plano específico da fase.
 
+## Economia de contexto
+
+O contexto colado pelo usuário deve conter apenas informações que ainda não estão nos documentos ativos.
+
+Não repetir no prompt:
+
+- regras permanentes de `.agents/rules/**`;
+- escopo permitido/proibido de `docs/review/**`;
+- critérios já descritos no plano ativo;
+- histórico detalhado de fases anteriores.
+
+Se o usuário colar conteúdo redundante, priorizar os documentos ativos e responder de forma resumida.
+
+Se não houver acesso real ao repositório, não afirmar que documentos foram lidos. Declarar que a leitura precisa ser confirmada no ambiente local.
 
 ## Se o usuário pedir um prompt para Codex
 
@@ -67,7 +70,7 @@ Quando o usuário pedir para gerar um prompt de execução para Codex a partir d
 
 - produzir prompt curto e referencial;
 - não copiar conteúdo extenso dos documentos lidos;
-- não repetir escopo proibido já documentado;
+- não repetir escopo permitido/proibido já documentado;
 - não repetir regras permanentes de `.agents/rules/**`;
 - apontar para os documentos normativos necessários;
 - repetir somente o caso de aceite específico da tarefa;
@@ -85,10 +88,13 @@ Seguir integralmente o escopo permitido e proibido definido em:
 - `[PLANO_ESPECIFICO_DA_FASE]`
 
 Não ampliar escopo sem evidência objetiva.
+```
 
 Evitar:
 
+```txt
 Listas longas de proibições já documentadas no plano ativo.
+```
 
 ---
 

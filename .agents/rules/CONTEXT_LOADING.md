@@ -3,8 +3,8 @@
 
 Use apenas o contexto necessário para a tarefa.
 
-Este arquivo decide **o que carregar**.  
-Para restrições contra leitura ampla, use `.agents/rules/no-broad-context.md`.  
+Este arquivo decide **o que carregar**.
+Para restrições contra leitura ampla, use `.agents/rules/no-broad-context.md`.
 Para execução de comandos, use `.agents/rules/rtk.md`.
 
 ---
@@ -73,6 +73,16 @@ Usar:
 - Não transformar roadmap em pendência técnica.
 - Não marcar fase como concluída sem validação correspondente.
 
+### Contexto colado em nova conversa
+
+Quando houver contexto de continuidade colado pelo usuário:
+
+- usar como ponteiro de continuidade, não como substituto dos documentos ativos;
+- não repetir regras já documentadas;
+- não repetir escopo já documentado;
+- distinguir fato confirmado de informação pendente de verificação local;
+- se o repositório não estiver acessível, declarar que baseline, worktree e documentos precisam ser confirmados localmente.
+
 ---
 
 ### Geração de prompts para agentes
@@ -90,9 +100,10 @@ Regra prática:
 
 ```txt
 Prompt de execução deve apontar para a fonte de verdade, não reproduzi-la.
+```
 
 Se o usuário pedir “não repetir regras permanentes”, tratar isso como prioridade sobre qualquer lista de exemplos fornecida na mesma solicitação.
-```
+
 ---
 
 ## Arquitetura
