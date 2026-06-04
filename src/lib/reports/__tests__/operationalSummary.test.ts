@@ -11,6 +11,9 @@ import type {
   EventoSanitario,
   FazendaSanidadeConfig,
   Gesture,
+  Insumo,
+  InsumoLote,
+  InsumoMovimentacao,
   Lote,
   Pasto,
   ProtocoloSanitario,
@@ -477,6 +480,197 @@ describe("buildOperationalSummary", () => {
       ]),
     );
     expect(report.recentEvents[0]?.dominio).toBe("Sanitario");
+  });
+
+  it("builds partial inventory cost read model without inferring absent movement cost", () => {
+    const range = resolveReportRange("30d", new Date("2026-06-04T12:00:00.000Z"));
+    const baseInsumo = {
+      fazenda_id: "farm-1",
+      tipo: "sanitario",
+      categoria: "vacina",
+      produto_veterinario_id: null,
+      unidade_base: "dose",
+      ativo: true,
+      payload: {},
+      client_id: "client-1",
+      client_op_id: "op-1",
+      client_tx_id: null,
+      client_recorded_at: "2026-06-01T10:00:00.000Z",
+      server_received_at: "2026-06-01T10:00:00.000Z",
+      created_at: "2026-06-01T10:00:00.000Z",
+      updated_at: "2026-06-01T10:00:00.000Z",
+      deleted_at: null,
+    } satisfies Omit<Insumo, "id" | "nome">;
+    const baseInsumoLote = {
+      fazenda_id: "farm-1",
+      apresentacao_id: null,
+      validade: null,
+      fabricante: null,
+      local_armazenamento: null,
+      quantidade_inicial_base: 200,
+      unidade_base: "dose",
+      status: "ativo",
+      payload: {},
+      client_id: "client-1",
+      client_op_id: "op-1",
+      client_tx_id: null,
+      client_recorded_at: "2026-06-01T10:00:00.000Z",
+      server_received_at: "2026-06-01T10:00:00.000Z",
+      created_at: "2026-06-01T10:00:00.000Z",
+      updated_at: "2026-06-01T10:00:00.000Z",
+      deleted_at: null,
+    } satisfies Omit<
+      InsumoLote,
+      | "id"
+      | "insumo_id"
+      | "identificacao_lote"
+      | "saldo_atual_base"
+      | "custo_total"
+      | "custo_unitario"
+    >;
+    const baseMovement = {
+      fazenda_id: "farm-1",
+      insumo_id: "insumo-known",
+      insumo_lote_id: "lot-known",
+      unidade_base: "dose",
+      source_evento_id: null,
+      source_evento_dominio: null,
+      animal_id: null,
+      rebanho_lote_id: null,
+      pasto_id: null,
+      observacoes: null,
+      payload: {},
+      client_id: "client-1",
+      client_op_id: "op-1",
+      client_tx_id: null,
+      client_recorded_at: "2026-06-01T10:00:00.000Z",
+      server_received_at: "2026-06-01T10:00:00.000Z",
+      created_at: "2026-06-01T10:00:00.000Z",
+      updated_at: "2026-06-01T10:00:00.000Z",
+      deleted_at: null,
+    } satisfies Omit<
+      InsumoMovimentacao,
+      "id" | "tipo" | "quantidade_base" | "occurred_at" | "custo_unitario_snapshot" | "custo_total_snapshot"
+    >;
+
+    const report = buildOperationalSummary(
+      {
+        animals: [],
+        lotes: [],
+        pastos: [],
+        agenda: [],
+        eventos: [],
+        eventosPesagem: [],
+        eventosFinanceiro: [],
+        gestures: [],
+        rejections: [],
+        insumos: [
+          { ...baseInsumo, id: "insumo-known", nome: "Vacina A" },
+          { ...baseInsumo, id: "insumo-zero", nome: "Mineral cortesia" },
+          { ...baseInsumo, id: "insumo-missing", nome: "Produto sem custo" },
+        ],
+        insumoLotes: [
+          {
+            ...baseInsumoLote,
+            id: "lot-known",
+            insumo_id: "insumo-known",
+            identificacao_lote: "Lote conhecido",
+            saldo_atual_base: 50,
+            custo_total: 800,
+            custo_unitario: 4,
+          },
+          {
+            ...baseInsumoLote,
+            id: "lot-zero",
+            insumo_id: "insumo-zero",
+            identificacao_lote: "Lote custo zero",
+            saldo_atual_base: 7,
+            custo_total: 0,
+            custo_unitario: 0,
+          },
+          {
+            ...baseInsumoLote,
+            id: "lot-missing",
+            insumo_id: "insumo-missing",
+            identificacao_lote: "Lote sem custo",
+            saldo_atual_base: 5,
+            custo_total: null,
+            custo_unitario: null,
+          },
+        ],
+        insumoMovimentacoes: [
+          {
+            ...baseMovement,
+            id: "mov-entry-known",
+            tipo: "entrada",
+            quantidade_base: 200,
+            occurred_at: "2026-06-01T10:00:00.000Z",
+            custo_unitario_snapshot: 4,
+            custo_total_snapshot: 800,
+          },
+          {
+            ...baseMovement,
+            id: "mov-exit-known",
+            tipo: "consumo_sanitario",
+            quantidade_base: 150,
+            occurred_at: "2026-06-02T10:00:00.000Z",
+            custo_unitario_snapshot: 4,
+            custo_total_snapshot: 600,
+          },
+          {
+            ...baseMovement,
+            id: "mov-entry-zero",
+            insumo_id: "insumo-zero",
+            insumo_lote_id: "lot-zero",
+            tipo: "entrada",
+            quantidade_base: 10,
+            occurred_at: "2026-06-02T10:00:00.000Z",
+            custo_unitario_snapshot: 0,
+            custo_total_snapshot: 0,
+          },
+          {
+            ...baseMovement,
+            id: "mov-exit-null",
+            tipo: "consumo_nutricao",
+            quantidade_base: 4,
+            occurred_at: "2026-06-03T10:00:00.000Z",
+            custo_unitario_snapshot: null,
+            custo_total_snapshot: null,
+          },
+          {
+            ...baseMovement,
+            id: "mov-entry-undefined",
+            tipo: "entrada",
+            quantidade_base: 3,
+            occurred_at: "2026-06-03T10:00:00.000Z",
+          },
+        ],
+      },
+      range,
+      new Date("2026-06-04T12:00:00.000Z"),
+    );
+
+    expect(report.inventory.partialCost).toMatchObject({
+      entradasKnownCost: 800,
+      entradasKnownQuantity: 210,
+      entradasMissingCostQuantity: 3,
+      entradasMissingCostMovements: 1,
+      saidasKnownCost: 600,
+      saidasKnownQuantity: 150,
+      saidasMissingCostQuantity: 4,
+      saidasMissingCostMovements: 1,
+      saldoKnownCost: 200,
+      saldoKnownQuantity: 57,
+      saldoMissingCostQuantity: 5,
+      activeLotsWithKnownCost: 2,
+      activeLotsWithMissingCost: 1,
+    });
+    expect(buildOperationalSummaryCsv(report, "Fazenda")).toContain(
+      "estoque_custo_parcial;entradas_custo_conhecido;800.00",
+    );
+    expect(buildOperationalSummaryCsv(report, "Fazenda")).toContain(
+      "estoque_custo_parcial;saldo_quantidade_custo_ausente;5.000",
+    );
   });
 
   it("groups structured sanitary cost by product, animal and livestock lot", () => {

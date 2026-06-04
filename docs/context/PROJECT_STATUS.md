@@ -24,15 +24,19 @@ A fase atual é Fase 9 — Gate Pós-MVP Comercial/Patrimonial/Classificação/C
 - custo total, custo por entrada e custo unitário/base separados;
 - baixa nutricional idempotente por evento/source validada local e remotamente;
 - snapshot econômico preservado como derivado/read-only;
+- Fase 9B Relatórios Operacionais de Custo Parcial concluída localmente;
+- `inventory.partialCost` implementado como leitura derivada/read model;
+- custo conhecido e custo ausente separados;
+- `0` tratado como custo válido e `null`/`undefined` como custo ausente;
 - baseline funcional Supabase passou após reset local;
-- suite global `pnpm test` passou (260 arquivos, 1746 testes);
+- suite global `pnpm test` passou (260 arquivos, 1747 testes);
 - lint e build passaram.
 
 Próximo foco:
 
-- continuar Fase 9 pela Subfase 9B;
+- continuar Fase 9;
 - usar a base de custo/unidade/snapshot consolidada na 9A;
-- preparar relatórios operacionais de custo parcial;
+- manter leitura de custo parcial como derivada/read model;
 - não antecipar DRE, ROI, venda, abate ou custo por arroba.
 
 ---
@@ -232,6 +236,9 @@ Limite confirmado em 2026-06-04:
 - baixa nutricional automática é idempotente por `eventId`/`source_evento_id`;
 - `insumo_movimentacoes` possui índice único parcial remoto para `consumo_nutricao` por `(fazenda_id, source_evento_id)`;
 - snapshot econômico segue derivado/read-only, sem virar fonte primária.
+- relatórios operacionais expõem custo parcial conhecido via `inventory.partialCost`;
+- entradas, saídas/consumos e saldo econômico parcial conhecido ficam separados de custo ausente;
+- custo não é inferido quando snapshot está ausente.
 
 ---
 

@@ -236,6 +236,8 @@ describe("Relatorios flow", () => {
           saldo_atual_base: 42,
           unidade_base: "kg",
           status: "ativo",
+          custo_total: 100,
+          custo_unitario: 2,
           payload: {},
           client_id: "client-1",
           client_op_id: "op-1",
@@ -263,6 +265,8 @@ describe("Relatorios flow", () => {
           rebanho_lote_id: null,
           pasto_id: null,
           observacoes: null,
+          custo_unitario_snapshot: 2,
+          custo_total_snapshot: 100,
           payload: {},
           client_id: "client-1",
           client_op_id: "op-1",
@@ -288,6 +292,8 @@ describe("Relatorios flow", () => {
           rebanho_lote_id: null,
           pasto_id: null,
           observacoes: null,
+          custo_unitario_snapshot: 2,
+          custo_total_snapshot: 16,
           payload: {},
           client_id: "client-1",
           client_op_id: "op-1",
@@ -341,6 +347,11 @@ describe("Relatorios flow", () => {
     ).toBeInTheDocument();
     expect(screen.getByText(/Resumo operacional/i)).toBeInTheDocument();
     expect(screen.getByText(/Estoque operacional/i)).toBeInTheDocument();
+    expect(screen.getByText(/Custo operacional parcial/i)).toBeInTheDocument();
+    expect(screen.getByText(/Fonte: read model de inventario/i)).toBeInTheDocument();
+    expect(screen.getByText(/Entradas com custo/i)).toBeInTheDocument();
+    expect(screen.getByText(/Saidas\/consumos com custo/i)).toBeInTheDocument();
+    expect(screen.getByText(/Saldo economico conhecido/i)).toBeInTheDocument();
     expect(
       screen.getByText(/Demanda futura por agenda valida/i),
     ).toBeInTheDocument();
@@ -353,6 +364,9 @@ describe("Relatorios flow", () => {
     expect(screen.getAllByText(/2 kg/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/\+50/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/-8/i).length).toBeGreaterThan(0);
+    expect(screen.getByText(/R\$ 100,00/i)).toBeInTheDocument();
+    expect(screen.getByText(/R\$ 16,00/i)).toBeInTheDocument();
+    expect(screen.getByText(/R\$ 84,00/i)).toBeInTheDocument();
     expect(screen.getByText(/28\/02\/2026 a 29\/03\/2026/i)).toBeInTheDocument();
     expect(screen.getAllByText(/R\$ 3\.500,00/i).length).toBeGreaterThan(0);
 
@@ -387,4 +401,3 @@ describe("Relatorios flow", () => {
     );
   });
 });
-

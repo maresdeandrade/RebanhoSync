@@ -187,6 +187,22 @@ export interface InventoryFutureDemandRow {
   balanceGap: number | null;
 }
 
+export interface InventoryPartialCostSummary {
+  entradasKnownCost: number;
+  entradasKnownQuantity: number;
+  entradasMissingCostQuantity: number;
+  entradasMissingCostMovements: number;
+  saidasKnownCost: number;
+  saidasKnownQuantity: number;
+  saidasMissingCostQuantity: number;
+  saidasMissingCostMovements: number;
+  saldoKnownCost: number;
+  saldoKnownQuantity: number;
+  saldoMissingCostQuantity: number;
+  activeLotsWithKnownCost: number;
+  activeLotsWithMissingCost: number;
+}
+
 export interface SanitaryTraceabilityCostRow {
   key: string;
   label: string;
@@ -288,6 +304,7 @@ export interface OperationalSummaryReport {
       missingQuantityCount: number;
       groups: InventoryFutureDemandRow[];
     };
+    partialCost: InventoryPartialCostSummary;
     sanitaryPhase3Prerequisites: {
       sanitaryEvents: number;
       catalogLinkedEvents: number;
@@ -499,6 +516,30 @@ function getInventoryMovementSignal(
     return "saida";
   }
 
+  return null;
+}
+
+function roundCurrency(value: number): number {
+  return Number(value.toFixed(2));
+}
+
+function roundQuantity(value: number): number {
+  return Number(value.toFixed(3));
+}
+
+function isKnownNonNegative(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value) && value >= 0;
+}
+
+function getLotUnitCostForPartialReport(lot: InsumoLote): number | null {
+  if (isKnownNonNegative(lot.custo_unitario)) return lot.custo_unitario;
+  if (
+    isKnownNonNegative(lot.custo_total) &&
+    isKnownNonNegative(lot.quantidade_inicial_base) &&
+    lot.quantidade_inicial_base > 0
+  ) {
+    return lot.custo_total / lot.quantidade_inicial_base;
+  }
   return null;
 }
 
@@ -738,6 +779,77 @@ export function buildOperationalSummary(
   const inventoryCategories = Array.from(inventoryCategoryMap.values()).sort(
     (left, right) => left.categoria.localeCompare(right.categoria),
   );
+  const partialCost: InventoryPartialCostSummary = {
+    entradasKnownCost: 0,
+    entradasKnownQuantity: 0,
+    entradasMissingCostQuantity: 0,
+    entradasMissingCostMovements: 0,
+    saidasKnownCost: 0,
+    saidasKnownQuantity: 0,
+    saidasMissingCostQuantity: 0,
+    saidasMissingCostMovements: 0,
+    saldoKnownCost: 0,
+    saldoKnownQuantity: 0,
+    saldoMissingCostQuantity: 0,
+    activeLotsWithKnownCost: 0,
+    activeLotsWithMissingCost: 0,
+  };
+
+  for (const movement of inventoryMovements) {
+    const signal = getInventoryMovementSignal(movement.tipo);
+    if (!signal) continue;
+
+    if (isKnownNonNegative(movement.custo_total_snapshot)) {
+      if (signal === "entrada") {
+        partialCost.entradasKnownCost = roundCurrency(
+          partialCost.entradasKnownCost + movement.custo_total_snapshot,
+        );
+        partialCost.entradasKnownQuantity = roundQuantity(
+          partialCost.entradasKnownQuantity + movement.quantidade_base,
+        );
+      } else {
+        partialCost.saidasKnownCost = roundCurrency(
+          partialCost.saidasKnownCost + movement.custo_total_snapshot,
+        );
+        partialCost.saidasKnownQuantity = roundQuantity(
+          partialCost.saidasKnownQuantity + movement.quantidade_base,
+        );
+      }
+      continue;
+    }
+
+    if (signal === "entrada") {
+      partialCost.entradasMissingCostQuantity = roundQuantity(
+        partialCost.entradasMissingCostQuantity + movement.quantidade_base,
+      );
+      partialCost.entradasMissingCostMovements += 1;
+    } else {
+      partialCost.saidasMissingCostQuantity = roundQuantity(
+        partialCost.saidasMissingCostQuantity + movement.quantidade_base,
+      );
+      partialCost.saidasMissingCostMovements += 1;
+    }
+  }
+
+  for (const lot of activeInventoryLots) {
+    const unitCost = getLotUnitCostForPartialReport(lot);
+    if (unitCost === null) {
+      partialCost.saldoMissingCostQuantity = roundQuantity(
+        partialCost.saldoMissingCostQuantity + lot.saldo_atual_base,
+      );
+      partialCost.activeLotsWithMissingCost += 1;
+      continue;
+    }
+
+    partialCost.saldoKnownCost = roundCurrency(
+      partialCost.saldoKnownCost + unitCost * lot.saldo_atual_base,
+    );
+    partialCost.saldoKnownQuantity = roundQuantity(
+      partialCost.saldoKnownQuantity + lot.saldo_atual_base,
+    );
+    partialCost.activeLotsWithKnownCost += 1;
+  }
+
   const inventoryLotById = new Map(
     (input.insumoLotes ?? [])
       .filter((lot) => !lot.deleted_at)
@@ -1401,6 +1513,7 @@ export function buildOperationalSummary(
         missingQuantityCount: futureDemandMissingQuantity,
         groups: futureDemandGroups,
       },
+      partialCost,
       sanitaryPhase3Prerequisites,
       sanitaryTraceability,
     },
@@ -1564,6 +1677,46 @@ export function buildOperationalSummaryCsv(
     "estoque",
     "alertas_reposicao",
     report.inventory.replenishmentAlerts.length,
+  );
+  pushRow(
+    "estoque_custo_parcial",
+    "entradas_custo_conhecido",
+    report.inventory.partialCost.entradasKnownCost.toFixed(2),
+  );
+  pushRow(
+    "estoque_custo_parcial",
+    "entradas_quantidade_custo_conhecido",
+    report.inventory.partialCost.entradasKnownQuantity.toFixed(3),
+  );
+  pushRow(
+    "estoque_custo_parcial",
+    "entradas_quantidade_custo_ausente",
+    report.inventory.partialCost.entradasMissingCostQuantity.toFixed(3),
+  );
+  pushRow(
+    "estoque_custo_parcial",
+    "saidas_custo_conhecido",
+    report.inventory.partialCost.saidasKnownCost.toFixed(2),
+  );
+  pushRow(
+    "estoque_custo_parcial",
+    "saidas_quantidade_custo_conhecido",
+    report.inventory.partialCost.saidasKnownQuantity.toFixed(3),
+  );
+  pushRow(
+    "estoque_custo_parcial",
+    "saidas_quantidade_custo_ausente",
+    report.inventory.partialCost.saidasMissingCostQuantity.toFixed(3),
+  );
+  pushRow(
+    "estoque_custo_parcial",
+    "saldo_economico_conhecido",
+    report.inventory.partialCost.saldoKnownCost.toFixed(2),
+  );
+  pushRow(
+    "estoque_custo_parcial",
+    "saldo_quantidade_custo_ausente",
+    report.inventory.partialCost.saldoMissingCostQuantity.toFixed(3),
   );
   pushRow(
     "estoque",
@@ -2149,6 +2302,13 @@ export function buildOperationalSummaryPrintHtml(
             -${report.inventory.saidasPeriodo.toLocaleString("pt-BR")} no periodo
             | ${report.inventory.resupplyWarningItems} ressuprimento(s) |
             ${report.inventory.resupplyCriticalItems} critico(s)
+          </p>
+          <p class="meta">
+            Custo parcial derivado: entradas ${report.inventory.partialCost.entradasKnownCost.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })} |
+            saidas ${report.inventory.partialCost.saidasKnownCost.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })} |
+            saldo conhecido ${report.inventory.partialCost.saldoKnownCost.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })} |
+            custo ausente: ${report.inventory.partialCost.entradasMissingCostMovements + report.inventory.partialCost.saidasMissingCostMovements} movimentacao(oes),
+            ${report.inventory.partialCost.activeLotsWithMissingCost} lote(s)
           </p>
           <table>
             <thead>

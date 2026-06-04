@@ -5,7 +5,7 @@ Atualizado em: 2026-06-04
 
 ## 1. Nome da fase
 
-Fase 9 — Subfase 9A: Inventário Operacional — Unidade, Custo, Baixa e Snapshot.
+Fase 9 — Subfase 9B: Relatórios Operacionais de Custo Parcial.
 
 ---
 
@@ -21,47 +21,50 @@ Fase 9 — Subfase 9A: Inventário Operacional — Unidade, Custo, Baixa e Snaps
 
 ## 3. Objetivo
 
-Consolidar o inventário operacional da Fase 9A com:
+Fechar tecnicamente a Subfase 9B com relatório operacional parcial de custo apoiado na base consolidada na 9A:
 
-- unidade de compra/apresentação separada da unidade base;
-- unidade de consumo/evento separada do controle de estoque;
-- custo total, custo por entrada e custo unitário/base sem ambiguidade;
-- persistência de lote usando custo unitário/base;
-- baixa de estoque idempotente;
-- snapshot econômico preservado como leitura derivada/read-only.
+- inventário;
+- entradas;
+- saídas/consumos;
+- saldo econômico parcial conhecido;
+- custo ausente separado;
+- leitura derivada/read model.
 
 ---
 
 ## 4. Resultado consolidado
 
-Subfase 9A concluída localmente no escopo técnico definido.
+Subfase 9B concluída localmente no escopo técnico definido.
 
 Entregue:
 
-- separação semântica entre unidade de compra/apresentação, unidade base e unidade de consumo/evento;
-- separação entre custo total, custo por entrada e custo unitário/base;
-- persistência do lote usando custo unitário/base;
-- snapshot econômico mantido como derivado/read-only, sem substituir evento nem inventário como fonte primária;
-- baixa nutricional automática testada com `record.id === eventId`, `record.source_evento_id === eventId` e `tipo === "consumo_nutricao"`;
-- retry/replay nutricional testado preservando `client_op_id`, `record.id` e `source_evento_id`;
-- conflito remoto `23505` em `insumo_movimentacoes` normalizado como `APPLIED`;
-- migration `20260604090000_insumo_movimentacoes_consumo_nutricao_idempotency.sql`;
-- índice único parcial remoto `ux_insumo_movimentacoes_consumo_nutricao_evento` em `(fazenda_id, source_evento_id)`, filtrado por `tipo = 'consumo_nutricao'`, `source_evento_id is not null` e `deleted_at is null`.
+- `inventory.partialCost` em `src/lib/reports/operationalSummary.ts`;
+- cálculo fora da UI;
+- apresentação em `src/pages/Relatorios.tsx`;
+- leitura derivada/read model;
+- custo operacional parcial conhecido;
+- entradas com custo conhecido;
+- saídas/consumos com custo conhecido;
+- saldo econômico parcial conhecido por lote ativo;
+- separação explícita de custo ausente;
+- `0` tratado como custo válido;
+- `null`/`undefined` tratados como custo ausente;
+- ausência de inferência de custo quando snapshot está ausente.
 
 ---
 
-## 5. Arquivos principais alterados na 9A
+## 5. Arquivos principais alterados na 9B
 
 | Arquivo | Motivo |
 |---|---|
-| `src/lib/inventory/inventoryFormPresets.ts` | Separar semântica de custo por entrada e custo unitário/base. |
-| `src/lib/inventory/__tests__/inventoryFormPresets.test.ts` | Cobrir unidade/custo operacional da entrada de inventário. |
-| `src/pages/Insumos.tsx` | Ajustar leitura de custo para refletir custo unitário/base persistido. |
-| `src/lib/inventory/__tests__/consumoGesture.test.ts` | Tornar explícito o contrato da baixa nutricional por `eventId`. |
-| `src/lib/offline/__tests__/sync_insumo_movimentacoes.test.ts` | Validar retry/replay nutricional preservando ids de idempotência. |
-| `supabase/functions/sync-batch/rules.test.ts` | Documentar `23505` de movimentação de insumo como `APPLIED`. |
-| `supabase/migrations/20260604090000_insumo_movimentacoes_consumo_nutricao_idempotency.sql` | Proteger remotamente a baixa nutricional por evento/source. |
-| `src/lib/inventory/__tests__/inventoryMigrations.test.ts` | Testar contrato textual do índice nutricional. |
+| `src/lib/reports/operationalSummary.ts` | Criar `inventory.partialCost` e calcular custo parcial derivado do inventário. |
+| `src/lib/reports/__tests__/operationalSummary.test.ts` | Cobrir custo conhecido, custo ausente, `0`, `null` e `undefined`. |
+| `src/pages/Relatorios.tsx` | Apresentar o bloco de custo operacional parcial sem calcular regra na UI. |
+| `src/pages/__tests__/Relatorios.e2e.test.tsx` | Validar exibição do bloco de custo parcial no relatório. |
+| `docs/review/CURRENT_PHASE_HANDOFF.md` | Atualizar continuidade da Fase 9 após fechamento da 9B. |
+| `docs/review/ACTIVE_PHASE_PLAN.md` | Registrar 9B concluída localmente e Fase 9 em andamento. |
+| `docs/review/PLANO_FASE_9_GATE_POS_MVP_COMERCIAL_PATRIMONIAL_CLASSIFICACAO_CUSTO.md` | Registrar fechamento da 9B no plano específico da Fase 9. |
+| `docs/context/PROJECT_STATUS.md` | Atualizar estado vivo do projeto. |
 
 ---
 
@@ -69,29 +72,28 @@ Entregue:
 
 | Comando | Resultado |
 |---|---|
-| `pnpm test -- src/lib/inventory src/lib/offline/__tests__/sync_insumo_movimentacoes.test.ts src/lib/animals/__tests__/classificationSnapshot.test.ts` | Passou. |
-| `pnpm test -- src/lib/inventory/__tests__/consumoGesture.test.ts src/lib/offline/__tests__/sync_insumo_movimentacoes.test.ts supabase/functions/sync-batch/rules.test.ts` | Passou. |
-| `pnpm test -- src/lib/inventory/__tests__/consumoGesture.test.ts src/lib/offline/__tests__/sync_insumo_movimentacoes.test.ts supabase/functions/sync-batch/rules.test.ts src/lib/inventory/__tests__/inventoryMigrations.test.ts` | Passou (4 arquivos, 28 tests). |
-| `pnpm test` | Passou (260 arquivos, 1746 tests). |
+| `git diff --check` | Passou. |
+| `pnpm test -- src/lib/reports/__tests__/operationalSummary.test.ts` | Passou. |
+| `pnpm test -- src/pages/__tests__/Relatorios.e2e.test.tsx` | Passou. |
+| `pnpm test` | Passou (260 arquivos, 1747 testes). |
 | `pnpm run lint` | Passou. |
 | `pnpm run build` | Passou com warnings conhecidos de Browserslist/chunks. |
-| `supabase db reset` | Passou; migration nutricional aplicada localmente. |
-| `node scripts/codex/validate-supabase-baseline-functional.mjs` | Passou após reset. |
-| `git diff --check` | Passou. |
+
+Validação Supabase/RLS não foi executada nesta subfase porque não houve alteração em Supabase, migrations, RLS, RPC, edge functions ou seed.
 
 ---
 
-## 7. Resultado técnico da 9A
+## 7. Resultado técnico da 9B
 
 Confirmado:
 
-- unidade de compra/apresentação, unidade base e unidade de consumo/evento não são tratadas como o mesmo conceito;
-- custo total, custo por entrada e custo unitário/base não ficam ambíguos;
-- baixa nutricional automática usa `eventId = source_evento_id = insumo_movimentacoes.id`;
-- retry/replay preserva os identificadores necessários para idempotência;
-- conflito remoto de PK/unique em `insumo_movimentacoes` segue normalizado como `APPLIED`;
-- índice remoto parcial impede duplicidade ativa de `consumo_nutricao` por evento/source;
-- snapshot econômico permanece derivado/read-only.
+- custo conhecido e custo ausente ficam separados;
+- `0` explícito permanece diferente de `null`/ausente;
+- movimentação sem snapshot de custo não tem custo inferido;
+- saldo econômico parcial conhecido usa custo persistido no lote ativo;
+- read model permanece derivado;
+- UI apenas apresenta o read model;
+- Fase 9 continua em andamento.
 
 ---
 
@@ -99,15 +101,15 @@ Confirmado:
 
 Não houve avanço para:
 
-- venda;
-- abate;
 - DRE;
 - ROI;
+- venda;
+- abate;
+- margem;
 - custo por arroba;
 - motor comercial avançado;
 - aptidão automática para venda;
 - aptidão automática para abate;
-- carência liberatória;
 - financeiro automático.
 
 Contratos preservados:
@@ -134,19 +136,13 @@ Pendências não bloqueantes permanecem em `docs/review/OPEN_REVIEW_ITEMS.md`:
 2. Warnings conhecidos de build.
 3. Revisão futura de avisos de Dialog/act em testes.
 
-Não há pendência aberta conhecida para índice único parcial remoto de `consumo_nutricao`.
+Não há pendência aberta conhecida para a leitura parcial de custo operacional da 9B.
 
 ---
 
 ## 10. Próximo passo recomendado
 
 Continuar Fase 9 sem marcar a fase inteira como concluída.
-
-Próximo foco conforme plano:
-
-```txt
-Subfase 9B — Relatórios Operacionais de Custo Parcial.
-```
 
 Antes de nova implementação:
 
@@ -162,11 +158,9 @@ git diff --check
 ## 11. Status final
 
 ```txt
-Fase 9A Inventário Operacional: concluída localmente.
-Suite global: verde.
+Fase 9B Relatórios Operacionais de Custo Parcial: concluída localmente.
+Suite global: verde (260 arquivos, 1747 testes).
 Lint: verde.
 Build: verde com warnings conhecidos.
-Baseline Supabase funcional: verde após reset local.
 Fase 9 completa: ainda em andamento.
-Próximo foco: 9B Relatórios Operacionais de Custo Parcial.
 ```

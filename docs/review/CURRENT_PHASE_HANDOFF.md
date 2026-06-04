@@ -9,7 +9,7 @@ Fase 9 — Gate Pós-MVP Comercial/Patrimonial/Classificação/Custo.
 
 Subfase 9A — Inventário Operacional — concluída localmente.
 
-Próximo foco: Subfase 9B — Relatórios Operacionais de Custo Parcial.
+Subfase 9B — Relatórios Operacionais de Custo Parcial — concluída localmente.
 
 ---
 
@@ -29,11 +29,25 @@ Fase 9A consolidou o inventário operacional no escopo técnico autorizado:
 - conflito remoto `23505` em `insumo_movimentacoes` tratado como `APPLIED`;
 - índice único parcial remoto `ux_insumo_movimentacoes_consumo_nutricao_evento` criado para `consumo_nutricao`.
 
+Fase 9B fechou documentalmente a leitura operacional parcial de custo:
+
+- `inventory.partialCost` em `src/lib/reports/operationalSummary.ts`;
+- cálculo fora da UI;
+- apresentação em `src/pages/Relatorios.tsx`;
+- custo operacional parcial conhecido;
+- entradas com custo conhecido;
+- saídas/consumos com custo conhecido;
+- saldo econômico parcial conhecido por lote ativo;
+- custo ausente separado;
+- `0` tratado como custo válido;
+- `null`/`undefined` tratados como custo ausente;
+- sem inferência de custo quando snapshot está ausente.
+
 Referência completa: `docs/review/LAST_PHASE_RESULT.md`.
 
 ---
 
-## 3. Validação consolidada da 9A
+## 3. Validação consolidada
 
 Validações executadas na 9A:
 
@@ -49,6 +63,17 @@ git diff --check: passou
 
 Warnings conhecidos permanecem não bloqueantes e documentados em `docs/review/OPEN_REVIEW_ITEMS.md`.
 
+Validações executadas na 9B:
+
+```txt
+git diff --check: passou
+pnpm test -- src/lib/reports/__tests__/operationalSummary.test.ts: passou
+pnpm test -- src/pages/__tests__/Relatorios.e2e.test.tsx: passou
+pnpm test: passou (260 arquivos, 1747 testes)
+pnpm run lint: passou
+pnpm run build: passou com warnings conhecidos de Browserslist/chunks
+```
+
 ---
 
 ## 4. Pendências abertas
@@ -58,7 +83,8 @@ Não há pendência aberta conhecida para:
 - separação de custo por entrada vs custo unitário/base;
 - idempotência local/remota da baixa nutricional;
 - índice único parcial remoto de `consumo_nutricao`;
-- snapshot econômico como derivado/read-only.
+- snapshot econômico como derivado/read-only;
+- leitura parcial de custo operacional da 9B.
 
 Pendências residuais não bloqueantes:
 
@@ -70,14 +96,23 @@ Pendências residuais não bloqueantes:
 
 ## 5. Próximo objetivo
 
-Continuar a Fase 9 pela Subfase 9B — Relatórios Operacionais de Custo Parcial.
+Continuar a Fase 9 sem marcar a fase inteira como concluída.
 
-Objetivo esperado da 9B:
+Resultado fechado da 9B:
 
 - usar as bases de unidade/custo/snapshot consolidadas na 9A;
 - produzir leitura operacional parcial de custo;
 - manter snapshot/read model como derivado;
 - não antecipar DRE, ROI, venda, abate, custo por arroba ou motor comercial avançado.
+
+Entrega local da 9B:
+
+- relatório operacional expõe custo parcial derivado de inventário;
+- entradas e saídas/consumos com custo conhecido ficam separadas;
+- saldo econômico parcial conhecido é calculado por lote ativo;
+- movimentações/lotes com custo ausente ficam separados;
+- custo `0` explícito permanece válido e diferente de custo ausente;
+- cálculo fica em `src/lib/reports/operationalSummary.ts`; UI apenas apresenta o read model.
 
 ---
 

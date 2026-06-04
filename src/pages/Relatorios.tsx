@@ -662,6 +662,103 @@ const Relatorios = () => {
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <h3 className="text-base font-semibold">
+                    Custo operacional parcial
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    Leitura derivada do inventario e dos snapshots de movimentacao.
+                  </p>
+                </div>
+                <StatusBadge tone="neutral">
+                  Fonte: read model de inventario
+                </StatusBadge>
+              </div>
+
+              <div className="grid gap-3 md:grid-cols-3">
+                <div className="rounded-lg border border-border/70 bg-background p-3">
+                  <p className="text-xs text-muted-foreground">
+                    Entradas com custo
+                  </p>
+                  <p className="mt-1 text-xl font-semibold">
+                    {money.format(report.inventory.partialCost.entradasKnownCost)}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {formatQuantity(
+                      report.inventory.partialCost.entradasKnownQuantity,
+                    )}{" "}
+                    un. base
+                  </p>
+                </div>
+                <div className="rounded-lg border border-border/70 bg-background p-3">
+                  <p className="text-xs text-muted-foreground">
+                    Saidas/consumos com custo
+                  </p>
+                  <p className="mt-1 text-xl font-semibold">
+                    {money.format(report.inventory.partialCost.saidasKnownCost)}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {formatQuantity(
+                      report.inventory.partialCost.saidasKnownQuantity,
+                    )}{" "}
+                    un. base
+                  </p>
+                </div>
+                <div className="rounded-lg border border-border/70 bg-background p-3">
+                  <p className="text-xs text-muted-foreground">
+                    Saldo economico conhecido
+                  </p>
+                  <p className="mt-1 text-xl font-semibold">
+                    {money.format(report.inventory.partialCost.saldoKnownCost)}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {
+                      report.inventory.partialCost.activeLotsWithKnownCost
+                    }{" "}
+                    lote(s)
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid gap-3 text-sm md:grid-cols-3">
+                <div className="rounded-lg border border-dashed border-border/70 bg-background p-3">
+                  <p className="font-medium">Entradas sem custo</p>
+                  <p className="text-muted-foreground">
+                    {report.inventory.partialCost.entradasMissingCostMovements}{" "}
+                    movimentacao(oes) |{" "}
+                    {formatQuantity(
+                      report.inventory.partialCost.entradasMissingCostQuantity,
+                    )}{" "}
+                    un. base
+                  </p>
+                </div>
+                <div className="rounded-lg border border-dashed border-border/70 bg-background p-3">
+                  <p className="font-medium">Saidas sem custo</p>
+                  <p className="text-muted-foreground">
+                    {report.inventory.partialCost.saidasMissingCostMovements}{" "}
+                    movimentacao(oes) |{" "}
+                    {formatQuantity(
+                      report.inventory.partialCost.saidasMissingCostQuantity,
+                    )}{" "}
+                    un. base
+                  </p>
+                </div>
+                <div className="rounded-lg border border-dashed border-border/70 bg-background p-3">
+                  <p className="font-medium">Saldo sem custo</p>
+                  <p className="text-muted-foreground">
+                    {report.inventory.partialCost.activeLotsWithMissingCost}{" "}
+                    lote(s) |{" "}
+                    {formatQuantity(
+                      report.inventory.partialCost.saldoMissingCostQuantity,
+                    )}{" "}
+                    un. base
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-3 rounded-xl border border-border/70 bg-muted/20 p-4">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <h3 className="text-base font-semibold">
                     Pre-requisitos da fase 3
                   </h3>
                   <p className="text-sm text-muted-foreground">
@@ -1371,5 +1468,4 @@ const Relatorios = () => {
 };
 
 export default Relatorios;
-
 

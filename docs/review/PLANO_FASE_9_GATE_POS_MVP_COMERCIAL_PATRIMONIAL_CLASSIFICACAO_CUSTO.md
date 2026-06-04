@@ -382,4 +382,44 @@ node scripts/codex/validate-supabase-baseline-functional.mjs
 
 ---
 
-**Próximo:** Subfase 9B — Relatórios Operacionais de Custo Parcial (após aceito 9A)
+---
+
+## Fechamento — Subfase 9B: Relatórios Operacionais de Custo Parcial
+
+**Status:** concluída localmente, com patch validado.
+
+Entregue na 9B:
+
+- leitura operacional parcial de custo no relatório existente;
+- `inventory.partialCost` em `src/lib/reports/operationalSummary.ts`;
+- cálculo fora da UI;
+- apresentação em `src/pages/Relatorios.tsx`;
+- leitura derivada/read model;
+- custo operacional parcial conhecido;
+- custo conhecido de entradas separado de custo ausente;
+- custo conhecido de saídas/consumos separado de custo ausente;
+- saldo econômico parcial conhecido por lote ativo;
+- lotes e movimentações com custo ausente preservados como limitação explícita;
+- `0` tratado como custo válido;
+- `null`/`undefined` tratados como custo ausente;
+- ausência de inferência de custo quando snapshot está ausente.
+
+Validações registradas:
+
+- `git diff --check`: passou;
+- `pnpm test -- src/lib/reports/__tests__/operationalSummary.test.ts`: passou;
+- `pnpm test -- src/pages/__tests__/Relatorios.e2e.test.tsx`: passou;
+- `pnpm test`: passou (260 arquivos, 1747 testes);
+- `pnpm run lint`: passou;
+- `pnpm run build`: passou com warnings conhecidos de Browserslist/chunks.
+
+Limites preservados:
+
+- sem DRE;
+- sem ROI;
+- sem venda/abate;
+- sem margem;
+- sem custo por arroba;
+- sem motor comercial avançado.
+
+**Próximo:** continuar Fase 9 sem marcar a fase inteira como concluída.

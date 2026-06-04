@@ -1,108 +1,78 @@
-﻿# ACTIVE_PHASE_PLAN — Fase 9 Subfase 9A
+# ACTIVE_PHASE_PLAN - Fase 9 Subfase 9B
 
-**Status:** Subfase 9A concluída localmente; Fase 9 em andamento
+**Status:** Subfase 9B concluida localmente; Fase 9 em andamento
 **Commit Baseline:** `8cd5534`
 **Criado:** 2026-06-04
+**Atualizado:** 2026-06-04
 
 ---
 
-## Objetivo em 1 parágrafo
+## Objetivo em 1 paragrafo
 
-Consolidar a base comercial e patrimonial da fazenda após Fase 8, validar custo operacional por inventário,
-garantir idempotência de baixa, isolamento de sociedade patrimonial, e preparar sistema para leitura de
-classificação operacional (sem alterar estado).
-
----
-
-## Diagnóstico obrigatório — 7 confirmações
-
-```bash
-# 1. Commit baseline OK?
-git log --oneline -1
-
-# 2. Migrations atualizadas?
-git status supabase/migrations
-
-# 3. RLS policies ativas?
-git grep "CREATE POLICY" -- supabase/migrations
-
-# 4. Testes passando?
-pnpm test -- --run
-
-# 5. Lint limpo?
-pnpm run lint
-
-# 6. Build compila?
-pnpm run build
-
-# 7. Diff clean?
-git diff --check
-```
+Fechar relatorio operacional parcial de custo usando a base consolidada na 9A, mantendo inventario, movimentacoes e snapshots como fontes primarias existentes e expondo apenas leitura derivada/read model. Nao avancar para DRE, ROI, venda, abate, margem, custo por arroba ou motor comercial avancado.
 
 ---
 
 ## Escopo permitido
 
-- Leitura de documentação de Fase 9 (PLANO_FASE_9_GATE_POS_MVP_COMERCIAL_PATRIMONIAL_CLASSIFICACAO_CUSTO.md)
-- Implementação de Subfase 9A conforme especificação
-- Testes unitários para conversão de unidade, custo, snapshot
-- Validação de idempotência de baixa
-- Isolamento de sociedade patrimonial
-- Leitura de classificação (sem alteração de estado)
+- Leitura operacional parcial de custo no relatorio existente.
+- Uso de `state_insumo_lotes`, `state_insumo_movimentacoes`, snapshots de custo e custo persistido dos lotes.
+- Separacao de custo conhecido vs custo ausente.
+- Testes proporcionais do read model e da tela de relatorios.
+- Documentacao do contrato implementado.
 
 ---
 
 ## Escopo proibido
 
-- Refatoração de testes existentes sem tarefa explícita
-- Alteração de RLS/migrations/seed
-- Mudança de contrato de Agenda/Eventos/Protocolo
-- Feature nova fora de Subfase 9A
-- Automação sem fonte técnica explícita
+- Alteracao de Supabase, migrations, RLS, RPC, edge functions ou seed.
+- Mudanca de contrato de Agenda/Eventos/Protocolo.
+- Mudanca de logica de inventario, baixa ou snapshot economico de origem.
+- Calculo de regra na UI.
+- DRE, ROI, venda, abate, margem, custo por arroba ou motor comercial avancado.
+- Marcar a Fase 9 inteira como concluida.
 
 ---
 
-## Validação obrigatória
+## Fechamento local da 9B
 
-1. `pnpm run test` — Todos os testes passam
-2. `pnpm run lint` — Sem erros novos
-3. `pnpm run build` — Compila sem warnings críticos
-4. `git diff --check` — Sem trailing whitespace
-5. Testes de idempotência passam (retry de baixa não duplica)
-6. Isolamento de sociedade validado em RLS
-7. Classificação é leitura apenas (read-only snapshot)
-
----
-
-## Critério de aceite — 10 itens
-
-1. Conversão de unidade (compra/apresentação -> base) funciona e é testada
-2. Entrada de custo segue modelo operacional (ausência != zero)
-3. Snapshot econômico preservado (sem recálculo retroativo)
-4. Baixa de inventário é idempotente (retry não duplica)
-5. Sociedade patrimonial isolada por RLS e visão
-6. Classificação operacional é leitura apenas (não altera estado)
-7. Testes cobrem fluxo completo (compra, custo, snapshot, classificação)
-8. Documentação interna reflete contrato (comentários de código)
-9. Não há warn do TypeScript ou ESLint em código novo
-10. git diff --check passa sem erros
+- `src/lib/reports/operationalSummary.ts` expõe `inventory.partialCost`.
+- Entradas com custo conhecido ficam separadas de entradas com custo ausente.
+- Saidas/consumos com custo conhecido ficam separados de saidas com custo ausente.
+- Saldo economico parcial conhecido e saldo sem custo ficam separados por lote ativo.
+- Custo `0` explicito permanece valido e diferente de `null`/ausente.
+- `null`/`undefined` sao tratados como custo ausente.
+- Custo nao e inferido quando o snapshot esta ausente.
+- `src/pages/Relatorios.tsx` apenas apresenta o read model derivado.
 
 ---
 
-## Resultado esperado — Estado final
+## Validacao obrigatoria
 
-Ao fim de Subfase 9A:
-
-- Unidade de compra/apresentação convertida corretamente para base
-- Custo registrado sem ambiguidade (ausência != zero, valor explícito)
-- Snapshot econômico preservado (histórico imutável)
-- Baixa de inventário retry-safe (idempotência confirmada em testes)
-- Sociedade patrimonial isolada (RLS, sem visibilidade cruzada)
-- Classificação lida como snapshot (sem alteração de estado animal)
-- Testes + lint + build limpas
-- git diff --check clean
-- Documentação referencia PLANO_FASE_9_GATE_POS_MVP_COMERCIAL_PATRIMONIAL_CLASSIFICACAO_CUSTO.md
+1. `git status --short --untracked-files=all`
+2. `git diff --check`
+3. `pnpm test -- src/lib/reports/__tests__/operationalSummary.test.ts`
+4. `pnpm test -- src/pages/__tests__/Relatorios.e2e.test.tsx`
+5. `pnpm test`
+6. `pnpm run lint`
+7. `pnpm run build`
 
 ---
 
-Próximo: Subfase 9B — Relatórios Operacionais de Custo Parcial, sem marcar a Fase 9 inteira como concluída.
+## Criterio de aceite - 9B
+
+1. Relatorio mostra custo parcial operacional derivado de inventario.
+2. Entradas com custo conhecido aparecem separadas.
+3. Saidas/consumos com custo conhecido aparecem separados.
+4. Saldo economico parcial conhecido aparece separado.
+5. Movimentacoes/lotes com custo ausente aparecem separados.
+6. `0` explicito permanece diferente de `null`/ausente.
+7. Calculo fica fora da UI.
+8. Nenhuma regra comercial avancada e criada.
+9. Validacoes proporcionais passam.
+
+---
+
+## Resultado esperado
+
+Subfase 9B concluida localmente com relatorio operacional parcial de custo, sem fechar a Fase 9 inteira.
