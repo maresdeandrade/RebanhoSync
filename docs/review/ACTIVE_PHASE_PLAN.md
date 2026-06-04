@@ -4,12 +4,29 @@
 **Commit Baseline:** `8cd5534`
 **Criado:** 2026-06-04
 **Atualizado:** 2026-06-04
+**Próxima subfase prevista:** 9D — Fechamento do Gate Fase 9 e Handoff para Próxima Fase
 
 ---
 
 ## Objetivo em 1 parágrafo
 
 Iniciar a Subfase 9C — Sociedade Patrimonial e Classificação Operacional Read-only, usando as bases consolidadas na 9A e 9B. A etapa deve começar por diagnóstico local antes de qualquer patch, confirmar o estado real de sociedade/participação patrimonial e revisar a classificação operacional como leitura derivada/snapshot, sem transformar classificação, snapshot, relatório, tag, insight ou sinal em autorização operacional/comercial.
+
+---
+
+## Realidade validada para planejamento pós-Fase 9
+
+Auditoria documental/local em 2026-06-04 confirmou que a sequência futura não deve reabrir como fase nova o que já foi executado:
+
+- Fase 5 — Exceções/Correções/Reconciliação Sanitária: `CONCLUÍDA`, com hardening residual apenas.
+- Fase 6 — Robustez Sanitária em Staging/RLS/sync: `HARDENING_RESIDUAL`, não nova fase de produto.
+- Fase 7 — Compra/Venda/Sociedade: `PARCIAL`, deve virar hardening/lacunas, não criação do zero.
+- Fase 8 — Relatórios/Baseline: `PARCIAL`, base para KPIs operacionais ampliados.
+- Fase 9A e 9B: `CONCLUÍDA` localmente.
+- Fase 9C: `A_INICIAR` e segue como fase atual.
+- Financeiro/DRE/Margem: `PARCIAL`; ledger existe, mas DRE/ROI/margem/custo por arroba seguem fora do escopo atual.
+
+Conduta: manter 9C como atual, 9D como fechamento previsto e deixar a nomeação final da próxima fase para 9D, usando a sequência corrigida do `docs/product/ROADMAP.md` como referência preliminar.
 
 ---
 

@@ -13,6 +13,8 @@ Subfase 9B — Relatórios Operacionais de Custo Parcial — concluída localmen
 
 Subfase 9C — Sociedade Patrimonial e Classificação Operacional Read-only — a iniciar.
 
+Subfase 9D — Fechamento do Gate Fase 9 e Handoff para Próxima Fase — prevista.
+
 ---
 
 ## 2. Estado consolidado
@@ -46,6 +48,22 @@ Fase 9B fechou documentalmente a leitura operacional parcial de custo:
 - sem inferência de custo quando snapshot está ausente.
 
 Referência completa: `docs/review/LAST_PHASE_RESULT.md`.
+
+---
+
+## 2.1 Realidade de fases para o roadmap
+
+Auditoria documental/local em 2026-06-04:
+
+- Fase 5 — Exceções/Correções/Reconciliação Sanitária: `CONCLUÍDA`; manter apenas hardening residual.
+- Fase 6 — Robustez Sanitária em Staging/RLS/sync: `HARDENING_RESIDUAL`; não reabrir como fase de produto sem bug objetivo.
+- Fase 7 — Compra/Venda/Sociedade: `PARCIAL`; tratar como hardening e lacunas, não criação do zero.
+- Fase 8 — Relatórios/Baseline: `PARCIAL`; usar como base para KPIs operacionais ampliados.
+- Fase 9A e 9B: `CONCLUÍDA` localmente.
+- Fase 9C: `A_INICIAR`; permanece o foco atual.
+- 9D: prevista para fechamento do gate e handoff da próxima fase.
+
+Conduta pós-Fase 9: usar a sequência corrigida do `docs/product/ROADMAP.md`, mantendo sanitário/reconciliação como trilha residual contínua e evitando antecipar DRE, ROI, margem, custo por arroba ou motor comercial.
 
 ---
 

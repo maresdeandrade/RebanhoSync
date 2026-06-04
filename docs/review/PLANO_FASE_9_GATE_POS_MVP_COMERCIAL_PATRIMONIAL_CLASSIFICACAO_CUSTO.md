@@ -43,6 +43,25 @@ Compromissos já ativos:
 
 ---
 
+## 2.1 Matriz de realidade por fase
+
+Status real usa apenas: `CONCLUÍDA`, `PARCIAL`, `HARDENING_RESIDUAL`, `A_INICIAR`, `FUTURA`, `NÃO_CONFIRMADA`.
+
+| Fase/tema | Estado documental | Evidência local | Status real | Lacunas | Conduta no roadmap |
+|---|---|---|---|---|---|
+| Fase 5 — Exceções/Reconciliação Sanitária | Consolidada em docs ativos; `docs/domain/SANITARIO.md` ainda tem trecho legado como planejamento. | `sanitaryCorrections.ts`, `sanitaryExceptions.ts`, testes e consumo em relatórios/eventos. | `CONCLUÍDA` | Hardening residual e contrato legado. | Não duplicar como fase futura. |
+| Fase 6 — Robustez Sanitária em Staging | Consolidada como gate anterior, com pendências residuais não bloqueantes. | Handoff Fase 6, `sync-batch`, RLS, retry/rollback e validações registradas. | `HARDENING_RESIDUAL` | Ruídos de teste/build/DX. | Trilha residual contínua. |
+| Fase 7 — Compra/Venda/Sociedade | Documentada como executada parcialmente. | `eventos_comercial`, `commercialOperation*`, `RegistrarComercialSection`, `sociedades_pecuarias`, `sociedade_animais` e testes. | `PARCIAL` | UX, sync, relatórios e hardening operacional. | Hardening/lacuna, não criação do zero. |
+| Fase 8 — Relatórios/Baseline | Documentada como relatórios/baseline estável; ampliada pela 9B. | `operationalSummary.ts`, `Relatorios.tsx`, `Home.tsx`, `finance/gerencial.ts` e testes. | `PARCIAL` | KPIs ampliados com fonte/limitação. | Base para próximos KPIs. |
+| Fase 9A — Inventário/Custo/Snapshot | Concluída localmente. | Handoff, `LAST_PHASE_RESULT`, validações globais e Supabase registradas. | `CONCLUÍDA` | Nenhuma pendência específica aberta. | Manter concluída. |
+| Fase 9B — Custo parcial em relatórios | Concluída localmente. | `inventory.partialCost`, testes de relatório e validações registradas. | `CONCLUÍDA` | Nenhuma pendência específica aberta. | Manter concluída. |
+| Fase 9C — Sociedade/Classificação read-only | Atual a iniciar. | `classificationSnapshot.ts`, testes, occupancy; sociedade em Dexie/migrations/UI, diagnóstico 9C pendente. | `A_INICIAR` | Mapear isolamento, consumo e risco de autorização. | Fase atual. |
+| Financeiro/DRE/Margem | Ledger existe; DRE/ROI/margem conclusivos não. | `finance_transactions`, `finance_categories`, docs financeiros e testes comerciais bloqueando métricas indevidas. | `PARCIAL` | Método, período, rateio, fonte explícita e limitações. | Futuro explícito, sem antecipar DRE/ROI. |
+| Lotes/Pastos/Desempenho | Base parcial no MVP. | `pastos`, `lotes`, occupancy, movimentação e relatórios. | `PARCIAL` | Desempenho ampliado/GMD por período. | Fase futura ou hardening. |
+| KPIs operacionais | Relatórios existem; KPIs ampliados são planejados. | `operationalSummary`, `Relatorios`, `Home`, docs de KPI/limites. | `PARCIAL` | Fonte, período e limitação explícitos. | Fase futura read-only. |
+
+---
+
 ## 3. Contratos obrigatórios da Fase 9
 
 | Contrato | Status | Regra |
@@ -225,7 +244,7 @@ supabase/migrations
 docs/review/PLANO_FASE_9_GATE_POS_MVP_COMERCIAL_PATRIMONIAL_CLASSIFICACAO_CUSTO.md
 ```
 
-Áreas protegidas:
+#### 6.5.1 Áreas protegidas
 
 ```txt
 supabase/migrations
@@ -289,7 +308,47 @@ A 9C só pode ser considerada avançada se:
 
 ---
 
-## 7. Pendências abertas da Fase 9
+## 7. Subfase 9D — Fechamento do Gate Fase 9 e Handoff para Próxima Fase
+
+**Status:** prevista
+
+### 7.1 Objetivo
+
+Fechar o Gate da Fase 9 em termos de planejamento, documentação e handoff para a próxima fase. A 9D deve consolidar o que foi aprendido em 9A/9B/9C e definir o nome e o foco da fase seguinte.
+
+### 7.2 Escopo previsto
+
+- validar que 9A e 9B estão concluídas localmente;
+- validar diagnóstico de 9C antes de patch;
+- documentar lacunas reais remanescentes;
+- definir critério de aceitação do gate;
+- preparar handoff para a fase seguinte;
+- não marcar Fase 9 como concluída até o fechamento da 9D.
+
+### 7.3 Observação
+
+A próxima fase após 9D será nomeada no fechamento da 9D.
+
+## 8. Sequência prevista pós-Fase 9
+
+1. Fase 10 — UX Operacional dos Fluxos Centrais.
+2. Fase 11 — Lotes, Pastos e Desempenho Operacional Ampliado.
+3. Fase 12 — Compra/Venda Operacional: Hardening e Lacunas.
+4. Fase 13 — Relatórios/KPIs Operacionais Read-only Ampliados.
+5. Fase 14 — Financeiro Gerencial Explícito.
+6. Fase 15 — Motor de Decisão Assistida.
+7. Fase 16 — Beta Externo / SLC / Hardening de Produto.
+
+A próxima fase após 9D será nomeada no fechamento da 9D. A sequência acima é referência preliminar corrigida pela matriz de realidade; não reabre Fases 5/6 e não trata compra/venda, sociedade ou relatórios como inexistentes.
+
+## 8.1 Trilhas residuais contínuas
+
+- Sanitário/reconciliação: apenas hardening residual das Fases 5/6, salvo bug objetivo.
+- Build/testes/DX: higiene residual de warnings, logs e estabilidade de suite.
+- Compliance regulatório: módulo futuro com fonte oficial e separação de alerta vs bloqueio.
+- Reprodução ampliada: módulo futuro com contrato de domínio, eventos, agenda, estado atual e testes.
+
+## 9. Pendências abertas da Fase 9
 
 Pendências reais da Fase 9 neste momento:
 
@@ -312,7 +371,7 @@ Não há pendência aberta conhecida para:
 
 ---
 
-## 8. Restrições permanentes da Fase 9
+## 10. Restrições permanentes da Fase 9
 
 Não avançar sem tarefa explícita para:
 
@@ -345,7 +404,7 @@ Tags/sinais/insights = auxiliares, nunca fonte primária.
 
 ---
 
-## 9. Validação técnica geral
+## 11. Validação técnica geral
 
 Antes de nova implementação:
 
@@ -370,7 +429,7 @@ node scripts/codex/validate-supabase-baseline-functional.mjs
 
 ---
 
-## 10. Resultado esperado ao fim da Fase 9
+## 12. Resultado esperado ao fim da Fase 9
 
 A Fase 9 só deve ser considerada concluída quando:
 

@@ -41,6 +41,26 @@ Próximo foco:
 - manter classificação como leitura/snapshot, nunca como autorização crítica;
 - não antecipar DRE, ROI, venda, abate, margem, custo por arroba ou motor comercial avançado.
 
+Realidade validada para o roadmap pós-Fase 9:
+
+- Fase 5 Sanitário/Exceções/Reconciliação: concluída; só hardening residual.
+- Fase 6 Robustez Sanitária/RLS/sync: hardening residual, não fase de produto nova.
+- Fase 7 Compra/Venda/Sociedade: parcial; tratar lacunas e hardening, não criação do zero.
+- Fase 8 Relatórios/Baseline: parcial; base para KPIs operacionais read-only ampliados.
+- Fase 9A e 9B: concluídas localmente.
+- Fase 9C: a iniciar e permanece como fase atual.
+- 9D: prevista para fechamento do gate e handoff.
+
+Sequência preliminar corrigida após 9D:
+
+1. UX Operacional dos Fluxos Centrais.
+2. Lotes, Pastos e Desempenho Operacional Ampliado.
+3. Compra/Venda Operacional: Hardening e Lacunas.
+4. Relatórios/KPIs Operacionais Read-only Ampliados.
+5. Financeiro Gerencial Explícito.
+6. Motor de Decisão Assistida.
+7. Beta Externo / SLC / Hardening de Produto.
+
 ---
 
 ## Produto

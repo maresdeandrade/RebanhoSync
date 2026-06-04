@@ -1,7 +1,7 @@
 ﻿# Roadmap — RebanhoSync
 
-Atualizado em: 2026-06-02
-**Baseline Commit:** `3fe7a81`
+Atualizado em: 2026-06-04
+**Baseline documental auditado:** `17f4f76`
 
 ## Objetivo
 
@@ -28,31 +28,32 @@ Não deve substituir issues, tarefas técnicas ou prompts de implementação.
 
 ## Fase atual — Fase 9 (Gate Pós-MVP Comercial/Patrimonial/Classificação/Custo)
 
-Subfase atual: **9A — Inventário Operacional**
+Subfase atual: **9C — Sociedade Patrimonial e Classificação Operacional Read-only**
+Próxima subfase prevista: **9D — Fechamento do Gate Fase 9 e Handoff para Próxima Fase**
 
-Objetivo:
+### Status das subfases
+
+- 9A — Inventário Operacional: concluída localmente.
+- 9B — Relatórios Operacionais de Custo Parcial: concluída localmente.
+- 9C — Sociedade Patrimonial e Classificação Operacional Read-only: a iniciar.
+- 9D — Fechamento do Gate Fase 9 e Handoff para Próxima Fase: prevista.
+
+### Objetivo da Fase 9
 
 - consolidar base comercial e patrimonial após Fase 8;
 - validar custo operacional por inventário;
 - garantir idempotência de baixa;
-- isolar sociedade patrimonial por RLS;
-- preparar classificação operacional como leitura apenas.
+- mapear sociedade patrimonial;
+- preparar classificação operacional como leitura apenas;
+- impedir que classificação, snapshot ou sinal virem autorização crítica.
 
-Entregas esperadas (Subfase 9A):
+### Critério de aceite da Fase 9
 
-- conversão de unidade (compra/apresentação -> base) registrada e testada;
-- custo operacional diferencia ausência vs zero;
-- snapshot econômico imutável (histórico preservado);
-- baixa de inventário idempotente (retry-safe);
-- isolamento de sociedade patrimonial por RLS;
-- classificação operacional como leitura apenas (read-only snapshot).
-
-Critério de aceite:
-
-- todos os 6 contratos obrigatórios implementados;
-- testes cobrem fluxo completo;
-- `git diff --check` passa;
-- sem warnings TypeScript/ESLint em código novo.
+- 9A e 9B permanecem concluídas localmente;
+- 9C mapeia sociedade patrimonial e classificação operacional com evidência local;
+- 9D fecha o gate e define explicitamente a próxima fase;
+- nenhuma autorização automática de venda/abate é criada;
+- nenhum avanço indevido para DRE, ROI, margem, custo por arroba ou motor comercial avançado ocorre.
 
 Referência: `docs/review/ACTIVE_PHASE_PLAN.md` e `docs/review/PLANO_FASE_9_GATE_POS_MVP_COMERCIAL_PATRIMONIAL_CLASSIFICACAO_CUSTO.md`
 
@@ -73,151 +74,45 @@ Detalhes em `docs/context/PROJECT_STATUS.md` e `docs/review/LAST_PHASE_RESULT.md
 
 ---
 
-## Próximos focos (pós-Fase 9A)
+## Matriz de realidade por fase
 
-### Próximo foco 1 — UX operacional dos fluxos centrais
+Status real usa apenas: `CONCLUÍDA`, `PARCIAL`, `HARDENING_RESIDUAL`, `A_INICIAR`, `FUTURA`, `NÃO_CONFIRMADA`.
 
-Objetivo:
-
-- reduzir fricção na rotina de campo;
-- deixar claro o que é pendência, execução e histórico;
-- melhorar leitura da Central Operacional;
-- simplificar fluxos de registro.
-
-Áreas:
-
-- Home/Central Operacional;
-- Agenda;
-- Registrar;
-- Animal;
-- Sanitário;
-- Lotes/Pastos;
-- Compra/Venda.
-
-Critério de aceite:
-
-- menos ambiguidade;
-- menos campos desnecessários;
-- CTA claro;
-- estados vazio/parcial/bloqueado claros;
-- sem regra crítica nova na UI;
-- sinais sanitários não são apresentados como autorização comercial.
+| Fase/tema | Estado documental | Evidência local | Status real | Lacunas | Conduta no roadmap |
+|---|---|---|---|---|---|
+| Fase 5 — Exceções/Reconciliação Sanitária | Consolidada em documentação ativa; há trecho legado em `docs/domain/SANITARIO.md` tratando como planejada. | `src/lib/sanitario/reconciliation/sanitaryCorrections.ts`, `sanitaryExceptions.ts`, testes e consumo em relatórios/eventos. | `CONCLUÍDA` | Hardening residual e contrato legado, sem bug objetivo novo. | Não duplicar como fase futura. |
+| Fase 6 — Robustez Sanitária em Staging | Consolidada como gate anterior; pendências residuais não bloqueantes continuam abertas. | `docs/review/FASE_6_SANITARIA_STAGING_SYNC_RLS_HANDOFF.md`, `sync-batch`, RLS, retry/rollback e validações registradas. | `HARDENING_RESIDUAL` | Ruídos de teste/build e higiene DX. | Trilha residual contínua, não fase de produto. |
+| Fase 7 — Compra/Venda/Sociedade | Documentada como já executada parcialmente; preparação de PR fechada. | `eventos_comercial`, `commercialOperation*`, `RegistrarComercialSection`, `sociedades_pecuarias`, `sociedade_animais` e testes comerciais/sociedade. | `PARCIAL` | Hardening operacional, UX, sync e relatórios. | Hardening/lacuna, não criação do zero. |
+| Fase 8 — Relatórios/Baseline | Documentada como relatórios/baseline estável; 9B ampliou custo parcial. | `operationalSummary.ts`, `Relatorios.tsx`, `Home.tsx`, `finance/gerencial.ts` e testes de relatório. | `PARCIAL` | KPIs ampliados ainda exigem fonte/limitação explícita. | Base para próximos KPIs. |
+| Fase 9A — Inventário/Custo/Snapshot | Concluída localmente. | Handoff, `LAST_PHASE_RESULT`, plano da Fase 9 e validações registradas. | `CONCLUÍDA` | Nenhuma pendência específica aberta. | Manter concluída. |
+| Fase 9B — Custo parcial em relatórios | Concluída localmente. | `inventory.partialCost`, `operationalSummary.test`, `Relatorios.e2e` e validações registradas. | `CONCLUÍDA` | Nenhuma pendência específica aberta. | Manter concluída. |
+| Fase 9C — Sociedade/Classificação read-only | Atual a iniciar. | `classificationSnapshot.ts`, testes, occupancy; sociedade em Dexie/migrations/UI, ainda sem diagnóstico 9C fechado. | `A_INICIAR` | Mapear isolamento, consumo e risco de autorização. | Fase atual. |
+| Financeiro/DRE/Margem | Limites documentados; ledger gerencial existe, DRE/ROI/margem conclusivos não. | `finance_transactions`, `finance_categories`, docs financeiros e testes bloqueando métricas comerciais indevidas. | `PARCIAL` | Método, período, rateio, fonte explícita e limitações. | Fase futura explícita, sem prometer DRE/ROI agora. |
+| Lotes/Pastos/Desempenho | MVP/capability indicam base parcial. | `pastos`, `lotes`, occupancy, movimentação e relatórios. | `PARCIAL` | Desempenho ampliado/GMD por período e fonte declarada. | Fase futura ou hardening. |
+| KPIs operacionais | Relatórios operacionais existem; KPIs ampliados são planejados. | `operationalSummary`, `Relatorios`, `Home`, docs de KPI/limites financeiros. | `PARCIAL` | KPIs read-only ampliados com fonte, período e limitação. | Fase futura read-only. |
 
 ---
 
-## Próximo foco 2 — Robustez sanitária
+## Sequência prevista pós-Fase 9
 
-Objetivo:
+1. Fase 10 — UX Operacional dos Fluxos Centrais.
+2. Fase 11 — Lotes, Pastos e Desempenho Operacional Ampliado.
+3. Fase 12 — Compra/Venda Operacional: Hardening e Lacunas.
+4. Fase 13 — Relatórios/KPIs Operacionais Read-only Ampliados.
+5. Fase 14 — Financeiro Gerencial Explícito.
+6. Fase 15 — Motor de Decisão Assistida.
+7. Fase 16 — Beta Externo / SLC / Hardening de Produto.
 
-- separar definitivamente protocolo, agenda, evento, compliance e checklist;
-- garantir baixa de estoque idempotente;
-- tratar exceções sanitárias;
-- permitir sinal sanitário de carência apenas com fonte estruturada;
-- impedir falsa liberação sanitária, comercial, venda ou abate.
-
-Áreas:
-
-- registro sanitário;
-- agenda sanitária;
-- produto/dose/lote;
-- estoque/custo;
-- compliance/checklists;
-- carência sanitária como sinal;
-- exceções/reconciliação.
-
-Critério de aceite:
-
-- agenda não vira histórico;
-- evento sanitário é fonte de execução;
-- produto/dose/lote têm limitação declarada;
-- carência sanitária pode aparecer como sinal se vier de evento sanitário estruturado;
-- carência sanitária não autoriza venda, abate ou liberação final;
-- checklist/compliance não vira prova universal de conformidade;
-- sync/retry não duplica baixa.
+A próxima fase após 9D será nomeada no fechamento da 9D.
 
 ---
 
-## Próximo foco 3 — Exceções e reconciliação
+## Trilhas residuais contínuas
 
-Objetivo:
-
-- permitir corrigir operação sem quebrar histórico;
-- tratar evento incompleto;
-- produto sem lote;
-- custo ausente;
-- estoque inconsistente;
-- correção histórica;
-- estorno/contra-lançamento.
-
-Critério de aceite:
-
-- erro fica visível;
-- correção é auditável;
-- não há edição destrutiva de histórico;
-- sucesso parcial é tratável;
-- rollback é coerente;
-- sinal derivado de evento corrigido deve ser recalculado ou invalidado de forma rastreável.
-
----
-
-## Próximo foco 4 — Lotes, pastos e desempenho operacional
-
-Objetivo:
-
-- melhorar gestão de lotação;
-- histórico de movimentação;
-- permanência;
-- ECC por animal/lote;
-- ganho de peso por período com fonte declarada.
-
-Critério de aceite:
-
-- estado atual não é tratado como histórico;
-- indicadores declaram fonte;
-- ganho de peso exige pesagens válidas;
-- ECC individual pode compor média de lote;
-- sem inferir produtividade sem dados.
-
----
-
-## Próximo foco 5 — Compra/venda e visão econômica básica
-
-Objetivo:
-
-- consolidar compra/venda/sociedade;
-- preservar snapshots econômicos;
-- apoiar visão simples de custo/receita;
-- evitar promessa de margem completa sem fonte;
-- impedir que carência sanitária seja confundida com aptidão comercial.
-
-Critério de aceite:
-
-- custo ausente não vira zero real;
-- snapshot histórico preservado;
-- venda altera status de forma coerente;
-- sociedade não é tag;
-- pronto para venda/abate segue bloqueado;
-- venda/abate não pode ser liberado apenas por `sanitario:sem_carencia_vigente` ou alias legado `sanitario:livre_carencia`.
-
----
-
-## Futuro — KPIs e gestão financeira ampliada
-
-Objetivo futuro:
-
-- custo por animal/lote;
-- margem parcial;
-- custo por período;
-- indicadores de manejo;
-- visão administrativa clara.
-
-Requisito:
-
-- fonte financeira explícita;
-- períodos definidos;
-- rateios documentados;
-- limitações visíveis;
-- testes.
+- Sanitário/reconciliação: apenas hardening residual das Fases 5/6, sem reabrir como fase de produto salvo bug objetivo.
+- Build/testes/DX: higiene residual de warnings, logs e estabilidade de suite.
+- Compliance regulatório: módulo futuro com fonte oficial, versionamento e separação de alerta vs bloqueio.
+- Reprodução ampliada: módulo futuro com contrato de domínio, eventos, agenda, estado atual e testes.
 
 ---
 
