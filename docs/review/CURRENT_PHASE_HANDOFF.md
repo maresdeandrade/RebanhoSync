@@ -15,9 +15,9 @@ Fases 1-8 foram concluídas e consolidadas em baseline `3fe7a81` (2026-06-02).
 
 **Fase 6 (Sanitário):** Carência, protocolo, evento separados, append-only validada, replay corretivo com idempotência.
 
-**Fase 7 (Compra/Venda):** Sociedade validada como vínculo patrimonial, sem efeitos automáticos.
+**Fase 7 (Preparação de PR + Auditoria de Regressão):** Validação de diff, lint, build, reconciliação de documentação, confirmação de que nenhuma feature nova entrou no patch.
 
-**Fase 8 (Relatórios + Higiene):** Suite global passa (259 arquivos, 1744 testes), lint limpo, build passa, baseline Supabase RLS funcional.
+**Fase 8 (Formalização do Fallback Legado Sanitário):** Normalização de payload legado como `partial`, validação de reversão/rollback, limpeza de warnings não bloqueantes, suite de 1744 testes passando.
 
 **Consolidado em 3fe7a81:**
 

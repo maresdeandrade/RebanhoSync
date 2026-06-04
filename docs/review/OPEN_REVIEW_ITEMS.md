@@ -37,19 +37,6 @@ Itens resolvidos devem sair deste documento e permanecer registrados apenas no r
 
 # Pendências abertas
 
-## FECHADO — Reconciliar continuidade final da Fase 7 antes de PR/merge
-
-**Resultado:** fechado em `docs/review/LAST_PHASE_RESULT.md`.
-
-Consolidado:
-
-- `git diff --check` passa;
-- documentação reconciliada e coerente entre `LAST_PHASE_RESULT.md`, `CURRENT_PHASE_HANDOFF.md`, `OPEN_REVIEW_ITEMS.md` e `PROJECT_STATUS.md`;
-- pendências reais listadas;
-- baseline atualizado para `3fe7a81`.
-
----
-
 ## P2 — Ruído residual em `stderr/stdout` de testes
 
 **Status:** `ABERTO`

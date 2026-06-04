@@ -26,37 +26,56 @@ Não deve substituir issues, tarefas técnicas ou prompts de implementação.
 
 ---
 
-## Fase atual — Consolidação SLC
+## Fase atual — Fase 9 (Gate Pós-MVP Comercial/Patrimonial/Classificação/Custo)
+
+Subfase atual: **9A — Inventário Operacional**
 
 Objetivo:
 
-- consolidar documentação ativa;
-- reduzir drift documental;
-- padronizar contexto para agentes;
-- validar contratos;
-- manter MVP operacional estável.
+- consolidar base comercial e patrimonial após Fase 8;
+- validar custo operacional por inventário;
+- garantir idempotência de baixa;
+- isolar sociedade patrimonial por RLS;
+- preparar classificação operacional como leitura apenas.
 
-Entregas esperadas:
+Entregas esperadas (Subfase 9A):
 
-- `.agents/rules/` organizado;
-- `.agents/skills/` organizado;
-- `.agents/prompts/` organizado;
-- `docs/context/` consolidado;
-- `docs/technical/` consolidado;
-- `docs/domain/` consolidado;
-- `docs/product/` consolidado;
-- archive separado de docs ativos.
+- conversão de unidade (compra/apresentação -> base) registrada e testada;
+- custo operacional diferencia ausência vs zero;
+- snapshot econômico imutável (histórico preservado);
+- baixa de inventário idempotente (retry-safe);
+- isolamento de sociedade patrimonial por RLS;
+- classificação operacional como leitura apenas (read-only snapshot).
 
 Critério de aceite:
 
-- agentes sabem quais docs carregar;
-- docs antigos não são fonte ativa;
-- fonte de verdade está clara;
-- lacunas críticas estão bloqueadas ou explicitamente condicionadas a fonte estruturada.
+- todos os 6 contratos obrigatórios implementados;
+- testes cobrem fluxo completo;
+- `git diff --check` passa;
+- sem warnings TypeScript/ESLint em código novo.
+
+Referência: `docs/review/ACTIVE_PHASE_PLAN.md` e `docs/review/PLANO_FASE_9_GATE_POS_MVP_COMERCIAL_PATRIMONIAL_CLASSIFICACAO_CUSTO.md`
 
 ---
 
-## Próximo foco 1 — UX operacional dos fluxos centrais
+## Fases anteriores consolidadas
+
+### Consolidação SLC (Fases 1-6 e Gates)
+
+Concluído em baseline `3fe7a81`:
+
+- `docs/context/`, `docs/domain/`, `docs/technical/`, `docs/product/` consolidados;
+- Sanitário (Fase 6): append-only, correcção idempotente, evento original preservado;
+- RLS validado para sanitário, estoque e sociedade;
+- Suite de 1744 testes passando, lint limpo, build sem erros bloqueantes.
+
+Detalhes em `docs/context/PROJECT_STATUS.md` e `docs/review/LAST_PHASE_RESULT.md`.
+
+---
+
+## Próximos focos (pós-Fase 9A)
+
+### Próximo foco 1 — UX operacional dos fluxos centrais
 
 Objetivo:
 

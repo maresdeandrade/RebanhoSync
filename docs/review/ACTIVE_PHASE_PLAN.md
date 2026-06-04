@@ -17,26 +17,26 @@ classificação operacional (sem alterar estado).
 ## Diagnóstico obrigatório — 7 confirmações
 
 ```bash
-# 1. Fases anteriores OK?
-git log --oneline -20 | head -1
+# 1. Commit baseline OK?
+git log --oneline -1
 
 # 2. Migrations atualizadas?
-git status supabase/migrations | grep nothing
+git status supabase/migrations
 
 # 3. RLS policies ativas?
-git grep "CREATE POLICY" -- supabase/migrations | grep -c "fazenda_id"
+git grep "CREATE POLICY" -- supabase/migrations
 
 # 4. Testes passando?
-pnpm run test 2>&1 | tail -3
+pnpm test -- --run
 
 # 5. Lint limpo?
-pnpm run lint 2>&1 | grep -E "error|warning" | wc -l
+pnpm run lint
 
 # 6. Build compila?
-pnpm run build 2>&1 | tail -2
+pnpm run build
 
 # 7. Diff clean?
-git diff --check && echo "OK"
+git diff --check
 ```
 
 ---

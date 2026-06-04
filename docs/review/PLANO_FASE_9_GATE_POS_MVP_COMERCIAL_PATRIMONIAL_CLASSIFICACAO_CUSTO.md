@@ -209,7 +209,7 @@ RLS: apenas Sócio A vê linha de custo com sua fazenda_id
 
 **O quê:**
 
-- Permitir leitura de classificação operacional (ex: "apto para venda")
+- Permitir leitura de classificação operacional (ex: "vacinado", "pronto para processamento", "em quarentena")
 - Classificação é SNAPSHOT, não altera estado de animal
 - Classificação não autoriza ação (venda, abate, etc.)
 
@@ -226,7 +226,7 @@ Animal X:
 - Carência: false (sanitário OK)
 - Custo registrado: true
 - Peso mínimo: true
-- Classificação operacional (snapshot): "apto_venda"
+- Classificação operacional (snapshot): "pronto_processamento"
 
 Mas:
 - Venda ainda requer autorização explícita
@@ -339,7 +339,7 @@ node scripts/codex/validate-supabase-baseline-functional.mjs
    - Saldo continua: 50 doses
 
 4. Classificação operacional:
-   - Lote A após vacinação: "vacinado", não = "apto_venda"
+   - Lote A após vacinação: "vacinado", não = decisão automática de venda
    - Classificação é snapshot (read-only)
    - Venda ainda requer autorização explícita
 
