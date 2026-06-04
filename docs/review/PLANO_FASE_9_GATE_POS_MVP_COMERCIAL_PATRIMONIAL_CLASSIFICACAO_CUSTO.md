@@ -2,7 +2,7 @@
 
 Atualizado em: 2026-06-04  
 **Status:** Fase 9 em andamento  
-**Subfase atual:** 9C — Sociedade Patrimonial e Classificação Operacional Read-only — a iniciar  
+**Subfase atual:** 9D — Fechamento do Gate Fase 9 e Handoff para Próxima Fase — prevista
 **Commit Baseline:** `8cd5534`  
 **Baseline anterior consolidado:** `3fe7a81`
 
@@ -55,7 +55,7 @@ Status real usa apenas: `CONCLUÍDA`, `PARCIAL`, `HARDENING_RESIDUAL`, `A_INICIA
 | Fase 8 — Relatórios/Baseline | Documentada como relatórios/baseline estável; ampliada pela 9B. | `operationalSummary.ts`, `Relatorios.tsx`, `Home.tsx`, `finance/gerencial.ts` e testes. | `PARCIAL` | KPIs ampliados com fonte/limitação. | Base para próximos KPIs. |
 | Fase 9A — Inventário/Custo/Snapshot | Concluída localmente. | Handoff, `LAST_PHASE_RESULT`, validações globais e Supabase registradas. | `CONCLUÍDA` | Nenhuma pendência específica aberta. | Manter concluída. |
 | Fase 9B — Custo parcial em relatórios | Concluída localmente. | `inventory.partialCost`, testes de relatório e validações registradas. | `CONCLUÍDA` | Nenhuma pendência específica aberta. | Manter concluída. |
-| Fase 9C — Sociedade/Classificação read-only | Atual a iniciar. | `classificationSnapshot.ts`, testes, occupancy; sociedade em Dexie/migrations/UI, diagnóstico 9C pendente. | `A_INICIAR` | Mapear isolamento, consumo e risco de autorização. | Fase atual. |
+| Fase 9C — Sociedade/Classificação read-only | Concluída localmente. | `classificationSnapshot.ts`, teste de contrato, occupancy; sociedade em Dexie/migrations/UI/RLS. | `CONCLUÍDA` | Hardening futuro de UX/sync/relatórios. | Manter concluída; 9D fecha o gate. |
 | Financeiro/DRE/Margem | Ledger existe; DRE/ROI/margem conclusivos não. | `finance_transactions`, `finance_categories`, docs financeiros e testes comerciais bloqueando métricas indevidas. | `PARCIAL` | Método, período, rateio, fonte explícita e limitações. | Futuro explícito, sem antecipar DRE/ROI. |
 | Lotes/Pastos/Desempenho | Base parcial no MVP. | `pastos`, `lotes`, occupancy, movimentação e relatórios. | `PARCIAL` | Desempenho ampliado/GMD por período. | Fase futura ou hardening. |
 | KPIs operacionais | Relatórios existem; KPIs ampliados são planejados. | `operationalSummary`, `Relatorios`, `Home`, docs de KPI/limites. | `PARCIAL` | Fonte, período e limitação explícitos. | Fase futura read-only. |
@@ -71,8 +71,8 @@ Status real usa apenas: `CONCLUÍDA`, `PARCIAL`, `HARDENING_RESIDUAL`, `A_INICIA
 | Baixa idempotente | Consolidado na 9A | Retry/replay não pode duplicar baixa por evento/source. |
 | Snapshot econômico | Consolidado na 9A/9B | Snapshot/read model é derivado, não fonte primária nem autorização. |
 | Relatório parcial de custo | Consolidado na 9B | Mostrar custo conhecido e custo ausente separados. |
-| Sociedade patrimonial | Pendente 9C | Mapear implementação real, isolamento e lacunas. |
-| Classificação operacional | Pendente 9C | Deve permanecer leitura/snapshot, sem autorizar venda/abate/carência. |
+| Sociedade patrimonial | Consolidado na 9C | Implementação parcial-real mapeada; vínculo patrimonial com isolamento por `fazenda_id`. |
+| Classificação operacional | Consolidado na 9C | Leitura/snapshot com teste de contrato; não autoriza venda/abate/carência. |
 
 ---
 
@@ -167,13 +167,13 @@ pnpm run build: passou com warnings conhecidos de Browserslist/chunks
 
 ## 6. Subfase 9C — Sociedade Patrimonial e Classificação Operacional Read-only
 
-**Status:** a iniciar.
+**Status:** concluída localmente.
 
 ### 6.1 Objetivo
 
 Mapear o estado real de sociedade patrimonial e classificação operacional, com diagnóstico local antes de qualquer patch.
 
-A 9C deve confirmar se já existe base suficiente para:
+A 9C confirmou que existe base suficiente para:
 
 - sociedade/participação patrimonial;
 - isolamento por `fazenda_id`;
@@ -182,7 +182,7 @@ A 9C deve confirmar se já existe base suficiente para:
 - leitura operacional de classificação;
 - consumo de classificação em relatórios, insights ou telas.
 
-A 9C não deve criar autorização operacional/comercial.
+A 9C não criou autorização operacional/comercial.
 
 ### 6.2 Escopo permitido
 
@@ -255,43 +255,44 @@ src/lib/eventos
 
 Só tocar áreas protegidas se a tarefa trouxer evidência objetiva, escopo explícito e validação proporcional.
 
-### 6.6 Checklist pendente 9C
+### 6.6 Checklist 9C
 
 #### Diagnóstico
 
-- [ ] Confirmar `git status --short --untracked-files=all`.
-- [ ] Confirmar `git diff --check`.
-- [ ] Confirmar commit/baseline local.
-- [ ] Ler documentos ativos.
-- [ ] Mapear sociedade patrimonial no schema/migrations.
-- [ ] Mapear sociedade patrimonial em tipos/stores/UI.
-- [ ] Confirmar se sociedade existe como dado implementado ou apenas conceito/documentação.
-- [ ] Confirmar isolamento por `fazenda_id`.
-- [ ] Confirmar se há isolamento por sócio/participação além de `fazenda_id`.
-- [ ] Mapear `classificationSnapshot`.
-- [ ] Mapear testes de classificação.
-- [ ] Mapear consumo de classificação em UI/relatórios/insights.
-- [ ] Identificar risco de classificação virar autorização crítica.
-- [ ] Registrar lacunas reais.
-- [ ] Definir se haverá patch ou apenas documentação.
+- [x] Confirmar `git status --short --untracked-files=all`.
+- [x] Confirmar `git diff --check`.
+- [x] Confirmar commit/baseline local.
+- [x] Ler documentos ativos.
+- [x] Mapear sociedade patrimonial no schema/migrations.
+- [x] Mapear sociedade patrimonial em tipos/stores/UI.
+- [x] Confirmar se sociedade existe como dado implementado ou apenas conceito/documentação.
+- [x] Confirmar isolamento por `fazenda_id`.
+- [x] Confirmar que isolamento por sócio/participação além de `fazenda_id` não foi criado nesta subfase.
+- [x] Mapear `classificationSnapshot`.
+- [x] Mapear testes de classificação.
+- [x] Mapear consumo de classificação em UI/relatórios/insights.
+- [x] Identificar risco de classificação virar autorização crítica.
+- [x] Registrar lacunas reais.
+- [x] Definir patch mínimo de teste de contrato.
 
 #### Patch, se houver evidência objetiva
 
-- [ ] Manter classificação como read-only/snapshot.
-- [ ] Não criar autorização automática.
-- [ ] Não criar regra comercial avançada.
-- [ ] Não alterar Supabase/migrations sem justificativa explícita.
-- [ ] Não duplicar fonte de verdade.
-- [ ] Adicionar testes proporcionais se alterar contrato.
-- [ ] Atualizar documentação se houver delta funcional.
+- [x] Manter classificação como read-only/snapshot.
+- [x] Não criar autorização automática.
+- [x] Não criar regra comercial avançada.
+- [x] Não alterar Supabase/migrations sem justificativa explícita.
+- [x] Não duplicar fonte de verdade.
+- [x] Adicionar teste proporcional de contrato.
+- [x] Atualizar documentação da 9C.
 
 #### Validação
 
-- [ ] `git diff --check`.
-- [ ] `pnpm test` se houver patch funcional.
-- [ ] `pnpm run lint` se houver patch funcional.
-- [ ] `pnpm run build` se houver patch funcional.
-- [ ] `node scripts/codex/validate-supabase-baseline-functional.mjs` se houver Supabase/RLS/RPC/migration/sync-batch.
+- [x] `git diff --check`.
+- [x] `pnpm test -- src/lib/animals/__tests__/classificationSnapshot.test.ts`.
+- [x] `pnpm test -- src/pages/Registrar/__tests__/sociedadePecuaria.effect.test.ts`.
+- [x] `pnpm run lint`.
+- [x] `pnpm run build`.
+- [x] Validação Supabase não executada porque não houve alteração em Supabase/RLS/RPC/migration/sync-batch.
 
 ### 6.7 Critério de aceite da 9C
 
@@ -354,9 +355,9 @@ Pendências reais da Fase 9 neste momento:
 
 | Prioridade | Item | Status | Conduta |
 |---|---|---|---|
-| P1 | Diagnóstico da sociedade patrimonial na 9C | Aberto | Executar antes de qualquer patch. |
-| P1 | Diagnóstico da classificação operacional read-only na 9C | Aberto | Mapear `classificationSnapshot` e usos. |
-| P1 | Confirmar se há lacuna de isolamento por sócio/participação | Aberto | Só propor migration/RLS se houver evidência objetiva. |
+| P1 | Diagnóstico da sociedade patrimonial na 9C | Fechado localmente | Evidência mapeada; manter hardening futuro fora da 9C. |
+| P1 | Diagnóstico da classificação operacional read-only na 9C | Fechado localmente | `classificationSnapshot` e usos mapeados; teste de contrato adicionado. |
+| P1 | Confirmar se há lacuna de isolamento por sócio/participação | Fechado localmente | Sem migration/RLS nova; isolamento por `fazenda_id` preservado. |
 | P2 | Ruído residual em `stderr/stdout` de testes | Aberto | Tratar em gate próprio de higiene residual. |
 | P2 | Warnings conhecidos de build | Aberto | Tratar em tarefa própria de build/performance. |
 | P2 | Avisos de Dialog/act em testes | Aberto | Tratar em gate futuro de testes UI. |

@@ -11,7 +11,7 @@ Subfase 9A — Inventário Operacional — concluída localmente.
 
 Subfase 9B — Relatórios Operacionais de Custo Parcial — concluída localmente.
 
-Subfase 9C — Sociedade Patrimonial e Classificação Operacional Read-only — a iniciar.
+Subfase 9C — Sociedade Patrimonial e Classificação Operacional Read-only — concluída localmente.
 
 Subfase 9D — Fechamento do Gate Fase 9 e Handoff para Próxima Fase — prevista.
 
@@ -60,7 +60,7 @@ Auditoria documental/local em 2026-06-04:
 - Fase 7 — Compra/Venda/Sociedade: `PARCIAL`; tratar como hardening e lacunas, não criação do zero.
 - Fase 8 — Relatórios/Baseline: `PARCIAL`; usar como base para KPIs operacionais ampliados.
 - Fase 9A e 9B: `CONCLUÍDA` localmente.
-- Fase 9C: `A_INICIAR`; permanece o foco atual.
+- Fase 9C: `CONCLUÍDA` localmente; 9D permanece o próximo foco.
 - 9D: prevista para fechamento do gate e handoff da próxima fase.
 
 Conduta pós-Fase 9: usar a sequência corrigida do `docs/product/ROADMAP.md`, mantendo sanitário/reconciliação como trilha residual contínua e evitando antecipar DRE, ROI, margem, custo por arroba ou motor comercial.
@@ -116,38 +116,27 @@ Pendências residuais não bloqueantes:
 
 ## 5. Próximo objetivo
 
-Continuar a Fase 9 pela Subfase 9C — Sociedade Patrimonial e Classificação Operacional Read-only.
+Continuar a Fase 9 pela Subfase 9D — Fechamento do Gate Fase 9 e Handoff para Próxima Fase.
 
-A 9C deve iniciar com diagnóstico local antes de qualquer patch.
+Resultado da 9C:
 
-Objetivo esperado da 9C:
-
-- mapear o estado atual de sociedade patrimonial no modelo;
-- confirmar se há isolamento por `fazenda_id` e se existe algum conceito de participação/sociedade já implementado;
-- revisar `classificationSnapshot` e usos relacionados;
-- garantir que classificação operacional permaneça leitura/snapshot;
-- não transformar classificação em autorização de venda, abate, carência, comercialização ou decisão crítica;
-- não criar DRE, ROI, margem, custo por arroba ou motor comercial avançado.
-
-A 9C deve decidir, com evidência local, se o próximo patch será:
-
-1. apenas documentação de contrato;
-2. teste de contrato read-only;
-3. pequena integração de leitura derivada;
-4. ou registro de lacuna real para fase futura.
+- sociedade patrimonial mapeada no modelo local, Dexie, pull/tableMap, migrations/RLS e Registrar;
+- isolamento por `fazenda_id` confirmado em stores, FKs compostas, índices e policies RLS;
+- `classificationSnapshot` revisado como leitura/snapshot com `source` e `limitations`;
+- consumo de classificação confirmado como agregação operacional de categoria predominante;
+- teste de contrato adicionado para impedir interpretação de classificação como autorização de venda, abate ou carência;
+- nenhuma regra de DRE, ROI, margem, custo por arroba, motor comercial avançado, carência liberatória ou autorização crítica criada.
 
 ---
 
 ## 6. Escopo permitido no próximo passo
 
-Permitido para continuidade da Fase 9 pela 9C:
+Permitido para continuidade da Fase 9 pela 9D:
 
-- leitura do plano ativo da Fase 9;
-- diagnóstico local antes de patch;
-- auditoria de sociedade patrimonial e isolamento existente;
-- auditoria de classificação operacional e `classificationSnapshot`;
-- testes proporcionais de contrato read-only, se houver lacuna objetiva;
-- documentação do contrato implementado ou da lacuna confirmada.
+- consolidar 9A, 9B e 9C no fechamento do gate;
+- revisar validações registradas;
+- preparar handoff para a próxima fase;
+- manter Fase 9 aberta até o fechamento explícito da 9D.
 
 ---
 

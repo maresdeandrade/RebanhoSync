@@ -451,4 +451,28 @@ describe("resolveAnimalClassificationSnapshot", () => {
     expect(snap.estadoProdutivoReprodutivo).toBe("desconhecido");
     expect(snap.limitations).toContain("sem fato reprodutivo confirmado");
   });
+
+  it("does not expose sale, slaughter, or withdrawal authorization from productive destination", () => {
+    const snap = resolveAnimalClassificationSnapshot(
+      {
+        sexo: "M",
+        data_nascimento: "2023-01-01",
+        destino_produtivo: "abate",
+      },
+      {
+        referenceDate: REFERENCE_DATE,
+      },
+    );
+
+    expect(snap.estagioVida).toBe("terminacao");
+    expect(snap.estadoProdutivoReprodutivo).toBe("terminacao");
+
+    const contract = snap as unknown as Record<string, unknown>;
+    expect(contract.autorizaVenda).toBeUndefined();
+    expect(contract.autorizaAbate).toBeUndefined();
+    expect(contract.prontoVenda).toBeUndefined();
+    expect(contract.aptoAbate).toBeUndefined();
+    expect(contract.livreCarencia).toBeUndefined();
+    expect(contract.semCarencia).toBeUndefined();
+  });
 });

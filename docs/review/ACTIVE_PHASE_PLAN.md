@@ -1,6 +1,6 @@
 # ACTIVE_PHASE_PLAN - Fase 9 Subfase 9C
 
-**Status:** Subfase 9C a iniciar; Fase 9 em andamento
+**Status:** Subfase 9C concluída localmente; Fase 9 em andamento
 **Commit Baseline:** `8cd5534`
 **Criado:** 2026-06-04
 **Atualizado:** 2026-06-04
@@ -10,7 +10,7 @@
 
 ## Objetivo em 1 parágrafo
 
-Iniciar a Subfase 9C — Sociedade Patrimonial e Classificação Operacional Read-only, usando as bases consolidadas na 9A e 9B. A etapa deve começar por diagnóstico local antes de qualquer patch, confirmar o estado real de sociedade/participação patrimonial e revisar a classificação operacional como leitura derivada/snapshot, sem transformar classificação, snapshot, relatório, tag, insight ou sinal em autorização operacional/comercial.
+Subfase 9C — Sociedade Patrimonial e Classificação Operacional Read-only concluída localmente, usando as bases consolidadas na 9A e 9B. A etapa confirmou o estado real de sociedade/participação patrimonial e revisou a classificação operacional como leitura derivada/snapshot, sem transformar classificação, snapshot, relatório, tag, insight ou sinal em autorização operacional/comercial.
 
 ---
 
@@ -23,10 +23,10 @@ Auditoria documental/local em 2026-06-04 confirmou que a sequência futura não 
 - Fase 7 — Compra/Venda/Sociedade: `PARCIAL`, deve virar hardening/lacunas, não criação do zero.
 - Fase 8 — Relatórios/Baseline: `PARCIAL`, base para KPIs operacionais ampliados.
 - Fase 9A e 9B: `CONCLUÍDA` localmente.
-- Fase 9C: `A_INICIAR` e segue como fase atual.
+- Fase 9C: `CONCLUÍDA` localmente; próxima subfase prevista é 9D.
 - Financeiro/DRE/Margem: `PARCIAL`; ledger existe, mas DRE/ROI/margem/custo por arroba seguem fora do escopo atual.
 
-Conduta: manter 9C como atual, 9D como fechamento previsto e deixar a nomeação final da próxima fase para 9D, usando a sequência corrigida do `docs/product/ROADMAP.md` como referência preliminar.
+Conduta: manter a Fase 9 em andamento, executar 9D como fechamento previsto e deixar a nomeação final da próxima fase para 9D, usando a sequência corrigida do `docs/product/ROADMAP.md` como referência preliminar.
 
 ---
 
@@ -136,6 +136,6 @@ Se houver Supabase, migrations, RLS, RPC, edge functions, sync-batch ou baseline
 
 ---
 
-## Resultado esperado
+## Resultado local
 
-Subfase 9C iniciada com trilho claro: diagnóstico primeiro, patch somente se houver evidência objetiva, mantendo sociedade patrimonial e classificação operacional como leitura/contrato seguro, sem fechar a Fase 9 inteira.
+Subfase 9C concluída localmente: sociedade patrimonial e classificação operacional foram mapeadas com evidência local; foi adicionado teste mínimo de contrato para garantir que `classificationSnapshot` não exponha autorização de venda, abate ou carência; Fase 9 permanece em andamento.

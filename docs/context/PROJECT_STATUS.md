@@ -32,14 +32,19 @@ A fase atual é Fase 9 — Gate Pós-MVP Comercial/Patrimonial/Classificação/C
 - suite global `pnpm test` passou (260 arquivos, 1747 testes);
 - lint e build passaram.
 
+Último avanço local:
+
+- Subfase 9C — Sociedade Patrimonial e Classificação Operacional Read-only concluída localmente;
+- sociedade patrimonial mapeada em tipos, Dexie, pull/tableMap, migrations/RLS e Registrar;
+- participação/sociedade e isolamento por `fazenda_id` confirmados;
+- `classificationSnapshot` revisado como leitura/snapshot com `source` e `limitations`;
+- teste de contrato adicionado para confirmar que classificação não expõe autorização de venda, abate ou carência;
+- nenhum avanço para DRE, ROI, margem, custo por arroba, motor comercial avançado, carência liberatória ou autorização crítica.
+
 Próximo foco:
 
-- iniciar Subfase 9C — Sociedade Patrimonial e Classificação Operacional Read-only;
-- começar com diagnóstico local antes de qualquer patch;
-- mapear sociedade patrimonial, participação/sociedade e isolamento por `fazenda_id`, se existirem;
-- revisar `classificationSnapshot` e usos de classificação operacional;
-- manter classificação como leitura/snapshot, nunca como autorização crítica;
-- não antecipar DRE, ROI, venda, abate, margem, custo por arroba ou motor comercial avançado.
+- executar Subfase 9D — Fechamento do Gate Fase 9 e Handoff para Próxima Fase;
+- não marcar a Fase 9 inteira como concluída antes da 9D.
 
 Realidade validada para o roadmap pós-Fase 9:
 
@@ -48,8 +53,8 @@ Realidade validada para o roadmap pós-Fase 9:
 - Fase 7 Compra/Venda/Sociedade: parcial; tratar lacunas e hardening, não criação do zero.
 - Fase 8 Relatórios/Baseline: parcial; base para KPIs operacionais read-only ampliados.
 - Fase 9A e 9B: concluídas localmente.
-- Fase 9C: a iniciar e permanece como fase atual.
-- 9D: prevista para fechamento do gate e handoff.
+- Fase 9C: concluída localmente.
+- 9D: prevista para fechamento do gate e handoff; Fase 9 ainda em andamento.
 
 Sequência preliminar corrigida após 9D:
 

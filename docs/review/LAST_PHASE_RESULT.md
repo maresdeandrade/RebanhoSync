@@ -1,11 +1,12 @@
 # Last Phase Result — RebanhoSync
 
 Atualizado em: 2026-06-04
-**Baseline Commit:** `8cd5534`
+**Baseline Commit documental:** `8cd5534`
+**Commit local observado na 9C:** `93d290c`
 
 ## 1. Nome da fase
 
-Fase 9 — Subfase 9B: Relatórios Operacionais de Custo Parcial.
+Fase 9 — Subfase 9C: Sociedade Patrimonial e Classificação Operacional Read-only.
 
 ---
 
@@ -15,55 +16,55 @@ Fase 9 — Subfase 9B: Relatórios Operacionais de Custo Parcial.
 - `docs/review/ACTIVE_PHASE_PLAN.md`
 - `docs/review/OPEN_REVIEW_ITEMS.md`
 - `docs/review/PLANO_FASE_9_GATE_POS_MVP_COMERCIAL_PATRIMONIAL_CLASSIFICACAO_CUSTO.md`
+- `docs/product/ROADMAP.md`
 - `docs/context/PROJECT_STATUS.md`
+- `.agents/rules/CORE_RULES.md`
+- `.agents/rules/CONTEXT_LOADING.md`
+- `.agents/rules/no-broad-context.md`
+- `.agents/rules/rtk.md`
 
 ---
 
 ## 3. Objetivo
 
-Fechar tecnicamente a Subfase 9B com relatório operacional parcial de custo apoiado na base consolidada na 9A:
+Fechar tecnicamente a Subfase 9C com diagnóstico local e hardening mínimo de contrato para:
 
-- inventário;
-- entradas;
-- saídas/consumos;
-- saldo econômico parcial conhecido;
-- custo ausente separado;
-- leitura derivada/read model.
+- sociedade patrimonial;
+- classificação operacional read-only;
+- uso seguro de `classificationSnapshot`;
+- bloqueio contra interpretação de classificação como autorização comercial, venda, abate, carência ou decisão crítica.
 
 ---
 
 ## 4. Resultado consolidado
 
-Subfase 9B concluída localmente no escopo técnico definido.
+Subfase 9C concluída localmente no escopo técnico definido.
 
-Entregue:
+Confirmado:
 
-- `inventory.partialCost` em `src/lib/reports/operationalSummary.ts`;
-- cálculo fora da UI;
-- apresentação em `src/pages/Relatorios.tsx`;
-- leitura derivada/read model;
-- custo operacional parcial conhecido;
-- entradas com custo conhecido;
-- saídas/consumos com custo conhecido;
-- saldo econômico parcial conhecido por lote ativo;
-- separação explícita de custo ausente;
-- `0` tratado como custo válido;
-- `null`/`undefined` tratados como custo ausente;
-- ausência de inferência de custo quando snapshot está ausente.
+- sociedade patrimonial existe como implementação parcial-real, não criação futura do zero;
+- tipos locais `SociedadePecuaria` e `SociedadeAnimal` incluem `fazenda_id`, percentuais e regras patrimoniais;
+- Dexie possui stores `state_sociedades_pecuarias` e `state_sociedade_animais`;
+- `tableMap` e `pull` incluem `sociedades_pecuarias` e `sociedade_animais`;
+- migrations ativas criam tabelas patrimoniais com FK composta por `fazenda_id`, índices por fazenda e RLS;
+- UI do Registrar cria/vincula/retira/encerra sociedade como vínculo patrimonial;
+- teste existente confirma que operação de sociedade não gera sanitário, conformidade, financeiro ou `finance_transactions` automaticamente;
+- `classificationSnapshot` é resolver/read model derivado com `source` e `limitations`;
+- classificação é consumida em ocupação como categoria predominante e status parcial/completo/empty;
+- sinais/insights mantêm guardrails de fonte e limitação;
+- teste de contrato foi adicionado para impedir que destino/classificação exponha autorização de venda, abate ou carência.
 
 ---
 
-## 5. Arquivos principais alterados na 9B
+## 5. Arquivos principais alterados na 9C
 
 | Arquivo | Motivo |
 |---|---|
-| `src/lib/reports/operationalSummary.ts` | Criar `inventory.partialCost` e calcular custo parcial derivado do inventário. |
-| `src/lib/reports/__tests__/operationalSummary.test.ts` | Cobrir custo conhecido, custo ausente, `0`, `null` e `undefined`. |
-| `src/pages/Relatorios.tsx` | Apresentar o bloco de custo operacional parcial sem calcular regra na UI. |
-| `src/pages/__tests__/Relatorios.e2e.test.tsx` | Validar exibição do bloco de custo parcial no relatório. |
-| `docs/review/CURRENT_PHASE_HANDOFF.md` | Atualizar continuidade da Fase 9 após fechamento da 9B. |
-| `docs/review/ACTIVE_PHASE_PLAN.md` | Registrar 9B concluída localmente e Fase 9 em andamento. |
-| `docs/review/PLANO_FASE_9_GATE_POS_MVP_COMERCIAL_PATRIMONIAL_CLASSIFICACAO_CUSTO.md` | Registrar fechamento da 9B no plano específico da Fase 9. |
+| `src/lib/animals/__tests__/classificationSnapshot.test.ts` | Adicionar teste de contrato read-only: classificação/destino produtivo não expõe autorização de venda, abate ou carência. |
+| `docs/review/LAST_PHASE_RESULT.md` | Registrar resultado consolidado da 9C. |
+| `docs/review/CURRENT_PHASE_HANDOFF.md` | Atualizar continuidade após 9C, mantendo 9D prevista. |
+| `docs/review/ACTIVE_PHASE_PLAN.md` | Registrar 9C concluída localmente e Fase 9 ainda em andamento. |
+| `docs/review/PLANO_FASE_9_GATE_POS_MVP_COMERCIAL_PATRIMONIAL_CLASSIFICACAO_CUSTO.md` | Fechar checklist/pendências da 9C e preservar gate 9D. |
 | `docs/context/PROJECT_STATUS.md` | Atualizar estado vivo do projeto. |
 
 ---
@@ -72,28 +73,30 @@ Entregue:
 
 | Comando | Resultado |
 |---|---|
-| `git diff --check` | Passou. |
-| `pnpm test -- src/lib/reports/__tests__/operationalSummary.test.ts` | Passou. |
-| `pnpm test -- src/pages/__tests__/Relatorios.e2e.test.tsx` | Passou. |
-| `pnpm test` | Passou (260 arquivos, 1747 testes). |
+| `git status --short --untracked-files=all` | Passou antes do patch: worktree limpo. |
+| `git diff --check` | Passou antes do patch. |
+| `pnpm test -- src/lib/animals/__tests__/classificationSnapshot.test.ts` | Passou: 25 testes. |
+| `pnpm test -- src/pages/Registrar/__tests__/sociedadePecuaria.effect.test.ts` | Passou: 16 testes. |
 | `pnpm run lint` | Passou. |
-| `pnpm run build` | Passou com warnings conhecidos de Browserslist/chunks. |
+| `pnpm run build` | Passou com warnings conhecidos de Browserslist/caniuse-lite e chunks grandes. |
+| `git diff --check` | Passou ao final do patch. |
+| `git status --short --untracked-files=all` | Alterações esperadas em docs da Fase 9/roadmap e teste de classificação. |
 
-Validação Supabase/RLS não foi executada nesta subfase porque não houve alteração em Supabase, migrations, RLS, RPC, edge functions ou seed.
+Validação Supabase/RLS não é exigida nesta subfase porque não houve alteração em Supabase, migrations, RLS, RPC, edge functions, sync-batch ou baseline.
 
 ---
 
-## 7. Resultado técnico da 9B
+## 7. Resultado técnico da 9C
 
 Confirmado:
 
-- custo conhecido e custo ausente ficam separados;
-- `0` explícito permanece diferente de `null`/ausente;
-- movimentação sem snapshot de custo não tem custo inferido;
-- saldo econômico parcial conhecido usa custo persistido no lote ativo;
-- read model permanece derivado;
-- UI apenas apresenta o read model;
-- Fase 9 continua em andamento.
+- sociedade patrimonial está mapeada com evidência local;
+- isolamento por `fazenda_id` existe em tipos, stores, pull, FKs compostas, índices e policies RLS;
+- há participação patrimonial por percentuais e regras de custo/perda/receita, sem cálculo financeiro automático;
+- `classificationSnapshot` permanece leitura/snapshot derivado;
+- classificação não libera carência, venda, abate, comercialização ou decisão crítica;
+- Fase 9 continua em andamento;
+- 9D permanece apenas como próxima subfase prevista.
 
 ---
 
@@ -103,14 +106,15 @@ Não houve avanço para:
 
 - DRE;
 - ROI;
-- venda;
-- abate;
 - margem;
 - custo por arroba;
 - motor comercial avançado;
 - aptidão automática para venda;
 - aptidão automática para abate;
-- financeiro automático.
+- carência liberatória;
+- financeiro automático;
+- migration/RLS nova;
+- alteração em Sanitário, Agenda, Evento ou Protocolo fora do escopo.
 
 Contratos preservados:
 
@@ -136,31 +140,26 @@ Pendências não bloqueantes permanecem em `docs/review/OPEN_REVIEW_ITEMS.md`:
 2. Warnings conhecidos de build.
 3. Revisão futura de avisos de Dialog/act em testes.
 
-Não há pendência aberta conhecida para a leitura parcial de custo operacional da 9B.
+Pendências futuras fora da 9C:
+
+- hardening operacional/UX de compra, venda e sociedade na fase própria;
+- relatórios/KPIs patrimoniais ampliados apenas com fonte e limitação explícitas;
+- qualquer prontidão comercial deve ser pré-check futuro não conclusivo, nunca autorização por classificação isolada.
 
 ---
 
 ## 10. Próximo passo recomendado
 
-Continuar Fase 9 sem marcar a fase inteira como concluída.
+Continuar Fase 9 pela Subfase 9D — Fechamento do Gate Fase 9 e Handoff para Próxima Fase.
 
-Antes de nova implementação:
-
-```bash
-git status --short --untracked-files=all
-git diff --name-only
-git diff --stat
-git diff --check
-```
+Não marcar a Fase 9 inteira como concluída antes da 9D.
 
 ---
 
 ## 11. Status final
 
 ```txt
-Fase 9B Relatórios Operacionais de Custo Parcial: concluída localmente.
-Suite global: verde (260 arquivos, 1747 testes).
-Lint: verde.
-Build: verde com warnings conhecidos.
+Fase 9C Sociedade Patrimonial e Classificação Operacional Read-only: concluída localmente.
 Fase 9 completa: ainda em andamento.
+Próxima subfase prevista: 9D.
 ```
