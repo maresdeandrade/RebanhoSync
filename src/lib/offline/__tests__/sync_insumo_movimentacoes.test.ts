@@ -150,15 +150,16 @@ describe("syncWorker insumo_movimentacoes integration", () => {
   });
 
   it("garante que o retry de sync nao altera o client_op_id imutavel da movimentacao local", async () => {
+    const eventId = randomUUID();
     const record = {
-      id: randomUUID(),
+      id: eventId,
       insumo_id: "insumo-123",
       insumo_lote_id: "lote-456",
-      tipo: "consumo_sanitario",
+      tipo: "consumo_nutricao",
       quantidade_base: 10,
-      unidade_base: "ml",
-      source_evento_id: "evento-789",
-      source_evento_dominio: "sanitario",
+      unidade_base: "kg",
+      source_evento_id: eventId,
+      source_evento_dominio: "nutricao",
     };
 
     const gesture = await createInsumoMovimentacaoGesture(record);
@@ -214,6 +215,14 @@ describe("syncWorker insumo_movimentacoes integration", () => {
     // O client_op_id DEVE ser absolutamente identico em ambos os envios para garantir idempotencia
     expect(call1Body.ops[0].client_op_id).toBe(gesture.client_op_id);
     expect(call2Body.ops[0].client_op_id).toBe(gesture.client_op_id);
+    expect(call1Body.ops[0].record.id).toBe(eventId);
+    expect(call2Body.ops[0].record.id).toBe(eventId);
+    expect(call1Body.ops[0].record.source_evento_id).toBe(eventId);
+    expect(call2Body.ops[0].record.source_evento_id).toBe(eventId);
+    expect(call2Body.ops[0].record).toMatchObject({
+      tipo: "consumo_nutricao",
+      source_evento_dominio: "nutricao",
+    });
 
     fetchMock.mockRestore();
     consoleErrorSpy.mockRestore();

@@ -55,6 +55,27 @@ describe('sync-batch rules: normalizeDbError', () => {
     expect(result).toEqual({ status: 'APPLIED' });
   });
 
+  it('maps inventory movement unique violation to APPLIED for replay idempotency', () => {
+    const result = normalizeDbError(
+      {
+        code: '23505',
+        message:
+          'duplicate key value violates unique constraint "insumo_movimentacoes_pkey"',
+      },
+      op({
+        table: 'insumo_movimentacoes',
+        record: {
+          id: 'evt-nutricao-1',
+          source_evento_id: 'evt-nutricao-1',
+          tipo: 'consumo_nutricao',
+          client_op_id: 'op-nutricao-1',
+        },
+      }),
+    );
+
+    expect(result).toEqual({ status: 'APPLIED' });
+  });
+
   it('maps duplicate agenda source event to deterministic rejection', () => {
     const result = normalizeDbError(
       {

@@ -40,7 +40,8 @@ export type InventoryCostMode = "ausente" | "custo_total" | "custo_unitario";
 
 export type InventoryCostSummary = {
   custoTotal: number | null;
-  custoUnitario: number | null;
+  custoPorEntrada: number | null;
+  custoUnitarioBase: number | null;
   status: "informado" | "ausente";
 };
 
@@ -426,32 +427,54 @@ export function calculateInventoryCostSummary(
   mode: InventoryCostMode,
 ): InventoryCostSummary {
   if (mode === "ausente") {
-    return { custoTotal: null, custoUnitario: null, status: "ausente" };
+    return {
+      custoTotal: null,
+      custoPorEntrada: null,
+      custoUnitarioBase: null,
+      status: "ausente",
+    };
   }
 
   const baseQuantity = calculateBaseQuantity(form);
   const entryQuantity = parsePositiveNumber(form.quantidadeEntrada);
   if (!baseQuantity || !entryQuantity) {
-    return { custoTotal: null, custoUnitario: null, status: "ausente" };
+    return {
+      custoTotal: null,
+      custoPorEntrada: null,
+      custoUnitarioBase: null,
+      status: "ausente",
+    };
   }
 
   if (mode === "custo_total") {
     const total = parseNonNegativeNumber(form.custoTotal);
     return total == null
-      ? { custoTotal: null, custoUnitario: null, status: "ausente" }
+      ? {
+          custoTotal: null,
+          custoPorEntrada: null,
+          custoUnitarioBase: null,
+          status: "ausente",
+        }
       : {
           custoTotal: total,
-          custoUnitario: round(total / entryQuantity, 4),
+          custoPorEntrada: round(total / entryQuantity, 4),
+          custoUnitarioBase: round(total / baseQuantity, 4),
           status: "informado",
         };
   }
 
   const unit = parseNonNegativeNumber(form.custoUnitario);
   return unit == null
-    ? { custoTotal: null, custoUnitario: null, status: "ausente" }
+    ? {
+        custoTotal: null,
+        custoPorEntrada: null,
+        custoUnitarioBase: null,
+        status: "ausente",
+      }
     : {
         custoTotal: round(unit * entryQuantity, 2),
-        custoUnitario: unit,
+        custoPorEntrada: unit,
+        custoUnitarioBase: round(unit / (baseQuantity / entryQuantity), 4),
         status: "informado",
       };
 }

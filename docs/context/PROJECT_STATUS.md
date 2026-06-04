@@ -1,6 +1,6 @@
 ﻿# Project Status — RebanhoSync
 
-Atualizado em: 2026-06-02
+Atualizado em: 2026-06-04
 **Baseline Commit:** `3fe7a81`
 
 ## Objetivo
@@ -19,18 +19,21 @@ A fase atual é Fase 9 — Gate Pós-MVP Comercial/Patrimonial/Classificação/C
 
 Último gate validado:
 
-- Fase 6 sanitária em staging, sync/replay e RLS/multi-tenant concluída nos gates focados;
-- baseline funcional Supabase passou para sanitário, estoque e sociedade;
-- suite global `pnpm test -- --run` passou (259 arquivos, 1744 testes) após estabilização do runner;
+- Fase 9A Inventário Operacional concluída localmente;
+- unidade de compra/apresentação, unidade base e unidade de consumo/evento separadas;
+- custo total, custo por entrada e custo unitário/base separados;
+- baixa nutricional idempotente por evento/source validada local e remotamente;
+- snapshot econômico preservado como derivado/read-only;
+- baseline funcional Supabase passou após reset local;
+- suite global `pnpm test` passou (260 arquivos, 1746 testes);
 - lint e build passaram.
 
 Próximo foco:
 
-- consolidar base comercial/patrimonial;
-- validar custo operacional por inventário;
-- garantir idempotência de baixa;
-- isolar sociedade patrimonial;
-- validar leitura de classificação operacional sem alteração de estado.
+- continuar Fase 9 pela Subfase 9B;
+- usar a base de custo/unidade/snapshot consolidada na 9A;
+- preparar relatórios operacionais de custo parcial;
+- não antecipar DRE, ROI, venda, abate ou custo por arroba.
 
 ---
 
@@ -222,6 +225,13 @@ Limite confirmado em 2026-06-02:
 - sociedade pecuária permanece vínculo patrimonial;
 - sociedade não gera sanitário, conformidade ou financeiro automático;
 - não houve avanço para venda, abate, DRE, ROI, custo por arroba ou motor comercial.
+
+Limite confirmado em 2026-06-04:
+
+- inventário operacional separa custo total, custo por entrada e custo unitário/base;
+- baixa nutricional automática é idempotente por `eventId`/`source_evento_id`;
+- `insumo_movimentacoes` possui índice único parcial remoto para `consumo_nutricao` por `(fazenda_id, source_evento_id)`;
+- snapshot econômico segue derivado/read-only, sem virar fonte primária.
 
 ---
 

@@ -1,6 +1,6 @@
 ﻿# ACTIVE_PHASE_PLAN — Fase 9 Subfase 9A
 
-**Status:** Próxima a iniciar
+**Status:** Subfase 9A concluída localmente; Fase 9 em andamento
 **Commit Baseline:** `3fe7a81`
 **Criado:** 2026-06-02
 
@@ -105,4 +105,4 @@ Ao fim de Subfase 9A:
 
 ---
 
-Próximo: Ler `docs/review/PLANO_FASE_9_GATE_POS_MVP_COMERCIAL_PATRIMONIAL_CLASSIFICACAO_CUSTO.md` para detalhes completos.
+Próximo: Subfase 9B — Relatórios Operacionais de Custo Parcial, sem marcar a Fase 9 inteira como concluída.

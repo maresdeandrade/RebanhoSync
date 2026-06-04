@@ -124,7 +124,8 @@ describe("inventory form presets", () => {
       }),
     ).toBe(50);
     expect(summary.custoTotal).toBe(250);
-    expect(summary.custoUnitario).toBe(125);
+    expect(summary.custoPorEntrada).toBe(125);
+    expect(summary.custoUnitarioBase).toBe(5);
     expect(summary.status).toBe("informado");
   });
 
@@ -139,7 +140,8 @@ describe("inventory form presets", () => {
     );
 
     expect(summary.custoTotal).toBe(10);
-    expect(summary.custoUnitario).toBe(5);
+    expect(summary.custoPorEntrada).toBe(5);
+    expect(summary.custoUnitarioBase).toBe(0.2);
     expect(summary.status).toBe("informado");
   });
 
@@ -154,7 +156,8 @@ describe("inventory form presets", () => {
     const summary = calculateInventoryCostSummary(form, "custo_unitario");
 
     expect(calculateBaseQuantity(form)).toBe(250);
-    expect(summary.custoUnitario).toBe(100);
+    expect(summary.custoPorEntrada).toBe(100);
+    expect(summary.custoUnitarioBase).toBe(4);
     expect(summary.custoTotal).toBe(1000);
   });
 

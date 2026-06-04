@@ -1,181 +1,156 @@
-﻿# Current Phase Handoff — RebanhoSync
+# Current Phase Handoff — RebanhoSync
 
-Atualizado em: 2026-06-02
+Atualizado em: 2026-06-04
 **Baseline Commit:** `3fe7a81`
 
 ## 1. Fase atual
 
-Fase 9 — Gate Pós-MVP Comercial/Patrimonial/Classificação/Custo / Subfase 9A — Inventário Operacional.
+Fase 9 — Gate Pós-MVP Comercial/Patrimonial/Classificação/Custo.
+
+Subfase 9A — Inventário Operacional — concluída localmente.
+
+Próximo foco: Subfase 9B — Relatórios Operacionais de Custo Parcial.
 
 ---
 
 ## 2. Estado consolidado
 
-Fases 1-8 foram concluídas e consolidadas em baseline `3fe7a81` (2026-06-02).
+Fases 1-8 permanecem consolidadas em baseline `3fe7a81`.
 
-**Fase 6 (Sanitário):** Carência, protocolo, evento separados, append-only validada, replay corretivo com idempotência.
+Fase 9A consolidou o inventário operacional no escopo técnico autorizado:
 
-**Fase 7 (Preparação de PR + Auditoria de Regressão):** Validação de diff, lint, build, reconciliação de documentação, confirmação de que nenhuma feature nova entrou no patch.
+- unidade de compra/apresentação separada da unidade base;
+- unidade base separada da unidade de consumo/evento;
+- custo total, custo por entrada e custo unitário/base separados;
+- lote persistido com custo unitário/base;
+- snapshot econômico preservado como derivado/read-only;
+- baixa nutricional automática testada por `eventId`;
+- retry/replay nutricional testado preservando `client_op_id`, `record.id` e `source_evento_id`;
+- conflito remoto `23505` em `insumo_movimentacoes` tratado como `APPLIED`;
+- índice único parcial remoto `ux_insumo_movimentacoes_consumo_nutricao_evento` criado para `consumo_nutricao`.
 
-**Fase 8 (Formalização do Fallback Legado Sanitário):** Normalização de payload legado como `partial`, validação de reversão/rollback, limpeza de warnings não bloqueantes, suite de 1744 testes passando.
-
-**Consolidado em 3fe7a81:**
-
-- Sanitário: append-only, payload mínimo corretivo, evento original preservado
-- Sociedade: vínculo patrimonial, sem autorização automática
-- Estoque/Inventário: básico, pronto para Fase 9 expansão
-- Testes: 1744 testes passando, RLS baseline validada
-- Sync: offline-first, Dexie + RPCs, idempotência confirmada
-
-Referência completa: Ler `docs/review/ACTIVE_PHASE_PLAN.md` e `docs/review/PLANO_FASE_9_GATE_POS_MVP_COMERCIAL_PATRIMONIAL_CLASSIFICACAO_CUSTO.md`.
+Referência completa: `docs/review/LAST_PHASE_RESULT.md`.
 
 ---
 
-## 3. Objetivo de transição
+## 3. Validação consolidada da 9A
 
-Levar a linha de desenvolvimento à Subfase 9A com:
+Validações executadas na 9A:
 
-- foco em inventário operacional;
-- unidade de compra/apresentação claramente convertida para base;
-- custo operacional registrado como valor conhecido ou ausência;
-- snapshot econômico preservado;
-- baixa idempotente;
-- sociedade patrimonial isolada por RLS;
-- classificação operacional apresentada como leitura apenas.
+```txt
+pnpm test -- testes focados de inventário/sync/sync-batch: passou
+pnpm test: passou (260 arquivos, 1746 testes)
+pnpm run lint: passou
+pnpm run build: passou com warnings conhecidos
+supabase db reset: passou
+node scripts/codex/validate-supabase-baseline-functional.mjs: passou
+git diff --check: passou
+```
+
+Warnings conhecidos permanecem não bloqueantes e documentados em `docs/review/OPEN_REVIEW_ITEMS.md`.
 
 ---
 
 ## 4. Pendências abertas
 
-Fases 6-8 estão fechadas sem pendências bloqueantes.
+Não há pendência aberta conhecida para:
 
-Itens residuais não bloqueantes (já documentados):
+- separação de custo por entrada vs custo unitário/base;
+- idempotência local/remota da baixa nutricional;
+- índice único parcial remoto de `consumo_nutricao`;
+- snapshot econômico como derivado/read-only.
 
-```txt
-docs/review/OPEN_REVIEW_ITEMS.md
-```
+Pendências residuais não bloqueantes:
 
-P2 items (não bloqueiam Fase 9):
-
-1. Ruído residual em `stderr/stdout` de testes
-2. Warnings conhecidos de build
-3. Dialog/act avisos em testes
+1. Ruído residual em `stderr/stdout` de testes.
+2. Warnings conhecidos de build.
+3. Revisão futura de avisos de Dialog/act em testes.
 
 ---
 
 ## 5. Próximo objetivo
 
-Implementar Subfase 9A — Inventário Operacional.
+Continuar a Fase 9 pela Subfase 9B — Relatórios Operacionais de Custo Parcial.
 
-Referências obrigatórias:
+Objetivo esperado da 9B:
 
-- `docs/review/ACTIVE_PHASE_PLAN.md` — diagnóstico rápido e checklist
-- `docs/review/PLANO_FASE_9_GATE_POS_MVP_COMERCIAL_PATRIMONIAL_CLASSIFICACAO_CUSTO.md` — especificação completa
-
-Antes de iniciar Subfase 9A:
-
-- Confirmar baseline `3fe7a81` está estável (testes, lint, build passam)
-- Ler `ACTIVE_PHASE_PLAN.md` para confirmações obrigatórias
-- Ler `PLANO_FASE_9_*.md` para contratos completos
-- Confirmar escopo (9A: unidade, custo, snapshot, baixa idempotente, isolamento sociedade, classificação read-only)
+- usar as bases de unidade/custo/snapshot consolidadas na 9A;
+- produzir leitura operacional parcial de custo;
+- manter snapshot/read model como derivado;
+- não antecipar DRE, ROI, venda, abate, custo por arroba ou motor comercial avançado.
 
 ---
 
-## 6. Escopo permitido em Fase 9A
+## 6. Escopo permitido no próximo passo
 
-Permitido em Subfase 9A:
+Permitido para continuidade da Fase 9:
 
-- Leitura de `docs/review/ACTIVE_PHASE_PLAN.md` e `PLANO_FASE_9_*.md`
-- Implementação de conversão de unidade (apresentação -> base)
-- Implementação de custo operacional (ausência != zero)
-- Implementação de snapshot econômico (imutável)
-- Implementação de baixa idempotente (retry-safe)
-- Testes e validação de idempotência
-- Isolamento de sociedade patrimonial por RLS
-- Leitura de classificação operacional (read-only snapshot)
-
-Obrigatório:
-
-- Respeitar contrato de domínio (6 regras em `PLANO_FASE_9_*.md`)
-- Não alterar migrations/RLS/RPCs sem tarefa explícita
-- Executar validação completa antes de aceitar
+- leitura do plano ativo da Fase 9;
+- diagnóstico local antes de patch;
+- relatórios operacionais parciais apoiados em fonte primária existente;
+- testes proporcionais de custo/read model;
+- documentação do contrato implementado.
 
 ---
 
-## 7. Escopo proibido em Fase 9A
+## 7. Escopo proibido permanente para esta transição
 
-Não fazer em Subfase 9A:
+Não fazer sem tarefa explícita:
 
-- Feature nova fora de 9A (venda, abate, relatórios completos, KPIs avançados)
-- Alteração de contrato Sanitário, Agenda, Evento, Protocolo
-- Automação sem fonte técnica explícita
-- Edição destrutiva de histórico
-- Alteração de RLS/migrations/RPCs sem tarefa explícita
-- Transformações não permitidas (snapshot retroativo, custo ambíguo, duplicação de baixa)
-- Refatoração não solicitada
+- marcar Fase 9 inteira como concluída;
+- criar DRE, ROI, venda, abate ou custo por arroba;
+- transformar classificação operacional em autorização;
+- transformar snapshot/read model em fonte primária;
+- criar nova fonte de verdade paralela;
+- alterar contrato Sanitário, Agenda, Evento ou Protocolo fora do escopo autorizado.
 
 ---
 
-## 8. Áreas candidatas para trabalho em Fase 9A
+## 8. Áreas relevantes para 9B
 
-Áreas a trabalhar em Subfase 9A:
+Áreas candidatas para leitura inicial:
 
 ```txt
-src/lib/inventory (conversão de unidade, custo, snapshot, baixa)
-src/lib/comercial (isolamento de sociedade patrimonial)
-src/features/inventario (UI para registros, leitura de classificação)
-src/pages/Registrar (fluxo de compra/inventário)
-tests/ (testes de idempotência, isolamento, snapshot)
-docs/domain/COMPRA_VENDA.md (atualizar com contratos 9A)
+src/lib/inventory
+src/lib/offline
+src/pages/Insumos.tsx
+supabase/migrations/20260525000000_insumos_inventory.sql
+supabase/migrations/20260604090000_insumo_movimentacoes_consumo_nutricao_idempotency.sql
+docs/review/PLANO_FASE_9_GATE_POS_MVP_COMERCIAL_PATRIMONIAL_CLASSIFICACAO_CUSTO.md
 ```
 
-Áreas protegidas (não tocar sem tarefa explícita):
+Áreas protegidas:
 
 ```txt
-supabase/migrations (RLS existente é fonte de verdade)
-supabase/functions (sync, RPCs offline)
-src/lib/sanitario (Fase 6 consolidada)
-src/lib/eventos (Fase 6-8 consolidada)
+supabase/migrations
+supabase/functions
+src/lib/sanitario
+src/lib/eventos
 ```
+
+Só tocar áreas protegidas se a tarefa trouxer escopo explícito e validação proporcional.
 
 ---
 
-## 9. Validação baseline (Fases 6-8)
+## 9. Checklist antes de nova implementação
 
-Fases 6-8 foram validadas e aprovadas em baseline `3fe7a81`:
+Executar no início de nova rodada:
 
 ```bash
-pnpm test -- --run     # 259 files, 1744 tests passed
-pnpm run lint          # passed
-pnpm run build         # passed (known warnings)
-git diff --check       # passed
+git status --short --untracked-files=all
+git diff --check
 ```
 
-Baseline estável confirmado. Fase 9A começa a partir deste ponto.
-
----
-
-## 10. Validação obrigatória para Subfase 9A
-
-Antes de aceitar Subfase 9A, executar:
+Se houver patch funcional:
 
 ```bash
-pnpm test -- --run 2>&1 | tail -10        # Testes devem passar (1744+N)
-pnpm run lint 2>&1                        # Lint deve passar
-pnpm run build 2>&1                       # Build deve passar
-git diff --check                          # Sem trailing whitespace
+pnpm test
+pnpm run lint
+pnpm run build
+```
 
-# Validação Supabase RLS (se disponível)
+Se houver Supabase, RLS, RPC, migration, sync-batch ou baseline:
+
+```bash
 node scripts/codex/validate-supabase-baseline-functional.mjs
-
-# Auditoria de contratos (commands de PLANO_FASE_9_*.md)
-git grep -n "multiplicador\|idempotent\|society" -- src/
 ```
-
-Checklist de aceite (ver `docs/review/ACTIVE_PHASE_PLAN.md`):
-
-- [ ] 7 confirmações de diagnóstico passam
-- [ ] 10 critérios de aceite de ACTIVE_PHASE_PLAN marcados
-- [ ] 6 contratos obrigatórios implementados
-- [ ] Todos os 11 critérios de PLANO_FASE_9_*.md marcados
-- [ ] Sem regressões em testes existentes

@@ -43,8 +43,9 @@ describe("consumoGesture", () => {
   });
 
   it("constroi operacao de consumo nutricional no formato correto", () => {
+    const eventId = "evt-456";
     const op = buildConsumoMovimentacaoOp({
-      eventId: "evt-456",
+      eventId,
       dominio: "nutricao",
       insumoId: "insumo-alimento",
       insumoLoteId: "lote-alimento",
@@ -61,6 +62,8 @@ describe("consumoGesture", () => {
 
     expect(op.table).toBe("insumo_movimentacoes");
     expect(op.action).toBe("INSERT");
+    expect(op.record.id).toBe(eventId);
+    expect(op.record.source_evento_id).toBe(eventId);
     expect(op.record).toMatchObject({
       insumo_id: "insumo-alimento",
       insumo_lote_id: "lote-alimento",

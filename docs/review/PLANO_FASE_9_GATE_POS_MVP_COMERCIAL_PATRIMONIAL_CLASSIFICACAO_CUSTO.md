@@ -168,6 +168,7 @@ Sem idempotência (bug): 100 doses baixadas (duplicate entry)
 
 - Baixa tem ID único (transação, timestamp, etc.)
 - Retry com mesmo ID não duplica
+- Baixa automática de estoque por evento/source é protegida remotamente por índice único parcial para consumo sanitário e nutricional
 - Custo de saída = quantidade * (custo unitário * multiplicador)
 - Testes obrigatórios para retry-safety
 

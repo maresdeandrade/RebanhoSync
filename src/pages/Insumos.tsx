@@ -1242,10 +1242,7 @@ export default function Insumos() {
     }
 
     const resolvedCustoTotal = entryCostSummary.custoTotal;
-    const resolvedCustoUnitario =
-      resolvedCustoTotal == null
-        ? null
-        : parseFloat((resolvedCustoTotal / quantidadeBase).toFixed(4));
+    const resolvedCustoUnitario = entryCostSummary.custoUnitarioBase;
     const resolvedCustoStatus = entryCostSummary.status;
     const resolvedOrigemCusto =
       resolvedCustoStatus === "informado"
@@ -2642,9 +2639,15 @@ export default function Insumos() {
             </div>
             <div>
               Custo por entrada:{" "}
-              {entryCostSummary.custoUnitario == null
+              {entryCostSummary.custoPorEntrada == null
                 ? "ausente"
-                : `R$ ${formatNumber(entryCostSummary.custoUnitario)}`}
+                : `R$ ${formatNumber(entryCostSummary.custoPorEntrada)}`}
+            </div>
+            <div>
+              Custo unitario/base:{" "}
+              {entryCostSummary.custoUnitarioBase == null
+                ? "ausente"
+                : `R$ ${formatNumber(entryCostSummary.custoUnitarioBase)}/${entryForm.unidadeBase}`}
             </div>
             <div>
               Custo total:{" "}
