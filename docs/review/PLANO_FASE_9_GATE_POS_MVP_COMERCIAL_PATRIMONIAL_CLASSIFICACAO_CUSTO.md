@@ -2,8 +2,8 @@
 
 **Status:** Gate Pós-MVP Comercial/Patrimonial/Classificação/Custo
 **Subfase:** 9A — Inventário Operacional
-**Commit Baseline:** `3fe7a81`
-**Criado:** 2026-06-02
+**Commit Baseline:** `8cd5534`
+**Criado:** 2026-06-04
 
 ---
 

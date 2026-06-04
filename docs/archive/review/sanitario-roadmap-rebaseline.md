@@ -1,7 +1,7 @@
 # Sanitário — Roadmap Rebaseline
 
-Atualizado em: 2026-06-01  
-**Baseline Commit:** `32d7779`
+Atualizado em: 2026-06-04  
+**Baseline Commit:** `8cd5534`
 
 ## Objetivo
 

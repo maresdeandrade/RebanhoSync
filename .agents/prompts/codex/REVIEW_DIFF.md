@@ -1,5 +1,7 @@
 ```markdown
 # Codex Prompt — Review de Diff
+Atualizado em: 2026-06-04  
+Versão: 1.1.0
 
 Use para revisar alterações já feitas.
 

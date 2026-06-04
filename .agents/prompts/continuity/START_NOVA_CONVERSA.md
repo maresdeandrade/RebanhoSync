@@ -1,5 +1,8 @@
 # Start Nova Conversa — RebanhoSync
 
+Atualizado em: 2026-06-04  
+Versão: 1.1.0
+
 Use este prompt ao iniciar uma nova conversa para continuar o desenvolvimento do RebanhoSync a partir da documentação ativa do repositório.
 
 ## Prompt
@@ -30,13 +33,14 @@ Antes de alterar qualquer arquivo, entregue diagnóstico inicial com:
 1. fase ou contexto atual;
 2. se a etapa está concluída ou em andamento;
 3. baseline/commit documentado, se houver;
-4. documentos ativos lidos ou pendentes de confirmação local;
-5. pendências abertas reais;
-6. decisões já tomadas;
-7. riscos de regressão;
-8. escopo permitido/proibido referenciado;
-9. próximo passo mínimo;
-10. validação obrigatória.
+4. commit local atual, se confirmável;
+5. documentos ativos lidos ou pendentes de confirmação local;
+6. pendências abertas reais;
+7. decisões já tomadas;
+8. riscos de regressão;
+9. escopo permitido/proibido referenciado;
+10. próximo passo mínimo;
+11. validação obrigatória.
 
 ## Regras obrigatórias
 
@@ -48,6 +52,27 @@ Antes de alterar qualquer arquivo, entregue diagnóstico inicial com:
 - Não alterar Supabase, migrations, RLS, RPC, schema ou edge functions sem justificativa explícita.
 - Seguir integralmente `.agents/rules/CORE_RULES.md`.
 - Seguir integralmente o escopo permitido/proibido definido no plano ativo e no plano específico da fase.
+
+## Verificação de baseline
+
+No diagnóstico inicial, confirmar:
+
+- baseline documentado nos docs ativos;
+- commit local atual;
+- se o worktree está limpo;
+- se a documentação está apontando para o commit correto.
+
+Comandos sugeridos:
+
+```powershell
+git status --short --untracked-files=all
+git status -sb
+git log --oneline -1
+git rev-parse --short HEAD
+git diff --check
+```
+
+Não atualizar baseline automaticamente se houver alterações pendentes.
 
 ## Economia de contexto
 
@@ -95,8 +120,6 @@ Evitar:
 ```txt
 Listas longas de proibições já documentadas no plano ativo.
 ```
-
----
 
 ## Formato obrigatório da resposta
 

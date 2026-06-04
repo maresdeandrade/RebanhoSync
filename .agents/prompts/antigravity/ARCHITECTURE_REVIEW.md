@@ -1,5 +1,7 @@
 ```markdown
 # Codex Prompt — Architecture Review
+Atualizado em: 2026-06-04  
+Versão: 1.1.0
 
 Use para revisão arquitetural sem executar patch automaticamente.
 

@@ -1,8 +1,11 @@
 # Update Final de Fase — RebanhoSync
 
+Atualizado em: 2026-06-04  
+Versão: 1.1.0
+
 Use este prompt ao concluir uma fase ou subfase validada.
 
-Este prompt atualiza a documentação permanente de continuidade.
+Este prompt atualiza a documentação permanente de continuidade. Não use para registrar conversa em andamento.
 
 ## Prompt
 
@@ -19,20 +22,47 @@ Atualizar a documentação de continuidade ao final da fase/subfase atual, sem i
 - Não reabrir fase fechada sem regressão comprovada.
 - Não marcar como concluído o que não foi validado.
 - Não inventar commit, teste, arquivo ou resultado.
+- Não transformar roadmap em pendência técnica.
+- Não arquivar documentos ativos de continuidade.
 
 ## Diagnóstico documental obrigatório antes de editar
 
 Entregue primeiro:
 
 1. fase/subfase concluída;
-2. baseline/commit atual, se informado;
-3. arquivos alterados na fase;
-4. validações executadas;
-5. pendências abertas;
-6. pendências fechadas;
-7. documentos que precisam atualização;
-8. relatórios históricos que podem ser arquivados;
-9. documentos que devem permanecer ativos.
+2. status do worktree;
+3. commit atual, se confirmável;
+4. data atual, se confirmável;
+5. arquivos alterados na fase;
+6. validações executadas;
+7. pendências abertas;
+8. pendências fechadas;
+9. documentos que precisam atualização;
+10. relatórios históricos que podem ser arquivados;
+11. documentos que devem permanecer ativos.
+
+## Baseline e data
+
+Antes de atualizar documentação de fase, descobrir o commit e a data atuais.
+
+Executar:
+
+```powershell
+git status --short --untracked-files=all
+git diff --check
+git log --oneline -1
+git rev-parse --short HEAD
+Get-Date -Format "yyyy-MM-dd"
+```
+
+Regras:
+
+- Se houver alterações pendentes, não registrar novo baseline como definitivo.
+- Se o worktree estiver limpo, usar `git rev-parse --short HEAD` como `Baseline Commit`.
+- Usar `Get-Date -Format "yyyy-MM-dd"` como data documental.
+- Não inventar commit ou data.
+- Se o commit ainda não foi feito, registrar como “pendente de commit”, não como baseline definitivo.
+- Se o objetivo for atualizar documentação após um commit recém-criado, primeiro confirmar `HEAD` limpo e só então atualizar o baseline.
 
 ## Atualizar, conforme aplicável
 
@@ -42,8 +72,6 @@ Entregue primeiro:
 - `docs/review/OPEN_REVIEW_ITEMS.md`
 - `docs/context/PROJECT_STATUS.md`
 - `docs/product/ROADMAP.md`
-- `docs/review/RESULTADO_FASE_*.md`
-- `docs/review/RESULTADO_SUBFASE_*.md`
 - `docs/archive/review/`, somente para relatórios históricos já resumidos
 
 ## Regras por arquivo
@@ -68,6 +96,36 @@ Registrar:
 
 Não arquivar `LAST_PHASE_RESULT.md`.
 
+### Campos de baseline/data
+
+Quando houver fechamento validado ou mudança consolidada, atualizar nos documentos aplicáveis:
+
+```md
+Atualizado em: YYYY-MM-DD  
+**Baseline Commit:** `abcdef0`
+```
+
+Aplicar principalmente em:
+
+- `docs/review/LAST_PHASE_RESULT.md`;
+- `docs/review/CURRENT_PHASE_HANDOFF.md`;
+- `docs/review/ACTIVE_PHASE_PLAN.md`;
+- `docs/context/PROJECT_STATUS.md`, somente se houve mudança consolidada;
+- `docs/product/ROADMAP.md`, somente se houve mudança macro.
+
+Não aplicar `Baseline Commit` em:
+
+- `.agents/prompts/**`;
+- `.agents/rules/**`;
+- `.agents/skills/**`.
+
+Esses arquivos de instrução reutilizável devem usar apenas:
+
+```md
+Atualizado em: YYYY-MM-DD  
+Versão: X.Y.Z
+```
+
 ### `docs/review/CURRENT_PHASE_HANDOFF.md`
 
 Deve ser curto e apontar para:
@@ -75,9 +133,9 @@ Deve ser curto e apontar para:
 - fase atual ou próxima fase;
 - `ACTIVE_PHASE_PLAN.md`;
 - plano específico da fase, se houver;
-- escopo permitido;
-- escopo proibido;
-- validação obrigatória.
+- escopo permitido/proibido por referência;
+- validação obrigatória por referência;
+- bloqueios imediatos, se houver.
 
 Não repetir todo o plano.
 
@@ -93,7 +151,8 @@ Deve conter:
 - arquivos de referência;
 - diagnóstico obrigatório;
 - validações mínimas;
-- critérios de aceite.
+- critérios de aceite;
+- próximo passo técnico.
 
 ### `docs/review/OPEN_REVIEW_ITEMS.md`
 
@@ -125,7 +184,7 @@ Roadmap não deve conter pendência operacional granular.
 
 ## Arquivamento
 
-Mover para `docs/archive/review/` apenas relatórios históricos fechados, por exemplo:
+Mover para `docs/archive/review/` apenas relatórios históricos fechados e já resumidos, por exemplo:
 
 - `RESULTADO_FASE_*.md`
 - `RESULTADO_SUBFASE_*.md`
@@ -133,15 +192,15 @@ Mover para `docs/archive/review/` apenas relatórios históricos fechados, por e
 
 Não arquivar:
 
-- `CURRENT_PHASE_HANDOFF.md`
-- `ACTIVE_PHASE_PLAN.md`
-- `OPEN_REVIEW_ITEMS.md`
-- `LAST_PHASE_RESULT.md`
+- `CURRENT_PHASE_HANDOFF.md`;
+- `ACTIVE_PHASE_PLAN.md`;
+- `OPEN_REVIEW_ITEMS.md`;
+- `LAST_PHASE_RESULT.md`;
 - plano ativo da fase atual.
 
 ## Validação obrigatória
 
-```bash
+```powershell
 git status --short --untracked-files=all
 git diff --name-only
 git diff --stat
@@ -160,6 +219,7 @@ Se qualquer arquivo de código for alterado por engano, parar e justificar.
 - relatórios históricos arquivados apenas se já resumidos;
 - `LAST_PHASE_RESULT.md` permanece ativo;
 - nenhum código funcional alterado;
+- baseline/data não foram inventados;
 - `git diff --check` passa.
 
 ## Resultado final esperado
@@ -169,7 +229,8 @@ Responder com:
 1. arquivos criados;
 2. arquivos alterados;
 3. arquivos arquivados;
-4. pendências abertas finais;
-5. próxima fase/subfase;
-6. validações executadas;
-7. confirmação de que não houve implementação funcional.
+4. baseline/data usados ou motivo para não atualizar;
+5. pendências abertas finais;
+6. próxima fase/subfase;
+7. validações executadas;
+8. confirmação de que não houve implementação funcional.

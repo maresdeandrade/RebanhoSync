@@ -1,4 +1,6 @@
 # Codex Prompt — Reconciliar Documentação
+Atualizado em: 2026-06-04  
+Versão: 1.1.0
 
 Use para alinhar documentação ativa ao estado real do código, dos testes e das fases já validadas.
 

@@ -1,7 +1,7 @@
 # Current Phase Handoff — RebanhoSync
 
 Atualizado em: 2026-06-04
-**Baseline Commit:** `3fe7a81`
+**Baseline Commit:** `8cd5534`
 
 ## 1. Fase atual
 

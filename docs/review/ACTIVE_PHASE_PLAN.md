@@ -1,8 +1,8 @@
 ﻿# ACTIVE_PHASE_PLAN — Fase 9 Subfase 9A
 
 **Status:** Subfase 9A concluída localmente; Fase 9 em andamento
-**Commit Baseline:** `3fe7a81`
-**Criado:** 2026-06-02
+**Commit Baseline:** `8cd5534`
+**Criado:** 2026-06-04
 
 ---
 

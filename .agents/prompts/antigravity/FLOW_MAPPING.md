@@ -1,5 +1,7 @@
 ```markdown
 # Antigravity Prompt — Flow Mapping
+Atualizado em: 2026-06-04  
+Versão: 1.1.0
 
 Use para mapear fluxo funcional ou jornada do app.
 

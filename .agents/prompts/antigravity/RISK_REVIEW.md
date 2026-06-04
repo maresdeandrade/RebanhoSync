@@ -1,5 +1,7 @@
 ```markdown
 # Antigravity Prompt — Risk Review
+Atualizado em: 2026-06-04  
+Versão: 1.1.0
 
 Use para revisar riscos antes de implementar ou aprovar uma mudança.
 

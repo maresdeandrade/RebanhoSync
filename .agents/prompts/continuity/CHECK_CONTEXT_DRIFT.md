@@ -1,4 +1,6 @@
 # Check Context Drift — RebanhoSync
+Atualizado em: 2026-06-04  
+Versão: 1.1.0
 
 Use este prompt para verificar coerência documental antes de iniciar nova fase, subfase ou conversa longa.
 

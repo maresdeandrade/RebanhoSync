@@ -1,5 +1,7 @@
 ```markdown
 # Codex Prompt — Feature Pequena
+Atualizado em: 2026-06-04  
+Versão: 1.1.0
 
 Use para implementar uma funcionalidade pequena, delimitada e sem refatoração ampla.
 
