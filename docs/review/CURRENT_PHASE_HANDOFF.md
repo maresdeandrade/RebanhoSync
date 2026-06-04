@@ -11,6 +11,8 @@ Subfase 9A — Inventário Operacional — concluída localmente.
 
 Subfase 9B — Relatórios Operacionais de Custo Parcial — concluída localmente.
 
+Subfase 9C — Sociedade Patrimonial e Classificação Operacional Read-only — a iniciar.
+
 ---
 
 ## 2. Estado consolidado
@@ -96,35 +98,38 @@ Pendências residuais não bloqueantes:
 
 ## 5. Próximo objetivo
 
-Continuar a Fase 9 sem marcar a fase inteira como concluída.
+Continuar a Fase 9 pela Subfase 9C — Sociedade Patrimonial e Classificação Operacional Read-only.
 
-Resultado fechado da 9B:
+A 9C deve iniciar com diagnóstico local antes de qualquer patch.
 
-- usar as bases de unidade/custo/snapshot consolidadas na 9A;
-- produzir leitura operacional parcial de custo;
-- manter snapshot/read model como derivado;
-- não antecipar DRE, ROI, venda, abate, custo por arroba ou motor comercial avançado.
+Objetivo esperado da 9C:
 
-Entrega local da 9B:
+- mapear o estado atual de sociedade patrimonial no modelo;
+- confirmar se há isolamento por `fazenda_id` e se existe algum conceito de participação/sociedade já implementado;
+- revisar `classificationSnapshot` e usos relacionados;
+- garantir que classificação operacional permaneça leitura/snapshot;
+- não transformar classificação em autorização de venda, abate, carência, comercialização ou decisão crítica;
+- não criar DRE, ROI, margem, custo por arroba ou motor comercial avançado.
 
-- relatório operacional expõe custo parcial derivado de inventário;
-- entradas e saídas/consumos com custo conhecido ficam separadas;
-- saldo econômico parcial conhecido é calculado por lote ativo;
-- movimentações/lotes com custo ausente ficam separados;
-- custo `0` explícito permanece válido e diferente de custo ausente;
-- cálculo fica em `src/lib/reports/operationalSummary.ts`; UI apenas apresenta o read model.
+A 9C deve decidir, com evidência local, se o próximo patch será:
+
+1. apenas documentação de contrato;
+2. teste de contrato read-only;
+3. pequena integração de leitura derivada;
+4. ou registro de lacuna real para fase futura.
 
 ---
 
 ## 6. Escopo permitido no próximo passo
 
-Permitido para continuidade da Fase 9:
+Permitido para continuidade da Fase 9 pela 9C:
 
 - leitura do plano ativo da Fase 9;
 - diagnóstico local antes de patch;
-- relatórios operacionais parciais apoiados em fonte primária existente;
-- testes proporcionais de custo/read model;
-- documentação do contrato implementado.
+- auditoria de sociedade patrimonial e isolamento existente;
+- auditoria de classificação operacional e `classificationSnapshot`;
+- testes proporcionais de contrato read-only, se houver lacuna objetiva;
+- documentação do contrato implementado ou da lacuna confirmada.
 
 ---
 
@@ -141,16 +146,19 @@ Não fazer sem tarefa explícita:
 
 ---
 
-## 8. Áreas relevantes para 9B
+## 8. Áreas candidatas para 9C
 
 Áreas candidatas para leitura inicial:
 
 ```txt
-src/lib/inventory
-src/lib/offline
-src/pages/Insumos.tsx
-supabase/migrations/20260525000000_insumos_inventory.sql
-supabase/migrations/20260604090000_insumo_movimentacoes_consumo_nutricao_idempotency.sql
+src/lib/animals/classificationSnapshot.ts
+src/lib/animals/__tests__/classificationSnapshot.test.ts
+src/features/occupancy/classification.ts
+src/lib/reports/operationalSummary.ts
+src/pages/Relatorios.tsx
+src/lib/insights/herdStageSummary.ts
+src/lib/insights/tagSignals.ts
+supabase/migrations
 docs/review/PLANO_FASE_9_GATE_POS_MVP_COMERCIAL_PATRIMONIAL_CLASSIFICACAO_CUSTO.md
 ```
 
@@ -163,7 +171,7 @@ src/lib/sanitario
 src/lib/eventos
 ```
 
-Só tocar áreas protegidas se a tarefa trouxer escopo explícito e validação proporcional.
+Só tocar Supabase/migrations/RLS se o diagnóstico da 9C demonstrar lacuna objetiva de isolamento patrimonial e o plano ativo autorizar validação proporcional.
 
 ---
 

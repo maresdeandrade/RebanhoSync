@@ -1,425 +1,384 @@
 ﻿# PLANO_FASE_9_GATE_POS_MVP_COMERCIAL_PATRIMONIAL_CLASSIFICACAO_CUSTO
 
-**Status:** Gate Pós-MVP Comercial/Patrimonial/Classificação/Custo
-**Subfase:** 9A — Inventário Operacional
-**Commit Baseline:** `8cd5534`
-**Criado:** 2026-06-04
+Atualizado em: 2026-06-04  
+**Status:** Fase 9 em andamento  
+**Subfase atual:** 9C — Sociedade Patrimonial e Classificação Operacional Read-only — a iniciar  
+**Commit Baseline:** `8cd5534`  
+**Baseline anterior consolidado:** `3fe7a81`
 
 ---
 
-## Objetivo — O que entregar
+## 1. Objetivo da Fase 9
 
-Consolidar a base comercial e patrimonial da fazenda após conclusão de Fase 6-8,
-validar custo operacional por inventário, garantir idempotência de baixa,
-isolamento de sociedade patrimonial, e preparar sistema para leitura
-de classificação operacional.
+Consolidar a base pós-MVP para leitura comercial, patrimonial, classificação operacional e custo, sem antecipar motor comercial avançado.
 
----
+A Fase 9 deve garantir:
 
-## Estado consolidado anterior — Fases 1-8
-
-**Fase 1-5:** Baseline MVP, animais, agenda, sanitário (SLC).
-**Fase 6:** Sanitário avançado, carência, protocolo, evento separados.
-**Gates 6:** Validação de contrato sanitário e separação de agenda/evento/estado.
-**Fase 7:** Compra/venda, sociedade, primeira visão comercial.
-**Fase 8:** Relatórios Fase 1-8, limpeza de warnings, baseline estável.
-
-**Commitments já ativos:**
-
-- RLS por `fazenda_id` (multi-tenant)
-- Offline-first (Dexie/IndexedDB + sync via RPCs)
-- Agenda/Eventos/`state_*` separados
-- Carência sanitária não autoriza venda/abate (sinal, não autorização)
-- Produto/dose/lote limitados e rastreáveis
-- Sync idempotente (upsert, retry-safe)
+- inventário com unidade e custo coerentes;
+- baixa de estoque idempotente;
+- snapshot econômico preservado como derivado/read-only;
+- relatório operacional parcial de custo;
+- sociedade patrimonial mapeada com isolamento adequado;
+- classificação operacional como leitura/snapshot, sem virar autorização crítica.
 
 ---
 
-## Primeira entrega — Subfase 9A: Inventário Operacional
+## 2. Estado consolidado anterior — Fases 1-8
 
-### 9A.1 — Unidade de Compra/Apresentação vs Unidade Base
+**Fase 1-5:** Baseline MVP, animais, agenda, sanitário e SLC.  
+**Fase 6:** Sanitário avançado, carência, protocolo e evento separados.  
+**Gates 6:** Validação de contrato sanitário e separação de agenda/evento/estado.  
+**Fase 7:** Compra/venda, sociedade e primeira visão comercial.  
+**Fase 8:** Relatórios Fase 1-8, limpeza de warnings e baseline estável.
 
-**O quê:**
+Compromissos já ativos:
 
-- Registrar unidade de compra/apresentação (ex: frasco, saco, lote comercial)
-- Converter para unidade base (ex: mL, kg, doses)
-- Preservar multiplicador de conversão
-
-**Por quê:**
-
-- Produtor compra em unidades comerciais (frasco de 50 doses)
-- Sistema opera em unidades base (doses)
-- Sem conversão explícita, custo por dose fica ambíguo
-
-**Exemplos:**
-
-```
-Compra: 4 frascos @ R$ 200/frasco
-Unidade apresentação: frasco
-Conteúdo: 50 doses/frasco
-Custo unitário base: R$ 200 / 50 = R$ 4/dose
-Custo total: 4 * 50 = 200 doses @ R$ 4/dose = R$ 800
-```
-
-**Contrato:**
-
-- Conversão é determinística (não há ambiguidade)
-- Multiplicador >= 1
-- Conversão é registrada, não inferida
-- Sem conversão, unidade apresentação == unidade base
+- RLS por `fazenda_id`;
+- offline-first com Dexie/IndexedDB + sync;
+- Agenda/Eventos/`state_*` separados;
+- carência sanitária não autoriza venda/abate por si só;
+- produto/dose/lote rastreáveis;
+- sync idempotente;
+- snapshot/read model não é fonte primária.
 
 ---
 
-### 9A.2 — Custo Operacional por Inventário
+## 3. Contratos obrigatórios da Fase 9
 
-**O quê:**
-
-- Registrar custo de cada entrada de inventário (compra, produção, consumo)
-- Modelar "custo ausente" como diferente de "custo zero"
-- Não permitir custo implícito
-
-**Por quê:**
-
-- Produtor precisa saber custo operacional
-- Custo ausente (desconhecido) != custo zero (cortesia/lucro bruto)
-- Sem distinção, relatório de custo é falso
-
-**Exemplos:**
-
-```
-Vacina comprada: 200 doses @ R$ 4/dose = R$ 800 (custo = 800, conhecido)
-Vacina produzida: 500 doses (custo = null, desconhecido; não = 0)
-Vacina doada: 100 doses (custo = 0, explícito cortesia)
-
-Relatório de custo operacional inclui APENAS 800 (comprada).
-Produzida e doada aparecem em volume, custo separado.
-```
-
-**Contrato:**
-
-- Custo é número real >= 0 ou null (não há "zero implícito")
-- Entrada sem custo não entra em cálculo de custo total
-- Relatório diferencia custo conhecido de desconhecido
-- Sem custo, indicador de custo/dose não é calculável (não = 0)
+| Contrato | Status | Regra |
+|---|---|---|
+| Conversão de unidade | Consolidado na 9A | Unidade de compra/apresentação, unidade base e unidade de consumo/evento devem ser separadas. |
+| Custo ausente != zero | Consolidado na 9A/9B | `0` explícito é válido; `null`/`undefined` é custo ausente. |
+| Baixa idempotente | Consolidado na 9A | Retry/replay não pode duplicar baixa por evento/source. |
+| Snapshot econômico | Consolidado na 9A/9B | Snapshot/read model é derivado, não fonte primária nem autorização. |
+| Relatório parcial de custo | Consolidado na 9B | Mostrar custo conhecido e custo ausente separados. |
+| Sociedade patrimonial | Pendente 9C | Mapear implementação real, isolamento e lacunas. |
+| Classificação operacional | Pendente 9C | Deve permanecer leitura/snapshot, sem autorizar venda/abate/carência. |
 
 ---
 
-### 9A.3 — Snapshot Econômico Preservado
+## 4. Subfase 9A — Inventário Operacional
 
-**O quê:**
+**Status:** concluída localmente.
 
-- Registrar snapshot de estado econômico (custo, valor de venda, margem potencial)
-- Snapshot é imutável (histórico)
-- Alteração futura de custo não recalcula snapshot passado
+### 4.1 Entregas consolidadas
 
-**Por quê:**
+- unidade de compra/apresentação separada da unidade base;
+- unidade base separada da unidade de consumo/evento;
+- custo total, custo por entrada e custo unitário/base separados;
+- lote persistido com custo unitário/base;
+- snapshot econômico preservado como derivado/read-only;
+- baixa nutricional automática testada por `eventId`;
+- retry/replay nutricional testado preservando `client_op_id`, `record.id` e `source_evento_id`;
+- conflito remoto `23505` em `insumo_movimentacoes` tratado como `APPLIED`;
+- índice único parcial remoto `ux_insumo_movimentacoes_consumo_nutricao_evento` criado para `consumo_nutricao`.
 
-- Produtor precisa de auditoria financeira
-- Decisão de venda era baseada em custo X, não em recálculo posterior
-- Retroatividade quebra accountability
+### 4.2 Checklist 9A
 
-**Exemplos:**
+- [x] Unidade de compra/apresentação separada da unidade base.
+- [x] Unidade base separada da unidade de consumo/evento.
+- [x] Custo total separado de custo por entrada.
+- [x] Custo unitário/base derivado de custo total ÷ quantidade base.
+- [x] Lote persistido com custo unitário/base.
+- [x] Snapshot econômico preservado como derivado/read-only.
+- [x] Baixa nutricional automática testada por `eventId`.
+- [x] Retry/replay nutricional testado.
+- [x] Conflito remoto `23505` tratado como `APPLIED`.
+- [x] Índice único parcial remoto para `consumo_nutricao`.
+- [x] Sem avanço para venda, abate, DRE, ROI, margem, custo por arroba ou motor comercial avançado.
 
-```
-Snapshot 2026-06-01:
-- 200 doses @ R$ 4/dose = R$ 800 (custo)
-- Valor de mercado: R$ 6/dose = R$ 1200
-- Margem potencial: R$ 400
+### 4.3 Validações registradas 9A
 
-2026-06-15: Descobre-se que compra anterior tinha cupom de desconto (custo real = R$ 3/dose)
-Snapshot de 2026-06-01 NÃO ALTERA.
-Nova entrada de "ajuste" pode ser registrada, mas histórico não muda.
-```
-
-**Contrato:**
-
-- Snapshot criado no momento de entrada/evento
-- Snapshot não sofre recálculo retroativo
-- Correção é nova entrada, não edição histórica
-- Relatório de snapshot pode agregar, mas elemento único é imutável
-
----
-
-### 9A.4 — Baixa de Inventário Idempotente
-
-**O quê:**
-
-- Registrar saída de inventário (uso, venda, descarte, etc.)
-- Retry de sincronização não duplica baixa
-- Custo de saída reflete multiplicador de unidade
-
-**Por quê:**
-
-- Offline-first: sincronização pode falhar e repetir
-- Duplicação de baixa quebra contabilidade
-- Sem idempotência, relatório de saldo é falso
-
-**Exemplos:**
-
-```
-Baixa 1: 50 doses usadas (custo = 50 * R$ 4 = R$ 200)
-Sync falha, retry com mesma transação ID
-Resultado: 50 doses baixadas 1x (idempotente)
-
-Sem idempotência (bug): 100 doses baixadas (duplicate entry)
-```
-
-**Contrato:**
-
-- Baixa tem ID único (transação, timestamp, etc.)
-- Retry com mesmo ID não duplica
-- Baixa automática de estoque por evento/source é protegida remotamente por índice único parcial para consumo sanitário e nutricional
-- Custo de saída = quantidade * (custo unitário * multiplicador)
-- Testes obrigatórios para retry-safety
-
----
-
-### 9A.5 — Isolamento de Sociedade Patrimonial
-
-**O quê:**
-
-- Registrar possibilidade de "sociedade" (co-propriedade de animal/rebanho)
-- Isolamento por RLS: cada usuário/fazenda vê apenas sua fatia
-- Custo/inventário não "vazam" entre sócios
-
-**Por quê:**
-
-- Propriedade compartilhada é comum em fazendas
-- Sem isolamento, custo de um sócio vira transparente para outro
-- RLS deve defender no DB, não na UI
-
-**Exemplos:**
-
-```
-Animal X: 50% Sócio A, 50% Sócio B
-Custo de vacinação: R$ 100 (da propriedade compartilhada)
-Sócio A vê: custo = R$ 100, mas não vê fatia de B isoladamente
-RLS: apenas Sócio A vê linha de custo com sua fazenda_id
-```
-
-**Contrato:**
-
-- Sociedade é metadado de animal/lote (frações % de propriedade)
-- RLS filtra por `fazenda_id` + societário (se existir)
-- Custo compartilhado é registrado uma vez, mas visão filtrada por RLS
-- Sem visão cruzada entre sócios
-
----
-
-### 9A.6 — Classificação Operacional (Leitura)
-
-**O quê:**
-
-- Permitir leitura de classificação operacional (ex: "vacinado", "pronto para processamento", "em quarentena")
-- Classificação é SNAPSHOT, não altera estado de animal
-- Classificação não autoriza ação (venda, abate, etc.)
-
-**Por quê:**
-
-- Produtor precisa entender "por que este animal pode/não pode vender"
-- Classificação deve ser RESULTADO de análise, não gatilho automático
-- Sem separação, falsa liberação estatutária é possível
-
-**Exemplos:**
-
-```
-Animal X:
-- Carência: false (sanitário OK)
-- Custo registrado: true
-- Peso mínimo: true
-- Classificação operacional (snapshot): "pronto_processamento"
-
-Mas:
-- Venda ainda requer autorização explícita
-- Classificação é LEITURA, não gatilho
-- Se carência mudar amanhã, classificação anterior não apaga
-```
-
-**Contrato:**
-
-- Classificação é snapshot (não altera histórico anterior)
-- Leitura de classificação não autoriza ação
-- Classificação é RESULTADO, não REGRA DE NEGÓCIO
-- Sem automação de venda/abate baseada em classificação sozinha
-
----
-
-## Contratos obrigatórios — 6 regras
-
-1. **Conversão de unidade:** Determinística, registrada, não inferida
-2. **Idempotência de baixa:** Retry não duplica, ID único obrigatório
-3. **Custo ausente != zero:** Null e 0 são diferentes, ambos válidos
-4. **Snapshot econômico:** Imutável, sem recálculo retroativo
-5. **Isolamento patrimonial:** RLS enforces por `fazenda_id`, sem cross-view
-6. **Classificação leitura:** Snapshot apenas, não autoriza ação, não altera estado
-
----
-
-## Diagnóstico obrigatório — Auditar status
-
-```bash
-# 1. Conversão de unidade registrada?
-git grep -n "multiplicador\|conversion\|unidade_apresentacao" -- src/
-
-# 2. Custo diferencia null vs 0?
-git grep -n "custo === null\|custo === 0\|cost_absent" -- src/
-
-# 3. Snapshot preservado (migrations)?
-git grep -n "snapshot\|immutable\|created_at.*NOT NULL" -- supabase/migrations/
-
-# 4. Baixa idempotente (testes)?
-git grep -n "idempotent\|transaction_id\|retry" -- tests/
-
-# 5. RLS isolamento sociedade?
-git grep -n "fazenda_id\|society\|fraction" -- supabase/migrations/ | grep "POLICY\|WHERE"
-
-# 6. Classificação leitura apenas?
-git grep -n "classification.*read\|snapshot.*frozen" -- src/features/
+```txt
+pnpm test -- testes focados de inventário/sync/sync-batch: passou
+pnpm test: passou (260 arquivos, 1746 testes)
+pnpm run lint: passou
+pnpm run build: passou com warnings conhecidos
+supabase db reset: passou
+node scripts/codex/validate-supabase-baseline-functional.mjs: passou
+git diff --check: passou
 ```
 
 ---
 
-## Áreas candidatas para auditoria
+## 5. Subfase 9B — Relatórios Operacionais de Custo Parcial
 
-- [ ] Tela "Status do Animal" — conversão visível?
-- [ ] Tela "Inventário de Insumos" — custo/unidade claros?
-- [ ] Tela "Histórico de Movimentações" — snapshot preservado?
-- [ ] Tela "Baixa de Inventário" — retry testado?
-- [ ] Central Operacional — sociedade isolada?
-- [ ] Eventos Sanitários — classificação visível mas read-only?
-- [ ] Relatório de Custo — diferencia conhecido vs desconhecido?
-- [ ] RLS queries — fazenda_id + society filters?
-- [ ] Testes unitários — cobertura de casos edge?
-- [ ] Logs de sincronização — retry sem duplicate?
+**Status:** concluída localmente.
 
----
+### 5.1 Entregas consolidadas
 
-## Validação técnica
-
-**Comandos obrigatórios:**
-
-```bash
-# Testes
-pnpm run test
-
-# Lint
-pnpm run lint
-
-# Build
-pnpm run build
-
-# Git checks
-git diff --check
-git status
-
-# Supabase RLS validation (se disponível)
-node scripts/codex/validate-supabase-baseline-functional.mjs
-```
-
----
-
-## Exemplo obrigatório — Caso de uso aceito
-
-**Cenário:** Compra de vacina, registro de custo, aplicação, snapshot, classificação
-
-```
-1. Compra: 4 frascos de vacina @ R$ 200/frasco
-   - Unidade apresentação: frasco
-   - Conteúdo: 50 doses/frasco
-   - Custo unitário base: R$ 4/dose
-   - Total: 200 doses @ R$ 4/dose = R$ 800
-   - Snapshot criado: {data, 200 doses, R$ 800}
-
-2. Registro de aplicação: Vacinação de 150 doses em lote A
-   - Custo desta aplicação: 150 * R$ 4 = R$ 600
-   - Saldo restante: 50 doses
-
-3. Retry de sincronização:
-   - Mesmo registro de aplicação novamente
-   - Sistema reconhece transaction_id, NÃO duplica
-   - Saldo continua: 50 doses
-
-4. Classificação operacional:
-   - Lote A após vacinação: "vacinado", não = decisão automática de venda
-   - Classificação é snapshot (read-only)
-   - Venda ainda requer autorização explícita
-
-5. Auditoria:
-   - Custo conhecido: R$ 800 (compra)
-   - Custo aplicado: R$ 600
-   - Saldo econômico: R$ 200 (50 doses x R$ 4)
-   - Histórico imutável, sem recálculo retroativo
-```
-
----
-
-## Critérios de aceite — 11 itens
-
-1. [ ] Conversão de unidade funciona e é testada
-2. [ ] Custo diferencia null vs 0 explicitamente
-3. [ ] Snapshot econômico é imutável
-4. [ ] Baixa de inventário é idempotente (retry tested)
-5. [ ] Isolamento de sociedade por RLS validado
-6. [ ] Classificação é leitura apenas (read-only snapshot)
-7. [ ] Testes cobrem todos os 6 contratos
-8. [ ] Sem warnings TypeScript/ESLint em código novo
-9. [ ] Documentação interna reflete contratos
-10. [ ] git diff --check passa
-11. [ ] Supabase RLS baseline funcional
-
----
-
-## Resultado esperado
-
-**Ao fim de Subfase 9A:**
-
-- Inventário operacional consolidado (unidade/custo/snapshot)
-- Idempotência de baixa confirmada
-- Isolamento de sociedade patrimonial ativo
-- Classificação operacional legível (read-only)
-- Todos os testes passam
-- Baseline preparado para Subfase 9B (Relatórios Operacionais de Custo Parcial)
-
----
-
----
-
-## Fechamento — Subfase 9B: Relatórios Operacionais de Custo Parcial
-
-**Status:** concluída localmente, com patch validado.
-
-Entregue na 9B:
-
-- leitura operacional parcial de custo no relatório existente;
 - `inventory.partialCost` em `src/lib/reports/operationalSummary.ts`;
 - cálculo fora da UI;
 - apresentação em `src/pages/Relatorios.tsx`;
 - leitura derivada/read model;
 - custo operacional parcial conhecido;
-- custo conhecido de entradas separado de custo ausente;
-- custo conhecido de saídas/consumos separado de custo ausente;
+- entradas com custo conhecido;
+- saídas/consumos com custo conhecido;
 - saldo econômico parcial conhecido por lote ativo;
-- lotes e movimentações com custo ausente preservados como limitação explícita;
+- custo ausente separado;
 - `0` tratado como custo válido;
 - `null`/`undefined` tratados como custo ausente;
 - ausência de inferência de custo quando snapshot está ausente.
 
-Validações registradas:
+### 5.2 Checklist 9B
 
-- `git diff --check`: passou;
-- `pnpm test -- src/lib/reports/__tests__/operationalSummary.test.ts`: passou;
-- `pnpm test -- src/pages/__tests__/Relatorios.e2e.test.tsx`: passou;
-- `pnpm test`: passou (260 arquivos, 1747 testes);
-- `pnpm run lint`: passou;
-- `pnpm run build`: passou com warnings conhecidos de Browserslist/chunks.
+- [x] Relatório mostra custo parcial operacional derivado de inventário.
+- [x] Entradas com custo conhecido aparecem separadas.
+- [x] Saídas/consumos com custo conhecido aparecem separadas.
+- [x] Saldo econômico parcial conhecido aparece separado.
+- [x] Movimentações/lotes com custo ausente aparecem separados.
+- [x] `0` explícito permanece diferente de `null`/ausente.
+- [x] Cálculo fica fora da UI.
+- [x] UI apenas apresenta o read model.
+- [x] Nenhuma regra comercial avançada foi criada.
+- [x] Fase 9 inteira não foi marcada como concluída.
 
-Limites preservados:
+### 5.3 Validações registradas 9B
 
-- sem DRE;
-- sem ROI;
-- sem venda/abate;
-- sem margem;
-- sem custo por arroba;
-- sem motor comercial avançado.
+```txt
+git diff --check: passou
+pnpm test -- src/lib/reports/__tests__/operationalSummary.test.ts: passou
+pnpm test -- src/pages/__tests__/Relatorios.e2e.test.tsx: passou
+pnpm test: passou (260 arquivos, 1747 testes)
+pnpm run lint: passou
+pnpm run build: passou com warnings conhecidos de Browserslist/chunks
+```
 
-**Próximo:** continuar Fase 9 sem marcar a fase inteira como concluída.
+---
+
+## 6. Subfase 9C — Sociedade Patrimonial e Classificação Operacional Read-only
+
+**Status:** a iniciar.
+
+### 6.1 Objetivo
+
+Mapear o estado real de sociedade patrimonial e classificação operacional, com diagnóstico local antes de qualquer patch.
+
+A 9C deve confirmar se já existe base suficiente para:
+
+- sociedade/participação patrimonial;
+- isolamento por `fazenda_id`;
+- eventual regra de acesso por sócio, se existir;
+- `classificationSnapshot`;
+- leitura operacional de classificação;
+- consumo de classificação em relatórios, insights ou telas.
+
+A 9C não deve criar autorização operacional/comercial.
+
+### 6.2 Escopo permitido
+
+- Diagnóstico local de sociedade patrimonial existente.
+- Diagnóstico local de isolamento por `fazenda_id`.
+- Diagnóstico local de participação/sociedade, se implementada.
+- Diagnóstico local de `classificationSnapshot`.
+- Revisão de usos de classificação em relatórios, insights, telas e read models.
+- Testes de contrato read-only, se houver lacuna objetiva.
+- Pequena integração de leitura derivada, se o diagnóstico justificar.
+- Documentação de contrato da 9C ou registro de lacuna real.
+
+### 6.3 Escopo proibido
+
+- Marcar a Fase 9 inteira como concluída.
+- Criar autorização automática de venda, abate, comercialização ou decisão crítica.
+- Transformar classificação operacional em regra crítica.
+- Transformar snapshot/read model em fonte primária.
+- Criar nova fonte de verdade paralela.
+- Criar DRE, ROI, margem, custo por arroba ou motor comercial avançado.
+- Alterar Supabase, migrations, RLS, RPC, edge functions ou seed sem diagnóstico objetivo e validação proporcional.
+
+### 6.4 Diagnóstico obrigatório antes de patch
+
+Antes de alterar qualquer arquivo, entregar:
+
+1. status local da Fase 9 e confirmação de 9A/9B concluídas;
+2. baseline/commit local atual;
+3. documentos ativos lidos;
+4. onde sociedade patrimonial aparece no modelo, se aparecer;
+5. se há isolamento real por `fazenda_id`;
+6. se existe participação/sociedade implementada;
+7. onde `classificationSnapshot` é calculado;
+8. onde `classificationSnapshot` é testado;
+9. onde classificação operacional é consumida;
+10. se classificação é apenas leitura/snapshot;
+11. se há risco de virar autorização;
+12. lacunas reais;
+13. patch mínimo recomendado ou justificativa para não alterar;
+14. validação proporcional conforme `.agents/rules/rtk.md`.
+
+Formato recomendado:
+
+```txt
+achado → arquivo → evidência → risco → recomendação mínima
+```
+
+### 6.5 Áreas candidatas para leitura inicial
+
+```txt
+src/lib/animals/classificationSnapshot.ts
+src/lib/animals/__tests__/classificationSnapshot.test.ts
+src/features/occupancy/classification.ts
+src/lib/reports/operationalSummary.ts
+src/pages/Relatorios.tsx
+src/lib/insights/herdStageSummary.ts
+src/lib/insights/tagSignals.ts
+supabase/migrations
+docs/review/PLANO_FASE_9_GATE_POS_MVP_COMERCIAL_PATRIMONIAL_CLASSIFICACAO_CUSTO.md
+```
+
+Áreas protegidas:
+
+```txt
+supabase/migrations
+supabase/functions
+src/lib/sanitario
+src/lib/eventos
+```
+
+Só tocar áreas protegidas se a tarefa trouxer evidência objetiva, escopo explícito e validação proporcional.
+
+### 6.6 Checklist pendente 9C
+
+#### Diagnóstico
+
+- [ ] Confirmar `git status --short --untracked-files=all`.
+- [ ] Confirmar `git diff --check`.
+- [ ] Confirmar commit/baseline local.
+- [ ] Ler documentos ativos.
+- [ ] Mapear sociedade patrimonial no schema/migrations.
+- [ ] Mapear sociedade patrimonial em tipos/stores/UI.
+- [ ] Confirmar se sociedade existe como dado implementado ou apenas conceito/documentação.
+- [ ] Confirmar isolamento por `fazenda_id`.
+- [ ] Confirmar se há isolamento por sócio/participação além de `fazenda_id`.
+- [ ] Mapear `classificationSnapshot`.
+- [ ] Mapear testes de classificação.
+- [ ] Mapear consumo de classificação em UI/relatórios/insights.
+- [ ] Identificar risco de classificação virar autorização crítica.
+- [ ] Registrar lacunas reais.
+- [ ] Definir se haverá patch ou apenas documentação.
+
+#### Patch, se houver evidência objetiva
+
+- [ ] Manter classificação como read-only/snapshot.
+- [ ] Não criar autorização automática.
+- [ ] Não criar regra comercial avançada.
+- [ ] Não alterar Supabase/migrations sem justificativa explícita.
+- [ ] Não duplicar fonte de verdade.
+- [ ] Adicionar testes proporcionais se alterar contrato.
+- [ ] Atualizar documentação se houver delta funcional.
+
+#### Validação
+
+- [ ] `git diff --check`.
+- [ ] `pnpm test` se houver patch funcional.
+- [ ] `pnpm run lint` se houver patch funcional.
+- [ ] `pnpm run build` se houver patch funcional.
+- [ ] `node scripts/codex/validate-supabase-baseline-functional.mjs` se houver Supabase/RLS/RPC/migration/sync-batch.
+
+### 6.7 Critério de aceite da 9C
+
+A 9C só pode ser considerada avançada se:
+
+- sociedade patrimonial estiver mapeada com evidência local;
+- classificação operacional estiver mapeada com evidência local;
+- fontes primárias e read models estiverem identificados;
+- riscos de autorização indevida estiverem documentados;
+- patch mínimo for proposto apenas com evidência objetiva;
+- nenhuma decisão comercial crítica for criada;
+- nenhuma regra de venda, abate, carência liberatória, ROI, DRE, margem ou custo por arroba for antecipada;
+- validação proporcional for definida antes de edição.
+
+---
+
+## 7. Pendências abertas da Fase 9
+
+Pendências reais da Fase 9 neste momento:
+
+| Prioridade | Item | Status | Conduta |
+|---|---|---|---|
+| P1 | Diagnóstico da sociedade patrimonial na 9C | Aberto | Executar antes de qualquer patch. |
+| P1 | Diagnóstico da classificação operacional read-only na 9C | Aberto | Mapear `classificationSnapshot` e usos. |
+| P1 | Confirmar se há lacuna de isolamento por sócio/participação | Aberto | Só propor migration/RLS se houver evidência objetiva. |
+| P2 | Ruído residual em `stderr/stdout` de testes | Aberto | Tratar em gate próprio de higiene residual. |
+| P2 | Warnings conhecidos de build | Aberto | Tratar em tarefa própria de build/performance. |
+| P2 | Avisos de Dialog/act em testes | Aberto | Tratar em gate futuro de testes UI. |
+
+Não há pendência aberta conhecida para:
+
+- separação de custo por entrada vs custo unitário/base;
+- idempotência local/remota da baixa nutricional;
+- índice único parcial remoto de `consumo_nutricao`;
+- snapshot econômico como derivado/read-only;
+- leitura parcial de custo operacional da 9B.
+
+---
+
+## 8. Restrições permanentes da Fase 9
+
+Não avançar sem tarefa explícita para:
+
+- venda;
+- abate;
+- DRE;
+- ROI;
+- margem;
+- custo por arroba;
+- motor comercial avançado;
+- aptidão automática para venda;
+- aptidão automática para abate;
+- carência liberatória;
+- financeiro automático;
+- autorização automática baseada em classificação.
+
+Preservar:
+
+```txt
+Agenda = intenção/tarefa futura.
+Evento = fato histórico append-only.
+state_* = read model / estado atual.
+Protocolo = regra/configuração, não execução.
+Snapshot = evidência histórica congelada/read model derivado.
+Financeiro = ledger explícito separado.
+Sociedade = vínculo patrimonial.
+Classificação = leitura operacional, não autorização crítica.
+Tags/sinais/insights = auxiliares, nunca fonte primária.
+```
+
+---
+
+## 9. Validação técnica geral
+
+Antes de nova implementação:
+
+```bash
+git status --short --untracked-files=all
+git diff --check
+```
+
+Se houver patch funcional:
+
+```bash
+pnpm test
+pnpm run lint
+pnpm run build
+```
+
+Se houver Supabase, migrations, RLS, RPC, edge functions, sync-batch ou baseline:
+
+```bash
+node scripts/codex/validate-supabase-baseline-functional.mjs
+```
+
+---
+
+## 10. Resultado esperado ao fim da Fase 9
+
+A Fase 9 só deve ser considerada concluída quando:
+
+- 9A estiver consolidada e documentada;
+- 9B estiver consolidada e documentada;
+- 9C tiver mapeado sociedade patrimonial e classificação operacional;
+- lacunas reais estiverem resolvidas ou registradas como pendência explícita;
+- nenhuma autorização crítica indevida tiver sido criada;
+- todos os contratos obrigatórios da Fase 9 estiverem documentados;
+- validação proporcional tiver passado;
+- Fase 9 inteira for fechada em documento próprio, sem confundir fechamento de subfase com fechamento de fase.
