@@ -15,7 +15,7 @@ Este documento não é changelog detalhado, auditoria histórica ou roadmap comp
 
 RebanhoSync está em beta interno, com MVP operacional.
 
-A fase atual/a iniciar é Fase 10 — UX Operacional dos Fluxos Centrais.
+A fase atual é Fase 10 — UX Operacional dos Fluxos Centrais, em andamento.
 
 Último gate validado:
 
@@ -42,12 +42,22 @@ A fase atual/a iniciar é Fase 10 — UX Operacional dos Fluxos Centrais.
 - nenhum avanço para DRE, ROI, margem, custo por arroba, motor comercial avançado, carência liberatória ou autorização crítica.
 - Subfase 9D — Fechamento do Gate Fase 9 e Handoff para Próxima Fase executada;
 - Fase 9 concluída localmente;
-- próxima fase definida como Fase 10 — UX Operacional dos Fluxos Centrais.
+- Fase 10A — Diagnóstico UX e mapa de fricção concluída sem patch;
+- Fase 10B — Agenda/Registrar: clareza de intenção futura vs execução real concluída localmente.
+
+Último avanço local da Fase 10:
+
+- Agenda usa `Registrar execução` no CTA global e no estado vazio;
+- ação direta de item de agenda usa `Fechar pendência`;
+- hints deixam explícito que Registrar grava execução real e que fechar pendência apenas encerra tarefa futura;
+- teste focado de Agenda passou;
+- nenhuma regra crítica nova foi criada;
+- nenhuma alteração em Supabase/RLS/migrations/RPC/sync.
 
 Próximo foco:
 
-- iniciar Fase 10 por diagnóstico UX/produto dos fluxos centrais;
-- não iniciar por patch direto;
+- Fase 10C — Home/Central Operacional;
+- preservar separação entre pendência, execução, histórico e estado atual;
 - não criar regra crítica nova, autorização automática ou motor comercial/financeiro.
 
 Realidade validada para o roadmap pós-Fase 9:

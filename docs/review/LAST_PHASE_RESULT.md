@@ -4,11 +4,43 @@ Atualizado em: 2026-06-04
 **Baseline Commit documental anterior:** `8cd5534`
 **Commit local observado na 9D:** `84383ab`
 
+## 0. Resultado mais recente
+
+Fase 10A — Diagnóstico UX e mapa de fricção — concluída sem patch.
+
+Fase 10B — Agenda/Registrar: clareza de intenção futura vs execução real — concluída localmente.
+
+Patch aplicado:
+
+- CTA global da Agenda passou de `Registrar` para `Registrar execução`;
+- estado vazio da Agenda passou de `Registrar` para `Registrar execução`;
+- CTA direto de item de agenda passou de `Concluir` para `Fechar pendência`;
+- hints de item reforçam que Registrar grava execução e que fechar pendência apenas encerra a tarefa futura;
+- teste focado de Agenda cobre o novo label de execução.
+
+Restrições preservadas:
+
+- Agenda continua sendo intenção/tarefa futura;
+- Registrar continua sendo fluxo de execução real;
+- Evento continua sendo fato histórico executado;
+- nenhuma regra crítica nova foi criada;
+- nenhuma alteração em Supabase, RLS, migrations, RPC, edge functions, schema ou sync.
+
+Validação local da 10B:
+
+```txt
+pnpm test -- src/pages/Agenda: passou (8 arquivos, 46 testes)
+```
+
+Próximo foco provável: Fase 10C — Home/Central Operacional.
+
+---
+
 ## 1. Nome da fase
 
-Fase 9 — Gate Pós-MVP Comercial/Patrimonial/Classificação/Custo.
+Fase 10 — UX Operacional dos Fluxos Centrais.
 
-Subfase final: 9D — Fechamento do Gate Fase 9 e Handoff para Próxima Fase.
+Subfase mais recente: 10B — Agenda/Registrar: clareza de intenção futura vs execução real.
 
 ---
 

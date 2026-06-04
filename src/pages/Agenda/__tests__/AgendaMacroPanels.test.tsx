@@ -5,6 +5,7 @@ import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 
 import { AgendaComplianceSummaryPanel } from "@/pages/Agenda/components/AgendaComplianceSummaryPanel";
+import { AgendaEmptyState } from "@/pages/Agenda/components/AgendaEmptyState";
 import { AgendaLifecycleSummaryPanel } from "@/pages/Agenda/components/AgendaLifecycleSummaryPanel";
 import { AgendaOverviewHeader } from "@/pages/Agenda/components/AgendaOverviewHeader";
 import { AgendaStatusMetrics } from "@/pages/Agenda/components/AgendaStatusMetrics";
@@ -26,8 +27,27 @@ describe("Agenda macro panels", () => {
     expect(screen.getByText("2 item(ns) no recorte")).toBeInTheDocument();
     expect(screen.getByText("Filtros ativos")).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: /registrar/i }));
+    fireEvent.click(screen.getByRole("button", { name: /registrar execução/i }));
     expect(onGoToRegistrar).toHaveBeenCalledTimes(1);
+  });
+
+  it("renders empty agenda action as execution registration", () => {
+    const onGoToRegistrar = vi.fn();
+    const onOpenProtocols = vi.fn();
+
+    render(
+      <AgendaEmptyState
+        hasItems={false}
+        hasComplianceAttention={false}
+        onOpenProtocols={onOpenProtocols}
+        onGoToRegistrar={onGoToRegistrar}
+      />,
+    );
+
+    expect(screen.getByText("Agenda vazia")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /registrar execução/i }));
+    expect(onGoToRegistrar).toHaveBeenCalledTimes(1);
+    expect(onOpenProtocols).not.toHaveBeenCalled();
   });
 
   it("renders compliance panel and triggers compliance navigation", () => {
@@ -112,4 +132,3 @@ describe("Agenda macro panels", () => {
     expect(screen.getByText("2")).toBeInTheDocument();
   });
 });
-

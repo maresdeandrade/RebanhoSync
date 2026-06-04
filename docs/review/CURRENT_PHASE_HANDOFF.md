@@ -5,23 +5,39 @@ Atualizado em: 2026-06-04
 
 ## 1. Fase atual
 
-Fase 9 — Gate Pós-MVP Comercial/Patrimonial/Classificação/Custo — concluída localmente.
+Fase 10 — UX Operacional dos Fluxos Centrais — em andamento.
 
-Subfase 9A — Inventário Operacional — concluída localmente.
+Subfase 10A — Diagnóstico UX e mapa de fricção — concluída sem patch.
 
-Subfase 9B — Relatórios Operacionais de Custo Parcial — concluída localmente.
+Subfase 10B — Agenda/Registrar: clareza de intenção futura vs execução real — concluída localmente.
 
-Subfase 9C — Sociedade Patrimonial e Classificação Operacional Read-only — concluída localmente.
-
-Subfase 9D — Fechamento do Gate Fase 9 e Handoff para Próxima Fase — executada.
-
-Próxima fase: Fase 10 — UX Operacional dos Fluxos Centrais.
+Próximo foco provável: Fase 10C — Home/Central Operacional.
 
 ---
 
 ## 2. Estado consolidado
 
 Fases 1-8 permanecem consolidadas em baseline `3fe7a81`.
+
+Fase 9 permanece concluída localmente, com 9A, 9B, 9C e 9D preservadas como fechadas.
+
+Fase 10A consolidou o diagnóstico UX/produto dos fluxos centrais sem patch funcional:
+
+- Home/Central Operacional já separa pendência, execução, histórico e estado atual em alto nível;
+- Agenda/Registrar foi identificada como maior ponto de fricção por ambiguidade de CTAs;
+- Eventos se mantém como histórico operacional;
+- Relatórios indicam fonte primária e custo parcial;
+- Lotes/Pastos e insights já mostram estados e limitações.
+
+Fase 10B aplicou patch UX mínimo em Agenda:
+
+- `Registrar` virou `Registrar execução` no CTA global da Agenda;
+- `Registrar` virou `Registrar execução` no estado vazio da Agenda;
+- `Concluir` virou `Fechar pendência` para ação direta de item;
+- hints reforçam que Registrar grava execução real e que fechar pendência encerra apenas tarefa futura;
+- teste de renderização/UX atualizado em `src/pages/Agenda/__tests__/AgendaMacroPanels.test.tsx`.
+
+Nenhuma regra de negócio, Supabase, RLS, migration, RPC, edge function, schema ou sync foi alterado.
 
 Fase 9A consolidou o inventário operacional no escopo técnico autorizado:
 

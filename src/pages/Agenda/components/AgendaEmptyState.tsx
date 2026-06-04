@@ -26,7 +26,7 @@ export function AgendaEmptyState({
           : "Registre eventos ou ative protocolos para alimentar a rotina."
       }
       action={{
-        label: hasComplianceAttention ? "Abrir protocolos" : "Registrar",
+        label: hasComplianceAttention ? "Abrir protocolos" : "Registrar execução",
         onClick: hasComplianceAttention ? onOpenProtocols : onGoToRegistrar,
       }}
     />

@@ -38,10 +38,9 @@ export function AgendaOverviewHeader({
       actions={
         <Button size="sm" onClick={onGoToRegistrar}>
           <Plus className="h-4 w-4" />
-          Registrar
+          Registrar execução
         </Button>
       }
     />
   );
 }
-

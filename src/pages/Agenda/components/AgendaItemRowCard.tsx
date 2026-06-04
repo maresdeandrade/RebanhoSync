@@ -57,15 +57,13 @@ export function AgendaItemRowCard({
   const registerCtaLabel = isCalfJourney
     ? "Seguir rotina da cria"
     : "Revisar no Registrar";
-  const directCompleteLabel = isSanitary
-    ? "Concluir tarefa"
-    : "Concluir";
+  const directCompleteLabel = "Fechar pendência";
   
   const nextStepHint = isCalfJourney
     ? "Próximo passo: seguir a rotina guiada da cria."
     : isSanitary
-      ? "Próximo passo: usar Registrar para revisar dados, lote e baixa de estoque."
-      : "Próximo passo: usar Registrar para gravar a execução completa; Concluir apenas fecha a pendência.";
+      ? "Próximo passo: usar Registrar para revisar dados, lote e baixa de estoque antes de registrar a execução."
+      : "Próximo passo: usar Registrar para gravar a execução completa; Fechar pendência apenas encerra a tarefa futura.";
 
   return (
     <article

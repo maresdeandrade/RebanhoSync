@@ -1,6 +1,6 @@
 # ACTIVE_PHASE_PLAN - Fase 10
 
-**Status:** a iniciar
+**Status:** em andamento
 **Foco:** UX Operacional dos Fluxos Centrais
 **Criado:** 2026-06-04
 **Atualizado:** 2026-06-04
@@ -16,7 +16,7 @@ Iniciar a Fase 10 com diagnóstico UX/produto dos fluxos centrais do RebanhoSync
 
 ## Conduta obrigatória de início
 
-A Fase 10 deve começar por diagnóstico, não por patch direto.
+A Fase 10 começou por diagnóstico, não por patch direto.
 
 Diagnóstico mínimo:
 
@@ -26,6 +26,22 @@ Diagnóstico mínimo:
 4. separar problema de UX de regra de domínio;
 5. propor patch pequeno, reversível e testável;
 6. definir validação proporcional antes de editar.
+
+Status local:
+
+- 10A — Diagnóstico UX e mapa de fricção: concluída sem patch.
+- 10B — Agenda/Registrar: clareza de intenção futura vs execução real: concluída localmente.
+- Próximo foco provável: 10C — Home/Central Operacional.
+
+Resultado da 10B:
+
+- CTA global da Agenda: `Registrar execução`;
+- estado vazio da Agenda: `Registrar execução`;
+- ação direta de item: `Fechar pendência`;
+- hints de item reforçam diferença entre Registrar execução e fechar tarefa futura;
+- teste focado de Agenda atualizado.
+
+Não houve alteração em regra de negócio, Supabase, migrations, RLS, RPC, edge functions, schema ou sync.
 
 ---
 
