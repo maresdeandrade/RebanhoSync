@@ -6,7 +6,7 @@ Atualizado em: 2026-06-02
 ## 1. Fonte de continuidade
 
 - `.agents/prompts/codex/EXECUTE_PHASE_FROM_HANDOFF.md`
-- `.agents/prompts/codex/SELF_UPDATE_CONTINUITY.md`
+- `.agents/prompts/continuity/UPDATE_FINAL_DE_FASE.md`
 - `docs/review/FASE_6_SANITARIA_STAGING_SYNC_RLS_HANDOFF.md`
 - `docs/context/PROJECT_STATUS.md`
 

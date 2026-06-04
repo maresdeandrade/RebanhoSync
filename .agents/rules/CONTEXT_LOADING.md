@@ -33,6 +33,47 @@ Para execução de comandos, use `.agents/rules/rtk.md`.
 * Patch visual pequeno.
 
 ---
+## Continuidade / Fases
+
+Use quando a tarefa envolver:
+
+- iniciar nova conversa;
+- continuar fase/subfase;
+- fechar fase/subfase;
+- atualizar handoff;
+- revisar coerência entre plano ativo, roadmap e pendências.
+
+### Documentos ativos
+
+Carregar:
+
+- `docs/review/CURRENT_PHASE_HANDOFF.md`
+- `docs/review/ACTIVE_PHASE_PLAN.md`
+- `docs/review/LAST_PHASE_RESULT.md`
+- `docs/review/OPEN_REVIEW_ITEMS.md`
+- `docs/context/PROJECT_STATUS.md`
+- `docs/product/ROADMAP.md`
+
+Se `ACTIVE_PHASE_PLAN.md` apontar para um plano específico da fase atual, carregar também esse plano.
+
+### Prompts de continuidade
+
+Usar:
+
+- `.agents/prompts/continuity/START_NOVA_CONVERSA.md`
+- `.agents/prompts/continuity/UPDATE_FINAL_DE_FASE.md`
+- `.agents/prompts/continuity/UPDATE_CONTEXTO_EM_ANDAMENTO.md`
+- `.agents/prompts/continuity/CHECK_CONTEXT_DRIFT.md`
+
+### Restrições
+
+- Não usar `.agents/prompts/archive/**` como fonte ativa.
+- Não usar `docs/archive/**` como fonte operacional.
+- Não arquivar `docs/review/LAST_PHASE_RESULT.md`.
+- Não transformar roadmap em pendência técnica.
+- Não marcar fase como concluída sem validação correspondente.
+
+---
 
 ## Arquitetura
 

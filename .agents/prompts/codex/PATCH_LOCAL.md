@@ -1,97 +1,140 @@
-```markdown
-# Codex Prompt — Patch Local
+# Codex Prompt — Feature Pequena
 
-Use para correção pequena, localizada e testável.
+Use para implementar uma funcionalidade pequena, delimitada e sem refatoração ampla.
 
-## Tarefa
+## Prompt
 
-Corrija o seguinte problema:
+Você é o arquiteto técnico sênior do RebanhoSync.
+
+Implemente a seguinte funcionalidade:
 
 ```txt
-[DESCREVER_PROBLEMA]
-
+[DESCREVER_FEATURE]
 ```
+
+## Contexto obrigatório
+
+Siga:
+
+- `AGENTS.md`
+- `.agents/rules/CORE_RULES.md`
+- `.agents/rules/CONTEXT_LOADING.md`
+- `.agents/rules/no-broad-context.md`
+- `.agents/rules/rtk.md`
+- `.agents/prompts/reusable/VALIDATION_CHECKLIST.md`
 
 ## Escopo
 
-### Arquivos-alvo prováveis:
+### Escopo permitido
 
-* `[LISTAR_ARQUIVOS]`
+```txt
+[LISTAR_O_QUE_PODE_SER_ALTERADO]
+```
 
-### Escopo permitido:
+### Escopo proibido
 
-* `[O_QUE_PODE_ALTERAR]`
+```txt
+[LISTAR_O_QUE_NAO_PODE_SER_ALTERADO]
+```
 
-### Escopo proibido:
+### Arquivos-alvo prováveis
 
-* Não alterar migrations, seed, RLS, RPCs ou testes fora do escopo.
-* Não refatorar por conveniência.
-* Se encontrar risco fora do escopo, reporte sem corrigir.
-* `[O_QUE_NAO_PODE_ALTERAR]`
+```txt
+[LISTAR_ARQUIVOS_OU_PASTAS]
+```
 
-## Regras Obrigatórias
+## Diagnóstico obrigatório antes do patch
 
-### Diretrizes de Contexto e Arquitetura:
+Antes de alterar arquivos, entregar:
 
-Siga estritamente as diretrizes contidas em:
+1. objetivo funcional;
+2. fonte de verdade envolvida;
+3. fluxo impactado;
+4. arquivos a ler;
+5. arquivos candidatos a alteração;
+6. risco operacional;
+7. risco de regressão;
+8. impacto em offline-first;
+9. impacto em RLS/multi-tenant;
+10. necessidade ou não de schema/RLS/RPC/migration;
+11. plano mínimo de patch;
+12. testes obrigatórios.
 
-* `AGENTS.md`
-* `.agents/rules/CORE_RULES.md`
-* `.agents/rules/CONTEXT_LOADING.md`
-* `.agents/rules/no-broad-context.md`
-* `.agents/rules/rtk.md`
+## Regras
 
-### Instruções de Execução:
+- Patch incremental.
+- Não ampliar escopo.
+- Não refatorar por conveniência.
+- Não criar fonte paralela de verdade.
+- Não colocar regra de negócio crítica em componente React.
+- Não reabrir fase fechada sem evidência objetiva.
+- Não automatizar decisão crítica sem fonte técnica explícita.
+- Se tocar Supabase/RLS/schema/migration/RPC/sync, justificar antes do patch.
+- Preservar Agenda/Eventos/`state_*`/Protocolo separados.
+- Preservar offline-first, idempotência e auditabilidade.
 
-1. Não faça leitura ampla do repositório.
-2. Leia apenas arquivos-alvo, testes relacionados e `AGENTS.md` local, se existir.
-3. Proponha o menor patch possível.
+## Estratégia obrigatória
 
-### Preservação de Domínio:
+1. Identificar a fonte de verdade.
+2. Mapear arquivos afetados.
+3. Propor patch mínimo.
+4. Implementar em etapas pequenas.
+5. Criar ou ajustar testes proporcionais.
+6. Validar impacto em domínio, UI, sync e RLS conforme escopo.
+7. Atualizar documentação apenas se houver novo contrato, nova limitação ou mudança de fase.
 
-* **Resiliência:** *Offline-first*, RLS e *multi-tenant*.
-* **Isolamento:** Segregação estrita por `fazenda_id`.
-* **Agenda:** Mantida estritamente como intenção.
-* **Evento:** Mantido estritamente como fato histórico.
-* **`state_*`:** Representa o estado atual do elemento.
-* **Protocolo:** Tratado como regra ou configuração.
-* **Tags/Sinais/Insights:** Atuam apenas como elementos auxiliares.
+## Validação proporcional
 
-## Validação
-
-Antes de finalizar, verifique o estado do repositório:
+Verificar estado do repositório:
 
 ```bash
 git status --short --untracked-files=all
-
+git diff --name-only
+git diff --stat
+git diff --check
 ```
 
-Execute a validação proporcional:
+Teste relacionado:
 
 ```bash
 rtk pnpm test -- [TESTE_RELACIONADO]
-
 ```
 
-Se a alteração afetar uma entrega ampla, execute o fluxo completo:
+Lint:
 
 ```bash
 rtk pnpm run lint
-rtk pnpm test
-rtk pnpm run build
-
 ```
+
+Se a alteração tocar domínio crítico, fluxo transversal ou build:
+
+```bash
+rtk pnpm run build
+```
+
+Se a alteração tocar Supabase, RLS, RPC, migration ou sync-batch:
+
+```bash
+rtk node scripts/codex/validate-supabase-baseline-functional.mjs
+```
+
+## Critérios de aceite
+
+- funcionalidade implementada dentro do escopo delimitado;
+- sem nova fonte paralela de verdade;
+- sem regressão nos contratos do domínio;
+- comportamento coberto por teste proporcional;
+- validação proporcional executada;
+- riscos/pendências declarados;
+- `git diff --check` passa.
 
 ## Entrega
 
-Responder com a seguinte estrutura de tópicos:
+Responder com:
 
-* **Resumo do problema:** [Descrição sucinta da falha corrigida]
-* **Patch aplicado:** [Bloco de código ou diff do patch]
-* **Arquivos alterados:** [Lista de arquivos modificados]
-* **Validações executadas:** [Resultados dos testes e comandos executados]
-* **Riscos/pendências:** [No máximo 3 pontos identificados]
-
-```
-
-```
+1. **Resumo executivo**
+2. **Arquivos criados/alterados**
+3. **Decisões técnicas**
+4. **Testes/validações**
+5. **Validações não executadas e motivo**
+6. **Riscos/pendências**, no máximo 3

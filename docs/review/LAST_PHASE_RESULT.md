@@ -15,7 +15,7 @@ Fechamento Pós-Fase 6 — Suite Global, Higiene de Testes, Preparação de PR e
 - `docs/review/LAST_PHASE_RESULT.md`
 - `docs/review/OPEN_REVIEW_ITEMS.md`
 - `docs/context/PROJECT_STATUS.md`
-- `.agents/prompts/codex/SELF_UPDATE_CONTINUITY.md`
+- `.agents/prompts/continuity/UPDATE_FINAL_DE_FASE.md`
 
 ---
 
