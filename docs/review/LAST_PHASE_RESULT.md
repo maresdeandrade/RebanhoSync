@@ -6,6 +6,32 @@ Atualizado em: 2026-06-05
 
 ## 0. Resultado mais recente
 
+Fase 11C — Ocupação, lotação e movimentações — concluída localmente.
+
+Resultado da 11C:
+
+- diagnóstico inicial executado antes do patch;
+- patch pequeno/read-only aplicado em `src/features/occupancy/cockpitManejoAdapter.ts`;
+- testes focados atualizados em `src/features/occupancy/__tests__/cockpitManejoAdapter.test.ts`;
+- movimentações apenas de entrada passaram a retornar leitura atual parcial, sem afirmar permanência histórica completa;
+- limitações de permanência por eventos agora declaram que histórico completo exige eventos completos de entrada e saída;
+- UA total do lote passou a explicitar dependência de peso explícito dos animais atuais;
+- nenhum schema, Supabase, RLS, migration, RPC, sync ou edge function foi alterado;
+- nenhum avanço para venda, abate, custo por arroba, DRE, ROI, margem, motor de decisão ou recomendação crítica.
+
+Validação local da 11C:
+
+```txt
+pnpm test -- src/features/occupancy/__tests__/cockpitManejoAdapter.test.ts: passou (1 arquivo, 22 testes).
+git diff --check: passou.
+pnpm run lint: passou.
+pnpm run build: passou com warnings conhecidos de Browserslist/caniuse-lite e chunks grandes.
+```
+
+Próximo foco: Fase 11D — Desempenho read-only se houver fonte suficiente, preparada mas não iniciada.
+
+---
+
 Fase 11B — Ajuste semântico/read-only do cockpit de Lotes/Pastos — concluída localmente.
 
 Resultado da 11B:
@@ -29,7 +55,7 @@ pnpm run lint: passou.
 pnpm run build: passou com warnings conhecidos de Browserslist/caniuse-lite e chunks grandes.
 ```
 
-Próximo foco: Fase 11C — Ocupação, lotação e movimentações, preparada mas não iniciada.
+Próximo foco indicado na 11B: Fase 11C — Ocupação, lotação e movimentações, agora concluída localmente.
 
 ---
 

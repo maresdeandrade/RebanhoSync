@@ -11,7 +11,9 @@ Subfase 11A — Diagnóstico de Lotes, Pastos e Desempenho Operacional Ampliado 
 
 Subfase 11B — Ajuste semântico/read-only do cockpit de Lotes/Pastos — concluída localmente.
 
-Subfase 11C — Ocupação, lotação e movimentações — preparada, não iniciada.
+Subfase 11C — Ocupação, lotação e movimentações — concluída localmente.
+
+Subfase 11D — Desempenho read-only se houver fonte suficiente — preparada, não iniciada.
 
 Plano específico: `docs/review/PLANO_FASE_11.md`.
 
@@ -71,7 +73,17 @@ Fase 11B consolidou patch pequeno/read-only no cockpit de Lotes/Pastos:
 
 Nenhum Supabase, RLS, migration, RPC, edge function, schema ou sync foi alterado na 11B.
 
-Próximo passo mínimo: iniciar 11C por diagnóstico, revisando ocupação, lotação e movimentações com fonte explícita e limitação operacional.
+Fase 11C consolidou patch pequeno/read-only para ocupação, lotação e movimentações:
+
+- movimentações apenas de entrada agora são leitura atual parcial, sem afirmar permanência histórica completa;
+- limitação de permanência por eventos explicita que histórico completo exige eventos completos de entrada e saída;
+- UA total do lote explicita dependência de peso explícito dos animais atuais;
+- testes focados de `src/features/occupancy/__tests__/cockpitManejoAdapter.test.ts` passaram com 22 testes;
+- `git diff --check`, `pnpm run lint` e `pnpm run build` passaram, com warnings conhecidos de Browserslist/chunks no build.
+
+Nenhum Supabase, RLS, migration, RPC, edge function, schema ou sync foi alterado na 11C.
+
+Próximo passo mínimo: iniciar 11D por diagnóstico, avaliando desempenho read-only apenas se houver fonte suficiente.
 
 Fases 1-8 permanecem consolidadas em baseline `3fe7a81`.
 
@@ -257,12 +269,12 @@ Resultado da 9D:
 
 ## 6. Escopo permitido no próximo passo
 
-Permitido para 11C:
+Permitido para 11D:
 
-- diferenciar ocupação atual de histórico de movimentação;
-- deixar claro quando lotação é calculável, parcial ou bloqueada;
-- impedir que movimentações incompletas gerem conclusão de permanência histórica;
-- explicitar limitações quando `area_ha`, peso ou eventos de movimentação estiverem ausentes;
+- avaliar desempenho read-only somente se houver fonte suficiente;
+- manter GMD vinculado a pesagens explícitas e período;
+- não afirmar desempenho de lote/pasto sem permanência comprovada no período;
+- declarar limitações quando a fonte de desempenho for parcial;
 - manter leitura read-only;
 - propor patch pequeno, reversível e testável com testes focados;
 - preservar regras críticas fora da UI;

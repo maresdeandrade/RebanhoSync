@@ -50,16 +50,23 @@ Componentes de tela só devem ser tocados se o texto exibido estiver fora do ada
 
 ### 11C — Ocupação, lotação e movimentações
 
-Status: preparada; não iniciada.
+Status: concluída localmente.
 
 - revisar ocupação atual, lotação e movimentações com fonte declarada;
 - manter `state_*` como estado atual/read model;
 - manter eventos de movimentação como histórico executado;
 - declarar limitação quando área, peso ou histórico estiverem incompletos.
 
+Resultado:
+
+- movimentações apenas de entrada tratadas como leitura atual parcial;
+- permanência histórica completa continua dependente de eventos completos de entrada e saída;
+- UA total do lote explicita dependência de peso explícito dos animais atuais;
+- testes focados atualizados no adapter.
+
 ### 11D — Desempenho read-only se houver fonte suficiente
 
-Status: futura.
+Status: preparada; não iniciada.
 
 - avaliar desempenho apenas como leitura operacional parcial;
 - calcular GMD por período somente com pesagens explícitas e vínculo temporal adequado;

@@ -106,6 +106,7 @@ describe("cockpitManejoAdapter unit tests", () => {
       expect(metrics.uaTotal).toBe(2); // (450 + 450) / 450 = 2 UA
       expect(metrics.lotacaoStatus.status).toBe("partial"); // contains outdated weights
       expect(metrics.lotacaoStatus.limitation).toContain("desatualizados");
+      expect(metrics.lotacaoStatus.limitation).toContain("peso explícito");
     });
 
     it("uses state_pasto_ocupacoes for permanence and prioritises it over movements", () => {
@@ -147,6 +148,8 @@ describe("cockpitManejoAdapter unit tests", () => {
       expect(metrics.tempoMedioPermanencia).toBe(8); // 2026-05-20 to 2026-05-28 = 8 days
       expect(metrics.permanenciaStatus.source).toBe("eventos_movimentacao");
       expect(metrics.permanenciaStatus.reason).toContain("movimentações de entrada");
+      expect(metrics.permanenciaStatus.status).toBe("partial");
+      expect(metrics.permanenciaStatus.limitation).toContain("não afirma permanência histórica completa");
       expect(metrics.permanenciaStatus.limitation).toContain("não substitui auditoria histórica completa");
     });
   });
@@ -219,6 +222,25 @@ describe("cockpitManejoAdapter unit tests", () => {
       expect(metrics.permanenciaStatus.status).toBe("partial");
       expect(metrics.permanenciaStatus.source).toBe("state_pasto_ocupacoes (read model)");
       expect(metrics.permanenciaStatus.limitation).toContain("não é fonte histórica primária completa");
+    });
+
+    it("does not treat entry-only movement as complete historical permanence for pasto", () => {
+      const animals: Animal[] = [
+        { id: "ani-1", status: "ativo", lote_id: "lote-1", identificacao: "A1", sexo: "F", fazenda_id: "faz-1", payload: {} } as any
+      ];
+      const events: Evento[] = [
+        { id: "evt-mov", dominio: "movimentacao", animal_id: "ani-1", occurred_at: "2026-05-20", deleted_at: null } as any
+      ];
+      const movimentacoes: EventoMovimentacao[] = [
+        { evento_id: "evt-mov", to_pasto_id: "pasto-1", to_lote_id: "lote-1" } as any
+      ];
+
+      const metrics = calculatePastoMetrics("pasto-1", refDate, 30, animals, lotes, pastos, events, [], [], movimentacoes, []);
+      expect(metrics.tempoUsoDias).toBe(8);
+      expect(metrics.permanenciaStatus.status).toBe("partial");
+      expect(metrics.permanenciaStatus.source).toBe("eventos_movimentacao");
+      expect(metrics.permanenciaStatus.reason).toContain("movimentações de entrada");
+      expect(metrics.permanenciaStatus.limitation).toContain("não afirma permanência histórica completa");
     });
   });
 

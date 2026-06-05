@@ -1,6 +1,6 @@
 # ACTIVE_PHASE_PLAN - Fase 11
 
-**Status:** 11A concluída documentalmente; 11B concluída localmente; 11C preparada, não iniciada
+**Status:** 11A concluída documentalmente; 11B concluída localmente; 11C concluída localmente; 11D preparada, não iniciada
 **Foco:** Lotes, Pastos e Desempenho Operacional Ampliado
 **Criado:** 2026-06-04
 **Atualizado:** 2026-06-05
@@ -20,8 +20,8 @@ Conduzir a Fase 11 por subfases documentadas em `docs/review/PLANO_FASE_11.md`, 
 
 - 11A — Diagnóstico de Lotes, Pastos e Desempenho Operacional Ampliado: concluída documentalmente, sem patch funcional.
 - 11B — Ajuste semântico/read-only do cockpit de Lotes/Pastos: concluída localmente.
-- 11C — Ocupação, lotação e movimentações: preparada, não iniciada.
-- 11D — Desempenho read-only se houver fonte suficiente: futura.
+- 11C — Ocupação, lotação e movimentações: concluída localmente.
+- 11D — Desempenho read-only se houver fonte suficiente: preparada, não iniciada.
 - 11E — Relatórios operacionais ampliados: futura.
 - 11F — Fechamento: futura.
 
@@ -93,6 +93,20 @@ Diagnóstico mínimo:
 - Impedir afirmação de permanência histórica quando movimentações completas estiverem ausentes.
 - Explicitar limitações quando `area_ha`, peso ou eventos de movimentação estiverem ausentes.
 - Manter patch pequeno, read-only e testável.
+
+Resultado da 11C:
+
+- movimentações apenas de entrada passaram a produzir leitura atual parcial, não permanência histórica completa;
+- limitações de permanência por eventos agora declaram que eventos completos de entrada e saída são necessários para histórico completo;
+- UA total do lote passou a explicitar dependência de peso explícito dos animais atuais;
+- testes focados passaram a cobrir entrada sem histórico completo para lote/pasto e dependência de peso explícito;
+- nenhuma alteração em Supabase, migrations, RLS, RPC, schema, sync ou edge functions.
+
+Próximo recorte — 11D:
+
+- avaliar desempenho read-only somente se houver fonte suficiente;
+- manter GMD vinculado a pesagens explícitas e período;
+- não afirmar desempenho de lote/pasto sem permanência comprovada no período.
 
 ---
 

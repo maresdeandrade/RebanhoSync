@@ -25,6 +25,10 @@ const MOVEMENT_HISTORY_LIMITATION =
   "Baseado em movimentações de entrada registradas para os animais atuais; não substitui auditoria histórica completa de entradas e saídas.";
 const PASTO_STOCKING_RATE_LIMITATION =
   "Taxa UA/ha exige area_ha válida e peso explícito dos animais atuais; dados incompletos tornam a leitura parcial.";
+const LOTE_UA_LIMITATION =
+  "UA total do lote exige peso explícito dos animais atuais; dados ausentes ou desatualizados tornam a leitura parcial.";
+const CURRENT_ENTRY_MOVEMENT_LIMITATION =
+  "Leitura atual baseada em movimentações de entrada; sem eventos completos de entrada e saída, não afirma permanência histórica completa.";
 
 function mergeLimitations(...limitations: Array<string | undefined>): string | undefined {
   return limitations.filter(Boolean).join(" ");
@@ -423,10 +427,13 @@ export function calculateLoteMetrics(
       permanenciaStatus = { status: "empty", reason: "Sem animais ativos no lote", source: "Sem dados" };
     } else if (countWithEntry === activeAnimals.length) {
       permanenciaStatus = {
-        status: "complete",
+        status: "partial",
         reason: "Permanência atual calculada por movimentações de entrada",
         source: "eventos_movimentacao",
-        limitation: MOVEMENT_HISTORY_LIMITATION,
+        limitation: mergeLimitations(
+          CURRENT_ENTRY_MOVEMENT_LIMITATION,
+          MOVEMENT_HISTORY_LIMITATION,
+        ),
       };
     } else if (countWithEntry > 0) {
       permanenciaStatus = {
@@ -538,7 +545,7 @@ export function calculateLoteMetrics(
       status: uaResult.status,
       reason: uaResult.reason,
       source: uaResult.source,
-      limitation: uaResult.limitation,
+      limitation: mergeLimitations(uaResult.limitation, LOTE_UA_LIMITATION),
     },
   };
 }
@@ -871,10 +878,13 @@ export function calculatePastoMetrics(
       };
     } else if (countWithPastoEntry === activeAnimals.length) {
       permanenciaStatus = {
-        status: "complete",
+        status: "partial",
         reason: "Uso atual calculado por movimentações de entrada",
         source: "eventos_movimentacao",
-        limitation: MOVEMENT_HISTORY_LIMITATION,
+        limitation: mergeLimitations(
+          CURRENT_ENTRY_MOVEMENT_LIMITATION,
+          MOVEMENT_HISTORY_LIMITATION,
+        ),
       };
     } else if (countWithPastoEntry > 0) {
       permanenciaStatus = {
