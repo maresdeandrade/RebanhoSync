@@ -5,7 +5,7 @@ Atualizado em: 2026-06-05
 
 ## 1. Fase atual
 
-Fase 11 — Lotes, Pastos e Desempenho Operacional Ampliado — em andamento.
+Fase 11 — Lotes, Pastos e Desempenho Operacional Ampliado — concluída localmente.
 
 Subfase 11A — Diagnóstico de Lotes, Pastos e Desempenho Operacional Ampliado — concluída documentalmente, sem patch funcional.
 
@@ -17,7 +17,7 @@ Subfase 11D — Desempenho read-only se houver fonte suficiente — concluída l
 
 Subfase 11E — Relatórios operacionais ampliados — concluída localmente.
 
-Subfase 11F — Fechamento — preparada, não iniciada.
+Subfase 11F — Fechamento — executada.
 
 Plano específico: `docs/review/PLANO_FASE_11.md`.
 
@@ -108,7 +108,22 @@ Fase 11E consolidou patch pequeno/read-only para relatórios operacionais amplia
 
 Nenhum Supabase, RLS, migration, RPC, edge function, schema ou sync foi alterado na 11E.
 
-Próximo passo mínimo: iniciar 11F por diagnóstico documental, fechando a Fase 11 e preparando a próxima fase sem reabrir 11A-11E.
+Fase 11F fechou documentalmente a Fase 11:
+
+- 11A, 11B, 11C, 11D e 11E preservadas como concluídas;
+- fonte explícita, período e limitação consolidados nas leituras de lote/pasto/desempenho;
+- `state_*` preservado como estado atual/read model;
+- eventos preservados como histórico/fato executado;
+- `state_pasto_ocupacoes` preservado como read model parcial de ocupação atual;
+- GMD preservado como dependente de pesagens explícitas válidas;
+- GMD agregado de lote/pasto permanece parcial sem permanência comprovada no período;
+- UA/ha preservada como dependente de `area_ha` válida e peso explícito;
+- relatórios operacionais ampliados preservam fonte, período e limitação;
+- custo operacional parcial preservado sem DRE, ROI, margem ou custo por arroba.
+
+Nenhum código funcional, Supabase, RLS, migration, RPC, edge function, schema ou sync foi alterado na 11F.
+
+Próximo passo mínimo: iniciar Fase 12 somente por diagnóstico, sem reabrir 11A-11F e sem criar venda/abate automático, custo por arroba, DRE, ROI, margem ou motor de decisão.
 
 Fases 1-8 permanecem consolidadas em baseline `3fe7a81`.
 
@@ -294,12 +309,12 @@ Resultado da 9D:
 
 ## 6. Escopo permitido no próximo passo
 
-Permitido para 11F:
+Permitido para Fase 12, se iniciada por tarefa explícita:
 
-- fechar documentalmente a Fase 11;
-- consolidar entregas, validações e riscos residuais reais;
-- preparar próxima fase sem reabrir subfases concluídas;
-- manter leitura read-only e preservar regras críticas fora da UI;
+- começar por diagnóstico de Compra/Venda Operacional: Hardening e Lacunas;
+- preservar Compra/Venda como registro manual informado pelo usuário;
+- preservar regras críticas fora da UI;
+- não reabrir Fase 11 sem evidência objetiva;
 - não criar custo por arroba, DRE, ROI, margem, motor de decisão ou venda/abate automático.
 
 ---

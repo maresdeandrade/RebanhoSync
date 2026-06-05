@@ -100,12 +100,23 @@ Resultado:
 
 ### 11F — Fechamento
 
-Status: preparada; não iniciada.
+Status: executada.
 
 - consolidar entregas da Fase 11;
 - registrar validações;
 - preservar riscos residuais reais;
 - preparar próxima fase sem reabrir etapas fechadas.
+
+Resultado:
+
+- Fase 11 concluída localmente;
+- 11A consolidou diagnóstico documental sem patch funcional;
+- 11B consolidou semântica/read-only do cockpit de Lotes/Pastos;
+- 11C consolidou ocupação, lotação e movimentações com limitações;
+- 11D consolidou desempenho read-only parcial com fonte suficiente;
+- 11E consolidou relatórios operacionais ampliados com fonte, período e limitação;
+- riscos residuais reais preservados como P2 já conhecidos;
+- próxima fase sugerida: Fase 12 — Compra/Venda Operacional: Hardening e Lacunas, preparada mas não iniciada.
 
 ## Fontes Permitidas por Domínio
 

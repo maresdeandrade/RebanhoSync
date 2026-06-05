@@ -6,6 +6,41 @@ Atualizado em: 2026-06-05
 
 ## 0. Resultado mais recente
 
+Fase 11F — Fechamento documental da Fase 11 — executada.
+
+Resultado da 11F:
+
+- diagnóstico inicial executado antes do patch documental;
+- Fase 11 — Lotes, Pastos e Desempenho Operacional Ampliado — concluída localmente;
+- 11A, 11B, 11C, 11D e 11E preservadas como concluídas;
+- fonte explícita, período e limitação consolidados em leituras de lote/pasto/desempenho;
+- `state_*` preservado como estado atual/read model;
+- eventos preservados como histórico/fato executado;
+- `state_pasto_ocupacoes` preservado como read model parcial de ocupação atual;
+- GMD preservado como dependente de pesagens explícitas válidas;
+- GMD agregado de lote/pasto permanece parcial sem permanência comprovada no período;
+- UA/ha preservada como dependente de `area_ha` válida e peso explícito;
+- relatórios operacionais ampliados preservam fonte, período e limitação;
+- custo operacional parcial preservado sem DRE, ROI, margem ou custo por arroba;
+- nenhum código funcional, schema, Supabase, RLS, migration, RPC, sync ou edge function foi alterado;
+- nenhum avanço para venda, abate, aptidão comercial, carência liberatória, motor de decisão ou recomendação crítica.
+
+Validação local da 11F:
+
+```txt
+git status --short --untracked-files=all: passou; worktree limpo antes do patch.
+git status -sb: main...origin/main [ahead 4].
+git log --oneline -5: HEAD bb2482e e commits 11A-11E confirmados.
+git rev-parse --short HEAD: bb2482e.
+git diff --check: passou antes do patch.
+git diff --check: passou após patch documental.
+git diff -- docs/review docs/context: executado para revisão do patch documental.
+```
+
+Próxima fase sugerida: Fase 12 — Compra/Venda Operacional: Hardening e Lacunas, preparada mas não iniciada.
+
+---
+
 Fase 11E — Relatórios operacionais ampliados — concluída localmente.
 
 Resultado da 11E:
@@ -32,7 +67,7 @@ pnpm run lint: passou.
 pnpm run build: passou com warnings conhecidos de Browserslist/caniuse-lite e chunks grandes.
 ```
 
-Próximo foco: Fase 11F — Fechamento, preparada mas não iniciada.
+Próximo foco indicado na 11E: Fase 11F — Fechamento, agora executada.
 
 ---
 

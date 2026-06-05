@@ -1,6 +1,6 @@
 # ACTIVE_PHASE_PLAN - Fase 11
 
-**Status:** 11A concluída documentalmente; 11B concluída localmente; 11C concluída localmente; 11D concluída localmente; 11E concluída localmente; 11F preparada, não iniciada
+**Status:** Fase 11 concluída localmente; 11A documental; 11B, 11C, 11D, 11E e 11F concluídas localmente
 **Foco:** Lotes, Pastos e Desempenho Operacional Ampliado
 **Criado:** 2026-06-04
 **Atualizado:** 2026-06-05
@@ -23,7 +23,7 @@ Conduzir a Fase 11 por subfases documentadas em `docs/review/PLANO_FASE_11.md`, 
 - 11C — Ocupação, lotação e movimentações: concluída localmente.
 - 11D — Desempenho read-only se houver fonte suficiente: concluída localmente.
 - 11E — Relatórios operacionais ampliados: concluída localmente.
-- 11F — Fechamento: preparada, não iniciada.
+- 11F — Fechamento: executada.
 
 Resultado da 11A:
 
@@ -137,6 +137,25 @@ Próximo recorte — 11F:
 - fechar documentalmente a Fase 11;
 - consolidar validações e riscos residuais reais;
 - preparar próxima fase sem reabrir 11A-11E.
+
+Resultado da 11F:
+
+- Fase 11 fechada documentalmente em `bb2482e`;
+- entregas de 11A, 11B, 11C, 11D e 11E consolidadas nos documentos ativos;
+- fonte explícita, período e limitação preservados em leituras de lote/pasto/desempenho;
+- `state_*` preservado como estado atual/read model;
+- eventos preservados como histórico/fato executado;
+- `state_pasto_ocupacoes` preservado como read model parcial de ocupação atual;
+- GMD preservado como dependente de pesagens explícitas válidas;
+- GMD agregado de lote/pasto permanece parcial sem permanência comprovada no período;
+- UA/ha preservada como dependente de `area_ha` válida e peso explícito;
+- relatórios operacionais ampliados preservam fonte, período e limitação;
+- custo operacional parcial preservado sem DRE, ROI, margem ou custo por arroba;
+- nenhuma alteração em Supabase, migrations, RLS, RPC, schema, sync ou edge functions.
+
+Próxima fase sugerida:
+
+- Fase 12 — Compra/Venda Operacional: Hardening e Lacunas, preparada mas não iniciada.
 
 ---
 

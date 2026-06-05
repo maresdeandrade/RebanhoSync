@@ -15,7 +15,7 @@ Este documento não é changelog detalhado, auditoria histórica ou roadmap comp
 
 RebanhoSync está em beta interno, com MVP operacional.
 
-A fase atual é Fase 11 — Lotes, Pastos e Desempenho Operacional Ampliado, a iniciar.
+A fase 11 — Lotes, Pastos e Desempenho Operacional Ampliado — está concluída localmente.
 
 Último gate validado:
 
@@ -49,6 +49,13 @@ A fase atual é Fase 11 — Lotes, Pastos e Desempenho Operacional Ampliado, a i
 - Fase 10E — Integração via Histórico para Lotes/Pastos, Relatórios e Compra/Venda concluída localmente.
 - Fase 10F — Fechamento da Fase 10 e handoff executada;
 - Fase 10 — UX Operacional dos Fluxos Centrais concluída localmente.
+- Fase 11A — Diagnóstico de Lotes, Pastos e Desempenho Operacional Ampliado concluída documentalmente.
+- Fase 11B — Ajuste semântico/read-only do cockpit de Lotes/Pastos concluída localmente.
+- Fase 11C — Ocupação, lotação e movimentações concluída localmente.
+- Fase 11D — Desempenho read-only se houver fonte suficiente concluída localmente.
+- Fase 11E — Relatórios operacionais ampliados concluída localmente.
+- Fase 11F — Fechamento documental executada.
+- Fase 11 — Lotes, Pastos e Desempenho Operacional Ampliado concluída localmente.
 
 Último avanço local da Fase 10:
 
@@ -73,13 +80,25 @@ A fase atual é Fase 11 — Lotes, Pastos e Desempenho Operacional Ampliado, a i
 - nenhum cálculo de relatório/insight/classificação foi alterado;
 - nenhuma alteração em Supabase/RLS/migrations/RPC/sync.
 
-Próximo foco:
+Último avanço local da Fase 11:
 
-- Fase 11 — Lotes, Pastos e Desempenho Operacional Ampliado;
-- começar por diagnóstico, não patch direto;
-- GMD por período somente com fonte explícita;
-- movimentações e ocupação como eventos/read models;
-- não criar custo por arroba, DRE, ROI, margem, motor de decisão, venda/abate automático ou regra crítica nova.
+- leituras de lote/pasto/desempenho preservam fonte explícita, período e limitação;
+- `state_*` permanece estado atual/read model;
+- eventos permanecem histórico/fato executado;
+- `state_pasto_ocupacoes` permanece read model parcial de ocupação atual;
+- GMD depende de pesagens explícitas válidas;
+- GMD agregado de lote/pasto permanece parcial sem permanência comprovada no período;
+- UA/ha depende de `area_ha` válida e peso explícito;
+- relatórios operacionais ampliados declaram fonte, período e limitação;
+- custo operacional parcial não é DRE, ROI, margem ou custo por arroba;
+- nenhuma alteração em Supabase/RLS/migrations/RPC/schema/sync/edge functions.
+
+Próximo foco sugerido:
+
+- Fase 12 — Compra/Venda Operacional: Hardening e Lacunas;
+- iniciar somente por diagnóstico;
+- preservar Compra/Venda como registro manual informado pelo usuário;
+- não criar venda/abate automático, aptidão comercial, carência liberatória, custo por arroba, DRE, ROI, margem ou motor de decisão.
 
 Realidade validada para o roadmap pós-Fase 9:
 
@@ -95,7 +114,7 @@ Realidade validada para o roadmap pós-Fase 9:
 Sequência corrigida pós-Fase 9:
 
 1. Fase 10 — UX Operacional dos Fluxos Centrais: concluída localmente.
-2. Fase 11 — Lotes, Pastos e Desempenho Operacional Ampliado: a iniciar.
+2. Fase 11 — Lotes, Pastos e Desempenho Operacional Ampliado: concluída localmente.
 3. Fase 12 — Compra/Venda Operacional: Hardening e Lacunas.
 4. Fase 13 — Relatórios/KPIs Operacionais Read-only Ampliados.
 5. Fase 14 — Financeiro Gerencial Explícito.
