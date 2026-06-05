@@ -26,14 +26,50 @@ Não deve substituir issues, tarefas técnicas ou prompts de implementação.
 
 ---
 
-## Fase atual — Fase 10 (UX Operacional dos Fluxos Centrais)
+## Fase atual — Fase 11 (Lotes, Pastos e Desempenho Operacional Ampliado)
 
 Status: **a iniciar**
-Fase anterior: **Fase 9 — Gate Pós-MVP Comercial/Patrimonial/Classificação/Custo — concluída localmente**
+Fase anterior: **Fase 10 — UX Operacional dos Fluxos Centrais — concluída localmente**
 
 ### Conduta inicial
 
-A Fase 10 deve começar por diagnóstico UX/produto dos fluxos centrais, sem patch direto, sem regra crítica nova e sem antecipar motor comercial/financeiro.
+A Fase 11 deve começar por diagnóstico de lote, pasto, ocupação e desempenho operacional ampliado, sem patch direto, sem regra crítica nova, sem custo por arroba, sem DRE/ROI/margem e sem venda/abate automático.
+
+### Escopo inicial sugerido
+
+- diagnóstico de lote/pasto/desempenho;
+- GMD por período somente com fonte explícita;
+- movimentações e ocupação como eventos/read models;
+- relatórios e leituras read-only com limitações explícitas;
+- sem motor de decisão ou autorização comercial.
+
+---
+
+## Fase 10 — concluída localmente
+
+### Status das subfases
+
+- 10A — Diagnóstico UX e mapa de fricção: concluída.
+- 10B — Agenda/Registrar: concluída localmente.
+- 10C — Home/Central Operacional: concluída localmente.
+- 10D — Animal, Eventos e Histórico: concluída localmente.
+- 10E — Integração via Histórico para Lotes/Pastos, Relatórios e Compra/Venda: concluída localmente.
+- 10F — Fechamento da Fase 10 e handoff: executada.
+
+### Resultado
+
+A Fase 10 fechou a UX operacional dos fluxos centrais sem criar regra crítica nova:
+
+- Agenda ficou mais clara como intenção/tarefa futura;
+- Registrar ficou mais claro como execução real;
+- Home/Central Operacional ficou mais clara como painel de ação/leitura;
+- Animal diferencia estado atual de histórico;
+- Eventos são apresentados como histórico executado;
+- histórico virou eixo de rastreabilidade;
+- Lotes/Pastos diferenciam estado atual de movimentações executadas;
+- Relatórios aparecem como leitura derivada/parcial;
+- Compra/Venda aparece como registro manual, não recomendação;
+- nenhum fluxo virou autorização crítica.
 
 ---
 
@@ -104,17 +140,16 @@ Status real usa apenas: `CONCLUÍDA`, `PARCIAL`, `HARDENING_RESIDUAL`, `A_INICIA
 
 ---
 
-## Sequência prevista a partir da Fase 10
+## Sequência prevista a partir da Fase 11
 
-1. Fase 10 — UX Operacional dos Fluxos Centrais.
-2. Fase 11 — Lotes, Pastos e Desempenho Operacional Ampliado.
-3. Fase 12 — Compra/Venda Operacional: Hardening e Lacunas.
-4. Fase 13 — Relatórios/KPIs Operacionais Read-only Ampliados.
-5. Fase 14 — Financeiro Gerencial Explícito.
-6. Fase 15 — Motor de Decisão Assistida.
-7. Fase 16 — Beta Externo / SLC / Hardening de Produto.
+1. Fase 11 — Lotes, Pastos e Desempenho Operacional Ampliado.
+2. Fase 12 — Compra/Venda Operacional: Hardening e Lacunas.
+3. Fase 13 — Relatórios/KPIs Operacionais Read-only Ampliados.
+4. Fase 14 — Financeiro Gerencial Explícito.
+5. Fase 15 — Motor de Decisão Assistida.
+6. Fase 16 — Beta Externo / SLC / Hardening de Produto.
 
-Fase 10 é a próxima fase definida pelo fechamento da 9D.
+Fase 11 é a próxima fase definida pelo fechamento local da Fase 10.
 
 ---
 

@@ -1,8 +1,8 @@
 # Last Phase Result — RebanhoSync
 
 Atualizado em: 2026-06-04
-**Baseline Commit documental anterior:** `84383ab`
-**Commit local observado no início da 10E:** `82b68b2`
+**Baseline Commit documental anterior:** `82b68b2`
+**Commit local observado no início da 10F:** `0f2fd8e`
 
 ## 0. Resultado mais recente
 
@@ -15,6 +15,35 @@ Fase 10C — Home/Central Operacional — concluída localmente.
 Fase 10D — Animal, Eventos e Histórico — concluída localmente.
 
 Fase 10E — Integração via Histórico para Lotes/Pastos, Relatórios e Compra/Venda — concluída localmente.
+
+Fase 10F — Fechamento da Fase 10 e handoff — executada.
+
+Fase 10 — UX Operacional dos Fluxos Centrais — concluída localmente.
+
+Fechamento da 10F:
+
+- 10A preservada como concluída;
+- 10B preservada como concluída localmente;
+- 10C preservada como concluída localmente;
+- 10D preservada como concluída localmente;
+- 10E preservada como concluída localmente;
+- ausência de P0/P1 aberta em `docs/review/OPEN_REVIEW_ITEMS.md` confirmada;
+- riscos residuais P2 preservados;
+- Fase 11 definida como próxima fase.
+
+Validação local da 10F:
+
+```txt
+git status --short --untracked-files=all: passou antes do patch; worktree limpo.
+git diff --check: passou antes do patch.
+git rev-parse --short HEAD: 0f2fd8e.
+```
+
+Como a 10F é documental, não foi rodada suite completa.
+
+Próxima fase: Fase 11 — Lotes, Pastos e Desempenho Operacional Ampliado.
+
+---
 
 Patch aplicado na 10E:
 
@@ -47,7 +76,7 @@ pnpm run lint: passou
 pnpm run build: passou com warnings conhecidos de Browserslist/caniuse-lite e chunks grandes
 ```
 
-Próximo foco sugerido: Fase 10F — Fechamento da Fase 10 e handoff.
+Próximo foco sugerido na 10E era Fase 10F — executada nesta etapa.
 
 ---
 
@@ -130,7 +159,7 @@ Próximo foco sugerido: Fase 10D — Animal, Eventos e Histórico.
 
 Fase 10 — UX Operacional dos Fluxos Centrais.
 
-Subfase mais recente: 10E — Integração via Histórico para Lotes/Pastos, Relatórios e Compra/Venda.
+Subfase mais recente: 10F — Fechamento da Fase 10 e handoff.
 
 ---
 
@@ -254,9 +283,9 @@ Não houve avanço para:
 
 ## 8. Próxima fase
 
-Próxima fase definida: Fase 10 — UX Operacional dos Fluxos Centrais.
+Próxima fase definida: Fase 11 — Lotes, Pastos e Desempenho Operacional Ampliado.
 
-A Fase 10 deve iniciar por diagnóstico UX/produto, sem patch direto e sem regra crítica nova.
+A Fase 11 deve iniciar por diagnóstico, sem patch direto e sem regra crítica nova. GMD por período exige fonte explícita; movimentações e ocupação devem permanecer como eventos/read models; custo por arroba, DRE, ROI, margem, motor de decisão e venda/abate automático permanecem fora do escopo inicial.
 
 ---
 
@@ -268,5 +297,12 @@ Fase 9B: concluída localmente.
 Fase 9C: concluída localmente.
 Fase 9D: executada.
 Fase 9 completa: concluída localmente.
-Próxima fase: Fase 10 — UX Operacional dos Fluxos Centrais.
+Fase 10A: concluída.
+Fase 10B: concluída localmente.
+Fase 10C: concluída localmente.
+Fase 10D: concluída localmente.
+Fase 10E: concluída localmente.
+Fase 10F: executada.
+Fase 10 completa: concluída localmente.
+Próxima fase: Fase 11 — Lotes, Pastos e Desempenho Operacional Ampliado.
 ```

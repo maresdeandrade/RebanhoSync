@@ -1,11 +1,11 @@
 # Current Phase Handoff — RebanhoSync
 
 Atualizado em: 2026-06-04
-**Baseline Commit:** `82b68b2`
+**Baseline Commit:** `0f2fd8e`
 
 ## 1. Fase atual
 
-Fase 10 — UX Operacional dos Fluxos Centrais — em andamento.
+Fase 10 — UX Operacional dos Fluxos Centrais — concluída localmente.
 
 Subfase 10A — Diagnóstico UX e mapa de fricção — concluída sem patch.
 
@@ -17,7 +17,9 @@ Subfase 10D — Animal, Eventos e Histórico — concluída localmente.
 
 Subfase 10E — Integração via Histórico para Lotes/Pastos, Relatórios e Compra/Venda — concluída localmente.
 
-Próximo foco sugerido: Fase 10F — Fechamento da Fase 10 e handoff.
+Subfase 10F — Fechamento da Fase 10 e handoff — executada.
+
+Próxima fase: Fase 11 — Lotes, Pastos e Desempenho Operacional Ampliado.
 
 ---
 
@@ -79,6 +81,16 @@ Fase 10E aplicou patch UX mínimo em Lotes/Pastos, Relatórios e Compra/Venda:
 - testes focados de LoteDetalhe, PastosP2, Relatorios e RegistrarComercialSection passaram.
 
 Nenhuma regra crítica nova, cálculo de relatório/insight/classificação, Supabase, RLS, migration, RPC, edge function, schema ou sync foi alterado.
+
+Fase 10F fechou documentalmente a Fase 10:
+
+- 10A, 10B, 10C, 10D e 10E preservadas como concluídas;
+- ausência de P0/P1 aberta em `docs/review/OPEN_REVIEW_ITEMS.md` confirmada;
+- riscos residuais P2 preservados;
+- Fase 10 marcada como concluída localmente;
+- Fase 11 nomeada como próxima fase.
+
+Nenhum código, teste, Supabase, RLS, migration, RPC, edge function, schema ou sync foi alterado na 10F.
 
 Fase 9A consolidou o inventário operacional no escopo técnico autorizado:
 
@@ -197,12 +209,13 @@ Resultado da 9D:
 
 ## 6. Escopo permitido no próximo passo
 
-Permitido para início da Fase 10:
+Permitido para início da Fase 11:
 
-- diagnosticar UX/produto dos fluxos centrais;
-- revisar telas, rotas e jornadas afetadas com evidência local;
+- diagnosticar lote, pasto, ocupação e desempenho operacional ampliado;
+- revisar fontes explícitas para movimentações, ocupação, GMD por período e read models;
 - propor patch pequeno, reversível e testável;
 - preservar regras críticas fora da UI;
+- não criar custo por arroba, DRE, ROI, margem, motor de decisão ou venda/abate automático;
 - não iniciar por patch direto.
 
 ---
@@ -221,16 +234,18 @@ Não fazer sem tarefa explícita:
 
 ---
 
-## 8. Áreas candidatas para Fase 10
+## 8. Áreas candidatas para Fase 11
 
-Áreas candidatas para diagnóstico inicial devem ser definidas conforme o fluxo UX escolhido. Começar por documentos de UX e pela tela/rota afetada:
+Áreas candidatas para diagnóstico inicial devem ser definidas conforme o recorte de Lotes/Pastos/Desempenho. Começar por documentação ativa e arquivos diretamente relacionados:
 
 ```txt
-docs/ux/UX_PRINCIPLES.md
-docs/ux/SCREEN_PATTERNS.md
-docs/ux/VISUAL_TOKENS.md
-src/pages
-src/components
+docs/domain/LOTES_PASTOS.md
+docs/context/PROJECT_STATUS.md
+src/pages/Lotes.tsx
+src/pages/Pastos.tsx
+src/pages/LoteDetalhe.tsx
+src/pages/PastoDetalhe.tsx
+src/features/occupancy
 ```
 
 Áreas protegidas:

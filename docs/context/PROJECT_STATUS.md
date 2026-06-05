@@ -1,7 +1,7 @@
 ﻿# Project Status — RebanhoSync
 
 Atualizado em: 2026-06-04
-**Baseline Commit:** `82b68b2`
+**Baseline Commit:** `0f2fd8e`
 
 ## Objetivo
 
@@ -15,7 +15,7 @@ Este documento não é changelog detalhado, auditoria histórica ou roadmap comp
 
 RebanhoSync está em beta interno, com MVP operacional.
 
-A fase atual é Fase 10 — UX Operacional dos Fluxos Centrais, em andamento.
+A fase atual é Fase 11 — Lotes, Pastos e Desempenho Operacional Ampliado, a iniciar.
 
 Último gate validado:
 
@@ -47,6 +47,8 @@ A fase atual é Fase 10 — UX Operacional dos Fluxos Centrais, em andamento.
 - Fase 10C — Home/Central Operacional concluída localmente.
 - Fase 10D — Animal, Eventos e Histórico concluída localmente.
 - Fase 10E — Integração via Histórico para Lotes/Pastos, Relatórios e Compra/Venda concluída localmente.
+- Fase 10F — Fechamento da Fase 10 e handoff executada;
+- Fase 10 — UX Operacional dos Fluxos Centrais concluída localmente.
 
 Último avanço local da Fase 10:
 
@@ -73,9 +75,11 @@ A fase atual é Fase 10 — UX Operacional dos Fluxos Centrais, em andamento.
 
 Próximo foco:
 
-- Fase 10F — Fechamento da Fase 10 e handoff;
-- preservar separação entre pendência, execução, histórico e estado atual;
-- não criar regra crítica nova, autorização automática ou motor comercial/financeiro.
+- Fase 11 — Lotes, Pastos e Desempenho Operacional Ampliado;
+- começar por diagnóstico, não patch direto;
+- GMD por período somente com fonte explícita;
+- movimentações e ocupação como eventos/read models;
+- não criar custo por arroba, DRE, ROI, margem, motor de decisão, venda/abate automático ou regra crítica nova.
 
 Realidade validada para o roadmap pós-Fase 9:
 
@@ -90,8 +94,8 @@ Realidade validada para o roadmap pós-Fase 9:
 
 Sequência corrigida pós-Fase 9:
 
-1. Fase 10 — UX Operacional dos Fluxos Centrais.
-2. Fase 11 — Lotes, Pastos e Desempenho Operacional Ampliado.
+1. Fase 10 — UX Operacional dos Fluxos Centrais: concluída localmente.
+2. Fase 11 — Lotes, Pastos e Desempenho Operacional Ampliado: a iniciar.
 3. Fase 12 — Compra/Venda Operacional: Hardening e Lacunas.
 4. Fase 13 — Relatórios/KPIs Operacionais Read-only Ampliados.
 5. Fase 14 — Financeiro Gerencial Explícito.
