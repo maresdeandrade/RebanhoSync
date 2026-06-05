@@ -96,8 +96,15 @@ describe("OperationalInsightsPanel", () => {
     expect(screen.getByText("vaca: 1")).toBeInTheDocument();
     expect(screen.getByText("sanitario: 1")).toBeInTheDocument();
     expect(screen.getByText("agenda:atrasada")).toBeInTheDocument();
-    expect(screen.getByText("Sinais auxiliares; nao persistem tags."))
+    expect(
+      screen.getByText(
+        "Sinais auxiliares; nao persistem tags nem autorizam acao operacional.",
+      ),
+    )
       .toBeInTheDocument();
+    expect(
+      screen.getByText(/nao autorizam venda, abate, carencia ou baixa automatica/i),
+    ).toBeInTheDocument();
     expect(screen.getAllByText(/Fonte: state_agenda_itens/i).length)
       .toBeGreaterThan(0);
     expectReadOnly(container);

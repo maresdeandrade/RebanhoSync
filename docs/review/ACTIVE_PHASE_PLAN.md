@@ -31,7 +31,8 @@ Status local:
 
 - 10A — Diagnóstico UX e mapa de fricção: concluída sem patch.
 - 10B — Agenda/Registrar: clareza de intenção futura vs execução real: concluída localmente.
-- Próximo foco provável: 10C — Home/Central Operacional.
+- 10C — Home/Central Operacional: concluída localmente.
+- Próximo foco sugerido: 10D — Animal, Eventos e Histórico.
 
 Resultado da 10B:
 
@@ -42,6 +43,17 @@ Resultado da 10B:
 - teste focado de Agenda atualizado.
 
 Não houve alteração em regra de negócio, Supabase, migrations, RLS, RPC, edge functions, schema ou sync.
+
+Resultado da 10C:
+
+- CTA principal da Home: `Registrar execucao`;
+- descrição da Home reforça agenda como pendência e Registrar como execução real;
+- atalhos de Home passaram a explicitar registro de evento executado;
+- copy reforça que atalhos e sinais não autorizam venda, abate ou carência;
+- painel da Central explicita estados completo/parcial/vazio/bloqueado;
+- sinais auxiliares seguem read-only, sem persistência de tags e sem autorização operacional;
+- nenhum cálculo de insight, relatório ou regra crítica foi alterado;
+- nenhuma alteração em Supabase, RLS, migrations, RPC, edge functions, schema ou sync.
 
 ---
 

@@ -44,19 +44,23 @@ A fase atual é Fase 10 — UX Operacional dos Fluxos Centrais, em andamento.
 - Fase 9 concluída localmente;
 - Fase 10A — Diagnóstico UX e mapa de fricção concluída sem patch;
 - Fase 10B — Agenda/Registrar: clareza de intenção futura vs execução real concluída localmente.
+- Fase 10C — Home/Central Operacional concluída localmente.
 
 Último avanço local da Fase 10:
 
-- Agenda usa `Registrar execução` no CTA global e no estado vazio;
-- ação direta de item de agenda usa `Fechar pendência`;
-- hints deixam explícito que Registrar grava execução real e que fechar pendência apenas encerra tarefa futura;
-- teste focado de Agenda passou;
+- Home usa `Registrar execucao` como CTA principal;
+- Home reforça que agenda é pendência e Registrar grava execução real;
+- atalhos da Home indicam registro de evento executado, sem autorizar venda, abate ou carência;
+- painel da Central explicita estados completo, parcial, vazio e bloqueado;
+- sinais auxiliares seguem leitura read-only, sem persistir tags e sem autorização operacional;
+- testes focados de Home e OperationalInsights passaram;
 - nenhuma regra crítica nova foi criada;
+- nenhum cálculo de insight/relatório foi alterado;
 - nenhuma alteração em Supabase/RLS/migrations/RPC/sync.
 
 Próximo foco:
 
-- Fase 10C — Home/Central Operacional;
+- Fase 10D — Animal, Eventos e Histórico;
 - preservar separação entre pendência, execução, histórico e estado atual;
 - não criar regra crítica nova, autorização automática ou motor comercial/financeiro.
 

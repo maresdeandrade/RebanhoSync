@@ -269,7 +269,7 @@ describe("Home", () => {
     renderHome();
 
     expect(
-      screen.getAllByRole("link", { name: /registrar manejo/i })[0],
+      screen.getAllByRole("link", { name: /registrar execucao/i })[0],
     ).toHaveAttribute("href", "/registrar");
     expect(
       screen.getByRole("link", { name: /ver agenda completa/i }),
@@ -278,6 +278,12 @@ describe("Home", () => {
       "href",
       "/animais",
     );
+    expect(
+      screen.getByText(/criam evento executado; nao autorizam venda, abate ou carencia/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /registrar venda/i }),
+    ).toHaveAttribute("href", "/registrar?quick=venda");
   });
 
   it("links sanitary operational classes to the filtered agenda", () => {
@@ -383,4 +389,3 @@ describe("Home", () => {
     ).not.toBeInTheDocument();
   });
 });
-

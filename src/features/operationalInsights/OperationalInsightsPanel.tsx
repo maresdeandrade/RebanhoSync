@@ -395,7 +395,7 @@ function SignalsCard({ viewModel }: { viewModel: OperationalInsightsViewModel })
       </CardHeader>
       <CardContent className="space-y-3 px-4 pb-4 sm:px-4 sm:pb-4">
         <p className="text-xs text-muted-foreground">
-          Sinais auxiliares; nao persistem tags.
+          Sinais auxiliares; nao persistem tags nem autorizam acao operacional.
         </p>
         {tagSignals.signals.length === 0 ? (
           <div className="rounded-md border border-dashed border-border/70 p-3 text-sm text-muted-foreground">
@@ -430,6 +430,10 @@ export function OperationalInsightsPanel({
           <h2 className="text-xl font-semibold tracking-normal">
             Leitura passiva da operação
           </h2>
+          <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
+            Cards mostram dado completo, parcial, vazio ou bloqueado; sinais sao
+            auxiliares e nao autorizam venda, abate, carencia ou baixa automatica.
+          </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <StatusBadge tone="neutral">Referencia {viewModel.referenceDate}</StatusBadge>

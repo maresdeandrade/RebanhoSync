@@ -10,7 +10,19 @@ Fase 10A — Diagnóstico UX e mapa de fricção — concluída sem patch.
 
 Fase 10B — Agenda/Registrar: clareza de intenção futura vs execução real — concluída localmente.
 
-Patch aplicado:
+Fase 10C — Home/Central Operacional — concluída localmente.
+
+Patch aplicado na 10C:
+
+- CTA principal da Home passou para `Registrar execucao`;
+- introdução da Home reforça pendência de agenda, execução real no Registrar, histórico/estado atual/sinais como leitura;
+- `Acoes rapidas` passou para `Atalhos de registro`, com copy explícita de que cria evento executado e não autoriza venda, abate ou carência;
+- atalhos de Home passaram a usar labels `Registrar ...`;
+- link regulatório/comercial deixou de sugerir revisão de venda/trânsito e passou a `Revisar registros comerciais`;
+- painel da Central reforça estados `completo`, `parcial`, `vazio` e `bloqueado`;
+- sinais auxiliares deixam explícito que não persistem tags nem autorizam ação operacional.
+
+Patch aplicado na 10B:
 
 - CTA global da Agenda passou de `Registrar` para `Registrar execução`;
 - estado vazio da Agenda passou de `Registrar` para `Registrar execução`;
@@ -24,15 +36,19 @@ Restrições preservadas:
 - Registrar continua sendo fluxo de execução real;
 - Evento continua sendo fato histórico executado;
 - nenhuma regra crítica nova foi criada;
+- nenhum cálculo de insight/relatório foi alterado;
 - nenhuma alteração em Supabase, RLS, migrations, RPC, edge functions, schema ou sync.
 
-Validação local da 10B:
+Validação local da 10C:
 
 ```txt
-pnpm test -- src/pages/Agenda: passou (8 arquivos, 46 testes)
+pnpm test -- src/pages/__tests__/Home.test.tsx: passou (1 arquivo, 7 testes)
+pnpm test -- src/features/operationalInsights: passou (3 arquivos, 18 testes)
+pnpm run lint: passou
+pnpm run build: passou com warnings conhecidos de Browserslist/chunks
 ```
 
-Próximo foco provável: Fase 10C — Home/Central Operacional.
+Próximo foco sugerido: Fase 10D — Animal, Eventos e Histórico.
 
 ---
 
@@ -40,7 +56,7 @@ Próximo foco provável: Fase 10C — Home/Central Operacional.
 
 Fase 10 — UX Operacional dos Fluxos Centrais.
 
-Subfase mais recente: 10B — Agenda/Registrar: clareza de intenção futura vs execução real.
+Subfase mais recente: 10C — Home/Central Operacional.
 
 ---
 

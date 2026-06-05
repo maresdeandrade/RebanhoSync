@@ -549,7 +549,7 @@ const Home = () => {
       <PageIntro
         variant="plain"
         title="Central Operacional"
-        description="O que precisa ser feito, o que ja aconteceu e o estado atual do rebanho."
+        description="Priorize pendencias de agenda; registre execucao real no Registrar. Historico, estado atual e sinais aparecem como leitura."
         meta={
           <>
             <StatusBadge tone="neutral">{farmSubtitle}</StatusBadge>
@@ -606,7 +606,7 @@ const Home = () => {
             <Button asChild>
               <Link to="/registrar">
                 <PlusCircle className="h-4 w-4" />
-                Registrar manejo
+                Registrar execucao
               </Link>
             </Button>
             <Button asChild variant="outline">
@@ -712,19 +712,19 @@ const Home = () => {
       <Card>
         <CardHeader>
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <CardTitle>Acoes rapidas</CardTitle>
+            <CardTitle>Atalhos de registro</CardTitle>
             <span className="text-sm text-muted-foreground">
-              Salvo neste aparelho · sincroniza depois
+              Criam evento executado; nao autorizam venda, abate ou carencia
             </span>
           </div>
         </CardHeader>
         <CardContent className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
           {[
-            ["Vacinacao", "/registrar?dominio=sanitario"],
-            ["Pesagem", "/registrar?dominio=pesagem"],
-            ["Movimentacao", "/registrar?dominio=movimentacao"],
-            ["Compra", "/registrar?quick=compra"],
-            ["Venda", "/registrar?quick=venda"],
+            ["Registrar vacinacao", "/registrar?dominio=sanitario"],
+            ["Registrar pesagem", "/registrar?dominio=pesagem"],
+            ["Registrar movimentacao", "/registrar?dominio=movimentacao"],
+            ["Registrar compra", "/registrar?quick=compra"],
+            ["Registrar venda", "/registrar?quick=venda"],
           ].map(([label, href]) => (
             <Button
               key={label}
@@ -1083,7 +1083,7 @@ const Home = () => {
                 </Link>
               </Button>
               <Button asChild variant="ghost" size="sm">
-                <Link to="/financeiro">Revisar vendas e transito</Link>
+                <Link to="/financeiro">Revisar registros comerciais</Link>
               </Button>
             </div>
           </CardContent>
@@ -1246,6 +1246,5 @@ const Home = () => {
 };
 
 export default Home;
-
 
 

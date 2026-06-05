@@ -11,7 +11,9 @@ Subfase 10A — Diagnóstico UX e mapa de fricção — concluída sem patch.
 
 Subfase 10B — Agenda/Registrar: clareza de intenção futura vs execução real — concluída localmente.
 
-Próximo foco provável: Fase 10C — Home/Central Operacional.
+Subfase 10C — Home/Central Operacional — concluída localmente.
+
+Próximo foco sugerido: Fase 10D — Animal, Eventos e Histórico.
 
 ---
 
@@ -36,6 +38,16 @@ Fase 10B aplicou patch UX mínimo em Agenda:
 - `Concluir` virou `Fechar pendência` para ação direta de item;
 - hints reforçam que Registrar grava execução real e que fechar pendência encerra apenas tarefa futura;
 - teste de renderização/UX atualizado em `src/pages/Agenda/__tests__/AgendaMacroPanels.test.tsx`.
+
+Fase 10C aplicou patch UX mínimo em Home/Central Operacional:
+
+- Home reforça que pendências vêm da agenda e execução real deve ser registrada no Registrar;
+- CTA principal passou para `Registrar execucao`;
+- atalhos foram renomeados como registros de evento executado;
+- copy deixa explícito que atalhos/sinais não autorizam venda, abate ou carência;
+- painel de insights reforça estados de dado completo, parcial, vazio e bloqueado;
+- sinais auxiliares permanecem leitura, sem persistir tags e sem autorizar ação operacional;
+- testes focados de Home e OperationalInsights passaram.
 
 Nenhuma regra de negócio, Supabase, RLS, migration, RPC, edge function, schema ou sync foi alterado.
 
