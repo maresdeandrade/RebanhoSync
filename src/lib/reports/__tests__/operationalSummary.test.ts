@@ -23,6 +23,7 @@ import type {
 import {
   buildOperationalSummary,
   buildOperationalSummaryCsv,
+  buildOperationalSummaryPrintHtml,
   resolveReportRange,
 } from "../operationalSummary";
 
@@ -1169,8 +1170,19 @@ describe("buildOperationalSummaryCsv", () => {
     expect(csv).toContain("meta;fazenda;Fazenda Teste");
     expect(csv).toContain("resumo;animais_ativos;0");
     expect(csv).toContain("financeiro;saldo;0.00");
+    expect(csv).toContain("meta_fonte;fonte;Historico: event_eventos + detail tables no periodo selecionado.");
+    expect(csv).toContain("meta_fonte;fonte;Estado atual: state_* como read model atual, sem historico completo.");
+    expect(csv).toContain("meta_fonte;fonte;Agenda: pendencia/intencao futura, nao fato executado.");
+    expect(csv).toContain("meta_limitacao;limitacao;Custo operacional parcial nao e DRE, ROI, margem ou custo por arroba.");
+    expect(csv).toContain("nao afirmam GMD ou desempenho de lote/pasto sem permanencia comprovada");
     expect(csv).toContain("conformidade_subarea");
     expect(csv).toContain("conformidade_impacto");
     expect(csv).not.toContain("undefined");
+
+    const html = buildOperationalSummaryPrintHtml(report, "Fazenda Teste");
+    expect(html).toContain("Fontes e limitacoes");
+    expect(html).toContain("Agenda: pendencia/intencao futura, nao fato executado.");
+    expect(html).toContain("Custo operacional parcial nao e DRE, ROI, margem ou custo por arroba.");
+    expect(html).toContain("nao afirmam GMD ou desempenho de lote/pasto sem permanencia comprovada");
   });
 });

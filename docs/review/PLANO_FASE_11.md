@@ -66,23 +66,41 @@ Resultado:
 
 ### 11D — Desempenho read-only se houver fonte suficiente
 
-Status: preparada; não iniciada.
+Status: concluída localmente.
 
 - avaliar desempenho apenas como leitura operacional parcial;
 - calcular GMD por período somente com pesagens explícitas e vínculo temporal adequado;
 - não afirmar desempenho de lote/pasto sem permanência suficiente no período.
 
+Resultado:
+
+- GMD de lote/pasto segue calculável apenas com pesagens explícitas válidas e intervalo em dias distintos;
+- quando todos os animais atuais têm GMD individual, o status agregado de lote/pasto permanece parcial se a permanência no período não estiver comprovada;
+- a limitação exibida declara que a leitura usa animais atuais e não comprova desempenho histórico completo nem permanência no período;
+- testes focados cobrem o comportamento para lote e pasto;
+- nenhuma recomendação, decisão, venda, abate, custo por arroba, DRE, ROI, margem, schema, Supabase, RLS, migration, RPC, sync ou edge function foi criada ou alterada.
+
 ### 11E — Relatórios operacionais ampliados
 
-Status: futura.
+Status: concluída localmente.
 
 - ampliar relatórios read-only com fonte, período e limitação;
 - preservar custo parcial, saldo e leituras financeiras como parciais quando aplicável;
 - não criar DRE, ROI, margem ou custo por arroba.
 
+Resultado:
+
+- tela de relatórios reforça fontes e limitações de leitura operacional;
+- CSV e impressão incluem metadados de fonte e limitação;
+- `state_*` permanece estado atual/read model, sem histórico completo;
+- agenda permanece pendência/intenção futura, não fato executado;
+- pesagens são apresentadas como peso médio/última pesagem no período, sem afirmar GMD ou desempenho de lote/pasto sem permanência comprovada;
+- custo operacional parcial segue separado de DRE, ROI, margem e custo por arroba;
+- testes focados atualizados em relatório e tela.
+
 ### 11F — Fechamento
 
-Status: futura.
+Status: preparada; não iniciada.
 
 - consolidar entregas da Fase 11;
 - registrar validações;

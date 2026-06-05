@@ -253,8 +253,8 @@ export function calculateLoteMetrics(
     gmdStatus = { status: "empty", reason: "Sem animais ativos" };
   } else if (countGmdCalculated === activeAnimals.length) {
     gmdStatus = {
-      status: "complete",
-      reason: "GMD calculado para todos os animais atuais do lote",
+      status: "partial",
+      reason: "GMD individual disponível para todos os animais atuais do lote",
       source: "Pesagens factuais dos animais atuais",
       limitation: GMD_LOTE_SCOPE_LIMITATION,
     };
@@ -708,8 +708,8 @@ export function calculatePastoMetrics(
     gmdStatus = { status: "empty", reason: "Sem animais ativos" };
   } else if (countGmdCalculated === activeAnimals.length) {
     gmdStatus = {
-      status: "complete",
-      reason: "GMD calculado para todos os animais atuais do pasto",
+      status: "partial",
+      reason: "GMD individual disponível para todos os animais atuais do pasto",
       source: "Pesagens factuais dos animais atuais",
       limitation: GMD_PASTO_SCOPE_LIMITATION,
     };

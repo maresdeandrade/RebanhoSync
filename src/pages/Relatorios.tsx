@@ -22,6 +22,8 @@ import {
   buildOperationalSummary,
   buildOperationalSummaryCsv,
   buildOperationalSummaryPrintHtml,
+  OPERATIONAL_REPORT_LIMITATIONS,
+  OPERATIONAL_REPORT_SOURCE_NOTES,
   resolveReportRange,
   type ReportPreset,
 } from "@/lib/reports/operationalSummary";
@@ -356,15 +358,15 @@ const Relatorios = () => {
             icon: FileText,
           },
           {
-            title: "Pesagem & GMD",
-            description: "Ganho medio diario por lote e categoria.",
+            title: "Pesagens",
+            description: "Peso medio e ultima pesagem no periodo; GMD por lote/pasto exige permanencia comprovada.",
             source: "Fonte: eventos de pesagem",
             icon: Scale,
           },
           {
             title: "Movimentacao",
-            description: "Entradas, saidas e transferencias de pasto.",
-            source: "Fonte: eventos + estado atual",
+            description: "Movimentacoes executadas no periodo e estado atual apenas como read model.",
+            source: "Fonte: eventos + state_*",
             icon: Beef,
           },
           {
@@ -381,7 +383,7 @@ const Relatorios = () => {
           },
           {
             title: "Visao operacional",
-            description: "Pendencias fechadas, atrasos e produtividade.",
+            description: "Agenda aberta indica pendencia/intencao; eventos indicam fatos executados.",
             source: "Fonte: agenda + eventos",
             icon: RefreshCw,
           },
@@ -444,6 +446,9 @@ const Relatorios = () => {
                 {report.summary.pastosAtivos} pastos
               </Badge>
             </div>
+            <p className="text-xs text-muted-foreground">
+              Estado atual vindo de state_*; nao substitui historico completo.
+            </p>
           </CardContent>
         </Card>
 
@@ -464,6 +469,9 @@ const Relatorios = () => {
                 </Badge>
               ) : null}
             </div>
+            <p className="text-xs text-muted-foreground">
+              Agenda e pendencia/intencao futura, nao fato executado.
+            </p>
           </CardContent>
         </Card>
 
@@ -509,6 +517,19 @@ const Relatorios = () => {
                 </Badge>
               </div>
             ) : null}
+          </CardContent>
+        </Card>
+      </section>
+
+      <section>
+        <Card className="shadow-none">
+          <CardHeader className="px-4 pb-2 pt-4 sm:px-5">
+            <CardTitle className="text-base">Fontes e limitacoes</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm text-muted-foreground">
+            {[...OPERATIONAL_REPORT_SOURCE_NOTES, ...OPERATIONAL_REPORT_LIMITATIONS].map((item) => (
+              <p key={item}>{item}</p>
+            ))}
           </CardContent>
         </Card>
       </section>

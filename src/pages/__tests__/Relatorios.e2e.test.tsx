@@ -351,11 +351,31 @@ describe("Relatorios flow", () => {
     expect(
       screen.getByText(/nao representam DRE, ROI, margem ou custo por arroba/i),
     ).toBeInTheDocument();
+    expect(screen.getByText(/Fontes e limitacoes/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Estado atual vindo de state_\*; nao substitui historico completo/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/Agenda e pendencia\/intencao futura, nao fato executado/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/Agenda: pendencia\/intencao futura, nao fato executado/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/Custo operacional parcial nao e DRE, ROI, margem ou custo por arroba/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/nao afirmam GMD ou desempenho de lote\/pasto sem permanencia comprovada/i),
+    ).toBeInTheDocument();
+    expect(screen.getAllByText(/Pesagens/i).length).toBeGreaterThan(0);
+    expect(
+      screen.getByText(/GMD por lote\/pasto exige permanencia comprovada/i),
+    ).toBeInTheDocument();
     expect(screen.getByText(/Resumo operacional/i)).toBeInTheDocument();
     expect(screen.getByText(/Financeiro operacional/i)).toBeInTheDocument();
     expect(screen.getByText(/nao e DRE, ROI ou margem/i)).toBeInTheDocument();
     expect(screen.getByText(/Estoque operacional/i)).toBeInTheDocument();
-    expect(screen.getByText(/Custo operacional parcial/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/Custo operacional parcial/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/Fonte: read model de inventario/i)).toBeInTheDocument();
     expect(screen.getByText(/Entradas com custo/i)).toBeInTheDocument();
     expect(screen.getByText(/Saidas\/consumos com custo/i)).toBeInTheDocument();

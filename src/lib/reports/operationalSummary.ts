@@ -62,6 +62,19 @@ import {
 
 export type ReportPreset = "7d" | "30d" | "90d" | "mes_atual";
 
+export const OPERATIONAL_REPORT_SOURCE_NOTES = [
+  "Historico: event_eventos + detail tables no periodo selecionado.",
+  "Estado atual: state_* como read model atual, sem historico completo.",
+  "Agenda: pendencia/intencao futura, nao fato executado.",
+] as const;
+
+export const OPERATIONAL_REPORT_LIMITATIONS = [
+  "Relatorio derivado/read-only; dados parciais nao autorizam decisao critica.",
+  "Custo operacional parcial nao e DRE, ROI, margem ou custo por arroba.",
+  "Pesagens indicam peso medio e ultima pesagem no periodo; nao afirmam GMD ou desempenho de lote/pasto sem permanencia comprovada.",
+  "Saldo operacional e leitura parcial, nao conclusao financeira.",
+] as const;
+
 export interface ReportRange {
   preset: ReportPreset;
   from: string;
@@ -1535,6 +1548,12 @@ export function buildOperationalSummaryCsv(
   pushRow("meta", "fazenda", farmName);
   pushRow("meta", "periodo", `${report.range.label} (${report.range.from} a ${report.range.to})`);
   pushRow("meta", "gerado_em", report.generatedAt);
+  OPERATIONAL_REPORT_SOURCE_NOTES.forEach((note) => {
+    pushRow("meta_fonte", "fonte", note);
+  });
+  OPERATIONAL_REPORT_LIMITATIONS.forEach((limitation) => {
+    pushRow("meta_limitacao", "limitacao", limitation);
+  });
   pushRow("resumo", "animais_ativos", report.summary.animaisAtivos);
   pushRow("resumo", "lotes_ativos", report.summary.lotesAtivos);
   pushRow("resumo", "pastos_ativos", report.summary.pastosAtivos);
@@ -1952,6 +1971,12 @@ export function buildOperationalSummaryPrintHtml(
       `,
     )
     .join("");
+  const sourceNoteRows = OPERATIONAL_REPORT_SOURCE_NOTES.map(
+    (note) => `<li>${escapeHtml(note)}</li>`,
+  ).join("");
+  const limitationRows = OPERATIONAL_REPORT_LIMITATIONS.map(
+    (limitation) => `<li>${escapeHtml(limitation)}</li>`,
+  ).join("");
 
   const manejoRows = report.manejoByDomain
     .map(
@@ -2249,6 +2274,12 @@ export function buildOperationalSummaryPrintHtml(
         </p>
 
         <div class="metrics">${metricCards}</div>
+
+        <section>
+          <h2>Fontes e limitacoes</h2>
+          <p class="meta">Leitura operacional derivada, read-only e limitada ao periodo selecionado.</p>
+          <ul>${sourceNoteRows}${limitationRows}</ul>
+        </section>
 
         <section>
           <h2>Manejos no periodo</h2>

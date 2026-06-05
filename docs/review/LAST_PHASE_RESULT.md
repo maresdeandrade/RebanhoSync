@@ -6,6 +6,62 @@ Atualizado em: 2026-06-05
 
 ## 0. Resultado mais recente
 
+Fase 11E — Relatórios operacionais ampliados — concluída localmente.
+
+Resultado da 11E:
+
+- diagnóstico inicial executado antes do patch;
+- patch pequeno/read-only aplicado em `src/lib/reports/operationalSummary.ts`;
+- tela de relatórios ajustada em `src/pages/Relatorios.tsx`;
+- testes focados atualizados em `src/lib/reports/__tests__/operationalSummary.test.ts` e `src/pages/__tests__/Relatorios.e2e.test.tsx`;
+- relatórios passaram a declarar fontes e limitações em tela, CSV e impressão;
+- `state_*` segue comunicado como estado atual/read model, sem histórico completo;
+- agenda segue comunicada como pendência/intenção futura, não fato executado;
+- pesagens são apresentadas como peso médio/última pesagem no período, sem afirmar GMD ou desempenho de lote/pasto sem permanência comprovada;
+- custo operacional parcial segue limitado, sem DRE, ROI, margem ou custo por arroba;
+- nenhum schema, Supabase, RLS, migration, RPC, sync ou edge function foi alterado;
+- nenhum avanço para venda, abate, aptidão comercial, carência liberatória, motor de decisão ou recomendação crítica.
+
+Validação local da 11E:
+
+```txt
+pnpm test -- src/lib/reports/__tests__/operationalSummary.test.ts: passou (1 arquivo, 8 testes).
+pnpm test -- src/pages/__tests__/Relatorios.e2e.test.tsx: passou (1 arquivo, 1 teste).
+git diff --check: passou.
+pnpm run lint: passou.
+pnpm run build: passou com warnings conhecidos de Browserslist/caniuse-lite e chunks grandes.
+```
+
+Próximo foco: Fase 11F — Fechamento, preparada mas não iniciada.
+
+---
+
+Fase 11D — Desempenho read-only se houver fonte suficiente — concluída localmente.
+
+Resultado da 11D:
+
+- diagnóstico inicial executado antes do patch;
+- patch pequeno/read-only aplicado em `src/features/occupancy/cockpitManejoAdapter.ts`;
+- testes focados atualizados em `src/features/occupancy/__tests__/cockpitManejoAdapter.test.ts`;
+- GMD de lote/pasto continua exigindo pesagens explícitas válidas e período em dias distintos;
+- GMD agregado de lote/pasto permanece parcial quando a permanência no período não estiver comprovada, mesmo se todos os animais atuais tiverem GMD individual;
+- limitações seguem declarando que a leitura usa animais atuais e não comprova desempenho histórico completo nem permanência no período;
+- nenhum schema, Supabase, RLS, migration, RPC, sync ou edge function foi alterado;
+- nenhum avanço para venda, abate, custo por arroba, DRE, ROI, margem, motor de decisão ou recomendação crítica.
+
+Validação local da 11D:
+
+```txt
+pnpm test -- src/features/occupancy/__tests__/cockpitManejoAdapter.test.ts: passou (1 arquivo, 23 testes).
+git diff --check: passou.
+pnpm run lint: passou.
+pnpm run build: passou com warnings conhecidos de Browserslist/caniuse-lite e chunks grandes.
+```
+
+Próximo foco indicado na 11D: Fase 11E — Relatórios operacionais ampliados, agora concluída localmente.
+
+---
+
 Fase 11C — Ocupação, lotação e movimentações — concluída localmente.
 
 Resultado da 11C:
@@ -28,7 +84,7 @@ pnpm run lint: passou.
 pnpm run build: passou com warnings conhecidos de Browserslist/caniuse-lite e chunks grandes.
 ```
 
-Próximo foco: Fase 11D — Desempenho read-only se houver fonte suficiente, preparada mas não iniciada.
+Próximo foco indicado na 11C: Fase 11D — Desempenho read-only se houver fonte suficiente, agora concluída localmente.
 
 ---
 

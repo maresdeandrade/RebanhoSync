@@ -13,7 +13,11 @@ Subfase 11B — Ajuste semântico/read-only do cockpit de Lotes/Pastos — concl
 
 Subfase 11C — Ocupação, lotação e movimentações — concluída localmente.
 
-Subfase 11D — Desempenho read-only se houver fonte suficiente — preparada, não iniciada.
+Subfase 11D — Desempenho read-only se houver fonte suficiente — concluída localmente.
+
+Subfase 11E — Relatórios operacionais ampliados — concluída localmente.
+
+Subfase 11F — Fechamento — preparada, não iniciada.
 
 Plano específico: `docs/review/PLANO_FASE_11.md`.
 
@@ -83,7 +87,28 @@ Fase 11C consolidou patch pequeno/read-only para ocupação, lotação e movimen
 
 Nenhum Supabase, RLS, migration, RPC, edge function, schema ou sync foi alterado na 11C.
 
-Próximo passo mínimo: iniciar 11D por diagnóstico, avaliando desempenho read-only apenas se houver fonte suficiente.
+Fase 11D consolidou patch pequeno/read-only para desempenho operacional parcial:
+
+- GMD de lote/pasto segue calculado somente com pesagens explícitas válidas e período em dias distintos;
+- quando todos os animais atuais têm GMD individual, o status agregado de lote/pasto permanece parcial sem comprovação de permanência no período;
+- a limitação comunica que a leitura se baseia nos animais atuais e não comprova desempenho histórico completo do lote/pasto;
+- testes focados de `src/features/occupancy/__tests__/cockpitManejoAdapter.test.ts` passaram com 23 testes;
+- `git diff --check`, `pnpm run lint` e `pnpm run build` passaram, com warnings conhecidos de Browserslist/chunks no build.
+
+Nenhum Supabase, RLS, migration, RPC, edge function, schema ou sync foi alterado na 11D.
+
+Fase 11E consolidou patch pequeno/read-only para relatórios operacionais ampliados:
+
+- relatórios declaram fontes e limitações em tela, CSV e impressão;
+- `state_*` é comunicado como estado atual/read model, não histórico completo;
+- agenda é comunicada como pendência/intenção futura, não fato executado;
+- pesagens são apresentadas como peso médio/última pesagem no período, sem afirmar GMD ou desempenho de lote/pasto sem permanência comprovada;
+- custo operacional parcial segue limitado, sem DRE, ROI, margem ou custo por arroba;
+- testes focados de `src/lib/reports/__tests__/operationalSummary.test.ts` e `src/pages/__tests__/Relatorios.e2e.test.tsx` passaram.
+
+Nenhum Supabase, RLS, migration, RPC, edge function, schema ou sync foi alterado na 11E.
+
+Próximo passo mínimo: iniciar 11F por diagnóstico documental, fechando a Fase 11 e preparando a próxima fase sem reabrir 11A-11E.
 
 Fases 1-8 permanecem consolidadas em baseline `3fe7a81`.
 
@@ -269,15 +294,12 @@ Resultado da 9D:
 
 ## 6. Escopo permitido no próximo passo
 
-Permitido para 11D:
+Permitido para 11F:
 
-- avaliar desempenho read-only somente se houver fonte suficiente;
-- manter GMD vinculado a pesagens explícitas e período;
-- não afirmar desempenho de lote/pasto sem permanência comprovada no período;
-- declarar limitações quando a fonte de desempenho for parcial;
-- manter leitura read-only;
-- propor patch pequeno, reversível e testável com testes focados;
-- preservar regras críticas fora da UI;
+- fechar documentalmente a Fase 11;
+- consolidar entregas, validações e riscos residuais reais;
+- preparar próxima fase sem reabrir subfases concluídas;
+- manter leitura read-only e preservar regras críticas fora da UI;
 - não criar custo por arroba, DRE, ROI, margem, motor de decisão ou venda/abate automático.
 
 ---

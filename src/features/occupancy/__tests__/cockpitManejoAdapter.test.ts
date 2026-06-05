@@ -26,7 +26,7 @@ describe("cockpitManejoAdapter unit tests", () => {
       const metrics = calculateLoteMetrics("lote-1", refDate, 30, animals, events, pesagens, [], [], []);
       expect(metrics.gmdMedio).toBe(1); // 10kg gain / 10 days = 1.0 kg/day
       expect(metrics.ganhoMedio).toBe(10); // 10kg gain
-      expect(metrics.gmdStatus.status).toBe("complete");
+      expect(metrics.gmdStatus.status).toBe("partial");
       expect(metrics.gmdStatus.reason).toContain("animais atuais do lote");
       expect(metrics.gmdStatus.limitation).toContain("não comprova desempenho histórico completo do lote");
       expect(metrics.gmdStatus.limitation).toContain("permanência no período");
@@ -203,6 +203,27 @@ describe("cockpitManejoAdapter unit tests", () => {
       expect(metrics.taxaLotacaoStatus.limitation).toContain("area_ha válida");
     });
 
+    it("keeps pasto GMD partial without proven permanence in the period", () => {
+      const animals: Animal[] = [
+        { id: "ani-1", status: "ativo", lote_id: "lote-1", identificacao: "A1", sexo: "F", fazenda_id: "faz-1", payload: {} } as any
+      ];
+      const events: Evento[] = [
+        { id: "evt-1", dominio: "pesagem", animal_id: "ani-1", occurred_at: "2026-05-18", deleted_at: null } as any,
+        { id: "evt-2", dominio: "pesagem", animal_id: "ani-1", occurred_at: "2026-05-28", deleted_at: null } as any
+      ];
+      const pesagens: EventoPesagem[] = [
+        { evento_id: "evt-1", peso_kg: 200 } as any,
+        { evento_id: "evt-2", peso_kg: 210 } as any
+      ];
+
+      const metrics = calculatePastoMetrics("pasto-1", refDate, 30, animals, lotes, pastos, events, pesagens, [], [], []);
+      expect(metrics.gmdMedio).toBe(1);
+      expect(metrics.gmdStatus.status).toBe("partial");
+      expect(metrics.gmdStatus.reason).toContain("animais atuais do pasto");
+      expect(metrics.gmdStatus.limitation).toContain("não comprova desempenho histórico completo do pasto");
+      expect(metrics.gmdStatus.limitation).toContain("permanência no período");
+    });
+
     it("treats state_pasto_ocupacoes as current occupancy read model, not complete history", () => {
       const animals: Animal[] = [
         { id: "ani-1", status: "ativo", lote_id: "lote-1", identificacao: "A1", sexo: "F", fazenda_id: "faz-1", payload: {} } as any
@@ -265,7 +286,7 @@ describe("cockpitManejoAdapter unit tests", () => {
       const metrics = calculateLoteMetrics("lote-1", refDate, 30, animals, events, pesagens, [], [], []);
       // ganho 10 kg / 10 dias = 1.0 kg/dia
       expect(metrics.gmdMedio).toBe(1.0);
-      expect(metrics.gmdStatus.status).toBe("complete");
+      expect(metrics.gmdStatus.status).toBe("partial");
     });
 
     it("pesagem com soft delete é ignorada no cálculo de GMD", () => {
