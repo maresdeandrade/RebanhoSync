@@ -45,6 +45,7 @@ A fase atual é Fase 10 — UX Operacional dos Fluxos Centrais, em andamento.
 - Fase 10A — Diagnóstico UX e mapa de fricção concluída sem patch;
 - Fase 10B — Agenda/Registrar: clareza de intenção futura vs execução real concluída localmente.
 - Fase 10C — Home/Central Operacional concluída localmente.
+- Fase 10D — Animal, Eventos e Histórico concluída localmente.
 
 Último avanço local da Fase 10:
 
@@ -57,10 +58,15 @@ A fase atual é Fase 10 — UX Operacional dos Fluxos Centrais, em andamento.
 - nenhuma regra crítica nova foi criada;
 - nenhum cálculo de insight/relatório foi alterado;
 - nenhuma alteração em Supabase/RLS/migrations/RPC/sync.
+- AnimalDetalhe diferencia `Estado atual` de histórico e reforça que status/classificação não autorizam venda ou abate;
+- venda no detalhe do animal e quick action de Registrar aparecem como registro manual;
+- Eventos explicita histórico de eventos executados e novo registro manual;
+- nenhum cálculo de classificação, evento ou relatório foi alterado;
+- nenhuma alteração em Supabase/RLS/migrations/RPC/sync.
 
 Próximo foco:
 
-- Fase 10D — Animal, Eventos e Histórico;
+- Fase 10E — Lotes/Pastos, Relatórios e Compra/Venda;
 - preservar separação entre pendência, execução, histórico e estado atual;
 - não criar regra crítica nova, autorização automática ou motor comercial/financeiro.
 

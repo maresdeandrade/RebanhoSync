@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 
 import {
+  REGISTRAR_QUICK_ACTIONS,
   isQuickActionKey,
   requiresAnimalsForQuickAction,
   resolveQuickActionDecision,
@@ -44,6 +45,16 @@ describe("quick action policy", () => {
         selectedAnimalCount: 0,
       }),
     ).toBe(false);
+  });
+
+  it("descreve venda como registro manual sem aptidao comercial", () => {
+    const venda = REGISTRAR_QUICK_ACTIONS.find(
+      (action) => action.key === "venda",
+    );
+
+    expect(venda?.label).toBe("Venda manual");
+    expect(venda?.helper).toMatch(/Registra operacao informada pelo usuario/i);
+    expect(venda?.helper).toMatch(/nao valida aptidao comercial/i);
   });
 
   it("hook executa efeitos corretos ao aplicar quick action", () => {

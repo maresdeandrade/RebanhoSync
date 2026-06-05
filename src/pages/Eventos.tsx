@@ -898,8 +898,9 @@ const Eventos = () => {
     <div className="space-y-5">
       <PageIntro
         variant="plain"
-        eyebrow="Historico operacional"
+        eyebrow="Historico de eventos executados"
         title="Eventos"
+        description="Lista fatos ja registrados. Novo registro abre o fluxo manual e nao transforma agenda em historico."
         meta={
           <>
             <StatusBadge tone="neutral">
@@ -936,7 +937,7 @@ const Eventos = () => {
         actions={
           <Button onClick={() => navigate("/registrar")}>
             <PlusCircle className="h-4 w-4" />
-            Novo registro
+            Novo registro manual
           </Button>
         }
       />

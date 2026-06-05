@@ -1,6 +1,7 @@
 /** @vitest-environment jsdom */
 import "@testing-library/jest-dom";
 import { fireEvent, render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { useLiveQuery } from "dexie-react-hooks";
@@ -556,6 +557,42 @@ describe("AnimalDetalhe", () => {
     expect(screen.getByText("Sem ECC factual registrado")).toBeInTheDocument();
   });
 
+  it("diferencia estado atual de autorizacao comercial", async () => {
+    const user = userEvent.setup();
+    const animal = makeAnimal({
+      id: "animal-1",
+      identificacao: "BR-001",
+      sexo: "M",
+    });
+
+    setupMockLiveQuery({
+      animal,
+    });
+
+    render(
+      <MemoryRouter
+        initialEntries={["/animais/animal-1"]}
+        future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+      >
+        <Routes>
+          <Route path="/animais/:id" element={<AnimalDetalhe />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText("Estado atual: ativo")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        /Estado, status e classificacao sao leitura operacional; nao autorizam venda ou abate/i,
+      ),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /mais acoes/i }));
+    expect(
+      await screen.findByRole("menuitem", { name: /registrar venda manual/i }),
+    ).toBeInTheDocument();
+  });
+
   it("exibe ultimo ECC e historico em ordem decrescente de data", () => {
     const animal = makeAnimal({
       id: "animal-1",
@@ -624,4 +661,3 @@ describe("AnimalDetalhe", () => {
     expect(screen.getByText("Escore bom")).toBeInTheDocument();
   });
 });
-

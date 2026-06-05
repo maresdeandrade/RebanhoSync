@@ -56,8 +56,9 @@ export const REGISTRAR_QUICK_ACTIONS: QuickActionConfig[] = [
   },
   {
     key: "venda",
-    label: "Venda",
-    helper: "Venda simples com atualizacao do status do animal.",
+    label: "Venda manual",
+    helper:
+      "Registra operacao informada pelo usuario; nao valida aptidao comercial.",
     requiresAnimals: true,
     icon: Handshake,
   },

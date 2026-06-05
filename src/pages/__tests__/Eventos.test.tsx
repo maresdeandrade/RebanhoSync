@@ -180,6 +180,15 @@ describe("Eventos page", () => {
       </MemoryRouter>,
     );
 
+    expect(
+      screen.getByText("Historico de eventos executados"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/Lista fatos ja registrados/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /novo registro manual/i }),
+    ).toBeInTheDocument();
     expect(screen.getByText("Atenção de conformidade")).toBeInTheDocument();
     expect(screen.getByText("Conformidade aberta")).toBeInTheDocument();
     expect(screen.getByText("Bloqueia nutricao")).toBeInTheDocument();

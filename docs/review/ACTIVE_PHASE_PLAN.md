@@ -32,7 +32,8 @@ Status local:
 - 10A — Diagnóstico UX e mapa de fricção: concluída sem patch.
 - 10B — Agenda/Registrar: clareza de intenção futura vs execução real: concluída localmente.
 - 10C — Home/Central Operacional: concluída localmente.
-- Próximo foco sugerido: 10D — Animal, Eventos e Histórico.
+- 10D — Animal, Eventos e Histórico: concluída localmente.
+- Próximo foco sugerido: 10E — Lotes/Pastos, Relatórios e Compra/Venda.
 
 Resultado da 10B:
 
@@ -53,6 +54,19 @@ Resultado da 10C:
 - painel da Central explicita estados completo/parcial/vazio/bloqueado;
 - sinais auxiliares seguem read-only, sem persistência de tags e sem autorização operacional;
 - nenhum cálculo de insight, relatório ou regra crítica foi alterado;
+- nenhuma alteração em Supabase, RLS, migrations, RPC, edge functions, schema ou sync.
+
+Resultado da 10D:
+
+- `AnimalDetalhe` explicita `Estado atual`;
+- estado, status e classificação são apresentados como leitura operacional, sem autorizar venda ou abate;
+- CTA comercial do animal passou para `Registrar venda manual`;
+- `Eventos` explicita `Historico de eventos executados`;
+- CTA de Eventos passou para `Novo registro manual`;
+- copy de Eventos reforça fatos executados, registro manual e que agenda não vira histórico;
+- quick action comercial de Registrar passou para `Venda manual`, sem validar aptidão comercial;
+- testes focados de AnimalDetalhe, Eventos e quick action de Registrar passaram;
+- nenhum cálculo de classificação, evento ou relatório foi alterado;
 - nenhuma alteração em Supabase, RLS, migrations, RPC, edge functions, schema ou sync.
 
 ---

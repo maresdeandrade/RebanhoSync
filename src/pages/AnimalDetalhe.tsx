@@ -1606,9 +1606,13 @@ const AnimalDetalhe = () => {
               <div className="flex flex-wrap gap-2">
                 <AnimalCategoryBadge categoriaLabel={categoriaLabel} />
                 <Badge variant="outline">
-                  Status: {animal.status}
+                  Estado atual: {animal.status}
                 </Badge>
               </div>
+              <p className="text-xs text-muted-foreground">
+                Estado, status e classificacao sao leitura operacional; nao
+                autorizam venda ou abate.
+              </p>
             </div>
           </div>
           <div className="flex flex-wrap gap-2 lg:ml-auto lg:justify-end">
@@ -1660,7 +1664,7 @@ const AnimalDetalhe = () => {
                   }
                 >
                   <Handshake className="mr-2 h-4 w-4" />
-                  Registrar venda
+                  Registrar venda manual
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => setShowObitoDialog(true)}
@@ -3537,4 +3541,3 @@ const AnimalDetalhe = () => {
 };
 
 export default AnimalDetalhe;
-

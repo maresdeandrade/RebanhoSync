@@ -12,6 +12,43 @@ Fase 10B — Agenda/Registrar: clareza de intenção futura vs execução real �
 
 Fase 10C — Home/Central Operacional — concluída localmente.
 
+Fase 10D — Animal, Eventos e Histórico — concluída localmente.
+
+Patch aplicado na 10D:
+
+- `AnimalDetalhe` passou a explicitar `Estado atual` no topo da ficha;
+- hint no topo do animal reforça que estado, status e classificação são leitura operacional e não autorizam venda ou abate;
+- CTA comercial do animal passou de `Registrar venda` para `Registrar venda manual`;
+- `Eventos` passou a apresentar `Historico de eventos executados`;
+- CTA de Eventos passou para `Novo registro manual`;
+- copy de Eventos reforça que a tela lista fatos já registrados e que novo registro abre fluxo manual, sem transformar agenda em histórico;
+- quick action de Registrar passou de `Venda` para `Venda manual`, com helper deixando claro que registra operação informada pelo usuário e não valida aptidão comercial;
+- testes focados de AnimalDetalhe, Eventos e quick action de Registrar foram atualizados.
+
+Restrições preservadas na 10D:
+
+- animal continua sendo entidade/estado atual;
+- eventos continuam sendo fatos históricos executados;
+- venda/saída continua sendo registro manual informado pelo usuário;
+- classificação/status continuam leitura operacional, sem aptidão para venda/abate;
+- nenhuma regra crítica nova foi criada;
+- nenhum cálculo de classificação, evento ou relatório foi alterado;
+- nenhuma alteração em Supabase, RLS, migrations, RPC, edge functions, schema ou sync.
+
+Validação local da 10D:
+
+```txt
+pnpm test -- src/pages/__tests__/AnimalDetalhe.test.tsx: passou (1 arquivo, 9 testes)
+pnpm test -- src/pages/__tests__/Eventos.test.tsx: passou (1 arquivo, 3 testes; warnings conhecidos de React Router future flags)
+pnpm test -- src/pages/Registrar/__tests__/quickActionPolicy.helper.test.ts: passou (1 arquivo, 5 testes)
+pnpm run lint: passou
+pnpm run build: passou com warnings conhecidos de Browserslist/caniuse-lite e chunks grandes
+```
+
+Próximo foco sugerido: Fase 10E — Lotes/Pastos, Relatórios e Compra/Venda.
+
+---
+
 Patch aplicado na 10C:
 
 - CTA principal da Home passou para `Registrar execucao`;
@@ -56,7 +93,7 @@ Próximo foco sugerido: Fase 10D — Animal, Eventos e Histórico.
 
 Fase 10 — UX Operacional dos Fluxos Centrais.
 
-Subfase mais recente: 10C — Home/Central Operacional.
+Subfase mais recente: 10D — Animal, Eventos e Histórico.
 
 ---
 

@@ -13,7 +13,9 @@ Subfase 10B — Agenda/Registrar: clareza de intenção futura vs execução rea
 
 Subfase 10C — Home/Central Operacional — concluída localmente.
 
-Próximo foco sugerido: Fase 10D — Animal, Eventos e Histórico.
+Subfase 10D — Animal, Eventos e Histórico — concluída localmente.
+
+Próximo foco sugerido: Fase 10E — Lotes/Pastos, Relatórios e Compra/Venda.
 
 ---
 
@@ -50,6 +52,19 @@ Fase 10C aplicou patch UX mínimo em Home/Central Operacional:
 - testes focados de Home e OperationalInsights passaram.
 
 Nenhuma regra de negócio, Supabase, RLS, migration, RPC, edge function, schema ou sync foi alterado.
+
+Fase 10D aplicou patch UX mínimo em Animal/Eventos/Histórico:
+
+- ficha do animal explicita `Estado atual`;
+- hint no topo do animal reforça que estado, status e classificação são leitura operacional, sem autorizar venda ou abate;
+- CTA comercial do animal passou para `Registrar venda manual`;
+- Eventos passou a `Historico de eventos executados`;
+- CTA de Eventos passou para `Novo registro manual`;
+- copy de Eventos reforça fatos já registrados, registro manual e separação de agenda vs histórico;
+- quick action de Registrar passou para `Venda manual`, com helper de limitação comercial;
+- testes focados de AnimalDetalhe, Eventos e quick action passaram.
+
+Nenhuma regra crítica nova, cálculo de classificação/evento/relatório, Supabase, RLS, migration, RPC, edge function, schema ou sync foi alterado.
 
 Fase 9A consolidou o inventário operacional no escopo técnico autorizado:
 
