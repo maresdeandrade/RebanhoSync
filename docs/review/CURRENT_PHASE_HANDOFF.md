@@ -1,9 +1,27 @@
 # Current Phase Handoff — RebanhoSync
 
-Atualizado em: 2026-06-04
+Atualizado em: 2026-06-05
 **Baseline Commit:** `0f2fd8e`
 
 ## 1. Fase atual
+
+Fase 11 — Lotes, Pastos e Desempenho Operacional Ampliado — em andamento documental.
+
+Subfase 11A — Diagnóstico de Lotes, Pastos e Desempenho Operacional Ampliado — concluída documentalmente, sem patch funcional.
+
+Subfase 11B — Ajuste semântico/read-only do cockpit de Lotes/Pastos — preparada, não iniciada.
+
+Plano específico: `docs/review/PLANO_FASE_11.md`.
+
+Commit local analisado na 11A: `0d350b8`.
+
+Baseline documental de entrada preservado: `0f2fd8e`.
+
+Contexto anterior citava commit `8a62445`; a 11A registrou drift entre contexto colado, baseline documental e commit local. Não houve atualização automática de baseline.
+
+---
+
+## 1.1 Fase anterior
 
 Fase 10 — UX Operacional dos Fluxos Centrais — concluída localmente.
 
@@ -19,11 +37,27 @@ Subfase 10E — Integração via Histórico para Lotes/Pastos, Relatórios e Com
 
 Subfase 10F — Fechamento da Fase 10 e handoff — executada.
 
-Próxima fase: Fase 11 — Lotes, Pastos e Desempenho Operacional Ampliado.
+Fase 11 nomeada como fase seguinte no fechamento da 10F.
 
 ---
 
 ## 2. Estado consolidado
+
+Fase 11A consolidou diagnóstico técnico/documental:
+
+- estado atual identificado em `state_lotes`, `state_pastos` e `state_animais`;
+- ocupação/read model identificado em `state_pasto_ocupacoes`;
+- histórico identificado em `event_eventos` + `event_eventos_movimentacao`;
+- peso/GMD identificado em `event_eventos_pesagem` com `event_eventos.occurred_at`;
+- lotação UA/ha depende de pesos explícitos e `state_pastos.area_ha`;
+- `state_pasto_ocupacoes` é read model útil para ocupação atual, mas não fonte histórica primária completa;
+- GMD por lote/pasto não comprova permanência no lote/pasto sem movimentações suficientes no período;
+- ocupação histórica exige eventos consistentes de entrada/saída;
+- desempenho parcial não autoriza decisão operacional crítica.
+
+Nenhum código funcional, Supabase, RLS, migration, RPC, edge function, schema ou sync foi alterado na 11A.
+
+Próximo passo mínimo: iniciar 11B somente com patch pequeno, read-only, provavelmente em `src/features/occupancy/cockpitManejoAdapter.ts` e testes relacionados de `occupancy`, tocando componentes de tela apenas se o texto exibido estiver fora do adapter.
 
 Fases 1-8 permanecem consolidadas em baseline `3fe7a81`.
 
@@ -209,14 +243,15 @@ Resultado da 9D:
 
 ## 6. Escopo permitido no próximo passo
 
-Permitido para início da Fase 11:
+Permitido para 11B:
 
-- diagnosticar lote, pasto, ocupação e desempenho operacional ampliado;
-- revisar fontes explícitas para movimentações, ocupação, GMD por período e read models;
-- propor patch pequeno, reversível e testável;
+- ajustar linguagem operacional do cockpit de Lotes/Pastos;
+- explicitar limitações de GMD, permanência e ocupação;
+- evitar que `state_pasto_ocupacoes` seja tratado como histórico completo;
+- manter leitura read-only;
+- propor patch pequeno, reversível e testável com testes focados;
 - preservar regras críticas fora da UI;
-- não criar custo por arroba, DRE, ROI, margem, motor de decisão ou venda/abate automático;
-- não iniciar por patch direto.
+- não criar custo por arroba, DRE, ROI, margem, motor de decisão ou venda/abate automático.
 
 ---
 

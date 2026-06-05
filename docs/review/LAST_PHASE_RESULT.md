@@ -1,10 +1,58 @@
 # Last Phase Result — RebanhoSync
 
-Atualizado em: 2026-06-04
+Atualizado em: 2026-06-05
 **Baseline Commit documental anterior:** `82b68b2`
 **Commit local observado no início da 10F:** `0f2fd8e`
 
 ## 0. Resultado mais recente
+
+Fase 11A — Diagnóstico de Lotes, Pastos e Desempenho Operacional Ampliado — concluída documentalmente.
+
+Resultado da 11A:
+
+- diagnóstico técnico/documental executado sem patch funcional;
+- commit local analisado: `0d350b8`;
+- baseline documental encontrado nos docs ativos: `0f2fd8e`;
+- contexto anterior citava `8a62445`;
+- worktree limpo no diagnóstico;
+- `git diff --check` passou;
+- documentos ativos lidos: `docs/review/CURRENT_PHASE_HANDOFF.md`, `docs/review/ACTIVE_PHASE_PLAN.md`, `docs/review/LAST_PHASE_RESULT.md`, `docs/review/OPEN_REVIEW_ITEMS.md`, `docs/context/PROJECT_STATUS.md`, `docs/product/ROADMAP.md`, `AGENTS.md`, `.agents/rules/CORE_RULES.md`, `.agents/rules/CONTEXT_LOADING.md`, `.agents/rules/no-broad-context.md`, `.agents/rules/rtk.md` e `docs/domain/LOTES_PASTOS.md`;
+- plano específico criado em `docs/review/PLANO_FASE_11.md`;
+- fontes reais confirmadas:
+  - estado atual: `state_lotes`, `state_pastos`, `state_animais`;
+  - ocupação/read model: `state_pasto_ocupacoes`;
+  - histórico: `event_eventos` + `event_eventos_movimentacao`;
+  - peso/GMD: `event_eventos_pesagem` com `event_eventos.occurred_at`;
+  - lotação UA/ha: pesos + `state_pastos.area_ha`;
+- lacunas confirmadas:
+  - `state_pasto_ocupacoes` não deve ser tratado como fonte histórica primária completa;
+  - GMD por lote/pasto não comprova permanência no lote/pasto sem movimentações suficientes no período;
+  - ocupação histórica depende de eventos consistentes de entrada/saída;
+  - lotação UA/ha depende de peso explícito e `area_ha` válida;
+- riscos de inferência indevida registrados;
+- 11B preparada como próximo patch pequeno, read-only, sem iniciar implementação.
+
+Restrições preservadas na 11A:
+
+- nenhum código funcional foi alterado;
+- nenhuma alteração em Supabase, migrations, RLS, RPC, schema, sync ou edge functions;
+- nenhum avanço para custo por arroba, DRE, ROI, margem, motor de decisão, venda/abate automático, carência liberatória ou recomendação crítica.
+
+Validação local da 11A:
+
+```txt
+git status --short --untracked-files=all: passou; worktree limpo.
+git status -sb: main...origin/main.
+git log --oneline -1: 0d350b8 docs: update continuity prompt and tool configurations.
+git rev-parse --short HEAD: 0d350b8.
+git diff --check: passou.
+```
+
+Como a 11A é documental, não foi rodada suite completa.
+
+Próximo foco: Fase 11B — Ajuste semântico/read-only do cockpit de Lotes/Pastos, preparada mas não iniciada.
+
+---
 
 Fase 10A — Diagnóstico UX e mapa de fricção — concluída sem patch.
 

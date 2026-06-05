@@ -1,16 +1,41 @@
 # ACTIVE_PHASE_PLAN - Fase 11
 
-**Status:** a iniciar
+**Status:** 11A concluída documentalmente; 11B preparada, não iniciada
 **Foco:** Lotes, Pastos e Desempenho Operacional Ampliado
 **Criado:** 2026-06-04
-**Atualizado:** 2026-06-04
-**Baseline de handoff:** `0f2fd8e`
+**Atualizado:** 2026-06-05
+**Baseline documental preservado: 0f2fd8e
+**Commit local analisado na 11A: 0d350b8
+**Plano específico:** `docs/review/PLANO_FASE_11.md`
 
 ---
 
 ## Objetivo em 1 parágrafo
 
-Iniciar a Fase 11 com diagnóstico de lote, pasto, ocupação e desempenho operacional ampliado, preservando o fechamento local da Fase 10. A fase deve ampliar leitura operacional com fonte explícita, período e limitação, sem criar regra crítica nova, sem custo por arroba, sem DRE/ROI/margem, sem motor de decisão e sem venda/abate automático.
+Conduzir a Fase 11 por subfases documentadas em `docs/review/PLANO_FASE_11.md`, preservando o fechamento local da Fase 10. A fase deve ampliar leitura operacional com fonte explícita, período e limitação, sem criar regra crítica nova, sem custo por arroba, sem DRE/ROI/margem, sem motor de decisão e sem venda/abate automático.
+
+---
+
+## Status da Fase 11
+
+- 11A — Diagnóstico de Lotes, Pastos e Desempenho Operacional Ampliado: concluída documentalmente, sem patch funcional.
+- 11B — Ajuste semântico/read-only do cockpit de Lotes/Pastos: preparada, não iniciada.
+- 11C — Ocupação, lotação e movimentações: futura.
+- 11D — Desempenho read-only se houver fonte suficiente: futura.
+- 11E — Relatórios operacionais ampliados: futura.
+- 11F — Fechamento: futura.
+
+Resultado da 11A:
+
+- commit local analisado: `0d350b8`;
+- baseline documental encontrado: `0f2fd8e`;
+- contexto anterior citava `8a62445`;
+- worktree limpo no diagnóstico;
+- `git diff --check` passou;
+- houve drift entre contexto anterior, baseline documental e commit local;
+- fontes reais identificadas para estado atual, ocupação/read model, histórico, pesagens e área de pasto;
+- lacunas registradas para GMD por lote/pasto, permanência histórica completa, ocupação histórica e lotação quando faltam peso/área;
+- nenhum código funcional, Supabase, migrations, RLS, RPC, schema, sync ou edge functions foi alterado.
 
 ---
 
@@ -28,7 +53,7 @@ Iniciar a Fase 11 com diagnóstico de lote, pasto, ocupação e desempenho opera
 
 ## Conduta obrigatória de início
 
-A Fase 11 deve começar por diagnóstico, não por patch direto.
+A Fase 11 começou por diagnóstico na 11A, sem patch funcional.
 
 Diagnóstico mínimo:
 
