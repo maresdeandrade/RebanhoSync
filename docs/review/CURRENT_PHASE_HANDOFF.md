@@ -5,11 +5,13 @@ Atualizado em: 2026-06-05
 
 ## 1. Fase atual
 
-Fase 11 — Lotes, Pastos e Desempenho Operacional Ampliado — em andamento documental.
+Fase 11 — Lotes, Pastos e Desempenho Operacional Ampliado — em andamento.
 
 Subfase 11A — Diagnóstico de Lotes, Pastos e Desempenho Operacional Ampliado — concluída documentalmente, sem patch funcional.
 
-Subfase 11B — Ajuste semântico/read-only do cockpit de Lotes/Pastos — preparada, não iniciada.
+Subfase 11B — Ajuste semântico/read-only do cockpit de Lotes/Pastos — concluída localmente.
+
+Subfase 11C — Ocupação, lotação e movimentações — preparada, não iniciada.
 
 Plano específico: `docs/review/PLANO_FASE_11.md`.
 
@@ -57,7 +59,19 @@ Fase 11A consolidou diagnóstico técnico/documental:
 
 Nenhum código funcional, Supabase, RLS, migration, RPC, edge function, schema ou sync foi alterado na 11A.
 
-Próximo passo mínimo: iniciar 11B somente com patch pequeno, read-only, provavelmente em `src/features/occupancy/cockpitManejoAdapter.ts` e testes relacionados de `occupancy`, tocando componentes de tela apenas se o texto exibido estiver fora do adapter.
+Fase 11B consolidou patch pequeno/read-only no cockpit de Lotes/Pastos:
+
+- `GMD` agora comunica leitura baseada nos animais atuais com pesagens válidas, sem comprovar desempenho histórico completo do lote/pasto;
+- `state_pasto_ocupacoes` é apresentado como read model parcial de ocupação atual, não fonte histórica primária completa;
+- permanência por movimentações declara limitação histórica;
+- taxa UA/ha explicita dependência de `area_ha` válida e peso explícito;
+- labels de permanência em `LoteDetalhe` e `PastoDetalhe` foram ajustados para leitura atual;
+- testes focados de `src/features/occupancy/__tests__/cockpitManejoAdapter.test.ts` passaram;
+- `git diff --check`, `pnpm run lint` e `pnpm run build` passaram, com warnings conhecidos de Browserslist/chunks no build.
+
+Nenhum Supabase, RLS, migration, RPC, edge function, schema ou sync foi alterado na 11B.
+
+Próximo passo mínimo: iniciar 11C por diagnóstico, revisando ocupação, lotação e movimentações com fonte explícita e limitação operacional.
 
 Fases 1-8 permanecem consolidadas em baseline `3fe7a81`.
 
@@ -243,11 +257,12 @@ Resultado da 9D:
 
 ## 6. Escopo permitido no próximo passo
 
-Permitido para 11B:
+Permitido para 11C:
 
-- ajustar linguagem operacional do cockpit de Lotes/Pastos;
-- explicitar limitações de GMD, permanência e ocupação;
-- evitar que `state_pasto_ocupacoes` seja tratado como histórico completo;
+- diferenciar ocupação atual de histórico de movimentação;
+- deixar claro quando lotação é calculável, parcial ou bloqueada;
+- impedir que movimentações incompletas gerem conclusão de permanência histórica;
+- explicitar limitações quando `area_ha`, peso ou eventos de movimentação estiverem ausentes;
 - manter leitura read-only;
 - propor patch pequeno, reversível e testável com testes focados;
 - preservar regras críticas fora da UI;

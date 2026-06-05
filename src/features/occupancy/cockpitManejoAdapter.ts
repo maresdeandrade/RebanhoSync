@@ -15,6 +15,21 @@ import type {
 import { calculateIndividualGmd, calculateUaLotacao } from "@/lib/animals/kpiHelpers";
 import { getPredominantCategorySnapshot } from "./classification";
 
+const GMD_LOTE_SCOPE_LIMITATION =
+  "Leitura baseada nos animais atualmente no lote com pesagens válidas; não comprova desempenho histórico completo do lote nem permanência no período sem movimentações suficientes.";
+const GMD_PASTO_SCOPE_LIMITATION =
+  "Leitura baseada nos animais atualmente no pasto com pesagens válidas; não comprova desempenho histórico completo do pasto nem permanência no período sem movimentações suficientes.";
+const OCCUPANCY_READ_MODEL_LIMITATION =
+  "Read model de ocupação atual; não é fonte histórica primária completa de permanência.";
+const MOVEMENT_HISTORY_LIMITATION =
+  "Baseado em movimentações de entrada registradas para os animais atuais; não substitui auditoria histórica completa de entradas e saídas.";
+const PASTO_STOCKING_RATE_LIMITATION =
+  "Taxa UA/ha exige area_ha válida e peso explícito dos animais atuais; dados incompletos tornam a leitura parcial.";
+
+function mergeLimitations(...limitations: Array<string | undefined>): string | undefined {
+  return limitations.filter(Boolean).join(" ");
+}
+
 export interface DataStatus {
   status: "empty" | "partial" | "complete" | "bloqueado";
   reason?: string;
@@ -235,22 +250,29 @@ export function calculateLoteMetrics(
   } else if (countGmdCalculated === activeAnimals.length) {
     gmdStatus = {
       status: "complete",
-      reason: "GMD calculado para todos os animais",
-      source: "GMD factual",
+      reason: "GMD calculado para todos os animais atuais do lote",
+      source: "Pesagens factuais dos animais atuais",
+      limitation: GMD_LOTE_SCOPE_LIMITATION,
     };
   } else if (countGmdCalculated > 0) {
     gmdStatus = {
       status: "partial",
-      reason: `${countGmdCalculated} de ${activeAnimals.length} animais com GMD`,
-      source: "GMD factual",
-      limitation: `${activeAnimals.length - countGmdCalculated} animais com dados insuficientes (exige ≥2 pesagens em dias distintos)`,
+      reason: `${countGmdCalculated} de ${activeAnimals.length} animais atuais do lote com GMD`,
+      source: "Pesagens factuais dos animais atuais",
+      limitation: mergeLimitations(
+        `${activeAnimals.length - countGmdCalculated} animais com dados insuficientes (exige ≥2 pesagens em dias distintos).`,
+        GMD_LOTE_SCOPE_LIMITATION,
+      ),
     };
   } else {
     gmdStatus = {
       status: "empty",
       reason: "Dados insuficientes para calcular GMD",
-      source: "GMD factual",
-      limitation: "Todos os animais têm menos de 2 pesagens ou intervalo inválido",
+      source: "Pesagens factuais dos animais atuais",
+      limitation: mergeLimitations(
+        "Todos os animais têm menos de 2 pesagens ou intervalo inválido.",
+        GMD_LOTE_SCOPE_LIMITATION,
+      ),
     };
   }
 
@@ -345,9 +367,10 @@ export function calculateLoteMetrics(
       tempoMedioPermanencia = days >= 0 ? days : 0;
       maxPermanencia = tempoMedioPermanencia;
       permanenciaStatus = {
-        status: "complete",
-        reason: "Permanência ativa mapeada",
-        source: "state_pasto_ocupacoes",
+        status: "partial",
+        reason: "Ocupação atual mapeada por read model",
+        source: "state_pasto_ocupacoes (read model)",
+        limitation: OCCUPANCY_READ_MODEL_LIMITATION,
       };
     } else {
       const sorted = [...ocupacoesLote].sort((a, b) => b.entrada_em.localeCompare(a.entrada_em));
@@ -358,8 +381,11 @@ export function calculateLoteMetrics(
       permanenciaStatus = {
         status: "partial",
         reason: "Ocupação anterior encerrada",
-        source: "state_pasto_ocupacoes",
-        limitation: "Não há registro de ocupação aberta atualmente no pasto",
+        source: "state_pasto_ocupacoes (read model)",
+        limitation: mergeLimitations(
+          "Não há registro de ocupação aberta atualmente no pasto.",
+          OCCUPANCY_READ_MODEL_LIMITATION,
+        ),
       };
     }
   } else {
@@ -398,22 +424,26 @@ export function calculateLoteMetrics(
     } else if (countWithEntry === activeAnimals.length) {
       permanenciaStatus = {
         status: "complete",
-        reason: "Histórico de permanência completo por movimentações factuais",
+        reason: "Permanência atual calculada por movimentações de entrada",
         source: "eventos_movimentacao",
+        limitation: MOVEMENT_HISTORY_LIMITATION,
       };
     } else if (countWithEntry > 0) {
       permanenciaStatus = {
         status: "partial",
         reason: "Permanência calculada parcialmente via movimentações",
         source: "eventos_movimentacao",
-        limitation: `${activeAnimals.length - countWithEntry} animais sem movimentação de entrada registrada`,
+        limitation: mergeLimitations(
+          `${activeAnimals.length - countWithEntry} animais sem movimentação de entrada registrada.`,
+          MOVEMENT_HISTORY_LIMITATION,
+        ),
       };
     } else {
       permanenciaStatus = {
         status: "partial",
         reason: "Permanência desconhecida (todos os animais sem movimentação de entrada)",
         source: "eventos_movimentacao",
-        limitation: "Movimentação inicial ausente para todos os animais",
+        limitation: "Movimentação inicial ausente para todos os animais atuais; permanência histórica não pode ser afirmada.",
       };
     }
   }
@@ -672,22 +702,29 @@ export function calculatePastoMetrics(
   } else if (countGmdCalculated === activeAnimals.length) {
     gmdStatus = {
       status: "complete",
-      reason: "GMD calculado para todos os animais",
-      source: "GMD factual",
+      reason: "GMD calculado para todos os animais atuais do pasto",
+      source: "Pesagens factuais dos animais atuais",
+      limitation: GMD_PASTO_SCOPE_LIMITATION,
     };
   } else if (countGmdCalculated > 0) {
     gmdStatus = {
       status: "partial",
-      reason: `${countGmdCalculated} de ${activeAnimals.length} animais com GMD`,
-      source: "GMD factual",
-      limitation: `${activeAnimals.length - countGmdCalculated} animais com dados insuficientes (exige ≥2 pesagens em dias distintos)`,
+      reason: `${countGmdCalculated} de ${activeAnimals.length} animais atuais do pasto com GMD`,
+      source: "Pesagens factuais dos animais atuais",
+      limitation: mergeLimitations(
+        `${activeAnimals.length - countGmdCalculated} animais com dados insuficientes (exige ≥2 pesagens em dias distintos).`,
+        GMD_PASTO_SCOPE_LIMITATION,
+      ),
     };
   } else {
     gmdStatus = {
       status: "empty",
       reason: "Dados insuficientes para calcular GMD",
-      source: "GMD factual",
-      limitation: "Todos os animais têm menos de 2 pesagens ou intervalo inválido",
+      source: "Pesagens factuais dos animais atuais",
+      limitation: mergeLimitations(
+        "Todos os animais têm menos de 2 pesagens ou intervalo inválido.",
+        GMD_PASTO_SCOPE_LIMITATION,
+      ),
     };
   }
 
@@ -781,9 +818,10 @@ export function calculatePastoMetrics(
       }, 0);
       tempoUsoDias = sumDays / ocupacoesAtivas.length;
       permanenciaStatus = {
-        status: "complete",
-        reason: "Tempo de uso ativo mapeado",
-        source: "state_pasto_ocupacoes",
+        status: "partial",
+        reason: "Ocupação atual mapeada por read model",
+        source: "state_pasto_ocupacoes (read model)",
+        limitation: OCCUPANCY_READ_MODEL_LIMITATION,
       };
     } else {
       const sorted = [...ocupacoesPasto].sort((a, b) => b.entrada_em.localeCompare(a.entrada_em));
@@ -793,8 +831,11 @@ export function calculatePastoMetrics(
       permanenciaStatus = {
         status: "partial",
         reason: "Última ocupação encerrada",
-        source: "state_pasto_ocupacoes",
-        limitation: "Não há registro de lote ativo atualmente no pasto",
+        source: "state_pasto_ocupacoes (read model)",
+        limitation: mergeLimitations(
+          "Não há registro de lote ativo atualmente no pasto.",
+          OCCUPANCY_READ_MODEL_LIMITATION,
+        ),
       };
     }
   } else {
@@ -831,22 +872,26 @@ export function calculatePastoMetrics(
     } else if (countWithPastoEntry === activeAnimals.length) {
       permanenciaStatus = {
         status: "complete",
-        reason: "Tempo de uso completo por movimentações factuais",
+        reason: "Uso atual calculado por movimentações de entrada",
         source: "eventos_movimentacao",
+        limitation: MOVEMENT_HISTORY_LIMITATION,
       };
     } else if (countWithPastoEntry > 0) {
       permanenciaStatus = {
         status: "partial",
         reason: "Tempo de uso parcial via movimentações",
         source: "eventos_movimentacao",
-        limitation: `${activeAnimals.length - countWithPastoEntry} animais sem movimentação de entrada registrada`,
+        limitation: mergeLimitations(
+          `${activeAnimals.length - countWithPastoEntry} animais sem movimentação de entrada registrada.`,
+          MOVEMENT_HISTORY_LIMITATION,
+        ),
       };
     } else {
       permanenciaStatus = {
         status: "partial",
         reason: "Tempo de uso desconhecido (todos os animais sem movimentação de entrada)",
         source: "eventos_movimentacao",
-        limitation: "Movimentação inicial ausente para todos os animais",
+        limitation: "Movimentação inicial ausente para todos os animais atuais; uso histórico do pasto não pode ser afirmado.",
       };
     }
   }
@@ -945,7 +990,7 @@ export function calculatePastoMetrics(
       status: uaResult.status,
       reason: uaResult.reason,
       source: uaResult.source,
-      limitation: uaResult.limitation,
+      limitation: mergeLimitations(uaResult.limitation, PASTO_STOCKING_RATE_LIMITATION),
     },
   };
 }

@@ -752,7 +752,7 @@ const PastoDetalhe = () => {
               unit="dias"
               icon={<CalendarIcon className="h-4 w-4" />}
               status={pastoMetrics.permanenciaStatus.status}
-              reason={`Permanência Média Atual: ${pastoMetrics.tempoUsoDias.toFixed(0)} dias no pasto`}
+              reason={`Leitura de uso atual: ${pastoMetrics.tempoUsoDias.toFixed(0)} dias no pasto`}
               source={pastoMetrics.permanenciaStatus.source}
               limitation={pastoMetrics.permanenciaStatus.limitation}
               extraContent={

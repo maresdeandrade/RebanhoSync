@@ -6,6 +6,33 @@ Atualizado em: 2026-06-05
 
 ## 0. Resultado mais recente
 
+Fase 11B — Ajuste semântico/read-only do cockpit de Lotes/Pastos — concluída localmente.
+
+Resultado da 11B:
+
+- patch pequeno/read-only aplicado em `src/features/occupancy/cockpitManejoAdapter.ts`;
+- testes focados atualizados em `src/features/occupancy/__tests__/cockpitManejoAdapter.test.ts`;
+- `LoteDetalhe` e `PastoDetalhe` tocados apenas para labels de permanência montados fora do adapter;
+- GMD passou a ser comunicado como leitura baseada nos animais atuais com pesagens válidas, sem comprovar desempenho histórico completo do lote/pasto;
+- `state_pasto_ocupacoes` passou a ser tratado como read model parcial de ocupação atual, não histórico completo;
+- permanência por movimentações passou a declarar limitação histórica;
+- taxa UA/ha passou a explicitar dependência de `area_ha` válida e peso explícito;
+- nenhum schema, Supabase, RLS, migration, RPC, sync ou edge function foi alterado;
+- nenhum avanço para venda, abate, custo por arroba, DRE, ROI, margem, motor de decisão ou recomendação crítica.
+
+Validação local da 11B:
+
+```txt
+pnpm test -- src/features/occupancy/__tests__/cockpitManejoAdapter.test.ts: passou (1 arquivo, 21 testes).
+git diff --check: passou.
+pnpm run lint: passou.
+pnpm run build: passou com warnings conhecidos de Browserslist/caniuse-lite e chunks grandes.
+```
+
+Próximo foco: Fase 11C — Ocupação, lotação e movimentações, preparada mas não iniciada.
+
+---
+
 Fase 11A — Diagnóstico de Lotes, Pastos e Desempenho Operacional Ampliado — concluída documentalmente.
 
 Resultado da 11A:
@@ -30,7 +57,7 @@ Resultado da 11A:
   - ocupação histórica depende de eventos consistentes de entrada/saída;
   - lotação UA/ha depende de peso explícito e `area_ha` válida;
 - riscos de inferência indevida registrados;
-- 11B preparada como próximo patch pequeno, read-only, sem iniciar implementação.
+- 11B foi preparada como próximo patch pequeno, read-only, e depois concluída localmente.
 
 Restrições preservadas na 11A:
 
@@ -50,7 +77,7 @@ git diff --check: passou.
 
 Como a 11A é documental, não foi rodada suite completa.
 
-Próximo foco: Fase 11B — Ajuste semântico/read-only do cockpit de Lotes/Pastos, preparada mas não iniciada.
+Próximo foco indicado na 11A: Fase 11B — Ajuste semântico/read-only do cockpit de Lotes/Pastos, agora concluída localmente.
 
 ---
 

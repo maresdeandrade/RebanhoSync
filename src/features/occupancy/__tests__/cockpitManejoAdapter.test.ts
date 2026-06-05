@@ -27,6 +27,9 @@ describe("cockpitManejoAdapter unit tests", () => {
       expect(metrics.gmdMedio).toBe(1); // 10kg gain / 10 days = 1.0 kg/day
       expect(metrics.ganhoMedio).toBe(10); // 10kg gain
       expect(metrics.gmdStatus.status).toBe("complete");
+      expect(metrics.gmdStatus.reason).toContain("animais atuais do lote");
+      expect(metrics.gmdStatus.limitation).toContain("não comprova desempenho histórico completo do lote");
+      expect(metrics.gmdStatus.limitation).toContain("permanência no período");
     });
 
     it("blocks GMD with less than 2 weights", () => {
@@ -43,6 +46,8 @@ describe("cockpitManejoAdapter unit tests", () => {
       const metrics = calculateLoteMetrics("lote-1", refDate, 30, animals, events, pesagens, [], [], []);
       expect(metrics.gmdMedio).toBeNull();
       expect(metrics.gmdStatus.status).toBe("empty");
+      expect(metrics.gmdStatus.limitation).toContain("pesagens");
+      expect(metrics.gmdStatus.limitation).toContain("não comprova desempenho histórico completo do lote");
     });
 
     it("blocks GMD with 0 days interval", () => {
@@ -122,8 +127,9 @@ describe("cockpitManejoAdapter unit tests", () => {
 
       const metrics = calculateLoteMetrics("lote-1", refDate, 30, animals, events, [], [], movimentacoes, [], pastoOcupacoes);
       expect(metrics.tempoMedioPermanencia).toBe(3); // 2026-05-25 to 2026-05-28
-      expect(metrics.permanenciaStatus.source).toBe("state_pasto_ocupacoes");
-      expect(metrics.permanenciaStatus.status).toBe("complete");
+      expect(metrics.permanenciaStatus.source).toBe("state_pasto_ocupacoes (read model)");
+      expect(metrics.permanenciaStatus.status).toBe("partial");
+      expect(metrics.permanenciaStatus.limitation).toContain("não é fonte histórica primária completa");
     });
 
     it("falls back to events_movimentacao for permanence when pasto_ocupacoes is empty", () => {
@@ -140,6 +146,8 @@ describe("cockpitManejoAdapter unit tests", () => {
       const metrics = calculateLoteMetrics("lote-1", refDate, 30, animals, events, [], [], movimentacoes, []);
       expect(metrics.tempoMedioPermanencia).toBe(8); // 2026-05-20 to 2026-05-28 = 8 days
       expect(metrics.permanenciaStatus.source).toBe("eventos_movimentacao");
+      expect(metrics.permanenciaStatus.reason).toContain("movimentações de entrada");
+      expect(metrics.permanenciaStatus.limitation).toContain("não substitui auditoria histórica completa");
     });
   });
 
@@ -168,6 +176,8 @@ describe("cockpitManejoAdapter unit tests", () => {
       expect(metrics.uaTotal).toBe(1); // 450 / 450 = 1 UA
       expect(metrics.taxaLotacaoUaHa).toBe(0.1); // 1 UA / 10 ha = 0.1 UA/ha
       expect(metrics.taxaLotacaoStatus.status).toBe("complete");
+      expect(metrics.taxaLotacaoStatus.limitation).toContain("area_ha válida");
+      expect(metrics.taxaLotacaoStatus.limitation).toContain("peso explícito");
     });
 
     it("blocks stocking rate UA/ha when area is <= 0 or missing", () => {
@@ -187,6 +197,28 @@ describe("cockpitManejoAdapter unit tests", () => {
       const metrics = calculatePastoMetrics("pasto-1", refDate, 30, animals, lotes, pastosNoArea, events, pesagens, [], [], []);
       expect(metrics.taxaLotacaoUaHa).toBeNull();
       expect(metrics.taxaLotacaoStatus.status).toBe("bloqueado");
+      expect(metrics.taxaLotacaoStatus.limitation).toContain("area_ha válida");
+    });
+
+    it("treats state_pasto_ocupacoes as current occupancy read model, not complete history", () => {
+      const animals: Animal[] = [
+        { id: "ani-1", status: "ativo", lote_id: "lote-1", identificacao: "A1", sexo: "F", fazenda_id: "faz-1", payload: {} } as any
+      ];
+      const events: Evento[] = [
+        { id: "evt-mov", dominio: "movimentacao", animal_id: "ani-1", occurred_at: "2026-05-01", deleted_at: null } as any
+      ];
+      const movimentacoes: EventoMovimentacao[] = [
+        { evento_id: "evt-mov", to_pasto_id: "pasto-1", to_lote_id: "lote-1" } as any
+      ];
+      const pastoOcupacoes: PastoOcupacao[] = [
+        { id: "ocup-1", lote_id: "lote-1", pasto_id: "pasto-1", entrada_em: "2026-05-20", saida_em: null } as any
+      ];
+
+      const metrics = calculatePastoMetrics("pasto-1", refDate, 30, animals, lotes, pastos, events, [], [], movimentacoes, [], pastoOcupacoes);
+      expect(metrics.tempoUsoDias).toBe(8);
+      expect(metrics.permanenciaStatus.status).toBe("partial");
+      expect(metrics.permanenciaStatus.source).toBe("state_pasto_ocupacoes (read model)");
+      expect(metrics.permanenciaStatus.limitation).toContain("não é fonte histórica primária completa");
     });
   });
 
@@ -372,8 +404,9 @@ it("animal vendido é excluído do cálculo de GMD", () => {
       const metrics = calculateLoteMetrics("lote-1", refDate, 30, animals, events, [], [], movimentacoes, [], pastoOcupacoes);
       // Deve usar state_pasto_ocupacoes (2026-05-20) = 8 dias, NÃO eventos_movimentacao (2026-05-01) = 27 dias
       expect(metrics.tempoMedioPermanencia).toBe(8);
-      expect(metrics.permanenciaStatus.source).toBe("state_pasto_ocupacoes");
-      expect(metrics.permanenciaStatus.status).toBe("complete");
+      expect(metrics.permanenciaStatus.source).toBe("state_pasto_ocupacoes (read model)");
+      expect(metrics.permanenciaStatus.status).toBe("partial");
+      expect(metrics.permanenciaStatus.limitation).toContain("não é fonte histórica primária completa");
     });
 
     it("categoriaPredominante não exibe snake_case — exibe label formatado", () => {

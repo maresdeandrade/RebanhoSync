@@ -605,7 +605,7 @@ export default function LoteDetalhe() {
               unit="dias"
               icon={<CalendarIcon className="h-4 w-4" />}
               status={loteMetrics.permanenciaStatus.status}
-              reason={`Permanência Média: ${loteMetrics.tempoMedioPermanencia.toFixed(0)} dias (Máx: ${loteMetrics.tempoMaximoPermanencia} dias)`}
+              reason={`Leitura de permanência atual: ${loteMetrics.tempoMedioPermanencia.toFixed(0)} dias (máx. ${loteMetrics.tempoMaximoPermanencia} dias)`}
               source={loteMetrics.permanenciaStatus.source}
               limitation={loteMetrics.permanenciaStatus.limitation}
               extraContent={

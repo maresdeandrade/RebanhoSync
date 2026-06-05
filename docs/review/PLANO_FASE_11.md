@@ -21,13 +21,21 @@ Status: concluída documentalmente.
 
 ### 11B — Ajuste semântico/read-only do cockpit de Lotes/Pastos
 
-Status: preparada; não iniciada.
+Status: concluída localmente.
 
 - ajustar linguagem operacional do cockpit;
 - explicitar limitações de GMD, permanência e ocupação;
 - evitar que `state_pasto_ocupacoes` seja tratado como histórico completo;
 - manter leitura read-only;
 - preservar schema, Supabase, migrations, RLS, RPC, sync e edge functions sem alteração.
+
+Resultado:
+
+- GMD limitado semanticamente a animais atuais com pesagens válidas;
+- `state_pasto_ocupacoes` tratado como read model parcial de ocupação atual;
+- permanência e lotação passaram a declarar limitações de fonte;
+- telas de detalhe só foram tocadas para labels de permanência montados fora do adapter;
+- testes focados cobrem os cenários críticos de GMD, ocupação/read model e UA/ha.
 
 Arquivos candidatos:
 
@@ -42,7 +50,7 @@ Componentes de tela só devem ser tocados se o texto exibido estiver fora do ada
 
 ### 11C — Ocupação, lotação e movimentações
 
-Status: futura.
+Status: preparada; não iniciada.
 
 - revisar ocupação atual, lotação e movimentações com fonte declarada;
 - manter `state_*` como estado atual/read model;

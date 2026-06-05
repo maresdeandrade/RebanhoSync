@@ -1,11 +1,11 @@
 # ACTIVE_PHASE_PLAN - Fase 11
 
-**Status:** 11A concluída documentalmente; 11B preparada, não iniciada
+**Status:** 11A concluída documentalmente; 11B concluída localmente; 11C preparada, não iniciada
 **Foco:** Lotes, Pastos e Desempenho Operacional Ampliado
 **Criado:** 2026-06-04
 **Atualizado:** 2026-06-05
-**Baseline documental preservado: 0f2fd8e
-**Commit local analisado na 11A: 0d350b8
+**Baseline documental preservado:** `0f2fd8e`
+**Commit local analisado na 11A:** `0d350b8`
 **Plano específico:** `docs/review/PLANO_FASE_11.md`
 
 ---
@@ -19,8 +19,8 @@ Conduzir a Fase 11 por subfases documentadas em `docs/review/PLANO_FASE_11.md`, 
 ## Status da Fase 11
 
 - 11A — Diagnóstico de Lotes, Pastos e Desempenho Operacional Ampliado: concluída documentalmente, sem patch funcional.
-- 11B — Ajuste semântico/read-only do cockpit de Lotes/Pastos: preparada, não iniciada.
-- 11C — Ocupação, lotação e movimentações: futura.
+- 11B — Ajuste semântico/read-only do cockpit de Lotes/Pastos: concluída localmente.
+- 11C — Ocupação, lotação e movimentações: preparada, não iniciada.
 - 11D — Desempenho read-only se houver fonte suficiente: futura.
 - 11E — Relatórios operacionais ampliados: futura.
 - 11F — Fechamento: futura.
@@ -36,6 +36,18 @@ Resultado da 11A:
 - fontes reais identificadas para estado atual, ocupação/read model, histórico, pesagens e área de pasto;
 - lacunas registradas para GMD por lote/pasto, permanência histórica completa, ocupação histórica e lotação quando faltam peso/área;
 - nenhum código funcional, Supabase, migrations, RLS, RPC, schema, sync ou edge functions foi alterado.
+
+Resultado da 11B:
+
+- patch pequeno/read-only aplicado no cockpit de Lotes/Pastos;
+- `GMD` passou a ser descrito como leitura baseada nos animais atuais com pesagens válidas, sem comprovar desempenho histórico completo do lote/pasto;
+- `state_pasto_ocupacoes` passou a ser comunicado como read model parcial de ocupação atual, não histórico completo;
+- permanência por movimentações passou a declarar limitação histórica;
+- taxa UA/ha passou a explicitar dependência de `area_ha` válida e peso explícito;
+- labels de permanência em Lote/Pasto foram ajustados para leitura atual;
+- testes focados de `cockpitManejoAdapter` passaram;
+- `git diff --check`, `pnpm run lint` e `pnpm run build` passaram, com warnings conhecidos de Browserslist/chunks no build;
+- nenhuma alteração em Supabase, migrations, RLS, RPC, schema, sync ou edge functions.
 
 ---
 
@@ -73,6 +85,14 @@ Diagnóstico mínimo:
 - GMD por período somente com fonte explícita e limitação.
 - Melhorias de copy, labels, estados vazios e rastreabilidade.
 - Testes focados quando houver patch.
+
+### Próximo recorte — 11C
+
+- Diferenciar ocupação atual de histórico de movimentação.
+- Deixar claro quando lotação é calculável, parcial ou bloqueada.
+- Impedir afirmação de permanência histórica quando movimentações completas estiverem ausentes.
+- Explicitar limitações quando `area_ha`, peso ou eventos de movimentação estiverem ausentes.
+- Manter patch pequeno, read-only e testável.
 
 ---
 
