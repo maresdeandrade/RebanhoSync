@@ -184,7 +184,7 @@ const Pastos = () => {
       <PageIntro
         variant="plain"
         title="Pastos"
-        description="Ocupacao atual e ultima ronda. Capacidade UA e descanso entram como contexto secundario."
+        description="Estado atual de ocupacao e ultima ronda executada. Movimentacoes historicas ficam rastreadas no detalhe do pasto."
         meta={
           <>
             <StatusBadge tone="neutral">
@@ -213,6 +213,7 @@ const Pastos = () => {
         <EmptyState
           icon={MapIcon}
           title="Nenhum pasto cadastrado"
+          description="Cadastre pastos para acompanhar ocupacao atual; rondas e movimentacoes aparecerao como historico executado."
           action={{
             label: "Cadastrar primeiro pasto",
             onClick: () => navigate("/pastos/novo"),
@@ -230,4 +231,3 @@ const Pastos = () => {
 };
 
 export default Pastos;
-

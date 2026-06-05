@@ -259,8 +259,8 @@ export function RegistrarComercialSection(
         <div className="flex gap-2">
           {(
             [
-              { value: "compra", label: "Compra" },
-              { value: "venda", label: "Venda" },
+              { value: "compra", label: "Compra manual" },
+              { value: "venda", label: "Venda manual" },
               { value: "sociedade", label: "Sociedade" },
             ] as const
           ).map((opt) => (
@@ -279,6 +279,9 @@ export function RegistrarComercialSection(
             </Button>
           ))}
         </div>
+        <p className="text-xs text-muted-foreground">
+          Compra e venda sao registros manuais informados pelo usuario; nao validam aptidao comercial.
+        </p>
       </div>
 
       {comercialData.operationType === "sociedade" ? (

@@ -568,6 +568,7 @@ const PastoDetalhe = () => {
         variant="plain"
         eyebrow="Estrutura do rebanho"
         title={pasto.nome}
+        description="Estado atual do pasto e ocupacao materializada; rondas e movimentacoes abaixo sao fatos historicos executados."
         meta={
           <>
             <StatusBadge tone="neutral">
@@ -850,10 +851,10 @@ const PastoDetalhe = () => {
 
       {/* Histórico de Movimentações */}
       {pastoAnimalPeriods.length > 0 && (
-        <AnimalMovementHistoryTable
-          periods={pastoAnimalPeriods}
-          title="Histórico de Movimentação do Pasto"
-          description="Trajetória dos animais neste pasto"
+          <AnimalMovementHistoryTable
+            periods={pastoAnimalPeriods}
+          title="Historico de movimentacoes executadas do pasto"
+          description="Trajetoria historica registrada por eventos de movimentacao; nao substitui a ocupacao atual do pasto."
         />
       )}
 
@@ -908,6 +909,9 @@ const PastoDetalhe = () => {
           <h2 className="text-lg font-semibold tracking-[-0.01em] text-foreground">
             Ultima ronda
           </h2>
+          <p className="text-sm text-muted-foreground">
+            Leitura do ultimo evento de ronda registrado para este pasto.
+          </p>
         </div>
 
         {ultimaAvaliacao ? (

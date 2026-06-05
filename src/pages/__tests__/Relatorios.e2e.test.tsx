@@ -345,7 +345,15 @@ describe("Relatorios flow", () => {
     expect(
       await screen.findByRole("heading", { name: /Fazenda Boa Vista/i }),
     ).toBeInTheDocument();
+    expect(
+      screen.getByText(/Leituras derivadas de eventos, state_\* e agenda/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/nao representam DRE, ROI, margem ou custo por arroba/i),
+    ).toBeInTheDocument();
     expect(screen.getByText(/Resumo operacional/i)).toBeInTheDocument();
+    expect(screen.getByText(/Financeiro operacional/i)).toBeInTheDocument();
+    expect(screen.getByText(/nao e DRE, ROI ou margem/i)).toBeInTheDocument();
     expect(screen.getByText(/Estoque operacional/i)).toBeInTheDocument();
     expect(screen.getByText(/Custo operacional parcial/i)).toBeInTheDocument();
     expect(screen.getByText(/Fonte: read model de inventario/i)).toBeInTheDocument();

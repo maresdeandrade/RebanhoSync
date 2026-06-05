@@ -106,7 +106,7 @@ const Lotes = () => {
       <PageIntro
         variant="plain"
         title="Lotes"
-        description="Agrupamento operacional do rebanho. Pendencias e indicadores por lote."
+        description="Estado atual dos agrupamentos do rebanho. Movimentacoes e manejos executados ficam no historico do lote."
         meta={
           <>
             <StatusBadge tone="neutral">{lotes?.length ?? 0} lotes</StatusBadge>
@@ -133,6 +133,7 @@ const Lotes = () => {
         <EmptyState
           icon={Layers}
           title="Nenhum lote cadastrado"
+          description="Cadastre lotes para acompanhar o estado atual; o historico aparece depois que houver eventos executados."
           action={{
             label: "Criar primeiro lote",
             onClick: () => navigate("/lotes/novo"),
@@ -150,4 +151,3 @@ const Lotes = () => {
 };
 
 export default Lotes;
-

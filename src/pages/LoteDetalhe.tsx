@@ -381,6 +381,7 @@ export default function LoteDetalhe() {
         variant="plain"
         eyebrow="Estrutura"
         title={lote.nome}
+        description="Estado atual do lote vindo de state_*; movimentacoes, manejos e operacoes abaixo sao fatos historicos executados."
         meta={
           <>
             <StatusBadge tone="neutral">
@@ -689,10 +690,10 @@ export default function LoteDetalhe() {
 
       {/* Histórico de Movimentações */}
       {loteAnimalPeriods.length > 0 && (
-        <AnimalMovementHistoryTable
-          periods={loteAnimalPeriods}
-          title="Histórico de Movimentação do Lote"
-          description="Trajetória dos animais neste lote entre pastos"
+          <AnimalMovementHistoryTable
+            periods={loteAnimalPeriods}
+          title="Historico de movimentacoes executadas do lote"
+          description="Trajetoria historica registrada por eventos de movimentacao; nao substitui o estado atual do lote."
         />
       )}
 
@@ -700,7 +701,10 @@ export default function LoteDetalhe() {
       {loteComerciais.length > 0 && (
         <Card className="shadow-none">
           <CardContent className="p-4 space-y-4">
-            <h3 className="text-lg font-bold text-foreground">Operações Comerciais do Lote</h3>
+            <h3 className="text-lg font-bold text-foreground">Operacoes comerciais manuais do lote</h3>
+            <p className="text-sm text-muted-foreground">
+              Registros informados pelo usuario; nao representam recomendacao, aptidao de venda ou autorizacao comercial.
+            </p>
             <div className="grid gap-3 sm:grid-cols-2">
               {loteComerciais.map((com) => {
                 const isCompra = com.operation_type === "compra";

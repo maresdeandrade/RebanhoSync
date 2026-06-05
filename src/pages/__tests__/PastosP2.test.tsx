@@ -349,6 +349,14 @@ render(
     );
 
     expect(await screen.findByText(/Tipo de pastagem: nativo/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        /Estado atual do pasto e ocupacao materializada; rondas e movimentacoes abaixo sao fatos historicos executados/i,
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/Leitura do ultimo evento de ronda registrado/i),
+    ).toBeInTheDocument();
     expect(screen.getAllByText(/Nao informado/i).length).toBeGreaterThan(0);
   });
 
@@ -370,6 +378,11 @@ render(
     );
 
     expect(screen.getAllByText(/Nao informado/i).length).toBeGreaterThan(0);
+    expect(
+      screen.getByText(
+        /Estado atual de ocupacao e ultima ronda executada/i,
+      ),
+    ).toBeInTheDocument();
   });
 });
 
@@ -538,4 +551,3 @@ render(
     expect(screen.queryByText(/balan[cç]a/i)).not.toBeInTheDocument();
   });
 });
-

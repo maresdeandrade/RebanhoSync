@@ -1,8 +1,8 @@
 # Last Phase Result — RebanhoSync
 
 Atualizado em: 2026-06-04
-**Baseline Commit documental anterior:** `8cd5534`
-**Commit local observado na 9D:** `84383ab`
+**Baseline Commit documental anterior:** `84383ab`
+**Commit local observado no início da 10E:** `82b68b2`
 
 ## 0. Resultado mais recente
 
@@ -13,6 +13,43 @@ Fase 10B — Agenda/Registrar: clareza de intenção futura vs execução real �
 Fase 10C — Home/Central Operacional — concluída localmente.
 
 Fase 10D — Animal, Eventos e Histórico — concluída localmente.
+
+Fase 10E — Integração via Histórico para Lotes/Pastos, Relatórios e Compra/Venda — concluída localmente.
+
+Patch aplicado na 10E:
+
+- `Lotes` e `Pastos` passaram a reforçar estado atual/read model e histórico de movimentos executados;
+- `LoteDetalhe` e `PastoDetalhe` passaram a explicitar que timeline, movimentações, rondas e operações são fatos históricos executados;
+- operações comerciais do lote passaram a aparecer como registros manuais informados pelo usuário, sem recomendação ou aptidão comercial;
+- `Relatorios` passou a reforçar leitura derivada/parcial de eventos, `state_*` e agenda;
+- saldo financeiro operacional e custo parcial foram limitados como leitura parcial, não DRE, ROI, margem ou custo por arroba;
+- `RegistrarComercialSection` passou a exibir `Compra manual` e `Venda manual`, sem validar aptidão comercial;
+- testes focados de LoteDetalhe, PastosP2, Relatorios e RegistrarComercialSection foram atualizados.
+
+Restrições preservadas na 10E:
+
+- histórico operacional continua sendo eixo de rastreabilidade, não recomendação;
+- Lotes/Pastos continuam separando estado atual de fato histórico;
+- Relatórios continuam leitura derivada/parcial;
+- Compra/Venda continua registro manual informado pelo usuário;
+- nenhuma regra crítica nova foi criada;
+- nenhum cálculo de relatório, insight, classificação ou evento foi alterado;
+- nenhuma alteração em Supabase, RLS, migrations, RPC, edge functions, schema ou sync.
+
+Validação local da 10E:
+
+```txt
+pnpm test -- src/pages/__tests__/LoteDetalhe.test.tsx: passou (1 arquivo, 1 teste; warnings conhecidos de React Router future flags)
+pnpm test -- src/pages/__tests__/PastosP2.test.tsx: passou (1 arquivo, 11 testes; warnings conhecidos de React Router future flags)
+pnpm test -- src/pages/__tests__/Relatorios.e2e.test.tsx: passou (1 arquivo, 1 teste)
+pnpm test -- src/pages/Registrar/__tests__/RegistrarComercialSection.test.tsx: passou (1 arquivo, 1 teste)
+pnpm run lint: passou
+pnpm run build: passou com warnings conhecidos de Browserslist/caniuse-lite e chunks grandes
+```
+
+Próximo foco sugerido: Fase 10F — Fechamento da Fase 10 e handoff.
+
+---
 
 Patch aplicado na 10D:
 
@@ -45,7 +82,7 @@ pnpm run lint: passou
 pnpm run build: passou com warnings conhecidos de Browserslist/caniuse-lite e chunks grandes
 ```
 
-Próximo foco sugerido: Fase 10E — Lotes/Pastos, Relatórios e Compra/Venda.
+Próximo foco sugerido na 10D era Fase 10E — concluída localmente nesta etapa.
 
 ---
 
@@ -93,7 +130,7 @@ Próximo foco sugerido: Fase 10D — Animal, Eventos e Histórico.
 
 Fase 10 — UX Operacional dos Fluxos Centrais.
 
-Subfase mais recente: 10D — Animal, Eventos e Histórico.
+Subfase mais recente: 10E — Integração via Histórico para Lotes/Pastos, Relatórios e Compra/Venda.
 
 ---
 

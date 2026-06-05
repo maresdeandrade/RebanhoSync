@@ -192,6 +192,11 @@ describe("LoteDetalhe page", () => {
     expect(
       screen.getByText("Conformidade impacta este lote"),
     ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        /Estado atual do lote vindo de state_\*; movimentacoes, manejos e operacoes abaixo sao fatos historicos executados/i,
+      ),
+    ).toBeInTheDocument();
     expect(screen.getByText("Movimentação restrita")).toBeInTheDocument();
     const addButtons = screen.getAllByRole("button", {
       name: /adicionar animais/i,
@@ -205,4 +210,3 @@ describe("LoteDetalhe page", () => {
     ).toHaveAttribute("href", "/registrar?loteId=lote-1");
   });
 });
-

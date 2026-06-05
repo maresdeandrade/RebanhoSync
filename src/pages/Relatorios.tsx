@@ -311,7 +311,7 @@ const Relatorios = () => {
       <PageIntro
        variant="plain"
         title="Relatorios"
-        description="Cada relatorio indica sua fonte primaria: eventos, estado atual ou agenda."
+        description="Leituras derivadas de eventos, state_* e agenda. Indicadores parciais nao representam DRE, ROI, margem ou custo por arroba."
         meta={
           <>
             <StatusBadge tone="neutral">{farm?.nome ?? "Sua fazenda"}</StatusBadge>
@@ -374,8 +374,8 @@ const Relatorios = () => {
             icon: CalendarClock,
           },
           {
-            title: "Financeiro",
-            description: "Receita, despesa e saldo por periodo.",
+            title: "Financeiro operacional",
+            description: "Receita, despesa e saldo informados no periodo; leitura parcial, nao DRE ou margem.",
             source: "Fonte: lancamentos financeiros",
             icon: Receipt,
           },
@@ -487,6 +487,9 @@ const Relatorios = () => {
                 {report.financeiro.transacoes} transacoes
               </Badge>
             </div>
+            <p className="text-xs text-muted-foreground">
+              Leitura operacional parcial; nao e DRE, ROI ou margem.
+            </p>
           </CardContent>
         </Card>
 
@@ -1468,4 +1471,3 @@ const Relatorios = () => {
 };
 
 export default Relatorios;
-

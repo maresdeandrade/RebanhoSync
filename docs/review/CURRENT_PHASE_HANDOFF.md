@@ -1,7 +1,7 @@
 # Current Phase Handoff — RebanhoSync
 
 Atualizado em: 2026-06-04
-**Baseline Commit:** `84383ab`
+**Baseline Commit:** `82b68b2`
 
 ## 1. Fase atual
 
@@ -15,7 +15,9 @@ Subfase 10C — Home/Central Operacional — concluída localmente.
 
 Subfase 10D — Animal, Eventos e Histórico — concluída localmente.
 
-Próximo foco sugerido: Fase 10E — Lotes/Pastos, Relatórios e Compra/Venda.
+Subfase 10E — Integração via Histórico para Lotes/Pastos, Relatórios e Compra/Venda — concluída localmente.
+
+Próximo foco sugerido: Fase 10F — Fechamento da Fase 10 e handoff.
 
 ---
 
@@ -65,6 +67,18 @@ Fase 10D aplicou patch UX mínimo em Animal/Eventos/Histórico:
 - testes focados de AnimalDetalhe, Eventos e quick action passaram.
 
 Nenhuma regra crítica nova, cálculo de classificação/evento/relatório, Supabase, RLS, migration, RPC, edge function, schema ou sync foi alterado.
+
+Fase 10E aplicou patch UX mínimo em Lotes/Pastos, Relatórios e Compra/Venda:
+
+- Lotes/Pastos reforçam estado atual vindo de `state_*` e histórico de movimentos/manejos executados;
+- detalhes de lote/pasto explicitam que timeline, movimentações, rondas e operações são fatos históricos executados;
+- operações comerciais do lote aparecem como registros manuais informados pelo usuário, sem recomendação ou aptidão comercial;
+- Relatórios passam a explicitar leitura derivada/parcial de eventos, `state_*` e agenda;
+- relatório financeiro operacional reforça que saldo e custo parcial não são DRE, ROI, margem ou custo por arroba;
+- seção comercial do Registrar apresenta `Compra manual` e `Venda manual`, sem validar aptidão comercial;
+- testes focados de LoteDetalhe, PastosP2, Relatorios e RegistrarComercialSection passaram.
+
+Nenhuma regra crítica nova, cálculo de relatório/insight/classificação, Supabase, RLS, migration, RPC, edge function, schema ou sync foi alterado.
 
 Fase 9A consolidou o inventário operacional no escopo técnico autorizado:
 

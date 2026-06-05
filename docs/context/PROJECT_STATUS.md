@@ -1,7 +1,7 @@
 ﻿# Project Status — RebanhoSync
 
 Atualizado em: 2026-06-04
-**Baseline Commit:** `84383ab`
+**Baseline Commit:** `82b68b2`
 
 ## Objetivo
 
@@ -46,6 +46,7 @@ A fase atual é Fase 10 — UX Operacional dos Fluxos Centrais, em andamento.
 - Fase 10B — Agenda/Registrar: clareza de intenção futura vs execução real concluída localmente.
 - Fase 10C — Home/Central Operacional concluída localmente.
 - Fase 10D — Animal, Eventos e Histórico concluída localmente.
+- Fase 10E — Integração via Histórico para Lotes/Pastos, Relatórios e Compra/Venda concluída localmente.
 
 Último avanço local da Fase 10:
 
@@ -63,10 +64,16 @@ A fase atual é Fase 10 — UX Operacional dos Fluxos Centrais, em andamento.
 - Eventos explicita histórico de eventos executados e novo registro manual;
 - nenhum cálculo de classificação, evento ou relatório foi alterado;
 - nenhuma alteração em Supabase/RLS/migrations/RPC/sync.
+- Lotes/Pastos reforçam estado atual/read model e histórico de movimentos/manejos executados;
+- Relatórios reforçam leitura derivada/parcial, sem DRE, ROI, margem ou custo por arroba;
+- Compra/Venda aparece como registro manual informado pelo usuário, sem recomendação ou autorização comercial;
+- histórico operacional foi usado como ponte entre 10D e os fluxos finais da 10E;
+- nenhum cálculo de relatório/insight/classificação foi alterado;
+- nenhuma alteração em Supabase/RLS/migrations/RPC/sync.
 
 Próximo foco:
 
-- Fase 10E — Lotes/Pastos, Relatórios e Compra/Venda;
+- Fase 10F — Fechamento da Fase 10 e handoff;
 - preservar separação entre pendência, execução, histórico e estado atual;
 - não criar regra crítica nova, autorização automática ou motor comercial/financeiro.
 

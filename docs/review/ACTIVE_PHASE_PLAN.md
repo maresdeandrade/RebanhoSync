@@ -4,7 +4,7 @@
 **Foco:** UX Operacional dos Fluxos Centrais
 **Criado:** 2026-06-04
 **Atualizado:** 2026-06-04
-**Baseline de handoff:** `84383ab`
+**Baseline de handoff:** `82b68b2`
 
 ---
 
@@ -33,7 +33,8 @@ Status local:
 - 10B — Agenda/Registrar: clareza de intenção futura vs execução real: concluída localmente.
 - 10C — Home/Central Operacional: concluída localmente.
 - 10D — Animal, Eventos e Histórico: concluída localmente.
-- Próximo foco sugerido: 10E — Lotes/Pastos, Relatórios e Compra/Venda.
+- 10E — Integração via Histórico para Lotes/Pastos, Relatórios e Compra/Venda: concluída localmente.
+- Próximo foco sugerido: 10F — Fechamento da Fase 10 e handoff.
 
 Resultado da 10B:
 
@@ -67,6 +68,17 @@ Resultado da 10D:
 - quick action comercial de Registrar passou para `Venda manual`, sem validar aptidão comercial;
 - testes focados de AnimalDetalhe, Eventos e quick action de Registrar passaram;
 - nenhum cálculo de classificação, evento ou relatório foi alterado;
+- nenhuma alteração em Supabase, RLS, migrations, RPC, edge functions, schema ou sync.
+
+Resultado da 10E:
+
+- Lotes e Pastos passaram a explicitar estado atual/read model e histórico de movimentações/manejos executados;
+- LoteDetalhe e PastoDetalhe reforçam que timeline, movimentações, rondas e operações são fatos históricos executados;
+- Relatórios reforçam que são leituras derivadas/parciais de eventos, `state_*` e agenda;
+- custo parcial e saldo operacional foram limitados como leitura parcial, não DRE, ROI, margem ou custo por arroba;
+- compra/venda no Registrar aparecem como `Compra manual` e `Venda manual`, sem validar aptidão comercial;
+- patch limitado a copy e testes focados;
+- nenhum cálculo de relatório, insight, classificação ou evento foi alterado;
 - nenhuma alteração em Supabase, RLS, migrations, RPC, edge functions, schema ou sync.
 
 ---
