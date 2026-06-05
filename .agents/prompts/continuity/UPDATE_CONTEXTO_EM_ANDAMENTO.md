@@ -1,8 +1,6 @@
 # Update Contexto em Andamento — RebanhoSync
-
 Atualizado em: 2026-06-04  
 Versão: 1.1.0
-
 Use este prompt quando a conversa ficou extensa, mas o trabalho ainda não foi concluído ou ainda não foi formalmente documentado.
 
 Este prompt não fecha fase, não atualiza documentação permanente e não define como o contexto será usado depois. Ele apenas preserva o estado útil da conversa atual.
@@ -18,8 +16,8 @@ Gerar um bloco enxuto de continuidade para preservar o que está sendo tratado n
 
 - Não implementar nada.
 - Não alterar código.
-- Não atualizar documentação permanente.
-- Não marcar fase/subfase como concluída.
+- Não atualizar roadmap como se a etapa tivesse sido concluída.
+- Não marcar fase/subfase como fechada.
 - Não inventar validações.
 - Não inventar commit.
 - Não inventar arquivos alterados.
@@ -29,6 +27,18 @@ Gerar um bloco enxuto de continuidade para preservar o que está sendo tratado n
 - Não explicar como o usuário deve usar o contexto.
 
 ## Tarefa
+
+Produzir um resumo de continuidade da conversa atual, separando claramente:
+
+1. o que está confirmado;
+2. o que está em andamento;
+3. o que foi decidido;
+4. o que ainda não foi validado;
+5. o que a próxima conversa deve continuar fazendo;
+6. o que não deve ser refeito;
+7. quais dúvidas ou riscos continuam abertos.
+
+## Limite do contexto gerado
 
 Produzir apenas um bloco de continuidade da conversa atual.
 
@@ -42,12 +52,13 @@ O bloco deve preservar:
 6. inferências ou premissas;
 7. pendências reais;
 8. riscos ou cuidados;
-9. referências citadas e motivo;
+9. arquivos, documentos, prompts ou áreas citadas;
 10. ponto exato de retomada.
 
 ## Limite do contexto gerado
 
 O resumo deve conter apenas o que agrega continuidade.
+
 
 Não repetir:
 
@@ -59,7 +70,7 @@ Não repetir:
 - prompt completo de nova conversa;
 - instruções sobre como usar o contexto.
 
-Preferir referências curtas:
+Preferir referências:
 
 - “seguir `ACTIVE_PHASE_PLAN.md`”;
 - “seguir `.agents/rules/CORE_RULES.md`”;
@@ -99,14 +110,9 @@ Preferir referências curtas:
 
 [Riscos de interpretação, regressão, duplicidade, drift documental ou consumo excessivo de contexto.]
 
-## 8. Referências citadas e motivo
-
-[Arquivos, documentos, prompts, regras ou áreas mencionadas, com uma frase curta explicando por que cada referência importa.]
-
-## 9. Ponto de retomada
+## 8. Ponto de retomada
 
 [Frase curta indicando de onde a conversa deve continuar.]
-```
 
 ## Regras
 
