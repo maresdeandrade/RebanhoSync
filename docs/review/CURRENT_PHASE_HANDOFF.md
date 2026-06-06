@@ -27,7 +27,7 @@ Referência: `docs/review/PLANO_FASE_11.md`.
 
 Fase 11.5 — Agenda Sanitária v2: Janelas, Agrupamento e Materialização Idempotente.
 
-Status: 11.5C concluída localmente / pronta para iniciar 11.5D.
+Status: 11.5D concluída localmente / pronta para iniciar 11.5E.
 
 Plano específico: `docs/review/PLANO_FASE_11_5_SANITARIO_AGENDA_V2.md`.
 
@@ -130,6 +130,36 @@ Próxima execução:
 
 - 11.5D — Preview operacional editável.
 
+11.5D — Preview operacional editável — concluída localmente.
+
+Resultado da 11.5D:
+
+- core puro criado em `src/lib/sanitario/preview/sanitaryOperationalPreview.ts`;
+- testes focados criados em `src/lib/sanitario/preview/__tests__/sanitaryOperationalPreview.test.ts`;
+- `createSanitaryOperationalPreview` consome `SanitaryDemandGroup[]` já recebido por parâmetro;
+- preview gera grupos operacionais apenas para demandas acionáveis;
+- `insufficient_data` é preservado como bloqueio/cadastro pendente com identidade operacional;
+- `not_applicable` não entra como item operacional;
+- `previewGroupId` e `sourceDemandKey` preservam protocolo, item, produto, classe, ação, lote e janela;
+- data sugerida fica dentro da janela quando possível;
+- campos editáveis são declarados sem persistir nada;
+- saída é determinística e não muta inputs;
+- preview permanece simulação derivada, com `materialization: "none"`;
+- não houve agenda, evento, baixa de estoque, carência ativa, autorização de venda/abate, Supabase, Dexie, React, UI, storage, RPC, `Date.now()`, migration, schema, RLS, sync-batch ou seed.
+
+Validações executadas:
+
+- `pnpm test -- src/lib/sanitario/preview`;
+- `pnpm test`;
+- `pnpm run lint`;
+- `pnpm run build`;
+- `git diff --check`;
+- `git status --short --untracked-files=all`.
+
+Próxima execução:
+
+- 11.5E — Materialização idempotente da agenda sanitária.
+
 ---
 
 ## 4. Fase 12
@@ -156,7 +186,7 @@ Não fazer sem tarefa explícita:
 
 ---
 
-## 6. Checklist antes da 11.5D
+## 6. Checklist antes da 11.5E
 
 Executar no início de nova rodada:
 

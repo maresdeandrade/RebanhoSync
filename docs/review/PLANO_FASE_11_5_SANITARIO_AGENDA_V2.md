@@ -1,7 +1,7 @@
 # Plano Fase 11.5 — Agenda Sanitária v2: Janelas, Agrupamento e Materialização Idempotente
 
 **Atualizado em:** 2026-06-06
-**Status:** 11.5C concluída localmente / pronta para iniciar 11.5D
+**Status:** 11.5D concluída localmente / pronta para iniciar 11.5E
 **Baseline documental de entrada:** `91e0775`
 **Commit local de entrada:** `91e0775`
 
@@ -843,7 +843,7 @@ git status --short --untracked-files=all
 
 ### 11.5D — Preview operacional editável
 
-**Status:** próxima execução.
+**Status:** concluída localmente em 2026-06-06.
 
 **Objetivo**
 Permitir revisão antes de materializar agenda.
@@ -905,9 +905,52 @@ Esses pontos só entram depois com motivo explícito e trilha de exceção técn
 * Regra técnica fica em core puro.
 * Preview deve declarar que é simulação operacional, não histórico.
 
+**Resultado 11.5D**
+
+Core puro criado em `src/lib/sanitario/preview/sanitaryOperationalPreview.ts`, com testes em `src/lib/sanitario/preview/__tests__/sanitaryOperationalPreview.test.ts`.
+
+Regras implementadas:
+
+* `createSanitaryOperationalPreview` consome `SanitaryDemandGroup[]` já recebido por parâmetro.
+* Preview gera grupos operacionais apenas para demanda acionável.
+* `insufficient_data` é preservado como bloqueio/cadastro pendente.
+* Bloqueios preservam identidade operacional por protocolo, item, produto, classe, ação, lote e janela.
+* `not_applicable` não entra como item operacional.
+* `previewGroupId` separa `productId` e `productClass` para evitar colisão.
+* Data sugerida fica dentro da janela quando possível.
+* Campos editáveis são declarados sem persistência.
+* Saída é determinística e não muta inputs.
+* Preview permanece simulação derivada, não agenda nem evento, com `materialization: "none"`.
+
+Testes cobrem:
+
+* geração apenas para grupos acionáveis;
+* exclusão de `not_applicable`;
+* preservação de `insufficient_data` como bloqueio;
+* identidade de bloqueios por item e janela;
+* origem da demanda;
+* sugestão de data dentro da janela;
+* campos editáveis sem persistência;
+* saída determinística;
+* IDs distintos para `productId` e `productClass`;
+* imutabilidade dos inputs;
+* ausência de agenda/evento/materialização;
+* ausência de Supabase, Dexie, React, UI, storage e `Date.now()`.
+
+Validações registradas:
+
+```bash
+pnpm test -- src/lib/sanitario/preview
+pnpm test
+pnpm run lint
+pnpm run build
+git diff --check
+git status --short --untracked-files=all
+```
+
 ### 11.5E — Materialização idempotente da agenda sanitária
 
-**Status:** futura.
+**Status:** próxima execução.
 
 **Objetivo**
 Transformar preview confirmado em agenda planejada sem duplicidade.

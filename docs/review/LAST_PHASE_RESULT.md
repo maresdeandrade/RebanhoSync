@@ -1,10 +1,45 @@
 # Last Phase Result — RebanhoSync
 
-Atualizado em: 2026-06-05
+Atualizado em: 2026-06-06
 **Baseline Commit documental anterior:** `82b68b2`
 **Commit local observado no início da 10F:** `0f2fd8e`
 
 ## 0. Resultado mais recente
+
+Fase 11.5D — Preview operacional editável — concluída localmente.
+
+Resultado da 11.5D:
+
+- core puro criado em `src/lib/sanitario/preview/sanitaryOperationalPreview.ts`;
+- testes focados criados em `src/lib/sanitario/preview/__tests__/sanitaryOperationalPreview.test.ts`;
+- `createSanitaryOperationalPreview` consome demanda agrupada já recebida por parâmetro;
+- preview gera grupos operacionais apenas quando há `actionableAnimalIds`;
+- `insufficient_data` é preservado como bloqueio/cadastro pendente;
+- bloqueios preservam identidade operacional por protocolo, item, produto, classe, ação, lote e janela;
+- `not_applicable` não entra como item operacional;
+- `previewGroupId` separa `productId` e `productClass` para evitar colisão;
+- data sugerida respeita `referenceDate`, `windowStart` e `windowEnd` quando possível;
+- campos editáveis são declarados sem persistir agenda, evento ou operação;
+- saída é determinística e não muta inputs;
+- preview permanece simulação derivada, com `materialization: "none"`;
+- não houve Supabase, Dexie, React, UI, storage, RPC, `Date.now()`, migration, schema, RLS, sync-batch, seed, agenda, evento, baixa de estoque, carência ativa ou autorização de venda/abate.
+
+Validação local da 11.5D:
+
+```txt
+pnpm test -- src/lib/sanitario/preview: passou.
+pnpm test: passou.
+pnpm run lint: passou.
+pnpm run build: passou com warnings conhecidos de Browserslist/caniuse-lite e chunks grandes.
+git diff --check: passou.
+git status --short --untracked-files=all: passou, com arquivos da 11.5D criados/alterados.
+```
+
+Próxima execução:
+
+- 11.5E — Materialização idempotente da agenda sanitária.
+
+---
 
 Fase 11.5C — Demanda sanitária agrupada — concluída localmente.
 

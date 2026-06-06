@@ -28,13 +28,13 @@ Não deve substituir issues, tarefas técnicas ou prompts de implementação.
 
 ## Fase atual — Fase 11.5 (Agenda Sanitária v2)
 
-Status: **em andamento / 11.5C concluída localmente / pronta para iniciar 11.5D**
+Status: **em andamento / 11.5D concluída localmente / pronta para iniciar 11.5E**
 Fase anterior: **Fase 11 — Lotes, Pastos e Desempenho Operacional Ampliado — concluída localmente**
 Fase seguinte: **Fase 12 — Compra/Venda Operacional: Hardening e Lacunas — bloqueada até fechamento formal da 11.5**
 
 ### Conduta inicial
 
-As subfases 11.5A (Diagnóstico + contrato alvo), 11.5B0 (contrato bibliográfico de regra e produto), 11.5B1 (motor puro de elegibilidade sanitária por janela), 11.5B1.1 (hardening de dose múltipla e âncora por evento) e 11.5C (demanda sanitária agrupada) foram concluídas localmente. A próxima execução é a 11.5D — Preview operacional editável. Não iniciar Fase 12 antes do fechamento formal da 11.5.
+As subfases 11.5A (Diagnóstico + contrato alvo), 11.5B0 (contrato bibliográfico de regra e produto), 11.5B1 (motor puro de elegibilidade sanitária por janela), 11.5B1.1 (hardening de dose múltipla e âncora por evento), 11.5C (demanda sanitária agrupada) e 11.5D (preview operacional editável) foram concluídas localmente. A próxima execução é a 11.5E — Materialização idempotente da agenda sanitária. Não iniciar Fase 12 antes do fechamento formal da 11.5.
 
 ### Escopo inicial sugerido
 

@@ -1,6 +1,6 @@
 # ACTIVE_PHASE_PLAN - Fase 11.5
 
-**Status:** 11.5C concluída localmente / pronta para iniciar 11.5D
+**Status:** 11.5D concluída localmente / pronta para iniciar 11.5E
 **Foco:** Agenda Sanitária v2: Janelas, Agrupamento e Materialização Idempotente
 **Criado:** 2026-06-05
 **Atualizado:** 2026-06-06
@@ -17,12 +17,12 @@ Conduzir a Fase 11.5 como etapa extra entre a Fase 11 e a Fase 12 para redesenha
 ## Status da Fase 11.5
 
 - Fase 11 — Lotes, Pastos e Desempenho Operacional Ampliado: concluída localmente.
-- Fase 11.5 — Agenda Sanitária v2: 11.5C concluída localmente / pronta para iniciar 11.5D.
+- Fase 11.5 — Agenda Sanitária v2: 11.5D concluída localmente / pronta para iniciar 11.5E.
 - Fase 12 — Compra/Venda Operacional: Hardening e Lacunas: bloqueada até fechamento formal da 11.5.
 
 Próximo passo:
 
-- 11.5D — Preview operacional editável.
+- 11.5E — Materialização idempotente da agenda sanitária.
 
 ---
 
@@ -71,7 +71,7 @@ Protocolo
 - 11.5B1 — Motor puro de elegibilidade sanitária por janela: concluída localmente.
 - 11.5B1.1 — Hardening de elegibilidade por dose múltipla e âncora por evento: concluída localmente.
 - 11.5C — Demanda sanitária agrupada: concluída localmente.
-- 11.5D — Preview sanitário editável: próxima execução.
+- 11.5D — Preview sanitário editável: concluída localmente.
 - 11.5E — Materialização idempotente da agenda sanitária.
 - 11.5F — Execução sanitária como evento.
 - 11.5G — Semântica final de fechamento da agenda.
@@ -90,18 +90,32 @@ Protocolo
 - `not_applicable` é contado e excluído da demanda acionável.
 - Demanda permanece derivada e não materializa agenda, evento, baixa de estoque ou carência.
 
+## Resultado da 11.5D
+
+- Core puro criado em `src/lib/sanitario/preview/sanitaryOperationalPreview.ts`.
+- Testes focados criados em `src/lib/sanitario/preview/__tests__/sanitaryOperationalPreview.test.ts`.
+- Preview operacional é derivado de `SanitaryDemandGroup[]` recebido por parâmetro.
+- Grupos operacionais são gerados apenas para demandas acionáveis.
+- `insufficient_data` permanece bloqueio/cadastro pendente, com identidade operacional.
+- `not_applicable` não entra como item operacional.
+- `previewGroupId` e `sourceDemandKey` preservam protocolo, item, produto, classe, ação, lote e janela.
+- Data sugerida respeita a janela quando possível.
+- Campos editáveis são declarados sem persistência.
+- Preview permanece simulação derivada, não agenda nem evento, com `materialization: "none"`.
+
 ## Escopo da próxima execução
 
-- Criar preview operacional editável a partir da demanda derivada.
-- Preservar preview como simulação operacional, não agenda e não evento.
-- Permitir ajustes operacionais permitidos sem alterar regra técnica.
-- Não materializar agenda, criar evento, baixar estoque ou calcular carência ativa.
+- Criar materialização idempotente da agenda sanitária a partir de preview confirmado.
+- Preservar agenda como intenção operacional futura.
+- Não criar evento, não baixar estoque e não calcular carência ativa na materialização.
+- Manter caminho offline-first e idempotência por chave determinística.
 
 ## Escopo proibido nesta transição
 
 - Criar migrations.
 - Alterar schema, RLS, sync-batch, Supabase, edge functions ou telas.
-- Criar UI, preview, materialização de agenda, evento ou baixa de estoque.
+- Criar UI, evento ou baixa de estoque.
+- Materializar agenda sem idempotência explícita.
 - Calcular carência ativa ou autorizar venda/abate.
 - Iniciar Fase 12.
 - Atualizar profundamente docs permanentes de contexto, arquitetura ou sync.
