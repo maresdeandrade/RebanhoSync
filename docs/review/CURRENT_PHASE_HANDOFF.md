@@ -27,7 +27,7 @@ Referência: `docs/review/PLANO_FASE_11.md`.
 
 Fase 11.5 — Agenda Sanitária v2: Janelas, Agrupamento e Materialização Idempotente.
 
-Status: 11.5A concluída localmente / pronta para iniciar 11.5B0.
+Status: 11.5B0 concluída localmente / pronta para iniciar 11.5B1.
 
 Plano específico: `docs/review/PLANO_FASE_11_5_SANITARIO_AGENDA_V2.md`.
 
@@ -42,7 +42,7 @@ Motivo da fase extra:
 
 ---
 
-## 3. Última execução da Fase 11.5
+## 3. Últimas execuções da Fase 11.5
 
 11.5A — Diagnóstico + contrato alvo + teste sentinela de retry/offline/sync — concluída localmente.
 
@@ -56,18 +56,27 @@ Resultado da 11.5A:
 - reforçar teste sentinela de retry/offline/sync em `supabase/functions/sync-batch/rules.test.ts`;
 - não implementar UI, motor de elegibilidade, preview, materialização, migration, schema ou RPC nesta subfase.
 
+11.5B0 — Contrato bibliográfico de regra sanitária e produto — concluída localmente.
+
+Resultado da 11.5B0:
+
+- contratos puros criados em `src/lib/sanitario/rules/sanitaryProtocolRule.ts`;
+- contratos cobrem `SourceRef`, `SanitaryProduct`, `WithdrawalRule`, `SanitaryProtocolRule` e `WithdrawalSnapshotOnEvent`;
+- validações puras cobrem fonte explícita em regra crítica, guideline isolado, carência do produto, exigência de produto e conclusão por evento executado;
+- testes focados criados em `src/lib/sanitario/rules/__tests__/sanitaryProtocolRule.test.ts`;
+- não houve motor de elegibilidade, demanda, preview, materialização, evento, cálculo runtime de carência, UI, migration, schema, RLS, sync-batch, seed, RPC, persistência, Supabase ou Dexie.
+
 Próxima execução:
 
-- 11.5B0 — Contrato bibliográfico de regra sanitária e produto.
+- 11.5B1 — Motor puro de elegibilidade sanitária por janela.
 
-Objetivo da 11.5B0:
+Objetivo da 11.5B1:
 
-- documentar fonte técnica por campo crítico de regra sanitária e produto;
-- tratar guideline como apoio técnico, não fonte única de verdade;
-- exigir validação por norma oficial, bula ou MV responsável quando a regra for crítica;
-- manter carência vinculada primariamente ao produto;
-- registrar que agenda, preview e demanda agrupada não geram carência;
-- preparar a 11.5B1 sem implementar motor, UI, schema, migration, RLS, sync-batch ou seeds.
+- consumir `SanitaryProtocolRule` e `SanitaryProduct` como entrada normalizada;
+- calcular elegibilidade sanitária por janela em core puro;
+- preservar `completed` como dependente de evento executado;
+- não consultar agenda, Supabase, Dexie, UI ou persistência;
+- não calcular carência ativa nem autorizar venda/abate.
 
 ---
 
@@ -95,7 +104,7 @@ Não fazer sem tarefa explícita:
 
 ---
 
-## 6. Checklist antes da 11.5B0
+## 6. Checklist antes da 11.5B1
 
 Executar no início de nova rodada:
 

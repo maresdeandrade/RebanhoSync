@@ -1,7 +1,7 @@
 # Plano Fase 11.5 — Agenda Sanitária v2: Janelas, Agrupamento e Materialização Idempotente
 
 **Atualizado em:** 2026-06-05
-**Status:** 11.5A concluída localmente / pronta para iniciar 11.5B0
+**Status:** 11.5B0 concluída localmente / pronta para iniciar 11.5B1
 **Baseline documental de entrada:** `91e0775`
 **Commit local de entrada:** `91e0775`
 
@@ -411,7 +411,7 @@ Próximo passo permitido:
 
 ### 11.5B0 — Contrato bibliográfico de regra sanitária e produto
 
-**Status:** próxima execução, dependente do resultado 11.5A.
+**Status:** concluída localmente em 2026-06-05.
 
 **Objetivo**
 Definir o contrato conceitual e técnico que permitirá ao motor de elegibilidade usar regras sanitárias rastreáveis por fonte bibliográfica, legal, bula ou MV responsável, sem transformar guideline genérico em fonte única de verdade.
@@ -566,9 +566,38 @@ type WithdrawalSnapshotOnEvent = {
 * seeds;
 * cálculo de carência em runtime.
 
+**Resultado 11.5B0**
+
+Contratos puros criados em `src/lib/sanitario/rules/sanitaryProtocolRule.ts`:
+
+* `SourceRef`;
+* `SanitaryProduct`;
+* `WithdrawalRule`;
+* `SanitaryProtocolRule`;
+* `WithdrawalSnapshotOnEvent`.
+
+Validações puras criadas:
+
+* `validateSanitaryProtocolRule`;
+* `validateSanitaryProduct`;
+* `validateWithdrawalSnapshotOnEvent`.
+
+Regras validadas localmente:
+
+* regra crítica sem fonte explícita retorna bloqueio;
+* guideline isolado não valida campo crítico como fonte forte;
+* carência declarada no produto exige fonte;
+* carência declarada no produto sem espécie ou finalidade mínima retorna limitação;
+* protocolo que exige produto deve declarar `productRequirement`;
+* `completionCriteria.requiresExecutedEvent` deve permanecer `true`;
+* snapshot futuro de carência no evento preserva fonte técnica;
+* contrato não importa Supabase, Dexie, React, UI ou agenda.
+
+Nenhum motor de elegibilidade, demanda, preview, materialização, evento, cálculo runtime de carência, UI, migration, schema, RLS, sync-batch, seed, RPC, persistência, Supabase ou Dexie foi implementado.
+
 ### 11.5B1 — Motor puro de elegibilidade sanitária por janela
 
-**Status:** futura, dependente da 11.5B0.
+**Status:** próxima execução, dependente da 11.5B0.
 
 **Objetivo**
 Calcular elegibilidade sanitária por janela de ação, sem IO e sem UI.
@@ -935,7 +964,7 @@ Consolidar contrato, validações, riscos residuais e handoff para liberar a Fas
 | Subfase | Áreas candidatas |
 | --- | --- |
 | **11.5A** | `src/lib/sanitario/**`, `src/lib/agenda/**`, `src/pages/Agenda/**`, `src/pages/Registrar/hooks/useRegistrarSanitarioPackage.ts`, `src/lib/offline/**`, `supabase/functions/sync-batch/**`, `supabase/migrations/**`, testes relacionados |
-| **11.5B0** | documentação de contrato sanitário, produto, carência e fontes técnicas |
+| **11.5B0** | `src/lib/sanitario/rules/**`, documentação de contrato sanitário, produto, carência e fontes técnicas |
 | **11.5B1** | `src/lib/sanitario/eligibility/**` |
 | **11.5C** | `src/lib/sanitario/eligibility/**`, `src/lib/sanitario/agenda/**` |
 | **11.5D** | `src/lib/sanitario/agenda/preview.ts`, `src/pages/Registrar/components/**`, `src/pages/Registrar/hooks/**` |

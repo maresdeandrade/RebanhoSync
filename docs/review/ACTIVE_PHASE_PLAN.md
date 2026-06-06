@@ -1,6 +1,6 @@
 # ACTIVE_PHASE_PLAN - Fase 11.5
 
-**Status:** 11.5A concluída localmente / pronta para iniciar 11.5B0
+**Status:** 11.5B0 concluída localmente / pronta para iniciar 11.5B1
 **Foco:** Agenda Sanitária v2: Janelas, Agrupamento e Materialização Idempotente
 **Criado:** 2026-06-05
 **Atualizado:** 2026-06-05
@@ -17,12 +17,12 @@ Conduzir a Fase 11.5 como etapa extra entre a Fase 11 e a Fase 12 para redesenha
 ## Status da Fase 11.5
 
 - Fase 11 — Lotes, Pastos e Desempenho Operacional Ampliado: concluída localmente.
-- Fase 11.5 — Agenda Sanitária v2: 11.5A concluída localmente / pronta para iniciar 11.5B0.
+- Fase 11.5 — Agenda Sanitária v2: 11.5B0 concluída localmente / pronta para iniciar 11.5B1.
 - Fase 12 — Compra/Venda Operacional: Hardening e Lacunas: bloqueada até fechamento formal da 11.5.
 
 Próximo passo:
 
-- 11.5B0 — Contrato bibliográfico de regra sanitária e produto.
+- 11.5B1 — Motor puro de elegibilidade sanitária por janela.
 
 ---
 
@@ -67,7 +67,7 @@ Protocolo
 ## Subfases planejadas
 
 - 11.5A — Diagnóstico + contrato alvo da Agenda Sanitária v2: concluída localmente.
-- 11.5B0 — Contrato bibliográfico de regra sanitária e produto.
+- 11.5B0 — Contrato bibliográfico de regra sanitária e produto: concluída localmente.
 - 11.5B1 — Motor puro de elegibilidade sanitária por janela.
 - 11.5C — Demanda sanitária agrupada.
 - 11.5D — Preview sanitário editável.
