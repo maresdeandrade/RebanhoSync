@@ -1,197 +1,100 @@
-# ACTIVE_PHASE_PLAN - Fase 11
+# ACTIVE_PHASE_PLAN - Fase 11.5
 
-**Status:** Fase 11 concluída localmente; 11A documental; 11B, 11C, 11D, 11E e 11F concluídas localmente
-**Foco:** Lotes, Pastos e Desempenho Operacional Ampliado
-**Criado:** 2026-06-04
+**Status:** planejada / pronta para iniciar 11.5A
+**Foco:** Agenda Sanitária v2: Janelas, Agrupamento e Materialização Idempotente
+**Criado:** 2026-06-05
 **Atualizado:** 2026-06-05
-**Baseline documental preservado:** `0f2fd8e`
-**Commit local analisado na 11A:** `0d350b8`
-**Plano específico:** `docs/review/PLANO_FASE_11.md`
+**Plano específico:** `docs/review/PLANO_FASE_11_5_SANITARIO_AGENDA_V2.md`
 
 ---
 
 ## Objetivo em 1 parágrafo
 
-Conduzir a Fase 11 por subfases documentadas em `docs/review/PLANO_FASE_11.md`, preservando o fechamento local da Fase 10. A fase deve ampliar leitura operacional com fonte explícita, período e limitação, sem criar regra crítica nova, sem custo por arroba, sem DRE/ROI/margem, sem motor de decisão e sem venda/abate automático.
+Conduzir a Fase 11.5 como etapa extra entre a Fase 11 e a Fase 12 para redesenhar o fluxo sanitário `Protocolo -> Agenda -> Evento`. A fase deve preparar contrato baseado em janela operacional sanitária, elegibilidade individual, demanda sanitária agrupada, preview editável, materialização idempotente da agenda e execução real como evento, preservando offline-first e a separação entre regra, intenção futura e fato histórico.
 
 ---
 
-## Status da Fase 11
+## Status da Fase 11.5
 
-- 11A — Diagnóstico de Lotes, Pastos e Desempenho Operacional Ampliado: concluída documentalmente, sem patch funcional.
-- 11B — Ajuste semântico/read-only do cockpit de Lotes/Pastos: concluída localmente.
-- 11C — Ocupação, lotação e movimentações: concluída localmente.
-- 11D — Desempenho read-only se houver fonte suficiente: concluída localmente.
-- 11E — Relatórios operacionais ampliados: concluída localmente.
-- 11F — Fechamento: executada.
+- Fase 11 — Lotes, Pastos e Desempenho Operacional Ampliado: concluída localmente.
+- Fase 11.5 — Agenda Sanitária v2: planejada / pronta para iniciar 11.5A.
+- Fase 12 — Compra/Venda Operacional: Hardening e Lacunas: bloqueada até fechamento formal da 11.5.
 
-Resultado da 11A:
+Próximo passo:
 
-- commit local analisado: `0d350b8`;
-- baseline documental encontrado: `0f2fd8e`;
-- contexto anterior citava `8a62445`;
-- worktree limpo no diagnóstico;
-- `git diff --check` passou;
-- houve drift entre contexto anterior, baseline documental e commit local;
-- fontes reais identificadas para estado atual, ocupação/read model, histórico, pesagens e área de pasto;
-- lacunas registradas para GMD por lote/pasto, permanência histórica completa, ocupação histórica e lotação quando faltam peso/área;
-- nenhum código funcional, Supabase, migrations, RLS, RPC, schema, sync ou edge functions foi alterado.
-
-Resultado da 11B:
-
-- patch pequeno/read-only aplicado no cockpit de Lotes/Pastos;
-- `GMD` passou a ser descrito como leitura baseada nos animais atuais com pesagens válidas, sem comprovar desempenho histórico completo do lote/pasto;
-- `state_pasto_ocupacoes` passou a ser comunicado como read model parcial de ocupação atual, não histórico completo;
-- permanência por movimentações passou a declarar limitação histórica;
-- taxa UA/ha passou a explicitar dependência de `area_ha` válida e peso explícito;
-- labels de permanência em Lote/Pasto foram ajustados para leitura atual;
-- testes focados de `cockpitManejoAdapter` passaram;
-- `git diff --check`, `pnpm run lint` e `pnpm run build` passaram, com warnings conhecidos de Browserslist/chunks no build;
-- nenhuma alteração em Supabase, migrations, RLS, RPC, schema, sync ou edge functions.
+- 11.5A — Diagnóstico + contrato alvo + teste sentinela de retry/offline/sync.
 
 ---
 
-## Status recebido
+## Contrato planejado
 
-- Fase 10A — Diagnóstico UX e mapa de fricção: concluída.
-- Fase 10B — Agenda/Registrar: concluída localmente.
-- Fase 10C — Home/Central Operacional: concluída localmente.
-- Fase 10D — Animal, Eventos e Histórico: concluída localmente.
-- Fase 10E — Integração via Histórico para Lotes/Pastos, Relatórios e Compra/Venda: concluída localmente.
-- Fase 10F — Fechamento da Fase 10 e handoff: executada.
-- Fase 10 — UX Operacional dos Fluxos Centrais: concluída localmente.
-
----
-
-## Conduta obrigatória de início
-
-A Fase 11 começou por diagnóstico na 11A, sem patch funcional.
-
-Diagnóstico mínimo:
-
-1. delimitar perguntas operacionais de lote/pasto/desempenho;
-2. confirmar fontes atuais em eventos, `state_*`, ocupação e relatórios;
-3. separar estado atual, histórico e leitura derivada;
-4. identificar lacunas reais de GMD por período, ocupação e movimentações;
-5. propor patch pequeno, reversível e testável;
-6. definir validação proporcional antes de editar.
+```txt
+Protocolo
+-> janela operacional sanitária
+-> elegibilidade individual
+-> demanda sanitária agrupada
+-> preview/editável
+-> agenda materializada de forma idempotente
+-> evento sanitário executado
+```
 
 ---
 
-## Escopo permitido
+## Princípios obrigatórios
 
-- Diagnóstico de lote, pasto e desempenho operacional.
-- Leitura read-only de movimentações, ocupação e permanência.
-- GMD por período somente com fonte explícita e limitação.
-- Melhorias de copy, labels, estados vazios e rastreabilidade.
-- Testes focados quando houver patch.
-
-### Recorte executado — 11C
-
-- Diferenciar ocupação atual de histórico de movimentação.
-- Deixar claro quando lotação é calculável, parcial ou bloqueada.
-- Impedir afirmação de permanência histórica quando movimentações completas estiverem ausentes.
-- Explicitar limitações quando `area_ha`, peso ou eventos de movimentação estiverem ausentes.
-- Manter patch pequeno, read-only e testável.
-
-Resultado da 11C:
-
-- movimentações apenas de entrada passaram a produzir leitura atual parcial, não permanência histórica completa;
-- limitações de permanência por eventos agora declaram que eventos completos de entrada e saída são necessários para histórico completo;
-- UA total do lote passou a explicitar dependência de peso explícito dos animais atuais;
-- testes focados passaram a cobrir entrada sem histórico completo para lote/pasto e dependência de peso explícito;
-- nenhuma alteração em Supabase, migrations, RLS, RPC, schema, sync ou edge functions.
-
-Recorte executado — 11D:
-
-- avaliar desempenho read-only somente se houver fonte suficiente;
-- manter GMD vinculado a pesagens explícitas e período;
-- não afirmar desempenho de lote/pasto sem permanência comprovada no período.
-
-Resultado da 11D:
-
-- GMD de lote/pasto com pesagens individuais suficientes passou a permanecer como leitura parcial quando a permanência no período não estiver comprovada;
-- o cálculo numérico de GMD foi preservado, mas o status deixou de comunicar desempenho completo do lote/pasto;
-- limitações seguem declarando que a leitura usa animais atuais com pesagens válidas e não comprova desempenho histórico completo nem permanência no período;
-- teste focado passou a cobrir lote e pasto com GMD calculável, mas desempenho agregado parcial;
-- nenhuma alteração em Supabase, migrations, RLS, RPC, schema, sync ou edge functions.
-
-Próximo recorte — 11E:
-
-- avaliar relatórios operacionais ampliados apenas como leitura read-only;
-- preservar fonte, período e limitação nas leituras derivadas;
-- não criar DRE, ROI, margem, custo por arroba, motor de decisão, venda ou abate automático.
-
-Resultado da 11E:
-
-- relatórios operacionais passaram a declarar fontes e limitações em tela, CSV e impressão;
-- `state_*` é comunicado como estado atual/read model, sem histórico completo;
-- agenda é comunicada como pendência/intenção futura, não fato executado;
-- pesagens deixaram de ser apresentadas como GMD/desempenho de lote/pasto sem permanência comprovada;
-- custo operacional parcial segue limitado como leitura parcial, não DRE, ROI, margem ou custo por arroba;
-- testes focados de relatório e tela passaram;
-- nenhuma alteração em Supabase, migrations, RLS, RPC, schema, sync ou edge functions.
-
-Próximo recorte — 11F:
-
-- fechar documentalmente a Fase 11;
-- consolidar validações e riscos residuais reais;
-- preparar próxima fase sem reabrir 11A-11E.
-
-Resultado da 11F:
-
-- Fase 11 fechada documentalmente em `bb2482e`;
-- entregas de 11A, 11B, 11C, 11D e 11E consolidadas nos documentos ativos;
-- fonte explícita, período e limitação preservados em leituras de lote/pasto/desempenho;
-- `state_*` preservado como estado atual/read model;
-- eventos preservados como histórico/fato executado;
-- `state_pasto_ocupacoes` preservado como read model parcial de ocupação atual;
-- GMD preservado como dependente de pesagens explícitas válidas;
-- GMD agregado de lote/pasto permanece parcial sem permanência comprovada no período;
-- UA/ha preservada como dependente de `area_ha` válida e peso explícito;
-- relatórios operacionais ampliados preservam fonte, período e limitação;
-- custo operacional parcial preservado sem DRE, ROI, margem ou custo por arroba;
-- nenhuma alteração em Supabase, migrations, RLS, RPC, schema, sync ou edge functions.
-
-Próxima fase sugerida:
-
-- Fase 12 — Compra/Venda Operacional: Hardening e Lacunas, preparada mas não iniciada.
+- Protocolo = regra/configuração.
+- Agenda = intenção operacional futura.
+- Evento = fato histórico executado.
+- Demanda sanitária = leitura derivada, não agenda nem evento.
+- Elegibilidade = cálculo derivado de animal + protocolo + eventos.
+- Tags, sinais e insights = auxiliares, nunca fonte primária.
+- Agenda sanitária antiga pode ser substituída.
+- Dados antigos da agenda sanitária não precisam ser preservados, desde que documentado.
+- Materialização de agenda não cria evento.
+- Materialização de agenda não baixa estoque.
+- Baixa de estoque ocorre apenas na execução real.
+- `completed` sanitário depende de evento executado, não de agenda concluída.
+- RPC não deve ser caminho principal porque o app é offline-first.
 
 ---
 
-## Escopo proibido
+## Subfases planejadas
 
-- Criar custo por arroba.
-- Criar DRE, ROI ou margem.
-- Criar motor de decisão.
-- Criar venda ou abate automático.
-- Criar aptidão para venda ou abate.
-- Criar carência liberatória.
-- Usar sinal, insight ou tag como fonte primária.
-- Transformar relatório parcial em conclusão financeira.
-- Alterar Supabase, migrations, RLS, RPC, edge functions, schema ou sync sem tarefa explícita.
+- 11.5A — Diagnóstico + contrato alvo da Agenda Sanitária v2.
+- 11.5B — Motor puro de elegibilidade sanitária por janela.
+- 11.5C — Demanda sanitária agrupada.
+- 11.5D — Preview sanitário editável.
+- 11.5E — Materialização idempotente da agenda sanitária.
+- 11.5F — Execução sanitária como evento.
+- 11.5G — Semântica final de fechamento da agenda.
+- 11.5H — Fechamento e handoff.
 
 ---
 
-## Validação inicial recomendada
+## Escopo permitido nesta preparação
 
-Antes de qualquer patch:
+- Criar plano da Fase 11.5.
+- Atualizar documentação de controle da fase.
+- Registrar decisão arquitetural planejada.
+- Bloquear explicitamente a Fase 12 até fechamento formal da 11.5.
+
+---
+
+## Escopo proibido nesta preparação
+
+- Alterar código funcional.
+- Criar migrations.
+- Alterar schema, RLS, sync-batch, Supabase, edge functions ou telas.
+- Criar testes agora.
+- Iniciar 11.5A funcional.
+- Iniciar Fase 12.
+- Atualizar profundamente docs permanentes de contexto, arquitetura ou sync.
+
+---
+
+## Validação obrigatória desta preparação
 
 ```bash
-git status --short --untracked-files=all
 git diff --check
-```
-
-Se houver patch funcional:
-
-```bash
-pnpm test -- <testes focados>
-pnpm run lint
-pnpm run build
-```
-
-Se houver Supabase, migrations, RLS, RPC, edge functions, sync-batch ou baseline:
-
-```bash
-node scripts/codex/validate-supabase-baseline-functional.mjs
+git status --short --untracked-files=all
 ```

@@ -1,7 +1,7 @@
 # Decision Log — RebanhoSync
 
-Atualizado em: 2026-05-31  
-**Baseline Commit:** `32d7779`
+Atualizado em: 2026-06-05
+**Baseline Commit:** `91e0775`
 
 ## Objetivo
 
@@ -26,6 +26,16 @@ Cada decisão deve conter:
 ---
 
 ## Decisões consolidadas
+
+### 2026-06-05 — Criar Fase 11.5 para Agenda Sanitária v2
+
+**Decisão:** criar a Fase 11.5 — Agenda Sanitária v2: Janelas, Agrupamento e Materialização Idempotente — antes da Fase 12.
+
+* **Motivo:** protocolos sanitários são frequentemente janelas operacionais, não datas exatas.
+* **Impacto:** agenda sanitária antiga pode ser substituída; evento permanece fonte histórica; materialização de agenda não executa manejo, não cria evento e não baixa estoque.
+* **Status:** decisão planejada para diagnóstico e contrato alvo na 11.5A.
+
+---
 
 ### 2026-05-31 — Reorganizar documentação ativa
 

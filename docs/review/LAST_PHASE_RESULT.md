@@ -475,10 +475,9 @@ Não houve avanço para:
 
 ## 8. Próxima fase
 
-Próxima fase definida: Fase 11 — Lotes, Pastos e Desempenho Operacional Ampliado.
+Após fechamento da Fase 11, foi criada a Fase 11.5 como etapa extra antes da Fase 12 para redesenho da Agenda Sanitária v2.
 
-A Fase 11 deve iniciar por diagnóstico, sem patch direto e sem regra crítica nova. GMD por período exige fonte explícita; movimentações e ocupação devem permanecer como eventos/read models; custo por arroba, DRE, ROI, margem, motor de decisão e venda/abate automático permanecem fora do escopo inicial.
-
+A Fase 12 permanece preparada, mas não iniciada.
 ---
 
 ## 9. Status final

@@ -1,7 +1,7 @@
 ﻿# Roadmap — RebanhoSync
 
-Atualizado em: 2026-06-04
-**Baseline documental auditado:** `17f4f76`
+Atualizado em: 2026-06-05
+**Baseline documental auditado:** `91e0775`
 
 ## Objetivo
 
@@ -26,22 +26,41 @@ Não deve substituir issues, tarefas técnicas ou prompts de implementação.
 
 ---
 
-## Fase atual — Fase 11 (Lotes, Pastos e Desempenho Operacional Ampliado)
+## Fase atual — Fase 11.5 (Agenda Sanitária v2)
 
-Status: **a iniciar**
-Fase anterior: **Fase 10 — UX Operacional dos Fluxos Centrais — concluída localmente**
+Status: **planejada / pronta para iniciar 11.5A**
+Fase anterior: **Fase 11 — Lotes, Pastos e Desempenho Operacional Ampliado — concluída localmente**
+Fase seguinte: **Fase 12 — Compra/Venda Operacional: Hardening e Lacunas — bloqueada até fechamento formal da 11.5**
 
 ### Conduta inicial
 
-A Fase 11 deve começar por diagnóstico de lote, pasto, ocupação e desempenho operacional ampliado, sem patch direto, sem regra crítica nova, sem custo por arroba, sem DRE/ROI/margem e sem venda/abate automático.
+A Fase 11.5 deve começar pela 11.5A — Diagnóstico + contrato alvo da Agenda Sanitária v2, com teste sentinela de retry/offline/sync. Não iniciar Fase 12 antes do fechamento formal da 11.5.
 
 ### Escopo inicial sugerido
 
-- diagnóstico de lote/pasto/desempenho;
-- GMD por período somente com fonte explícita;
-- movimentações e ocupação como eventos/read models;
-- relatórios e leituras read-only com limitações explícitas;
-- sem motor de decisão ou autorização comercial.
+- diagnosticar o contrato atual `Protocolo -> Agenda -> Evento`;
+- definir contrato alvo baseado em janela operacional sanitária, elegibilidade individual, demanda agrupada, preview editável, agenda materializada de forma idempotente e evento executado;
+- registrar que agenda sanitária antiga pode ser substituída e seus dados não precisam ser preservados, desde que documentado;
+- preservar Agenda como intenção futura, Evento como fato executado e Protocolo como regra/configuração;
+- preservar materialização de agenda sem criação de evento e sem baixa de estoque;
+- manter RPC fora do caminho principal por causa do offline-first.
+
+---
+
+## Fase 11 — concluída localmente
+
+### Status das subfases
+
+- 11A — Diagnóstico de Lotes, Pastos e Desempenho Operacional Ampliado: concluída documentalmente.
+- 11B — Ajuste semântico/read-only do cockpit de Lotes/Pastos: concluída localmente.
+- 11C — Ocupação, lotação e movimentações: concluída localmente.
+- 11D — Desempenho read-only se houver fonte suficiente: concluída localmente.
+- 11E — Relatórios operacionais ampliados: concluída localmente.
+- 11F — Fechamento: executada.
+
+### Resultado
+
+A Fase 11 consolidou leituras de lote, pasto e desempenho com fonte explícita, período e limitação. `state_*` permaneceu como estado atual/read model, eventos permaneceram como histórico/fato executado, GMD continuou dependente de pesagens explícitas e relatórios operacionais ampliados seguiram sem DRE, ROI, margem ou custo por arroba.
 
 ---
 
@@ -142,14 +161,14 @@ Status real usa apenas: `CONCLUÍDA`, `PARCIAL`, `HARDENING_RESIDUAL`, `A_INICIA
 
 ## Sequência prevista a partir da Fase 11
 
-1. Fase 11 — Lotes, Pastos e Desempenho Operacional Ampliado.
-2. Fase 12 — Compra/Venda Operacional: Hardening e Lacunas.
-3. Fase 13 — Relatórios/KPIs Operacionais Read-only Ampliados.
-4. Fase 14 — Financeiro Gerencial Explícito.
-5. Fase 15 — Motor de Decisão Assistida.
-6. Fase 16 — Beta Externo / SLC / Hardening de Produto.
+2. Fase 11.5 — Agenda Sanitária v2: Janelas, Agrupamento e Materialização Idempotente.
+3. Fase 12 — Compra/Venda Operacional: Hardening e Lacunas.
+4. Fase 13 — Relatórios/KPIs Operacionais Read-only Ampliados.
+5. Fase 14 — Financeiro Gerencial Explícito.
+6. Fase 15 — Motor de Decisão Assistida.
+7. Fase 16 — Beta Externo / SLC / Hardening de Produto.
 
-Fase 11 é a próxima fase definida pelo fechamento local da Fase 10.
+Fase 12 permanece bloqueada até fechamento formal da Fase 11.5.
 
 ---
 

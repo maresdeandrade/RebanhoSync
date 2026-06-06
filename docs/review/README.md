@@ -1,7 +1,7 @@
 # Review Docs — RebanhoSync
 
 Atualizado em: 2026-05-31  
-**Baseline Commit:** `32d7779`
+**Baseline Commit:** `91e0775`
 
 ## Objetivo
 
@@ -31,6 +31,7 @@ Se é histórico/fechado/substituído → docs/archive/
 | `DOCS_RECONCILIATION_REPORT.md` | Relatório ativo de reorganização documental. |
 | `ACTIVE_REVIEW_INDEX.md` | Índice das revisões ativas. |
 | `README.md` | Explica a pasta. |
+| `PLANO_FASE_11_5_SANITARIO_AGENDA_V2.md` | Plano ativo da Fase 11.5 — Agenda Sanitária v2. |
 
 ---
 

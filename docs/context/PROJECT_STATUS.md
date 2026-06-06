@@ -1,7 +1,7 @@
 ﻿# Project Status — RebanhoSync
 
-Atualizado em: 2026-06-04
-**Baseline Commit:** `0f2fd8e`
+Atualizado em: 2026-06-05
+**Baseline Commit:** `91e0775`
 
 ## Objetivo
 
@@ -16,6 +16,10 @@ Este documento não é changelog detalhado, auditoria histórica ou roadmap comp
 RebanhoSync está em beta interno, com MVP operacional.
 
 A fase 11 — Lotes, Pastos e Desempenho Operacional Ampliado — está concluída localmente.
+
+Foi criada a fase extra 11.5 — Agenda Sanitária v2: Janelas, Agrupamento e Materialização Idempotente — antes da Fase 12.
+
+A Fase 12 permanece bloqueada até fechamento formal da Fase 11.5.
 
 Último gate validado:
 
@@ -56,6 +60,8 @@ A fase 11 — Lotes, Pastos e Desempenho Operacional Ampliado — está concluí
 - Fase 11E — Relatórios operacionais ampliados concluída localmente.
 - Fase 11F — Fechamento documental executada.
 - Fase 11 — Lotes, Pastos e Desempenho Operacional Ampliado concluída localmente.
+- Fase 11.5 — Agenda Sanitária v2 criada como etapa extra antes da Fase 12.
+- Fase 12 — Compra/Venda Operacional bloqueada até fechamento formal da Fase 11.5.
 
 Último avanço local da Fase 10:
 
@@ -95,10 +101,11 @@ A fase 11 — Lotes, Pastos e Desempenho Operacional Ampliado — está concluí
 
 Próximo foco sugerido:
 
-- Fase 12 — Compra/Venda Operacional: Hardening e Lacunas;
-- iniciar somente por diagnóstico;
-- preservar Compra/Venda como registro manual informado pelo usuário;
-- não criar venda/abate automático, aptidão comercial, carência liberatória, custo por arroba, DRE, ROI, margem ou motor de decisão.
+- Fase 11.5A — Diagnóstico + contrato alvo da Agenda Sanitária v2;
+- criar ou reforçar teste sentinela de retry/offline/sync;
+- preservar Agenda como intenção futura e Evento como fato executado;
+- preservar materialização de agenda sem evento e sem baixa de estoque;
+- não iniciar Fase 12 antes do fechamento formal da 11.5.
 
 Realidade validada para o roadmap pós-Fase 9:
 
@@ -115,11 +122,12 @@ Sequência corrigida pós-Fase 9:
 
 1. Fase 10 — UX Operacional dos Fluxos Centrais: concluída localmente.
 2. Fase 11 — Lotes, Pastos e Desempenho Operacional Ampliado: concluída localmente.
-3. Fase 12 — Compra/Venda Operacional: Hardening e Lacunas.
-4. Fase 13 — Relatórios/KPIs Operacionais Read-only Ampliados.
-5. Fase 14 — Financeiro Gerencial Explícito.
-6. Fase 15 — Motor de Decisão Assistida.
-7. Fase 16 — Beta Externo / SLC / Hardening de Produto.
+3. Fase 11.5 — Agenda Sanitária v2: Janelas, Agrupamento e Materialização Idempotente.
+4. Fase 12 — Compra/Venda Operacional: Hardening e Lacunas.
+5. Fase 13 — Relatórios/KPIs Operacionais Read-only Ampliados.
+6. Fase 14 — Financeiro Gerencial Explícito.
+7. Fase 15 — Motor de Decisão Assistida.
+8. Fase 16 — Beta Externo / SLC / Hardening de Produto.
 
 ---
 
