@@ -1,7 +1,7 @@
 # Active Review Index — RebanhoSync
 
-Atualizado em: 2026-05-31  
-**Baseline Commit:** `32d7779`
+Atualizado em: 2026-06-06
+**Baseline Commit:** `a180854`
 
 ## Objetivo
 

@@ -37,7 +37,112 @@ git diff --check: passou após patch documental.
 git diff -- docs/review docs/context: executado para revisão do patch documental.
 ```
 
-Próxima fase sugerida: Fase 12 — Compra/Venda Operacional: Hardening e Lacunas, preparada mas não iniciada.
+---
+
+Fase 11.5B1.1 — Hardening de elegibilidade por dose múltipla e âncora por evento — concluída localmente.
+
+Resultado da 11.5B1.1:
+
+- `requiredDoseCount > 1` não retorna `completed` por contagem genérica de eventos compatíveis;
+- enquanto não houver validação explícita de sequência de doses, o motor retorna `unsupported_required_dose_count`;
+- janela com âncora `"evento"` exige `anchorEventCriteria` efetivo;
+- `anchorEventCriteria: {}` é tratado como critério ausente e retorna `missing_anchor_event_criteria`;
+- inputs seguem imutáveis nos testes.
+
+Validação local da 11.5B1.1:
+
+```txt
+pnpm test -- src/lib/sanitario/eligibility: passou.
+pnpm test: passou.
+pnpm run lint: passou.
+pnpm run build: passou.
+git diff --check: passou.
+git status --short --untracked-files=all: passou.
+```
+
+Próxima execução:
+
+- 11.5C — Demanda sanitária agrupada.
+
+---
+
+Fase 11.5B1 — Motor puro de elegibilidade sanitária por janela — concluída localmente.
+
+Resultado da 11.5B1:
+
+- motor puro criado em `src/lib/sanitario/eligibility/sanitaryEligibility.ts`;
+- testes focados criados em `src/lib/sanitario/eligibility/__tests__/sanitaryEligibility.test.ts`;
+- `computeSanitaryEligibility` consome animal, `SanitaryProtocolRule`, eventos executados, `referenceDate` e thresholds;
+- status cobrem `not_applicable`, `insufficient_data`, `not_yet_eligible`, `eligible_soon`, `in_action_window`, `near_deadline`, `overdue` e `completed`;
+- `completed` depende apenas de evento sanitário compatível, executado, não cancelado/deletado, do mesmo animal e não futuro;
+- ausência de dados críticos retorna limitações explícitas em vez de inferir histórico;
+- agenda, Supabase, Dexie, React, UI, storage, RPC, `Date.now()` e persistência não foram usados.
+
+Validação local da 11.5B1:
+
+```txt
+pnpm test -- src/lib/sanitario/eligibility: passou.
+pnpm test: passou.
+pnpm run lint: passou.
+pnpm run build: passou.
+git diff --check: passou.
+git status --short --untracked-files=all: passou.
+```
+
+Próxima execução:
+
+- 11.5B1.1 — Hardening de elegibilidade por dose múltipla e âncora por evento.
+
+---
+
+Fase 11.5B0 — Contrato bibliográfico de regra sanitária e produto — concluída localmente.
+
+Resultado da 11.5B0:
+
+- contratos puros criados em `src/lib/sanitario/rules/sanitaryProtocolRule.ts`;
+- contratos cobrem `SourceRef`, `SanitaryProduct`, `WithdrawalRule`, `SanitaryProtocolRule` e `WithdrawalSnapshotOnEvent`;
+- validações puras cobrem fonte explícita em regra crítica, guideline isolado, carência do produto, exigência de produto e conclusão por evento executado;
+- testes focados criados em `src/lib/sanitario/rules/__tests__/sanitaryProtocolRule.test.ts`;
+- não houve motor de elegibilidade, demanda, preview, materialização, evento, cálculo runtime de carência, UI, migration, schema, RLS, sync-batch, seed, RPC, persistência, Supabase ou Dexie.
+
+Validação local da 11.5B0:
+
+```txt
+pnpm test -- src/lib/sanitario/rules: passou.
+pnpm run lint: passou.
+pnpm run build: passou.
+git diff --check: passou.
+git status --short --untracked-files=all: passou.
+```
+
+Próxima execução:
+
+- 11.5B1 — Motor puro de elegibilidade sanitária por janela.
+
+---
+
+Fase 11.5A — Diagnóstico + contrato alvo + teste sentinela de retry/offline/sync — concluída localmente.
+
+Resultado da 11.5A:
+
+- diagnosticar o contrato atual `Protocolo -> Agenda -> Evento`;
+- mapear tabelas, stores, tipos, hooks, telas e testes afetados;
+- definir contrato alvo da Agenda Sanitária v2;
+- registrar decisão sobre substituição/descarte da agenda sanitária antiga;
+- definir critérios de idempotência;
+- reforçar teste sentinela de retry/offline/sync em `supabase/functions/sync-batch/rules.test.ts`;
+- não implementar UI, motor de elegibilidade, preview, materialização, migration, schema ou RPC nesta subfase.
+
+Validação local da 11.5A:
+
+```txt
+git diff --check: passou.
+git status --short --untracked-files=all: passou.
+```
+
+Próxima execução:
+
+- 11.5B0 — Contrato bibliográfico de regra sanitária e produto.
 
 ---
 
