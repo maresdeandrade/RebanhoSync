@@ -1,7 +1,7 @@
 # Plano Fase 11.5 — Agenda Sanitária v2: Janelas, Agrupamento e Materialização Idempotente
 
 **Atualizado em:** 2026-06-05
-**Status:** planejada / pronta para iniciar 11.5A
+**Status:** 11.5A concluída localmente / pronta para iniciar 11.5B0
 **Baseline documental de entrada:** `91e0775`
 **Commit local de entrada:** `91e0775`
 
@@ -101,6 +101,7 @@ Protocolo → data exata → item de agenda sanitária
 
 ```txt
 Protocolo
+→ contrato bibliográfico/legal/bula da regra e produto
 → janela sanitária
 → elegibilidade individual
 → demanda agrupada
@@ -117,6 +118,8 @@ Protocolo
 | Conceito | Regra |
 | --- | --- |
 | **Protocolo** | Regra/configuração sanitária. Não é execução. |
+| **Fonte técnica** | Referência bibliográfica, norma oficial, bula ou MV responsável para campo crítico. |
+| **Produto sanitário** | Fonte primária de dose, via, apresentação e carência quando houver produto vinculado. |
 | **Janela sanitária** | Período operacional recomendado/limite para ação. |
 | **Elegibilidade** | Cálculo derivado de animal + protocolo + eventos executados. |
 | **Demanda sanitária** | Leitura derivada de elegibilidade, lote e janela. Não é agenda nem evento. |
@@ -130,9 +133,16 @@ Protocolo
 
 * `completed` sanitário depende de evento executado, não de agenda concluída.
 * Agenda concluída não prova execução sanitária.
+* Produto é fonte primária de dose, via, apresentação e carência.
+* Protocolo pode exigir produto específico ou classe de produto.
+* Carência deve ser primariamente vinculada ao produto; protocolo pode complementar quando houver fonte explícita.
+* Evento executado deve futuramente gravar snapshot da carência calculada.
+* Agenda, preview e demanda agrupada não geram carência.
 * Baixa de estoque ocorre apenas na execução real.
 * Materialização de agenda não cria evento.
 * Materialização de agenda não baixa estoque.
+* Tags, sinais e insights não são fonte de carência.
+* “Livre de carência”, “apto para abate” e “pronto para venda” continuam bloqueados como autorização operacional.
 * RPC não deve ser caminho principal por causa do offline-first.
 
 ---
@@ -141,6 +151,7 @@ Protocolo
 
 * Diagnosticar o contrato atual da Agenda Sanitária.
 * Definir contrato alvo da Agenda Sanitária v2.
+* Definir contrato bibliográfico/legal/bula para regra sanitária e produto antes do motor de elegibilidade.
 * Modelar janela operacional sanitária.
 * Criar motor puro de elegibilidade sanitária.
 * Criar demanda sanitária agrupada.
@@ -182,7 +193,7 @@ Protocolo
 
 ### 11.5A — Diagnóstico + contrato alvo da Agenda Sanitária v2
 
-**Status:** próxima execução.
+**Status:** concluída localmente em 2026-06-05.
 
 **Objetivo**
 Mapear o contrato atual Protocolo → Agenda → Evento, definir o contrato alvo da Agenda Sanitária v2 e criar/reforçar teste sentinela de retry/offline/sync.
@@ -234,9 +245,330 @@ Definir:
 * nenhum motor de elegibilidade implementado;
 * nenhuma migration criada sem justificativa.
 
-### 11.5B — Motor puro de elegibilidade sanitária por janela
+#### Resultado 11.5A
 
-**Status:** futura, dependente da 11.5A.
+Escopo executado:
+
+* diagnóstico do contrato atual `Protocolo -> Agenda -> Evento`;
+* contrato alvo v2 documentado;
+* estratégia destrutiva/controlada documentada;
+* teste sentinela de retry/offline/sync reforçado;
+* nenhuma UI, migration, schema, RPC, materialização, preview ou motor de elegibilidade implementado.
+
+##### Diagnóstico do contrato atual
+
+Fluxo atual confirmado:
+
+```txt
+protocolos_sanitarios_itens
+-> sanitario_recompute_agenda_core / sanitario_recompute_agenda_for_fazenda
+-> agenda_itens / state_agenda_itens
+-> sanitario_complete_agenda_with_event ou INSERT eventos via sync-batch
+-> eventos + eventos_sanitario
+-> insumo_movimentacoes somente quando o registro de evento pede baixa
+```
+
+Pontos confirmados:
+
+* `agenda_itens` mistura agenda sanitária, agenda de outros domínios e pendências corretivas, com `dominio`, `tipo`, `status`, `data_prevista`, `animal_id`, `lote_id`, `dedup_key`, `source_kind`, `source_ref`, `source_evento_id`, `protocol_item_version_id`, `interval_days_applied` e `payload`.
+* `status` persistido atual é apenas `agendado | concluido | cancelado`; `concluido` ainda mistura fechamento operacional com conclusão por execução, embora o fluxo sanitário correto exija `source_evento_id`.
+* `source_evento_id` é o vínculo factual quando uma agenda é encerrada por execução real. Agenda sem `source_evento_id` não prova execução sanitária. Agenda concluída sem `source_evento_id` não é fato histórico confiável.
+* `dedup_key` é usado na materialização sanitária automática; índice parcial `ux_agenda_dedup_active` protege apenas agenda aberta (`status='agendado'`, não deletada).
+* Recompute SQL materializa agenda sanitária e evita recriar item quando já existe agenda concluída com `source_evento_id` e evento sanitário válido, ou quando existe evento sanitário com `payload.sanitary_completion.sanitary_completion_key`.
+* `client_op_id` é metadado obrigatório de sync; o baseline cria índices únicos por `client_op_id` nas tabelas com coluna correspondente, e `sync-batch` normaliza violação única genérica como `APPLIED`.
+* A conclusão sanitária direta por agenda ainda usa RPC `sanitario_complete_agenda_with_event`, que cria `eventos`, cria `eventos_sanitario`, marca `agenda_itens.status='concluido'`, grava `source_evento_id` e chama recompute. Isso é transacional, mas não é o caminho alvo principal da v2 por ser RPC-first.
+* `sync-batch` aceita `agenda_itens`, `eventos`, `eventos_sanitario` e `insumo_movimentacoes`, força `fazenda_id`, valida duplicidade de agenda já concluída por evento, aplica mutação e trata `23505`.
+* Baixa de estoque sanitário não nasce de agenda. Ela nasce de evento sanitário real quando `buildEventGesture` adiciona `insumo_movimentacoes` via `buildConsumoMovimentacaoOp`, com `source_evento_id` igual ao evento e `id` determinístico igual ao `eventId`.
+* `state_agenda_itens` é a store local de leitura/materialização da agenda. `queue_ops` guarda operações pendentes por `client_op_id`, `client_tx_id` e `fazenda_id`.
+
+Lacunas do contrato atual:
+
+* protocolo ainda tende a ser traduzido em data exata por animal, não em janela operacional agrupável;
+* `agenda_itens` não separa janela, demanda agrupada, preview e agenda materializada;
+* `concluido` é insuficiente para distinguir execução real, cancelamento, dispensa e fechamento administrativo;
+* o contrato sanitário ainda depende de RPC para conclusão direta da agenda;
+* o índice de dedup atual protege agenda aberta, mas a v2 precisará deduplicar materialização agrupada de preview confirmado;
+* demanda sanitária calculada ainda não existe como leitura derivada separada da agenda;
+* não há contrato persistido de preview/editabilidade/exclusões antes da materialização.
+
+##### Contrato alvo v2
+
+Contrato alvo:
+
+```txt
+Protocolo/regra
+-> janela operacional sanitária
+-> elegibilidade individual derivada
+-> demanda sanitária agrupada derivada
+-> preview operacional editável
+-> agenda materializada idempotente
+-> evento sanitário executado
+-> fechamento administrativo da agenda
+```
+
+Separação obrigatória:
+
+| Camada | Papel | Persistência alvo |
+| --- | --- | --- |
+| Protocolo/regra | regra versionada, fonte de calendário, produto, dose e janela | `protocolos_sanitarios` / `protocolos_sanitarios_itens` |
+| Janela sanitária | início/fim operacional derivado da regra e da referência técnica | snapshot mínimo na demanda/preview/agenda materializada |
+| Elegibilidade | cálculo puro por animal + protocolo + eventos executados | não persistir como fonte primária; pode alimentar read model derivado |
+| Demanda agrupada | leitura derivada por lote/protocolo/item/janela/status | derivada/recalculável, não evento e não agenda |
+| Preview | simulação editável antes de confirmar planejamento | contrato local ou tabela futura de planejamento, sem evento e sem baixa |
+| Agenda materializada | intenção futura confirmada pelo usuário ou regra operacional | agenda v2 ou `agenda_itens` redesenhada, com `dedup_key` determinístico |
+| Evento executado | fato histórico do manejo realizado | `eventos` + `eventos_sanitario` |
+| Fechamento administrativo | encerramento/cancelamento/dispensa da intenção | status próprio com motivo, sem virar execução |
+
+Regras alvo:
+
+* `completed` sanitário depende somente de evento sanitário compatível.
+* Agenda materializada não cria evento.
+* Agenda materializada não baixa estoque.
+* Preview não cria agenda automaticamente.
+* Demanda agrupada é recalculável e não deve ser fonte de histórico.
+* Evento pode referenciar agenda/demanda/preview, mas continua fonte histórica.
+* Baixa de estoque ocorre somente na execução real e deve ser idempotente por evento/source.
+* Fechamento administrativo deve exigir motivo quando não houver execução.
+* RPC pode permanecer apenas como compatibilidade temporária, reconciliação ou administração, não caminho principal offline-first.
+
+##### Dados, tabelas e stores que podem ser apagados/resetados
+
+Autorizado para v2, desde que em migration/reset explícito:
+
+* apagar dados antigos de agenda sanitária em `agenda_itens` onde `dominio='sanitario'` e origem seja materialização antiga;
+* preservar ou recriar separadamente pendências corretivas sanitárias vinculadas a ocorrência real quando a subfase correspondente decidir o contrato;
+* resetar `state_agenda_itens` local para itens sanitários antigos;
+* limpar `queue_ops`/`queue_gestures` pendentes que apontem para o contrato antigo de agenda sanitária durante janela controlada de rollout/reset;
+* recriar seeds/dados demo de agenda sanitária;
+* remover payloads/dedup legados de agenda sanitária se a v2 substituir o schema;
+* manter eventos históricos (`eventos`, `eventos_sanitario`) e baixas já executadas (`insumo_movimentacoes`) como fatos, salvo ambiente demo/resetado explicitamente.
+
+Não apagar como parte da agenda v2:
+
+* `eventos` e detail tables que representem fato executado real;
+* `insumo_movimentacoes` já vinculadas a evento real;
+* protocolos versionados usados por eventos históricos, salvo seed/demo controlado;
+* catálogos oficiais/regulatórios.
+
+##### Migrations/resets recomendados para 11.5E/11.5G
+
+Recomendações destrutivas/controladas:
+
+* migration para remover ou arquivar agenda sanitária antiga de `agenda_itens` (`dominio='sanitario'`) antes da primeira materialização v2;
+* migration para substituir `agenda_status_enum` ou criar novo status sanitário compatível com `aberta`, `programada`, `concluido_executado`, `cancelado`, `dispensado`, `fechado_sem_execucao`;
+* nova constraint futura: `concluido_executado` exige `source_evento_id`, mas somente após remover/limpar legado;
+* índice único novo para materialização v2 por `fazenda_id` + `dedup_key` de agenda planejada agrupada, cobrindo o status aberto/programado;
+* revisão de FKs compostas por `fazenda_id` em novos vínculos de planejamento/preview, se novas tabelas forem criadas;
+* migration/local Dexie para reset controlado de `state_agenda_itens` sanitário e, se houver nova store v2, bump de schema local;
+* seeds v2 devem criar protocolo, demanda/preview ou agenda demo coerente com janela, sem criar evento nem baixa automaticamente.
+
+##### Arquivos, tipos, telas e testes afetados
+
+Áreas afetadas pelo redesenho:
+
+* Supabase: `agenda_itens`, `eventos`, `eventos_sanitario`, `insumo_movimentacoes`, `protocolos_sanitarios`, `protocolos_sanitarios_itens`, `sanitario_recompute_agenda_core`, `sanitario_complete_agenda_with_event`, `sanitario_recompute_agenda_for_fazenda`.
+* Sync/offline: `src/lib/offline/db.ts`, `src/lib/offline/types.ts`, `src/lib/offline/tableMap.ts`, `src/lib/offline/ops.ts`, `src/lib/offline/syncWorker.ts`, `supabase/functions/sync-batch/**`.
+* Agenda: `src/lib/agenda/**`, `src/pages/Agenda/**`, `src/pages/Agenda/createAgendaActionController.ts`.
+* Sanitário: `src/lib/sanitario/engine/**`, `src/lib/sanitario/infrastructure/**`, `src/lib/sanitario/operations/**`, `src/lib/sanitario/compliance/**`.
+* Registrar/Eventos/Estoque: `src/pages/Registrar/**`, `src/lib/events/buildEventGesture.ts`, `src/lib/inventory/consumoGesture.ts`, `src/pages/Eventos.tsx`, `src/pages/Insumos.tsx`.
+* Tipos atuais candidatos a mudança: `AgendaItem`, `AgendaStatusEnum`, `ProtocoloSanitarioItem`, `Evento`, `EventoSanitario`, `InsumoMovimentacao`, `Operation`, `SyncOperationResult`.
+* Testes relacionados: `supabase/functions/sync-batch/rules.test.ts`, `src/lib/sanitario/__tests__/executionBoundary.test.ts`, `src/lib/sanitario/__tests__/sanitarioRecomputeAgendaCore.test.ts`, `src/pages/Agenda/__tests__/**`, `tests/integration/flows/**`, `tests/smoke/agenda_registrar_conclusao.smoke.test.ts`.
+
+##### Teste sentinela
+
+Teste reforçado:
+
+* `supabase/functions/sync-batch/rules.test.ts`
+* caso: `sentinela 11.5A: retry offline nao duplica agenda, evento sanitario nem baixa de estoque`
+
+Comportamento documentado:
+
+* retry de agenda por colisão de `dedup_key` retorna `APPLIED_ALTERED` com `dedup: collision_noop`;
+* retry de evento sanitário por violação única genérica retorna `APPLIED`;
+* retry de detail `eventos_sanitario` por PK retorna `APPLIED`;
+* retry de `insumo_movimentacoes` por violação única retorna `APPLIED`.
+
+Esse teste documenta a idempotência atual no envelope de sync. Ele não implementa materialização v2.
+
+##### Riscos de regressão
+
+* Quebrar fluxos não sanitários se `agenda_itens` for alterada sem separar `dominio`.
+* Perder pendências corretivas sanitárias reais se o reset filtrar apenas por `dominio='sanitario'` sem separar origem.
+* Manter RPC como caminho principal e violar offline-first se a v2 não deslocar materialização/execução para gesto local idempotente.
+* Recriar agenda animal-a-animal e perder o objetivo de agrupamento por janela.
+* Tratar fechamento administrativo como execução e inflar histórico, carência, custo ou baixa.
+
+##### Plano incremental para 11.5B0
+
+Próximo passo permitido:
+
+* documentar contrato bibliográfico/legal/bula para regra sanitária e produto;
+* separar fonte técnica por campo crítico: período de elegibilidade, intervalos, reforços, janelas de permissibilidade, critério de conclusão, produto, dose, via e carência;
+* registrar que guideline é fonte técnica de apoio, não fonte única de verdade;
+* exigir validação por norma oficial, bula ou MV responsável quando a regra for crítica;
+* manter carência vinculada primariamente ao produto;
+* preparar o motor de elegibilidade para retornar limitação/bloqueio quando faltar fonte explícita.
+
+### 11.5B0 — Contrato bibliográfico de regra sanitária e produto
+
+**Status:** próxima execução, dependente do resultado 11.5A.
+
+**Objetivo**
+Definir o contrato conceitual e técnico que permitirá ao motor de elegibilidade usar regras sanitárias rastreáveis por fonte bibliográfica, legal, bula ou MV responsável, sem transformar guideline genérico em fonte única de verdade.
+
+**Motivo**
+Antes de calcular elegibilidade por janela, o sistema precisa saber quais campos críticos têm fonte explícita e qual é o papel do produto sanitário no cálculo de dose, via, apresentação e carência.
+
+**Análise de guideline como fonte técnica**
+
+* Guideline técnico pode apoiar modelagem inicial, nomenclatura e hipóteses de janela.
+* Guideline não é fonte única de verdade para regra crítica.
+* Regra crítica deve ser validada por norma oficial, bula do produto, referência bibliográfica aceita ou MV responsável.
+* Campo crítico sem fonte explícita deve retornar limitação ou bloqueio, não regra operacional silenciosa.
+* Divergência entre guideline, norma, bula e MV responsável deve ser registrada como limitação até decisão técnica explícita.
+
+**Campos críticos cobertos**
+
+* período de elegibilidade;
+* intervalos entre doses;
+* reforços;
+* janelas de permissibilidade;
+* critérios de conclusão;
+* produto sanitário vinculado;
+* classe de produto permitida quando produto específico não for obrigatório;
+* dose, via e apresentação;
+* carência vinculada ao produto/protocolo;
+* fonte bibliográfica/legal/bula/MV responsável por campo crítico.
+
+**Contratos conceituais**
+
+```typescript
+type SourceRef = {
+  kind: "norma_oficial" | "bula" | "bibliografia" | "mv_responsavel" | "guideline_apoio";
+  title: string;
+  issuer?: string;
+  version?: string;
+  url?: string;
+  accessedAt?: string;
+  fieldKeys: string[];
+  limitation?: string;
+};
+
+type SanitaryProduct = {
+  id?: string;
+  name: string;
+  classKey?: string;
+  activeIngredient?: string;
+  presentation?: string;
+  dose?: {
+    quantity: number;
+    unit: string;
+    per?: "animal" | "kg_peso_vivo" | "dose";
+  };
+  route?: string;
+  withdrawalRules: WithdrawalRule[];
+  sourceRefs: SourceRef[];
+};
+
+type WithdrawalRule = {
+  species?: string;
+  aptitude?: "corte" | "leite" | "mista";
+  meatDays?: number | null;
+  milkDays?: number | null;
+  sourceRefs: SourceRef[];
+  limitations?: string[];
+};
+
+type SanitaryProtocolRule = {
+  id: string;
+  name: string;
+  eligibilityWindow?: {
+    start: { anchor: "nascimento" | "evento" | "entrada_lote" | "manual"; offsetDays: number };
+    end?: { anchor: "nascimento" | "evento" | "entrada_lote" | "manual"; offsetDays: number };
+    permissibility?: "recommended" | "allowed" | "limit";
+    sourceRefs: SourceRef[];
+  };
+  doseIntervals?: Array<{
+    fromDose: number;
+    toDose: number;
+    minDays?: number;
+    recommendedDays?: number;
+    maxDays?: number;
+    sourceRefs: SourceRef[];
+  }>;
+  boosters?: Array<{
+    afterDays?: number;
+    recurringEveryDays?: number;
+    sourceRefs: SourceRef[];
+  }>;
+  completionCriteria: {
+    requiresExecutedEvent: true;
+    compatibleProductId?: string;
+    compatibleProductClass?: string;
+    requiredDoseCount?: number;
+    sourceRefs: SourceRef[];
+  };
+  productRequirement?: {
+    kind: "specific_product" | "product_class";
+    productId?: string;
+    classKey?: string;
+    sourceRefs: SourceRef[];
+  };
+  limitations?: string[];
+};
+
+type WithdrawalSnapshotOnEvent = {
+  productId?: string;
+  productNameSnapshot: string;
+  protocolRuleId?: string;
+  meatWithdrawalDays?: number | null;
+  milkWithdrawalDays?: number | null;
+  meatWithdrawalUntil?: string | null;
+  milkWithdrawalUntil?: string | null;
+  calculatedAt: string;
+  sourceRefs: SourceRef[];
+  limitations?: string[];
+};
+```
+
+**Regras**
+
+* Protocolo é regra/configuração, não execução.
+* Produto é fonte primária de dose, via, apresentação e carência.
+* Carência deve ser primariamente vinculada ao produto.
+* Protocolo pode exigir produto específico ou classe de produto.
+* Protocolo pode complementar carência apenas quando houver fonte explícita compatível.
+* Evento executado deve futuramente gravar `WithdrawalSnapshotOnEvent`.
+* Agenda não gera carência.
+* Preview não gera carência.
+* Demanda agrupada não gera carência.
+* Tags, sinais e insights não são fonte de carência.
+* `completed` sanitário depende de evento executado.
+* “Livre de carência”, “apto para abate” e “pronto para venda” continuam bloqueados como autorização operacional.
+
+**Critérios de aceite**
+
+* regra crítica sem fonte explícita retorna limitação ou bloqueio;
+* carência está vinculada primariamente ao produto;
+* evento futuro deve carregar snapshot de carência calculada;
+* agenda, materialização, preview e demanda agrupada não geram carência;
+* guideline está documentado como fonte técnica de apoio, não fonte única de verdade;
+* necessidade de norma oficial, bula ou MV responsável está explícita para campos críticos.
+
+**Não implementar nesta subfase**
+
+* motor de elegibilidade;
+* UI;
+* schema;
+* migrations;
+* RLS;
+* sync-batch;
+* seeds;
+* cálculo de carência em runtime.
+
+### 11.5B1 — Motor puro de elegibilidade sanitária por janela
+
+**Status:** futura, dependente da 11.5B0.
 
 **Objetivo**
 Calcular elegibilidade sanitária por janela de ação, sem IO e sem UI.
@@ -603,7 +935,8 @@ Consolidar contrato, validações, riscos residuais e handoff para liberar a Fas
 | Subfase | Áreas candidatas |
 | --- | --- |
 | **11.5A** | `src/lib/sanitario/**`, `src/lib/agenda/**`, `src/pages/Agenda/**`, `src/pages/Registrar/hooks/useRegistrarSanitarioPackage.ts`, `src/lib/offline/**`, `supabase/functions/sync-batch/**`, `supabase/migrations/**`, testes relacionados |
-| **11.5B** | `src/lib/sanitario/eligibility/**` |
+| **11.5B0** | documentação de contrato sanitário, produto, carência e fontes técnicas |
+| **11.5B1** | `src/lib/sanitario/eligibility/**` |
 | **11.5C** | `src/lib/sanitario/eligibility/**`, `src/lib/sanitario/agenda/**` |
 | **11.5D** | `src/lib/sanitario/agenda/preview.ts`, `src/pages/Registrar/components/**`, `src/pages/Registrar/hooks/**` |
 | **11.5E** | `src/lib/sanitario/infrastructure/**`, `src/lib/offline/**`, `supabase/functions/sync-batch/**`, migrations se necessário |
@@ -647,7 +980,15 @@ git diff --check
 
 ```
 
-**Para core puro**
+**Para 11.5B0 documental**
+
+```bash
+git diff --check
+git status --short --untracked-files=all
+
+```
+
+**Para core puro de elegibilidade**
 
 ```bash
 pnpm test -- src/lib/sanitario/eligibility
@@ -699,6 +1040,8 @@ A Fase 11.5 é aceita quando:
 * baixa de estoque ocorrer apenas na execução real;
 * fechamento administrativo não for confundido com execução;
 * testes cobrirem retry/offline/sync e regras principais;
+* Os contratos devem ser criados como core puro/documental ou tipos isolados, sem acoplamento com schema atual de Supabase/Dexie.
+* Carência ativa não deve ser calculada nesta subfase; apenas o contrato para cálculo futuro deve ser definido.
 * schema/migrations, se existirem, estiverem validados;
 * documentação final estiver atualizada;
 * Fase 12 continuar não iniciada até fechamento formal da 11.5.

@@ -1,6 +1,6 @@
 # ACTIVE_PHASE_PLAN - Fase 11.5
 
-**Status:** planejada / pronta para iniciar 11.5A
+**Status:** 11.5A concluída localmente / pronta para iniciar 11.5B0
 **Foco:** Agenda Sanitária v2: Janelas, Agrupamento e Materialização Idempotente
 **Criado:** 2026-06-05
 **Atualizado:** 2026-06-05
@@ -10,19 +10,19 @@
 
 ## Objetivo em 1 parágrafo
 
-Conduzir a Fase 11.5 como etapa extra entre a Fase 11 e a Fase 12 para redesenhar o fluxo sanitário `Protocolo -> Agenda -> Evento`. A fase deve preparar contrato baseado em janela operacional sanitária, elegibilidade individual, demanda sanitária agrupada, preview editável, materialização idempotente da agenda e execução real como evento, preservando offline-first e a separação entre regra, intenção futura e fato histórico.
+Conduzir a Fase 11.5 como etapa extra entre a Fase 11 e a Fase 12 para redesenhar o fluxo sanitário `Protocolo -> Agenda -> Evento`. A fase deve preparar contrato baseado em fonte bibliográfica/legal/bula para regra e produto, janela operacional sanitária, elegibilidade individual, demanda sanitária agrupada, preview editável, materialização idempotente da agenda e execução real como evento, preservando offline-first e a separação entre regra, intenção futura e fato histórico.
 
 ---
 
 ## Status da Fase 11.5
 
 - Fase 11 — Lotes, Pastos e Desempenho Operacional Ampliado: concluída localmente.
-- Fase 11.5 — Agenda Sanitária v2: planejada / pronta para iniciar 11.5A.
+- Fase 11.5 — Agenda Sanitária v2: 11.5A concluída localmente / pronta para iniciar 11.5B0.
 - Fase 12 — Compra/Venda Operacional: Hardening e Lacunas: bloqueada até fechamento formal da 11.5.
 
 Próximo passo:
 
-- 11.5A — Diagnóstico + contrato alvo + teste sentinela de retry/offline/sync.
+- 11.5B0 — Contrato bibliográfico de regra sanitária e produto.
 
 ---
 
@@ -30,6 +30,7 @@ Próximo passo:
 
 ```txt
 Protocolo
+-> contrato bibliográfico/legal/bula da regra e produto
 -> janela operacional sanitária
 -> elegibilidade individual
 -> demanda sanitária agrupada
@@ -43,6 +44,8 @@ Protocolo
 ## Princípios obrigatórios
 
 - Protocolo = regra/configuração.
+- Produto = fonte primária de dose, via, apresentação e carência.
+- Carência deve ser vinculada primariamente ao produto e exige fonte explícita.
 - Agenda = intenção operacional futura.
 - Evento = fato histórico executado.
 - Demanda sanitária = leitura derivada, não agenda nem evento.
@@ -54,14 +57,18 @@ Protocolo
 - Materialização de agenda não baixa estoque.
 - Baixa de estoque ocorre apenas na execução real.
 - `completed` sanitário depende de evento executado, não de agenda concluída.
+- Agenda, preview e demanda agrupada não geram carência.
+- Evento executado deve futuramente gravar snapshot da carência calculada.
+- “Livre de carência”, “apto para abate” e “pronto para venda” seguem bloqueados como autorização operacional.
 - RPC não deve ser caminho principal porque o app é offline-first.
 
 ---
 
 ## Subfases planejadas
 
-- 11.5A — Diagnóstico + contrato alvo da Agenda Sanitária v2.
-- 11.5B — Motor puro de elegibilidade sanitária por janela.
+- 11.5A — Diagnóstico + contrato alvo da Agenda Sanitária v2: concluída localmente.
+- 11.5B0 — Contrato bibliográfico de regra sanitária e produto.
+- 11.5B1 — Motor puro de elegibilidade sanitária por janela.
 - 11.5C — Demanda sanitária agrupada.
 - 11.5D — Preview sanitário editável.
 - 11.5E — Materialização idempotente da agenda sanitária.

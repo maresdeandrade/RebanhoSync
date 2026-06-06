@@ -60,7 +60,7 @@ A Fase 12 permanece bloqueada até fechamento formal da Fase 11.5.
 - Fase 11E — Relatórios operacionais ampliados concluída localmente.
 - Fase 11F — Fechamento documental executada.
 - Fase 11 — Lotes, Pastos e Desempenho Operacional Ampliado concluída localmente.
-- Fase 11.5 — Agenda Sanitária v2 criada como etapa extra antes da Fase 12.
+- Fase 11.5A — Diagnóstico + contrato alvo da Agenda Sanitária v2 concluída localmente.
 - Fase 12 — Compra/Venda Operacional bloqueada até fechamento formal da Fase 11.5.
 
 Último avanço local da Fase 10:
@@ -101,8 +101,7 @@ A Fase 12 permanece bloqueada até fechamento formal da Fase 11.5.
 
 Próximo foco sugerido:
 
-- Fase 11.5A — Diagnóstico + contrato alvo da Agenda Sanitária v2;
-- criar ou reforçar teste sentinela de retry/offline/sync;
+- Fase 11.5B — Motor puro de elegibilidade sanitária por janela;
 - preservar Agenda como intenção futura e Evento como fato executado;
 - preservar materialização de agenda sem evento e sem baixa de estoque;
 - não iniciar Fase 12 antes do fechamento formal da 11.5.

@@ -27,13 +27,14 @@ Referência: `docs/review/PLANO_FASE_11.md`.
 
 Fase 11.5 — Agenda Sanitária v2: Janelas, Agrupamento e Materialização Idempotente.
 
-Status: planejada / pronta para iniciar 11.5A.
+Status: 11.5A concluída localmente / pronta para iniciar 11.5B0.
 
 Plano específico: `docs/review/PLANO_FASE_11_5_SANITARIO_AGENDA_V2.md`.
 
 Motivo da fase extra:
 
 - protocolos sanitários são frequentemente janelas operacionais, não datas exatas;
+- antes do motor de elegibilidade, regra sanitária e produto precisam de contrato bibliográfico/legal/bula;
 - a agenda sanitária antiga pode ser substituída;
 - a separação `Protocolo -> Agenda -> Evento` precisa ser redesenhada antes da Fase 12;
 - o app é offline-first, então RPC não deve ser caminho principal;
@@ -41,19 +42,32 @@ Motivo da fase extra:
 
 ---
 
-## 3. Próxima execução
+## 3. Última execução da Fase 11.5
 
-11.5A — Diagnóstico + contrato alvo + teste sentinela de retry/offline/sync.
+11.5A — Diagnóstico + contrato alvo + teste sentinela de retry/offline/sync — concluída localmente.
 
-Objetivo da 11.5A:
+Resultado da 11.5A:
 
 - diagnosticar o contrato atual `Protocolo -> Agenda -> Evento`;
 - mapear tabelas, stores, tipos, hooks, telas e testes afetados;
 - definir contrato alvo da Agenda Sanitária v2;
 - registrar decisão sobre substituição/descarte da agenda sanitária antiga;
 - definir critérios de idempotência;
-- criar ou reforçar teste sentinela de retry/offline/sync;
-- não implementar UI ampla antes do contrato alvo.
+- reforçar teste sentinela de retry/offline/sync em `supabase/functions/sync-batch/rules.test.ts`;
+- não implementar UI, motor de elegibilidade, preview, materialização, migration, schema ou RPC nesta subfase.
+
+Próxima execução:
+
+- 11.5B0 — Contrato bibliográfico de regra sanitária e produto.
+
+Objetivo da 11.5B0:
+
+- documentar fonte técnica por campo crítico de regra sanitária e produto;
+- tratar guideline como apoio técnico, não fonte única de verdade;
+- exigir validação por norma oficial, bula ou MV responsável quando a regra for crítica;
+- manter carência vinculada primariamente ao produto;
+- registrar que agenda, preview e demanda agrupada não geram carência;
+- preparar a 11.5B1 sem implementar motor, UI, schema, migration, RLS, sync-batch ou seeds.
 
 ---
 
@@ -81,7 +95,7 @@ Não fazer sem tarefa explícita:
 
 ---
 
-## 6. Checklist antes da 11.5A
+## 6. Checklist antes da 11.5B0
 
 Executar no início de nova rodada:
 
@@ -90,7 +104,7 @@ git status --short --untracked-files=all
 git diff --check
 ```
 
-Se a 11.5A tocar sync/offline/Supabase/RLS/migration/schema:
+Se uma etapa futura tocar sync/offline/Supabase/RLS/migration/schema:
 
 ```bash
 node scripts/codex/validate-supabase-baseline-functional.mjs

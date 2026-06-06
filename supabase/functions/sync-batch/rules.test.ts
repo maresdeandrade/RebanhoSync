@@ -76,6 +76,82 @@ describe('sync-batch rules: normalizeDbError', () => {
     expect(result).toEqual({ status: 'APPLIED' });
   });
 
+  it('sentinela 11.5A: retry offline nao duplica agenda, evento sanitario nem baixa de estoque', () => {
+    const agendaRetry = normalizeDbError(
+      {
+        code: '23505',
+        message:
+          'duplicate key value violates unique constraint "ux_agenda_dedup_active"',
+      },
+      op({
+        table: 'agenda_itens',
+        record: {
+          id: 'agenda-1',
+          dedup_key: 'san:animal:animal-1:proto:item:v1:window:2026-06-01',
+          client_op_id: 'op-agenda-1',
+        },
+      }),
+    );
+
+    const eventRetry = normalizeDbError(
+      {
+        code: '23505',
+        message:
+          'duplicate key value violates unique constraint "ux_eventos_client_op_id"',
+      },
+      op({
+        table: 'eventos',
+        record: {
+          id: 'evt-san-1',
+          dominio: 'sanitario',
+          source_task_id: 'agenda-1',
+          client_op_id: 'op-event-1',
+        },
+      }),
+    );
+
+    const sanitaryDetailRetry = normalizeDbError(
+      {
+        code: '23505',
+        message:
+          'duplicate key value violates unique constraint "eventos_sanitario_pkey"',
+      },
+      op({
+        table: 'eventos_sanitario',
+        record: {
+          evento_id: 'evt-san-1',
+          tipo: 'vacinacao',
+          client_op_id: 'op-event-detail-1',
+        },
+      }),
+    );
+
+    const stockMovementRetry = normalizeDbError(
+      {
+        code: '23505',
+        message:
+          'duplicate key value violates unique constraint "ux_insumo_movimentacoes_client_op_id"',
+      },
+      op({
+        table: 'insumo_movimentacoes',
+        record: {
+          id: 'evt-san-1',
+          source_evento_id: 'evt-san-1',
+          tipo: 'consumo_sanitario',
+          client_op_id: 'op-stock-1',
+        },
+      }),
+    );
+
+    expect(agendaRetry).toEqual({
+      status: 'APPLIED_ALTERED',
+      altered: { dedup: 'collision_noop' },
+    });
+    expect(eventRetry).toEqual({ status: 'APPLIED' });
+    expect(sanitaryDetailRetry).toEqual({ status: 'APPLIED' });
+    expect(stockMovementRetry).toEqual({ status: 'APPLIED' });
+  });
+
   it('maps duplicate agenda source event to deterministic rejection', () => {
     const result = normalizeDbError(
       {
