@@ -27,7 +27,7 @@ Referência: `docs/review/PLANO_FASE_11.md`.
 
 Fase 11.5 — Agenda Sanitária v2: Janelas, Agrupamento e Materialização Idempotente.
 
-Status: 11.5D concluída localmente / pronta para iniciar 11.5E.
+Status: 11.5E concluída localmente / pronta para iniciar 11.5F.
 
 Plano específico: `docs/review/PLANO_FASE_11_5_SANITARIO_AGENDA_V2.md`.
 
@@ -160,6 +160,37 @@ Próxima execução:
 
 - 11.5E — Materialização idempotente da agenda sanitária.
 
+11.5E — Materialização idempotente da agenda sanitária — concluída localmente.
+
+Resultado da 11.5E:
+
+- core puro criado em `src/lib/sanitario/agenda/sanitaryAgendaMaterialization.ts`;
+- testes focados criados em `src/lib/sanitario/agenda/__tests__/sanitaryAgendaMaterialization.test.ts`;
+- `createSanitaryAgendaMaterializationCommands` consome `SanitaryOperationalPreview` ou `SanitaryPreviewGroup[]` já recebidos por parâmetro;
+- materialização gera comandos `agenda_intent`, não `agenda_itens` persistido;
+- `dedupKey` é determinística e considera protocolo, item, produto, classe, ação, lote, data, janela e animais ordenados;
+- `dedupKey` não depende de `productName` ou `loteName`;
+- overrides editáveis permitem data de execução, responsável e observação;
+- grupos sem animais, sem data, com data inválida ou data fora da janela são rejeitados explicitamente;
+- vínculo com `previewGroupId` e `sourceDemandKey` é preservado;
+- saída é determinística e não muta inputs;
+- resultado declara criação de intenção de agenda, com `createsEvent: false` e `createsInventoryMovement: false`;
+- não houve persistência, agenda remota/local, evento, baixa de estoque, carência ativa, autorização de venda/abate, Supabase, Dexie, React, UI, storage, RPC, Edge Function, migration, schema, RLS, sync-batch ou seed.
+
+Validações executadas:
+
+- `pnpm test -- src/lib/sanitario/agenda`;
+- `pnpm test`;
+- `pnpm run lint`;
+- `pnpm run build`;
+- `git diff --check`;
+- `git status --short --untracked-files=all`;
+- `git diff --cached --check`.
+
+Próxima execução:
+
+- 11.5F — Execução sanitária como evento.
+
 ---
 
 ## 4. Fase 12
@@ -186,7 +217,7 @@ Não fazer sem tarefa explícita:
 
 ---
 
-## 6. Checklist antes da 11.5E
+## 6. Checklist antes da 11.5F
 
 Executar no início de nova rodada:
 

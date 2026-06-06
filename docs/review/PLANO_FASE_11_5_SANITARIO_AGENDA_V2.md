@@ -1,7 +1,7 @@
 # Plano Fase 11.5 — Agenda Sanitária v2: Janelas, Agrupamento e Materialização Idempotente
 
 **Atualizado em:** 2026-06-06
-**Status:** 11.5D concluída localmente / pronta para iniciar 11.5E
+**Status:** 11.5E concluída localmente / pronta para iniciar 11.5F
 **Baseline documental de entrada:** `91e0775`
 **Commit local de entrada:** `91e0775`
 
@@ -950,7 +950,7 @@ git status --short --untracked-files=all
 
 ### 11.5E — Materialização idempotente da agenda sanitária
 
-**Status:** próxima execução.
+**Status:** concluída localmente em 2026-06-06.
 
 **Objetivo**
 Transformar preview confirmado em agenda planejada sem duplicidade.
@@ -1003,6 +1003,52 @@ type AgendaProtocolCalculationSnapshot = {
 ```
 
 O snapshot completo de execução pertence ao evento, não à agenda.
+
+**Resultado 11.5E**
+
+Core puro criado em `src/lib/sanitario/agenda/sanitaryAgendaMaterialization.ts`, com testes em `src/lib/sanitario/agenda/__tests__/sanitaryAgendaMaterialization.test.ts`.
+
+Regras implementadas:
+
+* `createSanitaryAgendaMaterializationCommands` consome `SanitaryOperationalPreview` ou `SanitaryPreviewGroup[]`.
+* A saída gera comandos `agenda_intent`, sem persistir agenda.
+* `dedupKey` é estável e considera domínio sanitário, protocolo, item, `productId`, `productClass`, ação, lote, data agendada, janela e animais ordenados.
+* `dedupKey` não usa `productName` nem `loteName`.
+* Overrides editáveis permitem data, responsável e observação.
+* Grupos sem animais acionáveis são rejeitados.
+* Grupo sem data sugerida ou override é rejeitado como `missing_scheduled_date`.
+* Datas inválidas são rejeitadas como `invalid_scheduled_date`.
+* Datas fora da janela são rejeitadas como `scheduled_date_outside_window`.
+* Saída preserva `previewGroupId` e `sourceDemandKey`.
+* Saída é determinística e não muta inputs.
+* Resultado declara `createsEvent: false` e `createsInventoryMovement: false`.
+
+Testes cobrem:
+
+* criação de comando a partir de preview acionável;
+* rejeição de grupo sem animais;
+* rejeição de data ausente;
+* rejeição de data inválida;
+* override de data, responsável e observação;
+* rejeição de override fora da janela;
+* dedupKey sem labels mutáveis;
+* separação entre `productId` e `productClass`;
+* ordenação determinística de animais e comandos;
+* vínculo com preview/demanda;
+* ausência de evento, estoque, carência, Supabase, Dexie, React, UI, RPC, storage e `Date.now()`;
+* imutabilidade dos inputs.
+
+Validações registradas:
+
+```bash
+pnpm test -- src/lib/sanitario/agenda
+pnpm test
+pnpm run lint
+pnpm run build
+git diff --check
+git status --short --untracked-files=all
+git diff --cached --check
+```
 
 ### 11.5F — Execução sanitária como evento
 

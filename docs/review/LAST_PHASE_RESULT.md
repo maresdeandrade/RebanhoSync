@@ -6,6 +6,41 @@ Atualizado em: 2026-06-06
 
 ## 0. Resultado mais recente
 
+Fase 11.5E — Materialização idempotente da agenda sanitária — concluída localmente.
+
+Resultado da 11.5E:
+
+- core puro criado em `src/lib/sanitario/agenda/sanitaryAgendaMaterialization.ts`;
+- testes focados criados em `src/lib/sanitario/agenda/__tests__/sanitaryAgendaMaterialization.test.ts`;
+- `createSanitaryAgendaMaterializationCommands` consome `SanitaryOperationalPreview` ou `SanitaryPreviewGroup[]` já recebidos por parâmetro;
+- materialização gera comandos `agenda_intent`, não cria `agenda_itens` persistido;
+- `dedupKey` considera protocolo, item, `productId`, `productClass`, ação, lote, data agendada, janela e animais ordenados;
+- `dedupKey` não depende de `productName` ou `loteName`;
+- overrides editáveis permitem data de execução, responsável e observação;
+- grupos sem animais, sem data, com data inválida ou data fora da janela são rejeitados explicitamente;
+- vínculo com `previewGroupId` e `sourceDemandKey` é preservado;
+- saída é determinística e não muta inputs;
+- resultado declara que cria intenção de agenda, com `createsEvent: false` e `createsInventoryMovement: false`;
+- não houve Supabase, Dexie, React, UI, storage, RPC, Edge Function, migration, schema, RLS, sync-batch, seed, evento, baixa de estoque, carência ativa ou autorização de venda/abate.
+
+Validação local da 11.5E:
+
+```txt
+pnpm test -- src/lib/sanitario/agenda: passou.
+pnpm test: passou.
+pnpm run lint: passou.
+pnpm run build: passou com warnings conhecidos de Browserslist/caniuse-lite e chunks grandes.
+git diff --check: passou.
+git status --short --untracked-files=all: passou, com arquivos da 11.5E criados/alterados.
+git diff --cached --check: passou após stage dos arquivos da 11.5E.
+```
+
+Próxima execução:
+
+- 11.5F — Execução sanitária como evento.
+
+---
+
 Fase 11.5D — Preview operacional editável — concluída localmente.
 
 Resultado da 11.5D:

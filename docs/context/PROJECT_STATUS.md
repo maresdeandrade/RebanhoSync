@@ -66,6 +66,7 @@ A Fase 12 permanece bloqueada até fechamento formal da Fase 11.5.
 - Fase 11.5B1.1 — Hardening de dose múltipla e âncora por evento concluída localmente.
 - Fase 11.5C — Demanda sanitária agrupada concluída localmente.
 - Fase 11.5D — Preview operacional editável concluída localmente.
+- Fase 11.5E — Materialização idempotente da agenda sanitária concluída localmente.
 - Fase 12 — Compra/Venda Operacional bloqueada até fechamento formal da Fase 11.5.
 
 Último avanço local da Fase 10:
@@ -106,10 +107,10 @@ A Fase 12 permanece bloqueada até fechamento formal da Fase 11.5.
 
 Próximo foco sugerido:
 
-- Fase 11.5E — Materialização idempotente da agenda sanitária;
-- preservar preview sanitário como simulação derivada até confirmação explícita;
+- Fase 11.5F — Execução sanitária como evento;
 - preservar Agenda como intenção futura e Evento como fato executado;
-- preservar materialização de agenda sem evento e sem baixa de estoque;
+- preservar materialização de agenda como comando/intenção sem evento e sem baixa de estoque;
+- manter persistência/offline/sync fora da 11.5E já concluída;
 - não iniciar Fase 12 antes do fechamento formal da 11.5.
 
 Realidade validada para o roadmap pós-Fase 9:

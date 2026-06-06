@@ -1,6 +1,6 @@
 # ACTIVE_PHASE_PLAN - Fase 11.5
 
-**Status:** 11.5D concluída localmente / pronta para iniciar 11.5E
+**Status:** 11.5E concluída localmente / pronta para iniciar 11.5F
 **Foco:** Agenda Sanitária v2: Janelas, Agrupamento e Materialização Idempotente
 **Criado:** 2026-06-05
 **Atualizado:** 2026-06-06
@@ -17,12 +17,12 @@ Conduzir a Fase 11.5 como etapa extra entre a Fase 11 e a Fase 12 para redesenha
 ## Status da Fase 11.5
 
 - Fase 11 — Lotes, Pastos e Desempenho Operacional Ampliado: concluída localmente.
-- Fase 11.5 — Agenda Sanitária v2: 11.5D concluída localmente / pronta para iniciar 11.5E.
+- Fase 11.5 — Agenda Sanitária v2: 11.5E concluída localmente / pronta para iniciar 11.5F.
 - Fase 12 — Compra/Venda Operacional: Hardening e Lacunas: bloqueada até fechamento formal da 11.5.
 
 Próximo passo:
 
-- 11.5E — Materialização idempotente da agenda sanitária.
+- 11.5F — Execução sanitária como evento.
 
 ---
 
@@ -72,7 +72,7 @@ Protocolo
 - 11.5B1.1 — Hardening de elegibilidade por dose múltipla e âncora por evento: concluída localmente.
 - 11.5C — Demanda sanitária agrupada: concluída localmente.
 - 11.5D — Preview sanitário editável: concluída localmente.
-- 11.5E — Materialização idempotente da agenda sanitária.
+- 11.5E — Materialização idempotente da agenda sanitária: concluída localmente.
 - 11.5F — Execução sanitária como evento.
 - 11.5G — Semântica final de fechamento da agenda.
 - 11.5H — Fechamento e handoff.
@@ -103,12 +103,26 @@ Protocolo
 - Campos editáveis são declarados sem persistência.
 - Preview permanece simulação derivada, não agenda nem evento, com `materialization: "none"`.
 
+## Resultado da 11.5E
+
+- Core puro criado em `src/lib/sanitario/agenda/sanitaryAgendaMaterialization.ts`.
+- Testes focados criados em `src/lib/sanitario/agenda/__tests__/sanitaryAgendaMaterialization.test.ts`.
+- Materialização consome `SanitaryOperationalPreview` ou `SanitaryPreviewGroup[]` recebidos por parâmetro.
+- Resultado gera comandos `agenda_intent`, não persistência em agenda.
+- `dedupKey` usa protocolo, item, `productId`, `productClass`, ação, lote, data agendada, janela e animais ordenados.
+- `dedupKey` não usa `productName` nem `loteName`.
+- Overrides permitem data, responsável e observação.
+- Rejeições cobrem grupo sem animais, data ausente, data inválida e data fora da janela.
+- Saída preserva `previewGroupId` e `sourceDemandKey`, é determinística e não muta inputs.
+- Resultado declara `createsEvent: false` e `createsInventoryMovement: false`.
+- Não houve Supabase, Dexie, React, UI, storage, RPC, Edge Function, migration, schema, RLS, sync-batch, seed, evento, baixa de estoque, carência ativa ou autorização de venda/abate.
+
 ## Escopo da próxima execução
 
-- Criar materialização idempotente da agenda sanitária a partir de preview confirmado.
+- Criar execução sanitária como evento real.
 - Preservar agenda como intenção operacional futura.
-- Não criar evento, não baixar estoque e não calcular carência ativa na materialização.
-- Manter caminho offline-first e idempotência por chave determinística.
+- Manter evento sanitário como fato histórico executado.
+- Baixar estoque somente por evento executado, se aplicável e explicitamente implementado na subfase.
 
 ## Escopo proibido nesta transição
 
