@@ -6,6 +6,40 @@ Atualizado em: 2026-06-05
 
 ## 0. Resultado mais recente
 
+Fase 11.5C — Demanda sanitária agrupada — concluída localmente.
+
+Resultado da 11.5C:
+
+- core puro criado em `src/lib/sanitario/demand/sanitaryDemand.ts`;
+- testes focados criados em `src/lib/sanitario/demand/__tests__/sanitaryDemand.test.ts`;
+- `createSanitaryDemandGroupsFromEligibilityResults` agrupa resultados já calculados de elegibilidade;
+- `computeSanitaryDemandGroups` pode chamar `computeSanitaryEligibility`, mantendo core puro e `referenceDate` por parâmetro;
+- demanda é agrupada por protocolo, item/produto/classe, ação, lote, janela e status derivado;
+- nomes de produto e lote foram mantidos como exibição e removidos da identidade primária do grupo para evitar fragmentação por rename/cache offline;
+- `insufficient_data` é preservado como pendência de cadastro;
+- `not_applicable` é contado, mas excluído de `actionableAnimalIds`;
+- limitações agregadas são deduplicadas;
+- saída é determinística e não muta inputs;
+- demanda permanece leitura derivada, não agenda nem evento, com `materialization: "none"`;
+- não houve Supabase, Dexie, React, UI, storage, RPC, `Date.now()`, migration, schema, RLS, sync-batch, seed, agenda, evento, baixa de estoque, carência ativa ou autorização de venda/abate.
+
+Validação local da 11.5C:
+
+```txt
+pnpm test -- src/lib/sanitario/demand: passou.
+pnpm test: passou.
+pnpm run lint: passou.
+pnpm run build: passou com warnings conhecidos de Browserslist/caniuse-lite e chunks grandes.
+git diff --check: passou.
+git status --short --untracked-files=all: passou, com arquivos da 11.5C criados/alterados.
+```
+
+Próxima execução:
+
+- 11.5D — Preview operacional editável.
+
+---
+
 Fase 11F — Fechamento documental da Fase 11 — executada.
 
 Resultado da 11F:

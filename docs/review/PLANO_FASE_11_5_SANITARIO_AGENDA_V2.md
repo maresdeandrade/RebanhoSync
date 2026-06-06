@@ -1,7 +1,7 @@
 # Plano Fase 11.5 — Agenda Sanitária v2: Janelas, Agrupamento e Materialização Idempotente
 
 **Atualizado em:** 2026-06-06
-**Status:** 11.5B1.1 concluída localmente / pronta para iniciar 11.5C
+**Status:** 11.5C concluída localmente / pronta para iniciar 11.5D
 **Baseline documental de entrada:** `91e0775`
 **Commit local de entrada:** `91e0775`
 
@@ -722,7 +722,7 @@ Nenhuma demanda agrupada, preview, materialização de agenda, evento, baixa de 
 
 ### 11.5C — Demanda sanitária agrupada
 
-**Status:** próxima execução, dependente da 11.5B1/11.5B1.1.
+**Status:** concluída localmente em 2026-06-06.
 
 **Objetivo**
 Transformar elegibilidades individuais em demanda operacional por fazenda, protocolo, item, lote, categoria e janela.
@@ -798,9 +798,52 @@ type SanitaryDemandGroup = {
 * Agrupamento padrão deve evitar geração animal-a-animal.
 * Exclusões devem exigir motivo quando houver preview/materialização.
 
+**Resultado 11.5C**
+
+Core puro criado em `src/lib/sanitario/demand/sanitaryDemand.ts`, com testes em `src/lib/sanitario/demand/__tests__/sanitaryDemand.test.ts`.
+
+Regras implementadas:
+
+* `createSanitaryDemandGroupsFromEligibilityResults` agrupa elegibilidades já calculadas.
+* `computeSanitaryDemandGroups` pode chamar `computeSanitaryEligibility`, mantendo core puro, sem IO e com `referenceDate` recebido por parâmetro.
+* Agrupamento considera protocolo, item/produto/classe, ação, lote, janela e status derivado.
+* `productName` e `loteName` são preservados como campos de exibição, mas não entram na identidade primária do grupo.
+* `insufficient_data` é preservado como pendência de cadastro.
+* `not_applicable` é contado, mas não entra em `actionableAnimalIds`.
+* Status acionáveis são `eligible_soon`, `in_action_window`, `near_deadline` e `overdue`.
+* Limitações agregadas são deduplicadas.
+* Saída é determinística e não muta inputs.
+* Demanda permanece leitura derivada, não agenda e não evento, com `materialization: "none"`.
+
+Testes cobrem:
+
+* agrupamento por protocolo e lote;
+* agrupamento por item/produto/classe;
+* separação por janela;
+* preservação de `insufficient_data`;
+* exclusão de `not_applicable` da demanda acionável;
+* soma de `completed`, `overdue`, `near_deadline`, `in_action_window` e `eligible_soon`;
+* deduplicação de limitações;
+* saída determinística;
+* não fragmentar grupo quando apenas nomes de lote/produto divergem para o mesmo ID;
+* ausência de agenda/evento/materialização;
+* ausência de Supabase, Dexie, React, UI, storage e `Date.now()`;
+* imutabilidade dos inputs.
+
+Validações registradas:
+
+```bash
+pnpm test -- src/lib/sanitario/demand
+pnpm test
+pnpm run lint
+pnpm run build
+git diff --check
+git status --short --untracked-files=all
+```
+
 ### 11.5D — Preview operacional editável
 
-**Status:** futura.
+**Status:** próxima execução.
 
 **Objetivo**
 Permitir revisão antes de materializar agenda.

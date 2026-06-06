@@ -1,6 +1,6 @@
 # ACTIVE_PHASE_PLAN - Fase 11.5
 
-**Status:** 11.5B1.1 concluída localmente / pronta para iniciar 11.5C
+**Status:** 11.5C concluída localmente / pronta para iniciar 11.5D
 **Foco:** Agenda Sanitária v2: Janelas, Agrupamento e Materialização Idempotente
 **Criado:** 2026-06-05
 **Atualizado:** 2026-06-06
@@ -17,12 +17,12 @@ Conduzir a Fase 11.5 como etapa extra entre a Fase 11 e a Fase 12 para redesenha
 ## Status da Fase 11.5
 
 - Fase 11 — Lotes, Pastos e Desempenho Operacional Ampliado: concluída localmente.
-- Fase 11.5 — Agenda Sanitária v2: 11.5B1.1 concluída localmente / pronta para iniciar 11.5C.
+- Fase 11.5 — Agenda Sanitária v2: 11.5C concluída localmente / pronta para iniciar 11.5D.
 - Fase 12 — Compra/Venda Operacional: Hardening e Lacunas: bloqueada até fechamento formal da 11.5.
 
 Próximo passo:
 
-- 11.5C — Demanda sanitária agrupada.
+- 11.5D — Preview operacional editável.
 
 ---
 
@@ -70,8 +70,8 @@ Protocolo
 - 11.5B0 — Contrato bibliográfico de regra sanitária e produto: concluída localmente.
 - 11.5B1 — Motor puro de elegibilidade sanitária por janela: concluída localmente.
 - 11.5B1.1 — Hardening de elegibilidade por dose múltipla e âncora por evento: concluída localmente.
-- 11.5C — Demanda sanitária agrupada: próxima execução.
-- 11.5D — Preview sanitário editável.
+- 11.5C — Demanda sanitária agrupada: concluída localmente.
+- 11.5D — Preview sanitário editável: próxima execução.
 - 11.5E — Materialização idempotente da agenda sanitária.
 - 11.5F — Execução sanitária como evento.
 - 11.5G — Semântica final de fechamento da agenda.
@@ -79,14 +79,23 @@ Protocolo
 
 ---
 
+## Resultado da 11.5C
+
+- Core puro criado em `src/lib/sanitario/demand/sanitaryDemand.ts`.
+- Testes focados criados em `src/lib/sanitario/demand/__tests__/sanitaryDemand.test.ts`.
+- Demanda agrupada consome elegibilidades já calculadas ou chama `computeSanitaryEligibility` sem IO.
+- Agrupamento considera protocolo, item/produto/classe, ação, lote, janela e status derivado.
+- Nomes de produto e lote são campos de exibição, não identidade primária do grupo.
+- `insufficient_data` permanece pendência de cadastro.
+- `not_applicable` é contado e excluído da demanda acionável.
+- Demanda permanece derivada e não materializa agenda, evento, baixa de estoque ou carência.
+
 ## Escopo da próxima execução
 
-- Consumir resultados do motor puro de elegibilidade.
-- Agrupar demanda por protocolo, janela, lote/categoria e status derivado.
-- Preservar demanda como leitura derivada, não agenda e não evento.
-- Manter `completed` dependente de evento executado compatível.
-
----
+- Criar preview operacional editável a partir da demanda derivada.
+- Preservar preview como simulação operacional, não agenda e não evento.
+- Permitir ajustes operacionais permitidos sem alterar regra técnica.
+- Não materializar agenda, criar evento, baixar estoque ou calcular carência ativa.
 
 ## Escopo proibido nesta transição
 

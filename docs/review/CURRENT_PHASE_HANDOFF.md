@@ -27,7 +27,7 @@ Referência: `docs/review/PLANO_FASE_11.md`.
 
 Fase 11.5 — Agenda Sanitária v2: Janelas, Agrupamento e Materialização Idempotente.
 
-Status: 11.5B1.1 concluída localmente / pronta para iniciar 11.5C.
+Status: 11.5C concluída localmente / pronta para iniciar 11.5D.
 
 Plano específico: `docs/review/PLANO_FASE_11_5_SANITARIO_AGENDA_V2.md`.
 
@@ -101,12 +101,34 @@ Validações executadas:
 - `git diff --check`;
 - `git status --short --untracked-files=all`.
 
-Objetivo da 11.5C:
+11.5C — Demanda sanitária agrupada — concluída localmente.
 
-- transformar elegibilidades individuais em demanda operacional agrupada;
-- agrupar por protocolo, janela, lote/categoria e status derivado;
-- preservar demanda como leitura derivada, não agenda nem evento;
-- não materializar agenda, criar evento, baixar estoque ou calcular carência ativa.
+Resultado da 11.5C:
+
+- core puro criado em `src/lib/sanitario/demand/sanitaryDemand.ts`;
+- testes focados criados em `src/lib/sanitario/demand/__tests__/sanitaryDemand.test.ts`;
+- `createSanitaryDemandGroupsFromEligibilityResults` agrupa elegibilidades já calculadas;
+- `computeSanitaryDemandGroups` chama `computeSanitaryEligibility` sem IO e com `referenceDate` recebido por parâmetro;
+- agrupamento considera protocolo, item/produto/classe, ação, lote, janela e status derivado;
+- nomes de produto e lote ficam como exibição, não como identidade primária do grupo;
+- `insufficient_data` é preservado como pendência de cadastro;
+- `not_applicable` é contado, mas não entra em `actionableAnimalIds`;
+- limitações agregadas são deduplicadas e a saída é determinística;
+- demanda permanece leitura derivada, com `materialization: "none"`;
+- não houve agenda, evento, baixa de estoque, carência ativa, autorização de venda/abate, Supabase, Dexie, React, UI, storage, RPC, `Date.now()`, migration, schema, RLS, sync-batch ou seed.
+
+Validações executadas:
+
+- `pnpm test -- src/lib/sanitario/demand`;
+- `pnpm test`;
+- `pnpm run lint`;
+- `pnpm run build`;
+- `git diff --check`;
+- `git status --short --untracked-files=all`.
+
+Próxima execução:
+
+- 11.5D — Preview operacional editável.
 
 ---
 
@@ -134,7 +156,7 @@ Não fazer sem tarefa explícita:
 
 ---
 
-## 6. Checklist antes da 11.5C
+## 6. Checklist antes da 11.5D
 
 Executar no início de nova rodada:
 
