@@ -19,7 +19,7 @@ A fase 11 — Lotes, Pastos e Desempenho Operacional Ampliado — está concluí
 
 Foi criada a fase extra 11.5 — Agenda Sanitária v2: Janelas, Agrupamento e Materialização Idempotente — antes da Fase 12.
 
-A Fase 12 permanece bloqueada até fechamento formal da Fase 11.5.
+A Fase 11.5 foi fechada localmente pela 11.5H. A Fase 12 permanece não iniciada até novo diagnóstico, commit da 11.5H e atualização explícita do plano ativo.
 
 Último gate validado:
 
@@ -69,7 +69,8 @@ A Fase 12 permanece bloqueada até fechamento formal da Fase 11.5.
 - Fase 11.5E — Materialização idempotente da agenda sanitária concluída localmente.
 - Fase 11.5F — Execução sanitária como evento concluída localmente em escopo reduzido.
 - Fase 11.5G — Semântica final de fechamento da agenda concluída localmente em core puro.
-- Fase 12 — Compra/Venda Operacional bloqueada até fechamento formal da Fase 11.5.
+- Fase 11.5H — Fechamento e handoff concluída localmente como etapa documental.
+- Fase 12 — Compra/Venda Operacional não iniciada; exige novo diagnóstico e plano ativo próprio.
 
 Último avanço local da Fase 10:
 
@@ -109,25 +110,26 @@ A Fase 12 permanece bloqueada até fechamento formal da Fase 11.5.
 
 Último avanço local da Fase 11.5:
 
-- `src/lib/sanitario/agenda/sanitaryAgendaClosure.ts` criou comando/intenção `agenda_closure_intent`;
-- testes focados em `src/lib/sanitario/agenda/__tests__/sanitaryAgendaClosure.test.ts`;
-- fechamento administrativo cobre execução total com evento, execução parcial com evento, fechamento sem execução, cancelamento e dispensa;
-- fechamento executado exige evento compatível com a agenda;
-- fechamento sem execução, cancelamento e dispensa exigem motivo;
-- execução parcial preserva animais planejados não executados com motivo;
-- fechamento sem execução, cancelamento e dispensa rejeitam evento informado por engano;
-- fechamento executado rejeita animal executado fora do escopo planejado;
-- fechamento parcial rejeita execução total classificada como parcial;
-- fechamento declara que não cria evento, histórico sanitário, baixa de estoque ou carência;
-- nenhuma alteração em Supabase/RLS/migrations/RPC/schema/sync/edge functions/Dexie/UI.
+- 11.5H fechou documentalmente a Agenda Sanitária v2;
+- contratos 11.5A a 11.5G foram consolidados;
+- `agenda_intent`, `event_execution_intent` e `agenda_closure_intent` permanecem comandos/intenção de core puro;
+- Agenda permanece intenção/tarefa futura;
+- Evento permanece fato histórico executado;
+- fechamento administrativo permanece estado da intenção, sem virar histórico sanitário;
+- `completed` sanitário depende de evento compatível;
+- baixa de estoque depende de evento real;
+- carência depende de produto executado e fonte técnica explícita;
+- venda, abate e aptidão operacional seguem bloqueados sem fonte técnica explícita;
+- persistência, sync, schema, RLS, UI, RPC, Edge Functions, Dexie e seed continuam fora do implementado na 11.5;
+- riscos residuais para persistência real, fluxo legado de agenda, `status='concluido'`, replay/rollback/idempotência e RLS/multi-tenant foram documentados.
 
 Próximo foco sugerido:
 
-- Fase 11.5H — Fechamento e handoff;
-- preservar Agenda como intenção futura e Evento como fato executado;
-- preservar materialização de agenda como comando/intenção sem evento e sem baixa de estoque;
-- manter persistência/offline/sync fora da 11.5G concluída em core puro;
-- não iniciar Fase 12 antes do fechamento formal da 11.5.
+- preparar Fase 12 somente após commit da 11.5H;
+- atualizar o plano ativo para Fase 12;
+- executar novo diagnóstico local;
+- auditar fluxo legado de agenda antes de migration/constraint;
+- decidir explicitamente schema/migrations, Dexie/local-first, sync-batch, Supabase/RLS, RPC/Edge Function, UI, rollback/replay, idempotência real e tratamento de dados existentes/reset.
 
 Realidade validada para o roadmap pós-Fase 9:
 
@@ -144,8 +146,8 @@ Sequência corrigida pós-Fase 9:
 
 1. Fase 10 — UX Operacional dos Fluxos Centrais: concluída localmente.
 2. Fase 11 — Lotes, Pastos e Desempenho Operacional Ampliado: concluída localmente.
-3. Fase 11.5 — Agenda Sanitária v2: Janelas, Agrupamento e Materialização Idempotente.
-4. Fase 12 — Compra/Venda Operacional: Hardening e Lacunas.
+3. Fase 11.5 — Agenda Sanitária v2: Janelas, Agrupamento e Materialização Idempotente: fechada localmente pela 11.5H.
+4. Fase 12 — Compra/Venda Operacional: Hardening e Lacunas: não iniciada.
 5. Fase 13 — Relatórios/KPIs Operacionais Read-only Ampliados.
 6. Fase 14 — Financeiro Gerencial Explícito.
 7. Fase 15 — Motor de Decisão Assistida.

@@ -28,13 +28,24 @@ Não deve substituir issues, tarefas técnicas ou prompts de implementação.
 
 ## Fase atual — Fase 11.5 (Agenda Sanitária v2)
 
-Status: **em andamento / 11.5G concluída localmente / pronta para iniciar 11.5H**
+Status: **fechada localmente pela 11.5H**
 Fase anterior: **Fase 11 — Lotes, Pastos e Desempenho Operacional Ampliado — concluída localmente**
-Fase seguinte: **Fase 12 — Compra/Venda Operacional: Hardening e Lacunas — bloqueada até fechamento formal da 11.5**
+Fase seguinte: **Fase 12 — Compra/Venda Operacional: Hardening e Lacunas — não iniciada; exige novo diagnóstico e plano ativo próprio**
 
 ### Conduta inicial
 
-As subfases 11.5A (Diagnóstico + contrato alvo), 11.5B0 (contrato bibliográfico de regra e produto), 11.5B1 (motor puro de elegibilidade sanitária por janela), 11.5B1.1 (hardening de dose múltipla e âncora por evento), 11.5C (demanda sanitária agrupada), 11.5D (preview operacional editável), 11.5E (materialização idempotente da agenda sanitária como comando/intenção pura), 11.5F (execução sanitária como comando/intenção de evento em core puro, sem persistência) e 11.5G (semântica final de fechamento administrativo de agenda em core puro, sem persistência) foram concluídas localmente. A próxima execução é a 11.5H — Fechamento e handoff. Não iniciar Fase 12 antes do fechamento formal da 11.5.
+As subfases 11.5A (Diagnóstico + contrato alvo), 11.5B0 (contrato bibliográfico de regra e produto), 11.5B1 (motor puro de elegibilidade sanitária por janela), 11.5B1.1 (hardening de dose múltipla e âncora por evento), 11.5C (demanda sanitária agrupada), 11.5D (preview operacional editável), 11.5E (materialização idempotente da agenda sanitária como comando/intenção pura), 11.5F (execução sanitária como comando/intenção de evento em core puro, sem persistência), 11.5G (semântica final de fechamento administrativo de agenda em core puro, sem persistência) e 11.5H (fechamento documental e handoff) foram concluídas localmente. A Fase 12 ainda não foi iniciada.
+
+### Handoff para Fase 12
+
+Fase 12 só deve iniciar após nova rodada com worktree limpo, 11.5H commitada, plano ativo apontando para Fase 12 e diagnóstico explícito sobre fluxo legado de agenda, schema/migrations, Dexie/local-first, sync-batch, Supabase/RLS, RPC/Edge Function, UI, rollback/replay, idempotência real e tratamento de dados existentes/reset.
+
+Riscos residuais vindos da 11.5:
+
+- contratos core ainda não conectados à persistência real;
+- `agenda_intent`, `event_execution_intent` e `agenda_closure_intent` ainda não aplicados em Supabase/Dexie/sync;
+- `status='concluido'` legado permanece semanticamente ambíguo;
+- estoque e carência devem continuar derivados de evento real/produto executado, não de agenda.
 
 ### Escopo inicial sugerido
 
@@ -168,7 +179,7 @@ Status real usa apenas: `CONCLUÍDA`, `PARCIAL`, `HARDENING_RESIDUAL`, `A_INICIA
 6. Fase 15 — Motor de Decisão Assistida.
 7. Fase 16 — Beta Externo / SLC / Hardening de Produto.
 
-Fase 12 permanece bloqueada até fechamento formal da Fase 11.5.
+Fase 12 permanece não iniciada até novo diagnóstico, commit da 11.5H e atualização explícita do plano ativo.
 
 ---
 

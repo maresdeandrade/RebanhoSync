@@ -1,7 +1,7 @@
 # Plano Fase 11.5 — Agenda Sanitária v2: Janelas, Agrupamento e Materialização Idempotente
 
 **Atualizado em:** 2026-06-06
-**Status:** 11.5G concluída localmente / pronta para iniciar 11.5H
+**Status:** Fase 11.5 fechada localmente pela 11.5H
 **Baseline documental de entrada:** `0cc5577`
 **Commit local de entrada da 11.5F:** `0cc5577`
 
@@ -1217,10 +1217,10 @@ pnpm run build
 
 ### 11.5H — Fechamento e handoff
 
-**Status:** futura.
+**Status:** concluída localmente em 2026-06-06, como etapa documental e de validação.
 
 **Objetivo**
-Consolidar contrato, validações, riscos residuais e handoff para liberar a Fase 12.
+Consolidar contrato, validações, riscos residuais e handoff técnico. A 11.5H não inicia Fase 12; apenas define critérios para uma próxima rodada.
 
 **Entregáveis**
 
@@ -1231,6 +1231,69 @@ Consolidar contrato, validações, riscos residuais e handoff para liberar a Fas
 * decisões de descarte/reset documentadas;
 * documentação final atualizada;
 * handoff técnico para próxima fase.
+
+**Resultado 11.5H**
+
+Contratos 11.5A a 11.5G consolidados:
+
+* 11.5A — Agenda sanitária atual analisada; Agenda = intenção; Evento = fato; baixa de estoque nasce de evento real; dados antigos podem ser resetados apenas em fluxo explícito/demo/reset.
+* 11.5B0 — Regra sanitária/produto exige fonte técnica; guideline não é fonte única de verdade; carência é vinculada ao produto; snapshot futuro de carência depende de evento executado/produto executado.
+* 11.5B1 — Elegibilidade sanitária em core puro; `completed` depende de evento sanitário compatível; agenda concluída não é fato.
+* 11.5C — Demanda agrupada é derivada; não cria agenda; não cria evento; não usa labels mutáveis como identidade.
+* 11.5D — Preview operacional é simulação derivada; bloqueios `insufficient_data`; grupos acionáveis; não persiste.
+* 11.5E — Materialização idempotente gera `agenda_intent`; não persiste; usa `dedupKey` estável; rejeita datas inválidas; não cria evento/estoque/carência.
+* 11.5F — Execução sanitária gera `event_execution_intent`; declara `createsEvent: true` e `persistsEvent: false`; não fecha agenda; não baixa estoque; não calcula carência; produto executado não é inferido automaticamente do planejado.
+* 11.5G — Fechamento administrativo gera `agenda_closure_intent`; agenda fechada não vira histórico; fechamento executado/parcial exige evento compatível; fechamento sem execução/cancelamento/dispensa exige motivo; parcial preserva não executados; não cria evento/estoque/carência/histórico.
+
+Invariantes finais:
+
+* Agenda = intenção/tarefa futura.
+* Evento = fato histórico executado.
+* Fechamento da agenda = estado administrativo da intenção.
+* `state_*` = read model atual.
+* Protocolo = regra/configuração.
+* Tags, sinais e insights = auxiliares, nunca fonte primária.
+* Agenda concluída não satisfaz histórico sanitário.
+* `completed` sanitário depende de evento compatível.
+* Baixa de estoque depende de evento real.
+* Carência depende de produto executado e fonte técnica.
+* Venda/abate/aptidão operacional seguem bloqueados sem fonte técnica explícita.
+* Persistência/sync/schema/RLS ainda não foram implementados nesta 11.5.
+
+Riscos residuais:
+
+* Contratos core ainda não estão conectados à persistência real.
+* `agenda_intent`, `event_execution_intent` e `agenda_closure_intent` ainda não são aplicados em Supabase/Dexie/sync.
+* Fluxo legado de agenda precisa ser auditado antes de migration/constraint.
+* `status = concluido` legado permanece semanticamente ambíguo até futura migração.
+* Integração offline-first exigirá idempotência real, replay, rollback e sucesso parcial.
+* RLS/multi-tenant precisam ser validados antes de qualquer persistência remota.
+* Estoque e carência precisam continuar derivados de evento real/produto executado, não de agenda.
+
+Critérios para iniciar Fase 12:
+
+* worktree limpo;
+* 11.5H commitada;
+* plano ativo apontando para Fase 12;
+* novo diagnóstico local;
+* auditoria do fluxo legado de agenda;
+* decisão explícita sobre schema/migrations, Dexie/local-first, sync-batch, Supabase/RLS, RPC/Edge Function, UI, rollback/replay, idempotência real e tratamento de dados existentes/reset.
+
+Validações da 11.5H:
+
+```bash
+git status --short --untracked-files=all
+git status -sb
+git log --oneline -5
+git rev-parse --short HEAD
+git diff --check
+git diff --cached --check
+pnpm test -- src/lib/sanitario
+pnpm test
+pnpm run lint
+pnpm run build
+git status --short --untracked-files=all
+```
 
 ---
 

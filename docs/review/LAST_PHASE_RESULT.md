@@ -6,6 +6,70 @@ Atualizado em: 2026-06-06
 
 ## 0. Resultado mais recente
 
+Fase 11.5H — Fechamento e handoff — concluída localmente como etapa documental e de validação.
+
+Resultado da 11.5H:
+
+- Fase 11.5 consolidada como fechada localmente;
+- contratos 11.5A, 11.5B0, 11.5B1, 11.5B1.1, 11.5C, 11.5D, 11.5E, 11.5F e 11.5G preservados como concluídos;
+- contrato final `Protocolo -> regra/produto com fonte técnica -> janela -> elegibilidade -> demanda -> preview -> agenda_intent -> event_execution_intent -> agenda_closure_intent` registrado como core puro/documental;
+- Agenda preservada como intenção/tarefa futura;
+- Evento preservado como fato histórico executado;
+- fechamento administrativo preservado como estado da intenção, sem criar histórico sanitário;
+- `completed` sanitário preservado como dependente de evento compatível;
+- baixa de estoque preservada como dependente de evento real;
+- carência preservada como dependente de produto executado e fonte técnica explícita;
+- venda, abate e aptidão operacional continuam bloqueados sem fonte técnica explícita;
+- persistência real, sync, schema, RLS, RPC, Edge Functions, Dexie, UI e seed permaneceram fora da 11.5H;
+- Fase 12 não foi iniciada.
+
+Riscos residuais aceitos:
+
+- contratos core ainda não estão conectados à persistência real;
+- `agenda_intent`, `event_execution_intent` e `agenda_closure_intent` ainda não são aplicados em Supabase/Dexie/sync;
+- fluxo legado de agenda precisa ser auditado antes de migration/constraint;
+- `status='concluido'` legado permanece semanticamente ambíguo até futura migração;
+- integração offline-first exigirá idempotência real, replay, rollback e sucesso parcial;
+- RLS/multi-tenant precisam ser validados antes de qualquer persistência remota;
+- estoque e carência precisam continuar derivados de evento real/produto executado, não de agenda.
+
+Critério para preparar Fase 12:
+
+- worktree limpo;
+- 11.5H commitada;
+- plano ativo apontando para Fase 12;
+- novo diagnóstico local;
+- auditoria do fluxo legado de agenda;
+- decisão explícita sobre schema/migrations, Dexie/local-first, sync-batch, Supabase/RLS, RPC/Edge Function, UI, rollback/replay, idempotência real e tratamento de dados existentes/reset.
+
+Validações locais da 11.5H:
+
+```txt
+git status --short --untracked-files=all: passou; worktree limpo antes do patch.
+git status -sb: main...origin/main [ahead 2].
+git log --oneline -5: HEAD 178c592 e commits 11.5C-11.5G confirmados.
+git rev-parse --short HEAD: 178c592.
+git diff --check: passou antes do patch.
+git diff --cached --check: passou antes do patch.
+```
+
+Validações pós-patch:
+
+```txt
+git diff --check: passou.
+pnpm test -- src/lib/sanitario: passou, 70 arquivos, 769 testes.
+pnpm test: primeira execução estourou timeout do runner em ~183s e morreu com EPIPE, sem falha de teste conclusiva; repetida com timeout maior e passou, 268 arquivos, 1880 testes.
+pnpm run lint: passou.
+pnpm run build: passou com warnings conhecidos de Browserslist/caniuse-lite desatualizado e chunks grandes.
+git status --short --untracked-files=all: passou, com apenas documentos da 11.5H alterados.
+```
+
+Próxima execução:
+
+- Preparar Fase 12 somente em nova rodada, após commit da 11.5H e atualização explícita do plano ativo.
+
+---
+
 Fase 11.5G — Semântica final de fechamento da agenda — concluída localmente em core puro.
 
 Resultado da 11.5G:

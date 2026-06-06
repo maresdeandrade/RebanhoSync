@@ -25,9 +25,9 @@ Referência: `docs/review/PLANO_FASE_11.md`.
 
 ## 2. Fase atual
 
-Fase 11.5 — Agenda Sanitária v2: Janelas, Agrupamento e Materialização Idempotente.
+Fase 11.5 — Agenda Sanitária v2: Janelas, Agrupamento e Materialização Idempotente — fechada localmente.
 
-Status: 11.5G concluída localmente / pronta para iniciar 11.5H.
+Status: 11.5H concluída como fechamento documental e handoff técnico.
 
 Plano específico: `docs/review/PLANO_FASE_11_5_SANITARIO_AGENDA_V2.md`.
 
@@ -36,7 +36,7 @@ Motivo da fase extra:
 - protocolos sanitários são frequentemente janelas operacionais, não datas exatas;
 - antes do motor de elegibilidade, regra sanitária e produto precisam de contrato bibliográfico/legal/bula;
 - a agenda sanitária antiga pode ser substituída;
-- a separação `Protocolo -> Agenda -> Evento` precisa ser redesenhada antes da Fase 12;
+- a separação `Protocolo -> Agenda -> Evento` foi consolidada em core puro antes da Fase 12;
 - o app é offline-first, então RPC não deve ser caminho principal;
 - materialização de agenda deve ser idempotente e não pode criar evento nem baixar estoque.
 
@@ -249,17 +249,59 @@ Validações executadas:
 - `pnpm run lint`;
 - `pnpm run build`.
 
-Próxima execução:
+11.5H — Fechamento e handoff — concluída localmente como etapa documental.
 
-- 11.5H — Fechamento e handoff.
+Resultado da 11.5H:
+
+- contratos 11.5A a 11.5G consolidados como Agenda Sanitária v2 em core puro/documental;
+- `agenda_intent`, `event_execution_intent` e `agenda_closure_intent` registrados como intenções/comandos ainda sem aplicação em Supabase, Dexie ou sync;
+- Agenda preservada como intenção/tarefa futura;
+- Evento preservado como fato histórico executado;
+- fechamento administrativo de agenda preservado como estado da intenção, sem virar histórico sanitário;
+- `completed` sanitário continua dependente de evento compatível;
+- baixa de estoque continua dependente de evento real;
+- carência continua dependente de produto executado e fonte técnica explícita;
+- venda, abate e aptidão operacional seguem bloqueados sem fonte técnica explícita;
+- persistência, sync, schema, RLS, UI, RPC, Edge Functions, Dexie e seed não foram implementados na 11.5H;
+- Fase 12 não foi iniciada.
+
+Riscos residuais documentados:
+
+- contratos core ainda não estão conectados à persistência real;
+- `agenda_intent`, `event_execution_intent` e `agenda_closure_intent` ainda não são aplicados em Supabase/Dexie/sync;
+- fluxo legado de agenda e `status='concluido'` precisam ser auditados antes de migration/constraint;
+- integração offline-first exigirá idempotência real, replay, rollback e sucesso parcial;
+- RLS/multi-tenant precisam ser validados antes de qualquer persistência remota;
+- estoque e carência devem continuar derivados de evento real/produto executado, não de agenda.
+
+Validações executadas na 11.5H:
+
+- `git status --short --untracked-files=all`;
+- `git status -sb`;
+- `git log --oneline -5`;
+- `git rev-parse --short HEAD`;
+- `git diff --check`;
+- `git diff --cached --check`;
+- `pnpm test -- src/lib/sanitario`;
+- `pnpm test`;
+- `pnpm run lint`;
+- `pnpm run build`;
+- `git status --short --untracked-files=all`.
 
 ---
 
 ## 4. Fase 12
 
-Fase 12 — Compra/Venda Operacional: Hardening e Lacunas — permanece bloqueada.
+Fase 12 — Compra/Venda Operacional: Hardening e Lacunas — permanece não iniciada.
 
-Não iniciar Fase 12 até fechamento formal da Fase 11.5.
+Critério mínimo para iniciar Fase 12 em nova rodada:
+
+- worktree limpo;
+- 11.5H commitada;
+- plano ativo atualizado para Fase 12;
+- novo diagnóstico local;
+- auditoria do fluxo legado de agenda;
+- decisão explícita sobre schema/migrations, Dexie/local-first, sync-batch, Supabase/RLS, RPC/Edge Function, UI, rollback/replay, idempotência real e tratamento de dados existentes/reset.
 
 ---
 
@@ -279,7 +321,7 @@ Não fazer sem tarefa explícita:
 
 ---
 
-## 6. Checklist antes da 11.5H
+## 6. Checklist para preparar Fase 12
 
 Executar no início de nova rodada:
 
@@ -288,7 +330,9 @@ git status --short --untracked-files=all
 git diff --check
 ```
 
-Se uma etapa futura tocar sync/offline/Supabase/RLS/migration/schema:
+Antes de qualquer implementação da Fase 12, confirmar que o plano ativo aponta para Fase 12 e que a 11.5H está commitada.
+
+Se a Fase 12 tocar sync/offline/Supabase/RLS/migration/schema:
 
 ```bash
 node scripts/codex/validate-supabase-baseline-functional.mjs

@@ -1,6 +1,6 @@
 # ACTIVE_PHASE_PLAN - Fase 11.5
 
-**Status:** 11.5G concluída localmente / pronta para iniciar 11.5H
+**Status:** Fase 11.5 fechada localmente pela 11.5H
 **Foco:** Agenda Sanitária v2: Janelas, Agrupamento e Materialização Idempotente
 **Criado:** 2026-06-05
 **Atualizado:** 2026-06-06
@@ -17,12 +17,12 @@ Conduzir a Fase 11.5 como etapa extra entre a Fase 11 e a Fase 12 para redesenha
 ## Status da Fase 11.5
 
 - Fase 11 — Lotes, Pastos e Desempenho Operacional Ampliado: concluída localmente.
-- Fase 11.5 — Agenda Sanitária v2: 11.5G concluída localmente / pronta para iniciar 11.5H.
-- Fase 12 — Compra/Venda Operacional: Hardening e Lacunas: bloqueada até fechamento formal da 11.5.
+- Fase 11.5 — Agenda Sanitária v2: fechada localmente pela 11.5H.
+- Fase 12 — Compra/Venda Operacional: Hardening e Lacunas: não iniciada; exige novo diagnóstico e atualização explícita do plano ativo.
 
-Próximo passo:
+Próximo passo sugerido:
 
-- 11.5H — Fechamento e handoff.
+- Preparar Fase 12 somente em nova rodada, após commit da 11.5H e diagnóstico local.
 
 ---
 
@@ -75,7 +75,7 @@ Protocolo
 - 11.5E — Materialização idempotente da agenda sanitária: concluída localmente.
 - 11.5F — Execução sanitária como evento: concluída localmente em escopo reduzido.
 - 11.5G — Semântica final de fechamento da agenda: concluída localmente em core puro.
-- 11.5H — Fechamento e handoff.
+- 11.5H — Fechamento e handoff: concluída localmente como etapa documental.
 
 ---
 
@@ -148,12 +148,23 @@ Protocolo
 - `dedupKey` não usa `productName` nem `loteName`.
 - Não houve Supabase, Dexie, React, UI, storage, RPC, Edge Function, migration, schema, RLS, sync-batch, seed, persistência de agenda/evento, fechamento real no banco, baixa de estoque, carência ativa ou autorização de venda/abate.
 
+## Resultado da 11.5H
+
+- Fechamento documental da Fase 11.5 consolidado.
+- Contratos 11.5A a 11.5G registrados como concluídos.
+- Invariantes `Agenda = intenção`, `Evento = fato`, `state_* = read model` e `Protocolo = regra/configuração` preservados.
+- `completed` sanitário depende de evento compatível, não de agenda concluída.
+- Baixa de estoque depende de evento real.
+- Carência depende de produto executado e fonte técnica explícita.
+- `agenda_intent`, `event_execution_intent` e `agenda_closure_intent` permanecem comandos/intenção de core puro, ainda sem aplicação em Supabase/Dexie/sync.
+- Persistência, sync, schema, RLS, UI, RPC, Edge Functions, Dexie e seed seguiram fora do escopo.
+- Fase 12 não foi iniciada.
+
 ## Escopo da próxima execução
 
-- Consolidar fechamento e handoff da Fase 11.5.
-- Registrar validações, riscos residuais e escopo liberado/bloqueado para a próxima fase.
-- Preservar agenda como intenção operacional futura e evento sanitário como fato histórico executado.
-- Não iniciar Fase 12 antes do fechamento formal da 11.5.
+- Abrir Fase 12 apenas após commit da 11.5H, worktree limpo, plano ativo atualizado e diagnóstico explícito.
+- Auditar fluxo legado de agenda antes de qualquer migration/constraint.
+- Decidir explicitamente schema/migrations, Dexie/local-first, sync-batch, Supabase/RLS, RPC/Edge Function, UI, rollback/replay, idempotência real e dados existentes/reset.
 
 ## Escopo proibido nesta transição
 
@@ -164,6 +175,14 @@ Protocolo
 - Calcular carência ativa ou autorizar venda/abate.
 - Iniciar Fase 12.
 - Atualizar profundamente docs permanentes de contexto, arquitetura ou sync.
+
+## Riscos residuais para a próxima fase
+
+- Contratos core ainda não estão conectados à persistência real.
+- `agenda_intent`, `event_execution_intent` e `agenda_closure_intent` ainda não são aplicados em Supabase/Dexie/sync.
+- `status='concluido'` legado permanece semanticamente ambíguo até futura auditoria/migração.
+- Integração offline-first exigirá idempotência real, replay, rollback e sucesso parcial.
+- RLS/multi-tenant precisam ser validados antes de qualquer persistência remota.
 
 ---
 
