@@ -1,6 +1,6 @@
 # ACTIVE_PHASE_PLAN - Fase 11.5
 
-**Status:** 11.5E concluída localmente / pronta para iniciar 11.5F
+**Status:** 11.5F concluída localmente / pronta para iniciar 11.5G
 **Foco:** Agenda Sanitária v2: Janelas, Agrupamento e Materialização Idempotente
 **Criado:** 2026-06-05
 **Atualizado:** 2026-06-06
@@ -17,12 +17,12 @@ Conduzir a Fase 11.5 como etapa extra entre a Fase 11 e a Fase 12 para redesenha
 ## Status da Fase 11.5
 
 - Fase 11 — Lotes, Pastos e Desempenho Operacional Ampliado: concluída localmente.
-- Fase 11.5 — Agenda Sanitária v2: 11.5E concluída localmente / pronta para iniciar 11.5F.
+- Fase 11.5 — Agenda Sanitária v2: 11.5F concluída localmente / pronta para iniciar 11.5G.
 - Fase 12 — Compra/Venda Operacional: Hardening e Lacunas: bloqueada até fechamento formal da 11.5.
 
 Próximo passo:
 
-- 11.5F — Execução sanitária como evento.
+- 11.5G — Semântica final de fechamento da agenda.
 
 ---
 
@@ -73,7 +73,7 @@ Protocolo
 - 11.5C — Demanda sanitária agrupada: concluída localmente.
 - 11.5D — Preview sanitário editável: concluída localmente.
 - 11.5E — Materialização idempotente da agenda sanitária: concluída localmente.
-- 11.5F — Execução sanitária como evento.
+- 11.5F — Execução sanitária como evento: concluída localmente em escopo reduzido.
 - 11.5G — Semântica final de fechamento da agenda.
 - 11.5H — Fechamento e handoff.
 
@@ -110,25 +110,40 @@ Protocolo
 - Materialização consome `SanitaryOperationalPreview` ou `SanitaryPreviewGroup[]` recebidos por parâmetro.
 - Resultado gera comandos `agenda_intent`, não persistência em agenda.
 - `dedupKey` usa protocolo, item, `productId`, `productClass`, ação, lote, data agendada, janela e animais ordenados.
-- `dedupKey` não usa `productName` nem `loteName`.
+- `dedupKey` separa `productId`/`productClass` e não usa `productName` nem `loteName`.
 - Overrides permitem data, responsável e observação.
 - Rejeições cobrem grupo sem animais, data ausente, data inválida e data fora da janela.
 - Saída preserva `previewGroupId` e `sourceDemandKey`, é determinística e não muta inputs.
 - Resultado declara `createsEvent: false` e `createsInventoryMovement: false`.
 - Não houve Supabase, Dexie, React, UI, storage, RPC, Edge Function, migration, schema, RLS, sync-batch, seed, evento, baixa de estoque, carência ativa ou autorização de venda/abate.
 
+## Resultado da 11.5F
+
+- Core puro criado em `src/lib/sanitario/execution/sanitaryEventExecution.ts`.
+- Testes focados criados em `src/lib/sanitario/execution/__tests__/sanitaryEventExecution.test.ts`.
+- Resultado gera comando/intenção `event_execution_intent`, com `createsEvent: true` e `persistsEvent: false`.
+- Execução pode partir de agenda materializada ou de protocolo explícito manual.
+- `occurredAt` é obrigatório e validado.
+- Animais executados são deduplicados e ordenados.
+- Execução parcial exige motivo para animais planejados não executados.
+- Execução vinculada rejeita animal fora do escopo planejado.
+- `dedupKey` não usa `productName` nem `loteName`.
+- Saída preserva `agendaDedupKey`, `previewGroupId` e `sourceDemandKey` quando houver origem.
+- Resultado declara `createsAgenda: false`, `closesAgenda: false` e `createsInventoryMovement: false`.
+- Não houve Supabase, Dexie, React, UI, storage, RPC, Edge Function, migration, schema, RLS, sync-batch, seed, persistência de evento, fechamento de agenda, baixa de estoque, carência ativa ou autorização de venda/abate.
+
 ## Escopo da próxima execução
 
-- Criar execução sanitária como evento real.
+- Definir semântica final de fechamento da agenda.
 - Preservar agenda como intenção operacional futura.
 - Manter evento sanitário como fato histórico executado.
-- Baixar estoque somente por evento executado, se aplicável e explicitamente implementado na subfase.
+- Não tratar fechamento administrativo como execução sanitária.
 
 ## Escopo proibido nesta transição
 
 - Criar migrations.
 - Alterar schema, RLS, sync-batch, Supabase, edge functions ou telas.
-- Criar UI, evento ou baixa de estoque.
+- Criar UI, persistir evento ou baixar estoque.
 - Materializar agenda sem idempotência explícita.
 - Calcular carência ativa ou autorizar venda/abate.
 - Iniciar Fase 12.

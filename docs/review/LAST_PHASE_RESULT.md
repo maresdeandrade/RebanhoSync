@@ -1,43 +1,43 @@
 # Last Phase Result — RebanhoSync
 
 Atualizado em: 2026-06-06
-**Baseline Commit documental anterior:** `82b68b2`
-**Commit local observado no início da 10F:** `0f2fd8e`
+**Baseline Commit documental anterior:** `0cc5577`
+**Commit local observado no início da 11.5F:** `0cc5577`
 
 ## 0. Resultado mais recente
 
-Fase 11.5E — Materialização idempotente da agenda sanitária — concluída localmente.
+Fase 11.5F — Execução sanitária como evento — concluída localmente em escopo reduzido.
 
-Resultado da 11.5E:
+Resultado da 11.5F:
 
-- core puro criado em `src/lib/sanitario/agenda/sanitaryAgendaMaterialization.ts`;
-- testes focados criados em `src/lib/sanitario/agenda/__tests__/sanitaryAgendaMaterialization.test.ts`;
-- `createSanitaryAgendaMaterializationCommands` consome `SanitaryOperationalPreview` ou `SanitaryPreviewGroup[]` já recebidos por parâmetro;
-- materialização gera comandos `agenda_intent`, não cria `agenda_itens` persistido;
-- `dedupKey` considera protocolo, item, `productId`, `productClass`, ação, lote, data agendada, janela e animais ordenados;
-- `dedupKey` não depende de `productName` ou `loteName`;
-- overrides editáveis permitem data de execução, responsável e observação;
-- grupos sem animais, sem data, com data inválida ou data fora da janela são rejeitados explicitamente;
-- vínculo com `previewGroupId` e `sourceDemandKey` é preservado;
-- saída é determinística e não muta inputs;
-- resultado declara que cria intenção de agenda, com `createsEvent: false` e `createsInventoryMovement: false`;
-- não houve Supabase, Dexie, React, UI, storage, RPC, Edge Function, migration, schema, RLS, sync-batch, seed, evento, baixa de estoque, carência ativa ou autorização de venda/abate.
+- core puro criado em `src/lib/sanitario/execution/sanitaryEventExecution.ts`;
+- testes focados criados em `src/lib/sanitario/execution/__tests__/sanitaryEventExecution.test.ts`;
+- `createSanitaryEventExecutionCommand` gera comando/intenção `event_execution_intent` para execução sanitária como evento futuro;
+- contrato aceita vínculo com agenda materializada ou execução manual com protocolo explícito;
+- `occurredAt` é obrigatório e rejeita data/data-hora inválida;
+- animais executados são deduplicados e ordenados;
+- execução parcial exige motivo para animais planejados não executados;
+- execução vinculada rejeita animal fora do escopo planejado;
+- `dedupKey` é determinística, considera `productId`/`productClass` e não depende de `productName` ou `loteName`;
+- vínculo com `agendaDedupKey`, `previewGroupId` e `sourceDemandKey` é preservado quando houver origem;
+- resultado declara `createsEvent: true`, `persistsEvent: false`, `createsAgenda: false`, `closesAgenda: false` e `createsInventoryMovement: false`;
+- não houve Supabase, Dexie, React, UI, storage, RPC, Edge Function, migration, schema, RLS, sync-batch, seed, persistência de evento, fechamento de agenda, baixa de estoque, carência ativa ou autorização de venda/abate.
 
-Validação local da 11.5E:
+Validação local da 11.5F:
 
 ```txt
-pnpm test -- src/lib/sanitario/agenda: passou.
+pnpm test -- src/lib/sanitario/execution: passou.
+pnpm test -- src/lib/sanitario: passou.
 pnpm test: passou.
 pnpm run lint: passou.
 pnpm run build: passou com warnings conhecidos de Browserslist/caniuse-lite e chunks grandes.
 git diff --check: passou.
-git status --short --untracked-files=all: passou, com arquivos da 11.5E criados/alterados.
-git diff --cached --check: passou após stage dos arquivos da 11.5E.
+git status --short --untracked-files=all: passou, com arquivos da 11.5F criados/alterados.
 ```
 
 Próxima execução:
 
-- 11.5F — Execução sanitária como evento.
+- 11.5G — Semântica final de fechamento da agenda.
 
 ---
 

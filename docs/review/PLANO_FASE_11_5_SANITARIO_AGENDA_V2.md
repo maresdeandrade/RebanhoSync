@@ -1,9 +1,9 @@
 # Plano Fase 11.5 — Agenda Sanitária v2: Janelas, Agrupamento e Materialização Idempotente
 
 **Atualizado em:** 2026-06-06
-**Status:** 11.5E concluída localmente / pronta para iniciar 11.5F
-**Baseline documental de entrada:** `91e0775`
-**Commit local de entrada:** `91e0775`
+**Status:** 11.5F concluída localmente / pronta para iniciar 11.5G
+**Baseline documental de entrada:** `0cc5577`
+**Commit local de entrada da 11.5F:** `0cc5577`
 
 ---
 
@@ -1052,7 +1052,7 @@ git diff --cached --check
 
 ### 11.5F — Execução sanitária como evento
 
-**Status:** futura.
+**Status:** concluída localmente em escopo reduzido.
 
 **Objetivo**
 Garantir que execução real permaneça em evento.
@@ -1088,6 +1088,49 @@ agenda planejada
 * Estoque só baixa na execução, não no planejamento.
 * `completed` sanitário depende de evento, não de agenda.
 * Evento deve permitir execução parcial do manejo planejado.
+
+**Resultado 11.5F**
+
+Core puro criado em `src/lib/sanitario/execution/sanitaryEventExecution.ts`, com testes em `src/lib/sanitario/execution/__tests__/sanitaryEventExecution.test.ts`.
+
+Regras implementadas:
+
+* `createSanitaryEventExecutionCommand` gera comando/intenção `event_execution_intent`.
+* A saída declara `createsEvent: true`, mas `persistsEvent: false`.
+* O contrato aceita origem em agenda materializada ou execução manual com protocolo explícito.
+* `occurredAt` é obrigatório e valida data/data-hora real.
+* Animais executados são deduplicados e ordenados.
+* Execução parcial exige motivo para animais planejados não executados.
+* Execução vinculada rejeita animal fora do escopo planejado.
+* `dedupKey` usa protocolo, item, `productId`, `productClass`, ação, lote, data/hora executada, animais executados e vínculo de agenda quando houver.
+* `dedupKey` não usa `productName` nem `loteName`.
+* Saída preserva `agendaDedupKey`, `previewGroupId` e `sourceDemandKey` quando houver origem.
+* Resultado declara `createsAgenda: false`, `closesAgenda: false` e `createsInventoryMovement: false`.
+* Não houve persistência de evento, fechamento de agenda, baixa de estoque, carência ativa, autorização de venda/abate, Supabase, Dexie, React, UI, storage, RPC, Edge Function, migration, schema, RLS, sync-batch ou seed.
+
+Testes cobrem:
+
+* criação de comando a partir de agenda materializada;
+* execução parcial com motivo de não execução;
+* rejeição de execução parcial sem motivo;
+* rejeição de animal fora do escopo planejado;
+* rejeição de data ausente ou inválida;
+* rejeição de execução sem animais ou sem protocolo;
+* dedupKey determinística com separação entre `productId`/`productClass` e sem labels mutáveis;
+* imutabilidade dos inputs;
+* ausência de dependências e efeitos proibidos.
+
+Validações registradas:
+
+```bash
+pnpm test -- src/lib/sanitario/execution
+pnpm test -- src/lib/sanitario
+pnpm test
+pnpm run lint
+pnpm run build
+git diff --check
+git status --short --untracked-files=all
+```
 
 ### 11.5G — Semântica final de fechamento da agenda
 

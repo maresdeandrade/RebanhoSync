@@ -27,7 +27,7 @@ Referência: `docs/review/PLANO_FASE_11.md`.
 
 Fase 11.5 — Agenda Sanitária v2: Janelas, Agrupamento e Materialização Idempotente.
 
-Status: 11.5E concluída localmente / pronta para iniciar 11.5F.
+Status: 11.5F concluída localmente / pronta para iniciar 11.5G.
 
 Plano específico: `docs/review/PLANO_FASE_11_5_SANITARIO_AGENDA_V2.md`.
 
@@ -191,6 +191,37 @@ Próxima execução:
 
 - 11.5F — Execução sanitária como evento.
 
+11.5F — Execução sanitária como evento — concluída localmente em escopo reduzido.
+
+Resultado da 11.5F:
+
+- core puro criado em `src/lib/sanitario/execution/sanitaryEventExecution.ts`;
+- testes focados criados em `src/lib/sanitario/execution/__tests__/sanitaryEventExecution.test.ts`;
+- `createSanitaryEventExecutionCommand` gera comando/intenção `event_execution_intent` para execução sanitária como fato histórico futuro;
+- contrato aceita execução vinculada a comando de agenda materializada ou execução sanitária manual com protocolo explícito;
+- `occurredAt` é obrigatório e validado como data/data-hora real;
+- animais executados são normalizados, deduplicados e ordenados;
+- execução parcial exige motivo para cada animal planejado não executado;
+- execução vinculada rejeita animal fora do escopo planejado;
+- `dedupKey` é determinística, considera `productId`/`productClass` e não depende de `productName` ou `loteName`;
+- vínculo com `agendaDedupKey`, `previewGroupId` e `sourceDemandKey` é preservado quando existe agenda de origem;
+- saída declara `createsEvent: true`, mas `persistsEvent: false`, `createsAgenda: false`, `closesAgenda: false` e `createsInventoryMovement: false`;
+- não houve persistência de evento, fechamento de agenda, baixa de estoque, carência ativa, autorização de venda/abate, Supabase, Dexie, React, UI, storage, RPC, Edge Function, migration, schema, RLS, sync-batch ou seed.
+
+Validações executadas:
+
+- `pnpm test -- src/lib/sanitario/execution`;
+- `pnpm test -- src/lib/sanitario`;
+- `pnpm test`;
+- `pnpm run lint`;
+- `pnpm run build`;
+- `git diff --check`;
+- `git status --short --untracked-files=all`.
+
+Próxima execução:
+
+- 11.5G — Semântica final de fechamento da agenda.
+
 ---
 
 ## 4. Fase 12
@@ -217,7 +248,7 @@ Não fazer sem tarefa explícita:
 
 ---
 
-## 6. Checklist antes da 11.5F
+## 6. Checklist antes da 11.5G
 
 Executar no início de nova rodada:
 
