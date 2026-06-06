@@ -19,7 +19,7 @@ A fase 11 — Lotes, Pastos e Desempenho Operacional Ampliado — está concluí
 
 Foi criada a fase extra 11.5 — Agenda Sanitária v2: Janelas, Agrupamento e Materialização Idempotente — antes da Fase 12.
 
-A Fase 11.5 foi fechada localmente pela 11.5H, reconciliada documentalmente pela 11.5I e rebaselineada estrategicamente pela 11.5J. A Fase 12 foi aberta apenas em 12A documental/diagnóstica, sem implementação funcional.
+A Fase 11.5 foi fechada localmente pela 11.5H, reconciliada documentalmente pela 11.5I e rebaselineada estrategicamente pela 11.5J. A Fase 12 foi aberta em 12A documental/diagnóstica e avançou em 12B para modelagem clean/reset documental, sem implementação funcional.
 
 Último gate validado:
 
@@ -73,6 +73,7 @@ A Fase 11.5 foi fechada localmente pela 11.5H, reconciliada documentalmente pela
 - Fase 11.5I — Reconciliação de contratos normativos pós-Agenda Sanitária v2 concluída localmente.
 - Fase 11.5J — Rebaseline estratégico do roadmap técnico executada documentalmente.
 - Fase 12A — Auditoria do fluxo legado e decisão de schema da Agenda Sanitária v2 executada documentalmente em escopo reduzido.
+- Fase 12B — Modelagem clean da persistência sanitária v2 com liberdade de reset executada documentalmente em escopo reduzido.
 
 Último avanço local da Fase 10:
 
@@ -129,6 +130,16 @@ A Fase 11.5 foi fechada localmente pela 11.5H, reconciliada documentalmente pela
 
 Último avanço local da Fase 12:
 
+- 12B documentou a decisão clean/reset para a persistência sanitária v2;
+- `agenda_itens` sanitário deixou de ser superfície sanitária alvo e foi classificado como legado descartável;
+- modelo alvo definido com `sanitario_agenda_v2`, `sanitario_agenda_animais_v2` e `sanitario_agenda_closures_v2`;
+- reset controlado autorizado para agenda sanitária antiga, `state_agenda_itens` sanitário, filas antigas incompatíveis, payload/dedup/status sanitário legado e seeds/demo sanitários obsoletos;
+- `eventos`, `eventos_sanitario`, `insumo_movimentacoes`, protocolos históricos e catálogos técnicos usados por eventos reais seguem preservação obrigatória;
+- execução real continua exclusivamente em `eventos` + `eventos_sanitario`;
+- fechamento administrativo não cria evento;
+- baixa de estoque continua dependente de evento real;
+- carência continua dependente de produto executado + fonte técnica explícita;
+- nenhuma migration, RLS, Dexie, sync-batch, UI, seed ou regra funcional foi implementada.
 - 12A documentou a auditoria do fluxo legado sanitário sem alterar código funcional;
 - fluxo atual confirmado: `protocolos_sanitarios_itens -> sanitario_recompute_agenda_core -> agenda_itens/state_agenda_itens -> eventos/eventos_sanitario -> insumo_movimentacoes`;
 - `status='concluido'` legado confirmado como ambíguo e insuficiente para `completed` sanitário v2;
@@ -141,9 +152,9 @@ A Fase 11.5 foi fechada localmente pela 11.5H, reconciliada documentalmente pela
 
 Próximo foco sugerido:
 
-- fechar 12A com validações git obrigatórias;
-- preparar 12B — Desenho técnico persistido e testes sentinela sem migration destrutiva;
-- manter migrations, Dexie, sync-batch, RLS, RPC, UI e seed fora do escopo até decisão explícita de implementação.
+- fechar 12B com validações git obrigatórias;
+- preparar 12C — Migration clean da Agenda Sanitária v2 e reset controlado do legado sanitário;
+- manter UI ampla, Dexie completo, sync-batch completo, carência ativa, venda, abate e aptidão fora do escopo até decisão explícita de implementação.
 
 Realidade validada para o roadmap pós-Fase 9:
 
@@ -161,7 +172,7 @@ Sequência corrigida pós-Fase 9:
 1. Fase 10 — UX Operacional dos Fluxos Centrais: concluída localmente.
 2. Fase 11 — Lotes, Pastos e Desempenho Operacional Ampliado: concluída localmente.
 3. Fase 11.5 — Agenda Sanitária v2: Janelas, Agrupamento e Materialização Idempotente: fechada localmente pela 11.5H, reconciliada pela 11.5I e rebaselineada pela 11.5J.
-4. Fase 12 — Fundação Sanitária v2: Persistência, Sync, Schema e Rollout: 12A documental/diagnóstica executada; implementação funcional não iniciada.
+4. Fase 12 — Fundação Sanitária v2: Persistência, Sync, Schema e Rollout: 12A documental/diagnóstica e 12B modelagem clean/reset executadas; implementação funcional não iniciada.
 5. Fase 13 — Reprodução Operacional v1.
 6. Fase 14 — Compra/Venda Operacional: Hardening e Lacunas.
 7. Fase 15 — Relatórios/KPIs Operacionais Read-only Ampliados.

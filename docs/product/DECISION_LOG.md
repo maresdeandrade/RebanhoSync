@@ -27,13 +27,21 @@ Cada decisão deve conter:
 
 ## Decisões consolidadas
 
+### 2026-06-06 — Persistência sanitária v2 clean com reset do legado
+
+**Decisão:** substituir a direção transitória da 12A por um modelo clean da persistência sanitária v2, com estruturas dedicadas para agenda sanitária, animais planejados e closures administrativos, e com reset controlado da agenda sanitária legada.
+
+* **Motivo:** a 12A confirmou que `agenda_itens` sanitário mistura intenção futura, status administrativo e ponte para execução; `status='concluido'` é ambíguo; e a nova diretriz de produto remove a necessidade de preservar compatibilidade reversa com payload/dedup/status antigos. O legado passa a servir apenas como auditoria do que deve ser removido/substituído.
+* **Impacto:** 12C+ deve criar schema v2 dedicado, com `fazenda_id`, FKs compostas, RLS, idempotência por `client_op_id`/`dedup_key` e reset explícito de dados operacionais sanitários antigos. `agenda_itens` sanitário, `state_agenda_itens` sanitário, filas antigas incompatíveis e seeds/demo sanitários obsoletos podem ser resetados. `eventos`, `eventos_sanitario`, `insumo_movimentacoes`, protocolos históricos e catálogos técnicos usados por eventos reais não podem ser apagados em migration comum.
+* **Status:** aprovado na 12B como decisão arquitetural clean/reset. Não houve migration, schema, Dexie, sync-batch, RLS, RPC, UI, seed ou alteração funcional nesta decisão documental.
+
 ### 2026-06-06 — Direção de schema para Agenda Sanitária v2
 
 **Decisão:** para a Fundação Sanitária v2, criar estruturas complementares v2 mantendo `agenda_itens` como superfície operacional transitória.
 
 * **Motivo:** `agenda_itens` atual mistura domínios e usa `status='agendado'|'concluido'|'cancelado'`; `status='concluido'` é ambíguo para sanitário v2; o SQL/RPC legado ainda lidera materialização/conclusão; e os contratos 11.5 existem apenas como core puro. Reaproveitar somente `agenda_itens` manteria payload opaco e risco de fonte paralela; substituir tudo de uma vez elevaria risco em UI, Dexie, sync-batch, RLS e views.
 * **Impacto:** 12B+ deve desenhar persistência explícita para `agenda_intent`, `event_execution_intent` e `agenda_closure_intent`, com `fazenda_id`, RLS/FKs compostas, idempotência, replay e conflitos. `agenda_itens` pode continuar como superfície operacional durante transição. Dados factuais (`eventos`, `eventos_sanitario`, `insumo_movimentacoes`) não podem ser apagados em migration comum.
-* **Status:** aprovado como direção arquitetural preparatória da 12A. Não houve migration, schema, Dexie, sync-batch, RLS, RPC, UI, seed ou alteração funcional.
+* **Status:** substituído pela decisão clean/reset da 12B. Permanece como registro histórico da auditoria 12A, sem força como restrição de produto para a agenda sanitária legada.
 
 ---
 

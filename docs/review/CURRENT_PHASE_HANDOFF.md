@@ -306,14 +306,18 @@ Resultado da 11.5J:
 
 ## 4. Fase 12
 
-Fase 12 — Fundação Sanitária v2: Persistência, Sync, Schema e Rollout — foi aberta em 12A apenas como auditoria documental/diagnóstica.
+Fase 12 — Fundação Sanitária v2: Persistência, Sync, Schema e Rollout — foi aberta em 12A como auditoria documental/diagnóstica e avançou em 12B para modelagem clean/reset documental.
 
-Subfase atual:
+Subfases recentes:
 
 - 12A — Auditoria do fluxo legado e decisão de schema da Agenda Sanitária v2.
-- Plano/relatório: `docs/review/PLANO_FASE_12A_AUDITORIA_FLUXO_LEGADO_SCHEMA_SANITARIO.md`.
-- Decisão: `PROSSEGUIR COM ESCOPO REDUZIDO`.
-- Recomendação de schema: criar estruturas complementares v2 mantendo `agenda_itens` como superfície operacional transitória.
+- Plano/relatório 12A: `docs/review/PLANO_FASE_12A_AUDITORIA_FLUXO_LEGADO_SCHEMA_SANITARIO.md`.
+- Decisão 12A: `PROSSEGUIR COM ESCOPO REDUZIDO`.
+- Recomendação 12A: criar estruturas complementares v2 mantendo `agenda_itens` como superfície operacional transitória.
+- 12B — Modelagem clean da persistência sanitária v2 com liberdade de reset.
+- Plano/relatório 12B: `docs/review/PLANO_FASE_12B_MODELAGEM_CLEAN_PERSISTENCIA_SANITARIA_V2.md`.
+- Decisão 12B: `PROSSEGUIR COM ESCOPO REDUZIDO`.
+- Recomendação 12B: criar persistência sanitária v2 clean em estruturas dedicadas, resetar agenda sanitária legada e não manter compatibilidade reversa por produto.
 
 Fatos principais da 12A:
 
@@ -325,6 +329,19 @@ Fatos principais da 12A:
 - `source_evento_id` confirmado como vínculo factual quando há execução real;
 - dados factuais (`eventos`, `eventos_sanitario`, `insumo_movimentacoes`) classificados como preservação obrigatória;
 - testes sentinela futuros definidos para retry, replay, conflitos, RLS e dados legados.
+
+Fatos principais da 12B:
+
+- worktree limpo e 12A preservada em `HEAD dd441b0`;
+- decisão clean/reset registrada documentalmente;
+- `agenda_itens` sanitário classificado como legado descartável;
+- `state_agenda_itens` sanitário, filas antigas incompatíveis, payload/dedup/status sanitário legado e seeds/demo sanitários obsoletos classificados como resetáveis;
+- `eventos`, `eventos_sanitario`, `insumo_movimentacoes`, protocolos usados como histórico e catálogos técnicos usados em eventos reais classificados como preservação obrigatória;
+- modelo alvo definido com `sanitario_agenda_v2`, `sanitario_agenda_animais_v2` e `sanitario_agenda_closures_v2`;
+- execução real preservada exclusivamente em `eventos` + `eventos_sanitario`;
+- baixa de estoque preservada como derivada apenas de evento real;
+- carência preservada como futura leitura/snapshot a partir de produto executado e fonte técnica;
+- nenhuma migration, RLS, Dexie, sync-batch, UI, seed ou regra funcional foi implementada.
 
 Sequência estratégica vigente:
 
@@ -343,9 +360,9 @@ Sequência estratégica vigente:
 Não fazer sem tarefa explícita:
 
 - reabrir a Fase 11;
-- avançar para implementação da Fase 12B+;
+- avançar para implementação funcional da Fase 12C+ sem nova decisão explícita;
 - alterar código funcional nesta preparação documental;
-- criar migrations, schema, RLS, RPC, sync-batch, edge functions ou alterações Supabase nesta preparação;
+- criar migrations, schema, RLS, RPC, sync-batch, edge functions ou alterações Supabase fora da próxima subfase explicitamente autorizada;
 - tratar agenda como histórico;
 - tratar agenda concluída como evento;
 - criar evento sem execução real;
@@ -356,17 +373,25 @@ Não fazer sem tarefa explícita:
 
 ## 6. Checklist para próxima subfase
 
-Executar no início de nova rodada/12B:
+Executar no início de nova rodada/12C:
 
 ```bash
 git status --short --untracked-files=all
 git diff --check
 ```
 
-Antes de qualquer implementação, confirmar que a 12A fechou com decisão de schema, matriz de dados legados, impacto Dexie/sync/RLS e testes sentinela documentados.
+Antes de qualquer implementação, confirmar que a 12B fechou com decisão clean/reset, matriz de dados descartáveis/factuais, impacto Dexie/sync/RLS e testes sentinela documentados.
 
 Se a próxima subfase tocar sync/offline/Supabase/RLS/migration/schema:
 
 ```bash
+pnpm test -- src/lib/sanitario
+pnpm test -- supabase/functions/sync-batch
+pnpm test
+pnpm run lint
+pnpm run build
 node scripts/codex/validate-supabase-baseline-functional.mjs
+git diff --check
+git diff --cached --check
+git status --short --untracked-files=all
 ```

@@ -6,6 +6,51 @@ Atualizado em: 2026-06-06
 
 ## 0. Resultado mais recente
 
+Fase 12B — Modelagem clean da persistência sanitária v2 com liberdade de reset — executada documentalmente em escopo reduzido.
+
+Decisão: `PROSSEGUIR COM ESCOPO REDUZIDO`.
+
+Resultado da 12B:
+
+- diagnóstico local obrigatório executado com worktree limpo;
+- 12A confirmada no histórico local em `HEAD dd441b0`;
+- decisão clean/reset registrada como substituição da direção transitória da 12A;
+- modelo recomendado definido com estruturas dedicadas para agenda sanitária v2, animais planejados e closures administrativos;
+- `agenda_itens` sanitário classificado como legado descartável, não como superfície sanitária alvo;
+- `state_agenda_itens` sanitário, filas antigas incompatíveis, payload/dedup/status sanitário legado e seeds/demo sanitários obsoletos classificados como resetáveis;
+- `eventos`, `eventos_sanitario`, `insumo_movimentacoes`, protocolos históricos e catálogos técnicos usados por eventos reais classificados como preservação obrigatória;
+- idempotência definida por `agenda_intent`, `event_execution_intent`, `agenda_closure_intent`, `client_op_id` e `dedup_key`;
+- requisitos RLS/multi-tenant, Dexie/offline-first e sync-batch futuro documentados;
+- testes sentinela futuros definidos para retry, replay, conflitos, reset e preservação de fatos.
+
+Patch da 12B:
+
+- `docs/review/PLANO_FASE_12B_MODELAGEM_CLEAN_PERSISTENCIA_SANITARIA_V2.md`;
+- `docs/review/ACTIVE_PHASE_PLAN.md`;
+- `docs/review/CURRENT_PHASE_HANDOFF.md`;
+- `docs/review/LAST_PHASE_RESULT.md`;
+- `docs/context/PROJECT_STATUS.md`;
+- `docs/product/DECISION_LOG.md`.
+
+Não houve:
+
+- migration;
+- alteração de enum/tabela/FK/RLS/RPC/Edge Function;
+- alteração de sync-batch;
+- alteração de Dexie;
+- alteração de UI;
+- alteração de seed;
+- evento real;
+- baixa de estoque;
+- cálculo de carência ativa;
+- venda, abate ou aptidão operacional.
+
+Próxima execução recomendada:
+
+- 12C — Migration clean da Agenda Sanitária v2 e reset controlado do legado sanitário, sem UI ampla, sem Dexie completo e sem sync-batch completo.
+
+---
+
 Fase 12A — Auditoria do fluxo legado e decisão de schema da Agenda Sanitária v2 — executada documentalmente em escopo reduzido.
 
 Decisão: `PROSSEGUIR COM ESCOPO REDUZIDO`.
@@ -45,9 +90,9 @@ Não houve:
 - cálculo de carência ativa;
 - venda, abate ou aptidão operacional.
 
-Próxima execução recomendada:
+Próxima execução recomendada à época:
 
-- 12B — Desenho técnico persistido e testes sentinela sem migration destrutiva.
+- 12B — Desenho técnico persistido. A diretriz posterior da 12B autorizou modelagem clean/reset sem compatibilidade reversa com a agenda sanitária legada.
 
 ---
 
