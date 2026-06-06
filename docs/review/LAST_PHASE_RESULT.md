@@ -6,6 +6,51 @@ Atualizado em: 2026-06-06
 
 ## 0. Resultado mais recente
 
+Fase 12A — Auditoria do fluxo legado e decisão de schema da Agenda Sanitária v2 — executada documentalmente em escopo reduzido.
+
+Decisão: `PROSSEGUIR COM ESCOPO REDUZIDO`.
+
+Resultado da 12A:
+
+- diagnóstico local obrigatório executado com worktree limpo;
+- 11.5J confirmada no histórico local em `HEAD 5ab4adb`;
+- fluxo legado confirmado: `protocolos_sanitarios_itens -> sanitario_recompute_agenda_core -> agenda_itens/state_agenda_itens -> conclusão/registro -> eventos -> eventos_sanitario -> insumo_movimentacoes`;
+- `agenda_itens` confirmado como superfície mista de domínios, com `status='agendado'|'concluido'|'cancelado'`;
+- `source_evento_id` confirmado como vínculo factual de agenda encerrada por execução real;
+- `status='concluido'` confirmado como ambíguo e insuficiente para `completed` sanitário v2;
+- baixa de estoque confirmada como derivada de evento real via `insumo_movimentacoes`, não de agenda;
+- contratos 11.5 (`agenda_intent`, `event_execution_intent`, `agenda_closure_intent`) confirmados como core puro sem persistência real;
+- decisão de schema recomendada: criar estruturas complementares v2 mantendo `agenda_itens` como superfície operacional transitória;
+- matriz de dados legados, requisitos de idempotência, RLS/multi-tenant, Dexie/offline-first e testes sentinela futuros documentados.
+
+Patch da 12A:
+
+- `docs/review/PLANO_FASE_12A_AUDITORIA_FLUXO_LEGADO_SCHEMA_SANITARIO.md`;
+- `docs/review/ACTIVE_PHASE_PLAN.md`;
+- `docs/review/CURRENT_PHASE_HANDOFF.md`;
+- `docs/review/LAST_PHASE_RESULT.md`;
+- `docs/context/PROJECT_STATUS.md`;
+- `docs/product/DECISION_LOG.md`.
+
+Não houve:
+
+- migration;
+- alteração de enum/tabela/FK/RLS/RPC/Edge Function;
+- alteração de sync-batch;
+- alteração de Dexie;
+- alteração de UI;
+- alteração de seed;
+- evento real;
+- baixa de estoque;
+- cálculo de carência ativa;
+- venda, abate ou aptidão operacional.
+
+Próxima execução recomendada:
+
+- 12B — Desenho técnico persistido e testes sentinela sem migration destrutiva.
+
+---
+
 Fase 11.5J — Rebaseline Estratégico do Roadmap Técnico — executada documentalmente.
 
 Resultado da 11.5J:

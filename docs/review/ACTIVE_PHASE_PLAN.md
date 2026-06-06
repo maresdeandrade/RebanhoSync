@@ -1,16 +1,44 @@
-# ACTIVE_PHASE_PLAN - Pós-Fase 11.5
+# ACTIVE_PHASE_PLAN - Fase 12A
 
-**Status:** Fase 11.5 fechada; 11.5J executada como rebaseline estratégico documental
-**Foco:** Handoff para Fase 12 — Fundação Sanitária v2: Persistência, Sync, Schema e Rollout
+**Status:** Fase 12A em escopo documental/diagnóstico; nenhuma implementação funcional iniciada
+**Foco:** Auditoria do fluxo legado e decisão de schema da Agenda Sanitária v2
 **Criado:** 2026-06-05
 **Atualizado:** 2026-06-06
-**Plano específico:** `docs/review/PLANO_FASE_11_5_SANITARIO_AGENDA_V2.md`
+**Plano específico:** `docs/review/PLANO_FASE_12A_AUDITORIA_FLUXO_LEGADO_SCHEMA_SANITARIO.md`
 
 ---
 
 ## Objetivo em 1 parágrafo
 
-Manter a Fase 11.5 fechada e registrar o rebaseline estratégico pós-Agenda Sanitária v2. A próxima fase futura é a Fase 12 — Fundação Sanitária v2: Persistência, Sync, Schema e Rollout, ainda não iniciada. Compra/Venda, KPIs, financeiro e decisão assistida ficam depois da aplicação real dos contratos sanitários v2 e da Reprodução Operacional v1.
+Executar a 12A como subfase preparatória da Fase 12, limitada a diagnóstico e documentação. O objetivo é auditar o fluxo legado `protocolos_sanitarios_itens -> agenda_itens/state_agenda_itens -> eventos/eventos_sanitario -> insumo_movimentacoes`, decidir a direção de schema da Agenda Sanitária v2 e registrar requisitos mínimos de dados legados, idempotência, RLS, Dexie/offline-first e testes sentinela para 12B+. Não implementar migration, Dexie, sync-batch, RLS, RPC, UI, seed ou alteração funcional nesta etapa.
+
+---
+
+## Decisão 12A
+
+Decisão: `PROSSEGUIR COM ESCOPO REDUZIDO`.
+
+Recomendação de schema: criar estruturas complementares v2 mantendo `agenda_itens` como superfície operacional transitória.
+
+Justificativa:
+
+- `agenda_itens` atual mistura domínios e usa `status='agendado'|'concluido'|'cancelado'`;
+- `status='concluido'` é ambíguo para sanitário v2;
+- o SQL legado ainda lidera recompute/materialização;
+- a RPC `sanitario_complete_agenda_with_event` ainda cria evento e conclui agenda;
+- contratos 11.5 existem como core puro, sem persistência real;
+- substituir tudo de uma vez elevaria risco em UI, Dexie, sync-batch, views e RLS;
+- reaproveitar só `agenda_itens` manteria payload opaco e duplicidade semântica.
+
+Escopo permitido nesta subfase:
+
+- documentação da auditoria e decisão;
+- atualização de continuidade;
+- definição de testes sentinela.
+
+Escopo proibido:
+
+- migration SQL, enum, tabela, FK, RLS, RPC, Edge Function, sync-batch, Dexie, UI, seed, regra sanitária, evento real, baixa de estoque, carência ativa, venda, abate ou aptidão operacional.
 
 ---
 
@@ -18,11 +46,11 @@ Manter a Fase 11.5 fechada e registrar o rebaseline estratégico pós-Agenda San
 
 - Fase 11 — Lotes, Pastos e Desempenho Operacional Ampliado: concluída localmente.
 - Fase 11.5 — Agenda Sanitária v2: fechada localmente pela 11.5H, reconciliada pela 11.5I e rebaselineada pela 11.5J.
-- Fase 12 — Fundação Sanitária v2: Persistência, Sync, Schema e Rollout: não iniciada; exige novo diagnóstico e atualização explícita do plano ativo.
+- Fase 12A — Auditoria do fluxo legado e decisão de schema: iniciada somente em documentação/diagnóstico.
 
 Próximo passo sugerido:
 
-- Preparar Fase 12 somente em nova rodada, após commit da 11.5J e diagnóstico local.
+- Após fechar 12A documentalmente, seguir para 12B somente com decisão de schema, matriz de dados legados, riscos de `status='concluido'`, impacto Dexie/sync/RLS e testes sentinela definidos.
 
 ---
 
@@ -158,14 +186,14 @@ Protocolo
 - Carência depende de produto executado e fonte técnica explícita.
 - `agenda_intent`, `event_execution_intent` e `agenda_closure_intent` permanecem comandos/intenção de core puro, ainda sem aplicação em Supabase/Dexie/sync.
 - Persistência, sync, schema, RLS, UI, RPC, Edge Functions, Dexie e seed seguiram fora do escopo.
-- Fase 12 não foi iniciada.
+- Fase 12 ainda não teve implementação funcional; 12A foi aberta apenas como auditoria documental.
 
-## Escopo da próxima execução
+## Escopo da execução atual
 
-- Abrir Fase 12 apenas após commit da 11.5J, worktree limpo, plano ativo atualizado e diagnóstico explícito.
+- Manter 12A como auditoria documental.
 - Auditar fluxo legado de agenda antes de qualquer migration/constraint.
-- Decidir explicitamente schema/migrations, Dexie/local-first, sync-batch, Supabase/RLS, RPC/Edge Function, UI, rollback/replay, idempotência real e dados existentes/reset.
-- Aplicar contratos sanitários v2 em persistência/sync somente dentro de fase própria.
+- Decidir explicitamente a direção de schema, dados legados, Dexie/local-first, sync-batch, Supabase/RLS, rollback/replay e idempotência real.
+- Não aplicar contratos sanitários v2 em persistência/sync nesta subfase.
 
 ## Roadmap rebaselineado
 
@@ -184,14 +212,14 @@ Justificativa:
 - KPIs e financeiro dependem de fontes consolidadas.
 - Decisão assistida depende de dados confiáveis e limites explícitos.
 
-## Escopo proibido nesta transição
+## Escopo proibido nesta subfase
 
 - Criar migrations.
 - Alterar schema, RLS, sync-batch, Supabase, edge functions ou telas.
 - Criar UI, persistir evento ou baixar estoque.
 - Materializar agenda sem idempotência explícita.
 - Calcular carência ativa ou autorizar venda/abate.
-- Iniciar Fase 12.
+- Avançar para 12B sem fechar os critérios documentais da 12A.
 - Atualizar profundamente docs permanentes de contexto, arquitetura ou sync.
 
 ## Riscos residuais para a próxima fase

@@ -27,6 +27,16 @@ Cada decisão deve conter:
 
 ## Decisões consolidadas
 
+### 2026-06-06 — Direção de schema para Agenda Sanitária v2
+
+**Decisão:** para a Fundação Sanitária v2, criar estruturas complementares v2 mantendo `agenda_itens` como superfície operacional transitória.
+
+* **Motivo:** `agenda_itens` atual mistura domínios e usa `status='agendado'|'concluido'|'cancelado'`; `status='concluido'` é ambíguo para sanitário v2; o SQL/RPC legado ainda lidera materialização/conclusão; e os contratos 11.5 existem apenas como core puro. Reaproveitar somente `agenda_itens` manteria payload opaco e risco de fonte paralela; substituir tudo de uma vez elevaria risco em UI, Dexie, sync-batch, RLS e views.
+* **Impacto:** 12B+ deve desenhar persistência explícita para `agenda_intent`, `event_execution_intent` e `agenda_closure_intent`, com `fazenda_id`, RLS/FKs compostas, idempotência, replay e conflitos. `agenda_itens` pode continuar como superfície operacional durante transição. Dados factuais (`eventos`, `eventos_sanitario`, `insumo_movimentacoes`) não podem ser apagados em migration comum.
+* **Status:** aprovado como direção arquitetural preparatória da 12A. Não houve migration, schema, Dexie, sync-batch, RLS, RPC, UI, seed ou alteração funcional.
+
+---
+
 ### 2026-06-06 — Rebaseline estratégico pós-Agenda Sanitária v2
 
 **Decisão:** reordenar o roadmap técnico após a consolidação documental da Agenda Sanitária v2.
@@ -43,7 +53,7 @@ Cada decisão deve conter:
 
 * **Motivo:** separar regra/produto/fonte técnica, janela, elegibilidade, demanda, preview, agenda, execução e fechamento administrativo sem tratar agenda como histórico.
 * **Impacto:** 11.5A-G concluíram contratos core puros; 11.5H fechou o handoff documental; `agenda_intent`, `event_execution_intent` e `agenda_closure_intent` ficam definidos como comandos/intenção, ainda sem aplicação em Supabase/Dexie/sync.
-* **Status:** aprovado. Fase 12 não iniciada; persistência, sync, schema, RLS, RPC, Edge Functions, Dexie, UI e seed permanecem pendentes de fase futura com diagnóstico próprio.
+* **Status:** aprovado. À época da decisão, a Fase 12 não estava iniciada; após a 12A, persistência, sync, schema, RLS, RPC, Edge Functions, Dexie, UI e seed continuam pendentes de fase futura com diagnóstico próprio.
 
 ---
 

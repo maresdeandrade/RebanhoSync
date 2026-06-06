@@ -300,22 +300,31 @@ Resultado da 11.5J:
 - Compra/Venda Operacional movida para Fase 14;
 - KPIs, Financeiro, Motor de Decisão Assistida e Beta externo movidos para Fases 15-18;
 - trilhas residuais contínuas preservadas fora da sequência principal;
-- Fase 12 não foi iniciada.
+- Fase 12 não teve implementação funcional iniciada antes da 12A.
 
 ---
 
 ## 4. Fase 12
 
-Fase 12 — Fundação Sanitária v2: Persistência, Sync, Schema e Rollout — permanece não iniciada.
+Fase 12 — Fundação Sanitária v2: Persistência, Sync, Schema e Rollout — foi aberta em 12A apenas como auditoria documental/diagnóstica.
 
-Critério mínimo para iniciar Fase 12 em nova rodada:
+Subfase atual:
+
+- 12A — Auditoria do fluxo legado e decisão de schema da Agenda Sanitária v2.
+- Plano/relatório: `docs/review/PLANO_FASE_12A_AUDITORIA_FLUXO_LEGADO_SCHEMA_SANITARIO.md`.
+- Decisão: `PROSSEGUIR COM ESCOPO REDUZIDO`.
+- Recomendação de schema: criar estruturas complementares v2 mantendo `agenda_itens` como superfície operacional transitória.
+
+Fatos principais da 12A:
 
 - worktree limpo;
 - 11.5J commitada;
-- plano ativo atualizado para Fase 12;
-- novo diagnóstico local;
-- auditoria do fluxo legado de agenda;
-- decisão explícita sobre schema/migrations, Dexie/local-first, sync-batch, Supabase/RLS, RPC/Edge Function, UI, rollback/replay, idempotência real e tratamento de dados existentes/reset.
+- diagnóstico local executado;
+- fluxo legado SQL/RPC/Dexie/UI auditado;
+- `status='concluido'` confirmado como ambíguo para sanitário v2;
+- `source_evento_id` confirmado como vínculo factual quando há execução real;
+- dados factuais (`eventos`, `eventos_sanitario`, `insumo_movimentacoes`) classificados como preservação obrigatória;
+- testes sentinela futuros definidos para retry, replay, conflitos, RLS e dados legados.
 
 Sequência estratégica vigente:
 
@@ -334,7 +343,7 @@ Sequência estratégica vigente:
 Não fazer sem tarefa explícita:
 
 - reabrir a Fase 11;
-- iniciar Fase 12;
+- avançar para implementação da Fase 12B+;
 - alterar código funcional nesta preparação documental;
 - criar migrations, schema, RLS, RPC, sync-batch, edge functions ou alterações Supabase nesta preparação;
 - tratar agenda como histórico;
@@ -345,18 +354,18 @@ Não fazer sem tarefa explícita:
 
 ---
 
-## 6. Checklist para preparar Fase 12
+## 6. Checklist para próxima subfase
 
-Executar no início de nova rodada:
+Executar no início de nova rodada/12B:
 
 ```bash
 git status --short --untracked-files=all
 git diff --check
 ```
 
-Antes de qualquer implementação da Fase 12, confirmar que o plano ativo aponta para Fase 12 — Fundação Sanitária v2 e que a 11.5J está commitada.
+Antes de qualquer implementação, confirmar que a 12A fechou com decisão de schema, matriz de dados legados, impacto Dexie/sync/RLS e testes sentinela documentados.
 
-Se a Fase 12 tocar sync/offline/Supabase/RLS/migration/schema:
+Se a próxima subfase tocar sync/offline/Supabase/RLS/migration/schema:
 
 ```bash
 node scripts/codex/validate-supabase-baseline-functional.mjs
