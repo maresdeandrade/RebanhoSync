@@ -1,7 +1,7 @@
-# ACTIVE_PHASE_PLAN - Fase 11.5
+# ACTIVE_PHASE_PLAN - Pós-Fase 11.5
 
-**Status:** Fase 11.5 fechada localmente pela 11.5H
-**Foco:** Agenda Sanitária v2: Janelas, Agrupamento e Materialização Idempotente
+**Status:** Fase 11.5 fechada; 11.5J executada como rebaseline estratégico documental
+**Foco:** Handoff para Fase 12 — Fundação Sanitária v2: Persistência, Sync, Schema e Rollout
 **Criado:** 2026-06-05
 **Atualizado:** 2026-06-06
 **Plano específico:** `docs/review/PLANO_FASE_11_5_SANITARIO_AGENDA_V2.md`
@@ -10,19 +10,19 @@
 
 ## Objetivo em 1 parágrafo
 
-Conduzir a Fase 11.5 como etapa extra entre a Fase 11 e a Fase 12 para redesenhar o fluxo sanitário `Protocolo -> Agenda -> Evento`. A fase deve preparar contrato baseado em fonte bibliográfica/legal/bula para regra e produto, janela operacional sanitária, elegibilidade individual, demanda sanitária agrupada, preview editável, materialização idempotente da agenda e execução real como evento, preservando offline-first e a separação entre regra, intenção futura e fato histórico.
+Manter a Fase 11.5 fechada e registrar o rebaseline estratégico pós-Agenda Sanitária v2. A próxima fase futura é a Fase 12 — Fundação Sanitária v2: Persistência, Sync, Schema e Rollout, ainda não iniciada. Compra/Venda, KPIs, financeiro e decisão assistida ficam depois da aplicação real dos contratos sanitários v2 e da Reprodução Operacional v1.
 
 ---
 
 ## Status da Fase 11.5
 
 - Fase 11 — Lotes, Pastos e Desempenho Operacional Ampliado: concluída localmente.
-- Fase 11.5 — Agenda Sanitária v2: fechada localmente pela 11.5H.
-- Fase 12 — Compra/Venda Operacional: Hardening e Lacunas: não iniciada; exige novo diagnóstico e atualização explícita do plano ativo.
+- Fase 11.5 — Agenda Sanitária v2: fechada localmente pela 11.5H, reconciliada pela 11.5I e rebaselineada pela 11.5J.
+- Fase 12 — Fundação Sanitária v2: Persistência, Sync, Schema e Rollout: não iniciada; exige novo diagnóstico e atualização explícita do plano ativo.
 
 Próximo passo sugerido:
 
-- Preparar Fase 12 somente em nova rodada, após commit da 11.5H e diagnóstico local.
+- Preparar Fase 12 somente em nova rodada, após commit da 11.5J e diagnóstico local.
 
 ---
 
@@ -162,9 +162,27 @@ Protocolo
 
 ## Escopo da próxima execução
 
-- Abrir Fase 12 apenas após commit da 11.5H, worktree limpo, plano ativo atualizado e diagnóstico explícito.
+- Abrir Fase 12 apenas após commit da 11.5J, worktree limpo, plano ativo atualizado e diagnóstico explícito.
 - Auditar fluxo legado de agenda antes de qualquer migration/constraint.
 - Decidir explicitamente schema/migrations, Dexie/local-first, sync-batch, Supabase/RLS, RPC/Edge Function, UI, rollback/replay, idempotência real e dados existentes/reset.
+- Aplicar contratos sanitários v2 em persistência/sync somente dentro de fase própria.
+
+## Roadmap rebaselineado
+
+1. Fase 12 — Fundação Sanitária v2: Persistência, Sync, Schema e Rollout.
+2. Fase 13 — Reprodução Operacional v1.
+3. Fase 14 — Compra/Venda Operacional: Hardening e Lacunas.
+4. Fase 15 — Relatórios/KPIs Operacionais Read-only Ampliados.
+5. Fase 16 — Financeiro Gerencial Explícito.
+6. Fase 17 — Motor de Decisão Assistida.
+7. Fase 18 — Beta Externo / SLC / Hardening de Produto.
+
+Justificativa:
+
+- Compra/Venda depende da aplicação real da Agenda Sanitária v2 para não inferir histórico, estoque ou carência a partir de agenda.
+- Reprodução é domínio estrutural ausente e precisa anteceder KPIs, financeiro e decisão assistida.
+- KPIs e financeiro dependem de fontes consolidadas.
+- Decisão assistida depende de dados confiáveis e limites explícitos.
 
 ## Escopo proibido nesta transição
 

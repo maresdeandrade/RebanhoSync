@@ -6,6 +6,61 @@ Atualizado em: 2026-06-06
 
 ## 0. Resultado mais recente
 
+Fase 11.5J — Rebaseline Estratégico do Roadmap Técnico — executada documentalmente.
+
+Resultado da 11.5J:
+
+- roadmap técnico reordenado após a consolidação da Agenda Sanitária v2;
+- Fase 12 redefinida como Fundação Sanitária v2: Persistência, Sync, Schema e Rollout;
+- Fase 13 definida como Reprodução Operacional v1;
+- Compra/Venda Operacional movida para Fase 14;
+- Relatórios/KPIs Operacionais Read-only Ampliados movidos para Fase 15;
+- Financeiro Gerencial Explícito movido para Fase 16;
+- Motor de Decisão Assistida movido para Fase 17;
+- Beta Externo / SLC / Hardening de Produto movido para Fase 18;
+- Fase 12 permanece não iniciada.
+
+Justificativa técnica:
+
+- Compra/Venda não deve avançar antes da aplicação real dos contratos sanitários v2;
+- Reprodução é domínio estrutural ausente e deve anteceder KPIs, financeiro e decisão assistida;
+- KPIs e financeiro dependem de fontes consolidadas, períodos e limitações explícitas;
+- decisão assistida depende de dados confiáveis e limites claros de não autorização automática.
+
+Trilhas residuais contínuas:
+
+- higiene test/build/DX;
+- hardening sanitário residual das Fases 5/6;
+- docs reconciliation;
+- compliance regulatório avançado;
+- performance de eventos/paginação;
+- UX incremental sem regra crítica.
+
+Validações locais da 11.5J:
+
+```txt
+git status --short --untracked-files=all: passou antes do patch; worktree limpo.
+git status -sb: main...origin/main [ahead 4].
+git log --oneline -8: HEAD f9532a8; 11.5G, 11.5H e 11.5I confirmadas no histórico recente.
+git rev-parse --short HEAD: f9532a8.
+git diff --check: passou antes do patch.
+git diff --cached --check: passou antes do patch.
+```
+
+Validações pós-patch:
+
+```txt
+git diff --check: passou.
+git diff --cached --check: passou.
+git status --short --untracked-files=all: passou, com apenas documentos permitidos alterados.
+```
+
+Próxima execução:
+
+- Preparar Fase 12 — Fundação Sanitária v2 somente em nova rodada, após commit da 11.5J e atualização explícita do plano ativo.
+
+---
+
 Fase 11.5H — Fechamento e handoff — concluída localmente como etapa documental e de validação.
 
 Resultado da 11.5H:

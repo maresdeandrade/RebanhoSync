@@ -1,6 +1,6 @@
 ﻿# Roadmap — RebanhoSync
 
-Atualizado em: 2026-06-05
+Atualizado em: 2026-06-06
 **Baseline documental auditado:** `91e0775`
 
 ## Objetivo
@@ -26,19 +26,19 @@ Não deve substituir issues, tarefas técnicas ou prompts de implementação.
 
 ---
 
-## Fase atual — Fase 11.5 (Agenda Sanitária v2)
+## Fase atual — Pós-Fase 11.5
 
-Status: **fechada localmente pela 11.5H**
+Status: **Fase 11.5 fechada localmente; 11.5J executada como rebaseline documental**
 Fase anterior: **Fase 11 — Lotes, Pastos e Desempenho Operacional Ampliado — concluída localmente**
-Fase seguinte: **Fase 12 — Compra/Venda Operacional: Hardening e Lacunas — não iniciada; exige novo diagnóstico e plano ativo próprio**
+Fase seguinte: **Fase 12 — Fundação Sanitária v2: Persistência, Sync, Schema e Rollout — não iniciada; exige novo diagnóstico e plano ativo próprio**
 
 ### Conduta inicial
 
-As subfases 11.5A (Diagnóstico + contrato alvo), 11.5B0 (contrato bibliográfico de regra e produto), 11.5B1 (motor puro de elegibilidade sanitária por janela), 11.5B1.1 (hardening de dose múltipla e âncora por evento), 11.5C (demanda sanitária agrupada), 11.5D (preview operacional editável), 11.5E (materialização idempotente da agenda sanitária como comando/intenção pura), 11.5F (execução sanitária como comando/intenção de evento em core puro, sem persistência), 11.5G (semântica final de fechamento administrativo de agenda em core puro, sem persistência) e 11.5H (fechamento documental e handoff) foram concluídas localmente. A Fase 12 ainda não foi iniciada.
+As subfases 11.5A (Diagnóstico + contrato alvo), 11.5B0 (contrato bibliográfico de regra e produto), 11.5B1 (motor puro de elegibilidade sanitária por janela), 11.5B1.1 (hardening de dose múltipla e âncora por evento), 11.5C (demanda sanitária agrupada), 11.5D (preview operacional editável), 11.5E (materialização idempotente da agenda sanitária como comando/intenção pura), 11.5F (execução sanitária como comando/intenção de evento em core puro, sem persistência), 11.5G (semântica final de fechamento administrativo de agenda em core puro, sem persistência), 11.5H (fechamento documental e handoff) e 11.5I (reconciliação de contratos normativos) foram concluídas localmente e commitadas. A 11.5J reordenou documentalmente o roadmap. A Fase 12 ainda não foi iniciada.
 
 ### Handoff para Fase 12
 
-Fase 12 só deve iniciar após nova rodada com worktree limpo, 11.5H commitada, plano ativo apontando para Fase 12 e diagnóstico explícito sobre fluxo legado de agenda, schema/migrations, Dexie/local-first, sync-batch, Supabase/RLS, RPC/Edge Function, UI, rollback/replay, idempotência real e tratamento de dados existentes/reset.
+Fase 12 só deve iniciar após nova rodada com worktree limpo, 11.5J commitada, plano ativo apontando para Fase 12 — Fundação Sanitária v2 e diagnóstico explícito sobre fluxo legado de agenda, schema/migrations, Dexie/local-first, sync-batch, Supabase/RLS, RPC/Edge Function, UI, rollback/replay, idempotência real e tratamento de dados existentes/reset.
 
 Riscos residuais vindos da 11.5:
 
@@ -47,14 +47,14 @@ Riscos residuais vindos da 11.5:
 - `status='concluido'` legado permanece semanticamente ambíguo;
 - estoque e carência devem continuar derivados de evento real/produto executado, não de agenda.
 
-### Escopo inicial sugerido
+### Escopo inicial sugerido da Fase 12
 
-- diagnosticar o contrato atual `Protocolo -> Agenda -> Evento`;
-- definir contrato alvo baseado em janela operacional sanitária, elegibilidade individual, demanda agrupada, preview editável, agenda materializada de forma idempotente e evento executado;
-- registrar que agenda sanitária antiga pode ser substituída e seus dados não precisam ser preservados, desde que documentado;
+- aplicar os contratos `agenda_intent`, `event_execution_intent` e `agenda_closure_intent` em persistência real somente após diagnóstico;
+- auditar o fluxo legado de agenda e a ambiguidade de `status='concluido'`;
+- decidir schema/migrations, Dexie/local-first, sync-batch, Supabase/RLS, RPC/Edge Function, UI, rollback/replay, idempotência real e tratamento de dados existentes/reset;
 - preservar Agenda como intenção futura, Evento como fato executado e Protocolo como regra/configuração;
 - preservar materialização de agenda sem criação de evento e sem baixa de estoque;
-- manter RPC fora do caminho principal por causa do offline-first.
+- manter estoque e carência derivados de evento real/produto executado.
 
 ---
 
@@ -170,16 +170,33 @@ Status real usa apenas: `CONCLUÍDA`, `PARCIAL`, `HARDENING_RESIDUAL`, `A_INICIA
 
 ---
 
-## Sequência prevista a partir da Fase 11
+## Sequência rebaselineada após a Fase 11.5
 
-2. Fase 11.5 — Agenda Sanitária v2: Janelas, Agrupamento e Materialização Idempotente.
-3. Fase 12 — Compra/Venda Operacional: Hardening e Lacunas.
-4. Fase 13 — Relatórios/KPIs Operacionais Read-only Ampliados.
-5. Fase 14 — Financeiro Gerencial Explícito.
-6. Fase 15 — Motor de Decisão Assistida.
-7. Fase 16 — Beta Externo / SLC / Hardening de Produto.
+1. Fase 12 — Fundação Sanitária v2: Persistência, Sync, Schema e Rollout.
+2. Fase 13 — Reprodução Operacional v1.
+3. Fase 14 — Compra/Venda Operacional: Hardening e Lacunas.
+4. Fase 15 — Relatórios/KPIs Operacionais Read-only Ampliados.
+5. Fase 16 — Financeiro Gerencial Explícito.
+6. Fase 17 — Motor de Decisão Assistida.
+7. Fase 18 — Beta Externo / SLC / Hardening de Produto.
 
-Fase 12 permanece não iniciada até novo diagnóstico, commit da 11.5H e atualização explícita do plano ativo.
+Fase 12 permanece não iniciada até novo diagnóstico, commit da 11.5J e atualização explícita do plano ativo.
+
+Justificativa técnica:
+
+- Compra/Venda não deve avançar antes da aplicação real da Agenda Sanitária v2, porque estoque, carência, aptidão e histórico sanitário dependem de evento real/produto executado, não de agenda.
+- Reprodução é domínio estrutural ausente e afeta categoria operacional, estado animal, ciclo produtivo, agenda e decisões comerciais; deve anteceder KPIs e decisão assistida.
+- KPIs e financeiro dependem de fontes consolidadas, períodos, limitações e separação entre fato, intenção e read model.
+- Motor de decisão assistida depende de dados confiáveis, fontes explícitas e limites de não autorização automática.
+
+Fases reclassificadas:
+
+- Compra/Venda deixa de ser Fase 12 e passa a Fase 14.
+- Relatórios/KPIs passam de Fase 13 para Fase 15.
+- Financeiro Gerencial passa de Fase 14 para Fase 16.
+- Motor de Decisão Assistida passa de Fase 15 para Fase 17.
+- Beta Externo/SLC passa de Fase 16 para Fase 18.
+- Reprodução ampliada deixa de ser apenas futuro genérico e passa a Fase 13 — Reprodução Operacional v1.
 
 ---
 
@@ -187,8 +204,10 @@ Fase 12 permanece não iniciada até novo diagnóstico, commit da 11.5H e atuali
 
 - Sanitário/reconciliação: apenas hardening residual das Fases 5/6, sem reabrir como fase de produto salvo bug objetivo.
 - Build/testes/DX: higiene residual de warnings, logs e estabilidade de suite.
+- Docs reconciliation: manter alinhamento entre status, roadmap, contratos normativos e handoffs.
 - Compliance regulatório: módulo futuro com fonte oficial, versionamento e separação de alerta vs bloqueio.
-- Reprodução ampliada: módulo futuro com contrato de domínio, eventos, agenda, estado atual e testes.
+- Eventos/paginação/performance: otimização incremental conforme gargalo real.
+- UX incremental: melhorias sem criar regra crítica na UI.
 
 ---
 

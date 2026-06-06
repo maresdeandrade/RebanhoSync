@@ -19,7 +19,7 @@ A fase 11 — Lotes, Pastos e Desempenho Operacional Ampliado — está concluí
 
 Foi criada a fase extra 11.5 — Agenda Sanitária v2: Janelas, Agrupamento e Materialização Idempotente — antes da Fase 12.
 
-A Fase 11.5 foi fechada localmente pela 11.5H. A Fase 12 permanece não iniciada até novo diagnóstico, commit da 11.5H e atualização explícita do plano ativo.
+A Fase 11.5 foi fechada localmente pela 11.5H, reconciliada documentalmente pela 11.5I e rebaselineada estrategicamente pela 11.5J. A Fase 12 permanece não iniciada até novo diagnóstico, commit da 11.5J e atualização explícita do plano ativo.
 
 Último gate validado:
 
@@ -70,7 +70,9 @@ A Fase 11.5 foi fechada localmente pela 11.5H. A Fase 12 permanece não iniciada
 - Fase 11.5F — Execução sanitária como evento concluída localmente em escopo reduzido.
 - Fase 11.5G — Semântica final de fechamento da agenda concluída localmente em core puro.
 - Fase 11.5H — Fechamento e handoff concluída localmente como etapa documental.
-- Fase 12 — Compra/Venda Operacional não iniciada; exige novo diagnóstico e plano ativo próprio.
+- Fase 11.5I — Reconciliação de contratos normativos pós-Agenda Sanitária v2 concluída localmente.
+- Fase 11.5J — Rebaseline estratégico do roadmap técnico executada documentalmente.
+- Fase 12 — Fundação Sanitária v2: Persistência, Sync, Schema e Rollout não iniciada; exige novo diagnóstico e plano ativo próprio.
 
 Último avanço local da Fase 10:
 
@@ -122,11 +124,13 @@ A Fase 11.5 foi fechada localmente pela 11.5H. A Fase 12 permanece não iniciada
 - venda, abate e aptidão operacional seguem bloqueados sem fonte técnica explícita;
 - persistência, sync, schema, RLS, UI, RPC, Edge Functions, Dexie e seed continuam fora do implementado na 11.5;
 - riscos residuais para persistência real, fluxo legado de agenda, `status='concluido'`, replay/rollback/idempotência e RLS/multi-tenant foram documentados.
+- 11.5I alinhou docs normativos e skills de agente aos contratos da Agenda Sanitária v2.
+- 11.5J reordenou o roadmap técnico para aplicar a fundação sanitária antes de Compra/Venda, KPIs, financeiro e decisão assistida.
 
 Próximo foco sugerido:
 
-- preparar Fase 12 somente após commit da 11.5H;
-- atualizar o plano ativo para Fase 12;
+- preparar Fase 12 — Fundação Sanitária v2 somente após commit da 11.5J;
+- atualizar o plano ativo para Fase 12 sem iniciar implementação na mesma etapa documental;
 - executar novo diagnóstico local;
 - auditar fluxo legado de agenda antes de migration/constraint;
 - decidir explicitamente schema/migrations, Dexie/local-first, sync-batch, Supabase/RLS, RPC/Edge Function, UI, rollback/replay, idempotência real e tratamento de dados existentes/reset.
@@ -146,12 +150,14 @@ Sequência corrigida pós-Fase 9:
 
 1. Fase 10 — UX Operacional dos Fluxos Centrais: concluída localmente.
 2. Fase 11 — Lotes, Pastos e Desempenho Operacional Ampliado: concluída localmente.
-3. Fase 11.5 — Agenda Sanitária v2: Janelas, Agrupamento e Materialização Idempotente: fechada localmente pela 11.5H.
-4. Fase 12 — Compra/Venda Operacional: Hardening e Lacunas: não iniciada.
-5. Fase 13 — Relatórios/KPIs Operacionais Read-only Ampliados.
-6. Fase 14 — Financeiro Gerencial Explícito.
-7. Fase 15 — Motor de Decisão Assistida.
-8. Fase 16 — Beta Externo / SLC / Hardening de Produto.
+3. Fase 11.5 — Agenda Sanitária v2: Janelas, Agrupamento e Materialização Idempotente: fechada localmente pela 11.5H, reconciliada pela 11.5I e rebaselineada pela 11.5J.
+4. Fase 12 — Fundação Sanitária v2: Persistência, Sync, Schema e Rollout: não iniciada.
+5. Fase 13 — Reprodução Operacional v1.
+6. Fase 14 — Compra/Venda Operacional: Hardening e Lacunas.
+7. Fase 15 — Relatórios/KPIs Operacionais Read-only Ampliados.
+8. Fase 16 — Financeiro Gerencial Explícito.
+9. Fase 17 — Motor de Decisão Assistida.
+10. Fase 18 — Beta Externo / SLC / Hardening de Produto.
 
 ---
 

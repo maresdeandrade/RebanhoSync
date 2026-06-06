@@ -27,6 +27,16 @@ Cada decisão deve conter:
 
 ## Decisões consolidadas
 
+### 2026-06-06 — Rebaseline estratégico pós-Agenda Sanitária v2
+
+**Decisão:** reordenar o roadmap técnico após a consolidação documental da Agenda Sanitária v2.
+
+* **Motivo:** Compra/Venda não deve avançar antes da aplicação real dos contratos sanitários v2; Reprodução é domínio estrutural ausente e precisa anteceder KPIs, financeiro e decisão assistida; KPIs/financeiro dependem de fontes consolidadas; decisão assistida depende de dados confiáveis e limites explícitos.
+* **Impacto:** a próxima fase futura passa a ser Fase 12 — Fundação Sanitária v2: Persistência, Sync, Schema e Rollout; Reprodução passa a Fase 13; Compra/Venda fica como Fase 14; KPIs, Financeiro, Motor de Decisão e Beta externo passam a Fases 15-18. Trilhas de higiene DX, hardening sanitário residual, docs reconciliation, compliance avançado, performance e UX incremental permanecem contínuas, não fases principais imediatas.
+* **Status:** aprovado. Fase 12 ainda não foi iniciada; a 11.5J é documental e não altera código, schema, migrations, Supabase, Dexie, UI, sync, RLS, RPC ou Edge Functions.
+
+---
+
 ### 2026-06-06 — Consolidar Agenda Sanitária v2 em contratos puros
 
 **Decisão:** consolidar a Fase 11.5 como Agenda Sanitária v2 em contratos puros, antes de qualquer persistência real.

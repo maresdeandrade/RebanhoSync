@@ -27,7 +27,7 @@ Referência: `docs/review/PLANO_FASE_11.md`.
 
 Fase 11.5 — Agenda Sanitária v2: Janelas, Agrupamento e Materialização Idempotente — fechada localmente.
 
-Status: 11.5H concluída como fechamento documental e handoff técnico.
+Status: 11.5H concluída como fechamento documental e handoff técnico; 11.5I concluída como reconciliação normativa; 11.5J executada como rebaseline estratégico documental.
 
 Plano específico: `docs/review/PLANO_FASE_11_5_SANITARIO_AGENDA_V2.md`.
 
@@ -290,18 +290,42 @@ Validações executadas na 11.5H:
 
 ---
 
+11.5J — Rebaseline Estratégico do Roadmap Técnico — executada documentalmente.
+
+Resultado da 11.5J:
+
+- roadmap técnico reordenado após a Agenda Sanitária v2;
+- Fase 12 redefinida como Fundação Sanitária v2: Persistência, Sync, Schema e Rollout;
+- Reprodução Operacional v1 definida como Fase 13;
+- Compra/Venda Operacional movida para Fase 14;
+- KPIs, Financeiro, Motor de Decisão Assistida e Beta externo movidos para Fases 15-18;
+- trilhas residuais contínuas preservadas fora da sequência principal;
+- Fase 12 não foi iniciada.
+
+---
+
 ## 4. Fase 12
 
-Fase 12 — Compra/Venda Operacional: Hardening e Lacunas — permanece não iniciada.
+Fase 12 — Fundação Sanitária v2: Persistência, Sync, Schema e Rollout — permanece não iniciada.
 
 Critério mínimo para iniciar Fase 12 em nova rodada:
 
 - worktree limpo;
-- 11.5H commitada;
+- 11.5J commitada;
 - plano ativo atualizado para Fase 12;
 - novo diagnóstico local;
 - auditoria do fluxo legado de agenda;
 - decisão explícita sobre schema/migrations, Dexie/local-first, sync-batch, Supabase/RLS, RPC/Edge Function, UI, rollback/replay, idempotência real e tratamento de dados existentes/reset.
+
+Sequência estratégica vigente:
+
+1. Fase 12 — Fundação Sanitária v2: Persistência, Sync, Schema e Rollout.
+2. Fase 13 — Reprodução Operacional v1.
+3. Fase 14 — Compra/Venda Operacional: Hardening e Lacunas.
+4. Fase 15 — Relatórios/KPIs Operacionais Read-only Ampliados.
+5. Fase 16 — Financeiro Gerencial Explícito.
+6. Fase 17 — Motor de Decisão Assistida.
+7. Fase 18 — Beta Externo / SLC / Hardening de Produto.
 
 ---
 
@@ -330,7 +354,7 @@ git status --short --untracked-files=all
 git diff --check
 ```
 
-Antes de qualquer implementação da Fase 12, confirmar que o plano ativo aponta para Fase 12 e que a 11.5H está commitada.
+Antes de qualquer implementação da Fase 12, confirmar que o plano ativo aponta para Fase 12 — Fundação Sanitária v2 e que a 11.5J está commitada.
 
 Se a Fase 12 tocar sync/offline/Supabase/RLS/migration/schema:
 
