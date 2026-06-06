@@ -1,7 +1,7 @@
 ```md
 # Events and Agenda Contract — RebanhoSync
 
-Atualizado em: 2026-06-01
+Atualizado em: 2026-06-06
 **Baseline Commit:** `32d7779`
 
 ## Objetivo
@@ -18,6 +18,7 @@ Evento = Fato
 state_* = Estado atual
 Protocolo = Regra
 Tags/sinais/insights = Auxiliares
+Fechamento de agenda = estado administrativo da intenção
 
 ```
 
@@ -32,6 +33,101 @@ Tags/sinais/insights = Auxiliares
 | **`state_*`** | estado atual/read model | situação corrente |
 | **Protocolo** | regra/configuração | geração de agenda/proposta operacional |
 | **Tags/sinais/insights** | auxiliar de UX/consulta | filtro, alerta, priorização |
+
+---
+
+## Agenda Sanitária v2
+
+A Fase 11.5 consolidou a Agenda Sanitária v2 como contrato core puro/documental. Este contrato ainda não representa schema, migration, RLS, Dexie, sync-batch, RPC ou UI implementados.
+
+Pipeline conceitual:
+
+```txt
+Regra/produto/fonte técnica
+-> janela sanitária
+-> elegibilidade individual
+-> demanda agrupada
+-> preview operacional
+-> agenda_intent
+-> event_execution_intent
+-> agenda_closure_intent
+```
+
+### Camadas v2
+
+| Camada | Papel | Fonte primária para | Não serve para |
+| --- | --- | --- | --- |
+| Regra/protocolo | configuração sanitária com fonte técnica | critério operacional, janela, produto esperado | execução |
+| Produto/fonte técnica | dose, via, apresentação e carência | carência e aplicação tecnicamente descrita | histórico sem evento |
+| Janela sanitária | período operacional derivado | elegibilidade e planejamento | evento executado |
+| Elegibilidade | cálculo derivado por animal | status operacional derivado | histórico |
+| Demanda agrupada | leitura derivada de elegibilidade/lote/janela | agrupamento operacional | agenda, evento, carência |
+| Preview operacional | simulação editável | planejamento antes da confirmação | persistência, evento, estoque |
+| `agenda_intent` | intenção de agenda materializada em core puro | planejamento futuro | histórico, estoque, carência |
+| `event_execution_intent` | intenção de registrar execução sanitária como evento futuro | fronteira de execução | persistência automática |
+| `agenda_closure_intent` | intenção de fechamento administrativo | estado da intenção | evento, histórico sanitário |
+
+### Materialização idempotente
+
+`agenda_intent` representa planejamento sanitário confirmado em core puro.
+
+Regras:
+
+* usa `dedupKey` estável;
+* preserva vínculo com `previewGroupId` e `sourceDemandKey`;
+* rejeita data ausente, inválida ou fora da janela;
+* não cria evento;
+* não baixa estoque;
+* não calcula carência;
+* não autoriza venda/abate.
+
+### Execução sanitária
+
+`event_execution_intent` representa uma intenção de evento sanitário executado.
+
+Regras:
+
+* declara `createsEvent: true`;
+* declara `persistsEvent: false`;
+* execução parcial exige motivo para animais planejados não executados;
+* produto executado não é inferido automaticamente do produto planejado;
+* baixa de estoque futura deve nascer do evento real, não da agenda.
+
+### Fechamento administrativo
+
+`agenda_closure_intent` representa fechamento da intenção, não fato sanitário.
+
+Tipos conceituais preservados nos contratos TypeScript:
+
+* `executed_with_event`;
+* `partially_executed_with_event`;
+* `closed_without_execution`;
+* `cancelled`;
+* `dismissed`.
+
+Regras:
+
+* fechamento executado/parcial exige evento compatível;
+* fechamento parcial preserva animais planejados não executados e exige motivo;
+* fechamento sem execução, cancelamento e dispensa exigem motivo;
+* fechamento sem execução, cancelamento e dispensa rejeitam evento informado por engano;
+* fechamento não cria evento;
+* fechamento não cria histórico sanitário;
+* fechamento não baixa estoque;
+* fechamento não calcula carência.
+
+### Nomenclatura ainda não persistida
+
+Não tratar como enum/schema real enquanto não houver migration correspondente:
+
+* agenda aberta/programada;
+* fechamento executado com evento;
+* fechamento parcial com evento;
+* fechamento sem execução;
+* cancelamento;
+* dispensa.
+
+Não documentar como persistidos os status conceituais `aberta`, `programada`, `concluido_executado`, `cancelado`, `dispensado` e `fechado_sem_execucao` sem migration/schema específica.
 
 ---
 

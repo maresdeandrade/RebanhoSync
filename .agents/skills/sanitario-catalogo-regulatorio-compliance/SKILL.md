@@ -71,6 +71,9 @@ Regulatory/compliance objects are not the same as operational facts.
 
 ## Non-negotiable rules
 
+- Critical sanitary rule requires explicit technical source.
+- Guideline alone is not a sufficient single source for critical decisions.
+- Withdrawal/carência must be linked to the executed product and explicit source.
 - Regulatory catalog activated ≠ pending task.
 - Checklist available ≠ mandatory routine task.
 - Missing runtime ≠ non-compliance.
@@ -82,6 +85,9 @@ Regulatory/compliance objects are not the same as operational facts.
 - Corrective pending action must link to real occurrence/event.
 - Protocol is rule/configuration, not execution.
 - Agenda is future intention, not historical proof.
+- Demand, preview and agenda do not calculate active withdrawal.
+- `agenda_closure_intent` is administrative closure, not sanitary history.
+- Sale/slaughter/operational eligibility remains blocked without explicit technical source.
 - Tags/signals are not primary truth.
 
 ---

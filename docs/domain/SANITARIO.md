@@ -1,7 +1,7 @@
 ```markdown
 # Sanitário — RebanhoSync
 
-Atualizado em: 2026-06-01
+Atualizado em: 2026-06-06
 **Baseline Commit:** `32d7779`
 
 ## Objetivo
@@ -58,7 +58,12 @@ Fora do escopo deste documento:
 | Conceito | Fonte primária |
 |---|---|
 | Regra sanitária | Protocolo/configuração |
+| Fonte técnica da regra | Referência bibliográfica, norma oficial, bula ou MV responsável |
+| Produto, dose, via e carência planejada | Produto sanitário/fonte técnica explícita |
 | Tarefa sanitária futura | Agenda |
+| Elegibilidade por janela | Cálculo derivado de animal + regra + eventos |
+| Demanda agrupada | Leitura derivada de elegibilidade/lote/janela |
+| Preview operacional | Simulação derivada antes de materializar agenda |
 | Aplicação executada | Evento sanitário |
 | Produto aplicado | `eventos_sanitario` estruturado |
 | Estoque consumido | `insumo_movimentacoes` vinculada ao evento |
@@ -69,6 +74,7 @@ Fora do escopo deste documento:
 | Biossegurança | Ocorrência contextual registrada em evento |
 | Doença notificável | Suspeita/caso vinculado a animal/lote/evento |
 | Pendência corretiva | Agenda específica vinculada a evento/ocorrência |
+| Fechamento administrativo | Estado da intenção de agenda, não histórico |
 | Correção histórica | Novo evento vinculado, não edição destrutiva |
 | Sinal/insight | Leitura auxiliar, nunca fonte primária |
 
@@ -84,7 +90,10 @@ Fora do escopo deste documento:
 - Ausência de suspeita clínica não gera tarefa.
 - Tags, sinais e insights são auxiliares, nunca fonte primária.
 - Carência só pode ser calculada a partir de evento sanitário estruturado.
+- Produto executado e fonte técnica explícita são necessários para carência confiável.
+- Demanda, preview e agenda não calculam carência ativa.
 - Livre de carência não significa apto para venda ou abate.
+- Fechamento administrativo da agenda não cria evento nem histórico sanitário.
 - Correção sanitária deve gerar novo fato vinculado, não editar destrutivamente o passado.
 - Doença notificável exige vínculo clínico com animal, animais, lote ou evento.
 
@@ -127,6 +136,128 @@ Mudanças semânticas incluem:
 - tipo da etapa.
 
 Eventos e agendas antigas continuam vinculados à versão física usada na época.
+
+### Regra, produto e fonte técnica
+
+A Agenda Sanitária v2 exige separar regra sanitária de produto sanitário.
+
+Regras:
+
+- campo crítico de regra sanitária exige fonte técnica explícita;
+- guideline não é fonte única suficiente para decisão crítica;
+- produto sanitário é fonte primária de dose, via, apresentação e carência quando houver produto vinculado;
+- protocolo pode complementar carência apenas com fonte explícita;
+- carência futura deve depender do produto executado no evento, não do produto apenas planejado.
+
+---
+
+## Agenda Sanitária v2
+
+A Fase 11.5 consolidou contratos puros para redesenhar a agenda sanitária. Esses contratos ainda não implementam persistência real, sync, schema, RLS, RPC, Edge Function, Dexie, seed ou UI.
+
+Pipeline conceitual:
+
+```txt
+Regra/produto/fonte técnica
+→ janela sanitária
+→ elegibilidade individual
+→ demanda agrupada
+→ preview operacional
+→ agenda_intent
+→ event_execution_intent
+→ agenda_closure_intent
+```
+
+### Janela sanitária e elegibilidade
+
+Janela sanitária é o período operacional recomendado/limite para ação.
+
+Elegibilidade:
+
+- é core puro;
+- deriva de animal, regra/protocolo, eventos sanitários executados e data de referência;
+- retorna limitações explícitas quando faltam dados;
+- `completed` depende de evento sanitário compatível, executado e não futuro;
+- agenda concluída não satisfaz histórico sanitário.
+
+### Demanda agrupada e preview
+
+Demanda agrupada:
+
+- é derivada de elegibilidade;
+- agrupa por protocolo, item/produto/classe, ação, lote, janela e status derivado;
+- não cria agenda;
+- não cria evento;
+- não usa `productName` ou `loteName` como identidade.
+
+Preview operacional:
+
+- é simulação derivada antes da materialização;
+- preserva bloqueios `insufficient_data`;
+- expõe grupos acionáveis;
+- não persiste;
+- não cria evento, estoque ou carência.
+
+### Agenda intent
+
+`agenda_intent` representa comando/intenção de agenda sanitária em core puro.
+
+Regras:
+
+- usa `dedupKey` estável;
+- preserva `previewGroupId` e `sourceDemandKey`;
+- rejeita datas inválidas, ausentes ou fora da janela;
+- não persiste agenda real;
+- não cria evento;
+- não baixa estoque;
+- não calcula carência.
+
+### Event execution intent
+
+`event_execution_intent` representa intenção de execução sanitária como evento futuro.
+
+Regras:
+
+- declara `createsEvent: true`;
+- declara `persistsEvent: false`;
+- não fecha agenda;
+- não baixa estoque;
+- não calcula carência;
+- execução parcial exige motivo para animais planejados não executados;
+- produto executado não é inferido automaticamente do produto planejado.
+
+### Agenda closure intent
+
+`agenda_closure_intent` representa fechamento administrativo da intenção.
+
+Tipos do contrato TypeScript:
+
+- `executed_with_event`;
+- `partially_executed_with_event`;
+- `closed_without_execution`;
+- `cancelled`;
+- `dismissed`.
+
+Regras:
+
+- fechamento executado/parcial exige evento compatível;
+- fechamento sem execução, cancelamento e dispensa exigem motivo;
+- fechamento parcial preserva animais planejados não executados;
+- fechamento não cria evento;
+- fechamento não cria histórico sanitário;
+- fechamento não baixa estoque;
+- fechamento não calcula carência.
+
+### Limitações atuais
+
+Ainda não implementado pela Fase 11.5:
+
+- persistência real de `agenda_intent`, `event_execution_intent` ou `agenda_closure_intent`;
+- schema/migrations para status sanitário v2;
+- Dexie/local-first da Agenda v2;
+- sync-batch/replay/rollback/sucesso parcial da Agenda v2;
+- RLS/RPC/Edge Function para Agenda v2;
+- UI operacional da Agenda v2.
 
 ---
 
@@ -237,7 +368,7 @@ Regras:
 
 ## Carência
 
-Carência é derivada exclusivamente de evento sanitário estruturado.
+Carência é derivada de evento sanitário estruturado com produto executado e fonte técnica explícita.
 
 Permitido:
 
@@ -247,6 +378,9 @@ Permitido:
 Proibido:
 
 - calcular carência por agenda;
+- calcular carência por demanda agrupada;
+- calcular carência por preview operacional;
+- calcular carência por fechamento administrativo;
 - calcular carência por protocolo isolado;
 - calcular carência por catálogo oficial isolado;
 - usar ausência de carência como autorização comercial;
@@ -490,8 +624,9 @@ Essa fase deve validar uso real, não criar novo domínio.
 | Fase 2 | Rastreabilidade sanitária operacional | Encerrada |
 | Fase 3 | Consolidação de histórico, relatórios e sinais | Encerrada |
 | Fase 4 | Clínica, compliance, checklists, biossegurança, doenças notificáveis | Encerrada |
-| Fase 5 | Exceções, correções e reconciliação sanitária | Próxima |
-| Fase 6 | Robustez sanitária em staging | Pendente |
+| Fase 5 | Exceções, correções e reconciliação sanitária | Concluída; hardening residual |
+| Fase 6 | Robustez sanitária em staging/RLS/sync | Hardening residual |
+| Fase 11.5 | Agenda Sanitária v2 em contratos puros | Fechada localmente; persistência/sync/schema pendentes |
 
 ### Antipadrões proibidos
 

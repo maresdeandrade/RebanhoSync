@@ -57,6 +57,7 @@ Use `sanitario-catalogo-regulatorio-compliance` for those cases.
 
 - Agenda = intenção/tarefa futura.
 - Evento = fato executado append-only.
+- Fechamento de agenda = estado administrativo da intenção.
 - Protocolo = regra/configuração.
 - Produto aplicado = evento sanitário estruturado.
 - Baixa de estoque = movimento vinculado ao evento.
@@ -64,6 +65,9 @@ Use `sanitario-catalogo-regulatorio-compliance` for those cases.
 - Ocorrência de biossegurança = evento append-only com payload estruturado.
 - Pendência corretiva = agenda específica vinculada ao evento de ocorrência.
 - Correção = novo evento vinculado, não edição destrutiva.
+- `agenda_intent` = intenção de agenda em core puro, sem evento/estoque/carência.
+- `event_execution_intent` = intenção de execução sanitária como evento futuro.
+- `agenda_closure_intent` = intenção de fechamento administrativo, sem histórico sanitário.
 
 ---
 
@@ -73,6 +77,7 @@ Use `sanitario-catalogo-regulatorio-compliance` for those cases.
 
 - Agenda não é histórico.
 - Agenda não prova execução.
+- Agenda concluída não registra manejo executado sem evento compatível.
 - Agenda não prova ausência de doença.
 - Agenda corretiva só nasce de ocorrência real.
 - Pendência corretiva deve preservar `source_evento_id`.
@@ -80,9 +85,19 @@ Use `sanitario-catalogo-regulatorio-compliance` for those cases.
 ### Evento sanitário
 
 - Evento sanitário é fonte factual.
+- Evento sanitário compatível é obrigatório para execução total/parcial de agenda.
 - Deve preservar `protocol_item_version_id` e `protocol_item_snapshot` quando vier de protocolo.
 - Deve preservar produto/lote/dose/via/responsável/carência/custo quando aplicável.
 - Não reinterpretar evento passado pela versão ativa atual do protocolo.
+
+### Execução e fechamento v2
+
+- `agenda_intent` não persiste agenda real por si só.
+- `event_execution_intent` declara `createsEvent: true`, mas `persistsEvent: false`.
+- Execução parcial exige motivo para cada animal planejado não executado.
+- `agenda_closure_intent` não cria evento, estoque, carência ou histórico.
+- Fechamento sem execução, cancelamento e dispensa exigem motivo.
+- Produto executado não deve ser inferido automaticamente do produto planejado.
 
 ### Produto e estoque
 

@@ -56,7 +56,7 @@ Do not use when:
 
 ### Read as needed:
 * `docs/technical/SUPABASE_RLS.md`
-* `docs/technical/EVENTS_AGENDA_CONTRACT.md`
+* `docs/technical/EVENTS_AGENDA_CONTRACT.md` v2
 * `docs/technical/OFFLINE_SYNC.md`
 * `docs/technical/ARCHITECTURE.md`
 * `docs/context/SOURCE_OF_TRUTH.md`
@@ -133,10 +133,19 @@ Verify:
 
 * **Agenda:** Intention/future task.
 * **Evento:** Executed fact.
+* **Agenda closure:** Administrative state of the intention, not sanitary history.
 * **`state_*`:** Current state/read model.
 * **Protocolo:** Rule/configuration.
 * **Tags/signals/insights:** Auxiliary only.
 * **Métricas:** Critical operational eligibility requires explicit technical source.
+
+### Agenda Sanitária v2 database caution
+
+* Do not create enum/status/constraint for Agenda v2 before auditing the legacy agenda flow.
+* Do not require `source_evento_id` by constraint before distinguishing execution, partial execution, cancellation, dismissal and closure without execution.
+* Preserve multi-tenant/RLS and `fazenda_id` boundaries in any future persistence.
+* Validate real idempotency before moving `agenda_intent`, `event_execution_intent` or `agenda_closure_intent` into DB/sync contracts.
+* Do not turn core pure logical dedup into a database constraint without explicit decision, data audit and migration plan.
 
 ---
 

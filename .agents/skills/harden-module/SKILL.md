@@ -91,10 +91,25 @@ Use this decomposition when applicable:
 Do not violate:
 * **Agenda:** Intention/future task;
 * **Evento:** Executed fact;
+* **Agenda closure:** Administrative state of the intention;
 * **`state_*`:** Current state/read model;
 * **Protocolo:** Rule/configuration;
 * **Tags/signals/insights:** Auxiliary;
 * **Critical Decisions:** Require explicit technical source.
+
+### Sanitário Agenda v2 hardening checklist
+
+When hardening sanitary agenda/execution modules, verify:
+
+* agenda does not become history;
+* compatible event is required for executed/partially executed closure;
+* closure without execution, cancellation and dismissal require reason;
+* partial execution requires reason for planned animals not executed;
+* `productName` and `loteName` are display-only and not identity;
+* `productId` and `productClass` remain separate in dedup;
+* pure core does not use `Date.now()`;
+* pure core does not import Supabase, Dexie, React UI or storage;
+* agenda/preview/demand/closure do not create stock movement or active withdrawal.
 
 ---
 

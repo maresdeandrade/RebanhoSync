@@ -1,7 +1,7 @@
 ```md
 # Source of Truth — RebanhoSync
 
-Atualizado em: 2026-05-31  
+Atualizado em: 2026-06-06
 **Baseline Commit:** `32d7779`
 
 ## Objetivo
@@ -20,6 +20,7 @@ Evento = fato histórico executado
 state_* = estado atual/read model
 Protocolo = regra/configuração
 Tags, sinais e insights = auxiliares de UX/consulta
+Fechamento de agenda = estado administrativo da intenção
 
 ```
 
@@ -47,6 +48,9 @@ Em caso de conflito, confiar nesta ordem:
 | `agenda_itens` / `state_agenda_itens` | Intenção/tarefa futura | pendências, vencimentos, próximos manejos | histórico factual, KPI histórico |
 | `state_*` | Estado atual/read model | situação corrente, status atual, leitura operacional | prova histórica completa |
 | Protocolos/configurações | Regras/templates | geração/recalculo de agenda, política operacional | prova de execução |
+| Produto/fonte técnica sanitária | dose, via, apresentação, carência e fonte crítica | regra sanitária tecnicamente justificada, carência vinculada ao produto | execução sem evento |
+| Demanda/preview sanitário | derivado operacional | agrupamento, simulação e planejamento | histórico, agenda persistida, evento |
+| Fechamento de agenda | estado administrativo da intenção | encerramento/cancelamento/dispensa da tarefa | fato sanitário executado |
 | Tags/sinais/insights | Auxiliar visual/consulta | alerta, filtro, priorização, painel read-only | decisão crítica, fonte primária |
 
 ---
@@ -81,6 +85,18 @@ Agenda representa intenção operacional.
 * O animal está apto para venda/abate?
 
 > ⚠️ **Regra:** Agenda concluída sem evento vinculado **não deve ser tratada como fato histórico confiável**.
+
+### Agenda Sanitária v2
+
+Na Agenda Sanitária v2, os comandos puros têm papéis separados:
+
+| Comando | Papel | Não pode fazer |
+| --- | --- | --- |
+| `agenda_intent` | materializar intenção futura em core puro | criar evento, baixar estoque, calcular carência |
+| `event_execution_intent` | representar execução sanitária como evento futuro | persistir evento automaticamente, fechar agenda por si só |
+| `agenda_closure_intent` | fechar administrativamente a intenção | criar histórico sanitário, criar evento, baixar estoque |
+
+Demanda agrupada e preview operacional são derivados. Eles não são fonte primária de histórico, não substituem agenda persistida e não calculam carência ativa.
 
 ---
 
@@ -193,6 +209,12 @@ Protocolos são regras/configurações/templates.
 * Se há carência ativa ou livre.
 * Se está apto para venda/abate.
 * Se o protocolo foi cumprido.
+
+### Produto e fonte técnica sanitária
+
+Produto sanitário e fonte técnica explícita são fontes para dose, via, apresentação e carência planejada. Carência confiável exige produto executado em evento sanitário e fonte técnica explícita.
+
+Guideline isolado não deve ser tratado como fonte única de decisão crítica.
 
 ---
 

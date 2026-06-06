@@ -1,6 +1,6 @@
 # Decision Log — RebanhoSync
 
-Atualizado em: 2026-06-05
+Atualizado em: 2026-06-06
 **Baseline Commit:** `91e0775`
 
 ## Objetivo
@@ -26,6 +26,16 @@ Cada decisão deve conter:
 ---
 
 ## Decisões consolidadas
+
+### 2026-06-06 — Consolidar Agenda Sanitária v2 em contratos puros
+
+**Decisão:** consolidar a Fase 11.5 como Agenda Sanitária v2 em contratos puros, antes de qualquer persistência real.
+
+* **Motivo:** separar regra/produto/fonte técnica, janela, elegibilidade, demanda, preview, agenda, execução e fechamento administrativo sem tratar agenda como histórico.
+* **Impacto:** 11.5A-G concluíram contratos core puros; 11.5H fechou o handoff documental; `agenda_intent`, `event_execution_intent` e `agenda_closure_intent` ficam definidos como comandos/intenção, ainda sem aplicação em Supabase/Dexie/sync.
+* **Status:** aprovado. Fase 12 não iniciada; persistência, sync, schema, RLS, RPC, Edge Functions, Dexie, UI e seed permanecem pendentes de fase futura com diagnóstico próprio.
+
+---
 
 ### 2026-06-05 — Criar Fase 11.5 para Agenda Sanitária v2
 

@@ -97,9 +97,28 @@ In case of conflict, trust:
 
 * **Agenda:** Intention/future task.
 * **Evento:** Executed fact.
+* **Agenda closure:** Administrative state of the intention.
 * **`state_*`:** Current state/read model.
 * **Protocolo:** Rule/configuration.
 * **Tags/signals/insights:** Auxiliary only.
+
+## Agenda Sanitária v2 sync cautions
+
+Future offline persistence must treat these as distinct operations:
+
+* `agenda_intent`;
+* `event_execution_intent`;
+* `agenda_closure_intent`.
+
+Verify:
+
+* retry does not duplicate agenda/event/closure;
+* replay preserves `previewGroupId`, `sourceDemandKey` and agenda/event linkage;
+* partial success is explicit and not masked;
+* rollback restores local state safely after failed agenda/event/closure sync;
+* closure without execution does not create event;
+* event execution remains the only source of sanitary history;
+* inventory movement and withdrawal are not created from agenda or closure.
 
 ---
 
