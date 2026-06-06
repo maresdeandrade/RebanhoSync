@@ -1,7 +1,7 @@
 # Plano Fase 11.5 — Agenda Sanitária v2: Janelas, Agrupamento e Materialização Idempotente
 
-**Atualizado em:** 2026-06-05
-**Status:** 11.5B0 concluída localmente / pronta para iniciar 11.5B1
+**Atualizado em:** 2026-06-06
+**Status:** 11.5B1.1 concluída localmente / pronta para iniciar 11.5C
 **Baseline documental de entrada:** `91e0775`
 **Commit local de entrada:** `91e0775`
 
@@ -597,12 +597,12 @@ Nenhum motor de elegibilidade, demanda, preview, materialização, evento, cálc
 
 ### 11.5B1 — Motor puro de elegibilidade sanitária por janela
 
-**Status:** próxima execução, dependente da 11.5B0.
+**Status:** concluída localmente em 2026-06-06, com hardening 11.5B1.1 aplicado.
 
 **Objetivo**
 Calcular elegibilidade sanitária por janela de ação, sem IO e sem UI.
 
-**Arquivos prováveis**
+**Arquivos criados**
 
 * `src/lib/sanitario/eligibility/sanitaryEligibility.ts`
 * `src/lib/sanitario/eligibility/__tests__/sanitaryEligibility.test.ts`
@@ -612,7 +612,7 @@ Calcular elegibilidade sanitária por janela de ação, sem IO e sem UI.
 ```typescript
 computeSanitaryEligibility({
   animal,
-  protocolItem,
+  protocolRule,
   executedEvents,
   referenceDate,
   thresholds
@@ -625,6 +625,7 @@ computeSanitaryEligibility({
 ```typescript
 type SanitaryEligibilityStatus =
   | "not_applicable"
+  | "insufficient_data"
   | "not_yet_eligible"
   | "eligible_soon"
   | "in_action_window"
@@ -659,17 +660,69 @@ O motor deve retornar limitações explícitas quando houver baixa confiança:
 ```typescript
 type SanitaryEligibilityLimitation =
   | "missing_birth_date"
+  | "invalid_birth_date"
   | "estimated_age"
   | "missing_sex"
+  | "missing_species"
   | "missing_lote"
   | "missing_protocol_window"
-  | "insufficient_event_history";
+  | "invalid_protocol_rule"
+  | "invalid_reference_date"
+  | "invalid_event_date"
+  | "insufficient_event_history"
+  | "missing_anchor_event"
+  | "missing_anchor_event_criteria"
+  | "ambiguous_anchor_event"
+  | "unsupported_required_dose_count";
 
 ```
 
+**Resultado 11.5B1 / 11.5B1.1**
+
+Motor puro criado em `src/lib/sanitario/eligibility/sanitaryEligibility.ts`, com testes em `src/lib/sanitario/eligibility/__tests__/sanitaryEligibility.test.ts`.
+
+Regras implementadas:
+
+* entrada normalizada baseada em `SanitaryProtocolRule`, animal, eventos sanitários executados, data de referência e thresholds explícitos;
+* `completed` depende apenas de evento sanitário compatível, executado, não cancelado/deletado, do mesmo animal e não futuro em relação à `referenceDate`;
+* agenda concluída, campos estranhos de agenda e qualquer intenção futura não completam protocolo;
+* aplicabilidade por sexo, espécie, categoria e lote retorna `not_applicable` apenas quando há incompatibilidade real;
+* ausência de dado necessário retorna `insufficient_data` com limitação explícita;
+* janelas por nascimento, entrada de lote, âncora manual e evento são resolvidas sem IO e sem `Date.now`;
+* janela com âncora por evento exige `anchorEventCriteria` efetivo; critério ausente ou `{}` retorna `missing_anchor_event_criteria`;
+* evento âncora ausente ou ambíguo retorna limitação própria;
+* datas inválidas de nascimento, referência e evento são bloqueadas;
+* thresholds alteram `eligible_soon` e `near_deadline`;
+* `requiredDoseCount > 1` não retorna `completed` por contagem genérica de eventos compatíveis; enquanto não houver validação explícita de sequência de doses, retorna `unsupported_required_dose_count`;
+* função não muta inputs.
+
+Testes cobrem:
+
+* `not_yet_eligible`, `eligible_soon`, `in_action_window`, `near_deadline`, `overdue` e `completed`;
+* evento incompatível, futuro, cancelado/deletado ou de outro animal não completa;
+* animal fora de aplicabilidade não completa mesmo com evento compatível;
+* falta de nascimento, sexo, espécie, janela e âncora retorna limitação;
+* idade estimada sinaliza limitação sem bloquear por si só;
+* `requiredDoseCount > 1` com eventos genéricos não completa e retorna `unsupported_required_dose_count`;
+* `anchorEventCriteria: {}` retorna `insufficient_data` e `missing_anchor_event_criteria`;
+* ausência de imports/uso de agenda, Supabase, Dexie, React, UI, storage, RPC, `.at()` e `Date.now()`.
+
+Validações registradas:
+
+```bash
+pnpm test -- src/lib/sanitario/eligibility
+pnpm test
+pnpm run lint
+pnpm run build
+git diff --check
+git status --short --untracked-files=all
+```
+
+Nenhuma demanda agrupada, preview, materialização de agenda, evento, baixa de estoque, carência ativa, UI, schema, migration, RLS, sync-batch, Supabase, Dexie, worker ou read model foi implementado.
+
 ### 11.5C — Demanda sanitária agrupada
 
-**Status:** futura.
+**Status:** próxima execução, dependente da 11.5B1/11.5B1.1.
 
 **Objetivo**
 Transformar elegibilidades individuais em demanda operacional por fazenda, protocolo, item, lote, categoria e janela.

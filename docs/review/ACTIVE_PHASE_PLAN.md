@@ -1,9 +1,9 @@
 # ACTIVE_PHASE_PLAN - Fase 11.5
 
-**Status:** 11.5B0 concluída localmente / pronta para iniciar 11.5B1
+**Status:** 11.5B1.1 concluída localmente / pronta para iniciar 11.5C
 **Foco:** Agenda Sanitária v2: Janelas, Agrupamento e Materialização Idempotente
 **Criado:** 2026-06-05
-**Atualizado:** 2026-06-05
+**Atualizado:** 2026-06-06
 **Plano específico:** `docs/review/PLANO_FASE_11_5_SANITARIO_AGENDA_V2.md`
 
 ---
@@ -17,12 +17,12 @@ Conduzir a Fase 11.5 como etapa extra entre a Fase 11 e a Fase 12 para redesenha
 ## Status da Fase 11.5
 
 - Fase 11 — Lotes, Pastos e Desempenho Operacional Ampliado: concluída localmente.
-- Fase 11.5 — Agenda Sanitária v2: 11.5B0 concluída localmente / pronta para iniciar 11.5B1.
+- Fase 11.5 — Agenda Sanitária v2: 11.5B1.1 concluída localmente / pronta para iniciar 11.5C.
 - Fase 12 — Compra/Venda Operacional: Hardening e Lacunas: bloqueada até fechamento formal da 11.5.
 
 Próximo passo:
 
-- 11.5B1 — Motor puro de elegibilidade sanitária por janela.
+- 11.5C — Demanda sanitária agrupada.
 
 ---
 
@@ -68,8 +68,9 @@ Protocolo
 
 - 11.5A — Diagnóstico + contrato alvo da Agenda Sanitária v2: concluída localmente.
 - 11.5B0 — Contrato bibliográfico de regra sanitária e produto: concluída localmente.
-- 11.5B1 — Motor puro de elegibilidade sanitária por janela.
-- 11.5C — Demanda sanitária agrupada.
+- 11.5B1 — Motor puro de elegibilidade sanitária por janela: concluída localmente.
+- 11.5B1.1 — Hardening de elegibilidade por dose múltipla e âncora por evento: concluída localmente.
+- 11.5C — Demanda sanitária agrupada: próxima execução.
 - 11.5D — Preview sanitário editável.
 - 11.5E — Materialização idempotente da agenda sanitária.
 - 11.5F — Execução sanitária como evento.
@@ -78,28 +79,38 @@ Protocolo
 
 ---
 
-## Escopo permitido nesta preparação
+## Escopo da próxima execução
 
-- Criar plano da Fase 11.5.
-- Atualizar documentação de controle da fase.
-- Registrar decisão arquitetural planejada.
-- Bloquear explicitamente a Fase 12 até fechamento formal da 11.5.
+- Consumir resultados do motor puro de elegibilidade.
+- Agrupar demanda por protocolo, janela, lote/categoria e status derivado.
+- Preservar demanda como leitura derivada, não agenda e não evento.
+- Manter `completed` dependente de evento executado compatível.
 
 ---
 
-## Escopo proibido nesta preparação
+## Escopo proibido nesta transição
 
-- Alterar código funcional.
 - Criar migrations.
 - Alterar schema, RLS, sync-batch, Supabase, edge functions ou telas.
-- Criar testes agora.
-- Iniciar 11.5A funcional.
+- Criar UI, preview, materialização de agenda, evento ou baixa de estoque.
+- Calcular carência ativa ou autorizar venda/abate.
 - Iniciar Fase 12.
 - Atualizar profundamente docs permanentes de contexto, arquitetura ou sync.
 
 ---
 
-## Validação obrigatória desta preparação
+## Validação registrada da 11.5B1/11.5B1.1
+
+```bash
+pnpm test -- src/lib/sanitario/eligibility
+pnpm test
+pnpm run lint
+pnpm run build
+git diff --check
+git status --short --untracked-files=all
+```
+
+## Validação mínima antes da 11.5C
 
 ```bash
 git diff --check

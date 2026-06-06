@@ -1,6 +1,6 @@
 # Current Phase Handoff — RebanhoSync
 
-Atualizado em: 2026-06-05
+Atualizado em: 2026-06-06
 
 ## 1. Última fase fechada
 
@@ -27,7 +27,7 @@ Referência: `docs/review/PLANO_FASE_11.md`.
 
 Fase 11.5 — Agenda Sanitária v2: Janelas, Agrupamento e Materialização Idempotente.
 
-Status: 11.5B0 concluída localmente / pronta para iniciar 11.5B1.
+Status: 11.5B1.1 concluída localmente / pronta para iniciar 11.5C.
 
 Plano específico: `docs/review/PLANO_FASE_11_5_SANITARIO_AGENDA_V2.md`.
 
@@ -68,15 +68,45 @@ Resultado da 11.5B0:
 
 Próxima execução:
 
-- 11.5B1 — Motor puro de elegibilidade sanitária por janela.
+- 11.5C — Demanda sanitária agrupada.
 
-Objetivo da 11.5B1:
+11.5B1 — Motor puro de elegibilidade sanitária por janela — concluída localmente.
 
-- consumir `SanitaryProtocolRule` e `SanitaryProduct` como entrada normalizada;
-- calcular elegibilidade sanitária por janela em core puro;
-- preservar `completed` como dependente de evento executado;
-- não consultar agenda, Supabase, Dexie, UI ou persistência;
-- não calcular carência ativa nem autorizar venda/abate.
+Resultado da 11.5B1:
+
+- motor puro criado em `src/lib/sanitario/eligibility/sanitaryEligibility.ts`;
+- testes focados criados em `src/lib/sanitario/eligibility/__tests__/sanitaryEligibility.test.ts`;
+- `computeSanitaryEligibility` consome animal, `SanitaryProtocolRule`, eventos executados, `referenceDate` e thresholds;
+- status cobrem `not_applicable`, `insufficient_data`, `not_yet_eligible`, `eligible_soon`, `in_action_window`, `near_deadline`, `overdue` e `completed`;
+- `completed` depende apenas de evento sanitário compatível, executado, não cancelado/deletado, do mesmo animal e não futuro;
+- ausência de dados críticos retorna limitações explícitas em vez de inferir histórico;
+- agenda, Supabase, Dexie, React, UI, storage, RPC, `Date.now()` e persistência não foram usados.
+
+11.5B1.1 — Hardening de elegibilidade por dose múltipla e âncora por evento — concluída localmente.
+
+Resultado da 11.5B1.1:
+
+- `requiredDoseCount > 1` não retorna `completed` por contagem genérica de eventos compatíveis;
+- enquanto não houver validação explícita de sequência de doses, o motor retorna `unsupported_required_dose_count`;
+- janela com âncora `"evento"` exige `anchorEventCriteria` efetivo;
+- `anchorEventCriteria: {}` é tratado como critério ausente e retorna `missing_anchor_event_criteria`;
+- inputs seguem imutáveis nos testes.
+
+Validações executadas:
+
+- `pnpm test -- src/lib/sanitario/eligibility`;
+- `pnpm test`;
+- `pnpm run lint`;
+- `pnpm run build`;
+- `git diff --check`;
+- `git status --short --untracked-files=all`.
+
+Objetivo da 11.5C:
+
+- transformar elegibilidades individuais em demanda operacional agrupada;
+- agrupar por protocolo, janela, lote/categoria e status derivado;
+- preservar demanda como leitura derivada, não agenda nem evento;
+- não materializar agenda, criar evento, baixar estoque ou calcular carência ativa.
 
 ---
 
@@ -104,7 +134,7 @@ Não fazer sem tarefa explícita:
 
 ---
 
-## 6. Checklist antes da 11.5B1
+## 6. Checklist antes da 11.5C
 
 Executar no início de nova rodada:
 
