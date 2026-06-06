@@ -6,6 +6,42 @@ Atualizado em: 2026-06-06
 
 ## 0. Resultado mais recente
 
+Fase 11.5G — Semântica final de fechamento da agenda — concluída localmente em core puro.
+
+Resultado da 11.5G:
+
+- core puro criado em `src/lib/sanitario/agenda/sanitaryAgendaClosure.ts`;
+- testes focados criados em `src/lib/sanitario/agenda/__tests__/sanitaryAgendaClosure.test.ts`;
+- `createSanitaryAgendaClosureCommand` gera comando/intenção `agenda_closure_intent`;
+- fechamento administrativo cobre execução total com evento, execução parcial com evento, fechamento sem execução, cancelamento e dispensa;
+- execução total/parcial exige `SanitaryEventExecutionCommand` compatível com `agendaCommand.dedupKey`;
+- execução total exige todos os animais planejados executados;
+- execução parcial preserva animais planejados não executados com motivo;
+- fechamento sem execução, cancelamento e dispensa rejeitam evento informado por engano;
+- fechamento executado rejeita animal executado fora do escopo planejado;
+- fechamento parcial rejeita execução total classificada como parcial;
+- fechamento sem execução, cancelamento e dispensa exigem motivo;
+- `closedAt` é obrigatório, validado e recebido por parâmetro;
+- `dedupKey` é determinística e não usa `productName` nem `loteName`;
+- resultado declara `createsEvent: false`, `persistsEvent: false`, `createsHistoricalFact: false`, `createsInventoryMovement: false` e `calculatesWithdrawal: false`;
+- não houve Supabase, Dexie, React, UI, storage, RPC, Edge Function, migration, schema, RLS, sync-batch, seed, persistência de agenda/evento, fechamento real no banco, baixa de estoque, carência ativa ou autorização de venda/abate.
+
+Validação local da 11.5G:
+
+```txt
+pnpm test -- src/lib/sanitario/agenda: passou, 34 testes.
+pnpm test -- src/lib/sanitario: passou, 769 testes.
+pnpm test: passou, 1880 testes.
+pnpm run lint: passou.
+pnpm run build: passou.
+```
+
+Próxima execução:
+
+- 11.5H — Fechamento e handoff.
+
+---
+
 Fase 11.5F — Execução sanitária como evento — concluída localmente em escopo reduzido.
 
 Resultado da 11.5F:

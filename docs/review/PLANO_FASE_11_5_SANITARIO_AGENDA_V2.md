@@ -1,7 +1,7 @@
 # Plano Fase 11.5 — Agenda Sanitária v2: Janelas, Agrupamento e Materialização Idempotente
 
 **Atualizado em:** 2026-06-06
-**Status:** 11.5F concluída localmente / pronta para iniciar 11.5G
+**Status:** 11.5G concluída localmente / pronta para iniciar 11.5H
 **Baseline documental de entrada:** `0cc5577`
 **Commit local de entrada da 11.5F:** `0cc5577`
 
@@ -1134,7 +1134,7 @@ git status --short --untracked-files=all
 
 ### 11.5G — Semântica final de fechamento da agenda
 
-**Status:** futura, dependente da 11.5A.
+**Status:** concluída localmente em 2026-06-06, em core puro.
 
 **Objetivo**
 Separar fechamento administrativo de execução.
@@ -1167,6 +1167,53 @@ Separar fechamento administrativo de execução.
 * `em_janela` deve ser derivado da janela sanitária.
 * Fechamento administrativo não pode ser usado como execução sanitária.
 * Não aplicar constraint de `source_evento_id` antes de auditar dados e fluxos existentes.
+
+**Resultado 11.5G**
+
+Core puro criado em `src/lib/sanitario/agenda/sanitaryAgendaClosure.ts`, com testes em `src/lib/sanitario/agenda/__tests__/sanitaryAgendaClosure.test.ts`.
+
+Regras implementadas:
+
+* `createSanitaryAgendaClosureCommand` gera comando/intenção `agenda_closure_intent`.
+* Fechamento administrativo cobre `executed_with_event`, `partially_executed_with_event`, `closed_without_execution`, `cancelled` e `dismissed`.
+* `executed_with_event` e `partially_executed_with_event` exigem `SanitaryEventExecutionCommand` compatível com `agendaCommand.dedupKey`.
+* `executed_with_event` exige todos os animais planejados executados.
+* `partially_executed_with_event` preserva animais planejados não executados e exige motivo.
+* `closed_without_execution`, `cancelled` e `dismissed` exigem motivo.
+* `closed_without_execution`, `cancelled` e `dismissed` rejeitam `eventExecutionCommand`.
+* Fechamentos com evento rejeitam animal executado fora do escopo planejado.
+* `partially_executed_with_event` rejeita execução total classificada como parcial.
+* `closedAt` é obrigatório, validado e recebido por parâmetro.
+* `dedupKey` usa versão lógica `sanitario-agenda-closure-v1`, agenda, tipo, data/hora de fechamento, evento quando houver e animais ordenados.
+* `dedupKey` não usa `productName`, `loteName` ou labels de UI.
+* Saída declara `createsEvent: false`, `persistsEvent: false`, `createsHistoricalFact: false`, `createsInventoryMovement: false` e `calculatesWithdrawal: false`.
+* Não houve persistência de agenda/evento, baixa de estoque, carência ativa, autorização de venda/abate, Supabase, Dexie, React, UI, storage, RPC, Edge Function, migration, schema, RLS, sync-batch ou seed.
+
+Testes cobrem:
+
+* criação de fechamento executado com evento compatível;
+* rejeição de fechamento executado sem evento;
+* rejeição de evento com `agendaDedupKey` incompatível;
+* rejeição de execução total com animal planejado não executado;
+* fechamento parcial com motivo para não executados;
+* rejeição de parcial sem motivo;
+* rejeição de evento em fechamento sem execução;
+* rejeição de animal executado fora do escopo planejado;
+* rejeição de fechamento parcial sem animal não executado;
+* fechamento sem execução, cancelamento e dispensa com motivo;
+* rejeição de `closedAt` ausente ou inválido;
+* `dedupKey` sem `productName`/`loteName`;
+* determinismo, imutabilidade e ausência de dependências/efeitos proibidos.
+
+Validações registradas:
+
+```bash
+pnpm test -- src/lib/sanitario/agenda
+pnpm test -- src/lib/sanitario
+pnpm test
+pnpm run lint
+pnpm run build
+```
 
 ### 11.5H — Fechamento e handoff
 

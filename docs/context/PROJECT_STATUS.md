@@ -68,6 +68,7 @@ A Fase 12 permanece bloqueada até fechamento formal da Fase 11.5.
 - Fase 11.5D — Preview operacional editável concluída localmente.
 - Fase 11.5E — Materialização idempotente da agenda sanitária concluída localmente.
 - Fase 11.5F — Execução sanitária como evento concluída localmente em escopo reduzido.
+- Fase 11.5G — Semântica final de fechamento da agenda concluída localmente em core puro.
 - Fase 12 — Compra/Venda Operacional bloqueada até fechamento formal da Fase 11.5.
 
 Último avanço local da Fase 10:
@@ -106,12 +107,26 @@ A Fase 12 permanece bloqueada até fechamento formal da Fase 11.5.
 - custo operacional parcial não é DRE, ROI, margem ou custo por arroba;
 - nenhuma alteração em Supabase/RLS/migrations/RPC/schema/sync/edge functions.
 
+Último avanço local da Fase 11.5:
+
+- `src/lib/sanitario/agenda/sanitaryAgendaClosure.ts` criou comando/intenção `agenda_closure_intent`;
+- testes focados em `src/lib/sanitario/agenda/__tests__/sanitaryAgendaClosure.test.ts`;
+- fechamento administrativo cobre execução total com evento, execução parcial com evento, fechamento sem execução, cancelamento e dispensa;
+- fechamento executado exige evento compatível com a agenda;
+- fechamento sem execução, cancelamento e dispensa exigem motivo;
+- execução parcial preserva animais planejados não executados com motivo;
+- fechamento sem execução, cancelamento e dispensa rejeitam evento informado por engano;
+- fechamento executado rejeita animal executado fora do escopo planejado;
+- fechamento parcial rejeita execução total classificada como parcial;
+- fechamento declara que não cria evento, histórico sanitário, baixa de estoque ou carência;
+- nenhuma alteração em Supabase/RLS/migrations/RPC/schema/sync/edge functions/Dexie/UI.
+
 Próximo foco sugerido:
 
-- Fase 11.5G — Semântica final de fechamento da agenda;
+- Fase 11.5H — Fechamento e handoff;
 - preservar Agenda como intenção futura e Evento como fato executado;
 - preservar materialização de agenda como comando/intenção sem evento e sem baixa de estoque;
-- manter persistência/offline/sync fora da 11.5F concluída em escopo reduzido;
+- manter persistência/offline/sync fora da 11.5G concluída em core puro;
 - não iniciar Fase 12 antes do fechamento formal da 11.5.
 
 Realidade validada para o roadmap pós-Fase 9:

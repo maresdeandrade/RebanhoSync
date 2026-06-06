@@ -1,6 +1,6 @@
 # ACTIVE_PHASE_PLAN - Fase 11.5
 
-**Status:** 11.5F concluída localmente / pronta para iniciar 11.5G
+**Status:** 11.5G concluída localmente / pronta para iniciar 11.5H
 **Foco:** Agenda Sanitária v2: Janelas, Agrupamento e Materialização Idempotente
 **Criado:** 2026-06-05
 **Atualizado:** 2026-06-06
@@ -17,12 +17,12 @@ Conduzir a Fase 11.5 como etapa extra entre a Fase 11 e a Fase 12 para redesenha
 ## Status da Fase 11.5
 
 - Fase 11 — Lotes, Pastos e Desempenho Operacional Ampliado: concluída localmente.
-- Fase 11.5 — Agenda Sanitária v2: 11.5F concluída localmente / pronta para iniciar 11.5G.
+- Fase 11.5 — Agenda Sanitária v2: 11.5G concluída localmente / pronta para iniciar 11.5H.
 - Fase 12 — Compra/Venda Operacional: Hardening e Lacunas: bloqueada até fechamento formal da 11.5.
 
 Próximo passo:
 
-- 11.5G — Semântica final de fechamento da agenda.
+- 11.5H — Fechamento e handoff.
 
 ---
 
@@ -74,7 +74,7 @@ Protocolo
 - 11.5D — Preview sanitário editável: concluída localmente.
 - 11.5E — Materialização idempotente da agenda sanitária: concluída localmente.
 - 11.5F — Execução sanitária como evento: concluída localmente em escopo reduzido.
-- 11.5G — Semântica final de fechamento da agenda.
+- 11.5G — Semântica final de fechamento da agenda: concluída localmente em core puro.
 - 11.5H — Fechamento e handoff.
 
 ---
@@ -132,12 +132,28 @@ Protocolo
 - Resultado declara `createsAgenda: false`, `closesAgenda: false` e `createsInventoryMovement: false`.
 - Não houve Supabase, Dexie, React, UI, storage, RPC, Edge Function, migration, schema, RLS, sync-batch, seed, persistência de evento, fechamento de agenda, baixa de estoque, carência ativa ou autorização de venda/abate.
 
+## Resultado da 11.5G
+
+- Core puro criado em `src/lib/sanitario/agenda/sanitaryAgendaClosure.ts`.
+- Testes focados criados em `src/lib/sanitario/agenda/__tests__/sanitaryAgendaClosure.test.ts`.
+- Resultado gera comando/intenção `agenda_closure_intent`, com `createsEvent: false`, `persistsEvent: false`, `createsHistoricalFact: false`, `createsInventoryMovement: false` e `calculatesWithdrawal: false`.
+- Fechamento administrativo cobre execução total com evento, execução parcial com evento, fechamento sem execução, cancelamento e dispensa.
+- Fechamentos executados exigem evento compatível com `agendaDedupKey`.
+- Fechamentos sem execução, cancelamento e dispensa exigem motivo.
+- Execução parcial preserva animais planejados não executados com motivo.
+- Fechamentos sem execução rejeitam evento informado por engano.
+- Fechamentos executados rejeitam animal executado fora do escopo planejado.
+- Fechamento parcial rejeita execução total classificada como parcial.
+- `closedAt` é obrigatório, validado e recebido por parâmetro.
+- `dedupKey` não usa `productName` nem `loteName`.
+- Não houve Supabase, Dexie, React, UI, storage, RPC, Edge Function, migration, schema, RLS, sync-batch, seed, persistência de agenda/evento, fechamento real no banco, baixa de estoque, carência ativa ou autorização de venda/abate.
+
 ## Escopo da próxima execução
 
-- Definir semântica final de fechamento da agenda.
-- Preservar agenda como intenção operacional futura.
-- Manter evento sanitário como fato histórico executado.
-- Não tratar fechamento administrativo como execução sanitária.
+- Consolidar fechamento e handoff da Fase 11.5.
+- Registrar validações, riscos residuais e escopo liberado/bloqueado para a próxima fase.
+- Preservar agenda como intenção operacional futura e evento sanitário como fato histórico executado.
+- Não iniciar Fase 12 antes do fechamento formal da 11.5.
 
 ## Escopo proibido nesta transição
 

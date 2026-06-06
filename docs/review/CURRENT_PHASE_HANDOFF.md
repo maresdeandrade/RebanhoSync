@@ -27,7 +27,7 @@ Referência: `docs/review/PLANO_FASE_11.md`.
 
 Fase 11.5 — Agenda Sanitária v2: Janelas, Agrupamento e Materialização Idempotente.
 
-Status: 11.5F concluída localmente / pronta para iniciar 11.5G.
+Status: 11.5G concluída localmente / pronta para iniciar 11.5H.
 
 Plano específico: `docs/review/PLANO_FASE_11_5_SANITARIO_AGENDA_V2.md`.
 
@@ -222,6 +222,37 @@ Próxima execução:
 
 - 11.5G — Semântica final de fechamento da agenda.
 
+11.5G — Semântica final de fechamento da agenda — concluída localmente em core puro.
+
+Resultado da 11.5G:
+
+- core puro criado em `src/lib/sanitario/agenda/sanitaryAgendaClosure.ts`;
+- testes focados criados em `src/lib/sanitario/agenda/__tests__/sanitaryAgendaClosure.test.ts`;
+- `createSanitaryAgendaClosureCommand` gera comando/intenção `agenda_closure_intent` para fechamento administrativo de agenda sanitária;
+- fechamento cobre execução total com evento, execução parcial com evento, fechamento sem execução, cancelamento e dispensa;
+- execução total/parcial exige `SanitaryEventExecutionCommand` com `source.agendaDedupKey` compatível com a agenda;
+- fechamento sem execução, cancelamento e dispensa exigem motivo;
+- execução parcial preserva animais planejados não executados com motivo;
+- fechamento sem execução, cancelamento e dispensa rejeitam evento informado por engano;
+- fechamento executado rejeita animal executado fora do escopo planejado da agenda;
+- fechamento parcial rejeita caso todos os animais planejados tenham sido executados;
+- `closedAt` é obrigatório e validado como data/data-hora real recebida por parâmetro;
+- `dedupKey` é determinística, considera agenda, tipo, data/hora, evento e animais ordenados, sem depender de `productName` ou `loteName`;
+- saída declara `createsEvent: false`, `persistsEvent: false`, `createsHistoricalFact: false`, `createsInventoryMovement: false` e `calculatesWithdrawal: false`;
+- não houve persistência de agenda/evento, fechamento real no banco, baixa de estoque, carência ativa, autorização de venda/abate, Supabase, Dexie, React, UI, storage, RPC, Edge Function, migration, schema, RLS, sync-batch ou seed.
+
+Validações executadas:
+
+- `pnpm test -- src/lib/sanitario/agenda`;
+- `pnpm test -- src/lib/sanitario`;
+- `pnpm test`;
+- `pnpm run lint`;
+- `pnpm run build`.
+
+Próxima execução:
+
+- 11.5H — Fechamento e handoff.
+
 ---
 
 ## 4. Fase 12
@@ -248,7 +279,7 @@ Não fazer sem tarefa explícita:
 
 ---
 
-## 6. Checklist antes da 11.5G
+## 6. Checklist antes da 11.5H
 
 Executar no início de nova rodada:
 
