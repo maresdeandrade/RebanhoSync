@@ -19,7 +19,7 @@ A fase 11 — Lotes, Pastos e Desempenho Operacional Ampliado — está concluí
 
 Foi criada a fase extra 11.5 — Agenda Sanitária v2: Janelas, Agrupamento e Materialização Idempotente — antes da Fase 12.
 
-A Fase 11.5 foi fechada localmente pela 11.5H, reconciliada documentalmente pela 11.5I e rebaselineada estrategicamente pela 11.5J. A Fase 12 foi aberta em 12A documental/diagnóstica e avançou em 12B para modelagem clean/reset documental, sem implementação funcional.
+A Fase 11.5 foi fechada localmente pela 11.5H, reconciliada documentalmente pela 11.5I e rebaselineada estrategicamente pela 11.5J. A Fase 12 foi aberta em 12A documental/diagnóstica, avançou em 12B para modelagem clean/reset documental e em 12C para fundação SQL/RLS/reset controlado.
 
 Último gate validado:
 
@@ -74,6 +74,7 @@ A Fase 11.5 foi fechada localmente pela 11.5H, reconciliada documentalmente pela
 - Fase 11.5J — Rebaseline estratégico do roadmap técnico executada documentalmente.
 - Fase 12A — Auditoria do fluxo legado e decisão de schema da Agenda Sanitária v2 executada documentalmente em escopo reduzido.
 - Fase 12B — Modelagem clean da persistência sanitária v2 com liberdade de reset executada documentalmente em escopo reduzido.
+- Fase 12C — Migration clean da Agenda Sanitária v2 e reset controlado do legado sanitário executada em escopo reduzido SQL/RLS.
 
 Último avanço local da Fase 10:
 
@@ -130,6 +131,15 @@ A Fase 11.5 foi fechada localmente pela 11.5H, reconciliada documentalmente pela
 
 Último avanço local da Fase 12:
 
+- 12C criou a fundação SQL/RLS da Agenda Sanitária v2;
+- migration nova `20260606090000_sanitario_agenda_v2_clean_foundation.sql` criou `sanitario_agenda_v2`, `sanitario_agenda_animais_v2` e `sanitario_agenda_closures_v2`;
+- enums v2 foram criados sem reutilizar `agenda_status_enum` e sem valor `concluido`;
+- constraints mínimas impedem fechamento com/sem evento inválido, cancelamento/dispensa sem motivo, parcial sem distinção de executados/não executados, animal executado sem evento e animal não executado sem motivo;
+- RLS e policies por membership foram criadas para as tabelas v2;
+- `agenda_itens` sanitário legado foi resetado por soft-delete operacional e nova escrita sanitária legada em `agenda_itens` foi bloqueada por trigger;
+- `sanitario_recompute_agenda_core` virou no-op com validação de membership para impedir repovoamento do legado;
+- fatos executados em `eventos`, `eventos_sanitario` e `insumo_movimentacoes` não foram apagados nem alterados;
+- Dexie, sync-batch, UI e seed funcional não foram conectados na 12C.
 - 12B documentou a decisão clean/reset para a persistência sanitária v2;
 - `agenda_itens` sanitário deixou de ser superfície sanitária alvo e foi classificado como legado descartável;
 - modelo alvo definido com `sanitario_agenda_v2`, `sanitario_agenda_animais_v2` e `sanitario_agenda_closures_v2`;
@@ -152,9 +162,9 @@ A Fase 11.5 foi fechada localmente pela 11.5H, reconciliada documentalmente pela
 
 Próximo foco sugerido:
 
-- fechar 12B com validações git obrigatórias;
-- preparar 12C — Migration clean da Agenda Sanitária v2 e reset controlado do legado sanitário;
-- manter UI ampla, Dexie completo, sync-batch completo, carência ativa, venda, abate e aptidão fora do escopo até decisão explícita de implementação.
+- fechar 12C com validações obrigatórias de SQL/RLS;
+- preparar 12D — Contrato offline/sync da Agenda Sanitária v2;
+- manter UI ampla, carência ativa, venda, abate e aptidão fora do escopo até decisão explícita de implementação.
 
 Realidade validada para o roadmap pós-Fase 9:
 
@@ -172,7 +182,7 @@ Sequência corrigida pós-Fase 9:
 1. Fase 10 — UX Operacional dos Fluxos Centrais: concluída localmente.
 2. Fase 11 — Lotes, Pastos e Desempenho Operacional Ampliado: concluída localmente.
 3. Fase 11.5 — Agenda Sanitária v2: Janelas, Agrupamento e Materialização Idempotente: fechada localmente pela 11.5H, reconciliada pela 11.5I e rebaselineada pela 11.5J.
-4. Fase 12 — Fundação Sanitária v2: Persistência, Sync, Schema e Rollout: 12A documental/diagnóstica e 12B modelagem clean/reset executadas; implementação funcional não iniciada.
+4. Fase 12 — Fundação Sanitária v2: Persistência, Sync, Schema e Rollout: 12A documental/diagnóstica, 12B modelagem clean/reset e 12C fundação SQL/RLS executadas; Dexie/sync/UI ainda não conectados.
 5. Fase 13 — Reprodução Operacional v1.
 6. Fase 14 — Compra/Venda Operacional: Hardening e Lacunas.
 7. Fase 15 — Relatórios/KPIs Operacionais Read-only Ampliados.

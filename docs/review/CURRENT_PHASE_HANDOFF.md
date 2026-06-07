@@ -306,7 +306,7 @@ Resultado da 11.5J:
 
 ## 4. Fase 12
 
-Fase 12 — Fundação Sanitária v2: Persistência, Sync, Schema e Rollout — foi aberta em 12A como auditoria documental/diagnóstica e avançou em 12B para modelagem clean/reset documental.
+Fase 12 — Fundação Sanitária v2: Persistência, Sync, Schema e Rollout — foi aberta em 12A como auditoria documental/diagnóstica, avançou em 12B para modelagem clean/reset documental e em 12C para fundação SQL/RLS/reset controlado.
 
 Subfases recentes:
 
@@ -318,6 +318,10 @@ Subfases recentes:
 - Plano/relatório 12B: `docs/review/PLANO_FASE_12B_MODELAGEM_CLEAN_PERSISTENCIA_SANITARIA_V2.md`.
 - Decisão 12B: `PROSSEGUIR COM ESCOPO REDUZIDO`.
 - Recomendação 12B: criar persistência sanitária v2 clean em estruturas dedicadas, resetar agenda sanitária legada e não manter compatibilidade reversa por produto.
+- 12C — Migration clean da Agenda Sanitária v2 e reset controlado do legado sanitário.
+- Migration 12C: `supabase/migrations/20260606090000_sanitario_agenda_v2_clean_foundation.sql`.
+- Decisão 12C: `PROSSEGUIR COM ESCOPO REDUZIDO`.
+- Resultado 12C: fundação SQL/RLS criada; Dexie, sync-batch e UI não conectados.
 
 Fatos principais da 12A:
 
@@ -342,6 +346,20 @@ Fatos principais da 12B:
 - baixa de estoque preservada como derivada apenas de evento real;
 - carência preservada como futura leitura/snapshot a partir de produto executado e fonte técnica;
 - nenhuma migration, RLS, Dexie, sync-batch, UI, seed ou regra funcional foi implementada.
+
+Fatos principais da 12C:
+
+- 12B preservada no histórico local em `HEAD 555662b` antes do patch;
+- migration nova criada sem alterar `00000000000000_rebuild_base_schema_sanitario.sql`;
+- enums v2 criados sem reutilizar `agenda_status_enum` e sem status `concluido`;
+- criadas `sanitario_agenda_v2`, `sanitario_agenda_animais_v2` e `sanitario_agenda_closures_v2`;
+- FKs compostas com `fazenda_id` criadas para agenda/animais/eventos/protocolos/lotes;
+- RLS habilitada e policies por membership criadas;
+- reset aplicado apenas em `agenda_itens` com `dominio='sanitario'`, via soft-delete operacional;
+- recompute sanitário legado passou a no-op com validação de membership;
+- trigger bloqueia nova escrita sanitária legada em `agenda_itens`;
+- `eventos`, `eventos_sanitario` e `insumo_movimentacoes` não foram apagados nem alterados;
+- Dexie, sync-batch, UI e seed funcional não foram alterados.
 
 Sequência estratégica vigente:
 
@@ -373,14 +391,14 @@ Não fazer sem tarefa explícita:
 
 ## 6. Checklist para próxima subfase
 
-Executar no início de nova rodada/12C:
+Executar no início de nova rodada/12D:
 
 ```bash
 git status --short --untracked-files=all
 git diff --check
 ```
 
-Antes de qualquer implementação, confirmar que a 12B fechou com decisão clean/reset, matriz de dados descartáveis/factuais, impacto Dexie/sync/RLS e testes sentinela documentados.
+Antes de qualquer implementação, confirmar que a 12C fechou com migration/RLS validada, reset legado aplicado e fluxo Dexie/sync/UI ainda desconectado.
 
 Se a próxima subfase tocar sync/offline/Supabase/RLS/migration/schema:
 

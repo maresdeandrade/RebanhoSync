@@ -27,6 +27,14 @@ Cada decisão deve conter:
 
 ## Decisões consolidadas
 
+### 2026-06-06 — Fundação SQL/RLS da Agenda Sanitária v2
+
+**Decisão:** criar a fundação SQL/RLS da Agenda Sanitária v2 em tabelas dedicadas e resetar o legado sanitário em `agenda_itens`, preservando fatos executados.
+
+* **Motivo:** a decisão clean/reset da 12B removeu a agenda sanitária legada como restrição de produto. A 12C precisava materializar a fronteira persistida mínima sem conectar Dexie, sync-batch ou UI, mantendo agenda como intenção e evento como fato.
+* **Impacto:** `sanitario_agenda_v2`, `sanitario_agenda_animais_v2` e `sanitario_agenda_closures_v2` passam a ser a base SQL da agenda sanitária v2. `agenda_itens` sanitário foi resetado por soft-delete operacional e nova escrita sanitária legada foi bloqueada. `sanitario_recompute_agenda_core` passou a no-op para não repovoar o legado. `eventos`, `eventos_sanitario` e `insumo_movimentacoes` permanecem preservados e continuam sendo a fonte factual.
+* **Status:** aprovado na 12C em escopo SQL/RLS/reset. Dexie, sync-batch, UI, seed funcional, carência ativa, venda, abate e aptidão operacional permanecem fora do implementado.
+
 ### 2026-06-06 — Persistência sanitária v2 clean com reset do legado
 
 **Decisão:** substituir a direção transitória da 12A por um modelo clean da persistência sanitária v2, com estruturas dedicadas para agenda sanitária, animais planejados e closures administrativos, e com reset controlado da agenda sanitária legada.

@@ -153,7 +153,7 @@ Regras:
 
 ## Agenda Sanitária v2
 
-A Fase 11.5 consolidou contratos puros para redesenhar a agenda sanitária. Esses contratos ainda não implementam persistência real, sync, schema, RLS, RPC, Edge Function, Dexie, seed ou UI.
+A Fase 11.5 consolidou contratos puros para redesenhar a agenda sanitária. A Fase 12C criou a fundação SQL/RLS da persistência v2 em tabelas dedicadas, ainda sem Dexie, sync-batch, RPC/Edge Function, seed funcional ou UI conectados.
 
 Pipeline conceitual:
 
@@ -212,6 +212,14 @@ Regras:
 - não baixa estoque;
 - não calcula carência.
 
+Persistência remota introduzida na 12C:
+
+- `sanitario_agenda_v2`: intenção futura persistida;
+- `sanitario_agenda_animais_v2`: escopo planejado por animal;
+- `sanitario_agenda_closures_v2`: fechamento administrativo.
+
+`agenda_itens` sanitário legado não é a superfície sanitária alvo da v2.
+
 ### Event execution intent
 
 `event_execution_intent` representa intenção de execução sanitária como evento futuro.
@@ -250,13 +258,11 @@ Regras:
 
 ### Limitações atuais
 
-Ainda não implementado pela Fase 11.5:
+Ainda não implementado após a 12C:
 
-- persistência real de `agenda_intent`, `event_execution_intent` ou `agenda_closure_intent`;
-- schema/migrations para status sanitário v2;
 - Dexie/local-first da Agenda v2;
 - sync-batch/replay/rollback/sucesso parcial da Agenda v2;
-- RLS/RPC/Edge Function para Agenda v2;
+- RPC/Edge Function operacional para Agenda v2;
 - UI operacional da Agenda v2.
 
 ---

@@ -6,6 +6,53 @@ Atualizado em: 2026-06-06
 
 ## 0. Resultado mais recente
 
+Fase 12C — Migration clean da Agenda Sanitária v2 e reset controlado do legado sanitário — executada em escopo reduzido SQL/RLS.
+
+Decisão: `PROSSEGUIR COM ESCOPO REDUZIDO`.
+
+Resultado da 12C:
+
+- diagnóstico local obrigatório executado com worktree limpo;
+- 12B confirmada no histórico local em `HEAD 555662b`;
+- migration SQL nova criada sem alterar a baseline `00000000000000_rebuild_base_schema_sanitario.sql`;
+- criados enums v2 sem reutilizar `agenda_status_enum` e sem status `concluido`;
+- criadas `sanitario_agenda_v2`, `sanitario_agenda_animais_v2` e `sanitario_agenda_closures_v2`;
+- criadas constraints mínimas de janela/data, dedup, execução com evento, fechamento sem execução, cancelamento/dispensa com motivo, parcial com payload distinguindo executados e não executados, animal executado com evento e animal não executado com motivo;
+- criadas FKs compostas com `fazenda_id` para relações tenant-scoped;
+- RLS habilitada e policies por membership criadas;
+- grants mínimos para `authenticated` criados nas tabelas/tipos v2;
+- `agenda_itens` com `dominio='sanitario'` foi resetado por soft-delete operacional;
+- trigger bloqueia nova escrita sanitária legada em `agenda_itens`;
+- `sanitario_recompute_agenda_core` foi tornado no-op com validação de membership, impedindo repovoamento sanitário legado;
+- fatos executados em `eventos`, `eventos_sanitario` e `insumo_movimentacoes` não foram apagados nem alterados.
+
+Patch da 12C:
+
+- `supabase/migrations/20260606090000_sanitario_agenda_v2_clean_foundation.sql`;
+- `docs/review/ACTIVE_PHASE_PLAN.md`;
+- `docs/review/CURRENT_PHASE_HANDOFF.md`;
+- `docs/review/LAST_PHASE_RESULT.md`;
+- `docs/context/PROJECT_STATUS.md`;
+- `docs/product/DECISION_LOG.md`;
+- `docs/domain/SANITARIO.md`.
+
+Não houve:
+
+- alteração de Dexie;
+- alteração de sync-batch;
+- alteração de UI;
+- alteração de seed funcional;
+- criação de evento real;
+- baixa de estoque;
+- cálculo de carência ativa;
+- venda, abate ou aptidão operacional.
+
+Próxima execução recomendada:
+
+- 12D — Contrato offline/sync da Agenda Sanitária v2, com stores/intents e sentinelas de sync antes de conectar UI/Registrar/Agenda.
+
+---
+
 Fase 12B — Modelagem clean da persistência sanitária v2 com liberdade de reset — executada documentalmente em escopo reduzido.
 
 Decisão: `PROSSEGUIR COM ESCOPO REDUZIDO`.
