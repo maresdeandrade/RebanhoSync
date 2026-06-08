@@ -6,6 +6,51 @@ Atualizado em: 2026-06-06
 
 ## 0. Resultado mais recente
 
+Fase 12D0 — Modelo canônico de Protocolo Sanitário v2, Produto e Fonte Técnica — executada documentalmente em escopo reduzido.
+
+Decisão: `PROSSEGUIR COM ESCOPO REDUZIDO`.
+
+Resultado da 12D0:
+
+- diagnóstico local obrigatório executado com worktree limpo;
+- 12B confirmada no histórico local em `555662b`;
+- 12C confirmada no histórico local em `06bdf82`;
+- guideline curatorial localizado como Markdown em `docs/review/evidence/Guideline_Atualizado_Vacinacao_Imunizacao_Controle_Parasitario_Bovinos_Bubalinos.md`;
+- o PDF citado no prompt não foi localizado no workspace;
+- guideline usado como fonte de casos reais e matriz estrutural, não como seed final, protocolo automático ou fonte única de campo crítico;
+- modelo canônico definido para fonte técnica, produto sanitário, carência, protocolo sanitário, item versionado, elegibilidade, janela operacional e snapshots técnicos;
+- regra bovino/bubalino definida: bubalino não herda autorização de bovino por padrão e exige bula, norma ou limitação explícita;
+- estados `SIM_BULA`, `SIM_NORMA`, `PRECISA_VALIDAR`, `NAO_AUTORIZADO` e `EXTRAPOLADO` documentados;
+- campos críticos como dose, via, carência, espécie autorizada e obrigatoriedade legal exigem fonte forte por campo;
+- casos mínimos do guideline registrados para validar o modelo: febre aftosa condicional por UF/zona, brucelose B19, raiva regional, clostridial core, ivermectina com carência, eprinomectina com carência zero, RB51 em bubalinas e Toxocara vitulorum como alerta;
+- próxima fase recomendada redefinida para 12D1 — migration/contrato persistido de produto, protocolo e fonte técnica, antes de offline/sync.
+
+Patch da 12D0:
+
+- `docs/review/PLANO_FASE_12D_MODELO_CANONICO_PROTOCOLO_SANITARIO_V2.md`;
+- `docs/review/ACTIVE_PHASE_PLAN.md`;
+- `docs/review/CURRENT_PHASE_HANDOFF.md`;
+- `docs/review/LAST_PHASE_RESULT.md`;
+- `docs/context/PROJECT_STATUS.md`;
+- `docs/product/DECISION_LOG.md`;
+- `docs/domain/SANITARIO.md`.
+
+Não houve:
+
+- migration SQL;
+- alteração de Dexie;
+- alteração de sync-batch;
+- alteração de UI;
+- seed/carga de produtos ou protocolos;
+- criação de agenda, evento, baixa de estoque ou carência ativa;
+- venda, abate ou aptidão operacional.
+
+Próxima execução recomendada:
+
+- 12D1 — Migration/contrato persistido de produto, protocolo e fonte técnica.
+
+---
+
 Fase 12C — Migration clean da Agenda Sanitária v2 e reset controlado do legado sanitário — executada em escopo reduzido SQL/RLS.
 
 Decisão: `PROSSEGUIR COM ESCOPO REDUZIDO`.

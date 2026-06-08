@@ -149,6 +149,43 @@ Regras:
 - protocolo pode complementar carência apenas com fonte explícita;
 - carência futura deve depender do produto executado no evento, não do produto apenas planejado.
 
+### Modelo canônico de protocolo/produto/fonte
+
+A Fase 12D0 definiu o contrato canônico mínimo que deve preceder offline/sync amplo da Agenda Sanitária v2.
+
+Fonte técnica (`SourceRef`) deve declarar:
+
+- tipo da fonte: norma oficial, bula, registro de produto, bibliografia, guideline de apoio ou MV responsável;
+- emissor, versão, data/publicação/acesso e jurisdição quando aplicável;
+- `field_keys` cobertos pela fonte;
+- força da fonte: forte, apoio ou fraca;
+- limitações;
+- status por campo: `SIM_BULA`, `SIM_NORMA`, `PRECISA_VALIDAR`, `NAO_AUTORIZADO` ou `EXTRAPOLADO`.
+
+Produto sanitário deve declarar identidade, registro, fabricante, classe, princípio ativo, espécie autorizada, categoria/aptidão, dose, via, apresentação, regras de carência, contraindicações, fontes e status curatorial.
+
+Regra de carência pertence ao produto executado. Carência zero exige fonte explícita e não pode ser inferida por ausência de prazo.
+
+Protocolo sanitário v2 deve ser versionado e composto por itens versionados imutáveis. Mudança semântica em produto, dose, via, janela, reforço, elegibilidade, fonte, espécie, carência ou status regulatório cria nova versão de item.
+
+Bubalino não herda autorização de bovino por padrão:
+
+- `SIM_BULA`: bula/registro cita bubalino;
+- `SIM_NORMA`: norma oficial inclui bubalino ou bovídeos;
+- `PRECISA_VALIDAR`: guideline/literatura sugere, mas falta fonte forte;
+- `NAO_AUTORIZADO`: fonte forte não autoriza ou restringe;
+- `EXTRAPOLADO`: uso fora da bula/norma, exige MV responsável e limitação explícita.
+
+Itens experimentais, emergentes ou de alerta não entram em protocolo automático, agenda automática, evento sugerido ou cálculo de carência.
+
+Guidelines técnicos podem apoiar curadoria e casos de teste, mas não substituem bula, norma oficial, registro sanitário ou decisão veterinária responsável para campo crítico.
+
+Snapshots técnicos:
+
+- agenda v2 deve congelar regra, item versionado, janela, produto planejado, fontes, limitações e status de autorização como intenção técnica planejada;
+- evento sanitário deve congelar produto executado, dose/via executadas, fonte forte de carência e snapshot de carência;
+- produto planejado em agenda não vira produto executado automaticamente.
+
 ---
 
 ## Agenda Sanitária v2

@@ -1,84 +1,92 @@
-# ACTIVE_PHASE_PLAN - Fase 12C
+# ACTIVE_PHASE_PLAN - Fase 12D0
 
-**Status:** Fase 12C em implementacao SQL/RLS/reset controlado; Dexie, sync-batch e UI fora do escopo
-**Foco:** Migration clean da Agenda Sanitaria v2 e reset controlado do legado sanitario
-**Criado:** 2026-06-06
-**Atualizado:** 2026-06-06
-**Plano base:** `docs/review/PLANO_FASE_12B_MODELAGEM_CLEAN_PERSISTENCIA_SANITARIA_V2.md`
-
----
-
-## Objetivo em 1 paragrafo
-
-Executar a menor fundacao SQL/RLS da Agenda Sanitaria v2, baseada na decisao clean/reset da 12B. A 12C cria tabelas dedicadas para agenda sanitaria v2, animais planejados e closures administrativos; reseta apenas `agenda_itens` sanitario legado; desabilita repovoamento sanitario legado em `agenda_itens`; preserva fatos executados em `eventos`, `eventos_sanitario` e `insumo_movimentacoes`; e nao conecta Dexie, sync-batch, UI, seed ou fluxo operacional completo.
+**Status:** Fase 12D0 documentada em escopo reduzido; sem SQL, Dexie, sync-batch, UI ou seed
+**Foco:** Modelo canônico de Protocolo Sanitário v2, Produto e Fonte Técnica
+**Criado:** 2026-06-07
+**Atualizado:** 2026-06-07
+**Plano base:** `docs/review/PLANO_FASE_12D_MODELO_CANONICO_PROTOCOLO_SANITARIO_V2.md`
 
 ---
 
-## Decisao 12C
+## Objetivo em 1 parágrafo
 
-Decisao: `PROSSEGUIR COM ESCOPO REDUZIDO`.
-
-Implementacao autorizada:
-
-- criar migration SQL nova;
-- criar enums v2 sem reutilizar `agenda_status_enum`;
-- criar `sanitario_agenda_v2`, `sanitario_agenda_animais_v2` e `sanitario_agenda_closures_v2`;
-- aplicar constraints e indices de idempotencia;
-- habilitar RLS e policies por membership;
-- resetar por soft-delete operacional `agenda_itens` sanitario legado;
-- tornar recompute sanitario legado no-op para nao repovoar `agenda_itens`.
+Estabilizar o contrato canônico que alimentará a Agenda Sanitária v2 antes de qualquer offline/sync amplo. A 12D0 define fonte técnica, produto sanitário, carência, protocolo versionado, item versionado, bovino/bubalino, status de autorização, campos que exigem fonte forte e snapshots técnicos de agenda/evento. O guideline de vacinação, imunização e controle parasitário é usado como fonte curatorial e matriz de casos, não como seed final, protocolo automático ou autorização crítica.
 
 ---
 
-## Migration 12C
+## Decisão 12D0
 
-Arquivo:
+Decisão: `PROSSEGUIR COM ESCOPO REDUZIDO`.
 
-- `supabase/migrations/20260606090000_sanitario_agenda_v2_clean_foundation.sql`
+Implementação autorizada nesta subfase:
 
-Tipo de mudanca:
+- criar plano técnico/documental da 12D0;
+- registrar modelo canônico de produto, protocolo, fonte técnica, carência e snapshot;
+- registrar matriz de fonte mínima por campo;
+- registrar casos mínimos extraídos do guideline;
+- atualizar docs vivos de fase/status/decisão.
 
-- aditiva para as tabelas v2;
-- destrutiva/controlada logicamente apenas para `agenda_itens` com `dominio='sanitario'`, via soft-delete operacional;
-- corretiva para bloquear repovoamento legado.
+Implementação não autorizada nesta subfase:
+
+- migration SQL;
+- alteração de Dexie;
+- alteração de sync-batch;
+- alteração de UI;
+- seed/carga de produtos ou protocolos;
+- criação de agenda, evento, estoque ou carência ativa.
+
+---
+
+## Evidência curatorial
+
+Arquivo localizado:
+
+- `docs/review/evidence/Guideline_Atualizado_Vacinacao_Imunizacao_Controle_Parasitario_Bovinos_Bubalinos.md`
+
+Observação:
+
+- O prompt citou um PDF homônimo, mas o workspace contém a versão Markdown. A 12D0 usa essa versão como fonte curatorial disponível e registra a inconsistência.
 
 ---
 
 ## Escopo permitido nesta subfase
 
-- SQL/RLS/reset controlado;
-- documentacao de status e handoff;
-- validacoes obrigatorias de SQL/RLS.
+- documentação de contrato;
+- matriz de fonte forte;
+- delimitação de schema futuro;
+- delimitação de contrato TypeScript futuro;
+- testes sentinela futuros.
 
 ## Escopo proibido nesta subfase
 
-- alterar Dexie;
-- alterar sync-batch;
-- alterar UI/pages/components;
-- alterar seed funcional;
-- criar evento real;
-- baixar estoque;
-- calcular carencia ativa/liberatoria;
-- implementar venda, abate ou aptidao operacional;
-- alterar fluxo operacional completo de Registrar/Agenda.
+- importar guideline como seed;
+- gerar agenda;
+- criar evento;
+- calcular carência ativa;
+- liberar venda, abate ou aptidão operacional;
+- alterar SQL, Dexie, sync-batch ou UI;
+- automatizar item experimental;
+- tratar uso bubalino extrapolado como autorizado.
 
 ---
 
-## Criterios de aceite
+## Critérios de aceite
 
-- 12B commitada antes do patch.
-- Migration v2 clean criada.
-- Tabelas v2 separadas de `agenda_itens`.
-- `agenda_itens` sanitario legado resetado por soft-delete operacional.
-- Fatos executados preservados.
-- RLS definida para tabelas v2.
-- Constraints minimas impedem fechamento invalido.
-- Recompute sanitario legado nao repovoa `agenda_itens`.
-- Validacoes obrigatorias executadas.
-- Nenhuma integracao ampla com Dexie/sync/UI feita.
+- guideline usado como fonte de casos e curadoria, sem cópia integral;
+- modelo canônico de produto definido;
+- modelo canônico de protocolo definido;
+- modelo canônico de fonte técnica definido;
+- modelo canônico de carência definido;
+- regra bovino/bubalino definida;
+- regra para itens experimentais/alerta definida;
+- snapshot técnico mínimo definido;
+- separação clara entre estrutura e carga de dados;
+- próxima fase delimitada antes de offline/sync.
 
 ---
 
-## Proxima fase segura
+## Próxima fase segura
 
-12D — Contrato offline/sync da Agenda Sanitaria v2, ainda sem UI ampla: mapear stores/intents e adaptar `sync-batch` de forma sentinela antes de conectar fluxos operacionais.
+12D1 — Migration/contrato persistido de produto, protocolo e fonte técnica.
+
+Offline/sync da Agenda Sanitária v2 fica postergado para 12E ou fase equivalente após estabilização do contrato persistido de protocolo/produto/fonte.

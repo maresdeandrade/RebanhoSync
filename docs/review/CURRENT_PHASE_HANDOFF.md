@@ -306,7 +306,7 @@ Resultado da 11.5J:
 
 ## 4. Fase 12
 
-Fase 12 — Fundação Sanitária v2: Persistência, Sync, Schema e Rollout — foi aberta em 12A como auditoria documental/diagnóstica, avançou em 12B para modelagem clean/reset documental e em 12C para fundação SQL/RLS/reset controlado.
+Fase 12 — Fundação Sanitária v2: Persistência, Sync, Schema e Rollout — foi aberta em 12A como auditoria documental/diagnóstica, avançou em 12B para modelagem clean/reset documental, em 12C para fundação SQL/RLS/reset controlado e em 12D0 para modelo canônico de protocolo/produto/fonte técnica.
 
 Subfases recentes:
 
@@ -322,6 +322,10 @@ Subfases recentes:
 - Migration 12C: `supabase/migrations/20260606090000_sanitario_agenda_v2_clean_foundation.sql`.
 - Decisão 12C: `PROSSEGUIR COM ESCOPO REDUZIDO`.
 - Resultado 12C: fundação SQL/RLS criada; Dexie, sync-batch e UI não conectados.
+- 12D0 — Modelo canônico de Protocolo Sanitário v2, Produto e Fonte Técnica.
+- Plano/relatório 12D0: `docs/review/PLANO_FASE_12D_MODELO_CANONICO_PROTOCOLO_SANITARIO_V2.md`.
+- Decisão 12D0: `PROSSEGUIR COM ESCOPO REDUZIDO`.
+- Resultado 12D0: contrato documental criado para fonte técnica, produto sanitário, regra de carência, protocolo versionado, item versionado, bovino/bubalino, status de autorização e snapshots técnicos; SQL, Dexie, sync-batch, UI e seed não foram alterados.
 
 Fatos principais da 12A:
 
@@ -361,6 +365,16 @@ Fatos principais da 12C:
 - `eventos`, `eventos_sanitario` e `insumo_movimentacoes` não foram apagados nem alterados;
 - Dexie, sync-batch, UI e seed funcional não foram alterados.
 
+Fatos principais da 12D0:
+
+- guideline curatorial localizado como Markdown em `docs/review/evidence/Guideline_Atualizado_Vacinacao_Imunizacao_Controle_Parasitario_Bovinos_Bubalinos.md`; o PDF citado no prompt não existe no workspace;
+- guideline usado como fonte de casos reais e matriz de validação, não como seed final ou autorização crítica;
+- modelo canônico definido para `SourceRef`, produto sanitário, regra de carência, protocolo sanitário, item versionado, elegibilidade, janela operacional e snapshots técnicos;
+- campos críticos como dose, via, carência, espécie autorizada e obrigatoriedade legal exigem fonte forte por campo;
+- bubalino não herda autorização de bovino por padrão;
+- itens experimentais/alerta não entram em protocolo automático;
+- próxima fase segura redefinida para 12D1 — contrato persistido/migration de produto, protocolo e fonte técnica, antes de offline/sync.
+
 Sequência estratégica vigente:
 
 1. Fase 12 — Fundação Sanitária v2: Persistência, Sync, Schema e Rollout.
@@ -391,16 +405,16 @@ Não fazer sem tarefa explícita:
 
 ## 6. Checklist para próxima subfase
 
-Executar no início de nova rodada/12D:
+Executar no início de nova rodada/12D1:
 
 ```bash
 git status --short --untracked-files=all
 git diff --check
 ```
 
-Antes de qualquer implementação, confirmar que a 12C fechou com migration/RLS validada, reset legado aplicado e fluxo Dexie/sync/UI ainda desconectado.
+Antes de qualquer implementação, confirmar que a 12C fechou com migration/RLS validada, reset legado aplicado, a 12D0 definiu o contrato canônico e o fluxo Dexie/sync/UI ainda está desconectado.
 
-Se a próxima subfase tocar sync/offline/Supabase/RLS/migration/schema:
+Se a próxima subfase tocar Supabase/RLS/migration/schema:
 
 ```bash
 pnpm test -- src/lib/sanitario
@@ -413,3 +427,5 @@ git diff --check
 git diff --cached --check
 git status --short --untracked-files=all
 ```
+
+Não avançar para offline/sync da Agenda Sanitária v2 antes de estabilizar o contrato persistido de produto, protocolo, fonte técnica e snapshot.

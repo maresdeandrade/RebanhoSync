@@ -27,6 +27,14 @@ Cada decisão deve conter:
 
 ## Decisões consolidadas
 
+### 2026-06-07 — Protocolo/produto/fonte técnica antes de offline/sync sanitário
+
+**Decisão:** inserir a subfase 12D0 para definir o modelo canônico de Protocolo Sanitário v2, Produto, Fonte Técnica, Carência, Espécie, Bubalino e snapshots antes de implementar offline/sync da Agenda Sanitária v2.
+
+* **Motivo:** implementar sync agora cristalizaria payloads de `agenda_intent`, handlers e snapshots enquanto o contrato de protocolo/produto/fonte ainda está frouxo. A curadoria bibliográfica e regulatória precisa estabilizar quais campos exigem bula, norma, fonte forte, guideline de apoio ou decisão veterinária responsável.
+* **Impacto:** 12D0 é documental/contratual e usa o guideline de vacinação, imunização e controle parasitário apenas como fonte curatorial e matriz de casos. Offline/sync da Agenda v2 fica postergado para depois de 12D1 ou fase equivalente de contrato persistido. Guideline isolado não valida dose, via, carência, uso bubalino, venda, abate ou aptidão operacional.
+* **Status:** aprovado na 12D0 em escopo reduzido documental. SQL, Dexie, sync-batch, UI, seed, agenda, evento, estoque e carência ativa permanecem fora desta decisão.
+
 ### 2026-06-06 — Fundação SQL/RLS da Agenda Sanitária v2
 
 **Decisão:** criar a fundação SQL/RLS da Agenda Sanitária v2 em tabelas dedicadas e resetar o legado sanitário em `agenda_itens`, preservando fatos executados.
