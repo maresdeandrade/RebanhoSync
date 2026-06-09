@@ -1,10 +1,51 @@
 # Last Phase Result — RebanhoSync
 
-Atualizado em: 2026-06-06
+Atualizado em: 2026-06-08
 **Baseline Commit documental anterior:** `0cc5577`
 **Commit local observado no início da 11.5F:** `0cc5577`
 
 ## 0. Resultado mais recente
+
+Fase 12D1 — Schema e contratos mínimos de Produto, Protocolo e Fonte Técnica v2 — executada em escopo reduzido.
+
+Decisão: `PROSSEGUIR COM ESCOPO REDUZIDO`.
+
+Resultado da 12D1:
+
+- diagnóstico local obrigatório executado com worktree limpo no início;
+- guideline curatorial Markdown localizado e usado apenas como referência de casos/estrutura;
+- dependências ativas de `produtos_veterinarios`, `protocolos_sanitarios`, `protocolos_sanitarios_itens`, `catalogo_protocolos_oficiais` e `catalogo_protocolos_oficiais_itens` confirmadas em UI/offline/sync/testes;
+- legado de produto/protocolo não foi resetado nem limpo;
+- migration SQL nova criou persistência v2 em paralelo para fontes técnicas, cobertura por campo, produtos, autorização por espécie, dose/via, carência, protocolos e itens versionados;
+- RLS, policies, grants, constraints, índices e comentários foram criados para as estruturas v2;
+- contratos TypeScript puros criados para `SanitarySourceRefV2`, `SanitaryProductV2`, `WithdrawalRuleV2`, `SanitaryProtocolV2`, `SanitaryProtocolItemVersionV2`, `AgendaTechnicalSnapshot` e `EventTechnicalSnapshot`;
+- validadores puros criados para fonte técnica, cobertura de campo crítico, produto, autorização por espécie, carência, protocolo, item versionado e snapshots;
+- testes sentinela cobrem guideline isolado, fonte forte por field_key, carência zero, carência unknown, not_permitted, bubalino sem herança bovina, item alerta/bloqueado, `NAO_AUTORIZADO`, `PRECISA_VALIDAR`, `EXTRAPOLADO`, produto planejado vs executado e snapshots.
+
+Patch da 12D1:
+
+- `supabase/migrations/20260608090000_sanitario_protocol_product_source_v2.sql`;
+- `src/lib/sanitario/rules/sanitarySourceV2.ts`;
+- `src/lib/sanitario/rules/sanitaryProductV2.ts`;
+- `src/lib/sanitario/rules/sanitaryProtocolV2.ts`;
+- `src/lib/sanitario/rules/sanitarySnapshotsV2.ts`;
+- testes v2 em `src/lib/sanitario/rules/__tests__/`;
+- docs ativos de fase, status, decisão e domínio.
+
+Não houve:
+
+- alteração de Dexie;
+- alteração de sync-batch;
+- alteração de UI;
+- seed/carga curatorial completa;
+- criação de agenda, fechamento, evento, baixa de estoque ou carência ativa;
+- venda, abate, aptidão operacional, SISBOV, GTA, PNIB ou rastreabilidade animal.
+
+Próxima execução recomendada:
+
+- 12D2 — Builders/adapters de snapshot técnico e ponte controlada com Agenda Sanitária v2.
+
+---
 
 Fase 12D0 — Modelo canônico de Protocolo Sanitário v2, Produto e Fonte Técnica — executada documentalmente em escopo reduzido.
 

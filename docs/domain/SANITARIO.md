@@ -1,7 +1,7 @@
 ```markdown
 # Sanitário — RebanhoSync
 
-Atualizado em: 2026-06-06
+Atualizado em: 2026-06-08
 **Baseline Commit:** `32d7779`
 
 ## Objetivo
@@ -185,6 +185,52 @@ Snapshots técnicos:
 - agenda v2 deve congelar regra, item versionado, janela, produto planejado, fontes, limitações e status de autorização como intenção técnica planejada;
 - evento sanitário deve congelar produto executado, dose/via executadas, fonte forte de carência e snapshot de carência;
 - produto planejado em agenda não vira produto executado automaticamente.
+
+### Contrato persistido v2
+
+A Fase 12D1 criou o primeiro contrato persistido canônico em paralelo ao legado operacional.
+
+Estruturas v2:
+
+- `sanitario_fontes_tecnicas_v2`;
+- `sanitario_fonte_cobertura_campos_v2`;
+- `sanitario_produtos_v2`;
+- `sanitario_produto_especie_autorizacao_v2`;
+- `sanitario_produto_fontes_v2`;
+- `sanitario_produto_dose_rules_v2`;
+- `sanitario_produto_carencia_rules_v2`;
+- `sanitario_produto_carencia_fontes_v2`;
+- `sanitario_protocolos_v2`;
+- `sanitario_protocolo_itens_versions_v2`.
+
+Contratos TypeScript v2:
+
+- `SanitarySourceRefV2`;
+- `FieldSourceStatus`;
+- `SanitaryProductV2`;
+- `SpeciesAuthorizationV2`;
+- `WithdrawalRuleV2`;
+- `SanitaryProtocolV2`;
+- `SanitaryProtocolItemVersionV2`;
+- `AgendaTechnicalSnapshot`;
+- `EventTechnicalSnapshot`.
+
+Regras registradas:
+
+- fonte forte precisa cobrir o `field_key` crítico;
+- guideline de apoio não pode ser fonte forte isolada;
+- dose, via, apresentação, autorização por espécie, carência e obrigatoriedade legal exigem fonte forte;
+- carência `zero` exige fonte explícita;
+- carência `unknown` bloqueia leitura de livre de carência;
+- `not_permitted` bloqueia o uso declarado;
+- `NAO_AUTORIZADO` bloqueia agenda automática futura;
+- `PRECISA_VALIDAR` preserva limitação;
+- `EXTRAPOLADO` exige MV responsável para execução futura;
+- `somente_alerta` e `bloqueado` não podem gerar agenda automática;
+- snapshot de agenda não carrega carência ativa;
+- snapshot de evento exige produto executado real e snapshot de carência.
+
+Legados `produtos_veterinarios`, `protocolos_sanitarios`, `protocolos_sanitarios_itens` e catálogos oficiais continuam operacionais por dependência ativa de UI/offline/sync, mas não são o contrato canônico v2.
 
 ---
 

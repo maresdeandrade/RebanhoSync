@@ -1,6 +1,37 @@
 # Current Phase Handoff — RebanhoSync
 
-Atualizado em: 2026-06-06
+Atualizado em: 2026-06-08
+
+## 0. Handoff Atual — Fase 12D1
+
+Fase 12D1 — Schema e contratos mínimos de Produto, Protocolo e Fonte Técnica v2 — executada em escopo reduzido.
+
+Decisão: `PROSSEGUIR COM ESCOPO REDUZIDO`.
+
+Resultado:
+
+- criada migration `supabase/migrations/20260608090000_sanitario_protocol_product_source_v2.sql`;
+- criadas estruturas v2 em paralelo para fonte técnica, cobertura por campo, produto sanitário, autorização por espécie, dose/via, carência, protocolo sanitário e item versionado;
+- RLS habilitada, policies e grants mínimos criados;
+- contratos TypeScript puros criados em `src/lib/sanitario/rules/*V2.ts`;
+- validadores sentinela criados para fonte forte por campo, guideline isolado, produto, autorização por espécie, carência, protocolo, item versionado e snapshots;
+- testes v2 criados em `src/lib/sanitario/rules/__tests__`;
+- legados de produto/protocolo/catálogo foram auditados e mantidos por dependência ativa de UI/offline/sync, sem reset;
+- legados foram marcados como não-canônicos por comentários SQL;
+- Dexie, sync-batch, UI, seed, agenda automática, evento, estoque, carência ativa, venda, abate, aptidão, SISBOV, GTA, PNIB e rastreabilidade animal não foram alterados.
+
+Próxima fase recomendada:
+
+- 12D2 — Builders/adapters de snapshot técnico e ponte controlada com Agenda Sanitária v2.
+
+Escopo mínimo da próxima fase:
+
+- montar snapshots técnicos a partir do contrato v2;
+- manter builders puros;
+- não criar evento por agenda;
+- não iniciar offline/sync amplo antes da estabilização dos snapshots.
+
+---
 
 ## 1. Última fase fechada
 

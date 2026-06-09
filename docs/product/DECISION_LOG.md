@@ -1,6 +1,6 @@
 # Decision Log — RebanhoSync
 
-Atualizado em: 2026-06-06
+Atualizado em: 2026-06-08
 **Baseline Commit:** `91e0775`
 
 ## Objetivo
@@ -26,6 +26,14 @@ Cada decisão deve conter:
 ---
 
 ## Decisões consolidadas
+
+### 2026-06-08 — Persistir contrato canônico v2 antes de offline/sync sanitário
+
+**Decisão:** criar em paralelo o schema v2 de fonte técnica, cobertura por campo, produto sanitário, autorização por espécie, dose/via, carência, protocolo sanitário e item versionado, junto de contratos TypeScript puros e testes sentinela.
+
+* **Motivo:** a Agenda Sanitária v2 já possui fundação SQL/RLS, mas offline/sync não deve cristalizar payloads sem contrato persistido de produto/protocolo/fonte. Campos críticos exigem fonte forte por `field_key`; guideline isolado segue apenas como apoio curatorial; bubalino não herda autorização bovina.
+* **Impacto:** `sanitario_*_v2` passa a ser a direção canônica para produto/protocolo/fonte. Legados `produtos_veterinarios`, `protocolos_sanitarios`, `protocolos_sanitarios_itens` e catálogos oficiais permanecem operacionais por dependência ativa, mas não são o alvo canônico v2. Dexie, sync-batch, UI, seed, agenda automática, evento, estoque, venda, abate, aptidão e rastreabilidade animal ficam fora.
+* **Status:** aprovado na 12D1 em escopo reduzido SQL/RLS e TypeScript puro.
 
 ### 2026-06-07 — Protocolo/produto/fonte técnica antes de offline/sync sanitário
 

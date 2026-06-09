@@ -1,6 +1,6 @@
 ﻿# Project Status — RebanhoSync
 
-Atualizado em: 2026-06-06
+Atualizado em: 2026-06-08
 **Baseline Commit:** `91e0775`
 
 ## Objetivo
@@ -19,7 +19,7 @@ A fase 11 — Lotes, Pastos e Desempenho Operacional Ampliado — está concluí
 
 Foi criada a fase extra 11.5 — Agenda Sanitária v2: Janelas, Agrupamento e Materialização Idempotente — antes da Fase 12.
 
-A Fase 11.5 foi fechada localmente pela 11.5H, reconciliada documentalmente pela 11.5I e rebaselineada estrategicamente pela 11.5J. A Fase 12 foi aberta em 12A documental/diagnóstica, avançou em 12B para modelagem clean/reset documental, em 12C para fundação SQL/RLS/reset controlado e em 12D0 para modelo canônico de protocolo/produto/fonte técnica.
+A Fase 11.5 foi fechada localmente pela 11.5H, reconciliada documentalmente pela 11.5I e rebaselineada estrategicamente pela 11.5J. A Fase 12 foi aberta em 12A documental/diagnóstica, avançou em 12B para modelagem clean/reset documental, em 12C para fundação SQL/RLS/reset controlado, em 12D0 para modelo canônico de protocolo/produto/fonte técnica e em 12D1 para schema/contratos mínimos persistidos.
 
 Último gate validado:
 
@@ -76,6 +76,7 @@ A Fase 11.5 foi fechada localmente pela 11.5H, reconciliada documentalmente pela
 - Fase 12B — Modelagem clean da persistência sanitária v2 com liberdade de reset executada documentalmente em escopo reduzido.
 - Fase 12C — Migration clean da Agenda Sanitária v2 e reset controlado do legado sanitário executada em escopo reduzido SQL/RLS.
 - Fase 12D0 — Modelo canônico de Protocolo Sanitário v2, Produto e Fonte Técnica executada documentalmente em escopo reduzido.
+- Fase 12D1 — Schema e contratos mínimos de Produto, Protocolo e Fonte Técnica v2 executada em escopo reduzido SQL/RLS e TypeScript puro.
 
 Último avanço local da Fase 10:
 
@@ -132,6 +133,12 @@ A Fase 11.5 foi fechada localmente pela 11.5H, reconciliada documentalmente pela
 
 Último avanço local da Fase 12:
 
+- 12D1 criou a fundação persistida v2 para fonte técnica, cobertura por campo, produto sanitário, autorização por espécie, dose/via, carência, protocolo sanitário e item versionado;
+- contratos TypeScript puros v2 e validadores mínimos foram criados em `src/lib/sanitario/rules`;
+- snapshots técnicos mínimos de agenda e evento foram tipados;
+- testes sentinela v2 validam que guideline isolado não libera campo crítico, bubalino não herda autorização bovina, carência zero exige fonte forte, produto planejado não vira produto executado e agenda não carrega carência ativa;
+- legados `produtos_veterinarios`, `protocolos_sanitarios`, `protocolos_sanitarios_itens` e catálogos oficiais seguem operacionais por dependência ativa, mas foram marcados como não-canônicos para v2;
+- Dexie, sync-batch, UI, seed curatorial, agenda automática, evento, estoque, venda, abate, aptidão e rastreabilidade animal não foram alterados;
 - 12D0 definiu o modelo canônico documental para fonte técnica, produto sanitário, regra de carência, protocolo versionado, item versionado, espécie bovino/bubalino e snapshots técnicos;
 - o guideline curatorial de vacinação, imunização e controle parasitário foi localizado como Markdown em `docs/review/evidence/Guideline_Atualizado_Vacinacao_Imunizacao_Controle_Parasitario_Bovinos_Bubalinos.md`; o PDF citado no prompt não existe no workspace;
 - guideline foi usado como fonte de casos e validação estrutural, não como seed final, protocolo automático ou fonte única para dose, via, carência ou autorização de espécie;
@@ -170,8 +177,8 @@ A Fase 11.5 foi fechada localmente pela 11.5H, reconciliada documentalmente pela
 
 Próximo foco sugerido:
 
-- preparar 12D1 — Migration/contrato persistido de produto, protocolo e fonte técnica;
-- manter offline/sync da Agenda Sanitária v2 para fase posterior à estabilização do contrato canônico;
+- preparar 12D2 — Builders/adapters de snapshot técnico e ponte controlada com Agenda Sanitária v2;
+- manter offline/sync da Agenda Sanitária v2 para fase posterior à estabilização dos builders/snapshots;
 - manter UI ampla, carência ativa, venda, abate e aptidão fora do escopo até decisão explícita de implementação.
 
 Realidade validada para o roadmap pós-Fase 9:

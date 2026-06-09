@@ -1,0 +1,175 @@
+import { describe, expect, it } from "vitest";
+import {
+  requiresNewProtocolItemVersionV2,
+  validateSanitaryProtocolItemVersionV2,
+  validateSanitaryProtocolV2,
+  type SanitaryProtocolItemVersionV2,
+  type SanitaryProtocolV2,
+} from "../sanitaryProtocolV2";
+import type { SpeciesAuthorizationV2 } from "../sanitaryProductV2";
+import type { SanitarySourceRefV2 } from "../sanitarySourceV2";
+
+const officialSource: SanitarySourceRefV2 = {
+  kind: "norma_oficial",
+  title: "Norma oficial",
+  issuer: "MAPA",
+  strength: "forte",
+  evidenceStatus: "SIM_NORMA",
+  fieldKeys: [
+    "legal_status",
+    "eligibility_rule",
+    "operational_window",
+    "product_requirement",
+    "species_authorization",
+  ],
+};
+
+function validAuthorization(overrides: Partial<SpeciesAuthorizationV2> = {}): SpeciesAuthorizationV2 {
+  return {
+    speciesCode: "bovino",
+    aptitude: "all",
+    authorizationStatus: "SIM_NORMA",
+    sourceRefs: [officialSource],
+    ...overrides,
+  };
+}
+
+function validItem(overrides: Partial<SanitaryProtocolItemVersionV2> = {}): SanitaryProtocolItemVersionV2 {
+  return {
+    protocolId: "protocol-1",
+    logicalItemKey: "febre-aftosa-campanha",
+    version: 1,
+    itemStatus: "obrigatorio",
+    actionType: "vacinacao",
+    productRequirementKind: "product_class",
+    productClass: "vacina_febre_aftosa",
+    eligibilityRule: { species: ["bovino", "bubalino"] },
+    operationalWindowRule: { uf: ["CE"] },
+    speciesAuthorization: [validAuthorization()],
+    sourceRefsByField: {
+      eligibility_rule: [officialSource],
+      operational_window: [officialSource],
+      product_requirement: [officialSource],
+    },
+    limitations: [],
+    allowsAgendaAuto: true,
+    status: "active",
+    ...overrides,
+  };
+}
+
+describe("sanitaryProtocolV2", () => {
+  it("protocolo obrigatorio por norma exige fonte forte de legal_status", () => {
+    const protocol: SanitaryProtocolV2 = {
+      familyCode: "febre-aftosa",
+      name: "Febre aftosa",
+      scope: "global",
+      speciesScope: ["bovino", "bubalino"],
+      jurisdictionScope: { country: "BR" },
+      legalStatus: "obrigatorio_norma",
+      version: 1,
+      status: "active",
+      sourceRefsSnapshot: [officialSource],
+      approvalStatus: "approved",
+    };
+
+    expect(validateSanitaryProtocolV2(protocol).ok).toBe(true);
+  });
+
+  it("item experimental/somente_alerta nao permite agenda automatica", () => {
+    const result = validateSanitaryProtocolItemVersionV2(
+      validItem({ itemStatus: "somente_alerta", allowsAgendaAuto: true }),
+    );
+
+    expect(result.ok).toBe(false);
+    expect(result.issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: "alert_or_blocked_item_cannot_auto_schedule" }),
+      ]),
+    );
+  });
+
+  it("item NAO_AUTORIZADO bloqueia agenda automatica", () => {
+    const result = validateSanitaryProtocolItemVersionV2(
+      validItem({
+        speciesAuthorization: [
+          validAuthorization({
+            authorizationStatus: "NAO_AUTORIZADO",
+          }),
+        ],
+        allowsAgendaAuto: true,
+      }),
+    );
+
+    expect(result.ok).toBe(false);
+    expect(result.issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: "not_authorized_blocks_auto_schedule" }),
+      ]),
+    );
+  });
+
+  it("PRECISA_VALIDAR preserva limitacao", () => {
+    const result = validateSanitaryProtocolItemVersionV2(
+      validItem({
+        speciesAuthorization: [
+          validAuthorization({
+            authorizationStatus: "PRECISA_VALIDAR",
+          }),
+        ],
+        limitations: [],
+      }),
+    );
+
+    expect(result.ok).toBe(false);
+    expect(result.issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: "needs_validation_requires_limitation" }),
+      ]),
+    );
+  });
+
+  it("EXTRAPOLADO exige indicacao de MV responsavel para execucao futura", () => {
+    const result = validateSanitaryProtocolItemVersionV2(
+      validItem({
+        speciesAuthorization: [
+          validAuthorization({
+            authorizationStatus: "EXTRAPOLADO",
+            requiresMvResponsavel: true,
+          }),
+        ],
+        requiresMvResponsavel: false,
+      }),
+    );
+
+    expect(result.ok).toBe(false);
+    expect(result.issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: "extrapolated_item_requires_mv" }),
+      ]),
+    );
+  });
+
+  it("alteracao de protocolo exige nova versao de item", () => {
+    const previous = validItem();
+    const next = validItem({
+      version: 1,
+      eligibilityRule: { species: ["bovino"] },
+    });
+
+    expect(requiresNewProtocolItemVersionV2(previous, next)).toBe(true);
+  });
+
+  it("source_refs_by_field nao pode estar vazio em campo critico do item", () => {
+    const result = validateSanitaryProtocolItemVersionV2(
+      validItem({ sourceRefsByField: { eligibility_rule: [] } }),
+    );
+
+    expect(result.ok).toBe(false);
+    expect(result.issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: "critical_field_missing_source" }),
+      ]),
+    );
+  });
+});
