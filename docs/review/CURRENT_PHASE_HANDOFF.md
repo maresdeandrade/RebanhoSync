@@ -2,7 +2,30 @@
 
 Atualizado em: 2026-06-08
 
-## 0. Handoff Atual — Fase 12D1
+## 0. Handoff Atual — Fase 12D2
+
+Fase 12D2 — Builders/adapters de snapshot técnico e ponte controlada com Agenda Sanitária v2 — executada em escopo reduzido.
+
+Decisão: `PROSSEGUIR COM ESCOPO REDUZIDO`.
+
+Resultado:
+
+- criados builders puros em `src/lib/sanitario/rules/sanitarySnapshotBuildersV2.ts`;
+- criado adapter puro em `src/lib/sanitario/rules/sanitaryAgendaBridgeV2.ts`;
+- `buildAgendaTechnicalSnapshotV2` monta intenção técnica planejada sem carência ativa;
+- `buildEventTechnicalSnapshotV2` exige produto executado, dose, via e snapshot de carência;
+- `createSanitaryAgendaV2SnapshotPayload` prepara `protocol_item_snapshot`, `produto_snapshot` e metadados para persistência futura em `sanitario_agenda_v2`, sem persistir;
+- testes sentinela criados em `src/lib/sanitario/rules/__tests__/sanitarySnapshotBuildersV2.test.ts` e `sanitaryAgendaBridgeV2.test.ts`;
+- guideline isolado, fonte forte por `field_key`, bubalino sem herança bovina, `NAO_AUTORIZADO`, `PRECISA_VALIDAR`, `EXTRAPOLADO`, carência zero, `unknown` e `not_permitted` permanecem bloqueados/limitados conforme contrato;
+- SQL, RLS, Dexie, sync-batch, UI, seed, agenda, evento, estoque, venda, abate, aptidão, SISBOV, GTA, PNIB e rastreabilidade animal não foram alterados.
+
+Próxima fase recomendada:
+
+- 12E — Integração offline/sync da Agenda Sanitária v2 usando contrato canônico, após revisão do patch 12D2.
+
+---
+
+## 0.1. Handoff anterior — Fase 12D1
 
 Fase 12D1 — Schema e contratos mínimos de Produto, Protocolo e Fonte Técnica v2 — executada em escopo reduzido.
 

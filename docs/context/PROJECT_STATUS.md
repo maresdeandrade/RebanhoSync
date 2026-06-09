@@ -19,7 +19,7 @@ A fase 11 — Lotes, Pastos e Desempenho Operacional Ampliado — está concluí
 
 Foi criada a fase extra 11.5 — Agenda Sanitária v2: Janelas, Agrupamento e Materialização Idempotente — antes da Fase 12.
 
-A Fase 11.5 foi fechada localmente pela 11.5H, reconciliada documentalmente pela 11.5I e rebaselineada estrategicamente pela 11.5J. A Fase 12 foi aberta em 12A documental/diagnóstica, avançou em 12B para modelagem clean/reset documental, em 12C para fundação SQL/RLS/reset controlado, em 12D0 para modelo canônico de protocolo/produto/fonte técnica e em 12D1 para schema/contratos mínimos persistidos.
+A Fase 11.5 foi fechada localmente pela 11.5H, reconciliada documentalmente pela 11.5I e rebaselineada estrategicamente pela 11.5J. A Fase 12 foi aberta em 12A documental/diagnóstica, avançou em 12B para modelagem clean/reset documental, em 12C para fundação SQL/RLS/reset controlado, em 12D0 para modelo canônico de protocolo/produto/fonte técnica, em 12D1 para schema/contratos mínimos persistidos e em 12D2 para builders/adapters puros de snapshots técnicos.
 
 Último gate validado:
 
@@ -77,6 +77,7 @@ A Fase 11.5 foi fechada localmente pela 11.5H, reconciliada documentalmente pela
 - Fase 12C — Migration clean da Agenda Sanitária v2 e reset controlado do legado sanitário executada em escopo reduzido SQL/RLS.
 - Fase 12D0 — Modelo canônico de Protocolo Sanitário v2, Produto e Fonte Técnica executada documentalmente em escopo reduzido.
 - Fase 12D1 — Schema e contratos mínimos de Produto, Protocolo e Fonte Técnica v2 executada em escopo reduzido SQL/RLS e TypeScript puro.
+- Fase 12D2 — Builders/adapters de snapshot técnico e ponte controlada com Agenda Sanitária v2 executada em escopo reduzido TypeScript puro.
 
 Último avanço local da Fase 10:
 

@@ -1,37 +1,39 @@
-# ACTIVE_PHASE_PLAN - Fase 12D1
+# ACTIVE_PHASE_PLAN - Fase 12D2
 
-**Status:** Fase 12D1 executada em escopo reduzido com SQL/RLS e contratos TypeScript puros
-**Foco:** Schema e contratos mínimos de Produto, Protocolo e Fonte Técnica v2
+**Status:** Fase 12D2 executada em escopo reduzido com builders/adapters puros
+**Foco:** Snapshots técnicos e ponte controlada com Agenda Sanitária v2
 **Criado:** 2026-06-08
 **Atualizado:** 2026-06-08
-**Plano base:** 12D1 — Schema e contratos mínimos de Produto, Protocolo e Fonte Técnica v2
+**Plano base:** 12D2 — Builders/adapters de snapshot técnico e ponte controlada com Agenda Sanitária v2
 
 ---
 
 ## Objetivo em 1 parágrafo
 
-Persistir a fundação canônica mínima definida na 12D0 para fonte técnica, cobertura por campo, produto sanitário, autorização por espécie, dose/via, carência, protocolo sanitário v2 e item versionado. A fase estabiliza contratos TypeScript puros e snapshots técnicos mínimos antes de qualquer Dexie, sync-batch, UI, seed curatorial, agenda automática, evento, estoque, carência ativa, venda, abate ou rastreabilidade animal.
+Criar builders e adapters TypeScript puros para montar `AgendaTechnicalSnapshot`, `EventTechnicalSnapshot` e payload técnico futuro de `sanitario_agenda_v2` a partir dos contratos v2 de fonte, produto, carência, protocolo e item versionado. A fase não cria persistência, IO, Dexie, sync-batch, UI, seed, agenda, evento, estoque, carência ativa, venda, abate ou rastreabilidade animal.
 
 ---
 
-## Decisão 12D1
+## Decisão 12D2
 
 Decisão: `PROSSEGUIR COM ESCOPO REDUZIDO`.
 
 Implementação autorizada nesta subfase:
 
-- criar migration SQL nova em paralelo;
-- criar enums, tabelas, constraints, índices, RLS, policies, grants e comentários v2;
-- criar contratos TypeScript puros para fonte, produto, protocolo e snapshots;
-- criar validadores mínimos e testes sentinela;
+- criar builders puros de snapshot técnico;
+- criar adapter puro para payload de `sanitario_agenda_v2.protocol_item_snapshot` e `produto_snapshot`;
+- compor validações existentes da 12D1;
+- normalizar fontes por `field_key`;
+- criar testes sentinela dos builders/adapters;
 - atualizar docs vivos de fase/status/decisão/domínio.
 
 Implementação não autorizada nesta subfase:
 
+- criar migration SQL ou alterar RLS;
 - alterar Dexie/offline stores;
 - alterar sync-batch;
 - criar UI ou fluxo operacional;
-- importar guideline como seed;
+- importar guideline como seed ou carga curatorial;
 - criar agenda, fechar agenda, criar evento ou baixar estoque;
 - calcular carência ativa ou declarar livre de carência;
 - liberar venda, abate, aptidão, SISBOV, GTA, PNIB ou rastreabilidade animal.
@@ -42,50 +44,31 @@ Implementação não autorizada nesta subfase:
 
 Arquivos principais:
 
-- `supabase/migrations/20260608090000_sanitario_protocol_product_source_v2.sql`;
-- `src/lib/sanitario/rules/sanitarySourceV2.ts`;
-- `src/lib/sanitario/rules/sanitaryProductV2.ts`;
-- `src/lib/sanitario/rules/sanitaryProtocolV2.ts`;
-- `src/lib/sanitario/rules/sanitarySnapshotsV2.ts`;
-- `src/lib/sanitario/rules/__tests__/sanitarySourceV2.test.ts`;
-- `src/lib/sanitario/rules/__tests__/sanitaryProductV2.test.ts`;
-- `src/lib/sanitario/rules/__tests__/sanitaryProtocolV2.test.ts`;
-- `src/lib/sanitario/rules/__tests__/sanitarySnapshotsV2.test.ts`.
+- `src/lib/sanitario/rules/sanitarySnapshotBuildersV2.ts`;
+- `src/lib/sanitario/rules/sanitaryAgendaBridgeV2.ts`;
+- `src/lib/sanitario/rules/__tests__/sanitarySnapshotBuildersV2.test.ts`;
+- `src/lib/sanitario/rules/__tests__/sanitaryAgendaBridgeV2.test.ts`.
 
-Legados auditados com dependência ativa:
+Base consumida da 12D1:
 
-- `produtos_veterinarios`;
-- `protocolos_sanitarios`;
-- `protocolos_sanitarios_itens`;
-- `catalogo_protocolos_oficiais`;
-- `catalogo_protocolos_oficiais_itens`.
-
-Decisão sobre legado nesta fase:
-
-- não resetar;
-- não limpar;
-- não migrar UI/sync;
-- marcar como operacional legado não-canônico em comentários SQL.
+- contratos `SanitarySourceRefV2`, `SanitaryProductV2`, `WithdrawalRuleV2`, `SanitaryProtocolV2`, `SanitaryProtocolItemVersionV2`, `AgendaTechnicalSnapshot` e `EventTechnicalSnapshot`;
+- validadores de fonte forte por campo, produto, espécie, dose/via, carência, protocolo, item versionado e snapshots.
 
 ---
 
 ## Critérios de aceite da fase
 
-- schema persistido v2 de fonte técnica criado;
-- cobertura de fonte por campo criada;
-- produto sanitário v2 criado;
-- autorização por espécie criada;
-- dose/via estruturada criada;
-- carência por produto/contexto criada;
-- protocolo sanitário v2 criado;
-- item versionado de protocolo v2 criado;
-- contratos TypeScript e validadores puros criados;
-- snapshots técnicos mínimos tipados;
-- testes sentinela implementados;
+- `buildAgendaTechnicalSnapshotV2` criado;
+- `buildEventTechnicalSnapshotV2` criado;
+- adapter puro para payload de `sanitario_agenda_v2` criado;
+- snapshot de agenda não carrega carência ativa;
+- snapshot de evento exige produto executado;
+- produto planejado não vira produto executado;
 - guideline isolado não valida campo crítico;
+- fonte forte precisa cobrir `field_key`;
 - bubalino não herda autorização de bovino;
 - carência zero exige fonte explícita;
-- produto planejado não vira produto executado;
+- carência `unknown` e `not_permitted` bloqueiam leitura/liberação;
 - Agenda permanece intenção;
 - Evento permanece fato.
 
@@ -93,6 +76,6 @@ Decisão sobre legado nesta fase:
 
 ## Próxima fase segura
 
-12D2 — Builders/adapters de snapshot técnico e ponte controlada com Agenda Sanitária v2.
+12E — Integração offline/sync da Agenda Sanitária v2 usando contrato canônico, ou 12D3 se for necessário revisar builders antes da integração.
 
-Escopo mínimo da 12D2: criar builders puros para montar `AgendaTechnicalSnapshot` e `EventTechnicalSnapshot` a partir de produto/protocolo/fonte v2, sem Dexie/sync/UI amplo e sem criar evento por agenda.
+Escopo mínimo da próxima fase: mapear `agenda_intent`, payloads offline e handlers de sync para consumir snapshots já estabilizados, sem transformar agenda em histórico nem criar evento por fechamento administrativo.

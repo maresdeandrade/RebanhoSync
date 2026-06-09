@@ -6,6 +6,48 @@ Atualizado em: 2026-06-08
 
 ## 0. Resultado mais recente
 
+Fase 12D2 — Builders/adapters de snapshot técnico e ponte controlada com Agenda Sanitária v2 — executada em escopo reduzido.
+
+Decisão: `PROSSEGUIR COM ESCOPO REDUZIDO`.
+
+Resultado da 12D2:
+
+- builders puros criados para `AgendaTechnicalSnapshot` e `EventTechnicalSnapshot`;
+- adapter puro criado para preparar payload técnico futuro de `sanitario_agenda_v2.protocol_item_snapshot` e `sanitario_agenda_v2.produto_snapshot`;
+- builders compõem validadores da 12D1 e normalizam fontes por `field_key`;
+- snapshot de agenda preserva intenção planejada e não carrega carência ativa;
+- snapshot de evento exige produto executado real, dose, via e snapshot de carência;
+- produto planejado não vira produto executado automaticamente;
+- guideline isolado não valida campo crítico;
+- fonte forte precisa cobrir `field_key`;
+- bubalino não herda autorização bovina;
+- `NAO_AUTORIZADO`, `PRECISA_VALIDAR`, `EXTRAPOLADO`, carência zero, `unknown` e `not_permitted` seguem bloqueados/limitados por contrato;
+- testes sentinela dos builders/adapters foram adicionados.
+
+Patch da 12D2:
+
+- `src/lib/sanitario/rules/sanitarySnapshotBuildersV2.ts`;
+- `src/lib/sanitario/rules/sanitaryAgendaBridgeV2.ts`;
+- `src/lib/sanitario/rules/__tests__/sanitarySnapshotBuildersV2.test.ts`;
+- `src/lib/sanitario/rules/__tests__/sanitaryAgendaBridgeV2.test.ts`;
+- docs ativos de fase, status, decisão e domínio.
+
+Não houve:
+
+- migration SQL ou alteração de RLS;
+- alteração de Dexie;
+- alteração de sync-batch;
+- alteração de UI;
+- seed/carga curatorial;
+- criação de agenda, fechamento, evento, baixa de estoque ou carência ativa;
+- venda, abate, aptidão operacional, SISBOV, GTA, PNIB ou rastreabilidade animal.
+
+Próxima execução recomendada:
+
+- 12E — Integração offline/sync da Agenda Sanitária v2 usando contrato canônico.
+
+---
+
 Fase 12D1 — Schema e contratos mínimos de Produto, Protocolo e Fonte Técnica v2 — executada em escopo reduzido.
 
 Decisão: `PROSSEGUIR COM ESCOPO REDUZIDO`.

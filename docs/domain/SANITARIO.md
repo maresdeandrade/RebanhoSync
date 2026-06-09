@@ -99,6 +99,37 @@ Fora do escopo deste documento:
 
 ---
 
+## Snapshots técnicos sanitários v2
+
+A partir da 12D2, snapshots técnicos são montados por builders puros e determinísticos antes de qualquer integração offline/sync.
+
+Contrato:
+
+- `AgendaTechnicalSnapshot` documenta intenção técnica planejada.
+- `AgendaTechnicalSnapshot` pode carregar produto planejado e fontes por campo.
+- `AgendaTechnicalSnapshot` não carrega carência ativa, produto executado, baixa de estoque ou autorização de venda/abate.
+- `EventTechnicalSnapshot` documenta execução real.
+- `EventTechnicalSnapshot` exige produto executado, dose executada, via executada e snapshot de carência do produto executado.
+- Produto planejado na agenda não vira produto executado automaticamente.
+- Guideline isolado não valida campo crítico.
+- Fonte forte precisa cobrir o `field_key` específico.
+- Bubalino não herda autorização de bovino.
+- `NAO_AUTORIZADO` bloqueia agenda automática.
+- `PRECISA_VALIDAR` preserva limitação explícita.
+- `EXTRAPOLADO` exige MV responsável para execução futura.
+- Carência zero exige fonte forte explícita.
+- Carência `unknown` e `not_permitted` bloqueiam leitura de livre de carência ou uso declarado.
+
+Implementação pura:
+
+- `buildAgendaTechnicalSnapshotV2`;
+- `buildEventTechnicalSnapshotV2`;
+- `createSanitaryAgendaV2SnapshotPayload`.
+
+Essas funções não persistem dados, não consultam Supabase/Dexie, não criam agenda, não criam evento e não calculam carência ativa.
+
+---
+
 ## Protocolos sanitários
 
 Protocolos sanitários são regras operacionais versionadas.

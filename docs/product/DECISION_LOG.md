@@ -27,6 +27,14 @@ Cada decisão deve conter:
 
 ## Decisões consolidadas
 
+### 2026-06-08 — Estabilizar snapshots técnicos antes de offline/sync sanitário
+
+**Decisão:** criar builders/adapters TypeScript puros para montar `AgendaTechnicalSnapshot`, `EventTechnicalSnapshot` e payload técnico futuro de `sanitario_agenda_v2`, antes de conectar Dexie ou sync-batch.
+
+* **Motivo:** offline/sync não deve cristalizar payloads sem montagem determinística e validável dos snapshots. Agenda precisa carregar intenção técnica planejada sem carência ativa; evento precisa carregar produto executado real, dose, via e carência validável por fonte forte.
+* **Impacto:** `buildAgendaTechnicalSnapshotV2`, `buildEventTechnicalSnapshotV2` e `createSanitaryAgendaV2SnapshotPayload` passam a ser a ponte pura entre protocolo/produto/fonte v2 e Agenda Sanitária v2. SQL, RLS, Dexie, sync-batch, UI, seed, agenda automática, evento, estoque, venda, abate, aptidão e rastreabilidade animal permanecem fora.
+* **Status:** aprovado na 12D2 em escopo reduzido TypeScript puro.
+
 ### 2026-06-08 — Persistir contrato canônico v2 antes de offline/sync sanitário
 
 **Decisão:** criar em paralelo o schema v2 de fonte técnica, cobertura por campo, produto sanitário, autorização por espécie, dose/via, carência, protocolo sanitário e item versionado, junto de contratos TypeScript puros e testes sentinela.
