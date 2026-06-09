@@ -1,31 +1,41 @@
 # Current Phase Handoff — RebanhoSync
 
-Atualizado em: 2026-06-08
+Atualizado em: 2026-06-09
 
-## 0. Handoff Atual — Fase 12D2
+## 0. Handoff Atual — Fase 12D3
 
-Fase 12D2 — Builders/adapters de snapshot técnico e ponte controlada com Agenda Sanitária v2 — executada em escopo reduzido.
+Fase 12D3 — Extração curatorial de protocolos sanitários candidatos v2 para revisão — executada como patch documental em escopo reduzido.
 
 Decisão: `PROSSEGUIR COM ESCOPO REDUZIDO`.
 
 Resultado:
 
-- criados builders puros em `src/lib/sanitario/rules/sanitarySnapshotBuildersV2.ts`;
-- criado adapter puro em `src/lib/sanitario/rules/sanitaryAgendaBridgeV2.ts`;
-- `buildAgendaTechnicalSnapshotV2` monta intenção técnica planejada sem carência ativa;
-- `buildEventTechnicalSnapshotV2` exige produto executado, dose, via e snapshot de carência;
-- `createSanitaryAgendaV2SnapshotPayload` prepara `protocol_item_snapshot`, `produto_snapshot` e metadados para persistência futura em `sanitario_agenda_v2`, sem persistir;
-- testes sentinela criados em `src/lib/sanitario/rules/__tests__/sanitarySnapshotBuildersV2.test.ts` e `sanitaryAgendaBridgeV2.test.ts`;
-- guideline isolado, fonte forte por `field_key`, bubalino sem herança bovina, `NAO_AUTORIZADO`, `PRECISA_VALIDAR`, `EXTRAPOLADO`, carência zero, `unknown` e `not_permitted` permanecem bloqueados/limitados conforme contrato;
-- SQL, RLS, Dexie, sync-batch, UI, seed, agenda, evento, estoque, venda, abate, aptidão, SISBOV, GTA, PNIB e rastreabilidade animal não foram alterados.
+- guideline curatorial localizado e usado como fonte de casos e estrutura, não como seed final;
+- 4 matrizes revisáveis criadas em `docs/review/evidence/`;
+- 21 protocolos candidatos extraídos e classificados com status curatorial e de automação;
+- 23 itens versionáveis candidatos extraídos com dose, via, janela, espécie e limitações;
+- 14 produtos/classes candidatos extraídos com carências e status de autorização;
+- 15 fontes técnicas identificadas, todas `PRECISA_VALIDAR` (nenhuma fonte forte disponível no workspace);
+- README curatorial criado para guiar revisão humana;
+- toda linha tem status curatorial e de automação;
+- toda linha declara lacunas e fonte mínima necessária;
+- bubalino não herdou autorização bovina em nenhuma linha;
+- itens experimentais/alerta ficaram bloqueados como `not_automatable_alert`;
+- carência zero apenas candidata onde guideline cita explicitamente (aftosa/IN-48/2020 e eprinomectina);
+- nenhuma carência foi liberada;
+- nenhuma linha é seed final;
+- nenhuma agenda automática foi criada;
+- SQL, RLS, Dexie, sync-batch, UI, contratos TypeScript 12D1/12D2, seed, evento, estoque, venda, abate, aptidão, SISBOV, GTA, PNIB e rastreabilidade animal não foram alterados.
 
 Próxima fase recomendada:
 
-- 12E — Integração offline/sync da Agenda Sanitária v2 usando contrato canônico, após revisão do patch 12D2.
+- `12D4 — Revisão técnico-veterinária das matrizes curatoriais`.
 
 ---
 
-## 0.1. Handoff anterior — Fase 12D1
+## 0.1. Handoff anterior — Fase 12D2
+
+Fase 12D2 — Builders/adapters de snapshot técnico e ponte controlada com Agenda Sanitária v2 — executada em escopo reduzido.
 
 Fase 12D1 — Schema e contratos mínimos de Produto, Protocolo e Fonte Técnica v2 — executada em escopo reduzido.
 

@@ -747,6 +747,12 @@ Essa fase deve validar uso real, não criar novo domínio.
 | Fase 5 | Exceções, correções e reconciliação sanitária | Concluída; hardening residual |
 | Fase 6 | Robustez sanitária em staging/RLS/sync | Hardening residual |
 | Fase 11.5 | Agenda Sanitária v2 em contratos puros | Fechada localmente; persistência/sync/schema pendentes |
+| Fase 12D0 | Modelo canônico documental — protocolo/produto/fonte técnica | Concluída |
+| Fase 12D1 | Schema v2 e contratos TypeScript mínimos persistidos | Concluída |
+| Fase 12D2 | Builders/adapters puros de snapshots técnicos | Concluída |
+| Fase 12D3 | Extração curatorial de protocolos candidatos v2 — matrizes revisáveis | Concluída — revisão humana pendente |
+| Fase 12D4 | Revisão técnico-veterinária das matrizes curatoriais | Não iniciada |
+| Fase 12E | Offline/sync da Agenda Sanitária v2 | Não iniciada |
 
 ### Antipadrões proibidos
 

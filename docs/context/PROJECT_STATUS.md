@@ -1,6 +1,6 @@
-﻿# Project Status — RebanhoSync
+# Project Status — RebanhoSync
 
-Atualizado em: 2026-06-08
+Atualizado em: 2026-06-09
 **Baseline Commit:** `91e0775`
 
 ## Objetivo
@@ -19,7 +19,7 @@ A fase 11 — Lotes, Pastos e Desempenho Operacional Ampliado — está concluí
 
 Foi criada a fase extra 11.5 — Agenda Sanitária v2: Janelas, Agrupamento e Materialização Idempotente — antes da Fase 12.
 
-A Fase 11.5 foi fechada localmente pela 11.5H, reconciliada documentalmente pela 11.5I e rebaselineada estrategicamente pela 11.5J. A Fase 12 foi aberta em 12A documental/diagnóstica, avançou em 12B para modelagem clean/reset documental, em 12C para fundação SQL/RLS/reset controlado, em 12D0 para modelo canônico de protocolo/produto/fonte técnica, em 12D1 para schema/contratos mínimos persistidos e em 12D2 para builders/adapters puros de snapshots técnicos.
+A Fase 11.5 foi fechada localmente pela 11.5H, reconciliada documentalmente pela 11.5I e rebaselineada estrategicamente pela 11.5J. A Fase 12 foi aberta em 12A documental/diagnóstica, avançou em 12B para modelagem clean/reset documental, em 12C para fundação SQL/RLS/reset controlado, em 12D0 para modelo canônico de protocolo/produto/fonte técnica, em 12D1 para schema/contratos mínimos persistidos, em 12D2 para builders/adapters puros de snapshots técnicos e em 12D3 para extração curatorial de protocolos candidatos v2 para revisão.
 
 Último gate validado:
 
@@ -134,7 +134,8 @@ A Fase 11.5 foi fechada localmente pela 11.5H, reconciliada documentalmente pela
 
 Último avanço local da Fase 12:
 
-- 12D1 criou a fundação persistida v2 para fonte técnica, cobertura por campo, produto sanitário, autorização por espécie, dose/via, carência, protocolo sanitário e item versionado;
+- 12D3 executou extração curatorial de protocolos sanitários candidatos v2: 21 protocolos, 23 itens, 14 produtos/classes e 15 fontes técnicas extraídas em 4 matrizes revisáveis; nenhuma linha é seed final, nenhuma agenda foi criada, nenhuma carência foi liberada, bubalino não herdou autorização bovina, itens experimentais/alerta ficaram bloqueados; próxima fase segura é 12D4 — revisão técnico-veterinária das matrizes;
+- 12D2 criou builders puros de `AgendaTechnicalSnapshot` e `EventTechnicalSnapshot` e adapter puro para payload técnico de `sanitario_agenda_v2`; produto planejado não vira produto executado; guideline isolado não libera campo crítico; testes sentinela dos builders passaram;
 - contratos TypeScript puros v2 e validadores mínimos foram criados em `src/lib/sanitario/rules`;
 - snapshots técnicos mínimos de agenda e evento foram tipados;
 - testes sentinela v2 validam que guideline isolado não libera campo crítico, bubalino não herda autorização bovina, carência zero exige fonte forte, produto planejado não vira produto executado e agenda não carrega carência ativa;

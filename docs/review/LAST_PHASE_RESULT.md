@@ -1,10 +1,58 @@
 # Last Phase Result — RebanhoSync
 
-Atualizado em: 2026-06-08
+Atualizado em: 2026-06-09
 **Baseline Commit documental anterior:** `0cc5577`
 **Commit local observado no início da 11.5F:** `0cc5577`
 
 ## 0. Resultado mais recente
+
+Fase 12D3 — Extração curatorial de protocolos sanitários candidatos v2 para revisão — executada como patch documental em escopo reduzido.
+
+Decisão: `PROSSEGUIR COM ESCOPO REDUZIDO`.
+
+Resultado da 12D3:
+
+- guideline curatorial localizado e consumido como fonte curatorial de casos e estrutura;
+- 4 matrizes revisáveis criadas para revisão humana;
+- 21 protocolos candidatos com status curatorial e de automação declarados;
+- 23 itens versionáveis com dose, via, janela, espécie e limitações classificados;
+- 14 produtos/classes candidatos com carências e status de autorização;
+- 15 fontes técnicas identificadas — todas `PRECISA_VALIDAR` (nenhuma fonte forte disponível no workspace);
+- README curatorial criado para guiar sequência de revisão;
+- bubalino não herdou autorização bovina;
+- itens experimentais/alerta ficaram bloqueados como `not_automatable_alert`;
+- carência zero apenas candidata onde guideline cita explicitamente com norma/bula indicada;
+- nenhuma carência foi liberada sem fonte forte;
+- nenhuma linha é seed final;
+- nenhuma agenda automática foi criada.
+
+Patch da 12D3:
+
+- `docs/review/evidence/MATRIZ_PROTOCOLOS_SANITARIOS_CANDIDATOS_V2.md`;
+- `docs/review/evidence/MATRIZ_ITENS_PROTOCOLO_SANITARIO_V2.md`;
+- `docs/review/evidence/MATRIZ_PRODUTOS_SANITARIOS_CANDIDATOS_V2.md`;
+- `docs/review/evidence/MATRIZ_FONTES_TECNICAS_SANITARIAS_V2.md`;
+- `docs/review/evidence/README_CURADORIA_SANITARIA_V2.md`;
+- docs ativos de fase, status, decisão e domínio.
+
+Não houve:
+
+- migration SQL ou alteração de RLS;
+- alteração de Dexie;
+- alteração de sync-batch;
+- alteração de UI;
+- alteração de contratos TypeScript 12D1/12D2;
+- seed/carga curatorial final;
+- criação de agenda, fechamento, evento, baixa de estoque ou carência ativa;
+- venda, abate, aptidão operacional, SISBOV, GTA, PNIB ou rastreabilidade animal.
+
+Próxima execução recomendada:
+
+- `12D4 — Revisão técnico-veterinária das matrizes curatoriais`.
+
+---
+
+## 0.1 Resultado anterior — Fase 12D2
 
 Fase 12D2 — Builders/adapters de snapshot técnico e ponte controlada com Agenda Sanitária v2 — executada em escopo reduzido.
 

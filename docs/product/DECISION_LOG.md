@@ -1,6 +1,6 @@
 # Decision Log — RebanhoSync
 
-Atualizado em: 2026-06-08
+Atualizado em: 2026-06-09
 **Baseline Commit:** `91e0775`
 
 ## Objetivo
@@ -26,6 +26,14 @@ Cada decisão deve conter:
 ---
 
 ## Decisões consolidadas
+
+### 2026-06-09 — Extrair protocolos sanitários candidatos v2 em matrizes revisáveis antes de seed
+
+**Decisão:** extrair do guideline curatorial os protocolos, itens versionáveis, produtos/classes e fontes técnicas candidatos v2 em matrizes documentais revisáveis — sem seed, sem migration, sem agenda automática, sem sync, sem código funcional.
+
+* **Motivo:** o guideline curatorial é fonte de apoio, não fonte forte para campo crítico (dose, via, carência, espécie autorizada, obrigatoriedade legal). Qualquer carga prematura em banco poderia cristalizar candidatos não validados como protocolos ativos, com risco de agenda automática incorreta, carência incorreta ou uso em espécie não autorizada.
+* **Impacto:** 4 matrizes revisáveis criadas em `docs/review/evidence/`; 21 protocolos, 23 itens, 14 produtos/classes e 15 fontes técnicas extraídos e classificados com status curatorial e de automação; nenhuma linha é seed final; toda carência zero é candidata com lacuna identificada; bubalino não herda autorização bovina; itens experimentais/alerta ficaram bloqueados; SQL, RLS, Dexie, sync-batch, UI, contratos TypeScript 12D1/12D2, agenda, evento, estoque, venda, abate, aptidão e rastreabilidade animal não foram alterados.
+* **Status:** aprovado na 12D3 em escopo reduzido documental.
 
 ### 2026-06-08 — Estabilizar snapshots técnicos antes de offline/sync sanitário
 
