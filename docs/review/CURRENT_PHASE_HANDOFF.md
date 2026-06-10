@@ -2,7 +2,38 @@
 
 Atualizado em: 2026-06-09
 
-## 0. Handoff Atual — Fase 12D3
+## 0. Handoff Atual — Fase 12D4
+
+Fase 12D4 — Rebaseline conceitual das matrizes sanitárias v2: ProductClass, status curatorial e política de execução — executada como patch documental em escopo reduzido.
+
+Decisão: `PROSSEGUIR COM ESCOPO REDUZIDO`.
+
+Resultado:
+
+- modelo canônico `SanitaryProtocol → SanitaryProtocolItemVersion → ProductRequirement → ProductClass → ProductClassDefaultRule/Membership → SanitaryProduct` documentado no README curatorial;
+- `ProductClass` consolidada como entidade conceitual central — o item do protocolo exige uma classe, não um produto;
+- `ProductClassDefaultRule` separada com `can_validate_execution = false` e `requires_executed_product_for_withdrawal = true` invariáveis;
+- `SanitaryProduct` separado como exemplo/configuração/execução — nunca obrigatório do protocolo;
+- enums canônicos aplicados: `CurationStatus` (candidate/needs_review/approved_for_catalog/blocked/archived), `AutomationStatus` (manual_only/preview_allowed/agenda_allowed/blocked), `ExecutionProductPolicy` (not_required/required_at_agenda/required_at_execution/fixed_by_protocol);
+- `approved_for_seed` removido como status canônico; substituído por `approved_for_catalog`;
+- `requires_product_at_execution` removido de `automation_status`; virou `execution_product_policy = required_at_execution`;
+- linguagem de bulas corrigida: fontes produto-específicas com `scope_note` explícito; não representam toda a classe nem fixam carência no protocolo;
+- matriz de produtos separada em Seção A (ProductClass), B (ProductClassDefaultRule) e C (SanitaryProduct exemplos);
+- 12 `ProductClass` definidas conceitualmente; 19 defaults por classe/espécie/aptidão; 4 produtos exemplo identificados;
+- relatório de rebaseline 12D4 criado em `docs/review/evidence/RELATORIO_REVISAO_12D4_PRODUCT_CLASS_E_STATUS.md`;
+- critério de inclusão adicionado à matriz de fontes técnicas;
+- nenhum protocolo promovido para `approved_for_catalog` nesta fase;
+- carência permanece atributo de `WithdrawalRule` do `SanitaryProduct` executado — nunca do protocolo, item ou classe;
+- bubalino não herdou autorização bovina em nenhuma linha;
+- SQL, RLS, Dexie, sync-batch, UI, contratos TypeScript 12D1/12D2, seed, agenda, evento, estoque, venda, abate, aptidão, SISBOV, GTA, PNIB e rastreabilidade animal não foram alterados.
+
+Próxima fase recomendada:
+
+- `12D5 — Schema/contratos ProductClass, defaults e memberships`.
+
+---
+
+## 0.1. Handoff anterior — Fase 12D3
 
 Fase 12D3 — Extração curatorial de protocolos sanitários candidatos v2 para revisão — executada como patch documental em escopo reduzido.
 

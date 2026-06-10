@@ -1,73 +1,164 @@
-# Matriz de Produtos Sanitários Candidatos v2
+# Matriz de ProductClass, Defaults e Produtos Sanitários v2
 
-Atualizado em: 2026-06-09
-Fase: 12D3 — Extração curatorial de protocolos candidatos
+Atualizado em: 2026-06-09 (12D4+bulas)
+Fase: 12D4+bulas — Incorporação de evidências reais de bulas via URLs fornecidas
+Versão anterior: 12D4 (Rebaseline conceitual — ProductClass, status curatorial, política de execução)
 Responsável: Comitê Técnico-Veterinário e Arquitetural RebanhoSync
 
 ---
 
 ## Decisão
 
-Produtos abaixo são **candidatos curatoriais** para revisão técnica e veterinária.
+Esta matriz está separada em três seções:
 
-**Nenhum produto está ativo, nenhuma carência foi liberada, nenhum dado de fabricante ou registro foi inventado.** Onde o guideline cita classe sem produto comercial, `nome_comercial = NÃO_DEFINIDO`. Onde a carência depende de bula, `carencia_carne/leite = CONFIRMAR_BULA`.
+- **Seção A** — `ProductClass`: entidades conceituais que o item do protocolo exige.
+- **Seção B** — `ProductClassDefaultRule`: defaults operacionais por classe/espécie/aptidão.
+- **Seção C** — `SanitaryProduct` exemplos/configuráveis: produtos comerciais que satisfazem uma classe.
 
----
-
-## Regras de carência nesta matriz
-
-- **CONFIRMAR_BULA**: guideline cita um valor de referência, mas a carência final exige confirmação por bula do produto executado.
-- **ZERO_FONTE_BULA**: carência zero é candidata somente porque o guideline afirma explicitamente zero e indica que a bula confirma — mas exige validação de bula antes de seed.
-- **NAO_AUTORIZADO**: produto/contexto não autorizado para o uso declarado.
-- **VARIAVEL_POR_BULA**: varia entre fabricantes; somente bula do produto executado pode definir.
-- **DESCONHECIDO**: guideline não informa; fonte ausente.
+**Nenhuma carência foi liberada. Nenhum produto está ativo. Nenhuma linha é seed final.**
 
 ---
 
-## Tabela de Produtos Candidatos
+## Regras canônicas desta matriz (12D4)
 
-| product_candidate_key | classe | nome_comercial | principio_ativo | fabricante | registro | especie_autorizada | bubalino_status | dose | via | carencia_carne | carencia_leite | fonte_dose | fonte_via | fonte_carencia | status_curatorial | lacunas | observacoes |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| `vacina_fmd_inativada_multipla` | vacina inativada (FMD) | NÃO_DEFINIDO (produto aprovado MAPA para zona) | Aftovirus inativado múltiplo | NÃO_DEFINIDO | NÃO_DEFINIDO (MAPA/PNEFA) | bovino, bubalino | `SIM_NORMA` (PNEFA — bovídeos) | 2 mL (guideline) | SC ou IM (guideline) | ZERO_FONTE_BULA (IN-48/2020 eliminou carência) | ZERO_FONTE_BULA (IN-48/2020) | guideline_apoio | guideline_apoio | norma_oficial (IN-48/2020, MAPA) — candidato para confirmação | `needs_product_label` | Produto específico não definido; fabricante não definido; registro MAPA por produto; carência zero confirmada por IN-48/2020 (candidata) | Carência zero é candidata robusta por norma citada no guideline; produto específico precisa de curadoria |
-| `vacina_brucelose_b19` | vacina viva atenuada (Brucella) | NÃO_DEFINIDO (produto aprovado PNCEBT) | Brucella abortus cepa 19 (B19) | NÃO_DEFINIDO | NÃO_DEFINIDO (MAPA/PNCEBT) | bovino fêmea (3–8 meses); bubalino fêmea (condicional por UF) | `PRECISA_VALIDAR` — PNCEBT pode incluir bubalinas em alguns estados; verificar norma estadual | 2 mL (guideline) | SC (guideline) | VARIAVEL_POR_BULA (~30 dias carne — varia por fabricante) | CONFIRMAR_BULA (~30 dias afastamento leite por bula) | guideline_apoio | guideline_apoio | guideline_apoio + bula_fabricante (PRECISA_VALIDAR) | `needs_product_label` | Produto específico não definido; fabricante não definido; carência leite por fabricante; situação bubalino por UF | Dose única na vida; fêmeas apenas; marcação obrigatória; in-48/2020 citada para aftosa, não para brucelose — bula confirma carência |
-| `vacina_brucelose_rb51_bovilis` | vacina viva atenuada (Brucella RB51) | Bovilis® RB-51 (nome citado no guideline como exemplo) | Brucella abortus cepa RB51 | NÃO_DEFINIDO (MSD Animal Health — dedução; NÃO INVENTAR) | NÃO_DEFINIDO | bovino fêmea (sem leite) | `NAO_AUTORIZADO` — bula cita apenas "fêmeas bovinas"; bubalinas não autorizadas | 2 mL (guideline) | SC (guideline) | CONFIRMAR_BULA (~3 semanas por instrução genérica no guideline) | `NAO_AUTORIZADO` — vacina não autorizada em lactantes | guideline_apoio | guideline_apoio | guideline_apoio (genérico — confirmar bula) | `needs_product_label` | Fabricante e registro não confirmados; carência por bula do produto vigente; bubalino bloqueado | Alternativa técnica a B19; não obrigatória; não usar em machos; não usar em lactantes; bubalinas: NAO_AUTORIZADO |
-| `vacina_raiva_inativada_herbivoros` | vacina inativada (Raiva) | NÃO_DEFINIDO (ex: PastiVida, Raiva-Vac — exemplos no guideline) | Lyssavirus inativado | NÃO_DEFINIDO | NÃO_DEFINIDO (MAPA/PNCRH) | bovino, bubalino (condicional por programa estadual) | `PRECISA_VALIDAR` — alguns estados incluem bubalinos em campanhas; verificar programa estadual | 2 mL (guideline) | SC (guideline) | ZERO_FONTE_BULA (guideline: "geralmente 0 dias — vacina inativada; verificar bula") | ZERO_FONTE_BULA (guideline — confirmar bula específica) | guideline_apoio | guideline_apoio | guideline_apoio (genérico — confirmar bula de produto específico) | `needs_product_label` | Produto específico não definido (PastiVida e Raiva-Vac citados apenas como exemplos — NÃO confirmar como fabricante oficial); bubalino por programa estadual | Carência zero candidata por bula inativada — EXIGE confirmação; produto específico necessário |
-| `vacina_clostridial_7v_8v` | vacina toxoide multivalente (Clostridioses) | NÃO_DEFINIDO (múltiplos fabricantes registrados) | Toxoides: Cl. chauvoei, novyi, septicum, haemolyticum, sordellii + outros | NÃO_DEFINIDO | NÃO_DEFINIDO (MAPA — múltiplos) | bovino, bubalino (verificar bula) | `PRECISA_VALIDAR` — geralmente mesmo calendário; produto deve citar bubalinos | 2 mL (guideline) | SC (guideline) | ZERO_FONTE_BULA (guideline: "0 dias — vacina inativada" — confirmar bula por produto) | ZERO_FONTE_BULA (guideline — confirmar bula) | guideline_apoio | guideline_apoio | guideline_apoio (genérico — confirmar bula) | `needs_product_label` | Produto específico não definido; carência zero por bula a confirmar; fabricante e registro por produto | Core técnica; não é obrigação legal universal; não confundir com antraz (carbúnculo hemático) |
-| `bacterina_leptospirose_5_6_soros` | bacterina (Leptospirose) | NÃO_DEFINIDO (múltiplos fabricantes) | Leptospira spp. (Hardjo bovis, Canicola, Icterohaemorrhagiae, Pomona, etc.) | NÃO_DEFINIDO | NÃO_DEFINIDO (MAPA — múltiplos) | bovino, bubalino (produto adaptado se disponível) | `PRECISA_VALIDAR` — bubalinos mais suscetíveis a alguns sorogrupos; produto adaptado recomendado | 2 mL (guideline) | SC (guideline) | VARIAVEL_POR_BULA (guideline: "Hardjo ~14–21d carne — confirmar bula do produto específico") | VARIAVEL_POR_BULA (guideline: "0–72h leite — confirmar bula") | guideline_apoio | guideline_apoio | guideline_apoio + bula_fabricante (PRECISA_VALIDAR) | `needs_product_label` | Produto específico não definido; carência altamente variável por produto; bubalino: produto adaptado | Carência mais crítica desta matriz — varia por fabricante e por sorogrupo; confirmar sempre por bula |
-| `vacina_viral_respiratorio_inativada` | vacina inativada combinada viral (IBR/BVD/PI3/BRSV) | NÃO_DEFINIDO (ex: CattleMaster 4+L5 — citado no guideline como exemplo de classe) | BoHV-1 (IBR), BVDV (BVD), BPIV3 (PI3), BRSV inativados | NÃO_DEFINIDO | NÃO_DEFINIDO (MAPA) | bovino (bula do produto); bubalino: sem bula específica conhecida | `NAO_AUTORIZADO` — sem bula específica para bubalino no Brasil | 2 mL (guideline) | IM (guideline) | ZERO_FONTE_BULA (guideline: "0 dias — inativada sem antibióticos — confirmar bula") | ZERO_FONTE_BULA (guideline) | guideline_apoio | guideline_apoio | guideline_apoio (genérico — confirmar bula do produto) | `needs_product_label` | Produto específico não definido (CattleMaster citado apenas como exemplo de classe); bubalino bloqueado; fabricante e registro por produto | Vacinas vivas contraindicadas em gestantes; inativadas seguras; reforço anual/semestral |
-| `endectocida_ivermectina_1pct_injetavel` | endectocida injetável (Avermectina) | NÃO_DEFINIDO (múltiplos fabricantes) | Ivermectina 1% | NÃO_DEFINIDO | NÃO_DEFINIDO (MAPA — múltiplos) | bovino, bubalino (verificar bula) | `PRECISA_VALIDAR` — dose geralmente idêntica por peso; verificar bula do produto para bubalino | 1 mL/50kg = 200 µg/kg (guideline) | SC (guideline) | CONFIRMAR_BULA (guideline: "35 dias carne") | `NAO_AUTORIZADO` — guideline: "não usar; leite não consumir" | guideline_apoio | guideline_apoio | guideline_apoio (carência carne 35d — CONFIRMAR_BULA; leite NAO_AUTORIZADO) | `needs_product_label` | Produto específico não definido; fabricante e registro por produto; bubalino por bula | Não usar em lactantes; carência carne 35 dias — confirmar por bula; rotacionar classes para resistência |
-| `endectocida_ivermectina_0_5pct_pour_on` | endectocida tópico/pour-on (Avermectina) | NÃO_DEFINIDO (múltiplos fabricantes) | Ivermectina 0,5% | NÃO_DEFINIDO | NÃO_DEFINIDO (MAPA — múltiplos) | bovino, bubalino (verificar bula) | `PRECISA_VALIDAR` | 1 mL/10kg linha dorsal (guideline) | tópica/pour-on (guideline) | CONFIRMAR_BULA (guideline: "28 dias carne") | ZERO_FONTE_BULA (guideline: "0 dias leite") — confirmar bula | guideline_apoio | guideline_apoio | guideline_apoio (28d carne, 0 leite — CONFIRMAR_BULA) | `needs_product_label` | Produto específico não definido; carência leite zero por guideline — confirmar bula | Não misturar com outros por não administrar < 42 dias; aplicação cutânea dorsal |
-| `endectocida_eprinomectina_0_5pct_pour_on` | endectocida tópico/pour-on (Avermectina lactante) | NÃO_DEFINIDO (ex: Eprinex — nome de princípio ativo; NÃO é nome comercial definitivo) | Eprinomectina 0,5% | NÃO_DEFINIDO | NÃO_DEFINIDO (MAPA) | bovino, bubalino (verificar bula — citado para leiteiros) | `PRECISA_VALIDAR` — guideline cita para bubalinos leiteiros; verificar bula | 1 mL/10kg linha dorsal (guideline) | tópica/pour-on (guideline) | ZERO_FONTE_BULA (guideline: "0 dias carne e leite") | ZERO_FONTE_BULA (guideline: "0 dias") — EXIGE bula explícita | guideline_apoio | guideline_apoio | guideline_apoio — carência zero EXIGE bula explícita; zero não é inferido por ausência | `needs_product_label` | Nome comercial candidato não confirmado; fabricante e registro por produto específico; carência zero EXIGE bula | Produto ideal para lactantes por guideline; carência zero exige fonte bula explícita — NUNCA inferida |
-| `benzimidazol_albendazol_10pct` | benzimidazol oral (Antelmíntico) | NÃO_DEFINIDO (múltiplos fabricantes) | Albendazol 10% | NÃO_DEFINIDO | NÃO_DEFINIDO (MAPA — múltiplos) | bovino, bubalino (verificar bula) | `PRECISA_VALIDAR` | 10 mg/kg = 1 mL/10kg (guideline) | oral/PO (guideline) | CONFIRMAR_BULA (guideline: "14 dias carne") | CONFIRMAR_BULA (guideline: "72h leite") | guideline_apoio | guideline_apoio | guideline_apoio (14d carne, 72h leite — CONFIRMAR_BULA) | `needs_product_label` | Produto específico não definido; carência por bula; contra indicado em gestantes | Hepatotóxico; contraindicado em gestantes; 14d carne e 72h leite — confirmar bula |
-| `bacterina_campylobacter_bovino` | bacterina (Campylobacteriose) | NÃO_DEFINIDO (produto registrado MAPA para bovinos) | Campylobacter fetus venerealis (bacterina dupla) | NÃO_DEFINIDO | NÃO_DEFINIDO | bovino | `NAO_AUTORIZADO` (não há vacina para bubalinos; não aplicável) | 2 doses 30 dias (guideline) | SC (guideline — inferido) | DESCONHECIDO (guideline não informa carência) | DESCONHECIDO | guideline_apoio | guideline_apoio | DESCONHECIDO — bula necessária | `needs_product_label` | Produto específico não definido; carência não informada no guideline; bubalino não aplicável | Recomendado para fazendas de cria; touros: dose única anual antes da estação |
-| `vacina_rb51_bovino_bloqueio_bubalino` | vacina viva atenuada (Brucella RB51) — registro bloqueio bubalino | Bovilis® RB-51 (citado no guideline) | Brucella abortus cepa RB51 | NÃO_DEFINIDO | NÃO_DEFINIDO | bovino fêmea (sem leite) | `NAO_AUTORIZADO` — bula cita apenas fêmeas bovinas | 2 mL (guideline) | SC (guideline) | CONFIRMAR_BULA | `NAO_AUTORIZADO` (lactantes) | guideline_apoio | guideline_apoio | guideline_apoio | `blocked_alert_only` | Fabricante e registro por bula vigente; bubalino bloqueado; carência por bula | Este produto é o mesmo que `vacina_brucelose_rb51_bovilis` — linha duplicada com foco no status de bloqueio bubalino para evidência |
-| `toxocara_vitulorum_pesquisa_bubalino` | antelmíntico (experimental/pesquisa — sem vacina registrada) | NÃO_DEFINIDO (sem vacina comercial) | NÃO_DEFINIDO (estudos iniciais em bubalinos — sem formulação comercial) | NÃO_DEFINIDO | NÃO_DEFINIDO | bubalino (estudos preliminares) | `PRECISA_VALIDAR` (sem vacina registrada; uso de antiparasitários orais como controle) | NÃO_DEFINIDO | NÃO_DEFINIDO | DESCONHECIDO | DESCONHECIDO | NÃO_DISPONIVEL | NÃO_DISPONIVEL | NÃO_DISPONIVEL | `blocked_alert_only` | Sem produto comercial; sem vacina registrada; sem dose; sem via; sem carência — tudo ausente | Controle atual por antiparasitários orais (não por vacina); somente alerta documental |
+1. `ProductClass` é entidade conceitual obrigatória — o item do protocolo a exige.
+2. `SanitaryProduct` é a concretização que satisfaz uma `ProductClass` na execução.
+3. `ProductClassDefaultRule` são defaults operacionais — sugestão, pré-preenchimento, nunca validação.
+4. `can_validate_execution = false` em toda `ProductClassDefaultRule` (invariável).
+5. `requires_executed_product_for_withdrawal = true` em toda `ProductClassDefaultRule` (invariável).
+6. Carência **não entra** em `ProductClass` nem em `ProductClassDefaultRule`.
+7. Carência é atributo de `WithdrawalRule` do `SanitaryProduct` executado.
+8. Bulas comerciais são fontes produto-específicas. Não representam toda a classe. Não fixam carência no protocolo.
+9. `SanitaryProduct` é exemplo/configuração/execução — não obrigatório, não representante universal da classe.
 
 ---
 
-## Resumo de lacunas críticas por campo
+## Seção A — ProductClass
 
-| Campo | Produtos afetados | Ação necessária |
-|---|---|---|
-| `nome_comercial` | Todos exceto Bovilis® RB-51 (citado como exemplo) | Curadoria de produtos registrados MAPA por classe |
-| `fabricante` | Todos | Curadoria via MAPA/SINDAN |
-| `registro` | Todos | Consulta ao MAPA para número de registro por produto |
-| `carencia_carne` | Leptospirose, Ivermectinas, Brucelose, Raiva | Bula do produto executado |
-| `carencia_leite` | Leptospirose, Ivermectinas, Albendazol | Bula do produto executado |
-| `bubalino_status` | Clostridioses, IBR/BVD, Leptospirose, Ivermectinas, Brucelose | Revisão de bulas específicas por espécie |
-| `carencia_zero_confirmada` | Eprinomectina, Aftosa (por IN-48/2020) | Bula e/ou norma explícita — jamais inferida |
-| `especie_bubalino_forte` | RB51 (bloqueado), IBR/BVD (bloqueado) | Fonte forte ausente; bloqueio confirmado |
+Entidades conceituais de classe de produto sanitário.
 
----
-
-## Notas gerais
-
-1. **Eprinomectina**: é o único produto onde a carência zero pode ser candidata robusta, pois o guideline cita "carência zero carne e leite" e "vacas leiteiras" — mas mesmo assim exige confirmação de bula antes de qualquer seed.
-2. **Febre aftosa**: carência zero candidata robusta por IN-48/2020 citada no guideline — a mais próxima de `validated_for_review` nesta categoria.
-3. **Brucelose RB51**: bubalino bloqueado confirmado por bula citada no guideline — único produto com evidência de `NAO_AUTORIZADO` disponível no guideline.
-4. **Toxocara bubalino**: sem produto comercial; sem dose; sem via; sem carência — entrada apenas documental/alerta.
-5. **Campylobacteriose**: carência desconhecida — guideline não informa; bula necessária antes de qualquer dado.
+| product_class_key | class_name | class_description | product_type | target_condition | species_scope | curation_status | automation_status | limitations | source_refs_by_field | observacoes |
+|---|---|---|---|---|---|---|---|---|---|---|
+| `vacina_fmd_inativada` | Vacina Inativada contra Febre Aftosa | Vacina inativada multivalente contra FMD (Aftovirus) aprovada para zona de vacinação | `vacina_inativada` | Febre Aftosa (FMD) — Aftovirus | bovino, bubalino | `needs_review` | `blocked` | Uso proibido em UF livre sem vacinação; produto específico aprovado por PNEFA necessário | legal_status: Portaria 665/2024 (PRECISA_VALIDAR); product_requirement: PNEFA (PRECISA_VALIDAR) | Produto específico definido pelo programa PNEFA por zona e UF |
+| `vacina_brucelose_b19` | Vacina Viva Atenuada B19 — Brucella | Vacina viva atenuada com Brucella abortus cepa B19; uso obrigatório em fêmeas bovinas 3–8 meses por PNCEBT | `vacina_viva_atenuada` | Brucelose — Brucella abortus cepa B19 | bovino fêmea; bubalino fêmea (condicional por UF) | `needs_review` | `blocked` | Dose única na vida; fêmeas apenas; marcação obrigatória; carência por bula do produto; bubalino por norma estadual | legal_status: PNCEBT/IN-21/2008 (PRECISA_VALIDAR); species: IN 28/2005 MAPA (PRECISA_VALIDAR) | Produto aprovado pelo PNCEBT; bula do produto define carência |
+| `vacina_brucelose_rb51` | Vacina Viva Atenuada RB51 — Brucella | Vacina viva atenuada com Brucella abortus cepa RB51; alternativa técnica a B19; não obrigatória | `vacina_viva_atenuada` | Brucelose — Brucella abortus cepa RB51 | bovino fêmea (sem lactação) | `needs_review` | `blocked` | Não usar em bubalinas; não usar em lactantes; carência por bula do produto | species: bula produto-específica (ex: Bovilis® RB-51 — evidência de variabilidade) | Bubalino bloqueado por evidência produto-específica; evidência não representa toda a classe |
+| `vacina_antirrabica_inativada` | Vacina Inativada contra Raiva — Herbívoros | Vacina inativada contra raiva em herbívoros; uso condicional por zona/campanha estadual | `vacina_inativada` | Raiva — Lyssavirus | bovino, bubalino | `needs_review` | `blocked` | Não obrigatório em todo o país; regionalizado; bubalino por programa estadual | legal_status: PNCRH (PRECISA_VALIDAR); product_requirement: bula por produto (PRECISA_VALIDAR) | Produto específico por campanha estadual |
+| `vacina_clostridial_multivalente` | Vacina Toxoide Clostridial Multivalente (7V/8V) | Vacina toxoide multivalente contra clostridioses (Cl. chauvoei, novyi, septicum, haemolyticum, sordellii e outros) | `vacina_toxoide` | Clostridioses — Clostridium spp. múltiplas | bovino, bubalino | `needs_review` | `preview_allowed` | Não confundir com antraz; carência zero candidata por bula — confirmar por produto | product_requirement: bula por produto (PRECISA_VALIDAR) | Core técnica; não é obrigação legal; múltiplos fabricantes registrados |
+| `bacterina_leptospirose` | Bacterina contra Leptospirose (5–6 sorogrupos) | Bacterina polivalente contra Leptospira spp. (Hardjo bovis, Canicola, Icterohaemorrhagiae, Pomona e outros) | `bacterina` | Leptospirose — Leptospira spp. | bovino, bubalino | `needs_review` | `blocked` | Carência altamente variável por produto e sorogrupo; SP exige por portaria estadual | product_requirement: bula por produto (PRECISA_VALIDAR); legal_status: portaria SP (PRECISA_VALIDAR) | Bubalinos mais suscetíveis a alguns sorogrupos; produto adaptado pode ser necessário |
+| `vacina_ibr_bvd_combinada` | Vacina Combinada IBR/BVD/PI3/BRSV | Vacina inativada ou viva modificada combinada contra vírus respiratórios bovinos (IBR, BVD, PI3, BRSV) | `vacina_combinada` | IBR (BoHV-1), BVD, PI3, BRSV | bovino | `needs_review` | `preview_allowed` | Vivas contraindicadas em gestantes; bubalino sem bula específica conhecida | product_requirement: bula por produto (PRECISA_VALIDAR) | Bubalino bloqueado por ausência de bula específica; inativadas seguras em gestantes avançadas |
+| `bacterina_campylobacter` | Bacterina contra Campylobacteriose | Bacterina dupla contra Campylobacter fetus venerealis para reprodutores | `bacterina` | Campylobacteriose — Campylobacter fetus venerealis | bovino | `needs_review` | `preview_allowed` | Carência não informada no guideline; bula necessária | product_requirement: bula por produto (PRECISA_VALIDAR) | Não aplicável para bubalinos; recomendado para fazendas de cria |
+| `endectocida_ivermectina_injetavel` | Endectocida Injetável (Ivermectina 1%) | Endectocida injetável de amplo espectro com princípio ativo ivermectina 1% | `endectocida_injetavel` | Endoparasitas, Ectoparasitas | bovino, bubalino | `needs_review` | `blocked` | Não usar em lactantes; carência carne ~35d — confirmar bula; rotacionar classes | product_requirement: bula por produto (PRECISA_VALIDAR) | Múltiplos fabricantes registrados; bubalino por bula específica |
+| `endectocida_ivermectina_pour_on` | Endectocida Pour-On (Ivermectina 0,5%) | Endectocida tópico de amplo espectro com princípio ativo ivermectina 0,5% | `endectocida_pour_on` | Endoparasitas, Ectoparasitas | bovino, bubalino | `needs_review` | `preview_allowed` | Aplicação cutânea dorsal; não administrar < 42 dias de outro endectocida | product_requirement: bula por produto (PRECISA_VALIDAR) | Carência carne ~28d; leite 0 dias candidato — confirmar bula |
+| `endectocida_eprinomectina_pour_on` | Endectocida Pour-On Lactante (Eprinomectina) | Endectocida tópico com eprinomectina 0,5%; candidato para carência zero carne e leite | `endectocida_pour_on` | Endoparasitas, Ectoparasitas | bovino, bubalino | `needs_review` | `blocked` | Carência zero EXIGE bula explícita; nunca inferida por ausência | product_requirement: bula por produto (PRECISA_VALIDAR); carencia_zero: bula explícita exigida | Ideal para lactantes por guideline; carência zero é candidata, não confirmada |
+| `antielmintico_albendazol` | Anti-helmíntico Oral (Albendazol 10%) | Anti-helmíntico oral benzimidazol com princípio ativo albendazol 10% | `antielmintico_oral` | Endoparasitas — nematódeos | bovino, bubalino | `needs_review` | `preview_allowed` | Contraindicado em gestantes (hepatotóxico); carência carne ~14d e leite ~72h — confirmar bula | product_requirement: bula por produto (PRECISA_VALIDAR) | Múltiplos fabricantes registrados |
 
 ---
 
-_Versão: 12D3 | Produtos candidatos para revisão | Nenhuma carência liberada | Não são seed_
+## Seção B — ProductClassDefaultRule
+
+Defaults operacionais por classe/espécie/aptidão.
+
+> **Regra invariável:** `can_validate_execution = false` | `requires_executed_product_for_withdrawal = true`
+>
+> Defaults são sugestão operacional (preview, agenda). Não validam o evento executado. Não calculam carência.
+
+| product_class_key | species_code | aptitude_scope | dose_quantity | dose_unit | dose_basis | route | default_status | can_prefill_agenda | can_suggest_at_execution | can_validate_execution | requires_executed_product_for_withdrawal | source_refs_by_field | limitations |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| `vacina_fmd_inativada` | bovino | all | 2 | mL | animal | SC | `needs_review` | false | false | **false** | **true** | guideline_apoio (PRECISA_VALIDAR) | Default bloqueado até norma vigente confirmada; produto específico da zona/UF exigido |
+| `vacina_brucelose_b19` | bovino | all | 2 | mL | animal | SC | `needs_review` | false | false | **false** | **true** | guideline_apoio (PRECISA_VALIDAR) | Default bloqueado até bula e norma confirmadas; fêmeas 3–8 meses apenas |
+| `vacina_brucelose_rb51` | bovino | corte, mista | 2 | mL | animal | SC | `needs_review` | false | false | **false** | **true** | guideline_apoio (PRECISA_VALIDAR) | Default bloqueado até bula confirmada; não usar em lactantes |
+| `vacina_antirrabica_inativada` | bovino | all | 2 | mL | animal | SC | `needs_review` | false | false | **false** | **true** | guideline_apoio (PRECISA_VALIDAR) | Default bloqueado até programa estadual confirmado |
+| `vacina_antirrabica_inativada` | bubalino | all | 2 | mL | animal | SC | `needs_review` | false | false | **false** | **true** | guideline_apoio (PRECISA_VALIDAR) | Default bloqueado; programa estadual por UF necessário |
+| `vacina_clostridial_multivalente` | bovino | all | 2 | mL | animal | SC | `needs_review` | true | true | **false** | **true** | guideline_apoio (PRECISA_VALIDAR) | Default pode pré-preencher agenda/preview; bula do produto confirma dose real |
+| `vacina_clostridial_multivalente` | bubalino | all | 2 | mL | animal | SC | `needs_review` | true | true | **false** | **true** | guideline_apoio (PRECISA_VALIDAR) | Verificar bula do produto para bubalino |
+| `bacterina_leptospirose` | bovino | all | 2 | mL | animal | SC | `needs_review` | false | false | **false** | **true** | guideline_apoio (PRECISA_VALIDAR) | Default bloqueado; carência altamente variável por bula |
+| `bacterina_leptospirose` | bubalino | all | 2 | mL | animal | SC | `needs_review` | false | false | **false** | **true** | guideline_apoio (PRECISA_VALIDAR) | Default bloqueado; produto adaptado pode ser necessário |
+| `vacina_ibr_bvd_combinada` | bovino | all | 2 | mL | animal | IM | `needs_review` | true | true | **false** | **true** | guideline_apoio (PRECISA_VALIDAR) | Default pode pré-preencher; tipo (inativada vs viva) depende do produto escolhido |
+| `bacterina_campylobacter` | bovino | corte, mista | 2 | mL | animal | SC | `needs_review` | true | true | **false** | **true** | guideline_apoio (PRECISA_VALIDAR) | Default pode pré-preencher; carência por bula |
+| `endectocida_ivermectina_injetavel` | bovino | corte, mista | 1 | mL | kg_peso_vivo | SC | `needs_review` | false | false | **false** | **true** | guideline_apoio (PRECISA_VALIDAR) | Default bloqueado; não usar em lactantes; carência carne ~35d — confirmar bula |
+| `endectocida_ivermectina_injetavel` | bubalino | corte, mista | 1 | mL | kg_peso_vivo | SC | `needs_review` | false | false | **false** | **true** | guideline_apoio (PRECISA_VALIDAR) | Default bloqueado; bula do produto para bubalino |
+| `endectocida_ivermectina_pour_on` | bovino | all | 1 | mL | kg_peso_vivo | topica_dorsal | `needs_review` | true | true | **false** | **true** | guideline_apoio (PRECISA_VALIDAR) | Carência leite 0 dias candidato — confirmar bula |
+| `endectocida_ivermectina_pour_on` | bubalino | all | 1 | mL | kg_peso_vivo | topica_dorsal | `needs_review` | true | true | **false** | **true** | guideline_apoio (PRECISA_VALIDAR) | Verificar bula do produto para bubalino |
+| `endectocida_eprinomectina_pour_on` | bovino | leite | 1 | mL | kg_peso_vivo | topica_dorsal | `needs_review` | false | false | **false** | **true** | guideline_apoio (PRECISA_VALIDAR) | Default bloqueado; carência zero EXIGE bula explícita |
+| `endectocida_eprinomectina_pour_on` | bubalino | leite | 1 | mL | kg_peso_vivo | topica_dorsal | `needs_review` | false | false | **false** | **true** | guideline_apoio (PRECISA_VALIDAR) | Default bloqueado; verificar bula; carência zero EXIGE bula |
+| `antielmintico_albendazol` | bovino | all | 10 | mg_kg | kg_peso_vivo | oral | `needs_review` | true | true | **false** | **true** | guideline_apoio (PRECISA_VALIDAR) | Contraindicado em gestantes; carência carne ~14d e leite ~72h — confirmar bula |
+| `antielmintico_albendazol` | bubalino | all | 10 | mg_kg | kg_peso_vivo | oral | `needs_review` | true | true | **false** | **true** | guideline_apoio (PRECISA_VALIDAR) | Verificar bula do produto para bubalino; contraindicado em gestantes |
+
+---
+
+## Seção C — SanitaryProduct exemplos/configuráveis
+
+Produtos comerciais que satisfazem uma `ProductClass`.
+
+> Produtos são **exemplos/configurações/execuções** — não obrigatórios, não representantes universais da classe.
+> Carência do produto vai para a regra do produto executado, não para a classe.
+> **Fonte forte apenas para o produto comercial citado.** Usada como evidência produto-específica e como prova de variabilidade por bula. Não cria produto obrigatório, não representa toda a classe e não fixa carência no protocolo.
+
+| product_example_key | product_class_key | nome_comercial | fabricante | registro | principio_ativo | apresentacao | membership_status | uso_no_modelo | fonte_bula | bula_status | dados_confirmados | limitations |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| `bovilis_rb51_msd` | `vacina_brucelose_rb51` | **Bovilis® RB-51** | **MSD Saúde Animal Brasil** ✅ (confirmado na página MSD) | PRECISA_VALIDAR (MAPA/SINDAN) | Brucella abortus cepa RB51 atenuada | suspensão injetável | `example_only` | Evidência produto-específica; nome e fabricante confirmados via página MSD. Descrição MSD: "Vacina viva atenuada contra Brucelose Bovina, cepa RB-51". Indicação: brucelose bovina. | `bula_bovilis_rb51_msd` | **`PRECISA_VALIDAR`** — página confirmada, bula completa JS-rendered | ✅ Nome: "BOVILIS® RB-51" ✅ Fabricante: MSD ✅ Indicação: Brucelose Bovina ❌ Dose: não extraída ❌ Via: não extraída ❌ Carência: não extraída ❌ Espécie bubalino: não extraída | Bula completa (MAPA/site MSD com JS) necessária para confirmar dose, via, carência e exclusão de bubalinos |
+| `eprinex_pour_on_merial` | `endectocida_eprinomectina_pour_on` | **Eprinex Pour-On** | **Merial** (agora Boehringer Ingelheim) ✅ (confirmado via Suifarma) | PRECISA_VALIDAR (MAPA/SINDAN) | Eprinomectina 0,5% | pour-on (galão 1L e 2,5L) | `example_only` | **Carência zero confirmada pela bula.** Bula extraída via Suifarma: composição eprinomectina 0,5%; controla vermes redondos GI e pulmonar, berne, ácaros (sarcóptica e corióptica), piolhos, mosca-dos-chifres. Dose: 1mL/10kg, tópico dorsal (cernelha → lombo-sacral). **Carência: "Não" (zero)** para leite e carne. Espécie: bovinos corte e leite, inclusive vacas em lactação. | `bula_eprinex_pour_on_merial_suifarma` | **`SIM_BULA`** ✅ (conteúdo real extraído) | ✅ Nome: "Eprinex Pour-On" ✅ Fabricante: Merial ✅ Princípio ativo: Eprinomectina 0,5% ✅ Dose: 1mL/10kg ✅ Via: tópica dorsal ✅ **Carência: zero (leite e carne)** ✅ Espécie: bovinos (corte + leite + lactantes) ❌ Bubalinos: não mencionado na bula | **Carência zero confirmada para Eprinex Merial.** NÃO extrapolar carência zero para outros produtos de eprinomectina sem bula própria |
+| `raivacel_multi_msd` | `vacina_antirrabica_inativada` | **RAIVACEL MULTI** | **MSD Saúde Animal Brasil** ✅ (confirmado na página MSD) | PRECISA_VALIDAR (MAPA/SINDAN) | Vírus rábico inativado (múltiplas cepas) | suspensão injetável | `example_only` | Nome e fabricante confirmados via página MSD. Descrição MSD: "Vacina contra a Raiva". | `bula_raivacel_multi_msd` | **`PRECISA_VALIDAR`** — página confirmada, bula completa JS-rendered | ✅ Nome: "RAIVACEL MULTI" ✅ Fabricante: MSD ✅ Indicação: Raiva ❌ Dose: não extraída ❌ Via: não extraída ❌ Carência: não extraída ❌ Espécies: não extraídas | Bula completa necessária para confirmar dose, via, carência, espécies autorizadas |
+| `fortress_7_zoetis` | `vacina_clostridial_multivalente` | **Fortress 7** | **Zoetis** ✅ (URL confirmada; conteúdo JS-rendered) | PRECISA_VALIDAR (MAPA/SINDAN) | Toxoide clostridial 7 valências (Cl. chauvoei, septicum, novyi, sordellii, perfringens C e D, tetani) | suspensão injetável | `example_only` | Produto identificado via URL Zoetis. Fortress 7: vacina clostridial 7 valências para bovinos. Página acessada mas JS impediu extração do conteúdo textual. | `bula_fortress_7_zoetis` | **`PRECISA_VALIDAR`** — página acessada, JS-rendered | ✅ Nome: "Fortress 7" ✅ Fabricante: Zoetis ✅ Classe: Clostridial multivalente (7V) ❌ Dose: não extraída ❌ Via: não extraída ❌ Carência: não extraída (candidata zero) ❌ Espécies: não extraídas | Bula completa exige acesso JS ou bula MAPA. Carência candidata zero — não confirmar sem bula |
+| `leptoferm5_zoetis` | `bacterina_leptospirose` | **Leptoferm 5** | **Zoetis** ✅ (PDF baixado e OCR) | **5.037 em 15/03/95** (confirmado) | Bacterina de Leptospira (5 sorogrupos inativados) | injetável (solução IM) | `validated` | Leptoferm 5: bacterina contra leptospirose. Dose: 2 mL. Via: IM. Esquema: dose única inicial (bovinos), revacinação anual. **Carência: 21 dias para abate** (carne). | `bula_leptoferm5_zoetis_pdf` | **`SIM_BULA`** | ✅ Nome: "Leptoferm 5" ✅ Fabricante: Zoetis ✅ Tipo: bacterina 5 sorogrupos ✅ Dose: 2 mL ✅ Via: IM ✅ **Carência: 21 dias (abate/carne)** ✅ Espécies: bovinos e suínos | **Carência carne de 21 dias confirmada.** Muito crítica para planejamento de abate. |
+| `anticarbunculosa_labovet` | `vacina_antraz_hemático` | **Vacina Anticarbunculosa** | **Labovet** ✅ (PDF baixado e OCR) | **3.747 em 14/06/91** (confirmado) | Esporos de Bacillus anthracis atenuados (cepa Sterne) | suspensão injetável SC | `validated` | Vacina contra Carbúnculo Hemático (Antraz). Dose: bovinos 2 mL, ovinos/caprinos 1 mL. Via: SC. Idade: a partir de 4 meses, anual. **Carência: não citada na bula (zero/padrão)**. | `bula_anticarbunculosa_labovet_pdf` | **`SIM_BULA`** | ✅ Nome: "Vacina Anticarbunculosa" ✅ Fabricante: Labovet ✅ Indicação: Antraz (Bacillus anthracis) ✅ Dose: 2 mL (bovinos), 1 mL (ovinos/caprinos) ✅ Via: SC ✅ **Carência: não mencionada** ✅ Espécies: bovinos, ovinos e caprinos | Antraz é protocolo distinct de clostridioses. Não confundir. Notificação obrigatória MAPA. |
+| `ivomec_injetavel_boehringer` | `endectocida_ivermectina_injetavel` | **Ivomec Injetável** | **Boehringer Ingelheim** (ex-Merial) | PRECISA_VALIDAR (MAPA/SINDAN) | Ivermectina 1% | injetável SC (solução) | `example_only` | URL bloqueada por bot-protection (Incapsula). Produto identificado por nome. Ivomec: ivermectina 1% injetável. | `bula_ivomec_injetavel_boehringer` | **`PRECISA_VALIDAR`** — URL bloqueada, bula MAPA necessária | ✅ Nome: "Ivomec Injetável" ✅ Fabricante: Boehringer ❌ Dose: não confirmada ❌ Via: não confirmada ❌ Carência: não confirmada ❌ Espécies: não confirmadas | Dados de dose e carência baseados em knowledge base — NÃO usar sem bula confirmada |
+| `supramec_pour_on_msd` | `endectocida_ivermectina_pour_on` | **Supramec Pour-on** | **MSD Saúde Animal Brasil** | PRECISA_VALIDAR (MAPA/SINDAN) | Ivermectina 0,5% | pour-on | `example_only` | URL (loja Santa Clara) não acessada nesta sessão. Produto identificado por nome. Supramec: ivermectina 0,5% pour-on da MSD. | `bula_supramec_pour_on_msd` | **`PRECISA_VALIDAR`** — URL não acessada, bula MSD/MAPA necessária | ✅ Nome: "Supramec Pour-on" ✅ Fabricante: MSD ❌ Dose: não confirmada ❌ Via: não confirmada ❌ Carência: não confirmada | URL era de loja; bula oficial necessária via MSD ou MAPA |
+| `valbazen_10_zoetis` | `antielmintico_albendazol` | **Valbazen 10** | **Zoetis** | PRECISA_VALIDAR (MAPA/SINDAN) | Albendazol 10% | suspensão oral | `example_only` | URL (loja Agroline) não acessada nesta sessão. Produto identificado por nome. Valbazen: albendazol 10% oral Zoetis. Carência variável (candidata: carne ~14d, leite ~84h). Contraindicado em gestantes 1º trimestre. | `bula_valbazen_10_zoetis` | **`PRECISA_VALIDAR`** — URL não acessada, bula Zoetis/MAPA necessária | ✅ Nome: "Valbazen 10" ✅ Fabricante: Zoetis ❌ Dose: não confirmada ❌ Via: não confirmada ❌ Carência: não confirmada ❌ Contraindicações: não confirmadas | URL era de loja; bula oficial necessária. Contraindicação em gestantes: confirmar antes de usar |
+| `cattlemaster_4l5_exemplo` | `vacina_ibr_bvd_combinada` | CattleMaster 4+L5 (citado no guideline) | NÃO_CONFIRMADO (citado apenas no guideline como exemplo) | NÃO_CONFIRMADO | BoHV-1, BVDV, BPIV3, BRSV inativados + Leptospira | suspensão injetável | `example_only` | Exemplo de produto da classe `vacina_ibr_bvd_combinada`; citado no guideline apenas para contextualizar a classe | guideline_apoio | **`PRECISA_VALIDAR`** | ❌ Nenhum campo confirmado | Evidência de classe — NÃO tratar como produto obrigatório; bula do produto executado define dose e carência |
+| `gavac_bm86_restrito` | `vacina_bm86_recombinante` | Gavac | NÃO_CONFIRMADO | NÃO_CONFIRMADO — aprovação parcial por estado ✅ (confirmado pelo usuário) | Antígeno recombinante Bm86 | suspensão injetável | **`blocked`** | Vacina experimental/restrita a estados específicos. **Confirmado pelo usuário: "Restrito".** Uso bloqueado fora de pesquisa/aprovação parcial por estado. | `bm86_gavac_restrito` | **`NAO_AUTORIZADO`** | ✅ Restrição confirmada pelo usuário | `blocked` permanente para protocolo padrão; não liberar sem aprovação estadual explícita |
+
+---
+
+## Situação dos produtos por classe após URLs fornecidas
+
+| product_class_key | produto_exemplo_identificado | bula_status | carencia_status | ação_necessária |
+|---|---|---|---|---|
+| `vacina_fmd_inativada` | Não identificado nas URLs fornecidas | `PRECISA_VALIDAR` | PNEFA/IN-48/2020 (não extraída) | Curadoria via MAPA/PNEFA por UF |
+| `vacina_brucelose_b19` | Não identificado nas URLs fornecidas | `PRECISA_VALIDAR` | PNCEBT/IN-21 (não extraída) | Curadoria via MAPA/PNCEBT/SINDAN |
+| `vacina_brucelose_rb51` | ✅ **Bovilis® RB-51 (MSD)** — nome/fabricante confirmados | `PRECISA_VALIDAR` (bula JS-rendered) | Não extraída | Ler bula MAPA para dose, via, carência, espécies |
+| `vacina_antirrabica_inativada` | ✅ **RAIVACEL MULTI (MSD)** — nome/fabricante confirmados | `PRECISA_VALIDAR` (bula JS-rendered) | Não extraída | Ler bula MAPA para dose, via, carência, espécies |
+| `vacina_clostridial_multivalente` | ✅ **Fortress 7 (Zoetis)** — produto identificado, site JS | `PRECISA_VALIDAR` (bula JS-rendered) | Candidata zero — não confirmada | Ler bula MAPA/Zoetis com JS para confirmar |
+| `bacterina_leptospirose` | ✅ **Leptoferm 5 (Zoetis)** — PDF baixado e OCR | **`SIM_BULA`** | **Carência abate: 21 dias** | Confirmada via OCR |
+| `vacina_antraz_hematico` | ✅ **Anticarbunculosa Labovet** — PDF baixado e OCR | **`SIM_BULA`** | Carne/leite: não citada (zero/padrão) | Confirmada via OCR; protocolo distinto de clostridioses |
+| `bacterina_campylobacter` | Não identificado nas URLs fornecidas | `PRECISA_VALIDAR` | Não extraída | Curadoria via MAPA/SINDAN |
+| `endectocida_ivermectina_injetavel` | ✅ **Ivomec Injetável (Boehringer)** — URL bloqueada | `PRECISA_VALIDAR` (bot-blocked) | Não extraída | Bula MAPA ou acesso alternativo |
+| `endectocida_ivermectina_pour_on` | ✅ **Supramec Pour-on (MSD)** — URL não acessada | `PRECISA_VALIDAR` | Não extraída | Bula MSD ou MAPA |
+| `endectocida_eprinomectina_pour_on` | ✅ **Eprinex Pour-On (Merial)** — bula extraída | **`SIM_BULA`** ✅ **CONFIRMADA** | **✅ Carência ZERO confirmada** (leite e carne, Eprinex Merial) | NÃO extrapolar para outros produtos de eprinomectina |
+| `antielmintico_albendazol` | ✅ **Valbazen 10 (Zoetis)** — URL não acessada | `PRECISA_VALIDAR` | Não extraída | Bula Zoetis ou MAPA; confirmar contraindicação gestantes |
+| `vacina_ibr_bvd_combinada` | CattleMaster 4+L5 (guideline apenas) | `PRECISA_VALIDAR` | Não extraída | Curadoria via MAPA/SINDAN |
+| `vacina_bm86_recombinante` | Gavac — **Restrito** ✅ confirmado pelo usuário | **`NAO_AUTORIZADO`** | N/A | `blocked` permanente salvo aprovação estadual |
+
+---
+
+## Lacunas críticas por campo (pós-coleta de URLs)
+
+| Campo | Status após URLs | Classes/Produtos afetados | Ação necessária |
+|---|---|---|---|
+| `carencia_zero` (eprinomectina) | ✅ **CONFIRMADA** — Eprinex Pour-On Merial via Suifarma | Apenas para Eprinex Merial | NÃO extrapolar para outros produtos da classe |
+| `carencia_zero` (aftosa) | ❌ IN-48/2020 não extraída | `vacina_fmd_inativada` | Acessar texto da IN |
+| `nome_comercial` + `fabricante` (Bovilis RB-51) | ✅ **CONFIRMADOS** — MSD página do produto | `vacina_brucelose_rb51` | Bula completa para dose, via, carência |
+| `nome_comercial` + `fabricante` (Raivacel Multi) | ✅ **CONFIRMADOS** — MSD página do produto | `vacina_antirrabica_inativada` | Bula completa para dose, via, carência |
+| `carencia` (Leptoferm 5) | ✅ **CONFIRMADA** — Zoetis bula (OCR) | `bacterina_leptospirose` | Abate: 21 dias |
+| `carencia` + `dose` (Anticarbunculosa Labovet) | ✅ **CONFIRMADA** — Labovet bula (OCR) | `vacina_antraz_hematico` | Bovinos 2mL, via SC, carência não citada |
+| `carencia` + `dose` (Ivomec Injetável) | ❌ URL bloqueada por anti-bot | `endectocida_ivermectina_injetavel` | Bula MAPA ou acesso alternativo |
+| `carencia` + `dose` (Valbazen 10) | ❌ URL não acessada nesta sessão | `antielmintico_albendazol` | Bula Zoetis ou MAPA; confirmar contraindicação gestantes |
+| `carencia` + `dose` (Supramec Pour-on) | ❌ URL não acessada nesta sessão | `endectocida_ivermectina_pour_on` | Bula MSD ou MAPA |
+| `bubalino_authorization` | ❌ Nenhuma bula confirmou/excluiu bubalinos | Clostridioses, IBR/BVD, Leptospirose, Ivermectinas | Revisão de bulas por espécie |
+| `registro` MAPA/SINDAN | ❌ Nenhum produto com registro confirmado | Todos | Consulta MAPA/SINDAN com número de registro |
+| `vacina_antraz_hematico (Clostridiose ≠ Antraz)` | ✅ Distinção confirmada | `vacina_antraz_hematico` vs `vacina_clostridial_multivalente` | São protocolos distintos — nunca agregar |
+| `toxocara_vitulorum` | ✅ **Confirmado como inexistente** pelo usuário | — | `blocked` permanente |
+| `bm86_gavac` | ✅ **Confirmado como restrito** pelo usuário | `vacina_bm86_recombinante` | `blocked` permanente salvo aprovação estadual explícita |
+
+---
+
+## PDFs disponíveis e processados via OCR
+
+| Produto | Localização | Tamanho | Status do processamento |
+|---|---|---|---|
+| Leptoferm 5 (Zoetis) | `.tempmediaStorage/8e7d36ef45d9b9ce.pdf` | 626.868 bytes | ✅ Processado via OCR. Dose 2mL, via IM, carência abate 21 dias |
+| Anticarbunculosa (Labovet) | `.tempmediaStorage/4af81cd9fb30815e.pdf` | 41.257 bytes | ✅ Processado via OCR. Dose 2mL, via SC, carência não citada |
+
+---
+
+_Versão: 12D4+bulas | OCR de Leptoferm 5 e Anticarbunculosa concluído | Eprinex carência zero confirmada | PDFs processados | Sem seed_

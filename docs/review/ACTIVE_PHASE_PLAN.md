@@ -1,16 +1,88 @@
-# ACTIVE_PHASE_PLAN - Fase 12D3
+# ACTIVE_PHASE_PLAN - Fase 12D4
 
-**Status:** Fase 12D3 concluída como extração curatorial documental — matrizes revisáveis geradas
-**Foco:** Extração curatorial de protocolos sanitários candidatos v2 para revisão
-**Criado:** 2026-06-08
+**Status:** Fase 12D4 concluída como rebaseline conceitual documental — ProductClass, status e política de execução
+**Foco:** Rebaseline conceitual das matrizes sanitárias v2
+**Criado:** 2026-06-09
 **Atualizado:** 2026-06-09
-**Plano base:** 12D3 — Extração curatorial de protocolos sanitários candidatos v2 para revisão
+**Plano base:** 12D4 — Rebaseline conceitual das matrizes sanitárias v2: ProductClass, status curatorial e política de execução
 
 ---
 
 ## Objetivo em 1 parágrafo
 
-Criar matrizes curatoriais revisáveis de protocolos sanitários candidatos v2, itens versionáveis candidatos, produtos/classes candidatos e fontes técnicas identificadas — sem seed, sem migration, sem código funcional, sem agenda automática e sem sync. O objetivo é gerar artefatos documentais para análise e validação humana antes de qualquer carga real em banco.
+Reestruturar os documentos curatoriais da Agenda Sanitária v2 para consolidar o modelo canônico com `ProductClass` como entidade central, separar `ProductClassDefaultRule` de `SanitaryProduct`, aplicar enums canônicos de `CurationStatus`, `AutomationStatus` e `ExecutionProductPolicy`, e corrigir a linguagem de bulas para produto-específica. A fase é documental — sem SQL, sem TS, sem Dexie, sem sync, sem UI, sem seed, sem agenda, sem evento, sem estoque, sem carência ativa.
+
+---
+
+## Decisão 12D4
+
+Decisão: `PROSSEGUIR COM ESCOPO REDUZIDO`.
+
+Implementação autorizada nesta subfase:
+
+- reescrever matrizes curatoriais com modelo canônico ProductClass;
+- aplicar enums canônicos de CurationStatus, AutomationStatus e ExecutionProductPolicy;
+- separar ProductClass, ProductClassDefaultRule e SanitaryProduct nas matrizes;
+- corrigir linguagem de bulas para produto-específica;
+- criar relatório de rebaseline 12D4;
+- atualizar README curatorial com modelo canônico;
+- atualizar docs ativos de fase/status/decisão/domínio.
+
+Implementação não autorizada nesta subfase:
+
+- criar migration SQL ou alterar RLS;
+- alterar Dexie/offline stores;
+- alterar sync-batch;
+- criar UI ou fluxo operacional;
+- importar como seed ou carga final;
+- criar agenda, fechar agenda, criar evento ou baixar estoque;
+- calcular carência ativa ou declarar livre de carência;
+- liberar venda, abate, aptidão, SISBOV, GTA, PNIB ou rastreabilidade animal;
+- alterar contratos TypeScript 12D1/12D2.
+
+---
+
+## Evidência técnica
+
+Arquivos gerados/reescritos:
+
+- `docs/review/evidence/RELATORIO_REVISAO_12D4_PRODUCT_CLASS_E_STATUS.md` (novo);
+- `docs/review/evidence/MATRIZ_PROTOCOLOS_SANITARIOS_CANDIDATOS_V2.md` (reescrito);
+- `docs/review/evidence/MATRIZ_ITENS_PROTOCOLO_SANITARIO_V2.md` (reescrito);
+- `docs/review/evidence/MATRIZ_PRODUTOS_SANITARIOS_CANDIDATOS_V2.md` (reescrito — separado em Seção A/B/C);
+- `docs/review/evidence/MATRIZ_FONTES_TECNICAS_SANITARIAS_V2.md` (reescrito — critério de inclusão + linguagem produto-específica);
+- `docs/review/evidence/README_CURADORIA_SANITARIA_V2.md` (reescrito — modelo canônico e enums).
+
+---
+
+## Critérios de aceite da fase
+
+- [x] README curatorial atualizado com modelo `SanitaryProtocol -> ProductClass -> SanitaryProduct`.
+- [x] Matriz de protocolos usa `SanitaryProtocol` como entidade final, não "candidato" como tipo.
+- [x] Matriz de itens usa `ProductClass` como requisito do item (`product_class_key`).
+- [x] Matriz de produtos/classes separa Seção A (ProductClass), B (ProductClassDefaultRule) e C (SanitaryProduct).
+- [x] Matriz de fontes tem critério de inclusão explícito.
+- [x] Bulas comerciais descritas como produto-específicas com `scope_note`.
+- [x] `approved_for_seed` não é usado como status canônico.
+- [x] `approved_for_catalog` é o status canônico de aprovação.
+- [x] `requires_product_at_execution` saiu de `automation_status` e virou `ExecutionProductPolicy`.
+- [x] `required_at_agenda` documentado como produto planejado, não executado.
+- [x] `ProductClassDefaultRule` tem `can_validate_execution = false` explícito.
+- [x] Carência não aparece em protocolo, item ou classe como regra final.
+- [x] Produto executado continua sendo a fonte da carência.
+- [x] Sem SQL.
+- [x] Sem TypeScript.
+- [x] Sem Dexie/sync/UI.
+- [x] Docs ativos atualizados.
+
+---
+
+## Próxima fase segura
+
+`12D5 — Schema/contratos ProductClass, defaults e memberships`
+
+Escopo mínimo: migration expand-only criando `sanitario_product_classes_v2`, `sanitario_product_class_defaults_v2`, `sanitario_product_class_memberships_v2`; ajustar contratos TypeScript; validar snapshots; sem seed; sem UI; sem sync amplo.
+
 
 ---
 

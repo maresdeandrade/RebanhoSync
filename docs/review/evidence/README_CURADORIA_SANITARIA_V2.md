@@ -1,175 +1,228 @@
 # README — Curadoria Sanitária v2
 
-Atualizado em: 2026-06-09
-Fase: 12D3 — Extração curatorial de protocolos candidatos
+Atualizado em: 2026-06-09  
+Fase: 12D4.1 — Correção de granularidade Protocolo → Item → ProductClass → Produto  
 Responsável: Comitê Técnico-Veterinário e Arquitetural RebanhoSync
 
 ---
 
-## O que são estas matrizes
+## Decisão
 
-As matrizes curatoriais v2 foram produzidas na **Fase 12D3** do RebanhoSync como artefatos de revisão técnica e veterinária.
+As matrizes sanitárias v2 foram reestruturadas para corrigir a granularidade conceitual.
 
-Elas **não são seed, não são código, não geram agenda automática e não autorizam execução** de nenhuma ação sanitária. São documentos para que um comitê humano (técnico, veterinário ou regulatório) revise e valide antes de qualquer carga real em banco.
+Regra canônica:
+
+```txt
+SanitaryProtocol = programa sanitário macro versionado
+SanitaryProtocolItemVersion = etapa/fase/variação operacional do protocolo
+ProductClass = classe/tipo sanitário exigido pelo item
+ProductClassDefaultRule = default operacional, não regra crítica
+SanitaryProduct = produto comercial configurado/executado
+Fonte técnica = evidência por campo
+Evento sanitário = produto real + dose/via executadas + carência congelada
+```
+
+Nenhum documento desta pasta é seed final, não cria agenda automática, não autoriza execução, não calcula carência ativa, não libera venda, abate, leite ou aptidão operacional.
 
 ---
 
-## Arquivos desta pasta
+## Correção principal da 12D4.1
+
+A matriz anterior confundia, em alguns pontos:
+
+- protocolo com fase do protocolo;
+- protocolo com produto/classe;
+- bloqueio de espécie com protocolo próprio;
+- controle parasitário por produto, em vez de estratégia/categoria produtiva.
+
+A 12D4.1 corrige isso.
+
+### Regra de granularidade
+
+| Pergunta | Entidade correta |
+|---|---|
+| Qual programa sanitário existe? | `SanitaryProtocol` |
+| Qual ação/fase/janela dentro do programa? | `SanitaryProtocolItemVersion` |
+| Que tipo de produto satisfaz a ação? | `ProductClass` |
+| Qual produto real foi configurado/executado? | `SanitaryProduct` |
+| Qual campo está sustentado por qual evidência? | `TechnicalSource` / `source_refs_by_field` |
+| Produto planejado na agenda foi executado? | Não. Só evento confirma execução |
+
+---
+
+## Modelo canônico
+
+```txt
+SanitaryProtocol
+  -> SanitaryProtocolItemVersion
+      -> ProductRequirement
+          -> ProductClass
+              -> ProductClassDefaultRule
+              -> ProductClassMembership
+                  -> SanitaryProduct
+                      -> DoseRule
+                      -> RouteRule
+                      -> WithdrawalRule
+                      -> SpeciesAuthorization
+                      -> TechnicalSources
+```
+
+---
+
+## Regras obrigatórias
+
+### Protocolo
+
+Protocolo é programa macro.
+
+Exemplos corretos:
+
+```txt
+brucelose
+febre_aftosa
+raiva_herbivoros
+clostridioses
+leptospirose
+controle_parasitario_bezerros_pre_desmama
+controle_parasitario_recria_estrategico_5_7_9
+controle_parasitario_engorda_pre_confinamento
+controle_parasitario_matrizes_pre_parto
+```
+
+Não usar protocolo por:
+
+```txt
+produto comercial
+fase de dose
+bloqueio específico de espécie
+zona territorial quando a diferença é regra de jurisdição
+```
+
+### Item
+
+Item é a ação/fase/variação operacional.
+
+Exemplos:
+
+```txt
+brucelose.b19.femeas_3_8_meses
+brucelose.rb51.femeas_bovinas_estrategico
+clostridioses.primovac.dose_1
+clostridioses.primovac.reforco_30_dias
+clostridioses.revacinacao_anual
+controle_parasitario.recria.mes_5
+controle_parasitario.recria.mes_7
+controle_parasitario.recria.mes_9
+```
+
+### ProductClass
+
+ProductClass é requisito técnico do item.
+
+Exemplos:
+
+```txt
+vacina_brucelose_b19
+vacina_brucelose_rb51
+vacina_clostridial_multivalente
+bacterina_leptospirose
+vacina_antirrabica_inativada
+antiparasitario_endoparasiticida_sistemico
+endectocida_lactona_macrocilica
+benzimidazol_oral
+ectoparasiticida_pour_on
+```
+
+### SanitaryProduct
+
+Produto comercial é configurável/executável. Não é protocolo.
+
+Exemplos:
+
+```txt
+Bovilis RB-51
+Fortress 7
+Leptoferm-5
+Raivacel Multi
+Ivomec
+Supramec
+Eprinex
+Valbazen
+Panacur
+Ranger
+```
+
+---
+
+## Enums canônicos
+
+### CurationStatus
+
+| Status | Significado |
+|---|---|
+| `candidate` | Extraído/rascunho curatorial |
+| `needs_review` | Falta fonte, revisão técnica ou decisão veterinária |
+| `approved_for_catalog` | Pode compor catálogo curado/controlado |
+| `blocked` | Não usar para carga, agenda ou execução sugerida |
+| `archived` | Histórico/inativo |
+
+`approved_for_seed` não é status canônico.
+
+### AutomationStatus
+
+| Status | Significado |
+|---|---|
+| `manual_only` | Uso apenas manual/documental |
+| `preview_allowed` | Pode aparecer em preview operacional; sem agenda automática |
+| `agenda_allowed` | Pode gerar intenção futura após catálogo curado e contexto válido |
+| `blocked` | Não pode gerar preview nem agenda operacional |
+
+### ExecutionProductPolicy
+
+| Valor | Significado | Regra |
+|---|---|---|
+| `not_required` | Item não depende de produto | Exame, alerta, manejo sem produto |
+| `required_at_agenda` | Agenda registra produto planejado | Não vira produto executado |
+| `required_at_execution` | Produto obrigatório apenas no evento | Padrão para vacinas e produtos com carência |
+| `fixed_by_protocol` | Protocolo exige produto específico | Excepcional; exige fonte forte |
+
+---
+
+## Regras de segurança
+
+- Produto planejado na agenda não é produto executado.
+- Produto planejado não gera carência.
+- Agenda não baixa estoque.
+- Agenda não cria histórico sanitário.
+- Default de classe pode sugerir dose/via, mas não valida execução.
+- Carência nunca fica em protocolo, item, classe, agenda ou guideline.
+- Carência vem do produto executado + espécie + aptidão + via + dose_basis + fonte forte.
+- Bubalino não herda autorização bovina.
+- Bloqueio por espécie deve nascer de `species_authorization`, não de protocolo próprio.
+
+---
+
+## Arquivos
 
 | Arquivo | Conteúdo |
 |---|---|
-| `MATRIZ_PROTOCOLOS_SANITARIOS_CANDIDATOS_V2.md` | Lista de protocolos candidatos com status curatorial e de automação |
-| `MATRIZ_ITENS_PROTOCOLO_SANITARIO_V2.md` | Lista de itens versionáveis por protocolo com dose, via, janela e espécie |
-| `MATRIZ_PRODUTOS_SANITARIOS_CANDIDATOS_V2.md` | Lista de produtos/classes candidatos com carências e status de autorização |
-| `MATRIZ_FONTES_TECNICAS_SANITARIAS_V2.md` | Lista de fontes identificadas ou necessárias, com força e lacunas |
-| `Guideline_Atualizado_Vacinacao_Imunizacao_Controle_Parasitario_Bovinos_Bubalinos.md` | Guideline curatorial — fonte de apoio, NÃO fonte forte |
+| `MATRIZ_PROTOCOLOS_SANITARIOS_CANDIDATOS_V2.md` | Protocolos macro (`SanitaryProtocol`) com granularidade corrigida |
+| `MATRIZ_ITENS_PROTOCOLO_SANITARIO_V2.md` | Itens/fases/variações operacionais (`SanitaryProtocolItemVersion`) |
+| `MATRIZ_PRODUTOS_SANITARIOS_CANDIDATOS_V2.md` | `ProductClass`, defaults e produtos comerciais exemplos/configuráveis |
+| `MATRIZ_FONTES_TECNICAS_SANITARIAS_V2.md` | Fontes técnicas por origem e por campo |
+| `SUPLEMENTO_BULAS_POR_ORIGEM_V2.md` | Bulas avulsas e MSD agrupadas por origem, sem tratar MSD como catálogo nacional |
+| `RELATORIO_REVISAO_12D4_1_GRANULARIDADE_PROTOCOLO_ITEM.md` | Relatório de correção 12D4.1 |
 
 ---
 
-## Como revisar as matrizes
+## Critério para avançar para 12D5
 
-### Passo 1 — Revisar protocolos candidatos
+A 12D5 só deve iniciar após revisão humana confirmar:
 
-Leia `MATRIZ_PROTOCOLOS_SANITARIOS_CANDIDATOS_V2.md`.
-
-Para cada linha, verifique:
-
-1. A doença-alvo está correta para o contexto da fazenda?
-2. O status curatorial está adequado?
-3. A fonte mínima necessária está disponível?
-4. As lacunas são superáveis (você tem bula, norma ou pode acionar MV)?
-
-### Passo 2 — Revisar itens versionáveis
-
-Leia `MATRIZ_ITENS_PROTOCOLO_SANITARIO_V2.md`.
-
-Para cada item, verifique:
-
-1. Dose e via estão corretos para o produto que será usado?
-2. A janela operacional faz sentido para o calendário da fazenda?
-3. O status de bubalino está correto para o rebanho?
-4. O item pode gerar agenda no futuro (ou deve ficar bloqueado)?
-
-### Passo 3 — Revisar produtos candidatos
-
-Leia `MATRIZ_PRODUTOS_SANITARIOS_CANDIDATOS_V2.md`.
-
-Para cada produto, verifique:
-
-1. O produto existe no mercado com registro MAPA vigente?
-2. A bula autoriza a espécie e aptidão pretendida?
-3. A carência está correta para o produto que será efetivamente utilizado?
-4. A carência zero (onde candidata) é confirmada pela bula?
-
-### Passo 4 — Revisar fontes técnicas
-
-Leia `MATRIZ_FONTES_TECNICAS_SANITARIAS_V2.md`.
-
-Para cada fonte, verifique:
-
-1. A norma existe e está vigente?
-2. O texto da norma confirma o campo coberto?
-3. A bula está disponível e é do produto que será utilizado?
-4. A fonte é forte (bula/norma oficial) ou apenas apoio (guideline)?
-
----
-
-## O que pode virar protocolo
-
-Um protocolo pode ser elevado de candidato a ativo somente quando:
-
-- [ ] A fonte forte (norma oficial ou bula de produto vigente) estiver disponível para **todos** os campos críticos (legal_status, species_authorization, dose, via, carência);
-- [ ] A revisão veterinária responsável tiver aprovado o protocolo para a fazenda;
-- [ ] O bubalino, se incluído, tiver autorização explícita na bula ou norma (não herança bovina);
-- [ ] Carência zero, se aplicável, estiver explicitamente declarada na bula/norma (nunca inferida);
-- [ ] O protocolo não for experimental, alerta ou de uso restrito por MV.
-
----
-
-## O que precisa de fonte oficial
-
-Os seguintes campos **exigem norma oficial MAPA ou órgão estadual vigente**:
-
-- `legal_status = obrigatorio_norma` → norma federal ou estadual vigente
-- `legal_status = condicional` por UF/zona → portaria específica por UF ou zona sanitária
-- `species_authorization` para obrigatoriedade legal → programa oficial que inclua a espécie
-
----
-
-## O que precisa de bula
-
-Os seguintes campos **exigem bula do produto que será efetivamente utilizado**:
-
-- `dose` e `via` → bula do produto executado
-- `carencia_carne` e `carencia_leite` → bula do produto executado
-- `carencia_zero` → bula **afirmando explicitamente zero** (nunca inferida)
-- `species_authorization = SIM_BULA` → bula citando a espécie
-- Contraindicações (gestantes, lactantes, machos) → bula
-
----
-
-## O que precisa de MV responsável
-
-Os seguintes casos **exigem decisão documentada do médico-veterinário responsável pela fazenda**:
-
-- Qualquer uso marcado como `EXTRAPOLADO` (fora de bula/norma)
-- Qualquer protocolo marcado como `blocked_off_label`
-- Vacinas autógenas (Salmonella, etc.)
-- Uso de produto em espécie não contemplada na bula
-
-A decisão do MV deve ser auditável por fazenda (`scope = fazenda`, `requiresMvResponsavel = true`).
-
----
-
-## O que é proibido automatizar
-
-Os seguintes itens **jamais podem gerar agenda automática**, mesmo após revisão:
-
-| Item | Motivo |
-|---|---|
-| Toxocara vitulorum em bubalinos | Sem vacina registrada; somente pesquisa |
-| Vacina carrapato Bm86 (Gavac) | Aprovação parcial/restrita; custo; eficiência variável |
-| Salmonella autógena | Diagnóstico obrigatório; autorização MAPA |
-| RB51 em bubalinas | NAO_AUTORIZADO por bula |
-| Qualquer item `somente_alerta` ou `bloqueado` | Contrato v2 proíbe agenda automática |
-| Febre aftosa em zona livre sem vacinação | Proibido por norma |
-| Carência liberatória sem produto executado | Protocolo sem evento não tem carência |
-| Venda/abate automático | Bloqueio permanente do modelo |
-
----
-
-## Sequência sugerida para curadoria
-
-1. **Normas federais**: localizar e ler Portaria 665/2024 (aftosa), IN-21/2008 (PNCEBT), IN-48/2020 (carência aftosa), IN 28/2005 (bubalinos PNCEBT) e PNCRH.
-2. **Normas estaduais**: por UF do rebanho — portaria SP para leptospirose; programa estadual de raiva; situação de bubalinos por UF.
-3. **Bulas de produtos**: por ordem de prioridade — clostridioses (core), aftosa (produto aprovado MAPA), brucelose B19 (PNCEBT), eprinomectina (carência zero), ivermectinas (carência carne/leite), albendazol, leptospirose, raiva.
-4. **Revisão veterinária**: MV responsável valida campos de dose, via, janela operacional e quaisquer casos EXTRAPOLADO ou PRECISA_VALIDAR.
-5. **Elevação para `validated_for_review`**: somente após itens 1–4 para os campos críticos do protocolo/produto.
-6. **Seed controlado**: somente após aprovação humana explícita e com os campos obrigatórios preenchidos por fonte forte.
-
----
-
-## Relação com o modelo canônico v2
-
-Estas matrizes são a entrada para o modelo canônico v2 definido nas fases 12D0–12D2:
-
-| Matriz | Alimenta |
-|---|---|
-| Protocolos candidatos | `sanitario_protocolos_v2` + `SanitaryProtocolV2` |
-| Itens versionáveis | `sanitario_protocolo_itens_versions_v2` + `SanitaryProtocolItemVersionV2` |
-| Produtos candidatos | `sanitario_produtos_v2` + `SanitaryProductV2` + `WithdrawalRuleV2` |
-| Fontes técnicas | `sanitario_fontes_tecnicas_v2` + `SanitarySourceRefV2` |
-
----
-
-## Próxima fase recomendada
-
-Após revisão humana das matrizes:
-
-- **12D4 — Revisão técnico-veterinária das matrizes curatoriais**: revisar cada linha com MV responsável, confirmar bulas e normas, elevar candidatos para `validated_for_review`.
-- **12E — Curadoria assistida e carga inicial controlada**: seed dos candidatos aprovados em ambiente de homologação, com validação de RLS e multi-tenant.
-- **12F — Offline/sync da Agenda Sanitária v2**: conectar Dexie, sync-batch e UI aos contratos v2 estabilizados.
-
----
-
-_Versão: 12D3 | Guia de revisão | Não é código | Não é seed_
+- granularidade dos protocolos;
+- itens/fases de cada protocolo;
+- `ProductClass` exigida por item;
+- inexistência de protocolo de bloqueio por espécie;
+- controle parasitário por estratégia/categoria produtiva;
+- carência ausente de protocolo/item/classe;
+- produtos comerciais apenas como exemplos/configuração/execução.

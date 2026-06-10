@@ -27,6 +27,14 @@ Cada decisão deve conter:
 
 ## Decisões consolidadas
 
+### 2026-06-09 — Consolidar ProductClass como entidade central antes de schema/seed
+
+**Decisão:** rebasear conceitualmente as matrizes curatoriais v2 para usar `ProductClass` como entidade central obrigatória do item de protocolo, separar `ProductClassDefaultRule` (defaults operacionais) de `SanitaryProduct` (execução), aplicar enums canônicos de `CurationStatus`, `AutomationStatus` e `ExecutionProductPolicy`, e corrigir a linguagem de bulas para produto-específica — antes de qualquer migration de schema ou seed.
+
+* **Motivo:** o modelo anterior colapsava produto comercial com item de protocolo, permitia que bulas fossem lidas como regras de classe, e usava status curatoriais fragmentados que impediam clareza sobre o que pode gerar preview, agenda ou carga. `ProductClassDefaultRule` com `can_validate_execution = true` seria um antipadrão que permitiria carência por classe — incorreto estruturalmente. O rebaseline documental é necessário antes de qualquer schema (12D5) para evitar cristalizar o antipadrão em migration.
+* **Impacto:** 5 matrizes reescritas; 1 relatório de rebaseline criado; 12 `ProductClass` definidas; 19 defaults com `can_validate_execution = false` invariável; `approved_for_catalog` substituiu `approved_for_seed`; `ExecutionProductPolicy` separou produto planejado de produto executado; bulas são fontes produto-específicas com `scope_note`; nenhum protocolo promovido para `approved_for_catalog` nesta fase; SQL, RLS, Dexie, sync, UI, contratos TS, seed, agenda, evento, estoque e carência ativa não foram alterados.
+* **Status:** aprovado na 12D4 em escopo reduzido documental.
+
 ### 2026-06-09 — Extrair protocolos sanitários candidatos v2 em matrizes revisáveis antes de seed
 
 **Decisão:** extrair do guideline curatorial os protocolos, itens versionáveis, produtos/classes e fontes técnicas candidatos v2 em matrizes documentais revisáveis — sem seed, sem migration, sem agenda automática, sem sync, sem código funcional.

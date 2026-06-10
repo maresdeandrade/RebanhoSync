@@ -6,6 +6,57 @@ Atualizado em: 2026-06-09
 
 ## 0. Resultado mais recente
 
+Fase 12D4 — Rebaseline conceitual das matrizes sanitárias v2: ProductClass, status curatorial e política de execução — executada como patch documental em escopo reduzido.
+
+Decisão: `PROSSEGUIR COM ESCOPO REDUZIDO`.
+
+Resultado da 12D4:
+
+- modelo canônico `SanitaryProtocol → ProductClass → SanitaryProduct` documentado e aplicado às matrizes;
+- `ProductClass` como entidade conceitual central — o item exige uma classe, não um produto;
+- `ProductClassDefaultRule` separada com `can_validate_execution = false` e `requires_executed_product_for_withdrawal = true` invariáveis;
+- `SanitaryProduct` como exemplo/configuração/execução — nunca obrigatório do protocolo;
+- enums canônicos aplicados: `CurationStatus`, `AutomationStatus`, `ExecutionProductPolicy`;
+- `approved_for_seed` removido; `approved_for_catalog` substituiu;
+- `requires_product_at_execution` saiu de `automation_status`; virou `execution_product_policy`;
+- linguagem de bulas corrigida: produto-específica com `scope_note` explícito;
+- matriz de produtos separada em Seção A/B/C;
+- 12 `ProductClass` definidas; 19 defaults; 4 produtos exemplo;
+- relatório de rebaseline 12D4 criado;
+- critério de inclusão na matriz de fontes;
+- nenhum protocolo promovido para `approved_for_catalog`;
+- carência continua atributo do `SanitaryProduct` executado;
+- bubalino não herdou bovino.
+
+Patch da 12D4:
+
+- `docs/review/evidence/RELATORIO_REVISAO_12D4_PRODUCT_CLASS_E_STATUS.md` (novo);
+- `docs/review/evidence/MATRIZ_PROTOCOLOS_SANITARIOS_CANDIDATOS_V2.md` (reescrito);
+- `docs/review/evidence/MATRIZ_ITENS_PROTOCOLO_SANITARIO_V2.md` (reescrito);
+- `docs/review/evidence/MATRIZ_PRODUTOS_SANITARIOS_CANDIDATOS_V2.md` (reescrito);
+- `docs/review/evidence/MATRIZ_FONTES_TECNICAS_SANITARIAS_V2.md` (reescrito);
+- `docs/review/evidence/README_CURADORIA_SANITARIA_V2.md` (reescrito);
+- docs ativos de fase, status, decisão e domínio.
+
+Não houve:
+
+- migration SQL ou alteração de RLS;
+- alteração de Dexie;
+- alteração de sync-batch;
+- alteração de UI;
+- alteração de contratos TypeScript 12D1/12D2;
+- seed/carga curatorial final;
+- criação de agenda, fechamento, evento, baixa de estoque ou carência ativa;
+- venda, abate, aptidão operacional, SISBOV, GTA, PNIB ou rastreabilidade animal.
+
+Próxima execução recomendada:
+
+- `12D5 — Schema/contratos ProductClass, defaults e memberships`.
+
+---
+
+## 0.1 Resultado anterior — Fase 12D3
+
 Fase 12D3 — Extração curatorial de protocolos sanitários candidatos v2 para revisão — executada como patch documental em escopo reduzido.
 
 Decisão: `PROSSEGUIR COM ESCOPO REDUZIDO`.
