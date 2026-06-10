@@ -3,6 +3,15 @@
 Atualizado em: 2026-06-10
 **Baseline Commit documental anterior:** `0cc5577`
 
+
+## 0. Resultado mais recente — 12D6
+
+A Fase 12D6 foi concluída com sucesso. O esquema físico do banco de dados para `ProductClass`, `ProductClassGroup`, e `ProductClassDefaultRule` foi implementado através de uma migração SQL. Foram criados enums e tabelas com RLS habilitado (leitura global e baseada em tenant e escrita isolada em tenant). Triggers para `updated_at` foram aplicados às tabelas e índices parciais de chaves únicas ajudam a manter as instâncias ativas isoladas por tenant.
+
+## Artefatos 12D6
+- `supabase/migrations/20260610233557_sanitario_product_class_v2.sql` (novo)
+
+
 ## 0. Resultado mais recente
 
 Fase 12D5 — Contratos TypeScript de ProductClass, ProductClassGroup e ExecutionProductPolicy — executada como implementação funcional pura em TypeScript em escopo reduzido.

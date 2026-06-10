@@ -28,24 +28,24 @@ Não deve substituir issues, tarefas técnicas ou prompts de implementação.
 
 ## Fase atual — Fase 12
 
-Status: **Fase 12D5 concluída como contratos TypeScript de ProductClass, ProductClassGroup e ExecutionProductPolicy**
+Status: **Fase 12D6 concluída como implementação de schema SQL, tabelas e RLS para ProductClass**
 Fase anterior: **Fase 11.5 — Agenda Sanitária v2: Janelas, Agrupamento e Materialização Idempotente — concluída localmente**
-Fase seguinte: **Fase 12D6 — Schema SQL, RLS e Tabelas no Banco de Dados para ProductClass — a iniciar**
+Fase seguinte: **Fase 12D7 — Integração Offline (Dexie) e Sincronização — a iniciar**
 
 ### Conduta inicial
 
-As subfases 11.5A a 11.5J (Agenda Sanitária v2 core/documental), 12A (auditoria), 12B (modelagem clean/reset), 12C (migration clean SQL), 12D0 (modelo canônico), 12D1 (schema/contratos mínimos v2), 12D2 (builders/adapters puros de snapshots), 12D3 (extração curatorial), 12D4 (rebaseline conceitual das matrizes) e 12D5 (contratos TypeScript de ProductClass) foram concluídas localmente. O desenvolvimento segue focado na fundação do módulo sanitário v2 antes do acoplamento com o offline e sincronização.
+As subfases 11.5A a 11.5J (Agenda Sanitária v2 core/documental), 12A (auditoria), 12B (modelagem clean/reset), 12C (migration clean SQL), 12D0 (modelo canônico), 12D1 (schema/contratos mínimos v2), 12D2 (builders/adapters puros de snapshots), 12D3 (extração curatorial), 12D4 (rebaseline conceitual das matrizes), 12D5 (contratos TypeScript de ProductClass) e 12D6 (Schema SQL e RLS para ProductClass) foram concluídas localmente. O desenvolvimento segue focado na fundação do módulo sanitário v2 antes do acoplamento pleno com o offline e sincronização.
 
-### Handoff para Fase 12D6
+### Handoff para Fase 12D7
 
-A próxima etapa 12D6 criará as tabelas físicas para armazenar as classes de produto e seus relacionamentos no Supabase, definindo as políticas de RLS correspondentes.
+A próxima etapa 12D7 conectará as tabelas de ProductClass e Rules (criadas na 12D6) com as representações locais (Dexie) e processos de Sync (edge functions).
 
-Riscos residuais vindos da 12D5:
-- Compatibilidade profunda e gradativa das agendas ativas locais com o novo campo estruturado `productRequirementRule`.
-- Garantir que as migrations futuras de seed não reintroduzam registros não curados.
+Riscos residuais vindos da 12D6:
+- Integração da leitura global multitenant nas rotinas de sincronização offline sem violar restrições de RLS ou contaminar o estado de UI.
 
-### Escopo da Fase 12D6+
-- Migrations físicas no Supabase para as tabelas `sanitario_product_classes_v2` e vinculados.
+### Escopo da Fase 12D7+
+- Criação e modificação de modelos no Dexie para abrigar as tabelas remotas locais.
+- Atualização da função `sync-batch` e de payload sync definitions para trânsito da curadoria de ProductClass.
 - Criação e validação das regras de RLS baseadas no tenant (`fazenda_id`).
 
 ---

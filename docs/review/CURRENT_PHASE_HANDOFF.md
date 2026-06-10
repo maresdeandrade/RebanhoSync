@@ -2,7 +2,27 @@
 
 Atualizado em: 2026-06-10
 
-## 0. Handoff Atual — Fase 12D5
+## 0. Handoff Atual — Fase 12D6
+
+Fase 12D6 — Schema SQL, RLS e Tabelas no Banco de Dados para ProductClass — executada como implementação de persistência.
+
+Decisão: `PROSSEGUIR COM ESCOPO DEFINIDO`.
+
+Resultado:
+- Tabelas físicas criadas para `sanitario_product_classes_v2`, `sanitario_product_class_groups_v2`, `sanitario_product_class_group_members_v2`, e `sanitario_product_class_default_rules_v2`.
+- Enums SQL criados para status curatorial, status de automação, política de execução e tipo de produto.
+- Constraints adicionadas para consistência técnica.
+- Triggers ativados para atualização automática da coluna `updated_at`.
+- RLS habilitado com base no isolamento multitenant (leitura global/tenant, escrita apenas para tenant managers).
+- Índices otimizados aplicados em campos-chave (ex. `class_key`, `group_key`, `fazenda_id`).
+- Migration salva em `supabase/migrations/20260610233557_sanitario_product_class_v2.sql`.
+
+Próxima fase recomendada:
+- `12D7 — Integração Offline (Dexie) e Sincronização`.
+
+---
+
+## 0.1. Handoff anterior — Fase 12D5
 
 Fase 12D5 — Contratos TypeScript de ProductClass, ProductClassGroup e ExecutionProductPolicy — executada como implementação funcional pura em TypeScript em escopo reduzido.
 
