@@ -1,15 +1,38 @@
 # Current Phase Handoff — RebanhoSync
 
-Atualizado em: 2026-06-09
+Atualizado em: 2026-06-10
 
-## 0. Handoff Atual — Fase 12D4
+## 0. Handoff Atual — Fase 12D5
+
+Fase 12D5 — Contratos TypeScript de ProductClass, ProductClassGroup e ExecutionProductPolicy — executada como implementação funcional pura em TypeScript em escopo reduzido.
+
+Decisão: `PROSSEGUIR COM ESCOPO REDUZIDO`.
+
+Resultado:
+- Contratos TypeScript de `ProductClassV2` e `ProductClassGroupV2` definidos em `sanitaryProductClassV2.ts`.
+- Enums `SanitaryCurationStatusV2`, `SanitaryAutomationStatusV2` e `ExecutionProductPolicyV2` criados.
+- Union discriminada estruturada `SanitaryProductRequirementRuleV2` modelada.
+- Guards de tipo, validadores puros (`validateProductRequirementRuleV2`, `validateProductClassGroupV2`, `validateProductClassV2`) criados e validados.
+- `fixed_by_protocol` bloqueado em nível de validador runtime para `product_class` e `product_class_group`.
+- Item de protocolo versionado (`SanitaryProtocolItemVersionV2`) estendido com o campo opcional estruturado `productRequirementRule` em `sanitaryProtocolV2.ts`.
+- Validador do item versionado estendido para validar a integridade de `productRequirementRule`, bloquear mismatches com `productRequirementKind` e exigir regra quando kind for `product_class_group`.
+- Versionamento semântico (`requiresNewProtocolItemVersionV2`) estendido para detectar alterações estruturadas na regra de produto.
+- 18 testes unitários novos criados cobrindo validações, mismatches, coerência profunda, versionamento e guards de tipo.
+- Suíte completa de 900+ testes passou com sucesso absoluto e build limpo executado.
+- SQL, RLS, Dexie, sync-batch e UI não foram alterados.
+
+Próxima fase recomendada:
+- `12D6 — Schema SQL, RLS e Tabelas no Banco de Dados para ProductClass`.
+
+---
+
+## 0.1. Handoff anterior — Fase 12D4
 
 Fase 12D4 — Rebaseline conceitual das matrizes sanitárias v2: ProductClass, status curatorial e política de execução — executada como patch documental em escopo reduzido.
 
 Decisão: `PROSSEGUIR COM ESCOPO REDUZIDO`.
 
 Resultado:
-
 - modelo canônico `SanitaryProtocol → SanitaryProtocolItemVersion → ProductRequirement → ProductClass → ProductClassDefaultRule/Membership → SanitaryProduct` documentado no README curatorial;
 - `ProductClass` consolidada como entidade conceitual central — o item do protocolo exige uma classe, não um produto;
 - `ProductClassDefaultRule` separada com `can_validate_execution = false` e `requires_executed_product_for_withdrawal = true` invariáveis;
@@ -27,9 +50,7 @@ Resultado:
 - bubalino não herdou autorização bovina em nenhuma linha;
 - SQL, RLS, Dexie, sync-batch, UI, contratos TypeScript 12D1/12D2, seed, agenda, evento, estoque, venda, abate, aptidão, SISBOV, GTA, PNIB e rastreabilidade animal não foram alterados.
 
-Próxima fase recomendada:
-
-- `12D5 — Schema/contratos ProductClass, defaults e memberships`.
+---� Schema/contratos ProductClass, defaults e memberships`.
 
 ---
 

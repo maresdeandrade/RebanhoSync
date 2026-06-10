@@ -1,4 +1,4 @@
-﻿# Roadmap — RebanhoSync
+# Roadmap — RebanhoSync
 
 Atualizado em: 2026-06-06
 **Baseline documental auditado:** `91e0775`
@@ -26,35 +26,27 @@ Não deve substituir issues, tarefas técnicas ou prompts de implementação.
 
 ---
 
-## Fase atual — Pós-Fase 11.5
+## Fase atual — Fase 12
 
-Status: **Fase 11.5 fechada localmente; 11.5J executada como rebaseline documental**
-Fase anterior: **Fase 11 — Lotes, Pastos e Desempenho Operacional Ampliado — concluída localmente**
-Fase seguinte: **Fase 12 — Fundação Sanitária v2: Persistência, Sync, Schema e Rollout — não iniciada; exige novo diagnóstico e plano ativo próprio**
+Status: **Fase 12D5 concluída como contratos TypeScript de ProductClass, ProductClassGroup e ExecutionProductPolicy**
+Fase anterior: **Fase 11.5 — Agenda Sanitária v2: Janelas, Agrupamento e Materialização Idempotente — concluída localmente**
+Fase seguinte: **Fase 12D6 — Schema SQL, RLS e Tabelas no Banco de Dados para ProductClass — a iniciar**
 
 ### Conduta inicial
 
-As subfases 11.5A (Diagnóstico + contrato alvo), 11.5B0 (contrato bibliográfico de regra e produto), 11.5B1 (motor puro de elegibilidade sanitária por janela), 11.5B1.1 (hardening de dose múltipla e âncora por evento), 11.5C (demanda sanitária agrupada), 11.5D (preview operacional editável), 11.5E (materialização idempotente da agenda sanitária como comando/intenção pura), 11.5F (execução sanitária como comando/intenção de evento em core puro, sem persistência), 11.5G (semântica final de fechamento administrativo de agenda em core puro, sem persistência), 11.5H (fechamento documental e handoff) e 11.5I (reconciliação de contratos normativos) foram concluídas localmente e commitadas. A 11.5J reordenou documentalmente o roadmap. A Fase 12 ainda não foi iniciada.
+As subfases 11.5A a 11.5J (Agenda Sanitária v2 core/documental), 12A (auditoria), 12B (modelagem clean/reset), 12C (migration clean SQL), 12D0 (modelo canônico), 12D1 (schema/contratos mínimos v2), 12D2 (builders/adapters puros de snapshots), 12D3 (extração curatorial), 12D4 (rebaseline conceitual das matrizes) e 12D5 (contratos TypeScript de ProductClass) foram concluídas localmente. O desenvolvimento segue focado na fundação do módulo sanitário v2 antes do acoplamento com o offline e sincronização.
 
-### Handoff para Fase 12
+### Handoff para Fase 12D6
 
-Fase 12 só deve iniciar após nova rodada com worktree limpo, 11.5J commitada, plano ativo apontando para Fase 12 — Fundação Sanitária v2 e diagnóstico explícito sobre fluxo legado de agenda, schema/migrations, Dexie/local-first, sync-batch, Supabase/RLS, RPC/Edge Function, UI, rollback/replay, idempotência real e tratamento de dados existentes/reset.
+A próxima etapa 12D6 criará as tabelas físicas para armazenar as classes de produto e seus relacionamentos no Supabase, definindo as políticas de RLS correspondentes.
 
-Riscos residuais vindos da 11.5:
+Riscos residuais vindos da 12D5:
+- Compatibilidade profunda e gradativa das agendas ativas locais com o novo campo estruturado `productRequirementRule`.
+- Garantir que as migrations futuras de seed não reintroduzam registros não curados.
 
-- contratos core ainda não conectados à persistência real;
-- `agenda_intent`, `event_execution_intent` e `agenda_closure_intent` ainda não aplicados em Supabase/Dexie/sync;
-- `status='concluido'` legado permanece semanticamente ambíguo;
-- estoque e carência devem continuar derivados de evento real/produto executado, não de agenda.
-
-### Escopo inicial sugerido da Fase 12
-
-- aplicar os contratos `agenda_intent`, `event_execution_intent` e `agenda_closure_intent` em persistência real somente após diagnóstico;
-- auditar o fluxo legado de agenda e a ambiguidade de `status='concluido'`;
-- decidir schema/migrations, Dexie/local-first, sync-batch, Supabase/RLS, RPC/Edge Function, UI, rollback/replay, idempotência real e tratamento de dados existentes/reset;
-- preservar Agenda como intenção futura, Evento como fato executado e Protocolo como regra/configuração;
-- preservar materialização de agenda sem criação de evento e sem baixa de estoque;
-- manter estoque e carência derivados de evento real/produto executado.
+### Escopo da Fase 12D6+
+- Migrations físicas no Supabase para as tabelas `sanitario_product_classes_v2` e vinculados.
+- Criação e validação das regras de RLS baseadas no tenant (`fazenda_id`).
 
 ---
 

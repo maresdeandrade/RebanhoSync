@@ -1,6 +1,6 @@
 # Active Review Index — RebanhoSync
 
-Atualizado em: 2026-06-06
+Atualizado em: 2026-06-10
 **Baseline Commit:** `a180854`
 
 ## Objetivo
@@ -43,8 +43,8 @@ Quando deixar de orientar ação:
 
 ### Reconciliação documental
 
-**Arquivo:** `DOCS_RECONCILIATION_REPORT.md`  
-**Status:** Ativo  
+**Arquivo:** `DOCS_RECONCILIATION_REPORT.md`
+**Status:** Ativo
 **Baseline:** `3664395`
 
 ### Objetivo
@@ -78,8 +78,8 @@ docs/archive/
 
 ### Otimização de contexto/agentes
 
-**Arquivo:** `AI_CONTEXT_OPTIMIZATION_REPORT.md`  
-**Status:** Ativo  
+**Arquivo:** `AI_CONTEXT_OPTIMIZATION_REPORT.md`
+**Status:** Ativo
 **Baseline:** `3664395`
 
 ### Objetivo
@@ -102,8 +102,8 @@ Reduzir consumo de tokens e evitar carregamento amplo desnecessário.
 
 ### Checklist padrão
 
-**Arquivo:** `REVIEW_CHECKLIST.md`  
-**Status:** Ativo permanente  
+**Arquivo:** `REVIEW_CHECKLIST.md`
+**Status:** Ativo permanente
 **Baseline:** `3664395`
 
 ### Objetivo
@@ -120,8 +120,8 @@ Não fechar enquanto estiver sendo usado como padrão ativo.
 
 ### Itens abertos
 
-**Arquivo:** `OPEN_REVIEW_ITEMS.md`  
-**Status:** Ativo permanente  
+**Arquivo:** `OPEN_REVIEW_ITEMS.md`
+**Status:** Ativo permanente
 **Baseline:** `3664395`
 
 ### Objetivo

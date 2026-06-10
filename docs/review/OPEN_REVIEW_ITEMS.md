@@ -1,6 +1,6 @@
 # Open Review Items — RebanhoSync
 
-Atualizado em: 2026-06-02
+Atualizado em: 2026-06-10
 **Baseline Commit:** `3fe7a81`
 
 ## Objetivo

@@ -172,4 +172,121 @@ describe("sanitaryProtocolV2", () => {
       ]),
     );
   });
+
+  it("validateSanitaryProtocolItemVersionV2 bloqueia productRequirementRule invalido (P0)", () => {
+    const item = validItem({
+      productRequirementKind: "product_class",
+      productClass: "",
+      productRequirementRule: {
+        kind: "product_class",
+        productClass: "", // invalido
+        executionProductPolicy: "required_at_execution",
+      },
+    });
+
+    const result = validateSanitaryProtocolItemVersionV2(item);
+    expect(result.ok).toBe(false);
+    expect(result.issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: "invalid_product_requirement_rule" }),
+      ]),
+    );
+  });
+
+  it("validateSanitaryProtocolItemVersionV2 bloqueia mismatch entre productRequirementKind e productRequirementRule.kind (P0)", () => {
+    const item = validItem({
+      productRequirementKind: "product_class",
+      productClass: "vacina_febre_aftosa",
+      productRequirementRule: {
+        kind: "specific_product", // mismatch
+        productId: "prod-123",
+        executionProductPolicy: "required_at_execution",
+      },
+    });
+
+    const result = validateSanitaryProtocolItemVersionV2(item);
+    expect(result.ok).toBe(false);
+    expect(result.issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: "mismatch_product_requirement_rule" }),
+      ]),
+    );
+  });
+
+  it("productRequirementKind = product_class_group sem productRequirementRule bloqueia (P0)", () => {
+    const item = validItem({
+      productRequirementKind: "product_class_group",
+      productRequirementRule: null,
+    });
+
+    const result = validateSanitaryProtocolItemVersionV2(item);
+    expect(result.ok).toBe(false);
+    expect(result.issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: "product_class_group_requires_rule" }),
+      ]),
+    );
+  });
+
+  it("requiresNewProtocolItemVersionV2 retorna true quando muda productRequirementRule (P0)", () => {
+    const previous = validItem({
+      productRequirementKind: "product_class",
+      productRequirementRule: {
+        kind: "product_class",
+        productClass: "class-1",
+        executionProductPolicy: "required_at_execution",
+      },
+    });
+
+    const next = validItem({
+      productRequirementKind: "product_class",
+      productRequirementRule: {
+        kind: "product_class",
+        productClass: "class-2", // alterado
+        executionProductPolicy: "required_at_execution",
+      },
+    });
+
+    expect(requiresNewProtocolItemVersionV2(previous, next)).toBe(true);
+  });
+
+  it("validateSanitaryProtocolItemVersionV2 bloqueia mismatch de coherence entre productClass legado e regra (P0)", () => {
+    const item = validItem({
+      productRequirementKind: "product_class",
+      productClass: "vacina_febre_aftosa", // legado
+      productRequirementRule: {
+        kind: "product_class",
+        productClass: "vacina_clostridial_multivalente", // diferente na regra
+        executionProductPolicy: "required_at_execution",
+      },
+    });
+
+    const result = validateSanitaryProtocolItemVersionV2(item);
+    expect(result.ok).toBe(false);
+    expect(result.issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: "coherence_mismatch_product_class" }),
+      ]),
+    );
+  });
+
+  it("validateSanitaryProtocolItemVersionV2 bloqueia mismatch de coherence entre productId legado e regra (P0)", () => {
+    const item = validItem({
+      productRequirementKind: "specific_product",
+      productId: "prod-legado",
+      productRequirementRule: {
+        kind: "specific_product",
+        productId: "prod-regra", // diferente na regra
+        executionProductPolicy: "required_at_execution",
+      },
+    });
+
+    const result = validateSanitaryProtocolItemVersionV2(item);
+    expect(result.ok).toBe(false);
+    expect(result.issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: "coherence_mismatch_product_id" }),
+      ]),
+    );
+  });
 });

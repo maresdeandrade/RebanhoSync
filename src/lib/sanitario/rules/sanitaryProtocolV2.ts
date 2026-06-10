@@ -10,6 +10,14 @@ import {
   validateSpeciesAuthorizationV2,
   type SpeciesAuthorizationV2,
 } from "./sanitaryProductV2";
+import {
+  validateProductRequirementRuleV2,
+  type SanitaryProductRequirementRuleV2,
+} from "./sanitaryProductClassV2";
+
+// Re-exported so consumers can import from this file without breaking
+// existing imports. The canonical definition lives in sanitaryProductClassV2.ts.
+export type { ProductRequirementKindV2 } from "./sanitaryProductClassV2";
 
 export type SanitaryProtocolScopeV2 = "global" | "pack" | "fazenda";
 export type SanitaryProtocolLegalStatusV2 =
@@ -35,7 +43,10 @@ export type SanitaryActionTypeV2 =
   | "exame"
   | "manejo_sanitario"
   | "alerta";
-export type ProductRequirementKindV2 = "specific_product" | "product_class" | "none";
+// ProductRequirementKindV2 is now defined and exported from sanitaryProductClassV2.ts
+// and re-exported above. The local alias below keeps backward compat for this file's
+// internal validator until the full migration in a future phase.
+type _ProductRequirementKindLegacy = "specific_product" | "product_class" | "product_class_group" | "none";
 
 export type SanitaryProtocolV2 = {
   id?: string;
@@ -60,9 +71,15 @@ export type SanitaryProtocolItemVersionV2 = {
   version: number;
   itemStatus: SanitaryProtocolItemStatusV2;
   actionType: SanitaryActionTypeV2;
-  productRequirementKind: ProductRequirementKindV2;
+  productRequirementKind: _ProductRequirementKindLegacy;
   productId?: string | null;
   productClass?: string | null;
+  /**
+   * Structured requirement rule (12D5+).
+   * Supersedes the loose productRequirementKind/productId/productClass trio
+   * when present. Optional for backward compatibility.
+   */
+  productRequirementRule?: SanitaryProductRequirementRuleV2 | null;
   eligibilityRule: Record<string, unknown>;
   operationalWindowRule: Record<string, unknown>;
   doseRule?: Record<string, unknown> | null;
@@ -146,6 +163,72 @@ export function validateSanitaryProtocolV2(
 function validateProductRequirement(
   item: SanitaryProtocolItemVersionV2,
 ): SanitaryValidationIssueV2[] {
+  if (item.productRequirementKind === "product_class_group" && !item.productRequirementRule) {
+    return [
+      {
+        code: "product_class_group_requires_rule",
+        severity: "block",
+        field: "productRequirementRule",
+        message: 'Requisito "product_class_group" exige preenchimento do campo estruturado productRequirementRule.',
+      },
+    ];
+  }
+
+  if (item.productRequirementRule) {
+    if (item.productRequirementKind !== item.productRequirementRule.kind) {
+      return [
+        {
+          code: "mismatch_product_requirement_rule",
+          severity: "block",
+          field: "productRequirementRule",
+          message: `productRequirementKind ("${item.productRequirementKind}") deve coincidir com productRequirementRule.kind ("${item.productRequirementRule.kind}").`,
+        },
+      ];
+    }
+
+    if (
+      item.productRequirementKind === "product_class" &&
+      item.productRequirementRule.kind === "product_class" &&
+      item.productClass !== item.productRequirementRule.productClass
+    ) {
+      return [
+        {
+          code: "coherence_mismatch_product_class",
+          severity: "block",
+          field: "productClass",
+          message: `productClass legado ("${item.productClass}") deve ser idêntico ao productClass da regra estruturada ("${item.productRequirementRule.productClass}").`,
+        },
+      ];
+    }
+
+    if (
+      item.productRequirementKind === "specific_product" &&
+      item.productRequirementRule.kind === "specific_product" &&
+      item.productId !== item.productRequirementRule.productId
+    ) {
+      return [
+        {
+          code: "coherence_mismatch_product_id",
+          severity: "block",
+          field: "productId",
+          message: `productId legado ("${item.productId}") deve ser idêntico ao productId da regra estruturada ("${item.productRequirementRule.productId}").`,
+        },
+      ];
+    }
+
+    const structVal = validateProductRequirementRuleV2(item.productRequirementRule);
+    if (!structVal.ok) {
+      return [
+        {
+          code: "invalid_product_requirement_rule",
+          severity: "block",
+          field: "productRequirementRule",
+          message: structVal.reason,
+        },
+      ];
+    }
+  }
+
   if (item.productRequirementKind === "specific_product" && !item.productId) {
     return [
       {
@@ -277,6 +360,7 @@ export function requiresNewProtocolItemVersionV2(
     productRequirementKind: previous.productRequirementKind,
     productId: previous.productId ?? null,
     productClass: previous.productClass ?? null,
+    productRequirementRule: previous.productRequirementRule ?? null,
     eligibilityRule: previous.eligibilityRule,
     operationalWindowRule: previous.operationalWindowRule,
     doseRule: previous.doseRule ?? null,
@@ -291,6 +375,7 @@ export function requiresNewProtocolItemVersionV2(
     productRequirementKind: next.productRequirementKind,
     productId: next.productId ?? null,
     productClass: next.productClass ?? null,
+    productRequirementRule: next.productRequirementRule ?? null,
     eligibilityRule: next.eligibilityRule,
     operationalWindowRule: next.operationalWindowRule,
     doseRule: next.doseRule ?? null,

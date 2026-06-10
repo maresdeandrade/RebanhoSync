@@ -1,10 +1,46 @@
 # Last Phase Result — RebanhoSync
 
-Atualizado em: 2026-06-09
+Atualizado em: 2026-06-10
 **Baseline Commit documental anterior:** `0cc5577`
-**Commit local observado no início da 11.5F:** `0cc5577`
 
 ## 0. Resultado mais recente
+
+Fase 12D5 — Contratos TypeScript de ProductClass, ProductClassGroup e ExecutionProductPolicy — executada como implementação funcional pura em TypeScript em escopo reduzido.
+
+Decisão: `PROSSEGUIR COM ESCOPO REDUZIDO`.
+
+Resultado da 12D5:
+- Contratos TypeScript de `ProductClassV2` e `ProductClassGroupV2` definidos em `sanitaryProductClassV2.ts`.
+- Enums `SanitaryCurationStatusV2`, `SanitaryAutomationStatusV2` e `ExecutionProductPolicyV2` criados.
+- Union discriminada estruturada `SanitaryProductRequirementRuleV2` modelada.
+- Guards de tipo, validadores puros (`validateProductRequirementRuleV2`, `validateProductClassGroupV2`, `validateProductClassV2`) criados e validados.
+- `fixed_by_protocol` bloqueado em nível de validador runtime para `product_class` e `product_class_group`.
+- Item de protocolo versionado (`SanitaryProtocolItemVersionV2`) estendido com o campo opcional estruturado `productRequirementRule` em `sanitaryProtocolV2.ts`.
+- Validador do item versionado estendido para validar a integridade de `productRequirementRule`, bloquear mismatches com `productRequirementKind` e exigir regra quando kind for `product_class_group`.
+- Adicionada validação de coerência profunda entre campos legados (`productClass`, `productId`) e os campos equivalentes dentro da regra estruturada `productRequirementRule`.
+- Versionamento semântico (`requiresNewProtocolItemVersionV2`) estendido para detectar alterações estruturadas na regra de produto.
+- 18 testes unitários novos criados cobrindo todas as validações, mismatches, versionamento e guards de tipo em `sanitaryProductClassV2.test.ts` e `sanitaryProtocolV2.test.ts`.
+- Suíte completa de 900+ testes passou com sucesso absoluto e build limpo executado.
+
+Patch da 12D5:
+- `src/lib/sanitario/rules/sanitaryProductClassV2.ts` (novo)
+- `src/lib/sanitario/rules/__tests__/sanitaryProductClassV2.test.ts` (novo)
+- `src/lib/sanitario/rules/sanitaryProtocolV2.ts` (alterado)
+- `src/lib/sanitario/rules/__tests__/sanitaryProtocolV2.test.ts` (alterado)
+
+Não houve:
+- migration SQL ou alteração de RLS;
+- alteração de Dexie;
+- alteração de sync-batch;
+- alteração de UI;
+- criação de agenda real, evento real ou baixa de estoque.
+
+Próxima execução recomendada:
+- `12D6 — Schema SQL, RLS e Tabelas no Banco de Dados para ProductClass`.
+
+---
+
+## 0.1 Resultado anterior — Fase 12D4
 
 Fase 12D4 — Rebaseline conceitual das matrizes sanitárias v2: ProductClass, status curatorial e política de execução — executada como patch documental em escopo reduzido.
 
@@ -55,7 +91,7 @@ Próxima execução recomendada:
 
 ---
 
-## 0.1 Resultado anterior — Fase 12D3
+## 0.2 Resultado anterior — Fase 12D3
 
 Fase 12D3 — Extração curatorial de protocolos sanitários candidatos v2 para revisão — executada como patch documental em escopo reduzido.
 
