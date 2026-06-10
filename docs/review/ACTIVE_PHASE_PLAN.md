@@ -1,67 +1,67 @@
-# ACTIVE_PHASE_PLAN - Fase 12D5
+# ACTIVE_PHASE_PLAN - Fase 12D6
 
-**Status:** Fase 12D5 concluída como contratos TypeScript puros para ProductClass, ProductClassGroup e ExecutionProductPolicy.
-**Foco:** Definição de contratos TS, guards, validadores e testes unitários.
+**Status:** Fase 12D6 concluída como implementação de schema SQL, tabelas e RLS.
+**Foco:** Persistência de dados para ProductClass, ProductClassGroup e políticas de execução.
 **Criado:** 2026-06-10
 **Atualizado:** 2026-06-10
-**Plano base:** 12D5 — Contratos TypeScript de ProductClass, ProductClassGroup e ExecutionProductPolicy
+**Plano base:** 12D6 — Schema SQL, RLS e Tabelas no Banco de Dados para ProductClass
 
 ---
 
 ## Objetivo em 1 parágrafo
 
-Traduzir as decisões documentais da Fase 12D4 em contratos TypeScript puros, guards de tipo, funções validadoras e testes unitários sem persistência (sem SQL, RLS, Dexie, sync ou UI). Garantir que o validador de itens de protocolo e o versionamento semântico (`requiresNewProtocolItemVersionV2`) suportem de forma robusta e segura o novo campo estruturado `productRequirementRule`, prevenindo mismatches ou ausência de regras para grupos de classes.
+Criar a base física no Supabase/Postgres (schema SQL e RLS) para persistir as entidades `ProductClass`, `ProductClassGroup`, seus memberships e regras default por classe, respeitando o isolamento multitenant. A implementação foca estritamente no banco de dados e não altera persistência local (Dexie), sincronização, UI ou regras de negócio frontend.
 
 ---
 
-## Decisão 12D5
+## Decisão 12D6
 
-Decisão: `PROSSEGUIR COM ESCOPO REDUZIDO`.
+Decisão: `PROSSEGUIR COM ESCOPO DEFINIDO`.
 
 Implementação autorizada nesta fase:
-- criar contratos TypeScript em `sanitaryProductClassV2.ts`;
-- implementar validadores puros para regras de exigência, grupos de classes e classes técnicas;
-- integrar o campo estruturado `productRequirementRule` no item de protocolo versionado;
-- atualizar `requiresNewProtocolItemVersionV2` para incluir o novo campo no versionamento semântico;
-- implementar testes de cobertura e regressão para o novo comportamento.
+- Criar a migration SQL para persistência de `ProductClass`, `ProductClassGroup`, group members e default rules.
+- Implementar enums SQL e constraints garantindo coerência (ex. default rules requerendo snapshot em execução).
+- Adicionar chaves e índices otimizados para busca tenant-aware.
+- Configurar políticas de RLS baseadas nos metadados de fazenda (leitura global e tenant, escrita restrita a tenant managers).
+- Adicionar triggers para `updated_at`.
 
 Implementação não autorizada nesta fase:
-- criar migration SQL ou RLS;
-- alterar Dexie/offline stores;
-- alterar sync-batch;
-- criar UI ou fluxos operacionais;
-- alterar agenda real ou evento real.
+- Alterar Dexie/offline stores;
+- Alterar sync-batch edge functions;
+- Alterar UI ou fluxos operacionais;
+- Materializar agenda ou gerar seed curatorial real;
+- Inserir carência ativa em nível de banco de dados;
 
 ---
 
 ## Evidência técnica
 
 Arquivos gerados/alterados:
-- `src/lib/sanitario/rules/sanitaryProductClassV2.ts` (novo)
-- `src/lib/sanitario/rules/__tests__/sanitaryProductClassV2.test.ts` (novo)
-- `src/lib/sanitario/rules/sanitaryProtocolV2.ts` (alterado)
-- `src/lib/sanitario/rules/__tests__/sanitaryProtocolV2.test.ts` (alterado)
+- `supabase/migrations/20260610233557_sanitario_product_class_v2.sql` (novo)
 
 ---
 
 ## Critérios de aceite da fase
 
-- [x] Contratos de `ProductClassV2` e `ProductClassGroupV2` criados.
-- [x] Enums `SanitaryCurationStatusV2`, `SanitaryAutomationStatusV2` e `ExecutionProductPolicyV2` definidos.
-- [x] Union discriminada `SanitaryProductRequirementRuleV2` implementada.
-- [x] Validador runtime bloqueia `fixed_by_protocol` em `product_class` e `product_class_group`.
-- [x] Item de protocolo valida `productRequirementRule` quando presente.
-- [x] Mismatch entre `productRequirementKind` e `productRequirementRule.kind` é bloqueado.
-- [x] `productRequirementKind = product_class_group` exige `productRequirementRule` definido.
-- [x] `requiresNewProtocolItemVersionV2` detecta alterações em `productRequirementRule`.
-- [x] Suíte de testes com 100% de aprovação.
-- [x] Sem SQL, RLS ou migrações físicas.
-- [x] Sem Dexie/sync/UI.
+- [x] Migration SQL nova criada.
+- [x] Tabela de `ProductClass` criada.
+- [x] Tabela de `ProductClassGroup` criada.
+- [x] Tabela de membership grupo↔classe criada.
+- [x] Tabela de default rules criada.
+- [x] Status curatorial persistível.
+- [x] Status de automação persistível.
+- [x] `ExecutionProductPolicy` persistível.
+- [x] Constraints impedem combinações críticas inválidas.
+- [x] RLS habilitada em todas as tabelas novas com global read e tenant-scoped write.
+- [x] Índices mínimos criados.
+- [x] Comentários SQL documentam os limites sanitários.
+- [x] Nenhuma seed curatorial final criada.
+- [x] Nenhum Dexie/sync/UI alterado.
 
 ---
 
 ## Próxima fase segura
 
-`12D6 — Schema SQL, RLS e Tabelas no Banco de Dados para ProductClass`
+`12D7 — Integração Offline (Dexie) e Sincronização`
 
-Escopo mínimo da próxima fase: criar tabelas físicas no Supabase, habilitar RLS com isolamento por `fazenda_id` e preparar a persistência remota para a curadoria.
+Escopo mínimo da próxima fase: Conectar as novas tabelas SQL criadas na 12D6 ao Dexie e adaptar as functions sync-batch para o envio/recebimento de dados.
