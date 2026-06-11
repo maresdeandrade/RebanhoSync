@@ -5,6 +5,30 @@ Atualizado em: 2026-06-10
 
 ## 0. Resultado mais recente
 
+Fase 12D6 — Schema SQL, RLS e Tabelas no Banco de Dados para ProductClass — executada como migration física Postgres no Supabase em escopo reduzido.
+
+Decisão: `PROSSEGUIR COM ESCOPO REDUZIDO`.
+
+Resultado da 12D6:
+- Migration física de banco de dados criada em `supabase/migrations/20260610203500_sanitario_product_class_v2.sql`.
+- Tabelas criadas: `sanitario_product_classes_v2`, `sanitario_product_class_groups_v2`, `sanitario_product_class_group_members_v2` e `sanitario_product_class_default_rules_v2`.
+- CHECK constraints de integridade e cardinalidade, tipos de enumerados e JSONB estrutural implementados.
+- RLS habilitada em todas as tabelas com policies explícitas de `SELECT` (reutilizando `has_membership`) e de `INSERT`/`UPDATE` com `WITH CHECK` restrito a `owner`/`manager`.
+- Triggers `BEFORE INSERT OR UPDATE` para memberships e default rules executando validação e derivação determinística, bloqueando FKs inativas (`deleted_at is not null`).
+- Privilégios de DELETE omitidos nos grants; soft-deletion via UPDATE exigido.
+- Sem inserção de dados curatoriais, seeds de produto ou UI/Dexie integrados.
+- Alterações em sanitaryClassificationsV2.ts e sanitaryProductClassV2.test.ts foram correções mínimas de build/lint, sem mudança de regra sanitária, sem Dexie, sem sync, sem UI e sem alteração de contrato da 12D5.
+
+Patch da 12D6:
+- `supabase/migrations/20260610203500_sanitario_product_class_v2.sql` (novo)
+
+Próxima execução recomendada:
+- `12E — Offline/sync da Fundação Sanitária v2, incluindo ProductClass e Agenda Sanitária v2`.
+
+---
+
+## 0.1 Resultado anterior — Fase 12D5
+
 Fase 12D5 — Contratos TypeScript de ProductClass, ProductClassGroup e ExecutionProductPolicy — executada como implementação funcional pura em TypeScript em escopo reduzido.
 
 Decisão: `PROSSEGUIR COM ESCOPO REDUZIDO`.
@@ -35,12 +59,9 @@ Não houve:
 - alteração de UI;
 - criação de agenda real, evento real ou baixa de estoque.
 
-Próxima execução recomendada:
-- `12D6 — Schema SQL, RLS e Tabelas no Banco de Dados para ProductClass`.
-
 ---
 
-## 0.1 Resultado anterior — Fase 12D4
+## 0.2 Resultado anterior — Fase 12D4
 
 Fase 12D4 — Rebaseline conceitual das matrizes sanitárias v2: ProductClass, status curatorial e política de execução — executada como patch documental em escopo reduzido.
 
@@ -179,7 +200,7 @@ Não houve:
 
 Próxima execução recomendada:
 
-- 12E — Integração offline/sync da Agenda Sanitária v2 usando contrato canônico.
+- 12E — Offline/sync da Fundação Sanitária v2, incluindo ProductClass e Agenda Sanitária v2.
 
 ---
 

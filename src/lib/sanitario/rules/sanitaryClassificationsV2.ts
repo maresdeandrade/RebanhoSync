@@ -10,4 +10,6 @@ export const PROTOCOL_LEGAL_STATUSES = [
   "condicional",
   "estrategico",
   "experimental_alerta",
- 
+  "bloqueado"
+] as const;
+export type ProtocolLegalStatus = (typeof PROTOCOL_LEGAL_STATUSES)[number];
