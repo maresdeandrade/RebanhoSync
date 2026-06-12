@@ -2,7 +2,27 @@
 
 Atualizado em: 2026-06-11
 
-## 0. Handoff Atual — Fase 12E0
+## 0. Handoff Atual — Fase 12E1
+
+Fase 12E1 — Dexie schema/stores para ProductClass v2 — executada localmente em escopo reduzido.
+
+Decisao: `PROSSEGUIR COM ESCOPO REDUZIDO`.
+
+Resultado:
+- Stores Dexie locais criadas para ProductClass v2 em `catalog_sanitario_product_classes_v2`, `catalog_sanitario_product_class_groups_v2`, `catalog_sanitario_product_class_group_members_v2` e `catalog_sanitario_product_class_default_rules_v2`.
+- Versionamento Dexie atualizado para v23.
+- Tipos locais minimos criados para preservar campos criticos remotos: `id`, `fazenda_id`, `scope`, `created_at`, `updated_at`, `deleted_at`, `metadata`, `limitations` e campos especificos de cada tabela.
+- Indices locais adicionados para consultas futuras por `scope`, `fazenda_id`, `deleted_at`, `updated_at`, chaves semanticas, status curatoriais/automacao e compostos principais.
+- `tableMap` mapeia as 4 tabelas remotas ProductClass v2 para stores locais `catalog_*`, sem adiciona-las ao pull inicial.
+- Teste focado valida registro de stores, representacao global (`scope='global'`, `fazenda_id=null`), tenant (`scope='tenant'`, `fazenda_id` preenchido), preservacao de `deleted_at`, `updated_at`, metadata e arrays, sem criar `queue_ops`.
+- Nenhum pull, push, sync-batch, UI, migration, seed, protocolo, agenda, evento, estoque, carencia ativa, venda, abate, leite ou aptidao operacional foi implementado.
+
+Proxima fase recomendada:
+- `12E2 — Sync/Pull ProductClass v2 e correcao do baseline P1`.
+
+---
+
+## 0.1 Handoff anterior — Fase 12E0
 
 Fase 12E0 — Diagnóstico Técnico e Contrato de Implementação para Offline/Sync da Fundação Sanitária v2 — executada localmente como patch documental.
 
@@ -22,7 +42,7 @@ Próxima fase recomendada:
 
 ---
 
-## 0.1 Handoff anterior — Fase 12D6
+## 0.2 Handoff anterior — Fase 12D6
 
 Fase 12D6 — Schema SQL, RLS e Tabelas no Banco de Dados para ProductClass — executada como migration física Postgres no Supabase em escopo reduzido.
 
@@ -43,7 +63,7 @@ Próxima fase recomendada:
 
 ---
 
-## 0.2 Handoff anterior — Fase 12D5
+## 0.3 Handoff anterior — Fase 12D5
 
 Fase 12D5 — Contratos TypeScript de ProductClass, ProductClassGroup e ExecutionProductPolicy — executada como implementação funcional pura em TypeScript em escopo reduzido.
 

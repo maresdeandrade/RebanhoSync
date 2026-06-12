@@ -883,6 +883,105 @@ export interface CatalogoDoencaNotificavel {
   updated_at: string;
 }
 
+export type SanitarioProductClassScopeV2 = "global" | "tenant";
+export type SanitarioProductClassSpeciesV2 = "bovino" | "bubalino";
+export type SanitarioProductClassAptitudeV2 = "corte" | "leite" | "mista" | "all";
+export type SanitarioProductClassCurationStatusV2 =
+  | "candidate"
+  | "needs_review"
+  | "approved_for_catalog"
+  | "blocked"
+  | "archived";
+export type SanitarioProductClassAutomationStatusV2 =
+  | "manual_only"
+  | "preview_allowed"
+  | "agenda_allowed"
+  | "blocked";
+export type SanitarioProductClassProductTypeV2 =
+  | "vacina"
+  | "antiparasitario"
+  | "antibiotico"
+  | "anti_inflamatorio"
+  | "hormonio"
+  | "diagnostico"
+  | "outro";
+export type SanitarioExecutionProductPolicyLocalV2 =
+  | "required_at_execution"
+  | "required_at_agenda"
+  | "not_required";
+
+export interface SanitarioProductClassLocalV2 {
+  id: string;
+  fazenda_id: string | null;
+  scope: SanitarioProductClassScopeV2;
+  class_key: string;
+  name: string;
+  product_type: SanitarioProductClassProductTypeV2;
+  product_subtype: string | null;
+  target_condition: string | null;
+  species_scope: SanitarioProductClassSpeciesV2[];
+  curation_status: SanitarioProductClassCurationStatusV2;
+  automation_status: SanitarioProductClassAutomationStatusV2;
+  limitations: string[];
+  metadata: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+}
+
+export interface SanitarioProductClassGroupLocalV2 {
+  id: string;
+  fazenda_id: string | null;
+  scope: SanitarioProductClassScopeV2;
+  group_key: string;
+  name: string;
+  requires_mv_for_other_class: boolean;
+  curation_status: SanitarioProductClassCurationStatusV2;
+  automation_status: SanitarioProductClassAutomationStatusV2;
+  limitations: string[];
+  metadata: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+}
+
+export interface SanitarioProductClassGroupMemberLocalV2 {
+  id: string;
+  fazenda_id: string | null;
+  scope: SanitarioProductClassScopeV2;
+  group_id: string;
+  class_id: string;
+  is_allowed: boolean;
+  requires_mv_override: boolean | null;
+  limitations: string[];
+  metadata: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+}
+
+export interface SanitarioProductClassDefaultRuleLocalV2 {
+  id: string;
+  fazenda_id: string | null;
+  scope: SanitarioProductClassScopeV2;
+  class_id: string;
+  species_code: SanitarioProductClassSpeciesV2;
+  aptitude: SanitarioProductClassAptitudeV2;
+  dose_rule: Record<string, unknown> | null;
+  route_rule: Record<string, unknown> | null;
+  withdrawal_rule: Record<string, unknown> | null;
+  execution_product_policy: SanitarioExecutionProductPolicyLocalV2;
+  can_validate_execution: boolean;
+  requires_executed_product_for_withdrawal: boolean;
+  source_refs: Array<Record<string, unknown>>;
+  limitations: string[];
+  metadata: Record<string, unknown>;
+  curation_status: SanitarioProductClassCurationStatusV2;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+}
+
 export interface FazendaSanidadeConfig {
   fazenda_id: string;
   uf: EstadoUFEnum | null;

@@ -5,6 +5,35 @@ Atualizado em: 2026-06-11
 
 ## 0. Resultado mais recente
 
+Fase 12E1 — Dexie schema/stores para ProductClass v2 — executada localmente em escopo reduzido.
+
+Decisao: `PROSSEGUIR COM ESCOPO REDUZIDO`.
+
+Resultado da 12E1:
+- Adicionados os stores Dexie `catalog_sanitario_product_classes_v2`, `catalog_sanitario_product_class_groups_v2`, `catalog_sanitario_product_class_group_members_v2` e `catalog_sanitario_product_class_default_rules_v2`.
+- Dexie versionado para v23, sem migracao customizada por serem stores novas.
+- Tipos locais minimos adicionados para ProductClass v2, grupos, memberships e regras default, preservando campos criticos remotos.
+- Indices locais adicionados para consulta futura por escopo, fazenda, soft-delete, atualizacao, chaves semanticas, vinculo grupo/classe e regra por classe/especie/aptidao.
+- `tableMap` passou a reconhecer as 4 tabelas remotas ProductClass v2 como `catalog_*`.
+- Teste focado criado para validar armazenamento local global/tenant, preservacao de `deleted_at`, `updated_at`, `metadata`, arrays e ausencia de `queue_ops`.
+- Nenhum pull remoto, push remoto, sync-batch, UI, migration, seed, protocolo estruturado, agenda, evento, estoque, carencia ativa, venda, abate, leite ou aptidao operacional foi implementado.
+
+Patch da 12E1:
+- `src/lib/offline/db.ts`
+- `src/lib/offline/types.ts`
+- `src/lib/offline/tableMap.ts`
+- `src/lib/offline/__tests__/sanitarioProductClassV2Store.test.ts`
+
+Validacao inicial:
+- `pnpm test -- src/lib/offline/__tests__/sanitarioProductClassV2Store.test.ts`: passou.
+
+Proxima execucao recomendada:
+- `12E2 — Sync/Pull ProductClass v2 e correcao do baseline P1`.
+
+---
+
+## 0.1 Resultado anterior — Fase 12E0
+
 Fase 12E0 — Offline/sync da Fundação Sanitária v2, incluindo ProductClass e Agenda Sanitária v2 (Diagnóstico e Contrato) — executada localmente como patch documental.
 
 Decisão: `PROSSEGUIR COM ESCOPO REDUZIDO`.
@@ -27,7 +56,7 @@ Próxima execução recomendada:
 
 ---
 
-## 0.1 Resultado anterior — Fase 12D6
+## 0.2 Resultado anterior — Fase 12D6
 
 Fase 12D6 — Schema SQL, RLS e Tabelas no Banco de Dados para ProductClass — executada como migration física Postgres no Supabase em escopo reduzido.
 
@@ -51,7 +80,7 @@ Próxima execução recomendada:
 
 ---
 
-## 0.2 Resultado anterior — Fase 12D5
+## 0.3 Resultado anterior — Fase 12D5
 
 Fase 12D5 — Contratos TypeScript de ProductClass, ProductClassGroup e ExecutionProductPolicy — executada como implementação funcional pura em TypeScript em escopo reduzido.
 

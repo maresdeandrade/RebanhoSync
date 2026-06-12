@@ -36,6 +36,14 @@ export const TABLE_MAP: Record<string, string> = {
   eventos_financeiro: "event_eventos_financeiro",
   eventos_ecc: "event_eventos_ecc",
   eventos_comercial: "event_eventos_comercial",
+
+  // Catalog Rails - ProductClass v2 (12E1 local storage only; pull/sync in later phase)
+  sanitario_product_classes_v2: "catalog_sanitario_product_classes_v2",
+  sanitario_product_class_groups_v2: "catalog_sanitario_product_class_groups_v2",
+  sanitario_product_class_group_members_v2:
+    "catalog_sanitario_product_class_group_members_v2",
+  sanitario_product_class_default_rules_v2:
+    "catalog_sanitario_product_class_default_rules_v2",
 };
 
 // Reverse map (localStore -> remoteTable) calculado 1x
@@ -48,7 +56,11 @@ const REVERSE_TABLE_MAP: Record<string, string> = Object.fromEntries(
  * Se já vier no formato local (state_/event_), retorna como está (sem warning).
  */
 export const getLocalStoreName = (remoteTable: string): string => {
-  if (remoteTable.startsWith("state_") || remoteTable.startsWith("event_")) {
+  if (
+    remoteTable.startsWith("state_") ||
+    remoteTable.startsWith("event_") ||
+    remoteTable.startsWith("catalog_")
+  ) {
     return remoteTable; // já é local
   }
   const localName = TABLE_MAP[remoteTable];
@@ -76,7 +88,8 @@ export const getRemoteTableName = (storeOrRemote: string): string => {
 
   if (
     storeOrRemote.startsWith("state_") ||
-    storeOrRemote.startsWith("event_")
+    storeOrRemote.startsWith("event_") ||
+    storeOrRemote.startsWith("catalog_")
   ) {
     console.warn(
       `[table-map] No remote table found for local store: ${storeOrRemote}. Using as-is.`,

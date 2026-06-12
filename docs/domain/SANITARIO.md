@@ -755,9 +755,26 @@ Essa fase deve validar uso real, não criar novo domínio.
 | Fase 12D5 | Contratos TypeScript de ProductClass, ProductClassGroup e ExecutionProductPolicy | Concluída |
 | Fase 12D6 | Schema SQL, RLS e Tabelas no Banco de Dados para ProductClass | Concluída |
 | Fase 12E0 | Diagnóstico técnico e contrato de offline/sync | Concluída |
-| Fase 12E1 | Dexie schema/stores para ProductClass v2 | Não iniciada |
+| Fase 12E1 | Dexie schema/stores para ProductClass v2 | Concluída localmente |
 | Fase 12E2 | Sincronização de ProductClass (sync-batch) e baseline P1 | Não iniciada |
 | Fase 12E3 | Dexie & Sync para Agenda Sanitária v2 | Não iniciada |
+
+### ProductClass v2 local/offline
+
+A Fase 12E1 criou apenas a base local Dexie/IndexedDB para as 4 estruturas ProductClass v2:
+
+- `catalog_sanitario_product_classes_v2`;
+- `catalog_sanitario_product_class_groups_v2`;
+- `catalog_sanitario_product_class_group_members_v2`;
+- `catalog_sanitario_product_class_default_rules_v2`.
+
+Contrato da 12E1:
+
+- `scope = 'global'` é representável localmente com `fazenda_id = null`;
+- `scope = 'tenant'` é representável localmente com `fazenda_id` preenchido;
+- `deleted_at`, `updated_at`, `metadata`, `limitations`, arrays e JSON estruturados são preservados;
+- o cache local ainda não implementa pull remoto, push remoto, sync-batch, seed, protocolo, agenda, evento ou carência ativa;
+- catálogo global segue preparado como leitura futura/pull-only, sem edição local autorizada.
 
 ### Antipadrões proibidos
 

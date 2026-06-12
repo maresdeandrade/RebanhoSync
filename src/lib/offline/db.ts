@@ -26,6 +26,10 @@ import {
   type CatalogoProtocoloOficial,
   type CatalogoProtocoloOficialItem,
   type CatalogoDoencaNotificavel,
+  type SanitarioProductClassDefaultRuleLocalV2,
+  type SanitarioProductClassGroupLocalV2,
+  type SanitarioProductClassGroupMemberLocalV2,
+  type SanitarioProductClassLocalV2,
   type FazendaSanidadeConfig,
   type Insumo,
   type InsumoApresentacao,
@@ -84,6 +88,10 @@ export class OfflineDB extends Dexie {
   catalog_protocolos_oficiais!: Table<CatalogoProtocoloOficial, string>;
   catalog_protocolos_oficiais_itens!: Table<CatalogoProtocoloOficialItem, string>;
   catalog_doencas_notificaveis!: Table<CatalogoDoencaNotificavel, string>;
+  catalog_sanitario_product_classes_v2!: Table<SanitarioProductClassLocalV2, string>;
+  catalog_sanitario_product_class_groups_v2!: Table<SanitarioProductClassGroupLocalV2, string>;
+  catalog_sanitario_product_class_group_members_v2!: Table<SanitarioProductClassGroupMemberLocalV2, string>;
+  catalog_sanitario_product_class_default_rules_v2!: Table<SanitarioProductClassDefaultRuleLocalV2, string>;
 
   constructor() {
     super("RebanhoSync");
@@ -632,6 +640,18 @@ export class OfflineDB extends Dexie {
         "id, fazenda_id, sociedade_id, animal_id, status, deleted_at, [fazenda_id+sociedade_id], [fazenda_id+animal_id], [fazenda_id+status]",
       state_sociedades_pecuarias:
         "id, fazenda_id, contraparte_id, status, deleted_at, [fazenda_id+contraparte_id], [fazenda_id+status]",
+    });
+
+    // Version 23: cache local ProductClass v2. Apenas armazenamento local; sync/pull fica para 12E2.
+    this.version(23).stores({
+      catalog_sanitario_product_classes_v2:
+        "id, scope, fazenda_id, deleted_at, updated_at, class_key, curation_status, automation_status, [scope+class_key], [fazenda_id+class_key]",
+      catalog_sanitario_product_class_groups_v2:
+        "id, scope, fazenda_id, deleted_at, updated_at, group_key, curation_status, automation_status, [scope+group_key], [fazenda_id+group_key]",
+      catalog_sanitario_product_class_group_members_v2:
+        "id, scope, fazenda_id, deleted_at, updated_at, group_id, class_id, [group_id+class_id]",
+      catalog_sanitario_product_class_default_rules_v2:
+        "id, scope, fazenda_id, deleted_at, updated_at, class_id, species_code, aptitude, curation_status, [class_id+species_code+aptitude]",
     });
   }
 }

@@ -1,39 +1,46 @@
-# ACTIVE_PHASE_PLAN - Fase 12E0
+# ACTIVE_PHASE_PLAN - Fase 12E1
 
-**Status:** Fase 12E0 concluída — Diagnóstico técnico e contrato de implementação para conectar a Fundação Sanitária v2 ao fluxo offline/sync.
-**Foco:** Planejamento e mapeamento das estruturas de ProductClass e Agenda Sanitária v2 no Dexie, sync-batch, pull e RLS.
-**Criado:** 2026-06-11
-**Atualizado:** 2026-06-11
-**Plano base:** 12E0 — Offline/sync da Fundação Sanitária v2, incluindo ProductClass e Agenda Sanitária v2 (Diagnóstico e Contrato)
-
----
-
-## Objetivo em 1 parágrafo
-
-Executar a Fase 12E0 como diagnóstico e contrato técnico de implementação, mapeando as 17 estruturas sanitárias v2 Supabase/Dexie divididas em dois blocos (Catálogo vs Operação), alinhando as estratégias de pull/push para registros globais (pull-only) vs tenant (`scope = 'tenant'`), tratando o fluxo de soft-delete e RLS, sem alterar código funcional, migrations, Dexie, sync-batch ou UI nesta subfase.
+**Status:** Fase 12E1 concluida localmente — Dexie schema/stores para ProductClass v2.
+**Foco:** Armazenamento local IndexedDB/Dexie das 4 estruturas ProductClass v2, sem sincronizacao remota.
+**Criado:** 2026-06-12
+**Atualizado:** 2026-06-12
+**Plano base:** 12E1 — Dexie ProductClass v2 local storage
 
 ---
 
-## Decisão 12E0
+## Objetivo em 1 paragrafo
 
-Decisão: `PROSSEGUIR COM ESCOPO REDUZIDO`.
-
-Implementação autorizada nesta fase:
-- criar plano técnico e diagnóstico de sincronização/offline em `docs/review/PLANO_FASE_12E0_OFFLINE_SYNC_FOUNDATION.md`;
-- atualizar documentação de status, roadmap e handoff da fase.
-
-Implementação não autorizada nesta fase:
-- alteração de esquemas Dexie locais;
-- alteração da Edge Function `sync-batch` ou das tabelas no banco de dados;
-- alteração na UI ou em arquivos TypeScript funcionais;
-- criação de seeds, agendas ou eventos.
+Executar a Fase 12E1 criando apenas a base local Dexie/IndexedDB para armazenar offline as entidades de ProductClass v2 criadas na Fase 12D6: classes, grupos, memberships e regras default. A fase prepara cache local `catalog_*` para leitura futura, preservando `scope`, `fazenda_id`, `updated_at`, `deleted_at`, arrays e JSON/metadados, sem implementar pull, push, sync-batch, UI, migration, seed, protocolos, agenda, evento ou carencia ativa.
 
 ---
 
-## Evidência técnica
+## Decisao 12E1
+
+Decisao: `PROSSEGUIR COM ESCOPO REDUZIDO`.
+
+Implementacao autorizada nesta fase:
+- adicionar stores Dexie `catalog_sanitario_product_classes_v2`, `catalog_sanitario_product_class_groups_v2`, `catalog_sanitario_product_class_group_members_v2` e `catalog_sanitario_product_class_default_rules_v2`;
+- atualizar versionamento Dexie para v23;
+- criar tipos locais minimos espelhando as tabelas ProductClass v2;
+- mapear remoto -> local no `tableMap` sem incluir no pull inicial;
+- criar teste focado de armazenamento local global/tenant.
+
+Implementacao nao autorizada nesta fase:
+- alteracao da Edge Function `sync-batch`;
+- implementacao de pull remoto ou push remoto;
+- alteracao de UI, agenda, evento, estoque ou fluxos operacionais;
+- criacao de migrations, seeds ou protocolos reais;
+- calculo de carencia ativa ou liberacao de venda, abate, leite ou aptidao operacional.
+
+---
+
+## Evidencia tecnica
 
 Arquivos gerados/alterados:
-- `docs/review/PLANO_FASE_12E0_OFFLINE_SYNC_FOUNDATION.md` (novo)
+- `src/lib/offline/db.ts` (alterado)
+- `src/lib/offline/types.ts` (alterado)
+- `src/lib/offline/tableMap.ts` (alterado)
+- `src/lib/offline/__tests__/sanitarioProductClassV2Store.test.ts` (novo)
 - `docs/review/ACTIVE_PHASE_PLAN.md` (alterado)
 - `docs/review/CURRENT_PHASE_HANDOFF.md` (alterado)
 - `docs/review/LAST_PHASE_RESULT.md` (alterado)
@@ -43,15 +50,22 @@ Arquivos gerados/alterados:
 
 ---
 
-## Critérios de aceitação da fase
+## Criterios de aceitacao da fase
 
-- [x] Nenhum código funcional, UI, Dexie ou sync-batch alterado.
+- [x] Stores Dexie/ProductClass v2 criadas.
+- [x] Versionamento Dexie atualizado para v23.
+- [x] Registros global e tenant sao representaveis localmente.
+- [x] `deleted_at` e `updated_at` preservados.
+- [x] `metadata`, `limitations`, `species_scope` e `source_refs` preservados localmente.
+- [x] Nenhum push implementado.
+- [x] Nenhum pull remoto implementado.
+- [x] Nenhum sync-batch alterado.
+- [x] Nenhuma UI alterada.
 - [x] Nenhuma migration criada.
-- [x] Mapa de lojas remotas → locais proposto no plano técnico (17 estruturas no total).
-- [x] Estratégia de sincronização global (pull-only) vs tenant (`scope = 'tenant'`) documentada.
-- [x] Fatiamento da Fase 12E em 4 subfases (12E1 a 12E4) e Fase 12F estabelecido.
-- [x] Baseline P1 catalogado e riscos mapeados.
+- [x] Nenhum seed criado.
+- [x] Nenhum protocolo estruturado, agenda, evento ou carencia ativa criado.
+- [x] Teste focado passou.
 
-## Próxima fase segura
+## Proxima fase segura
 
-`12E1 — Dexie schema/stores para ProductClass v2`
+`12E2 — Sync/Pull ProductClass v2 e correcao do baseline P1`
