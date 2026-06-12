@@ -1,8 +1,28 @@
 # Current Phase Handoff — RebanhoSync
 
-Atualizado em: 2026-06-10
+Atualizado em: 2026-06-11
 
-## 0. Handoff Atual — Fase 12D6
+## 0. Handoff Atual — Fase 12E0
+
+Fase 12E0 — Diagnóstico Técnico e Contrato de Implementação para Offline/Sync da Fundação Sanitária v2 — executada localmente como patch documental.
+
+Decisão: `PROSSEGUIR COM ESCOPO REDUZIDO`.
+
+Resultado:
+- Plano técnico de sincronização/offline criado em [PLANO_FASE_12E0_OFFLINE_SYNC_FOUNDATION.md](file:///c:/Users/mares/dyad-apps/GestaoAgro/docs/review/PLANO_FASE_12E0_OFFLINE_SYNC_FOUNDATION.md).
+- Mapeamento remoto → local proposto para as 17 estruturas sanitárias v2 Supabase/Dexie (14 de Catálogo e 3 de Operação).
+- Estratégia de pull/push diferenciada para registros de escopo global (pull-only) vs tenant (`scope = 'tenant'`).
+- Soft-delete e constraints de idempotência RLS (por `client_op_id` / `dedup_key`) documentados.
+- Ordem de implementação em 4 subfases curtas sugerida: 12E1 (ProductClass Dexie) -> 12E2 (ProductClass sync/P1) -> 12E3 (Catálogo ampliado) -> 12E4 (Agenda Sanitária v2 Dexie/sync).
+- Classificação da pendência P1 (atualizar `validate-supabase-baseline-functional.mjs`) mapeada para resolução na Fase 12E2.
+- Nenhum código funcional, UI, Dexie, migrations ou sync-batch foi alterado nesta subfase.
+
+Próxima fase recomendada:
+- `12E1 — Dexie schema/stores para ProductClass v2`.
+
+---
+
+## 0.1 Handoff anterior — Fase 12D6
 
 Fase 12D6 — Schema SQL, RLS e Tabelas no Banco de Dados para ProductClass — executada como migration física Postgres no Supabase em escopo reduzido.
 
@@ -16,14 +36,14 @@ Resultado:
 - Triggers `BEFORE INSERT OR UPDATE` para memberships e default rules executando validação e derivação determinística, bloqueando FKs inativas (`deleted_at is not null`).
 - Privilégios de DELETE omitidos nos grants; soft-deletion via UPDATE exigido.
 - Sem inserção de dados curatoriais, seeds de produto ou UI/Dexie integrados.
-- Alterações em sanitaryClassificationsV2.ts e sanitaryProductClassV2.test.ts foram correções mínimas de build/lint, sem mudança de regra sanitária, sem Dexie, sem sync, sem UI e sem alteração de contrato da 12D5.
+- Alterações em sanitaryClassificationsV2.ts and sanitaryProductClassV2.test.ts foram correções mínimas de build/lint, sem mudança de regra sanitária, sem Dexie, sem sync, sem UI e sem alteração de contrato da 12D5.
 
 Próxima fase recomendada:
-- `12E — Offline/sync da Fundação Sanitária v2, incluindo ProductClass e Agenda Sanitária v2`.
+- `12E0 — Diagnóstico técnico e contrato de implementação para offline/sync da Fundação Sanitária v2`.
 
 ---
 
-## 0.1 Handoff anterior — Fase 12D5
+## 0.2 Handoff anterior — Fase 12D5
 
 Fase 12D5 — Contratos TypeScript de ProductClass, ProductClassGroup e ExecutionProductPolicy — executada como implementação funcional pura em TypeScript em escopo reduzido.
 

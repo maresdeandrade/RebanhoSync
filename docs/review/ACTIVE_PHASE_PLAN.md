@@ -1,54 +1,57 @@
-# ACTIVE_PHASE_PLAN - Fase 12D6
+# ACTIVE_PHASE_PLAN - Fase 12E0
 
-**Status:** Fase 12D6 em andamento — Criação do Schema SQL, RLS e Tabelas no Banco de Dados para ProductClass.
-**Foco:** Persistência física de ProductClass, ProductClassGroup, default rules e memberships.
-**Criado:** 2026-06-10
-**Atualizado:** 2026-06-10
-**Plano base:** 12D6 — Schema SQL, RLS e Tabelas no Banco de Dados para ProductClass
+**Status:** Fase 12E0 concluída — Diagnóstico técnico e contrato de implementação para conectar a Fundação Sanitária v2 ao fluxo offline/sync.
+**Foco:** Planejamento e mapeamento das estruturas de ProductClass e Agenda Sanitária v2 no Dexie, sync-batch, pull e RLS.
+**Criado:** 2026-06-11
+**Atualizado:** 2026-06-11
+**Plano base:** 12E0 — Offline/sync da Fundação Sanitária v2, incluindo ProductClass e Agenda Sanitária v2 (Diagnóstico e Contrato)
 
 ---
 
 ## Objetivo em 1 parágrafo
 
-Traduzir os contratos TypeScript validados na Fase 12D5 em estruturas físicas de tabelas no Supabase/Postgres (`sanitario_product_classes_v2`, `sanitario_product_class_groups_v2`, `sanitario_product_class_group_members_v2` e `sanitario_product_class_default_rules_v2`), protegendo os dados com políticas de Row Level Security (RLS) alinhadas às regras de tenant (`fazenda_id`) e validando a pertinência de escopos por triggers `BEFORE INSERT OR UPDATE` no banco, sem integrar UI, offline/sync ou seeds operacionais reais.
+Executar a Fase 12E0 como diagnóstico e contrato técnico de implementação, mapeando as 17 estruturas sanitárias v2 Supabase/Dexie divididas em dois blocos (Catálogo vs Operação), alinhando as estratégias de pull/push para registros globais (pull-only) vs tenant (`scope = 'tenant'`), tratando o fluxo de soft-delete e RLS, sem alterar código funcional, migrations, Dexie, sync-batch ou UI nesta subfase.
 
 ---
 
-## Decisão 12D6
+## Decisão 12E0
 
 Decisão: `PROSSEGUIR COM ESCOPO REDUZIDO`.
 
 Implementação autorizada nesta fase:
-- criar migration física para as novas tabelas v2;
-- configurar RLS select, insert, e update policies reutilizando o padrão do projeto (`role_in_fazenda` e `has_membership`);
-- configurar triggers de validação de coerência e de timestamp;
-- criar índices parciais específicos para evitar colisões com nulos.
+- criar plano técnico e diagnóstico de sincronização/offline em `docs/review/PLANO_FASE_12E0_OFFLINE_SYNC_FOUNDATION.md`;
+- atualizar documentação de status, roadmap e handoff da fase.
 
 Implementação não autorizada nesta fase:
-- seeds curatoriais ou dados comerciais reais;
-- conexões com offline (Dexie) ou sincronização (sync-batch);
-- alterações na UI ou nos fluxos de agenda/evento ativos.
+- alteração de esquemas Dexie locais;
+- alteração da Edge Function `sync-batch` ou das tabelas no banco de dados;
+- alteração na UI ou em arquivos TypeScript funcionais;
+- criação de seeds, agendas ou eventos.
 
 ---
 
 ## Evidência técnica
 
 Arquivos gerados/alterados:
-- `supabase/migrations/20260610203500_sanitario_product_class_v2.sql` (novo)
+- `docs/review/PLANO_FASE_12E0_OFFLINE_SYNC_FOUNDATION.md` (novo)
+- `docs/review/ACTIVE_PHASE_PLAN.md` (alterado)
+- `docs/review/CURRENT_PHASE_HANDOFF.md` (alterado)
+- `docs/review/LAST_PHASE_RESULT.md` (alterado)
+- `docs/context/PROJECT_STATUS.md` (alterado)
+- `docs/product/ROADMAP.md` (alterado)
+- `docs/domain/SANITARIO.md` (alterado)
 
 ---
 
-## Critérios de aceite da fase
+## Critérios de aceitação da fase
 
-- [x] Migration SQL criada no padrão de timestamp.
-- [x] Tabelas `sanitario_product_classes_v2`, `sanitario_product_class_groups_v2`, `sanitario_product_class_group_members_v2` e `sanitario_product_class_default_rules_v2` criadas.
-- [x] Constraints impedem cardinalidades zeradas ou tipos inválidos.
-- [x] RLS ativada e policies configuradas com WITH CHECK estritos para escritas.
-- [x] Triggers BEFORE INSERT OR UPDATE implementados para integridade e bloqueio de soft-deletes.
-- [x] Privilégios de DELETE omitidos nos grants para authenticated.
-- [x] Comentários SQL documentando as restrições sanitárias inseridos.
-- [x] Sem seeds, Dexie ou UI conectados.
+- [x] Nenhum código funcional, UI, Dexie ou sync-batch alterado.
+- [x] Nenhuma migration criada.
+- [x] Mapa de lojas remotas → locais proposto no plano técnico (17 estruturas no total).
+- [x] Estratégia de sincronização global (pull-only) vs tenant (`scope = 'tenant'`) documentada.
+- [x] Fatiamento da Fase 12E em 4 subfases (12E1 a 12E4) e Fase 12F estabelecido.
+- [x] Baseline P1 catalogado e riscos mapeados.
 
 ## Próxima fase segura
 
-`12E — Offline/sync da Fundação Sanitária v2, incluindo ProductClass e Agenda Sanitária v2`
+`12E1 — Dexie schema/stores para ProductClass v2`

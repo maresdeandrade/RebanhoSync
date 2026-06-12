@@ -28,24 +28,28 @@ Não deve substituir issues, tarefas técnicas ou prompts de implementação.
 
 ## Fase atual — Fase 12
 
-Status: **Fase 12D6 concluída como Schema SQL, RLS e Tabelas no Banco de Dados para ProductClass**
+Status: **Fase 12E0 concluída como Diagnóstico Técnico e Contrato de Offline/Sync**
 Fase anterior: **Fase 11.5 — Agenda Sanitária v2: Janelas, Agrupamento e Materialização Idempotente — concluída localmente**
-Fase seguinte: **Fase 12E — Offline/sync da Fundação Sanitária v2, incluindo ProductClass e Agenda Sanitária v2 — a iniciar**
+Fase seguinte: **Fase 12E1 — Dexie schema/stores para ProductClass v2 — a iniciar**
 
 ### Conduta inicial
 
-As subfases 11.5A a 11.5J (Agenda Sanitária v2 core/documental), 12A (auditoria), 12B (modelagem clean/reset), 12C (migration clean SQL), 12D0 (modelo canônico), 12D1 (schema/contratos mínimos v2), 12D2 (builders/adapters puros de snapshots), 12D3 (extração curatorial), 12D4 (rebaseline conceitual das matrizes), 12D5 (contratos TypeScript de ProductClass) e 12D6 (schema SQL, RLS e tabelas para ProductClass) foram concluídas localmente. O desenvolvimento segue focado na fundação do módulo sanitário v2 antes do acoplamento com o offline e sincronização.
+As subfases 11.5A a 11.5J (Agenda Sanitária v2 core/documental), 12A (auditoria), 12B (modelagem clean/reset), 12C (migration clean SQL), 12D0 (modelo canônico), 12D1 (schema/contratos mínimos v2), 12D2 (builders/adapters puros de snapshots), 12D3 (extração curatorial), 12D4 (rebaseline conceitual das matrizes), 12D5 (contratos TypeScript de ProductClass), 12D6 (schema SQL, RLS e tabelas para ProductClass) e 12E0 (Diagnóstico e Contrato de Offline/Sync) foram concluídas localmente. O desenvolvimento avança agora para a conexão gradual das novas estruturas com a sincronização local-remota.
 
 ### Handoff para Fase 12E
 
-A próxima etapa 12E definirá as estruturas do Dexie para ProductClass e ProductClassGroup, estenderá o sync-batch para sincronizar classes de produtos de forma bidirecional, e preparará a persistência local-first.
+A próxima etapa 12E está dividida na seguinte ordem de subfases:
+1. **12E1**: Criação do Dexie schema e stores para as tabelas de ProductClass (`sanitario_product_classes_v2`, `sanitario_product_class_groups_v2`, etc.).
+2. **12E2**: Ajustes no `sync-batch` e rotinas de pull para sincronizar tabelas de ProductClass, além da correção do validador funcional baseline P1.
+3. **12E3**: Sincronização e stores locais Dexie para a Agenda Sanitária v2 (`sanitario_agenda_v2`, `sanitario_agenda_animais_v2`, `sanitario_agenda_closures_v2`).
 
-Riscos residuais vindos da 12D6:
-- Compatibilidade profunda e gradativa das agendas ativas locais com o novo campo estruturado `productRequirementRule` e RLS na materialização.
+Riscos residuais vindos da 12E0:
+- Pull de registros globais exige carregamento inicial apartado do filtro padrão por `fazenda_id`.
+- Sincronização offline e replay de closures de agendas exige conciliação de idempotência baseada na constraint de agenda única ativa.
 
-### Escopo da Fase 12D6+
-- Migrations físicas no Supabase para as tabelas `sanitario_product_classes_v2` e vinculados.
-- Criação e validação das regras de RLS baseadas no tenant (`fazenda_id`).
+### Escopo da Fase 12E1+
+- Inclusão dos novos stores de ProductClass no schema Dexie v23.
+- Mapeamento e suporte à exportação de tipos TypeScript correspondentes.
 
 ---
 

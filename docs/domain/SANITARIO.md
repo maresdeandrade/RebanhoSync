@@ -754,7 +754,10 @@ Essa fase deve validar uso real, não criar novo domínio.
 | Fase 12D4 | Rebaseline conceitual: ProductClass, enums canônicos, ExecutionProductPolicy | Concluída |
 | Fase 12D5 | Contratos TypeScript de ProductClass, ProductClassGroup e ExecutionProductPolicy | Concluída |
 | Fase 12D6 | Schema SQL, RLS e Tabelas no Banco de Dados para ProductClass | Concluída |
-| Fase 12E | Offline/sync da Fundação Sanitária v2, incluindo ProductClass e Agenda Sanitária v2 | Não iniciada |
+| Fase 12E0 | Diagnóstico técnico e contrato de offline/sync | Concluída |
+| Fase 12E1 | Dexie schema/stores para ProductClass v2 | Não iniciada |
+| Fase 12E2 | Sincronização de ProductClass (sync-batch) e baseline P1 | Não iniciada |
+| Fase 12E3 | Dexie & Sync para Agenda Sanitária v2 | Não iniciada |
 
 ### Antipadrões proibidos
 

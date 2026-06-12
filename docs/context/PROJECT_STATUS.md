@@ -78,6 +78,11 @@ A Fase 11.5 foi fechada localmente pela 11.5H, reconciliada documentalmente pela
 - Fase 12D0 — Modelo canônico de Protocolo Sanitário v2, Produto e Fonte Técnica executada documentalmente em escopo reduzido.
 - Fase 12D1 — Schema e contratos mínimos de Produto, Protocolo e Fonte Técnica v2 executada em escopo reduzido SQL/RLS e TypeScript puro.
 - Fase 12D2 — Builders/adapters de snapshot técnico e ponte controlada com Agenda Sanitária v2 executada em escopo reduzido TypeScript puro.
+- Fase 12D3 — Extração curatorial de protocolos candidatos v2 executada documentalmente em escopo reduzido.
+- Fase 12D4 — Rebaseline conceitual das matrizes executada documentalmente em escopo reduzido.
+- Fase 12D5 — Contratos TypeScript de ProductClass executada em TypeScript puro.
+- Fase 12D6 — Schema SQL, RLS e Tabelas para ProductClass executada em escopo reduzido SQL/RLS.
+- Fase 12E0 — Diagnóstico técnico e contrato de implementação offline/sync executada documentalmente em escopo reduzido.
 
 Último avanço local da Fase 10:
 
@@ -132,6 +137,7 @@ A Fase 11.5 foi fechada localmente pela 11.5H, reconciliada documentalmente pela
 - 11.5I alinhou docs normativos e skills de agente aos contratos da Agenda Sanitária v2.
 - 11.5J reordenou o roadmap técnico para aplicar a fundação sanitária antes de Compra/Venda, KPIs, financeiro e decisão assistida.
 
+- 12E0 executou o diagnóstico técnico e contrato de implementação para o offline/sync, desenhando o mapeamento de 17 estruturas sanitárias v2 Supabase/Dexie, delineando estratégias para pull/push globais (pull-only) vs tenant (`scope = 'tenant'`), tombstones de soft-delete, idempotência por client_op_id e formalizando a progressão em subfases curtas (12E1 -> 12E2 -> 12E3 -> 12E4);
 - 12D6 executou a criação do schema de banco de dados, RLS e tabelas para ProductClass, ProductClassGroup, memberships e regras default, com validações triggers BEFORE, grants mínimos, soft-delete RLS, e índices parciais separados para global/tenant;
 - 12D5 executou a implementação pura em TypeScript de ProductClass, ProductClassGroup e ExecutionProductPolicy, com validações de tempo de execução robustas para fixed_by_protocol, verificação de coerência profunda entre campos legados e o novo campo estruturado productRequirementRule, e versionamento semântico integrado;
 - 12D4 executou rebaseline conceitual das matrizes: ProductClass como entidade central, ProductClassDefaultRule com can_validate_execution=false invariável, SanitaryProduct como exemplo/execução, enums canônicos (CurationStatus/AutomationStatus/ExecutionProductPolicy) aplicados, approved_for_seed substituído por approved_for_catalog, bulas corrigidas para produto-específicas;

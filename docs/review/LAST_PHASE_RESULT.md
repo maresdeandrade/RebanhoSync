@@ -1,9 +1,33 @@
 # Last Phase Result — RebanhoSync
 
-Atualizado em: 2026-06-10
-**Baseline Commit documental anterior:** `0cc5577`
+Atualizado em: 2026-06-11
+**Baseline Commit:** `2e43b27`
 
 ## 0. Resultado mais recente
+
+Fase 12E0 — Offline/sync da Fundação Sanitária v2, incluindo ProductClass e Agenda Sanitária v2 (Diagnóstico e Contrato) — executada localmente como patch documental.
+
+Decisão: `PROSSEGUIR COM ESCOPO REDUZIDO`.
+
+Resultado da 12E0:
+- Elaborado o diagnóstico técnico e o contrato de offline/sincronização em `docs/review/PLANO_FASE_12E0_OFFLINE_SYNC_FOUNDATION.md`.
+- Proposto o mapeamento das 17 estruturas sanitárias v2 do Supabase para novas stores correspondentes no Dexie/IndexedDB (Versão 23).
+- Definida a conduta de pull e de push para registros globais (pull-only) e registros tenant (`scope = 'tenant'`).
+- Definida a estratégia para soft-delete (com coluna `deleted_at`) e tratamento de conflitos no Sync Worker.
+- Mapeado o mecanismo de idempotência por `client_op_id` em caso de re-tentativas de sincronização.
+- Recomendada a ordem de subfases curtas: 12E1 (ProductClass Dexie) -> 12E2 (ProductClass sync/P1) -> 12E3 (Catálogo ampliado) -> 12E4 (Agenda Sanitária v2 Dexie/sync).
+- Classificada a P1 (baseline do script de validação funcional legada) para ser resolvida na Fase 12E2.
+- Nenhum código funcional, UI, Dexie, migrations ou sync-batch foi alterado nesta subfase.
+
+Patch da 12E0:
+- `docs/review/PLANO_FASE_12E0_OFFLINE_SYNC_FOUNDATION.md` (novo)
+
+Próxima execução recomendada:
+- `12E1 — Dexie schema/stores para ProductClass v2`.
+
+---
+
+## 0.1 Resultado anterior — Fase 12D6
 
 Fase 12D6 — Schema SQL, RLS e Tabelas no Banco de Dados para ProductClass — executada como migration física Postgres no Supabase em escopo reduzido.
 
@@ -23,11 +47,11 @@ Patch da 12D6:
 - `supabase/migrations/20260610203500_sanitario_product_class_v2.sql` (novo)
 
 Próxima execução recomendada:
-- `12E — Offline/sync da Fundação Sanitária v2, incluindo ProductClass e Agenda Sanitária v2`.
+- `12E0 — Diagnóstico técnico e contrato de implementação para offline/sync da Fundação Sanitária v2`.
 
 ---
 
-## 0.1 Resultado anterior — Fase 12D5
+## 0.2 Resultado anterior — Fase 12D5
 
 Fase 12D5 — Contratos TypeScript de ProductClass, ProductClassGroup e ExecutionProductPolicy — executada como implementação funcional pura em TypeScript em escopo reduzido.
 
