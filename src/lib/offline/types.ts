@@ -982,6 +982,158 @@ export interface SanitarioProductClassDefaultRuleLocalV2 {
   deleted_at: string | null;
 }
 
+export type SanitarioTechnicalSourceScopeV2 = "global" | "fazenda";
+export type SanitarioTechnicalSourceKindV2 =
+  | "norma_oficial"
+  | "bula"
+  | "registro_produto"
+  | "bibliografia"
+  | "guideline_apoio"
+  | "mv_responsavel";
+export type SanitarioTechnicalSourceStrengthV2 = "forte" | "apoio" | "fraca";
+export type SanitarioTechnicalEvidenceStatusV2 =
+  | "SIM_BULA"
+  | "SIM_NORMA"
+  | "PRECISA_VALIDAR"
+  | "NAO_AUTORIZADO"
+  | "EXTRAPOLADO";
+export type SanitarioTechnicalSourceCoverageStatusV2 =
+  | "covers"
+  | "partially_covers"
+  | "does_not_cover";
+export type SanitarioTechnicalCuratorialStatusV2 =
+  | "ativo"
+  | "precisa_validar"
+  | "bloqueado"
+  | "arquivado";
+export type SanitarioTechnicalSpeciesCodeV2 = "bovino" | "bubalino" | "outro";
+export type SanitarioTechnicalAptitudeV2 = "corte" | "leite" | "mista" | "all";
+export type SanitarioTechnicalDoseBasisV2 = "animal" | "kg_peso_vivo" | "dose";
+export type SanitarioTechnicalWithdrawalApplicabilityV2 =
+  | "period"
+  | "zero"
+  | "not_applicable"
+  | "unknown"
+  | "not_permitted";
+
+export interface SanitarioFonteTecnicaLocalV2 {
+  id: string;
+  kind: SanitarioTechnicalSourceKindV2;
+  scope: SanitarioTechnicalSourceScopeV2;
+  fazenda_id: string | null;
+  title: string;
+  issuer: string | null;
+  version: string | null;
+  published_at: string | null;
+  accessed_at: string | null;
+  url: string | null;
+  jurisdiction_country: string | null;
+  jurisdiction_uf: EstadoUFEnum | null;
+  jurisdiction_zone: string | null;
+  strength: SanitarioTechnicalSourceStrengthV2;
+  evidence_status: SanitarioTechnicalEvidenceStatusV2;
+  limitations: Array<Record<string, unknown> | string>;
+  metadata: Record<string, unknown>;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+}
+
+export interface SanitarioFonteCoberturaCampoLocalV2 {
+  id: string;
+  source_id: string;
+  field_key: string;
+  coverage_status: SanitarioTechnicalSourceCoverageStatusV2;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+}
+
+export interface SanitarioProdutoLocalV2 {
+  id: string;
+  nome_comercial: string;
+  fabricante: string | null;
+  registro_orgao: string | null;
+  registro_numero: string | null;
+  classe: string;
+  principio_ativo: string | null;
+  tipo_produto: string;
+  apresentacao: string | null;
+  status_curatorial: SanitarioTechnicalCuratorialStatusV2;
+  metadata: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+}
+
+export interface SanitarioProdutoEspecieAutorizacaoLocalV2 {
+  id: string;
+  product_id: string;
+  species_code: SanitarioTechnicalSpeciesCodeV2;
+  authorization_status: SanitarioTechnicalEvidenceStatusV2;
+  aptitude: SanitarioTechnicalAptitudeV2;
+  sexo: string | null;
+  idade_min_dias: number | null;
+  idade_max_dias: number | null;
+  lactacao_permitida: boolean | null;
+  gestacao_permitida: boolean | null;
+  requires_mv_responsavel: boolean;
+  limitations: Array<Record<string, unknown> | string>;
+  metadata: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+}
+
+export interface SanitarioProdutoFonteLocalV2 {
+  product_id: string;
+  source_id: string;
+  field_key: string;
+  created_at: string;
+}
+
+export interface SanitarioProdutoDoseRuleLocalV2 {
+  id: string;
+  product_id: string;
+  species_code: SanitarioTechnicalSpeciesCodeV2 | null;
+  aptitude: SanitarioTechnicalAptitudeV2 | null;
+  route: string;
+  dose_quantity: number;
+  dose_unit: string;
+  dose_basis: SanitarioTechnicalDoseBasisV2;
+  min_weight_kg: number | null;
+  max_weight_kg: number | null;
+  limitations: Array<Record<string, unknown> | string>;
+  status_curatorial: SanitarioTechnicalCuratorialStatusV2;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+}
+
+export interface SanitarioProdutoCarenciaRuleLocalV2 {
+  id: string;
+  product_id: string;
+  species_code: SanitarioTechnicalSpeciesCodeV2;
+  aptitude: SanitarioTechnicalAptitudeV2;
+  route: string | null;
+  dose_basis: SanitarioTechnicalDoseBasisV2 | null;
+  meat_days: number | null;
+  milk_days: number | null;
+  milk_hours: number | null;
+  applicability: SanitarioTechnicalWithdrawalApplicabilityV2;
+  zero_requires_explicit_source: boolean;
+  valid_from: string | null;
+  valid_until: string | null;
+  status_curatorial: SanitarioTechnicalCuratorialStatusV2;
+  limitations: Array<Record<string, unknown> | string>;
+  metadata: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+}
+
 export interface FazendaSanidadeConfig {
   fazenda_id: string;
   uf: EstadoUFEnum | null;

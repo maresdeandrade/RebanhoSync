@@ -757,7 +757,7 @@ Essa fase deve validar uso real, não criar novo domínio.
 | Fase 12E0 | Diagnóstico técnico e contrato de offline/sync | Concluída |
 | Fase 12E1 | Dexie schema/stores para ProductClass v2 | Concluída localmente |
 | Fase 12E2 | Pull remoto ProductClass v2 para Dexie e baseline P1 | Concluída localmente |
-| Fase 12E3 | Catálogo técnico sanitário v2 ampliado | Não iniciada |
+| Fase 12E3 | Catálogo técnico sanitário v2 ampliado | Concluída localmente |
 
 ### ProductClass v2 local/offline
 
@@ -778,6 +778,29 @@ Contrato atual:
 - `deleted_at`, `updated_at`, `metadata`, `limitations`, arrays e JSON estruturados são preservados;
 - o cache local nao implementa push remoto, `queue_ops`, sync-batch ProductClass, seed, protocolo, agenda, evento ou carência ativa;
 - catálogo global segue como leitura futura/pull-only, sem edição local autorizada.
+
+### Catálogo técnico sanitário v2 local/offline
+
+A Fase 12E3 criou a base local Dexie/IndexedDB e pull remoto para as 7 estruturas autorizadas do catálogo técnico sanitário v2:
+
+- `catalog_sanitario_fontes_tecnicas_v2`;
+- `catalog_sanitario_fonte_cobertura_campos_v2`;
+- `catalog_sanitario_produtos_v2`;
+- `catalog_sanitario_produto_especie_autorizacao_v2`;
+- `catalog_sanitario_produto_fontes_v2`;
+- `catalog_sanitario_produto_dose_rules_v2`;
+- `catalog_sanitario_produto_carencia_rules_v2`.
+
+Contrato atual:
+
+- fontes técnicas globais são baixadas por consulta separada com `scope = 'global'` e `fazenda_id is null`;
+- fontes técnicas da fazenda são baixadas por consulta separada com `scope = 'fazenda'` e `fazenda_id`, conforme enum real da migration ativa;
+- produtos, autorizações por espécie, vínculos produto-fonte, regras de dose e regras catalogadas de carência são armazenados como catálogo técnico pull-only;
+- `deleted_at`, `updated_at`, `metadata`, `limitations`, arrays e JSON estruturados são preservados;
+- bubalino não herda autorização bovina por cache local ou selector implícito;
+- regras de carência em catálogo não são carência ativa e não liberam venda, abate, leite ou aptidão operacional;
+- `sanitario_produto_carencia_fontes_v2`, `sanitario_protocolos_v2` e `sanitario_protocolo_itens_versions_v2` permanecem fora da 12E3;
+- o cache local não implementa push remoto, `queue_ops`, sync-batch, UI, migration, seed, protocolo estruturado, agenda, evento ou baixa de estoque.
 
 ### Antipadrões proibidos
 

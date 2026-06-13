@@ -2,7 +2,30 @@
 
 Atualizado em: 2026-06-12
 
-## 0. Handoff Atual — Fase 12E2
+## 0. Handoff Atual — Fase 12E3
+
+Fase 12E3 — Catalogo tecnico sanitario v2 ampliado em Dexie com pull remoto — executada localmente em escopo reduzido.
+
+Decisao: `PROSSEGUIR COM ESCOPO REDUZIDO`.
+
+Resultado:
+- Criadas stores Dexie v24 para as 7 estruturas autorizadas do catalogo tecnico sanitario v2: fontes tecnicas, cobertura por campo, produtos, autorizacao por especie, produto-fonte, dose rules e carencia rules catalogadas.
+- Criados tipos locais minimos e mapeamento `tableMap` remoto -> `catalog_*` para essas 7 estruturas.
+- Criado pull especifico `pullSanitarioTechnicalCatalogV2`.
+- `sanitario_fontes_tecnicas_v2` e baixada em duas consultas: global com `scope = 'global'` e `fazenda_id is null`, e fazenda com `scope = 'fazenda'` e `fazenda_id` atual, conforme enum real da migration.
+- As demais 6 tabelas autorizadas sao baixadas sem filtro artificial por `fazenda_id`; leitura acessivel permanece governada pelo schema/RLS existente e pelos vinculos do catalogo.
+- Dados sao aplicados em modo merge, preservando `deleted_at`, `updated_at`, `metadata`, `limitations`, arrays e JSON; tombstones nao sao apagados fisicamente.
+- `pullInitialData` passou a executar o pull do catalogo tecnico sanitario v2 apos ProductClass v2.
+- Testes focados cobrem stores, pull global/fazenda, ausencia de `queue_ops`, ordem de gravacao, soft-delete, metadata/arrays, regra de nao heranca bovino -> bubalino e ausencia de carencia ativa.
+- `sanitario_produto_carencia_fontes_v2`, protocolos v2 e itens versionados permanecem fora desta fase.
+- Nenhum push, sync-batch, UI, migration, seed, protocolo estruturado, agenda real, evento real, estoque, carencia ativa, venda, abate, leite ou aptidao operacional foi implementado.
+
+Proxima fase recomendada:
+- `12E4 — Agenda Sanitaria v2 offline/sync em escopo controlado`.
+
+---
+
+## 0.1 Handoff anterior — Fase 12E2
 
 Fase 12E2 — Pull remoto ProductClass v2 para cache local Dexie — executada localmente em escopo reduzido.
 
@@ -25,7 +48,7 @@ Proxima fase recomendada:
 
 ---
 
-## 0.1 Handoff anterior — Fase 12E1
+## 0.2 Handoff anterior — Fase 12E1
 
 Fase 12E1 — Dexie schema/stores para ProductClass v2 — executada localmente em escopo reduzido.
 
@@ -45,7 +68,7 @@ Proxima fase recomendada:
 
 ---
 
-## 0.2 Handoff anterior — Fase 12E0
+## 0.3 Handoff anterior — Fase 12E0
 
 Fase 12E0 — Diagnóstico Técnico e Contrato de Implementação para Offline/Sync da Fundação Sanitária v2 — executada localmente como patch documental.
 
@@ -65,7 +88,7 @@ Próxima fase recomendada:
 
 ---
 
-## 0.3 Handoff anterior — Fase 12D6
+## 0.4 Handoff anterior — Fase 12D6
 
 Fase 12D6 — Schema SQL, RLS e Tabelas no Banco de Dados para ProductClass — executada como migration física Postgres no Supabase em escopo reduzido.
 
@@ -86,7 +109,7 @@ Próxima fase recomendada:
 
 ---
 
-## 0.4 Handoff anterior — Fase 12D5
+## 0.5 Handoff anterior — Fase 12D5
 
 Fase 12D5 — Contratos TypeScript de ProductClass, ProductClassGroup e ExecutionProductPolicy — executada como implementação funcional pura em TypeScript em escopo reduzido.
 

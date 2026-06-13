@@ -1,9 +1,46 @@
 # Last Phase Result — RebanhoSync
 
 Atualizado em: 2026-06-12
-**Baseline Commit:** `c2bac2b`
+**Baseline Commit:** `0e44694`
 
 ## 0. Resultado mais recente
+
+Fase 12E3 — Catalogo tecnico sanitario v2 ampliado em Dexie com pull remoto — executada localmente em escopo reduzido.
+
+Decisao: `PROSSEGUIR COM ESCOPO REDUZIDO`.
+
+Resultado da 12E3:
+- Criadas stores Dexie v24 para as 7 tabelas autorizadas do catalogo tecnico sanitario v2.
+- Criados tipos locais minimos para fontes tecnicas, cobertura por campo, produtos, autorizacao por especie, produto-fonte, regras de dose e regras catalogadas de carencia.
+- `tableMap` passou a mapear essas 7 tabelas remotas para stores locais `catalog_*`.
+- Implementado pull remoto -> Dexie local em `pullSanitarioTechnicalCatalogV2`.
+- Pull de fontes tecnicas globais usa `scope = 'global'` e `fazenda_id is null`.
+- Pull de fontes tecnicas da fazenda usa `scope = 'fazenda'` e `fazenda_id`, alinhado ao enum real da migration ativa.
+- Demais 6 tabelas autorizadas sao baixadas sem filtro tenant artificial por `fazenda_id`.
+- Aplicacao local respeita ordem de dependencia e usa merge, preservando `deleted_at`, `updated_at`, `metadata`, `limitations`, arrays e JSON.
+- Catalogo tecnico sanitario v2 permanece pull-only: nenhum push, nenhuma `queue_ops` e nenhuma chamada de sync-batch foi adicionada.
+- `sanitario_produto_carencia_fontes_v2`, protocolos v2 e itens versionados ficaram fora do escopo da 12E3.
+- Nenhuma UI, migration, seed, protocolo estruturado, agenda real, estoque, evento real, carencia ativa, venda, abate, leite ou aptidao operacional foi implementada.
+
+Patch da 12E3:
+- `src/lib/offline/db.ts`
+- `src/lib/offline/types.ts`
+- `src/lib/offline/tableMap.ts`
+- `src/lib/offline/pull.ts`
+- `src/lib/offline/__tests__/sanitarioTechnicalCatalogV2Store.test.ts`
+- `src/lib/offline/__tests__/sanitarioTechnicalCatalogV2Pull.test.ts`
+- `src/lib/offline/__tests__/sanitarioProductClassV2Store.test.ts`
+- docs ativos de fase/status/roadmap/dominio
+
+Validacao inicial:
+- `pnpm test -- src/lib/offline`: passou.
+
+Proxima execucao recomendada:
+- `12E4 — Agenda Sanitaria v2 offline/sync em escopo controlado`.
+
+---
+
+## 0.1 Resultado anterior — Fase 12E2
 
 Fase 12E2 — Pull remoto ProductClass v2 para Dexie local — executada localmente em escopo reduzido.
 
@@ -37,7 +74,7 @@ Proxima execucao recomendada:
 
 ---
 
-## 0.1 Resultado anterior — Fase 12E0
+## 0.2 Resultado anterior — Fase 12E0
 
 Fase 12E0 — Offline/sync da Fundação Sanitária v2, incluindo ProductClass e Agenda Sanitária v2 (Diagnóstico e Contrato) — executada localmente como patch documental.
 

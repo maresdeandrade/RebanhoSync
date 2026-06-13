@@ -34,6 +34,16 @@ export const SANITARIO_PRODUCT_CLASS_V2_REMOTE_TABLES = [
   "sanitario_product_class_default_rules_v2",
 ] as const;
 
+export const SANITARIO_TECHNICAL_CATALOG_V2_REMOTE_TABLES = [
+  "sanitario_fontes_tecnicas_v2",
+  "sanitario_fonte_cobertura_campos_v2",
+  "sanitario_produtos_v2",
+  "sanitario_produto_especie_autorizacao_v2",
+  "sanitario_produto_fontes_v2",
+  "sanitario_produto_dose_rules_v2",
+  "sanitario_produto_carencia_rules_v2",
+] as const;
+
 export interface PullOptions {
   // replace: clear local store then write remote snapshot
   // merge: upsert remote rows without clearing local store
@@ -178,7 +188,90 @@ export const pullSanitarioProductClassV2Catalog = async (
   });
 };
 
+export const pullSanitarioTechnicalCatalogV2 = async (
+  fazenda_id: string,
+) => {
+  console.log(`[pull] Starting sanitario technical catalog v2 pull for farm ${fazenda_id}`);
+
+  const results: Record<string, unknown[]> = {};
+
+  for (const remoteTable of SANITARIO_TECHNICAL_CATALOG_V2_REMOTE_TABLES) {
+    if (remoteTable === "sanitario_fontes_tecnicas_v2") {
+      const globalResult = await supabase
+        .from(remoteTable)
+        .select("*")
+        .eq("scope", "global")
+        .is("fazenda_id", null);
+
+      if (globalResult.error) {
+        console.error(`[pull] Error pulling global ${remoteTable}:`, globalResult.error);
+        throw globalResult.error;
+      }
+
+      const farmResult = await supabase
+        .from(remoteTable)
+        .select("*")
+        .eq("scope", "fazenda")
+        .eq("fazenda_id", fazenda_id);
+
+      if (farmResult.error) {
+        console.error(`[pull] Error pulling farm-scoped ${remoteTable}:`, farmResult.error);
+        throw farmResult.error;
+      }
+
+      results[remoteTable] = [
+        ...(globalResult.data ?? []),
+        ...(farmResult.data ?? []),
+      ];
+      continue;
+    }
+
+    const { data, error } = await supabase.from(remoteTable).select("*");
+
+    if (error) {
+      console.error(`[pull] Error pulling ${remoteTable}:`, error);
+      throw error;
+    }
+
+    results[remoteTable] = data ?? [];
+  }
+
+  const validTableNames = new Set(db.tables.map((t) => t.name));
+  const storesToUpdate = SANITARIO_TECHNICAL_CATALOG_V2_REMOTE_TABLES
+    .map((rt) => ({ remote: rt, local: getLocalStoreName(rt) }))
+    .filter(({ remote, local }) => {
+      if (!validTableNames.has(local)) {
+        console.warn(
+          `[pull] Store ${local} not found for technical catalog v2 table ${remote}. Skipping.`,
+        );
+        return false;
+      }
+      return true;
+    });
+
+  if (storesToUpdate.length === 0) {
+    console.warn("[pull] No valid technical catalog v2 stores to update.");
+    return;
+  }
+
+  await db.transaction("rw", storesToUpdate.map((s) => s.local), async () => {
+    for (const { remote, local } of storesToUpdate) {
+      const rows = results[remote];
+      const store = db.table(local);
+
+      if (rows.length > 0) {
+        await store.bulkPut(rows);
+      }
+
+      console.log(
+        `[pull] Synced ${rows.length} technical catalog v2 records for ${remote} -> ${local} (mode=merge)`,
+      );
+    }
+  });
+};
+
 export const pullInitialData = async (fazenda_id: string) => {
   await pullDataForFarm(fazenda_id, DEFAULT_REMOTE_TABLES, { mode: "replace" });
   await pullSanitarioProductClassV2Catalog(fazenda_id);
+  await pullSanitarioTechnicalCatalogV2(fazenda_id);
 };

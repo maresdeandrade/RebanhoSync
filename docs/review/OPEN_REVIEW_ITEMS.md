@@ -37,6 +37,34 @@ Itens resolvidos devem sair deste documento e permanecer registrados apenas no r
 
 # Pendências abertas
 
+## P1 — Cursor incremental por `updated_at` para catalogos sanitarios v2
+
+**Status:** `ABERTO`
+**Área:** offline / sync / catalogos sanitarios v2
+**Risco:** pull full fetch/merge crescer em custo e latencia conforme o catalogo tecnico sanitario v2 aumentar.
+
+### Descrição
+
+As Fases 12E2 e 12E3 seguiram o padrao local existente de pull com fetch completo e merge em Dexie para catalogos v2. Esse padrao preserva `deleted_at`, `updated_at`, metadata e tombstones, mas ainda nao possui cursor incremental por tabela baseado em `updated_at` com desempate por `id`.
+
+### Regra de tratamento
+
+Implementar em fase propria, sem misturar com push, UI, agenda ou protocolo:
+
+- cursor por tabela/stores de catalogo;
+- filtro remoto por `updated_at` sem ignorar tombstones;
+- desempate por `id` se necessario;
+- compatibilidade com catalogo global pull-only e dados de fazenda;
+- testes cobrindo soft-delete incremental.
+
+### Critério de aceite
+
+- Pull incremental reduz fetch sem perder registros atualizados ou soft-deletados.
+- Full fetch inicial continua possivel.
+- Nenhum push, `queue_ops`, sync-batch ou UI e introduzido por esse ajuste.
+
+---
+
 ## P2 — Ruído residual em `stderr/stdout` de testes
 
 **Status:** `ABERTO`

@@ -32,8 +32,8 @@ describe("offline ProductClass v2 catalog stores", () => {
     await db.queue_ops.clear();
   });
 
-  it("registra stores ProductClass v2 no Dexie v23", () => {
-    expect(db.verno).toBe(23);
+  it("registra stores ProductClass v2 no Dexie", () => {
+    expect(db.verno).toBeGreaterThanOrEqual(23);
     expect(db.tables.map((table) => table.name)).toEqual(
       expect.arrayContaining([...stores]),
     );

@@ -44,6 +44,17 @@ export const TABLE_MAP: Record<string, string> = {
     "catalog_sanitario_product_class_group_members_v2",
   sanitario_product_class_default_rules_v2:
     "catalog_sanitario_product_class_default_rules_v2",
+  sanitario_fontes_tecnicas_v2: "catalog_sanitario_fontes_tecnicas_v2",
+  sanitario_fonte_cobertura_campos_v2:
+    "catalog_sanitario_fonte_cobertura_campos_v2",
+  sanitario_produtos_v2: "catalog_sanitario_produtos_v2",
+  sanitario_produto_especie_autorizacao_v2:
+    "catalog_sanitario_produto_especie_autorizacao_v2",
+  sanitario_produto_fontes_v2: "catalog_sanitario_produto_fontes_v2",
+  sanitario_produto_dose_rules_v2:
+    "catalog_sanitario_produto_dose_rules_v2",
+  sanitario_produto_carencia_rules_v2:
+    "catalog_sanitario_produto_carencia_rules_v2",
 };
 
 // Reverse map (localStore -> remoteTable) calculado 1x

@@ -26,6 +26,13 @@ import {
   type CatalogoProtocoloOficial,
   type CatalogoProtocoloOficialItem,
   type CatalogoDoencaNotificavel,
+  type SanitarioFonteCoberturaCampoLocalV2,
+  type SanitarioFonteTecnicaLocalV2,
+  type SanitarioProdutoCarenciaRuleLocalV2,
+  type SanitarioProdutoDoseRuleLocalV2,
+  type SanitarioProdutoEspecieAutorizacaoLocalV2,
+  type SanitarioProdutoFonteLocalV2,
+  type SanitarioProdutoLocalV2,
   type SanitarioProductClassDefaultRuleLocalV2,
   type SanitarioProductClassGroupLocalV2,
   type SanitarioProductClassGroupMemberLocalV2,
@@ -92,6 +99,13 @@ export class OfflineDB extends Dexie {
   catalog_sanitario_product_class_groups_v2!: Table<SanitarioProductClassGroupLocalV2, string>;
   catalog_sanitario_product_class_group_members_v2!: Table<SanitarioProductClassGroupMemberLocalV2, string>;
   catalog_sanitario_product_class_default_rules_v2!: Table<SanitarioProductClassDefaultRuleLocalV2, string>;
+  catalog_sanitario_fontes_tecnicas_v2!: Table<SanitarioFonteTecnicaLocalV2, string>;
+  catalog_sanitario_fonte_cobertura_campos_v2!: Table<SanitarioFonteCoberturaCampoLocalV2, string>;
+  catalog_sanitario_produtos_v2!: Table<SanitarioProdutoLocalV2, string>;
+  catalog_sanitario_produto_especie_autorizacao_v2!: Table<SanitarioProdutoEspecieAutorizacaoLocalV2, string>;
+  catalog_sanitario_produto_fontes_v2!: Table<SanitarioProdutoFonteLocalV2, [string, string, string]>;
+  catalog_sanitario_produto_dose_rules_v2!: Table<SanitarioProdutoDoseRuleLocalV2, string>;
+  catalog_sanitario_produto_carencia_rules_v2!: Table<SanitarioProdutoCarenciaRuleLocalV2, string>;
 
   constructor() {
     super("RebanhoSync");
@@ -652,6 +666,24 @@ export class OfflineDB extends Dexie {
         "id, scope, fazenda_id, deleted_at, updated_at, group_id, class_id, [group_id+class_id]",
       catalog_sanitario_product_class_default_rules_v2:
         "id, scope, fazenda_id, deleted_at, updated_at, class_id, species_code, aptitude, curation_status, [class_id+species_code+aptitude]",
+    });
+
+    // Version 24: cache local pull-only do catalogo tecnico sanitario v2 ampliado.
+    this.version(24).stores({
+      catalog_sanitario_fontes_tecnicas_v2:
+        "id, scope, fazenda_id, deleted_at, updated_at, kind, strength, evidence_status, [scope+kind], [fazenda_id+kind]",
+      catalog_sanitario_fonte_cobertura_campos_v2:
+        "id, source_id, field_key, coverage_status, deleted_at, updated_at, [source_id+field_key]",
+      catalog_sanitario_produtos_v2:
+        "id, deleted_at, updated_at, nome_comercial, classe, tipo_produto, status_curatorial, [classe+tipo_produto]",
+      catalog_sanitario_produto_especie_autorizacao_v2:
+        "id, product_id, species_code, aptitude, authorization_status, deleted_at, updated_at, [product_id+species_code+aptitude]",
+      catalog_sanitario_produto_fontes_v2:
+        "[product_id+source_id+field_key], product_id, source_id, field_key, created_at",
+      catalog_sanitario_produto_dose_rules_v2:
+        "id, product_id, species_code, aptitude, route, dose_basis, status_curatorial, deleted_at, updated_at, [product_id+species_code+aptitude]",
+      catalog_sanitario_produto_carencia_rules_v2:
+        "id, product_id, species_code, aptitude, applicability, status_curatorial, deleted_at, updated_at, [product_id+species_code+aptitude], [product_id+species_code+aptitude+applicability]",
     });
   }
 }
