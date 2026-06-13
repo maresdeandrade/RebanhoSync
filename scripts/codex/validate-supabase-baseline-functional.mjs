@@ -373,37 +373,60 @@ async function main() {
       );
     });
 
-    console.log("4/5 agenda -> evento sanitario via RPC");
+    console.log("4/5 evento sanitario direto sem agenda legada");
 
     const agendaResult = await withAuthenticatedUser(client, owner.id, async () => {
-      const agenda = await client.query(
-        `
-        insert into public.agenda_itens(
-          fazenda_id, dominio, tipo, status, data_prevista, animal_id,
-          source_kind, protocol_item_version_id, payload
-        )
-        values ($1, 'sanitario', 'vacinacao', 'agendado', current_date, $2, 'manual', $3, '{"produto":"Produto baseline"}'::jsonb)
-        returning id
-        `,
-        [farmId, productive.animalId, productive.protocoloItemId],
-      );
-      const clientOpId = randomUUID();
-      const clientTxId = randomUUID();
+      const eventMeta = syncMeta("sanitary-event-direct");
       const event = await client.query(
         `
-        select public.sanitario_complete_agenda_with_event(
-          $1, now(), 'vacinacao'::public.sanitario_tipo_enum, 'Produto baseline',
-          'execucao funcional', '{"origem":"functional_baseline"}'::jsonb,
-          'baseline-functional', $2, $3, now()
-        ) as evento_id
+        insert into public.eventos(
+          fazenda_id, dominio, occurred_at, animal_id, lote_id, observacoes, payload,
+          client_id, client_op_id, client_tx_id, client_recorded_at
+        )
+        values (
+          $1, 'sanitario', now(), $2, $3, 'execucao funcional baseline sem agenda legada',
+          '{"origem":"functional_baseline","phase":"12E2","legacy_agenda_itens_sanitario":"disabled"}'::jsonb,
+          $4, $5, $6, $7
+        )
+        returning id
         `,
-        [agenda.rows[0].id, clientOpId, clientTxId],
+        [
+          farmId,
+          productive.animalId,
+          productive.loteId,
+          eventMeta.client_id,
+          eventMeta.client_op_id,
+          eventMeta.client_tx_id,
+          eventMeta.client_recorded_at,
+        ],
       );
-      return { agendaId: agenda.rows[0].id, eventId: event.rows[0].evento_id };
+      const detailMeta = syncMeta("sanitary-detail-direct");
+      await client.query(
+        `
+        insert into public.eventos_sanitario(
+          evento_id, fazenda_id, tipo, produto, payload, protocol_item_version_id,
+          client_id, client_op_id, client_tx_id, client_recorded_at
+        )
+        values (
+          $1, $2, 'vacinacao', 'Produto baseline',
+          '{"origem":"functional_baseline","phase":"12E2","legacy_agenda_itens_sanitario":"disabled"}'::jsonb,
+          $3, $4, $5, $6, $7
+        )
+        `,
+        [
+          event.rows[0].id,
+          farmId,
+          productive.protocoloItemId,
+          detailMeta.client_id,
+          detailMeta.client_op_id,
+          detailMeta.client_tx_id,
+          detailMeta.client_recorded_at,
+        ],
+      );
+      return { agendaId: null, eventId: event.rows[0].id };
     });
 
-    await expectCount(client, "select count(*) from public.agenda_itens where id = $1 and status = 'concluido' and source_evento_id = $2 and fazenda_id = $3", [agendaResult.agendaId, agendaResult.eventId, farmId], 1, "agenda concluida e vinculada");
-    await expectCount(client, "select count(*) from public.eventos where id = $1 and source_task_id = $2 and dominio = 'sanitario' and fazenda_id = $3", [agendaResult.eventId, agendaResult.agendaId, farmId], 1, "evento sanitario base criado");
+    await expectCount(client, "select count(*) from public.eventos where id = $1 and source_task_id is null and dominio = 'sanitario' and fazenda_id = $2", [agendaResult.eventId, farmId], 1, "evento sanitario base criado sem agenda legada");
     await expectCount(client, "select count(*) from public.eventos_sanitario where evento_id = $1 and tipo = 'vacinacao' and produto = 'Produto baseline' and fazenda_id = $2", [agendaResult.eventId, farmId], 1, "detalhe sanitario criado");
 
     const stagingFixtures = await withAuthenticatedUser(client, owner.id, async () => {
@@ -604,7 +627,7 @@ async function main() {
       },
       productive_structure: "passou",
       composite_fk_cross_tenant: "passou",
-      sanitary_agenda_event_rpc: "passou",
+      sanitary_direct_event_without_legacy_agenda: "passou",
       sanitary_inventory_sociedade_rls: "passou",
       sync_batch_real_edge_function: "passou",
     }, null, 2));

@@ -27,6 +27,13 @@ export const DEFAULT_REMOTE_TABLES = [
   "finance_transactions",
 ] as const;
 
+export const SANITARIO_PRODUCT_CLASS_V2_REMOTE_TABLES = [
+  "sanitario_product_classes_v2",
+  "sanitario_product_class_groups_v2",
+  "sanitario_product_class_group_members_v2",
+  "sanitario_product_class_default_rules_v2",
+] as const;
+
 export interface PullOptions {
   // replace: clear local store then write remote snapshot
   // merge: upsert remote rows without clearing local store
@@ -101,6 +108,77 @@ export const pullDataForFarm = async (
   });
 };
 
+export const pullSanitarioProductClassV2Catalog = async (
+  fazenda_id: string,
+) => {
+  console.log(`[pull] Starting sanitario ProductClass v2 catalog pull for farm ${fazenda_id}`);
+
+  const results: Record<string, unknown[]> = {};
+
+  for (const remoteTable of SANITARIO_PRODUCT_CLASS_V2_REMOTE_TABLES) {
+    const globalResult = await supabase
+      .from(remoteTable)
+      .select("*")
+      .eq("scope", "global")
+      .is("fazenda_id", null);
+
+    if (globalResult.error) {
+      console.error(`[pull] Error pulling global ${remoteTable}:`, globalResult.error);
+      throw globalResult.error;
+    }
+
+    const tenantResult = await supabase
+      .from(remoteTable)
+      .select("*")
+      .eq("scope", "tenant")
+      .eq("fazenda_id", fazenda_id);
+
+    if (tenantResult.error) {
+      console.error(`[pull] Error pulling tenant ${remoteTable}:`, tenantResult.error);
+      throw tenantResult.error;
+    }
+
+    results[remoteTable] = [
+      ...(globalResult.data ?? []),
+      ...(tenantResult.data ?? []),
+    ];
+  }
+
+  const validTableNames = new Set(db.tables.map((t) => t.name));
+  const storesToUpdate = SANITARIO_PRODUCT_CLASS_V2_REMOTE_TABLES
+    .map((rt) => ({ remote: rt, local: getLocalStoreName(rt) }))
+    .filter(({ remote, local }) => {
+      if (!validTableNames.has(local)) {
+        console.warn(
+          `[pull] Store ${local} not found for ProductClass v2 table ${remote}. Skipping.`,
+        );
+        return false;
+      }
+      return true;
+    });
+
+  if (storesToUpdate.length === 0) {
+    console.warn("[pull] No valid ProductClass v2 catalog stores to update.");
+    return;
+  }
+
+  await db.transaction("rw", storesToUpdate.map((s) => s.local), async () => {
+    for (const { remote, local } of storesToUpdate) {
+      const rows = results[remote];
+      const store = db.table(local);
+
+      if (rows.length > 0) {
+        await store.bulkPut(rows);
+      }
+
+      console.log(
+        `[pull] Synced ${rows.length} ProductClass v2 records for ${remote} -> ${local} (mode=merge)`,
+      );
+    }
+  });
+};
+
 export const pullInitialData = async (fazenda_id: string) => {
   await pullDataForFarm(fazenda_id, DEFAULT_REMOTE_TABLES, { mode: "replace" });
+  await pullSanitarioProductClassV2Catalog(fazenda_id);
 };

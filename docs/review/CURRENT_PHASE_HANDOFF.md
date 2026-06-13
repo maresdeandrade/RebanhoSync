@@ -1,8 +1,31 @@
 # Current Phase Handoff — RebanhoSync
 
-Atualizado em: 2026-06-11
+Atualizado em: 2026-06-12
 
-## 0. Handoff Atual — Fase 12E1
+## 0. Handoff Atual — Fase 12E2
+
+Fase 12E2 — Pull remoto ProductClass v2 para cache local Dexie — executada localmente em escopo reduzido.
+
+Decisao: `PROSSEGUIR COM ESCOPO REDUZIDO`.
+
+Resultado:
+- Criado pull especifico para ProductClass v2 em `pullSanitarioProductClassV2Catalog`.
+- As 4 tabelas remotas sao baixadas em ordem de dependencia: classes, grupos, memberships e regras default.
+- Registros globais sao buscados separadamente com `scope = 'global'` e `fazenda_id is null`.
+- Registros tenant sao buscados separadamente com `scope = 'tenant'` e `fazenda_id` da fazenda atual.
+- Dados globais e tenant sao aplicados nos stores locais `catalog_*` criados na 12E1, em modo merge.
+- `deleted_at`, `updated_at`, `metadata`, `limitations`, arrays e JSON sao preservados; tombstones nao sao apagados fisicamente.
+- ProductClass v2 nao entrou no fluxo de push, nao cria `queue_ops` e nao chama sync-batch.
+- `pullInitialData` passou a executar o pull ProductClass v2 apos o pull padrao, sem adicionar essas tabelas ao `DEFAULT_REMOTE_TABLES` tenant-scoped.
+- Baseline P1 ajustado: `validate-supabase-baseline-functional.mjs` nao tenta mais escrever agenda sanitaria legada em `agenda_itens`; a etapa sanitaria cria evento/detalhe sanitario diretamente.
+- Nenhuma UI, migration, seed, protocolo estruturado, agenda real, estoque, carencia ativa, venda, abate, leite ou aptidao operacional foi implementada.
+
+Proxima fase recomendada:
+- `12E3 — Catalogo tecnico sanitario v2 ampliado`.
+
+---
+
+## 0.1 Handoff anterior — Fase 12E1
 
 Fase 12E1 — Dexie schema/stores para ProductClass v2 — executada localmente em escopo reduzido.
 
@@ -22,7 +45,7 @@ Proxima fase recomendada:
 
 ---
 
-## 0.1 Handoff anterior — Fase 12E0
+## 0.2 Handoff anterior — Fase 12E0
 
 Fase 12E0 — Diagnóstico Técnico e Contrato de Implementação para Offline/Sync da Fundação Sanitária v2 — executada localmente como patch documental.
 
@@ -42,7 +65,7 @@ Próxima fase recomendada:
 
 ---
 
-## 0.2 Handoff anterior — Fase 12D6
+## 0.3 Handoff anterior — Fase 12D6
 
 Fase 12D6 — Schema SQL, RLS e Tabelas no Banco de Dados para ProductClass — executada como migration física Postgres no Supabase em escopo reduzido.
 
@@ -63,7 +86,7 @@ Próxima fase recomendada:
 
 ---
 
-## 0.3 Handoff anterior — Fase 12D5
+## 0.4 Handoff anterior — Fase 12D5
 
 Fase 12D5 — Contratos TypeScript de ProductClass, ProductClassGroup e ExecutionProductPolicy — executada como implementação funcional pura em TypeScript em escopo reduzido.
 

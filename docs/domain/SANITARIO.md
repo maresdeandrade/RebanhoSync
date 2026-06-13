@@ -1,8 +1,8 @@
 ```markdown
 # Sanitário — RebanhoSync
 
-Atualizado em: 2026-06-08
-**Baseline Commit:** `32d7779`
+Atualizado em: 2026-06-12
+**Baseline Commit:** `c2bac2b`
 
 ## Objetivo
 
@@ -756,25 +756,28 @@ Essa fase deve validar uso real, não criar novo domínio.
 | Fase 12D6 | Schema SQL, RLS e Tabelas no Banco de Dados para ProductClass | Concluída |
 | Fase 12E0 | Diagnóstico técnico e contrato de offline/sync | Concluída |
 | Fase 12E1 | Dexie schema/stores para ProductClass v2 | Concluída localmente |
-| Fase 12E2 | Sincronização de ProductClass (sync-batch) e baseline P1 | Não iniciada |
-| Fase 12E3 | Dexie & Sync para Agenda Sanitária v2 | Não iniciada |
+| Fase 12E2 | Pull remoto ProductClass v2 para Dexie e baseline P1 | Concluída localmente |
+| Fase 12E3 | Catálogo técnico sanitário v2 ampliado | Não iniciada |
 
 ### ProductClass v2 local/offline
 
-A Fase 12E1 criou apenas a base local Dexie/IndexedDB para as 4 estruturas ProductClass v2:
+A Fase 12E1 criou a base local Dexie/IndexedDB para as 4 estruturas ProductClass v2, e a Fase 12E2 adicionou o pull remoto para cache local:
 
 - `catalog_sanitario_product_classes_v2`;
 - `catalog_sanitario_product_class_groups_v2`;
 - `catalog_sanitario_product_class_group_members_v2`;
 - `catalog_sanitario_product_class_default_rules_v2`.
 
-Contrato da 12E1:
+Contrato atual:
 
 - `scope = 'global'` é representável localmente com `fazenda_id = null`;
 - `scope = 'tenant'` é representável localmente com `fazenda_id` preenchido;
+- pull global usa consulta separada com `scope = 'global'` e `fazenda_id is null`;
+- pull tenant usa consulta separada com `scope = 'tenant'` e `fazenda_id` da fazenda atual;
+- ProductClass v2 permanece pull-only nesta etapa: remoto -> Dexie local;
 - `deleted_at`, `updated_at`, `metadata`, `limitations`, arrays e JSON estruturados são preservados;
-- o cache local ainda não implementa pull remoto, push remoto, sync-batch, seed, protocolo, agenda, evento ou carência ativa;
-- catálogo global segue preparado como leitura futura/pull-only, sem edição local autorizada.
+- o cache local nao implementa push remoto, `queue_ops`, sync-batch ProductClass, seed, protocolo, agenda, evento ou carência ativa;
+- catálogo global segue como leitura futura/pull-only, sem edição local autorizada.
 
 ### Antipadrões proibidos
 

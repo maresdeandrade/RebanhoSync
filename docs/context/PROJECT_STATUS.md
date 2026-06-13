@@ -1,7 +1,7 @@
 # Project Status — RebanhoSync
 
-Atualizado em: 2026-06-10
-**Baseline Commit:** `91e0775`
+Atualizado em: 2026-06-12
+**Baseline Commit:** `c2bac2b`
 
 ## Objetivo
 
@@ -19,7 +19,7 @@ A fase 11 — Lotes, Pastos e Desempenho Operacional Ampliado — está concluí
 
 Foi criada a fase extra 11.5 — Agenda Sanitária v2: Janelas, Agrupamento e Materialização Idempotente — antes da Fase 12.
 
-A Fase 11.5 foi fechada localmente pela 11.5H, reconciliada documentalmente pela 11.5I e rebaselineada estrategicamente pela 11.5J. A Fase 12 foi aberta em 12A documental/diagnóstica, avançou em 12B para modelagem clean/reset documental, em 12C para fundação SQL/RLS/reset controlado, em 12D0 para modelo canônico de protocolo/produto/fonte técnica, em 12D1 para schema/contratos mínimos persistidos, em 12D2 para builders/adapters puros de snapshots técnicos, em 12D3 para extração curatorial de protocolos candidatos v2 para revisão, em 12D4 para rebaseline conceitual das matrizes, em 12D5 para contratos TypeScript puros de ProductClass, ProductClassGroup e ExecutionProductPolicy, em 12D6 para schema SQL, RLS e tabelas no banco de dados para ProductClass, em 12E0 para diagnóstico/contrato offline-sync e em 12E1 para stores Dexie locais de ProductClass v2.
+A Fase 11.5 foi fechada localmente pela 11.5H, reconciliada documentalmente pela 11.5I e rebaselineada estrategicamente pela 11.5J. A Fase 12 foi aberta em 12A documental/diagnóstica, avançou em 12B para modelagem clean/reset documental, em 12C para fundação SQL/RLS/reset controlado, em 12D0 para modelo canônico de protocolo/produto/fonte técnica, em 12D1 para schema/contratos mínimos persistidos, em 12D2 para builders/adapters puros de snapshots técnicos, em 12D3 para extração curatorial de protocolos candidatos v2 para revisão, em 12D4 para rebaseline conceitual das matrizes, em 12D5 para contratos TypeScript puros de ProductClass, ProductClassGroup e ExecutionProductPolicy, em 12D6 para schema SQL, RLS e tabelas no banco de dados para ProductClass, em 12E0 para diagnóstico/contrato offline-sync, em 12E1 para stores Dexie locais de ProductClass v2 e em 12E2 para pull remoto ProductClass v2 para cache Dexie local.
 
 Último gate validado:
 
@@ -84,6 +84,7 @@ A Fase 11.5 foi fechada localmente pela 11.5H, reconciliada documentalmente pela
 - Fase 12D6 — Schema SQL, RLS e Tabelas para ProductClass executada em escopo reduzido SQL/RLS.
 - Fase 12E0 — Diagnóstico técnico e contrato de implementação offline/sync executada documentalmente em escopo reduzido.
 - Fase 12E1 — Dexie schema/stores para ProductClass v2 executada localmente em escopo reduzido, criando apenas armazenamento local `catalog_*`.
+- Fase 12E2 — Pull remoto ProductClass v2 executada localmente em escopo reduzido, baixando catalogo global e tenant para Dexie sem push, sem `queue_ops` e sem sync-batch ProductClass.
 
 Último avanço local da Fase 10:
 
@@ -138,6 +139,7 @@ A Fase 11.5 foi fechada localmente pela 11.5H, reconciliada documentalmente pela
 - 11.5I alinhou docs normativos e skills de agente aos contratos da Agenda Sanitária v2.
 - 11.5J reordenou o roadmap técnico para aplicar a fundação sanitária antes de Compra/Venda, KPIs, financeiro e decisão assistida.
 
+- 12E2 implementou pull remoto ProductClass v2 para Dexie local, com consulta global separada (`scope='global'`, `fazenda_id is null`) e consulta tenant separada (`scope='tenant'`, `fazenda_id` atual), preservando tombstones e sem implementar push, `queue_ops`, sync-batch ProductClass, UI, migrations, seed, protocolo, agenda, evento ou carência ativa;
 - 12E1 criou a base Dexie local ProductClass v2 em stores `catalog_*`, com tipos locais mínimos, índices de consulta futura e testes de armazenamento global/tenant, sem pull, push, sync-batch, UI, migrations, seed, protocolo, agenda, evento ou carência ativa;
 - 12E0 executou o diagnóstico técnico e contrato de implementação para o offline/sync, desenhando o mapeamento de 17 estruturas sanitárias v2 Supabase/Dexie, delineando estratégias para pull/push globais (pull-only) vs tenant (`scope = 'tenant'`), tombstones de soft-delete, idempotência por client_op_id e formalizando a progressão em subfases curtas (12E1 -> 12E2 -> 12E3 -> 12E4);
 - 12D6 executou a criação do schema de banco de dados, RLS e tabelas para ProductClass, ProductClassGroup, memberships e regras default, com validações triggers BEFORE, grants mínimos, soft-delete RLS, e índices parciais separados para global/tenant;

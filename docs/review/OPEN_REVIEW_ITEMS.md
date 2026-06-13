@@ -1,7 +1,7 @@
 # Open Review Items — RebanhoSync
 
-Atualizado em: 2026-06-10
-**Baseline Commit:** `3fe7a81`
+Atualizado em: 2026-06-12
+**Baseline Commit:** `c2bac2b`
 
 ## Objetivo
 
@@ -36,23 +36,6 @@ Itens resolvidos devem sair deste documento e permanecer registrados apenas no r
 ---
 
 # Pendências abertas
-
-## P1 — Atualizar validate-supabase-baseline-functional.mjs para não depender de escrita sanitária legada em agenda_itens após bloqueio 12C
-
-**Status:** `ABERTO`
-**Área:** infraestrutura / testes / CI
-**Risco:** falso-negativo no validador funcional baseline de Supabase.
-
-### Descrição
-
-O script `validate-supabase-baseline-functional.mjs` falha na etapa 4/5 porque tenta inserir registros de agenda sanitária legada na tabela `agenda_itens`, que foi intencionalmente bloqueada via trigger na Fase 12C. O script validador legado precisa ser atualizado para usar as novas estruturas da Agenda Sanitária v2 (`sanitario_agenda_v2`) em vez da tabela legada.
-
-### Critério de aceite
-
-- O validador baseline executa até o fim com sucesso (`exit 0`).
-- Nenhuma dependência de escrita legada permanece na validação funcional sanitária.
-
----
 
 ## P2 — Ruído residual em `stderr/stdout` de testes
 
@@ -148,6 +131,17 @@ Tratar em gate futuro de higiene residual:
 ---
 
 # Itens fechados nesta etapa
+
+## FECHADO — Baseline P1 sem escrita sanitária legada em agenda_itens
+
+**Resultado:** fechado na Fase 12E2.
+
+Consolidado:
+
+- `scripts/codex/validate-supabase-baseline-functional.mjs` deixou de inserir agenda sanitária legada em `agenda_itens`.
+- A etapa sanitária do baseline passou a validar evento/detalhe sanitário direto, preservando `eventos` + `eventos_sanitario` como superfície factual.
+- Teste de contrato impede regressão para escrita legada sanitária em `agenda_itens`.
+- O bloqueio introduzido na Fase 12C permanece preservado.
 
 ## FECHADO — Fase 7 Preparação de PR + Auditoria de Regressão
 

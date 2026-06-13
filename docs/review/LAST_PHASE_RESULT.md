@@ -1,34 +1,39 @@
 # Last Phase Result — RebanhoSync
 
-Atualizado em: 2026-06-11
-**Baseline Commit:** `2e43b27`
+Atualizado em: 2026-06-12
+**Baseline Commit:** `c2bac2b`
 
 ## 0. Resultado mais recente
 
-Fase 12E1 — Dexie schema/stores para ProductClass v2 — executada localmente em escopo reduzido.
+Fase 12E2 — Pull remoto ProductClass v2 para Dexie local — executada localmente em escopo reduzido.
 
 Decisao: `PROSSEGUIR COM ESCOPO REDUZIDO`.
 
-Resultado da 12E1:
-- Adicionados os stores Dexie `catalog_sanitario_product_classes_v2`, `catalog_sanitario_product_class_groups_v2`, `catalog_sanitario_product_class_group_members_v2` e `catalog_sanitario_product_class_default_rules_v2`.
-- Dexie versionado para v23, sem migracao customizada por serem stores novas.
-- Tipos locais minimos adicionados para ProductClass v2, grupos, memberships e regras default, preservando campos criticos remotos.
-- Indices locais adicionados para consulta futura por escopo, fazenda, soft-delete, atualizacao, chaves semanticas, vinculo grupo/classe e regra por classe/especie/aptidao.
-- `tableMap` passou a reconhecer as 4 tabelas remotas ProductClass v2 como `catalog_*`.
-- Teste focado criado para validar armazenamento local global/tenant, preservacao de `deleted_at`, `updated_at`, `metadata`, arrays e ausencia de `queue_ops`.
-- Nenhum pull remoto, push remoto, sync-batch, UI, migration, seed, protocolo estruturado, agenda, evento, estoque, carencia ativa, venda, abate, leite ou aptidao operacional foi implementado.
+Resultado da 12E2:
+- Implementado pull remoto -> Dexie local para as 4 tabelas ProductClass v2.
+- Pull global separado usa `scope = 'global'` e `fazenda_id is null`, sem filtro tenant por fazenda.
+- Pull tenant separado usa `scope = 'tenant'` e `fazenda_id` da fazenda atual.
+- Aplicacao local respeita ordem de dependencia: classes, grupos, memberships e regras default.
+- Dados sao gravados em stores `catalog_*` em modo merge, preservando `deleted_at`, `updated_at`, `metadata`, arrays e JSON.
+- ProductClass v2 permanece pull-only: nenhum push, nenhuma `queue_ops` e nenhuma chamada de sync-batch foi adicionada.
+- `DEFAULT_REMOTE_TABLES` continua sem ProductClass v2 para impedir filtro tenant padrao em catalogo global.
+- `pullInitialData` executa o pull ProductClass v2 apos o pull padrao.
+- Baseline P1 ajustado: o validador funcional nao escreve mais agenda sanitaria legada em `agenda_itens`; a etapa sanitaria cria evento/detalhe sanitario diretamente.
+- Nenhuma UI, migration, seed, protocolo estruturado, agenda real, estoque, carencia ativa, venda, abate, leite ou aptidao operacional foi implementada.
 
-Patch da 12E1:
-- `src/lib/offline/db.ts`
-- `src/lib/offline/types.ts`
-- `src/lib/offline/tableMap.ts`
-- `src/lib/offline/__tests__/sanitarioProductClassV2Store.test.ts`
+Patch da 12E2:
+- `src/lib/offline/pull.ts`
+- `src/lib/offline/__tests__/sanitarioProductClassV2Pull.test.ts`
+- `src/lib/offline/__tests__/baselineValidatorContract.test.ts`
+- `scripts/codex/validate-supabase-baseline-functional.mjs`
+- docs ativos de fase/status/roadmap/dominio
 
 Validacao inicial:
-- `pnpm test -- src/lib/offline/__tests__/sanitarioProductClassV2Store.test.ts`: passou.
+- `pnpm test -- src/lib/offline/__tests__/sanitarioProductClassV2Pull.test.ts`: passou.
+- `pnpm test -- src/lib/offline`: passou apos ajuste de mock do teste novo.
 
 Proxima execucao recomendada:
-- `12E2 — Sync/Pull ProductClass v2 e correcao do baseline P1`.
+- `12E3 — Catalogo tecnico sanitario v2 ampliado`.
 
 ---
 

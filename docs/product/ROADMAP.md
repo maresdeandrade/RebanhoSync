@@ -1,7 +1,7 @@
 # Roadmap — RebanhoSync
 
-Atualizado em: 2026-06-06
-**Baseline documental auditado:** `91e0775`
+Atualizado em: 2026-06-12
+**Baseline documental auditado:** `c2bac2b`
 
 ## Objetivo
 
@@ -28,20 +28,20 @@ Não deve substituir issues, tarefas técnicas ou prompts de implementação.
 
 ## Fase atual — Fase 12
 
-Status: **Fase 12E1 concluída localmente como Dexie schema/stores para ProductClass v2**
+Status: **Fase 12E2 concluída localmente como pull remoto ProductClass v2 para Dexie**
 Fase anterior: **Fase 11.5 — Agenda Sanitária v2: Janelas, Agrupamento e Materialização Idempotente — concluída localmente**
-Fase seguinte: **Fase 12E2 — Sync/Pull ProductClass v2 e correção do baseline P1 — a iniciar**
+Fase seguinte: **Fase 12E3 — Catálogo técnico sanitário v2 ampliado — a iniciar**
 
 ### Conduta inicial
 
-As subfases 11.5A a 11.5J (Agenda Sanitária v2 core/documental), 12A (auditoria), 12B (modelagem clean/reset), 12C (migration clean SQL), 12D0 (modelo canônico), 12D1 (schema/contratos mínimos v2), 12D2 (builders/adapters puros de snapshots), 12D3 (extração curatorial), 12D4 (rebaseline conceitual das matrizes), 12D5 (contratos TypeScript de ProductClass), 12D6 (schema SQL, RLS e tabelas para ProductClass), 12E0 (Diagnóstico e Contrato de Offline/Sync) e 12E1 (Dexie stores ProductClass v2) foram concluídas localmente. O desenvolvimento avança agora para pull/sync controlado dessas estruturas, sem misturar Agenda v2.
+As subfases 11.5A a 11.5J (Agenda Sanitária v2 core/documental), 12A (auditoria), 12B (modelagem clean/reset), 12C (migration clean SQL), 12D0 (modelo canônico), 12D1 (schema/contratos mínimos v2), 12D2 (builders/adapters puros de snapshots), 12D3 (extração curatorial), 12D4 (rebaseline conceitual das matrizes), 12D5 (contratos TypeScript de ProductClass), 12D6 (schema SQL, RLS e tabelas para ProductClass), 12E0 (Diagnóstico e Contrato de Offline/Sync), 12E1 (Dexie stores ProductClass v2) e 12E2 (pull remoto ProductClass v2 para Dexie) foram concluídas localmente. O desenvolvimento avança agora para ampliação controlada do catálogo técnico sanitário v2, sem misturar Agenda v2.
 
 ### Handoff para Fase 12E
 
 A próxima etapa 12E está dividida na seguinte ordem de subfases:
 1. **12E1**: Criação do Dexie schema e stores para as tabelas de ProductClass (`sanitario_product_classes_v2`, `sanitario_product_class_groups_v2`, etc.) — concluída localmente.
-2. **12E2**: Ajustes nas rotinas de pull/sync para sincronizar tabelas de ProductClass, além da correção do validador funcional baseline P1.
-3. **12E3**: Sincronização e stores locais Dexie para a Agenda Sanitária v2 (`sanitario_agenda_v2`, `sanitario_agenda_animais_v2`, `sanitario_agenda_closures_v2`).
+2. **12E2**: Pull remoto ProductClass v2 para Dexie local e correção do validador funcional baseline P1 — concluída localmente.
+3. **12E3**: Catálogo técnico sanitário v2 ampliado.
 
 Riscos residuais vindos da 12E0:
 - Pull de registros globais exige carregamento inicial apartado do filtro padrão por `fazenda_id`.
@@ -49,7 +49,7 @@ Riscos residuais vindos da 12E0:
 
 ### Escopo da Fase 12E1+
 - 12E1 concluiu a inclusão dos novos stores de ProductClass no schema Dexie v23.
-- 12E2 deve implementar pull/sync de ProductClass v2, preservando catálogo global como pull-only.
+- 12E2 concluiu o pull remoto ProductClass v2 para Dexie, preservando catálogo global e tenant como pull-only nesta fase.
 
 ---
 
