@@ -55,6 +55,11 @@ export const TABLE_MAP: Record<string, string> = {
     "catalog_sanitario_produto_dose_rules_v2",
   sanitario_produto_carencia_rules_v2:
     "catalog_sanitario_produto_carencia_rules_v2",
+
+  // Operational Rails - Agenda Sanitaria v2
+  sanitario_agenda_v2: "ops_sanitario_agenda_v2",
+  sanitario_agenda_animais_v2: "ops_sanitario_agenda_animais_v2",
+  sanitario_agenda_closures_v2: "ops_sanitario_agenda_closures_v2",
 };
 
 // Reverse map (localStore -> remoteTable) calculado 1x
@@ -64,13 +69,14 @@ const REVERSE_TABLE_MAP: Record<string, string> = Object.fromEntries(
 
 /**
  * Retorna o nome do store local baseado no nome da tabela remota.
- * Se já vier no formato local (state_/event_), retorna como está (sem warning).
+ * Se já vier no formato local (state_/event_/catalog_/ops_), retorna como está (sem warning).
  */
 export const getLocalStoreName = (remoteTable: string): string => {
   if (
     remoteTable.startsWith("state_") ||
     remoteTable.startsWith("event_") ||
-    remoteTable.startsWith("catalog_")
+    remoteTable.startsWith("catalog_") ||
+    remoteTable.startsWith("ops_")
   ) {
     return remoteTable; // já é local
   }
@@ -87,7 +93,7 @@ export const getLocalStoreName = (remoteTable: string): string => {
 /**
  * Retorna o nome da tabela remota baseado no nome do store local.
  * - Se já vier remoto (chave em TABLE_MAP), retorna como está (sem warning).
- * - Se vier local (state_/event_), traduz via reverse map.
+ * - Se vier local (state_/event_/catalog_/ops_), traduz via reverse map.
  * - Só emite warning quando parece local e não está mapeado.
  */
 export const getRemoteTableName = (storeOrRemote: string): string => {
@@ -100,7 +106,8 @@ export const getRemoteTableName = (storeOrRemote: string): string => {
   if (
     storeOrRemote.startsWith("state_") ||
     storeOrRemote.startsWith("event_") ||
-    storeOrRemote.startsWith("catalog_")
+    storeOrRemote.startsWith("catalog_") ||
+    storeOrRemote.startsWith("ops_")
   ) {
     console.warn(
       `[table-map] No remote table found for local store: ${storeOrRemote}. Using as-is.`,

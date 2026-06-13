@@ -1,9 +1,63 @@
 # Last Phase Result — RebanhoSync
 
-Atualizado em: 2026-06-12
-**Baseline Commit:** `0e44694`
+Atualizado em: 2026-06-13
+**Baseline Commit:** `797a692`
 
 ## 0. Resultado mais recente
+
+Fase 12E4 — Agenda Sanitaria v2 offline/sync em escopo controlado — executada localmente.
+
+Decisao: `PROSSEGUIR COM ESCOPO CONTROLADO`.
+
+Resultado da 12E4:
+- Criadas stores Dexie v25 `ops_sanitario_agenda_v2`, `ops_sanitario_agenda_animais_v2` e `ops_sanitario_agenda_closures_v2`.
+- Criados tipos locais minimos para as 3 tabelas reais da migration da Agenda Sanitaria v2.
+- `tableMap` passou a mapear as tabelas remotas da Agenda v2 para stores locais `ops_*`.
+- Implementado pull remoto -> Dexie local em `pullSanitarioAgendaV2(fazenda_id)`.
+- Pull usa filtro tenant explicito por `fazenda_id` e nao executa pull global.
+- Pull respeita ordem de dependencia: agenda -> animais -> closures.
+- Dados sao aplicados por merge/upsert, preservando `updated_at`, `deleted_at`, metadata, `agenda_id`, `animal_id` e `client_op_id`.
+- `pullInitialData` passou a executar o pull da Agenda v2 apos ProductClass v2 e catalogo tecnico sanitario v2.
+- `createGesture` bloqueia `queue_ops` para `catalog_*`, `sanitario_agenda_v2` e `sanitario_agenda_animais_v2`.
+- Push controlado foi habilitado somente para `sanitario_agenda_closures_v2`.
+- `sync-batch` reconhece as tabelas da Agenda v2 como tenant-scoped e depende do RLS existente.
+- Conflito de closure ativa duplicada e normalizado como `sanitario_agenda_closure_already_exists`.
+- Sucesso parcial de gestures compostas apenas por closures preserva closures aceitas e mantem rejeitadas em `queue_ops` com erro rastreavel.
+- Reconciliacao pos-sync da Agenda v2 executa novo pull por fazenda.
+- ProductClass v2 e catalogo tecnico sanitario v2 permanecem pull-only.
+- Nenhuma UI, migration, seed, protocolo estruturado, evento sanitario executado, baixa de estoque, carencia ativa, venda, abate, leite ou aptidao operacional foi implementada.
+
+Patch da 12E4:
+- `src/lib/offline/db.ts`
+- `src/lib/offline/types.ts`
+- `src/lib/offline/tableMap.ts`
+- `src/lib/offline/pull.ts`
+- `src/lib/offline/ops.ts`
+- `src/lib/offline/syncWorker.ts`
+- `src/lib/offline/__tests__/sanitarioAgendaV2Store.test.ts`
+- `src/lib/offline/__tests__/sanitarioAgendaV2Pull.test.ts`
+- `src/lib/offline/__tests__/sanitarioAgendaV2Sync.test.ts`
+- `supabase/functions/sync-batch/index.ts`
+- `supabase/functions/sync-batch/rules.ts`
+- `supabase/functions/sync-batch/rules.test.ts`
+- docs ativos de fase/status/roadmap/dominio
+
+Validacao:
+- `git diff --check`: passou.
+- `pnpm test -- src/lib/offline`: passou.
+- `pnpm test -- supabase/functions/sync-batch`: passou antes e depois de `supabase db reset`.
+- `pnpm test -- src/lib/sanitario`: passou.
+- `pnpm run lint`: passou.
+- `pnpm run build`: passou com warnings conhecidos de Browserslist/chunks.
+- `supabase db reset`: passou.
+- `node scripts/codex/validate-supabase-baseline-functional.mjs`: passou.
+
+Proxima execucao recomendada:
+- `12E5 — Hardening offline/sync` ou `12F — Estruturacao curatorial dos protocolos`, conforme decisao de gate.
+
+---
+
+## 0.1 Resultado anterior — Fase 12E3
 
 Fase 12E3 — Catalogo tecnico sanitario v2 ampliado em Dexie com pull remoto — executada localmente em escopo reduzido.
 

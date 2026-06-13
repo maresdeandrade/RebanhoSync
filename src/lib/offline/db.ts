@@ -28,6 +28,9 @@ import {
   type CatalogoDoencaNotificavel,
   type SanitarioFonteCoberturaCampoLocalV2,
   type SanitarioFonteTecnicaLocalV2,
+  type SanitarioAgendaAnimalLocalV2,
+  type SanitarioAgendaClosureLocalV2,
+  type SanitarioAgendaLocalV2,
   type SanitarioProdutoCarenciaRuleLocalV2,
   type SanitarioProdutoDoseRuleLocalV2,
   type SanitarioProdutoEspecieAutorizacaoLocalV2,
@@ -106,6 +109,9 @@ export class OfflineDB extends Dexie {
   catalog_sanitario_produto_fontes_v2!: Table<SanitarioProdutoFonteLocalV2, [string, string, string]>;
   catalog_sanitario_produto_dose_rules_v2!: Table<SanitarioProdutoDoseRuleLocalV2, string>;
   catalog_sanitario_produto_carencia_rules_v2!: Table<SanitarioProdutoCarenciaRuleLocalV2, string>;
+  ops_sanitario_agenda_v2!: Table<SanitarioAgendaLocalV2, string>;
+  ops_sanitario_agenda_animais_v2!: Table<SanitarioAgendaAnimalLocalV2, [string, string]>;
+  ops_sanitario_agenda_closures_v2!: Table<SanitarioAgendaClosureLocalV2, string>;
 
   constructor() {
     super("RebanhoSync");
@@ -684,6 +690,17 @@ export class OfflineDB extends Dexie {
         "id, product_id, species_code, aptitude, route, dose_basis, status_curatorial, deleted_at, updated_at, [product_id+species_code+aptitude]",
       catalog_sanitario_produto_carencia_rules_v2:
         "id, product_id, species_code, aptitude, applicability, status_curatorial, deleted_at, updated_at, [product_id+species_code+aptitude], [product_id+species_code+aptitude+applicability]",
+    });
+
+    // Version 25: base operacional local da Agenda Sanitaria v2.
+    // Agenda/animais sao pull por fazenda; closures podem ser push controlado.
+    this.version(25).stores({
+      ops_sanitario_agenda_v2:
+        "id, fazenda_id, status, dedup_key, client_op_id, data_programada, created_at, updated_at, deleted_at, [fazenda_id+updated_at], [fazenda_id+deleted_at], [fazenda_id+data_programada], [fazenda_id+status]",
+      ops_sanitario_agenda_animais_v2:
+        "[agenda_id+animal_id], agenda_id, animal_id, fazenda_id, planned_status, execution_evento_id, created_at, updated_at, [fazenda_id+animal_id], [fazenda_id+planned_status]",
+      ops_sanitario_agenda_closures_v2:
+        "id, fazenda_id, agenda_id, closure_type, dedup_key, client_op_id, closed_at, created_at, updated_at, deleted_at, [agenda_id+deleted_at], [fazenda_id+updated_at], [fazenda_id+deleted_at], [fazenda_id+agenda_id]",
     });
   }
 }

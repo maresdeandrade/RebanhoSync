@@ -5,6 +5,7 @@ import {
   inferAgendaSourceTaskIdForEventInsert,
   normalizeDbError,
   prevalidateAntiTeleport,
+  validateSanitarioAgendaClosurePush,
 } from './rules.ts'
 import { resolveEventFeatureFlags } from './flags.ts'
 import { validateAnimalTaxonomyFactsOperation } from './taxonomy.ts'
@@ -197,7 +198,9 @@ Deno.serve(async (req: Request) => {
       'eventos_movimentacao', 'eventos_reproducao', 'eventos_financeiro', 'eventos_ecc',
       'eventos_comercial',
       'finance_categories', 'finance_transactions',
-      'sociedades_pecuarias', 'sociedade_animais'
+      'sociedades_pecuarias', 'sociedade_animais',
+      'sanitario_agenda_v2', 'sanitario_agenda_animais_v2',
+      'sanitario_agenda_closures_v2'
     ]);
 
     const results = [];
@@ -225,6 +228,20 @@ Deno.serve(async (req: Request) => {
         );
         if (TABLES_WITH_FAZENDA.has(op.table)) {
           record.fazenda_id = fazenda_id; // Always use request fazenda_id
+        }
+
+        const agendaClosureValidation = validateSanitarioAgendaClosurePush({
+          ...op,
+          record,
+        });
+        if (agendaClosureValidation) {
+          results.push({
+            op_id: op.client_op_id,
+            status: agendaClosureValidation.status,
+            reason_code: agendaClosureValidation.reason_code,
+            reason_message: agendaClosureValidation.reason_message,
+          });
+          continue;
         }
         
         const taxonomyValidation = validateAnimalTaxonomyFactsOperation({

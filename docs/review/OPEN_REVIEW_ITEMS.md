@@ -1,7 +1,7 @@
 # Open Review Items — RebanhoSync
 
-Atualizado em: 2026-06-12
-**Baseline Commit:** `c2bac2b`
+Atualizado em: 2026-06-13
+**Baseline Commit:** `797a692`
 
 ## Objetivo
 
@@ -62,6 +62,34 @@ Implementar em fase propria, sem misturar com push, UI, agenda ou protocolo:
 - Pull incremental reduz fetch sem perder registros atualizados ou soft-deletados.
 - Full fetch inicial continua possivel.
 - Nenhum push, `queue_ops`, sync-batch ou UI e introduzido por esse ajuste.
+
+---
+
+## P1 — Cursor incremental por `updated_at` para Agenda Sanitaria v2
+
+**Status:** `ABERTO`
+**Área:** offline / sync / Agenda Sanitaria v2
+**Risco:** pull full fetch/merge crescer em custo e latencia conforme a agenda operacional acumular historico e tombstones.
+
+### Descrição
+
+A Fase 12E4 seguiu o padrao local existente de pull por tabela com fetch completo e merge em Dexie para `sanitario_agenda_v2`, `sanitario_agenda_animais_v2` e `sanitario_agenda_closures_v2`. Esse padrao preserva `updated_at`, `deleted_at` quando existente, metadata e tombstones, mas ainda nao possui cursor incremental por tabela baseado em `updated_at`.
+
+### Regra de tratamento
+
+Implementar em fase propria de hardening, sem misturar com UI, protocolo, evento executado, estoque ou carencia ativa:
+
+- cursor por tabela/stores `ops_*`;
+- filtro remoto por `updated_at` sem ignorar tombstones;
+- desempate por chave estavel quando necessario;
+- conciliacao segura quando houver `queue_ops` pendente de closure;
+- testes cobrindo soft-delete incremental e sucesso parcial.
+
+### Critério de aceite
+
+- Pull incremental reduz fetch sem perder registros atualizados ou soft-deletados.
+- Full fetch inicial continua possivel.
+- Nenhum push de `catalog_*`, `state_*`, agenda/animais v2, evento, estoque ou UI e introduzido por esse ajuste.
 
 ---
 

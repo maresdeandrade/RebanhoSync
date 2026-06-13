@@ -1,8 +1,36 @@
 # Current Phase Handoff — RebanhoSync
 
-Atualizado em: 2026-06-12
+Atualizado em: 2026-06-13
 
-## 0. Handoff Atual — Fase 12E3
+## 0. Handoff Atual — Fase 12E4
+
+Fase 12E4 — Agenda Sanitaria v2 offline/sync em escopo controlado — executada localmente.
+
+Decisao: `PROSSEGUIR COM ESCOPO CONTROLADO`.
+
+Resultado:
+- Criadas stores Dexie v25 `ops_sanitario_agenda_v2`, `ops_sanitario_agenda_animais_v2` e `ops_sanitario_agenda_closures_v2`.
+- Criados tipos locais minimos para espelhar as 3 tabelas reais da migration da Agenda Sanitaria v2.
+- `tableMap` mapeia as tabelas remotas da Agenda v2 para stores locais `ops_*`.
+- Criado pull especifico `pullSanitarioAgendaV2(fazenda_id)`, sempre tenant-scoped por `fazenda_id`.
+- Pull respeita ordem agenda -> animais -> closures e aplica dados em merge/upsert, preservando `updated_at`, `deleted_at`, metadata e vinculos.
+- `pullInitialData` passou a executar o pull da Agenda v2 apos ProductClass v2 e catalogo tecnico sanitario v2.
+- `createGesture` bloqueia `queue_ops` para `catalog_*`, `sanitario_agenda_v2` e `sanitario_agenda_animais_v2`.
+- Push foi habilitado somente para `sanitario_agenda_closures_v2`, com `client_op_id` preservado.
+- Push de closure na 12E4 aceita apenas closures administrativas sem `execution_evento_id`; `executed_with_event`, `partially_executed_with_event` e `execution_evento_id` preenchido sao bloqueados.
+- `sync-batch` trata as tabelas da Agenda v2 como tenant-scoped e continua dependente do RLS existente.
+- Duplicidade de closure ativa e normalizada como rejeicao controlada `sanitario_agenda_closure_already_exists`.
+- Sucesso parcial de gestures compostas apenas por closures preserva aceitas sincronizadas e mantem rejeitadas com erro rastreavel.
+- ProductClass v2 e catalogo tecnico sanitario v2 continuam pull-only.
+- `execution_evento_id` em agenda, animais e closures pode existir apenas como dado vindo de pull/read remoto; nao e superficie de push da 12E4.
+- Nenhuma UI, migration, seed, protocolo estruturado, evento sanitario executado, baixa de estoque, carencia ativa, venda, abate, leite ou aptidao operacional foi implementada.
+
+Proxima fase recomendada:
+- `12E5 — Hardening offline/sync` ou `12F — Estruturacao curatorial dos protocolos`, conforme decisao de gate.
+
+---
+
+## 0.1 Handoff anterior — Fase 12E3
 
 Fase 12E3 — Catalogo tecnico sanitario v2 ampliado em Dexie com pull remoto — executada localmente em escopo reduzido.
 

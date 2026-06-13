@@ -31,10 +31,48 @@ const getClientId = () => {
   return next;
 };
 
+function assertAllowedOfflinePushSurface(op: OperationInput) {
+  const localStoreName = getLocalStoreName(op.table);
+
+  if (localStoreName.startsWith("catalog_")) {
+    throw new Error(
+      `CATALOG_PUSH_BLOCKED: ${op.table} is pull-only and cannot generate queue_ops`,
+    );
+  }
+
+  if (
+    localStoreName === "ops_sanitario_agenda_v2" ||
+    localStoreName === "ops_sanitario_agenda_animais_v2"
+  ) {
+    throw new Error(
+      `SANITARIO_AGENDA_V2_PULL_ONLY: ${op.table} is synced remote-to-local in this phase`,
+    );
+  }
+
+  if (localStoreName === "ops_sanitario_agenda_closures_v2") {
+    const closureType = op.record?.closure_type;
+    const executionEventoId = op.record?.execution_evento_id;
+
+    if (
+      closureType === "executed_with_event" ||
+      closureType === "partially_executed_with_event" ||
+      executionEventoId != null
+    ) {
+      throw new Error(
+        "SANITARIO_AGENDA_CLOSURE_EXECUTION_BLOCKED_IN_12E4",
+      );
+    }
+  }
+}
+
 export const createGesture = async (
   fazenda_id: string,
   ops_input: OperationInput[],
 ) => {
+  for (const op of ops_input) {
+    assertAllowedOfflinePushSurface(op);
+  }
+
   const client_tx_id = crypto.randomUUID();
   const client_recorded_at = new Date().toISOString();
   const client_id = getClientId();

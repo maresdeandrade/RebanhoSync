@@ -1134,6 +1134,79 @@ export interface SanitarioProdutoCarenciaRuleLocalV2 {
   deleted_at: string | null;
 }
 
+export type SanitarioAgendaV2Status = "programada" | "fechada" | "cancelada" | "dispensada";
+export type SanitarioAgendaAnimalV2Status = "planejado" | "executado" | "nao_executado";
+export type SanitarioAgendaClosureV2Type =
+  | "executed_with_event"
+  | "partially_executed_with_event"
+  | "closed_without_execution"
+  | "cancelled"
+  | "dismissed";
+
+export interface SanitarioAgendaLocalV2 {
+  id: string;
+  fazenda_id: string;
+  status: SanitarioAgendaV2Status;
+  dedup_key: string;
+  client_id: string;
+  client_op_id: string;
+  client_tx_id: string | null;
+  client_recorded_at: string;
+  server_received_at: string;
+  source_demand_key: string | null;
+  preview_group_id: string | null;
+  protocolo_id: string | null;
+  protocol_item_version_id: string | null;
+  protocol_item_snapshot: Record<string, unknown>;
+  janela_inicio: string;
+  janela_fim: string | null;
+  data_programada: string;
+  lote_id: string | null;
+  produto_veterinario_id: string | null;
+  produto_snapshot: Record<string, unknown>;
+  produto_classe: string | null;
+  acao_sanitaria: string;
+  execution_evento_id: string | null;
+  metadata: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+}
+
+export interface SanitarioAgendaAnimalLocalV2 {
+  agenda_id: string;
+  fazenda_id: string;
+  animal_id: string;
+  planned_status: SanitarioAgendaAnimalV2Status;
+  execution_evento_id: string | null;
+  not_executed_reason: string | null;
+  metadata: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SanitarioAgendaClosureLocalV2 {
+  id: string;
+  fazenda_id: string;
+  agenda_id: string;
+  closure_type: SanitarioAgendaClosureV2Type;
+  dedup_key: string;
+  client_id: string;
+  client_op_id: string;
+  client_tx_id: string | null;
+  client_recorded_at: string;
+  server_received_at: string;
+  closed_at: string;
+  closed_by: string | null;
+  execution_evento_id: string | null;
+  reason: string | null;
+  partial_payload: Record<string, unknown>;
+  metadata: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+}
+
 export interface FazendaSanidadeConfig {
   fazenda_id: string;
   uf: EstadoUFEnum | null;

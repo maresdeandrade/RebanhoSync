@@ -12,6 +12,34 @@ export interface DbErrorLike {
   hint?: string | null;
 }
 
+export function validateSanitarioAgendaClosurePush(op: Operation):
+  | null
+  | {
+      status: 'REJECTED';
+      reason_code: 'SANITARIO_AGENDA_CLOSURE_EXECUTION_BLOCKED';
+      reason_message: string;
+    } {
+  if (op.table !== 'sanitario_agenda_closures_v2') return null;
+
+  const closureType = op.record?.closure_type;
+  const executionEventoId = op.record?.execution_evento_id;
+
+  if (
+    closureType === 'executed_with_event' ||
+    closureType === 'partially_executed_with_event' ||
+    executionEventoId != null
+  ) {
+    return {
+      status: 'REJECTED',
+      reason_code: 'SANITARIO_AGENDA_CLOSURE_EXECUTION_BLOCKED',
+      reason_message:
+        'Agenda v2 closure push in 12E4 cannot confirm executed sanitary events',
+    };
+  }
+
+  return null;
+}
+
 const CHECK_CONSTRAINT_REASON: Record<string, string> = {
   ck_evt_fin_valor_total_pos: 'VALIDATION_FINANCEIRO_VALOR_TOTAL',
   ck_evt_nutricao_quantidade_pos_nullable: 'VALIDATION_NUTRICAO_QUANTIDADE',
@@ -37,6 +65,8 @@ const FK_CONSTRAINT_REASON: Record<string, string> = {
 
 const UNIQUE_CONSTRAINT_REASON: Record<string, string> = {
   idx_eventos_unique_source_task: 'agenda_already_completed_by_event',
+  ux_sanitario_agenda_closures_v2_agenda_active:
+    'sanitario_agenda_closure_already_exists',
 };
 
 const TABLE_PRIMARY_KEY: Record<string, 'id' | 'evento_id' | 'user_id' | 'fazenda_id'> = {

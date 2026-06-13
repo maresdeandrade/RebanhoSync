@@ -5,6 +5,7 @@ import {
   normalizeDbError,
   prevalidateAntiTeleport,
   resolveOperationPrimaryKey,
+  validateSanitarioAgendaClosurePush,
   type Operation,
 } from './rules';
 
@@ -168,6 +169,22 @@ describe('sync-batch rules: normalizeDbError', () => {
     }
   });
 
+  it('maps duplicate Agenda v2 active closure to deterministic rejection', () => {
+    const result = normalizeDbError(
+      {
+        code: '23505',
+        message:
+          'duplicate key value violates unique constraint "ux_sanitario_agenda_closures_v2_agenda_active"',
+      },
+      op({ table: 'sanitario_agenda_closures_v2' }),
+    );
+
+    expect(result.status).toBe('REJECTED');
+    if (result.status === 'REJECTED') {
+      expect(result.reason_code).toBe('sanitario_agenda_closure_already_exists');
+    }
+  });
+
   it('maps known FK constraint to domain reason_code', () => {
     const result = normalizeDbError(
       {
@@ -272,6 +289,48 @@ describe('sync-batch rules: mutation key resolution', () => {
     });
 
     expect(buildMutationMatch(operation, 'faz-1')).toBeNull();
+  });
+});
+
+describe('sync-batch rules: Agenda v2 closure push boundary', () => {
+  it('rejects closures that would confirm sanitary execution in 12E4', () => {
+    for (const record of [
+      { closure_type: 'executed_with_event', execution_evento_id: null },
+      { closure_type: 'partially_executed_with_event', execution_evento_id: null },
+      { closure_type: 'closed_without_execution', execution_evento_id: 'evt-1' },
+    ]) {
+      const result = validateSanitarioAgendaClosurePush(
+        op({
+          table: 'sanitario_agenda_closures_v2',
+          record,
+        }),
+      );
+
+      expect(result).toMatchObject({
+        status: 'REJECTED',
+        reason_code: 'SANITARIO_AGENDA_CLOSURE_EXECUTION_BLOCKED',
+      });
+    }
+  });
+
+  it('allows administrative closures without execution_evento_id', () => {
+    for (const closureType of [
+      'closed_without_execution',
+      'cancelled',
+      'dismissed',
+    ]) {
+      expect(
+        validateSanitarioAgendaClosurePush(
+          op({
+            table: 'sanitario_agenda_closures_v2',
+            record: {
+              closure_type: closureType,
+              execution_evento_id: null,
+            },
+          }),
+        ),
+      ).toBeNull();
+    }
   });
 });
 

@@ -7,7 +7,7 @@ import { getRemoteTableName } from "./tableMap";
 import { normalizeTableMutationRecord } from "./mutationRecord";
 import { rollbackOpLocal, getAffectedStores } from "./ops";
 import { sortOpsForSync } from "./syncOrder";
-import { pullDataForFarm } from "./pull";
+import { pullDataForFarm, pullSanitarioAgendaV2 } from "./pull";
 import { purgeRejections } from "./rejections";
 import { trackPilotMetric, flushPilotMetrics } from "@/lib/telemetry/pilotMetrics";
 
@@ -30,6 +30,13 @@ const RECOVERABLE_ERROR_MARKERS = [
   "name resolution failed",
 ];
 const AGENDA_ALREADY_COMPLETED_REASON = "agenda_already_completed_by_event";
+const SANITARIO_AGENDA_CLOSURE_CONFLICT_REASON =
+  "sanitario_agenda_closure_already_exists";
+const SANITARIO_AGENDA_V2_REMOTE_TABLES = new Set([
+  "sanitario_agenda_v2",
+  "sanitario_agenda_animais_v2",
+  "sanitario_agenda_closures_v2",
+]);
 
 // Auto-purge: run at most once every 6 hours, persisted across reloads
 const PURGE_INTERVAL_MS = 6 * 60 * 60 * 1000;
@@ -388,6 +395,20 @@ export async function processGesture(gesture: Gesture) {
           );
         }
       }
+      if (
+        Array.from(remoteTablesTouched).some((table) =>
+          SANITARIO_AGENDA_V2_REMOTE_TABLES.has(table),
+        )
+      ) {
+        try {
+          await pullSanitarioAgendaV2(gesture.fazenda_id);
+        } catch (refreshError) {
+          console.warn(
+            `[sync-worker] post-sync agenda v2 pull failed for TX ${gesture.client_tx_id}:`,
+            refreshError,
+          );
+        }
+      }
 
       await db.queue_gestures.update(gesture.client_tx_id, {
         status: "DONE",
@@ -457,6 +478,68 @@ export async function processGesture(gesture: Gesture) {
         });
       }
 
+      const appliedResults = result.results.filter(
+        (r) => r.status === "APPLIED" || r.status === "APPLIED_ALTERED",
+      );
+      const isAgendaClosureOnlyGesture =
+        mappedOps.length > 0 &&
+        mappedOps.every((op) => op.table === "sanitario_agenda_closures_v2");
+
+      if (isAgendaClosureOnlyGesture && appliedResults.length > 0) {
+        const appliedOpIds = new Set(
+          appliedResults
+            .map((entry) => entry.op_id)
+            .filter((opId): opId is string => typeof opId === "string"),
+        );
+        const rejectedOpIds = new Set(
+          rejectedResults
+            .map((entry) => entry.op_id)
+            .filter((opId): opId is string => typeof opId === "string"),
+        );
+        const rejectedOps = ops.filter((op) => rejectedOpIds.has(op.client_op_id));
+
+        if (rejectedOps.length > 0) {
+          await db.transaction("rw", [...getAffectedStores(rejectedOps)], async () => {
+            for (const op of [...rejectedOps].reverse()) {
+              await rollbackOpLocal(op);
+            }
+          });
+        }
+
+        if (appliedOpIds.size > 0) {
+          await db.queue_ops.bulkDelete(Array.from(appliedOpIds));
+        }
+
+        try {
+          await pullSanitarioAgendaV2(gesture.fazenda_id);
+        } catch (refreshError) {
+          console.warn(
+            `[sync-worker] partial agenda v2 reconciliation pull failed for TX ${gesture.client_tx_id}:`,
+            refreshError,
+          );
+        }
+
+        console.warn(
+          `[sync-worker] TX ${gesture.client_tx_id} had agenda closure partial success`,
+        );
+        await trackPilotMetric({
+          fazendaId: gesture.fazenda_id,
+          eventName: "sync_rejected",
+          status: "error",
+          entity: "sync-batch",
+          quantity: rejectedResults.length,
+          reasonCode: rejectedResults[0]?.reason_code,
+          payload: {
+            op_count: ops.length,
+            applied_count: appliedOpIds.size,
+            rejected_count: rejectedResults.length,
+            tables: ["sanitario_agenda_closures_v2"],
+            reasons: rejectedResults.map((result) => result.reason_code ?? "UNKNOWN"),
+          },
+        });
+        return;
+      }
+
       await db.transaction("rw", [...getAffectedStores(ops)], async () => {
         for (const op of [...ops].reverse()) {
           await rollbackOpLocal(op);
@@ -477,6 +560,21 @@ export async function processGesture(gesture: Gesture) {
         } catch (refreshError) {
           console.warn(
             `[sync-worker] reconciliation pull failed for TX ${gesture.client_tx_id}:`,
+            refreshError,
+          );
+        }
+      }
+      if (
+        rejectedResults.some(
+          (result) =>
+            result.reason_code === SANITARIO_AGENDA_CLOSURE_CONFLICT_REASON,
+        )
+      ) {
+        try {
+          await pullSanitarioAgendaV2(gesture.fazenda_id);
+        } catch (refreshError) {
+          console.warn(
+            `[sync-worker] agenda v2 conflict reconciliation pull failed for TX ${gesture.client_tx_id}:`,
             refreshError,
           );
         }

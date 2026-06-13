@@ -36,8 +36,8 @@ describe("offline technical sanitary catalog v2 stores", () => {
     await db.queue_ops.clear();
   });
 
-  it("registra stores do catalogo tecnico sanitario v2 no Dexie v24", () => {
-    expect(db.verno).toBe(24);
+  it("registra stores do catalogo tecnico sanitario v2 no Dexie v24 ou superior", () => {
+    expect(db.verno).toBeGreaterThanOrEqual(24);
     expect(db.tables.map((table) => table.name)).toEqual(
       expect.arrayContaining([...stores]),
     );

@@ -267,7 +267,7 @@ Legados `produtos_veterinarios`, `protocolos_sanitarios`, `protocolos_sanitarios
 
 ## Agenda Sanitária v2
 
-A Fase 11.5 consolidou contratos puros para redesenhar a agenda sanitária. A Fase 12C criou a fundação SQL/RLS da persistência v2 em tabelas dedicadas, ainda sem Dexie, sync-batch, RPC/Edge Function, seed funcional ou UI conectados.
+A Fase 11.5 consolidou contratos puros para redesenhar a agenda sanitária. A Fase 12C criou a fundação SQL/RLS da persistência v2 em tabelas dedicadas. A Fase 12E4 adicionou base Dexie/offline e sync controlado para Agenda v2, ainda sem UI conectada, seed funcional, protocolo estruturado real, evento executado, estoque ou carência ativa.
 
 Pipeline conceitual:
 
@@ -372,12 +372,21 @@ Regras:
 
 ### Limitações atuais
 
-Ainda não implementado após a 12C:
+Implementado localmente na 12E4:
 
-- Dexie/local-first da Agenda v2;
-- sync-batch/replay/rollback/sucesso parcial da Agenda v2;
+- stores Dexie `ops_sanitario_agenda_v2`, `ops_sanitario_agenda_animais_v2` e `ops_sanitario_agenda_closures_v2`;
+- pull remoto por `fazenda_id`, sem pull global, na ordem agenda -> animais -> closures;
+- merge/upsert preservando `updated_at`, `deleted_at` quando existente, metadata e vínculos;
+- push controlado somente para `sanitario_agenda_closures_v2`;
+- push de closure na 12E4 bloqueia `executed_with_event`, `partially_executed_with_event` e qualquer `execution_evento_id` preenchido;
+- conflito de closure ativa duplicada tratado como rejeição rastreável;
+- sucesso parcial de closures sem perda silenciosa local.
+
+Ainda não implementado após a 12E4:
+
 - RPC/Edge Function operacional para Agenda v2;
 - UI operacional da Agenda v2.
+- push de `sanitario_agenda_v2` e `sanitario_agenda_animais_v2`.
 
 ---
 
@@ -758,6 +767,7 @@ Essa fase deve validar uso real, não criar novo domínio.
 | Fase 12E1 | Dexie schema/stores para ProductClass v2 | Concluída localmente |
 | Fase 12E2 | Pull remoto ProductClass v2 para Dexie e baseline P1 | Concluída localmente |
 | Fase 12E3 | Catálogo técnico sanitário v2 ampliado | Concluída localmente |
+| Fase 12E4 | Agenda Sanitária v2 offline/sync controlado | Concluída localmente |
 
 ### ProductClass v2 local/offline
 
@@ -801,6 +811,28 @@ Contrato atual:
 - regras de carência em catálogo não são carência ativa e não liberam venda, abate, leite ou aptidão operacional;
 - `sanitario_produto_carencia_fontes_v2`, `sanitario_protocolos_v2` e `sanitario_protocolo_itens_versions_v2` permanecem fora da 12E3;
 - o cache local não implementa push remoto, `queue_ops`, sync-batch, UI, migration, seed, protocolo estruturado, agenda, evento ou baixa de estoque.
+
+### Agenda Sanitária v2 local/offline
+
+A Fase 12E4 criou a base local/sync controlada da Agenda Sanitária v2:
+
+- `ops_sanitario_agenda_v2`;
+- `ops_sanitario_agenda_animais_v2`;
+- `ops_sanitario_agenda_closures_v2`.
+
+Regras atuais:
+
+- Agenda v2 é operacional por fazenda e usa pull por `fazenda_id`;
+- não existe catálogo global de agenda;
+- pull respeita ordem agenda -> animais -> closures;
+- agenda/animais v2 permanecem pull por fazenda nesta etapa;
+- push é permitido somente para closures operacionais;
+- push de closure operacional nesta etapa significa apenas `closed_without_execution`, `cancelled` ou `dismissed`, sempre sem `execution_evento_id`;
+- closure fecha ou cancela intenção e não cria evento sanitário executado;
+- closure não cria baixa de estoque;
+- closure não calcula carência ativa;
+- closure não libera venda, abate, leite ou aptidão operacional;
+- ProductClass v2 e catálogo técnico sanitário v2 continuam pull-only.
 
 ### Antipadrões proibidos
 

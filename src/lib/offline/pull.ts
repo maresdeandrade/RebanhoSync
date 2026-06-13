@@ -44,6 +44,12 @@ export const SANITARIO_TECHNICAL_CATALOG_V2_REMOTE_TABLES = [
   "sanitario_produto_carencia_rules_v2",
 ] as const;
 
+export const SANITARIO_AGENDA_V2_REMOTE_TABLES = [
+  "sanitario_agenda_v2",
+  "sanitario_agenda_animais_v2",
+  "sanitario_agenda_closures_v2",
+] as const;
+
 export interface PullOptions {
   // replace: clear local store then write remote snapshot
   // merge: upsert remote rows without clearing local store
@@ -270,8 +276,62 @@ export const pullSanitarioTechnicalCatalogV2 = async (
   });
 };
 
+export const pullSanitarioAgendaV2 = async (fazenda_id: string) => {
+  console.log(`[pull] Starting sanitario agenda v2 pull for farm ${fazenda_id}`);
+
+  const results: Record<string, unknown[]> = {};
+
+  for (const remoteTable of SANITARIO_AGENDA_V2_REMOTE_TABLES) {
+    const { data, error } = await supabase
+      .from(remoteTable)
+      .select("*")
+      .eq("fazenda_id", fazenda_id);
+
+    if (error) {
+      console.error(`[pull] Error pulling agenda v2 ${remoteTable}:`, error);
+      throw error;
+    }
+
+    results[remoteTable] = data ?? [];
+  }
+
+  const validTableNames = new Set(db.tables.map((t) => t.name));
+  const storesToUpdate = SANITARIO_AGENDA_V2_REMOTE_TABLES
+    .map((rt) => ({ remote: rt, local: getLocalStoreName(rt) }))
+    .filter(({ remote, local }) => {
+      if (!validTableNames.has(local)) {
+        console.warn(
+          `[pull] Store ${local} not found for agenda v2 table ${remote}. Skipping.`,
+        );
+        return false;
+      }
+      return true;
+    });
+
+  if (storesToUpdate.length === 0) {
+    console.warn("[pull] No valid agenda v2 stores to update.");
+    return;
+  }
+
+  await db.transaction("rw", storesToUpdate.map((s) => s.local), async () => {
+    for (const { remote, local } of storesToUpdate) {
+      const rows = results[remote];
+      const store = db.table(local);
+
+      if (rows.length > 0) {
+        await store.bulkPut(rows);
+      }
+
+      console.log(
+        `[pull] Synced ${rows.length} agenda v2 records for ${remote} -> ${local} (mode=merge)`,
+      );
+    }
+  });
+};
+
 export const pullInitialData = async (fazenda_id: string) => {
   await pullDataForFarm(fazenda_id, DEFAULT_REMOTE_TABLES, { mode: "replace" });
   await pullSanitarioProductClassV2Catalog(fazenda_id);
   await pullSanitarioTechnicalCatalogV2(fazenda_id);
+  await pullSanitarioAgendaV2(fazenda_id);
 };
