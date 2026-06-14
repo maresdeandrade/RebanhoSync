@@ -47,6 +47,7 @@ import {
   type InsumoMovimentacao,
   type CategoriaZootecnica,
   type PilotMetricEvent,
+  type PullCursor,
   type Rejection,
   type SanitarioCaso,
   type FinanceCategory,
@@ -93,6 +94,7 @@ export class OfflineDB extends Dexie {
   queue_gestures!: Table<Gesture, string>;
   queue_ops!: Table<Operation, string>;
   queue_rejections!: Table<Rejection, number>;
+  sync_pull_cursors!: Table<PullCursor, string>;
   metrics_events!: Table<PilotMetricEvent, string>;
   catalog_produtos_veterinarios!: Table<ProdutoVeterinarioCatalogEntry, string>;
   catalog_protocolos_oficiais!: Table<CatalogoProtocoloOficial, string>;
@@ -701,6 +703,12 @@ export class OfflineDB extends Dexie {
         "[agenda_id+animal_id], agenda_id, animal_id, fazenda_id, planned_status, execution_evento_id, created_at, updated_at, [fazenda_id+animal_id], [fazenda_id+planned_status]",
       ops_sanitario_agenda_closures_v2:
         "id, fazenda_id, agenda_id, closure_type, dedup_key, client_op_id, closed_at, created_at, updated_at, deleted_at, [agenda_id+deleted_at], [fazenda_id+updated_at], [fazenda_id+deleted_at], [fazenda_id+agenda_id]",
+    });
+
+    // Version 26: cursores locais por tabela/escopo para pulls sanitarios v2.
+    this.version(26).stores({
+      sync_pull_cursors:
+        "key, remote_table, local_store, scope, fazenda_id, last_updated_at, last_id, updated_at, [remote_table+fazenda_id]",
     });
   }
 }

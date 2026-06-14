@@ -5,6 +5,53 @@ Atualizado em: 2026-06-13
 
 ## 0. Resultado mais recente
 
+Fase 12E5 — Hardening final offline/sync sanitario v2 — executada localmente.
+
+Decisao: `PROSSEGUIR PARA 12F APOS VALIDACOES DE GATE`.
+
+Resultado da 12E5:
+- Criada store Dexie v26 `sync_pull_cursors`.
+- Pull incremental por `updated_at` implementado para Agenda Sanitaria v2, ProductClass v2 e catalogos tecnicos sanitarios v2 que possuem `updated_at`.
+- Full fetch inicial preservado quando cursor nao existe.
+- Cursor local e por tabela/store/escopo e nao usa `created_at`.
+- Tombstones `deleted_at` continuam sendo baixados e preservados localmente.
+- Pull global continua sem filtro tenant por `fazenda_id`; pull tenant/fazenda continua com `fazenda_id`.
+- `sanitario_produto_fontes_v2` segue em full fetch/merge por nao possuir `updated_at` no contrato implementado.
+- Retry de rede de closure preserva `queue_ops` para replay.
+- Closure aplicada sai de `queue_ops`; closure rejeitada cria `queue_rejections` com `reason_code`.
+- Sucesso parcial de closures mantem aceitas sincronizadas, rejeitadas rastreaveis e roda reconciliacao por `pullSanitarioAgendaV2`.
+- Conflito de closure duplicada segue mapeado para `sanitario_agenda_closure_already_exists`.
+- `catalog_*` e `state_*` ficam bloqueados como superficie direta de push.
+- Agenda v2 e agenda_animais v2 seguem sem push; closures seguem pushaveis apenas sem execucao.
+- Nenhum protocolo real, seed, UI, migration, evento executado, estoque, carencia ativa ou liberacao operacional foi criado.
+
+Patch da 12E5:
+- `src/lib/offline/db.ts`
+- `src/lib/offline/types.ts`
+- `src/lib/offline/pull.ts`
+- `src/lib/offline/ops.ts`
+- `src/lib/offline/__tests__/sanitarioIncrementalPullCursor.test.ts`
+- `src/lib/offline/__tests__/sanitarioAgendaV2Sync.test.ts`
+- `supabase/functions/sync-batch/rules.test.ts`
+- docs ativos de fase/status/roadmap/dominio
+
+Validacao:
+- `git diff --check`: passou.
+- `pnpm test -- src/lib/offline`: passou (26 arquivos, 90 testes).
+- `pnpm test -- supabase/functions/sync-batch`: passou antes e depois de `supabase db reset` (3 arquivos, 31 testes).
+- `pnpm test -- src/lib/sanitario`: passou (77 arquivos, 849 testes).
+- `pnpm run lint`: passou.
+- `pnpm run build`: passou com warnings conhecidos de Browserslist/chunks.
+- `supabase db reset`: passou.
+- `node scripts/codex/validate-supabase-baseline-functional.mjs`: passou.
+
+Proxima execucao recomendada:
+- `12F — Estruturacao curatorial dos Protocolos Sanitarios v2`, se o gate 12F permanecer verde.
+
+---
+
+## 0.1 Resultado anterior — Fase 12E4
+
 Fase 12E4 — Agenda Sanitaria v2 offline/sync em escopo controlado — executada localmente.
 
 Decisao: `PROSSEGUIR COM ESCOPO CONTROLADO`.

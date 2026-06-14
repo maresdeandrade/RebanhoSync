@@ -267,7 +267,7 @@ Legados `produtos_veterinarios`, `protocolos_sanitarios`, `protocolos_sanitarios
 
 ## Agenda Sanitária v2
 
-A Fase 11.5 consolidou contratos puros para redesenhar a agenda sanitária. A Fase 12C criou a fundação SQL/RLS da persistência v2 em tabelas dedicadas. A Fase 12E4 adicionou base Dexie/offline e sync controlado para Agenda v2, ainda sem UI conectada, seed funcional, protocolo estruturado real, evento executado, estoque ou carência ativa.
+A Fase 11.5 consolidou contratos puros para redesenhar a agenda sanitária. A Fase 12C criou a fundação SQL/RLS da persistência v2 em tabelas dedicadas. A Fase 12E4 adicionou base Dexie/offline e sync controlado para Agenda v2. A Fase 12E5 adicionou hardening de cursor incremental, retry/replay de closures, sucesso parcial e bloqueios de superficie. Ainda nao ha UI conectada, seed funcional, protocolo estruturado real, evento executado, estoque ou carência ativa.
 
 Pipeline conceitual:
 
@@ -382,7 +382,31 @@ Implementado localmente na 12E4:
 - conflito de closure ativa duplicada tratado como rejeição rastreável;
 - sucesso parcial de closures sem perda silenciosa local.
 
-Ainda não implementado após a 12E4:
+Hardening implementado na 12E5:
+
+- `sync_pull_cursors` local guarda cursor por tabela/escopo;
+- ProductClass v2, catalogo tecnico sanitario v2 com `updated_at` e Agenda v2 usam pull incremental por `updated_at`;
+- full fetch inicial continua possivel quando cursor nao existe;
+- tombstones `deleted_at` continuam preservados por merge/upsert;
+- `sanitario_produto_fontes_v2` permanece full fetch/merge por nao possuir `updated_at`;
+- falha de rede em closure preserva `queue_ops` para retry;
+- closure aplicada sai da fila; closure rejeitada fica rastreavel em `queue_rejections`;
+- conflito de closure duplicada dispara reconciliacao por pull da Agenda v2;
+- `catalog_*` nao e superficie de push;
+- `state_*` nao e superficie direta de push;
+- agenda/animais v2 permanecem pull-only;
+- closure pushavel continua restrita a `closed_without_execution`, `cancelled` ou `dismissed`, sempre sem `execution_evento_id`.
+
+Gate para 12F:
+
+- iniciar protocolos curatoriais somente com P0 zerado;
+- baseline funcional, sync-batch, lint e build verdes;
+- ProductClass v2 e catalogo tecnico disponiveis offline;
+- Agenda v2 estabilizada como intencao;
+- closure sem execucao preservada;
+- carencia ativa continua nascendo apenas de evento executado com produto/fonte tecnica.
+
+Ainda não implementado após a 12E5:
 
 - RPC/Edge Function operacional para Agenda v2;
 - UI operacional da Agenda v2.
@@ -768,6 +792,7 @@ Essa fase deve validar uso real, não criar novo domínio.
 | Fase 12E2 | Pull remoto ProductClass v2 para Dexie e baseline P1 | Concluída localmente |
 | Fase 12E3 | Catálogo técnico sanitário v2 ampliado | Concluída localmente |
 | Fase 12E4 | Agenda Sanitária v2 offline/sync controlado | Concluída localmente |
+| Fase 12E5 | Hardening offline/sync sanitario v2 | Concluída localmente |
 
 ### ProductClass v2 local/offline
 
@@ -833,6 +858,7 @@ Regras atuais:
 - closure não calcula carência ativa;
 - closure não libera venda, abate, leite ou aptidão operacional;
 - ProductClass v2 e catálogo técnico sanitário v2 continuam pull-only.
+- A partir da 12E5, pulls sanitarios v2 usam cursor incremental por `updated_at` quando a tabela possui esse campo; `sanitario_produto_fontes_v2` permanece full fetch/merge por contrato sem `updated_at`.
 
 ### Antipadrões proibidos
 

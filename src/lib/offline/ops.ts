@@ -34,6 +34,12 @@ const getClientId = () => {
 function assertAllowedOfflinePushSurface(op: OperationInput) {
   const localStoreName = getLocalStoreName(op.table);
 
+  if (op.table.startsWith("state_")) {
+    throw new Error(
+      `STATE_PUSH_BLOCKED: ${op.table} is a read-model surface and cannot generate queue_ops`,
+    );
+  }
+
   if (localStoreName.startsWith("catalog_")) {
     throw new Error(
       `CATALOG_PUSH_BLOCKED: ${op.table} is pull-only and cannot generate queue_ops`,

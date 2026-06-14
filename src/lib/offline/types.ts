@@ -1743,6 +1743,19 @@ export interface PilotMetricEvent {
   created_at: string;
 }
 
+export type PullCursorScope = "global" | "tenant" | "fazenda" | "unscoped";
+
+export interface PullCursor {
+  key: string;
+  remote_table: string;
+  local_store: string;
+  scope: PullCursorScope;
+  fazenda_id: string | null;
+  last_updated_at: string;
+  last_id: string | null;
+  updated_at: string;
+}
+
 // =========================================================
 // SYNC API TYPES (sync-batch Edge Function)
 // =========================================================

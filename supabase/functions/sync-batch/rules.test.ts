@@ -185,6 +185,26 @@ describe('sync-batch rules: normalizeDbError', () => {
     }
   });
 
+  it('maps duplicate Agenda v2 closure client_op_id to APPLIED for replay idempotency', () => {
+    const result = normalizeDbError(
+      {
+        code: '23505',
+        message:
+          'duplicate key value violates unique constraint "ux_sanitario_agenda_closures_v2_client_op_active"',
+      },
+      op({
+        table: 'sanitario_agenda_closures_v2',
+        record: {
+          id: 'closure-replay',
+          agenda_id: 'agenda-replay',
+          client_op_id: 'op-replay',
+        },
+      }),
+    );
+
+    expect(result).toEqual({ status: 'APPLIED' });
+  });
+
   it('maps known FK constraint to domain reason_code', () => {
     const result = normalizeDbError(
       {

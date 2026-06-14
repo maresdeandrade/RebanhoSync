@@ -146,6 +146,20 @@ describe("Agenda Sanitaria v2 controlled offline push", () => {
     expect(await db.ops_sanitario_agenda_animais_v2.count()).toBe(0);
   });
 
+  it("bloqueia state_* como superficie direta de push", async () => {
+    await expect(
+      createGesture(fazendaId, [
+        {
+          table: "state_animais",
+          action: "UPDATE",
+          record: { id: "animal-state", observacoes: "read model" },
+        },
+      ]),
+    ).rejects.toThrow("STATE_PUSH_BLOCKED");
+
+    expect(await db.queue_ops.count()).toBe(0);
+  });
+
   it("bloqueia push de closure que confirme execucao sanitaria na 12E4", async () => {
     await expect(
       createGesture(fazendaId, [
@@ -277,6 +291,58 @@ describe("Agenda Sanitaria v2 controlled offline push", () => {
     expect(await db.state_insumo_movimentacoes.count()).toBe(0);
     expect(pullSanitarioAgendaV2).toHaveBeenCalledWith(fazendaId);
     expect(pullDataForFarm).not.toHaveBeenCalled();
+  });
+
+  it("mantem closure em queue_ops em falha de rede para retry seguro", async () => {
+    const txId = await createGesture(fazendaId, [
+      {
+        table: "sanitario_agenda_closures_v2",
+        action: "INSERT",
+        record: closureRecord("closure-network", "agenda-network"),
+      },
+    ]);
+    const [op] = await db.queue_ops.where("client_tx_id").equals(txId).toArray();
+
+    vi.mocked(fetch).mockRejectedValue(new TypeError("Failed to fetch"));
+
+    await processGesture(await getGesture(txId));
+
+    const gesture = await getGesture(txId);
+    expect(gesture.status).toBe("PENDING");
+    expect(gesture.retry_count).toBe(1);
+    expect(gesture.last_error).toContain("Failed to fetch");
+    expect(await db.queue_ops.get(op.client_op_id)).toBeDefined();
+    expect(await db.queue_rejections.count()).toBe(0);
+    expect(await db.ops_sanitario_agenda_closures_v2.get("closure-network"))
+      .toBeDefined();
+  });
+
+  it("replay de closure ja aplicada por client_op_id nao duplica nem mantem fila", async () => {
+    const txId = await createGesture(fazendaId, [
+      {
+        table: "sanitario_agenda_closures_v2",
+        action: "INSERT",
+        record: closureRecord("closure-replay", "agenda-replay"),
+      },
+    ]);
+    const [op] = await db.queue_ops.where("client_tx_id").equals(txId).toArray();
+
+    vi.mocked(fetch).mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          results: [{ op_id: op.client_op_id, status: "APPLIED" }],
+        }),
+        { status: 200 },
+      ),
+    );
+
+    await processGesture(await getGesture(txId));
+
+    expect((await getGesture(txId)).status).toBe("DONE");
+    expect(await db.queue_ops.count()).toBe(0);
+    expect(await db.queue_rejections.count()).toBe(0);
+    expect(await db.ops_sanitario_agenda_closures_v2.where("client_op_id").equals(op.client_op_id).count())
+      .toBe(1);
   });
 
   it("trata conflito de closure duplicada como rejeicao controlada sem perda silenciosa", async () => {

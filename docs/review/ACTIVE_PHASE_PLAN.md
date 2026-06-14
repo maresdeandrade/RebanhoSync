@@ -1,16 +1,54 @@
-# ACTIVE_PHASE_PLAN - Fase 12E4
+# ACTIVE_PHASE_PLAN - Fase 12E5
 
-**Status:** Fase 12E4 concluida localmente - Agenda Sanitaria v2 com Dexie, pull por fazenda e push controlado de closures.
-**Foco:** Base offline/sync operacional para `sanitario_agenda_v2`, `sanitario_agenda_animais_v2` e `sanitario_agenda_closures_v2`.
+**Status:** Fase 12E5 concluida localmente - hardening final offline/sync sanitario v2.
+**Foco:** Cursor incremental por `updated_at`, retry/replay seguro de closures, sucesso parcial, bloqueios permanentes de superficie e gate 12F.
 **Criado:** 2026-06-13
 **Atualizado:** 2026-06-13
-**Plano base:** 12E4 - Agenda Sanitaria v2 offline/sync em escopo controlado
+**Plano base:** 12E5 - Hardening offline/sync sanitario v2
 
 ---
 
 ## Objetivo em 1 paragrafo
 
-Executar a Fase 12E4 criando stores Dexie `ops_*` para Agenda Sanitaria v2, adicionando pull remoto por `fazenda_id` na ordem agenda -> animais -> closures e habilitando push controlado somente para closures operacionais com `client_op_id`/idempotencia e conflito rastreavel. A fase nao executa evento sanitario, nao baixa estoque, nao calcula carencia ativa, nao libera venda, abate, leite ou aptidao operacional, nao estrutura protocolos reais, nao altera UI, nao cria seed e nao cria migration.
+Executar a Fase 12E5 endurecendo a fundacao offline/sync sanitaria v2 antes da 12F: adicionar cursor incremental local por `updated_at` aos pulls sanitarios v2, preservar tombstones, reforcar retry/replay e sucesso parcial de closures, bloquear permanentemente push de `catalog_*` e `state_*`, manter agenda/animais v2 pull-only e documentar o gate tecnico para protocolos. A fase nao estrutura protocolo real, nao cria seed, nao altera UI, nao cria evento sanitario executado, nao baixa estoque, nao calcula carencia ativa e nao libera venda, abate, leite ou aptidao operacional.
+
+---
+
+## Decisao 12E5
+
+Decisao: `PROSSEGUIR PARA GATE 12F COM FUNDACAO OFFLINE/SYNC ENDURECIDA`.
+
+Implementado nesta fase:
+- store Dexie v26 `sync_pull_cursors` para cursores locais por tabela/escopo;
+- pull incremental por `updated_at` para ProductClass v2, catalogo tecnico sanitario v2 com `updated_at` e Agenda Sanitaria v2;
+- full fetch inicial permanece quando nao ha cursor;
+- filtro incremental usa `updated_at >= last_updated_at` para nao perder empates e depende do merge/upsert idempotente local;
+- tombstones com `deleted_at` continuam preservados no pull incremental;
+- `sanitario_produto_fontes_v2` permanece em full fetch/merge porque o contrato local/remoto usado na 12E3 nao possui `updated_at`;
+- bloqueio local explicito de `state_*` como superficie direta de push;
+- testes de retry de rede, replay por `client_op_id`, sucesso parcial e conflito de closure reforcados;
+- sync-batch preserva idempotencia de replay por duplicidade generica de `client_op_id` e continua rejeitando closure ativa duplicada como conflito controlado.
+
+Gate 12F:
+- `catalog_*` confirmado como pull-only;
+- `state_*` confirmado como read-model, sem superficie direta de push;
+- ProductClass v2 e catalogo tecnico sanitario v2 disponiveis offline e pull-only;
+- Agenda v2 offline/sync estavel como intencao operacional;
+- agenda/animais v2 seguem pull-only;
+- closure pushavel continua restrita a fechamento administrativo sem execucao;
+- closure nao cria evento, estoque, carencia ativa ou liberacao operacional;
+- baseline funcional, sync-batch, lint e build devem passar antes de iniciar 12F;
+- P0 aberto deve bloquear 12F.
+
+Nao implementado nesta fase:
+- protocolo sanitario real estruturado;
+- seed curatorial;a
+- UI;
+- migration;
+- evento sanitario executado;
+- baixa de estoque;
+- carencia ativa;
+- venda, abate, leite ou aptidao operacional.
 
 ---
 

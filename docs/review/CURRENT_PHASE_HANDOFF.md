@@ -2,7 +2,38 @@
 
 Atualizado em: 2026-06-13
 
-## 0. Handoff Atual — Fase 12E4
+## 0. Handoff Atual — Fase 12E5
+
+Fase 12E5 — Hardening final offline/sync sanitario v2 — executada localmente.
+
+Decisao: `PROSSEGUIR PARA 12F APOS VALIDACOES DE GATE`.
+
+Resultado:
+- Criada store Dexie v26 `sync_pull_cursors` para cursores locais por tabela/escopo.
+- Pull incremental por `updated_at` implementado para ProductClass v2, catalogo tecnico sanitario v2 com `updated_at` e Agenda Sanitaria v2.
+- Full fetch inicial continua possivel quando nao ha cursor; cursor ausente/corrompido nao bloqueia pull.
+- Cursor e salvo por tabela/store/escopo: global, tenant, fazenda ou unscoped.
+- Pull global de ProductClass e fontes tecnicas continua separado e nao depende de `fazenda_id`.
+- Pull tenant/fazenda continua filtrando por `fazenda_id` quando o contrato exige.
+- Tombstones com `deleted_at` continuam preservados por merge/upsert; nao ha delete fisico.
+- `sanitario_produto_fontes_v2` permanece full fetch/merge porque nao possui `updated_at` no contrato local usado.
+- Retry/replay de closures reforcado: falha de rede preserva `queue_ops`, sucesso remove op aplicada, rejeicao gera `queue_rejections` e conflito dispara reconciliacao.
+- Sucesso parcial de closures preserva aceitas sincronizadas e mantem rejeitadas rastreaveis.
+- `catalog_*` segue pull-only e nao gera `queue_ops`.
+- `state_*` foi bloqueado como superficie direta de push.
+- `sanitario_agenda_v2` e `sanitario_agenda_animais_v2` seguem pull-only.
+- Push de closure continua bloqueando `executed_with_event`, `partially_executed_with_event` e qualquer `execution_evento_id`.
+- Nenhuma UI, migration, seed, protocolo estruturado, evento sanitario executado, baixa de estoque, carencia ativa, venda, abate, leite ou aptidao operacional foi implementada.
+
+Gate 12F:
+- autorizado somente com P0 zerado, baseline funcional passando, sync-batch passando, lint/build passando e contratos `catalog_*` pull-only, `state_*` read-model, Agenda=intencao e Closure sem execucao preservados.
+
+Proxima fase recomendada:
+- `12F — Estruturacao curatorial dos Protocolos Sanitarios v2`.
+
+---
+
+## 0.1 Handoff anterior — Fase 12E4
 
 Fase 12E4 — Agenda Sanitaria v2 offline/sync em escopo controlado — executada localmente.
 

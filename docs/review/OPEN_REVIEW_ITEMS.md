@@ -37,59 +37,9 @@ Itens resolvidos devem sair deste documento e permanecer registrados apenas no r
 
 # Pendências abertas
 
-## P1 — Cursor incremental por `updated_at` para catalogos sanitarios v2
+Sem P0/P1 aberto apos a Fase 12E5.
 
-**Status:** `ABERTO`
-**Área:** offline / sync / catalogos sanitarios v2
-**Risco:** pull full fetch/merge crescer em custo e latencia conforme o catalogo tecnico sanitario v2 aumentar.
-
-### Descrição
-
-As Fases 12E2 e 12E3 seguiram o padrao local existente de pull com fetch completo e merge em Dexie para catalogos v2. Esse padrao preserva `deleted_at`, `updated_at`, metadata e tombstones, mas ainda nao possui cursor incremental por tabela baseado em `updated_at` com desempate por `id`.
-
-### Regra de tratamento
-
-Implementar em fase propria, sem misturar com push, UI, agenda ou protocolo:
-
-- cursor por tabela/stores de catalogo;
-- filtro remoto por `updated_at` sem ignorar tombstones;
-- desempate por `id` se necessario;
-- compatibilidade com catalogo global pull-only e dados de fazenda;
-- testes cobrindo soft-delete incremental.
-
-### Critério de aceite
-
-- Pull incremental reduz fetch sem perder registros atualizados ou soft-deletados.
-- Full fetch inicial continua possivel.
-- Nenhum push, `queue_ops`, sync-batch ou UI e introduzido por esse ajuste.
-
----
-
-## P1 — Cursor incremental por `updated_at` para Agenda Sanitaria v2
-
-**Status:** `ABERTO`
-**Área:** offline / sync / Agenda Sanitaria v2
-**Risco:** pull full fetch/merge crescer em custo e latencia conforme a agenda operacional acumular historico e tombstones.
-
-### Descrição
-
-A Fase 12E4 seguiu o padrao local existente de pull por tabela com fetch completo e merge em Dexie para `sanitario_agenda_v2`, `sanitario_agenda_animais_v2` e `sanitario_agenda_closures_v2`. Esse padrao preserva `updated_at`, `deleted_at` quando existente, metadata e tombstones, mas ainda nao possui cursor incremental por tabela baseado em `updated_at`.
-
-### Regra de tratamento
-
-Implementar em fase propria de hardening, sem misturar com UI, protocolo, evento executado, estoque ou carencia ativa:
-
-- cursor por tabela/stores `ops_*`;
-- filtro remoto por `updated_at` sem ignorar tombstones;
-- desempate por chave estavel quando necessario;
-- conciliacao segura quando houver `queue_ops` pendente de closure;
-- testes cobrindo soft-delete incremental e sucesso parcial.
-
-### Critério de aceite
-
-- Pull incremental reduz fetch sem perder registros atualizados ou soft-deletados.
-- Full fetch inicial continua possivel.
-- Nenhum push de `catalog_*`, `state_*`, agenda/animais v2, evento, estoque ou UI e introduzido por esse ajuste.
+Observacao tecnica: `sanitario_produto_fontes_v2` permanece em full fetch/merge porque nao possui `updated_at` no contrato implementado. Reavaliar apenas se futura migration/contrato adicionar timestamp de atualizacao a essa tabela.
 
 ---
 
@@ -187,6 +137,31 @@ Tratar em gate futuro de higiene residual:
 ---
 
 # Itens fechados nesta etapa
+
+## FECHADO — Cursor incremental por `updated_at` para catalogos sanitarios v2
+
+**Resultado:** fechado na Fase 12E5.
+
+Consolidado:
+
+- `sync_pull_cursors` guarda cursor por tabela/store/escopo.
+- ProductClass v2 e catalogo tecnico sanitario v2 com `updated_at` usam pull incremental.
+- Pull global continua separado de tenant/fazenda e nao depende de `fazenda_id`.
+- Tombstones com `deleted_at` continuam preservados.
+- `sanitario_produto_fontes_v2` segue full fetch/merge por nao possuir `updated_at` no contrato implementado.
+- Nenhum push de catalogo, `queue_ops`, sync-batch ou UI foi criado.
+
+## FECHADO — Cursor incremental por `updated_at` para Agenda Sanitaria v2
+
+**Resultado:** fechado na Fase 12E5.
+
+Consolidado:
+
+- Agenda v2, agenda_animais v2 e closures v2 usam cursor por tabela/fazenda.
+- Full fetch inicial continua possivel.
+- Pull incremental preserva `updated_at`, `deleted_at` quando existente e metadata por merge/upsert.
+- Retry/replay, sucesso parcial e conflito de closures foram reforcados por testes.
+- Agenda v2 e agenda_animais v2 permanecem sem push.
 
 ## FECHADO — Baseline P1 sem escrita sanitária legada em agenda_itens
 

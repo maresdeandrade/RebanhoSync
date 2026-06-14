@@ -28,13 +28,13 @@ Não deve substituir issues, tarefas técnicas ou prompts de implementação.
 
 ## Fase atual — Fase 12
 
-Status: **Fase 12E4 concluida localmente como Agenda Sanitaria v2 offline/sync em escopo controlado**
+Status: **Fase 12E5 concluida localmente como hardening final offline/sync sanitario v2**
 Fase anterior: **Fase 11.5 — Agenda Sanitária v2: Janelas, Agrupamento e Materialização Idempotente — concluída localmente**
-Fase seguinte: **Fase 12E5 — Hardening offline/sync ou Fase 12F — Estruturacao curatorial dos protocolos — a decidir**
+Fase seguinte: **Fase 12F — Estruturacao curatorial dos Protocolos Sanitarios v2, condicionada ao gate verde**
 
 ### Conduta inicial
 
-As subfases 11.5A a 11.5J (Agenda Sanitária v2 core/documental), 12A (auditoria), 12B (modelagem clean/reset), 12C (migration clean SQL), 12D0 (modelo canônico), 12D1 (schema/contratos mínimos v2), 12D2 (builders/adapters puros de snapshots), 12D3 (extração curatorial), 12D4 (rebaseline conceitual das matrizes), 12D5 (contratos TypeScript de ProductClass), 12D6 (schema SQL, RLS e tabelas para ProductClass), 12E0 (Diagnóstico e Contrato de Offline/Sync), 12E1 (Dexie stores ProductClass v2), 12E2 (pull remoto ProductClass v2 para Dexie), 12E3 (catalogo tecnico sanitario v2 ampliado em Dexie/pull) e 12E4 (Agenda Sanitaria v2 offline/sync controlado) foram concluídas localmente. O desenvolvimento pode avançar para hardening offline/sync ou para protocolos curatoriais, sem misturar UI ampla, evento executado, estoque ou carencia ativa.
+As subfases 11.5A a 11.5J (Agenda Sanitária v2 core/documental), 12A (auditoria), 12B (modelagem clean/reset), 12C (migration clean SQL), 12D0 (modelo canônico), 12D1 (schema/contratos mínimos v2), 12D2 (builders/adapters puros de snapshots), 12D3 (extração curatorial), 12D4 (rebaseline conceitual das matrizes), 12D5 (contratos TypeScript de ProductClass), 12D6 (schema SQL, RLS e tabelas para ProductClass), 12E0 (Diagnóstico e Contrato de Offline/Sync), 12E1 (Dexie stores ProductClass v2), 12E2 (pull remoto ProductClass v2 para Dexie), 12E3 (catalogo tecnico sanitario v2 ampliado em Dexie/pull), 12E4 (Agenda Sanitaria v2 offline/sync controlado) e 12E5 (hardening offline/sync) foram concluídas localmente. O desenvolvimento pode avançar para protocolos curatoriais v2, sem misturar UI ampla, evento executado, estoque ou carencia ativa.
 
 ### Handoff para Fase 12E
 
@@ -43,6 +43,7 @@ A próxima etapa 12E está dividida na seguinte ordem de subfases:
 2. **12E2**: Pull remoto ProductClass v2 para Dexie local e correção do validador funcional baseline P1 — concluída localmente.
 3. **12E3**: Catálogo técnico sanitário v2 ampliado — concluída localmente.
 4. **12E4**: Agenda Sanitária v2 offline/sync em escopo controlado — concluída localmente.
+5. **12E5**: Hardening offline/sync sanitario v2 — concluída localmente.
 
 Riscos residuais vindos da 12E0:
 - Pull de registros globais exige carregamento inicial apartado do filtro padrão por `fazenda_id`.
@@ -53,6 +54,19 @@ Riscos residuais vindos da 12E0:
 - 12E2 concluiu o pull remoto ProductClass v2 para Dexie, preservando catálogo global e tenant como pull-only nesta fase.
 - 12E3 concluiu stores Dexie v24 e pull remoto para 7 tabelas autorizadas do catalogo tecnico sanitario v2, mantendo fontes, produtos, autorizacao por especie, dose e carencia rules como catalogo pull-only, sem push, sem `queue_ops`, sem sync-batch, sem UI, sem migration, sem seed, sem protocolo, sem agenda, sem evento e sem carencia ativa.
 - 12E4 concluiu stores Dexie v25 e pull remoto por fazenda para Agenda Sanitaria v2, mantendo agenda/animais como pull por fazenda e habilitando push controlado somente para closures com idempotencia/conflito rastreavel; nao criou evento executado, estoque, carencia ativa, UI, migration, seed ou protocolo estruturado.
+- 12E5 concluiu cursor incremental por `updated_at` em `sync_pull_cursors`, retry/replay seguro de closures, sucesso parcial rastreavel, bloqueio permanente de push para `catalog_*` e `state_*`, e gate tecnico para iniciar 12F com P0 zerado e validacoes verdes.
+
+### Gate para 12F
+
+12F pode iniciar somente se:
+
+- `catalog_*` permanecer pull-only;
+- `state_*` permanecer read-model, sem superficie direta de push;
+- Agenda v2 permanecer intencao operacional, sem virar evento;
+- closure permanecer sem execucao, sem `execution_evento_id` e sem estoque/carencia;
+- ProductClass v2 e catalogo tecnico sanitario v2 estiverem disponiveis offline;
+- baseline funcional, sync-batch, lint e build estiverem verdes;
+- nao houver P0 aberto.
 
 ---
 

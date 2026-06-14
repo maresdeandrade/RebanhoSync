@@ -1,6 +1,7 @@
 import { supabase } from "@/lib/supabase";
 import { db } from "./db";
 import { getLocalStoreName } from "./tableMap";
+import type { PullCursor, PullCursorScope } from "./types";
 
 export const DEFAULT_REMOTE_TABLES = [
   "pastos",
@@ -54,6 +55,117 @@ export interface PullOptions {
   // replace: clear local store then write remote snapshot
   // merge: upsert remote rows without clearing local store
   mode?: "replace" | "merge";
+}
+
+type RemoteRow = Record<string, unknown>;
+
+interface CursorUpdate {
+  key: string;
+  remoteTable: string;
+  localStore: string;
+  scope: PullCursorScope;
+  fazendaId: string | null;
+  rows: RemoteRow[];
+}
+
+const PULL_CURSOR_STORE = "sync_pull_cursors";
+
+function hasPullCursorStore() {
+  return db.tables.some((table) => table.name === PULL_CURSOR_STORE);
+}
+
+function buildPullCursorKey(
+  remoteTable: string,
+  scope: PullCursorScope,
+  fazendaId: string | null,
+) {
+  return `${remoteTable}:${scope}:${fazendaId ?? "null"}`;
+}
+
+async function getPullCursor(key: string): Promise<PullCursor | null> {
+  if (!hasPullCursorStore()) return null;
+  return ((await db.table(PULL_CURSOR_STORE).get(key)) as PullCursor | undefined) ?? null;
+}
+
+function getLatestUpdatedAtRow(rows: RemoteRow[]) {
+  const rowsWithUpdatedAt = rows.filter(
+    (row) => typeof row.updated_at === "string" && row.updated_at.length > 0,
+  );
+
+  if (rowsWithUpdatedAt.length === 0) return null;
+
+  return [...rowsWithUpdatedAt].sort((a, b) => {
+    const updatedDiff = String(a.updated_at).localeCompare(String(b.updated_at));
+    if (updatedDiff !== 0) return updatedDiff;
+    return String(a.id ?? "").localeCompare(String(b.id ?? ""));
+  }).at(-1) ?? null;
+}
+
+async function savePullCursor(update: CursorUpdate) {
+  if (!hasPullCursorStore()) return;
+
+  const latestRow = getLatestUpdatedAtRow(update.rows);
+  if (!latestRow) return;
+
+  const cursor: PullCursor = {
+    key: update.key,
+    remote_table: update.remoteTable,
+    local_store: update.localStore,
+    scope: update.scope,
+    fazenda_id: update.fazendaId,
+    last_updated_at: String(latestRow.updated_at),
+    last_id: typeof latestRow.id === "string" ? latestRow.id : null,
+    updated_at: new Date().toISOString(),
+  };
+
+  await db.table(PULL_CURSOR_STORE).put(cursor);
+}
+
+async function applyUpdatedAtCursor<TQuery>(
+  query: TQuery,
+  cursorKey: string,
+): Promise<TQuery> {
+  const cursor = await getPullCursor(cursorKey);
+  if (!cursor?.last_updated_at) return query;
+
+  const queryWithCursor = query as TQuery & {
+    gte?: (column: string, value: string) => TQuery;
+  };
+
+  if (typeof queryWithCursor.gte !== "function") return query;
+
+  // Rebusca o ultimo timestamp conhecido para nao perder empates de updated_at.
+  return queryWithCursor.gte("updated_at", cursor.last_updated_at);
+}
+
+async function writeMergeResults(
+  storesToUpdate: Array<{ remote: string; local: string }>,
+  results: Record<string, RemoteRow[]>,
+  cursorUpdates: CursorUpdate[],
+) {
+  const storeNames = storesToUpdate.map((s) => s.local);
+  const transactionStores = hasPullCursorStore()
+    ? [...storeNames, PULL_CURSOR_STORE]
+    : storeNames;
+
+  await db.transaction("rw", transactionStores, async () => {
+    for (const { remote, local } of storesToUpdate) {
+      const rows = results[remote] ?? [];
+      const store = db.table(local);
+
+      if (rows.length > 0) {
+        await store.bulkPut(rows);
+      }
+
+      console.log(
+        `[pull] Synced ${rows.length} records for ${remote} -> ${local} (mode=merge)`,
+      );
+    }
+
+    for (const cursorUpdate of cursorUpdates) {
+      await savePullCursor(cursorUpdate);
+    }
+  });
 }
 
 export const pullDataForFarm = async (
@@ -129,35 +241,68 @@ export const pullSanitarioProductClassV2Catalog = async (
 ) => {
   console.log(`[pull] Starting sanitario ProductClass v2 catalog pull for farm ${fazenda_id}`);
 
-  const results: Record<string, unknown[]> = {};
+  const results: Record<string, RemoteRow[]> = {};
+  const cursorUpdates: CursorUpdate[] = [];
 
   for (const remoteTable of SANITARIO_PRODUCT_CLASS_V2_REMOTE_TABLES) {
-    const globalResult = await supabase
+    const localStore = getLocalStoreName(remoteTable);
+    const globalCursorKey = buildPullCursorKey(remoteTable, "global", null);
+    const tenantCursorKey = buildPullCursorKey(remoteTable, "tenant", fazenda_id);
+
+    const globalQuery = await applyUpdatedAtCursor(
+      supabase
       .from(remoteTable)
       .select("*")
       .eq("scope", "global")
-      .is("fazenda_id", null);
+        .is("fazenda_id", null),
+      globalCursorKey,
+    );
+    const globalResult = await globalQuery;
 
     if (globalResult.error) {
       console.error(`[pull] Error pulling global ${remoteTable}:`, globalResult.error);
       throw globalResult.error;
     }
 
-    const tenantResult = await supabase
+    const tenantQuery = await applyUpdatedAtCursor(
+      supabase
       .from(remoteTable)
       .select("*")
       .eq("scope", "tenant")
-      .eq("fazenda_id", fazenda_id);
+        .eq("fazenda_id", fazenda_id),
+      tenantCursorKey,
+    );
+    const tenantResult = await tenantQuery;
 
     if (tenantResult.error) {
       console.error(`[pull] Error pulling tenant ${remoteTable}:`, tenantResult.error);
       throw tenantResult.error;
     }
 
+    const globalRows = (globalResult.data ?? []) as RemoteRow[];
+    const tenantRows = (tenantResult.data ?? []) as RemoteRow[];
     results[remoteTable] = [
-      ...(globalResult.data ?? []),
-      ...(tenantResult.data ?? []),
+      ...globalRows,
+      ...tenantRows,
     ];
+    cursorUpdates.push(
+      {
+        key: globalCursorKey,
+        remoteTable,
+        localStore,
+        scope: "global",
+        fazendaId: null,
+        rows: globalRows,
+      },
+      {
+        key: tenantCursorKey,
+        remoteTable,
+        localStore,
+        scope: "tenant",
+        fazendaId: fazenda_id,
+        rows: tenantRows,
+      },
+    );
   }
 
   const validTableNames = new Set(db.tables.map((t) => t.name));
@@ -178,20 +323,7 @@ export const pullSanitarioProductClassV2Catalog = async (
     return;
   }
 
-  await db.transaction("rw", storesToUpdate.map((s) => s.local), async () => {
-    for (const { remote, local } of storesToUpdate) {
-      const rows = results[remote];
-      const store = db.table(local);
-
-      if (rows.length > 0) {
-        await store.bulkPut(rows);
-      }
-
-      console.log(
-        `[pull] Synced ${rows.length} ProductClass v2 records for ${remote} -> ${local} (mode=merge)`,
-      );
-    }
-  });
+  await writeMergeResults(storesToUpdate, results, cursorUpdates);
 };
 
 export const pullSanitarioTechnicalCatalogV2 = async (
@@ -199,47 +331,96 @@ export const pullSanitarioTechnicalCatalogV2 = async (
 ) => {
   console.log(`[pull] Starting sanitario technical catalog v2 pull for farm ${fazenda_id}`);
 
-  const results: Record<string, unknown[]> = {};
+  const results: Record<string, RemoteRow[]> = {};
+  const cursorUpdates: CursorUpdate[] = [];
 
   for (const remoteTable of SANITARIO_TECHNICAL_CATALOG_V2_REMOTE_TABLES) {
+    const localStore = getLocalStoreName(remoteTable);
     if (remoteTable === "sanitario_fontes_tecnicas_v2") {
-      const globalResult = await supabase
+      const globalCursorKey = buildPullCursorKey(remoteTable, "global", null);
+      const farmCursorKey = buildPullCursorKey(remoteTable, "fazenda", fazenda_id);
+      const globalQuery = await applyUpdatedAtCursor(
+        supabase
         .from(remoteTable)
         .select("*")
         .eq("scope", "global")
-        .is("fazenda_id", null);
+          .is("fazenda_id", null),
+        globalCursorKey,
+      );
+      const globalResult = await globalQuery;
 
       if (globalResult.error) {
         console.error(`[pull] Error pulling global ${remoteTable}:`, globalResult.error);
         throw globalResult.error;
       }
 
-      const farmResult = await supabase
+      const farmQuery = await applyUpdatedAtCursor(
+        supabase
         .from(remoteTable)
         .select("*")
         .eq("scope", "fazenda")
-        .eq("fazenda_id", fazenda_id);
+          .eq("fazenda_id", fazenda_id),
+        farmCursorKey,
+      );
+      const farmResult = await farmQuery;
 
       if (farmResult.error) {
         console.error(`[pull] Error pulling farm-scoped ${remoteTable}:`, farmResult.error);
         throw farmResult.error;
       }
 
+      const globalRows = (globalResult.data ?? []) as RemoteRow[];
+      const farmRows = (farmResult.data ?? []) as RemoteRow[];
       results[remoteTable] = [
-        ...(globalResult.data ?? []),
-        ...(farmResult.data ?? []),
+        ...globalRows,
+        ...farmRows,
       ];
+      cursorUpdates.push(
+        {
+          key: globalCursorKey,
+          remoteTable,
+          localStore,
+          scope: "global",
+          fazendaId: null,
+          rows: globalRows,
+        },
+        {
+          key: farmCursorKey,
+          remoteTable,
+          localStore,
+          scope: "fazenda",
+          fazendaId: fazenda_id,
+          rows: farmRows,
+        },
+      );
       continue;
     }
 
-    const { data, error } = await supabase.from(remoteTable).select("*");
+    const cursorKey = buildPullCursorKey(remoteTable, "unscoped", null);
+    const baseQuery = supabase.from(remoteTable).select("*");
+    const query =
+      remoteTable === "sanitario_produto_fontes_v2"
+        ? baseQuery
+        : await applyUpdatedAtCursor(baseQuery, cursorKey);
+    const { data, error } = await query;
 
     if (error) {
       console.error(`[pull] Error pulling ${remoteTable}:`, error);
       throw error;
     }
 
-    results[remoteTable] = data ?? [];
+    const rows = (data ?? []) as RemoteRow[];
+    results[remoteTable] = rows;
+    if (remoteTable !== "sanitario_produto_fontes_v2") {
+      cursorUpdates.push({
+        key: cursorKey,
+        remoteTable,
+        localStore,
+        scope: "unscoped",
+        fazendaId: null,
+        rows,
+      });
+    }
   }
 
   const validTableNames = new Set(db.tables.map((t) => t.name));
@@ -260,39 +441,42 @@ export const pullSanitarioTechnicalCatalogV2 = async (
     return;
   }
 
-  await db.transaction("rw", storesToUpdate.map((s) => s.local), async () => {
-    for (const { remote, local } of storesToUpdate) {
-      const rows = results[remote];
-      const store = db.table(local);
-
-      if (rows.length > 0) {
-        await store.bulkPut(rows);
-      }
-
-      console.log(
-        `[pull] Synced ${rows.length} technical catalog v2 records for ${remote} -> ${local} (mode=merge)`,
-      );
-    }
-  });
+  await writeMergeResults(storesToUpdate, results, cursorUpdates);
 };
 
 export const pullSanitarioAgendaV2 = async (fazenda_id: string) => {
   console.log(`[pull] Starting sanitario agenda v2 pull for farm ${fazenda_id}`);
 
-  const results: Record<string, unknown[]> = {};
+  const results: Record<string, RemoteRow[]> = {};
+  const cursorUpdates: CursorUpdate[] = [];
 
   for (const remoteTable of SANITARIO_AGENDA_V2_REMOTE_TABLES) {
-    const { data, error } = await supabase
+    const localStore = getLocalStoreName(remoteTable);
+    const cursorKey = buildPullCursorKey(remoteTable, "fazenda", fazenda_id);
+    const query = await applyUpdatedAtCursor(
+      supabase
       .from(remoteTable)
       .select("*")
-      .eq("fazenda_id", fazenda_id);
+        .eq("fazenda_id", fazenda_id),
+      cursorKey,
+    );
+    const { data, error } = await query;
 
     if (error) {
       console.error(`[pull] Error pulling agenda v2 ${remoteTable}:`, error);
       throw error;
     }
 
-    results[remoteTable] = data ?? [];
+    const rows = (data ?? []) as RemoteRow[];
+    results[remoteTable] = rows;
+    cursorUpdates.push({
+      key: cursorKey,
+      remoteTable,
+      localStore,
+      scope: "fazenda",
+      fazendaId: fazenda_id,
+      rows,
+    });
   }
 
   const validTableNames = new Set(db.tables.map((t) => t.name));
@@ -313,20 +497,7 @@ export const pullSanitarioAgendaV2 = async (fazenda_id: string) => {
     return;
   }
 
-  await db.transaction("rw", storesToUpdate.map((s) => s.local), async () => {
-    for (const { remote, local } of storesToUpdate) {
-      const rows = results[remote];
-      const store = db.table(local);
-
-      if (rows.length > 0) {
-        await store.bulkPut(rows);
-      }
-
-      console.log(
-        `[pull] Synced ${rows.length} agenda v2 records for ${remote} -> ${local} (mode=merge)`,
-      );
-    }
-  });
+  await writeMergeResults(storesToUpdate, results, cursorUpdates);
 };
 
 export const pullInitialData = async (fazenda_id: string) => {
