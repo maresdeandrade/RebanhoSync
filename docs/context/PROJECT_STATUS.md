@@ -1,7 +1,7 @@
 # Project Status — RebanhoSync
 
 Atualizado em: 2026-06-14
-**Baseline Commit:** `da42d31`
+**Baseline Commit:** `3853b80`
 
 ## Objetivo
 
@@ -19,7 +19,7 @@ A fase 11 — Lotes, Pastos e Desempenho Operacional Ampliado — está concluí
 
 Foi criada a fase extra 11.5 — Agenda Sanitária v2: Janelas, Agrupamento e Materialização Idempotente — antes da Fase 12.
 
-A Fase 11.5 foi fechada localmente pela 11.5H, reconciliada documentalmente pela 11.5I e rebaselineada estrategicamente pela 11.5J. A Fase 12 foi aberta em 12A documental/diagnóstica, avançou em 12B para modelagem clean/reset documental, em 12C para fundação SQL/RLS/reset controlado, em 12D0 para modelo canônico de protocolo/produto/fonte técnica, em 12D1 para schema/contratos mínimos persistidos, em 12D2 para builders/adapters puros de snapshots técnicos, em 12D3 para extração curatorial de protocolos candidatos v2 para revisão, em 12D4 para rebaseline conceitual das matrizes, em 12D5 para contratos TypeScript puros de ProductClass, ProductClassGroup e ExecutionProductPolicy, em 12D6 para schema SQL, RLS e tabelas no banco de dados para ProductClass, em 12E0 para diagnóstico/contrato offline-sync, em 12E1 para stores Dexie locais de ProductClass v2, em 12E2 para pull remoto ProductClass v2 para cache Dexie local, em 12E3 para base Dexie/pull remoto do catalogo tecnico sanitario v2 ampliado, em 12E4 para base offline/sync controlada da Agenda Sanitaria v2, em 12E5 para hardening final offline/sync sanitario v2 e em 12F0 para estruturacao curatorial dos Protocolos Sanitarios v2 como catalogo candidato documental.
+A Fase 11.5 foi fechada localmente pela 11.5H, reconciliada documentalmente pela 11.5I e rebaselineada estrategicamente pela 11.5J. A Fase 12 foi aberta em 12A documental/diagnóstica, avançou em 12B para modelagem clean/reset documental, em 12C para fundação SQL/RLS/reset controlado, em 12D0 para modelo canônico de protocolo/produto/fonte técnica, em 12D1 para schema/contratos mínimos persistidos, em 12D2 para builders/adapters puros de snapshots técnicos, em 12D3 para extração curatorial de protocolos candidatos v2 para revisão, em 12D4 para rebaseline conceitual das matrizes, em 12D5 para contratos TypeScript puros de ProductClass, ProductClassGroup e ExecutionProductPolicy, em 12D6 para schema SQL, RLS e tabelas no banco de dados para ProductClass, em 12E0 para diagnóstico/contrato offline-sync, em 12E1 para stores Dexie locais de ProductClass v2, em 12E2 para pull remoto ProductClass v2 para cache Dexie local, em 12E3 para base Dexie/pull remoto do catalogo tecnico sanitario v2 ampliado, em 12E4 para base offline/sync controlada da Agenda Sanitaria v2, em 12E5 para hardening final offline/sync sanitario v2, em 12F0 para estruturacao curatorial dos Protocolos Sanitarios v2 como catalogo candidato documental e em 12F1 para normalizacao tecnica em artefatos candidatos para futura seed/importacao.
 
 Último gate validado:
 
@@ -88,6 +88,8 @@ A Fase 11.5 foi fechada localmente pela 11.5H, reconciliada documentalmente pela
 - Fase 12E3 — Catalogo tecnico sanitario v2 ampliado executada localmente em escopo reduzido, criando stores Dexie v24 e pull remoto para 7 tabelas autorizadas, sem push, sem `queue_ops`, sem sync-batch, sem UI, sem migration, sem seed, sem protocolo, sem agenda, sem evento e sem carencia ativa.
 - Fase 12E4 — Agenda Sanitaria v2 offline/sync executada localmente em escopo controlado, criando stores Dexie v25 `ops_*`, pull remoto por `fazenda_id` e push controlado somente para closures, sem UI, sem migration, sem seed, sem evento executado, sem estoque, sem carencia ativa e sem protocolo estruturado.
 - Fase 12E5 — Hardening final offline/sync sanitario v2 executada localmente, criando cursor Dexie v26 por tabela/escopo, pull incremental por `updated_at` para ProductClass v2, catalogo tecnico sanitario v2 com `updated_at` e Agenda v2, retry/replay seguro de closures, sucesso parcial rastreavel, bloqueio de push por `catalog_*` e `state_*`, e gate tecnico para 12F.
+- Fase 12F0 — Estruturacao curatorial dos Protocolos Sanitarios v2 executada documentalmente, classificando 10 protocolos candidatos, itens, ProductRequirement, ProductClass/ProductClassGroup, sourceRefs/sourceGaps e bloqueando `agenda_allowed`.
+- Fase 12F1 — Normalizacao dos Protocolos Sanitarios v2 executada documentalmente, criando artefatos estruturados para futura seed/importacao candidata, com 10 protocolos, 19 itens, 4 ProductClassGroups antiparasitarios, rotationRule e sourceRefs por campo, sem seed real, migration, UI, runtime, agenda, evento, estoque ou carencia ativa.
 
 Último avanço local da Fase 10:
 

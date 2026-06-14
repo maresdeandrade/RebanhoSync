@@ -1,7 +1,7 @@
 # Roadmap — RebanhoSync
 
 Atualizado em: 2026-06-14
-**Baseline documental auditado:** `da42d31`
+**Baseline documental auditado:** `3853b80`
 
 ## Objetivo
 
@@ -28,13 +28,13 @@ Não deve substituir issues, tarefas técnicas ou prompts de implementação.
 
 ## Fase atual — Fase 12
 
-Status: **Fase 12F0 concluida localmente como estruturacao curatorial dos Protocolos Sanitarios v2**
+Status: **Fase 12F1 concluida localmente como normalizacao tecnica dos Protocolos Sanitarios v2 em artefato candidato**
 Fase anterior: **Fase 11.5 — Agenda Sanitária v2: Janelas, Agrupamento e Materialização Idempotente — concluída localmente**
-Fase seguinte: **Fase 12F1 — Normalizacao dos Protocolos Sanitarios v2 em artefato importavel/seed candidato, ainda sem ativacao automatica**
+Fase seguinte: **Fase 12F2 — Seed/import real candidato dos Protocolos Sanitarios v2, condicionado a revisao tecnica e ainda sem ativacao automatica**
 
 ### Conduta inicial
 
-As subfases 11.5A a 11.5J (Agenda Sanitária v2 core/documental), 12A (auditoria), 12B (modelagem clean/reset), 12C (migration clean SQL), 12D0 (modelo canônico), 12D1 (schema/contratos mínimos v2), 12D2 (builders/adapters puros de snapshots), 12D3 (extração curatorial), 12D4 (rebaseline conceitual das matrizes), 12D5 (contratos TypeScript de ProductClass), 12D6 (schema SQL, RLS e tabelas para ProductClass), 12E0 (Diagnóstico e Contrato de Offline/Sync), 12E1 (Dexie stores ProductClass v2), 12E2 (pull remoto ProductClass v2 para Dexie), 12E3 (catalogo tecnico sanitario v2 ampliado em Dexie/pull), 12E4 (Agenda Sanitaria v2 offline/sync controlado), 12E5 (hardening offline/sync) e 12F0 (estruturacao curatorial dos Protocolos Sanitarios v2) foram concluídas localmente. O desenvolvimento pode avançar para 12F1 como normalizacao de artefato importavel/seed candidato, ainda sem ativacao automatica, sem UI ampla, evento executado, estoque ou carencia ativa.
+As subfases 11.5A a 11.5J (Agenda Sanitária v2 core/documental), 12A (auditoria), 12B (modelagem clean/reset), 12C (migration clean SQL), 12D0 (modelo canônico), 12D1 (schema/contratos mínimos v2), 12D2 (builders/adapters puros de snapshots), 12D3 (extração curatorial), 12D4 (rebaseline conceitual das matrizes), 12D5 (contratos TypeScript de ProductClass), 12D6 (schema SQL, RLS e tabelas para ProductClass), 12E0 (Diagnóstico e Contrato de Offline/Sync), 12E1 (Dexie stores ProductClass v2), 12E2 (pull remoto ProductClass v2 para Dexie), 12E3 (catalogo tecnico sanitario v2 ampliado em Dexie/pull), 12E4 (Agenda Sanitaria v2 offline/sync controlado), 12E5 (hardening offline/sync), 12F0 (estruturacao curatorial dos Protocolos Sanitarios v2) e 12F1 (normalizacao tecnica em artefatos candidatos) foram concluídas localmente. O desenvolvimento pode avançar para 12F2 como seed/import real candidato, condicionado a revisao tecnica, ainda sem ativacao automatica, sem UI ampla, evento executado, estoque ou carencia ativa.
 
 ### Handoff para Fase 12E
 

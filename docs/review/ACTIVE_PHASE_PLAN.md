@@ -1,20 +1,63 @@
-# ACTIVE_PHASE_PLAN - Fase 12F0
+# ACTIVE_PHASE_PLAN - Fase 12F1
 
-**Status:** Fase 12F0 concluida localmente - estruturacao curatorial dos Protocolos Sanitarios v2.
-**Foco:** Catalogo curatorial candidato, auditavel e conservador; sem seed, migration, UI, agenda, evento, carencia ativa ou automacao operacional.
+**Status:** Fase 12F1 concluida localmente - normalizacao tecnica dos Protocolos Sanitarios v2 em artefato candidato.
+**Foco:** Artefatos documentais estruturados para futura seed/importacao candidata; sem seed real, migration, UI, agenda, evento, carencia ativa ou automacao operacional.
 **Criado:** 2026-06-14
 **Atualizado:** 2026-06-14
-**Plano base:** `docs/review/PLANO_FASE_12F0_ESTRUTURACAO_CURATORIAL_PROTOCOLOS_SANITARIOS_V2.md`
+**Plano base:** `docs/review/PLANO_FASE_12F1_NORMALIZACAO_PROTOCOLOS_V2.md`
 
 ---
 
 ## Objetivo em 1 paragrafo
 
-Executar a Fase 12F0 estruturando os Protocolos Sanitarios v2 como catalogo curatorial candidato: classificar protocolos e itens, definir `productRequirementKind`, mapear `ProductClass` e `ProductClassGroup`, explicitar `sourceRefs` e `source_gaps`, e declarar criterios para `preview_allowed`, `agenda_allowed` e 12F1. A fase e documental/curatorial; nao cria seed, migration, UI, Dexie, sync, agenda, evento, estoque, carencia ativa, venda, abate, leite ou aptidao operacional.
+Executar a Fase 12F1 normalizando os Protocolos Sanitarios v2 em artefatos tecnicos estruturados para futura seed/importacao candidata: protocolos, itens, `ProductClassGroup`, `eligibilityRule`, `operationalWindowRule`, `recurrenceRule`, `rotationRule`, `sourceRefs` por campo, `sourceGaps`, `executionProductPolicy` e `restrictions`. A fase e documental; nao cria seed real, migration, UI, Dexie, sync, agenda, evento, estoque, carencia ativa, venda, abate, leite ou aptidao operacional.
 
 ---
 
-## Decisao 12F0
+## Decisao 12F1
+
+Decisao: `FASE 12F1 CONCLUIDA COMO NORMALIZACAO TECNICA CANDIDATA`.
+
+Entregue nesta fase:
+- plano principal `docs/review/PLANO_FASE_12F1_NORMALIZACAO_PROTOCOLOS_V2.md`;
+- evidencia `docs/review/evidence/PROTOCOLOS_SANITARIOS_V2_NORMALIZADOS_12F1.md`;
+- evidencia `docs/review/evidence/PROTOCOLO_ITENS_NORMALIZADOS_12F1.md`;
+- evidencia `docs/review/evidence/PRODUCT_CLASS_GROUPS_NORMALIZADOS_12F1.md`;
+- evidencia `docs/review/evidence/ROTATION_RULES_ANTIPARASITARIOS_12F1.md`;
+- evidencia `docs/review/evidence/SOURCE_REFS_FIELD_LEVEL_12F1.md`;
+- 10 protocolos normalizados;
+- 19 itens normalizados;
+- 4 `ProductClassGroup` antiparasitarios fechados;
+- `associacoes_antiparasitarias` marcada como `reserved_candidate`;
+- `rotationRule` antiparasitario padrao definido;
+- `sourceRefs` por campo critico, `sourcePolicy` separada e `sourceGaps` explicitos;
+- nenhum item promovido a `agenda_allowed`;
+- febre aftosa preservada como `archived/blocked` com `productRequirementKind = none`.
+
+Validacao curatorial final:
+- Brucelose B19 e nacional para femeas bovinas e bubalinas de 3-8 meses; UF/estado nao e gap de elegibilidade.
+- Bloqueios da B19 permanecem operacionais: MV, registro oficial, marcacao, produto real e snapshot.
+- Aftosa contingencia usa `productRequirementKind = none`, sem produto sugerido.
+- `sourceRef` real foi separado de `sourcePolicy` baseada em produto executado.
+
+Nao implementado nesta fase:
+- codigo funcional;
+- migration;
+- seed real;
+- UI;
+- Dexie/sync;
+- agenda real;
+- evento real;
+- baixa de estoque;
+- carencia ativa;
+- venda, abate, leite ou aptidao operacional.
+
+Proxima fase autorizavel:
+- `12F2 — Seed/import real candidato dos Protocolos Sanitarios v2, condicionado a revisao tecnica e ainda sem ativacao automatica`.
+
+---
+
+## Historico anterior — Fase 12F0
 
 Decisao: `FASE 12F0 CONCLUIDA COMO CATALOGO CURATORIAL CANDIDATO`.
 
@@ -24,7 +67,7 @@ Entregue nesta fase:
 - evidencia `docs/review/evidence/ITENS_PROTOCOLO_SANITARIO_V2_CANDIDATOS_12F0.md`;
 - evidencia `docs/review/evidence/MAPA_FONTES_PROTOCOLOS_SANITARIOS_V2_12F0.md`;
 - 10 protocolos candidatos classificados;
-- 22 itens candidatos estruturados;
+- 19 itens candidatos estruturados;
 - ProductRequirement definido por item;
 - ProductClass/ProductClassGroup mapeado quando aplicavel;
 - sourceRefs/source_gaps documentados;
@@ -42,11 +85,6 @@ Nao implementado nesta fase:
 - baixa de estoque;
 - carencia ativa;
 - venda, abate, leite ou aptidao operacional.
-
-Proxima fase autorizavel:
-- `12F1 — Normalizacao dos Protocolos Sanitarios v2 em artefato importavel/seed candidato, ainda sem ativacao automatica`.
-
----
 
 ## Historico anterior — Fase 12E5
 

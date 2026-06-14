@@ -2,7 +2,33 @@
 
 Atualizado em: 2026-06-14
 
-## 0. Handoff Atual — Fase 12F0
+## 0. Handoff Atual — Fase 12F1
+
+Fase 12F1 — Normalizacao dos Protocolos Sanitarios v2 em artefato tecnico estruturado — executada localmente como fase documental.
+
+Decisao: `FASE 12F1 CONCLUIDA COMO NORMALIZACAO TECNICA CANDIDATA`.
+
+Resultado:
+- Criado `docs/review/PLANO_FASE_12F1_NORMALIZACAO_PROTOCOLOS_V2.md`.
+- Criadas evidencias normalizadas 12F1 em `docs/review/evidence/`.
+- 10 protocolos normalizados para futura seed/importacao candidata.
+- 19 itens normalizados com `productRequirementKind`, `executionProductPolicy`, `eligibilityRule`, `operationalWindowRule`, `recurrenceRule`, `sourceRefs` por campo e `sourceGaps`.
+- 4 `ProductClassGroup` antiparasitarios fechados: recria estrategicos, bezerros pre-desmama, pre-confinamento e matrizes pre-parto.
+- `associacoes_antiparasitarias` ficou como `reserved_candidate`, sem validar execucao sem bula propria.
+- `rotationRule` antiparasitario normalizado como `chemical_class_rotation`, com bloqueio de repeticao de classe sem justificativa/MV e contexto de resistencia.
+- Brucelose B19 fixada como protocolo nacional para bovino femea e bubalino femea, 3-8 meses, normativa consolidada, sem UF/estado como gap de elegibilidade e sem heranca por analogia.
+- Bloqueios da B19 permanecem operacionais: MV, registro oficial, marcacao, produto real e snapshot.
+- Febre aftosa classificada como `archived`/`blocked`, `productRequirementKind = none`, sem protocolo operacional automatico.
+- `sourceRefs` reais foram separados de `sourcePolicy` baseada em produto executado.
+- Nenhum protocolo ou item foi promovido a `agenda_allowed`.
+- Nenhum codigo funcional, migration, seed, UI, Dexie, sync, agenda real, evento real, estoque, carencia ativa, venda, abate, leite ou aptidao operacional foi criado.
+
+Proxima fase autorizavel:
+- `12F2 — Seed/import real candidato dos Protocolos Sanitarios v2, condicionado a revisao tecnica e ainda sem ativacao automatica`.
+
+---
+
+## 0.1 Handoff anterior — Fase 12F0
 
 Fase 12F0 — Estruturacao curatorial dos Protocolos Sanitarios v2 — executada localmente como fase documental.
 
@@ -11,20 +37,15 @@ Decisao: `FASE 12F0 CONCLUIDA COMO CATALOGO CURATORIAL CANDIDATO`.
 Resultado:
 - Criado `docs/review/PLANO_FASE_12F0_ESTRUTURACAO_CURATORIAL_PROTOCOLOS_SANITARIOS_V2.md`.
 - Criadas evidencias curatoriais 12F0 em `docs/review/evidence/`.
-- 10 protocolos candidatos classificados: Brucelose B19, Clostridioses, Raiva, Leptospirose, IBR/BVD, Controle parasitario recria 5/7/9, Vermifugacao pre-desmama, Vermifugacao pre-confinamento/pasto vedado, Matrizes pre-parto e Febre aftosa.
-- 22 itens candidatos estruturados com `productRequirementKind`, status curatorial, status de automacao, `allowsPreview`, `allowsAgendaAuto=false`, `sourceRefs` e `source_gaps`.
-- ProductClass usado para vacinas quando classe tecnica e suficiente para regra curatorial.
-- ProductClassGroup tornado obrigatorio para controle parasitario quando diferentes classes podem cumprir o item.
-- Febre aftosa classificada como `archived`/`blocked`, sem protocolo operacional automatico.
-- Nenhum protocolo ou item foi promovido a `agenda_allowed`.
+- 10 protocolos candidatos classificados.
+- 19 itens candidatos estruturados.
+- ProductClass/ProductClassGroup mapeado quando aplicavel.
+- Nenhum item recebeu `agenda_allowed`.
 - Nenhum codigo funcional, migration, seed, UI, Dexie, sync, agenda real, evento real, estoque, carencia ativa, venda, abate, leite ou aptidao operacional foi criado.
-
-Proxima fase autorizavel:
-- `12F1 — Normalizacao dos Protocolos Sanitarios v2 em artefato importavel/seed candidato, ainda sem ativacao automatica`.
 
 ---
 
-## 0.1 Handoff anterior — Fase 12E5
+## 0.2 Handoff anterior — Fase 12E5
 
 Fase 12E5 — Hardening final offline/sync sanitario v2 — executada localmente.
 
