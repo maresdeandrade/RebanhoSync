@@ -1,4 +1,54 @@
-# ACTIVE_PHASE_PLAN - Fase 12E5
+# ACTIVE_PHASE_PLAN - Fase 12F0
+
+**Status:** Fase 12F0 concluida localmente - estruturacao curatorial dos Protocolos Sanitarios v2.
+**Foco:** Catalogo curatorial candidato, auditavel e conservador; sem seed, migration, UI, agenda, evento, carencia ativa ou automacao operacional.
+**Criado:** 2026-06-14
+**Atualizado:** 2026-06-14
+**Plano base:** `docs/review/PLANO_FASE_12F0_ESTRUTURACAO_CURATORIAL_PROTOCOLOS_SANITARIOS_V2.md`
+
+---
+
+## Objetivo em 1 paragrafo
+
+Executar a Fase 12F0 estruturando os Protocolos Sanitarios v2 como catalogo curatorial candidato: classificar protocolos e itens, definir `productRequirementKind`, mapear `ProductClass` e `ProductClassGroup`, explicitar `sourceRefs` e `source_gaps`, e declarar criterios para `preview_allowed`, `agenda_allowed` e 12F1. A fase e documental/curatorial; nao cria seed, migration, UI, Dexie, sync, agenda, evento, estoque, carencia ativa, venda, abate, leite ou aptidao operacional.
+
+---
+
+## Decisao 12F0
+
+Decisao: `FASE 12F0 CONCLUIDA COMO CATALOGO CURATORIAL CANDIDATO`.
+
+Entregue nesta fase:
+- plano principal `docs/review/PLANO_FASE_12F0_ESTRUTURACAO_CURATORIAL_PROTOCOLOS_SANITARIOS_V2.md`;
+- evidencia `docs/review/evidence/PROTOCOLOS_SANITARIOS_V2_CANDIDATOS_12F0.md`;
+- evidencia `docs/review/evidence/ITENS_PROTOCOLO_SANITARIO_V2_CANDIDATOS_12F0.md`;
+- evidencia `docs/review/evidence/MAPA_FONTES_PROTOCOLOS_SANITARIOS_V2_12F0.md`;
+- 10 protocolos candidatos classificados;
+- 22 itens candidatos estruturados;
+- ProductRequirement definido por item;
+- ProductClass/ProductClassGroup mapeado quando aplicavel;
+- sourceRefs/source_gaps documentados;
+- nenhum item promovido a `agenda_allowed`;
+- febre aftosa preservada como `archived/blocked`.
+
+Nao implementado nesta fase:
+- codigo funcional;
+- migration;
+- seed;
+- UI;
+- Dexie/sync;
+- agenda real;
+- evento real;
+- baixa de estoque;
+- carencia ativa;
+- venda, abate, leite ou aptidao operacional.
+
+Proxima fase autorizavel:
+- `12F1 — Normalizacao dos Protocolos Sanitarios v2 em artefato importavel/seed candidato, ainda sem ativacao automatica`.
+
+---
+
+## Historico anterior — Fase 12E5
 
 **Status:** Fase 12E5 concluida localmente - hardening final offline/sync sanitario v2.
 **Foco:** Cursor incremental por `updated_at`, retry/replay seguro de closures, sucesso parcial, bloqueios permanentes de superficie e gate 12F.

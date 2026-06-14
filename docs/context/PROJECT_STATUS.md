@@ -1,7 +1,7 @@
 # Project Status — RebanhoSync
 
-Atualizado em: 2026-06-13
-**Baseline Commit:** `797a692`
+Atualizado em: 2026-06-14
+**Baseline Commit:** `da42d31`
 
 ## Objetivo
 
@@ -19,7 +19,7 @@ A fase 11 — Lotes, Pastos e Desempenho Operacional Ampliado — está concluí
 
 Foi criada a fase extra 11.5 — Agenda Sanitária v2: Janelas, Agrupamento e Materialização Idempotente — antes da Fase 12.
 
-A Fase 11.5 foi fechada localmente pela 11.5H, reconciliada documentalmente pela 11.5I e rebaselineada estrategicamente pela 11.5J. A Fase 12 foi aberta em 12A documental/diagnóstica, avançou em 12B para modelagem clean/reset documental, em 12C para fundação SQL/RLS/reset controlado, em 12D0 para modelo canônico de protocolo/produto/fonte técnica, em 12D1 para schema/contratos mínimos persistidos, em 12D2 para builders/adapters puros de snapshots técnicos, em 12D3 para extração curatorial de protocolos candidatos v2 para revisão, em 12D4 para rebaseline conceitual das matrizes, em 12D5 para contratos TypeScript puros de ProductClass, ProductClassGroup e ExecutionProductPolicy, em 12D6 para schema SQL, RLS e tabelas no banco de dados para ProductClass, em 12E0 para diagnóstico/contrato offline-sync, em 12E1 para stores Dexie locais de ProductClass v2, em 12E2 para pull remoto ProductClass v2 para cache Dexie local, em 12E3 para base Dexie/pull remoto do catalogo tecnico sanitario v2 ampliado, em 12E4 para base offline/sync controlada da Agenda Sanitaria v2 e em 12E5 para hardening final offline/sync sanitario v2.
+A Fase 11.5 foi fechada localmente pela 11.5H, reconciliada documentalmente pela 11.5I e rebaselineada estrategicamente pela 11.5J. A Fase 12 foi aberta em 12A documental/diagnóstica, avançou em 12B para modelagem clean/reset documental, em 12C para fundação SQL/RLS/reset controlado, em 12D0 para modelo canônico de protocolo/produto/fonte técnica, em 12D1 para schema/contratos mínimos persistidos, em 12D2 para builders/adapters puros de snapshots técnicos, em 12D3 para extração curatorial de protocolos candidatos v2 para revisão, em 12D4 para rebaseline conceitual das matrizes, em 12D5 para contratos TypeScript puros de ProductClass, ProductClassGroup e ExecutionProductPolicy, em 12D6 para schema SQL, RLS e tabelas no banco de dados para ProductClass, em 12E0 para diagnóstico/contrato offline-sync, em 12E1 para stores Dexie locais de ProductClass v2, em 12E2 para pull remoto ProductClass v2 para cache Dexie local, em 12E3 para base Dexie/pull remoto do catalogo tecnico sanitario v2 ampliado, em 12E4 para base offline/sync controlada da Agenda Sanitaria v2, em 12E5 para hardening final offline/sync sanitario v2 e em 12F0 para estruturacao curatorial dos Protocolos Sanitarios v2 como catalogo candidato documental.
 
 Último gate validado:
 

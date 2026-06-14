@@ -1,9 +1,40 @@
 # Last Phase Result — RebanhoSync
 
-Atualizado em: 2026-06-13
-**Baseline Commit:** `797a692`
+Atualizado em: 2026-06-14
+**Baseline Commit:** `da42d31`
 
 ## 0. Resultado mais recente
+
+Fase 12F0 — Estruturacao curatorial dos Protocolos Sanitarios v2 — executada localmente como fase documental.
+
+Decisao: `FASE 12F0 CONCLUIDA COMO CATALOGO CURATORIAL CANDIDATO`.
+
+Resultado da 12F0:
+- Criado plano principal `docs/review/PLANO_FASE_12F0_ESTRUTURACAO_CURATORIAL_PROTOCOLOS_SANITARIOS_V2.md`.
+- Criadas evidencias 12F0 para protocolos, itens e mapa de fontes/gaps.
+- 10 protocolos candidatos classificados.
+- 22 itens candidatos estruturados.
+- `productRequirementKind` definido por item.
+- ProductClass/ProductClassGroup mapeados.
+- `sourceRefs` e `source_gaps` explicitados por campo critico.
+- Status curatorial e status de automacao definidos.
+- Nenhum item recebeu `agenda_allowed`.
+- Febre aftosa ficou `archived/blocked`.
+- Nenhum codigo funcional, migration, seed, UI, Dexie, sync, agenda, evento, estoque, carencia ativa ou liberacao operacional foi criado.
+
+Patch da 12F0:
+- `docs/review/PLANO_FASE_12F0_ESTRUTURACAO_CURATORIAL_PROTOCOLOS_SANITARIOS_V2.md`
+- `docs/review/evidence/PROTOCOLOS_SANITARIOS_V2_CANDIDATOS_12F0.md`
+- `docs/review/evidence/ITENS_PROTOCOLO_SANITARIO_V2_CANDIDATOS_12F0.md`
+- `docs/review/evidence/MAPA_FONTES_PROTOCOLOS_SANITARIOS_V2_12F0.md`
+- docs ativos de fase/status/roadmap/dominio
+
+Proxima execucao recomendada:
+- `12F1 — Normalizacao dos Protocolos Sanitarios v2 em artefato importavel/seed candidato, ainda sem ativacao automatica`.
+
+---
+
+## 0.1 Resultado anterior — Fase 12E5
 
 Fase 12E5 — Hardening final offline/sync sanitario v2 — executada localmente.
 

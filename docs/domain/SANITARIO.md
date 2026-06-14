@@ -267,7 +267,7 @@ Legados `produtos_veterinarios`, `protocolos_sanitarios`, `protocolos_sanitarios
 
 ## Agenda Sanitária v2
 
-A Fase 11.5 consolidou contratos puros para redesenhar a agenda sanitária. A Fase 12C criou a fundação SQL/RLS da persistência v2 em tabelas dedicadas. A Fase 12E4 adicionou base Dexie/offline e sync controlado para Agenda v2. A Fase 12E5 adicionou hardening de cursor incremental, retry/replay de closures, sucesso parcial e bloqueios de superficie. Ainda nao ha UI conectada, seed funcional, protocolo estruturado real, evento executado, estoque ou carência ativa.
+A Fase 11.5 consolidou contratos puros para redesenhar a agenda sanitária. A Fase 12C criou a fundação SQL/RLS da persistência v2 em tabelas dedicadas. A Fase 12E4 adicionou base Dexie/offline e sync controlado para Agenda v2. A Fase 12E5 adicionou hardening de cursor incremental, retry/replay de closures, sucesso parcial e bloqueios de superficie. A Fase 12F0 estruturou Protocolos Sanitarios v2 como catalogo curatorial candidato documental, sem seed e sem ativacao. Ainda nao ha UI conectada, seed funcional, protocolo ativo/importado, evento executado, estoque ou carência ativa.
 
 Pipeline conceitual:
 
@@ -406,11 +406,13 @@ Gate para 12F:
 - closure sem execucao preservada;
 - carencia ativa continua nascendo apenas de evento executado com produto/fonte tecnica.
 
-Ainda não implementado após a 12E5:
+Ainda não implementado após a 12F0:
 
 - RPC/Edge Function operacional para Agenda v2;
 - UI operacional da Agenda v2.
 - push de `sanitario_agenda_v2` e `sanitario_agenda_animais_v2`.
+- seed/importacao ativa de protocolos v2;
+- agenda automatica a partir de protocolos v2.
 
 ---
 
@@ -793,6 +795,7 @@ Essa fase deve validar uso real, não criar novo domínio.
 | Fase 12E3 | Catálogo técnico sanitário v2 ampliado | Concluída localmente |
 | Fase 12E4 | Agenda Sanitária v2 offline/sync controlado | Concluída localmente |
 | Fase 12E5 | Hardening offline/sync sanitario v2 | Concluída localmente |
+| Fase 12F0 | Estruturacao curatorial dos Protocolos Sanitarios v2 como catalogo candidato | Concluída localmente |
 
 ### ProductClass v2 local/offline
 
