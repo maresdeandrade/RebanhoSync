@@ -1,20 +1,58 @@
-# ACTIVE_PHASE_PLAN - Fase 12F2
+# ACTIVE_PHASE_PLAN - Fase 12F3
 
-**Status:** Fase 12F2 concluida localmente - payloads candidatos para futura seed/importacao dos Protocolos Sanitarios v2.
-**Foco:** Artefatos importaveis candidatos; sem seed executada, migration, schema, runtime, Dexie, sync, UI, agenda, evento, estoque, carencia ativa ou automacao operacional.
+**Status:** Fase 12F3 concluida localmente - validacao tecnica dos payloads candidatos contra schema real.
+**Foco:** Reconciliacao documental de payloads 12F2 com SQL/TypeScript existente; sem seed/import, migration, schema, runtime, Dexie, sync, UI, agenda, evento, estoque, carencia ativa ou automacao operacional.
 **Criado:** 2026-06-14
 **Atualizado:** 2026-06-14
-**Plano base:** `docs/review/PLANO_FASE_12F2_SEED_CANDIDATA_PROTOCOLOS_V2.md`
+**Plano base:** `docs/review/PLANO_FASE_12F3_VALIDACAO_PAYLOADS_SCHEMA_REAL.md`
 
 ---
 
 ## Objetivo em 1 paragrafo
 
-Executar a Fase 12F2 convertendo a normalizacao 12F1 em payloads tecnicos candidatos para futura seed/importacao: `sanitario_protocolos_v2`, `sanitario_protocolo_itens_versions_v2`, `sanitario_product_class_groups_v2`, `sanitario_product_class_group_members_v2`, `sanitario_rotation_rules_v2` e `sanitario_source_refs_field_level_v2`. A fase e documental/importavel candidata; nao executa seed/import, nao cria migration, nao altera schema/runtime/Dexie/sync/UI e nao cria agenda, evento, estoque, carencia ativa, venda, abate, leite ou aptidao operacional.
+Executar a Fase 12F3 validando os payloads candidatos 12F2 contra o schema SQL e contratos TypeScript reais, identificando divergencias de coluna, enum, JSONB, FK, constraints, RLS e superficie offline. A fase e documental; nao executa seed/import, nao cria migration, nao altera schema/runtime/Dexie/sync/UI e nao cria agenda, evento, estoque, carencia ativa, venda, abate, leite ou aptidao operacional.
 
 ---
 
-## Decisao 12F2
+## Decisao 12F3
+
+Decisao: `FASE 12F3 CONCLUIDA COMO VALIDACAO TECNICA DOCUMENTAL`.
+
+Entregue nesta fase:
+- plano principal `docs/review/PLANO_FASE_12F3_VALIDACAO_PAYLOADS_SCHEMA_REAL.md`;
+- evidencia `docs/review/evidence/VALIDACAO_SCHEMA_REAL_PROTOCOLOS_12F3.md`;
+- evidencia `docs/review/evidence/VALIDACAO_SCHEMA_REAL_ITENS_12F3.md`;
+- evidencia `docs/review/evidence/VALIDACAO_SCHEMA_REAL_PRODUCT_CLASS_GROUPS_12F3.md`;
+- evidencia `docs/review/evidence/VALIDACAO_SCHEMA_REAL_SOURCE_REFS_12F3.md`;
+- evidencia `docs/review/evidence/MAPA_AJUSTES_PAYLOADS_12F3.md`;
+- tabelas reais auditadas: `sanitario_protocolos_v2`, `sanitario_protocolo_itens_versions_v2`, `sanitario_product_classes_v2`, `sanitario_product_class_groups_v2`, `sanitario_product_class_group_members_v2` e `sanitario_product_class_default_rules_v2`;
+- identificado que `sanitario_rotation_rules_v2` e `sanitario_source_refs_field_level_v2` nao existem como tabelas reais;
+- divergencias de coluna, enum, JSONB, FK e RLS documentadas;
+- ProductClassGroup members bloqueados ate mapeamento para `class_id`;
+- B19 preservada como regra nacional para femeas bovinas e bubalinas de 3 a 8 meses;
+- aftosa preservada como archived/blocked e `productRequirementKind = none`;
+- zero `agenda_allowed`;
+- zero `approved_for_catalog`.
+
+Nao implementado nesta fase:
+- seed/import executado;
+- migration;
+- alteracao de schema;
+- codigo funcional/runtime;
+- UI;
+- Dexie/sync;
+- agenda real;
+- evento real;
+- estoque;
+- carencia ativa;
+- venda, abate, leite ou aptidao operacional.
+
+Proxima fase segura:
+- `12F4 — Adapter/normalizer de payload candidato para schema real`, ainda sem aplicar seed/import e sem ativacao automatica.
+
+---
+
+## Historico anterior — Fase 12F2
 
 Decisao: `FASE 12F2 CONCLUIDA COMO ARTEFATO IMPORTAVEL CANDIDATO`.
 

@@ -2,7 +2,31 @@
 
 Atualizado em: 2026-06-14
 
-## 0. Handoff Atual — Fase 12F2
+## 0. Handoff Atual — Fase 12F3
+
+Fase 12F3 — Validacao tecnica dos payloads candidatos e reconciliacao contra schema real — executada localmente como fase documental.
+
+Decisao: `FASE 12F3 CONCLUIDA COMO VALIDACAO TECNICA DOCUMENTAL`.
+
+Resultado:
+- Criado `docs/review/PLANO_FASE_12F3_VALIDACAO_PAYLOADS_SCHEMA_REAL.md`.
+- Criadas evidencias 12F3 em `docs/review/evidence/`.
+- Payloads 12F2 avaliados contra `sanitario_protocolos_v2`, `sanitario_protocolo_itens_versions_v2`, `sanitario_product_classes_v2`, `sanitario_product_class_groups_v2`, `sanitario_product_class_group_members_v2` e `sanitario_product_class_default_rules_v2`.
+- Confirmado que `sanitario_rotation_rules_v2` e `sanitario_source_refs_field_level_v2` nao existem como tabelas reais no schema auditado.
+- Import bruto bloqueado por divergencias de enum/coluna/FK: `legal_status` curatorial, `product_class_group` em itens, `protocol_id` UUID, `version` inteiro, `species_authorization`, `source_refs_by_field` e members por `class_id`.
+- ProductClassGroup members exigem ProductClass previa e mapeamento para `class_id`; principios ativos ficam como metadata/sourcePolicy candidata.
+- B19 preservada como regra nacional para femeas bovinas e bubalinas de 3 a 8 meses, sem dependencia estadual para elegibilidade.
+- Aftosa preservada como `archived/blocked` e `productRequirementKind = none`.
+- Nenhum protocolo foi promovido a `approved_for_catalog`.
+- Nenhum protocolo ou item foi promovido a `agenda_allowed`.
+- Nenhum codigo funcional, migration, seed/import, schema, UI, Dexie, sync, agenda real, evento real, estoque, carencia ativa, venda, abate, leite ou aptidao operacional foi criado.
+
+Proxima fase segura:
+- `12F4 — Adapter/normalizer de payload candidato para schema real`, ainda sem aplicar seed/import e sem ativacao automatica.
+
+---
+
+## 0.1 Handoff anterior — Fase 12F2
 
 Fase 12F2 — Seed/import candidata dos Protocolos Sanitarios v2 — executada localmente como fase documental/importavel candidata.
 

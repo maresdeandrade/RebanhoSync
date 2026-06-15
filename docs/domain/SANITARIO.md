@@ -85,6 +85,9 @@ Fora do escopo deste documento:
 - Agenda é intenção/tarefa futura, não histórico.
 - Evento é fato executado, append-only.
 - Protocolo é regra/configuração, não execução.
+- Payload candidato de protocolo não é seed aplicada, dado ativo, agenda ou evento.
+- ProductClassGroup não valida execução sozinho; execução exige produto real quando aplicável.
+- Carência ativa nasce somente de evento executado com produto real e snapshot técnico.
 - Checklist regulatório disponível não é pendência.
 - Ausência de runtime de compliance não é não conformidade.
 - Ausência de suspeita clínica não gera tarefa.
@@ -133,6 +136,15 @@ Essas funções não persistem dados, não consultam Supabase/Dexie, não criam 
 ## Protocolos sanitários
 
 Protocolos sanitários são regras operacionais versionadas.
+
+A partir da 12F3, os payloads candidatos dos Protocolos Sanitarios v2 foram validados contra o schema real e seguem bloqueados para import bruto. Qualquer fase futura deve usar adapter/normalizer antes de seed/import e deve preservar:
+
+- `agenda_allowed = false` enquanto houver sourceGap critico;
+- `approved_for_catalog = false` ate aprovacao curatorial propria;
+- B19 como regra nacional para femeas bovinas e bubalinas de 3 a 8 meses;
+- febre aftosa como archived/blocked, sem rotina operacional;
+- ProductClassGroup antiparasitario dependente de ProductClass real e produto executado;
+- SourceRefs separados de sourceGaps e sourcePolicy.
 
 Um protocolo pode nascer de:
 

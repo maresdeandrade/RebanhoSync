@@ -5,6 +5,39 @@ Atualizado em: 2026-06-14
 
 ## 0. Resultado mais recente
 
+Fase 12F3 — Validacao tecnica dos payloads candidatos e reconciliacao contra schema real — executada localmente como fase documental.
+
+Decisao: `FASE 12F3 CONCLUIDA COMO VALIDACAO TECNICA DOCUMENTAL`.
+
+Resultado da 12F3:
+- Criado plano principal `docs/review/PLANO_FASE_12F3_VALIDACAO_PAYLOADS_SCHEMA_REAL.md`.
+- Criadas 5 evidencias 12F3 em `docs/review/evidence/`.
+- Todos os payloads 12F2 foram avaliados contra schema SQL e contratos TypeScript existentes.
+- `sanitario_protocolos_v2`, `sanitario_protocolo_itens_versions_v2` e ProductClass v2 foram auditados.
+- Divergencias de coluna, enum, JSONB, FK, constraints, RLS e destino documental foram registradas.
+- Import bruto ficou bloqueado; payloads podem avancar somente para adapter/normalizer 12F4.
+- B19 nacional foi preservada.
+- Febre aftosa permaneceu archived/blocked.
+- `agenda_allowed` permaneceu zero.
+- `approved_for_catalog` permaneceu zero.
+- Nenhum codigo funcional, migration, seed/import, schema, UI, Dexie, sync, agenda, evento, estoque, carencia ativa ou liberacao operacional foi criado.
+
+Patch da 12F3:
+- `docs/review/PLANO_FASE_12F3_VALIDACAO_PAYLOADS_SCHEMA_REAL.md`
+- `docs/review/evidence/VALIDACAO_SCHEMA_REAL_PROTOCOLOS_12F3.md`
+- `docs/review/evidence/VALIDACAO_SCHEMA_REAL_ITENS_12F3.md`
+- `docs/review/evidence/VALIDACAO_SCHEMA_REAL_PRODUCT_CLASS_GROUPS_12F3.md`
+- `docs/review/evidence/VALIDACAO_SCHEMA_REAL_SOURCE_REFS_12F3.md`
+- `docs/review/evidence/MAPA_AJUSTES_PAYLOADS_12F3.md`
+- docs ativos de fase/status/roadmap/dominio
+
+Proxima execucao recomendada:
+- `12F4 — Adapter/normalizer de payload candidato para schema real`, ainda sem aplicar seed/import e sem ativacao automatica.
+
+---
+
+## 0.1 Resultado anterior — Fase 12F2
+
 Fase 12F2 — Seed/import candidata dos Protocolos Sanitarios v2 — executada localmente como fase documental/importavel candidata.
 
 Decisao: `FASE 12F2 CONCLUIDA COMO ARTEFATO IMPORTAVEL CANDIDATO`.

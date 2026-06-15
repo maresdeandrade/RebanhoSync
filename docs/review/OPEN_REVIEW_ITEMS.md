@@ -1,7 +1,7 @@
 # Open Review Items — RebanhoSync
 
-Atualizado em: 2026-06-13
-**Baseline Commit:** `797a692`
+Atualizado em: 2026-06-14
+**Baseline Commit:** `3853b80`
 
 ## Objetivo
 
@@ -37,7 +37,9 @@ Itens resolvidos devem sair deste documento e permanecer registrados apenas no r
 
 # Pendências abertas
 
-Sem P0/P1 aberto apos a Fase 12E5.
+Sem P0/P1 aberto de runtime apos a Fase 12F3.
+
+Observacao 12F3: os bloqueios P0 documentados em `docs/review/PLANO_FASE_12F3_VALIDACAO_PAYLOADS_SCHEMA_REAL.md` sao bloqueios de import candidato, nao incidentes abertos de runtime. Eles impedem seed/import bruto dos payloads 12F2 ate a fase 12F4 adaptar ou rejeitar formalmente os registros incompatíveis.
 
 Observacao tecnica: `sanitario_produto_fontes_v2` permanece em full fetch/merge porque nao possui `updated_at` no contrato implementado. Reavaliar apenas se futura migration/contrato adicionar timestamp de atualizacao a essa tabela.
 
