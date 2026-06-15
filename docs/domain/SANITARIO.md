@@ -137,7 +137,7 @@ Essas funções não persistem dados, não consultam Supabase/Dexie, não criam 
 
 Protocolos sanitários são regras operacionais versionadas.
 
-A partir da 12F3, os payloads candidatos dos Protocolos Sanitarios v2 foram validados contra o schema real e seguem bloqueados para import bruto. Qualquer fase futura deve usar adapter/normalizer antes de seed/import e deve preservar:
+A partir da 12F3, os payloads candidatos dos Protocolos Sanitarios v2 foram validados contra o schema real e seguem bloqueados para import bruto. A 12F4 definiu adapter/normalizer candidato, ainda sem seed/import. Qualquer fase futura deve preservar:
 
 - `agenda_allowed = false` enquanto houver sourceGap critico;
 - `approved_for_catalog = false` ate aprovacao curatorial propria;
@@ -145,6 +145,7 @@ A partir da 12F3, os payloads candidatos dos Protocolos Sanitarios v2 foram vali
 - febre aftosa como archived/blocked, sem rotina operacional;
 - ProductClassGroup antiparasitario dependente de ProductClass real e produto executado;
 - SourceRefs separados de sourceGaps e sourcePolicy.
+- itens com ProductClassGroup nao devem ser convertidos para `product_class`, `specific_product` ou `none` sem decisao estrutural explicita.
 
 Um protocolo pode nascer de:
 

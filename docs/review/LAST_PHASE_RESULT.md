@@ -5,6 +5,42 @@ Atualizado em: 2026-06-14
 
 ## 0. Resultado mais recente
 
+Fase 12F4 — Adapter/normalizer dos payloads candidatos para schema real — executada localmente como fase documental.
+
+Decisao: `FASE 12F4 CONCLUIDA COMO ADAPTER/NORMALIZER CANDIDATO DOCUMENTAL`.
+
+Resultado da 12F4:
+- Criado plano principal `docs/review/PLANO_FASE_12F4_ADAPTER_PAYLOADS_SCHEMA_REAL.md`.
+- Criadas 6 evidencias 12F4 em `docs/review/evidence/`.
+- 10 protocolos classificados como adaptaveis para `sanitario_protocolos_v2`.
+- 13 itens classificados como adaptaveis para `sanitario_protocolo_itens_versions_v2`.
+- 6 itens antiparasitarios rejeitados por `PRODUCT_CLASS_GROUP_NOT_SUPPORTED_BY_SQL_ITEM_ENUM`.
+- 4 ProductClassGroups adaptaveis parcialmente.
+- 16 ProductClassGroup members bloqueados por `PRODUCT_CLASS_ID_REQUIRED_FOR_GROUP_MEMBER`.
+- SourceRefs e RotationRules tiveram destino JSONB definido.
+- B19 nacional foi preservada.
+- Febre aftosa ficou archived/blocked com `legal_status = bloqueado`, `status = retired` no protocolo adaptado e `productRequirementKind = none` nos itens.
+- Nenhum protocolo recebeu `approved_for_catalog`.
+- Nenhum item recebeu `agenda_allowed`.
+- Nenhum codigo funcional, migration, seed/import, schema, UI, Dexie, sync, agenda, evento, estoque, carencia ativa ou liberacao operacional foi criado.
+
+Patch da 12F4:
+- `docs/review/PLANO_FASE_12F4_ADAPTER_PAYLOADS_SCHEMA_REAL.md`
+- `docs/review/evidence/ADAPTER_PROTOCOLOS_V2_12F4.md`
+- `docs/review/evidence/ADAPTER_ITENS_PROTOCOLOS_V2_12F4.md`
+- `docs/review/evidence/ADAPTER_PRODUCT_CLASS_GROUPS_12F4.md`
+- `docs/review/evidence/ADAPTER_SOURCE_REFS_ROTATION_RULES_12F4.md`
+- `docs/review/evidence/REJEICOES_PAYLOADS_12F4.md`
+- `docs/review/evidence/PAYLOADS_ADAPTADOS_SCHEMA_REAL_12F4.md`
+- docs ativos de fase/status/roadmap/dominio
+
+Proxima execucao recomendada:
+- `12F5 — Validacao automatizada do adapter/normalizer candidato`, ainda sem aplicar seed/import e sem ativacao automatica.
+
+---
+
+## 0.1 Resultado anterior — Fase 12F3
+
 Fase 12F3 — Validacao tecnica dos payloads candidatos e reconciliacao contra schema real — executada localmente como fase documental.
 
 Decisao: `FASE 12F3 CONCLUIDA COMO VALIDACAO TECNICA DOCUMENTAL`.

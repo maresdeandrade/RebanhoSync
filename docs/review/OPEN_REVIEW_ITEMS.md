@@ -37,9 +37,9 @@ Itens resolvidos devem sair deste documento e permanecer registrados apenas no r
 
 # Pendências abertas
 
-Sem P0/P1 aberto de runtime apos a Fase 12F3.
+Sem P0/P1 aberto de runtime apos a Fase 12F4.
 
-Observacao 12F3: os bloqueios P0 documentados em `docs/review/PLANO_FASE_12F3_VALIDACAO_PAYLOADS_SCHEMA_REAL.md` sao bloqueios de import candidato, nao incidentes abertos de runtime. Eles impedem seed/import bruto dos payloads 12F2 ate a fase 12F4 adaptar ou rejeitar formalmente os registros incompatíveis.
+Observacao 12F4: as rejeicoes documentadas em `docs/review/evidence/REJEICOES_PAYLOADS_12F4.md` sao bloqueios de adapter/import candidato, nao incidentes abertos de runtime. Elas impedem seed/import bruto de itens `product_class_group` e members sem `class_id` ate validacao automatizada, schema futuro ou ProductClass previa.
 
 Observacao tecnica: `sanitario_produto_fontes_v2` permanece em full fetch/merge porque nao possui `updated_at` no contrato implementado. Reavaliar apenas se futura migration/contrato adicionar timestamp de atualizacao a essa tabela.
 

@@ -1,20 +1,61 @@
-# ACTIVE_PHASE_PLAN - Fase 12F3
+# ACTIVE_PHASE_PLAN - Fase 12F4
 
-**Status:** Fase 12F3 concluida localmente - validacao tecnica dos payloads candidatos contra schema real.
-**Foco:** Reconciliacao documental de payloads 12F2 com SQL/TypeScript existente; sem seed/import, migration, schema, runtime, Dexie, sync, UI, agenda, evento, estoque, carencia ativa ou automacao operacional.
+**Status:** Fase 12F4 concluida localmente - adapter/normalizer candidato dos payloads para schema real.
+**Foco:** Adapter documental de payloads 12F2 para shape SQL real, com rejeicoes formais; sem seed/import, migration, schema, runtime, Dexie, sync, UI, agenda, evento, estoque, carencia ativa ou automacao operacional.
 **Criado:** 2026-06-14
 **Atualizado:** 2026-06-14
-**Plano base:** `docs/review/PLANO_FASE_12F3_VALIDACAO_PAYLOADS_SCHEMA_REAL.md`
+**Plano base:** `docs/review/PLANO_FASE_12F4_ADAPTER_PAYLOADS_SCHEMA_REAL.md`
 
 ---
 
 ## Objetivo em 1 paragrafo
 
-Executar a Fase 12F3 validando os payloads candidatos 12F2 contra o schema SQL e contratos TypeScript reais, identificando divergencias de coluna, enum, JSONB, FK, constraints, RLS e superficie offline. A fase e documental; nao executa seed/import, nao cria migration, nao altera schema/runtime/Dexie/sync/UI e nao cria agenda, evento, estoque, carencia ativa, venda, abate, leite ou aptidao operacional.
+Executar a Fase 12F4 definindo um adapter/normalizer nao destrutivo para converter os payloads candidatos 12F2 no shape real das tabelas existentes, gerando tambem relatorio de rejeicoes. A fase e documental; nao executa seed/import, nao cria migration, nao altera schema/runtime/Dexie/sync/UI e nao cria agenda, evento, estoque, carencia ativa, venda, abate, leite ou aptidao operacional.
 
 ---
 
-## Decisao 12F3
+## Decisao 12F4
+
+Decisao: `FASE 12F4 CONCLUIDA COMO ADAPTER/NORMALIZER CANDIDATO DOCUMENTAL`.
+
+Entregue nesta fase:
+- plano principal `docs/review/PLANO_FASE_12F4_ADAPTER_PAYLOADS_SCHEMA_REAL.md`;
+- evidencia `docs/review/evidence/ADAPTER_PROTOCOLOS_V2_12F4.md`;
+- evidencia `docs/review/evidence/ADAPTER_ITENS_PROTOCOLOS_V2_12F4.md`;
+- evidencia `docs/review/evidence/ADAPTER_PRODUCT_CLASS_GROUPS_12F4.md`;
+- evidencia `docs/review/evidence/ADAPTER_SOURCE_REFS_ROTATION_RULES_12F4.md`;
+- evidencia `docs/review/evidence/REJEICOES_PAYLOADS_12F4.md`;
+- evidencia `docs/review/evidence/PAYLOADS_ADAPTADOS_SCHEMA_REAL_12F4.md`;
+- 10 protocolos adaptaveis;
+- 13 itens adaptaveis;
+- 6 itens antiparasitarios rejeitados por `PRODUCT_CLASS_GROUP_NOT_SUPPORTED_BY_SQL_ITEM_ENUM`;
+- 4 ProductClassGroups adaptaveis parcialmente;
+- 16 ProductClassGroup members bloqueados por `PRODUCT_CLASS_ID_REQUIRED_FOR_GROUP_MEMBER`;
+- SourceRefs e RotationRules direcionados para JSONB existente;
+- B19 nacional preservada;
+- aftosa preservada como archived/blocked;
+- zero `agenda_allowed`;
+- zero `approved_for_catalog`.
+
+Nao implementado nesta fase:
+- seed/import executado;
+- migration;
+- alteracao de schema;
+- codigo funcional/runtime;
+- UI;
+- Dexie/sync;
+- agenda real;
+- evento real;
+- estoque;
+- carencia ativa;
+- venda, abate, leite ou aptidao operacional.
+
+Proxima fase segura:
+- `12F5 — Validacao automatizada do adapter/normalizer candidato`, ainda sem aplicar seed/import e sem ativacao automatica.
+
+---
+
+## Historico anterior — Fase 12F3
 
 Decisao: `FASE 12F3 CONCLUIDA COMO VALIDACAO TECNICA DOCUMENTAL`.
 

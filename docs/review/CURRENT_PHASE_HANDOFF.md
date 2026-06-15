@@ -2,19 +2,22 @@
 
 Atualizado em: 2026-06-14
 
-## 0. Handoff Atual — Fase 12F3
+## 0. Handoff Atual — Fase 12F4
 
-Fase 12F3 — Validacao tecnica dos payloads candidatos e reconciliacao contra schema real — executada localmente como fase documental.
+Fase 12F4 — Adapter/normalizer dos payloads candidatos para schema real — executada localmente como fase documental.
 
-Decisao: `FASE 12F3 CONCLUIDA COMO VALIDACAO TECNICA DOCUMENTAL`.
+Decisao: `FASE 12F4 CONCLUIDA COMO ADAPTER/NORMALIZER CANDIDATO DOCUMENTAL`.
 
 Resultado:
-- Criado `docs/review/PLANO_FASE_12F3_VALIDACAO_PAYLOADS_SCHEMA_REAL.md`.
-- Criadas evidencias 12F3 em `docs/review/evidence/`.
-- Payloads 12F2 avaliados contra `sanitario_protocolos_v2`, `sanitario_protocolo_itens_versions_v2`, `sanitario_product_classes_v2`, `sanitario_product_class_groups_v2`, `sanitario_product_class_group_members_v2` e `sanitario_product_class_default_rules_v2`.
-- Confirmado que `sanitario_rotation_rules_v2` e `sanitario_source_refs_field_level_v2` nao existem como tabelas reais no schema auditado.
-- Import bruto bloqueado por divergencias de enum/coluna/FK: `legal_status` curatorial, `product_class_group` em itens, `protocol_id` UUID, `version` inteiro, `species_authorization`, `source_refs_by_field` e members por `class_id`.
-- ProductClassGroup members exigem ProductClass previa e mapeamento para `class_id`; principios ativos ficam como metadata/sourcePolicy candidata.
+- Criado `docs/review/PLANO_FASE_12F4_ADAPTER_PAYLOADS_SCHEMA_REAL.md`.
+- Criadas evidencias 12F4 em `docs/review/evidence/`.
+- 10 protocolos podem gerar payload adaptado para `sanitario_protocolos_v2`.
+- 13 itens podem gerar payload adaptado para `sanitario_protocolo_itens_versions_v2`.
+- 6 itens antiparasitarios foram rejeitados por `PRODUCT_CLASS_GROUP_NOT_SUPPORTED_BY_SQL_ITEM_ENUM`.
+- 4 ProductClassGroups podem gerar payload adaptado parcial.
+- 16 ProductClassGroup members foram bloqueados por `PRODUCT_CLASS_ID_REQUIRED_FOR_GROUP_MEMBER`.
+- SourceRefs foram direcionados para `source_refs_snapshot` e `source_refs_by_field`.
+- RotationRules foram direcionados para JSONB de `snapshot_template`/metadata, sem tabela nova.
 - B19 preservada como regra nacional para femeas bovinas e bubalinas de 3 a 8 meses, sem dependencia estadual para elegibilidade.
 - Aftosa preservada como `archived/blocked` e `productRequirementKind = none`.
 - Nenhum protocolo foi promovido a `approved_for_catalog`.
@@ -22,11 +25,24 @@ Resultado:
 - Nenhum codigo funcional, migration, seed/import, schema, UI, Dexie, sync, agenda real, evento real, estoque, carencia ativa, venda, abate, leite ou aptidao operacional foi criado.
 
 Proxima fase segura:
-- `12F4 — Adapter/normalizer de payload candidato para schema real`, ainda sem aplicar seed/import e sem ativacao automatica.
+- `12F5 — Validacao automatizada do adapter/normalizer candidato`, ainda sem aplicar seed/import e sem ativacao automatica.
 
 ---
 
-## 0.1 Handoff anterior — Fase 12F2
+## 0.1 Handoff anterior — Fase 12F3
+
+Fase 12F3 — Validacao tecnica dos payloads candidatos e reconciliacao contra schema real — executada localmente como fase documental.
+
+Decisao: `FASE 12F3 CONCLUIDA COMO VALIDACAO TECNICA DOCUMENTAL`.
+
+Resultado:
+- Payloads 12F2 avaliados contra `sanitario_protocolos_v2`, `sanitario_protocolo_itens_versions_v2`, ProductClass v2 e contratos TypeScript.
+- Import bruto bloqueado por divergencias de enum/coluna/FK.
+- Proxima etapa definida como adapter/normalizer sem import.
+
+---
+
+## 0.2 Handoff anterior — Fase 12F2
 
 Fase 12F2 — Seed/import candidata dos Protocolos Sanitarios v2 — executada localmente como fase documental/importavel candidata.
 
