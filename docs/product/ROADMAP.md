@@ -28,13 +28,13 @@ Não deve substituir issues, tarefas técnicas ou prompts de implementação.
 
 ## Fase atual — Fase 12
 
-Status: **Fase 12F10 concluida localmente como consolidacao documental e payload canonico**
+Status: **Fase 12G concluida localmente como importador controlado dos Protocolos Sanitarios v2**
 Fase anterior: **Fase 11.5 — Agenda Sanitária v2: Janelas, Agrupamento e Materialização Idempotente — concluída localmente**
-Fase seguinte: **Fase 12G0 — Dry-run real do import usando somente o payload canonico 12F10, com autorizacao explicita**
+Fase seguinte: **Aplicar import real somente com autorizacao operacional explicita e `ALLOW_SANITARIO_IMPORT=1`**
 
 ### Conduta inicial
 
-As subfases 11.5A a 11.5J (Agenda Sanitária v2 core/documental), 12A-12E5 e 12F0-12F10 foram concluídas localmente. A 12F10 consolidou a fonte final em `SANITARIO_PROTOCOLS_V2_CANONICAL_PAYLOAD_12F10.json`. O desenvolvimento so deve avancar para import real em fase propria com dry-run/transacao/rollback e autorizacao explicita.
+As subfases 11.5A a 11.5J (Agenda Sanitária v2 core/documental), 12A-12E5, 12F0-12F10 e 12G foram concluídas localmente. A 12F10 consolidou a fonte final em `SANITARIO_PROTOCOLS_V2_CANONICAL_PAYLOAD_12F10.json`; a 12G criou o importador controlado em `scripts/codex/import-sanitario-protocols-v2.mjs`. O import real so deve ocorrer com `ALLOW_SANITARIO_IMPORT=1`, apos decisao operacional explicita.
 
 ### Handoff para Fase 12E
 

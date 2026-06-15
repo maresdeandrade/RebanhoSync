@@ -2,7 +2,29 @@
 
 Atualizado em: 2026-06-15
 
-## 0. Handoff Atual — Fase 12F10
+## 0. Handoff Atual — Fase 12G
+
+Fase 12G — Importador controlado dos Protocolos Sanitarios v2 — executada localmente.
+
+Decisao: `12G_IMPORTADOR_CONTROLADO_PROTOCOLS_SANITARIOS_V2_COM_PAYLOAD_12F10`.
+
+Resultado:
+- Criado `scripts/codex/import-sanitario-protocols-v2.mjs`.
+- O script usa exclusivamente `docs/review/evidence/SANITARIO_PROTOCOLS_V2_CANONICAL_PAYLOAD_12F10.json`.
+- Implementados os modos `--validate`, `--dry-run` e `--apply`.
+- `--apply` falha sem `ALLOW_SANITARIO_IMPORT=1`.
+- `--validate` passou.
+- `--dry-run` passou com 33 criações planejadas e 16 rejeições preservadas.
+- ProductClassGroup members continuam bloqueados por ausência de `class_id` real.
+- Nenhum import real foi executado nesta rodada.
+- Nenhuma migration, schema, RLS, UI, Dexie, sync, Edge Function, agenda, evento, estoque, carência ativa ou liberação operacional foi criada.
+
+Próximo passo seguro:
+- aplicar somente com autorização operacional explícita, `ALLOW_SANITARIO_IMPORT=1` e ambiente Supabase validado.
+
+---
+
+## 0.1 Handoff anterior — Fase 12F10
 
 Fase 12F10 — Consolidacao e reducao documental dos Protocolos Sanitarios v2 — executada localmente.
 

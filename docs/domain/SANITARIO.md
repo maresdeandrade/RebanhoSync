@@ -137,7 +137,7 @@ Essas funções não persistem dados, não consultam Supabase/Dexie, não criam 
 
 Protocolos sanitários são regras operacionais versionadas.
 
-A partir da 12F3, os payloads candidatos dos Protocolos Sanitarios v2 foram validados contra o schema real e seguem bloqueados para import bruto. A 12F4 definiu adapter/normalizer candidato, ainda sem seed/import. A 12F5 validou esse adapter com script local somente leitura. Qualquer fase futura deve preservar:
+A partir da 12F3, os payloads candidatos dos Protocolos Sanitarios v2 foram validados contra o schema real e seguem bloqueados para import bruto. A 12F4 definiu adapter/normalizer candidato, ainda sem seed/import. A 12F5 validou esse adapter com script local somente leitura. A 12G criou importador controlado usando exclusivamente o payload canonico 12F10, com `--validate`, `--dry-run` e `--apply` protegido por `ALLOW_SANITARIO_IMPORT=1`. Qualquer import deve preservar:
 
 - `agenda_allowed = false` enquanto houver sourceGap critico;
 - `approved_for_catalog = false` ate aprovacao curatorial propria;
@@ -147,7 +147,7 @@ A partir da 12F3, os payloads candidatos dos Protocolos Sanitarios v2 foram vali
 - SourceRefs separados de sourceGaps e sourcePolicy.
 - itens com ProductClassGroup nao devem ser convertidos para `product_class`, `specific_product` ou `none` sem decisao estrutural explicita.
 
-A 12F6 tomou a decisao estrutural documental: a forma futura recomendada e suporte direto a `product_class_group` no item com `product_class_group_id` referenciando `sanitario_product_class_groups_v2(id)`. A 12F7 criou essa migration controlada no schema real, com enum, coluna, FK, CHECK e trigger de validacao de grupo ativo/escopo/status. A 12F8 revalidou o adapter e adaptou documentalmente os 6 itens antiparasitarios com `product_class_group_id` por lookup, elevando a contagem de itens adaptaveis para 19. A 12F9 gerou payload JSON completo candidato e a 12F10 consolidou a fonte final em `docs/review/evidence/SANITARIO_PROTOCOLS_V2_CANONICAL_PAYLOAD_12F10.json`, com 10 protocolos, 19 itens, 4 ProductClassGroups e 16 rejeicoes de members, sempre com `execute_import=false`. Ainda assim, nenhum seed/import foi aplicado; import real exige fase propria, dry-run/transacao/rollback e autorizacao explicita.
+A 12F6 tomou a decisao estrutural documental: a forma futura recomendada e suporte direto a `product_class_group` no item com `product_class_group_id` referenciando `sanitario_product_class_groups_v2(id)`. A 12F7 criou essa migration controlada no schema real, com enum, coluna, FK, CHECK e trigger de validacao de grupo ativo/escopo/status. A 12F8 revalidou o adapter e adaptou documentalmente os 6 itens antiparasitarios com `product_class_group_id` por lookup, elevando a contagem de itens adaptaveis para 19. A 12F9 gerou payload JSON completo candidato e a 12F10 consolidou a fonte final em `docs/review/evidence/SANITARIO_PROTOCOLS_V2_CANONICAL_PAYLOAD_12F10.json`, com 10 protocolos, 19 itens, 4 ProductClassGroups e 16 rejeicoes de members, sempre com `execute_import=false`. A 12G implementou o importador controlado; nenhum import real foi aplicado nesta rodada e members seguem bloqueados sem `class_id` real.
 
 Um protocolo pode nascer de:
 
@@ -817,6 +817,7 @@ Essa fase deve validar uso real, não criar novo domínio.
 | Fase 12F1 | Normalizacao dos Protocolos Sanitarios v2 em artefatos tecnicos candidatos | Concluída localmente |
 | Fase 12F2 | Payloads candidatos de seed/import dos Protocolos Sanitarios v2 | Concluída localmente |
 | Fase 12F3-12F8 | Validacao, adapter, decisao/migration ProductClassGroup e revalidacao dos 6 itens antiparasitarios | Concluídas localmente; sem seed/import real |
+| Fase 12G | Importador controlado dos Protocolos Sanitarios v2 usando payload canonico 12F10 | Concluída localmente; apply bloqueado sem flag |
 
 ### ProductClass v2 local/offline
 

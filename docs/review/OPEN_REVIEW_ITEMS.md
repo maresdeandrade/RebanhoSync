@@ -37,9 +37,9 @@ Itens resolvidos devem sair deste documento e permanecer registrados apenas no r
 
 # Pendências abertas
 
-Sem P0/P1 aberto de runtime apos a Fase 12F10.
+Sem P0/P1 aberto de runtime apos a Fase 12G.
 
-Observacao 12F10: a fonte final para futura 12G0 e `docs/review/evidence/SANITARIO_PROTOCOLS_V2_CANONICAL_PAYLOAD_12F10.json`. Import real continua bloqueado ate autorizacao explicita, dry-run transacional e rollback definido. Os 16 ProductClassGroup members continuam bloqueados por `PRODUCT_CLASS_ID_REQUIRED_FOR_GROUP_MEMBER`.
+Observacao 12G: o importador controlado esta em `scripts/codex/import-sanitario-protocols-v2.mjs` e usa somente `docs/review/evidence/SANITARIO_PROTOCOLS_V2_CANONICAL_PAYLOAD_12F10.json`. `--validate` e `--dry-run` passaram; `--apply` segue bloqueado sem `ALLOW_SANITARIO_IMPORT=1`. Os 16 ProductClassGroup members continuam bloqueados por `PRODUCT_CLASS_ID_REQUIRED_FOR_GROUP_MEMBER`.
 
 Observacao tecnica: `sanitario_produto_fontes_v2` permanece em full fetch/merge porque nao possui `updated_at` no contrato implementado. Reavaliar apenas se futura migration/contrato adicionar timestamp de atualizacao a essa tabela.
 

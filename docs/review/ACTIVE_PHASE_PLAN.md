@@ -1,16 +1,46 @@
-    # ACTIVE_PHASE_PLAN - Fase 12F10
+    # ACTIVE_PHASE_PLAN - Fase 12G
 
-    **Status:** Fase 12F10 concluida localmente - consolidacao documental e payload canonico definidos.
-    **Foco:** Reduzir fragmentacao documental 12F0-12F9 e definir payload, decisao e gate canonicos antes de qualquer 12G0.
+    **Status:** Fase 12G concluida localmente - importador controlado dos Protocolos Sanitarios v2 implementado.
+    **Foco:** Importador seguro e idempotente usando somente o payload canonico 12F10, com modos `validate`, `dry-run` e `apply` protegido por `ALLOW_SANITARIO_IMPORT=1`.
     **Criado:** 2026-06-15
     **Atualizado:** 2026-06-15
-    **Plano base:** `docs/review/PLANO_FASE_12F10_CONSOLIDACAO_DOCUMENTAL_SANITARIO_V2.md`
+    **Plano base:** solicitação direta da Fase 12G.
 
     ---
 
     ## Objetivo em 1 paragrafo
 
-    Executar a Fase 12F10 consolidando os artefatos dos Protocolos Sanitarios v2 em um payload canonico unico, decision record, gate de import e indice de arquivo historico, sem aplicar import real.
+    Executar a Fase 12G criando `scripts/codex/import-sanitario-protocols-v2.mjs` como importador controlado para Protocolos Sanitarios v2, consumindo exclusivamente `docs/review/evidence/SANITARIO_PROTOCOLS_V2_CANONICAL_PAYLOAD_12F10.json`, validando invariantes sanitarias, simulando plano deterministico e bloqueando escrita real sem flag explicita.
+
+    ---
+
+    ## Decisao 12G
+
+    Decisao: `12G_IMPORTADOR_CONTROLADO_PROTOCOLS_SANITARIOS_V2_COM_PAYLOAD_12F10`.
+
+    Entregue nesta fase:
+    - script `scripts/codex/import-sanitario-protocols-v2.mjs`;
+    - modo `--validate` somente leitura;
+    - modo `--dry-run` com lookup em banco e plano deterministico sem escrita;
+    - modo `--apply` transacional, bloqueado sem `ALLOW_SANITARIO_IMPORT=1`;
+    - relatório unico `docs/review/evidence/RELATORIO_12G_IMPORTADOR_SANITARIO_V2.md`.
+
+    Resultado local:
+    - `--validate`: passou;
+    - `--dry-run`: passou com 33 `create`, 0 `update`, 0 `skip`, 16 `reject`;
+    - `--apply` sem flag: bloqueado com erro explicito;
+    - members permanecem rejeitados por `PRODUCT_CLASS_ID_REQUIRED_FOR_GROUP_MEMBER`.
+
+    Nao implementado nesta fase:
+    - migration;
+    - schema/RLS;
+    - UI;
+    - Dexie/sync/Edge Function;
+    - agenda, evento, estoque, carencia ativa ou liberacao operacional;
+    - import de ProductClassGroup members.
+
+    Proximo passo seguro:
+    - executar `--apply` somente se houver decisao operacional explicita para carga real e ambiente validado.
 
     ---
 

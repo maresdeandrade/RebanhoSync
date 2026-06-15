@@ -4,41 +4,38 @@ Atualizado em: 2026-06-15
 
 ## Resultado mais recente
 
-Fase 12F10 - Consolidacao e reducao documental dos Protocolos Sanitarios v2 - concluida localmente.
+Fase 12G - Importador controlado dos Protocolos Sanitarios v2 - concluida localmente.
 
-Decisao: `12F10_CONSOLIDAR_ARTEFATOS_CANONICOS_ANTES_DE_12G0`.
+Decisao: `12G_IMPORTADOR_CONTROLADO_PROTOCOLS_SANITARIOS_V2_COM_PAYLOAD_12F10`.
 
 ## Resultado
 
-- Consolidado um payload canonico unico em `docs/review/evidence/SANITARIO_PROTOCOLS_V2_CANONICAL_PAYLOAD_12F10.json`.
-- Preservadas as contagens finais da 12F9: 10 protocolos, 19 itens, 4 ProductClassGroups e 16 rejeicoes de members.
-- Mantido `execute_import=false`.
-- Criado decision record curto em `docs/review/evidence/SANITARIO_PROTOCOLS_V2_DECISION_RECORD_12F10.md`.
-- Criado gate de import em `docs/review/evidence/SANITARIO_PROTOCOLS_V2_IMPORT_GATE_12F10.md`.
-- Criado indice de arquivo historico 12F0-12F9 em `docs/review/evidence/ARCHIVE_INDEX_SANITARIO_12F0_12F9.md`.
-- 12G0 deixa de ser proxima fase imediata sem gate: qualquer dry-run/import deve usar somente o payload canonico 12F10.
-
-## Nao executado
-
-- seed/import real;
-- insercao no banco;
-- migration, schema, RLS, UI, Dexie, sync, Edge Function ou runtime operacional;
-- agenda, evento, estoque, carencia ativa ou liberacao operacional;
-- ProductClass, member, `class_id` ou UUID artificial.
+- Criado `scripts/codex/import-sanitario-protocols-v2.mjs`.
+- O script consome somente `docs/review/evidence/SANITARIO_PROTOCOLS_V2_CANONICAL_PAYLOAD_12F10.json`.
+- Implementados modos `--validate`, `--dry-run` e `--apply`.
+- `--apply` exige `ALLOW_SANITARIO_IMPORT=1` e falha sem essa variavel.
+- Members de ProductClassGroup continuam bloqueados por `PRODUCT_CLASS_ID_REQUIRED_FOR_GROUP_MEMBER`.
+- Criado o relatorio unico `docs/review/evidence/RELATORIO_12G_IMPORTADOR_SANITARIO_V2.md`.
 
 ## Validacao
 
-- `node -e` para parse/shape do payload canonico 12F10: passou;
-- `git diff --check`: passou.
+- `node scripts/codex/import-sanitario-protocols-v2.mjs --validate`: passou.
+- `node scripts/codex/import-sanitario-protocols-v2.mjs --dry-run`: passou com 33 `create`, 0 `update`, 0 `skip`, 16 `reject`.
+- `node scripts/codex/import-sanitario-protocols-v2.mjs --apply` sem flag: bloqueado com erro explicito.
+
+## Nao executado
+
+- import real com `ALLOW_SANITARIO_IMPORT=1`;
+- migration, schema, RLS, UI, Dexie, sync ou Edge Function;
+- agenda, evento, estoque, carencia ativa ou liberacao operacional;
+- ProductClassGroup members.
 
 ## Fonte final
 
-Para 12G0 e fases posteriores, usar:
+Import futuro deve continuar usando exclusivamente:
 
 `docs/review/evidence/SANITARIO_PROTOCOLS_V2_CANONICAL_PAYLOAD_12F10.json`
 
-Artefatos 12F0-12F9 permanecem como evidencia intermediaria e indice historico, nao como fonte preferencial de execucao.
+## Proximo passo possivel
 
-## Proxima execucao possivel
-
-12G0 - dry-run real do import, usando somente o payload canonico 12F10, com autorizacao explicita, transacao e rollback.
+Executar `--apply` apenas se houver autorizacao operacional explicita para carga real e ambiente Supabase validado.
