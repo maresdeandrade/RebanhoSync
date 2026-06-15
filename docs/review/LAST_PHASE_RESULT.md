@@ -5,6 +5,44 @@ Atualizado em: 2026-06-15
 
 ## 0. Resultado mais recente
 
+Fase 12F7 — Migration controlada para suportar ProductClassGroup em itens de protocolo sanitario v2 — executada localmente.
+
+Decisao: `FASE 12F7 CONCLUIDA COMO MIGRATION CONTROLADA`.
+
+Resultado da 12F7:
+- Criada migration `supabase/migrations/20260615120000_sanitario_protocol_item_product_class_group_v2.sql`.
+- Enum SQL `sanitario_product_requirement_kind_v2_enum` passou a aceitar `product_class_group`.
+- Coluna `product_class_group_id` criada em `sanitario_protocolo_itens_versions_v2`.
+- FK `sanitario_item_product_class_group_id_fkey` criada para `sanitario_product_class_groups_v2(id)`.
+- CHECK de requisito de produto atualizado para `specific_product`, `product_class`, `product_class_group` e `none`.
+- Trigger `trg_validate_protocol_item_product_class_group_v2` criada para validar grupo ativo, escopo e bloqueio de agenda automatica com grupo blocked/archived.
+- Contrato TS `SanitaryProtocolItemVersionV2` passou a expor `productClassGroupId`.
+- Testes de contrato sanitario ampliados.
+- Nenhum seed/import real, protocolo ativo, agenda, evento, estoque, carencia ativa, UI, Dexie, sync ou liberacao operacional foi criado.
+
+Patch da 12F7:
+- `supabase/migrations/20260615120000_sanitario_protocol_item_product_class_group_v2.sql`
+- `src/lib/sanitario/rules/sanitaryProtocolV2.ts`
+- `src/lib/sanitario/rules/__tests__/sanitaryProtocolV2.test.ts`
+- `docs/review/PLANO_FASE_12F7_MIGRATION_PRODUCT_CLASS_GROUP_ITENS.md`
+- `docs/review/evidence/RELATORIO_12F7_MIGRATION_PRODUCT_CLASS_GROUP_ITENS.md`
+- docs ativos de fase/status/roadmap/dominio
+
+Validacao da 12F7:
+- `pnpm test -- src/lib/sanitario/rules`: passou;
+- `supabase db reset`: passou;
+- `pnpm test -- supabase/functions/sync-batch`: passou;
+- `pnpm run lint`: passou;
+- `pnpm run build`: passou com warnings conhecidos de Browserslist/chunks;
+- `git diff --check`: passou.
+
+Proxima execucao recomendada:
+- `12F8 — Revalidar adapter 12F4/12F5 contra schema atualizado e tentar adaptar os 6 itens antiparasitarios antes rejeitados, ainda sem seed/import real`.
+
+---
+
+## 0.1 Resultado anterior — Fase 12F6
+
 Fase 12F6 — Decisao estrutural sobre ProductClassGroup em itens de protocolo sanitario v2 — executada localmente como fase documental.
 
 Decisao: `RECOMENDAR OPCAO A — SUPORTE DIRETO A PRODUCT_CLASS_GROUP NO ITEM`.

@@ -74,6 +74,7 @@ export type SanitaryProtocolItemVersionV2 = {
   productRequirementKind: _ProductRequirementKindLegacy;
   productId?: string | null;
   productClass?: string | null;
+  productClassGroupId?: string | null;
   /**
    * Structured requirement rule (12D5+).
    * Supersedes the loose productRequirementKind/productId/productClass trio
@@ -174,6 +175,31 @@ function validateProductRequirement(
     ];
   }
 
+  if (item.productRequirementKind === "product_class_group" && !item.productClassGroupId?.trim()) {
+    return [
+      {
+        code: "product_class_group_requires_group_id",
+        severity: "block",
+        field: "productClassGroupId",
+        message: 'Requisito "product_class_group" exige productClassGroupId persistido.',
+      },
+    ];
+  }
+
+  if (
+    item.productRequirementKind === "product_class_group" &&
+    (item.productId || item.productClass?.trim())
+  ) {
+    return [
+      {
+        code: "product_class_group_must_not_reference_product_or_class",
+        severity: "block",
+        field: "productRequirementKind",
+        message: 'Requisito "product_class_group" nao pode referenciar productId ou productClass.',
+      },
+    ];
+  }
+
   if (item.productRequirementRule) {
     if (item.productRequirementKind !== item.productRequirementRule.kind) {
       return [
@@ -240,6 +266,17 @@ function validateProductRequirement(
     ];
   }
 
+  if (item.productRequirementKind === "specific_product" && item.productClassGroupId) {
+    return [
+      {
+        code: "specific_product_must_not_reference_group",
+        severity: "block",
+        field: "productClassGroupId",
+        message: "Item com produto especifico nao pode referenciar ProductClassGroup.",
+      },
+    ];
+  }
+
   if (item.productRequirementKind === "product_class" && !item.productClass?.trim()) {
     return [
       {
@@ -251,7 +288,21 @@ function validateProductRequirement(
     ];
   }
 
-  if (item.productRequirementKind === "none" && (item.productId || item.productClass)) {
+  if (item.productRequirementKind === "product_class" && item.productClassGroupId) {
+    return [
+      {
+        code: "product_class_must_not_reference_group",
+        severity: "block",
+        field: "productClassGroupId",
+        message: "Item por classe nao pode referenciar ProductClassGroup.",
+      },
+    ];
+  }
+
+  if (
+    item.productRequirementKind === "none" &&
+    (item.productId || item.productClass || item.productClassGroupId)
+  ) {
     return [
       {
         code: "none_product_requirement_must_not_reference_product",
@@ -360,6 +411,7 @@ export function requiresNewProtocolItemVersionV2(
     productRequirementKind: previous.productRequirementKind,
     productId: previous.productId ?? null,
     productClass: previous.productClass ?? null,
+    productClassGroupId: previous.productClassGroupId ?? null,
     productRequirementRule: previous.productRequirementRule ?? null,
     eligibilityRule: previous.eligibilityRule,
     operationalWindowRule: previous.operationalWindowRule,
@@ -375,6 +427,7 @@ export function requiresNewProtocolItemVersionV2(
     productRequirementKind: next.productRequirementKind,
     productId: next.productId ?? null,
     productClass: next.productClass ?? null,
+    productClassGroupId: next.productClassGroupId ?? null,
     productRequirementRule: next.productRequirementRule ?? null,
     eligibilityRule: next.eligibilityRule,
     operationalWindowRule: next.operationalWindowRule,

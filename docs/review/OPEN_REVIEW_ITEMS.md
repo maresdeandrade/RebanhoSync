@@ -37,11 +37,13 @@ Itens resolvidos devem sair deste documento e permanecer registrados apenas no r
 
 # Pendências abertas
 
-Sem P0/P1 aberto de runtime apos a Fase 12F6.
+Sem P0/P1 aberto de runtime apos a Fase 12F7.
 
 Observacao 12F5: o script `scripts/codex/validate-sanitario-adapter-payloads-12f5.mjs` passou com 300 PASS, 1 WARNING e 0 FAIL. As rejeicoes documentadas em `docs/review/evidence/REJEICOES_PAYLOADS_12F4.md` permanecem bloqueios de adapter/import candidato, nao incidentes abertos de runtime.
 
 Observacao 12F6: a decisao estrutural recomenda futura migration para `product_class_group` com `product_class_group_id` no item. Enquanto a 12F7 nao existir, os 6 itens antiparasitarios com ProductClassGroup continuam bloqueados para import e nao devem ser convertidos para `product_class`, `specific_product` ou `none`.
+
+Observacao 12F7: a migration estrutural para `product_class_group` foi criada e validada, mas nenhum seed/import real foi aplicado. A revalidacao/adaptacao dos 6 itens antiparasitarios fica para 12F8, ainda sem seed/import.
 
 Observacao tecnica: `sanitario_produto_fontes_v2` permanece em full fetch/merge porque nao possui `updated_at` no contrato implementado. Reavaliar apenas se futura migration/contrato adicionar timestamp de atualizacao a essa tabela.
 

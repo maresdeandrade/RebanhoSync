@@ -2,7 +2,29 @@
 
 Atualizado em: 2026-06-15
 
-## 0. Handoff Atual — Fase 12F6
+## 0. Handoff Atual — Fase 12F7
+
+Fase 12F7 — Migration controlada para suportar ProductClassGroup em itens de protocolo sanitario v2 — executada localmente.
+
+Decisao: `FASE 12F7 CONCLUIDA COMO MIGRATION CONTROLADA`.
+
+Resultado:
+- Criada migration `supabase/migrations/20260615120000_sanitario_protocol_item_product_class_group_v2.sql`.
+- `sanitario_product_requirement_kind_v2_enum` passou a aceitar `product_class_group`.
+- `sanitario_protocolo_itens_versions_v2` recebeu `product_class_group_id`.
+- Criada FK para `sanitario_product_class_groups_v2(id)` com `on delete restrict`.
+- CHECK de requisito de produto passou a validar exatamente uma modalidade coerente.
+- Criada trigger para bloquear grupo deletado, fora de escopo e agenda automatica com grupo blocked/archived.
+- Contrato TS do item recebeu `productClassGroupId`.
+- Testes focados, reset Supabase, lint e build passaram.
+- Nenhum seed/import, protocolo ativo, agenda, evento, estoque, carencia ativa, UI, Dexie, sync ou liberacao operacional foi criado.
+
+Proxima fase segura:
+- `12F8 — Revalidar adapter 12F4/12F5 contra schema atualizado e tentar adaptar os 6 itens antiparasitarios antes rejeitados, ainda sem seed/import real`.
+
+---
+
+## 0.1 Handoff anterior — Fase 12F6
 
 Fase 12F6 — Decisao estrutural sobre ProductClassGroup em itens de protocolo sanitario v2 — executada documentalmente.
 

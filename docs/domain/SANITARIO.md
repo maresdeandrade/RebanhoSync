@@ -147,7 +147,7 @@ A partir da 12F3, os payloads candidatos dos Protocolos Sanitarios v2 foram vali
 - SourceRefs separados de sourceGaps e sourcePolicy.
 - itens com ProductClassGroup nao devem ser convertidos para `product_class`, `specific_product` ou `none` sem decisao estrutural explicita.
 
-A 12F6 tomou a decisao estrutural documental: a forma futura recomendada e suporte direto a `product_class_group` no item com `product_class_group_id` referenciando `sanitario_product_class_groups_v2(id)`. Essa decisao nao criou migration. Ate a 12F7 existir e passar validacao, os 6 itens antiparasitarios com ProductClassGroup continuam bloqueados para import.
+A 12F6 tomou a decisao estrutural documental: a forma futura recomendada e suporte direto a `product_class_group` no item com `product_class_group_id` referenciando `sanitario_product_class_groups_v2(id)`. A 12F7 criou essa migration controlada no schema real, com enum, coluna, FK, CHECK e trigger de validacao de grupo ativo/escopo/status. Ainda assim, nenhum seed/import foi aplicado; os 6 itens antiparasitarios dependem de revalidacao/adaptacao na 12F8 antes de qualquer import real.
 
 Um protocolo pode nascer de:
 

@@ -216,6 +216,8 @@ describe("sanitaryProtocolV2", () => {
   it("productRequirementKind = product_class_group sem productRequirementRule bloqueia (P0)", () => {
     const item = validItem({
       productRequirementKind: "product_class_group",
+      productClass: null,
+      productClassGroupId: "group-id-1",
       productRequirementRule: null,
     });
 
@@ -226,6 +228,122 @@ describe("sanitaryProtocolV2", () => {
         expect.objectContaining({ code: "product_class_group_requires_rule" }),
       ]),
     );
+  });
+
+  it("productRequirementKind = product_class_group exige productClassGroupId persistido (P0)", () => {
+    const item = validItem({
+      productRequirementKind: "product_class_group",
+      productClass: null,
+      productClassGroupId: null,
+      productRequirementRule: {
+        kind: "product_class_group",
+        productClassGroupKey: "pcg_antiparasitarios_recria_estrategicos",
+        allowedProductClasses: ["lactonas_macrociclicas"],
+        requiresMvForOtherClass: true,
+        executionProductPolicy: "required_at_execution",
+      },
+    });
+
+    const result = validateSanitaryProtocolItemVersionV2(item);
+    expect(result.ok).toBe(false);
+    expect(result.issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: "product_class_group_requires_group_id" }),
+      ]),
+    );
+  });
+
+  it("productRequirementKind = product_class_group rejeita productId ou productClass legado (P0)", () => {
+    const item = validItem({
+      productRequirementKind: "product_class_group",
+      productId: "prod-1",
+      productClass: "classe-indevida",
+      productClassGroupId: "group-id-1",
+      productRequirementRule: {
+        kind: "product_class_group",
+        productClassGroupKey: "pcg_antiparasitarios_recria_estrategicos",
+        allowedProductClasses: ["lactonas_macrociclicas"],
+        requiresMvForOtherClass: true,
+        executionProductPolicy: "required_at_execution",
+      },
+    });
+
+    const result = validateSanitaryProtocolItemVersionV2(item);
+    expect(result.ok).toBe(false);
+    expect(result.issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: "product_class_group_must_not_reference_product_or_class" }),
+      ]),
+    );
+  });
+
+  it("productRequirementKind = specific_product rejeita productClassGroupId (P0)", () => {
+    const item = validItem({
+      productRequirementKind: "specific_product",
+      productId: "prod-1",
+      productClass: null,
+      productClassGroupId: "group-id-1",
+    });
+
+    const result = validateSanitaryProtocolItemVersionV2(item);
+    expect(result.ok).toBe(false);
+    expect(result.issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: "specific_product_must_not_reference_group" }),
+      ]),
+    );
+  });
+
+  it("productRequirementKind = product_class rejeita productClassGroupId (P0)", () => {
+    const item = validItem({
+      productRequirementKind: "product_class",
+      productClass: "vacina_febre_aftosa",
+      productClassGroupId: "group-id-1",
+    });
+
+    const result = validateSanitaryProtocolItemVersionV2(item);
+    expect(result.ok).toBe(false);
+    expect(result.issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: "product_class_must_not_reference_group" }),
+      ]),
+    );
+  });
+
+  it("productRequirementKind = none rejeita productClassGroupId (P0)", () => {
+    const item = validItem({
+      productRequirementKind: "none",
+      productId: null,
+      productClass: null,
+      productClassGroupId: "group-id-1",
+    });
+
+    const result = validateSanitaryProtocolItemVersionV2(item);
+    expect(result.ok).toBe(false);
+    expect(result.issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: "none_product_requirement_must_not_reference_product" }),
+      ]),
+    );
+  });
+
+  it("productRequirementKind = product_class_group valido nao permite agenda automatica por implicacao", () => {
+    const item = validItem({
+      productRequirementKind: "product_class_group",
+      productClass: null,
+      productClassGroupId: "group-id-1",
+      productRequirementRule: {
+        kind: "product_class_group",
+        productClassGroupKey: "pcg_antiparasitarios_recria_estrategicos",
+        allowedProductClasses: ["lactonas_macrociclicas"],
+        requiresMvForOtherClass: true,
+        executionProductPolicy: "required_at_execution",
+      },
+      allowsAgendaAuto: false,
+    });
+
+    const result = validateSanitaryProtocolItemVersionV2(item);
+    expect(result.ok).toBe(true);
   });
 
   it("requiresNewProtocolItemVersionV2 retorna true quando muda productRequirementRule (P0)", () => {
@@ -243,6 +361,36 @@ describe("sanitaryProtocolV2", () => {
       productRequirementRule: {
         kind: "product_class",
         productClass: "class-2", // alterado
+        executionProductPolicy: "required_at_execution",
+      },
+    });
+
+    expect(requiresNewProtocolItemVersionV2(previous, next)).toBe(true);
+  });
+
+  it("requiresNewProtocolItemVersionV2 retorna true quando muda productClassGroupId (P0)", () => {
+    const previous = validItem({
+      productRequirementKind: "product_class_group",
+      productClass: null,
+      productClassGroupId: "group-id-1",
+      productRequirementRule: {
+        kind: "product_class_group",
+        productClassGroupKey: "pcg_antiparasitarios_recria_estrategicos",
+        allowedProductClasses: ["lactonas_macrociclicas"],
+        requiresMvForOtherClass: true,
+        executionProductPolicy: "required_at_execution",
+      },
+    });
+
+    const next = validItem({
+      productRequirementKind: "product_class_group",
+      productClass: null,
+      productClassGroupId: "group-id-2",
+      productRequirementRule: {
+        kind: "product_class_group",
+        productClassGroupKey: "pcg_antiparasitarios_recria_estrategicos",
+        allowedProductClasses: ["lactonas_macrociclicas"],
+        requiresMvForOtherClass: true,
         executionProductPolicy: "required_at_execution",
       },
     });
