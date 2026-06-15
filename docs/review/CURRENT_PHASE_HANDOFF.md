@@ -2,7 +2,31 @@
 
 Atualizado em: 2026-06-15
 
-## 0. Handoff Atual — Fase 12F7
+## 0. Handoff Atual — Fase 12F8
+
+Fase 12F8 — Revalidacao do adapter contra schema atualizado e adaptacao documental dos itens ProductClassGroup — executada localmente.
+
+Decisao: `FASE 12F8 CONCLUIDA COMO REVALIDACAO NAO DESTRUTIVA DO ADAPTER`.
+
+Resultado:
+- Criado `scripts/codex/validate-sanitario-adapter-payloads-12f8.mjs`.
+- Criado `docs/review/PLANO_FASE_12F8_REVALIDACAO_ADAPTER_PRODUCT_CLASS_GROUP.md`.
+- Criadas evidencias 12F8 em `docs/review/evidence/`.
+- Migration 12F7 revalidada quanto a enum, coluna `product_class_group_id`, FK, CHECK e trigger.
+- 6 itens antiparasitarios antes rejeitados foram adaptados como payload candidato com `product_class_group_id` por lookup.
+- Contagem passou para 19 itens adaptaveis e 0 rejeicao por `PRODUCT_CLASS_GROUP_NOT_SUPPORTED_BY_SQL_ITEM_ENUM`.
+- 16 ProductClassGroup members continuam bloqueados por ausencia de `class_id` real.
+- Nenhum seed/import, migration nova, insercao no banco, UI, Dexie, sync, agenda, evento, estoque, carencia ativa ou liberacao operacional foi criado.
+
+Validacao:
+- `node scripts/codex/validate-sanitario-adapter-payloads-12f8.mjs`: 167 PASS, 0 WARNING, 0 FAIL.
+
+Proxima fase segura:
+- `12F9 — Gerar payload JSON completo importavel candidato para protocolos/itens/grupos, ainda sem executar import`.
+
+---
+
+## 0.1 Handoff anterior — Fase 12F7
 
 Fase 12F7 — Migration controlada para suportar ProductClassGroup em itens de protocolo sanitario v2 — executada localmente.
 

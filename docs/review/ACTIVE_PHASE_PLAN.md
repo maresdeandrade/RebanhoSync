@@ -1,16 +1,49 @@
-    # ACTIVE_PHASE_PLAN - Fase 12F7
+    # ACTIVE_PHASE_PLAN - Fase 12F8
 
-    **Status:** Fase 12F7 concluida localmente - migration controlada para suportar ProductClassGroup em itens.
-    **Foco:** Representar `product_class_group` no schema real de `sanitario_protocolo_itens_versions_v2` com enum, coluna, FK, CHECK e trigger, sem seed/import, UI, Dexie, sync, agenda, evento, estoque ou carencia ativa.
+    **Status:** Fase 12F8 concluida localmente - revalidacao nao destrutiva do adapter ProductClassGroup.
+    **Foco:** Revalidar o adapter 12F4/12F5 contra o schema atualizado pela 12F7 e adaptar documentalmente os 6 itens antiparasitarios antes rejeitados, sem seed/import, UI, Dexie, sync, agenda, evento, estoque ou carencia ativa.
     **Criado:** 2026-06-15
     **Atualizado:** 2026-06-15
-    **Plano base:** `docs/review/PLANO_FASE_12F7_MIGRATION_PRODUCT_CLASS_GROUP_ITENS.md`
+    **Plano base:** `docs/review/PLANO_FASE_12F8_REVALIDACAO_ADAPTER_PRODUCT_CLASS_GROUP.md`
 
     ---
 
     ## Objetivo em 1 paragrafo
 
-    Executar a Fase 12F7 criando migration SQL pequena, idempotente e controlada para permitir que itens de protocolo sanitario v2 representem ProductClassGroup sem perda semantica, ainda sem importar payloads ou ativar automacao operacional.
+    Executar a Fase 12F8 revalidando o adapter dos payloads candidatos contra o schema atualizado pela 12F7, gerando payloads adaptados candidatos para os 6 itens antiparasitarios com ProductClassGroup quando houver lookup documental inequivoco para `product_class_group_id`, sem aplicar import real.
+
+    ---
+
+    ## Decisao 12F8
+
+    Decisao: `FASE 12F8 CONCLUIDA COMO REVALIDACAO NAO DESTRUTIVA DO ADAPTER`.
+
+    Entregue nesta fase:
+    - plano `docs/review/PLANO_FASE_12F8_REVALIDACAO_ADAPTER_PRODUCT_CLASS_GROUP.md`;
+    - script `scripts/codex/validate-sanitario-adapter-payloads-12f8.mjs`;
+    - evidencia `docs/review/evidence/REVALIDACAO_ADAPTER_SCHEMA_ATUALIZADO_12F8.md`;
+    - evidencia `docs/review/evidence/PAYLOADS_ADAPTADOS_PRODUCT_CLASS_GROUP_12F8.md`;
+    - evidencia `docs/review/evidence/REJEICOES_REMANESCENTES_12F8.md`;
+    - evidencia `docs/review/evidence/RESULTADO_VALIDACAO_12F8.md`;
+    - 6 itens antiparasitarios antes rejeitados adaptados como payload candidato com `product_class_group_id` por lookup;
+    - contagem de itens adaptaveis passou de 13 para 19;
+    - rejeicao `PRODUCT_CLASS_GROUP_NOT_SUPPORTED_BY_SQL_ITEM_ENUM` zerada;
+    - 16 ProductClassGroup members continuam bloqueados por `PRODUCT_CLASS_ID_REQUIRED_FOR_GROUP_MEMBER`.
+
+    Nao implementado nesta fase:
+    - seed/import real;
+    - migration nova;
+    - insercao no banco;
+    - ProductClass, ProductClassGroup ou member novo;
+    - UUID artificial;
+    - UI, Dexie/sync ou Edge Function;
+    - agenda real, evento real, estoque, carencia ativa ou liberacao operacional.
+
+    Validacao:
+    - `node scripts/codex/validate-sanitario-adapter-payloads-12f8.mjs`: passou com 167 PASS, 0 WARNING, 0 FAIL.
+
+    Proxima fase segura:
+    - `12F9 — Gerar payload JSON completo importavel candidato para protocolos/itens/grupos, ainda sem executar import`.
 
     ---
 

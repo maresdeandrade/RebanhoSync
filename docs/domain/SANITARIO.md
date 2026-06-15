@@ -147,7 +147,7 @@ A partir da 12F3, os payloads candidatos dos Protocolos Sanitarios v2 foram vali
 - SourceRefs separados de sourceGaps e sourcePolicy.
 - itens com ProductClassGroup nao devem ser convertidos para `product_class`, `specific_product` ou `none` sem decisao estrutural explicita.
 
-A 12F6 tomou a decisao estrutural documental: a forma futura recomendada e suporte direto a `product_class_group` no item com `product_class_group_id` referenciando `sanitario_product_class_groups_v2(id)`. A 12F7 criou essa migration controlada no schema real, com enum, coluna, FK, CHECK e trigger de validacao de grupo ativo/escopo/status. Ainda assim, nenhum seed/import foi aplicado; os 6 itens antiparasitarios dependem de revalidacao/adaptacao na 12F8 antes de qualquer import real.
+A 12F6 tomou a decisao estrutural documental: a forma futura recomendada e suporte direto a `product_class_group` no item com `product_class_group_id` referenciando `sanitario_product_class_groups_v2(id)`. A 12F7 criou essa migration controlada no schema real, com enum, coluna, FK, CHECK e trigger de validacao de grupo ativo/escopo/status. A 12F8 revalidou o adapter e adaptou documentalmente os 6 itens antiparasitarios com `product_class_group_id` por lookup, elevando a contagem de itens adaptaveis para 19. Ainda assim, nenhum seed/import foi aplicado; a 12F9 deve gerar payload JSON completo importavel candidato antes de qualquer import real.
 
 Um protocolo pode nascer de:
 
@@ -816,6 +816,7 @@ Essa fase deve validar uso real, não criar novo domínio.
 | Fase 12F0 | Estruturacao curatorial dos Protocolos Sanitarios v2 como catalogo candidato | Concluída localmente |
 | Fase 12F1 | Normalizacao dos Protocolos Sanitarios v2 em artefatos tecnicos candidatos | Concluída localmente |
 | Fase 12F2 | Payloads candidatos de seed/import dos Protocolos Sanitarios v2 | Concluída localmente |
+| Fase 12F3-12F8 | Validacao, adapter, decisao/migration ProductClassGroup e revalidacao dos 6 itens antiparasitarios | Concluídas localmente; sem seed/import real |
 
 ### ProductClass v2 local/offline
 

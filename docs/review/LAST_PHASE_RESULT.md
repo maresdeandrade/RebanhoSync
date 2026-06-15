@@ -5,6 +5,39 @@ Atualizado em: 2026-06-15
 
 ## 0. Resultado mais recente
 
+Fase 12F8 — Revalidacao do adapter contra schema atualizado e adaptacao documental dos itens ProductClassGroup — executada localmente.
+
+Decisao: `FASE 12F8 CONCLUIDA COMO REVALIDACAO NAO DESTRUTIVA DO ADAPTER`.
+
+Resultado da 12F8:
+- Revalidada a migration 12F7 quanto a enum `product_class_group`, coluna `product_class_group_id`, FK, CHECK e trigger.
+- Criado script local `scripts/codex/validate-sanitario-adapter-payloads-12f8.mjs`.
+- Criados payloads adaptados candidatos para os 6 itens antiparasitarios antes rejeitados.
+- `product_class_group_id` e resolvido apenas por lookup documental `group_key -> id`, sem UUID artificial.
+- Itens adaptaveis passaram de 13 para 19.
+- Rejeicao `PRODUCT_CLASS_GROUP_NOT_SUPPORTED_BY_SQL_ITEM_ENUM` passou para 0.
+- ProductClassGroup members continuam 16 rejeitados por `PRODUCT_CLASS_ID_REQUIRED_FOR_GROUP_MEMBER`.
+- Nenhum seed/import real, migration nova, UI, Dexie, sync, agenda, evento, estoque, carencia ativa ou liberacao operacional foi criado.
+
+Patch da 12F8:
+- `scripts/codex/validate-sanitario-adapter-payloads-12f8.mjs`
+- `docs/review/PLANO_FASE_12F8_REVALIDACAO_ADAPTER_PRODUCT_CLASS_GROUP.md`
+- `docs/review/evidence/REVALIDACAO_ADAPTER_SCHEMA_ATUALIZADO_12F8.md`
+- `docs/review/evidence/PAYLOADS_ADAPTADOS_PRODUCT_CLASS_GROUP_12F8.md`
+- `docs/review/evidence/REJEICOES_REMANESCENTES_12F8.md`
+- `docs/review/evidence/RESULTADO_VALIDACAO_12F8.md`
+- docs ativos de fase/status/roadmap/dominio
+
+Validacao da 12F8:
+- `node scripts/codex/validate-sanitario-adapter-payloads-12f8.mjs`: passou com 167 PASS, 0 WARNING, 0 FAIL.
+
+Proxima execucao recomendada:
+- `12F9 — Gerar payload JSON completo importavel candidato para protocolos/itens/grupos, ainda sem executar import`.
+
+---
+
+## 0.1 Resultado anterior — Fase 12F7
+
 Fase 12F7 — Migration controlada para suportar ProductClassGroup em itens de protocolo sanitario v2 — executada localmente.
 
 Decisao: `FASE 12F7 CONCLUIDA COMO MIGRATION CONTROLADA`.
