@@ -1,20 +1,58 @@
-# ACTIVE_PHASE_PLAN - Fase 12F4
+# ACTIVE_PHASE_PLAN - Fase 12F5
 
-**Status:** Fase 12F4 concluida localmente - adapter/normalizer candidato dos payloads para schema real.
-**Foco:** Adapter documental de payloads 12F2 para shape SQL real, com rejeicoes formais; sem seed/import, migration, schema, runtime, Dexie, sync, UI, agenda, evento, estoque, carencia ativa ou automacao operacional.
+**Status:** Fase 12F5 concluida localmente - validacao automatizada nao destrutiva do adapter candidato.
+**Foco:** Script local somente leitura para validar artefatos 12F4, rejeicoes, enums, JSONB, flags proibidas e invariantes sanitarios; sem seed/import, migration, schema, runtime funcional, Dexie, sync, UI, agenda, evento, estoque, carencia ativa ou automacao operacional.
 **Criado:** 2026-06-14
 **Atualizado:** 2026-06-14
-**Plano base:** `docs/review/PLANO_FASE_12F4_ADAPTER_PAYLOADS_SCHEMA_REAL.md`
+**Plano base:** `docs/review/PLANO_FASE_12F5_VALIDACAO_AUTOMATIZADA_ADAPTER.md`
 
 ---
 
 ## Objetivo em 1 paragrafo
 
-Executar a Fase 12F4 definindo um adapter/normalizer nao destrutivo para converter os payloads candidatos 12F2 no shape real das tabelas existentes, gerando tambem relatorio de rejeicoes. A fase e documental; nao executa seed/import, nao cria migration, nao altera schema/runtime/Dexie/sync/UI e nao cria agenda, evento, estoque, carencia ativa, venda, abate, leite ou aptidao operacional.
+Executar a Fase 12F5 criando validacao automatizada local e nao destrutiva para conferir o adapter 12F4 e seus artefatos. A fase permite script local de leitura e relatorios documentais; nao executa seed/import, nao cria migration, nao altera schema/runtime funcional/Dexie/sync/UI e nao cria agenda, evento, estoque, carencia ativa, venda, abate, leite ou aptidao operacional.
 
 ---
 
-## Decisao 12F4
+## Decisao 12F5
+
+Decisao: `FASE 12F5 CONCLUIDA COMO VALIDACAO AUTOMATIZADA NAO DESTRUTIVA`.
+
+Entregue nesta fase:
+- script local `scripts/codex/validate-sanitario-adapter-payloads-12f5.mjs`;
+- plano principal `docs/review/PLANO_FASE_12F5_VALIDACAO_AUTOMATIZADA_ADAPTER.md`;
+- evidencia `docs/review/evidence/VALIDACAO_AUTOMATIZADA_ADAPTER_12F5.md`;
+- evidencia `docs/review/evidence/RESULTADO_VALIDACAO_ADAPTER_12F5.md`;
+- evidencia `docs/review/evidence/REGRAS_VALIDACAO_ADAPTER_12F5.md`;
+- validacao automatizada com exit code 0;
+- resultado: 300 PASS, 1 WARNING, 0 FAIL;
+- B19 nacional validada;
+- aftosa archived/blocked validada;
+- ProductClassGroup em itens rejeitado corretamente;
+- ProductClassGroup members bloqueados corretamente;
+- flags proibidas ausentes;
+- zero `agenda_allowed`;
+- zero `approved_for_catalog`.
+
+Nao implementado nesta fase:
+- seed/import executado;
+- migration;
+- alteracao de schema;
+- codigo funcional/runtime de produto;
+- UI;
+- Dexie/sync;
+- agenda real;
+- evento real;
+- estoque;
+- carencia ativa;
+- venda, abate, leite ou aptidao operacional.
+
+Proxima fase segura:
+- `12F6 — Decisao estrutural sobre ProductClassGroup em itens`, ainda sem seed/import real.
+
+---
+
+## Historico anterior — Fase 12F4
 
 Decisao: `FASE 12F4 CONCLUIDA COMO ADAPTER/NORMALIZER CANDIDATO DOCUMENTAL`.
 

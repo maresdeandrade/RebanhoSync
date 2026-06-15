@@ -2,34 +2,49 @@
 
 Atualizado em: 2026-06-14
 
-## 0. Handoff Atual — Fase 12F4
+## 0. Handoff Atual — Fase 12F5
+
+Fase 12F5 — Validacao automatizada do adapter/normalizer candidato — executada localmente com script somente leitura e relatorios documentais.
+
+Decisao: `FASE 12F5 CONCLUIDA COMO VALIDACAO AUTOMATIZADA NAO DESTRUTIVA`.
+
+Resultado:
+- Criado `scripts/codex/validate-sanitario-adapter-payloads-12f5.mjs`.
+- Criado `docs/review/PLANO_FASE_12F5_VALIDACAO_AUTOMATIZADA_ADAPTER.md`.
+- Criadas evidencias 12F5 em `docs/review/evidence/`.
+- Script executado com exit code 0.
+- Resultado do script: 300 PASS, 1 WARNING, 0 FAIL.
+- B19 nacional validada.
+- Aftosa archived/blocked validada.
+- ProductClassGroup em itens rejeitado corretamente.
+- ProductClassGroup members bloqueados corretamente.
+- Flags proibidas ausentes.
+- Nenhum protocolo foi promovido a `approved_for_catalog`.
+- Nenhum protocolo ou item foi promovido a `agenda_allowed`.
+- Nenhum codigo funcional, migration, seed/import, schema, UI, Dexie, sync, agenda real, evento real, estoque, carencia ativa, venda, abate, leite ou aptidao operacional foi criado.
+
+Proxima fase segura:
+- `12F6 — Decisao estrutural sobre ProductClassGroup em itens`, ainda sem seed/import real.
+
+---
+
+## 0.1 Handoff anterior — Fase 12F4
 
 Fase 12F4 — Adapter/normalizer dos payloads candidatos para schema real — executada localmente como fase documental.
 
 Decisao: `FASE 12F4 CONCLUIDA COMO ADAPTER/NORMALIZER CANDIDATO DOCUMENTAL`.
 
 Resultado:
-- Criado `docs/review/PLANO_FASE_12F4_ADAPTER_PAYLOADS_SCHEMA_REAL.md`.
-- Criadas evidencias 12F4 em `docs/review/evidence/`.
-- 10 protocolos podem gerar payload adaptado para `sanitario_protocolos_v2`.
-- 13 itens podem gerar payload adaptado para `sanitario_protocolo_itens_versions_v2`.
-- 6 itens antiparasitarios foram rejeitados por `PRODUCT_CLASS_GROUP_NOT_SUPPORTED_BY_SQL_ITEM_ENUM`.
-- 4 ProductClassGroups podem gerar payload adaptado parcial.
-- 16 ProductClassGroup members foram bloqueados por `PRODUCT_CLASS_ID_REQUIRED_FOR_GROUP_MEMBER`.
-- SourceRefs foram direcionados para `source_refs_snapshot` e `source_refs_by_field`.
-- RotationRules foram direcionados para JSONB de `snapshot_template`/metadata, sem tabela nova.
-- B19 preservada como regra nacional para femeas bovinas e bubalinas de 3 a 8 meses, sem dependencia estadual para elegibilidade.
-- Aftosa preservada como `archived/blocked` e `productRequirementKind = none`.
-- Nenhum protocolo foi promovido a `approved_for_catalog`.
-- Nenhum protocolo ou item foi promovido a `agenda_allowed`.
-- Nenhum codigo funcional, migration, seed/import, schema, UI, Dexie, sync, agenda real, evento real, estoque, carencia ativa, venda, abate, leite ou aptidao operacional foi criado.
-
-Proxima fase segura:
-- `12F5 — Validacao automatizada do adapter/normalizer candidato`, ainda sem aplicar seed/import e sem ativacao automatica.
+- 10 protocolos adaptaveis.
+- 13 itens adaptaveis.
+- 6 itens antiparasitarios rejeitados.
+- 4 ProductClassGroups adaptaveis parcialmente.
+- 16 ProductClassGroup members bloqueados.
+- Proxima etapa definida como validacao automatizada sem import.
 
 ---
 
-## 0.1 Handoff anterior — Fase 12F3
+## 0.2 Handoff anterior — Fase 12F3
 
 Fase 12F3 — Validacao tecnica dos payloads candidatos e reconciliacao contra schema real — executada localmente como fase documental.
 

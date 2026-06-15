@@ -28,13 +28,13 @@ Não deve substituir issues, tarefas técnicas ou prompts de implementação.
 
 ## Fase atual — Fase 12
 
-Status: **Fase 12F4 concluida localmente como adapter/normalizer candidato dos payloads para schema real**
+Status: **Fase 12F5 concluida localmente como validacao automatizada nao destrutiva do adapter candidato**
 Fase anterior: **Fase 11.5 — Agenda Sanitária v2: Janelas, Agrupamento e Materialização Idempotente — concluída localmente**
-Fase seguinte: **Fase 12F5 — Validacao automatizada do adapter/normalizer candidato, ainda sem aplicar seed/import**
+Fase seguinte: **Fase 12F6 — Decisao estrutural sobre ProductClassGroup em itens, ainda sem seed/import real**
 
 ### Conduta inicial
 
-As subfases 11.5A a 11.5J (Agenda Sanitária v2 core/documental), 12A (auditoria), 12B (modelagem clean/reset), 12C (migration clean SQL), 12D0 (modelo canônico), 12D1 (schema/contratos mínimos v2), 12D2 (builders/adapters puros de snapshots), 12D3 (extração curatorial), 12D4 (rebaseline conceitual das matrizes), 12D5 (contratos TypeScript de ProductClass), 12D6 (schema SQL, RLS e tabelas para ProductClass), 12E0 (Diagnóstico e Contrato de Offline/Sync), 12E1 (Dexie stores ProductClass v2), 12E2 (pull remoto ProductClass v2 para Dexie), 12E3 (catalogo tecnico sanitario v2 ampliado em Dexie/pull), 12E4 (Agenda Sanitaria v2 offline/sync controlado), 12E5 (hardening offline/sync), 12F0 (estruturacao curatorial dos Protocolos Sanitarios v2), 12F1 (normalizacao tecnica em artefatos candidatos), 12F2 (payloads candidatos de seed/import, sem execucao), 12F3 (validacao tecnica contra schema real) e 12F4 (adapter/normalizer candidato sem import) foram concluídas localmente. O desenvolvimento pode avançar para 12F5 como validacao automatizada do adapter/normalizer candidato, ainda sem aplicar seed/import, sem ativacao automatica, sem UI ampla, evento executado, estoque ou carencia ativa.
+As subfases 11.5A a 11.5J (Agenda Sanitária v2 core/documental), 12A (auditoria), 12B (modelagem clean/reset), 12C (migration clean SQL), 12D0 (modelo canônico), 12D1 (schema/contratos mínimos v2), 12D2 (builders/adapters puros de snapshots), 12D3 (extração curatorial), 12D4 (rebaseline conceitual das matrizes), 12D5 (contratos TypeScript de ProductClass), 12D6 (schema SQL, RLS e tabelas para ProductClass), 12E0 (Diagnóstico e Contrato de Offline/Sync), 12E1 (Dexie stores ProductClass v2), 12E2 (pull remoto ProductClass v2 para Dexie), 12E3 (catalogo tecnico sanitario v2 ampliado em Dexie/pull), 12E4 (Agenda Sanitaria v2 offline/sync controlado), 12E5 (hardening offline/sync), 12F0 (estruturacao curatorial dos Protocolos Sanitarios v2), 12F1 (normalizacao tecnica em artefatos candidatos), 12F2 (payloads candidatos de seed/import, sem execucao), 12F3 (validacao tecnica contra schema real), 12F4 (adapter/normalizer candidato sem import) e 12F5 (validacao automatizada nao destrutiva) foram concluídas localmente. O desenvolvimento pode avançar para 12F6 como decisao estrutural sobre ProductClassGroup em itens, ainda sem seed/import real, sem ativacao automatica, sem UI ampla, evento executado, estoque ou carencia ativa.
 
 ### Handoff para Fase 12E
 

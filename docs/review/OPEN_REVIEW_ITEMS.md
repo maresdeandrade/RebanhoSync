@@ -37,9 +37,9 @@ Itens resolvidos devem sair deste documento e permanecer registrados apenas no r
 
 # Pendências abertas
 
-Sem P0/P1 aberto de runtime apos a Fase 12F4.
+Sem P0/P1 aberto de runtime apos a Fase 12F5.
 
-Observacao 12F4: as rejeicoes documentadas em `docs/review/evidence/REJEICOES_PAYLOADS_12F4.md` sao bloqueios de adapter/import candidato, nao incidentes abertos de runtime. Elas impedem seed/import bruto de itens `product_class_group` e members sem `class_id` ate validacao automatizada, schema futuro ou ProductClass previa.
+Observacao 12F5: o script `scripts/codex/validate-sanitario-adapter-payloads-12f5.mjs` passou com 300 PASS, 1 WARNING e 0 FAIL. As rejeicoes documentadas em `docs/review/evidence/REJEICOES_PAYLOADS_12F4.md` permanecem bloqueios de adapter/import candidato, nao incidentes abertos de runtime.
 
 Observacao tecnica: `sanitario_produto_fontes_v2` permanece em full fetch/merge porque nao possui `updated_at` no contrato implementado. Reavaliar apenas se futura migration/contrato adicionar timestamp de atualizacao a essa tabela.
 

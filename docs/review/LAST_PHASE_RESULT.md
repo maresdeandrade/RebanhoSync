@@ -5,6 +5,42 @@ Atualizado em: 2026-06-14
 
 ## 0. Resultado mais recente
 
+Fase 12F5 — Validacao automatizada do adapter/normalizer candidato — executada localmente como script somente leitura e relatorio documental.
+
+Decisao: `FASE 12F5 CONCLUIDA COMO VALIDACAO AUTOMATIZADA NAO DESTRUTIVA`.
+
+Resultado da 12F5:
+- Criado script local `scripts/codex/validate-sanitario-adapter-payloads-12f5.mjs`.
+- Criado plano principal `docs/review/PLANO_FASE_12F5_VALIDACAO_AUTOMATIZADA_ADAPTER.md`.
+- Criadas 3 evidencias 12F5 em `docs/review/evidence/`.
+- Script executado com exit code 0.
+- Resultado consolidado: 300 PASS, 1 WARNING, 0 FAIL.
+- Flags proibidas ausentes.
+- Contagens 12F4 validadas.
+- B19 nacional validada.
+- Febre aftosa archived/blocked validada.
+- Rejeicoes ProductClassGroup validadas.
+- ProductClassGroup members sem `class_id` bloqueados corretamente.
+- SourceRefs e RotationRules em JSONB confirmados.
+- Nenhum protocolo recebeu `approved_for_catalog`.
+- Nenhum item recebeu `agenda_allowed`.
+- Nenhum codigo funcional de produto, migration, seed/import, schema, UI, Dexie, sync, agenda, evento, estoque, carencia ativa ou liberacao operacional foi criado.
+
+Patch da 12F5:
+- `scripts/codex/validate-sanitario-adapter-payloads-12f5.mjs`
+- `docs/review/PLANO_FASE_12F5_VALIDACAO_AUTOMATIZADA_ADAPTER.md`
+- `docs/review/evidence/VALIDACAO_AUTOMATIZADA_ADAPTER_12F5.md`
+- `docs/review/evidence/RESULTADO_VALIDACAO_ADAPTER_12F5.md`
+- `docs/review/evidence/REGRAS_VALIDACAO_ADAPTER_12F5.md`
+- docs ativos de fase/status/roadmap/dominio
+
+Proxima execucao recomendada:
+- `12F6 — Decisao estrutural sobre ProductClassGroup em itens`, ainda sem seed/import real.
+
+---
+
+## 0.1 Resultado anterior — Fase 12F4
+
 Fase 12F4 — Adapter/normalizer dos payloads candidatos para schema real — executada localmente como fase documental.
 
 Decisao: `FASE 12F4 CONCLUIDA COMO ADAPTER/NORMALIZER CANDIDATO DOCUMENTAL`.
