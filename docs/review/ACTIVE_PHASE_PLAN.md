@@ -1,16 +1,38 @@
-    # ACTIVE_PHASE_PLAN - Fase 12F8
+    # ACTIVE_PHASE_PLAN - Fase 12F9
 
-    **Status:** Fase 12F8 concluida localmente - revalidacao nao destrutiva do adapter ProductClassGroup.
-    **Foco:** Revalidar o adapter 12F4/12F5 contra o schema atualizado pela 12F7 e adaptar documentalmente os 6 itens antiparasitarios antes rejeitados, sem seed/import, UI, Dexie, sync, agenda, evento, estoque ou carencia ativa.
+    **Status:** Fase 12F9 concluida localmente - payload JSON completo candidato gerado sem seed/import.
+    **Foco:** Gerar payload JSON completo candidato para protocolos, itens, ProductClassGroups e rejeicoes remanescentes, sem executar import real e sem alterar runtime operacional.
     **Criado:** 2026-06-15
     **Atualizado:** 2026-06-15
-    **Plano base:** `docs/review/PLANO_FASE_12F8_REVALIDACAO_ADAPTER_PRODUCT_CLASS_GROUP.md`
+    **Plano base:** `docs/review/PLANO_FASE_12F9_PAYLOAD_JSON_COMPLETO_PROTOCOLOS_V2.md`
 
     ---
 
     ## Objetivo em 1 paragrafo
 
-    Executar a Fase 12F8 revalidando o adapter dos payloads candidatos contra o schema atualizado pela 12F7, gerando payloads adaptados candidatos para os 6 itens antiparasitarios com ProductClassGroup quando houver lookup documental inequivoco para `product_class_group_id`, sem aplicar import real.
+    Executar a Fase 12F9 gerando payload JSON completo candidato para Protocolos Sanitarios v2, com 10 protocolos, 19 itens, 4 ProductClassGroups e 16 rejeicoes remanescentes de members, sem aplicar import real.
+
+    ---
+
+    ## Decisao 12F9
+
+    Decisao: `FASE 12F9 CONCLUIDA COMO GERACAO JSON CANDIDATA NAO DESTRUTIVA`.
+
+    Entregue nesta fase:
+    - plano `docs/review/PLANO_FASE_12F9_PAYLOAD_JSON_COMPLETO_PROTOCOLOS_V2.md`;
+    - script `scripts/codex/validate-sanitario-complete-payloads-12f9.mjs`;
+    - JSON `docs/review/evidence/PAYLOAD_JSON_PROTOCOLOS_V2_12F9.json`;
+    - JSON `docs/review/evidence/PAYLOAD_JSON_ITENS_PROTOCOLOS_V2_12F9.json`;
+    - JSON `docs/review/evidence/PAYLOAD_JSON_PRODUCT_CLASS_GROUPS_12F9.json`;
+    - JSON `docs/review/evidence/REJEICOES_PAYLOAD_JSON_12F9.json`;
+    - relatorio `docs/review/evidence/RELATORIO_12F9_PAYLOAD_JSON_COMPLETO.md`;
+    - resultado `docs/review/evidence/RESULTADO_VALIDACAO_PAYLOAD_JSON_12F9.md`.
+
+    Validacao:
+    - `node scripts/codex/validate-sanitario-complete-payloads-12f9.mjs`: passou com 543 PASS, 0 WARNING, 0 FAIL.
+
+    Proxima fase segura:
+    - `12G0 — Import controlado/dry-run dos payloads candidatos, apenas se houver autorizacao explicita para carga real`.
 
     ---
 

@@ -2,7 +2,30 @@
 
 Atualizado em: 2026-06-15
 
-## 0. Handoff Atual — Fase 12F8
+## 0. Handoff Atual — Fase 12F9
+
+Fase 12F9 — Payload JSON completo importavel candidato para Protocolos Sanitarios v2 — executada localmente.
+
+Decisao: `FASE 12F9 CONCLUIDA COMO GERACAO JSON CANDIDATA NAO DESTRUTIVA`.
+
+Resultado:
+- Criado `scripts/codex/validate-sanitario-complete-payloads-12f9.mjs`.
+- Criado `docs/review/PLANO_FASE_12F9_PAYLOAD_JSON_COMPLETO_PROTOCOLOS_V2.md`.
+- Criados JSONs candidatos em `docs/review/evidence/`.
+- Criado relatorio e resultado de validacao 12F9.
+- Contagem candidata: 10 protocolos, 19 itens, 4 ProductClassGroups e 16 members rejeitados.
+- B19, aftosa, ProductClassGroup e carencia por evento/produto/snapshot foram preservados.
+- Nenhum seed/import, migration, banco, UI, Dexie, sync, Edge Function, agenda, evento, estoque, carencia ativa ou liberacao operacional foi criado.
+
+Validacao:
+- `node scripts/codex/validate-sanitario-complete-payloads-12f9.mjs`: 543 PASS, 0 WARNING, 0 FAIL.
+
+Proxima fase segura:
+- `12G0 — Import controlado/dry-run dos payloads candidatos, somente com autorizacao explicita para carga real`.
+
+---
+
+## 0.1 Handoff anterior — Fase 12F8
 
 Fase 12F8 — Revalidacao do adapter contra schema atualizado e adaptacao documental dos itens ProductClassGroup — executada localmente.
 

@@ -5,6 +5,40 @@ Atualizado em: 2026-06-15
 
 ## 0. Resultado mais recente
 
+Fase 12F9 — Payload JSON completo importavel candidato para Protocolos Sanitarios v2 — executada localmente.
+
+Decisao: `FASE 12F9 CONCLUIDA COMO GERACAO JSON CANDIDATA NAO DESTRUTIVA`.
+
+Resultado da 12F9:
+- Gerados payloads JSON candidatos para 10 protocolos, 19 itens e 4 ProductClassGroups.
+- Gerado JSON de 16 rejeicoes remanescentes de ProductClassGroup members por `PRODUCT_CLASS_ID_REQUIRED_FOR_GROUP_MEMBER`.
+- `execute_import=false` preservado em todos os artefatos.
+- B19 permanece nacional/manual_only, femeas bovinas/bubalinas, 3-8 meses, sem agenda automatica.
+- Aftosa permanece blocked/archived, `status=retired`, sem produto e sem agenda.
+- ProductClassGroup continua sem validar execucao, dose ou carencia; produto real segue obrigatorio no evento.
+- Nenhum seed/import, migration, schema runtime, UI, Dexie, sync, agenda, evento, estoque, carencia ativa ou liberacao operacional foi criado.
+
+Patch da 12F9:
+- `scripts/codex/validate-sanitario-complete-payloads-12f9.mjs`
+- `docs/review/PLANO_FASE_12F9_PAYLOAD_JSON_COMPLETO_PROTOCOLOS_V2.md`
+- `docs/review/evidence/PAYLOAD_JSON_PROTOCOLOS_V2_12F9.json`
+- `docs/review/evidence/PAYLOAD_JSON_ITENS_PROTOCOLOS_V2_12F9.json`
+- `docs/review/evidence/PAYLOAD_JSON_PRODUCT_CLASS_GROUPS_12F9.json`
+- `docs/review/evidence/REJEICOES_PAYLOAD_JSON_12F9.json`
+- `docs/review/evidence/RELATORIO_12F9_PAYLOAD_JSON_COMPLETO.md`
+- `docs/review/evidence/RESULTADO_VALIDACAO_PAYLOAD_JSON_12F9.md`
+- docs ativos de fase/status/roadmap/dominio
+
+Validacao da 12F9:
+- `node scripts/codex/validate-sanitario-complete-payloads-12f9.mjs`: passou com 543 PASS, 0 WARNING, 0 FAIL.
+
+Proxima execucao recomendada:
+- `12G0 — Import controlado/dry-run dos payloads candidatos, somente com autorizacao explicita para carga real`.
+
+---
+
+## 0.1 Resultado anterior — Fase 12F8
+
 Fase 12F8 — Revalidacao do adapter contra schema atualizado e adaptacao documental dos itens ProductClassGroup — executada localmente.
 
 Decisao: `FASE 12F8 CONCLUIDA COMO REVALIDACAO NAO DESTRUTIVA DO ADAPTER`.

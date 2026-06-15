@@ -147,7 +147,7 @@ A partir da 12F3, os payloads candidatos dos Protocolos Sanitarios v2 foram vali
 - SourceRefs separados de sourceGaps e sourcePolicy.
 - itens com ProductClassGroup nao devem ser convertidos para `product_class`, `specific_product` ou `none` sem decisao estrutural explicita.
 
-A 12F6 tomou a decisao estrutural documental: a forma futura recomendada e suporte direto a `product_class_group` no item com `product_class_group_id` referenciando `sanitario_product_class_groups_v2(id)`. A 12F7 criou essa migration controlada no schema real, com enum, coluna, FK, CHECK e trigger de validacao de grupo ativo/escopo/status. A 12F8 revalidou o adapter e adaptou documentalmente os 6 itens antiparasitarios com `product_class_group_id` por lookup, elevando a contagem de itens adaptaveis para 19. Ainda assim, nenhum seed/import foi aplicado; a 12F9 deve gerar payload JSON completo importavel candidato antes de qualquer import real.
+A 12F6 tomou a decisao estrutural documental: a forma futura recomendada e suporte direto a `product_class_group` no item com `product_class_group_id` referenciando `sanitario_product_class_groups_v2(id)`. A 12F7 criou essa migration controlada no schema real, com enum, coluna, FK, CHECK e trigger de validacao de grupo ativo/escopo/status. A 12F8 revalidou o adapter e adaptou documentalmente os 6 itens antiparasitarios com `product_class_group_id` por lookup, elevando a contagem de itens adaptaveis para 19. A 12F9 gerou payload JSON completo candidato para 10 protocolos, 19 itens, 4 ProductClassGroups e 16 rejeicoes de members, sempre com `execute_import=false`. Ainda assim, nenhum seed/import foi aplicado; import real exige fase propria, dry-run/transacao/rollback e autorizacao explicita.
 
 Um protocolo pode nascer de:
 

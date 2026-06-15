@@ -1,0 +1,76 @@
+{
+  "artifact": "sanitario_product_class_groups_v2_complete_candidate",
+  "artifact_version": "12F9.0-candidate",
+  "execute_import": false,
+  "target_table": "sanitario_product_class_groups_v2",
+  "rows": [
+    {
+      "group_key": "pcg_antiparasitarios_recria_estrategicos",
+      "name": "Antiparasitarios recria estrategicos",
+      "scope": "global",
+      "fazenda_id": null,
+      "requires_mv_for_other_class": true,
+      "curation_status": "needs_review",
+      "automation_status": "preview_allowed",
+      "limitations": ["requires_real_product", "requires_weight", "withdrawal_by_executed_product", "chemical_class_rotation_required"],
+      "metadata": {
+        "usage": "recria maio/julho/setembro",
+        "agenda_allowed": false,
+        "approved_for_catalog": false,
+        "principios_ativos_candidatos": ["lactonas_macrociclicas", "benzimidazois", "imidazotiazoleis", "associacoes_antiparasitarias"],
+        "rotationRule": {"key": "rr_antiparasitario_chemical_class_rotation_v1", "kind": "chemical_class_rotation", "avoid_same_class_consecutively": true, "allow_combination_products": true, "requires_mv_override_for_repeat_class": true, "requires_resistance_context": true, "combination_requires_own_label": true}
+      }
+    },
+    {
+      "group_key": "pcg_antiparasitarios_bezerros_pre_desmama",
+      "name": "Antiparasitarios bezerros pre-desmama",
+      "scope": "global",
+      "fazenda_id": null,
+      "requires_mv_for_other_class": true,
+      "curation_status": "needs_review",
+      "automation_status": "manual_only",
+      "limitations": ["requires_real_product", "requires_weight_or_label", "requires_mv_or_management_context", "chemical_class_rotation_required"],
+      "metadata": {
+        "usage": "pre-desmama situacional",
+        "agenda_allowed": false,
+        "approved_for_catalog": false,
+        "principios_ativos_candidatos": ["lactonas_macrociclicas", "benzimidazois", "imidazotiazoleis", "associacoes_antiparasitarias"],
+        "rotationRule": {"key": "rr_antiparasitario_chemical_class_rotation_v1", "kind": "chemical_class_rotation", "avoid_same_class_consecutively": true, "allow_combination_products": true, "requires_mv_override_for_repeat_class": true, "requires_resistance_context": true, "combination_requires_own_label": true}
+      }
+    },
+    {
+      "group_key": "pcg_antiparasitarios_pre_confinamento",
+      "name": "Antiparasitarios pre-confinamento ou pasto vedado",
+      "scope": "global",
+      "fazenda_id": null,
+      "requires_mv_for_other_class": true,
+      "curation_status": "needs_review",
+      "automation_status": "manual_only",
+      "limitations": ["requires_real_product", "requires_weight", "slaughter_withdrawal_requires_executed_product", "chemical_class_rotation_required"],
+      "metadata": {
+        "usage": "pre-confinamento/pasto vedado",
+        "agenda_allowed": false,
+        "approved_for_catalog": false,
+        "principios_ativos_candidatos": ["lactonas_macrociclicas", "benzimidazois", "imidazotiazoleis", "associacoes_antiparasitarias"],
+        "rotationRule": {"key": "rr_antiparasitario_chemical_class_rotation_v1", "kind": "chemical_class_rotation", "avoid_same_class_consecutively": true, "allow_combination_products": true, "requires_mv_override_for_repeat_class": true, "requires_resistance_context": true, "combination_requires_own_label": true}
+      }
+    },
+    {
+      "group_key": "pcg_antiparasitarios_matrizes_pre_parto",
+      "name": "Antiparasitarios matrizes pre-parto",
+      "scope": "global",
+      "fazenda_id": null,
+      "requires_mv_for_other_class": true,
+      "curation_status": "needs_review",
+      "automation_status": "manual_only",
+      "limitations": ["requires_real_product", "milk_requires_label", "gestation_lactation_requires_label_or_mv", "chemical_class_rotation_required"],
+      "metadata": {
+        "usage": "matrizes pre-parto/periparto",
+        "agenda_allowed": false,
+        "approved_for_catalog": false,
+        "principios_ativos_candidatos": ["lactonas_macrociclicas", "benzimidazois", "imidazotiazoleis", "associacoes_antiparasitarias"],
+        "rotationRule": {"key": "rr_antiparasitario_chemical_class_rotation_v1", "kind": "chemical_class_rotation", "avoid_same_class_consecutively": true, "allow_combination_products": true, "requires_mv_override_for_repeat_class": true, "requires_resistance_context": true, "combination_requires_own_label": true}
+      }
+    }
+  ]
+}
