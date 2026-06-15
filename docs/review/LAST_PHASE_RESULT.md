@@ -5,6 +5,40 @@ Atualizado em: 2026-06-14
 
 ## 0. Resultado mais recente
 
+Fase 12F2 — Seed/import candidata dos Protocolos Sanitarios v2 — executada localmente como fase documental/importavel candidata.
+
+Decisao: `FASE 12F2 CONCLUIDA COMO ARTEFATO IMPORTAVEL CANDIDATO`.
+
+Resultado da 12F2:
+- Criado plano principal `docs/review/PLANO_FASE_12F2_SEED_CANDIDATA_PROTOCOLOS_V2.md`.
+- Criados 5 artefatos de payload candidato em `docs/review/evidence/`.
+- 10 protocolos convertidos para payload candidato.
+- 19 itens versionados convertidos para payload candidato.
+- 4 ProductClassGroups antiparasitarios e 16 membros convertidos para payload candidato.
+- RotationRule e SourceRefs field-level convertidos para artefatos documentais candidatos.
+- B19 preservada como regra normativa nacional para femeas bovinas e bubalinas de 3 a 8 meses.
+- Febre aftosa ficou `archived/blocked` com `productRequirementKind = none`.
+- Fragilidades pre-12F3 registradas e parcialmente normalizadas nos payloads candidatos: intervalos ideais sem string, tipo composto removido, `fieldSourceRefs` separado de gaps/politicas e changelog 22->19 documentado.
+- Nenhum protocolo recebeu `approved_for_catalog`.
+- Nenhum item recebeu `agenda_allowed`.
+- Nenhum codigo funcional, migration, seed executada, schema, UI, Dexie, sync, agenda, evento, estoque, carencia ativa ou liberacao operacional foi criado.
+
+Patch da 12F2:
+- `docs/review/PLANO_FASE_12F2_SEED_CANDIDATA_PROTOCOLOS_V2.md`
+- `docs/review/evidence/SEED_PROTOCOLOS_V2_CANDIDATA_12F2.md`
+- `docs/review/evidence/SEED_ITENS_PROTOCOLOS_V2_CANDIDATA_12F2.md`
+- `docs/review/evidence/SEED_PRODUCT_CLASS_GROUPS_CANDIDATA_12F2.md`
+- `docs/review/evidence/SEED_ROTATION_RULES_CANDIDATA_12F2.md`
+- `docs/review/evidence/SEED_SOURCE_REFS_CANDIDATA_12F2.md`
+- docs ativos de fase/status/roadmap/dominio
+
+Proxima execucao recomendada:
+- `12F3 — Validacao tecnica dos payloads candidatos e reconciliacao contra schema real`, ainda sem aplicar seed/import e sem ativacao automatica.
+
+---
+
+## 0.1 Resultado anterior — Fase 12F1
+
 Fase 12F1 — Normalizacao dos Protocolos Sanitarios v2 em artefato tecnico estruturado — executada localmente como fase documental.
 
 Decisao: `FASE 12F1 CONCLUIDA COMO NORMALIZACAO TECNICA CANDIDATA`.
@@ -15,31 +49,12 @@ Resultado da 12F1:
 - 10 protocolos normalizados.
 - 19 itens normalizados.
 - 4 ProductClassGroups antiparasitarios fechados.
-- `associacoes_antiparasitarias` marcada como `reserved_candidate`.
-- `rotationRule` antiparasitario definido.
-- `sourceRefs` por campo critico, `sourcePolicy` separada e `sourceGaps` explicitados.
-- `executionProductPolicy` e `restrictions` definidos.
 - Nenhum item recebeu `agenda_allowed`.
-- Brucelose B19 validada com regra normativa nacional consolidada para femeas bovinas e bubalinas de 3 a 8 meses.
-- B19 usa `legal_status = obrigatorio_norma_nacional`, `curationStatus = needs_review`, `automationStatus = manual_only`, `allowsAgendaAuto = false` e `agenda_allowed = false`.
-- Febre aftosa ficou `archived/blocked` com `productRequirementKind = none`.
 - Nenhum codigo funcional, migration, seed, UI, Dexie, sync, agenda, evento, estoque, carencia ativa ou liberacao operacional foi criado.
-
-Patch da 12F1:
-- `docs/review/PLANO_FASE_12F1_NORMALIZACAO_PROTOCOLOS_V2.md`
-- `docs/review/evidence/PROTOCOLOS_SANITARIOS_V2_NORMALIZADOS_12F1.md`
-- `docs/review/evidence/PROTOCOLO_ITENS_NORMALIZADOS_12F1.md`
-- `docs/review/evidence/PRODUCT_CLASS_GROUPS_NORMALIZADOS_12F1.md`
-- `docs/review/evidence/ROTATION_RULES_ANTIPARASITARIOS_12F1.md`
-- `docs/review/evidence/SOURCE_REFS_FIELD_LEVEL_12F1.md`
-- docs ativos de fase/status/roadmap/dominio
-
-Proxima execucao recomendada:
-- `12F2 — Seed/import real candidato dos Protocolos Sanitarios v2, condicionado a revisao tecnica e ainda sem ativacao automatica`.
 
 ---
 
-## 0.1 Resultado anterior — Fase 12F0
+## 0.2 Resultado anterior — Fase 12F0
 
 Fase 12F0 — Estruturacao curatorial dos Protocolos Sanitarios v2 — executada localmente como fase documental.
 

@@ -1,20 +1,60 @@
-# ACTIVE_PHASE_PLAN - Fase 12F1
+# ACTIVE_PHASE_PLAN - Fase 12F2
 
-**Status:** Fase 12F1 concluida localmente - normalizacao tecnica dos Protocolos Sanitarios v2 em artefato candidato.
-**Foco:** Artefatos documentais estruturados para futura seed/importacao candidata; sem seed real, migration, UI, agenda, evento, carencia ativa ou automacao operacional.
+**Status:** Fase 12F2 concluida localmente - payloads candidatos para futura seed/importacao dos Protocolos Sanitarios v2.
+**Foco:** Artefatos importaveis candidatos; sem seed executada, migration, schema, runtime, Dexie, sync, UI, agenda, evento, estoque, carencia ativa ou automacao operacional.
 **Criado:** 2026-06-14
 **Atualizado:** 2026-06-14
-**Plano base:** `docs/review/PLANO_FASE_12F1_NORMALIZACAO_PROTOCOLOS_V2.md`
+**Plano base:** `docs/review/PLANO_FASE_12F2_SEED_CANDIDATA_PROTOCOLOS_V2.md`
 
 ---
 
 ## Objetivo em 1 paragrafo
 
-Executar a Fase 12F1 normalizando os Protocolos Sanitarios v2 em artefatos tecnicos estruturados para futura seed/importacao candidata: protocolos, itens, `ProductClassGroup`, `eligibilityRule`, `operationalWindowRule`, `recurrenceRule`, `rotationRule`, `sourceRefs` por campo, `sourceGaps`, `executionProductPolicy` e `restrictions`. A fase e documental; nao cria seed real, migration, UI, Dexie, sync, agenda, evento, estoque, carencia ativa, venda, abate, leite ou aptidao operacional.
+Executar a Fase 12F2 convertendo a normalizacao 12F1 em payloads tecnicos candidatos para futura seed/importacao: `sanitario_protocolos_v2`, `sanitario_protocolo_itens_versions_v2`, `sanitario_product_class_groups_v2`, `sanitario_product_class_group_members_v2`, `sanitario_rotation_rules_v2` e `sanitario_source_refs_field_level_v2`. A fase e documental/importavel candidata; nao executa seed/import, nao cria migration, nao altera schema/runtime/Dexie/sync/UI e nao cria agenda, evento, estoque, carencia ativa, venda, abate, leite ou aptidao operacional.
 
 ---
 
-## Decisao 12F1
+## Decisao 12F2
+
+Decisao: `FASE 12F2 CONCLUIDA COMO ARTEFATO IMPORTAVEL CANDIDATO`.
+
+Entregue nesta fase:
+- plano principal `docs/review/PLANO_FASE_12F2_SEED_CANDIDATA_PROTOCOLOS_V2.md`;
+- payload candidato `docs/review/evidence/SEED_PROTOCOLOS_V2_CANDIDATA_12F2.md`;
+- payload candidato `docs/review/evidence/SEED_ITENS_PROTOCOLOS_V2_CANDIDATA_12F2.md`;
+- payload candidato `docs/review/evidence/SEED_PRODUCT_CLASS_GROUPS_CANDIDATA_12F2.md`;
+- payload candidato `docs/review/evidence/SEED_ROTATION_RULES_CANDIDATA_12F2.md`;
+- payload candidato `docs/review/evidence/SEED_SOURCE_REFS_CANDIDATA_12F2.md`;
+- 10 protocolos em payload candidato;
+- 19 itens versionados em payload candidato;
+- 4 ProductClassGroups antiparasitarios fechados;
+- sourceRefs por campo preservados;
+- sourceGaps criticos preservados;
+- fragilidades pre-12F3 registradas, incluindo reconciliacao de ProductClassGroup members contra schema real e changelog 22->19;
+- zero `agenda_allowed`;
+- zero `approved_for_catalog`;
+- aftosa preservada como `archived/blocked`;
+- B19 preservada como regra nacional para femeas bovinas e bubalinas de 3 a 8 meses.
+
+Nao implementado nesta fase:
+- seed executada;
+- migration;
+- alteracao de schema;
+- codigo funcional/runtime;
+- UI;
+- Dexie/sync;
+- agenda real;
+- evento real;
+- estoque;
+- carencia ativa;
+- venda, abate, leite ou aptidao operacional.
+
+Proxima fase segura:
+- `12F3 — Validacao tecnica dos payloads candidatos e reconciliacao contra schema real`, ainda sem aplicar seed/import e sem ativacao automatica.
+
+---
+
+## Historico anterior — Fase 12F1
 
 Decisao: `FASE 12F1 CONCLUIDA COMO NORMALIZACAO TECNICA CANDIDATA`.
 
