@@ -14,7 +14,7 @@ Artefato documental candidato. Não é seed, migration, import aplicado, agenda 
   "type": "vacina|antiparasitario|manejo_sanitario|alerta",
   "target_species": [],
   "target_aptitudes": [],
-  "legal_status": "obrigatorio_norma|condicional_regional|recomendado_tecnico|situacional_tecnico|archived",
+  "legal_status": "obrigatorio_norma_nacional|obrigatorio_norma|condicional_regional|recomendado_tecnico|situacional_tecnico|archived",
   "curationStatus": "candidate|needs_review|approved_for_catalog|blocked|archived",
   "automationStatus": "manual_only|preview_allowed|agenda_allowed|blocked",
   "is_core": false,
@@ -30,7 +30,7 @@ Artefato documental candidato. Não é seed, migration, import aplicado, agenda 
 
 | protocol_key | type | target_species | legal_status | curationStatus | automationStatus | fieldSourceRefs principais | restrictions |
 |---|---|---|---|---|---|---|---|
-| `brucelose_b19` | `vacina` | `bovino_femea`, `bubalino_femea` | `obrigatorio_norma` | `needs_review` | `manual_only` | eligibility:`SRC_PNCEBT_BRUCELOSE`; dose:`SRC_BULA_ABORVAC_B19`; route:`SRC_BULA_ABORVAC_B19`; recurrence:`SRC_BULA_ABORVAC_B19`; restrictions:`SRC_PNCEBT_BRUCELOSE` | nacional para fêmeas bovinas e bubalinas 3-8 meses; bloqueios operacionais: MV, registro oficial, marcação, produto real e snapshot |
+| `brucelose_b19` | `vacina` | `bovino_femea`, `bubalino_femea` | `obrigatorio_norma_nacional` | `needs_review` | `manual_only` | eligibility:`SRC_PNCEBT_BRUCELOSE`; species:`SRC_PNCEBT_BRUCELOSE`; sex:`SRC_PNCEBT_BRUCELOSE`; age:`SRC_PNCEBT_BRUCELOSE`; dose:`SRC_BULA_ABORVAC_B19`; route:`SRC_BULA_ABORVAC_B19`; recurrence:`SRC_BULA_ABORVAC_B19`; restrictions:`SRC_PNCEBT_BRUCELOSE` | Brucelose B19 possui regra normativa nacional consolidada para fêmeas bovinas e bubalinas de 3 a 8 meses; bloqueios operacionais: MV habilitado/responsável, registro oficial, marcação quando aplicável, produto real e snapshot técnico |
 | `clostridioses` | `vacina` | `bovino`; bubalino `needs_review` | `recomendado_tecnico` | `needs_review` | `preview_allowed` | dose:`SRC_BULA_FORTRESS7`; route:`SRC_BULA_FORTRESS7`; recurrence:`SRC_BULA_FORTRESS7`; withdrawal:`SRC_BULA_FORTRESS7` | fonte produto-específica; não generalizar classe |
 | `raiva_herbivoros` | `vacina` | `bovino`, `bubalino` por mapeamento de bovídeos | `condicional_regional` | `needs_review` | `manual_only` | eligibility:`SRC_MAPA_RAIVA_VACINA`; dose:`SRC_PNCRH_RAIVA`; route:`SRC_PNCRH_RAIVA`; recurrence:`SRC_PNCRH_RAIVA`; restrictions:`SRC_PNCRH_RAIVA` | exige foco/perifoco/área de risco e overlay regional |
 | `leptospirose` | `vacina` | `bovino`; bubalino `needs_review` | `recomendado_tecnico` | `needs_review` | `manual_only` | dose:`SRC_BULA_LEPTOFERM5`; route:`SRC_BULA_LEPTOFERM5`; recurrence:`SRC_BULA_LEPTOFERM5`; withdrawal:`SRC_BULA_LEPTOFERM5` | esquema varia por produto/sorovar; não criar regra única |

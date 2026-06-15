@@ -35,7 +35,7 @@ Artefato documental candidato. Nenhum item é `agenda_allowed`.
 
 | item_key | protocol_key | productRequirementKind | classe/grupo | executionProductPolicy | operationalWindowRule | recurrenceRule | tolerance | automationStatus |
 |---|---|---|---|---|---|---|---|---|
-| `b19_femeas_3_8_meses` | `brucelose_b19` | `product_class` | `vacina_brucelose_b19` | `required_at_execution` | `age`, birth+90d a birth+240d | `single_lifetime_dose` | n/a | `manual_only` |
+| `b19_femeas_3_8_meses` | `brucelose_b19` | `product_class` | `vacina_brucelose_b19` | `required_at_execution` | `age`, birth+3m a birth+8m, `hard_window=true` | `single_lifetime_dose` | n/a | `manual_only` |
 | `clostridial_primovac_dose1` | `clostridioses` | `product_class` | `vacina_clostridial_multivalente` | `required_at_execution` | `hybrid`, idade/produto/MV | `primary_series_dose_1` | n/a | `preview_allowed` |
 | `clostridial_primovac_dose2` | `clostridioses` | `product_class` | `vacina_clostridial_multivalente` | `required_at_execution` | `anchor_event`, dose1 executada | `primary_series_dose_2` | min:28, ideal:28-42, max:42, grace:null | `preview_allowed` |
 | `clostridial_reforco_anual` | `clostridioses` | `product_class` | `vacina_clostridial_multivalente` | `required_at_execution` | `anchor_event`, última dose | `annual` | min:null, ideal:365, max:null, grace:null | `preview_allowed` |
@@ -54,6 +54,53 @@ Artefato documental candidato. Nenhum item é `agenda_allowed`.
 | `matrizes_pre_parto_lepto_reforco_situacional` | `matrizes_pre_parto` | `product_class` | `bacterina_leptospirose` | `required_at_execution` | `hybrid`, risco/produto/MV | `product_defined` | nulls até produto | `manual_only` |
 | `fmd_historico_contingencia` | `febre_aftosa` | `none` | n/a, contingência SVO documental bloqueada | `not_required` | `hybrid`, contingência normativa | `contingency_only` | n/a | `blocked` |
 | `fmd_bloqueio_vacinacao_rotina` | `febre_aftosa` | `none` | n/a, nenhum produto sugerido na rotina | `not_required` | `hybrid`, status sanitário | `none` | n/a | `blocked` |
+
+## Normalização específica — Brucelose B19
+
+Brucelose B19 possui regra normativa nacional consolidada para fêmeas bovinas e bubalinas de 3 a 8 meses.
+
+```json
+{
+  "item_key": "b19_femeas_3_8_meses",
+  "protocol_key": "brucelose_b19",
+  "curationStatus": "needs_review",
+  "automationStatus": "manual_only",
+  "allowsAgendaAuto": false,
+  "agenda_allowed": false,
+  "eligibilityRule": {
+    "species": ["bovino", "bubalino"],
+    "sex": "femea",
+    "age_min_months": 3,
+    "age_max_months": 8,
+    "legal_scope": "nacional"
+  },
+  "operationalWindowRule": {
+    "type": "age",
+    "anchor": "birth",
+    "min_offset_months": 3,
+    "max_offset_months": 8,
+    "hard_window": true
+  },
+  "fieldSourceRefs": {
+    "eligibility": "SRC_PNCEBT_BRUCELOSE",
+    "species": "SRC_PNCEBT_BRUCELOSE",
+    "sex": "SRC_PNCEBT_BRUCELOSE",
+    "age": "SRC_PNCEBT_BRUCELOSE",
+    "dose": "SRC_BULA_ABORVAC_B19",
+    "route": "SRC_BULA_ABORVAC_B19",
+    "recurrence": "SRC_BULA_ABORVAC_B19",
+    "restrictions": "SRC_PNCEBT_BRUCELOSE"
+  },
+  "sourceGaps": [
+    "requires_mv_habilitado",
+    "requires_official_record_flow",
+    "requires_marking_when_applicable",
+    "requires_executed_product_snapshot",
+    "requires_product_catalog_validation"
+  ],
+  "statusReason": "A regra nacional permite elegibilidade documental, mas a execução operacional ainda exige MV habilitado/responsável, fluxo oficial, marcação quando aplicável, produto real e snapshot técnico."
+}
+```
 
 ## Regras comuns
 

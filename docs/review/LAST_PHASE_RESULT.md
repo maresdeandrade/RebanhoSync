@@ -20,7 +20,8 @@ Resultado da 12F1:
 - `sourceRefs` por campo critico, `sourcePolicy` separada e `sourceGaps` explicitados.
 - `executionProductPolicy` e `restrictions` definidos.
 - Nenhum item recebeu `agenda_allowed`.
-- Brucelose B19 validada como nacional para femeas bovinas e bubalinas de 3-8 meses; UF/estado nao e gap de elegibilidade.
+- Brucelose B19 validada com regra normativa nacional consolidada para femeas bovinas e bubalinas de 3 a 8 meses.
+- B19 usa `legal_status = obrigatorio_norma_nacional`, `curationStatus = needs_review`, `automationStatus = manual_only`, `allowsAgendaAuto = false` e `agenda_allowed = false`.
 - Febre aftosa ficou `archived/blocked` com `productRequirementKind = none`.
 - Nenhum codigo funcional, migration, seed, UI, Dexie, sync, agenda, evento, estoque, carencia ativa ou liberacao operacional foi criado.
 

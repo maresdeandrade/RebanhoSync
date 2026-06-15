@@ -218,14 +218,16 @@ Bloqueios:
 
 Brucelose B19:
 
-- bovino fêmea;
-- bubalino fêmea;
-- 3–8 meses;
-- normativa consolidada por `SRC_PNCEBT_BRUCELOSE`;
-- protocolo nacional; UF/estado não é `sourceGap` de elegibilidade;
+- Brucelose B19 possui regra normativa nacional consolidada para fêmeas bovinas e bubalinas de 3 a 8 meses;
+- `legal_status = obrigatorio_norma_nacional`;
+- `eligibilityRule = {"species":["bovino","bubalino"],"sex":"femea","age_min_months":3,"age_max_months":8,"legal_scope":"nacional"}`;
+- `operationalWindowRule = {"type":"age","anchor":"birth","min_offset_months":3,"max_offset_months":8,"hard_window":true}`;
+- `curationStatus = needs_review`;
+- `automationStatus = manual_only`;
+- `allowsAgendaAuto = false`;
+- `agenda_allowed = false`;
 - produto executado ainda obrigatório;
-- bloqueios operacionais: MV, registro oficial, marcação, produto real e snapshot técnico;
-- `automationStatus = manual_only`.
+- bloqueios operacionais: `requires_mv_habilitado`, `requires_official_record_flow`, `requires_marking_when_applicable`, `requires_executed_product_snapshot` e `requires_product_catalog_validation`.
 
 Febre aftosa:
 

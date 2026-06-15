@@ -35,8 +35,9 @@ Entregue nesta fase:
 - febre aftosa preservada como `archived/blocked` com `productRequirementKind = none`.
 
 Validacao curatorial final:
-- Brucelose B19 e nacional para femeas bovinas e bubalinas de 3-8 meses; UF/estado nao e gap de elegibilidade.
-- Bloqueios da B19 permanecem operacionais: MV, registro oficial, marcacao, produto real e snapshot.
+- Brucelose B19 possui regra normativa nacional consolidada para femeas bovinas e bubalinas de 3 a 8 meses.
+- B19 usa `legal_status = obrigatorio_norma_nacional`, `curationStatus = needs_review`, `automationStatus = manual_only`, `allowsAgendaAuto = false` e `agenda_allowed = false`.
+- Bloqueios da B19 permanecem operacionais: `requires_mv_habilitado`, `requires_official_record_flow`, `requires_marking_when_applicable`, `requires_executed_product_snapshot` e `requires_product_catalog_validation`.
 - Aftosa contingencia usa `productRequirementKind = none`, sem produto sugerido.
 - `sourceRef` real foi separado de `sourcePolicy` baseada em produto executado.
 

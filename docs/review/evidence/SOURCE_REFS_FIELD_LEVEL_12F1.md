@@ -19,7 +19,7 @@ Artefato documental candidato. Campo crítico sem fonte explícita permanece `so
 
 | protocol_key | item_key | eligibility | dose | route | recurrence | withdrawal | restrictions | sourceGaps |
 |---|---|---|---|---|---|---|---|---|
-| `brucelose_b19` | `b19_femeas_3_8_meses` | `SRC_PNCEBT_BRUCELOSE` | `SRC_BULA_ABORVAC_B19` | `SRC_BULA_ABORVAC_B19` | `SRC_BULA_ABORVAC_B19` | `source_gap_product_withdrawal_snapshot` | `SRC_PNCEBT_BRUCELOSE` | MV/registro oficial/marcação/produto comercial/snapshot |
+| `brucelose_b19` | `b19_femeas_3_8_meses` | `SRC_PNCEBT_BRUCELOSE` | `SRC_BULA_ABORVAC_B19` | `SRC_BULA_ABORVAC_B19` | `SRC_BULA_ABORVAC_B19` | `source_gap_product_withdrawal_snapshot` | `SRC_PNCEBT_BRUCELOSE` | requires_mv_habilitado; requires_official_record_flow; requires_marking_when_applicable; requires_executed_product_snapshot; requires_product_catalog_validation |
 | `clostridioses` | `clostridial_primovac_dose1` | `source_gap_age_product` | `SRC_BULA_FORTRESS7` | `SRC_BULA_FORTRESS7` | n/a | `SRC_BULA_FORTRESS7` | `source_gap_bubalino` | produto específico não fixado |
 | `clostridioses` | `clostridial_primovac_dose2` | `source_gap_age_product` | `SRC_BULA_FORTRESS7` | `SRC_BULA_FORTRESS7` | `SRC_BULA_FORTRESS7` | `SRC_BULA_FORTRESS7` | `source_gap_bubalino` | intervalo não generalizável |
 | `clostridioses` | `clostridial_reforco_anual` | `source_gap_context` | `SRC_BULA_FORTRESS7` | `SRC_BULA_FORTRESS7` | `SRC_BULA_FORTRESS7` | `SRC_BULA_FORTRESS7` | `source_gap_bubalino` | calendário fazenda |
@@ -49,6 +49,34 @@ Artefato documental candidato. Campo crítico sem fonte explícita permanece `so
 | `vermifugacao_pre_desmama` | `pre_desmama_situacional` | dose, via, carência e restrições dependem da bula do produto executado no evento |
 | `vermifugacao_pre_confinamento_pasto_vedado` | `pre_confinamento_dose_unica` | dose, via, carência e restrições dependem da bula do produto executado no evento |
 | `matrizes_pre_parto` | `matrizes_pre_parto_antiparasitario` | dose, via, carência, leite, gestação e lactação dependem da bula do produto executado e/ou decisão MV auditável |
+
+## FieldSourceRefs específicos — Brucelose B19
+
+Brucelose B19 possui regra normativa nacional consolidada para fêmeas bovinas e bubalinas de 3 a 8 meses.
+
+```json
+{
+  "protocol_key": "brucelose_b19",
+  "item_key": "b19_femeas_3_8_meses",
+  "fieldSourceRefs": {
+    "eligibility": "SRC_PNCEBT_BRUCELOSE",
+    "species": "SRC_PNCEBT_BRUCELOSE",
+    "sex": "SRC_PNCEBT_BRUCELOSE",
+    "age": "SRC_PNCEBT_BRUCELOSE",
+    "dose": "SRC_BULA_ABORVAC_B19",
+    "route": "SRC_BULA_ABORVAC_B19",
+    "recurrence": "SRC_BULA_ABORVAC_B19",
+    "restrictions": "SRC_PNCEBT_BRUCELOSE"
+  },
+  "sourceGaps": [
+    "requires_mv_habilitado",
+    "requires_official_record_flow",
+    "requires_marking_when_applicable",
+    "requires_executed_product_snapshot",
+    "requires_product_catalog_validation"
+  ]
+}
+```
 
 ## Regras
 

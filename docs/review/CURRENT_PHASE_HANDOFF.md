@@ -16,8 +16,9 @@ Resultado:
 - 4 `ProductClassGroup` antiparasitarios fechados: recria estrategicos, bezerros pre-desmama, pre-confinamento e matrizes pre-parto.
 - `associacoes_antiparasitarias` ficou como `reserved_candidate`, sem validar execucao sem bula propria.
 - `rotationRule` antiparasitario normalizado como `chemical_class_rotation`, com bloqueio de repeticao de classe sem justificativa/MV e contexto de resistencia.
-- Brucelose B19 fixada como protocolo nacional para bovino femea e bubalino femea, 3-8 meses, normativa consolidada, sem UF/estado como gap de elegibilidade e sem heranca por analogia.
-- Bloqueios da B19 permanecem operacionais: MV, registro oficial, marcacao, produto real e snapshot.
+- Brucelose B19 possui regra normativa nacional consolidada para femeas bovinas e bubalinas de 3 a 8 meses, sem heranca por analogia.
+- B19 usa `legal_status = obrigatorio_norma_nacional`, `curationStatus = needs_review`, `automationStatus = manual_only`, `allowsAgendaAuto = false` e `agenda_allowed = false`.
+- Bloqueios da B19 permanecem operacionais: `requires_mv_habilitado`, `requires_official_record_flow`, `requires_marking_when_applicable`, `requires_executed_product_snapshot` e `requires_product_catalog_validation`.
 - Febre aftosa classificada como `archived`/`blocked`, `productRequirementKind = none`, sem protocolo operacional automatico.
 - `sourceRefs` reais foram separados de `sourcePolicy` baseada em produto executado.
 - Nenhum protocolo ou item foi promovido a `agenda_allowed`.
