@@ -1,20 +1,55 @@
-# ACTIVE_PHASE_PLAN - Fase 12F5
+# ACTIVE_PHASE_PLAN - Fase 12F6
 
-**Status:** Fase 12F5 concluida localmente - validacao automatizada nao destrutiva do adapter candidato.
-**Foco:** Script local somente leitura para validar artefatos 12F4, rejeicoes, enums, JSONB, flags proibidas e invariantes sanitarios; sem seed/import, migration, schema, runtime funcional, Dexie, sync, UI, agenda, evento, estoque, carencia ativa ou automacao operacional.
-**Criado:** 2026-06-14
-**Atualizado:** 2026-06-14
-**Plano base:** `docs/review/PLANO_FASE_12F5_VALIDACAO_AUTOMATIZADA_ADAPTER.md`
+**Status:** Fase 12F6 concluida localmente - decisao estrutural documental sobre ProductClassGroup em itens.
+**Foco:** Comparar alternativas para representar `product_class_group` em `sanitario_protocolo_itens_versions_v2` e recomendar contrato futuro sem criar migration, seed/import, runtime, Dexie, sync, UI, agenda, evento, estoque ou carencia ativa.
+**Criado:** 2026-06-15
+**Atualizado:** 2026-06-15
+**Plano base:** `docs/review/PLANO_FASE_12F6_DECISAO_PRODUCT_CLASS_GROUP_ITENS.md`
 
 ---
 
 ## Objetivo em 1 paragrafo
 
-Executar a Fase 12F5 criando validacao automatizada local e nao destrutiva para conferir o adapter 12F4 e seus artefatos. A fase permite script local de leitura e relatorios documentais; nao executa seed/import, nao cria migration, nao altera schema/runtime funcional/Dexie/sync/UI e nao cria agenda, evento, estoque, carencia ativa, venda, abate, leite ou aptidao operacional.
+Executar a Fase 12F6 como decisao estrutural documental para resolver a incompatibilidade entre os itens candidatos com `product_class_group` e o schema SQL real, que hoje aceita apenas `specific_product`, `product_class` e `none` em `sanitario_product_requirement_kind_v2_enum`.
 
 ---
 
-## Decisao 12F5
+## Decisao 12F6
+
+Decisao: `RECOMENDAR OPCAO A — SUPORTE DIRETO A PRODUCT_CLASS_GROUP NO ITEM`.
+
+Entregue nesta fase:
+- plano principal `docs/review/PLANO_FASE_12F6_DECISAO_PRODUCT_CLASS_GROUP_ITENS.md`;
+- evidencia `docs/review/evidence/DECISAO_PRODUCT_CLASS_GROUP_ITENS_12F6.md`;
+- evidencia `docs/review/evidence/MATRIZ_OPCOES_PRODUCT_CLASS_GROUP_12F6.md`;
+- evidencia `docs/review/evidence/CONTRATO_SCHEMA_FUTURO_PRODUCT_CLASS_GROUP_12F6.md`;
+- evidencia `docs/review/evidence/CRITERIOS_12F7_PRODUCT_CLASS_GROUP.md`;
+- recomendacao para futura migration controlada com enum `product_class_group`, coluna `product_class_group_id`, FK para `sanitario_product_class_groups_v2(id)` e CHECK de requisito unico;
+- rejeicao formal de converter `product_class_group` para `product_class`, `specific_product` ou `none`;
+- preservacao dos 6 itens antiparasitarios como bloqueados ate existir schema futuro;
+- preservacao de ProductClassGroup members bloqueados ate existir `class_id` real.
+
+Nao implementado nesta fase:
+- migration;
+- alteracao de enum, tabela, constraint, FK, RLS ou policy;
+- seed/import executado;
+- codigo funcional/runtime;
+- UI;
+- Dexie/sync;
+- agenda real;
+- evento real;
+- estoque;
+- carencia ativa;
+- venda, abate, leite ou aptidao operacional.
+
+Proxima fase segura:
+- `12F7 — Migration controlada para suportar ProductClassGroup em itens de protocolo sanitario v2`, ainda sem seed/import real e sem ativacao automatica.
+
+---
+
+## Historico anterior — Fase 12F5
+
+### Decisao 12F5
 
 Decisao: `FASE 12F5 CONCLUIDA COMO VALIDACAO AUTOMATIZADA NAO DESTRUTIVA`.
 

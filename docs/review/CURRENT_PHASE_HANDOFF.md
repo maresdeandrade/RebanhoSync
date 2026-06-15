@@ -1,8 +1,29 @@
 # Current Phase Handoff — RebanhoSync
 
-Atualizado em: 2026-06-14
+Atualizado em: 2026-06-15
 
-## 0. Handoff Atual — Fase 12F5
+## 0. Handoff Atual — Fase 12F6
+
+Fase 12F6 — Decisao estrutural sobre ProductClassGroup em itens de protocolo sanitario v2 — executada documentalmente.
+
+Decisao: `RECOMENDAR OPCAO A — SUPORTE DIRETO A PRODUCT_CLASS_GROUP NO ITEM`.
+
+Resultado:
+- Criado `docs/review/PLANO_FASE_12F6_DECISAO_PRODUCT_CLASS_GROUP_ITENS.md`.
+- Criadas evidencias 12F6 em `docs/review/evidence/`.
+- Confirmado que o schema SQL real de `sanitario_protocolo_itens_versions_v2` ainda nao aceita `product_class_group`.
+- Confirmado que o contrato TypeScript ja reconhece `product_class_group`, mas o import segue bloqueado sem suporte SQL.
+- Recomendada futura migration com enum `product_class_group`, coluna `product_class_group_id`, FK para `sanitario_product_class_groups_v2(id)` e CHECK de requisito unico.
+- Rejeitada conversao de `product_class_group` para `product_class`, `specific_product` ou `none`.
+- Mantidos bloqueados os 6 itens antiparasitarios rejeitados na 12F4 ate existir schema futuro.
+- Nenhuma migration, seed/import, schema, runtime, UI, Dexie, sync, agenda, evento, estoque, carencia ativa ou liberacao operacional foi criada.
+
+Proxima fase segura:
+- `12F7 — Migration controlada para suportar ProductClassGroup em itens de protocolo sanitario v2`, ainda sem seed/import real e sem ativacao automatica.
+
+---
+
+## 0.1 Handoff anterior — Fase 12F5
 
 Fase 12F5 — Validacao automatizada do adapter/normalizer candidato — executada localmente com script somente leitura e relatorios documentais.
 

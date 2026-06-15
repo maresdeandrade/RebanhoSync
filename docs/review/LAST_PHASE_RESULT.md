@@ -1,9 +1,39 @@
 # Last Phase Result — RebanhoSync
 
-Atualizado em: 2026-06-14
+Atualizado em: 2026-06-15
 **Baseline Commit:** `3853b80`
 
 ## 0. Resultado mais recente
+
+Fase 12F6 — Decisao estrutural sobre ProductClassGroup em itens de protocolo sanitario v2 — executada localmente como fase documental.
+
+Decisao: `RECOMENDAR OPCAO A — SUPORTE DIRETO A PRODUCT_CLASS_GROUP NO ITEM`.
+
+Resultado da 12F6:
+- Criado plano principal `docs/review/PLANO_FASE_12F6_DECISAO_PRODUCT_CLASS_GROUP_ITENS.md`.
+- Criadas 4 evidencias 12F6 em `docs/review/evidence/`.
+- Reconciliado que o SQL real nao aceita `product_class_group` em `sanitario_product_requirement_kind_v2_enum`.
+- Reconciliado que TypeScript ja aceita `product_class_group`, mas o import precisa de suporte SQL.
+- Recomendado contrato futuro com enum `product_class_group`, coluna `product_class_group_id`, FK direta para `sanitario_product_class_groups_v2(id)` e CHECK de requisito unico.
+- Rejeitada a conversao semantica de ProductClassGroup para `product_class`, `specific_product` ou `none`.
+- Mantidos 6 itens antiparasitarios bloqueados ate 12F7.
+- Mantidos 16 ProductClassGroup members bloqueados ate existir `class_id` real.
+- Nenhum codigo funcional, migration, seed/import, schema aplicado, UI, Dexie, sync, agenda, evento, estoque, carencia ativa ou liberacao operacional foi criado.
+
+Patch da 12F6:
+- `docs/review/PLANO_FASE_12F6_DECISAO_PRODUCT_CLASS_GROUP_ITENS.md`
+- `docs/review/evidence/DECISAO_PRODUCT_CLASS_GROUP_ITENS_12F6.md`
+- `docs/review/evidence/MATRIZ_OPCOES_PRODUCT_CLASS_GROUP_12F6.md`
+- `docs/review/evidence/CONTRATO_SCHEMA_FUTURO_PRODUCT_CLASS_GROUP_12F6.md`
+- `docs/review/evidence/CRITERIOS_12F7_PRODUCT_CLASS_GROUP.md`
+- docs ativos de fase/status/roadmap/dominio
+
+Proxima execucao recomendada:
+- `12F7 — Migration controlada para suportar ProductClassGroup em itens de protocolo sanitario v2`, ainda sem seed/import real.
+
+---
+
+## 0.1 Resultado anterior — Fase 12F5
 
 Fase 12F5 — Validacao automatizada do adapter/normalizer candidato — executada localmente como script somente leitura e relatorio documental.
 

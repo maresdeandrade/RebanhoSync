@@ -1,7 +1,7 @@
 ```markdown
 # Sanitário — RebanhoSync
 
-Atualizado em: 2026-06-12
+Atualizado em: 2026-06-15
 **Baseline Commit:** `c2bac2b`
 
 ## Objetivo
@@ -146,6 +146,8 @@ A partir da 12F3, os payloads candidatos dos Protocolos Sanitarios v2 foram vali
 - ProductClassGroup antiparasitario dependente de ProductClass real e produto executado;
 - SourceRefs separados de sourceGaps e sourcePolicy.
 - itens com ProductClassGroup nao devem ser convertidos para `product_class`, `specific_product` ou `none` sem decisao estrutural explicita.
+
+A 12F6 tomou a decisao estrutural documental: a forma futura recomendada e suporte direto a `product_class_group` no item com `product_class_group_id` referenciando `sanitario_product_class_groups_v2(id)`. Essa decisao nao criou migration. Ate a 12F7 existir e passar validacao, os 6 itens antiparasitarios com ProductClassGroup continuam bloqueados para import.
 
 Um protocolo pode nascer de:
 
