@@ -37,17 +37,9 @@ Itens resolvidos devem sair deste documento e permanecer registrados apenas no r
 
 # Pendências abertas
 
-Sem P0/P1 aberto de runtime apos a Fase 12F9.
+Sem P0/P1 aberto de runtime apos a Fase 12F10.
 
-Observacao 12F5: o script `scripts/codex/validate-sanitario-adapter-payloads-12f5.mjs` passou com 300 PASS, 1 WARNING e 0 FAIL. As rejeicoes documentadas em `docs/review/evidence/REJEICOES_PAYLOADS_12F4.md` permanecem bloqueios de adapter/import candidato, nao incidentes abertos de runtime.
-
-Observacao 12F6: a decisao estrutural recomenda futura migration para `product_class_group` com `product_class_group_id` no item. Enquanto a 12F7 nao existir, os 6 itens antiparasitarios com ProductClassGroup continuam bloqueados para import e nao devem ser convertidos para `product_class`, `specific_product` ou `none`.
-
-Observacao 12F7: a migration estrutural para `product_class_group` foi criada e validada, mas nenhum seed/import real foi aplicado. A revalidacao/adaptacao dos 6 itens antiparasitarios fica para 12F8, ainda sem seed/import.
-
-Observacao 12F8: o adapter foi revalidado contra o schema 12F7 e os 6 itens antiparasitarios antes rejeitados foram adaptados como payload candidato com `product_class_group_id` por lookup. A rejeicao `PRODUCT_CLASS_GROUP_NOT_SUPPORTED_BY_SQL_ITEM_ENUM` ficou zerada, mas os 16 ProductClassGroup members continuam bloqueados por `PRODUCT_CLASS_ID_REQUIRED_FOR_GROUP_MEMBER`. Seed/import real continua proibido ate fase explicita.
-
-Observacao 12F9: payloads JSON completos candidatos foram gerados para 10 protocolos, 19 itens e 4 ProductClassGroups, com `execute_import=false`. Os 16 ProductClassGroup members continuam bloqueados por `PRODUCT_CLASS_ID_REQUIRED_FOR_GROUP_MEMBER`. Nao houve seed/import real, migration nova, UI, Dexie, sync, agenda, evento, estoque, carencia ativa ou liberacao operacional.
+Observacao 12F10: a fonte final para futura 12G0 e `docs/review/evidence/SANITARIO_PROTOCOLS_V2_CANONICAL_PAYLOAD_12F10.json`. Import real continua bloqueado ate autorizacao explicita, dry-run transacional e rollback definido. Os 16 ProductClassGroup members continuam bloqueados por `PRODUCT_CLASS_ID_REQUIRED_FOR_GROUP_MEMBER`.
 
 Observacao tecnica: `sanitario_produto_fontes_v2` permanece em full fetch/merge porque nao possui `updated_at` no contrato implementado. Reavaliar apenas se futura migration/contrato adicionar timestamp de atualizacao a essa tabela.
 

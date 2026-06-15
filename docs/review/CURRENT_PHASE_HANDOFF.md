@@ -2,7 +2,26 @@
 
 Atualizado em: 2026-06-15
 
-## 0. Handoff Atual — Fase 12F9
+## 0. Handoff Atual — Fase 12F10
+
+Fase 12F10 — Consolidacao e reducao documental dos Protocolos Sanitarios v2 — executada localmente.
+
+Decisao: `12F10_CONSOLIDAR_ARTEFATOS_CANONICOS_ANTES_DE_12G0`.
+
+Resultado:
+- Consolidado payload final em `docs/review/evidence/SANITARIO_PROTOCOLS_V2_CANONICAL_PAYLOAD_12F10.json`.
+- Preservadas as contagens 10 protocolos, 19 itens, 4 ProductClassGroups e 16 rejeicoes de members.
+- Mantido `execute_import=false`.
+- Criados decision record, import gate e archive index 12F0-12F9.
+- `LAST_PHASE_RESULT` foi reduzido para resumo executivo recente.
+- Nenhum seed/import, migration, schema, runtime, UI, Dexie, sync, agenda, evento, estoque, carencia ativa ou liberacao operacional foi criado.
+
+Proxima fase segura:
+- `12G0 — dry-run real do import usando somente o payload canonico 12F10, com autorizacao explicita, transacao e rollback`.
+
+---
+
+## 0.1 Handoff anterior — Fase 12F9
 
 Fase 12F9 — Payload JSON completo importavel candidato para Protocolos Sanitarios v2 — executada localmente.
 

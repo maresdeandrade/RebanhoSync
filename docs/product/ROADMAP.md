@@ -28,13 +28,13 @@ Não deve substituir issues, tarefas técnicas ou prompts de implementação.
 
 ## Fase atual — Fase 12
 
-Status: **Fase 12F9 concluida localmente como payload JSON completo candidato sem import**
+Status: **Fase 12F10 concluida localmente como consolidacao documental e payload canonico**
 Fase anterior: **Fase 11.5 — Agenda Sanitária v2: Janelas, Agrupamento e Materialização Idempotente — concluída localmente**
-Fase seguinte: **Fase 12G0 — Import controlado/dry-run dos payloads candidatos, somente com autorizacao explicita**
+Fase seguinte: **Fase 12G0 — Dry-run real do import usando somente o payload canonico 12F10, com autorizacao explicita**
 
 ### Conduta inicial
 
-As subfases 11.5A a 11.5J (Agenda Sanitária v2 core/documental), 12A (auditoria), 12B (modelagem clean/reset), 12C (migration clean SQL), 12D0 (modelo canônico), 12D1 (schema/contratos mínimos v2), 12D2 (builders/adapters puros de snapshots), 12D3 (extração curatorial), 12D4 (rebaseline conceitual das matrizes), 12D5 (contratos TypeScript de ProductClass), 12D6 (schema SQL, RLS e tabelas para ProductClass), 12E0 (Diagnóstico e Contrato de Offline/Sync), 12E1 (Dexie stores ProductClass v2), 12E2 (pull remoto ProductClass v2 para Dexie), 12E3 (catalogo tecnico sanitario v2 ampliado em Dexie/pull), 12E4 (Agenda Sanitaria v2 offline/sync controlado), 12E5 (hardening offline/sync), 12F0 (estruturacao curatorial dos Protocolos Sanitarios v2), 12F1 (normalizacao tecnica em artefatos candidatos), 12F2 (payloads candidatos de seed/import, sem execucao), 12F3 (validacao tecnica contra schema real), 12F4 (adapter/normalizer candidato sem import), 12F5 (validacao automatizada nao destrutiva), 12F6 (decisao estrutural ProductClassGroup em itens), 12F7 (migration controlada), 12F8 (revalidacao do adapter contra schema atualizado) e 12F9 (payload JSON completo candidato) foram concluídas localmente. O desenvolvimento so deve avancar para import real em fase propria com dry-run/transacao/rollback e autorizacao explicita.
+As subfases 11.5A a 11.5J (Agenda Sanitária v2 core/documental), 12A-12E5 e 12F0-12F10 foram concluídas localmente. A 12F10 consolidou a fonte final em `SANITARIO_PROTOCOLS_V2_CANONICAL_PAYLOAD_12F10.json`. O desenvolvimento so deve avancar para import real em fase propria com dry-run/transacao/rollback e autorizacao explicita.
 
 ### Handoff para Fase 12E
 

@@ -1,16 +1,32 @@
-    # ACTIVE_PHASE_PLAN - Fase 12F9
+    # ACTIVE_PHASE_PLAN - Fase 12F10
 
-    **Status:** Fase 12F9 concluida localmente - payload JSON completo candidato gerado sem seed/import.
-    **Foco:** Gerar payload JSON completo candidato para protocolos, itens, ProductClassGroups e rejeicoes remanescentes, sem executar import real e sem alterar runtime operacional.
+    **Status:** Fase 12F10 concluida localmente - consolidacao documental e payload canonico definidos.
+    **Foco:** Reduzir fragmentacao documental 12F0-12F9 e definir payload, decisao e gate canonicos antes de qualquer 12G0.
     **Criado:** 2026-06-15
     **Atualizado:** 2026-06-15
-    **Plano base:** `docs/review/PLANO_FASE_12F9_PAYLOAD_JSON_COMPLETO_PROTOCOLOS_V2.md`
+    **Plano base:** `docs/review/PLANO_FASE_12F10_CONSOLIDACAO_DOCUMENTAL_SANITARIO_V2.md`
 
     ---
 
     ## Objetivo em 1 paragrafo
 
-    Executar a Fase 12F9 gerando payload JSON completo candidato para Protocolos Sanitarios v2, com 10 protocolos, 19 itens, 4 ProductClassGroups e 16 rejeicoes remanescentes de members, sem aplicar import real.
+    Executar a Fase 12F10 consolidando os artefatos dos Protocolos Sanitarios v2 em um payload canonico unico, decision record, gate de import e indice de arquivo historico, sem aplicar import real.
+
+    ---
+
+    ## Decisao 12F10
+
+    Decisao: `12F10_CONSOLIDAR_ARTEFATOS_CANONICOS_ANTES_DE_12G0`.
+
+    Entregue nesta fase:
+    - payload canonico `docs/review/evidence/SANITARIO_PROTOCOLS_V2_CANONICAL_PAYLOAD_12F10.json`;
+    - decision record `docs/review/evidence/SANITARIO_PROTOCOLS_V2_DECISION_RECORD_12F10.md`;
+    - import gate `docs/review/evidence/SANITARIO_PROTOCOLS_V2_IMPORT_GATE_12F10.md`;
+    - indice `docs/review/evidence/ARCHIVE_INDEX_SANITARIO_12F0_12F9.md`;
+    - plano `docs/review/PLANO_FASE_12F10_CONSOLIDACAO_DOCUMENTAL_SANITARIO_V2.md`.
+
+    Proxima fase segura:
+    - `12G0 — dry-run real do import usando somente o payload canonico 12F10, com autorizacao explicita, transacao e rollback`.
 
     ---
 
