@@ -37,9 +37,11 @@ Itens resolvidos devem sair deste documento e permanecer registrados apenas no r
 
 # Pendências abertas
 
-Sem P0/P1 aberto de runtime apos a Fase 12G.
+Sem P0/P1 aberto de runtime apos a Fase 12H.
 
-Observacao 12G: o importador controlado esta em `scripts/codex/import-sanitario-protocols-v2.mjs` e usa somente `docs/review/evidence/SANITARIO_PROTOCOLS_V2_CANONICAL_PAYLOAD_12F10.json`. `--validate` e `--dry-run` passaram; `--apply` segue bloqueado sem `ALLOW_SANITARIO_IMPORT=1`. Os 16 ProductClassGroup members continuam bloqueados por `PRODUCT_CLASS_ID_REQUIRED_FOR_GROUP_MEMBER`.
+Observacao 12G: o importador controlado esta em `scripts/codex/import-sanitario-protocols-v2.mjs` e usa somente `docs/review/evidence/SANITARIO_PROTOCOLS_V2_CANONICAL_PAYLOAD_12F10.json`. Apply real executado localmente com 33 `create`, 0 `update`, 0 `skip`, 16 `reject`; dry-run pos-apply confirmou 0 `create`, 0 `update`, 33 `skip`, 16 `reject`. Os 16 ProductClassGroup members continuam bloqueados por `PRODUCT_CLASS_ID_REQUIRED_FOR_GROUP_MEMBER`.
+
+Observacao 12H: a leitura read-only dos Protocolos Sanitarios v2 foi criada em `src/lib/sanitario/catalog/sanitaryProtocolCatalogV2.ts`, com testes focados. A camada consulta banco, nao JSON, e confirma B19, aftosa e antiparasitarios sem criar agenda, evento, estoque, carencia ativa ou liberacao operacional. Proximo trabalho util: conectar a leitura a uma superficie UI read-only ou pull offline objetivo.
 
 Observacao tecnica: `sanitario_produto_fontes_v2` permanece em full fetch/merge porque nao possui `updated_at` no contrato implementado. Reavaliar apenas se futura migration/contrato adicionar timestamp de atualizacao a essa tabela.
 

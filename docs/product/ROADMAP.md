@@ -28,13 +28,13 @@ Não deve substituir issues, tarefas técnicas ou prompts de implementação.
 
 ## Fase atual — Fase 12
 
-Status: **Fase 12G concluida localmente como importador controlado dos Protocolos Sanitarios v2**
+Status: **Fase 12H concluida localmente como leitura read-only dos Protocolos Sanitarios v2 importados**
 Fase anterior: **Fase 11.5 — Agenda Sanitária v2: Janelas, Agrupamento e Materialização Idempotente — concluída localmente**
-Fase seguinte: **Aplicar import real somente com autorizacao operacional explicita e `ALLOW_SANITARIO_IMPORT=1`**
+Fase seguinte: **Conectar leitura a superficie UI read-only ou pull offline objetivo, sem agenda automatica**
 
 ### Conduta inicial
 
-As subfases 11.5A a 11.5J (Agenda Sanitária v2 core/documental), 12A-12E5, 12F0-12F10 e 12G foram concluídas localmente. A 12F10 consolidou a fonte final em `SANITARIO_PROTOCOLS_V2_CANONICAL_PAYLOAD_12F10.json`; a 12G criou o importador controlado em `scripts/codex/import-sanitario-protocols-v2.mjs`. O import real so deve ocorrer com `ALLOW_SANITARIO_IMPORT=1`, apos decisao operacional explicita.
+As subfases 11.5A a 11.5J (Agenda Sanitária v2 core/documental), 12A-12E5, 12F0-12F10, 12G e 12H foram concluídas localmente. A 12F10 consolidou a fonte final em `SANITARIO_PROTOCOLS_V2_CANONICAL_PAYLOAD_12F10.json`; a 12G criou o importador controlado em `scripts/codex/import-sanitario-protocols-v2.mjs` e executou apply real local com 33 `create`, 0 `update`, 0 `skip`, 16 `reject`; a 12H criou a leitura read-only em `src/lib/sanitario/catalog/sanitaryProtocolCatalogV2.ts`, consultando banco e confirmando B19/aftosa/antiparasitarios sem agenda automatica. O foco seguinte e conectar essa leitura a uma superficie UI read-only ou pull offline objetivo.
 
 ### Handoff para Fase 12E
 

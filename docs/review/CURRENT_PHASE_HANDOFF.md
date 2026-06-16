@@ -2,7 +2,26 @@
 
 Atualizado em: 2026-06-15
 
-## 0. Handoff Atual — Fase 12G
+## 0. Handoff Atual — Fase 12H
+
+Fase 12H — Leitura read-only dos Protocolos Sanitarios v2 importados — executada localmente.
+
+Decisao: `12H_LEITURA_READ_ONLY_PROTOCOLS_SANITARIOS_V2_IMPORTADOS`.
+
+Resultado:
+- Criada camada `src/lib/sanitario/catalog/sanitaryProtocolCatalogV2.ts`.
+- Implementadas consultas read-only para protocolos v2, itens por protocolo e ProductClassGroups v2.
+- Implementado resumo read-only para validar 10 protocolos, 19 itens, 4 grupos e 16 members bloqueados.
+- B19 nacional, aftosa retired/bloqueada e 6 itens antiparasitarios com `product_class_group_id` foram confirmados em teste.
+- A camada consulta banco via cliente Supabase-like e nao le o JSON 12F10 em runtime.
+- Nenhum caminho de escrita, migration, schema, RLS, UI, Dexie, sync, Edge Function, agenda, evento, estoque, carencia ativa ou liberacao operacional foi criado.
+
+Próximo passo seguro:
+- conectar esta leitura a uma superficie UI read-only ou a pull offline objetivo, mantendo protocolos como regra/configuracao e sem agenda automatica.
+
+---
+
+## 0.1 Handoff anterior — Fase 12G
 
 Fase 12G — Importador controlado dos Protocolos Sanitarios v2 — executada localmente.
 
@@ -14,13 +33,10 @@ Resultado:
 - Implementados os modos `--validate`, `--dry-run` e `--apply`.
 - `--apply` falha sem `ALLOW_SANITARIO_IMPORT=1`.
 - `--validate` passou.
-- `--dry-run` passou com 33 criações planejadas e 16 rejeições preservadas.
+- Apply real executado localmente: 33 `create`, 0 `update`, 0 `skip`, 16 `reject`.
+- Dry-run pos-apply passou com 0 `create`, 0 `update`, 33 `skip`, 16 `reject`.
 - ProductClassGroup members continuam bloqueados por ausência de `class_id` real.
-- Nenhum import real foi executado nesta rodada.
 - Nenhuma migration, schema, RLS, UI, Dexie, sync, Edge Function, agenda, evento, estoque, carência ativa ou liberação operacional foi criada.
-
-Próximo passo seguro:
-- aplicar somente com autorização operacional explícita, `ALLOW_SANITARIO_IMPORT=1` e ambiente Supabase validado.
 
 ---
 

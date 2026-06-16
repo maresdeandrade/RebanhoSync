@@ -4,38 +4,40 @@ Atualizado em: 2026-06-15
 
 ## Resultado mais recente
 
-Fase 12G - Importador controlado dos Protocolos Sanitarios v2 - concluida localmente.
+Fase 12H - Leitura read-only dos Protocolos Sanitarios v2 importados - concluida localmente.
 
-Decisao: `12G_IMPORTADOR_CONTROLADO_PROTOCOLS_SANITARIOS_V2_COM_PAYLOAD_12F10`.
+Decisao: `12H_LEITURA_READ_ONLY_PROTOCOLS_SANITARIOS_V2_IMPORTADOS`.
 
 ## Resultado
 
-- Criado `scripts/codex/import-sanitario-protocols-v2.mjs`.
-- O script consome somente `docs/review/evidence/SANITARIO_PROTOCOLS_V2_CANONICAL_PAYLOAD_12F10.json`.
-- Implementados modos `--validate`, `--dry-run` e `--apply`.
-- `--apply` exige `ALLOW_SANITARIO_IMPORT=1` e falha sem essa variavel.
-- Members de ProductClassGroup continuam bloqueados por `PRODUCT_CLASS_ID_REQUIRED_FOR_GROUP_MEMBER`.
-- Criado o relatorio unico `docs/review/evidence/RELATORIO_12G_IMPORTADOR_SANITARIO_V2.md`.
+- Criada camada read-only em `src/lib/sanitario/catalog/sanitaryProtocolCatalogV2.ts`.
+- A leitura consulta banco via cliente Supabase-like e nao le o JSON 12F10 em runtime.
+- Implementadas consultas para protocolos, itens por protocolo e ProductClassGroups v2.
+- Implementado resumo read-only com 10 protocolos, 19 itens, 4 grupos e 16 members bloqueados.
+- B19, aftosa e os 6 itens antiparasitarios com ProductClassGroup foram cobertos por teste.
+- Nenhum caminho de escrita, agenda, evento, estoque, carencia ativa ou liberacao operacional foi criado.
+- Criado o relatorio unico `docs/review/evidence/RELATORIO_12H_LEITURA_PROTOCOLS_SANITARIOS_V2.md`.
 
 ## Validacao
 
-- `node scripts/codex/import-sanitario-protocols-v2.mjs --validate`: passou.
-- `node scripts/codex/import-sanitario-protocols-v2.mjs --dry-run`: passou com 33 `create`, 0 `update`, 0 `skip`, 16 `reject`.
-- `node scripts/codex/import-sanitario-protocols-v2.mjs --apply` sem flag: bloqueado com erro explicito.
+- Diagnostico inicial confirmou carga 12G aplicada: `--dry-run` com 0 `create`, 0 `update`, 33 `skip`, 16 `reject`.
+- `pnpm test -- src/lib/sanitario/catalog/__tests__/sanitaryProtocolCatalogV2.test.ts`: passou.
+- Validacoes finais da 12H registradas no relatorio.
 
 ## Nao executado
 
-- import real com `ALLOW_SANITARIO_IMPORT=1`;
 - migration, schema, RLS, UI, Dexie, sync ou Edge Function;
 - agenda, evento, estoque, carencia ativa ou liberacao operacional;
 - ProductClassGroup members.
 
 ## Fonte final
 
-Import futuro deve continuar usando exclusivamente:
+Import futuro continua vinculado exclusivamente ao payload canonico:
 
 `docs/review/evidence/SANITARIO_PROTOCOLS_V2_CANONICAL_PAYLOAD_12F10.json`
 
+Leitura 12H usa as tabelas reais importadas pela 12G, nao o JSON.
+
 ## Proximo passo possivel
 
-Executar `--apply` apenas se houver autorizacao operacional explicita para carga real e ambiente Supabase validado.
+Conectar esta leitura a uma superficie UI read-only ou a pull offline objetivo, sem agenda automatica.

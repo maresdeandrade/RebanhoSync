@@ -32,13 +32,17 @@ Confirmado: 10 protocolos, 19 itens, 4 ProductClassGroups, 16 rejeicoes de membe
 
 `node scripts/codex/import-sanitario-protocols-v2.mjs --dry-run`: passou.
 
-Resumo local: 33 `create`, 0 `update`, 0 `skip`, 16 `reject`.
+Dry-run inicial antes do apply: 33 `create`, 0 `update`, 0 `skip`, 16 `reject`.
+
+Dry-run pos-apply: 0 `create`, 0 `update`, 33 `skip`, 16 `reject`.
 
 ## 6. Resultado de apply
 
-`node scripts/codex/import-sanitario-protocols-v2.mjs --apply` sem `ALLOW_SANITARIO_IMPORT=1`: bloqueado com erro explicito.
+Apply real executado com `ALLOW_SANITARIO_IMPORT=1`.
 
-Apply real nao foi executado nesta rodada.
+Resumo: 33 `create`, 0 `update`, 0 `skip`, 16 `reject`.
+
+O apply preservou `approval_status='draft'`, `allows_agenda_auto=false`, `agenda_allowed=false` e `approved_for_catalog=false`.
 
 ## 7. Rejeicoes mantidas
 
@@ -46,10 +50,10 @@ Os 16 members de `sanitario_product_class_group_members_v2` seguem rejeitados po
 
 ## 8. Riscos
 
-- Apply real ainda depende de decisao operacional explicita e ambiente Supabase validado.
-- Registros globais escritos pelo importador exigem caminho administrativo controlado.
+- A carga aplicada esta no banco local; `supabase db reset` remove esses 33 registros e volta o dry-run para 33 `create`.
+- A proxima leitura deve permanecer read-only e sem agenda automatica.
 - ProductClassGroup members continuam pendentes ate existirem `class_id` reais.
 
 ## 9. Proximo passo
 
-Executar `--apply` somente com autorizacao operacional explicita e `ALLOW_SANITARIO_IMPORT=1`.
+Conectar leitura read-only dos protocolos sanitarios v2 ao catalogo/local/offline: listar protocolos, listar itens por protocolo e confirmar B19, aftosa e antiparasitarios sem agenda automatica.

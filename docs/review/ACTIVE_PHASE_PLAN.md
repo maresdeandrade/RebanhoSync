@@ -1,16 +1,40 @@
-    # ACTIVE_PHASE_PLAN - Fase 12G
+    # ACTIVE_PHASE_PLAN - Fase 12H
 
-    **Status:** Fase 12G concluida localmente - importador controlado dos Protocolos Sanitarios v2 implementado.
-    **Foco:** Importador seguro e idempotente usando somente o payload canonico 12F10, com modos `validate`, `dry-run` e `apply` protegido por `ALLOW_SANITARIO_IMPORT=1`.
+    **Status:** Fase 12H concluida localmente - leitura read-only dos Protocolos Sanitarios v2 importados implementada.
+    **Foco:** Consultar protocolos, itens e ProductClassGroups v2 a partir do banco, sem ler JSON em runtime e sem criar agenda, evento, estoque, carencia ativa ou automacao operacional.
     **Criado:** 2026-06-15
     **Atualizado:** 2026-06-15
-    **Plano base:** solicitação direta da Fase 12G.
+    **Plano base:** solicitação direta da Fase 12H.
 
     ---
 
     ## Objetivo em 1 paragrafo
 
-    Executar a Fase 12G criando `scripts/codex/import-sanitario-protocols-v2.mjs` como importador controlado para Protocolos Sanitarios v2, consumindo exclusivamente `docs/review/evidence/SANITARIO_PROTOCOLS_V2_CANONICAL_PAYLOAD_12F10.json`, validando invariantes sanitarias, simulando plano deterministico e bloqueando escrita real sem flag explicita.
+    Executar a Fase 12H criando uma camada read-only para consultar os Protocolos Sanitarios v2 ja importados pela 12G, confirmando 10 protocolos, 19 itens, 4 ProductClassGroups, B19 nacional, aftosa bloqueada e itens antiparasitarios com ProductClassGroup, mantendo protocolo como regra/configuracao e sem qualquer automacao operacional.
+
+    ---
+
+    ## Decisao 12H
+
+    Decisao: `12H_LEITURA_READ_ONLY_PROTOCOLS_SANITARIOS_V2_IMPORTADOS`.
+
+    Entregue nesta fase:
+    - modulo `src/lib/sanitario/catalog/sanitaryProtocolCatalogV2.ts`;
+    - teste focado `src/lib/sanitario/catalog/__tests__/sanitaryProtocolCatalogV2.test.ts`;
+    - consultas read-only para protocolos, itens por protocolo e ProductClassGroups;
+    - resumo read-only `buildSanitaryProtocolCatalogSummaryV2`;
+    - validacao de invariantes `validateSanitaryProtocolCatalogReadOnlyInvariantsV2`;
+    - relatorio unico `docs/review/evidence/RELATORIO_12H_LEITURA_PROTOCOLS_SANITARIOS_V2.md`.
+
+    Resultado local:
+    - diagnostico inicial confirmou carga 12G aplicada: `--dry-run` com 0 `create`, 0 `update`, 33 `skip`, 16 `reject`;
+    - testes focados passaram;
+    - leitura usa banco via cliente Supabase-like, nao JSON;
+    - nenhum member foi importado;
+    - nenhuma agenda, evento, estoque, carencia ativa ou liberacao operacional foi criada.
+
+    Proximo passo seguro:
+    - conectar esta leitura a uma superficie UI read-only ou a pull offline objetivo, sem agenda automatica.
 
     ---
 
@@ -27,7 +51,8 @@
 
     Resultado local:
     - `--validate`: passou;
-    - `--dry-run`: passou com 33 `create`, 0 `update`, 0 `skip`, 16 `reject`;
+    - apply real executado: 33 `create`, 0 `update`, 0 `skip`, 16 `reject`;
+    - `--dry-run` pos-apply: 0 `create`, 0 `update`, 33 `skip`, 16 `reject`;
     - `--apply` sem flag: bloqueado com erro explicito;
     - members permanecem rejeitados por `PRODUCT_CLASS_ID_REQUIRED_FOR_GROUP_MEMBER`.
 
@@ -40,7 +65,7 @@
     - import de ProductClassGroup members.
 
     Proximo passo seguro:
-    - executar `--apply` somente se houver decisao operacional explicita para carga real e ambiente validado.
+    - conectar leitura read-only dos protocolos sanitarios v2 ao catalogo/local/offline, sem agenda automatica.
 
     ---
 
