@@ -884,6 +884,7 @@ export interface CatalogoDoencaNotificavel {
 }
 
 export type SanitarioProductClassScopeV2 = "global" | "tenant";
+export type SanitarioProtocolScopeLocalV2 = "global" | "pack" | "fazenda";
 export type SanitarioProductClassSpeciesV2 = "bovino" | "bubalino";
 export type SanitarioProductClassAptitudeV2 = "corte" | "leite" | "mista" | "all";
 export type SanitarioProductClassCurationStatusV2 =
@@ -977,6 +978,56 @@ export interface SanitarioProductClassDefaultRuleLocalV2 {
   limitations: string[];
   metadata: Record<string, unknown>;
   curation_status: SanitarioProductClassCurationStatusV2;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+}
+
+export interface SanitarioProtocoloLocalV2 {
+  id: string;
+  family_code: string;
+  name: string;
+  scope: SanitarioProtocolScopeLocalV2;
+  fazenda_id: string | null;
+  species_scope: Record<string, unknown> | unknown[];
+  jurisdiction_scope: Record<string, unknown>;
+  legal_status: string;
+  version: number;
+  status: string;
+  source_refs_snapshot: Array<Record<string, unknown> | string>;
+  approval_status: string;
+  created_by?: string | null;
+  approved_by?: string | null;
+  approved_at?: string | null;
+  metadata: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+}
+
+export interface SanitarioProtocoloItemVersionLocalV2 {
+  id: string;
+  protocol_id: string;
+  logical_item_key: string;
+  version: number;
+  item_status: string;
+  action_type: string;
+  product_requirement_kind: string;
+  product_id: string | null;
+  product_class: string | null;
+  product_class_group_id: string | null;
+  eligibility_rule: Record<string, unknown>;
+  operational_window_rule: Record<string, unknown>;
+  dose_rule: Record<string, unknown> | null;
+  route_rule: Record<string, unknown> | null;
+  booster_rule: Record<string, unknown> | null;
+  species_authorization: Array<Record<string, unknown> | string>;
+  source_refs_by_field: Record<string, unknown>;
+  limitations: Array<Record<string, unknown> | string>;
+  snapshot_template: Record<string, unknown>;
+  allows_agenda_auto: boolean;
+  requires_mv_responsavel: boolean;
+  status: string;
   created_at: string;
   updated_at: string;
   deleted_at: string | null;

@@ -45,6 +45,12 @@ export const SANITARIO_TECHNICAL_CATALOG_V2_REMOTE_TABLES = [
   "sanitario_produto_carencia_rules_v2",
 ] as const;
 
+export const SANITARIO_PROTOCOL_CATALOG_V2_REMOTE_TABLES = [
+  "sanitario_protocolos_v2",
+  "sanitario_protocolo_itens_versions_v2",
+  "sanitario_product_class_groups_v2",
+] as const;
+
 export const SANITARIO_AGENDA_V2_REMOTE_TABLES = [
   "sanitario_agenda_v2",
   "sanitario_agenda_animais_v2",
@@ -136,6 +142,21 @@ async function applyUpdatedAtCursor<TQuery>(
 
   // Rebusca o ultimo timestamp conhecido para nao perder empates de updated_at.
   return queryWithCursor.gte("updated_at", cursor.last_updated_at);
+}
+
+async function getLocalSanitarioProtocolIdsV2(): Promise<string[]> {
+  const localStore = getLocalStoreName("sanitario_protocolos_v2");
+  if (!db.tables.some((table) => table.name === localStore)) return [];
+
+  const rows = (await db.table(localStore).toArray()) as RemoteRow[];
+  return rows
+    .filter(
+      (row) =>
+        row.scope === "global" &&
+        row.fazenda_id === null &&
+        typeof row.id === "string",
+    )
+    .map((row) => String(row.id));
 }
 
 async function writeMergeResults(
@@ -444,6 +465,136 @@ export const pullSanitarioTechnicalCatalogV2 = async (
   await writeMergeResults(storesToUpdate, results, cursorUpdates);
 };
 
+export const pullSanitarioProtocolCatalogV2 = async () => {
+  console.log("[pull] Starting sanitario protocol catalog v2 pull");
+
+  const results: Record<string, RemoteRow[]> = {};
+  const cursorUpdates: CursorUpdate[] = [];
+
+  const protocolsTable = "sanitario_protocolos_v2";
+  const protocolLocalStore = getLocalStoreName(protocolsTable);
+  const protocolCursorKey = buildPullCursorKey(protocolsTable, "global", null);
+  const protocolQuery = await applyUpdatedAtCursor(
+    supabase
+      .from(protocolsTable)
+      .select("*")
+      .eq("scope", "global")
+      .is("fazenda_id", null),
+    protocolCursorKey,
+  );
+  const protocolResult = await protocolQuery;
+
+  if (protocolResult.error) {
+    console.error(`[pull] Error pulling ${protocolsTable}:`, protocolResult.error);
+    throw protocolResult.error;
+  }
+
+  const protocolRows = (protocolResult.data ?? []) as RemoteRow[];
+  results[protocolsTable] = protocolRows;
+  cursorUpdates.push({
+    key: protocolCursorKey,
+    remoteTable: protocolsTable,
+    localStore: protocolLocalStore,
+    scope: "global",
+    fazendaId: null,
+    rows: protocolRows,
+  });
+
+  const protocolIds = Array.from(
+    new Set([
+      ...protocolRows
+        .map((row) => row.id)
+        .filter((id): id is string => typeof id === "string"),
+      ...(await getLocalSanitarioProtocolIdsV2()),
+    ]),
+  ).sort();
+
+  const itemsTable = "sanitario_protocolo_itens_versions_v2";
+  const itemLocalStore = getLocalStoreName(itemsTable);
+  const itemCursorKey = buildPullCursorKey(itemsTable, "global", null);
+  let itemRows: RemoteRow[] = [];
+
+  if (protocolIds.length > 0) {
+    const itemQueryBase = supabase.from(itemsTable).select("*");
+    const itemQueryWithProtocols = (
+      itemQueryBase as typeof itemQueryBase & {
+        in: (column: string, values: string[]) => typeof itemQueryBase;
+      }
+    ).in("protocol_id", protocolIds);
+    const itemQuery = await applyUpdatedAtCursor(
+      itemQueryWithProtocols,
+      itemCursorKey,
+    );
+    const itemResult = await itemQuery;
+
+    if (itemResult.error) {
+      console.error(`[pull] Error pulling ${itemsTable}:`, itemResult.error);
+      throw itemResult.error;
+    }
+
+    itemRows = (itemResult.data ?? []) as RemoteRow[];
+  }
+
+  results[itemsTable] = itemRows;
+  cursorUpdates.push({
+    key: itemCursorKey,
+    remoteTable: itemsTable,
+    localStore: itemLocalStore,
+    scope: "global",
+    fazendaId: null,
+    rows: itemRows,
+  });
+
+  const groupsTable = "sanitario_product_class_groups_v2";
+  const groupLocalStore = getLocalStoreName(groupsTable);
+  const groupCursorKey = buildPullCursorKey(groupsTable, "global", null);
+  const groupQuery = await applyUpdatedAtCursor(
+    supabase
+      .from(groupsTable)
+      .select("*")
+      .eq("scope", "global")
+      .is("fazenda_id", null),
+    groupCursorKey,
+  );
+  const groupResult = await groupQuery;
+
+  if (groupResult.error) {
+    console.error(`[pull] Error pulling ${groupsTable}:`, groupResult.error);
+    throw groupResult.error;
+  }
+
+  const groupRows = (groupResult.data ?? []) as RemoteRow[];
+  results[groupsTable] = groupRows;
+  cursorUpdates.push({
+    key: groupCursorKey,
+    remoteTable: groupsTable,
+    localStore: groupLocalStore,
+    scope: "global",
+    fazendaId: null,
+    rows: groupRows,
+  });
+
+  const validTableNames = new Set(db.tables.map((t) => t.name));
+  const storesToUpdate = SANITARIO_PROTOCOL_CATALOG_V2_REMOTE_TABLES
+    .map((rt) => ({ remote: rt, local: getLocalStoreName(rt) }))
+    .filter(({ remote, local }) => {
+      if (!validTableNames.has(local)) {
+        console.warn(
+          `[pull] Store ${local} not found for protocol catalog v2 table ${remote}. Skipping.`,
+        );
+        return false;
+      }
+      return true;
+    });
+
+  if (storesToUpdate.length === 0) {
+    console.warn("[pull] No valid protocol catalog v2 stores to update.");
+    return;
+  }
+
+  await writeMergeResults(storesToUpdate, results, cursorUpdates);
+};
+
 export const pullSanitarioAgendaV2 = async (fazenda_id: string) => {
   console.log(`[pull] Starting sanitario agenda v2 pull for farm ${fazenda_id}`);
 
@@ -504,5 +655,6 @@ export const pullInitialData = async (fazenda_id: string) => {
   await pullDataForFarm(fazenda_id, DEFAULT_REMOTE_TABLES, { mode: "replace" });
   await pullSanitarioProductClassV2Catalog(fazenda_id);
   await pullSanitarioTechnicalCatalogV2(fazenda_id);
+  await pullSanitarioProtocolCatalogV2();
   await pullSanitarioAgendaV2(fazenda_id);
 };

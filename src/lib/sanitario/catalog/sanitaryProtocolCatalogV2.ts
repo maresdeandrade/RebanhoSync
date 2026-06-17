@@ -113,6 +113,18 @@ export type SanitaryProtocolCatalogQueryClient = {
   ): SanitaryProtocolCatalogQueryBuilder<T>;
 };
 
+export type SanitaryProtocolCatalogLocalDb = {
+  catalog_sanitario_protocolos_v2: {
+    toArray(): Promise<JsonRecord[]>;
+  };
+  catalog_sanitario_protocolo_itens_versions_v2: {
+    toArray(): Promise<JsonRecord[]>;
+  };
+  catalog_sanitario_product_class_groups_v2: {
+    toArray(): Promise<JsonRecord[]>;
+  };
+};
+
 const PROTOCOL_COLUMNS = [
   "id",
   "family_code",
@@ -181,6 +193,9 @@ const isRecord = (value: unknown): value is JsonRecord =>
 
 const readRecord = (value: unknown): JsonRecord => (isRecord(value) ? value : {});
 
+const readSpeciesScope = (value: unknown): JsonRecord =>
+  Array.isArray(value) ? { especies: readStringArray(value) } : readRecord(value);
+
 const readString = (record: JsonRecord, key: string): string | null => {
   const value = record[key];
   return typeof value === "string" && value.trim().length > 0 ? value : null;
@@ -208,6 +223,12 @@ const hasStringEntry = (value: unknown, expected: string): boolean => {
   return false;
 };
 
+const readAlias = (
+  record: JsonRecord,
+  primaryKey: string,
+  fallbackKey: string,
+): unknown => record[primaryKey] ?? record[fallbackKey];
+
 const metadataFlag = (record: { metadata: JsonRecord }, key: string): boolean =>
   record.metadata[key] === true;
 
@@ -226,7 +247,7 @@ export function adaptSanitaryProtocolV2Row(
     name: readString(row, "name") ?? "",
     scope: readString(row, "scope") ?? "",
     fazendaId: readString(row, "fazenda_id"),
-    speciesScope: readRecord(row.species_scope),
+    speciesScope: readSpeciesScope(row.species_scope),
     jurisdictionScope: readRecord(row.jurisdiction_scope),
     legalStatus: readString(row, "legal_status") ?? "",
     version: readNumber(row, "version"),
@@ -362,6 +383,87 @@ export async function readSanitaryProtocolCatalogV2(
   return { protocols, items, productClassGroups };
 }
 
+async function getDefaultLocalDb(): Promise<SanitaryProtocolCatalogLocalDb> {
+  const { db } = await import("@/lib/offline/db");
+  return db as unknown as SanitaryProtocolCatalogLocalDb;
+}
+
+const isNotDeleted = (row: JsonRecord): boolean => row.deleted_at == null;
+
+export async function listLocalSanitaryProtocolsV2(
+  localDb?: SanitaryProtocolCatalogLocalDb,
+): Promise<SanitaryProtocolV2ReadModel[]> {
+  const offlineDb = localDb ?? (await getDefaultLocalDb());
+  const rows = await offlineDb.catalog_sanitario_protocolos_v2.toArray();
+
+  return rows
+    .filter(isNotDeleted)
+    .map(adaptSanitaryProtocolV2Row)
+    .sort((left, right) => left.familyCode.localeCompare(right.familyCode));
+}
+
+export async function listLocalSanitaryProtocolItemsV2(
+  protocolId?: string,
+  localDb?: SanitaryProtocolCatalogLocalDb,
+): Promise<SanitaryProtocolItemV2ReadModel[]> {
+  const offlineDb = localDb ?? (await getDefaultLocalDb());
+  const rows = await offlineDb.catalog_sanitario_protocolo_itens_versions_v2.toArray();
+
+  return rows
+    .filter(isNotDeleted)
+    .filter((row) => !protocolId || row.protocol_id === protocolId)
+    .map(adaptSanitaryProtocolItemV2Row)
+    .sort((left, right) => {
+      const protocolDiff = left.protocolId.localeCompare(right.protocolId);
+      if (protocolDiff !== 0) return protocolDiff;
+      const keyDiff = left.logicalItemKey.localeCompare(right.logicalItemKey);
+      if (keyDiff !== 0) return keyDiff;
+      return left.version - right.version;
+    });
+}
+
+export async function listLocalSanitaryProductClassGroupsV2(
+  localDb?: SanitaryProtocolCatalogLocalDb,
+): Promise<SanitaryProductClassGroupV2ReadModel[]> {
+  const offlineDb = localDb ?? (await getDefaultLocalDb());
+  const rows = await offlineDb.catalog_sanitario_product_class_groups_v2.toArray();
+
+  return rows
+    .filter(isNotDeleted)
+    .map(adaptSanitaryProductClassGroupV2Row)
+    .sort((left, right) => left.groupKey.localeCompare(right.groupKey));
+}
+
+export async function getLocalSanitaryProtocolV2WithItems(
+  input: { protocolId?: string; familyCode?: string },
+  localDb?: SanitaryProtocolCatalogLocalDb,
+): Promise<SanitaryProtocolV2WithItems | null> {
+  const protocols = await listLocalSanitaryProtocolsV2(localDb);
+  const protocol =
+    protocols.find((entry) => entry.id === input.protocolId) ??
+    protocols.find((entry) => entry.familyCode === input.familyCode) ??
+    null;
+
+  if (!protocol) return null;
+
+  return {
+    protocol,
+    items: await listLocalSanitaryProtocolItemsV2(protocol.id, localDb),
+  };
+}
+
+export async function readLocalSanitaryProtocolCatalogV2(
+  localDb?: SanitaryProtocolCatalogLocalDb,
+): Promise<SanitaryProtocolCatalogReadModelV2> {
+  const [protocols, items, productClassGroups] = await Promise.all([
+    listLocalSanitaryProtocolsV2(localDb),
+    listLocalSanitaryProtocolItemsV2(undefined, localDb),
+    listLocalSanitaryProductClassGroupsV2(localDb),
+  ]);
+
+  return { protocols, items, productClassGroups };
+}
+
 function isB19NationalRule(
   protocol: SanitaryProtocolV2ReadModel,
   items: SanitaryProtocolItemV2ReadModel[],
@@ -376,14 +478,33 @@ function isB19NationalRule(
   );
   if (!item) return false;
 
+  const species = readAlias(protocol.speciesScope, "especies", "species");
+  const sex = readAlias(item.eligibilityRule, "sexo", "sex");
+  const minAge = readAlias(
+    item.eligibilityRule,
+    "idade_min_meses",
+    "age_min_months",
+  );
+  const maxAge = readAlias(
+    item.eligibilityRule,
+    "idade_max_meses",
+    "age_max_months",
+  );
+  const country = readAlias(protocol.jurisdictionScope, "pais", "country");
+  const legalScope = readAlias(
+    protocol.jurisdictionScope,
+    "escopo",
+    "legal_scope",
+  );
+
   return (
-    hasStringEntry(protocol.speciesScope.especies, "bovino") &&
-    hasStringEntry(protocol.speciesScope.especies, "bubalino") &&
-    hasStringEntry(item.eligibilityRule.sexo, "femea") &&
-    item.eligibilityRule.idade_min_meses === 3 &&
-    item.eligibilityRule.idade_max_meses === 8 &&
-    protocol.jurisdictionScope.pais === "BR" &&
-    protocol.jurisdictionScope.escopo === "nacional"
+    hasStringEntry(species, "bovino") &&
+    hasStringEntry(species, "bubalino") &&
+    hasStringEntry(sex, "femea") &&
+    minAge === 3 &&
+    maxAge === 8 &&
+    country === "BR" &&
+    legalScope === "nacional"
   );
 }
 

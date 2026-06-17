@@ -49,6 +49,7 @@ const Membros = lazy(() => import("./pages/Membros"));
 const Categorias = lazy(() => import("./pages/Categorias"));
 const CategoriaNova = lazy(() => import("./pages/CategoriaNova"));
 const ProtocolosSanitarios = lazy(() => import("./pages/ProtocolosSanitarios"));
+const SanitarioCatalogoV2 = lazy(() => import("./pages/SanitarioCatalogoV2"));
 const ReproductionDashboard = lazy(() => import("./pages/ReproductionDashboard"));
 const OnboardingInicial = lazy(() => import("./pages/OnboardingInicial"));
 
@@ -131,6 +132,10 @@ const App = () => (
           <Route
             path="/protocolos-sanitarios"
             element={<ProtocolosSanitarios />}
+          />
+          <Route
+            path="/protocolos-sanitarios/catalogo-v2"
+            element={<SanitarioCatalogoV2 />}
           />
           <Route path="/reproducao" element={<ReproductionDashboard />} />
         </Route>

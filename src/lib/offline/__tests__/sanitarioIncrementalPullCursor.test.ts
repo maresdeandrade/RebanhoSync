@@ -13,10 +13,11 @@ import { db } from "../db";
 import {
   pullSanitarioAgendaV2,
   pullSanitarioProductClassV2Catalog,
+  pullSanitarioProtocolCatalogV2,
   pullSanitarioTechnicalCatalogV2,
 } from "../pull";
 
-type FilterOp = "eq" | "is" | "gte";
+type FilterOp = "eq" | "is" | "gte" | "in";
 
 const remoteRows: Record<string, Array<Record<string, unknown>>> = {};
 const queryLog: Array<{
@@ -49,6 +50,11 @@ function makeQuery(table: string) {
       queryLog.push({ table, op: "gte", column, value });
       return query;
     }),
+    in: vi.fn((column: string, value: unknown[]) => {
+      filters.push({ op: "in", column, value });
+      queryLog.push({ table, op: "in", column, value });
+      return query;
+    }),
     then: (
       resolve: (value: { data: Array<Record<string, unknown>>; error: null }) => unknown,
       reject?: (reason: unknown) => unknown,
@@ -70,6 +76,9 @@ function filterRows(table: string, filters: Array<{ op: FilterOp; column: string
       if (filter.op === "gte") {
         const value = row[filter.column];
         return typeof value === "string" && value >= String(filter.value);
+      }
+      if (filter.op === "in") {
+        return Array.isArray(filter.value) && filter.value.includes(row[filter.column]);
       }
       return true;
     }),
@@ -100,6 +109,8 @@ describe("sanitario v2 incremental pull cursors", () => {
       db.catalog_sanitario_produto_fontes_v2.clear(),
       db.catalog_sanitario_produto_dose_rules_v2.clear(),
       db.catalog_sanitario_produto_carencia_rules_v2.clear(),
+      db.catalog_sanitario_protocolos_v2.clear(),
+      db.catalog_sanitario_protocolo_itens_versions_v2.clear(),
       db.ops_sanitario_agenda_v2.clear(),
       db.ops_sanitario_agenda_animais_v2.clear(),
       db.ops_sanitario_agenda_closures_v2.clear(),
@@ -312,5 +323,103 @@ describe("sanitario v2 incremental pull cursors", () => {
     ).toBe(false);
     expect(await db.sync_pull_cursors.get("sanitario_produto_fontes_v2:unscoped:null"))
       .toBeUndefined();
+  });
+
+  it("usa cursor incremental no catalogo de protocolos sanitarios v2 e preserva tombstones", async () => {
+    remoteRows.sanitario_protocolos_v2 = [
+      {
+        id: "protocol-b19",
+        family_code: "brucelose_b19",
+        scope: "global",
+        fazenda_id: null,
+        status: "draft",
+        approval_status: "draft",
+        updated_at: "2026-06-15T08:00:00.000Z",
+        deleted_at: null,
+      },
+    ];
+    remoteRows.sanitario_protocolo_itens_versions_v2 = [
+      {
+        id: "item-b19",
+        protocol_id: "protocol-b19",
+        logical_item_key: "b19_femeas_3_8_meses",
+        version: 1,
+        allows_agenda_auto: false,
+        updated_at: "2026-06-15T08:01:00.000Z",
+        deleted_at: null,
+      },
+    ];
+    remoteRows.sanitario_product_class_groups_v2 = [
+      {
+        id: "group-antiparasitario",
+        group_key: "pcg_antiparasitarios_recria_estrategicos",
+        scope: "global",
+        fazenda_id: null,
+        curation_status: "needs_review",
+        automation_status: "blocked",
+        updated_at: "2026-06-15T08:02:00.000Z",
+        deleted_at: null,
+      },
+    ];
+
+    await pullSanitarioProtocolCatalogV2();
+
+    expect(queryLog.some((entry) => entry.op === "gte")).toBe(false);
+    expect(await db.catalog_sanitario_protocolos_v2.get("protocol-b19"))
+      .toMatchObject({
+        family_code: "brucelose_b19",
+        deleted_at: null,
+      });
+
+    remoteRows.sanitario_protocolos_v2.push({
+      id: "protocol-aftosa",
+      family_code: "febre_aftosa",
+      scope: "global",
+      fazenda_id: null,
+      status: "retired",
+      approval_status: "draft",
+      updated_at: "2026-06-15T09:00:00.000Z",
+      deleted_at: "2026-06-15T09:05:00.000Z",
+    });
+    queryLog.length = 0;
+
+    await pullSanitarioProtocolCatalogV2();
+
+    expect(queryLog).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          table: "sanitario_protocolos_v2",
+          op: "gte",
+          column: "updated_at",
+          value: "2026-06-15T08:00:00.000Z",
+        }),
+        expect.objectContaining({
+          table: "sanitario_protocolo_itens_versions_v2",
+          op: "gte",
+          column: "updated_at",
+          value: "2026-06-15T08:01:00.000Z",
+        }),
+        expect.objectContaining({
+          table: "sanitario_product_class_groups_v2",
+          op: "gte",
+          column: "updated_at",
+          value: "2026-06-15T08:02:00.000Z",
+        }),
+      ]),
+    );
+    expect(await db.catalog_sanitario_protocolos_v2.get("protocol-aftosa"))
+      .toMatchObject({
+        status: "retired",
+        deleted_at: "2026-06-15T09:05:00.000Z",
+      });
+    expect(await db.sync_pull_cursors.get("sanitario_protocolos_v2:global:null"))
+      .toMatchObject({
+        remote_table: "sanitario_protocolos_v2",
+        local_store: "catalog_sanitario_protocolos_v2",
+        scope: "global",
+        fazenda_id: null,
+        last_updated_at: "2026-06-15T09:00:00.000Z",
+        last_id: "protocol-aftosa",
+      });
   });
 });

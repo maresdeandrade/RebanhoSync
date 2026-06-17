@@ -55,6 +55,9 @@ export const TABLE_MAP: Record<string, string> = {
     "catalog_sanitario_produto_dose_rules_v2",
   sanitario_produto_carencia_rules_v2:
     "catalog_sanitario_produto_carencia_rules_v2",
+  sanitario_protocolos_v2: "catalog_sanitario_protocolos_v2",
+  sanitario_protocolo_itens_versions_v2:
+    "catalog_sanitario_protocolo_itens_versions_v2",
 
   // Operational Rails - Agenda Sanitaria v2
   sanitario_agenda_v2: "ops_sanitario_agenda_v2",

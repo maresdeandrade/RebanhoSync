@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  adaptSanitaryProtocolItemV2Row,
+  adaptSanitaryProtocolV2Row,
+  adaptSanitaryProductClassGroupV2Row,
   buildSanitaryProtocolCatalogSummaryV2,
   getSanitaryProtocolV2WithItems,
   listSanitaryProductClassGroupsV2,
@@ -156,7 +159,15 @@ const group = (groupKey: string): JsonRecord => ({
 
 const protocols = [
   protocol("brucelose_b19", {
-    species_scope: { especies: ["bovino", "bubalino"] },
+    species_scope: ["bovino", "bubalino"],
+    jurisdiction_scope: { country: "BR", legal_scope: "nacional" },
+    legal_status: "obrigatorio_norma",
+    metadata: {
+      agenda_allowed: false,
+      approved_for_catalog: false,
+      curationStatus: "needs_review",
+      automationStatus: "manual_only",
+    },
   }),
   protocol("febre_aftosa", {
     legal_status: "bloqueado",
@@ -167,14 +178,14 @@ const protocols = [
       automation_status: "blocked",
     },
   }),
-  protocol("controle_parasitario_recria"),
-  protocol("controle_parasitario_pre_desmama"),
-  protocol("controle_parasitario_pre_confinamento"),
-  protocol("controle_parasitario_matrizes"),
+  protocol("controle_parasitario_recria_5_7_9"),
+  protocol("vermifugacao_pre_desmama"),
+  protocol("vermifugacao_pre_confinamento_pasto_vedado"),
+  protocol("matrizes_pre_parto"),
   protocol("raiva_herbivoros"),
   protocol("clostridioses"),
-  protocol("leptospirose_ibr_bvd"),
-  protocol("rastreabilidade_medicamentos"),
+  protocol("leptospirose"),
+  protocol("ibr_bvd"),
 ];
 
 const protocolId = (familyCode: string) => `protocol-${familyCode}`;
@@ -187,53 +198,56 @@ const antiparasiticOverrides = (groupKey: string): JsonRecord => ({
 const items = [
   item(protocolId("brucelose_b19"), "b19_femeas_3_8_meses", {
     eligibility_rule: {
-      sexo: "femea",
-      idade_min_meses: 3,
-      idade_max_meses: 8,
+      sex: "femea",
+      age_min_months: 3,
+      age_max_months: 8,
     },
   }),
-  item(protocolId("febre_aftosa"), "aftosa_vacinacao_bloqueada"),
-  item(protocolId("febre_aftosa"), "aftosa_sem_agenda"),
+  item(protocolId("febre_aftosa"), "fmd_historico_contingencia"),
+  item(protocolId("febre_aftosa"), "fmd_bloqueio_vacinacao_rotina"),
   item(
-    protocolId("controle_parasitario_recria"),
+    protocolId("controle_parasitario_recria_5_7_9"),
     "recria_maio",
     antiparasiticOverrides("antiparasitario_endectocida"),
   ),
   item(
-    protocolId("controle_parasitario_recria"),
+    protocolId("controle_parasitario_recria_5_7_9"),
     "recria_julho",
     antiparasiticOverrides("antiparasitario_endectocida"),
   ),
   item(
-    protocolId("controle_parasitario_recria"),
+    protocolId("controle_parasitario_recria_5_7_9"),
     "recria_setembro",
     antiparasiticOverrides("antiparasitario_endectocida"),
   ),
   item(
-    protocolId("controle_parasitario_pre_desmama"),
+    protocolId("vermifugacao_pre_desmama"),
     "pre_desmama_situacional",
     antiparasiticOverrides("antiparasitario_pre_desmama"),
   ),
   item(
-    protocolId("controle_parasitario_pre_confinamento"),
+    protocolId("vermifugacao_pre_confinamento_pasto_vedado"),
     "pre_confinamento_dose_unica",
     antiparasiticOverrides("antiparasitario_pre_confinamento"),
   ),
   item(
-    protocolId("controle_parasitario_matrizes"),
+    protocolId("matrizes_pre_parto"),
     "matrizes_pre_parto_antiparasitario",
     antiparasiticOverrides("antiparasitario_matrizes"),
   ),
-  item(protocolId("raiva_herbivoros"), "raiva_d1"),
-  item(protocolId("raiva_herbivoros"), "raiva_reforco"),
-  item(protocolId("clostridioses"), "clostridioses_primovacinacao"),
-  item(protocolId("clostridioses"), "clostridioses_reforco"),
-  item(protocolId("leptospirose_ibr_bvd"), "reprodutivas_pre_estacao"),
-  item(protocolId("leptospirose_ibr_bvd"), "reprodutivas_reforco"),
-  item(protocolId("rastreabilidade_medicamentos"), "medicamento_antibiotico"),
-  item(protocolId("rastreabilidade_medicamentos"), "medicamento_antiinflamatorio"),
-  item(protocolId("rastreabilidade_medicamentos"), "medicamento_suporte"),
-  item(protocolId("rastreabilidade_medicamentos"), "medicamento_outros"),
+  item(protocolId("raiva_herbivoros"), "raiva_area_risco_anual"),
+  item(protocolId("clostridioses"), "clostridial_primovac_dose1"),
+  item(protocolId("clostridioses"), "clostridial_primovac_dose2"),
+  item(protocolId("clostridioses"), "clostridial_reforco_anual"),
+  item(protocolId("leptospirose"), "lepto_primovac_dose1"),
+  item(protocolId("leptospirose"), "lepto_primovac_dose2"),
+  item(protocolId("leptospirose"), "lepto_reforco_anual_semestral"),
+  item(protocolId("ibr_bvd"), "ibr_bvd_primovac_dose1"),
+  item(protocolId("ibr_bvd"), "ibr_bvd_primovac_dose2"),
+  item(
+    protocolId("matrizes_pre_parto"),
+    "matrizes_pre_parto_lepto_reforco_situacional",
+  ),
 ];
 
 const groups = [
@@ -278,60 +292,9 @@ describe("sanitaryProtocolCatalogV2", () => {
 
   it("confirma B19 nacional, aftosa bloqueada e 6 antiparasitarios com ProductClassGroup", () => {
     const summary = buildSanitaryProtocolCatalogSummaryV2({
-      protocols: protocols.map((row) => ({
-        id: String(row.id),
-        familyCode: String(row.family_code),
-        name: String(row.name),
-        scope: String(row.scope),
-        fazendaId: null,
-        speciesScope: row.species_scope as JsonRecord,
-        jurisdictionScope: row.jurisdiction_scope as JsonRecord,
-        legalStatus: String(row.legal_status),
-        version: Number(row.version),
-        status: String(row.status),
-        approvalStatus: String(row.approval_status),
-        sourceRefsSnapshot: row.source_refs_snapshot as unknown[],
-        metadata: row.metadata as JsonRecord,
-      })),
-      items: items.map((row) => ({
-        id: String(row.id),
-        protocolId: String(row.protocol_id),
-        logicalItemKey: String(row.logical_item_key),
-        version: Number(row.version),
-        itemStatus: String(row.item_status),
-        actionType: String(row.action_type),
-        productRequirementKind: String(row.product_requirement_kind),
-        productId: null,
-        productClass: null,
-        productClassGroupId:
-          typeof row.product_class_group_id === "string"
-            ? row.product_class_group_id
-            : null,
-        eligibilityRule: row.eligibility_rule as JsonRecord,
-        operationalWindowRule: row.operational_window_rule as JsonRecord,
-        doseRule: row.dose_rule as JsonRecord,
-        routeRule: row.route_rule as JsonRecord,
-        boosterRule: row.booster_rule as JsonRecord,
-        speciesAuthorization: row.species_authorization as JsonRecord,
-        sourceRefsByField: row.source_refs_by_field as JsonRecord,
-        limitations: row.limitations as JsonRecord,
-        snapshotTemplate: row.snapshot_template as JsonRecord,
-        allowsAgendaAuto: row.allows_agenda_auto === true,
-        requiresMvResponsavel: row.requires_mv_responsavel === true,
-        status: String(row.status),
-      })),
-      productClassGroups: groups.map((row) => ({
-        id: String(row.id),
-        fazendaId: null,
-        scope: String(row.scope),
-        groupKey: String(row.group_key),
-        name: String(row.name),
-        requiresMvForOtherClass: row.requires_mv_for_other_class === true,
-        curationStatus: String(row.curation_status),
-        automationStatus: String(row.automation_status),
-        limitations: row.limitations as string[],
-        metadata: row.metadata as JsonRecord,
-      })),
+      protocols: protocols.map(adaptSanitaryProtocolV2Row),
+      items: items.map(adaptSanitaryProtocolItemV2Row),
+      productClassGroups: groups.map(adaptSanitaryProductClassGroupV2Row),
     });
 
     expect(summary).toMatchObject({
@@ -345,6 +308,31 @@ describe("sanitaryProtocolCatalogV2", () => {
       hasAgendaAutoEnabled: false,
       hasApprovedCatalogProtocol: false,
     });
+  });
+
+  it("normaliza aliases reais do payload importado para B19", () => {
+    const b19Protocol = adaptSanitaryProtocolV2Row({
+      ...protocol("brucelose_b19"),
+      species_scope: ["bovino", "bubalino"],
+      jurisdiction_scope: { country: "BR", legal_scope: "nacional" },
+      legal_status: "obrigatorio_norma",
+    });
+    const b19Item = adaptSanitaryProtocolItemV2Row({
+      ...item(protocolId("brucelose_b19"), "b19_femeas_3_8_meses"),
+      eligibility_rule: {
+        sex: "femea",
+        age_min_months: 3,
+        age_max_months: 8,
+      },
+    });
+    const summary = buildSanitaryProtocolCatalogSummaryV2({
+      protocols: [b19Protocol],
+      items: [b19Item],
+      productClassGroups: [],
+    });
+
+    expect(b19Protocol.speciesScope.especies).toEqual(["bovino", "bubalino"]);
+    expect(summary.hasB19NationalRule).toBe(true);
   });
 
   it("preserva invariantes: protocolo e grupo nao autorizam operacao", async () => {

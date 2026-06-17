@@ -28,13 +28,13 @@ Não deve substituir issues, tarefas técnicas ou prompts de implementação.
 
 ## Fase atual — Fase 12
 
-Status: **Fase 12H concluida localmente como leitura read-only dos Protocolos Sanitarios v2 importados**
+Status: **Fase 12I concluida localmente, com UI minima read-only do Catalogo Sanitario v2**
 Fase anterior: **Fase 11.5 — Agenda Sanitária v2: Janelas, Agrupamento e Materialização Idempotente — concluída localmente**
-Fase seguinte: **Conectar leitura a superficie UI read-only ou pull offline objetivo, sem agenda automatica**
+Fase seguinte: **Validar uso em runtime e manter catalogo v2 como consulta read-only, sem agenda automatica**
 
 ### Conduta inicial
 
-As subfases 11.5A a 11.5J (Agenda Sanitária v2 core/documental), 12A-12E5, 12F0-12F10, 12G e 12H foram concluídas localmente. A 12F10 consolidou a fonte final em `SANITARIO_PROTOCOLS_V2_CANONICAL_PAYLOAD_12F10.json`; a 12G criou o importador controlado em `scripts/codex/import-sanitario-protocols-v2.mjs` e executou apply real local com 33 `create`, 0 `update`, 0 `skip`, 16 `reject`; a 12H criou a leitura read-only em `src/lib/sanitario/catalog/sanitaryProtocolCatalogV2.ts`, consultando banco e confirmando B19/aftosa/antiparasitarios sem agenda automatica. O foco seguinte e conectar essa leitura a uma superficie UI read-only ou pull offline objetivo.
+As subfases 11.5A a 11.5J (Agenda Sanitária v2 core/documental), 12A-12E5, 12F0-12F10, 12G, 12H e 12I foram concluídas localmente. A 12F10 consolidou a fonte final em `SANITARIO_PROTOCOLS_V2_CANONICAL_PAYLOAD_12F10.json`; a 12G criou o importador controlado em `scripts/codex/import-sanitario-protocols-v2.mjs` e executou apply real local com 33 `create`, 0 `update`, 0 `skip`, 16 `reject`; a 12H criou a leitura read-only em `src/lib/sanitario/catalog/sanitaryProtocolCatalogV2.ts`; a 12I conectou essa leitura ao offline-first Dexie com stores `catalog_*`, pull remoto e leitura local read-only. O avanço UI posterior criou `/protocolos-sanitarios/catalogo-v2` como consulta read-only do catalogo local, sem agenda automatica.
 
 ### Handoff para Fase 12E
 

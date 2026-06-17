@@ -81,6 +81,12 @@ const ProtocolosSanitarios = () => {
             </Button>
             <Button
               variant="outline"
+              onClick={() => navigate("/protocolos-sanitarios/catalogo-v2")}
+            >
+              Catalogo v2
+            </Button>
+            <Button
+              variant="outline"
               onClick={() => scrollToSection("protocolos-conformidade")}
             >
               Conformidade
@@ -158,4 +164,3 @@ const ProtocolosSanitarios = () => {
 };
 
 export default ProtocolosSanitarios;
-

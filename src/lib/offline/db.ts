@@ -36,6 +36,8 @@ import {
   type SanitarioProdutoEspecieAutorizacaoLocalV2,
   type SanitarioProdutoFonteLocalV2,
   type SanitarioProdutoLocalV2,
+  type SanitarioProtocoloItemVersionLocalV2,
+  type SanitarioProtocoloLocalV2,
   type SanitarioProductClassDefaultRuleLocalV2,
   type SanitarioProductClassGroupLocalV2,
   type SanitarioProductClassGroupMemberLocalV2,
@@ -111,6 +113,8 @@ export class OfflineDB extends Dexie {
   catalog_sanitario_produto_fontes_v2!: Table<SanitarioProdutoFonteLocalV2, [string, string, string]>;
   catalog_sanitario_produto_dose_rules_v2!: Table<SanitarioProdutoDoseRuleLocalV2, string>;
   catalog_sanitario_produto_carencia_rules_v2!: Table<SanitarioProdutoCarenciaRuleLocalV2, string>;
+  catalog_sanitario_protocolos_v2!: Table<SanitarioProtocoloLocalV2, string>;
+  catalog_sanitario_protocolo_itens_versions_v2!: Table<SanitarioProtocoloItemVersionLocalV2, string>;
   ops_sanitario_agenda_v2!: Table<SanitarioAgendaLocalV2, string>;
   ops_sanitario_agenda_animais_v2!: Table<SanitarioAgendaAnimalLocalV2, [string, string]>;
   ops_sanitario_agenda_closures_v2!: Table<SanitarioAgendaClosureLocalV2, string>;
@@ -709,6 +713,16 @@ export class OfflineDB extends Dexie {
     this.version(26).stores({
       sync_pull_cursors:
         "key, remote_table, local_store, scope, fazenda_id, last_updated_at, last_id, updated_at, [remote_table+fazenda_id]",
+    });
+
+    // Version 27: cache local pull-only dos Protocolos Sanitarios v2 importados.
+    this.version(27).stores({
+      catalog_sanitario_protocolos_v2:
+        "id, family_code, scope, status, approval_status, deleted_at, updated_at",
+      catalog_sanitario_protocolo_itens_versions_v2:
+        "id, protocol_id, logical_item_key, [protocol_id+logical_item_key+version], product_requirement_kind, allows_agenda_auto, deleted_at, updated_at",
+      catalog_sanitario_product_class_groups_v2:
+        "id, group_key, scope, fazenda_id, curation_status, automation_status, deleted_at, updated_at, [scope+group_key], [fazenda_id+group_key]",
     });
   }
 }

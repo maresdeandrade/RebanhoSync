@@ -4,31 +4,34 @@ Atualizado em: 2026-06-15
 
 ## Resultado mais recente
 
-Fase 12H - Leitura read-only dos Protocolos Sanitarios v2 importados - concluida localmente.
+Fase 12I - Catalogo Sanitario v2 read-only offline-first - concluida localmente.
 
-Decisao: `12H_LEITURA_READ_ONLY_PROTOCOLS_SANITARIOS_V2_IMPORTADOS`.
+Decisao: `12I_CATALOGO_SANITARIO_V2_OFFLINE_READ_ONLY`.
 
 ## Resultado
 
-- Criada camada read-only em `src/lib/sanitario/catalog/sanitaryProtocolCatalogV2.ts`.
-- A leitura consulta banco via cliente Supabase-like e nao le o JSON 12F10 em runtime.
-- Implementadas consultas para protocolos, itens por protocolo e ProductClassGroups v2.
-- Implementado resumo read-only com 10 protocolos, 19 itens, 4 grupos e 16 members bloqueados.
-- B19, aftosa e os 6 itens antiparasitarios com ProductClassGroup foram cobertos por teste.
-- Nenhum caminho de escrita, agenda, evento, estoque, carencia ativa ou liberacao operacional foi criado.
-- Criado o relatorio unico `docs/review/evidence/RELATORIO_12H_LEITURA_PROTOCOLS_SANITARIOS_V2.md`.
+- Avanco posterior: criada UI minima read-only em `/protocolos-sanitarios/catalogo-v2` para visualizar o catalogo local Dexie, sem ler JSON/Supabase direto e sem criar agenda, evento, estoque, carencia ativa ou automacao operacional.
+- Criados stores Dexie v27 para `catalog_sanitario_protocolos_v2` e `catalog_sanitario_protocolo_itens_versions_v2`.
+- Ampliados índices de `catalog_sanitario_product_class_groups_v2` para consulta local do catalogo de protocolos.
+- Implementado pull remoto `pullSanitarioProtocolCatalogV2` para protocolos, itens e grupos globais.
+- Implementadas funções locais read-only para listar protocolos, itens por protocolo, ProductClassGroups e resumo do catalogo v2.
+- B19, aftosa e os 6 itens antiparasitarios com ProductClassGroup foram cobertos por testes locais.
+- Nenhum caminho de push, `queue_ops`, agenda, evento, estoque, carencia ativa ou liberacao operacional foi criado.
+- Criado o relatorio unico `docs/review/evidence/RELATORIO_12I_CATALOGO_SANITARIO_V2_OFFLINE_READONLY.md`.
 
 ## Validacao
 
 - Diagnostico inicial confirmou carga 12G aplicada: `--dry-run` com 0 `create`, 0 `update`, 33 `skip`, 16 `reject`.
-- `pnpm test -- src/lib/sanitario/catalog/__tests__/sanitaryProtocolCatalogV2.test.ts`: passou.
-- Validacoes finais da 12H registradas no relatorio.
+- Testes focados de store, pull, cursor incremental e leitura local passaram.
+- Teste focado da UI read-only do catalogo v2 passou.
+- Validacoes finais da 12I registradas no relatorio.
 
 ## Nao executado
 
-- migration, schema, RLS, UI, Dexie, sync ou Edge Function;
+- migration, schema, RLS, UI ampla, Edge Function ou import novo;
 - agenda, evento, estoque, carencia ativa ou liberacao operacional;
-- ProductClassGroup members.
+- ProductClassGroup members;
+- push/sync-batch de escrita para catalogos.
 
 ## Fonte final
 
@@ -36,8 +39,8 @@ Import futuro continua vinculado exclusivamente ao payload canonico:
 
 `docs/review/evidence/SANITARIO_PROTOCOLS_V2_CANONICAL_PAYLOAD_12F10.json`
 
-Leitura 12H usa as tabelas reais importadas pela 12G, nao o JSON.
+Leitura 12I usa as tabelas reais importadas pela 12G e cache Dexie pull-only, nao o JSON.
 
 ## Proximo passo possivel
 
-Conectar esta leitura a uma superficie UI read-only ou a pull offline objetivo, sem agenda automatica.
+Validar a tela read-only em runtime com Dexie local populado, sem agenda automatica.

@@ -1,16 +1,40 @@
-    # ACTIVE_PHASE_PLAN - Fase 12H
+    # ACTIVE_PHASE_PLAN - Fase 12I
 
-    **Status:** Fase 12H concluida localmente - leitura read-only dos Protocolos Sanitarios v2 importados implementada.
-    **Foco:** Consultar protocolos, itens e ProductClassGroups v2 a partir do banco, sem ler JSON em runtime e sem criar agenda, evento, estoque, carencia ativa ou automacao operacional.
+    **Status:** Fase 12I concluida localmente - Catalogo Sanitario v2 read-only conectado ao offline-first Dexie.
+    **Foco:** Baixar e consultar protocolos, itens e ProductClassGroups v2 em stores `catalog_*` pull-only, sem push, `queue_ops`, agenda, evento, estoque, carencia ativa ou automacao operacional.
     **Criado:** 2026-06-15
     **Atualizado:** 2026-06-15
-    **Plano base:** solicitação direta da Fase 12H.
+    **Plano base:** solicitação direta da Fase 12I.
 
     ---
 
     ## Objetivo em 1 paragrafo
 
-    Executar a Fase 12H criando uma camada read-only para consultar os Protocolos Sanitarios v2 ja importados pela 12G, confirmando 10 protocolos, 19 itens, 4 ProductClassGroups, B19 nacional, aftosa bloqueada e itens antiparasitarios com ProductClassGroup, mantendo protocolo como regra/configuracao e sem qualquer automacao operacional.
+    Executar a Fase 12I conectando a leitura read-only dos Protocolos Sanitarios v2 ao offline-first Dexie, com pull remoto controlado para 10 protocolos, 19 itens e 4 ProductClassGroups, consulta local por protocolo/itens/grupos, validação de B19/aftosa/antiparasitarios e preservação de catálogo como fonte pull-only sem autorização operacional.
+
+    ---
+
+    ## Decisao 12I
+
+    Decisao: `12I_CATALOGO_SANITARIO_V2_OFFLINE_READ_ONLY`.
+
+    Entregue nesta fase:
+    - stores Dexie v27 `catalog_sanitario_protocolos_v2` e `catalog_sanitario_protocolo_itens_versions_v2`;
+    - índices ampliados do store `catalog_sanitario_product_class_groups_v2`;
+    - mapeamento remoto/local para `sanitario_protocolos_v2` e `sanitario_protocolo_itens_versions_v2`;
+    - pull remoto `pullSanitarioProtocolCatalogV2` para protocolos, itens e grupos globais;
+    - leitura local Dexie read-only em `src/lib/sanitario/catalog/sanitaryProtocolCatalogV2.ts`;
+    - testes focados de store, pull, cursor incremental e leitura local.
+
+    Resultado local:
+    - diagnóstico inicial confirmou carga 12G aplicada: `--dry-run` com 0 `create`, 0 `update`, 33 `skip`, 16 `reject`;
+    - pull implementado usa merge incremental, preserva tombstones e não limpa stores;
+    - leitura local confirma 10 protocolos, 19 itens, 4 grupos, B19 nacional, aftosa bloqueada e 6 itens antiparasitarios com ProductClassGroup;
+    - avanço UI posterior criou `/protocolos-sanitarios/catalogo-v2` para consulta local/offline read-only;
+    - nenhum caminho de push, `queue_ops`, agenda, evento, estoque, carencia ativa ou liberacao operacional foi criado.
+
+    Proximo passo seguro:
+    - validar a tela read-only em runtime com Dexie populado, sem agenda automatica.
 
     ---
 

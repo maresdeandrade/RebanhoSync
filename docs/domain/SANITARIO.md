@@ -137,7 +137,7 @@ Essas funções não persistem dados, não consultam Supabase/Dexie, não criam 
 
 Protocolos sanitários são regras operacionais versionadas.
 
-A partir da 12F3, os payloads candidatos dos Protocolos Sanitarios v2 foram validados contra o schema real e seguem bloqueados para import bruto. A 12F4 definiu adapter/normalizer candidato, ainda sem seed/import. A 12F5 validou esse adapter com script local somente leitura. A 12G criou importador controlado usando exclusivamente o payload canonico 12F10, com `--validate`, `--dry-run` e `--apply` protegido por `ALLOW_SANITARIO_IMPORT=1`. Qualquer import deve preservar:
+A partir da 12F3, os payloads candidatos dos Protocolos Sanitarios v2 foram validados contra o schema real e seguem bloqueados para import bruto. A 12F4 definiu adapter/normalizer candidato, ainda sem seed/import. A 12F5 validou esse adapter com script local somente leitura. A 12G criou importador controlado usando exclusivamente o payload canonico 12F10, com `--validate`, `--dry-run` e `--apply` protegido por `ALLOW_SANITARIO_IMPORT=1`. A 12I conectou os protocolos importados ao offline-first Dexie como catalogo `catalog_*` pull-only/read-only. Qualquer import ou leitura local deve preservar:
 
 - `agenda_allowed = false` enquanto houver sourceGap critico;
 - `approved_for_catalog = false` ate aprovacao curatorial propria;
@@ -147,7 +147,31 @@ A partir da 12F3, os payloads candidatos dos Protocolos Sanitarios v2 foram vali
 - SourceRefs separados de sourceGaps e sourcePolicy.
 - itens com ProductClassGroup nao devem ser convertidos para `product_class`, `specific_product` ou `none` sem decisao estrutural explicita.
 
-A 12F6 tomou a decisao estrutural documental: a forma futura recomendada e suporte direto a `product_class_group` no item com `product_class_group_id` referenciando `sanitario_product_class_groups_v2(id)`. A 12F7 criou essa migration controlada no schema real, com enum, coluna, FK, CHECK e trigger de validacao de grupo ativo/escopo/status. A 12F8 revalidou o adapter e adaptou documentalmente os 6 itens antiparasitarios com `product_class_group_id` por lookup, elevando a contagem de itens adaptaveis para 19. A 12F9 gerou payload JSON completo candidato e a 12F10 consolidou a fonte final em `docs/review/evidence/SANITARIO_PROTOCOLS_V2_CANONICAL_PAYLOAD_12F10.json`, com 10 protocolos, 19 itens, 4 ProductClassGroups e 16 rejeicoes de members, sempre com `execute_import=false`. A 12G implementou o importador controlado e executou apply real local: 33 `create`, 0 `update`, 0 `skip`, 16 `reject`; dry-run pos-apply confirmou 33 `skip` e 16 `reject`. A 12H criou leitura read-only a partir do banco em `src/lib/sanitario/catalog/sanitaryProtocolCatalogV2.ts`, confirmando B19 nacional, aftosa bloqueada e antiparasitarios com ProductClassGroup sem criar agenda, evento, estoque, carencia ativa ou liberacao operacional. Members seguem bloqueados sem `class_id` real.
+A 12F6 tomou a decisao estrutural documental: a forma futura recomendada e suporte direto a `product_class_group` no item com `product_class_group_id` referenciando `sanitario_product_class_groups_v2(id)`. A 12F7 criou essa migration controlada no schema real, com enum, coluna, FK, CHECK e trigger de validacao de grupo ativo/escopo/status. A 12F8 revalidou o adapter e adaptou documentalmente os 6 itens antiparasitarios com `product_class_group_id` por lookup, elevando a contagem de itens adaptaveis para 19. A 12F9 gerou payload JSON completo candidato e a 12F10 consolidou a fonte final em `docs/review/evidence/SANITARIO_PROTOCOLS_V2_CANONICAL_PAYLOAD_12F10.json`, com 10 protocolos, 19 itens, 4 ProductClassGroups e 16 rejeicoes de members, sempre com `execute_import=false`. A 12G implementou o importador controlado e executou apply real local: 33 `create`, 0 `update`, 0 `skip`, 16 `reject`; dry-run pos-apply confirmou 33 `skip` e 16 `reject`. A 12H criou leitura read-only a partir do banco em `src/lib/sanitario/catalog/sanitaryProtocolCatalogV2.ts`, confirmando B19 nacional, aftosa bloqueada e antiparasitarios com ProductClassGroup sem criar agenda, evento, estoque, carencia ativa ou liberacao operacional. A 12I criou stores Dexie v27 e pull remoto/local read-only para esse catalogo, preservando tombstones e sem `queue_ops` ou push. Members seguem bloqueados sem `class_id` real.
+
+### Catalogo de Protocolos Sanitarios v2 local/offline
+
+A camada local de Protocolos Sanitarios v2 é cache offline-first de leitura, não fonte paralela de verdade.
+
+A rota `/protocolos-sanitarios/catalogo-v2` expõe esse cache em UI read-only. Ela deve ler pela camada local `readLocalSanitaryProtocolCatalogV2`, sem ler JSON canonico ou Supabase direto em runtime.
+
+Stores locais:
+
+- `catalog_sanitario_protocolos_v2`;
+- `catalog_sanitario_protocolo_itens_versions_v2`;
+- `catalog_sanitario_product_class_groups_v2`.
+
+Regras:
+
+- pull remoto permitido apenas para leitura/merge de catalogo;
+- `catalog_*` permanece pull-only;
+- não usar `queue_ops` para protocolos, itens ou ProductClassGroups;
+- não criar push/sync-batch de escrita para catalogo;
+- não importar ProductClassGroup members sem `class_id`;
+- não criar agenda, evento, estoque, carencia ativa ou liberação operacional a partir da leitura;
+- não exibir CTA de agenda, execução, estoque, carencia ou liberação operacional nessa superficie;
+- ProductClassGroup não valida execução, dose ou carência;
+- execução real continua exigindo produto real e snapshot técnico.
 
 Um protocolo pode nascer de:
 

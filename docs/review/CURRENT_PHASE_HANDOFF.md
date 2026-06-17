@@ -2,7 +2,27 @@
 
 Atualizado em: 2026-06-15
 
-## 0. Handoff Atual — Fase 12H
+## 0. Handoff Atual — Fase 12I
+
+Fase 12I — Catalogo Sanitario v2 read-only offline-first — executada localmente.
+
+Decisao: `12I_CATALOGO_SANITARIO_V2_OFFLINE_READ_ONLY`.
+
+Resultado:
+- Criados stores Dexie v27 `catalog_sanitario_protocolos_v2` e `catalog_sanitario_protocolo_itens_versions_v2`.
+- Ampliados os índices de `catalog_sanitario_product_class_groups_v2` para consulta de grupos do catalogo de protocolos.
+- Implementado `pullSanitarioProtocolCatalogV2` para baixar protocolos, itens e ProductClassGroups globais em modo merge/incremental.
+- A leitura local Dexie em `src/lib/sanitario/catalog/sanitaryProtocolCatalogV2.ts` lista protocolos, itens por protocolo, grupos e resumo read-only.
+- Avanco UI posterior: rota `/protocolos-sanitarios/catalogo-v2` criada para visualizar o catalogo local/offline em modo read-only.
+- Testes confirmam 10 protocolos, 19 itens, 4 grupos, B19 nacional, aftosa retired/bloqueada e 6 antiparasitarios com ProductClassGroup.
+- Não foi criado push, `queue_ops`, sync-batch de escrita, UI operacional, migration, schema, RLS, Edge Function, agenda, evento, estoque, carencia ativa ou liberação operacional.
+
+Próximo passo seguro:
+- validar a tela read-only em runtime com Dexie populado, mantendo tudo sem agenda automatica.
+
+---
+
+## 0.1 Handoff anterior — Fase 12H
 
 Fase 12H — Leitura read-only dos Protocolos Sanitarios v2 importados — executada localmente.
 
@@ -21,7 +41,7 @@ Próximo passo seguro:
 
 ---
 
-## 0.1 Handoff anterior — Fase 12G
+## 0.2 Handoff anterior — Fase 12G
 
 Fase 12G — Importador controlado dos Protocolos Sanitarios v2 — executada localmente.
 
