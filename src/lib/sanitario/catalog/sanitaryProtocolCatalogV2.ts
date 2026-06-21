@@ -188,6 +188,12 @@ const ANTIPARASITIC_ITEM_KEYS = new Set([
   "matrizes_pre_parto_antiparasitario",
 ]);
 
+const RAIVA_ITEM_KEYS = new Set([
+  "raiva_primovac_dose1",
+  "raiva_primovac_reforco_30d",
+  "raiva_reforco_anual_area_risco",
+]);
+
 const isRecord = (value: unknown): value is JsonRecord =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 
@@ -586,7 +592,7 @@ export function validateSanitaryProtocolCatalogReadOnlyInvariantsV2(
   const summary = buildSanitaryProtocolCatalogSummaryV2(readModel);
 
   if (summary.protocolCount !== 10) issues.push("protocol_count_mismatch");
-  if (summary.itemCount !== 19) issues.push("item_count_mismatch");
+  if (summary.itemCount !== 21) issues.push("item_count_mismatch");
   if (summary.productClassGroupCount !== 4) {
     issues.push("product_class_group_count_mismatch");
   }
@@ -594,6 +600,40 @@ export function validateSanitaryProtocolCatalogReadOnlyInvariantsV2(
   if (!summary.hasAftosaBlockedRule) issues.push("aftosa_blocked_rule_missing");
   if (!summary.antiparasiticItemsUseProductClassGroup) {
     issues.push("antiparasitic_group_lookup_missing");
+  }
+  const raivaProtocol = readModel.protocols.find(
+    (entry) => entry.familyCode === "raiva_herbivoros",
+  );
+  const raivaItems = readModel.items.filter(
+    (entry) => entry.protocolId === raivaProtocol?.id,
+  );
+  const raivaKeys = new Set(raivaItems.map((entry) => entry.logicalItemKey));
+  if (raivaKeys.has("raiva_area_risco_anual")) {
+    issues.push("raiva_deprecated_item_active");
+  }
+  for (const key of RAIVA_ITEM_KEYS) {
+    if (!raivaKeys.has(key)) issues.push(`raiva_item_missing:${key}`);
+  }
+  for (const item of raivaItems) {
+    if (item.productRequirementKind !== "product_class") {
+      issues.push(`raiva_product_requirement_invalid:${item.logicalItemKey}`);
+    }
+    if (item.productClass !== "vacina_raiva_herbivoros") {
+      issues.push(`raiva_product_class_invalid:${item.logicalItemKey}`);
+    }
+    if (item.productClassGroupId) {
+      issues.push(`raiva_product_class_group_forbidden:${item.logicalItemKey}`);
+    }
+    if (item.allowsAgendaAuto) {
+      issues.push(`raiva_agenda_auto_enabled:${item.logicalItemKey}`);
+    }
+    if (item.status !== "draft") {
+      issues.push(`raiva_item_not_draft:${item.logicalItemKey}`);
+    }
+    const snapshotMetadata = readRecord(item.snapshotTemplate.metadata);
+    if (snapshotMetadata.automationStatus !== "manual_only") {
+      issues.push(`raiva_not_manual_only:${item.logicalItemKey}`);
+    }
   }
   if (summary.hasAgendaAutoEnabled) issues.push("agenda_auto_enabled");
   if (summary.hasApprovedCatalogProtocol) issues.push("approved_catalog_protocol");

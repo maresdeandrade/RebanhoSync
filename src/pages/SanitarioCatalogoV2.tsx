@@ -111,6 +111,11 @@ export default function SanitarioCatalogoV2() {
         : 0,
     [catalog],
   );
+  const isCatalogEmpty =
+    summary !== null &&
+    summary.protocolCount === 0 &&
+    summary.itemCount === 0 &&
+    summary.productClassGroupCount === 0;
 
   const filteredProtocols = useMemo(() => {
     if (!catalog) return [];
@@ -207,104 +212,120 @@ export default function SanitarioCatalogoV2() {
             />
           </section>
 
-          <div className="grid gap-5 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-            <Card>
-              <CardHeader>
-                <CardTitle>Protocolos v2</CardTitle>
-                <CardDescription>
-                  Lista local filtravel. Nenhuma acao operacional e exposta.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <Input
-                  aria-label="Filtrar protocolos"
-                  placeholder="Filtrar por nome ou familyCode"
-                  value={filter}
-                  onChange={(event) => setFilter(event.target.value)}
-                />
-                <div className="space-y-2">
-                  {filteredProtocols.map((protocol) => (
-                    <button
-                      key={protocol.id}
-                      type="button"
-                      className="w-full rounded-lg border border-border bg-background p-3 text-left transition-colors hover:bg-muted/40"
-                      onClick={() => setSelectedFamilyCode(protocol.familyCode)}
+          {isCatalogEmpty ? (
+            <EmptyState
+              icon={ShieldCheck}
+              title="Catalogo local ainda nao sincronizado."
+              description="Execute a sincronizacao para baixar os protocolos sanitarios v2."
+            />
+          ) : (
+            <div className="grid gap-5 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Protocolos v2</CardTitle>
+                  <CardDescription>
+                    Lista local filtravel. Nenhuma acao operacional e exposta.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <Input
+                    aria-label="Filtrar protocolos"
+                    placeholder="Filtrar por nome ou familyCode"
+                    value={filter}
+                    onChange={(event) => setFilter(event.target.value)}
+                  />
+                  <div className="space-y-2">
+                    {filteredProtocols.map((protocol) => (
+                      <button
+                        key={protocol.id}
+                        type="button"
+                        className="w-full rounded-lg border border-border bg-background p-3 text-left transition-colors hover:bg-muted/40"
+                        onClick={() => setSelectedFamilyCode(protocol.familyCode)}
+                      >
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="font-semibold text-foreground">
+                            {protocol.name}
+                          </span>
+                          <Badge variant="outline">{protocol.familyCode}</Badge>
+                          <Badge variant="secondary">{protocol.status}</Badge>
+                          <Badge variant="secondary">
+                            {protocol.approvalStatus}
+                          </Badge>
+                        </div>
+                        <div className="mt-2 flex flex-wrap gap-2 text-xs text-muted-foreground">
+                          <span>curadoria: {getCurationStatus(protocol)}</span>
+                          <span>automacao: {getAutomationStatus(protocol)}</span>
+                        </div>
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {protocol.familyCode === "febre_aftosa" ? (
+                            <Badge variant="destructive">bloqueado/retired</Badge>
+                          ) : null}
+                          {protocol.familyCode === "brucelose_b19" &&
+                          hasManualOnly(protocol) ? (
+                            <Badge variant="outline">manual_only</Badge>
+                          ) : null}
+                          {hasPreviewAllowed(protocol) ? (
+                            <Badge variant="outline">preview_allowed</Badge>
+                          ) : null}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>
+                    {selectedProtocol
+                      ? selectedProtocol.name
+                      : "Selecione um protocolo"}
+                  </CardTitle>
+                  {selectedProtocol ? (
+                    <CardDescription>{selectedProtocol.familyCode}</CardDescription>
+                  ) : null}
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {selectedItems.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                      Nenhum item local para o protocolo selecionado.
+                    </p>
+                  ) : null}
+                  {selectedItems.map((item) => (
+                    <div
+                      key={item.id}
+                      className="rounded-lg border border-border bg-background p-3"
                     >
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-semibold text-foreground">
-                          {protocol.name}
-                        </span>
-                        <Badge variant="outline">{protocol.familyCode}</Badge>
-                        <Badge variant="secondary">{protocol.status}</Badge>
-                        <Badge variant="secondary">{protocol.approvalStatus}</Badge>
+                        <span className="font-semibold">{item.logicalItemKey}</span>
+                        <Badge variant="outline">{item.itemStatus}</Badge>
+                        <Badge variant="secondary">{item.actionType}</Badge>
                       </div>
-                      <div className="mt-2 flex flex-wrap gap-2 text-xs text-muted-foreground">
-                        <span>curadoria: {getCurationStatus(protocol)}</span>
-                        <span>automacao: {getAutomationStatus(protocol)}</span>
-                      </div>
-                      <div className="mt-2 flex flex-wrap gap-2">
-                        {protocol.familyCode === "febre_aftosa" ? (
-                          <Badge variant="destructive">bloqueado/retired</Badge>
-                        ) : null}
-                        {protocol.familyCode === "brucelose_b19" &&
-                        hasManualOnly(protocol) ? (
-                          <Badge variant="outline">manual_only</Badge>
-                        ) : null}
-                        {hasPreviewAllowed(protocol) ? (
-                          <Badge variant="outline">preview_allowed</Badge>
-                        ) : null}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>
-                  {selectedProtocol
-                    ? selectedProtocol.name
-                    : "Selecione um protocolo"}
-                </CardTitle>
-                {selectedProtocol ? (
-                  <CardDescription>{selectedProtocol.familyCode}</CardDescription>
-                ) : null}
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {selectedItems.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">
-                    Nenhum item local para o protocolo selecionado.
-                  </p>
-                ) : null}
-                {selectedItems.map((item) => (
-                  <div
-                    key={item.id}
-                    className="rounded-lg border border-border bg-background p-3"
-                  >
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-semibold">{item.logicalItemKey}</span>
-                      <Badge variant="outline">{item.itemStatus}</Badge>
-                      <Badge variant="secondary">{item.actionType}</Badge>
+                      <dl className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
+                        <Detail
+                          label="ProductRequirement"
+                          value={item.productRequirementKind}
+                        />
+                        <Detail
+                          label="ProductClass"
+                          value={item.productClass ?? "nenhum"}
+                        />
+                        <Detail
+                          label="ProductClassGroupId"
+                          value={item.productClassGroupId ?? "nenhum"}
+                        />
+                        <Detail
+                          label="allowsAgendaAuto"
+                          value={formatBoolean(item.allowsAgendaAuto)}
+                        />
+                        <Detail label="Limitacoes" value={formatLimitations(item)} />
+                      </dl>
                     </div>
-                    <dl className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
-                      <Detail label="ProductRequirement" value={item.productRequirementKind} />
-                      <Detail label="ProductClass" value={item.productClass ?? "nenhum"} />
-                      <Detail
-                        label="ProductClassGroupId"
-                        value={item.productClassGroupId ?? "nenhum"}
-                      />
-                      <Detail
-                        label="allowsAgendaAuto"
-                        value={formatBoolean(item.allowsAgendaAuto)}
-                      />
-                      <Detail label="Limitacoes" value={formatLimitations(item)} />
-                    </dl>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          </div>
+                  ))}
+                </CardContent>
+              </Card>
+            </div>
+          )}
         </>
       ) : null}
     </div>

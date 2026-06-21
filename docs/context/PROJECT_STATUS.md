@@ -101,6 +101,7 @@ A Fase 11.5 foi fechada localmente pela 11.5H, reconciliada documentalmente pela
 - Fase 12H — Leitura read-only dos Protocolos Sanitarios v2 importados executada localmente, criando `src/lib/sanitario/catalog/sanitaryProtocolCatalogV2.ts` para consultar banco, listar protocolos, itens e ProductClassGroups, montar resumo read-only e validar B19/aftosa/antiparasitarios sem agenda, evento, estoque, carencia ativa ou liberacao operacional.
 - Fase 12I — Catalogo Sanitario v2 read-only offline-first executada localmente, criando stores Dexie v27 para protocolos e itens, pull remoto `pullSanitarioProtocolCatalogV2`, leitura local Dexie e testes de store/pull/cursor/resumo, sem push, `queue_ops`, agenda, evento, estoque, carencia ativa ou liberacao operacional.
 - Avanco UI pos-12I — Superficie read-only `/protocolos-sanitarios/catalogo-v2` criada para consultar o catalogo sanitario v2 local/offline, exibindo resumo, protocolos, itens e bloqueios sem ler JSON/Supabase direto e sem criar automacao operacional.
+- Saneamento sanitario v2 pos-12I — A tela `/protocolos-sanitarios` foi reduzida a hub read-only para o Catalogo Sanitario v2, ocultando Pack Oficial, Conformidade e Protocolos da fazenda. O protocolo `raiva_herbivoros` foi corrigido para 21 itens ativos no catalogo: dose inicial, reforco 30d e reforco anual em area de risco; o item antigo `raiva_area_risco_anual` foi tombstonado por import controlado idempotente, sem agenda, evento, estoque, carencia ativa ou liberacao operacional.
 
 Último avanço local da Fase 10:
 

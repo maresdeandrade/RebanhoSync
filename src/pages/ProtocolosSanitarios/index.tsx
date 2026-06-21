@@ -1,48 +1,31 @@
-import { ShieldCheck } from "lucide-react";
+import { BookOpenCheck, ShieldCheck } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 import { EmptyState } from "@/components/EmptyState";
 import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { PageIntro } from "@/components/ui/page-intro";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { FarmProtocolManager } from "@/components/sanitario/FarmProtocolManager";
-import { OfficialSanitaryPackManager } from "@/components/sanitario/OfficialSanitaryPackManager";
-import { RegulatoryOverlayManager } from "@/components/sanitario/RegulatoryOverlayManager";
-import { SanitaryAgendaDiagnosticsPanel } from "@/components/sanitario/SanitaryAgendaDiagnosticsPanel";
 import { useAuth } from "@/hooks/useAuth";
-import { buildSanitaryAgendaDiagnostics } from "@/lib/sanitario/operations/agendaDiagnostics";
-import { useProtocolosData } from "@/pages/ProtocolosSanitarios/helpers/useProtocolosData";
+
+const readOnlyGuards = [
+  "Leitura local/offline via Dexie.",
+  "Sem criacao de agenda.",
+  "Sem registro de evento.",
+  "Sem movimentacao de estoque.",
+  "Sem carencia ativa.",
+  "Sem liberacao operacional.",
+];
 
 const ProtocolosSanitarios = () => {
   const navigate = useNavigate();
-  const { activeFarmId, farmExperienceMode, role } = useAuth();
-  const canManageProtocols = role === "manager" || role === "owner";
-  const scrollToSection = (sectionId: string) => {
-    const section = document.getElementById(sectionId);
-    if (!section) return;
-    section.scrollIntoView({ behavior: "smooth", block: "start" });
-  };
-  const {
-    catalogProducts,
-    protocolosExistentes,
-    protocolosItensExistentes,
-    agendaItens,
-    animais,
-    sanidadeConfig,
-    isRefreshing,
-    refreshError,
-    isLoading,
-  } = useProtocolosData({ activeFarmId });
-  const agendaDiagnostics = buildSanitaryAgendaDiagnostics({
-    config: sanidadeConfig,
-    protocols: protocolosExistentes,
-    protocolItems: protocolosItensExistentes,
-    animals: animais,
-    agendaItems: agendaItens,
-  });
-  const pendingSanitaryCount = agendaItens.filter(
-    (item) => item.dominio === "sanitario" && item.status === "agendado",
-  ).length;
+  const { activeFarmId } = useAuth();
 
   if (!activeFarmId) {
     return (
@@ -62,103 +45,55 @@ const ProtocolosSanitarios = () => {
   return (
     <div className="container mx-auto space-y-5 pb-10">
       <PageIntro
-        eyebrow="Sanitário"
-        title="Protocolos"
+        eyebrow="Sanitario"
+        title="Protocolos sanitarios"
+        description="Superficie read-only do catalogo sanitario v2. As interfaces legadas de pack, conformidade e protocolos editaveis foram ocultadas para evitar uso de dados nao canonicos."
         meta={
           <>
-            {!canManageProtocols ? (
-              <StatusBadge tone="neutral">Somente leitura</StatusBadge>
-            ) : null}
-            {isRefreshing ? (
-              <StatusBadge tone="info">Atualizando</StatusBadge>
-            ) : null}
+            <StatusBadge tone="neutral">Read-only</StatusBadge>
+            <StatusBadge tone="info">Catalogo v2</StatusBadge>
           </>
         }
         actions={
-          <>
-            <Button onClick={() => scrollToSection("protocolos-aplicar")}>
-              Pack oficial
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => navigate("/protocolos-sanitarios/catalogo-v2")}
-            >
-              Catalogo v2
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => scrollToSection("protocolos-conformidade")}
-            >
-              Conformidade
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => scrollToSection("protocolos-gerenciar")}
-              disabled={!canManageProtocols}
-            >
-              Protocolos da fazenda
-            </Button>
-            <Button
-              variant="ghost"
-              onClick={() => navigate("/agenda?dominio=sanitario")}
-            >
-              Agenda
-            </Button>
-          </>
+          <Button onClick={() => navigate("/protocolos-sanitarios/catalogo-v2")}>
+            Abrir catalogo sanitario v2
+          </Button>
         }
       />
 
-      {isRefreshing ? (
-        null
-      ) : null}
-      {refreshError ? (
-        <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-3 text-sm text-destructive">
-          {refreshError}
-        </div>
-      ) : null}
-      {isLoading ? (
-        <EmptyState icon={ShieldCheck} title="Carregando protocolos" />
-      ) : null}
+      <section className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+        {readOnlyGuards.map((guard) => (
+          <div
+            key={guard}
+            className="rounded-lg border border-border bg-muted/30 px-3 py-2 text-sm font-medium text-muted-foreground"
+          >
+            {guard}
+          </div>
+        ))}
+      </section>
 
-      {!isLoading ? (
-        <SanitaryAgendaDiagnosticsPanel
-          diagnostics={agendaDiagnostics}
-          pendingSanitaryCount={pendingSanitaryCount}
-          onOpenProtocols={() => scrollToSection("protocolos-gerenciar")}
-        />
-      ) : null}
-
-      {!isLoading ? (
-        <div id="protocolos-aplicar">
-          <OfficialSanitaryPackManager
-            activeFarmId={activeFarmId}
-            canManage={canManageProtocols}
-          />
-        </div>
-      ) : null}
-
-      {!isLoading ? (
-        <div id="protocolos-conformidade">
-          <RegulatoryOverlayManager
-            activeFarmId={activeFarmId}
-            canManage={canManageProtocols}
-          />
-        </div>
-      ) : null}
-
-      {!isLoading ? (
-        <div id="protocolos-gerenciar">
-          <FarmProtocolManager
-            activeFarmId={activeFarmId}
-            farmExperienceMode={farmExperienceMode}
-            catalogProducts={catalogProducts}
-            protocols={protocolosExistentes}
-            protocolItems={protocolosItensExistentes}
-            agendaDiagnostics={agendaDiagnostics}
-            canManage={canManageProtocols}
-          />
-        </div>
-      ) : null}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <BookOpenCheck className="h-5 w-5 text-primary" />
+            <div>
+              <CardTitle>Catalogo Sanitario v2</CardTitle>
+              <CardDescription>
+                Protocolos, itens e ProductClassGroups locais, sem automacao
+                operacional.
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <Button
+            variant="outline"
+            onClick={() => navigate("/protocolos-sanitarios/catalogo-v2")}
+          >
+            Consultar catalogo
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   );
 };

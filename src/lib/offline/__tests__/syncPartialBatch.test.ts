@@ -37,6 +37,7 @@ vi.mock("@/lib/supabase", () => ({
 
 vi.mock("../pull", () => ({
   pullDataForFarm: vi.fn(async () => undefined),
+  pullInitialData: vi.fn(async () => undefined),
   pullSanitarioAgendaV2: vi.fn(async () => undefined),
 }));
 

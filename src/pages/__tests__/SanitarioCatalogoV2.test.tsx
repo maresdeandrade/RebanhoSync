@@ -4,6 +4,7 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import SanitarioCatalogoV2 from "@/pages/SanitarioCatalogoV2";
+import { supabase } from "@/lib/supabase";
 import {
   readLocalSanitaryProtocolCatalogV2,
   type SanitaryProtocolCatalogReadModelV2,
@@ -21,6 +22,12 @@ vi.mock("@/lib/sanitario/catalog/sanitaryProtocolCatalogV2", async () => {
     readLocalSanitaryProtocolCatalogV2: vi.fn(),
   };
 });
+
+vi.mock("@/lib/supabase", () => ({
+  supabase: {
+    from: vi.fn(),
+  },
+}));
 
 const protocol = (
   familyCode: string,
@@ -211,7 +218,30 @@ const catalogFixture: SanitaryProtocolCatalogReadModelV2 = {
     item("clostridioses", "clostridial_primovac_dose1"),
     item("clostridioses", "clostridial_primovac_dose2"),
     item("clostridioses", "clostridial_reforco_anual"),
-    item("raiva_herbivoros", "raiva_area_risco_anual"),
+    item("raiva_herbivoros", "raiva_primovac_dose1", {
+      itemStatus: "condicional",
+      productRequirementKind: "product_class",
+      productClass: "vacina_raiva_herbivoros",
+      snapshotTemplate: { metadata: { automationStatus: "manual_only" } },
+    }),
+    item("raiva_herbivoros", "raiva_primovac_reforco_30d", {
+      itemStatus: "condicional",
+      productRequirementKind: "product_class",
+      productClass: "vacina_raiva_herbivoros",
+      operationalWindowRule: {
+        anchor: "previous_dose",
+        min_offset_days: 30,
+        max_offset_days: 30,
+      },
+      snapshotTemplate: { metadata: { automationStatus: "manual_only" } },
+    }),
+    item("raiva_herbivoros", "raiva_reforco_anual_area_risco", {
+      itemStatus: "condicional",
+      productRequirementKind: "product_class",
+      productClass: "vacina_raiva_herbivoros",
+      boosterRule: { recurrenceRule: { kind: "annual_if_risk_area" } },
+      snapshotTemplate: { metadata: { automationStatus: "manual_only" } },
+    }),
     item("matrizes_pre_parto", "matrizes_pre_parto_lepto_reforco_situacional"),
   ],
   productClassGroups: [
@@ -222,6 +252,12 @@ const catalogFixture: SanitaryProtocolCatalogReadModelV2 = {
   ],
 };
 
+const emptyCatalogFixture: SanitaryProtocolCatalogReadModelV2 = {
+  protocols: [],
+  items: [],
+  productClassGroups: [],
+};
+
 describe("SanitarioCatalogoV2", () => {
   const mockedReadLocal = vi.mocked(readLocalSanitaryProtocolCatalogV2);
 
@@ -230,7 +266,7 @@ describe("SanitarioCatalogoV2", () => {
     mockedReadLocal.mockResolvedValue(catalogFixture);
   });
 
-  it("renderiza resumo local com 10 protocolos, 19 itens e 4 grupos", async () => {
+  it("renderiza resumo local com 10 protocolos, 21 itens e 4 grupos", async () => {
     render(<SanitarioCatalogoV2 />);
 
     expect(await screen.findByText("Catalogo sanitario v2")).toBeInTheDocument();
@@ -240,10 +276,26 @@ describe("SanitarioCatalogoV2", () => {
     expect(screen.getByText("ProductClassGroups")).toBeInTheDocument();
     expect(screen.getByText("Members bloqueados")).toBeInTheDocument();
     expect(screen.getAllByText("10").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("19").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("21").length).toBeGreaterThan(0);
     expect(screen.getAllByText("4").length).toBeGreaterThan(0);
     expect(screen.getByText("Itens ProductClassGroup")).toBeInTheDocument();
     expect(screen.getByText("6")).toBeInTheDocument();
+  });
+
+  it("mostra estado vazio quando a Dexie local ainda nao foi sincronizada", async () => {
+    mockedReadLocal.mockResolvedValueOnce(emptyCatalogFixture);
+
+    render(<SanitarioCatalogoV2 />);
+
+    expect(
+      await screen.findByText("Catalogo local ainda nao sincronizado."),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Execute a sincronizacao para baixar os protocolos sanitarios v2.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Protocolos v2")).not.toBeInTheDocument();
   });
 
   it("exibe B19 nacional/manual_only e aftosa bloqueada/retired", async () => {
@@ -275,6 +327,21 @@ describe("SanitarioCatalogoV2", () => {
       screen.getAllByText("group-pcg_antiparasitarios_recria_estrategicos")
         .length,
     ).toBeGreaterThanOrEqual(3);
+  });
+
+  it("exibe raiva com primovacinacao, reforco 30d e reforco anual read-only", async () => {
+    render(<SanitarioCatalogoV2 />);
+
+    const raivaButton = await screen.findByRole("button", {
+      name: /Raiva dos herbivoros/i,
+    });
+    fireEvent.click(raivaButton);
+
+    expect(screen.getByText("raiva_primovac_dose1")).toBeInTheDocument();
+    expect(screen.getByText("raiva_primovac_reforco_30d")).toBeInTheDocument();
+    expect(screen.getByText("raiva_reforco_anual_area_risco")).toBeInTheDocument();
+    expect(screen.getAllByText("vacina_raiva_herbivoros").length).toBe(3);
+    expect(screen.getAllByText("nao").length).toBeGreaterThanOrEqual(3);
   });
 
   it("nao renderiza CTAs de agenda, execucao, estoque, carencia ou liberacao", async () => {
@@ -319,6 +386,7 @@ describe("SanitarioCatalogoV2", () => {
     expect(screen.getAllByText("IBR/BVD").length).toBeGreaterThan(0);
     expect(screen.queryAllByText("Brucelose B19")).toHaveLength(0);
     expect(mockedReadLocal).toHaveBeenCalledTimes(1);
+    expect(supabase.from).not.toHaveBeenCalled();
   });
 
   it("mantem a leitura como visualizacao local sem formularios operacionais", async () => {

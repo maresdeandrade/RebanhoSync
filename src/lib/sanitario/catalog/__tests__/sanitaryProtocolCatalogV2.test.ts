@@ -235,7 +235,33 @@ const items = [
     "matrizes_pre_parto_antiparasitario",
     antiparasiticOverrides("antiparasitario_matrizes"),
   ),
-  item(protocolId("raiva_herbivoros"), "raiva_area_risco_anual"),
+  item(protocolId("raiva_herbivoros"), "raiva_primovac_dose1", {
+    item_status: "condicional",
+    action_type: "vacinacao",
+    product_requirement_kind: "product_class",
+    product_class: "vacina_raiva_herbivoros",
+    snapshot_template: { metadata: { automationStatus: "manual_only" } },
+  }),
+  item(protocolId("raiva_herbivoros"), "raiva_primovac_reforco_30d", {
+    item_status: "condicional",
+    action_type: "vacinacao",
+    product_requirement_kind: "product_class",
+    product_class: "vacina_raiva_herbivoros",
+    operational_window_rule: {
+      anchor: "previous_dose",
+      min_offset_days: 30,
+      max_offset_days: 30,
+    },
+    snapshot_template: { metadata: { automationStatus: "manual_only" } },
+  }),
+  item(protocolId("raiva_herbivoros"), "raiva_reforco_anual_area_risco", {
+    item_status: "condicional",
+    action_type: "vacinacao",
+    product_requirement_kind: "product_class",
+    product_class: "vacina_raiva_herbivoros",
+    booster_rule: { recurrenceRule: { kind: "annual_if_risk_area" } },
+    snapshot_template: { metadata: { automationStatus: "manual_only" } },
+  }),
   item(protocolId("clostridioses"), "clostridial_primovac_dose1"),
   item(protocolId("clostridioses"), "clostridial_primovac_dose2"),
   item(protocolId("clostridioses"), "clostridial_reforco_anual"),
@@ -269,7 +295,7 @@ describe("sanitaryProtocolCatalogV2", () => {
     const client = createCatalogClient();
 
     await expect(listSanitaryProtocolsV2(client)).resolves.toHaveLength(10);
-    await expect(listSanitaryProtocolItemsV2(client)).resolves.toHaveLength(19);
+    await expect(listSanitaryProtocolItemsV2(client)).resolves.toHaveLength(21);
     await expect(listSanitaryProductClassGroupsV2(client)).resolves.toHaveLength(4);
 
     expect(client.calls.map((call) => call.method)).not.toContain("insert");
@@ -299,7 +325,7 @@ describe("sanitaryProtocolCatalogV2", () => {
 
     expect(summary).toMatchObject({
       protocolCount: 10,
-      itemCount: 19,
+      itemCount: 21,
       productClassGroupCount: 4,
       memberImportBlockedCount: 16,
       hasB19NationalRule: true,
@@ -333,6 +359,46 @@ describe("sanitaryProtocolCatalogV2", () => {
 
     expect(b19Protocol.speciesScope.especies).toEqual(["bovino", "bubalino"]);
     expect(summary.hasB19NationalRule).toBe(true);
+  });
+
+  it("confirma raiva com primovacinacao, reforco 30d e reforco anual manual_only", () => {
+    const readModel = {
+      protocols: protocols.map(adaptSanitaryProtocolV2Row),
+      items: items.map(adaptSanitaryProtocolItemV2Row),
+      productClassGroups: groups.map(adaptSanitaryProductClassGroupV2Row),
+    };
+    const raiva = readModel.protocols.find(
+      (entry) => entry.familyCode === "raiva_herbivoros",
+    );
+    const raivaItems = readModel.items.filter(
+      (entry) => entry.protocolId === raiva?.id,
+    );
+
+    expect(raivaItems.map((entry) => entry.logicalItemKey).sort()).toEqual([
+      "raiva_primovac_dose1",
+      "raiva_primovac_reforco_30d",
+      "raiva_reforco_anual_area_risco",
+    ]);
+    expect(
+      raivaItems.every(
+        (entry) =>
+          entry.productRequirementKind === "product_class" &&
+          entry.productClass === "vacina_raiva_herbivoros" &&
+          entry.productClassGroupId === null &&
+          entry.allowsAgendaAuto === false &&
+          entry.status === "draft" &&
+          entry.snapshotTemplate.metadata?.automationStatus === "manual_only",
+      ),
+    ).toBe(true);
+    expect(
+      raivaItems.find(
+        (entry) => entry.logicalItemKey === "raiva_primovac_reforco_30d",
+      )?.operationalWindowRule,
+    ).toMatchObject({
+      anchor: "previous_dose",
+      min_offset_days: 30,
+      max_offset_days: 30,
+    });
   });
 
   it("preserva invariantes: protocolo e grupo nao autorizam operacao", async () => {

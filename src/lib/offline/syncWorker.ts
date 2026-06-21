@@ -7,13 +7,16 @@ import { getRemoteTableName } from "./tableMap";
 import { normalizeTableMutationRecord } from "./mutationRecord";
 import { rollbackOpLocal, getAffectedStores } from "./ops";
 import { sortOpsForSync } from "./syncOrder";
-import { pullDataForFarm, pullSanitarioAgendaV2 } from "./pull";
+import { pullDataForFarm, pullInitialData, pullSanitarioAgendaV2 } from "./pull";
 import { purgeRejections } from "./rejections";
 import { trackPilotMetric, flushPilotMetrics } from "@/lib/telemetry/pilotMetrics";
+import { getActiveFarmId } from "@/lib/storage";
 
 let intervalId: ReturnType<typeof setInterval> | null = null;
 let isTickRunning = false;
 let startupRecoveryDone = false;
+let initialPullFarmId: string | null = null;
+let isInitialPullRunning = false;
 
 const WORKER_INTERVAL_MS = 5000;
 const MAX_RETRIES = 3;
@@ -59,11 +62,14 @@ export const startSyncWorker = () => {
   if (import.meta.env.DEV) {
     console.debug("[sync-worker] Starting sync worker");
   }
+  void runInitialOfflinePullForActiveFarmOnce();
   intervalId = setInterval(async () => {
     if (isTickRunning) return;
     isTickRunning = true;
 
     try {
+      await runInitialOfflinePullForActiveFarmOnce();
+
       if (!startupRecoveryDone) {
         await recoverErroredGesturesOnce();
         startupRecoveryDone = true;
@@ -127,6 +133,24 @@ export const stopSyncWorker = () => {
   isTickRunning = false;
   startupRecoveryDone = false;
 };
+
+export async function runInitialOfflinePullForActiveFarmOnce() {
+  const activeFarmId = getActiveFarmId();
+  if (!activeFarmId || initialPullFarmId === activeFarmId || isInitialPullRunning) {
+    return;
+  }
+
+  isInitialPullRunning = true;
+  try {
+    await pullInitialData(activeFarmId);
+    initialPullFarmId = activeFarmId;
+  } catch (e: unknown) {
+    const error = e instanceof Error ? e : new Error(String(e));
+    console.warn("[sync-worker] Initial offline pull failed:", error.message);
+  } finally {
+    isInitialPullRunning = false;
+  }
+}
 
 async function tryPurgeOldRejections() {
   try {

@@ -14,7 +14,7 @@ Resultado:
 - Implementado `pullSanitarioProtocolCatalogV2` para baixar protocolos, itens e ProductClassGroups globais em modo merge/incremental.
 - A leitura local Dexie em `src/lib/sanitario/catalog/sanitaryProtocolCatalogV2.ts` lista protocolos, itens por protocolo, grupos e resumo read-only.
 - Avanco UI posterior: rota `/protocolos-sanitarios/catalogo-v2` criada para visualizar o catalogo local/offline em modo read-only.
-- Testes confirmam 10 protocolos, 19 itens, 4 grupos, B19 nacional, aftosa retired/bloqueada e 6 antiparasitarios com ProductClassGroup.
+- Testes confirmam 10 protocolos, 21 itens ativos apos saneamento de `raiva_herbivoros`, 4 grupos, B19 nacional, aftosa retired/bloqueada e 6 antiparasitarios com ProductClassGroup.
 - Não foi criado push, `queue_ops`, sync-batch de escrita, UI operacional, migration, schema, RLS, Edge Function, agenda, evento, estoque, carencia ativa ou liberação operacional.
 
 Próximo passo seguro:
@@ -31,7 +31,7 @@ Decisao: `12H_LEITURA_READ_ONLY_PROTOCOLS_SANITARIOS_V2_IMPORTADOS`.
 Resultado:
 - Criada camada `src/lib/sanitario/catalog/sanitaryProtocolCatalogV2.ts`.
 - Implementadas consultas read-only para protocolos v2, itens por protocolo e ProductClassGroups v2.
-- Implementado resumo read-only para validar 10 protocolos, 19 itens, 4 grupos e 16 members bloqueados.
+- Implementado resumo read-only para validar 10 protocolos, 21 itens ativos apos saneamento de raiva, 4 grupos e 16 members bloqueados.
 - B19 nacional, aftosa retired/bloqueada e 6 itens antiparasitarios com `product_class_group_id` foram confirmados em teste.
 - A camada consulta banco via cliente Supabase-like e nao le o JSON 12F10 em runtime.
 - Nenhum caminho de escrita, migration, schema, RLS, UI, Dexie, sync, Edge Function, agenda, evento, estoque, carencia ativa ou liberacao operacional foi criado.

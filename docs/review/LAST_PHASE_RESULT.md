@@ -41,6 +41,11 @@ Import futuro continua vinculado exclusivamente ao payload canonico:
 
 Leitura 12I usa as tabelas reais importadas pela 12G e cache Dexie pull-only, nao o JSON.
 
+Atualizacao posterior de saneamento sanitario v2:
+- `/protocolos-sanitarios` passou a apontar apenas para o Catalogo Sanitario v2 read-only;
+- Pack Oficial, Conformidade e Protocolos da fazenda foram ocultados da superficie principal;
+- `raiva_herbivoros` passou a 3 itens ativos e o catalogo passou a 21 itens ativos, mantendo `manual_only`, `draft` e `allows_agenda_auto=false`.
+
 ## Proximo passo possivel
 
 Validar a tela read-only em runtime com Dexie local populado, sem agenda automatica.

@@ -139,12 +139,35 @@ const itemRows = [
     "matrizes_pre_parto_antiparasitario",
     antiparasitic("antiparasitario_matrizes"),
   ),
-  item(familyId("raiva_herbivoros"), "raiva_d1"),
-  item(familyId("raiva_herbivoros"), "raiva_reforco"),
+  item(familyId("raiva_herbivoros"), "raiva_primovac_dose1", {
+    item_status: "condicional",
+    product_requirement_kind: "product_class",
+    product_class: "vacina_raiva_herbivoros",
+    snapshot_template: { metadata: { automationStatus: "manual_only" } },
+  }),
+  item(familyId("raiva_herbivoros"), "raiva_primovac_reforco_30d", {
+    item_status: "condicional",
+    product_requirement_kind: "product_class",
+    product_class: "vacina_raiva_herbivoros",
+    operational_window_rule: {
+      anchor: "previous_dose",
+      min_offset_days: 30,
+      max_offset_days: 30,
+    },
+    snapshot_template: { metadata: { automationStatus: "manual_only" } },
+  }),
+  item(familyId("raiva_herbivoros"), "raiva_reforco_anual_area_risco", {
+    item_status: "condicional",
+    product_requirement_kind: "product_class",
+    product_class: "vacina_raiva_herbivoros",
+    booster_rule: { recurrenceRule: { kind: "annual_if_risk_area" } },
+    snapshot_template: { metadata: { automationStatus: "manual_only" } },
+  }),
   item(familyId("clostridioses"), "clostridioses_primovacinacao"),
   item(familyId("clostridioses"), "clostridioses_reforco"),
   item(familyId("leptospirose_ibr_bvd"), "reprodutivas_pre_estacao"),
   item(familyId("leptospirose_ibr_bvd"), "reprodutivas_reforco"),
+  item(familyId("leptospirose_ibr_bvd"), "reprodutivas_reforco_anual"),
   item(familyId("rastreabilidade_medicamentos"), "medicamento_antibiotico"),
   item(familyId("rastreabilidade_medicamentos"), "medicamento_antiinflamatorio"),
   item(familyId("rastreabilidade_medicamentos"), "medicamento_suporte"),
@@ -187,7 +210,7 @@ describe("local sanitary protocol catalog v2", () => {
 
     expect(summary).toMatchObject({
       protocolCount: 10,
-      itemCount: 19,
+      itemCount: 21,
       productClassGroupCount: 4,
       memberImportBlockedCount: 16,
       hasB19NationalRule: true,
@@ -220,5 +243,26 @@ describe("local sanitary protocol catalog v2", () => {
       logicalItemKey: "b19_femeas_3_8_meses",
       allowsAgendaAuto: false,
     });
+  });
+
+  it("lista raiva local com dose inicial, reforco 30d e anual em area de risco", async () => {
+    const raiva = await getLocalSanitaryProtocolV2WithItems({
+      familyCode: "raiva_herbivoros",
+    });
+
+    expect(raiva?.items.map((entry) => entry.logicalItemKey).sort()).toEqual([
+      "raiva_primovac_dose1",
+      "raiva_primovac_reforco_30d",
+      "raiva_reforco_anual_area_risco",
+    ]);
+    expect(
+      raiva?.items.every(
+        (entry) =>
+          entry.productRequirementKind === "product_class" &&
+          entry.productClass === "vacina_raiva_herbivoros" &&
+          entry.allowsAgendaAuto === false &&
+          entry.status === "draft",
+      ),
+    ).toBe(true);
   });
 });

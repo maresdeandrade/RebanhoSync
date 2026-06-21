@@ -15,10 +15,22 @@ const EXPECTED = {
   artifact: "sanitario_protocols_v2_canonical_payload",
   artifactVersion: "12F10.0-canonical-candidate",
   protocols: 10,
-  items: 19,
+  items: 21,
   groups: 4,
   memberRejections: 16,
 };
+
+const DEPRECATED_ACTIVE_ITEMS = [
+  {
+    familyCode: "raiva_herbivoros",
+    logicalItemKey: "raiva_area_risco_anual",
+    replacementKeys: [
+      "raiva_primovac_dose1",
+      "raiva_primovac_reforco_30d",
+      "raiva_reforco_anual_area_risco",
+    ],
+  },
+];
 
 const FORBIDDEN_TRUE_FLAGS = [
   "agenda_allowed",
@@ -221,6 +233,32 @@ function validateCanonicalPayload(payload) {
     validateSourceRefs(item.source_refs_by_field, item.logical_item_key);
   }
 
+  const raivaItems = data.items.filter((row) => lookupFamily(row.protocol_id) === "raiva_herbivoros");
+  const raivaKeys = new Set(raivaItems.map((row) => row.logical_item_key));
+  assert(!raivaKeys.has("raiva_area_risco_anual"), "raiva_area_risco_anual deve sair do payload canonico ativo");
+  for (const expectedKey of [
+    "raiva_primovac_dose1",
+    "raiva_primovac_reforco_30d",
+    "raiva_reforco_anual_area_risco",
+  ]) {
+    assert(raivaKeys.has(expectedKey), `${expectedKey}: item de raiva ausente`);
+  }
+  for (const item of raivaItems) {
+    assert(item.product_requirement_kind === "product_class", `${item.logical_item_key}: raiva deve usar product_class`);
+    assert(item.product_class === "vacina_raiva_herbivoros", `${item.logical_item_key}: product_class de raiva invalida`);
+    assert(item.product_class_group_id === null, `${item.logical_item_key}: raiva nao deve usar ProductClassGroup`);
+    assert(item.allows_agenda_auto === false, `${item.logical_item_key}: raiva nao pode agenda_auto`);
+    assert(item.status === "draft", `${item.logical_item_key}: raiva deve permanecer draft`);
+    assert(
+      item.snapshot_template?.metadata?.automationStatus === "manual_only",
+      `${item.logical_item_key}: raiva deve permanecer manual_only`,
+    );
+    assert(
+      item.snapshot_template?.sourcePolicy?.withdrawal === "by_executed_product_snapshot",
+      `${item.logical_item_key}: raiva exige carencia por produto executado`,
+    );
+  }
+
   for (const protocol of data.protocols) {
     assert(protocol.approval_status === "draft", `${protocol.family_code}: approval_status deve ser draft`);
     assert(protocol.metadata?.agenda_allowed === false, `${protocol.family_code}: metadata agenda_allowed deve ser false`);
@@ -340,6 +378,29 @@ async function selectItems(client, items, protocolIdsByFamily) {
     );
     assert(existing.rowCount <= 1, `${item.logical_item_key}: lookup ambiguo em sanitario_protocolo_itens_versions_v2`);
     result.set(item.logical_item_key, existing.rows[0] ?? null);
+  }
+  return result;
+}
+
+async function selectDeprecatedActiveItems(client, protocolIdsByFamily) {
+  const result = [];
+  for (const deprecatedItem of DEPRECATED_ACTIVE_ITEMS) {
+    const protocolId = protocolIdsByFamily.get(deprecatedItem.familyCode);
+    if (!protocolId || !UUID_LIKE.test(protocolId)) continue;
+    const existing = await client.query(
+      `
+        select id, protocol_id, logical_item_key, deleted_at
+        from public.sanitario_protocolo_itens_versions_v2
+        where deleted_at is null
+          and protocol_id = $1
+          and logical_item_key = $2
+        order by id
+      `,
+      [protocolId, deprecatedItem.logicalItemKey],
+    );
+    for (const row of existing.rows) {
+      result.push({ ...deprecatedItem, id: row.id });
+    }
   }
   return result;
 }
@@ -483,6 +544,7 @@ async function buildPlan(client, data) {
   }
 
   const existingItems = await selectItems(client, data.items, plannedProtocolIds);
+  const deprecatedActiveItems = await selectDeprecatedActiveItems(client, plannedProtocolIds);
   const operations = [];
 
   for (const group of sortedBy(data.groups, "group_key")) {
@@ -536,6 +598,15 @@ async function buildPlan(client, data) {
       key: rejection.member_key,
       action: "reject",
       reason: rejection.reason,
+    });
+  }
+
+  for (const item of deprecatedActiveItems) {
+    operations.push({
+      table: "sanitario_protocolo_itens_versions_v2",
+      key: `${item.familyCode}:${item.logicalItemKey}:deprecated`,
+      action: "update",
+      reason: `replaced_by:${item.replacementKeys.join(",")}`,
     });
   }
 
@@ -772,6 +843,28 @@ async function upsertItem(client, item, protocolId, groupId) {
   return "update";
 }
 
+async function tombstoneDeprecatedActiveItems(client, protocolIds) {
+  let count = 0;
+  for (const deprecatedItem of DEPRECATED_ACTIVE_ITEMS) {
+    const protocolId = protocolIds.get(deprecatedItem.familyCode);
+    if (!protocolId) continue;
+    const result = await client.query(
+      `
+        update public.sanitario_protocolo_itens_versions_v2
+        set deleted_at = now(),
+            status = 'retired',
+            allows_agenda_auto = false
+        where deleted_at is null
+          and protocol_id = $1
+          and logical_item_key = $2
+      `,
+      [protocolId, deprecatedItem.logicalItemKey],
+    );
+    count += result.rowCount ?? 0;
+  }
+  return count;
+}
+
 async function applyImport(client, data) {
   assert(
     process.env.ALLOW_SANITARIO_IMPORT === "1",
@@ -806,6 +899,7 @@ async function applyImport(client, data) {
       counts[action] += 1;
     }
 
+    counts.update += await tombstoneDeprecatedActiveItems(client, protocolIds);
     counts.reject += data.memberRejections.length;
     await client.query("commit");
   } catch (error) {

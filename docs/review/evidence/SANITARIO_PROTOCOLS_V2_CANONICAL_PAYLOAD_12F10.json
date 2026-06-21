@@ -17,7 +17,7 @@
   "allows_operational_release": false,
   "counts": {
     "protocols": 10,
-    "protocol_items": 19,
+    "protocol_items": 21,
     "product_class_groups": 4,
     "product_class_group_member_rejections": 16
   },
@@ -888,7 +888,7 @@
         },
         {
           "protocol_id": "{{lookup sanitario_protocolos_v2.id by family_code=raiva_herbivoros}}",
-          "logical_item_key": "raiva_area_risco_anual",
+          "logical_item_key": "raiva_primovac_dose1",
           "version": 1,
           "item_status": "condicional",
           "action_type": "vacinacao",
@@ -905,7 +905,217 @@
           },
           "operational_window_rule": {
             "type": "regional_overlay",
-            "anchor": "risk_area_definition"
+            "anchor": "risk_area_definition",
+            "requires_regional_overlay": true
+          },
+          "booster_rule": {
+            "recurrenceRule": {
+              "kind": "primovaccination_dose_1"
+            },
+            "tolerance": null
+          },
+          "species_authorization": [
+            {
+              "species": "bovino",
+              "source_ref": "SRC_MAPA_RAIVA_VACINA"
+            },
+            {
+              "species": "bubalino",
+              "source_ref": "SRC_MAPA_RAIVA_VACINA"
+            }
+          ],
+          "source_refs_by_field": {
+            "eligibility": [
+              {
+                "source_ref": "SRC_MAPA_RAIVA_VACINA"
+              }
+            ],
+            "dose": [
+              {
+                "source_ref": "SRC_PNCRH_RAIVA"
+              }
+            ],
+            "route": [
+              {
+                "source_ref": "SRC_PNCRH_RAIVA"
+              }
+            ],
+            "recurrence": [
+              {
+                "source_ref": "SRC_PNCRH_RAIVA"
+              }
+            ],
+            "restrictions": [
+              {
+                "source_ref": "SRC_PNCRH_RAIVA"
+              }
+            ]
+          },
+          "limitations": [
+            "requires_risk_area_overlay",
+            "requires_focus_or_perifocus_context",
+            "requires_regional_overlay",
+            "source_gap_product_withdrawal_snapshot",
+            "requires_executed_product_snapshot",
+            "no_agenda_auto"
+          ],
+          "snapshot_template": {
+            "executionProductPolicy": "required_at_execution",
+            "sourceGaps": [
+              "requires_risk_area_overlay",
+              "requires_focus_or_perifocus_context",
+              "requires_regional_overlay",
+              "source_gap_product_withdrawal_snapshot"
+            ],
+            "sourcePolicy": {
+              "withdrawal": "by_executed_product_snapshot"
+            },
+            "restrictions": [
+              "regional_risk_context_required",
+              "no_agenda_auto"
+            ],
+            "metadata": {
+              "curationStatus": "needs_review",
+              "automationStatus": "manual_only",
+              "agenda_allowed": false,
+              "approved_for_catalog": false
+            }
+          },
+          "allows_agenda_auto": false,
+          "requires_mv_responsavel": false,
+          "status": "draft"
+        },
+        {
+          "protocol_id": "{{lookup sanitario_protocolos_v2.id by family_code=raiva_herbivoros}}",
+          "logical_item_key": "raiva_primovac_reforco_30d",
+          "version": 1,
+          "item_status": "condicional",
+          "action_type": "vacinacao",
+          "product_requirement_kind": "product_class",
+          "product_id": null,
+          "product_class": "vacina_raiva_herbivoros",
+          "product_class_group_id": null,
+          "eligibility_rule": {
+            "species": [
+              "bovino",
+              "bubalino"
+            ],
+            "requires_risk_area_overlay": true,
+            "requires_previous_dose": "raiva_primovac_dose1"
+          },
+          "operational_window_rule": {
+            "type": "relative_to_previous_dose",
+            "anchor": "previous_dose",
+            "previous_logical_item_key": "raiva_primovac_dose1",
+            "target_offset_days": 30,
+            "min_offset_days": 30,
+            "max_offset_days": 30
+          },
+          "booster_rule": {
+            "anchor": "previous_dose",
+            "previous_logical_item_key": "raiva_primovac_dose1",
+            "min_offset_days": 30,
+            "max_offset_days": 30,
+            "recurrenceRule": {
+              "kind": "booster_after_initial_dose"
+            },
+            "tolerance": {
+              "days": 0
+            }
+          },
+          "species_authorization": [
+            {
+              "species": "bovino",
+              "source_ref": "SRC_MAPA_RAIVA_VACINA"
+            },
+            {
+              "species": "bubalino",
+              "source_ref": "SRC_MAPA_RAIVA_VACINA"
+            }
+          ],
+          "source_refs_by_field": {
+            "eligibility": [
+              {
+                "source_ref": "SRC_MAPA_RAIVA_VACINA"
+              }
+            ],
+            "dose": [
+              {
+                "source_ref": "SRC_PNCRH_RAIVA"
+              }
+            ],
+            "route": [
+              {
+                "source_ref": "SRC_PNCRH_RAIVA"
+              }
+            ],
+            "recurrence": [
+              {
+                "source_ref": "SRC_PNCRH_RAIVA"
+              }
+            ],
+            "restrictions": [
+              {
+                "source_ref": "SRC_PNCRH_RAIVA"
+              }
+            ]
+          },
+          "limitations": [
+            "requires_previous_dose",
+            "requires_risk_area_overlay",
+            "requires_focus_or_perifocus_context",
+            "target_30_days_conservative_no_grace_window",
+            "source_gap_product_withdrawal_snapshot",
+            "requires_executed_product_snapshot",
+            "no_agenda_auto"
+          ],
+          "snapshot_template": {
+            "executionProductPolicy": "required_at_execution",
+            "sourceGaps": [
+              "requires_risk_area_overlay",
+              "requires_focus_or_perifocus_context",
+              "source_gap_product_withdrawal_snapshot"
+            ],
+            "sourcePolicy": {
+              "withdrawal": "by_executed_product_snapshot"
+            },
+            "restrictions": [
+              "regional_risk_context_required",
+              "previous_dose_required",
+              "no_agenda_auto"
+            ],
+            "metadata": {
+              "curationStatus": "needs_review",
+              "automationStatus": "manual_only",
+              "agenda_allowed": false,
+              "approved_for_catalog": false
+            }
+          },
+          "allows_agenda_auto": false,
+          "requires_mv_responsavel": false,
+          "status": "draft"
+        },
+        {
+          "protocol_id": "{{lookup sanitario_protocolos_v2.id by family_code=raiva_herbivoros}}",
+          "logical_item_key": "raiva_reforco_anual_area_risco",
+          "version": 1,
+          "item_status": "condicional",
+          "action_type": "vacinacao",
+          "product_requirement_kind": "product_class",
+          "product_id": null,
+          "product_class": "vacina_raiva_herbivoros",
+          "product_class_group_id": null,
+          "eligibility_rule": {
+            "species": [
+              "bovino",
+              "bubalino"
+            ],
+            "requires_risk_area_overlay": true
+          },
+          "operational_window_rule": {
+            "type": "regional_overlay",
+            "anchor": "risk_area_definition",
+            "recurrence": "annual_if_risk_area"
           },
           "booster_rule": {
             "recurrenceRule": {
@@ -955,7 +1165,9 @@
           "limitations": [
             "requires_risk_area_overlay",
             "requires_focus_or_perifocus_context",
+            "annual_if_risk_area",
             "source_gap_product_withdrawal_snapshot",
+            "requires_executed_product_snapshot",
             "no_agenda_auto"
           ],
           "snapshot_template": {
