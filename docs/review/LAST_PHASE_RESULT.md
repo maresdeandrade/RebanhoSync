@@ -44,7 +44,7 @@ Leitura 12I usa as tabelas reais importadas pela 12G e cache Dexie pull-only, na
 Atualizacao posterior de saneamento sanitario v2:
 - `/protocolos-sanitarios` passou a apontar apenas para o Catalogo Sanitario v2 read-only;
 - Pack Oficial, Conformidade e Protocolos da fazenda foram ocultados da superficie principal;
-- `raiva_herbivoros` passou a 3 itens ativos e o catalogo passou a 21 itens ativos, mantendo `manual_only`, `draft` e `allows_agenda_auto=false`.
+- `raiva_herbivoros` permanece com 3 itens ativos sem duplicidade anual e `matrizes_pre_parto_lepto_reforco_situacional` foi tombstonado para evitar concorrencia com `leptospirose`; o catalogo passou a 20 itens ativos, mantendo `manual_only`, `draft` e `allows_agenda_auto=false`.
 
 ## Proximo passo possivel
 

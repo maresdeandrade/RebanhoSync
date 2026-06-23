@@ -17,7 +17,7 @@
   "allows_operational_release": false,
   "counts": {
     "protocols": 10,
-    "protocol_items": 21,
+    "protocol_items": 20,
     "product_class_groups": 4,
     "product_class_group_member_rejections": 16
   },
@@ -453,7 +453,8 @@
               "source_gap_executed_product_label",
               "source_gap_label_or_mv",
               "source_gap_bubalino"
-            ]
+            ],
+            "nonOperationalNotice": "avaliar protocolo de leptospirose conforme manejo reprodutivo e orientação técnica"
           }
         },
         {
@@ -1597,93 +1598,6 @@
             "metadata": {
               "curationStatus": "needs_review",
               "automationStatus": "preview_allowed",
-              "agenda_allowed": false,
-              "approved_for_catalog": false
-            }
-          },
-          "allows_agenda_auto": false,
-          "requires_mv_responsavel": false,
-          "status": "draft"
-        },
-        {
-          "protocol_id": "{{lookup sanitario_protocolos_v2.id by family_code=matrizes_pre_parto}}",
-          "logical_item_key": "matrizes_pre_parto_lepto_reforco_situacional",
-          "version": 1,
-          "item_status": "condicional",
-          "action_type": "vacinacao",
-          "product_requirement_kind": "product_class",
-          "product_id": null,
-          "product_class": "vacina_leptospirose",
-          "product_class_group_id": null,
-          "eligibility_rule": {
-            "species": [
-              "bovino"
-            ],
-            "sex": "femea",
-            "requires_pregnancy_or_peripartum_context": true
-          },
-          "operational_window_rule": {
-            "type": "hybrid",
-            "anchor": "parturition"
-          },
-          "booster_rule": {
-            "recurrenceRule": {
-              "kind": "risk_or_mv_defined"
-            },
-            "tolerance": null
-          },
-          "species_authorization": [
-            {
-              "species": "bovino",
-              "source_ref": "SRC_BULA_LEPTOFERM5"
-            }
-          ],
-          "source_refs_by_field": {
-            "eligibility": [
-              {
-                "source_ref": "SRC_EMBRAPA_VERMINOSE"
-              }
-            ],
-            "dose": [
-              {
-                "source_ref": "SRC_BULA_LEPTOFERM5"
-              }
-            ],
-            "route": [
-              {
-                "source_ref": "SRC_BULA_LEPTOFERM5"
-              }
-            ],
-            "withdrawal": [
-              {
-                "source_ref": "SRC_BULA_LEPTOFERM5"
-              }
-            ]
-          },
-          "limitations": [
-            "source_gap_label_or_mv",
-            "gestation_lactation_requires_label_or_mv",
-            "milk_requires_label",
-            "source_gap_product_withdrawal_snapshot"
-          ],
-          "snapshot_template": {
-            "executionProductPolicy": "required_at_execution",
-            "sourceGaps": [
-              "source_gap_label_or_mv",
-              "source_gap_product_withdrawal_snapshot"
-            ],
-            "sourcePolicy": {
-              "withdrawal": "by_executed_product_snapshot",
-              "milk": "requires_executed_product_label",
-              "gestation_lactation": "requires_label_or_mv"
-            },
-            "restrictions": [
-              "gestation_lactation_requires_label_or_mv",
-              "milk_requires_label"
-            ],
-            "metadata": {
-              "curationStatus": "needs_review",
-              "automationStatus": "manual_only",
               "agenda_allowed": false,
               "approved_for_catalog": false
             }

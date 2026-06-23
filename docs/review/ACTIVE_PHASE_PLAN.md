@@ -10,7 +10,7 @@
 
     ## Objetivo em 1 paragrafo
 
-    Executar a Fase 12I conectando a leitura read-only dos Protocolos Sanitarios v2 ao offline-first Dexie, com pull remoto controlado para 10 protocolos, 19 itens iniciais e 4 ProductClassGroups, consulta local por protocolo/itens/grupos, validação de B19/aftosa/antiparasitarios e preservação de catálogo como fonte pull-only sem autorização operacional. Saneamento posterior corrigiu `raiva_herbivoros`, elevando o catalogo ativo para 21 itens sem ativar agenda ou operação.
+    Executar a Fase 12I conectando a leitura read-only dos Protocolos Sanitarios v2 ao offline-first Dexie, com pull remoto controlado para 10 protocolos, 19 itens iniciais e 4 ProductClassGroups, consulta local por protocolo/itens/grupos, validação de B19/aftosa/antiparasitarios e preservação de catálogo como fonte pull-only sem autorização operacional. Saneamentos posteriores corrigiram `raiva_herbivoros` e tombstonaram a leptospirose concorrente de `matrizes_pre_parto`, deixando o catalogo ativo com 20 itens sem ativar agenda ou operação.
 
     ---
 
@@ -29,7 +29,7 @@
     Resultado local:
     - diagnóstico inicial confirmou carga 12G aplicada: `--dry-run` com 0 `create`, 0 `update`, 33 `skip`, 16 `reject`;
     - pull implementado usa merge incremental, preserva tombstones e não limpa stores;
-    - leitura local confirma 10 protocolos, 21 itens ativos apos saneamento de raiva, 4 grupos, B19 nacional, aftosa bloqueada e 6 itens antiparasitarios com ProductClassGroup;
+    - leitura local confirma 10 protocolos, 20 itens ativos apos saneamento de raiva e matrizes pre-parto, 4 grupos, B19 nacional, aftosa bloqueada e 6 itens antiparasitarios com ProductClassGroup;
     - avanço UI posterior criou `/protocolos-sanitarios/catalogo-v2` para consulta local/offline read-only;
     - nenhum caminho de push, `queue_ops`, agenda, evento, estoque, carencia ativa ou liberacao operacional foi criado.
 

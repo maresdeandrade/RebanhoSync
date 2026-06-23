@@ -171,7 +171,6 @@ const itemRows = [
   item(familyId("rastreabilidade_medicamentos"), "medicamento_antibiotico"),
   item(familyId("rastreabilidade_medicamentos"), "medicamento_antiinflamatorio"),
   item(familyId("rastreabilidade_medicamentos"), "medicamento_suporte"),
-  item(familyId("rastreabilidade_medicamentos"), "medicamento_outros"),
 ];
 
 const groupRows = [
@@ -210,7 +209,7 @@ describe("local sanitary protocol catalog v2", () => {
 
     expect(summary).toMatchObject({
       protocolCount: 10,
-      itemCount: 21,
+      itemCount: 20,
       productClassGroupCount: 4,
       memberImportBlockedCount: 16,
       hasB19NationalRule: true,
@@ -264,5 +263,26 @@ describe("local sanitary protocol catalog v2", () => {
           entry.status === "draft",
       ),
     ).toBe(true);
+  });
+
+  it("mantem matrizes pre-parto local sem leptospirose concorrente", async () => {
+    const matrizes = await getLocalSanitaryProtocolV2WithItems({
+      familyCode: "controle_parasitario_matrizes",
+    });
+    const readModel = await readLocalSanitaryProtocolCatalogV2();
+    const summary = buildSanitaryProtocolCatalogSummaryV2(readModel);
+
+    expect(summary.itemCount).toBe(20);
+    expect(matrizes?.items.map((entry) => entry.logicalItemKey)).toEqual([
+      "matrizes_pre_parto_antiparasitario",
+    ]);
+    expect(
+      matrizes?.items.some(
+        (entry) =>
+          entry.logicalItemKey ===
+            "matrizes_pre_parto_lepto_reforco_situacional" ||
+          entry.productClass === "vacina_leptospirose",
+      ),
+    ).toBe(false);
   });
 });

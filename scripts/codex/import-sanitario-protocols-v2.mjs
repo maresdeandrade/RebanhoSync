@@ -15,7 +15,7 @@ const EXPECTED = {
   artifact: "sanitario_protocols_v2_canonical_payload",
   artifactVersion: "12F10.0-canonical-candidate",
   protocols: 10,
-  items: 21,
+  items: 20,
   groups: 4,
   memberRejections: 16,
 };
@@ -29,6 +29,11 @@ const DEPRECATED_ACTIVE_ITEMS = [
       "raiva_primovac_reforco_30d",
       "raiva_reforco_anual_area_risco",
     ],
+  },
+  {
+    familyCode: "matrizes_pre_parto",
+    logicalItemKey: "matrizes_pre_parto_lepto_reforco_situacional",
+    replacementKeys: ["leptospirose"],
   },
 ];
 
@@ -163,14 +168,14 @@ function validateCanonicalPayload(payload) {
   assert(payload.artifact_version === EXPECTED.artifactVersion, "artifact_version 12F10 inesperada");
   assert(payload.execute_import === false, "execute_import deve permanecer false");
   assert(payload.counts?.protocols === EXPECTED.protocols, "counts.protocols deve ser 10");
-  assert(payload.counts?.protocol_items === EXPECTED.items, "counts.protocol_items deve ser 19");
+  assert(payload.counts?.protocol_items === EXPECTED.items, `counts.protocol_items deve ser ${EXPECTED.items}`);
   assert(payload.counts?.product_class_groups === EXPECTED.groups, "counts.product_class_groups deve ser 4");
   assert(
     payload.counts?.product_class_group_member_rejections === EXPECTED.memberRejections,
     "counts.product_class_group_member_rejections deve ser 16",
   );
   assert(data.protocols.length === EXPECTED.protocols, "payload deve conter 10 protocolos");
-  assert(data.items.length === EXPECTED.items, "payload deve conter 19 itens");
+  assert(data.items.length === EXPECTED.items, `payload deve conter ${EXPECTED.items} itens`);
   assert(data.groups.length === EXPECTED.groups, "payload deve conter 4 ProductClassGroups");
   assert(data.memberRejections.length === EXPECTED.memberRejections, "payload deve conter 16 rejeicoes de members");
 
@@ -256,6 +261,24 @@ function validateCanonicalPayload(payload) {
     assert(
       item.snapshot_template?.sourcePolicy?.withdrawal === "by_executed_product_snapshot",
       `${item.logical_item_key}: raiva exige carencia por produto executado`,
+    );
+  }
+
+  const matrizesItems = data.items.filter((row) => lookupFamily(row.protocol_id) === "matrizes_pre_parto");
+  const matrizesKeys = new Set(matrizesItems.map((row) => row.logical_item_key));
+  assert(
+    !matrizesKeys.has("matrizes_pre_parto_lepto_reforco_situacional"),
+    "matrizes_pre_parto_lepto_reforco_situacional deve sair do payload canonico ativo",
+  );
+  assert(
+    matrizesKeys.has("matrizes_pre_parto_antiparasitario"),
+    "matrizes_pre_parto_antiparasitario deve permanecer ativo",
+  );
+  assert(matrizesItems.length === 1, "matrizes_pre_parto deve manter apenas um item ativo");
+  for (const item of matrizesItems) {
+    assert(
+      item.product_class !== "vacina_leptospirose",
+      `${item.logical_item_key}: matrizes_pre_parto nao deve concorrer com leptospirose`,
     );
   }
 

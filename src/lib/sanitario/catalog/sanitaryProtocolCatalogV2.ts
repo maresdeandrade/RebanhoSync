@@ -39,7 +39,7 @@ export type SanitaryProtocolItemV2ReadModel = {
   boosterRule: JsonRecord;
   speciesAuthorization: JsonRecord;
   sourceRefsByField: JsonRecord;
-  limitations: JsonRecord;
+  limitations: JsonRecord | string[];
   snapshotTemplate: JsonRecord;
   allowsAgendaAuto: boolean;
   requiresMvResponsavel: boolean;
@@ -89,6 +89,80 @@ export type SanitaryProtocolCatalogReadModelV2 = {
   protocols: SanitaryProtocolV2ReadModel[];
   items: SanitaryProtocolItemV2ReadModel[];
   productClassGroups: SanitaryProductClassGroupV2ReadModel[];
+};
+
+export type SanitaryItemLimitationPresentationV2 = {
+  operational: string[];
+  technical: string[];
+  auditCodes: string[];
+};
+
+export type ProductRequirementDisplayV2 = {
+  title: "Produto exigido";
+  value: string;
+  qualifier?: string;
+};
+
+const ITEM_LABELS_PT_BR: Record<string, string> = {
+  b19_femeas_3_8_meses: "B19 — fêmeas de 3 a 8 meses",
+  clostridial_primovac_dose1: "Primovacinação — dose 1",
+  clostridial_primovac_dose2: "Primovacinação — dose 2",
+  clostridial_reforco_anual: "Reforço anual",
+  raiva_primovac_dose1: "Primovacinação — dose 1",
+  raiva_primovac_reforco_30d: "Reforço da primovacinação — 30 dias",
+  raiva_reforco_anual_area_risco: "Reforço anual em área de risco",
+  recria_maio: "Recria — maio",
+  recria_julho: "Recria — julho",
+  recria_setembro: "Recria — setembro",
+  matrizes_pre_parto_antiparasitario: "Antiparasitário pré-parto",
+  pre_confinamento_dose_unica: "Dose única pré-confinamento/pasto vedado",
+  pre_desmama_situacional: "Vermifugação pré-desmama situacional",
+  fmd_historico_contingencia: "Histórico/contingência de febre aftosa",
+  fmd_bloqueio_vacinacao_rotina: "Bloqueio de vacinação de rotina",
+  lepto_primovac_dose1: "Primovacinação — dose 1",
+  lepto_primovac_dose2: "Primovacinação — dose 2",
+  lepto_reforco_anual_semestral: "Reforço anual/semestral",
+  ibr_bvd_primovac_dose1: "Primovacinação — dose 1",
+  ibr_bvd_primovac_dose2: "Primovacinação — dose 2",
+};
+
+const REQUIREMENT_KIND_LABELS_PT_BR: Record<string, string> = {
+  product_class: "Classe técnica",
+  product_class_group: "Grupo técnico",
+  specific_product: "Produto específico",
+  none: "Sem produto executável",
+};
+
+const PRODUCT_CLASS_LABELS_PT_BR: Record<string, string> = {
+  vacina_brucelose_b19: "Vacina contra brucelose B19",
+  vacina_clostridial: "Vacina clostridial",
+  vacina_clostridial_multivalente: "Vacina clostridial",
+  vacina_ibr_bvd: "Vacina IBR/BVD",
+  vacina_leptospirose: "Vacina contra leptospirose",
+  vacina_raiva_herbivoros: "Vacina contra raiva dos herbívoros",
+};
+
+const ACTION_TYPE_LABELS_PT_BR: Record<string, string> = {
+  vacinacao: "Vacinação",
+  vermifugacao: "Vermifugação",
+  alerta: "Alerta",
+  orientacao: "Orientação",
+};
+
+const STATUS_LABELS_PT_BR: Record<string, string> = {
+  obrigatorio: "Obrigatório",
+  recomendado: "Recomendado",
+  condicional: "Condicional",
+  estrategico: "Estratégico",
+  bloqueado: "Bloqueado",
+  draft: "Rascunho",
+  retired: "Retirado",
+  manual_only: "Manual",
+  preview_allowed: "Prévia permitida",
+  blocked: "Bloqueado",
+  needs_review: "Requer revisão",
+  archived: "Arquivado",
+  active: "Ativo",
 };
 
 export type SanitaryProtocolCatalogQueryResult<T> = {
@@ -194,6 +268,17 @@ const RAIVA_ITEM_KEYS = new Set([
   "raiva_reforco_anual_area_risco",
 ]);
 
+const MATRIX_PREPARTUM_ALLOWED_ITEM_KEYS = new Set([
+  "matrizes_pre_parto_antiparasitario",
+]);
+
+const INACTIVE_ITEM_STATUSES = new Set(["tombstoned", "inactive", "archived"]);
+
+const DEPRECATED_ITEM_KEYS = new Set([
+  "raiva_area_risco_anual",
+  "matrizes_pre_parto_lepto_reforco_situacional",
+]);
+
 const isRecord = (value: unknown): value is JsonRecord =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 
@@ -237,6 +322,559 @@ const readAlias = (
 
 const metadataFlag = (record: { metadata: JsonRecord }, key: string): boolean =>
   record.metadata[key] === true;
+
+const uniqueStrings = (values: string[]): string[] => Array.from(new Set(values));
+
+const UUID_LIKE =
+  /\b[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\b/i;
+
+const SNAKE_CASE_LIKE = /\b[a-z][a-z0-9]+(?:_[a-z0-9]+)+\b/;
+
+const collectStringValues = (value: unknown): string[] => {
+  if (typeof value === "string" && value.trim().length > 0) {
+    return [value.trim()];
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap(collectStringValues);
+  }
+  return [];
+};
+
+const collectPolicyEntries = (value: unknown): string[] => {
+  if (typeof value === "string" && value.trim().length > 0) {
+    return [value.trim()];
+  }
+  if (!isRecord(value)) return [];
+  return Object.entries(value)
+    .filter(([, entry]) => typeof entry === "string" && entry.trim().length > 0)
+    .map(([key, entry]) => `${key}: ${String(entry).trim()}`);
+};
+
+const normalizeLimitationCode = (value: string): string =>
+  value
+    .trim()
+    .replace(/^lacuna de fonte:\s*/i, "")
+    .replace(/^política de fonte:\s*/i, "")
+    .replace(/^politica de fonte:\s*/i, "")
+    .replace(/^restrição:\s*/i, "")
+    .replace(/^restricao:\s*/i, "")
+    .replace(/\s+/g, " ");
+
+const humanizeUnknownLimitation = (value: string): string => {
+  const text = normalizeLimitationCode(value)
+    .replace(UUID_LIKE, "identificador interno")
+    .replace(/_/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  return text.length > 0 ? text : "Limitação técnica não detalhada.";
+};
+
+const sanitizeHumanLimitation = (value: string): string =>
+  value
+    .replace(UUID_LIKE, "identificador interno")
+    .replace(SNAKE_CASE_LIKE, (match) => match.replace(/_/g, " "))
+    .replace(/\s+/g, " ")
+    .trim();
+
+type LimitationMessageEntry = {
+  key: string;
+  message: string;
+  section: "operational" | "technical";
+};
+
+const LIMITATION_MESSAGE_BY_CODE: Record<string, LimitationMessageEntry> = {
+  requires_mv_habilitado: {
+    key: "enabled_veterinarian",
+    message: "Exige médico-veterinário habilitado.",
+    section: "operational",
+  },
+  requires_official_record_flow: {
+    key: "official_record",
+    message: "Exige fluxo oficial de registro quando aplicável.",
+    section: "operational",
+  },
+  requires_marking_when_applicable: {
+    key: "official_marking",
+    message:
+      "Pode exigir marcação/identificação conforme regra oficial aplicável.",
+    section: "operational",
+  },
+  requires_executed_product_snapshot: {
+    key: "real_product_snapshot",
+    message: "Exige produto real registrado na execução.",
+    section: "operational",
+  },
+  requires_product_catalog_validation: {
+    key: "product_catalog_validation",
+    message: "Exige validação do produto no catálogo técnico.",
+    section: "operational",
+  },
+  source_gap_age_product: {
+    key: "age_product_source_gap",
+    message: "Há lacuna de fonte para idade/produto.",
+    section: "operational",
+  },
+  source_gap_bubalino: {
+    key: "bubalino_source_gap",
+    message: "Bubalinos exigem fonte/bula específica quando aplicável.",
+    section: "operational",
+  },
+  product_specific_label_required: {
+    key: "product_label_required",
+    message: "Dose, via e carência dependem da bula do produto executado.",
+    section: "operational",
+  },
+  do_not_generalize_class: {
+    key: "do_not_generalize_class",
+    message: "Classe técnica não autoriza generalizar dose, via ou carência.",
+    section: "operational",
+  },
+  withdrawal_by_executed_product: {
+    key: "withdrawal_by_executed_product",
+    message: "Carência deve seguir o produto executado.",
+    section: "operational",
+  },
+  execution_requires_enabled_veterinarian: {
+    key: "enabled_veterinarian",
+    message: "Exige médico-veterinário habilitado.",
+    section: "operational",
+  },
+  execution_requires_official_record: {
+    key: "official_record",
+    message: "Exige fluxo oficial de registro quando aplicável.",
+    section: "operational",
+  },
+  execution_requires_real_product_snapshot: {
+    key: "real_product_snapshot",
+    message: "Exige produto real registrado na execução.",
+    section: "operational",
+  },
+  "dose: by_executed_product_label": {
+    key: "dose_by_executed_product_label",
+    message: "Dose deve seguir a bula do produto executado.",
+    section: "operational",
+  },
+  "withdrawal: by_executed_product_snapshot": {
+    key: "withdrawal_by_executed_product",
+    message: "Carência deve seguir o produto executado.",
+    section: "operational",
+  },
+  by_executed_product_snapshot: {
+    key: "withdrawal_by_executed_product",
+    message: "Carência deve seguir o produto executado.",
+    section: "operational",
+  },
+  by_executed_product_label: {
+    key: "dose_by_executed_product_label",
+    message: "Dose deve seguir a bula do produto executado.",
+    section: "operational",
+  },
+  by_executed_product_and_weight: {
+    key: "weight_for_dose",
+    message: "Pode exigir peso para dose quando aplicável.",
+    section: "operational",
+  },
+  requires_real_product: {
+    key: "real_product_snapshot",
+    message: "Exige produto real registrado na execução.",
+    section: "operational",
+  },
+  produto_real_obrigatorio_na_execucao: {
+    key: "real_product_snapshot",
+    message: "Exige produto real registrado na execução.",
+    section: "operational",
+  },
+  source_gap_executed_product_label: {
+    key: "product_label_required",
+    message: "Dose, via e carência dependem da bula do produto executado.",
+    section: "operational",
+  },
+  source_gap_product_withdrawal_snapshot: {
+    key: "withdrawal_by_executed_product",
+    message: "Carência deve seguir o produto executado.",
+    section: "operational",
+  },
+  source_gap_label_or_mv: {
+    key: "label_or_vet_source_gap",
+    message: "Exige bula do produto ou orientação técnica responsável.",
+    section: "operational",
+  },
+  source_gap_mv_decision: {
+    key: "vet_decision_source_gap",
+    message: "Exige avaliação técnica responsável quando aplicável.",
+    section: "operational",
+  },
+  requires_weight: {
+    key: "weight_for_dose",
+    message: "Pode exigir peso para dose quando aplicável.",
+    section: "operational",
+  },
+  requires_weight_or_label: {
+    key: "weight_for_dose",
+    message: "Pode exigir peso para dose quando aplicável.",
+    section: "operational",
+  },
+  requires_rotation_context: {
+    key: "rotation_context",
+    message: "Pode exigir avaliação de rotação de classes/produtos.",
+    section: "operational",
+  },
+  chemical_class_rotation_required: {
+    key: "rotation_context",
+    message: "Pode exigir avaliação de rotação de classes/produtos.",
+    section: "operational",
+  },
+  class_group_does_not_validate_execution: {
+    key: "group_no_dose_withdrawal",
+    message: "Grupo técnico não valida dose nem carência.",
+    section: "operational",
+  },
+  members_sem_class_id_bloqueados: {
+    key: "group_members_blocked",
+    message: "Grupo técnico sem membros ativos.",
+    section: "technical",
+  },
+  gestation_lactation_requires_label_or_mv: {
+    key: "gestation_lactation_label_or_vet",
+    message: "Gestação e lactação exigem bula do produto ou orientação técnica.",
+    section: "operational",
+  },
+  milk_requires_label: {
+    key: "milk_label_required",
+    message: "Uso em leite exige bula do produto executado.",
+    section: "operational",
+  },
+  requires_slaughter_withdrawal_review: {
+    key: "slaughter_withdrawal_review",
+    message: "Exige revisão de carência para abate pelo produto executado.",
+    section: "operational",
+  },
+  slaughter_withdrawal_requires_executed_product: {
+    key: "slaughter_withdrawal_review",
+    message: "Exige revisão de carência para abate pelo produto executado.",
+    section: "operational",
+  },
+  withdrawal_requires_executed_product: {
+    key: "withdrawal_by_executed_product",
+    message: "Carência deve seguir o produto executado.",
+    section: "operational",
+  },
+  requires_risk_area_overlay: {
+    key: "risk_overlay",
+    message: "Depende de avaliação regional/de risco.",
+    section: "operational",
+  },
+  requires_focus_or_perifocus_context: {
+    key: "risk_overlay",
+    message: "Depende de avaliação regional/de risco.",
+    section: "operational",
+  },
+  requires_regional_overlay: {
+    key: "risk_overlay",
+    message: "Depende de avaliação regional/de risco.",
+    section: "operational",
+  },
+  regional_risk_context_required: {
+    key: "risk_overlay",
+    message: "Depende de avaliação regional/de risco.",
+    section: "operational",
+  },
+  vaccination_routine_blocked: {
+    key: "blocked_protocol",
+    message: "Protocolo bloqueado/retired.",
+    section: "operational",
+  },
+  blocked_archived: {
+    key: "blocked_protocol",
+    message: "Protocolo bloqueado/retired.",
+    section: "operational",
+  },
+  routine_vaccination_blocked: {
+    key: "blocked_protocol",
+    message: "Protocolo bloqueado/retired.",
+    section: "operational",
+  },
+  productRequirementKind_none: {
+    key: "no_executable_product",
+    message: "Item sem produto executável.",
+    section: "operational",
+  },
+};
+
+const DERIVED_LIMITATIONS: Record<
+  "product_class" | "product_class_group" | "none" | "specific_product",
+  LimitationMessageEntry[]
+> = {
+  product_class: [
+    {
+      key: "real_product_snapshot",
+      message: "Exige produto real registrado na execução.",
+      section: "operational",
+    },
+    {
+      key: "product_label_required",
+      message: "Dose, via e carência dependem do produto executado.",
+      section: "operational",
+    },
+  ],
+  product_class_group: [
+    {
+      key: "group_no_dose_withdrawal",
+      message: "Grupo técnico não valida dose nem carência.",
+      section: "operational",
+    },
+    {
+      key: "real_product_snapshot",
+      message: "Produto real continua obrigatório na execução.",
+      section: "operational",
+    },
+    {
+      key: "technical_choice_required",
+      message:
+        "Pode exigir escolha técnica entre classes/produtos no momento da execução.",
+      section: "operational",
+    },
+  ],
+  none: [
+    {
+      key: "no_executable_product",
+      message: "Item sem produto executável.",
+      section: "operational",
+    },
+    {
+      key: "no_operational_action",
+      message: "Não gera ação sanitária operacional.",
+      section: "operational",
+    },
+  ],
+  specific_product: [
+    {
+      key: "specific_product",
+      message: "Item depende do produto específico indicado.",
+      section: "operational",
+    },
+  ],
+};
+
+const addPresentationMessage = (
+  presentation: SanitaryItemLimitationPresentationV2,
+  seen: Set<string>,
+  entry: LimitationMessageEntry,
+) => {
+  if (seen.has(entry.key)) return;
+  const message = sanitizeHumanLimitation(entry.message);
+  if (!message) return;
+  seen.add(entry.key);
+  presentation[entry.section].push(message);
+};
+
+export function formatSanitaryLimitationCodeV2(
+  rawCode: string,
+  fallbackSection: "operational" | "technical" = "technical",
+): LimitationMessageEntry {
+  const normalizedCode = normalizeLimitationCode(rawCode);
+  const mapped = LIMITATION_MESSAGE_BY_CODE[normalizedCode];
+  if (mapped) return mapped;
+
+  const message = normalizedCode.startsWith("source_gap_")
+    ? `Lacuna técnica: ${humanizeUnknownLimitation(normalizedCode.replace(/^source_gap_/, ""))}.`
+    : normalizedCode.includes(":")
+      ? `Política técnica: ${humanizeUnknownLimitation(normalizedCode)}.`
+      : `Limitação técnica: ${humanizeUnknownLimitation(normalizedCode)}.`;
+
+  return {
+    key: `unknown:${normalizedCode.toLowerCase()}`,
+    message,
+    section: fallbackSection,
+  };
+}
+
+export function dedupeSanitaryLimitationMessagesV2(
+  values: string[],
+): string[] {
+  const normalized = new Set<string>();
+  const result: string[] = [];
+
+  for (const value of values) {
+    const message = sanitizeHumanLimitation(value);
+    const key = message
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/\p{Diacritic}/gu, "")
+      .replace(/[^\p{Letter}\p{Number}]+/gu, " ")
+      .trim();
+    if (!key || normalized.has(key)) continue;
+    normalized.add(key);
+    result.push(message);
+  }
+
+  return result;
+}
+
+export function buildSanitaryItemProductClassGroupDisplayV2(
+  item: SanitaryProtocolItemV2ReadModel,
+  groups: SanitaryProductClassGroupV2ReadModel[],
+): string {
+  if (item.productRequirementKind === "product_class_group") {
+    const group = groups.find((entry) => entry.id === item.productClassGroupId);
+    return group?.name ?? "Grupo técnico não encontrado";
+  }
+
+  if (item.productRequirementKind === "product_class") {
+    return "Não se aplica — item usa classe técnica";
+  }
+
+  if (item.productRequirementKind === "specific_product") {
+    return "Não se aplica — item usa produto específico";
+  }
+
+  if (item.productRequirementKind === "none") {
+    return "Não se aplica — item bloqueado/sem produto";
+  }
+
+  return "Não se aplica — requisito de produto não reconhecido";
+}
+
+export function formatSanitaryProtocolItemLabelV2(
+  itemOrKey: SanitaryProtocolItemV2ReadModel | string,
+): string {
+  const key = typeof itemOrKey === "string" ? itemOrKey : itemOrKey.logicalItemKey;
+  return ITEM_LABELS_PT_BR[key] ?? humanizeUnknownLimitation(key);
+}
+
+export function formatSanitaryRequirementKindV2(kind: string): string {
+  return REQUIREMENT_KIND_LABELS_PT_BR[kind] ?? humanizeUnknownLimitation(kind);
+}
+
+export function formatSanitaryProductClassLabelV2(
+  productClass: string | null,
+): string {
+  if (!productClass) return "Não se aplica";
+  return PRODUCT_CLASS_LABELS_PT_BR[productClass] ?? humanizeUnknownLimitation(productClass);
+}
+
+export function formatSanitaryActionTypeV2(actionType: string): string {
+  return ACTION_TYPE_LABELS_PT_BR[actionType] ?? humanizeUnknownLimitation(actionType);
+}
+
+export function formatSanitaryItemStatusV2(status: string): string {
+  return STATUS_LABELS_PT_BR[status] ?? humanizeUnknownLimitation(status);
+}
+
+export function formatSanitaryBooleanPtBrV2(value: boolean): string {
+  return value ? "Sim" : "Não";
+}
+
+export function buildSanitaryProductRequirementDisplayV2(
+  item: SanitaryProtocolItemV2ReadModel,
+  groups: SanitaryProductClassGroupV2ReadModel[],
+): ProductRequirementDisplayV2 {
+  if (item.productRequirementKind === "product_class") {
+    return {
+      title: "Produto exigido",
+      value: formatSanitaryProductClassLabelV2(item.productClass),
+      qualifier: "Classe técnica",
+    };
+  }
+
+  if (item.productRequirementKind === "product_class_group") {
+    return {
+      title: "Produto exigido",
+      value: buildSanitaryItemProductClassGroupDisplayV2(item, groups),
+      qualifier: "Grupo técnico",
+    };
+  }
+
+  if (item.productRequirementKind === "specific_product") {
+    return {
+      title: "Produto exigido",
+      value: item.productId ?? "Produto específico",
+      qualifier: "Produto específico",
+    };
+  }
+
+  if (item.productRequirementKind === "none") {
+    return {
+      title: "Produto exigido",
+      value: "Não se aplica — item bloqueado/sem produto",
+      qualifier: "Sem produto executável",
+    };
+  }
+
+  return {
+    title: "Produto exigido",
+    value: "Requisito de produto não reconhecido",
+  };
+}
+
+export function buildSanitaryItemLimitationPresentationV2(
+  item: SanitaryProtocolItemV2ReadModel,
+  protocol?: SanitaryProtocolV2ReadModel | null,
+): SanitaryItemLimitationPresentationV2 {
+  const snapshotMetadata = readRecord(item.snapshotTemplate.metadata);
+  const protocolMetadata = readRecord(protocol?.metadata);
+  const rawValues = [
+    ...collectStringValues(item.limitations),
+    ...collectStringValues(item.snapshotTemplate.sourceGaps),
+    ...collectPolicyEntries(item.snapshotTemplate.sourcePolicy),
+    ...collectStringValues(item.snapshotTemplate.restrictions),
+    ...collectStringValues(snapshotMetadata.sourceGaps),
+    ...collectStringValues(snapshotMetadata.restrictions),
+    ...collectStringValues(protocolMetadata.sourceGaps),
+    ...collectStringValues(protocolMetadata.restrictions),
+  ];
+  const presentation: SanitaryItemLimitationPresentationV2 = {
+    operational: [],
+    technical: [],
+    auditCodes: uniqueStrings(rawValues.map(normalizeLimitationCode)),
+  };
+  const seen = new Set<string>();
+
+  const productRequirementKind = item.productRequirementKind as keyof typeof DERIVED_LIMITATIONS;
+  const addDerivedMessages = () => {
+    for (const entry of DERIVED_LIMITATIONS[productRequirementKind] ?? []) {
+      addPresentationMessage(presentation, seen, entry);
+    }
+  };
+  const addRawMessages = () => {
+    for (const rawValue of rawValues) {
+      addPresentationMessage(
+        presentation,
+        seen,
+        formatSanitaryLimitationCodeV2(rawValue),
+      );
+    }
+  };
+
+  if (item.productRequirementKind === "product_class_group") {
+    addDerivedMessages();
+    addRawMessages();
+  } else {
+    addRawMessages();
+    addDerivedMessages();
+  }
+
+  presentation.operational = dedupeSanitaryLimitationMessagesV2(
+    presentation.operational,
+  );
+  presentation.technical = dedupeSanitaryLimitationMessagesV2(
+    presentation.technical,
+  ).filter((entry) => !presentation.operational.includes(entry));
+
+  if (presentation.operational.length === 0 && presentation.technical.length === 0) {
+    presentation.operational.push("Sem limitações registradas.");
+  }
+
+  return presentation;
+}
+
+export function buildSanitaryItemLimitationsDisplayV2(
+  item: SanitaryProtocolItemV2ReadModel,
+  protocol?: SanitaryProtocolV2ReadModel | null,
+): string[] {
+  return buildSanitaryItemLimitationPresentationV2(item, protocol).operational;
+}
 
 function throwQueryError(table: string, error: { message: string } | null) {
   if (error) {
@@ -285,7 +923,9 @@ export function adaptSanitaryProtocolItemV2Row(
     boosterRule: readRecord(row.booster_rule),
     speciesAuthorization: readRecord(row.species_authorization),
     sourceRefsByField: readRecord(row.source_refs_by_field),
-    limitations: readRecord(row.limitations),
+    limitations: Array.isArray(row.limitations)
+      ? readStringArray(row.limitations)
+      : readRecord(row.limitations),
     snapshotTemplate: readRecord(row.snapshot_template),
     allowsAgendaAuto: row.allows_agenda_auto === true,
     requiresMvResponsavel: row.requires_mv_responsavel === true,
@@ -342,7 +982,9 @@ export async function listSanitaryProtocolItemsV2(
     .order("version", { ascending: true });
 
   throwQueryError("sanitario_protocolo_itens_versions_v2", error);
-  return (data ?? []).map(adaptSanitaryProtocolItemV2Row);
+  return filterActiveSanitaryProtocolItemsV2(
+    (data ?? []).map(adaptSanitaryProtocolItemV2Row),
+  );
 }
 
 export async function listSanitaryProductClassGroupsV2(
@@ -371,9 +1013,11 @@ export async function getSanitaryProtocolV2WithItems(
 
   if (!protocol) return null;
 
+  const items = await listSanitaryProtocolItemsV2(client, protocol.id);
+
   return {
     protocol,
-    items: await listSanitaryProtocolItemsV2(client, protocol.id),
+    items: filterActiveSanitaryProtocolItemsV2(items, [protocol]),
   };
 }
 
@@ -386,7 +1030,11 @@ export async function readSanitaryProtocolCatalogV2(
     listSanitaryProductClassGroupsV2(client),
   ]);
 
-  return { protocols, items, productClassGroups };
+  return {
+    protocols,
+    items: filterActiveSanitaryProtocolItemsV2(items, protocols),
+    productClassGroups,
+  };
 }
 
 async function getDefaultLocalDb(): Promise<SanitaryProtocolCatalogLocalDb> {
@@ -395,6 +1043,35 @@ async function getDefaultLocalDb(): Promise<SanitaryProtocolCatalogLocalDb> {
 }
 
 const isNotDeleted = (row: JsonRecord): boolean => row.deleted_at == null;
+
+function isActiveSanitaryProtocolItemV2(
+  item: SanitaryProtocolItemV2ReadModel,
+  protocols?: SanitaryProtocolV2ReadModel[],
+): boolean {
+  const itemStatus = item.itemStatus.trim().toLowerCase();
+  const rowStatus = item.status.trim().toLowerCase();
+
+  if (INACTIVE_ITEM_STATUSES.has(itemStatus)) return false;
+  if (INACTIVE_ITEM_STATUSES.has(rowStatus)) return false;
+  if (DEPRECATED_ITEM_KEYS.has(item.logicalItemKey)) return false;
+
+  const protocol = protocols?.find((entry) => entry.id === item.protocolId);
+  if (protocol?.familyCode === "raiva_herbivoros") {
+    return RAIVA_ITEM_KEYS.has(item.logicalItemKey);
+  }
+  if (protocol?.familyCode === "matrizes_pre_parto") {
+    return MATRIX_PREPARTUM_ALLOWED_ITEM_KEYS.has(item.logicalItemKey);
+  }
+
+  return true;
+}
+
+function filterActiveSanitaryProtocolItemsV2(
+  items: SanitaryProtocolItemV2ReadModel[],
+  protocols?: SanitaryProtocolV2ReadModel[],
+): SanitaryProtocolItemV2ReadModel[] {
+  return items.filter((item) => isActiveSanitaryProtocolItemV2(item, protocols));
+}
 
 export async function listLocalSanitaryProtocolsV2(
   localDb?: SanitaryProtocolCatalogLocalDb,
@@ -419,6 +1096,7 @@ export async function listLocalSanitaryProtocolItemsV2(
     .filter(isNotDeleted)
     .filter((row) => !protocolId || row.protocol_id === protocolId)
     .map(adaptSanitaryProtocolItemV2Row)
+    .filter((item) => isActiveSanitaryProtocolItemV2(item))
     .sort((left, right) => {
       const protocolDiff = left.protocolId.localeCompare(right.protocolId);
       if (protocolDiff !== 0) return protocolDiff;
@@ -452,9 +1130,11 @@ export async function getLocalSanitaryProtocolV2WithItems(
 
   if (!protocol) return null;
 
+  const items = await listLocalSanitaryProtocolItemsV2(protocol.id, localDb);
+
   return {
     protocol,
-    items: await listLocalSanitaryProtocolItemsV2(protocol.id, localDb),
+    items: filterActiveSanitaryProtocolItemsV2(items, [protocol]),
   };
 }
 
@@ -467,7 +1147,11 @@ export async function readLocalSanitaryProtocolCatalogV2(
     listLocalSanitaryProductClassGroupsV2(localDb),
   ]);
 
-  return { protocols, items, productClassGroups };
+  return {
+    protocols,
+    items: filterActiveSanitaryProtocolItemsV2(items, protocols),
+    productClassGroups,
+  };
 }
 
 function isB19NationalRule(
@@ -592,7 +1276,7 @@ export function validateSanitaryProtocolCatalogReadOnlyInvariantsV2(
   const summary = buildSanitaryProtocolCatalogSummaryV2(readModel);
 
   if (summary.protocolCount !== 10) issues.push("protocol_count_mismatch");
-  if (summary.itemCount !== 21) issues.push("item_count_mismatch");
+  if (summary.itemCount !== 20) issues.push("item_count_mismatch");
   if (summary.productClassGroupCount !== 4) {
     issues.push("product_class_group_count_mismatch");
   }
@@ -634,6 +1318,37 @@ export function validateSanitaryProtocolCatalogReadOnlyInvariantsV2(
     if (snapshotMetadata.automationStatus !== "manual_only") {
       issues.push(`raiva_not_manual_only:${item.logicalItemKey}`);
     }
+  }
+  if (raivaItems.length !== RAIVA_ITEM_KEYS.size) {
+    issues.push("raiva_item_count_mismatch");
+  }
+
+  const matrizesProtocol = readModel.protocols.find(
+    (entry) => entry.familyCode === "matrizes_pre_parto",
+  );
+  const matrizesFallbackProtocolId = readModel.items.find((entry) =>
+    MATRIX_PREPARTUM_ALLOWED_ITEM_KEYS.has(entry.logicalItemKey),
+  )?.protocolId;
+  const matrizesItems = readModel.items.filter(
+    (entry) => entry.protocolId === (matrizesProtocol?.id ?? matrizesFallbackProtocolId),
+  );
+  const matrizesKeys = new Set(
+    matrizesItems.map((entry) => entry.logicalItemKey),
+  );
+  if (matrizesKeys.has("matrizes_pre_parto_lepto_reforco_situacional")) {
+    issues.push("matrizes_pre_parto_lepto_duplicate_active");
+  }
+  for (const key of MATRIX_PREPARTUM_ALLOWED_ITEM_KEYS) {
+    if (!matrizesKeys.has(key)) issues.push(`matrizes_pre_parto_item_missing:${key}`);
+  }
+  if (
+    matrizesItems.some(
+      (entry) =>
+        entry.productRequirementKind === "product_class" &&
+        entry.productClass === "vacina_leptospirose",
+    )
+  ) {
+    issues.push("matrizes_pre_parto_leptospirose_product_class_active");
   }
   if (summary.hasAgendaAutoEnabled) issues.push("agenda_auto_enabled");
   if (summary.hasApprovedCatalogProtocol) issues.push("approved_catalog_protocol");

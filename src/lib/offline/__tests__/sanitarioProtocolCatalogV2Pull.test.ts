@@ -112,7 +112,7 @@ describe("pullSanitarioProtocolCatalogV2", () => {
       metadata: { agenda_allowed: false, approved_for_catalog: false },
     }));
     rowsByTable.sanitario_protocolo_itens_versions_v2 = Array.from(
-      { length: 21 },
+      { length: 20 },
       (_, index) => ({
         id: `item-${index}`,
         protocol_id: `protocol-${index % 10}`,
@@ -123,7 +123,7 @@ describe("pullSanitarioProtocolCatalogV2", () => {
         product_class_group_id: index >= 3 && index <= 8 ? "group-0" : null,
         allows_agenda_auto: false,
         updated_at: `2026-06-15T12:${String(index).padStart(2, "0")}:00.000Z`,
-        deleted_at: index === 20 ? "2026-06-15T13:00:00.000Z" : null,
+        deleted_at: index === 19 ? "2026-06-15T13:00:00.000Z" : null,
       }),
     );
     rowsByTable.sanitario_product_class_groups_v2 = Array.from(
@@ -206,7 +206,7 @@ describe("pullSanitarioProtocolCatalogV2", () => {
     expect(writeLog.filter((entry) => entry.store === localStores[0])[0].rows)
       .toHaveLength(10);
     expect(writeLog.filter((entry) => entry.store === localStores[1])[0].rows)
-      .toHaveLength(21);
+      .toHaveLength(20);
     expect(writeLog.filter((entry) => entry.store === localStores[2])[0].rows)
       .toHaveLength(4);
     expect(writeLog[0].rows).toEqual(
@@ -220,7 +220,7 @@ describe("pullSanitarioProtocolCatalogV2", () => {
     expect(writeLog[1].rows).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          id: "item-20",
+          id: "item-19",
           deleted_at: "2026-06-15T13:00:00.000Z",
         }),
       ]),
