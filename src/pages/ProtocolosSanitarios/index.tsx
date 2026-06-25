@@ -47,10 +47,10 @@ const ProtocolosSanitarios = () => {
       <PageIntro
         eyebrow="Sanitario"
         title="Protocolos sanitarios"
-        description="Superficie read-only do catalogo sanitario v2. As interfaces legadas de pack, conformidade e protocolos editaveis foram ocultadas para evitar uso de dados nao canonicos."
+        description="Superficie somente leitura do catalogo sanitario v2. As interfaces legadas de pack, conformidade e protocolos editaveis foram ocultadas para evitar uso de dados nao canonicos."
         meta={
           <>
-            <StatusBadge tone="neutral">Read-only</StatusBadge>
+            <StatusBadge tone="neutral">Somente leitura</StatusBadge>
             <StatusBadge tone="info">Catalogo v2</StatusBadge>
           </>
         }
@@ -79,7 +79,7 @@ const ProtocolosSanitarios = () => {
             <div>
               <CardTitle>Catalogo Sanitario v2</CardTitle>
               <CardDescription>
-                Protocolos, itens e ProductClassGroups locais, sem automacao
+                Protocolos, itens e grupos técnicos locais, sem automacao
                 operacional.
               </CardDescription>
             </div>

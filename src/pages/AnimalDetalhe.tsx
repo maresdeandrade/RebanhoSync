@@ -134,12 +134,14 @@ import {
 } from "@/lib/sanitario/compliance/clinicalProtocols";
 import { useAnimalWithdrawal } from "@/lib/sanitario/hooks/useWithdrawal";
 import { WithdrawalBadgePanel } from "@/components/sanitario/WithdrawalBadgePanel";
+import { SanitaryPrecheckPanelV2 } from "@/components/sanitario/SanitaryPrecheckPanelV2";
 import {
   formatWeight,
   formatWeightPerDay,
   formatWeightValue,
 } from "@/lib/format/weight";
 import { resolveSanitaryAgendaItemScheduleMeta } from "@/lib/sanitario/infrastructure/agendaSchedule";
+import { readLocalSanitaryProtocolCatalogV2 } from "@/lib/sanitario/catalog/sanitaryProtocolCatalogV2";
 import { resolveCurrentWeight } from "@/lib/insights/pesoAtual";
 import { showError, showSuccess } from "@/utils/toast";
 import {
@@ -1042,6 +1044,13 @@ const AnimalDetalhe = () => {
       )[0] ?? null
     );
   }, [animal?.fazenda_id, animal?.id]);
+  const sanitaryProtocolCatalogV2 = useLiveQuery(
+    () =>
+      animal?.fazenda_id
+        ? readLocalSanitaryProtocolCatalogV2()
+        : Promise.resolve(null),
+    [animal?.fazenda_id],
+  );
   const sanitaryCaseFlowSummary = useMemo(
     () =>
       buildSanitaryCaseFlowSummary({
@@ -1095,6 +1104,18 @@ const AnimalDetalhe = () => {
     });
   }, [animal, eventos, farmLifecycleConfig]);
   const categoriaLabel = taxonomySnapshot?.display.categoria ?? null;
+  const sanitaryPrecheckAnimalV2 = useMemo(() => {
+    if (!animal) return null;
+
+    return {
+      id: animal.id,
+      especie: animal.especie,
+      sexo: animal.sexo,
+      nascimento: animal.data_nascimento,
+      categoria: taxonomySnapshot?.categoria_zootecnica ?? null,
+      fazendaId: animal.fazenda_id,
+    };
+  }, [animal, taxonomySnapshot?.categoria_zootecnica]);
   const isReproductionEligible =
     animal && isFemaleReproductionEligible(animal, categoriaLabel);
   const lifecycleSnapshot = animal
@@ -2770,12 +2791,15 @@ const AnimalDetalhe = () => {
       <WithdrawalBadgePanel readModel={carenciaModel} className="mb-6" />
 
       <Tabs defaultValue="timeline" className="w-full">
-        <TabsList className="grid w-full max-w-[640px] grid-cols-4 bg-muted/40 p-1">
+        <TabsList className="grid w-full max-w-[760px] grid-cols-5 bg-muted/40 p-1">
           <TabsTrigger value="timeline" className="gap-2 rounded-md">
             <History className="h-4 w-4" /> Timeline
           </TabsTrigger>
           <TabsTrigger value="casos" className="gap-2 rounded-md">
             <HeartPulse className="h-4 w-4" /> Casos
+          </TabsTrigger>
+          <TabsTrigger value="sanidade" className="gap-2 rounded-md">
+            <Syringe className="h-4 w-4" /> Sanidade
           </TabsTrigger>
           <TabsTrigger value="agenda" className="gap-2 rounded-md">
             <Calendar className="h-4 w-4" /> Agenda
@@ -2932,6 +2956,14 @@ const AnimalDetalhe = () => {
             cases={sanitaryCases}
             eventsByCase={sanitaryEventsByCase}
             onCloseClinicalCase={handleOpenCloseClinicalCaseDialog}
+          />
+        </TabsContent>
+
+        <TabsContent value="sanidade" className="mt-6">
+          <SanitaryPrecheckPanelV2
+            animal={sanitaryPrecheckAnimalV2}
+            catalog={sanitaryProtocolCatalogV2}
+            isLoading={sanitaryProtocolCatalogV2 === undefined}
           />
         </TabsContent>
 

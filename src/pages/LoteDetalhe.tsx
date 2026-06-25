@@ -53,6 +53,8 @@ import { TimelineFactual } from "@/components/timeline/TimelineFactual";
 import { useAuth } from "@/hooks/useAuth";
 import { useLoteWithdrawal } from "@/lib/sanitario/hooks/useWithdrawal";
 import { WithdrawalBadgePanel } from "@/components/sanitario/WithdrawalBadgePanel";
+import { SanitaryPrecheckPanelV2 } from "@/components/sanitario/SanitaryPrecheckPanelV2";
+import { readLocalSanitaryProtocolCatalogV2 } from "@/lib/sanitario/catalog/sanitaryProtocolCatalogV2";
 
 const EMPTY_ARRAY: never[] = [];
 
@@ -199,6 +201,13 @@ export default function LoteDetalhe() {
   const animais = useLiveQuery(
     () => (id ? db.state_animais.where("lote_id").equals(id).toArray() : []),
     [id],
+  );
+  const sanitaryProtocolCatalogV2 = useLiveQuery(
+    () =>
+      lote?.fazenda_id
+        ? readLocalSanitaryProtocolCatalogV2()
+        : Promise.resolve(null),
+    [lote?.fazenda_id],
   );
   const regulatorySurfaceSource = useLiveQuery(
     () => (lote ? loadRegulatorySurfaceSource(lote.fazenda_id) : null),
@@ -349,6 +358,28 @@ export default function LoteDetalhe() {
       animal.identificacao?.toLowerCase().includes(termo)
     );
   }, [animais, searchTerm]);
+  const sanitaryPrecheckLoteV2 = useMemo(() => {
+    if (!lote) return null;
+
+    return {
+      id: lote.id,
+      fazendaId: lote.fazenda_id,
+      animalIds: (animais ?? []).map((animal) => animal.id),
+      categoria: loteMetrics?.categoriaPredominante ?? null,
+    };
+  }, [animais, lote, loteMetrics?.categoriaPredominante]);
+  const sanitaryPrecheckAnimalsV2 = useMemo(() => {
+    if (!animais) return null;
+
+    return animais.map((animal) => ({
+      id: animal.id,
+      especie: animal.especie,
+      sexo: animal.sexo,
+      nascimento: animal.data_nascimento,
+      categoria: null,
+      fazendaId: animal.fazenda_id,
+    }));
+  }, [animais]);
 
   if (!id || !lote) {
     return (
@@ -687,6 +718,21 @@ export default function LoteDetalhe() {
           </CardContent>
         </Card>
       )}
+
+      <section id="sanidade-secao" className="scroll-mt-5">
+        <div className="mb-3">
+          <h2 className="text-xl font-semibold text-foreground">Sanidade</h2>
+        </div>
+        <SanitaryPrecheckPanelV2
+          scope="lote"
+          lote={sanitaryPrecheckLoteV2}
+          animals={sanitaryPrecheckAnimalsV2}
+          catalog={sanitaryProtocolCatalogV2}
+          isLoading={
+            sanitaryProtocolCatalogV2 === undefined || animais === undefined
+          }
+        />
+      </section>
 
       {/* Histórico de Movimentações */}
       {loteAnimalPeriods.length > 0 && (

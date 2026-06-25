@@ -475,7 +475,7 @@ describe("SanitarioCatalogoV2", () => {
     expect(screen.queryByText("vacina_raiva_herbivoros")).not.toBeInTheDocument();
     expect(
       screen.getByText(
-        "Catálogo read-only. Produto real, dose e carência são definidos somente na execução.",
+        "Catálogo somente leitura. Produto real, dose e carência são definidos somente na execução.",
       ),
     ).toBeInTheDocument();
     expect(
@@ -687,7 +687,7 @@ describe("SanitarioCatalogoV2", () => {
     render(<SanitarioCatalogoV2 />);
 
     await screen.findByText(
-      "Catálogo read-only. Produto real, dose e carência são definidos somente na execução.",
+      "Catálogo somente leitura. Produto real, dose e carência são definidos somente na execução.",
     );
 
     const forbiddenButtons = [

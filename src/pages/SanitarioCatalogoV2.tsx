@@ -34,7 +34,7 @@ import {
 } from "@/lib/sanitario/catalog/sanitaryProtocolCatalogV2";
 
 const fixedReadOnlyAlerts = [
-  "Catálogo read-only. Produto real, dose e carência são definidos somente na execução.",
+  "Catálogo somente leitura. Produto real, dose e carência são definidos somente na execução.",
 ];
 
 const GLOBAL_PRODUCT_EXECUTION_WARNINGS = new Set([
@@ -159,7 +159,7 @@ export default function SanitarioCatalogoV2() {
         description="Consulta local/offline dos Protocolos Sanitários v2 importados. Esta superfície é somente leitura."
         meta={
           <>
-            <StatusBadge tone="neutral">Read-only</StatusBadge>
+            <StatusBadge tone="neutral">Somente leitura</StatusBadge>
             <StatusBadge tone="info">Dexie local</StatusBadge>
           </>
         }

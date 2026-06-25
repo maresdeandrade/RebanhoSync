@@ -18,6 +18,7 @@ import type {
 import { buildClinicalProtocolEventPayload } from "@/lib/sanitario/compliance/clinicalProtocols";
 import { validateClinicalCaseClosureInput } from "@/pages/animalDetalheClinicalCase";
 import AnimalDetalhe, { AnimalSanitaryCasesPanel } from "@/pages/AnimalDetalhe";
+import type { SanitaryProtocolCatalogReadModelV2 } from "@/lib/sanitario/catalog/sanitaryProtocolCatalogV2";
 
 vi.mock("@/hooks/useAuth");
 vi.mock("dexie-react-hooks", () => ({
@@ -172,6 +173,7 @@ describe("AnimalDetalhe", () => {
     contraparte?: unknown;
     sanitaryCases?: unknown;
     activeSanitaryCase?: unknown;
+    sanitaryCatalog?: SanitaryProtocolCatalogReadModelV2 | null;
   }
 
   const setupMockLiveQuery = (mockResponses: MockLiveQueryResponses) => {
@@ -211,6 +213,9 @@ describe("AnimalDetalhe", () => {
           return mockResponses.activeSanitaryCase ?? null;
         }
         return mockResponses.sanitaryCases ?? [];
+      }
+      if (str.includes("readLocalSanitaryProtocolCatalogV2")) {
+        return mockResponses.sanitaryCatalog ?? null;
       }
       if (str.includes("state_lotes")) {
         if (str.includes(".get")) {
@@ -555,6 +560,45 @@ describe("AnimalDetalhe", () => {
     );
 
     expect(screen.getByText("Sem ECC factual registrado")).toBeInTheDocument();
+  });
+
+  it("integra pre-checagem sanitaria v2 read-only na ficha do animal", async () => {
+    const user = userEvent.setup();
+    const animal = makeAnimal({
+      id: "animal-1",
+      identificacao: "BR-001",
+      sexo: "F",
+      especie: "bovino",
+    } as Partial<Animal> & Pick<Animal, "id" | "identificacao" | "sexo">);
+
+    setupMockLiveQuery({
+      animal,
+      sanitaryCatalog: {
+        protocols: [],
+        items: [],
+        productClassGroups: [],
+      },
+    });
+
+    render(
+      <MemoryRouter
+        initialEntries={["/animais/animal-1"]}
+        future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+      >
+        <Routes>
+          <Route path="/animais/:id" element={<AnimalDetalhe />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    await user.click(screen.getByRole("tab", { name: /sanidade/i }));
+
+    expect(screen.getByText("Pré-checagem sanitária")).toBeInTheDocument();
+    expect(
+      screen.getByText("Catálogo sanitário local ainda não sincronizado"),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /criar agenda/i }))
+      .not.toBeInTheDocument();
   });
 
   it("diferencia estado atual de autorizacao comercial", async () => {
