@@ -389,7 +389,7 @@ describe("LoteDetalhe page", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("Brucelose B19 · B19 — fêmeas de 3 a 8 meses"))
       .toBeInTheDocument();
-    expect(screen.getByText("Em janela")).toBeInTheDocument();
+    expect(screen.getAllByText("Em janela").length).toBeGreaterThan(0);
     expect(screen.queryByRole("button", { name: /criar agenda/i }))
       .not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /^registrar$/i }))

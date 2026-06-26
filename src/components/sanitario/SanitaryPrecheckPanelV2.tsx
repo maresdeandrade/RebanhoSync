@@ -3,6 +3,7 @@ import { AlertTriangle, ShieldCheck } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { SanitaryManualPreviewV2 } from "@/components/sanitario/SanitaryManualPreviewV2";
 import type { SanitaryEligibilityStatus } from "@/lib/sanitario/eligibility/sanitaryEligibility";
 import {
   precheckSanitaryProtocolsForAnimalV2,
@@ -169,6 +170,22 @@ export function SanitaryPrecheckPanelV2({
               Ver catálogo sanitário v2
             </Link>
           </div>
+        ) : null}
+
+        {!isLoading && results.length > 0 ? (
+          <SanitaryManualPreviewV2
+            precheck={precheck}
+            manualAgendaTarget={
+              scope === "lote" && lote
+                ? {
+                    fazendaId: lote.fazendaId,
+                    animalIds: lotAnimals?.map((entry) => entry.id),
+                  }
+                : animal
+                  ? { fazendaId: animal.fazendaId, animalIds: [animal.id] }
+                  : undefined
+            }
+          />
         ) : null}
 
         {!isLoading && results.length > 0 ? (

@@ -35,6 +35,10 @@ export type SanitaryProtocolPrecheckResultV2 = {
   protocolName: string;
   itemKey: string;
   itemLabel: string;
+  productRequirementKind: string;
+  productClass: string | null;
+  productClassGroupId: string | null;
+  productClassGroupName: string | null;
   status: SanitaryEligibilityStatus;
   reasons: string[];
   blockers: string[];
@@ -184,6 +188,10 @@ function baseResult(input: {
     protocolName: input.protocol.name,
     itemKey: input.item.logicalItemKey,
     itemLabel: formatSanitaryProtocolItemLabelV2(input.item.logicalItemKey),
+    productRequirementKind: input.item.productRequirementKind,
+    productClass: input.item.productClass,
+    productClassGroupId: input.item.productClassGroupId,
+    productClassGroupName: null,
     status: input.status,
     reasons: input.reasons ?? [],
     blockers: input.blockers ?? [],
@@ -605,18 +613,27 @@ export function precheckSanitaryProtocolsForAnimalV2(
   const protocolsById = new Map(
     input.catalog.protocols.map((protocol) => [protocol.id, protocol]),
   );
+  const productClassGroupsById = new Map(
+    input.catalog.productClassGroups.map((group) => [group.id, group]),
+  );
 
   const results = input.catalog.items
     .map((item) => {
       const protocol = protocolsById.get(item.protocolId);
-      return protocol
-        ? evaluateItemForAnimal({
-            protocol,
-            item,
-            animal: input.animal,
-            today: input.today,
-          })
-        : null;
+      if (!protocol) return null;
+      const result = evaluateItemForAnimal({
+        protocol,
+        item,
+        animal: input.animal,
+        today: input.today,
+      });
+
+      return {
+        ...result,
+        productClassGroupName: item.productClassGroupId
+          ? (productClassGroupsById.get(item.productClassGroupId)?.name ?? null)
+          : null,
+      };
     })
     .filter((entry): entry is SanitaryProtocolPrecheckResultV2 => entry !== null);
 
@@ -633,6 +650,9 @@ export function precheckSanitaryProtocolsForLotV2(
 ): SanitaryProtocolPrecheckV2 {
   const protocolsById = new Map(
     input.catalog.protocols.map((protocol) => [protocol.id, protocol]),
+  );
+  const productClassGroupsById = new Map(
+    input.catalog.productClassGroups.map((group) => [group.id, group]),
   );
   const animals = input.animals ?? [];
 
@@ -654,7 +674,13 @@ export function precheckSanitaryProtocolsForLotV2(
         }),
       );
 
-      return aggregateLotResult({ protocol, item, animalResults });
+      const result = aggregateLotResult({ protocol, item, animalResults });
+      return {
+        ...result,
+        productClassGroupName: item.productClassGroupId
+          ? (productClassGroupsById.get(item.productClassGroupId)?.name ?? null)
+          : null,
+      };
     })
     .filter((entry): entry is SanitaryProtocolPrecheckResultV2 => entry !== null);
 

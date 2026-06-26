@@ -173,19 +173,19 @@ describe("SanitaryPrecheckPanelV2", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("Brucelose B19 · B19 — fêmeas de 3 a 8 meses"))
       .toBeInTheDocument();
-    expect(screen.getByText("Em janela")).toBeInTheDocument();
+    expect(screen.getAllByText("Em janela").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Dados insuficientes").length).toBeGreaterThan(0);
-    expect(screen.getByText("Não aplicável")).toBeInTheDocument();
+    expect(screen.getAllByText("Não aplicável").length).toBeGreaterThan(0);
   });
 
   it("B19 femea 3-8 meses fica em janela e macho fica nao aplicavel", () => {
     renderPanel(baseAnimal);
-    expect(screen.getByText("Em janela")).toBeInTheDocument();
+    expect(screen.getAllByText("Em janela").length).toBeGreaterThan(0);
 
     renderPanel({ ...baseAnimal, id: "animal-macho", sexo: "macho" });
     expect(screen.getAllByText("Não aplicável").length).toBeGreaterThan(0);
     expect(
-      screen.getByText("B19 se aplica a fêmeas bovinas/bubalinas."),
+      screen.getAllByText("B19 se aplica a fêmeas bovinas/bubalinas.")[0],
     ).toBeInTheDocument();
   });
 
@@ -194,7 +194,7 @@ describe("SanitaryPrecheckPanelV2", () => {
 
     expect(screen.getAllByText("Dados insuficientes").length).toBeGreaterThan(0);
     expect(
-      screen.getByText("Nascimento ausente para calcular janela B19."),
+      screen.getAllByText("Nascimento ausente para calcular janela B19.")[0],
     ).toBeInTheDocument();
   });
 
@@ -211,9 +211,9 @@ describe("SanitaryPrecheckPanelV2", () => {
     expect(screen.getByText("Raiva dos herbivoros · Primovacinação — dose 1"))
       .toBeInTheDocument();
     expect(
-      screen.getByText("Protocolo de raiva depende de dado regional/de área de risco."),
+      screen.getAllByText("Protocolo de raiva depende de dado regional/de área de risco.")[0],
     ).toBeInTheDocument();
-    expect(screen.getByText("A pré-checagem não infere área de risco."))
+    expect(screen.getAllByText("A pré-checagem não infere área de risco.")[0])
       .toBeInTheDocument();
   });
 
@@ -243,7 +243,7 @@ describe("SanitaryPrecheckPanelV2", () => {
 
     expect(screen.getByText("Brucelose B19 · B19 — fêmeas de 3 a 8 meses"))
       .toBeInTheDocument();
-    expect(screen.getByText("Em janela")).toBeInTheDocument();
+    expect(screen.getAllByText("Em janela").length).toBeGreaterThan(0);
   });
 
   it("nao renderiza CTA operacional nem chaves tecnicas como titulo principal", () => {
