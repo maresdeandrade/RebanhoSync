@@ -1,6 +1,7 @@
+import { useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { BookOpenCheck, CalendarClock, History, ShieldCheck } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 
 import { EmptyState } from "@/components/EmptyState";
@@ -25,9 +26,23 @@ import {
   type SanitaryProtocolWindowRowV2,
 } from "@/lib/sanitario/windows/sanitaryProtocolWindowsV2";
 
+type CentralSanitaryTab = "janelas" | "agenda" | "historico" | "catalogo";
+
+function readCentralSanitaryTab(value: string | null): CentralSanitaryTab {
+  return value === "agenda" || value === "historico" || value === "catalogo"
+    ? value
+    : "janelas";
+}
+
 const ProtocolosSanitarios = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { activeFarmId } = useAuth();
+  const initialTab = readCentralSanitaryTab(searchParams.get("tab"));
+  const initialAnimalId = searchParams.get("animalId");
+  const initialLotId = searchParams.get("loteId");
+  const initialLotContextId = initialAnimalId ? initialLotId : null;
+  const [activeTab, setActiveTab] = useState(initialTab);
   const localAgenda = useLiveQuery(
     () => (activeFarmId ? listLocalSanitaryAgendasV2(activeFarmId) : []),
     [activeFarmId],
@@ -40,6 +55,13 @@ const ProtocolosSanitarios = () => {
     source: windowSource,
     evaluatedAt: new Date().toISOString().slice(0, 10),
   });
+
+  const clearInitialFilter = () => {
+    const next = new URLSearchParams(searchParams);
+    next.delete("animalId");
+    next.delete("loteId");
+    setSearchParams(next, { replace: true });
+  };
 
   if (!activeFarmId) {
     return (
@@ -102,7 +124,7 @@ const ProtocolosSanitarios = () => {
         meta={<><StatusBadge tone="info">Local e offline</StatusBadge><StatusBadge tone="neutral">Execução bloqueada</StatusBadge></>}
       />
 
-      <Tabs defaultValue="janelas" className="space-y-4">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList className="h-auto flex-wrap justify-start">
           <TabsTrigger value="janelas"><CalendarClock className="mr-2 h-4 w-4" />Janelas sanitárias</TabsTrigger>
           <TabsTrigger value="agenda"><CalendarClock className="mr-2 h-4 w-4" />Agenda sanitária</TabsTrigger>
@@ -112,7 +134,14 @@ const ProtocolosSanitarios = () => {
         </TabsList>
 
         <TabsContent value="janelas">
-          <SanitaryProtocolWindowPanelV2 source={windowSource} onPlan={planSelected} />
+          <SanitaryProtocolWindowPanelV2
+            source={windowSource}
+            initialAnimalId={initialAnimalId}
+            initialLotId={initialLotId}
+            initialLotContextId={initialLotContextId}
+            onClearInitialFilter={clearInitialFilter}
+            onPlan={planSelected}
+          />
         </TabsContent>
 
         <TabsContent value="agenda">

@@ -230,6 +230,32 @@ describe("sanitaryProtocolWindowsV2", () => {
     expect(result.rows.find((row) => row.animalId === "overdue")).toMatchObject({ status: "insufficient_data", documentaryPending: true, canSelect: false });
   });
 
+  it("filtra janelas por lote sem criar agenda, evento, estoque, carencia ou fila", async () => {
+    const otherLot = { id: "lot-2", fazenda_id: "farm-1", nome: "Descarte", deleted_at: null } as Lote;
+    const outsideLotAnimal = { ...animal("outside", "F", "2026-03-01"), lote_id: "lot-2", identificacao: "Fêmea fora" };
+
+    const result = buildSanitaryProtocolWindowV2({
+      source: source({
+        animals: [
+          animal("female", "F", "2026-03-01"),
+          animal("male", "M", "2026-03-01"),
+          outsideLotAnimal,
+        ],
+        lots: [lot, otherLot],
+      }),
+      protocolId: "protocol-b19",
+      itemId: "item-b19",
+      evaluatedAt: "2026-07-04",
+      filters: { animalStatus: "ativo", lotId: "lot-1" },
+    })!;
+
+    expect(result.rows.map((row) => row.identification)).toEqual(["Fêmea 101", "Macho 202"]);
+    expect(await db.ops_sanitario_agenda_v2.count()).toBe(0);
+    expect(await db.event_eventos.count()).toBe(0);
+    expect(await db.state_insumo_movimentacoes.count()).toBe(0);
+    expect(await db.queue_ops.count()).toBe(0);
+  });
+
   it("B19 adulta documentada conclui e declarada permanece pendente", () => {
     const documented = windowFor({
       protocolId: "protocol-b19",

@@ -53,11 +53,28 @@ import { TimelineFactual } from "@/components/timeline/TimelineFactual";
 import { useAuth } from "@/hooks/useAuth";
 import { useLoteWithdrawal } from "@/lib/sanitario/hooks/useWithdrawal";
 import { WithdrawalBadgePanel } from "@/components/sanitario/WithdrawalBadgePanel";
-import { SanitaryPrecheckPanelV2 } from "@/components/sanitario/SanitaryPrecheckPanelV2";
-import { readLocalSanitaryProtocolCatalogV2 } from "@/lib/sanitario/catalog/sanitaryProtocolCatalogV2";
+import { SanitaryLotSummaryPanelV2 } from "@/components/sanitario/SanitaryLotSummaryPanelV2";
+import {
+  formatSanitaryProtocolItemLabelV2,
+  readLocalSanitaryProtocolCatalogV2,
+} from "@/lib/sanitario/catalog/sanitaryProtocolCatalogV2";
 import { getLotSanitaryExecutedHistoryV2 } from "@/lib/sanitario/history/sanitaryExecutedHistoryV2";
 
 const EMPTY_ARRAY: never[] = [];
+
+function readString(source: Record<string, unknown> | null | undefined, ...keys: string[]) {
+  if (!source) return null;
+  for (const key of keys) {
+    const value = source[key];
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+  return null;
+}
+
+function formatDate(value: string | null | undefined) {
+  if (!value) return "-";
+  return new Date(`${value.slice(0, 10)}T00:00:00.000`).toLocaleDateString("pt-BR");
+}
 
 interface CockpitCardProps {
   title: string;
@@ -221,6 +238,23 @@ export default function LoteDetalhe() {
           })
         : Promise.resolve([]),
     [lote?.id, lote?.fazenda_id, animais, sanitaryProtocolCatalogV2],
+  );
+  const sanitaryAgendaV2 = useLiveQuery(
+    () =>
+      lote?.fazenda_id
+        ? db.ops_sanitario_agenda_v2.where("fazenda_id").equals(lote.fazenda_id).toArray()
+        : Promise.resolve([]),
+    [lote?.fazenda_id],
+  );
+  const sanitaryAgendaAnimalsV2 = useLiveQuery(
+    () =>
+      lote?.fazenda_id
+        ? db.ops_sanitario_agenda_animais_v2
+            .where("fazenda_id")
+            .equals(lote.fazenda_id)
+            .toArray()
+        : Promise.resolve([]),
+    [lote?.fazenda_id],
   );
   const regulatorySurfaceSource = useLiveQuery(
     () => (lote ? loadRegulatorySurfaceSource(lote.fazenda_id) : null),
@@ -393,6 +427,47 @@ export default function LoteDetalhe() {
       fazendaId: animal.fazenda_id,
     }));
   }, [animais]);
+  const sanitaryFutureAgendaV2 = useMemo(() => {
+    if (!id || !animais || !sanitaryAgendaV2 || !sanitaryAgendaAnimalsV2) return [];
+    const today = new Date().toISOString().slice(0, 10);
+    const lotAnimalIds = new Set(animais.map((animal) => animal.id));
+    const agendaIdsByLotAnimals = new Set(
+      sanitaryAgendaAnimalsV2
+        .filter((entry) => lotAnimalIds.has(entry.animal_id))
+        .map((entry) => entry.agenda_id),
+    );
+
+    return sanitaryAgendaV2
+      .filter(
+        (agenda) =>
+          !agenda.deleted_at &&
+          agenda.status === "programada" &&
+          !agenda.execution_evento_id &&
+          agenda.data_programada >= today &&
+          (agenda.lote_id === id || agendaIdsByLotAnimals.has(agenda.id)),
+      )
+      .sort((left, right) => left.data_programada.localeCompare(right.data_programada))
+      .map((agenda) => {
+        const itemKey =
+          readString(agenda.metadata, "itemKey") ??
+          readString(agenda.protocol_item_snapshot, "itemKey", "logicalItemKey");
+        const protocolLabel =
+          readString(agenda.metadata, "protocolName", "protocolLabel") ??
+          readString(agenda.protocol_item_snapshot, "protocolName", "protocolLabel") ??
+          "Protocolo sanitário";
+        return {
+          id: agenda.id,
+          label: itemKey
+            ? `${protocolLabel} · ${formatSanitaryProtocolItemLabelV2(itemKey)}`
+            : protocolLabel,
+          dateLabel: formatDate(agenda.data_programada),
+          detailLabel:
+            agenda.lote_id === id
+              ? "Planejamento do lote"
+              : "Planejamento vinculado a animal do lote",
+        };
+      });
+  }, [animais, id, sanitaryAgendaAnimalsV2, sanitaryAgendaV2]);
 
   if (!id || !lote) {
     return (
@@ -736,16 +811,20 @@ export default function LoteDetalhe() {
         <div className="mb-3">
           <h2 className="text-xl font-semibold text-foreground">Sanidade</h2>
         </div>
-        <SanitaryPrecheckPanelV2
-          scope="lote"
+        <SanitaryLotSummaryPanelV2
           lote={sanitaryPrecheckLoteV2}
+          loteId={lote.id}
+          loteLabel={lote.nome}
           animals={sanitaryPrecheckAnimalsV2}
           catalog={sanitaryProtocolCatalogV2}
           executedHistory={sanitaryExecutedHistoryV2}
+          futureAgenda={sanitaryFutureAgendaV2}
           isLoading={
             sanitaryProtocolCatalogV2 === undefined ||
             animais === undefined ||
-            sanitaryExecutedHistoryV2 === undefined
+            sanitaryExecutedHistoryV2 === undefined ||
+            sanitaryAgendaV2 === undefined ||
+            sanitaryAgendaAnimalsV2 === undefined
           }
         />
       </section>

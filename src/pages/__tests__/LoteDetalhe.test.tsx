@@ -302,16 +302,20 @@ describe("LoteDetalhe page", () => {
     expect(
       screen.getByRole("heading", { name: "Sanidade" }),
     ).toBeInTheDocument();
-    expect(screen.getByText("Pré-checagem sanitária")).toBeInTheDocument();
+    expect(screen.getByText("Resumo sanitário do lote")).toBeInTheDocument();
     expect(
-      screen.getByText("Dados insuficientes para avaliar o lote."),
+      screen.getByText("Lote sem animais para avaliar."),
     ).toBeInTheDocument();
     expect(
-      screen.getByText("Catálogo sanitário local ainda não sincronizado"),
+      screen.getByRole("link", { name: /Abrir Central Sanitária filtrada para este lote/i }),
+    ).toHaveAttribute("href", "/protocolos-sanitarios?tab=janelas&loteId=lote-1");
+    expect(screen.queryByText("Pré-checagem sanitária")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Ver detalhes técnicos da pré-checagem/i }),
     ).toBeInTheDocument();
   });
 
-  it("renderiza pre-checagem sanitaria v2 do lote com catalogo local e animais", () => {
+  it("renderiza Sanidade do lote como resumo compacto com catalogo local e animais", () => {
     const lote: Lote = {
       id: "lote-1",
       fazenda_id: "farm-1",
@@ -385,20 +389,30 @@ describe("LoteDetalhe page", () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByText("Pré-checagem sanitária")).toBeInTheDocument();
+    expect(screen.getByText("Resumo sanitário do lote")).toBeInTheDocument();
     expect(
       screen.getByRole("heading", { name: "Sanidade" }),
     ).toBeInTheDocument();
-    expect(screen.getByText("Brucelose B19")).toBeInTheDocument();
-    expect(screen.getAllByText("B19 — fêmeas de 3 a 8 meses")).toHaveLength(1);
     expect(
-      screen.getByText("Há fêmeas do lote dentro da janela B19 de 3 a 8 meses."),
+      screen.getByText("Nenhuma pendência crítica resumida para este lote."),
     ).toBeInTheDocument();
+    expect(screen.queryByText("Brucelose B19")).not.toBeInTheDocument();
+    expect(screen.queryByText("B19 — fêmeas de 3 a 8 meses")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Há fêmeas do lote dentro da janela B19 de 3 a 8 meses."),
+    ).not.toBeInTheDocument();
     expect(screen.queryByText(/^Animal /)).not.toBeInTheDocument();
     expect(screen.getAllByText("Em janela").length).toBeGreaterThan(0);
+    expect(screen.queryByText("Pré-checagem sanitária")).not.toBeInTheDocument();
+    expect(screen.queryByText("Preview manual sanitário")).not.toBeInTheDocument();
+    expect(screen.queryByText("Bloqueadas")).not.toBeInTheDocument();
+    expect(screen.queryByText("Não aplicáveis")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /criar agenda/i }))
       .not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /^registrar$/i }))
       .not.toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /Abrir Central Sanitária filtrada para este lote/i }),
+    ).toHaveAttribute("href", "/protocolos-sanitarios?tab=janelas&loteId=lote-1");
   });
 });

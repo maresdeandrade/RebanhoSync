@@ -567,7 +567,7 @@ describe("AnimalDetalhe", () => {
     expect(screen.getByText("Sem ECC factual registrado")).toBeInTheDocument();
   });
 
-  it("integra pre-checagem sanitaria v2 read-only na ficha do animal", async () => {
+  it("renderiza Sanidade como resumo compacto e deixa pre-checagem completa fechada", async () => {
     const user = userEvent.setup();
     const animal = makeAnimal({
       id: "animal-1",
@@ -599,12 +599,113 @@ describe("AnimalDetalhe", () => {
 
     await user.click(screen.getByRole("tab", { name: /sanidade/i }));
 
+    expect(screen.getByText("Resumo sanitário")).toBeInTheDocument();
+    expect(screen.getByText("Pendências principais")).toBeInTheDocument();
+    expect(screen.getByText("Histórico de entrada")).toBeInTheDocument();
+    expect(screen.getAllByText("Agenda futura").length).toBeGreaterThan(0);
+    expect(screen.queryByText("Preview manual sanitário")).not.toBeInTheDocument();
+    expect(screen.queryByText("Candidatas")).not.toBeInTheDocument();
+    expect(screen.queryByText("Bloqueadas")).not.toBeInTheDocument();
+    expect(screen.queryByText("Não aplicáveis")).not.toBeInTheDocument();
+    expect(screen.queryByText("Pré-checagem sanitária")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Planejar agenda/i }))
+      .not.toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole("button", {
+        name: /Ver detalhes técnicos da pré-checagem/i,
+      }),
+    );
+
     expect(screen.getByText("Pré-checagem sanitária")).toBeInTheDocument();
     expect(
       screen.getByText("Catálogo sanitário local ainda não sincronizado"),
     ).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /criar agenda/i }))
       .not.toBeInTheDocument();
+  });
+
+  it("exibe pendência documental B19 no resumo da aba Sanidade", async () => {
+    const user = userEvent.setup();
+    const animal = makeAnimal({
+      id: "animal-1",
+      identificacao: "BR-001",
+      sexo: "F",
+      especie: "bovino",
+      data_nascimento: "2024-01-01",
+    } as Partial<Animal> & Pick<Animal, "id" | "identificacao" | "sexo">);
+
+    setupMockLiveQuery({
+      animal,
+      sanitaryCatalog: {
+        protocols: [
+          {
+            id: "protocol-b19",
+            familyCode: "brucelose_b19",
+            name: "Brucelose B19",
+            scope: "global",
+            fazendaId: null,
+            speciesScope: {},
+            jurisdictionScope: {},
+            legalStatus: "manual_only",
+            version: 1,
+            status: "draft",
+            approvalStatus: "draft",
+            sourceRefsSnapshot: [],
+            metadata: {},
+          },
+        ],
+        items: [
+          {
+            id: "item-b19",
+            protocolId: "protocol-b19",
+            logicalItemKey: "b19_femeas_3_8_meses",
+            version: 1,
+            itemStatus: "draft",
+            actionType: "vacinacao",
+            productRequirementKind: "product_class",
+            productId: null,
+            productClass: "vacina_brucelose_b19",
+            productClassGroupId: null,
+            eligibilityRule: { species: ["bovino"], sex: "femea" },
+            operationalWindowRule: {},
+            doseRule: {},
+            routeRule: {},
+            boosterRule: {},
+            speciesAuthorization: {},
+            sourceRefsByField: {},
+            limitations: [],
+            snapshotTemplate: {},
+            allowsAgendaAuto: false,
+            requiresMvResponsavel: false,
+            status: "draft",
+          },
+        ],
+        productClassGroups: [],
+      },
+      sanitaryHistory: [],
+    });
+
+    render(
+      <MemoryRouter
+        initialEntries={["/animais/animal-1"]}
+        future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+      >
+        <Routes>
+          <Route path="/animais/:id" element={<AnimalDetalhe />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    await user.click(screen.getByRole("tab", { name: /sanidade/i }));
+
+    expect(screen.getByText("Fêmea adulta exige comprovação documental de B19.")).toBeInTheDocument();
+    expect(screen.getByText("Pendência documental")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Abrir Central Sanitária filtrada para este animal/i }))
+      .toHaveAttribute(
+        "href",
+        "/protocolos-sanitarios?tab=janelas&animalId=animal-1&loteId=lote-1",
+      );
   });
 
   it("exibe acao de registrar historico anterior sem usar marcar como vacinado", async () => {

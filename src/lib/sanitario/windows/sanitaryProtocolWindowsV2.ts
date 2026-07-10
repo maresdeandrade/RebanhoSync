@@ -57,6 +57,7 @@ export const EMPTY_SANITARY_OPERATIONAL_CONTEXT_V2: SanitaryOperationalContextV2
 
 export type SanitaryProtocolWindowFiltersV2 = {
   lotId: string;
+  animalId: string;
   category: string;
   sex: SexoEnum | "todos";
   animalStatus: AnimalStatusEnum | "todos";
@@ -206,6 +207,7 @@ export function buildSanitaryProtocolWindowV2(input: {
 
   const filters: SanitaryProtocolWindowFiltersV2 = {
     lotId: input.filters?.lotId ?? "todos",
+    animalId: input.filters?.animalId ?? "todos",
     category: input.filters?.category ?? "todas",
     sex: input.filters?.sex ?? "todos",
     animalStatus: input.filters?.animalStatus ?? "ativo",
@@ -300,6 +302,7 @@ export function buildSanitaryProtocolWindowV2(input: {
       return row;
     })
     .filter((row): row is SanitaryProtocolWindowRowV2 => row !== null)
+    .filter((row) => filters.animalId === "todos" || row.animalId === filters.animalId)
     .filter((row) => filters.lotId === "todos" || row.lotId === filters.lotId)
     .filter((row) => filters.category === "todas" || row.category === filters.category)
     .filter((row) => filters.sex === "todos" || row.sex === filters.sex)

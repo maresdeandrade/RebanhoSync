@@ -134,7 +134,7 @@ import {
 } from "@/lib/sanitario/compliance/clinicalProtocols";
 import { useAnimalWithdrawal } from "@/lib/sanitario/hooks/useWithdrawal";
 import { WithdrawalBadgePanel } from "@/components/sanitario/WithdrawalBadgePanel";
-import { SanitaryPrecheckPanelV2 } from "@/components/sanitario/SanitaryPrecheckPanelV2";
+import { SanitaryAnimalSummaryPanelV2 } from "@/components/sanitario/SanitaryAnimalSummaryPanelV2";
 import { getAnimalSanitaryExecutedHistoryV2 } from "@/lib/sanitario/history/sanitaryExecutedHistoryV2";
 import {
   createSanitaryEntryHistoryV2,
@@ -1160,6 +1160,23 @@ const AnimalDetalhe = () => {
       ),
     [animalSanitaryHistoryEvents],
   );
+  const sanitaryFutureAgenda = useMemo(() => {
+    const today = new Date().toISOString().split("T")[0];
+    return (agenda ?? [])
+      .filter(
+        (entry) =>
+          entry.item.dominio === "sanitario" &&
+          entry.item.status === "agendado" &&
+          entry.item.data_prevista >= today &&
+          !entry.item.deleted_at,
+      )
+      .map((entry) => ({
+        id: entry.item.id,
+        label: formatAgendaTipoLabel(entry.item.tipo),
+        dateLabel: formatDate(entry.item.data_prevista),
+        detailLabel: entry.scheduleLabel,
+      }));
+  }, [agenda]);
   const sanitaryCaseFlowSummary = useMemo(
     () =>
       buildSanitaryCaseFlowSummary({
@@ -3114,93 +3131,21 @@ const AnimalDetalhe = () => {
         </TabsContent>
 
         <TabsContent value="sanidade" className="mt-6">
-          <div className="space-y-4">
-            <Card className="shadow-none">
-              <CardHeader className="space-y-2">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                  <div>
-                    <CardTitle className="text-base">
-                      Histórico sanitário de entrada
-                    </CardTitle>
-                    <p className="text-sm text-muted-foreground">
-                      Registre histórico anterior à entrada do animal. Isso não
-                      registra execução da fazenda, não movimenta estoque e não
-                      calcula carência ativa.
-                    </p>
-                  </div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setShowEntryHistoryDialog(true)}
-                    disabled={!sanitaryProtocolCatalogV2}
-                  >
-                    Registrar histórico anterior
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent className="grid gap-3 md:grid-cols-2">
-                <div className="rounded-lg border border-border/70 bg-muted/10 p-3">
-                  <p className="text-sm font-semibold">
-                    Histórico externo documentado
-                  </p>
-                  {externalDocumentedHistory.length === 0 ? (
-                    <p className="mt-2 text-sm text-muted-foreground">
-                      Nenhum histórico externo documentado registrado.
-                    </p>
-                  ) : (
-                    <div className="mt-2 space-y-2">
-                      {externalDocumentedHistory.map((event) => (
-                        <div key={event.eventId} className="text-sm">
-                          <p className="font-medium">
-                            {event.itemKey
-                              ? formatSanitaryProtocolItemLabelV2(event.itemKey)
-                              : "Item sanitário"}
-                          </p>
-                          <p className="text-muted-foreground">
-                            {formatDate(event.executedAt)}
-                            {event.dateApproximate ? " · data aproximada" : ""}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                <div className="rounded-lg border border-border/70 bg-muted/10 p-3">
-                  <p className="text-sm font-semibold">Declarações</p>
-                  {declaredSanitaryHistory.length === 0 ? (
-                    <p className="mt-2 text-sm text-muted-foreground">
-                      Nenhuma declaração sanitária registrada.
-                    </p>
-                  ) : (
-                    <div className="mt-2 space-y-2">
-                      {declaredSanitaryHistory.map((event) => (
-                        <div key={event.eventId} className="text-sm">
-                          <p className="font-medium">
-                            {event.itemKey
-                              ? formatSanitaryProtocolItemLabelV2(event.itemKey)
-                              : "Item sanitário"}
-                          </p>
-                          <p className="text-muted-foreground">
-                            Declaração sem documento pode não liberar pendências
-                            críticas.
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-            <SanitaryPrecheckPanelV2
-              animal={sanitaryPrecheckAnimalV2}
-              catalog={sanitaryProtocolCatalogV2}
-              executedHistory={sanitaryExecutedHistoryV2}
-              isLoading={
-                sanitaryProtocolCatalogV2 === undefined ||
-                sanitaryExecutedHistoryV2 === undefined
-              }
-            />
-          </div>
+          <SanitaryAnimalSummaryPanelV2
+            animal={sanitaryPrecheckAnimalV2}
+            animalId={animal.id}
+            lotId={animal.lote_id}
+            catalog={sanitaryProtocolCatalogV2}
+            executedHistory={sanitaryExecutedHistoryV2}
+            externalDocumentedHistory={externalDocumentedHistory}
+            declaredHistory={declaredSanitaryHistory}
+            futureAgenda={sanitaryFutureAgenda}
+            isLoading={
+              sanitaryProtocolCatalogV2 === undefined ||
+              sanitaryExecutedHistoryV2 === undefined
+            }
+            onRegisterEntryHistory={() => setShowEntryHistoryDialog(true)}
+          />
         </TabsContent>
 
         <TabsContent value="agenda" className="mt-6">

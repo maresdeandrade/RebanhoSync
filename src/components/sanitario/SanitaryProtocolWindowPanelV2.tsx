@@ -17,6 +17,7 @@ import { formatSanitaryProtocolItemLabelV2 } from "@/lib/sanitario/catalog/sanit
 
 const initialFilters: SanitaryProtocolWindowFiltersV2 = {
   lotId: "todos",
+  animalId: "todos",
   category: "todas",
   sex: "todos",
   animalStatus: "ativo",
@@ -49,6 +50,10 @@ const summaryStatuses: Array<{
 
 type Props = {
   source: SanitaryProtocolWindowSourceV2 | undefined;
+  initialAnimalId?: string | null;
+  initialLotId?: string | null;
+  initialLotContextId?: string | null;
+  onClearInitialFilter?: () => void;
   onPlan: (
     rows: SanitaryProtocolWindowRowV2[],
     plannedFor: string,
@@ -60,7 +65,14 @@ function todayKey() {
   return new Date().toISOString().slice(0, 10);
 }
 
-export function SanitaryProtocolWindowPanelV2({ source, onPlan }: Props) {
+export function SanitaryProtocolWindowPanelV2({
+  source,
+  initialAnimalId,
+  initialLotId,
+  initialLotContextId,
+  onClearInitialFilter,
+  onPlan,
+}: Props) {
   const [protocolId, setProtocolId] = useState("");
   const [itemId, setItemId] = useState("");
   const [evaluatedAt, setEvaluatedAt] = useState(todayKey);
@@ -74,11 +86,25 @@ export function SanitaryProtocolWindowPanelV2({ source, onPlan }: Props) {
   const [planning, setPlanning] = useState(false);
   const protocols = source?.catalog.protocols ?? [];
   const items = source?.catalog.items.filter((item) => item.protocolId === protocolId) ?? [];
+  const filteredAnimal = source?.animals.find((entry) => entry.id === filters.animalId);
+  const filteredLot = source?.lots.find((entry) => entry.id === filters.lotId);
+  const lotContext = source?.lots.find((entry) => entry.id === initialLotContextId);
+  const filteredAnimalLabel =
+    filteredAnimal?.nome?.trim() || filteredAnimal?.identificacao || "animal selecionado";
+  const filteredLotLabel = filteredLot?.nome || "lote selecionado";
 
   useEffect(() => {
     setItemId("");
     setSelectedIds(new Set());
   }, [protocolId]);
+
+  useEffect(() => {
+    setFilters((current) => ({
+      ...current,
+      animalId: initialAnimalId || "todos",
+      lotId: initialAnimalId ? "todos" : initialLotId || "todos",
+    }));
+  }, [initialAnimalId, initialLotId]);
 
   useEffect(
     () => setSelectedIds(new Set()),
@@ -131,6 +157,11 @@ export function SanitaryProtocolWindowPanelV2({ source, onPlan }: Props) {
     }
   };
 
+  const clearInitialFilter = () => {
+    setFilters((current) => ({ ...current, animalId: "todos", lotId: "todos" }));
+    onClearInitialFilter?.();
+  };
+
   if (!source) {
     return <p className="text-sm text-muted-foreground">Carregando catálogo, rebanho e histórico sanitário local...</p>;
   }
@@ -140,6 +171,35 @@ export function SanitaryProtocolWindowPanelV2({ source, onPlan }: Props) {
       <div className="rounded-lg border border-border bg-muted/30 p-3 text-sm text-muted-foreground">
         Isso cria agenda futura, não execução. Produto real, dose, via, estoque e carência permanecem exclusivos do registro executado.
       </div>
+
+      {filters.animalId !== "todos" ? (
+        <div className="flex flex-col gap-3 rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="font-medium text-foreground">
+              Filtro ativo: animal {filteredAnimalLabel}
+            </p>
+            {lotContext ? (
+              <p className="text-muted-foreground">
+                Lote usado apenas como contexto auxiliar: {lotContext.nome}.
+              </p>
+            ) : null}
+          </div>
+          <Button type="button" size="sm" variant="outline" onClick={clearInitialFilter}>
+            Limpar filtro
+          </Button>
+        </div>
+      ) : null}
+
+      {filters.animalId === "todos" && filters.lotId !== "todos" ? (
+        <div className="flex flex-col gap-3 rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm sm:flex-row sm:items-center sm:justify-between">
+          <p className="font-medium text-foreground">
+            Filtro ativo: lote {filteredLotLabel}
+          </p>
+          <Button type="button" size="sm" variant="outline" onClick={clearInitialFilter}>
+            Limpar filtro
+          </Button>
+        </div>
+      ) : null}
 
       <section className="space-y-3 rounded-lg border border-border p-4" aria-label="Contexto operacional">
         <div>
