@@ -135,13 +135,22 @@ import {
 import { useAnimalWithdrawal } from "@/lib/sanitario/hooks/useWithdrawal";
 import { WithdrawalBadgePanel } from "@/components/sanitario/WithdrawalBadgePanel";
 import { SanitaryPrecheckPanelV2 } from "@/components/sanitario/SanitaryPrecheckPanelV2";
+import { getAnimalSanitaryExecutedHistoryV2 } from "@/lib/sanitario/history/sanitaryExecutedHistoryV2";
+import {
+  createSanitaryEntryHistoryV2,
+  type SanitaryEntryHistoryEvidenceTypeV2,
+  type SanitaryEntryHistorySourceV2,
+} from "@/lib/sanitario/history/sanitaryEntryHistoryV2";
 import {
   formatWeight,
   formatWeightPerDay,
   formatWeightValue,
 } from "@/lib/format/weight";
 import { resolveSanitaryAgendaItemScheduleMeta } from "@/lib/sanitario/infrastructure/agendaSchedule";
-import { readLocalSanitaryProtocolCatalogV2 } from "@/lib/sanitario/catalog/sanitaryProtocolCatalogV2";
+import {
+  formatSanitaryProtocolItemLabelV2,
+  readLocalSanitaryProtocolCatalogV2,
+} from "@/lib/sanitario/catalog/sanitaryProtocolCatalogV2";
 import { resolveCurrentWeight } from "@/lib/insights/pesoAtual";
 import { showError, showSuccess } from "@/utils/toast";
 import {
@@ -183,6 +192,16 @@ type ClinicalCaseClosureState = {
   notes: string;
 };
 
+type SanitaryEntryHistoryFormState = {
+  protocolId: string;
+  itemId: string;
+  occurredOn: string;
+  dateApproximate: boolean;
+  source: SanitaryEntryHistorySourceV2;
+  evidenceType: SanitaryEntryHistoryEvidenceTypeV2;
+  notes: string;
+};
+
 const resolveSanitaryCaseStatusOnAlertClosure = (
   closureReason: SanitaryAlertClosureReason,
 ) =>
@@ -208,6 +227,27 @@ const SANITARY_ALERT_CLOSURE_OPTIONS: Array<{
   },
   { value: "encerrada_clinicamente", label: "Encerrada clinicamente" },
   { value: "outro", label: "Outro desfecho" },
+];
+
+const SANITARY_ENTRY_HISTORY_SOURCE_OPTIONS: Array<{
+  value: SanitaryEntryHistorySourceV2;
+  label: string;
+}> = [
+  { value: "external_documented", label: "Documentado" },
+  { value: "external_declared", label: "Declarado" },
+  { value: "legacy_import", label: "Importado legado" },
+];
+
+const SANITARY_ENTRY_HISTORY_EVIDENCE_OPTIONS: Array<{
+  value: SanitaryEntryHistoryEvidenceTypeV2;
+  label: string;
+}> = [
+  { value: "certificado", label: "Certificado" },
+  { value: "gta", label: "GTA" },
+  { value: "atestado_veterinario", label: "Atestado veterinário" },
+  { value: "nota_documento", label: "Nota/documento" },
+  { value: "declaracao_produtor", label: "Declaração do produtor" },
+  { value: "outro", label: "Outro" },
 ];
 
 function formatDate(value: string | null | undefined) {
@@ -670,6 +710,18 @@ const AnimalDetalhe = () => {
   const [obitoCausa, setObitoCausa] = useState<CausaObitoEnum>("outro");
   const [obitoObs, setObitoObs] = useState("");
   const [showSanitaryAlertDialog, setShowSanitaryAlertDialog] = useState(false);
+  const [showEntryHistoryDialog, setShowEntryHistoryDialog] = useState(false);
+  const [isSavingEntryHistory, setIsSavingEntryHistory] = useState(false);
+  const [entryHistoryForm, setEntryHistoryForm] =
+    useState<SanitaryEntryHistoryFormState>({
+      protocolId: "",
+      itemId: "",
+      occurredOn: "",
+      dateApproximate: false,
+      source: "external_documented",
+      evidenceType: "certificado",
+      notes: "",
+    });
   const [showCloseSanitaryAlertDialog, setShowCloseSanitaryAlertDialog] =
     useState(false);
   const [isSubmittingSanitaryAlert, setIsSubmittingSanitaryAlert] =
@@ -1051,6 +1103,63 @@ const AnimalDetalhe = () => {
         : Promise.resolve(null),
     [animal?.fazenda_id],
   );
+  const sanitaryExecutedHistoryV2 = useLiveQuery(
+    () =>
+      animal && sanitaryProtocolCatalogV2
+        ? getAnimalSanitaryExecutedHistoryV2({
+            animalId: animal.id,
+            fazendaId: animal.fazenda_id,
+            catalog: sanitaryProtocolCatalogV2,
+          })
+        : Promise.resolve([]),
+    [animal?.id, animal?.fazenda_id, sanitaryProtocolCatalogV2],
+  );
+  const sanitaryEntryProtocolOptions = useMemo(
+    () =>
+      (sanitaryProtocolCatalogV2?.protocols ?? [])
+        .filter((protocol) => protocol.status !== "retired")
+        .sort((left, right) => left.name.localeCompare(right.name, "pt-BR")),
+    [sanitaryProtocolCatalogV2],
+  );
+  const sanitaryEntryItemOptions = useMemo(
+    () =>
+      (sanitaryProtocolCatalogV2?.items ?? [])
+        .filter((item) => item.protocolId === entryHistoryForm.protocolId)
+        .sort((left, right) =>
+          formatSanitaryProtocolItemLabelV2(left.logicalItemKey).localeCompare(
+            formatSanitaryProtocolItemLabelV2(right.logicalItemKey),
+            "pt-BR",
+          ),
+        ),
+    [entryHistoryForm.protocolId, sanitaryProtocolCatalogV2],
+  );
+  const animalSanitaryHistoryEvents = useMemo(
+    () =>
+      sanitaryExecutedHistoryV2?.find((entry) => entry.animalId === animal?.id)
+        ?.events ?? [],
+    [animal?.id, sanitaryExecutedHistoryV2],
+  );
+  const externalDocumentedHistory = useMemo(
+    () =>
+      animalSanitaryHistoryEvents.filter(
+        (event) =>
+          event.source === "external_documented" ||
+          (event.source === "legacy_import" &&
+            event.evidenceClass === "documented"),
+      ),
+    [animalSanitaryHistoryEvents],
+  );
+  const declaredSanitaryHistory = useMemo(
+    () =>
+      animalSanitaryHistoryEvents.filter(
+        (event) =>
+          event.source === "external_declared" ||
+          event.evidenceClass === "declared" ||
+          (event.source === "legacy_import" &&
+            event.evidenceClass !== "documented"),
+      ),
+    [animalSanitaryHistoryEvents],
+  );
   const sanitaryCaseFlowSummary = useMemo(
     () =>
       buildSanitaryCaseFlowSummary({
@@ -1304,6 +1413,51 @@ const AnimalDetalhe = () => {
       setIsClosingSociedade(false);
     }
   }, [animal, sociedadeAtiva]);
+
+  const handleRegisterEntryHistory = useCallback(async () => {
+    if (!animal || !sanitaryProtocolCatalogV2) return;
+    if (!entryHistoryForm.protocolId || !entryHistoryForm.itemId) {
+      showError("Selecione protocolo e item do histórico anterior.");
+      return;
+    }
+
+    setIsSavingEntryHistory(true);
+    try {
+      await createSanitaryEntryHistoryV2({
+        fazendaId: animal.fazenda_id,
+        animalId: animal.id,
+        protocolId: entryHistoryForm.protocolId,
+        itemId: entryHistoryForm.itemId,
+        occurredOn: entryHistoryForm.occurredOn || null,
+        dateApproximate: entryHistoryForm.dateApproximate,
+        source: entryHistoryForm.source,
+        evidenceClass:
+          entryHistoryForm.source === "external_documented"
+            ? "documented"
+            : entryHistoryForm.source === "external_declared"
+              ? "declared"
+              : "unknown",
+        evidenceType: entryHistoryForm.evidenceType,
+        notes: entryHistoryForm.notes,
+        catalog: sanitaryProtocolCatalogV2,
+      });
+      setShowEntryHistoryDialog(false);
+      setEntryHistoryForm({
+        protocolId: "",
+        itemId: "",
+        occurredOn: "",
+        dateApproximate: false,
+        source: "external_documented",
+        evidenceType: "certificado",
+        notes: "",
+      });
+      showSuccess("Histórico anterior registrado.");
+    } catch {
+      showError("Não foi possível registrar o histórico anterior.");
+    } finally {
+      setIsSavingEntryHistory(false);
+    }
+  }, [animal, entryHistoryForm, sanitaryProtocolCatalogV2]);
 
   const handleRegisterObito = useCallback(async () => {
     if (!animal) return;
@@ -2960,11 +3114,93 @@ const AnimalDetalhe = () => {
         </TabsContent>
 
         <TabsContent value="sanidade" className="mt-6">
-          <SanitaryPrecheckPanelV2
-            animal={sanitaryPrecheckAnimalV2}
-            catalog={sanitaryProtocolCatalogV2}
-            isLoading={sanitaryProtocolCatalogV2 === undefined}
-          />
+          <div className="space-y-4">
+            <Card className="shadow-none">
+              <CardHeader className="space-y-2">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <CardTitle className="text-base">
+                      Histórico sanitário de entrada
+                    </CardTitle>
+                    <p className="text-sm text-muted-foreground">
+                      Registre histórico anterior à entrada do animal. Isso não
+                      registra execução da fazenda, não movimenta estoque e não
+                      calcula carência ativa.
+                    </p>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setShowEntryHistoryDialog(true)}
+                    disabled={!sanitaryProtocolCatalogV2}
+                  >
+                    Registrar histórico anterior
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="grid gap-3 md:grid-cols-2">
+                <div className="rounded-lg border border-border/70 bg-muted/10 p-3">
+                  <p className="text-sm font-semibold">
+                    Histórico externo documentado
+                  </p>
+                  {externalDocumentedHistory.length === 0 ? (
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      Nenhum histórico externo documentado registrado.
+                    </p>
+                  ) : (
+                    <div className="mt-2 space-y-2">
+                      {externalDocumentedHistory.map((event) => (
+                        <div key={event.eventId} className="text-sm">
+                          <p className="font-medium">
+                            {event.itemKey
+                              ? formatSanitaryProtocolItemLabelV2(event.itemKey)
+                              : "Item sanitário"}
+                          </p>
+                          <p className="text-muted-foreground">
+                            {formatDate(event.executedAt)}
+                            {event.dateApproximate ? " · data aproximada" : ""}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div className="rounded-lg border border-border/70 bg-muted/10 p-3">
+                  <p className="text-sm font-semibold">Declarações</p>
+                  {declaredSanitaryHistory.length === 0 ? (
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      Nenhuma declaração sanitária registrada.
+                    </p>
+                  ) : (
+                    <div className="mt-2 space-y-2">
+                      {declaredSanitaryHistory.map((event) => (
+                        <div key={event.eventId} className="text-sm">
+                          <p className="font-medium">
+                            {event.itemKey
+                              ? formatSanitaryProtocolItemLabelV2(event.itemKey)
+                              : "Item sanitário"}
+                          </p>
+                          <p className="text-muted-foreground">
+                            Declaração sem documento pode não liberar pendências
+                            críticas.
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+            <SanitaryPrecheckPanelV2
+              animal={sanitaryPrecheckAnimalV2}
+              catalog={sanitaryProtocolCatalogV2}
+              executedHistory={sanitaryExecutedHistoryV2}
+              isLoading={
+                sanitaryProtocolCatalogV2 === undefined ||
+                sanitaryExecutedHistoryV2 === undefined
+              }
+            />
+          </div>
         </TabsContent>
 
         <TabsContent value="agenda" className="mt-6">
@@ -3212,6 +3448,191 @@ const AnimalDetalhe = () => {
               disabled={isClosingClinicalCase || !canConfirmClinicalCaseClosure}
             >
               {isClosingClinicalCase ? "Encerrando..." : "Confirmar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={showEntryHistoryDialog}
+        onOpenChange={setShowEntryHistoryDialog}
+      >
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Registrar histórico anterior</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+              Histórico anterior não registra execução da fazenda. Histórico
+              anterior não movimenta estoque. Declaração sem documento pode não
+              liberar pendências críticas.
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Protocolo</Label>
+                <Select
+                  value={entryHistoryForm.protocolId}
+                  onValueChange={(value) =>
+                    setEntryHistoryForm((prev) => ({
+                      ...prev,
+                      protocolId: value,
+                      itemId: "",
+                    }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o protocolo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {sanitaryEntryProtocolOptions.map((protocol) => (
+                      <SelectItem key={protocol.id} value={protocol.id}>
+                        {protocol.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Item</Label>
+                <Select
+                  value={entryHistoryForm.itemId}
+                  onValueChange={(value) =>
+                    setEntryHistoryForm((prev) => ({
+                      ...prev,
+                      itemId: value,
+                    }))
+                  }
+                  disabled={!entryHistoryForm.protocolId}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o item" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {sanitaryEntryItemOptions.map((item) => (
+                      <SelectItem key={item.id} value={item.id}>
+                        {formatSanitaryProtocolItemLabelV2(item.logicalItemKey)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="entry_history_date">Data, se conhecida</Label>
+                <Input
+                  id="entry_history_date"
+                  type="date"
+                  value={entryHistoryForm.occurredOn}
+                  onChange={(event) =>
+                    setEntryHistoryForm((prev) => ({
+                      ...prev,
+                      occurredOn: event.target.value,
+                    }))
+                  }
+                />
+              </div>
+              <label className="flex items-center gap-3 rounded-xl border border-border/70 bg-background/80 p-3 text-sm">
+                <input
+                  type="checkbox"
+                  checked={entryHistoryForm.dateApproximate}
+                  onChange={(event) =>
+                    setEntryHistoryForm((prev) => ({
+                      ...prev,
+                      dateApproximate: event.target.checked,
+                    }))
+                  }
+                />
+                Data aproximada
+              </label>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Origem</Label>
+                <Select
+                  value={entryHistoryForm.source}
+                  onValueChange={(value) =>
+                    setEntryHistoryForm((prev) => ({
+                      ...prev,
+                      source: value as SanitaryEntryHistorySourceV2,
+                    }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione a origem" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SANITARY_ENTRY_HISTORY_SOURCE_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Tipo de evidência</Label>
+                <Select
+                  value={entryHistoryForm.evidenceType}
+                  onValueChange={(value) =>
+                    setEntryHistoryForm((prev) => ({
+                      ...prev,
+                      evidenceType: value as SanitaryEntryHistoryEvidenceTypeV2,
+                    }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione a evidência" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SANITARY_ENTRY_HISTORY_EVIDENCE_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="entry_history_notes">Observação</Label>
+              <Textarea
+                id="entry_history_notes"
+                value={entryHistoryForm.notes}
+                onChange={(event) =>
+                  setEntryHistoryForm((prev) => ({
+                    ...prev,
+                    notes: event.target.value,
+                  }))
+                }
+                placeholder="Informe número do documento, emissor, vendedor ou contexto da entrada."
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowEntryHistoryDialog(false)}
+              disabled={isSavingEntryHistory}
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={() => void handleRegisterEntryHistory()}
+              disabled={
+                isSavingEntryHistory ||
+                !entryHistoryForm.protocolId ||
+                !entryHistoryForm.itemId
+              }
+            >
+              {isSavingEntryHistory ? "Registrando..." : "Registrar histórico anterior"}
             </Button>
           </DialogFooter>
         </DialogContent>

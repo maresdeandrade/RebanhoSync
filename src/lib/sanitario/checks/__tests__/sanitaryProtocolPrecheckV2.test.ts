@@ -143,6 +143,11 @@ function buildCatalog(): SanitaryProtocolCatalogReadModelV2 {
         requires_risk_area_overlay: true,
         requires_previous_dose: "raiva_primovac_dose1",
       },
+      operational_window_rule: {
+        anchor: "previous_dose",
+        min_offset_days: 30,
+        max_offset_days: 30,
+      },
     }),
     item(protocolId("raiva_herbivoros"), "raiva_reforco_anual_area_risco", {
       item_status: "condicional",
@@ -188,6 +193,27 @@ function buildCatalog(): SanitaryProtocolCatalogReadModelV2 {
       eligibility_rule: {
         species: ["bovino"],
       },
+      booster_rule: { recurrenceRule: { kind: "primovaccination_dose_1" } },
+    }),
+    item(protocolId("leptospirose"), "lepto_primovac_dose2", {
+      product_requirement_kind: "product_class",
+      product_class: "vacina_leptospirose",
+      eligibility_rule: { species: ["bovino"] },
+      operational_window_rule: {
+        anchor: "previous_dose",
+        min_offset_days: 21,
+        max_offset_days: 42,
+      },
+      booster_rule: { recurrenceRule: { kind: "primovaccination_dose_2" } },
+    }),
+    item(protocolId("leptospirose"), "lepto_reforco_anual_semestral", {
+      product_requirement_kind: "product_class",
+      product_class: "vacina_leptospirose",
+      eligibility_rule: { species: ["bovino"] },
+      operational_window_rule: { anchor: "last_execution" },
+      booster_rule: {
+        recurrenceRule: { kind: "annual_or_semester_by_risk" },
+      },
     }),
     item(protocolId("ibr_bvd"), "ibr_bvd_primovac_dose1", {
       item_status: "condicional",
@@ -197,6 +223,18 @@ function buildCatalog(): SanitaryProtocolCatalogReadModelV2 {
       eligibility_rule: {
         species: ["bovino"],
       },
+      booster_rule: { recurrenceRule: { kind: "primovaccination_dose_1" } },
+    }),
+    item(protocolId("ibr_bvd"), "ibr_bvd_primovac_dose2", {
+      product_requirement_kind: "product_class",
+      product_class: "vacina_ibr_bvd",
+      eligibility_rule: { species: ["bovino"] },
+      operational_window_rule: {
+        anchor: "previous_dose",
+        min_offset_days: 21,
+        max_offset_days: 42,
+      },
+      booster_rule: { recurrenceRule: { kind: "primovaccination_dose_2" } },
     }),
     item(protocolId("clostridioses"), "clostridial_primovac_dose1", {
       item_status: "condicional",
@@ -205,6 +243,28 @@ function buildCatalog(): SanitaryProtocolCatalogReadModelV2 {
       product_class: "vacina_clostridial",
       eligibility_rule: {
         species: ["bovino"],
+      },
+      booster_rule: { recurrenceRule: { kind: "primovaccination_dose_1" } },
+    }),
+    item(protocolId("clostridioses"), "clostridial_primovac_dose2", {
+      product_requirement_kind: "product_class",
+      product_class: "vacina_clostridial",
+      eligibility_rule: { species: ["bovino"] },
+      operational_window_rule: {
+        anchor: "previous_dose",
+        min_offset_days: 21,
+        max_offset_days: 42,
+      },
+      booster_rule: { recurrenceRule: { kind: "primovaccination_dose_2" } },
+    }),
+    item(protocolId("clostridioses"), "clostridial_reforco_anual", {
+      product_requirement_kind: "product_class",
+      product_class: "vacina_clostridial",
+      eligibility_rule: { species: ["bovino"] },
+      operational_window_rule: { anchor: "last_execution" },
+      booster_rule: {
+        recurrenceRule: { kind: "annual" },
+        tolerance: { days: 30 },
       },
     }),
   ].map(adaptSanitaryProtocolItemV2Row);
@@ -233,16 +293,46 @@ function resultByItem(
   animal: SanitaryPrecheckAnimalResumoV2,
   itemKey: string,
   today = "2026-05-01",
+  executedHistory?: Parameters<
+    typeof precheckSanitaryProtocolsForAnimalV2
+  >[0]["executedHistory"],
 ) {
   const precheck = precheckSanitaryProtocolsForAnimalV2({
     scope: "animal",
     animal,
     catalog,
+    executedHistory,
     today,
   });
   const result = precheck.results.find((entry) => entry.itemKey === itemKey);
   expect(result).toBeDefined();
   return result!;
+}
+
+function eventHistory(
+  familyCode: string | undefined,
+  itemKey: string | undefined,
+  executedAt: string,
+  overrides: Record<string, unknown> = {},
+) {
+  return [
+    {
+      animalId: baseAnimal.id,
+      events: [
+        {
+          eventId: "event-history-1",
+          protocolId: familyCode ? protocolId(familyCode) : undefined,
+          familyCode,
+          itemKey,
+          productClass: "vacina_teste",
+          productId: "product-1",
+          executedAt,
+          source: "event" as const,
+          ...overrides,
+        },
+      ],
+    },
+  ];
 }
 
 describe("precheckSanitaryProtocolsV2", () => {
@@ -300,7 +390,64 @@ describe("precheckSanitaryProtocolsV2", () => {
         { ...baseAnimal, nascimento: "2025-06-01" },
         "b19_femeas_3_8_meses",
       ).status,
-    ).toBe("overdue");
+    ).toBe("insufficient_data");
+  });
+
+  it("B19 adulta sem documento vira pendencia documental sem planejar agenda", () => {
+    const result = resultByItem(
+      buildCatalog(),
+      { ...baseAnimal, nascimento: "2024-01-01" },
+      "b19_femeas_3_8_meses",
+    );
+
+    expect(result.status).toBe("insufficient_data");
+    expect(result.documentaryPending).toBe(true);
+    expect(result.documentaryPendingReasons).toContain(
+      "Fêmea adulta exige comprovação documental de B19.",
+    );
+    expect(result.createsAgenda).toBe(false);
+  });
+
+  it("B19 adulta com historico externo documentado fica comprovada", () => {
+    const result = resultByItem(
+      buildCatalog(),
+      { ...baseAnimal, nascimento: "2024-01-01" },
+      "b19_femeas_3_8_meses",
+      "2026-05-01",
+      eventHistory(
+        "brucelose_b19",
+        "b19_femeas_3_8_meses",
+        "2024-06-01",
+        { source: "external_documented", evidenceClass: "documented" },
+      ),
+    );
+
+    expect(result.status).toBe("completed");
+    expect(result.documentaryPending).toBe(false);
+    expect(result.warnings).toContain(
+      "Histórico anterior não registra execução da fazenda nem movimenta estoque.",
+    );
+  });
+
+  it("B19 adulta apenas declarada continua com pendencia documental", () => {
+    const result = resultByItem(
+      buildCatalog(),
+      { ...baseAnimal, nascimento: "2024-01-01" },
+      "b19_femeas_3_8_meses",
+      "2026-05-01",
+      eventHistory(
+        "brucelose_b19",
+        "b19_femeas_3_8_meses",
+        "2024-06-01",
+        { source: "external_declared", evidenceClass: "declared" },
+      ),
+    );
+
+    expect(result.status).toBe("insufficient_data");
+    expect(result.documentaryPending).toBe(true);
+    expect(result.reasons).toContain(
+      "B19 informada apenas por declaração sem documento suficiente.",
+    );
   });
 
   it("aftosa permanece bloqueada/not_applicable", () => {
@@ -343,9 +490,173 @@ describe("precheckSanitaryProtocolsV2", () => {
     expect(dose1.status).toBe("in_action_window");
     expect(dose1.createsAgenda).toBe(false);
     expect(booster.status).toBe("insufficient_data");
-    expect(booster.reasons).toContain(
-      "Reforço depende de histórico explícito da dose anterior.",
+    expect(booster.reasons).toContain("Dose anterior não informada.");
+    expect(booster.missingExecutedHistory).toBe(true);
+  });
+
+  it.each([
+    ["dose 2 de clostridioses", "clostridial_primovac_dose2", "previous_dose"],
+    ["reforco anual de clostridioses", "clostridial_reforco_anual", "previous_execution"],
+    ["dose 2 de IBR/BVD", "ibr_bvd_primovac_dose2", "previous_dose"],
+    ["dose 2 de leptospirose", "lepto_primovac_dose2", "previous_dose"],
+    ["reforco de leptospirose", "lepto_reforco_anual_semestral", "previous_execution"],
+  ] as const)("%s sem historico retorna insufficient_data", (_label, itemKey, kind) => {
+    const result = resultByItem(buildCatalog(), baseAnimal, itemKey);
+
+    expect(result.status).toBe("insufficient_data");
+    expect(result.historyRequirementKind).toBe(kind);
+    expect(result.missingExecutedHistory).toBe(true);
+    expect(result.warnings).toContain(
+      "Dados insuficientes para planejar esta etapa.",
     );
+  });
+
+  it("dose 2 usa somente historico executado explicito da dose anterior", () => {
+    const precheck = precheckSanitaryProtocolsForAnimalV2({
+      scope: "animal",
+      animal: baseAnimal,
+      catalog: buildCatalog(),
+      executedHistory: eventHistory(
+        "clostridioses",
+        "clostridial_primovac_dose1",
+        "2026-04-01",
+      ),
+      today: "2026-05-01",
+    });
+    const result = precheck.results.find(
+      (entry) => entry.itemKey === "clostridial_primovac_dose2",
+    );
+
+    expect(result?.status).toBe("in_action_window");
+    expect(result?.missingExecutedHistory).toBe(false);
+  });
+
+  it.each([
+    ["clostridioses", "clostridial_primovac_dose1", "clostridial_primovac_dose2"],
+    ["ibr_bvd", "ibr_bvd_primovac_dose1", "ibr_bvd_primovac_dose2"],
+    ["leptospirose", "lepto_primovac_dose1", "lepto_primovac_dose2"],
+  ] as const)(
+    "%s dose 2 fica avaliavel com dose 1 executada",
+    (familyCode, previousItemKey, itemKey) => {
+      const result = resultByItem(
+        buildCatalog(),
+        baseAnimal,
+        itemKey,
+        "2026-05-01",
+        eventHistory(familyCode, previousItemKey, "2026-04-01"),
+      );
+
+      expect(result.status).toBe("in_action_window");
+      expect(result.missingExecutedHistory).toBe(false);
+    },
+  );
+
+  it("reforco anual usa evento anterior compativel e respeita a janela", () => {
+    const result = resultByItem(
+      buildCatalog(),
+      baseAnimal,
+      "clostridial_reforco_anual",
+      "2026-05-01",
+      eventHistory(
+        "clostridioses",
+        "clostridial_primovac_dose2",
+        "2025-05-01",
+      ),
+    );
+
+    expect(result.status).toBe("in_action_window");
+    expect(result.reasons).toContain(
+      "Etapa dentro da janela calculada pelo histórico executado.",
+    );
+  });
+
+  it("reforco de raiva 30d usa dose anterior executada e datada", () => {
+    const result = resultByItem(
+      buildCatalog(),
+      { ...baseAnimal, riskArea: true },
+      "raiva_primovac_reforco_30d",
+      "2026-05-01",
+      eventHistory(
+        "raiva_herbivoros",
+        "raiva_primovac_dose1",
+        "2026-04-01",
+      ),
+    );
+
+    expect(result.status).toBe("in_action_window");
+    expect(result.missingExecutedHistory).toBe(false);
+  });
+
+  it("historico parcial ou ambiguo nao libera etapa dependente", () => {
+    const partial = resultByItem(
+      buildCatalog(),
+      baseAnimal,
+      "clostridial_primovac_dose2",
+      "2026-05-01",
+      eventHistory(undefined, undefined, "2026-04-01"),
+    );
+    const incompatibleProtocol = resultByItem(
+      buildCatalog(),
+      baseAnimal,
+      "clostridial_primovac_dose2",
+      "2026-05-01",
+      eventHistory(
+        "clostridioses",
+        "clostridial_primovac_dose1",
+        "2026-04-01",
+        { protocolId: "protocol-incompativel" },
+      ),
+    );
+
+    expect(partial.status).toBe("insufficient_data");
+    expect(incompatibleProtocol.status).toBe("insufficient_data");
+  });
+
+  it("agenda futura nao conta como historico executado", () => {
+    const agendaHistory = eventHistory(
+      "clostridioses",
+      "clostridial_primovac_dose1",
+      "2026-04-01",
+      { source: "agenda" },
+    ) as unknown as Parameters<
+      typeof precheckSanitaryProtocolsForAnimalV2
+    >[0]["executedHistory"];
+    const result = resultByItem(
+      buildCatalog(),
+      baseAnimal,
+      "clostridial_primovac_dose2",
+      "2026-05-01",
+      agendaHistory,
+    );
+
+    expect(result.status).toBe("insufficient_data");
+    expect(result.missingExecutedHistory).toBe(true);
+  });
+
+  it("historico parcial do lote mantem dose dependente como insufficient_data", () => {
+    const secondAnimal = { ...baseAnimal, id: "animal-2" };
+    const precheck = precheckSanitaryProtocolsForLotV2({
+      scope: "lote",
+      lote: {
+        id: "lote-1",
+        fazendaId: baseAnimal.fazendaId,
+        animalIds: [baseAnimal.id, secondAnimal.id],
+      },
+      animals: [baseAnimal, secondAnimal],
+      catalog: buildCatalog(),
+      executedHistory: eventHistory(
+        "clostridioses",
+        "clostridial_primovac_dose1",
+        "2026-04-01",
+      ),
+      today: "2026-05-01",
+    });
+    const result = precheck.results.find(
+      (entry) => entry.itemKey === "clostridial_primovac_dose2",
+    );
+
+    expect(result?.status).toBe("insufficient_data");
+    expect(result?.missingExecutedHistory).toBe(true);
   });
 
   it("antiparasitario com ProductClassGroup nao autoriza execucao", () => {

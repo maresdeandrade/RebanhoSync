@@ -186,6 +186,7 @@ describe("LoteDetalhe page", () => {
       if (source.includes("readLocalSanitaryProtocolCatalogV2")) {
         return emptyCatalog;
       }
+      if (source.includes("getLotSanitaryExecutedHistoryV2")) return [];
       if (source.includes("loadRegulatorySurfaceSource")) {
         return {
           config: {
@@ -371,6 +372,7 @@ describe("LoteDetalhe page", () => {
       if (source.includes("readLocalSanitaryProtocolCatalogV2")) {
         return buildB19Catalog();
       }
+      if (source.includes("getLotSanitaryExecutedHistoryV2")) return [];
       if (source.includes("loadRegulatorySurfaceSource")) return null;
       return [];
     }) as typeof useLiveQuery);
@@ -387,8 +389,12 @@ describe("LoteDetalhe page", () => {
     expect(
       screen.getByRole("heading", { name: "Sanidade" }),
     ).toBeInTheDocument();
-    expect(screen.getByText("Brucelose B19 · B19 — fêmeas de 3 a 8 meses"))
-      .toBeInTheDocument();
+    expect(screen.getByText("Brucelose B19")).toBeInTheDocument();
+    expect(screen.getAllByText("B19 — fêmeas de 3 a 8 meses")).toHaveLength(1);
+    expect(
+      screen.getByText("Há fêmeas do lote dentro da janela B19 de 3 a 8 meses."),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/^Animal /)).not.toBeInTheDocument();
     expect(screen.getAllByText("Em janela").length).toBeGreaterThan(0);
     expect(screen.queryByRole("button", { name: /criar agenda/i }))
       .not.toBeInTheDocument();

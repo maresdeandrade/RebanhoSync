@@ -8,6 +8,7 @@ import type { SanitaryEligibilityStatus } from "@/lib/sanitario/eligibility/sani
 import {
   precheckSanitaryProtocolsForAnimalV2,
   precheckSanitaryProtocolsForLotV2,
+  type SanitaryExecutedHistoryV2,
   type SanitaryPrecheckAnimalResumoV2,
   type SanitaryPrecheckLoteResumoV2,
   type SanitaryProtocolPrecheckResultV2,
@@ -42,6 +43,7 @@ export type SanitaryPrecheckPanelV2Props = {
   scope?: "animal";
   animal: SanitaryPrecheckAnimalResumoV2 | null;
   catalog: SanitaryProtocolCatalogReadModelV2 | null | undefined;
+  executedHistory?: SanitaryExecutedHistoryV2[];
   isLoading?: boolean;
   today?: string;
   className?: string;
@@ -50,6 +52,7 @@ export type SanitaryPrecheckPanelV2Props = {
   lote: SanitaryPrecheckLoteResumoV2 | null;
   animals?: SanitaryPrecheckAnimalResumoV2[] | null;
   catalog: SanitaryProtocolCatalogReadModelV2 | null | undefined;
+  executedHistory?: SanitaryExecutedHistoryV2[];
   isLoading?: boolean;
   today?: string;
   className?: string;
@@ -85,6 +88,7 @@ export function SanitaryPrecheckPanelV2({
   catalog,
   isLoading = false,
   today = new Date().toISOString().slice(0, 10),
+  executedHistory,
   className,
   ...props
 }: SanitaryPrecheckPanelV2Props) {
@@ -99,6 +103,7 @@ export function SanitaryPrecheckPanelV2({
             lote,
             animals: lotAnimals,
             catalog,
+            executedHistory,
             today,
           })
         : scope === "animal" && animal
@@ -106,6 +111,7 @@ export function SanitaryPrecheckPanelV2({
               scope: "animal",
               animal,
               catalog,
+              executedHistory,
               today,
             })
           : null
@@ -188,7 +194,7 @@ export function SanitaryPrecheckPanelV2({
           />
         ) : null}
 
-        {!isLoading && results.length > 0 ? (
+        {!isLoading && scope === "animal" && results.length > 0 ? (
           <div className="grid gap-3">
             {results.map((result) => (
               <article
@@ -209,7 +215,9 @@ export function SanitaryPrecheckPanelV2({
                   </Badge>
                 </div>
 
-                {result.blockers.length > 0 || result.warnings.length > 0 ? (
+                {result.blockers.length > 0 ||
+                result.documentaryPendingReasons.length > 0 ||
+                result.warnings.length > 0 ? (
                   <div className="mt-3 grid gap-2 text-xs text-muted-foreground">
                     {result.blockers.slice(0, 2).map((blocker) => (
                       <p
@@ -218,6 +226,15 @@ export function SanitaryPrecheckPanelV2({
                       >
                         <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                         <span>{blocker}</span>
+                      </p>
+                    ))}
+                    {result.documentaryPendingReasons.slice(0, 2).map((reason) => (
+                      <p
+                        key={reason}
+                        className="flex gap-2 rounded-md border border-amber-200 bg-amber-50 p-2 text-amber-900"
+                      >
+                        <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                        <span>{reason}</span>
                       </p>
                     ))}
                     {result.warnings.slice(0, 2).map((warning) => (

@@ -35,6 +35,17 @@ export type CreateManualSanitaryAgendaInputV2 = {
     productClass?: string | null;
     productClassGroupId?: string | null;
     productClassGroupName?: string | null;
+    operationalContext?: {
+      rabiesRiskArea: boolean | null;
+      sanitaryCadence: "annual" | "semiannual" | null;
+      reproductiveContext: "prepartum" | "peripartum" | null;
+      management:
+        | "pre_weaning"
+        | "rearing"
+        | "pre_feedlot"
+        | "deferred_pasture"
+        | null;
+    };
   };
   plannedFor: string;
   notes?: string;
@@ -254,6 +265,7 @@ export function buildManualSanitaryAgendaRecordsV2(
       productClass: input.source.productClass ?? null,
       productClassGroupId: input.source.productClassGroupId ?? null,
       productClassGroupName: input.source.productClassGroupName ?? null,
+      operationalContext: input.source.operationalContext ?? null,
     },
     janela_inicio: plannedFor,
     janela_fim: null,

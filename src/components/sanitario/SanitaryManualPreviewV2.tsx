@@ -1,5 +1,12 @@
 import { useState } from "react";
-import { AlertTriangle, CalendarPlus, ClipboardList, HelpCircle, ShieldAlert } from "lucide-react";
+import {
+  AlertTriangle,
+  CalendarPlus,
+  ChevronDown,
+  ClipboardList,
+  HelpCircle,
+  ShieldAlert,
+} from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -147,7 +154,11 @@ function getVisibleWarnings(result: SanitaryProtocolPrecheckResultV2) {
 }
 
 function canPlanManualAgenda(item: SanitaryProtocolPrecheckResultV2) {
-  return item.blockers.length === 0 && (isCandidate(item) || item.status === "overdue");
+  return (
+    item.blockers.length === 0 &&
+    !item.missingExecutedHistory &&
+    (isCandidate(item) || item.status === "overdue")
+  );
 }
 
 function PreviewResultCard({
@@ -159,6 +170,7 @@ function PreviewResultCard({
   canPlanAgenda: boolean;
   onPlanAgenda: (item: SanitaryProtocolPrecheckResultV2) => void;
 }) {
+  const [planningExpanded, setPlanningExpanded] = useState(false);
   const mainText = getMainText(item);
   const visibleWarnings = getVisibleWarnings(item);
 
@@ -191,16 +203,30 @@ function PreviewResultCard({
       ) : null}
 
       {canPlanAgenda ? (
-        <div className="mt-3 flex justify-end">
+        <div className="mt-2 text-xs">
           <Button
             type="button"
             size="sm"
-            variant="outline"
-            onClick={() => onPlanAgenda(item)}
+            variant="ghost"
+            aria-expanded={planningExpanded}
+            onClick={() => setPlanningExpanded((current) => !current)}
           >
-            <CalendarPlus className="h-4 w-4" />
-            Planejar agenda
+            <ChevronDown className="h-4 w-4" />
+            Ver opções de planejamento
           </Button>
+          {planningExpanded ? (
+            <div className="mt-3 flex justify-end">
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => onPlanAgenda(item)}
+              >
+                <CalendarPlus className="h-4 w-4" />
+                Planejar agenda
+              </Button>
+            </div>
+          ) : null}
         </div>
       ) : null}
     </article>
@@ -248,14 +274,18 @@ export function SanitaryManualPreviewV2({
           {sections.map((section) => {
             const Icon = section.icon;
             const protocolGroups = buildProtocolGroups(section.items);
+            const collapsedByDefault =
+              precheck.scope === "lote" &&
+              (section.key === "blocked" || section.key === "notApplicable");
 
             return (
-              <section
+              <details
                 key={section.key}
+                open={collapsedByDefault ? undefined : true}
                 className="rounded-lg border border-border/70 bg-background p-3"
                 aria-label={section.title}
               >
-                <div className="mb-3 flex items-start justify-between gap-3">
+                <summary className="flex cursor-pointer list-none items-start justify-between gap-3">
                   <div>
                     <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
                       <Icon className="h-4 w-4 text-primary" />
@@ -266,34 +296,36 @@ export function SanitaryManualPreviewV2({
                     </p>
                   </div>
                   <Badge variant="secondary">{section.items.length}</Badge>
-                </div>
+                </summary>
 
-                {protocolGroups.length === 0 ? (
-                  <p className="rounded-md bg-muted/30 p-2 text-xs text-muted-foreground">
-                    {section.emptyLabel}
-                  </p>
-                ) : (
-                  <div className="grid gap-3">
-                    {protocolGroups.map(([protocolName, items]) => (
-                      <div key={protocolName} className="grid gap-2">
-                        <p className="text-xs font-semibold uppercase text-muted-foreground">
-                          {protocolName}
-                        </p>
-                        {items.map((item) => (
-                          <PreviewResultCard
-                            key={`${item.protocolId}:${item.itemKey}`}
-                            item={item}
-                            canPlanAgenda={
-                              canCreateManualAgenda && canPlanManualAgenda(item)
-                            }
-                            onPlanAgenda={setSelectedItem}
-                          />
-                        ))}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </section>
+                <div className="mt-3">
+                  {protocolGroups.length === 0 ? (
+                    <p className="rounded-md bg-muted/30 p-2 text-xs text-muted-foreground">
+                      {section.emptyLabel}
+                    </p>
+                  ) : (
+                    <div className="grid gap-3">
+                      {protocolGroups.map(([protocolName, items]) => (
+                        <div key={protocolName} className="grid gap-2">
+                          <p className="text-xs font-semibold uppercase text-muted-foreground">
+                            {protocolName}
+                          </p>
+                          {items.map((item) => (
+                            <PreviewResultCard
+                              key={`${item.protocolId}:${item.itemKey}`}
+                              item={item}
+                              canPlanAgenda={
+                                canCreateManualAgenda && canPlanManualAgenda(item)
+                              }
+                              onPlanAgenda={setSelectedItem}
+                            />
+                          ))}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </details>
             );
           })}
         </CardContent>

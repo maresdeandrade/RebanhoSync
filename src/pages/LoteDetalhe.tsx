@@ -55,6 +55,7 @@ import { useLoteWithdrawal } from "@/lib/sanitario/hooks/useWithdrawal";
 import { WithdrawalBadgePanel } from "@/components/sanitario/WithdrawalBadgePanel";
 import { SanitaryPrecheckPanelV2 } from "@/components/sanitario/SanitaryPrecheckPanelV2";
 import { readLocalSanitaryProtocolCatalogV2 } from "@/lib/sanitario/catalog/sanitaryProtocolCatalogV2";
+import { getLotSanitaryExecutedHistoryV2 } from "@/lib/sanitario/history/sanitaryExecutedHistoryV2";
 
 const EMPTY_ARRAY: never[] = [];
 
@@ -208,6 +209,18 @@ export default function LoteDetalhe() {
         ? readLocalSanitaryProtocolCatalogV2()
         : Promise.resolve(null),
     [lote?.fazenda_id],
+  );
+  const sanitaryExecutedHistoryV2 = useLiveQuery(
+    () =>
+      lote && animais && sanitaryProtocolCatalogV2
+        ? getLotSanitaryExecutedHistoryV2({
+            loteId: lote.id,
+            fazendaId: lote.fazenda_id,
+            animalIds: animais.map((animal) => animal.id),
+            catalog: sanitaryProtocolCatalogV2,
+          })
+        : Promise.resolve([]),
+    [lote?.id, lote?.fazenda_id, animais, sanitaryProtocolCatalogV2],
   );
   const regulatorySurfaceSource = useLiveQuery(
     () => (lote ? loadRegulatorySurfaceSource(lote.fazenda_id) : null),
@@ -728,8 +741,11 @@ export default function LoteDetalhe() {
           lote={sanitaryPrecheckLoteV2}
           animals={sanitaryPrecheckAnimalsV2}
           catalog={sanitaryProtocolCatalogV2}
+          executedHistory={sanitaryExecutedHistoryV2}
           isLoading={
-            sanitaryProtocolCatalogV2 === undefined || animais === undefined
+            sanitaryProtocolCatalogV2 === undefined ||
+            animais === undefined ||
+            sanitaryExecutedHistoryV2 === undefined
           }
         />
       </section>

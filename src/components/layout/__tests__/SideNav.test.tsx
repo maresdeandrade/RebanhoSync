@@ -76,7 +76,10 @@ describe("SideNav", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /configuracoes/i }));
 
-    expect(screen.getByText("Protocolos")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /sanitário/i })).toHaveAttribute(
+      "href",
+      "/protocolos-sanitarios",
+    );
     expect(screen.queryByText("Dashboard")).not.toBeInTheDocument();
     expect(screen.queryByText("Reconciliacao")).not.toBeInTheDocument();
   });
@@ -103,12 +106,11 @@ describe("SideNav", () => {
     fireEvent.click(screen.getByRole("button", { name: /configuracoes/i }));
 
     expect(screen.getByText("Dashboard")).toBeInTheDocument();
-    expect(screen.getByText("Protocolos")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /ajustes/i })).toHaveAttribute(
       "href",
       "/configuracoes",
     );
-    expect(screen.getByRole("link", { name: /protocolos/i })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: /sanitário/i })).toHaveAttribute(
       "href",
       "/protocolos-sanitarios",
     );

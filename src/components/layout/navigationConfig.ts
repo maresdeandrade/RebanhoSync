@@ -65,6 +65,12 @@ export const navigationItems: NavigationItem[] = [
   },
   { icon: Calendar, label: "Agenda", path: "/agenda", section: "operacao" },
   {
+    icon: Syringe,
+    label: "Sanitário",
+    path: "/protocolos-sanitarios",
+    section: "operacao",
+  },
+  {
     icon: Activity,
     label: "Reproducao",
     path: "/reproducao",
@@ -120,7 +126,6 @@ export const navigationItems: NavigationItem[] = [
         path: "/dashboard",
         modes: ["completo"],
       },
-      { icon: Syringe, label: "Protocolos", path: "/protocolos-sanitarios" },
       {
         icon: AlertCircle,
         label: "Reconciliacao",

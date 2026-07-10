@@ -16,6 +16,7 @@ import type {
   SanitarioCaso,
 } from "@/lib/offline/types";
 import { buildClinicalProtocolEventPayload } from "@/lib/sanitario/compliance/clinicalProtocols";
+import type { SanitaryExecutedHistoryV2 } from "@/lib/sanitario/checks/sanitaryProtocolPrecheckV2";
 import { validateClinicalCaseClosureInput } from "@/pages/animalDetalheClinicalCase";
 import AnimalDetalhe, { AnimalSanitaryCasesPanel } from "@/pages/AnimalDetalhe";
 import type { SanitaryProtocolCatalogReadModelV2 } from "@/lib/sanitario/catalog/sanitaryProtocolCatalogV2";
@@ -174,6 +175,7 @@ describe("AnimalDetalhe", () => {
     sanitaryCases?: unknown;
     activeSanitaryCase?: unknown;
     sanitaryCatalog?: SanitaryProtocolCatalogReadModelV2 | null;
+    sanitaryHistory?: SanitaryExecutedHistoryV2[];
   }
 
   const setupMockLiveQuery = (mockResponses: MockLiveQueryResponses) => {
@@ -213,6 +215,9 @@ describe("AnimalDetalhe", () => {
           return mockResponses.activeSanitaryCase ?? null;
         }
         return mockResponses.sanitaryCases ?? [];
+      }
+      if (str.includes("getAnimalSanitaryExecutedHistoryV2")) {
+        return mockResponses.sanitaryHistory ?? [];
       }
       if (str.includes("readLocalSanitaryProtocolCatalogV2")) {
         return mockResponses.sanitaryCatalog ?? null;
@@ -578,6 +583,7 @@ describe("AnimalDetalhe", () => {
         items: [],
         productClassGroups: [],
       },
+      sanitaryHistory: [],
     });
 
     render(
@@ -599,6 +605,88 @@ describe("AnimalDetalhe", () => {
     ).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /criar agenda/i }))
       .not.toBeInTheDocument();
+  });
+
+  it("exibe acao de registrar historico anterior sem usar marcar como vacinado", async () => {
+    const user = userEvent.setup();
+    const animal = makeAnimal({
+      id: "animal-1",
+      identificacao: "BR-001",
+      sexo: "F",
+      especie: "bovino",
+    } as Partial<Animal> & Pick<Animal, "id" | "identificacao" | "sexo">);
+
+    setupMockLiveQuery({
+      animal,
+      sanitaryCatalog: {
+        protocols: [
+          {
+            id: "protocol-b19",
+            familyCode: "brucelose_b19",
+            name: "Brucelose B19",
+            scope: "global",
+            fazendaId: null,
+            speciesScope: {},
+            jurisdictionScope: {},
+            legalStatus: "manual_only",
+            version: 1,
+            status: "draft",
+            approvalStatus: "draft",
+            sourceRefsSnapshot: [],
+            metadata: {},
+          },
+        ],
+        items: [
+          {
+            id: "item-b19",
+            protocolId: "protocol-b19",
+            logicalItemKey: "b19_femeas_3_8_meses",
+            version: 1,
+            itemStatus: "draft",
+            actionType: "vacinacao",
+            productRequirementKind: "product_class",
+            productId: null,
+            productClass: "vacina_brucelose_b19",
+            productClassGroupId: null,
+            eligibilityRule: { species: ["bovino"], sex: "femea" },
+            operationalWindowRule: {},
+            doseRule: {},
+            routeRule: {},
+            boosterRule: {},
+            speciesAuthorization: {},
+            sourceRefsByField: {},
+            limitations: [],
+            snapshotTemplate: {},
+            allowsAgendaAuto: false,
+            requiresMvResponsavel: false,
+            status: "draft",
+          },
+        ],
+        productClassGroups: [],
+      },
+      sanitaryHistory: [],
+    });
+
+    render(
+      <MemoryRouter
+        initialEntries={["/animais/animal-1"]}
+        future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+      >
+        <Routes>
+          <Route path="/animais/:id" element={<AnimalDetalhe />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    await user.click(screen.getByRole("tab", { name: /sanidade/i }));
+    await user.click(
+      screen.getByRole("button", { name: /Registrar histórico anterior/i }),
+    );
+
+    expect(screen.getByRole("dialog")).toHaveTextContent(
+      "Histórico anterior não registra execução da fazenda",
+    );
+    expect(screen.queryByText(/Marcar como vacinado/i)).not.toBeInTheDocument();
   });
 
   it("diferencia estado atual de autorizacao comercial", async () => {

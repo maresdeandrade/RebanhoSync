@@ -1,99 +1,166 @@
-import { BookOpenCheck, ShieldCheck } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useLiveQuery } from "dexie-react-hooks";
+import { BookOpenCheck, CalendarClock, History, ShieldCheck } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 import { EmptyState } from "@/components/EmptyState";
+import { SanitaryLocalAgendaPanelV2 } from "@/components/sanitario/SanitaryLocalAgendaPanelV2";
+import { SanitaryProtocolWindowPanelV2 } from "@/components/sanitario/SanitaryProtocolWindowPanelV2";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageIntro } from "@/components/ui/page-intro";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
-
-const readOnlyGuards = [
-  "Leitura local/offline via Dexie.",
-  "Sem criacao de agenda.",
-  "Sem registro de evento.",
-  "Sem movimentacao de estoque.",
-  "Sem carencia ativa.",
-  "Sem liberacao operacional.",
-];
+import {
+  cancelLocalSanitaryAgendaV2,
+  listLocalSanitaryAgendasV2,
+  rescheduleLocalSanitaryAgendaV2,
+} from "@/lib/sanitario/agenda/sanitaryLocalAgendaManagementV2";
+import {
+  createGroupedManualSanitaryAgendasV2,
+  listSanitaryDocumentaryPendenciesV2,
+  loadSanitaryProtocolWindowSourceV2,
+  type SanitaryOperationalContextV2,
+  type SanitaryProtocolWindowRowV2,
+} from "@/lib/sanitario/windows/sanitaryProtocolWindowsV2";
 
 const ProtocolosSanitarios = () => {
   const navigate = useNavigate();
   const { activeFarmId } = useAuth();
+  const localAgenda = useLiveQuery(
+    () => (activeFarmId ? listLocalSanitaryAgendasV2(activeFarmId) : []),
+    [activeFarmId],
+  );
+  const windowSource = useLiveQuery(
+    () => (activeFarmId ? loadSanitaryProtocolWindowSourceV2(activeFarmId) : undefined),
+    [activeFarmId],
+  );
+  const documentaryPendencies = listSanitaryDocumentaryPendenciesV2({
+    source: windowSource,
+    evaluatedAt: new Date().toISOString().slice(0, 10),
+  });
 
   if (!activeFarmId) {
     return (
       <div className="container mx-auto space-y-5 pb-10">
         <EmptyState
           icon={ShieldCheck}
-          title="Fazenda nao selecionada"
-          action={{
-            label: "Selecionar fazenda",
-            onClick: () => navigate("/select-fazenda"),
-          }}
+          title="Fazenda não selecionada"
+          action={{ label: "Selecionar fazenda", onClick: () => navigate("/select-fazenda") }}
         />
       </div>
     );
   }
 
+  const reschedule = async (agendaId: string, plannedFor: string) => {
+    try {
+      await rescheduleLocalSanitaryAgendaV2({ agendaId, fazendaId: activeFarmId, plannedFor });
+      toast.success("Agenda sanitária reagendada.");
+    } catch {
+      toast.error("Não foi possível reagendar esta agenda.");
+    }
+  };
+
+  const cancel = async (agendaId: string) => {
+    try {
+      await cancelLocalSanitaryAgendaV2({ agendaId, fazendaId: activeFarmId });
+      toast.success("Agenda sanitária cancelada.");
+    } catch {
+      toast.error("Não foi possível cancelar esta agenda.");
+    }
+  };
+
+  const planSelected = async (
+    rows: SanitaryProtocolWindowRowV2[],
+    plannedFor: string,
+    operationalContext: SanitaryOperationalContextV2,
+  ) => {
+    try {
+      const results = await createGroupedManualSanitaryAgendasV2({
+        rows,
+        fazendaId: activeFarmId,
+        plannedFor,
+        operationalContext,
+      });
+      toast.success(
+        results.length === 1
+          ? "Agenda sanitária criada."
+          : `${results.length} agendas sanitárias agrupadas foram criadas.`,
+      );
+    } catch {
+      toast.error("Não foi possível planejar as agendas selecionadas.");
+    }
+  };
+
   return (
     <div className="container mx-auto space-y-5 pb-10">
       <PageIntro
-        eyebrow="Sanitario"
-        title="Protocolos sanitarios"
-        description="Superficie somente leitura do catalogo sanitario v2. As interfaces legadas de pack, conformidade e protocolos editaveis foram ocultadas para evitar uso de dados nao canonicos."
-        meta={
-          <>
-            <StatusBadge tone="neutral">Somente leitura</StatusBadge>
-            <StatusBadge tone="info">Catalogo v2</StatusBadge>
-          </>
-        }
-        actions={
-          <Button onClick={() => navigate("/protocolos-sanitarios/catalogo-v2")}>
-            Abrir catalogo sanitario v2
-          </Button>
-        }
+        eyebrow="Sanitário"
+        title="Central Sanitária"
+        description="Acompanhe planejamentos sanitários locais e consulte as fontes separadas de catálogo e histórico executado."
+        meta={<><StatusBadge tone="info">Local e offline</StatusBadge><StatusBadge tone="neutral">Execução bloqueada</StatusBadge></>}
       />
 
-      <section className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-        {readOnlyGuards.map((guard) => (
-          <div
-            key={guard}
-            className="rounded-lg border border-border bg-muted/30 px-3 py-2 text-sm font-medium text-muted-foreground"
-          >
-            {guard}
-          </div>
-        ))}
-      </section>
+      <Tabs defaultValue="janelas" className="space-y-4">
+        <TabsList className="h-auto flex-wrap justify-start">
+          <TabsTrigger value="janelas"><CalendarClock className="mr-2 h-4 w-4" />Janelas sanitárias</TabsTrigger>
+          <TabsTrigger value="agenda"><CalendarClock className="mr-2 h-4 w-4" />Agenda sanitária</TabsTrigger>
+          <TabsTrigger value="historico"><History className="mr-2 h-4 w-4" />Histórico sanitário</TabsTrigger>
+          <TabsTrigger value="catalogo"><BookOpenCheck className="mr-2 h-4 w-4" />Catálogo sanitário</TabsTrigger>
+          <TabsTrigger value="conformidade" disabled>Conformidade</TabsTrigger>
+        </TabsList>
 
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-3">
-            <BookOpenCheck className="h-5 w-5 text-primary" />
-            <div>
-              <CardTitle>Catalogo Sanitario v2</CardTitle>
-              <CardDescription>
-                Protocolos, itens e grupos técnicos locais, sem automacao
-                operacional.
-              </CardDescription>
-            </div>
+        <TabsContent value="janelas">
+          <SanitaryProtocolWindowPanelV2 source={windowSource} onPlan={planSelected} />
+        </TabsContent>
+
+        <TabsContent value="agenda">
+          <SanitaryLocalAgendaPanelV2 items={localAgenda} onReschedule={reschedule} onCancel={cancel} />
+        </TabsContent>
+
+        <TabsContent value="catalogo">
+          <Card>
+            <CardHeader><CardTitle>Catálogo sanitário v2</CardTitle><CardDescription>Consulta local de protocolos, itens e grupos técnicos. Catálogo é regra e não comprova execução.</CardDescription></CardHeader>
+            <CardContent><Button onClick={() => navigate("/protocolos-sanitarios/catalogo-v2")}>Abrir catálogo sanitário</Button></CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="historico">
+          <div className="grid gap-4">
+            <Card>
+              <CardHeader><CardTitle>Histórico sanitário executado</CardTitle><CardDescription>O histórico factual vem de eventos registrados. Agendas abertas, fechadas ou canceladas não são prova de execução.</CardDescription></CardHeader>
+              <CardContent><Button variant="outline" onClick={() => navigate("/eventos")}>Abrir eventos</Button></CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>Pendências documentais</CardTitle>
+                <CardDescription>Comprovações necessárias antes de tratar histórico externo como evidência suficiente. Não cria agenda automática.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {documentaryPendencies.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Nenhuma pendência documental sanitária encontrada nos filtros locais.</p>
+                ) : (
+                  documentaryPendencies.map((pendency) => (
+                    <div key={`${pendency.animalId}:${pendency.protocolLabel}:${pendency.itemLabel}`} className="rounded-lg border border-border/70 bg-background p-3">
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                        <div>
+                          <p className="font-medium">{pendency.protocolLabel} · {pendency.itemLabel}</p>
+                          <p className="text-sm text-muted-foreground">{pendency.lotLabel}</p>
+                          <p className="mt-1 text-sm text-amber-700">{pendency.reasons[0]}</p>
+                        </div>
+                        <Button size="sm" variant="outline" asChild>
+                          <Link to={pendency.animalHref}>Abrir animal</Link>
+                        </Button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </CardContent>
+            </Card>
           </div>
-        </CardHeader>
-        <CardContent>
-          <Button
-            variant="outline"
-            onClick={() => navigate("/protocolos-sanitarios/catalogo-v2")}
-          >
-            Consultar catalogo
-          </Button>
-        </CardContent>
-      </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

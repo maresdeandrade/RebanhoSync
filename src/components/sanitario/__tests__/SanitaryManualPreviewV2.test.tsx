@@ -184,6 +184,8 @@ function result(
     reasons: ["Motivo resumido."],
     blockers: [],
     warnings: [],
+    historyRequirementKind: null,
+    missingExecutedHistory: false,
     createsAgenda: false,
     createsEvent: false,
     createsStockMovement: false,
@@ -247,6 +249,10 @@ describe("SanitaryManualPreviewV2", () => {
     expect(screen.getByText("Preview manual sanitário")).toBeInTheDocument();
     expect(screen.getByText("Lote")).toBeInTheDocument();
     expect(screen.getByText("Brucelose B19")).toBeInTheDocument();
+    expect(screen.getByLabelText("Candidatas")).toHaveAttribute("open");
+    expect(screen.getByLabelText("Pendências de dados")).toHaveAttribute("open");
+    expect(screen.getByLabelText("Bloqueadas")).not.toHaveAttribute("open");
+    expect(screen.getByLabelText("Não aplicáveis")).not.toHaveAttribute("open");
   });
 
   it("B19 em janela aparece como candidata", () => {
@@ -259,12 +265,17 @@ describe("SanitaryManualPreviewV2", () => {
     expect(within(candidates).getAllByText("Em janela").length).toBeGreaterThan(0);
   });
 
-  it("botao Planejar agenda aparece em item candidato", () => {
+  it("botao Planejar agenda aparece apenas no item candidato expandido", () => {
     renderManualPreview([result({ itemLabel: "Item candidato" })], {
       withAgendaTarget: true,
     });
 
     const candidates = screen.getByLabelText("Candidatas");
+    expect(within(candidates).queryByRole("button", { name: /Planejar agenda/i }))
+      .not.toBeInTheDocument();
+    fireEvent.click(
+      within(candidates).getByText("Ver opções de planejamento"),
+    );
     expect(within(candidates).getByRole("button", { name: /Planejar agenda/i }))
       .toBeInTheDocument();
   });
@@ -285,6 +296,7 @@ describe("SanitaryManualPreviewV2", () => {
     const candidates = screen.getByLabelText("Candidatas");
     expect(within(overdue).getByText("Revisão atrasada")).toBeInTheDocument();
     expect(within(overdue).getByText("Atrasado")).toBeInTheDocument();
+    fireEvent.click(within(overdue).getByText("Ver opções de planejamento"));
     expect(within(overdue).getByRole("button", { name: /Planejar agenda/i }))
       .toBeInTheDocument();
     expect(within(candidates).queryByText("Revisão atrasada"))
@@ -331,6 +343,48 @@ describe("SanitaryManualPreviewV2", () => {
 
     expect(screen.queryByRole("button", { name: /Planejar agenda/i }))
       .not.toBeInTheDocument();
+    expect(screen.queryByText("Ver opções de planejamento"))
+      .not.toBeInTheDocument();
+  });
+
+  it("dependencia de historico ausente nao oferece planejamento", () => {
+    renderManualPreview(
+      [
+        result({
+          itemLabel: "Dose 2 sem histórico",
+          status: "insufficient_data",
+          reasons: ["Dose anterior não informada."],
+          historyRequirementKind: "previous_dose",
+          missingExecutedHistory: true,
+        }),
+      ],
+      { withAgendaTarget: true },
+    );
+
+    expect(screen.getByText("Dose anterior não informada.")).toBeInTheDocument();
+    expect(screen.queryByText("Ver opções de planejamento"))
+      .not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Planejar agenda/i }))
+      .not.toBeInTheDocument();
+  });
+
+  it("flag estruturada de historico ausente bloqueia planejamento mesmo com status candidato", () => {
+    renderManualPreview(
+      [
+        result({
+          itemLabel: "Dose dependente inconsistente",
+          status: "in_action_window",
+          historyRequirementKind: "previous_dose",
+          missingExecutedHistory: true,
+        }),
+      ],
+      { withAgendaTarget: true },
+    );
+
+    expect(screen.queryByText("Ver opções de planejamento"))
+      .not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Planejar agenda/i }))
+      .not.toBeInTheDocument();
   });
 
   it("modal informa limites da agenda e exige data planejada e confirmacao", async () => {
@@ -357,6 +411,7 @@ describe("SanitaryManualPreviewV2", () => {
       { withAgendaTarget: true, createAgenda },
     );
 
+    fireEvent.click(screen.getByText("Ver opções de planejamento"));
     fireEvent.click(screen.getByRole("button", { name: /Planejar agenda/i }));
 
     expect(screen.getByText("Agenda é uma intenção futura. Não registra execução, não movimenta estoque e não calcula carência."))
@@ -433,6 +488,7 @@ describe("SanitaryManualPreviewV2", () => {
       { withAgendaTarget: true, createAgenda },
     );
 
+    fireEvent.click(screen.getByText("Ver opções de planejamento"));
     fireEvent.click(screen.getByRole("button", { name: /Planejar agenda/i }));
 
     expect(

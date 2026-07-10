@@ -2,7 +2,7 @@
 import "@testing-library/jest-dom";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it } from "vitest";
 
@@ -14,7 +14,10 @@ import {
   type JsonRecord,
   type SanitaryProtocolCatalogReadModelV2,
 } from "@/lib/sanitario/catalog/sanitaryProtocolCatalogV2";
-import type { SanitaryPrecheckAnimalResumoV2 } from "@/lib/sanitario/checks/sanitaryProtocolPrecheckV2";
+import type {
+  SanitaryExecutedHistoryV2,
+  SanitaryPrecheckAnimalResumoV2,
+} from "@/lib/sanitario/checks/sanitaryProtocolPrecheckV2";
 import type { SanitaryEligibilityStatus } from "@/lib/sanitario/eligibility/sanitaryEligibility";
 
 const protocol = (familyCode: string, overrides: JsonRecord = {}): JsonRecord => ({
@@ -115,6 +118,32 @@ function buildCatalog(): SanitaryProtocolCatalogReadModelV2 {
   };
 }
 
+function buildSequentialCatalog(): SanitaryProtocolCatalogReadModelV2 {
+  return {
+    protocols: [protocol("clostridioses")].map(adaptSanitaryProtocolV2Row),
+    items: [
+      item("protocol-clostridioses", "clostridial_primovac_dose1", {
+        product_requirement_kind: "product_class",
+        product_class: "vacina_clostridial",
+        eligibility_rule: { species: ["bovino"] },
+        booster_rule: { recurrenceRule: { kind: "primovaccination_dose_1" } },
+      }),
+      item("protocol-clostridioses", "clostridial_primovac_dose2", {
+        product_requirement_kind: "product_class",
+        product_class: "vacina_clostridial",
+        eligibility_rule: { species: ["bovino"] },
+        operational_window_rule: {
+          anchor: "previous_dose",
+          min_offset_days: 21,
+          max_offset_days: 42,
+        },
+        booster_rule: { recurrenceRule: { kind: "primovaccination_dose_2" } },
+      }),
+    ].map(adaptSanitaryProtocolItemV2Row),
+    productClassGroups: [],
+  };
+}
+
 const baseAnimal: SanitaryPrecheckAnimalResumoV2 = {
   id: "animal-1",
   especie: "bovino",
@@ -127,12 +156,14 @@ const baseAnimal: SanitaryPrecheckAnimalResumoV2 = {
 function renderPanel(
   animal: SanitaryPrecheckAnimalResumoV2 | null,
   catalog = buildCatalog(),
+  executedHistory?: SanitaryExecutedHistoryV2[],
 ) {
   return render(
     <MemoryRouter>
       <SanitaryPrecheckPanelV2
         animal={animal}
         catalog={catalog}
+        executedHistory={executedHistory}
         today="2026-05-01"
       />
     </MemoryRouter>,
@@ -171,8 +202,8 @@ describe("SanitaryPrecheckPanelV2", () => {
         "Consulta baseada no catálogo sanitário v2 local. Não cria agenda nem evento.",
       ),
     ).toBeInTheDocument();
-    expect(screen.getByText("Brucelose B19 · B19 — fêmeas de 3 a 8 meses"))
-      .toBeInTheDocument();
+    expect(screen.getByText("Brucelose B19")).toBeInTheDocument();
+    expect(screen.getAllByText("B19 — fêmeas de 3 a 8 meses")).toHaveLength(1);
     expect(screen.getAllByText("Em janela").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Dados insuficientes").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Não aplicável").length).toBeGreaterThan(0);
@@ -241,9 +272,52 @@ describe("SanitaryPrecheckPanelV2", () => {
   it("lote com animais usa precheck de lote e exibe status em portugues", () => {
     renderLotPanel([baseAnimal]);
 
-    expect(screen.getByText("Brucelose B19 · B19 — fêmeas de 3 a 8 meses"))
-      .toBeInTheDocument();
+    expect(screen.getByText("Brucelose B19")).toBeInTheDocument();
+    expect(screen.getAllByText("B19 — fêmeas de 3 a 8 meses")).toHaveLength(1);
+    expect(
+      screen.getByText("Há fêmeas do lote dentro da janela B19 de 3 a 8 meses."),
+    ).toBeInTheDocument();
     expect(screen.getAllByText("Em janela").length).toBeGreaterThan(0);
+  });
+
+  it("preview libera planejamento da dose 2 somente com evento estruturado", () => {
+    const firstRender = renderPanel(baseAnimal, buildSequentialCatalog());
+    const pending = screen.getByLabelText("Pendências de dados");
+    const pendingDose2 = within(pending)
+      .getByText("Primovacinação — dose 2")
+      .closest("article");
+    expect(pendingDose2).not.toBeNull();
+    expect(within(pendingDose2!).getByText("Dados insuficientes"))
+      .toBeInTheDocument();
+    expect(within(pendingDose2!).queryByText("Ver opções de planejamento"))
+      .not.toBeInTheDocument();
+    firstRender.unmount();
+
+    renderPanel(baseAnimal, buildSequentialCatalog(), [
+      {
+        animalId: baseAnimal.id,
+        events: [
+          {
+            eventId: "event-dose1",
+            protocolId: "protocol-clostridioses",
+            familyCode: "clostridioses",
+            itemKey: "clostridial_primovac_dose1",
+            productClass: "vacina_clostridial",
+            productId: "product-1",
+            executedAt: "2026-04-01",
+            source: "event",
+          },
+        ],
+      },
+    ]);
+    const candidates = screen.getByLabelText("Candidatas");
+    const eligibleDose2 = within(candidates)
+      .getByText("Primovacinação — dose 2")
+      .closest("article");
+    expect(eligibleDose2).not.toBeNull();
+    expect(within(eligibleDose2!).getByText("Em janela")).toBeInTheDocument();
+    expect(within(eligibleDose2!).getByText("Ver opções de planejamento"))
+      .toBeInTheDocument();
   });
 
   it("nao renderiza CTA operacional nem chaves tecnicas como titulo principal", () => {
