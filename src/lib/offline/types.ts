@@ -1185,7 +1185,12 @@ export interface SanitarioProdutoCarenciaRuleLocalV2 {
   deleted_at: string | null;
 }
 
-export type SanitarioAgendaV2Status = "programada" | "fechada" | "cancelada" | "dispensada";
+export type SanitarioAgendaV2Status =
+  | "programada"
+  | "executada"
+  | "fechada"
+  | "cancelada"
+  | "dispensada";
 export type SanitarioAgendaAnimalV2Status = "planejado" | "executado" | "nao_executado";
 export type SanitarioAgendaClosureV2Type =
   | "executed_with_event"

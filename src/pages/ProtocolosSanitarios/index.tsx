@@ -19,6 +19,10 @@ import {
   rescheduleLocalSanitaryAgendaV2,
 } from "@/lib/sanitario/agenda/sanitaryLocalAgendaManagementV2";
 import {
+  executeSanitaryAgendaV2,
+  type ExecuteSanitaryAgendaInputV2,
+} from "@/lib/sanitario/execution/sanitaryAgendaExecutionV2";
+import {
   createGroupedManualSanitaryAgendasV2,
   listSanitaryDocumentaryPendenciesV2,
   loadSanitaryProtocolWindowSourceV2,
@@ -37,7 +41,7 @@ function readCentralSanitaryTab(value: string | null): CentralSanitaryTab {
 const ProtocolosSanitarios = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { activeFarmId } = useAuth();
+  const { activeFarmId, user } = useAuth();
   const initialTab = readCentralSanitaryTab(searchParams.get("tab"));
   const initialAnimalId = searchParams.get("animalId");
   const initialLotId = searchParams.get("loteId");
@@ -115,13 +119,37 @@ const ProtocolosSanitarios = () => {
     }
   };
 
+  const executeAgenda = async (payloads: Array<Omit<ExecuteSanitaryAgendaInputV2, "fazendaId">>) => {
+    try {
+      const results = [];
+      for (const payload of payloads) {
+        results.push(
+          await executeSanitaryAgendaV2({
+            ...payload,
+            fazendaId: activeFarmId,
+          }),
+        );
+      }
+      const stockMovements = results.filter((result) => result.createsStockMovement).length;
+      toast.success(
+        results.length === 1
+          ? stockMovements > 0
+            ? "Evento sanitário registrado com baixa de estoque."
+            : "Evento sanitário registrado."
+          : `${results.length} eventos sanitários registrados.`,
+      );
+    } catch {
+      toast.error("Não foi possível executar esta agenda sanitária.");
+    }
+  };
+
   return (
     <div className="container mx-auto space-y-5 pb-10">
       <PageIntro
         eyebrow="Sanitário"
         title="Central Sanitária"
         description="Acompanhe planejamentos sanitários locais e consulte as fontes separadas de catálogo e histórico executado."
-        meta={<><StatusBadge tone="info">Local e offline</StatusBadge><StatusBadge tone="neutral">Execução bloqueada</StatusBadge></>}
+        meta={<><StatusBadge tone="info">Local e offline</StatusBadge><StatusBadge tone="neutral">Execução explícita</StatusBadge></>}
       />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
@@ -145,7 +173,13 @@ const ProtocolosSanitarios = () => {
         </TabsContent>
 
         <TabsContent value="agenda">
-          <SanitaryLocalAgendaPanelV2 items={localAgenda} onReschedule={reschedule} onCancel={cancel} />
+          <SanitaryLocalAgendaPanelV2
+            items={localAgenda}
+            defaultResponsibleName={user?.email ?? user?.id ?? null}
+            onReschedule={reschedule}
+            onCancel={cancel}
+            onExecute={executeAgenda}
+          />
         </TabsContent>
 
         <TabsContent value="catalogo">

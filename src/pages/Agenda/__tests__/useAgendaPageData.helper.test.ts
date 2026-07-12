@@ -11,6 +11,8 @@ import type {
   Lote,
   ProtocoloSanitario,
   ProtocoloSanitarioItem,
+  SanitarioAgendaAnimalLocalV2,
+  SanitarioAgendaLocalV2,
 } from "@/lib/offline/types";
 
 function recordWithDeletedAt<T extends { deleted_at?: string | null }>(
@@ -100,6 +102,57 @@ describe("normalizeAgendaPageData", () => {
     expect(result.gestos).toEqual([gesture]);
     expect(result.officialTemplates).toEqual([template]);
     expect(result.officialTemplateItems).toEqual([templateItem]);
+  });
+
+  it("adapta agenda sanitária v2 local como item da Agenda global", () => {
+    const sanitaryAgenda = {
+      id: "san-agenda-1",
+      fazenda_id: "farm-1",
+      status: "programada",
+      dedup_key: "dedup-1",
+      client_id: "client-1",
+      client_op_id: "op-1",
+      client_tx_id: null,
+      client_recorded_at: "2026-07-01T10:00:00.000Z",
+      server_received_at: "2026-07-01T10:00:00.000Z",
+      protocolo_id: "protocol-1",
+      protocol_item_version_id: "item-version-1",
+      protocol_item_snapshot: { protocolName: "Brucelose B19", itemLabel: "Dose anual" },
+      data_programada: "2026-07-12",
+      lote_id: "lot-1",
+      produto_snapshot: {},
+      produto_classe: "vacina_ibr_bvd",
+      execution_evento_id: null,
+      metadata: {},
+      created_at: "2026-07-01T10:00:00.000Z",
+      updated_at: "2026-07-01T10:00:00.000Z",
+      deleted_at: null,
+    } as SanitarioAgendaLocalV2;
+    const lot = { id: "lot-1", nome: "Lote recria", deleted_at: null } as Lote;
+    const agendaAnimal = {
+      agenda_id: "san-agenda-1",
+      animal_id: "animal-1",
+    } as SanitarioAgendaAnimalLocalV2;
+
+    const result = normalizeAgendaPageData({
+      sanitaryAgendasV2: [sanitaryAgenda],
+      sanitaryAgendaAnimalsV2: [agendaAnimal],
+      lotes: [lot],
+    });
+
+    expect(result.itens).toHaveLength(1);
+    expect(result.itens[0]).toMatchObject({
+      id: "sanitario-v2:san-agenda-1",
+      dominio: "sanitario",
+      tipo: "Dose anual",
+      status: "agendado",
+      data_prevista: "2026-07-12",
+      source_ref: expect.objectContaining({
+        agenda_v2_id: "san-agenda-1",
+        protocolo: "Brucelose B19",
+        produto: "Vacina IBR/BVD",
+      }),
+    });
   });
 
   it("returns empty arrays and null config when sources are absent", () => {

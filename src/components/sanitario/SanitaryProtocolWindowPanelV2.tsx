@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import { CalendarPlus, ShieldX } from "lucide-react";
+import { CalendarPlus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SanitaryProtocolWindowTableV2 } from "@/components/sanitario/SanitaryProtocolWindowTableV2";
+import type { SanitaryWindowSortKeyV2 } from "@/components/sanitario/SanitaryProtocolWindowTableV2";
 import {
   buildSanitaryProtocolWindowV2,
   EMPTY_SANITARY_OPERATIONAL_CONTEXT_V2,
@@ -36,17 +37,28 @@ const eligibilityOptions: Array<[SanitaryEligibilityStatus, string]> = [
 ];
 
 const summaryStatuses: Array<{
+  key: SanitaryWindowStatusCardFilterV2;
   label: string;
   match: (row: SanitaryProtocolWindowRowV2) => boolean;
 }> = [
-  { label: "Em janela", match: (row) => row.status === "in_action_window" && !row.alreadyPlanned },
-  { label: "Próximos", match: (row) => ["eligible_soon", "not_yet_eligible", "near_deadline"].includes(row.status) && !row.alreadyPlanned },
-  { label: "Atrasados", match: (row) => row.status === "overdue" && !row.alreadyPlanned },
-  { label: "Dados insuficientes", match: (row) => row.status === "insufficient_data" },
-  { label: "Bloqueados", match: (row) => row.blockers.length > 0 },
-  { label: "Não aplicáveis", match: (row) => row.status === "not_applicable" },
-  { label: "Já planejados", match: (row) => row.alreadyPlanned },
+  { key: "in_action_window", label: "Em janela", match: (row) => row.status === "in_action_window" && !row.alreadyPlanned },
+  { key: "upcoming", label: "Próximos", match: (row) => ["eligible_soon", "not_yet_eligible", "near_deadline"].includes(row.status) && !row.alreadyPlanned },
+  { key: "overdue", label: "Atrasados", match: (row) => row.status === "overdue" && !row.alreadyPlanned },
+  { key: "insufficient_data", label: "Dados insuficientes", match: (row) => row.status === "insufficient_data" },
+  { key: "blocked", label: "Bloqueados", match: (row) => row.blockers.length > 0 },
+  { key: "not_applicable", label: "Não aplicáveis", match: (row) => row.status === "not_applicable" },
+  { key: "already_planned", label: "Já planejados", match: (row) => row.alreadyPlanned },
 ];
+
+type SanitaryWindowStatusCardFilterV2 =
+  | "todos"
+  | "in_action_window"
+  | "upcoming"
+  | "overdue"
+  | "insufficient_data"
+  | "blocked"
+  | "not_applicable"
+  | "already_planned";
 
 type Props = {
   source: SanitaryProtocolWindowSourceV2 | undefined;
@@ -65,6 +77,48 @@ function todayKey() {
   return new Date().toISOString().slice(0, 10);
 }
 
+function matchesStatusCardFilter(
+  row: SanitaryProtocolWindowRowV2,
+  filter: SanitaryWindowStatusCardFilterV2,
+) {
+  if (filter === "todos") return true;
+  return summaryStatuses.find((summary) => summary.key === filter)?.match(row) ?? true;
+}
+
+function sortValue(row: SanitaryProtocolWindowRowV2, key: SanitaryWindowSortKeyV2) {
+  if (key === "animal") return row.identification;
+  if (key === "lote") return row.lotLabel;
+  if (key === "sexo") return `${row.sexLabel} ${row.ageLabel}`;
+  if (key === "idade") return row.ageLabel;
+  if (key === "categoria") return row.categoryLabel;
+  if (key === "status") {
+    if (row.alreadyPlanned) return "Já planejado";
+    if (row.blockers.length > 0) return "Bloqueado";
+    return row.status;
+  }
+  if (key === "motivo") return row.reason;
+  return row.plannedFor ?? "";
+}
+
+function sortRows(
+  rows: SanitaryProtocolWindowRowV2[],
+  key: SanitaryWindowSortKeyV2,
+  direction: "asc" | "desc",
+) {
+  const factor = direction === "asc" ? 1 : -1;
+  return rows
+    .map((row, index) => ({ row, index }))
+    .sort((left, right) => {
+      const comparison = sortValue(left.row, key).localeCompare(
+        sortValue(right.row, key),
+        "pt-BR",
+        { numeric: true, sensitivity: "base" },
+      );
+      return comparison === 0 ? left.index - right.index : comparison * factor;
+    })
+    .map((entry) => entry.row);
+}
+
 export function SanitaryProtocolWindowPanelV2({
   source,
   initialAnimalId,
@@ -78,6 +132,10 @@ export function SanitaryProtocolWindowPanelV2({
   const [evaluatedAt, setEvaluatedAt] = useState(todayKey);
   const [plannedFor, setPlannedFor] = useState(todayKey);
   const [filters, setFilters] = useState(initialFilters);
+  const [statusCardFilter, setStatusCardFilter] =
+    useState<SanitaryWindowStatusCardFilterV2>("todos");
+  const [sortKey, setSortKey] = useState<SanitaryWindowSortKeyV2>("animal");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [operationalContext, setOperationalContext] =
     useState<SanitaryOperationalContextV2>(
       EMPTY_SANITARY_OPERATIONAL_CONTEXT_V2,
@@ -140,6 +198,24 @@ export function SanitaryProtocolWindowPanelV2({
     [evaluatedAt, filters, itemId, operationalContext, protocolId, source],
   );
   const selectedRows = result?.rows.filter((row) => selectedIds.has(row.animalId) && row.canSelect) ?? [];
+  const visibleRows = useMemo(
+    () =>
+      result
+        ? sortRows(
+            result.rows.filter((row) => matchesStatusCardFilter(row, statusCardFilter)),
+            sortKey,
+            sortDirection,
+          )
+        : [],
+    [result, sortDirection, sortKey, statusCardFilter],
+  );
+  const visibleEligibleRows = visibleRows.filter((row) => row.canSelect);
+  const visibleSelectedRows = visibleRows.filter(
+    (row) => row.canSelect && selectedIds.has(row.animalId),
+  );
+  const allVisibleEligibleSelected =
+    visibleEligibleRows.length > 0 &&
+    visibleEligibleRows.every((row) => selectedIds.has(row.animalId));
   const categories = Array.from(
     new Map(
       (categoryResult?.rows ?? []).map((row) => [row.category, row.categoryLabel]),
@@ -147,10 +223,10 @@ export function SanitaryProtocolWindowPanelV2({
   );
 
   const planSelected = async () => {
-    if (selectedRows.length === 0 || !plannedFor) return;
+    if (visibleSelectedRows.length === 0 || !plannedFor) return;
     setPlanning(true);
     try {
-      await onPlan(selectedRows, plannedFor, operationalContext);
+      await onPlan(visibleSelectedRows, plannedFor, operationalContext);
       setSelectedIds(new Set());
     } finally {
       setPlanning(false);
@@ -160,6 +236,28 @@ export function SanitaryProtocolWindowPanelV2({
   const clearInitialFilter = () => {
     setFilters((current) => ({ ...current, animalId: "todos", lotId: "todos" }));
     onClearInitialFilter?.();
+  };
+
+  const toggleSort = (key: SanitaryWindowSortKeyV2) => {
+    setSortKey((current) => {
+      if (current === key) {
+        setSortDirection((direction) => (direction === "asc" ? "desc" : "asc"));
+        return current;
+      }
+      setSortDirection("asc");
+      return key;
+    });
+  };
+
+  const selectAllVisible = (checked: boolean) => {
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      for (const row of visibleEligibleRows) {
+        if (checked) next.add(row.animalId);
+        else next.delete(row.animalId);
+      }
+      return next;
+    });
   };
 
   if (!source) {
@@ -232,12 +330,56 @@ export function SanitaryProtocolWindowPanelV2({
       ) : result ? (
         <>
           <section className="grid gap-2 sm:grid-cols-2 lg:grid-cols-7" aria-label="Resumo das janelas sanitárias">
-            {summaryStatuses.map((summary) => <div key={summary.label} className="rounded-lg border border-border p-3"><div className="text-2xl font-semibold">{result.rows.filter(summary.match).length}</div><div className="text-xs text-muted-foreground">{summary.label}</div></div>)}
+            {summaryStatuses.map((summary) => {
+              const active = statusCardFilter === summary.key;
+              return (
+                <button
+                  key={summary.label}
+                  type="button"
+                  className={`rounded-lg border p-3 text-left transition ${active ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"}`}
+                  onClick={() => setStatusCardFilter(summary.key)}
+                >
+                  <div className="text-2xl font-semibold">{result.rows.filter(summary.match).length}</div>
+                  <div className="text-xs text-muted-foreground">{summary.label}</div>
+                </button>
+              );
+            })}
           </section>
-          <SanitaryProtocolWindowTableV2 rows={result.rows} selectedIds={selectedIds} onSelectionChange={(animalId, checked) => setSelectedIds((current) => { const next = new Set(current); if (checked) next.add(animalId); else next.delete(animalId); return next; })} />
+          {statusCardFilter !== "todos" ? (
+            <div className="flex items-center justify-between gap-3 rounded-lg border border-primary/20 bg-primary/5 p-3 text-sm">
+              <span>Filtro ativo: {summaryStatuses.find((summary) => summary.key === statusCardFilter)?.label}</span>
+              <Button type="button" variant="outline" size="sm" onClick={() => setStatusCardFilter("todos")}>
+                Limpar filtro
+              </Button>
+            </div>
+          ) : null}
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border p-3 text-sm">
+            <span className="text-muted-foreground">
+              {visibleSelectedRows.length} selecionado(s) de {visibleEligibleRows.length} elegível(is) visível(is)
+            </span>
+            <div className="flex flex-wrap gap-2">
+              <Button type="button" variant="outline" size="sm" disabled={visibleEligibleRows.length === 0} onClick={() => selectAllVisible(true)}>
+                Selecionar todos os elegíveis visíveis
+              </Button>
+              <Button type="button" variant="outline" size="sm" disabled={selectedIds.size === 0} onClick={() => setSelectedIds(new Set())}>
+                Limpar seleção
+              </Button>
+            </div>
+          </div>
+          <SanitaryProtocolWindowTableV2
+            rows={visibleRows}
+            selectedIds={selectedIds}
+            sortKey={sortKey}
+            sortDirection={sortDirection}
+            visibleEligibleCount={visibleEligibleRows.length}
+            allVisibleEligibleSelected={allVisibleEligibleSelected}
+            onSelectAllVisible={selectAllVisible}
+            onSortChange={toggleSort}
+            onSelectionChange={(animalId, checked) => setSelectedIds((current) => { const next = new Set(current); if (checked) next.add(animalId); else next.delete(animalId); return next; })}
+          />
           <div className="flex flex-wrap items-end justify-between gap-3 rounded-lg border border-border p-4">
             <div className="space-y-3"><label className="block space-y-1 text-sm"><span className="font-medium">Data planejada</span><Input aria-label="Data planejada da agenda agrupada" type="date" value={plannedFor} onChange={(event) => setPlannedFor(event.target.value)} /></label><div className="text-xs text-muted-foreground"><span className="font-semibold text-foreground">Contexto usado neste planejamento:</span> raiva {operationalContext.rabiesRiskArea === null ? "não informada" : operationalContext.rabiesRiskArea ? "em área de risco" : "fora de área de risco"}; cadência {operationalContext.sanitaryCadence === "annual" ? "anual" : operationalContext.sanitaryCadence === "semiannual" ? "semestral" : "não informada"}; reprodução {operationalContext.reproductiveContext === "prepartum" ? "pré-parto" : operationalContext.reproductiveContext === "peripartum" ? "periparto" : "não informada"}; manejo {operationalContext.management === "pre_weaning" ? "pré-desmama" : operationalContext.management === "rearing" ? "recria" : operationalContext.management === "pre_feedlot" ? "pré-confinamento" : operationalContext.management === "deferred_pasture" ? "pasto vedado" : "não informado"}.</div></div>
-            <div className="flex items-center gap-3"><span className="text-sm text-muted-foreground">{selectedRows.length} selecionado(s)</span><Button type="button" disabled={selectedRows.length === 0 || !plannedFor || planning} onClick={planSelected}><CalendarPlus className="h-4 w-4" />Planejar agenda para selecionados</Button><Button type="button" disabled title="Execução não pertence ao planejamento"><ShieldX className="h-4 w-4" />Execução indisponível</Button></div>
+            <div className="flex items-center gap-3"><span className="text-sm text-muted-foreground">{visibleSelectedRows.length} selecionado(s)</span><Button type="button" disabled={visibleSelectedRows.length === 0 || !plannedFor || planning} onClick={planSelected}><CalendarPlus className="h-4 w-4" />Planejar agenda para selecionados</Button></div>
           </div>
         </>
       ) : null}

@@ -1,4 +1,3 @@
-import { Fragment } from "react";
 import { ExternalLink } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -20,8 +19,24 @@ const SANITARY_WINDOW_STATUS_LABELS = {
 type Props = {
   rows: SanitaryProtocolWindowRowV2[];
   selectedIds: Set<string>;
+  sortKey: SanitaryWindowSortKeyV2;
+  sortDirection: "asc" | "desc";
+  visibleEligibleCount: number;
+  allVisibleEligibleSelected: boolean;
   onSelectionChange: (animalId: string, checked: boolean) => void;
+  onSelectAllVisible: (checked: boolean) => void;
+  onSortChange: (key: SanitaryWindowSortKeyV2) => void;
 };
+
+export type SanitaryWindowSortKeyV2 =
+  | "animal"
+  | "lote"
+  | "sexo"
+  | "idade"
+  | "categoria"
+  | "status"
+  | "motivo"
+  | "agenda";
 
 function statusLabel(row: SanitaryProtocolWindowRowV2) {
   if (row.alreadyPlanned) return "Já planejado";
@@ -59,7 +74,13 @@ function groupLabel(row: SanitaryProtocolWindowRowV2) {
 export function SanitaryProtocolWindowTableV2({
   rows,
   selectedIds,
+  sortKey,
+  sortDirection,
+  visibleEligibleCount,
+  allVisibleEligibleSelected,
   onSelectionChange,
+  onSelectAllVisible,
+  onSortChange,
 }: Props) {
   if (rows.length === 0) {
     return (
@@ -72,27 +93,46 @@ export function SanitaryProtocolWindowTableV2({
   const groups = groupOrder
     .map((label) => ({ label, rows: rows.filter((row) => groupLabel(row) === label) }))
     .filter((group) => group.rows.length > 0);
+  const sortGlyph = (key: SanitaryWindowSortKeyV2) =>
+    sortKey === key ? (sortDirection === "asc" ? " ↑" : " ↓") : "";
+  const headerButton = (key: SanitaryWindowSortKeyV2, label: string) => (
+    <button
+      type="button"
+      className="text-left font-semibold hover:text-foreground"
+      onClick={() => onSortChange(key)}
+    >
+      {label}
+      {sortGlyph(key)}
+    </button>
+  );
 
   return (
     <div className="overflow-x-auto rounded-lg border border-border">
       <table className="w-full min-w-[1080px] text-left text-sm">
         <thead className="bg-muted/50 text-xs uppercase text-muted-foreground">
           <tr>
-            <th className="w-12 px-3 py-3"><span className="sr-only">Selecionar</span></th>
-            <th className="px-3 py-3">Animal</th>
-            <th className="px-3 py-3">Lote</th>
-            <th className="px-3 py-3">Sexo / idade</th>
-            <th className="px-3 py-3">Categoria</th>
+            <th className="w-12 px-3 py-3">
+              <Checkbox
+                aria-label="Selecionar todos os elegíveis visíveis"
+                checked={visibleEligibleCount > 0 && allVisibleEligibleSelected}
+                disabled={visibleEligibleCount === 0}
+                onCheckedChange={(checked) => onSelectAllVisible(checked === true)}
+              />
+            </th>
+            <th className="px-3 py-3">{headerButton("animal", "Animal")}</th>
+            <th className="px-3 py-3">{headerButton("lote", "Lote")}</th>
+            <th className="px-3 py-3">{headerButton("sexo", "Sexo / idade")}</th>
+            <th className="px-3 py-3">{headerButton("categoria", "Categoria")}</th>
             <th className="px-3 py-3">Protocolo / item</th>
-            <th className="px-3 py-3">Status</th>
-            <th className="px-3 py-3">Motivo e pendências</th>
+            <th className="px-3 py-3">{headerButton("status", "Status")}</th>
+            <th className="px-3 py-3">{headerButton("motivo", "Motivo")}</th>
+            <th className="px-3 py-3">{headerButton("agenda", "Agenda existente")}</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-border">
-          {groups.map((group) => (
-            <Fragment key={group.label}>
+        {groups.map((group) => (
+          <tbody key={group.label} className="divide-y divide-border">
               <tr className="bg-muted/30">
-                <th colSpan={8} className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                <th colSpan={9} className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                   {group.label} ({group.rows.length})
                 </th>
               </tr>
@@ -125,7 +165,6 @@ export function SanitaryProtocolWindowTableV2({
               <td className="px-3 py-4"><div>{row.protocolLabel}</div><div className="text-muted-foreground">{row.itemLabel}</div></td>
               <td className="px-3 py-4">
                 <Badge variant={row.canSelect ? "default" : "secondary"}>{statusLabel(row)}</Badge>
-                {row.plannedFor ? <div className="mt-1 text-xs text-muted-foreground">Planejada para {row.plannedFor.split("-").reverse().join("/")}</div> : null}
               </td>
               <td className="max-w-sm px-3 py-4">
                 <div>{row.reason}</div>
@@ -133,11 +172,13 @@ export function SanitaryProtocolWindowTableV2({
                 {row.documentaryPendingReasons[0] ? <div className="mt-1 text-xs text-amber-700">{row.documentaryPendingReasons[0]}</div> : null}
                 {row.warnings[0] ? <div className="mt-1 text-xs text-muted-foreground">{row.warnings[0]}</div> : null}
               </td>
+              <td className="px-3 py-4 text-muted-foreground">
+                {row.plannedFor ? row.plannedFor.split("-").reverse().join("/") : "Sem agenda aberta"}
+              </td>
               </tr>
               ))}
-            </Fragment>
-          ))}
-        </tbody>
+          </tbody>
+        ))}
       </table>
     </div>
   );

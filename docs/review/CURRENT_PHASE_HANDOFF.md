@@ -1,8 +1,8 @@
 # Current Phase Handoff — RebanhoSync
 
-Atualizado em: 2026-06-15
+Atualizado em: 2026-07-12
 
-## 0. Handoff Atual — Fase 12I
+## 0. Handoff Atual — Fase 12I + avanços UI sanitários pós-12I
 
 Fase 12I — Catalogo Sanitario v2 read-only offline-first — executada localmente.
 
@@ -15,10 +15,16 @@ Resultado:
 - A leitura local Dexie em `src/lib/sanitario/catalog/sanitaryProtocolCatalogV2.ts` lista protocolos, itens por protocolo, grupos e resumo read-only.
 - Avanco UI posterior: rota `/protocolos-sanitarios/catalogo-v2` criada para visualizar o catalogo local/offline em modo read-only.
 - Testes confirmam 10 protocolos, 20 itens ativos apos saneamento de `raiva_herbivoros` e `matrizes_pre_parto`, 4 grupos, B19 nacional, aftosa retired/bloqueada e 6 antiparasitarios com ProductClassGroup.
-- Não foi criado push, `queue_ops`, sync-batch de escrita, UI operacional, migration, schema, RLS, Edge Function, agenda, evento, estoque, carencia ativa ou liberação operacional.
+- Avanco UI sanitario posterior: `/protocolos-sanitarios` passou a atuar como Central Sanitaria v2, com abas de Janelas sanitarias, Agenda sanitaria local, Catalogo, Historico e conformidade futura/desabilitada.
+- Janelas sanitarias recebem contexto operacional explicito apenas para pre-checagem/preview e snapshot de planejamento, sem transformar contexto em fonte tecnica primaria.
+- Agenda sanitaria local le `ops_sanitario_agenda_v2`, permite reagendar/cancelar somente agendas nao executadas e mantem execucao bloqueada.
+- Historico sanitario de entrada foi separado por origem/evidencia, com historico externo documentado apoiando pre-checagem de forma conservadora e declaracoes gerando aviso/pendencia documental.
+- `AnimalDetalhe` e `LoteDetalhe` passaram a usar resumos sanitarios compactos, mantendo preview completo e planejamento agrupado na Central.
+- Atalhos filtrados por animal/lote abrem `/protocolos-sanitarios?tab=janelas&animalId=...` ou `/protocolos-sanitarios?tab=janelas&loteId=...`; `animalId` tem prioridade sobre `loteId`.
+- Não foi criado push, `queue_ops`, sync-batch de escrita, migration, schema, RLS, Edge Function, evento, estoque, carencia ativa ou liberação operacional.
 
 Próximo passo seguro:
-- validar a tela read-only em runtime com Dexie populado, mantendo tudo sem agenda automatica.
+- validar a Central Sanitaria v2 em runtime com Dexie populado, mantendo catalogo read-only, agenda como intenção futura e filtros sem efeito operacional.
 
 ---
 

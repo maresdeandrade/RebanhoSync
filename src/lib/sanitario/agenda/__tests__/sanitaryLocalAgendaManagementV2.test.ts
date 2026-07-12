@@ -94,8 +94,10 @@ describe("sanitaryLocalAgendaManagementV2", () => {
 
     expect(result).toHaveLength(2);
     expect(result[0]).toMatchObject({
+      fazendaId: "farm-1",
       protocolLabel: "Raiva",
       itemLabel: "Reforço anual",
+      animalCount: 1,
       target: { label: "Estrela", href: "/animais/animal-1" },
     });
     expect(result[1]).toMatchObject({
@@ -107,8 +109,54 @@ describe("sanitaryLocalAgendaManagementV2", () => {
 
   it("filtra por status, período e conteúdo visível", () => {
     const items = [
-      { id: "1", plannedFor: "2026-07-01", status: "programada" as const, protocolLabel: "Brucelose B19", itemLabel: "Dose anual", target: { kind: "lote" as const, label: "Novilhas", href: "/lotes/1" }, canManage: true },
-      { id: "2", plannedFor: "2026-08-01", status: "cancelada" as const, protocolLabel: "Raiva", itemLabel: "Reforço", target: { kind: "animal" as const, label: "Estrela", href: "/animais/1" }, canManage: false },
+      {
+        id: "1",
+        fazendaId: "farm-1",
+        plannedFor: "2026-07-01",
+        status: "programada" as const,
+        protocolId: "protocol-1",
+        itemKey: "dose-anual",
+        protocolLabel: "Brucelose B19",
+        itemLabel: "Dose anual",
+        productRequirementKind: "none",
+        productClass: null,
+        productClassLabel: null,
+        productClassGroupId: null,
+        productClassGroupName: null,
+        plannedProductId: null,
+        plannedProductName: null,
+        suggestedDose: null,
+        suggestedDoseUnit: null,
+        suggestedRoute: null,
+        animalCount: 1,
+        target: { kind: "lote" as const, label: "Novilhas", href: "/lotes/1" },
+        canManage: true,
+        canExecute: true,
+      },
+      {
+        id: "2",
+        fazendaId: "farm-1",
+        plannedFor: "2026-08-01",
+        status: "cancelada" as const,
+        protocolId: "protocol-2",
+        itemKey: "reforco",
+        protocolLabel: "Raiva",
+        itemLabel: "Reforço",
+        productRequirementKind: "none",
+        productClass: null,
+        productClassLabel: null,
+        productClassGroupId: null,
+        productClassGroupName: null,
+        plannedProductId: null,
+        plannedProductName: null,
+        suggestedDose: null,
+        suggestedDoseUnit: null,
+        suggestedRoute: null,
+        animalCount: 1,
+        target: { kind: "animal" as const, label: "Estrela", href: "/animais/1" },
+        canManage: false,
+        canExecute: false,
+      },
     ];
 
     expect(filterLocalSanitaryAgendasV2(items, { search: "novilhas", status: "programada", startDate: "2026-06-01", endDate: "2026-07-31" })).toEqual([items[0]]);

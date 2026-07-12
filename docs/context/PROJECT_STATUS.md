@@ -1,6 +1,6 @@
 # Project Status — RebanhoSync
 
-Atualizado em: 2026-06-15
+Atualizado em: 2026-07-12
 **Baseline Commit:** `3853b80`
 
 ## Objetivo
@@ -101,7 +101,9 @@ A Fase 11.5 foi fechada localmente pela 11.5H, reconciliada documentalmente pela
 - Fase 12H — Leitura read-only dos Protocolos Sanitarios v2 importados executada localmente, criando `src/lib/sanitario/catalog/sanitaryProtocolCatalogV2.ts` para consultar banco, listar protocolos, itens e ProductClassGroups, montar resumo read-only e validar B19/aftosa/antiparasitarios sem agenda, evento, estoque, carencia ativa ou liberacao operacional.
 - Fase 12I — Catalogo Sanitario v2 read-only offline-first executada localmente, criando stores Dexie v27 para protocolos e itens, pull remoto `pullSanitarioProtocolCatalogV2`, leitura local Dexie e testes de store/pull/cursor/resumo, sem push, `queue_ops`, agenda, evento, estoque, carencia ativa ou liberacao operacional.
 - Avanco UI pos-12I — Superficie read-only `/protocolos-sanitarios/catalogo-v2` criada para consultar o catalogo sanitario v2 local/offline, exibindo resumo, protocolos, itens e bloqueios sem ler JSON/Supabase direto e sem criar automacao operacional.
-- Saneamento sanitario v2 pos-12I — A tela `/protocolos-sanitarios` foi reduzida a hub read-only para o Catalogo Sanitario v2, ocultando Pack Oficial, Conformidade e Protocolos da fazenda. O protocolo `raiva_herbivoros` mantem tres itens ativos sem duplicidade anual: dose inicial, reforco 30d e reforco anual em area de risco. O item antigo `raiva_area_risco_anual` e o item concorrente `matrizes_pre_parto_lepto_reforco_situacional` foram tombstonados por import controlado idempotente; o catalogo ativo fica com 20 itens, sem agenda, evento, estoque, carencia ativa ou liberacao operacional.
+- Saneamento sanitario v2 pos-12I — A superficie `/protocolos-sanitarios` passou por saneamento inicial para consulta segura do Catalogo Sanitario v2, ocultando Pack Oficial, Conformidade e Protocolos da fazenda enquanto nao havia Central operacional. O protocolo `raiva_herbivoros` mantem tres itens ativos sem duplicidade anual: dose inicial, reforco 30d e reforco anual em area de risco. O item antigo `raiva_area_risco_anual` e o item concorrente `matrizes_pre_parto_lepto_reforco_situacional` foram tombstonados por import controlado idempotente; o catalogo ativo fica com 20 itens, sem agenda, evento, estoque, carencia ativa ou liberacao operacional.
+- Avanco UI sanitario pos-12I — A rota `/protocolos-sanitarios` passou a atuar como Central Sanitaria v2, com abas para Janelas sanitarias, Agenda sanitaria local, Catalogo, Historico e conformidade futura/desabilitada. A Central le agenda local em `ops_sanitario_agenda_v2`, permite reagendar/cancelar somente agendas nao executadas e mantem execucao bloqueada. Foram adicionados contexto operacional explicito para pre-checagem, historico sanitario de entrada separado por origem/evidencia, pendencias documentais, filtro inicial por animal/lote via query params e badges de filtro ativo, sem migration, schema/RLS/Edge, evento, estoque, carencia ativa, push ou `queue_ops`.
+- Avanco UX sanitario contextual pos-12I — As abas Sanidade de `AnimalDetalhe` e `LoteDetalhe` foram compactadas para resumo operacional contextual. O animal/lote mostram resumo, pendencias principais, historico de entrada quando aplicavel, agenda futura e atalhos para a Central Sanitaria filtrada. Preview completo, listas extensas, bloqueadas/nao aplicaveis e botoes por item ficam fora da visualizacao padrao ou em detalhe tecnico fechado. A Central continua sendo a superficie principal para janelas, elegibilidade, preview completo e planejamento agrupado.
 
 Último avanço local da Fase 10:
 

@@ -52,17 +52,25 @@ export function AgendaItemRowCard({
   const isScheduled = row.item.status === "agendado";
   const isCalfJourney = isCalfJourneyAgendaItem(row.item);
   const isSanitary = row.item.dominio === "sanitario";
+  const sanitaryAgendaV2Id =
+    typeof row.item.source_ref?.agenda_v2_id === "string"
+      ? row.item.source_ref.agenda_v2_id
+      : null;
   const canDirectComplete = isScheduled && !isCalfJourney && !isSanitary;
 
-  const registerCtaLabel = isCalfJourney
-    ? "Seguir rotina da cria"
-    : "Revisar no Registrar";
+  const registerCtaLabel = sanitaryAgendaV2Id
+    ? "Abrir na Central Sanitária"
+    : isCalfJourney
+      ? "Seguir rotina da cria"
+      : "Revisar no Registrar";
   const directCompleteLabel = "Fechar pendência";
   
   const nextStepHint = isCalfJourney
     ? "Próximo passo: seguir a rotina guiada da cria."
-    : isSanitary
-      ? "Próximo passo: usar Registrar para revisar dados, lote e baixa de estoque antes de registrar a execução."
+    : sanitaryAgendaV2Id
+      ? "Próximo passo: abrir a Central Sanitária para revisar a intenção ou executar com confirmação explícita."
+      : isSanitary
+        ? "Próximo passo: usar Registrar para revisar dados, lote e baixa de estoque antes de registrar a execução."
       : "Próximo passo: usar Registrar para gravar a execução completa; Fechar pendência apenas encerra a tarefa futura.";
 
   return (

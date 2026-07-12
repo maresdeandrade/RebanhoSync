@@ -15,12 +15,27 @@ export type SanitaryAgendaTargetV2 = {
 
 export type SanitaryLocalAgendaListItemV2 = {
   id: string;
+  fazendaId: string;
   plannedFor: string;
   status: SanitarioAgendaV2Status;
+  protocolId: string | null;
+  itemKey: string | null;
   protocolLabel: string;
   itemLabel: string;
+  productRequirementKind: string;
+  productClass: string | null;
+  productClassLabel: string | null;
+  productClassGroupId: string | null;
+  productClassGroupName: string | null;
+  plannedProductId: string | null;
+  plannedProductName: string | null;
+  suggestedDose: number | null;
+  suggestedDoseUnit: string | null;
+  suggestedRoute: string | null;
+  animalCount: number;
   target: SanitaryAgendaTargetV2;
   canManage: boolean;
+  canExecute: boolean;
 };
 
 export type SanitaryLocalAgendaFiltersV2 = {
@@ -42,6 +57,25 @@ type LocalAgendaDbV2 = Pick<
 function readText(source: Record<string, unknown>, key: string) {
   const value = source[key];
   return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+function readNumber(source: Record<string, unknown>, key: string) {
+  const value = source[key];
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+export function formatSanitaryProductClassLabelV2(value: string | null | undefined) {
+  if (!value) return null;
+  const known: Record<string, string> = {
+    vacina_ibr_bvd: "Vacina IBR/BVD",
+    vacina_clostridial: "Vacina clostridial",
+    vacina_brucelose_b19: "Vacina Brucelose B19",
+    vacina_raiva_herbivoros: "Vacina contra raiva dos herbívoros",
+  };
+  if (known[value]) return known[value];
+  return value
+    .replaceAll("_", " ")
+    .replace(/\b\w/g, (char) => char.toLocaleUpperCase("pt-BR"));
 }
 
 function metadataTarget(agenda: SanitarioAgendaLocalV2) {
@@ -151,15 +185,73 @@ export async function listLocalSanitaryAgendasV2(
           (entry) =>
             entry.planned_status === "executado" || Boolean(entry.execution_evento_id),
         );
+      const productRequirementKind =
+        readText(agenda.metadata, "productRequirementKind") ??
+        readText(agenda.protocol_item_snapshot, "productRequirementKind") ??
+        readText(agenda.protocol_item_snapshot, "product_requirement_kind") ??
+        "none";
+      const productClass =
+        readText(agenda.metadata, "productClass") ??
+        readText(agenda.protocol_item_snapshot, "productClass") ??
+        readText(agenda.protocol_item_snapshot, "product_class");
+      const productClassGroupId =
+        readText(agenda.metadata, "productClassGroupId") ??
+        readText(agenda.protocol_item_snapshot, "productClassGroupId") ??
+        readText(agenda.protocol_item_snapshot, "product_class_group_id");
+      const productClassGroupName =
+        readText(agenda.metadata, "productClassGroupName") ??
+        readText(agenda.protocol_item_snapshot, "productClassGroupName");
+      const plannedProductId =
+        agenda.produto_veterinario_id ??
+        readText(agenda.produto_snapshot, "productId") ??
+        readText(agenda.produto_snapshot, "plannedProductId") ??
+        readText(agenda.protocol_item_snapshot, "productId") ??
+        readText(agenda.protocol_item_snapshot, "product_id");
+      const plannedProductName =
+        readText(agenda.produto_snapshot, "productName") ??
+        readText(agenda.produto_snapshot, "nomeComercial") ??
+        readText(agenda.produto_snapshot, "nome_comercial") ??
+        readText(agenda.metadata, "productName");
+      const suggestedDose =
+        readNumber(agenda.metadata, "dose") ??
+        readNumber(agenda.protocol_item_snapshot, "dose") ??
+        readNumber(agenda.protocol_item_snapshot, "dose_quantity");
+      const suggestedDoseUnit =
+        readText(agenda.metadata, "doseUnit") ??
+        readText(agenda.protocol_item_snapshot, "doseUnit") ??
+        readText(agenda.protocol_item_snapshot, "dose_unit");
+      const suggestedRoute =
+        readText(agenda.metadata, "route") ??
+        readText(agenda.protocol_item_snapshot, "route") ??
+        readText(agenda.protocol_item_snapshot, "routeRule");
 
       return {
         id: agenda.id,
+        fazendaId: agenda.fazenda_id,
         plannedFor: agenda.data_programada,
         status: agenda.status,
+        protocolId: agenda.protocolo_id,
+        itemKey:
+          readText(agenda.metadata, "itemKey") ??
+          readText(agenda.protocol_item_snapshot, "itemKey") ??
+          readText(agenda.protocol_item_snapshot, "logicalItemKey") ??
+          readText(agenda.protocol_item_snapshot, "logical_item_key"),
         protocolLabel,
         itemLabel,
+        productRequirementKind,
+        productClass,
+        productClassLabel: formatSanitaryProductClassLabelV2(productClass),
+        productClassGroupId,
+        productClassGroupName,
+        plannedProductId,
+        plannedProductName,
+        suggestedDose,
+        suggestedDoseUnit,
+        suggestedRoute,
+        animalCount: Math.max(entries.length, 1),
         target: targetForAgenda(agenda, entries, animalsById, lotsById),
         canManage: agenda.status === "programada" && !hasExecution,
+        canExecute: agenda.status === "programada" && !hasExecution,
       };
     })
     .sort((left, right) => left.plannedFor.localeCompare(right.plannedFor));

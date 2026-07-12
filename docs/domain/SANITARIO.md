@@ -1,7 +1,7 @@
 ```markdown
 # Sanitário — RebanhoSync
 
-Atualizado em: 2026-06-15
+Atualizado em: 2026-07-12
 **Baseline Commit:** `c2bac2b`
 
 ## Objetivo
@@ -62,9 +62,11 @@ Fora do escopo deste documento:
 | Produto, dose, via e carência planejada | Produto sanitário/fonte técnica explícita |
 | Tarefa sanitária futura | Agenda |
 | Elegibilidade por janela | Cálculo derivado de animal + regra + eventos |
+| Contexto operacional explícito | Entrada declarada pelo usuário para pré-checagem/preview |
 | Demanda agrupada | Leitura derivada de elegibilidade/lote/janela |
 | Preview operacional | Simulação derivada antes de materializar agenda |
 | Aplicação executada | Evento sanitário |
+| Histórico sanitário de entrada | Evento/histórico anterior à entrada, classificado por origem e evidência |
 | Produto aplicado | `eventos_sanitario` estruturado |
 | Estoque consumido | `insumo_movimentacoes` vinculada ao evento |
 | Custo sanitário | Snapshot no evento/movimento |
@@ -95,6 +97,8 @@ Fora do escopo deste documento:
 - Carência só pode ser calculada a partir de evento sanitário estruturado.
 - Produto executado e fonte técnica explícita são necessários para carência confiável.
 - Demanda, preview e agenda não calculam carência ativa.
+- Contexto operacional explícito não substitui fonte técnica, não executa protocolo e não libera operação.
+- Histórico sanitário de entrada documentado pode apoiar pré-checagem; declaração sem documento não libera regra crítica.
 - Livre de carência não significa apto para venda ou abate.
 - Fechamento administrativo da agenda não cria evento nem histórico sanitário.
 - Correção sanitária deve gerar novo fato vinculado, não editar destrutivamente o passado.
@@ -306,7 +310,7 @@ Legados `produtos_veterinarios`, `protocolos_sanitarios`, `protocolos_sanitarios
 
 ## Agenda Sanitária v2
 
-A Fase 11.5 consolidou contratos puros para redesenhar a agenda sanitária. A Fase 12C criou a fundação SQL/RLS da persistência v2 em tabelas dedicadas. A Fase 12E4 adicionou base Dexie/offline e sync controlado para Agenda v2. A Fase 12E5 adicionou hardening de cursor incremental, retry/replay de closures, sucesso parcial e bloqueios de superficie. A Fase 12F0 estruturou Protocolos Sanitarios v2 como catalogo curatorial candidato documental, sem seed e sem ativacao. A Fase 12F1 normalizou protocolos, itens, ProductClassGroups, rotationRule, sourceRefs por campo e sourceGaps em artefatos tecnicos candidatos para futura seed/importacao. A Fase 12F2 converteu esses artefatos em payloads candidatos de seed/import, sem executar importacao. Ainda nao ha UI conectada, seed funcional aplicada, protocolo ativo/importado, evento executado, estoque ou carência ativa.
+A Fase 11.5 consolidou contratos puros para redesenhar a agenda sanitária. A Fase 12C criou a fundação SQL/RLS da persistência v2 em tabelas dedicadas. A Fase 12E4 adicionou base Dexie/offline e sync controlado para Agenda v2. A Fase 12E5 adicionou hardening de cursor incremental, retry/replay de closures, sucesso parcial e bloqueios de superficie. A Fase 12F0 estruturou Protocolos Sanitarios v2 como catalogo curatorial candidato documental, sem seed e sem ativacao. A Fase 12F1 normalizou protocolos, itens, ProductClassGroups, rotationRule, sourceRefs por campo e sourceGaps em artefatos tecnicos candidatos para futura seed/importacao. A Fase 12F2 converteu esses artefatos em payloads candidatos de seed/import, sem executar importacao. Avanços locais posteriores conectaram a Central Sanitária v2 em `/protocolos-sanitarios` para consulta, janelas, agenda local, histórico e planejamento manual, mantendo seed funcional, execução automática, estoque e carência ativa fora do escopo.
 
 Pipeline conceitual:
 
@@ -332,6 +336,54 @@ Elegibilidade:
 - retorna limitações explícitas quando faltam dados;
 - `completed` depende de evento sanitário compatível, executado e não futuro;
 - agenda concluída não satisfaz histórico sanitário.
+
+### Contexto operacional explícito
+
+Contexto operacional explícito é entrada estruturada informada pelo usuário para avaliar janelas que dependem de condição externa.
+
+Campos iniciais:
+
+- área de risco para raiva;
+- cadência sanitária anual/semestral;
+- contexto reprodutivo pré-parto/periparto;
+- manejo pré-desmama, recria, pré-confinamento ou pasto vedado.
+
+Regras:
+
+- contexto operacional entra somente na pré-checagem/preview e no snapshot de planejamento da agenda manual;
+- contexto operacional não altera fonte técnica do protocolo;
+- contexto operacional não é execução, evento, histórico, estoque, carência ou liberação;
+- quando o contexto exigido não estiver informado, a elegibilidade deve permanecer como dados insuficientes ou ambígua;
+- texto de UI não deve ser usado como regra técnica.
+
+### Histórico sanitário de entrada
+
+Histórico sanitário de entrada permite registrar fatos anteriores à entrada do animal no app/fazenda, especialmente animais comprados ou já existentes no cadastro inicial.
+
+Origens aceitas:
+
+- `internal_execution`;
+- `external_documented`;
+- `external_declared`;
+- `legacy_import`.
+
+Evidência:
+
+- documentada;
+- declarada;
+- desconhecida.
+
+Regras:
+
+- evento interno executado continua contando como histórico executado;
+- histórico externo documentado pode ser considerado válido na pré-checagem quando houver vínculo suficiente com protocolo/item;
+- histórico externo declarado gera aviso, mas não libera regra crítica;
+- histórico legado ambíguo não libera dose/reforço;
+- agenda futura não conta como histórico;
+- histórico externo não cria agenda, execução local, baixa de estoque, carência ativa ou `queue_ops`;
+- B19 em fêmea adulta sem comprovação documentada deve gerar pendência documental, não agenda de vacinação;
+- B19 em fêmea adulta com comprovação externa documentada pode ser considerada comprovada/concluída;
+- B19 em fêmea de 3 a 8 meses sem histórico continua planejável.
 
 ### Demanda agrupada e preview
 
@@ -909,6 +961,55 @@ Regras atuais:
 - closure não libera venda, abate, leite ou aptidão operacional;
 - ProductClass v2 e catálogo técnico sanitário v2 continuam pull-only.
 - A partir da 12E5, pulls sanitarios v2 usam cursor incremental por `updated_at` quando a tabela possui esse campo; `sanitario_produto_fontes_v2` permanece full fetch/merge por contrato sem `updated_at`.
+
+### Central Sanitária v2 e superfícies contextuais
+
+A rota `/protocolos-sanitarios` é a Central Sanitária operacional. Ela concentra planejamento, janelas, elegibilidade, preview completo, agenda manual local, catálogo sanitário, histórico sanitário e pendências documentais.
+
+Superfícies:
+
+- `Janelas sanitárias`: seleção por protocolo/item, contexto operacional explícito, pré-checagem local e filtro inicial por animal ou lote;
+- `Agenda sanitária`: leitura local de `ops_sanitario_agenda_v2`, com reagendamento/cancelamento apenas para agendas não executadas;
+- `Catálogo sanitário`: consulta read-only do catálogo v2 local/offline;
+- `Histórico sanitário`: execução interna, histórico externo documentado, declarações e legado ambíguo separados;
+- `Conformidade futura/desabilitada`: superfície reservada, sem liberação automática.
+
+Regras de navegação:
+
+- detalhe do animal é visão contextual individual, não planejamento completo;
+- detalhe do lote é visão contextual do grupo, não planejamento completo;
+- animal/lote podem abrir a Central com filtro inicial por query params;
+- `animalId` tem prioridade sobre `loteId`; quando ambos existem, o lote é apenas contexto auxiliar;
+- filtro por lote lista apenas animais do lote;
+- limpar filtro volta à visão geral e não deve persistir filtro indevidamente;
+- filtros, badges e atalhos não criam agenda, evento, estoque, carência ativa ou `queue_ops`.
+
+Regras de UX:
+
+- não exibir UUID cru ou `snake_case` na UI;
+- execução permanece bloqueada/desabilitada quando a superfície é de planejamento;
+- reagendar agenda não executada altera apenas data planejada;
+- cancelar agenda não executada altera apenas status da agenda.
+
+### Resumos sanitários em animal e lote
+
+As abas de Sanidade em `AnimalDetalhe` e `LoteDetalhe` são resumos operacionais contextuais.
+
+Elas devem mostrar por padrão:
+
+- resumo de status;
+- pendências documentais críticas;
+- histórico de entrada quando aplicável;
+- agenda sanitária futura;
+- atalhos para a Central Sanitária filtrada.
+
+Devem ficar fechados sob demanda:
+
+- pré-checagem técnica completa;
+- preview manual completo;
+- listas completas de candidatas, atrasadas, bloqueadas e não aplicáveis.
+
+Essas abas não devem exibir lista linear repetida de todos os itens nem botões por item no modo compacto.
 
 ### Antipadrões proibidos
 

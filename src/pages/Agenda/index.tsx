@@ -361,6 +361,17 @@ export default function Agenda() {
       }),
     [activeFarmId, navigate],
   );
+  const goToAgendaAction = (item: Parameters<typeof actionController.goToRegistrar>[0]) => {
+    const sanitaryAgendaV2Id =
+      typeof item.source_ref?.agenda_v2_id === "string"
+        ? item.source_ref.agenda_v2_id
+        : null;
+    if (sanitaryAgendaV2Id) {
+      navigate(`/protocolos-sanitarios?tab=agenda&agendaId=${sanitaryAgendaV2Id}`);
+      return;
+    }
+    actionController.goToRegistrar(item);
+  };
   const {
     contextualHighlightedRowIds,
     registerRowRef,
@@ -530,7 +541,7 @@ export default function Agenda() {
             onToggleGroupReveal={toggleGroupReveal}
             onAnimalSummaryBadgeClick={handleAnimalSummaryBadgeClick}
             onEventSummaryBadgeClick={handleEventSummaryBadgeClick}
-            onGoToRegistrar={actionController.goToRegistrar}
+            onGoToRegistrar={goToAgendaAction}
             onUpdateStatus={actionController.updateStatus}
             onNavigateToEvent={actionController.goToEvent}
             onNavigateToAnimal={actionController.goToAnimal}

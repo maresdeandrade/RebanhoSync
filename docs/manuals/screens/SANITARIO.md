@@ -1,18 +1,22 @@
 # Manual da Tela — Sanitário
 
-Atualizado em: 2026-05-31  
+Atualizado em: 2026-07-12
 **Baseline Commit:** `32d7779`
 
 ## Para que serve
 
-A tela Sanitário ajuda a organizar protocolos, agenda sanitária, eventos sanitários, produtos, estoque, ocorrências e sinais sanitários.
+A Central Sanitária ajuda a organizar protocolos, janelas sanitárias, agenda sanitária local, histórico sanitário, pendências documentais, produtos, estoque, ocorrências e sinais sanitários.
 
 Use para:
 
 * consultar protocolos;
+* avaliar janelas sanitárias;
+* usar contexto operacional explícito na pré-checagem;
 * ver pendências sanitárias;
-* registrar aplicação/tratamento;
+* planejar agenda sanitária manual local;
 * consultar eventos sanitários;
+* consultar histórico sanitário anterior à entrada;
+* consultar pendências documentais;
 * acompanhar produtos e custos, quando disponíveis;
 * ver sinais de carência sanitária;
 * registrar ocorrências ou suspeitas, quando aplicável.
@@ -35,12 +39,36 @@ Representa uma tarefa futura ou pendência programada.
 > 💡 **Exemplo:** Vacina prevista para hoje.
 > ⚠️ **Atenção:** Agenda sanitária **não** é evento sanitário.
 
+Na Central Sanitária, a agenda manual local representa intenção futura. Reagendar agenda não executada altera apenas a data planejada. Cancelar agenda não executada altera apenas o status da agenda.
+
 ### Evento sanitário
 
 Representa a aplicação ou ocorrência executada e registrada formalmente.
 **Exemplos:** vacina aplicada, vermífugo aplicado, tratamento realizado, exame registrado ou ocorrência sanitária registrada.
 
 > 📌 **Regra:** O evento é a única fonte histórica factual e confiável de manejo.
+
+### Contexto operacional
+
+Algumas janelas sanitárias dependem de contexto externo informado explicitamente, como área de risco para raiva, cadência anual/semestral, contexto reprodutivo ou manejo.
+
+> ⚠️ **Atenção:** Contexto operacional ajuda a avaliar a janela, mas não substitui fonte técnica nem execução.
+
+Se o contexto necessário não estiver informado, a pré-checagem pode permanecer como `Dados insuficientes`.
+
+### Histórico sanitário anterior
+
+Histórico sanitário anterior é usado para registrar fatos anteriores à entrada do animal no app/fazenda, especialmente em compra, importação ou cadastro inicial.
+
+Pode aparecer separado como:
+
+* histórico executado;
+* histórico externo documentado;
+* declarações;
+* pendências documentais;
+* agenda futura.
+
+Declaração sem documento pode não liberar pendências críticas.
 
 ### Produto, dose e lote
 
@@ -89,6 +117,29 @@ Quando existir o fluxo, a suspeita clínica ou ocorrência sanitária deve ser r
 
 ---
 
+## Central Sanitária e filtros
+
+A rota `/protocolos-sanitarios` concentra a operação sanitária completa.
+
+Abas/superfícies esperadas:
+
+* `Janelas sanitárias`;
+* `Agenda sanitária`;
+* `Catálogo sanitário`;
+* `Histórico sanitário`;
+* `Conformidade futura/desabilitada`.
+
+Atalhos vindos do detalhe do animal ou do lote podem abrir a Central com filtro inicial aplicado.
+
+* Filtro por animal mostra apenas/destaca o animal de origem.
+* Filtro por lote lista apenas animais daquele lote.
+* Se animal e lote vierem juntos, o animal tem prioridade e o lote fica como contexto auxiliar.
+* `Limpar filtro` volta à visão geral.
+
+> ⚠️ **Regra:** Filtro não cria agenda, evento, estoque, carência ativa ou fila de sincronização.
+
+---
+
 ## Custo sanitário
 
 O custo sanitário é calculado e registrado quando há a composição de: produto, quantidade, lote de estoque, custo unitário, custo total e o snapshot econômico da operação.
@@ -103,6 +154,10 @@ O custo sanitário é calculado e registrado quando há a composição de: produ
 | --- | --- |
 | **Protocolo configurado** | Aplicação feita |
 | **Agenda sanitária aberta** | Evento sanitário executado |
+| **Agenda futura** | Histórico executado |
+| **Histórico externo declarado** | Comprovação crítica documentada |
+| **Contexto operacional preenchido** | Fonte técnica primária ou execução |
+| **Filtro ativo na Central** | Operação executada |
 | **Sem carência vigente nas fontes** | Liberado para venda ou abate (Aptidão comercial) |
 | **Checklist sem alteração** | Conformidade universal garantida |
 | **Produto cadastrado** | Produto aplicado |
@@ -119,6 +174,8 @@ O custo sanitário é calculado e registrado quando há a composição de: produ
 * Conferir o status de sincronização (`sync`) após salvar registros em ambientes offline.
 * Usar o campo de observações para detalhar reações adversas ou exceções no manejo.
 * **Nunca** marcar uma agenda sanitária como "concluída" para gerar histórico se o manejo real não tiver um evento sanitário correspondente registrado.
+* Usar `Registrar histórico anterior` apenas para fatos anteriores à entrada, mantendo evidência e observação quando disponíveis.
+* Usar a Central Sanitária para planejamento completo; usar detalhes de animal/lote apenas como resumo contextual.
 
 ---
 

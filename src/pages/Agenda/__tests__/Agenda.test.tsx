@@ -438,6 +438,43 @@ describe("Agenda page", () => {
     expect(screen.queryByText("Controle de peso")).not.toBeInTheDocument();
   });
 
+  it("abre agenda sanitária v2 na Central sem criar evento pela Agenda global", async () => {
+    mockedUseLiveQuery.mockReturnValue({
+      itens: [
+        createAgendaItem({
+          id: "sanitario-v2:san-agenda-1",
+          tipo: "Dose anual",
+          source_ref: {
+            agenda_v2_id: "san-agenda-1",
+            produto: "Vacina IBR/BVD",
+            indicacao: "Brucelose B19 · Lote Sanitário",
+          },
+          payload: {
+            agenda_v2_id: "san-agenda-1",
+          },
+        }),
+      ],
+      animais: [createAnimal()],
+      lotes: [createLote()],
+      protocolos: [],
+      protocoloItens: [],
+      gestos: [],
+      sanidadeConfig: null,
+      officialTemplates: [],
+      officialTemplateItems: [],
+    } as ReturnType<typeof useLiveQuery>);
+
+    const user = userEvent.setup();
+    await renderAgenda(["/agenda?dominio=sanitario"]);
+
+    await user.click(screen.getByRole("button", { name: /ver itens/i }));
+    await user.click(screen.getByRole("button", { name: "Abrir na Central Sanitária" }));
+
+    expect(mockNavigate).toHaveBeenCalledWith(
+      "/protocolos-sanitarios?tab=agenda&agendaId=san-agenda-1",
+    );
+  });
+
   it("uses summary badges to focus the group and can reveal the full context", async () => {
     const user = userEvent.setup();
     await renderAgenda();

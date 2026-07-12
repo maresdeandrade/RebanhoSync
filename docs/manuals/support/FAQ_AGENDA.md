@@ -1,6 +1,6 @@
 # FAQ — Agenda
 
-Atualizado em: 2026-05-31  
+Atualizado em: 2026-07-12
 **Baseline Commit:** `32d7779`
 
 ## Objetivo
@@ -25,6 +25,16 @@ Agenda é uma lista de tarefas futuras ou pendências.
 ## Agenda é histórico?
 
 Não. Agenda é intenção ou pendência. Histórico vem de evento registrado.
+
+---
+
+## Agenda sanitária local é execução?
+
+Não. Agenda sanitária local é intenção futura.
+
+Na Central Sanitária, reagendar uma agenda não executada altera apenas a data planejada. Cancelar uma agenda não executada altera apenas o status da agenda.
+
+> ⚠️ Agenda sanitária local não cria evento, não movimenta estoque, não calcula carência ativa e não libera venda, abate ou leite.
 
 ---
 
@@ -75,6 +85,14 @@ Depende do fluxo. O app deve deixar explícito quando uma ação cria evento.
 ## Agenda sanitária atrasada significa que o animal está bloqueado?
 
 Não automaticamente. Significa que há uma tarefa sanitária pendente ou atrasada. Bloqueio sanitário/comercial exige fonte própria.
+
+---
+
+## Filtro por animal ou lote muda a agenda?
+
+Não. O filtro só muda a visualização da Central Sanitária.
+
+Ele não cria agenda, evento, estoque, carência ativa ou `queue_ops`.
 
 ---
 

@@ -1,6 +1,6 @@
 # Lotes, Pastos e Movimentação — RebanhoSync
 
-Atualizado em: 2026-05-31  
+Atualizado em: 2026-07-12
 **Baseline Commit:** `32d7779`
 
 ## Objetivo
@@ -53,7 +53,8 @@ Pode representar: grupo de manejo, grupo sanitário, grupo comercial, grupo prod
 * quais animais estão agrupados agora;
 * qual manejo pode ser aplicado ao grupo;
 * qual é o estado atual do agrupamento;
-* qual lote está associado a uma agenda ou evento.
+* qual lote está associado a uma agenda ou evento;
+* qual é o resumo sanitário contextual do grupo, quando calculado a partir de fontes sanitárias explícitas.
 
 ### Lote não pode responder sozinho
 
@@ -61,7 +62,31 @@ Pode representar: grupo de manejo, grupo sanitário, grupo comercial, grupo prod
 * ganho de peso por período;
 * custo total por animal;
 * aptidão para venda;
-* status sanitário consolidado.
+* status sanitário consolidado como fonte primária;
+* planejamento sanitário completo, que pertence à Central Sanitária.
+
+### Sanidade do lote
+
+A aba Sanidade do detalhe do lote deve ser uma visão contextual compacta.
+
+Pode mostrar:
+
+* resumo sanitário do lote;
+* pendências principais limitadas e priorizadas;
+* agenda sanitária futura do lote;
+* atalho para a Central Sanitária filtrada por lote;
+* detalhes técnicos da pré-checagem fechados por padrão.
+
+Não deve mostrar por padrão:
+
+* preview manual completo;
+* candidatas completas;
+* atrasadas completas;
+* bloqueadas e não aplicáveis abertas;
+* lista linear repetida de itens;
+* botões por item.
+
+> ⚠️ **Regra:** Lote é contexto operacional do grupo. Central Sanitária é a superfície principal para janelas, elegibilidade, preview completo e planejamento agrupado.
 
 ---
 

@@ -1,6 +1,6 @@
 # Screen Patterns — RebanhoSync
 
-Atualizado em: 2026-05-31  
+Atualizado em: 2026-07-12
 **Baseline Commit:** `32d7779`
 
 ## Objetivo
@@ -220,6 +220,39 @@ Tela do animal deve separar:
 
 Não misturar último peso com peso atual confiável.
 
+Na aba Sanidade, o animal deve mostrar visão contextual compacta:
+
+- resumo sanitário;
+- pendência documental crítica;
+- histórico sanitário de entrada;
+- agenda sanitária futura;
+- ação `Registrar histórico anterior`;
+- atalho para a Central Sanitária filtrada por animal.
+
+Pré-checagem completa, preview manual, bloqueadas, não aplicáveis e lista linear completa devem ficar em detalhe técnico fechado por padrão.
+
+---
+
+## Lote
+
+Tela do lote deve separar:
+
+- identificação e status do agrupamento;
+- animais vinculados;
+- indicadores contextuais;
+- agenda futura;
+- eventos/histórico quando houver fonte;
+- detalhes técnicos sob demanda.
+
+Na aba Sanidade, o lote deve mostrar visão contextual compacta:
+
+- resumo sanitário do lote;
+- pendências principais limitadas e priorizadas;
+- agenda sanitária futura do lote;
+- atalho para a Central Sanitária filtrada por lote.
+
+O lote não deve renderizar a Central Sanitária completa dentro da página. Pré-checagem completa, preview manual, candidatas, atrasadas completas, bloqueadas, não aplicáveis e botões por item devem ficar fora da visualização padrão.
+
 ---
 
 ## Sanitário
@@ -232,6 +265,22 @@ Tela sanitária deve separar:
 - produtos/estoque;
 - sinais de carência;
 - compliance/checklists.
+
+A Central Sanitária em `/protocolos-sanitarios` é a superfície principal para janelas sanitárias, elegibilidade, preview completo e planejamento agrupado.
+
+Ela deve suportar:
+
+- aba `Janelas sanitárias`;
+- contexto operacional explícito para pré-checagem;
+- filtro inicial por animal ou lote via query params;
+- badge de filtro ativo com identificação legível;
+- ação `Limpar filtro`;
+- agenda sanitária local como intenção futura;
+- histórico executado, histórico externo documentado, declarações e pendências documentais separados.
+
+Animal e lote podem apontar para a Central por atalho filtrado, mas continuam sendo superfícies contextuais.
+
+Filtros de Central Sanitária não podem criar agenda, evento, estoque, carência ativa ou `queue_ops`.
 
 Copy obrigatória quando exibir ausência de carência:
 

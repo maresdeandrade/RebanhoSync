@@ -1,6 +1,6 @@
 # Core Rules — RebanhoSync
 
-Atualizado em: 2026-05-31  
+Atualizado em: 2026-07-12
 **Baseline Commit:** `32d7779`
 
 ## Objetivo
@@ -102,6 +102,37 @@ Serve para:
 - padronizar rotina.
 
 Não comprova execução.
+
+---
+
+### Contexto operacional
+
+Contexto operacional é entrada explícita do usuário para apoiar pré-checagem, preview e snapshot de planejamento.
+
+Pode apoiar:
+
+- avaliação de janela sanitária;
+- explicação de dados insuficientes;
+- planejamento manual.
+
+Não pode:
+
+- substituir fonte técnica;
+- criar evento;
+- movimentar estoque;
+- calcular carência ativa;
+- liberar venda/abate/leite;
+- provar execução.
+
+---
+
+### Histórico externo
+
+Histórico sanitário externo documentado pode apoiar pré-checagem quando houver vínculo suficiente com protocolo/item.
+
+Declaração sem documento e legado ambíguo são avisos/pendências documentais, não comprovação crítica.
+
+Histórico externo não é execução local e não deve baixar estoque, criar agenda automática ou calcular carência ativa automaticamente.
 
 ---
 

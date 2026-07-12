@@ -1,7 +1,7 @@
 ```md
 # FAQ — Sanitário
 
-Atualizado em: 2026-05-31  
+Atualizado em: 2026-07-12
 **Baseline Commit:** `32d7779`
 
 ## Objetivo
@@ -35,6 +35,39 @@ Fato executado.
 ## Agenda sanitária prova aplicação?
 
 **Não.** A agenda sanitária indica tarefa prevista ou pendente. A aplicação exige um evento sanitário registrado.
+
+---
+
+## O que é a Central Sanitária?
+
+É a área `/protocolos-sanitarios` usada para janelas sanitárias, elegibilidade, pré-checagem, agenda sanitária local, catálogo, histórico e pendências documentais.
+
+Detalhe de animal e detalhe de lote mostram apenas resumo contextual. Para planejamento completo, use a Central Sanitária.
+
+---
+
+## O que é contexto operacional?
+
+É informação explícita usada para avaliar uma janela quando o protocolo depende de condição externa.
+
+Exemplos:
+
+* área de risco para raiva;
+* cadência anual/semestral;
+* contexto reprodutivo;
+* manejo pré-desmama, recria, pré-confinamento ou pasto vedado.
+
+> ⚠️ Contexto operacional ajuda a avaliar a janela, mas não substitui fonte técnica nem execução.
+
+---
+
+## O que é histórico sanitário anterior?
+
+É histórico registrado antes da entrada do animal no app/fazenda.
+
+Pode ser documentado, declarado ou importado legado. Histórico externo documentado pode apoiar a pré-checagem. Declaração sem documento pode gerar aviso ou pendência documental.
+
+> ⚠️ Histórico anterior não registra execução local da fazenda, não baixa estoque e não calcula carência ativa automaticamente.
 
 ---
 
@@ -109,6 +142,12 @@ Depende do fluxo e dos dados informados. Se houver baixa, ela deve ser idempoten
 
 ---
 
+## Filtro por animal ou lote na Central executa alguma ação?
+
+**Não.** Filtro só muda a visualização. Ele não cria agenda, evento, estoque, carência ativa ou `queue_ops`.
+
+---
+
 ## Custo sanitário ausente é zero?
 
 **Não.** Custo ausente significa custo não informado.
@@ -130,6 +169,8 @@ Acione o suporte se:
 * baixa de estoque duplicou;
 * carência parece incorreta;
 * protocolo gerou agenda errada;
+* filtro por animal/lote mostra itens de outro escopo;
+* histórico anterior documentado não aparece separado;
 * agenda sanitária não bate com o evento;
 * ocorrência sanitária não aparece;
 * sinais sanitários aparecem como liberação comercial.

@@ -88,7 +88,6 @@ describe("SanitaryProtocolWindowPanelV2", () => {
       reproductiveContext: null,
       management: null,
     });
-    expect(screen.getByRole("button", { name: "Execução indisponível" })).toBeDisabled();
     expect(document.body.textContent).not.toMatch(/protocol-b19|item-b19|b19_femeas_3_8_meses/);
   });
 
@@ -106,5 +105,25 @@ describe("SanitaryProtocolWindowPanelV2", () => {
     expect(screen.getByLabelText("Selecionar Fêmea 101")).toBeEnabled();
     expect(screen.getByText(/raiva em área de risco/)).toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/risk_area|rabiesRiskArea|protocol-raiva/);
+  });
+
+  it("filtra por card, seleciona somente elegíveis visíveis e mantém seleção ao ordenar", async () => {
+    const onPlan = vi.fn().mockResolvedValue(undefined);
+    render(<MemoryRouter><SanitaryProtocolWindowPanelV2 source={source} onPlan={onPlan} /></MemoryRouter>);
+
+    fireEvent.change(screen.getByLabelText("Selecionar protocolo"), { target: { value: "protocol-b19" } });
+    fireEvent.change(screen.getByLabelText("Selecionar item do protocolo"), { target: { value: "item-b19" } });
+    fireEvent.change(screen.getByLabelText("Data de avaliação"), { target: { value: "2026-07-04" } });
+
+    fireEvent.click(screen.getByRole("button", { name: /Em janela/ }));
+    expect(screen.getByText("Filtro ativo: Em janela")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Selecionar todos os elegíveis visíveis" }));
+    expect(screen.getByLabelText("Selecionar Fêmea 101")).toBeChecked();
+    expect(screen.queryByText("Macho 202")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /Animal/ }));
+    expect(screen.getByLabelText("Selecionar Fêmea 101")).toBeChecked();
+    fireEvent.click(screen.getByRole("button", { name: "Limpar filtro" }));
+    expect(screen.getByText("Macho 202")).toBeInTheDocument();
   });
 });

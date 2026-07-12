@@ -1,6 +1,6 @@
 # Manual da Tela — Animais
 
-Atualizado em: 2026-05-31  
+Atualizado em: 2026-07-12
 **Baseline Commit:** `32d7779`
 
 ## Para que serve
@@ -14,6 +14,7 @@ Use para:
 * ver status atual;
 * consultar lote/pasto atual;
 * acessar histórico;
+* acessar resumo sanitário contextual;
 * ver pendências e sinais auxiliares.
 
 ---
@@ -53,6 +54,24 @@ Histórico vem de eventos.
 * parto
 * óbito
 
+### Sanidade do animal
+
+A aba Sanidade do detalhe do animal é um resumo contextual, não a Central Sanitária completa.
+
+Ela pode mostrar:
+
+* resumo sanitário;
+* pendências documentais críticas;
+* histórico sanitário de entrada;
+* declarações;
+* agenda sanitária futura;
+* ação `Registrar histórico anterior`;
+* atalho `Abrir Central Sanitária filtrada para este animal`.
+
+Detalhes técnicos da pré-checagem devem ficar fechados por padrão.
+
+> ⚠️ **Regra:** Agenda futura não conta como histórico executado. Histórico anterior não registra execução local da fazenda.
+
 ---
 
 ## Ações comuns
@@ -64,6 +83,8 @@ Histórico vem de eventos.
 
 * **Ver histórico:** Use para consultar fatos executados relacionados ao animal.
 * **Registrar manejo:** Use quando um fato novo será registrado para o animal.
+* **Registrar histórico anterior:** Use quando o animal já entrou com histórico sanitário prévio documentado, declarado ou importado.
+* **Abrir Central Sanitária filtrada:** Use para ver janelas, elegibilidade e planejamento completo daquele animal na Central Sanitária.
 
 ---
 
@@ -114,6 +135,9 @@ A tela pode mostrar sinais como:
 | **Animal em lote** | Histórico completo de lote |
 | **Estágio definido** | Aptidão operacional automática |
 | **Sem pendência** | Tudo regularizado |
+| **Histórico anterior declarado** | Comprovação documental suficiente |
+| **Agenda futura** | Evento sanitário executado |
+| **Resumo sanitário do animal** | Planejamento completo da Central Sanitária |
 
 ---
 
@@ -125,6 +149,8 @@ A tela pode mostrar sinais como:
 * Usar movimentação para trocar lote/pasto quando aplicável.
 * Revisar animais sem lote.
 * Verificar animais com estágio desconhecido.
+* Registrar evidência documental quando houver histórico sanitário anterior à entrada.
+* Usar o atalho filtrado para abrir a Central Sanitária quando precisar avaliar janelas ou planejar agenda.
 
 ---
 

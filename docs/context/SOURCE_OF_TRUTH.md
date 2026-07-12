@@ -1,7 +1,7 @@
 ```md
 # Source of Truth — RebanhoSync
 
-Atualizado em: 2026-06-06
+Atualizado em: 2026-07-12
 **Baseline Commit:** `32d7779`
 
 ## Objetivo
@@ -19,6 +19,7 @@ Agenda = intenção/tarefa futura
 Evento = fato histórico executado
 state_* = estado atual/read model
 Protocolo = regra/configuração
+Contexto operacional explícito = entrada declarada para pré-checagem
 Tags, sinais e insights = auxiliares de UX/consulta
 Fechamento de agenda = estado administrativo da intenção
 
@@ -49,7 +50,9 @@ Em caso de conflito, confiar nesta ordem:
 | `state_*` | Estado atual/read model | situação corrente, status atual, leitura operacional | prova histórica completa |
 | Protocolos/configurações | Regras/templates | geração/recalculo de agenda, política operacional | prova de execução |
 | Produto/fonte técnica sanitária | dose, via, apresentação, carência e fonte crítica | regra sanitária tecnicamente justificada, carência vinculada ao produto | execução sem evento |
+| Contexto operacional sanitário | entrada estruturada declarada | pré-checagem/preview e snapshot de planejamento | fonte técnica primária, execução, carência, liberação |
 | Demanda/preview sanitário | derivado operacional | agrupamento, simulação e planejamento | histórico, agenda persistida, evento |
+| Histórico sanitário de entrada | fato anterior à entrada, com origem/evidência | pré-checagem conservadora e auditoria documental | execução local, baixa de estoque, carência automática |
 | Fechamento de agenda | estado administrativo da intenção | encerramento/cancelamento/dispensa da tarefa | fato sanitário executado |
 | Tags/sinais/insights | Auxiliar visual/consulta | alerta, filtro, priorização, painel read-only | decisão crítica, fonte primária |
 
@@ -97,6 +100,8 @@ Na Agenda Sanitária v2, os comandos puros têm papéis separados:
 | `agenda_closure_intent` | fechar administrativamente a intenção | criar histórico sanitário, criar evento, baixar estoque |
 
 Demanda agrupada e preview operacional são derivados. Eles não são fonte primária de histórico, não substituem agenda persistida e não calculam carência ativa.
+
+Agenda sanitária manual local em `ops_sanitario_agenda_v2` é intenção futura. Reagendar agenda não executada altera apenas a data planejada; cancelar agenda não executada altera apenas o status da agenda.
 
 ---
 
@@ -216,6 +221,48 @@ Produto sanitário e fonte técnica explícita são fontes para dose, via, apres
 
 Guideline isolado não deve ser tratado como fonte única de decisão crítica.
 
+### Contexto operacional sanitário
+
+Contexto operacional sanitário é entrada explícita do usuário para protocolos que dependem de condição externa, como área de risco para raiva, cadência anual/semestral, contexto reprodutivo ou manejo.
+
+Pode responder:
+
+* qual contexto foi usado na pré-checagem;
+* por que uma janela deixou de estar ambígua;
+* qual snapshot de planejamento foi usado ao criar agenda manual.
+
+Não pode responder:
+
+* se o protocolo foi executado;
+* se há carência ativa;
+* se venda, abate, leite ou aptidão operacional estão liberados;
+* qual é a fonte técnica primária da regra.
+
+### Histórico sanitário de entrada
+
+Histórico sanitário de entrada representa fato sanitário anterior à entrada no app/fazenda.
+
+Pode ser:
+
+* interno executado;
+* externo documentado;
+* externo declarado;
+* importado legado.
+
+Uso correto:
+
+* externo documentado pode apoiar pré-checagem quando houver vínculo suficiente com protocolo/item;
+* declaração sem documento gera aviso ou pendência documental;
+* legado ambíguo não libera regra crítica.
+
+Não pode:
+
+* criar execução local;
+* criar agenda automática;
+* baixar estoque;
+* calcular carência ativa automaticamente;
+* substituir evento interno executado.
+
 ---
 
 ## Tags, sinais e insights
@@ -259,6 +306,9 @@ Tags, sinais e insights são auxiliares.
 | Qual regra sanitária está configurada? | Protocolo/configuração |
 | Qual produto foi aplicado? | Evento sanitário + detail |
 | O protocolo foi executado? | Evento vinculado à execução, não protocolo isolado |
+| Há histórico sanitário anterior suficiente? | Evento interno ou histórico externo documentado vinculado ao protocolo/item |
+| A janela sanitária depende de contexto externo? | Pré-checagem + contexto operacional explícito informado |
+| Qual animal/lote está filtrado na Central Sanitária? | Query params + filtro visual aplicado, sem virar fonte de verdade |
 | O animal está livre de carência? | Fonte técnica explícita de carência consolidada |
 | O animal está pronto para venda? | Fonte técnica/comercial explícita |
 | O animal está apto para abate? | Fonte técnica explícita |
@@ -278,6 +328,8 @@ Não automatizar nem afirmar como certo:
 * apto para abate;
 * protocolo executado;
 * agenda concluída como fato histórico;
+* histórico externo declarado como comprovação crítica;
+* contexto operacional como fonte técnica primária;
 * IATF pendente amplo;
 * conformidade regulatória universal;
 * liberação sanitária para trânsito sem fonte explícita.
