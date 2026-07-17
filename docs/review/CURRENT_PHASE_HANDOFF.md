@@ -1,10 +1,10 @@
 # Current Phase Handoff — RebanhoSync
 
-Atualizado em: 2026-07-12
+Atualizado em: 2026-07-17
 
-## 0. Handoff Atual — Fase 12I + avanços UI sanitários pós-12I
+## 0. Handoff Atual — Fase 12I + execução sanitária operacional pós-12I
 
-Fase 12I — Catalogo Sanitario v2 read-only offline-first — executada localmente.
+Fase 12I — Catalogo Sanitario v2 read-only offline-first — concluída localmente, com execução sanitária explícita adicionada posteriormente sem abrir nova fase.
 
 Decisao: `12I_CATALOGO_SANITARIO_V2_OFFLINE_READ_ONLY`.
 
@@ -17,14 +17,19 @@ Resultado:
 - Testes confirmam 10 protocolos, 20 itens ativos apos saneamento de `raiva_herbivoros` e `matrizes_pre_parto`, 4 grupos, B19 nacional, aftosa retired/bloqueada e 6 antiparasitarios com ProductClassGroup.
 - Avanco UI sanitario posterior: `/protocolos-sanitarios` passou a atuar como Central Sanitaria v2, com abas de Janelas sanitarias, Agenda sanitaria local, Catalogo, Historico e conformidade futura/desabilitada.
 - Janelas sanitarias recebem contexto operacional explicito apenas para pre-checagem/preview e snapshot de planejamento, sem transformar contexto em fonte tecnica primaria.
-- Agenda sanitaria local le `ops_sanitario_agenda_v2`, permite reagendar/cancelar somente agendas nao executadas e mantem execucao bloqueada.
+- Agenda sanitaria local le `ops_sanitario_agenda_v2`, preserva os animais vinculados e permite reagendar/cancelar somente agendas não executadas.
+- A execução começa exclusivamente por uma agenda válida e confirmada; `executeSanitaryAgendaV2` cria o evento sanitário factual, seu detalhe e o vínculo com os animais afetados.
+- Produto real, dose, via, responsável e observação ficam em snapshot do evento. Produto obrigatório é selecionado de cadastro/insumo sanitário compatível, não por texto livre.
+- Baixa de estoque só ocorre depois do evento, com `source_evento_id`, lote e quantidade consumida; sem lote, o evento registra execução sem baixa. Carência ativa só nasce de evento, produto real, data válida e regra técnica explícita com snapshot.
+- A execução é idempotente por `clientOpId + agendaId`; retry retorna o evento existente e não duplica evento, detalhe, estoque ou carência.
+- Histórico executado da Central e do animal lê eventos factuais; agenda futura não conta como histórico. Não há liberação de venda, abate, leite ou aptidão operacional.
 - Historico sanitario de entrada foi separado por origem/evidencia, com historico externo documentado apoiando pre-checagem de forma conservadora e declaracoes gerando aviso/pendencia documental.
 - `AnimalDetalhe` e `LoteDetalhe` passaram a usar resumos sanitarios compactos, mantendo preview completo e planejamento agrupado na Central.
 - Atalhos filtrados por animal/lote abrem `/protocolos-sanitarios?tab=janelas&animalId=...` ou `/protocolos-sanitarios?tab=janelas&loteId=...`; `animalId` tem prioridade sobre `loteId`.
-- Não foi criado push, `queue_ops`, sync-batch de escrita, migration, schema, RLS, Edge Function, evento, estoque, carencia ativa ou liberação operacional.
+- Não foi criada migration, alteração de schema/RLS/Edge Function, `queue_ops` paralelo ou liberação operacional. O catálogo permanece pull-only/read-only e a agenda permanece intenção até confirmação explícita.
 
 Próximo passo seguro:
-- validar a Central Sanitaria v2 em runtime com Dexie populado, mantendo catalogo read-only, agenda como intenção futura e filtros sem efeito operacional.
+- validar em runtime a execução a partir de agenda com animais vinculados, produto cadastrado com e sem lote de estoque, retry idempotente e histórico por animal/Central.
 
 ---
 

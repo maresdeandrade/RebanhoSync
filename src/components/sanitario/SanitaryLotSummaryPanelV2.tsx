@@ -21,6 +21,8 @@ import {
 } from "@/lib/sanitario/checks/sanitaryProtocolPrecheckV2";
 import { formatSanitaryPrecheckStatusV2 } from "@/lib/sanitario/checks/sanitaryPrecheckPresentationV2";
 import type { SanitaryProtocolCatalogReadModelV2 } from "@/lib/sanitario/catalog/sanitaryProtocolCatalogV2";
+import { buildSanitaryComplianceV2 } from "@/lib/sanitario/compliance/sanitaryComplianceV2";
+import type { SanitaryProtocolWindowSourceV2 } from "@/lib/sanitario/windows/sanitaryProtocolWindowsV2";
 import { cn } from "@/lib/utils";
 
 type SanitaryLotFutureAgendaV2 = {
@@ -38,6 +40,7 @@ export type SanitaryLotSummaryPanelV2Props = {
   catalog: SanitaryProtocolCatalogReadModelV2 | null | undefined;
   executedHistory?: SanitaryExecutedHistoryV2[];
   futureAgenda: SanitaryLotFutureAgendaV2[];
+  complianceSource?: SanitaryProtocolWindowSourceV2;
   isLoading?: boolean;
   today?: string;
   className?: string;
@@ -52,14 +55,6 @@ const PENDENCY_PRIORITY: Record<string, number> = {
 
 function hasLocalCatalog(catalog: SanitaryProtocolCatalogReadModelV2 | null | undefined) {
   return Boolean(catalog && catalog.protocols.length > 0 && catalog.items.length > 0);
-}
-
-function isActionWindow(result: SanitaryProtocolPrecheckResultV2) {
-  return (
-    result.status === "in_action_window" ||
-    result.status === "near_deadline" ||
-    result.status === "eligible_soon"
-  );
 }
 
 function primaryReason(result: SanitaryProtocolPrecheckResultV2) {
@@ -108,6 +103,7 @@ export function SanitaryLotSummaryPanelV2({
   catalog,
   executedHistory,
   futureAgenda,
+  complianceSource,
   isLoading = false,
   today = new Date().toISOString().slice(0, 10),
   className,
@@ -125,15 +121,33 @@ export function SanitaryLotSummaryPanelV2({
     });
   }, [animals, catalog, executedHistory, lote, today]);
   const results = precheck?.results ?? [];
+  const complianceRows = useMemo(
+    () =>
+      complianceSource &&
+      Array.isArray(complianceSource.executedHistory) &&
+      Array.isArray(complianceSource.agendas) &&
+      Array.isArray(complianceSource.agendaAnimals)
+        ? buildSanitaryComplianceV2({ source: complianceSource, evaluatedAt: today }).rows.filter(
+            (row) => row.lotId === loteId,
+          )
+        : [],
+    [complianceSource, loteId, today],
+  );
+  const animalStatuses = new Map<string, Set<string>>();
+  for (const row of complianceRows) {
+    animalStatuses.set(row.animalId, new Set([...(animalStatuses.get(row.animalId) ?? []), row.status]));
+  }
   const summary = {
-    inWindow: results.filter(isActionWindow).length,
-    overdue: results.filter((result) => result.status === "overdue").length,
-    documentary: results.filter((result) => result.documentaryPending).length,
-    insufficient: results.filter((result) => result.status === "insufficient_data").length,
-    futureAgenda: futureAgenda.length,
+    compliantAnimals: Array.from(animalStatuses.values()).filter(
+      (statuses) => statuses.has("compliant") && !["document_pending", "blocked", "overdue", "insufficient_data"].some((status) => statuses.has(status)),
+    ).length,
+    pendingAnimals: Array.from(animalStatuses.values()).filter((statuses) =>
+      ["document_pending", "blocked", "overdue", "insufficient_data"].some((status) => statuses.has(status)),
+    ).length,
+    plannedAnimals: Array.from(animalStatuses.values()).filter((statuses) => statuses.has("planned")).length,
   };
   const mainPendencies = buildMainPendencies(results);
-  const centralHref = `/protocolos-sanitarios?tab=janelas&loteId=${encodeURIComponent(loteId)}`;
+  const centralHref = `/protocolos-sanitarios?tab=conformidade&loteId=${encodeURIComponent(loteId)}`;
 
   return (
     <div className={cn("space-y-4", className)}>
@@ -143,24 +157,22 @@ export function SanitaryLotSummaryPanelV2({
             <div>
               <CardTitle className="flex items-center gap-2 text-base">
                 <ShieldCheck className="h-4 w-4 text-primary" />
-                Resumo sanitário do lote
+                Conformidade sanitária do lote
               </CardTitle>
               <p className="text-sm text-muted-foreground">
                 Visão contextual de {loteLabel}. Planejamento completo fica na Central Sanitária.
               </p>
             </div>
             <Button size="sm" variant="outline" asChild>
-              <Link to={centralHref}>Abrir Central Sanitária filtrada para este lote</Link>
+              <Link to={centralHref}>Abrir conformidade na Central filtrada para este lote</Link>
             </Button>
           </div>
         </CardHeader>
-        <CardContent className="grid gap-3 sm:grid-cols-5">
+        <CardContent className="grid gap-3 sm:grid-cols-3">
           {[
-            ["Em janela", summary.inWindow],
-            ["Atrasadas", summary.overdue],
-            ["Pendências documentais", summary.documentary],
-            ["Dados insuficientes", summary.insufficient],
-            ["Agenda futura", summary.futureAgenda],
+            ["Animais conformes", summary.compliantAnimals],
+            ["Animais com pendência", summary.pendingAnimals],
+            ["Animais com agenda futura", summary.plannedAnimals],
           ].map(([label, value]) => (
             <div key={label} className="rounded-lg border border-border/70 bg-muted/10 p-3">
               <p className="text-xs uppercase text-muted-foreground">{label}</p>

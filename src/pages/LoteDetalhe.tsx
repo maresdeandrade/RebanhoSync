@@ -59,6 +59,7 @@ import {
   readLocalSanitaryProtocolCatalogV2,
 } from "@/lib/sanitario/catalog/sanitaryProtocolCatalogV2";
 import { getLotSanitaryExecutedHistoryV2 } from "@/lib/sanitario/history/sanitaryExecutedHistoryV2";
+import { loadSanitaryProtocolWindowSourceV2 } from "@/lib/sanitario/windows/sanitaryProtocolWindowsV2";
 
 const EMPTY_ARRAY: never[] = [];
 
@@ -238,6 +239,13 @@ export default function LoteDetalhe() {
           })
         : Promise.resolve([]),
     [lote?.id, lote?.fazenda_id, animais, sanitaryProtocolCatalogV2],
+  );
+  const sanitaryComplianceSourceV2 = useLiveQuery(
+    () =>
+      lote?.fazenda_id
+        ? loadSanitaryProtocolWindowSourceV2(lote.fazenda_id)
+        : Promise.resolve(undefined),
+    [lote?.fazenda_id],
   );
   const sanitaryAgendaV2 = useLiveQuery(
     () =>
@@ -819,12 +827,14 @@ export default function LoteDetalhe() {
           catalog={sanitaryProtocolCatalogV2}
           executedHistory={sanitaryExecutedHistoryV2}
           futureAgenda={sanitaryFutureAgendaV2}
+          complianceSource={sanitaryComplianceSourceV2}
           isLoading={
             sanitaryProtocolCatalogV2 === undefined ||
             animais === undefined ||
             sanitaryExecutedHistoryV2 === undefined ||
             sanitaryAgendaV2 === undefined ||
-            sanitaryAgendaAnimalsV2 === undefined
+            sanitaryAgendaAnimalsV2 === undefined ||
+            sanitaryComplianceSourceV2 === undefined
           }
         />
       </section>

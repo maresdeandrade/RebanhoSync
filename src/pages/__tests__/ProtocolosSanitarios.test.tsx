@@ -47,14 +47,18 @@ describe("Central Sanitária", () => {
     vi.mocked(listLocalSanitaryAgendasV2).mockReturnValue(Promise.resolve([]));
   });
 
-  it("renderiza as áreas da central com conformidade futura desabilitada", () => {
+  it("renderiza as áreas da central com a aba Conformidade ativa", async () => {
+    const user = userEvent.setup();
     renderPage();
     expect(screen.getByText("Central Sanitária")).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: /Janelas sanitárias/ })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: /Agenda sanitária/ })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: /Catálogo sanitário/ })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: /Histórico sanitário/ })).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: /Conformidade/ })).toBeDisabled();
+    const complianceTab = screen.getByRole("tab", { name: /Conformidade/ });
+    expect(complianceTab).toBeEnabled();
+    await user.click(complianceTab);
+    expect(screen.getByText("Resumo de conformidade")).toBeInTheDocument();
   });
 
   it("explicita que planejamento não é execução nem histórico", () => {

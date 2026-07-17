@@ -22,6 +22,8 @@ import {
 import { formatSanitaryPrecheckStatusV2 } from "@/lib/sanitario/checks/sanitaryPrecheckPresentationV2";
 import type { SanitaryProtocolCatalogReadModelV2 } from "@/lib/sanitario/catalog/sanitaryProtocolCatalogV2";
 import { formatSanitaryProtocolItemLabelV2 } from "@/lib/sanitario/catalog/sanitaryProtocolCatalogV2";
+import { buildSanitaryComplianceV2 } from "@/lib/sanitario/compliance/sanitaryComplianceV2";
+import type { SanitaryProtocolWindowSourceV2 } from "@/lib/sanitario/windows/sanitaryProtocolWindowsV2";
 import { cn } from "@/lib/utils";
 
 type SanitaryAnimalFutureAgendaV2 = {
@@ -40,6 +42,7 @@ export type SanitaryAnimalSummaryPanelV2Props = {
   externalDocumentedHistory: SanitaryExecutedHistoryEventV2[];
   declaredHistory: SanitaryExecutedHistoryEventV2[];
   futureAgenda: SanitaryAnimalFutureAgendaV2[];
+  complianceSource?: SanitaryProtocolWindowSourceV2;
   isLoading?: boolean;
   today?: string;
   onRegisterEntryHistory: () => void;
@@ -59,14 +62,6 @@ function hasLocalCatalog(catalog: SanitaryProtocolCatalogReadModelV2 | null | un
 function formatDate(value: string | null | undefined) {
   if (!value) return "-";
   return new Date(value).toLocaleDateString("pt-BR");
-}
-
-function isActionWindow(result: SanitaryProtocolPrecheckResultV2) {
-  return (
-    result.status === "in_action_window" ||
-    result.status === "near_deadline" ||
-    result.status === "eligible_soon"
-  );
 }
 
 function primaryReason(result: SanitaryProtocolPrecheckResultV2) {
@@ -182,6 +177,7 @@ export function SanitaryAnimalSummaryPanelV2({
   externalDocumentedHistory,
   declaredHistory,
   futureAgenda,
+  complianceSource,
   isLoading = false,
   today = new Date().toISOString().slice(0, 10),
   onRegisterEntryHistory,
@@ -199,18 +195,30 @@ export function SanitaryAnimalSummaryPanelV2({
     });
   }, [animal, catalog, executedHistory, today]);
   const results = precheck?.results ?? [];
+  const complianceRows = useMemo(
+    () =>
+      complianceSource &&
+      Array.isArray(complianceSource.executedHistory) &&
+      Array.isArray(complianceSource.agendas) &&
+      Array.isArray(complianceSource.agendaAnimals)
+        ? buildSanitaryComplianceV2({ source: complianceSource, evaluatedAt: today }).rows.filter(
+            (row) => row.animalId === animalId,
+          )
+        : [],
+    [animalId, complianceSource, today],
+  );
   const summary = {
-    inWindow: results.filter(isActionWindow).length,
-    overdue: results.filter((result) => result.status === "overdue").length,
-    documentary: results.filter((result) => result.documentaryPending).length,
-    insufficient: results.filter((result) => result.status === "insufficient_data").length,
-    futureAgenda: futureAgenda.length,
+    compliant: complianceRows.filter((row) => row.status === "compliant").length,
+    overdue: complianceRows.filter((row) => row.status === "overdue").length,
+    documentary: complianceRows.filter((row) => row.status === "document_pending").length,
+    insufficient: complianceRows.filter((row) => row.status === "insufficient_data").length,
+    planned: complianceRows.filter((row) => row.status === "planned").length,
   };
   const mainPendencies = buildMainPendencies(results);
   const executedEvents = (executedHistory ?? [])
     .find((entry) => entry.animalId === animalId)
     ?.events ?? [];
-  const centralHref = `/protocolos-sanitarios?tab=janelas&animalId=${encodeURIComponent(animalId)}${
+  const centralHref = `/protocolos-sanitarios?tab=conformidade&animalId=${encodeURIComponent(animalId)}${
     lotId ? `&loteId=${encodeURIComponent(lotId)}` : ""
   }`;
 
@@ -239,24 +247,24 @@ export function SanitaryAnimalSummaryPanelV2({
             <div>
               <CardTitle className="flex items-center gap-2 text-base">
                 <ShieldCheck className="h-4 w-4 text-primary" />
-                Resumo sanitário
+                Conformidade sanitária
               </CardTitle>
               <p className="text-sm text-muted-foreground">
                 Visão contextual do animal. Planejamento completo fica na Central Sanitária.
               </p>
             </div>
             <Button size="sm" variant="outline" asChild>
-              <Link to={centralHref}>Abrir Central Sanitária filtrada para este animal</Link>
+              <Link to={centralHref}>Abrir conformidade na Central</Link>
             </Button>
           </div>
         </CardHeader>
         <CardContent className="grid gap-3 sm:grid-cols-5">
           {[
-            ["Em janela", summary.inWindow],
-            ["Atrasadas", summary.overdue],
-            ["Pendências documentais", summary.documentary],
+            ["Conforme", summary.compliant],
+            ["Planejado", summary.planned],
+            ["Pendência documental", summary.documentary],
             ["Dados insuficientes", summary.insufficient],
-            ["Agenda futura", summary.futureAgenda],
+            ["Atrasado", summary.overdue],
           ].map(([label, value]) => (
             <div key={label} className="rounded-lg border border-border/70 bg-muted/10 p-3">
               <p className="text-xs uppercase text-muted-foreground">{label}</p>

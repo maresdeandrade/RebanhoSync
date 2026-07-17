@@ -1,7 +1,7 @@
 # Roadmap — RebanhoSync
 
-Atualizado em: 2026-07-12
-**Baseline documental auditado:** `3853b80`
+Atualizado em: 2026-07-17
+**Baseline documental auditado:** `2e8d355`
 
 ## Objetivo
 
@@ -28,13 +28,13 @@ Não deve substituir issues, tarefas técnicas ou prompts de implementação.
 
 ## Fase atual — Fase 12
 
-Status: **Fase 12I concluida localmente, com Central Sanitaria v2 operacional local e catalogo sanitario v2 read-only**
+Status: **Fase 12I concluída localmente, com catálogo sanitário v2 read-only e execução sanitária explícita pós-12I concluída localmente**
 Fase anterior: **Fase 11.5 — Agenda Sanitária v2: Janelas, Agrupamento e Materialização Idempotente — concluída localmente**
-Fase seguinte: **Validar uso em runtime mantendo catalogo v2 como consulta read-only e agenda sanitaria como intencao futura, sem execucao automatica**
+Fase seguinte: **Validar em runtime a execução confirmada a partir de agenda, mantendo catálogo read-only, agenda como intenção e evento como único fato histórico**
 
 ### Conduta inicial
 
-As subfases 11.5A a 11.5J (Agenda Sanitária v2 core/documental), 12A-12E5, 12F0-12F10, 12G, 12H e 12I foram concluídas localmente. A 12F10 consolidou a fonte final em `SANITARIO_PROTOCOLS_V2_CANONICAL_PAYLOAD_12F10.json`; a 12G criou o importador controlado em `scripts/codex/import-sanitario-protocols-v2.mjs`; a 12H criou a leitura read-only em `src/lib/sanitario/catalog/sanitaryProtocolCatalogV2.ts`; a 12I conectou essa leitura ao offline-first Dexie com stores `catalog_*`, pull remoto e leitura local read-only. O avanço UI posterior criou `/protocolos-sanitarios/catalogo-v2` como consulta read-only do catalogo local, sem agenda automatica. O saneamento posterior ocultou as superficies legadas de Pack Oficial, Conformidade e Protocolos da fazenda, corrigiu `raiva_herbivoros` para dose inicial, reforco 30d e reforco anual sem duplicidade, e removeu a leptospirose concorrente de `matrizes_pre_parto`, mantendo 20 itens ativos read-only/manual_only. Avanços locais posteriores transformaram `/protocolos-sanitarios` em Central Sanitaria v2 com `Janelas sanitarias`, agenda local, catalogo, historico e conformidade futura/desabilitada; adicionaram contexto operacional explicito, historico sanitario de entrada, pendencias documentais, filtros por animal/lote e resumos compactos em `AnimalDetalhe`/`LoteDetalhe`. Esses avanços não criaram migration, schema/RLS/Edge, evento, estoque, carencia ativa, push ou `queue_ops`.
+As subfases 11.5A a 11.5J, 12A-12E5, 12F0-12F10, 12G, 12H e 12I foram concluídas localmente. O catálogo permanece `catalog_*` pull-only/read-only. Avanços pós-12I transformaram `/protocolos-sanitarios` em Central Sanitária v2 e habilitaram execução manual exclusivamente a partir de agenda existente: confirmação explícita cria evento sanitário factual, detalhe e vínculos dos animais afetados; produto real e dados de aplicação são registrados no snapshot. Estoque só é baixado após o evento com `source_evento_id`, e carência só é criada com produto real e regra técnica explícita. Agenda futura não conta como histórico e não há execução por janela ou pré-checagem. Não foram criadas migration, schema/RLS/Edge Function, `queue_ops` paralelo ou liberações de venda, abate, leite e aptidão operacional.
 
 ### Handoff para Fase 12E
 

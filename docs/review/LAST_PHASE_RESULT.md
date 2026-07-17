@@ -1,35 +1,39 @@
 # Last Phase Result - RebanhoSync
 
-Atualizado em: 2026-06-15
+Atualizado em: 2026-07-17
 
 ## Resultado mais recente
 
-Fase 12I - Catalogo Sanitario v2 read-only offline-first - concluida localmente.
+Fase 12I - Catalogo Sanitario v2 read-only offline-first, com execução sanitária explícita pós-12I - concluída localmente.
 
-Decisao: `12I_CATALOGO_SANITARIO_V2_OFFLINE_READ_ONLY`.
+Decisão: catálogo sanitário continua read-only/pull-only; agenda permanece intenção e só vira evento por execução confirmada.
 
 ## Resultado
 
-- Avanco posterior: criada UI minima read-only em `/protocolos-sanitarios/catalogo-v2` para visualizar o catalogo local Dexie, sem ler JSON/Supabase direto e sem criar agenda, evento, estoque, carencia ativa ou automacao operacional.
+- Catálogo v2 continua disponível localmente/read-only em `/protocolos-sanitarios/catalogo-v2`, sem ler JSON em runtime.
 - Criados stores Dexie v27 para `catalog_sanitario_protocolos_v2` e `catalog_sanitario_protocolo_itens_versions_v2`.
 - Ampliados índices de `catalog_sanitario_product_class_groups_v2` para consulta local do catalogo de protocolos.
 - Implementado pull remoto `pullSanitarioProtocolCatalogV2` para protocolos, itens e grupos globais.
 - Implementadas funções locais read-only para listar protocolos, itens por protocolo, ProductClassGroups e resumo do catalogo v2.
 - B19, aftosa e os 6 itens antiparasitarios com ProductClassGroup foram cobertos por testes locais.
-- Nenhum caminho de push, `queue_ops`, agenda, evento, estoque, carencia ativa ou liberacao operacional foi criado.
+- Execução sanitária foi adicionada exclusivamente a partir de agenda existente, válida e confirmada, por `executeSanitaryAgendaV2`.
+- A execução cria evento sanitário, detalhe e vínculo dos animais afetados; o histórico executado da Central e do animal passa a ler esse fato, nunca a agenda futura.
+- Produto real é selecionado de cadastro/insumo sanitário compatível. Sem lote de estoque, o evento é permitido e registra ausência de baixa; com lote, a baixa usa `source_evento_id`.
+- Carência ativa só é criada para produto real com regra técnica explícita, aplicabilidade e snapshot suficientes. Não há liberação de venda, abate, leite ou aptidão operacional.
+- Retry por `clientOpId + agendaId` não duplica evento, detalhe, movimento de estoque ou carência. Não foi criado `queue_ops` paralelo.
 - Criado o relatorio unico `docs/review/evidence/RELATORIO_12I_CATALOGO_SANITARIO_V2_OFFLINE_READONLY.md`.
 
 ## Validacao
 
 - Diagnostico inicial confirmou carga 12G aplicada: `--dry-run` com 0 `create`, 0 `update`, 33 `skip`, 16 `reject`.
 - Testes focados de store, pull, cursor incremental e leitura local passaram.
-- Teste focado da UI read-only do catalogo v2 passou.
-- Validacoes finais da 12I registradas no relatorio.
+- Testes focados de execução, histórico, Agenda e componentes sanitários passaram nas alterações pós-12I.
 
 ## Nao executado
 
-- migration, schema, RLS, UI ampla, Edge Function ou import novo;
-- agenda, evento, estoque, carencia ativa ou liberacao operacional;
+- migration, schema, RLS, Edge Function ou import novo;
+- execução direta de janela, preview ou pré-checagem;
+- baixa sem evento, carência sem evento/produto/regra explícita ou liberação operacional;
 - ProductClassGroup members;
 - push/sync-batch de escrita para catalogos.
 
@@ -48,4 +52,4 @@ Atualizacao posterior de saneamento sanitario v2:
 
 ## Proximo passo possivel
 
-Validar a tela read-only em runtime com Dexie local populado, sem agenda automatica.
+Validar em runtime o fluxo agenda → execução confirmada → evento → histórico, com produto cadastrado, lote opcional e retry idempotente.

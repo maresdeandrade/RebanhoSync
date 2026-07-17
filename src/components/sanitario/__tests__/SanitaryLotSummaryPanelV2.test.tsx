@@ -107,13 +107,16 @@ describe("SanitaryLotSummaryPanelV2", () => {
   it("renderiza resumo compacto do lote sem preview manual aberto por padrão", () => {
     renderPanel();
 
-    expect(screen.getByText("Resumo sanitário do lote")).toBeInTheDocument();
+    expect(screen.getByText("Conformidade sanitária do lote")).toBeInTheDocument();
+    expect(screen.getByText("Animais conformes")).toBeInTheDocument();
+    expect(screen.getByText("Animais com pendência")).toBeInTheDocument();
+    expect(screen.getByText("Animais com agenda futura")).toBeInTheDocument();
     expect(screen.getByText("Pendências principais")).toBeInTheDocument();
     expect(screen.getAllByText("Agenda futura").length).toBeGreaterThan(0);
     expect(screen.getByText("Fêmea adulta exige comprovação documental de B19.")).toBeInTheDocument();
     expect(
-      screen.getByRole("link", { name: /Abrir Central Sanitária filtrada para este lote/i }),
-    ).toHaveAttribute("href", "/protocolos-sanitarios?tab=janelas&loteId=lote-1");
+      screen.getByRole("link", { name: /Abrir conformidade na Central filtrada para este lote/i }),
+    ).toHaveAttribute("href", "/protocolos-sanitarios?tab=conformidade&loteId=lote-1");
     expect(screen.queryByText("Preview manual sanitário")).not.toBeInTheDocument();
     expect(screen.queryByText("Candidatas")).not.toBeInTheDocument();
     expect(screen.queryByText("Bloqueadas")).not.toBeInTheDocument();

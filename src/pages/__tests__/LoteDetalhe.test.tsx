@@ -302,13 +302,13 @@ describe("LoteDetalhe page", () => {
     expect(
       screen.getByRole("heading", { name: "Sanidade" }),
     ).toBeInTheDocument();
-    expect(screen.getByText("Resumo sanitário do lote")).toBeInTheDocument();
+    expect(screen.getByText("Conformidade sanitária do lote")).toBeInTheDocument();
     expect(
       screen.getByText("Lote sem animais para avaliar."),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("link", { name: /Abrir Central Sanitária filtrada para este lote/i }),
-    ).toHaveAttribute("href", "/protocolos-sanitarios?tab=janelas&loteId=lote-1");
+      screen.getByRole("link", { name: /Abrir conformidade na Central filtrada para este lote/i }),
+    ).toHaveAttribute("href", "/protocolos-sanitarios?tab=conformidade&loteId=lote-1");
     expect(screen.queryByText("Pré-checagem sanitária")).not.toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: /Ver detalhes técnicos da pré-checagem/i }),
@@ -389,7 +389,7 @@ describe("LoteDetalhe page", () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByText("Resumo sanitário do lote")).toBeInTheDocument();
+    expect(screen.getByText("Conformidade sanitária do lote")).toBeInTheDocument();
     expect(
       screen.getByRole("heading", { name: "Sanidade" }),
     ).toBeInTheDocument();
@@ -402,7 +402,9 @@ describe("LoteDetalhe page", () => {
       screen.queryByText("Há fêmeas do lote dentro da janela B19 de 3 a 8 meses."),
     ).not.toBeInTheDocument();
     expect(screen.queryByText(/^Animal /)).not.toBeInTheDocument();
-    expect(screen.getAllByText("Em janela").length).toBeGreaterThan(0);
+    expect(screen.getByText("Animais conformes")).toBeInTheDocument();
+    expect(screen.getByText("Animais com pendência")).toBeInTheDocument();
+    expect(screen.getByText("Animais com agenda futura")).toBeInTheDocument();
     expect(screen.queryByText("Pré-checagem sanitária")).not.toBeInTheDocument();
     expect(screen.queryByText("Preview manual sanitário")).not.toBeInTheDocument();
     expect(screen.queryByText("Bloqueadas")).not.toBeInTheDocument();
@@ -412,7 +414,7 @@ describe("LoteDetalhe page", () => {
     expect(screen.queryByRole("button", { name: /^registrar$/i }))
       .not.toBeInTheDocument();
     expect(
-      screen.getByRole("link", { name: /Abrir Central Sanitária filtrada para este lote/i }),
-    ).toHaveAttribute("href", "/protocolos-sanitarios?tab=janelas&loteId=lote-1");
+      screen.getByRole("link", { name: /Abrir conformidade na Central filtrada para este lote/i }),
+    ).toHaveAttribute("href", "/protocolos-sanitarios?tab=conformidade&loteId=lote-1");
   });
 });

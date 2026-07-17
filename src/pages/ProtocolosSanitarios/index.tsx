@@ -6,6 +6,7 @@ import { toast } from "sonner";
 
 import { EmptyState } from "@/components/EmptyState";
 import { SanitaryLocalAgendaPanelV2 } from "@/components/sanitario/SanitaryLocalAgendaPanelV2";
+import { SanitaryCompliancePanelV2 } from "@/components/sanitario/SanitaryCompliancePanelV2";
 import { SanitaryProtocolWindowPanelV2 } from "@/components/sanitario/SanitaryProtocolWindowPanelV2";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -38,11 +39,11 @@ import {
   type SanitaryProtocolWindowRowV2,
 } from "@/lib/sanitario/windows/sanitaryProtocolWindowsV2";
 
-type CentralSanitaryTab = "janelas" | "agenda" | "historico" | "catalogo";
+type CentralSanitaryTab = "janelas" | "agenda" | "historico" | "catalogo" | "conformidade";
 type HistoryRecordFilter = "todos" | "executed_event" | "external_documented" | "declaration" | "documentary_pendency";
 
 function readCentralSanitaryTab(value: string | null): CentralSanitaryTab {
-  return value === "agenda" || value === "historico" || value === "catalogo"
+  return value === "agenda" || value === "historico" || value === "catalogo" || value === "conformidade"
     ? value
     : "janelas";
 }
@@ -216,7 +217,7 @@ const ProtocolosSanitarios = () => {
           <TabsTrigger value="agenda"><CalendarClock className="mr-2 h-4 w-4" />Agenda sanitária</TabsTrigger>
           <TabsTrigger value="historico"><History className="mr-2 h-4 w-4" />Histórico sanitário</TabsTrigger>
           <TabsTrigger value="catalogo"><BookOpenCheck className="mr-2 h-4 w-4" />Catálogo sanitário</TabsTrigger>
-          <TabsTrigger value="conformidade" disabled>Conformidade</TabsTrigger>
+          <TabsTrigger value="conformidade"><ShieldCheck className="mr-2 h-4 w-4" />Conformidade</TabsTrigger>
         </TabsList>
 
         <TabsContent value="janelas">
@@ -237,6 +238,14 @@ const ProtocolosSanitarios = () => {
             onReschedule={reschedule}
             onCancel={cancel}
             onExecute={executeAgenda}
+          />
+        </TabsContent>
+
+        <TabsContent value="conformidade">
+          <SanitaryCompliancePanelV2
+            source={windowSource}
+            initialAnimalId={initialAnimalId}
+            initialLotId={initialLotId}
           />
         </TabsContent>
 

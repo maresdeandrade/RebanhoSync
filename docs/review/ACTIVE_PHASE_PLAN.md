@@ -1,16 +1,16 @@
-    # ACTIVE_PHASE_PLAN - Fase 12I
+    # ACTIVE_PHASE_PLAN - Fase 12I + execução sanitária operacional pós-12I
 
-    **Status:** Fase 12I concluida localmente - Catalogo Sanitario v2 read-only conectado ao offline-first Dexie.
-    **Foco:** Baixar e consultar protocolos, itens e ProductClassGroups v2 em stores `catalog_*` pull-only, sem push, `queue_ops`, agenda, evento, estoque, carencia ativa ou automacao operacional.
+    **Status:** Fase 12I concluída localmente; execução sanitária explícita posterior concluída localmente, sem abrir nova fase.
+    **Foco:** Catálogo permanece `catalog_*` pull-only. Agenda é intenção; sua execução confirmada cria evento factual, com estoque e carência somente quando os requisitos explícitos forem atendidos.
     **Criado:** 2026-06-15
-    **Atualizado:** 2026-06-15
+    **Atualizado:** 2026-07-17
     **Plano base:** solicitação direta da Fase 12I.
 
     ---
 
     ## Objetivo em 1 paragrafo
 
-    Executar a Fase 12I conectando a leitura read-only dos Protocolos Sanitarios v2 ao offline-first Dexie, com pull remoto controlado para 10 protocolos, 19 itens iniciais e 4 ProductClassGroups, consulta local por protocolo/itens/grupos, validação de B19/aftosa/antiparasitarios e preservação de catálogo como fonte pull-only sem autorização operacional. Saneamentos posteriores corrigiram `raiva_herbivoros` e tombstonaram a leptospirose concorrente de `matrizes_pre_parto`, deixando o catalogo ativo com 20 itens sem ativar agenda ou operação.
+    A Fase 12I conectou a leitura read-only dos Protocolos Sanitarios v2 ao offline-first Dexie. O avanço posterior mantém o catálogo como fonte pull-only e adiciona execução manual exclusivamente a partir de agenda existente: confirmação explícita cria um evento sanitário factual, preserva animais/produto/aplicação e pode gerar baixa de estoque e carência apenas sob regras explícitas. A agenda não é histórico, não há execução por janela ou pré-checagem e não há liberação operacional.
 
     ---
 
@@ -31,10 +31,12 @@
     - pull implementado usa merge incremental, preserva tombstones e não limpa stores;
     - leitura local confirma 10 protocolos, 20 itens ativos apos saneamento de raiva e matrizes pre-parto, 4 grupos, B19 nacional, aftosa bloqueada e 6 itens antiparasitarios com ProductClassGroup;
     - avanço UI posterior criou `/protocolos-sanitarios/catalogo-v2` para consulta local/offline read-only;
-    - nenhum caminho de push, `queue_ops`, agenda, evento, estoque, carencia ativa ou liberacao operacional foi criado.
+    - execução posterior por agenda cria evento sanitário idempotente, detalhe e vínculos de animais, sem alterar protocolo ou catálogo;
+    - estoque é baixado apenas após o evento, por `source_evento_id`; carência exige produto real e regra técnica explícita;
+    - não há `queue_ops` paralelo, migration, alteração de schema/RLS/Edge Function ou liberação operacional.
 
     Proximo passo seguro:
-    - validar a tela read-only em runtime com Dexie populado, sem agenda automatica.
+    - validar em runtime a execução confirmada de agenda com animais, produto cadastrado, lote opcional, retry idempotente e histórico factual.
 
     ---
 

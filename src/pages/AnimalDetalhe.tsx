@@ -147,6 +147,7 @@ import {
   formatWeightValue,
 } from "@/lib/format/weight";
 import { resolveSanitaryAgendaItemScheduleMeta } from "@/lib/sanitario/infrastructure/agendaSchedule";
+import { loadSanitaryProtocolWindowSourceV2 } from "@/lib/sanitario/windows/sanitaryProtocolWindowsV2";
 import {
   formatSanitaryProtocolItemLabelV2,
   readLocalSanitaryProtocolCatalogV2,
@@ -1113,6 +1114,13 @@ const AnimalDetalhe = () => {
           })
         : Promise.resolve([]),
     [animal?.id, animal?.fazenda_id, sanitaryProtocolCatalogV2],
+  );
+  const sanitaryComplianceSourceV2 = useLiveQuery(
+    () =>
+      animal?.fazenda_id
+        ? loadSanitaryProtocolWindowSourceV2(animal.fazenda_id)
+        : Promise.resolve(undefined),
+    [animal?.fazenda_id],
   );
   const sanitaryEntryProtocolOptions = useMemo(
     () =>
@@ -3140,9 +3148,11 @@ const AnimalDetalhe = () => {
             externalDocumentedHistory={externalDocumentedHistory}
             declaredHistory={declaredSanitaryHistory}
             futureAgenda={sanitaryFutureAgenda}
+            complianceSource={sanitaryComplianceSourceV2}
             isLoading={
               sanitaryProtocolCatalogV2 === undefined ||
-              sanitaryExecutedHistoryV2 === undefined
+              sanitaryExecutedHistoryV2 === undefined ||
+              sanitaryComplianceSourceV2 === undefined
             }
             onRegisterEntryHistory={() => setShowEntryHistoryDialog(true)}
           />

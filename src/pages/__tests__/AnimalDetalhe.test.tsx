@@ -599,7 +599,7 @@ describe("AnimalDetalhe", () => {
 
     await user.click(screen.getByRole("tab", { name: /sanidade/i }));
 
-    expect(screen.getByText("Resumo sanitário")).toBeInTheDocument();
+    expect(screen.getByText("Conformidade sanitária")).toBeInTheDocument();
     expect(screen.getByText("Pendências principais")).toBeInTheDocument();
     expect(screen.getByText("Histórico de entrada")).toBeInTheDocument();
     expect(screen.getAllByText("Agenda futura").length).toBeGreaterThan(0);
@@ -700,11 +700,11 @@ describe("AnimalDetalhe", () => {
     await user.click(screen.getByRole("tab", { name: /sanidade/i }));
 
     expect(screen.getByText("Fêmea adulta exige comprovação documental de B19.")).toBeInTheDocument();
-    expect(screen.getByText("Pendência documental")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Abrir Central Sanitária filtrada para este animal/i }))
+    expect(screen.getAllByText("Pendência documental").length).toBeGreaterThan(0);
+    expect(screen.getByRole("link", { name: /Abrir conformidade na Central/i }))
       .toHaveAttribute(
         "href",
-        "/protocolos-sanitarios?tab=janelas&animalId=animal-1&loteId=lote-1",
+        "/protocolos-sanitarios?tab=conformidade&animalId=animal-1&loteId=lote-1",
       );
   });
 

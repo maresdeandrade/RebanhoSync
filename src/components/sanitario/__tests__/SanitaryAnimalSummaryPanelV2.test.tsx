@@ -162,7 +162,9 @@ describe("SanitaryAnimalSummaryPanelV2", () => {
   it("renderiza resumo compacto sem preview manual aberto por padrão", () => {
     renderPanel();
 
-    expect(screen.getByText("Resumo sanitário")).toBeInTheDocument();
+    expect(screen.getByText("Conformidade sanitária")).toBeInTheDocument();
+    expect(screen.getByText("Conforme")).toBeInTheDocument();
+    expect(screen.getByText("Planejado")).toBeInTheDocument();
     expect(screen.getByText("Pendências principais")).toBeInTheDocument();
     expect(screen.getByText("Histórico sanitário executado")).toBeInTheDocument();
     expect(screen.getByText(/Vacina Clostridial/)).toBeInTheDocument();
@@ -170,9 +172,9 @@ describe("SanitaryAnimalSummaryPanelV2", () => {
     expect(screen.getByText("Histórico de entrada")).toBeInTheDocument();
     expect(screen.getAllByText("Agenda futura").length).toBeGreaterThan(0);
     expect(screen.getByText("Fêmea adulta exige comprovação documental de B19.")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Abrir Central Sanitária filtrada para este animal/i })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: /Abrir conformidade na Central/i })).toHaveAttribute(
       "href",
-      "/protocolos-sanitarios?tab=janelas&animalId=animal-1&loteId=lot-1",
+      "/protocolos-sanitarios?tab=conformidade&animalId=animal-1&loteId=lot-1",
     );
     expect(screen.queryByText("Preview manual sanitário")).not.toBeInTheDocument();
     expect(screen.queryByText("Candidatas")).not.toBeInTheDocument();

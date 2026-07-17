@@ -1,7 +1,7 @@
 # Open Review Items — RebanhoSync
 
-Atualizado em: 2026-06-15
-**Baseline Commit:** `3853b80`
+Atualizado em: 2026-07-17
+**Baseline Commit:** `2e8d355`
 
 ## Objetivo
 
@@ -31,21 +31,21 @@ Itens resolvidos devem sair deste documento e permanecer registrados apenas no r
 | `EM_ANDAMENTO` | Está sendo tratado. |
 | `BLOQUEADO` | Depende de decisão, fonte ou validação. |
 | `PRONTO_PARA_VALIDAR` | Patch feito, falta validação. |
-| `FECHADO` | Resolvido; deve sair deste documento em próxima limpeza. |
+| `FECHADO` | Resolvido; não deve permanecer neste documento. Registrar no resultado/handoff ou arquivar o relatório correspondente. |
 
 ---
 
 # Pendências abertas
 
-Sem P0/P1 aberto de runtime apos a Fase 12I.
+Sem P0/P1 aberto de runtime após a execução sanitária pós-12I.
 
 Observacao 12G: o importador controlado esta em `scripts/codex/import-sanitario-protocols-v2.mjs` e usa somente `docs/review/evidence/SANITARIO_PROTOCOLS_V2_CANONICAL_PAYLOAD_12F10.json`. Apply real executado localmente com 33 `create`, 0 `update`, 0 `skip`, 16 `reject`; dry-run pos-apply confirmou 0 `create`, 0 `update`, 33 `skip`, 16 `reject`. Os 16 ProductClassGroup members continuam bloqueados por `PRODUCT_CLASS_ID_REQUIRED_FOR_GROUP_MEMBER`.
 
-Observacao 12H: a leitura read-only dos Protocolos Sanitarios v2 foi criada em `src/lib/sanitario/catalog/sanitaryProtocolCatalogV2.ts`, com testes focados. A camada consulta banco, nao JSON, e confirma B19, aftosa e antiparasitarios sem criar agenda, evento, estoque, carencia ativa ou liberacao operacional. Proximo trabalho util: conectar a leitura a uma superficie UI read-only ou pull offline objetivo.
+Observação 12H/12I: a leitura read-only dos Protocolos Sanitários v2 usa o catálogo local/offline e permanece separada da execução operacional.
 
-Observacao 12I: o catalogo de Protocolos Sanitarios v2 foi conectado ao offline-first Dexie em stores `catalog_*` pull-only, com `pullSanitarioProtocolCatalogV2` e leitura local read-only. Saneamentos posteriores corrigiram `raiva_herbivoros`, tombstonaram o item antigo de raiva e removeram a leptospirose concorrente de `matrizes_pre_parto`, deixando 20 itens ativos. Testes confirmam 10 protocolos, 20 itens, 4 grupos, B19 nacional, aftosa bloqueada e 6 antiparasitarios com ProductClassGroup. Nenhum push, `queue_ops`, agenda, evento, estoque, carencia ativa ou liberacao operacional foi criado.
+Observação pós-12I: agenda sanitária pode ser executada somente com confirmação explícita. O evento resultante é o único fato histórico; estoque e carência continuam condicionados a evento, produto real e regra explícita. Não há `queue_ops` paralelo ou liberação operacional.
 
-Observacao UI catalogo v2: `/protocolos-sanitarios/catalogo-v2` permite visualizar o catalogo local/offline em modo read-only. A tela usa a camada `readLocalSanitaryProtocolCatalogV2`, nao le JSON 12F10 em runtime e nao chama Supabase direto.
+Observação UI catálogo v2: `/protocolos-sanitarios/catalogo-v2` permite visualizar o catálogo local/offline em modo read-only. A tela usa `readLocalSanitaryProtocolCatalogV2` e não lê JSON 12F10 em runtime.
 
 Observacao tecnica: `sanitario_produto_fontes_v2` permanece em full fetch/merge porque nao possui `updated_at` no contrato implementado. Reavaliar apenas se futura migration/contrato adicionar timestamp de atualizacao a essa tabela.
 
@@ -141,72 +141,6 @@ Tratar em gate futuro de higiene residual:
 - Warnings reduzidos nos testes afetados.
 - Sem alteração funcional.
 - Suite global permanece verde.
-
----
-
-# Itens fechados nesta etapa
-
-## FECHADO — Cursor incremental por `updated_at` para catalogos sanitarios v2
-
-**Resultado:** fechado na Fase 12E5.
-
-Consolidado:
-
-- `sync_pull_cursors` guarda cursor por tabela/store/escopo.
-- ProductClass v2 e catalogo tecnico sanitario v2 com `updated_at` usam pull incremental.
-- Pull global continua separado de tenant/fazenda e nao depende de `fazenda_id`.
-- Tombstones com `deleted_at` continuam preservados.
-- `sanitario_produto_fontes_v2` segue full fetch/merge por nao possuir `updated_at` no contrato implementado.
-- Nenhum push de catalogo, `queue_ops`, sync-batch ou UI foi criado.
-
-## FECHADO — Cursor incremental por `updated_at` para Agenda Sanitaria v2
-
-**Resultado:** fechado na Fase 12E5.
-
-Consolidado:
-
-- Agenda v2, agenda_animais v2 e closures v2 usam cursor por tabela/fazenda.
-- Full fetch inicial continua possivel.
-- Pull incremental preserva `updated_at`, `deleted_at` quando existente e metadata por merge/upsert.
-- Retry/replay, sucesso parcial e conflito de closures foram reforcados por testes.
-- Agenda v2 e agenda_animais v2 permanecem sem push.
-
-## FECHADO — Baseline P1 sem escrita sanitária legada em agenda_itens
-
-**Resultado:** fechado na Fase 12E2.
-
-Consolidado:
-
-- `scripts/codex/validate-supabase-baseline-functional.mjs` deixou de inserir agenda sanitária legada em `agenda_itens`.
-- A etapa sanitária do baseline passou a validar evento/detalhe sanitário direto, preservando `eventos` + `eventos_sanitario` como superfície factual.
-- Teste de contrato impede regressão para escrita legada sanitária em `agenda_itens`.
-- O bloqueio introduzido na Fase 12C permanece preservado.
-
-## FECHADO — Fase 7 Preparação de PR + Auditoria de Regressão
-
-**Resultado:** fechado no `docs/review/RESULTADO_FASE_7_PREPARACAO_PR.md`.
-
-Consolidado:
-
-- suite global verde;
-- lint verde;
-- build verde;
-- continuidade documental reconciliada;
-- pendências residuais registradas;
-- nenhuma feature nova criada.
-
----
-
-## FECHADO — Formalização Contrato Mínimo Fallback Legado Sanitário
-
-**Resultado:** fechado no `docs/review/RESULTADO_FASE_8_FORMALIZACAO_FALLBACK_SANITARIO.md`.
-
-Consolidado:
-
-- Shape mínimo definido: `family_code` e `item_code` obrigatórios no payload.
-- Adapter interno `tryLegacyCompatibleCompute` implementado.
-- Testes cobrindo campo ausente implementados.
-- Nenhuma alteração indevida em materialização sanitária.
 
 ---
 
