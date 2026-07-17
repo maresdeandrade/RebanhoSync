@@ -29,6 +29,7 @@ import {
 import { buildSanitaryOperationalStatuses } from "@/lib/sanitario/operations/agendaDiagnostics";
 import {
   formatAnimalAge,
+  formatAgendaDate,
   readString,
 } from "@/pages/Agenda/helpers/formatting";
 import { matchesAnimalQuickFilter } from "@/pages/Agenda/helpers/quickFilters";
@@ -89,7 +90,14 @@ export function buildAgendaBaseRows(
       const dateMatch =
         (!filters.dateFrom || item.data_prevista >= filters.dateFrom) &&
         (!filters.dateTo || item.data_prevista <= filters.dateTo);
-      const statusMatch = filters.statusFilter === "all" || item.status === filters.statusFilter;
+      const statusMatch =
+        filters.statusFilter === "all"
+          ? !(
+              filters.dominioFilter === "sanitario" &&
+              item.dominio === "sanitario" &&
+              item.status !== "agendado"
+            )
+          : item.status === filters.statusFilter;
       const dominioMatch = filters.dominioFilter === "all" || item.dominio === filters.dominioFilter;
 
       const textIndex = [item.tipo, item.dominio, animal?.identificacao ?? "", lote?.nome ?? ""]
@@ -102,6 +110,9 @@ export function buildAgendaBaseRows(
       }
 
       const protocolId = readString(item.source_ref, "protocolo_id");
+      const sourceTargetLabel =
+        readString(item.source_ref, "target_label") ??
+        readString(item.payload, "targetLabel");
 
       return {
         item,
@@ -111,7 +122,7 @@ export function buildAgendaBaseRows(
         protocolItem: item.protocol_item_version_id
           ? protocolItemById.get(item.protocol_item_version_id) ?? null
           : null,
-        animalNome: animal?.identificacao ?? "Sem animal",
+        animalNome: animal?.identificacao ?? sourceTargetLabel ?? "Sem animal",
         loteNome: lote?.nome ?? "Sem lote",
         syncStage,
       };
@@ -215,7 +226,10 @@ export function groupAgendaRowsByAnimal(input: {
   for (const row of input.baseRows) {
     const key = row.item.animal_id ?? `sem-animal:${row.item.id}`;
     const animalIdShort = row.item.animal_id ? row.item.animal_id.slice(0, 8) : null;
-    const title = row.animal?.identificacao ?? (animalIdShort ? `Animal ${animalIdShort}` : "Sem animal");
+    const title =
+      row.animal?.identificacao ??
+      row.animalNome ??
+      (animalIdShort ? `Animal ${animalIdShort}` : "Sem animal");
 
     const current = byAnimal.get(key);
     if (current) {
@@ -251,6 +265,80 @@ export function groupAgendaRowsByAnimal(input: {
     );
 }
 
+function todayKey() {
+  const today = new Date();
+  return [
+    today.getFullYear(),
+    `${today.getMonth() + 1}`.padStart(2, "0"),
+    `${today.getDate()}`.padStart(2, "0"),
+  ].join("-");
+}
+
+function sanitaryOperationalGroupLabel(row: AgendaRow, currentDateKey = todayKey()) {
+  if (row.item.status === "concluido") return "Executadas";
+  if (row.item.status === "cancelado") return "Canceladas";
+  if (row.item.status === "agendado" && row.item.data_prevista < currentDateKey) {
+    return "Atrasadas";
+  }
+  return "Planejadas";
+}
+
+function buildSanitaryAgendaEventGroupMeta(row: AgendaRow) {
+  const base = buildAgendaEventGroupMeta({
+    item: row.item,
+    produtoLabel: row.produtoLabel,
+    protocol: row.protocol,
+  });
+  const section = sanitaryOperationalGroupLabel(row);
+  const dateLabel = formatAgendaDate(row.item.data_prevista);
+  const protocolId =
+    readString(row.item.source_ref, "protocolo_id") ??
+    row.protocol?.id ??
+    "sem-protocolo";
+  const itemId =
+    row.item.protocol_item_version_id ??
+    readString(row.item.source_ref, "item_key") ??
+    row.item.protocol_item_code ??
+    row.item.tipo;
+  const product = row.produtoLabel || readString(row.item.source_ref, "produto") || row.item.tipo;
+
+  return {
+    key: [
+      "sanitario",
+      `status:${row.item.status}`,
+      `bucket:${section}`,
+      `date:${row.item.data_prevista}`,
+      `protocol:${protocolId}`,
+      `item:${itemId}`,
+      `product:${product}`,
+    ].join("|"),
+    title: `${section} · ${dateLabel} · ${base.title}`,
+    subtitle: `${base.subtitle} · Produto: ${product}`,
+  };
+}
+
+function summarizeSanitaryEventGroupSubtitle(group: AgendaEventGroup) {
+  let animalCount = 0;
+  const loteLabels = new Set<string>();
+  for (const row of group.rows) {
+    if (row.animalNome && row.animalNome !== "Sem animal") {
+      const groupedAnimals = row.animalNome.match(/^(\d+)\s+animais?$/i);
+      animalCount += groupedAnimals ? Number(groupedAnimals[1]) : 1;
+    }
+    if (row.loteNome && row.loteNome !== "Sem lote") loteLabels.add(row.loteNome);
+  }
+  const baseSubtitle = group.subtitle;
+  const targetSummary =
+    animalCount > 0
+      ? `${animalCount} animal(is)`
+      : "Sem animal vinculado";
+  const loteSummary =
+    loteLabels.size > 0
+      ? `${loteLabels.size} lote(s)`
+      : "Sem lote";
+  return `${baseSubtitle} · ${targetSummary} · ${loteSummary}`;
+}
+
 export function groupAgendaRowsByEvent(input: {
   baseRows: AgendaRow[];
   filteredRows: AgendaRow[];
@@ -260,11 +348,14 @@ export function groupAgendaRowsByEvent(input: {
   const byEvent = new Map<string, AgendaEventGroup>();
 
   for (const row of input.baseRows) {
-    const meta = buildAgendaEventGroupMeta({
-      item: row.item,
-      produtoLabel: row.produtoLabel,
-      protocol: row.protocol,
-    });
+    const meta =
+      row.item.dominio === "sanitario"
+        ? buildSanitaryAgendaEventGroupMeta(row)
+        : buildAgendaEventGroupMeta({
+            item: row.item,
+            produtoLabel: row.produtoLabel,
+            protocol: row.protocol,
+          });
 
     const current = byEvent.get(meta.key);
     if (current) {
@@ -292,6 +383,9 @@ export function groupAgendaRowsByEvent(input: {
       ...group,
       rows: [...group.rows].sort((left, right) => left.item.data_prevista.localeCompare(right.item.data_prevista)),
       visibleRows: group.rows.filter((row) => visibleRowIds.has(row.item.id)),
+      subtitle: group.rows.some((row) => row.item.dominio === "sanitario")
+        ? summarizeSanitaryEventGroupSubtitle(group)
+        : group.subtitle,
       summary: summarizeAgendaGroupByEvent(group.rows),
       sortMeta: summarizeAgendaGroupOrdering(
         input.hasQuickFiltersActive ? group.rows.filter((row) => visibleRowIds.has(row.item.id)) : group.rows,

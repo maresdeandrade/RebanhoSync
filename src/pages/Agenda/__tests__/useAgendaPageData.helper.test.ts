@@ -155,6 +155,88 @@ describe("normalizeAgendaPageData", () => {
     });
   });
 
+  it("preserva vínculos animais de agenda sanitária agrupada por lote", () => {
+    const sanitaryAgenda = {
+      id: "san-agenda-lote",
+      fazenda_id: "farm-1",
+      status: "programada",
+      dedup_key: "dedup-lote",
+      client_id: "client-1",
+      client_op_id: "op-lote",
+      client_tx_id: null,
+      client_recorded_at: "2026-07-01T10:00:00.000Z",
+      server_received_at: "2026-07-01T10:00:00.000Z",
+      protocolo_id: "protocol-1",
+      protocol_item_version_id: "item-version-1",
+      protocol_item_snapshot: { protocolName: "Raiva", itemLabel: "Reforço anual" },
+      data_programada: "2026-07-12",
+      lote_id: "lot-1",
+      produto_snapshot: {},
+      produto_classe: "vacina_raiva_herbivoros",
+      execution_evento_id: null,
+      metadata: {},
+      created_at: "2026-07-01T10:00:00.000Z",
+      updated_at: "2026-07-01T10:00:00.000Z",
+      deleted_at: null,
+    } as SanitarioAgendaLocalV2;
+    const lot = { id: "lot-1", nome: "L_09", deleted_at: null } as Lote;
+    const result = normalizeAgendaPageData({
+      sanitaryAgendasV2: [sanitaryAgenda],
+      sanitaryAgendaAnimalsV2: [
+        { agenda_id: "san-agenda-lote", animal_id: "animal-1" },
+        { agenda_id: "san-agenda-lote", animal_id: "animal-2" },
+      ] as SanitarioAgendaAnimalLocalV2[],
+      lotes: [lot],
+    });
+
+    expect(result.itens[0].source_ref).toMatchObject({
+      target_label: "2 animais",
+      lote_label: "L_09",
+      indicacao: "Raiva · 2 animais",
+    });
+    expect(result.itens[0].animal_id).toBeNull();
+    expect(result.itens[0].lote_id).toBe("lot-1");
+  });
+
+  it("rotula agenda sanitária de lote sem animal_ids como lote inteiro", () => {
+    const sanitaryAgenda = {
+      id: "san-agenda-lote-inteiro",
+      fazenda_id: "farm-1",
+      status: "programada",
+      dedup_key: "dedup-lote-inteiro",
+      client_id: "client-1",
+      client_op_id: "op-lote-inteiro",
+      client_tx_id: null,
+      client_recorded_at: "2026-07-01T10:00:00.000Z",
+      server_received_at: "2026-07-01T10:00:00.000Z",
+      protocolo_id: "protocol-1",
+      protocol_item_version_id: "item-version-1",
+      protocol_item_snapshot: { protocolName: "Raiva", itemLabel: "Reforço anual" },
+      data_programada: "2026-07-12",
+      lote_id: "lot-1",
+      produto_snapshot: {},
+      produto_classe: "vacina_raiva_herbivoros",
+      execution_evento_id: null,
+      metadata: { targetAnimalScope: "lote_sem_animais_explicitos" },
+      created_at: "2026-07-01T10:00:00.000Z",
+      updated_at: "2026-07-01T10:00:00.000Z",
+      deleted_at: null,
+    } as SanitarioAgendaLocalV2;
+    const lot = { id: "lot-1", nome: "L_09", deleted_at: null } as Lote;
+
+    const result = normalizeAgendaPageData({
+      sanitaryAgendasV2: [sanitaryAgenda],
+      sanitaryAgendaAnimalsV2: [],
+      lotes: [lot],
+    });
+
+    expect(result.itens[0].source_ref).toMatchObject({
+      target_label: "Lote inteiro",
+      lote_label: "L_09",
+      indicacao: "Raiva · Lote inteiro",
+    });
+  });
+
   it("returns empty arrays and null config when sources are absent", () => {
     expect(normalizeAgendaPageData(undefined)).toEqual({
       itens: [],

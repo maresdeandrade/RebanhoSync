@@ -115,7 +115,31 @@ function renderPanel() {
         animalId="animal-1"
         lotId="lot-1"
         catalog={catalog}
-        executedHistory={[]}
+        executedHistory={[
+          {
+            animalId: "animal-1",
+            events: [
+              {
+                eventId: "event-1",
+                protocolId: "protocol-clostridial",
+                familyCode: "clostridioses",
+                itemKey: "clostridial_primovac_dose1",
+                productClass: "vacina_clostridial",
+                productId: "product-1",
+                productName: "Vacina Clostridial",
+                doseQuantity: 2,
+                doseUnit: "ml",
+                route: "subcutanea",
+                responsibleName: "mv@example.com",
+                stockStatus: "without_movement",
+                withdrawalStatus: "without_rule",
+                originLabel: "agenda sanitária",
+                executedAt: "2026-07-02T12:00:00.000Z",
+                source: "event",
+              },
+            ],
+          },
+        ]}
         externalDocumentedHistory={[]}
         declaredHistory={[]}
         futureAgenda={[
@@ -140,6 +164,9 @@ describe("SanitaryAnimalSummaryPanelV2", () => {
 
     expect(screen.getByText("Resumo sanitário")).toBeInTheDocument();
     expect(screen.getByText("Pendências principais")).toBeInTheDocument();
+    expect(screen.getByText("Histórico sanitário executado")).toBeInTheDocument();
+    expect(screen.getByText(/Vacina Clostridial/)).toBeInTheDocument();
+    expect(screen.getByText(/origem: agenda sanitária/)).toBeInTheDocument();
     expect(screen.getByText("Histórico de entrada")).toBeInTheDocument();
     expect(screen.getAllByText("Agenda futura").length).toBeGreaterThan(0);
     expect(screen.getByText("Fêmea adulta exige comprovação documental de B19.")).toBeInTheDocument();

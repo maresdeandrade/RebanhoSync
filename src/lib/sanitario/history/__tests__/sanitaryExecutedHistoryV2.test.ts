@@ -259,6 +259,6 @@ describe("sanitaryExecutedHistoryV2", () => {
 
     expect(source).not.toMatch(/state_agenda_itens|ops_sanitario_agenda/i);
     expect(source).not.toMatch(/queue_ops|createGesture|sync-batch|\.add\(|\.put\(/i);
-    expect(source).not.toMatch(/insumo_movimentacoes|carencia_.*(?:dias|ate)/i);
+    expect(source).not.toMatch(/insumo_movimentacoes/i);
   });
 });

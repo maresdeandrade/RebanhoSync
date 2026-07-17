@@ -181,7 +181,18 @@ describe("sanitaryLocalAgendaManagementV2", () => {
     await db.ops_sanitario_agenda_v2.put(original);
 
     await cancelLocalSanitaryAgendaV2({ agendaId: original.id, fazendaId: original.fazenda_id }, db);
-    expect(await db.ops_sanitario_agenda_v2.get(original.id)).toEqual({ ...original, status: "cancelada" });
+    expect(await db.ops_sanitario_agenda_v2.get(original.id)).toMatchObject({
+      id: original.id,
+      fazenda_id: original.fazenda_id,
+      status: "cancelada",
+      execution_evento_id: null,
+      metadata: {
+        cancellation: {
+          status: "cancelled",
+          cancelledAt: expect.any(String),
+        },
+      },
+    });
 
     await db.ops_sanitario_agenda_v2.put(agenda({ id: "executed", execution_evento_id: "event-1" }));
     await expect(cancelLocalSanitaryAgendaV2({ agendaId: "executed", fazendaId: "farm-1" }, db)).rejects.toThrow("AGENDA_SANITARIA_NAO_GERENCIAVEL");

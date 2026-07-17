@@ -35,10 +35,14 @@ import {
   type SanitaryLocalAgendaListItemV2,
 } from "@/lib/sanitario/agenda/sanitaryLocalAgendaManagementV2";
 import type { ExecuteSanitaryAgendaInputV2 } from "@/lib/sanitario/execution/sanitaryAgendaExecutionV2";
-import { SanitaryAgendaExecutionConfirmV2 } from "./SanitaryAgendaExecutionConfirmV2";
+import {
+  SanitaryAgendaExecutionConfirmV2,
+  type SanitaryExecutionInventoryLotOptionV2,
+  type SanitaryExecutionProductOptionV2,
+} from "./SanitaryAgendaExecutionConfirmV2";
 
 const statusLabels = {
-  programada: "Programada",
+  programada: "Planejada",
   executada: "Executada",
   fechada: "Fechada",
   cancelada: "Cancelada",
@@ -60,6 +64,8 @@ type ExecutionPayload = Omit<ExecuteSanitaryAgendaInputV2, "fazendaId">;
 type Props = {
   items: SanitaryLocalAgendaListItemV2[] | undefined;
   defaultResponsibleName?: string | null;
+  executionProductOptions?: SanitaryExecutionProductOptionV2[];
+  executionInventoryLotOptions?: SanitaryExecutionInventoryLotOptionV2[];
   onReschedule: (agendaId: string, plannedFor: string) => Promise<void>;
   onCancel: (agendaId: string) => Promise<void>;
   onExecute: (payloads: ExecutionPayload[]) => Promise<void>;
@@ -139,6 +145,8 @@ function selectedCompatibilityMessage(items: SanitaryLocalAgendaListItemV2[]) {
 export function SanitaryLocalAgendaPanelV2({
   items,
   defaultResponsibleName,
+  executionProductOptions,
+  executionInventoryLotOptions,
   onReschedule,
   onCancel,
   onExecute,
@@ -258,7 +266,7 @@ export function SanitaryLocalAgendaPanelV2({
             <SelectTrigger aria-label="Filtrar por status"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="todas">Todos</SelectItem>
-              <SelectItem value="programada">Programadas</SelectItem>
+              <SelectItem value="programada">Planejadas</SelectItem>
               <SelectItem value="executada">Executadas</SelectItem>
               <SelectItem value="fechada">Fechadas</SelectItem>
               <SelectItem value="cancelada">Canceladas</SelectItem>
@@ -425,6 +433,8 @@ export function SanitaryLocalAgendaPanelV2({
         items={executionTargets}
         open={executionTargets.length > 0}
         defaultResponsibleName={defaultResponsibleName}
+        productOptions={executionProductOptions}
+        inventoryLotOptions={executionInventoryLotOptions}
         onOpenChange={(open) => !open && setExecutionTargets([])}
         onConfirm={executeAgenda}
       />

@@ -57,7 +57,7 @@ export function SyncHealthPanel() {
     <Card className="border-destructive/20 bg-destructive/5 shadow-none">
       <CardHeader className="px-4 py-3">
         <CardTitle className="text-base text-destructive">
-          Envios para revisar
+          Telemetria de sync para revisar
         </CardTitle>
       </CardHeader>
       <CardContent className="px-4 pt-0">
@@ -65,6 +65,11 @@ export function SyncHealthPanel() {
           <p className="text-sm text-muted-foreground">Verificando...</p>
         ) : (
           <div className="space-y-2">
+            <p className="text-xs text-muted-foreground">
+              Estes registros vêm da telemetria remota de sync. A fila local
+              atual continua indicada no Dashboard como itens salvos neste
+              aparelho.
+            </p>
             {metrics.map((m) => (
               <div
                 key={m.id}

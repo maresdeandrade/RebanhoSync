@@ -22,6 +22,7 @@ const emptyWindowSource = {
   animals: [],
   lots: [],
   executedHistory: [],
+  executedEvents: [],
   agendas: [],
   agendaAnimals: [],
 };
@@ -176,6 +177,7 @@ describe("Central Sanitária", () => {
         ],
         lots: [{ id: "lote-1", fazenda_id: "farm-1", nome: "Lote recria", deleted_at: null }],
         executedHistory: [],
+        executedEvents: [],
         agendas: [],
         agendaAnimals: [],
       });
@@ -351,6 +353,7 @@ describe("Central Sanitária", () => {
         { id: "lote-2", fazenda_id: "farm-1", nome: "Lote descarte", deleted_at: null },
       ],
       executedHistory: [],
+      executedEvents: [],
       agendas: [],
       agendaAnimals: [],
     });
@@ -464,6 +467,7 @@ describe("Central Sanitária", () => {
         ],
         lots: [],
         executedHistory: [],
+        executedEvents: [],
         agendas: [],
         agendaAnimals: [],
       });
@@ -481,5 +485,42 @@ describe("Central Sanitária", () => {
       "href",
       "/animais/animal-adulta",
     );
+  });
+
+  it("lista eventos executados e filtros na visão de histórico", async () => {
+    const user = userEvent.setup();
+    vi.mocked(useLiveQuery).mockReset();
+    mockLiveQueries({
+      ...emptyWindowSource,
+      executedEvents: [
+        {
+          eventId: "event-1",
+          executedAt: "2026-07-02T12:00:00.000Z",
+          protocolLabel: "Raiva",
+          itemLabel: "Reforço anual",
+          animalLabel: "14 animais",
+          animalCount: 14,
+          lotLabel: "L_09",
+          productLabel: "Vacina Raiva",
+          doseLabel: "2 ml",
+          routeLabel: "subcutanea",
+          responsibleLabel: "mv@example.com",
+          originLabel: "agenda sanitária",
+          stockLabel: "sem baixa",
+          withdrawalLabel: "sem regra",
+          recordType: "executed_event",
+        },
+      ],
+    });
+
+    renderPage();
+    await user.click(screen.getByRole("tab", { name: /Histórico sanitário/ }));
+
+    expect(screen.getByText("Eventos executados")).toBeInTheDocument();
+    expect(screen.getByLabelText("Produto")).toBeInTheDocument();
+    expect(screen.getByLabelText("Tipo de registro")).toBeInTheDocument();
+    expect(screen.getByText("Raiva · Reforço anual")).toBeInTheDocument();
+    expect(screen.getByText(/Vacina Raiva · 2 ml · subcutanea/)).toBeInTheDocument();
+    expect(screen.getByText(/agenda sanitária · estoque sem baixa · carência sem regra/)).toBeInTheDocument();
   });
 });

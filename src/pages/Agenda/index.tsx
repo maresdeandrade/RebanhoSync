@@ -255,6 +255,7 @@ export default function Agenda() {
       }),
     [baseRows, filtered, hasQuickFiltersActive],
   );
+  const effectiveGroupMode = dominioFilter === "sanitario" ? "evento" : groupMode;
 
   const counts = useMemo(
     () => summarizeAgendaRowsByStatus(filtered),
@@ -319,7 +320,7 @@ export default function Agenda() {
 
   const criticalTargets = useMemo(
     () =>
-      groupMode === "animal"
+      effectiveGroupMode === "animal"
         ? buildAgendaCriticalNavigationTargets(
             groupedByAnimal.map((group) => ({
               key: group.key,
@@ -334,7 +335,7 @@ export default function Agenda() {
               rows: group.visibleRows,
             })),
           ),
-    [groupMode, groupedByAnimal, groupedByEvent],
+    [effectiveGroupMode, groupedByAnimal, groupedByEvent],
   );
 
   const currentCriticalTarget = useMemo(
@@ -515,14 +516,14 @@ export default function Agenda() {
             onDateFromChange={setDateFrom}
             dateTo={dateTo}
             onDateToChange={setDateTo}
-            groupMode={groupMode}
+            groupMode={effectiveGroupMode}
             onGroupModeChange={setGroupMode}
             onClearFilters={resetFilters}
           />
 
           <AgendaGroupedContent
             filteredLength={filtered.length}
-            groupMode={groupMode}
+            groupMode={effectiveGroupMode}
             groupedByAnimal={groupedByAnimal}
             groupedByEvent={groupedByEvent}
             expandedGroupSet={expandedGroupSet}

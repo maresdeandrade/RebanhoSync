@@ -107,10 +107,28 @@ function targetForAgenda(
   const lotId = agenda.lote_id ?? (target?.scope === "lote" ? target.id : null);
 
   if (lotId) {
+    const animalIds = Array.from(new Set(agendaAnimals.map((entry) => entry.animal_id)));
+    if (animalIds.length === 1) {
+      return {
+        kind: "animal",
+        label: animalLabel(animals.get(animalIds[0])),
+        href: `/animais/${animalIds[0]}`,
+      };
+    }
+    if (animalIds.length > 1) {
+      return {
+        kind: "animal",
+        label: `${animalIds.length} animais`,
+        href: null,
+      };
+    }
     const lot = lots.get(lotId);
     return {
       kind: "lote",
-      label: lot?.nome.trim() || "Lote não encontrado",
+      label:
+        readText(agenda.metadata, "targetAnimalScope") === "lote_sem_animais_explicitos"
+          ? "Lote inteiro"
+          : lot?.nome.trim() || "Lote não encontrado",
       href: `/lotes/${lotId}`,
     };
   }
@@ -328,12 +346,24 @@ export async function cancelLocalSanitaryAgendaV2(
   localDb?: LocalAgendaDbV2,
 ) {
   const db = localDb ?? (await getDefaultDb());
+  const now = new Date().toISOString();
   await db.transaction(
     "rw",
     [db.ops_sanitario_agenda_v2, db.ops_sanitario_agenda_animais_v2],
     async () => {
       await assertAgendaCanBeManaged(db, input.agendaId, input.fazendaId);
-      await db.ops_sanitario_agenda_v2.update(input.agendaId, { status: "cancelada" });
+      const current = await db.ops_sanitario_agenda_v2.get(input.agendaId);
+      await db.ops_sanitario_agenda_v2.update(input.agendaId, {
+        status: "cancelada",
+        updated_at: now,
+        metadata: {
+          ...(current?.metadata ?? {}),
+          cancellation: {
+            status: "cancelled",
+            cancelledAt: now,
+          },
+        },
+      });
     },
   );
 }

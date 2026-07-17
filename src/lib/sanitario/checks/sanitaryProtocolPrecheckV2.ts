@@ -43,6 +43,14 @@ export type SanitaryExecutedHistoryEventV2 = {
   itemKey?: string;
   productClass?: string | null;
   productId?: string | null;
+  productName?: string | null;
+  doseQuantity?: number | null;
+  doseUnit?: string | null;
+  route?: string | null;
+  responsibleName?: string | null;
+  stockStatus?: "with_movement" | "without_movement" | "not_applicable";
+  withdrawalStatus?: "generated" | "without_rule" | "not_applicable";
+  originLabel?: string | null;
   executedAt: string;
   source:
     | "event"

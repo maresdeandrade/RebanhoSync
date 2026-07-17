@@ -9,7 +9,15 @@ import { SanitaryLocalAgendaPanelV2 } from "@/components/sanitario/SanitaryLocal
 import { SanitaryProtocolWindowPanelV2 } from "@/components/sanitario/SanitaryProtocolWindowPanelV2";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { PageIntro } from "@/components/ui/page-intro";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
@@ -31,6 +39,7 @@ import {
 } from "@/lib/sanitario/windows/sanitaryProtocolWindowsV2";
 
 type CentralSanitaryTab = "janelas" | "agenda" | "historico" | "catalogo";
+type HistoryRecordFilter = "todos" | "executed_event" | "external_documented" | "declaration" | "documentary_pendency";
 
 function readCentralSanitaryTab(value: string | null): CentralSanitaryTab {
   return value === "agenda" || value === "historico" || value === "catalogo"
@@ -47,6 +56,18 @@ const ProtocolosSanitarios = () => {
   const initialLotId = searchParams.get("loteId");
   const initialLotContextId = initialAnimalId ? initialLotId : null;
   const [activeTab, setActiveTab] = useState(initialTab);
+  const [historyFilters, setHistoryFilters] = useState({
+    text: "",
+    animal: "",
+    lote: "",
+    protocol: "",
+    item: "",
+    product: "",
+    origin: "",
+    startDate: "",
+    endDate: "",
+    recordType: "todos" as HistoryRecordFilter,
+  });
   const localAgenda = useLiveQuery(
     () => (activeFarmId ? listLocalSanitaryAgendasV2(activeFarmId) : []),
     [activeFarmId],
@@ -58,6 +79,43 @@ const ProtocolosSanitarios = () => {
   const documentaryPendencies = listSanitaryDocumentaryPendenciesV2({
     source: windowSource,
     evaluatedAt: new Date().toISOString().slice(0, 10),
+  });
+  const executedEvents = (windowSource?.executedEvents ?? []).filter((event) => {
+    if (historyFilters.recordType !== "todos" && historyFilters.recordType !== "executed_event") return false;
+    if (historyFilters.startDate && event.executedAt.slice(0, 10) < historyFilters.startDate) return false;
+    if (historyFilters.endDate && event.executedAt.slice(0, 10) > historyFilters.endDate) return false;
+    const fields = [
+      event.protocolLabel,
+      event.itemLabel,
+      event.animalLabel,
+      event.lotLabel,
+      event.productLabel,
+      event.originLabel,
+    ];
+    const text = historyFilters.text.trim().toLocaleLowerCase("pt-BR");
+    if (text && !fields.join(" ").toLocaleLowerCase("pt-BR").includes(text)) return false;
+    if (historyFilters.animal && !event.animalLabel.toLocaleLowerCase("pt-BR").includes(historyFilters.animal.toLocaleLowerCase("pt-BR"))) return false;
+    if (historyFilters.lote && !event.lotLabel.toLocaleLowerCase("pt-BR").includes(historyFilters.lote.toLocaleLowerCase("pt-BR"))) return false;
+    if (historyFilters.protocol && !event.protocolLabel.toLocaleLowerCase("pt-BR").includes(historyFilters.protocol.toLocaleLowerCase("pt-BR"))) return false;
+    if (historyFilters.item && !event.itemLabel.toLocaleLowerCase("pt-BR").includes(historyFilters.item.toLocaleLowerCase("pt-BR"))) return false;
+    if (historyFilters.product && !event.productLabel.toLocaleLowerCase("pt-BR").includes(historyFilters.product.toLocaleLowerCase("pt-BR"))) return false;
+    if (historyFilters.origin && !event.originLabel.toLocaleLowerCase("pt-BR").includes(historyFilters.origin.toLocaleLowerCase("pt-BR"))) return false;
+    return true;
+  });
+  const filteredPendencies = documentaryPendencies.filter((pendency) => {
+    if (historyFilters.recordType !== "todos" && historyFilters.recordType !== "documentary_pendency") return false;
+    const text = historyFilters.text.trim().toLocaleLowerCase("pt-BR");
+    if (!text) return true;
+    return [
+      pendency.protocolLabel,
+      pendency.itemLabel,
+      pendency.animalLabel,
+      pendency.lotLabel,
+      pendency.reasons.join(" "),
+    ]
+      .join(" ")
+      .toLocaleLowerCase("pt-BR")
+      .includes(text);
   });
 
   const clearInitialFilter = () => {
@@ -192,8 +250,61 @@ const ProtocolosSanitarios = () => {
         <TabsContent value="historico">
           <div className="grid gap-4">
             <Card>
-              <CardHeader><CardTitle>Histórico sanitário executado</CardTitle><CardDescription>O histórico factual vem de eventos registrados. Agendas abertas, fechadas ou canceladas não são prova de execução.</CardDescription></CardHeader>
-              <CardContent><Button variant="outline" onClick={() => navigate("/eventos")}>Abrir eventos</Button></CardContent>
+              <CardHeader>
+                <CardTitle>Filtros do histórico sanitário</CardTitle>
+                <CardDescription>Filtros locais sobre eventos executados e registros documentais. Agenda futura não entra como histórico.</CardDescription>
+              </CardHeader>
+              <CardContent className="grid gap-3 md:grid-cols-4">
+                <Input aria-label="Texto" placeholder="Texto" value={historyFilters.text} onChange={(event) => setHistoryFilters((current) => ({ ...current, text: event.target.value }))} />
+                <Input aria-label="Animal" placeholder="Animal" value={historyFilters.animal} onChange={(event) => setHistoryFilters((current) => ({ ...current, animal: event.target.value }))} />
+                <Input aria-label="Lote" placeholder="Lote" value={historyFilters.lote} onChange={(event) => setHistoryFilters((current) => ({ ...current, lote: event.target.value }))} />
+                <Input aria-label="Protocolo" placeholder="Protocolo" value={historyFilters.protocol} onChange={(event) => setHistoryFilters((current) => ({ ...current, protocol: event.target.value }))} />
+                <Input aria-label="Item" placeholder="Item" value={historyFilters.item} onChange={(event) => setHistoryFilters((current) => ({ ...current, item: event.target.value }))} />
+                <Input aria-label="Produto" placeholder="Produto" value={historyFilters.product} onChange={(event) => setHistoryFilters((current) => ({ ...current, product: event.target.value }))} />
+                <Input aria-label="Origem" placeholder="Origem" value={historyFilters.origin} onChange={(event) => setHistoryFilters((current) => ({ ...current, origin: event.target.value }))} />
+                <Select value={historyFilters.recordType} onValueChange={(recordType: HistoryRecordFilter) => setHistoryFilters((current) => ({ ...current, recordType }))}>
+                  <SelectTrigger aria-label="Tipo de registro"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos</SelectItem>
+                    <SelectItem value="executed_event">Eventos executados</SelectItem>
+                    <SelectItem value="external_documented">Histórico externo documentado</SelectItem>
+                    <SelectItem value="declaration">Declarações</SelectItem>
+                    <SelectItem value="documentary_pendency">Pendências documentais</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Input aria-label="Data inicial" type="date" value={historyFilters.startDate} onChange={(event) => setHistoryFilters((current) => ({ ...current, startDate: event.target.value }))} />
+                <Input aria-label="Data final" type="date" value={historyFilters.endDate} onChange={(event) => setHistoryFilters((current) => ({ ...current, endDate: event.target.value }))} />
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader><CardTitle>Eventos executados</CardTitle><CardDescription>Fatos sanitários criados por execução confirmada. Agendas abertas, fechadas ou canceladas não são prova de execução.</CardDescription></CardHeader>
+              <CardContent className="space-y-3">
+                {executedEvents.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Nenhum evento sanitário executado encontrado nos filtros locais.</p>
+                ) : (
+                  executedEvents.map((event) => (
+                    <div key={event.eventId} className="rounded-lg border border-border/70 bg-background p-3">
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                        <div>
+                          <p className="font-medium">{event.protocolLabel} · {event.itemLabel}</p>
+                          <p className="text-sm text-muted-foreground">{new Date(event.executedAt).toLocaleDateString("pt-BR")} · {event.animalLabel} · {event.lotLabel}</p>
+                          <p className="text-sm text-muted-foreground">{event.productLabel} · {event.doseLabel} · {event.routeLabel}</p>
+                          <p className="text-sm text-muted-foreground">{event.responsibleLabel} · {event.originLabel} · estoque {event.stockLabel} · carência {event.withdrawalLabel}</p>
+                        </div>
+                        <Button size="sm" variant="outline" onClick={() => navigate("/eventos")}>Abrir eventos</Button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader><CardTitle>Histórico externo documentado</CardTitle><CardDescription>Registros anteriores com evidência documental. Não movimentam estoque.</CardDescription></CardHeader>
+              <CardContent><p className="text-sm text-muted-foreground">Nenhum histórico externo documentado listado nesta visão.</p></CardContent>
+            </Card>
+            <Card>
+              <CardHeader><CardTitle>Declarações</CardTitle><CardDescription>Declarações sanitárias sem documento comprobatório completo.</CardDescription></CardHeader>
+              <CardContent><p className="text-sm text-muted-foreground">Nenhuma declaração sanitária listada nesta visão.</p></CardContent>
             </Card>
             <Card>
               <CardHeader>
@@ -201,10 +312,10 @@ const ProtocolosSanitarios = () => {
                 <CardDescription>Comprovações necessárias antes de tratar histórico externo como evidência suficiente. Não cria agenda automática.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
-                {documentaryPendencies.length === 0 ? (
+                {filteredPendencies.length === 0 ? (
                   <p className="text-sm text-muted-foreground">Nenhuma pendência documental sanitária encontrada nos filtros locais.</p>
                 ) : (
-                  documentaryPendencies.map((pendency) => (
+                  filteredPendencies.map((pendency) => (
                     <div key={`${pendency.animalId}:${pendency.protocolLabel}:${pendency.itemLabel}`} className="rounded-lg border border-border/70 bg-background p-3">
                       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                         <div>

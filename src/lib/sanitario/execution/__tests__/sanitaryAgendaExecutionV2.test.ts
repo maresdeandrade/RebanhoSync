@@ -235,6 +235,13 @@ describe("executeSanitaryAgendaV2", () => {
     });
     expect(await db.event_eventos.count()).toBe(1);
     expect(await db.event_eventos_sanitario.count()).toBe(1);
+    expect(await db.event_eventos.get(result.eventId)).toMatchObject({
+      animal_id: "animal-1",
+      payload: expect.objectContaining({
+        animal_ids: ["animal-1"],
+        target_animal_ids: ["animal-1"],
+      }),
+    });
     expect(await db.queue_ops.count()).toBe(0);
     expect(await db.ops_sanitario_agenda_v2.get("agenda-1")).toMatchObject({
       status: "executada",
@@ -295,7 +302,7 @@ describe("executeSanitaryAgendaV2", () => {
       "missing_executed_at",
     );
     await expect(executeSanitaryAgendaV2({ ...baseInput, product: undefined }, db)).rejects.toThrow(
-      "missing_product",
+      "missing_registered_product",
     );
     await expect(
       executeSanitaryAgendaV2({ ...baseInput, application: { dose: null, doseUnit: "ml", route: "subcutanea" } }, db),
@@ -345,7 +352,10 @@ describe("executeSanitaryAgendaV2", () => {
     const result = await executeSanitaryAgendaV2(
       {
         ...baseInput,
-        product: { productName: "Vermífugo informado" },
+        product: {
+          productId: "product-antiparasitario-1",
+          productName: "Vermífugo cadastrado",
+        },
       },
       db,
     );
@@ -399,11 +409,47 @@ describe("executeSanitaryAgendaV2", () => {
     );
 
     expect(result.createsStockMovement).toBe(true);
+    const repeated = await executeSanitaryAgendaV2(
+      {
+        ...baseInput,
+        product: {
+          ...baseInput.product,
+          inventoryLotId: "stock-lot-1",
+          quantityConsumed: 2,
+          unit: "ml",
+        },
+        confirmation: {
+          userConfirmedExecution: true,
+          userConfirmedStockMovement: true,
+        },
+      },
+      db,
+    );
+    expect(repeated.eventId).toBe(result.eventId);
+    expect(await db.state_insumo_movimentacoes.count()).toBe(1);
     expect(await db.state_insumo_movimentacoes.get(result.eventId)).toMatchObject({
       source_evento_id: result.eventId,
       source_evento_dominio: "sanitario",
       quantidade_base: 2,
       custo_total_snapshot: 10,
+    });
+    expect(await db.state_insumo_lotes.get("stock-lot-1")).toMatchObject({
+      saldo_atual_base: 98,
+    });
+    expect(repeated.createsStockMovement).toBe(false);
+    expect(await db.state_insumo_movimentacoes.count()).toBe(1);
+    expect(await db.state_insumo_lotes.get("stock-lot-1")).toMatchObject({
+      saldo_atual_base: 98,
+    });
+
+    db.close();
+    await db.open();
+    expect(await db.state_insumo_movimentacoes.get(result.eventId)).toMatchObject({
+      source_evento_id: result.eventId,
+      quantidade_base: 2,
+    });
+    expect(await db.state_insumo_lotes.get("stock-lot-1")).toMatchObject({
+      saldo_atual_base: 98,
     });
 
     await clearScope();

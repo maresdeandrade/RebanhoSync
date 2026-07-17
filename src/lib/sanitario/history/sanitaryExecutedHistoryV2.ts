@@ -56,10 +56,20 @@ function resolveTargetAnimalIds(event: Evento): string[] {
     new Set(
       readStringArray(
         event.payload.animal_ids,
+        event.payload.target_animal_ids,
         readRecord(event.payload.sanitario).animal_ids,
+        readRecord(event.payload.sanitario).target_animal_ids,
       ),
     ),
   );
+}
+
+function resolveWithdrawalStatus(detail: EventoSanitario) {
+  if (detail.carencia_carne_ate || detail.carencia_leite_ate) return "generated";
+  const withdrawal = readRecord(detail.payload.withdrawal);
+  return readString(withdrawal.reason) === "missing_explicit_rule"
+    ? "without_rule"
+    : "not_applicable";
 }
 
 function resolveCatalogItem(input: {
@@ -167,6 +177,17 @@ export function buildSanitaryExecutedHistoryV2(
         itemKey: item.logicalItemKey,
         productClass: item.productClass,
         productId: detail.produto_veterinario_id ?? null,
+        productName:
+          detail.produto_nome_snapshot ??
+          detail.produto ??
+          readString(readRecord(detail.payload.product).productName),
+        doseQuantity: detail.dose_quantidade ?? null,
+        doseUnit: detail.dose_unidade ?? null,
+        route: detail.via_aplicacao ?? null,
+        responsibleName: detail.responsavel_nome ?? null,
+        stockStatus: detail.estoque_lote_id ? "with_movement" : "without_movement",
+        withdrawalStatus: resolveWithdrawalStatus(detail),
+        originLabel: event.source_task_id ? "agenda sanitária" : null,
         executedAt: event.occurred_at,
         source:
           readString(

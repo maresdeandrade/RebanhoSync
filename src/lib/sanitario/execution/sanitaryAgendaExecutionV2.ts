@@ -59,6 +59,7 @@ export type SanitaryAgendaExecutionDbV2 = Pick<
   | "state_insumo_lotes"
   | "state_insumo_movimentacoes"
   | "catalog_sanitario_produto_carencia_rules_v2"
+  | "catalog_sanitario_produtos_v2"
   | "transaction"
 >;
 
@@ -219,14 +220,24 @@ function validateAgainstAgenda(input: {
   const doseUnit = request.application?.doseUnit?.trim();
   const route = request.application?.route?.trim();
   const animals = targetAnimalIds(agendaAnimals, agenda);
+  const metadata = readRecord(agenda.metadata);
 
   if (agenda.fazenda_id !== request.fazendaId || agenda.deleted_at) {
     rejected.push("agenda_not_found");
   }
   if (!agenda.protocolo_id || !itemKey(agenda)) rejected.push("missing_protocol_item");
   if (!agenda.lote_id && animals.length === 0) rejected.push("missing_target");
+  if (
+    metadata.source === "sanitary_precheck_preview_v2" &&
+    metadata.targetAnimalScope !== "lote_sem_animais_explicitos" &&
+    animals.length === 0
+  ) {
+    rejected.push("missing_target_animals");
+  }
   if (agenda.status !== "programada") rejected.push("agenda_not_executable");
-  if (requiresProduct && !realProductName) rejected.push("missing_product");
+  if (requiresProduct && (!request.product?.productId || !realProductName)) {
+    rejected.push("missing_registered_product");
+  }
   if ((requiresProduct || realProductName) && (!dose || dose <= 0)) rejected.push("missing_dose");
   if ((requiresProduct || realProductName) && !doseUnit) rejected.push("missing_dose_unit");
   if ((requiresProduct || realProductName) && !route) rejected.push("missing_route");
@@ -378,7 +389,9 @@ function buildRecords(input: {
     creates_event: true,
     creates_stock_movement: Boolean(inventory),
     creates_active_withdrawal: withdrawal.createsActiveWithdrawal,
+    animal_ids: targetAnimalIds,
     target_animal_ids: targetAnimalIds,
+    produto_veterinario_id: request.product?.productId ?? null,
     product: productSnapshot,
     withdrawal: {
       reason: withdrawal.reason,
@@ -578,6 +591,7 @@ export async function executeSanitaryAgendaV2(
       localDb.ops_sanitario_agenda_animais_v2,
       localDb.event_eventos,
       localDb.event_eventos_sanitario,
+      localDb.state_insumo_lotes,
       localDb.state_insumo_movimentacoes,
     ],
     async () => {
@@ -593,7 +607,18 @@ export async function executeSanitaryAgendaV2(
       await localDb.event_eventos.add(records.event);
       await localDb.event_eventos_sanitario.add(records.detail);
       if (records.movement) {
+        const lot = await localDb.state_insumo_lotes.get(records.movement.insumo_lote_id);
+        if (!lot || lot.fazenda_id !== input.fazendaId || lot.deleted_at) {
+          throw new Error("SANITARY_AGENDA_EXECUTION_REJECTED:inventory_lot_not_found");
+        }
+        if (lot.saldo_atual_base < records.movement.quantidade_base) {
+          throw new Error("SANITARY_AGENDA_EXECUTION_REJECTED:insufficient_stock_balance");
+        }
         await localDb.state_insumo_movimentacoes.put(records.movement);
+        await localDb.state_insumo_lotes.update(lot.id, {
+          saldo_atual_base: lot.saldo_atual_base - records.movement.quantidade_base,
+          updated_at: records.now,
+        });
       }
       await localDb.ops_sanitario_agenda_v2.update(input.agendaId, {
         status: "executada",

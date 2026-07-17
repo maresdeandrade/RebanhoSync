@@ -56,7 +56,9 @@ export function AgendaItemRowCard({
     typeof row.item.source_ref?.agenda_v2_id === "string"
       ? row.item.source_ref.agenda_v2_id
       : null;
+  const isSanitaryAgendaV2 = Boolean(sanitaryAgendaV2Id);
   const canDirectComplete = isScheduled && !isCalfJourney && !isSanitary;
+  const canDirectCancel = isScheduled && !isSanitaryAgendaV2;
 
   const registerCtaLabel = sanitaryAgendaV2Id
     ? "Abrir na Central Sanitária"
@@ -124,7 +126,7 @@ export function AgendaItemRowCard({
                     {directCompleteLabel}
                   </DropdownMenuItem>
                 ) : null}
-                {isScheduled ? (
+                {canDirectCancel ? (
                   <DropdownMenuItem onClick={() => onUpdateStatus(row.item, "cancelado")} className="text-destructive">
                     Cancelar tarefa
                   </DropdownMenuItem>

@@ -142,6 +142,37 @@ function HistoryList({
   );
 }
 
+function ExecutedHistoryList({ events }: { events: SanitaryExecutedHistoryEventV2[] }) {
+  return (
+    <div className="space-y-3">
+      {events.length === 0 ? (
+        <p className="text-sm text-muted-foreground">
+          Nenhum evento sanitário executado para este animal.
+        </p>
+      ) : (
+        events.slice(0, 5).map((event) => (
+          <div key={event.eventId} className="rounded-lg border border-border/70 bg-muted/10 p-3">
+            <p className="font-medium">
+              {event.itemKey
+                ? formatSanitaryProtocolItemLabelV2(event.itemKey)
+                : "Item sanitário"}
+            </p>
+            <p className="text-sm text-muted-foreground">
+              {formatDate(event.executedAt)}
+              {event.productName ? ` · ${event.productName}` : ""}
+              {event.doseQuantity && event.doseUnit ? ` · ${event.doseQuantity} ${event.doseUnit}` : ""}
+              {event.route ? ` · ${event.route}` : ""}
+            </p>
+            <p className="text-sm text-muted-foreground">
+              {event.responsibleName ?? "Responsável não informado"} · origem: {event.originLabel ?? "evento sanitário"} · estoque: {event.stockStatus === "with_movement" ? "com baixa" : "sem baixa"} · carência: {event.withdrawalStatus === "generated" ? "gerada" : event.withdrawalStatus === "without_rule" ? "sem regra" : "não aplicável"}
+            </p>
+          </div>
+        ))
+      )}
+    </div>
+  );
+}
+
 export function SanitaryAnimalSummaryPanelV2({
   animal,
   animalId,
@@ -176,12 +207,32 @@ export function SanitaryAnimalSummaryPanelV2({
     futureAgenda: futureAgenda.length,
   };
   const mainPendencies = buildMainPendencies(results);
+  const executedEvents = (executedHistory ?? [])
+    .find((entry) => entry.animalId === animalId)
+    ?.events ?? [];
   const centralHref = `/protocolos-sanitarios?tab=janelas&animalId=${encodeURIComponent(animalId)}${
     lotId ? `&loteId=${encodeURIComponent(lotId)}` : ""
   }`;
 
   return (
     <div className={cn("space-y-4", className)}>
+      <Card className="shadow-none">
+        <CardHeader className="space-y-2">
+          <div>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <ClipboardCheck className="h-4 w-4 text-primary" />
+              Histórico sanitário executado
+            </CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Eventos factuais confirmados. Agenda futura não aparece nesta lista.
+            </p>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <ExecutedHistoryList events={executedEvents} />
+        </CardContent>
+      </Card>
+
       <Card className="shadow-none">
         <CardHeader className="space-y-2">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">

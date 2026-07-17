@@ -3,6 +3,8 @@ import { db } from "@/lib/offline/db";
 import type {
   Animal,
   AnimalStatusEnum,
+  Evento,
+  EventoSanitario,
   Lote,
   SanitarioAgendaAnimalLocalV2,
   SanitarioAgendaLocalV2,
@@ -32,8 +34,27 @@ export type SanitaryProtocolWindowSourceV2 = {
   animals: Animal[];
   lots: Lote[];
   executedHistory: SanitaryExecutedHistoryV2[];
+  executedEvents: SanitaryCentralExecutedEventV2[];
   agendas: SanitarioAgendaLocalV2[];
   agendaAnimals: SanitarioAgendaAnimalLocalV2[];
+};
+
+export type SanitaryCentralExecutedEventV2 = {
+  eventId: string;
+  executedAt: string;
+  protocolLabel: string;
+  itemLabel: string;
+  animalLabel: string;
+  animalCount: number;
+  lotLabel: string;
+  productLabel: string;
+  doseLabel: string;
+  routeLabel: string;
+  responsibleLabel: string;
+  originLabel: string;
+  stockLabel: string;
+  withdrawalLabel: string;
+  recordType: "executed_event";
 };
 
 export type SanitaryOperationalContextV2 = {
@@ -121,6 +142,18 @@ function readString(source: Record<string, unknown>, ...keys: string[]) {
   return null;
 }
 
+function readStringArray(...values: unknown[]): string[] {
+  for (const value of values) {
+    if (Array.isArray(value)) {
+      return value.filter(
+        (entry): entry is string =>
+          typeof entry === "string" && entry.trim().length > 0,
+      );
+    }
+  }
+  return [];
+}
+
 function dateKey(value: string) {
   return /^(\d{4}-\d{2}-\d{2})/.exec(value)?.[1] ?? value;
 }
@@ -146,6 +179,106 @@ function agendaItemKey(agenda: SanitarioAgendaLocalV2) {
     readString(agenda.metadata, "itemKey") ??
     readString(agenda.protocol_item_snapshot, "itemKey", "logicalItemKey")
   );
+}
+
+function resolveEventAnimalIds(event: Evento) {
+  if (event.animal_id) return [event.animal_id];
+  const sanitario = readRecord(event.payload.sanitario);
+  return Array.from(
+    new Set(
+      readStringArray(
+        event.payload.animal_ids,
+        event.payload.target_animal_ids,
+        sanitario.animal_ids,
+        sanitario.target_animal_ids,
+      ),
+    ),
+  );
+}
+
+function resolveCentralItem(input: {
+  detail: EventoSanitario;
+  catalog: SanitaryProtocolCatalogReadModelV2;
+}) {
+  const { detail, catalog } = input;
+  if (detail.protocol_item_version_id) {
+    const byId = catalog.items.find((item) => item.id === detail.protocol_item_version_id);
+    if (byId) return byId;
+  }
+  const snapshot = readRecord(detail.protocol_item_snapshot);
+  const key =
+    detail.protocol_item_logical_key ??
+    readString(snapshot, "logicalItemKey", "logical_item_key", "itemKey", "item_key");
+  return key ? catalog.items.find((item) => item.logicalItemKey === key) ?? null : null;
+}
+
+function buildCentralExecutedEvents(input: {
+  events: Evento[];
+  details: EventoSanitario[];
+  animals: Animal[];
+  lots: Lote[];
+  catalog: SanitaryProtocolCatalogReadModelV2;
+  fazendaId: string;
+}): SanitaryCentralExecutedEventV2[] {
+  const detailsByEventId = new Map(input.details.map((detail) => [detail.evento_id, detail]));
+  const animalsById = new Map(input.animals.map((animal) => [animal.id, animal]));
+  const lotsById = new Map(input.lots.map((lot) => [lot.id, lot]));
+  const protocolsById = new Map(input.catalog.protocols.map((protocol) => [protocol.id, protocol]));
+
+  return input.events
+    .filter(
+      (event) =>
+        event.fazenda_id === input.fazendaId &&
+        event.dominio === "sanitario" &&
+        !event.deleted_at,
+    )
+    .map((event): SanitaryCentralExecutedEventV2 | null => {
+      const detail = detailsByEventId.get(event.id);
+      if (!detail || detail.deleted_at) return null;
+      const item = resolveCentralItem({ detail, catalog: input.catalog });
+      const protocol = item ? protocolsById.get(item.protocolId) : null;
+      const animalIds = resolveEventAnimalIds(event);
+      const firstAnimal = animalIds.length === 1 ? animalsById.get(animalIds[0]) : null;
+      const lot = event.lote_id ? lotsById.get(event.lote_id) : null;
+      const productPayload = readRecord(detail.payload.product);
+      const doseLabel =
+        detail.dose_quantidade && detail.dose_unidade
+          ? `${detail.dose_quantidade} ${detail.dose_unidade}`
+          : "Dose não informada";
+      const withdrawalLabel =
+        detail.carencia_carne_ate || detail.carencia_leite_ate
+          ? "gerada"
+          : readString(readRecord(detail.payload.withdrawal), "reason") === "missing_explicit_rule"
+            ? "sem regra"
+            : "não aplicável";
+
+      return {
+        eventId: event.id,
+        executedAt: event.occurred_at,
+        protocolLabel: protocol?.name ?? "Protocolo sanitário",
+        itemLabel: item ? formatSanitaryProtocolItemLabelV2(item.logicalItemKey) : "Item sanitário",
+        animalLabel:
+          animalIds.length > 1
+            ? `${animalIds.length} animais`
+            : firstAnimal?.nome?.trim() || firstAnimal?.identificacao || "Animal não informado",
+        animalCount: animalIds.length,
+        lotLabel: lot?.nome ?? "Sem lote",
+        productLabel:
+          detail.produto_nome_snapshot ??
+          detail.produto ??
+          readString(productPayload, "productName") ??
+          "Produto não informado",
+        doseLabel,
+        routeLabel: detail.via_aplicacao ?? "Via não informada",
+        responsibleLabel: detail.responsavel_nome ?? "Responsável não informado",
+        originLabel: event.source_task_id ? "agenda sanitária" : "histórico externo",
+        stockLabel: detail.estoque_lote_id ? "com baixa" : "sem baixa",
+        withdrawalLabel,
+        recordType: "executed_event",
+      };
+    })
+    .filter((event): event is SanitaryCentralExecutedEventV2 => event !== null)
+    .sort((left, right) => right.executedAt.localeCompare(left.executedAt));
 }
 
 function buildActiveAgendaIndex(source: SanitaryProtocolWindowSourceV2) {
@@ -388,13 +521,29 @@ export async function loadSanitaryProtocolWindowSourceV2(
       .equals(fazendaId)
       .toArray(),
   ]);
+  const events = await db.event_eventos.where("fazenda_id").equals(fazendaId).toArray();
+  const details =
+    events.length > 0
+      ? await db.event_eventos_sanitario
+          .where("evento_id")
+          .anyOf(events.map((event) => event.id))
+          .toArray()
+      : [];
   const executedHistory = await getLotSanitaryExecutedHistoryV2({
     fazendaId,
     loteId: "central-sanitaria",
     animalIds: animals.filter((animal) => !animal.deleted_at).map((animal) => animal.id),
     catalog,
   });
-  return { catalog, animals, lots, agendas, agendaAnimals, executedHistory };
+  const executedEvents = buildCentralExecutedEvents({
+    events,
+    details,
+    animals,
+    lots,
+    catalog,
+    fazendaId,
+  });
+  return { catalog, animals, lots, agendas, agendaAnimals, executedHistory, executedEvents };
 }
 
 function clientOperationId() {

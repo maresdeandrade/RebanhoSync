@@ -4,6 +4,7 @@ import {
   applyAgendaQuickFilters,
   buildAgendaBaseRows,
   groupAgendaRowsByAnimal,
+  groupAgendaRowsByEvent,
   hasAgendaQuickFiltersActive,
   summarizeAgendaRowsByStatus,
 } from "@/pages/Agenda/helpers/derivations";
@@ -88,6 +89,196 @@ describe("agenda derivations", () => {
     });
 
     expect(rows[0]?.loteNome).toBe("Lote A");
+  });
+
+  it("uses sanitary agenda target label instead of Sem animal for grouped animal links", () => {
+    const data: AgendaPageData = {
+      itens: [
+        {
+          id: "sanitario-v2:agenda-1",
+          tipo: "Reforço anual",
+          status: "agendado",
+          data_prevista: "2026-07-12",
+          animal_id: null,
+          lote_id: "lote-1",
+          dominio: "sanitario",
+          payload: { targetLabel: "2 animais" },
+          source_ref: { target_label: "2 animais", produto: "Vacina Raiva" },
+        } as AgendaRow["item"],
+      ],
+      animais: [],
+      lotes: [{ id: "lote-1", nome: "L_09" } as AgendaRow["lote"]].filter(Boolean) as AgendaPageData["lotes"],
+      protocolos: [],
+      protocoloItens: [],
+      gestos: [],
+      sanidadeConfig: null,
+      officialTemplates: [],
+      officialTemplateItems: [],
+    };
+
+    const rows = buildAgendaBaseRows(data, {
+      search: "",
+      statusFilter: "all",
+      dominioFilter: "all",
+      dateFrom: "",
+      dateTo: "",
+    });
+
+    expect(rows[0]?.animalNome).toBe("2 animais");
+    expect(rows[0]?.loteNome).toBe("L_09");
+
+    const groups = groupAgendaRowsByAnimal({
+      baseRows: rows,
+      filteredRows: rows,
+      hasQuickFiltersActive: false,
+    });
+    expect(groups[0]?.title).toBe("2 animais");
+  });
+
+  it("groups sanitary agenda by operational status, date, protocol and item instead of lote", () => {
+    const rows = [
+      createRow("agenda-a", {
+        item: {
+          id: "agenda-a",
+          tipo: "vacinacao",
+          status: "agendado",
+          data_prevista: "2099-07-12",
+          animal_id: null,
+          lote_id: "lot-1",
+          dominio: "sanitario",
+          protocol_item_version_id: "item-ibr-bvd-d1",
+          source_ref: {
+            protocolo_id: "protocol-repro",
+            produto: "Vacina Reprodutiva IBR BVD Leptospirose",
+          },
+        } as AgendaRow["item"],
+        loteNome: "L_09",
+        animalNome: "10 animais",
+        produtoLabel: "Vacina Reprodutiva IBR BVD Leptospirose",
+        protocol: { id: "protocol-repro", nome: "IBR/BVD" } as AgendaRow["protocol"],
+      }),
+      createRow("agenda-b", {
+        item: {
+          id: "agenda-b",
+          tipo: "vacinacao",
+          status: "agendado",
+          data_prevista: "2099-07-12",
+          animal_id: null,
+          lote_id: "lot-2",
+          dominio: "sanitario",
+          protocol_item_version_id: "item-ibr-bvd-d1",
+          source_ref: {
+            protocolo_id: "protocol-repro",
+            produto: "Vacina Reprodutiva IBR BVD Leptospirose",
+          },
+        } as AgendaRow["item"],
+        loteNome: "L_10",
+        animalNome: "8 animais",
+        produtoLabel: "Vacina Reprodutiva IBR BVD Leptospirose",
+        protocol: { id: "protocol-repro", nome: "IBR/BVD" } as AgendaRow["protocol"],
+      }),
+      createRow("agenda-cancelada", {
+        item: {
+          id: "agenda-cancelada",
+          tipo: "vacinacao",
+          status: "cancelado",
+          data_prevista: "2099-07-12",
+          animal_id: null,
+          lote_id: "lot-1",
+          dominio: "sanitario",
+          protocol_item_version_id: "item-ibr-bvd-d1",
+          source_ref: {
+            protocolo_id: "protocol-repro",
+            produto: "Vacina Reprodutiva IBR BVD Leptospirose",
+          },
+        } as AgendaRow["item"],
+        loteNome: "L_09",
+        animalNome: "10 animais",
+        produtoLabel: "Vacina Reprodutiva IBR BVD Leptospirose",
+        protocol: { id: "protocol-repro", nome: "IBR/BVD" } as AgendaRow["protocol"],
+      }),
+    ];
+
+    const groups = groupAgendaRowsByEvent({
+      baseRows: rows,
+      filteredRows: rows,
+      hasQuickFiltersActive: false,
+    });
+
+    expect(groups).toHaveLength(2);
+    expect(groups[0]?.title).toContain("Planejadas");
+    expect(groups[0]?.title).toContain("IBR/BVD");
+    expect(groups[0]?.rows.map((row) => row.loteNome).sort()).toEqual(["L_09", "L_10"]);
+    expect(groups[0]?.subtitle).toContain("18 animal(is)");
+    expect(groups[0]?.subtitle).toContain("2 lote(s)");
+    expect(groups[1]?.title).toContain("Canceladas");
+  });
+
+  it("hides executed and cancelled sanitary agenda from default sanitary recorte", () => {
+    const data: AgendaPageData = {
+      itens: [
+        {
+          id: "planned",
+          tipo: "vacinacao",
+          status: "agendado",
+          data_prevista: "2099-07-12",
+          animal_id: null,
+          lote_id: "lote-1",
+          dominio: "sanitario",
+          payload: {},
+          source_ref: {},
+        } as AgendaRow["item"],
+        {
+          id: "executed",
+          tipo: "vacinacao",
+          status: "concluido",
+          data_prevista: "2099-07-12",
+          animal_id: null,
+          lote_id: "lote-1",
+          dominio: "sanitario",
+          payload: {},
+          source_ref: {},
+        } as AgendaRow["item"],
+        {
+          id: "cancelled",
+          tipo: "vacinacao",
+          status: "cancelado",
+          data_prevista: "2099-07-12",
+          animal_id: null,
+          lote_id: "lote-1",
+          dominio: "sanitario",
+          payload: {},
+          source_ref: {},
+        } as AgendaRow["item"],
+      ],
+      animais: [],
+      lotes: [{ id: "lote-1", nome: "L_09" } as AgendaRow["lote"]].filter(Boolean) as AgendaPageData["lotes"],
+      protocolos: [],
+      protocoloItens: [],
+      gestos: [],
+      sanidadeConfig: null,
+      officialTemplates: [],
+      officialTemplateItems: [],
+    };
+
+    expect(
+      buildAgendaBaseRows(data, {
+        search: "",
+        statusFilter: "all",
+        dominioFilter: "sanitario",
+        dateFrom: "",
+        dateTo: "",
+      }).map((row) => row.item.id),
+    ).toEqual(["planned"]);
+    expect(
+      buildAgendaBaseRows(data, {
+        search: "",
+        statusFilter: "cancelado",
+        dominioFilter: "sanitario",
+        dateFrom: "",
+        dateTo: "",
+      }).map((row) => row.item.id),
+    ).toEqual(["cancelled"]);
   });
 
   it("applies quick filters without duplicating domain rules", () => {

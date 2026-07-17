@@ -85,7 +85,18 @@ function buildSanitaryAgendaV2AdapterItems(input: {
         readText(agenda.produto_snapshot, "nome_comercial") ??
         formatSanitaryProductClassLabelV2(productClass) ??
         "Produto definido na execução";
-      const targetLabel = lot?.nome ?? firstAnimal?.identificacao ?? (entries.length > 1 ? `${entries.length} animais` : "Alvo sanitário");
+      const animalTargetLabel =
+        entries.length === 1
+          ? firstAnimal?.identificacao ?? "Animal não encontrado"
+          : entries.length > 1
+            ? `${entries.length} animais`
+            : null;
+      const targetScope = readText(agenda.metadata, "targetAnimalScope");
+      const targetLabel =
+        animalTargetLabel ??
+        (agenda.lote_id && targetScope === "lote_sem_animais_explicitos"
+          ? "Lote inteiro"
+          : lot?.nome ?? "Alvo sanitário");
 
       return {
         id: `sanitario-v2:${agenda.id}`,
@@ -103,6 +114,8 @@ function buildSanitaryAgendaV2AdapterItems(input: {
           protocolo_id: agenda.protocolo_id,
           protocolo: protocolLabel,
           produto: productLabel,
+          target_label: targetLabel,
+          lote_label: lot?.nome ?? null,
           indicacao: `${protocolLabel} · ${targetLabel}`,
         },
         source_client_op_id: agenda.client_op_id,
