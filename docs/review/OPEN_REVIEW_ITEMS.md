@@ -48,7 +48,7 @@ Observação 12H/12I: a leitura read-only dos Protocolos Sanitários v2 usa o ca
 
 Observação pós-12I: agenda sanitária pode ser executada somente com confirmação explícita. O evento resultante é o único fato histórico; estoque e carência continuam condicionados a evento, produto real e regra explícita. Não há `queue_ops` paralelo ou liberação operacional.
 
-Observação Conformidade v2: read model derivado/somente leitura validado por animal, lote, protocolo e item. Evidência `external_documented` sem referência vinculada não comprova regra crítica; execução parcial não se generaliza e retry/reabertura não duplicam efeitos locais.
+Observação Conformidade v2: read model derivado/somente leitura validado por animal, lote, protocolo e item. Evidência `external_documented` sem referência vinculada não comprova regra crítica; execução parcial não se generaliza e retry/reabertura não duplicam efeitos locais. Retry/replay não duplicou evento, movimento de estoque, baixa de lote, carência ou vínculo agenda-evento.
 
 Observação UI catálogo v2: `/protocolos-sanitarios/catalogo-v2` permite visualizar o catálogo local/offline em modo read-only. A tela usa `readLocalSanitaryProtocolCatalogV2` e não lê JSON 12F10 em runtime.
 

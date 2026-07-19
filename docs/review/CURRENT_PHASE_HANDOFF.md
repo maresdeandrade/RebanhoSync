@@ -24,6 +24,7 @@ Resultado:
 - Produto real, dose, via, responsável e observação ficam em snapshot do evento. Produto obrigatório é selecionado de cadastro/insumo sanitário compatível, não por texto livre.
 - Baixa de estoque só ocorre depois do evento, com `source_evento_id`, lote e quantidade consumida; sem lote, o evento registra execução sem baixa. Carência ativa só nasce de evento, produto real, data válida e regra técnica explícita com snapshot.
 - A execução é idempotente por `clientOpId + agendaId`; retry retorna o evento existente e não duplica evento, detalhe, estoque ou carência.
+- Retry/replay não duplicou evento, movimento de estoque, baixa de lote, carência ou vínculo agenda-evento.
 - Histórico executado da Central e do animal lê eventos factuais; agenda futura não conta como histórico. Não há liberação de venda, abate, leite ou aptidão operacional.
 - Conformidade Sanitária v2 foi validada como read model local derivado e somente leitura, por animal/lote/protocolo/item. Agenda futura permanece `planned`; cancelamento/conclusão administrativa sem evento não prova execução.
 - Histórico `external_documented` só comprova regra crítica quando possui classe documentada e referência de evidência vinculada; sem referência, permanece pendência documental. Histórico declarado não libera regra crítica.

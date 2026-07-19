@@ -22,7 +22,7 @@ Decisão: catálogo sanitário continua read-only/pull-only; agenda permanece in
 - A execução cria evento sanitário, detalhe e vínculo dos animais afetados; o histórico executado da Central e do animal passa a ler esse fato, nunca a agenda futura.
 - Produto real é selecionado de cadastro/insumo sanitário compatível. Sem lote de estoque, o evento é permitido e registra ausência de baixa; com lote, a baixa usa `source_evento_id`.
 - Carência ativa só é criada para produto real com regra técnica explícita, aplicabilidade e snapshot suficientes. Não há liberação de venda, abate, leite ou aptidão operacional.
-- Retry por `clientOpId + agendaId` não duplica evento, detalhe, movimento de estoque ou carência. Não foi criado `queue_ops` paralelo.
+- Retry por `clientOpId + agendaId` não duplica evento, detalhe, movimento de estoque ou carência. Retry/replay não duplicou evento, movimento de estoque, baixa de lote, carência ou vínculo agenda-evento. Não foi criado `queue_ops` paralelo.
 - Conformidade v2 permanece derivada e somente leitura: agenda futura é `planned`, agenda cancelada/executada não gera planejamento residual e conclusão sem evento não prova execução.
 - B19 adulta exige evidência externa documentada com referência vinculada; declaração ou documento sem referência permanecem pendência documental.
 - Execução parcial é individual, múltiplos protocolos são avaliados separadamente e reabertura do Dexie preserva IDs, contagens e saldo.
