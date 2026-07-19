@@ -34,6 +34,7 @@ export type CreateSanitaryEntryHistoryV2Input = {
   source: SanitaryEntryHistorySourceV2;
   evidenceClass: SanitaryEntryHistoryEvidenceClassV2;
   evidenceType: SanitaryEntryHistoryEvidenceTypeV2;
+  evidenceReference?: string | null;
   notes?: string | null;
   catalog: SanitaryProtocolCatalogReadModelV2;
   clientId?: string;
@@ -105,6 +106,7 @@ export async function createSanitaryEntryHistoryV2(
     entry_history_source: input.source,
     evidence_class: input.evidenceClass,
     evidence_type: input.evidenceType,
+    evidence_reference: input.evidenceReference?.trim() || null,
     date_approximate: input.dateApproximate || !input.occurredOn,
     execution_date_known: Boolean(input.occurredOn),
     creates_local_execution: false,

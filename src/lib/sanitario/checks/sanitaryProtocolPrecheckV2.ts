@@ -59,6 +59,7 @@ export type SanitaryExecutedHistoryEventV2 = {
     | "external_declared"
     | "legacy_import";
   evidenceClass?: "documented" | "declared" | "unknown";
+  evidenceReference?: string | null;
   dateApproximate?: boolean;
 };
 
@@ -259,11 +260,16 @@ function resolveHistoryRequirement(
 }
 
 function isDocumentedHistorySource(event: SanitaryExecutedHistoryEventV2): boolean {
+  const hasLinkedEvidence = Boolean(event.evidenceReference?.trim());
   return (
     event.source === "event" ||
     event.source === "internal_execution" ||
-    event.source === "external_documented" ||
-    (event.source === "legacy_import" && event.evidenceClass === "documented")
+    (event.source === "external_documented" &&
+      event.evidenceClass === "documented" &&
+      hasLinkedEvidence) ||
+    (event.source === "legacy_import" &&
+      event.evidenceClass === "documented" &&
+      hasLinkedEvidence)
   );
 }
 

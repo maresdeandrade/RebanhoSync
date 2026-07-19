@@ -167,6 +167,29 @@ describe("sanitaryExecutedHistoryV2", () => {
     ]);
   });
 
+  it("preserva referência documental estruturada no histórico externo", () => {
+    const history = buildSanitaryExecutedHistoryV2({
+      events: [
+        event({
+          payload: {
+            entry_history_source: "external_documented",
+            evidence_class: "documented",
+            evidence_reference: "certificado-b19-2024",
+          },
+        }),
+      ],
+      sanitaryDetails: [detail()],
+      catalog: catalog(),
+      fazendaId: "farm-1",
+    });
+
+    expect(history[0]?.events[0]).toMatchObject({
+      source: "external_documented",
+      evidenceClass: "documented",
+      evidenceReference: "certificado-b19-2024",
+    });
+  });
+
   it("expande evento de lote apenas com animal_ids explicitos", () => {
     const withoutTargets = buildSanitaryExecutedHistoryV2({
       events: [event({ animal_id: null, lote_id: "lot-1" })],

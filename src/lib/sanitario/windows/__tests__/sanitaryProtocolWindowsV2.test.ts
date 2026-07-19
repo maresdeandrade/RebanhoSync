@@ -262,7 +262,7 @@ describe("sanitaryProtocolWindowsV2", () => {
       itemId: "item-b19",
       source: source({
         animals: [animal("overdue", "F", "2025-09-01")],
-        executedHistory: [{ animalId: "overdue", events: [{ eventId: "event-b19-doc", protocolId: "protocol-b19", familyCode: "brucelose_b19", itemKey: "b19_femeas_3_8_meses", executedAt: "2026-01-01", source: "external_documented", evidenceClass: "documented" }] }],
+        executedHistory: [{ animalId: "overdue", events: [{ eventId: "event-b19-doc", protocolId: "protocol-b19", familyCode: "brucelose_b19", itemKey: "b19_femeas_3_8_meses", executedAt: "2026-01-01", source: "external_documented", evidenceClass: "documented", evidenceReference: "certificado-b19-2026" }] }],
       }),
     });
     expect(documented.rows[0]).toMatchObject({ status: "completed", documentaryPending: false, canSelect: false });

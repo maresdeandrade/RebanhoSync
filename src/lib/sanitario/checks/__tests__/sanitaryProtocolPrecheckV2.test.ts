@@ -418,7 +418,11 @@ describe("precheckSanitaryProtocolsV2", () => {
         "brucelose_b19",
         "b19_femeas_3_8_meses",
         "2024-06-01",
-        { source: "external_documented", evidenceClass: "documented" },
+        {
+          source: "external_documented",
+          evidenceClass: "documented",
+          evidenceReference: "certificado-b19-2024",
+        },
       ),
     );
 
@@ -427,6 +431,24 @@ describe("precheckSanitaryProtocolsV2", () => {
     expect(result.warnings).toContain(
       "Histórico anterior não registra execução da fazenda nem movimenta estoque.",
     );
+  });
+
+  it("B19 adulta external_documented sem referência continua pendente", () => {
+    const result = resultByItem(
+      buildCatalog(),
+      { ...baseAnimal, nascimento: "2024-01-01" },
+      "b19_femeas_3_8_meses",
+      "2026-05-01",
+      eventHistory(
+        "brucelose_b19",
+        "b19_femeas_3_8_meses",
+        "2024-06-01",
+        { source: "external_documented", evidenceClass: "documented" },
+      ),
+    );
+
+    expect(result.status).toBe("insufficient_data");
+    expect(result.documentaryPending).toBe(true);
   });
 
   it("B19 adulta apenas declarada continua com pendencia documental", () => {

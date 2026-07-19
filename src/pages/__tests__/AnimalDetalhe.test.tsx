@@ -787,6 +787,14 @@ describe("AnimalDetalhe", () => {
     expect(screen.getByRole("dialog")).toHaveTextContent(
       "Histórico anterior não registra execução da fazenda",
     );
+    expect(
+      screen.getByLabelText("Referência do documento"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Sem referência vinculada, o histórico não comprova regra crítica.",
+      ),
+    ).toBeInTheDocument();
     expect(screen.queryByText(/Marcar como vacinado/i)).not.toBeInTheDocument();
   });
 

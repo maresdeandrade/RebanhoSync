@@ -226,9 +226,15 @@ export function buildSanitaryExecutedHistoryV2(
               : readString(
                     detail.payload.evidence_class,
                     event.payload.evidence_class,
-                  ) === "unknown"
+                ) === "unknown"
                 ? "unknown"
                 : undefined,
+        evidenceReference: readString(
+          detail.payload.evidence_reference,
+          detail.payload.evidence_document_id,
+          event.payload.evidence_reference,
+          event.payload.evidence_document_id,
+        ),
         dateApproximate:
           readBoolean(detail.payload.date_approximate) ??
           readBoolean(event.payload.date_approximate),

@@ -200,6 +200,7 @@ type SanitaryEntryHistoryFormState = {
   dateApproximate: boolean;
   source: SanitaryEntryHistorySourceV2;
   evidenceType: SanitaryEntryHistoryEvidenceTypeV2;
+  evidenceReference: string;
   notes: string;
 };
 
@@ -721,6 +722,7 @@ const AnimalDetalhe = () => {
       dateApproximate: false,
       source: "external_documented",
       evidenceType: "certificado",
+      evidenceReference: "",
       notes: "",
     });
   const [showCloseSanitaryAlertDialog, setShowCloseSanitaryAlertDialog] =
@@ -1463,6 +1465,7 @@ const AnimalDetalhe = () => {
               ? "declared"
               : "unknown",
         evidenceType: entryHistoryForm.evidenceType,
+        evidenceReference: entryHistoryForm.evidenceReference,
         notes: entryHistoryForm.notes,
         catalog: sanitaryProtocolCatalogV2,
       });
@@ -1474,6 +1477,7 @@ const AnimalDetalhe = () => {
         dateApproximate: false,
         source: "external_documented",
         evidenceType: "certificado",
+        evidenceReference: "",
         notes: "",
       });
       showSuccess("Histórico anterior registrado.");
@@ -3556,6 +3560,29 @@ const AnimalDetalhe = () => {
             </div>
 
             <div className="space-y-2">
+              <Label htmlFor="entry_history_evidence_reference">
+                Referência do documento
+              </Label>
+              <Input
+                id="entry_history_evidence_reference"
+                value={entryHistoryForm.evidenceReference}
+                onChange={(event) =>
+                  setEntryHistoryForm((prev) => ({
+                    ...prev,
+                    evidenceReference: event.target.value,
+                  }))
+                }
+                placeholder="Número, emissor ou identificador do documento"
+              />
+              {entryHistoryForm.source === "external_documented" &&
+              !entryHistoryForm.evidenceReference.trim() ? (
+                <p className="text-xs text-amber-700">
+                  Sem referência vinculada, o histórico não comprova regra crítica.
+                </p>
+              ) : null}
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="entry_history_notes">Observação</Label>
               <Textarea
                 id="entry_history_notes"
@@ -3584,7 +3611,9 @@ const AnimalDetalhe = () => {
               disabled={
                 isSavingEntryHistory ||
                 !entryHistoryForm.protocolId ||
-                !entryHistoryForm.itemId
+                !entryHistoryForm.itemId ||
+                (entryHistoryForm.source === "external_documented" &&
+                  !entryHistoryForm.evidenceReference.trim())
               }
             >
               {isSavingEntryHistory ? "Registrando..." : "Registrar histórico anterior"}

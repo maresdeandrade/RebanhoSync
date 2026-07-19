@@ -145,9 +145,14 @@ function isCompatibleHistory(
 }
 
 function isDocumentedHistory(event: SanitaryExecutedHistoryEventV2) {
+  const hasLinkedEvidence = Boolean(event.evidenceReference?.trim());
   return (
-    event.source === "external_documented" ||
-    (event.source === "legacy_import" && event.evidenceClass === "documented")
+    (event.source === "external_documented" &&
+      event.evidenceClass === "documented" &&
+      hasLinkedEvidence) ||
+    (event.source === "legacy_import" &&
+      event.evidenceClass === "documented" &&
+      hasLinkedEvidence)
   );
 }
 
@@ -422,4 +427,3 @@ export function buildSanitaryComplianceV2(input: {
     allowsOperationalRelease: false,
   };
 }
-

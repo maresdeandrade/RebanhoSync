@@ -86,6 +86,7 @@ describe("sanitaryEntryHistoryV2", () => {
       source: "external_documented",
       evidenceClass: "documented",
       evidenceType: "certificado",
+      evidenceReference: "certificado-b19-2024",
       notes: "Certificado apresentado na compra.",
       catalog,
     });
@@ -111,6 +112,7 @@ describe("sanitaryEntryHistoryV2", () => {
       eventId: result.eventId,
       source: "external_documented",
       evidenceClass: "documented",
+      evidenceReference: "certificado-b19-2024",
       itemKey: "b19_femeas_3_8_meses",
     });
   });

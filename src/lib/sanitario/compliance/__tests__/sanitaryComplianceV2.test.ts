@@ -126,6 +126,7 @@ function historyEvent(
   eventId: string,
   source: SanitaryExecutedHistoryEventV2["source"],
   evidenceClass?: SanitaryExecutedHistoryEventV2["evidenceClass"],
+  evidenceReference?: string | null,
 ): SanitaryExecutedHistoryEventV2 {
   return {
     eventId,
@@ -138,6 +139,7 @@ function historyEvent(
     executedAt: "2026-04-10T10:00:00.000Z",
     source,
     evidenceClass,
+    evidenceReference,
   };
 }
 
@@ -244,11 +246,41 @@ describe("sanitaryComplianceV2", () => {
         histories: [
           {
             animalId: "adult",
-            events: [historyEvent("document-1", "external_documented", "documented")],
+            events: [
+              historyEvent(
+                "document-1",
+                "external_documented",
+                "documented",
+                "certificado-b19-2024",
+              ),
+            ],
           },
         ],
       }),
     ).toMatchObject({ status: "compliant", evidenceOrigin: "external_documented" });
+  });
+
+  it("histórico external_documented sem evidência vinculada não comprova B19", () => {
+    expect(
+      row({
+        animals: [animal("adult", "2024-01-01")],
+        histories: [
+          {
+            animalId: "adult",
+            events: [
+              historyEvent(
+                "document-without-reference",
+                "external_documented",
+                "documented",
+              ),
+            ],
+          },
+        ],
+      }),
+    ).toMatchObject({
+      status: "document_pending",
+      evidenceOrigin: "documentary_pendency",
+    });
   });
 
   it("declaração sem documento não gera compliant em B19 adulta", () => {
@@ -312,6 +344,65 @@ describe("sanitaryComplianceV2", () => {
     expect(model.rows.every((entry) => entry.status === "compliant")).toBe(true);
   });
 
+  it("execução parcial de lote não generaliza conformidade", () => {
+    const model = buildSanitaryComplianceV2({
+      source: source({
+        animals: [
+          animal("executed", "2026-03-01"),
+          animal("not-executed", "2026-03-01"),
+        ],
+        histories: [
+          {
+            animalId: "executed",
+            events: [historyEvent("partial-lot-event", "event")],
+          },
+        ],
+      }),
+      evaluatedAt: TODAY,
+    });
+
+    expect(
+      Object.fromEntries(model.rows.map((entry) => [entry.animalId, entry.status])),
+    ).toEqual({ executed: "compliant", "not-executed": "due_now" });
+  });
+
+  it("avalia múltiplos protocolos do mesmo animal de forma independente", () => {
+    const secondProtocol = protocol({
+      id: "protocol-clostridioses",
+      familyCode: "clostridioses",
+      name: "Clostridioses",
+      legalStatus: "manual_only",
+    });
+    const secondItem = item({
+      id: "item-clostridioses",
+      protocolId: secondProtocol.id,
+      logicalItemKey: "clostridioses_dose_1",
+      productClass: "vacina_clostridioses",
+      eligibilityRule: { species: ["bovino"] },
+    });
+    const model = buildSanitaryComplianceV2({
+      source: source({
+        histories: [
+          { animalId: "young", events: [historyEvent("event-b19", "event")] },
+        ],
+        catalogOverride: {
+          protocols: [protocol(), secondProtocol],
+          items: [item(), secondItem],
+          productClassGroups: [],
+        },
+      }),
+      evaluatedAt: TODAY,
+    });
+
+    expect(model.rows).toHaveLength(2);
+    expect(model.rows.find((entry) => entry.protocolId === "protocol-b19")?.status).toBe(
+      "compliant",
+    );
+    expect(
+      model.rows.find((entry) => entry.protocolId === secondProtocol.id)?.status,
+    ).not.toBe("compliant");
+  });
+
   it("agenda executada ou cancelada não aparece como planejada", () => {
     const executed = agendaAnimal("young", {
       planned_status: "executado",
@@ -326,6 +417,41 @@ describe("sanitaryComplianceV2", () => {
     ).toBe("due_now");
   });
 
+  it("agenda marcada como executada sem evento não prova execução", () => {
+    expect(
+      row({
+        agendas: [agenda("executada")],
+        agendaAnimals: [agendaAnimal("young", { planned_status: "executado" })],
+      }),
+    ).toMatchObject({ status: "due_now", eventId: null, agendaId: null });
+  });
+
+  it("agenda executada com evento correspondente deixa de ser pendência", () => {
+    const executedAgenda = agenda("executada");
+    executedAgenda.execution_evento_id = "event-from-agenda";
+    expect(
+      row({
+        agendas: [executedAgenda],
+        agendaAnimals: [
+          agendaAnimal("young", {
+            planned_status: "executado",
+            execution_evento_id: "event-from-agenda",
+          }),
+        ],
+        histories: [
+          {
+            animalId: "young",
+            events: [historyEvent("event-from-agenda", "event")],
+          },
+        ],
+      }),
+    ).toMatchObject({
+      status: "compliant",
+      eventId: "event-from-agenda",
+      agendaId: null,
+    });
+  });
+
   it("não cria efeitos operacionais nem libera operações", () => {
     const model = buildSanitaryComplianceV2({ source: source(), evaluatedAt: TODAY });
     expect(model).toMatchObject({
@@ -337,4 +463,3 @@ describe("sanitaryComplianceV2", () => {
     });
   });
 });
-

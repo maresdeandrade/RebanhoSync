@@ -375,8 +375,12 @@ describe("executeSanitaryAgendaV2", () => {
     await db.catalog_sanitario_produto_carencia_rules_v2.put(withdrawalRule());
 
     const result = await executeSanitaryAgendaV2(baseInput, db);
+    const repeated = await executeSanitaryAgendaV2(baseInput, db);
 
     const detail = await db.event_eventos_sanitario.get(result.eventId);
+    expect(repeated.eventId).toBe(result.eventId);
+    expect(await db.event_eventos.count()).toBe(1);
+    expect(await db.event_eventos_sanitario.count()).toBe(1);
     expect(result.createsActiveWithdrawal).toBe(true);
     expect(detail).toMatchObject({
       produto_veterinario_id: "product-1",
@@ -390,6 +394,13 @@ describe("executeSanitaryAgendaV2", () => {
   it("baixa estoque somente após evento e não deixa falha de estoque marcar agenda como executada", async () => {
     await seedAgenda();
     await db.state_insumo_lotes.put(inventoryLot());
+
+    expect(await db.event_eventos.count()).toBe(0);
+    expect(await db.event_eventos_sanitario.count()).toBe(0);
+    expect(await db.state_insumo_movimentacoes.count()).toBe(0);
+    expect(await db.state_insumo_lotes.get("stock-lot-1")).toMatchObject({
+      saldo_atual_base: 100,
+    });
 
     const result = await executeSanitaryAgendaV2(
       {
@@ -444,6 +455,8 @@ describe("executeSanitaryAgendaV2", () => {
 
     db.close();
     await db.open();
+    expect(await db.event_eventos.count()).toBe(1);
+    expect(await db.event_eventos_sanitario.count()).toBe(1);
     expect(await db.state_insumo_movimentacoes.get(result.eventId)).toMatchObject({
       source_evento_id: result.eventId,
       quantidade_base: 2,
@@ -451,6 +464,18 @@ describe("executeSanitaryAgendaV2", () => {
     expect(await db.state_insumo_lotes.get("stock-lot-1")).toMatchObject({
       saldo_atual_base: 98,
     });
+    expect(await db.ops_sanitario_agenda_v2.get("agenda-1")).toMatchObject({
+      status: "executada",
+      execution_evento_id: result.eventId,
+    });
+    expect(
+      buildSanitaryExecutedHistoryV2({
+        events: await db.event_eventos.toArray(),
+        sanitaryDetails: await db.event_eventos_sanitario.toArray(),
+        catalog,
+        fazendaId: "farm-1",
+      })[0]?.events[0]?.eventId,
+    ).toBe(result.eventId);
 
     await clearScope();
     await seedAgenda();
