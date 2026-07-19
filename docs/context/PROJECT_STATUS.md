@@ -1,7 +1,10 @@
 # Project Status — RebanhoSync
 
-Atualizado em: 2026-07-17
-**Baseline Commit:** `2e8d355`
+Atualizado em: 2026-07-18
+**Baseline Commit (commit-base do worktree):** `dbe37a8`
+**Baseline funcional documentado:** `fcf42bc`
+
+A validação passou no worktree local baseado em dbe37a8. O commit funcional que contém a implementação validada no worktree é fcf42bc. evidenceReference: validação local executada com Vitest, ESLint e build Vite em 2026-07-18. A evidência textual local não garante existência, integridade ou disponibilidade futura de arquivo remoto.
 
 ## Objetivo
 
@@ -103,6 +106,7 @@ A Fase 11.5 foi fechada localmente pela 11.5H, reconciliada documentalmente pela
 - Avanco UI pos-12I — Superficie read-only `/protocolos-sanitarios/catalogo-v2` criada para consultar o catalogo sanitario v2 local/offline, exibindo resumo, protocolos, itens e bloqueios sem ler JSON/Supabase direto e sem criar automacao operacional.
 - Saneamento sanitário v2 pós-12I — O catálogo ativo mantém 20 itens e continua separado de execução. `raiva_herbivoros` preserva dose inicial, reforço de 30d e reforço anual sem duplicidade; o item concorrente de leptospirose permanece tombstonado.
 - Avanço operacional pós-12I — A Central Sanitária v2 executa somente agendas existentes, elegíveis e confirmadas. A execução cria evento e detalhe sanitários com animais, produto real e dados da aplicação; o evento alimenta histórico factual da Central e do animal. Estoque só baixa após evento por `source_evento_id`; carência exige produto real, regra explícita e snapshot. Retry por `clientOpId + agendaId` é idempotente. Não há execução por janela/pré-checagem, `queue_ops` paralelo, migration/schema/RLS/Edge ou liberação de venda, abate, leite e aptidão operacional.
+- Validação funcional da Conformidade Sanitária v2 pós-12I — Read model derivado/somente leitura validado com evento factual, agenda futura/cancelada/executada, B19 documentada/declarada, documento sem referência, execução parcial de lote, múltiplos protocolos, retry e reabertura. Evidência externa crítica exige referência vinculada; Conformidade não cria agenda, evento, estoque, carência ou liberação operacional.
 - Avanco UX sanitario contextual pos-12I — As abas Sanidade de `AnimalDetalhe` e `LoteDetalhe` foram compactadas para resumo operacional contextual. O animal/lote mostram resumo, pendencias principais, historico de entrada quando aplicavel, agenda futura e atalhos para a Central Sanitaria filtrada. Preview completo, listas extensas, bloqueadas/nao aplicaveis e botoes por item ficam fora da visualizacao padrao ou em detalhe tecnico fechado. A Central continua sendo a superficie principal para janelas, elegibilidade, preview completo e planejamento agrupado.
 
 Último avanço local da Fase 10:

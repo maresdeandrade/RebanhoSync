@@ -1,7 +1,10 @@
 # Open Review Items — RebanhoSync
 
-Atualizado em: 2026-07-17
-**Baseline Commit:** `2e8d355`
+Atualizado em: 2026-07-18
+**Baseline Commit (commit-base do worktree):** `dbe37a8`
+**Baseline funcional documentado:** `fcf42bc`
+
+A validação passou no worktree local baseado em dbe37a8. O commit funcional que contém a implementação validada no worktree é fcf42bc. evidenceReference: validação local executada com Vitest, ESLint e build Vite em 2026-07-18. A evidência textual local não garante existência, integridade ou disponibilidade futura de arquivo remoto.
 
 ## Objetivo
 
@@ -37,13 +40,15 @@ Itens resolvidos devem sair deste documento e permanecer registrados apenas no r
 
 # Pendências abertas
 
-Sem P0/P1 aberto de runtime após a execução sanitária pós-12I.
+Sem P0/P1 aberto de runtime após a validação funcional local da execução e Conformidade Sanitária v2.
 
 Observacao 12G: o importador controlado esta em `scripts/codex/import-sanitario-protocols-v2.mjs` e usa somente `docs/review/evidence/SANITARIO_PROTOCOLS_V2_CANONICAL_PAYLOAD_12F10.json`. Apply real executado localmente com 33 `create`, 0 `update`, 0 `skip`, 16 `reject`; dry-run pos-apply confirmou 0 `create`, 0 `update`, 33 `skip`, 16 `reject`. Os 16 ProductClassGroup members continuam bloqueados por `PRODUCT_CLASS_ID_REQUIRED_FOR_GROUP_MEMBER`.
 
 Observação 12H/12I: a leitura read-only dos Protocolos Sanitários v2 usa o catálogo local/offline e permanece separada da execução operacional.
 
 Observação pós-12I: agenda sanitária pode ser executada somente com confirmação explícita. O evento resultante é o único fato histórico; estoque e carência continuam condicionados a evento, produto real e regra explícita. Não há `queue_ops` paralelo ou liberação operacional.
+
+Observação Conformidade v2: read model derivado/somente leitura validado por animal, lote, protocolo e item. Evidência `external_documented` sem referência vinculada não comprova regra crítica; execução parcial não se generaliza e retry/reabertura não duplicam efeitos locais.
 
 Observação UI catálogo v2: `/protocolos-sanitarios/catalogo-v2` permite visualizar o catálogo local/offline em modo read-only. A tela usa `readLocalSanitaryProtocolCatalogV2` e não lê JSON 12F10 em runtime.
 

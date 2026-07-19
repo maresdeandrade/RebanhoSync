@@ -1,7 +1,10 @@
 # Active Review Index — RebanhoSync
 
-Atualizado em: 2026-07-17
-**Baseline Commit:** `2e8d355`
+Atualizado em: 2026-07-18
+**Baseline Commit (commit-base do worktree):** `dbe37a8`
+**Baseline funcional documentado:** `fcf42bc`
+
+A validação passou no worktree local baseado em dbe37a8. O commit funcional que contém a implementação validada no worktree é fcf42bc. evidenceReference: validação local executada com Vitest, ESLint e build Vite em 2026-07-18. A evidência textual local não garante existência, integridade ou disponibilidade futura de arquivo remoto.
 
 ## Objetivo
 

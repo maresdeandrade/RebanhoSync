@@ -1,16 +1,17 @@
-    # ACTIVE_PHASE_PLAN - Fase 12I + execução sanitária operacional pós-12I
+    # ACTIVE_PHASE_PLAN - Fase 12I + execução e Conformidade Sanitária v2 pós-12I
 
-    **Status:** Fase 12I concluída localmente; execução sanitária explícita posterior concluída localmente, sem abrir nova fase.
-    **Foco:** Catálogo permanece `catalog_*` pull-only. Agenda é intenção; sua execução confirmada cria evento factual, com estoque e carência somente quando os requisitos explícitos forem atendidos.
+    **Status:** Fase 12I concluída localmente; execução e Conformidade Sanitária v2 validadas localmente, sem abrir nova fase.
+    **Nota de fechamento:** A validação passou no worktree local baseado em dbe37a8. O commit funcional que contém a implementação validada no worktree é fcf42bc. evidenceReference: validação local executada com Vitest, ESLint e build Vite em 2026-07-18. A evidência textual local não garante existência, integridade ou disponibilidade futura de arquivo remoto.
+    **Foco:** Catálogo permanece `catalog_*` pull-only. Agenda é intenção; evento é fato. Conformidade é read model derivado/somente leitura e não libera operação.
     **Criado:** 2026-06-15
-    **Atualizado:** 2026-07-17
+    **Atualizado:** 2026-07-18
     **Plano base:** solicitação direta da Fase 12I.
 
     ---
 
     ## Objetivo em 1 paragrafo
 
-    A Fase 12I conectou a leitura read-only dos Protocolos Sanitarios v2 ao offline-first Dexie. O avanço posterior mantém o catálogo como fonte pull-only e adiciona execução manual exclusivamente a partir de agenda existente: confirmação explícita cria um evento sanitário factual, preserva animais/produto/aplicação e pode gerar baixa de estoque e carência apenas sob regras explícitas. A agenda não é histórico, não há execução por janela ou pré-checagem e não há liberação operacional.
+    A Fase 12I conectou a leitura read-only dos Protocolos Sanitarios v2 ao offline-first Dexie. O avanço posterior mantém o catálogo como fonte pull-only, adiciona execução manual exclusivamente a partir de agenda existente e expõe Conformidade v2 como leitura derivada por animal/lote/protocolo/item. Evidência externa crítica exige referência vinculada; agenda e fechamento administrativo não provam execução. Não há liberação operacional.
 
     ---
 
@@ -33,10 +34,12 @@
     - avanço UI posterior criou `/protocolos-sanitarios/catalogo-v2` para consulta local/offline read-only;
     - execução posterior por agenda cria evento sanitário idempotente, detalhe e vínculos de animais, sem alterar protocolo ou catálogo;
     - estoque é baixado apenas após o evento, por `source_evento_id`; carência exige produto real e regra técnica explícita;
+    - Conformidade v2 validada com agenda futura/cancelada/executada, B19 documentada/declarada, execução parcial, múltiplos protocolos, retry e reabertura;
+    - histórico externo documentado sem referência vinculada permanece pendência documental;
     - não há `queue_ops` paralelo, migration, alteração de schema/RLS/Edge Function ou liberação operacional.
 
     Proximo passo seguro:
-    - validar em runtime a execução confirmada de agenda com animais, produto cadastrado, lote opcional, retry idempotente e histórico factual.
+    - planejar a sincronização remota dos fatos sanitários v2 em tarefa própria; não iniciar sync neste bloco.
 
     ---
 

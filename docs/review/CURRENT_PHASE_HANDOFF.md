@@ -1,8 +1,10 @@
 # Current Phase Handoff — RebanhoSync
 
-Atualizado em: 2026-07-17
+Atualizado em: 2026-07-18
 
-## 0. Handoff Atual — Fase 12I + execução sanitária operacional pós-12I
+A validação passou no worktree local baseado em dbe37a8. O commit funcional que contém a implementação validada no worktree é fcf42bc. evidenceReference: validação local executada com Vitest, ESLint e build Vite em 2026-07-18 no worktree atual. A evidência textual local não garante existência, integridade ou disponibilidade futura de arquivo remoto.
+
+## 0. Handoff Atual — Fase 12I + execução e Conformidade Sanitária v2 pós-12I
 
 Fase 12I — Catalogo Sanitario v2 read-only offline-first — concluída localmente, com execução sanitária explícita adicionada posteriormente sem abrir nova fase.
 
@@ -23,13 +25,16 @@ Resultado:
 - Baixa de estoque só ocorre depois do evento, com `source_evento_id`, lote e quantidade consumida; sem lote, o evento registra execução sem baixa. Carência ativa só nasce de evento, produto real, data válida e regra técnica explícita com snapshot.
 - A execução é idempotente por `clientOpId + agendaId`; retry retorna o evento existente e não duplica evento, detalhe, estoque ou carência.
 - Histórico executado da Central e do animal lê eventos factuais; agenda futura não conta como histórico. Não há liberação de venda, abate, leite ou aptidão operacional.
+- Conformidade Sanitária v2 foi validada como read model local derivado e somente leitura, por animal/lote/protocolo/item. Agenda futura permanece `planned`; cancelamento/conclusão administrativa sem evento não prova execução.
+- Histórico `external_documented` só comprova regra crítica quando possui classe documentada e referência de evidência vinculada; sem referência, permanece pendência documental. Histórico declarado não libera regra crítica.
+- Execução parcial de lote não se propaga aos animais sem vínculo factual, múltiplos protocolos permanecem independentes e retry/reabertura preservam evento, detalhe, agenda, estoque e carência sem duplicação.
 - Historico sanitario de entrada foi separado por origem/evidencia, com historico externo documentado apoiando pre-checagem de forma conservadora e declaracoes gerando aviso/pendencia documental.
 - `AnimalDetalhe` e `LoteDetalhe` passaram a usar resumos sanitarios compactos, mantendo preview completo e planejamento agrupado na Central.
 - Atalhos filtrados por animal/lote abrem `/protocolos-sanitarios?tab=janelas&animalId=...` ou `/protocolos-sanitarios?tab=janelas&loteId=...`; `animalId` tem prioridade sobre `loteId`.
 - Não foi criada migration, alteração de schema/RLS/Edge Function, `queue_ops` paralelo ou liberação operacional. O catálogo permanece pull-only/read-only e a agenda permanece intenção até confirmação explícita.
 
 Próximo passo seguro:
-- validar em runtime a execução a partir de agenda com animais vinculados, produto cadastrado com e sem lote de estoque, retry idempotente e histórico por animal/Central.
+- planejar, em bloco próprio, a sincronização remota dos fatos sanitários v2 já validados localmente, preservando idempotência, RLS e `fazenda_id`.
 
 ---
 

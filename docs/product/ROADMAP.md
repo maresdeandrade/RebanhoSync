@@ -1,7 +1,10 @@
 # Roadmap — RebanhoSync
 
-Atualizado em: 2026-07-17
-**Baseline documental auditado:** `2e8d355`
+Atualizado em: 2026-07-18
+**Baseline documental auditado (commit-base do worktree):** `dbe37a8`
+**Baseline funcional documentado:** `fcf42bc`
+
+A validação passou no worktree local baseado em dbe37a8. O commit funcional que contém a implementação validada no worktree é fcf42bc. evidenceReference: validação local executada com Vitest, ESLint e build Vite em 2026-07-18. A evidência textual local não garante existência, integridade ou disponibilidade futura de arquivo remoto.
 
 ## Objetivo
 
@@ -28,9 +31,9 @@ Não deve substituir issues, tarefas técnicas ou prompts de implementação.
 
 ## Fase atual — Fase 12
 
-Status: **Fase 12I concluída localmente, com catálogo sanitário v2 read-only e execução sanitária explícita pós-12I concluída localmente**
+Status: **Fase 12I concluída; execução e Conformidade Sanitária v2 validadas localmente**
 Fase anterior: **Fase 11.5 — Agenda Sanitária v2: Janelas, Agrupamento e Materialização Idempotente — concluída localmente**
-Fase seguinte: **Validar em runtime a execução confirmada a partir de agenda, mantendo catálogo read-only, agenda como intenção e evento como único fato histórico**
+Fase seguinte: **Planejar a sincronização remota dos fatos sanitários v2, preservando idempotência, RLS e `fazenda_id`**
 
 ### Conduta inicial
 

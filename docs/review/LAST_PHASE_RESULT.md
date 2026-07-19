@@ -1,10 +1,12 @@
 # Last Phase Result - RebanhoSync
 
-Atualizado em: 2026-07-17
+Atualizado em: 2026-07-18
+
+A validação passou no worktree local baseado em dbe37a8. O commit funcional que contém a implementação validada no worktree é fcf42bc. evidenceReference: validação local executada com Vitest, ESLint e build Vite em 2026-07-18. A evidência textual local não garante existência, integridade ou disponibilidade futura de arquivo remoto.
 
 ## Resultado mais recente
 
-Fase 12I - Catalogo Sanitario v2 read-only offline-first, com execução sanitária explícita pós-12I - concluída localmente.
+Fase 12I - Catalogo Sanitario v2 read-only offline-first, com execução e Conformidade Sanitária v2 pós-12I - validada localmente.
 
 Decisão: catálogo sanitário continua read-only/pull-only; agenda permanece intenção e só vira evento por execução confirmada.
 
@@ -21,6 +23,9 @@ Decisão: catálogo sanitário continua read-only/pull-only; agenda permanece in
 - Produto real é selecionado de cadastro/insumo sanitário compatível. Sem lote de estoque, o evento é permitido e registra ausência de baixa; com lote, a baixa usa `source_evento_id`.
 - Carência ativa só é criada para produto real com regra técnica explícita, aplicabilidade e snapshot suficientes. Não há liberação de venda, abate, leite ou aptidão operacional.
 - Retry por `clientOpId + agendaId` não duplica evento, detalhe, movimento de estoque ou carência. Não foi criado `queue_ops` paralelo.
+- Conformidade v2 permanece derivada e somente leitura: agenda futura é `planned`, agenda cancelada/executada não gera planejamento residual e conclusão sem evento não prova execução.
+- B19 adulta exige evidência externa documentada com referência vinculada; declaração ou documento sem referência permanecem pendência documental.
+- Execução parcial é individual, múltiplos protocolos são avaliados separadamente e reabertura do Dexie preserva IDs, contagens e saldo.
 - Criado o relatorio unico `docs/review/evidence/RELATORIO_12I_CATALOGO_SANITARIO_V2_OFFLINE_READONLY.md`.
 
 ## Validacao
@@ -28,6 +33,7 @@ Decisão: catálogo sanitário continua read-only/pull-only; agenda permanece in
 - Diagnostico inicial confirmou carga 12G aplicada: `--dry-run` com 0 `create`, 0 `update`, 33 `skip`, 16 `reject`.
 - Testes focados de store, pull, cursor incremental e leitura local passaram.
 - Testes focados de execução, histórico, Agenda e componentes sanitários passaram nas alterações pós-12I.
+- Matriz funcional de Conformidade v2, execução, estoque, idempotência e Central/histórico passou localmente; lint, build e `git diff --check` devem permanecer verdes no fechamento deste bloco.
 
 ## Nao executado
 
@@ -52,4 +58,4 @@ Atualizacao posterior de saneamento sanitario v2:
 
 ## Proximo passo possivel
 
-Validar em runtime o fluxo agenda → execução confirmada → evento → histórico, com produto cadastrado, lote opcional e retry idempotente.
+Planejar em bloco próprio a sincronização remota dos fatos sanitários v2 validados localmente, sem transformar Conformidade em fonte primária.

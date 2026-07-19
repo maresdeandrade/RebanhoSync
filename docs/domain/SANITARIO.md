@@ -1,8 +1,11 @@
 ```markdown
 # Sanitário — RebanhoSync
 
-Atualizado em: 2026-07-12
-**Baseline Commit:** `c2bac2b`
+Atualizado em: 2026-07-18
+**Baseline Commit (commit-base do worktree):** `dbe37a8`
+**Baseline funcional documentado:** `fcf42bc`
+
+A validação passou no worktree local baseado em dbe37a8. O commit funcional que contém a implementação validada no worktree é fcf42bc. evidenceReference: validação local executada com Vitest, ESLint e build Vite em 2026-07-18. A evidência textual local não garante existência, integridade ou disponibilidade futura de arquivo remoto.
 
 ## Objetivo
 
@@ -376,7 +379,7 @@ Evidência:
 Regras:
 
 - evento interno executado continua contando como histórico executado;
-- histórico externo documentado pode ser considerado válido na pré-checagem quando houver vínculo suficiente com protocolo/item;
+- histórico externo documentado pode ser considerado válido na pré-checagem quando houver vínculo suficiente com protocolo/item e referência de evidência estruturada;
 - histórico externo declarado gera aviso, mas não libera regra crítica;
 - histórico legado ambíguo não libera dose/reforço;
 - agenda futura não conta como histórico;
@@ -972,7 +975,17 @@ Superfícies:
 - `Agenda sanitária`: leitura local de `ops_sanitario_agenda_v2`, com reagendamento/cancelamento apenas para agendas não executadas;
 - `Catálogo sanitário`: consulta read-only do catálogo v2 local/offline;
 - `Histórico sanitário`: execução interna, histórico externo documentado, declarações e legado ambíguo separados;
-- `Conformidade futura/desabilitada`: superfície reservada, sem liberação automática.
+- `Conformidade`: read model derivado/somente leitura por animal, lote, protocolo e item, sem liberação automática.
+
+Regras da Conformidade v2:
+
+- evento sanitário executado é a única prova de execução local;
+- agenda futura aparece apenas como planejamento;
+- fechamento/conclusão administrativa sem evento não prova execução;
+- histórico `external_documented` exige classe documentada e referência vinculada para apoiar regra crítica;
+- histórico declarado ou documento sem referência permanece pendência documental;
+- execução parcial de lote não se generaliza aos demais animais;
+- a leitura não cria agenda, evento, estoque, carência ou autorização operacional.
 
 Regras de navegação:
 
