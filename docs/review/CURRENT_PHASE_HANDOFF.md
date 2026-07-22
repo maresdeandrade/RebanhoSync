@@ -1,10 +1,43 @@
 # Current Phase Handoff — RebanhoSync
 
-Atualizado em: 2026-07-18
+Atualizado em: 2026-07-22
 
-A validação passou no worktree local baseado em dbe37a8. O commit funcional que contém a implementação validada no worktree é fcf42bc. evidenceReference: validação local executada com Vitest, ESLint e build Vite em 2026-07-18 no worktree atual. A evidência textual local não garante existência, integridade ou disponibilidade futura de arquivo remoto.
+**Baseline do incremento expand:** `78e91ec`.
 
-## 0. Handoff Atual — Fase 12I + execução e Conformidade Sanitária v2 pós-12I
+**Commit funcional do incremento expand:** será registrado após o commit isolado desta entrega.
+
+**Baseline histórico da Conformidade local:** `fcf42bc`, validado em 2026-07-18. Essa referência não valida a migration do incremento expand.
+
+## 0. Handoff Atual — primeiro incremento expand do Sync Remoto Sanitário v2
+
+O ADR-0007 está `Accepted`. O primeiro incremento de banco foi implementado exclusivamente em modo `expand`, sem conectar o cliente ou o `sync-batch` às novas funções.
+
+Decisão: `ADR_0007_SYNC_SANITARIO_V2_EXPAND_FOUNDATION`.
+
+Resultado:
+- Criada migration incremental com `revision`, identidades idempotentes e FK composta Evento-Agenda v2.
+- Criada relação factual append-only Evento-Animal com RLS por `fazenda_id`.
+- Separadas as referências de produto sanitário v2, insumo real e snapshot histórico; `produto_veterinario_id` permanece legado somente para leitura.
+- Criadas unique parcial de execução primária e unique de movimento por fazenda, evento, lote e tipo.
+- Criado gate autoritativo persistido, sem linha habilitada por padrão e com falha fechada.
+- Criadas funções transacionais internas para Agenda+animais, substituição de alvos, núcleo factual e closure administrativa.
+- Funções são `SECURITY INVOKER`, têm `search_path` fixo e `EXECUTE` exclusivo de `service_role`; `anon`, `authenticated` e `PUBLIC` não executam.
+- Sentinelas comprovam atomicidade, RLS/tenant, revision, concorrência, replay, conflito idempotente, correção append-only, evidência externa e estoque sem segunda baixa.
+- Reset limpo, baseline Supabase, suite, lint, build e `git diff --check` passaram; o lint de banco não encontrou erro novo.
+- Conformidade continua read model local; não houve UI, Dexie, worker, pull, nova Edge Function, backfill ou liberação operacional.
+
+Gates obrigatórios antes de qualquer rollout:
+- detectar inconsistências históricas na FK lote + insumo, corrigir ou documentar, executar `VALIDATE CONSTRAINT` e somente então habilitar push;
+- validar o caminho completo `JWT → sync-batch → gate → comando → RPC → resultado → classificação local`;
+- manter 500 animais, 1 MiB e 10s como limites explícitos do contrato v1 até configuração/versionamento autoritativo;
+- validar no ambiente da Edge Function a rotação, o armazenamento e a ausência de `service_role` em logs.
+
+Próximo passo seguro:
+- conectar comandos tipados e consulta do gate ao `sync-batch` em incremento separado, mantendo o gate desligado até validação ponta a ponta; depois preparar cutover/merge não destrutivo antes de qualquer ativação do cliente.
+
+---
+
+## 0.1 Handoff anterior — Fase 12I + execução e Conformidade Sanitária v2 pós-12I
 
 Fase 12I — Catalogo Sanitario v2 read-only offline-first — concluída localmente, com execução sanitária explícita adicionada posteriormente sem abrir nova fase.
 
@@ -39,7 +72,7 @@ Próximo passo seguro:
 
 ---
 
-## 0.1 Handoff anterior — Fase 12H
+## 0.2 Handoff anterior — Fase 12H
 
 Fase 12H — Leitura read-only dos Protocolos Sanitarios v2 importados — executada localmente.
 

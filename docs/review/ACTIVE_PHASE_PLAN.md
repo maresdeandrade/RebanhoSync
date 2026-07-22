@@ -1,17 +1,54 @@
-    # ACTIVE_PHASE_PLAN - Fase 12I + execução e Conformidade Sanitária v2 pós-12I
+    # ACTIVE_PHASE_PLAN - Sync Remoto Sanitário v2 — incremento expand pós-ADR-0007
 
-    **Status:** Fase 12I concluída localmente; execução e Conformidade Sanitária v2 validadas localmente, sem abrir nova fase.
-    **Nota de fechamento:** A validação passou no worktree local baseado em dbe37a8. O commit funcional que contém a implementação validada no worktree é fcf42bc. evidenceReference: validação local executada com Vitest, ESLint e build Vite em 2026-07-18. A evidência textual local não garante existência, integridade ou disponibilidade futura de arquivo remoto.
+    **Status:** Primeiro incremento `expand` do Sync Remoto Sanitário v2 implementado localmente; push permanece desabilitado.
+    **Baseline do incremento expand:** `78e91ec`.
+    **Commit funcional do incremento expand:** será registrado após o commit isolado desta entrega.
+    **Baseline histórico da Conformidade local:** `fcf42bc`, validado em 2026-07-18. Essa referência não valida a migration do incremento expand.
     **Foco:** Catálogo permanece `catalog_*` pull-only. Agenda é intenção; evento é fato. Conformidade é read model derivado/somente leitura e não libera operação.
     **Criado:** 2026-06-15
-    **Atualizado:** 2026-07-18
-    **Plano base:** solicitação direta da Fase 12I.
+    **Atualizado:** 2026-07-22
+    **Plano base:** ADR-0007 Accepted + solicitação direta do primeiro incremento `expand`.
 
     ---
 
     ## Objetivo em 1 paragrafo
 
-    A Fase 12I conectou a leitura read-only dos Protocolos Sanitarios v2 ao offline-first Dexie. O avanço posterior mantém o catálogo como fonte pull-only, adiciona execução manual exclusivamente a partir de agenda existente e expõe Conformidade v2 como leitura derivada por animal/lote/protocolo/item. Evidência externa crítica exige referência vinculada; agenda e fechamento administrativo não provam execução. Não há liberação operacional.
+    Preparar no banco, sem ativar push, o contrato transacional e tenant-safe do Sync Sanitário v2: revision da agenda, vínculo factual Evento-Agenda e Evento-Animal, produto/insumo/snapshot separados, idempotência persistida, gate autoritativo fail-closed, constraints e funções internas `SECURITY INVOKER` exclusivas de `service_role`. Worker, pull, Dexie, UI e Conformidade permanecem inalterados.
+
+    ---
+
+    ## Decisão — primeiro incremento expand do Sync Sanitário v2
+
+    Decisão: `ADR_0007_SYNC_SANITARIO_V2_EXPAND_FOUNDATION`.
+
+    Entregue neste incremento:
+    - migration incremental `20260722102038_sanitario_sync_v2_expand_foundation.sql`;
+    - `revision` e identidades `contract_version`/`domain_op_id` na Agenda v2;
+    - FK composta própria `eventos.source_sanitario_agenda_v2_id` e relação append-only `eventos_animais`;
+    - produto sanitário v2, insumo real e snapshot histórico em colunas separadas, preservando produto legado apenas para leitura;
+    - unique parcial da execução primária, unique de movimento por fazenda/evento/lote/tipo e gate persistido fail-closed;
+    - funções internas atômicas para criar Agenda+animais, substituir alvos, persistir núcleo factual e realizar closure administrativa;
+    - ledger interno de idempotência e testes sentinela funcionais/estáticos.
+
+    Validação desta entrega em 2026-07-22:
+    - `supabase db reset`, sentinelas específicas, baseline funcional Supabase, `pnpm test`, `pnpm run lint`, `pnpm run build` e `git diff --check` concluídos sem erro;
+    - `supabase db lint --fail-on error` concluiu sem erro e reportou somente dois warnings preexistentes de parâmetros não usados em `sanitario_recompute_agenda_core`.
+
+    Limites confirmados:
+    - nenhuma função foi conectada ao `sync-batch`;
+    - nenhuma escrita sanitária nova foi habilitada no cliente;
+    - push, worker, pull, Dexie, UI e Conformidade não foram alterados;
+    - movimento de estoque continua posterior ao núcleo factual;
+    - gate não possui linha habilitada por padrão e falha fechado.
+
+    Gates obrigatórios antes de qualquer rollout:
+    - detectar inconsistências históricas na FK lote + insumo, corrigir ou documentar, executar `VALIDATE CONSTRAINT` e somente então habilitar push;
+    - validar o caminho completo `JWT → sync-batch → gate → comando → RPC → resultado → classificação local`;
+    - manter 500 animais, 1 MiB e 10s como limites explícitos do contrato v1 até que exista configuração/versionamento autoritativo;
+    - validar no ambiente da Edge Function a rotação, o armazenamento e a ausência de `service_role` em logs.
+
+    Próximo passo seguro:
+    - implementar, em incremento separado e ainda sob gate, os comandos tipados no `sync-batch`, a leitura do gate e a classificação canônica de resultados/conflitos; não ativar cliente antes dos testes de integração ponta a ponta.
 
     ---
 
