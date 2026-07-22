@@ -2,7 +2,7 @@
 
     **Status:** Primeiro incremento `expand` do Sync Remoto Sanitário v2 implementado localmente; push permanece desabilitado.
     **Baseline do incremento expand:** `78e91ec`.
-    **Commit funcional do incremento expand:** será registrado após o commit isolado desta entrega.
+    **Commit funcional do incremento expand:** `8967f0c`.
     **Baseline histórico da Conformidade local:** `fcf42bc`, validado em 2026-07-18. Essa referência não valida a migration do incremento expand.
     **Foco:** Catálogo permanece `catalog_*` pull-only. Agenda é intenção; evento é fato. Conformidade é read model derivado/somente leitura e não libera operação.
     **Criado:** 2026-06-15
