@@ -1,6 +1,6 @@
 # Current Phase Handoff — RebanhoSync
 
-Atualizado em: 2026-07-22
+Atualizado em: 2026-07-27
 
 **Baseline do incremento expand:** `78e91ec`.
 
@@ -8,7 +8,30 @@ Atualizado em: 2026-07-22
 
 **Baseline histórico da Conformidade local:** `fcf42bc`, validado em 2026-07-18. Essa referência não valida a migration do incremento expand.
 
-## 0. Handoff Atual — primeiro incremento expand do Sync Remoto Sanitário v2
+## 0. Handoff Atual — rebaseline completo do Supabase staging
+
+Decisão: `STAGING_FULL_REBASELINE_VALIDATED`.
+
+Em 2026-07-27, sobre o commit `79ccd7b`, o projeto staging `zqloazqzhwauamcejmuz` foi reconstruído sob autorização destrutiva explícita. Todos os usuários, dados, objetos e configurações operacionais encontrados eram exclusivamente de teste e foram descartados; a cadeia local versionada foi a única fonte de verdade.
+
+Resultado:
+- Storage foi esvaziado pela API, buckets de teste foram removidos e Auth terminou sem usuários, identidades, sessões ou fatores residuais.
+- `supabase db reset --linked --no-seed` aplicou integralmente a cadeia local; o histórico remoto ficou alinhado e `supabase db push --dry-run` não encontrou alterações pendentes.
+- A migration `20260722102038_sanitario_sync_v2_expand_foundation.sql` foi confirmada remotamente, incluindo revision/contrato/operação, relação factual Evento-Animal, produto/insumo/lote/snapshot separados, ledger e gate autoritativo.
+- As quatro funções SQL internas são `SECURITY INVOKER`, usam `search_path` fixo e têm `EXECUTE` somente para `service_role`; `PUBLIC`, `anon` e `authenticated` permanecem sem execução.
+- O gate ficou fail-closed com zero fazendas habilitadas.
+- A FK `fk_eventos_sanitario_lote_insumo_fazenda` existe como `NOT VALID`, protege novas escritas e apresentou zero inconsistências no banco reconstruído.
+- Edge Functions reconciliadas com o código local: `sanitario-reconcile`, `sync-batch`, `telemetry-ingest` e `test-auth`. Somente secrets automáticos da plataforma foram encontrados; nenhum valor foi registrado.
+- Smokes remotos cobriram gate desligado, versão incompatível, ausência de `expected_revision`, bloqueio de `anon`/`authenticated`, relação cross-farm e replay idempotente; a transação foi revertida e o usuário sintético removido.
+- Validações locais passaram: reset, sentinelas expand, baseline funcional, 34 testes focados do `sync-batch`, suíte integral com 2.191 testes, lint, build, `git diff --check` e lint SQL sem erros.
+- Não houve `db pull`, `migration repair`, alteração de migration, integração dos novos comandos sanitários no `sync-batch`, alteração de cliente/Dexie/worker/pull/UI ou habilitação do gate.
+
+Próximo passo seguro:
+- integrar os comandos sanitários ao `sync-batch` em incremento separado, mantendo o gate desligado e sem ativar cliente antes da validação ponta a ponta.
+
+---
+
+## 0.1 Handoff anterior — primeiro incremento expand do Sync Remoto Sanitário v2
 
 O ADR-0007 está `Accepted`. O primeiro incremento de banco foi implementado exclusivamente em modo `expand`, sem conectar o cliente ou o `sync-batch` às novas funções.
 

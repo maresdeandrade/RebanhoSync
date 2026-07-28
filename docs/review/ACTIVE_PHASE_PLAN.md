@@ -1,13 +1,33 @@
-    # ACTIVE_PHASE_PLAN - Sync Remoto Sanitário v2 — incremento expand pós-ADR-0007
+    # ACTIVE_PHASE_PLAN - Sync Remoto Sanitário v2 — staging rebaseline validado
 
-    **Status:** Primeiro incremento `expand` do Sync Remoto Sanitário v2 implementado localmente; push permanece desabilitado.
+    **Status:** Staging reconstruído pela cadeia local e fundação `expand` validada remotamente; integração sanitária no `sync-batch` permanece desabilitada.
     **Baseline do incremento expand:** `78e91ec`.
     **Commit funcional do incremento expand:** `8967f0c`.
     **Baseline histórico da Conformidade local:** `fcf42bc`, validado em 2026-07-18. Essa referência não valida a migration do incremento expand.
     **Foco:** Catálogo permanece `catalog_*` pull-only. Agenda é intenção; evento é fato. Conformidade é read model derivado/somente leitura e não libera operação.
     **Criado:** 2026-06-15
-    **Atualizado:** 2026-07-22
+    **Atualizado:** 2026-07-27
     **Plano base:** ADR-0007 Accepted + solicitação direta do primeiro incremento `expand`.
+
+    ---
+
+    ## Decisão — rebaseline destrutivo completo do staging
+
+    Decisão: `STAGING_FULL_REBASELINE_VALIDATED`.
+
+    Validação executada em 2026-07-27 sobre o commit `79ccd7b`:
+    - projeto não produtivo confirmado como `zqloazqzhwauamcejmuz`, com autorização explícita para rebaseline destrutivo e remoção de usuários, dados, arquivos e configurações exclusivamente de teste;
+    - Storage esvaziado pela API e buckets de teste removidos; Auth ficou com zero usuários, identidades, sessões e fatores residuais após o reset;
+    - `supabase db reset --linked --no-seed` reaplicou integralmente as migrations versionadas, usadas como única fonte de verdade;
+    - histórico remoto e local alinhados; `supabase db push --dry-run` confirmou ausência de migration pendente ou órfã;
+    - migration `20260722102038_sanitario_sync_v2_expand_foundation.sql` validada remotamente com schema, ledger, funções internas, grants e gate autoritativo esperados;
+    - gate permaneceu fail-closed, com zero fazendas habilitadas; a FK histórica `fk_eventos_sanitario_lote_insumo_fazenda` permaneceu `NOT VALID`, protege novas escritas e apresentou zero inconsistências;
+    - Edge Functions remotas reconciliadas com o repositório: `sanitario-reconcile`, `sync-batch`, `telemetry-ingest` e `test-auth`; secrets customizados não foram necessários;
+    - smokes remotos foram transacionais/reversíveis e deixaram zero dados sintéticos;
+    - não houve `db pull`, `migration repair`, alteração de migration aceita, integração dos novos comandos com `sync-batch`, alteração de cliente/Dexie/worker/pull/UI ou habilitação do gate.
+
+    Próximo passo seguro:
+    - conectar os comandos sanitários tipados ao `sync-batch` em incremento separado, mantendo o gate desligado até validação ponta a ponta.
 
     ---
 
