@@ -1,81 +1,116 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0'
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import {
-  type Operation,
+  buildInternalErrorResult,
   buildMutationMatch,
   inferAgendaSourceTaskIdForEventInsert,
   normalizeDbError,
+  type Operation,
   prevalidateAntiTeleport,
+  readLinkedReproductionType,
+  readReproductionPayload,
   validateSanitarioAgendaClosurePush,
-} from './rules.ts'
-import { resolveEventFeatureFlags } from './flags.ts'
-import { validateAnimalTaxonomyFactsOperation } from './taxonomy.ts'
-import { normalizeTableMutationRecord } from '../_shared/mutationRecord.ts'
+} from "./rules.ts";
+import { resolveEventFeatureFlags } from "./flags.ts";
+import { validateAnimalTaxonomyFactsOperation } from "./taxonomy.ts";
+import {
+  executeSanitarioSyncV2Operation,
+  isSanitarioSyncV2Operation,
+  sanitarioSyncV2DependencyBlocked,
+  sanitarioSyncV2EnvelopeRejected,
+  type SanitarioSyncV2Gate,
+  type SanitarioSyncV2Operation,
+  validateSanitarioSyncV2Envelope,
+} from "./sanitario-v2.ts";
+import { normalizeTableMutationRecord } from "../_shared/mutationRecord.ts";
 
 const allowedOrigins = [
-  'http://localhost:5173',
-  'http://localhost:8080',
-  'http://localhost:3000',
-  Deno.env.get('APP_ORIGIN') || '',
-]
+  "http://localhost:5173",
+  "http://localhost:8080",
+  "http://localhost:3000",
+  Deno.env.get("APP_ORIGIN") || "",
+];
 
 function isAllowedDevOrigin(origin: string) {
-  return /^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin)
+  return /^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin);
 }
 
 function getCorsHeaders(origin: string | null) {
-  let allowOrigin = allowedOrigins[0]
+  let allowOrigin = allowedOrigins[0];
   if (origin) {
     if (
       allowedOrigins.includes(origin) ||
-      origin.endsWith('.vercel.app') ||
+      origin.endsWith(".vercel.app") ||
       isAllowedDevOrigin(origin)
     ) {
-      allowOrigin = origin
+      allowOrigin = origin;
     }
   }
   return {
-    'Access-Control-Allow-Origin': allowOrigin,
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  }
+    "Access-Control-Allow-Origin": allowOrigin,
+    "Access-Control-Allow-Headers":
+      "authorization, x-client-info, apikey, content-type",
+  };
+}
+
+function withTimeout<T>(
+  promise: PromiseLike<T>,
+  timeoutMs: number,
+): Promise<T> {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(
+      () => reject(new Error("SANITARIO_RPC_TIMEOUT")),
+      timeoutMs,
+    );
+  });
+  return Promise.race([Promise.resolve(promise), timeout]).finally(() => {
+    if (timeoutId !== undefined) clearTimeout(timeoutId);
+  });
 }
 
 Deno.serve(async (req: Request) => {
-  const origin = req.headers.get('Origin');
+  const origin = req.headers.get("Origin");
   const corsHeaders = getCorsHeaders(origin);
 
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    console.log('[sync-batch] Request received');
-    
+    console.log("[sync-batch] Request received");
+
     // Validate and extract JWT from Authorization header
-    const authHeader = req.headers.get('Authorization');
-    console.log('[sync-batch] Authorization header present:', !!authHeader);
-    
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      console.error('[sync-batch] Missing or invalid Authorization header');
+    const authHeader = req.headers.get("Authorization");
+    console.log("[sync-batch] Authorization header present:", !!authHeader);
+
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      console.error("[sync-batch] Missing or invalid Authorization header");
       return new Response(
-        JSON.stringify({ error: 'Unauthorized - missing JWT' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: "Unauthorized - missing JWT" }),
+        {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
       );
     }
 
-    const jwt = authHeader.slice('Bearer '.length).trim();
-    console.log('[sync-batch] JWT extracted, length:', jwt.length);
+    const jwt = authHeader.slice("Bearer ".length).trim();
+    console.log("[sync-batch] JWT extracted, length:", jwt.length);
 
     if (!jwt) {
       return new Response(
-        JSON.stringify({ error: 'Unauthorized - invalid JWT' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: "Unauthorized - invalid JWT" }),
+        {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
       );
     }
 
     // Validate JWT signature and claims against GoTrue.
     const authClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
       {
         auth: {
           autoRefreshToken: false,
@@ -90,20 +125,23 @@ Deno.serve(async (req: Request) => {
     } = await authClient.auth.getUser(jwt);
 
     if (authError || !user) {
-      console.error('[sync-batch] JWT validation failed:', authError?.message);
+      console.error("[sync-batch] JWT validation failed:", authError?.message);
       return new Response(
-        JSON.stringify({ error: 'Unauthorized - invalid JWT' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: "Unauthorized - invalid JWT" }),
+        {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
       );
     }
 
     const user_id = user.id;
     console.log(`[sync-batch] JWT validated for user ${user_id}`);
-    
+
     // Create user-scoped client with JWT (RLS enforced by user context).
     const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
       {
         global: {
           headers: { Authorization: `Bearer ${jwt}` },
@@ -112,38 +150,88 @@ Deno.serve(async (req: Request) => {
           autoRefreshToken: false,
           persistSession: false,
         },
-      }
+      },
     );
-    
-    console.log('[sync-batch] Supabase client created');
 
-    const { client_id, fazenda_id, client_tx_id, ops: rawOps } = await req.json();
-    const ops: Operation[] = Array.isArray(rawOps) ? rawOps : [];
-    console.log(`[sync-batch] Processing TX ${client_tx_id} for farm ${fazenda_id}`);
+    console.log("[sync-batch] Supabase client created");
+
+    const { client_id, fazenda_id, client_tx_id, ops: rawOps } = await req
+      .json();
+    const ops: Array<Operation | SanitarioSyncV2Operation> =
+      Array.isArray(rawOps) ? rawOps : [];
+    console.log(
+      `[sync-batch] Processing TX ${client_tx_id} for farm ${fazenda_id}`,
+    );
+
+    const hasSanitarioSyncV2Operations = ops.some(isSanitarioSyncV2Operation);
+    const sanitarioEnvelopeIssue = hasSanitarioSyncV2Operations
+      ? validateSanitarioSyncV2Envelope({
+        fazendaId: fazenda_id,
+        clientId: client_id,
+        clientTxId: client_tx_id,
+      })
+      : null;
+    if (sanitarioEnvelopeIssue) {
+      return new Response(
+        JSON.stringify({
+          client_tx_id,
+          results: ops.map((op) =>
+            isSanitarioSyncV2Operation(op)
+              ? sanitarioSyncV2EnvelopeRejected(op, sanitarioEnvelopeIssue)
+              : {
+                op_id: op.client_op_id,
+                status: "REJECTED",
+                reason_code: sanitarioEnvelopeIssue,
+              }
+          ),
+        }),
+        {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
 
     // P0: Verify user has membership in this fazenda (using user client)
     const { data: membership, error: membershipError } = await supabase
-      .from('user_fazendas')
-      .select('role')
-      .eq('user_id', user_id)
-      .eq('fazenda_id', fazenda_id)
-      .is('deleted_at', null)
+      .from("user_fazendas")
+      .select("role")
+      .eq("user_id", user_id)
+      .eq("fazenda_id", fazenda_id)
+      .is("deleted_at", null)
       .maybeSingle();
 
     if (membershipError || !membership) {
-      console.error(`[sync-batch] User ${user_id} has no membership in farm ${fazenda_id}`);
+      console.error(
+        `[sync-batch] User ${user_id} has no membership in farm ${fazenda_id}`,
+      );
       return new Response(
-        JSON.stringify({ error: 'Forbidden - no access to this farm' }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: "Forbidden - no access to this farm" }),
+        {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
       );
     }
 
     console.log(`[sync-batch] User has role: ${membership.role}`);
 
+    const serviceRoleKey = hasSanitarioSyncV2Operations
+      ? Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")
+      : null;
+    const serviceSupabase = serviceRoleKey
+      ? createClient(Deno.env.get("SUPABASE_URL") ?? "", serviceRoleKey, {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
+        },
+      })
+      : null;
+
     const { data: fazendaConfig, error: fazendaConfigError } = await supabase
-      .from('fazendas')
-      .select('metadata')
-      .eq('id', fazenda_id)
+      .from("fazendas")
+      .select("metadata")
+      .eq("id", fazenda_id)
       .maybeSingle();
 
     if (fazendaConfigError) {
@@ -158,20 +246,26 @@ Deno.serve(async (req: Request) => {
       `[sync-batch] Feature flags strict_rules_enabled=${featureFlags.strictRulesEnabled} strict_anti_teleporte=${featureFlags.strictAntiTeleport}`,
     );
 
+    const legacyOps = ops.filter(
+      (op): op is Operation => !isSanitarioSyncV2Operation(op),
+    );
     if (featureFlags.strictAntiTeleport) {
-      const anti = prevalidateAntiTeleport(ops);
+      const anti = prevalidateAntiTeleport(legacyOps);
       if (!anti.ok) {
         // Abort entire batch (atomicity: reject all ops if anti-teleport fails)
         return new Response(
           JSON.stringify({
-            results: ops.map((o: Operation) => ({
+            results: ops.map((o) => ({
               op_id: o.client_op_id,
               status: "REJECTED",
               reason_code: anti.reason_code,
               reason_message: anti.reason_message,
             })),
           }),
-          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 },
+          {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            status: 200,
+          },
         );
       }
     } else {
@@ -183,39 +277,98 @@ Deno.serve(async (req: Request) => {
     // P0: Ready to process operations (user authenticated + authorized)
     // Define security boundaries
     const BLOCKED_TABLES = new Set([
-      'user_fazendas',  // Membership only via security definer RPC
-      'user_profiles',  // Self-only via RLS
-      'user_settings'   // Self-only via RLS
+      "user_fazendas", // Membership only via security definer RPC
+      "user_profiles", // Self-only via RLS
+      "user_settings", // Self-only via RLS
     ]);
 
     const TABLES_WITH_FAZENDA = new Set([
-      'animais', 'lotes', 'pastos', 'agenda_itens', 'eventos',
-      'contrapartes', 'protocolos_sanitarios', 'protocolos_sanitarios_itens',
-      'fazenda_sanidade_config',
-      'sanitario_casos',
-      'insumos', 'insumo_apresentacoes', 'insumo_lotes', 'insumo_movimentacoes',
-      'eventos_sanitario', 'eventos_pesagem', 'eventos_nutricao',
-      'eventos_movimentacao', 'eventos_reproducao', 'eventos_financeiro', 'eventos_ecc',
-      'eventos_comercial',
-      'finance_categories', 'finance_transactions',
-      'sociedades_pecuarias', 'sociedade_animais',
-      'sanitario_agenda_v2', 'sanitario_agenda_animais_v2',
-      'sanitario_agenda_closures_v2'
+      "animais",
+      "lotes",
+      "pastos",
+      "agenda_itens",
+      "eventos",
+      "contrapartes",
+      "protocolos_sanitarios",
+      "protocolos_sanitarios_itens",
+      "fazenda_sanidade_config",
+      "sanitario_casos",
+      "insumos",
+      "insumo_apresentacoes",
+      "insumo_lotes",
+      "insumo_movimentacoes",
+      "eventos_sanitario",
+      "eventos_pesagem",
+      "eventos_nutricao",
+      "eventos_movimentacao",
+      "eventos_reproducao",
+      "eventos_financeiro",
+      "eventos_ecc",
+      "eventos_comercial",
+      "finance_categories",
+      "finance_transactions",
+      "sociedades_pecuarias",
+      "sociedade_animais",
+      "sanitario_agenda_v2",
+      "sanitario_agenda_animais_v2",
+      "sanitario_agenda_closures_v2",
     ]);
 
     const results = [];
     const recomputeTablesTouched = new Set<string>();
-    
-    for (const op of ops) {
+
+    for (const rawOp of ops) {
       try {
+        if (isSanitarioSyncV2Operation(rawOp)) {
+          if (!serviceSupabase) {
+            results.push(sanitarioSyncV2DependencyBlocked(rawOp));
+            continue;
+          }
+
+          const sanitarioResult = await executeSanitarioSyncV2Operation(
+            rawOp,
+            {
+              actorUserId: user_id,
+              fazendaId: fazenda_id,
+              clientId: client_id,
+              clientTxId: client_tx_id,
+              membershipRole: membership.role,
+            },
+            {
+              loadGate: async (trustedFazendaId) => {
+                const { data, error } = await serviceSupabase
+                  .from("sanitario_sync_v2_gates")
+                  .select(
+                    "enabled, minimum_contract_version, maximum_contract_version, allowed_user_ids, allowed_client_ids, rollout_percentage, valid_from, valid_until",
+                  )
+                  .eq("fazenda_id", trustedFazendaId)
+                  .maybeSingle();
+                return {
+                  data: data as SanitarioSyncV2Gate | null,
+                  error,
+                };
+              },
+              callRpc: async ({ functionName, args }) => {
+                return await withTimeout(
+                  serviceSupabase.rpc(functionName, args),
+                  12_000,
+                );
+              },
+            },
+          );
+          results.push(sanitarioResult);
+          continue;
+        }
+
+        const op = rawOp as Operation;
         // P0: Block sensitive tables
         if (BLOCKED_TABLES.has(op.table)) {
           console.warn(`[sync-batch] Blocked table: ${op.table}`);
           results.push({
             op_id: op.client_op_id,
-            status: 'REJECTED',
-            reason_code: 'SECURITY_BLOCKED_TABLE',
-            reason_message: `Table ${op.table} cannot be modified via sync`
+            status: "REJECTED",
+            reason_code: "SECURITY_BLOCKED_TABLE",
+            reason_message: `Table ${op.table} cannot be modified via sync`,
           });
           continue;
         }
@@ -243,7 +396,7 @@ Deno.serve(async (req: Request) => {
           });
           continue;
         }
-        
+
         const taxonomyValidation = validateAnimalTaxonomyFactsOperation({
           ...op,
           record,
@@ -259,161 +412,174 @@ Deno.serve(async (req: Request) => {
         }
 
         // P1.1: Reproduction Events Hardening (Payload v1 + Episode Linking)
-        if (op.table === 'eventos_reproducao' && op.action === 'INSERT') {
-          const payload = record.payload || {};
-          
+        if (op.table === "eventos_reproducao" && op.action === "INSERT") {
+          const {
+            reproductionPayload,
+            schemaVersion,
+            episodeEventId,
+            episodeLinkMethod,
+          } = readReproductionPayload(record.payload);
+
           // 1. Validate Schema Version (Strict)
-          if (payload.schema_version !== 1) {
-             results.push({
+          if (schemaVersion !== 1) {
+            results.push({
               op_id: op.client_op_id,
-              status: 'REJECTED',
-              reason_code: 'PAYLOAD_SCHEMA_VERSION_REQUIRED',
-              reason_message: 'Reproduction events must have schema_version: 1'
+              status: "REJECTED",
+              reason_code: "PAYLOAD_SCHEMA_VERSION_REQUIRED",
+              reason_message: "Reproduction events must have schema_version: 1",
             });
             continue;
           }
 
           // 2. Validate Macho for Cobertura/IA
-          if ((record.tipo === 'cobertura' || record.tipo === 'IA') && !record.macho_id) {
+          if (
+            (record.tipo === "cobertura" || record.tipo === "IA") &&
+            !record.macho_id
+          ) {
             results.push({
               op_id: op.client_op_id,
-              status: 'REJECTED',
-              reason_code: 'VALIDATION_ERROR',
-              reason_message: 'Macho_id is required for Cobertura/IA'
+              status: "REJECTED",
+              reason_code: "VALIDATION_ERROR",
+              reason_message: "Macho_id is required for Cobertura/IA",
             });
             continue;
           }
 
           // 3. Deterministic Episode Linking (Diagnostico/Parto)
-          if (record.tipo === 'diagnostico' || record.tipo === 'parto') {
-             // A) If link provided, validate it
-             if (payload.episode_evento_id) {
-                // Check if the referenced event exists, is same farm/animal, is service, and occurs before
-                // NOTE: We do a lightweight check here. 
-                // Ideally we check DB.
-                const { data: linkEvent, error: linkError } = await supabase
-                   .from('eventos')
-                   .select('id, occurred_at, eventos_reproducao(tipo)')
-                   .eq('id', payload.episode_evento_id)
-                   .eq('fazenda_id', fazenda_id)
-                   .eq('animal_id', op.record.animal_id || record.animal_id) // Handle nested or flat animal_id
-                   .single();
+          if (record.tipo === "diagnostico" || record.tipo === "parto") {
+            // A) If link provided, validate it
+            if (episodeEventId) {
+              // Check if the referenced event exists, is same farm/animal, is service, and occurs before
+              // NOTE: We do a lightweight check here.
+              // Ideally we check DB.
+              const { data: linkEvent, error: linkError } = await supabase
+                .from("eventos")
+                .select("id, occurred_at, eventos_reproducao(tipo)")
+                .eq("id", episodeEventId)
+                .eq("fazenda_id", fazenda_id)
+                .eq("animal_id", op.record.animal_id || record.animal_id) // Handle nested or flat animal_id
+                .single();
 
-                if (linkError || !linkEvent) {
-                   results.push({
-                      op_id: op.client_op_id,
-                      status: 'REJECTED',
-                      reason_code: 'INVALID_EPISODE_REFERENCE',
-                      reason_message: 'Referenced episode event not found or invalid'
-                   });
-                   continue;
+              if (linkError || !linkEvent) {
+                results.push({
+                  op_id: op.client_op_id,
+                  status: "REJECTED",
+                  reason_code: "INVALID_EPISODE_REFERENCE",
+                  reason_message:
+                    "Referenced episode event not found or invalid",
+                });
+                continue;
+              }
+
+              // Check types (must be cobertura or IA). PostgREST can return
+              // a to-one relation as an object or an array depending on metadata.
+              const reproductionRelation = linkEvent.eventos_reproducao;
+              const linkType = readLinkedReproductionType(reproductionRelation);
+              if (linkType !== "cobertura" && linkType !== "IA") {
+                results.push({
+                  op_id: op.client_op_id,
+                  status: "REJECTED",
+                  reason_code: "INVALID_EPISODE_REFERENCE",
+                  reason_message: "Episode event must be Cobertura or IA",
+                });
+                continue;
+              }
+            } // B) If NO link provided, try auto-link (Server-Side Fallback)
+            else {
+              // Find most recent open service
+              // Query: Service events for this animal, on this farm, occurred <= current, not linked to any other parto?
+              // Simplifying: Just find the latest service.
+              // The "open" check is complex for sync function without full view access.
+              // We will use a direct query to find candidate.
+
+              // Get animal_id from the parent event (we need to fetch it or rely on client sending it in record context if flattened)
+              // 'eventos_reproducao' table usually has 'evento_id' which points to 'eventos'.
+              // 'eventos' has 'animal_id'.
+              // The input record for 'eventos_reproducao' insert usually contains what?
+              // Wait, 'eventos_reproducao' is a child table. The 'eventos' insert happens strictly before in the same batch?
+              // OR checking `op.record`.
+              // If this is a child insert, we might not have the animal_id readily available if it's in the parent `eventos` record in the batch.
+              // However, the client Ops usually include FKs.
+              // Let's assume the client sends independent inserts or we have context.
+
+              // IMPORTANT: In this system, `eventos` and `eventos_reproducao` are usually sent together.
+              // If `eventos_reproducao` op relies on `eventos` op in same batch, we can't easily query DB for the parent if it's not committed yet.
+              // BUT: The client should have sent the link.
+              // If client failed (offline fallback), we try to find the service in DB.
+
+              // We need the animal_id. It is NOT in `eventos_reproducao` table (it is in `eventos`).
+              // We can't implement server-side linking efficiently if we don't have animal_id.
+              // We will assume the client did its job OR we skip server-linking if we can't find animal_id.
+              // Actually, `vw_repro_episodios` does the linking on READ.
+              // Storing the link is an optimization/freeze.
+
+              // Policy:
+              // If Parto and no link -> REJECT (Client MUST link)
+              if (record.tipo === "parto") {
+                results.push({
+                  op_id: op.client_op_id,
+                  status: "REJECTED",
+                  reason_code: "EPISODE_LINK_REQUIRED_FOR_PARTO",
+                  reason_message: "Parto must be linked to a service event",
+                });
+                continue;
+              }
+
+              // If Diagnostico and no link -> ACCEPT (Unlinked)
+              if (record.tipo === "diagnostico") {
+                // Ideally we set 'unlinked' explicitly if not present
+                if (!episodeLinkMethod) {
+                  record.payload = {
+                    ...reproductionPayload,
+                    episode_link_method: "unlinked",
+                  };
+                  // We need to modify the record before insert?
+                  // Yes, we can mutate `record` before passing to insert/update queries below.
                 }
-                
-                // Check types (must be cobertura or IA)
-                // Note: supabase join returns array.
-                const linkType = linkEvent.eventos_reproducao?.[0]?.tipo;
-                if (linkType !== 'cobertura' && linkType !== 'IA') {
-                   results.push({
-                      op_id: op.client_op_id,
-                      status: 'REJECTED',
-                      reason_code: 'INVALID_EPISODE_REFERENCE',
-                      reason_message: 'Episode event must be Cobertura or IA'
-                   });
-                   continue;
-                }
-             } 
-             // B) If NO link provided, try auto-link (Server-Side Fallback)
-             else {
-                // Find most recent open service
-                // Query: Service events for this animal, on this farm, occurred <= current, not linked to any other parto?
-                // Simplifying: Just find the latest service.
-                // The "open" check is complex for sync function without full view access.
-                // We will use a direct query to find candidate.
-                
-                // Get animal_id from the parent event (we need to fetch it or rely on client sending it in record context if flattened)
-                // 'eventos_reproducao' table usually has 'evento_id' which points to 'eventos'.
-                // 'eventos' has 'animal_id'.
-                // The input record for 'eventos_reproducao' insert usually contains what?
-                // Wait, 'eventos_reproducao' is a child table. The 'eventos' insert happens strictly before in the same batch?
-                // OR checking `op.record`.
-                // If this is a child insert, we might not have the animal_id readily available if it's in the parent `eventos` record in the batch.
-                // However, the client Ops usually include FKs.
-                // Let's assume the client sends independent inserts or we have context.
-                
-                // IMPORTANT: In this system, `eventos` and `eventos_reproducao` are usually sent together.
-                // If `eventos_reproducao` op relies on `eventos` op in same batch, we can't easily query DB for the parent if it's not committed yet.
-                // BUT: The client should have sent the link.
-                // If client failed (offline fallback), we try to find the service in DB.
-                
-                // We need the animal_id. It is NOT in `eventos_reproducao` table (it is in `eventos`).
-                // We can't implement server-side linking efficiently if we don't have animal_id.
-                // We will assume the client did its job OR we skip server-linking if we can't find animal_id.
-                // Actually, `vw_repro_episodios` does the linking on READ.
-                // Storing the link is an optimization/freeze.
-                
-                // Policy:
-                // If Parto and no link -> REJECT (Client MUST link)
-                if (record.tipo === 'parto') {
-                   results.push({
-                      op_id: op.client_op_id,
-                      status: 'REJECTED',
-                      reason_code: 'EPISODE_LINK_REQUIRED_FOR_PARTO',
-                      reason_message: 'Parto must be linked to a service event'
-                   });
-                   continue;
-                }
-                
-                // If Diagnostico and no link -> ACCEPT (Unlinked)
-                if (record.tipo === 'diagnostico') {
-                   // Ideally we set 'unlinked' explicitly if not present
-                   if (!payload.episode_link_method) {
-                      record.payload.episode_link_method = 'unlinked';
-                      // We need to modify the record before insert?
-                      // Yes, we can mutate `record` before passing to insert/update queries below.
-                   }
-                }
-             }
+              }
+            }
           }
         }
 
         if (
-          op.table === 'eventos' &&
-          op.action === 'INSERT'
+          op.table === "eventos" &&
+          op.action === "INSERT"
         ) {
           const agendaSourceTaskId = inferAgendaSourceTaskIdForEventInsert(
             { ...op, record },
-            ops,
+            legacyOps,
           );
 
           if (agendaSourceTaskId) {
             const { data: agendaItem, error: agendaError } = await supabase
-              .from('agenda_itens')
-              .select('id, status, source_evento_id')
-              .eq('id', agendaSourceTaskId)
-              .eq('fazenda_id', fazenda_id)
-              .is('deleted_at', null)
+              .from("agenda_itens")
+              .select("id, status, source_evento_id")
+              .eq("id", agendaSourceTaskId)
+              .eq("fazenda_id", fazenda_id)
+              .is("deleted_at", null)
               .maybeSingle();
 
             if (agendaError) {
               results.push({
                 op_id: op.client_op_id,
-                status: 'REJECTED',
-                reason_code: 'AGENDA_SOURCE_LOOKUP_FAILED',
+                status: "REJECTED",
+                reason_code: "AGENDA_SOURCE_LOOKUP_FAILED",
                 reason_message: agendaError.message,
               });
               continue;
             }
 
             if (
-              agendaItem?.status === 'concluido' &&
-              typeof agendaItem.source_evento_id === 'string' &&
+              agendaItem?.status === "concluido" &&
+              typeof agendaItem.source_evento_id === "string" &&
               agendaItem.source_evento_id.length > 0
             ) {
               results.push({
                 op_id: op.client_op_id,
-                status: 'REJECTED',
-                reason_code: 'agenda_already_completed_by_event',
-                reason_message: `Agenda item already completed by event ${agendaItem.source_evento_id}`,
+                status: "REJECTED",
+                reason_code: "agenda_already_completed_by_event",
+                reason_message:
+                  `Agenda item already completed by event ${agendaItem.source_evento_id}`,
               });
               continue;
             }
@@ -422,24 +588,25 @@ Deno.serve(async (req: Request) => {
 
         // P0: Execute with user client (RLS enforced)
         let query;
-        if (op.action === 'INSERT') {
+        if (op.action === "INSERT") {
           query = supabase.from(op.table)
-            .insert({ 
-              ...record, 
-              fazenda_id, 
-              client_id, 
-              client_op_id: op.client_op_id, 
-              client_tx_id 
+            .insert({
+              ...record,
+              fazenda_id,
+              client_id,
+              client_op_id: op.client_op_id,
+              client_tx_id,
             })
             .select(); // Request representation to avoid PGRST204
-        } else if (op.action === 'UPDATE') {
+        } else if (op.action === "UPDATE") {
           const match = buildMutationMatch(op, fazenda_id);
           if (!match) {
             results.push({
               op_id: op.client_op_id,
-              status: 'REJECTED',
-              reason_code: 'VALIDATION_MISSING_PRIMARY_KEY',
-              reason_message: `Operation UPDATE on ${op.table} missing id/evento_id/user_id`,
+              status: "REJECTED",
+              reason_code: "VALIDATION_MISSING_PRIMARY_KEY",
+              reason_message:
+                `Operation UPDATE on ${op.table} missing id/evento_id/user_id`,
             });
             continue;
           }
@@ -447,14 +614,15 @@ Deno.serve(async (req: Request) => {
             .update(record)
             .match(match)
             .select(); // Request representation to avoid PGRST204
-        } else if (op.action === 'DELETE') {
+        } else if (op.action === "DELETE") {
           const match = buildMutationMatch(op, fazenda_id);
           if (!match) {
             results.push({
               op_id: op.client_op_id,
-              status: 'REJECTED',
-              reason_code: 'VALIDATION_MISSING_PRIMARY_KEY',
-              reason_message: `Operation DELETE on ${op.table} missing id/evento_id/user_id`,
+              status: "REJECTED",
+              reason_code: "VALIDATION_MISSING_PRIMARY_KEY",
+              reason_message:
+                `Operation DELETE on ${op.table} missing id/evento_id/user_id`,
             });
             continue;
           }
@@ -468,41 +636,40 @@ Deno.serve(async (req: Request) => {
 
         if (error) {
           const normalized = normalizeDbError(error, op);
-          if (normalized.status === 'APPLIED_ALTERED') {
+          if (normalized.status === "APPLIED_ALTERED") {
             results.push({
               op_id: op.client_op_id,
-              status: 'APPLIED_ALTERED',
+              status: "APPLIED_ALTERED",
               altered: normalized.altered,
             });
-          } else if (normalized.status === 'APPLIED') {
-            results.push({ op_id: op.client_op_id, status: 'APPLIED' });
+          } else if (normalized.status === "APPLIED") {
+            results.push({ op_id: op.client_op_id, status: "APPLIED" });
           } else {
             results.push({
               op_id: op.client_op_id,
-              status: 'REJECTED',
+              status: "REJECTED",
               reason_code: normalized.reason_code,
               reason_message: normalized.reason_message,
             });
           }
         } else {
           if (
-            op.table === 'protocolos_sanitarios' ||
-            op.table === 'protocolos_sanitarios_itens' ||
-            op.table === 'fazenda_sanidade_config'
+            op.table === "protocolos_sanitarios" ||
+            op.table === "protocolos_sanitarios_itens" ||
+            op.table === "fazenda_sanidade_config"
           ) {
             recomputeTablesTouched.add(op.table);
           }
-          results.push({ op_id: op.client_op_id, status: 'APPLIED' });
+          results.push({ op_id: op.client_op_id, status: "APPLIED" });
         }
       } catch (e: unknown) {
-        const error = e instanceof Error ? e : new Error(String(e));
-        results.push({ op_id: op.client_op_id, status: 'REJECTED', reason_code: 'INTERNAL_ERROR', reason_message: error.message });
+        results.push(buildInternalErrorResult(rawOp, e));
       }
     }
 
     if (recomputeTablesTouched.size > 0) {
       const { error: recomputeError } = await supabase.rpc(
-        'sanitario_recompute_agenda_for_fazenda',
+        "sanitario_recompute_agenda_for_fazenda",
         {
           _fazenda_id: fazenda_id,
           _as_of: new Date().toISOString().slice(0, 10),
@@ -516,17 +683,23 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    return new Response(JSON.stringify({ server_tx_id: `srv-${client_tx_id.slice(0,8)}`, client_tx_id, results }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 200
-    })
-
+    return new Response(
+      JSON.stringify({
+        server_tx_id: `srv-${client_tx_id.slice(0, 8)}`,
+        client_tx_id,
+        results,
+      }),
+      {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      },
+    );
   } catch (e: unknown) {
     const error = e instanceof Error ? e : new Error(String(e));
-    console.error('[sync-batch] Fatal error:', error.message);
+    console.error("[sync-batch] Fatal error:", error.message);
     return new Response(JSON.stringify({ error: error.message }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 500
-    })
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500,
+    });
   }
-})
+});

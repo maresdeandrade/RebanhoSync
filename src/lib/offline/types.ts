@@ -5,10 +5,10 @@ import type {
 } from "@/lib/animals/catalogs";
 import type { AnimalSpeciesEnum } from "@/lib/animals/species";
 import type {
-  CommercialOperationType,
-  CommercialOperationScope,
   CommercialOperationCalculationStatus,
   CommercialOperationIssue,
+  CommercialOperationScope,
+  CommercialOperationType,
 } from "@/lib/comercial/commercialOperation";
 
 // =========================================================
@@ -29,6 +29,21 @@ export type GestureSyncResult =
   | "REJECTED"
   | "ERROR";
 export type OpAction = "INSERT" | "UPDATE" | "DELETE";
+export type SanitarioSyncV2Command =
+  | "create_agenda"
+  | "replace_agenda_animals"
+  | "apply_factual_core"
+  | "close_agenda";
+export type SanitarioSyncV2ResultStatus =
+  | "APPLIED"
+  | "RETRYABLE"
+  | "REJECTED"
+  | "CONFLICT"
+  | "BLOCKED_DEPENDENCY";
+export type OperationQueueSyncState =
+  | "PENDING"
+  | "RETRYABLE"
+  | "BLOCKED_DEPENDENCY";
 
 // Farm & User Management
 export type FarmRoleEnum = "cowboy" | "manager" | "owner";
@@ -98,7 +113,12 @@ export type StatusReprodutivoMachoEnum =
   | "suspenso"
   | "inativo";
 export type ModoTransicaoEstagioEnum = "automatico" | "manual" | "hibrido";
-export type OrigemEnum = "nascimento" | "compra" | "doacao" | "arrendamento" | "sociedade";
+export type OrigemEnum =
+  | "nascimento"
+  | "compra"
+  | "doacao"
+  | "arrendamento"
+  | "sociedade";
 
 // Contrapartes
 export type ContraparteTipoEnum = "pessoa" | "empresa";
@@ -164,20 +184,12 @@ export type SanitarioCasoStatusEnum =
   | "cancelado";
 export type PastoAvaliacaoMomentoEnum = "entrada" | "saida" | "ronda";
 export type PastoCoberturaSoloEnum = "excelente" | "media" | "ruim";
-export type PastoInvasorasNivelEnum =
-  | "nenhuma"
-  | "leve"
-  | "moderada"
-  | "alta";
+export type PastoInvasorasNivelEnum = "nenhuma" | "leve" | "moderada" | "alta";
 export type PastoFezesScoreEnum =
   | "aneladas"
   | "ressecadas_empilhadas"
   | "liquidas";
-export type PastoAguaStatusEnum =
-  | "limpo"
-  | "sujo"
-  | "nivel_baixo"
-  | "seco";
+export type PastoAguaStatusEnum = "limpo" | "sujo" | "nivel_baixo" | "seco";
 export type SuplementoUnidadeEnum = "kg" | "sacos";
 export type SanitaryOfficialScopeEnum = "federal" | "estadual";
 export type SanitaryOfficialAptidaoEnum = "corte" | "leite" | "misto" | "all";
@@ -211,9 +223,18 @@ export type FazendaSanitaryCalendarModeEnum =
   | "tecnico_recomendado"
   | "completo";
 export type FazendaSanitaryRiskLevelEnum = "baixo" | "medio" | "alto";
-export type ReproTipoEnum = "cobertura" | "IA" | "diagnostico" | "parto" | "aborto";
+export type ReproTipoEnum =
+  | "cobertura"
+  | "IA"
+  | "diagnostico"
+  | "parto"
+  | "aborto";
 export type FinanceiroTipoEnum = "compra" | "venda";
-export type FinanceCategoryTipoEnum = "receita" | "custo_variavel" | "custo_fixo" | "investimento";
+export type FinanceCategoryTipoEnum =
+  | "receita"
+  | "custo_variavel"
+  | "custo_fixo"
+  | "investimento";
 export type FinanceCategoryGrupoEnum =
   | "venda_animais"
   | "compra_animais"
@@ -228,8 +249,15 @@ export type FinanceCategoryGrupoEnum =
   | "administrativo"
   | "outros";
 export type FinanceTransactionDirectionEnum = "entrada" | "saida";
-export type FinanceTransactionStatusEnum = "previsto" | "realizado" | "cancelado";
-export type FinanceTransactionCentroCustoTipoEnum = "fazenda" | "animal" | "lote" | "pasto";
+export type FinanceTransactionStatusEnum =
+  | "previsto"
+  | "realizado"
+  | "cancelado";
+export type FinanceTransactionCentroCustoTipoEnum =
+  | "fazenda"
+  | "animal"
+  | "lote"
+  | "pasto";
 export type FinanceTransactionRateioMetodoEnum =
   | "direto"
   | "por_cabeca"
@@ -334,7 +362,7 @@ export interface Animal {
   // Campos opcionais de identificação
   nome: string | null;
   rfid: string | null;
-  
+
   // Campos adicionados na Fase 2
   especie: AnimalSpeciesEnum | null;
   origem: OrigemEnum | null;
@@ -390,7 +418,7 @@ export interface Benfeitoria {
   tipo?: string;
   capacidade?: number;
   unidade_capacidade?: string;
-  estado?: 'otimo' | 'bom' | 'regular' | 'ruim';
+  estado?: "otimo" | "bom" | "regular" | "ruim";
   observacoes?: string;
   outros_detalhes?: Record<string, unknown>;
 }
@@ -478,7 +506,11 @@ export interface PastoOcupacao {
 
 // FASE 9 (Patch): Sociedade Pecuária
 export type SociedadePecuariaStatus = "ativa" | "encerrada" | "suspensa";
-export type SociedadePecuariaRegra = "fazenda" | "parceiro" | "proporcional" | "manual";
+export type SociedadePecuariaRegra =
+  | "fazenda"
+  | "parceiro"
+  | "proporcional"
+  | "manual";
 
 export interface SociedadePecuaria {
   id: string;
@@ -601,6 +633,13 @@ export interface Operation {
    */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   before_snapshot?: any;
+  /** Canonical sanitario_v2 identity returned by sync-batch. */
+  domain_op_id?: string;
+  /** Per-operation retry/blocking state; fields are intentionally not indexed. */
+  sync_state?: OperationQueueSyncState;
+  retry_count?: number;
+  next_attempt_at?: string;
+  blocked_reason?: string;
   created_at: string;
 }
 
@@ -886,7 +925,11 @@ export interface CatalogoDoencaNotificavel {
 export type SanitarioProductClassScopeV2 = "global" | "tenant";
 export type SanitarioProtocolScopeLocalV2 = "global" | "pack" | "fazenda";
 export type SanitarioProductClassSpeciesV2 = "bovino" | "bubalino";
-export type SanitarioProductClassAptitudeV2 = "corte" | "leite" | "mista" | "all";
+export type SanitarioProductClassAptitudeV2 =
+  | "corte"
+  | "leite"
+  | "mista"
+  | "all";
 export type SanitarioProductClassCurationStatusV2 =
   | "candidate"
   | "needs_review"
@@ -1191,7 +1234,10 @@ export type SanitarioAgendaV2Status =
   | "fechada"
   | "cancelada"
   | "dispensada";
-export type SanitarioAgendaAnimalV2Status = "planejado" | "executado" | "nao_executado";
+export type SanitarioAgendaAnimalV2Status =
+  | "planejado"
+  | "executado"
+  | "nao_executado";
 export type SanitarioAgendaClosureV2Type =
   | "executed_with_event"
   | "partially_executed_with_event"
@@ -1655,10 +1701,10 @@ export interface EventoPastoAvaliacao {
 
 export interface ReproductionEventPayloadV1 {
   schema_version: 1;
-  
+
   // Episode Linking
   episode_evento_id?: string; // UUID do evento de serviço (cobertura/IA)
-  episode_link_method?: 'manual' | 'auto_last_open_service' | 'unlinked';
+  episode_link_method?: "manual" | "auto_last_open_service" | "unlinked";
 
   // Common Fields
   observacoes_estruturadas?: Record<string, unknown>;
@@ -1673,7 +1719,7 @@ export interface ReproductionEventPayloadV1 {
   dose_semen_ref?: string;
 
   // Diagnostico
-  resultado?: 'positivo' | 'negativo' | 'inconclusivo';
+  resultado?: "positivo" | "negativo" | "inconclusivo";
   metodo_livre?: string;
   data_prevista_parto?: string; // YYYY-MM-DD
 
@@ -1760,8 +1806,6 @@ export interface EventoComercial {
   deleted_at: string | null;
 }
 
-
-
 export interface Gesture {
   client_tx_id: string;
   fazenda_id: string;
@@ -1772,6 +1816,7 @@ export interface Gesture {
   last_error?: string;
   retry_count?: number; // P1.3: For exponential backoff retry strategy
   created_at: string;
+  operation_results?: SyncOperationAuditResult[];
 }
 
 export interface Rejection {
@@ -1784,6 +1829,12 @@ export interface Rejection {
   reason_code: string;
   reason_message: string;
   created_at: string;
+  domain_op_id?: string;
+  result_status?: Extract<SanitarioSyncV2ResultStatus, "REJECTED" | "CONFLICT">;
+  current_revision?: number;
+  canonical_status?: string;
+  canonical_entity_id?: string;
+  payload?: Record<string, unknown>;
 }
 
 export interface PilotMetricEvent {
@@ -1831,10 +1882,24 @@ export interface SyncBatchResponse {
 
 export interface SyncOperationResult {
   op_id: string;
-  status: "APPLIED" | "APPLIED_ALTERED" | "REJECTED";
+  client_op_id?: string;
+  domain_op_id?: string;
+  status: SanitarioSyncV2ResultStatus | "APPLIED_ALTERED";
   reason_code?: string;
   reason_message?: string;
+  retryable?: boolean;
+  canonical_entity_id?: string;
+  current_revision?: number;
+  canonical_status?: string;
+  canonical_result?: Record<string, unknown>;
   altered?: { dedup?: "collision_noop" };
+}
+
+export interface SyncOperationAuditResult extends SyncOperationResult {
+  matched: boolean;
+  recorded_at: string;
+  command?: SanitarioSyncV2Command;
+  local_reason_code?: "SYNC_RESULT_OP_NOT_FOUND" | "SYNC_RESULT_ID_MISMATCH";
 }
 
 // =========================================================
@@ -1877,15 +1942,17 @@ export const ensureSchemaVersion = (payload: unknown): 1 => {
   return 1;
 };
 
-export const normalizeDateToISO = (dateStr: string | undefined | null): string | undefined => {
+export const normalizeDateToISO = (
+  dateStr: string | undefined | null,
+): string | undefined => {
   if (!dateStr) return undefined;
   // Simple regex check for YYYY-MM-DD
   if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
-  
+
   // Try to parse if it's a valid date object or other format
   const d = new Date(dateStr);
   if (!isNaN(d.getTime())) {
-     return d.toISOString().split('T')[0];
+    return d.toISOString().split("T")[0];
   }
   return undefined;
 };

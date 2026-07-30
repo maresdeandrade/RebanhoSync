@@ -1,6 +1,6 @@
 # Current Phase Handoff — RebanhoSync
 
-Atualizado em: 2026-07-27
+Atualizado em: 2026-07-30
 
 **Baseline do incremento expand:** `78e91ec`.
 
@@ -8,7 +8,72 @@ Atualizado em: 2026-07-27
 
 **Baseline histórico da Conformidade local:** `fcf42bc`, validado em 2026-07-18. Essa referência não valida a migration do incremento expand.
 
-## 0. Handoff Atual — rebaseline completo do Supabase staging
+## 0. Handoff Atual — worker/reconcile do sync sanitário v2
+
+Decisão: `SANITARIO_V2_WORKER_RECONCILE_READY`.
+
+Em 2026-07-30, sobre o baseline `7c19409`, o worker offline e o reconcile local foram preparados para consumir a classificação canônica por operação do `sanitario_v2`. O enqueue/cutover não foi ativado, o gate remoto continua desligado e não houve deploy.
+
+Resultado:
+- A fila compartilhada existente trata `APPLIED`, `RETRYABLE`, `REJECTED`, `CONFLICT` e `BLOCKED_DEPENDENCY` por operação, inclusive em lote parcialmente bem-sucedido.
+- `APPLIED` remove somente a operação confirmada e dispara reconcile dirigido; `RETRYABLE` preserva IDs e agenda backoff exponencial; dependência bloqueada permanece retida sem loop automático agressivo.
+- `REJECTED` e `CONFLICT` saem da fila ativa para a auditoria/DLQ existente, preservando identidade, estado canônico e revisão sem sobrescrever fatos locais.
+- Agenda, animais e closure reconciliam por `pullSanitarioAgendaV2`; núcleo factual solicita merge de `eventos`, `eventos_sanitario` e `eventos_animais` e atualiza a agenda.
+- Resultado ausente, desconhecido ou com `client_op_id` divergente é auditado e não remove a operação original.
+- Cobertura nova: 6 testes de worker sanitário v2; passaram ainda 105 testes offline, 54 do `sync-batch` e 2.217 testes integrais, além de lint, build, `deno check` e `git diff --check`.
+- Não houve fila paralela, schema Dexie novo, persistência local de fato por resposta, alteração de Edge Function, migration, SQL, UI, gate ou deploy.
+
+Próximo passo seguro:
+- autorizar em incremento separado o enqueue/cutover local e o teste ponta a ponta, mantendo o gate remoto desligado.
+
+---
+
+## 0.1 Handoff anterior — typecheck Deno do sync-batch sanitário v2
+
+Decisão: `SYNC_BATCH_SANITARIO_V2_TYPECHECK_CLEAN`.
+
+Em 2026-07-28, sobre o baseline `7c19409`, os erros TypeScript/Deno do `sync-batch` sanitário v2 foram eliminados e o artefato validado foi implantado exclusivamente no staging `zqloazqzhwauamcejmuz` como versão 19. O gate permaneceu fail-closed e nenhum cliente/offline foi conectado.
+
+Resultado:
+- Deno oficial 2.9.4 e extensão `denoland.vscode-deno` 3.53.0 configurados somente para `./supabase/functions`, com import map único em `supabase/functions/deno.json`.
+- Os 14 erros iniciais foram corrigidos: timeout Deno, payload reprodutivo `unknown`, relação PostgREST array/objeto, união legado/sanitário, catch com identidade fora de escopo, payload financeiro desconhecido e serialização dos quatro objetos sanitários.
+- Nenhum `as any`, `@ts-ignore`, `@ts-expect-error`, index signature artificial ou relaxamento de strict foi introduzido.
+- Cobertura focada: 5 arquivos e 54 testes aprovados, incluindo payload ausente/não objeto, ID de episódio inválido, relação array/objeto/ausente, atribuição `unlinked`, catch por `rawOp` e serialização dos quatro comandos.
+- `deno check` e `deno fmt --check` passaram com exit code 0. Reset local, sentinelas expand 8/8, baseline funcional Supabase, suíte integral com 307 arquivos/2.211 testes, lint, build e `git diff --check` também passaram.
+- Deploy único confirmou `sync-batch` v19 `ACTIVE` com `verify_jwt=true`.
+- Smoke remoto único retornou `SANITARIO_SYNC_DISABLED`; cleanup/auditoria final: zero usuários Auth, fazendas, memberships, agendas, ledger e gates habilitados.
+- Não houve migration, mudança de contrato sanitário, gate habilitado, alteração de cliente/Dexie/worker/pull/UI ou integração com `sanitario-reconcile`.
+
+Próximo passo seguro:
+- integrar worker/reconcile à classificação canônica em incremento separado, mantendo o gate desligado.
+
+---
+
+## 0.2 Handoff anterior — Sync Sanitário v2 integrado ao sync-batch
+
+Decisão: `SYNC_BATCH_SANITARIO_V2_INTEGRATED`.
+
+Em 2026-07-28, sobre o baseline `7c19409`, o backend `sync-batch` foi integrado às quatro funções internas da fundação expand e implantado no staging `zqloazqzhwauamcejmuz` como versão 18. O gate permaneceu fail-closed e nenhum cliente/offline foi conectado.
+
+Resultado:
+- Contrato discriminado `domain = sanitario_v2` suporta `create_agenda`, `replace_agenda_animals`, `apply_factual_core` e `close_agenda` com payloads tipados.
+- JWT é validado antes de qualquer cliente privilegiado; `actor_user_id` vem exclusivamente do usuário autenticado e `fazenda_id`, `client_id` e `client_tx_id` são fixados pelo envelope confiável.
+- Membership e papel são avaliados antes do gate; owner/manager executam comandos administrativos e cowboy permanece permitido somente no núcleo factual, conforme a assinatura SQL autoritativa.
+- Gate ausente, desligado, fora da janela/allowlist ou incompatível com a versão rejeita antes da RPC. Limites de 500 alvos e 1 MiB também são aplicados no transporte.
+- As chamadas privilegiadas usam `service_role` somente na Edge Function; o banco continua responsável por tenant, revision, estado, atomicidade e ledger idempotente.
+- Respostas canônicas distinguem `APPLIED`, `RETRYABLE`, `REJECTED`, `CONFLICT` e `BLOCKED_DEPENDENCY`, incluindo entidade, revisão e status quando disponíveis.
+- Replay válido retorna o registro canônico; revision divergente e `23505` não comprovadamente idempotente não são tratados como sucesso; timeout permanece retryable.
+- Testes focados: 5 arquivos e 48 testes aprovados. Suíte integral: 307 arquivos e 2.205 testes aprovados.
+- Reset local, sentinelas expand 8/8, baseline funcional Supabase, lint, build, `git diff --check` e lint SQL passaram; permaneceram somente dois warnings SQL preexistentes.
+- Smoke remoto real confirmou `SANITARIO_SYNC_DISABLED` antes da RPC e zero persistência. Após cleanup: zero fazendas, usuários e gates habilitados.
+- Não houve migration, alteração de cliente, Dexie, worker, pull, UI, `sanitario-reconcile`, estoque, Conformidade, FK histórica ou habilitação do gate.
+
+Próximo passo seguro:
+- integrar worker/reconcile à classificação canônica em incremento separado, mantendo o gate desligado e sem cutover do cliente.
+
+---
+
+## 0.3 Handoff anterior — rebaseline completo do Supabase staging
 
 Decisão: `STAGING_FULL_REBASELINE_VALIDATED`.
 
@@ -31,7 +96,7 @@ Próximo passo seguro:
 
 ---
 
-## 0.1 Handoff anterior — primeiro incremento expand do Sync Remoto Sanitário v2
+## 0.4 Handoff anterior — primeiro incremento expand do Sync Remoto Sanitário v2
 
 O ADR-0007 está `Accepted`. O primeiro incremento de banco foi implementado exclusivamente em modo `expand`, sem conectar o cliente ou o `sync-batch` às novas funções.
 

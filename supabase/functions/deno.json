@@ -1,4 +1,7 @@
 {
+  "fmt": {
+    "exclude": ["sync-batch/AGENTS.md"]
+  },
   "compilerOptions": {
     "allowJs": true,
     "lib": ["deno.window", "dom"],

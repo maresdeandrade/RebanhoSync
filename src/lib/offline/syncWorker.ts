@@ -2,14 +2,29 @@ import type { Session } from "@supabase/supabase-js";
 import { db } from "./db";
 import { env } from "@/lib/env";
 import { supabase } from "@/lib/supabase";
-import type { Gesture } from "./types";
+import type {
+  Gesture,
+  Operation,
+  Rejection,
+  SanitarioSyncV2Command,
+  SanitarioSyncV2ResultStatus,
+  SyncOperationAuditResult,
+  SyncOperationResult,
+} from "./types";
 import { getRemoteTableName } from "./tableMap";
 import { normalizeTableMutationRecord } from "./mutationRecord";
-import { rollbackOpLocal, getAffectedStores } from "./ops";
+import { getAffectedStores, rollbackOpLocal } from "./ops";
 import { sortOpsForSync } from "./syncOrder";
-import { pullDataForFarm, pullInitialData, pullSanitarioAgendaV2 } from "./pull";
+import {
+  pullDataForFarm,
+  pullInitialData,
+  pullSanitarioAgendaV2,
+} from "./pull";
 import { purgeRejections } from "./rejections";
-import { trackPilotMetric, flushPilotMetrics } from "@/lib/telemetry/pilotMetrics";
+import {
+  flushPilotMetrics,
+  trackPilotMetric,
+} from "@/lib/telemetry/pilotMetrics";
 import { getActiveFarmId } from "@/lib/storage";
 
 let intervalId: ReturnType<typeof setInterval> | null = null;
@@ -40,20 +55,27 @@ const SANITARIO_AGENDA_V2_REMOTE_TABLES = new Set([
   "sanitario_agenda_animais_v2",
   "sanitario_agenda_closures_v2",
 ]);
+const SANITARIO_CANONICAL_STATUSES = new Set<SanitarioSyncV2ResultStatus>([
+  "APPLIED",
+  "RETRYABLE",
+  "REJECTED",
+  "CONFLICT",
+  "BLOCKED_DEPENDENCY",
+]);
+const SANITARIO_RETRY_BASE_MS = 5_000;
+const SANITARIO_RETRY_MAX_MS = 5 * 60_000;
+const SANITARIO_FACTUAL_REMOTE_TABLES = [
+  "eventos",
+  "eventos_sanitario",
+  "eventos_animais",
+] as const;
 
 // Auto-purge: run at most once every 6 hours, persisted across reloads
 const PURGE_INTERVAL_MS = 6 * 60 * 60 * 1000;
 const PURGE_LS_KEY = "rebanhosync:lastRejectionPurgeAt";
 
-interface SyncBatchResult {
-  status: string;
-  op_id?: string;
-  reason_code?: string;
-  reason_message?: string;
-}
-
 interface SyncBatchResponse {
-  results: SyncBatchResult[];
+  results: SyncOperationResult[];
 }
 
 export const startSyncWorker = () => {
@@ -98,19 +120,19 @@ export const startSyncWorker = () => {
 
       // Flush pilot metrics (non-blocking)
       try {
-         const pendingCount = pending.length;
-         if (pendingCount > 0) {
-            // Pick the fazenda_id of the first pending gesture (if there are multiple, it's fine, it's just telemetry)
-            await trackPilotMetric({
-              fazendaId: pending[0].fazenda_id,
-              eventName: "sync_backlog",
-              status: "info",
-              quantity: pendingCount,
-            });
-         }
-         await flushPilotMetrics();
-      } catch(e) {
-         console.warn("[sync-worker] telemetry flush error", e);
+        const pendingCount = pending.length;
+        if (pendingCount > 0) {
+          // Pick the fazenda_id of the first pending gesture (if there are multiple, it's fine, it's just telemetry)
+          await trackPilotMetric({
+            fazendaId: pending[0].fazenda_id,
+            eventName: "sync_backlog",
+            status: "info",
+            quantity: pendingCount,
+          });
+        }
+        await flushPilotMetrics();
+      } catch (e) {
+        console.warn("[sync-worker] telemetry flush error", e);
       }
 
       // Auto-purge old rejections (>7d) at most once per 6h
@@ -136,7 +158,11 @@ export const stopSyncWorker = () => {
 
 export async function runInitialOfflinePullForActiveFarmOnce() {
   const activeFarmId = getActiveFarmId();
-  if (!activeFarmId || initialPullFarmId === activeFarmId || isInitialPullRunning) {
+  if (
+    !activeFarmId ||
+    initialPullFarmId === activeFarmId ||
+    isInitialPullRunning
+  ) {
     return;
   }
 
@@ -191,9 +217,371 @@ function isNonRetryableSyncError(errorMessage?: string): boolean {
     normalizedMessage.includes("forbidden - no access to this farm")
   );
 }
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isSanitarioCanonicalResult(
+  result: SyncOperationResult,
+): result is SyncOperationResult & { status: SanitarioSyncV2ResultStatus } {
+  if (
+    !SANITARIO_CANONICAL_STATUSES.has(
+      result.status as SanitarioSyncV2ResultStatus,
+    )
+  ) {
+    return false;
+  }
+
+  return (
+    typeof result.domain_op_id === "string" ||
+    typeof result.canonical_entity_id === "string" ||
+    typeof result.current_revision === "number" ||
+    typeof result.canonical_status === "string" ||
+    isRecord(result.canonical_result) ||
+    result.status === "RETRYABLE" ||
+    result.status === "CONFLICT" ||
+    result.status === "BLOCKED_DEPENDENCY"
+  );
+}
+
+function readSanitarioCommand(
+  op: Operation,
+  result: SyncOperationResult,
+): SanitarioSyncV2Command | undefined {
+  const record = isRecord(op.record) ? op.record : {};
+  const canonical = isRecord(result.canonical_result)
+    ? result.canonical_result
+    : {};
+  const candidate = record.command ?? canonical.command;
+
+  return candidate === "create_agenda" ||
+    candidate === "replace_agenda_animals" ||
+    candidate === "apply_factual_core" ||
+    candidate === "close_agenda"
+    ? candidate
+    : undefined;
+}
+
+function getSanitarioRetryUpdate(op: Operation, nowMs: number, reason: string) {
+  const retryCount = (op.retry_count ?? 0) + 1;
+  const backoffMs = Math.min(
+    SANITARIO_RETRY_BASE_MS * 2 ** Math.min(retryCount - 1, 8),
+    SANITARIO_RETRY_MAX_MS,
+  );
+
+  return {
+    domain_op_id: op.domain_op_id,
+    sync_state: "RETRYABLE" as const,
+    retry_count: retryCount,
+    next_attempt_at: new Date(nowMs + backoffMs).toISOString(),
+    blocked_reason: reason,
+  };
+}
+
+function isOperationReadyForSync(op: Operation, nowMs = Date.now()) {
+  if (op.sync_state === "BLOCKED_DEPENDENCY") return false;
+  if (!op.next_attempt_at) return true;
+
+  const nextAttemptAt = Date.parse(op.next_attempt_at);
+  return !Number.isFinite(nextAttemptAt) || nextAttemptAt <= nowMs;
+}
+
+function mergeOperationAudit(
+  current: SyncOperationAuditResult[] | undefined,
+  incoming: SyncOperationAuditResult[],
+) {
+  const merged = new Map<string, SyncOperationAuditResult>();
+
+  for (const result of current ?? []) {
+    const key =
+      result.op_id ||
+      result.domain_op_id ||
+      `${result.status}:${result.local_reason_code ?? "unknown"}`;
+    merged.set(key, result);
+  }
+  for (const result of incoming) {
+    const key =
+      result.op_id ||
+      result.domain_op_id ||
+      `${result.status}:${result.local_reason_code ?? "unknown"}`;
+    merged.set(key, result);
+  }
+
+  return Array.from(merged.values());
+}
+
+function buildMinimalRejectionPayload(result: SyncOperationResult) {
+  return {
+    status: result.status,
+    ...(result.domain_op_id ? { domain_op_id: result.domain_op_id } : {}),
+    ...(result.canonical_entity_id
+      ? { canonical_entity_id: result.canonical_entity_id }
+      : {}),
+    ...(typeof result.current_revision === "number"
+      ? { current_revision: result.current_revision }
+      : {}),
+    ...(result.canonical_status
+      ? { canonical_status: result.canonical_status }
+      : {}),
+  };
+}
+
+async function reconcileSanitarioV2Results(
+  fazendaId: string,
+  matched: Array<{
+    op: Operation;
+    result: SyncOperationResult & { status: SanitarioSyncV2ResultStatus };
+  }>,
+) {
+  let pullAgenda = false;
+  let pullFactual = false;
+
+  for (const { op, result } of matched) {
+    if (result.status !== "APPLIED" && result.status !== "CONFLICT") continue;
+
+    const command = readSanitarioCommand(op, result);
+    const canonical = isRecord(result.canonical_result)
+      ? result.canonical_result
+      : {};
+    const hasAgendaEntity =
+      typeof canonical.agenda_id === "string" ||
+      typeof canonical.closure_id === "string";
+    const hasFactualEntity = typeof canonical.evento_id === "string";
+
+    if (
+      command === "create_agenda" ||
+      command === "replace_agenda_animals" ||
+      command === "close_agenda" ||
+      hasAgendaEntity
+    ) {
+      pullAgenda = true;
+    }
+    if (command === "apply_factual_core" || hasFactualEntity) {
+      pullFactual = true;
+      pullAgenda = true;
+    }
+    if (
+      result.status === "CONFLICT" &&
+      !hasAgendaEntity &&
+      !hasFactualEntity &&
+      (!result.canonical_entity_id || !command)
+    ) {
+      pullAgenda = true;
+      pullFactual = true;
+    }
+  }
+
+  if (pullFactual) {
+    try {
+      await pullDataForFarm(fazendaId, SANITARIO_FACTUAL_REMOTE_TABLES, {
+        mode: "merge",
+      });
+    } catch (error) {
+      console.warn(
+        "[sync-worker] sanitario v2 factual reconcile failed:",
+        error,
+      );
+    }
+  }
+  if (pullAgenda) {
+    try {
+      await pullSanitarioAgendaV2(fazendaId);
+    } catch (error) {
+      console.warn(
+        "[sync-worker] sanitario v2 agenda reconcile failed:",
+        error,
+      );
+    }
+  }
+}
+
+async function processSanitarioCanonicalResults(
+  gesture: Gesture,
+  sentOps: Operation[],
+  results: SyncOperationResult[],
+) {
+  const canonicalResults = results.filter(isSanitarioCanonicalResult);
+  if (canonicalResults.length === 0) return false;
+
+  const nowMs = Date.now();
+  const recordedAt = new Date(nowMs).toISOString();
+  const deleteIds = new Set<string>();
+  const matchedOpIds = new Set<string>();
+  const audits: SyncOperationAuditResult[] = [];
+  const rejections: Rejection[] = [];
+  const matchedForReconcile: Array<{
+    op: Operation;
+    result: SyncOperationResult & { status: SanitarioSyncV2ResultStatus };
+  }> = [];
+  const operationUpdates = new Map<string, Record<string, unknown>>();
+  let terminalRejection = false;
+
+  for (const result of canonicalResults) {
+    const resultOpId = typeof result.op_id === "string" ? result.op_id : "";
+    const identifiersDiverge =
+      typeof result.client_op_id === "string" &&
+      result.client_op_id !== resultOpId;
+    const op = identifiersDiverge
+      ? undefined
+      : sentOps.find((candidate) => candidate.client_op_id === resultOpId);
+    const command = op ? readSanitarioCommand(op, result) : undefined;
+
+    audits.push({
+      ...result,
+      op_id: resultOpId,
+      matched: Boolean(op),
+      recorded_at: recordedAt,
+      command,
+      local_reason_code: op
+        ? undefined
+        : identifiersDiverge
+          ? "SYNC_RESULT_ID_MISMATCH"
+          : "SYNC_RESULT_OP_NOT_FOUND",
+    });
+
+    if (!op) {
+      console.warn("[sync-worker] Ignoring unmatched sanitario v2 result", {
+        op_id: resultOpId,
+        client_op_id: result.client_op_id,
+        domain_op_id: result.domain_op_id,
+        status: result.status,
+      });
+      continue;
+    }
+
+    matchedOpIds.add(op.client_op_id);
+    matchedForReconcile.push({ op, result });
+
+    if (result.status === "APPLIED") {
+      deleteIds.add(op.client_op_id);
+      continue;
+    }
+
+    if (result.status === "RETRYABLE") {
+      operationUpdates.set(op.client_op_id, {
+        ...getSanitarioRetryUpdate(
+          {
+            ...op,
+            domain_op_id: result.domain_op_id ?? op.domain_op_id,
+          },
+          nowMs,
+          result.reason_code ?? "SANITARIO_SYNC_V2_RETRYABLE",
+        ),
+        domain_op_id: result.domain_op_id ?? op.domain_op_id,
+      });
+      continue;
+    }
+
+    if (result.status === "BLOCKED_DEPENDENCY") {
+      operationUpdates.set(op.client_op_id, {
+        domain_op_id: result.domain_op_id ?? op.domain_op_id,
+        sync_state: "BLOCKED_DEPENDENCY",
+        next_attempt_at: undefined,
+        blocked_reason:
+          result.reason_code ?? "SANITARIO_SYNC_V2_DEPENDENCY_UNAVAILABLE",
+      });
+      continue;
+    }
+
+    terminalRejection = true;
+    deleteIds.add(op.client_op_id);
+    rejections.push({
+      client_tx_id: gesture.client_tx_id,
+      client_op_id: op.client_op_id,
+      fazenda_id: gesture.fazenda_id,
+      table: op.table,
+      action: op.action,
+      reason_code: result.reason_code ?? `SANITARIO_SYNC_V2_${result.status}`,
+      reason_message:
+        result.reason_message ?? `sanitario_v2 result: ${result.status}`,
+      domain_op_id: result.domain_op_id,
+      result_status: result.status,
+      current_revision: result.current_revision,
+      canonical_status: result.canonical_status,
+      canonical_entity_id: result.canonical_entity_id,
+      payload: buildMinimalRejectionPayload(result),
+      created_at: recordedAt,
+    });
+  }
+
+  for (const op of sentOps) {
+    if (matchedOpIds.has(op.client_op_id)) continue;
+
+    operationUpdates.set(
+      op.client_op_id,
+      getSanitarioRetryUpdate(op, nowMs, "SYNC_RESULT_MISSING"),
+    );
+  }
+
+  await db.transaction(
+    "rw",
+    [db.queue_gestures, db.queue_ops, db.queue_rejections],
+    async () => {
+      if (deleteIds.size > 0) {
+        await db.queue_ops.bulkDelete(Array.from(deleteIds));
+      }
+      for (const [clientOpId, update] of operationUpdates) {
+        await db.queue_ops.update(clientOpId, update);
+      }
+      if (rejections.length > 0) {
+        await db.queue_rejections.bulkAdd(rejections);
+      }
+
+      const remaining = await db.queue_ops
+        .where("client_tx_id")
+        .equals(gesture.client_tx_id)
+        .toArray();
+      const hasRetryable = remaining.some(
+        (op) => op.sync_state === "RETRYABLE",
+      );
+      const hasBlocked = remaining.some(
+        (op) => op.sync_state === "BLOCKED_DEPENDENCY",
+      );
+      const operationResults = mergeOperationAudit(
+        gesture.operation_results,
+        audits,
+      );
+
+      if (remaining.length === 0) {
+        await db.queue_gestures.update(gesture.client_tx_id, {
+          status: terminalRejection ? "REJECTED" : "DONE",
+          sync_result: terminalRejection ? "REJECTED" : "APPLIED",
+          completed_at: recordedAt,
+          last_error: terminalRejection
+            ? "sanitario_v2 completed with rejection or conflict"
+            : undefined,
+          operation_results: operationResults,
+        });
+      } else if (hasRetryable) {
+        await db.queue_gestures.update(gesture.client_tx_id, {
+          status: "PENDING",
+          sync_result: undefined,
+          completed_at: undefined,
+          retry_count: (gesture.retry_count ?? 0) + 1,
+          last_error: "sanitario_v2 retry scheduled with backoff",
+          operation_results: operationResults,
+        });
+      } else if (hasBlocked) {
+        await db.queue_gestures.update(gesture.client_tx_id, {
+          status: "ERROR",
+          sync_result: "ERROR",
+          completed_at: recordedAt,
+          last_error: "sanitario_v2 blocked by unavailable dependency",
+          operation_results: operationResults,
+        });
+      }
+    },
+  );
+
+  await reconcileSanitarioV2Results(gesture.fazenda_id, matchedForReconcile);
+  return true;
+}
 
 export async function recoverErroredGesturesOnce() {
-  const errored = await db.queue_gestures.where("status").equals("ERROR").toArray();
+  const errored = await db.queue_gestures
+    .where("status")
+    .equals("ERROR")
+    .toArray();
   const recoverable = errored.filter((gesture) =>
     isRecoverableSyncError(gesture.last_error),
   );
@@ -206,7 +594,8 @@ export async function recoverErroredGesturesOnce() {
       sync_result: undefined,
       completed_at: undefined,
       retry_count: 0,
-      last_error: "Recovered transient sync error; retrying after worker startup",
+      last_error:
+        "Recovered transient sync error; retrying after worker startup",
     });
   }
 
@@ -225,7 +614,9 @@ function logTokenExpiry(session: Session) {
 
   const tokenExpiry = new Date(session.expires_at * 1000);
   const now = new Date();
-  const timeLeft = Math.floor((tokenExpiry.getTime() - now.getTime()) / 1000 / 60);
+  const timeLeft = Math.floor(
+    (tokenExpiry.getTime() - now.getTime()) / 1000 / 60,
+  );
   console.debug("[sync-worker] Token expira em:", timeLeft, "minutos");
 }
 
@@ -246,7 +637,9 @@ async function getValidSession() {
 
   if (refreshError || !refreshedSession) {
     const reason =
-      refreshError?.message ?? sessionError?.message ?? "session null after refresh";
+      refreshError?.message ??
+      sessionError?.message ??
+      "session null after refresh";
     throw new Error(`Nao autenticado - sessao expirada (${reason})`);
   }
 
@@ -280,17 +673,47 @@ async function sendBatchRequest(
 }
 
 export async function processGesture(gesture: Gesture) {
+  const queuedOps = await db.queue_ops
+    .where("client_tx_id")
+    .equals(gesture.client_tx_id)
+    .toArray();
+  const readyOps = queuedOps.filter((op) => isOperationReadyForSync(op));
+
+  if (readyOps.length === 0) {
+    const hasDeferredRetry = queuedOps.some(
+      (op) => op.sync_state === "RETRYABLE",
+    );
+    const hasBlockedDependency = queuedOps.some(
+      (op) => op.sync_state === "BLOCKED_DEPENDENCY",
+    );
+
+    await db.queue_gestures.update(gesture.client_tx_id, {
+      status: hasDeferredRetry
+        ? "PENDING"
+        : hasBlockedDependency
+          ? "ERROR"
+          : "DONE",
+      sync_result:
+        hasBlockedDependency && !hasDeferredRetry ? "ERROR" : undefined,
+      completed_at:
+        hasBlockedDependency && !hasDeferredRetry
+          ? new Date().toISOString()
+          : undefined,
+      last_error: hasDeferredRetry
+        ? "sanitario_v2 retry waiting for backoff"
+        : hasBlockedDependency
+          ? "sanitario_v2 blocked by unavailable dependency"
+          : undefined,
+    });
+    return;
+  }
+
+  const ops = sortOpsForSync(readyOps);
   await db.queue_gestures.update(gesture.client_tx_id, {
     status: "SYNCING",
     sync_result: undefined,
     completed_at: undefined,
   });
-
-  const queuedOps = await db.queue_ops
-    .where("client_tx_id")
-    .equals(gesture.client_tx_id)
-    .toArray();
-  const ops = sortOpsForSync(queuedOps);
 
   try {
     const { supabase, session } = await getValidSession();
@@ -317,7 +740,11 @@ export async function processGesture(gesture: Gesture) {
     }
     logTokenExpiry(session);
 
-    let response = await sendBatchRequest(session.access_token, gesture, mappedOps);
+    let response = await sendBatchRequest(
+      session.access_token,
+      gesture,
+      mappedOps,
+    );
 
     if (response.status === 401) {
       console.warn(
@@ -330,7 +757,9 @@ export async function processGesture(gesture: Gesture) {
       } = await supabase.auth.refreshSession();
 
       if (refreshError || !refreshedSession) {
-        throw new Error(`HTTP 401 - refresh failed: ${refreshError?.message ?? "no session"}`);
+        throw new Error(
+          `HTTP 401 - refresh failed: ${refreshError?.message ?? "no session"}`,
+        );
       }
 
       logTokenExpiry(refreshedSession);
@@ -364,6 +793,12 @@ export async function processGesture(gesture: Gesture) {
     if (!Array.isArray(result.results)) {
       throw new Error("Invalid sync-batch response: results missing");
     }
+    const handledSanitarioV2 = await processSanitarioCanonicalResults(
+      gesture,
+      ops,
+      result.results,
+    );
+    if (handledSanitarioV2) return;
 
     const allApplied = result.results.every(
       (r) => r.status === "APPLIED" || r.status === "APPLIED_ALTERED",
@@ -440,7 +875,10 @@ export async function processGesture(gesture: Gesture) {
         completed_at: completedAt,
         last_error: undefined,
       });
-      await db.queue_ops.where("client_tx_id").equals(gesture.client_tx_id).delete();
+      await db.queue_ops
+        .where("client_tx_id")
+        .equals(gesture.client_tx_id)
+        .delete();
       await trackPilotMetric({
         fazendaId: gesture.fazenda_id,
         eventName: "sync_success",
@@ -454,14 +892,18 @@ export async function processGesture(gesture: Gesture) {
       });
 
       if (import.meta.env.DEV) {
-        console.debug(`[sync-worker] TX ${gesture.client_tx_id} synced successfully`);
+        console.debug(
+          `[sync-worker] TX ${gesture.client_tx_id} synced successfully`,
+        );
       }
       return;
     }
 
     if (hasRejected) {
       const completedAt = new Date().toISOString();
-      const rejectedResults = result.results.filter((r) => r.status === "REJECTED");
+      const rejectedResults = result.results.filter(
+        (r) => r.status === "REJECTED",
+      );
       const rejectionSummary = rejectedResults
         .map((r) => `${r.reason_code ?? "UNKNOWN"}: ${r.reason_message ?? "-"}`)
         .join(" | ");
@@ -520,14 +962,20 @@ export async function processGesture(gesture: Gesture) {
             .map((entry) => entry.op_id)
             .filter((opId): opId is string => typeof opId === "string"),
         );
-        const rejectedOps = ops.filter((op) => rejectedOpIds.has(op.client_op_id));
+        const rejectedOps = ops.filter((op) =>
+          rejectedOpIds.has(op.client_op_id),
+        );
 
         if (rejectedOps.length > 0) {
-          await db.transaction("rw", [...getAffectedStores(rejectedOps)], async () => {
-            for (const op of [...rejectedOps].reverse()) {
-              await rollbackOpLocal(op);
-            }
-          });
+          await db.transaction(
+            "rw",
+            [...getAffectedStores(rejectedOps)],
+            async () => {
+              for (const op of [...rejectedOps].reverse()) {
+                await rollbackOpLocal(op);
+              }
+            },
+          );
         }
 
         if (appliedOpIds.size > 0) {
@@ -558,7 +1006,9 @@ export async function processGesture(gesture: Gesture) {
             applied_count: appliedOpIds.size,
             rejected_count: rejectedResults.length,
             tables: ["sanitario_agenda_closures_v2"],
-            reasons: rejectedResults.map((result) => result.reason_code ?? "UNKNOWN"),
+            reasons: rejectedResults.map(
+              (result) => result.reason_code ?? "UNKNOWN",
+            ),
           },
         });
         return;
@@ -616,13 +1066,17 @@ export async function processGesture(gesture: Gesture) {
         reasonCode: rejectedResults[0]?.reason_code,
         payload: {
           op_count: ops.length,
-          reasons: rejectedResults.map((result) => result.reason_code ?? "UNKNOWN"),
+          reasons: rejectedResults.map(
+            (result) => result.reason_code ?? "UNKNOWN",
+          ),
         },
       });
       return;
     }
 
-    throw new Error("Invalid sync-batch response: no APPLIED or REJECTED statuses");
+    throw new Error(
+      "Invalid sync-batch response: no APPLIED or REJECTED statuses",
+    );
   } catch (e: unknown) {
     const error = e instanceof Error ? e : new Error(String(e));
     const retryCount = gesture.retry_count || 0;

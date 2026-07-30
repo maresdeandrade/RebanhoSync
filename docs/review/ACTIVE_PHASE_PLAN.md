@@ -1,13 +1,69 @@
-    # ACTIVE_PHASE_PLAN - Sync Remoto Sanitário v2 — staging rebaseline validado
+    # ACTIVE_PHASE_PLAN - Sync Remoto Sanitário v2 — worker/reconcile preparado localmente
 
-    **Status:** Staging reconstruído pela cadeia local e fundação `expand` validada remotamente; integração sanitária no `sync-batch` permanece desabilitada.
+    **Status:** worker/reconcile local preparado para resultados canônicos do `sanitario_v2`; enqueue/cutover e gate permanecem desabilitados.
     **Baseline do incremento expand:** `78e91ec`.
     **Commit funcional do incremento expand:** `8967f0c`.
     **Baseline histórico da Conformidade local:** `fcf42bc`, validado em 2026-07-18. Essa referência não valida a migration do incremento expand.
     **Foco:** Catálogo permanece `catalog_*` pull-only. Agenda é intenção; evento é fato. Conformidade é read model derivado/somente leitura e não libera operação.
     **Criado:** 2026-06-15
-    **Atualizado:** 2026-07-27
+    **Atualizado:** 2026-07-30
     **Plano base:** ADR-0007 Accepted + solicitação direta do primeiro incremento `expand`.
+
+    ---
+
+    ## Decisão — worker/reconcile do Sync Sanitário v2
+
+    Decisão: `SANITARIO_V2_WORKER_RECONCILE_READY`.
+
+    Validação executada em 2026-07-30 sobre o baseline `7c19409`:
+    - a fila compartilhada existente passou a interpretar resultados canônicos `APPLIED`, `RETRYABLE`, `REJECTED`, `CONFLICT` e `BLOCKED_DEPENDENCY` por operação, sem criar fila paralela ou nova versão de schema Dexie;
+    - sucesso parcial remove somente operações aplicadas ou terminalmente rejeitadas, preserva retry com backoff e mantém dependências bloqueadas fora de loop agressivo;
+    - rejeições e conflitos são registrados na estrutura existente de auditoria/DLQ com identidade canônica, revisão e status quando disponíveis, sem rollback otimista destrutivo;
+    - reconcile de agenda/animais/closure usa `pullSanitarioAgendaV2`; núcleo factual solicita merge de `eventos`, `eventos_sanitario` e `eventos_animais` e também atualiza a agenda;
+    - resultados desconhecidos, ausentes ou com identidade divergente são auditados e mantêm a operação para retry seguro;
+    - passaram 105 testes offline focados, 54 testes do `sync-batch`, 2.217 testes integrais, lint, build, `deno check` e `git diff --check`;
+    - nenhum enqueue sanitário foi ativado; não houve alteração de Edge Function, migration, SQL, UI, gate, deploy ou cutover Dexie.
+
+    Próximo passo seguro:
+    - autorizar em incremento separado o enqueue/cutover local e validar ponta a ponta, mantendo o gate remoto desligado.
+
+    ---
+
+    ## Decisão — typecheck Deno do Sync Sanitário v2
+
+    Decisão: `SYNC_BATCH_SANITARIO_V2_TYPECHECK_CLEAN`.
+
+    Validação executada em 2026-07-28 sobre o baseline `7c19409`:
+    - o diagnóstico inicial do Deno 2.9.4 encontrou 14 erros reais/configuracionais em `index.ts`, `rules.ts` e `sanitario-v2.ts`; todos foram corrigidos sem `any`, ignores, declaração global artificial de Deno ou relaxamento de `strict`;
+    - o fluxo reprodutivo agora normaliza payload desconhecido, `episode_evento_id` e `episode_link_method`, aceita relação PostgREST como array/objeto/ausente e substitui o payload `unlinked` sem mutação insegura;
+    - o catch por operação preserva `rawOp.client_op_id`; a serialização sanitária aceita objetos de domínio sem index signature e isola o cast na fronteira `Record<string, unknown>`;
+    - Deno ficou limitado a `./supabase/functions`, reutilizando `supabase/functions/deno.json`; a extensão oficial `denoland.vscode-deno` 3.53.0 foi instalada/recomendada;
+    - `deno check` e `deno fmt --check` terminaram com exit code 0; 54 testes focados, 2.211 testes integrais, reset local, sentinelas expand 8/8, baseline funcional, lint, build e `git diff --check` passaram;
+    - `sync-batch` versão 19 foi implantado uma única vez no staging `zqloazqzhwauamcejmuz`, ficou `ACTIVE` e manteve `verify_jwt=true`;
+    - o smoke remoto único retornou `SANITARIO_SYNC_DISABLED`; a limpeza confirmou zero usuários Auth, fazendas, memberships, agendas, entradas de ledger e gates habilitados;
+    - não houve migration, alteração de contrato sanitário, habilitação de gate ou integração de cliente, Dexie, worker, pull, UI ou `sanitario-reconcile`.
+
+    Próximo passo seguro:
+    - integrar worker/reconcile à classificação canônica em incremento separado, mantendo o gate desligado e sem cutover do cliente.
+
+    ---
+
+    ## Decisão — integração do Sync Sanitário v2 ao sync-batch
+
+    Decisão: `SYNC_BATCH_SANITARIO_V2_INTEGRATED`.
+
+    Validação executada em 2026-07-28 sobre o baseline `7c19409`:
+    - adicionados quatro comandos tipados em `domain = sanitario_v2`: criar agenda, substituir animais, aplicar núcleo factual e cancelar/dispensar agenda;
+    - JWT e membership são validados antes da criação do cliente `service_role`; ator, fazenda, cliente e transação são derivados ou confrontados com o envelope confiável;
+    - allowlist, papel, gate persistido, versão 2, limite de 500 alvos e payload de 1 MiB são verificados antes da RPC; as funções SQL mantêm a revalidação autoritativa de tenant, revision, estado e idempotência;
+    - resultados são classificados como `APPLIED`, `RETRYABLE`, `REJECTED`, `CONFLICT` ou `BLOCKED_DEPENDENCY`, sem converter `23505` genérico em sucesso;
+    - `sync-batch` versão 18 implantado somente no staging `zqloazqzhwauamcejmuz`;
+    - smoke remoto com gate ausente retornou `SANITARIO_SYNC_DISABLED` antes da RPC, sem agenda ou ledger; a limpeza terminou com zero fazendas, usuários e gates habilitados;
+    - validações locais passaram com 48 testes focados e 2.205 testes integrais, além de reset, sentinelas expand, baseline funcional, lint, build e lint SQL sem erro;
+    - nenhuma migration, cliente, Dexie, worker, pull, UI, `sanitario-reconcile`, movimento de estoque, Conformidade ou gate foi alterado.
+
+    Próximo passo seguro:
+    - integrar worker/reconcile ao resultado canônico em incremento separado, preservando o gate desligado e sem cutover do cliente.
 
     ---
 
@@ -535,7 +591,7 @@
 
     ## Historico anterior — Fase 12E5
 
-    **Status:** Fase 12E5 concluida localmente - hardening final offline/sync sanitario v2.
+    **Status:** `sync-batch` v19 com typecheck Deno limpo e implantado no staging; gate, cliente, Dexie, worker e pull permanecem desabilitados.
     **Foco:** Cursor incremental por `updated_at`, retry/replay seguro de closures, sucesso parcial, bloqueios permanentes de superficie e gate 12F.
     **Criado:** 2026-06-13
     **Atualizado:** 2026-06-13

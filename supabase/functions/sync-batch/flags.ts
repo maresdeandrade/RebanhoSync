@@ -11,7 +11,7 @@ interface MetadataWithRollout {
 }
 
 function asBooleanOrDefault(value: unknown, defaultValue: boolean): boolean {
-  if (typeof value === 'boolean') return value;
+  if (typeof value === "boolean") return value;
   return defaultValue;
 }
 
@@ -33,4 +33,3 @@ export function resolveEventFeatureFlags(metadata: unknown): EventFeatureFlags {
     strictAntiTeleport: strictRulesEnabled && strictAntiTeleportRaw,
   };
 }
-
