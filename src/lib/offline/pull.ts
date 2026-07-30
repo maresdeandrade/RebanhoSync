@@ -90,7 +90,9 @@ function buildPullCursorKey(
 
 async function getPullCursor(key: string): Promise<PullCursor | null> {
   if (!hasPullCursorStore()) return null;
-  return ((await db.table(PULL_CURSOR_STORE).get(key)) as PullCursor | undefined) ?? null;
+  return ((await db.table(PULL_CURSOR_STORE).get(key)) as
+    | PullCursor
+    | undefined) ?? null;
 }
 
 function getLatestUpdatedAtRow(rows: RemoteRow[]) {
@@ -101,7 +103,9 @@ function getLatestUpdatedAtRow(rows: RemoteRow[]) {
   if (rowsWithUpdatedAt.length === 0) return null;
 
   return [...rowsWithUpdatedAt].sort((a, b) => {
-    const updatedDiff = String(a.updated_at).localeCompare(String(b.updated_at));
+    const updatedDiff = String(a.updated_at).localeCompare(
+      String(b.updated_at),
+    );
     if (updatedDiff !== 0) return updatedDiff;
     return String(a.id ?? "").localeCompare(String(b.id ?? ""));
   }).at(-1) ?? null;
@@ -159,6 +163,46 @@ async function getLocalSanitarioProtocolIdsV2(): Promise<string[]> {
     .map((row) => String(row.id));
 }
 
+function sameEventoAnimal(left: RemoteRow, right: RemoteRow) {
+  return left.id === right.id &&
+    left.fazenda_id === right.fazenda_id &&
+    left.evento_id === right.evento_id &&
+    left.animal_id === right.animal_id &&
+    left.created_at === right.created_at;
+}
+
+async function appendEventoAnimais(
+  store: ReturnType<typeof db.table>,
+  rows: RemoteRow[],
+) {
+  for (const row of rows) {
+    if (
+      typeof row.id !== "string" || typeof row.fazenda_id !== "string" ||
+      typeof row.evento_id !== "string" || typeof row.animal_id !== "string"
+    ) {
+      throw new Error("SANITARIO_V2_EVENT_ANIMAL_INVALID");
+    }
+    const existingById = await store.get(row.id) as RemoteRow | undefined;
+    if (existingById) {
+      if (!sameEventoAnimal(existingById, row)) {
+        throw new Error("SANITARIO_V2_EVENT_ANIMAL_APPEND_ONLY_VIOLATION");
+      }
+      continue;
+    }
+    const existingFact = await store.where("[fazenda_id+evento_id+animal_id]")
+      .equals([row.fazenda_id, row.evento_id, row.animal_id]).first() as
+        | RemoteRow
+        | undefined;
+    if (existingFact) {
+      if (!sameEventoAnimal(existingFact, row)) {
+        throw new Error("SANITARIO_V2_EVENT_ANIMAL_FACT_COLLISION");
+      }
+      continue;
+    }
+    await store.add(row);
+  }
+}
+
 async function writeMergeResults(
   storesToUpdate: Array<{ remote: string; local: string }>,
   results: Record<string, RemoteRow[]>,
@@ -175,7 +219,11 @@ async function writeMergeResults(
       const store = db.table(local);
 
       if (rows.length > 0) {
-        await store.bulkPut(rows);
+        if (remote === "eventos_animais") {
+          await appendEventoAnimais(store, rows as RemoteRow[]);
+        } else {
+          await store.bulkPut(rows);
+        }
       }
 
       console.log(
@@ -242,12 +290,16 @@ export const pullDataForFarm = async (
       const rows = results[remote];
       const store = db.table(local);
 
-      if (mode === "replace") {
+      if (mode === "replace" && remote !== "eventos_animais") {
         await store.clear();
       }
 
       if (rows.length > 0) {
-        await store.bulkPut(rows);
+        if (remote === "eventos_animais") {
+          await appendEventoAnimais(store, rows as RemoteRow[]);
+        } else {
+          await store.bulkPut(rows);
+        }
       }
 
       console.log(
@@ -260,7 +312,9 @@ export const pullDataForFarm = async (
 export const pullSanitarioProductClassV2Catalog = async (
   fazenda_id: string,
 ) => {
-  console.log(`[pull] Starting sanitario ProductClass v2 catalog pull for farm ${fazenda_id}`);
+  console.log(
+    `[pull] Starting sanitario ProductClass v2 catalog pull for farm ${fazenda_id}`,
+  );
 
   const results: Record<string, RemoteRow[]> = {};
   const cursorUpdates: CursorUpdate[] = [];
@@ -268,35 +322,45 @@ export const pullSanitarioProductClassV2Catalog = async (
   for (const remoteTable of SANITARIO_PRODUCT_CLASS_V2_REMOTE_TABLES) {
     const localStore = getLocalStoreName(remoteTable);
     const globalCursorKey = buildPullCursorKey(remoteTable, "global", null);
-    const tenantCursorKey = buildPullCursorKey(remoteTable, "tenant", fazenda_id);
+    const tenantCursorKey = buildPullCursorKey(
+      remoteTable,
+      "tenant",
+      fazenda_id,
+    );
 
     const globalQuery = await applyUpdatedAtCursor(
       supabase
-      .from(remoteTable)
-      .select("*")
-      .eq("scope", "global")
+        .from(remoteTable)
+        .select("*")
+        .eq("scope", "global")
         .is("fazenda_id", null),
       globalCursorKey,
     );
     const globalResult = await globalQuery;
 
     if (globalResult.error) {
-      console.error(`[pull] Error pulling global ${remoteTable}:`, globalResult.error);
+      console.error(
+        `[pull] Error pulling global ${remoteTable}:`,
+        globalResult.error,
+      );
       throw globalResult.error;
     }
 
     const tenantQuery = await applyUpdatedAtCursor(
       supabase
-      .from(remoteTable)
-      .select("*")
-      .eq("scope", "tenant")
+        .from(remoteTable)
+        .select("*")
+        .eq("scope", "tenant")
         .eq("fazenda_id", fazenda_id),
       tenantCursorKey,
     );
     const tenantResult = await tenantQuery;
 
     if (tenantResult.error) {
-      console.error(`[pull] Error pulling tenant ${remoteTable}:`, tenantResult.error);
+      console.error(
+        `[pull] Error pulling tenant ${remoteTable}:`,
+        tenantResult.error,
+      );
       throw tenantResult.error;
     }
 
@@ -350,7 +414,9 @@ export const pullSanitarioProductClassV2Catalog = async (
 export const pullSanitarioTechnicalCatalogV2 = async (
   fazenda_id: string,
 ) => {
-  console.log(`[pull] Starting sanitario technical catalog v2 pull for farm ${fazenda_id}`);
+  console.log(
+    `[pull] Starting sanitario technical catalog v2 pull for farm ${fazenda_id}`,
+  );
 
   const results: Record<string, RemoteRow[]> = {};
   const cursorUpdates: CursorUpdate[] = [];
@@ -359,34 +425,44 @@ export const pullSanitarioTechnicalCatalogV2 = async (
     const localStore = getLocalStoreName(remoteTable);
     if (remoteTable === "sanitario_fontes_tecnicas_v2") {
       const globalCursorKey = buildPullCursorKey(remoteTable, "global", null);
-      const farmCursorKey = buildPullCursorKey(remoteTable, "fazenda", fazenda_id);
+      const farmCursorKey = buildPullCursorKey(
+        remoteTable,
+        "fazenda",
+        fazenda_id,
+      );
       const globalQuery = await applyUpdatedAtCursor(
         supabase
-        .from(remoteTable)
-        .select("*")
-        .eq("scope", "global")
+          .from(remoteTable)
+          .select("*")
+          .eq("scope", "global")
           .is("fazenda_id", null),
         globalCursorKey,
       );
       const globalResult = await globalQuery;
 
       if (globalResult.error) {
-        console.error(`[pull] Error pulling global ${remoteTable}:`, globalResult.error);
+        console.error(
+          `[pull] Error pulling global ${remoteTable}:`,
+          globalResult.error,
+        );
         throw globalResult.error;
       }
 
       const farmQuery = await applyUpdatedAtCursor(
         supabase
-        .from(remoteTable)
-        .select("*")
-        .eq("scope", "fazenda")
+          .from(remoteTable)
+          .select("*")
+          .eq("scope", "fazenda")
           .eq("fazenda_id", fazenda_id),
         farmCursorKey,
       );
       const farmResult = await farmQuery;
 
       if (farmResult.error) {
-        console.error(`[pull] Error pulling farm-scoped ${remoteTable}:`, farmResult.error);
+        console.error(
+          `[pull] Error pulling farm-scoped ${remoteTable}:`,
+          farmResult.error,
+        );
         throw farmResult.error;
       }
 
@@ -419,10 +495,9 @@ export const pullSanitarioTechnicalCatalogV2 = async (
 
     const cursorKey = buildPullCursorKey(remoteTable, "unscoped", null);
     const baseQuery = supabase.from(remoteTable).select("*");
-    const query =
-      remoteTable === "sanitario_produto_fontes_v2"
-        ? baseQuery
-        : await applyUpdatedAtCursor(baseQuery, cursorKey);
+    const query = remoteTable === "sanitario_produto_fontes_v2"
+      ? baseQuery
+      : await applyUpdatedAtCursor(baseQuery, cursorKey);
     const { data, error } = await query;
 
     if (error) {
@@ -485,7 +560,10 @@ export const pullSanitarioProtocolCatalogV2 = async () => {
   const protocolResult = await protocolQuery;
 
   if (protocolResult.error) {
-    console.error(`[pull] Error pulling ${protocolsTable}:`, protocolResult.error);
+    console.error(
+      `[pull] Error pulling ${protocolsTable}:`,
+      protocolResult.error,
+    );
     throw protocolResult.error;
   }
 
@@ -596,7 +674,9 @@ export const pullSanitarioProtocolCatalogV2 = async () => {
 };
 
 export const pullSanitarioAgendaV2 = async (fazenda_id: string) => {
-  console.log(`[pull] Starting sanitario agenda v2 pull for farm ${fazenda_id}`);
+  console.log(
+    `[pull] Starting sanitario agenda v2 pull for farm ${fazenda_id}`,
+  );
 
   const results: Record<string, RemoteRow[]> = {};
   const cursorUpdates: CursorUpdate[] = [];
@@ -606,8 +686,8 @@ export const pullSanitarioAgendaV2 = async (fazenda_id: string) => {
     const cursorKey = buildPullCursorKey(remoteTable, "fazenda", fazenda_id);
     const query = await applyUpdatedAtCursor(
       supabase
-      .from(remoteTable)
-      .select("*")
+        .from(remoteTable)
+        .select("*")
         .eq("fazenda_id", fazenda_id),
       cursorKey,
     );
@@ -649,6 +729,21 @@ export const pullSanitarioAgendaV2 = async (fazenda_id: string) => {
   }
 
   await writeMergeResults(storesToUpdate, results, cursorUpdates);
+};
+
+export const pullSanitarioV2CutoverState = async (fazendaId: string) => {
+  const orderedTables = [
+    "sanitario_agenda_v2",
+    "sanitario_agenda_animais_v2",
+    "eventos",
+    "eventos_sanitario",
+    "eventos_animais",
+    "sanitario_agenda_closures_v2",
+  ] as const;
+
+  for (const remoteTable of orderedTables) {
+    await pullDataForFarm(fazendaId, [remoteTable], { mode: "merge" });
+  }
 };
 
 export const pullInitialData = async (fazenda_id: string) => {

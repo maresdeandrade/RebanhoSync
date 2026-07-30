@@ -19,6 +19,7 @@ import {
   pullDataForFarm,
   pullInitialData,
   pullSanitarioAgendaV2,
+  pullSanitarioV2CutoverState,
 } from "./pull";
 import { purgeRejections } from "./rejections";
 import {
@@ -64,11 +65,6 @@ const SANITARIO_CANONICAL_STATUSES = new Set<SanitarioSyncV2ResultStatus>([
 ]);
 const SANITARIO_RETRY_BASE_MS = 5_000;
 const SANITARIO_RETRY_MAX_MS = 5 * 60_000;
-const SANITARIO_FACTUAL_REMOTE_TABLES = [
-  "eventos",
-  "eventos_sanitario",
-  "eventos_animais",
-] as const;
 
 // Auto-purge: run at most once every 6 hours, persisted across reloads
 const PURGE_INTERVAL_MS = 6 * 60 * 60 * 1000;
@@ -94,6 +90,7 @@ export const startSyncWorker = () => {
 
       if (!startupRecoveryDone) {
         await recoverErroredGesturesOnce();
+        await recoverBlockedSanitarioV2Operations("app_startup");
         startupRecoveryDone = true;
       }
 
@@ -205,7 +202,7 @@ function isRecoverableSyncError(errorMessage?: string): boolean {
   if (!errorMessage) return false;
   const normalizedMessage = errorMessage.toLowerCase();
   return RECOVERABLE_ERROR_MARKERS.some((marker) =>
-    normalizedMessage.includes(marker.toLowerCase()),
+    normalizedMessage.includes(marker.toLowerCase())
   );
 }
 
@@ -255,9 +252,9 @@ function readSanitarioCommand(
   const candidate = record.command ?? canonical.command;
 
   return candidate === "create_agenda" ||
-    candidate === "replace_agenda_animals" ||
-    candidate === "apply_factual_core" ||
-    candidate === "close_agenda"
+      candidate === "replace_agenda_animals" ||
+      candidate === "apply_factual_core" ||
+      candidate === "close_agenda"
     ? candidate
     : undefined;
 }
@@ -293,15 +290,13 @@ function mergeOperationAudit(
   const merged = new Map<string, SyncOperationAuditResult>();
 
   for (const result of current ?? []) {
-    const key =
-      result.op_id ||
+    const key = result.op_id ||
       result.domain_op_id ||
       `${result.status}:${result.local_reason_code ?? "unknown"}`;
     merged.set(key, result);
   }
   for (const result of incoming) {
-    const key =
-      result.op_id ||
+    const key = result.op_id ||
       result.domain_op_id ||
       `${result.status}:${result.local_reason_code ?? "unknown"}`;
     merged.set(key, result);
@@ -343,8 +338,7 @@ async function reconcileSanitarioV2Results(
     const canonical = isRecord(result.canonical_result)
       ? result.canonical_result
       : {};
-    const hasAgendaEntity =
-      typeof canonical.agenda_id === "string" ||
+    const hasAgendaEntity = typeof canonical.agenda_id === "string" ||
       typeof canonical.closure_id === "string";
     const hasFactualEntity = typeof canonical.evento_id === "string";
 
@@ -371,24 +365,20 @@ async function reconcileSanitarioV2Results(
     }
   }
 
-  if (pullFactual) {
+  if (pullAgenda || pullFactual) {
     try {
-      await pullDataForFarm(fazendaId, SANITARIO_FACTUAL_REMOTE_TABLES, {
-        mode: "merge",
-      });
-    } catch (error) {
-      console.warn(
-        "[sync-worker] sanitario v2 factual reconcile failed:",
-        error,
+      await pullSanitarioV2CutoverState(fazendaId);
+      const justBlocked = new Set(
+        matched.filter(({ result }) => result.status === "BLOCKED_DEPENDENCY")
+          .map(({ op }) => op.client_op_id),
       );
-    }
-  }
-  if (pullAgenda) {
-    try {
-      await pullSanitarioAgendaV2(fazendaId);
+      await recoverBlockedSanitarioV2Operations(
+        "reconcile_completed",
+        justBlocked,
+      );
     } catch (error) {
       console.warn(
-        "[sync-worker] sanitario v2 agenda reconcile failed:",
+        "[sync-worker] sanitario v2 ordered reconcile failed:",
         error,
       );
     }
@@ -418,8 +408,7 @@ async function processSanitarioCanonicalResults(
 
   for (const result of canonicalResults) {
     const resultOpId = typeof result.op_id === "string" ? result.op_id : "";
-    const identifiersDiverge =
-      typeof result.client_op_id === "string" &&
+    const identifiersDiverge = typeof result.client_op_id === "string" &&
       result.client_op_id !== resultOpId;
     const op = identifiersDiverge
       ? undefined
@@ -435,8 +424,8 @@ async function processSanitarioCanonicalResults(
       local_reason_code: op
         ? undefined
         : identifiersDiverge
-          ? "SYNC_RESULT_ID_MISMATCH"
-          : "SYNC_RESULT_OP_NOT_FOUND",
+        ? "SYNC_RESULT_ID_MISMATCH"
+        : "SYNC_RESULT_OP_NOT_FOUND",
     });
 
     if (!op) {
@@ -477,8 +466,8 @@ async function processSanitarioCanonicalResults(
         domain_op_id: result.domain_op_id ?? op.domain_op_id,
         sync_state: "BLOCKED_DEPENDENCY",
         next_attempt_at: undefined,
-        blocked_reason:
-          result.reason_code ?? "SANITARIO_SYNC_V2_DEPENDENCY_UNAVAILABLE",
+        blocked_reason: result.reason_code ??
+          "SANITARIO_SYNC_V2_DEPENDENCY_UNAVAILABLE",
       });
       continue;
     }
@@ -492,8 +481,8 @@ async function processSanitarioCanonicalResults(
       table: op.table,
       action: op.action,
       reason_code: result.reason_code ?? `SANITARIO_SYNC_V2_${result.status}`,
-      reason_message:
-        result.reason_message ?? `sanitario_v2 result: ${result.status}`,
+      reason_message: result.reason_message ??
+        `sanitario_v2 result: ${result.status}`,
       domain_op_id: result.domain_op_id,
       result_status: result.status,
       current_revision: result.current_revision,
@@ -583,7 +572,7 @@ export async function recoverErroredGesturesOnce() {
     .equals("ERROR")
     .toArray();
   const recoverable = errored.filter((gesture) =>
-    isRecoverableSyncError(gesture.last_error),
+    isRecoverableSyncError(gesture.last_error)
   );
 
   if (recoverable.length === 0) return;
@@ -602,6 +591,51 @@ export async function recoverErroredGesturesOnce() {
   console.warn(
     `[sync-worker] Re-queued ${recoverable.length} recoverable ERROR gesture(s)`,
   );
+}
+
+export type SanitarioV2RecoveryTrigger =
+  | "app_startup"
+  | "reconcile_completed"
+  | "contract_version_updated"
+  | "remote_dependency_recovered";
+
+export async function recoverBlockedSanitarioV2Operations(
+  trigger: SanitarioV2RecoveryTrigger,
+  excludedOpIds: ReadonlySet<string> = new Set(),
+) {
+  const blocked = await db.queue_ops
+    .filter((op) =>
+      op.sync_state === "BLOCKED_DEPENDENCY" &&
+      !excludedOpIds.has(op.client_op_id)
+    )
+    .toArray();
+  if (blocked.length === 0) return 0;
+
+  const transactionIds = Array.from(
+    new Set(blocked.map((op) => op.client_tx_id)),
+  );
+  const now = new Date().toISOString();
+  await db.transaction("rw", [db.queue_ops, db.queue_gestures], async () => {
+    for (const op of blocked) {
+      await db.queue_ops.where("client_op_id").equals(op.client_op_id)
+        .modify((queued) => {
+          queued.sync_state = "PENDING";
+          delete queued.next_attempt_at;
+          delete queued.blocked_reason;
+        });
+    }
+    for (const clientTxId of transactionIds) {
+      await db.queue_gestures.where("client_tx_id").equals(clientTxId)
+        .modify((gesture) => {
+          gesture.status = "PENDING";
+          delete gesture.sync_result;
+          delete gesture.completed_at;
+          gesture.last_error =
+            `sanitario_v2 dependency recovery: ${trigger} at ${now}`;
+        });
+    }
+  });
+  return blocked.length;
 }
 
 function logTokenExpiry(session: Session) {
@@ -636,8 +670,7 @@ async function getValidSession() {
   } = await supabase.auth.refreshSession();
 
   if (refreshError || !refreshedSession) {
-    const reason =
-      refreshError?.message ??
+    const reason = refreshError?.message ??
       sessionError?.message ??
       "session null after refresh";
     throw new Error(`Nao autenticado - sessao expirada (${reason})`);
@@ -649,12 +682,7 @@ async function getValidSession() {
 async function sendBatchRequest(
   accessToken: string,
   gesture: Gesture,
-  ops: Array<{
-    client_op_id: string;
-    table: string;
-    action: "INSERT" | "UPDATE" | "DELETE";
-    record: Record<string, unknown>;
-  }>,
+  ops: Record<string, unknown>[],
 ) {
   return fetch(`${env.supabaseFunctionsUrl}/sync-batch`, {
     method: "POST",
@@ -670,6 +698,29 @@ async function sendBatchRequest(
       ops,
     }),
   });
+}
+
+export function mapOperationForSync(
+  op: Operation,
+  fazendaId: string,
+): Record<string, unknown> {
+  if (isRecord(op.record) && op.record.domain === "sanitario_v2") {
+    if (
+      op.record.client_op_id !== op.client_op_id ||
+      op.record.client_tx_id !== op.client_tx_id ||
+      op.record.domain_op_id !== op.domain_op_id
+    ) {
+      throw new Error("SANITARIO_V2_QUEUED_IDENTITY_MISMATCH");
+    }
+    return { ...op.record };
+  }
+  const remoteTable = getRemoteTableName(op.table);
+  return {
+    client_op_id: op.client_op_id,
+    table: remoteTable,
+    action: op.action,
+    record: normalizeTableMutationRecord(remoteTable, op.record, fazendaId),
+  };
 }
 
 export async function processGesture(gesture: Gesture) {
@@ -691,19 +742,19 @@ export async function processGesture(gesture: Gesture) {
       status: hasDeferredRetry
         ? "PENDING"
         : hasBlockedDependency
-          ? "ERROR"
-          : "DONE",
-      sync_result:
-        hasBlockedDependency && !hasDeferredRetry ? "ERROR" : undefined,
-      completed_at:
-        hasBlockedDependency && !hasDeferredRetry
-          ? new Date().toISOString()
-          : undefined,
+        ? "ERROR"
+        : "DONE",
+      sync_result: hasBlockedDependency && !hasDeferredRetry
+        ? "ERROR"
+        : undefined,
+      completed_at: hasBlockedDependency && !hasDeferredRetry
+        ? new Date().toISOString()
+        : undefined,
       last_error: hasDeferredRetry
         ? "sanitario_v2 retry waiting for backoff"
         : hasBlockedDependency
-          ? "sanitario_v2 blocked by unavailable dependency"
-          : undefined,
+        ? "sanitario_v2 blocked by unavailable dependency"
+        : undefined,
     });
     return;
   }
@@ -717,20 +768,9 @@ export async function processGesture(gesture: Gesture) {
 
   try {
     const { supabase, session } = await getValidSession();
-    const mappedOps = ops.map((o) => {
-      const remoteTable = getRemoteTableName(o.table);
-
-      return {
-        client_op_id: o.client_op_id,
-        table: remoteTable,
-        action: o.action,
-        record: normalizeTableMutationRecord(
-          remoteTable,
-          o.record,
-          gesture.fazenda_id,
-        ),
-      };
-    });
+    const mappedOps = ops.map((op) =>
+      mapOperationForSync(op, gesture.fazenda_id)
+    );
 
     if (import.meta.env.DEV) {
       console.debug(
@@ -808,11 +848,13 @@ export async function processGesture(gesture: Gesture) {
     if (allApplied) {
       const completedAt = new Date().toISOString();
       const syncResult = result.results.some(
-        (entry) => entry.status === "APPLIED_ALTERED",
-      )
+          (entry) => entry.status === "APPLIED_ALTERED",
+        )
         ? "APPLIED_ALTERED"
         : "APPLIED";
-      const remoteTablesTouched = new Set(mappedOps.map((op) => op.table));
+      const remoteTablesTouched = new Set(
+        ops.map((op) => getRemoteTableName(op.table)),
+      );
       const refreshTables = new Set<string>();
 
       // Agenda pode ser gerada automaticamente por trigger ao inserir/atualizar animais.
@@ -856,7 +898,7 @@ export async function processGesture(gesture: Gesture) {
       }
       if (
         Array.from(remoteTablesTouched).some((table) =>
-          SANITARIO_AGENDA_V2_REMOTE_TABLES.has(table),
+          SANITARIO_AGENDA_V2_REMOTE_TABLES.has(table)
         )
       ) {
         try {
@@ -923,9 +965,11 @@ export async function processGesture(gesture: Gesture) {
         })),
       );
       console.warn(
-        `[sync-worker] TX ${gesture.client_tx_id} rejected (json): ${JSON.stringify(
-          rejectedResults,
-        )}`,
+        `[sync-worker] TX ${gesture.client_tx_id} rejected (json): ${
+          JSON.stringify(
+            rejectedResults,
+          )
+        }`,
       );
 
       for (const res of rejectedResults) {
@@ -947,9 +991,11 @@ export async function processGesture(gesture: Gesture) {
       const appliedResults = result.results.filter(
         (r) => r.status === "APPLIED" || r.status === "APPLIED_ALTERED",
       );
-      const isAgendaClosureOnlyGesture =
-        mappedOps.length > 0 &&
-        mappedOps.every((op) => op.table === "sanitario_agenda_closures_v2");
+      const isAgendaClosureOnlyGesture = mappedOps.length > 0 &&
+        ops.every(
+          (op) =>
+            getRemoteTableName(op.table) === "sanitario_agenda_closures_v2",
+        );
 
       if (isAgendaClosureOnlyGesture && appliedResults.length > 0) {
         const appliedOpIds = new Set(
@@ -963,7 +1009,7 @@ export async function processGesture(gesture: Gesture) {
             .filter((opId): opId is string => typeof opId === "string"),
         );
         const rejectedOps = ops.filter((op) =>
-          rejectedOpIds.has(op.client_op_id),
+          rejectedOpIds.has(op.client_op_id)
         );
 
         if (rejectedOps.length > 0) {

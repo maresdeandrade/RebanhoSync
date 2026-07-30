@@ -26,6 +26,7 @@ vi.mock("../pull", () => ({
   pullDataForFarm: vi.fn(async () => undefined),
   pullInitialData: vi.fn(async () => undefined),
   pullSanitarioAgendaV2: vi.fn(async () => undefined),
+  pullSanitarioV2CutoverState: vi.fn(async () => undefined),
 }));
 
 vi.mock("@/lib/telemetry/pilotMetrics", () => ({
@@ -34,8 +35,12 @@ vi.mock("@/lib/telemetry/pilotMetrics", () => ({
 }));
 
 import { db } from "../db";
-import { pullDataForFarm, pullSanitarioAgendaV2 } from "../pull";
-import { processGesture } from "../syncWorker";
+import { pullSanitarioV2CutoverState } from "../pull";
+import {
+  mapOperationForSync,
+  processGesture,
+  recoverBlockedSanitarioV2Operations,
+} from "../syncWorker";
 import type {
   Gesture,
   Operation,
@@ -67,6 +72,11 @@ async function seedGesture(
     record: {
       domain: "sanitario_v2",
       command,
+      client_op_id: `op-${suffix}-${index}`,
+      client_tx_id: gesture.client_tx_id,
+      domain_op_id: `domain-${suffix}-${index}`,
+      contract_version: 2,
+      payload: {},
     },
     domain_op_id: `domain-${suffix}-${index}`,
     created_at: createdAt,
@@ -238,7 +248,7 @@ describe("sanitario_v2 canonical worker/reconcile", () => {
       domain_op_id: ops[0].domain_op_id,
       canonical_entity_id: "agenda-server",
     });
-    expect(pullSanitarioAgendaV2).toHaveBeenCalledWith(FAZENDA_ID);
+    expect(pullSanitarioV2CutoverState).toHaveBeenCalledWith(FAZENDA_ID);
     expect(await db.event_eventos.count()).toBe(0);
     expect(await db.event_eventos_sanitario.count()).toBe(0);
     expect(await db.state_insumo_movimentacoes.count()).toBe(0);
@@ -298,12 +308,7 @@ describe("sanitario_v2 canonical worker/reconcile", () => {
     expect(replayRequest.ops[0].client_op_id).toBe(ops[0].client_op_id);
     expect(await db.queue_ops.get(ops[0].client_op_id)).toBeUndefined();
     expect((await loadGesture(gesture.client_tx_id)).status).toBe("DONE");
-    expect(pullDataForFarm).toHaveBeenCalledWith(
-      FAZENDA_ID,
-      ["eventos", "eventos_sanitario", "eventos_animais"],
-      { mode: "merge" },
-    );
-    expect(pullSanitarioAgendaV2).toHaveBeenCalledWith(FAZENDA_ID);
+    expect(pullSanitarioV2CutoverState).toHaveBeenCalledWith(FAZENDA_ID);
     expect(await db.event_eventos.count()).toBe(0);
     expect(await db.state_insumo_movimentacoes.count()).toBe(0);
   });
@@ -363,12 +368,7 @@ describe("sanitario_v2 canonical worker/reconcile", () => {
         canonical_status: "closed",
       }),
     ]);
-    expect(pullDataForFarm).toHaveBeenCalledWith(
-      FAZENDA_ID,
-      ["eventos", "eventos_sanitario", "eventos_animais"],
-      { mode: "merge" },
-    );
-    expect(pullSanitarioAgendaV2).toHaveBeenCalledWith(FAZENDA_ID);
+    expect(pullSanitarioV2CutoverState).toHaveBeenCalledWith(FAZENDA_ID);
     expect(await db.event_eventos.count()).toBe(0);
   });
 
@@ -417,7 +417,7 @@ describe("sanitario_v2 canonical worker/reconcile", () => {
         }),
       ]),
     );
-    expect(pullSanitarioAgendaV2).not.toHaveBeenCalled();
+    expect(pullSanitarioV2CutoverState).not.toHaveBeenCalled();
     expect(await db.queue_rejections.count()).toBe(0);
   });
 
@@ -460,5 +460,43 @@ describe("sanitario_v2 canonical worker/reconcile", () => {
     expect(await db.event_eventos.count()).toBe(0);
     expect(await db.event_eventos_sanitario.count()).toBe(0);
     expect(await db.state_insumo_movimentacoes.count()).toBe(0);
+  });
+  it("serializa sanitario_v2 no envelope superior e preserva identidades", async () => {
+    const { ops } = await seedGesture(["create_agenda"], "wire");
+    const mapped = mapOperationForSync(ops[0], FAZENDA_ID);
+    expect(mapped).toMatchObject({
+      domain: "sanitario_v2",
+      command: "create_agenda",
+      client_op_id: ops[0].client_op_id,
+      client_tx_id: ops[0].client_tx_id,
+      domain_op_id: ops[0].domain_op_id,
+      contract_version: 2,
+    });
+    expect(mapped).not.toHaveProperty("table");
+    expect(mapped).not.toHaveProperty("record");
+  });
+
+  it("reabre dependencia bloqueada somente por trigger explicito", async () => {
+    const { gesture, ops } = await seedGesture(["create_agenda"], "recover");
+    await db.queue_ops.update(ops[0].client_op_id, {
+      sync_state: "BLOCKED_DEPENDENCY",
+      blocked_reason: "remote_dependency",
+    });
+    await db.queue_gestures.update(gesture.client_tx_id, {
+      status: "ERROR",
+      sync_result: "ERROR",
+    });
+
+    await expect(
+      recoverBlockedSanitarioV2Operations("remote_dependency_recovered"),
+    ).resolves.toBe(1);
+    expect(await db.queue_ops.get(ops[0].client_op_id)).toMatchObject({
+      client_op_id: ops[0].client_op_id,
+      domain_op_id: ops[0].domain_op_id,
+      sync_state: "PENDING",
+    });
+    const recoveredGesture = await loadGesture(gesture.client_tx_id);
+    expect(recoveredGesture.status).toBe("PENDING");
+    expect(recoveredGesture.sync_result).toBeUndefined();
   });
 });

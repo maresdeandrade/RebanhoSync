@@ -1,12 +1,16 @@
 import Dexie, { type Table } from "dexie";
 import {
   type AgendaItem,
-  type Animal,
   type AnimaisSociedade,
+  type Animal,
+  type CatalogoDoencaNotificavel,
+  type CatalogoProtocoloOficial,
+  type CatalogoProtocoloOficialItem,
+  type CategoriaZootecnica,
   type Contraparte,
-  type SociedadePecuaria,
-  type SociedadeAnimal,
   type Evento,
+  type EventoAnimalLocalV2,
+  type EventoComercial,
   type EventoEcc,
   type EventoFinanceiro,
   type EventoMovimentacao,
@@ -15,22 +19,34 @@ import {
   type EventoPesagem,
   type EventoReproducao,
   type EventoSanitario,
+  type FazendaSanidadeConfig,
+  type FinanceCategory,
+  type FinanceTransaction,
   type Gesture,
+  type Insumo,
+  type InsumoApresentacao,
+  type InsumoLote,
+  type InsumoMovimentacao,
   type Lote,
   type Operation,
   type Pasto,
   type PastoOcupacao,
+  type PilotMetricEvent,
+  type ProdutoVeterinarioCatalogEntry,
   type ProtocoloSanitario,
   type ProtocoloSanitarioItem,
-  type ProdutoVeterinarioCatalogEntry,
-  type CatalogoProtocoloOficial,
-  type CatalogoProtocoloOficialItem,
-  type CatalogoDoencaNotificavel,
-  type SanitarioFonteCoberturaCampoLocalV2,
-  type SanitarioFonteTecnicaLocalV2,
+  type PullCursor,
+  type Rejection,
   type SanitarioAgendaAnimalLocalV2,
   type SanitarioAgendaClosureLocalV2,
   type SanitarioAgendaLocalV2,
+  type SanitarioCaso,
+  type SanitarioFonteCoberturaCampoLocalV2,
+  type SanitarioFonteTecnicaLocalV2,
+  type SanitarioProductClassDefaultRuleLocalV2,
+  type SanitarioProductClassGroupLocalV2,
+  type SanitarioProductClassGroupMemberLocalV2,
+  type SanitarioProductClassLocalV2,
   type SanitarioProdutoCarenciaRuleLocalV2,
   type SanitarioProdutoDoseRuleLocalV2,
   type SanitarioProdutoEspecieAutorizacaoLocalV2,
@@ -38,23 +54,9 @@ import {
   type SanitarioProdutoLocalV2,
   type SanitarioProtocoloItemVersionLocalV2,
   type SanitarioProtocoloLocalV2,
-  type SanitarioProductClassDefaultRuleLocalV2,
-  type SanitarioProductClassGroupLocalV2,
-  type SanitarioProductClassGroupMemberLocalV2,
-  type SanitarioProductClassLocalV2,
-  type FazendaSanidadeConfig,
-  type Insumo,
-  type InsumoApresentacao,
-  type InsumoLote,
-  type InsumoMovimentacao,
-  type CategoriaZootecnica,
-  type PilotMetricEvent,
-  type PullCursor,
-  type Rejection,
-  type SanitarioCaso,
-  type FinanceCategory,
-  type FinanceTransaction,
-  type EventoComercial,
+  type SanitarioV2CutoverManifest,
+  type SociedadeAnimal,
+  type SociedadePecuaria,
 } from "./types";
 
 export class OfflineDB extends Dexie {
@@ -91,33 +93,77 @@ export class OfflineDB extends Dexie {
   event_eventos_financeiro!: Table<EventoFinanceiro, string>;
   event_eventos_ecc!: Table<EventoEcc, string>;
   event_eventos_comercial!: Table<EventoComercial, string>;
+  event_eventos_animais!: Table<EventoAnimalLocalV2, string>;
 
   // Queue Stores
   queue_gestures!: Table<Gesture, string>;
   queue_ops!: Table<Operation, string>;
   queue_rejections!: Table<Rejection, number>;
   sync_pull_cursors!: Table<PullCursor, string>;
+  sync_sanitario_v2_cutovers!: Table<SanitarioV2CutoverManifest, string>;
   metrics_events!: Table<PilotMetricEvent, string>;
   catalog_produtos_veterinarios!: Table<ProdutoVeterinarioCatalogEntry, string>;
   catalog_protocolos_oficiais!: Table<CatalogoProtocoloOficial, string>;
-  catalog_protocolos_oficiais_itens!: Table<CatalogoProtocoloOficialItem, string>;
+  catalog_protocolos_oficiais_itens!: Table<
+    CatalogoProtocoloOficialItem,
+    string
+  >;
   catalog_doencas_notificaveis!: Table<CatalogoDoencaNotificavel, string>;
-  catalog_sanitario_product_classes_v2!: Table<SanitarioProductClassLocalV2, string>;
-  catalog_sanitario_product_class_groups_v2!: Table<SanitarioProductClassGroupLocalV2, string>;
-  catalog_sanitario_product_class_group_members_v2!: Table<SanitarioProductClassGroupMemberLocalV2, string>;
-  catalog_sanitario_product_class_default_rules_v2!: Table<SanitarioProductClassDefaultRuleLocalV2, string>;
-  catalog_sanitario_fontes_tecnicas_v2!: Table<SanitarioFonteTecnicaLocalV2, string>;
-  catalog_sanitario_fonte_cobertura_campos_v2!: Table<SanitarioFonteCoberturaCampoLocalV2, string>;
+  catalog_sanitario_product_classes_v2!: Table<
+    SanitarioProductClassLocalV2,
+    string
+  >;
+  catalog_sanitario_product_class_groups_v2!: Table<
+    SanitarioProductClassGroupLocalV2,
+    string
+  >;
+  catalog_sanitario_product_class_group_members_v2!: Table<
+    SanitarioProductClassGroupMemberLocalV2,
+    string
+  >;
+  catalog_sanitario_product_class_default_rules_v2!: Table<
+    SanitarioProductClassDefaultRuleLocalV2,
+    string
+  >;
+  catalog_sanitario_fontes_tecnicas_v2!: Table<
+    SanitarioFonteTecnicaLocalV2,
+    string
+  >;
+  catalog_sanitario_fonte_cobertura_campos_v2!: Table<
+    SanitarioFonteCoberturaCampoLocalV2,
+    string
+  >;
   catalog_sanitario_produtos_v2!: Table<SanitarioProdutoLocalV2, string>;
-  catalog_sanitario_produto_especie_autorizacao_v2!: Table<SanitarioProdutoEspecieAutorizacaoLocalV2, string>;
-  catalog_sanitario_produto_fontes_v2!: Table<SanitarioProdutoFonteLocalV2, [string, string, string]>;
-  catalog_sanitario_produto_dose_rules_v2!: Table<SanitarioProdutoDoseRuleLocalV2, string>;
-  catalog_sanitario_produto_carencia_rules_v2!: Table<SanitarioProdutoCarenciaRuleLocalV2, string>;
+  catalog_sanitario_produto_especie_autorizacao_v2!: Table<
+    SanitarioProdutoEspecieAutorizacaoLocalV2,
+    string
+  >;
+  catalog_sanitario_produto_fontes_v2!: Table<
+    SanitarioProdutoFonteLocalV2,
+    [string, string, string]
+  >;
+  catalog_sanitario_produto_dose_rules_v2!: Table<
+    SanitarioProdutoDoseRuleLocalV2,
+    string
+  >;
+  catalog_sanitario_produto_carencia_rules_v2!: Table<
+    SanitarioProdutoCarenciaRuleLocalV2,
+    string
+  >;
   catalog_sanitario_protocolos_v2!: Table<SanitarioProtocoloLocalV2, string>;
-  catalog_sanitario_protocolo_itens_versions_v2!: Table<SanitarioProtocoloItemVersionLocalV2, string>;
+  catalog_sanitario_protocolo_itens_versions_v2!: Table<
+    SanitarioProtocoloItemVersionLocalV2,
+    string
+  >;
   ops_sanitario_agenda_v2!: Table<SanitarioAgendaLocalV2, string>;
-  ops_sanitario_agenda_animais_v2!: Table<SanitarioAgendaAnimalLocalV2, [string, string]>;
-  ops_sanitario_agenda_closures_v2!: Table<SanitarioAgendaClosureLocalV2, string>;
+  ops_sanitario_agenda_animais_v2!: Table<
+    SanitarioAgendaAnimalLocalV2,
+    [string, string]
+  >;
+  ops_sanitario_agenda_closures_v2!: Table<
+    SanitarioAgendaClosureLocalV2,
+    string
+  >;
 
   constructor() {
     super("RebanhoSync");
@@ -638,8 +684,10 @@ export class OfflineDB extends Dexie {
 
     // Version 19: Patch Fase 9 - Sociedades Pecuarias
     this.version(19).stores({
-      state_sociedades_pecuarias: "id, fazenda_id, contraparte_id, status, deleted_at, [fazenda_id+contraparte_id], [fazenda_id+status]",
-      state_sociedade_animais: "id, fazenda_id, sociedade_id, animal_id, status, deleted_at, [fazenda_id+sociedade_id], [fazenda_id+animal_id], [fazenda_id+status]",
+      state_sociedades_pecuarias:
+        "id, fazenda_id, contraparte_id, status, deleted_at, [fazenda_id+contraparte_id], [fazenda_id+status]",
+      state_sociedade_animais:
+        "id, fazenda_id, sociedade_id, animal_id, status, deleted_at, [fazenda_id+sociedade_id], [fazenda_id+animal_id], [fazenda_id+status]",
     });
 
     // Version 20: protocolos sanitarios com etapa logica e versao fisica imutavel.
@@ -723,6 +771,14 @@ export class OfflineDB extends Dexie {
         "id, protocol_id, logical_item_key, [protocol_id+logical_item_key+version], product_requirement_kind, allows_agenda_auto, deleted_at, updated_at",
       catalog_sanitario_product_class_groups_v2:
         "id, group_key, scope, fazenda_id, curation_status, automation_status, deleted_at, updated_at, [scope+group_key], [fazenda_id+group_key]",
+    });
+
+    // Version 28: cutover local resumivel e relacao evento-animal append-only.
+    this.version(28).stores({
+      event_eventos_animais:
+        "id, fazenda_id, evento_id, animal_id, [fazenda_id+evento_id+animal_id], [fazenda_id+animal_id]",
+      sync_sanitario_v2_cutovers:
+        "key, fazenda_id, contract_version, status, updated_at, [fazenda_id+contract_version]",
     });
   }
 }

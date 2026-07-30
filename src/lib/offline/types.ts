@@ -44,6 +44,11 @@ export type OperationQueueSyncState =
   | "PENDING"
   | "RETRYABLE"
   | "BLOCKED_DEPENDENCY";
+export type SanitarioV2CutoverStatus =
+  | "PREPARED"
+  | "APPLYING"
+  | "APPLIED"
+  | "FAILED";
 
 // Farm & User Management
 export type FarmRoleEnum = "cowboy" | "manager" | "owner";
@@ -1273,6 +1278,9 @@ export interface SanitarioAgendaLocalV2 {
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
+  revision?: number;
+  contract_version?: number;
+  domain_op_id?: string | null;
 }
 
 export interface SanitarioAgendaAnimalLocalV2 {
@@ -1284,6 +1292,27 @@ export interface SanitarioAgendaAnimalLocalV2 {
   not_executed_reason: string | null;
   metadata: Record<string, unknown>;
   created_at: string;
+  updated_at: string;
+}
+
+export interface EventoAnimalLocalV2 {
+  id: string;
+  fazenda_id: string;
+  evento_id: string;
+  animal_id: string;
+  created_at: string;
+}
+
+export interface SanitarioV2CutoverManifest {
+  key: string;
+  fazenda_id: string;
+  contract_version: number;
+  status: SanitarioV2CutoverStatus;
+  prepared_at: string;
+  applying_at: string | null;
+  applied_at: string | null;
+  failed_at: string | null;
+  last_error: string | null;
   updated_at: string;
 }
 
@@ -1535,6 +1564,14 @@ export interface Evento {
   sanitario_caso_id?: string | null;
   observacoes: string | null;
   payload: Record<string, unknown>;
+  source_sanitario_agenda_v2_id?: string | null;
+  sanitario_sync_v2_nature?:
+    | "primary_execution"
+    | "correction"
+    | "standalone_fact"
+    | null;
+  sanitario_contract_version?: number | null;
+  domain_op_id?: string | null;
 
   // Campos de sistema
   client_id: string;
@@ -1573,6 +1610,11 @@ export interface EventoSanitario {
   protocol_item_logical_key?: string | null;
   protocol_item_version?: number | null;
   protocol_item_snapshot?: Record<string, unknown> | null;
+  produto_sanitario_v2_id?: string | null;
+  insumo_id?: string | null;
+  produto_snapshot?: Record<string, unknown> | null;
+  sanitario_contract_version?: number | null;
+  domain_op_id?: string | null;
   payload: Record<string, unknown>;
 
   // Campos de sistema

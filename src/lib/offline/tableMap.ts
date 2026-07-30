@@ -36,10 +36,12 @@ export const TABLE_MAP: Record<string, string> = {
   eventos_financeiro: "event_eventos_financeiro",
   eventos_ecc: "event_eventos_ecc",
   eventos_comercial: "event_eventos_comercial",
+  eventos_animais: "event_eventos_animais",
 
   // Catalog Rails - ProductClass v2 (12E1 local storage only; pull/sync in later phase)
   sanitario_product_classes_v2: "catalog_sanitario_product_classes_v2",
-  sanitario_product_class_groups_v2: "catalog_sanitario_product_class_groups_v2",
+  sanitario_product_class_groups_v2:
+    "catalog_sanitario_product_class_groups_v2",
   sanitario_product_class_group_members_v2:
     "catalog_sanitario_product_class_group_members_v2",
   sanitario_product_class_default_rules_v2:
@@ -51,8 +53,7 @@ export const TABLE_MAP: Record<string, string> = {
   sanitario_produto_especie_autorizacao_v2:
     "catalog_sanitario_produto_especie_autorizacao_v2",
   sanitario_produto_fontes_v2: "catalog_sanitario_produto_fontes_v2",
-  sanitario_produto_dose_rules_v2:
-    "catalog_sanitario_produto_dose_rules_v2",
+  sanitario_produto_dose_rules_v2: "catalog_sanitario_produto_dose_rules_v2",
   sanitario_produto_carencia_rules_v2:
     "catalog_sanitario_produto_carencia_rules_v2",
   sanitario_protocolos_v2: "catalog_sanitario_protocolos_v2",
