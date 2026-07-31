@@ -1,723 +1,116 @@
-    # ACTIVE_PHASE_PLAN - Sync Remoto Sanitário v2 — worker/reconcile preparado localmente
-
-    **Status:** worker/reconcile local preparado para resultados canônicos do `sanitario_v2`; enqueue/cutover e gate permanecem desabilitados.
-    **Baseline do incremento expand:** `78e91ec`.
-    **Commit funcional do incremento expand:** `8967f0c`.
-    **Baseline histórico da Conformidade local:** `fcf42bc`, validado em 2026-07-18. Essa referência não valida a migration do incremento expand.
-    **Foco:** Catálogo permanece `catalog_*` pull-only. Agenda é intenção; evento é fato. Conformidade é read model derivado/somente leitura e não libera operação.
-    **Criado:** 2026-06-15
-    **Atualizado:** 2026-07-30
-    **Plano base:** ADR-0007 Accepted + solicitação direta do primeiro incremento `expand`.
-
-    ---
-
-    ## Decisão — worker/reconcile do Sync Sanitário v2
-
-    Decisão: `SANITARIO_V2_WORKER_RECONCILE_READY`.
-
-    Validação executada em 2026-07-30 sobre o baseline `7c19409`:
-    - a fila compartilhada existente passou a interpretar resultados canônicos `APPLIED`, `RETRYABLE`, `REJECTED`, `CONFLICT` e `BLOCKED_DEPENDENCY` por operação, sem criar fila paralela ou nova versão de schema Dexie;
-    - sucesso parcial remove somente operações aplicadas ou terminalmente rejeitadas, preserva retry com backoff e mantém dependências bloqueadas fora de loop agressivo;
-    - rejeições e conflitos são registrados na estrutura existente de auditoria/DLQ com identidade canônica, revisão e status quando disponíveis, sem rollback otimista destrutivo;
-    - reconcile de agenda/animais/closure usa `pullSanitarioAgendaV2`; núcleo factual solicita merge de `eventos`, `eventos_sanitario` e `eventos_animais` e também atualiza a agenda;
-    - resultados desconhecidos, ausentes ou com identidade divergente são auditados e mantêm a operação para retry seguro;
-    - passaram 105 testes offline focados, 54 testes do `sync-batch`, 2.217 testes integrais, lint, build, `deno check` e `git diff --check`;
-    - nenhum enqueue sanitário foi ativado; não houve alteração de Edge Function, migration, SQL, UI, gate, deploy ou cutover Dexie.
-
-    Próximo passo seguro:
-    - autorizar em incremento separado o enqueue/cutover local e validar ponta a ponta, mantendo o gate remoto desligado.
-
-    ---
-
-    ## Decisão — typecheck Deno do Sync Sanitário v2
-
-    Decisão: `SYNC_BATCH_SANITARIO_V2_TYPECHECK_CLEAN`.
-
-    Validação executada em 2026-07-28 sobre o baseline `7c19409`:
-    - o diagnóstico inicial do Deno 2.9.4 encontrou 14 erros reais/configuracionais em `index.ts`, `rules.ts` e `sanitario-v2.ts`; todos foram corrigidos sem `any`, ignores, declaração global artificial de Deno ou relaxamento de `strict`;
-    - o fluxo reprodutivo agora normaliza payload desconhecido, `episode_evento_id` e `episode_link_method`, aceita relação PostgREST como array/objeto/ausente e substitui o payload `unlinked` sem mutação insegura;
-    - o catch por operação preserva `rawOp.client_op_id`; a serialização sanitária aceita objetos de domínio sem index signature e isola o cast na fronteira `Record<string, unknown>`;
-    - Deno ficou limitado a `./supabase/functions`, reutilizando `supabase/functions/deno.json`; a extensão oficial `denoland.vscode-deno` 3.53.0 foi instalada/recomendada;
-    - `deno check` e `deno fmt --check` terminaram com exit code 0; 54 testes focados, 2.211 testes integrais, reset local, sentinelas expand 8/8, baseline funcional, lint, build e `git diff --check` passaram;
-    - `sync-batch` versão 19 foi implantado uma única vez no staging `zqloazqzhwauamcejmuz`, ficou `ACTIVE` e manteve `verify_jwt=true`;
-    - o smoke remoto único retornou `SANITARIO_SYNC_DISABLED`; a limpeza confirmou zero usuários Auth, fazendas, memberships, agendas, entradas de ledger e gates habilitados;
-    - não houve migration, alteração de contrato sanitário, habilitação de gate ou integração de cliente, Dexie, worker, pull, UI ou `sanitario-reconcile`.
-
-    Próximo passo seguro:
-    - integrar worker/reconcile à classificação canônica em incremento separado, mantendo o gate desligado e sem cutover do cliente.
-
-    ---
-
-    ## Decisão — integração do Sync Sanitário v2 ao sync-batch
-
-    Decisão: `SYNC_BATCH_SANITARIO_V2_INTEGRATED`.
-
-    Validação executada em 2026-07-28 sobre o baseline `7c19409`:
-    - adicionados quatro comandos tipados em `domain = sanitario_v2`: criar agenda, substituir animais, aplicar núcleo factual e cancelar/dispensar agenda;
-    - JWT e membership são validados antes da criação do cliente `service_role`; ator, fazenda, cliente e transação são derivados ou confrontados com o envelope confiável;
-    - allowlist, papel, gate persistido, versão 2, limite de 500 alvos e payload de 1 MiB são verificados antes da RPC; as funções SQL mantêm a revalidação autoritativa de tenant, revision, estado e idempotência;
-    - resultados são classificados como `APPLIED`, `RETRYABLE`, `REJECTED`, `CONFLICT` ou `BLOCKED_DEPENDENCY`, sem converter `23505` genérico em sucesso;
-    - `sync-batch` versão 18 implantado somente no staging `zqloazqzhwauamcejmuz`;
-    - smoke remoto com gate ausente retornou `SANITARIO_SYNC_DISABLED` antes da RPC, sem agenda ou ledger; a limpeza terminou com zero fazendas, usuários e gates habilitados;
-    - validações locais passaram com 48 testes focados e 2.205 testes integrais, além de reset, sentinelas expand, baseline funcional, lint, build e lint SQL sem erro;
-    - nenhuma migration, cliente, Dexie, worker, pull, UI, `sanitario-reconcile`, movimento de estoque, Conformidade ou gate foi alterado.
-
-    Próximo passo seguro:
-    - integrar worker/reconcile ao resultado canônico em incremento separado, preservando o gate desligado e sem cutover do cliente.
-
-    ---
-
-    ## Decisão — rebaseline destrutivo completo do staging
-
-    Decisão: `STAGING_FULL_REBASELINE_VALIDATED`.
-
-    Validação executada em 2026-07-27 sobre o commit `79ccd7b`:
-    - projeto não produtivo confirmado como `zqloazqzhwauamcejmuz`, com autorização explícita para rebaseline destrutivo e remoção de usuários, dados, arquivos e configurações exclusivamente de teste;
-    - Storage esvaziado pela API e buckets de teste removidos; Auth ficou com zero usuários, identidades, sessões e fatores residuais após o reset;
-    - `supabase db reset --linked --no-seed` reaplicou integralmente as migrations versionadas, usadas como única fonte de verdade;
-    - histórico remoto e local alinhados; `supabase db push --dry-run` confirmou ausência de migration pendente ou órfã;
-    - migration `20260722102038_sanitario_sync_v2_expand_foundation.sql` validada remotamente com schema, ledger, funções internas, grants e gate autoritativo esperados;
-    - gate permaneceu fail-closed, com zero fazendas habilitadas; a FK histórica `fk_eventos_sanitario_lote_insumo_fazenda` permaneceu `NOT VALID`, protege novas escritas e apresentou zero inconsistências;
-    - Edge Functions remotas reconciliadas com o repositório: `sanitario-reconcile`, `sync-batch`, `telemetry-ingest` e `test-auth`; secrets customizados não foram necessários;
-    - smokes remotos foram transacionais/reversíveis e deixaram zero dados sintéticos;
-    - não houve `db pull`, `migration repair`, alteração de migration aceita, integração dos novos comandos com `sync-batch`, alteração de cliente/Dexie/worker/pull/UI ou habilitação do gate.
-
-    Próximo passo seguro:
-    - conectar os comandos sanitários tipados ao `sync-batch` em incremento separado, mantendo o gate desligado até validação ponta a ponta.
-
-    ---
-
-    ## Objetivo em 1 paragrafo
-
-    Preparar no banco, sem ativar push, o contrato transacional e tenant-safe do Sync Sanitário v2: revision da agenda, vínculo factual Evento-Agenda e Evento-Animal, produto/insumo/snapshot separados, idempotência persistida, gate autoritativo fail-closed, constraints e funções internas `SECURITY INVOKER` exclusivas de `service_role`. Worker, pull, Dexie, UI e Conformidade permanecem inalterados.
-
-    ---
-
-    ## Decisão — primeiro incremento expand do Sync Sanitário v2
-
-    Decisão: `ADR_0007_SYNC_SANITARIO_V2_EXPAND_FOUNDATION`.
-
-    Entregue neste incremento:
-    - migration incremental `20260722102038_sanitario_sync_v2_expand_foundation.sql`;
-    - `revision` e identidades `contract_version`/`domain_op_id` na Agenda v2;
-    - FK composta própria `eventos.source_sanitario_agenda_v2_id` e relação append-only `eventos_animais`;
-    - produto sanitário v2, insumo real e snapshot histórico em colunas separadas, preservando produto legado apenas para leitura;
-    - unique parcial da execução primária, unique de movimento por fazenda/evento/lote/tipo e gate persistido fail-closed;
-    - funções internas atômicas para criar Agenda+animais, substituir alvos, persistir núcleo factual e realizar closure administrativa;
-    - ledger interno de idempotência e testes sentinela funcionais/estáticos.
-
-    Validação desta entrega em 2026-07-22:
-    - `supabase db reset`, sentinelas específicas, baseline funcional Supabase, `pnpm test`, `pnpm run lint`, `pnpm run build` e `git diff --check` concluídos sem erro;
-    - `supabase db lint --fail-on error` concluiu sem erro e reportou somente dois warnings preexistentes de parâmetros não usados em `sanitario_recompute_agenda_core`.
-
-    Limites confirmados:
-    - nenhuma função foi conectada ao `sync-batch`;
-    - nenhuma escrita sanitária nova foi habilitada no cliente;
-    - push, worker, pull, Dexie, UI e Conformidade não foram alterados;
-    - movimento de estoque continua posterior ao núcleo factual;
-    - gate não possui linha habilitada por padrão e falha fechado.
-
-    Gates obrigatórios antes de qualquer rollout:
-    - detectar inconsistências históricas na FK lote + insumo, corrigir ou documentar, executar `VALIDATE CONSTRAINT` e somente então habilitar push;
-    - validar o caminho completo `JWT → sync-batch → gate → comando → RPC → resultado → classificação local`;
-    - manter 500 animais, 1 MiB e 10s como limites explícitos do contrato v1 até que exista configuração/versionamento autoritativo;
-    - validar no ambiente da Edge Function a rotação, o armazenamento e a ausência de `service_role` em logs.
-
-    Próximo passo seguro:
-    - implementar, em incremento separado e ainda sob gate, os comandos tipados no `sync-batch`, a leitura do gate e a classificação canônica de resultados/conflitos; não ativar cliente antes dos testes de integração ponta a ponta.
-
-    ---
-
-    ## Decisao 12I
-
-    Decisao: `12I_CATALOGO_SANITARIO_V2_OFFLINE_READ_ONLY`.
-
-    Entregue nesta fase:
-    - stores Dexie v27 `catalog_sanitario_protocolos_v2` e `catalog_sanitario_protocolo_itens_versions_v2`;
-    - índices ampliados do store `catalog_sanitario_product_class_groups_v2`;
-    - mapeamento remoto/local para `sanitario_protocolos_v2` e `sanitario_protocolo_itens_versions_v2`;
-    - pull remoto `pullSanitarioProtocolCatalogV2` para protocolos, itens e grupos globais;
-    - leitura local Dexie read-only em `src/lib/sanitario/catalog/sanitaryProtocolCatalogV2.ts`;
-    - testes focados de store, pull, cursor incremental e leitura local.
-
-    Resultado local:
-    - diagnóstico inicial confirmou carga 12G aplicada: `--dry-run` com 0 `create`, 0 `update`, 33 `skip`, 16 `reject`;
-    - pull implementado usa merge incremental, preserva tombstones e não limpa stores;
-    - leitura local confirma 10 protocolos, 20 itens ativos apos saneamento de raiva e matrizes pre-parto, 4 grupos, B19 nacional, aftosa bloqueada e 6 itens antiparasitarios com ProductClassGroup;
-    - avanço UI posterior criou `/protocolos-sanitarios/catalogo-v2` para consulta local/offline read-only;
-    - execução posterior por agenda cria evento sanitário idempotente, detalhe e vínculos de animais, sem alterar protocolo ou catálogo;
-    - estoque é baixado apenas após o evento, por `source_evento_id`; carência exige produto real e regra técnica explícita;
-    - Conformidade v2 validada com agenda futura/cancelada/executada, B19 documentada/declarada, execução parcial, múltiplos protocolos, retry e reabertura;
-    - histórico externo documentado sem referência vinculada permanece pendência documental;
-    - não há `queue_ops` paralelo, migration, alteração de schema/RLS/Edge Function ou liberação operacional.
-
-    Proximo passo seguro:
-    - planejar a sincronização remota dos fatos sanitários v2 em tarefa própria; não iniciar sync neste bloco.
-
-    ---
-
-    ## Decisao 12H
-
-    Decisao: `12H_LEITURA_READ_ONLY_PROTOCOLS_SANITARIOS_V2_IMPORTADOS`.
-
-    Entregue nesta fase:
-    - modulo `src/lib/sanitario/catalog/sanitaryProtocolCatalogV2.ts`;
-    - teste focado `src/lib/sanitario/catalog/__tests__/sanitaryProtocolCatalogV2.test.ts`;
-    - consultas read-only para protocolos, itens por protocolo e ProductClassGroups;
-    - resumo read-only `buildSanitaryProtocolCatalogSummaryV2`;
-    - validacao de invariantes `validateSanitaryProtocolCatalogReadOnlyInvariantsV2`;
-    - relatorio unico `docs/review/evidence/RELATORIO_12H_LEITURA_PROTOCOLS_SANITARIOS_V2.md`.
-
-    Resultado local:
-    - diagnostico inicial confirmou carga 12G aplicada: `--dry-run` com 0 `create`, 0 `update`, 33 `skip`, 16 `reject`;
-    - testes focados passaram;
-    - leitura usa banco via cliente Supabase-like, nao JSON;
-    - nenhum member foi importado;
-    - nenhuma agenda, evento, estoque, carencia ativa ou liberacao operacional foi criada.
-
-    Proximo passo seguro:
-    - conectar esta leitura a uma superficie UI read-only ou a pull offline objetivo, sem agenda automatica.
-
-    ---
-
-    ## Decisao 12G
-
-    Decisao: `12G_IMPORTADOR_CONTROLADO_PROTOCOLS_SANITARIOS_V2_COM_PAYLOAD_12F10`.
-
-    Entregue nesta fase:
-    - script `scripts/codex/import-sanitario-protocols-v2.mjs`;
-    - modo `--validate` somente leitura;
-    - modo `--dry-run` com lookup em banco e plano deterministico sem escrita;
-    - modo `--apply` transacional, bloqueado sem `ALLOW_SANITARIO_IMPORT=1`;
-    - relatório unico `docs/review/evidence/RELATORIO_12G_IMPORTADOR_SANITARIO_V2.md`.
-
-    Resultado local:
-    - `--validate`: passou;
-    - apply real executado: 33 `create`, 0 `update`, 0 `skip`, 16 `reject`;
-    - `--dry-run` pos-apply: 0 `create`, 0 `update`, 33 `skip`, 16 `reject`;
-    - `--apply` sem flag: bloqueado com erro explicito;
-    - members permanecem rejeitados por `PRODUCT_CLASS_ID_REQUIRED_FOR_GROUP_MEMBER`.
-
-    Nao implementado nesta fase:
-    - migration;
-    - schema/RLS;
-    - UI;
-    - Dexie/sync/Edge Function;
-    - agenda, evento, estoque, carencia ativa ou liberacao operacional;
-    - import de ProductClassGroup members.
-
-    Proximo passo seguro:
-    - conectar leitura read-only dos protocolos sanitarios v2 ao catalogo/local/offline, sem agenda automatica.
-
-    ---
-
-    ## Decisao 12F10
-
-    Decisao: `12F10_CONSOLIDAR_ARTEFATOS_CANONICOS_ANTES_DE_12G0`.
-
-    Entregue nesta fase:
-    - payload canonico `docs/review/evidence/SANITARIO_PROTOCOLS_V2_CANONICAL_PAYLOAD_12F10.json`;
-    - decision record `docs/review/evidence/SANITARIO_PROTOCOLS_V2_DECISION_RECORD_12F10.md`;
-    - import gate `docs/review/evidence/SANITARIO_PROTOCOLS_V2_IMPORT_GATE_12F10.md`;
-    - indice `docs/review/evidence/ARCHIVE_INDEX_SANITARIO_12F0_12F9.md`;
-    - plano `docs/review/PLANO_FASE_12F10_CONSOLIDACAO_DOCUMENTAL_SANITARIO_V2.md`.
-
-    Proxima fase segura:
-    - `12G0 — dry-run real do import usando somente o payload canonico 12F10, com autorizacao explicita, transacao e rollback`.
-
-    ---
-
-    ## Decisao 12F9
-
-    Decisao: `FASE 12F9 CONCLUIDA COMO GERACAO JSON CANDIDATA NAO DESTRUTIVA`.
-
-    Entregue nesta fase:
-    - plano `docs/review/PLANO_FASE_12F9_PAYLOAD_JSON_COMPLETO_PROTOCOLOS_V2.md`;
-    - script `scripts/codex/validate-sanitario-complete-payloads-12f9.mjs`;
-    - JSON `docs/review/evidence/PAYLOAD_JSON_PROTOCOLOS_V2_12F9.json`;
-    - JSON `docs/review/evidence/PAYLOAD_JSON_ITENS_PROTOCOLOS_V2_12F9.json`;
-    - JSON `docs/review/evidence/PAYLOAD_JSON_PRODUCT_CLASS_GROUPS_12F9.json`;
-    - JSON `docs/review/evidence/REJEICOES_PAYLOAD_JSON_12F9.json`;
-    - relatorio `docs/review/evidence/RELATORIO_12F9_PAYLOAD_JSON_COMPLETO.md`;
-    - resultado `docs/review/evidence/RESULTADO_VALIDACAO_PAYLOAD_JSON_12F9.md`.
-
-    Validacao:
-    - `node scripts/codex/validate-sanitario-complete-payloads-12f9.mjs`: passou com 543 PASS, 0 WARNING, 0 FAIL.
-
-    Proxima fase segura:
-    - `12G0 — Import controlado/dry-run dos payloads candidatos, apenas se houver autorizacao explicita para carga real`.
-
-    ---
-
-    ## Decisao 12F8
-
-    Decisao: `FASE 12F8 CONCLUIDA COMO REVALIDACAO NAO DESTRUTIVA DO ADAPTER`.
-
-    Entregue nesta fase:
-    - plano `docs/review/PLANO_FASE_12F8_REVALIDACAO_ADAPTER_PRODUCT_CLASS_GROUP.md`;
-    - script `scripts/codex/validate-sanitario-adapter-payloads-12f8.mjs`;
-    - evidencia `docs/review/evidence/REVALIDACAO_ADAPTER_SCHEMA_ATUALIZADO_12F8.md`;
-    - evidencia `docs/review/evidence/PAYLOADS_ADAPTADOS_PRODUCT_CLASS_GROUP_12F8.md`;
-    - evidencia `docs/review/evidence/REJEICOES_REMANESCENTES_12F8.md`;
-    - evidencia `docs/review/evidence/RESULTADO_VALIDACAO_12F8.md`;
-    - 6 itens antiparasitarios antes rejeitados adaptados como payload candidato com `product_class_group_id` por lookup;
-    - contagem de itens adaptaveis passou de 13 para 19;
-    - rejeicao `PRODUCT_CLASS_GROUP_NOT_SUPPORTED_BY_SQL_ITEM_ENUM` zerada;
-    - 16 ProductClassGroup members continuam bloqueados por `PRODUCT_CLASS_ID_REQUIRED_FOR_GROUP_MEMBER`.
-
-    Nao implementado nesta fase:
-    - seed/import real;
-    - migration nova;
-    - insercao no banco;
-    - ProductClass, ProductClassGroup ou member novo;
-    - UUID artificial;
-    - UI, Dexie/sync ou Edge Function;
-    - agenda real, evento real, estoque, carencia ativa ou liberacao operacional.
-
-    Validacao:
-    - `node scripts/codex/validate-sanitario-adapter-payloads-12f8.mjs`: passou com 167 PASS, 0 WARNING, 0 FAIL.
-
-    Proxima fase segura:
-    - `12F9 — Gerar payload JSON completo importavel candidato para protocolos/itens/grupos, ainda sem executar import`.
-
-    ---
-
-    ## Decisao 12F7
-
-    Decisao: `FASE 12F7 CONCLUIDA COMO MIGRATION CONTROLADA`.
-
-    Entregue nesta fase:
-    - migration `supabase/migrations/20260615120000_sanitario_protocol_item_product_class_group_v2.sql`;
-    - enum SQL `sanitario_product_requirement_kind_v2_enum` aceita `product_class_group`;
-    - coluna `product_class_group_id` em `sanitario_protocolo_itens_versions_v2`;
-    - FK `sanitario_item_product_class_group_id_fkey`;
-    - CHECK de requisito de produto com `specific_product`, `product_class`, `product_class_group` e `none`;
-    - trigger `trg_validate_protocol_item_product_class_group_v2` para validar grupo ativo, escopo e bloqueio de agenda automatica com grupo blocked/archived;
-    - contrato TS `SanitaryProtocolItemVersionV2.productClassGroupId`;
-    - testes focados atualizados.
-
-    Nao implementado nesta fase:
-    - seed/import real;
-    - protocolo ativo;
-    - `approved_for_catalog`;
-    - `agenda_allowed`;
-    - UI;
-    - Dexie/sync;
-    - Edge Function;
-    - agenda real;
-    - evento real;
-    - estoque;
-    - carencia ativa;
-    - venda, abate, leite ou aptidao operacional.
-
-    Validacoes:
-    - `pnpm test -- src/lib/sanitario/rules`: passou;
-    - `supabase db reset`: passou;
-    - `pnpm test -- supabase/functions/sync-batch`: passou;
-    - `pnpm run lint`: passou;
-    - `pnpm run build`: passou com warnings conhecidos de Browserslist/chunks.
-
-    Proxima fase segura:
-    - `12F8 — Revalidar adapter 12F4/12F5 contra schema atualizado e tentar adaptar os 6 itens antiparasitarios antes rejeitados, ainda sem seed/import real`.
-
-    ---
-
-    ## Historico anterior — Fase 12F6
-
-    ### Decisao 12F6
-
-    Decisao: `RECOMENDAR OPCAO A — SUPORTE DIRETO A PRODUCT_CLASS_GROUP NO ITEM`.
-
-    Entregue nesta fase:
-    - plano principal `docs/review/PLANO_FASE_12F6_DECISAO_PRODUCT_CLASS_GROUP_ITENS.md`;
-    - evidencia `docs/review/evidence/DECISAO_PRODUCT_CLASS_GROUP_ITENS_12F6.md`;
-    - evidencia `docs/review/evidence/MATRIZ_OPCOES_PRODUCT_CLASS_GROUP_12F6.md`;
-    - evidencia `docs/review/evidence/CONTRATO_SCHEMA_FUTURO_PRODUCT_CLASS_GROUP_12F6.md`;
-    - evidencia `docs/review/evidence/CRITERIOS_12F7_PRODUCT_CLASS_GROUP.md`;
-    - recomendacao para futura migration controlada com enum `product_class_group`, coluna `product_class_group_id`, FK para `sanitario_product_class_groups_v2(id)` e CHECK de requisito unico;
-    - rejeicao formal de converter `product_class_group` para `product_class`, `specific_product` ou `none`;
-    - preservacao dos 6 itens antiparasitarios como bloqueados ate existir schema futuro;
-    - preservacao de ProductClassGroup members bloqueados ate existir `class_id` real.
-
-    Nao implementado nesta fase:
-    - migration;
-    - alteracao de enum, tabela, constraint, FK, RLS ou policy;
-    - seed/import executado;
-    - codigo funcional/runtime;
-    - UI;
-    - Dexie/sync;
-    - agenda real;
-    - evento real;
-    - estoque;
-    - carencia ativa;
-    - venda, abate, leite ou aptidao operacional.
-
-    Proxima fase segura:
-    - `12F7 — Migration controlada para suportar ProductClassGroup em itens de protocolo sanitario v2`, ainda sem seed/import real e sem ativacao automatica.
-
-    ---
-
-    ## Historico anterior — Fase 12F5
-
-    ### Decisao 12F5
-
-    Decisao: `FASE 12F5 CONCLUIDA COMO VALIDACAO AUTOMATIZADA NAO DESTRUTIVA`.
-
-    Entregue nesta fase:
-    - script local `scripts/codex/validate-sanitario-adapter-payloads-12f5.mjs`;
-    - plano principal `docs/review/PLANO_FASE_12F5_VALIDACAO_AUTOMATIZADA_ADAPTER.md`;
-    - evidencia `docs/review/evidence/VALIDACAO_AUTOMATIZADA_ADAPTER_12F5.md`;
-    - evidencia `docs/review/evidence/RESULTADO_VALIDACAO_ADAPTER_12F5.md`;
-    - evidencia `docs/review/evidence/REGRAS_VALIDACAO_ADAPTER_12F5.md`;
-    - validacao automatizada com exit code 0;
-    - resultado: 300 PASS, 1 WARNING, 0 FAIL;
-    - B19 nacional validada;
-    - aftosa archived/blocked validada;
-    - ProductClassGroup em itens rejeitado corretamente;
-    - ProductClassGroup members bloqueados corretamente;
-    - flags proibidas ausentes;
-    - zero `agenda_allowed`;
-    - zero `approved_for_catalog`.
-
-    Nao implementado nesta fase:
-    - seed/import executado;
-    - migration;
-    - alteracao de schema;
-    - codigo funcional/runtime de produto;
-    - UI;
-    - Dexie/sync;
-    - agenda real;
-    - evento real;
-    - estoque;
-    - carencia ativa;
-    - venda, abate, leite ou aptidao operacional.
-
-    Proxima fase segura:
-    - `12F6 — Decisao estrutural sobre ProductClassGroup em itens`, ainda sem seed/import real.
-
-    ---
-
-    ## Historico anterior — Fase 12F4
-
-    Decisao: `FASE 12F4 CONCLUIDA COMO ADAPTER/NORMALIZER CANDIDATO DOCUMENTAL`.
-
-    Entregue nesta fase:
-    - plano principal `docs/review/PLANO_FASE_12F4_ADAPTER_PAYLOADS_SCHEMA_REAL.md`;
-    - evidencia `docs/review/evidence/ADAPTER_PROTOCOLOS_V2_12F4.md`;
-    - evidencia `docs/review/evidence/ADAPTER_ITENS_PROTOCOLOS_V2_12F4.md`;
-    - evidencia `docs/review/evidence/ADAPTER_PRODUCT_CLASS_GROUPS_12F4.md`;
-    - evidencia `docs/review/evidence/ADAPTER_SOURCE_REFS_ROTATION_RULES_12F4.md`;
-    - evidencia `docs/review/evidence/REJEICOES_PAYLOADS_12F4.md`;
-    - evidencia `docs/review/evidence/PAYLOADS_ADAPTADOS_SCHEMA_REAL_12F4.md`;
-    - 10 protocolos adaptaveis;
-    - 13 itens adaptaveis;
-    - 6 itens antiparasitarios rejeitados por `PRODUCT_CLASS_GROUP_NOT_SUPPORTED_BY_SQL_ITEM_ENUM`;
-    - 4 ProductClassGroups adaptaveis parcialmente;
-    - 16 ProductClassGroup members bloqueados por `PRODUCT_CLASS_ID_REQUIRED_FOR_GROUP_MEMBER`;
-    - SourceRefs e RotationRules direcionados para JSONB existente;
-    - B19 nacional preservada;
-    - aftosa preservada como archived/blocked;
-    - zero `agenda_allowed`;
-    - zero `approved_for_catalog`.
-
-    Nao implementado nesta fase:
-    - seed/import executado;
-    - migration;
-    - alteracao de schema;
-    - codigo funcional/runtime;
-    - UI;
-    - Dexie/sync;
-    - agenda real;
-    - evento real;
-    - estoque;
-    - carencia ativa;
-    - venda, abate, leite ou aptidao operacional.
-
-    Proxima fase segura:
-    - `12F5 — Validacao automatizada do adapter/normalizer candidato`, ainda sem aplicar seed/import e sem ativacao automatica.
-
-    ---
-
-    ## Historico anterior — Fase 12F3
-
-    Decisao: `FASE 12F3 CONCLUIDA COMO VALIDACAO TECNICA DOCUMENTAL`.
-
-    Entregue nesta fase:
-    - plano principal `docs/review/PLANO_FASE_12F3_VALIDACAO_PAYLOADS_SCHEMA_REAL.md`;
-    - evidencia `docs/review/evidence/VALIDACAO_SCHEMA_REAL_PROTOCOLOS_12F3.md`;
-    - evidencia `docs/review/evidence/VALIDACAO_SCHEMA_REAL_ITENS_12F3.md`;
-    - evidencia `docs/review/evidence/VALIDACAO_SCHEMA_REAL_PRODUCT_CLASS_GROUPS_12F3.md`;
-    - evidencia `docs/review/evidence/VALIDACAO_SCHEMA_REAL_SOURCE_REFS_12F3.md`;
-    - evidencia `docs/review/evidence/MAPA_AJUSTES_PAYLOADS_12F3.md`;
-    - tabelas reais auditadas: `sanitario_protocolos_v2`, `sanitario_protocolo_itens_versions_v2`, `sanitario_product_classes_v2`, `sanitario_product_class_groups_v2`, `sanitario_product_class_group_members_v2` e `sanitario_product_class_default_rules_v2`;
-    - identificado que `sanitario_rotation_rules_v2` e `sanitario_source_refs_field_level_v2` nao existem como tabelas reais;
-    - divergencias de coluna, enum, JSONB, FK e RLS documentadas;
-    - ProductClassGroup members bloqueados ate mapeamento para `class_id`;
-    - B19 preservada como regra nacional para femeas bovinas e bubalinas de 3 a 8 meses;
-    - aftosa preservada como archived/blocked e `productRequirementKind = none`;
-    - zero `agenda_allowed`;
-    - zero `approved_for_catalog`.
-
-    Nao implementado nesta fase:
-    - seed/import executado;
-    - migration;
-    - alteracao de schema;
-    - codigo funcional/runtime;
-    - UI;
-    - Dexie/sync;
-    - agenda real;
-    - evento real;
-    - estoque;
-    - carencia ativa;
-    - venda, abate, leite ou aptidao operacional.
-
-    Proxima fase segura:
-    - `12F4 — Adapter/normalizer de payload candidato para schema real`, ainda sem aplicar seed/import e sem ativacao automatica.
-
-    ---
-
-    ## Historico anterior — Fase 12F2
-
-    Decisao: `FASE 12F2 CONCLUIDA COMO ARTEFATO IMPORTAVEL CANDIDATO`.
-
-    Entregue nesta fase:
-    - plano principal `docs/review/PLANO_FASE_12F2_SEED_CANDIDATA_PROTOCOLOS_V2.md`;
-    - payload candidato `docs/review/evidence/SEED_PROTOCOLOS_V2_CANDIDATA_12F2.md`;
-    - payload candidato `docs/review/evidence/SEED_ITENS_PROTOCOLOS_V2_CANDIDATA_12F2.md`;
-    - payload candidato `docs/review/evidence/SEED_PRODUCT_CLASS_GROUPS_CANDIDATA_12F2.md`;
-    - payload candidato `docs/review/evidence/SEED_ROTATION_RULES_CANDIDATA_12F2.md`;
-    - payload candidato `docs/review/evidence/SEED_SOURCE_REFS_CANDIDATA_12F2.md`;
-    - 10 protocolos em payload candidato;
-    - 19 itens versionados em payload candidato;
-    - 4 ProductClassGroups antiparasitarios fechados;
-    - sourceRefs por campo preservados;
-    - sourceGaps criticos preservados;
-    - fragilidades pre-12F3 registradas, incluindo reconciliacao de ProductClassGroup members contra schema real e changelog 22->19;
-    - zero `agenda_allowed`;
-    - zero `approved_for_catalog`;
-    - aftosa preservada como `archived/blocked`;
-    - B19 preservada como regra nacional para femeas bovinas e bubalinas de 3 a 8 meses.
-
-    Nao implementado nesta fase:
-    - seed executada;
-    - migration;
-    - alteracao de schema;
-    - codigo funcional/runtime;
-    - UI;
-    - Dexie/sync;
-    - agenda real;
-    - evento real;
-    - estoque;
-    - carencia ativa;
-    - venda, abate, leite ou aptidao operacional.
-
-    Proxima fase segura:
-    - `12F3 — Validacao tecnica dos payloads candidatos e reconciliacao contra schema real`, ainda sem aplicar seed/import e sem ativacao automatica.
-
-    ---
-
-    ## Historico anterior — Fase 12F1
-
-    Decisao: `FASE 12F1 CONCLUIDA COMO NORMALIZACAO TECNICA CANDIDATA`.
-
-    Entregue nesta fase:
-    - plano principal `docs/review/PLANO_FASE_12F1_NORMALIZACAO_PROTOCOLOS_V2.md`;
-    - evidencia `docs/review/evidence/PROTOCOLOS_SANITARIOS_V2_NORMALIZADOS_12F1.md`;
-    - evidencia `docs/review/evidence/PROTOCOLO_ITENS_NORMALIZADOS_12F1.md`;
-    - evidencia `docs/review/evidence/PRODUCT_CLASS_GROUPS_NORMALIZADOS_12F1.md`;
-    - evidencia `docs/review/evidence/ROTATION_RULES_ANTIPARASITARIOS_12F1.md`;
-    - evidencia `docs/review/evidence/SOURCE_REFS_FIELD_LEVEL_12F1.md`;
-    - 10 protocolos normalizados;
-    - 19 itens normalizados;
-    - 4 `ProductClassGroup` antiparasitarios fechados;
-    - `associacoes_antiparasitarias` marcada como `reserved_candidate`;
-    - `rotationRule` antiparasitario padrao definido;
-    - `sourceRefs` por campo critico, `sourcePolicy` separada e `sourceGaps` explicitos;
-    - nenhum item promovido a `agenda_allowed`;
-    - febre aftosa preservada como `archived/blocked` com `productRequirementKind = none`.
-
-    Validacao curatorial final:
-    - Brucelose B19 possui regra normativa nacional consolidada para femeas bovinas e bubalinas de 3 a 8 meses.
-    - B19 usa `legal_status = obrigatorio_norma_nacional`, `curationStatus = needs_review`, `automationStatus = manual_only`, `allowsAgendaAuto = false` e `agenda_allowed = false`.
-    - Bloqueios da B19 permanecem operacionais: `requires_mv_habilitado`, `requires_official_record_flow`, `requires_marking_when_applicable`, `requires_executed_product_snapshot` e `requires_product_catalog_validation`.
-    - Aftosa contingencia usa `productRequirementKind = none`, sem produto sugerido.
-    - `sourceRef` real foi separado de `sourcePolicy` baseada em produto executado.
-
-    Nao implementado nesta fase:
-    - codigo funcional;
-    - migration;
-    - seed real;
-    - UI;
-    - Dexie/sync;
-    - agenda real;
-    - evento real;
-    - baixa de estoque;
-    - carencia ativa;
-    - venda, abate, leite ou aptidao operacional.
-
-    Proxima fase autorizavel:
-    - `12F2 — Seed/import real candidato dos Protocolos Sanitarios v2, condicionado a revisao tecnica e ainda sem ativacao automatica`.
-
-    ---
-
-    ## Historico anterior — Fase 12F0
-
-    Decisao: `FASE 12F0 CONCLUIDA COMO CATALOGO CURATORIAL CANDIDATO`.
-
-    Entregue nesta fase:
-    - plano principal `docs/review/PLANO_FASE_12F0_ESTRUTURACAO_CURATORIAL_PROTOCOLOS_SANITARIOS_V2.md`;
-    - evidencia `docs/review/evidence/PROTOCOLOS_SANITARIOS_V2_CANDIDATOS_12F0.md`;
-    - evidencia `docs/review/evidence/ITENS_PROTOCOLO_SANITARIO_V2_CANDIDATOS_12F0.md`;
-    - evidencia `docs/review/evidence/MAPA_FONTES_PROTOCOLOS_SANITARIOS_V2_12F0.md`;
-    - 10 protocolos candidatos classificados;
-    - 19 itens candidatos estruturados;
-    - ProductRequirement definido por item;
-    - ProductClass/ProductClassGroup mapeado quando aplicavel;
-    - sourceRefs/source_gaps documentados;
-    - nenhum item promovido a `agenda_allowed`;
-    - febre aftosa preservada como `archived/blocked`.
-
-    Nao implementado nesta fase:
-    - codigo funcional;
-    - migration;
-    - seed;
-    - UI;
-    - Dexie/sync;
-    - agenda real;
-    - evento real;
-    - baixa de estoque;
-    - carencia ativa;
-    - venda, abate, leite ou aptidao operacional.
-
-    ## Historico anterior — Fase 12E5
-
-    **Status:** `sync-batch` v19 com typecheck Deno limpo e implantado no staging; gate, cliente, Dexie, worker e pull permanecem desabilitados.
-    **Foco:** Cursor incremental por `updated_at`, retry/replay seguro de closures, sucesso parcial, bloqueios permanentes de superficie e gate 12F.
-    **Criado:** 2026-06-13
-    **Atualizado:** 2026-06-13
-    **Plano base:** 12E5 - Hardening offline/sync sanitario v2
-
-    ---
-
-    ## Objetivo em 1 paragrafo
-
-    Executar a Fase 12E5 endurecendo a fundacao offline/sync sanitaria v2 antes da 12F: adicionar cursor incremental local por `updated_at` aos pulls sanitarios v2, preservar tombstones, reforcar retry/replay e sucesso parcial de closures, bloquear permanentemente push de `catalog_*` e `state_*`, manter agenda/animais v2 pull-only e documentar o gate tecnico para protocolos. A fase nao estrutura protocolo real, nao cria seed, nao altera UI, nao cria evento sanitario executado, nao baixa estoque, nao calcula carencia ativa e nao libera venda, abate, leite ou aptidao operacional.
-
-    ---
-
-    ## Decisao 12E5
-
-    Decisao: `PROSSEGUIR PARA GATE 12F COM FUNDACAO OFFLINE/SYNC ENDURECIDA`.
-
-    Implementado nesta fase:
-    - store Dexie v26 `sync_pull_cursors` para cursores locais por tabela/escopo;
-    - pull incremental por `updated_at` para ProductClass v2, catalogo tecnico sanitario v2 com `updated_at` e Agenda Sanitaria v2;
-    - full fetch inicial permanece quando nao ha cursor;
-    - filtro incremental usa `updated_at >= last_updated_at` para nao perder empates e depende do merge/upsert idempotente local;
-    - tombstones com `deleted_at` continuam preservados no pull incremental;
-    - `sanitario_produto_fontes_v2` permanece em full fetch/merge porque o contrato local/remoto usado na 12E3 nao possui `updated_at`;
-    - bloqueio local explicito de `state_*` como superficie direta de push;
-    - testes de retry de rede, replay por `client_op_id`, sucesso parcial e conflito de closure reforcados;
-    - sync-batch preserva idempotencia de replay por duplicidade generica de `client_op_id` e continua rejeitando closure ativa duplicada como conflito controlado.
-
-    Gate 12F:
-    - `catalog_*` confirmado como pull-only;
-    - `state_*` confirmado como read-model, sem superficie direta de push;
-    - ProductClass v2 e catalogo tecnico sanitario v2 disponiveis offline e pull-only;
-    - Agenda v2 offline/sync estavel como intencao operacional;
-    - agenda/animais v2 seguem pull-only;
-    - closure pushavel continua restrita a fechamento administrativo sem execucao;
-    - closure nao cria evento, estoque, carencia ativa ou liberacao operacional;
-    - baseline funcional, sync-batch, lint e build devem passar antes de iniciar 12F;
-    - P0 aberto deve bloquear 12F.
-
-    Nao implementado nesta fase:
-    - protocolo sanitario real estruturado;
-    - seed curatorial;a
-    - UI;
-    - migration;
-    - evento sanitario executado;
-    - baixa de estoque;
-    - carencia ativa;
-    - venda, abate, leite ou aptidao operacional.
-
-    ---
-
-    ## Decisao 12E4
-
-    Decisao: `PROSSEGUIR COM ESCOPO CONTROLADO`.
-
-    Implementado nesta fase:
-    - stores Dexie v25 para `ops_sanitario_agenda_v2`, `ops_sanitario_agenda_animais_v2` e `ops_sanitario_agenda_closures_v2`;
-    - tipos locais minimos espelhando os campos reais da migration da Agenda Sanitaria v2;
-    - `tableMap` remoto -> local para as 3 estruturas `ops_*`;
-    - pull especifico `pullSanitarioAgendaV2(fazenda_id)`;
-    - pull tenant por `fazenda_id`, sem pull global;
-    - ordem de pull `sanitario_agenda_v2` -> `sanitario_agenda_animais_v2` -> `sanitario_agenda_closures_v2`;
-    - aplicacao local em modo merge, preservando `updated_at`, `deleted_at`, metadata e vinculos `agenda_id`/`animal_id`;
-    - bloqueio local de push para `catalog_*`, `sanitario_agenda_v2` e `sanitario_agenda_animais_v2`;
-    - push controlado de `sanitario_agenda_closures_v2`;
-    - push de closure bloqueia `executed_with_event`, `partially_executed_with_event` e qualquer `execution_evento_id` preenchido;
-    - reconciliacao pos-sync com `pullSanitarioAgendaV2`;
-    - sucesso parcial especifico para gestures compostas apenas por closures: aceitas saem de `queue_ops`, rejeitadas permanecem rastreaveis;
-    - conflito de closure ativa duplicada mapeado para `sanitario_agenda_closure_already_exists`.
-
-    Nao implementado nesta fase:
-    - push de catalogos `catalog_*`;
-    - push de `state_*`;
-    - push de agenda/animais v2;
-    - evento sanitario executado;
-    - snapshot tecnico de evento;
-    - baixa de estoque;
-    - carencia ativa;
-    - liberacao de venda, abate, leite ou aptidao operacional;
-    - protocolo estruturado real;
-    - UI, migration ou seed.
-
-    ---
-
-    ## Evidencia tecnica
-
-    Arquivos gerados/alterados:
-    - `src/lib/offline/db.ts`
-    - `src/lib/offline/types.ts`
-    - `src/lib/offline/tableMap.ts`
-    - `src/lib/offline/pull.ts`
-    - `src/lib/offline/ops.ts`
-    - `src/lib/offline/syncWorker.ts`
-    - `src/lib/offline/__tests__/sanitarioAgendaV2Store.test.ts`
-    - `src/lib/offline/__tests__/sanitarioAgendaV2Pull.test.ts`
-    - `src/lib/offline/__tests__/sanitarioAgendaV2Sync.test.ts`
-    - `supabase/functions/sync-batch/index.ts`
-    - `supabase/functions/sync-batch/rules.ts`
-    - `supabase/functions/sync-batch/rules.test.ts`
-    - docs ativos de fase/status/roadmap/dominio
-
-    ---
-
-    ## Criterios de aceitacao da fase
-
-    - [x] Stores Dexie da Agenda Sanitaria v2 criadas.
-    - [x] Pull remoto Agenda v2 implementado por fazenda.
-    - [x] Pull respeita ordem agenda -> animais -> closures.
-    - [x] `deleted_at` e `updated_at` preservados quando existem no contrato remoto.
-    - [x] Push controlado implementado somente para closures.
-    - [x] Push de closure restrito a fechamento administrativo sem `execution_evento_id`.
-    - [x] Idempotencia por `client_op_id` preservada no push de closure.
-    - [x] Conflito de closure duplicada tratado como rejeicao controlada.
-    - [x] Sucesso parcial tratado para gestures de closures.
-    - [x] Nenhum push de `catalog_*` implementado.
-    - [x] Nenhum push novo de `state_*` implementado.
-    - [x] ProductClass e catalogo tecnico sanitario v2 seguem pull-only.
-    - [x] Nenhuma UI alterada.
-    - [x] Nenhuma migration criada.
-    - [x] Nenhum seed criado.
-    - [x] Nenhum protocolo estruturado criado.
-    - [x] Nenhum evento sanitario executado criado.
-    - [x] Nenhuma baixa de estoque criada.
-    - [x] Nenhuma carencia ativa criada.
-    - [x] Nenhuma liberacao de venda, abate, leite ou aptidao criada.
-
-    ## Proxima fase segura
-
-    `12E5 - Hardening offline/sync` ou `12F - Estruturacao curatorial dos protocolos`, conforme decisao de gate.
+# Plano ativo — Fase 12 / Sync Remoto Sanitário v2
+
+Atualizado em: 2026-07-30
+Status: **Fase 12 ativa; Sync Sanitário v2 em andamento**
+Próximo incremento: **3.8 — Push/pull de histórico sanitário externo/documental**
+
+Este documento contém o plano corrente. Estado técnico detalhado, validações e risco de plataforma ficam em [CURRENT_PHASE_HANDOFF.md](./CURRENT_PHASE_HANDOFF.md). A decisão arquitetural permanente está em [ADR-0007](../technical/adrs/ADR-0007-sync-remoto-sanitario-v2-integrado.md).
+
+## Resultado já consolidado
+
+1. Validação real da Conformidade Sanitária v2 — **concluída**.
+2. Documentação curta do Sanitário v2 local — **concluída**.
+3. Sync Remoto Sanitário v2 — **em andamento**.
+
+A Conformidade Sanitária v2 permanece um read model local derivado, somente leitura e recalculado a partir de fontes factuais. Ela não libera venda, abate, leite ou aptidão operacional.
+
+## Estado do Sync Remoto Sanitário v2
+
+| Subitem | Estado canônico |
+|---|---|
+| 3.1 Diagnóstico schema local/remoto | Concluído |
+| 3.2 Migrations necessárias | Fundação concluída |
+| 3.3 RLS e isolamento multi-tenant/fazenda | Concluído tecnicamente |
+| 3.4 Push/pull de agenda sanitária | Implementado; E2E remoto parcial |
+| 3.5 Push/pull de `agenda_animais` | Implementado; E2E remoto parcial |
+| 3.6 Push/pull de evento sanitário | Implementado; E2E remoto pendente |
+| 3.7 Push/pull de detalhe sanitário | Implementado; E2E remoto pendente |
+| 3.8 Push/pull de histórico externo/documental | **Próximo incremento** |
+| 3.9 Push/pull de movimento de estoque sanitário | Pendente |
+| 3.10 Retry/replay/idempotência | Implementado; validação remota parcial |
+| 3.11 Sucesso parcial | Validado localmente; E2E remoto pendente |
+| 3.12 Conflito multi-dispositivo | Código e SQL validados; plataforma bloqueada |
+| 3.13 Recalcular Conformidade após pull | Pendente de integração explícita |
+
+O item 3 não está concluído e a Fase 12 não está encerrada.
+
+## Próximo incremento — 3.8
+
+Objetivo: sincronizar histórico sanitário de entrada sem transformar declaração ou documento em execução local.
+
+Escopo:
+
+- sincronizar `external_declared` e `external_documented`;
+- preservar origem e evidência;
+- exigir referência documental para comprovação crítica;
+- reutilizar `queue_gestures` e `queue_ops`, sem fila paralela;
+- manter UUID, `client_op_id`, `domain_op_id` e idempotência;
+- respeitar tenant e `fazenda_id`;
+- implementar pull não destrutivo;
+- tratar replay, conflito e sucesso parcial;
+- recalcular a Conformidade Sanitária v2 conservadoramente após pull.
+
+Fora do escopo:
+
+- criar Agenda Sanitária v2;
+- criar Evento sanitário executado;
+- movimentar estoque;
+- calcular carência;
+- liberar venda, abate, leite ou aptidão operacional;
+- habilitar rollout, gate remoto ou feature flag local;
+- alterar a semântica do bloqueio de plataforma.
+
+## Regras de domínio do incremento
+
+- Agenda = intenção ou tarefa futura.
+- Evento = fato histórico executado.
+- Closure administrativa = encerramento da intenção, não execução.
+- `state_*` = estado atual/read model.
+- Protocolo = regra/configuração.
+- Conformidade = leitura derivada, não fonte primária.
+- Agenda concluída sem Evento não comprova execução.
+- Cancelamento e dispensa não criam fato sanitário.
+- Execução parcial vale somente para os animais vinculados ao Evento.
+- `external_declared` não comprova regra crítica.
+- `external_documented` exige referência de evidência para comprovação crítica.
+- Baixa de estoque depende de Evento factual.
+- Carência depende de produto executado e fonte técnica explícita.
+- Tags, sinais, insights e status de sync não são fontes críticas.
+- Resposta de sync não libera operação.
+
+## Gate e ambientes
+
+- Supabase staging: `zqloazqzhwauamcejmuz`.
+- Produção: não alterada.
+- Gate sanitário remoto: desligado, fail-closed.
+- Feature flag local: `false`.
+- Rollout para usuários: não autorizado.
+- Fixtures sintéticas residuais: zero.
+
+O bloqueio `SANITARIO_V2_E2E_PLATFORM_BLOCKED` impede rollout, mas não impede o desenvolvimento do item 3.8 sob gates desligados. Não aumentar timeout nem alterar RPC sem nova evidência.
+
+## Sequência após 3.8
+
+```txt
+3.9 Movimento de estoque sanitário
+→ 3.13 recálculo explícito da Conformidade após pull
+→ reexecução dos E2Es remotos quando a plataforma estiver estável
+→ item 4 Produto técnico e fonte por campo
+→ item 5 Correção append-only sanitária
+→ item 6 Carência operacional
+→ item 7 Fechamento da Fase 12
+```
+
+Somente depois do fechamento formal da Fase 12 pode iniciar a Fase 13 — Reprodução Operacional v1.
+
+## Critérios de aceite de 3.8
+
+- origem e evidência preservadas no push e no pull;
+- `external_documented` sem referência não comprova regra crítica;
+- replay não duplica histórico;
+- conflito e sucesso parcial ficam rastreáveis;
+- pull é merge não destrutivo por `fazenda_id`;
+- Conformidade é recalculada conservadoramente;
+- nenhum Evento, Agenda, estoque, carência ou liberação operacional é criado por inferência;
+- gate remoto e feature flag local permanecem desligados;
+- validações proporcionais de domínio, sync/offline e Supabase passam.

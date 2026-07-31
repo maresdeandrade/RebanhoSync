@@ -1,61 +1,43 @@
-# Last Phase Result - RebanhoSync
+# Resultado funcional mais recente — RebanhoSync
 
-Atualizado em: 2026-07-18
-
-A validação passou no worktree local baseado em dbe37a8. O commit funcional que contém a implementação validada no worktree é fcf42bc. evidenceReference: validação local executada com Vitest, ESLint e build Vite em 2026-07-18. A evidência textual local não garante existência, integridade ou disponibilidade futura de arquivo remoto.
-
-## Resultado mais recente
-
-Fase 12I - Catalogo Sanitario v2 read-only offline-first, com execução e Conformidade Sanitária v2 pós-12I - validada localmente.
-
-Decisão: catálogo sanitário continua read-only/pull-only; agenda permanece intenção e só vira evento por execução confirmada.
+Atualizado em: 2026-07-30
+Baseline funcional: `2006286`
 
 ## Resultado
 
-- Catálogo v2 continua disponível localmente/read-only em `/protocolos-sanitarios/catalogo-v2`, sem ler JSON em runtime.
-- Criados stores Dexie v27 para `catalog_sanitario_protocolos_v2` e `catalog_sanitario_protocolo_itens_versions_v2`.
-- Ampliados índices de `catalog_sanitario_product_class_groups_v2` para consulta local do catalogo de protocolos.
-- Implementado pull remoto `pullSanitarioProtocolCatalogV2` para protocolos, itens e grupos globais.
-- Implementadas funções locais read-only para listar protocolos, itens por protocolo, ProductClassGroups e resumo do catalogo v2.
-- B19, aftosa e os 6 itens antiparasitarios com ProductClassGroup foram cobertos por testes locais.
-- Execução sanitária foi adicionada exclusivamente a partir de agenda existente, válida e confirmada, por `executeSanitaryAgendaV2`.
-- A execução cria evento sanitário, detalhe e vínculo dos animais afetados; o histórico executado da Central e do animal passa a ler esse fato, nunca a agenda futura.
-- Produto real é selecionado de cadastro/insumo sanitário compatível. Sem lote de estoque, o evento é permitido e registra ausência de baixa; com lote, a baixa usa `source_evento_id`.
-- Carência ativa só é criada para produto real com regra técnica explícita, aplicabilidade e snapshot suficientes. Não há liberação de venda, abate, leite ou aptidão operacional.
-- Retry por `clientOpId + agendaId` não duplica evento, detalhe, movimento de estoque ou carência. Retry/replay não duplicou evento, movimento de estoque, baixa de lote, carência ou vínculo agenda-evento. Não foi criado `queue_ops` paralelo.
-- Conformidade v2 permanece derivada e somente leitura: agenda futura é `planned`, agenda cancelada/executada não gera planejamento residual e conclusão sem evento não prova execução.
-- B19 adulta exige evidência externa documentada com referência vinculada; declaração ou documento sem referência permanecem pendência documental.
-- Execução parcial é individual, múltiplos protocolos são avaliados separadamente e reabertura do Dexie preserva IDs, contagens e saldo.
-- Criado o relatorio unico `docs/review/evidence/RELATORIO_12I_CATALOGO_SANITARIO_V2_OFFLINE_READONLY.md`.
+O cutover local Dexie do Sync Sanitário v2 foi implementado sob gate desligado:
 
-## Validacao
+- Dexie v28;
+- store factual `event_eventos_animais`;
+- manifesto de cutover com `PREPARED`, `APPLYING`, `APPLIED` e `FAILED`;
+- preservação da fila compartilhada;
+- pull/reconcile não destrutivo;
+- feature flag local fail-closed mantida em `false`.
 
-- Diagnostico inicial confirmou carga 12G aplicada: `--dry-run` com 0 `create`, 0 `update`, 33 `skip`, 16 `reject`.
-- Testes focados de store, pull, cursor incremental e leitura local passaram.
-- Testes focados de execução, histórico, Agenda e componentes sanitários passaram nas alterações pós-12I.
-- Matriz funcional de Conformidade v2, execução, estoque, idempotência e Central/histórico passou localmente; lint, build e `git diff --check` devem permanecer verdes no fechamento deste bloco.
+Incrementos anteriores do mesmo bloco entregaram a fundação expand, RLS, `sync-batch` v19, typecheck Deno limpo e worker/reconcile com resultados canônicos.
 
-## Nao executado
+## Estado da validação
 
-- migration, schema, RLS, Edge Function ou import novo;
-- execução direta de janela, preview ou pré-checagem;
-- baixa sem evento, carência sem evento/produto/regra explícita ou liberação operacional;
-- ProductClassGroup members;
-- push/sync-batch de escrita para catalogos.
+- validações locais dos incrementos: concluídas;
+- agenda e `agenda_animais`: E2E remoto parcial;
+- evento e detalhe: E2E remoto pendente;
+- conflito multi-dispositivo: código e SQL validados, plataforma bloqueada;
+- rollout: não autorizado.
 
-## Fonte final
+`SANITARIO_V2_E2E_PLATFORM_BLOCKED` ocorre porque o PostgreSQL produz imediatamente `SQLSTATE 40001 / SANITARIO_AGENDA_REVISION_CONFLICT`, mas a resposta não retorna pelo caminho Edge Function/PostgREST/gateway antes do timeout. O worker recebe `RETRYABLE / SANITARIO_RPC_TIMEOUT`.
 
-Import futuro continua vinculado exclusivamente ao payload canonico:
+Não há evidência atual de defeito no SQL ou na regra de domínio.
 
-`docs/review/evidence/SANITARIO_PROTOCOLS_V2_CANONICAL_PAYLOAD_12F10.json`
+## Ambiente
 
-Leitura 12I usa as tabelas reais importadas pela 12G e cache Dexie pull-only, nao o JSON.
+- staging: `zqloazqzhwauamcejmuz`;
+- produção: não alterada;
+- gate remoto: desligado;
+- feature flag local: `false`;
+- fixtures sintéticas residuais: zero.
 
-Atualizacao posterior de saneamento sanitario v2:
-- `/protocolos-sanitarios` passou a apontar apenas para o Catalogo Sanitario v2 read-only;
-- Pack Oficial, Conformidade e Protocolos da fazenda foram ocultados da superficie principal;
-- `raiva_herbivoros` permanece com 3 itens ativos sem duplicidade anual e `matrizes_pre_parto_lepto_reforco_situacional` foi tombstonado para evitar concorrencia com `leptospirose`; o catalogo passou a 20 itens ativos, mantendo `manual_only`, `draft` e `allows_agenda_auto=false`.
+## Próximo incremento
 
-## Proximo passo possivel
+3.8 — Push/pull de histórico sanitário externo/documental.
 
-Planejar em bloco próprio a sincronização remota dos fatos sanitários v2 validados localmente, sem transformar Conformidade em fonte primária.
+Detalhes no [plano ativo](./ACTIVE_PHASE_PLAN.md) e no [handoff atual](./CURRENT_PHASE_HANDOFF.md).

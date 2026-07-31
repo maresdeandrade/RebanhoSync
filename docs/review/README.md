@@ -122,6 +122,15 @@ Mas regras permanentes devem ficar em `.agents/rules/`, não apenas em relatóri
 
 ---
 
+## Continuidade atual
+
+- [ACTIVE_PHASE_PLAN.md](./ACTIVE_PHASE_PLAN.md): plano corrente da Fase 12 e próximo incremento 3.8.
+- [CURRENT_PHASE_HANDOFF.md](./CURRENT_PHASE_HANDOFF.md): estado técnico detalhado e risco de plataforma.
+- [LAST_PHASE_RESULT.md](./LAST_PHASE_RESULT.md): resultado funcional mais recente.
+- [OPEN_REVIEW_ITEMS.md](./OPEN_REVIEW_ITEMS.md): bloqueios e pendências reais.
+
+Planos encerrados e `evidence/` preservam cronologia; não substituem essas fontes.
+
 ## Baseline
 
 Toda revisão ativa deve declarar:

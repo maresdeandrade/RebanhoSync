@@ -1,10 +1,6 @@
 # Active Review Index — RebanhoSync
 
-Atualizado em: 2026-07-18
-**Baseline Commit (commit-base do worktree):** `dbe37a8`
-**Baseline funcional documentado:** `fcf42bc`
-
-A validação passou no worktree local baseado em dbe37a8. O commit funcional que contém a implementação validada no worktree é fcf42bc. evidenceReference: validação local executada com Vitest, ESLint e build Vite em 2026-07-18. A evidência textual local não garante existência, integridade ou disponibilidade futura de arquivo remoto.
+Atualizado em: 2026-07-30
 
 ## Objetivo
 
@@ -33,6 +29,8 @@ Quando deixar de orientar ação:
 
 | Revisão | Arquivo | Status | Prioridade | Próxima ação |
 |---|---|---:|---:|---|
+| Plano da Fase 12 | `ACTIVE_PHASE_PLAN.md` | Ativo | P0 | Implementar 3.8 — histórico externo/documental. |
+| Handoff da Fase 12 | `CURRENT_PHASE_HANDOFF.md` | Ativo | P0 | Manter risco externo e estado técnico corrente. |
 | Checklist padrão de revisão | `REVIEW_CHECKLIST.md` | Ativo | P0 | Usar em toda revisão documental/técnica. |
 | Pendências abertas | `OPEN_REVIEW_ITEMS.md` | Ativo | P0 | Atualizar conforme itens forem resolvidos. |
 | Otimização de contexto/agentes | `AI_CONTEXT_OPTIMIZATION_REPORT.md` | Ativo | P1 | Incorporar recomendações em `.agents/` e docs. |

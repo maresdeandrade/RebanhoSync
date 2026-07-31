@@ -1,8 +1,7 @@
 ```md
 # Supabase RLS — RebanhoSync
 
-Atualizado em: 2026-05-31  
-**Baseline Commit:** `32d7779`
+Atualizado em: 2026-07-30
 
 ## Objetivo
 
@@ -30,6 +29,20 @@ Definir o contrato técnico para Supabase, RLS, isolamento multi-tenant, RPCs, p
 4. Docs normativos ativos.
 5. Docs derivados.
 6. Histórico/archive.
+
+## Ambiente atual do Sync Sanitário v2
+
+- Supabase staging: `zqloazqzhwauamcejmuz`.
+- Produção: não alterada.
+- Gate sanitário remoto: desligado e fail-closed.
+- Feature flag local: `false`; não é fronteira de autorização.
+- Rollout para usuários: não autorizado.
+
+A fundação de RLS e isolamento multi-tenant/fazenda do Sync Sanitário v2 está tecnicamente concluída. Isso não conclui o sync nem autoriza rollout.
+
+O `sync-batch` autentica e valida membership antes da execução server-side. As funções internas revalidam tenant, `fazenda_id`, revisão, estado e idempotência. `service_role` não é exposto no cliente.
+
+O bloqueio `SANITARIO_V2_E2E_PLATFORM_BLOCKED` é classificado como externo: PostgreSQL produz o conflito esperado `SQLSTATE 40001`, mas o caminho Edge Function/PostgREST/gateway não devolve a resposta antes do timeout. Não atribuir defeito ao SQL sem nova evidência.
 
 ---
 

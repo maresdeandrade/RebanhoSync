@@ -6,6 +6,8 @@
 > **Baseline diagnosticado:** `28f5f8f`
 > **Autores:** Codex + revisão técnica
 
+> **Status de implementação em 2026-07-30:** implementação parcial sob gates desligados. Fundação expand, RLS, `sync-batch` v19, worker/reconcile, Dexie v28 e cutover local foram implementados; E2E remoto permanece parcial por `SANITARIO_V2_E2E_PLATFORM_BLOCKED`; rollout não autorizado. Próximo incremento: 3.8 — histórico sanitário externo/documental. Ver [handoff atual](../../review/CURRENT_PHASE_HANDOFF.md).
+
 ## Problema
 
 A execução e a Conformidade Sanitária v2 estão validadas localmente, mas o contrato local não pode ser enviado diretamente ao schema remoto atual. Existem incompatibilidades de identidade, relacionamentos, produto executado, estados de agenda e tratamento de falhas.
@@ -875,7 +877,7 @@ Critério de rollback futuro: desativar o gate de push sanitário sem apagar fat
 
 ## Critério de aceite arquitetural
 
-O ADR permanece `Proposed` até revisão técnica formal. Sua promoção para `Accepted` exige que este documento mantenha explicitamente todos os contratos abaixo:
+O ADR permanece `Accepted`. O checklist abaixo registra os contratos exigidos no aceite arquitetural:
 
 - [x] transporte consumido de `expected_revision` da `queue_op` até a comparação sob lock na transação;
 - [x] rejeição de evento de agenda sem `expected_revision`;
@@ -908,4 +910,4 @@ O ADR permanece `Proposed` até revisão técnica formal. Sua promoção para `A
 - [x] limites de payload/alvos rejeitados antes da escrita, sem quebra da atomicidade por particionamento;
 - [x] `eventos.source_sanitario_agenda_v2_id` como única referência factual canônica Evento → Agenda.
 
-Depois do aceite arquitetural, a primeira migration proposta ainda deverá demonstrar aderência testável a esses contratos, além de UUID desde a origem, RLS/fazenda, idempotência, conflitos, pull não destrutivo pós-ativação e recálculo local da Conformidade. Nenhum caminho feliz isolado será aceito como incremento implementável.
+A implementação continua obrigada a demonstrar aderência testável a esses contratos, além de UUID desde a origem, RLS/fazenda, idempotência, conflitos, pull não destrutivo pós-ativação e recálculo local da Conformidade. Nenhum caminho feliz isolado conclui o bloco.

@@ -1,8 +1,7 @@
 ```md
 # Testing Gates — RebanhoSync
 
-Atualizado em: 2026-05-31  
-**Baseline Commit:** `32d7779`
+Atualizado em: 2026-07-30
 
 ## Objetivo
 
@@ -55,6 +54,31 @@ rtk pnpm test -- caminho/do/teste.test.ts
 ```
 
 > ⚠️ Se não houver teste específico, justificar.
+
+## Patch exclusivamente documental
+
+Executar:
+
+```bash
+git status --short --untracked-files=all
+git diff --name-only
+git diff --check
+git diff --stat
+```
+
+Se existirem no `package.json`, executar também `lint:docs`, `docs:check` e `markdownlint`. Não criar script apenas para a validação.
+
+Validar manualmente links relativos, títulos/âncoras, consistência do próximo incremento e ausência de alteração em código/schema.
+
+Para o estado corrente da Fase 12, confirmar:
+
+- Fase 12 ativa;
+- item 3.8 como próximo incremento;
+- gate remoto desligado;
+- feature flag local `false`;
+- rollout não autorizado;
+- staging separado de produção;
+- bloqueio `40001` descrito como plataforma, sem causa no SQL não comprovada.
 
 ---
 

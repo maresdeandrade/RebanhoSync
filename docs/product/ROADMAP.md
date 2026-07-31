@@ -1,273 +1,96 @@
 # Roadmap — RebanhoSync
 
-Atualizado em: 2026-07-18
-**Baseline documental auditado (commit-base do worktree):** `dbe37a8`
-**Baseline funcional documentado:** `fcf42bc`
-
-A validação passou no worktree local baseado em dbe37a8. O commit funcional que contém a implementação validada no worktree é fcf42bc. evidenceReference: validação local executada com Vitest, ESLint e build Vite em 2026-07-18. A evidência textual local não garante existência, integridade ou disponibilidade futura de arquivo remoto.
+Atualizado em: 2026-07-30
+Fase atual: **Fase 12 — ativa**
+Próximo incremento: **3.8 — Push/pull de histórico sanitário externo/documental**
 
 ## Objetivo
 
-Definir os próximos focos de desenvolvimento do RebanhoSync em nível de produto.
-
-Este documento não é backlog detalhado.
-Não deve substituir issues, tarefas técnicas ou prompts de implementação.
-
----
-
-## Princípios do roadmap
-
-- Estabilizar antes de expandir.
-- Proteger offline-first.
-- Proteger RLS/multi-tenant.
-- Reduzir risco operacional.
-- Melhorar UX dos fluxos centrais.
-- Evitar automação crítica sem fonte técnica.
-- Diferenciar sinal sanitário de autorização comercial.
-- Entregar valor prático ao produtor.
-- Preservar Agenda/Eventos/`state_*`/Protocolo separados.
-
----
-
-## Fase atual — Fase 12
-
-Status: **Fase 12I concluída; execução e Conformidade Sanitária v2 validadas localmente**
-Fase anterior: **Fase 11.5 — Agenda Sanitária v2: Janelas, Agrupamento e Materialização Idempotente — concluída localmente**
-Fase seguinte: **Planejar a sincronização remota dos fatos sanitários v2, preservando idempotência, RLS e `fazenda_id`**
-
-### Conduta inicial
-
-As subfases 11.5A a 11.5J, 12A-12E5, 12F0-12F10, 12G, 12H e 12I foram concluídas localmente. O catálogo permanece `catalog_*` pull-only/read-only. Avanços pós-12I transformaram `/protocolos-sanitarios` em Central Sanitária v2 e habilitaram execução manual exclusivamente a partir de agenda existente: confirmação explícita cria evento sanitário factual, detalhe e vínculos dos animais afetados; produto real e dados de aplicação são registrados no snapshot. Estoque só é baixado após o evento com `source_evento_id`, e carência só é criada com produto real e regra técnica explícita. Agenda futura não conta como histórico e não há execução por janela ou pré-checagem. Não foram criadas migration, schema/RLS/Edge Function, `queue_ops` paralelo ou liberações de venda, abate, leite e aptidão operacional.
-
-### Handoff para Fase 12E
-
-A próxima etapa 12E está dividida na seguinte ordem de subfases:
-1. **12E1**: Criação do Dexie schema e stores para as tabelas de ProductClass (`sanitario_product_classes_v2`, `sanitario_product_class_groups_v2`, etc.) — concluída localmente.
-2. **12E2**: Pull remoto ProductClass v2 para Dexie local e correção do validador funcional baseline P1 — concluída localmente.
-3. **12E3**: Catálogo técnico sanitário v2 ampliado — concluída localmente.
-4. **12E4**: Agenda Sanitária v2 offline/sync em escopo controlado — concluída localmente.
-5. **12E5**: Hardening offline/sync sanitario v2 — concluída localmente.
-
-Riscos residuais vindos da 12E0:
-- Pull de registros globais exige carregamento inicial apartado do filtro padrão por `fazenda_id`.
-- Sincronização offline e replay de closures de agendas exige conciliação de idempotência baseada na constraint de agenda única ativa.
-
-### Escopo da Fase 12E1+
-- 12E1 concluiu a inclusão dos novos stores de ProductClass no schema Dexie v23.
-- 12E2 concluiu o pull remoto ProductClass v2 para Dexie, preservando catálogo global e tenant como pull-only nesta fase.
-- 12E3 concluiu stores Dexie v24 e pull remoto para 7 tabelas autorizadas do catalogo tecnico sanitario v2, mantendo fontes, produtos, autorizacao por especie, dose e carencia rules como catalogo pull-only, sem push, sem `queue_ops`, sem sync-batch, sem UI, sem migration, sem seed, sem protocolo, sem agenda, sem evento e sem carencia ativa.
-- 12E4 concluiu stores Dexie v25 e pull remoto por fazenda para Agenda Sanitaria v2, mantendo agenda/animais como pull por fazenda e habilitando push controlado somente para closures com idempotencia/conflito rastreavel; nao criou evento executado, estoque, carencia ativa, UI, migration, seed ou protocolo estruturado.
-- 12E5 concluiu cursor incremental por `updated_at` em `sync_pull_cursors`, retry/replay seguro de closures, sucesso parcial rastreavel, bloqueio permanente de push para `catalog_*` e `state_*`, e gate tecnico para iniciar 12F com P0 zerado e validacoes verdes.
-
-### Gate para 12F
-
-12F pode iniciar somente se:
-
-- `catalog_*` permanecer pull-only;
-- `state_*` permanecer read-model, sem superficie direta de push;
-- Agenda v2 permanecer intencao operacional, sem virar evento;
-- closure permanecer sem execucao, sem `execution_evento_id` e sem estoque/carencia;
-- ProductClass v2 e catalogo tecnico sanitario v2 estiverem disponiveis offline;
-- baseline funcional, sync-batch, lint e build estiverem verdes;
-- nao houver P0 aberto.
-
----
-
-## Fase 11 — concluída localmente
-
-### Status das subfases
-
-- 11A — Diagnóstico de Lotes, Pastos e Desempenho Operacional Ampliado: concluída documentalmente.
-- 11B — Ajuste semântico/read-only do cockpit de Lotes/Pastos: concluída localmente.
-- 11C — Ocupação, lotação e movimentações: concluída localmente.
-- 11D — Desempenho read-only se houver fonte suficiente: concluída localmente.
-- 11E — Relatórios operacionais ampliados: concluída localmente.
-- 11F — Fechamento: executada.
-
-### Resultado
-
-A Fase 11 consolidou leituras de lote, pasto e desempenho com fonte explícita, período e limitação. `state_*` permaneceu como estado atual/read model, eventos permaneceram como histórico/fato executado, GMD continuou dependente de pesagens explícitas e relatórios operacionais ampliados seguiram sem DRE, ROI, margem ou custo por arroba.
-
----
-
-## Fase 10 — concluída localmente
-
-### Status das subfases
-
-- 10A — Diagnóstico UX e mapa de fricção: concluída.
-- 10B — Agenda/Registrar: concluída localmente.
-- 10C — Home/Central Operacional: concluída localmente.
-- 10D — Animal, Eventos e Histórico: concluída localmente.
-- 10E — Integração via Histórico para Lotes/Pastos, Relatórios e Compra/Venda: concluída localmente.
-- 10F — Fechamento da Fase 10 e handoff: executada.
-
-### Resultado
-
-A Fase 10 fechou a UX operacional dos fluxos centrais sem criar regra crítica nova:
-
-- Agenda ficou mais clara como intenção/tarefa futura;
-- Registrar ficou mais claro como execução real;
-- Home/Central Operacional ficou mais clara como painel de ação/leitura;
-- Animal diferencia estado atual de histórico;
-- Eventos são apresentados como histórico executado;
-- histórico virou eixo de rastreabilidade;
-- Lotes/Pastos diferenciam estado atual de movimentações executadas;
-- Relatórios aparecem como leitura derivada/parcial;
-- Compra/Venda aparece como registro manual, não recomendação;
-- nenhum fluxo virou autorização crítica.
-
----
-
-## Fase 9 — concluída localmente
-
-### Status das subfases
-
-- 9A — Inventário Operacional: concluída localmente.
-- 9B — Relatórios Operacionais de Custo Parcial: concluída localmente.
-- 9C — Sociedade Patrimonial e Classificação Operacional Read-only: concluída localmente.
-- 9D — Fechamento do Gate Fase 9 e Handoff para Próxima Fase: executada.
-
-### Objetivo da Fase 9
-
-- consolidar base comercial e patrimonial após Fase 8;
-- validar custo operacional por inventário;
-- garantir idempotência de baixa;
-- mapear sociedade patrimonial;
-- preparar classificação operacional como leitura apenas;
-- impedir que classificação, snapshot ou sinal virem autorização crítica.
-
-### Critério de aceite da Fase 9
-
-- 9A e 9B permanecem concluídas localmente;
-- 9C mapeia sociedade patrimonial e classificação operacional com evidência local;
-- 9D fecha o gate e define explicitamente a próxima fase;
-- nenhuma autorização automática de venda/abate é criada;
-- nenhum avanço indevido para DRE, ROI, margem, custo por arroba ou motor comercial avançado ocorre.
-
-Status final: cumprido localmente.
-
-Referência: `docs/review/LAST_PHASE_RESULT.md` e `docs/review/PLANO_FASE_9_GATE_POS_MVP_COMERCIAL_PATRIMONIAL_CLASSIFICACAO_CUSTO.md`
-
----
-
-## Fases anteriores consolidadas
-
-### Consolidação SLC (Fases 1-6 e Gates)
-
-Concluído em baseline `3fe7a81`:
-
-- `docs/context/`, `docs/domain/`, `docs/technical/`, `docs/product/` consolidados;
-- Sanitário (Fase 6): append-only, correcção idempotente, evento original preservado;
-- RLS validado para sanitário, estoque e sociedade;
-- Suite de 1744 testes passando, lint limpo, build sem erros bloqueantes.
-
-Detalhes em `docs/context/PROJECT_STATUS.md` e `docs/review/LAST_PHASE_RESULT.md`.
-
----
-
-## Matriz de realidade por fase
-
-Status real usa apenas: `CONCLUÍDA`, `PARCIAL`, `HARDENING_RESIDUAL`, `A_INICIAR`, `FUTURA`, `NÃO_CONFIRMADA`.
-
-| Fase/tema | Estado documental | Evidência local | Status real | Lacunas | Conduta no roadmap |
-|---|---|---|---|---|---|
-| Fase 5 — Exceções/Reconciliação Sanitária | Consolidada em documentação ativa; há trecho legado em `docs/domain/SANITARIO.md` tratando como planejada. | `src/lib/sanitario/reconciliation/sanitaryCorrections.ts`, `sanitaryExceptions.ts`, testes e consumo em relatórios/eventos. | `CONCLUÍDA` | Hardening residual e contrato legado, sem bug objetivo novo. | Não duplicar como fase futura. |
-| Fase 6 — Robustez Sanitária em Staging | Consolidada como gate anterior; pendências residuais não bloqueantes continuam abertas. | `docs/review/FASE_6_SANITARIA_STAGING_SYNC_RLS_HANDOFF.md`, `sync-batch`, RLS, retry/rollback e validações registradas. | `HARDENING_RESIDUAL` | Ruídos de teste/build e higiene DX. | Trilha residual contínua, não fase de produto. |
-| Fase 7 — Compra/Venda/Sociedade | Documentada como já executada parcialmente; preparação de PR fechada. | `eventos_comercial`, `commercialOperation*`, `RegistrarComercialSection`, `sociedades_pecuarias`, `sociedade_animais` e testes comerciais/sociedade. | `PARCIAL` | Hardening operacional, UX, sync e relatórios. | Hardening/lacuna, não criação do zero. |
-| Fase 8 — Relatórios/Baseline | Documentada como relatórios/baseline estável; 9B ampliou custo parcial. | `operationalSummary.ts`, `Relatorios.tsx`, `Home.tsx`, `finance/gerencial.ts` e testes de relatório. | `PARCIAL` | KPIs ampliados ainda exigem fonte/limitação explícita. | Base para próximos KPIs. |
-| Fase 9A — Inventário/Custo/Snapshot | Concluída localmente. | Handoff, `LAST_PHASE_RESULT`, plano da Fase 9 e validações registradas. | `CONCLUÍDA` | Nenhuma pendência específica aberta. | Manter concluída. |
-| Fase 9B — Custo parcial em relatórios | Concluída localmente. | `inventory.partialCost`, `operationalSummary.test`, `Relatorios.e2e` e validações registradas. | `CONCLUÍDA` | Nenhuma pendência específica aberta. | Manter concluída. |
-| Fase 9C — Sociedade/Classificação read-only | Concluída localmente. | `classificationSnapshot.ts`, teste de contrato, occupancy; sociedade em Dexie/migrations/UI/RLS. | `CONCLUÍDA` | Hardening futuro de UX/sync/relatórios. | Manter concluída. |
-| Fase 9D — Fechamento do Gate | Executada. | `LAST_PHASE_RESULT`, `CURRENT_PHASE_HANDOFF`, `ACTIVE_PHASE_PLAN`, `PROJECT_STATUS`, `ROADMAP` e plano da Fase 9 alinhados. | `CONCLUÍDA` | Nenhuma P0/P1 aberta. | Gate fechado; handoff para Fase 10. |
-| Financeiro/DRE/Margem | Limites documentados; ledger gerencial existe, DRE/ROI/margem conclusivos não. | `finance_transactions`, `finance_categories`, docs financeiros e testes bloqueando métricas comerciais indevidas. | `PARCIAL` | Método, período, rateio, fonte explícita e limitações. | Fase futura explícita, sem prometer DRE/ROI agora. |
-| Lotes/Pastos/Desempenho | MVP/capability indicam base parcial. | `pastos`, `lotes`, occupancy, movimentação e relatórios. | `PARCIAL` | Desempenho ampliado/GMD por período e fonte declarada. | Fase futura ou hardening. |
-| KPIs operacionais | Relatórios operacionais existem; KPIs ampliados são planejados. | `operationalSummary`, `Relatorios`, `Home`, docs de KPI/limites financeiros. | `PARCIAL` | KPIs read-only ampliados com fonte, período e limitação. | Fase futura read-only. |
-
----
-
-## Sequência rebaselineada após a Fase 11.5
-
-1. Fase 12 — Fundação Sanitária v2: Persistência, Sync, Schema e Rollout.
-2. Fase 13 — Reprodução Operacional v1.
-3. Fase 14 — Compra/Venda Operacional: Hardening e Lacunas.
-4. Fase 15 — Relatórios/KPIs Operacionais Read-only Ampliados.
-5. Fase 16 — Financeiro Gerencial Explícito.
-6. Fase 17 — Motor de Decisão Assistida.
-7. Fase 18 — Beta Externo / SLC / Hardening de Produto.
-
-Fase 12 permanece não iniciada até novo diagnóstico, commit da 11.5J e atualização explícita do plano ativo.
-
-Justificativa técnica:
-
-- Compra/Venda não deve avançar antes da aplicação real da Agenda Sanitária v2, porque estoque, carência, aptidão e histórico sanitário dependem de evento real/produto executado, não de agenda.
-- Reprodução é domínio estrutural ausente e afeta categoria operacional, estado animal, ciclo produtivo, agenda e decisões comerciais; deve anteceder KPIs e decisão assistida.
-- KPIs e financeiro dependem de fontes consolidadas, períodos, limitações e separação entre fato, intenção e read model.
-- Motor de decisão assistida depende de dados confiáveis, fontes explícitas e limites de não autorização automática.
-
-Fases reclassificadas:
-
-- Compra/Venda deixa de ser Fase 12 e passa a Fase 14.
-- Relatórios/KPIs passam de Fase 13 para Fase 15.
-- Financeiro Gerencial passa de Fase 14 para Fase 16.
-- Motor de Decisão Assistida passa de Fase 15 para Fase 17.
-- Beta Externo/SLC passa de Fase 16 para Fase 18.
-- Reprodução ampliada deixa de ser apenas futuro genérico e passa a Fase 13 — Reprodução Operacional v1.
-
----
-
-## Trilhas residuais contínuas
-
-- Sanitário/reconciliação: apenas hardening residual das Fases 5/6, sem reabrir como fase de produto salvo bug objetivo.
-- Build/testes/DX: higiene residual de warnings, logs e estabilidade de suite.
-- Docs reconciliation: manter alinhamento entre status, roadmap, contratos normativos e handoffs.
-- Compliance regulatório: módulo futuro com fonte oficial, versionamento e separação de alerta vs bloqueio.
-- Eventos/paginação/performance: otimização incremental conforme gargalo real.
-- UX incremental: melhorias sem criar regra crítica na UI.
-
----
-
-## Futuro — Compliance regulatório avançado
-
-Objetivo futuro:
-
-- catálogo regulatório;
-- overlay estadual;
-- biossegurança;
-- feed-ban;
-- doenças notificáveis;
-- alertas documentais.
-
-Requisito:
-
-- fonte oficial;
-- aplicabilidade;
-- versionamento;
-- separação de alerta vs bloqueio;
-- não transformar compliance em evento;
-- não transformar checklist ou ausência de ocorrência em liberação final.
-
----
-
-## Futuro — Reprodução ampliada
-
-Objetivo futuro:
-
-- IATF;
-- IA;
-- cobertura;
-- diagnóstico de gestação;
-- estação de monta;
-- indicadores reprodutivos.
-
-Requisito:
-
-- contrato de domínio;
-- modelagem de eventos;
-- agenda;
-- estado atual;
-- testes;
-- limites bem definidos.
-
----
-
-## Bloqueios estratégicos
+Definir a sequência macro de desenvolvimento. O plano detalhado da fase corrente está em [ACTIVE_PHASE_PLAN.md](../review/ACTIVE_PHASE_PLAN.md), e o estado técnico está em [CURRENT_PHASE_HANDOFF.md](../review/CURRENT_PHASE_HANDOFF.md).
+
+## Princípios
+
+- estabilizar antes de expandir;
+- preservar offline-first, RLS, multi-tenant e `fazenda_id`;
+- manter Agenda, Evento, `state_*`, Protocolo e Conformidade semanticamente separados;
+- não automatizar decisão crítica sem fonte técnica explícita;
+- não iniciar a Fase 13 antes do fechamento formal da Fase 12.
+
+## Fase 12 — estado vigente
+
+1. Validação real da Conformidade Sanitária v2 — **concluída**.
+2. Documentação curta do Sanitário v2 local — **concluída**.
+3. Sync remoto sanitário v2 — **em andamento**.
+   1. Diagnóstico schema local/remoto — **concluído**.
+   2. Migrations necessárias — **concluído**.
+   3. RLS/multi-tenant/fazenda — **concluído**.
+   4. Agenda sanitária — **implementada; E2E parcial**.
+   5. `agenda_animais` — **implementada; E2E parcial**.
+   6. Evento sanitário — **implementado; E2E pendente**.
+   7. Detalhe sanitário — **implementado; E2E pendente**.
+   8. Histórico externo/documental — **próximo incremento**.
+   9. Movimento de estoque sanitário — **pendente**.
+   10. Retry/replay/idempotência — **implementado**.
+   11. Sucesso parcial — **local validado; remoto pendente**.
+   12. Conflito multi-dispositivo — **plataforma bloqueada**.
+   13. Recalcular Conformidade após pull — **pendente**.
+4. Produto sanitário técnico e fonte por campo.
+5. Correção append-only sanitária.
+6. Carência operacional derivada.
+7. Fechamento formal da Fase 12.
+8. Fase 13 — Reprodução Operacional v1.
+9. Fase 14 — Compra/Venda Operacional.
+10. Fase 15 — KPIs/Relatórios.
+11. Fase 16 — Financeiro Gerencial.
+12. Fase 17 — Decisão Assistida.
+13. Fase 18 — Beta/Hardening.
+
+O item 3 não está integralmente concluído. A Fase 12 permanece ativa.
+
+## Próximo incremento funcional
+
+O item 3.8 sincronizará histórico sanitário de entrada `external_declared` e `external_documented`, preservando origem e evidência.
+
+Guardrails:
+
+- comprovação crítica por `external_documented` exige referência documental;
+- fila compartilhada, UUID, idempotência e isolamento por `fazenda_id`;
+- pull não destrutivo;
+- replay, conflito e sucesso parcial explícitos;
+- recálculo conservador da Conformidade após pull;
+- nenhuma criação de Agenda ou Evento executado;
+- nenhum movimento de estoque, cálculo de carência ou liberação operacional;
+- gate remoto desligado, feature flag local `false` e rollout não autorizado.
+
+## Sequência após 3.8
+
+```txt
+3.9 Movimento de estoque sanitário
+→ 3.13 recálculo explícito da Conformidade após pull
+→ reexecução dos E2Es remotos quando a plataforma estiver estável
+→ 4 Produto técnico e fonte por campo
+→ 5 Correção append-only
+→ 6 Carência operacional
+→ 7 Fechamento da Fase 12
+```
+
+## Risco de rollout
+
+`SANITARIO_V2_E2E_PLATFORM_BLOCKED` bloqueia o rollout do Sync Sanitário v2. O PostgreSQL produz o conflito esperado `SQLSTATE 40001 / SANITARIO_AGENDA_REVISION_CONFLICT`, mas a resposta não retorna pelo caminho Edge Function/PostgREST/gateway antes do timeout.
+
+Não há evidência atual de defeito no SQL ou na regra de domínio. Não aumentar timeout nem alterar RPC sem nova evidência. O desenvolvimento pode continuar sob gates desligados.
+
+## Fases anteriores
+
+Fases 1 a 11 e a Fase 11.5 permanecem concluídas conforme seus relatórios e evidências históricas. Esses documentos preservam a cronologia, mas não substituem o plano ativo da Fase 12.
+
+## Sequência futura
+
+| Fase | Escopo | Condição de início |
+|---|---|---|
+| 13 | Reprodução Operacional v1 | Fase 12 formalmente encerrada |
+| 14 | Compra/Venda Operacional | Fontes sanitárias operacionais estabilizadas |
+| 15 | KPIs/Relatórios | Fontes, períodos e limitações explícitos |
+| 16 | Financeiro Gerencial | Ledger e critérios gerenciais explícitos |
+| 17 | Decisão Assistida | Dados confiáveis e limites de não autorização |
+| 18 | Beta/Hardening | Gates técnicos e operacionais atendidos |

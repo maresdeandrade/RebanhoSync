@@ -1,11 +1,7 @@
 ```markdown
 # Sanitário — RebanhoSync
 
-Atualizado em: 2026-07-18
-**Baseline Commit (commit-base do worktree):** `dbe37a8`
-**Baseline funcional documentado:** `fcf42bc`
-
-A validação passou no worktree local baseado em dbe37a8. O commit funcional que contém a implementação validada no worktree é fcf42bc. evidenceReference: validação local executada com Vitest, ESLint e build Vite em 2026-07-18. A evidência textual local não garante existência, integridade ou disponibilidade futura de arquivo remoto.
+Atualizado em: 2026-07-30
 
 ## Objetivo
 
@@ -466,50 +462,22 @@ Regras:
 
 ### Limitações atuais
 
-Implementado localmente na 12E4:
+O Sync Sanitário v2 está implementado sob gates desligados, mas não concluído:
 
-- stores Dexie `ops_sanitario_agenda_v2`, `ops_sanitario_agenda_animais_v2` e `ops_sanitario_agenda_closures_v2`;
-- pull remoto por `fazenda_id`, sem pull global, na ordem agenda -> animais -> closures;
-- merge/upsert preservando `updated_at`, `deleted_at` quando existente, metadata e vínculos;
-- push controlado somente para `sanitario_agenda_closures_v2`;
-- push de closure na 12E4 bloqueia `executed_with_event`, `partially_executed_with_event` e qualquer `execution_evento_id` preenchido;
-- conflito de closure ativa duplicada tratado como rejeição rastreável;
-- sucesso parcial de closures sem perda silenciosa local.
+- agenda e `agenda_animais`: implementados, com E2E remoto parcial;
+- evento e detalhe: implementados, com E2E remoto pendente;
+- retry/replay/idempotência: implementados, com validação remota parcial;
+- sucesso parcial: validado localmente, com E2E remoto pendente;
+- conflito multi-dispositivo: código e SQL validados, plataforma bloqueada;
+- histórico externo/documental: próximo incremento;
+- movimento de estoque sanitário: pendente;
+- recálculo explícito da Conformidade após pull: pendente.
 
-Hardening implementado na 12E5:
+O gate remoto está desligado, a feature flag local é `false` e o rollout não está autorizado. Produção não foi alterada.
 
-- `sync_pull_cursors` local guarda cursor por tabela/escopo;
-- ProductClass v2, catalogo tecnico sanitario v2 com `updated_at` e Agenda v2 usam pull incremental por `updated_at`;
-- full fetch inicial continua possivel quando cursor nao existe;
-- tombstones `deleted_at` continuam preservados por merge/upsert;
-- `sanitario_produto_fontes_v2` permanece full fetch/merge por nao possuir `updated_at`;
-- falha de rede em closure preserva `queue_ops` para retry;
-- closure aplicada sai da fila; closure rejeitada fica rastreavel em `queue_rejections`;
-- conflito de closure duplicada dispara reconciliacao por pull da Agenda v2;
-- `catalog_*` nao e superficie de push;
-- `state_*` nao e superficie direta de push;
-- agenda/animais v2 permanecem pull-only;
-- closure pushavel continua restrita a `closed_without_execution`, `cancelled` ou `dismissed`, sempre sem `execution_evento_id`.
+`SANITARIO_V2_E2E_PLATFORM_BLOCKED` impede rollout: o PostgreSQL gera o conflito esperado `SQLSTATE 40001`, mas a resposta não retorna pelo caminho Edge Function/PostgREST/gateway antes do timeout. Não há evidência atual de defeito no SQL ou na regra de domínio.
 
-Gate para 12F:
-
-- iniciar protocolos curatoriais somente com P0 zerado;
-- baseline funcional, sync-batch, lint e build verdes;
-- ProductClass v2 e catalogo tecnico disponiveis offline;
-- Agenda v2 estabilizada como intencao;
-- closure sem execucao preservada;
-- carencia ativa continua nascendo apenas de evento executado com produto/fonte tecnica.
-
-Ainda não implementado após a 12F2:
-
-- RPC/Edge Function operacional para Agenda v2;
-- UI operacional da Agenda v2.
-- push de `sanitario_agenda_v2` e `sanitario_agenda_animais_v2`.
-- seed/importacao ativa de protocolos v2;
-- validacao tecnica dos payloads 12F2 contra schema real;
-- agenda automatica a partir de protocolos v2.
-- promocao de qualquer item para `agenda_allowed`.
-- carencia ativa derivada de protocolo ou agenda.
+Próximo incremento: 3.8 — push/pull de `external_declared` e `external_documented`, preservando origem, evidência, UUID, idempotência, tenant/`fazenda_id` e pull não destrutivo. O incremento não cria Agenda, Evento executado, estoque, carência ou liberação operacional.
 
 ---
 
@@ -852,52 +820,19 @@ Relatórios não devem transformar sinal em fonte primária.
 
 ### Robustez e staging
 
-A Fase 6 deve validar:
+O Sync Sanitário v2 usa o staging `zqloazqzhwauamcejmuz`. Produção não foi alterada, o gate remoto permanece desligado, a feature flag local permanece `false`, o rollout não foi autorizado e não restaram fixtures sintéticas.
 
-* multi-tenant;
-* concorrência;
-* sync;
-* RLS;
-* retry;
-* recompute;
-* baixa de estoque idempotente;
-* agenda corretiva;
-* ocorrência + pendência;
-* protocolos versionados;
-* eventos sanitários rastreáveis.
-
-Essa fase deve validar uso real, não criar novo domínio.
+Validações locais cobrem multi-tenant, RLS, retry/replay, idempotência, sucesso parcial, cutover e reconcile. O E2E remoto permanece parcial pelo bloqueio externo descrito no handoff atual.
 
 ### Roadmap sanitário consolidado
 
-| Fase | Escopo | Status esperado |
-| --- | --- | --- |
-| Fase 1 | Protocolos, versionamento, legado `protocol_item_id` | Encerrada |
-| Fase 2 | Rastreabilidade sanitária operacional | Encerrada |
-| Fase 3 | Consolidação de histórico, relatórios e sinais | Encerrada |
-| Fase 4 | Clínica, compliance, checklists, biossegurança, doenças notificáveis | Encerrada |
-| Fase 5 | Exceções, correções e reconciliação sanitária | Concluída; hardening residual |
-| Fase 6 | Robustez sanitária em staging/RLS/sync | Hardening residual |
-| Fase 11.5 | Agenda Sanitária v2 em contratos puros | Fechada localmente; persistência/sync/schema pendentes |
-| Fase 12D0 | Modelo canônico documental — protocolo/produto/fonte técnica | Concluída |
-| Fase 12D1 | Schema v2 e contratos TypeScript mínimos persistidos | Concluída |
-| Fase 12D2 | Builders/adapters puros de snapshots técnicos | Concluída |
-| Fase 12D3 | Extração curatorial de protocolos candidatos v2 — matrizes revisáveis | Concluída — rebaseline conceitual aplicado em 12D4 |
-| Fase 12D4 | Rebaseline conceitual: ProductClass, enums canônicos, ExecutionProductPolicy | Concluída |
-| Fase 12D5 | Contratos TypeScript de ProductClass, ProductClassGroup e ExecutionProductPolicy | Concluída |
-| Fase 12D6 | Schema SQL, RLS e Tabelas no Banco de Dados para ProductClass | Concluída |
-| Fase 12E0 | Diagnóstico técnico e contrato de offline/sync | Concluída |
-| Fase 12E1 | Dexie schema/stores para ProductClass v2 | Concluída localmente |
-| Fase 12E2 | Pull remoto ProductClass v2 para Dexie e baseline P1 | Concluída localmente |
-| Fase 12E3 | Catálogo técnico sanitário v2 ampliado | Concluída localmente |
-| Fase 12E4 | Agenda Sanitária v2 offline/sync controlado | Concluída localmente |
-| Fase 12E5 | Hardening offline/sync sanitario v2 | Concluída localmente |
-| Fase 12F0 | Estruturacao curatorial dos Protocolos Sanitarios v2 como catalogo candidato | Concluída localmente |
-| Fase 12F1 | Normalizacao dos Protocolos Sanitarios v2 em artefatos tecnicos candidatos | Concluída localmente |
-| Fase 12F2 | Payloads candidatos de seed/import dos Protocolos Sanitarios v2 | Concluída localmente |
-| Fase 12F3-12F8 | Validacao, adapter, decisao/migration ProductClassGroup e revalidacao dos 6 itens antiparasitarios | Concluídas localmente; sem seed/import real |
-| Fase 12G | Importador controlado dos Protocolos Sanitarios v2 usando payload canonico 12F10 | Concluída localmente; apply real local executado e dry-run pos-apply idempotente |
-| Fase 12H | Leitura read-only dos Protocolos Sanitarios v2 importados | Concluída localmente; consultas de banco e resumo sem escrita operacional |
+- Conformidade Sanitária v2 local: concluída e validada.
+- Documentação curta do Sanitário v2 local: concluída.
+- Sync Remoto Sanitário v2: em andamento.
+- Próximo incremento: 3.8 — histórico externo/documental.
+- Depois: 3.9 estoque, 3.13 recálculo explícito após pull, E2Es remotos, produto/fonte por campo, correção append-only, carência operacional e fechamento formal da Fase 12.
+
+O roadmap macro e os estados por subitem ficam em [ROADMAP.md](../product/ROADMAP.md). O estado técnico detalhado fica em [CURRENT_PHASE_HANDOFF.md](../review/CURRENT_PHASE_HANDOFF.md).
 
 ### ProductClass v2 local/offline
 
@@ -944,7 +879,7 @@ Contrato atual:
 
 ### Agenda Sanitária v2 local/offline
 
-A Fase 12E4 criou a base local/sync controlada da Agenda Sanitária v2:
+A base local/sync da Agenda Sanitária v2 inclui:
 
 - `ops_sanitario_agenda_v2`;
 - `ops_sanitario_agenda_animais_v2`;
@@ -955,15 +890,17 @@ Regras atuais:
 - Agenda v2 é operacional por fazenda e usa pull por `fazenda_id`;
 - não existe catálogo global de agenda;
 - pull respeita ordem agenda -> animais -> closures;
-- agenda/animais v2 permanecem pull por fazenda nesta etapa;
-- push é permitido somente para closures operacionais;
-- push de closure operacional nesta etapa significa apenas `closed_without_execution`, `cancelled` ou `dismissed`, sempre sem `execution_evento_id`;
+- push/pull de agenda e animais foi implementado sob gate, com E2E remoto parcial;
+- núcleo factual de evento/detalhe foi implementado, com E2E remoto pendente;
+- closure administrativa continua separada da execução factual;
 - closure fecha ou cancela intenção e não cria evento sanitário executado;
 - closure não cria baixa de estoque;
 - closure não calcula carência ativa;
 - closure não libera venda, abate, leite ou aptidão operacional;
 - ProductClass v2 e catálogo técnico sanitário v2 continuam pull-only.
-- A partir da 12E5, pulls sanitarios v2 usam cursor incremental por `updated_at` quando a tabela possui esse campo; `sanitario_produto_fontes_v2` permanece full fetch/merge por contrato sem `updated_at`.
+- pulls sanitários v2 usam merge não destrutivo e cursor incremental quando o contrato da tabela possui `updated_at`;
+- Dexie v28 inclui a relação factual `event_eventos_animais`;
+- cutover local usa manifesto `PREPARED`, `APPLYING`, `APPLIED` e `FAILED`.
 
 ### Central Sanitária v2 e superfícies contextuais
 

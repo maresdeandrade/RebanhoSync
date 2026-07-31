@@ -1,146 +1,99 @@
-```markdown
-# Offline Sync — RebanhoSync
+# Offline e sync — RebanhoSync
 
-Atualizado em: 2026-05-31  
-**Baseline Commit:** `32d7779`
+Atualizado em: 2026-07-30
 
-## Objetivo
+## Contrato geral
 
-Definir o contrato técnico para comportamento offline-first, sync, rollback e reconciliação local-remota.
+O fluxo é local-first e usa uma única fila compartilhada:
 
----
-
-## Princípios
-
-* **Local-first:** A operação deve funcionar localmente primeiro quando aplicável.
-* **Idempotência:** Toda sincronização deve ser estritamente idempotente.
-* **Integridade:** Lógicas de retry nunca podem duplicar eventos, itens de agenda ou baixas de insumos.
-* **Tratamento de Falhas:** Falhas parciais devem ser tratadas de forma explícita e reconciliável.
-* **Determinismo:** O rollback deve ser determinístico quando houver operação otimista.
-* **Isolamento:** O estado local não pode, sob circunstância alguma, violar o isolamento multi-tenant por `fazenda_id`.
-
----
-
-## Conceitos
-
-### 1. Gesture
-Representa uma ação operacional isolada do usuário.  
-*Diretriz:*
 ```txt
-1 ação operacional ──> 1 gesture idempotente
-
+ação local
+→ queue_gestures
+→ queue_ops
+→ sync-batch
+→ resultado por operação
+→ worker/reconcile
+→ pull/merge não destrutivo
 ```
 
-### 2. Queue (Fila Local)
+Regras:
 
-Fila local de operações pendentes de envio. Deve preservar obrigatoriamente:
+- retry/replay reutiliza identidades estáveis;
+- sucesso parcial é explícito;
+- fatos aceitos não sofrem rollback destrutivo;
+- dependências bloqueadas não entram em loop agressivo;
+- pull respeita `fazenda_id`, cursores e tombstones;
+- `catalog_*` permanece pull-only quando definido pelo contrato;
+- `state_*` não é superfície direta de push.
 
-* Ordem cronológica e de dependência necessária;
-* Payload de dados original;
-* Metadados de controle;
-* Status atual do processamento;
-* Contador de tentativas de retry;
-* Registro detalhado de erros;
-* Vínculo com snapshots de rollback quando aplicável.
+## Sync Sanitário v2
 
-### 3. Before Snapshot
+### Identidade e revisão
 
-Cópia do estado anterior à execução local. É de uso **obrigatório** sempre que uma operação otimista alterar o estado local antes da confirmação do servidor remoto.
+- UUID real para entidades destinadas ao remoto;
+- `client_op_id` identifica a tentativa idempotente;
+- `client_tx_id` agrupa a transação do cliente;
+- `domain_op_id` identifica a operação de domínio;
+- `expected_revision` protege transições concorrentes;
+- ledger remoto comprova replay.
 
-### 4. Reconcile
+### Comandos
 
-Processo que compara o resultado do processamento remoto com o estado local e ajusta divergências.
+- `create_agenda`;
+- `replace_agenda_animals`;
+- `apply_factual_core`;
+- `close_agenda`.
 
-> ⚠️ **Restrição:** Nunca apague ou mascare erros silenciosamente durante a reconciliação.
+### Resultados do worker
 
----
+- `APPLIED`;
+- `RETRYABLE`;
+- `REJECTED`;
+- `CONFLICT`;
+- `BLOCKED_DEPENDENCY`.
 
-## Contratos Operacionais
+O worker não transforma timeout em conflito confirmado. Resultado desconhecido ou identidade divergente permanece rastreável e elegível para reconcile seguro.
 
-### Idempotência
+### Dexie e cutover
 
-Uma operação repetida em decorrência de retry deve resultar obrigatoriamente em:
+- schema Dexie v28;
+- store factual `event_eventos_animais`;
+- manifesto `PREPARED`, `APPLYING`, `APPLIED` e `FAILED`;
+- cutover idempotente por domínio/versão;
+- preservação das filas de outros domínios;
+- feature flag local fail-closed.
 
-1. Mesmo efeito final no estado do sistema; ou
-2. Rejeição segura por duplicidade já conhecida.
+### Pull/reconcile
 
-*Garantia: Nunca deve gerar duplicidade operacional ou registros concorrentes.*
+O pull sanitário faz merge não destrutivo. Agenda/animais/closure e núcleo factual são reconciliados sem apagar fatos locais pendentes ou remotos aceitos.
 
-### Rollback
+A Conformidade não é sincronizada como fonte primária. Seu recálculo explícito após pull é o item 3.13 e permanece pendente; o item 3.8 deve recalculá-la conservadoramente no recorte do histórico externo/documental.
 
-Mecanismo de reversão que atua quando a operação falha na ponta remota. Deve:
+## Estado de validação
 
-* Restaurar integralmente o estado anterior do banco local;
-* Preservar a trilha e o log do erro original;
-* Expor explicitamente falhas parciais;
-* Impedir o travamento ou quebra da fila local;
-* Evitar a geração de novos fatos históricos falsos ou artificiais.
+- agenda e `agenda_animais`: implementados, com E2E remoto parcial;
+- evento e detalhe: implementados, com E2E remoto pendente;
+- retry/replay/idempotência: implementados, com validação remota parcial;
+- sucesso parcial: validado localmente, remoto pendente;
+- conflito multi-dispositivo: código e SQL validados, plataforma bloqueada.
 
-### Sucesso Parcial
+`SANITARIO_V2_E2E_PLATFORM_BLOCKED` ocorre porque o PostgreSQL produz `SQLSTATE 40001 / SANITARIO_AGENDA_REVISION_CONFLICT`, mas a resposta não retorna pelo caminho Edge Function/PostgREST/gateway antes do timeout. O worker recebe `RETRYABLE / SANITARIO_RPC_TIMEOUT`.
 
-Cenários de sucesso parcial devem ser tratados como estados explícitos do fluxo. Jamais assuma que a transação inteira foi concluída se apenas uma fração do lote foi aceita pelo servidor.
+Não aumentar timeout nem alterar RPC sem nova evidência.
 
-### Pull Seletivo
+## Ativação
 
-A busca e atualização de dados remotos deve respeitar estritamente:
+- staging: `zqloazqzhwauamcejmuz`;
+- produção: não alterada;
+- gate remoto: desligado;
+- feature flag local: `false`;
+- rollout: não autorizado;
+- fixtures sintéticas residuais: zero.
 
-* O escopo do `fazenda_id` ativo;
-* As permissões e papéis do usuário autenticado;
-* Timestamps de controle e versionamento de registros;
-* Tabelas explicitamente autorizadas;
-* A integridade dos read models locais.
+## Próximo incremento
 
----
+3.8 — sincronizar `external_declared` e `external_documented` pela fila compartilhada, com origem/evidência, idempotência, tenant/`fazenda_id`, pull não destrutivo, replay, conflito e sucesso parcial.
 
-## Fronteiras de Fonte de Verdade
+O incremento não cria Agenda, Evento executado, estoque, carência ou liberação operacional.
 
-| Pergunta Operacional | Fonte Correta de Verdade |
-| --- | --- |
-| O que foi executado? | Tabelas de `eventos` + tabelas de detalhes (`detail tables`). |
-| O que está planejado/pendente? | Itens de `agenda` abertos. |
-| Qual é o estado atual do ecossistema? | Tabelas e views de read model `state_*`. |
-| Qual regra gera novas tarefas? | Modelos de `protocolo` / configurações estáticas. |
-| Qual sinal visual exibir na interface? | Camadas de `tags/sinais/insights` (apenas como auxiliares de UX). |
-
----
-
-## Riscos Operacionais e Técnicos
-
-* Duplicação indesejada de eventos históricos durante retries automáticos;
-* Conclusão de itens de agenda sem o registro do evento real correspondente;
-* Rollbacks parciais defeituosos que deixam o estado local corrompido ou incoerente;
-* Travamento da fila local (`queue`) sem feedback visual ou tratamento para o usuário;
-* Duplicação em baixa de insumos ou lançamentos de estoque;
-* Sincronização aceitar ou processar payloads com dados cruzados entre fazendas (*cross-tenant*);
-* Divergência persistente e falta de reconciliação entre o read model local e o banco remoto.
-
----
-
-## Diretrizes de Validação Mínima
-
-### Para patches puramente locais:
-
-```bash
-rtk pnpm test -- caminho/do/teste.test.ts
-
-```
-
-### Para alterações amplas na arquitetura de sync/offline:
-
-```bash
-rtk pnpm run lint
-rtk pnpm test
-rtk pnpm run build
-
-```
-
-### Se a alteração envolver sync-batch, RLS ou contratos do Supabase:
-
-```bash
-rtk node scripts/codex/validate-supabase-baseline-functional.mjs
-
-```
-
-```
-
-```
+Detalhes: [plano ativo](../review/ACTIVE_PHASE_PLAN.md) e [handoff](../review/CURRENT_PHASE_HANDOFF.md).

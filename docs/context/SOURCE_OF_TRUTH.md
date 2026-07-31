@@ -1,11 +1,7 @@
 ```md
 # Source of Truth — RebanhoSync
 
-Atualizado em: 2026-07-18
-**Baseline Commit (commit-base do worktree):** `dbe37a8`
-**Baseline funcional documentado:** `fcf42bc`
-
-A validação passou no worktree local baseado em dbe37a8. O commit funcional que contém a implementação validada no worktree é fcf42bc. evidenceReference: validação local executada com Vitest, ESLint e build Vite em 2026-07-18. A evidência textual local não garante existência, integridade ou disponibilidade futura de arquivo remoto.
+Atualizado em: 2026-07-30
 
 ## Objetivo
 
@@ -57,6 +53,8 @@ Em caso de conflito, confiar nesta ordem:
 | Demanda/preview sanitário | derivado operacional | agrupamento, simulação e planejamento | histórico, agenda persistida, evento |
 | Histórico sanitário de entrada | fato anterior à entrada, com origem/evidência | pré-checagem conservadora e auditoria documental | execução local, baixa de estoque, carência automática |
 | Fechamento de agenda | estado administrativo da intenção | encerramento/cancelamento/dispensa da tarefa | fato sanitário executado |
+| Conformidade Sanitária v2 | read model local derivado/somente leitura | leitura conservadora por animal, lote, protocolo e item | fonte primária, liberação operacional |
+| Status de sync | estado técnico de transporte/reconcile | retry, suporte e auditoria técnica | prova de execução, conformidade ou liberação |
 | Tags/sinais/insights | Auxiliar visual/consulta | alerta, filtro, priorização, painel read-only | decisão crítica, fonte primária |
 
 ---
@@ -91,6 +89,8 @@ Agenda representa intenção operacional.
 * O animal está apto para venda/abate?
 
 > ⚠️ **Regra:** Agenda concluída sem evento vinculado **não deve ser tratada como fato histórico confiável**.
+
+Cancelamento e dispensa encerram a intenção e não criam fato sanitário.
 
 ### Agenda Sanitária v2
 
@@ -258,6 +258,13 @@ Uso correto:
 * declaração sem documento gera aviso ou pendência documental;
 * legado ambíguo não libera regra crítica.
 
+Regras adicionais:
+
+* `external_declared` não comprova regra crítica;
+* `external_documented` exige referência documental para comprovação crítica;
+* execução parcial vale somente para animais vinculados ao Evento;
+* resposta ou status de sync não altera a força probatória da origem.
+
 Não pode:
 
 * criar execução local;
@@ -315,6 +322,8 @@ Tags, sinais e insights são auxiliares.
 | O animal está livre de carência? | Fonte técnica explícita de carência consolidada |
 | O animal está pronto para venda? | Fonte técnica/comercial explícita |
 | O animal está apto para abate? | Fonte técnica explícita |
+| A execução parcial vale para quais animais? | Relação factual Evento–Animal |
+| O sync foi aplicado? | Resultado técnico por operação; não prova execução sanitária por si só |
 | Qual foi o ganho de peso no período? | Eventos de pesagem com datas válidas |
 | Qual é o peso atual confiável? | Fonte técnica explícita de peso atual confiável |
 
@@ -332,6 +341,8 @@ Não automatizar nem afirmar como certo:
 * protocolo executado;
 * agenda concluída como fato histórico;
 * histórico externo declarado como comprovação crítica;
+* histórico externo documentado sem referência como comprovação crítica;
+* resposta de sync como liberação de venda, abate, leite ou aptidão;
 * contexto operacional como fonte técnica primária;
 * IATF pendente amplo;
 * conformidade regulatória universal;
