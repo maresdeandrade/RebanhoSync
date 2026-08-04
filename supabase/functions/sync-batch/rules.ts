@@ -5,6 +5,124 @@ export interface Operation {
   record: Record<string, unknown>;
 }
 
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+const SANITARY_MOVEMENT_FINGERPRINT_FIELDS = [
+  "id",
+  "fazenda_id",
+  "insumo_id",
+  "insumo_lote_id",
+  "tipo",
+  "quantidade_base",
+  "unidade_base",
+  "occurred_at",
+  "source_evento_id",
+  "source_evento_dominio",
+  "animal_id",
+  "rebanho_lote_id",
+  "pasto_id",
+  "observacoes",
+  "custo_unitario_snapshot",
+  "custo_total_snapshot",
+  "payload",
+  "domain_op_id",
+] as const;
+
+function sanitaryMovementFingerprint(record: Record<string, unknown>) {
+  const canonicalize = (value: unknown): unknown => {
+    if (Array.isArray(value)) return value.map(canonicalize);
+    if (isRecord(value)) {
+      return Object.fromEntries(
+        Object.keys(value).sort().map((key) => [key, canonicalize(value[key])]),
+      );
+    }
+    return value ?? null;
+  };
+  return JSON.stringify(canonicalize(Object.fromEntries(
+    SANITARY_MOVEMENT_FINGERPRINT_FIELDS.map((field) => [
+      field,
+      record[field] ?? null,
+    ]),
+  )));
+}
+
+export function sameSanitarioInventoryMovement(
+  existing: Record<string, unknown>,
+  incoming: Record<string, unknown>,
+) {
+  return sanitaryMovementFingerprint(existing) ===
+    sanitaryMovementFingerprint(incoming);
+}
+
+export function validateSanitarioInventoryMovementRecord(
+  op: Operation,
+  fazendaId: string,
+): string | null {
+  if (
+    op.table !== "insumo_movimentacoes" ||
+    op.action !== "INSERT" ||
+    op.record?.tipo !== "consumo_sanitario"
+  ) return null;
+  const record = op.record;
+  if (
+    (record.fazenda_id != null && record.fazenda_id !== fazendaId) ||
+    !UUID_PATTERN.test(op.client_op_id) ||
+    !UUID_PATTERN.test(String(record.id ?? "")) ||
+    !UUID_PATTERN.test(String(record.insumo_id ?? "")) ||
+    !UUID_PATTERN.test(String(record.insumo_lote_id ?? "")) ||
+    !UUID_PATTERN.test(String(record.source_evento_id ?? "")) ||
+    !UUID_PATTERN.test(String(record.domain_op_id ?? "")) ||
+    record.source_evento_dominio !== "sanitario" ||
+    typeof record.quantidade_base !== "number" ||
+    !Number.isFinite(record.quantidade_base) ||
+    record.quantidade_base <= 0 ||
+    typeof record.unidade_base !== "string" ||
+    record.unidade_base.length === 0
+  ) {
+    return "SANITARIO_INVENTORY_MOVEMENT_INVALID";
+  }
+  return null;
+}
+
+export function validateSanitarioInventoryMovementSource(
+  movement: Record<string, unknown>,
+  event: Record<string, unknown> | null,
+  detail: Record<string, unknown> | null,
+): string | null {
+  if (!event || event.deleted_at != null || event.dominio !== "sanitario") {
+    return "SANITARIO_INVENTORY_SOURCE_EVENT_INVALID";
+  }
+  if (event.sanitario_sync_v2_nature !== "primary_execution") {
+    return "SANITARIO_INVENTORY_SOURCE_NOT_PRIMARY_EXECUTION";
+  }
+  const eventPayload = isRecord(event.payload) ? event.payload : {};
+  const product = isRecord(eventPayload.product) ? eventPayload.product : {};
+  if (
+    eventPayload.schema !== "sanitary_agenda_execution_v2" ||
+    eventPayload.entry_history_source === "external_declared" ||
+    eventPayload.entry_history_source === "external_documented"
+  ) {
+    return "SANITARIO_INVENTORY_EXTERNAL_OR_NON_EXECUTION_SOURCE";
+  }
+  if (!detail || detail.deleted_at != null) {
+    return "SANITARIO_INVENTORY_DETAIL_REQUIRED";
+  }
+  if (
+    typeof product.productId !== "string" ||
+    product.productId.length === 0 ||
+    product.productId !== detail.produto_sanitario_v2_id ||
+    detail.insumo_id !== movement.insumo_id ||
+    detail.estoque_lote_id !== movement.insumo_lote_id ||
+    product.inventoryLotId !== movement.insumo_lote_id ||
+    product.quantityConsumed !== movement.quantidade_base ||
+    product.unit !== movement.unidade_base
+  ) {
+    return "SANITARIO_INVENTORY_CONTENT_MISMATCH";
+  }
+  return null;
+}
+
 export function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }

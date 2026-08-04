@@ -1,7 +1,19 @@
 import { buildInventoryCostSnapshot } from "@/lib/inventory/costing";
+import { env } from "@/lib/env";
 import { db as defaultDb, type OfflineDB } from "@/lib/offline/db";
+import {
+  buildApplyFactualCoreOperation,
+  buildSanitarioV2InventoryMovementOperation,
+  createSanitarioV2Identity,
+  isSanitarioV2PushEnabled,
+  SANITARIO_V2_CONTRACT_VERSION,
+  validateSanitarioV2Enqueue,
+  writeSanitarioV2Queue,
+  type SanitarioV2OperationIdentity,
+} from "@/lib/offline/sanitarioV2Cutover";
 import type {
   Evento,
+  EventoAnimalLocalV2,
   EventoSanitario,
   InsumoMovimentacao,
   InsumoUnidadeBaseEnum,
@@ -37,6 +49,10 @@ export type ExecuteSanitaryAgendaInputV2 = {
     userConfirmedStockMovement?: boolean;
     userConfirmedWithdrawal?: boolean;
   };
+  sync?: {
+    clientId: string;
+    projectRef: string;
+  };
 };
 
 export type ExecuteSanitaryAgendaResultV2 = {
@@ -55,11 +71,15 @@ export type SanitaryAgendaExecutionDbV2 = Pick<
   | "ops_sanitario_agenda_animais_v2"
   | "event_eventos"
   | "event_eventos_sanitario"
+  | "event_eventos_animais"
   | "state_insumos"
   | "state_insumo_lotes"
   | "state_insumo_movimentacoes"
   | "catalog_sanitario_produto_carencia_rules_v2"
   | "catalog_sanitario_produtos_v2"
+  | "sync_sanitario_v2_cutovers"
+  | "queue_gestures"
+  | "queue_ops"
   | "transaction"
 >;
 
@@ -122,8 +142,36 @@ function addDays(dateTime: string, days: number | null): string | null {
   return date.toISOString().slice(0, 10);
 }
 
-function eventIdFor(input: Pick<ExecuteSanitaryAgendaInputV2, "agendaId" | "clientOpId">) {
-  return `sanitary-agenda-execution-v2:${input.agendaId}:${input.clientOpId}`;
+function eventIdFor(
+  input: Pick<ExecuteSanitaryAgendaInputV2, "agendaId" | "clientOpId">,
+  syncEnabled: boolean,
+) {
+  return syncEnabled
+    ? input.clientOpId
+    : `sanitary-agenda-execution-v2:${input.agendaId}:${input.clientOpId}`;
+}
+
+function createUuid() {
+  const id = globalThis.crypto?.randomUUID?.();
+  if (!id) throw new Error("SANITARY_AGENDA_EXECUTION_UUID_UNAVAILABLE");
+  return id;
+}
+
+function resolveConfiguredSync(input: ExecuteSanitaryAgendaInputV2) {
+  if (input.sync) return input.sync;
+  if (typeof localStorage === "undefined") return null;
+  let projectRef: string;
+  try {
+    projectRef = new URL(env.supabaseUrl).hostname.split(".")[0] ?? "";
+  } catch {
+    return null;
+  }
+  if (!projectRef || !isSanitarioV2PushEnabled(projectRef)) return null;
+  const clientStorageKey = "gestao_agro_client_id";
+  const existingClientId = localStorage.getItem(clientStorageKey);
+  const clientId = existingClientId ?? `browser:${createUuid()}`;
+  if (!existingClientId) localStorage.setItem(clientStorageKey, clientId);
+  return { clientId, projectRef };
 }
 
 function productRequirementKind(agenda: SanitarioAgendaLocalV2): ProductRequirementKindV2 {
@@ -338,11 +386,16 @@ function explicitWithdrawalRule(
   };
 }
 
-function syncMeta(input: ExecuteSanitaryAgendaInputV2, now: string) {
+function syncMeta(
+  input: ExecuteSanitaryAgendaInputV2,
+  now: string,
+  identity?: SanitarioV2OperationIdentity,
+  clientId = "sanitary-agenda-execution-v2",
+) {
   return {
-    client_id: "sanitary-agenda-execution-v2",
-    client_op_id: input.clientOpId,
-    client_tx_id: null,
+    client_id: clientId,
+    client_op_id: identity?.clientOpId ?? input.clientOpId,
+    client_tx_id: identity?.clientTxId ?? null,
     client_recorded_at: now,
     server_received_at: now,
     created_at: now,
@@ -365,11 +418,24 @@ function buildRecords(input: {
     costUnit: number | null;
     costTotal: number | null;
   } | null;
+  factualIdentity?: SanitarioV2OperationIdentity;
+  movementIdentity?: SanitarioV2OperationIdentity;
+  clientId?: string;
 }) {
-  const { request, agenda, executedAt, targetAnimalIds, withdrawal, inventory } = input;
+  const {
+    request,
+    agenda,
+    executedAt,
+    targetAnimalIds,
+    withdrawal,
+    inventory,
+    factualIdentity,
+    movementIdentity,
+  } = input;
   const now = new Date().toISOString();
-  const meta = syncMeta(request, now);
-  const eventId = eventIdFor(request);
+  const meta = syncMeta(request, now, factualIdentity, input.clientId);
+  const movementMeta = syncMeta(request, now, movementIdentity, input.clientId);
+  const eventId = eventIdFor(request, Boolean(factualIdentity));
   const productName = request.product?.productName.trim() || "Produto não informado";
   const productSnapshot = {
     productId: request.product?.productId ?? null,
@@ -381,6 +447,9 @@ function buildRecords(input: {
     dose: request.application?.dose ?? null,
     doseUnit: request.application?.doseUnit ?? null,
     route: request.application?.route ?? null,
+    inventoryLotId: inventory?.inventoryLotId ?? null,
+    quantityConsumed: request.product?.quantityConsumed ?? null,
+    unit: inventory?.unit ?? null,
   };
   const payload = {
     schema: "sanitary_agenda_execution_v2",
@@ -425,6 +494,10 @@ function buildRecords(input: {
     sanitario_caso_id: null,
     observacoes: request.notes?.trim() || null,
     payload,
+    source_sanitario_agenda_v2_id: factualIdentity ? agenda.id : null,
+    sanitario_sync_v2_nature: "primary_execution",
+    sanitario_contract_version: SANITARIO_V2_CONTRACT_VERSION,
+    domain_op_id: factualIdentity?.domainOpId ?? null,
     ...meta,
   };
 
@@ -434,6 +507,8 @@ function buildRecords(input: {
     tipo: actionTypeToSanitaryType(actionType(agenda)),
     produto: productName,
     produto_veterinario_id: request.product?.productId ?? expectedProductId(agenda),
+    produto_sanitario_v2_id: request.product?.productId ?? null,
+    insumo_id: inventory?.insumoId ?? null,
     produto_nome_snapshot: productName,
     estoque_lote_id: request.product?.inventoryLotId ?? null,
     estoque_lote_codigo_snapshot: request.product?.inventoryLotId ?? null,
@@ -454,6 +529,8 @@ function buildRecords(input: {
     protocol_item_logical_key: itemKey(agenda),
     protocol_item_version: readNumber(agenda.protocol_item_snapshot.version),
     protocol_item_snapshot: agenda.protocol_item_snapshot,
+    sanitario_contract_version: SANITARIO_V2_CONTRACT_VERSION,
+    domain_op_id: factualIdentity?.domainOpId ?? null,
     payload,
     ...meta,
   };
@@ -481,11 +558,22 @@ function buildRecords(input: {
           source_evento_id: eventId,
           source: "sanitary_agenda_execution_v2",
         },
-        ...meta,
+        domain_op_id: movementIdentity?.domainOpId ?? null,
+        ...movementMeta,
       }
     : null;
 
-  return { event, detail, movement, now };
+  const eventAnimals: EventoAnimalLocalV2[] = targetAnimalIds.map(
+    (animalId) => ({
+      id: createUuid(),
+      fazenda_id: request.fazendaId,
+      evento_id: eventId,
+      animal_id: animalId,
+      created_at: now,
+    }),
+  );
+
+  return { event, detail, movement, eventAnimals, now };
 }
 
 export async function executeSanitaryAgendaV2(
@@ -542,6 +630,17 @@ export async function executeSanitaryAgendaV2(
         .toArray()
     : [];
   const withdrawal = explicitWithdrawalRule(withdrawalRules, input, basicValidation.executedAt);
+  const sync = resolveConfiguredSync(input);
+  const factualIdentity = sync
+    ? {
+        clientTxId: createUuid(),
+        clientOpId: input.clientOpId,
+        domainOpId: createUuid(),
+      }
+    : undefined;
+  const movementIdentity = factualIdentity
+    ? createSanitarioV2Identity(factualIdentity.clientTxId)
+    : undefined;
 
   let inventory: {
     insumoId: string;
@@ -550,16 +649,31 @@ export async function executeSanitaryAgendaV2(
     costUnit: number | null;
     costTotal: number | null;
   } | null = null;
+  if (
+    input.confirmation.userConfirmedStockMovement &&
+    !input.product?.inventoryLotId
+  ) {
+    throw new Error("SANITARY_AGENDA_EXECUTION_REJECTED:missing_stock_lot");
+  }
   if (input.product?.inventoryLotId) {
+    if (!input.product.productId?.trim()) {
+      throw new Error("SANITARY_AGENDA_EXECUTION_REJECTED:missing_stock_product");
+    }
     if (!input.confirmation.userConfirmedStockMovement) {
       throw new Error("SANITARY_AGENDA_EXECUTION_REJECTED:missing_stock_confirmation");
     }
     if (!input.product.quantityConsumed || input.product.quantityConsumed <= 0) {
       throw new Error("SANITARY_AGENDA_EXECUTION_REJECTED:missing_stock_quantity");
     }
+    if (!input.product.unit?.trim()) {
+      throw new Error("SANITARY_AGENDA_EXECUTION_REJECTED:missing_stock_unit");
+    }
     const lot = await localDb.state_insumo_lotes.get(input.product.inventoryLotId);
     if (!lot || lot.fazenda_id !== input.fazendaId || lot.deleted_at) {
       throw new Error("SANITARY_AGENDA_EXECUTION_REJECTED:inventory_lot_not_found");
+    }
+    if (input.product.unit !== lot.unidade_base) {
+      throw new Error("SANITARY_AGENDA_EXECUTION_REJECTED:inventory_unit_mismatch");
     }
     const cost = buildInventoryCostSnapshot({
       lot,
@@ -568,7 +682,7 @@ export async function executeSanitaryAgendaV2(
     inventory = {
       insumoId: lot.insumo_id,
       inventoryLotId: lot.id,
-      unit: (input.product.unit || lot.unidade_base) as InsumoUnidadeBaseEnum,
+      unit: input.product.unit as InsumoUnidadeBaseEnum,
       costUnit: cost.custo_unitario_snapshot,
       costTotal: cost.custo_total_snapshot,
     };
@@ -582,7 +696,39 @@ export async function executeSanitaryAgendaV2(
     targetAnimalIds: agendaValidation.targetAnimalIds,
     withdrawal,
     inventory,
+    factualIdentity,
+    movementIdentity,
+    clientId: sync?.clientId,
   });
+
+  const factualOperation = factualIdentity
+    ? buildApplyFactualCoreOperation(
+        factualIdentity,
+        records.event,
+        records.detail,
+        records.eventAnimals,
+        agenda.revision ?? 0,
+      )
+    : null;
+  const movementOperation =
+    movementIdentity && records.movement
+      ? buildSanitarioV2InventoryMovementOperation({
+          identity: movementIdentity,
+          event: records.event,
+          detail: records.detail,
+          movement: records.movement,
+        })
+      : null;
+  if (sync && factualOperation) {
+    if (localDb !== defaultDb) {
+      throw new Error("SANITARY_AGENDA_EXECUTION_SYNC_REQUIRES_DEFAULT_DB");
+    }
+    await validateSanitarioV2Enqueue({
+      fazendaId: input.fazendaId,
+      projectRef: sync.projectRef,
+      operations: [factualOperation],
+    });
+  }
 
   await localDb.transaction(
     "rw",
@@ -591,8 +737,11 @@ export async function executeSanitaryAgendaV2(
       localDb.ops_sanitario_agenda_animais_v2,
       localDb.event_eventos,
       localDb.event_eventos_sanitario,
+      localDb.event_eventos_animais,
       localDb.state_insumo_lotes,
       localDb.state_insumo_movimentacoes,
+      localDb.queue_gestures,
+      localDb.queue_ops,
     ],
     async () => {
       const current = await localDb.ops_sanitario_agenda_v2.get(input.agendaId);
@@ -606,6 +755,7 @@ export async function executeSanitaryAgendaV2(
 
       await localDb.event_eventos.add(records.event);
       await localDb.event_eventos_sanitario.add(records.detail);
+      await localDb.event_eventos_animais.bulkAdd(records.eventAnimals);
       if (records.movement) {
         const lot = await localDb.state_insumo_lotes.get(records.movement.insumo_lote_id);
         if (!lot || lot.fazenda_id !== input.fazendaId || lot.deleted_at) {
@@ -618,6 +768,14 @@ export async function executeSanitaryAgendaV2(
         await localDb.state_insumo_lotes.update(lot.id, {
           saldo_atual_base: lot.saldo_atual_base - records.movement.quantidade_base,
           updated_at: records.now,
+        });
+      }
+      if (sync && factualOperation) {
+        await writeSanitarioV2Queue({
+          fazendaId: input.fazendaId,
+          clientId: sync.clientId,
+          operations: [factualOperation],
+          companionOperations: movementOperation ? [movementOperation] : [],
         });
       }
       await localDb.ops_sanitario_agenda_v2.update(input.agendaId, {

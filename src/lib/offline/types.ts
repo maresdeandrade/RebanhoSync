@@ -1451,6 +1451,7 @@ export interface InsumoMovimentacao {
   custo_unitario_snapshot?: number | null;
   custo_total_snapshot?: number | null;
   payload: Record<string, unknown>;
+  domain_op_id?: string | null;
 
   client_id: string;
   client_op_id: string;

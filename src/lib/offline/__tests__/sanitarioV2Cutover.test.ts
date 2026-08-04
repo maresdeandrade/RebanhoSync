@@ -8,6 +8,7 @@ import {
   buildCloseAgendaOperation,
   buildCreateAgendaOperation,
   buildReplaceAgendaAnimalsOperation,
+  buildSanitarioV2InventoryMovementOperation,
   createSanitarioV2Identity,
   enqueueSanitarioV2Operations,
   isSanitarioV2PushEnabled,
@@ -19,6 +20,7 @@ import type {
   Evento,
   EventoAnimalLocalV2,
   EventoSanitario,
+  InsumoMovimentacao,
   SanitarioAgendaClosureLocalV2,
   SanitarioAgendaLocalV2,
 } from "../types";
@@ -276,6 +278,78 @@ describe("sanitario v2 local cutover", () => {
         [ANIMAL_ID],
       ),
     ).toThrow("SANITARIO_V2_EXPECTED_REVISION_REQUIRED");
+  });
+
+  it("aceita movimento somente para execução factual completa e rejeita origem externa", () => {
+    const factualEvent = {
+      ...event(),
+      payload: {
+        schema: "sanitary_agenda_execution_v2",
+        product: { productId: "90000000-0000-4000-8000-000000000001" },
+      },
+    };
+    const factualDetail = {
+      ...detail(),
+      produto_sanitario_v2_id: "90000000-0000-4000-8000-000000000001",
+      insumo_id: "70000000-0000-4000-8000-000000000001",
+      estoque_lote_id: "80000000-0000-4000-8000-000000000001",
+    };
+    const movement: InsumoMovimentacao = {
+      id: EVENT_ID,
+      fazenda_id: FARM_ID,
+      insumo_id: factualDetail.insumo_id,
+      insumo_lote_id: factualDetail.estoque_lote_id,
+      tipo: "consumo_sanitario",
+      quantidade_base: 2,
+      unidade_base: "ml",
+      occurred_at: NOW,
+      source_evento_id: EVENT_ID,
+      source_evento_dominio: "sanitario",
+      animal_id: ANIMAL_ID,
+      rebanho_lote_id: null,
+      pasto_id: null,
+      observacoes: null,
+      payload: {},
+      client_id: "staging-client",
+      client_op_id: crypto.randomUUID(),
+      client_tx_id: null,
+      client_recorded_at: NOW,
+      server_received_at: NOW,
+      created_at: NOW,
+      updated_at: NOW,
+      deleted_at: null,
+    };
+    const operation = buildSanitarioV2InventoryMovementOperation({
+      identity: createSanitarioV2Identity(),
+      event: factualEvent,
+      detail: factualDetail,
+      movement,
+    });
+    expect(operation).toMatchObject({
+      table: "state_insumo_movimentacoes",
+      action: "INSERT",
+      op_order: 1,
+      record: {
+        source_evento_id: EVENT_ID,
+        quantidade_base: 2,
+        unidade_base: "ml",
+      },
+    });
+    expect(() =>
+      buildSanitarioV2InventoryMovementOperation({
+        identity: createSanitarioV2Identity(),
+        event: {
+          ...factualEvent,
+          sanitario_sync_v2_nature: "standalone_fact",
+          payload: {
+            schema: "sanitary_entry_history_v2",
+            entry_history_source: "external_documented",
+          },
+        },
+        detail: factualDetail,
+        movement,
+      })
+    ).toThrow("SANITARIO_V2_INVENTORY_MOVEMENT_INELIGIBLE");
   });
 
   it("enfileira apos APPLIED + flag e deduplica replay local", async () => {

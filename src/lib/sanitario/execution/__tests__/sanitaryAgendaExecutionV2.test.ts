@@ -1,7 +1,11 @@
 import "fake-indexeddb/auto";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { db } from "@/lib/offline/db";
+import {
+  SANITARIO_V2_STAGING_PROJECT_REF,
+  setSanitarioV2PushEnabled,
+} from "@/lib/offline/sanitarioV2Cutover";
 import type {
   InsumoLote,
   SanitarioAgendaAnimalLocalV2,
@@ -180,10 +184,13 @@ async function clearScope() {
     db.ops_sanitario_agenda_animais_v2.clear(),
     db.event_eventos.clear(),
     db.event_eventos_sanitario.clear(),
+    db.event_eventos_animais.clear(),
     db.state_insumo_lotes.clear(),
     db.state_insumo_movimentacoes.clear(),
     db.catalog_sanitario_produto_carencia_rules_v2.clear(),
     db.queue_ops.clear(),
+    db.queue_gestures.clear(),
+    db.sync_sanitario_v2_cutovers.clear(),
   ]);
 }
 
@@ -219,6 +226,12 @@ describe("executeSanitaryAgendaV2", () => {
   });
 
   afterEach(clearScope);
+
+  afterEach(() => {
+    if (typeof localStorage !== "undefined") {
+      setSanitarioV2PushEnabled(false, SANITARIO_V2_STAGING_PROJECT_REF);
+    }
+  });
 
   it("executa agenda futura criando evento, detalhe e marcando a agenda como executada", async () => {
     await seedAgenda();
@@ -502,5 +515,147 @@ describe("executeSanitaryAgendaV2", () => {
       status: "programada",
       execution_evento_id: null,
     });
+
+    await clearScope();
+    await seedAgenda();
+    await db.state_insumo_lotes.put(inventoryLot());
+    await expect(
+      executeSanitaryAgendaV2(
+        {
+          ...baseInput,
+          product: {
+            ...baseInput.product,
+            inventoryLotId: "stock-lot-1",
+            quantityConsumed: 2,
+          },
+          confirmation: {
+            userConfirmedExecution: true,
+            userConfirmedStockMovement: true,
+          },
+        },
+        db,
+      ),
+    ).rejects.toThrow("missing_stock_unit");
+    expect(await db.event_eventos.count()).toBe(0);
+    expect(await db.state_insumo_movimentacoes.count()).toBe(0);
+    expect(await db.state_insumo_lotes.get("stock-lot-1")).toMatchObject({
+      saldo_atual_base: 100,
+    });
+  });
+
+  it("persiste execução, movimento e fila sanitária de forma atômica sob gate habilitado", async () => {
+    const ids = {
+      farm: "10000000-0000-4000-8000-000000000001",
+      agenda: "20000000-0000-4000-8000-000000000001",
+      animal: "30000000-0000-4000-8000-000000000001",
+      protocol: "40000000-0000-4000-8000-000000000001",
+      item: "50000000-0000-4000-8000-000000000001",
+      lot: "60000000-0000-4000-8000-000000000001",
+      supply: "70000000-0000-4000-8000-000000000001",
+      operation: "80000000-0000-4000-8000-000000000001",
+    };
+    vi.stubGlobal(
+      "localStorage",
+      (() => {
+        const values = new Map<string, string>();
+        return {
+          getItem: (key: string) => values.get(key) ?? null,
+          setItem: (key: string, value: string) => values.set(key, value),
+          removeItem: (key: string) => values.delete(key),
+        };
+      })(),
+    );
+    setSanitarioV2PushEnabled(true, SANITARIO_V2_STAGING_PROJECT_REF);
+    await db.sync_sanitario_v2_cutovers.put({
+      key: `${ids.farm}:2`,
+      fazenda_id: ids.farm,
+      contract_version: 2,
+      status: "APPLIED",
+      prepared_at: "2026-07-01T00:00:00.000Z",
+      applying_at: "2026-07-01T00:00:00.000Z",
+      applied_at: "2026-07-01T00:00:00.000Z",
+      failed_at: null,
+      last_error: null,
+      updated_at: "2026-07-01T00:00:00.000Z",
+    });
+    await seedAgenda(
+      agenda({
+        id: ids.agenda,
+        fazenda_id: ids.farm,
+        protocolo_id: ids.protocol,
+        protocol_item_version_id: ids.item,
+        revision: 0,
+        lote_id: null,
+        metadata: {
+          itemKey: "item-1",
+          target: { scope: "animal", id: ids.animal },
+          targetAnimalIds: [ids.animal],
+        },
+      }),
+    );
+    await db.ops_sanitario_agenda_animais_v2.clear();
+    await db.ops_sanitario_agenda_animais_v2.put(
+      agendaAnimal({
+        agenda_id: ids.agenda,
+        fazenda_id: ids.farm,
+        animal_id: ids.animal,
+      }),
+    );
+    await db.state_insumo_lotes.put(
+      inventoryLot({
+        id: ids.lot,
+        fazenda_id: ids.farm,
+        insumo_id: ids.supply,
+      }),
+    );
+
+    const result = await executeSanitaryAgendaV2({
+      ...baseInput,
+      fazendaId: ids.farm,
+      agendaId: ids.agenda,
+      clientOpId: ids.operation,
+      product: {
+        ...baseInput.product,
+        inventoryLotId: ids.lot,
+        quantityConsumed: 2,
+        unit: "ml",
+      },
+      confirmation: {
+        userConfirmedExecution: true,
+        userConfirmedStockMovement: true,
+      },
+      sync: {
+        clientId: "staging-client",
+        projectRef: SANITARIO_V2_STAGING_PROJECT_REF,
+      },
+    });
+
+    expect(result.eventId).toBe(ids.operation);
+    expect(await db.event_eventos_animais.count()).toBe(1);
+    expect(await db.state_insumo_movimentacoes.get(result.eventId)).toMatchObject({
+      source_evento_id: result.eventId,
+      insumo_id: ids.supply,
+      insumo_lote_id: ids.lot,
+      quantidade_base: 2,
+      unidade_base: "ml",
+    });
+    const queued = (await db.queue_ops.toArray()).sort(
+      (left, right) => (left.op_order ?? 0) - (right.op_order ?? 0),
+    );
+    expect(queued).toHaveLength(2);
+    expect(queued[0]).toMatchObject({
+      table: "sanitario_v2",
+      op_order: 0,
+      record: { command: "apply_factual_core" },
+    });
+    expect(queued[1]).toMatchObject({
+      table: "state_insumo_movimentacoes",
+      op_order: 1,
+      record: {
+        source_evento_id: result.eventId,
+        tipo: "consumo_sanitario",
+      },
+    });
+    expect(queued[0].client_tx_id).toBe(queued[1].client_tx_id);
   });
 });

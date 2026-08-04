@@ -313,6 +313,75 @@ describe("sanitario_v2 canonical worker/reconcile", () => {
     expect(await db.state_insumo_movimentacoes.count()).toBe(0);
   });
 
+  it("reenvia somente movimento retryable após fato confirmado", async () => {
+    const { gesture, ops } = await seedGesture(
+      ["apply_factual_core"],
+      "inventory-retry",
+    );
+    const movement: Operation = {
+      client_op_id: "op-inventory-retry-1",
+      client_tx_id: gesture.client_tx_id,
+      op_order: 1,
+      table: "state_insumo_movimentacoes",
+      action: "INSERT",
+      record: {
+        id: "movement-1",
+        source_evento_id: "event-1",
+        tipo: "consumo_sanitario",
+      },
+      domain_op_id: "domain-inventory-retry-1",
+      created_at: gesture.created_at,
+    };
+    await db.queue_ops.add(movement);
+    respondWith([
+      {
+        op_id: ops[0].client_op_id,
+        client_op_id: ops[0].client_op_id,
+        domain_op_id: ops[0].domain_op_id,
+        status: "APPLIED",
+      },
+      {
+        op_id: movement.client_op_id,
+        client_op_id: movement.client_op_id,
+        domain_op_id: movement.domain_op_id,
+        status: "RETRYABLE",
+        retryable: true,
+        reason_code: "SANITARIO_INVENTORY_SOURCE_LOOKUP_FAILED",
+      },
+    ]);
+
+    await processGesture(gesture);
+    expect(await db.queue_ops.get(ops[0].client_op_id)).toBeUndefined();
+    expect(await db.queue_ops.get(movement.client_op_id)).toMatchObject({
+      sync_state: "RETRYABLE",
+      retry_count: 1,
+    });
+
+    await db.queue_ops.update(movement.client_op_id, {
+      next_attempt_at: "2020-01-01T00:00:00.000Z",
+    });
+    respondWith([
+      {
+        op_id: movement.client_op_id,
+        client_op_id: movement.client_op_id,
+        domain_op_id: movement.domain_op_id,
+        status: "APPLIED",
+      },
+    ]);
+    await processGesture(await loadGesture(gesture.client_tx_id));
+
+    const retryRequest = JSON.parse(
+      String(vi.mocked(fetch).mock.calls[1][1]?.body),
+    );
+    expect(retryRequest.ops).toHaveLength(1);
+    expect(retryRequest.ops[0]).toMatchObject({
+      client_op_id: movement.client_op_id,
+      table: "insumo_movimentacoes",
+    });
+    expect(await db.queue_ops.get(movement.client_op_id)).toBeUndefined();
+    expect((await loadGesture(gesture.client_tx_id)).status).toBe("DONE");
+  });
+
   it("mant�m depend�ncia bloqueada fora do loop autom�tico", async () => {
     const { gesture, ops } = await seedGesture(["create_agenda"], "blocked");
     respondWith([

@@ -1,8 +1,8 @@
 # Plano ativo — Fase 12 / Sync Remoto Sanitário v2
 
-Atualizado em: 2026-08-03
+Atualizado em: 2026-08-04
 Status: **Fase 12 ativa; Sync Sanitário v2 em andamento**
-Próximo incremento: **3.9 — Push/pull de movimento de estoque sanitário**
+Próximo incremento: **3.13 — Recalcular Conformidade após pull**
 
 Este documento contém o plano corrente. Estado técnico detalhado, validações e risco de plataforma ficam em [CURRENT_PHASE_HANDOFF.md](./CURRENT_PHASE_HANDOFF.md). A decisão arquitetural permanente está em [ADR-0007](../technical/adrs/ADR-0007-sync-remoto-sanitario-v2-integrado.md).
 
@@ -26,7 +26,7 @@ A Conformidade Sanitária v2 permanece um read model local derivado, somente lei
 | 3.6 Push/pull de evento sanitário | Implementado; E2E remoto pendente |
 | 3.7 Push/pull de detalhe sanitário | Implementado; E2E remoto pendente |
 | 3.8 Push/pull de histórico externo/documental | Implementado e validado localmente; E2E remoto não executado |
-| 3.9 Push/pull de movimento de estoque sanitário | Pendente |
+| 3.9 Push/pull de movimento de estoque sanitário | Implementado e validado localmente; E2E remoto não executado |
 | 3.10 Retry/replay/idempotência | Implementado; validação remota parcial |
 | 3.11 Sucesso parcial | Validado localmente; E2E remoto pendente |
 | 3.12 Conflito multi-dispositivo | Código e SQL validados; plataforma bloqueada |
@@ -49,6 +49,23 @@ Resultado comprovado:
 - a Conformidade usa somente o campo documentalmente coberto, sem recálculo global do item 3.13;
 - tenant e `fazenda_id` permanecem isolados;
 - nenhuma migration ou alteração de RPC foi necessária.
+
+## Resultado do incremento 3.9
+
+Quando o gate estiver habilitado, o consumo sanitário acompanha a execução factual `primary_execution` no mesmo gesto offline, após evento, detalhe e relações, reutilizando `insumo_movimentacoes`, fila compartilhada, worker e pull incremental existentes. Com gates desligados, o comportamento local vigente permanece sem fila remota.
+
+Resultado comprovado localmente:
+
+- somente execução factual da fazenda com produto, insumo, lote, quantidade e unidade explícitos é elegível;
+- Agenda, closure, `standalone_fact`, `external_declared` e `external_documented` não geram movimento;
+- `source_evento_id`, `client_op_id`, `client_tx_id` e `domain_op_id` preservam vínculo e identidade;
+- replay idêntico não reaplica saldo e conteúdo divergente produz conflito;
+- persistência local de fato, movimento, saldo e fila permanece atômica;
+- pull incremental protege movimento local pendente e não reaplica baixa;
+- trigger existente preserva saldo não negativo e sucesso parcial continua por operação;
+- nenhuma migration, alteração de RPC, carência nova ou autorização operacional foi introduzida.
+
+O E2E remoto específico do movimento não foi executado. O bloqueio `SANITARIO_V2_E2E_PLATFORM_BLOCKED`, os gates desligados e o rollout não autorizado permanecem inalterados.
 
 Fora do escopo:
 
@@ -89,11 +106,10 @@ Fora do escopo:
 
 O bloqueio `SANITARIO_V2_E2E_PLATFORM_BLOCKED` continua impedindo rollout, sem invalidar a implementação local do item 3.8 sob gates desligados. Não aumentar timeout nem alterar RPC sem nova evidência.
 
-## Sequência após 3.8
+## Sequência após 3.9
 
 ```txt
-3.9 Movimento de estoque sanitário
-→ 3.13 recálculo explícito da Conformidade após pull
+3.13 recálculo explícito da Conformidade após pull
 → reexecução dos E2Es remotos quando a plataforma estiver estável
 → item 4 Produto técnico e fonte por campo
 → item 5 Correção append-only sanitária

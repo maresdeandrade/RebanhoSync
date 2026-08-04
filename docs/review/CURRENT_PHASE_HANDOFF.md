@@ -1,9 +1,9 @@
 # Handoff atual — Fase 12 / Sync Sanitário v2
 
-Atualizado em: 2026-08-03
-Baseline anterior confirmado: `c1491d7`
+Atualizado em: 2026-08-04
+Baseline autorizado para o incremento 3.9: `bafbcbe`
 Status: **Fase 12 ativa; rollout não autorizado**
-Próximo incremento: **3.9 — Push/pull de movimento de estoque sanitário**
+Próximo incremento: **3.13 — Recalcular Conformidade após pull**
 
 ## Resumo executivo
 
@@ -11,7 +11,7 @@ A Conformidade Sanitária v2 permanece um read model derivado/somente leitura. O
 
 As validações locais estão completas no baseline registrado pelos commits recentes. A validação E2E remota é parcial: criação de agenda, replay e substituição de animais foram aprovados, mas o cenário de conflito `expected_revision` fica retido no caminho Edge Function/PostgREST/gateway até timeout, embora o PostgreSQL produza imediatamente o erro esperado.
 
-Decisão atual: manter o rollout bloqueado e seguir para o item 3.9, sem concluir o item 3, o item 3.13 ou a Fase 12.
+Decisão atual: manter o rollout bloqueado e seguir para o item 3.13, sem concluir o item 3, o item 3.13 ou a Fase 12.
 
 ## Fontes autoritativas
 
@@ -39,7 +39,7 @@ Planos encerrados e evidências em `docs/review/evidence/` permanecem histórico
 | 3.6 Evento sanitário | Implementado; E2E remoto pendente |
 | 3.7 Detalhe sanitário | Implementado; E2E remoto pendente |
 | 3.8 Histórico externo/documental | Implementado e validado localmente; E2E remoto não executado |
-| 3.9 Movimento de estoque sanitário | Pendente |
+| 3.9 Movimento de estoque sanitário | Implementado e validado localmente; E2E remoto não executado |
 | 3.10 Retry/replay/idempotência | Implementado; validação remota parcial |
 | 3.11 Sucesso parcial | Validado localmente; E2E remoto pendente |
 | 3.12 Conflito multi-dispositivo | Código e SQL validados; plataforma bloqueada |
@@ -168,15 +168,30 @@ Fatos confirmados:
 
 O item 3.13 permanece pendente: o incremento 3.8 não introduz recálculo global após todos os pulls.
 
+## Resultado do incremento 3.9
+
+Fatos confirmados:
+
+- execução sanitária `primary_execution` persiste evento, detalhe, relações, movimento, saldo local e fila no mesmo limite transacional Dexie;
+- o movimento reutiliza `insumo_movimentacoes` e permanece ligado ao Evento por `source_evento_id`;
+- o gesto inicial ordena fato antes do movimento; em retry isolado, o servidor exige ledger factual confirmado e valida fazenda, natureza, produto, insumo, lote, quantidade e unidade antes do INSERT;
+- Agenda, closure administrativa, `standalone_fact`, `external_declared` e `external_documented` não são elegíveis;
+- replay por identidade ou chave lógica compara fingerprint canônico; conteúdo idêntico é no-op e conteúdo divergente é conflito;
+- pull de `insumo_movimentacoes` é incremental, idempotente e protege operação local pendente, inclusive contra tombstone parcial;
+- sucesso parcial e retry continuam preservando resultado individual; saldo confirmado não é reaplicado;
+- schema, migrations, RPCs, `db.ts`, `tableMap.ts` e `syncWorker.ts` permaneceram inalterados;
+- nenhuma carência nova, Conformidade recalculada ou autorização de venda, abate ou leite foi criada.
+
+Validação local concluída com testes focados, suíte completa, lint, build, Deno fmt/check e baseline funcional Supabase 5/5. O E2E remoto específico do movimento não foi executado; `SANITARIO_V2_E2E_PLATFORM_BLOCKED` permanece como pendência externa sem autorizar rollout.
+
 ## Próximo incremento oficial
 
-Implementar 3.9 — push/pull de movimento de estoque sanitário, respeitando os gates e contratos ativos.
+Implementar 3.13 — recálculo explícito da Conformidade após pull, respeitando os gates e contratos ativos.
 
 Sequência posterior:
 
 ```txt
-3.9 movimento de estoque sanitário
-→ 3.13 recálculo explícito da Conformidade após pull
+3.13 recálculo explícito da Conformidade após pull
 → reexecutar E2Es remotos quando a plataforma estiver estável
 → 4 produto técnico e fonte por campo
 → 5 correção append-only

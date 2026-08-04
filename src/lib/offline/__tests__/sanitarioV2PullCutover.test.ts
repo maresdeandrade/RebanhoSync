@@ -31,6 +31,7 @@ describe("sanitario v2 ordered pull", () => {
       db.event_eventos_animais.clear(),
       db.event_eventos.clear(),
       db.event_eventos_sanitario.clear(),
+      db.state_insumo_movimentacoes.clear(),
       db.queue_gestures.clear(),
       db.queue_ops.clear(),
       db.sync_pull_cursors.clear(),
@@ -108,6 +109,7 @@ describe("sanitario v2 ordered pull", () => {
       "eventos",
       "eventos_sanitario",
       "eventos_animais",
+      "insumo_movimentacoes",
       "sanitario_agenda_closures_v2",
     ]);
     expect(await db.queue_gestures.get("tx-pending-before-pull")).toMatchObject(
@@ -151,7 +153,7 @@ describe("sanitario v2 ordered pull", () => {
     expect(gteCalls).toContainEqual({ table: "eventos", value: CREATED_AT });
   });
 
-  it("protege evento, detalhe e relação pendentes contra tombstone remoto parcial", async () => {
+  it("protege evento, detalhe, relação e movimento pendentes contra tombstone remoto parcial", async () => {
     await db.event_eventos.put({
       id: EVENT_ID,
       fazenda_id: FARM_ID,
@@ -175,6 +177,31 @@ describe("sanitario v2 ordered pull", () => {
       deleted_at: null,
     } as never);
     await db.event_eventos_animais.put(relation());
+    await db.state_insumo_movimentacoes.put({
+      id: EVENT_ID,
+      fazenda_id: FARM_ID,
+      insumo_id: "60000000-0000-4000-8000-000000000001",
+      insumo_lote_id: "70000000-0000-4000-8000-000000000001",
+      tipo: "consumo_sanitario",
+      quantidade_base: 2,
+      unidade_base: "ml",
+      occurred_at: CREATED_AT,
+      source_evento_id: EVENT_ID,
+      source_evento_dominio: "sanitario",
+      animal_id: ANIMAL_ID,
+      rebanho_lote_id: null,
+      pasto_id: null,
+      observacoes: null,
+      payload: {},
+      client_id: "client-local",
+      client_op_id: "90000000-0000-4000-8000-000000000005",
+      client_tx_id: "90000000-0000-4000-8000-000000000002",
+      client_recorded_at: CREATED_AT,
+      server_received_at: CREATED_AT,
+      created_at: CREATED_AT,
+      updated_at: CREATED_AT,
+      deleted_at: null,
+    });
     await db.queue_ops.add({
       client_op_id: "90000000-0000-4000-8000-000000000001",
       client_tx_id: "90000000-0000-4000-8000-000000000002",
@@ -185,6 +212,16 @@ describe("sanitario v2 ordered pull", () => {
         command: "apply_factual_core",
         payload: { event: { id: EVENT_ID } },
       },
+      sync_state: "PENDING",
+      created_at: CREATED_AT,
+    });
+    await db.queue_ops.add({
+      client_op_id: "90000000-0000-4000-8000-000000000005",
+      client_tx_id: "90000000-0000-4000-8000-000000000002",
+      domain_op_id: "90000000-0000-4000-8000-000000000006",
+      table: "state_insumo_movimentacoes",
+      action: "INSERT",
+      record: { source_evento_id: EVENT_ID },
       sync_state: "PENDING",
       created_at: CREATED_AT,
     });
@@ -215,6 +252,16 @@ describe("sanitario v2 ordered pull", () => {
                       ]
                     : table === "eventos_animais"
                       ? [relation({ animal_id: crypto.randomUUID() })]
+                      : table === "insumo_movimentacoes"
+                        ? [
+                            {
+                              id: EVENT_ID,
+                              fazenda_id: FARM_ID,
+                              source_evento_id: EVENT_ID,
+                              deleted_at: "2026-07-31T12:00:00.000Z",
+                              updated_at: "2026-07-31T12:00:00.000Z",
+                            },
+                          ]
                       : [],
               error: null,
             }),
@@ -233,11 +280,20 @@ describe("sanitario v2 ordered pull", () => {
     expect(await db.event_eventos_animais.get(RELATION_ID)).toMatchObject({
       animal_id: ANIMAL_ID,
     });
+    expect(await db.state_insumo_movimentacoes.get(EVENT_ID)).toMatchObject({
+      deleted_at: null,
+      quantidade_base: 2,
+    });
     expect(
       await db.sync_pull_cursors.get(`eventos:fazenda:${FARM_ID}`),
     ).toBeUndefined();
     expect(
       await db.sync_pull_cursors.get(`eventos_sanitario:fazenda:${FARM_ID}`),
+    ).toBeUndefined();
+    expect(
+      await db.sync_pull_cursors.get(
+        `insumo_movimentacoes:fazenda:${FARM_ID}`,
+      ),
     ).toBeUndefined();
   });
 

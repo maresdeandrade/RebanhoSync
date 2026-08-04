@@ -8,7 +8,10 @@ import {
   prevalidateAntiTeleport,
   readLinkedReproductionType,
   readReproductionPayload,
+  sameSanitarioInventoryMovement,
   validateSanitarioAgendaClosurePush,
+  validateSanitarioInventoryMovementRecord,
+  validateSanitarioInventoryMovementSource,
 } from "./rules.ts";
 import { resolveEventFeatureFlags } from "./flags.ts";
 import { validateAnimalTaxonomyFactsOperation } from "./taxonomy.ts";
@@ -381,6 +384,209 @@ Deno.serve(async (req: Request) => {
         );
         if (TABLES_WITH_FAZENDA.has(op.table)) {
           record.fazenda_id = fazenda_id; // Always use request fazenda_id
+        }
+
+        const sanitaryMovementIssue = validateSanitarioInventoryMovementRecord(
+          op,
+          fazenda_id,
+        );
+        if (sanitaryMovementIssue) {
+          results.push({
+            op_id: op.client_op_id,
+            client_op_id: op.client_op_id,
+            domain_op_id: typeof op.record?.domain_op_id === "string"
+              ? op.record.domain_op_id
+              : undefined,
+            status: "REJECTED",
+            reason_code: sanitaryMovementIssue,
+            reason_message:
+              "Sanitary inventory movement failed conservative validation",
+          });
+          continue;
+        }
+
+        if (
+          op.table === "insumo_movimentacoes" &&
+          op.action === "INSERT" &&
+          record.tipo === "consumo_sanitario"
+        ) {
+          const sourceEventId = String(record.source_evento_id);
+          const dependency = ops.find((candidate) =>
+            isSanitarioSyncV2Operation(candidate) &&
+            candidate.command === "apply_factual_core" &&
+            candidate.payload.event.id === sourceEventId
+          ) as SanitarioSyncV2Operation | undefined;
+          const dependencyResult = dependency
+            ? results.find((entry) => entry.op_id === dependency.client_op_id)
+            : undefined;
+          if (dependency && dependencyResult?.status !== "APPLIED") {
+            results.push({
+              op_id: op.client_op_id,
+              client_op_id: op.client_op_id,
+              domain_op_id: String(record.domain_op_id),
+              status: "BLOCKED_DEPENDENCY",
+              reason_code: "SANITARIO_INVENTORY_FACTUAL_OPERATION_REQUIRED",
+              reason_message:
+                "Inventory movement requires an applied factual execution in the same transaction",
+            });
+            continue;
+          }
+          if (!serviceSupabase) {
+            results.push({
+              op_id: op.client_op_id,
+              client_op_id: op.client_op_id,
+              domain_op_id: String(record.domain_op_id),
+              status: "BLOCKED_DEPENDENCY",
+              reason_code: "SANITARIO_INVENTORY_LEDGER_UNAVAILABLE",
+              reason_message:
+                "Sanitary factual ledger is unavailable for inventory validation",
+            });
+            continue;
+          }
+
+          const { data: factualLedger, error: ledgerError } =
+            await serviceSupabase.from("sanitario_sync_v2_operations")
+              .select("id")
+              .eq("fazenda_id", fazenda_id)
+              .eq("operation_kind", "factual_core")
+              .eq("entity_id", sourceEventId)
+              .maybeSingle();
+          if (ledgerError) {
+            results.push({
+              op_id: op.client_op_id,
+              client_op_id: op.client_op_id,
+              domain_op_id: String(record.domain_op_id),
+              status: "RETRYABLE",
+              retryable: true,
+              reason_code: "SANITARIO_INVENTORY_LEDGER_LOOKUP_FAILED",
+              reason_message: ledgerError.message,
+            });
+            continue;
+          }
+          if (!factualLedger) {
+            results.push({
+              op_id: op.client_op_id,
+              client_op_id: op.client_op_id,
+              domain_op_id: String(record.domain_op_id),
+              status: "BLOCKED_DEPENDENCY",
+              reason_code: "SANITARIO_INVENTORY_FACTUAL_OPERATION_REQUIRED",
+              reason_message:
+                "Inventory movement requires a confirmed factual execution ledger",
+            });
+            continue;
+          }
+
+          const [{ data: sourceEvent, error: eventError }, {
+            data: sourceDetail,
+            error: detailError,
+          }] = await Promise.all([
+            supabase.from("eventos")
+              .select(
+                "id, fazenda_id, dominio, sanitario_sync_v2_nature, payload, deleted_at",
+              )
+              .eq("id", sourceEventId)
+              .eq("fazenda_id", fazenda_id)
+              .maybeSingle(),
+            supabase.from("eventos_sanitario")
+              .select(
+                "evento_id, fazenda_id, produto_sanitario_v2_id, insumo_id, estoque_lote_id, deleted_at",
+              )
+              .eq("evento_id", sourceEventId)
+              .eq("fazenda_id", fazenda_id)
+              .maybeSingle(),
+          ]);
+          if (eventError || detailError) {
+            results.push({
+              op_id: op.client_op_id,
+              client_op_id: op.client_op_id,
+              domain_op_id: String(record.domain_op_id),
+              status: "RETRYABLE",
+              retryable: true,
+              reason_code: "SANITARIO_INVENTORY_SOURCE_LOOKUP_FAILED",
+              reason_message: eventError?.message ?? detailError?.message ??
+                "Sanitary inventory source lookup failed",
+            });
+            continue;
+          }
+          const sourceIssue = validateSanitarioInventoryMovementSource(
+            record,
+            sourceEvent as Record<string, unknown> | null,
+            sourceDetail as Record<string, unknown> | null,
+          );
+          if (sourceIssue) {
+            results.push({
+              op_id: op.client_op_id,
+              client_op_id: op.client_op_id,
+              domain_op_id: String(record.domain_op_id),
+              status: "REJECTED",
+              reason_code: sourceIssue,
+              reason_message:
+                "Sanitary inventory movement does not match its factual execution",
+            });
+            continue;
+          }
+
+          const [byClientOp, byDomainOp, byLogicalMovement] = await Promise.all(
+            [
+              supabase.from("insumo_movimentacoes")
+                .select("*")
+                .eq("fazenda_id", fazenda_id)
+                .eq("client_op_id", op.client_op_id)
+                .is("deleted_at", null)
+                .maybeSingle(),
+              supabase.from("insumo_movimentacoes")
+                .select("*")
+                .eq("fazenda_id", fazenda_id)
+                .eq("domain_op_id", String(record.domain_op_id))
+                .is("deleted_at", null)
+                .maybeSingle(),
+              supabase.from("insumo_movimentacoes")
+                .select("*")
+                .eq("fazenda_id", fazenda_id)
+                .eq("source_evento_id", sourceEventId)
+                .eq("insumo_lote_id", String(record.insumo_lote_id))
+                .eq("tipo", "consumo_sanitario")
+                .is("deleted_at", null)
+                .maybeSingle(),
+            ],
+          );
+          const existingError = byClientOp.error ?? byDomainOp.error ??
+            byLogicalMovement.error;
+          if (existingError) {
+            results.push({
+              op_id: op.client_op_id,
+              client_op_id: op.client_op_id,
+              domain_op_id: String(record.domain_op_id),
+              status: "RETRYABLE",
+              retryable: true,
+              reason_code: "SANITARIO_INVENTORY_REPLAY_LOOKUP_FAILED",
+              reason_message: existingError.message,
+            });
+            continue;
+          }
+          const existingMovements = [
+            byClientOp.data,
+            byDomainOp.data,
+            byLogicalMovement.data,
+          ].filter((entry): entry is Record<string, unknown> => Boolean(entry));
+          if (existingMovements.length > 0) {
+            const replay = existingMovements.every((existingMovement) =>
+              sameSanitarioInventoryMovement(existingMovement, record)
+            );
+            results.push({
+              op_id: op.client_op_id,
+              client_op_id: op.client_op_id,
+              domain_op_id: String(record.domain_op_id),
+              status: replay ? "APPLIED" : "CONFLICT",
+              reason_code: replay
+                ? undefined
+                : "SANITARIO_INVENTORY_IDENTITY_CONTENT_CONFLICT",
+              reason_message: replay
+                ? undefined
+                : "Existing sanitary movement has divergent consumption content",
+            });
+            continue;
+          }
         }
 
         const agendaClosureValidation = validateSanitarioAgendaClosurePush({

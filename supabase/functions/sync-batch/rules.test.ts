@@ -10,7 +10,10 @@ import {
   readLinkedReproductionType,
   readReproductionPayload,
   resolveOperationPrimaryKey,
+  sameSanitarioInventoryMovement,
   validateSanitarioAgendaClosurePush,
+  validateSanitarioInventoryMovementRecord,
+  validateSanitarioInventoryMovementSource,
 } from "./rules";
 
 function op(partial: Partial<Operation>): Operation {
@@ -447,6 +450,145 @@ describe("sync-batch rules: Agenda v2 closure push boundary", () => {
           }),
         ),
       ).toBeNull();
+    }
+  });
+});
+
+describe("sync-batch rules: sanitary inventory movement", () => {
+  const ids = {
+    farm: "10000000-0000-4000-8000-000000000001",
+    event: "20000000-0000-4000-8000-000000000001",
+    movement: "30000000-0000-4000-8000-000000000001",
+    supply: "40000000-0000-4000-8000-000000000001",
+    lot: "50000000-0000-4000-8000-000000000001",
+    domain: "60000000-0000-4000-8000-000000000001",
+  };
+  const movement = {
+    id: ids.movement,
+    fazenda_id: ids.farm,
+    insumo_id: ids.supply,
+    insumo_lote_id: ids.lot,
+    tipo: "consumo_sanitario",
+    quantidade_base: 2,
+    unidade_base: "ml",
+    occurred_at: "2026-07-02T12:00:00.000Z",
+    source_evento_id: ids.event,
+    source_evento_dominio: "sanitario",
+    animal_id: null,
+    rebanho_lote_id: null,
+    pasto_id: null,
+    observacoes: null,
+    custo_unitario_snapshot: 5,
+    custo_total_snapshot: 10,
+    payload: { source: "sanitary_agenda_execution_v2" },
+    domain_op_id: ids.domain,
+  };
+  const event = {
+    id: ids.event,
+    fazenda_id: ids.farm,
+    dominio: "sanitario",
+    sanitario_sync_v2_nature: "primary_execution",
+    payload: {
+      schema: "sanitary_agenda_execution_v2",
+      product: {
+        productId: "90000000-0000-4000-8000-000000000001",
+        inventoryLotId: ids.lot,
+        quantityConsumed: 2,
+        unit: "ml",
+      },
+    },
+    deleted_at: null,
+  };
+  const detail = {
+    evento_id: ids.event,
+    fazenda_id: ids.farm,
+    insumo_id: ids.supply,
+    produto_sanitario_v2_id: "90000000-0000-4000-8000-000000000001",
+    estoque_lote_id: ids.lot,
+    deleted_at: null,
+  };
+
+  it("accepts only complete same-farm sanitary consumption records", () => {
+    const operation = op({
+      client_op_id: ids.movement,
+      table: "insumo_movimentacoes",
+      record: movement,
+    });
+    expect(validateSanitarioInventoryMovementRecord(operation, ids.farm))
+      .toBeNull();
+    expect(
+      validateSanitarioInventoryMovementRecord(
+        { ...operation, record: { ...movement, quantidade_base: 0 } },
+        ids.farm,
+      ),
+    ).toBe("SANITARIO_INVENTORY_MOVEMENT_INVALID");
+    expect(
+      validateSanitarioInventoryMovementRecord(
+        {
+          ...operation,
+          record: { ...movement, fazenda_id: crypto.randomUUID() },
+        },
+        ids.farm,
+      ),
+    ).toBe("SANITARIO_INVENTORY_MOVEMENT_INVALID");
+  });
+
+  it("requires primary factual execution and exact product lot quantity and unit", () => {
+    expect(validateSanitarioInventoryMovementSource(movement, event, detail))
+      .toBeNull();
+    expect(
+      validateSanitarioInventoryMovementSource(movement, {
+        ...event,
+        sanitario_sync_v2_nature: "standalone_fact",
+      }, detail),
+    ).toBe("SANITARIO_INVENTORY_SOURCE_NOT_PRIMARY_EXECUTION");
+    expect(
+      validateSanitarioInventoryMovementSource(movement, {
+        ...event,
+        payload: {
+          ...event.payload,
+          entry_history_source: "external_documented",
+        },
+      }, detail),
+    ).toBe("SANITARIO_INVENTORY_EXTERNAL_OR_NON_EXECUTION_SOURCE");
+    for (
+      const changed of [
+        { quantidade_base: 3 },
+        { unidade_base: "dose" },
+        { insumo_id: crypto.randomUUID() },
+        { insumo_lote_id: crypto.randomUUID() },
+      ]
+    ) {
+      expect(
+        validateSanitarioInventoryMovementSource(
+          { ...movement, ...changed },
+          event,
+          detail,
+        ),
+      ).toBe("SANITARIO_INVENTORY_CONTENT_MISMATCH");
+    }
+  });
+
+  it("treats identical replay as equal and divergent consumption as conflict", () => {
+    expect(sameSanitarioInventoryMovement(movement, { ...movement })).toBe(
+      true,
+    );
+    expect(sameSanitarioInventoryMovement(
+      { ...movement, payload: { a: 1, nested: { x: 1, y: 2 } } },
+      { ...movement, payload: { nested: { y: 2, x: 1 }, a: 1 } },
+    )).toBe(true);
+    for (
+      const changed of [
+        { quantidade_base: 3 },
+        { unidade_base: "dose" },
+        { insumo_id: crypto.randomUUID() },
+        { insumo_lote_id: crypto.randomUUID() },
+      ]
+    ) {
+      expect(sameSanitarioInventoryMovement(movement, {
+        ...movement,
+        ...changed,
+      })).toBe(false);
     }
   });
 });

@@ -213,11 +213,17 @@ async function appendEventoAnimais(
 }
 
 async function getPendingSanitarioV2EventIds() {
-  const operations = await db.queue_ops
-    .filter((operation) => operation.table === "sanitario_v2")
-    .toArray();
+  const operations = await db.queue_ops.toArray();
   return new Set(
     operations.flatMap((operation) => {
+      if (
+        operation.table === "state_insumo_movimentacoes" ||
+        operation.table === "insumo_movimentacoes"
+      ) {
+        const sourceEventId = operation.record?.source_evento_id;
+        return typeof sourceEventId === "string" ? [sourceEventId] : [];
+      }
+      if (operation.table !== "sanitario_v2") return [];
       const record = operation.record as RemoteRow;
       const payload = record?.payload;
       const event =
@@ -242,12 +248,21 @@ function protectPendingFactualRows(
 ) {
   if (
     pendingEventIds.size === 0 ||
-    !["eventos", "eventos_sanitario", "eventos_animais"].includes(remoteTable)
+    ![
+      "eventos",
+      "eventos_sanitario",
+      "eventos_animais",
+      "insumo_movimentacoes",
+    ].includes(remoteTable)
   ) {
     return { rows, skipped: false };
   }
   const safeRows = rows.filter((row) => {
-    const eventId = remoteTable === "eventos" ? row.id : row.evento_id;
+    const eventId = remoteTable === "eventos"
+      ? row.id
+      : remoteTable === "insumo_movimentacoes"
+      ? row.source_evento_id
+      : row.evento_id;
     return typeof eventId !== "string" || !pendingEventIds.has(eventId);
   });
   return { rows: safeRows, skipped: safeRows.length !== rows.length };
@@ -259,7 +274,12 @@ async function writeMergeResults(
   cursorUpdates: CursorUpdate[],
 ) {
   const protectsFactualRows = storesToUpdate.some(({ remote }) =>
-    ["eventos", "eventos_sanitario", "eventos_animais"].includes(remote),
+    [
+      "eventos",
+      "eventos_sanitario",
+      "eventos_animais",
+      "insumo_movimentacoes",
+    ].includes(remote),
   );
   const pendingEventIds = protectsFactualRows
     ? await getPendingSanitarioV2EventIds()
@@ -798,6 +818,7 @@ export const pullSanitarioV2CutoverState = async (fazendaId: string) => {
     "eventos",
     "eventos_sanitario",
     "eventos_animais",
+    "insumo_movimentacoes",
     "sanitario_agenda_closures_v2",
   ] as const;
 

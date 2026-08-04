@@ -50,6 +50,13 @@ export interface SanitarioV2QueuedOperation {
   payload: Record<string, unknown>;
 }
 
+export interface SanitarioV2InventoryMovementQueueInput {
+  identity: SanitarioV2OperationIdentity;
+  event: Evento;
+  detail: EventoSanitario;
+  movement: import("./types").InsumoMovimentacao;
+}
+
 function requireUuid(value: string, field: string) {
   if (!UUID_PATTERN.test(value)) {
     throw new Error(`SANITARIO_V2_INVALID_UUID:${field}`);
@@ -372,7 +379,7 @@ function sameQueuedEnvelope(
   );
 }
 
-async function validateSanitarioV2Enqueue(input: {
+export async function validateSanitarioV2Enqueue(input: {
   fazendaId: string;
   projectRef: string;
   operations: readonly SanitarioV2QueuedOperation[];
@@ -400,10 +407,78 @@ async function validateSanitarioV2Enqueue(input: {
   );
 }
 
-async function writeSanitarioV2Queue(input: {
+function sameQueuedOperation(existing: Operation, incoming: Operation) {
+  return (
+    existing.client_tx_id === incoming.client_tx_id &&
+    existing.domain_op_id === incoming.domain_op_id &&
+    existing.table === incoming.table &&
+    existing.action === incoming.action &&
+    JSON.stringify(existing.record) === JSON.stringify(incoming.record)
+  );
+}
+
+export function buildSanitarioV2InventoryMovementOperation(
+  input: SanitarioV2InventoryMovementQueueInput,
+): Operation {
+  requireIdentity(input.identity);
+  const { event, detail, movement } = input;
+  const product = event.payload.product;
+  const productRecord = product && typeof product === "object" &&
+      !Array.isArray(product)
+    ? product as Record<string, unknown>
+    : {};
+  if (
+    event.sanitario_sync_v2_nature !== "primary_execution" ||
+    event.payload.schema !== "sanitary_agenda_execution_v2" ||
+    event.fazenda_id !== detail.fazenda_id ||
+    event.fazenda_id !== movement.fazenda_id ||
+    detail.evento_id !== event.id ||
+    movement.source_evento_id !== event.id ||
+    movement.source_evento_dominio !== "sanitario" ||
+    movement.tipo !== "consumo_sanitario" ||
+    !detail.produto_sanitario_v2_id ||
+    productRecord.productId !== detail.produto_sanitario_v2_id ||
+    !detail.insumo_id ||
+    detail.insumo_id !== movement.insumo_id ||
+    !detail.estoque_lote_id ||
+    detail.estoque_lote_id !== movement.insumo_lote_id ||
+    !Number.isFinite(movement.quantidade_base) ||
+    movement.quantidade_base <= 0 ||
+    !movement.unidade_base
+  ) {
+    throw new Error("SANITARIO_V2_INVENTORY_MOVEMENT_INELIGIBLE");
+  }
+  const historySource = event.payload.entry_history_source;
+  if (
+    historySource === "external_declared" ||
+    historySource === "external_documented"
+  ) {
+    throw new Error("SANITARIO_V2_INVENTORY_MOVEMENT_EXTERNAL_FORBIDDEN");
+  }
+  const record = {
+    ...movement,
+    client_op_id: input.identity.clientOpId,
+    client_tx_id: input.identity.clientTxId,
+    domain_op_id: input.identity.domainOpId,
+  };
+  return {
+    client_op_id: input.identity.clientOpId,
+    client_tx_id: input.identity.clientTxId,
+    op_order: 1,
+    table: "state_insumo_movimentacoes",
+    action: "INSERT",
+    record,
+    domain_op_id: input.identity.domainOpId,
+    sync_state: "PENDING",
+    created_at: movement.created_at,
+  };
+}
+
+export async function writeSanitarioV2Queue(input: {
   fazendaId: string;
   clientId: string;
   operations: readonly SanitarioV2QueuedOperation[];
+  companionOperations?: readonly Operation[];
 }) {
   if (input.operations.length === 0) return;
   const clientTxId = input.operations[0].client_tx_id;
@@ -436,6 +511,28 @@ async function writeSanitarioV2Queue(input: {
       sync_state: "PENDING",
       created_at: createdAt,
     });
+  }
+  for (const companion of input.companionOperations ?? []) {
+    requireIdentity({
+      clientTxId: companion.client_tx_id,
+      clientOpId: companion.client_op_id,
+      domainOpId: companion.domain_op_id ?? "",
+    });
+    if (
+      companion.client_tx_id !== clientTxId ||
+      companion.table !== "state_insumo_movimentacoes" ||
+      companion.action !== "INSERT"
+    ) {
+      throw new Error("SANITARIO_V2_COMPANION_OPERATION_INVALID");
+    }
+    const existing = await db.queue_ops.get(companion.client_op_id);
+    if (existing) {
+      if (!sameQueuedOperation(existing, companion)) {
+        throw new Error("SANITARIO_V2_IDENTITY_REUSE_DIVERGENT_PAYLOAD");
+      }
+      continue;
+    }
+    newOperations.push(companion);
   }
   if (!existingGesture) {
     const gesture: Gesture = {
