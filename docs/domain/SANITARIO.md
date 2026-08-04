@@ -69,7 +69,7 @@ Fora do escopo deste documento:
 | Produto aplicado | `eventos_sanitario` estruturado |
 | Estoque consumido | `insumo_movimentacoes` vinculada ao evento |
 | Custo sanitário | Snapshot no evento/movimento |
-| Carência | Colunas estruturadas de `eventos_sanitario` |
+| Carência operacional | Evento factual + `eventos_sanitario.produto_snapshot.withdrawalSnapshot` + fonte técnica forte explícita |
 | Compliance regulatório | Catálogo/overlay/read model contextual |
 | Checklist documental | Contexto ou fluxo específico, não pendência geral |
 | Biossegurança | Ocorrência contextual registrada em evento |
@@ -477,7 +477,7 @@ O gate remoto está desligado, a feature flag local é `false` e o rollout não 
 
 `SANITARIO_V2_E2E_PLATFORM_BLOCKED` impede rollout: o PostgreSQL gera o conflito esperado `SQLSTATE 40001`, mas a resposta não retorna pelo caminho Edge Function/PostgREST/gateway antes do timeout. Não há evidência atual de defeito no SQL ou na regra de domínio.
 
-Próximo incremento: 3.9 — push/pull de movimento de estoque sanitário. O item 3.13, o rollout e os E2Es remotos permanecem pendentes.
+Os itens 3.9, 3.13, 4, 5 e 6 estão validados localmente; o hardening integrado local foi executado. E2Es remotos, rollout e fechamento da Fase 12 permanecem pendentes.
 
 ---
 
@@ -607,6 +607,39 @@ Proibido:
 - emitir `comercial:pronto_venda` ou `comercial:apto_abate` nesta camada.
 
 Livre de carência é apenas uma evidência sanitária. Não é decisão comercial final.
+
+### Contrato operacional validado localmente na Fase 12
+
+O `withdrawalSnapshot` fica congelado dentro do `produto_snapshot` do Evento factual e não é reconstruído pelo catálogo atual durante retry, replay ou projeção.
+
+Estados preservados por finalidade e animal:
+
+- `calculated`: regra única aplicável informa período e término calculado;
+- `explicit_absence`: fonte forte comprova ausência de carência;
+- `unknown`: produto, contexto, fonte, cobertura ou regra são ausentes/insuficientes;
+- `ambiguous`: mais de uma regra igualmente aplicável produz resultados não equivalentes;
+- `not_permitted`: a fonte técnica não permite o uso/finalidade declarados.
+
+Aplicabilidade:
+
+- usa somente produto executado, espécie, aptidão quando exigida, via, finalidade, fonte, cobertura e qualificadores previstos no contrato;
+- regras semanticamente equivalentes são selecionadas deterministicamente; regras divergentes não calculam;
+- carne e leite são independentes e a cobertura de uma finalidade não se amplia para a outra;
+- ausência de catálogo offline não impede o Evento, mas mantém a carência desconhecida sem fabricar evidência.
+
+Semântica temporal implementada:
+
+- horas: adição exata ao instante factual, sem arredondamento;
+- dias: data nominal em `America/Sao_Paulo`, com término inclusivo no fim do dia nominal;
+- animais com contextos distintos no mesmo Evento preservam resultados próprios.
+
+Correções e projeção:
+
+- cada correção é novo Evento e mantém snapshot próprio;
+- correção de data ou técnica pode alterar a carência vigente; correção somente de custo preserva o significado sanitário;
+- a projeção pura percorre a cadeia factual linear; ramificação permanece conflito explícito;
+- legado insuficiente e histórico externo permanecem desconhecidos e não criam carência operacional;
+- cálculo, reprojeção ou término não movimenta estoque nem autoriza venda, abate, leite, trânsito ou movimentação.
 
 ---
 
@@ -830,7 +863,9 @@ Validações locais cobrem multi-tenant, RLS, retry/replay, idempotência, suces
 - Documentação curta do Sanitário v2 local: concluída.
 - Sync Remoto Sanitário v2: em andamento.
 - Histórico externo/documental 3.8: implementado e validado localmente.
-- Próximo incremento: 3.9 estoque; depois, 3.13 recálculo explícito após pull, E2Es remotos, produto/fonte por campo, correção append-only, carência operacional e fechamento formal da Fase 12.
+- Estoque 3.9, recálculo 3.13, produto/fonte por campo 4, correção append-only 5 e carência operacional 6: validados localmente.
+- Hardening integrado local de 3.9, 3.13, 4, 5 e 6: executado.
+- Próxima pendência: certificação remota acumulada; Fase 12 aberta, gates desligados e rollout não autorizado.
 
 O roadmap macro e os estados por subitem ficam em [ROADMAP.md](../product/ROADMAP.md). O estado técnico detalhado fica em [CURRENT_PHASE_HANDOFF.md](../review/CURRENT_PHASE_HANDOFF.md).
 

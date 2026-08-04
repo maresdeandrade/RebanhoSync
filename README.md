@@ -8,10 +8,11 @@ Plataforma offline-first para gestão pecuária, com React/TypeScript, Dexie e S
 - Fase 12 ativa.
 - Conformidade Sanitária v2 validada localmente como read model derivado e somente leitura.
 - Documentação curta do Sanitário v2 local concluída.
-- Sync Sanitário v2 em andamento, com infraestrutura principal implementada.
+- Sync Sanitário v2 em andamento, com os itens 3.9, 3.13, 4, 5 e 6 validados localmente.
+- Hardening integrado local desses incrementos executado e documentado.
 - E2E remoto parcial e rollout bloqueado por `SANITARIO_V2_E2E_PLATFORM_BLOCKED`.
 - Gate sanitário remoto desligado; feature flag local `false`; rollout não autorizado.
-- Próximo incremento: **3.8 — Push/pull de histórico sanitário externo/documental**.
+- Próxima pendência: **certificação remota acumulada quando o ambiente e os gates forem liberados**.
 
 Produção não foi alterada. O ambiente remoto usado nesta fase é o Supabase staging `zqloazqzhwauamcejmuz`.
 
@@ -24,6 +25,8 @@ Produção não foi alterada. O ambiente remoto usado nesta fase é o Supabase s
 - Protocolo = regra/configuração.
 - Conformidade = leitura derivada, não fonte primária.
 - Carência, venda, abate, leite e aptidão operacional exigem fontes técnicas e factuais explícitas.
+- Correção sanitária = novo Evento factual vinculado; o Evento original permanece imutável.
+- Carência operacional = projeção reconstruível da cadeia factual, do `produto_snapshot`, do `withdrawalSnapshot` e de fonte forte explícita; não autoriza operação comercial.
 
 ## Navegação documental
 

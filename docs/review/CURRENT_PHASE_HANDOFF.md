@@ -1,13 +1,13 @@
 # Handoff atual — Fase 12 / Sync Sanitário v2
 
 Atualizado em: 2026-08-04
-Baseline autorizado para o item 4: `77d640f`
+Baseline funcional validado no hardening integrado local: `27453fa`
 Status: **Fase 12 ativa; rollout não autorizado**
-Próxima pendência: **reexecutar os E2Es remotos quando a plataforma estiver estável**
+Próxima pendência: **certificação remota acumulada quando o ambiente e os gates forem liberados**
 
 ## Resumo executivo
 
-A Conformidade Sanitária v2 permanece um read model derivado/somente leitura. O incremento 3.8 implementou o round-trip local/remoto do histórico `external_declared` e `external_documented` por `apply_factual_core`, fila compartilhada e relação canônica Evento–Animal, sob gates desligados.
+A Conformidade Sanitária v2 permanece um read model derivado/somente leitura. Os incrementos 3.9, 3.13, 4, 5 e 6 estão validados localmente e passaram pelo hardening integrado da cadeia de execução factual, snapshots, correção append-only, projeção de carência, fila, pull/reconcile e estoque.
 
 As validações locais estão completas no baseline registrado pelos commits recentes. A validação E2E remota é parcial: criação de agenda, replay e substituição de animais foram aprovados, mas o cenário de conflito `expected_revision` fica retido no caminho Edge Function/PostgREST/gateway até timeout, embora o PostgreSQL produza imediatamente o erro esperado.
 
@@ -45,6 +45,9 @@ Planos encerrados e evidências em `docs/review/evidence/` permanecem histórico
 | 3.12 Conflito multi-dispositivo | Código e SQL validados; plataforma bloqueada |
 | 3.13 Recalcular Conformidade após pull | Implementado e validado localmente |
 | 4 Produto técnico e fonte por campo | Implementado e validado localmente |
+| 5 Correção sanitária append-only | Implementado e validado localmente |
+| 6 Carência sanitária operacional | Implementado e validado localmente |
+| Hardening integrado local | Executado e validado para 3.9, 3.13, 4, 5 e 6 |
 
 Nem o item 3 nem a Fase 12 estão concluídos.
 
@@ -204,7 +207,7 @@ Validação local concluída com 45 testes focados, suíte completa, lint, build
 Fatos confirmados:
 
 - `eventos_sanitario.produto_snapshot` permanece a única persistência factual do snapshot do produto executado;
-- o núcleo tipado do item 4 contém produto executado e evidência por campo; o contrato futuro com `withdrawalSnapshot` continua separado e obrigatório somente para materialização específica de carência;
+- o núcleo tipado do item 4 contém produto executado e evidência por campo; o `withdrawalSnapshot` permanece uma extensão separada, materializada posteriormente pelo item 6;
 - evidência `covers` exige produto, fonte e versão atuais, cobertura exata, vínculo produto–fonte, regra técnica e aplicabilidade determinística ao animal; cobertura ausente, ambígua ou divergente permanece não comprovada;
 - dose e via factuais nunca são substituídas pelo catálogo, e produto planejado, Agenda, closure ou Protocolo isolado não criam snapshot factual;
 - o snapshot é gravado atomicamente com o detalhe e a fila existentes, participa do fingerprint remoto e faz round-trip pelo pull sem sobrescrever operação local pendente;
@@ -213,15 +216,46 @@ Fatos confirmados:
 
 Validação local concluída com testes focados, suíte completa, lint, build, Deno fmt/check, gate local agregado e baseline funcional Supabase 5/5. O `rtk` não estava disponível; foram usados os comandos equivalentes diretamente.
 
+## Resultado do item 5
+
+Fatos confirmados:
+
+- correção sanitária cria novo Evento factual vinculado e nunca altera o Evento original;
+- cadeia linear é determinística; ramificação permanece conflito explícito, sem last-write-wins;
+- correções técnicas congelam snapshot próprio; correção somente de custo preserva carência e significado sanitário;
+- replay idêntico é no-op, identidade divergente é conflito, retry mantém identidades e rollback não deixa persistência parcial;
+- correções comuns não criam estoque nem estorno; compensações continuam nos gestures especializados.
+
+## Resultado do item 6
+
+Fatos confirmados:
+
+- carência operacional depende exclusivamente do Evento factual, produto executado, `produto_snapshot`, `withdrawalSnapshot` e fonte forte com cobertura explícita para o campo;
+- estados calculado, ausência explícita, desconhecido, ambíguo e não permitido são semanticamente distintos;
+- carne e leite são independentes por animal; aptidão ausente, produto não identificado ou catálogo insuficiente permanecem desconhecidos;
+- períodos em horas usam duração exata desde o fato; períodos em dias usam data nominal em `America/Sao_Paulo` e término inclusivo no fim do dia;
+- cada Evento mantém seu snapshot; correções projetam o estado vigente pela cadeia factual do item 5;
+- round-trip preserva fonte, versão, cobertura e cálculo; retry reutiliza o snapshot persistido;
+- carência encerrada não autoriza venda, abate, leite, movimentação ou qualquer operação comercial.
+
+## Hardening integrado local
+
+Fatos confirmados:
+
+- 166 testes focados dos cinco incrementos e das fronteiras sanitário/offline/`sync-batch` passaram;
+- suíte completa, lint, build, baseline funcional Supabase 5/5, validador agregado e Deno fmt/check passaram;
+- a cobertura existente satisfez a matriz integrada; nenhum defeito de código ou lacuna que exigisse novo teste foi encontrado;
+- não houve mudança em migration, RPC, RLS, schema Dexie, UI, gates ou rollout;
+- o timeout inicial da suíte completa não foi falha funcional: a mesma suíte foi reexecutada integralmente e aprovada.
+
 ## Próxima pendência oficial
 
-Reexecutar os E2Es remotos quando a plataforma estiver estável. O E2E remoto pendente do item 3.9 não foi executado neste incremento.
+Executar a certificação remota acumulada quando o ambiente estiver estável e os gates puderem ser liberados para teste. Nenhum E2E remoto foi executado neste hardening.
 
 Sequência posterior:
 
 ```txt
-reexecutar E2Es remotos quando a plataforma estiver estável
-→ 5 correção append-only
-→ 6 carência operacional
+certificação remota acumulada
+→ correção de eventual defeito comprovado
 → 7 fechamento formal da Fase 12
 ```

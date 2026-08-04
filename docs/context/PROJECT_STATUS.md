@@ -1,7 +1,7 @@
 # Project Status — RebanhoSync
 
 Atualizado em: 2026-08-04
-Baseline funcional atual: `47c3ebd`
+Baseline funcional validado localmente: `27453fa`
 
 ## Objetivo
 
@@ -11,11 +11,11 @@ Registrar o estado vivo do produto em formato curto. Este documento não substit
 
 RebanhoSync está em beta interno, com arquitetura offline-first e isolamento multi-tenant por `fazenda_id`.
 
-A Fase 12 permanece ativa. A Conformidade Sanitária v2 foi validada localmente e documentada; o Sync Remoto Sanitário v2 está em andamento, com infraestrutura principal implementada e validação E2E remota parcial.
+A Fase 12 permanece ativa. A Conformidade Sanitária v2 foi validada localmente e documentada; o Sync Remoto Sanitário v2 está em andamento, com os itens 3.9, 3.13, 4, 5 e 6 validados e submetidos a hardening integrado local.
 
 A documentação curta do Sanitário v2 local também está concluída.
 
-Próxima pendência oficial: **reexecutar os E2Es remotos quando a plataforma estiver estável**.
+Próxima pendência oficial: **certificação remota acumulada quando o ambiente e os gates forem liberados**.
 
 ## Estado sanitário consolidado
 
@@ -29,6 +29,10 @@ Próxima pendência oficial: **reexecutar os E2Es remotos quando a plataforma es
 - `external_documented` exige referência de evidência para comprovação crítica.
 - Baixa de estoque depende de Evento factual.
 - Carência depende de produto executado e fonte técnica explícita.
+- Correção sanitária é novo Evento factual vinculado; cadeia ramificada é conflito explícito.
+- Carência vigente é projeção reconstruível da cadeia factual e dos snapshots congelados.
+- Estados calculado, ausência explícita, desconhecido, ambíguo e não permitido permanecem distintos.
+- Carne e leite são finalidades independentes; carência encerrada não autoriza operação comercial.
 - Tags, sinais, insights e status de sync não são fontes críticas.
 
 ## Sync Sanitário v2
@@ -63,6 +67,9 @@ Estado dos subitens:
 | 3.12 Conflito multi-dispositivo | Plataforma bloqueada |
 | 3.13 Recalcular Conformidade após pull | Implementado e validado localmente |
 | 4 Produto técnico e fonte por campo | Implementado e validado localmente |
+| 5 Correção sanitária append-only | Implementado e validado localmente |
+| 6 Carência sanitária operacional | Implementado e validado localmente |
+| Hardening integrado local | Executado e validado para 3.9, 3.13, 4, 5 e 6 |
 
 ## Ambiente e rollout
 
@@ -87,7 +94,7 @@ Não há evidência atual de defeito no SQL ou na regra de domínio. Não aument
 
 ## Próximo desenvolvimento
 
-O item 4 integra ao Evento factual o produto realmente executado e a evidência técnica explicitamente coberta por campo, persistidos somente em `eventos_sanitario.produto_snapshot`. Ausência ou divergência de catálogo não altera o fato e não fabrica comprovação. `withdrawalSnapshot`, carência e autorização operacional permanecem fora deste item. O item 3 e a Fase 12 permanecem abertos pelas validações remotas pendentes.
+A próxima etapa é a certificação remota acumulada dos contratos já validados localmente, condicionada à estabilidade do ambiente e à liberação controlada dos gates para teste. O item 3 e a Fase 12 permanecem abertos; rollout e produção continuam inalterados.
 
 ## Fontes de detalhe
 

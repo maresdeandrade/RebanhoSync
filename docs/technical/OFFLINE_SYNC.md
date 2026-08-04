@@ -68,7 +68,9 @@ O worker não transforma timeout em conflito confirmado. Resultado desconhecido 
 
 O pull sanitário faz merge não destrutivo. Agenda/animais/closure e núcleo factual são reconciliados sem apagar fatos locais pendentes ou remotos aceitos. Uma operação `apply_factual_core` pendente protege conjuntamente evento, detalhe e relação Evento–Animal, inclusive diante de tombstone remoto parcial.
 
-A Conformidade não é sincronizada como fonte primária. Seu recálculo explícito após pull é o item 3.13 e permanece pendente; o item 3.8 apenas lê conservadoramente o histórico externo/documental puxado.
+A Conformidade não é sincronizada como fonte primária. O item 3.13 reconstrói esse read model localmente somente depois do commit completo do pull factual; falha anterior ao merge não grava estado parcial nem dispara recálculo.
+
+Snapshots técnicos e de carência fazem round-trip dentro de `eventos_sanitario.produto_snapshot`. Retry reutiliza o snapshot persistido e o remoto não consulta o catálogo atual para reescrever fato histórico. Correções sanitárias são novos Eventos com identidades próprias e projeção append-only; ramificação permanece conflito explícito.
 
 ## Estado de validação
 
@@ -77,6 +79,10 @@ A Conformidade não é sincronizada como fonte primária. Seu recálculo explíc
 - retry/replay/idempotência: implementados, com validação remota parcial;
 - sucesso parcial: validado localmente, remoto pendente;
 - conflito multi-dispositivo: código e SQL validados, plataforma bloqueada.
+- movimento de estoque 3.9: implementado e validado localmente;
+- recálculo após pull 3.13: implementado e validado localmente;
+- produto/fonte 4, correção append-only 5 e carência operacional 6: implementados e validados localmente;
+- hardening integrado local de 3.9, 3.13, 4, 5 e 6: executado e aprovado.
 
 `SANITARIO_V2_E2E_PLATFORM_BLOCKED` ocorre porque o PostgreSQL produz `SQLSTATE 40001 / SANITARIO_AGENDA_REVISION_CONFLICT`, mas a resposta não retorna pelo caminho Edge Function/PostgREST/gateway antes do timeout. O worker recebe `RETRYABLE / SANITARIO_RPC_TIMEOUT`.
 
@@ -97,8 +103,8 @@ Não aumentar timeout nem alterar RPC sem nova evidência.
 
 O fingerprint remoto cobre evento, detalhe e relações completos. Alterar referência, cobertura ou snapshot crítico com a mesma identidade gera conflito. O fallback legado de animais só é usado quando não existe relação canônica.
 
-## Próximo incremento
+## Próxima pendência
 
-3.9 — push/pull de movimento de estoque sanitário. O item 3.13 permanece pendente.
+Certificação remota acumulada quando o ambiente estiver estável e os gates forem liberados para teste. E2Es remotos permanecem pendentes, feature gates desligados, rollout não autorizado e Fase 12 aberta.
 
 Detalhes: [plano ativo](../review/ACTIVE_PHASE_PLAN.md) e [handoff](../review/CURRENT_PHASE_HANDOFF.md).

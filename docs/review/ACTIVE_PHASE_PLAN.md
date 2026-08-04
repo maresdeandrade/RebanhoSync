@@ -2,7 +2,7 @@
 
 Atualizado em: 2026-08-04
 Status: **Fase 12 ativa; Sync Sanitário v2 em andamento**
-Próxima pendência: **reexecutar os E2Es remotos quando a plataforma estiver estável**
+Próxima pendência: **certificação remota acumulada quando o ambiente e os gates forem liberados**
 
 Este documento contém o plano corrente. Estado técnico detalhado, validações e risco de plataforma ficam em [CURRENT_PHASE_HANDOFF.md](./CURRENT_PHASE_HANDOFF.md). A decisão arquitetural permanente está em [ADR-0007](../technical/adrs/ADR-0007-sync-remoto-sanitario-v2-integrado.md).
 
@@ -32,6 +32,9 @@ A Conformidade Sanitária v2 permanece um read model local derivado, somente lei
 | 3.12 Conflito multi-dispositivo | Código e SQL validados; plataforma bloqueada |
 | 3.13 Recalcular Conformidade após pull | Implementado e validado localmente |
 | 4 Produto técnico e fonte por campo | Implementado e validado localmente |
+| 5 Correção sanitária append-only | Implementado e validado localmente |
+| 6 Carência sanitária operacional | Implementado e validado localmente |
+| Hardening integrado local de 3.9, 3.13, 4, 5 e 6 | Executado e validado localmente |
 
 O item 3 não está concluído e a Fase 12 não está encerrada.
 
@@ -103,8 +106,46 @@ Resultado comprovado localmente:
 - ausência, arquivamento, ambiguidade ou incompatibilidade de catálogo não impede o Evento, não fabrica evidência e não deixa qualificação parcial;
 - o mesmo `produto_snapshot` participa do detalhe factual, fingerprint remoto e pull incremental, com proteção da operação local pendente;
 - o `sync-batch` valida tenant, produto, fonte, cobertura, regra e aplicabilidade antes da RPC; replay já confirmado continua resolvido pelo ledger e fingerprint canônicos;
-- o núcleo do item 4 não contém `withdrawalSnapshot`, não calcula carência e não cria autorização operacional;
+- o núcleo isolado do item 4 não contém `withdrawalSnapshot`; a materialização de carência foi adicionada posteriormente pelo item 6, sem criar autorização operacional;
 - nenhuma migration, alteração de RPC, schema Dexie, estoque, gate, deploy ou push foi necessária.
+
+## Resultado do item 5
+
+A correção sanitária é um novo Evento factual vinculado por `corrige_evento_id`; o original e seu snapshot permanecem imutáveis.
+
+Resultado comprovado localmente:
+
+- cadeia linear é projetada deterministicamente e correções sucessivas preservam campos não alterados;
+- ramificação factual é conflito explícito, sem last-write-wins;
+- correção técnica congela snapshot próprio e correção apenas de custo preserva o significado sanitário e a carência;
+- replay idêntico é no-op, identidade divergente é conflito e falha transacional não deixa fato ou detalhe parcial;
+- retry mantém identidades estáveis e não transforma correção local pendente em confirmação remota;
+- compensações de estoque permanecem nos gestures especializados, sem estorno implícito.
+
+## Resultado do item 6
+
+A carência operacional nasce exclusivamente do Evento factual executado, do produto realmente aplicado, do `produto_snapshot`, do `withdrawalSnapshot` congelado e de evidência técnica forte com cobertura explícita para `withdrawal`.
+
+Resultado comprovado localmente:
+
+- estados `calculated`, `explicit_absence`, `unknown`, `ambiguous` e `not_permitted` permanecem distintos;
+- carne e leite são finalidades independentes por animal, sem ampliar cobertura ou inferir aptidão ausente;
+- regras semanticamente equivalentes têm seleção determinística; regras divergentes permanecem ambíguas e não calculam;
+- horas são somadas exatamente ao instante factual, sem arredondamento; dias usam data nominal em `America/Sao_Paulo` com término inclusivo no fim do dia;
+- ausência de catálogo offline permite registrar o Evento, mas mantém carência desconhecida sem fabricar snapshot;
+- retry reutiliza o snapshot persistido, o round-trip preserva fonte/versão/cobertura/cálculo e a projeção vigente usa a cadeia factual do item 5;
+- término de carência não autoriza venda, abate, leite, movimentação ou outra operação comercial.
+
+## Hardening integrado local
+
+Os itens 3.9, 3.13, 4, 5 e 6 foram validados conjuntamente nas fronteiras de Agenda/closure, execução factual, snapshots, correção, projeção, fila, worker/reconcile, pull, estoque e `sync-batch`.
+
+Resultado:
+
+- a matriz integrada já possuía cobertura direta; nenhum defeito funcional ou teste adicional foi necessário;
+- lint, suíte completa, build, baseline funcional Supabase, validador agregado e Deno fmt/check passaram;
+- nenhuma migration, RPC, RLS, schema Dexie, UI, feature flag ou fonte de verdade foi alterada;
+- E2Es remotos não foram executados, gates permanecem desligados, rollout não está autorizado e a Fase 12 continua aberta.
 
 ## Regras de domínio do incremento
 
@@ -135,13 +176,12 @@ Resultado comprovado localmente:
 
 O bloqueio `SANITARIO_V2_E2E_PLATFORM_BLOCKED` continua impedindo rollout, sem invalidar a implementação local do item 3.8 sob gates desligados. Não aumentar timeout nem alterar RPC sem nova evidência.
 
-## Sequência após 3.13
+## Sequência após o hardening integrado local
 
 ```txt
-reexecução dos E2Es remotos quando a plataforma estiver estável
-→ item 5 Correção append-only sanitária
-→ item 6 Carência operacional
-→ item 7 Fechamento da Fase 12
+certificação remota acumulada quando o ambiente e os gates forem liberados
+→ correção de eventual defeito comprovado, sem ampliar escopo
+→ item 7 Fechamento formal da Fase 12
 ```
 
 Somente depois do fechamento formal da Fase 12 pode iniciar a Fase 13 — Reprodução Operacional v1.
