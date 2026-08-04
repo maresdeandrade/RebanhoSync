@@ -16,7 +16,10 @@ import {
   type SanitaryProtocolCatalogReadModelV2,
 } from "@/lib/sanitario/catalog/sanitaryProtocolCatalogV2";
 
-const protocol = (familyCode: string, overrides: JsonRecord = {}): JsonRecord => ({
+const protocol = (
+  familyCode: string,
+  overrides: JsonRecord = {},
+): JsonRecord => ({
   id: `protocol-${familyCode}`,
   family_code: familyCode,
   name: familyCode,
@@ -174,17 +177,21 @@ function buildCatalog(): SanitaryProtocolCatalogReadModelV2 {
         calendar_months: [5],
       },
     }),
-    item(protocolId("matrizes_pre_parto"), "matrizes_pre_parto_antiparasitario", {
-      item_status: "condicional",
-      action_type: "vermifugacao",
-      product_requirement_kind: "product_class_group",
-      product_class_group_id: "group-pcg_antiparasitarios_matrizes_pre_parto",
-      eligibility_rule: {
-        species: ["bovino"],
-        sex: "femea",
-        requires_pregnancy_or_peripartum_context: true,
+    item(
+      protocolId("matrizes_pre_parto"),
+      "matrizes_pre_parto_antiparasitario",
+      {
+        item_status: "condicional",
+        action_type: "vermifugacao",
+        product_requirement_kind: "product_class_group",
+        product_class_group_id: "group-pcg_antiparasitarios_matrizes_pre_parto",
+        eligibility_rule: {
+          species: ["bovino"],
+          sex: "femea",
+          requires_pregnancy_or_peripartum_context: true,
+        },
       },
-    }),
+    ),
     item(protocolId("leptospirose"), "lepto_primovac_dose1", {
       item_status: "condicional",
       action_type: "vacinacao",
@@ -371,7 +378,9 @@ describe("precheckSanitaryProtocolsV2", () => {
     );
 
     expect(result.status).toBe("insufficient_data");
-    expect(result.reasons).toContain("Nascimento ausente para calcular janela B19.");
+    expect(result.reasons).toContain(
+      "Nascimento ausente para calcular janela B19.",
+    );
   });
 
   it("B19 abaixo e acima da janela nao vira permissivo", () => {
@@ -414,16 +423,12 @@ describe("precheckSanitaryProtocolsV2", () => {
       { ...baseAnimal, nascimento: "2024-01-01" },
       "b19_femeas_3_8_meses",
       "2026-05-01",
-      eventHistory(
-        "brucelose_b19",
-        "b19_femeas_3_8_meses",
-        "2024-06-01",
-        {
-          source: "external_documented",
-          evidenceClass: "documented",
-          evidenceReference: "certificado-b19-2024",
-        },
-      ),
+      eventHistory("brucelose_b19", "b19_femeas_3_8_meses", "2024-06-01", {
+        source: "external_documented",
+        evidenceClass: "documented",
+        evidenceReference: "certificado-b19-2024",
+        evidenceCoveredFields: ["protocol_item_completion"],
+      }),
     );
 
     expect(result.status).toBe("completed");
@@ -439,12 +444,10 @@ describe("precheckSanitaryProtocolsV2", () => {
       { ...baseAnimal, nascimento: "2024-01-01" },
       "b19_femeas_3_8_meses",
       "2026-05-01",
-      eventHistory(
-        "brucelose_b19",
-        "b19_femeas_3_8_meses",
-        "2024-06-01",
-        { source: "external_documented", evidenceClass: "documented" },
-      ),
+      eventHistory("brucelose_b19", "b19_femeas_3_8_meses", "2024-06-01", {
+        source: "external_documented",
+        evidenceClass: "documented",
+      }),
     );
 
     expect(result.status).toBe("insufficient_data");
@@ -457,12 +460,10 @@ describe("precheckSanitaryProtocolsV2", () => {
       { ...baseAnimal, nascimento: "2024-01-01" },
       "b19_femeas_3_8_meses",
       "2026-05-01",
-      eventHistory(
-        "brucelose_b19",
-        "b19_femeas_3_8_meses",
-        "2024-06-01",
-        { source: "external_declared", evidenceClass: "declared" },
-      ),
+      eventHistory("brucelose_b19", "b19_femeas_3_8_meses", "2024-06-01", {
+        source: "external_declared",
+        evidenceClass: "declared",
+      }),
     );
 
     expect(result.status).toBe("insufficient_data");
@@ -493,7 +494,9 @@ describe("precheckSanitaryProtocolsV2", () => {
     );
 
     expect(result.status).toBe("insufficient_data");
-    expect(result.warnings).toContain("A pré-checagem não infere área de risco.");
+    expect(result.warnings).toContain(
+      "A pré-checagem não infere área de risco.",
+    );
   });
 
   it("raiva em area de risco ainda nao agenda e reforco 30d exige historico", () => {
@@ -518,20 +521,31 @@ describe("precheckSanitaryProtocolsV2", () => {
 
   it.each([
     ["dose 2 de clostridioses", "clostridial_primovac_dose2", "previous_dose"],
-    ["reforco anual de clostridioses", "clostridial_reforco_anual", "previous_execution"],
+    [
+      "reforco anual de clostridioses",
+      "clostridial_reforco_anual",
+      "previous_execution",
+    ],
     ["dose 2 de IBR/BVD", "ibr_bvd_primovac_dose2", "previous_dose"],
     ["dose 2 de leptospirose", "lepto_primovac_dose2", "previous_dose"],
-    ["reforco de leptospirose", "lepto_reforco_anual_semestral", "previous_execution"],
-  ] as const)("%s sem historico retorna insufficient_data", (_label, itemKey, kind) => {
-    const result = resultByItem(buildCatalog(), baseAnimal, itemKey);
+    [
+      "reforco de leptospirose",
+      "lepto_reforco_anual_semestral",
+      "previous_execution",
+    ],
+  ] as const)(
+    "%s sem historico retorna insufficient_data",
+    (_label, itemKey, kind) => {
+      const result = resultByItem(buildCatalog(), baseAnimal, itemKey);
 
-    expect(result.status).toBe("insufficient_data");
-    expect(result.historyRequirementKind).toBe(kind);
-    expect(result.missingExecutedHistory).toBe(true);
-    expect(result.warnings).toContain(
-      "Dados insuficientes para planejar esta etapa.",
-    );
-  });
+      expect(result.status).toBe("insufficient_data");
+      expect(result.historyRequirementKind).toBe(kind);
+      expect(result.missingExecutedHistory).toBe(true);
+      expect(result.warnings).toContain(
+        "Dados insuficientes para planejar esta etapa.",
+      );
+    },
+  );
 
   it("dose 2 usa somente historico executado explicito da dose anterior", () => {
     const precheck = precheckSanitaryProtocolsForAnimalV2({
@@ -554,7 +568,11 @@ describe("precheckSanitaryProtocolsV2", () => {
   });
 
   it.each([
-    ["clostridioses", "clostridial_primovac_dose1", "clostridial_primovac_dose2"],
+    [
+      "clostridioses",
+      "clostridial_primovac_dose1",
+      "clostridial_primovac_dose2",
+    ],
     ["ibr_bvd", "ibr_bvd_primovac_dose1", "ibr_bvd_primovac_dose2"],
     ["leptospirose", "lepto_primovac_dose1", "lepto_primovac_dose2"],
   ] as const)(
@@ -579,11 +597,7 @@ describe("precheckSanitaryProtocolsV2", () => {
       baseAnimal,
       "clostridial_reforco_anual",
       "2026-05-01",
-      eventHistory(
-        "clostridioses",
-        "clostridial_primovac_dose2",
-        "2025-05-01",
-      ),
+      eventHistory("clostridioses", "clostridial_primovac_dose2", "2025-05-01"),
     );
 
     expect(result.status).toBe("in_action_window");
@@ -598,11 +612,7 @@ describe("precheckSanitaryProtocolsV2", () => {
       { ...baseAnimal, riskArea: true },
       "raiva_primovac_reforco_30d",
       "2026-05-01",
-      eventHistory(
-        "raiva_herbivoros",
-        "raiva_primovac_dose1",
-        "2026-04-01",
-      ),
+      eventHistory("raiva_herbivoros", "raiva_primovac_dose1", "2026-04-01"),
     );
 
     expect(result.status).toBe("in_action_window");
@@ -742,7 +752,11 @@ describe("precheckSanitaryProtocolsV2", () => {
   });
 
   it("leptospirose continua como protocolo proprio avaliavel tecnicamente", () => {
-    const result = resultByItem(buildCatalog(), baseAnimal, "lepto_primovac_dose1");
+    const result = resultByItem(
+      buildCatalog(),
+      baseAnimal,
+      "lepto_primovac_dose1",
+    );
 
     expect(result.familyCode).toBe("leptospirose");
     expect(result.status).toBe("in_action_window");
@@ -752,7 +766,11 @@ describe("precheckSanitaryProtocolsV2", () => {
   it("nenhum resultado cria agenda, evento, estoque ou carencia ativa", () => {
     const precheck = precheckSanitaryProtocolsV2({
       scope: "animal",
-      animal: { ...baseAnimal, riskArea: true, pregnancyOrPeripartumContext: true },
+      animal: {
+        ...baseAnimal,
+        riskArea: true,
+        pregnancyOrPeripartumContext: true,
+      },
       catalog: buildCatalog(),
       today: "2026-05-01",
     });
@@ -800,8 +818,9 @@ describe("precheckSanitaryProtocolsV2", () => {
 
     expect(precheck.scope).toBe("lote");
     expect(precheck.results).not.toHaveLength(0);
-    expect(precheck.results.every((entry) => entry.status === "insufficient_data"))
-      .toBe(true);
+    expect(
+      precheck.results.every((entry) => entry.status === "insufficient_data"),
+    ).toBe(true);
   });
 
   it("modulo nao importa Dexie, Supabase, React, agenda, eventos ou queue_ops", () => {
@@ -814,7 +833,9 @@ describe("precheckSanitaryProtocolsV2", () => {
     expect(moduleSource).not.toMatch(/from ["']@\/lib\/supabase["']/);
     expect(moduleSource).not.toMatch(/from ["']react["']/i);
     expect(moduleSource).not.toMatch(/from ["']@\/pages\//);
-    expect(moduleSource).not.toMatch(/queue_ops|createGesture|sync-batch|rpc\(/i);
+    expect(moduleSource).not.toMatch(
+      /queue_ops|createGesture|sync-batch|rpc\(/i,
+    );
     expect(moduleSource).not.toMatch(/event_eventos|state_agenda_itens/);
   });
 });

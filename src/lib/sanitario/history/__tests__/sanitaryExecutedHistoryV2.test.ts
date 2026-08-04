@@ -33,11 +33,7 @@ const protocol = (id: string, familyCode: string): JsonRecord => ({
   metadata: {},
 });
 
-const item = (
-  id: string,
-  protocolId: string,
-  itemKey: string,
-): JsonRecord => ({
+const item = (id: string, protocolId: string, itemKey: string): JsonRecord => ({
   id,
   protocol_id: protocolId,
   logical_item_key: itemKey,
@@ -175,6 +171,12 @@ describe("sanitaryExecutedHistoryV2", () => {
             entry_history_source: "external_documented",
             evidence_class: "documented",
             evidence_reference: "certificado-b19-2024",
+            evidence_covered_fields: [
+              "protocol_item_completion",
+              "product_class",
+            ],
+            external_origin: "certificadora estadual",
+            product_class: "vacina_documentada",
           },
         }),
       ],
@@ -187,7 +189,31 @@ describe("sanitaryExecutedHistoryV2", () => {
       source: "external_documented",
       evidenceClass: "documented",
       evidenceReference: "certificado-b19-2024",
+      evidenceCoveredFields: ["protocol_item_completion", "product_class"],
+      originLabel: "certificadora estadual",
+      productClass: "vacina_documentada",
     });
+  });
+
+  it("prioriza a relação canônica Evento-Animal sobre fallbacks legados", () => {
+    const history = buildSanitaryExecutedHistoryV2({
+      events: [event({ animal_id: "animal-legado" })],
+      sanitaryDetails: [detail()],
+      eventAnimals: [
+        {
+          id: "relation-1",
+          fazenda_id: "farm-1",
+          evento_id: "event-1",
+          animal_id: "animal-canonico",
+          created_at: "2026-04-01T10:00:00.000Z",
+        },
+      ],
+      catalog: catalog(),
+      fazendaId: "farm-1",
+      allowedAnimalIds: ["animal-legado", "animal-canonico"],
+    });
+
+    expect(history.map((entry) => entry.animalId)).toEqual(["animal-canonico"]);
   });
 
   it("expande evento de lote apenas com animal_ids explicitos", () => {
@@ -227,6 +253,13 @@ describe("sanitaryExecutedHistoryV2", () => {
     const storedDetail = detail({ evento_id: storedEvent.id });
     await db.event_eventos.put(storedEvent);
     await db.event_eventos_sanitario.put(storedDetail);
+    await db.event_eventos_animais.put({
+      id: "relation-dexie-history-v2",
+      fazenda_id: "farm-1",
+      evento_id: storedEvent.id,
+      animal_id: "animal-1",
+      created_at: "2026-04-01T10:00:00.000Z",
+    });
 
     try {
       const animalHistory = await getAnimalSanitaryExecutedHistoryV2({
@@ -244,6 +277,7 @@ describe("sanitaryExecutedHistoryV2", () => {
       expect(animalHistory[0]?.events[0]?.eventId).toBe(storedEvent.id);
       expect(lotHistory[0]?.events[0]?.eventId).toBe(storedEvent.id);
     } finally {
+      await db.event_eventos_animais.delete("relation-dexie-history-v2");
       await db.event_eventos_sanitario.delete(storedEvent.id);
       await db.event_eventos.delete(storedEvent.id);
     }
@@ -281,7 +315,9 @@ describe("sanitaryExecutedHistoryV2", () => {
     );
 
     expect(source).not.toMatch(/state_agenda_itens|ops_sanitario_agenda/i);
-    expect(source).not.toMatch(/queue_ops|createGesture|sync-batch|\.add\(|\.put\(/i);
+    expect(source).not.toMatch(
+      /queue_ops|createGesture|sync-batch|\.add\(|\.put\(/i,
+    );
     expect(source).not.toMatch(/insumo_movimentacoes/i);
   });
 });

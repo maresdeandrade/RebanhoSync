@@ -29,6 +29,15 @@ const EVENT_ID = "30000000-0000-4000-8000-000000000001";
 const ANIMAL_ID = "40000000-0000-4000-8000-000000000001";
 const RELATION_ID = "50000000-0000-4000-8000-000000000001";
 const CLOSURE_ID = "60000000-0000-4000-8000-000000000001";
+const EXTERNAL_OP_ID = "70000000-0000-4000-8000-000000000001";
+const EXTERNAL_TX_ID = "80000000-0000-4000-8000-000000000001";
+const EXTERNAL_DOMAIN_OP_ID = "90000000-0000-4000-8000-000000000001";
+const LEGACY_EVENT_ID = "30000000-0000-4000-8000-000000000002";
+const LEGACY_ANIMAL_ID = "40000000-0000-4000-8000-000000000002";
+const LEGACY_RELATION_ID = "50000000-0000-4000-8000-000000000002";
+const LEGACY_OP_ID = "70000000-0000-4000-8000-000000000002";
+const LEGACY_TX_ID = "80000000-0000-4000-8000-000000000002";
+const LEGACY_DOMAIN_OP_ID = "90000000-0000-4000-8000-000000000002";
 const NOW = "2026-07-30T12:00:00.000Z";
 
 function agenda(): SanitarioAgendaLocalV2 {
@@ -147,6 +156,8 @@ describe("sanitario v2 local cutover", () => {
   beforeEach(async () => {
     await Promise.all([
       db.sync_sanitario_v2_cutovers.clear(),
+      db.event_eventos.clear(),
+      db.event_eventos_sanitario.clear(),
       db.event_eventos_animais.clear(),
       db.queue_gestures.clear(),
       db.queue_ops.clear(),
@@ -157,6 +168,8 @@ describe("sanitario v2 local cutover", () => {
     setSanitarioV2PushEnabled(false, SANITARIO_V2_STAGING_PROJECT_REF);
     await Promise.all([
       db.sync_sanitario_v2_cutovers.clear(),
+      db.event_eventos.clear(),
+      db.event_eventos_sanitario.clear(),
       db.event_eventos_animais.clear(),
       db.queue_gestures.clear(),
       db.queue_ops.clear(),
@@ -233,19 +246,22 @@ describe("sanitario v2 local cutover", () => {
       closure(),
       2,
     );
-    expect([create.command, replace.command, factual.command, close.command])
-      .toEqual([
-        "create_agenda",
-        "replace_agenda_animals",
-        "apply_factual_core",
-        "close_agenda",
-      ]);
+    expect([
+      create.command,
+      replace.command,
+      factual.command,
+      close.command,
+    ]).toEqual([
+      "create_agenda",
+      "replace_agenda_animals",
+      "apply_factual_core",
+      "close_agenda",
+    ]);
     expect([
       replace.expected_revision,
       factual.expected_revision,
       close.expected_revision,
-    ])
-      .toEqual([0, 1, 2]);
+    ]).toEqual([0, 1, 2]);
     expect(factual.payload).toMatchObject({
       event: { id: EVENT_ID, source_sanitario_agenda_v2_id: AGENDA_ID },
       event_animals: [{ id: RELATION_ID, animal_id: ANIMAL_ID }],
@@ -258,7 +274,7 @@ describe("sanitario v2 local cutover", () => {
         AGENDA_ID,
         undefined,
         [ANIMAL_ID],
-      )
+      ),
     ).toThrow("SANITARIO_V2_EXPECTED_REVISION_REQUIRED");
   });
 
@@ -286,11 +302,139 @@ describe("sanitario v2 local cutover", () => {
     await expect(
       enqueueSanitarioV2Operations({
         ...input,
-        operations: [{
-          ...operation,
-          payload: { ...operation.payload, animal_ids: [] },
-        }],
+        operations: [
+          {
+            ...operation,
+            payload: { ...operation.payload, animal_ids: [] },
+          },
+        ],
       }),
     ).rejects.toThrow("SANITARIO_V2_IDENTITY_REUSE_DIVERGENT_PAYLOAD");
+  });
+
+  it("faz backfill idempotente de histórico externo criado com gate desligado", async () => {
+    await applySanitarioV2Cutover(FARM_ID, async () => undefined);
+    expect(isSanitarioV2PushEnabled(SANITARIO_V2_STAGING_PROJECT_REF)).toBe(
+      false,
+    );
+    await db.event_eventos.add({
+      ...event(),
+      animal_id: ANIMAL_ID,
+      source_sanitario_agenda_v2_id: null,
+      sanitario_sync_v2_nature: "standalone_fact",
+      client_op_id: EXTERNAL_OP_ID,
+      client_tx_id: EXTERNAL_TX_ID,
+      domain_op_id: EXTERNAL_DOMAIN_OP_ID,
+      payload: {
+        schema: "sanitary_entry_history_v2",
+        entry_history_source: "external_documented",
+        evidence_class: "documented",
+        evidence_reference: "documento-externo-1",
+        evidence_covered_fields: ["protocol_item_completion"],
+      },
+    });
+    await db.event_eventos_sanitario.add({
+      ...detail(),
+      client_op_id: EXTERNAL_OP_ID,
+      client_tx_id: EXTERNAL_TX_ID,
+      domain_op_id: EXTERNAL_DOMAIN_OP_ID,
+      payload: {
+        schema: "sanitary_entry_history_v2",
+        entry_history_source: "external_documented",
+        evidence_reference: "documento-externo-1",
+        evidence_covered_fields: ["protocol_item_completion"],
+      },
+    });
+    await db.event_eventos_animais.add(relation());
+    await db.event_eventos.add({
+      ...event(),
+      id: LEGACY_EVENT_ID,
+      animal_id: LEGACY_ANIMAL_ID,
+      source_sanitario_agenda_v2_id: null,
+      sanitario_sync_v2_nature: "standalone_fact",
+      client_op_id: LEGACY_OP_ID,
+      client_tx_id: LEGACY_TX_ID,
+      domain_op_id: LEGACY_DOMAIN_OP_ID,
+      payload: {
+        schema: "sanitary_entry_history_v2",
+        entry_history_source: "external_documented",
+        evidence_class: "documented",
+        evidence_reference: null,
+        evidence_covered_fields: [],
+      },
+    });
+    await db.event_eventos_sanitario.add({
+      ...detail(),
+      evento_id: LEGACY_EVENT_ID,
+      client_op_id: LEGACY_OP_ID,
+      client_tx_id: LEGACY_TX_ID,
+      domain_op_id: LEGACY_DOMAIN_OP_ID,
+      payload: {
+        schema: "sanitary_entry_history_v2",
+        entry_history_source: "external_documented",
+        evidence_reference: null,
+        evidence_covered_fields: [],
+      },
+    });
+    await db.event_eventos_animais.add({
+      ...relation(),
+      id: LEGACY_RELATION_ID,
+      evento_id: LEGACY_EVENT_ID,
+      animal_id: LEGACY_ANIMAL_ID,
+    });
+
+    setSanitarioV2PushEnabled(true, SANITARIO_V2_STAGING_PROJECT_REF);
+    const activation = {
+      backfillExternalHistory: {
+        clientId: "staging-client",
+        projectRef: SANITARIO_V2_STAGING_PROJECT_REF,
+      },
+    };
+    await applySanitarioV2Cutover(FARM_ID, async () => undefined, activation);
+    await applySanitarioV2Cutover(FARM_ID, async () => undefined, activation);
+
+    expect(await db.queue_gestures.count()).toBe(1);
+    expect(await db.queue_ops.count()).toBe(1);
+    expect(await db.queue_ops.get(LEGACY_OP_ID)).toBeUndefined();
+    expect(await db.event_eventos.get(LEGACY_EVENT_ID)).toMatchObject({
+      deleted_at: null,
+      payload: { evidence_reference: null },
+    });
+    expect(await db.queue_ops.get(EXTERNAL_OP_ID)).toMatchObject({
+      client_tx_id: EXTERNAL_TX_ID,
+      domain_op_id: EXTERNAL_DOMAIN_OP_ID,
+      record: {
+        command: "apply_factual_core",
+        payload: {
+          event: {
+            id: EVENT_ID,
+            natureza: "standalone_fact",
+            payload: {
+              evidence_reference: "documento-externo-1",
+              evidence_covered_fields: ["protocol_item_completion"],
+            },
+          },
+          event_animals: [{ id: RELATION_ID, animal_id: ANIMAL_ID }],
+        },
+      },
+    });
+
+    await db.queue_ops.delete(EXTERNAL_OP_ID);
+    await db.queue_gestures.update(EXTERNAL_TX_ID, {
+      status: "DONE",
+      sync_result: "APPLIED",
+      operation_results: [
+        {
+          op_id: EXTERNAL_OP_ID,
+          client_op_id: EXTERNAL_OP_ID,
+          domain_op_id: EXTERNAL_DOMAIN_OP_ID,
+          status: "APPLIED",
+          recorded_at: NOW,
+        },
+      ],
+    });
+    await applySanitarioV2Cutover(FARM_ID, async () => undefined, activation);
+    expect(await db.queue_ops.get(EXTERNAL_OP_ID)).toBeUndefined();
+    expect(await db.queue_gestures.count()).toBe(1);
   });
 });

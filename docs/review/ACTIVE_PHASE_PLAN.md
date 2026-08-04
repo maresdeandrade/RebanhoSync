@@ -1,8 +1,8 @@
 # Plano ativo — Fase 12 / Sync Remoto Sanitário v2
 
-Atualizado em: 2026-07-30
+Atualizado em: 2026-08-03
 Status: **Fase 12 ativa; Sync Sanitário v2 em andamento**
-Próximo incremento: **3.8 — Push/pull de histórico sanitário externo/documental**
+Próximo incremento: **3.9 — Push/pull de movimento de estoque sanitário**
 
 Este documento contém o plano corrente. Estado técnico detalhado, validações e risco de plataforma ficam em [CURRENT_PHASE_HANDOFF.md](./CURRENT_PHASE_HANDOFF.md). A decisão arquitetural permanente está em [ADR-0007](../technical/adrs/ADR-0007-sync-remoto-sanitario-v2-integrado.md).
 
@@ -25,7 +25,7 @@ A Conformidade Sanitária v2 permanece um read model local derivado, somente lei
 | 3.5 Push/pull de `agenda_animais` | Implementado; E2E remoto parcial |
 | 3.6 Push/pull de evento sanitário | Implementado; E2E remoto pendente |
 | 3.7 Push/pull de detalhe sanitário | Implementado; E2E remoto pendente |
-| 3.8 Push/pull de histórico externo/documental | **Próximo incremento** |
+| 3.8 Push/pull de histórico externo/documental | Implementado e validado localmente; E2E remoto não executado |
 | 3.9 Push/pull de movimento de estoque sanitário | Pendente |
 | 3.10 Retry/replay/idempotência | Implementado; validação remota parcial |
 | 3.11 Sucesso parcial | Validado localmente; E2E remoto pendente |
@@ -34,21 +34,21 @@ A Conformidade Sanitária v2 permanece um read model local derivado, somente lei
 
 O item 3 não está concluído e a Fase 12 não está encerrada.
 
-## Próximo incremento — 3.8
+## Resultado do incremento 3.8
 
-Objetivo: sincronizar histórico sanitário de entrada sem transformar declaração ou documento em execução local.
+O histórico sanitário de entrada faz round-trip por `apply_factual_core` e pela fila compartilhada como `standalone_fact`, sem ser convertido em execução realizada pela fazenda.
 
-Escopo:
+Resultado comprovado:
 
-- sincronizar `external_declared` e `external_documented`;
-- preservar origem e evidência;
-- exigir referência documental para comprovação crítica;
-- reutilizar `queue_gestures` e `queue_ops`, sem fila paralela;
-- manter UUID, `client_op_id`, `domain_op_id` e idempotência;
-- respeitar tenant e `fazenda_id`;
-- implementar pull não destrutivo;
-- tratar replay, conflito e sucesso parcial;
-- recalcular a Conformidade Sanitária v2 conservadoramente após pull.
+- `external_declared` permanece não comprobatório;
+- nova entrada `external_documented` exige referência e cobertura explícita; legado incompleto permanece legível como pendência;
+- origem, evidência, snapshots e relação canônica Evento–Animal sobrevivem ao push/pull;
+- replay é idempotente e identidade com conteúdo divergente produz conflito;
+- pull incremental preserva operação local pendente e trata tombstone remotamente de modo conservador;
+- ativação futura faz backfill idempotente dos históricos locais elegíveis criados com o gate desligado;
+- a Conformidade usa somente o campo documentalmente coberto, sem recálculo global do item 3.13;
+- tenant e `fazenda_id` permanecem isolados;
+- nenhuma migration ou alteração de RPC foi necessária.
 
 Fora do escopo:
 
@@ -87,7 +87,7 @@ Fora do escopo:
 - Rollout para usuários: não autorizado.
 - Fixtures sintéticas residuais: zero.
 
-O bloqueio `SANITARIO_V2_E2E_PLATFORM_BLOCKED` impede rollout, mas não impede o desenvolvimento do item 3.8 sob gates desligados. Não aumentar timeout nem alterar RPC sem nova evidência.
+O bloqueio `SANITARIO_V2_E2E_PLATFORM_BLOCKED` continua impedindo rollout, sem invalidar a implementação local do item 3.8 sob gates desligados. Não aumentar timeout nem alterar RPC sem nova evidência.
 
 ## Sequência após 3.8
 
@@ -103,14 +103,14 @@ O bloqueio `SANITARIO_V2_E2E_PLATFORM_BLOCKED` impede rollout, mas não impede o
 
 Somente depois do fechamento formal da Fase 12 pode iniciar a Fase 13 — Reprodução Operacional v1.
 
-## Critérios de aceite de 3.8
+## Critérios preservados após 3.8
 
 - origem e evidência preservadas no push e no pull;
 - `external_documented` sem referência não comprova regra crítica;
 - replay não duplica histórico;
 - conflito e sucesso parcial ficam rastreáveis;
 - pull é merge não destrutivo por `fazenda_id`;
-- Conformidade é recalculada conservadoramente;
-- nenhum Evento, Agenda, estoque, carência ou liberação operacional é criado por inferência;
+- Conformidade lê conservadoramente os fatos puxados, sem concluir o recálculo global do item 3.13;
+- nenhum Evento de execução, Agenda, estoque, carência ou liberação operacional é criado por inferência;
 - gate remoto e feature flag local permanecem desligados;
 - validações proporcionais de domínio, sync/offline e Supabase passam.

@@ -109,8 +109,9 @@ const ALL_STATUSES = Object.keys(
 ) as SanitaryComplianceStatusV2[];
 
 function emptyStatusSummary(): SanitaryComplianceStatusSummaryV2 {
-  return Object.fromEntries(ALL_STATUSES.map((status) => [status, 0])) as
-    SanitaryComplianceStatusSummaryV2;
+  return Object.fromEntries(
+    ALL_STATUSES.map((status) => [status, 0]),
+  ) as SanitaryComplianceStatusSummaryV2;
 }
 
 function readString(source: Record<string, unknown>, ...keys: string[]) {
@@ -146,13 +147,27 @@ function isCompatibleHistory(
 
 function isDocumentedHistory(event: SanitaryExecutedHistoryEventV2) {
   const hasLinkedEvidence = Boolean(event.evidenceReference?.trim());
+  const coversProtocolItem =
+    event.evidenceCoveredFields?.includes("protocol_item_completion") ?? false;
   return (
     (event.source === "external_documented" &&
       event.evidenceClass === "documented" &&
-      hasLinkedEvidence) ||
+      hasLinkedEvidence &&
+      coversProtocolItem) ||
     (event.source === "legacy_import" &&
       event.evidenceClass === "documented" &&
-      hasLinkedEvidence)
+      hasLinkedEvidence &&
+      coversProtocolItem)
+  );
+}
+
+function hasDocumentedProductCoverage(
+  event: SanitaryExecutedHistoryEventV2 | undefined,
+) {
+  return (
+    event?.evidenceCoveredFields?.some(
+      (field) => field === "product" || field === "product_class",
+    ) ?? false
   );
 }
 
@@ -160,7 +175,7 @@ function isDeclaredHistory(event: SanitaryExecutedHistoryEventV2) {
   return (
     event.source === "external_declared" ||
     event.evidenceClass === "declared" ||
-    (event.source === "legacy_import" && event.evidenceClass !== "documented")
+    (event.source === "legacy_import" && !isDocumentedHistory(event))
   );
 }
 
@@ -174,7 +189,8 @@ function buildAgendaIndex(
 ) {
   const animalsByAgenda = new Map<string, string[]>();
   for (const entry of source.agendaAnimals) {
-    if (entry.planned_status !== "planejado" || entry.execution_evento_id) continue;
+    if (entry.planned_status !== "planejado" || entry.execution_evento_id)
+      continue;
     animalsByAgenda.set(entry.agenda_id, [
       ...(animalsByAgenda.get(entry.agenda_id) ?? []),
       entry.animal_id,
@@ -238,7 +254,9 @@ function statusFromPrecheck(row: SanitaryProtocolWindowRowV2) {
 
 function aggregate(
   rows: SanitaryComplianceRowV2[],
-  resolve: (row: SanitaryComplianceRowV2) => { id: string; label: string } | null,
+  resolve: (
+    row: SanitaryComplianceRowV2,
+  ) => { id: string; label: string } | null,
 ) {
   const groups = new Map<string, SanitaryComplianceGroupSummaryV2>();
   for (const row of rows) {
@@ -293,7 +311,9 @@ export function buildSanitaryComplianceV2(input: {
       const localEvent = history.find(isLocalExecution);
       const documentedEvent = history.find(isDocumentedHistory);
       const declaredEvent = history.find(isDeclaredHistory);
-      const agenda = agendas.get(`${row.animalId}|${row.protocolId}|${row.itemKey}`);
+      const agenda = agendas.get(
+        `${row.animalId}|${row.protocolId}|${row.itemKey}`,
+      );
       const blocked =
         row.blockers.length > 0 ||
         protocol.status === "retired" ||
@@ -311,7 +331,8 @@ export function buildSanitaryComplianceV2(input: {
 
       if (blocked) {
         status = "blocked";
-        evidenceLabel = row.blockers[0] ?? "Item bloqueado pela regra sanitária.";
+        evidenceLabel =
+          row.blockers[0] ?? "Item bloqueado pela regra sanitária.";
         evidenceOrigin = "technical_block";
         evidenceOriginLabel = "Bloqueio técnico do catálogo";
       } else if (row.status === "not_applicable") {
@@ -363,7 +384,11 @@ export function buildSanitaryComplianceV2(input: {
         eventId = declaredEvent?.eventId ?? null;
       }
 
-      const eventForProduct = localEvent ?? documentedEvent ?? declaredEvent;
+      const eventForProduct =
+        localEvent ??
+        (hasDocumentedProductCoverage(documentedEvent)
+          ? documentedEvent
+          : undefined);
       const agendaProduct = resolveProductFromAgenda(agenda);
       rows.push({
         key: `${row.animalId}|${row.protocolId}|${row.itemKey}`,
@@ -387,7 +412,7 @@ export function buildSanitaryComplianceV2(input: {
         agendaDate: agenda?.data_programada ?? null,
         eventId,
         documentPendency: row.documentaryPending
-          ? row.documentaryPendingReasons[0] ?? row.reason
+          ? (row.documentaryPendingReasons[0] ?? row.reason)
           : null,
         productId: eventForProduct?.productId ?? agendaProduct.id,
         productLabel: eventForProduct?.productName ?? agendaProduct.label,
@@ -411,7 +436,10 @@ export function buildSanitaryComplianceV2(input: {
     evaluatedAt: input.evaluatedAt,
     rows,
     statuses,
-    byAnimal: aggregate(rows, (row) => ({ id: row.animalId, label: row.animalLabel })),
+    byAnimal: aggregate(rows, (row) => ({
+      id: row.animalId,
+      label: row.animalLabel,
+    })),
     byLot: aggregate(rows, (row) =>
       row.lotId ? { id: row.lotId, label: row.lotLabel } : null,
     ),
@@ -419,7 +447,10 @@ export function buildSanitaryComplianceV2(input: {
       id: row.protocolId,
       label: row.protocolLabel,
     })),
-    byItem: aggregate(rows, (row) => ({ id: row.itemId, label: row.itemLabel })),
+    byItem: aggregate(rows, (row) => ({
+      id: row.itemId,
+      label: row.itemLabel,
+    })),
     createsAgenda: false,
     createsEvent: false,
     createsStockMovement: false,

@@ -65,6 +65,64 @@ function createAgendaOperation(overrides: Record<string, unknown> = {}) {
   };
 }
 
+function externalHistoryOperation(input: {
+  source?: "external_declared" | "external_documented";
+  evidenceReference?: string | null;
+  evidenceCoveredFields?: string[];
+  event?: Record<string, unknown>;
+  detail?: Record<string, unknown>;
+} = {}) {
+  const source = input.source ?? "external_documented";
+  return {
+    domain: "sanitario_v2",
+    command: "apply_factual_core",
+    contract_version: 2,
+    client_tx_id: ids.tx,
+    client_op_id: ids.op,
+    domain_op_id: ids.domainOp,
+    payload: {
+      event: {
+        id: ids.event,
+        natureza: "standalone_fact",
+        occurred_at: "2026-07-28T12:00:00.000Z",
+        animal_id: ids.animal,
+        source_sanitario_agenda_v2_id: null,
+        corrige_evento_id: null,
+        payload: {
+          entry_history_source: source,
+          evidence_class: source === "external_documented"
+            ? "documented"
+            : "declared",
+          evidence_reference: input.evidenceReference ??
+            (source === "external_documented" ? "certificado-b19-2024" : null),
+          evidence_covered_fields: input.evidenceCoveredFields ??
+            (source === "external_documented"
+              ? ["protocol_item_completion"]
+              : []),
+          creates_agenda: false,
+          creates_local_execution: false,
+          creates_stock_movement: false,
+          creates_active_withdrawal: false,
+        },
+        ...input.event,
+      },
+      detail: {
+        tipo: "vacinacao",
+        produto_sanitario_v2_id: null,
+        insumo_id: null,
+        estoque_lote_id: null,
+        carencia_carne_dias: null,
+        carencia_leite_dias: null,
+        carencia_carne_ate: null,
+        carencia_leite_ate: null,
+        payload: {},
+        ...input.detail,
+      },
+      event_animals: [{ id: ids.relation, animal_id: ids.animal }],
+    },
+  };
+}
+
 function dependencies(options?: {
   gate?: SanitarioSyncV2Gate | null;
   gateError?: { code?: string; message?: string };
@@ -436,6 +494,177 @@ describe("sync-batch sanitario v2: RPC e resultado canônico", () => {
     expect(result).toMatchObject({
       status: "REJECTED",
       reason_code: "SANITARIO_AGENDA_TARGET_CROSS_FARM_OR_MISSING",
+    });
+  });
+});
+
+describe("sync-batch sanitario v2: histórico externo/documental", () => {
+  it("aceita documentado com referência/cobertura e declaração fail-closed", () => {
+    const documented = validateSanitarioSyncV2Operation(
+      externalHistoryOperation(),
+      context,
+    );
+    const declared = validateSanitarioSyncV2Operation(
+      externalHistoryOperation({ source: "external_declared" }),
+      context,
+    );
+
+    expect(documented.ok).toBe(true);
+    expect(declared.ok).toBe(true);
+    if (documented.ok) {
+      expect(buildSanitarioSyncV2RpcCall(documented.operation, context))
+        .toMatchObject({
+          functionName: "internal_sanitario_sync_v2_apply_factual_core",
+          args: {
+            expected_revision: null,
+            event_payload: {
+              natureza: "standalone_fact",
+              animal_id: ids.animal,
+            },
+            event_animals: [{ id: ids.relation, animal_id: ids.animal }],
+          },
+        });
+    }
+  });
+
+  it("preserva referência, cobertura e snapshots críticos enviados ao fingerprint remoto", () => {
+    const raw = externalHistoryOperation({
+      event: {
+        payload: {
+          entry_history_source: "external_documented",
+          evidence_class: "documented",
+          evidence_reference: "certificado-b19-revisao-2",
+          evidence_covered_fields: [
+            "protocol_item_completion",
+            "product_class",
+          ],
+          protocol_snapshot: { id: "protocol-b19", version: 3 },
+          creates_agenda: false,
+          creates_local_execution: false,
+          creates_stock_movement: false,
+          creates_active_withdrawal: false,
+        },
+      },
+      detail: {
+        produto_snapshot: {
+          product_class: "vacina_b19",
+          evidence_covered_fields: ["product_class"],
+        },
+      },
+    });
+    const validation = validateSanitarioSyncV2Operation(raw, context);
+
+    expect(validation.ok).toBe(true);
+    if (!validation.ok) return;
+    expect(buildSanitarioSyncV2RpcCall(validation.operation, context).args)
+      .toMatchObject({
+        event_payload: {
+          payload: {
+            evidence_reference: "certificado-b19-revisao-2",
+            evidence_covered_fields: [
+              "protocol_item_completion",
+              "product_class",
+            ],
+            protocol_snapshot: { id: "protocol-b19", version: 3 },
+          },
+        },
+        detail_payload: {
+          produto_snapshot: {
+            product_class: "vacina_b19",
+            evidence_covered_fields: ["product_class"],
+          },
+        },
+      });
+  });
+
+  it("rejeita documentado sem referência antes da RPC", async () => {
+    const deps = dependencies();
+    const result = await executeSanitarioSyncV2Operation(
+      externalHistoryOperation({ evidenceReference: " " }),
+      context,
+      deps,
+    );
+
+    expect(result).toMatchObject({
+      status: "REJECTED",
+      reason_code: "SANITARIO_EXTERNAL_DOCUMENT_REFERENCE_REQUIRED",
+    });
+    expect(deps.callRpc).not.toHaveBeenCalled();
+  });
+
+  it("rejeita Agenda, execução primária, estoque e carência no histórico externo", () => {
+    const agenda = validateSanitarioSyncV2Operation(
+      externalHistoryOperation({
+        event: {
+          natureza: "primary_execution",
+          source_sanitario_agenda_v2_id: ids.agenda,
+        },
+      }),
+      context,
+    );
+    const stock = validateSanitarioSyncV2Operation(
+      externalHistoryOperation({ detail: { estoque_lote_id: ids.agenda } }),
+      context,
+    );
+    const withdrawal = validateSanitarioSyncV2Operation(
+      externalHistoryOperation({ detail: { carencia_carne_dias: 30 } }),
+      context,
+    );
+
+    expect(agenda.ok).toBe(false);
+    if (!agenda.ok) {
+      expect(agenda.result.reason_code).toBe(
+        "SANITARIO_EXTERNAL_HISTORY_MUST_BE_STANDALONE_FACT",
+      );
+    }
+    for (const validation of [stock, withdrawal]) {
+      expect(validation.ok).toBe(false);
+      if (!validation.ok) {
+        expect(validation.result.reason_code).toBe(
+          "SANITARIO_EXTERNAL_HISTORY_FORBIDDEN_EFFECT",
+        );
+      }
+    }
+  });
+
+  it("mantém replay idempotente e conflito de conteúdo divergente explícitos", async () => {
+    const replayDependencies = dependencies({
+      rpcData: {
+        evento_id: ids.event,
+        animal_ids: [ids.animal],
+        replayed: true,
+      },
+    });
+    const operation = externalHistoryOperation();
+    const first = await executeSanitarioSyncV2Operation(
+      operation,
+      context,
+      replayDependencies,
+    );
+    const replay = await executeSanitarioSyncV2Operation(
+      operation,
+      context,
+      replayDependencies,
+    );
+    const conflict = await executeSanitarioSyncV2Operation(
+      operation,
+      context,
+      dependencies({
+        rpcError: {
+          code: "23505",
+          message: "SANITARIO_IDEMPOTENCY_PAYLOAD_MISMATCH",
+        },
+      }),
+    );
+
+    expect(replay).toEqual(first);
+    expect(first).toMatchObject({
+      status: "APPLIED",
+      canonical_entity_id: ids.event,
+    });
+    expect(conflict).toMatchObject({
+      status: "CONFLICT",
+      reason_code: "SANITARIO_IDEMPOTENCY_PAYLOAD_MISMATCH",
     });
   });
 });

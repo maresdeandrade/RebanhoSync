@@ -240,6 +240,17 @@ const COMMAND_ALLOWED_ROLES: Record<
   close_agenda: new Set(["owner", "manager"]),
 };
 
+const EXTERNAL_HISTORY_EVIDENCE_FIELDS = new Set([
+  "protocol_completion",
+  "protocol_item_completion",
+  "product_class",
+  "product",
+  "execution_date",
+  "dose",
+  "route",
+  "responsible",
+]);
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -296,6 +307,111 @@ function validateTargets(ids: unknown): string | null {
   }
   if (!ids.every(isUuid) || new Set(ids).size !== ids.length) {
     return "SANITARIO_TARGETS_INVALID";
+  }
+  return null;
+}
+
+function readNonEmptyString(value: unknown): string | null {
+  return typeof value === "string" && value.trim().length > 0
+    ? value.trim()
+    : null;
+}
+
+function hasNonNullField(
+  record: Record<string, unknown>,
+  fields: readonly string[],
+) {
+  return fields.some((field) =>
+    record[field] !== null && record[field] !== undefined
+  );
+}
+
+function validateExternalHistoryFactualCore(input: {
+  event: Record<string, unknown>;
+  detail: Record<string, unknown>;
+  eventAnimals: unknown[];
+}): string | null {
+  const eventPayload = isRecord(input.event.payload) ? input.event.payload : {};
+  const detailPayload = isRecord(input.detail.payload)
+    ? input.detail.payload
+    : {};
+  const historySource = readNonEmptyString(
+    detailPayload.entry_history_source ?? eventPayload.entry_history_source,
+  );
+  if (
+    historySource !== "external_documented" &&
+    historySource !== "external_declared"
+  ) {
+    return null;
+  }
+
+  if (
+    input.event.natureza !== "standalone_fact" ||
+    input.event.source_sanitario_agenda_v2_id != null ||
+    input.event.corrige_evento_id != null
+  ) {
+    return "SANITARIO_EXTERNAL_HISTORY_MUST_BE_STANDALONE_FACT";
+  }
+  if (
+    !isUuid(input.event.animal_id) ||
+    input.eventAnimals.length !== 1 ||
+    !isRecord(input.eventAnimals[0]) ||
+    input.eventAnimals[0].animal_id !== input.event.animal_id
+  ) {
+    return "SANITARIO_EXTERNAL_HISTORY_ANIMAL_INVALID";
+  }
+  if (
+    hasNonNullField(input.detail, [
+      "produto_sanitario_v2_id",
+      "insumo_id",
+      "estoque_lote_id",
+      "estoque_lote_codigo_snapshot",
+      "lote_fabricante",
+      "validade_produto",
+      "carencia_carne_dias",
+      "carencia_leite_dias",
+      "carencia_carne_ate",
+      "carencia_leite_ate",
+      "custo_unitario_snapshot",
+      "custo_total_snapshot",
+    ]) ||
+    eventPayload.creates_agenda === true ||
+    eventPayload.creates_local_execution === true ||
+    eventPayload.creates_stock_movement === true ||
+    eventPayload.creates_active_withdrawal === true
+  ) {
+    return "SANITARIO_EXTERNAL_HISTORY_FORBIDDEN_EFFECT";
+  }
+
+  const evidenceClass = readNonEmptyString(
+    detailPayload.evidence_class ?? eventPayload.evidence_class,
+  );
+  const evidenceReference = readNonEmptyString(
+    detailPayload.evidence_reference ?? eventPayload.evidence_reference,
+  );
+  const rawCoverage = detailPayload.evidence_covered_fields ??
+    eventPayload.evidence_covered_fields;
+  const coverage = Array.isArray(rawCoverage) ? rawCoverage : [];
+  if (
+    !coverage.every((field) =>
+      typeof field === "string" && EXTERNAL_HISTORY_EVIDENCE_FIELDS.has(field)
+    ) || new Set(coverage).size !== coverage.length
+  ) {
+    return "SANITARIO_EXTERNAL_HISTORY_EVIDENCE_COVERAGE_INVALID";
+  }
+  if (historySource === "external_documented") {
+    if (evidenceClass !== "documented" || !evidenceReference) {
+      return "SANITARIO_EXTERNAL_DOCUMENT_REFERENCE_REQUIRED";
+    }
+    if (coverage.length === 0) {
+      return "SANITARIO_EXTERNAL_HISTORY_EVIDENCE_COVERAGE_REQUIRED";
+    }
+  }
+  if (
+    historySource === "external_declared" &&
+    (evidenceClass !== "declared" || coverage.length > 0)
+  ) {
+    return "SANITARIO_EXTERNAL_DECLARATION_INVALID";
   }
   return null;
 }
@@ -443,16 +559,6 @@ export function validateSanitarioSyncV2Operation(
       };
     }
     const event = payload.event;
-    if (
-      event.natureza === "primary_execution" &&
-      event.source_sanitario_agenda_v2_id != null &&
-      !isRevision(raw.expected_revision)
-    ) {
-      return {
-        ok: false,
-        result: reject(raw, "SANITARIO_EXPECTED_REVISION_REQUIRED"),
-      };
-    }
     const eventAnimals = payload.event_animals as unknown[];
     const animalIds = eventAnimals.map((item) =>
       isRecord(item) ? item.animal_id : null
@@ -469,6 +575,24 @@ export function validateSanitarioSyncV2Operation(
       return {
         ok: false,
         result: reject(raw, "SANITARIO_EVENT_ANIMALS_INVALID"),
+      };
+    }
+    const externalHistoryIssue = validateExternalHistoryFactualCore({
+      event,
+      detail: payload.detail,
+      eventAnimals,
+    });
+    if (externalHistoryIssue) {
+      return { ok: false, result: reject(raw, externalHistoryIssue) };
+    }
+    if (
+      event.natureza === "primary_execution" &&
+      event.source_sanitario_agenda_v2_id != null &&
+      !isRevision(raw.expected_revision)
+    ) {
+      return {
+        ok: false,
+        result: reject(raw, "SANITARIO_EXPECTED_REVISION_REQUIRED"),
       };
     }
   }

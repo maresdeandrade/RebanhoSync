@@ -72,11 +72,7 @@ const item = (
   ...overrides,
 });
 
-function animal(
-  id: string,
-  birthDate: string | null,
-  lotId = "lot-1",
-): Animal {
+function animal(id: string, birthDate: string | null, lotId = "lot-1"): Animal {
   return {
     id,
     fazenda_id: "farm-1",
@@ -127,6 +123,7 @@ function historyEvent(
   source: SanitaryExecutedHistoryEventV2["source"],
   evidenceClass?: SanitaryExecutedHistoryEventV2["evidenceClass"],
   evidenceReference?: string | null,
+  evidenceCoveredFields?: string[],
 ): SanitaryExecutedHistoryEventV2 {
   return {
     eventId,
@@ -140,6 +137,11 @@ function historyEvent(
     source,
     evidenceClass,
     evidenceReference,
+    evidenceCoveredFields:
+      evidenceCoveredFields ??
+      (source === "external_documented" && evidenceReference
+        ? ["protocol_item_completion"]
+        : []),
   };
 }
 
@@ -193,13 +195,15 @@ function agendaAnimal(
   };
 }
 
-function source(input: {
-  animals?: Animal[];
-  histories?: SanitaryExecutedHistoryV2[];
-  agendas?: SanitarioAgendaLocalV2[];
-  agendaAnimals?: SanitarioAgendaAnimalLocalV2[];
-  catalogOverride?: SanitaryProtocolCatalogReadModelV2;
-} = {}): SanitaryProtocolWindowSourceV2 {
+function source(
+  input: {
+    animals?: Animal[];
+    histories?: SanitaryExecutedHistoryV2[];
+    agendas?: SanitarioAgendaLocalV2[];
+    agendaAnimals?: SanitarioAgendaAnimalLocalV2[];
+    catalogOverride?: SanitaryProtocolCatalogReadModelV2;
+  } = {},
+): SanitaryProtocolWindowSourceV2 {
   return {
     catalog: input.catalogOverride ?? catalog,
     animals: input.animals ?? [animal("young", "2026-03-01")],
@@ -236,7 +240,11 @@ describe("sanitaryComplianceV2", () => {
   it("agenda futura explícita gera planned, nunca compliant", () => {
     expect(
       row({ agendas: [agenda()], agendaAnimals: [agendaAnimal("young")] }),
-    ).toMatchObject({ status: "planned", agendaId: "agenda-b19", eventId: null });
+    ).toMatchObject({
+      status: "planned",
+      agendaId: "agenda-b19",
+      eventId: null,
+    });
   });
 
   it("histórico externo documentado compatível comprova conformidade", () => {
@@ -257,7 +265,10 @@ describe("sanitaryComplianceV2", () => {
           },
         ],
       }),
-    ).toMatchObject({ status: "compliant", evidenceOrigin: "external_documented" });
+    ).toMatchObject({
+      status: "compliant",
+      evidenceOrigin: "external_documented",
+    });
   });
 
   it("histórico external_documented sem evidência vinculada não comprova B19", () => {
@@ -283,6 +294,54 @@ describe("sanitaryComplianceV2", () => {
     });
   });
 
+  it("histórico documentado apoia somente o campo explicitamente coberto", () => {
+    const onlyProductClass = row({
+      animals: [animal("adult", "2024-01-01")],
+      histories: [
+        {
+          animalId: "adult",
+          events: [
+            historyEvent(
+              "document-product-only",
+              "external_documented",
+              "documented",
+              "certificado-produto-2024",
+              ["product_class"],
+            ),
+          ],
+        },
+      ],
+    });
+    const onlyCompletion = row({
+      animals: [animal("adult", "2024-01-01")],
+      histories: [
+        {
+          animalId: "adult",
+          events: [
+            historyEvent(
+              "document-completion-only",
+              "external_documented",
+              "documented",
+              "certificado-b19-2024",
+              ["protocol_item_completion"],
+            ),
+          ],
+        },
+      ],
+    });
+
+    expect(onlyProductClass).toMatchObject({
+      status: "document_pending",
+      evidenceOrigin: "documentary_pendency",
+    });
+    expect(onlyCompletion).toMatchObject({
+      status: "compliant",
+      evidenceOrigin: "external_documented",
+      productId: null,
+      productLabel: null,
+    });
+  });
+
   it("declaração sem documento não gera compliant em B19 adulta", () => {
     expect(
       row({
@@ -290,11 +349,40 @@ describe("sanitaryComplianceV2", () => {
         histories: [
           {
             animalId: "adult",
-            events: [historyEvent("declaration-1", "external_declared", "declared")],
+            events: [
+              historyEvent("declaration-1", "external_declared", "declared"),
+            ],
           },
         ],
       }),
-    ).toMatchObject({ status: "document_pending", evidenceOrigin: "declaration" });
+    ).toMatchObject({
+      status: "document_pending",
+      evidenceOrigin: "declaration",
+    });
+  });
+
+  it("legado documentado sem referência continua legível como pendência", () => {
+    expect(
+      row({
+        animals: [animal("adult", "2024-01-01")],
+        histories: [
+          {
+            animalId: "adult",
+            events: [
+              historyEvent(
+                "legacy-no-reference",
+                "legacy_import",
+                "documented",
+              ),
+            ],
+          },
+        ],
+      }),
+    ).toMatchObject({
+      status: "document_pending",
+      evidenceOrigin: "declaration",
+      eventId: "legacy-no-reference",
+    });
   });
 
   it("B19 adulta sem documento gera document_pending", () => {
@@ -341,7 +429,9 @@ describe("sanitaryComplianceV2", () => {
       evaluatedAt: TODAY,
     });
     expect(model.rows).toHaveLength(2);
-    expect(model.rows.every((entry) => entry.status === "compliant")).toBe(true);
+    expect(model.rows.every((entry) => entry.status === "compliant")).toBe(
+      true,
+    );
   });
 
   it("execução parcial de lote não generaliza conformidade", () => {
@@ -362,7 +452,9 @@ describe("sanitaryComplianceV2", () => {
     });
 
     expect(
-      Object.fromEntries(model.rows.map((entry) => [entry.animalId, entry.status])),
+      Object.fromEntries(
+        model.rows.map((entry) => [entry.animalId, entry.status]),
+      ),
     ).toEqual({ executed: "compliant", "not-executed": "due_now" });
   });
 
@@ -395,11 +487,12 @@ describe("sanitaryComplianceV2", () => {
     });
 
     expect(model.rows).toHaveLength(2);
-    expect(model.rows.find((entry) => entry.protocolId === "protocol-b19")?.status).toBe(
-      "compliant",
-    );
     expect(
-      model.rows.find((entry) => entry.protocolId === secondProtocol.id)?.status,
+      model.rows.find((entry) => entry.protocolId === "protocol-b19")?.status,
+    ).toBe("compliant");
+    expect(
+      model.rows.find((entry) => entry.protocolId === secondProtocol.id)
+        ?.status,
     ).not.toBe("compliant");
   });
 
@@ -412,8 +505,10 @@ describe("sanitaryComplianceV2", () => {
       "due_now",
     );
     expect(
-      row({ agendas: [agenda("cancelada")], agendaAnimals: [agendaAnimal("young")] })
-        .status,
+      row({
+        agendas: [agenda("cancelada")],
+        agendaAnimals: [agendaAnimal("young")],
+      }).status,
     ).toBe("due_now");
   });
 
@@ -453,7 +548,10 @@ describe("sanitaryComplianceV2", () => {
   });
 
   it("não cria efeitos operacionais nem libera operações", () => {
-    const model = buildSanitaryComplianceV2({ source: source(), evaluatedAt: TODAY });
+    const model = buildSanitaryComplianceV2({
+      source: source(),
+      evaluatedAt: TODAY,
+    });
     expect(model).toMatchObject({
       createsAgenda: false,
       createsEvent: false,

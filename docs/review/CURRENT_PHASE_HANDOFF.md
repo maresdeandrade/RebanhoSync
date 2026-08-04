@@ -1,17 +1,17 @@
 # Handoff atual — Fase 12 / Sync Sanitário v2
 
-Atualizado em: 2026-07-30
-Baseline funcional atual: `2006286`
+Atualizado em: 2026-08-03
+Baseline anterior confirmado: `c1491d7`
 Status: **Fase 12 ativa; rollout não autorizado**
-Próximo incremento: **3.8 — Push/pull de histórico sanitário externo/documental**
+Próximo incremento: **3.9 — Push/pull de movimento de estoque sanitário**
 
 ## Resumo executivo
 
-A Conformidade Sanitária v2 foi validada localmente e documentada como read model derivado/somente leitura. A fundação remota, o `sync-batch`, o typecheck Deno, o worker/reconcile e o cutover local Dexie do Sync Sanitário v2 foram implementados sob gates desligados.
+A Conformidade Sanitária v2 permanece um read model derivado/somente leitura. O incremento 3.8 implementou o round-trip local/remoto do histórico `external_declared` e `external_documented` por `apply_factual_core`, fila compartilhada e relação canônica Evento–Animal, sob gates desligados.
 
 As validações locais estão completas no baseline registrado pelos commits recentes. A validação E2E remota é parcial: criação de agenda, replay e substituição de animais foram aprovados, mas o cenário de conflito `expected_revision` fica retido no caminho Edge Function/PostgREST/gateway até timeout, embora o PostgreSQL produza imediatamente o erro esperado.
 
-Decisão atual: desenvolver o item 3.8 sob gate fail-closed, sem rollout e sem atribuir ao SQL uma causa não comprovada.
+Decisão atual: manter o rollout bloqueado e seguir para o item 3.9, sem concluir o item 3, o item 3.13 ou a Fase 12.
 
 ## Fontes autoritativas
 
@@ -38,7 +38,7 @@ Planos encerrados e evidências em `docs/review/evidence/` permanecem histórico
 | 3.5 Agenda animais | Implementada; E2E remoto parcial |
 | 3.6 Evento sanitário | Implementado; E2E remoto pendente |
 | 3.7 Detalhe sanitário | Implementado; E2E remoto pendente |
-| 3.8 Histórico externo/documental | Próximo incremento |
+| 3.8 Histórico externo/documental | Implementado e validado localmente; E2E remoto não executado |
 | 3.9 Movimento de estoque sanitário | Pendente |
 | 3.10 Retry/replay/idempotência | Implementado; validação remota parcial |
 | 3.11 Sucesso parcial | Validado localmente; E2E remoto pendente |
@@ -146,20 +146,31 @@ IDs e rastros detalhados da execução remota devem permanecer em relatório té
 - suíte local completa, lint e build nos respectivos incrementos;
 - limpeza remota com zero fixtures sintéticas residuais.
 
+No incremento 3.8 foram reexecutados: preflight e validação agregada, testes focados do domínio/sync, suíte completa com 2.241 testes em 310 arquivos, lint, build, `deno fmt --check`, `deno check --no-lock` e baseline funcional Supabase com 5/5 verificações. Não houve migration, alteração de RPC, deploy ou push.
+
 Este handoff registra resultados já executados; não afirma que essas validações foram reexecutadas por uma alteração puramente documental.
+
+## Resultado do incremento 3.8
+
+Fatos confirmados:
+
+- UUID e identidades de operação são gerados na origem e enfileirados na fila compartilhada;
+- existe registro na tabela factual `event_eventos`/`eventos`, classificado como `standalone_fact`; ele não é Evento de execução `primary_execution`;
+- referência presente, classe e cobertura são validações estruturais e não autenticam o conteúdo do documento;
+- `external_declared` não comprova; documento sem referência permanece fail-closed; `external_documented` apoia somente a cobertura declarada;
+- o cutover com contexto de ativação faz backfill idempotente dos históricos locais elegíveis criados com o gate desligado, inclusive quando o manifesto já está `APPLIED`;
+- a relação Evento–Animal canônica é exclusiva quando existe; fallback legado ocorre somente na ausência dela, sem união ou duplicidade;
+- o fingerprint cobre evento, detalhe e relações completos; alteração de referência, cobertura ou snapshot crítico com a mesma identidade produz conflito, não replay;
+- pull incremental/idempotente protege conjuntamente evento, detalhe e relação de operação local pendente, inclusive contra tombstone remoto parcial;
+- replay, conflito de conteúdo, sucesso parcial e divergência de tenant estão cobertos;
+- não são criados Agenda, `primary_execution`, movimento de estoque, carência ou autorização operacional;
+- nenhuma migration ou ampliação da RPC foi necessária.
+
+O item 3.13 permanece pendente: o incremento 3.8 não introduz recálculo global após todos os pulls.
 
 ## Próximo incremento oficial
 
-Implementar 3.8 — push/pull de histórico sanitário `external_declared` e `external_documented`:
-
-- preservar origem e evidência;
-- exigir referência documental para comprovação crítica;
-- usar fila compartilhada, UUID e idempotência;
-- respeitar tenant/`fazenda_id`;
-- usar pull não destrutivo;
-- tratar replay, conflito e sucesso parcial;
-- recalcular Conformidade conservadoramente após pull;
-- não criar Agenda, Evento executado, estoque, carência ou liberação operacional.
+Implementar 3.9 — push/pull de movimento de estoque sanitário, respeitando os gates e contratos ativos.
 
 Sequência posterior:
 

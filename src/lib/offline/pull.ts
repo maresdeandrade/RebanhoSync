@@ -90,9 +90,10 @@ function buildPullCursorKey(
 
 async function getPullCursor(key: string): Promise<PullCursor | null> {
   if (!hasPullCursorStore()) return null;
-  return ((await db.table(PULL_CURSOR_STORE).get(key)) as
-    | PullCursor
-    | undefined) ?? null;
+  return (
+    ((await db.table(PULL_CURSOR_STORE).get(key)) as PullCursor | undefined) ??
+    null
+  );
 }
 
 function getLatestUpdatedAtRow(rows: RemoteRow[]) {
@@ -102,13 +103,17 @@ function getLatestUpdatedAtRow(rows: RemoteRow[]) {
 
   if (rowsWithUpdatedAt.length === 0) return null;
 
-  return [...rowsWithUpdatedAt].sort((a, b) => {
-    const updatedDiff = String(a.updated_at).localeCompare(
-      String(b.updated_at),
-    );
-    if (updatedDiff !== 0) return updatedDiff;
-    return String(a.id ?? "").localeCompare(String(b.id ?? ""));
-  }).at(-1) ?? null;
+  return (
+    [...rowsWithUpdatedAt]
+      .sort((a, b) => {
+        const updatedDiff = String(a.updated_at).localeCompare(
+          String(b.updated_at),
+        );
+        if (updatedDiff !== 0) return updatedDiff;
+        return String(a.id ?? "").localeCompare(String(b.id ?? ""));
+      })
+      .at(-1) ?? null
+  );
 }
 
 async function savePullCursor(update: CursorUpdate) {
@@ -164,11 +169,12 @@ async function getLocalSanitarioProtocolIdsV2(): Promise<string[]> {
 }
 
 function sameEventoAnimal(left: RemoteRow, right: RemoteRow) {
-  return left.id === right.id &&
+  return (
+    left.id === right.id &&
     left.fazenda_id === right.fazenda_id &&
     left.evento_id === right.evento_id &&
-    left.animal_id === right.animal_id &&
-    left.created_at === right.created_at;
+    left.animal_id === right.animal_id
+  );
 }
 
 async function appendEventoAnimais(
@@ -177,22 +183,25 @@ async function appendEventoAnimais(
 ) {
   for (const row of rows) {
     if (
-      typeof row.id !== "string" || typeof row.fazenda_id !== "string" ||
-      typeof row.evento_id !== "string" || typeof row.animal_id !== "string"
+      typeof row.id !== "string" ||
+      typeof row.fazenda_id !== "string" ||
+      typeof row.evento_id !== "string" ||
+      typeof row.animal_id !== "string"
     ) {
       throw new Error("SANITARIO_V2_EVENT_ANIMAL_INVALID");
     }
-    const existingById = await store.get(row.id) as RemoteRow | undefined;
+    const existingById = (await store.get(row.id)) as RemoteRow | undefined;
     if (existingById) {
       if (!sameEventoAnimal(existingById, row)) {
         throw new Error("SANITARIO_V2_EVENT_ANIMAL_APPEND_ONLY_VIOLATION");
       }
+      if (existingById.created_at !== row.created_at) await store.put(row);
       continue;
     }
-    const existingFact = await store.where("[fazenda_id+evento_id+animal_id]")
-      .equals([row.fazenda_id, row.evento_id, row.animal_id]).first() as
-        | RemoteRow
-        | undefined;
+    const existingFact = (await store
+      .where("[fazenda_id+evento_id+animal_id]")
+      .equals([row.fazenda_id, row.evento_id, row.animal_id])
+      .first()) as RemoteRow | undefined;
     if (existingFact) {
       if (!sameEventoAnimal(existingFact, row)) {
         throw new Error("SANITARIO_V2_EVENT_ANIMAL_FACT_COLLISION");
@@ -203,11 +212,69 @@ async function appendEventoAnimais(
   }
 }
 
+async function getPendingSanitarioV2EventIds() {
+  const operations = await db.queue_ops
+    .filter((operation) => operation.table === "sanitario_v2")
+    .toArray();
+  return new Set(
+    operations.flatMap((operation) => {
+      const record = operation.record as RemoteRow;
+      const payload = record?.payload;
+      const event =
+        payload && typeof payload === "object" && !Array.isArray(payload)
+          ? (payload as RemoteRow).event
+          : null;
+      return record?.command === "apply_factual_core" &&
+        event &&
+        typeof event === "object" &&
+        !Array.isArray(event) &&
+        typeof (event as RemoteRow).id === "string"
+        ? [String((event as RemoteRow).id)]
+        : [];
+    }),
+  );
+}
+
+function protectPendingFactualRows(
+  remoteTable: string,
+  rows: RemoteRow[],
+  pendingEventIds: ReadonlySet<string>,
+) {
+  if (
+    pendingEventIds.size === 0 ||
+    !["eventos", "eventos_sanitario", "eventos_animais"].includes(remoteTable)
+  ) {
+    return { rows, skipped: false };
+  }
+  const safeRows = rows.filter((row) => {
+    const eventId = remoteTable === "eventos" ? row.id : row.evento_id;
+    return typeof eventId !== "string" || !pendingEventIds.has(eventId);
+  });
+  return { rows: safeRows, skipped: safeRows.length !== rows.length };
+}
+
 async function writeMergeResults(
   storesToUpdate: Array<{ remote: string; local: string }>,
   results: Record<string, RemoteRow[]>,
   cursorUpdates: CursorUpdate[],
 ) {
+  const protectsFactualRows = storesToUpdate.some(({ remote }) =>
+    ["eventos", "eventos_sanitario", "eventos_animais"].includes(remote),
+  );
+  const pendingEventIds = protectsFactualRows
+    ? await getPendingSanitarioV2EventIds()
+    : new Set<string>();
+  const effectiveResults: Record<string, RemoteRow[]> = { ...results };
+  const cursorBlockedTables = new Set<string>();
+  for (const { remote } of storesToUpdate) {
+    const protectedResult = protectPendingFactualRows(
+      remote,
+      results[remote] ?? [],
+      pendingEventIds,
+    );
+    effectiveResults[remote] = protectedResult.rows;
+    if (protectedResult.skipped) cursorBlockedTables.add(remote);
+  }
   const storeNames = storesToUpdate.map((s) => s.local);
   const transactionStores = hasPullCursorStore()
     ? [...storeNames, PULL_CURSOR_STORE]
@@ -215,7 +282,7 @@ async function writeMergeResults(
 
   await db.transaction("rw", transactionStores, async () => {
     for (const { remote, local } of storesToUpdate) {
-      const rows = results[remote] ?? [];
+      const rows = effectiveResults[remote] ?? [];
       const store = db.table(local);
 
       if (rows.length > 0) {
@@ -232,6 +299,7 @@ async function writeMergeResults(
     }
 
     for (const cursorUpdate of cursorUpdates) {
+      if (cursorBlockedTables.has(cursorUpdate.remoteTable)) continue;
       await savePullCursor(cursorUpdate);
     }
   });
@@ -366,10 +434,7 @@ export const pullSanitarioProductClassV2Catalog = async (
 
     const globalRows = (globalResult.data ?? []) as RemoteRow[];
     const tenantRows = (tenantResult.data ?? []) as RemoteRow[];
-    results[remoteTable] = [
-      ...globalRows,
-      ...tenantRows,
-    ];
+    results[remoteTable] = [...globalRows, ...tenantRows];
     cursorUpdates.push(
       {
         key: globalCursorKey,
@@ -391,17 +456,18 @@ export const pullSanitarioProductClassV2Catalog = async (
   }
 
   const validTableNames = new Set(db.tables.map((t) => t.name));
-  const storesToUpdate = SANITARIO_PRODUCT_CLASS_V2_REMOTE_TABLES
-    .map((rt) => ({ remote: rt, local: getLocalStoreName(rt) }))
-    .filter(({ remote, local }) => {
-      if (!validTableNames.has(local)) {
-        console.warn(
-          `[pull] Store ${local} not found for ProductClass v2 table ${remote}. Skipping.`,
-        );
-        return false;
-      }
-      return true;
-    });
+  const storesToUpdate = SANITARIO_PRODUCT_CLASS_V2_REMOTE_TABLES.map((rt) => ({
+    remote: rt,
+    local: getLocalStoreName(rt),
+  })).filter(({ remote, local }) => {
+    if (!validTableNames.has(local)) {
+      console.warn(
+        `[pull] Store ${local} not found for ProductClass v2 table ${remote}. Skipping.`,
+      );
+      return false;
+    }
+    return true;
+  });
 
   if (storesToUpdate.length === 0) {
     console.warn("[pull] No valid ProductClass v2 catalog stores to update.");
@@ -411,9 +477,7 @@ export const pullSanitarioProductClassV2Catalog = async (
   await writeMergeResults(storesToUpdate, results, cursorUpdates);
 };
 
-export const pullSanitarioTechnicalCatalogV2 = async (
-  fazenda_id: string,
-) => {
+export const pullSanitarioTechnicalCatalogV2 = async (fazenda_id: string) => {
   console.log(
     `[pull] Starting sanitario technical catalog v2 pull for farm ${fazenda_id}`,
   );
@@ -468,10 +532,7 @@ export const pullSanitarioTechnicalCatalogV2 = async (
 
       const globalRows = (globalResult.data ?? []) as RemoteRow[];
       const farmRows = (farmResult.data ?? []) as RemoteRow[];
-      results[remoteTable] = [
-        ...globalRows,
-        ...farmRows,
-      ];
+      results[remoteTable] = [...globalRows, ...farmRows];
       cursorUpdates.push(
         {
           key: globalCursorKey,
@@ -495,9 +556,10 @@ export const pullSanitarioTechnicalCatalogV2 = async (
 
     const cursorKey = buildPullCursorKey(remoteTable, "unscoped", null);
     const baseQuery = supabase.from(remoteTable).select("*");
-    const query = remoteTable === "sanitario_produto_fontes_v2"
-      ? baseQuery
-      : await applyUpdatedAtCursor(baseQuery, cursorKey);
+    const query =
+      remoteTable === "sanitario_produto_fontes_v2"
+        ? baseQuery
+        : await applyUpdatedAtCursor(baseQuery, cursorKey);
     const { data, error } = await query;
 
     if (error) {
@@ -520,17 +582,17 @@ export const pullSanitarioTechnicalCatalogV2 = async (
   }
 
   const validTableNames = new Set(db.tables.map((t) => t.name));
-  const storesToUpdate = SANITARIO_TECHNICAL_CATALOG_V2_REMOTE_TABLES
-    .map((rt) => ({ remote: rt, local: getLocalStoreName(rt) }))
-    .filter(({ remote, local }) => {
-      if (!validTableNames.has(local)) {
-        console.warn(
-          `[pull] Store ${local} not found for technical catalog v2 table ${remote}. Skipping.`,
-        );
-        return false;
-      }
-      return true;
-    });
+  const storesToUpdate = SANITARIO_TECHNICAL_CATALOG_V2_REMOTE_TABLES.map(
+    (rt) => ({ remote: rt, local: getLocalStoreName(rt) }),
+  ).filter(({ remote, local }) => {
+    if (!validTableNames.has(local)) {
+      console.warn(
+        `[pull] Store ${local} not found for technical catalog v2 table ${remote}. Skipping.`,
+      );
+      return false;
+    }
+    return true;
+  });
 
   if (storesToUpdate.length === 0) {
     console.warn("[pull] No valid technical catalog v2 stores to update.");
@@ -653,17 +715,17 @@ export const pullSanitarioProtocolCatalogV2 = async () => {
   });
 
   const validTableNames = new Set(db.tables.map((t) => t.name));
-  const storesToUpdate = SANITARIO_PROTOCOL_CATALOG_V2_REMOTE_TABLES
-    .map((rt) => ({ remote: rt, local: getLocalStoreName(rt) }))
-    .filter(({ remote, local }) => {
-      if (!validTableNames.has(local)) {
-        console.warn(
-          `[pull] Store ${local} not found for protocol catalog v2 table ${remote}. Skipping.`,
-        );
-        return false;
-      }
-      return true;
-    });
+  const storesToUpdate = SANITARIO_PROTOCOL_CATALOG_V2_REMOTE_TABLES.map(
+    (rt) => ({ remote: rt, local: getLocalStoreName(rt) }),
+  ).filter(({ remote, local }) => {
+    if (!validTableNames.has(local)) {
+      console.warn(
+        `[pull] Store ${local} not found for protocol catalog v2 table ${remote}. Skipping.`,
+      );
+      return false;
+    }
+    return true;
+  });
 
   if (storesToUpdate.length === 0) {
     console.warn("[pull] No valid protocol catalog v2 stores to update.");
@@ -685,10 +747,7 @@ export const pullSanitarioAgendaV2 = async (fazenda_id: string) => {
     const localStore = getLocalStoreName(remoteTable);
     const cursorKey = buildPullCursorKey(remoteTable, "fazenda", fazenda_id);
     const query = await applyUpdatedAtCursor(
-      supabase
-        .from(remoteTable)
-        .select("*")
-        .eq("fazenda_id", fazenda_id),
+      supabase.from(remoteTable).select("*").eq("fazenda_id", fazenda_id),
       cursorKey,
     );
     const { data, error } = await query;
@@ -711,17 +770,18 @@ export const pullSanitarioAgendaV2 = async (fazenda_id: string) => {
   }
 
   const validTableNames = new Set(db.tables.map((t) => t.name));
-  const storesToUpdate = SANITARIO_AGENDA_V2_REMOTE_TABLES
-    .map((rt) => ({ remote: rt, local: getLocalStoreName(rt) }))
-    .filter(({ remote, local }) => {
-      if (!validTableNames.has(local)) {
-        console.warn(
-          `[pull] Store ${local} not found for agenda v2 table ${remote}. Skipping.`,
-        );
-        return false;
-      }
-      return true;
-    });
+  const storesToUpdate = SANITARIO_AGENDA_V2_REMOTE_TABLES.map((rt) => ({
+    remote: rt,
+    local: getLocalStoreName(rt),
+  })).filter(({ remote, local }) => {
+    if (!validTableNames.has(local)) {
+      console.warn(
+        `[pull] Store ${local} not found for agenda v2 table ${remote}. Skipping.`,
+      );
+      return false;
+    }
+    return true;
+  });
 
   if (storesToUpdate.length === 0) {
     console.warn("[pull] No valid agenda v2 stores to update.");
@@ -742,7 +802,38 @@ export const pullSanitarioV2CutoverState = async (fazendaId: string) => {
   ] as const;
 
   for (const remoteTable of orderedTables) {
-    await pullDataForFarm(fazendaId, [remoteTable], { mode: "merge" });
+    const localStore = getLocalStoreName(remoteTable);
+    const cursorKey = buildPullCursorKey(remoteTable, "fazenda", fazendaId);
+    const baseQuery = supabase
+      .from(remoteTable)
+      .select("*")
+      .eq("fazenda_id", fazendaId);
+    const query =
+      remoteTable === "eventos_animais"
+        ? baseQuery
+        : await applyUpdatedAtCursor(baseQuery, cursorKey);
+    const { data, error } = await query;
+    if (error) {
+      console.error(`[pull] Error pulling sanitario v2 ${remoteTable}:`, error);
+      throw error;
+    }
+    const rows = (data ?? []) as RemoteRow[];
+    await writeMergeResults(
+      [{ remote: remoteTable, local: localStore }],
+      { [remoteTable]: rows },
+      remoteTable === "eventos_animais"
+        ? []
+        : [
+            {
+              key: cursorKey,
+              remoteTable,
+              localStore,
+              scope: "fazenda",
+              fazendaId,
+              rows,
+            },
+          ],
+    );
   }
 };
 

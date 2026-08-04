@@ -60,6 +60,7 @@ export type SanitaryExecutedHistoryEventV2 = {
     | "legacy_import";
   evidenceClass?: "documented" | "declared" | "unknown";
   evidenceReference?: string | null;
+  evidenceCoveredFields?: string[];
   dateApproximate?: boolean;
 };
 
@@ -175,7 +176,9 @@ function daysBetween(fromDate: string, toDate: string): number | null {
   return Math.round((to.getTime() - from.getTime()) / MS_PER_DAY);
 }
 
-function normalizeSex(value: string | null | undefined): "femea" | "macho" | null {
+function normalizeSex(
+  value: string | null | undefined,
+): "femea" | "macho" | null {
   const normalized = value?.trim().toLowerCase();
   if (!normalized) return null;
   if (normalized === "f" || normalized === "femea" || normalized === "fêmea") {
@@ -259,25 +262,33 @@ function resolveHistoryRequirement(
   return null;
 }
 
-function isDocumentedHistorySource(event: SanitaryExecutedHistoryEventV2): boolean {
+function isDocumentedHistorySource(
+  event: SanitaryExecutedHistoryEventV2,
+): boolean {
   const hasLinkedEvidence = Boolean(event.evidenceReference?.trim());
+  const coversProtocolItem =
+    event.evidenceCoveredFields?.includes("protocol_item_completion") ?? false;
   return (
     event.source === "event" ||
     event.source === "internal_execution" ||
     (event.source === "external_documented" &&
       event.evidenceClass === "documented" &&
-      hasLinkedEvidence) ||
+      hasLinkedEvidence &&
+      coversProtocolItem) ||
     (event.source === "legacy_import" &&
       event.evidenceClass === "documented" &&
-      hasLinkedEvidence)
+      hasLinkedEvidence &&
+      coversProtocolItem)
   );
 }
 
-function isDeclaredHistorySource(event: SanitaryExecutedHistoryEventV2): boolean {
+function isDeclaredHistorySource(
+  event: SanitaryExecutedHistoryEventV2,
+): boolean {
   return (
     event.source === "external_declared" ||
     event.evidenceClass === "declared" ||
-    (event.source === "legacy_import" && event.evidenceClass !== "documented")
+    (event.source === "legacy_import" && !isDocumentedHistorySource(event))
   );
 }
 
@@ -298,7 +309,8 @@ function findCompatibleHistoryEvents(input: {
     .filter((event) => {
       if (!event.familyCode || !event.itemKey) return false;
       if (event.familyCode !== input.familyCode) return false;
-      if (event.protocolId && event.protocolId !== input.protocolId) return false;
+      if (event.protocolId && event.protocolId !== input.protocolId)
+        return false;
       if (input.itemKey && event.itemKey !== input.itemKey) return false;
       const daysSinceExecution = daysBetween(event.executedAt, input.today);
       return daysSinceExecution !== null && daysSinceExecution >= 0;
@@ -332,7 +344,8 @@ function findRequiredExecutedHistory(input: {
       if (event.dateApproximate) return false;
       if (!event.familyCode || !event.itemKey) return false;
       if (event.familyCode !== input.familyCode) return false;
-      if (event.protocolId && event.protocolId !== input.protocolId) return false;
+      if (event.protocolId && event.protocolId !== input.protocolId)
+        return false;
       if (
         input.requirement.previousItemKey &&
         event.itemKey !== input.requirement.previousItemKey
@@ -353,9 +366,7 @@ function readRequiredSpecies(item: SanitaryProtocolItemV2ReadModel): string[] {
   );
 }
 
-function protocolIsBlocked(
-  protocol: SanitaryProtocolV2ReadModel,
-): boolean {
+function protocolIsBlocked(protocol: SanitaryProtocolV2ReadModel): boolean {
   return (
     protocol.familyCode === "febre_aftosa" ||
     protocol.status === "retired" ||
@@ -363,9 +374,7 @@ function protocolIsBlocked(
   );
 }
 
-function hasRiskAreaInfo(
-  animal: SanitaryPrecheckAnimalResumoV2,
-): boolean {
+function hasRiskAreaInfo(animal: SanitaryPrecheckAnimalResumoV2): boolean {
   return animal.riskArea !== undefined || animal.regionalRiskArea !== undefined;
 }
 
@@ -422,8 +431,12 @@ function resolveHistoryWindowDays(input: {
   cadence?: SanitaryPrecheckAnimalResumoV2["sanitaryCadence"];
 }): { minDays: number; maxDays: number } | null {
   if (input.requirement.kind === "previous_dose") {
-    const minDays = readNumber(input.item.operationalWindowRule.min_offset_days);
-    const maxDays = readNumber(input.item.operationalWindowRule.max_offset_days);
+    const minDays = readNumber(
+      input.item.operationalWindowRule.min_offset_days,
+    );
+    const maxDays = readNumber(
+      input.item.operationalWindowRule.max_offset_days,
+    );
     return minDays !== null && maxDays !== null && maxDays >= minDays
       ? { minDays, maxDays }
       : null;
@@ -470,7 +483,9 @@ function evaluateHistoryRequirement(input: {
       item: input.item,
       status: "insufficient_data",
       reasons: ["Cadência sanitária anual ou semestral não informada."],
-      warnings: ["Contexto operacional não substitui fonte técnica nem execução."],
+      warnings: [
+        "Contexto operacional não substitui fonte técnica nem execução.",
+      ],
       historyRequirementKind: input.requirement.kind,
       missingExecutedHistory: false,
     });
@@ -512,7 +527,9 @@ function evaluateHistoryRequirement(input: {
       protocol: input.protocol,
       item: input.item,
       status: "insufficient_data",
-      reasons: ["Histórico executado existe, mas a janela desta etapa está incompleta."],
+      reasons: [
+        "Histórico executado existe, mas a janela desta etapa está incompleta.",
+      ],
       warnings: ["Dados insuficientes para planejar esta etapa."],
       historyRequirementKind: input.requirement.kind,
       missingExecutedHistory: false,
@@ -627,7 +644,9 @@ function evaluateB19(input: {
       item,
       status: "not_yet_eligible",
       reasons: ["Animal ainda abaixo da janela B19 de 3 a 8 meses."],
-      warnings: ["Exige MV habilitado, registro oficial e produto real na execução."],
+      warnings: [
+        "Exige MV habilitado, registro oficial e produto real na execução.",
+      ],
     });
   }
   if (ageMonths > 8) {
@@ -645,7 +664,9 @@ function evaluateB19(input: {
         protocol,
         item,
         status: "completed",
-        reasons: ["B19 comprovada por histórico sanitário documentado anterior."],
+        reasons: [
+          "B19 comprovada por histórico sanitário documentado anterior.",
+        ],
         warnings: [
           "Histórico anterior não registra execução da fazenda nem movimenta estoque.",
         ],
@@ -657,7 +678,9 @@ function evaluateB19(input: {
         protocol,
         item,
         status: "insufficient_data",
-        reasons: ["B19 informada apenas por declaração sem documento suficiente."],
+        reasons: [
+          "B19 informada apenas por declaração sem documento suficiente.",
+        ],
         warnings: [
           "Declaração sem documento pode não liberar pendências críticas.",
         ],
@@ -672,7 +695,9 @@ function evaluateB19(input: {
       item,
       status: "insufficient_data",
       reasons: ["Fêmea adulta sem comprovação documental de B19."],
-      warnings: ["Não planejar vacinação B19 fora da janela sem comprovação técnica."],
+      warnings: [
+        "Não planejar vacinação B19 fora da janela sem comprovação técnica.",
+      ],
       documentaryPending: true,
       documentaryPendingReasons: [
         "Fêmea adulta exige comprovação documental de B19.",
@@ -685,7 +710,9 @@ function evaluateB19(input: {
     item,
     status: "in_action_window",
     reasons: ["Fêmea bovina/bubalina dentro da janela B19 de 3 a 8 meses."],
-    warnings: ["Exige MV habilitado, registro oficial e produto real na execução."],
+    warnings: [
+      "Exige MV habilitado, registro oficial e produto real na execução.",
+    ],
   });
 }
 
@@ -717,7 +744,9 @@ function evaluateRaiva(input: {
       protocol,
       item,
       status: "insufficient_data",
-      reasons: ["Protocolo de raiva depende de dado regional/de área de risco."],
+      reasons: [
+        "Protocolo de raiva depende de dado regional/de área de risco.",
+      ],
       warnings: ["A pré-checagem não infere área de risco."],
     });
   }
@@ -746,7 +775,9 @@ function evaluateRaiva(input: {
     item,
     status: "in_action_window",
     reasons: ["Área de risco informada explicitamente para avaliação técnica."],
-    warnings: ["Produto real e avaliação técnica continuam obrigatórios na execução."],
+    warnings: [
+      "Produto real e avaliação técnica continuam obrigatórios na execução.",
+    ],
   });
 }
 
@@ -758,14 +789,8 @@ function evaluateAntiparasitic(input: {
   historyRequirement: ResolvedHistoryRequirementV2 | null;
   executedHistory: SanitaryExecutedHistoryV2[];
 }): SanitaryProtocolPrecheckResultV2 {
-  const {
-    protocol,
-    item,
-    animal,
-    today,
-    historyRequirement,
-    executedHistory,
-  } = input;
+  const { protocol, item, animal, today, historyRequirement, executedHistory } =
+    input;
   const speciesStatus = evaluateSpecies(animal, item);
   if (speciesStatus) {
     return baseResult({
@@ -776,7 +801,9 @@ function evaluateAntiparasitic(input: {
         speciesStatus === "insufficient_data"
           ? ["Espécie ausente para avaliar antiparasitário."]
           : ["Espécie fora da regra antiparasitária do catálogo."],
-      warnings: ["Grupo técnico de produtos não valida execução, dose nem carência."],
+      warnings: [
+        "Grupo técnico de produtos não valida execução, dose nem carência.",
+      ],
     });
   }
 
@@ -798,7 +825,9 @@ function evaluateAntiparasitic(input: {
       item,
       status: "insufficient_data",
       reasons: ["Manejo necessário para avaliar este item não informado."],
-      warnings: ["Contexto operacional não substitui produto, dose nem carência."],
+      warnings: [
+        "Contexto operacional não substitui produto, dose nem carência.",
+      ],
     });
   }
   if (
@@ -811,7 +840,9 @@ function evaluateAntiparasitic(input: {
       item,
       status: "not_applicable",
       reasons: ["Manejo informado não corresponde à condição deste item."],
-      warnings: ["Grupo técnico de produtos não valida execução, dose nem carência."],
+      warnings: [
+        "Grupo técnico de produtos não valida execução, dose nem carência.",
+      ],
     });
   }
 
@@ -824,7 +855,9 @@ function evaluateAntiparasitic(input: {
         item,
         status: "insufficient_data",
         reasons: ["Categoria ausente para avaliar antiparasitário."],
-        warnings: ["Grupo técnico de produtos não valida execução, dose nem carência."],
+        warnings: [
+          "Grupo técnico de produtos não valida execução, dose nem carência.",
+        ],
       });
     }
     if (category !== requiredCategory) {
@@ -833,19 +866,25 @@ function evaluateAntiparasitic(input: {
         item,
         status: "not_applicable",
         reasons: ["Categoria do animal fora da regra antiparasitária."],
-        warnings: ["Grupo técnico de produtos não valida execução, dose nem carência."],
+        warnings: [
+          "Grupo técnico de produtos não valida execução, dose nem carência.",
+        ],
       });
     }
   }
 
-  if (readBoolean(item.eligibilityRule.requires_pregnancy_or_peripartum_context)) {
+  if (
+    readBoolean(item.eligibilityRule.requires_pregnancy_or_peripartum_context)
+  ) {
     if (animal.pregnancyOrPeripartumContext !== true) {
       return baseResult({
         protocol,
         item,
         status: "insufficient_data",
         reasons: ["Pré-parto exige contexto gestacional/periparto explícito."],
-        warnings: ["Grupo técnico de produtos não valida execução, dose nem carência."],
+        warnings: [
+          "Grupo técnico de produtos não valida execução, dose nem carência.",
+        ],
       });
     }
   }
@@ -870,8 +909,12 @@ function evaluateAntiparasitic(input: {
         protocol,
         item,
         status: "insufficient_data",
-        reasons: ["Data de referência inválida para avaliar janela de calendário."],
-        warnings: ["Grupo técnico de produtos não valida execução, dose nem carência."],
+        reasons: [
+          "Data de referência inválida para avaliar janela de calendário.",
+        ],
+        warnings: [
+          "Grupo técnico de produtos não valida execução, dose nem carência.",
+        ],
       });
     }
     const currentMonth = date.getUTCMonth() + 1;
@@ -898,7 +941,9 @@ function evaluateAntiparasitic(input: {
     protocol,
     item,
     status: "in_action_window",
-    reasons: ["Item antiparasitário avaliável tecnicamente com os dados informados."],
+    reasons: [
+      "Item antiparasitário avaliável tecnicamente com os dados informados.",
+    ],
     warnings: [
       "Grupo técnico de produtos não valida execução, dose nem carência.",
       "Produto real obrigatório na execução.",
@@ -967,7 +1012,10 @@ function evaluateGenericItem(input: {
           "Produto real obrigatório na execução.",
         ]
       : item.productRequirementKind === "product_class"
-        ? ["Produto real obrigatório na execução.", "Carência depende do produto executado."]
+        ? [
+            "Produto real obrigatório na execução.",
+            "Carência depende do produto executado.",
+          ]
         : item.productRequirementKind === "none"
           ? ["Item sem produto executável."]
           : ["Produto específico deve ser confirmado na execução."];
@@ -992,14 +1040,8 @@ function evaluateItemForAnimal(input: {
   historyRequirement: ResolvedHistoryRequirementV2 | null;
   executedHistory: SanitaryExecutedHistoryV2[];
 }): SanitaryProtocolPrecheckResultV2 {
-  const {
-    protocol,
-    item,
-    animal,
-    today,
-    historyRequirement,
-    executedHistory,
-  } = input;
+  const { protocol, item, animal, today, historyRequirement, executedHistory } =
+    input;
 
   if (protocolIsBlocked(protocol)) {
     return baseResult({
@@ -1120,8 +1162,12 @@ function aggregateLotResult(input: {
   return {
     ...strongest,
     reasons: aggregateLotReasons({ item, strongest }),
-    blockers: Array.from(new Set(animalResults.flatMap((entry) => entry.blockers))),
-    warnings: Array.from(new Set(animalResults.flatMap((entry) => entry.warnings))),
+    blockers: Array.from(
+      new Set(animalResults.flatMap((entry) => entry.blockers)),
+    ),
+    warnings: Array.from(
+      new Set(animalResults.flatMap((entry) => entry.warnings)),
+    ),
     protocolId: protocol.id,
     familyCode: protocol.familyCode,
     protocolName: protocol.name,
@@ -1150,7 +1196,10 @@ export function precheckSanitaryProtocolsForAnimalV2(
         item,
         animal: input.animal,
         today: input.today,
-        historyRequirement: resolveHistoryRequirement(item, input.catalog.items),
+        historyRequirement: resolveHistoryRequirement(
+          item,
+          input.catalog.items,
+        ),
         executedHistory: input.executedHistory ?? [],
       });
 
@@ -1161,7 +1210,9 @@ export function precheckSanitaryProtocolsForAnimalV2(
           : null,
       };
     })
-    .filter((entry): entry is SanitaryProtocolPrecheckResultV2 => entry !== null);
+    .filter(
+      (entry): entry is SanitaryProtocolPrecheckResultV2 => entry !== null,
+    );
 
   return {
     animalOrLotId: input.animal.id,
@@ -1197,7 +1248,10 @@ export function precheckSanitaryProtocolsForLotV2(
             riskArea: animal.riskArea ?? input.lote.riskArea,
           },
           today: input.today,
-          historyRequirement: resolveHistoryRequirement(item, input.catalog.items),
+          historyRequirement: resolveHistoryRequirement(
+            item,
+            input.catalog.items,
+          ),
           executedHistory: (input.executedHistory ?? []).filter(
             (entry) => entry.animalId === animal.id,
           ),
@@ -1212,7 +1266,9 @@ export function precheckSanitaryProtocolsForLotV2(
           : null,
       };
     })
-    .filter((entry): entry is SanitaryProtocolPrecheckResultV2 => entry !== null);
+    .filter(
+      (entry): entry is SanitaryProtocolPrecheckResultV2 => entry !== null,
+    );
 
   return {
     animalOrLotId: input.lote.id,

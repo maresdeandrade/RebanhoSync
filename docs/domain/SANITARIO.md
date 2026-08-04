@@ -375,13 +375,13 @@ Evidência:
 Regras:
 
 - evento interno executado continua contando como histórico executado;
-- histórico externo documentado pode ser considerado válido na pré-checagem quando houver vínculo suficiente com protocolo/item e referência de evidência estruturada;
+- histórico externo documentado pode apoiar somente o campo coberto quando houver vínculo suficiente com protocolo/item, referência presente e cobertura estruturada; isso não autentica o conteúdo do documento;
 - histórico externo declarado gera aviso, mas não libera regra crítica;
 - histórico legado ambíguo não libera dose/reforço;
 - agenda futura não conta como histórico;
-- histórico externo não cria agenda, execução local, baixa de estoque, carência ativa ou `queue_ops`;
+- histórico externo não cria agenda, execução local, baixa de estoque ou carência ativa; quando o sync estiver habilitado, usa `queue_ops` apenas para transportar o fato `standalone_fact`;
 - B19 em fêmea adulta sem comprovação documentada deve gerar pendência documental, não agenda de vacinação;
-- B19 em fêmea adulta com comprovação externa documentada pode ser considerada comprovada/concluída;
+- B19 em fêmea adulta com referência e cobertura estruturadas pode ter somente o requisito coberto apoiado pelo histórico externo; o sistema não atesta a autenticidade do documento;
 - B19 em fêmea de 3 a 8 meses sem histórico continua planejável.
 
 ### Demanda agrupada e preview
@@ -469,7 +469,7 @@ O Sync Sanitário v2 está implementado sob gates desligados, mas não concluíd
 - retry/replay/idempotência: implementados, com validação remota parcial;
 - sucesso parcial: validado localmente, com E2E remoto pendente;
 - conflito multi-dispositivo: código e SQL validados, plataforma bloqueada;
-- histórico externo/documental: próximo incremento;
+- histórico externo/documental: implementado e validado localmente, com E2E remoto não executado;
 - movimento de estoque sanitário: pendente;
 - recálculo explícito da Conformidade após pull: pendente.
 
@@ -477,7 +477,7 @@ O gate remoto está desligado, a feature flag local é `false` e o rollout não 
 
 `SANITARIO_V2_E2E_PLATFORM_BLOCKED` impede rollout: o PostgreSQL gera o conflito esperado `SQLSTATE 40001`, mas a resposta não retorna pelo caminho Edge Function/PostgREST/gateway antes do timeout. Não há evidência atual de defeito no SQL ou na regra de domínio.
 
-Próximo incremento: 3.8 — push/pull de `external_declared` e `external_documented`, preservando origem, evidência, UUID, idempotência, tenant/`fazenda_id` e pull não destrutivo. O incremento não cria Agenda, Evento executado, estoque, carência ou liberação operacional.
+Próximo incremento: 3.9 — push/pull de movimento de estoque sanitário. O item 3.13, o rollout e os E2Es remotos permanecem pendentes.
 
 ---
 
@@ -829,8 +829,8 @@ Validações locais cobrem multi-tenant, RLS, retry/replay, idempotência, suces
 - Conformidade Sanitária v2 local: concluída e validada.
 - Documentação curta do Sanitário v2 local: concluída.
 - Sync Remoto Sanitário v2: em andamento.
-- Próximo incremento: 3.8 — histórico externo/documental.
-- Depois: 3.9 estoque, 3.13 recálculo explícito após pull, E2Es remotos, produto/fonte por campo, correção append-only, carência operacional e fechamento formal da Fase 12.
+- Histórico externo/documental 3.8: implementado e validado localmente.
+- Próximo incremento: 3.9 estoque; depois, 3.13 recálculo explícito após pull, E2Es remotos, produto/fonte por campo, correção append-only, carência operacional e fechamento formal da Fase 12.
 
 O roadmap macro e os estados por subitem ficam em [ROADMAP.md](../product/ROADMAP.md). O estado técnico detalhado fica em [CURRENT_PHASE_HANDOFF.md](../review/CURRENT_PHASE_HANDOFF.md).
 

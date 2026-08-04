@@ -17,6 +17,19 @@ const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export type SanitarioV2CutoverReconcile = (fazendaId: string) => Promise<void>;
+export interface SanitarioV2CutoverOptions {
+  contractVersion?: number;
+  backfillExternalHistory?: {
+    clientId: string;
+    projectRef: string;
+  };
+}
+export interface SanitarioV2ExternalHistoryBackfillResult {
+  candidates: number;
+  enqueued: number;
+  replayed: number;
+  skippedLegacyIncomplete: number;
+}
 export interface SanitarioV2OperationIdentity {
   clientTxId: string;
   clientOpId: string;
@@ -62,9 +75,11 @@ function storageAvailable() {
 }
 
 export function isSanitarioV2PushEnabled(projectRef: string) {
-  return projectRef === SANITARIO_V2_STAGING_PROJECT_REF &&
+  return (
+    projectRef === SANITARIO_V2_STAGING_PROJECT_REF &&
     storageAvailable() &&
-    localStorage.getItem(FEATURE_FLAG_KEY) === projectRef;
+    localStorage.getItem(FEATURE_FLAG_KEY) === projectRef
+  );
 }
 export function setSanitarioV2PushEnabled(
   enabled: boolean,
@@ -195,15 +210,16 @@ export function buildApplyFactualCoreOperation(
       },
       detail: {
         tipo: detail.tipo,
-        produto_sanitario_v2_id: detail.produto_sanitario_v2_id ??
+        produto_sanitario_v2_id:
+          detail.produto_sanitario_v2_id ??
           detail.produto_veterinario_id ??
           null,
         insumo_id: detail.insumo_id ?? null,
         estoque_lote_id: detail.estoque_lote_id ?? null,
         produto_nome_snapshot: detail.produto_nome_snapshot ?? null,
         produto_snapshot: detail.produto_snapshot ?? null,
-        estoque_lote_codigo_snapshot: detail.estoque_lote_codigo_snapshot ??
-          null,
+        estoque_lote_codigo_snapshot:
+          detail.estoque_lote_codigo_snapshot ?? null,
         lote_fabricante: detail.lote_fabricante ?? null,
         validade_produto: detail.validade_produto ?? null,
         dose_quantidade: detail.dose_quantidade ?? null,
@@ -287,10 +303,24 @@ export async function prepareSanitarioV2Cutover(
 export async function applySanitarioV2Cutover(
   fazendaId: string,
   reconcile: SanitarioV2CutoverReconcile,
-  contractVersion = SANITARIO_V2_CONTRACT_VERSION,
+  options: number | SanitarioV2CutoverOptions = SANITARIO_V2_CONTRACT_VERSION,
 ) {
+  const contractVersion =
+    typeof options === "number"
+      ? options
+      : (options.contractVersion ?? SANITARIO_V2_CONTRACT_VERSION);
+  const backfill =
+    typeof options === "number" ? undefined : options.backfillExternalHistory;
   const prepared = await prepareSanitarioV2Cutover(fazendaId, contractVersion);
-  if (prepared.status === "APPLIED") return prepared;
+  if (prepared.status === "APPLIED") {
+    if (backfill) {
+      await backfillSanitarioV2ExternalHistory({
+        fazendaId,
+        ...backfill,
+      });
+    }
+    return prepared;
+  }
   const applyingAt = new Date().toISOString();
   await db.sync_sanitario_v2_cutovers.update(prepared.key, {
     status: "APPLYING",
@@ -309,6 +339,12 @@ export async function applySanitarioV2Cutover(
       last_error: null,
       updated_at: appliedAt,
     });
+    if (backfill) {
+      await backfillSanitarioV2ExternalHistory({
+        fazendaId,
+        ...backfill,
+      });
+    }
   } catch (cause) {
     const error = cause instanceof Error ? cause : new Error(String(cause));
     const failedAt = new Date().toISOString();
@@ -329,14 +365,15 @@ function sameQueuedEnvelope(
   existing: Operation,
   incoming: SanitarioV2QueuedOperation,
 ) {
-  return existing.client_tx_id === incoming.client_tx_id &&
+  return (
+    existing.client_tx_id === incoming.client_tx_id &&
     existing.domain_op_id === incoming.domain_op_id &&
-    JSON.stringify(existing.record) === JSON.stringify(incoming);
+    JSON.stringify(existing.record) === JSON.stringify(incoming)
+  );
 }
 
-export async function enqueueSanitarioV2Operations(input: {
+async function validateSanitarioV2Enqueue(input: {
   fazendaId: string;
-  clientId: string;
   projectRef: string;
   operations: readonly SanitarioV2QueuedOperation[];
 }) {
@@ -359,50 +396,277 @@ export async function enqueueSanitarioV2Operations(input: {
       clientTxId: op.client_tx_id,
       clientOpId: op.client_op_id,
       domainOpId: op.domain_op_id,
-    })
+    }),
   );
+}
+
+async function writeSanitarioV2Queue(input: {
+  fazendaId: string;
+  clientId: string;
+  operations: readonly SanitarioV2QueuedOperation[];
+}) {
+  if (input.operations.length === 0) return;
   const clientTxId = input.operations[0].client_tx_id;
   const createdAt = new Date().toISOString();
-  await db.transaction("rw", [db.queue_gestures, db.queue_ops], async () => {
-    const existingGesture = await db.queue_gestures.get(clientTxId);
-    if (
-      existingGesture &&
-      (existingGesture.fazenda_id !== input.fazendaId ||
-        existingGesture.client_id !== input.clientId)
-    ) {
-      throw new Error("SANITARIO_V2_GESTURE_SCOPE_MISMATCH");
-    }
-    const newOperations: Operation[] = [];
-    for (const [index, envelope] of input.operations.entries()) {
-      const existing = await db.queue_ops.get(envelope.client_op_id);
-      if (existing) {
-        if (!sameQueuedEnvelope(existing, envelope)) {
-          throw new Error("SANITARIO_V2_IDENTITY_REUSE_DIVERGENT_PAYLOAD");
-        }
-        continue;
+  const existingGesture = await db.queue_gestures.get(clientTxId);
+  if (
+    existingGesture &&
+    (existingGesture.fazenda_id !== input.fazendaId ||
+      existingGesture.client_id !== input.clientId)
+  ) {
+    throw new Error("SANITARIO_V2_GESTURE_SCOPE_MISMATCH");
+  }
+  const newOperations: Operation[] = [];
+  for (const [index, envelope] of input.operations.entries()) {
+    const existing = await db.queue_ops.get(envelope.client_op_id);
+    if (existing) {
+      if (!sameQueuedEnvelope(existing, envelope)) {
+        throw new Error("SANITARIO_V2_IDENTITY_REUSE_DIVERGENT_PAYLOAD");
       }
-      newOperations.push({
-        client_op_id: envelope.client_op_id,
-        client_tx_id: envelope.client_tx_id,
-        op_order: index,
-        table: "sanitario_v2",
-        action: "INSERT",
-        record: envelope,
-        domain_op_id: envelope.domain_op_id,
-        sync_state: "PENDING",
-        created_at: createdAt,
-      });
+      continue;
     }
-    if (!existingGesture) {
-      const gesture: Gesture = {
-        client_tx_id: clientTxId,
-        fazenda_id: input.fazendaId,
-        client_id: input.clientId,
-        status: "PENDING",
-        created_at: createdAt,
-      };
-      await db.queue_gestures.add(gesture);
-    }
-    if (newOperations.length > 0) await db.queue_ops.bulkAdd(newOperations);
+    newOperations.push({
+      client_op_id: envelope.client_op_id,
+      client_tx_id: envelope.client_tx_id,
+      op_order: index,
+      table: "sanitario_v2",
+      action: "INSERT",
+      record: envelope,
+      domain_op_id: envelope.domain_op_id,
+      sync_state: "PENDING",
+      created_at: createdAt,
+    });
+  }
+  if (!existingGesture) {
+    const gesture: Gesture = {
+      client_tx_id: clientTxId,
+      fazenda_id: input.fazendaId,
+      client_id: input.clientId,
+      status: "PENDING",
+      created_at: createdAt,
+    };
+    await db.queue_gestures.add(gesture);
+  }
+  if (newOperations.length > 0) await db.queue_ops.bulkAdd(newOperations);
+}
+
+export async function enqueueSanitarioV2Operations(input: {
+  fazendaId: string;
+  clientId: string;
+  projectRef: string;
+  operations: readonly SanitarioV2QueuedOperation[];
+}) {
+  await validateSanitarioV2Enqueue(input);
+  if (input.operations.length === 0) return;
+  await db.transaction("rw", [db.queue_gestures, db.queue_ops], async () => {
+    await writeSanitarioV2Queue(input);
   });
+}
+
+function readExternalHistorySource(event: Evento) {
+  const source = event.payload.entry_history_source;
+  return source === "external_declared" || source === "external_documented"
+    ? source
+    : null;
+}
+
+function isPushableExternalHistory(event: Evento, detail: EventoSanitario) {
+  const source = readExternalHistorySource(event);
+  if (
+    !source ||
+    event.payload.schema !== "sanitary_entry_history_v2" ||
+    event.sanitario_sync_v2_nature !== "standalone_fact" ||
+    !event.client_tx_id ||
+    !event.domain_op_id ||
+    detail.domain_op_id !== event.domain_op_id
+  ) {
+    return false;
+  }
+  const reference =
+    detail.payload.evidence_reference ?? event.payload.evidence_reference;
+  const coverage =
+    detail.payload.evidence_covered_fields ??
+    event.payload.evidence_covered_fields;
+  if (source === "external_documented") {
+    return (
+      typeof reference === "string" &&
+      reference.trim().length > 0 &&
+      Array.isArray(coverage) &&
+      coverage.length > 0
+    );
+  }
+  return Array.isArray(coverage) && coverage.length === 0;
+}
+
+function gestureAlreadyApplied(
+  gesture: Gesture | undefined,
+  clientOpId: string,
+  domainOpId: string,
+) {
+  if (
+    !gesture ||
+    gesture.status !== "DONE" ||
+    gesture.sync_result !== "APPLIED"
+  ) {
+    return false;
+  }
+  const results = gesture.operation_results ?? [];
+  return (
+    results.length === 0 ||
+    results.some(
+      (result) =>
+        result.status === "APPLIED" &&
+        result.op_id === clientOpId &&
+        (!result.domain_op_id || result.domain_op_id === domainOpId),
+    )
+  );
+}
+
+export async function backfillSanitarioV2ExternalHistory(input: {
+  fazendaId: string;
+  clientId: string;
+  projectRef: string;
+}): Promise<SanitarioV2ExternalHistoryBackfillResult> {
+  requireUuid(input.fazendaId, "fazenda_id");
+  const candidates = await db.event_eventos
+    .where("fazenda_id")
+    .equals(input.fazendaId)
+    .filter(
+      (event) =>
+        event.dominio === "sanitario" &&
+        !event.deleted_at &&
+        event.payload.schema === "sanitary_entry_history_v2" &&
+        readExternalHistorySource(event) !== null,
+    )
+    .toArray();
+  if (candidates.length === 0) {
+    return {
+      candidates: 0,
+      enqueued: 0,
+      replayed: 0,
+      skippedLegacyIncomplete: 0,
+    };
+  }
+
+  const eventIds = candidates.map((event) => event.id);
+  const [details, relations] = await Promise.all([
+    db.event_eventos_sanitario.where("evento_id").anyOf(eventIds).toArray(),
+    db.event_eventos_animais.where("evento_id").anyOf(eventIds).toArray(),
+  ]);
+  const detailsByEvent = new Map(
+    details
+      .filter(
+        (detail) => detail.fazenda_id === input.fazendaId && !detail.deleted_at,
+      )
+      .map((detail) => [detail.evento_id, detail]),
+  );
+  const relationsByEvent = new Map<string, EventoAnimalLocalV2[]>();
+  for (const relation of relations) {
+    if (relation.fazenda_id !== input.fazendaId) continue;
+    const current = relationsByEvent.get(relation.evento_id) ?? [];
+    current.push(relation);
+    relationsByEvent.set(relation.evento_id, current);
+  }
+
+  let enqueued = 0;
+  let replayed = 0;
+  let skippedLegacyIncomplete = 0;
+  for (const event of candidates) {
+    const detail = detailsByEvent.get(event.id);
+    const eventAnimals = relationsByEvent.get(event.id) ?? [];
+    if (
+      !detail ||
+      eventAnimals.length === 0 ||
+      !isPushableExternalHistory(event, detail)
+    ) {
+      skippedLegacyIncomplete += 1;
+      continue;
+    }
+    const identity = {
+      clientTxId: event.client_tx_id as string,
+      clientOpId: event.client_op_id,
+      domainOpId: event.domain_op_id as string,
+    };
+    const operation = buildApplyFactualCoreOperation(
+      identity,
+      event,
+      detail,
+      eventAnimals,
+    );
+    const [existingOperation, existingGesture] = await Promise.all([
+      db.queue_ops.get(operation.client_op_id),
+      db.queue_gestures.get(operation.client_tx_id),
+    ]);
+    if (
+      !existingOperation &&
+      gestureAlreadyApplied(
+        existingGesture,
+        operation.client_op_id,
+        operation.domain_op_id,
+      )
+    ) {
+      replayed += 1;
+      continue;
+    }
+    await enqueueSanitarioV2Operations({
+      fazendaId: input.fazendaId,
+      clientId: input.clientId,
+      projectRef: input.projectRef,
+      operations: [operation],
+    });
+    if (existingOperation) replayed += 1;
+    else enqueued += 1;
+  }
+  return {
+    candidates: candidates.length,
+    enqueued,
+    replayed,
+    skippedLegacyIncomplete,
+  };
+}
+
+export async function persistSanitarioV2FactualCore(input: {
+  fazendaId: string;
+  clientId: string;
+  projectRef: string;
+  event: Evento;
+  detail: EventoSanitario;
+  eventAnimal: EventoAnimalLocalV2;
+  operation: SanitarioV2QueuedOperation;
+}) {
+  if (
+    input.operation.command !== "apply_factual_core" ||
+    input.event.fazenda_id !== input.fazendaId ||
+    input.detail.fazenda_id !== input.fazendaId ||
+    input.eventAnimal.fazenda_id !== input.fazendaId ||
+    input.detail.evento_id !== input.event.id ||
+    input.eventAnimal.evento_id !== input.event.id
+  ) {
+    throw new Error("SANITARIO_V2_FACTUAL_LOCAL_SCOPE_MISMATCH");
+  }
+  await validateSanitarioV2Enqueue({
+    fazendaId: input.fazendaId,
+    projectRef: input.projectRef,
+    operations: [input.operation],
+  });
+  await db.transaction(
+    "rw",
+    [
+      db.event_eventos,
+      db.event_eventos_sanitario,
+      db.event_eventos_animais,
+      db.queue_gestures,
+      db.queue_ops,
+    ],
+    async () => {
+      await db.event_eventos.add(input.event);
+      await db.event_eventos_sanitario.add(input.detail);
+      await db.event_eventos_animais.add(input.eventAnimal);
+      await writeSanitarioV2Queue({
+        fazendaId: input.fazendaId,
+        clientId: input.clientId,
+        operations: [input.operation],
+      });
+    },
+  );
 }

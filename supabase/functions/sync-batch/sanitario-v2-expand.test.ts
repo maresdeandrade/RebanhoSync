@@ -50,6 +50,29 @@ describe("Sync Sanitario v2 expand foundation", () => {
     expect(sql).toContain("ux_insumo_movimentacoes_source_lote_tipo");
   });
 
+  it("inclui evento, detalhe e relações completos no fingerprint factual", () => {
+    const sql = readMigration();
+    const start = sql.indexOf(
+      "create or replace function public.internal_sanitario_sync_v2_apply_factual_core",
+    );
+    const end = sql.indexOf(
+      "create or replace function public.internal_sanitario_sync_v2_close_agenda",
+      start,
+    );
+    const factualFunction = sql.slice(start, end);
+
+    expect(start).toBeGreaterThanOrEqual(0);
+    expect(end).toBeGreaterThan(start);
+    expect(factualFunction).toContain("v_fingerprint := pg_catalog.md5");
+    expect(factualFunction).toContain("'event', to_jsonb(event_payload)");
+    expect(factualFunction).toContain("'detail', to_jsonb(detail_payload)");
+    expect(factualFunction).toContain("'animals', to_jsonb(event_animals)");
+    expect(factualFunction).toContain(
+      "public.internal_sanitario_sync_v2_existing_result",
+    );
+    expect(sql).toContain("SANITARIO_IDEMPOTENCY_CONFLICT");
+  });
+
   it("conecta as funcoes somente no backend e preserva JWT antes de service_role", () => {
     const syncBatch = readFileSync(
       join(process.cwd(), "supabase", "functions", "sync-batch", "index.ts"),
