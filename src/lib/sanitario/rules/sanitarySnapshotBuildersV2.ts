@@ -282,6 +282,7 @@ export function buildEventTechnicalSnapshotV2(
     schemaVersion: "sanitario-event-technical-snapshot-v2",
     eventId: input.eventId,
     executedProductId: input.executedProduct.id,
+    executedProductName: input.executedProduct.nomeComercial,
     executedProductSnapshot: buildSanitaryProductSnapshotV2(
       input.executedProduct,
       input.executedProductSpeciesAuthorization,
@@ -292,6 +293,7 @@ export function buildEventTechnicalSnapshotV2(
       basis: (input.executedDose.basis ?? "dose") as EventTechnicalSnapshot["executedDose"]["basis"],
     },
     executedRoute: input.executedRoute ?? "",
+    fieldEvidence: [],
     protocolId: input.protocol?.id,
     protocolItemVersionId: input.protocolItem?.id,
     protocolItemSnapshot: input.protocolItem

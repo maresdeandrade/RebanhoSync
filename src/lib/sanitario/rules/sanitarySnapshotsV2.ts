@@ -1,6 +1,7 @@
 import {
   buildValidationResultV2,
   type FieldSourceStatus,
+  type SourceCoverageStatusV2,
   type SanitarySourceRefV2,
   type SanitaryValidationIssueV2,
   type SanitaryValidationResultV2,
@@ -21,6 +22,10 @@ import type {
 export type SanitaryProductSnapshotV2 = {
   productId: string;
   nomeComercial: string;
+  fabricante?: string | null;
+  registroOrgao?: string | null;
+  registroNumero?: string | null;
+  catalogUpdatedAt?: string | null;
   classe: string;
   principioAtivo?: string | null;
   tipoProduto: string;
@@ -42,6 +47,45 @@ export type WithdrawalSnapshotV2 = {
   applicability: WithdrawalApplicabilityV2;
   sourceRefs: SanitarySourceRefV2[];
   limitations?: string[];
+};
+
+export type ExecutedProductFieldEvidenceV2 = {
+  fieldKey: string;
+  coverageStatus: SourceCoverageStatusV2;
+  factualValue: Record<string, unknown>;
+  technicalValue: Record<string, unknown> | null;
+  sourceRef: SanitarySourceRefV2 | null;
+  sourceCoverageId: string | null;
+  productSource: {
+    productId: string;
+    sourceId: string;
+    fieldKey: string;
+  } | null;
+  qualifiers: {
+    speciesCode?: SanitarySpeciesCodeV2 | null;
+    aptitude?: SanitaryAptitudeV2 | null;
+    route?: string | null;
+    doseBasis?: SanitaryDoseBasisV2 | null;
+    animalIds?: string[];
+  };
+  reason: string;
+};
+
+export type ExecutedProductTechnicalSnapshotV2 = {
+  schemaVersion: "sanitario-executed-product-technical-snapshot-v2";
+  eventId: string;
+  executedProductId: string;
+  executedProductName: string;
+  executedProductSnapshot: SanitaryProductSnapshotV2 | null;
+  executedDose: {
+    quantity: number;
+    unit: string;
+    basis: SanitaryDoseBasisV2;
+  };
+  executedRoute: string;
+  fieldEvidence: ExecutedProductFieldEvidenceV2[];
+  sourceRefs: SanitarySourceRefV2[];
+  limitations: string[];
 };
 
 export type AgendaTechnicalSnapshot = {
@@ -70,29 +114,121 @@ export type AgendaTechnicalSnapshot = {
   limitations: string[];
 };
 
-export type EventTechnicalSnapshot = {
+export type EventTechnicalSnapshot = Omit<
+  ExecutedProductTechnicalSnapshotV2,
+  "schemaVersion" | "executedProductSnapshot"
+> & {
   schemaVersion: "sanitario-event-technical-snapshot-v2";
-  eventId: string;
-  executedProductId: string;
   executedProductSnapshot: SanitaryProductSnapshotV2;
-  executedDose: {
-    quantity: number;
-    unit: string;
-    basis: SanitaryDoseBasisV2;
-  };
-  executedRoute: string;
   protocolId?: string | null;
   protocolItemVersionId?: string | null;
   protocolItemSnapshot?: Record<string, unknown> | null;
   withdrawalSnapshot: WithdrawalSnapshotV2;
-  sourceRefs: SanitarySourceRefV2[];
   mvResponsavel?: {
     id?: string | null;
     nome?: string | null;
     registro?: string | null;
   } | null;
-  limitations: string[];
 };
+
+export function validateExecutedProductTechnicalSnapshotV2(
+  snapshot: ExecutedProductTechnicalSnapshotV2 & Record<string, unknown>,
+): SanitaryValidationResultV2 {
+  const issues: SanitaryValidationIssueV2[] = [];
+  if (snapshot.schemaVersion !== "sanitario-executed-product-technical-snapshot-v2") {
+    issues.push({
+      code: "executed_product_snapshot_invalid_schema_version",
+      severity: "block",
+      field: "schemaVersion",
+      message: "Snapshot técnico do produto executado exige schema version v2.",
+    });
+  }
+  if (!snapshot.eventId || !snapshot.executedProductId || !snapshot.executedProductName) {
+    issues.push({
+      code: "executed_product_snapshot_requires_factual_identity",
+      severity: "block",
+      field: "executedProductId",
+      message: "Snapshot técnico exige identidade factual do Evento e do produto executado.",
+    });
+  }
+  if (!snapshot.executedRoute?.trim()) {
+    issues.push({
+      code: "executed_product_snapshot_requires_route",
+      severity: "block",
+      field: "executedRoute",
+      message: "Snapshot técnico exige a via factual executada.",
+    });
+  }
+  if (!(snapshot.executedDose?.quantity > 0) || !snapshot.executedDose?.unit?.trim()) {
+    issues.push({
+      code: "executed_product_snapshot_requires_dose",
+      severity: "block",
+      field: "executedDose",
+      message: "Snapshot técnico exige a dose factual executada.",
+    });
+  }
+  if (
+    snapshot.executedProductSnapshot &&
+    snapshot.executedProductSnapshot.productId !== snapshot.executedProductId
+  ) {
+    issues.push({
+      code: "executed_product_snapshot_product_mismatch",
+      severity: "block",
+      field: "executedProductSnapshot.productId",
+      message: "Snapshot do catálogo deve corresponder ao produto factual executado.",
+    });
+  }
+  if (!Array.isArray(snapshot.fieldEvidence) || !Array.isArray(snapshot.sourceRefs)) {
+    issues.push({
+      code: "executed_product_snapshot_evidence_invalid",
+      severity: "block",
+      field: "fieldEvidence",
+      message: "Evidências técnicas por campo devem ser preservadas como coleção explícita.",
+    });
+  } else {
+    for (const evidence of snapshot.fieldEvidence) {
+      if (!evidence.fieldKey?.trim()) {
+        issues.push({
+          code: "executed_product_snapshot_field_key_required",
+          severity: "block",
+          field: "fieldEvidence.fieldKey",
+          message: "Cada evidência deve identificar o campo técnico coberto.",
+        });
+      }
+      if (
+        evidence.coverageStatus === "covers" &&
+        (!evidence.sourceRef?.id || !evidence.sourceCoverageId || !evidence.productSource || !evidence.technicalValue)
+      ) {
+        issues.push({
+          code: "executed_product_snapshot_covered_field_incomplete",
+          severity: "block",
+          field: evidence.fieldKey,
+          message: "Campo coberto exige fonte, cobertura, vínculo produto-fonte e valor técnico.",
+        });
+      }
+      if (
+        evidence.coverageStatus !== "covers" &&
+        (evidence.sourceRef || evidence.sourceCoverageId || evidence.productSource || evidence.technicalValue)
+      ) {
+        issues.push({
+          code: "executed_product_snapshot_uncovered_field_qualified",
+          severity: "block",
+          field: evidence.fieldKey,
+          message: "Campo não coberto não pode conservar qualificação técnica parcial.",
+        });
+      }
+    }
+  }
+  if ("withdrawalSnapshot" in snapshot || "withdrawal_snapshot" in snapshot) {
+    issues.push({
+      code: "executed_product_snapshot_must_not_carry_withdrawal",
+      severity: "block",
+      field: "withdrawalSnapshot",
+      message: "O núcleo técnico do item 4 não materializa carência.",
+    });
+  }
+  return buildValidationResultV2(issues);
+}
 
 export function validateAgendaTechnicalSnapshotV2(
   snapshot: AgendaTechnicalSnapshot & Record<string, unknown>,
@@ -142,6 +278,21 @@ export function validateEventTechnicalSnapshotV2(
   snapshot: EventTechnicalSnapshot & Record<string, unknown>,
 ): SanitaryValidationResultV2 {
   const issues: SanitaryValidationIssueV2[] = [];
+
+  issues.push(
+    ...validateExecutedProductTechnicalSnapshotV2({
+      schemaVersion: "sanitario-executed-product-technical-snapshot-v2",
+      eventId: snapshot.eventId,
+      executedProductId: snapshot.executedProductId,
+      executedProductName: snapshot.executedProductName,
+      executedProductSnapshot: snapshot.executedProductSnapshot,
+      executedDose: snapshot.executedDose,
+      executedRoute: snapshot.executedRoute,
+      fieldEvidence: snapshot.fieldEvidence,
+      sourceRefs: snapshot.sourceRefs,
+      limitations: snapshot.limitations,
+    }).issues,
+  );
 
   if (snapshot.schemaVersion !== "sanitario-event-technical-snapshot-v2") {
     issues.push({

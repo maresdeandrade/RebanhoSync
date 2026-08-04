@@ -31,6 +31,7 @@ A Conformidade Sanitária v2 permanece um read model local derivado, somente lei
 | 3.11 Sucesso parcial | Validado localmente; E2E remoto pendente |
 | 3.12 Conflito multi-dispositivo | Código e SQL validados; plataforma bloqueada |
 | 3.13 Recalcular Conformidade após pull | Implementado e validado localmente |
+| 4 Produto técnico e fonte por campo | Implementado e validado localmente |
 
 O item 3 não está concluído e a Fase 12 não está encerrada.
 
@@ -91,6 +92,20 @@ Fora do escopo:
 - habilitar rollout, gate remoto ou feature flag local;
 - alterar a semântica do bloqueio de plataforma.
 
+## Resultado do item 4
+
+A execução factual preserva em `eventos_sanitario.produto_snapshot` o produto realmente executado e um snapshot técnico por campo, formado somente a partir do catálogo v2 disponível no cache local.
+
+Resultado comprovado localmente:
+
+- dose, via e produto executados permanecem fatos históricos; divergência com o catálogo não os substitui e deixa o campo explicitamente não coberto;
+- fonte, versão, cobertura, vínculo produto–fonte, regra técnica e qualificadores por espécie/animal são preservados somente para o campo comprovado;
+- ausência, arquivamento, ambiguidade ou incompatibilidade de catálogo não impede o Evento, não fabrica evidência e não deixa qualificação parcial;
+- o mesmo `produto_snapshot` participa do detalhe factual, fingerprint remoto e pull incremental, com proteção da operação local pendente;
+- o `sync-batch` valida tenant, produto, fonte, cobertura, regra e aplicabilidade antes da RPC; replay já confirmado continua resolvido pelo ledger e fingerprint canônicos;
+- o núcleo do item 4 não contém `withdrawalSnapshot`, não calcula carência e não cria autorização operacional;
+- nenhuma migration, alteração de RPC, schema Dexie, estoque, gate, deploy ou push foi necessária.
+
 ## Regras de domínio do incremento
 
 - Agenda = intenção ou tarefa futura.
@@ -124,7 +139,6 @@ O bloqueio `SANITARIO_V2_E2E_PLATFORM_BLOCKED` continua impedindo rollout, sem i
 
 ```txt
 reexecução dos E2Es remotos quando a plataforma estiver estável
-→ item 4 Produto técnico e fonte por campo
 → item 5 Correção append-only sanitária
 → item 6 Carência operacional
 → item 7 Fechamento da Fase 12

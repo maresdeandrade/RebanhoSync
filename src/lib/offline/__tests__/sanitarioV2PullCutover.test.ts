@@ -105,6 +105,58 @@ describe("sanitario v2 ordered pull", () => {
     expect(await db.event_eventos_animais.count()).toBe(1);
   });
 
+  it("preserva snapshot técnico no round-trip sem sobrescrever fato local pendente", async () => {
+    const technicalSnapshot = {
+      schemaVersion: "sanitario-executed-product-technical-snapshot-v2",
+      eventId: EVENT_ID,
+      executedProductId: "60000000-0000-4000-8000-000000000001",
+      executedProductName: "Vacina",
+      executedProductSnapshot: { productId: "60000000-0000-4000-8000-000000000001", catalogUpdatedAt: CREATED_AT },
+      executedDose: { quantity: 2, unit: "mL", basis: "animal" },
+      executedRoute: "subcutanea",
+      fieldEvidence: [],
+      sourceRefs: [],
+      limitations: ["technical_source_unavailable"],
+    };
+    const remoteDetail = {
+      evento_id: EVENT_ID,
+      fazenda_id: FARM_ID,
+      tipo: "vacinacao",
+      produto_snapshot: technicalSnapshot,
+      updated_at: CREATED_AT,
+      deleted_at: null,
+    };
+    vi.mocked(supabase.from).mockImplementation(
+      () => ({ select: () => ({ eq: async () => ({ data: [remoteDetail], error: null }) }) }) as never,
+    );
+
+    await pullDataForFarm(FARM_ID, ["eventos_sanitario"], { mode: "merge" });
+    await pullDataForFarm(FARM_ID, ["eventos_sanitario"], { mode: "merge" });
+    expect((await db.event_eventos_sanitario.get(EVENT_ID))?.produto_snapshot).toEqual(technicalSnapshot);
+
+    await db.queue_ops.add({
+      client_op_id: "90000000-0000-4000-8000-000000000001",
+      client_tx_id: "90000000-0000-4000-8000-000000000002",
+      domain_op_id: "90000000-0000-4000-8000-000000000003",
+      table: "sanitario_v2",
+      action: "INSERT",
+      record: { command: "apply_factual_core", payload: { event: { id: EVENT_ID } } },
+      sync_state: "PENDING",
+      created_at: CREATED_AT,
+    });
+    const divergent = { ...remoteDetail, produto_snapshot: { ...technicalSnapshot, executedRoute: "intramuscular" } };
+    vi.mocked(supabase.from).mockImplementation(
+      (table: string) => ({
+        select: () => ({
+          eq: async () => ({ data: table === "eventos_sanitario" ? [divergent] : [], error: null }),
+        }),
+      }) as never,
+    );
+
+    await pullSanitarioV2CutoverState(FARM_ID);
+    expect((await db.event_eventos_sanitario.get(EVENT_ID))?.produto_snapshot).toEqual(technicalSnapshot);
+  });
+
   it("reconcilia na ordem agenda, alvos, fato, detalhe, animais e closure", async () => {
     await db.queue_gestures.add({
       client_tx_id: "tx-pending-before-pull",

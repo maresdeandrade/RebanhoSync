@@ -7,6 +7,7 @@ import {
   setSanitarioV2PushEnabled,
 } from "@/lib/offline/sanitarioV2Cutover";
 import type {
+  Animal,
   InsumoLote,
   SanitarioAgendaAnimalLocalV2,
   SanitarioAgendaLocalV2,
@@ -188,6 +189,13 @@ async function clearScope() {
     db.state_insumo_lotes.clear(),
     db.state_insumo_movimentacoes.clear(),
     db.catalog_sanitario_produto_carencia_rules_v2.clear(),
+    db.catalog_sanitario_produtos_v2.clear(),
+    db.catalog_sanitario_fontes_tecnicas_v2.clear(),
+    db.catalog_sanitario_fonte_cobertura_campos_v2.clear(),
+    db.catalog_sanitario_produto_fontes_v2.clear(),
+    db.catalog_sanitario_produto_dose_rules_v2.clear(),
+    db.catalog_sanitario_produto_especie_autorizacao_v2.clear(),
+    db.state_animais.clear(),
     db.queue_ops.clear(),
     db.queue_gestures.clear(),
     db.sync_sanitario_v2_cutovers.clear(),
@@ -264,6 +272,129 @@ describe("executeSanitaryAgendaV2", () => {
       planned_status: "executado",
       execution_evento_id: result.eventId,
     });
+  });
+
+  it("persiste o snapshot técnico do produto executado na mesma execução factual", async () => {
+    await seedAgenda();
+    await db.state_animais.put({
+      id: "animal-1",
+      fazenda_id: "farm-1",
+      identificacao: "A-1",
+      nome: null,
+      sexo: "F",
+      status: "ativo",
+      lote_id: "lot-1",
+      data_nascimento: null,
+      data_entrada: null,
+      data_saida: null,
+      pai_id: null,
+      mae_id: null,
+      rfid: null,
+      especie: "bovino",
+      origem: null,
+      raca: null,
+      papel_macho: null,
+      habilitado_monta: false,
+      observacoes: null,
+      payload: {},
+      client_id: "client-1",
+      client_op_id: "animal-op-1",
+      client_tx_id: null,
+      client_recorded_at: "2026-01-01T00:00:00.000Z",
+      server_received_at: "2026-01-01T00:00:00.000Z",
+      created_at: "2026-01-01T00:00:00.000Z",
+      updated_at: "2026-01-01T00:00:00.000Z",
+      deleted_at: null,
+    } satisfies Animal);
+    await db.catalog_sanitario_produtos_v2.put({
+      id: "product-1",
+      nome_comercial: "Vacina Raiva",
+      fabricante: "Lab",
+      registro_orgao: "MAPA",
+      registro_numero: "123",
+      classe: "vacina_raiva",
+      principio_ativo: "antigeno",
+      tipo_produto: "imunobiologico",
+      apresentacao: "frasco",
+      status_curatorial: "ativo",
+      metadata: {},
+      created_at: "2026-01-01T00:00:00.000Z",
+      updated_at: "2026-01-02T00:00:00.000Z",
+      deleted_at: null,
+    });
+    await db.catalog_sanitario_fontes_tecnicas_v2.put({
+      id: "source-1",
+      kind: "bula",
+      scope: "global",
+      fazenda_id: null,
+      title: "Bula",
+      issuer: "Lab",
+      version: "v1",
+      published_at: null,
+      accessed_at: null,
+      url: null,
+      jurisdiction_country: "BR",
+      jurisdiction_uf: null,
+      jurisdiction_zone: null,
+      strength: "forte",
+      evidence_status: "SIM_BULA",
+      limitations: [],
+      metadata: {},
+      created_by: null,
+      created_at: "2026-01-01T00:00:00.000Z",
+      updated_at: "2026-01-01T00:00:00.000Z",
+      deleted_at: null,
+    });
+    await db.catalog_sanitario_fonte_cobertura_campos_v2.bulkPut(["dose", "route"].map((fieldKey) => ({
+      id: `coverage-${fieldKey}`,
+      source_id: "source-1",
+      field_key: fieldKey,
+      coverage_status: "covers" as const,
+      notes: null,
+      created_at: "2026-01-01T00:00:00.000Z",
+      updated_at: "2026-01-01T00:00:00.000Z",
+      deleted_at: null,
+    })));
+    await db.catalog_sanitario_produto_fontes_v2.bulkPut(["dose", "route"].map((fieldKey) => ({
+      product_id: "product-1",
+      source_id: "source-1",
+      field_key: fieldKey,
+      created_at: "2026-01-01T00:00:00.000Z",
+    })));
+    await db.catalog_sanitario_produto_dose_rules_v2.put({
+      id: "dose-rule-1",
+      product_id: "product-1",
+      species_code: "bovino",
+      aptitude: "all",
+      route: "subcutanea",
+      dose_quantity: 2,
+      dose_unit: "ml",
+      dose_basis: "animal",
+      min_weight_kg: null,
+      max_weight_kg: null,
+      limitations: [],
+      status_curatorial: "ativo",
+      created_at: "2026-01-01T00:00:00.000Z",
+      updated_at: "2026-01-01T00:00:00.000Z",
+      deleted_at: null,
+    });
+
+    const result = await executeSanitaryAgendaV2(baseInput, db);
+    const detail = await db.event_eventos_sanitario.get(result.eventId);
+
+    expect(detail?.produto_snapshot).toMatchObject({
+      schemaVersion: "sanitario-executed-product-technical-snapshot-v2",
+      eventId: result.eventId,
+      executedProductId: "product-1",
+      executedProductName: "Vacina Raiva",
+      executedProductSnapshot: { catalogUpdatedAt: "2026-01-02T00:00:00.000Z" },
+      fieldEvidence: expect.arrayContaining([
+        expect.objectContaining({ fieldKey: "dose", coverageStatus: "covers" }),
+        expect.objectContaining({ fieldKey: "route", coverageStatus: "covers" }),
+      ]),
+    });
+    expect(detail?.produto_snapshot).not.toHaveProperty("withdrawalSnapshot");
+    expect(result.createsActiveWithdrawal).toBe(false);
   });
 
   it("não usa agenda futura como histórico antes da execução e passa a expor o evento factual depois", async () => {

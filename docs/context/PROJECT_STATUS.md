@@ -62,6 +62,7 @@ Estado dos subitens:
 | 3.11 Sucesso parcial | Local validado; remoto pendente |
 | 3.12 Conflito multi-dispositivo | Plataforma bloqueada |
 | 3.13 Recalcular Conformidade após pull | Implementado e validado localmente |
+| 4 Produto técnico e fonte por campo | Implementado e validado localmente |
 
 ## Ambiente e rollout
 
@@ -86,7 +87,7 @@ Não há evidência atual de defeito no SQL ou na regra de domínio. Não aument
 
 ## Próximo desenvolvimento
 
-O item 3.13 recalcula localmente a Conformidade após o pull das fontes factuais necessárias. A Conformidade permanece read model derivado, sem tabela/operação primária de sync e sem criar Agenda, Evento, movimento de estoque, carência ou liberação operacional. O item 3 e a Fase 12 permanecem abertos pelas validações remotas pendentes.
+O item 4 integra ao Evento factual o produto realmente executado e a evidência técnica explicitamente coberta por campo, persistidos somente em `eventos_sanitario.produto_snapshot`. Ausência ou divergência de catálogo não altera o fato e não fabrica comprovação. `withdrawalSnapshot`, carência e autorização operacional permanecem fora deste item. O item 3 e a Fase 12 permanecem abertos pelas validações remotas pendentes.
 
 ## Fontes de detalhe
 

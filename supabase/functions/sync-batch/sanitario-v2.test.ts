@@ -128,6 +128,8 @@ function dependencies(options?: {
   gateError?: { code?: string; message?: string };
   rpcData?: unknown;
   rpcError?: { code?: string; message?: string };
+  evidenceReason?: string | null;
+  evidenceError?: { code?: string; message?: string };
   order?: string[];
 }): SanitarioSyncV2Dependencies {
   return {
@@ -138,6 +140,10 @@ function dependencies(options?: {
         error: options?.gateError ?? null,
       };
     }),
+    validateProductEvidence: vi.fn(async () => ({
+      reasonCode: options?.evidenceReason ?? null,
+      error: options?.evidenceError ?? null,
+    })),
     callRpc: vi.fn(async () => {
       options?.order?.push("rpc");
       return {
@@ -588,6 +594,24 @@ describe("sync-batch sanitario v2: histórico externo/documental", () => {
     expect(result).toMatchObject({
       status: "REJECTED",
       reason_code: "SANITARIO_EXTERNAL_DOCUMENT_REFERENCE_REQUIRED",
+    });
+    expect(deps.callRpc).not.toHaveBeenCalled();
+  });
+
+  it("rejeita evidência técnica inválida antes da RPC sem promover falha parcial a sucesso", async () => {
+    const deps = dependencies({
+      evidenceReason: "SANITARIO_PRODUCT_FIELD_COVERAGE_MISMATCH",
+    });
+    const result = await executeSanitarioSyncV2Operation(
+      externalHistoryOperation(),
+      context,
+      deps,
+    );
+
+    expect(result).toMatchObject({
+      status: "REJECTED",
+      retryable: false,
+      reason_code: "SANITARIO_PRODUCT_FIELD_COVERAGE_MISMATCH",
     });
     expect(deps.callRpc).not.toHaveBeenCalled();
   });

@@ -24,6 +24,10 @@ import {
   type SanitarioSyncV2Operation,
   validateSanitarioSyncV2Envelope,
 } from "./sanitario-v2.ts";
+import {
+  validateSanitaryProductEvidenceCatalog,
+  validateSanitaryProductEvidenceShape,
+} from "./sanitary-product-evidence.ts";
 import { normalizeTableMutationRecord } from "../_shared/mutationRecord.ts";
 
 const allowedOrigins = [
@@ -349,6 +353,183 @@ Deno.serve(async (req: Request) => {
                 return {
                   data: data as SanitarioSyncV2Gate | null,
                   error,
+                };
+              },
+              validateProductEvidence: async (operation, trustedFazendaId) => {
+                const shapeIssue = validateSanitaryProductEvidenceShape({
+                  event: operation.payload.event as unknown as Record<
+                    string,
+                    unknown
+                  >,
+                  detail: operation.payload.detail as unknown as Record<
+                    string,
+                    unknown
+                  >,
+                  eventAnimals: operation.payload.event_animals,
+                });
+                if (shapeIssue) return { reasonCode: shapeIssue, error: null };
+                if (
+                  operation.payload.event.natureza !== "primary_execution" ||
+                  !operation.payload.detail.produto_sanitario_v2_id
+                ) return { reasonCode: null, error: null };
+
+                const { data: replay, error: replayError } =
+                  await serviceSupabase
+                    .from("sanitario_sync_v2_operations")
+                    .select("id")
+                    .eq("fazenda_id", trustedFazendaId)
+                    .eq("operation_kind", "factual_core")
+                    .or(
+                      `client_op_id.eq.${operation.client_op_id},domain_op_id.eq.${operation.domain_op_id}`,
+                    )
+                    .limit(1)
+                    .maybeSingle();
+                if (replayError) {
+                  return { reasonCode: null, error: replayError };
+                }
+                if (replay) return { reasonCode: null, error: null };
+
+                const snapshot = operation.payload.detail
+                  .produto_snapshot as Record<string, unknown>;
+                const evidence = Array.isArray(snapshot.fieldEvidence)
+                  ? snapshot.fieldEvidence
+                  : [];
+                const covered = evidence.filter((entry) =>
+                  typeof entry === "object" && entry !== null &&
+                  (entry as Record<string, unknown>).coverageStatus === "covers"
+                ) as Record<string, unknown>[];
+                const sourceIds = [
+                  ...new Set(
+                    covered.map((
+                      entry,
+                    ) => ((entry.sourceRef as Record<string, unknown> | null)
+                      ?.id)
+                    ).filter((id): id is string => typeof id === "string"),
+                  ),
+                ];
+                const coverageIds = [
+                  ...new Set(
+                    covered.map((entry) => entry.sourceCoverageId)
+                      .filter((id): id is string => typeof id === "string"),
+                  ),
+                ];
+                const doseRuleIds = [
+                  ...new Set(
+                    covered.map((
+                      entry,
+                    ) => ((entry.technicalValue as
+                      | Record<string, unknown>
+                      | null)?.doseRuleId)
+                    ).filter((id): id is string => typeof id === "string"),
+                  ),
+                ];
+                const authorizationIds = [
+                  ...new Set(
+                    covered.map((
+                      entry,
+                    ) => ((entry.technicalValue as
+                      | Record<string, unknown>
+                      | null)?.authorizationId)
+                    ).filter((id): id is string => typeof id === "string"),
+                  ),
+                ];
+                const animalIds = operation.payload.event_animals.map((entry) =>
+                  entry.animal_id
+                );
+                const productId =
+                  operation.payload.detail.produto_sanitario_v2_id;
+                const empty = Promise.resolve({ data: [], error: null });
+                const [
+                  productResult,
+                  sourcesResult,
+                  coveragesResult,
+                  linksResult,
+                  doseRulesResult,
+                  authorizationsResult,
+                  animalsResult,
+                ] = await Promise.all([
+                  serviceSupabase.from("sanitario_produtos_v2").select("*").eq(
+                    "id",
+                    productId,
+                  ).maybeSingle(),
+                  sourceIds.length
+                    ? serviceSupabase.from("sanitario_fontes_tecnicas_v2")
+                      .select("*").in("id", sourceIds)
+                    : empty,
+                  coverageIds.length
+                    ? serviceSupabase.from(
+                      "sanitario_fonte_cobertura_campos_v2",
+                    ).select("*").in("id", coverageIds)
+                    : empty,
+                  sourceIds.length
+                    ? serviceSupabase.from("sanitario_produto_fontes_v2")
+                      .select("*").eq("product_id", productId).in(
+                        "source_id",
+                        sourceIds,
+                      )
+                    : empty,
+                  doseRuleIds.length
+                    ? serviceSupabase.from("sanitario_produto_dose_rules_v2")
+                      .select("*").in("id", doseRuleIds)
+                    : empty,
+                  authorizationIds.length
+                    ? serviceSupabase.from(
+                      "sanitario_produto_especie_autorizacao_v2",
+                    ).select("*").in("id", authorizationIds)
+                    : empty,
+                  serviceSupabase.from("animais").select(
+                    "id, fazenda_id, especie",
+                  ).eq("fazenda_id", trustedFazendaId).in("id", animalIds),
+                ]);
+                const lookupError = [
+                  productResult,
+                  sourcesResult,
+                  coveragesResult,
+                  linksResult,
+                  doseRulesResult,
+                  authorizationsResult,
+                  animalsResult,
+                ]
+                  .map((result) => result.error).find(Boolean);
+                if (lookupError) {
+                  return { reasonCode: null, error: lookupError };
+                }
+                return {
+                  reasonCode: validateSanitaryProductEvidenceCatalog(
+                    snapshot,
+                    trustedFazendaId,
+                    {
+                      product: productResult.data as
+                        | Record<string, unknown>
+                        | null,
+                      sources: (sourcesResult.data ?? []) as Record<
+                        string,
+                        unknown
+                      >[],
+                      coverages: (coveragesResult.data ?? []) as Record<
+                        string,
+                        unknown
+                      >[],
+                      productSources: (linksResult.data ?? []) as Record<
+                        string,
+                        unknown
+                      >[],
+                      doseRules: (doseRulesResult.data ?? []) as Record<
+                        string,
+                        unknown
+                      >[],
+                      speciesAuthorizations:
+                        (authorizationsResult.data ?? []) as Record<
+                          string,
+                          unknown
+                        >[],
+                      animals: (animalsResult.data ?? []) as Record<
+                        string,
+                        unknown
+                      >[],
+                    },
+                  ),
+                  error: null,
                 };
               },
               callRpc: async ({ functionName, args }) => {

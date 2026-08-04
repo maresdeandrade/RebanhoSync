@@ -1,7 +1,7 @@
 # Handoff atual — Fase 12 / Sync Sanitário v2
 
 Atualizado em: 2026-08-04
-Baseline autorizado para o incremento 3.13: `47c3ebd`
+Baseline autorizado para o item 4: `77d640f`
 Status: **Fase 12 ativa; rollout não autorizado**
 Próxima pendência: **reexecutar os E2Es remotos quando a plataforma estiver estável**
 
@@ -44,6 +44,7 @@ Planos encerrados e evidências em `docs/review/evidence/` permanecem histórico
 | 3.11 Sucesso parcial | Validado localmente; E2E remoto pendente |
 | 3.12 Conflito multi-dispositivo | Código e SQL validados; plataforma bloqueada |
 | 3.13 Recalcular Conformidade após pull | Implementado e validado localmente |
+| 4 Produto técnico e fonte por campo | Implementado e validado localmente |
 
 Nem o item 3 nem a Fase 12 estão concluídos.
 
@@ -198,6 +199,20 @@ Fatos confirmados:
 
 Validação local concluída com 45 testes focados, suíte completa, lint, build e baseline funcional Supabase 5/5. O `rtk` não estava disponível; os comandos equivalentes foram executados diretamente. Warnings existentes de Browserslist, chunking e imports mistos do Dexie não bloquearam o build.
 
+## Resultado do item 4
+
+Fatos confirmados:
+
+- `eventos_sanitario.produto_snapshot` permanece a única persistência factual do snapshot do produto executado;
+- o núcleo tipado do item 4 contém produto executado e evidência por campo; o contrato futuro com `withdrawalSnapshot` continua separado e obrigatório somente para materialização específica de carência;
+- evidência `covers` exige produto, fonte e versão atuais, cobertura exata, vínculo produto–fonte, regra técnica e aplicabilidade determinística ao animal; cobertura ausente, ambígua ou divergente permanece não comprovada;
+- dose e via factuais nunca são substituídas pelo catálogo, e produto planejado, Agenda, closure ou Protocolo isolado não criam snapshot factual;
+- o snapshot é gravado atomicamente com o detalhe e a fila existentes, participa do fingerprint remoto e faz round-trip pelo pull sem sobrescrever operação local pendente;
+- a validação remota foi adicionada antes da RPC existente e preserva replay por ledger; nenhuma migration, nova coluna, RPC ou segunda fonte de verdade foi criada;
+- estoque, Conformidade, carência, autorização operacional, gates e rollout permaneceram inalterados.
+
+Validação local concluída com testes focados, suíte completa, lint, build, Deno fmt/check, gate local agregado e baseline funcional Supabase 5/5. O `rtk` não estava disponível; foram usados os comandos equivalentes diretamente.
+
 ## Próxima pendência oficial
 
 Reexecutar os E2Es remotos quando a plataforma estiver estável. O E2E remoto pendente do item 3.9 não foi executado neste incremento.
@@ -206,7 +221,6 @@ Sequência posterior:
 
 ```txt
 reexecutar E2Es remotos quando a plataforma estiver estável
-→ 4 produto técnico e fonte por campo
 → 5 correção append-only
 → 6 carência operacional
 → 7 fechamento formal da Fase 12

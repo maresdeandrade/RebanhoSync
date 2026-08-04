@@ -22,6 +22,8 @@ import type {
   SanitarioProdutoCarenciaRuleLocalV2,
   SanitarioTipoEnum,
 } from "@/lib/offline/types";
+import type { ExecutedProductTechnicalSnapshotV2 } from "@/lib/sanitario/rules/sanitarySnapshotsV2";
+import { buildExecutedProductTechnicalSnapshotV2 } from "./executedProductTechnicalSnapshotV2";
 
 export type ExecuteSanitaryAgendaInputV2 = {
   fazendaId: string;
@@ -77,6 +79,12 @@ export type SanitaryAgendaExecutionDbV2 = Pick<
   | "state_insumo_movimentacoes"
   | "catalog_sanitario_produto_carencia_rules_v2"
   | "catalog_sanitario_produtos_v2"
+  | "catalog_sanitario_fontes_tecnicas_v2"
+  | "catalog_sanitario_fonte_cobertura_campos_v2"
+  | "catalog_sanitario_produto_fontes_v2"
+  | "catalog_sanitario_produto_dose_rules_v2"
+  | "catalog_sanitario_produto_especie_autorizacao_v2"
+  | "state_animais"
   | "sync_sanitario_v2_cutovers"
   | "queue_gestures"
   | "queue_ops"
@@ -411,6 +419,7 @@ function buildRecords(input: {
   executedAt: string;
   targetAnimalIds: string[];
   withdrawal: WithdrawalResolutionV2;
+  productTechnicalSnapshot: ExecutedProductTechnicalSnapshotV2 | null;
   inventory?: {
     insumoId: string;
     inventoryLotId: string;
@@ -428,6 +437,7 @@ function buildRecords(input: {
     executedAt,
     targetAnimalIds,
     withdrawal,
+    productTechnicalSnapshot,
     inventory,
     factualIdentity,
     movementIdentity,
@@ -508,6 +518,7 @@ function buildRecords(input: {
     produto: productName,
     produto_veterinario_id: request.product?.productId ?? expectedProductId(agenda),
     produto_sanitario_v2_id: request.product?.productId ?? null,
+    produto_snapshot: productTechnicalSnapshot,
     insumo_id: inventory?.insumoId ?? null,
     produto_nome_snapshot: productName,
     estoque_lote_id: request.product?.inventoryLotId ?? null,
@@ -642,6 +653,60 @@ export async function executeSanitaryAgendaV2(
     ? createSanitarioV2Identity(factualIdentity.clientTxId)
     : undefined;
 
+  let productTechnicalSnapshot: ExecutedProductTechnicalSnapshotV2 | null = null;
+  if (input.product?.productId && input.application?.dose && input.application.doseUnit && input.application.route) {
+    const [product, productSources, doseRules, speciesAuthorizations, animals] = await Promise.all([
+      localDb.catalog_sanitario_produtos_v2.get(input.product.productId),
+      localDb.catalog_sanitario_produto_fontes_v2
+        .where("product_id")
+        .equals(input.product.productId)
+        .toArray(),
+      localDb.catalog_sanitario_produto_dose_rules_v2
+        .where("product_id")
+        .equals(input.product.productId)
+        .toArray(),
+      localDb.catalog_sanitario_produto_especie_autorizacao_v2
+        .where("product_id")
+        .equals(input.product.productId)
+        .toArray(),
+      localDb.state_animais.bulkGet(agendaValidation.targetAnimalIds),
+    ]);
+    const sourceIds = Array.from(new Set(productSources.map((entry) => entry.source_id)));
+    const [sources, coverages] = await Promise.all([
+      localDb.catalog_sanitario_fontes_tecnicas_v2.bulkGet(sourceIds),
+      sourceIds.length > 0
+        ? localDb.catalog_sanitario_fonte_cobertura_campos_v2
+            .where("source_id")
+            .anyOf(sourceIds)
+            .toArray()
+        : Promise.resolve([]),
+    ]);
+    productTechnicalSnapshot = buildExecutedProductTechnicalSnapshotV2({
+      eventId: eventIdFor(input, Boolean(factualIdentity)),
+      fazendaId: input.fazendaId,
+      executedProductId: input.product.productId,
+      executedProductName: input.product.productName,
+      executedProductClass: input.product.productClass,
+      executedDose: {
+        quantity: input.application.dose,
+        unit: input.application.doseUnit,
+      },
+      executedRoute: input.application.route,
+      animals: agendaValidation.targetAnimalIds.map((animalId, index) => ({
+        animalId,
+        speciesCode: animals[index]?.fazenda_id === input.fazendaId
+          ? animals[index]?.especie ?? null
+          : null,
+      })),
+      product: product ?? null,
+      productSources,
+      sources: sources.filter((entry): entry is NonNullable<typeof entry> => Boolean(entry)),
+      coverages,
+      doseRules,
+      speciesAuthorizations,
+    });
+  }
+
   let inventory: {
     insumoId: string;
     inventoryLotId: string;
@@ -695,6 +760,7 @@ export async function executeSanitaryAgendaV2(
     executedAt: basicValidation.executedAt,
     targetAnimalIds: agendaValidation.targetAnimalIds,
     withdrawal,
+    productTechnicalSnapshot,
     inventory,
     factualIdentity,
     movementIdentity,

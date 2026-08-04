@@ -200,6 +200,10 @@ export interface SanitarioSyncV2Dependencies {
   callRpc: (
     call: SanitarioRpcCall,
   ) => Promise<{ data: unknown; error: SanitarioDbError | null }>;
+  validateProductEvidence: (
+    operation: ApplyFactualCoreOperation,
+    fazendaId: string,
+  ) => Promise<{ reasonCode: string | null; error: SanitarioDbError | null }>;
 }
 
 export function validateSanitarioSyncV2Envelope(
@@ -868,6 +872,28 @@ export async function executeSanitarioSyncV2Operation(
   const validation = validateSanitarioSyncV2Operation(raw, context);
   if (!validation.ok) return validation.result;
   const operation = validation.operation;
+
+  if (operation.command === "apply_factual_core") {
+    let evidenceValidation: Awaited<
+      ReturnType<SanitarioSyncV2Dependencies["validateProductEvidence"]>
+    >;
+    try {
+      evidenceValidation = await dependencies.validateProductEvidence(
+        operation,
+        context.fazendaId,
+      );
+    } catch (error) {
+      return classifySanitarioSyncV2Error(operation, {
+        message: error instanceof Error ? error.message : String(error),
+      });
+    }
+    if (evidenceValidation.error) {
+      return classifySanitarioSyncV2Error(operation, evidenceValidation.error);
+    }
+    if (evidenceValidation.reasonCode) {
+      return reject(operation, evidenceValidation.reasonCode);
+    }
+  }
 
   const rpcCall = buildSanitarioSyncV2RpcCall(operation, context);
   try {
