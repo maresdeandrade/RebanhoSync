@@ -1,178 +1,159 @@
-```markdown
 ---
 name: animal-cadastro-origem-destino
-description: Use when a RebanhoSync task touches animal registration, editing, identification, origin, destination, entry, exit, purchase, sale, death status, or animal base data integrity.
+description: Protege identidade, cadastro-base, edição, identificação, taxonomia, proveniência, origem/destino cadastral, entrada, compra, venda, saída, óbito e estado atual do animal no RebanhoSync. Usar quando a tarefa criar, corrigir, importar, sincronizar ou auditar dados-base e transições de ciclo de vida do animal. Não usar para parto/cria, execução sanitária, movimentação física entre lote/pasto/fazendas, KPI financeiro isolado ou ajuste apenas visual/copy; combinar com a skill específica quando os fluxos se cruzarem.
 ---
 
 # Animal Cadastro Origem Destino
 
-## Mission
+## Missão
 
-Protect animal base registration, identity, origin/destination, entry/exit, and current state integrity in RebanhoSync.
+Preservar identidade estável, proveniência, isolamento por fazenda e separação entre cadastro-base, fatos históricos, estado atual e intenções futuras.
 
----
+## Coordenação
 
-## When to use
+Combinar quando necessário com:
 
-Use when task touches:
-* Cadastro de animal;
-* Edição de animal;
-* Identificação;
-* Origem;
-* Destino;
-* Entrada;
-* Saída;
-* Compra;
-* Venda;
-* Óbito;
-* Status atual;
-* Lote atual;
-* Animal base data;
-* Taxonomic/category fields;
-* Origem/destino provenance.
+- `reproducao-parto-posparto-cria`: nascimento, cria e vínculo mãe–Evento–cria;
+- `movimentacao-transito-conformidade`: deslocamento, lote/pasto, trânsito ou GTA;
+- `sanitario-registro-operacional`: execução sanitária;
+- `sync-offline-rollback`: gesto, fila, retry, rollback ou reconcile;
+- `migrations-rls-contracts`: schema, RLS, constraint ou RPC;
+- `rebanhosync-verification-gate`: validação final.
 
----
+Compra ou venda pode exigir também o contrato comercial; usar esta skill para identidade/estado do animal e a skill de movimento quando houver deslocamento físico.
 
-## Do not use when
+## Leitura inicial
 
-Do not use when:
-* Task is only visual/copy;
-* Animal appears only as a filter in an unrelated flow;
-* Task is strictly sanitary execution;
-* Task is strictly reproductive birth/calf flow;
-* Task is only a financial KPI.
+1. `AGENTS.md`;
+2. `.agents/rules/CORE_RULES.md`;
+3. `.agents/rules/CONTEXT_LOADING.md`;
+4. `.agents/rules/no-broad-context.md`;
+5. `AGENTS.md` local, se existir;
+6. arquivos-alvo e testes diretamente relacionados.
 
-### Use instead:
-* `reproducao-parto-posparto-cria` for birth/calf flow;
-* `sanitario-registro-operacional` for sanitary events;
-* `movimentacao-transito-conformidade` for movement/transit;
-* `sync-offline-rollback` if sync/rollback is main risk.
+Carregar conforme o caso:
 
----
+- `docs/domain/ANIMAIS_TAXONOMIA.md`: cadastro, identificação ou taxonomia;
+- `docs/context/SOURCE_OF_TRUTH.md`: fato, estado ou proveniência;
+- `docs/domain/COMPRA_VENDA.md`: compra, venda, entrada ou saída comercial;
+- `docs/domain/LOTES_PASTOS.md`: consistência de lote/pasto atual;
+- `docs/technical/OFFLINE_SYNC.md`: persistência, retry ou rollback;
+- `.agents/rules/rtk.md`: comandos e validação.
 
-## Read first
+Não carregar todas as fontes por padrão.
 
-1. `AGENTS.md`
-2. `.agents/rules/CORE_RULES.md`
-3. `.agents/rules/CONTEXT_LOADING.md`
-4. `.agents/rules/no-broad-context.md`
+## Hierarquia em conflito
 
-> ⚙️ **Execution Rule:** For commands and validation, follow `.agents/rules/rtk.md`.
-
-### Read as needed:
-* `docs/domain/ANIMAIS_TAXONOMIA.md`
-* `docs/context/SOURCE_OF_TRUTH.md`
-* `docs/domain/COMPRA_VENDA.md` if purchase/sale is involved;
-* `docs/domain/LOTES_PASTOS.md` if lote/pasto is involved;
-* `docs/technical/OFFLINE_SYNC.md` if sync is involved.
-
----
-
-## Source of truth
-
-In case of conflict, trust:
-1. Code + active migrations;
+1. código + migrations ativas;
 2. `docs/context/PROJECT_STATUS.md`;
-3. Active normative docs;
-4. Derived docs;
-5. Archive/history;
-6. This skill.
+3. docs normativos ativos;
+4. docs derivados;
+5. histórico em `docs/archive/**`;
+6. esta skill.
 
----
+## Separação canônica
 
-## Hard constraints
+| Estrutura | Papel |
+|---|---|
+| Cadastro-base do animal | Identidade estável e atributos descritivos |
+| Evento | Compra, entrada, venda, saída, óbito, pesagem ou outra mudança factual |
+| `state_*` ou read model equivalente | Status, lote, categoria ou condição atual, conforme o modelo existente |
+| Agenda | Intenção futura; não é histórico do animal |
+| Tags/sinais/insights | Apoio de UX/consulta; não são fonte primária |
 
-* **Identidade:** Animal identity must remain stable and never be duplicated.
-* **Isolamento:** Do not break `fazenda_id` isolation.
-* **Métricas:** Do not infer current weight reliability without an explicit source.
-* **Métricas:** Do not infer sale/slaughter readiness.
-* **Limitação:** Do not treat tags/signals as a source of animal truth.
-* **Garantia:** Do not treat agenda as animal history.
-* **`state_*`:** Current state belongs in `state_*` or an equivalent read model.
-* **Evento:** Historical changes must be event-backed when factual.
-* Preserve offline-first and idempotency.
+## Invariantes
 
----
+- Gerar e preservar identidade estável; retry/importação não pode duplicar o mesmo animal.
+- Preservar `fazenda_id` e impedir vínculos cross-tenant.
+- Não editar o cadastro-base para simular fato histórico.
+- Mudança factual de ciclo de vida deve ter Evento compatível quando o contrato existente assim definir.
+- Estado atual deve derivar ou reconciliar com os fatos, sem competir com o histórico.
+- Não usar Agenda, tag, sinal ou insight como prova de estado ou histórico.
+- Não inferir peso atual confiável, aptidão de venda/abate ou destino sem fonte explícita.
+- Não preencher sexo, raça, categoria, lote, pasto, origem ou propriedade por default não auditável.
+- Preservar offline-first, idempotência, correção auditável e rollback.
 
-## Conceptual separation
+## Procedimento
 
-* **Animal Base:** Stable identity and descriptive data.
-* **Current State:** Current status/read model (active, sold, dead, current lote, current category/stage if modeled).
-* **Historical Fact:** Events (purchase, sale, movement, death, weighing, reproduction, sanitary event).
-* **Future Intention:** Agenda item.
+### 1. Classificar a operação
 
----
+Identificar: criação, edição descritiva, importação, identificação, taxonomia, proveniência, compra/entrada, venda/saída, óbito, leitura de estado atual ou correção.
 
-## Procedure
+Se houver deslocamento físico, cadastro originado de parto ou execução sanitária, incluir a skill de domínio correspondente.
 
-### 1. Classify animal operation
-Classify as: create animal, edit base data, entry/purchase, sale/exit, death, origin/destination update, current state read, taxonomic/category adjustment, or UI display.
+### 2. Confirmar fontes e vínculos
 
-### 2. Verify source-of-truth
-Check base table vs read model, event-backed history, and current state source. Ensure no agenda-as-history or tag-as-truth behaviors are introduced.
+Localizar no código:
 
-### 3. Verify identity
-Check unique identifiers, farm isolation, duplicate creation risk, offline retry behavior, and the link to a purchase/birth event if applicable.
+- tabela/entidade de identidade-base;
+- Evento e detalhes que sustentam mudanças factuais;
+- read model que sustenta o estado atual;
+- gesto/fila/RPC responsáveis pela persistência, se houver.
 
-### 4. Verify status transitions
-Check active → sold, active → dead, lote change, sale/exit, correction/rollback, and pending agenda cleanup if relevant and explicitly modeled.
+Não presumir nomes ou comportamento somente pela documentação.
 
-### 5. Verify edge cases
-Consider: duplicate animal, missing identifier, animal moved between farms, animal sold but still in active lote, animal dead but with active agenda, offline create then retry, and imported animal with incomplete origin.
+### 3. Validar identidade e duplicidade
 
----
+Confirmar:
 
-## Validation
+- UUID/ID definido antes de persistir ou enfileirar;
+- identificadores únicos dentro do escopo correto;
+- chave de idempotência estável para retry/importação;
+- vínculo com nascimento, compra ou entrada quando aplicável;
+- colisão e merge tratados conforme contrato explícito, sem sobrescrita silenciosa.
 
-Follow `.agents/rules/rtk.md`.
+### 4. Validar transição de estado
 
-### Minimum check:
+Verificar transições compatíveis, como ativo → vendido, ativo → morto e entrada → ativo. Confirmar que venda/óbito não deixam o animal indevidamente ativo em lote/pasto e que correção não destrói o fato original.
+
+Agenda pendente só deve ser alterada se houver regra explícita e vínculo correspondente; não apagar tarefas por inferência.
+
+### 5. Validar proveniência e origem/destino
+
+Preservar o que é conhecido, declarado, importado ou documentado conforme o modelo. Ausência de origem/destino deve permanecer desconhecida ou pendente; não converter ausência em valor factual.
+
+### 6. Validar offline e correção
+
+Confirmar retry sem duplicação, ordem segura dos efeitos, sucesso parcial explícito, rollback e reconcile local/remoto. Correção de fato confirmado deve ser auditável e preferencialmente append-only conforme o contrato do domínio.
+
+## Casos mínimos
+
+- identificador ausente ou duplicado;
+- importação repetida;
+- animal de outra fazenda;
+- nascimento/compra já vinculados;
+- venda ou óbito repetido;
+- animal vendido/morto ainda em lote ativo;
+- agenda pendente após mudança de estado;
+- origem externa incompleta;
+- falha entre Evento e read model;
+- duplo submit, retry offline e conflito concorrente;
+- correção após sincronização.
+
+## Validação
+
+Seguir `.agents/rules/rtk.md` e executar no mínimo:
+
 ```bash
 git status --short --untracked-files=all
-
+git diff --check
 ```
 
-* plus the related animal tests.
+Executar testes focados do fluxo animal. Para mudança de domínio crítico, usar lint e build; para entrega ampla, executar a suíte completa. Se tocar Supabase, RLS, RPC, migration ou sync-batch, executar também a validação funcional de baseline indicada nas regras.
 
-### For broader changes:
+Não executar reset, deploy, push ou habilitação de gate sem autorização explícita.
 
-```bash
-rtk pnpm run lint
-rtk pnpm test
-rtk pnpm run build
+## Saída obrigatória
 
-```
+Informar:
 
-### If Supabase/RLS/RPC is touched:
+1. fatos confirmados;
+2. operação animal afetada;
+3. identidade, proveniência e risco de duplicação;
+4. Evento e estado atual envolvidos;
+5. isolamento, idempotência e rollback;
+6. impacto em lote/pasto, Agenda e fluxos relacionados;
+7. testes e resultados;
+8. riscos residuais, até três.
 
-```bash
-rtk node scripts/codex/validate-supabase-baseline-functional.mjs
-
-```
-
----
-
-## Expected output
-
-Return:
-
-1. **Animal operation affected:** [Flow identifier]
-2. **Source-of-truth assessment:** [Invariants status]
-3. **Identity / duplication risk:** [Uniqueness verification status]
-4. **Current state vs history assessment:** [Read model sync check]
-5. **Sync / rollback risk:** [Idempotency status]
-6. **Tests required/executed:** [Scenarios covered]
-7. **Riscos/pendências:** [Up to 3 points]
-
----
-
-## Output rules
-
-* Do not infer weight reliability.
-* Do not infer sale/slaughter readiness.
-* Do not use tags/signals as truth.
-* Separate confirmed behavior, inference, and recommendation.
-
-```
-
-```
+Separar fato, inferência e recomendação. Não inferir peso, aptidão comercial, origem, destino ou estado a partir de Agenda, tags, sinais ou defaults.

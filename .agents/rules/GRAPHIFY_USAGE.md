@@ -1,35 +1,39 @@
-```markdown
-# Graphify Usage
+# Graphify Usage — RebanhoSync
 
-Use o Graphify quando a tarefa envolver:
+Use Graphify quando a tarefa envolver:
+
 * Mapa de dependências;
 * Relação entre módulos;
 * Impacto transversal;
-* Análise de arquitetura;
-* Investigação sem um arquivo-alvo claro.
+* Análise arquitetural;
+* Investigação em que a descoberta dirigida não localizou um arquivo-alvo confiável.
 
-Se o diretório `graphify-out/` existir, consulte prioritariamente:
-* `graphify-out/GRAPH_REPORT.md`
+Se `graphify-out/GRAPH_REPORT.md` existir, consulte-o antes de regenerar o grafo.
 
-Não é obrigatório para:
-* Ajuste local em um arquivo já conhecido;
-* Alterações de texto ou *copy*;
-* Atualização de documentação;
+Não use Graphify por padrão para:
+
+* Arquivo-alvo já conhecido;
+* Alteração de texto ou microcopy;
+* Atualização documental localizada;
 * Patch visual pequeno;
 * Teste unitário isolado.
 
-## Comandos Úteis
+Graphify auxilia a descoberta; não substitui inspeção do código, do diff ou dos testes reais.
 
-Se as ferramentas estiverem disponíveis no ambiente, utilize os seguintes comandos:
+## Comandos
+
+Siga obrigatoriamente `.agents/rules/rtk.md`. Quando `rtk` e Graphify estiverem disponíveis:
 
 ```bash
-graphify query "<pergunta>"
-graphify path "<arquivo-ou-conceito-A>" "<arquivo-ou-conceito-B>"
-graphify explain "<conceito>"
-graphify update .
-
+rtk graphify query "<pergunta>"
+rtk graphify path "<arquivo-ou-conceito-A>" "<arquivo-ou-conceito-B>"
+rtk graphify explain "<conceito>"
 ```
 
+Atualize o grafo apenas após mudança estrutural relevante:
+
+```bash
+rtk graphify update .
 ```
 
-```
+Não invente comandos nem afirme que o grafo foi atualizado sem saída confirmatória.

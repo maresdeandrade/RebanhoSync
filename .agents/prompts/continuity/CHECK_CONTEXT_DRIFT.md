@@ -1,91 +1,63 @@
 # Check Context Drift — RebanhoSync
-Atualizado em: 2026-06-04  
-Versão: 1.1.0
 
-Use este prompt para verificar coerência documental antes de iniciar nova fase, subfase ou conversa longa.
+Atualizado em: 2026-08-03  
+Versão: 1.2.0
+
+Use para diagnosticar incoerência entre documentos ativos antes de iniciar ou continuar uma fase. Não autoriza patch documental.
 
 ## Prompt
 
-Você é o arquiteto técnico sênior do RebanhoSync.
+Verifique se a documentação ativa do RebanhoSync permite continuar o trabalho sem reabrir fase concluída, perder pendência real ou seguir baseline incorreto.
 
-Objetivo:
-Verificar se a documentação ativa está coerente antes de iniciar nova fase ou continuar desenvolvimento.
+## Contexto
+
+1. Leia `AGENTS.md`.
+2. Aplique `.agents/rules/CORE_RULES.md`, `CONTEXT_LOADING.md` e `no-broad-context.md`.
+3. Comece por:
+   - `docs/review/CURRENT_PHASE_HANDOFF.md`;
+   - `docs/review/ACTIVE_PHASE_PLAN.md`;
+   - plano específico apontado pelo plano ativo, se houver;
+   - `docs/context/PROJECT_STATUS.md`.
+4. Leia `LAST_PHASE_RESULT.md`, `OPEN_REVIEW_ITEMS.md` e `ROADMAP.md` somente para responder dúvidas concretas de resultado, pendência ou sequência macro.
+5. Não carregar archive como fonte ativa.
+6. Para comandos, siga `.agents/rules/rtk.md`.
 
 ## Restrições
 
-- Não alterar código.
-- Não implementar feature.
-- Não iniciar nova fase.
-- Não atualizar documentação antes de apresentar diagnóstico.
-- Não usar `docs/archive/**` como fonte operacional, salvo para confirmar histórico arquivado.
-- Não transformar roadmap em backlog técnico.
-
-## Ler
-
-- `docs/review/CURRENT_PHASE_HANDOFF.md`
-- `docs/review/ACTIVE_PHASE_PLAN.md`
-- `docs/review/LAST_PHASE_RESULT.md`
-- `docs/review/OPEN_REVIEW_ITEMS.md`
-- `docs/context/PROJECT_STATUS.md`
-- `docs/product/ROADMAP.md`
-- `AGENTS.md`
-- `.agents/rules/CORE_RULES.md`
-- `.agents/rules/CONTEXT_LOADING.md`
+- Não alterar arquivos, implementar feature ou iniciar fase.
+- Não transformar roadmap em backlog.
+- Não tratar contexto colado ou relatório histórico como superior ao código e às migrations ativas.
+- Não afirmar baseline, worktree ou documento lido sem confirmação local.
+- Se for necessário corrigir o drift, apenas recomendar o patch; a execução deve usar `reconcile-docs` em tarefa separada ou após autorização explícita.
 
 ## Verificar
 
-1. A fase atual é a mesma em todos os documentos?
-2. A subfase atual está clara?
-3. O baseline/commit está coerente?
-4. A próxima etapa está alinhada entre handoff, plano ativo e roadmap?
-5. Existem pendências fechadas listadas como abertas?
-6. Existem pendências técnicas misturadas com roadmap?
-7. `LAST_PHASE_RESULT.md` continua ativo em `docs/review/`?
-8. Relatórios antigos estão arquivados corretamente?
-9. Escopo permitido/proibido está consistente?
-10. Validações obrigatórias estão proporcionais ao escopo?
-11. Algum documento ativo aponta para `docs/archive/**` como fonte operacional?
-12. Algum prompt ativo aponta para `.agents/prompts/archive/**`?
-13. Há contradição entre roadmap, handoff e plano ativo?
-14. Há risco de o próximo agente reabrir fase fechada?
+1. Fase/subfase atual e próxima etapa.
+2. Coerência entre handoff, plano ativo, plano específico e `PROJECT_STATUS.md`.
+3. Baseline documentado versus `HEAD` local e estado do worktree.
+4. Pendências abertas reais versus itens já fechados.
+5. Escopo permitido/proibido e critérios de aceite.
+6. Validações exigidas versus validações efetivamente comprovadas.
+7. Uso indevido de roadmap, archive, prompts arquivados ou auditorias antigas.
+8. Permanência dos documentos ativos de continuidade.
+9. Referências quebradas, duplicadas ou apontando para fonte de menor precedência.
+10. Risco de o próximo agente repetir trabalho ou reabrir fase concluída.
 
-## Resultado esperado
+## Classificação
 
-Responder com:
+- **Coerente:** sem contradição material; trabalho pode continuar.
+- **Parcialmente coerente:** drift não bloqueante, claramente delimitado.
+- **Incoerente:** divergência material de fase, baseline, escopo, pendência ou fonte de verdade.
 
-```md
-## Coerência geral
+## Entrega
 
-[Coerente | Parcialmente coerente | Incoerente]
+1. **Coerência geral**
+2. **Fatos confirmados**
+3. **Inferências/itens não confirmados**
+4. **Inconsistências**, por prioridade
+5. **Risco prático**
+6. **Patch documental mínimo recomendado**
+7. **Pode continuar?** Sim ou não, com condição
+8. **Validação recomendada**
 
-## Fato confirmado
-
-[Lista objetiva]
-
-## Inconsistências encontradas
-
-[Lista priorizada]
-
-## Risco
-
-[Impacto prático]
-
-## Patch documental mínimo recomendado
-
-[Arquivos e alterações pontuais]
-
-## Pode iniciar a fase?
-
-[Sim | Não]
-
-## Validação recomendada
-
-[Comandos proporcionais]
-```
-
-## Critérios
-
-- Se houver divergência de fase atual, responder “Não” em “Pode iniciar a fase?”.
-- Se `LAST_PHASE_RESULT.md` estiver arquivado, responder “Não”.
-- Se houver item fechado em pendências abertas, recomendar patch antes de seguir.
-- Se as inconsistências forem apenas cosméticas e não bloqueantes, classificar como “Parcialmente coerente”.
+Responder **Não** se a fase atual, o baseline relevante ou o documento ativo indispensável não puder ser determinado com segurança.

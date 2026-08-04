@@ -2,108 +2,120 @@
 
 Dispatcher principal para agentes que atuam no RebanhoSync.
 
-Objetivo: carregar apenas o contexto necessário para cada tarefa, preservar as fontes de verdade do domínio e evitar leitura ampla desnecessária.
+Objetivo: carregar somente o contexto necessário, preservar os contratos do domínio e executar cada tarefa dentro do escopo autorizado.
 
 ---
 
-## Leitura mínima
+## Bootstrap mínimo
 
-Sempre leia:
+Antes de atuar:
 
-1. `.agents/rules/CORE_RULES.md`
-2. `.agents/rules/CONTEXT_LOADING.md`
-3. `AGENTS.md` local da pasta afetada, se existir
+1. Leia `.agents/rules/CORE_RULES.md`.
+2. Leia `.agents/rules/CONTEXT_LOADING.md`.
+3. Leia `.agents/rules/no-broad-context.md`.
+4. Leia o `AGENTS.md` local da pasta afetada, se existir.
+5. Delimite o objetivo, os arquivos-alvo prováveis e o tipo real da tarefa.
 
-Não usar `docs/archive/**` como fonte operacional, salvo pedido explícito.
+Não abra todos os documentos, rules, skills ou arquivos `AGENTS.md` por padrão. Não use `docs/archive/**` como fonte operacional, salvo pedido explícito de análise histórica.
 
 ---
 
 ## Fonte de verdade em conflito
 
-1. Código + migrations ativas
-2. `docs/context/PROJECT_STATUS.md`
-3. Docs normativos ativos
-4. Docs derivados
-5. Histórico em `docs/archive/**`
+Siga esta ordem:
+
+1. Código + migrations ativas.
+2. `docs/context/PROJECT_STATUS.md`.
+3. Documentos normativos ativos.
+4. Documentos derivados.
+5. Histórico em `docs/archive/**`.
+6. Definições procedimentais de rules, skills e prompts.
+
+Rules, skills e prompts orientam o trabalho do agente; não substituem contratos implementados nem comprovam comportamento do produto.
 
 ---
 
 ## Regras globais
 
-- Preservar offline-first.
+- Preservar offline-first, idempotência, retry/replay, rollback e reconciliação.
 - Preservar RLS, multi-tenant e isolamento por `fazenda_id`.
 - Não criar fonte paralela de verdade.
 - Não colocar regra de negócio crítica em componente React.
 - Não usar UI como única fronteira de autorização.
 - Não expor `service_role` no client.
-- Não alterar migrations, seed, RLS, policies ou RPCs sem tarefa explícita.
+- Não alterar migrations, seed, RLS, policies, RPCs ou schema sem tarefa explícita.
 - Preferir patch pequeno, reversível e testável.
 - Não refatorar por conveniência.
 - Separar fato confirmado, inferência e recomendação.
+- Não declarar validação que não foi executada.
 
 ---
 
 ## Contratos do domínio
 
-Ver `.agents/rules/CORE_RULES.md` e `docs/context/SOURCE_OF_TRUTH.md`.
-
-Resumo:
+Consulte `.agents/rules/CORE_RULES.md` e, somente quando pertinente, `docs/context/SOURCE_OF_TRUTH.md`.
 
 - Agenda = intenção/tarefa futura.
 - Evento = fato executado.
 - `state_*` = estado atual/read model.
 - Protocolo = regra/configuração.
-- Tags, sinais e insights = auxiliares; nunca fonte primária.
+- Tags, sinais e insights = auxiliares; nunca fonte primária nem regra crítica.
 - Carência, peso confiável, venda/abate e aptidão operacional exigem fonte técnica explícita.
+
+---
+
+## Skills
+
+Consulte `.agents/skills/README.md` para roteamento.
+
+- Escolha no máximo uma skill principal.
+- Use uma segunda somente quando houver interseção real de domínio crítico.
+- Não use skill apenas porque um termo relacionado aparece incidentalmente.
+- Se o ponto de intervenção estiver incerto, use `repository-context-retrieval` para descoberta dirigida.
+- Após implementação, use `rebanhosync-verification-gate` para fechamento técnico.
+- Use `prepare-pr` somente depois de a entrega estar validada e classificada como pronta.
+
+Análise, implementação, verificação e preparação de PR são etapas distintas. Um pedido de revisão ou diagnóstico não autoriza alteração de arquivos.
 
 ---
 
 ## Carregamento de contexto
 
-Use `.agents/rules/CONTEXT_LOADING.md`.
+Siga `.agents/rules/CONTEXT_LOADING.md`.
 
 Regra prática:
 
-- tarefa local: leia só arquivos-alvo, testes relacionados e AGENTS local;
-- tarefa UX/UI: leia contexto de UX e tela afetada;
-- tarefa sanitária: leia contexto sanitário e skill sanitária aplicável;
-- tarefa sync/offline: leia contexto técnico de sync;
-- tarefa documental: leia contexto de status e reconcile-docs;
-- auditoria ampla: comece por índices, depois expanda sob demanda.
+- tarefa localizada: arquivos-alvo, testes relacionados e `AGENTS.md` local;
+- tarefa UX/UI: tela afetada e contexto de UX pertinente;
+- tarefa de domínio: documento normativo e skill específica, se necessária;
+- tarefa sync/offline: contratos técnicos de persistência, fila, retry e rollback;
+- tarefa Supabase/RLS: migration ativa, policies/RPCs relacionadas e contrato de tenant;
+- tarefa documental: fontes de maior precedência e documentos-alvo;
+- auditoria transversal: índices primeiro; expansão somente para responder lacuna explícita.
 
 ---
 
-## Graphify
+## Comandos, Graphify e validação
 
-Use Graphify quando a tarefa exigir relação entre módulos, dependências ou impacto transversal.
+Para qualquer comando, teste, pnpm, Graphify, WSL/Windows ou validação local, siga `.agents/rules/rtk.md`.
 
-Se `graphify-out/` existir, consulte `.agents/rules/GRAPHIFY_USAGE.md`.
-
-Não é obrigatório para patch local em arquivo já conhecido.
-
----
-
-## Validação
-
-Use validação proporcional ao escopo:
-
-- patch local: teste específico do módulo;
-- domínio crítico: preflight + validate;
-- entrega ampla: `pnpm run lint`, `pnpm test`, `pnpm run build`;
-- Supabase/RLS: `node scripts/codex/validate-supabase-baseline-functional.mjs`.
-
-Não inventar scripts. Conferir `package.json` quando necessário.
+- Não invente scripts ou parâmetros.
+- Use validação proporcional ao risco e ao escopo.
+- Inspecione alterações tracked, staged e untracked quando revisar ou fechar uma entrega.
+- Use Graphify apenas nos casos definidos em `.agents/rules/GRAPHIFY_USAGE.md`.
+- Não altere o grafo por tarefa local sem impacto estrutural.
 
 ---
 
-## Resposta final
+## Resposta
 
-Formato preferido:
+Use `.agents/rules/RESPONSE_FORMATS.md` quando a tarefa exigir formato padronizado.
 
-1. Resumo executivo
-2. Arquivos criados/alterados/movidos
-3. Conteúdo principal
-4. Impacto em Supabase/RLS/migrations, se houver
-5. Validações executadas
-6. Escopo confirmado
-7. Riscos/pendências, no máximo 3
+Na resposta final, registre:
+
+1. decisão ou veredito;
+2. fatos confirmados e escopo real;
+3. arquivos afetados, quando houver;
+4. impacto funcional, de domínio e de banco, quando aplicável;
+5. validações executadas e não executadas;
+6. riscos ou pendências, no máximo 3.

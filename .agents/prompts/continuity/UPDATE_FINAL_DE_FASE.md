@@ -1,236 +1,110 @@
 # Update Final de Fase — RebanhoSync
 
-Atualizado em: 2026-06-04  
-Versão: 1.1.0
+Atualizado em: 2026-08-03  
+Versão: 1.2.0
 
-Use este prompt ao concluir uma fase ou subfase validada.
-
-Este prompt atualiza a documentação permanente de continuidade. Não use para registrar conversa em andamento.
+Use somente após a fase ou subfase estar validada. Atualiza documentação permanente de continuidade; não inicia nova implementação.
 
 ## Prompt
 
-Você é o arquiteto técnico sênior do RebanhoSync.
+Atualize a documentação ativa para registrar o fechamento validado da fase/subfase:
 
-Objetivo:
-Atualizar a documentação de continuidade ao final da fase/subfase atual, sem iniciar nova implementação.
+```txt
+[IDENTIFICAR_FASE_OU_SUBFASE]
+```
+
+## Contexto e skill
+
+1. Leia `AGENTS.md`.
+2. Aplique `.agents/rules/CORE_RULES.md`, `CONTEXT_LOADING.md` e `no-broad-context.md`.
+3. Use `reconcile-docs` como skill principal.
+4. Leia apenas os documentos ativos necessários ao fechamento.
+5. Para comandos e validações, siga `.agents/rules/rtk.md`.
 
 ## Restrições
 
-- Não alterar código funcional.
-- Não alterar Supabase, migrations, RLS, RPC, schema ou edge functions.
-- Não criar nova feature.
-- Não reabrir fase fechada sem regressão comprovada.
+- Não alterar código funcional, testes, Supabase, migrations, RLS, RPC, schema ou edge functions.
+- Não criar feature nem iniciar a próxima fase.
 - Não marcar como concluído o que não foi validado.
-- Não inventar commit, teste, arquivo ou resultado.
-- Não transformar roadmap em pendência técnica.
+- Não inventar commit, data, arquivo, teste ou resultado.
+- Não transformar roadmap em backlog técnico.
 - Não arquivar documentos ativos de continuidade.
+- Não usar archive como fonte operacional.
 
-## Diagnóstico documental obrigatório antes de editar
+## Diagnóstico antes de editar
 
-Entregue primeiro:
+Confirme:
 
-1. fase/subfase concluída;
-2. status do worktree;
-3. commit atual, se confirmável;
-4. data atual, se confirmável;
-5. arquivos alterados na fase;
-6. validações executadas;
-7. pendências abertas;
-8. pendências fechadas;
-9. documentos que precisam atualização;
-10. relatórios históricos que podem ser arquivados;
-11. documentos que devem permanecer ativos.
+1. fase/subfase e critério de conclusão;
+2. evidências de validação;
+3. estado do worktree antes da edição documental, inclusive staged e untracked;
+4. `HEAD` atual e data local;
+5. arquivos efetivamente alterados na fase;
+6. pendências abertas e fechadas;
+7. documentos que exigem atualização;
+8. relatórios históricos elegíveis para arquivamento;
+9. documentos que devem permanecer ativos.
+
+Se a conclusão ou as validações não estiverem comprovadas, não fechar a fase.
 
 ## Baseline e data
 
-Antes de atualizar documentação de fase, descobrir o commit e a data atuais.
+- Capture `HEAD` e data; não invente valores.
+- Se houver alterações funcionais não commitadas, registre “baseline pendente de commit”.
+- Se o worktree estiver limpo antes da edição documental, o `HEAD` pode ser registrado como baseline da implementação concluída.
+- A sujeira criada apenas pela atualização documental posterior não invalida esse baseline, mas deve ser relatada.
+- Não gravar `Baseline Commit` em `.agents/prompts/**`, `.agents/rules/**` ou `.agents/skills/**`.
 
-Executar:
+## Atualizar somente quando aplicável
 
-```powershell
-git status --short --untracked-files=all
-git diff --check
-git log --oneline -1
-git rev-parse --short HEAD
-Get-Date -Format "yyyy-MM-dd"
-```
-
-Regras:
-
-- Se houver alterações pendentes, não registrar novo baseline como definitivo.
-- Se o worktree estiver limpo, usar `git rev-parse --short HEAD` como `Baseline Commit`.
-- Usar `Get-Date -Format "yyyy-MM-dd"` como data documental.
-- Não inventar commit ou data.
-- Se o commit ainda não foi feito, registrar como “pendente de commit”, não como baseline definitivo.
-- Se o objetivo for atualizar documentação após um commit recém-criado, primeiro confirmar `HEAD` limpo e só então atualizar o baseline.
-
-## Atualizar, conforme aplicável
-
-- `docs/review/LAST_PHASE_RESULT.md`
-- `docs/review/CURRENT_PHASE_HANDOFF.md`
-- `docs/review/ACTIVE_PHASE_PLAN.md`
-- `docs/review/OPEN_REVIEW_ITEMS.md`
-- `docs/context/PROJECT_STATUS.md`
-- `docs/product/ROADMAP.md`
-- `docs/archive/review/`, somente para relatórios históricos já resumidos
-
-## Regras por arquivo
-
-### `docs/review/LAST_PHASE_RESULT.md`
-
-Deve permanecer ativo em `docs/review/`.
-
-Registrar:
-
-1. fase concluída;
-2. objetivo;
-3. arquivos alterados;
-4. testes criados/ajustados;
-5. comandos executados;
-6. resultado de cada comando;
-7. resultado técnico;
-8. restrições preservadas;
-9. pendências remanescentes;
-10. riscos;
-11. próximo passo recomendado.
-
-Não arquivar `LAST_PHASE_RESULT.md`.
-
-### Campos de baseline/data
-
-Quando houver fechamento validado ou mudança consolidada, atualizar nos documentos aplicáveis:
-
-```md
-Atualizado em: YYYY-MM-DD  
-**Baseline Commit:** `abcdef0`
-```
-
-Aplicar principalmente em:
-
-- `docs/review/LAST_PHASE_RESULT.md`;
-- `docs/review/CURRENT_PHASE_HANDOFF.md`;
-- `docs/review/ACTIVE_PHASE_PLAN.md`;
-- `docs/context/PROJECT_STATUS.md`, somente se houve mudança consolidada;
-- `docs/product/ROADMAP.md`, somente se houve mudança macro.
-
-Não aplicar `Baseline Commit` em:
-
-- `.agents/prompts/**`;
-- `.agents/rules/**`;
-- `.agents/skills/**`.
-
-Esses arquivos de instrução reutilizável devem usar apenas:
-
-```md
-Atualizado em: YYYY-MM-DD  
-Versão: X.Y.Z
-```
-
-### `docs/review/CURRENT_PHASE_HANDOFF.md`
-
-Deve ser curto e apontar para:
-
-- fase atual ou próxima fase;
-- `ACTIVE_PHASE_PLAN.md`;
-- plano específico da fase, se houver;
-- escopo permitido/proibido por referência;
-- validação obrigatória por referência;
-- bloqueios imediatos, se houver.
-
-Não repetir todo o plano.
-
-### `docs/review/ACTIVE_PHASE_PLAN.md`
-
-Atualizar para a próxima fase/subfase ativa.
-
-Deve conter:
-
-- fase atual;
-- subfase atual, se houver;
-- objetivo imediato;
-- arquivos de referência;
-- diagnóstico obrigatório;
-- validações mínimas;
-- critérios de aceite;
-- próximo passo técnico.
-
-### `docs/review/OPEN_REVIEW_ITEMS.md`
-
-Manter apenas pendências abertas reais.
-
-Não colocar roadmap.
-Não manter item fechado dentro de “Pendências abertas”.
-Mover itens resolvidos para seção de fechados ou remover se já estiverem registrados em `LAST_PHASE_RESULT.md`.
-
-### `docs/context/PROJECT_STATUS.md`
-
-Atualizar apenas se houver mudança consolidada real:
-
-- fase fechada;
-- baseline novo;
-- contrato de domínio novo;
-- lacuna crítica resolvida;
-- mudança estratégica;
-- gate validado.
-
-Não transformar em diário.
-
-### `docs/product/ROADMAP.md`
-
-Atualizar apenas se houver mudança na sequência planejada de fases.
-
-Roadmap não é backlog técnico.
-Roadmap não deve conter pendência operacional granular.
-
-## Arquivamento
-
-Mover para `docs/archive/review/` apenas relatórios históricos fechados e já resumidos, por exemplo:
-
-- `RESULTADO_FASE_*.md`
-- `RESULTADO_SUBFASE_*.md`
-- `RESULTADO_GATE_*.md`
+- `docs/review/LAST_PHASE_RESULT.md`: sempre no fechamento validado; permanece ativo.
+- `docs/review/CURRENT_PHASE_HANDOFF.md`: apontar de forma curta para a próxima etapa e para o plano ativo.
+- `docs/review/ACTIVE_PHASE_PLAN.md`: atualizar somente se a fase/subfase ativa mudar.
+- `docs/review/OPEN_REVIEW_ITEMS.md`: manter apenas pendências abertas reais.
+- `docs/context/PROJECT_STATUS.md`: somente para mudança consolidada.
+- `docs/product/ROADMAP.md`: somente se a sequência macro de fases mudar.
+- `docs/archive/review/**`: somente relatórios históricos fechados, já resumidos e sem função ativa.
 
 Não arquivar:
 
+- `LAST_PHASE_RESULT.md`;
 - `CURRENT_PHASE_HANDOFF.md`;
 - `ACTIVE_PHASE_PLAN.md`;
 - `OPEN_REVIEW_ITEMS.md`;
-- `LAST_PHASE_RESULT.md`;
-- plano ativo da fase atual.
+- plano específico da fase ativa.
 
-## Validação obrigatória
+## Conteúdo mínimo do resultado de fase
 
-```powershell
-git status --short --untracked-files=all
-git diff --name-only
-git diff --stat
-git diff --check
-```
+Registrar:
 
-Se qualquer arquivo de código for alterado por engano, parar e justificar.
+- objetivo e resultado técnico;
+- arquivos alterados;
+- testes criados/ajustados;
+- comandos e resultados reais;
+- restrições preservadas;
+- pendências e riscos;
+- próximo passo recomendado;
+- baseline/data ou motivo objetivo para não os registrar.
 
-## Critérios de aceite
+## Validação
 
-- documentação ativa coerente;
-- fase concluída registrada;
-- próxima fase/subfase apontada;
-- pendências reais mantidas;
-- itens fechados não aparecem como abertos;
-- relatórios históricos arquivados apenas se já resumidos;
-- `LAST_PHASE_RESULT.md` permanece ativo;
-- nenhum código funcional alterado;
-- baseline/data não foram inventados;
+Para alteração exclusivamente documental, execute a validação proporcional definida em `.agents/rules/rtk.md` e confirme:
+
+- somente arquivos documentais esperados foram alterados;
+- diffs unstaged e staged foram inspecionados;
+- arquivos untracked relevantes foram revisados;
+- links/referências e cercas Markdown estão válidos;
 - `git diff --check` passa.
 
-## Resultado final esperado
+Não execute testes, lint ou build de produto sem justificativa funcional.
 
-Responder com:
+## Entrega
 
-1. arquivos criados;
-2. arquivos alterados;
-3. arquivos arquivados;
-4. baseline/data usados ou motivo para não atualizar;
-5. pendências abertas finais;
-6. próxima fase/subfase;
-7. validações executadas;
-8. confirmação de que não houve implementação funcional.
+1. **Fase/subfase registrada**
+2. **Arquivos criados/alterados/arquivados**
+3. **Baseline e data**
+4. **Pendências abertas finais**
+5. **Próxima etapa**
+6. **Validações executadas**
+7. **Validações não executadas e motivo**
+8. **Confirmação de ausência de implementação funcional**

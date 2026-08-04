@@ -1,178 +1,149 @@
-```markdown
 ---
 name: harden-module
-description: Use when a RebanhoSync module or hotspot needs incremental hardening, responsibility separation, safer flow boundaries, or reduction of architectural risk without broad rewrite.
+description: Endurece incrementalmente módulos e hotspots do RebanhoSync por separação de responsabilidades, extração de regras puras, contenção de efeitos e limites seguros entre UI, domínio, persistência e sync. Usar quando um módulo mistura responsabilidades, duplica payload/validação/efeitos, concentra regra crítica em React ou apresenta risco arquitetural/operacional sem justificar reescrita ampla. Não usar para microcopy/visual, quando o hotspot ainda não foi localizado ou quando o patch já está na etapa de verificação final.
 ---
 
 # Harden Module
 
-## Mission
+## Missão
 
-Harden a RebanhoSync module with small, safe, testable changes.
+Reduzir risco arquitetural e operacional com alterações pequenas, reversíveis, testáveis e compatíveis com o comportamento explicitamente preservado.
 
-The goal is to reduce operational risk without big-bang refactor.
+## Coordenação
 
----
+- Usar `repository-context-retrieval` se o hotspot ainda não estiver localizado.
+- Combinar com a skill de domínio quando houver regra específica.
+- Combinar com `sync-offline-rollback` para gesto, fila, retry, rollback ou reconcile.
+- Combinar com `migrations-rls-contracts` para schema, RLS, constraint ou RPC.
+- Encerrar com `rebanhosync-verification-gate` após o patch.
 
-## When to use
+## Leitura inicial
 
-Use when:
-* A module mixes UI and business rule;
-* A hotspot has too many responsibilities;
-* A flow needs clearer boundaries;
-* Logic should be extracted to pure helpers;
-* Existing behavior must be preserved while reducing risk;
-* There is duplication in payload/plan/effects;
-* Sync/offline or domain contracts are at risk.
+1. `AGENTS.md`;
+2. `.agents/rules/CORE_RULES.md`;
+3. `.agents/rules/CONTEXT_LOADING.md`;
+4. `.agents/rules/no-broad-context.md`;
+5. `AGENTS.md` local, se existir;
+6. hotspot, chamadores diretos e testes relacionados;
+7. `.agents/rules/rtk.md`, se houver comandos.
 
----
+Não abrir documentação ampla. Carregar somente o contrato de domínio ou técnico necessário para definir o limite correto.
 
-## Do not use when
+## Restrições
 
-Do not use when:
-* The task is simple copy/microcopy;
-* Only visual spacing/color is involved;
-* The correct intervention point is unknown;
-* The patch is complete and needs validation;
-* There is no architectural or operational risk.
+- Preservar comportamento, salvo mudança explicitamente solicitada e testada.
+- Não mover regra crítica para componente React nem usar UI como única validação.
+- Não criar fonte paralela de verdade.
+- Não ampliar escopo por conveniência.
+- Não alterar migrations, RLS, RPC, seed ou contrato de sync sem escopo explícito.
+- Preservar offline-first, `fazenda_id`, idempotência, retry e rollback.
+- Evitar renomeações amplas, movimentação de pastas e troca massiva de interfaces.
+- Não extrair abstração sem responsabilidade clara e consumidor real.
 
-### Use instead:
-* `repository-context-retrieval` when target is unclear;
-* `rebanhosync-verification-gate` after patch;
-* Specific domain skill if the issue is domain-specific.
+## Pipeline preferencial
 
----
+Aplicar somente as etapas úteis ao hotspot:
 
-## Read first
+1. **Normalize:** normalizar entrada e defaults sem transformar ausência em fato;
+2. **Select/Policy:** aplicar regra pura e selecionar ação;
+3. **Payload:** construir contrato de persistência uma única vez;
+4. **Plan:** descrever efeitos antes de executá-los;
+5. **Effects:** persistir, enfileirar ou integrar nas bordas;
+6. **Reconcile:** confirmar, corrigir ou desfazer estado após sucesso/falha.
 
-1. `AGENTS.md`
-2. `.agents/rules/CORE_RULES.md`
-3. `.agents/rules/CONTEXT_LOADING.md`
-4. `.agents/rules/no-broad-context.md`
+Não forçar o pipeline quando ele não representar o fluxo real.
 
-### Then read:
-* Local `AGENTS.md`, if present;
-* Hotspot files;
-* Tests directly related to the hotspot.
+## Procedimento
 
-> ⚙️ **Execution Rule:** For commands and validation, follow `.agents/rules/rtk.md`.
+### 1. Confirmar o vazamento de responsabilidade
 
----
+Classificar com evidência:
 
-## Preferred pipeline
+- UI contém regra de domínio;
+- serviço contém preocupação de apresentação;
+- validação e efeito estão misturados;
+- payload é construído em vários pontos;
+- regra, sync e reconcile estão acoplados;
+- módulo coordena responsabilidades demais;
+- testes cobrem apenas happy path.
 
-Use this decomposition when applicable:
-1. Normalize
-2. Select/Policy
-3. Payload
-4. Plan
-5. Effects
-6. Reconcile
+### 2. Definir comportamento preservado
 
-*Note: Do not force the pipeline where it does not fit.*
+Registrar entradas, saídas, efeitos, erros e invariantes atuais. Separar bug confirmado de comportamento que deve permanecer. Não usar refactor para introduzir mudança funcional implícita.
 
----
+### 3. Escolher a menor contenção
 
-## Hard constraints
+Preferir, conforme a falha:
 
-* Preserve current behavior unless change is explicit.
-* Do not move critical domain rule into React component.
-* Do not create parallel source of truth.
-* Do not broaden scope.
-* Do not alter migrations/RLS/RPC/seed unless explicit.
-* Preserve offline-first and idempotency.
-* Preserve `fazenda_id` boundary.
-* Avoid large renames or folder moves unless required.
+- helper puro;
+- validator;
+- builder/mapper;
+- policy/selector;
+- adapter de persistência;
+- planner de efeitos;
+- função local de domínio;
+- teste de caracterização antes da extração.
 
----
+Manter assinaturas e formatos existentes quando isso reduzir regressão e não perpetuar o defeito.
 
-## Domain invariants
+### 4. Separar decisão de efeito
 
-Do not violate:
-* **Agenda:** Intention/future task;
-* **Evento:** Executed fact;
-* **Agenda closure:** Administrative state of the intention;
-* **`state_*`:** Current state/read model;
-* **Protocolo:** Rule/configuration;
-* **Tags/signals/insights:** Auxiliary;
-* **Critical Decisions:** Require explicit technical source.
+Regra pura não deve importar React, Supabase, Dexie, storage ou relógio global quando o tempo puder ser entrada explícita. Efeitos devem ficar em bordas identificáveis e receber IDs/tempos necessários de forma controlada.
 
-### Sanitário Agenda v2 hardening checklist
+### 5. Preservar contratos do RebanhoSync
 
-When hardening sanitary agenda/execution modules, verify:
+Confirmar, conforme o módulo:
 
-* agenda does not become history;
-* compatible event is required for executed/partially executed closure;
-* closure without execution, cancellation and dismissal require reason;
-* partial execution requires reason for planned animals not executed;
-* `productName` and `loteName` are display-only and not identity;
-* `productId` and `productClass` remain separate in dedup;
-* pure core does not use `Date.now()`;
-* pure core does not import Supabase, Dexie, React UI or storage;
-* agenda/preview/demand/closure do not create stock movement or active withdrawal.
+- Agenda continua intenção;
+- Evento continua fato;
+- `state_*` continua read model atual;
+- Protocolo continua regra;
+- tags/sinais/insights continuam auxiliares;
+- decisão crítica mantém fonte técnica explícita;
+- UI não se torna fonte de verdade;
+- operação composta continua idempotente e reconciliável.
 
----
+Para detalhes sanitários, reprodutivos, de movimento ou cadastro animal, usar a skill de domínio correspondente em vez de duplicar suas regras aqui.
 
-## Procedure
+### 6. Testar por fronteira
 
-### 1. Identify responsibility leak
-Classify the issue:
-* UI contains rule;
-* Service contains UI concern;
-* Payload construction duplicated;
-* Effect and validation mixed;
-* Sync/reconcile mixed with domain selection;
-* Tests only validate happy path.
+Cobrir:
 
-### 2. Choose smallest extraction
-Prefer:
-* Pure helper;
-* Adapter;
-* Validator;
-* Builder;
-* Mapper;
-* Local domain function;
-* Test around extracted rule.
+- comportamento preservado;
+- entrada inválida e ausência de dados;
+- edge cases do domínio;
+- determinismo da regra pura;
+- chamada única dos efeitos;
+- retry e duplicidade, se aplicável;
+- falha parcial e rollback, se aplicável;
+- integração estável com chamadores existentes.
 
-### 3. Keep integration stable
-Preserve:
-* Function signatures when possible;
-* Existing UI behavior;
-* Existing data shape;
-* Existing test fixtures unless wrong.
+### 7. Parar diante de expansão
 
-### 4. Add tests
-Focus on:
-* Edge cases;
-* Invalid input;
-* Idempotency;
-* Source-of-truth contract;
-* No UI-only rule.
+Se a menor contenção exigir novo schema, mudança transversal de contrato, migração de dados ou reescrita de múltiplos módulos, interromper e relatar o novo escopo antes de implementá-lo.
 
-### 5. Validate proportionally
-Use `.agents/rules/rtk.md`.
+## Validação
 
----
+Seguir `.agents/rules/rtk.md`. Executar:
 
-## Expected output
-
-Return:
-1. **Decision:** [Hardening approach chosen]
-2. **Confirmed facts:** [Validated technical observations]
-3. **Risk in current design:** [Architectural and operational flaws]
-4. **Minimal hardening proposal:** [Step-by-step containment layout]
-5. **Files affected:** [Paths list]
-6. **Tests required:** [Scenarios to cover]
-7. **Validation commands:** [Testing execution strings]
-8. **Riscos/pendências:** [Up to 3 points]
-
----
-
-## Output rules
-
-* Do not propose broad rewrite first.
-* Prefer incremental patch.
-* Separate fact, inference, recommendation.
-* If scope expands, stop and report.
-
+```bash
+git status --short --untracked-files=all
+git diff --check
 ```
+
+Adicionar testes focados do hotspot. Para domínio crítico, usar lint e build; para entrega ampla, executar a suíte completa. Se tocar Supabase/RLS/RPC/migration/sync-batch, executar também a validação de baseline indicada nas regras.
+
+## Saída obrigatória
+
+Informar:
+
+1. decisão de hardening;
+2. fatos confirmados e comportamento preservado;
+3. vazamento ou risco atual;
+4. extração/limite mínimo aplicado;
+5. arquivos afetados;
+6. contratos de domínio, sync ou banco impactados;
+7. testes e resultados;
+8. bloqueadores e até três riscos residuais.
+
+Separar fato, inferência e recomendação. Não propor reescrita ampla como primeira intervenção.

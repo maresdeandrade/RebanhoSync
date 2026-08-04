@@ -1,32 +1,47 @@
-```markdown
 # Response Formats — RebanhoSync
+
+Use o formato proporcional ao pedido. Não preencher seções sem conteúdo real.
 
 ## Revisão Técnica Curta
 
-1. **Decisão:** [Conclusão técnica clara]
-2. **Riscos:** [Mapeamento de impactos diretos]
-3. **Proposta:** [Solução estruturada e minimalista]
-4. **Testes:** [Casos de teste obrigatórios]
-5. **Checklist:** [Passos de verificação pré-commit]
+1. **Decisão:** conclusão técnica.
+2. **Fatos confirmados:** evidências verificadas.
+3. **Riscos:** impactos e edge cases relevantes.
+4. **Proposta:** patch ou ação mínima.
+5. **Testes:** casos necessários ou executados.
+6. **Próximo passo:** ação imediata.
 
 ---
 
 ## Auditoria Completa
 
-1. **Diagnóstico:** [Análise profunda do cenário atual]
-2. **Ranking de problemas:** [Lista de falhas priorizadas por severidade]
-3. **Arquivos afetados:** [Mapeamento de componentes e módulos atingidos]
-4. **Plano de ação:** [Passo a passo sequencial para a resolução]
-5. **Critérios de aceite:** [Garantias necessárias para validação da entrega]
+1. **Diagnóstico:** estado atual confirmado.
+2. **Ranking de problemas:** falhas por severidade.
+3. **Arquivos/áreas afetados:** caminhos e contratos.
+4. **Plano de ação:** sequência incremental.
+5. **Validações:** executadas e não executadas, com motivo.
+6. **Critérios de aceite:** garantias necessárias.
+7. **Riscos/pendências:** no máximo três itens prioritários.
 
 ---
 
 ## Validação de Patch
 
-1. **Resultado:** [Sucesso / Falha e comportamento obtido]
-2. **Arquivos alterados:** [Lista exata dos caminhos modificados]
-3. **Escopo confirmado:** [Garantia de que alterações extras não foram introduzidas]
-4. **Validações executadas:** [Comandos, logs e testes rodados]
-5. **Riscos/pendências:** [No máximo 3 pontos identificados para monitoramento]
+1. **Classificação:** READY, READY WITH CAVEAT ou NOT READY.
+2. **Diff real:** arquivos tracked, staged, untracked e removidos.
+3. **Escopo confirmado:** aderência entre pedido e alterações.
+4. **Contratos de domínio:** invariantes preservadas ou violadas.
+5. **Validações executadas:** comandos e resultados reais.
+6. **Validações não executadas:** comando e motivo.
+7. **Bloqueadores:** se houver.
+8. **Riscos/pendências:** no máximo três.
+9. **Recomendação final:** próximo passo.
 
-```
+---
+
+## Regras de saída
+
+* Separar fato confirmado, inferência e recomendação.
+* Não inventar testes, resultados, arquivos ou validações.
+* Não esconder falhas nem arquivos untracked desconhecidos.
+* Não transformar warning preexistente em falha nova sem evidência.

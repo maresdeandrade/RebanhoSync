@@ -1,65 +1,60 @@
 # Validation Checklist — RebanhoSync
 
-Use este checklist ao finalizar revisão, patch ou prompt de execução.
+Atualizado em: 2026-08-03  
+Versão: 1.2.0
 
-## Escopo
+Use ao finalizar patch ou revisão. Marque **N/A** quando o item não se aplicar; não trate item não verificado como aprovado.
 
-- [ ] Escopo permitido declarado.
-- [ ] Escopo proibido declarado.
-- [ ] Arquivos-alvo listados.
-- [ ] Nenhuma alteração fora do escopo.
-- [ ] Nenhuma refatoração ampla sem necessidade.
+## Escopo e diff
 
-## Contratos do domínio
+- [ ] Pedido, escopo permitido e escopo proibido estão claros.
+- [ ] Estado inicial do worktree foi registrado.
+- [ ] Arquivos tracked, staged, untracked, removidos e renomeados foram inspecionados.
+- [ ] Diff real corresponde ao escopo.
+- [ ] Não houve refatoração ou alteração incidental sem justificativa.
+- [ ] `git diff --check` passou.
 
-- [ ] Agenda não foi tratada como histórico.
-- [ ] Evento continua sendo fato executado.
-- [ ] `state_*` continua sendo estado atual/read model.
-- [ ] Protocolo não foi tratado como execução.
-- [ ] Tags/sinais/insights não viraram fonte primária.
+## Contratos aplicáveis
+
+- [ ] Agenda não virou histórico.
+- [ ] Evento permanece fato executado.
+- [ ] `state_*` permanece estado atual/read model.
+- [ ] Protocolo não virou execução.
+- [ ] Tags, sinais e insights não viraram fonte primária.
 - [ ] Decisão crítica não foi automatizada sem fonte técnica explícita.
+- [ ] Não surgiu regra crítica na UI nem fonte de verdade paralela.
 
-## Segurança técnica
+## Offline, sync e dados
 
-- [ ] Offline-first preservado.
-- [ ] RLS/multi-tenant preservado.
-- [ ] `fazenda_id` preservado como fronteira de isolamento.
-- [ ] Nenhum `service_role` exposto no client.
-- [ ] Nenhuma migration/RPC/policy alterada sem pedido explícito.
-- [ ] Operações idempotentes preservadas.
+- [ ] Offline-first foi preservado.
+- [ ] Idempotência, retry/replay, sucesso parcial, rollback e reconciliação foram avaliados quando tocados.
+- [ ] RLS, multi-tenant e `fazenda_id` foram preservados.
+- [ ] Relações cross-tenant continuam impossíveis.
+- [ ] Nenhum `service_role` foi exposto ao cliente.
+- [ ] Migration, RPC, policy, seed ou schema só foram alterados quando explicitamente autorizados.
 
-## Validação
+## Testes e validações
 
-Executar proporcionalmente ao escopo:
+- [ ] Teste diretamente relacionado foi executado ou há motivo objetivo documentado.
+- [ ] Cenários negativos e edge cases relevantes foram cobertos.
+- [ ] Lint/build/testes amplos foram executados somente quando proporcionais ao risco.
+- [ ] Gate Supabase foi executado quando o escopo tocou banco, RLS, RPC, migration ou sync-batch e o script existia.
+- [ ] Comandos seguiram `.agents/rules/rtk.md`.
+- [ ] Resultados foram relatados sem ocultar falhas, warnings ou limitações.
 
-```bash
-git status --short --untracked-files=all
-```
+## Classificação final
 
-Patch local:
+- [ ] **READY:** sem bloqueadores e com validação suficiente.
+- [ ] **READY WITH CAVEAT:** risco residual explícito e não bloqueante.
+- [ ] **NOT READY:** contrato violado, escopo indevido, falha relevante ou validação bloqueante ausente.
 
-```bash
-rtk pnpm test -- caminho/do/teste.test.ts
-```
-
-Entrega ampla:
-
-```bash
-rtk pnpm run lint
-rtk pnpm test
-rtk pnpm run build
-```
-
-Supabase/RLS/sync:
-
-```bash
-rtk node scripts/codex/validate-supabase-baseline-functional.mjs
-```
-
-## Resultado final
+## Entrega
 
 Relatar:
-- arquivos criados/alterados/movidos;
-- validações executadas;
-- validações não executadas e motivo;
-- riscos/pendências, no máximo 3.
+
+1. arquivos criados/alterados/removidos;
+2. validações executadas, com comando e resultado;
+3. validações não executadas, com motivo;
+4. bloqueadores;
+5. riscos/pendências, no máximo 3;
+6. próximo passo recomendado.

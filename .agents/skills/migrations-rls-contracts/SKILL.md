@@ -1,193 +1,165 @@
-```markdown
 ---
 name: migrations-rls-contracts
-description: Use when a RebanhoSync task touches Supabase migrations, RLS policies, RPCs, functions, composite foreign keys, tenant isolation, RBAC, or database contract changes.
+description: Protege contratos de banco do RebanhoSync em migrations Supabase/Postgres, RLS, policies, grants, funções, triggers, RPCs, índices, constraints, FKs compostas, RBAC, membership, `fazenda_id`, sync-batch e baseline. Usar ao criar, alterar, revisar ou consolidar schema ou autorização remota. Não usar para UI/copy, documentação local sem mudança de contrato ou sync exclusivamente local; combinar com a skill de domínio e com `sync-offline-rollback` quando aplicável.
 ---
 
 # Migrations RLS Contracts
 
-## Mission
+## Missão
 
-Protect RebanhoSync database contracts, RLS, tenant isolation, composite keys, RPC safety, and Supabase baseline integrity.
+Preservar evolução segura do schema, isolamento por tenant, autorização por papel, integridade referencial e compatibilidade dos contratos remotos.
 
----
+## Leitura inicial
 
-## When to use
+1. `AGENTS.md`;
+2. `.agents/rules/CORE_RULES.md`;
+3. `.agents/rules/CONTEXT_LOADING.md`;
+4. `.agents/rules/no-broad-context.md`;
+5. `.agents/rules/rtk.md`;
+6. `AGENTS.md` local em `supabase/**`, se existir;
+7. migrations ativas, código consumidor e testes diretamente relacionados.
 
-Use when task touches:
-* `supabase/migrations/**`;
-* RLS policies;
-* Database functions;
-* RPCs;
-* Triggers;
-* Indexes;
-* Composite FKs;
-* `fazenda_id`;
-* `user_fazendas`;
-* RBAC/membership;
-* Sync-batch backend contract;
-* Database baseline validation;
-* Migrations consolidation.
+Carregar somente quando necessário:
 
----
+- `docs/technical/SUPABASE_RLS.md`;
+- `docs/technical/EVENTS_AGENDA_CONTRACT.md`;
+- `docs/technical/OFFLINE_SYNC.md`;
+- `docs/technical/ARCHITECTURE.md`;
+- `docs/technical/TESTING_GATES.md`;
+- `docs/context/SOURCE_OF_TRUTH.md`;
+- skill de domínio afetada.
 
-## Do not use when
+## Hierarquia em conflito
 
-Do not use when:
-* Task is UI-only;
-* No DB/RLS/RPC/schema contract is involved;
-* Task is local documentation only;
-* Task only changes client copy or styling.
+1. código + migrations ativas;
+2. `docs/context/PROJECT_STATUS.md`;
+3. docs normativos ativos;
+4. docs derivados;
+5. histórico em `docs/archive/**` e migrations legadas;
+6. esta skill.
 
-### Use instead:
-* `sync-offline-rollback` if local sync is main risk;
-* `rebanhosync-verification-gate` after patch;
-* Domain skill for domain rules.
+## Restrições
 
----
+- Não enfraquecer ou contornar RLS.
+- Preservar `fazenda_id` como fronteira de isolamento.
+- Impedir relações cross-tenant com constraints/FKs compostas quando aplicável, não apenas por validação de UI.
+- Não confiar em `fazenda_id` enviado pelo cliente sem validar membership e papel.
+- Não expor `service_role` ao cliente.
+- Não conceder escrita direta em membership sem contrato explícito e proteção equivalente.
+- Não editar migration já aplicada; preferir migration forward-only. Alterar baseline ou consolidar migrations somente com escopo explícito e plano de compatibilidade.
+- Não usar migrations legadas como verdade ativa sem pedido expresso.
+- Não adicionar constraint, status ou dedup físico sem auditar dados existentes, semântica e impacto offline/sync.
+- Não executar reset, deploy, push ou operação destrutiva sem autorização explícita.
 
-## Read first
+## Procedimento
 
-1. `AGENTS.md`
-2. `.agents/rules/CORE_RULES.md`
-3. `.agents/rules/CONTEXT_LOADING.md`
-4. `.agents/rules/no-broad-context.md`
-5. `.agents/rules/rtk.md`
+### 1. Registrar o contrato alterado
 
-### Read as needed:
-* `docs/technical/SUPABASE_RLS.md`
-* `docs/technical/EVENTS_AGENDA_CONTRACT.md` v2
-* `docs/technical/OFFLINE_SYNC.md`
-* `docs/technical/ARCHITECTURE.md`
-* `docs/context/SOURCE_OF_TRUTH.md`
-* Local `AGENTS.md` in `supabase/**`.
+Identificar tabelas, colunas, relações, policies, funções/RPCs, triggers, índices, grants, payloads de sync e consumidores afetados. Distinguir mudança aditiva, restritiva, backfill, substituição ou remoção.
 
----
+### 2. Validar isolamento tenant
 
-## Source of truth
+Confirmar:
 
-In case of conflict, trust:
-1. Active migrations;
-2. Code using those contracts;
-3. `docs/context/PROJECT_STATUS.md`;
-4. Active normative docs;
-5. Derived docs;
-6. Archive/history;
-7. This skill.
+- `fazenda_id` nas estruturas tenant-scoped;
+- unicidade e FKs compatíveis com o escopo da fazenda;
+- impossibilidade de relacionar IDs de fazendas distintas;
+- membership validada no banco;
+- payload do cliente incapaz de elevar acesso;
+- comportamento de outsider, membro e cada papel realmente afetado.
 
----
+### 3. Validar RLS e grants
 
-## Hard constraints
+Para cada operação suportada, verificar `SELECT`, `INSERT`, `UPDATE` e `DELETE` conforme o contrato. Avaliar `USING`, `WITH CHECK`, soft delete, views, owner da tabela, grants e caminhos indiretos por função ou trigger.
 
-* Do not weaken RLS.
-* Do not bypass tenant isolation.
-* Preserve `fazenda_id` as isolation boundary.
-* Prefer composite FKs with `fazenda_id` when applicable.
-* Do not grant direct write to membership tables unless explicitly designed.
-* Do not expose `service_role` to client.
-* RPC with elevated privileges must validate user, role, tenant, and search path.
-* Use `search_path = public` or explicit schema where relevant.
-* Do not alter migrations or baseline without explicit task.
-* Do not use legacy migrations as current truth unless requested.
-* Do not introduce cross-tenant references.
+Não aprovar policy apenas pelo happy path. Cobrir outsider, papel insuficiente, troca de `fazenda_id` e referência cross-tenant.
 
----
+### 4. Validar função, RPC e trigger
 
-## Required checks
+Confirmar:
 
-### RLS
-Verify:
-* Table has RLS enabled when needed;
-* Select/insert/update/delete policies are scoped;
-* Policies use membership/role correctly;
-* Outsider cannot access tenant data;
-* Owner/manager/cowboy roles behave as expected.
+- autenticação quando exigida;
+- membership, papel e tenant;
+- `search_path` controlado conforme o padrão ativo e objetos sensíveis qualificados;
+- privilégio do executor, `SECURITY INVOKER`/`SECURITY DEFINER` e grants coerentes;
+- ausência de bypass amplo;
+- idempotência e concorrência quando aplicáveis;
+- mensagens de erro sem vazamento de dado privilegiado.
 
-### Tenant isolation
-Verify:
-* `fazenda_id` is included in relevant tables;
-* Relationships cannot cross farms;
-* Composite FK prevents cross-tenant linkage;
-* Client payload cannot spoof tenant access.
+### 5. Validar migration
 
-### RPC / function safety
-Verify:
-* Authenticated user is checked;
-* Role/membership is checked;
-* Tenant is checked;
-* `search_path` is controlled;
-* Function does not use broad bypass;
-* Errors do not leak privileged data.
+Avaliar:
 
-### Migration safety
-Verify:
-* Migration is idempotent where possible;
-* No destructive data loss without explicit plan;
-* Indexes and constraints match usage;
-* Backfill is safe;
-* Rollback/forward compatibility is considered.
+- ordem e dependências;
+- compatibilidade forward com clientes locais ainda não sincronizados;
+- lock e custo de backfill;
+- dados inválidos preexistentes;
+- `NOT NULL`, enum, unique, FK e índice em tabelas populadas;
+- reexecução segura quando o padrão do projeto exigir;
+- falha parcial e estratégia de correção;
+- impacto no baseline e em ambientes novos.
 
----
+### 6. Validar contratos de domínio
 
-## RebanhoSync contracts
+Aplicar apenas os contratos relevantes:
 
-* **Agenda:** Intention/future task.
-* **Evento:** Executed fact.
-* **Agenda closure:** Administrative state of the intention, not sanitary history.
-* **`state_*`:** Current state/read model.
-* **Protocolo:** Rule/configuration.
-* **Tags/signals/insights:** Auxiliary only.
-* **Métricas:** Critical operational eligibility requires explicit technical source.
+- Agenda = intenção futura;
+- Evento = fato executado;
+- fechamento de Agenda = estado administrativo, não histórico;
+- `state_*` = estado atual/read model;
+- Protocolo = regra/configuração;
+- tags/sinais/insights = auxiliares;
+- decisão crítica = fonte técnica explícita.
 
-### Agenda Sanitária v2 database caution
+Não converter dedup lógico do core em constraint física sem decisão explícita, auditoria dos dados e plano de migration/sync.
 
-* Do not create enum/status/constraint for Agenda v2 before auditing the legacy agenda flow.
-* Do not require `source_evento_id` by constraint before distinguishing execution, partial execution, cancellation, dismissal and closure without execution.
-* Preserve multi-tenant/RLS and `fazenda_id` boundaries in any future persistence.
-* Validate real idempotency before moving `agenda_intent`, `event_execution_intent` or `agenda_closure_intent` into DB/sync contracts.
-* Do not turn core pure logical dedup into a database constraint without explicit decision, data audit and migration plan.
+## Cautela com Agenda Sanitária v2
 
----
+Quando esse fluxo for afetado:
 
-## Validation
+- auditar o legado antes de criar enum, status ou constraint;
+- distinguir execução, execução parcial, cancelamento, descarte e fechamento sem execução antes de exigir `source_evento_id`;
+- comprovar idempotência real antes de persistir intents ou impor unicidade;
+- preservar `fazenda_id`, RLS e compatibilidade com clientes offline;
+- combinar com a skill sanitária aplicável.
 
-Follow `.agents/rules/rtk.md`.
+## Testes mínimos por risco
 
-### For schema/RLS/RPC/sync changes:
+Cobrir quando aplicável:
+
+- outsider sem acesso;
+- papel insuficiente rejeitado;
+- membro autorizado aceito;
+- spoof ou troca de `fazenda_id` rejeitado;
+- FK cross-tenant rejeitada;
+- chamada direta da RPC com tenant não autorizado;
+- retry/idempotência e concorrência;
+- upgrade sobre dados existentes;
+- criação limpa a partir do baseline.
+
+## Validação
+
+Seguir `.agents/rules/rtk.md`. Executar no mínimo:
+
 ```bash
 git status --short --untracked-files=all
-rtk pnpm run lint
-rtk pnpm test
-rtk pnpm run build
+git diff --check
 rtk node scripts/codex/validate-supabase-baseline-functional.mjs
-
 ```
 
-*Note: If a command cannot run, report why.*
+Executar testes focados de RLS/RPC/schema. Usar lint e build se o contrato TypeScript/cliente mudar; executar a suíte completa quando o escopo for amplo. Se um comando não puder rodar, registrar o motivo e não declarar o contrato validado.
 
----
+## Saída obrigatória
 
-## Expected output
+Informar:
 
-Return:
+1. fatos confirmados;
+2. contratos, tabelas e funções afetados;
+3. isolamento tenant e matriz de acesso;
+4. segurança de RLS, grants, RPCs e triggers;
+5. segurança da migration, backfill e compatibilidade;
+6. arquivos alterados;
+7. comandos executados e resultados;
+8. bloqueadores e até três riscos residuais.
 
-1. **DB/RLS contract touched:** [Layers or tables list]
-2. **Tenant isolation assessment:** [Security status]
-3. **RPC/function safety assessment:** [Privileges and validations status]
-4. **Migration safety assessment:** [Idempotency and compatibility status]
-5. **Affected files:** [Paths list]
-6. **Validation executed:** [Commands output summary]
-7. **Blockers:** [If any]
-8. **Riscos/pendências:** [Up to 3 points]
-
----
-
-## Output rules
-
-* Do not approve RLS change without outsider/role risk assessment.
-* Do not approve RPC change without tenant and role validation assessment.
-* Do not claim baseline valid without running or citing validation.
-
-```
-
-```
+Não aprovar RLS sem avaliar outsider/papéis, RPC sem autenticação/tenant/privilégios ou baseline sem executar a validação correspondente.

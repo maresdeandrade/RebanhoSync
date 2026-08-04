@@ -1,137 +1,101 @@
-```markdown
 ---
 name: prepare-pr
-description: Use after a RebanhoSync patch has passed verification gate to prepare a concise pull request title, body, scope summary, validation section, and risk statement.
+description: Prepara título, corpo, escopo, impacto de domínio, validações e riscos de um PR do RebanhoSync usando uma verificação classificada como READY ou READY WITH CAVEAT. Usar quando o patch estiver concluído e verificado e o usuário pedir narrativa de PR ou handoff final. Não usar com escopo incerto, implementação em andamento, teste relevante sem interpretação ou antes do rebanhosync-verification-gate.
 ---
 
 # Prepare PR
 
-## Mission
+## Missão
 
-Prepare a clear PR narrative for a completed and verified RebanhoSync patch.
+Converter o resultado do `rebanhosync-verification-gate` em uma narrativa curta, auditável e sem ampliar o escopo técnico.
 
-This skill should consume the result of `rebanhosync-verification-gate`.
+## Entradas obrigatórias
 
----
+Exigir do gate:
 
-## When to use
+- classificação READY ou READY WITH CAVEAT;
+- resumo do diff e arquivos alterados;
+- contratos afetados;
+- comandos realmente executados e resultados;
+- ressalvas e riscos.
 
-Use when:
-* Patch is complete;
-* Verification gate classified it as READY or READY WITH CAVEAT;
-* User wants PR title/body;
-* User wants final delivery summary;
-* A formal review handoff is needed.
+Se essas informações não estiverem disponíveis ou o patch tiver mudado depois do gate, interromper a preparação e executar novamente o `rebanhosync-verification-gate`.
 
----
+## Leitura inicial
 
-## Do not use when
+1. `AGENTS.md`;
+2. `.agents/rules/CORE_RULES.md`;
+3. `.agents/rules/RESPONSE_FORMATS.md`;
+4. resultado atual do gate.
 
-Do not use when:
-* The patch has not been verified;
-* Tests are failing without explanation;
-* The scope is unclear;
-* Implementation is still ongoing;
-* User needs architectural diagnosis, not PR narrative.
+Ler contexto adicional apenas se uma ressalva do gate exigir precisão de domínio. Não reabrir documentação ampla.
 
-### Use instead:
-* `rebanhosync-verification-gate` before this skill;
-* `repository-context-retrieval` if files are unclear;
-* Domain skill if more implementation is needed.
+## Restrições
 
----
+- Não inventar teste, resultado, arquivo ou comportamento.
+- Não omitir ressalva do gate.
+- Não dizer “todos os testes passaram” sem evidência correspondente.
+- Não alterar código ou documentação nesta etapa.
+- Não expandir o escopo nem introduzir decisão arquitetural nova.
+- Não declarar impacto ausente sem confirmação do diff.
 
-## Read first
+## Título
 
-1. `AGENTS.md`
-2. `.agents/rules/CORE_RULES.md`
-3. `.agents/rules/RESPONSE_FORMATS.md`
-4. `.agents/rules/rtk.md`
-5. Result from `rebanhosync-verification-gate`
+Usar título curto, acionável e com um único escopo principal.
 
-> ⚠️ **Constraint:** Read additional context only if the gate identifies a domain-specific caveat.
+Formato preferido:
 
----
+```txt
+<tipo>: <ação objetiva>
+```
 
-## Hard constraints
+Tipos usuais: `fix`, `feat`, `refactor`, `docs`, `test`, `chore` ou `ui`.
 
-* Do not invent tests.
-* Do not claim validations that were not executed.
-* Do not hide caveats.
-* Do not expand the technical scope.
-* Do not rewrite documentation in this step.
-* Do not open broad docs unless the gate indicates documentation risk.
+## Corpo do PR
 
----
-
-## PR title rules
-
-Title should be short, action-oriented, scoped, and not overloaded.
-
-### Examples:
-* `docs: reorganiza regras de contexto dos agentes`
-* `fix: corrige validação de agenda sanitária`
-* `refactor: isola montagem de payload sanitário`
-* `ui: simplifica painel operacional da Home`
-
----
-
-## PR body structure
-
-Use this structure:
+Usar:
 
 ### Summary
-* What changed.
-* Why it changed.
+
+- o que mudou;
+- por que mudou.
 
 ### Files changed
-* Main files or areas.
-* Mention generated/archived files if relevant.
+
+- principais arquivos ou áreas;
+- arquivos gerados, movidos ou arquivados, se houver.
 
 ### Domain impact
-Explicitly state whether the patch affects:
-* Agenda;
-* Eventos;
-* `state_*`;
-* Protocolos;
-* Tags/signals/insights;
-* Supabase/RLS;
-* Sync/offline;
-* Migrations.
+
+Declarar como afetado ou não afetado, conforme o gate:
+
+- Agenda;
+- Eventos;
+- `state_*`;
+- Protocolos;
+- tags/sinais/insights;
+- Supabase/RLS/migrations;
+- sync/offline.
 
 ### Validation
-List exactly what was executed:
-* Command;
-* Result;
-* Caveat, if any.
+
+Listar cada comando, resultado e ressalva exatamente como verificados.
 
 ### Scope confirmed
-State what was not changed:
-* No migrations/RLS/RPC, if true;
-* No product code, if true;
-* No UI/domain behavior, if true;
-* No sync/offline impact, if true.
+
+Declarar somente exclusões confirmadas, como ausência de mudança em produto, UI, domínio, migrations/RLS/RPC ou sync/offline.
 
 ### Risks / caveats
-* Up to 3.
 
----
+Listar até três riscos reais. Em READY WITH CAVEAT, tornar a ressalva visível nesta seção.
 
-## Expected output
+## Saída obrigatória
 
-Return:
-1. **PR title:** [Formated string]
-2. **PR body:** [Structured markdown text]
-3. **Optional review notes:** [Technical warnings or remarks]
-4. **Optional follow-up checklist:** [Immediate post-merge items]
+Retornar:
 
----
+1. título do PR;
+2. corpo em Markdown pronto para copiar;
+3. notas de revisão, somente se úteis;
+4. checklist pós-merge, somente se houver ação imediata real.
 
-## Output rules
-
-* Be concise.
-* Do not overstate impact.
-* Do not say “all tests passed” without evidence.
-* Keep risk section limited to real caveats.
-
-```
+Ser conciso e não superestimar o impacto.

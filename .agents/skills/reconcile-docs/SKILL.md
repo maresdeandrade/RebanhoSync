@@ -1,225 +1,148 @@
-```markdown
 ---
 name: reconcile-docs
-description: Use when you need to reconcile RebanhoSync documentation with the real state of code and migrations, updating only the documents truly impacted and avoiding drift.
+description: Reconcilia a documentação do RebanhoSync com o estado real de código, migrations e testes, atualizando somente snapshots, contratos, documentos derivados, manuais, prompts ou skills realmente afetados. Usar após mudança funcional/arquitetural, diante de drift documental ou para analisar a fase atual pelo repositório. Não usar para ajuste apenas visual, refactor sem delta, microcopy isolada, validação final do patch ou narrativa de PR.
 ---
 
 # Reconcile Docs
 
-## Mission
+## Missão
 
-Reconcile RebanhoSync documentation against the real state of code and migrations, updating only truly impacted docs and avoiding drift.
+Eliminar drift documental com diffs mínimos, preservando a hierarquia de fontes e sem duplicar contratos estáveis.
 
----
+## Leitura inicial
 
-## When to use
+1. `AGENTS.md`;
+2. `.agents/rules/CORE_RULES.md`;
+3. `.agents/rules/CONTEXT_LOADING.md`;
+4. `.agents/rules/no-broad-context.md`;
+5. `.agents/rules/rtk.md`.
 
-Use when:
-* There was a relevant functional change;
-* There is suspected drift between code and docs;
-* Documentation references outdated behavior;
-* A snapshot, normative doc, derived doc, manual, prompt, or skill needs alignment;
-* The user asks for current project-stage analysis based on repo state.
+Depois, ler somente os arquivos necessários ao delta.
 
----
+## Roteamento de contexto
 
-## Do not use when
+| Necessidade | Fontes candidatas |
+|---|---|
+| Estado atual | `docs/context/PROJECT_STATUS.md`, `docs/context/KNOWN_GAPS.md` |
+| Fonte de verdade | `docs/context/SOURCE_OF_TRUTH.md`, documento de domínio específico |
+| Arquitetura/sync/RLS/eventos/testes | documento correspondente em `docs/technical/` |
+| Fase/continuidade | `docs/review/CURRENT_PHASE_HANDOFF.md`, `docs/review/ACTIVE_PHASE_PLAN.md`, `docs/review/LAST_PHASE_RESULT.md` |
+| Produto/roadmap | `docs/product/ROADMAP.md` |
+| Documento derivado | arquivo derivado diretamente afetado, se existir |
+| Manual/suporte | somente a página da tela ou fluxo alterado |
 
-Do not use if the change is only:
-* Visual without functional/documentation impact;
-* Cleanup/refactor without behavior or architecture impact;
-* Isolated wording tweak;
-* PR body preparation;
-* Technical verification gate.
+Não abrir todas as fontes da tabela. Selecionar apenas as que respondem à mudança.
 
-### Use instead:
-* `prepare-pr` for PR narrative;
-* `rebanhosync-verification-gate` for final validation;
-* `repository-context-retrieval` if the affected docs/code are not clear.
+## Hierarquia em conflito
 
----
+1. código + migrations ativas;
+2. `docs/context/PROJECT_STATUS.md`;
+3. docs normativos ativos;
+4. docs derivados;
+5. histórico em `docs/archive/**`.
 
-## Read first
+## Restrições
 
-1. `AGENTS.md`
-2. `.agents/rules/CORE_RULES.md`
-3. `.agents/rules/CONTEXT_LOADING.md`
-4. `.agents/rules/no-broad-context.md`
+- Não usar `docs/archive/**` como verdade operacional.
+- Não atualizar documento derivado sem delta funcional real.
+- Não repetir contratos já definidos em `.agents/rules/CORE_RULES.md` ou `docs/context/SOURCE_OF_TRUTH.md`.
+- Não reescrever documento estável por conveniência.
+- Não documentar comportamento presumido ou teste não executado.
+- Não transformar roadmap em pendência técnica nem intenção em entrega concluída.
+- Não arquivar ou excluir conteúdo histórico sem necessidade e escopo explícitos.
 
-> ⚠️ **Constraint:** Then read only what the task requires.
+## Procedimento
 
----
+### 1. Registrar baseline e escopo
 
-## Context by need
+Identificar:
 
-### Project status
-* `docs/context/PROJECT_STATUS.md`
-* `docs/context/KNOWN_GAPS.md`
+- capability ou trilha `infra.*` afetada;
+- módulos e arquivos alterados;
+- migrations/RPC/RLS envolvidos;
+- evidências de teste;
+- mudanças preexistentes no worktree que não pertencem à tarefa.
 
-### Source of truth / domain contracts
-* `docs/context/SOURCE_OF_TRUTH.md`
-* `docs/domain/TAGS_SIGNALS_CONTRACT.md`
+### 2. Validar o estado real
 
-### Technical contracts
-* `docs/technical/ARCHITECTURE.md`
-* `docs/technical/OFFLINE_SYNC.md`
-* `docs/technical/SUPABASE_RLS.md`
-* `docs/technical/EVENTS_AGENDA_CONTRACT.md`
-* `docs/technical/TESTING_GATES.md`
+Inspecionar somente código, migrations ativas, testes e documentos diretamente ligados ao delta. Se houver conflito, registrar a divergência e seguir a hierarquia de fontes.
 
-### Product / roadmap
-* `docs/product/CAPABILITY_MATRIX.md`
-* `docs/product/MVP_PRIORITIES.md`
-* `docs/product/ROADMAP.md`
+### 3. Classificar o impacto documental
 
-### Derived docs
-Open only if there is real functional delta:
-* `docs/IMPLEMENTATION_STATUS.md`
-* `docs/TECH_DEBT.md`
-* `docs/ROADMAP.md`
-* `docs/review/ACTIVE_REVIEW_INDEX.md`
+Para cada candidato, classificar como:
 
-### Archive
-> ⚠️ **Constraint:** Do not use `docs/archive/**` as operational truth.  
-* Use archive only to preserve replaced documents, compare historical context when explicitly requested, or move superseded docs after extracting active content.
+- `snapshot`;
+- `normative`;
+- `derived`;
+- `manual/support`;
+- `prompt/skill`;
+- `no_doc_impact`.
 
----
+### 4. Medir o delta
 
-## Hard constraints
+Registrar por documento:
 
-* Do not use `docs/archive/**` as operational truth.
-* Do not update derived docs without real functional delta.
-* Do not duplicate contracts already present in `CORE_RULES.md` or `SOURCE_OF_TRUTH.md`.
-* Do not rewrite stable docs unnecessarily.
-* Do not update docs only to match assumptions.
-* If code and docs conflict, trust code + active migrations.
-* If docs are obsolete, either update or move to archive after extracting active content.
+- o que mudou;
+- o que permanece válido;
+- o trecho em drift;
+- o que não deve ser tocado;
+- ação: atualizar, dividir, arquivar ou manter.
 
----
+### 5. Atualizar na camada correta
 
-## Source of truth in conflict
+Aplicar somente os níveis necessários:
 
-1. Code + active migrations.
-2. `docs/context/PROJECT_STATUS.md`.
-3. Active normative docs.
-4. Derived docs.
-5. Historical archive.
+1. normativo, se o contrato mudou;
+2. snapshot, se o estado atual mudou;
+3. derivado/roadmap, se o progresso ou dívida mudou;
+4. manual, se o comportamento visível mudou;
+5. prompt/skill, se o comportamento dos agentes mudou.
 
----
+Usar diff mínimo por arquivo.
 
-## Procedure
+### 6. Preservar histórico
 
-### 1. Identify scope
-Register:
-* Affected capability or `infra.*` track;
-* Changed files/modules;
-* Migrations/RPC/RLS involved, if any;
-* Tests or validation evidence;
-* Docs likely affected.
+Se um documento tiver sido realmente substituído e a tarefa incluir arquivamento:
 
-### 2. Classify doc impact
-Classify each affected doc as:
-* `snapshot`
-* `normative`
-* `derived`
-* `manual/support`
-* `prompt/skill`
-* `no doc impact`
+- extrair antes qualquer conteúdo ainda ativo;
+- mover para o padrão de archive já adotado no repositório;
+- não apagar histórico silenciosamente;
+- não criar novo padrão de diretório sem necessidade.
 
-### 3. Validate real state
-Check only the needed source: code, active migrations, tests, local AGENTS, or relevant docs.  
-> ⚠️ **Constraint:** Do not expand to broad repository reading unless justified.
+### 7. Avaliar ADR
 
-### 4. Measure delta
-For each doc, identify:
-* What changed;
-* What remains valid;
-* What is in drift;
-* What must not be touched;
-* Whether the doc should be updated, split, or archived.
+Sugerir ADR somente se houver alteração durável em:
 
-### 5. Update in the correct layer
-Update only affected layers:
-1. **Normative docs:** If contract/architecture/source-of-truth changed.
-2. **Project status:** If current state changed.
-3. **Derived docs:** If implementation status/roadmap/debt changed.
-4. **Manuals:** If user-facing behavior changed.
-5. **Prompts/skills:** If agent behavior changed.
+- contrato de sync, ordenação, deduplicação ou status;
+- modelo canônico;
+- invariantes RLS/RBAC/RPC;
+- offline-first;
+- Two Rails;
+- fonte de verdade;
+- regra normativa que orientará decisões futuras.
 
-### 6. Archive when needed
-Move superseded docs to: `docs/archive/2026-05-ai-context-optimization/`  
-Use appropriate subfolder:
-* `old-prompts/`
-* `old-audits/`
-* `old-reviews/`
-* `superseded-docs/`
+## Validação
 
-*Note: Do not delete historical material unless explicitly requested.*
+Seguir `.agents/rules/rtk.md` e executar ao menos:
 
-### 7. Evaluate ADR need
-Suggest ADR only if the change alters:
-* Sync contract;
-* Ordering/dedup/status codes;
-* Canonical data model;
-* RLS/RBAC/RPC invariants;
-* Offline-first architecture;
-* Two Rails;
-* Source-of-truth contract;
-* Normative rule that will guide future product decisions.
-
----
-
-## Validation
-
-Follow `.agents/rules/rtk.md`.
-
-### Minimum check:
 ```bash
 git status --short --untracked-files=all
-
+git diff --check
 ```
 
-### For duplicate invariants:
+Inspecionar o diff dos documentos alterados. Validar links, invariantes duplicados ou arquivos extensos apenas quando o delta exigir e com busca direcionada.
 
-```bash
-rg -n "Agenda = intenção|Evento = fato|state_\\*|Protocolo = regra|Tags, sinais e insights|fonte primária" AGENTS.md docs .agents -g "!docs/archive/**"
+## Saída obrigatória
 
-```
+Separar `snapshot`, `normative`, `derived`, `manual/support`, `prompt/skill` e `archive`, informando:
 
-### For active large markdown files:
+1. resumo da reconciliação;
+2. documentos atualizados e motivo;
+3. documentos deliberadamente mantidos;
+4. documentos movidos e conteúdo preservado;
+5. fase atual, somente se solicitada;
+6. validações e evidências;
+7. riscos, dívidas ou divergências, até três;
+8. ADR sugerido, se aplicável.
 
-```powershell
-Get-ChildItem -Recurse -File AGENTS.md,*.md |
-  Where-Object { $_.FullName -notmatch "docs\\archive|node_modules" } |
-  Select-Object FullName, Length |
-  Sort-Object Length -Descending
-
-```
-
----
-
-## Expected output
-
-Return:
-
-* Iteration summary;
-* Documents updated;
-* Documents deliberately left unchanged;
-* Documents moved to archive;
-* Content extracted before archiving;
-* Current project phase, if requested;
-* Risks/debts/divergences, up to 3;
-* ADRs suggested, if any.
-
----
-
-## Output rules
-
-* Use minimal diff per document.
-* Do not rewrite whole files unnecessarily.
-* Separate clearly: `snapshot`, `normative`, `derived`, and `archive`.
-* Do not claim docs are reconciled without checking real files.
-
-```
-
-```
+Não afirmar reconciliação sem verificar os arquivos reais.

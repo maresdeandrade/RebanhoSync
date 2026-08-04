@@ -1,49 +1,52 @@
 # Prompts — RebanhoSync
 
-Prompts reutilizáveis para reduzir contexto repetido e padronizar execução por tipo de tarefa.
+Prompts reutilizáveis para padronizar tarefas sem repetir regras permanentes nem carregar contexto amplo.
 
-## Princípios
+Prompts orientam a execução; não substituem `AGENTS.md`, rules, skills, código, migrations ou documentos normativos.
 
-- Não colar documentação longa sem necessidade.
-- Não usar prompts arquivados como fonte ativa.
-- Sempre respeitar `AGENTS.md`.
-- Sempre respeitar `.agents/rules/CORE_RULES.md`.
-- Usar `.agents/rules/CONTEXT_LOADING.md` para decidir o contexto mínimo.
-- Usar `.agents/rules/no-broad-context.md` para evitar leitura ampla.
-- Usar `.agents/rules/rtk.md` quando envolver comandos, validação, pnpm, Graphify, WSL ou Windows.
-- Usar `reusable/CONTEXT_BLOCK_MINIMAL.md` apenas quando precisar fornecer contexto compacto para uma IA externa.
-- Não usar prompt de auditoria para executar patch local.
-- Não usar prompt de patch local para auditoria ampla.
+---
+
+## Bootstrap e princípios
+
+Antes de usar qualquer prompt:
+
+1. Leia `AGENTS.md`.
+2. Aplique `.agents/rules/CORE_RULES.md`.
+3. Use `.agents/rules/CONTEXT_LOADING.md` e `no-broad-context.md` para escolher o contexto mínimo.
+4. Escolha no máximo uma skill principal; segunda somente em interseção real de domínio crítico.
+5. Siga `.agents/rules/rtk.md` para comandos, testes, pnpm, Graphify, WSL/Windows ou validação local.
+
+Regras:
+
+- Não abrir todos os prompts, skills ou documentos por padrão.
+- Não usar prompts ou documentos arquivados como fonte ativa.
+- Não usar prompt de análise para executar patch.
+- Não usar prompt de implementação para substituir verificação independente.
+- Não transformar diagnóstico, intenção ou plano em fato concluído.
+- Não declarar validação, commit, push ou arquivo alterado sem evidência.
+- O prompt não amplia a autorização concedida pelo pedido atual.
 
 ---
 
 ## Economia de contexto em prompts gerados
 
-Quando a tarefa for gerar outro prompt para Codex, Antigravity ou outro agente:
+Ao gerar prompt para Codex, Antigravity ou outro agente:
 
-- gerar prompt referencial, não enciclopédico;
-- não repetir regras permanentes já presentes em `.agents/rules/**`;
-- não repetir escopo permitido/proibido já documentado em `docs/review/**`;
-- referenciar arquivos normativos em vez de copiar seu conteúdo;
-- repetir apenas:
-  - objetivo imediato;
-  - diagnóstico obrigatório;
-  - critério específico de aceite;
-  - validação específica não coberta por `.agents/rules/rtk.md`;
-- manter prompts de execução preferencialmente entre 400 e 700 palavras;
-- se o prompt passar de 900 palavras, justificar qual informação ainda não está documentada;
-- não listar proibições já documentadas, salvo se forem risco crítico específico do patch atual.
+- produzir texto referencial, não enciclopédico;
+- não repetir contratos já presentes em `.agents/rules/**` ou documentos normativos;
+- referenciar o plano/escopo ativo em vez de copiar listas extensas;
+- repetir apenas objetivo imediato, diagnóstico obrigatório, restrições específicas, aceite e validação não coberta por `rtk.md`;
+- preferir entre 400 e 700 palavras para prompts de execução;
+- justificar conteúdo acima de 900 palavras que ainda não esteja documentado;
+- evitar cercas Markdown externas no arquivo real.
 
 Forma preferida:
 
 ```txt
 Seguir integralmente o escopo permitido e proibido definido em:
 - docs/review/ACTIVE_PHASE_PLAN.md
-- plano específico da fase atual
+- [PLANO_ESPECIFICO_DA_FASE]
 ```
-
-Forma a evitar:
-- Repetir listas longas de escopo proibido já documentadas.
 
 ---
 
@@ -73,121 +76,87 @@ Forma a evitar:
   reusable/
     CONTEXT_BLOCK_MINIMAL.md
     VALIDATION_CHECKLIST.md
-
 ```
+
+---
+
+## Escolha por etapa
+
+| Etapa | Prompt/skill | Uso | Não usar para |
+|---|---|---|---|
+| Descoberta | `repository-context-retrieval` | Localizar ponto de intervenção e contexto mínimo. | Implementar ou validar entrega. |
+| Análise arquitetural | `antigravity/ARCHITECTURE_REVIEW.md` | Avaliar responsabilidades, fontes de verdade e riscos estruturais. | Alterar arquivos. |
+| Mapeamento | `antigravity/FLOW_MAPPING.md` | Seguir jornada, dados, persistência e falhas ponta a ponta. | Corrigir o fluxo. |
+| Risco pré-implementação | `antigravity/RISK_REVIEW.md` | Avaliar mudança proposta e controles mínimos. | Revisar diff pronto. |
+| Bug localizado | `codex/PATCH_LOCAL.md` | Correção pequena e testável. | Feature nova ou auditoria ampla. |
+| Feature pequena | `codex/FEATURE_SMALL.md` | Comportamento novo delimitado. | Refatoração ampla. |
+| Reconciliação documental | `codex/DOCS_RECONCILE.md` | Alinhar docs/prompts/skills às fontes atuais. | Alterar produto. |
+| Verificação | `codex/REVIEW_DIFF.md` + `rebanhosync-verification-gate` | Revisar diff e classificar READY/NOT READY. | Corrigir o patch durante a revisão. |
+| Preparação de PR | `prepare-pr` | Produzir título/corpo após verificação aprovada. | Compensar validação ausente. |
+| Continuidade | `continuity/*` | Preservar ou fechar contexto documental conforme o estado real. | Implementar mudança funcional. |
+
+Análise, implementação, verificação e preparação de PR são etapas distintas.
 
 ---
 
 ## Continuity
 
-Use para transição de conversa, fechamento de fase e coerência documental.
-
 | Prompt | Quando usar |
 |---|---|
-| `continuity/START_NOVA_CONVERSA.md` | Iniciar nova conversa a partir de handoff, plano ativo e contexto colado. |
-| `continuity/UPDATE_FINAL_DE_FASE.md` | Encerrar fase/subfase validada e atualizar documentação permanente. |
-| `continuity/UPDATE_CONTEXTO_EM_ANDAMENTO.md` | Conversa ficou longa, mas a fase/tarefa ainda não terminou. |
-| `continuity/CHECK_CONTEXT_DRIFT.md` | Verificar se handoff, plano ativo, roadmap e pendências estão coerentes. |
+| `continuity/START_NOVA_CONVERSA.md` | Iniciar conversa a partir de handoff, plano ativo e contexto mínimo. |
+| `continuity/UPDATE_FINAL_DE_FASE.md` | Encerrar fase/subfase efetivamente validada e atualizar documentação permanente. |
+| `continuity/UPDATE_CONTEXTO_EM_ANDAMENTO.md` | Preservar conversa longa sem marcar tarefa ou fase como concluída. |
+| `continuity/CHECK_CONTEXT_DRIFT.md` | Diagnosticar incoerência entre handoff, plano, status e pendências. |
 
 ---
 
 ## Codex
 
-Use para implementação, correção, revisão de diff e documentação.
-
 | Prompt | Quando usar |
 |---|---|
 | `codex/PATCH_LOCAL.md` | Correção pequena, localizada e testável. |
-| `codex/FEATURE_SMALL.md` | Funcionalidade pequena, delimitada e sem refatoração ampla. |
-| `codex/REVIEW_DIFF.md` | Revisar alterações já feitas. |
-| `codex/DOCS_RECONCILE.md` | Reconciliar documentação com estado real do repositório. |
+| `codex/FEATURE_SMALL.md` | Funcionalidade nova, pequena e delimitada. |
+| `codex/REVIEW_DIFF.md` | Revisão somente leitura de alterações staged, unstaged e untracked. |
+| `codex/DOCS_RECONCILE.md` | Reconciliação documental com o estado confirmado do repositório. |
 
 ---
 
 ## Antigravity
 
-Use para análise antes de patch ou para mapear riscos/fluxos.
+Todos os prompts desta pasta são somente leitura.
 
 | Prompt | Quando usar |
 |---|---|
-| `antigravity/ARCHITECTURE_REVIEW.md` | Revisão arquitetural sem executar patch automaticamente. |
-| `antigravity/FLOW_MAPPING.md` | Mapear fluxo funcional ou jornada do app. |
-| `antigravity/RISK_REVIEW.md` | Revisar riscos antes de implementar ou aprovar mudança. |
+| `antigravity/ARCHITECTURE_REVIEW.md` | Revisar arquitetura e hardening possível antes de patch. |
+| `antigravity/FLOW_MAPPING.md` | Mapear fluxo funcional e de dados ponta a ponta. |
+| `antigravity/RISK_REVIEW.md` | Avaliar riscos de mudança proposta antes da implementação. |
 
 ---
 
 ## Reusable
 
-Blocos auxiliares, não substituem prompts principais.
+Blocos auxiliares não substituem prompts principais.
 
 | Arquivo | Uso |
 |---|---|
-| `reusable/CONTEXT_BLOCK_MINIMAL.md` | Contexto mínimo para IA externa ou tarefa curta. |
-| `reusable/VALIDATION_CHECKLIST.md` | Checklist de validação para revisão, patch ou fechamento. |
+| `reusable/CONTEXT_BLOCK_MINIMAL.md` | Contexto compacto para IA externa ou tarefa curta. |
+| `reusable/VALIDATION_CHECKLIST.md` | Checklist proporcional para patch, revisão ou fechamento. |
 
 ---
 
 ## Archive
 
-Prompts substituídos ou históricos.
-
-Regra:
-
-```txt
-Não usar `.agents/prompts/archive/**` como fonte ativa.
-```
-
-Prompts arquivados podem ser consultados apenas para histórico.
-
----
-
-## Escolha rápida
-
-```txt
-Conversa nova:
-  continuity/START_NOVA_CONVERSA.md
-
-Final de fase:
-  continuity/UPDATE_FINAL_DE_FASE.md
-
-Conversa longa em andamento:
-  continuity/UPDATE_CONTEXTO_EM_ANDAMENTO.md
-
-Checar coerência documental:
-  continuity/CHECK_CONTEXT_DRIFT.md
-
-Bug localizado:
-  codex/PATCH_LOCAL.md
-
-Feature pequena:
-  codex/FEATURE_SMALL.md
-
-Revisar diff:
-  codex/REVIEW_DIFF.md
-
-Reconciliar documentação:
-  codex/DOCS_RECONCILE.md
-
-Revisar arquitetura:
-  antigravity/ARCHITECTURE_REVIEW.md
-
-Mapear fluxo:
-  antigravity/FLOW_MAPPING.md
-
-Revisar risco:
-  antigravity/RISK_REVIEW.md
-```
+Não use `.agents/prompts/archive/**` como fonte ativa. Consulte apenas quando o pedido exigir histórico.
 
 ---
 
 ## Fonte de verdade
 
-Em caso de conflito, seguir:
+Em conflito, siga:
 
 1. Código + migrations ativas.
 2. `docs/context/PROJECT_STATUS.md`.
-3. Docs normativos ativos.
-4. Docs derivados.
+3. Documentos normativos ativos.
+4. Documentos derivados.
 5. Histórico em `docs/archive/**`.
-
-Prompts ajudam a executar tarefas; não substituem contratos de domínio.
+6. Definições procedimentais de rules, skills e prompts.

@@ -1,134 +1,79 @@
 # Codex Prompt — Reconciliar Documentação
-Atualizado em: 2026-06-04  
-Versão: 1.1.0
 
-Use para alinhar documentação ativa ao estado real do código, dos testes e das fases já validadas.
+Atualizado em: 2026-08-03  
+Versão: 1.2.0
 
-Não use este prompt para finalizar fase.
-Para final de fase, use:
+Use para alinhar documentação ativa ao comportamento confirmado no código e nas migrations. Não use para fechar fase; nesse caso, use `.agents/prompts/continuity/UPDATE_FINAL_DE_FASE.md`.
+
+## Prompt
+
+Você está reconciliando a documentação do RebanhoSync.
+
+### Objetivo
 
 ```txt
-.agents/prompts/continuity/UPDATE_FINAL_DE_FASE.md
+[DESCREVER_O_DRIFT_OU_RESULTADO_ESPERADO]
 ```
-
----
-
-## Objetivo
-
-Reconciliar documentação com o estado atual do repositório sem criar documentação redundante e sem reabrir fases fechadas.
-
----
-
-## Escopo
 
 ### Documentos-alvo
 
 ```txt
-[LISTAR_DOCS]
+[LISTAR_DOCUMENTOS]
 ```
 
-### Código ou áreas de referência
+### Código, migrations ou testes de referência
 
 ```txt
-[LISTAR_AREAS_DE_CODIGO]
+[LISTAR_AREAS_MINIMAS_DE_REFERENCIA]
 ```
 
----
+## Contexto e skill
 
-## Regras
+1. Leia `AGENTS.md`.
+2. Aplique `.agents/rules/CORE_RULES.md`, `CONTEXT_LOADING.md` e `no-broad-context.md`.
+3. Use `reconcile-docs` como skill principal.
+4. Para comandos e validações, siga `.agents/rules/rtk.md`.
+5. Expanda o contexto somente se houver conflito ainda não resolvido.
 
-- Não alterar código de produto.
-- Não alterar migrations, seed, RLS, RPCs ou testes.
+Em conflito, siga a precedência definida nas rules: código + migrations ativas → `PROJECT_STATUS.md` → documentos normativos ativos → documentos derivados → histórico.
+
+## Restrições
+
+- Alterar somente documentação, prompts ou skills explicitamente incluídos no escopo.
+- Não alterar código, testes, migrations, seed, RLS, RPC ou schema.
 - Não usar `docs/archive/**` como fonte operacional.
-- Não tratar documentação antiga como verdade se contradizer código/migrations atuais.
-- Não duplicar contratos já presentes em `.agents/rules/CORE_RULES.md` ou `docs/context/SOURCE_OF_TRUTH.md`.
-- Arquivar documentos substituídos em vez de apagar.
-- Não arquivar:
-  - `docs/review/LAST_PHASE_RESULT.md`;
-  - `docs/review/CURRENT_PHASE_HANDOFF.md`;
-  - `docs/review/ACTIVE_PHASE_PLAN.md`;
-  - `docs/review/OPEN_REVIEW_ITEMS.md`;
-  - plano ativo da fase atual.
+- Não duplicar contratos já centralizados em rules ou documentos normativos.
+- Não reabrir fase fechada nem transformar roadmap em backlog técnico.
+- Não mover ou arquivar documento ativo sem confirmar que foi substituído e que suas referências foram atualizadas.
+- Preservar `LAST_PHASE_RESULT.md`, `CURRENT_PHASE_HANDOFF.md`, `ACTIVE_PHASE_PLAN.md`, `OPEN_REVIEW_ITEMS.md` e o plano ativo da fase.
+- Se o escopo exigir mudança funcional, parar e relatar a expansão necessária.
 
----
+## Procedimento
 
-## Fontes de verdade
-
-Seguir esta ordem de precedência:
-
-1. Código + migrations ativas.
-2. Testes e validações executadas.
-3. `docs/context/PROJECT_STATUS.md`.
-4. Docs normativos ativos.
-5. Docs derivados.
-6. Histórico em `docs/archive/**`.
-
----
-
-## Verificar
-
-- Docs obsoletos.
-- Docs duplicados.
-- Prompts longos que devem virar template compacto.
-- Auditorias antigas ainda referenciadas como fonte ativa.
-- Manuais completos usados como contexto padrão.
-- Regras repetidas entre `AGENTS.md`, `.agents/rules`, docs e skills.
-- Pendências fechadas listadas como abertas.
-- Roadmap usado como backlog técnico.
-- Relatórios históricos ainda na pasta ativa.
-- `LAST_PHASE_RESULT.md` arquivado indevidamente.
-
----
-
-## Saída esperada
-
-Aplicar patch documental contendo:
-
-- arquivos criados;
-- arquivos alterados;
-- arquivos movidos para archive;
-- conteúdo extraído antes do arquivamento;
-- links/referências atualizados;
-- riscos/pendências, no máximo 3.
-
----
-
-## Validação
-
-Verificar estado local:
-
-```bash
-git status --short --untracked-files=all
-git diff --name-only
-git diff --stat
-git diff --check
-```
-
-Buscar duplicidade das invariantes:
-
-```bash
-rg -n "Agenda = intenção|Evento = fato|state_\\*|Protocolo = regra|Tags, sinais e insights|fonte primária" AGENTS.md docs .agents -g "!docs/archive/**"
-```
-
-Listar maiores markdowns ativos no PowerShell:
-
-```powershell
-Get-ChildItem -Recurse -File AGENTS.md,*.md |
-  Where-Object { $_.FullName -notmatch "docs\\archive|node_modules" } |
-  Select-Object FullName, Length |
-  Sort-Object Length -Descending
-```
-
----
+1. Confirmar o drift com evidência no código, migration ativa, teste ou documento de maior precedência.
+2. Separar fato confirmado, inferência e recomendação.
+3. Identificar duplicações, referências quebradas, status obsoletos e documentos ativos apontando para archive.
+4. Propor o patch documental mínimo.
+5. Aplicar somente após o diagnóstico.
+6. Revisar arquivos tracked, staged e untracked.
+7. Validar conforme `.agents/rules/rtk.md`.
 
 ## Critérios de aceite
 
-- `AGENTS.md` permanece como dispatcher curto.
-- `.agents/rules/*` concentra regras de agente.
-- Docs longos ficam disponíveis sob demanda.
-- Arquivos históricos ficam contidos em `docs/archive/`.
-- Nenhuma fonte operacional aponta para `docs/archive/`.
-- `LAST_PHASE_RESULT.md` permanece ativo em `docs/review/`.
-- `OPEN_REVIEW_ITEMS.md` contém apenas pendências abertas reais.
-- `CURRENT_PHASE_HANDOFF.md` aponta para `ACTIVE_PHASE_PLAN.md`.
-- Nenhum código funcional foi alterado.
+- Documentação ativa coerente com as fontes de maior precedência.
+- Nenhum contrato duplicado ou nova fonte paralela de verdade.
+- Nenhuma referência operacional depende de `docs/archive/**`.
+- Pendências fechadas não permanecem como abertas.
+- Nenhum arquivo funcional foi alterado.
+- Cercas Markdown, links e whitespace estão válidos.
+- Validações executadas e não executadas foram relatadas sem invenção.
+
+## Entrega
+
+1. **Diagnóstico**
+2. **Fatos confirmados**
+3. **Arquivos alterados/movidos**
+4. **Referências atualizadas**
+5. **Validações executadas**
+6. **Validações não executadas e motivo**
+7. **Riscos/pendências**, no máximo 3

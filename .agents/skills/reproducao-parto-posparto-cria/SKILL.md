@@ -1,4 +1,3 @@
-```markdown
 ---
 name: reproducao-parto-posparto-cria
 description: Use when a RebanhoSync task touches parto, pós-parto, cria creation, deterministic linking, reproductive event flow, or agenda derived from birth/calf lifecycle.

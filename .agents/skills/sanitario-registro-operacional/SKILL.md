@@ -1,4 +1,3 @@
-```markdown
 ---
 name: sanitario-registro-operacional
 description: Use when a RebanhoSync task touches operational sanitary registration, sanitary agenda completion, veterinary products, doses, stock lot consumption, sanitary event creation, biosecurity occurrence recording, or corrective sanitary pending actions.

@@ -1,148 +1,75 @@
 # Start Nova Conversa — RebanhoSync
 
-Atualizado em: 2026-06-04  
-Versão: 1.1.0
+Atualizado em: 2026-08-03  
+Versão: 1.2.0
 
-Use este prompt ao iniciar uma nova conversa para continuar o desenvolvimento do RebanhoSync a partir da documentação ativa do repositório.
+Use ao iniciar uma nova conversa para continuar o RebanhoSync a partir do estado ativo do repositório.
 
 ## Prompt
 
-Você é o arquiteto técnico sênior do RebanhoSync.
+Você está retomando o desenvolvimento do RebanhoSync.
 
-Estou iniciando uma nova conversa para continuar o desenvolvimento.
+### Contexto adicional da conversa anterior
 
-Use como fonte principal, nesta ordem:
+```txt
+[COLAR_APENAS_O_QUE_AINDA_NAO_ESTA_DOCUMENTADO]
+```
 
-1. O contexto de continuidade colado pelo usuário, se houver.
-2. `docs/review/CURRENT_PHASE_HANDOFF.md`
-3. `docs/review/ACTIVE_PHASE_PLAN.md`
-4. `docs/review/LAST_PHASE_RESULT.md`
-5. `docs/review/OPEN_REVIEW_ITEMS.md`
-6. `docs/context/PROJECT_STATUS.md`
-7. `docs/product/ROADMAP.md`
-8. `AGENTS.md`
-9. `.agents/rules/CORE_RULES.md`
-10. `.agents/rules/CONTEXT_LOADING.md`
-11. `.agents/rules/no-broad-context.md`
-12. `.agents/rules/rtk.md`
+## Bootstrap mínimo
 
-Se `ACTIVE_PHASE_PLAN.md` apontar para um plano específico da fase atual, leia esse plano antes de propor qualquer patch.
+1. Leia `AGENTS.md`.
+2. Aplique `.agents/rules/CORE_RULES.md`, `CONTEXT_LOADING.md` e `no-broad-context.md`.
+3. Leia `docs/review/CURRENT_PHASE_HANDOFF.md` e `docs/review/ACTIVE_PHASE_PLAN.md`.
+4. Se o plano ativo apontar para plano específico, leia-o.
+5. Carregue `LAST_PHASE_RESULT.md`, `OPEN_REVIEW_ITEMS.md`, `PROJECT_STATUS.md` ou `ROADMAP.md` somente quando necessários para uma dúvida concreta.
+6. Escolha no máximo uma skill principal para a tarefa atual.
+7. Para comandos e validações, siga `.agents/rules/rtk.md`.
 
-Antes de alterar qualquer arquivo, entregue diagnóstico inicial com:
+O contexto colado é complementar. Em conflito, siga a precedência das rules e confirme no repositório. Se o repositório não estiver acessível, declare o que não pôde ser verificado.
 
-1. fase ou contexto atual;
-2. se a etapa está concluída ou em andamento;
-3. baseline/commit documentado, se houver;
-4. commit local atual, se confirmável;
-5. documentos ativos lidos ou pendentes de confirmação local;
-6. pendências abertas reais;
-7. decisões já tomadas;
-8. riscos de regressão;
-9. escopo permitido/proibido referenciado;
-10. próximo passo mínimo;
-11. validação obrigatória.
+## Diagnóstico antes do patch
 
-## Regras obrigatórias
+Entregue um diagnóstico curto contendo:
 
-- Não iniciar implementação antes do diagnóstico.
+1. fase/subfase ou contexto atual;
+2. estado: concluído, em andamento ou não confirmável;
+3. baseline documentado e `HEAD` local, quando confirmáveis;
+4. estado inicial do worktree, inclusive staged e untracked;
+5. fontes ativas efetivamente lidas;
+6. pendências abertas relevantes;
+7. decisões já consolidadas;
+8. próximo passo mínimo;
+9. skill principal escolhida e motivo;
+10. validação proporcional necessária.
+
+## Regras
+
+- Não implementar antes do diagnóstico.
 - Não reabrir fase fechada sem evidência objetiva.
 - Não marcar etapa em andamento como concluída.
 - Não transformar roadmap em pendência técnica.
 - Não executar hardening genérico.
-- Não alterar Supabase, migrations, RLS, RPC, schema ou edge functions sem justificativa explícita.
-- Seguir integralmente `.agents/rules/CORE_RULES.md`.
-- Seguir integralmente o escopo permitido/proibido definido no plano ativo e no plano específico da fase.
+- Não alterar Supabase, migrations, RLS, RPC, schema ou edge functions sem escopo e justificativa explícitos.
+- Seguir o escopo permitido/proibido do plano ativo e do plano específico.
+- Não repetir regras permanentes ou histórico já documentado.
+- Não atualizar baseline automaticamente com worktree contendo alterações funcionais pendentes.
 
-## Verificação de baseline
+## Quando gerar prompt para agente
 
-No diagnóstico inicial, confirmar:
+Produza prompt curto e referencial:
 
-- baseline documentado nos docs ativos;
-- commit local atual;
-- se o worktree está limpo;
-- se a documentação está apontando para o commit correto.
+- aponte para os documentos normativos necessários;
+- repita apenas objetivo, escopo e critérios de aceite específicos;
+- exija diagnóstico antes do patch;
+- exija validação proporcional via `.agents/rules/rtk.md`;
+- não copie regras permanentes, plano completo ou histórico extenso.
 
-Comandos sugeridos:
+## Formato da resposta
 
-```powershell
-git status --short --untracked-files=all
-git status -sb
-git log --oneline -1
-git rev-parse --short HEAD
-git diff --check
-```
-
-Não atualizar baseline automaticamente se houver alterações pendentes.
-
-## Economia de contexto
-
-O contexto colado pelo usuário deve conter apenas informações que ainda não estão nos documentos ativos.
-
-Não repetir no prompt:
-
-- regras permanentes de `.agents/rules/**`;
-- escopo permitido/proibido de `docs/review/**`;
-- critérios já descritos no plano ativo;
-- histórico detalhado de fases anteriores.
-
-Se o usuário colar conteúdo redundante, priorizar os documentos ativos e responder de forma resumida.
-
-Se não houver acesso real ao repositório, não afirmar que documentos foram lidos. Declarar que a leitura precisa ser confirmada no ambiente local.
-
-## Se o usuário pedir um prompt para Codex
-
-Quando o usuário pedir para gerar um prompt de execução para Codex a partir desta conversa:
-
-- produzir prompt curto e referencial;
-- não copiar conteúdo extenso dos documentos lidos;
-- não repetir escopo permitido/proibido já documentado;
-- não repetir regras permanentes de `.agents/rules/**`;
-- apontar para os documentos normativos necessários;
-- repetir somente o caso de aceite específico da tarefa;
-- exigir diagnóstico antes de patch;
-- exigir validação proporcional via `.agents/rules/rtk.md`;
-- declarar que escopo permitido/proibido deve ser seguido conforme plano ativo e plano específico da fase.
-
-Modelo de formulação:
-
-```md
-Escopo:
-Seguir integralmente o escopo permitido e proibido definido em:
-
-- `docs/review/ACTIVE_PHASE_PLAN.md`
-- `[PLANO_ESPECIFICO_DA_FASE]`
-
-Não ampliar escopo sem evidência objetiva.
-```
-
-Evitar:
-
-```txt
-Listas longas de proibições já documentadas no plano ativo.
-```
-
-## Formato obrigatório da resposta
-
-```md
-## Diagnóstico
-
-## Fato confirmado
-
-## Inferência
-
-## Riscos
-
-## Plano mínimo
-
-## Validação obrigatória
-
-## Critério de aceite
-```
-
-## Contexto de continuidade da conversa anterior
-
-Cole abaixo o contexto da conversa anterior, se houver:
-
-```txt
-[COLAR_CONTEXTO_AQUI]
-```
+1. **Diagnóstico**
+2. **Fatos confirmados**
+3. **Inferências/limitações**
+4. **Riscos**
+5. **Plano mínimo**
+6. **Validação obrigatória**
+7. **Critério de aceite**

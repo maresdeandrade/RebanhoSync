@@ -1,229 +1,143 @@
-```markdown
 ---
 name: rebanhosync-verification-gate
-description: Use to validate a completed RebanhoSync patch, inspect actual diff including untracked files, classify readiness, and identify blockers before PR or merge.
+description: Valida um patch concluído do RebanhoSync, inspeciona diff tracked, staged e arquivos untracked, confirma escopo, contratos de domínio e evidências de teste e classifica a entrega antes de PR ou merge. Usar quando a implementação estiver concluída, houver mudanças locais a revisar ou a tarefa tocar domínio crítico, sync, RLS, migrations ou documentação. Não usar durante descoberta, planejamento, implementação em curso ou apenas para escrever o PR.
 ---
 
 # RebanhoSync Verification Gate
 
-## Mission
+## Missão
 
-Verify a completed patch against RebanhoSync contracts, scope, files changed, tests, and operational risks.
+Classificar uma entrega com base no patch real e em validação proporcional:
 
-This skill classifies the delivery as:
-* 🟢 **READY**
-* 🟡 **READY WITH CAVEAT**
-* 🔴 **NOT READY**
+- **READY**;
+- **READY WITH CAVEAT**;
+- **NOT READY**.
 
----
+## Leitura inicial
 
-## When to use
+1. `AGENTS.md`;
+2. `.agents/rules/CORE_RULES.md`;
+3. `.agents/rules/CONTEXT_LOADING.md`;
+4. `.agents/rules/rtk.md`;
+5. `AGENTS.md` local e skill de domínio, se o patch tocar caminho crítico.
 
-Use when:
-* A patch is complete;
-* The user asks to validate a phase;
-* Tests were executed and need interpretation;
-* There are modified or untracked files;
-* A PR is almost ready;
-* The task touches critical domain, sync, RLS, migrations, or documentation.
+## Inspeção obrigatória do patch
 
----
+Executar:
 
-## Do not use when
-
-Do not use when:
-* The task is still planning;
-* The implementation has not started;
-* The correct files are still unknown;
-* The goal is only to write a PR body.
-
-### Use instead:
-* `repository-context-retrieval` for discovery;
-* `prepare-pr` after this gate passes;
-* Domain-specific skill for implementation guidance.
-
----
-
-## Read first
-
-1. `AGENTS.md`
-2. `.agents/rules/CORE_RULES.md`
-3. `.agents/rules/CONTEXT_LOADING.md`
-4. `.agents/rules/rtk.md`
-
-*Note: If the task touched a critical path, read the local `AGENTS.md` for that path.*
-
----
-
-## Required commands
-
-Always inspect repository state:
 ```bash
 git status --short --untracked-files=all
-
-```
-
-Then inspect tracked diff:
-
-```bash
-git diff --name-only
+git diff --name-status
 git diff --stat
-
+git diff --cached --name-status
+git diff --cached --stat
+git diff --check
 ```
 
-> ⚠️ **Aviso:** `git diff` does not show new untracked files. Always use `git status --short --untracked-files=all`.
+Regras:
 
----
+- inspecionar o conteúdo do diff tracked e staged;
+- abrir cada arquivo untracked relevante: nome no status não equivale a conteúdo revisado;
+- identificar modificações preexistentes e não atribuí-las ao patch;
+- se a entrega já estiver commitada, usar o base explicitamente informado para revisar `base...HEAD`;
+- não usar base presumido para aprovar a entrega.
 
-## Scope checks
+## Verificação de escopo
 
-Verify:
+Comparar intenção e alterações reais:
 
-* Intended scope vs actual files changed;
-* Modified files;
-* Untracked files;
-* Deleted files;
-* Generated artifacts;
-* Accidental broad refactors;
-* Docs changed without functional delta;
-* Tests changed without justification.
+- arquivos modificados, adicionados, removidos e renomeados;
+- arquivos untracked;
+- artefatos gerados;
+- refactor amplo acidental;
+- testes alterados sem justificativa;
+- docs alterados sem delta funcional;
+- migrations/RLS/RPC fora do escopo.
 
----
+## Verificação de contratos
 
-## Domain checks
+Aplicar apenas os contratos relevantes ao patch e confirmar que não houve violação:
 
-Confirm that the patch did not violate:
+- Agenda = intenção futura;
+- Evento = fato executado;
+- `state_*` = estado atual/read model;
+- Protocolo = regra/configuração;
+- tags/sinais/insights = auxiliares;
+- decisão crítica = fonte técnica explícita;
+- UI não contém regra crítica como única implementação;
+- não existe fonte paralela de verdade;
+- `fazenda_id`, RLS e isolamento multi-tenant permanecem preservados.
 
-* **Agenda:** Intenção/future task, not history;
-* **Evento:** Executed fact;
-* **`state_*`:** Current state/read model;
-* **Protocolo:** Rule/configuration, not execution;
-* **Tags/signals/insights:** Auxiliary, not source of truth;
-* **Métricas:** Carência, reliable current weight, sale/slaughter readiness require explicit technical source;
-* **Arquitetura:** UI must not contain critical business rules;
-* **Garantia:** No parallel source of truth.
+Quando aplicável, verificar offline-first, Dexie, gesto/fila, retry/replay, rollback, conflito, sucesso parcial, pull/reconcile, Supabase, policies, RPCs e migrations.
 
----
+## Validação proporcional
 
-## Technical checks
+Seguir `.agents/rules/rtk.md`.
 
-Verify impact on:
+| Escopo | Evidência mínima |
+|---|---|
+| Docs/skills | diff, frontmatter/links afetados e `git diff --check` |
+| Patch local | teste focado do módulo e checagens locais aplicáveis |
+| Domínio crítico | testes focados, lint e build |
+| Entrega ampla | lint, suíte completa e build |
+| Supabase/RLS/RPC/migration/sync-batch | validação funcional de baseline indicada em `.agents/rules/rtk.md` |
 
-* Offline-first;
-* Dexie/local state;
-* Gestures;
-* Sync queue;
-* Rollback;
-* Retry;
-* Partial success;
-* Supabase/RLS;
-* `fazenda_id` isolation;
-* Migrations/RPC/policies;
-* Tests and build.
+Registrar exatamente:
 
----
+- comando executado;
+- resultado;
+- warnings relevantes;
+- comando não executado e motivo.
 
-## Validation
+Não afirmar sucesso sem saída confirmatória. Não reclassificar warning preexistente como regressão sem evidência.
 
-Follow `.agents/rules/rtk.md`.
+## Classificação
 
-### Minimum check:
+### READY
 
-```bash
-git status --short --untracked-files=all
+Usar somente quando:
 
-```
+- escopo real está íntegro;
+- todos os arquivos relevantes, inclusive untracked, foram revisados;
+- validação proporcional passou;
+- contratos aplicáveis foram preservados;
+- não resta risco crítico de migration, RLS ou sync.
 
-### For local patch:
+### READY WITH CAVEAT
 
-* Related test command if available.
+Usar quando o patch está provavelmente seguro, mas há validação parcial justificada ou ressalva não bloqueante, ambas explícitas.
 
-### For broader patch:
+Não usar para encobrir teste relevante falhando, arquivo untracked desconhecido, escopo incerto ou risco crítico não resolvido.
 
-```bash
-rtk pnpm run lint
-rtk pnpm test
-rtk pnpm run build
+### NOT READY
 
-```
+Usar quando houver:
 
-### For Supabase/RLS/sync-batch:
+- falha em validação relevante;
+- arquivo ausente ou untracked não inspecionado;
+- expansão de escopo injustificada;
+- violação de contrato de domínio;
+- risco não resolvido de RLS/sync/migration;
+- documentação afirmando comportamento inexistente.
 
-```bash
-rtk node scripts/codex/validate-supabase-baseline-functional.mjs
+## Próximo passo
 
-```
+- Acionar `reconcile-docs` se houver drift formal.
+- Acionar skill de domínio se um bloqueador exigir implementação.
+- Acionar `prepare-pr` somente após READY ou READY WITH CAVEAT.
 
-> ⚠️ **Restrição:** Do not claim validation passed unless command output confirms it.
+## Saída obrigatória
 
----
+Separar fatos confirmados, inferências e recomendações e retornar:
 
-## Readiness classification
+1. classificação;
+2. resumo do diff real;
+3. arquivos alterados e untracked;
+4. confirmação de escopo;
+5. contratos verificados;
+6. comandos e resultados;
+7. bloqueadores;
+8. riscos/pendências, até três;
+9. recomendação final.
 
-### 🟢 READY
-
-Use when:
-
-* Scope is clean;
-* Tests/validation proportional to risk passed;
-* No domain contract violation;
-* No critical untracked file missed;
-* No migration/RLS/sync risk remains.
-
-### 🟡 READY WITH CAVEAT
-
-Use when:
-
-* Patch is likely safe;
-* Validation was partial but justified;
-* Only non-blocking warnings remain;
-* Risks are explicit and acceptable.
-
-### 🔴 NOT READY
-
-Use when:
-
-* Tests fail;
-* Files are missing/untracked unexpectedly;
-* Scope expanded without justification;
-* Domain contract is violated;
-* RLS/sync/migration risk is unresolved;
-* Build/lint critical failure remains;
-* Docs claim behavior not implemented.
-
----
-
-## Escalation
-
-* Use `reconcile-docs` if documentation needs formal alignment;
-* Use `prepare-pr` only after READY or READY WITH CAVEAT;
-* Use domain skill if a blocker requires implementation guidance.
-
----
-
-## Expected output
-
-Return:
-
-1. **Classification:** [READY | READY WITH CAVEAT | NOT READY]
-2. **Summary of actual diff:** [Brief analysis]
-3. **Files changed and untracked:** [Paths list]
-4. **Scope confirmation:** [Scope matching verification]
-5. **Domain contract check:** [Invariants matching verification]
-6. **Validation commands and results:** [Output summary]
-7. **Blockers:** [If any]
-8. **Riscos/pendências:** [Up to 3 points]
-9. **Final recommendation:** [Next strategic action]
-
----
-
-## Output rules
-
-* Separate confirmed facts, inferences, and recommendations.
-* Do not hide failed tests.
-* Do not treat old warnings as new failures without evidence.
-* Do not approve patch with unknown untracked files.
-
-```
-
-```
+Não ocultar falhas nem aprovar conteúdo desconhecido.

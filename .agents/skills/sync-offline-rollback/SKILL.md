@@ -1,4 +1,3 @@
-```markdown
 ---
 name: sync-offline-rollback
 description: Use when a RebanhoSync task touches Dexie, offline-first behavior, sync queue, gestures, rollback, retry, reconcile, partial success, or local-remote conflict handling.

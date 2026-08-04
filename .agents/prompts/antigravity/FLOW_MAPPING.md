@@ -1,73 +1,78 @@
-```markdown
 # Antigravity Prompt — Flow Mapping
-Atualizado em: 2026-06-04  
-Versão: 1.1.0
 
-Use para mapear fluxo funcional ou jornada do app.
+Atualizado em: 2026-08-03  
+Versão: 1.2.0
 
-## Objetivo
+Use para mapear uma jornada funcional ou fluxo de dados sem alterar a implementação.
 
-Mapear detalhadamente o comportamento, transições e regras de um fluxo específico do sistema:
+## Prompt
+
+Mapeie o fluxo abaixo do início ao resultado observável:
 
 ```txt
 [NOME_DO_FLUXO]
-
 ```
 
 ### Escopo inicial
 
-* `[ARQUIVOS_OU_PASTAS_SE_CONHECIDOS]`
+```txt
+[ARQUIVOS_OU_PASTAS_SE_CONHECIDOS]
+```
 
-## Regras e Diretrizes
+## Contexto e skill
 
-### Estratégia de Leitura:
+1. Leia `AGENTS.md`.
+2. Aplique `.agents/rules/CORE_RULES.md`, `CONTEXT_LOADING.md` e `no-broad-context.md`.
+3. Use `repository-context-retrieval` como skill principal somente quando os pontos de entrada ou saída não estiverem claros.
+4. Se o fluxo já estiver delimitado, leia apenas arquivos-alvo, dependências diretas e testes relacionados.
+5. Para comandos ou Graphify, siga `.agents/rules/rtk.md` e `GRAPHIFY_USAGE.md`.
 
-* Não ler o repositório inteiro.
-* Começar estritamente pelos arquivos raiz ou componentes iniciais do fluxo informado.
-* Usar o `Graphify` para mapear dependências se houver relação transversal complexa.
+Graphify é opcional: use apenas quando houver dependência transversal complexa que a leitura dirigida não resolva.
 
-### Critério de Análise:
+## Restrições
 
-* **Fato Confirmado:** Aquilo que está explicitamente implementado e verificado no código.
-* **Inferência:** Comportamentos implícitos deduzidos pela arquitetura ou padrões.
-* **Lacuna:** O que está ausente, mal documentado ou gera incerteza.
+- Não editar arquivos, corrigir achados, criar testes, fazer commit ou preparar PR.
+- Não ler o repositório inteiro.
+- Não assumir que o nome exibido na UI identifica a entidade persistida.
+- Não tratar Agenda, documento, checklist, tag ou insight como fato executado.
+- Não confundir estado local transitório, fato histórico e `state_*` atual.
+- Não afirmar comportamento offline/remoto sem seguir o fluxo até persistência e reconciliação.
 
----
+## Itens a mapear
 
-## Itens a Mapear
+1. entrada do usuário, sistema ou integração;
+2. componente, serviço ou handler inicial;
+3. normalização e validações;
+4. regra/política de domínio aplicada;
+5. identidade e fonte de verdade de cada dado;
+6. construção de payload, plano e efeitos;
+7. persistência local em Dexie/IndexedDB;
+8. fila, sync, persistência remota e retorno do servidor;
+9. retry, duplicidade, sucesso parcial, rollback e reconcile;
+10. atualização de `state_*` ou read models;
+11. mensagens, erros e exceções expostos ao usuário;
+12. RLS, papel e fronteira de `fazenda_id`, quando aplicável;
+13. testes existentes e lacunas de cobertura.
 
-1. **Entrada do usuário:** Ações, cliques, inputs e interações iniciais;
-2. **Tela/componente inicial:** Ponto de entrada na interface de usuário;
-3. **Estado local usado:** Hooks, contexts ou estados locais que gerenciam a memória da tela;
-4. **Validações:** Regras aplicadas antes do processamento (schema validation, validação de domínio);
-5. **Fonte de verdade:** Onde o dado reside primariamente;
-6. **Persistência local/remota:** Estratégia de armazenamento (IndexedDB, PouchDB, Supabase);
-7. **Contratos envolvidos:** Identificar o papel exato de Evento, Agenda, `state_*` ou Protocolo;
-8. **Sync/Rollback:** Estratégia adotada em caso de falha de conectividade ou concorrência;
-9. **Erros e exceções:** Como o sistema captura, trata e expõe falhas no fluxo;
-10. **Testes existentes:** Arquivos de testes unitários ou de integração vinculados;
-11. **Lacunas:** Gargalos de performance, lógica obscura ou falta de tratamento de borda.
+Classifique cada conclusão como **fato confirmado**, **inferência** ou **lacuna**.
 
----
+## Tabela obrigatória
 
-## Tabela de Mapeamento do Fluxo
-
-| Etapa | Arquivo | Responsabilidade | Fonte de Verdade | Risco Identificado | Teste Existente |
-| --- | --- | --- | --- | --- | --- |
-| [Ex: 1. Clique] | `path/to/file.tsx` | [O que o componente faz] | [Local / Remota] | [Vazamento, Trava] | `file.test.ts` |
-
----
+| Etapa | Arquivo/função | Entrada → saída | Responsabilidade | Fonte de verdade | Falha/compensação | Teste |
+|---|---|---|---|---|---|---|
+| 1 | `path/to/file.ts` | `[entrada] → [saída]` | `[responsabilidade]` | `[fonte]` | `[tratamento]` | `[teste ou ausente]` |
 
 ## Entrega
 
-Após a consolidação dos dados estruturados, responder com:
+1. **Resumo do fluxo**
+2. **Escopo e pontos de entrada/saída confirmados**
+3. **Tabela de mapeamento**
+4. **Diagrama Mermaid**, somente se esclarecer dependências ou transições
+5. **Fontes de verdade por etapa**
+6. **Fatos, inferências e lacunas**
+7. **Fragilidades**, incluindo race conditions e acoplamentos
+8. **Edge cases e testes recomendados**
+9. **Melhorias incrementais**
+10. **Próximos passos**, no máximo 3
 
-* **Diagrama textual do fluxo:** [Representação em texto/ASCII ou Mermaid do fluxo de dados e estados]
-* **Fragilidades:** [Pontos fracos da implementação atual, race conditions ou acoplamento excessivo]
-* **Melhorias incrementais:** [Sugestões pontuais e de baixo impacto para sanar as fragilidades]
-* **Testes recomendados:** [Cenários críticos ou edge cases que necessitam de nova cobertura de testes]
-* **Próximos passos:** [Plano de ação imediato para prosseguir com o desenvolvimento ou correção]
-
-```
-
-```
+Se uma etapa não puder ser comprovada, não complete o fluxo por suposição; registre a lacuna e o próximo arquivo mínimo necessário.

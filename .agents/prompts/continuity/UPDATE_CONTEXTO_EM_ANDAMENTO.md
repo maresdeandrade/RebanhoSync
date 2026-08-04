@@ -1,130 +1,63 @@
 # Update Contexto em Andamento — RebanhoSync
-Atualizado em: 2026-06-04  
-Versão: 1.1.0
-Use este prompt quando a conversa ficou extensa, mas o trabalho ainda não foi concluído ou ainda não foi formalmente documentado.
 
-Este prompt não fecha fase, não atualiza documentação permanente e não define como o contexto será usado depois. Ele apenas preserva o estado útil da conversa atual.
+Atualizado em: 2026-08-03  
+Versão: 1.2.0
+
+Use quando a conversa ficou extensa, mas o trabalho ainda não terminou ou não foi formalmente documentado. Este prompt não fecha fase nem altera o repositório.
 
 ## Prompt
 
-Você é o assistente técnico do contexto atual.
+Gere um único bloco enxuto de continuidade da conversa atual.
 
-Objetivo:
-Gerar um bloco enxuto de continuidade para preservar o que está sendo tratado nesta conversa, especialmente aquilo que ainda não está documentado no repositório.
+## Regras
 
-## Restrições
+- Não implementar, editar arquivos ou atualizar documentação.
+- Não marcar fase/subfase como concluída.
+- Não inventar commit, baseline, arquivo, decisão, teste ou resultado.
+- Não transformar intenção, hipótese ou discussão em fato.
+- Separar fatos confirmados, inferências e decisões aceitas.
+- Priorizar apenas o que ainda não está estável nos documentos ativos.
+- Se não foi verificado se algo está documentado, registrar como “não confirmado”.
+- Não repetir rules, escopo, roadmap, histórico de fases fechadas ou listas de comandos.
+- Não gerar prompt de nova conversa nem explicar como usar o bloco.
+- Alvo: até 300 palavras; máximo de 500 apenas se houver risco relevante.
 
-- Não implementar nada.
-- Não alterar código.
-- Não atualizar roadmap como se a etapa tivesse sido concluída.
-- Não marcar fase/subfase como fechada.
-- Não inventar validações.
-- Não inventar commit.
-- Não inventar arquivos alterados.
-- Não transformar intenção em fato concluído.
-- Não transformar discussão em decisão se não houve aceite.
-- Não gerar prompt de nova conversa.
-- Não explicar como o usuário deve usar o contexto.
-
-## Tarefa
-
-Produzir um resumo de continuidade da conversa atual, separando claramente:
-
-1. o que está confirmado;
-2. o que está em andamento;
-3. o que foi decidido;
-4. o que ainda não foi validado;
-5. o que a próxima conversa deve continuar fazendo;
-6. o que não deve ser refeito;
-7. quais dúvidas ou riscos continuam abertos.
-
-## Limite do contexto gerado
-
-Produzir apenas um bloco de continuidade da conversa atual.
-
-O bloco deve preservar:
-
-1. tema central da conversa;
-2. objetivo em andamento;
-3. decisões já aceitas;
-4. pontos ainda em discussão;
-5. fatos confirmados;
-6. inferências ou premissas;
-7. pendências reais;
-8. riscos ou cuidados;
-9. arquivos, documentos, prompts ou áreas citadas;
-10. ponto exato de retomada.
-
-## Limite do contexto gerado
-
-O resumo deve conter apenas o que agrega continuidade.
-
-
-Não repetir:
-
-- regras permanentes já documentadas;
-- escopo permitido/proibido já documentado;
-- roadmap completo;
-- histórico longo de fases fechadas;
-- listas extensas de validações já descritas em `.agents/rules/rtk.md`;
-- prompt completo de nova conversa;
-- instruções sobre como usar o contexto.
-
-Preferir referências:
-
-- “seguir `ACTIVE_PHASE_PLAN.md`”;
-- “seguir `.agents/rules/CORE_RULES.md`”;
-- “seguir `.agents/rules/rtk.md`”;
-- “ver documentos ativos em `docs/review/`”.
-
-## Formato obrigatório
+## Formato
 
 ```md
 # Continuidade de Conversa — RebanhoSync
 
-## 1. Tema tratado
+## Tema e objetivo em andamento
 
-[Resumo objetivo do assunto central da conversa.]
+[Assunto central e resultado buscado.]
 
-## 2. Objetivo em andamento
+## Estado confirmado
 
-[O que estava sendo buscado/construído/analisado.]
+[Fatos comprovados, incluindo arquivos e validações somente quando informados.]
 
-## 3. Estado confirmado
+## Decisões aceitas
 
-[Fatos confirmados na conversa. Não inventar validações, commits ou arquivos.]
+[Decisões explicitamente confirmadas pelo usuário.]
 
-## 4. Decisões aceitas
+## Inferências e premissas
 
-[Decisões explicitamente alinhadas pelo usuário.]
+[Itens ainda não comprovados.]
 
-## 5. Pontos ainda não documentados
+## Pendências e dúvidas
 
-[Conteúdo relevante desta conversa que ainda não consta claramente na documentação do projeto.]
+[O que precisa ser decidido, executado ou validado.]
 
-## 6. Pendências e dúvidas
+## Riscos e cuidados
 
-[O que ainda precisa ser confirmado, decidido ou validado.]
+[Até três riscos relevantes.]
 
-## 7. Riscos e cuidados
+## Não refazer
 
-[Riscos de interpretação, regressão, duplicidade, drift documental ou consumo excessivo de contexto.]
+[Trabalho confirmado que não deve ser repetido.]
 
-## 8. Ponto de retomada
+## Ponto exato de retomada
 
-[Frase curta indicando de onde a conversa deve continuar.]
+[Próxima ação mínima.]
+```
 
-## Regras
-
-- Separar fato confirmado de inferência.
-- Priorizar o que ainda não está documentado.
-- Não repetir conteúdo já estável do repositório.
-- Não dizer que testes passaram se isso não foi informado.
-- Não dizer que arquivos foram alterados se isso não foi confirmado.
-- Não dizer que commit foi feito se isso não foi confirmado.
-- Não reabrir fase fechada sem evidência.
-- Não transformar roadmap em pendência técnica.
-- Não gerar prompt de nova conversa.
-- Ser objetivo e específico.
-- Alvo preferencial: até 300 palavras.
-- Máximo: 500 palavras, salvo se houver risco relevante ainda não documentado.
+Quando útil, referencie `ACTIVE_PHASE_PLAN.md`, `CORE_RULES.md`, `rtk.md` ou o documento ativo correspondente, sem reproduzir seu conteúdo.

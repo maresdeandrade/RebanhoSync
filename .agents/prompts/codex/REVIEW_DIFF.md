@@ -1,78 +1,66 @@
-```markdown
 # Codex Prompt — Review de Diff
-Atualizado em: 2026-06-04  
-Versão: 1.1.0
 
-Use para revisar alterações já feitas.
+Atualizado em: 2026-08-03  
+Versão: 1.2.0
 
-## Tarefa
+Use para revisar alterações já existentes. Este prompt é somente leitura: não autoriza corrigir o patch.
 
-Revise o diff atual e classifique a entrega.
+## Prompt
 
-## Regras
+Revise o estado atual do worktree do RebanhoSync e classifique a entrega.
 
-Siga estritamente as diretrizes contidas em:
-* `AGENTS.md`
-* `.agents/rules/CORE_RULES.md`
-* `.agents/rules/no-broad-context.md`
-* `.agents/rules/rtk.md`
+### Escopo pretendido
 
-> **Atenção:** Não implementar patch novo, salvo se a correção for mínima e explicitamente necessária.
-
-## Comandos Iniciais
-
-```bash
-git status --short --untracked-files=all
-git diff --name-only
-git diff --stat
-
+```txt
+[DESCREVER_PEDIDO_E_LIMITES]
 ```
 
-*Nota: Arquivos novos podem aparecer apenas no `git status`.*
+## Contexto e skill
 
-## Revisar
+1. Leia `AGENTS.md`.
+2. Aplique `.agents/rules/CORE_RULES.md`, `no-broad-context.md` e `RESPONSE_FORMATS.md`.
+3. Use `rebanhosync-verification-gate` como skill principal.
+4. Para comandos e validações, siga `.agents/rules/rtk.md`.
 
-Verifique minuciosamente os seguintes pontos:
+## Restrições
 
-* Escopo real vs. escopo pretendido;
-* Arquivos alterados e *untracked*;
-* Regressão de domínio;
-* Alteração indevida em migrations, RLS, RPC, seed ou testes;
-* Regra de negócio colocada na UI;
-* Duplicidade de fonte de verdade;
-* Impacto em *offline-first/sync*;
-* Impacto *multi-tenant*/RLS;
-* Necessidade de teste adicional.
+- Não editar arquivos, corrigir achados, criar testes, fazer commit ou preparar PR.
+- Não assumir que `git diff` inclui staged ou untracked.
+- Não classificar como READY se uma validação necessária não foi executada ou se há arquivo relevante não inspecionado.
+- Não tratar warning preexistente como regressão nova sem evidência.
 
-### Contratos Obrigatórios
+## Revisão obrigatória
 
-* **Agenda:** Não pode virar histórico.
-* **Evento:** É fonte factual.
-* **`state_*`:** Representa o estado atual.
-* **Protocolo:** Não é execução.
-* **Tags/Sinais/Insights:** Não são fonte primária.
-* **Métricas Críticas:** Carência, peso confiável e venda/abate exigem fonte técnica explícita.
+Inspecione:
+
+- estado completo: tracked, staged, untracked, removidos e renomeados;
+- conteúdo dos diffs unstaged e staged;
+- conteúdo dos arquivos untracked relevantes;
+- aderência entre escopo pretendido e diff real;
+- contratos de domínio aplicáveis;
+- regressão em offline-first, sync, idempotência, rollback, RLS e `fazenda_id`, quando tocados;
+- mudanças indevidas em migrations, RLS, RPC, seed ou testes;
+- regra de negócio na UI ou fonte de verdade paralela;
+- testes alterados apenas para aceitar comportamento incorreto;
+- validações executadas e lacunas.
 
 ## Classificação
 
-Classifique a entrega estritamente sob um dos seguintes status:
-
-* 🟢 **READY**
-* 🟡 **READY WITH CAVEAT**
-* 🔴 **NOT READY**
+- **READY:** escopo aderente, sem bloqueadores e validação suficiente confirmada.
+- **READY WITH CAVEAT:** entrega utilizável, com risco residual explícito e não bloqueante.
+- **NOT READY:** falha funcional, contrato violado, escopo indevido, evidência insuficiente ou validação bloqueante ausente.
 
 ## Entrega
 
-Responder com a seguinte estrutura de tópicos:
+1. **Classificação**
+2. **Achados**, por severidade e com arquivo/trecho
+3. **Diff real**, incluindo staged e untracked
+4. **Escopo confirmado**
+5. **Contratos avaliados**
+6. **Validações executadas**
+7. **Validações não executadas e motivo**
+8. **Bloqueadores**
+9. **Riscos/pendências**, no máximo 3
+10. **Recomendação final**
 
-1. **Classificação:** [Status]
-2. **Resumo do diff:** [Breve descrição das mudanças]
-3. **Achados críticos:** [Problemas graves encontrados]
-4. **Achados menores:** [Melhorias pontuais ou avisos]
-5. **Validações executadas:** [O que foi testado/verificado]
-6. **Validações pendentes:** [O que ainda precisa ser avaliado]
-7. **Recomendação final:** [Ação sugerida para o próximo passo]
-
-```
-
-```
+Se não houver achados, declarar isso explicitamente e ainda registrar riscos residuais e lacunas de validação.

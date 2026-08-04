@@ -1,107 +1,86 @@
-```markdown
 # Codex Prompt — Feature Pequena
-Atualizado em: 2026-06-04  
-Versão: 1.1.0
 
-Use para implementar uma funcionalidade pequena, delimitada e sem refatoração ampla.
+Atualizado em: 2026-08-03  
+Versão: 1.2.0
 
-## Objetivo
+Use para implementar uma funcionalidade nova, pequena e delimitada. Para corrigir comportamento existente em um ponto conhecido, prefira `PATCH_LOCAL.md`.
 
-Implementar:
+## Prompt
+
+Implemente no RebanhoSync:
 
 ```txt
-[DESCREVER_FEATURE]
-
+[DESCREVER_FEATURE_E_RESULTADO_OBSERVAVEL]
 ```
 
 ### Escopo permitido
 
-* `[LISTAR_O_QUE_PODE_SER_ALTERADO]`
+```txt
+[LISTAR_ARQUIVOS_AREAS_OU_COMPORTAMENTOS_PERMITIDOS]
+```
 
 ### Escopo proibido
 
-* `[LISTAR_O_QUE_NAO_PODE_SER_ALTERADO]`
+```txt
+[LISTAR_LIMITES_ESPECIFICOS]
+```
 
 ### Arquivos-alvo prováveis
 
-* `[LISTAR_ARQUIVOS_OU_PASTAS]`
+```txt
+[LISTAR_ARQUIVOS_OU_PASTAS]
+```
 
-## Regras do RebanhoSync
+### Critérios de aceite específicos
 
-### Contratos do Domínio:
+```txt
+[LISTAR_CENARIOS_OBSERVAVEIS]
+```
 
-* **Agenda:** Representa estritamente uma intenção ou tarefa futura.
-* **Evento:** Representa um fato estritamente executado e consolidado.
-* **`state_*`:** Atua como o estado atual / *read model*.
-* **Protocolo:** Representa uma regra ou configuração pré-definida.
-* **Tags/Sinais/Insights:** São elementos auxiliares, nunca a fonte primária de dados.
+## Contexto e skill
 
-### Arquitetura e Segurança:
+1. Leia `AGENTS.md`.
+2. Aplique `.agents/rules/CORE_RULES.md`, `CONTEXT_LOADING.md` e `no-broad-context.md`.
+3. Escolha no máximo uma skill principal pelo risco dominante da feature.
+4. Use uma segunda skill apenas se houver interseção real de domínio crítico.
+5. Para comandos e validações, siga `.agents/rules/rtk.md`.
 
-* Preservar a arquitetura *offline-first*.
-* Preservar regras de RLS, *multi-tenant* e isolamento estrito por `fazenda_id`.
-* Não colocar regra de negócio crítica dentro de componentes React.
-* Não criar fontes paralelas de verdade.
-* Não automatizar carência, peso confiável, venda/abate ou aptidão operacional sem uma fonte técnica explícita.
+## Antes do patch
 
-## Estratégia Obrigatória
+Confirme de forma breve:
 
-1. Identificar a fonte de verdade a ser utilizada.
-2. Mapear e identificar todos os arquivos afetados.
-3. Implementar um patch incremental minimalista.
-4. Criar ou ajustar testes unitários/integração mínimos.
-5. Validar exaustivamente o impacto no domínio, UI, sincronização (*sync*) e RLS.
-6. Manter o escopo restrito, sem expandir para outros domínios da aplicação.
+- fonte de verdade e fluxo afetado;
+- arquivos mínimos a ler e alterar;
+- impacto em domínio, offline-first, sync e RLS — apenas quando aplicável;
+- necessidade de migration/RPC/RLS/schema;
+- plano incremental e testes proporcionais.
+
+Se o ponto de intervenção não estiver claro, interrompa a implementação e faça descoberta dirigida com `repository-context-retrieval`.
+
+## Regras
+
+- Não ampliar escopo nem refatorar por conveniência.
+- Não criar fonte paralela de verdade.
+- Não mover regra crítica para componente React.
+- Preservar idempotência, retry, sucesso parcial, rollback e isolamento por `fazenda_id` quando afetados.
+- Não alterar migration, RLS, RPC, seed ou schema sem autorização explícita no escopo.
+- Atualizar documentação somente se surgir contrato, limitação ou comportamento persistente novo.
+- Não afirmar validação sem saída confirmatória.
 
 ## Validação
 
-Verifique o estado do repositório local:
+Executar validações proporcionais previstas em `.agents/rules/rtk.md`, incluindo:
 
-```bash
-git status --short --untracked-files=all
-
-```
-
-Execute a validação local obrigatória:
-
-```bash
-rtk pnpm test -- [TESTE_RELACIONADO]
-rtk pnpm run lint
-
-```
-
-Se a alteração tocar em fluxos críticos do sistema:
-
-```bash
-rtk pnpm run build
-
-```
-
-Se a alteração tocar na camada do Supabase, regras de RLS ou sincronização (*sync*):
-
-```bash
-rtk node scripts/codex/validate-supabase-baseline-functional.mjs
-
-```
-
-## Critérios de Aceite
-
-* Feature completamente implementada dentro do escopo delimitado.
-* Ausência de nova fonte paralela de verdade.
-* Sem regressão nos contratos e invariantes do domínio.
-* Todos os testes relacionados passando com sucesso.
-* Validação proporcional executada e formalmente relatada.
+- estado inicial e final do worktree, inclusive staged e untracked;
+- teste diretamente relacionado;
+- lint/build apenas quando o risco justificar;
+- gate Supabase quando contratos de banco, RLS, RPC, migration ou sync-batch forem tocados.
 
 ## Entrega
 
-Responder com a seguinte estrutura de tópicos:
-
-* **Resumo executivo:** [Descrição da funcionalidade entregue]
-* **Arquivos criados/alterados:** [Lista de arquivos modificados ou novos]
-* **Decisões técnicas:** [Justificativa das escolhas de implementação]
-* **Testes/validações:** [Resultados dos comandos e coberturas validadas]
-* **Riscos/pendências:** [No máximo 3 pontos identificados para atenção futura]
-
-```
-
-```
+1. **Decisão e resultado**
+2. **Arquivos criados/alterados**
+3. **Decisões técnicas**
+4. **Testes e validações executadas**
+5. **Validações não executadas e motivo**
+6. **Riscos/pendências**, no máximo 3

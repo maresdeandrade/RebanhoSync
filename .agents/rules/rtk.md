@@ -1,75 +1,106 @@
-```markdown
 # RTK — Execução de comandos no RebanhoSync
 
-Use este arquivo quando a tarefa envolver comandos locais, validação, testes, Graphify, pnpm ou ambiente WSL/Windows.
+Use estas diretrizes sempre que a tarefa envolver comandos, testes, Graphify, pnpm, WSL/Windows ou validação local.
 
 ---
 
-## Princípio
+## Princípios
 
-Preferir comandos reproduzíveis, mínimos e proporcionais ao escopo.  
-Não inventar script. Conferir `package.json` quando houver dúvida.
+* Preferir comandos reproduzíveis, mínimos e proporcionais ao risco.
+* Usar `rtk` para comandos do projeto quando disponível.
+* Confirmar scripts em `package.json` ou no caminho citado; não inventar comandos.
+* Não declarar sucesso sem saída confirmatória.
+* Distinguir falha nova, warning preexistente e validação não executada.
 
----
-
-## Uso de `rtk`
-
-Quando disponível, usar `rtk` para executar comandos do projeto em ambiente controlado.
-
-### Exemplos:
-```bash
-rtk pnpm test
-rtk pnpm run lint
-rtk pnpm run build
-
-```
-
-### Para teste específico:
-
-```bash
-rtk pnpm test -- caminho/do/teste.test.ts
-
-```
-
-### Para Vitest por nome:
-
-```bash
-rtk pnpm test -- -t "nome do teste"
-
-```
+Se `rtk` não estiver disponível ou não suportar o comando necessário, registrar a limitação e usar apenas a alternativa já prevista pelo repositório/ambiente.
 
 ---
 
-## Corepack / pnpm
+## Estado inicial do repositório
 
-Se aparecer aviso de Corepack baixando versão diferente de `pnpm`, verificar antes:
+Antes de alterar ou validar:
+
+```bash
+git status --short --untracked-files=all
+```
+
+Inspecionar separadamente alterações unstaged e staged:
+
+```bash
+git diff --name-only
+git diff --stat
+git diff --cached --name-only
+git diff --cached --stat
+```
+
+`git diff` comum não mostra arquivos untracked nem substitui a inspeção do conteúdo desses arquivos.
+
+Para revisão textual do patch:
+
+```bash
+git diff
+git diff --cached
+git diff --check
+```
+
+---
+
+## pnpm e Corepack
+
+Confirmar o contrato do projeto antes de assumir versão ou script:
 
 ```bash
 node -p "require('./package.json').packageManager || 'sem packageManager'"
 pnpm --version
 corepack --version
-
 ```
 
-> ⚠️ **Aviso:** Se o `package.json` não define `packageManager`, não assumir versão única de pnpm.
+Se `package.json` não definir `packageManager`, não assumir versão única do pnpm.
+
+Com `rtk` disponível:
+
+```bash
+rtk pnpm test
+rtk pnpm run lint
+rtk pnpm run build
+```
+
+Teste específico:
+
+```bash
+rtk pnpm test -- caminho/do/teste.test.ts
+```
+
+Vitest por nome:
+
+```bash
+rtk pnpm test -- -t "nome do teste"
+```
 
 ---
 
-## Validação Proporcional
+## Validação proporcional
+
+### Documentação, prompt ou skill sem alteração funcional
+
+```bash
+git status --short --untracked-files=all
+git diff --check
+```
+
+Adicionar validador específico existente quando houver. Não executar lint, testes ou build de produto sem justificativa funcional.
 
 ### Patch local
 
 ```bash
 rtk pnpm test -- caminho/do/teste.test.ts
-
 ```
 
-### UI / Componente
+### UI / componente
 
 ```bash
 rtk pnpm test -- caminho/do/componente.test.tsx
 rtk pnpm run lint
-
 ```
 
 ### Domínio crítico
@@ -78,7 +109,6 @@ rtk pnpm run lint
 rtk pnpm test -- caminho/do/dominio
 rtk pnpm run lint
 rtk pnpm run build
-
 ```
 
 ### Entrega ampla
@@ -87,108 +117,73 @@ rtk pnpm run build
 rtk pnpm run lint
 rtk pnpm test
 rtk pnpm run build
-
 ```
 
-### Supabase / RLS / sync-batch
+### Supabase / RLS / RPC / migration / sync-batch
+
+Quando o script existir e o escopo tocar esses contratos:
 
 ```bash
 rtk node scripts/codex/validate-supabase-baseline-functional.mjs
-
 ```
-
-*Nota: Usar somente se a tarefa tocar Supabase, RLS, RPC, migration, sync-batch ou baseline.*
 
 ---
 
 ## Scripts Codex
 
-Se disponíveis no ambiente de execução:
+Confirmar a existência antes de executar:
 
 ```powershell
 powershell -File scripts/codex/preflight.ps1 -Paths "<path1>","<path2>"
 powershell -File scripts/codex/validate.ps1 -TouchedPaths "<path1>","<path2>"
-
 ```
 
-> ⚠️ **Restrição:** Não usar se o script correspondente não existir.
+Executar no ambiente previsto pelo repositório. Não adaptar ou inventar parâmetros sem ler o script ou sua documentação.
 
 ---
 
 ## Graphify
 
-Se `graphify-out/` existir e a tarefa for transversal:
+Usar somente nos casos definidos em `.agents/rules/GRAPHIFY_USAGE.md`.
+
+Se `rtk`, Graphify e o contrato correspondente estiverem disponíveis:
 
 ```bash
-graphify query "<pergunta>"
-graphify path "<arquivo-ou-conceito-A>" "<arquivo-ou-conceito-B>"
-graphify explain "<conceito>"
-
+rtk graphify query "<pergunta>"
+rtk graphify path "<arquivo-ou-conceito-A>" "<arquivo-ou-conceito-B>"
+rtk graphify explain "<conceito>"
 ```
 
-Após mudança estrutural relevante, atualize o grafo:
+Atualizar o grafo apenas após mudança estrutural relevante:
 
 ```bash
-graphify update .
-
+rtk graphify update .
 ```
 
-### Não obrigatório para:
-
-* Alterações de *copy* ou texto;
-* Ajuste visual pequeno;
-* Teste unitário isolado;
-* Patch em arquivo com escopo já conhecido.
+Graphify não é obrigatório para copy, patch visual pequeno, teste isolado ou arquivo-alvo já conhecido.
 
 ---
 
-## Antes de Validar
-
-Verificar o estado atual do repositório local:
-
-```bash
-git status --short --untracked-files=all
-
-```
-
-Para analisar as modificações e o diff:
-
-```bash
-git diff --name-only
-git diff --stat
-
-```
-
-*Nota: Arquivos novos não aparecem em `git diff` comum se estiverem untracked. Use sempre o `git status`.*
-
----
-
-## Relato de Validação
-
-Registrar e estruturar os resultados sempre sob o seguinte formato:
+## Relato de validação
 
 ```txt
 Validações executadas:
-- comando:
-- resultado:
-- observação:
+- comando: [comando exato]
+- resultado: [passou/falhou + resumo objetivo]
+- observação: [warning ou limitação relevante]
 
 Validações não executadas:
-- comando:
-- motivo:
-
+- comando: [comando esperado]
+- motivo: [razão objetiva]
 ```
 
 ---
 
-## Regras de Segurança
+## Segurança
 
-* Não rodar nenhum comando destrutivo sem tarefa explicitamente definida.
-* Não alterar migrations, seed, RLS, RPC ou testes fora do escopo delimitado.
-* Não forçar a execução usando `--force`, `reset`, `clean` ou `rebase` sem pedido explícito.
-* Não mascarar ou ignorar falhas de testes.
-* Não tratar *warning* legado/antigo como erro novo sem evidência técnica direta.
-
-```
-
-```
+* Não executar comando destrutivo sem escopo explícito e alvo confirmado.
+* Não alterar migration, seed, RLS, RPC ou teste fora do escopo.
+* Não usar `--force`, `reset`, `clean` ou `rebase` sem autorização explícita.
+* Não mascarar falhas nem alterar teste apenas para fazê-lo passar.
+* Não tratar warning antigo como erro novo sem evidência.
+* Não afirmar que arquivos untracked foram revisados apenas porque `git diff` está limpo.

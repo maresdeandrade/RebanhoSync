@@ -1,282 +1,250 @@
-```markdown
 # Context Loading — RebanhoSync
 
-Use apenas o contexto necessário para a tarefa.
+Carregue apenas o contexto necessário para decidir e executar a tarefa.
 
-Este arquivo decide **o que carregar**.
-Para restrições contra leitura ampla, use `.agents/rules/no-broad-context.md`.
-Para execução de comandos, use `.agents/rules/rtk.md`.
+Este arquivo define **o que carregar**. Para limitar expansão, use `.agents/rules/no-broad-context.md`. Para comandos e validações, siga `.agents/rules/rtk.md`.
 
 ---
 
-## Sempre
+## Bootstrap obrigatório
 
-* `AGENTS.md`
-* `.agents/rules/CORE_RULES.md`
+Antes de escolher uma skill:
+
+1. Ler `AGENTS.md`.
+2. Ler `.agents/rules/CORE_RULES.md`.
+3. Aplicar este arquivo.
+4. Ler `.agents/rules/no-broad-context.md`.
+5. Classificar o tipo real da tarefa.
+6. Escolher no máximo uma skill principal.
+
+Uma segunda skill só é permitida quando houver interseção real de domínio crítico. Não abrir todos os `SKILL.md` para decidir.
+
+### Precedência em conflito
+
+1. Código + migrations ativas.
+2. `docs/context/PROJECT_STATUS.md`.
+3. Documentos normativos ativos.
+4. Documentos derivados.
+5. Histórico em `docs/archive/**`.
+6. Definições da skill.
 
 ---
 
-## Tarefa Localizada
+## Roteamento de skill
 
-### Use:
-* `AGENTS.md` local da pasta afetada, se existir;
-* Arquivos-alvo;
-* Testes relacionados.
+* Ponto de intervenção desconhecido: `repository-context-retrieval`.
+* Hotspot conhecido com risco arquitetural: `harden-module` ou a skill do domínio principal.
+* Patch concluído aguardando validação: `rebanhosync-verification-gate`.
+* PR após gate aprovado: `prepare-pr`.
+* Drift formal entre documentação e implementação: `reconcile-docs`.
 
-> ⚠️ **Restrição:** Não carregar documentação ampla.
-
-### Exemplos:
-* Ajuste em uma tela;
-* Bug localizado;
-* *Microcopy*;
-* Teste unitário específico;
-* Patch visual pequeno.
+Sync/offline, migrations/RLS e regras de domínio não devem ser carregados como segunda skill apenas por menção incidental. O risco principal da tarefa deve justificar o roteamento.
 
 ---
-## Continuidade / Fases
 
-Use quando a tarefa envolver:
-
-- iniciar nova conversa;
-- continuar fase/subfase;
-- fechar fase/subfase;
-- atualizar handoff;
-- revisar coerência entre plano ativo, roadmap e pendências.
-
-### Documentos ativos
+## Tarefa localizada
 
 Carregar:
 
-- `docs/review/CURRENT_PHASE_HANDOFF.md`
-- `docs/review/ACTIVE_PHASE_PLAN.md`
-- `docs/review/LAST_PHASE_RESULT.md`
-- `docs/review/OPEN_REVIEW_ITEMS.md`
-- `docs/context/PROJECT_STATUS.md`
-- `docs/product/ROADMAP.md`
+* `AGENTS.md` local da pasta afetada, se existir;
+* Arquivos-alvo;
+* Testes diretamente relacionados;
+* Um documento de domínio somente se necessário para confirmar contrato.
 
-Se `ACTIVE_PHASE_PLAN.md` apontar para um plano específico da fase atual, carregar também esse plano.
-
-### Prompts de continuidade
-
-Usar:
-
-- `.agents/prompts/continuity/START_NOVA_CONVERSA.md`
-- `.agents/prompts/continuity/UPDATE_FINAL_DE_FASE.md`
-- `.agents/prompts/continuity/UPDATE_CONTEXTO_EM_ANDAMENTO.md`
-- `.agents/prompts/continuity/CHECK_CONTEXT_DRIFT.md`
-
-### Restrições
-
-- Não usar `.agents/prompts/archive/**` como fonte ativa.
-- Não usar `docs/archive/**` como fonte operacional.
-- Não arquivar `docs/review/LAST_PHASE_RESULT.md`.
-- Não transformar roadmap em pendência técnica.
-- Não marcar fase como concluída sem validação correspondente.
-
-### Contexto colado em nova conversa
-
-Quando houver contexto de continuidade colado pelo usuário:
-
-- usar como ponteiro de continuidade, não como substituto dos documentos ativos;
-- não repetir regras já documentadas;
-- não repetir escopo já documentado;
-- distinguir fato confirmado de informação pendente de verificação local;
-- se o repositório não estiver acessível, declarar que baseline, worktree e documentos precisam ser confirmados localmente.
+Não carregar documentação ampla para ajuste visual, microcopy, teste unitário isolado ou patch com alvo já conhecido.
 
 ---
 
-### Geração de prompts para agentes
+## Continuidade e fases
 
-Quando a tarefa for criar um prompt para Codex, Antigravity, Jules ou outro agente:
+Use quando a tarefa envolver iniciar ou continuar conversa, fase/subfase, handoff, roadmap ou pendências formais.
 
-- carregar apenas os documentos ativos necessários;
-- referenciar regras permanentes em vez de copiá-las;
-- referenciar escopo permitido/proibido em vez de duplicá-lo;
-- repetir apenas requisitos específicos que não estejam documentados;
-- incluir o caso de aceite específico da tarefa, se houver;
-- manter o prompt curto e executável.
+### Documentos ativos
 
-Regra prática:
+Carregar apenas os pertinentes entre:
+
+* `docs/review/CURRENT_PHASE_HANDOFF.md`
+* `docs/review/ACTIVE_PHASE_PLAN.md`
+* `docs/review/LAST_PHASE_RESULT.md`
+* `docs/review/OPEN_REVIEW_ITEMS.md`
+* `docs/context/PROJECT_STATUS.md`
+* `docs/product/ROADMAP.md`
+
+Se `ACTIVE_PHASE_PLAN.md` apontar para um plano específico, carregar esse plano. Não abrir planos históricos sem necessidade explícita.
+
+### Prompts de continuidade
+
+Usar somente o prompt correspondente:
+
+* `.agents/prompts/continuity/START_NOVA_CONVERSA.md`
+* `.agents/prompts/continuity/UPDATE_FINAL_DE_FASE.md`
+* `.agents/prompts/continuity/UPDATE_CONTEXTO_EM_ANDAMENTO.md`
+* `.agents/prompts/continuity/CHECK_CONTEXT_DRIFT.md`
+
+Restrições:
+
+* Não usar `.agents/prompts/archive/**` nem `docs/archive/**` como fonte ativa.
+* Não transformar roadmap em pendência técnica.
+* Não marcar fase concluída sem validação correspondente.
+* Tratar contexto colado pelo usuário como ponteiro, não como substituto dos documentos ativos.
+* Se o repositório não estiver acessível, declarar o que não pôde ser confirmado.
+
+### Prompts para agentes
+
+* Referenciar fontes permanentes em vez de copiá-las.
+* Repetir apenas escopo, restrições e critérios de aceite específicos.
+* Manter o prompt curto, executável e sem alegar validações futuras como concluídas.
 
 ```txt
 Prompt de execução deve apontar para a fonte de verdade, não reproduzi-la.
 ```
 
-Se o usuário pedir “não repetir regras permanentes”, tratar isso como prioridade sobre qualquer lista de exemplos fornecida na mesma solicitação.
-
 ---
 
 ## Arquitetura
 
-### Use:
+Carregar:
+
 * `docs/context/SOURCE_OF_TRUTH.md`
 * `docs/technical/ARCHITECTURE.md`
 
-### Adicionar `docs/technical/OFFLINE_SYNC.md` apenas se envolver:
-* Dexie;
-* Fila local;
-* *Sync*;
-* *Rollback*;
-* *Gestures*;
-* `sync-batch`;
-* Conflito local/remoto.
+Adicionar `docs/technical/OFFLINE_SYNC.md` apenas se houver Dexie, fila, sync, rollback, gestures, `sync-batch` ou conflito local/remoto.
 
 ---
 
-## Sync / Offline
+## Sync / offline
 
-### Use:
+Carregar:
+
 * `docs/technical/OFFLINE_SYNC.md`
-* `.agents/rules/rtk.md`
-* Arquivos afetados de Dexie, *gestures*, fila ou `sync-batch`.
+* Arquivos afetados de Dexie, gestures, fila ou `sync-batch`;
+* Testes relacionados.
 
-> **Nota:** Adicionar `docs/technical/SUPABASE_RLS.md` se houver backend, RLS, RPC ou Supabase.
+Adicionar `docs/technical/SUPABASE_RLS.md` somente quando houver backend, RLS, RPC ou contrato Supabase. Usar `sync-offline-rollback` quando este for o risco principal.
 
 ---
 
-## Supabase / RLS / Migrations
+## Supabase / RLS / migrations
 
-### Use:
-* `docs/technical/SUPABASE_RLS.md`
-* `docs/technical/TESTING_GATES.md`
+Carregar:
+
 * Migrations ativas relevantes;
-* Scripts de validação Supabase, se aplicável.
+* `docs/technical/SUPABASE_RLS.md`;
+* `docs/technical/TESTING_GATES.md`, se aplicável;
+* Scripts de validação existentes, conforme `.agents/rules/rtk.md`.
 
-> ⚠️ **Restrição:** Não usar migrations antigas em `docs/archive/**` ou `supabase/migrations_legacy_pre_baseline/**` como fonte ativa, salvo pedido explícito.
+Usar `migrations-rls-contracts` como skill principal. Não usar `supabase/migrations_legacy_pre_baseline/**` nem materiais arquivados como fonte ativa, salvo pedido explícito.
 
 ---
 
 ## Sanitário
 
-### Use:
-* `docs/domain/SANITARIO.md`
-* Skill sanitária adequada:
-  * `sanitario-registro-operacional`
-  * `sanitario-catalogo-regulatorio-compliance`
+Carregar `docs/domain/SANITARIO.md` e somente a skill adequada ao fluxo:
 
-> ⚠️ **Restrição:** Não carregar compliance regulatório para ajuste simples de formulário operacional.
+* `sanitario-registro-operacional` para execução e registro factual;
+* `sanitario-catalogo-regulatorio-compliance` para catálogo oficial, regra regulatória e compliance.
+
+Não carregar compliance regulatório para ajuste simples de formulário operacional.
 
 ---
 
 ## Reprodução
 
-### Use:
-* `docs/domain/REPRODUCAO.md`
+Carregar `docs/domain/REPRODUCAO.md`.
 
-### Adicionar arquitetura/eventos apenas se envolver:
-* Parto;
-* Cria / pós-parto;
-* *Linking* determinístico;
-* Evento reprodutivo;
-* Agenda derivada.
+Usar `reproducao-parto-posparto-cria` quando houver parto, nascimento, pós-parto, vínculo mãe-cria ou agenda derivada do ciclo da cria. Adicionar arquitetura/eventos apenas se o contrato factual ou o read model estiver em jogo.
 
 ---
 
-## Animais / Taxonomia
+## Animais, origem e destino
 
-### Use:
-* `docs/domain/ANIMAIS_TAXONOMIA.md`
+Carregar `docs/domain/ANIMAIS_TAXONOMIA.md`.
 
-> **Nota:** Adicionar `SOURCE_OF_TRUTH.md` se envolver fonte primária, estado atual ou *read model*.
-
----
-
-## Lotes / Pastos
-
-### Use:
-* `docs/domain/LOTES_PASTOS.md`
-
-> **Nota:** Adicionar eventos se envolver histórico de movimentação, ocupação, ganho de peso ou KPI por período.
+Usar `animal-cadastro-origem-destino` para identidade, cadastro, entrada/saída, compra/venda, óbito ou integridade dos dados-base. Adicionar `docs/context/SOURCE_OF_TRUTH.md` se envolver estado atual ou read model.
 
 ---
 
-## Compra / Venda / Sociedade
+## Movimentação, lotes e pastos
 
-### Use:
-* `docs/domain/COMPRA_VENDA.md`
+Carregar `docs/domain/LOTES_PASTOS.md`.
 
-> **Nota:** Adicionar financeiro/KPI apenas se envolver custo, margem, preço, estoque, *snapshot* econômico ou pagamento.
+Usar `movimentacao-transito-conformidade` quando houver movimento físico, origem/destino operacional, trânsito, GTA ou documentação associada. Adicionar eventos, sync ou RLS somente se esses contratos forem realmente afetados.
+
+---
+
+## Compra, venda e sociedade
+
+Carregar `docs/domain/COMPRA_VENDA.md`.
+
+Adicionar financeiro/KPI apenas se houver custo, margem, preço, estoque, snapshot econômico ou pagamento. Não inferir venda/abate ou aptidão operacional sem fonte técnica explícita.
 
 ---
 
 ## UX / UI
 
-### Use:
-* `docs/ux/UX_PRINCIPLES.md`
-* `docs/ux/SCREEN_PATTERNS.md`
-* `docs/ux/VISUAL_TOKENS.md`
-* Tela afetada.
+Carregar somente:
 
-> ⚠️ **Restrição:** Não carregar docs técnicos de Supabase, sanitário ou KPI para ajuste visual sem regra de domínio.
+* Tela ou componente afetado;
+* Teste relacionado;
+* Documento específico entre `docs/ux/UX_PRINCIPLES.md`, `docs/ux/SCREEN_PATTERNS.md` e `docs/ux/VISUAL_TOKENS.md`.
+
+Não carregar Supabase, sanitário, KPI ou arquitetura ampla para ajuste visual sem regra de domínio.
 
 ---
 
-## Login / Auth
+## Login / auth
 
-### Use:
+Carregar:
+
 * `docs/ux/LOGIN_UX.md`
 * `docs/technical/SUPABASE_RLS.md`
 * Arquivos de autenticação afetados.
 
-> ⚠️ **Restrição:** Não carregar sanitário, KPI, pastos ou manuais completos.
+Não carregar domínios não relacionados.
 
 ---
 
 ## Financeiro / KPI
 
-### Use:
-* `docs/finance/KPI_INDEX.md`
+Carregar `docs/finance/KPI_INDEX.md`.
 
-### Carregar `docs/finance/KPI_MATRIX_FULL.md` apenas para:
-* Modelagem detalhada;
-* Cálculo financeiro;
-* Painel de indicadores;
-* Revisão de fórmulas;
-* Definição de novos KPIs.
+Carregar `docs/finance/KPI_MATRIX_FULL.md` apenas para modelagem detalhada, cálculo, painel, revisão de fórmulas ou definição de KPI.
 
 ---
 
-## Manual / Suporte
+## Manual / suporte
 
-### Use apenas a página específica:
-* `docs/manuals/screens/`
-* `docs/manuals/support/`
-
-> ⚠️ **Restrição:** Não carregar manual completo para dúvida de uma única tela.
+Carregar somente a página específica em `docs/manuals/screens/` ou `docs/manuals/support/`. Não abrir o manual completo para dúvida localizada.
 
 ---
 
 ## Documentação
 
-### Use:
+Carregar:
+
 * `docs/context/PROJECT_STATUS.md`
-* `docs/context/SOURCE_OF_TRUTH.md`
-* Skill `reconcile-docs`, se houver *drift* documental.
+* `docs/context/SOURCE_OF_TRUTH.md`, se houver contrato de fonte;
+* Arquivos documentais diretamente afetados.
 
-> ⚠️ **Restrição:** Não atualizar docs derivados sem delta funcional real.
-
----
-
-## Auditoria Ampla
-
-### Use:
-* Índices;
-* `SOURCE_OF_TRUTH.md`;
-* `PROJECT_STATUS.md`;
-* `Graphify`, se houver impacto transversal;
-* Arquivos longos apenas após justificar a necessidade.
+Usar `reconcile-docs` somente quando houver drift formal. Não atualizar documento derivado sem delta funcional ou decisão normativa correspondente.
 
 ---
 
-## Não Carregar por Padrão
+## Auditoria ampla
+
+Começar por índices, `PROJECT_STATUS.md`, `SOURCE_OF_TRUTH.md` e busca dirigida. Usar Graphify somente quando o impacto for transversal e conforme `.agents/rules/GRAPHIFY_USAGE.md`.
+
+Arquivos longos e contexto adicional exigem justificativa nos termos de `.agents/rules/no-broad-context.md`.
+
+---
+
+## Não carregar por padrão
 
 * `docs/archive/**`
-* Auditorias antigas
-* Prompts antigos
+* Auditorias e prompts antigos
 * Manuais completos
 * Matrizes longas
-* *Handoffs* substituídos
+* Handoffs substituídos
 * Migrations legadas
 * Relatórios históricos fechados
-
-```
+* Todas as skills ou regras secundárias

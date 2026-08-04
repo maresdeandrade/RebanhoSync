@@ -1,4 +1,3 @@
-```markdown
 # RebanhoSync — Skills Index
 
 Skills especializadas para agentes atuarem no RebanhoSync sem reler o repositório inteiro a cada tarefa.  
@@ -60,5 +59,3 @@ Em caso de divergência ou conflito de informações, confie estritamente nesta 
 | Skill | Motivo |
 |---|---|
 | `_archive/docs-reconciliation` | Substituída e consolidada por `reconcile-docs`. **Não usar como skill ativa.** |
-
-```
