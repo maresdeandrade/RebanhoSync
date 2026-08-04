@@ -117,6 +117,25 @@ describe("sanitario v2 ordered pull", () => {
       fieldEvidence: [],
       sourceRefs: [],
       limitations: ["technical_source_unavailable"],
+      withdrawalSnapshot: {
+        schemaVersion: "sanitario-operational-withdrawal-snapshot-v2",
+        eventId: EVENT_ID,
+        productId: "60000000-0000-4000-8000-000000000001",
+        productCatalogUpdatedAt: CREATED_AT,
+        factualReferenceAt: CREATED_AT,
+        timezone: "America/Sao_Paulo",
+        results: [{
+          purpose: "meat",
+          state: "calculated",
+          ruleId: "70000000-0000-4000-8000-000000000001",
+          sourceRef: { id: "80000000-0000-4000-8000-000000000001", version: "v1" },
+          sourceCoverageId: "90000000-0000-4000-8000-000000000004",
+          period: { value: 10, unit: "days" },
+          endsOn: "2026-08-09",
+          endsAt: "2026-08-10T02:59:59.999Z",
+        }],
+        limitations: [],
+      },
     };
     const remoteDetail = {
       evento_id: EVENT_ID,

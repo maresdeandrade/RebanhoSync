@@ -19,11 +19,11 @@ import type {
   InsumoUnidadeBaseEnum,
   SanitarioAgendaAnimalLocalV2,
   SanitarioAgendaLocalV2,
-  SanitarioProdutoCarenciaRuleLocalV2,
   SanitarioTipoEnum,
 } from "@/lib/offline/types";
 import type { ExecutedProductTechnicalSnapshotV2 } from "@/lib/sanitario/rules/sanitarySnapshotsV2";
 import { buildExecutedProductTechnicalSnapshotV2 } from "./executedProductTechnicalSnapshotV2";
+import { projectOperationalWithdrawalLegacyFieldsV2 } from "./operationalWithdrawalSnapshotV2";
 
 export type ExecuteSanitaryAgendaInputV2 = {
   fazendaId: string;
@@ -85,6 +85,7 @@ export type SanitaryAgendaExecutionDbV2 = Pick<
   | "catalog_sanitario_produto_dose_rules_v2"
   | "catalog_sanitario_produto_especie_autorizacao_v2"
   | "state_animais"
+  | "state_fazenda_sanidade_config"
   | "sync_sanitario_v2_cutovers"
   | "queue_gestures"
   | "queue_ops"
@@ -99,7 +100,6 @@ type ProductRequirementKindV2 =
   | string;
 
 type WithdrawalResolutionV2 = {
-  rule: SanitarioProdutoCarenciaRuleLocalV2 | null;
   carneDias: number | null;
   leiteDias: number | null;
   carneAte: string | null;
@@ -140,14 +140,6 @@ function normalizeDateTime(value: string | undefined): string | null {
   const iso = date.toISOString();
   if (dateOnly && iso.slice(0, 10) !== dateOnly) return null;
   return iso;
-}
-
-function addDays(dateTime: string, days: number | null): string | null {
-  if (!days || days <= 0) return null;
-  const [year, month, day] = dateTime.slice(0, 10).split("-").map(Number);
-  const date = new Date(Date.UTC(year, month - 1, day));
-  date.setUTCDate(date.getUTCDate() + days);
-  return date.toISOString().slice(0, 10);
 }
 
 function eventIdFor(
@@ -340,58 +332,10 @@ async function findExistingExecution(
     .first();
 }
 
-function explicitWithdrawalRule(
-  rules: SanitarioProdutoCarenciaRuleLocalV2[],
-  input: ExecuteSanitaryAgendaInputV2,
-  executedAt: string,
+function withdrawalResolution(
+  snapshot: ExecutedProductTechnicalSnapshotV2 | null,
 ): WithdrawalResolutionV2 {
-  if (!input.product?.productId) {
-    return {
-      rule: null,
-      carneDias: null,
-      leiteDias: null,
-      carneAte: null,
-      leiteAte: null,
-      createsActiveWithdrawal: false,
-      reason: "missing_product_id",
-    };
-  }
-  const route = input.application?.route?.trim();
-  const dateKey = executedAt.slice(0, 10);
-  const candidates = rules.filter((rule) => {
-    if (rule.deleted_at || rule.status_curatorial !== "ativo") return false;
-    if (rule.applicability !== "period" && rule.applicability !== "zero") return false;
-    if (rule.valid_from && rule.valid_from > dateKey) return false;
-    if (rule.valid_until && rule.valid_until < dateKey) return false;
-    if (rule.route && route && rule.route !== route) return false;
-    return true;
-  });
-  if (candidates.length !== 1) {
-    return {
-      rule: null,
-      carneDias: null,
-      leiteDias: null,
-      carneAte: null,
-      leiteAte: null,
-      createsActiveWithdrawal: false,
-      reason: candidates.length === 0 ? "missing_explicit_rule" : "ambiguous_rule",
-    };
-  }
-
-  const rule = candidates[0];
-  const leiteDias =
-    rule.milk_days ?? (rule.milk_hours ? Math.ceil(rule.milk_hours / 24) : null);
-  const carneAte = addDays(executedAt, rule.meat_days);
-  const leiteAte = addDays(executedAt, leiteDias);
-  return {
-    rule,
-    carneDias: rule.meat_days,
-    leiteDias,
-    carneAte,
-    leiteAte,
-    createsActiveWithdrawal: Boolean(carneAte || leiteAte),
-    reason: "explicit_product_rule",
-  };
+  return projectOperationalWithdrawalLegacyFieldsV2(snapshot?.withdrawalSnapshot);
 }
 
 function syncMeta(
@@ -474,7 +418,7 @@ function buildRecords(input: {
     product: productSnapshot,
     withdrawal: {
       reason: withdrawal.reason,
-      rule_snapshot: withdrawal.rule,
+      rule_snapshot: productTechnicalSnapshot?.withdrawalSnapshot ?? null,
       source_evento_id: eventId,
     },
     warnings: [
@@ -598,6 +542,7 @@ export async function executeSanitaryAgendaV2(
 
   const existing = await findExistingExecution(localDb, input);
   if (existing) {
+    const existingDetail = await localDb.event_eventos_sanitario.get(existing.id);
     return {
       eventId: existing.id,
       agendaId: input.agendaId,
@@ -605,7 +550,9 @@ export async function executeSanitaryAgendaV2(
       agendaStatus: "executed",
       createsEvent: true,
       createsStockMovement: false,
-      createsActiveWithdrawal: false,
+      createsActiveWithdrawal: withdrawalResolution(
+        existingDetail?.produto_snapshot as ExecutedProductTechnicalSnapshotV2 | null,
+      ).createsActiveWithdrawal,
     };
   }
 
@@ -614,6 +561,7 @@ export async function executeSanitaryAgendaV2(
     throw new Error("SANITARY_AGENDA_EXECUTION_REJECTED:agenda_not_found");
   }
   if (agenda.execution_evento_id) {
+    const existingDetail = await localDb.event_eventos_sanitario.get(agenda.execution_evento_id);
     return {
       eventId: agenda.execution_evento_id,
       agendaId: agenda.id,
@@ -621,7 +569,9 @@ export async function executeSanitaryAgendaV2(
       agendaStatus: "executed",
       createsEvent: true,
       createsStockMovement: false,
-      createsActiveWithdrawal: false,
+      createsActiveWithdrawal: withdrawalResolution(
+        existingDetail?.produto_snapshot as ExecutedProductTechnicalSnapshotV2 | null,
+      ).createsActiveWithdrawal,
     };
   }
 
@@ -634,13 +584,6 @@ export async function executeSanitaryAgendaV2(
     throw new Error(`SANITARY_AGENDA_EXECUTION_REJECTED:${agendaValidation.rejected.join(",")}`);
   }
 
-  const withdrawalRules = input.product?.productId
-    ? await localDb.catalog_sanitario_produto_carencia_rules_v2
-        .where("product_id")
-        .equals(input.product.productId)
-        .toArray()
-    : [];
-  const withdrawal = explicitWithdrawalRule(withdrawalRules, input, basicValidation.executedAt);
   const sync = resolveConfiguredSync(input);
   const factualIdentity = sync
     ? {
@@ -655,7 +598,7 @@ export async function executeSanitaryAgendaV2(
 
   let productTechnicalSnapshot: ExecutedProductTechnicalSnapshotV2 | null = null;
   if (input.product?.productId && input.application?.dose && input.application.doseUnit && input.application.route) {
-    const [product, productSources, doseRules, speciesAuthorizations, animals] = await Promise.all([
+    const [product, productSources, doseRules, withdrawalRules, speciesAuthorizations, animals, farmConfig] = await Promise.all([
       localDb.catalog_sanitario_produtos_v2.get(input.product.productId),
       localDb.catalog_sanitario_produto_fontes_v2
         .where("product_id")
@@ -665,11 +608,16 @@ export async function executeSanitaryAgendaV2(
         .where("product_id")
         .equals(input.product.productId)
         .toArray(),
+      localDb.catalog_sanitario_produto_carencia_rules_v2
+        .where("product_id")
+        .equals(input.product.productId)
+        .toArray(),
       localDb.catalog_sanitario_produto_especie_autorizacao_v2
         .where("product_id")
         .equals(input.product.productId)
         .toArray(),
       localDb.state_animais.bulkGet(agendaValidation.targetAnimalIds),
+      localDb.state_fazenda_sanidade_config.get(input.fazendaId),
     ]);
     const sourceIds = Array.from(new Set(productSources.map((entry) => entry.source_id)));
     const [sources, coverages] = await Promise.all([
@@ -697,6 +645,11 @@ export async function executeSanitaryAgendaV2(
         speciesCode: animals[index]?.fazenda_id === input.fazendaId
           ? animals[index]?.especie ?? null
           : null,
+        aptitude: farmConfig?.aptidao === "misto"
+          ? "mista"
+          : farmConfig?.aptidao === "corte" || farmConfig?.aptidao === "leite"
+          ? farmConfig.aptidao
+          : null,
       })),
       product: product ?? null,
       productSources,
@@ -704,8 +657,11 @@ export async function executeSanitaryAgendaV2(
       coverages,
       doseRules,
       speciesAuthorizations,
+      factualReferenceAt: basicValidation.executedAt,
+      withdrawalRules,
     });
   }
+  const withdrawal = withdrawalResolution(productTechnicalSnapshot);
 
   let inventory: {
     insumoId: string;

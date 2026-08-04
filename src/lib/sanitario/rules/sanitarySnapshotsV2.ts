@@ -49,6 +49,53 @@ export type WithdrawalSnapshotV2 = {
   limitations?: string[];
 };
 
+export type OperationalWithdrawalPurposeV2 = "meat" | "milk";
+export type OperationalWithdrawalStateV2 =
+  | "calculated"
+  | "explicit_absence"
+  | "unknown"
+  | "ambiguous"
+  | "not_permitted";
+
+export type OperationalWithdrawalPurposeResultV2 = {
+  purpose: OperationalWithdrawalPurposeV2;
+  state: OperationalWithdrawalStateV2;
+  reason: string;
+  period: { value: number; unit: "days" | "hours" } | null;
+  startsAt: string;
+  endsAt: string | null;
+  endsOn: string | null;
+  endInclusivity: "inclusive";
+  ruleId: string | null;
+  equivalentRuleIds: string[];
+  applicability: WithdrawalApplicabilityV2 | null;
+  sourceRef: SanitarySourceRefV2 | null;
+  sourceCoverageId: string | null;
+  productSource: {
+    productId: string;
+    sourceId: string;
+    fieldKey: "withdrawal";
+  } | null;
+  qualifiers: {
+    speciesCode: SanitarySpeciesCodeV2 | null;
+    aptitude: Exclude<SanitaryAptitudeV2, "all"> | null;
+    route: string;
+    doseBasis: SanitaryDoseBasisV2;
+    animalId: string;
+  };
+};
+
+export type OperationalWithdrawalSnapshotV2 = {
+  schemaVersion: "sanitario-operational-withdrawal-snapshot-v2";
+  eventId: string;
+  productId: string;
+  productCatalogUpdatedAt: string | null;
+  factualReferenceAt: string;
+  timezone: "America/Sao_Paulo";
+  results: OperationalWithdrawalPurposeResultV2[];
+  limitations: string[];
+};
+
 export type ExecutedProductFieldEvidenceV2 = {
   fieldKey: string;
   coverageStatus: SourceCoverageStatusV2;
@@ -86,6 +133,7 @@ export type ExecutedProductTechnicalSnapshotV2 = {
   fieldEvidence: ExecutedProductFieldEvidenceV2[];
   sourceRefs: SanitarySourceRefV2[];
   limitations: string[];
+  withdrawalSnapshot?: OperationalWithdrawalSnapshotV2;
 };
 
 export type AgendaTechnicalSnapshot = {
@@ -219,13 +267,30 @@ export function validateExecutedProductTechnicalSnapshotV2(
       }
     }
   }
-  if ("withdrawalSnapshot" in snapshot || "withdrawal_snapshot" in snapshot) {
+  if ("withdrawal_snapshot" in snapshot) {
     issues.push({
       code: "executed_product_snapshot_must_not_carry_withdrawal",
       severity: "block",
       field: "withdrawalSnapshot",
-      message: "O núcleo técnico do item 4 não materializa carência.",
+      message: "Snapshot de carência usa exclusivamente withdrawalSnapshot.",
     });
+  }
+  if (snapshot.withdrawalSnapshot) {
+    const withdrawal = snapshot.withdrawalSnapshot;
+    if (
+      withdrawal.schemaVersion !== "sanitario-operational-withdrawal-snapshot-v2" ||
+      withdrawal.eventId !== snapshot.eventId ||
+      withdrawal.productId !== snapshot.executedProductId ||
+      withdrawal.timezone !== "America/Sao_Paulo" ||
+      !Array.isArray(withdrawal.results)
+    ) {
+      issues.push({
+        code: "operational_withdrawal_snapshot_factual_mismatch",
+        severity: "block",
+        field: "withdrawalSnapshot",
+        message: "Snapshot operacional de carência deve corresponder ao Evento e produto factuais.",
+      });
+    }
   }
   return buildValidationResultV2(issues);
 }

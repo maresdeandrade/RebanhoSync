@@ -196,6 +196,7 @@ async function clearScope() {
     db.catalog_sanitario_produto_dose_rules_v2.clear(),
     db.catalog_sanitario_produto_especie_autorizacao_v2.clear(),
     db.state_animais.clear(),
+    db.state_fazenda_sanidade_config.clear(),
     db.queue_ops.clear(),
     db.queue_gestures.clear(),
     db.sync_sanitario_v2_cutovers.clear(),
@@ -205,6 +206,51 @@ async function clearScope() {
 async function seedAgenda(record = agenda()) {
   await db.ops_sanitario_agenda_v2.put(record);
   await db.ops_sanitario_agenda_animais_v2.put(agendaAnimal({ agenda_id: record.id }));
+}
+
+async function seedWithdrawalContext() {
+  const now = "2026-01-01T00:00:00.000Z";
+  await db.catalog_sanitario_produtos_v2.put({
+    id: "product-1", nome_comercial: "Vacina Raiva", fabricante: "Lab",
+    registro_orgao: "MAPA", registro_numero: "1", classe: "vacina_raiva",
+    principio_ativo: "antigeno", tipo_produto: "imunobiologico", apresentacao: null,
+    status_curatorial: "ativo", metadata: {}, created_at: now, updated_at: now,
+    deleted_at: null,
+  });
+  await db.state_animais.put({
+    id: "animal-1", fazenda_id: "farm-1", identificacao: "A-1", sexo: "F",
+    status: "ativo", lote_id: "lot-1", data_nascimento: null, data_entrada: null,
+    data_saida: null, pai_id: null, mae_id: null, nome: null, rfid: null,
+    especie: "bovino", origem: null, raca: null, papel_macho: null,
+    habilitado_monta: false, observacoes: null, payload: {}, client_id: "client-1",
+    client_op_id: "animal-op-1", client_tx_id: null, client_recorded_at: now,
+    server_received_at: now, created_at: now, updated_at: now, deleted_at: null,
+  });
+  await db.state_fazenda_sanidade_config.put({
+    fazenda_id: "farm-1", uf: null, aptidao: "corte", sistema: "extensivo",
+    zona_raiva_risco: "baixo", pressao_carrapato: "baixo",
+    pressao_helmintos: "baixo", modo_calendario: "tecnico_recomendado", payload: {},
+    client_id: "client-1", client_op_id: "config-op-1", client_tx_id: null,
+    client_recorded_at: now, server_received_at: now, created_at: now,
+    updated_at: now, deleted_at: null,
+  });
+  await db.catalog_sanitario_fontes_tecnicas_v2.put({
+    id: "withdrawal-source", kind: "bula", scope: "global", fazenda_id: null,
+    title: "Bula", issuer: "Lab", version: "v1", published_at: null,
+    accessed_at: now, url: null, jurisdiction_country: "BR", jurisdiction_uf: null,
+    jurisdiction_zone: null, strength: "forte", evidence_status: "SIM_BULA",
+    limitations: [], metadata: {}, created_by: null, created_at: now, updated_at: now,
+    deleted_at: null,
+  });
+  await db.catalog_sanitario_fonte_cobertura_campos_v2.put({
+    id: "withdrawal-coverage", source_id: "withdrawal-source", field_key: "withdrawal",
+    coverage_status: "covers", notes: null, created_at: now, updated_at: now,
+    deleted_at: null,
+  });
+  await db.catalog_sanitario_produto_fontes_v2.put({
+    product_id: "product-1", source_id: "withdrawal-source", field_key: "withdrawal",
+    created_at: now,
+  });
 }
 
 const baseInput = {
@@ -393,7 +439,7 @@ describe("executeSanitaryAgendaV2", () => {
         expect.objectContaining({ fieldKey: "route", coverageStatus: "covers" }),
       ]),
     });
-    expect(detail?.produto_snapshot).not.toHaveProperty("withdrawalSnapshot");
+    expect(detail?.produto_snapshot).toHaveProperty("withdrawalSnapshot");
     expect(result.createsActiveWithdrawal).toBe(false);
   });
 
@@ -516,15 +562,18 @@ describe("executeSanitaryAgendaV2", () => {
 
   it("cria carência ativa somente com regra explícita por produto executado", async () => {
     await seedAgenda();
+    await seedWithdrawalContext();
     await db.catalog_sanitario_produto_carencia_rules_v2.put(withdrawalRule());
 
     const result = await executeSanitaryAgendaV2(baseInput, db);
+    const persistedSnapshot = (await db.event_eventos_sanitario.get(result.eventId))?.produto_snapshot;
     const repeated = await executeSanitaryAgendaV2(baseInput, db);
 
     const detail = await db.event_eventos_sanitario.get(result.eventId);
     expect(repeated.eventId).toBe(result.eventId);
     expect(await db.event_eventos.count()).toBe(1);
     expect(await db.event_eventos_sanitario.count()).toBe(1);
+    expect(detail?.produto_snapshot).toEqual(persistedSnapshot);
     expect(result.createsActiveWithdrawal).toBe(true);
     expect(detail).toMatchObject({
       produto_veterinario_id: "product-1",

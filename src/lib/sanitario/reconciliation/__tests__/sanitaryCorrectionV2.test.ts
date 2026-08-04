@@ -10,6 +10,7 @@ import {
 import type { Evento, EventoSanitario } from "@/lib/offline/types";
 import {
   createSanitaryCorrectionV2,
+  projectOperationalWithdrawalV2,
   resolveSanitaryCorrectionChainV2,
 } from "@/lib/sanitario/reconciliation/sanitaryCorrectionV2";
 
@@ -99,7 +100,9 @@ async function clear() {
     db.catalog_sanitario_fonte_cobertura_campos_v2.clear(),
     db.catalog_sanitario_produto_fontes_v2.clear(),
     db.catalog_sanitario_produto_dose_rules_v2.clear(),
+    db.catalog_sanitario_produto_carencia_rules_v2.clear(),
     db.catalog_sanitario_produto_especie_autorizacao_v2.clear(),
+    db.state_fazenda_sanidade_config.clear(),
     db.queue_gestures.clear(),
     db.queue_ops.clear(),
     db.sync_sanitario_v2_cutovers.clear(),
@@ -216,6 +219,26 @@ async function seedTechnicalCatalog() {
     updated_at: NOW,
     deleted_at: null,
   } as never);
+  await db.state_fazenda_sanidade_config.put({
+    fazenda_id: FARM, aptidao: "corte", deleted_at: null,
+  } as never);
+  await db.catalog_sanitario_fonte_cobertura_campos_v2.put({
+    id: "coverage-withdrawal", source_id: "source-1", field_key: "withdrawal",
+    coverage_status: "covers", notes: null, created_at: NOW, updated_at: NOW,
+    deleted_at: null,
+  } as never);
+  await db.catalog_sanitario_produto_fontes_v2.put({
+    product_id: "product-1", source_id: "source-1", field_key: "withdrawal",
+    created_at: NOW,
+  });
+  await db.catalog_sanitario_produto_carencia_rules_v2.put({
+    id: "withdrawal-rule-1", product_id: "product-1", species_code: "bovino",
+    aptitude: "corte", route: null, dose_basis: "dose", meat_days: 10,
+    milk_days: null, milk_hours: 36, applicability: "period",
+    zero_requires_explicit_source: true, valid_from: null, valid_until: null,
+    status_curatorial: "ativo", limitations: [], metadata: {}, created_at: NOW,
+    updated_at: NOW, deleted_at: null,
+  });
 }
 
 describe("sanitary correction v2", () => {
@@ -358,13 +381,54 @@ describe("sanitary correction v2", () => {
       executedDose: { quantity: 3, unit: "ml" },
       executedRoute: "intramuscular",
     });
-    expect(saved?.produto_snapshot).not.toHaveProperty("withdrawalSnapshot");
+    expect(saved?.produto_snapshot).toHaveProperty("withdrawalSnapshot");
     await db.catalog_sanitario_produtos_v2.update("product-1", {
       nome_comercial: "Vacina Renomeada",
     });
     expect(
       (await db.event_eventos_sanitario.get(CORRECTION_1))?.produto_snapshot,
     ).toEqual(saved?.produto_snapshot);
+  });
+
+  it("correção de data recalcula a projeção e correção apenas de custo preserva a carência", async () => {
+    await seed();
+    await seedTechnicalCatalog();
+    await createSanitaryCorrectionV2(
+      correction({
+        correctionType: "complemento_rastreabilidade",
+        changes: { executed_at: "2026-07-05T12:00:00.000Z" },
+      }),
+      db,
+    );
+    const dated = await db.event_eventos_sanitario.get(CORRECTION_1);
+    expect(dated).toMatchObject({
+      carencia_carne_dias: 10,
+      carencia_carne_ate: "2026-07-15",
+      carencia_leite_dias: null,
+      carencia_leite_ate: "2026-07-07T00:00:00.000Z",
+    });
+    await createSanitaryCorrectionV2(
+      correction({
+        correctedEventId: CORRECTION_1,
+        correctionEventId: CORRECTION_2,
+        occurredAt: "2026-08-02T12:00:00.000Z",
+        changes: { custo_total_snapshot: 15 },
+      }),
+      db,
+    );
+    const cost = await db.event_eventos_sanitario.get(CORRECTION_2);
+    expect(cost?.produto_snapshot).toEqual(dated?.produto_snapshot);
+    const projection = projectOperationalWithdrawalV2({
+      fazendaId: FARM,
+      rootEventId: ORIGINAL,
+      events: await db.event_eventos.toArray(),
+      details: await db.event_eventos_sanitario.toArray(),
+    });
+    expect(projection).toMatchObject({
+      status: "resolved",
+      currentEventId: CORRECTION_2,
+      supportingEventIds: [ORIGINAL, CORRECTION_1, CORRECTION_2],
+    });
   });
 
   it("falha conservadoramente para correção técnica incompleta ou campo fora da taxonomia", async () => {

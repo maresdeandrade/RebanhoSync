@@ -12,6 +12,8 @@ const ids = {
   source: "44444444-4444-4444-8444-444444444444",
   coverage: "55555555-5555-4555-8555-555555555555",
   rule: "66666666-6666-4666-8666-666666666666",
+  withdrawalRule: "77777777-7777-4777-8777-777777777777",
+  withdrawalCoverage: "88888888-8888-4888-8888-888888888888",
 };
 
 function snapshot(overrides: Record<string, unknown> = {}) {
@@ -86,6 +88,8 @@ const catalog = () => ({
     version: "v1",
     scope: "global",
     fazenda_id: null,
+    strength: "forte",
+    evidence_status: "SIM_BULA",
     deleted_at: null,
   }],
   coverages: [{
@@ -94,11 +98,21 @@ const catalog = () => ({
     field_key: "dose",
     coverage_status: "covers",
     deleted_at: null,
+  }, {
+    id: ids.withdrawalCoverage,
+    source_id: ids.source,
+    field_key: "withdrawal",
+    coverage_status: "covers",
+    deleted_at: null,
   }],
   productSources: [{
     product_id: ids.product,
     source_id: ids.source,
     field_key: "dose",
+  }, {
+    product_id: ids.product,
+    source_id: ids.source,
+    field_key: "withdrawal",
   }],
   doseRules: [{
     id: ids.rule,
@@ -112,6 +126,25 @@ const catalog = () => ({
     status_curatorial: "ativo",
     deleted_at: null,
   }],
+  withdrawalRules: [{
+    id: ids.withdrawalRule,
+    product_id: ids.product,
+    species_code: "bovino",
+    aptitude: "all",
+    route: "subcutanea",
+    dose_basis: "animal",
+    meat_days: 10,
+    milk_days: null,
+    milk_hours: null,
+    applicability: "period",
+    status_curatorial: "ativo",
+    deleted_at: null,
+  }],
+  withdrawalRuleSources: [{
+    withdrawal_rule_id: ids.withdrawalRule,
+    source_id: ids.source,
+    field_key: "withdrawal",
+  }],
   speciesAuthorizations: [],
   animals: [{ id: ids.animal, fazenda_id: ids.farm, especie: "bovino" }],
 });
@@ -124,7 +157,7 @@ describe("sanitary product evidence", () => {
       .toBeNull();
   });
 
-  it("rejeita identidade factual divergente e withdrawalSnapshot no núcleo", () => {
+  it("rejeita identidade factual divergente e alias concorrente de snapshot", () => {
     expect(
       validateSanitaryProductEvidenceShape(
         shapeInput(snapshot({ eventId: "outro" })),
@@ -133,10 +166,56 @@ describe("sanitary product evidence", () => {
       .toBe("SANITARIO_PRODUCT_SNAPSHOT_FACTUAL_MISMATCH");
     expect(
       validateSanitaryProductEvidenceShape(
-        shapeInput(snapshot({ withdrawalSnapshot: {} })),
+        shapeInput(snapshot({ withdrawal_snapshot: {} })),
       ),
     )
       .toBe("SANITARIO_PRODUCT_SNAPSHOT_FACTUAL_MISMATCH");
+  });
+
+  it("aceita snapshot operacional de carência e rejeita regra remota divergente", () => {
+    const withdrawalSnapshot = {
+      schemaVersion: "sanitario-operational-withdrawal-snapshot-v2",
+      eventId: ids.event,
+      productId: ids.product,
+      factualReferenceAt: "2026-08-04T12:00:00.000Z",
+      timezone: "America/Sao_Paulo",
+      results: [{
+        purpose: "meat",
+        state: "calculated",
+        reason: "explicit_period",
+        period: { value: 10, unit: "days" },
+        startsAt: "2026-08-04T12:00:00.000Z",
+        endsAt: "2026-08-15T02:59:59.999Z",
+        endsOn: "2026-08-14",
+        endInclusivity: "inclusive",
+        ruleId: ids.withdrawalRule,
+        equivalentRuleIds: [ids.withdrawalRule],
+        applicability: "period",
+        sourceRef: { id: ids.source, version: "v1" },
+        sourceCoverageId: ids.withdrawalCoverage,
+        productSource: {
+          productId: ids.product,
+          sourceId: ids.source,
+          fieldKey: "withdrawal",
+        },
+        qualifiers: {
+          speciesCode: "bovino",
+          aptitude: null,
+          route: "subcutanea",
+          doseBasis: "animal",
+          animalId: ids.animal,
+        },
+      }],
+      limitations: [],
+    };
+    const value = snapshot({ withdrawalSnapshot });
+    expect(validateSanitaryProductEvidenceShape(shapeInput(value))).toBeNull();
+    expect(validateSanitaryProductEvidenceCatalog(value, ids.farm, catalog()))
+      .toBeNull();
+    expect(validateSanitaryProductEvidenceCatalog(value, ids.farm, {
+      ...catalog(),
+      withdrawalRules: [{ ...catalog().withdrawalRules[0], meat_days: 20 }],
+    })).toBe("SANITARIO_WITHDRAWAL_RULE_MISMATCH");
   });
 
   it("rejeita booleano de cobertura sem fonte e vínculo reais", () => {

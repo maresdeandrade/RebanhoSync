@@ -2,6 +2,7 @@ import type {
   SanitarioFonteCoberturaCampoLocalV2,
   SanitarioFonteTecnicaLocalV2,
   SanitarioProdutoDoseRuleLocalV2,
+  SanitarioProdutoCarenciaRuleLocalV2,
   SanitarioProdutoEspecieAutorizacaoLocalV2,
   SanitarioProdutoFonteLocalV2,
   SanitarioProdutoLocalV2,
@@ -13,10 +14,12 @@ import type {
   ExecutedProductTechnicalSnapshotV2,
 } from "@/lib/sanitario/rules/sanitarySnapshotsV2";
 import { validateExecutedProductTechnicalSnapshotV2 } from "@/lib/sanitario/rules/sanitarySnapshotsV2";
+import { buildOperationalWithdrawalSnapshotV2 } from "./operationalWithdrawalSnapshotV2";
 
 export type ExecutedProductAnimalContextV2 = {
   animalId: string;
   speciesCode: SanitarioTechnicalSpeciesCodeV2 | null;
+  aptitude?: "corte" | "leite" | "mista" | null;
 };
 
 export type BuildExecutedProductTechnicalSnapshotInputV2 = {
@@ -34,6 +37,8 @@ export type BuildExecutedProductTechnicalSnapshotInputV2 = {
   coverages: SanitarioFonteCoberturaCampoLocalV2[];
   doseRules: SanitarioProdutoDoseRuleLocalV2[];
   speciesAuthorizations: SanitarioProdutoEspecieAutorizacaoLocalV2[];
+  factualReferenceAt?: string;
+  withdrawalRules?: SanitarioProdutoCarenciaRuleLocalV2[];
 };
 
 const TECHNICAL_FIELDS = ["species_authorization", "dose", "route", "presentation"] as const;
@@ -255,6 +260,31 @@ export function buildExecutedProductTechnicalSnapshotV2(
     sourceRefs,
     limitations: Array.from(new Set(limitations)).sort(),
   };
+  if (input.factualReferenceAt && input.withdrawalRules) {
+    snapshot.withdrawalSnapshot = buildOperationalWithdrawalSnapshotV2({
+      eventId: input.eventId,
+      fazendaId: input.fazendaId,
+      productId: input.executedProductId,
+      productCatalogUpdatedAt: productUsable ? input.product!.updated_at : null,
+      factualReferenceAt: input.factualReferenceAt,
+      route: input.executedRoute,
+      doseBasis: input.executedDose.basis ?? "dose",
+      animals: input.animals.map((animal) => ({
+        animalId: animal.animalId,
+        speciesCode: animal.speciesCode,
+        aptitude: animal.aptitude ?? null,
+      })),
+      rules: input.withdrawalRules,
+      productSources: input.productSources,
+      sources: input.sources,
+      coverages: input.coverages,
+    });
+    snapshot.sourceRefs = Array.from(new Map([
+      ...snapshot.sourceRefs,
+      ...snapshot.withdrawalSnapshot.results.flatMap((result) => result.sourceRef ? [result.sourceRef] : []),
+    ].map((source) => [source.id ?? "", source])).values())
+      .sort((left, right) => (left.id ?? "").localeCompare(right.id ?? ""));
+  }
   const validation = validateExecutedProductTechnicalSnapshotV2(snapshot);
   if (!validation.ok) throw new Error(`SANITARY_EXECUTED_PRODUCT_SNAPSHOT_INVALID:${validation.issues.map((issue) => issue.code).join(",")}`);
   return snapshot;

@@ -11,7 +11,9 @@ import type {
   EventoAnimalLocalV2,
   EventoSanitario,
 } from "@/lib/offline/types";
+import type { OperationalWithdrawalSnapshotV2 } from "@/lib/sanitario/rules/sanitarySnapshotsV2";
 import { buildExecutedProductTechnicalSnapshotV2 } from "@/lib/sanitario/execution/executedProductTechnicalSnapshotV2";
+import { projectOperationalWithdrawalLegacyFieldsV2 } from "@/lib/sanitario/execution/operationalWithdrawalSnapshotV2";
 import type { SanitaryCorrectionType } from "./sanitaryCorrections";
 
 export type SanitaryCorrectionChangesV2 = {
@@ -60,7 +62,9 @@ export type SanitaryCorrectionDbV2 = Pick<
   | "catalog_sanitario_fonte_cobertura_campos_v2"
   | "catalog_sanitario_produto_fontes_v2"
   | "catalog_sanitario_produto_dose_rules_v2"
+  | "catalog_sanitario_produto_carencia_rules_v2"
   | "catalog_sanitario_produto_especie_autorizacao_v2"
+  | "state_fazenda_sanidade_config"
   | "sync_sanitario_v2_cutovers"
   | "queue_gestures"
   | "queue_ops"
@@ -84,12 +88,32 @@ export type SanitaryCorrectionProjectionV2 =
       reason: string;
     };
 
+export type OperationalWithdrawalProjectionV2 =
+  | {
+      status: "resolved";
+      rootEventId: string;
+      currentEventId: string;
+      supportingEventIds: string[];
+      snapshot: OperationalWithdrawalSnapshotV2;
+    }
+  | {
+      status: "unknown" | "conflict" | "invalid";
+      rootEventId: string;
+      supportingEventIds: string[];
+      reason: string;
+      conflictingEventIds: string[];
+    };
+
 const TECHNICAL_FIELDS = new Set<keyof SanitaryCorrectionChangesV2>([
   "produto_sanitario_v2_id",
   "produto_nome_snapshot",
   "dose_quantidade",
   "dose_unidade",
   "via_aplicacao",
+]);
+const WITHDRAWAL_FIELDS = new Set<keyof SanitaryCorrectionChangesV2>([
+  ...TECHNICAL_FIELDS,
+  "executed_at",
 ]);
 const SPECIALIZED_GESTURE_TYPES = new Set<SanitaryCorrectionType>([
   "estorno_baixa_estoque",
@@ -240,6 +264,10 @@ function sourceSnapshot(event: Evento, detail: EventoSanitario) {
       responsavel_tipo: detail.responsavel_tipo ?? null,
       custo_unitario_snapshot: detail.custo_unitario_snapshot ?? null,
       custo_total_snapshot: detail.custo_total_snapshot ?? null,
+      carencia_carne_dias: detail.carencia_carne_dias ?? null,
+      carencia_leite_dias: detail.carencia_leite_dias ?? null,
+      carencia_carne_ate: detail.carencia_carne_ate ?? null,
+      carencia_leite_ate: detail.carencia_leite_ate ?? null,
     },
   };
 }
@@ -250,6 +278,7 @@ async function buildTechnicalSnapshot(input: {
   fazendaId: string;
   detail: EventoSanitario;
   relations: EventoAnimalLocalV2[];
+  factualReferenceAt: string;
 }) {
   const productId = input.detail.produto_sanitario_v2_id;
   const productName = input.detail.produto_nome_snapshot?.trim();
@@ -259,7 +288,7 @@ async function buildTechnicalSnapshot(input: {
   if (!productId || !productName || !dose || !doseUnit || !route) {
     throw new Error("SANITARY_CORRECTION_TECHNICAL_FACT_INCOMPLETE");
   }
-  const [product, productSources, doseRules, authorizations, animals] =
+  const [product, productSources, doseRules, withdrawalRules, authorizations, animals, farmConfig] =
     await Promise.all([
       input.db.catalog_sanitario_produtos_v2.get(productId),
       input.db.catalog_sanitario_produto_fontes_v2
@@ -270,6 +299,10 @@ async function buildTechnicalSnapshot(input: {
         .where("product_id")
         .equals(productId)
         .toArray(),
+      input.db.catalog_sanitario_produto_carencia_rules_v2
+        .where("product_id")
+        .equals(productId)
+        .toArray(),
       input.db.catalog_sanitario_produto_especie_autorizacao_v2
         .where("product_id")
         .equals(productId)
@@ -277,6 +310,7 @@ async function buildTechnicalSnapshot(input: {
       input.db.state_animais.bulkGet(
         input.relations.map((entry) => entry.animal_id),
       ),
+      input.db.state_fazenda_sanidade_config.get(input.fazendaId),
     ]);
   const sourceIds = Array.from(
     new Set(productSources.map((entry) => entry.source_id)),
@@ -303,6 +337,11 @@ async function buildTechnicalSnapshot(input: {
         animals[index]?.fazenda_id === input.fazendaId
           ? (animals[index]?.especie ?? null)
           : null,
+      aptitude: farmConfig?.aptidao === "misto"
+        ? "mista"
+        : farmConfig?.aptidao === "corte" || farmConfig?.aptidao === "leite"
+        ? farmConfig.aptidao
+        : null,
     })),
     product: product ?? null,
     productSources,
@@ -312,6 +351,8 @@ async function buildTechnicalSnapshot(input: {
     coverages,
     doseRules,
     speciesAuthorizations: authorizations,
+    factualReferenceAt: input.factualReferenceAt,
+    withdrawalRules,
   });
 }
 
@@ -398,6 +439,50 @@ export function resolveSanitaryCorrectionChainV2(input: {
     currentDetail: details.get(current.id)!,
     effectiveOccurredAt,
     chainEventIds: chain,
+  };
+}
+
+export function projectOperationalWithdrawalV2(input: {
+  fazendaId: string;
+  rootEventId: string;
+  events: readonly Evento[];
+  details: readonly EventoSanitario[];
+}): OperationalWithdrawalProjectionV2 {
+  const chain = resolveSanitaryCorrectionChainV2(input);
+  if (chain.status !== "resolved") {
+    return {
+      status: chain.status,
+      rootEventId: chain.rootEventId,
+      supportingEventIds: chain.chainEventIds,
+      reason: chain.reason,
+      conflictingEventIds: chain.conflictingEventIds,
+    };
+  }
+  const value = chain.currentDetail.produto_snapshot;
+  const record = value && typeof value === "object" && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : null;
+  const snapshot = record?.withdrawalSnapshot;
+  if (
+    !snapshot || typeof snapshot !== "object" || Array.isArray(snapshot) ||
+    (snapshot as Record<string, unknown>).schemaVersion !==
+      "sanitario-operational-withdrawal-snapshot-v2" ||
+    !Array.isArray((snapshot as Record<string, unknown>).results)
+  ) {
+    return {
+      status: "unknown",
+      rootEventId: chain.rootEventId,
+      supportingEventIds: chain.chainEventIds,
+      reason: "legacy_or_insufficient_withdrawal_snapshot",
+      conflictingEventIds: [],
+    };
+  }
+  return {
+    status: "resolved",
+    rootEventId: chain.rootEventId,
+    currentEventId: chain.currentEvent.id,
+    supportingEventIds: chain.chainEventIds,
+    snapshot: snapshot as OperationalWithdrawalSnapshotV2,
   };
 }
 
@@ -504,7 +589,7 @@ export async function createSanitaryCorrectionV2(
     : previousEffectiveOccurredAt;
   const technicalCorrection = (
     Object.keys(changes) as Array<keyof SanitaryCorrectionChangesV2>
-  ).some((key) => TECHNICAL_FIELDS.has(key));
+  ).some((key) => WITHDRAWAL_FIELDS.has(key));
   const event: Evento = {
     ...corrected,
     id: input.correctionEventId,
@@ -558,13 +643,23 @@ export async function createSanitaryCorrectionV2(
     ...meta,
   };
   if (technicalCorrection) {
-    detail.produto_snapshot = await buildTechnicalSnapshot({
+    const technicalSnapshot = await buildTechnicalSnapshot({
       db: localDb,
       eventId: event.id,
       fazendaId: input.fazendaId,
       detail,
       relations,
+      factualReferenceAt: effectiveOccurredAt,
     });
+    detail.produto_snapshot = technicalSnapshot;
+    const withdrawal = projectOperationalWithdrawalLegacyFieldsV2(
+      technicalSnapshot.withdrawalSnapshot,
+    );
+    detail.carencia_carne_dias = withdrawal.carneDias;
+    detail.carencia_leite_dias = withdrawal.leiteDias;
+    detail.carencia_carne_ate = withdrawal.carneAte;
+    detail.carencia_leite_ate = withdrawal.leiteAte;
+    event.payload.creates_active_withdrawal = withdrawal.createsActiveWithdrawal;
   }
   const eventAnimals = relations.map((relation) => ({
     id: uuid(),

@@ -6,6 +6,8 @@ export interface SanitaryProductEvidenceCatalog {
   coverages: Row[];
   productSources: Row[];
   doseRules: Row[];
+  withdrawalRules: Row[];
+  withdrawalRuleSources: Row[];
   speciesAuthorizations: Row[];
   animals: Row[];
 }
@@ -55,7 +57,6 @@ export function validateSanitaryProductEvidenceShape(input: {
     }) ||
     !Array.isArray(snapshot.fieldEvidence) ||
     !Array.isArray(snapshot.sourceRefs) ||
-    "withdrawalSnapshot" in snapshot ||
     "withdrawal_snapshot" in snapshot
   ) return "SANITARIO_PRODUCT_SNAPSHOT_FACTUAL_MISMATCH";
 
@@ -88,6 +89,55 @@ export function validateSanitaryProductEvidenceShape(input: {
       typeof evidence.sourceCoverageId !== "string"
     ) {
       return "SANITARIO_PRODUCT_COVERED_FIELD_SOURCE_REQUIRED";
+    }
+  }
+  const withdrawal = record(snapshot.withdrawalSnapshot);
+  if (withdrawal) {
+    const effectiveAt = typeof correction?.effective_occurred_at === "string"
+      ? correction.effective_occurred_at
+      : record(input.event.payload)?.effective_occurred_at ??
+        input.event.occurred_at;
+    if (
+      withdrawal.schemaVersion !==
+        "sanitario-operational-withdrawal-snapshot-v2" ||
+      withdrawal.eventId !== input.event.id ||
+      withdrawal.productId !== productId ||
+      (effectiveAt != null && withdrawal.factualReferenceAt !== effectiveAt) ||
+      withdrawal.timezone !== "America/Sao_Paulo" ||
+      !Array.isArray(withdrawal.results)
+    ) return "SANITARIO_WITHDRAWAL_SNAPSHOT_FACTUAL_MISMATCH";
+    const seen = new Set<string>();
+    for (const rawResult of withdrawal.results) {
+      const result = record(rawResult);
+      const qualifiers = record(result?.qualifiers);
+      const key = `${qualifiers?.animalId}:${result?.purpose}`;
+      if (
+        !result || !qualifiers || !targetIds.has(qualifiers.animalId) ||
+        !["meat", "milk"].includes(String(result.purpose)) || seen.has(key)
+      ) return "SANITARIO_WITHDRAWAL_RESULT_INVALID";
+      seen.add(key);
+      const proven = ["calculated", "explicit_absence", "not_permitted"]
+        .includes(String(result.state));
+      if (
+        proven && (
+          typeof result.ruleId !== "string" || !record(result.sourceRef) ||
+          typeof result.sourceCoverageId !== "string" ||
+          !record(result.productSource)
+        )
+      ) return "SANITARIO_WITHDRAWAL_EVIDENCE_REQUIRED";
+      if (
+        !proven && (
+          result.ruleId != null || result.sourceRef != null ||
+          result.sourceCoverageId != null ||
+          result.productSource != null || result.endsAt != null
+        )
+      ) return "SANITARIO_WITHDRAWAL_UNPROVEN_RESULT_QUALIFIED";
+      if (
+        result.state === "calculated" &&
+        (!record(result.period) || typeof result.endsAt !== "string")
+      ) {
+        return "SANITARIO_WITHDRAWAL_CALCULATION_INVALID";
+      }
     }
   }
   return null;
@@ -176,6 +226,67 @@ export function validateSanitaryProductEvidenceCatalog(
       (!productSnapshot ||
         productSnapshot.apresentacao !== technicalValue?.presentation)
     ) return "SANITARIO_PRODUCT_FIELD_RULE_MISMATCH";
+  }
+
+  const withdrawal = record(snapshot.withdrawalSnapshot);
+  for (
+    const rawResult of (withdrawal?.results as unknown[] | undefined) ?? []
+  ) {
+    const result = record(rawResult)!;
+    if (
+      !["calculated", "explicit_absence", "not_permitted"].includes(
+        String(result.state),
+      )
+    ) continue;
+    const sourceRef = record(result.sourceRef)!;
+    const productSource = record(result.productSource)!;
+    const qualifiers = record(result.qualifiers)!;
+    const source = catalog.sources.find((row) => row.id === sourceRef.id);
+    const coverage = catalog.coverages.find((row) =>
+      row.id === result.sourceCoverageId
+    );
+    const link = catalog.productSources.find((row) =>
+      row.product_id === snapshot.executedProductId &&
+      row.source_id === sourceRef.id &&
+      row.field_key === "withdrawal"
+    );
+    const rule = catalog.withdrawalRules.find((row) =>
+      row.id === result.ruleId
+    );
+    const ruleSource = catalog.withdrawalRuleSources.find((row) =>
+      row.withdrawal_rule_id === result.ruleId &&
+      row.source_id === sourceRef.id &&
+      row.field_key === "withdrawal"
+    );
+    if (
+      !active(source) || source.strength !== "forte" ||
+      !["SIM_BULA", "SIM_NORMA"].includes(String(source.evidence_status)) ||
+      (source.scope === "fazenda" && source.fazenda_id !== fazendaId) ||
+      source.version !== sourceRef.version || !active(coverage) ||
+      coverage.source_id !== source.id || coverage.field_key !== "withdrawal" ||
+      coverage.coverage_status !== "covers" || !link || !ruleSource ||
+      productSource.productId !== link.product_id ||
+      productSource.sourceId !== link.source_id ||
+      !active(rule) || rule.status_curatorial !== "ativo" ||
+      rule.product_id !== snapshot.executedProductId ||
+      rule.species_code !== qualifiers.speciesCode ||
+      !["all", qualifiers.aptitude].includes(rule.aptitude as string) ||
+      (rule.route != null && rule.route !== qualifiers.route) ||
+      (rule.dose_basis != null && rule.dose_basis !== qualifiers.doseBasis) ||
+      rule.applicability !== result.applicability
+    ) return "SANITARIO_WITHDRAWAL_CATALOG_MISMATCH";
+    const period = record(result.period);
+    if (
+      result.state === "calculated" && (
+        (result.purpose === "meat" &&
+          (period?.unit !== "days" || period.value !== rule.meat_days)) ||
+        (result.purpose === "milk" && !(
+          (period?.unit === "hours" && period.value === rule.milk_hours) ||
+          (period?.unit === "days" && period.value === rule.milk_days &&
+            rule.milk_hours == null)
+        ))
+      )
+    ) return "SANITARIO_WITHDRAWAL_RULE_MISMATCH";
   }
 
   const animalById = new Map(catalog.animals.map((row) => [row.id, row]));

@@ -454,9 +454,21 @@ Deno.serve(async (req: Request) => {
                   typeof entry === "object" && entry !== null &&
                   (entry as Record<string, unknown>).coverageStatus === "covers"
                 ) as Record<string, unknown>[];
+                const withdrawalSnapshot = snapshot.withdrawalSnapshot as
+                  | Record<string, unknown>
+                  | undefined;
+                const withdrawalResults =
+                  Array.isArray(withdrawalSnapshot?.results)
+                    ? withdrawalSnapshot.results.filter((entry) => {
+                      const state = (entry as Record<string, unknown>)?.state;
+                      return typeof entry === "object" && entry !== null &&
+                        ["calculated", "explicit_absence", "not_permitted"]
+                          .includes(String(state));
+                    }) as Record<string, unknown>[]
+                    : [];
                 const sourceIds = [
                   ...new Set(
-                    covered.map((
+                    [...covered, ...withdrawalResults].map((
                       entry,
                     ) => ((entry.sourceRef as Record<string, unknown> | null)
                       ?.id)
@@ -465,7 +477,9 @@ Deno.serve(async (req: Request) => {
                 ];
                 const coverageIds = [
                   ...new Set(
-                    covered.map((entry) => entry.sourceCoverageId)
+                    [...covered, ...withdrawalResults].map((entry) =>
+                      entry.sourceCoverageId
+                    )
                       .filter((id): id is string => typeof id === "string"),
                   ),
                 ];
@@ -489,6 +503,12 @@ Deno.serve(async (req: Request) => {
                     ).filter((id): id is string => typeof id === "string"),
                   ),
                 ];
+                const withdrawalRuleIds = [
+                  ...new Set(
+                    withdrawalResults.map((entry) => entry.ruleId)
+                      .filter((id): id is string => typeof id === "string"),
+                  ),
+                ];
                 const animalIds = operation.payload.event_animals.map((entry) =>
                   entry.animal_id
                 );
@@ -501,6 +521,8 @@ Deno.serve(async (req: Request) => {
                   coveragesResult,
                   linksResult,
                   doseRulesResult,
+                  withdrawalRulesResult,
+                  withdrawalRuleSourcesResult,
                   authorizationsResult,
                   animalsResult,
                 ] = await Promise.all([
@@ -528,6 +550,18 @@ Deno.serve(async (req: Request) => {
                     ? serviceSupabase.from("sanitario_produto_dose_rules_v2")
                       .select("*").in("id", doseRuleIds)
                     : empty,
+                  withdrawalRuleIds.length
+                    ? serviceSupabase.from(
+                      "sanitario_produto_carencia_rules_v2",
+                    )
+                      .select("*").in("id", withdrawalRuleIds)
+                    : empty,
+                  withdrawalRuleIds.length
+                    ? serviceSupabase.from(
+                      "sanitario_produto_carencia_fontes_v2",
+                    )
+                      .select("*").in("withdrawal_rule_id", withdrawalRuleIds)
+                    : empty,
                   authorizationIds.length
                     ? serviceSupabase.from(
                       "sanitario_produto_especie_autorizacao_v2",
@@ -543,6 +577,8 @@ Deno.serve(async (req: Request) => {
                   coveragesResult,
                   linksResult,
                   doseRulesResult,
+                  withdrawalRulesResult,
+                  withdrawalRuleSourcesResult,
                   authorizationsResult,
                   animalsResult,
                 ]
@@ -574,6 +610,16 @@ Deno.serve(async (req: Request) => {
                         string,
                         unknown
                       >[],
+                      withdrawalRules:
+                        (withdrawalRulesResult.data ?? []) as Record<
+                          string,
+                          unknown
+                        >[],
+                      withdrawalRuleSources:
+                        (withdrawalRuleSourcesResult.data ?? []) as Record<
+                          string,
+                          unknown
+                        >[],
                       speciesAuthorizations:
                         (authorizationsResult.data ?? []) as Record<
                           string,
