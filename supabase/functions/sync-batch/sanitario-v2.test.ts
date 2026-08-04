@@ -11,6 +11,7 @@ import {
   type SanitarioSyncV2Gate,
   validateSanitarioSyncV2Envelope,
   validateSanitarioSyncV2Operation,
+  validateSanitaryCorrectionSourceConsistency,
 } from "./sanitario-v2";
 
 const ids = {
@@ -117,6 +118,77 @@ function externalHistoryOperation(input: {
         carencia_leite_ate: null,
         payload: {},
         ...input.detail,
+      },
+      event_animals: [{ id: ids.relation, animal_id: ids.animal }],
+    },
+  };
+}
+
+function correctionOperation(overrides: {
+  event?: Record<string, unknown>;
+  detail?: Record<string, unknown>;
+  correction?: Record<string, unknown>;
+} = {}) {
+  return {
+    domain: "sanitario_v2",
+    command: "apply_factual_core",
+    contract_version: 2,
+    client_tx_id: ids.tx,
+    client_op_id: ids.op,
+    domain_op_id: ids.domainOp,
+    payload: {
+      event: {
+        id: ids.event,
+        natureza: "correction",
+        occurred_at: "2026-07-28T12:00:00.000Z",
+        animal_id: ids.animal,
+        lote_id: null,
+        source_sanitario_agenda_v2_id: null,
+        corrige_evento_id: ids.agenda,
+        observacoes: "Custo conferido.",
+        payload: {
+          schema: "sanitary_correction_v2",
+          creates_active_withdrawal: false,
+          sanitary_correction: {
+            schema_version: 1,
+            evento_origem_id: ids.agenda,
+            corrige_evento_id: ids.agenda,
+            tipo_correcao: "correcao_custo",
+            motivo: "Custo conferido.",
+            payload_original_snapshot: { event: {}, detail: {} },
+            payload_correcao: {
+              custo_unitario_snapshot: 6,
+              custo_total_snapshot: 12,
+            },
+            created_by: ids.actor,
+            created_at: "2026-07-28T12:00:00.000Z",
+            fazenda_id: ids.farm,
+            idempotency_key: ids.event,
+            request_fingerprint: "fnv1a32:12345678",
+            technical_correction: false,
+            ...overrides.correction,
+          },
+        },
+        ...overrides.event,
+      },
+      detail: {
+        tipo: "vacinacao",
+        produto_sanitario_v2_id: ids.closure,
+        insumo_id: null,
+        estoque_lote_id: null,
+        produto_nome_snapshot: "Vacina A",
+        produto_snapshot: { eventId: ids.agenda },
+        dose_quantidade: 2,
+        dose_unidade: "ml",
+        via_aplicacao: "subcutanea",
+        custo_unitario_snapshot: 6,
+        custo_total_snapshot: 12,
+        carencia_carne_dias: null,
+        carencia_leite_dias: null,
+        carencia_carne_ate: null,
+        carencia_leite_ate: null,
+        payload: {},
+        ...overrides.detail,
       },
       event_animals: [{ id: ids.relation, animal_id: ids.animal }],
     },
@@ -690,6 +762,149 @@ describe("sync-batch sanitario v2: histórico externo/documental", () => {
       status: "CONFLICT",
       reason_code: "SANITARIO_IDEMPOTENCY_PAYLOAD_MISMATCH",
     });
+  });
+});
+
+describe("sync-batch sanitario v2: correção append-only", () => {
+  it("aceita correção factual vinculada com motivo e taxonomia ativa", () => {
+    const validation = validateSanitarioSyncV2Operation(
+      correctionOperation(),
+      context,
+    );
+    expect(validation.ok).toBe(true);
+    if (!validation.ok) return;
+    expect(buildSanitarioSyncV2RpcCall(validation.operation, context))
+      .toMatchObject({
+        functionName: "internal_sanitario_sync_v2_apply_factual_core",
+        args: {
+          event_payload: {
+            natureza: "correction",
+            corrige_evento_id: ids.agenda,
+            observacoes: "Custo conferido.",
+          },
+        },
+      });
+  });
+
+  it("rejeita motivo ausente, autorreferência, Agenda e campo fora da taxonomia", () => {
+    const cases = [
+      correctionOperation({
+        event: { observacoes: "" },
+        correction: { motivo: "" },
+      }),
+      correctionOperation({
+        event: { corrige_evento_id: ids.event },
+        correction: { corrige_evento_id: ids.event },
+      }),
+      correctionOperation({
+        event: { source_sanitario_agenda_v2_id: ids.agenda },
+      }),
+      correctionOperation({
+        correction: { payload_correcao: { via_aplicacao: "oral" } },
+      }),
+    ];
+    const reasons = cases.map((operation) => {
+      const result = validateSanitarioSyncV2Operation(operation, context);
+      expect(result.ok).toBe(false);
+      return result.ok ? null : result.result.reason_code;
+    });
+    expect(reasons).toEqual([
+      "SANITARIO_CORRECTION_PAYLOAD_INVALID",
+      "SANITARIO_CORRECTION_REFERENCE_INVALID",
+      "SANITARIO_CORRECTION_REFERENCE_INVALID",
+      "SANITARIO_CORRECTION_FIELDS_UNSUPPORTED",
+    ]);
+  });
+
+  it("rejeita carência e mudança técnica disfarçada de correção de custo", () => {
+    for (
+      const operation of [
+        correctionOperation({ detail: { carencia_carne_dias: 30 } }),
+        correctionOperation({ correction: { technical_correction: true } }),
+      ]
+    ) {
+      const result = validateSanitarioSyncV2Operation(operation, context);
+      expect(result.ok).toBe(false);
+      if (!result.ok) expect(result.result.status).toBe("REJECTED");
+    }
+  });
+
+  it("compara detalhe e animais ao fato corrigido e expõe conflito divergente", () => {
+    const validation = validateSanitarioSyncV2Operation(
+      correctionOperation(),
+      context,
+    );
+    expect(validation.ok).toBe(true);
+    if (
+      !validation.ok || validation.operation.command !== "apply_factual_core"
+    ) return;
+    const sourceDetail = {
+      tipo: "vacinacao",
+      produto_sanitario_v2_id: ids.closure,
+      insumo_id: null,
+      estoque_lote_id: null,
+      produto_nome_snapshot: "Vacina A",
+      produto_snapshot: { eventId: ids.agenda },
+      estoque_lote_codigo_snapshot: null,
+      lote_fabricante: null,
+      validade_produto: null,
+      dose_quantidade: 2,
+      dose_unidade: "ml",
+      via_aplicacao: "subcutanea",
+      responsavel_nome: null,
+      responsavel_tipo: null,
+      custo_unitario_snapshot: 5,
+      custo_total_snapshot: 10,
+    };
+    const base = {
+      operation: validation.operation,
+      sourceEvent: { id: ids.agenda, animal_id: ids.animal, lote_id: null },
+      sourceDetail,
+      sourceAnimalIds: [ids.animal],
+    };
+    expect(validateSanitaryCorrectionSourceConsistency(base)).toBeNull();
+    expect(validateSanitaryCorrectionSourceConsistency({
+      ...base,
+      sourceAnimalIds: [ids.actor],
+    })).toBe("SANITARIO_CORRECTION_ANIMALS_MISMATCH");
+
+    const divergent = validateSanitarioSyncV2Operation(
+      correctionOperation({ detail: { via_aplicacao: "oral" } }),
+      context,
+    );
+    expect(divergent.ok).toBe(true);
+    if (!divergent.ok || divergent.operation.command !== "apply_factual_core") {
+      return;
+    }
+    expect(validateSanitaryCorrectionSourceConsistency({
+      ...base,
+      operation: divergent.operation,
+    })).toBe("SANITARIO_CORRECTION_UNDECLARED_CHANGE");
+
+    const technical = validateSanitarioSyncV2Operation(
+      correctionOperation({
+        correction: {
+          tipo_correcao: "complemento_rastreabilidade",
+          payload_correcao: { dose_quantidade: 3 },
+          technical_correction: true,
+        },
+        detail: {
+          dose_quantidade: 3,
+          custo_unitario_snapshot: 5,
+          custo_total_snapshot: 10,
+          produto_snapshot: { eventId: ids.event },
+        },
+      }),
+      context,
+    );
+    expect(technical.ok).toBe(true);
+    if (!technical.ok || technical.operation.command !== "apply_factual_core") {
+      return;
+    }
+    expect(validateSanitaryCorrectionSourceConsistency({
+      ...base,
+      operation: technical.operation,
+    })).toBeNull();
   });
 });
 

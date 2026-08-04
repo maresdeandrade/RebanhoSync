@@ -254,6 +254,54 @@ const EXTERNAL_HISTORY_EVIDENCE_FIELDS = new Set([
   "route",
   "responsible",
 ]);
+const SANITARY_CORRECTION_TYPES = new Set([
+  "complemento_rastreabilidade",
+  "correcao_custo",
+  "correcao_lote_estoque",
+  "estorno_baixa_estoque",
+  "contra_lancamento_estoque",
+  "resolucao_ocorrencia_biosseguranca",
+  "cancelamento_ocorrencia_biosseguranca",
+  "encerramento_pendencia_corretiva",
+]);
+const SANITARY_SPECIALIZED_CORRECTION_TYPES = new Set([
+  "estorno_baixa_estoque",
+  "contra_lancamento_estoque",
+  "resolucao_ocorrencia_biosseguranca",
+  "cancelamento_ocorrencia_biosseguranca",
+  "encerramento_pendencia_corretiva",
+]);
+const SANITARY_CORRECTION_ALLOWED_FIELDS: Record<string, ReadonlySet<string>> =
+  {
+    complemento_rastreabilidade: new Set([
+      "executed_at",
+      "produto_sanitario_v2_id",
+      "produto_nome_snapshot",
+      "dose_quantidade",
+      "dose_unidade",
+      "via_aplicacao",
+      "responsavel_nome",
+      "responsavel_tipo",
+      "lote_fabricante",
+      "validade_produto",
+    ]),
+    correcao_custo: new Set([
+      "custo_unitario_snapshot",
+      "custo_total_snapshot",
+    ]),
+    correcao_lote_estoque: new Set([
+      "insumo_id",
+      "estoque_lote_id",
+      "estoque_lote_codigo_snapshot",
+      "lote_fabricante",
+      "validade_produto",
+    ]),
+    estorno_baixa_estoque: new Set(),
+    contra_lancamento_estoque: new Set(),
+    resolucao_ocorrencia_biosseguranca: new Set(),
+    cancelamento_ocorrencia_biosseguranca: new Set(),
+    encerramento_pendencia_corretiva: new Set(),
+  };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -420,6 +468,179 @@ function validateExternalHistoryFactualCore(input: {
   return null;
 }
 
+export function validateSanitaryCorrectionFactualCore(input: {
+  event: Record<string, unknown>;
+  detail: Record<string, unknown>;
+  eventAnimals: unknown[];
+}): string | null {
+  const { event, detail } = input;
+  if (event.natureza !== "correction") {
+    return event.corrige_evento_id == null
+      ? null
+      : "SANITARIO_CORRECTION_REFERENCE_FORBIDDEN";
+  }
+  if (
+    !isUuid(event.corrige_evento_id) ||
+    event.corrige_evento_id === event.id ||
+    event.source_sanitario_agenda_v2_id != null
+  ) {
+    return "SANITARIO_CORRECTION_REFERENCE_INVALID";
+  }
+  const eventPayload = isRecord(event.payload) ? event.payload : {};
+  const correction = isRecord(eventPayload.sanitary_correction)
+    ? eventPayload.sanitary_correction
+    : null;
+  if (
+    eventPayload.schema !== "sanitary_correction_v2" ||
+    !correction ||
+    correction.schema_version !== 1 ||
+    !isUuid(correction.evento_origem_id) ||
+    correction.corrige_evento_id !== event.corrige_evento_id ||
+    typeof correction.tipo_correcao !== "string" ||
+    !SANITARY_CORRECTION_TYPES.has(correction.tipo_correcao) ||
+    readNonEmptyString(correction.motivo) !==
+      readNonEmptyString(event.observacoes) ||
+    !readNonEmptyString(correction.motivo) ||
+    typeof correction.fazenda_id !== "string" ||
+    !isRecord(correction.payload_correcao) ||
+    !isRecord(correction.payload_original_snapshot) ||
+    correction.creates_active_withdrawal === true ||
+    eventPayload.creates_active_withdrawal === true ||
+    hasNonNullField(detail, [
+      "carencia_carne_dias",
+      "carencia_leite_dias",
+      "carencia_carne_ate",
+      "carencia_leite_ate",
+    ])
+  ) {
+    return "SANITARIO_CORRECTION_PAYLOAD_INVALID";
+  }
+  const changes = correction.payload_correcao as Record<string, unknown>;
+  if (SANITARY_SPECIALIZED_CORRECTION_TYPES.has(correction.tipo_correcao)) {
+    return "SANITARIO_CORRECTION_SPECIALIZED_GESTURE_REQUIRED";
+  }
+  const allowed =
+    SANITARY_CORRECTION_ALLOWED_FIELDS[String(correction.tipo_correcao)];
+  if (!allowed || Object.keys(changes).some((field) => !allowed.has(field))) {
+    return "SANITARIO_CORRECTION_FIELDS_UNSUPPORTED";
+  }
+  if (
+    correction.tipo_correcao === "complemento_rastreabilidade" &&
+    Object.keys(changes).length === 0
+  ) {
+    return "SANITARIO_CORRECTION_CHANGES_REQUIRED";
+  }
+  if (
+    correction.tipo_correcao === "correcao_custo" &&
+    correction.technical_correction === true
+  ) {
+    return "SANITARIO_CORRECTION_COST_SEMANTICS_FORBIDDEN";
+  }
+  if (
+    correction.technical_correction !== true &&
+    isRecord(detail.produto_snapshot) &&
+    (detail.produto_snapshot as Record<string, unknown>).eventId === event.id
+  ) {
+    return "SANITARIO_CORRECTION_TECHNICAL_FLAG_REQUIRED";
+  }
+  return null;
+}
+
+export function validateSanitaryCorrectionSourceConsistency(input: {
+  operation: ApplyFactualCoreOperation;
+  sourceEvent: Record<string, unknown> | null;
+  sourceDetail: Record<string, unknown> | null;
+  sourceAnimalIds: readonly string[];
+}): string | null {
+  const { operation, sourceEvent, sourceDetail } = input;
+  if (operation.payload.event.natureza !== "correction") return null;
+  if (!sourceEvent || !sourceDetail) {
+    return "SANITARIO_CORRECTED_EVENT_NOT_FOUND";
+  }
+  const event = operation.payload.event as unknown as Record<string, unknown>;
+  const detail = operation.payload.detail as unknown as Record<string, unknown>;
+  const payload = isRecord(event.payload) ? event.payload : {};
+  const correction = isRecord(payload.sanitary_correction)
+    ? payload.sanitary_correction
+    : {};
+  const changes = isRecord(correction.payload_correcao)
+    ? correction.payload_correcao
+    : {};
+  const allowed =
+    SANITARY_CORRECTION_ALLOWED_FIELDS[String(correction.tipo_correcao)] ??
+      new Set<string>();
+  if (
+    sourceEvent.id !== event.corrige_evento_id ||
+    sourceEvent.animal_id !== event.animal_id ||
+    sourceEvent.lote_id !== event.lote_id
+  ) return "SANITARIO_CORRECTION_SOURCE_FACT_MISMATCH";
+  const sourcePayload = isRecord(sourceEvent.payload)
+    ? sourceEvent.payload
+    : {};
+  const sourceCorrection = isRecord(sourcePayload.sanitary_correction)
+    ? sourcePayload.sanitary_correction
+    : null;
+  const expectedRootEventId = typeof sourceCorrection?.evento_origem_id ===
+      "string"
+    ? sourceCorrection.evento_origem_id
+    : sourceEvent.id;
+  if (correction.evento_origem_id !== expectedRootEventId) {
+    return "SANITARIO_CORRECTION_ROOT_MISMATCH";
+  }
+
+  const targetAnimalIds = operation.payload.event_animals
+    .map((entry) => entry.animal_id)
+    .sort();
+  if (
+    JSON.stringify([...input.sourceAnimalIds].sort()) !==
+      JSON.stringify(targetAnimalIds)
+  ) {
+    return "SANITARIO_CORRECTION_ANIMALS_MISMATCH";
+  }
+  const factualFields = [
+    "tipo",
+    "produto_sanitario_v2_id",
+    "insumo_id",
+    "estoque_lote_id",
+    "produto_nome_snapshot",
+    "estoque_lote_codigo_snapshot",
+    "lote_fabricante",
+    "validade_produto",
+    "dose_quantidade",
+    "dose_unidade",
+    "via_aplicacao",
+    "responsavel_nome",
+    "responsavel_tipo",
+    "custo_unitario_snapshot",
+    "custo_total_snapshot",
+  ];
+  for (const field of factualFields) {
+    if (Object.prototype.hasOwnProperty.call(changes, field)) {
+      if (
+        !allowed.has(field) ||
+        JSON.stringify(detail[field] ?? null) !==
+          JSON.stringify(changes[field] ?? null)
+      ) {
+        return "SANITARIO_CORRECTION_DECLARED_CHANGE_MISMATCH";
+      }
+    } else if (
+      JSON.stringify(detail[field] ?? null) !==
+        JSON.stringify(sourceDetail[field] ?? null)
+    ) {
+      return "SANITARIO_CORRECTION_UNDECLARED_CHANGE";
+    }
+  }
+  const technical = correction.technical_correction === true;
+  if (
+    !technical &&
+    JSON.stringify(detail.produto_snapshot ?? null) !==
+      JSON.stringify(sourceDetail.produto_snapshot ?? null)
+  ) {
+    return "SANITARIO_CORRECTION_UNDECLARED_TECHNICAL_CHANGE";
+  }
+  return null;
+}
+
 function reject(
   raw: unknown,
   reasonCode: string,
@@ -563,6 +784,16 @@ export function validateSanitarioSyncV2Operation(
       };
     }
     const event = payload.event;
+    if (
+      event.natureza !== "primary_execution" &&
+      event.natureza !== "correction" &&
+      event.natureza !== "standalone_fact"
+    ) {
+      return {
+        ok: false,
+        result: reject(raw, "SANITARIO_EVENT_NATURE_INVALID"),
+      };
+    }
     const eventAnimals = payload.event_animals as unknown[];
     const animalIds = eventAnimals.map((item) =>
       isRecord(item) ? item.animal_id : null
@@ -588,6 +819,14 @@ export function validateSanitarioSyncV2Operation(
     });
     if (externalHistoryIssue) {
       return { ok: false, result: reject(raw, externalHistoryIssue) };
+    }
+    const correctionIssue = validateSanitaryCorrectionFactualCore({
+      event,
+      detail: payload.detail,
+      eventAnimals,
+    });
+    if (correctionIssue) {
+      return { ok: false, result: reject(raw, correctionIssue) };
     }
     if (
       event.natureza === "primary_execution" &&

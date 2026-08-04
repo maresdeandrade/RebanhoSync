@@ -23,6 +23,7 @@ import {
   type SanitarioSyncV2Gate,
   type SanitarioSyncV2Operation,
   validateSanitarioSyncV2Envelope,
+  validateSanitaryCorrectionSourceConsistency,
 } from "./sanitario-v2.ts";
 import {
   validateSanitaryProductEvidenceCatalog,
@@ -368,8 +369,63 @@ Deno.serve(async (req: Request) => {
                   eventAnimals: operation.payload.event_animals,
                 });
                 if (shapeIssue) return { reasonCode: shapeIssue, error: null };
+                const correctionPayload = operation.payload.event.payload
+                  ?.sanitary_correction as Record<string, unknown> | undefined;
+                const validatesTechnicalCorrection =
+                  operation.payload.event.natureza === "correction" &&
+                  correctionPayload?.technical_correction === true;
+                if (operation.payload.event.natureza === "correction") {
+                  const correctedEventId = operation.payload.event
+                    .corrige_evento_id as string;
+                  const [{ data: sourceEvent, error: sourceEventError }, {
+                    data: sourceDetail,
+                    error: sourceDetailError,
+                  }, { data: sourceAnimals, error: sourceAnimalsError }] =
+                    await Promise.all([
+                      serviceSupabase.from("eventos")
+                        .select("id, animal_id, lote_id, payload")
+                        .eq("fazenda_id", trustedFazendaId)
+                        .eq("id", correctedEventId)
+                        .is("deleted_at", null)
+                        .maybeSingle(),
+                      serviceSupabase.from("eventos_sanitario")
+                        .select(
+                          "tipo, produto_sanitario_v2_id, insumo_id, estoque_lote_id, produto_nome_snapshot, produto_snapshot, estoque_lote_codigo_snapshot, lote_fabricante, validade_produto, dose_quantidade, dose_unidade, via_aplicacao, responsavel_nome, responsavel_tipo, custo_unitario_snapshot, custo_total_snapshot",
+                        )
+                        .eq("fazenda_id", trustedFazendaId)
+                        .eq("evento_id", correctedEventId)
+                        .is("deleted_at", null)
+                        .maybeSingle(),
+                      serviceSupabase.from("eventos_animais")
+                        .select("animal_id")
+                        .eq("fazenda_id", trustedFazendaId)
+                        .eq("evento_id", correctedEventId),
+                    ]);
+                  const sourceError = sourceEventError ?? sourceDetailError ??
+                    sourceAnimalsError;
+                  if (sourceError) {
+                    return { reasonCode: null, error: sourceError };
+                  }
+                  const sourceIssue =
+                    validateSanitaryCorrectionSourceConsistency({
+                      operation,
+                      sourceEvent: sourceEvent as
+                        | Record<string, unknown>
+                        | null,
+                      sourceDetail: sourceDetail as
+                        | Record<string, unknown>
+                        | null,
+                      sourceAnimalIds: (sourceAnimals ?? []).map((entry) =>
+                        String((entry as Record<string, unknown>).animal_id)
+                      ),
+                    });
+                  if (sourceIssue) {
+                    return { reasonCode: sourceIssue, error: null };
+                  }
+                }
                 if (
-                  operation.payload.event.natureza !== "primary_execution" ||
+                  (operation.payload.event.natureza !== "primary_execution" &&
+                    !validatesTechnicalCorrection) ||
                   !operation.payload.detail.produto_sanitario_v2_id
                 ) return { reasonCode: null, error: null };
 

@@ -29,7 +29,14 @@ export function validateSanitaryProductEvidenceShape(input: {
   detail: Row;
   eventAnimals: unknown[];
 }): string | null {
-  if (input.event.natureza !== "primary_execution") return null;
+  const eventPayload = record(input.event.payload);
+  const correction = record(eventPayload?.sanitary_correction);
+  const validatesTechnicalCorrection = input.event.natureza === "correction" &&
+    correction?.technical_correction === true;
+  if (
+    input.event.natureza !== "primary_execution" &&
+    !validatesTechnicalCorrection
+  ) return null;
   const productId = input.detail.produto_sanitario_v2_id;
   if (typeof productId !== "string") return null;
   const snapshot = record(input.detail.produto_snapshot);
