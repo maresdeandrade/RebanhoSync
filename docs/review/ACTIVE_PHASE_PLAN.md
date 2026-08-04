@@ -2,7 +2,7 @@
 
 Atualizado em: 2026-08-04
 Status: **Fase 12 ativa; Sync Sanitário v2 em andamento**
-Próximo incremento: **3.13 — Recalcular Conformidade após pull**
+Próxima pendência: **reexecutar os E2Es remotos quando a plataforma estiver estável**
 
 Este documento contém o plano corrente. Estado técnico detalhado, validações e risco de plataforma ficam em [CURRENT_PHASE_HANDOFF.md](./CURRENT_PHASE_HANDOFF.md). A decisão arquitetural permanente está em [ADR-0007](../technical/adrs/ADR-0007-sync-remoto-sanitario-v2-integrado.md).
 
@@ -30,7 +30,7 @@ A Conformidade Sanitária v2 permanece um read model local derivado, somente lei
 | 3.10 Retry/replay/idempotência | Implementado; validação remota parcial |
 | 3.11 Sucesso parcial | Validado localmente; E2E remoto pendente |
 | 3.12 Conflito multi-dispositivo | Código e SQL validados; plataforma bloqueada |
-| 3.13 Recalcular Conformidade após pull | Pendente de integração explícita |
+| 3.13 Recalcular Conformidade após pull | Implementado e validado localmente |
 
 O item 3 não está concluído e a Fase 12 não está encerrada.
 
@@ -66,6 +66,20 @@ Resultado comprovado localmente:
 - nenhuma migration, alteração de RPC, carência nova ou autorização operacional foi introduzida.
 
 O E2E remoto específico do movimento não foi executado. O bloqueio `SANITARIO_V2_E2E_PLATFORM_BLOCKED`, os gates desligados e o rollout não autorizado permanecem inalterados.
+
+## Resultado do incremento 3.13
+
+O pull sanitário de cutover busca todas as fontes necessárias antes de gravar, aplica o merge em uma única transação Dexie e, somente após o commit factual completo, reconstrói localmente a Conformidade a partir das fontes da fazenda.
+
+Resultado comprovado localmente:
+
+- a Conformidade permanece um read model efêmero, sem tabela ou operação primária de sync;
+- Evento, detalhe, relações canônicas com animais, Agenda e closures preservam seus papéis de fato, detalhe e intenção administrativa;
+- pull incremental e replay idêntico recalculam sem duplicar fatos ou efeitos;
+- operação local pendente continua protegida contra sobrescrita e tombstone remoto parcial;
+- falha em qualquer fonte anterior ao merge não grava estado parcial nem dispara recálculo;
+- o recálculo não cria Evento, Agenda, movimento de estoque, carência ou autorização operacional;
+- nenhuma migration, RPC, tabela Dexie, `tableMap` ou worker foi alterado.
 
 Fora do escopo:
 
@@ -106,11 +120,10 @@ Fora do escopo:
 
 O bloqueio `SANITARIO_V2_E2E_PLATFORM_BLOCKED` continua impedindo rollout, sem invalidar a implementação local do item 3.8 sob gates desligados. Não aumentar timeout nem alterar RPC sem nova evidência.
 
-## Sequência após 3.9
+## Sequência após 3.13
 
 ```txt
-3.13 recálculo explícito da Conformidade após pull
-→ reexecução dos E2Es remotos quando a plataforma estiver estável
+reexecução dos E2Es remotos quando a plataforma estiver estável
 → item 4 Produto técnico e fonte por campo
 → item 5 Correção append-only sanitária
 → item 6 Carência operacional
@@ -126,7 +139,7 @@ Somente depois do fechamento formal da Fase 12 pode iniciar a Fase 13 — Reprod
 - replay não duplica histórico;
 - conflito e sucesso parcial ficam rastreáveis;
 - pull é merge não destrutivo por `fazenda_id`;
-- Conformidade lê conservadoramente os fatos puxados, sem concluir o recálculo global do item 3.13;
+- Conformidade é reconstruída localmente após o merge completo dos fatos puxados;
 - nenhum Evento de execução, Agenda, estoque, carência ou liberação operacional é criado por inferência;
 - gate remoto e feature flag local permanecem desligados;
 - validações proporcionais de domínio, sync/offline e Supabase passam.

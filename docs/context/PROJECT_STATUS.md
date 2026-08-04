@@ -1,7 +1,7 @@
 # Project Status — RebanhoSync
 
-Atualizado em: 2026-07-30
-Baseline funcional atual: `2006286`
+Atualizado em: 2026-08-04
+Baseline funcional atual: `47c3ebd`
 
 ## Objetivo
 
@@ -15,7 +15,7 @@ A Fase 12 permanece ativa. A Conformidade Sanitária v2 foi validada localmente 
 
 A documentação curta do Sanitário v2 local também está concluída.
 
-Próximo incremento oficial: **3.8 — Push/pull de histórico sanitário externo/documental**.
+Próxima pendência oficial: **reexecutar os E2Es remotos quando a plataforma estiver estável**.
 
 ## Estado sanitário consolidado
 
@@ -56,12 +56,12 @@ Estado dos subitens:
 | 3.1–3.3 Schema, migrations e RLS | Concluídos |
 | 3.4–3.5 Agenda e animais | Implementados; E2E remoto parcial |
 | 3.6–3.7 Evento e detalhe | Implementados; E2E remoto pendente |
-| 3.8 Histórico externo/documental | Próximo incremento |
-| 3.9 Movimento de estoque | Pendente |
+| 3.8 Histórico externo/documental | Implementado e validado localmente; E2E remoto não executado |
+| 3.9 Movimento de estoque | Implementado e validado localmente; E2E remoto pendente |
 | 3.10 Retry/replay/idempotência | Implementado; remoto parcial |
 | 3.11 Sucesso parcial | Local validado; remoto pendente |
 | 3.12 Conflito multi-dispositivo | Plataforma bloqueada |
-| 3.13 Recalcular Conformidade após pull | Pendente |
+| 3.13 Recalcular Conformidade após pull | Implementado e validado localmente |
 
 ## Ambiente e rollout
 
@@ -86,11 +86,7 @@ Não há evidência atual de defeito no SQL ou na regra de domínio. Não aument
 
 ## Próximo desenvolvimento
 
-O item 3.8 deve sincronizar `external_declared` e `external_documented`, preservar origem/evidência, usar a fila compartilhada, manter UUID/idempotência e respeitar tenant/`fazenda_id`.
-
-O pull deve ser não destrutivo, com replay, conflito e sucesso parcial explícitos. Após o pull, a Conformidade deve ser recalculada conservadoramente.
-
-O incremento não cria Agenda, Evento executado, movimento de estoque, carência ou liberação operacional.
+O item 3.13 recalcula localmente a Conformidade após o pull das fontes factuais necessárias. A Conformidade permanece read model derivado, sem tabela/operação primária de sync e sem criar Agenda, Evento, movimento de estoque, carência ou liberação operacional. O item 3 e a Fase 12 permanecem abertos pelas validações remotas pendentes.
 
 ## Fontes de detalhe
 

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import type {
   Animal,
@@ -11,7 +11,10 @@ import type {
   SanitaryProtocolItemV2ReadModel,
   SanitaryProtocolV2ReadModel,
 } from "@/lib/sanitario/catalog/sanitaryProtocolCatalogV2";
-import { buildSanitaryComplianceV2 } from "@/lib/sanitario/compliance/sanitaryComplianceV2";
+import {
+  buildSanitaryComplianceV2,
+  recomputeSanitaryComplianceAfterPullV2,
+} from "@/lib/sanitario/compliance/sanitaryComplianceV2";
 import type {
   SanitaryExecutedHistoryEventV2,
   SanitaryExecutedHistoryV2,
@@ -551,6 +554,37 @@ describe("sanitaryComplianceV2", () => {
     const model = buildSanitaryComplianceV2({
       source: source(),
       evaluatedAt: TODAY,
+    });
+    expect(model).toMatchObject({
+      createsAgenda: false,
+      createsEvent: false,
+      createsStockMovement: false,
+      createsActiveWithdrawal: false,
+      allowsOperationalRelease: false,
+    });
+  });
+
+  it("recalcula após pull a partir das fontes locais da fazenda sem persistir efeitos", async () => {
+    const loadSource = vi.fn(async (fazendaId: string) => {
+      expect(fazendaId).toBe("farm-1");
+      return source({
+        histories: [
+          { animalId: "young", events: [historyEvent("event-pulled", "event")] },
+        ],
+      });
+    });
+
+    const model = await recomputeSanitaryComplianceAfterPullV2({
+      fazendaId: "farm-1",
+      evaluatedAt: TODAY,
+      loadSource,
+    });
+
+    expect(loadSource).toHaveBeenCalledOnce();
+    expect(model.rows[0]).toMatchObject({
+      status: "compliant",
+      evidenceOrigin: "executed_event",
+      eventId: "event-pulled",
     });
     expect(model).toMatchObject({
       createsAgenda: false,

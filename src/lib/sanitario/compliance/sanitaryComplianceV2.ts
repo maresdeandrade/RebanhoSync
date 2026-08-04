@@ -2,6 +2,7 @@ import type { SanitarioAgendaLocalV2 } from "@/lib/offline/types";
 import type { SanitaryExecutedHistoryEventV2 } from "@/lib/sanitario/checks/sanitaryProtocolPrecheckV2";
 import {
   buildSanitaryProtocolWindowV2,
+  loadSanitaryProtocolWindowSourceV2,
   type SanitaryProtocolWindowRowV2,
   type SanitaryProtocolWindowSourceV2,
 } from "@/lib/sanitario/windows/sanitaryProtocolWindowsV2";
@@ -457,4 +458,20 @@ export function buildSanitaryComplianceV2(input: {
     createsActiveWithdrawal: false,
     allowsOperationalRelease: false,
   };
+}
+
+export async function recomputeSanitaryComplianceAfterPullV2(input: {
+  fazendaId: string;
+  evaluatedAt?: string;
+  loadSource?: (
+    fazendaId: string,
+  ) => Promise<SanitaryProtocolWindowSourceV2>;
+}): Promise<SanitaryComplianceReadModelV2> {
+  const loadSource = input.loadSource ?? loadSanitaryProtocolWindowSourceV2;
+  const source = await loadSource(input.fazendaId);
+  return buildSanitaryComplianceV2({
+    source,
+    evaluatedAt:
+      input.evaluatedAt ?? new Date().toISOString().slice(0, 10),
+  });
 }

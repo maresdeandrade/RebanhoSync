@@ -2,10 +2,27 @@
 import "fake-indexeddb/auto";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { supabase } from "@/lib/supabase";
+import { recomputeSanitaryComplianceAfterPullV2 } from "@/lib/sanitario/compliance/sanitaryComplianceV2";
 import { db } from "../db";
 import { pullDataForFarm, pullSanitarioV2CutoverState } from "../pull";
 
 vi.mock("@/lib/supabase", () => ({ supabase: { from: vi.fn() } }));
+vi.mock("@/lib/sanitario/compliance/sanitaryComplianceV2", () => ({
+  recomputeSanitaryComplianceAfterPullV2: vi.fn(async () => ({
+    evaluatedAt: "2026-07-30",
+    rows: [],
+    statuses: {},
+    byAnimal: [],
+    byLot: [],
+    byProtocol: [],
+    byItem: [],
+    createsAgenda: false,
+    createsEvent: false,
+    createsStockMovement: false,
+    createsActiveWithdrawal: false,
+    allowsOperationalRelease: false,
+  })),
+}));
 
 const FARM_ID = "10000000-0000-4000-8000-000000000001";
 const EVENT_ID = "30000000-0000-4000-8000-000000000001";
@@ -31,6 +48,9 @@ describe("sanitario v2 ordered pull", () => {
       db.event_eventos_animais.clear(),
       db.event_eventos.clear(),
       db.event_eventos_sanitario.clear(),
+      db.ops_sanitario_agenda_v2.clear(),
+      db.ops_sanitario_agenda_animais_v2.clear(),
+      db.ops_sanitario_agenda_closures_v2.clear(),
       db.state_insumo_movimentacoes.clear(),
       db.queue_gestures.clear(),
       db.queue_ops.clear(),
@@ -102,7 +122,7 @@ describe("sanitario v2 ordered pull", () => {
         }),
       } as never;
     });
-    await pullSanitarioV2CutoverState(FARM_ID);
+    const compliance = await pullSanitarioV2CutoverState(FARM_ID);
     expect(calls).toEqual([
       "sanitario_agenda_v2",
       "sanitario_agenda_animais_v2",
@@ -115,10 +135,77 @@ describe("sanitario v2 ordered pull", () => {
     expect(await db.queue_gestures.get("tx-pending-before-pull")).toMatchObject(
       { status: "PENDING" },
     );
+    expect(recomputeSanitaryComplianceAfterPullV2).toHaveBeenCalledOnce();
+    expect(recomputeSanitaryComplianceAfterPullV2).toHaveBeenCalledWith({
+      fazendaId: FARM_ID,
+    });
+    expect(compliance).toMatchObject({
+      createsAgenda: false,
+      createsEvent: false,
+      createsStockMovement: false,
+      createsActiveWithdrawal: false,
+      allowsOperationalRelease: false,
+    });
+  });
+
+  it("não grava estado parcial nem recalcula conformidade quando uma fonte factual falha", async () => {
+    vi.mocked(supabase.from).mockImplementation((table: string) =>
+      ({
+        select: () => ({
+          eq: async () =>
+            table === "eventos_sanitario"
+              ? { data: null, error: { message: "detail pull failed" } }
+              : {
+                  data:
+                    table === "eventos"
+                      ? [
+                          {
+                            id: EVENT_ID,
+                            fazenda_id: FARM_ID,
+                            dominio: "sanitario",
+                            updated_at: CREATED_AT,
+                            deleted_at: null,
+                          },
+                        ]
+                      : [],
+                  error: null,
+                },
+        }),
+      }) as never
+    );
+
+    await expect(pullSanitarioV2CutoverState(FARM_ID)).rejects.toMatchObject({
+      message: "detail pull failed",
+    });
+
+    expect(await db.event_eventos.get(EVENT_ID)).toBeUndefined();
+    expect(recomputeSanitaryComplianceAfterPullV2).not.toHaveBeenCalled();
   });
 
   it("usa cursor incremental existente e permanece idempotente", async () => {
     const gteCalls: Array<{ table: string; value: string }> = [];
+    vi.mocked(recomputeSanitaryComplianceAfterPullV2).mockImplementation(
+      async ({ fazendaId }) => {
+        expect(fazendaId).toBe(FARM_ID);
+        expect(await db.event_eventos.get(EVENT_ID)).toMatchObject({
+          fazenda_id: FARM_ID,
+        });
+        return {
+          evaluatedAt: "2026-07-30",
+          rows: [],
+          statuses: {},
+          byAnimal: [],
+          byLot: [],
+          byProtocol: [],
+          byItem: [],
+          createsAgenda: false,
+          createsEvent: false,
+          createsStockMovement: false,
+          createsActiveWithdrawal: false,
+          allowsOperationalRelease: false,
+        };
+      },
+    );
     vi.mocked(supabase.from).mockImplementation((table: string) => {
       const result =
         table === "eventos"
@@ -151,6 +238,7 @@ describe("sanitario v2 ordered pull", () => {
 
     expect(await db.event_eventos.count()).toBe(1);
     expect(gteCalls).toContainEqual({ table: "eventos", value: CREATED_AT });
+    expect(recomputeSanitaryComplianceAfterPullV2).toHaveBeenCalledTimes(2);
   });
 
   it("protege evento, detalhe, relação e movimento pendentes contra tombstone remoto parcial", async () => {

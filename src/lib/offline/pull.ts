@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { recomputeSanitaryComplianceAfterPullV2 } from "@/lib/sanitario/compliance/sanitaryComplianceV2";
 import { db } from "./db";
 import { getLocalStoreName } from "./tableMap";
 import type { PullCursor, PullCursorScope } from "./types";
@@ -822,6 +823,9 @@ export const pullSanitarioV2CutoverState = async (fazendaId: string) => {
     "sanitario_agenda_closures_v2",
   ] as const;
 
+  const results: Record<string, RemoteRow[]> = {};
+  const cursorUpdates: CursorUpdate[] = [];
+
   for (const remoteTable of orderedTables) {
     const localStore = getLocalStoreName(remoteTable);
     const cursorKey = buildPullCursorKey(remoteTable, "fazenda", fazendaId);
@@ -839,23 +843,29 @@ export const pullSanitarioV2CutoverState = async (fazendaId: string) => {
       throw error;
     }
     const rows = (data ?? []) as RemoteRow[];
-    await writeMergeResults(
-      [{ remote: remoteTable, local: localStore }],
-      { [remoteTable]: rows },
-      remoteTable === "eventos_animais"
-        ? []
-        : [
-            {
-              key: cursorKey,
-              remoteTable,
-              localStore,
-              scope: "fazenda",
-              fazendaId,
-              rows,
-            },
-          ],
-    );
+    results[remoteTable] = rows;
+    if (remoteTable !== "eventos_animais") {
+      cursorUpdates.push({
+        key: cursorKey,
+        remoteTable,
+        localStore,
+        scope: "fazenda",
+        fazendaId,
+        rows,
+      });
+    }
   }
+
+  await writeMergeResults(
+    orderedTables.map((remote) => ({
+      remote,
+      local: getLocalStoreName(remote),
+    })),
+    results,
+    cursorUpdates,
+  );
+
+  return recomputeSanitaryComplianceAfterPullV2({ fazendaId });
 };
 
 export const pullInitialData = async (fazenda_id: string) => {
@@ -863,5 +873,5 @@ export const pullInitialData = async (fazenda_id: string) => {
   await pullSanitarioProductClassV2Catalog(fazenda_id);
   await pullSanitarioTechnicalCatalogV2(fazenda_id);
   await pullSanitarioProtocolCatalogV2();
-  await pullSanitarioAgendaV2(fazenda_id);
+  await pullSanitarioV2CutoverState(fazenda_id);
 };

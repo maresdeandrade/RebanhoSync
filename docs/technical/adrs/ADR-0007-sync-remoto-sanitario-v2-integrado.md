@@ -6,7 +6,7 @@
 > **Baseline diagnosticado:** `28f5f8f`
 > **Autores:** Codex + revisão técnica
 
-> **Status de implementação em 2026-07-30:** implementação parcial sob gates desligados. Fundação expand, RLS, `sync-batch` v19, worker/reconcile, Dexie v28 e cutover local foram implementados; E2E remoto permanece parcial por `SANITARIO_V2_E2E_PLATFORM_BLOCKED`; rollout não autorizado. Próximo incremento: 3.8 — histórico sanitário externo/documental. Ver [handoff atual](../../review/CURRENT_PHASE_HANDOFF.md).
+> **Status de implementação em 2026-08-04:** implementação parcial sob gates desligados. Fundação expand, RLS, `sync-batch` v19, worker/reconcile, Dexie v28, cutover local e os incrementos 3.8, 3.9 e 3.13 foram implementados; E2E remoto permanece parcial por `SANITARIO_V2_E2E_PLATFORM_BLOCKED`; rollout não autorizado. Próxima pendência: reexecutar os E2Es remotos quando a plataforma estiver estável. Ver [handoff atual](../../review/CURRENT_PHASE_HANDOFF.md).
 
 ## Problema
 

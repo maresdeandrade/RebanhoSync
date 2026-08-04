@@ -1,9 +1,9 @@
 # Handoff atual — Fase 12 / Sync Sanitário v2
 
 Atualizado em: 2026-08-04
-Baseline autorizado para o incremento 3.9: `bafbcbe`
+Baseline autorizado para o incremento 3.13: `47c3ebd`
 Status: **Fase 12 ativa; rollout não autorizado**
-Próximo incremento: **3.13 — Recalcular Conformidade após pull**
+Próxima pendência: **reexecutar os E2Es remotos quando a plataforma estiver estável**
 
 ## Resumo executivo
 
@@ -11,7 +11,7 @@ A Conformidade Sanitária v2 permanece um read model derivado/somente leitura. O
 
 As validações locais estão completas no baseline registrado pelos commits recentes. A validação E2E remota é parcial: criação de agenda, replay e substituição de animais foram aprovados, mas o cenário de conflito `expected_revision` fica retido no caminho Edge Function/PostgREST/gateway até timeout, embora o PostgreSQL produza imediatamente o erro esperado.
 
-Decisão atual: manter o rollout bloqueado e seguir para o item 3.13, sem concluir o item 3, o item 3.13 ou a Fase 12.
+Decisão atual: manter o rollout bloqueado e o item 3 aberto até as validações remotas pendentes, sem concluir a Fase 12.
 
 ## Fontes autoritativas
 
@@ -43,7 +43,7 @@ Planos encerrados e evidências em `docs/review/evidence/` permanecem histórico
 | 3.10 Retry/replay/idempotência | Implementado; validação remota parcial |
 | 3.11 Sucesso parcial | Validado localmente; E2E remoto pendente |
 | 3.12 Conflito multi-dispositivo | Código e SQL validados; plataforma bloqueada |
-| 3.13 Recalcular Conformidade após pull | Pendente de integração explícita |
+| 3.13 Recalcular Conformidade após pull | Implementado e validado localmente |
 
 Nem o item 3 nem a Fase 12 estão concluídos.
 
@@ -166,7 +166,7 @@ Fatos confirmados:
 - não são criados Agenda, `primary_execution`, movimento de estoque, carência ou autorização operacional;
 - nenhuma migration ou ampliação da RPC foi necessária.
 
-O item 3.13 permanece pendente: o incremento 3.8 não introduz recálculo global após todos os pulls.
+O incremento 3.8 não introduziu recálculo global após todos os pulls; essa integração foi realizada posteriormente no item 3.13.
 
 ## Resultado do incremento 3.9
 
@@ -184,15 +184,28 @@ Fatos confirmados:
 
 Validação local concluída com testes focados, suíte completa, lint, build, Deno fmt/check e baseline funcional Supabase 5/5. O E2E remoto específico do movimento não foi executado; `SANITARIO_V2_E2E_PLATFORM_BLOCKED` permanece como pendência externa sem autorizar rollout.
 
-## Próximo incremento oficial
+## Resultado do incremento 3.13
 
-Implementar 3.13 — recálculo explícito da Conformidade após pull, respeitando os gates e contratos ativos.
+Fatos confirmados:
+
+- o pull de cutover busca as fontes sanitárias ordenadas e somente grava depois que todas respondem sem erro;
+- agenda, alvos, Evento, detalhe, relações com animais, movimentos e closures são mesclados em uma única transação Dexie;
+- a Conformidade é reconstruída após esse commit, diretamente das fontes locais filtradas por `fazenda_id`, sem persistir uma fonte primária paralela;
+- cursor incremental, idempotência e proteção de operação local pendente foram preservados;
+- falha de fonte não produz estado factual parcial nem recálculo;
+- o recálculo declara e testa ausência de criação de Agenda, Evento, estoque, carência e autorização operacional;
+- não houve migration, RPC, alteração de schema Dexie, `tableMap`, `syncWorker`, gate, deploy ou push.
+
+Validação local concluída com 45 testes focados, suíte completa, lint, build e baseline funcional Supabase 5/5. O `rtk` não estava disponível; os comandos equivalentes foram executados diretamente. Warnings existentes de Browserslist, chunking e imports mistos do Dexie não bloquearam o build.
+
+## Próxima pendência oficial
+
+Reexecutar os E2Es remotos quando a plataforma estiver estável. O E2E remoto pendente do item 3.9 não foi executado neste incremento.
 
 Sequência posterior:
 
 ```txt
-3.13 recálculo explícito da Conformidade após pull
-→ reexecutar E2Es remotos quando a plataforma estiver estável
+reexecutar E2Es remotos quando a plataforma estiver estável
 → 4 produto técnico e fonte por campo
 → 5 correção append-only
 → 6 carência operacional
