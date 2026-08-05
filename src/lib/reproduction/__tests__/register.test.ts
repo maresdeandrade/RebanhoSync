@@ -2,17 +2,18 @@ import "fake-indexeddb/auto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { EventValidationError } from "@/lib/events/validators";
 import { db } from "@/lib/offline/db";
+import { getBirthEventId } from "@/lib/reproduction/neonatal";
 import {
   buildReproductionGesture,
   prepareReproductionGesture,
   registerReproductionGesture,
 } from "../register";
 
-async function seedAnimal(id: string) {
+async function seedAnimal(id: string, fazendaId = "farm-1") {
   const now = new Date().toISOString();
   await db.state_animais.add({
     id,
-    fazenda_id: "farm-1",
+    fazenda_id: fazendaId,
     identificacao: id.toUpperCase(),
     sexo: "F",
     status: "ativo",
@@ -131,17 +132,19 @@ describe("buildReproductionGesture", () => {
     ).toThrowError(EventValidationError);
   });
 
-  it("blocks parto marked as unlinked", () => {
-    expect(() =>
-      buildReproductionGesture({
-        fazendaId: "farm-1",
-        animalId: "animal-1",
-        data: {
-          tipo: "parto",
-          episodeLinkMethod: "unlinked",
-        },
-      }),
-    ).toThrowError(EventValidationError);
+  it("builds factual parto without inventing a previous episode", () => {
+    const result = buildReproductionGesture({
+      fazendaId: "farm-1",
+      animalId: "animal-1",
+      eventId: "birth-unlinked",
+      data: {
+        tipo: "parto",
+        episodeLinkMethod: "unlinked",
+      },
+    });
+
+    expect(result.ops[1]?.record.payload).not.toHaveProperty("episode_evento_id");
+    expect(result.ops[2]?.record.pai_id).toBeNull();
   });
 
   it("builds a valid diagnostico gesture with linked episode", () => {
@@ -458,8 +461,6 @@ describe("buildReproductionGesture", () => {
         tipo: "parto",
         dataParto: "2026-03-30",
         numeroCrias: 1,
-        episodeLinkMethod: "manual",
-        episodeEventoId: "servico-1",
       },
     });
 
@@ -474,6 +475,13 @@ describe("buildReproductionGesture", () => {
       em_lactacao: true,
       secagem_realizada: false,
       puberdade_confirmada: true,
+    });
+    expect(result.projection).toMatchObject({
+      status: "PARIDA_PUERPERIO",
+      currentEpisodeId: null,
+      dpp: null,
+      lastBirthDate: "2026-03-30",
+      inconsistency: "PARTO_WITHOUT_EPISODE",
     });
   });
 
@@ -507,6 +515,7 @@ describe("buildReproductionGesture", () => {
     expect(result.ops[2]?.record.mae_id).toBe("matriz-1");
     expect(result.ops[2]?.record.pai_id).toBe("touro-1");
     expect(result.ops[2]?.record.origem).toBe("nascimento");
+    expect(result.ops[2]?.record.payload.birth_event_id).toBe(result.eventId);
     const umbigoAgendaOps = result.ops.filter(
       (op) => op.table === "agenda_itens" && op.record.tipo === "cura_umbigo",
     );
@@ -519,6 +528,7 @@ describe("buildReproductionGesture", () => {
 
   it("resolves sire from linked service before generating calf ops", async () => {
     const now = "2026-03-20T10:00:00.000Z";
+    await seedAnimal("matriz-1");
 
     await db.event_eventos.add({
       id: "servico-1",
@@ -581,6 +591,7 @@ describe("buildReproductionGesture", () => {
   });
 
   it("returns calf ids after registering parto", async () => {
+    await seedAnimal("matriz-1");
     const result = await registerReproductionGesture({
       fazendaId: "farm-1",
       animalId: "matriz-1",
@@ -590,8 +601,6 @@ describe("buildReproductionGesture", () => {
         tipo: "parto",
         dataParto: "2026-03-30",
         numeroCrias: 2,
-        episodeLinkMethod: "manual",
-        episodeEventoId: "servico-1",
         crias: [
           {
             localId: "cria-a",
@@ -614,5 +623,183 @@ describe("buildReproductionGesture", () => {
     const calves = await db.state_animais.bulkGet(result.calfIds);
     expect(calves[0]?.mae_id).toBe("matriz-1");
     expect(calves[1]?.identificacao).toBe("BZ-102");
+    expect(calves[0]?.pai_id).toBeNull();
+    expect(calves[0]?.payload.birth_event_id).toBe(result.eventId);
+  });
+
+  it("ends the current pregnancy projection and preserves its factual history", async () => {
+    await seedAnimal("matriz-prenha");
+    await seedService({ id: "service-parto", animalId: "matriz-prenha" });
+    await registerReproductionGesture({
+      fazendaId: "farm-1",
+      animalId: "matriz-prenha",
+      eventId: "diag-parto",
+      occurredAt: "2026-02-20T10:00:00.000Z",
+      data: {
+        tipo: "diagnostico",
+        resultadoDiagnostico: "positivo",
+        episodeEventoId: "service-parto",
+      },
+    });
+
+    const result = await registerReproductionGesture({
+      fazendaId: "farm-1",
+      animalId: "matriz-prenha",
+      eventId: "birth-parto",
+      occurredAt: "2026-07-20T10:00:00.000Z",
+      data: { tipo: "parto", dataParto: "2026-07-20", numeroCrias: 1 },
+    });
+
+    expect(result.projection).toMatchObject({
+      status: "PARIDA_PUERPERIO",
+      currentEpisodeId: null,
+      dpp: null,
+      lastBirthDate: "2026-07-20",
+      inconsistency: null,
+    });
+    expect(await db.event_eventos.get("service-parto")).toBeDefined();
+    expect(await db.event_eventos.get("diag-parto")).toBeDefined();
+    expect(
+      (await db.event_eventos_reproducao.get("birth-parto"))?.payload,
+    ).toMatchObject({ episode_evento_id: "service-parto" });
+    const taxonomyFacts = (await db.state_animais.get("matriz-prenha"))?.payload
+      .taxonomy_facts;
+    expect(taxonomyFacts).toMatchObject({
+      prenhez_confirmada: false,
+      data_ultimo_parto: "2026-07-20",
+    });
+    expect(taxonomyFacts).not.toHaveProperty("data_prevista_parto");
+  });
+
+  it("retries a twin birth without duplicating event, calves, agenda or queue", async () => {
+    await seedAnimal("matriz-gemeos");
+    const input = {
+      fazendaId: "farm-1",
+      animalId: "matriz-gemeos",
+      eventId: "birth-twins",
+      occurredAt: "2026-07-20T10:00:00.000Z",
+      data: { tipo: "parto" as const, dataParto: "2026-07-20", numeroCrias: 2 },
+    };
+
+    const first = await registerReproductionGesture(input);
+    const counts = {
+      events: await db.event_eventos.count(),
+      details: await db.event_eventos_reproducao.count(),
+      animals: await db.state_animais.count(),
+      agenda: await db.state_agenda_itens.count(),
+      queue: await db.queue_ops.count(),
+    };
+    const second = await registerReproductionGesture(input);
+
+    expect(first.calfIds).toHaveLength(2);
+    expect(new Set(first.calfIds).size).toBe(2);
+    expect(second).toMatchObject({ txId: first.txId, calfIds: first.calfIds });
+    expect(await db.event_eventos.count()).toBe(counts.events);
+    expect(await db.event_eventos_reproducao.count()).toBe(counts.details);
+    expect(await db.state_animais.count()).toBe(counts.animals);
+    expect(await db.state_agenda_itens.count()).toBe(counts.agenda);
+    expect(await db.queue_ops.count()).toBe(counts.queue);
+  });
+
+  it("rejects divergent calf content with the same birth identity", async () => {
+    await seedAnimal("matriz-birth-conflict");
+    const baseInput = {
+      fazendaId: "farm-1",
+      animalId: "matriz-birth-conflict",
+      eventId: "birth-conflict",
+      occurredAt: "2026-07-20T10:00:00.000Z",
+      data: {
+        tipo: "parto" as const,
+        dataParto: "2026-07-20",
+        numeroCrias: 1,
+        crias: [{ localId: "calf-conflict", identificacao: "C-1", sexo: "F" as const }],
+      },
+    };
+    await registerReproductionGesture(baseInput);
+
+    await expect(
+      registerReproductionGesture({
+        ...baseInput,
+        data: {
+          ...baseInput.data,
+          crias: [{ ...baseInput.data.crias[0], identificacao: "C-2" }],
+        },
+      }),
+    ).rejects.toMatchObject({
+      issues: [expect.objectContaining({ code: "REPRO_OPERATION_IDENTITY_CONFLICT" })],
+    });
+  });
+
+  it("rolls back the complete birth gesture when neonatal agenda persistence fails", async () => {
+    await seedAnimal("matriz-birth-rollback");
+    const failAgenda = () => {
+      throw new Error("forced neonatal agenda failure");
+    };
+    db.state_agenda_itens.hook("creating", failAgenda);
+
+    try {
+      await expect(
+        registerReproductionGesture({
+          fazendaId: "farm-1",
+          animalId: "matriz-birth-rollback",
+          eventId: "birth-rollback",
+          occurredAt: "2026-07-20T10:00:00.000Z",
+          data: { tipo: "parto", dataParto: "2026-07-20", numeroCrias: 1 },
+        }),
+      ).rejects.toThrow("forced neonatal agenda failure");
+    } finally {
+      db.state_agenda_itens.hook("creating").unsubscribe(failAgenda);
+    }
+
+    expect(await db.event_eventos.get("birth-rollback")).toBeUndefined();
+    expect(await db.event_eventos_reproducao.get("birth-rollback")).toBeUndefined();
+    expect(
+      await db.state_animais
+        .filter((animal) => getBirthEventId(animal.payload) === "birth-rollback")
+        .count(),
+    ).toBe(0);
+    expect(await db.state_agenda_itens.count()).toBe(0);
+    expect(await db.queue_ops.count()).toBe(0);
+    expect(await db.queue_gestures.count()).toBe(0);
+    expect(
+      (await db.state_animais.get("matriz-birth-rollback"))?.payload.taxonomy_facts,
+    ).toBeUndefined();
+  });
+
+  it("rejects a mother from another farm", async () => {
+    await seedAnimal("matriz-other-farm", "farm-other");
+
+    await expect(
+      prepareReproductionGesture({
+        fazendaId: "farm-1",
+        animalId: "matriz-other-farm",
+        data: { tipo: "parto", numeroCrias: 1 },
+      }),
+    ).rejects.toMatchObject({
+      issues: [expect.objectContaining({ code: "REPRO_PARTO_MOTHER_FARM_MISMATCH" })],
+    });
+  });
+
+  it("rejects a birth episode from another farm", async () => {
+    await seedAnimal("matriz-episode-farm");
+    await seedService({
+      id: "service-other-farm",
+      animalId: "matriz-episode-farm",
+      fazendaId: "farm-other",
+    });
+
+    await expect(
+      prepareReproductionGesture({
+        fazendaId: "farm-1",
+        animalId: "matriz-episode-farm",
+        data: {
+          tipo: "parto",
+          numeroCrias: 1,
+          episodeEventoId: "service-other-farm",
+        },
+      }),
+    ).rejects.toMatchObject({
+      issues: [expect.objectContaining({ code: "REPRO_PARTO_EPISODE_FARM_MISMATCH" })],
+    });
   });
 });

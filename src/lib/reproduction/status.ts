@@ -17,6 +17,8 @@ export type ReproductiveProjectionInconsistency =
   | "EPISODE_TYPE_INVALID"
   | "EPISODE_AFTER_DIAGNOSIS"
   | "EPISODE_NOT_CURRENT"
+  | "PARTO_WITHOUT_EPISODE"
+  | "PARTO_EPISODE_AFTER_BIRTH"
   | "DPP_INVALID";
 
 export interface ReproductiveProjectionEvent {
@@ -39,6 +41,7 @@ export interface ReproductiveProjection {
   diagnosedEpisodeId: string | null;
   dpp: string | null;
   dppOrigin: ReproductiveDppOrigin | null;
+  lastBirthDate: string | null;
   inconsistency: ReproductiveProjectionInconsistency | null;
   definingEventId: string | null;
   definingEventDate: string | null;
@@ -90,6 +93,13 @@ function getExplicitDpp(payload: unknown) {
   return payload.data_prevista_parto ?? null;
 }
 
+function getBirthDate(payload: unknown, occurredAt: string) {
+  if (isPayloadV1(payload) && isDateKey(payload.data_parto_real)) {
+    return payload.data_parto_real;
+  }
+  return occurredAt.slice(0, 10);
+}
+
 function baseProjection(): ReproductiveProjection {
   return {
     status: "VAZIA",
@@ -98,6 +108,7 @@ function baseProjection(): ReproductiveProjection {
     diagnosedEpisodeId: null,
     dpp: null,
     dppOrigin: null,
+    lastBirthDate: null,
     inconsistency: null,
     definingEventId: null,
     definingEventDate: null,
@@ -223,11 +234,39 @@ export function rebuildReproductiveProjection(
     }
 
     if (type === "parto") {
+      const episodeId = getEpisodeId(event.details.payload);
+      const episode = episodeId ? byId.get(episodeId) : null;
+      const activeEpisodeId = projection.currentEpisodeId;
+      let inconsistency: ReproductiveProjectionInconsistency | null = null;
+
+      if (!episodeId) {
+        inconsistency = "PARTO_WITHOUT_EPISODE";
+      } else if (!episode) {
+        inconsistency = "EPISODE_NOT_FOUND";
+      } else if (episode.fazenda_id !== event.fazenda_id) {
+        inconsistency = "EPISODE_FARM_MISMATCH";
+      } else if (episode.animal_id !== event.animal_id) {
+        inconsistency = "EPISODE_ANIMAL_MISMATCH";
+      } else if (
+        episode.details?.tipo !== "cobertura" &&
+        episode.details?.tipo !== "IA"
+      ) {
+        inconsistency = "EPISODE_TYPE_INVALID";
+      } else if (episode.occurred_at > event.occurred_at) {
+        inconsistency = "PARTO_EPISODE_AFTER_BIRTH";
+      } else if (activeEpisodeId !== episode.id) {
+        inconsistency = "EPISODE_NOT_CURRENT";
+      }
+
       projection.status = "PARIDA_PUERPERIO";
       projection.currentEpisodeId = null;
       projection.dpp = null;
       projection.dppOrigin = null;
-      projection.inconsistency = null;
+      projection.lastBirthDate = getBirthDate(
+        event.details.payload,
+        event.occurred_at,
+      );
+      projection.inconsistency = inconsistency;
       defineFromEvent(projection, event);
       continue;
     }

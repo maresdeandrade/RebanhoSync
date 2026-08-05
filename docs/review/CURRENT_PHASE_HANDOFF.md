@@ -1,9 +1,22 @@
-# Handoff atual — Fase 13.1 / diagnóstico de gestação
+# Handoff atual — Fase 13.2 / parto factual
 
 Atualizado em: 2026-08-05
 Baseline de entrada: `main@ab47e47`
-Status: **diagnóstico factual e projeção local reconstruível implementados**
-Próximo incremento: **parto e encerramento da gestação**
+Status: **parto factual integrado à projeção local reconstruível**
+Próximo incremento: **aborto/perda gestacional**
+
+## Entrega da Fase 13.2
+
+- o gesto existente persiste Evento de parto, detalhe, crias, cache derivado e Agenda neonatal de forma atômica;
+- a projeção encerra PRENHA/SERVIDA, remove DPP atual e deriva a data do último parto do Evento;
+- ausência de serviço/diagnóstico anterior não bloqueia o fato real e fica sinalizada como histórico incompleto;
+- cada cria possui identidade estável, `mae_id`, `birth_event_id` e `pai_id` somente quando explicitado ou ligado a serviço factual compatível;
+- mãe e episódio são validados por `fazenda_id`, animal, tipo e cronologia;
+- replay da mesma identidade não duplica Evento, cria, Agenda ou fila; divergência nas crias é conflito explícito;
+- falha intermediária reverte integralmente o gesto Dexie;
+- nenhuma migration, RPC, RLS, Edge Function ou sincronização reprodutiva foi alterada.
+
+Validações executadas: testes focados de Reprodução, ESLint dos arquivos TypeScript alterados, `git diff --check` e um build no fechamento. Permanecem fora do escopo: aborto/perda, correção append-only e round-trip remoto reprodutivo.
 
 ## Entrega da Fase 13.1
 

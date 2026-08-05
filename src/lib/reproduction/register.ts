@@ -10,6 +10,7 @@ import type { EventGestureBuildResult } from "@/lib/events/types";
 import type { OperationInput, ReproTipoEnum } from "@/lib/offline/types";
 import { buildAnimalTaxonomyFactsPayload } from "@/lib/animals/taxonomy";
 import { buildUmbigoCareAgendaOps } from "@/lib/reproduction/calfJourney";
+import { getBirthEventId } from "@/lib/reproduction/neonatal";
 import {
   rebuildReproductiveProjection,
   type ReproductiveProjection,
@@ -81,6 +82,27 @@ function throwReproIssues(issues: EventValidationIssue[]): never {
   throw new EventValidationError(issues);
 }
 
+function deterministicUuidFromText(value: string) {
+  const bytes: number[] = [];
+  for (let block = 0; block < 4; block += 1) {
+    let hash = 0x811c9dc5 ^ (block * 0x9e3779b1);
+    for (let index = 0; index < value.length; index += 1) {
+      hash ^= value.charCodeAt(index);
+      hash = Math.imul(hash, 0x01000193);
+    }
+    bytes.push(
+      (hash >>> 24) & 0xff,
+      (hash >>> 16) & 0xff,
+      (hash >>> 8) & 0xff,
+      hash & 0xff,
+    );
+  }
+  bytes[6] = (bytes[6] & 0x0f) | 0x50;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  const hex = bytes.map((byte) => byte.toString(16).padStart(2, "0")).join("");
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
+
 function buildGeneratedCalves(
   eventId: string,
   occurredAt: string,
@@ -110,7 +132,8 @@ function buildGeneratedCalves(
     { length: requestedCount },
     (_, index): { calfId: string; ops: OperationInput[] } => {
       const cria = data.crias?.[index];
-      const criaId = cria?.localId || crypto.randomUUID();
+      const criaId =
+        cria?.localId || deterministicUuidFromText(`${eventId}:calf:${index + 1}`);
       const sexo = cria?.sexo || (index === 0 ? "F" : "M");
       const calfRecord = {
         id: criaId,
@@ -173,38 +196,128 @@ function buildGeneratedCalves(
   };
 }
 
-async function resolvePartoFatherId({
-  animalId,
-  data,
-}: Pick<BuildReproductionGestureInput, "animalId" | "data">) {
-  if (data.tipo !== "parto") return data.machoId ?? null;
-  if (data.machoId) return data.machoId;
-
-  if (data.episodeLinkMethod === "manual" && data.episodeEventoId) {
-    const details = await db.event_eventos_reproducao.get(data.episodeEventoId);
-    return details?.macho_id ?? null;
+async function resolvePartoContext(
+  input: BuildReproductionGestureInput,
+  occurredAt: string,
+) {
+  if (input.data.tipo !== "parto") {
+    return {
+      episodeEventoId: input.data.episodeEventoId ?? null,
+      episodeLinkMethod: input.data.episodeLinkMethod,
+      paiId: input.data.machoId ?? null,
+      maeRaca: null,
+    };
   }
 
-  if (
-    data.episodeLinkMethod === "auto_last_open_service" ||
-    !data.episodeLinkMethod
-  ) {
-    const history = await db.event_eventos
-      .where("animal_id")
-      .equals(animalId)
-      .filter((event) => event.dominio === "reproducao" && !event.deleted_at)
-      .reverse()
-      .sortBy("occurred_at");
-
-    for (const event of history) {
-      const details = await db.event_eventos_reproducao.get(event.id);
-      if (details && (details.tipo === "cobertura" || details.tipo === "IA")) {
-        return details.macho_id ?? null;
-      }
-    }
+  const mother = await db.state_animais.get(input.animalId);
+  if (!mother || mother.deleted_at) {
+    throwReproIssues([
+      {
+        code: "REPRO_PARTO_MOTHER_NOT_FOUND",
+        field: "animalId",
+        message: "A matriz do parto nao foi encontrada localmente.",
+      },
+    ]);
+  }
+  if (mother.fazenda_id !== input.fazendaId) {
+    throwReproIssues([
+      {
+        code: "REPRO_PARTO_MOTHER_FARM_MISMATCH",
+        field: "animalId",
+        message: "A matriz do parto pertence a outra fazenda.",
+      },
+    ]);
   }
 
-  return null;
+  const history = await loadReproductiveHistory(
+    input.fazendaId,
+    input.animalId,
+    input.eventId ?? "",
+  );
+  const currentProjection = rebuildReproductiveProjection(history);
+  const existingPartoDetail = input.eventId
+    ? await db.event_eventos_reproducao.get(input.eventId)
+    : null;
+  const existingPartoPayload =
+    existingPartoDetail?.tipo === "parto" &&
+    existingPartoDetail.payload &&
+    typeof existingPartoDetail.payload === "object"
+      ? existingPartoDetail.payload
+      : null;
+  const existingEpisodeId =
+    existingPartoPayload &&
+    typeof existingPartoPayload.episode_evento_id === "string"
+      ? existingPartoPayload.episode_evento_id
+      : null;
+  const existingLinkMethod =
+    existingPartoPayload &&
+    (existingPartoPayload.episode_link_method === "manual" ||
+      existingPartoPayload.episode_link_method === "auto_last_open_service" ||
+      existingPartoPayload.episode_link_method === "unlinked")
+      ? existingPartoPayload.episode_link_method
+      : null;
+  const replaysExistingParto = Boolean(
+    existingPartoDetail && !input.data.episodeEventoId,
+  );
+  const requestedEpisodeId = input.data.episodeEventoId ?? null;
+  const episodeId =
+    requestedEpisodeId ??
+    (replaysExistingParto ? existingEpisodeId : currentProjection.currentEpisodeId);
+
+  if (!episodeId) {
+    return {
+      episodeEventoId: null,
+      episodeLinkMethod: "unlinked" as const,
+      paiId: input.data.machoId ?? existingPartoDetail?.macho_id ?? null,
+      maeRaca: mother.raca,
+    };
+  }
+
+  const [serviceEvent, serviceDetail] = await Promise.all([
+    db.event_eventos.get(episodeId),
+    db.event_eventos_reproducao.get(episodeId),
+  ]);
+  const issue = !serviceEvent || !serviceDetail
+    ? "REPRO_PARTO_EPISODE_NOT_FOUND"
+    : serviceEvent.fazenda_id !== input.fazendaId ||
+        serviceDetail.fazenda_id !== input.fazendaId
+      ? "REPRO_PARTO_EPISODE_FARM_MISMATCH"
+      : serviceEvent.animal_id !== input.animalId
+        ? "REPRO_PARTO_EPISODE_ANIMAL_MISMATCH"
+        : serviceEvent.dominio !== "reproducao" ||
+            (serviceDetail.tipo !== "cobertura" && serviceDetail.tipo !== "IA")
+          ? "REPRO_PARTO_EPISODE_TYPE_INVALID"
+          : serviceEvent.deleted_at || serviceDetail.deleted_at
+            ? "REPRO_PARTO_EPISODE_DELETED"
+            : serviceEvent.occurred_at > occurredAt
+              ? "REPRO_PARTO_EPISODE_AFTER_BIRTH"
+              : requestedEpisodeId &&
+                  !replaysExistingParto &&
+                  currentProjection.currentEpisodeId &&
+                  currentProjection.currentEpisodeId !== requestedEpisodeId
+                ? "REPRO_PARTO_EPISODE_NOT_CURRENT"
+                : null;
+
+  if (issue) {
+    throwReproIssues([
+      {
+        code: issue,
+        field: "episodeEventoId",
+        message: "O episodio informado nao e compativel com este parto.",
+      },
+    ]);
+  }
+
+  return {
+    episodeEventoId: episodeId,
+    episodeLinkMethod: replaysExistingParto
+      ? existingLinkMethod ?? "manual"
+      : requestedEpisodeId
+        ? "manual" as const
+        : "auto_last_open_service" as const,
+    paiId: input.data.machoId ?? serviceDetail!.macho_id ?? null,
+    maeRaca: mother.raca,
+  };
 }
 
 async function resolveExpectedBirthDate({
@@ -375,33 +488,37 @@ async function loadReproductiveHistory(
   }));
 }
 
-async function rebuildProjectionWithPendingDiagnosis(
+async function rebuildProjectionWithPendingEvent(
   input: BuildReproductionGestureInput,
-  eventId: string,
-  occurredAt: string,
-  expectedBirthDate: string | null,
+  built: ReproductionGestureBuildResult,
 ) {
   const history = await loadReproductiveHistory(
     input.fazendaId,
     input.animalId,
-    eventId,
+    built.eventId,
   );
+  const eventOp = built.ops.find(
+    (op) => op.table === "eventos" && op.record.id === built.eventId,
+  );
+  const detailOp = built.ops.find(
+    (op) =>
+      op.table === "eventos_reproducao" &&
+      op.record.evento_id === built.eventId,
+  );
+  if (!eventOp || !detailOp) {
+    throw new Error("REPRO_PENDING_EVENT_INCOMPLETE");
+  }
+
   history.push({
-    id: eventId,
+    id: built.eventId,
     fazenda_id: input.fazendaId,
     animal_id: input.animalId,
-    occurred_at: occurredAt,
+    occurred_at: eventOp.record.occurred_at,
     deleted_at: null,
     details: {
-      tipo: "diagnostico",
+      tipo: detailOp.record.tipo,
       deleted_at: null,
-      payload: {
-        schema_version: 1,
-        episode_evento_id: input.data.episodeEventoId,
-        episode_link_method: input.data.episodeLinkMethod ?? "manual",
-        resultado: input.data.resultadoDiagnostico,
-        ...(expectedBirthDate ? { data_prevista_parto: expectedBirthDate } : {}),
-      },
+      payload: detailOp.record.payload,
     },
   });
 
@@ -416,7 +533,6 @@ async function buildAnimalTaxonomyUpdateOp(
   const animal = await db.state_animais.get(input.animalId);
   if (!animal) return null;
 
-  const partoDate = normalizeDateKey(input.data.dataParto) ?? occurredAt.slice(0, 10);
   let payload = animal.payload;
 
   if (input.data.tipo === "diagnostico") {
@@ -436,10 +552,13 @@ async function buildAnimalTaxonomyUpdateOp(
   }
 
   if (input.data.tipo === "parto") {
+    if (projection?.status !== "PARIDA_PUERPERIO" || !projection.lastBirthDate) {
+      return null;
+    }
     payload = buildAnimalTaxonomyFactsPayload(payload, {
       prenhez_confirmada: false,
       data_prevista_parto: null,
-      data_ultimo_parto: partoDate,
+      data_ultimo_parto: projection.lastBirthDate,
       em_lactacao: true,
       secagem_realizada: false,
       puberdade_confirmada: true,
@@ -473,29 +592,6 @@ export function buildReproductionGesture({
   maeRaca = null,
   data,
 }: BuildReproductionGestureInput): ReproductionGestureBuildResult {
-  if (data.tipo === "parto") {
-    if (data.episodeLinkMethod === "unlinked") {
-      throwReproIssues([
-        {
-          code: "REPRO_PARTO_REQUIRES_EPISODE",
-          field: "episodeLinkMethod",
-          message:
-            "Parto exige vinculo com servico anterior. Selecione o episodio correspondente.",
-        },
-      ]);
-    }
-
-    if (data.episodeLinkMethod === "manual" && !data.episodeEventoId) {
-      throwReproIssues([
-        {
-          code: "REPRO_PARTO_MANUAL_EPISODE_REQUIRED",
-          field: "episodeEventoId",
-          message: "Selecione o evento de servico para vincular o parto.",
-        },
-      ]);
-    }
-  }
-
   if ((data.tipo === "cobertura" || data.tipo === "IA") && !data.machoId) {
     throwReproIssues([
       {
@@ -518,8 +614,12 @@ export function buildReproductionGesture({
     observacoes: data.observacoes ?? "",
     payloadData: {
       schema_version: 1,
-      episode_evento_id: data.episodeEventoId || undefined,
-      episode_link_method: data.episodeLinkMethod || undefined,
+      ...(data.episodeEventoId
+        ? { episode_evento_id: data.episodeEventoId }
+        : {}),
+      ...(data.episodeLinkMethod
+        ? { episode_link_method: data.episodeLinkMethod }
+        : {}),
       tecnica_livre: data.tecnicaLivre,
       reprodutor_tag: data.reprodutorTag,
       lote_semen: data.loteSemen,
@@ -561,22 +661,26 @@ export async function prepareReproductionGesture(
     input,
     occurredAt,
   );
-  const paiId = await resolvePartoFatherId(input);
+  const partoContext = await resolvePartoContext(input, occurredAt);
   const expectedBirthDate = diagnostic
     ? diagnostic.expectedBirthDate
     : await resolveExpectedBirthDate({ ...input, occurredAt });
-  const animal = await db.state_animais.get(input.animalId);
-  const maeRaca = animal?.raca ?? null;
 
   const built = buildReproductionGesture({
     ...input,
     occurredAt,
-    paiId,
-    maeRaca,
+    paiId: partoContext.paiId,
+    maeRaca: partoContext.maeRaca,
     data: {
       ...input.data,
       ...(input.data.tipo === "diagnostico"
         ? { episodeLinkMethod: input.data.episodeLinkMethod ?? "manual" }
+        : {}),
+      ...(input.data.tipo === "parto"
+        ? {
+            episodeEventoId: partoContext.episodeEventoId,
+            episodeLinkMethod: partoContext.episodeLinkMethod,
+          }
         : {}),
       dataPrevistaParto:
         input.data.tipo === "diagnostico"
@@ -584,13 +688,8 @@ export async function prepareReproductionGesture(
           : expectedBirthDate ?? input.data.dataPrevistaParto,
     },
   });
-  const projection = input.data.tipo === "diagnostico"
-    ? await rebuildProjectionWithPendingDiagnosis(
-        input,
-        built.eventId,
-        occurredAt,
-        expectedBirthDate,
-      )
+  const projection = input.data.tipo === "diagnostico" || input.data.tipo === "parto"
+    ? await rebuildProjectionWithPendingEvent(input, built)
     : null;
   const taxonomyUpdateOp = await buildAnimalTaxonomyUpdateOp(
     input,
@@ -618,6 +717,23 @@ function canonicalize(value: unknown): unknown {
 
 function sameCanonicalValue(left: unknown, right: unknown) {
   return JSON.stringify(canonicalize(left)) === JSON.stringify(canonicalize(right));
+}
+
+function calfIdentity(record: Record<string, unknown>) {
+  return {
+    id: record.id,
+    identificacao: record.identificacao,
+    sexo: record.sexo,
+    status: record.status,
+    lote_id: record.lote_id,
+    data_nascimento: record.data_nascimento,
+    pai_id: record.pai_id,
+    mae_id: record.mae_id,
+    nome: record.nome,
+    origem: record.origem,
+    raca: record.raca,
+    payload: record.payload,
+  };
 }
 
 async function resolveExistingOperation(
@@ -666,6 +782,33 @@ async function resolveExistingOperation(
     ]);
   }
 
+  const expectedCalfOps = built.ops.filter(
+    (op) =>
+      op.table === "animais" &&
+      op.action === "INSERT" &&
+      getBirthEventId(op.record.payload) === built.eventId,
+  );
+  const persistedCalves = await db.state_animais.bulkGet(
+    expectedCalfOps.map((op) => op.record.id),
+  );
+  const sameCalves = expectedCalfOps.every((op, index) => {
+    const persisted = persistedCalves[index];
+    return Boolean(
+      persisted &&
+        persisted.fazenda_id === input.fazendaId &&
+        sameCanonicalValue(calfIdentity(persisted), calfIdentity(op.record)),
+    );
+  });
+  if (!sameCalves) {
+    throwReproIssues([
+      {
+        code: "REPRO_OPERATION_IDENTITY_CONFLICT",
+        field: "eventId",
+        message: "A identidade do parto ja existe com crias diferentes.",
+      },
+    ]);
+  }
+
   if (!event?.client_tx_id) {
     throwReproIssues([
       {
@@ -676,19 +819,27 @@ async function resolveExistingOperation(
     ]);
   }
 
-  return event.client_tx_id;
+  return {
+    txId: event.client_tx_id,
+    calfIds: persistedCalves
+      .filter(
+        (calf): calf is NonNullable<(typeof persistedCalves)[number]> =>
+          Boolean(calf),
+      )
+      .map((calf) => calf.id),
+  };
 }
 
 export async function registerReproductionGesture(
   input: BuildReproductionGestureInput,
 ) {
   const built = await prepareReproductionGesture(input);
-  const existingTxId = await resolveExistingOperation(input, built);
-  if (existingTxId) {
+  const existing = await resolveExistingOperation(input, built);
+  if (existing) {
     return {
-      txId: existingTxId,
+      txId: existing.txId,
       eventId: built.eventId,
-      calfIds: built.calfIds,
+      calfIds: existing.calfIds,
       projection: built.projection,
     };
   }

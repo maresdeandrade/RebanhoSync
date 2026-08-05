@@ -177,4 +177,46 @@ describe("Repro Status Calculation", () => {
       definingEventId: 'service-current',
     });
   });
+
+  it("closes a current pregnancy when a linked factual birth occurs", () => {
+    const projection = rebuildReproductiveProjection([
+      createEvent('2026-01-10', 'IA', {}, 'birth-service'),
+      createEvent('2026-02-20', 'diagnostico', {
+        schema_version: 1,
+        resultado: 'positivo',
+        episode_evento_id: 'birth-service',
+      }, 'birth-diagnosis'),
+      createEvent('2026-10-20', 'parto', {
+        schema_version: 1,
+        episode_evento_id: 'birth-service',
+        data_parto_real: '2026-10-20',
+      }, 'birth-event'),
+    ]);
+
+    expect(projection).toMatchObject({
+      status: 'PARIDA_PUERPERIO',
+      currentEpisodeId: null,
+      dpp: null,
+      lastBirthDate: '2026-10-20',
+      inconsistency: null,
+      definingEventId: 'birth-event',
+    });
+  });
+
+  it("keeps an unlinked factual birth and signals incomplete history", () => {
+    const projection = rebuildReproductiveProjection([
+      createEvent('2026-10-20', 'parto', {
+        schema_version: 1,
+        data_parto_real: '2026-10-20',
+      }, 'unlinked-birth'),
+    ]);
+
+    expect(projection).toMatchObject({
+      status: 'PARIDA_PUERPERIO',
+      currentEpisodeId: null,
+      dpp: null,
+      lastBirthDate: '2026-10-20',
+      inconsistency: 'PARTO_WITHOUT_EPISODE',
+    });
+  });
 });

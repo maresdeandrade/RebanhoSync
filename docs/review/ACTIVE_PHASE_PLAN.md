@@ -1,10 +1,22 @@
 # Plano ativo — Fase 13 / Reprodução Operacional v1
 
 Atualizado em: 2026-08-05
-Status: **incremento 13.1 — diagnóstico de gestação factual e projeção reconstruível implementado**
-Próxima pendência: **parto e encerramento da gestação, em incremento separado**
+Status: **incremento 13.2 — parto factual e encerramento da gestação implementado**
+Próxima pendência: **aborto/perda gestacional, em incremento separado**
 
 Este documento contém o plano corrente. Estado técnico detalhado, validações e risco de plataforma ficam em [CURRENT_PHASE_HANDOFF.md](./CURRENT_PHASE_HANDOFF.md). A decisão arquitetural permanente está em [ADR-0007](../technical/adrs/ADR-0007-sync-remoto-sanitario-v2-integrado.md).
+
+## Incremento 13.2
+
+- parto permanece Evento factual com detalhe reprodutivo no gesto já existente;
+- gestação vigente é encerrada pela reconstrução histórica, preservando serviço e diagnósticos anteriores;
+- parto sem histórico compatível continua registrável e produz `PARTO_WITHOUT_EPISODE`, sem fabricar serviço, diagnóstico ou DPP;
+- crias preservam identidade própria, fazenda, mãe, pai factual quando conhecido, origem nascimento e `birth_event_id`;
+- Evento, detalhe, crias, cache, Agenda neonatal e fila compartilhada permanecem na mesma transação Dexie;
+- retry retorna Evento/crias já persistidos sem duplicar Agenda ou fila; conteúdo divergente gera conflito;
+- não houve migration, alteração remota, aborto/perda ou mudança no Sanitário v2.
+
+Validação: testes focados de registro/projeção, ESLint dos arquivos TypeScript alterados, `git diff --check` e build único. Próximo incremento: aborto/perda gestacional factual.
 
 ## Incremento 13.1
 
