@@ -1,9 +1,22 @@
-# Handoff atual — Fase 12 encerrada / entrada da Fase 13
+# Handoff atual — Fase 13.1 / diagnóstico de gestação
 
 Atualizado em: 2026-08-05
-Baseline técnico do fechamento: `7e43248`
-Status: **Fase 12 tecnicamente encerrada; rollout sanitário bloqueado**
-Próxima fase de desenvolvimento: **Fase 13 — Reprodução Operacional v1**
+Baseline de entrada: `main@ab47e47`
+Status: **diagnóstico factual e projeção local reconstruível implementados**
+Próximo incremento: **parto e encerramento da gestação**
+
+## Entrega da Fase 13.1
+
+- fato: Evento base + detalhe `diagnostico`, com resultado canônico positivo/negativo;
+- vínculo: cobertura ou IA existente, mesma matriz, mesma fazenda e data não posterior ao diagnóstico;
+- projeção: função pura sobre histórico ordenado, sem leitura de UI, Dexie, Supabase ou `taxonomy_facts`;
+- DPP: explícita válida ou serviço + 283 dias; o fallback diagnóstico + 150 dias foi removido;
+- cache: `taxonomy_facts` reflete somente a projeção; VAZIA elimina prenhez e DPP atuais sem apagar fatos;
+- persistência: Evento, detalhe, cache e fila compartilhada permanecem atômicos em Dexie;
+- idempotência: mesma identidade e conteúdo retorna a transação original; divergência é conflito explícito;
+- banco remoto: nenhuma migration, RPC, RLS, Edge Function ou sincronização reprodutiva foi alterada.
+
+Validações executadas: testes focados de Reprodução, lint somente dos arquivos TypeScript alterados, `git diff --check` e um build no fechamento. Permanecem fora do escopo: parto, aborto/perda, correção append-only e round-trip remoto reprodutivo.
 
 ## Resumo executivo
 
@@ -11,7 +24,7 @@ A Conformidade Sanitária v2 permanece um read model derivado/somente leitura. O
 
 As validações locais e a certificação remota funcional estão consolidadas, incluindo histórico externo/documental, núcleo factual, estoque, correções, carência, pull/Conformidade, sucesso parcial e a recertificação de `BLOCKED_DEPENDENCY` no `sync-batch` v20.
 
-Decisão atual: encerrar o desenvolvimento técnico da Fase 12, manter o rollout bloqueado pela pendência externa `SANITARIO_V2_E2E_PLATFORM_BLOCKED` e liberar o início da Fase 13 sem ativar o Sync Sanitário v2 para usuários.
+Decisão atual: manter a Fase 12 encerrada e o rollout sanitário desligado; avançar a Fase 13 em incrementos reprodutivos locais e verticais.
 
 ## Fontes autoritativas
 

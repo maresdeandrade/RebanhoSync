@@ -29,6 +29,7 @@ export type EventDomain =
 export interface BaseEventInput {
   dominio: EventDomain;
   fazendaId: string;
+  eventId?: string;
   occurredAt?: string;
   animalId?: string | null;
   loteId?: string | null;

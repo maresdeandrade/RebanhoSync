@@ -1,10 +1,24 @@
-# Plano ativo — Transição para a Fase 13 / Reprodução Operacional v1
+# Plano ativo — Fase 13 / Reprodução Operacional v1
 
 Atualizado em: 2026-08-05
-Status: **Fase 12 tecnicamente encerrada; Fase 13 é a próxima fase de desenvolvimento**
-Próxima pendência: **iniciar o plano da Fase 13 sem habilitar o rollout sanitário**
+Status: **incremento 13.1 — diagnóstico de gestação factual e projeção reconstruível implementado**
+Próxima pendência: **parto e encerramento da gestação, em incremento separado**
 
 Este documento contém o plano corrente. Estado técnico detalhado, validações e risco de plataforma ficam em [CURRENT_PHASE_HANDOFF.md](./CURRENT_PHASE_HANDOFF.md). A decisão arquitetural permanente está em [ADR-0007](../technical/adrs/ADR-0007-sync-remoto-sanitario-v2-integrado.md).
+
+## Incremento 13.1
+
+Baseline de entrada: `main@ab47e47`, worktree limpa e Fase 12 tecnicamente encerrada.
+
+- diagnóstico é Evento factual com detalhe reprodutivo e vínculo obrigatório a cobertura ou IA da mesma matriz e fazenda;
+- PRENHA e VAZIA são projetados exclusivamente do histórico ordenado;
+- DPP positiva preserva valor explícito válido ou usa a data do serviço + 283 dias, sem fallback pela data do diagnóstico;
+- `taxonomy_facts` é somente cache derivado, atualizado pela projeção e removível/reconstruível;
+- Evento, detalhe, cache e fila compartilhada são persistidos na mesma transação Dexie;
+- retry pela mesma identidade não duplica; conteúdo divergente gera conflito;
+- não houve migration, alteração remota ou habilitação de gate/rollout sanitário.
+
+Validação: testes focados de registro/projeção, lint dos arquivos alterados, `git diff --check` e build de fechamento. Risco restante: parto, perda gestacional e round-trip remoto reprodutivo continuam fora deste incremento.
 
 ## Resultado já consolidado
 

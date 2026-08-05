@@ -71,7 +71,7 @@ const resolveSanitarioCasoId = (input: EventInput): string | null => {
 export const buildEventGesture = (input: EventInput): EventGestureBuildResult => {
   assertValidEventInput(input);
 
-  const eventId = crypto.randomUUID();
+  const eventId = input.eventId ?? crypto.randomUUID();
   const occurredAt = input.occurredAt ?? new Date().toISOString();
   const sanitarioCasoId = resolveSanitarioCasoId(input);
   const ops: OperationInput[] = [];

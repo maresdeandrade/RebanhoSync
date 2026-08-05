@@ -1,6 +1,6 @@
 # Pendências abertas — RebanhoSync
 
-Atualizado em: 2026-07-30
+Atualizado em: 2026-08-05
 
 ## Objetivo
 
@@ -29,22 +29,11 @@ Conduta:
 
 Não há evidência atual de defeito no SQL ou na regra de domínio.
 
-## P1 — Item 3.8 ainda não implementado
+## P1 — Próximo incremento reprodutivo
 
 Status: `ABERTO`
 
-Próximo incremento oficial: push/pull de `external_declared` e `external_documented`.
-
-Critérios:
-
-- preservar origem e evidência;
-- exigir referência documental para comprovação crítica;
-- usar fila compartilhada, UUID e idempotência;
-- respeitar tenant/`fazenda_id`;
-- pull não destrutivo;
-- replay, conflito e sucesso parcial explícitos;
-- recálculo conservador da Conformidade após pull;
-- não criar Agenda, Evento executado, estoque, carência ou liberação operacional.
+Implementar parto e encerramento da gestação como novo fato histórico, reconstruindo a projeção atual sem reabrir a Fase 12. Aborto/perda gestacional, correção append-only e round-trip remoto permanecem incrementos posteriores.
 
 ## P2 — Ruído residual em testes
 
