@@ -5,14 +5,14 @@ Plataforma offline-first para gestão pecuária, com React/TypeScript, Dexie e S
 ## Estado atual
 
 - Beta interno.
-- Fase 12 ativa.
+- Fase 12 tecnicamente encerrada; Fase 13 é a próxima fase de desenvolvimento.
 - Conformidade Sanitária v2 validada localmente como read model derivado e somente leitura.
 - Documentação curta do Sanitário v2 local concluída.
-- Sync Sanitário v2 em andamento, com os itens 3.9, 3.13, 4, 5 e 6 validados localmente.
+- Sync Sanitário v2 concluído tecnicamente e certificado funcionalmente no staging com `sync-batch` v20.
 - Hardening integrado local desses incrementos executado e documentado.
-- E2E remoto parcial e rollout bloqueado por `SANITARIO_V2_E2E_PLATFORM_BLOCKED`.
+- Rollout sanitário bloqueado pela pendência externa `SANITARIO_V2_E2E_PLATFORM_BLOCKED`, sem bloquear a Fase 13.
 - Gate sanitário remoto desligado; feature flag local `false`; rollout não autorizado.
-- Próxima pendência: **certificação remota acumulada quando o ambiente e os gates forem liberados**.
+- Próxima fase: **Fase 13 — Reprodução Operacional v1**.
 
 Produção não foi alterada. O ambiente remoto usado nesta fase é o Supabase staging `zqloazqzhwauamcejmuz`.
 
@@ -33,7 +33,7 @@ Produção não foi alterada. O ambiente remoto usado nesta fase é o Supabase s
 - [Índice da documentação](./docs/README.md)
 - [Estado atual](./docs/context/PROJECT_STATUS.md)
 - [Roadmap](./docs/product/ROADMAP.md)
-- [Plano ativo da Fase 12](./docs/review/ACTIVE_PHASE_PLAN.md)
+- [Plano ativo e transição para a Fase 13](./docs/review/ACTIVE_PHASE_PLAN.md)
 - [Handoff técnico atual](./docs/review/CURRENT_PHASE_HANDOFF.md)
 - [Arquitetura](./docs/technical/ARCHITECTURE.md)
 - [Sanitário](./docs/domain/SANITARIO.md)

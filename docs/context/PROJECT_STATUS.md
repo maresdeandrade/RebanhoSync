@@ -1,7 +1,7 @@
 # Project Status — RebanhoSync
 
-Atualizado em: 2026-08-04
-Baseline funcional validado localmente: `27453fa`
+Atualizado em: 2026-08-05
+Baseline técnico do fechamento da Fase 12: `7e43248`
 
 ## Objetivo
 
@@ -11,11 +11,11 @@ Registrar o estado vivo do produto em formato curto. Este documento não substit
 
 RebanhoSync está em beta interno, com arquitetura offline-first e isolamento multi-tenant por `fazenda_id`.
 
-A Fase 12 permanece ativa. A Conformidade Sanitária v2 foi validada localmente e documentada; o Sync Remoto Sanitário v2 está em andamento, com os itens 3.9, 3.13, 4, 5 e 6 validados e submetidos a hardening integrado local.
+A Fase 12 está tecnicamente encerrada. A Conformidade Sanitária v2, a documentação local e o Sync Remoto Sanitário v2 foram concluídos, endurecidos localmente e certificados funcionalmente no staging.
 
 A documentação curta do Sanitário v2 local também está concluída.
 
-Próxima pendência oficial: **certificação remota acumulada quando o ambiente e os gates forem liberados**.
+Próxima fase de desenvolvimento: **Fase 13 — Reprodução Operacional v1**.
 
 ## Estado sanitário consolidado
 
@@ -47,7 +47,7 @@ Implementado:
 - ledger de idempotência;
 - gate autoritativo fail-closed;
 - comandos `create_agenda`, `replace_agenda_animals`, `apply_factual_core` e `close_agenda`;
-- `sync-batch` v19 e typecheck Deno limpo;
+- `sync-batch` v20 e typecheck Deno limpo;
 - worker/reconcile com `APPLIED`, `RETRYABLE`, `REJECTED`, `CONFLICT` e `BLOCKED_DEPENDENCY`;
 - Dexie v28 e store factual `event_eventos_animais`;
 - manifesto de cutover `PREPARED`, `APPLYING`, `APPLIED` e `FAILED`;
@@ -58,18 +58,12 @@ Estado dos subitens:
 | Subitem | Estado |
 |---|---|
 | 3.1–3.3 Schema, migrations e RLS | Concluídos |
-| 3.4–3.5 Agenda e animais | Implementados; E2E remoto parcial |
-| 3.6–3.7 Evento e detalhe | Implementados; E2E remoto pendente |
-| 3.8 Histórico externo/documental | Implementado e validado localmente; E2E remoto não executado |
-| 3.9 Movimento de estoque | Implementado e validado localmente; E2E remoto pendente |
-| 3.10 Retry/replay/idempotência | Implementado; remoto parcial |
-| 3.11 Sucesso parcial | Local validado; remoto pendente |
-| 3.12 Conflito multi-dispositivo | Plataforma bloqueada |
-| 3.13 Recalcular Conformidade após pull | Implementado e validado localmente |
-| 4 Produto técnico e fonte por campo | Implementado e validado localmente |
-| 5 Correção sanitária append-only | Implementado e validado localmente |
-| 6 Carência sanitária operacional | Implementado e validado localmente |
-| Hardening integrado local | Executado e validado para 3.9, 3.13, 4, 5 e 6 |
+| 3.4–3.11 e 3.13 Sync funcional | Concluído e certificado no escopo da Fase 12 |
+| 3.12 Conflito multi-dispositivo | Desenvolvimento concluído; rollout bloqueado pela plataforma |
+| 4 Produto técnico e fonte por campo | Concluído |
+| 5 Correção sanitária append-only | Concluído |
+| 6 Carência sanitária operacional | Concluído |
+| Hardening integrado local | Concluído |
 
 ## Ambiente e rollout
 
@@ -90,15 +84,15 @@ Estado dos subitens:
 - a resposta não retorna pelo caminho Edge Function/PostgREST/gateway antes do timeout;
 - o worker recebe `RETRYABLE / SANITARIO_RPC_TIMEOUT`.
 
-Não há evidência atual de defeito no SQL ou na regra de domínio. Não aumentar timeout nem alterar RPC sem nova evidência. O bloqueio impede rollout, mas não o desenvolvimento sob gate desligado.
+Não há evidência atual de defeito no SQL ou na regra de domínio. Não aumentar timeout, criar workaround ou reescrever preventivamente a RPC. O bloqueio impede rollout, mas não o desenvolvimento das próximas fases.
 
 ## Próximo desenvolvimento
 
-A próxima etapa é a certificação remota acumulada dos contratos já validados localmente, condicionada à estabilidade do ambiente e à liberação controlada dos gates para teste. O item 3 e a Fase 12 permanecem abertos; rollout e produção continuam inalterados.
+A próxima etapa de desenvolvimento é a Fase 13 — Reprodução Operacional v1. O ciclo Dexie completo permanece coberto pela certificação local existente. A transição não habilita o Sync Sanitário v2; rollout e produção continuam inalterados.
 
 ## Fontes de detalhe
 
-- [Plano ativo da Fase 12](../review/ACTIVE_PHASE_PLAN.md)
+- [Plano ativo e transição para a Fase 13](../review/ACTIVE_PHASE_PLAN.md)
 - [Handoff técnico atual](../review/CURRENT_PHASE_HANDOFF.md)
 - [Roadmap](../product/ROADMAP.md)
 - [Sanitário](../domain/SANITARIO.md)

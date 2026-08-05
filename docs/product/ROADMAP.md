@@ -1,8 +1,8 @@
 # Roadmap — RebanhoSync
 
-Atualizado em: 2026-07-30
-Fase atual: **Fase 12 — ativa**
-Próximo incremento: **3.8 — Push/pull de histórico sanitário externo/documental**
+Atualizado em: 2026-08-05
+Fase atual: **Fase 13 — Reprodução Operacional v1**
+Fase anterior: **Fase 12 — desenvolvimento técnico concluído; rollout sanitário bloqueado**
 
 ## Objetivo
 
@@ -16,28 +16,15 @@ Definir a sequência macro de desenvolvimento. O plano detalhado da fase corrent
 - não automatizar decisão crítica sem fonte técnica explícita;
 - não iniciar a Fase 13 antes do fechamento formal da Fase 12.
 
-## Fase 12 — estado vigente
+## Fase 12 — resultado encerrado
 
 1. Validação real da Conformidade Sanitária v2 — **concluída**.
 2. Documentação curta do Sanitário v2 local — **concluída**.
-3. Sync remoto sanitário v2 — **em andamento**.
-   1. Diagnóstico schema local/remoto — **concluído**.
-   2. Migrations necessárias — **concluído**.
-   3. RLS/multi-tenant/fazenda — **concluído**.
-   4. Agenda sanitária — **implementada; E2E parcial**.
-   5. `agenda_animais` — **implementada; E2E parcial**.
-   6. Evento sanitário — **implementado; E2E pendente**.
-   7. Detalhe sanitário — **implementado; E2E pendente**.
-   8. Histórico externo/documental — **próximo incremento**.
-   9. Movimento de estoque sanitário — **pendente**.
-   10. Retry/replay/idempotência — **implementado**.
-   11. Sucesso parcial — **local validado; remoto pendente**.
-   12. Conflito multi-dispositivo — **plataforma bloqueada**.
-   13. Recalcular Conformidade após pull — **pendente**.
-4. Produto sanitário técnico e fonte por campo.
-5. Correção append-only sanitária.
-6. Carência operacional derivada.
-7. Fechamento formal da Fase 12.
+3. Sync remoto sanitário v2 — **desenvolvimento técnico concluído e certificado funcionalmente**.
+4. Produto sanitário técnico e fonte por campo — **concluído**.
+5. Correção append-only sanitária — **concluída**.
+6. Carência operacional derivada — **concluída**.
+7. Fechamento formal da Fase 12 — **concluído**.
 8. Fase 13 — Reprodução Operacional v1.
 9. Fase 14 — Compra/Venda Operacional.
 10. Fase 15 — KPIs/Relatórios.
@@ -45,34 +32,16 @@ Definir a sequência macro de desenvolvimento. O plano detalhado da fase corrent
 12. Fase 17 — Decisão Assistida.
 13. Fase 18 — Beta/Hardening.
 
-O item 3 não está integralmente concluído. A Fase 12 permanece ativa.
+O rollout do Sync Sanitário v2 permanece não autorizado por `SANITARIO_V2_E2E_PLATFORM_BLOCKED`. Isso não reabre o desenvolvimento técnico da Fase 12.
 
-## Próximo incremento funcional
-
-O item 3.8 sincronizará histórico sanitário de entrada `external_declared` e `external_documented`, preservando origem e evidência.
-
-Guardrails:
-
-- comprovação crítica por `external_documented` exige referência documental;
-- fila compartilhada, UUID, idempotência e isolamento por `fazenda_id`;
-- pull não destrutivo;
-- replay, conflito e sucesso parcial explícitos;
-- recálculo conservador da Conformidade após pull;
-- nenhuma criação de Agenda ou Evento executado;
-- nenhum movimento de estoque, cálculo de carência ou liberação operacional;
-- gate remoto desligado, feature flag local `false` e rollout não autorizado.
-
-## Sequência após 3.8
+## Próxima fase de desenvolvimento
 
 ```txt
-3.9 Movimento de estoque sanitário
-→ 3.13 recálculo explícito da Conformidade após pull
-→ reexecução dos E2Es remotos quando a plataforma estiver estável
-→ 4 Produto técnico e fonte por campo
-→ 5 Correção append-only
-→ 6 Carência operacional
-→ 7 Fechamento da Fase 12
+Fase 13 — Reprodução Operacional v1
+→ Fase 14 — Compra/Venda Operacional
 ```
+
+A Fase 13 inicia sem habilitar gate, feature flag ou rollout do Sync Sanitário v2.
 
 ## Risco de rollout
 
@@ -82,7 +51,7 @@ Não há evidência atual de defeito no SQL ou na regra de domínio. Não aument
 
 ## Fases anteriores
 
-Fases 1 a 11 e a Fase 11.5 permanecem concluídas conforme seus relatórios e evidências históricas. Esses documentos preservam a cronologia, mas não substituem o plano ativo da Fase 12.
+Fases 1 a 12 e a Fase 11.5 permanecem concluídas conforme seus relatórios e evidências. O bloqueio de rollout sanitário permanece registrado separadamente e não altera essa sequência de desenvolvimento.
 
 ## Sequência futura
 

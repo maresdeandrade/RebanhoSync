@@ -1,17 +1,17 @@
-# Handoff atual — Fase 12 / Sync Sanitário v2
+# Handoff atual — Fase 12 encerrada / entrada da Fase 13
 
-Atualizado em: 2026-08-04
-Baseline funcional validado no hardening integrado local: `27453fa`
-Status: **Fase 12 ativa; rollout não autorizado**
-Próxima pendência: **conflito remoto 40001 e decisão de rollout; Fase 12 permanece aberta**
+Atualizado em: 2026-08-05
+Baseline técnico do fechamento: `7e43248`
+Status: **Fase 12 tecnicamente encerrada; rollout sanitário bloqueado**
+Próxima fase de desenvolvimento: **Fase 13 — Reprodução Operacional v1**
 
 ## Resumo executivo
 
 A Conformidade Sanitária v2 permanece um read model derivado/somente leitura. Os incrementos 3.9, 3.13, 4, 5 e 6 estão validados localmente e passaram pelo hardening integrado da cadeia de execução factual, snapshots, correção append-only, projeção de carência, fila, pull/reconcile e estoque.
 
-As validações locais estão completas no baseline registrado pelos commits recentes. A validação E2E remota é parcial: criação de agenda, replay e substituição de animais foram aprovados, mas o cenário de conflito `expected_revision` fica retido no caminho Edge Function/PostgREST/gateway até timeout, embora o PostgreSQL produza imediatamente o erro esperado.
+As validações locais e a certificação remota funcional estão consolidadas, incluindo histórico externo/documental, núcleo factual, estoque, correções, carência, pull/Conformidade, sucesso parcial e a recertificação de `BLOCKED_DEPENDENCY` no `sync-batch` v20.
 
-Decisão atual: manter o rollout bloqueado e o item 3 aberto até as validações remotas pendentes, sem concluir a Fase 12.
+Decisão atual: encerrar o desenvolvimento técnico da Fase 12, manter o rollout bloqueado pela pendência externa `SANITARIO_V2_E2E_PLATFORM_BLOCKED` e liberar o início da Fase 13 sem ativar o Sync Sanitário v2 para usuários.
 
 ## Fontes autoritativas
 
@@ -27,29 +27,29 @@ Planos encerrados e evidências em `docs/review/evidence/` permanecem histórico
 
 1. Validação real da Conformidade Sanitária v2 — **concluída**.
 2. Documentação curta do Sanitário v2 local — **concluída**.
-3. Sync Remoto Sanitário v2 — **em andamento**.
+3. Sync Remoto Sanitário v2 — **desenvolvimento técnico concluído**.
 
 | Subitem | Estado |
 |---|---|
 | 3.1 Diagnóstico schema local/remoto | Concluído |
 | 3.2 Migrations necessárias | Fundação concluída |
 | 3.3 RLS/multi-tenant/fazenda | Concluído tecnicamente |
-| 3.4 Agenda sanitária | Implementada; E2E remoto parcial |
-| 3.5 Agenda animais | Implementada; E2E remoto parcial |
-| 3.6 Evento sanitário | Implementado; E2E remoto pendente |
-| 3.7 Detalhe sanitário | Implementado; E2E remoto pendente |
-| 3.8 Histórico externo/documental | Implementado e validado localmente; E2E remoto não executado |
-| 3.9 Movimento de estoque sanitário | Implementado e validado localmente; E2E remoto não executado |
-| 3.10 Retry/replay/idempotência | Implementado; validação remota parcial |
-| 3.11 Sucesso parcial | Validado localmente; E2E remoto pendente |
-| 3.12 Conflito multi-dispositivo | Código e SQL validados; plataforma bloqueada |
-| 3.13 Recalcular Conformidade após pull | Implementado e validado localmente |
-| 4 Produto técnico e fonte por campo | Implementado e validado localmente |
-| 5 Correção sanitária append-only | Implementado e validado localmente |
-| 6 Carência sanitária operacional | Implementado e validado localmente |
-| Hardening integrado local | Executado e validado para 3.9, 3.13, 4, 5 e 6 |
+| 3.4 Agenda sanitária | Concluída |
+| 3.5 Agenda animais | Concluída |
+| 3.6 Evento sanitário | Concluído |
+| 3.7 Detalhe sanitário | Concluído |
+| 3.8 Histórico externo/documental | Concluído |
+| 3.9 Movimento de estoque sanitário | Concluído e recertificado no staging |
+| 3.10 Retry/replay/idempotência | Concluído |
+| 3.11 Sucesso parcial | Concluído |
+| 3.12 Conflito multi-dispositivo | Desenvolvimento concluído; rollout bloqueado pela plataforma |
+| 3.13 Recalcular Conformidade após pull | Concluído |
+| 4 Produto técnico e fonte por campo | Concluído |
+| 5 Correção sanitária append-only | Concluído |
+| 6 Carência sanitária operacional | Concluído |
+| Hardening integrado local | Concluído |
 
-Nem o item 3 nem a Fase 12 estão concluídos.
+A Fase 12 está tecnicamente encerrada. A pendência externa do conflito não bloqueia o desenvolvimento das próximas fases.
 
 ## Componentes implementados
 
@@ -190,7 +190,7 @@ Fatos confirmados:
 - schema, migrations, RPCs, `db.ts`, `tableMap.ts` e `syncWorker.ts` permaneceram inalterados;
 - nenhuma carência nova, Conformidade recalculada ou autorização de venda, abate ou leite foi criada.
 
-Validação local concluída com testes focados, suíte completa, lint, build, Deno fmt/check e baseline funcional Supabase 5/5. O E2E remoto específico do movimento não foi executado; `SANITARIO_V2_E2E_PLATFORM_BLOCKED` permanece como pendência externa sem autorizar rollout.
+Validação local concluída com testes focados, suíte completa, lint, build, Deno fmt/check e baseline funcional Supabase 5/5. O movimento e seu `BLOCKED_DEPENDENCY` foram posteriormente certificados no staging; `SANITARIO_V2_E2E_PLATFORM_BLOCKED` permanece como pendência externa sem autorizar rollout.
 
 ## Resultado do incremento 3.13
 
@@ -252,14 +252,11 @@ Fatos confirmados:
 - não houve mudança em migration, RPC, RLS, schema Dexie, UI, gates ou rollout;
 - o timeout inicial da suíte completa não foi falha funcional: a mesma suíte foi reexecutada integralmente e aprovada.
 
-## Próxima pendência oficial
-
-Executar a certificação remota acumulada quando o ambiente estiver estável e os gates puderem ser liberados para teste. Nenhum E2E remoto foi executado neste hardening.
-
-Sequência posterior:
+## Transição oficial
 
 ```txt
-certificação remota acumulada
-→ correção de eventual defeito comprovado
-→ 7 fechamento formal da Fase 12
+Fase 12 — desenvolvimento técnico concluído
+→ Fase 13 — Reprodução Operacional v1
 ```
+
+O ciclo Dexie completo permanece coberto pela certificação local existente e não exige novo E2E remoto apenas para renovar evidência. O rollout sanitário continua separado, sem autorização para workaround do 40001, aumento de timeout ou reescrita preventiva.

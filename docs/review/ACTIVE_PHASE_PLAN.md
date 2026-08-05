@@ -1,8 +1,8 @@
-# Plano ativo — Fase 12 / Sync Remoto Sanitário v2
+# Plano ativo — Transição para a Fase 13 / Reprodução Operacional v1
 
-Atualizado em: 2026-08-04
-Status: **Fase 12 ativa; Sync Sanitário v2 em andamento**
-Próxima pendência: **conflito remoto 40001 e decisão de rollout; Fase 12 permanece aberta**
+Atualizado em: 2026-08-05
+Status: **Fase 12 tecnicamente encerrada; Fase 13 é a próxima fase de desenvolvimento**
+Próxima pendência: **iniciar o plano da Fase 13 sem habilitar o rollout sanitário**
 
 Este documento contém o plano corrente. Estado técnico detalhado, validações e risco de plataforma ficam em [CURRENT_PHASE_HANDOFF.md](./CURRENT_PHASE_HANDOFF.md). A decisão arquitetural permanente está em [ADR-0007](../technical/adrs/ADR-0007-sync-remoto-sanitario-v2-integrado.md).
 
@@ -10,7 +10,7 @@ Este documento contém o plano corrente. Estado técnico detalhado, validações
 
 1. Validação real da Conformidade Sanitária v2 — **concluída**.
 2. Documentação curta do Sanitário v2 local — **concluída**.
-3. Sync Remoto Sanitário v2 — **em andamento**.
+3. Sync Remoto Sanitário v2 — **desenvolvimento técnico concluído**.
 
 A Conformidade Sanitária v2 permanece um read model local derivado, somente leitura e recalculado a partir de fontes factuais. Ela não libera venda, abate, leite ou aptidão operacional.
 
@@ -21,22 +21,22 @@ A Conformidade Sanitária v2 permanece um read model local derivado, somente lei
 | 3.1 Diagnóstico schema local/remoto | Concluído |
 | 3.2 Migrations necessárias | Fundação concluída |
 | 3.3 RLS e isolamento multi-tenant/fazenda | Concluído tecnicamente |
-| 3.4 Push/pull de agenda sanitária | Implementado; E2E remoto parcial |
-| 3.5 Push/pull de `agenda_animais` | Implementado; E2E remoto parcial |
-| 3.6 Push/pull de evento sanitário | Implementado; E2E remoto pendente |
-| 3.7 Push/pull de detalhe sanitário | Implementado; E2E remoto pendente |
-| 3.8 Push/pull de histórico externo/documental | Implementado e validado localmente; E2E remoto não executado |
-| 3.9 Push/pull de movimento de estoque sanitário | Implementado e validado localmente; E2E remoto não executado |
-| 3.10 Retry/replay/idempotência | Implementado; validação remota parcial |
-| 3.11 Sucesso parcial | Validado localmente; E2E remoto pendente |
-| 3.12 Conflito multi-dispositivo | Código e SQL validados; plataforma bloqueada |
-| 3.13 Recalcular Conformidade após pull | Implementado e validado localmente |
-| 4 Produto técnico e fonte por campo | Implementado e validado localmente |
-| 5 Correção sanitária append-only | Implementado e validado localmente |
-| 6 Carência sanitária operacional | Implementado e validado localmente |
-| Hardening integrado local de 3.9, 3.13, 4, 5 e 6 | Executado e validado localmente |
+| 3.4 Push/pull de agenda sanitária | Concluído |
+| 3.5 Push/pull de `agenda_animais` | Concluído |
+| 3.6 Push/pull de evento sanitário | Concluído |
+| 3.7 Push/pull de detalhe sanitário | Concluído |
+| 3.8 Push/pull de histórico externo/documental | Concluído |
+| 3.9 Push/pull de movimento de estoque sanitário | Concluído e recertificado no staging |
+| 3.10 Retry/replay/idempotência | Concluído |
+| 3.11 Sucesso parcial | Concluído |
+| 3.12 Conflito multi-dispositivo | Desenvolvimento concluído; rollout bloqueado pela plataforma |
+| 3.13 Recalcular Conformidade após pull | Concluído |
+| 4 Produto técnico e fonte por campo | Concluído |
+| 5 Correção sanitária append-only | Concluído |
+| 6 Carência sanitária operacional | Concluído |
+| Hardening integrado local de 3.9, 3.13, 4, 5 e 6 | Concluído |
 
-O item 3 não está concluído e a Fase 12 não está encerrada.
+A Fase 12 está tecnicamente encerrada. O rollout permanece bloqueado e não faz parte da transição de desenvolvimento para a Fase 13.
 
 ## Resultado do incremento 3.8
 
@@ -69,7 +69,7 @@ Resultado comprovado localmente:
 - trigger existente preserva saldo não negativo e sucesso parcial continua por operação;
 - nenhuma migration, alteração de RPC, carência nova ou autorização operacional foi introduzida.
 
-O E2E remoto específico do movimento não foi executado. O bloqueio `SANITARIO_V2_E2E_PLATFORM_BLOCKED`, os gates desligados e o rollout não autorizado permanecem inalterados.
+O movimento foi certificado remotamente e o defeito de `BLOCKED_DEPENDENCY` foi recertificado no `sync-batch` v20. Gates e rollout permanecem desligados.
 
 ## Resultado do incremento 3.13
 
@@ -145,7 +145,7 @@ Resultado:
 - a matriz integrada já possuía cobertura direta; nenhum defeito funcional ou teste adicional foi necessário;
 - lint, suíte completa, build, baseline funcional Supabase, validador agregado e Deno fmt/check passaram;
 - nenhuma migration, RPC, RLS, schema Dexie, UI, feature flag ou fonte de verdade foi alterada;
-- E2Es remotos não foram executados, gates permanecem desligados, rollout não está autorizado e a Fase 12 continua aberta.
+- a certificação remota funcional foi concluída; gates permanecem desligados e rollout não está autorizado.
 
 ## Recertificação mínima de `BLOCKED_DEPENDENCY`
 
@@ -178,17 +178,17 @@ O `sync-batch` v20 foi publicado somente no staging `zqloazqzhwauamcejmuz`. Um �
 - Rollout para usuários: não autorizado.
 - Fixtures sintéticas residuais: zero.
 
-O bloqueio `SANITARIO_V2_E2E_PLATFORM_BLOCKED` continua impedindo rollout, sem invalidar a implementação local do item 3.8 sob gates desligados. Não aumentar timeout nem alterar RPC sem nova evidência.
+O bloqueio `SANITARIO_V2_E2E_PLATFORM_BLOCKED` continua impedindo rollout, sem invalidar o desenvolvimento técnico concluído da Fase 12. Não criar workaround, aumentar timeout nem reescrever preventivamente a RPC.
 
-## Sequência após o hardening integrado local
+## Sequência após o fechamento formal
 
 ```txt
-certificação remota acumulada quando o ambiente e os gates forem liberados
-→ correção de eventual defeito comprovado, sem ampliar escopo
-→ item 7 Fechamento formal da Fase 12
+Fase 12 tecnicamente encerrada
+→ Fase 13 — Reprodução Operacional v1
+→ decisão futura e separada sobre rollout sanitário
 ```
 
-Somente depois do fechamento formal da Fase 12 pode iniciar a Fase 13 — Reprodução Operacional v1.
+A Fase 13 pode iniciar sob os contratos existentes. Essa transição não habilita gate, feature flag nem rollout do Sync Sanitário v2.
 
 ## Critérios preservados após 3.8
 

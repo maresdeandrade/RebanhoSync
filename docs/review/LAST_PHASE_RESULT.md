@@ -1,43 +1,33 @@
-# Resultado funcional mais recente — RebanhoSync
+# Resultado funcional mais recente — Fase 12
 
-Atualizado em: 2026-07-30
-Baseline funcional: `2006286`
+Atualizado em: 2026-08-05
+Baseline técnico do fechamento: `7e43248`
+Decisão: **Fase 12 tecnicamente encerrada; rollout sanitário bloqueado**
 
 ## Resultado
 
-O cutover local Dexie do Sync Sanitário v2 foi implementado sob gate desligado:
+A Fase 12 consolidou a Conformidade Sanitária v2 local, sua documentação e o Sync Sanitário v2. Foram concluídos histórico externo/documental, Evento e detalhe, movimento de estoque, retry/replay/idempotência, sucesso parcial, produto técnico e fonte por campo, correção append-only, carência operacional derivada, pull com recálculo conservador da Conformidade e hardening integrado local.
 
-- Dexie v28;
-- store factual `event_eventos_animais`;
-- manifesto de cutover com `PREPARED`, `APPLYING`, `APPLIED` e `FAILED`;
-- preservação da fila compartilhada;
-- pull/reconcile não destrutivo;
-- feature flag local fail-closed mantida em `false`.
+O `sync-batch` v20 foi publicado no staging `zqloazqzhwauamcejmuz`. A recertificação mínima confirmou `BLOCKED_DEPENDENCY / SANITARIO_INVENTORY_FACTUAL_OPERATION_REQUIRED`, sem movimento persistido e sem alteração de saldo. O cleanup terminou sem resíduos e com isolamento por `fazenda_id` preservado.
 
-Incrementos anteriores do mesmo bloco entregaram a fundação expand, RLS, `sync-batch` v19, typecheck Deno limpo e worker/reconcile com resultados canônicos.
+## Pendência externa aceita
 
-## Estado da validação
+`SANITARIO_V2_E2E_PLATFORM_BLOCKED` permanece exclusivamente como bloqueio de rollout. O PostgreSQL produz `SQLSTATE 40001 / SANITARIO_AGENDA_REVISION_CONFLICT`, mas o caminho hospedado devolve `SANITARIO_RPC_TIMEOUT`.
 
-- validações locais dos incrementos: concluídas;
-- agenda e `agenda_animais`: E2E remoto parcial;
-- evento e detalhe: E2E remoto pendente;
-- conflito multi-dispositivo: código e SQL validados, plataforma bloqueada;
-- rollout: não autorizado.
-
-`SANITARIO_V2_E2E_PLATFORM_BLOCKED` ocorre porque o PostgreSQL produz imediatamente `SQLSTATE 40001 / SANITARIO_AGENDA_REVISION_CONFLICT`, mas a resposta não retorna pelo caminho Edge Function/PostgREST/gateway antes do timeout. O worker recebe `RETRYABLE / SANITARIO_RPC_TIMEOUT`.
-
-Não há evidência atual de defeito no SQL ou na regra de domínio.
+Não há defeito funcional comprovado no domínio ou SQL. Não estão autorizados workaround, aumento de timeout ou reescrita preventiva. A pendência não bloqueia o início das próximas fases de desenvolvimento.
 
 ## Ambiente
 
 - staging: `zqloazqzhwauamcejmuz`;
-- produção: não alterada;
+- `sync-batch`: v20 ativo;
 - gate remoto: desligado;
 - feature flag local: `false`;
+- rollout: não autorizado;
+- produção: não alterada;
 - fixtures sintéticas residuais: zero.
 
-## Próximo incremento
+## Próxima fase
 
-3.8 — Push/pull de histórico sanitário externo/documental.
+Fase 13 — Reprodução Operacional v1. A transição não habilita o Sync Sanitário v2 para usuários.
 
 Detalhes no [plano ativo](./ACTIVE_PHASE_PLAN.md) e no [handoff atual](./CURRENT_PHASE_HANDOFF.md).
