@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Seed GitHub Issues + Project v2 items from docs/TECH_DEBT.md (capability-centric).
+Seed GitHub Issues + Project v2 items from an explicit active TECH_DEBT file.
 
 ✅ Windows-safe + Project v2 safe:
 - Resolves gh.exe without relying on PATH (shutil.which + common install paths)
@@ -16,15 +16,16 @@ Requirements:
   - For Projects v2: gh auth refresh -s read:project,project
 
 Usage:
-  # Dry-run
-  python scripts/antigravity/seed_github_project.py --tech-debt docs/TECH_DEBT.md
+  # Dry-run (the source must be active; docs/archive/** is rejected)
+  python scripts/antigravity/seed_github_project.py --tech-debt docs/path/to/ACTIVE_TECH_DEBT.md
 
   # Apply: issues + project v2 + bootstrap labels
   python scripts/antigravity/seed_github_project.py \
-    --tech-debt docs/TECH_DEBT.md \
+    --tech-debt docs/path/to/ACTIVE_TECH_DEBT.md \
     --project-owner maresdeandrade \
     --project-number 1 \
     --apply \
+    --confirm-repo maresdeandrade/RebanhoSync \
     --bootstrap-labels \
     --update-existing
 
@@ -38,10 +39,13 @@ import argparse
 import json
 import os
 import re
+import shlex
 import subprocess
+import sys
 import unicodedata
 import shutil
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 
@@ -121,7 +125,7 @@ def resolve_gh_exe() -> str:
 # Robust subprocess runner (UTF-8 safe)
 # -----------------------------
 
-def run(cmd: List[str], check: bool = True) -> str:
+def run(cmd: List[str], check: bool = True, timeout: int = 60) -> str:
     """
     Run a command and return stdout.
     - If cmd starts with 'gh', replace with resolved gh.exe path.
@@ -141,21 +145,27 @@ def run(cmd: List[str], check: bool = True) -> str:
     env.setdefault("LANG", "C.UTF-8")
     env.setdefault("LC_ALL", "C.UTF-8")
 
-    p = subprocess.run(
-        cmd,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-        encoding="utf-8",
-        errors="replace",
-        env=env,
-    )
+    try:
+        p = subprocess.run(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            env=env,
+            timeout=timeout,
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise RuntimeError(
+            f"Command timed out after {timeout}s: {shlex.join(cmd)}"
+        ) from exc
     stdout = (p.stdout or "").strip()
     stderr = (p.stderr or "").strip()
 
     if check and p.returncode != 0:
         raise RuntimeError(
-            f"Command failed ({p.returncode}): {' '.join(cmd)}\n"
+            f"Command failed ({p.returncode}): {shlex.join(cmd)}\n"
             f"STDERR:\n{stderr}\n"
             f"STDOUT:\n{stdout}"
         )
@@ -230,6 +240,35 @@ def detect_repo_name_with_owner() -> str:
     return out
 
 
+def resolve_active_source(path_arg: str) -> Path:
+    """Resolve an explicit repository-owned, non-archived Markdown source."""
+    root_raw = run(["git", "rev-parse", "--show-toplevel"])
+    root = Path(root_raw).resolve()
+    source = (root / path_arg).resolve() if not Path(path_arg).is_absolute() else Path(path_arg).resolve()
+
+    try:
+        source.relative_to(root)
+    except ValueError as exc:
+        raise RuntimeError("--tech-debt must resolve inside the current repository.") from exc
+
+    if not source.is_file():
+        raise RuntimeError(f"Active TECH_DEBT source not found: {source}")
+    if source.suffix.lower() != ".md":
+        raise RuntimeError("--tech-debt must point to a Markdown (.md) file.")
+
+    relative_parts = source.relative_to(root).parts
+    if len(relative_parts) >= 2 and relative_parts[0] == "docs" and relative_parts[1] == "archive":
+        raise RuntimeError(
+            "Refusing docs/archive/** as an issue source. Provide an active, current document."
+        )
+    return source
+
+
+def validate_repo_name(repo: str) -> None:
+    if not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repo):
+        raise RuntimeError(f"Invalid repository name; expected OWNER/REPO, got: {repo!r}")
+
+
 # -----------------------------
 # Parsing helpers
 # -----------------------------
@@ -283,7 +322,9 @@ BASELINE_RE_LIST = [
 ]
 
 OPEN_CATALOG_RE = re.compile(r"^##\s+OPEN\s+\(Catalog\)", re.IGNORECASE)
-OPEN_INFRA_RE = re.compile(r"^##\s+OPEN\s+\(Infra/Out-of-catalog\)", re.IGNORECASE)
+OPEN_INFRA_RE = re.compile(
+    r"^##\s+OPEN\s+\(Infra\s*/\s*Out-of-catalog\)", re.IGNORECASE
+)
 CLOSED_RE = re.compile(r"^##\s+.*CLOSED", re.IGNORECASE)
 SEVERITY_RE = re.compile(r"\b(P0|P1|P2)\b")
 
@@ -324,11 +365,16 @@ def parse_tech_debt(path: str) -> List[TDItem]:
         elif OPEN_INFRA_RE.match(line):
             section = "Infra"
 
-        if line.startswith("###") and SEVERITY_RE.search(line):
-            severity = SEVERITY_RE.search(line).group(1)
+        severity_match = SEVERITY_RE.search(line)
+        if re.match(r"^###\s+", line) and severity_match is not None:
+            severity = severity_match.group(1)
 
         m = TD_HEADING_RE.match(line)
-        if m and section in ("Catalog", "Infra") and severity in ("P0", "P1", "P2"):
+        if m and section in ("Catalog", "Infra"):
+            if severity not in ("P0", "P1", "P2"):
+                raise RuntimeError(
+                    f"{m.group(1)} has no P0/P1/P2 severity heading in its OPEN section."
+                )
             td_id = m.group(1).strip()
             title = m.group(2).strip()
 
@@ -366,8 +412,7 @@ def parse_tech_debt(path: str) -> List[TDItem]:
                 j += 1
 
             if not cap_id:
-                i = j
-                continue
+                raise RuntimeError(f"{td_id} is missing capability_id.")
 
             domain = safe_domain_from_doc(domain_raw, section, cap_id)
 
@@ -379,9 +424,9 @@ def parse_tech_debt(path: str) -> List[TDItem]:
                     track=section,
                     severity=severity,
                     domain=domain,
-                    risk=risk or "N/A",
-                    evidence=evid or "N/A",
-                    action=action or "N/A",
+                    risk=risk,
+                    evidence=evid,
+                    action=action,
                     acceptance=acceptance,
                     baseline=baseline,
                 )
@@ -393,6 +438,56 @@ def parse_tech_debt(path: str) -> List[TDItem]:
         i += 1
 
     return items
+
+
+def validate_parsed_items(items: List[TDItem]) -> None:
+    if not items:
+        raise RuntimeError("No valid OPEN TD items were found in the active source.")
+
+    seen_td: Dict[str, int] = {}
+    seen_capability: Dict[str, int] = {}
+    errors: List[str] = []
+
+    for index, item in enumerate(items, start=1):
+        if not re.fullmatch(r"[0-9a-f]{7,40}", item.baseline):
+            errors.append("document baseline is missing or is not a 7-40 character Git SHA")
+        if not item.title:
+            errors.append(f"{item.td_id}: title is empty")
+        if not item.risk:
+            errors.append(f"{item.td_id}: Risco is missing")
+        if not item.evidence:
+            errors.append(f"{item.td_id}: Evidência is missing")
+        if not item.action:
+            errors.append(f"{item.td_id}: Ação is missing")
+        if not item.acceptance:
+            errors.append(f"{item.td_id}: Critério de Aceite has no checklist items")
+
+        if item.td_id in seen_td:
+            errors.append(
+                f"duplicate TD id {item.td_id} (items {seen_td[item.td_id]} and {index})"
+            )
+        else:
+            seen_td[item.td_id] = index
+
+        if item.capability_id in seen_capability:
+            errors.append(
+                "duplicate capability_id "
+                f"{item.capability_id} (items {seen_capability[item.capability_id]} and {index})"
+            )
+        else:
+            seen_capability[item.capability_id] = index
+
+    if errors:
+        formatted = "\n".join(f"  - {error}" for error in sorted(set(errors)))
+        raise RuntimeError(f"Invalid active TECH_DEBT source:\n{formatted}")
+
+    baseline = items[0].baseline
+    try:
+        run(["git", "cat-file", "-e", f"{baseline}^{{commit}}"])
+    except RuntimeError as exc:
+        raise RuntimeError(
+            f"Document baseline is not a commit in the current repository: {baseline}"
+        ) from exc
 
 
 # -----------------------------
@@ -416,7 +511,7 @@ def ensure_labels_exist(repo: str) -> None:
         label_specs.append((f"domain:{d}", "C5DEF5", f"Domain {d}"))
 
     for name, color, desc in label_specs:
-        run(["gh", "label", "create", name, "--color", color, "--description", desc, "--force", "-R", repo], check=False)
+        run(["gh", "label", "create", name, "--color", color, "--description", desc, "--force", "-R", repo])
 
 
 # -----------------------------
@@ -432,8 +527,8 @@ def labels_for_item(item: TDItem) -> List[str]:
         f"milestone:{milestone_from_severity(item.severity)}",
     ]
 
-def build_issue_body(item: TDItem) -> str:
-    acc = "\n".join([f"- [ ] {x}" for x in item.acceptance]) if item.acceptance else "- [ ] (definir)"
+def build_issue_body(item: TDItem, source_path: str) -> str:
+    acc = "\n".join([f"- [ ] {x}" for x in item.acceptance])
     milestone = milestone_from_severity(item.severity)
     return f"""## Contexto
 - **capability_id:** `{item.capability_id}`
@@ -442,6 +537,7 @@ def build_issue_body(item: TDItem) -> str:
 - **Severidade:** {item.severity} ({milestone})
 - **Domínio:** {item.domain}
 - **Baseline (docs):** `{item.baseline}`
+- **Fonte ativa:** `{source_path}`
 
 ## Risco
 {item.risk}
@@ -456,8 +552,8 @@ def build_issue_body(item: TDItem) -> str:
 {acc}
 
 ## Definição de Done (DoD)
-- `gap({item.capability_id}) == FALSE` no `docs/IMPLEMENTATION_STATUS.md` (ou item infra resolvido)
-- Docs derivados regen e RECONCILIACAO_REPORT confirmam consistência
+- Gap resolvido com evidência verificável no código, migrations ou contrato pertinente
+- `PROJECT_STATUS`, plano ativo, handoff e roadmap reconciliados quando aplicável
 """
 
 def find_existing_issue_number(repo: str, capability_id: str) -> Optional[int]:
@@ -467,13 +563,24 @@ def find_existing_issue_number(repo: str, capability_id: str) -> Optional[int]:
         "-R", repo,
         "--state", "all",
         "--search", query,
+        "--limit", "100",
         "--json", "number,title,state"
     ])
     data = json.loads(out) if out else []
-    if not data:
+    exact = [x for x in data if x.get("title", "").startswith(f"[{capability_id}] ")]
+    if not exact:
         return None
-    open_issues = [x for x in data if x.get("state") == "OPEN"]
-    pick = open_issues[0] if open_issues else data[0]
+    if len(exact) > 1:
+        numbers = ", ".join(f"#{x.get('number')}" for x in exact)
+        raise RuntimeError(
+            f"Multiple issues match capability_id {capability_id}: {numbers}. Resolve duplicates first."
+        )
+    pick = exact[0]
+    if pick.get("state") != "OPEN":
+        raise RuntimeError(
+            f"Capability {capability_id} matches closed issue #{pick.get('number')}; "
+            "reopen it or resolve the source before seeding."
+        )
     return int(pick["number"])
 
 def get_issue_node_id(repo: str, number: int) -> str:
@@ -497,10 +604,11 @@ def update_issue(repo: str, number: int, body: Optional[str], add_labels: Option
     args = ["-X", "PATCH", f"repos/{owner}/{name}/issues/{number}"]
     if body is not None:
         args += ["-f", f"body={body}"]
-    gh_api_json(args)
+    if body is not None:
+        gh_api_json(args)
 
     if add_labels:
-        run(["gh", "issue", "edit", str(number), "-R", repo, "--add-label", ",".join(add_labels)], check=False)
+        run(["gh", "issue", "edit", str(number), "-R", repo, "--add-label", ",".join(add_labels)])
 
 
 # -----------------------------
@@ -616,7 +724,7 @@ def add_issue_to_project(project_id: str, issue_node_id: str) -> str:
 
 def find_project_item_id_by_issue_node(project_id: str, issue_node_id: str) -> Optional[str]:
     after = None
-    for _ in range(30):  # enough for most boards
+    for _ in range(100):
         data = gh_graphql(FIND_ITEM_BY_CONTENT_QUERY, {"projectId": project_id, "after": after})
         nodes = data["data"]["node"]["items"]["nodes"]
         page = data["data"]["node"]["items"]["pageInfo"]
@@ -627,17 +735,21 @@ def find_project_item_id_by_issue_node(project_id: str, issue_node_id: str) -> O
         if not page.get("hasNextPage"):
             return None
         after = page.get("endCursor")
-    return None
+        if not after:
+            raise RuntimeError("Project pagination reported another page without an end cursor.")
+    raise RuntimeError("Project item lookup exceeded 10,000 items; narrow or redesign the query.")
 
 def ensure_project_item(project_id: str, issue_node_id: str) -> str:
+    existing = find_project_item_id_by_issue_node(project_id, issue_node_id)
+    if existing:
+        return existing
     try:
         return add_issue_to_project(project_id, issue_node_id)
-    except RuntimeError as e:
-        msg = str(e).lower()
-        if "already exists" in msg or "content already exists" in msg:
-            existing = find_project_item_id_by_issue_node(project_id, issue_node_id)
-            if existing:
-                return existing
+    except RuntimeError:
+        # A concurrent run may have linked the item between lookup and add.
+        existing = find_project_item_id_by_issue_node(project_id, issue_node_id)
+        if existing:
+            return existing
         raise
 
 def set_text_field(project_id: str, item_id: str, field_id: str, value: str) -> None:
@@ -710,36 +822,98 @@ def try_set_project_fields(
     return warnings
 
 
+def validate_project_schema(
+    fields_by_name: Dict[str, dict], desired_status: str, items: List[TDItem]
+) -> None:
+    expected_selects = {
+        "Status": {desired_status},
+        "Severity": {item.severity for item in items},
+        "Track": {item.track for item in items},
+        "Domain": {item.domain for item in items},
+        "Milestone": {milestone_from_severity(item.severity) for item in items},
+    }
+    errors: List[str] = []
+
+    for field_name, expected_options in expected_selects.items():
+        field = fields_by_name.get(field_name)
+        if not field:
+            errors.append(f"missing Project field: {field_name}")
+            continue
+        if field.get("__typename") != "ProjectV2SingleSelectField":
+            errors.append(f"Project field is not single-select: {field_name}")
+            continue
+        actual_options = {option.get("name") for option in field.get("options") or []}
+        missing_options = sorted(expected_options - actual_options)
+        if missing_options:
+            errors.append(
+                f"{field_name} missing option(s): {', '.join(missing_options)}"
+            )
+
+    for field_name in ("CapabilityID", "Baseline"):
+        field = fields_by_name.get(field_name)
+        if not field:
+            errors.append(f"missing Project field: {field_name}")
+        elif field.get("__typename") != "ProjectV2Field":
+            errors.append(f"Project field is not a text field: {field_name}")
+
+    if errors:
+        formatted = "\n".join(f"  - {error}" for error in errors)
+        raise RuntimeError(f"Project v2 schema is incompatible:\n{formatted}")
+
+
 # -----------------------------
 # Main
 # -----------------------------
 
 def main() -> int:
-    ensure_gh_available()
-
     ap = argparse.ArgumentParser()
-    ap.add_argument("--tech-debt", default="docs/TECH_DEBT.md", help="Path to TECH_DEBT.md")
+    ap.add_argument("--tech-debt", required=True, help="Path to an active TECH_DEBT Markdown file")
     ap.add_argument("--repo", default="", help="Override repo as OWNER/REPO (optional)")
     ap.add_argument("--project-owner", default="", help="Org/user login that owns the Project v2 (optional)")
     ap.add_argument("--project-number", type=int, default=0, help="Project v2 number (optional)")
     ap.add_argument("--apply", action="store_true", help="Apply changes (create/update issues and project items)")
+    ap.add_argument(
+        "--confirm-repo",
+        default="",
+        help="Required with --apply; must exactly match OWNER/REPO",
+    )
     ap.add_argument("--update-existing", action="store_true", help="Update body for existing issues")
     ap.add_argument("--limit", type=int, default=0, help="Limit number of items processed (0 = no limit)")
     ap.add_argument("--bootstrap-labels", action="store_true", help="Create/update required labels (recommended first run)")
     ap.add_argument("--project-status", default="Backlog", help="Project Status value to set (default Backlog)")
     args = ap.parse_args()
 
-    items = parse_tech_debt(args.tech_debt)
-    if not items:
-        print("No OPEN items found in TECH_DEBT.")
-        return 0
+    if args.limit < 0:
+        ap.error("--limit must be zero or a positive integer")
+    if args.project_number < 0:
+        ap.error("--project-number must be zero or a positive integer")
+    if bool(args.project_owner) != bool(args.project_number):
+        ap.error("--project-owner and --project-number must be provided together")
+    if not args.apply and (args.bootstrap_labels or args.update_existing):
+        ap.error("--bootstrap-labels and --update-existing require --apply")
+    if not args.apply and args.confirm_repo:
+        ap.error("--confirm-repo is only valid with --apply")
+    if not args.project_status.strip():
+        ap.error("--project-status cannot be empty")
+
+    source = resolve_active_source(args.tech_debt)
+    items = parse_tech_debt(str(source))
+    validate_parsed_items(items)
 
     if args.limit and args.limit > 0:
         items = items[: args.limit]
 
     repo = args.repo.strip() or detect_repo_name_with_owner()
+    validate_repo_name(repo)
+    if args.apply and args.confirm_repo.strip() != repo:
+        ap.error(f"--apply requires --confirm-repo {repo}")
+
+    ensure_gh_available()
+
+    root = Path(run(["git", "rev-parse", "--show-toplevel"])).resolve()
+    source_display = source.relative_to(root).as_posix()
     print(f"Repo: {repo}")
-    print(f"Parsed OPEN items: {len(items)} (from {args.tech_debt})")
+    print(f"Parsed OPEN items: {len(items)} (from {source_display})")
     print(f"Mode: {'APPLY' if args.apply else 'DRY-RUN'}")
 
     if args.apply and args.bootstrap_labels:
@@ -752,21 +926,23 @@ def main() -> int:
     project_title = ""
 
     if use_project:
-        try:
-            project_id, fields_by_name, project_title = load_project(args.project_owner, args.project_number)
-            print(f"Project loaded: {project_title} (owner={args.project_owner} number={args.project_number})")
-        except Exception as e:
-            print(f"WARNING: Could not load Project v2.\n{e}\nWill proceed with issues only.")
-            use_project = False
+        project_id, fields_by_name, project_title = load_project(args.project_owner, args.project_number)
+        validate_project_schema(fields_by_name, args.project_status, items)
+        print(f"Project loaded: {project_title} (owner={args.project_owner} number={args.project_number})")
 
     created = 0
     updated = 0
     project_linked = 0
+    project_failures = 0
 
     for it in items:
         issue_title = f"[{it.capability_id}] {it.title}"
         labels = labels_for_item(it)
-        body = build_issue_body(it)
+        body = build_issue_body(it, source_display)
+        if len(issue_title) > 256:
+            raise RuntimeError(f"Issue title exceeds 256 characters for {it.td_id}.")
+        if len(body) > 65536:
+            raise RuntimeError(f"Issue body exceeds 65,536 characters for {it.td_id}.")
 
         existing = find_existing_issue_number(repo, it.capability_id)
         if existing:
@@ -784,12 +960,14 @@ def main() -> int:
                         warns = try_set_project_fields(project_id, fields_by_name, item_id, it, args.project_status)
                         for w in warns:
                             print(f"  WARN: {w}")
+                        project_failures += len(warns)
                         project_linked += 1
                         print("  Project: linked + fields set.")
                     else:
                         print("  (dry-run) Would link to Project + set fields.")
                 except Exception as e:
-                    print(f"  WARNING: Project link/set failed: {e}")
+                    project_failures += 1
+                    print(f"  ERROR: Project link/set failed: {e}")
             continue
 
         print(f"- CREATE: {issue_title}")
@@ -807,16 +985,28 @@ def main() -> int:
                 warns = try_set_project_fields(project_id, fields_by_name, item_id, it, args.project_status)
                 for w in warns:
                     print(f"  WARN: {w}")
+                project_failures += len(warns)
                 project_linked += 1
                 print("  Project: linked + fields set.")
             except Exception as e:
-                print(f"  WARNING: Project link/set failed: {e}")
+                project_failures += 1
+                print(f"  ERROR: Project link/set failed: {e}")
 
-    print(f"\nDone. Created={created} Updated={updated} ProjectLinked={project_linked} TotalProcessed={len(items)}")
+    print(
+        f"\nDone. Created={created} Updated={updated} ProjectLinked={project_linked} "
+        f"ProjectFailures={project_failures} TotalProcessed={len(items)}"
+    )
     if not args.apply:
         print("Dry-run only. Re-run with --apply to make changes.")
-    return 0
+    return 1 if project_failures else 0
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    try:
+        raise SystemExit(main())
+    except KeyboardInterrupt:
+        print("ERROR: interrupted by user.", file=sys.stderr)
+        raise SystemExit(130)
+    except Exception as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        raise SystemExit(1)

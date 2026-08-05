@@ -1,47 +1,77 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# scripts/antigravity/check_clean_tree.sh
-# Fails if the git working tree is dirty (tracked changes, staged changes, or untracked files).
-# Usage:
-#   scripts/antigravity/check_clean_tree.sh
-#   scripts/antigravity/check_clean_tree.sh --allow-untracked   # ignore untracked files
+# Fails when the repository has tracked, staged or (by default) untracked
+# changes. Ignored files are never considered.
 
-ALLOW_UNTRACKED=0
-if [[ "${1:-}" == "--allow-untracked" ]]; then
-  ALLOW_UNTRACKED=1
-fi
+usage() {
+  cat <<'EOF'
+Usage: scripts/antigravity/check_clean_tree.sh [--allow-untracked]
 
-if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-  echo "ERROR: Not inside a git repository." >&2
+Options:
+  --allow-untracked  Ignore untracked, non-ignored files.
+  -h, --help         Show this help.
+EOF
+}
+
+allow_untracked=0
+while [[ "$#" -gt 0 ]]; do
+  case "$1" in
+    --allow-untracked)
+      allow_untracked=1
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    *)
+      echo "ERROR: unknown argument: $1" >&2
+      usage >&2
+      exit 2
+      ;;
+  esac
+  shift
+done
+
+if ! root="$(git rev-parse --show-toplevel 2>/dev/null)"; then
+  echo "ERROR: not inside a Git repository." >&2
   exit 2
 fi
+cd "$root"
 
-# Refresh index to avoid false positives.
-git update-index -q --refresh || true
+# Refresh cached stat information. A non-zero status may simply mean that a
+# tracked file changed; the explicit checks below are authoritative.
+git update-index -q --refresh >/dev/null 2>&1 || true
 
-# Check staged/unstaged tracked changes
-if ! git diff --quiet --exit-code; then
-  echo "ERROR: Working tree has unstaged tracked changes." >&2
-  git --no-pager diff --stat >&2 || true
-  exit 1
+fail=0
+
+if ! git diff --quiet --exit-code --; then
+  echo "ERROR: working tree has unstaged tracked changes." >&2
+  git --no-pager diff --stat -- >&2 || true
+  fail=1
 fi
 
-if ! git diff --quiet --exit-code --cached; then
-  echo "ERROR: Working tree has staged changes." >&2
-  git --no-pager diff --cached --stat >&2 || true
-  exit 1
+if ! git diff --quiet --exit-code --cached --; then
+  echo "ERROR: working tree has staged changes." >&2
+  git --no-pager diff --cached --stat -- >&2 || true
+  fail=1
 fi
 
-if [[ "$ALLOW_UNTRACKED" -eq 0 ]]; then
-  # Check untracked files (excluding ignored)
-  if [[ -n "$(git ls-files --others --exclude-standard)" ]]; then
-    echo "ERROR: Working tree has untracked files." >&2
-    git ls-files --others --exclude-standard >&2
-    echo "" >&2
-    echo "Tip: add files to git, or rerun with --allow-untracked if intentional." >&2
-    exit 1
+if [[ "$allow_untracked" -eq 0 ]]; then
+  mapfile -d '' -t untracked < <(git ls-files --others --exclude-standard -z)
+  if [[ "${#untracked[@]}" -gt 0 ]]; then
+    echo "ERROR: working tree has untracked files." >&2
+    printf '  %s\n' "${untracked[@]}" >&2
+    fail=1
   fi
 fi
 
-echo "OK: git working tree is clean."
+if [[ "$fail" -ne 0 ]]; then
+  exit 1
+fi
+
+if [[ "$allow_untracked" -eq 1 ]]; then
+  echo "OK: tracked working tree is clean; untracked files were ignored."
+else
+  echo "OK: Git working tree is clean."
+fi

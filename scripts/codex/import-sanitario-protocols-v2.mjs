@@ -20,6 +20,9 @@ const EXPECTED = {
   memberRejections: 16,
 };
 
+const LOCAL_DATABASE_HOSTS = new Set(["127.0.0.1", "localhost", "::1"]);
+const IMPORT_LOCK_KEY = "rebanhosync:sanitario-protocols-v2:12F10";
+
 const DEPRECATED_ACTIVE_ITEMS = [
   {
     familyCode: "raiva_herbivoros",
@@ -60,7 +63,8 @@ function usage() {
     "Uso:",
     "  node scripts/codex/import-sanitario-protocols-v2.mjs --validate",
     "  node scripts/codex/import-sanitario-protocols-v2.mjs --dry-run",
-    "  ALLOW_SANITARIO_IMPORT=1 node scripts/codex/import-sanitario-protocols-v2.mjs --apply",
+    `  ALLOW_SANITARIO_IMPORT=1 SANITARIO_IMPORT_CONFIRM=${EXPECTED.artifactVersion} node scripts/codex/import-sanitario-protocols-v2.mjs --apply`,
+    "  Em banco remoto, tambem exige ALLOW_SANITARIO_REMOTE_IMPORT=1.",
   ].join("\n");
 }
 
@@ -123,6 +127,10 @@ function lookupGroupKey(token) {
   return match?.[1] ?? null;
 }
 
+function itemIdentity(item) {
+  return `${lookupFamily(item.protocol_id)}:${item.logical_item_key}:v${item.version}`;
+}
+
 function scopeForGroup(scope) {
   return scope === "fazenda" ? "tenant" : scope;
 }
@@ -144,6 +152,30 @@ function stableStringify(value) {
 
 function isDifferent(a, b) {
   return stableStringify(a) !== stableStringify(b);
+}
+
+function protocolUpdateBlockReason(existing) {
+  if (!existing) return null;
+  if (existing.approval_status !== "draft" || existing.approved_at) {
+    return "protocol_not_draft";
+  }
+  return null;
+}
+
+function groupUpdateBlockReason(existing) {
+  if (!existing) return null;
+  if (
+    existing.curation_status !== "needs_review" ||
+    existing.automation_status === "agenda_allowed"
+  ) {
+    return "group_already_curated_or_operational";
+  }
+  return null;
+}
+
+function itemUpdateBlockReason(existing) {
+  if (!existing) return null;
+  return existing.status === "draft" ? null : "item_not_draft";
 }
 
 function asJsonb(value) {
@@ -312,26 +344,78 @@ function validateCanonicalPayload(payload) {
 }
 
 function readSupabaseStatusEnv() {
-  if (process.env.DB_URL) return { DB_URL: process.env.DB_URL };
+  if (process.env.DB_URL?.trim()) return { DB_URL: process.env.DB_URL.trim() };
   const output = execFileSync("supabase", ["status", "-o", "env"], {
     cwd: ROOT,
     encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"],
   });
   const env = {};
-  for (const line of output.split(/\r?\n/)) {
-    const match = line.match(/^([A-Z0-9_]+)="?(.*?)"?$/);
-    if (match) env[match[1]] = match[2];
+  for (const rawLine of output.split(/\r?\n/)) {
+    const line = rawLine.trim();
+    const separator = line.indexOf("=");
+    if (separator <= 0) continue;
+    const key = line.slice(0, separator);
+    if (!/^[A-Z0-9_]+$/.test(key)) continue;
+    let value = line.slice(separator + 1).trim();
+    if (
+      value.length >= 2 &&
+      ((value.startsWith('"') && value.endsWith('"')) ||
+        (value.startsWith("'") && value.endsWith("'")))
+    ) {
+      value = value.slice(1, -1);
+    }
+    env[key] = value;
   }
   assert(env.DB_URL, "supabase status -o env nao retornou DB_URL");
   return env;
 }
 
-async function connectDb() {
+function describeDatabase(dbUrl) {
+  let parsed;
+  try {
+    parsed = new URL(dbUrl);
+  } catch {
+    fail("DB_URL invalida; use uma connection string postgresql:// valida.");
+  }
+  assert(
+    ["postgres:", "postgresql:"].includes(parsed.protocol),
+    `DB_URL deve usar postgres/postgresql, recebido ${parsed.protocol}`,
+  );
+  return {
+    host: parsed.hostname,
+    port: parsed.port || "5432",
+    database: parsed.pathname.replace(/^\//, "") || "postgres",
+    local: LOCAL_DATABASE_HOSTS.has(parsed.hostname),
+  };
+}
+
+function assertApplyAuthorized(dbUrl) {
+  assert(
+    process.env.ALLOW_SANITARIO_IMPORT === "1",
+    "Modo --apply bloqueado: defina ALLOW_SANITARIO_IMPORT=1.",
+  );
+  assert(
+    process.env.SANITARIO_IMPORT_CONFIRM === EXPECTED.artifactVersion,
+    `Modo --apply bloqueado: defina SANITARIO_IMPORT_CONFIRM=${EXPECTED.artifactVersion}.`,
+  );
+  const target = describeDatabase(dbUrl);
+  if (!target.local) {
+    assert(
+      process.env.ALLOW_SANITARIO_REMOTE_IMPORT === "1",
+      `Import remoto bloqueado para ${target.host}. Defina ALLOW_SANITARIO_REMOTE_IMPORT=1 somente apos dry-run e autorizacao explicita.`,
+    );
+  }
+  return target;
+}
+
+async function connectDb(mode) {
   const env = readSupabaseStatusEnv();
+  const target = describeDatabase(env.DB_URL);
+  if (mode === "apply") assertApplyAuthorized(env.DB_URL);
   const client = new Client({ connectionString: env.DB_URL });
   await client.connect();
-  return client;
+  return { client, target };
 }
 
 async function selectProtocols(client, protocols) {
@@ -384,7 +468,7 @@ async function selectItems(client, items, protocolIdsByFamily) {
     const familyCode = lookupFamily(item.protocol_id);
     const protocolId = protocolIdsByFamily.get(familyCode);
     if (!protocolId || !UUID_LIKE.test(protocolId)) {
-      result.set(item.logical_item_key, null);
+      result.set(itemIdentity(item), null);
       continue;
     }
     const existing = await client.query(
@@ -400,7 +484,7 @@ async function selectItems(client, items, protocolIdsByFamily) {
       [protocolId, item.logical_item_key, item.version],
     );
     assert(existing.rowCount <= 1, `${item.logical_item_key}: lookup ambiguo em sanitario_protocolo_itens_versions_v2`);
-    result.set(item.logical_item_key, existing.rows[0] ?? null);
+    result.set(itemIdentity(item), existing.rows[0] ?? null);
   }
   return result;
 }
@@ -412,7 +496,7 @@ async function selectDeprecatedActiveItems(client, protocolIdsByFamily) {
     if (!protocolId || !UUID_LIKE.test(protocolId)) continue;
     const existing = await client.query(
       `
-        select id, protocol_id, logical_item_key, deleted_at
+        select id, protocol_id, logical_item_key, status, deleted_at
         from public.sanitario_protocolo_itens_versions_v2
         where deleted_at is null
           and protocol_id = $1
@@ -422,7 +506,7 @@ async function selectDeprecatedActiveItems(client, protocolIdsByFamily) {
       [protocolId, deprecatedItem.logicalItemKey],
     );
     for (const row of existing.rows) {
-      result.push({ ...deprecatedItem, id: row.id });
+      result.push({ ...deprecatedItem, id: row.id, status: row.status });
     }
   }
   return result;
@@ -573,15 +657,29 @@ async function buildPlan(client, data) {
   for (const group of sortedBy(data.groups, "group_key")) {
     const row = groupInsertRow(group);
     const existing = existingGroups.get(group.group_key);
-    const action = existing ? (compareGroup(existing, row) ? "update" : "skip") : "create";
-    operations.push({ table: "sanitario_product_class_groups_v2", key: group.group_key, action });
+    const changed = existing && compareGroup(existing, row);
+    const reason = changed ? groupUpdateBlockReason(existing) : null;
+    const action = reason ? "reject" : existing ? (changed ? "update" : "skip") : "create";
+    operations.push({
+      table: "sanitario_product_class_groups_v2",
+      key: group.group_key,
+      action,
+      reason: reason ?? "",
+    });
   }
 
   for (const protocol of sortedBy(data.protocols, "family_code")) {
     const row = protocolInsertRow(protocol);
     const existing = existingProtocols.get(protocol.family_code);
-    const action = existing ? (compareProtocol(existing, row) ? "update" : "skip") : "create";
-    operations.push({ table: "sanitario_protocolos_v2", key: protocol.family_code, action });
+    const changed = existing && compareProtocol(existing, row);
+    const reason = changed ? protocolUpdateBlockReason(existing) : null;
+    const action = reason ? "reject" : existing ? (changed ? "update" : "skip") : "create";
+    operations.push({
+      table: "sanitario_protocolos_v2",
+      key: protocol.family_code,
+      action,
+      reason: reason ?? "",
+    });
   }
 
   for (const item of sortedBy(data.items, "logical_item_key")) {
@@ -603,8 +701,15 @@ async function buildPlan(client, data) {
 
     if (!reason) {
       const row = itemInsertRow(item, protocolId, groupId);
-      const existing = existingItems.get(item.logical_item_key);
-      action = existing ? (compareItem(existing, row) ? "update" : "skip") : "create";
+      const existing = existingItems.get(itemIdentity(item));
+      const changed = existing && compareItem(existing, row);
+      const blockReason = changed ? itemUpdateBlockReason(existing) : null;
+      if (blockReason) {
+        action = "reject";
+        reason = blockReason;
+      } else {
+        action = existing ? (changed ? "update" : "skip") : "create";
+      }
     }
 
     operations.push({
@@ -625,11 +730,14 @@ async function buildPlan(client, data) {
   }
 
   for (const item of deprecatedActiveItems) {
+    const blocked = item.status !== "draft";
     operations.push({
       table: "sanitario_protocolo_itens_versions_v2",
       key: `${item.familyCode}:${item.logicalItemKey}:deprecated`,
-      action: "update",
-      reason: `replaced_by:${item.replacementKeys.join(",")}`,
+      action: blocked ? "reject" : "update",
+      reason: blocked
+        ? "deprecated_item_not_draft"
+        : `replaced_by:${item.replacementKeys.join(",")}`,
     });
   }
 
@@ -683,6 +791,10 @@ async function upsertGroup(client, group) {
     return { id: inserted.rows[0].id, action: "create" };
   }
   if (!compareGroup(existing, row)) return { id: existing.id, action: "skip" };
+  assert(
+    !groupUpdateBlockReason(existing),
+    `${group.group_key}: grupo curado/operacional nao pode ser sobrescrito pelo importador`,
+  );
   await client.query(
     `
       update public.sanitario_product_class_groups_v2
@@ -737,6 +849,10 @@ async function upsertProtocol(client, protocol) {
     return { id: inserted.rows[0].id, action: "create" };
   }
   if (!compareProtocol(existing, row)) return { id: existing.id, action: "skip" };
+  assert(
+    !protocolUpdateBlockReason(existing),
+    `${protocol.family_code}: protocolo aprovado nao pode ser rebaixado para draft`,
+  );
   await client.query(
     `
       update public.sanitario_protocolos_v2
@@ -820,6 +936,10 @@ async function upsertItem(client, item, protocolId, groupId) {
     return "create";
   }
   if (!compareItem(existing.rows[0], row)) return "skip";
+  assert(
+    !itemUpdateBlockReason(existing.rows[0]),
+    `${item.logical_item_key}: item nao-draft exige nova versao; update in-place bloqueado`,
+  );
   await client.query(
     `
       update public.sanitario_protocolo_itens_versions_v2
@@ -871,6 +991,21 @@ async function tombstoneDeprecatedActiveItems(client, protocolIds) {
   for (const deprecatedItem of DEPRECATED_ACTIVE_ITEMS) {
     const protocolId = protocolIds.get(deprecatedItem.familyCode);
     if (!protocolId) continue;
+    const existing = await client.query(
+      `
+        select id, status
+        from public.sanitario_protocolo_itens_versions_v2
+        where deleted_at is null
+          and protocol_id = $1
+          and logical_item_key = $2
+        order by id
+      `,
+      [protocolId, deprecatedItem.logicalItemKey],
+    );
+    assert(
+      existing.rows.every((row) => row.status === "draft"),
+      `${deprecatedItem.logicalItemKey}: tombstone de item nao-draft exige decisao/versionamento proprio`,
+    );
     const result = await client.query(
       `
         update public.sanitario_protocolo_itens_versions_v2
@@ -880,6 +1015,7 @@ async function tombstoneDeprecatedActiveItems(client, protocolIds) {
         where deleted_at is null
           and protocol_id = $1
           and logical_item_key = $2
+          and status = 'draft'
       `,
       [protocolId, deprecatedItem.logicalItemKey],
     );
@@ -889,14 +1025,13 @@ async function tombstoneDeprecatedActiveItems(client, protocolIds) {
 }
 
 async function applyImport(client, data) {
-  assert(
-    process.env.ALLOW_SANITARIO_IMPORT === "1",
-    "Modo --apply bloqueado: defina ALLOW_SANITARIO_IMPORT=1 para executar import controlado.",
-  );
-
   const counts = { create: 0, update: 0, skip: 0, reject: 0 };
   await client.query("begin");
   try {
+    await client.query("set local lock_timeout = '5s'");
+    await client.query("set local statement_timeout = '60s'");
+    await client.query("select pg_advisory_xact_lock(hashtext($1))", [IMPORT_LOCK_KEY]);
+
     const groupIds = new Map();
     for (const group of sortedBy(data.groups, "group_key")) {
       const result = await upsertGroup(client, group);
@@ -924,6 +1059,15 @@ async function applyImport(client, data) {
 
     counts.update += await tombstoneDeprecatedActiveItems(client, protocolIds);
     counts.reject += data.memberRejections.length;
+
+    const verificationPlan = await buildPlan(client, data);
+    const unstableOperations = verificationPlan.filter((operation) =>
+      ["create", "update"].includes(operation.action),
+    );
+    assert(
+      unstableOperations.length === 0,
+      `Import nao ficou idempotente antes do commit: ${stableStringify(unstableOperations)}`,
+    );
     await client.query("commit");
   } catch (error) {
     await client.query("rollback");
@@ -957,21 +1101,29 @@ async function main() {
     return;
   }
 
-  if (mode === "apply") {
-    assert(
-      process.env.ALLOW_SANITARIO_IMPORT === "1",
-      "Modo --apply bloqueado: defina ALLOW_SANITARIO_IMPORT=1 para executar import controlado.",
-    );
-  }
-
-  const client = await connectDb();
+  const connection = await connectDb(mode);
+  const { client } = connection;
   try {
+    console.log(
+      `database host=${connection.target.host} port=${connection.target.port} database=${connection.target.database} local=${connection.target.local}`,
+    );
     if (mode === "dry-run") {
       const plan = await buildPlan(client, data);
       printPlan("dry-run", plan);
       return;
     }
 
+    const preflightPlan = await buildPlan(client, data);
+    const unexpectedRejections = preflightPlan.filter(
+      (operation) =>
+        operation.action === "reject" &&
+        operation.table !== "sanitario_product_class_group_members_v2",
+    );
+    assert(
+      unexpectedRejections.length === 0,
+      `Apply bloqueado por registros imutaveis ou lookups ausentes: ${stableStringify(unexpectedRejections)}`,
+    );
+    printPlan("apply-plan", preflightPlan);
     const counts = await applyImport(client, data);
     console.log("12G apply OK");
     console.log(`summary ${JSON.stringify(counts)}`);

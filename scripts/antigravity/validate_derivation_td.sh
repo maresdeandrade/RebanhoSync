@@ -1,111 +1,91 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Validates derivation consistency using the current Rev D+ docs model.
-# Rules:
-# - TECH_DEBT OPEN TD set must equal IMPLEMENTATION_STATUS "Gaps consolidados" TD set
-# - ROADMAP TD set must equal TECH_DEBT OPEN TD set
-# - capability_id sets must also match across IMPLEMENTATION_STATUS, TECH_DEBT OPEN and ROADMAP
+# Compatibility entrypoint retained by package.json. Validates consistency of
+# the current continuity chain instead of the archived Rev D TD model.
 
-ROOT="$(git rev-parse --show-toplevel)"
-cd "$ROOT"
+readonly FILES=(
+  "docs/README.md"
+  "docs/context/PROJECT_STATUS.md"
+  "docs/product/ROADMAP.md"
+  "docs/review/ACTIVE_PHASE_PLAN.md"
+  "docs/review/CURRENT_PHASE_HANDOFF.md"
+)
+
+if [[ "$#" -ne 0 ]]; then
+  echo "ERROR: this script does not accept arguments." >&2
+  exit 2
+fi
+
+if ! root="$(git rev-parse --show-toplevel 2>/dev/null)"; then
+  echo "ERROR: not inside a Git repository." >&2
+  exit 2
+fi
+cd "$root"
 
 if ! command -v rg >/dev/null 2>&1; then
   echo "ERROR: ripgrep (rg) is required." >&2
   exit 2
 fi
 
-impl="docs/IMPLEMENTATION_STATUS.md"
-td="docs/TECH_DEBT.md"
-rm="docs/ROADMAP.md"
-
-for f in "$impl" "$td" "$rm"; do
-  [[ -f "$f" ]] || { echo "ERROR: missing required file: $f" >&2; exit 2; }
+for file in "${FILES[@]}"; do
+  if [[ ! -f "$file" ]]; then
+    echo "ERROR: missing required active document: $file" >&2
+    exit 2
+  fi
 done
 
-tmp_dir="$(mktemp -d)"
-trap 'rm -rf "$tmp_dir"' EXIT
-
-impl_set="$tmp_dir/impl_tds.txt"
-impl_cap_set="$tmp_dir/impl_caps.txt"
-td_set="$tmp_dir/td_open_tds.txt"
-td_cap_set="$tmp_dir/td_open_caps.txt"
-rm_set="$tmp_dir/rm_tds.txt"
-rm_cap_set="$tmp_dir/rm_caps.txt"
-
-# Extract open TDs and capability_ids from IMPLEMENTATION_STATUS.
-if rg -n 'Gaps consolidados' "$impl" >/dev/null 2>&1; then
-  awk '
-    BEGIN{in_section=0}
-    /Gaps consolidados/ {in_section=1}
-    in_section==1 {print}
-  ' "$impl" | rg -o 'TD-[0-9]{3,}' | sort -u > "$impl_set"
-else
-  rg -o 'TD-[0-9]{3,}' "$impl" | sort -u > "$impl_set"
-fi
-
-rg -n '^\| TD-[0-9]{3,} \| `[^`]+` \| .* \| OPEN \|$' "$impl" \
-  | sed -E 's/.*\| `([^`]+)` \|.*/\1/' \
-  | sort -u > "$impl_cap_set"
-
-# Extract TDs and capability_ids from TECH_DEBT OPEN blocks.
-awk '
-  BEGIN{in_section=0}
-  /^##[[:space:]]+OPEN($|[[:space:](])/ {in_section=1; next}
-  in_section==1 && /^##[[:space:]]+/ {exit}
-  in_section==1 {print}
-' "$td" | rg -o 'TD-[0-9]{3,}' | sort -u > "$td_set"
-
-awk '
-  BEGIN{in_section=0}
-  /^##[[:space:]]+OPEN($|[[:space:](])/ {in_section=1; next}
-  in_section==1 && /^##[[:space:]]+/ {exit}
-  in_section==1 {print}
-' "$td" | rg -o '\*\*capability_id:\*\*[[:space:]]*`[^`]+`' \
-  | sed -E 's/.*`([^`]+)`.*/\1/' \
-  | sort -u > "$td_cap_set"
-
-# Extract TDs and capability_ids from ROADMAP derivation table.
-rg -o 'TD-[0-9]{3,}' "$rm" | sort -u > "$rm_set"
-
-rg -n '^\| TD-[0-9]{3,} \| `[^`]+` \| ' "$rm" \
-  | sed -E 's/.*\| `([^`]+)` \|.*/\1/' \
-  | sort -u > "$rm_cap_set"
-
-fail=0
-
-diff_sets() {
-  local a="$1"; local b="$2"; local label="$3"
-  local only_a only_b
-  only_a="$(comm -23 "$a" "$b" || true)"
-  only_b="$(comm -13 "$a" "$b" || true)"
-  if [[ -n "$only_a" || -n "$only_b" ]]; then
-    echo "FAIL: set mismatch ($label)" >&2
-    [[ -n "$only_a" ]] && { echo "Only in A:" >&2; printf "%s\n" "$only_a" >&2; echo "" >&2; }
-    [[ -n "$only_b" ]] && { echo "Only in B:" >&2; printf "%s\n" "$only_b" >&2; echo "" >&2; }
-    return 1
-  fi
-  return 0
+normalize_value() {
+  sed -E \
+    -e 's/^[-*[:space:]]*//' \
+    -e 's/^(Próximo incremento( oficial)?|Próximo desenvolvimento):[[:space:]]*//' \
+    -e 's/\*\*//g' \
+    -e 's/`//g' \
+    -e 's/[.;:][[:space:]]*$//' \
+    -e 's/[[:space:]]+$//' \
+    | tr -s ' '
 }
 
-if ! diff_sets "$td_set" "$impl_set" "TECH_DEBT OPEN vs IMPLEMENTATION_STATUS gaps"; then
-  fail=1
-fi
+extract_next_increment() {
+  local file="$1"
+  local line
+  line="$(rg --max-count 1 '^(Próximo incremento( oficial)?|[-*][[:space:]]*Próximo incremento):' "$file" || true)"
+  if [[ -z "$line" ]]; then
+    return 1
+  fi
+  printf '%s\n' "$line" | normalize_value
+}
 
-if ! diff_sets "$td_set" "$rm_set" "TECH_DEBT OPEN vs ROADMAP"; then
-  fail=1
-fi
+reference=""
+fail=0
+for file in "${FILES[@]}"; do
+  value="$(extract_next_increment "$file" || true)"
+  if [[ -z "$value" ]]; then
+    echo "FAIL: could not extract the next increment from $file" >&2
+    fail=1
+    continue
+  fi
 
-if ! diff_sets "$td_cap_set" "$impl_cap_set" "TECH_DEBT OPEN capability_id set vs IMPLEMENTATION_STATUS"; then
-  fail=1
-fi
+  if [[ -z "$reference" ]]; then
+    reference="$value"
+  elif [[ "$value" != "$reference" ]]; then
+    echo "FAIL: next-increment mismatch in $file" >&2
+    echo "  expected: $reference" >&2
+    echo "  found:    $value" >&2
+    fail=1
+  fi
+done
 
-if ! diff_sets "$td_cap_set" "$rm_cap_set" "TECH_DEBT OPEN capability_id set vs ROADMAP"; then
-  fail=1
-fi
+for file in "${FILES[@]:1}"; do
+  if ! rg -qi 'Fase[[:space:]]+[0-9]+[^\n]*(ativa|em andamento)|Status:[^\n]*(ativa|em andamento)' "$file"; then
+    echo "FAIL: active phase is not stated explicitly in $file" >&2
+    fail=1
+  fi
+done
 
 if [[ "$fail" -ne 0 ]]; then
+  echo "Active-document derivation validation FAILED." >&2
   exit 1
 fi
 
-echo "OK: derivation validated via TD IDs and capability_id sets."
+echo "OK: active docs agree on phase state and next increment: $reference"

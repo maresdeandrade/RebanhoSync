@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
-import { execSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 
 const root = process.cwd();
 
@@ -52,6 +52,12 @@ function add(kind, message) {
 
 function assert(condition, message) {
   add(condition ? "pass" : "fail", message);
+}
+
+function uniqueBy(rows, key, label) {
+  const values = rows.map((row) => row?.[key]).filter(Boolean);
+  assert(values.length === rows.length, `${label} possuem ${key} preenchido`);
+  assert(new Set(values).size === values.length, `${label} nao duplicam ${key}`);
 }
 
 function read(rel) {
@@ -105,6 +111,10 @@ function validateNoForbiddenFlags(allText) {
 }
 
 function validateSourceRefsObject(sourceRefs, label) {
+  if (!sourceRefs || typeof sourceRefs !== "object") {
+    add("fail", `${label} source_refs_by_field deve ser objeto`);
+    return;
+  }
   let ok = true;
   walk(sourceRefs, (value, parts) => {
     if (value === null) {
@@ -120,6 +130,29 @@ function validateSourceRefsObject(sourceRefs, label) {
     }
   });
   assert(ok, `${label} source_refs_by_field sem null/n/a/source_gap/politica/MV`);
+}
+
+function gitChangedFiles() {
+  if (process.env.SKIP_GIT_CHECKS === "1") {
+    add("warning", "Checagens Git ignoradas por SKIP_GIT_CHECKS=1.");
+    return [];
+  }
+  try {
+    const commands = [
+      ["diff", "--name-only", "--diff-filter=ACMRTUXB"],
+      ["diff", "--cached", "--name-only", "--diff-filter=ACMRTUXB"],
+      ["ls-files", "--others", "--exclude-standard"],
+    ];
+    return [...new Set(commands.flatMap((args) =>
+      execFileSync("git", args, { cwd: root, encoding: "utf8" })
+        .split(/\r?\n/)
+        .filter(Boolean)
+        .map((file) => file.replaceAll("\\", "/")),
+    ))];
+  } catch (error) {
+    add("fail", `Nao foi possivel consultar estado Git: ${error.message}`);
+    return [];
+  }
 }
 
 function lookupToken(groupKey) {
@@ -147,10 +180,12 @@ assert(migration.includes("v_group_curation_status in ('blocked', 'archived')"),
 const seedItemsArtifact = jsonBlocks(markdown.seedItems12f2, files.seedItems12f2)[0];
 const seedRows = seedItemsArtifact?.rows ?? [];
 assert(seedRows.length === 19, "12F2 contem 19 itens candidatos");
+uniqueBy(seedRows, "item_key", "Itens candidatos 12F2");
 
 const groupsArtifact = jsonBlocks(markdown.groups12f4, files.groups12f4)[0];
 const groupRows = groupsArtifact?.rows ?? [];
 assert(groupRows.length === 4, "12F4 contem 4 ProductClassGroups adaptaveis");
+uniqueBy(groupRows, "group_key", "ProductClassGroups 12F4");
 for (const groupKey of expectedGroups) {
   const matches = groupRows.filter((group) => group.group_key === groupKey && group.scope === "global" && group.fazenda_id === null);
   assert(matches.length === 1, `Lookup documental inequivoco para ${groupKey}`);
@@ -166,6 +201,7 @@ assert(payloadArtifact?.counts?.items?.adapted === 19, "Contagem 12F8 itens adap
 assert(payloadArtifact?.counts?.items?.rejected === 0, "Contagem 12F8 itens rejeitados por enum antigo = 0");
 assert(payloadArtifact?.counts?.productClassGroupMembers?.rejected === 16, "Members continuam 16 rejeitados");
 assert(adaptedRows.length === 6, "Payload 12F8 documenta os 6 itens ProductClassGroup adaptados");
+uniqueBy(adaptedRows, "logical_item_key", "Itens ProductClassGroup 12F8");
 
 for (const itemKey of expectedItems) {
   const source = seedRows.find((row) => row.item_key === itemKey);
@@ -216,17 +252,7 @@ for (const invariant of [
   assert(markdown.sanitaryDoc.includes(invariant), `SANITARIO preserva invariante: ${invariant}`);
 }
 
-const changedFiles = (() => {
-  try {
-    return execSync("git diff --name-only --cached && git diff --name-only", { encoding: "utf8" })
-      .split(/\r?\n/)
-      .filter(Boolean)
-      .map((file) => file.replaceAll("\\", "/"));
-  } catch {
-    add("warning", "Nao foi possivel consultar git diff.");
-    return [];
-  }
-})();
+const changedFiles = gitChangedFiles();
 
 for (const file of changedFiles) {
   assert(file !== files.migration12f7, "Migration 12F7 nao foi alterada nesta fase");

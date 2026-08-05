@@ -1,41 +1,66 @@
+[CmdletBinding()]
+param()
+
+Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
-Write-Host "== RebanhoSync Codex Bootstrap =="
+function Get-RepositoryRoot {
+  $root = (& git rev-parse --show-toplevel 2>$null)
+  if ($LASTEXITCODE -ne 0 -or -not $root) {
+    throw "Execute o bootstrap dentro de um checkout Git do RebanhoSync."
+  }
 
-if (Test-Path ".\AGENTS.md") {
-  Write-Host "AGENTS.md found."
-} else {
-  Write-Host "WARNING: AGENTS.md not found."
+  return $root.Trim()
 }
 
-$docs = @(
+$repoRoot = Get-RepositoryRoot
+$requiredFiles = @(
+  "AGENTS.md",
+  ".agents/rules/CORE_RULES.md",
+  ".agents/rules/CONTEXT_LOADING.md",
+  ".agents/rules/no-broad-context.md",
+  ".agents/rules/rtk.md"
+)
+$referenceFiles = @(
   "README.md",
-  "docs/CURRENT_STATE.md",
-  "docs/PROCESS.md"
+  "docs/context/PROJECT_STATUS.md",
+  "docs/context/SOURCE_OF_TRUTH.md",
+  ".agents/skills/README.md"
 )
 
-foreach ($doc in $docs) {
-  if (Test-Path $doc) {
-    Write-Host "OK   $doc"
+Write-Host "== RebanhoSync Codex Bootstrap =="
+Write-Host "Repository: $repoRoot"
+Write-Host ""
+
+$missingRequired = @()
+foreach ($relativePath in $requiredFiles) {
+  $absolutePath = Join-Path $repoRoot $relativePath
+  if (Test-Path -LiteralPath $absolutePath -PathType Leaf) {
+    Write-Host "OK   $relativePath"
   } else {
-    Write-Host "MISS $doc"
+    Write-Host "MISS $relativePath"
+    $missingRequired += $relativePath
   }
 }
 
 Write-Host ""
-Write-Host "Read first:"
-Write-Host "- README.md"
-Write-Host "- docs/CURRENT_STATE.md"
-Write-Host "- docs/PROCESS.md"
+Write-Host "Referencias sob demanda:"
+foreach ($relativePath in $referenceFiles) {
+  $absolutePath = Join-Path $repoRoot $relativePath
+  $status = if (Test-Path -LiteralPath $absolutePath -PathType Leaf) { "OK  " } else { "MISS" }
+  Write-Host "$status $relativePath"
+}
+
+if ($missingRequired.Count -gt 0) {
+  throw "Bootstrap incompleto. Arquivos obrigatorios ausentes: $($missingRequired -join ', ')"
+}
+
 Write-Host ""
-Write-Host "Global invariants:"
-Write-Host "- Two Rails"
-Write-Host "- fazenda_id isolation"
-Write-Host "- idempotent sync"
-Write-Host "- deterministic rollback"
-Write-Host "- no docs/archive/** as operational truth"
+Write-Host "Ordem minima:"
+Write-Host "1. AGENTS.md"
+Write-Host "2. CORE_RULES.md + CONTEXT_LOADING.md + no-broad-context.md"
+Write-Host "3. AGENTS.md local, se existir"
+Write-Host "4. Uma skill principal, somente se a tarefa exigir"
+Write-Host "5. rtk.md para qualquer comando ou validacao"
 Write-Host ""
-Write-Host "Validation commands:"
-Write-Host "- pnpm run lint"
-Write-Host "- pnpm test"
-Write-Host "- pnpm run build"
+Write-Host "Bootstrap OK"

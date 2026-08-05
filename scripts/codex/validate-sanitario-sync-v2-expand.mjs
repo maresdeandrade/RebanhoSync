@@ -4,9 +4,17 @@ import pg from "pg";
 import { createClient } from "@supabase/supabase-js";
 
 const { Client } = pg;
-const PASSWORD = "SanitarioSyncV2Sentinel1!";
+const CLIENT_ID = "sanitario-sync-v2-sentinel";
+const LOCAL_HOSTS = new Set(["127.0.0.1", "localhost", "::1"]);
 
 function readEnv() {
+  const configured = {
+    DB_URL: process.env.DB_URL?.trim(),
+    API_URL: process.env.API_URL?.trim(),
+    SERVICE_ROLE_KEY: process.env.SERVICE_ROLE_KEY?.trim(),
+  };
+  if (Object.values(configured).every(Boolean)) return configured;
+
   const output = execFileSync("supabase", ["status", "-o", "env"], {
     cwd: process.cwd(),
     encoding: "utf8",
@@ -14,8 +22,8 @@ function readEnv() {
   });
   const env = {};
   for (const line of output.split(/\r?\n/)) {
-    const match = line.match(/^([A-Z0-9_]+)="?(.*?)"?$/);
-    if (match) env[match[1]] = match[2];
+    const match = line.match(/^([A-Z0-9_]+)=(?:"([\s\S]*)"|'([\s\S]*)'|([^\s].*))$/);
+    if (match) env[match[1]] = match[2] ?? match[3] ?? match[4] ?? "";
   }
   for (const key of ["DB_URL", "API_URL", "SERVICE_ROLE_KEY"]) {
     if (!env[key]) throw new Error(`supabase status nao retornou ${key}`);
@@ -25,6 +33,20 @@ function readEnv() {
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
+}
+
+function assertLocalTarget(env) {
+  let database;
+  let api;
+  try {
+    database = new URL(env.DB_URL);
+    api = new URL(env.API_URL);
+  } catch (error) {
+    throw new Error(`Configuracao Supabase invalida: ${error.message}`);
+  }
+  assert(["postgres:", "postgresql:"].includes(database.protocol), "DB_URL deve ser PostgreSQL");
+  assert(LOCAL_HOSTS.has(database.hostname), `Sentinela bloqueada fora do banco local: ${database.hostname}`);
+  assert(LOCAL_HOSTS.has(api.hostname), `Sentinela bloqueada fora da API local: ${api.hostname}`);
 }
 
 async function expectError(fn, label, codes = [], messagePart = null) {
@@ -67,7 +89,7 @@ function agendaPayload(id, suffix) {
   return {
     id,
     dedup_key: `sanitario-sync-v2:${suffix}:${id}`,
-    client_id: "sanitario-sync-v2-sentinel",
+    client_id: CLIENT_ID,
     client_tx_id: randomUUID(),
     client_recorded_at: new Date().toISOString(),
     source_demand_key: null,
@@ -97,7 +119,7 @@ function eventPayload(id, agendaId, nature, correctedEventId = null, payload = {
     corrige_evento_id: correctedEventId,
     observacoes: "sentinela sync sanitario v2",
     payload,
-    client_id: "sanitario-sync-v2-sentinel",
+    client_id: CLIENT_ID,
     client_tx_id: randomUUID(),
     client_recorded_at: new Date().toISOString(),
   };
@@ -152,7 +174,7 @@ async function callReplaceAnimals(client, args) {
         $1, $2, $3, $4, $5, $6, $7, $8, $9::uuid[]
       ) as result`,
       [args.actorId, args.farmId, args.version ?? 2, args.clientOpId, args.domainOpId,
-        args.expectedRevision, args.agendaId, "sanitario-sync-v2-sentinel", args.animalIds],
+        args.expectedRevision, args.agendaId, CLIENT_ID, args.animalIds],
     );
     return result.rows[0].result;
   });
@@ -199,6 +221,7 @@ async function count(client, table, field, value) {
 
 async function main() {
   const env = readEnv();
+  assertLocalTarget(env);
   const db = new Client({ connectionString: env.DB_URL });
   const db2 = new Client({ connectionString: env.DB_URL });
   const admin = createClient(env.API_URL, env.SERVICE_ROLE_KEY, {
@@ -206,15 +229,21 @@ async function main() {
   });
   const users = [];
   const farms = [];
+  const run = randomUUID().slice(0, 8);
+  const password = `SyncV2-${randomUUID()}-Aa1!`;
   await db.connect();
   await db2.connect();
   try {
-    const run = randomUUID().slice(0, 8);
+    for (const client of [db, db2]) {
+      await client.query("set statement_timeout = '60s'");
+      await client.query("set lock_timeout = '5s'");
+    }
     for (const label of ["owner", "outsider"]) {
       const { data, error } = await admin.auth.admin.createUser({
         email: `${label}-${run}@sanitario-v2.local`,
-        password: PASSWORD,
+        password,
         email_confirm: true,
+        user_metadata: { functional_fixture: CLIENT_ID, run_id: run },
       });
       if (error) throw error;
       users.push({ label, id: data.user.id });
@@ -446,6 +475,11 @@ async function main() {
     ]);
     assert(concurrentResults.filter((result) => result.status === "fulfilled").length === 1, "uma execucao concorrente deve vencer");
     assert(concurrentResults.filter((result) => result.status === "rejected").length === 1, "uma execucao concorrente deve conflitar");
+    const loser = concurrentResults.find((result) => result.status === "rejected");
+    assert(
+      loser?.reason?.code === "40001" || loser?.reason?.message?.includes("SANITARIO_AGENDA_REVISION_CONFLICT"),
+      `execucao perdedora deve falhar por revision: ${loser?.reason?.message ?? "erro ausente"}`,
+    );
     const winnerIndex = concurrentResults.findIndex((result) => result.status === "fulfilled");
     const winner = executions[winnerIndex];
     assert(await count(db, "eventos", "source_sanitario_agenda_v2_id", concurrentAgendaId) === 1, "unique primaria impede segundo evento");
@@ -476,7 +510,7 @@ async function main() {
         actorId: ownerId, farmId: farmA, clientOpId: randomUUID(), domainOpId: randomUUID(), expectedRevision: 0,
         payload: {
           id: badClosureId, agenda_id: closureAgendaId, closure_type: "cancelled",
-          dedup_key: `closure:${badClosureId}`, client_id: "sanitario-sync-v2-sentinel",
+          dedup_key: `closure:${badClosureId}`, client_id: CLIENT_ID,
           client_tx_id: randomUUID(), client_recorded_at: new Date().toISOString(),
           closed_at: new Date().toISOString(), reason: " ", partial_payload: {}, metadata: {},
         },
@@ -495,7 +529,7 @@ async function main() {
       actorId: ownerId, farmId: farmA, clientOpId: randomUUID(), domainOpId: randomUUID(), expectedRevision: 0,
       payload: {
         id: goodClosureId, agenda_id: closureAgendaId, closure_type: "cancelled",
-        dedup_key: `closure:${goodClosureId}`, client_id: "sanitario-sync-v2-sentinel",
+        dedup_key: `closure:${goodClosureId}`, client_id: CLIENT_ID,
         client_tx_id: randomUUID(), client_recorded_at: new Date().toISOString(),
         closed_at: new Date().toISOString(), reason: "cancelamento sentinela", partial_payload: {}, metadata: {},
       },
@@ -564,22 +598,26 @@ async function main() {
     );
     assert(executor.rows[0].count === totalOps.rows[0].count && totalOps.rows[0].count > 0, "ledger deve observar apenas service_role");
 
-    console.log("OK sentinelas Sync Sanitario v2 expand validadas");
+    console.log(JSON.stringify({
+      result: "PASS",
+      run_id: run,
+      farms,
+      facts_persisted: true,
+      cleanup: "execute supabase db reset no ambiente local descartavel",
+    }, null, 2));
   } finally {
     await db.query("reset role").catch(() => undefined);
-    // Fatos append-only podem impedir a exclusao fisica da fazenda fixture.
-    // O gate deve sempre voltar ao estado fail-closed, inclusive em falhas.
+    await db2.query("reset role").catch(() => undefined);
+    // Eventos sao append-only: nao tente apagar a fixture factual.
+    // O gate volta a fail-closed; descarte os dados por reset do ambiente local.
     for (const farmId of farms) {
       await db.query(
         "update public.sanitario_sync_v2_gates set enabled = false where fazenda_id = $1",
         [farmId],
       ).catch(() => undefined);
     }
-    for (const farmId of farms.reverse()) {
-      await db.query("delete from public.fazendas where id = $1", [farmId]).catch(() => undefined);
-    }
-    for (const user of users) {
-      await admin.auth.admin.deleteUser(user.id).catch(() => undefined);
+    if (farms.length > 0 || users.length > 0) {
+      console.log(`FIXTURE_MARKER=${JSON.stringify({ run_id: run, client_id: CLIENT_ID, farms, user_ids: users.map((user) => user.id), action: "local_supabase_db_reset" })}`);
     }
     await db.end();
     await db2.end();

@@ -5,7 +5,8 @@ import { createClient } from "@supabase/supabase-js";
 
 const { Client } = pg;
 
-const DEFAULT_PASSWORD = "SupabaseFunctional1!";
+const CLIENT_ID = "baseline-functional";
+const LOCAL_HOSTS = new Set(["127.0.0.1", "localhost", "::1"]);
 
 function readSupabaseStatusEnv() {
   if (process.env.DB_URL && process.env.API_URL && process.env.ANON_KEY && process.env.SERVICE_ROLE_KEY) {
@@ -26,10 +27,8 @@ function readSupabaseStatusEnv() {
 
   const env = {};
   for (const line of output.split(/\r?\n/)) {
-    const match = line.match(/^([A-Z0-9_]+)="?(.*?)"?$/);
-    if (match) {
-      env[match[1]] = match[2];
-    }
+    const match = line.match(/^([A-Z0-9_]+)=(?:"([\s\S]*)"|'([\s\S]*)'|([^\s].*))$/);
+    if (match) env[match[1]] = match[2] ?? match[3] ?? match[4] ?? "";
   }
 
   if (!env.FUNCTIONS_URL && env.API_URL) {
@@ -49,14 +48,53 @@ function assert(condition, message) {
   if (!condition) throw new Error(message);
 }
 
+function assertLocalTarget(env) {
+  let database;
+  let api;
+  let functions;
+  try {
+    database = new URL(env.DB_URL);
+    api = new URL(env.API_URL);
+    functions = new URL(env.FUNCTIONS_URL);
+  } catch (error) {
+    throw new Error(`Configuracao Supabase invalida: ${error.message}`);
+  }
+  assert(["postgres:", "postgresql:"].includes(database.protocol), "DB_URL deve ser PostgreSQL");
+  for (const [label, url] of [["banco", database], ["API", api], ["Functions", functions]]) {
+    assert(LOCAL_HOSTS.has(url.hostname), `Baseline bloqueada fora do ${label} local: ${url.hostname}`);
+  }
+}
+
 function sleep(ms) {
   return new Promise((resolve) => {
     setTimeout(resolve, ms);
   });
 }
 
-async function startFunctionsServeNoVerify() {
+async function functionEndpointAvailable(functionsUrl) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 1000);
+  try {
+    const response = await fetch(`${functionsUrl}/sync-batch`, {
+      method: "GET",
+      redirect: "manual",
+      signal: controller.signal,
+    });
+    return ![404, 502, 503, 504].includes(response.status);
+  } catch {
+    return false;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function startFunctionsServeNoVerify(functionsUrl) {
   if (process.env.REBANHOSYNC_SKIP_FUNCTIONS_SERVE === "1") {
+    return null;
+  }
+
+  if (await functionEndpointAvailable(functionsUrl)) {
+    console.log("INFO Supabase local ja esta respondendo; servidor existente sera reutilizado.");
     return null;
   }
 
@@ -72,13 +110,16 @@ async function startFunctionsServeNoVerify() {
     windowsHide: true,
   });
 
-  await sleep(6000);
-
-  if (child.exitCode !== null) {
-    throw new Error("supabase functions serve --no-verify-jwt encerrou antes da validacao de sync-batch");
+  const startedAt = Date.now();
+  while (Date.now() - startedAt < 20_000) {
+    if (child.exitCode !== null) {
+      throw new Error("supabase functions serve --no-verify-jwt encerrou antes da validacao de sync-batch");
+    }
+    if (await functionEndpointAvailable(functionsUrl)) return child;
+    await sleep(250);
   }
-
-  return child;
+  stopChild(child);
+  throw new Error("Timeout aguardando Supabase Functions local");
 }
 
 function stopChild(child) {
@@ -123,7 +164,7 @@ async function withAuthenticatedUser(client, userId, fn) {
 function syncMeta(prefix) {
   const clientOpId = randomUUID();
   return {
-    client_id: "baseline-functional",
+    client_id: CLIENT_ID,
     client_op_id: clientOpId,
     client_tx_id: randomUUID(),
     client_recorded_at: new Date().toISOString(),
@@ -131,13 +172,13 @@ function syncMeta(prefix) {
   };
 }
 
-async function createAuthUser(adminClient, runId, label) {
+async function createAuthUser(adminClient, runId, label, password) {
   const email = `${label}-${runId}@baseline.local`;
   const { data, error } = await adminClient.auth.admin.createUser({
     email,
-    password: DEFAULT_PASSWORD,
+    password,
     email_confirm: true,
-    user_metadata: { baseline_functional_test: true, label },
+    user_metadata: { functional_fixture: CLIENT_ID, run_id: runId, label },
   });
 
   if (error) {
@@ -147,7 +188,7 @@ async function createAuthUser(adminClient, runId, label) {
   return {
     id: data.user.id,
     email,
-    password: DEFAULT_PASSWORD,
+    password,
   };
 }
 
@@ -190,7 +231,9 @@ async function callSyncBatch({ functionsUrl, anonKey, token, body }) {
 
 async function main() {
   const env = readSupabaseStatusEnv();
+  assertLocalTarget(env);
   const runId = randomUUID().slice(0, 8);
+  const password = `Baseline-${randomUUID()}-Aa1!`;
   const client = new Client({ connectionString: env.DB_URL });
   const adminClient = createClient(env.API_URL, env.SERVICE_ROLE_KEY, {
     auth: { autoRefreshToken: false, persistSession: false },
@@ -205,10 +248,13 @@ async function main() {
   await client.connect();
 
   try {
-    const owner = await createAuthUser(adminClient, runId, "owner");
-    const manager = await createAuthUser(adminClient, runId, "manager");
-    const cowboy = await createAuthUser(adminClient, runId, "cowboy");
-    const outsider = await createAuthUser(adminClient, runId, "outsider");
+    await client.query("set statement_timeout = '60s'");
+    await client.query("set lock_timeout = '5s'");
+
+    const owner = await createAuthUser(adminClient, runId, "owner", password);
+    const manager = await createAuthUser(adminClient, runId, "manager", password);
+    const cowboy = await createAuthUser(adminClient, runId, "cowboy", password);
+    const outsider = await createAuthUser(adminClient, runId, "outsider", password);
     createdUsers.push(owner, manager, cowboy, outsider);
 
     console.log("1/5 RLS + fluxo owner/fazenda");
@@ -533,7 +579,7 @@ async function main() {
     });
 
     console.log("5/5 sync-batch real");
-    const functionsServe = await startFunctionsServeNoVerify();
+    const functionsServe = await startFunctionsServeNoVerify(env.FUNCTIONS_URL);
 
     try {
       const ownerToken = await signInUser(anonClient, owner);
@@ -542,7 +588,7 @@ async function main() {
       const syncOpId = randomUUID();
       const syncTxId = randomUUID();
       const syncBody = {
-        client_id: "baseline-functional",
+        client_id: CLIENT_ID,
         fazenda_id: farmId,
         client_tx_id: syncTxId,
         ops: [
@@ -566,6 +612,7 @@ async function main() {
         body: syncBody,
       });
       assert(syncFirst.status === 200, `sync-batch owner deveria retornar 200, recebeu ${syncFirst.status}: ${JSON.stringify(syncFirst.payload)}`);
+      assert(syncFirst.payload.results?.length === 1, `sync-batch owner deve retornar um resultado: ${JSON.stringify(syncFirst.payload)}`);
       assert(syncFirst.payload.results?.[0]?.status === "APPLIED", `sync-batch owner deveria aplicar: ${JSON.stringify(syncFirst.payload)}`);
 
       const syncSecond = await callSyncBatch({
@@ -575,6 +622,7 @@ async function main() {
         body: syncBody,
       });
       assert(syncSecond.status === 200, `sync-batch idempotente deveria retornar 200, recebeu ${syncSecond.status}: ${JSON.stringify(syncSecond.payload)}`);
+      assert(syncSecond.payload.results?.length === 1, `replay deve retornar um resultado: ${JSON.stringify(syncSecond.payload)}`);
       assert(syncSecond.payload.results?.[0]?.status === "APPLIED", `sync-batch idempotente deveria retornar APPLIED: ${JSON.stringify(syncSecond.payload)}`);
       await expectCount(client, "select count(*) from public.pastos where id = $1 and fazenda_id = $2", [syncPastoId, farmId], 1, "sync idempotente sem duplicar pasto");
 
@@ -583,7 +631,7 @@ async function main() {
         anonKey: env.ANON_KEY,
         token: ownerToken,
         body: {
-          client_id: "baseline-functional",
+          client_id: CLIENT_ID,
           fazenda_id: farmId,
           client_tx_id: randomUUID(),
           ops: [
@@ -597,15 +645,48 @@ async function main() {
         },
       });
       assert(invalid.status === 200, `sync-batch invalid deveria retornar 200 com REJECTED, recebeu ${invalid.status}`);
+      assert(invalid.payload.results?.length === 1, `sync-batch invalid deve retornar um resultado: ${JSON.stringify(invalid.payload)}`);
       assert(invalid.payload.results?.[0]?.status === "REJECTED", `sync-batch invalid deveria rejeitar: ${JSON.stringify(invalid.payload)}`);
       assert(invalid.payload.results?.[0]?.reason_code === "SECURITY_BLOCKED_TABLE", `reason_code inesperado: ${JSON.stringify(invalid.payload)}`);
+
+      const partialPastoId = randomUUID();
+      const partial = await callSyncBatch({
+        functionsUrl: env.FUNCTIONS_URL,
+        anonKey: env.ANON_KEY,
+        token: ownerToken,
+        body: {
+          client_id: CLIENT_ID,
+          fazenda_id: farmId,
+          client_tx_id: randomUUID(),
+          ops: [
+            {
+              client_op_id: randomUUID(),
+              table: "pastos",
+              action: "INSERT",
+              record: { id: partialPastoId, nome: `Pasto Parcial ${runId}`, area_ha: 3 },
+            },
+            {
+              client_op_id: randomUUID(),
+              table: "user_fazendas",
+              action: "INSERT",
+              record: { user_id: outsider.id, fazenda_id: farmId, role: "owner" },
+            },
+          ],
+        },
+      });
+      assert(partial.status === 200, `sync-batch parcial deveria retornar 200, recebeu ${partial.status}`);
+      assert(Array.isArray(partial.payload.results) && partial.payload.results.length === 2, `sync parcial deve retornar resultado por operacao: ${JSON.stringify(partial.payload)}`);
+      assert(partial.payload.results[0]?.status === "APPLIED", `primeira operacao parcial deveria aplicar: ${JSON.stringify(partial.payload)}`);
+      assert(partial.payload.results[1]?.status === "REJECTED", `segunda operacao parcial deveria rejeitar: ${JSON.stringify(partial.payload)}`);
+      assert(partial.payload.results[1]?.reason_code === "SECURITY_BLOCKED_TABLE", `reason parcial inesperado: ${JSON.stringify(partial.payload)}`);
+      await expectCount(client, "select count(*) from public.pastos where id = $1 and fazenda_id = $2", [partialPastoId, farmId], 1, "sucesso parcial persiste apenas operacao aceita");
 
       const forbidden = await callSyncBatch({
         functionsUrl: env.FUNCTIONS_URL,
         anonKey: env.ANON_KEY,
         token: outsiderToken,
         body: {
-          client_id: "baseline-functional",
+          client_id: CLIENT_ID,
           fazenda_id: farmId,
           client_tx_id: randomUUID(),
           ops: [],
@@ -630,14 +711,14 @@ async function main() {
       sanitary_direct_event_without_legacy_agenda: "passou",
       sanitary_inventory_sociedade_rls: "passou",
       sync_batch_real_edge_function: "passou",
+      sync_batch_partial_success: "passou",
+      facts_persisted: true,
+      cleanup: "execute supabase db reset no ambiente local descartavel",
     }, null, 2));
   } finally {
     await client.query("reset role").catch(() => undefined);
-    for (const farmId of createdFarmIds.reverse()) {
-      await client.query("delete from public.fazendas where id = $1", [farmId]).catch(() => undefined);
-    }
-    for (const user of createdUsers) {
-      await adminClient.auth.admin.deleteUser(user.id).catch(() => undefined);
+    if (createdFarmIds.length > 0 || createdUsers.length > 0) {
+      console.log(`FIXTURE_MARKER=${JSON.stringify({ run_id: runId, client_id: CLIENT_ID, farms: createdFarmIds, user_ids: createdUsers.map((user) => user.id), action: "local_supabase_db_reset" })}`);
     }
     await client.end();
   }

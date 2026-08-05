@@ -5,7 +5,8 @@ import { createClient } from "@supabase/supabase-js";
 
 const { Client } = pg;
 
-const DEFAULT_PASSWORD = "SupabaseFunctional1!";
+const CLIENT_ID = "dry-cow-functional";
+const LOCAL_HOSTS = new Set(["127.0.0.1", "localhost", "::1"]);
 const AS_OF = "2026-05-10";
 const EXPECTED_CALVING_DATE = "2026-07-10";
 
@@ -13,14 +14,12 @@ function readSupabaseStatusEnv() {
   if (
     process.env.DB_URL &&
     process.env.API_URL &&
-    process.env.ANON_KEY &&
     process.env.SERVICE_ROLE_KEY
   ) {
     return {
-      DB_URL: process.env.DB_URL,
-      API_URL: process.env.API_URL,
-      ANON_KEY: process.env.ANON_KEY,
-      SERVICE_ROLE_KEY: process.env.SERVICE_ROLE_KEY,
+      DB_URL: process.env.DB_URL.trim(),
+      API_URL: process.env.API_URL.trim(),
+      SERVICE_ROLE_KEY: process.env.SERVICE_ROLE_KEY.trim(),
     };
   }
 
@@ -32,11 +31,11 @@ function readSupabaseStatusEnv() {
 
   const env = {};
   for (const line of output.split(/\r?\n/)) {
-    const match = line.match(/^([A-Z0-9_]+)="?(.*?)"?$/);
-    if (match) env[match[1]] = match[2];
+    const match = line.match(/^([A-Z0-9_]+)=(?:"([\s\S]*)"|'([\s\S]*)'|([^\s].*))$/);
+    if (match) env[match[1]] = match[2] ?? match[3] ?? match[4] ?? "";
   }
 
-  for (const key of ["DB_URL", "API_URL", "ANON_KEY", "SERVICE_ROLE_KEY"]) {
+  for (const key of ["DB_URL", "API_URL", "SERVICE_ROLE_KEY"]) {
     if (!env[key]) throw new Error(`supabase status -o env nao retornou ${key}`);
   }
 
@@ -47,49 +46,49 @@ function assert(condition, message) {
   if (!condition) throw new Error(message);
 }
 
-async function createAuthUser(adminClient, runId) {
+function assertLocalTarget(env) {
+  let database;
+  let api;
+  try {
+    database = new URL(env.DB_URL);
+    api = new URL(env.API_URL);
+  } catch (error) {
+    throw new Error(`Configuracao Supabase invalida: ${error.message}`);
+  }
+  assert(["postgres:", "postgresql:"].includes(database.protocol), "DB_URL deve ser PostgreSQL");
+  assert(LOCAL_HOSTS.has(database.hostname), `Validacao bloqueada fora do banco local: ${database.hostname}`);
+  assert(LOCAL_HOSTS.has(api.hostname), `Validacao bloqueada fora da API local: ${api.hostname}`);
+}
+
+async function createAuthUser(adminClient, runId, password) {
   const email = `dry-cow-${runId}@functional.local`;
   const { data, error } = await adminClient.auth.admin.createUser({
     email,
-    password: DEFAULT_PASSWORD,
+    password,
     email_confirm: true,
-    user_metadata: { dry_cow_functional_test: true },
+    user_metadata: { functional_fixture: CLIENT_ID, run_id: runId },
   });
 
   if (error) throw new Error(`falha ao criar auth user: ${error.message}`);
   return { id: data.user.id, email };
 }
 
+async function withRole(client, role, fn) {
+  await client.query("reset role");
+  await client.query(`set local role ${role}`);
+  return fn();
+}
+
 async function withAuthenticatedUser(client, userId, fn) {
-  await client.query("begin");
-  try {
-    await client.query("set local role authenticated");
-    await client.query("select set_config('request.jwt.claim.sub', $1, true)", [
-      userId,
-    ]);
-    await client.query(
-      "select set_config('request.jwt.claim.role', 'authenticated', true)",
-    );
-    const result = await fn();
-    await client.query("commit");
-    return result;
-  } catch (error) {
-    await client.query("rollback");
-    throw error;
-  }
+  return withRole(client, "authenticated", async () => {
+    await client.query("select set_config('request.jwt.claim.sub', $1, true)", [userId]);
+    await client.query("select set_config('request.jwt.claim.role', 'authenticated', true)");
+    return fn();
+  });
 }
 
 async function withServiceRole(client, fn) {
-  await client.query("begin");
-  try {
-    await client.query("set local role service_role");
-    const result = await fn();
-    await client.query("commit");
-    return result;
-  } catch (error) {
-    await client.query("rollback");
-    throw error;
-  }
+  return withRole(client, "service_role", fn);
 }
 
 function dryCowPayload({ activated }) {
@@ -132,8 +131,7 @@ function animalPayload({ dried = false } = {}) {
   };
 }
 
-async function createDryCowAnimal(client, fazendaId, loteId, runId, label) {
-  const animalId = randomUUID();
+async function createDryCowAnimal(client, fazendaId, loteId, runId, label, animalId) {
   await client.query(
     `
       insert into public.animais (
@@ -148,7 +146,7 @@ async function createDryCowAnimal(client, fazendaId, loteId, runId, label) {
       `Vaca Seca ${label} ${runId}`,
       loteId,
       animalPayload(),
-      "dry-cow-functional",
+      CLIENT_ID,
       randomUUID(),
     ],
   );
@@ -194,17 +192,26 @@ async function getOpenDryCowAgenda(client, fazendaId, animalId) {
 
 async function main() {
   const runId = randomUUID().slice(0, 8);
+  const password = `DryCow-${randomUUID()}-Aa1!`;
   console.log(`Iniciando validacao funcional Vaca Seca (${runId})`);
 
   const env = readSupabaseStatusEnv();
+  assertLocalTarget(env);
   const adminClient = createClient(env.API_URL, env.SERVICE_ROLE_KEY, {
-    db: { url: env.DB_URL },
+    auth: { autoRefreshToken: false, persistSession: false },
   });
   const dbClient = new Client({ connectionString: env.DB_URL });
+  let user = null;
+  let transactionOpen = false;
   await dbClient.connect();
 
   try {
-    const user = await createAuthUser(adminClient, runId);
+    await dbClient.query("begin");
+    transactionOpen = true;
+    await dbClient.query("set local lock_timeout = '5s'");
+    await dbClient.query("set local statement_timeout = '60s'");
+
+    user = await createAuthUser(adminClient, runId, password);
     console.log(`Usuario criado: ${user.email}`);
 
     const fazendaId = await withAuthenticatedUser(dbClient, user.id, async () => {
@@ -239,16 +246,16 @@ async function main() {
       await dbClient.query(
         `
           insert into public.lotes(id, fazenda_id, nome, client_id, client_op_id, client_recorded_at)
-          values ($1, $2, $3, 'dry-cow-functional', $4, now())
+          values ($1, $2, $3, $4, $5, now())
         `,
-        [loteId, fazendaId, `Lote Vaca Seca ${runId}`, randomUUID()],
+        [loteId, fazendaId, `Lote Vaca Seca ${runId}`, CLIENT_ID, randomUUID()],
       );
       await dbClient.query(
         `
           insert into public.protocolos_sanitarios(
             id, fazenda_id, nome, ativo, payload, client_id, client_op_id, client_recorded_at
           )
-          values ($1, $2, 'Terapia de Vaca Seca', true, $3, 'dry-cow-functional', $4, now())
+          values ($1, $2, 'Terapia de Vaca Seca', true, $3, $4, $5, now())
         `,
         [
           protocolId,
@@ -258,6 +265,7 @@ async function main() {
             standard_id: "med-mastite-seca",
             family_code: "terapia_vaca_seca",
           },
+          CLIENT_ID,
           randomUUID(),
         ],
       );
@@ -269,7 +277,7 @@ async function main() {
             client_recorded_at
           )
           values ($1, $2, $3, $4, 'secagem-intramamario', 1, true, 'medicamento', $5, 60, 1, false, $6,
-                  'dry-cow-functional', $7, now())
+                  $7, $8, now())
         `,
         [
           itemId,
@@ -278,27 +286,12 @@ async function main() {
           randomUUID(),
           "Antibiotico Intramamario (Vaca Seca)",
           dryCowPayload({ activated: false }),
+          CLIENT_ID,
           randomUUID(),
         ],
       );
-      await createDryCowAnimal(dbClient, fazendaId, loteId, runId, "conclusao");
-      await dbClient.query(
-        `
-          update public.animais
-          set id = $1
-          where fazenda_id = $2 and identificacao = $3
-        `,
-        [animalCompleteId, fazendaId, `Vaca Seca conclusao ${runId}`],
-      );
-      await createDryCowAnimal(dbClient, fazendaId, loteId, runId, "cancelamento");
-      await dbClient.query(
-        `
-          update public.animais
-          set id = $1
-          where fazenda_id = $2 and identificacao = $3
-        `,
-        [animalCancelId, fazendaId, `Vaca Seca cancelamento ${runId}`],
-      );
+      await createDryCowAnimal(dbClient, fazendaId, loteId, runId, "conclusao", animalCompleteId);
+      await createDryCowAnimal(dbClient, fazendaId, loteId, runId, "cancelamento", animalCancelId);
     });
 
     const inactiveInsert = await withAuthenticatedUser(dbClient, user.id, async () => {
@@ -372,7 +365,7 @@ async function main() {
         `
           select public.sanitario_complete_agenda_with_event(
             $1, $2::timestamptz, 'medicamento'::public.sanitario_tipo_enum,
-            $3, $4, $5, 'dry-cow-functional', $6, $7, now()
+            $3, $4, $5, $6, $7, $8, now()
           ) as evento_id
         `,
         [
@@ -394,6 +387,7 @@ async function main() {
               source: "manual_dry_off_event",
             },
           },
+          CLIENT_ID,
           randomUUID(),
           randomUUID(),
         ],
@@ -485,8 +479,23 @@ async function main() {
     );
     console.log("OK: anti-agenda-zumbi cancela pendencia invalida");
 
-    console.log("Validacao funcional Vaca Seca concluida com sucesso");
+    console.log(JSON.stringify({
+      result: "PASS",
+      run_id: runId,
+      agenda_concluida: agenda.id,
+      evento_factual: eventoId,
+      cancelamento_anti_zumbi: "validado",
+      persisted_after_test: false,
+    }, null, 2));
   } finally {
+    if (transactionOpen) {
+      await dbClient.query("reset role").catch(() => undefined);
+      await dbClient.query("rollback").catch(() => undefined);
+    }
+    if (user) {
+      const { error } = await adminClient.auth.admin.deleteUser(user.id);
+      if (error) console.warn(`WARNING usuario de teste nao removido: ${error.message}`);
+    }
     await dbClient.end();
   }
 }

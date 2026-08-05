@@ -1,63 +1,116 @@
+[CmdletBinding()]
 param(
-  [string]$Title = "",
-  [string]$Capability = "",
-  [string[]]$Files = @(),
+  [Parameter(Mandatory = $true)]
+  [ValidateNotNullOrEmpty()]
+  [string]$Title,
+
+  [Parameter(Mandatory = $true)]
+  [ValidateNotNullOrEmpty()]
+  [string]$Capability,
+
+  [Parameter(Mandatory = $true)]
+  [ValidateNotNullOrEmpty()]
+  [string]$Summary,
+
+  [Parameter(Mandatory = $true)]
+  [ValidateNotNullOrEmpty()]
+  [string[]]$Files,
+
+  [Parameter(Mandatory = $true)]
+  [ValidateSet("READY", "NOT_READY")]
+  [string]$VerificationStatus,
+
+  [Parameter(Mandatory = $true)]
+  [ValidateNotNullOrEmpty()]
+  [string[]]$Validations,
+
   [string[]]$Risks = @(),
-  [string[]]$Docs = @()
+  [string[]]$Docs = @(),
+  [string[]]$NotExecuted = @(),
+  [string]$OutputPath = "",
+  [switch]$Force
 )
 
+Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
-Write-Host "== RebanhoSync PR Prep =="
-
-Write-Host ""
-Write-Host "Suggested title:"
-if ($Title) {
-  Write-Host $Title
-} else {
-  Write-Host "[capability] concise summary"
+if ($VerificationStatus -ne "READY") {
+  throw "PR nao pode ser preparado: verification gate = $VerificationStatus."
 }
 
-Write-Host ""
-Write-Host "Context:"
-if ($Capability) {
-  Write-Host "- capability/theme: $Capability"
-} else {
-  Write-Host "- capability/theme: <fill>"
-}
+function Add-Bullets {
+  param(
+    [System.Collections.Generic.List[string]]$Target,
+    [string[]]$Values,
+    [string]$EmptyMessage
+  )
 
-Write-Host ""
-Write-Host "Key files:"
-if ($Files.Count -eq 0) {
-  Write-Host "- <fill>"
-} else {
-  foreach ($file in $Files) {
-    Write-Host "- $file"
+  if ($Values.Count -eq 0) {
+    $Target.Add("- $EmptyMessage")
+    return
+  }
+
+  foreach ($value in $Values) {
+    if (-not [string]::IsNullOrWhiteSpace($value)) {
+      $Target.Add("- $($value.Trim())")
+    }
   }
 }
 
-Write-Host ""
-Write-Host "Risks:"
-if ($Risks.Count -eq 0) {
-  Write-Host "- none explicitly registered"
-} else {
-  foreach ($risk in $Risks) {
-    Write-Host "- $risk"
-  }
+$body = [System.Collections.Generic.List[string]]::new()
+$body.Add("# $($Title.Trim())")
+$body.Add("")
+$body.Add("## Contexto")
+$body.Add("")
+$body.Add("- Capability: $($Capability.Trim())")
+$body.Add("- Verification gate: READY")
+$body.Add("")
+$body.Add("## Resumo")
+$body.Add("")
+$body.Add($Summary.Trim())
+$body.Add("")
+$body.Add("## Arquivos principais")
+$body.Add("")
+Add-Bullets -Target $body -Values $Files -EmptyMessage "ERRO: nenhum arquivo informado"
+$body.Add("")
+$body.Add("## Riscos residuais")
+$body.Add("")
+Add-Bullets -Target $body -Values $Risks -EmptyMessage "Nenhum risco residual informado."
+$body.Add("")
+$body.Add("## Documentacao")
+$body.Add("")
+Add-Bullets -Target $body -Values $Docs -EmptyMessage "Nenhuma alteracao documental informada."
+$body.Add("")
+$body.Add("## Validacoes executadas")
+$body.Add("")
+Add-Bullets -Target $body -Values $Validations -EmptyMessage "ERRO: nenhuma validacao informada"
+
+if ($NotExecuted.Count -gt 0) {
+  $body.Add("")
+  $body.Add("## Validacoes nao executadas")
+  $body.Add("")
+  Add-Bullets -Target $body -Values $NotExecuted -EmptyMessage "Nenhuma"
 }
 
-Write-Host ""
-Write-Host "Docs:"
-if ($Docs.Count -eq 0) {
-  Write-Host "- no doc updates"
-} else {
-  foreach ($doc in $Docs) {
-    Write-Host "- $doc"
-  }
+$content = ($body -join [Environment]::NewLine) + [Environment]::NewLine
+
+if ([string]::IsNullOrWhiteSpace($OutputPath)) {
+  Write-Output $content
+  return
 }
 
-Write-Host ""
-Write-Host "Validation:"
-Write-Host "- pnpm run lint"
-Write-Host "- pnpm test"
-Write-Host "- pnpm run build"
+$resolvedOutput = [System.IO.Path]::GetFullPath($OutputPath)
+$outputExists = Test-Path -LiteralPath $resolvedOutput
+if ($outputExists -and -not $Force) {
+  throw "Arquivo de saida ja existe: $resolvedOutput. Use -Force somente para substituicao intencional."
+}
+$outputIsDirectory = $outputExists -and (Test-Path -LiteralPath $resolvedOutput -PathType Container)
+if ($outputIsDirectory) {
+  throw "OutputPath deve apontar para arquivo, nao diretorio: $resolvedOutput"
+}
+$parent = [System.IO.Path]::GetDirectoryName($resolvedOutput)
+if ($parent -and -not (Test-Path -LiteralPath $parent)) {
+  [System.IO.Directory]::CreateDirectory($parent) | Out-Null
+}
+[System.IO.File]::WriteAllText($resolvedOutput, $content, [System.Text.UTF8Encoding]::new($false))
+Write-Host "PR body salvo em: $resolvedOutput"

@@ -1,65 +1,118 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Lightweight audit for the governance data contract used by Antigravity.
-# Keeps the active document chain coherent and prevents archived material from
-# drifting back into the live process.
+# Lightweight audit for the current RebanhoSync governance contract. Archived
+# documents are deliberately excluded from the operational chain.
 
-ROOT="$(git rev-parse --show-toplevel)"
-cd "$ROOT"
+readonly REQUIRED_FILES=(
+  "README.md"
+  "AGENTS.md"
+  ".agents/rules/CORE_RULES.md"
+  ".agents/rules/CONTEXT_LOADING.md"
+  ".agents/rules/no-broad-context.md"
+  ".agents/rules/rtk.md"
+  ".agents/skills/README.md"
+  "docs/README.md"
+  "docs/context/PROJECT_STATUS.md"
+  "docs/context/SOURCE_OF_TRUTH.md"
+  "docs/product/ROADMAP.md"
+  "docs/review/ACTIVE_PHASE_PLAN.md"
+  "docs/review/CURRENT_PHASE_HANDOFF.md"
+  "docs/technical/ARCHITECTURE.md"
+  "docs/technical/OFFLINE_SYNC.md"
+  "docs/technical/SUPABASE_RLS.md"
+  "docs/technical/TESTING_GATES.md"
+  "docs/domain/SANITARIO.md"
+)
+
+readonly ACTIVE_CONTROL_FILES=(
+  "README.md"
+  "AGENTS.md"
+  ".agents/rules"
+  ".agents/skills/README.md"
+  "docs/README.md"
+  "docs/context/PROJECT_STATUS.md"
+  "docs/context/SOURCE_OF_TRUTH.md"
+  "docs/product/ROADMAP.md"
+  "docs/review/ACTIVE_PHASE_PLAN.md"
+  "docs/review/CURRENT_PHASE_HANDOFF.md"
+  "docs/technical/README.md"
+  "docs/technical/ARCHITECTURE.md"
+  "docs/technical/OFFLINE_SYNC.md"
+  "docs/technical/SUPABASE_RLS.md"
+  "docs/technical/TESTING_GATES.md"
+  "docs/domain/README.md"
+  "docs/domain/SANITARIO.md"
+)
+
+if [[ "$#" -ne 0 ]]; then
+  echo "ERROR: this script does not accept arguments." >&2
+  exit 2
+fi
+
+if ! root="$(git rev-parse --show-toplevel 2>/dev/null)"; then
+  echo "ERROR: not inside a Git repository." >&2
+  exit 2
+fi
+cd "$root"
 
 if ! command -v rg >/dev/null 2>&1; then
   echo "ERROR: ripgrep (rg) is required." >&2
   exit 2
 fi
 
-REQUIRED_FILES=(
-  "docs/ARCHITECTURE.md"
-  "docs/OFFLINE.md"
-  "docs/CONTRACTS.md"
-  "docs/RLS.md"
-  "docs/E2E_MVP.md"
-  "docs/PROCESS.md"
-  "docs/IMPLEMENTATION_STATUS.md"
-  "docs/TECH_DEBT.md"
-  "docs/ROADMAP.md"
-  "docs/review/AUDIT_CAPABILITY_MATRIX.md"
-  "docs/review/RECONCILIACAO_REPORT.md"
-)
-
 fail=0
-
-for f in "${REQUIRED_FILES[@]}"; do
-  if [[ ! -f "$f" ]]; then
-    echo "FAIL: missing required governance file: $f" >&2
+for file in "${REQUIRED_FILES[@]}"; do
+  if [[ ! -f "$file" ]]; then
+    echo "FAIL: missing required active file: $file" >&2
     fail=1
   fi
 done
 
-if ! rg -q 'IMPLEMENTATION_STATUS\.md.*TECH_DEBT\.md.*ROADMAP\.md.*RECONCILIACAO_REPORT\.md' docs/PROCESS.md; then
-  echo "FAIL: docs/PROCESS.md does not declare the active derivation chain." >&2
-  fail=1
-fi
+if [[ "$fail" -eq 0 ]]; then
+  if ! rg -q 'context/PROJECT_STATUS\.md' docs/README.md README.md; then
+    echo "FAIL: documentation indexes do not link PROJECT_STATUS.md." >&2
+    fail=1
+  fi
 
-if ! rg -q 'docs/archive/' docs/README.md docs/PROCESS.md docs/REPO_MAP.md; then
-  echo "FAIL: archive separation is not documented in the active docs." >&2
-  fail=1
-fi
+  if ! rg -q 'product/ROADMAP\.md' docs/README.md README.md; then
+    echo "FAIL: documentation indexes do not link the active ROADMAP.md." >&2
+    fail=1
+  fi
 
-if rg -n 'docs/analysis/|docs/performance/' docs/README.md docs/PROCESS.md docs/REPO_MAP.md >/dev/null 2>&1; then
-  echo "FAIL: active governance docs/scripts still reference pre-archive paths docs/analysis/ or docs/performance/." >&2
-  rg -n 'docs/analysis/|docs/performance/' docs/README.md docs/PROCESS.md docs/REPO_MAP.md >&2 || true
-  fail=1
-fi
+  if ! rg -q 'review/ACTIVE_PHASE_PLAN\.md' docs/README.md README.md; then
+    echo "FAIL: documentation indexes do not link ACTIVE_PHASE_PLAN.md." >&2
+    fail=1
+  fi
 
-if ! rg -q 'capability_id' docs/IMPLEMENTATION_STATUS.md docs/TECH_DEBT.md docs/ROADMAP.md docs/review/RECONCILIACAO_REPORT.md; then
-  echo "FAIL: one or more derived governance docs are missing capability_id references." >&2
-  fail=1
+  if ! rg -q 'review/CURRENT_PHASE_HANDOFF\.md' docs/README.md README.md; then
+    echo "FAIL: documentation indexes do not link CURRENT_PHASE_HANDOFF.md." >&2
+    fail=1
+  fi
+
+  for term in 'Agenda' 'Evento' 'state_\*' 'Protocolo'; do
+    if ! rg -q "$term" docs/context/SOURCE_OF_TRUTH.md .agents/rules/CORE_RULES.md; then
+      echo "FAIL: source-of-truth contract missing term: $term" >&2
+      fail=1
+    fi
+  done
+
+  if ! rg -q 'docs/archive/' docs/README.md AGENTS.md .agents/rules/CORE_RULES.md; then
+    echo "FAIL: archive separation is not documented in active governance files." >&2
+    fail=1
+  fi
+
+  readonly LEGACY_PATH_PATTERN='docs/(ARCHITECTURE|OFFLINE|CONTRACTS|RLS|E2E_MVP|PROCESS|IMPLEMENTATION_STATUS|TECH_DEBT)\.md'
+  if rg -n "$LEGACY_PATH_PATTERN" "${ACTIVE_CONTROL_FILES[@]}" >/dev/null 2>&1; then
+    echo "FAIL: active governance still references a deprecated root-level docs path." >&2
+    rg -n "$LEGACY_PATH_PATTERN" "${ACTIVE_CONTROL_FILES[@]}" >&2 || true
+    fail=1
+  fi
 fi
 
 if [[ "$fail" -ne 0 ]]; then
-  echo "Data contract audit FAILED." >&2
+  echo "Active data-contract audit FAILED." >&2
   exit 1
 fi
 
-echo "OK: governance data contract audit passed."
+echo "OK: active governance data contract is coherent."

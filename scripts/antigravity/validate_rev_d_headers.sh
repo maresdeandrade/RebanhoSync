@@ -1,128 +1,102 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Validates derived-doc headers against the current repository format.
-# Accepted header forms:
-#   > **Status:** ...
-#   > **Baseline:** `abcdef0`
-#   > **Ultima Atualizacao:** YYYY-MM-DD
-#   > **Derivado por:** ...
-#
-# Legacy review docs may omit "Derivado por", so that field is only required
-# for the active derivation chain.
+# Compatibility entrypoint retained by package.json. It validates the headers
+# of the current active-document chain; it no longer depends on legacy Rev D
+# TECH_DEBT/IMPLEMENTATION_STATUS documents.
 
-ROOT="$(git rev-parse --show-toplevel)"
-cd "$ROOT"
+readonly STATUS_DOC="docs/context/PROJECT_STATUS.md"
+readonly ROADMAP_DOC="docs/product/ROADMAP.md"
+readonly PLAN_DOC="docs/review/ACTIVE_PHASE_PLAN.md"
+readonly HANDOFF_DOC="docs/review/CURRENT_PHASE_HANDOFF.md"
+readonly FILES=("$STATUS_DOC" "$ROADMAP_DOC" "$PLAN_DOC" "$HANDOFF_DOC")
+
+if [[ "$#" -ne 0 ]]; then
+  echo "ERROR: this script does not accept arguments." >&2
+  exit 2
+fi
+
+if ! root="$(git rev-parse --show-toplevel 2>/dev/null)"; then
+  echo "ERROR: not inside a Git repository." >&2
+  exit 2
+fi
+cd "$root"
 
 if ! command -v rg >/dev/null 2>&1; then
   echo "ERROR: ripgrep (rg) is required." >&2
   exit 2
 fi
 
-CORE_FILES=(
-  "docs/IMPLEMENTATION_STATUS.md"
-  "docs/TECH_DEBT.md"
-  "docs/ROADMAP.md"
-  "docs/review/RECONCILIACAO_REPORT.md"
-)
+fail=0
 
-AUX_FILES=(
-  "docs/review/AUDIT_CAPABILITY_MATRIX.md"
-)
-
-header_block() {
-  head -n 20 "$1" | tr -d '\r' || true
+require_file() {
+  local file="$1"
+  if [[ ! -f "$file" ]]; then
+    echo "FAIL: missing required active document: $file" >&2
+    fail=1
+    return 1
+  fi
 }
 
-has_status() {
-  printf "%s\n" "$1" | rg -q '^>?\s*\*\*Status:\*\*\s*.+$'
-}
-
-has_baseline() {
-  printf "%s\n" "$1" | rg -q '^>?\s*\*\*Baseline:\*\*\s*`[0-9a-f]{7,40}`$'
-}
-
-has_date() {
-  printf "%s\n" "$1" | rg -q '^>?\s*\*\*.*Atualiza.*:\*\*\s*[0-9]{4}-[0-9]{2}-[0-9]{2}$'
-}
-
-has_derived_by() {
-  printf "%s\n" "$1" | rg -q '^>?\s*\*\*Derivado por:\*\*\s*.+$'
+require_header() {
+  local file="$1"
+  local pattern="$2"
+  local label="$3"
+  if ! head -n 15 "$file" | tr -d '\r' | rg -q "$pattern"; then
+    echo "FAIL: $file missing or invalid $label header." >&2
+    fail=1
+  fi
 }
 
 extract_baseline() {
-  tr -d '\r' < "$1" | rg -n --max-count 1 '^>?\s*\*\*Baseline:\*\*\s*`[0-9a-f]{7,40}`$' \
+  head -n 15 "$1" \
+    | tr -d '\r' \
+    | rg --max-count 1 '^(>\s*)?(\*\*)?Baseline( funcional atual)?:(\*\*)?\s*`[0-9a-f]{7,40}`\s*$' \
     | sed -E 's/.*`([0-9a-f]{7,40})`.*/\1/' || true
 }
 
-collect_changed_core_files() {
-  local changed changed_cached
-  changed="$(git diff --name-only --diff-filter=ACMRT 2>/dev/null || true)"
-  changed_cached="$(git diff --name-only --cached --diff-filter=ACMRT 2>/dev/null || true)"
+for file in "${FILES[@]}"; do
+  require_file "$file" || true
+done
 
-  printf "%s\n%s\n" "$changed" "$changed_cached" \
-    | rg -v '^\s*$' \
-    | sort -u \
-    | while IFS= read -r file; do
-        for managed in "${CORE_FILES[@]}"; do
-          [[ "$file" == "$managed" ]] && printf "%s\n" "$file"
-        done
-      done \
-    | sort -u
-}
+if [[ "$fail" -eq 0 ]]; then
+  require_header "$STATUS_DOC" '^# Project Status — RebanhoSync$' "title"
+  require_header "$ROADMAP_DOC" '^# Roadmap — RebanhoSync$' "title"
+  require_header "$PLAN_DOC" '^# Plano ativo — Fase [0-9]+' "title"
+  require_header "$HANDOFF_DOC" '^# Handoff atual — Fase [0-9]+' "title"
 
-fail=0
+  for file in "${FILES[@]}"; do
+    require_header "$file" '^(>\s*)?(\*\*)?Atualizado em:(\*\*)?\s*[0-9]{4}-[0-9]{2}-[0-9]{2}\s*$' "updated-date"
+  done
 
-for f in "${CORE_FILES[@]}"; do
-  if [[ ! -f "$f" ]]; then
-    echo "FAIL: missing required file: $f" >&2
+  require_header "$STATUS_DOC" '^(>\s*)?(\*\*)?Baseline funcional atual:(\*\*)?\s*`[0-9a-f]{7,40}`\s*$' "functional-baseline"
+  require_header "$HANDOFF_DOC" '^(>\s*)?(\*\*)?Baseline funcional atual:(\*\*)?\s*`[0-9a-f]{7,40}`\s*$' "functional-baseline"
+  require_header "$ROADMAP_DOC" '^(>\s*)?(\*\*)?Fase atual:(\*\*)?\s*.+' "current-phase"
+  require_header "$PLAN_DOC" '^(>\s*)?(\*\*)?Status:(\*\*)?\s*.+' "status"
+  require_header "$HANDOFF_DOC" '^(>\s*)?(\*\*)?Status:(\*\*)?\s*.+' "status"
+
+  status_baseline="$(extract_baseline "$STATUS_DOC")"
+  handoff_baseline="$(extract_baseline "$HANDOFF_DOC")"
+  if [[ -n "$status_baseline" && -n "$handoff_baseline" && "$status_baseline" != "$handoff_baseline" ]]; then
+    echo "FAIL: functional baseline mismatch: $STATUS_DOC=$status_baseline, $HANDOFF_DOC=$handoff_baseline" >&2
     fail=1
-    continue
   fi
 
-  block="$(header_block "$f")"
-
-  has_status "$block" || { echo "FAIL: $f missing Status header." >&2; fail=1; }
-  has_baseline "$block" || { echo "FAIL: $f missing Baseline header." >&2; fail=1; }
-  has_date "$block" || { echo "FAIL: $f missing Ultima Atualizacao header." >&2; fail=1; }
-  has_derived_by "$block" || { echo "FAIL: $f missing Derivado por header." >&2; fail=1; }
-done
-
-for f in "${AUX_FILES[@]}"; do
-  [[ -f "$f" ]] || continue
-  block="$(header_block "$f")"
-
-  has_status "$block" || { echo "FAIL: $f missing Status header." >&2; fail=1; }
-  has_baseline "$block" || { echo "FAIL: $f missing Baseline header." >&2; fail=1; }
-  has_date "$block" || { echo "FAIL: $f missing Ultima Atualizacao header." >&2; fail=1; }
-done
-
-mapfile -t changed_core_files < <(collect_changed_core_files)
-if [[ "${#changed_core_files[@]}" -gt 1 ]]; then
-  baseline_seen=""
-  for f in "${changed_core_files[@]}"; do
-    baseline="$(extract_baseline "$f")"
-    if [[ -z "$baseline" ]]; then
-      echo "FAIL: could not extract baseline from $f" >&2
-      fail=1
-      continue
-    fi
-    if [[ -z "$baseline_seen" ]]; then
-      baseline_seen="$baseline"
-    elif [[ "$baseline_seen" != "$baseline" ]]; then
-      echo "FAIL: baseline mismatch among changed derived docs. $f has $baseline but expected $baseline_seen" >&2
-      fail=1
+  for baseline in "$status_baseline" "$handoff_baseline"; do
+    if [[ -n "$baseline" ]] && ! git cat-file -e "${baseline}^{commit}" 2>/dev/null; then
+      if [[ "$(git rev-parse --is-shallow-repository 2>/dev/null || echo false)" == "true" ]]; then
+        echo "WARN: baseline commit is unavailable in this shallow clone: $baseline" >&2
+      else
+        echo "FAIL: documented baseline is not a local Git commit: $baseline" >&2
+        fail=1
+      fi
     fi
   done
 fi
 
 if [[ "$fail" -ne 0 ]]; then
-  echo "Rev D header validation FAILED." >&2
+  echo "Active-document header validation FAILED." >&2
   exit 1
 fi
 
-if [[ "${#changed_core_files[@]}" -gt 1 ]]; then
-  echo "OK: headers validated and changed derived docs share a consistent baseline."
-else
-  echo "OK: headers validated."
-fi
+echo "OK: active-document headers and functional baselines are valid."

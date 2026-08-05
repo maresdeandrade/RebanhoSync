@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
-import { execSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 
 const root = process.cwd();
 
@@ -60,6 +60,12 @@ function assert(condition, message) {
 
 function warn(condition, message) {
   if (!condition) add("warning", message);
+}
+
+function uniqueBy(rows, key, label) {
+  const values = rows.map((row) => row?.[key]).filter(Boolean);
+  assert(values.length === rows.length, `${label} possuem ${key} preenchido`);
+  assert(new Set(values).size === values.length, `${label} nao duplicam ${key}`);
 }
 
 function read(rel) {
@@ -123,6 +129,10 @@ function validateNoForbiddenFlags(allText) {
 }
 
 function validateSourceRefsObject(sourceRefs, label) {
+  if (!sourceRefs || typeof sourceRefs !== "object") {
+    add("fail", `${label} source refs deve ser objeto ou array`);
+    return;
+  }
   let ok = true;
   walk(sourceRefs, (value, parts) => {
     if (value === null) ok = false;
@@ -135,6 +145,34 @@ function validateSourceRefsObject(sourceRefs, label) {
     }
   });
   assert(ok, `${label} nao mistura null/n/a/source_gap/policy em sourceRefs`);
+  if (Array.isArray(sourceRefs)) {
+    const fields = sourceRefs.map((entry) => entry?.field).filter(Boolean);
+    assert(fields.length === sourceRefs.length, `${label} source refs possuem field`);
+    assert(new Set(fields).size === fields.length, `${label} source refs nao duplicam field`);
+  }
+}
+
+function gitChangedFiles() {
+  if (process.env.SKIP_GIT_CHECKS === "1") {
+    add("warning", "Checagens Git ignoradas por SKIP_GIT_CHECKS=1.");
+    return [];
+  }
+  try {
+    const commands = [
+      ["diff", "--name-only", "--diff-filter=ACMRTUXB"],
+      ["diff", "--cached", "--name-only", "--diff-filter=ACMRTUXB"],
+      ["ls-files", "--others", "--exclude-standard"],
+    ];
+    return [...new Set(commands.flatMap((args) =>
+      execFileSync("git", args, { cwd: root, encoding: "utf8" })
+        .split(/\r?\n/)
+        .filter(Boolean)
+        .map((file) => file.replaceAll("\\", "/")),
+    ))];
+  } catch (error) {
+    add("fail", `Nao foi possivel consultar estado Git: ${error.message}`);
+    return [];
+  }
 }
 
 function parseAdaptedItemsTable(markdown) {
@@ -167,6 +205,7 @@ assert(bundle?.productClassGroupMembers?.adapted === 0 && bundle?.productClassGr
 const protocolsArtifact = jsonBlocks(markdown.protocols, files.protocols)[0];
 const protocols = protocolsArtifact?.rows ?? [];
 assert(protocols.length === 10, "10 protocolos adaptados presentes");
+uniqueBy(protocols, "family_code", "Protocolos");
 
 for (const row of protocols) {
   assert(allowedProtocolLegalStatus.has(row.legal_status), `Protocolo ${row.family_code} legal_status valido`);
@@ -216,6 +255,7 @@ if (aftosa) {
 
 const adaptedItems = parseAdaptedItemsTable(markdown.items);
 assert(adaptedItems.length === 13, "Tabela documental contem 13 itens adaptaveis");
+uniqueBy(adaptedItems, "item", "Itens adaptados");
 for (const item of adaptedItems) {
   assert(allowedItemStatus.has(item.item_status), `Item ${item.item} item_status valido`);
   assert(allowedActionType.has(item.action_type), `Item ${item.item} action_type valido`);
@@ -288,6 +328,7 @@ assert(memberRejection?.blocked_member_count === 16, "16 ProductClassGroup membe
 const groupsArtifact = jsonBlocks(markdown.groups, files.groups)[0];
 const groups = groupsArtifact?.rows ?? [];
 assert(groups.length === 4, "4 ProductClassGroups adaptados presentes");
+uniqueBy(groups, "group_key", "ProductClassGroups");
 for (const groupKey of expectedGroups) {
   const group = groups.find((entry) => entry.group_key === groupKey);
   assert(Boolean(group), `Grupo obrigatorio ${groupKey} presente`);
@@ -330,18 +371,7 @@ for (const invariant of [
   assert(sanitaryDoc.includes(invariant), `Invariante sanitario documentado: ${invariant}`);
 }
 
-const changedFiles = process.env.SKIP_GIT_CHECKS === "1"
-  ? []
-  : (() => {
-      try {
-        return execSync("git diff --name-only --cached && git diff --name-only", { encoding: "utf8" })
-          .split(/\r?\n/)
-          .filter(Boolean);
-      } catch {
-        add("warning", "Nao foi possivel consultar git diff para checar migrations.");
-        return [];
-      }
-    })();
+const changedFiles = gitChangedFiles();
 
 for (const file of changedFiles) {
   assert(!/^supabase\/migrations\//.test(file.replaceAll("\\", "/")), `Nenhuma migration alterada: ${file}`);

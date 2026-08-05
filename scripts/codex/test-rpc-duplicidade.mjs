@@ -4,284 +4,263 @@ import pg from "pg";
 import { createClient } from "@supabase/supabase-js";
 
 const { Client } = pg;
+const CLIENT_ID = "rpc-duplicidade-functional";
+const LOCAL_HOSTS = new Set(["127.0.0.1", "localhost", "::1"]);
 
-const DEFAULT_PASSWORD = "SupabaseFunctional1!";
+function assert(condition, message) {
+  if (!condition) throw new Error(message);
+}
+
+function parseSupabaseEnv(output) {
+  const env = {};
+  for (const line of output.split(/\r?\n/)) {
+    const match = line.match(/^([A-Z0-9_]+)=(?:"([\s\S]*)"|'([\s\S]*)'|([^\s].*))$/);
+    if (match) env[match[1]] = match[2] ?? match[3] ?? match[4] ?? "";
+  }
+  return env;
+}
 
 function readSupabaseStatusEnv() {
-  if (process.env.DB_URL && process.env.API_URL && process.env.ANON_KEY && process.env.SERVICE_ROLE_KEY) {
-    return {
-      DB_URL: process.env.DB_URL,
-      API_URL: process.env.API_URL,
-      FUNCTIONS_URL: process.env.API_URL + "/functions/v1",
-      ANON_KEY: process.env.ANON_KEY,
-      SERVICE_ROLE_KEY: process.env.SERVICE_ROLE_KEY,
-    };
-  }
+  const configured = {
+    DB_URL: process.env.DB_URL?.trim(),
+    API_URL: process.env.API_URL?.trim(),
+    SERVICE_ROLE_KEY: process.env.SERVICE_ROLE_KEY?.trim(),
+  };
+  if (Object.values(configured).every(Boolean)) return configured;
 
   const output = execFileSync("supabase", ["status", "-o", "env"], {
     cwd: process.cwd(),
     encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"],
   });
-
-  const env = {};
-  for (const line of output.split(/\r?\n/)) {
-    const match = line.match(/^([A-Z0-9_]+)="?(.*?)"?$/);
-    if (match) {
-      env[match[1]] = match[2];
-    }
+  const env = parseSupabaseEnv(output);
+  for (const key of Object.keys(configured)) {
+    assert(env[key], `supabase status -o env nao retornou ${key}`);
   }
-
-  for (const key of ["DB_URL", "API_URL", "FUNCTIONS_URL", "ANON_KEY", "SERVICE_ROLE_KEY"]) {
-    if (!env[key]) {
-      throw new Error(`supabase status -o env nao retornou ${key}`);
-    }
-  }
-
   return env;
 }
 
-function assert(condition, message) {
-  if (!condition) throw new Error(message);
+function assertLocalTarget(env) {
+  let database;
+  let api;
+  try {
+    database = new URL(env.DB_URL);
+    api = new URL(env.API_URL);
+  } catch (error) {
+    throw new Error(`Configuracao Supabase invalida: ${error.message}`);
+  }
+  assert(["postgres:", "postgresql:"].includes(database.protocol), "DB_URL deve ser PostgreSQL");
+  assert(LOCAL_HOSTS.has(database.hostname), `Teste bloqueado fora do banco local: ${database.hostname}`);
+  assert(LOCAL_HOSTS.has(api.hostname), `Teste bloqueado fora da API local: ${api.hostname}`);
 }
 
-async function createAuthUser(adminClient, runId, label) {
-  const email = `${label}-${runId}@baseline.local`;
+async function createAuthUser(adminClient, runId, password) {
+  const email = `rpc-duplicidade-${runId}@functional.local`;
   const { data, error } = await adminClient.auth.admin.createUser({
     email,
-    password: DEFAULT_PASSWORD,
+    password,
     email_confirm: true,
-    user_metadata: { baseline_functional_test: true, label },
+    user_metadata: { functional_fixture: CLIENT_ID, run_id: runId },
   });
-
-  if (error) {
-    throw new Error(`falha ao criar auth user ${label}: ${error.message}`);
+  if (error || !data.user) {
+    throw new Error(`Falha ao criar usuario de teste: ${error?.message ?? "usuario ausente"}`);
   }
-
-  return {
-    id: data.user.id,
-    email,
-    password: DEFAULT_PASSWORD,
-  };
+  return { id: data.user.id, email };
 }
 
-async function signInUser(anonClient, user) {
-  const { data, error } = await anonClient.auth.signInWithPassword({
-    email: user.email,
-    password: user.password,
-  });
-
-  if (error) {
-    throw new Error(`falha ao logar user ${user.email}: ${error.message}`);
-  }
-
-  return data.session.access_token;
+async function asRole(client, role, fn) {
+  await client.query("reset role");
+  await client.query(`set local role ${role}`);
+  return fn();
 }
 
-async function withAuthenticatedUser(client, userId, fn) {
-  await client.query("begin");
-  try {
-    await client.query("set local role authenticated");
+async function asAuthenticated(client, userId, fn) {
+  return asRole(client, "authenticated", async () => {
     await client.query("select set_config('request.jwt.claim.sub', $1, true)", [userId]);
     await client.query("select set_config('request.jwt.claim.role', 'authenticated', true)");
-    const result = await fn();
-    await client.query("commit");
-    return result;
-  } catch (error) {
-    await client.query("rollback");
-    throw error;
-  }
+    return fn();
+  });
 }
 
-async function withServiceRole(client, fn) {
-  await client.query("begin");
-  try {
-    await client.query("set local role service_role");
-    const result = await fn();
-    await client.query("commit");
-    return result;
-  } catch (error) {
-    await client.query("rollback");
-    throw error;
-  }
+async function completeAgenda(client, userId, args) {
+  return asAuthenticated(client, userId, async () => {
+    const result = await client.query(
+      `select public.sanitario_complete_agenda_with_event(
+        $1, $2, $3, $4, $5, $6::jsonb, $7, $8, $9, $10
+      ) as evento_id`,
+      [
+        args.agendaItemId,
+        args.occurredAt,
+        "vacinacao",
+        "Vacina Teste",
+        args.observacoes,
+        JSON.stringify({ origem: CLIENT_ID, run_id: args.runId }),
+        CLIENT_ID,
+        args.clientOpId,
+        args.clientTxId,
+        args.recordedAt,
+      ],
+    );
+    return result.rows[0]?.evento_id;
+  });
 }
 
 async function main() {
   const runId = randomUUID().slice(0, 8);
-  console.log(`🚀 Iniciando teste de contrato RPC duplicidade (run ${runId})`);
-
+  const password = `Rpc-${randomUUID()}-Aa1!`;
   const env = readSupabaseStatusEnv();
+  assertLocalTarget(env);
+
   const adminClient = createClient(env.API_URL, env.SERVICE_ROLE_KEY, {
-    db: { url: env.DB_URL },
+    auth: { autoRefreshToken: false, persistSession: false },
   });
-  const anonClient = createClient(env.API_URL, env.ANON_KEY, {
-    db: { url: env.DB_URL },
-  });
-
   const dbClient = new Client({ connectionString: env.DB_URL });
+  let user = null;
+  let transactionOpen = false;
+
   await dbClient.connect();
-
   try {
-    // Criar usuário de teste
-    const user = await createAuthUser(adminClient, runId, "rpc-duplicidade-test");
-    console.log(`✅ Usuário criado: ${user.email}`);
+    await dbClient.query("begin");
+    transactionOpen = true;
+    await dbClient.query("set local lock_timeout = '5s'");
+    await dbClient.query("set local statement_timeout = '30s'");
 
-    // Logar usuário
-    const token = await signInUser(anonClient, user);
-    console.log(`✅ Usuário logado`);
-
-    // Criar fazenda usando create_fazenda (que configura membership automaticamente)
-    const fazendaId = await withAuthenticatedUser(dbClient, user.id, async () => {
-      // Criar profile e settings primeiro
-      await dbClient.query(`
-        insert into public.user_profiles(user_id, display_name) values ($1, $2)
-      `, [user.id, `Test User ${runId}`]);
-      await dbClient.query(`
-        insert into public.user_settings(user_id) values ($1)
-      `, [user.id]);
-
-      // Usar create_fazenda function
-      const result = await dbClient.query(`
-        select public.create_fazenda($1, $2, $3, 'GO'::public.estado_uf_enum, null, 120, 'corte'::public.tipo_producao_enum, 'pastagem'::public.sistema_manejo_enum) as id
-      `, [`Fazenda Teste ${runId}`, `test-${runId}`, 'Test City']);
+    user = await createAuthUser(adminClient, runId, password);
+    const fazendaId = await asAuthenticated(dbClient, user.id, async () => {
+      await dbClient.query(
+        "insert into public.user_profiles(user_id, display_name) values ($1, $2)",
+        [user.id, `RPC duplicidade ${runId}`],
+      );
+      await dbClient.query("insert into public.user_settings(user_id) values ($1)", [user.id]);
+      const result = await dbClient.query(
+        `select public.create_fazenda(
+          $1, $2, $3, 'GO'::public.estado_uf_enum, null, 120,
+          'corte'::public.tipo_producao_enum,
+          'pastagem'::public.sistema_manejo_enum
+        ) as id`,
+        [`Fazenda RPC ${runId}`, `rpc-${runId}`, "Teste"],
+      );
       return result.rows[0].id;
     });
-    console.log(`✅ Fazenda criada: ${fazendaId}`);
 
-    // Criar lote de teste primeiro
     const loteId = randomUUID();
-    await withServiceRole(dbClient, async () => {
-      await dbClient.query(`
-        insert into public.lotes (id, fazenda_id, nome, client_id, client_op_id, client_recorded_at)
-        values ($1, $2, $3, $4, $5, $6)
-      `, [loteId, fazendaId, `Lote Teste ${runId}`, 'baseline-functional', randomUUID(), new Date().toISOString()]);
-    });
-    console.log(`✅ Lote criado: ${loteId}`);
-
-    // Criar animal de teste (usar service role para bypass RLS)
     const animalId = randomUUID();
-    await withServiceRole(dbClient, async () => {
-      await dbClient.query(`
-        insert into public.animais (
+    const agendaItemId = randomUUID();
+    await asRole(dbClient, "service_role", async () => {
+      await dbClient.query(
+        `insert into public.lotes(
+          id, fazenda_id, nome, client_id, client_op_id, client_recorded_at
+        ) values ($1, $2, $3, $4, $5, now())`,
+        [loteId, fazendaId, `Lote RPC ${runId}`, CLIENT_ID, randomUUID()],
+      );
+      await dbClient.query(
+        `insert into public.animais(
           id, fazenda_id, identificacao, sexo, lote_id, data_nascimento,
           client_id, client_op_id, client_recorded_at
-        ) values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-      `, [
-        animalId, fazendaId, `Animal Teste ${runId}`, 'F', loteId,
-        new Date(Date.now() - 120 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 120 dias atrás
-        'baseline-functional', randomUUID(), new Date().toISOString()
-      ]);
-    });
-    console.log(`✅ Animal criado: ${animalId}`);
-
-    // Criar item de agenda sanitário agendado (usar service role para bypass RLS)
-    const agendaItemId = randomUUID();
-    await withServiceRole(dbClient, async () => {
-      await dbClient.query(`
-        insert into public.agenda_itens (
+        ) values ($1, $2, $3, 'F', $4, current_date - 120, $5, $6, now())`,
+        [animalId, fazendaId, `Animal RPC ${runId}`, loteId, CLIENT_ID, randomUUID()],
+      );
+      await dbClient.query(
+        `insert into public.agenda_itens(
           id, fazenda_id, dominio, tipo, status, data_prevista, animal_id,
           source_kind, payload, client_id, client_op_id, client_recorded_at
-        ) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-      `, [
-        agendaItemId, fazendaId, 'sanitario', 'vacinacao', 'agendado',
-        new Date().toISOString().split('T')[0], animalId,
-        'manual', '{"produto": "Vacina Teste"}', 'baseline-functional', randomUUID(), new Date().toISOString()
-      ]);
+        ) values (
+          $1, $2, 'sanitario', 'vacinacao', 'agendado', current_date, $3,
+          'manual', $4::jsonb, $5, $6, now()
+        )`,
+        [
+          agendaItemId,
+          fazendaId,
+          animalId,
+          JSON.stringify({ produto: "Vacina Teste", fixture: CLIENT_ID, run_id: runId }),
+          CLIENT_ID,
+          randomUUID(),
+        ],
+      );
     });
-    console.log(`✅ Item de agenda criado: ${agendaItemId} (status: agendado)`);
 
-    // Verificar estado inicial
-    const initialEvents = await dbClient.query(`
-      select count(*) from public.eventos where source_task_id = $1 and fazenda_id = $2
-    `, [agendaItemId, fazendaId]);
-    assert(Number(initialEvents.rows[0].count) === 0, "Estado inicial: deve haver 0 eventos");
-    console.log(`✅ Estado inicial: 0 eventos para agenda item`);
+    const initial = await dbClient.query(
+      "select count(*)::integer as count from public.eventos where source_task_id = $1 and fazenda_id = $2",
+      [agendaItemId, fazendaId],
+    );
+    assert(initial.rows[0].count === 0, "Estado inicial deve ter zero Eventos");
 
-    // PRIMEIRA CHAMADA DA RPC
-    console.log(`\n📞 Chamada 1 da RPC (client_op_id: uuid-1)`);
-    const clientOpId1 = randomUUID();
-    const result1 = await withAuthenticatedUser(dbClient, user.id, async () => {
-      return await dbClient.query(`
-        select public.sanitario_complete_agenda_with_event(
-          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10
-        ) as evento_id
-      `, [
-        agendaItemId, // _agenda_item_id
-        new Date().toISOString(), // _occurred_at
-        'vacinacao', // _tipo
-        'Vacina Teste', // _produto
-        'Observacao teste 1', // _observacoes
-        '{"origem": "teste"}', // _sanitario_payload
-        'baseline-functional', // _client_id
-        clientOpId1, // _client_op_id
-        randomUUID(), // _client_tx_id
-        new Date().toISOString() // _client_recorded_at
-      ]);
+    const occurredAt = new Date().toISOString();
+    const recordedAt = new Date().toISOString();
+    const firstArgs = {
+      agendaItemId,
+      occurredAt,
+      observacoes: "Primeira execucao do teste de idempotencia",
+      clientOpId: randomUUID(),
+      clientTxId: randomUUID(),
+      recordedAt,
+      runId,
+    };
+    const eventoId1 = await completeAgenda(dbClient, user.id, firstArgs);
+    assert(eventoId1, "Primeira chamada deve retornar evento_id");
+
+    const replaySameOperation = await completeAgenda(dbClient, user.id, firstArgs);
+    assert(replaySameOperation === eventoId1, "Replay da mesma operacao deve retornar o Evento canonico");
+
+    const eventoId2 = await completeAgenda(dbClient, user.id, {
+      ...firstArgs,
+      observacoes: "Retry com novo client_op_id",
+      clientOpId: randomUUID(),
+      clientTxId: randomUUID(),
+      recordedAt: new Date().toISOString(),
     });
-    const eventoId1 = result1.rows[0].evento_id;
-    console.log(`✅ Chamada 1: evento criado ${eventoId1}`);
+    assert(eventoId2 === eventoId1, "Retry da mesma Agenda com nova operacao deve retornar o Evento atual");
 
-    // Verificar após primeira chamada
-    const afterFirstEvents = await dbClient.query(`
-      select count(*) from public.eventos where source_task_id = $1 and fazenda_id = $2
-    `, [agendaItemId, fazendaId]);
-    const afterFirstAgenda = await dbClient.query(`
-      select status, source_evento_id from public.agenda_itens where id = $1 and fazenda_id = $2
-    `, [agendaItemId, fazendaId]);
-    assert(Number(afterFirstEvents.rows[0].count) === 1, "Após primeira chamada: deve haver 1 evento");
-    assert(afterFirstAgenda.rows[0].status === 'concluido', "Após primeira chamada: agenda deve estar concluida");
-    assert(afterFirstAgenda.rows[0].source_evento_id === eventoId1, "Após primeira chamada: agenda deve referenciar evento correto");
-    console.log(`✅ Após chamada 1: 1 evento, agenda concluida referenciando ${eventoId1}`);
+    const state = await dbClient.query(
+      `select
+        ai.status,
+        ai.source_evento_id,
+        count(e.id)::integer as event_count,
+        count(es.evento_id)::integer as detail_count
+      from public.agenda_itens ai
+      left join public.eventos e
+        on e.source_task_id = ai.id and e.fazenda_id = ai.fazenda_id
+      left join public.eventos_sanitario es
+        on es.evento_id = e.id and es.fazenda_id = e.fazenda_id
+      where ai.id = $1 and ai.fazenda_id = $2
+      group by ai.status, ai.source_evento_id`,
+      [agendaItemId, fazendaId],
+    );
+    const row = state.rows[0];
+    assert(row?.status === "concluido", "Agenda deve ficar concluida");
+    assert(row?.source_evento_id === eventoId1, "Agenda deve apontar para o Evento canonico");
+    assert(row?.event_count === 1, "Retries nao podem duplicar Evento");
+    assert(row?.detail_count === 1, "Retries nao podem duplicar detalhe sanitario");
 
-    // SEGUNDA CHAMADA DA RPC (mesmo agenda_item_id, novo client_op_id)
-    console.log(`\n📞 Chamada 2 da RPC (mesmo agenda_item_id, client_op_id: uuid-2)`);
-    const clientOpId2 = randomUUID();
-    const result2 = await withAuthenticatedUser(dbClient, user.id, async () => {
-      return await dbClient.query(`
-        select public.sanitario_complete_agenda_with_event(
-          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10
-        ) as evento_id
-      `, [
-        agendaItemId, // _agenda_item_id (MESMO!)
-        new Date().toISOString(), // _occurred_at
-        'vacinacao', // _tipo
-        'Vacina Teste', // _produto
-        'Observacao teste 2', // _observacoes
-        '{"origem": "teste"}', // _sanitario_payload
-        'baseline-functional', // _client_id
-        clientOpId2, // _client_op_id (NOVO!)
-        randomUUID(), // _client_tx_id
-        new Date().toISOString() // _client_recorded_at
-      ]);
-    });
-    const eventoId2 = result2.rows[0].evento_id;
-    console.log(`✅ Chamada 2: retorno evento ${eventoId2}`);
-
-    // Verificar após segunda chamada
-    const afterSecondEvents = await dbClient.query(`
-      select count(*) from public.eventos where source_task_id = $1 and fazenda_id = $2
-    `, [agendaItemId, fazendaId]);
-    const afterSecondAgenda = await dbClient.query(`
-      select status, source_evento_id from public.agenda_itens where id = $1 and fazenda_id = $2
-    `, [agendaItemId, fazendaId]);
-    const eventCount = Number(afterSecondEvents.rows[0].count);
-    console.log(`✅ Após chamada 2: ${eventCount} eventos, agenda status=${afterSecondAgenda.rows[0].status}, source_evento_id=${afterSecondAgenda.rows[0].source_evento_id}`);
-
-    assert(eventCount === 1, 'A segunda chamada deve manter apenas 1 evento para o mesmo agenda_item_id');
-    assert(eventoId2 === eventoId1, 'A segunda chamada deve retornar o evento atual vinculado');
-    assert(afterSecondAgenda.rows[0].source_evento_id === eventoId1, 'A agenda deve continuar apontando para o mesmo evento');
-
-    console.log(`\n🎯 RESULTADO DO TESTE DE CONTRATO:`);
-    console.log(`✅ IDEMPOTENTE: Segunda chamada retornou o mesmo evento ${eventoId1}, sem duplicidade.`);
-
-    console.log(`\n🏁 Teste concluído com sucesso`);
-
+    console.log(
+      JSON.stringify(
+        {
+          result: "PASS",
+          run_id: runId,
+          agenda_item_id: agendaItemId,
+          evento_id: eventoId1,
+          same_operation_replay: "same_event",
+          new_operation_retry: "same_event",
+          persisted_after_test: false,
+        },
+        null,
+        2,
+      ),
+    );
   } finally {
+    if (transactionOpen) {
+      await dbClient.query("reset role").catch(() => undefined);
+      await dbClient.query("rollback").catch(() => undefined);
+    }
+    if (user) {
+      const { error } = await adminClient.auth.admin.deleteUser(user.id);
+      if (error) console.warn(`WARNING usuario de teste nao removido: ${error.message}`);
+    }
     await dbClient.end();
   }
 }
 
 main().catch((error) => {
-  console.error(`❌ Erro no teste: ${error.message}`);
-  process.exit(1);
+  console.error(`Falha no contrato RPC de duplicidade: ${error.message}`);
+  process.exitCode = 1;
 });
