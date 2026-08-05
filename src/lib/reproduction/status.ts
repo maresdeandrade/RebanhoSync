@@ -19,6 +19,8 @@ export type ReproductiveProjectionInconsistency =
   | "EPISODE_NOT_CURRENT"
   | "PARTO_WITHOUT_EPISODE"
   | "PARTO_EPISODE_AFTER_BIRTH"
+  | "ABORTO_WITHOUT_EPISODE"
+  | "ABORTO_EPISODE_AFTER_LOSS"
   | "DPP_INVALID";
 
 export interface ReproductiveProjectionEvent {
@@ -42,6 +44,7 @@ export interface ReproductiveProjection {
   dpp: string | null;
   dppOrigin: ReproductiveDppOrigin | null;
   lastBirthDate: string | null;
+  lastLossDate: string | null;
   inconsistency: ReproductiveProjectionInconsistency | null;
   definingEventId: string | null;
   definingEventDate: string | null;
@@ -109,6 +112,7 @@ function baseProjection(): ReproductiveProjection {
     dpp: null,
     dppOrigin: null,
     lastBirthDate: null,
+    lastLossDate: null,
     inconsistency: null,
     definingEventId: null,
     definingEventDate: null,
@@ -272,11 +276,40 @@ export function rebuildReproductiveProjection(
     }
 
     if (type === "aborto") {
+      const episodeId = getEpisodeId(event.details.payload);
+      const episode = episodeId ? byId.get(episodeId) : null;
+      const activeEpisodeId = projection.currentEpisodeId;
+      let inconsistency: ReproductiveProjectionInconsistency | null = null;
+
+      if (!episodeId) {
+        inconsistency = "ABORTO_WITHOUT_EPISODE";
+      } else if (!episode) {
+        inconsistency = "EPISODE_NOT_FOUND";
+      } else if (episode.fazenda_id !== event.fazenda_id) {
+        inconsistency = "EPISODE_FARM_MISMATCH";
+      } else if (episode.animal_id !== event.animal_id) {
+        inconsistency = "EPISODE_ANIMAL_MISMATCH";
+      } else if (
+        episode.details?.tipo !== "cobertura" &&
+        episode.details?.tipo !== "IA"
+      ) {
+        inconsistency = "EPISODE_TYPE_INVALID";
+      } else if (episode.occurred_at > event.occurred_at) {
+        inconsistency = "ABORTO_EPISODE_AFTER_LOSS";
+      } else if (activeEpisodeId !== episode.id) {
+        inconsistency = "EPISODE_NOT_CURRENT";
+      }
+
+      projection.lastLossDate = event.occurred_at.slice(0, 10);
+      if (inconsistency && activeEpisodeId) {
+        projection.inconsistency = inconsistency;
+        continue;
+      }
       projection.status = "VAZIA";
       projection.currentEpisodeId = null;
       projection.dpp = null;
       projection.dppOrigin = null;
-      projection.inconsistency = null;
+      projection.inconsistency = inconsistency;
       defineFromEvent(projection, event);
     }
   }

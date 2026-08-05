@@ -1,10 +1,23 @@
 # Plano ativo — Fase 13 / Reprodução Operacional v1
 
 Atualizado em: 2026-08-05
-Status: **incremento 13.2 — parto factual e encerramento da gestação implementado**
-Próxima pendência: **aborto/perda gestacional, em incremento separado**
+Status: **incremento 13.3 — aborto/perda gestacional factual implementado**
+Próxima pendência: **correção append-only reprodutiva, em incremento separado**
 
 Este documento contém o plano corrente. Estado técnico detalhado, validações e risco de plataforma ficam em [CURRENT_PHASE_HANDOFF.md](./CURRENT_PHASE_HANDOFF.md). A decisão arquitetural permanente está em [ADR-0007](../technical/adrs/ADR-0007-sync-remoto-sanitario-v2-integrado.md).
+
+## Incremento 13.3
+
+- aborto/perda usa o tipo `aborto` existente e permanece Evento factual com detalhe reprodutivo;
+- episódio informado ou vigente é validado por fazenda, matriz, tipo e cronologia;
+- perda do episódio vigente encerra PRENHA/SERVIDA e remove episódio e DPP atuais;
+- perda sem antecedentes permanece registrável com `ABORTO_WITHOUT_EPISODE`, sem fabricar serviço, diagnóstico, DPP ou causa;
+- perda ligada a episódio antigo não encerra gestação posterior e `lastLossDate` deriva do histórico;
+- `taxonomy_facts` continua cache derivado da projeção, sem participar da criação do fato;
+- Evento, detalhe, cache e fila compartilhada permanecem na mesma transação Dexie, com replay e conflito existentes;
+- não são criadas crias, Agenda neonatal, migration ou alteração remota.
+
+Validação: testes focados de registro/projeção, ESLint dos arquivos TypeScript alterados, `git diff --check` e build único. Próximo incremento: correção append-only reprodutiva.
 
 ## Incremento 13.2
 

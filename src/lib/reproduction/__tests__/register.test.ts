@@ -802,4 +802,216 @@ describe("buildReproductionGesture", () => {
       issues: [expect.objectContaining({ code: "REPRO_PARTO_EPISODE_FARM_MISMATCH" })],
     });
   });
+
+  it("records abortion as fact and closes a current pregnancy without creating calf or agenda", async () => {
+    await seedAnimal("matriz-aborto-prenha");
+    await seedService({ id: "service-aborto-prenha", animalId: "matriz-aborto-prenha" });
+    await registerReproductionGesture({
+      fazendaId: "farm-1",
+      animalId: "matriz-aborto-prenha",
+      eventId: "diag-aborto-prenha",
+      occurredAt: "2026-02-20T10:00:00.000Z",
+      data: {
+        tipo: "diagnostico",
+        resultadoDiagnostico: "positivo",
+        episodeEventoId: "service-aborto-prenha",
+      },
+    });
+    const animalCount = await db.state_animais.count();
+
+    const result = await registerReproductionGesture({
+      fazendaId: "farm-1",
+      animalId: "matriz-aborto-prenha",
+      eventId: "aborto-prenha",
+      occurredAt: "2026-04-10T10:00:00.000Z",
+      data: { tipo: "aborto", observacoes: "Perda observada no manejo." },
+    });
+
+    expect(result.calfIds).toEqual([]);
+    expect(result.projection).toMatchObject({
+      status: "VAZIA",
+      currentEpisodeId: null,
+      dpp: null,
+      lastLossDate: "2026-04-10",
+      inconsistency: null,
+    });
+    expect(await db.event_eventos.get("service-aborto-prenha")).toBeDefined();
+    expect(await db.event_eventos.get("diag-aborto-prenha")).toBeDefined();
+    expect(await db.event_eventos.get("aborto-prenha")).toMatchObject({
+      observacoes: "Perda observada no manejo.",
+    });
+    expect(
+      (await db.event_eventos_reproducao.get("aborto-prenha"))?.payload,
+    ).toMatchObject({ episode_evento_id: "service-aborto-prenha" });
+    expect(await db.state_animais.count()).toBe(animalCount);
+    expect(await db.state_agenda_itens.count()).toBe(0);
+    const taxonomyFacts = (await db.state_animais.get("matriz-aborto-prenha"))
+      ?.payload.taxonomy_facts;
+    expect(taxonomyFacts).toMatchObject({ prenhez_confirmada: false });
+    expect(taxonomyFacts).not.toHaveProperty("data_prevista_parto");
+  });
+
+  it("closes a SERVIDA episode and accepts loss without local antecedents", async () => {
+    await seedAnimal("matriz-aborto-servida");
+    await seedService({ id: "service-aborto-servida", animalId: "matriz-aborto-servida" });
+
+    const served = await registerReproductionGesture({
+      fazendaId: "farm-1",
+      animalId: "matriz-aborto-servida",
+      eventId: "aborto-servida",
+      occurredAt: "2026-03-01T10:00:00.000Z",
+      data: { tipo: "aborto" },
+    });
+    expect(served.projection).toMatchObject({
+      status: "VAZIA",
+      currentEpisodeId: null,
+      inconsistency: null,
+    });
+
+    await seedAnimal("matriz-aborto-unlinked");
+    const unlinked = await registerReproductionGesture({
+      fazendaId: "farm-1",
+      animalId: "matriz-aborto-unlinked",
+      eventId: "aborto-unlinked",
+      occurredAt: "2026-03-02T10:00:00.000Z",
+      data: { tipo: "aborto" },
+    });
+    expect(unlinked.projection).toMatchObject({
+      status: "VAZIA",
+      currentEpisodeId: null,
+      dpp: null,
+      inconsistency: "ABORTO_WITHOUT_EPISODE",
+    });
+    expect(
+      (await db.event_eventos_reproducao.get("aborto-unlinked"))?.payload,
+    ).not.toHaveProperty("episode_evento_id");
+  });
+
+  it.each([
+    ["another matrix", "service-aborto-other-animal", "matriz-aborto-owner", "farm-1"],
+    ["another farm", "service-aborto-other-farm", "matriz-aborto-target", "farm-other"],
+  ])("rejects abortion episode from %s", async (_label, serviceId, serviceAnimalId, serviceFarmId) => {
+    await seedAnimal("matriz-aborto-target");
+    await seedService({
+      id: serviceId,
+      animalId: serviceAnimalId,
+      fazendaId: serviceFarmId,
+    });
+
+    await expect(
+      prepareReproductionGesture({
+        fazendaId: "farm-1",
+        animalId: "matriz-aborto-target",
+        data: { tipo: "aborto", episodeEventoId: serviceId },
+      }),
+    ).rejects.toBeInstanceOf(EventValidationError);
+  });
+
+  it("keeps a later pregnancy when recording loss for an older episode", async () => {
+    await seedAnimal("matriz-aborto-old");
+    await seedService({ id: "service-aborto-old", animalId: "matriz-aborto-old" });
+    await seedService({
+      id: "service-aborto-current",
+      animalId: "matriz-aborto-old",
+      tipo: "IA",
+      occurredAt: "2026-02-01T10:00:00.000Z",
+    });
+    await registerReproductionGesture({
+      fazendaId: "farm-1",
+      animalId: "matriz-aborto-old",
+      eventId: "diag-aborto-current",
+      occurredAt: "2026-03-01T10:00:00.000Z",
+      data: {
+        tipo: "diagnostico",
+        resultadoDiagnostico: "positivo",
+        episodeEventoId: "service-aborto-current",
+        dataPrevistaParto: "2026-11-10",
+      },
+    });
+
+    const result = await registerReproductionGesture({
+      fazendaId: "farm-1",
+      animalId: "matriz-aborto-old",
+      eventId: "aborto-old-episode",
+      occurredAt: "2026-04-01T10:00:00.000Z",
+      data: { tipo: "aborto", episodeEventoId: "service-aborto-old" },
+    });
+
+    expect(result.projection).toMatchObject({
+      status: "PRENHA",
+      currentEpisodeId: "service-aborto-current",
+      dpp: "2026-11-10",
+      lastLossDate: "2026-04-01",
+      inconsistency: "EPISODE_NOT_CURRENT",
+    });
+    expect(
+      (await db.state_animais.get("matriz-aborto-old"))?.payload.taxonomy_facts,
+    ).toMatchObject({
+      prenhez_confirmada: true,
+      data_prevista_parto: "2026-11-10",
+    });
+  });
+
+  it("retries abortion without duplicating fact, detail or queue and rejects divergent content", async () => {
+    await seedAnimal("matriz-aborto-retry");
+    const input = {
+      fazendaId: "farm-1",
+      animalId: "matriz-aborto-retry",
+      eventId: "aborto-retry",
+      occurredAt: "2026-04-01T10:00:00.000Z",
+      data: { tipo: "aborto" as const, observacoes: "Perda confirmada." },
+    };
+
+    const first = await registerReproductionGesture(input);
+    const counts = {
+      events: await db.event_eventos.count(),
+      details: await db.event_eventos_reproducao.count(),
+      queue: await db.queue_ops.count(),
+    };
+    const second = await registerReproductionGesture(input);
+
+    expect(second.txId).toBe(first.txId);
+    expect(await db.event_eventos.count()).toBe(counts.events);
+    expect(await db.event_eventos_reproducao.count()).toBe(counts.details);
+    expect(await db.queue_ops.count()).toBe(counts.queue);
+
+    await expect(
+      registerReproductionGesture({
+        ...input,
+        data: { ...input.data, observacoes: "Conteudo divergente." },
+      }),
+    ).rejects.toMatchObject({
+      issues: [expect.objectContaining({ code: "REPRO_OPERATION_IDENTITY_CONFLICT" })],
+    });
+  });
+
+  it("rolls back abortion event, detail, cache and queue on intermediate failure", async () => {
+    await seedAnimal("matriz-aborto-rollback");
+    const failDetail = () => {
+      throw new Error("forced abortion detail failure");
+    };
+    db.event_eventos_reproducao.hook("creating", failDetail);
+
+    try {
+      await expect(
+        registerReproductionGesture({
+          fazendaId: "farm-1",
+          animalId: "matriz-aborto-rollback",
+          eventId: "aborto-rollback",
+          occurredAt: "2026-04-01T10:00:00.000Z",
+          data: { tipo: "aborto" },
+        }),
+      ).rejects.toThrow("forced abortion detail failure");
+    } finally {
+      db.event_eventos_reproducao.hook("creating").unsubscribe(failDetail);
+    }
+
+    expect(await db.event_eventos.get("aborto-rollback")).toBeUndefined();
+    expect(await db.event_eventos_reproducao.get("aborto-rollback")).toBeUndefined();
+    expect(
+      (await db.state_animais.get("matriz-aborto-rollback"))?.payload.taxonomy_facts,
+    ).toBeUndefined();
+    expect(await db.queue_ops.count()).toBe(0);
+    expect(await db.queue_gestures.count()).toBe(0);
+  });
 });

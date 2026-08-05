@@ -320,6 +320,116 @@ async function resolvePartoContext(
   };
 }
 
+async function resolveAbortoContext(
+  input: BuildReproductionGestureInput,
+  occurredAt: string,
+) {
+  if (input.data.tipo !== "aborto") {
+    return {
+      episodeEventoId: input.data.episodeEventoId ?? null,
+      episodeLinkMethod: input.data.episodeLinkMethod,
+    };
+  }
+
+  const matrix = await db.state_animais.get(input.animalId);
+  if (!matrix || matrix.deleted_at) {
+    throwReproIssues([
+      {
+        code: "REPRO_ABORTO_MATRIX_NOT_FOUND",
+        field: "animalId",
+        message: "A matriz da perda gestacional nao foi encontrada localmente.",
+      },
+    ]);
+  }
+  if (matrix.fazenda_id !== input.fazendaId) {
+    throwReproIssues([
+      {
+        code: "REPRO_ABORTO_MATRIX_FARM_MISMATCH",
+        field: "animalId",
+        message: "A matriz da perda gestacional pertence a outra fazenda.",
+      },
+    ]);
+  }
+
+  const history = await loadReproductiveHistory(
+    input.fazendaId,
+    input.animalId,
+    input.eventId ?? "",
+  );
+  const currentProjection = rebuildReproductiveProjection(history);
+  const existingDetail = input.eventId
+    ? await db.event_eventos_reproducao.get(input.eventId)
+    : null;
+  const existingPayload =
+    existingDetail?.tipo === "aborto" &&
+    existingDetail.payload &&
+    typeof existingDetail.payload === "object"
+      ? existingDetail.payload
+      : null;
+  const existingEpisodeId =
+    existingPayload && typeof existingPayload.episode_evento_id === "string"
+      ? existingPayload.episode_evento_id
+      : null;
+  const existingLinkMethod =
+    existingPayload &&
+    (existingPayload.episode_link_method === "manual" ||
+      existingPayload.episode_link_method === "auto_last_open_service" ||
+      existingPayload.episode_link_method === "unlinked")
+      ? existingPayload.episode_link_method
+      : null;
+  const replaysExisting = Boolean(existingDetail && !input.data.episodeEventoId);
+  const requestedEpisodeId = input.data.episodeEventoId ?? null;
+  const episodeId =
+    requestedEpisodeId ??
+    (replaysExisting ? existingEpisodeId : currentProjection.currentEpisodeId);
+
+  if (!episodeId) {
+    return {
+      episodeEventoId: null,
+      episodeLinkMethod: "unlinked" as const,
+    };
+  }
+
+  const [serviceEvent, serviceDetail] = await Promise.all([
+    db.event_eventos.get(episodeId),
+    db.event_eventos_reproducao.get(episodeId),
+  ]);
+  const issue = !serviceEvent || !serviceDetail
+    ? "REPRO_ABORTO_EPISODE_NOT_FOUND"
+    : serviceEvent.fazenda_id !== input.fazendaId ||
+        serviceDetail.fazenda_id !== input.fazendaId
+      ? "REPRO_ABORTO_EPISODE_FARM_MISMATCH"
+      : serviceEvent.animal_id !== input.animalId
+        ? "REPRO_ABORTO_EPISODE_ANIMAL_MISMATCH"
+        : serviceEvent.dominio !== "reproducao" ||
+            (serviceDetail.tipo !== "cobertura" && serviceDetail.tipo !== "IA")
+          ? "REPRO_ABORTO_EPISODE_TYPE_INVALID"
+          : serviceEvent.deleted_at || serviceDetail.deleted_at
+            ? "REPRO_ABORTO_EPISODE_DELETED"
+            : serviceEvent.occurred_at > occurredAt
+              ? "REPRO_ABORTO_EPISODE_AFTER_LOSS"
+              : null;
+
+  if (issue) {
+    throwReproIssues([
+      {
+        code: issue,
+        field: "episodeEventoId",
+        message: "O episodio informado nao e compativel com esta perda gestacional.",
+      },
+    ]);
+  }
+
+  return {
+    episodeEventoId: episodeId,
+    episodeLinkMethod: replaysExisting
+      ? existingLinkMethod ?? "manual"
+      : requestedEpisodeId
+        ? "manual" as const
+        : "auto_last_open_service" as const,
+  };
+}
+
 async function resolveExpectedBirthDate({
   animalId,
   occurredAt,
@@ -565,6 +675,28 @@ async function buildAnimalTaxonomyUpdateOp(
     }, "reproduction_event");
   }
 
+  if (input.data.tipo === "aborto") {
+    if (!projection) return null;
+    if (projection.status === "PRENHA") {
+      payload = buildAnimalTaxonomyFactsPayload(payload, {
+        prenhez_confirmada: true,
+        data_prevista_parto: projection.dpp,
+      }, "reproduction_event");
+    } else if (projection.status === "SERVIDA") {
+      payload = buildAnimalTaxonomyFactsPayload(payload, {
+        prenhez_confirmada: null,
+        data_prevista_parto: null,
+      }, "reproduction_event");
+    } else if (projection.status === "VAZIA") {
+      payload = buildAnimalTaxonomyFactsPayload(payload, {
+        prenhez_confirmada: false,
+        data_prevista_parto: null,
+      }, "reproduction_event");
+    } else {
+      return null;
+    }
+  }
+
   if (payload === animal.payload) {
     return null;
   }
@@ -610,7 +742,7 @@ export function buildReproductionGesture({
     occurredAt,
     sourceTaskId,
     tipo: data.tipo,
-    machoId: data.machoId ?? paiId ?? null,
+    machoId: data.tipo === "aborto" ? null : data.machoId ?? paiId ?? null,
     observacoes: data.observacoes ?? "",
     payloadData: {
       schema_version: 1,
@@ -662,6 +794,7 @@ export async function prepareReproductionGesture(
     occurredAt,
   );
   const partoContext = await resolvePartoContext(input, occurredAt);
+  const abortoContext = await resolveAbortoContext(input, occurredAt);
   const expectedBirthDate = diagnostic
     ? diagnostic.expectedBirthDate
     : await resolveExpectedBirthDate({ ...input, occurredAt });
@@ -682,13 +815,23 @@ export async function prepareReproductionGesture(
             episodeLinkMethod: partoContext.episodeLinkMethod,
           }
         : {}),
+      ...(input.data.tipo === "aborto"
+        ? {
+            machoId: null,
+            episodeEventoId: abortoContext.episodeEventoId,
+            episodeLinkMethod: abortoContext.episodeLinkMethod,
+          }
+        : {}),
       dataPrevistaParto:
         input.data.tipo === "diagnostico"
           ? expectedBirthDate ?? undefined
           : expectedBirthDate ?? input.data.dataPrevistaParto,
     },
   });
-  const projection = input.data.tipo === "diagnostico" || input.data.tipo === "parto"
+  const projection =
+    input.data.tipo === "diagnostico" ||
+    input.data.tipo === "parto" ||
+    input.data.tipo === "aborto"
     ? await rebuildProjectionWithPendingEvent(input, built)
     : null;
   const taxonomyUpdateOp = await buildAnimalTaxonomyUpdateOp(

@@ -1,9 +1,23 @@
-# Handoff atual — Fase 13.2 / parto factual
+# Handoff atual — Fase 13.3 / aborto e perda gestacional
 
 Atualizado em: 2026-08-05
 Baseline de entrada: `main@ab47e47`
-Status: **parto factual integrado à projeção local reconstruível**
-Próximo incremento: **aborto/perda gestacional**
+Status: **aborto/perda factual integrado à projeção local reconstruível**
+Próximo incremento: **correção append-only reprodutiva**
+
+## Entrega da Fase 13.3
+
+- o tipo `aborto` existente persiste Evento base e detalhe reprodutivo, preservando data, matriz, fazenda, identidade e observação explícita;
+- vínculo informado ou derivado do episódio vigente aceita somente cobertura/IA compatível da mesma matriz e fazenda;
+- a projeção encerra somente o episódio afetado, remove DPP atual e deriva `lastLossDate` do Evento;
+- ausência de antecedentes não bloqueia o fato e é sinalizada por `ABORTO_WITHOUT_EPISODE`;
+- aborto de episódio antigo permanece histórico sem encerrar gestação posterior;
+- `taxonomy_facts` é atualizado exclusivamente pelo resultado da reconstrução histórica;
+- retry não duplica Evento, detalhe ou fila; conteúdo divergente é conflito explícito;
+- falha intermediária reverte Evento, detalhe, cache e fila integralmente;
+- nenhuma cria, Agenda neonatal, migration, RPC, RLS, Edge Function ou sincronização remota foi criada.
+
+Validações executadas: testes focados de Reprodução, ESLint dos arquivos TypeScript alterados, `git diff --check` e um build no fechamento. Permanecem fora do escopo: correção append-only e round-trip remoto reprodutivo.
 
 ## Entrega da Fase 13.2
 

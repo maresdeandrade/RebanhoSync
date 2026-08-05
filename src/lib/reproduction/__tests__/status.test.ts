@@ -219,4 +219,85 @@ describe("Repro Status Calculation", () => {
       inconsistency: 'PARTO_WITHOUT_EPISODE',
     });
   });
+
+  it("closes PRENHA and DPP after abortion of the current episode", () => {
+    const projection = rebuildReproductiveProjection([
+      createEvent('2026-01-10', 'IA', {}, 'loss-service'),
+      createEvent('2026-02-20', 'diagnostico', {
+        schema_version: 1,
+        resultado: 'positivo',
+        episode_evento_id: 'loss-service',
+        data_prevista_parto: '2026-10-20',
+      }, 'loss-diagnosis'),
+      createEvent('2026-04-01', 'aborto', {
+        schema_version: 1,
+        episode_evento_id: 'loss-service',
+      }, 'loss-event'),
+    ]);
+
+    expect(projection).toMatchObject({
+      status: 'VAZIA',
+      currentEpisodeId: null,
+      dpp: null,
+      lastLossDate: '2026-04-01',
+      inconsistency: null,
+      definingEventId: 'loss-event',
+    });
+  });
+
+  it("closes a SERVIDA episode and signals abortion without antecedents", () => {
+    const served = rebuildReproductiveProjection([
+      createEvent('2026-01-10', 'cobertura', {}, 'served-loss-service'),
+      createEvent('2026-03-01', 'aborto', {
+        schema_version: 1,
+        episode_evento_id: 'served-loss-service',
+      }),
+    ]);
+    expect(served).toMatchObject({
+      status: 'VAZIA',
+      currentEpisodeId: null,
+      dpp: null,
+      inconsistency: null,
+    });
+
+    const unlinked = rebuildReproductiveProjection([
+      createEvent('2026-03-02', 'aborto', { schema_version: 1 }),
+    ]);
+    expect(unlinked).toMatchObject({
+      status: 'VAZIA',
+      currentEpisodeId: null,
+      lastLossDate: '2026-03-02',
+      inconsistency: 'ABORTO_WITHOUT_EPISODE',
+    });
+  });
+
+  it("does not close a later pregnancy when abortion references an old episode", () => {
+    const staleTaxonomyFacts = {
+      prenhez_confirmada: false,
+      data_prevista_parto: null,
+    };
+    const projection = rebuildReproductiveProjection([
+      createEvent('2026-01-01', 'cobertura', {}, 'old-loss-service'),
+      createEvent('2026-02-01', 'IA', {}, 'current-loss-service'),
+      createEvent('2026-03-01', 'diagnostico', {
+        schema_version: 1,
+        resultado: 'positivo',
+        episode_evento_id: 'current-loss-service',
+        data_prevista_parto: '2026-11-10',
+      }),
+      createEvent('2026-04-01', 'aborto', {
+        schema_version: 1,
+        episode_evento_id: 'old-loss-service',
+      }),
+    ]);
+
+    expect(staleTaxonomyFacts.prenhez_confirmada).toBe(false);
+    expect(projection).toMatchObject({
+      status: 'PRENHA',
+      currentEpisodeId: 'current-loss-service',
+      dpp: '2026-11-10',
+      lastLossDate: '2026-04-01',
+      inconsistency: 'EPISODE_NOT_CURRENT',
+    });
+  });
 });
