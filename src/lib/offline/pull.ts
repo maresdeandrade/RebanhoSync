@@ -254,6 +254,40 @@ async function getPendingFactualEventIds() {
   );
 }
 
+async function getPendingRecordIds(remoteTables: readonly string[]) {
+  const protectedTables = new Set(
+    remoteTables.filter((table) =>
+      table === "animais" || table === "agenda_itens"
+    ),
+  );
+  const pendingIds = new Map<string, Set<string>>();
+  if (protectedTables.size === 0) return pendingIds;
+
+  const operations = await db.queue_ops.toArray();
+  for (const operation of operations) {
+    if (!protectedTables.has(operation.table)) continue;
+    const id = operation.record?.id;
+    if (typeof id !== "string") continue;
+    const ids = pendingIds.get(operation.table) ?? new Set<string>();
+    ids.add(id);
+    pendingIds.set(operation.table, ids);
+  }
+  return pendingIds;
+}
+
+function protectPendingRecordRows(
+  remoteTable: string,
+  rows: RemoteRow[],
+  pendingRecordIds: ReadonlyMap<string, ReadonlySet<string>>,
+) {
+  const ids = pendingRecordIds.get(remoteTable);
+  if (!ids || ids.size === 0) return { rows, skipped: false };
+  const safeRows = rows.filter((row) =>
+    typeof row.id !== "string" || !ids.has(row.id)
+  );
+  return { rows: safeRows, skipped: safeRows.length !== rows.length };
+}
+
 function protectPendingFactualRows(
   remoteTable: string,
   rows: RemoteRow[],
@@ -299,6 +333,9 @@ async function writeMergeResults(
   const pendingEventIds = protectsFactualRows
     ? await getPendingFactualEventIds()
     : new Set<string>();
+  const pendingRecordIds = await getPendingRecordIds(
+    storesToUpdate.map(({ remote }) => remote),
+  );
   const effectiveResults: Record<string, RemoteRow[]> = { ...results };
   const cursorBlockedTables = new Set<string>();
   for (const { remote } of storesToUpdate) {
@@ -307,8 +344,15 @@ async function writeMergeResults(
       results[remote] ?? [],
       pendingEventIds,
     );
-    effectiveResults[remote] = protectedResult.rows;
-    if (protectedResult.skipped) cursorBlockedTables.add(remote);
+    const protectedRecords = protectPendingRecordRows(
+      remote,
+      protectedResult.rows,
+      pendingRecordIds,
+    );
+    effectiveResults[remote] = protectedRecords.rows;
+    if (protectedResult.skipped || protectedRecords.skipped) {
+      cursorBlockedTables.add(remote);
+    }
   }
   const storeNames = storesToUpdate.map((s) => s.local);
   const transactionStores = hasPullCursorStore()
@@ -391,12 +435,28 @@ export const pullDataForFarm = async (
   )
     ? await getPendingFactualEventIds()
     : new Set<string>();
+  const pendingRecordIds = await getPendingRecordIds(remoteTables);
+  const pendingLocalRows = new Map<string, RemoteRow[]>();
+  for (const { remote, local } of storesToUpdate) {
+    const ids = pendingRecordIds.get(remote);
+    if (!ids || ids.size === 0) continue;
+    const rows = await db.table(local).bulkGet([...ids]);
+    pendingLocalRows.set(
+      remote,
+      rows.filter((row): row is RemoteRow => Boolean(row)),
+    );
+  }
   const effectiveResults: Record<string, unknown[]> = { ...results };
   for (const remoteTable of remoteTables) {
-    effectiveResults[remoteTable] = protectPendingFactualRows(
+    const protectedFacts = protectPendingFactualRows(
       remoteTable,
       (results[remoteTable] ?? []) as RemoteRow[],
       pendingEventIds,
+    );
+    effectiveResults[remoteTable] = protectPendingRecordRows(
+      remoteTable,
+      protectedFacts.rows,
+      pendingRecordIds,
     ).rows;
   }
 
@@ -421,6 +481,9 @@ export const pullDataForFarm = async (
           await store.bulkPut(rows);
         }
       }
+
+      const localPending = pendingLocalRows.get(remote) ?? [];
+      if (localPending.length > 0) await store.bulkPut(localPending);
 
       console.log(
         `[pull] Synced ${rows.length} records for ${remote} -> ${local} (mode=${mode})`,

@@ -35,11 +35,18 @@ import {
   resolveSanitarioInventoryFactualDependency,
 } from "./inventory-dependency.ts";
 import {
-  findDiagnosisDetailForEvent,
-  isDiagnosisDetailOperation,
+  findSyncedReproductionDetailForEvent,
+  isAppliedResult,
+  isBirthAgendaOperation,
+  isBirthCalfOperation,
+  isSyncedReproductionDetailOperation,
+  readAgendaBirthEventId,
+  readBirthEventId,
   resolveReproductionDiagnosisDependency,
   sameReproductionDiagnosisRecord,
+  validateOptionalReproductionEpisode,
   validatePregnancyDiagnosis,
+  validateReproductionCorrection,
 } from "./reproduction-diagnosis.ts";
 
 const allowedOrigins = [
@@ -910,8 +917,6 @@ Deno.serve(async (req: Request) => {
           const {
             reproductionPayload,
             schemaVersion,
-            episodeEventId,
-            episodeLinkMethod,
           } = readReproductionPayload(record.payload);
 
           // 1. Validate Schema Version (Strict)
@@ -939,7 +944,7 @@ Deno.serve(async (req: Request) => {
             continue;
           }
 
-          if (record.tipo === "diagnostico") {
+          if (isSyncedReproductionDetailOperation({ ...op, record })) {
             const dependency = await resolveReproductionDiagnosisDependency({
               operation: { ...op, record },
               operations: legacyOps,
@@ -987,147 +992,277 @@ Deno.serve(async (req: Request) => {
               });
               continue;
             }
-            const diagnosisIssue = validatePregnancyDiagnosis({
-              detail: record,
-              event: dependency.event,
-              episode,
-              episodeType: readLinkedReproductionType(
-                episode?.eventos_reproducao,
-              ),
-              fazendaId: fazenda_id,
-            });
-            if (diagnosisIssue) {
+            const episodeType = readLinkedReproductionType(
+              episode?.eventos_reproducao,
+            );
+            const factualIssue = record.tipo === "diagnostico"
+              ? validatePregnancyDiagnosis({
+                detail: record,
+                event: dependency.event,
+                episode,
+                episodeType,
+                fazendaId: fazenda_id,
+              })
+              : validateOptionalReproductionEpisode({
+                detail: record,
+                event: dependency.event,
+                episode,
+                episodeType,
+                fazendaId: fazenda_id,
+              });
+            if (factualIssue) {
               results.push({
                 op_id: op.client_op_id,
                 status: "REJECTED",
-                reason_code: diagnosisIssue,
-                reason_message: "Pregnancy diagnosis failed factual validation",
+                reason_code: factualIssue,
+                reason_message:
+                  "Reproduction detail failed factual validation",
               });
               continue;
             }
           }
+        }
 
-          // 3. Deterministic Episode Linking (Diagnostico/Parto)
-          if (record.tipo === "parto") {
-            // A) If link provided, validate it
-            if (episodeEventId) {
-              // Check if the referenced event exists, is same farm/animal, is service, and occurs before
-              // NOTE: We do a lightweight check here.
-              // Ideally we check DB.
-              const { data: linkEvent, error: linkError } = await supabase
-                .from("eventos")
-                .select("id, occurred_at, eventos_reproducao(tipo)")
-                .eq("id", episodeEventId)
+        const reproductionDetail = op.table === "eventos" &&
+            op.action === "INSERT" &&
+            typeof record.id === "string"
+          ? findSyncedReproductionDetailForEvent(record.id, legacyOps)
+          : null;
+        if (reproductionDetail && record.corrige_evento_id != null) {
+          const correctedId = String(record.corrige_evento_id);
+          const [{ data: correctedEvent, error: correctedError }, {
+            data: correctionChildren,
+            error: childrenError,
+          }] = await Promise.all([
+            supabase.from("eventos")
+              .select(
+                "id, fazenda_id, dominio, animal_id, occurred_at, eventos_reproducao(tipo)",
+              )
+              .eq("id", correctedId)
+              .eq("fazenda_id", fazenda_id)
+              .maybeSingle(),
+            supabase.from("eventos")
+              .select("id")
+              .eq("fazenda_id", fazenda_id)
+              .eq("corrige_evento_id", correctedId)
+              .is("deleted_at", null),
+          ]);
+          if (correctedError || childrenError) {
+            results.push({
+              op_id: op.client_op_id,
+              status: "RETRYABLE",
+              retryable: true,
+              reason_code: "REPRODUCTION_CORRECTION_LOOKUP_FAILED",
+              reason_message: correctedError?.message ?? childrenError?.message,
+            });
+            continue;
+          }
+          if (!correctedEvent) {
+            results.push({
+              op_id: op.client_op_id,
+              status: "BLOCKED_DEPENDENCY",
+              retryable: false,
+              reason_code: "REPRODUCTION_CORRECTED_EVENT_NOT_APPLIED",
+              reason_message:
+                "Correction is blocked until the corrected event is available",
+            });
+            continue;
+          }
+          const correctionIssue = validateReproductionCorrection({
+            event: { ...record, fazenda_id },
+            detail: reproductionDetail.record,
+            correctedEvent,
+            correctedType: readLinkedReproductionType(
+              correctedEvent.eventos_reproducao,
+            ),
+            directChildren: correctionChildren ?? [],
+            fazendaId: fazenda_id,
+          });
+          if (correctionIssue) {
+            results.push({
+              op_id: op.client_op_id,
+              status: correctionIssue ===
+                  "REPRODUCTION_CORRECTION_BRANCH_CONFLICT"
+                ? "CONFLICT"
+                : "REJECTED",
+              reason_code: correctionIssue,
+              reason_message:
+                "Reproductive correction failed append-only validation",
+            });
+            continue;
+          }
+          const rewritesBirthChildren = reproductionDetail.record.tipo ===
+              "parto" &&
+            legacyOps.some((candidate) =>
+              (isBirthCalfOperation(candidate) &&
+                readBirthEventId(candidate.record) === record.id) ||
+              (isBirthAgendaOperation(candidate) &&
+                readAgendaBirthEventId(candidate.record) === record.id)
+            );
+          if (rewritesBirthChildren) {
+            results.push({
+              op_id: op.client_op_id,
+              status: "REJECTED",
+              reason_code: "REPRODUCTION_CORRECTION_BIRTH_CHILDREN_UNSUPPORTED",
+              reason_message:
+                "Birth correction cannot recreate calves or neonatal agenda",
+            });
+            continue;
+          }
+        }
+
+        const isBirthCalf = isBirthCalfOperation({ ...op, record });
+        const isBirthAgenda = isBirthAgendaOperation({ ...op, record });
+        if (isBirthCalf || isBirthAgenda) {
+          const birthEventId = isBirthCalf
+            ? readBirthEventId(record)
+            : readAgendaBirthEventId(record);
+          const birthEventOp = legacyOps.find((candidate) =>
+            candidate.table === "eventos" &&
+            candidate.action === "INSERT" &&
+            candidate.record?.id === birthEventId
+          );
+          const birthDetailOp = birthEventId
+            ? findSyncedReproductionDetailForEvent(birthEventId, legacyOps)
+            : null;
+          let parentEvent: Record<string, unknown> | null = null;
+          let parentType: string | null = null;
+          if (birthEventOp || birthDetailOp) {
+            if (
+              !birthEventOp ||
+              !birthDetailOp ||
+              birthDetailOp.record.tipo !== "parto" ||
+              !isAppliedResult(results, birthEventOp.client_op_id) ||
+              !isAppliedResult(results, birthDetailOp.client_op_id)
+            ) {
+              results.push({
+                op_id: op.client_op_id,
+                status: "BLOCKED_DEPENDENCY",
+                retryable: false,
+                reason_code: "REPRODUCTION_BIRTH_FACT_NOT_APPLIED",
+                reason_message:
+                  "Birth dependent is blocked until event and detail are applied",
+              });
+              continue;
+            }
+            parentEvent = { ...birthEventOp.record, fazenda_id };
+            parentType = String(birthDetailOp.record.tipo);
+          } else if (birthEventId) {
+            const { data: remoteBirth, error: remoteBirthError } = await supabase
+              .from("eventos")
+              .select(
+                "id, fazenda_id, dominio, animal_id, eventos_reproducao(tipo)",
+              )
+              .eq("id", birthEventId)
+              .eq("fazenda_id", fazenda_id)
+              .maybeSingle();
+            if (remoteBirthError) {
+              results.push({
+                op_id: op.client_op_id,
+                status: "RETRYABLE",
+                retryable: true,
+                reason_code: "REPRODUCTION_BIRTH_LOOKUP_FAILED",
+                reason_message: remoteBirthError.message,
+              });
+              continue;
+            }
+            parentEvent = remoteBirth;
+            parentType = readLinkedReproductionType(
+              remoteBirth?.eventos_reproducao,
+            );
+          }
+          if (
+            !parentEvent ||
+            parentEvent.fazenda_id !== fazenda_id ||
+            parentEvent.dominio !== "reproducao" ||
+            parentType !== "parto"
+          ) {
+            results.push({
+              op_id: op.client_op_id,
+              status: "BLOCKED_DEPENDENCY",
+              retryable: false,
+              reason_code: "REPRODUCTION_BIRTH_FACT_NOT_APPLIED",
+              reason_message: "Birth fact is missing or incompatible",
+            });
+            continue;
+          }
+          if (isBirthCalf && record.mae_id !== parentEvent.animal_id) {
+            results.push({
+              op_id: op.client_op_id,
+              status: "REJECTED",
+              reason_code: "REPRODUCTION_CALF_MOTHER_MISMATCH",
+              reason_message: "Calf mother must match the birth event animal",
+            });
+            continue;
+          }
+          if (isBirthAgenda) {
+            const calfId = record.animal_id;
+            const calfOp = legacyOps.find((candidate) =>
+              isBirthCalfOperation(candidate) &&
+              candidate.record.id === calfId &&
+              readBirthEventId(candidate.record) === birthEventId
+            );
+            if (calfOp && !isAppliedResult(results, calfOp.client_op_id)) {
+              results.push({
+                op_id: op.client_op_id,
+                status: "BLOCKED_DEPENDENCY",
+                retryable: false,
+                reason_code: "REPRODUCTION_CALF_NOT_APPLIED",
+                reason_message:
+                  "Neonatal agenda is blocked until the calf is applied",
+              });
+              continue;
+            }
+            if (!calfOp && typeof calfId === "string") {
+              const { data: remoteCalf, error: remoteCalfError } = await supabase
+                .from("animais")
+                .select("id, fazenda_id, payload")
+                .eq("id", calfId)
                 .eq("fazenda_id", fazenda_id)
-                .eq("animal_id", op.record.animal_id || record.animal_id) // Handle nested or flat animal_id
-                .single();
-
-              if (linkError || !linkEvent) {
+                .maybeSingle();
+              if (remoteCalfError) {
                 results.push({
                   op_id: op.client_op_id,
-                  status: "REJECTED",
-                  reason_code: "INVALID_EPISODE_REFERENCE",
+                  status: "RETRYABLE",
+                  retryable: true,
+                  reason_code: "REPRODUCTION_CALF_LOOKUP_FAILED",
+                  reason_message: remoteCalfError.message,
+                });
+                continue;
+              }
+              if (
+                !remoteCalf || readBirthEventId(remoteCalf) !== birthEventId
+              ) {
+                results.push({
+                  op_id: op.client_op_id,
+                  status: "BLOCKED_DEPENDENCY",
+                  retryable: false,
+                  reason_code: "REPRODUCTION_CALF_NOT_APPLIED",
                   reason_message:
-                    "Referenced episode event not found or invalid",
+                    "Neonatal agenda requires a calf from the same birth event",
                 });
                 continue;
-              }
-
-              // Check types (must be cobertura or IA). PostgREST can return
-              // a to-one relation as an object or an array depending on metadata.
-              const reproductionRelation = linkEvent.eventos_reproducao;
-              const linkType = readLinkedReproductionType(reproductionRelation);
-              if (linkType !== "cobertura" && linkType !== "IA") {
-                results.push({
-                  op_id: op.client_op_id,
-                  status: "REJECTED",
-                  reason_code: "INVALID_EPISODE_REFERENCE",
-                  reason_message: "Episode event must be Cobertura or IA",
-                });
-                continue;
-              }
-            } // B) If NO link provided, try auto-link (Server-Side Fallback)
-            else {
-              // Find most recent open service
-              // Query: Service events for this animal, on this farm, occurred <= current, not linked to any other parto?
-              // Simplifying: Just find the latest service.
-              // The "open" check is complex for sync function without full view access.
-              // We will use a direct query to find candidate.
-
-              // Get animal_id from the parent event (we need to fetch it or rely on client sending it in record context if flattened)
-              // 'eventos_reproducao' table usually has 'evento_id' which points to 'eventos'.
-              // 'eventos' has 'animal_id'.
-              // The input record for 'eventos_reproducao' insert usually contains what?
-              // Wait, 'eventos_reproducao' is a child table. The 'eventos' insert happens strictly before in the same batch?
-              // OR checking `op.record`.
-              // If this is a child insert, we might not have the animal_id readily available if it's in the parent `eventos` record in the batch.
-              // However, the client Ops usually include FKs.
-              // Let's assume the client sends independent inserts or we have context.
-
-              // IMPORTANT: In this system, `eventos` and `eventos_reproducao` are usually sent together.
-              // If `eventos_reproducao` op relies on `eventos` op in same batch, we can't easily query DB for the parent if it's not committed yet.
-              // BUT: The client should have sent the link.
-              // If client failed (offline fallback), we try to find the service in DB.
-
-              // We need the animal_id. It is NOT in `eventos_reproducao` table (it is in `eventos`).
-              // We can't implement server-side linking efficiently if we don't have animal_id.
-              // We will assume the client did its job OR we skip server-linking if we can't find animal_id.
-              // Actually, `vw_repro_episodios` does the linking on READ.
-              // Storing the link is an optimization/freeze.
-
-              // Policy:
-              // If Parto and no link -> REJECT (Client MUST link)
-              if (record.tipo === "parto") {
-                results.push({
-                  op_id: op.client_op_id,
-                  status: "REJECTED",
-                  reason_code: "EPISODE_LINK_REQUIRED_FOR_PARTO",
-                  reason_message: "Parto must be linked to a service event",
-                });
-                continue;
-              }
-
-              // If Diagnostico and no link -> ACCEPT (Unlinked)
-              if (record.tipo === "diagnostico") {
-                // Ideally we set 'unlinked' explicitly if not present
-                if (!episodeLinkMethod) {
-                  record.payload = {
-                    ...reproductionPayload,
-                    episode_link_method: "unlinked",
-                  };
-                  // We need to modify the record before insert?
-                  // Yes, we can mutate `record` before passing to insert/update queries below.
-                }
               }
             }
           }
         }
 
-        const diagnosisDetail = op.table === "eventos" &&
-            op.action === "INSERT" &&
-            typeof record.id === "string"
-          ? findDiagnosisDetailForEvent(record.id, legacyOps)
-          : null;
-        const diagnosisReplayTable = diagnosisDetail
+        const reproductionReplayTable = reproductionDetail
           ? "eventos"
-          : isDiagnosisDetailOperation({ ...op, record })
+          : isSyncedReproductionDetailOperation({ ...op, record })
           ? "eventos_reproducao"
+          : isBirthCalf
+          ? "animais"
+          : isBirthAgenda
+          ? "agenda_itens"
           : null;
-        if (diagnosisDetail && record.corrige_evento_id != null) {
-          results.push({
-            op_id: op.client_op_id,
-            status: "REJECTED",
-            reason_code: "REPRODUCTION_CORRECTION_SYNC_OUT_OF_SCOPE",
-            reason_message:
-              "Reproductive correction sync is outside the diagnosis round-trip contract",
-          });
-          continue;
-        }
-        if (diagnosisReplayTable) {
-          const keyField = diagnosisReplayTable === "eventos" ? "id" : "evento_id";
+        if (reproductionReplayTable) {
+          const keyField = reproductionReplayTable === "eventos_reproducao"
+            ? "evento_id"
+            : "id";
           const keyValue = record[keyField];
           const { data: existing, error: existingError } = await supabase
-            .from(diagnosisReplayTable)
+            .from(reproductionReplayTable)
             .select("*")
             .eq(keyField, keyValue)
             .eq("fazenda_id", fazenda_id)
@@ -1151,7 +1286,7 @@ Deno.serve(async (req: Request) => {
             };
             if (
               sameReproductionDiagnosisRecord(
-                diagnosisReplayTable,
+                reproductionReplayTable,
                 existing,
                 incoming,
               )

@@ -44,13 +44,16 @@ import { createGesture } from "../ops";
 import { processGesture } from "../syncWorker";
 
 describe("reproduction diagnosis sync worker", () => {
-  async function createDiagnosisGesture() {
+  async function createReproductionGesture(
+    tipo: "diagnostico" | "parto" = "diagnostico",
+  ) {
+    const eventId = `${tipo}-worker`;
     return createGesture("farm-1", [
       {
         table: "eventos",
         action: "INSERT",
         record: {
-          id: "diagnosis-worker",
+          id: eventId,
           dominio: "reproducao",
           occurred_at: "2026-03-01T10:00:00.000Z",
           animal_id: "cow-1",
@@ -65,13 +68,17 @@ describe("reproduction diagnosis sync worker", () => {
         table: "eventos_reproducao",
         action: "INSERT",
         record: {
-          evento_id: "diagnosis-worker",
-          tipo: "diagnostico",
+          evento_id: eventId,
+          tipo,
           macho_id: null,
           payload: {
             schema_version: 1,
-            resultado: "positivo",
-            episode_evento_id: "service-worker",
+            ...(tipo === "diagnostico"
+              ? {
+                resultado: "positivo",
+                episode_evento_id: "service-worker",
+              }
+              : { data_parto_real: "2026-03-01", numero_crias: 0 }),
           },
         },
       },
@@ -100,7 +107,7 @@ describe("reproduction diagnosis sync worker", () => {
   });
 
   it("pulls and reconciles diagnosis after event and detail are applied", async () => {
-    const txId = await createDiagnosisGesture();
+    const txId = await createReproductionGesture();
     const ops = await db.queue_ops
       .where("client_tx_id")
       .equals(txId)
@@ -124,8 +131,32 @@ describe("reproduction diagnosis sync worker", () => {
     expect(await db.queue_ops.where("client_tx_id").equals(txId).count()).toBe(0);
   });
 
+  it("pulls the expanded reproduction history after a birth is applied", async () => {
+    const txId = await createReproductionGesture("parto");
+    const ops = await db.queue_ops
+      .where("client_tx_id")
+      .equals(txId)
+      .sortBy("op_order");
+    vi.mocked(fetch).mockResolvedValue(new Response(JSON.stringify({
+      results: ops.map((op) => ({
+        op_id: op.client_op_id,
+        status: "APPLIED",
+      })),
+    }), { status: 200 }));
+    const gesture = await db.queue_gestures.get(txId);
+    if (!gesture) throw new Error("gesture not found");
+
+    await processGesture(gesture);
+
+    expect(mocks.pullReproductionDiagnosisState).toHaveBeenCalledWith(
+      "farm-1",
+      { ignorePendingClientTxId: txId },
+    );
+    expect(await db.queue_gestures.get(txId)).toMatchObject({ status: "DONE" });
+  });
+
   it("rolls back local fact when the detail is blocked by its dependency", async () => {
-    const txId = await createDiagnosisGesture();
+    const txId = await createReproductionGesture();
     const ops = await db.queue_ops
       .where("client_tx_id")
       .equals(txId)

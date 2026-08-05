@@ -1,9 +1,24 @@
-# Handoff atual — Fase 13.5 / round-trip remoto do diagnóstico gestacional
+# Handoff atual — expansão do sync reprodutivo
 
 Atualizado em: 2026-08-05
-Baseline de entrada: `main@eb5c4fa`
-Status: **round-trip remoto mínimo do diagnóstico gestacional validado localmente**
-Próximo incremento: **round-trip remoto dos demais fatos reprodutivos**
+Baseline de entrada: `main@3e4ee5e`
+Status: **parto, aborto e correções reprodutivas expandidos e validados localmente**
+Próximo incremento: **deploy autorizado e E2E remoto único da expansão**
+
+## Entrega da expansão reprodutiva
+
+- o `sync-batch` exige Evento e detalhe de parto aplicados antes de aceitar cria e exige cria aplicada antes da Agenda neonatal;
+- dependência ausente retorna `BLOCKED_DEPENDENCY`, lookup transitório retorna `RETRYABLE` e conteúdo divergente com a mesma identidade retorna `CONFLICT`;
+- parto simples ou gemelar preserva `mae_id`, `pai_id`, `birth_event_id`, `fazenda_id` e identidades; replay não duplica Evento, detalhe, cria ou Agenda;
+- aborto faz round-trip somente como Evento + detalhe e a projeção histórica remove gestação/DPP do episódio afetado, sem criar dependentes de parto;
+- correções de diagnóstico, parto e aborto permanecem Eventos append-only com `corrige_evento_id`; original permanece imutável, cadeia linear usa o significado vigente e ramificação é conflito explícito;
+- correção de parto não recria nem altera crias ou Agendas; essa limitação continua fail-closed por ausência de compensação segura;
+- o pull incremental busca Eventos, detalhes, crias e Agendas por fazenda, valida o lote completo e grava/reprojeta em uma única transação Dexie;
+- o pull inicial e o especializado preservam Eventos, crias e Agendas locais pendentes; colisão divergente aborta o lote sem escrita parcial;
+- `taxonomy_facts` continua cache reconstruído exclusivamente do histórico; status de sync não é evidência de domínio;
+- nenhuma migration, tabela, RPC ou RLS foi criada ou alterada; não houve deploy, E2E remoto ou mudança em Sanitário v2.
+
+Validações executadas: 20 testes focados em 3 arquivos, ESLint dos 8 arquivos TypeScript alterados, `deno check supabase/functions/sync-batch/index.ts`, `git diff --check` e um build único. O build manteve apenas warnings preexistentes de Browserslist, chunks e import misto do Dexie. Próximo passo: deploy e uma fixture remota agregada somente após autorização explícita.
 
 ## Entrega da Fase 13.5
 

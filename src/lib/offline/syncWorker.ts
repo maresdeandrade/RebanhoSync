@@ -64,6 +64,11 @@ const SANITARIO_CANONICAL_STATUSES = new Set<SanitarioSyncV2ResultStatus>([
   "CONFLICT",
   "BLOCKED_DEPENDENCY",
 ]);
+const SYNCED_REPRODUCTION_TYPES = new Set([
+  "diagnostico",
+  "parto",
+  "aborto",
+]);
 const SANITARIO_RETRY_BASE_MS = 5_000;
 const SANITARIO_RETRY_MAX_MS = 5 * 60_000;
 
@@ -842,17 +847,17 @@ export async function processGesture(gesture: Gesture) {
     const allApplied = result.results.every(
       (r) => r.status === "APPLIED" || r.status === "APPLIED_ALTERED",
     );
-    const hasDiagnosisOperation = ops.some(
+    const hasReproductionOperation = ops.some(
       (op) =>
         getRemoteTableName(op.table) === "eventos_reproducao" &&
-        op.record?.tipo === "diagnostico",
+        SYNCED_REPRODUCTION_TYPES.has(String(op.record?.tipo)),
     );
-    const isTerminalDiagnosisResult = (entry: SyncOperationResult) =>
+    const isTerminalReproductionResult = (entry: SyncOperationResult) =>
       entry.status === "REJECTED" ||
-      (hasDiagnosisOperation &&
+      (hasReproductionOperation &&
         (entry.status === "CONFLICT" ||
           entry.status === "BLOCKED_DEPENDENCY"));
-    const hasRejected = result.results.some(isTerminalDiagnosisResult);
+    const hasRejected = result.results.some(isTerminalReproductionResult);
 
     if (allApplied) {
       const completedAt = new Date().toISOString();
@@ -905,13 +910,13 @@ export async function processGesture(gesture: Gesture) {
           );
         }
       }
-      const hasDiagnosisDetail = ops.some(
+      const hasReproductionDetail = ops.some(
         (op) =>
           getRemoteTableName(op.table) === "eventos_reproducao" &&
           op.action === "INSERT" &&
-          op.record?.tipo === "diagnostico",
+          SYNCED_REPRODUCTION_TYPES.has(String(op.record?.tipo)),
       );
-      if (hasDiagnosisDetail) {
+      if (hasReproductionDetail) {
         try {
           await pullReproductionDiagnosisState(gesture.fazenda_id, {
             ignorePendingClientTxId: gesture.client_tx_id,
@@ -970,7 +975,9 @@ export async function processGesture(gesture: Gesture) {
 
     if (hasRejected) {
       const completedAt = new Date().toISOString();
-      const rejectedResults = result.results.filter(isTerminalDiagnosisResult);
+      const rejectedResults = result.results.filter(
+        isTerminalReproductionResult,
+      );
       const rejectionSummary = rejectedResults
         .map((r) => `${r.reason_code ?? "UNKNOWN"}: ${r.reason_message ?? "-"}`)
         .join(" | ");

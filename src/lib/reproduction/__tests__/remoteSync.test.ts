@@ -40,7 +40,7 @@ function eventRow(id: string, animalId: string, occurredAt: string): Row {
 
 function detailRow(
   id: string,
-  tipo: "cobertura" | "IA" | "diagnostico",
+  tipo: "cobertura" | "IA" | "diagnostico" | "parto" | "aborto",
   payload: Row,
 ): Row {
   return {
@@ -52,6 +52,72 @@ function detailRow(
     client_id: "client-remote",
     client_op_id: `op-detail-${id}`,
     client_tx_id: `tx-${id}`,
+    client_recorded_at: now,
+    server_received_at: now,
+    created_at: now,
+    updated_at: now,
+    deleted_at: null,
+  };
+}
+
+function calfRow(id: string, motherId: string, birthEventId: string): Row {
+  return {
+    id,
+    fazenda_id: "farm-1",
+    identificacao: id,
+    sexo: "F",
+    status: "ativo",
+    lote_id: null,
+    data_nascimento: "2026-10-20",
+    data_entrada: null,
+    data_saida: null,
+    pai_id: null,
+    mae_id: motherId,
+    nome: null,
+    rfid: null,
+    especie: "bovino",
+    origem: "nascimento",
+    raca: null,
+    papel_macho: null,
+    habilitado_monta: false,
+    observacoes: null,
+    payload: {
+      generated_from: "evento_parto",
+      birth_event_id: birthEventId,
+    },
+    client_id: "client-remote",
+    client_op_id: `op-${id}`,
+    client_tx_id: `tx-${birthEventId}`,
+    client_recorded_at: now,
+    server_received_at: now,
+    created_at: now,
+    updated_at: now,
+    deleted_at: null,
+  };
+}
+
+function agendaRow(id: string, calfId: string, birthEventId: string): Row {
+  return {
+    id,
+    fazenda_id: "farm-1",
+    dominio: "sanitario",
+    tipo: "cura_umbigo",
+    status: "agendado",
+    data_prevista: "2026-10-20",
+    animal_id: calfId,
+    lote_id: null,
+    dedup_key: `umbigo:${calfId}`,
+    source_kind: "automatico",
+    source_ref: { birth_event_id: birthEventId },
+    source_evento_id: birthEventId,
+    source_tx_id: null,
+    source_client_op_id: null,
+    protocol_item_version_id: null,
+    interval_days_applied: 0,
+    payload: { birth_event_id: birthEventId },
+    client_id: "client-remote",
+    client_op_id: `op-${id}`,
+    client_tx_id: `tx-${birthEventId}`,
     client_recorded_at: now,
     server_received_at: now,
     created_at: now,
@@ -92,7 +158,13 @@ async function seedAnimal(id: string) {
   });
 }
 
-function mockRemote(events: Row[], details: Row[], failTable?: string) {
+function mockRemote(
+  events: Row[],
+  details: Row[],
+  failTable?: string,
+  calves: Row[] = [],
+  agendas: Row[] = [],
+) {
   const observedFilters: Array<{
     table: string;
     kind: "eq" | "in" | "gte";
@@ -124,7 +196,13 @@ function mockRemote(events: Row[], details: Row[], failTable?: string) {
         if (table === failTable) {
           return Promise.resolve(resolve({ data: null, error: { message: "remote failure" } }));
         }
-        let rows = table === "eventos" ? events : details;
+        let rows = table === "eventos"
+          ? events
+          : table === "eventos_reproducao"
+          ? details
+          : table === "animais"
+          ? calves
+          : agendas;
         for (const filter of filters) {
           if (filter.kind === "eq") {
             rows = rows.filter((row) => row[filter.column] === filter.value);
@@ -150,6 +228,7 @@ describe("reproduction diagnosis remote pull", () => {
     await db.sync_pull_cursors.clear();
     await db.event_eventos_reproducao.clear();
     await db.event_eventos.clear();
+    await db.state_agenda_itens.clear();
     await db.state_animais.clear();
   });
 
@@ -159,6 +238,7 @@ describe("reproduction diagnosis remote pull", () => {
     await db.sync_pull_cursors.clear();
     await db.event_eventos_reproducao.clear();
     await db.event_eventos.clear();
+    await db.state_agenda_itens.clear();
     await db.state_animais.clear();
   });
 
@@ -279,6 +359,202 @@ describe("reproduction diagnosis remote pull", () => {
     expect(await db.event_eventos.get("remote-existing-event")).toBeDefined();
   });
 
+  it("preserves pending birth calves and neonatal agendas during the generic initial pull", async () => {
+    const localCalf = calfRow("calf-pending", "cow-pending", "birth-pending");
+    const localAgenda = agendaRow(
+      "agenda-pending",
+      "calf-pending",
+      "birth-pending",
+    );
+    await db.state_animais.put(localCalf as never);
+    await db.state_agenda_itens.put(localAgenda as never);
+    await db.queue_ops.bulkAdd([
+      {
+        client_op_id: "pending-calf-op",
+        client_tx_id: "pending-birth-tx",
+        op_order: 2,
+        table: "animais",
+        action: "INSERT",
+        record: localCalf,
+        created_at: now,
+      },
+      {
+        client_op_id: "pending-agenda-op",
+        client_tx_id: "pending-birth-tx",
+        op_order: 3,
+        table: "agenda_itens",
+        action: "INSERT",
+        record: localAgenda,
+        created_at: now,
+      },
+    ]);
+    mockRemote([], [], undefined, [
+      { ...localCalf, mae_id: "remote-divergent" },
+      calfRow("calf-remote", "cow-remote", "birth-remote"),
+    ], [
+      { ...localAgenda, animal_id: "remote-divergent" },
+      agendaRow("agenda-remote", "calf-remote", "birth-remote"),
+    ]);
+
+    await pullDataForFarm("farm-1", ["animais", "agenda_itens"], {
+      mode: "replace",
+    });
+
+    expect(await db.state_animais.get("calf-pending")).toMatchObject({
+      mae_id: "cow-pending",
+    });
+    expect(await db.state_agenda_itens.get("agenda-pending")).toMatchObject({
+      animal_id: "calf-pending",
+    });
+    expect(await db.state_animais.get("calf-remote")).toBeDefined();
+    expect(await db.state_agenda_itens.get("agenda-remote")).toBeDefined();
+  });
+
+  it("pulls a complete twin birth and rebuilds mother, calves and neonatal agenda", async () => {
+    await seedAnimal("cow-birth");
+    const events = [
+      eventRow("service-birth", "cow-birth", "2026-01-10T10:00:00.000Z"),
+      eventRow("diagnosis-birth", "cow-birth", "2026-03-01T10:00:00.000Z"),
+      eventRow("birth-1", "cow-birth", "2026-10-20T10:00:00.000Z"),
+    ];
+    const details = [
+      detailRow("service-birth", "cobertura", {}),
+      detailRow("diagnosis-birth", "diagnostico", {
+        resultado: "positivo",
+        episode_evento_id: "service-birth",
+      }),
+      detailRow("birth-1", "parto", {
+        episode_evento_id: "service-birth",
+        data_parto_real: "2026-10-20",
+        numero_crias: 2,
+      }),
+    ];
+    const calves = [
+      calfRow("calf-1", "cow-birth", "birth-1"),
+      calfRow("calf-2", "cow-birth", "birth-1"),
+    ];
+    const agendas = [
+      agendaRow("agenda-calf-1", "calf-1", "birth-1"),
+      agendaRow("agenda-calf-2", "calf-2", "birth-1"),
+    ];
+    mockRemote(events, details, undefined, calves, agendas);
+
+    const pulled = await pullReproductionDiagnosisState("farm-1");
+
+    expect(pulled.pulled).toBe(7);
+    expect(await db.state_animais.get("calf-1")).toMatchObject({
+      mae_id: "cow-birth",
+      pai_id: null,
+      payload: expect.objectContaining({ birth_event_id: "birth-1" }),
+    });
+    expect(await db.state_animais.get("calf-2")).toBeDefined();
+    expect(await db.state_agenda_itens.count()).toBe(2);
+    const birthFacts = (await db.state_animais.get("cow-birth"))?.payload
+      .taxonomy_facts;
+    expect(birthFacts).toMatchObject({
+      prenhez_confirmada: false,
+      data_ultimo_parto: "2026-10-20",
+    });
+    expect(birthFacts).not.toHaveProperty("data_prevista_parto");
+  });
+
+  it("pulls abortion without calf or agenda and clears the current pregnancy", async () => {
+    await seedAnimal("cow-loss");
+    const events = [
+      eventRow("service-loss", "cow-loss", "2026-01-10T10:00:00.000Z"),
+      eventRow("diagnosis-loss", "cow-loss", "2026-03-01T10:00:00.000Z"),
+      eventRow("loss-1", "cow-loss", "2026-05-01T10:00:00.000Z"),
+    ];
+    const details = [
+      detailRow("service-loss", "IA", {}),
+      detailRow("diagnosis-loss", "diagnostico", {
+        resultado: "positivo",
+        episode_evento_id: "service-loss",
+      }),
+      detailRow("loss-1", "aborto", {
+        episode_evento_id: "service-loss",
+      }),
+    ];
+    mockRemote(events, details);
+
+    await pullReproductionDiagnosisState("farm-1");
+
+    expect(await db.state_animais.count()).toBe(1);
+    expect(await db.state_agenda_itens.count()).toBe(0);
+    const lossFacts = (await db.state_animais.get("cow-loss"))?.payload
+      .taxonomy_facts;
+    expect(lossFacts).toMatchObject({ prenhez_confirmada: false });
+    expect(lossFacts).not.toHaveProperty("data_prevista_parto");
+  });
+
+  it("projects a linear correction and rejects a correction branch", async () => {
+    await seedAnimal("cow-correction");
+    const service = eventRow(
+      "service-correction",
+      "cow-correction",
+      "2026-01-10T10:00:00.000Z",
+    );
+    const diagnosis = eventRow(
+      "diagnosis-correction",
+      "cow-correction",
+      "2026-03-01T10:00:00.000Z",
+    );
+    const correction = {
+      ...eventRow(
+        "correction-1",
+        "cow-correction",
+        "2026-03-01T10:00:00.000Z",
+      ),
+      corrige_evento_id: "diagnosis-correction",
+      payload: {
+        reproduction_correction: {
+          schema_version: 1,
+          nature: "correction",
+          corrected_event_id: "diagnosis-correction",
+        },
+      },
+    };
+    const details = [
+      detailRow("service-correction", "cobertura", {}),
+      detailRow("diagnosis-correction", "diagnostico", {
+        resultado: "positivo",
+        episode_evento_id: "service-correction",
+      }),
+      detailRow("correction-1", "diagnostico", {
+        resultado: "negativo",
+        episode_evento_id: "service-correction",
+      }),
+    ];
+    mockRemote([service, diagnosis, correction], details);
+
+    await pullReproductionDiagnosisState("farm-1");
+
+    const correctionFacts = (await db.state_animais.get("cow-correction"))
+      ?.payload.taxonomy_facts;
+    expect(correctionFacts).toMatchObject({ prenhez_confirmada: false });
+    expect(correctionFacts).not.toHaveProperty("data_prevista_parto");
+    expect(await db.event_eventos.get("diagnosis-correction")).toBeDefined();
+
+    await db.event_eventos.clear();
+    await db.event_eventos_reproducao.clear();
+    await db.sync_pull_cursors.clear();
+    const branch = {
+      ...correction,
+      id: "correction-branch",
+      client_op_id: "op-correction-branch",
+    };
+    mockRemote(
+      [service, diagnosis, correction, branch],
+      [...details, detailRow("correction-branch", "diagnostico", {
+        resultado: "positivo",
+        episode_evento_id: "service-correction",
+      })],
+    );
+    await expect(
+      pullReproductionDiagnosisState("farm-1"),
+    ).rejects.toThrow("REPRO_PULL_CORRECTION_BRANCH_CONFLICT");
+  });
+
   it("rejects divergent collision or tenant/episode mismatch without partial writes", async () => {
     await seedAnimal("cow-conflict");
     const service = eventRow("service-conflict", "cow-conflict", "2026-01-01T10:00:00.000Z");
@@ -302,7 +578,7 @@ describe("reproduction diagnosis remote pull", () => {
     mockRemote([crossTenantService, diagnosis], details);
     await expect(
       pullReproductionDiagnosisState("farm-1"),
-    ).rejects.toThrow("REPRO_PULL_FACT_CONTRACT_INVALID");
+    ).rejects.toThrow("REPRO_PULL_EPISODE_CONTRACT_INVALID");
     expect(await db.event_eventos.count()).toBe(0);
   });
 

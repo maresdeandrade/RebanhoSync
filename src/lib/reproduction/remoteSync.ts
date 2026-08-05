@@ -9,7 +9,13 @@ import {
 
 type RemoteRow = Record<string, unknown>;
 
-const SUPPORTED_TYPES = ["cobertura", "IA", "diagnostico"] as const;
+const SUPPORTED_TYPES = [
+  "cobertura",
+  "IA",
+  "diagnostico",
+  "parto",
+  "aborto",
+] as const;
 const CURSOR_KEY_PREFIX = "reproduction_diagnosis";
 const EVENT_FACT_FIELDS = [
   "id",
@@ -32,6 +38,55 @@ const DETAIL_FACT_FIELDS = [
   "fazenda_id",
   "tipo",
   "macho_id",
+  "payload",
+  "client_id",
+  "client_op_id",
+  "client_tx_id",
+  "client_recorded_at",
+] as const;
+const CALF_FACT_FIELDS = [
+  "id",
+  "fazenda_id",
+  "identificacao",
+  "sexo",
+  "status",
+  "lote_id",
+  "data_nascimento",
+  "data_entrada",
+  "data_saida",
+  "pai_id",
+  "mae_id",
+  "nome",
+  "rfid",
+  "especie",
+  "origem",
+  "raca",
+  "papel_macho",
+  "habilitado_monta",
+  "observacoes",
+  "payload",
+  "client_id",
+  "client_op_id",
+  "client_tx_id",
+  "client_recorded_at",
+] as const;
+const AGENDA_FACT_FIELDS = [
+  "id",
+  "fazenda_id",
+  "dominio",
+  "tipo",
+  "status",
+  "data_prevista",
+  "animal_id",
+  "lote_id",
+  "dedup_key",
+  "source_kind",
+  "source_ref",
+  "source_evento_id",
+  "source_tx_id",
+  "source_client_op_id",
+  "protocol_item_version_id",
+  "interval_days_applied",
   "payload",
   "client_id",
   "client_op_id",
@@ -67,20 +122,31 @@ function getCursorKey(fazendaId: string) {
   return `${CURSOR_KEY_PREFIX}:eventos_reproducao:fazenda:${fazendaId}`;
 }
 
-async function getPendingReproductionEventIds(ignoreClientTxId?: string) {
+async function getPendingReproductionIds(ignoreClientTxId?: string) {
   const operations = await db.queue_ops.toArray();
-  return new Set(operations.flatMap((operation) => {
-    if (operation.client_tx_id === ignoreClientTxId) return [];
+  const eventIds = new Set<string>();
+  const animalIds = new Set<string>();
+  const agendaIds = new Set<string>();
+  for (const operation of operations) {
+    if (operation.client_tx_id === ignoreClientTxId) continue;
     if (operation.table === "eventos" && operation.record?.dominio === "reproducao") {
-      return typeof operation.record.id === "string" ? [operation.record.id] : [];
+      if (typeof operation.record.id === "string") {
+        eventIds.add(operation.record.id);
+      }
     }
     if (operation.table === "eventos_reproducao") {
-      return typeof operation.record?.evento_id === "string"
-        ? [operation.record.evento_id]
-        : [];
+      if (typeof operation.record?.evento_id === "string") {
+        eventIds.add(operation.record.evento_id);
+      }
     }
-    return [];
-  }));
+    if (operation.table === "animais" && typeof operation.record?.id === "string") {
+      animalIds.add(operation.record.id);
+    }
+    if (operation.table === "agenda_itens" && typeof operation.record?.id === "string") {
+      agendaIds.add(operation.record.id);
+    }
+  }
+  return { eventIds, animalIds, agendaIds };
 }
 
 function readEpisodeId(detail: RemoteRow) {
@@ -112,8 +178,13 @@ function assertRemoteBatch(
     ) {
       throw new Error("REPRO_PULL_FACT_CONTRACT_INVALID");
     }
-    if (detail.tipo !== "diagnostico") continue;
+    if (
+      detail.tipo !== "diagnostico" &&
+      detail.tipo !== "parto" &&
+      detail.tipo !== "aborto"
+    ) continue;
     const episodeId = readEpisodeId(detail);
+    if (!episodeId && detail.tipo !== "diagnostico") continue;
     const episode = episodeId ? eventsById.get(episodeId) : null;
     const episodeDetail = episodeId ? detailsById.get(episodeId) : null;
     if (
@@ -128,11 +199,43 @@ function assertRemoteBatch(
       throw new Error("REPRO_PULL_EPISODE_CONTRACT_INVALID");
     }
   }
+  const correctionChildren = new Map<string, string[]>();
+  for (const event of events) {
+    if (typeof event.corrige_evento_id !== "string") continue;
+    const corrected = eventsById.get(event.corrige_evento_id);
+    const correctionDetail = detailsById.get(String(event.id));
+    const correctedDetail = detailsById.get(event.corrige_evento_id);
+    const eventPayload = isRecord(event.payload) ? event.payload : {};
+    const correction = isRecord(eventPayload.reproduction_correction)
+      ? eventPayload.reproduction_correction
+      : null;
+    if (
+      !corrected ||
+      !correctionDetail ||
+      !correctedDetail ||
+      corrected.fazenda_id !== event.fazenda_id ||
+      corrected.animal_id !== event.animal_id ||
+      correctedDetail.tipo !== correctionDetail.tipo ||
+      !correction ||
+      correction.nature !== "correction" ||
+      correction.corrected_event_id !== event.corrige_evento_id
+    ) {
+      throw new Error("REPRO_PULL_CORRECTION_CONTRACT_INVALID");
+    }
+    const children = correctionChildren.get(event.corrige_evento_id) ?? [];
+    children.push(String(event.id));
+    correctionChildren.set(event.corrige_evento_id, children);
+  }
+  if ([...correctionChildren.values()].some((children) => children.length > 1)) {
+    throw new Error("REPRO_PULL_CORRECTION_BRANCH_CONFLICT");
+  }
 }
 
 async function assertNoDivergentLocalFact(
   events: RemoteRow[],
   details: RemoteRow[],
+  calves: RemoteRow[],
+  agendas: RemoteRow[],
 ) {
   for (const event of events) {
     const existing = await db.event_eventos.get(String(event.id));
@@ -149,9 +252,27 @@ async function assertNoDivergentLocalFact(
       throw new Error("REPRO_PULL_DETAIL_CONFLICT");
     }
   }
+  for (const calf of calves) {
+    const existing = await db.state_animais.get(String(calf.id));
+    if (
+      existing &&
+      !sameFact(existing as unknown as RemoteRow, calf, CALF_FACT_FIELDS)
+    ) {
+      throw new Error("REPRO_PULL_CALF_CONFLICT");
+    }
+  }
+  for (const agenda of agendas) {
+    const existing = await db.state_agenda_itens.get(String(agenda.id));
+    if (
+      existing &&
+      !sameFact(existing as unknown as RemoteRow, agenda, AGENDA_FACT_FIELDS)
+    ) {
+      throw new Error("REPRO_PULL_AGENDA_CONFLICT");
+    }
+  }
 }
 
-async function rebuildDiagnosisCaches(animalIds: Set<string>) {
+async function rebuildReproductionCaches(animalIds: Set<string>) {
   for (const animalId of animalIds) {
     const events = await db.event_eventos
       .where("animal_id")
@@ -166,18 +287,42 @@ async function rebuildDiagnosisCaches(animalIds: Set<string>) {
       details: details[index],
     }));
     const projection = rebuildReproductiveProjection(history);
-    if (
-      projection.inconsistency ||
-      projection.definingEventType !== "diagnostico" ||
-      (projection.status !== "PRENHA" && projection.status !== "VAZIA")
-    ) continue;
+    const cacheableIncompleteHistory =
+      projection.inconsistency === "PARTO_WITHOUT_EPISODE" ||
+      projection.inconsistency === "ABORTO_WITHOUT_EPISODE";
+    if (projection.inconsistency && !cacheableIncompleteHistory) continue;
     const animal = await db.state_animais.get(animalId);
     if (!animal || animal.deleted_at) continue;
+    const patch = projection.status === "PRENHA"
+      ? {
+        prenhez_confirmada: true,
+        data_prevista_parto: projection.dpp,
+      }
+      : projection.status === "SERVIDA"
+      ? {
+        prenhez_confirmada: null,
+        data_prevista_parto: null,
+      }
+      : projection.status === "PARIDA_PUERPERIO" ||
+          projection.status === "PARIDA_ABERTA"
+      ? {
+        prenhez_confirmada: false,
+        data_prevista_parto: null,
+        data_ultimo_parto: projection.lastBirthDate,
+        em_lactacao: true,
+        secagem_realizada: false,
+        puberdade_confirmada: true,
+      }
+      : {
+        prenhez_confirmada: false,
+        data_prevista_parto: null,
+      };
     await db.state_animais.update(animalId, {
-      payload: buildAnimalTaxonomyFactsPayload(animal.payload, {
-        prenhez_confirmada: projection.status === "PRENHA",
-        data_prevista_parto: projection.status === "PRENHA" ? projection.dpp : null,
-      }, "reproduction_event"),
+      payload: buildAnimalTaxonomyFactsPayload(
+        animal.payload,
+        patch,
+        "reproduction_event",
+      ),
     });
   }
 }
@@ -201,68 +346,110 @@ export async function pullReproductionDiagnosisState(
   const changedDetails = (changedData ?? []) as RemoteRow[];
   if (changedDetails.length === 0) return { pulled: 0, projections: [] };
 
-  const episodeIds = changedDetails.flatMap((detail) => {
-    const id = readEpisodeId(detail);
-    return id ? [id] : [];
-  });
-  let details = changedDetails;
-  if (episodeIds.length > 0) {
-    const { data, error } = await supabase
-      .from("eventos_reproducao")
-      .select("*")
-      .eq("fazenda_id", fazendaId)
-      .in("evento_id", episodeIds);
-    if (error) throw error;
-    details = Array.from(new Map(
-      [...changedDetails, ...((data ?? []) as RemoteRow[])].map((row) => [
-        String(row.evento_id),
-        row,
-      ]),
-    ).values());
+  const changedEventIds = changedDetails.map((detail) =>
+    String(detail.evento_id)
+  );
+  const { data: changedEventData, error: changedEventError } = await supabase
+    .from("eventos")
+    .select("*")
+    .eq("fazenda_id", fazendaId)
+    .eq("dominio", "reproducao")
+    .in("id", changedEventIds);
+  if (changedEventError) throw changedEventError;
+  const affectedAnimalIds = new Set(
+    ((changedEventData ?? []) as RemoteRow[])
+      .map((event) => event.animal_id)
+      .filter((animalId): animalId is string => typeof animalId === "string"),
+  );
+  if (affectedAnimalIds.size === 0) {
+    throw new Error("REPRO_PULL_FACT_CONTRACT_INVALID");
   }
-
-  const eventIds = details.map((detail) => String(detail.evento_id));
   const { data: eventData, error: eventError } = await supabase
     .from("eventos")
     .select("*")
     .eq("fazenda_id", fazendaId)
     .eq("dominio", "reproducao")
-    .in("id", eventIds);
+    .in("animal_id", Array.from(affectedAnimalIds));
   if (eventError) throw eventError;
-  const fetchedEvents = (eventData ?? []) as RemoteRow[];
-  const fetchedEventsById = new Map(
-    fetchedEvents.map((event) => [String(event.id), event]),
-  );
-  const detailsInScope = details.filter((detail) =>
-    fetchedEventsById.get(String(detail.evento_id))?.corrige_evento_id == null
-  );
-  const inScopeIds = new Set(
-    detailsInScope.map((detail) => String(detail.evento_id)),
-  );
-  const events = fetchedEvents.filter((event) => inScopeIds.has(String(event.id)));
-  assertRemoteBatch(fazendaId, events, detailsInScope);
+  const events = (eventData ?? []) as RemoteRow[];
+  const eventIds = events.map((event) => String(event.id));
+  const { data: detailData, error: allDetailsError } = await supabase
+    .from("eventos_reproducao")
+    .select("*")
+    .eq("fazenda_id", fazendaId)
+    .in("evento_id", eventIds)
+    .in("tipo", [...SUPPORTED_TYPES]);
+  if (allDetailsError) throw allDetailsError;
+  const details = (detailData ?? []) as RemoteRow[];
+  assertRemoteBatch(fazendaId, events, details);
 
-  const pendingIds = await getPendingReproductionEventIds(
+  const partoEventIds = new Set(
+    details
+      .filter((detail) => detail.tipo === "parto")
+      .map((detail) => String(detail.evento_id)),
+  );
+  let calves: RemoteRow[] = [];
+  if (affectedAnimalIds.size > 0 && partoEventIds.size > 0) {
+    const { data, error } = await supabase
+      .from("animais")
+      .select("*")
+      .eq("fazenda_id", fazendaId)
+      .in("mae_id", Array.from(affectedAnimalIds));
+    if (error) throw error;
+    calves = ((data ?? []) as RemoteRow[]).filter((calf) => {
+      const payload = isRecord(calf.payload) ? calf.payload : {};
+      return payload.generated_from === "evento_parto" &&
+        partoEventIds.has(String(payload.birth_event_id));
+    });
+  }
+  let agendas: RemoteRow[] = [];
+  if (partoEventIds.size > 0) {
+    const { data, error } = await supabase
+      .from("agenda_itens")
+      .select("*")
+      .eq("fazenda_id", fazendaId)
+      .in("source_evento_id", Array.from(partoEventIds));
+    if (error) throw error;
+    agendas = (data ?? []) as RemoteRow[];
+  }
+
+  const pendingIds = await getPendingReproductionIds(
     options.ignorePendingClientTxId,
   );
-  const safeDetails = detailsInScope.filter((detail) =>
-    !pendingIds.has(String(detail.evento_id))
+  const safeDetails = details.filter((detail) =>
+    !pendingIds.eventIds.has(String(detail.evento_id))
   );
-  const protectedRows = safeDetails.length !== detailsInScope.length;
+  const protectedRows = safeDetails.length !== details.length ||
+    calves.some((calf) => pendingIds.animalIds.has(String(calf.id))) ||
+    agendas.some((agenda) => pendingIds.agendaIds.has(String(agenda.id)));
   const safeIds = new Set(safeDetails.map((detail) => String(detail.evento_id)));
-  const safeEvents = events.filter((event) => safeIds.has(String(event.id)));
-  await assertNoDivergentLocalFact(safeEvents, safeDetails);
+  const safeEvents = events.filter((event) =>
+    safeIds.has(String(event.id)) &&
+    !pendingIds.eventIds.has(String(event.id))
+  );
+  const safeCalves = calves.filter((calf) =>
+    !pendingIds.animalIds.has(String(calf.id))
+  );
+  const safeAgendas = agendas.filter((agenda) =>
+    !pendingIds.agendaIds.has(String(agenda.id))
+  );
+  await assertNoDivergentLocalFact(
+    safeEvents,
+    safeDetails,
+    safeCalves,
+    safeAgendas,
+  );
 
-  const diagnosisAnimalIds = new Set(
-    safeDetails
-      .filter((detail) => detail.tipo === "diagnostico")
-      .map((detail) => safeEvents.find((event) => event.id === detail.evento_id)?.animal_id)
+  const safeProjectionAnimalIds = new Set(
+    safeEvents
+      .map((event) => event.animal_id)
       .filter((animalId): animalId is string => typeof animalId === "string"),
   );
   const transactionStores = [
     db.event_eventos,
     db.event_eventos_reproducao,
     db.state_animais,
+    db.state_agenda_itens,
     db.sync_pull_cursors,
   ];
   await db.transaction("rw", transactionStores, async () => {
@@ -270,7 +457,11 @@ export async function pullReproductionDiagnosisState(
     if (safeDetails.length > 0) {
       await db.event_eventos_reproducao.bulkPut(safeDetails);
     }
-    await rebuildDiagnosisCaches(diagnosisAnimalIds);
+    if (safeCalves.length > 0) await db.state_animais.bulkPut(safeCalves);
+    if (safeAgendas.length > 0) {
+      await db.state_agenda_itens.bulkPut(safeAgendas);
+    }
+    await rebuildReproductionCaches(safeProjectionAnimalIds);
     if (!protectedRows) {
       const latest = [...changedDetails].sort((left, right) =>
         String(left.updated_at).localeCompare(String(right.updated_at)) ||
@@ -293,8 +484,8 @@ export async function pullReproductionDiagnosisState(
   });
 
   return {
-    pulled: safeDetails.length,
-    projections: Array.from(diagnosisAnimalIds),
+    pulled: safeDetails.length + safeCalves.length + safeAgendas.length,
+    projections: Array.from(safeProjectionAnimalIds),
   };
 }
 

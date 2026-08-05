@@ -1,10 +1,25 @@
 # Plano ativo — Fase 13 / Reprodução Operacional v1
 
 Atualizado em: 2026-08-05
-Status: **incremento 13.5 — round-trip remoto mínimo do diagnóstico gestacional implementado**
-Próxima pendência: **round-trip remoto dos demais fatos reprodutivos, em incrementos separados**
+Status: **expansão local do sync reprodutivo para parto, aborto e correções implementada**
+Próxima pendência: **deploy autorizado e E2E remoto único da expansão reprodutiva**
 
 Este documento contém o plano corrente. Estado técnico detalhado, validações e risco de plataforma ficam em [CURRENT_PHASE_HANDOFF.md](./CURRENT_PHASE_HANDOFF.md). A decisão arquitetural permanente está em [ADR-0007](../technical/adrs/ADR-0007-sync-remoto-sanitario-v2-integrado.md).
+
+## Expansão do sync reprodutivo
+
+Baseline de entrada: `main@3e4ee5e`, worktree limpa.
+
+- parto, aborto e correções reutilizam Evento, `eventos_reproducao`, fila compartilhada, worker, `sync-batch`, RLS e identidades existentes;
+- parto ordena Evento → detalhe → cria(s) → Agenda neonatal; dependente sem fato aplicado retorna `BLOCKED_DEPENDENCY` antes da escrita;
+- cria preserva fazenda, mãe, pai somente quando informado e `birth_event_id`; replay idêntico não duplica cria ou Agenda;
+- aborto sincroniza somente Evento e detalhe, sem criar animal ou Agenda, e a reprojeção encerra apenas o episódio relacionado;
+- correção permanece novo Evento append-only com detalhe próprio e `corrige_evento_id`; cadeia linear é aceita, ramificação é conflito e correção de parto não recria crias;
+- pull incremental recupera o histórico reprodutivo completo dos animais afetados, depois crias e Agendas de parto, e grava/reprojeta em uma transação Dexie;
+- fatos e dependentes locais pendentes são preservados, colisões divergentes são rejeitadas e `taxonomy_facts` continua cache derivado;
+- nenhuma migration, RPC, RLS ou tabela foi alterada; Sanitário v2 e seus gates permaneceram intocados e desligados.
+
+Validação local: 20 testes focados em 3 arquivos, ESLint dos 8 arquivos TypeScript alterados, `deno check` do `sync-batch`, `git diff --check` e um build de fechamento. Não houve deploy nem E2E remoto. Próximo passo: uma única fixture remota de parto, aborto, correção, replay, dependência bloqueada, pull e cleanup, somente após autorização.
 
 ## Incremento 13.5
 
