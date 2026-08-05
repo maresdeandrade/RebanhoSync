@@ -52,6 +52,11 @@ const DETAIL_FIELDS = [
   "client_recorded_at",
 ] as const;
 
+const TEMPORAL_FINGERPRINT_FIELDS = new Set([
+  "occurred_at",
+  "client_recorded_at",
+]);
+
 function canonicalize(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(canonicalize);
   if (!isRecord(value)) return value ?? null;
@@ -65,7 +70,14 @@ function fingerprint(
   fields: readonly string[],
 ) {
   return JSON.stringify(canonicalize(Object.fromEntries(
-    fields.map((field) => [field, record[field] ?? null]),
+    fields.map((field) => {
+      const value = record[field] ?? null;
+      if (TEMPORAL_FINGERPRINT_FIELDS.has(field) && typeof value === "string") {
+        const timestamp = Date.parse(value);
+        return [field, Number.isNaN(timestamp) ? value : new Date(timestamp).toISOString()];
+      }
+      return [field, value];
+    }),
   )));
 }
 

@@ -99,6 +99,7 @@ describe("reproduction diagnosis sync contract", () => {
     };
     expect(sameReproductionDiagnosisRecord("eventos", persisted, {
       ...persisted,
+      client_recorded_at: "2026-03-01T10:00:00+00:00",
       server_received_at: "ignored",
     })).toBe(true);
     expect(sameReproductionDiagnosisRecord("eventos", persisted, {
