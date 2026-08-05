@@ -27,6 +27,7 @@ import {
   trackPilotMetric,
 } from "@/lib/telemetry/pilotMetrics";
 import { getActiveFarmId } from "@/lib/storage";
+import { pullReproductionDiagnosisState } from "@/lib/reproduction/remoteSync";
 
 let intervalId: ReturnType<typeof setInterval> | null = null;
 let isTickRunning = false;
@@ -166,6 +167,7 @@ export async function runInitialOfflinePullForActiveFarmOnce() {
   isInitialPullRunning = true;
   try {
     await pullInitialData(activeFarmId);
+    await pullReproductionDiagnosisState(activeFarmId);
     initialPullFarmId = activeFarmId;
   } catch (e: unknown) {
     const error = e instanceof Error ? e : new Error(String(e));
@@ -234,10 +236,7 @@ function isSanitarioCanonicalResult(
     typeof result.canonical_entity_id === "string" ||
     typeof result.current_revision === "number" ||
     typeof result.canonical_status === "string" ||
-    isRecord(result.canonical_result) ||
-    result.status === "RETRYABLE" ||
-    result.status === "CONFLICT" ||
-    result.status === "BLOCKED_DEPENDENCY"
+    isRecord(result.canonical_result)
   );
 }
 
@@ -843,7 +842,17 @@ export async function processGesture(gesture: Gesture) {
     const allApplied = result.results.every(
       (r) => r.status === "APPLIED" || r.status === "APPLIED_ALTERED",
     );
-    const hasRejected = result.results.some((r) => r.status === "REJECTED");
+    const hasDiagnosisOperation = ops.some(
+      (op) =>
+        getRemoteTableName(op.table) === "eventos_reproducao" &&
+        op.record?.tipo === "diagnostico",
+    );
+    const isTerminalDiagnosisResult = (entry: SyncOperationResult) =>
+      entry.status === "REJECTED" ||
+      (hasDiagnosisOperation &&
+        (entry.status === "CONFLICT" ||
+          entry.status === "BLOCKED_DEPENDENCY"));
+    const hasRejected = result.results.some(isTerminalDiagnosisResult);
 
     if (allApplied) {
       const completedAt = new Date().toISOString();
@@ -896,6 +905,24 @@ export async function processGesture(gesture: Gesture) {
           );
         }
       }
+      const hasDiagnosisDetail = ops.some(
+        (op) =>
+          getRemoteTableName(op.table) === "eventos_reproducao" &&
+          op.action === "INSERT" &&
+          op.record?.tipo === "diagnostico",
+      );
+      if (hasDiagnosisDetail) {
+        try {
+          await pullReproductionDiagnosisState(gesture.fazenda_id, {
+            ignorePendingClientTxId: gesture.client_tx_id,
+          });
+        } catch (refreshError) {
+          console.warn(
+            `[sync-worker] post-sync reproduction pull failed for TX ${gesture.client_tx_id}:`,
+            refreshError,
+          );
+        }
+      }
       if (
         Array.from(remoteTablesTouched).some((table) =>
           SANITARIO_AGENDA_V2_REMOTE_TABLES.has(table)
@@ -943,9 +970,7 @@ export async function processGesture(gesture: Gesture) {
 
     if (hasRejected) {
       const completedAt = new Date().toISOString();
-      const rejectedResults = result.results.filter(
-        (r) => r.status === "REJECTED",
-      );
+      const rejectedResults = result.results.filter(isTerminalDiagnosisResult);
       const rejectionSummary = rejectedResults
         .map((r) => `${r.reason_code ?? "UNKNOWN"}: ${r.reason_message ?? "-"}`)
         .join(" | ");

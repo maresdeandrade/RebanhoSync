@@ -1,10 +1,23 @@
 # Plano ativo — Fase 13 / Reprodução Operacional v1
 
 Atualizado em: 2026-08-05
-Status: **incremento 13.4 — correção append-only reprodutiva implementada**
-Próxima pendência: **round-trip remoto reprodutivo, em incremento separado**
+Status: **incremento 13.5 — round-trip remoto mínimo do diagnóstico gestacional implementado**
+Próxima pendência: **round-trip remoto dos demais fatos reprodutivos, em incrementos separados**
 
 Este documento contém o plano corrente. Estado técnico detalhado, validações e risco de plataforma ficam em [CURRENT_PHASE_HANDOFF.md](./CURRENT_PHASE_HANDOFF.md). A decisão arquitetural permanente está em [ADR-0007](../technical/adrs/ADR-0007-sync-remoto-sanitario-v2-integrado.md).
+
+## Incremento 13.5
+
+Baseline de entrada: `main@eb5c4fa`, worktree limpa.
+
+- diagnóstico gestacional reutiliza Evento, `eventos_reproducao`, fila compartilhada e `sync-batch` existentes, sem contrato paralelo;
+- o detalhe só é escrito após o Evento base resultar `APPLIED`; dependência ausente ou rejeitada retorna `BLOCKED_DEPENDENCY` antes da FK;
+- replay compara o conteúdo factual e retorna `APPLIED` para identidade idêntica ou conflito explícito para divergência;
+- pull incremental aplica Evento antes do detalhe, protege fatos locais pendentes, rejeita colisão/tenant divergentes e só então reconstrói PRENHA/VAZIA e `taxonomy_facts` derivado;
+- DPP continua exclusivamente explícita ou serviço + 283 dias; status de sync não é evidência reprodutiva;
+- parto, aborto, crias e correções permanecem fora do round-trip; não houve migration, alteração de RLS/RPC, deploy ou E2E remoto.
+
+Validação: 18 testes focados, ESLint dos arquivos TypeScript alterados, `deno check`, baseline funcional Supabase local 5/5, `git diff --check` e um build de fechamento. Próximo incremento: round-trip remoto dos demais fatos reprodutivos.
 
 ## Incremento 13.4
 

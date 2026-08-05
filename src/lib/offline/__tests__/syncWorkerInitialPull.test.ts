@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   activeFarmId: "farm-runtime",
   pullInitialData: vi.fn(async () => undefined),
+  pullReproductionDiagnosisState: vi.fn(async () => undefined),
 }));
 
 vi.mock("@/lib/storage", () => ({
@@ -30,6 +31,10 @@ vi.mock("@/lib/telemetry/pilotMetrics", () => ({
   flushPilotMetrics: vi.fn(async () => undefined),
 }));
 
+vi.mock("@/lib/reproduction/remoteSync", () => ({
+  pullReproductionDiagnosisState: mocks.pullReproductionDiagnosisState,
+}));
+
 import { runInitialOfflinePullForActiveFarmOnce } from "../syncWorker";
 
 describe("sync worker initial offline pull", () => {
@@ -43,6 +48,9 @@ describe("sync worker initial offline pull", () => {
 
     expect(mocks.pullInitialData).toHaveBeenCalledTimes(1);
     expect(mocks.pullInitialData).toHaveBeenCalledWith(mocks.activeFarmId);
+    expect(mocks.pullReproductionDiagnosisState).toHaveBeenCalledWith(
+      mocks.activeFarmId,
+    );
   });
 
   it("nao executa pull sem fazenda ativa", async () => {
@@ -51,6 +59,7 @@ describe("sync worker initial offline pull", () => {
     await runInitialOfflinePullForActiveFarmOnce();
 
     expect(mocks.pullInitialData).not.toHaveBeenCalled();
+    expect(mocks.pullReproductionDiagnosisState).not.toHaveBeenCalled();
   });
 
   it("mantem o pull inicial idempotente por fazenda no processo", async () => {

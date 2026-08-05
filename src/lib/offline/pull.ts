@@ -213,10 +213,22 @@ async function appendEventoAnimais(
   }
 }
 
-async function getPendingSanitarioV2EventIds() {
+async function getPendingFactualEventIds() {
   const operations = await db.queue_ops.toArray();
   return new Set(
     operations.flatMap((operation) => {
+      if (
+        operation.table === "eventos" &&
+        typeof operation.record?.id === "string"
+      ) {
+        return [operation.record.id];
+      }
+      if (
+        operation.table.startsWith("eventos_") &&
+        typeof operation.record?.evento_id === "string"
+      ) {
+        return [operation.record.evento_id];
+      }
       if (
         operation.table === "state_insumo_movimentacoes" ||
         operation.table === "insumo_movimentacoes"
@@ -252,6 +264,7 @@ function protectPendingFactualRows(
     ![
       "eventos",
       "eventos_sanitario",
+      "eventos_reproducao",
       "eventos_animais",
       "insumo_movimentacoes",
     ].includes(remoteTable)
@@ -278,12 +291,13 @@ async function writeMergeResults(
     [
       "eventos",
       "eventos_sanitario",
+      "eventos_reproducao",
       "eventos_animais",
       "insumo_movimentacoes",
     ].includes(remote),
   );
   const pendingEventIds = protectsFactualRows
-    ? await getPendingSanitarioV2EventIds()
+    ? await getPendingFactualEventIds()
     : new Set<string>();
   const effectiveResults: Record<string, RemoteRow[]> = { ...results };
   const cursorBlockedTables = new Set<string>();
@@ -372,14 +386,31 @@ export const pullDataForFarm = async (
   }
 
   const storeNames = storesToUpdate.map((s) => s.local);
+  const pendingEventIds = remoteTables.some((table) =>
+    ["eventos", "eventos_reproducao"].includes(table)
+  )
+    ? await getPendingFactualEventIds()
+    : new Set<string>();
+  const effectiveResults: Record<string, unknown[]> = { ...results };
+  for (const remoteTable of remoteTables) {
+    effectiveResults[remoteTable] = protectPendingFactualRows(
+      remoteTable,
+      (results[remoteTable] ?? []) as RemoteRow[],
+      pendingEventIds,
+    ).rows;
+  }
 
   // 3. Write in a single transaction
   await db.transaction("rw", storeNames, async () => {
     for (const { remote, local } of storesToUpdate) {
-      const rows = results[remote];
+      const rows = effectiveResults[remote];
       const store = db.table(local);
 
-      if (mode === "replace" && remote !== "eventos_animais") {
+      if (
+        mode === "replace" &&
+        remote !== "eventos" &&
+        remote !== "eventos_animais"
+      ) {
         await store.clear();
       }
 

@@ -1,9 +1,22 @@
-# Handoff atual — Fase 13.4 / correção append-only reprodutiva
+# Handoff atual — Fase 13.5 / round-trip remoto do diagnóstico gestacional
 
 Atualizado em: 2026-08-05
-Baseline de entrada: `main@4360777`
-Status: **correção append-only integrada à projeção local reconstruível**
-Próximo incremento: **round-trip remoto reprodutivo**
+Baseline de entrada: `main@eb5c4fa`
+Status: **round-trip remoto mínimo do diagnóstico gestacional validado localmente**
+Próximo incremento: **round-trip remoto dos demais fatos reprodutivos**
+
+## Entrega da Fase 13.5
+
+- Evento de diagnóstico e detalhe reprodutivo reutilizam a fila compartilhada e o `sync-batch`; Evento aplicado é dependência explícita do detalhe;
+- base não aplicada bloqueia o detalhe antes da escrita remota, evitando detalhe órfão e erro de FK como decisão de domínio;
+- replay idêntico é idempotente e conteúdo divergente com a mesma identidade retorna conflito explícito;
+- o pull incremental por fazenda aplica Evento antes do detalhe, preserva fato local pendente e rejeita colisão divergente ou vínculo cross-tenant;
+- reconstrução local usa somente o histórico factual para projetar PRENHA/VAZIA e atualizar `taxonomy_facts` como cache derivado;
+- DPP permanece explícita ou serviço + 283 dias; nenhum status de sync participa da projeção;
+- Evento, detalhe, episódio, observação e identidades atravessam o round-trip sem incluir parto, aborto, crias ou correções;
+- schema, migrations, RLS e RPCs permaneceram inalterados; não houve deploy nem E2E remoto.
+
+Validações executadas: 18 testes focados em 5 arquivos, ESLint dos 9 arquivos TypeScript alterados, `deno check` do `sync-batch`, baseline funcional Supabase local 5/5, `git diff --check` e um build de fechamento. Próximo incremento: round-trip remoto dos demais fatos reprodutivos.
 
 ## Entrega da Fase 13.4
 

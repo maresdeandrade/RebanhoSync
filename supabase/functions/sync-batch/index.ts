@@ -34,6 +34,13 @@ import {
   isSanitarioInventoryMovementOperation,
   resolveSanitarioInventoryFactualDependency,
 } from "./inventory-dependency.ts";
+import {
+  findDiagnosisDetailForEvent,
+  isDiagnosisDetailOperation,
+  resolveReproductionDiagnosisDependency,
+  sameReproductionDiagnosisRecord,
+  validatePregnancyDiagnosis,
+} from "./reproduction-diagnosis.ts";
 
 const allowedOrigins = [
   "http://localhost:5173",
@@ -932,8 +939,76 @@ Deno.serve(async (req: Request) => {
             continue;
           }
 
+          if (record.tipo === "diagnostico") {
+            const dependency = await resolveReproductionDiagnosisDependency({
+              operation: { ...op, record },
+              operations: legacyOps,
+              processedResults: results,
+              fazendaId: fazenda_id,
+              loadRemoteEvent: async (trustedFazendaId, eventId) => {
+                const { data, error } = await supabase
+                  .from("eventos")
+                  .select("id, fazenda_id, dominio, animal_id, occurred_at")
+                  .eq("id", eventId)
+                  .eq("fazenda_id", trustedFazendaId)
+                  .maybeSingle();
+                return { data, error };
+              },
+            });
+            if (dependency.status !== "READY") {
+              results.push({
+                op_id: op.client_op_id,
+                status: dependency.status,
+                retryable: dependency.status === "RETRYABLE",
+                reason_code: dependency.reason_code,
+                reason_message: dependency.reason_message,
+              });
+              continue;
+            }
+
+            const episodeId = typeof reproductionPayload.episode_evento_id === "string"
+              ? reproductionPayload.episode_evento_id
+              : "";
+            const { data: episode, error: episodeError } = episodeId
+              ? await supabase
+                .from("eventos")
+                .select("id, fazenda_id, animal_id, occurred_at, eventos_reproducao(tipo)")
+                .eq("id", episodeId)
+                .eq("fazenda_id", fazenda_id)
+                .eq("animal_id", dependency.event.animal_id)
+                .maybeSingle()
+              : { data: null, error: null };
+            if (episodeError) {
+              results.push({
+                op_id: op.client_op_id,
+                status: "REJECTED",
+                reason_code: "INVALID_EPISODE_REFERENCE",
+                reason_message: episodeError.message,
+              });
+              continue;
+            }
+            const diagnosisIssue = validatePregnancyDiagnosis({
+              detail: record,
+              event: dependency.event,
+              episode,
+              episodeType: readLinkedReproductionType(
+                episode?.eventos_reproducao,
+              ),
+              fazendaId: fazenda_id,
+            });
+            if (diagnosisIssue) {
+              results.push({
+                op_id: op.client_op_id,
+                status: "REJECTED",
+                reason_code: diagnosisIssue,
+                reason_message: "Pregnancy diagnosis failed factual validation",
+              });
+              continue;
+            }
+          }
+
           // 3. Deterministic Episode Linking (Diagnostico/Parto)
-          if (record.tipo === "diagnostico" || record.tipo === "parto") {
+          if (record.tipo === "parto") {
             // A) If link provided, validate it
             if (episodeEventId) {
               // Check if the referenced event exists, is same farm/animal, is service, and occurs before
@@ -1025,6 +1100,73 @@ Deno.serve(async (req: Request) => {
                 }
               }
             }
+          }
+        }
+
+        const diagnosisDetail = op.table === "eventos" &&
+            op.action === "INSERT" &&
+            typeof record.id === "string"
+          ? findDiagnosisDetailForEvent(record.id, legacyOps)
+          : null;
+        const diagnosisReplayTable = diagnosisDetail
+          ? "eventos"
+          : isDiagnosisDetailOperation({ ...op, record })
+          ? "eventos_reproducao"
+          : null;
+        if (diagnosisDetail && record.corrige_evento_id != null) {
+          results.push({
+            op_id: op.client_op_id,
+            status: "REJECTED",
+            reason_code: "REPRODUCTION_CORRECTION_SYNC_OUT_OF_SCOPE",
+            reason_message:
+              "Reproductive correction sync is outside the diagnosis round-trip contract",
+          });
+          continue;
+        }
+        if (diagnosisReplayTable) {
+          const keyField = diagnosisReplayTable === "eventos" ? "id" : "evento_id";
+          const keyValue = record[keyField];
+          const { data: existing, error: existingError } = await supabase
+            .from(diagnosisReplayTable)
+            .select("*")
+            .eq(keyField, keyValue)
+            .eq("fazenda_id", fazenda_id)
+            .maybeSingle();
+          if (existingError) {
+            results.push({
+              op_id: op.client_op_id,
+              status: "REJECTED",
+              reason_code: "REPRODUCTION_REPLAY_LOOKUP_FAILED",
+              reason_message: existingError.message,
+            });
+            continue;
+          }
+          if (existing) {
+            const incoming = {
+              ...record,
+              fazenda_id,
+              client_id,
+              client_op_id: op.client_op_id,
+              client_tx_id,
+            };
+            if (
+              sameReproductionDiagnosisRecord(
+                diagnosisReplayTable,
+                existing,
+                incoming,
+              )
+            ) {
+              results.push({ op_id: op.client_op_id, status: "APPLIED" });
+            } else {
+              results.push({
+                op_id: op.client_op_id,
+                status: "CONFLICT",
+                reason_code: "REPRODUCTION_IDENTITY_CONFLICT",
+                reason_message:
+                  "Reproduction identity already exists with divergent content",
+              });
+            }
+            continue;
           }
         }
 
