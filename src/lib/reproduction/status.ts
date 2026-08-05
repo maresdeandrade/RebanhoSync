@@ -21,6 +21,9 @@ export type ReproductiveProjectionInconsistency =
   | "PARTO_EPISODE_AFTER_BIRTH"
   | "ABORTO_WITHOUT_EPISODE"
   | "ABORTO_EPISODE_AFTER_LOSS"
+  | "CORRECTION_CHAIN_BRANCH"
+  | "CORRECTION_CHAIN_CYCLE"
+  | "CORRECTION_CHAIN_INVALID"
   | "DPP_INVALID";
 
 export interface ReproductiveProjectionEvent {
@@ -28,12 +31,111 @@ export interface ReproductiveProjectionEvent {
   fazenda_id: string;
   animal_id: string | null;
   occurred_at: string;
+  corrige_evento_id?: string | null;
+  payload?: Record<string, unknown>;
   deleted_at: string | null;
   details?: {
     tipo: ReproTipoEnum;
     payload: unknown;
     deleted_at?: string | null;
   };
+}
+
+const CORRECTABLE_TYPES = new Set<ReproTipoEnum>([
+  "diagnostico",
+  "parto",
+  "aborto",
+]);
+
+function isReproductiveCorrection(event: ReproductiveProjectionEvent) {
+  const value = event.payload?.reproduction_correction;
+  return Boolean(
+    value &&
+      typeof value === "object" &&
+      !Array.isArray(value) &&
+      (value as Record<string, unknown>).nature === "correction",
+  );
+}
+
+function resolveEffectiveHistory(events: ReproductiveProjectionEvent[]) {
+  const active = events.filter(
+    (event) => !event.deleted_at && event.details && !event.details.deleted_at,
+  );
+  const byId = new Map(active.map((event) => [event.id, event]));
+  const children = new Map<string, ReproductiveProjectionEvent[]>();
+  let inconsistency: ReproductiveProjectionInconsistency | null = null;
+
+  for (const event of active) {
+    const correctedId = event.corrige_evento_id;
+    if (!correctedId) continue;
+    const corrected = byId.get(correctedId);
+    if (
+      !corrected ||
+      !isReproductiveCorrection(event) ||
+      corrected.fazenda_id !== event.fazenda_id ||
+      corrected.animal_id !== event.animal_id ||
+      !CORRECTABLE_TYPES.has(corrected.details!.tipo) ||
+      corrected.details!.tipo !== event.details!.tipo
+    ) {
+      inconsistency = "CORRECTION_CHAIN_INVALID";
+      continue;
+    }
+    const directChildren = children.get(correctedId) ?? [];
+    directChildren.push(event);
+    children.set(correctedId, directChildren);
+  }
+
+  for (const event of active) {
+    const visited = new Set<string>();
+    let current: ReproductiveProjectionEvent | undefined = event;
+    while (current?.corrige_evento_id) {
+      if (visited.has(current.id)) {
+        inconsistency = "CORRECTION_CHAIN_CYCLE";
+        break;
+      }
+      visited.add(current.id);
+      current = byId.get(current.corrige_evento_id);
+    }
+  }
+
+  const roots = active.filter((event) => !event.corrige_evento_id);
+  const effective: ReproductiveProjectionEvent[] = [];
+  for (const root of roots) {
+    let current = root;
+    const visited = new Set([root.id]);
+    while (true) {
+      const directChildren = children.get(current.id) ?? [];
+      if (directChildren.length > 1) {
+        inconsistency = "CORRECTION_CHAIN_BRANCH";
+        break;
+      }
+      const child = directChildren[0];
+      if (!child) break;
+      if (visited.has(child.id)) {
+        inconsistency = "CORRECTION_CHAIN_CYCLE";
+        break;
+      }
+      visited.add(child.id);
+      current = child;
+    }
+    effective.push(current);
+  }
+
+  const reachable = new Set<string>();
+  for (const root of roots) {
+    const pending = [root];
+    while (pending.length) {
+      const current = pending.pop()!;
+      if (reachable.has(current.id)) continue;
+      reachable.add(current.id);
+      pending.push(...(children.get(current.id) ?? []));
+    }
+  }
+  if (active.some((event) => !reachable.has(event.id))) {
+    inconsistency ??= "CORRECTION_CHAIN_INVALID";
+  }
+
+  return { events: effective, inconsistency };
 }
 
 export interface ReproductiveProjection {
@@ -136,8 +238,8 @@ function defineFromEvent(
 export function rebuildReproductiveProjection(
   events: ReproductiveProjectionEvent[],
 ): ReproductiveProjection {
-  const history = events
-    .filter((event) => !event.deleted_at && event.details && !event.details.deleted_at)
+  const effectiveHistory = resolveEffectiveHistory(events);
+  const history = effectiveHistory.events
     .sort((left, right) => {
       const dateOrder = left.occurred_at.localeCompare(right.occurred_at);
       return dateOrder !== 0 ? dateOrder : left.id.localeCompare(right.id);
@@ -314,6 +416,9 @@ export function rebuildReproductiveProjection(
     }
   }
 
+  if (effectiveHistory.inconsistency) {
+    projection.inconsistency = effectiveHistory.inconsistency;
+  }
   return projection;
 }
 

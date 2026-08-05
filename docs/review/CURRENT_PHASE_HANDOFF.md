@@ -1,9 +1,23 @@
-# Handoff atual — Fase 13.3 / aborto e perda gestacional
+# Handoff atual — Fase 13.4 / correção append-only reprodutiva
 
 Atualizado em: 2026-08-05
-Baseline de entrada: `main@ab47e47`
-Status: **aborto/perda factual integrado à projeção local reconstruível**
-Próximo incremento: **correção append-only reprodutiva**
+Baseline de entrada: `main@4360777`
+Status: **correção append-only integrada à projeção local reconstruível**
+Próximo incremento: **round-trip remoto reprodutivo**
+
+## Entrega da Fase 13.4
+
+- correções de diagnóstico, parto e aborto são novos Eventos factuais com novo detalhe e `corrige_evento_id`; nenhum fato original é atualizado ou apagado;
+- a projeção pura colapsa cadeia linear para o último fato vigente e sinaliza ramificação, ciclo e elo inválido explicitamente;
+- diagnóstico corrige data efetiva, resultado, episódio, DPP explícita e observação; aborto corrige data, episódio e observação;
+- parto corrige somente observação, pois o contrato atual não possui compensação segura para data, episódio, quantidade ou identidade das crias;
+- correção de parto não cria cria ou Agenda neonatal e preserva `mae_id`, `birth_event_id` e identidades existentes;
+- `taxonomy_facts` permanece cache reconstruído do histórico, sem participar da criação ou resolução da correção;
+- retry da mesma identidade retorna a transação persistida; conteúdo divergente e ramificação retornam conflito;
+- Evento, detalhe, cache e fila compartilhada permanecem atômicos no gesto Dexie, com rollback integral;
+- nenhuma migration, RPC, RLS, Edge Function, sincronização remota ou alteração sanitária foi realizada.
+
+Validações executadas: 8 testes novos em `correction.test.ts`, ESLint dos três arquivos TypeScript alterados, `git diff --check` e build de fechamento. Próximo incremento: round-trip remoto reprodutivo.
 
 ## Entrega da Fase 13.3
 

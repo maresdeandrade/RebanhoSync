@@ -7,7 +7,12 @@ import {
 import { db } from "@/lib/offline/db";
 import { createGesture } from "@/lib/offline/ops";
 import type { EventGestureBuildResult } from "@/lib/events/types";
-import type { OperationInput, ReproTipoEnum } from "@/lib/offline/types";
+import type {
+  Evento,
+  EventoReproducao,
+  OperationInput,
+  ReproTipoEnum,
+} from "@/lib/offline/types";
 import { buildAnimalTaxonomyFactsPayload } from "@/lib/animals/taxonomy";
 import { buildUmbigoCareAgendaOps } from "@/lib/reproduction/calfJourney";
 import { getBirthEventId } from "@/lib/reproduction/neonatal";
@@ -22,7 +27,7 @@ export interface ReproductionDraftInput {
   machoId?: string | null;
   observacoes?: string;
   resultadoDiagnostico?: string;
-  dataPrevistaParto?: string;
+  dataPrevistaParto?: string | null;
   dataParto?: string;
   numeroCrias?: number;
   crias?: ReproductionCalfDraft[];
@@ -38,6 +43,7 @@ export interface BuildReproductionGestureInput {
   fazendaId: string;
   animalId: string;
   eventId?: string;
+  corrigeEventoId?: string | null;
   sourceTaskId?: string | null;
   occurredAt?: string;
   data: ReproductionDraftInput;
@@ -80,6 +86,235 @@ function addGestationDays(value: string | null | undefined, days: number) {
 
 function throwReproIssues(issues: EventValidationIssue[]): never {
   throw new EventValidationError(issues);
+}
+
+function throwReproIssue(code: string, field: string, message: string): never {
+  return throwReproIssues([{ code, field, message }]);
+}
+
+const CORRECTABLE_REPRO_TYPES = new Set<ReproTipoEnum>([
+  "diagnostico",
+  "parto",
+  "aborto",
+]);
+
+function hasOwn(value: object, key: string) {
+  return Object.prototype.hasOwnProperty.call(value, key);
+}
+
+function isReproductiveCorrectionEvent(event: Evento) {
+  const value = event.payload.reproduction_correction;
+  return Boolean(
+    value &&
+      typeof value === "object" &&
+      !Array.isArray(value) &&
+      (value as Record<string, unknown>).nature === "correction",
+  );
+}
+
+async function validateCorrectionAncestry(
+  corrected: Evento,
+  correctedDetail: EventoReproducao,
+) {
+  const visited = new Set<string>();
+  let event = corrected;
+  let detail = correctedDetail;
+  while (event.corrige_evento_id) {
+    if (visited.has(event.id) || !isReproductiveCorrectionEvent(event)) {
+      throwReproIssue(
+        "REPRO_CORRECTION_CHAIN_INVALID",
+        "corrigeEventoId",
+        "A cadeia factual corrigida possui ciclo ou elo invalido.",
+      );
+    }
+    visited.add(event.id);
+    const [parent, parentDetail] = await Promise.all([
+      db.event_eventos.get(event.corrige_evento_id),
+      db.event_eventos_reproducao.get(event.corrige_evento_id),
+    ]);
+    if (
+      !parent ||
+      !parentDetail ||
+      parent.deleted_at ||
+      parentDetail.deleted_at ||
+      parent.fazenda_id !== event.fazenda_id ||
+      parentDetail.fazenda_id !== detail.fazenda_id ||
+      parent.animal_id !== event.animal_id ||
+      parentDetail.tipo !== detail.tipo
+    ) {
+      throwReproIssue(
+        "REPRO_CORRECTION_CHAIN_INVALID",
+        "corrigeEventoId",
+        "A cadeia factual corrigida possui ciclo ou elo invalido.",
+      );
+    }
+    event = parent;
+    detail = parentDetail;
+  }
+}
+
+function readDraftFromFact(event: Evento, detail: EventoReproducao) {
+  const payload = detail.payload as Record<string, unknown>;
+  return {
+    tipo: detail.tipo,
+    machoId: detail.macho_id,
+    observacoes: event.observacoes ?? undefined,
+    resultadoDiagnostico:
+      typeof payload.resultado === "string" ? payload.resultado : undefined,
+    dataPrevistaParto:
+      typeof payload.data_prevista_parto === "string"
+        ? payload.data_prevista_parto
+        : undefined,
+    dataParto:
+      typeof payload.data_parto_real === "string"
+        ? payload.data_parto_real
+        : undefined,
+    numeroCrias:
+      typeof payload.numero_crias === "number" ? payload.numero_crias : undefined,
+    tecnicaLivre:
+      typeof payload.tecnica_livre === "string" ? payload.tecnica_livre : undefined,
+    reprodutorTag:
+      typeof payload.reprodutor_tag === "string" ? payload.reprodutor_tag : undefined,
+    loteSemen:
+      typeof payload.lote_semen === "string" ? payload.lote_semen : undefined,
+    doseSemenRef:
+      typeof payload.dose_semen_ref === "string" ? payload.dose_semen_ref : undefined,
+    episodeEventoId:
+      typeof payload.episode_evento_id === "string"
+        ? payload.episode_evento_id
+        : null,
+    episodeLinkMethod:
+      payload.episode_link_method === "manual" ||
+      payload.episode_link_method === "auto_last_open_service" ||
+      payload.episode_link_method === "unlinked"
+        ? payload.episode_link_method
+        : undefined,
+  } satisfies ReproductionDraftInput;
+}
+
+async function resolveCorrectionInput(
+  input: BuildReproductionGestureInput,
+): Promise<BuildReproductionGestureInput> {
+  if (!input.corrigeEventoId) return input;
+  if (!input.eventId) {
+    throwReproIssue(
+      "REPRO_CORRECTION_ID_REQUIRED",
+      "eventId",
+      "A correcao exige identidade estavel propria.",
+    );
+  }
+  if (input.eventId === input.corrigeEventoId) {
+    throwReproIssue(
+      "REPRO_CORRECTION_CYCLE",
+      "corrigeEventoId",
+      "A correcao nao pode apontar para si mesma.",
+    );
+  }
+
+  const [corrected, correctedDetail, directChildren] = await Promise.all([
+    db.event_eventos.get(input.corrigeEventoId),
+    db.event_eventos_reproducao.get(input.corrigeEventoId),
+    db.event_eventos
+      .filter(
+        (event) =>
+          event.corrige_evento_id === input.corrigeEventoId &&
+          event.id !== input.eventId &&
+          !event.deleted_at,
+      )
+      .toArray(),
+  ]);
+  if (!corrected || !correctedDetail || corrected.deleted_at || correctedDetail.deleted_at) {
+    throwReproIssue(
+      "REPRO_CORRECTION_SOURCE_NOT_FOUND",
+      "corrigeEventoId",
+      "O fato reprodutivo corrigido nao existe.",
+    );
+  }
+  if (
+    corrected.fazenda_id !== input.fazendaId ||
+    correctedDetail.fazenda_id !== input.fazendaId
+  ) {
+    throwReproIssue(
+      "REPRO_CORRECTION_FARM_MISMATCH",
+      "corrigeEventoId",
+      "O fato corrigido pertence a outra fazenda.",
+    );
+  }
+  if (corrected.animal_id !== input.animalId) {
+    throwReproIssue(
+      "REPRO_CORRECTION_ANIMAL_MISMATCH",
+      "corrigeEventoId",
+      "O fato corrigido pertence a outra matriz.",
+    );
+  }
+  if (
+    corrected.dominio !== "reproducao" ||
+    !CORRECTABLE_REPRO_TYPES.has(correctedDetail.tipo) ||
+    correctedDetail.tipo !== input.data.tipo
+  ) {
+    throwReproIssue(
+      "REPRO_CORRECTION_TYPE_UNSUPPORTED",
+      "corrigeEventoId",
+      "A correcao exige diagnostico, parto ou aborto do mesmo tipo.",
+    );
+  }
+  if (directChildren.length > 0) {
+    throwReproIssue(
+      "REPRO_CORRECTION_CHAIN_BRANCH_CONFLICT",
+      "corrigeEventoId",
+      "O ponto factual ja possui uma correcao vigente.",
+    );
+  }
+  await validateCorrectionAncestry(corrected, correctedDetail);
+  const sourceData = readDraftFromFact(corrected, correctedDetail);
+  if (correctedDetail.tipo === "parto") {
+    const immutableFields: Array<keyof ReproductionDraftInput> = [
+      "dataParto",
+      "numeroCrias",
+      "episodeEventoId",
+      "machoId",
+    ];
+    const changedField = immutableFields.find(
+      (field) =>
+        hasOwn(input.data, field) &&
+        canonicalize(input.data[field]) !== canonicalize(sourceData[field]),
+    );
+    if (
+      changedField ||
+      (input.occurredAt && input.occurredAt !== corrected.occurred_at)
+    ) {
+      throwReproIssue(
+        "REPRO_CORRECTION_BIRTH_FIELDS_UNSUPPORTED",
+        changedField ?? "occurredAt",
+        "Parto permite corrigir apenas observacao sem reescrever crias.",
+      );
+    }
+    return {
+      ...input,
+      occurredAt: corrected.occurred_at,
+      data: {
+        ...sourceData,
+        observacoes: hasOwn(input.data, "observacoes")
+          ? input.data.observacoes
+          : sourceData.observacoes,
+      },
+    };
+  }
+
+  return {
+    ...input,
+    occurredAt: input.occurredAt ?? corrected.occurred_at,
+    data: {
+      ...sourceData,
+      ...input.data,
+      dataPrevistaParto: hasOwn(input.data, "dataPrevistaParto")
+        ? input.data.dataPrevistaParto
+        : sourceData.dataPrevistaParto,
+      episodeEventoId: hasOwn(input.data, "episodeEventoId")
+        ? input.data.episodeEventoId
+        : sourceData.episodeEventoId,
+    },
+  };
 }
 
 function deterministicUuidFromText(value: string) {
@@ -624,6 +859,8 @@ async function rebuildProjectionWithPendingEvent(
     fazenda_id: input.fazendaId,
     animal_id: input.animalId,
     occurred_at: eventOp.record.occurred_at,
+    corrige_evento_id: eventOp.record.corrige_evento_id ?? null,
+    payload: eventOp.record.payload ?? {},
     deleted_at: null,
     details: {
       tipo: detailOp.record.tipo,
@@ -716,6 +953,7 @@ export function buildReproductionGesture({
   fazendaId,
   animalId,
   eventId,
+  corrigeEventoId = null,
   sourceTaskId = null,
   occurredAt = new Date().toISOString(),
   animalIdentificacao,
@@ -741,6 +979,16 @@ export function buildReproductionGesture({
     animalId,
     occurredAt,
     sourceTaskId,
+    corrigeEventoId,
+    payload: corrigeEventoId
+      ? {
+          reproduction_correction: {
+            schema_version: 1,
+            nature: "correction",
+            corrected_event_id: corrigeEventoId,
+          },
+        }
+      : {},
     tipo: data.tipo,
     machoId: data.tipo === "aborto" ? null : data.machoId ?? paiId ?? null,
     observacoes: data.observacoes ?? "",
@@ -765,18 +1013,16 @@ export function buildReproductionGesture({
     },
   });
 
-  const { calfIds, ops: calfOps } = buildGeneratedCalves(
-    built.eventId,
-    occurredAt,
-    {
-      animalId,
-      animalIdentificacao,
-      loteId,
-      paiId,
-      maeRaca,
-      data,
-    },
-  );
+  const { calfIds, ops: calfOps } = corrigeEventoId
+    ? { calfIds: [], ops: [] }
+    : buildGeneratedCalves(built.eventId, occurredAt, {
+        animalId,
+        animalIdentificacao,
+        loteId,
+        paiId,
+        maeRaca,
+        data,
+      });
 
   built.ops.push(...calfOps);
   return {
@@ -788,6 +1034,7 @@ export function buildReproductionGesture({
 export async function prepareReproductionGesture(
   input: BuildReproductionGestureInput,
 ) {
+  input = await resolveCorrectionInput(input);
   const occurredAt = input.occurredAt ?? new Date().toISOString();
   const diagnostic = await validateDiagnosticEpisodeAndResolveDpp(
     input,
@@ -903,6 +1150,7 @@ async function resolveExistingOperation(
       event.animal_id === eventOp.record.animal_id &&
       event.occurred_at === eventOp.record.occurred_at &&
       event.source_task_id === eventOp.record.source_task_id &&
+      event.corrige_evento_id === eventOp.record.corrige_evento_id &&
       event.observacoes === eventOp.record.observacoes &&
       sameCanonicalValue(event.payload, eventOp.record.payload),
   );

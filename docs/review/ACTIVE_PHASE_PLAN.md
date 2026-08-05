@@ -1,10 +1,24 @@
 # Plano ativo — Fase 13 / Reprodução Operacional v1
 
 Atualizado em: 2026-08-05
-Status: **incremento 13.3 — aborto/perda gestacional factual implementado**
-Próxima pendência: **correção append-only reprodutiva, em incremento separado**
+Status: **incremento 13.4 — correção append-only reprodutiva implementada**
+Próxima pendência: **round-trip remoto reprodutivo, em incremento separado**
 
 Este documento contém o plano corrente. Estado técnico detalhado, validações e risco de plataforma ficam em [CURRENT_PHASE_HANDOFF.md](./CURRENT_PHASE_HANDOFF.md). A decisão arquitetural permanente está em [ADR-0007](../technical/adrs/ADR-0007-sync-remoto-sanitario-v2-integrado.md).
+
+## Incremento 13.4
+
+Baseline de entrada: `main@4360777`, worktree limpa.
+
+- correção de diagnóstico, parto ou aborto cria novo Evento e detalhe vinculados por `corrige_evento_id`; o original permanece imutável;
+- cadeia linear usa o último significado factual válido e ramificação, ciclo ou elo inválido permanecem inconsistência explícita, sem last-write-wins;
+- diagnóstico permite corrigir data, resultado, episódio, DPP explícita e observação; aborto permite data, episódio e observação;
+- parto permite somente corrigir observação: data, episódio, quantidade e identidade das crias permanecem protegidos por ausência de compensação segura;
+- `taxonomy_facts` continua cache derivado exclusivamente da reconstrução histórica;
+- Evento, detalhe, cache e fila compartilhada permanecem no mesmo gesto Dexie, com replay idempotente e rollback integral;
+- não houve migration, alteração remota, criação de fila paralela ou mudança no Sanitário v2.
+
+Validação: 8 testes novos focados, ESLint dos arquivos TypeScript alterados, `git diff --check` e build de fechamento. Próximo incremento: round-trip remoto reprodutivo.
 
 ## Incremento 13.3
 
