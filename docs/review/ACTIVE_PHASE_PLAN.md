@@ -2,7 +2,7 @@
 
 Atualizado em: 2026-08-04
 Status: **Fase 12 ativa; Sync Sanitário v2 em andamento**
-Próxima pendência: **certificação remota acumulada quando o ambiente e os gates forem liberados**
+Próxima pendência: **conflito remoto 40001 e decisão de rollout; Fase 12 permanece aberta**
 
 Este documento contém o plano corrente. Estado técnico detalhado, validações e risco de plataforma ficam em [CURRENT_PHASE_HANDOFF.md](./CURRENT_PHASE_HANDOFF.md). A decisão arquitetural permanente está em [ADR-0007](../technical/adrs/ADR-0007-sync-remoto-sanitario-v2-integrado.md).
 
@@ -146,6 +146,10 @@ Resultado:
 - lint, suíte completa, build, baseline funcional Supabase, validador agregado e Deno fmt/check passaram;
 - nenhuma migration, RPC, RLS, schema Dexie, UI, feature flag ou fonte de verdade foi alterada;
 - E2Es remotos não foram executados, gates permanecem desligados, rollout não está autorizado e a Fase 12 continua aberta.
+
+## Recertificação mínima de `BLOCKED_DEPENDENCY`
+
+O `sync-batch` v20 foi publicado somente no staging `zqloazqzhwauamcejmuz`. Um único batch sintético confirmou fato `REJECTED` seguido de movimento `BLOCKED_DEPENDENCY / SANITARIO_INVENTORY_FACTUAL_OPERATION_REQUIRED`, sem Evento, ledger ou movimento persistido e com saldo inalterado. O cleanup terminou sem resíduos e com zero gates habilitados. O defeito funcional está encerrado; o conflito remoto `SQLSTATE 40001` permanece como bloqueio externo separado, sem autorizar rollout.
 
 ## Regras de domínio do incremento
 

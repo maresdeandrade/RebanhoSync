@@ -3,7 +3,7 @@
 Atualizado em: 2026-08-04
 Baseline funcional validado no hardening integrado local: `27453fa`
 Status: **Fase 12 ativa; rollout não autorizado**
-Próxima pendência: **certificação remota acumulada quando o ambiente e os gates forem liberados**
+Próxima pendência: **conflito remoto 40001 e decisão de rollout; Fase 12 permanece aberta**
 
 ## Resumo executivo
 
@@ -66,7 +66,7 @@ Nem o item 3 nem a Fase 12 estão concluídos.
 
 ### Transporte e processamento
 
-- `sync-batch` v19;
+- `sync-batch` v20;
 - typecheck Deno limpo;
 - worker com resultados canônicos `APPLIED`, `RETRYABLE`, `REJECTED`, `CONFLICT` e `BLOCKED_DEPENDENCY`;
 - retry/replay sem assumir `23505` genérico como sucesso;
@@ -149,6 +149,10 @@ IDs e rastros detalhados da execução remota devem permanecer em relatório té
 - testes do cutover e pull;
 - suíte local completa, lint e build nos respectivos incrementos;
 - limpeza remota com zero fixtures sintéticas residuais.
+
+## Recertificação mínima de `BLOCKED_DEPENDENCY`
+
+O staging `zqloazqzhwauamcejmuz` recebeu o `sync-batch` v20 com `verify_jwt=true`. No único batch sintético, o fato deliberadamente inválido retornou `REJECTED` e o movimento dependente retornou `BLOCKED_DEPENDENCY / SANITARIO_INVENTORY_FACTUAL_OPERATION_REQUIRED`. Não houve Evento, detalhe, relação, ledger ou movimento persistido; o saldo permaneceu `10.000`. O cleanup removeu usuário Auth, fazenda, membership, animal, insumo, lote e gate, com zero gates habilitados ao final. O defeito de dependência está encerrado; o conflito `SQLSTATE 40001` continua como bloqueio externo independente.
 
 No incremento 3.8 foram reexecutados: preflight e validação agregada, testes focados do domínio/sync, suíte completa com 2.241 testes em 310 arquivos, lint, build, `deno fmt --check`, `deno check --no-lock` e baseline funcional Supabase com 5/5 verificações. Não houve migration, alteração de RPC, deploy ou push.
 

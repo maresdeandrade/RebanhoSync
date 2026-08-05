@@ -30,6 +30,10 @@ import {
   validateSanitaryProductEvidenceShape,
 } from "./sanitary-product-evidence.ts";
 import { normalizeTableMutationRecord } from "../_shared/mutationRecord.ts";
+import {
+  isSanitarioInventoryMovementOperation,
+  resolveSanitarioInventoryFactualDependency,
+} from "./inventory-dependency.ts";
 
 const allowedOrigins = [
   "http://localhost:5173",
@@ -224,9 +228,13 @@ Deno.serve(async (req: Request) => {
 
     console.log(`[sync-batch] User has role: ${membership.role}`);
 
-    const serviceRoleKey = hasSanitarioSyncV2Operations
-      ? Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")
-      : null;
+    const hasSanitarioInventoryMovements = ops.some(
+      isSanitarioInventoryMovementOperation,
+    );
+    const serviceRoleKey =
+      hasSanitarioSyncV2Operations || hasSanitarioInventoryMovements
+        ? Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")
+        : null;
     const serviceSupabase = serviceRoleKey
       ? createClient(Deno.env.get("SUPABASE_URL") ?? "", serviceRoleKey, {
         auth: {
@@ -694,26 +702,6 @@ Deno.serve(async (req: Request) => {
           record.tipo === "consumo_sanitario"
         ) {
           const sourceEventId = String(record.source_evento_id);
-          const dependency = ops.find((candidate) =>
-            isSanitarioSyncV2Operation(candidate) &&
-            candidate.command === "apply_factual_core" &&
-            candidate.payload.event.id === sourceEventId
-          ) as SanitarioSyncV2Operation | undefined;
-          const dependencyResult = dependency
-            ? results.find((entry) => entry.op_id === dependency.client_op_id)
-            : undefined;
-          if (dependency && dependencyResult?.status !== "APPLIED") {
-            results.push({
-              op_id: op.client_op_id,
-              client_op_id: op.client_op_id,
-              domain_op_id: String(record.domain_op_id),
-              status: "BLOCKED_DEPENDENCY",
-              reason_code: "SANITARIO_INVENTORY_FACTUAL_OPERATION_REQUIRED",
-              reason_message:
-                "Inventory movement requires an applied factual execution in the same transaction",
-            });
-            continue;
-          }
           if (!serviceSupabase) {
             results.push({
               op_id: op.client_op_id,
@@ -727,32 +715,42 @@ Deno.serve(async (req: Request) => {
             continue;
           }
 
-          const { data: factualLedger, error: ledgerError } =
-            await serviceSupabase.from("sanitario_sync_v2_operations")
-              .select("id")
-              .eq("fazenda_id", fazenda_id)
-              .eq("operation_kind", "factual_core")
-              .eq("entity_id", sourceEventId)
-              .maybeSingle();
-          if (ledgerError) {
+          const dependencyDecision =
+            await resolveSanitarioInventoryFactualDependency({
+              operations: ops,
+              processedResults: results,
+              fazendaId: fazenda_id,
+              sourceEventId,
+              loadAppliedLedger: async (trustedFazendaId, trustedEventId) => {
+                const { data, error } = await serviceSupabase
+                  .from("sanitario_sync_v2_operations")
+                  .select("id")
+                  .eq("fazenda_id", trustedFazendaId)
+                  .eq("operation_kind", "factual_core")
+                  .eq("entity_id", trustedEventId)
+                  .maybeSingle();
+                return { data, error };
+              },
+            });
+          if (dependencyDecision.status === "RETRYABLE") {
             results.push({
               op_id: op.client_op_id,
               client_op_id: op.client_op_id,
               domain_op_id: String(record.domain_op_id),
               status: "RETRYABLE",
               retryable: true,
-              reason_code: "SANITARIO_INVENTORY_LEDGER_LOOKUP_FAILED",
-              reason_message: ledgerError.message,
+              reason_code: dependencyDecision.reason_code,
+              reason_message: dependencyDecision.reason_message,
             });
             continue;
           }
-          if (!factualLedger) {
+          if (dependencyDecision.status === "BLOCKED_DEPENDENCY") {
             results.push({
               op_id: op.client_op_id,
               client_op_id: op.client_op_id,
               domain_op_id: String(record.domain_op_id),
               status: "BLOCKED_DEPENDENCY",
-              reason_code: "SANITARIO_INVENTORY_FACTUAL_OPERATION_REQUIRED",
+              reason_code: dependencyDecision.reason_code,
               reason_message:
                 "Inventory movement requires a confirmed factual execution ledger",
             });
