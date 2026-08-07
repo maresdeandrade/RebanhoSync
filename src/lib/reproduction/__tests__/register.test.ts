@@ -787,6 +787,97 @@ describe("buildReproductionGesture", () => {
     expect(await db.queue_ops.count()).toBe(counts.queue);
   });
 
+  it("accepts equivalent timestamp representations on birth replay without duplicates", async () => {
+    await seedAnimal("matriz-timestamp-equivalent");
+    const input = {
+      fazendaId: "farm-1",
+      animalId: "matriz-timestamp-equivalent",
+      eventId: "birth-timestamp-equivalent",
+      occurredAt: "2026-08-07T10:00:00.000Z",
+      data: {
+        tipo: "parto" as const,
+        dataParto: "2026-08-07",
+        numeroCrias: 1,
+        crias: [{
+          localId: "calf-timestamp-equivalent",
+          identificacao: "C-TIMESTAMP",
+          sexo: "F" as const,
+        }],
+      },
+    };
+    const first = await registerReproductionGesture(input);
+    const counts = {
+      events: await db.event_eventos.count(),
+      details: await db.event_eventos_reproducao.count(),
+      animals: await db.state_animais.count(),
+      agendas: await db.ops_sanitario_agenda_v2.count(),
+      agendaAnimals: await db.ops_sanitario_agenda_animais_v2.count(),
+      queue: await db.queue_ops.count(),
+    };
+
+    await db.event_eventos.update(input.eventId, {
+      occurred_at: "2026-08-07 10:00:00+00",
+    });
+    const normalizedReplay = await registerReproductionGesture(input);
+    await db.event_eventos.update(input.eventId, {
+      occurred_at: "2026-08-07T07:00:00-03:00",
+    });
+    const offsetReplay = await registerReproductionGesture(input);
+
+    expect(normalizedReplay.txId).toBe(first.txId);
+    expect(offsetReplay.txId).toBe(first.txId);
+    expect(await db.event_eventos.count()).toBe(counts.events);
+    expect(await db.event_eventos_reproducao.count()).toBe(counts.details);
+    expect(await db.state_animais.count()).toBe(counts.animals);
+    expect(await db.ops_sanitario_agenda_v2.count()).toBe(counts.agendas);
+    expect(await db.ops_sanitario_agenda_animais_v2.count()).toBe(
+      counts.agendaAnimals,
+    );
+    expect(await db.queue_ops.count()).toBe(counts.queue);
+    expect(counts.agendas).toBe(6);
+    expect(counts.agendaAnimals).toBe(6);
+  });
+
+  it("rejects a genuinely different timestamp on replay", async () => {
+    await seedAnimal("matriz-timestamp-different");
+    const input = {
+      fazendaId: "farm-1",
+      animalId: "matriz-timestamp-different",
+      eventId: "birth-timestamp-different",
+      occurredAt: "2026-08-07T10:00:00.000Z",
+      data: { tipo: "parto" as const, dataParto: "2026-08-07", numeroCrias: 1 },
+    };
+    await registerReproductionGesture(input);
+    await db.event_eventos.update(input.eventId, {
+      occurred_at: "2026-08-07T10:00:01.000Z",
+    });
+
+    await expect(registerReproductionGesture(input)).rejects.toMatchObject({
+      issues: [
+        expect.objectContaining({ code: "REPRO_OPERATION_IDENTITY_CONFLICT" }),
+      ],
+    });
+  });
+
+  it("does not treat an invalid timestamp as equivalent on replay", async () => {
+    await seedAnimal("matriz-timestamp-invalid");
+    const input = {
+      fazendaId: "farm-1",
+      animalId: "matriz-timestamp-invalid",
+      eventId: "birth-timestamp-invalid",
+      occurredAt: "2026-08-07T10:00:00.000Z",
+      data: { tipo: "parto" as const, dataParto: "2026-08-07", numeroCrias: 1 },
+    };
+    await registerReproductionGesture(input);
+    await db.event_eventos.update(input.eventId, { occurred_at: "invalid" });
+
+    await expect(registerReproductionGesture(input)).rejects.toMatchObject({
+      issues: [
+        expect.objectContaining({ code: "REPRO_OPERATION_IDENTITY_CONFLICT" }),
+      ],
+    });
+  });
+
   it("rejects divergent calf content with the same birth identity", async () => {
     await seedAnimal("matriz-birth-conflict");
     const baseInput = {
