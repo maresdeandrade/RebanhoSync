@@ -96,6 +96,9 @@ describe("reproduction diagnosis sync worker", () => {
     await db.queue_gestures.clear();
     await db.event_eventos_reproducao.clear();
     await db.event_eventos.clear();
+    await db.state_animais.clear();
+    await db.ops_sanitario_agenda_animais_v2.clear();
+    await db.ops_sanitario_agenda_v2.clear();
   });
 
   afterEach(async () => {
@@ -104,6 +107,9 @@ describe("reproduction diagnosis sync worker", () => {
     await db.queue_gestures.clear();
     await db.event_eventos_reproducao.clear();
     await db.event_eventos.clear();
+    await db.state_animais.clear();
+    await db.ops_sanitario_agenda_animais_v2.clear();
+    await db.ops_sanitario_agenda_v2.clear();
   });
 
   it("pulls and reconciles diagnosis after event and detail are applied", async () => {
@@ -153,6 +159,113 @@ describe("reproduction diagnosis sync worker", () => {
       { ignorePendingClientTxId: txId },
     );
     expect(await db.queue_gestures.get(txId)).toMatchObject({ status: "DONE" });
+  });
+
+  it("consumes applied birth ops together with a canonical neonatal agenda command", async () => {
+    const agendaId = "10000000-0000-5000-8000-000000000001";
+    const calfId = "20000000-0000-5000-8000-000000000001";
+    const txId = await createGesture(
+      "farm-1",
+      [
+        {
+          table: "eventos",
+          action: "INSERT",
+          record: {
+            id: "birth-mixed-worker",
+            dominio: "reproducao",
+            occurred_at: "2026-03-01T10:00:00.000Z",
+            animal_id: "cow-1",
+            lote_id: null,
+            source_task_id: null,
+            corrige_evento_id: null,
+            observacoes: null,
+            payload: {},
+          },
+        },
+        {
+          table: "animais",
+          action: "INSERT",
+          record: {
+            id: calfId,
+            identificacao: "CALF-MIXED",
+            sexo: "F",
+            status: "ativo",
+            lote_id: null,
+            data_nascimento: "2026-03-01",
+            data_entrada: null,
+            data_saida: null,
+            pai_id: null,
+            mae_id: "cow-1",
+            nome: null,
+            rfid: null,
+            origem: "nascimento",
+            raca: null,
+            papel_macho: null,
+            habilitado_monta: false,
+            observacoes: null,
+            payload: { birth_event_id: "birth-mixed-worker" },
+          },
+        },
+      ],
+      {
+        sanitarioAgendaV2: [
+          {
+            agenda: {
+              id: agendaId,
+              status: "programada",
+              dedup_key: "calf_journey:mixed:cura_umbigo:d0:manha",
+              source_demand_key: "birth-mixed-worker:d0:manha",
+              preview_group_id: "birth-mixed-worker:cura_umbigo",
+              protocolo_id: null,
+              protocol_item_version_id: null,
+              protocol_item_snapshot: {},
+              janela_inicio: "2026-03-01",
+              janela_fim: "2026-03-01",
+              data_programada: "2026-03-01",
+              lote_id: null,
+              produto_veterinario_id: null,
+              produto_snapshot: {},
+              produto_classe: null,
+              acao_sanitaria: "cura_umbigo",
+              execution_evento_id: null,
+              metadata: { birth_event_id: "birth-mixed-worker" },
+              deleted_at: null,
+            },
+            animal_id: calfId,
+            animal_metadata: { birth_event_id: "birth-mixed-worker" },
+          },
+        ],
+        enqueueSanitarioAgendaV2: true,
+      },
+    );
+    const ops = await db.queue_ops
+      .where("client_tx_id")
+      .equals(txId)
+      .sortBy("op_order");
+    vi.mocked(fetch).mockResolvedValue(new Response(JSON.stringify({
+      results: ops.map((op) =>
+        op.table === "sanitario_v2"
+          ? {
+              op_id: op.client_op_id,
+              client_op_id: op.client_op_id,
+              domain_op_id: op.domain_op_id,
+              status: "APPLIED",
+              canonical_entity_id: agendaId,
+              canonical_result: {
+                command: "create_agenda",
+                agenda_id: agendaId,
+              },
+            }
+          : { op_id: op.client_op_id, status: "APPLIED" },
+      ),
+    }), { status: 200 }));
+    const gesture = await db.queue_gestures.get(txId);
+    if (!gesture) throw new Error("gesture not found");
+
+    await processGesture(gesture);
+
+    expect(await db.queue_gestures.get(txId)).toMatchObject({ status: "DONE" });
+    expect(await db.queue_ops.where("client_tx_id").equals(txId).count()).toBe(0);
   });
 
   it("rolls back local fact when the detail is blocked by its dependency", async () => {

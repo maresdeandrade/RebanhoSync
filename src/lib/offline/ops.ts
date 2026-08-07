@@ -1,7 +1,15 @@
 import { db } from "./db";
-import { Operation, Gesture, OperationInput } from "./types";
+import type {
+  Gesture,
+  Operation,
+  OperationInput,
+  SanitarioAgendaAnimalLocalV2,
+  SanitarioAgendaCreateDraftV2,
+  SanitarioAgendaLocalV2,
+} from "./types";
 import { getLocalStoreName } from "./tableMap";
 import { normalizeTableMutationRecord } from "./mutationRecord";
+import { buildCreateAgendaOperation } from "./sanitarioV2Cutover";
 import {
   assertValidAnimalTaxonomyFactsContract,
   readTaxonomyFactsRecord,
@@ -74,6 +82,10 @@ function assertAllowedOfflinePushSurface(op: OperationInput) {
 export const createGesture = async (
   fazenda_id: string,
   ops_input: OperationInput[],
+  options: {
+    sanitarioAgendaV2?: readonly SanitarioAgendaCreateDraftV2[];
+    enqueueSanitarioAgendaV2?: boolean;
+  } = {},
 ) => {
   for (const op of ops_input) {
     assertAllowedOfflinePushSurface(op);
@@ -117,19 +129,96 @@ export const createGesture = async (
     };
   });
 
-  for (const op of ops) {
+  const sanitarioAgendaV2 = (options.sanitarioAgendaV2 ?? []).map(
+    (draft, index) => {
+      const client_op_id = crypto.randomUUID();
+      const domain_op_id = crypto.randomUUID();
+      const agenda: SanitarioAgendaLocalV2 = {
+        ...draft.agenda,
+        fazenda_id,
+        client_id,
+        client_op_id,
+        client_tx_id,
+        client_recorded_at,
+        server_received_at: client_recorded_at,
+        created_at: client_recorded_at,
+        updated_at: client_recorded_at,
+        revision: 0,
+        contract_version: 2,
+        domain_op_id,
+      };
+      const animal: SanitarioAgendaAnimalLocalV2 = {
+        agenda_id: agenda.id,
+        fazenda_id,
+        animal_id: draft.animal_id,
+        planned_status: "planejado",
+        execution_evento_id: null,
+        not_executed_reason: null,
+        metadata: draft.animal_metadata,
+        created_at: client_recorded_at,
+        updated_at: client_recorded_at,
+      };
+      const envelope = options.enqueueSanitarioAgendaV2
+        ? buildCreateAgendaOperation(
+            {
+              clientTxId: client_tx_id,
+              clientOpId: client_op_id,
+              domainOpId: domain_op_id,
+            },
+            agenda,
+            [animal.animal_id],
+          )
+        : null;
+      const queueOp: Operation | null = envelope
+        ? {
+            client_op_id,
+            client_tx_id,
+            op_order: ops.length + index,
+            table: "sanitario_v2",
+            action: "INSERT",
+            record: envelope,
+            domain_op_id,
+            sync_state: "PENDING",
+            created_at: client_recorded_at,
+          }
+        : null;
+
+      return { agenda, animal, queueOp };
+    },
+  );
+  const queueOps = [
+    ...ops,
+    ...sanitarioAgendaV2.flatMap(({ queueOp }) => (queueOp ? [queueOp] : [])),
+  ];
+
+  for (const op of queueOps) {
     validateOperationPayloadContracts(op);
   }
 
   await db.transaction(
     "rw",
-    [db.queue_gestures, db.queue_ops, ...getAffectedStores(ops)],
+    [
+      db.queue_gestures,
+      db.queue_ops,
+      ...getAffectedStores(ops),
+      ...(sanitarioAgendaV2.length > 0
+        ? [db.ops_sanitario_agenda_v2, db.ops_sanitario_agenda_animais_v2]
+        : []),
+    ],
     async () => {
       await db.queue_gestures.add(gesture);
-      await db.queue_ops.bulkAdd(ops);
+      await db.queue_ops.bulkAdd(queueOps);
 
       for (const op of ops) {
         await applyOpLocal(op);
+      }
+      if (sanitarioAgendaV2.length > 0) {
+        await db.ops_sanitario_agenda_v2.bulkPut(
+          sanitarioAgendaV2.map(({ agenda }) => agenda),
+        );
+        await db.ops_sanitario_agenda_animais_v2.bulkPut(
+          sanitarioAgendaV2.map(({ animal }) => animal),
+        );
       }
     },
   );

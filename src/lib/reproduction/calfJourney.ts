@@ -1,5 +1,10 @@
 import { buildEventGesture } from "@/lib/events/buildEventGesture";
-import type { AgendaItem, Animal, OperationInput } from "@/lib/offline/types";
+import type {
+  AgendaItem,
+  Animal,
+  OperationInput,
+  SanitarioAgendaCreateDraftV2,
+} from "@/lib/offline/types";
 import {
   getAnimalPayloadRecord,
   getBirthEventId,
@@ -94,6 +99,11 @@ export type BuildUmbigoCareAgendaOpsInput = Omit<
   BuildCalfJourneyAgendaOpsInput,
   "fazendaId"
 >;
+
+export interface BuildUmbigoCareSanitarioAgendaV2Input
+  extends BuildUmbigoCareAgendaOpsInput {
+  createAgendaId: (dayOffset: number, slot: string) => string;
+}
 
 export type CalfJourneyExistingAgendaItem = Pick<
   AgendaItem,
@@ -281,6 +291,76 @@ export function buildUmbigoCareAgendaOps({
     ops,
     createdCount: ops.length,
   };
+}
+
+export function buildUmbigoCareSanitarioAgendaV2({
+  calf,
+  mother,
+  createAgendaId,
+}: BuildUmbigoCareSanitarioAgendaV2Input): SanitarioAgendaCreateDraftV2[] {
+  const birthDate = calf.data_nascimento ?? new Date().toISOString().slice(0, 10);
+  const birthEventId = getBirthEventId(calf.payload);
+
+  return UMBIGO_CARE_SCHEDULE.map((scheduled) => {
+    const dedupKey = getUmbigoCareDedupKey(
+      calf.id,
+      scheduled.dayOffset,
+      scheduled.slot,
+    );
+    const plannedFor = addDays(birthDate, scheduled.dayOffset);
+    const sourceMetadata = {
+      source: "evento_parto",
+      journey: "cria",
+      milestone_key: "cura_umbigo",
+      milestone_label: "Cura do umbigo",
+      mother_id: mother.id,
+      mother_identificacao: mother.identificacao,
+      birth_event_id: birthEventId,
+      schedule_kind: "twice_daily_until_dry",
+      schedule_slot: scheduled.slot,
+      schedule_slot_label: scheduled.slotLabel,
+      schedule_day_offset: scheduled.dayOffset,
+      sequence_order: scheduled.sequenceOrder,
+      min_days: UMBIGO_CARE_MIN_DAYS,
+      max_days: UMBIGO_CARE_MAX_DAYS,
+      stop_condition: "umbigo_completamente_seco",
+    };
+
+    return {
+      agenda: {
+        id: createAgendaId(scheduled.dayOffset, scheduled.slot),
+        status: "programada",
+        dedup_key: dedupKey,
+        source_demand_key: `evento_parto:${birthEventId}:cura_umbigo:d${scheduled.dayOffset}:${scheduled.slot}`,
+        preview_group_id: `${getCalfJourneyDedupKey(calf.id, "cura_umbigo")}:parto`,
+        protocolo_id: null,
+        protocol_item_version_id: null,
+        protocol_item_snapshot: sourceMetadata,
+        janela_inicio: plannedFor,
+        janela_fim: plannedFor,
+        data_programada: plannedFor,
+        lote_id: calf.lote_id ?? null,
+        produto_veterinario_id: null,
+        produto_snapshot: {
+          planningOnly: true,
+          realProductDefinedOnlyAtExecution: true,
+        },
+        produto_classe: null,
+        acao_sanitaria: "cura_umbigo",
+        execution_evento_id: null,
+        metadata: sourceMetadata,
+        deleted_at: null,
+      },
+      animal_id: calf.id,
+      animal_metadata: {
+        source: "evento_parto",
+        birth_event_id: birthEventId,
+        milestone_key: "cura_umbigo",
+        schedule_slot: scheduled.slot,
+        schedule_day_offset: scheduled.dayOffset,
+      },
+    };
+  });
 }
 
 export function buildCalfJourneyAgendaOps({

@@ -394,7 +394,18 @@ async function processSanitarioCanonicalResults(
   sentOps: Operation[],
   results: SyncOperationResult[],
 ) {
-  const canonicalResults = results.filter(isSanitarioCanonicalResult);
+  const sanitarioOpIds = new Set(
+    sentOps
+      .filter(
+        (op) => isRecord(op.record) && op.record.domain === "sanitario_v2",
+      )
+      .map((op) => op.client_op_id),
+  );
+  const canonicalResults = results.filter(
+    (result) =>
+      sanitarioOpIds.has(String(result.op_id ?? "")) &&
+      isSanitarioCanonicalResult(result),
+  );
   if (canonicalResults.length === 0) return false;
 
   const nowMs = Date.now();
@@ -498,6 +509,22 @@ async function processSanitarioCanonicalResults(
   }
 
   for (const op of sentOps) {
+    if (!sanitarioOpIds.has(op.client_op_id)) {
+      const result = results.find((entry) => entry.op_id === op.client_op_id);
+      if (result?.status === "APPLIED" || result?.status === "APPLIED_ALTERED") {
+        deleteIds.add(op.client_op_id);
+      } else {
+        operationUpdates.set(
+          op.client_op_id,
+          getSanitarioRetryUpdate(
+            op,
+            nowMs,
+            result?.reason_code ?? "SYNC_MIXED_RESULT_NOT_APPLIED",
+          ),
+        );
+      }
+      continue;
+    }
     if (matchedOpIds.has(op.client_op_id)) continue;
 
     operationUpdates.set(

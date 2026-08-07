@@ -2,6 +2,7 @@ import "fake-indexeddb/auto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { EventValidationError } from "@/lib/events/validators";
 import { db } from "@/lib/offline/db";
+import { createGesture } from "@/lib/offline/ops";
 import { getBirthEventId } from "@/lib/reproduction/neonatal";
 import {
   buildReproductionGesture,
@@ -107,6 +108,8 @@ describe("buildReproductionGesture", () => {
     await db.queue_ops.clear();
     await db.queue_gestures.clear();
     await db.state_agenda_itens.clear();
+    await db.ops_sanitario_agenda_animais_v2.clear();
+    await db.ops_sanitario_agenda_v2.clear();
   });
 
   afterEach(async () => {
@@ -117,6 +120,8 @@ describe("buildReproductionGesture", () => {
     await db.queue_ops.clear();
     await db.queue_gestures.clear();
     await db.state_agenda_itens.clear();
+    await db.ops_sanitario_agenda_animais_v2.clear();
+    await db.ops_sanitario_agenda_v2.clear();
   });
 
   it("requires male for cobertura and IA", () => {
@@ -509,21 +514,87 @@ describe("buildReproductionGesture", () => {
       },
     });
 
-    expect(result.ops).toHaveLength(9);
+    expect(result.ops).toHaveLength(3);
     expect(result.ops[2]?.table).toBe("animais");
     expect(result.ops[2]?.record.identificacao).toBe("BZ-001");
     expect(result.ops[2]?.record.mae_id).toBe("matriz-1");
     expect(result.ops[2]?.record.pai_id).toBe("touro-1");
     expect(result.ops[2]?.record.origem).toBe("nascimento");
     expect(result.ops[2]?.record.payload.birth_event_id).toBe(result.eventId);
-    const umbigoAgendaOps = result.ops.filter(
-      (op) => op.table === "agenda_itens" && op.record.tipo === "cura_umbigo",
-    );
-    expect(umbigoAgendaOps).toHaveLength(6);
-    expect(umbigoAgendaOps[0]?.record.payload).toMatchObject({
+    expect(
+      result.ops.some(
+        (op) => op.table === "agenda_itens" && op.record.dominio === "sanitario",
+      ),
+    ).toBe(false);
+    expect(result.sanitarioAgendaV2).toHaveLength(6);
+    expect(result.sanitarioAgendaV2[0]?.agenda.metadata).toMatchObject({
       schedule_kind: "twice_daily_until_dry",
       stop_condition: "umbigo_completamente_seco",
     });
+    expect(
+      result.sanitarioAgendaV2.map(({ agenda }) => agenda.data_programada),
+    ).toEqual([
+      "2026-03-30",
+      "2026-03-30",
+      "2026-03-31",
+      "2026-03-31",
+      "2026-04-01",
+      "2026-04-01",
+    ]);
+    expect(
+      result.sanitarioAgendaV2.map(({ agenda }) => [
+        agenda.metadata.schedule_day_offset,
+        agenda.metadata.schedule_slot,
+      ]),
+    ).toEqual([
+      [0, "manha"],
+      [0, "tarde"],
+      [1, "manha"],
+      [1, "tarde"],
+      [2, "manha"],
+      [2, "tarde"],
+    ]);
+  });
+
+  it("queues the six neonatal intents with the canonical sanitario_v2 create_agenda command", async () => {
+    const built = buildReproductionGesture({
+      fazendaId: "farm-1",
+      animalId: "matriz-command",
+      animalIdentificacao: "MAT-COMMAND",
+      eventId: "birth-command",
+      occurredAt: "2026-03-30T10:00:00.000Z",
+      data: {
+        tipo: "parto",
+        dataParto: "2026-03-30",
+        numeroCrias: 1,
+      },
+    });
+
+    const txId = await createGesture("farm-1", built.ops, {
+      sanitarioAgendaV2: built.sanitarioAgendaV2,
+      enqueueSanitarioAgendaV2: true,
+    });
+    const queue = await db.queue_ops
+      .where("client_tx_id")
+      .equals(txId)
+      .sortBy("op_order");
+    const agendaCommands = queue.filter((op) => op.table === "sanitario_v2");
+    const calfOp = queue.find((op) => op.table === "animais");
+
+    expect(agendaCommands).toHaveLength(6);
+    expect(
+      agendaCommands.every(
+        (op) =>
+          op.record.domain === "sanitario_v2" &&
+          op.record.command === "create_agenda" &&
+          op.record.payload.animal_ids.length === 1,
+      ),
+    ).toBe(true);
+    expect(
+      agendaCommands.every(
+        (op) => (op.op_order ?? -1) > (calfOp?.op_order ?? Number.MAX_SAFE_INTEGER),
+      ),
+    ).toBe(true);
   });
 
   it("resolves sire from linked service before generating calf ops", async () => {
@@ -625,6 +696,16 @@ describe("buildReproductionGesture", () => {
     expect(calves[1]?.identificacao).toBe("BZ-102");
     expect(calves[0]?.pai_id).toBeNull();
     expect(calves[0]?.payload.birth_event_id).toBe(result.eventId);
+    expect(await db.ops_sanitario_agenda_v2.count()).toBe(12);
+    expect(await db.ops_sanitario_agenda_animais_v2.count()).toBe(12);
+    expect(await db.state_agenda_itens.count()).toBe(0);
+    const agendaAnimals = await db.ops_sanitario_agenda_animais_v2.toArray();
+    expect(
+      agendaAnimals.filter((item) => item.animal_id === "cria-a"),
+    ).toHaveLength(6);
+    expect(
+      agendaAnimals.filter((item) => item.animal_id === "cria-b"),
+    ).toHaveLength(6);
   });
 
   it("ends the current pregnancy projection and preserves its factual history", async () => {
@@ -686,7 +767,8 @@ describe("buildReproductionGesture", () => {
       events: await db.event_eventos.count(),
       details: await db.event_eventos_reproducao.count(),
       animals: await db.state_animais.count(),
-      agenda: await db.state_agenda_itens.count(),
+      agenda: await db.ops_sanitario_agenda_v2.count(),
+      agendaAnimals: await db.ops_sanitario_agenda_animais_v2.count(),
       queue: await db.queue_ops.count(),
     };
     const second = await registerReproductionGesture(input);
@@ -697,7 +779,11 @@ describe("buildReproductionGesture", () => {
     expect(await db.event_eventos.count()).toBe(counts.events);
     expect(await db.event_eventos_reproducao.count()).toBe(counts.details);
     expect(await db.state_animais.count()).toBe(counts.animals);
-    expect(await db.state_agenda_itens.count()).toBe(counts.agenda);
+    expect(await db.ops_sanitario_agenda_v2.count()).toBe(counts.agenda);
+    expect(await db.ops_sanitario_agenda_animais_v2.count()).toBe(
+      counts.agendaAnimals,
+    );
+    expect(await db.state_agenda_itens.count()).toBe(0);
     expect(await db.queue_ops.count()).toBe(counts.queue);
   });
 
@@ -735,7 +821,7 @@ describe("buildReproductionGesture", () => {
     const failAgenda = () => {
       throw new Error("forced neonatal agenda failure");
     };
-    db.state_agenda_itens.hook("creating", failAgenda);
+    db.ops_sanitario_agenda_v2.hook("creating", failAgenda);
 
     try {
       await expect(
@@ -748,7 +834,7 @@ describe("buildReproductionGesture", () => {
         }),
       ).rejects.toThrow("forced neonatal agenda failure");
     } finally {
-      db.state_agenda_itens.hook("creating").unsubscribe(failAgenda);
+      db.ops_sanitario_agenda_v2.hook("creating").unsubscribe(failAgenda);
     }
 
     expect(await db.event_eventos.get("birth-rollback")).toBeUndefined();
@@ -759,6 +845,8 @@ describe("buildReproductionGesture", () => {
         .count(),
     ).toBe(0);
     expect(await db.state_agenda_itens.count()).toBe(0);
+    expect(await db.ops_sanitario_agenda_v2.count()).toBe(0);
+    expect(await db.ops_sanitario_agenda_animais_v2.count()).toBe(0);
     expect(await db.queue_ops.count()).toBe(0);
     expect(await db.queue_gestures.count()).toBe(0);
     expect(

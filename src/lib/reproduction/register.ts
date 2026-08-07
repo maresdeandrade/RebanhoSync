@@ -12,10 +12,13 @@ import type {
   EventoReproducao,
   OperationInput,
   ReproTipoEnum,
+  SanitarioAgendaCreateDraftV2,
 } from "@/lib/offline/types";
 import { buildAnimalTaxonomyFactsPayload } from "@/lib/animals/taxonomy";
-import { buildUmbigoCareAgendaOps } from "@/lib/reproduction/calfJourney";
+import { buildUmbigoCareSanitarioAgendaV2 } from "@/lib/reproduction/calfJourney";
 import { getBirthEventId } from "@/lib/reproduction/neonatal";
+import { env } from "@/lib/env";
+import { isSanitarioV2PushEnabled } from "@/lib/offline/sanitarioV2Cutover";
 import {
   rebuildReproductiveProjection,
   type ReproductiveProjection,
@@ -56,6 +59,7 @@ export interface BuildReproductionGestureInput {
 export interface ReproductionGestureBuildResult
   extends EventGestureBuildResult {
   calfIds: string[];
+  sanitarioAgendaV2: SanitarioAgendaCreateDraftV2[];
 }
 
 function normalizeDateKey(value: string | null | undefined) {
@@ -352,8 +356,14 @@ function buildGeneratedCalves(
     BuildReproductionGestureInput,
     "animalId" | "animalIdentificacao" | "loteId" | "paiId" | "maeRaca" | "data"
   >,
-): { calfIds: string[]; ops: OperationInput[] } {
-  if (data.tipo !== "parto") return { calfIds: [], ops: [] };
+): {
+  calfIds: string[];
+  ops: OperationInput[];
+  sanitarioAgendaV2: SanitarioAgendaCreateDraftV2[];
+} {
+  if (data.tipo !== "parto") {
+    return { calfIds: [], ops: [], sanitarioAgendaV2: [] };
+  }
 
   const requestedCount = Math.max(
     1,
@@ -365,7 +375,11 @@ function buildGeneratedCalves(
 
   const calfOps = Array.from(
     { length: requestedCount },
-    (_, index): { calfId: string; ops: OperationInput[] } => {
+    (_, index): {
+      calfId: string;
+      ops: OperationInput[];
+      sanitarioAgendaV2: SanitarioAgendaCreateDraftV2[];
+    } => {
       const cria = data.crias?.[index];
       const criaId =
         cria?.localId || deterministicUuidFromText(`${eventId}:calf:${index + 1}`);
@@ -397,7 +411,7 @@ function buildGeneratedCalves(
         created_at: occurredAt,
         updated_at: occurredAt,
       };
-      const umbigoAgenda = buildUmbigoCareAgendaOps({
+      const umbigoAgenda = buildUmbigoCareSanitarioAgendaV2({
         calf: {
           id: calfRecord.id,
           identificacao: calfRecord.identificacao,
@@ -409,6 +423,10 @@ function buildGeneratedCalves(
           id: animalId,
           identificacao: animalIdentificacao || animalId.slice(0, 8),
         },
+        createAgendaId: (dayOffset, slot) =>
+          deterministicUuidFromText(
+            `${eventId}:calf:${criaId}:cura_umbigo:d${dayOffset}:${slot}`,
+          ),
       });
 
       return {
@@ -419,8 +437,8 @@ function buildGeneratedCalves(
             action: "INSERT",
             record: calfRecord,
           },
-          ...umbigoAgenda.ops,
         ],
+        sanitarioAgendaV2: umbigoAgenda,
       };
     },
   );
@@ -428,6 +446,7 @@ function buildGeneratedCalves(
   return {
     calfIds: calfOps.map((calf) => calf.calfId),
     ops: calfOps.flatMap((calf) => calf.ops),
+    sanitarioAgendaV2: calfOps.flatMap((calf) => calf.sanitarioAgendaV2),
   };
 }
 
@@ -1013,8 +1032,8 @@ export function buildReproductionGesture({
     },
   });
 
-  const { calfIds, ops: calfOps } = corrigeEventoId
-    ? { calfIds: [], ops: [] }
+  const { calfIds, ops: calfOps, sanitarioAgendaV2 } = corrigeEventoId
+    ? { calfIds: [], ops: [], sanitarioAgendaV2: [] }
     : buildGeneratedCalves(built.eventId, occurredAt, {
         animalId,
         animalIdentificacao,
@@ -1028,6 +1047,7 @@ export function buildReproductionGesture({
   return {
     ...built,
     calfIds,
+    sanitarioAgendaV2,
   };
 }
 
@@ -1234,7 +1254,17 @@ export async function registerReproductionGesture(
       projection: built.projection,
     };
   }
-  const txId = await createGesture(input.fazendaId, built.ops);
+  let enqueueSanitarioAgendaV2 = false;
+  try {
+    const projectRef = new URL(env.supabaseUrl).hostname.split(".")[0] ?? "";
+    enqueueSanitarioAgendaV2 = isSanitarioV2PushEnabled(projectRef);
+  } catch {
+    enqueueSanitarioAgendaV2 = false;
+  }
+  const txId = await createGesture(input.fazendaId, built.ops, {
+    sanitarioAgendaV2: built.sanitarioAgendaV2,
+    enqueueSanitarioAgendaV2,
+  });
 
   return {
     txId,

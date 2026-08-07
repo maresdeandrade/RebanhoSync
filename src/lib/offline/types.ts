@@ -1295,6 +1295,25 @@ export interface SanitarioAgendaAnimalLocalV2 {
   updated_at: string;
 }
 
+export interface SanitarioAgendaCreateDraftV2 {
+  agenda: Omit<
+    SanitarioAgendaLocalV2,
+    | "fazenda_id"
+    | "client_id"
+    | "client_op_id"
+    | "client_tx_id"
+    | "client_recorded_at"
+    | "server_received_at"
+    | "created_at"
+    | "updated_at"
+    | "revision"
+    | "contract_version"
+    | "domain_op_id"
+  >;
+  animal_id: string;
+  animal_metadata: Record<string, unknown>;
+}
+
 export interface EventoAnimalLocalV2 {
   id: string;
   fazenda_id: string;

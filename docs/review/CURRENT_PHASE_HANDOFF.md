@@ -1,9 +1,23 @@
-# Handoff atual — expansão do sync reprodutivo
+# Handoff atual — Agenda neonatal na Agenda Sanitária v2
 
-Atualizado em: 2026-08-05
-Baseline de entrada: `main@3e4ee5e`
-Status: **parto, aborto e correções reprodutivas expandidos e validados localmente**
-Próximo incremento: **deploy autorizado e E2E remoto único da expansão**
+Atualizado em: 2026-08-07
+Baseline de entrada: `main@d64805e`
+Status: **integração neonatal v2 implementada e validada localmente**
+Próximo incremento: **recertificação remota mínima do parto com seis Agendas v2**
+
+## Entrega da Agenda neonatal v2
+
+- cura de umbigo permanece classificada como Sanitário, mas não cria mais `agenda_itens` no gesto de parto;
+- cada cria recebe seis intenções canônicas independentes: D0, D1 e D2, manhã e tarde;
+- a intenção fica em `ops_sanitario_agenda_v2` e seu único alvo em `ops_sanitario_agenda_animais_v2`, com vínculo ao Evento de parto preservado em metadata;
+- D0 usa a data programada e a janela canônica da Agenda v2; não existe `interval_days_applied = 0`;
+- IDs de Agenda e `dedup_key` são determinísticos; retry do mesmo parto retorna o gesto existente sem duplicar Evento, cria, Agenda, vínculo ou fila;
+- o mesmo limite transacional Dexie persiste fato, detalhe, cria, cache, Agendas v2, vínculos e fila; falha de Agenda reverte o gesto completo;
+- com o push sanitário local habilitado, os envelopes existentes `sanitario_v2/create_agenda` são ordenados depois da cria; com ele desligado, o planejamento local continua existindo;
+- o worker preserva resultados aplicados de parto/cria quando processa comandos sanitários canônicos no mesmo batch;
+- `sync-batch`, migrations, RPC, RLS, gates e rollout permaneceram inalterados; não houve deploy.
+
+Validações executadas: 40 testes focados em 3 arquivos, ESLint dos 7 arquivos TypeScript alterados, `git diff --check` e um build único. O build manteve apenas warnings preexistentes de Browserslist, chunks e import misto do Dexie. Próximo passo: uma única recertificação de parto, cria, seis Agendas v2, replay, pull e cleanup.
 
 ## Entrega da expansão reprodutiva
 

@@ -1,10 +1,24 @@
 # Plano ativo — Fase 13 / Reprodução Operacional v1
 
-Atualizado em: 2026-08-05
-Status: **expansão local do sync reprodutivo para parto, aborto e correções implementada**
-Próxima pendência: **deploy autorizado e E2E remoto único da expansão reprodutiva**
+Atualizado em: 2026-08-07
+Status: **Agenda neonatal do parto integrada localmente à Agenda Sanitária v2**
+Próxima pendência: **recertificação remota mínima de um parto, uma cria e seis Agendas v2**
 
 Este documento contém o plano corrente. Estado técnico detalhado, validações e risco de plataforma ficam em [CURRENT_PHASE_HANDOFF.md](./CURRENT_PHASE_HANDOFF.md). A decisão arquitetural permanente está em [ADR-0007](../technical/adrs/ADR-0007-sync-remoto-sanitario-v2-integrado.md).
+
+## Correção da Agenda neonatal
+
+Baseline de entrada: `main@d64805e`, worktree limpa.
+
+- o parto deixou de criar os seis cuidados de umbigo sanitários em `agenda_itens` legado;
+- D0, D1 e D2, manhã e tarde, são materializados localmente em `ops_sanitario_agenda_v2` e vinculados individualmente à cria em `ops_sanitario_agenda_animais_v2`;
+- cada intenção preserva data, turno, `dedup_key`, vínculo com o Evento de parto em metadata e classificação sanitária;
+- quando o push sanitário local está habilitado, o gesto reutiliza `sanitario_v2/create_agenda`, depois do Evento e da cria pelo `op_order` existente;
+- Agenda v2, vínculo animal, Evento, detalhe, cria, cache e fila são gravados na mesma transação Dexie; replay do parto não duplica as intenções;
+- o worker passou a consumir corretamente resultados mistos de fatos reprodutivos e comandos sanitários canônicos no mesmo batch;
+- nenhuma migration, RPC, RLS, Edge Function, gate ou rollout foi alterado; não houve deploy.
+
+Validação local: 40 testes focados em 3 arquivos, ESLint dos 7 arquivos TypeScript alterados, `git diff --check` e um build único. Próximo passo: após autorização, executar somente parto → cria → seis Agendas v2 → replay → pull → cleanup.
 
 ## Expansão do sync reprodutivo
 
