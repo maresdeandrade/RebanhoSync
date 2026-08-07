@@ -2,6 +2,7 @@
 
 Atualizado em: 2026-08-07
 Baseline de entrada do fechamento: `main@e7b69fc`
+Baseline autoritativo de saída da Fase 13: `main@e2aac87`
 Status: **Fase 13 fechada com patch funcional de leitura canônica**
 Próxima fase: **Fase 14 — Compra/Venda Operacional**
 
