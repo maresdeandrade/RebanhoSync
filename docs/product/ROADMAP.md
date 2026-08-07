@@ -1,8 +1,8 @@
 # Roadmap — RebanhoSync
 
-Atualizado em: 2026-08-05
-Fase atual: **Fase 13 — Reprodução Operacional v1**
-Fase anterior: **Fase 12 — desenvolvimento técnico concluído; rollout sanitário bloqueado**
+Atualizado em: 2026-08-07
+Fase atual: **Fase 14 — Compra/Venda Operacional**
+Fase anterior: **Fase 13 — Reprodução Operacional v1 encerrada com patch funcional**
 
 ## Objetivo
 
@@ -14,7 +14,7 @@ Definir a sequência macro de desenvolvimento. O plano detalhado da fase corrent
 - preservar offline-first, RLS, multi-tenant e `fazenda_id`;
 - manter Agenda, Evento, `state_*`, Protocolo e Conformidade semanticamente separados;
 - não automatizar decisão crítica sem fonte técnica explícita;
-- não iniciar a Fase 13 antes do fechamento formal da Fase 12.
+- não iniciar uma fase antes do fechamento formal da anterior.
 
 ## Fase 12 — resultado encerrado
 
@@ -25,7 +25,7 @@ Definir a sequência macro de desenvolvimento. O plano detalhado da fase corrent
 5. Correção append-only sanitária — **concluída**.
 6. Carência operacional derivada — **concluída**.
 7. Fechamento formal da Fase 12 — **concluído**.
-8. Fase 13 — Reprodução Operacional v1.
+8. Fase 13 — Reprodução Operacional v1 — **concluída**.
 9. Fase 14 — Compra/Venda Operacional.
 10. Fase 15 — KPIs/Relatórios.
 11. Fase 16 — Financeiro Gerencial.
@@ -34,14 +34,18 @@ Definir a sequência macro de desenvolvimento. O plano detalhado da fase corrent
 
 O rollout do Sync Sanitário v2 permanece não autorizado por `SANITARIO_V2_E2E_PLATFORM_BLOCKED`. Isso não reabre o desenvolvimento técnico da Fase 12.
 
+## Fase 13 — resultado encerrado
+
+Cobertura/IA, diagnóstico, PRENHA/VAZIA e DPP reconstruíveis, parto, aborto/perda, vínculo mãe–cria, correções append-only e Agenda neonatal v2 estão operacionais. O patch final eliminou a precedência residual de `taxonomy_facts` sobre a projeção reprodutiva canônica nas telas.
+
 ## Próxima fase de desenvolvimento
 
 ```txt
-Fase 13 — Reprodução Operacional v1
-→ Fase 14 — Compra/Venda Operacional
+Fase 14 — Compra/Venda Operacional
+→ Fase 15 — KPIs/Relatórios
 ```
 
-A Fase 13 inicia sem habilitar gate, feature flag ou rollout do Sync Sanitário v2.
+A Fase 14 inicia sem habilitar gate, feature flag ou rollout do Sync Sanitário v2.
 
 ## Risco de rollout
 
@@ -57,8 +61,8 @@ Fases 1 a 12 e a Fase 11.5 permanecem concluídas conforme seus relatórios e ev
 
 | Fase | Escopo | Condição de início |
 |---|---|---|
-| 13 | Reprodução Operacional v1 | Fase 12 formalmente encerrada |
-| 14 | Compra/Venda Operacional | Fontes sanitárias operacionais estabilizadas |
+| 13 | Reprodução Operacional v1 | Concluída |
+| 14 | Compra/Venda Operacional | Fase 13 formalmente encerrada |
 | 15 | KPIs/Relatórios | Fontes, períodos e limitações explícitos |
 | 16 | Financeiro Gerencial | Ledger e critérios gerenciais explícitos |
 | 17 | Decisão Assistida | Dados confiáveis e limites de não autorização |

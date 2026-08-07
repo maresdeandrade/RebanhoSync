@@ -1,9 +1,22 @@
-# Handoff atual — Agenda neonatal na Agenda Sanitária v2
+# Handoff atual — Fase 13 encerrada / Reprodução Operacional v1
 
 Atualizado em: 2026-08-07
-Baseline de entrada: `main@d64805e`
-Status: **integração neonatal v2 implementada e validada localmente**
-Próximo incremento: **recertificação remota mínima do parto com seis Agendas v2**
+Baseline de entrada do fechamento: `main@e7b69fc`
+Status: **Fase 13 fechada com patch funcional de leitura canônica**
+Próxima fase: **Fase 14 — Compra/Venda Operacional**
+
+## Fechamento funcional
+
+- cobertura e IA podem ser iniciadas na ficha ou no painel reprodutivo; o serviço permanece Evento factual e alimenta histórico e próximo estado;
+- diagnóstico positivo e negativo são registráveis pela UI; PRENHA, VAZIA e DPP vêm da reconstrução histórica;
+- parto e aborto encerram a gestação exibida; parto cria vínculo mãe–cria e seis Agendas sanitárias v2, enquanto aborto não cria dependentes;
+- pós-parto e cria inicial permanecem navegáveis após o parto;
+- correções permanecem Eventos append-only e a leitura usa o significado factual vigente;
+- o único gap encontrado estava no adaptador de taxonomia das telas: cache reprodutivo antigo podia sobreviver a um contexto canônico VAZIA ou vazio;
+- o patch passou a usar `rebuildReproductiveProjection` para DPP e último parto e torna o contexto factual explicitamente carregado autoritativo sobre `taxonomy_facts`;
+- não houve alteração de persistência, Dexie schema, sync, Supabase, Sanitário v2, migration, RLS ou RPC.
+
+Validações executadas: dois smokes integrados (parto e aborto), 14 testes em 2 arquivos, ESLint dos 3 arquivos TypeScript alterados, `git diff --check` e build único. O build manteve warnings preexistentes de Browserslist, chunks e import misto do Dexie. A automação visual via `agent-browser` não foi executada porque o binário não está disponível no ambiente; acessibilidade e navegação foram inspecionadas nos componentes e rotas existentes.
 
 ## Entrega da Agenda neonatal v2
 

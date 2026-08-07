@@ -230,6 +230,43 @@ describe("deriveAnimalTaxonomy", () => {
     });
     const contextMap = buildAnimalTaxonomyReproContextMap([
       {
+        id: "evt-service",
+        fazenda_id: "farm-1",
+        dominio: "reproducao",
+        occurred_at: "2025-07-31T10:00:00.000Z",
+        animal_id: animal.id,
+        lote_id: null,
+        source_task_id: null,
+        source_tx_id: null,
+        source_client_op_id: null,
+        corrige_evento_id: null,
+        observacoes: null,
+        payload: {},
+        client_id: "client-1",
+        client_op_id: "op-service",
+        client_tx_id: "tx-service",
+        client_recorded_at: NOW.toISOString(),
+        server_received_at: NOW.toISOString(),
+        created_at: NOW.toISOString(),
+        updated_at: NOW.toISOString(),
+        deleted_at: null,
+        details: {
+          evento_id: "evt-service",
+          fazenda_id: "farm-1",
+          tipo: "IA",
+          macho_id: "bull-1",
+          payload: { schema_version: 1 },
+          client_id: "client-1",
+          client_op_id: "op-service",
+          client_tx_id: "tx-service",
+          client_recorded_at: NOW.toISOString(),
+          server_received_at: NOW.toISOString(),
+          created_at: NOW.toISOString(),
+          updated_at: NOW.toISOString(),
+          deleted_at: null,
+        },
+      },
+      {
         id: "evt-diag",
         fazenda_id: "farm-1",
         dominio: "reproducao",
@@ -259,6 +296,7 @@ describe("deriveAnimalTaxonomy", () => {
             schema_version: 1,
             resultado: "positivo",
             data_prevista_parto: "2026-05-10",
+            episode_evento_id: "evt-service",
           },
           client_id: "client-1",
           client_op_id: "op-1",
@@ -280,6 +318,30 @@ describe("deriveAnimalTaxonomy", () => {
     expect(snapshot.fase_veterinaria).toBe("gestante");
     expect(snapshot.estado_produtivo_reprodutivo).toBe("prenhe");
     expect(snapshot.facts.data_prevista_parto).toBe("2026-05-10");
+  });
+
+  it("does not reuse stale reproductive cache when canonical history is empty", () => {
+    const animal = createAnimal({
+      sexo: "F",
+      data_nascimento: "2022-01-01",
+      payload: {
+        taxonomy_facts: {
+          prenhez_confirmada: true,
+          data_prevista_parto: "2026-05-10",
+          data_ultimo_parto: "2025-04-01",
+        },
+      },
+    });
+
+    const snapshot = deriveAnimalTaxonomy(animal, {
+      now: NOW,
+      reproContext: null,
+    });
+
+    expect(snapshot.facts.prenhez_confirmada).toBe(false);
+    expect(snapshot.facts.data_prevista_parto).toBeNull();
+    expect(snapshot.facts.data_ultimo_parto).toBeNull();
+    expect(snapshot.estado_produtivo_reprodutivo).toBe("vazia");
   });
 });
 

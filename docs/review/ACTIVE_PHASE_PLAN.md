@@ -1,10 +1,23 @@
-# Plano ativo — Fase 13 / Reprodução Operacional v1
+# Plano de fechamento — Fase 13 / Reprodução Operacional v1
 
 Atualizado em: 2026-08-07
-Status: **Agenda neonatal do parto integrada localmente à Agenda Sanitária v2**
-Próxima pendência: **recertificação remota mínima de um parto, uma cria e seis Agendas v2**
+Status: **Fase 13 encerrada com patch funcional de leitura canônica**
+Próxima fase: **Fase 14 — Compra/Venda Operacional**
 
 Este documento contém o plano corrente. Estado técnico detalhado, validações e risco de plataforma ficam em [CURRENT_PHASE_HANDOFF.md](./CURRENT_PHASE_HANDOFF.md). A decisão arquitetural permanente está em [ADR-0007](../technical/adrs/ADR-0007-sync-remoto-sanitario-v2-integrado.md).
+
+## Fechamento funcional da Fase 13
+
+Baseline de entrada: `main@e7b69fc`, branch local 11 commits à frente de `origin/main` e worktree limpa.
+
+- a jornada cobertura/IA → diagnóstico → PRENHA/VAZIA + DPP → parto ou aborto permanece acessível pelas telas existentes;
+- parto cria e vincula a cria, materializa seis Agendas neonatais na Agenda Sanitária v2 e encaminha para pós-parto/cria inicial;
+- aborto encerra o episódio vigente sem criar cria ou Agenda e remove a DPP atual da projeção;
+- a leitura reprodutiva usada pela taxonomia das telas passou a obter DPP e último parto da projeção histórica canônica e não reutiliza `taxonomy_facts` antigo quando o contexto factual foi carregado;
+- Evento continua fato, Agenda continua intenção, correção permanece append-only e `taxonomy_facts` continua cache derivado;
+- nenhuma migration, RLS, RPC, Edge Function, fila, worker ou contrato de sync foi alterado.
+
+Smoke local: dois caminhos integrados, 14 testes em 2 arquivos, ESLint dos 3 arquivos TypeScript do patch, `git diff --check` e um build único. A inspeção visual automatizada não foi executada porque `agent-browser` não está disponível no ambiente; rotas, controles e navegações foram confirmados diretamente nos componentes existentes.
 
 ## Correção da Agenda neonatal
 

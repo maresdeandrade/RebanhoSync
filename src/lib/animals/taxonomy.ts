@@ -23,6 +23,7 @@ import { getAnimalPayloadRecord } from "@/lib/reproduction/neonatal";
 import type { ReproEventJoined } from "@/lib/reproduction/selectors";
 import {
   computeReproStatus,
+  rebuildReproductiveProjection,
   type AnimalReproStatus,
 } from "@/lib/reproduction/status";
 
@@ -93,18 +94,6 @@ function parseNullableDate(value: unknown) {
   return typeof value === "string" && value.length >= 10
     ? value.slice(0, 10)
     : null;
-}
-
-function isPositiveDiagnosticPayload(payload: unknown) {
-  const record = asRecord(payload);
-  return (
-    record.resultado === "positivo" ||
-    record.diagnostico_resultado === "positivo"
-  );
-}
-
-function getDiagnosticPredictionDate(payload: unknown) {
-  return parseNullableDate(asRecord(payload).data_prevista_parto);
 }
 
 function getLatestWeightKg(payload: Animal["payload"]) {
@@ -233,19 +222,12 @@ export function buildAnimalTaxonomyReproContextMap(events: ReproEventJoined[]) {
       right.occurred_at.localeCompare(left.occurred_at),
     );
     const reproStatus = computeReproStatus(sorted);
-    const parto = sorted.find((event) => event.details?.tipo === "parto");
-    const positiveDiagnostic = sorted.find(
-      (event) =>
-        event.details?.tipo === "diagnostico" &&
-        isPositiveDiagnosticPayload(event.details.payload),
-    );
+    const projection = rebuildReproductiveProjection(sorted);
 
     contextMap.set(animalId, {
       reproStatus,
-      dataUltimoParto: parto?.occurred_at?.slice(0, 10) ?? null,
-      dataPrevistaParto:
-        getDiagnosticPredictionDate(positiveDiagnostic?.details?.payload) ??
-        null,
+      dataUltimoParto: projection.lastBirthDate,
+      dataPrevistaParto: projection.dpp,
     });
   }
 
@@ -504,19 +486,23 @@ export function deriveAnimalTaxonomy(
   const config = options?.config ?? DEFAULT_FARM_LIFECYCLE_CONFIG;
   const now = options?.now ?? new Date();
   const storedFacts = getAnimalTaxonomyFacts(animal.payload);
+  const hasCanonicalReproContext =
+    options !== undefined &&
+    Object.prototype.hasOwnProperty.call(options, "reproContext");
   const reproContext = options?.reproContext ?? null;
   const dataDesmama = getDataDesmama(animal.payload);
   const ageInDays = getDateInDays(animal.data_nascimento, now);
   const destinoProdutivo = getAnimalProductiveDestination(animal);
   const maleStatus = getMaleReproductiveStatus(animal);
-  const dataUltimoParto =
-    reproContext?.dataUltimoParto ?? storedFacts.data_ultimo_parto;
-  const dataPrevistaParto =
-    reproContext?.dataPrevistaParto ?? storedFacts.data_prevista_parto;
-  const prenhezConfirmada =
-    reproContext?.reproStatus?.status === "PRENHA"
-      ? true
-      : storedFacts.prenhez_confirmada === true;
+  const dataUltimoParto = hasCanonicalReproContext
+    ? (reproContext?.dataUltimoParto ?? null)
+    : storedFacts.data_ultimo_parto;
+  const dataPrevistaParto = hasCanonicalReproContext
+    ? (reproContext?.dataPrevistaParto ?? null)
+    : storedFacts.data_prevista_parto;
+  const prenhezConfirmada = hasCanonicalReproContext
+    ? reproContext?.reproStatus?.status === "PRENHA"
+    : storedFacts.prenhez_confirmada === true;
   const pariuAlgumaVez = Boolean(dataUltimoParto);
   const secagemRealizada = storedFacts.secagem_realizada === true;
   const daysSinceParto = getDateInDays(dataUltimoParto, now);

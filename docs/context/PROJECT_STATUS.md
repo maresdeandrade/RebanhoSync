@@ -1,7 +1,7 @@
 # Project Status — RebanhoSync
 
-Atualizado em: 2026-08-05
-Baseline técnico do fechamento da Fase 12: `7e43248`
+Atualizado em: 2026-08-07
+Baseline de entrada do fechamento da Fase 13: `e7b69fc`
 
 ## Objetivo
 
@@ -11,11 +11,22 @@ Registrar o estado vivo do produto em formato curto. Este documento não substit
 
 RebanhoSync está em beta interno, com arquitetura offline-first e isolamento multi-tenant por `fazenda_id`.
 
-A Fase 12 está tecnicamente encerrada. A Conformidade Sanitária v2, a documentação local e o Sync Remoto Sanitário v2 foram concluídos, endurecidos localmente e certificados funcionalmente no staging.
+A Fase 13 está funcionalmente encerrada. A Reprodução Operacional v1 cobre cobertura/IA, diagnóstico, PRENHA/VAZIA e DPP reconstruíveis, parto, aborto/perda, cria, correção append-only e seis Agendas neonatais na Agenda Sanitária v2.
 
-A documentação curta do Sanitário v2 local também está concluída.
+O patch final eliminou a precedência residual do cache `taxonomy_facts` nas leituras reprodutivas das telas quando o contexto factual canônico está carregado. Nenhum contrato de banco ou sync foi alterado.
 
-Próxima fase de desenvolvimento: **Fase 13 — Reprodução Operacional v1**.
+Próxima fase de desenvolvimento: **Fase 14 — Compra/Venda Operacional**.
+
+## Estado reprodutivo consolidado
+
+- cobertura/IA, diagnóstico, parto e aborto são Eventos factuais;
+- PRENHA, VAZIA, DPP, último parto e perda vigente vêm da projeção histórica;
+- parto cria vínculo determinístico mãe–parto–cria e seis Agendas sanitárias v2;
+- Agenda neonatal representa intenção futura e não prova execução;
+- aborto não cria cria ou Agenda e remove a DPP do episódio encerrado;
+- correção é novo Evento append-only;
+- `taxonomy_facts` é cache derivado e não é fonte concorrente nas telas com contexto factual;
+- retry/replay, rollback, atomicidade e isolamento por `fazenda_id` permanecem preservados.
 
 ## Estado sanitário consolidado
 
