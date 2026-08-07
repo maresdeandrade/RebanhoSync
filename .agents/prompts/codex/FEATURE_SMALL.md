@@ -5,6 +5,10 @@ Versão: 1.2.0
 
 Use para implementar uma funcionalidade nova, pequena e delimitada. Para corrigir comportamento existente em um ponto conhecido, prefira `PATCH_LOCAL.md`.
 
+## Modo
+
+`MUTACAO_AUTORIZADA` somente dentro do escopo preenchido neste prompt e da tarefa atual.
+
 ## Prompt
 
 Implemente no RebanhoSync:
@@ -41,9 +45,10 @@ Implemente no RebanhoSync:
 
 1. Leia `AGENTS.md`.
 2. Aplique `.agents/rules/CORE_RULES.md`, `CONTEXT_LOADING.md` e `no-broad-context.md`.
-3. Escolha no máximo uma skill principal pelo risco dominante da feature.
-4. Use uma segunda skill apenas se houver interseção real de domínio crítico.
-5. Para comandos e validações, siga `.agents/rules/rtk.md`.
+3. Se o ponto de intervenção estiver incerto, usar `repository-context-retrieval`, concluir a descoberta e encerrar essa fase antes de selecionar a skill de implementação.
+4. Depois da descoberta, escolher uma skill principal pelo risco dominante da feature.
+5. Usar no máximo uma skill de apoio quando houver interseção técnica concreta; não acumular a skill de descoberta com duas skills de implementação.
+6. Para comandos e validações, seguir `.agents/rules/rtk.md`.
 
 ## Antes do patch
 
@@ -55,7 +60,7 @@ Confirme de forma breve:
 - necessidade de migration/RPC/RLS/schema;
 - plano incremental e testes proporcionais.
 
-Se o ponto de intervenção não estiver claro, interrompa a implementação e faça descoberta dirigida com `repository-context-retrieval`.
+Se a descoberta não delimitar o ponto de intervenção, parar sem implementar e relatar a lacuna mínima.
 
 ## Regras
 

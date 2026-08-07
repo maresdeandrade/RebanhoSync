@@ -16,20 +16,13 @@ Antes de atuar:
 4. Leia o `AGENTS.md` local da pasta afetada, se existir.
 5. Delimite o objetivo, os arquivos-alvo prováveis e o tipo real da tarefa.
 
-Não abra todos os documentos, rules, skills ou arquivos `AGENTS.md` por padrão. Não use `docs/archive/**` como fonte operacional, salvo pedido explícito de análise histórica.
+Não abra todos os documentos, rules, skills ou arquivos `AGENTS.md` por padrão. `.agents/archive/**`, scripts arquivados e `docs/archive/**` são históricos, não fontes operacionais nem superfície normal de execução; consulte-os somente por necessidade explícita.
 
 ---
 
-## Fonte de verdade em conflito
+## Precedência
 
-Siga esta ordem:
-
-1. Código + migrations ativas.
-2. `docs/context/PROJECT_STATUS.md`.
-3. Documentos normativos ativos.
-4. Documentos derivados.
-5. Histórico em `docs/archive/**`.
-6. Definições procedimentais de rules, skills e prompts.
+Aplicar as precedências factual e procedimental definidas em `.agents/rules/CORE_RULES.md`, subordinadas à hierarquia de instruções do runtime. Resumo procedimental: tarefa atual → `AGENTS.md` aplicável → rules obrigatórias → skill principal → no máximo uma skill de apoio → prompt/template; lifecycle ocorre separadamente. Uma camada inferior não pode ampliar autorização, relaxar segurança, converter diagnóstico em autorização de implementação nem autorizar operação destrutiva proibida.
 
 Rules, skills e prompts orientam o trabalho do agente; não substituem contratos implementados nem comprovam comportamento do produto.
 
@@ -44,6 +37,8 @@ Rules, skills e prompts orientam o trabalho do agente; não substituem contratos
 - Não usar UI como única fronteira de autorização.
 - Não expor `service_role` no client.
 - Não alterar migrations, seed, RLS, policies, RPCs ou schema sem tarefa explícita.
+- Não imprimir, persistir nem incorporar credenciais, tokens ou segredos em URLs, scripts, logs ou documentação.
+- Operações destrutivas exigem autorização explícita e obediência às rules e aos scripts de segurança aplicáveis.
 - Preferir patch pequeno, reversível e testável.
 - Não refatorar por conveniência.
 - Separar fato confirmado, inferência e recomendação.
@@ -66,10 +61,10 @@ Consulte `.agents/rules/CORE_RULES.md` e, somente quando pertinente, `docs/conte
 
 ## Skills
 
-Consulte `.agents/skills/README.md` para roteamento.
+Use `.agents/rules/CONTEXT_LOADING.md` como única autoridade interna de roteamento de contexto, seleção de skill e progressão entre etapas. READMEs são catálogos; prompts não criam roteamento concorrente.
 
-- Escolha no máximo uma skill principal.
-- Use uma segunda somente quando houver interseção real de domínio crítico.
+- Em implementação, escolha uma skill principal e no máximo uma skill de apoio quando houver interseção técnica concreta.
+- Discovery, verification gate, reconciliação documental e preparação de PR são fases lifecycle separadas; não contam como skills simultâneas da implementação.
 - Não use skill apenas porque um termo relacionado aparece incidentalmente.
 - Se o ponto de intervenção estiver incerto, use `repository-context-retrieval` para descoberta dirigida.
 - Após implementação, use `rebanhosync-verification-gate` para fechamento técnico.
@@ -101,6 +96,9 @@ Para qualquer comando, teste, pnpm, Graphify, WSL/Windows ou validação local, 
 
 - Não invente scripts ou parâmetros.
 - Use validação proporcional ao risco e ao escopo.
+- `scripts/codex/validate.ps1` exige perfil explícito: `focused` para mudança localizada, `standard` para alteração compartilhada relevante e `full` somente quando escopo/risco exigirem e houver autorização.
+- Use `pnpm run audit:agents` para governança de agentes e `pnpm run gates:docs` para contratos documentais atuais, quando aplicáveis.
+- O verification gate produz o veredito técnico da entrega; scripts históricos ou restritos não são gates permanentes.
 - Inspecione alterações tracked, staged e untracked quando revisar ou fechar uma entrega.
 - Use Graphify apenas nos casos definidos em `.agents/rules/GRAPHIFY_USAGE.md`.
 - Não altere o grafo por tarefa local sem impacto estrutural.

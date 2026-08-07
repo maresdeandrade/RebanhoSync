@@ -1,20 +1,14 @@
 # Prompts — RebanhoSync
 
-Prompts reutilizáveis para padronizar tarefas sem repetir regras permanentes nem carregar contexto amplo.
+Catálogo de prompts reutilizáveis. O roteamento autoritativo, a composição de skills e a progressão entre fases ficam em `.agents/rules/CONTEXT_LOADING.md`; prompts não ampliam autorização nem substituem rules ou skills.
 
 Prompts orientam a execução; não substituem `AGENTS.md`, rules, skills, código, migrations ou documentos normativos.
 
 ---
 
-## Bootstrap e princípios
+## Bootstrap
 
-Antes de usar qualquer prompt:
-
-1. Leia `AGENTS.md`.
-2. Aplique `.agents/rules/CORE_RULES.md`.
-3. Use `.agents/rules/CONTEXT_LOADING.md` e `no-broad-context.md` para escolher o contexto mínimo.
-4. Escolha no máximo uma skill principal; segunda somente em interseção real de domínio crítico.
-5. Siga `.agents/rules/rtk.md` para comandos, testes, pnpm, Graphify, WSL/Windows ou validação local.
+Antes de usar qualquer prompt, aplicar o bootstrap, as precedências e o roteamento definidos em `AGENTS.md`, `.agents/rules/CORE_RULES.md` e `.agents/rules/CONTEXT_LOADING.md`. Para comandos e validações, seguir `.agents/rules/rtk.md`.
 
 Regras:
 
@@ -25,6 +19,7 @@ Regras:
 - Não transformar diagnóstico, intenção ou plano em fato concluído.
 - Não declarar validação, commit, push ou arquivo alterado sem evidência.
 - O prompt não amplia a autorização concedida pelo pedido atual.
+- Nenhum prompt pode relaxar rule de segurança ou autorizar operação destrutiva.
 
 ---
 
@@ -99,64 +94,12 @@ Análise, implementação, verificação e preparação de PR são etapas distin
 
 ---
 
-## Continuity
-
-| Prompt | Quando usar |
-|---|---|
-| `continuity/START_NOVA_CONVERSA.md` | Iniciar conversa a partir de handoff, plano ativo e contexto mínimo. |
-| `continuity/UPDATE_FINAL_DE_FASE.md` | Encerrar fase/subfase efetivamente validada e atualizar documentação permanente. |
-| `continuity/UPDATE_CONTEXTO_EM_ANDAMENTO.md` | Preservar conversa longa sem marcar tarefa ou fase como concluída. |
-| `continuity/CHECK_CONTEXT_DRIFT.md` | Diagnosticar incoerência entre handoff, plano, status e pendências. |
-
----
-
-## Codex
-
-| Prompt | Quando usar |
-|---|---|
-| `codex/PATCH_LOCAL.md` | Correção pequena, localizada e testável. |
-| `codex/FEATURE_SMALL.md` | Funcionalidade nova, pequena e delimitada. |
-| `codex/REVIEW_DIFF.md` | Revisão somente leitura de alterações staged, unstaged e untracked. |
-| `codex/DOCS_RECONCILE.md` | Reconciliação documental com o estado confirmado do repositório. |
-
----
-
-## Antigravity
-
-Todos os prompts desta pasta são somente leitura.
-
-| Prompt | Quando usar |
-|---|---|
-| `antigravity/ARCHITECTURE_REVIEW.md` | Revisar arquitetura e hardening possível antes de patch. |
-| `antigravity/FLOW_MAPPING.md` | Mapear fluxo funcional e de dados ponta a ponta. |
-| `antigravity/RISK_REVIEW.md` | Avaliar riscos de mudança proposta antes da implementação. |
-
----
-
-## Reusable
-
-Blocos auxiliares não substituem prompts principais.
-
-| Arquivo | Uso |
-|---|---|
-| `reusable/CONTEXT_BLOCK_MINIMAL.md` | Contexto compacto para IA externa ou tarefa curta. |
-| `reusable/VALIDATION_CHECKLIST.md` | Checklist proporcional para patch, revisão ou fechamento. |
-
----
-
 ## Archive
 
 Não use `.agents/prompts/archive/**` como fonte ativa. Consulte apenas quando o pedido exigir histórico.
 
 ---
 
-## Fonte de verdade
+## Precedência
 
-Em conflito, siga:
-
-1. Código + migrations ativas.
-2. `docs/context/PROJECT_STATUS.md`.
-3. Documentos normativos ativos.
-4. Documentos derivados.
-5. Histórico em `docs/archive/**`.
-6. Definições procedimentais de rules, skills e prompts.
+As precedências factual e procedimental são definidas somente em `.agents/rules/CORE_RULES.md`. Este README é catálogo e não cria uma definição concorrente.

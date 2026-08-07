@@ -1,6 +1,7 @@
 ---
 name: movimentacao-transito-conformidade
 description: Protege fluxos de movimentação e trânsito do RebanhoSync, incluindo troca de lote ou pasto, entrada/saída física, transferência, origem/destino, Evento de movimentação, estado atual, ocupação, GTA, documentação de transporte e compliance associado. Usar quando a tarefa criar, corrigir, sincronizar, exibir ou auditar movimento histórico ou estado derivado. Não usar para cadastro animal sem deslocamento, compliance sanitário puro, KPI financeiro isolado ou ajuste apenas visual/copy.
+role: domain
 ---
 
 # Movimentação Trânsito Conformidade
@@ -11,13 +12,15 @@ Preservar o fato histórico da movimentação, o estado atual derivado, a integr
 
 ## Coordenação
 
-Combinar quando necessário com:
+Durante implementação, esta é a skill principal quando movimento ou trânsito for o risco dominante. Escolher no máximo uma das skills abaixo como apoio quando houver interseção técnica concreta:
 
 - `animal-cadastro-origem-destino`: identidade, cadastro-base ou proveniência sem movimento;
 - `sanitario-catalogo-regulatorio-compliance`: regra sanitária/regulatória ligada ao trânsito;
 - `sync-offline-rollback`: gesto, fila, retry, rollback ou reconcile;
 - `migrations-rls-contracts`: schema, RLS, constraint ou RPC;
-- `rebanhosync-verification-gate`: validação final do patch.
+- `rebanhosync-verification-gate`: usar depois do patch, como fase lifecycle separada, não como apoio simultâneo.
+
+Não carregar toda a lista. Se mais de uma skill de apoio parecer indispensável, parar e redelimitar a tarefa.
 
 ## Leitura inicial
 
@@ -40,14 +43,9 @@ Carregar conforme o caso:
 
 Não abrir todas essas fontes por padrão.
 
-## Hierarquia em conflito
+## Precedência
 
-1. código + migrations ativas;
-2. `docs/context/PROJECT_STATUS.md`;
-3. docs normativos ativos;
-4. docs derivados;
-5. histórico em `docs/archive/**`;
-6. esta skill.
+Aplicar as precedências factual e procedimental definidas em `.agents/rules/CORE_RULES.md`. Esta skill não substitui código, migrations ou documentos normativos ativos.
 
 ## Separação canônica
 

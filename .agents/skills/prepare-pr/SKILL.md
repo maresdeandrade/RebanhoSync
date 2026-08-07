@@ -1,6 +1,7 @@
 ---
 name: prepare-pr
-description: Prepara título, corpo, escopo, impacto de domínio, validações e riscos de um PR do RebanhoSync usando uma verificação classificada como READY ou READY WITH CAVEAT. Usar quando o patch estiver concluído e verificado e o usuário pedir narrativa de PR ou handoff final. Não usar com escopo incerto, implementação em andamento, teste relevante sem interpretação ou antes do rebanhosync-verification-gate.
+description: Prepara título, corpo, escopo, impacto de domínio, validações e riscos de um PR do RebanhoSync usando uma verificação classificada como READY. Usar quando o patch estiver concluído e verificado e o usuário pedir narrativa de PR ou handoff final. Não usar com READY WITH CAVEAT, NOT READY, escopo incerto, implementação em andamento ou antes do rebanhosync-verification-gate.
+role: lifecycle
 ---
 
 # Prepare PR
@@ -13,13 +14,13 @@ Converter o resultado do `rebanhosync-verification-gate` em uma narrativa curta,
 
 Exigir do gate:
 
-- classificação READY ou READY WITH CAVEAT;
+- classificação READY;
 - resumo do diff e arquivos alterados;
 - contratos afetados;
 - comandos realmente executados e resultados;
 - ressalvas e riscos.
 
-Se essas informações não estiverem disponíveis ou o patch tiver mudado depois do gate, interromper a preparação e executar novamente o `rebanhosync-verification-gate`.
+Se essas informações não estiverem disponíveis, o resultado for READY WITH CAVEAT/NOT READY ou o patch tiver mudado depois do gate, interromper a preparação e executar novamente o `rebanhosync-verification-gate` após resolver a ressalva ou bloqueador.
 
 ## Leitura inicial
 
@@ -87,7 +88,7 @@ Declarar somente exclusões confirmadas, como ausência de mudança em produto, 
 
 ### Risks / caveats
 
-Listar até três riscos reais. Em READY WITH CAVEAT, tornar a ressalva visível nesta seção.
+Listar até três riscos reais não bloqueantes já aceitos pelo gate READY.
 
 ## Saída obrigatória
 

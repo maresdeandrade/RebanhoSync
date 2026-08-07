@@ -1,98 +1,80 @@
-```markdown
 # Antigravity Prompt — Risk Review
-Atualizado em: 2026-06-04  
-Versão: 1.1.0
 
-Use para revisar riscos antes de implementar ou aprovar uma mudança.
+Atualizado em: 2026-08-07
+Versão: 1.2.0
 
-## Mudança Proposta
+Use para revisar riscos de uma mudança proposta antes da implementação. Não use para revisar ou aprovar um diff já existente.
+
+## Modo
+
+`SOMENTE_LEITURA`
+
+Não editar arquivos, executar correções, criar testes, fazer commit ou preparar PR.
+
+## Entradas obrigatórias
+
+### Mudança proposta
 
 ```txt
-[DESCREVER_MUDANCA]
-
+[DESCREVER_MUDANCA_E_RESULTADO_ESPERADO]
 ```
 
-### Escopo
+### Escopo conhecido
 
-* `[ARQUIVOS_OU_DOMINIOS]`
-
----
-
-## Avaliação de Riscos
-
-Analise a proposta com base nas seguintes categorias de ameaça:
-
-### 1. Produto
-
-* Confusão para o usuário no campo;
-* Aumento desnecessário de passos no fluxo;
-* Perda de clareza operacional;
-* Decisão crítica tomada sem fonte confiável.
-
-### 2. Domínio e Invariantes
-
-* **Agenda:** Tratada indevidamente como histórico;
-* **Evento:** Tratado de forma não factual;
-* **`state_*`:** Utilizado incorretamente como histórico;
-* **Protocolo:** Tratado como execução ativa;
-* **Tags/Sinais/Insights:** Virando regra ou fonte primária;
-* **Métricas Críticas:** Carência, venda ou abate sem fonte técnica explícita.
-
-### 3. Técnico e Arquitetura
-
-* Quebra do modelo *offline-first*;
-* Operação ou comando não idempotente;
-* Perda de capacidade de *rollback*;
-* Duplicidade de fonte de verdade;
-* Regra de negócio crítica acoplada na UI;
-* *Sync* parcial sem mecanismo de *reconcile*;
-* Conflito ou vazamento *multi-tenant*.
-
-### 4. Segurança
-
-* *Bypass* ou falha de RLS;
-* Quebra de isolamento estrito por `fazenda_id`;
-* Exposição de tokens ou chaves no *client*;
-* *Client* operando com privilégio indevido (`service_role`).
-
-### 5. Testes
-
-* Teste ausente para o novo comportamento;
-* Teste frágil ou dependente de estado volátil;
-* Cobertura insuficiente de cenários de exceção (*edge cases*);
-* Regressão de comportamento anterior não coberta.
-
----
-
-## Classificação de Severidade
-
-Classifique cada risco identificado sob uma das seguintes métricas:
-
-* 🟢 **Baixo**
-* 🟡 **Médio**
-* 🔴 **Alto**
-* ❌ **Bloqueante**
-
----
-
-## Matriz de Riscos
-
-| Risco | Severidade | Evidência / Gatilho | Mitigação Proposta | Bloqueia a Entrega? |
-| --- | --- | --- | --- | --- |
-| [Nome do Risco] | `[Status]` | [Onde/Como ocorre no código] | [Ação para neutralizar] | [Sim/Não] |
-
----
-
-## Entrega e Veredito
-
-Responder com a seguinte estrutura conclusiva:
-
-* **Veredito:** [APROVADO | APROVADO COM RESSALVAS | REJEITADO]
-* **Riscos bloqueantes:** [Lista de pontos que impedem o avanço imediato]
-* **Ajustes mínimos:** [O que deve ser corrigido antes da implementação]
-* **Testes obrigatórios:** [Cenários específicos que precisam de cobertura de teste]
-* **Recomendação final:** [Orientação estratégica para os próximos passos]
-
+```txt
+[ARQUIVOS_AREAS_OU_CONTRATOS]
 ```
 
+### Evidências disponíveis
+
+```txt
+[CODIGO_DOCUMENTO_TESTE_OU_LACUNA_CONHECIDA]
 ```
+
+## Dependências autoritativas
+
+1. Aplicar `AGENTS.md` e `.agents/rules/CORE_RULES.md`.
+2. Usar `.agents/rules/CONTEXT_LOADING.md` para contexto e skill.
+3. Aplicar `.agents/rules/no-broad-context.md`.
+4. Seguir `.agents/rules/rtk.md` se houver comandos somente leitura.
+5. Usar `repository-context-retrieval` como skill principal apenas se o ponto de intervenção estiver incerto; caso contrário, registrar `N/A` e inspecionar somente o escopo delimitado.
+
+## Escopo proibido
+
+- Não ampliar autorização nem converter recomendação em patch.
+- Não aprovar proposta apenas por descrição; exigir evidência proporcional no repositório.
+- Não tratar hipótese, checklist, agenda, tag ou insight como fato.
+- Não carregar todos os documentos, migrations ou skills.
+- Não afirmar validação, comportamento ou mitigação sem evidência.
+
+## Avaliação
+
+Avaliar somente categorias aplicáveis:
+
+- produto e clareza operacional;
+- domínio e fontes de verdade;
+- offline-first, idempotência, retry, rollback e reconcile;
+- RLS, `fazenda_id`, autorização e exposição de credenciais;
+- compatibilidade local/remota e migrations;
+- testes, observabilidade e tratamento de falha;
+- escopo, reversibilidade e risco de regressão.
+
+Classificar cada conclusão como `FATO_CONFIRMADO`, `INFERÊNCIA` ou `RECOMENDAÇÃO` e cada risco como `BAIXO`, `MÉDIO`, `ALTO` ou `BLOQUEANTE`.
+
+## Condições de parada
+
+Se não for possível localizar o contrato, o ponto de intervenção ou a evidência mínima, não emitir aprovação. Registrar a lacuna e o próximo arquivo mínimo necessário.
+
+## Saída obrigatória
+
+| Risco | Severidade | Classificação da evidência | Evidência/gatilho | Mitigação mínima | Bloqueia? |
+|---|---|---|---|---|---|
+
+Finalizar com:
+
+1. **Veredito:** `APROVADO`, `APROVADO_COM_RESSALVAS`, `REJEITADO` ou `EVIDÊNCIA_INSUFICIENTE`;
+2. **Escopo e fontes inspecionadas**;
+3. **Riscos bloqueantes**;
+4. **Ajustes mínimos antes da implementação**;
+5. **Testes necessários**;
+6. **Riscos/pendências**, no máximo 3.

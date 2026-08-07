@@ -1,6 +1,7 @@
 ---
 name: animal-cadastro-origem-destino
 description: Protege identidade, cadastro-base, edição, identificação, taxonomia, proveniência, origem/destino cadastral, entrada, compra, venda, saída, óbito e estado atual do animal no RebanhoSync. Usar quando a tarefa criar, corrigir, importar, sincronizar ou auditar dados-base e transições de ciclo de vida do animal. Não usar para parto/cria, execução sanitária, movimentação física entre lote/pasto/fazendas, KPI financeiro isolado ou ajuste apenas visual/copy; combinar com a skill específica quando os fluxos se cruzarem.
+role: domain
 ---
 
 # Animal Cadastro Origem Destino
@@ -11,14 +12,16 @@ Preservar identidade estável, proveniência, isolamento por fazenda e separaç�
 
 ## Coordenação
 
-Combinar quando necessário com:
+Durante implementação, esta é a skill principal quando identidade/estado cadastral for o risco dominante. Escolher no máximo uma das skills abaixo como apoio quando houver interseção técnica concreta:
 
 - `reproducao-parto-posparto-cria`: nascimento, cria e vínculo mãe–Evento–cria;
 - `movimentacao-transito-conformidade`: deslocamento, lote/pasto, trânsito ou GTA;
 - `sanitario-registro-operacional`: execução sanitária;
 - `sync-offline-rollback`: gesto, fila, retry, rollback ou reconcile;
 - `migrations-rls-contracts`: schema, RLS, constraint ou RPC;
-- `rebanhosync-verification-gate`: validação final.
+- `rebanhosync-verification-gate`: usar depois do patch, como fase lifecycle separada, não como apoio simultâneo.
+
+Não carregar toda a lista. Se mais de uma skill de apoio parecer indispensável, parar e redelimitar a tarefa.
 
 Compra ou venda pode exigir também o contrato comercial; usar esta skill para identidade/estado do animal e a skill de movimento quando houver deslocamento físico.
 
@@ -42,14 +45,9 @@ Carregar conforme o caso:
 
 Não carregar todas as fontes por padrão.
 
-## Hierarquia em conflito
+## Precedência
 
-1. código + migrations ativas;
-2. `docs/context/PROJECT_STATUS.md`;
-3. docs normativos ativos;
-4. docs derivados;
-5. histórico em `docs/archive/**`;
-6. esta skill.
+Aplicar as precedências factual e procedimental definidas em `.agents/rules/CORE_RULES.md`. Esta skill não substitui código, migrations ou documentos normativos ativos.
 
 ## Separação canônica
 
@@ -79,7 +77,7 @@ Não carregar todas as fontes por padrão.
 
 Identificar: criação, edição descritiva, importação, identificação, taxonomia, proveniência, compra/entrada, venda/saída, óbito, leitura de estado atual ou correção.
 
-Se houver deslocamento físico, cadastro originado de parto ou execução sanitária, incluir a skill de domínio correspondente.
+Se houver deslocamento físico, cadastro originado de parto ou execução sanitária, decidir qual domínio é principal e, no máximo, qual será a única skill de apoio.
 
 ### 2. Confirmar fontes e vínculos
 

@@ -40,6 +40,12 @@ Stack principal: React/TypeScript, Dexie/IndexedDB, Supabase/Postgres/Auth/RLS e
 [ESCOPO_PROIBIDO]
 ```
 
+### Modo
+
+```txt
+[SOMENTE_LEITURA | MUTACAO_AUTORIZADA]
+```
+
 ### Critérios de aceite
 
 ```txt

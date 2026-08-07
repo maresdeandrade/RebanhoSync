@@ -1,6 +1,7 @@
 ---
 name: repository-context-retrieval
 description: Localiza o ponto mínimo de intervenção, os arquivos, fluxos, documentos e testes relevantes do RebanhoSync sem leitura ampla. Usar quando os arquivos afetados não estiverem claros, houver possível impacto entre módulos, divergência entre código e documentação ou necessidade de orientação antes do planejamento. Não usar quando o arquivo já for conhecido, o ajuste for local/microcopy, o patch estiver pronto para validação ou o objetivo for preparar PR.
+role: lifecycle
 ---
 
 # Repository Context Retrieval

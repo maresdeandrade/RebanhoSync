@@ -19,13 +19,14 @@ $requiredFiles = @(
   ".agents/rules/CORE_RULES.md",
   ".agents/rules/CONTEXT_LOADING.md",
   ".agents/rules/no-broad-context.md",
-  ".agents/rules/rtk.md"
+  ".agents/rules/rtk.md",
+  ".agents/skills/README.md",
+  "scripts/README.md"
 )
 $referenceFiles = @(
   "README.md",
   "docs/context/PROJECT_STATUS.md",
-  "docs/context/SOURCE_OF_TRUTH.md",
-  ".agents/skills/README.md"
+  "docs/context/SOURCE_OF_TRUTH.md"
 )
 
 Write-Host "== RebanhoSync Codex Bootstrap =="
@@ -60,7 +61,9 @@ Write-Host "Ordem minima:"
 Write-Host "1. AGENTS.md"
 Write-Host "2. CORE_RULES.md + CONTEXT_LOADING.md + no-broad-context.md"
 Write-Host "3. AGENTS.md local, se existir"
-Write-Host "4. Uma skill principal, somente se a tarefa exigir"
-Write-Host "5. rtk.md para qualquer comando ou validacao"
+Write-Host "4. CONTEXT_LOADING.md roteia a fase e a skill aplicavel"
+Write-Host "5. Implementacao: uma skill principal e no maximo uma de apoio"
+Write-Host "6. Lifecycle posterior: gate, reconcile docs e prepare PR em fases separadas"
+Write-Host "7. rtk.md para qualquer comando ou validacao"
 Write-Host ""
 Write-Host "Bootstrap OK"

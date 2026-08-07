@@ -28,7 +28,10 @@ param(
   [string[]]$Docs = @(),
   [string[]]$NotExecuted = @(),
   [string]$OutputPath = "",
-  [switch]$Force
+  [switch]$Force,
+  [string]$OverwriteConfirmation = "",
+  [switch]$AllowExternalOutput,
+  [string]$ExternalOutputConfirmation = ""
 )
 
 Set-StrictMode -Version Latest
@@ -99,10 +102,39 @@ if ([string]::IsNullOrWhiteSpace($OutputPath)) {
   return
 }
 
-$resolvedOutput = [System.IO.Path]::GetFullPath($OutputPath)
+$repoRoot = (& git rev-parse --show-toplevel 2>$null).Trim()
+if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($repoRoot)) {
+  throw "Execute prepare-pr.ps1 dentro de um checkout Git."
+}
+$repoRoot = [System.IO.Path]::GetFullPath($repoRoot)
+$resolvedOutput = if ([System.IO.Path]::IsPathRooted($OutputPath)) {
+  [System.IO.Path]::GetFullPath($OutputPath)
+} else {
+  [System.IO.Path]::GetFullPath((Join-Path $repoRoot $OutputPath))
+}
+$rootPrefix = $repoRoot.TrimEnd(
+  [System.IO.Path]::DirectorySeparatorChar,
+  [System.IO.Path]::AltDirectorySeparatorChar
+) + [System.IO.Path]::DirectorySeparatorChar
+$insideRepository = $resolvedOutput.StartsWith($rootPrefix, [System.StringComparison]::OrdinalIgnoreCase)
+$gitDirectory = [System.IO.Path]::GetFullPath((Join-Path $repoRoot ".git"))
+$insideGitDirectory = $resolvedOutput.Equals($gitDirectory, [System.StringComparison]::OrdinalIgnoreCase) -or
+  $resolvedOutput.StartsWith($gitDirectory + [System.IO.Path]::DirectorySeparatorChar, [System.StringComparison]::OrdinalIgnoreCase)
+
+if ($insideGitDirectory) {
+  throw "OutputPath nao pode apontar para .git."
+}
+if (-not $insideRepository -and
+    (-not $AllowExternalOutput -or $ExternalOutputConfirmation -ne "ALLOW_EXTERNAL_PR_OUTPUT")) {
+  throw "Output externo bloqueado. Exige -AllowExternalOutput e -ExternalOutputConfirmation ALLOW_EXTERNAL_PR_OUTPUT."
+}
+
 $outputExists = Test-Path -LiteralPath $resolvedOutput
 if ($outputExists -and -not $Force) {
-  throw "Arquivo de saida ja existe: $resolvedOutput. Use -Force somente para substituicao intencional."
+  throw "Arquivo de saida ja existe: $resolvedOutput. Sobrescrita exige -Force e confirmacao inequívoca."
+}
+if ($outputExists -and $Force -and $OverwriteConfirmation -ne "OVERWRITE_PR_OUTPUT") {
+  throw "Sobrescrita exige -OverwriteConfirmation OVERWRITE_PR_OUTPUT."
 }
 $outputIsDirectory = $outputExists -and (Test-Path -LiteralPath $resolvedOutput -PathType Container)
 if ($outputIsDirectory) {

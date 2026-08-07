@@ -3,7 +3,7 @@
 Atualizado em: 2026-08-03  
 Versão: 1.2.0
 
-Use ao finalizar patch ou revisão. Marque **N/A** quando o item não se aplicar; não trate item não verificado como aprovado.
+Use como checklist auxiliar ao finalizar patch ou revisão. Marque **N/A** quando o item não se aplicar; não trate item não verificado como aprovado. Este arquivo não emite READY/NOT READY e não substitui `rebanhosync-verification-gate`.
 
 ## Escopo e diff
 
@@ -42,11 +42,10 @@ Use ao finalizar patch ou revisão. Marque **N/A** quando o item não se aplicar
 - [ ] Comandos seguiram `.agents/rules/rtk.md`.
 - [ ] Resultados foram relatados sem ocultar falhas, warnings ou limitações.
 
-## Classificação final
+## Encaminhamento ao gate
 
-- [ ] **READY:** sem bloqueadores e com validação suficiente.
-- [ ] **READY WITH CAVEAT:** risco residual explícito e não bloqueante.
-- [ ] **NOT READY:** contrato violado, escopo indevido, falha relevante ou validação bloqueante ausente.
+- [ ] Evidências, comandos, resultados e lacunas estão prontos para `rebanhosync-verification-gate`.
+- [ ] Nenhuma classificação final foi inferida por este checklist auxiliar.
 
 ## Entrega
 
@@ -55,6 +54,6 @@ Relatar:
 1. arquivos criados/alterados/removidos;
 2. validações executadas, com comando e resultado;
 3. validações não executadas, com motivo;
-4. bloqueadores;
+4. lacunas conhecidas;
 5. riscos/pendências, no máximo 3;
-6. próximo passo recomendado.
+6. próximo passo: executar ou concluir `rebanhosync-verification-gate`.

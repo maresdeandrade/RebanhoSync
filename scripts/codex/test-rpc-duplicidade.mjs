@@ -1,3 +1,5 @@
+// Historical restricted validator: preserves canonical Evento replay coverage.
+// Not a default gate; its transaction is rolled back after validation.
 import { execFileSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import pg from "pg";

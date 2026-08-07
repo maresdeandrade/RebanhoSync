@@ -1,75 +1,78 @@
 # Start Nova Conversa — RebanhoSync
 
-Atualizado em: 2026-08-03  
-Versão: 1.2.0
+Atualizado em: 2026-08-07
+Versão: 1.3.0
 
-Use ao iniciar uma nova conversa para continuar o RebanhoSync a partir do estado ativo do repositório.
+Use para retomar o RebanhoSync a partir do estado ativo do repositório. Por padrão, esta execução termina em diagnóstico e decisão; não autoriza patch apenas porque existe um plano ativo.
 
-## Prompt
+## Modo
 
-Você está retomando o desenvolvimento do RebanhoSync.
+`SOMENTE_LEITURA` por padrão.
 
-### Contexto adicional da conversa anterior
+Implementação só é permitida quando a tarefa atual contém objetivo, escopo e autorização explícitos. Nesse caso, após entregar o diagnóstico, aplicar o prompt operacional adequado em uma fase separada.
+
+## Entradas obrigatórias
+
+### Objetivo da tarefa atual
+
+```txt
+[OBJETIVO_ATUAL_OU_DIAGNOSTICO_DE_CONTINUIDADE]
+```
+
+### Contexto não documentado da conversa anterior
 
 ```txt
 [COLAR_APENAS_O_QUE_AINDA_NAO_ESTA_DOCUMENTADO]
 ```
 
-## Bootstrap mínimo
+## Dependências autoritativas
 
-1. Leia `AGENTS.md`.
-2. Aplique `.agents/rules/CORE_RULES.md`, `CONTEXT_LOADING.md` e `no-broad-context.md`.
-3. Leia `docs/review/CURRENT_PHASE_HANDOFF.md` e `docs/review/ACTIVE_PHASE_PLAN.md`.
-4. Se o plano ativo apontar para plano específico, leia-o.
-5. Carregue `LAST_PHASE_RESULT.md`, `OPEN_REVIEW_ITEMS.md`, `PROJECT_STATUS.md` ou `ROADMAP.md` somente quando necessários para uma dúvida concreta.
-6. Escolha no máximo uma skill principal para a tarefa atual.
-7. Para comandos e validações, siga `.agents/rules/rtk.md`.
+1. Ler `AGENTS.md` e aplicar `.agents/rules/CORE_RULES.md`.
+2. Usar `.agents/rules/CONTEXT_LOADING.md` para contexto, skill e progressão.
+3. Aplicar `.agents/rules/no-broad-context.md`.
+4. Ler `docs/review/CURRENT_PHASE_HANDOFF.md` e `docs/review/ACTIVE_PHASE_PLAN.md`.
+5. Se o plano ativo apontar para plano específico, lê-lo.
+6. Carregar `LAST_PHASE_RESULT.md`, `OPEN_REVIEW_ITEMS.md`, `PROJECT_STATUS.md` ou `ROADMAP.md` somente para dúvida concreta.
+7. Seguir `.agents/rules/rtk.md` se houver comandos somente leitura.
 
-O contexto colado é complementar. Em conflito, siga a precedência das rules e confirme no repositório. Se o repositório não estiver acessível, declare o que não pôde ser verificado.
+O contexto colado é complementar. Em conflito, aplicar as precedências de `CORE_RULES.md`. Se o repositório não estiver acessível, declarar o que não pôde ser verificado.
 
-## Diagnóstico antes do patch
+## Escopo proibido
 
-Entregue um diagnóstico curto contendo:
-
-1. fase/subfase ou contexto atual;
-2. estado: concluído, em andamento ou não confirmável;
-3. baseline documentado e `HEAD` local, quando confirmáveis;
-4. estado inicial do worktree, inclusive staged e untracked;
-5. fontes ativas efetivamente lidas;
-6. pendências abertas relevantes;
-7. decisões já consolidadas;
-8. próximo passo mínimo;
-9. skill principal escolhida e motivo;
-10. validação proporcional necessária.
-
-## Regras
-
-- Não implementar antes do diagnóstico.
-- Não reabrir fase fechada sem evidência objetiva.
+- Não implementar, editar, commitar ou iniciar a próxima fase apenas com base no handoff ou plano ativo.
+- Não reabrir fase fechada sem evidência.
 - Não marcar etapa em andamento como concluída.
 - Não transformar roadmap em pendência técnica.
 - Não executar hardening genérico.
-- Não alterar Supabase, migrations, RLS, RPC, schema ou edge functions sem escopo e justificativa explícitos.
-- Seguir o escopo permitido/proibido do plano ativo e do plano específico.
-- Não repetir regras permanentes ou histórico já documentado.
-- Não atualizar baseline automaticamente com worktree contendo alterações funcionais pendentes.
+- Não alterar Supabase, migrations, RLS, RPC, schema ou edge functions sem tarefa atual explícita e prompt operacional apropriado.
+- Não atualizar baseline automaticamente com alterações funcionais pendentes.
 
-## Quando gerar prompt para agente
+## Diagnóstico obrigatório
 
-Produza prompt curto e referencial:
+Confirmar:
 
-- aponte para os documentos normativos necessários;
-- repita apenas objetivo, escopo e critérios de aceite específicos;
-- exija diagnóstico antes do patch;
-- exija validação proporcional via `.agents/rules/rtk.md`;
-- não copie regras permanentes, plano completo ou histórico extenso.
+1. fase/subfase ou contexto atual;
+2. estado: concluído, em andamento ou não confirmável;
+3. baseline documentado e `HEAD`, quando confirmáveis;
+4. worktree completo, inclusive staged e untracked;
+5. fontes ativas efetivamente lidas;
+6. pendências abertas relevantes;
+7. decisões consolidadas;
+8. próximo passo mínimo;
+9. skill indicada para a próxima fase, sem carregá-la antecipadamente;
+10. validação proporcional necessária.
 
-## Formato da resposta
+## Condições de parada
 
-1. **Diagnóstico**
-2. **Fatos confirmados**
-3. **Inferências/limitações**
-4. **Riscos**
-5. **Plano mínimo**
-6. **Validação obrigatória**
-7. **Critério de aceite**
+Se fase, baseline, escopo atual ou autorização não puderem ser confirmados, parar no diagnóstico. Não inferir permissão de implementação.
+
+## Saída obrigatória
+
+1. **Diagnóstico**;
+2. **Fatos confirmados**;
+3. **Inferências/limitações**;
+4. **Riscos**;
+5. **Decisão:** `CONTINUAR_DIAGNOSTICO`, `PRONTO_PARA_NOVA_TAREFA` ou `BLOQUEADO_POR_CONTEXTO`;
+6. **Próximo passo mínimo**;
+7. **Validação necessária**;
+8. **Critério de aceite da próxima fase**.

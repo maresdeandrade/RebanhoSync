@@ -135,10 +135,10 @@ Confirmar a existência antes de executar:
 
 ```powershell
 powershell -File scripts/codex/preflight.ps1 -Paths "<path1>","<path2>"
-powershell -File scripts/codex/validate.ps1 -TouchedPaths "<path1>","<path2>"
+powershell -File scripts/codex/validate.ps1 -Profile focused -TouchedPaths "<path1>","<path2>" -TestPaths "<teste-focado>"
 ```
 
-Executar no ambiente previsto pelo repositório. Não adaptar ou inventar parâmetros sem ler o script ou sua documentação.
+Use `standard` com `-TestPaths`, `-LintPaths` e `-IncludeBuild` somente conforme o risco. Use `full -ConfirmFull` apenas em fechamento amplo explicitamente autorizado. Executar no ambiente previsto pelo repositório; não adaptar ou inventar parâmetros sem ler o script ou sua documentação.
 
 ---
 

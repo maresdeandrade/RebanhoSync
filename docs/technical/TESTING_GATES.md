@@ -179,7 +179,7 @@ Se disponíveis:
 
 ```powershell
 powershell -File scripts/codex/preflight.ps1 -Paths "<path1>","<path2>"
-powershell -File scripts/codex/validate.ps1 -TouchedPaths "<path1>","<path2>"
+powershell -File scripts/codex/validate.ps1 -Profile focused -TouchedPaths "<path1>","<path2>" -TestPaths "<teste-focado>"
 
 ```
 

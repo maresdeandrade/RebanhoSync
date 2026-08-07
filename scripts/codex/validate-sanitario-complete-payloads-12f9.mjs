@@ -1,3 +1,4 @@
+// Historical restricted evidence gate for Phase 12F9 artifacts.
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 

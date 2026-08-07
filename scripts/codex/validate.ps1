@@ -1,5 +1,12 @@
 param(
-  [string[]]$TouchedPaths = @()
+  [string[]]$TouchedPaths = @(),
+  [Parameter(Mandatory = $true)]
+  [ValidateSet("focused", "standard", "full")]
+  [string]$Profile,
+  [string[]]$TestPaths = @(),
+  [string[]]$LintPaths = @(),
+  [switch]$IncludeBuild,
+  [switch]$ConfirmFull
 )
 
 Set-StrictMode -Version Latest
@@ -114,6 +121,7 @@ foreach ($path in $normalizedPaths) {
 Write-Host "== RebanhoSync Validation Gate =="
 Write-Host "Repository: $repoRoot"
 Write-Host "Touched paths: $($normalizedPaths.Count)"
+Write-Host "Profile: $Profile"
 if ($criticalTouched) {
   Write-Host "Critical area detected. Review, when applicable:"
   Write-Host "- rollback, retry/replay, idempotency, tableMap and reason codes"
@@ -135,9 +143,44 @@ function Invoke-Pnpm {
   }
 }
 
-Invoke-Pnpm run lint
-Invoke-Pnpm test
-Invoke-Pnpm run build
+switch ($Profile) {
+  "focused" {
+    if ($IncludeBuild) {
+      throw "IncludeBuild nao e permitido no perfil focused. Use standard ou full."
+    }
+    if ($TestPaths.Count -gt 0) {
+      Invoke-Pnpm test -- @TestPaths
+    }
+    if ($LintPaths.Count -gt 0) {
+      Invoke-Pnpm exec eslint -- @LintPaths
+    }
+  }
+  "standard" {
+    if ($TestPaths.Count -eq 0 -and $LintPaths.Count -eq 0 -and -not $IncludeBuild) {
+      throw "Perfil standard exige TestPaths, LintPaths ou IncludeBuild explicitamente."
+    }
+    if ($TestPaths.Count -gt 0) {
+      Invoke-Pnpm test -- @TestPaths
+    }
+    if ($LintPaths.Count -gt 0) {
+      Invoke-Pnpm exec eslint -- @LintPaths
+    }
+    if ($IncludeBuild) {
+      Invoke-Pnpm run build
+    }
+  }
+  "full" {
+    if (-not $ConfirmFull) {
+      throw "Perfil full exige -ConfirmFull para confirmar validacao ampla autorizada."
+    }
+    if ($TestPaths.Count -gt 0 -or $LintPaths.Count -gt 0 -or $IncludeBuild) {
+      throw "Perfil full possui contrato fixo; nao combine TestPaths, LintPaths ou IncludeBuild."
+    }
+    Invoke-Pnpm run lint
+    Invoke-Pnpm test
+    Invoke-Pnpm run build
+  }
+}
 
 Write-Host "Validation OK"
 exit 0

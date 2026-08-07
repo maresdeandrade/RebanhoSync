@@ -519,8 +519,7 @@ pnpm run build
 Se a mudança tocar sanitário, eventos, relatórios ou adapter operacional:
 
 ```bash
-powershell -File scripts/codex/validate.ps1 -TouchedPaths "src/lib/insights","src/features/operationalInsights","src/lib/sanitario","src/lib/events","src/lib/reports"
-graphify update .
+powershell -File scripts/codex/validate.ps1 -Profile standard -TouchedPaths "src/lib/insights","src/features/operationalInsights","src/lib/sanitario","src/lib/events","src/lib/reports" -TestPaths "src/lib/insights/__tests__" -LintPaths "src/lib/insights","src/features/operationalInsights"
 git diff --check
 
 ```

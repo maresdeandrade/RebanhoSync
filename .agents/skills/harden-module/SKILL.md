@@ -1,6 +1,7 @@
 ---
 name: harden-module
 description: Endurece incrementalmente módulos e hotspots do RebanhoSync por separação de responsabilidades, extração de regras puras, contenção de efeitos e limites seguros entre UI, domínio, persistência e sync. Usar quando um módulo mistura responsabilidades, duplica payload/validação/efeitos, concentra regra crítica em React ou apresenta risco arquitetural/operacional sem justificar reescrita ampla. Não usar para microcopy/visual, quando o hotspot ainda não foi localizado ou quando o patch já está na etapa de verificação final.
+role: engineering
 ---
 
 # Harden Module
@@ -11,11 +12,10 @@ Reduzir risco arquitetural e operacional com alterações pequenas, reversíveis
 
 ## Coordenação
 
-- Usar `repository-context-retrieval` se o hotspot ainda não estiver localizado.
-- Combinar com a skill de domínio quando houver regra específica.
-- Combinar com `sync-offline-rollback` para gesto, fila, retry, rollback ou reconcile.
-- Combinar com `migrations-rls-contracts` para schema, RLS, constraint ou RPC.
-- Encerrar com `rebanhosync-verification-gate` após o patch.
+- Se o hotspot ainda não estiver localizado, executar primeiro a fase de descoberta com `repository-context-retrieval` e encerrá-la antes do hardening.
+- Durante implementação, usar `harden-module` como principal e no máximo uma skill de apoio quando houver interseção concreta de domínio, sync ou banco.
+- Se duas ou mais interseções adicionais forem indispensáveis, parar e redelimitar o escopo em vez de carregar múltiplas skills simultaneamente.
+- Executar `rebanhosync-verification-gate` somente depois do patch, como fase lifecycle separada.
 
 ## Leitura inicial
 

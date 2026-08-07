@@ -1,6 +1,7 @@
 ---
 name: sync-offline-rollback
 description: Use when a RebanhoSync task touches Dexie, offline-first behavior, sync queue, gestures, rollback, retry, reconcile, partial success, or local-remote conflict handling.
+role: engineering
 ---
 
 # Sync Offline Rollback
@@ -63,15 +64,9 @@ Do not use when:
 
 ---
 
-## Source of truth
+## Precedência
 
-In case of conflict, trust:
-1. Code + active migrations;
-2. `docs/context/PROJECT_STATUS.md`;
-3. Active normative docs;
-4. Derived docs;
-5. Archive/history;
-6. This skill.
+Aplicar as precedências factual e procedimental definidas em `.agents/rules/CORE_RULES.md`. Esta skill não substitui contratos ativos de sync ou domínio.
 
 ---
 
@@ -101,23 +96,9 @@ In case of conflict, trust:
 * **Protocolo:** Rule/configuration.
 * **Tags/signals/insights:** Auxiliary only.
 
-## Agenda Sanitária v2 sync cautions
+## Contratos específicos de domínio
 
-Future offline persistence must treat these as distinct operations:
-
-* `agenda_intent`;
-* `event_execution_intent`;
-* `agenda_closure_intent`.
-
-Verify:
-
-* retry does not duplicate agenda/event/closure;
-* replay preserves `previewGroupId`, `sourceDemandKey` and agenda/event linkage;
-* partial success is explicit and not masked;
-* rollback restores local state safely after failed agenda/event/closure sync;
-* closure without execution does not create event;
-* event execution remains the only source of sanitary history;
-* inventory movement and withdrawal are not created from agenda or closure.
+Não duplicar nesta skill contratos detalhados de Sanitário, Reprodução, Movimento ou Cadastro. Quando o fluxo de domínio for o risco dominante, usar a skill de domínio como principal e esta como única skill de apoio; quando sync for o risco dominante, inverter os papéis. Carregar o documento normativo específico somente para os invariantes realmente afetados.
 
 ---
 
@@ -191,7 +172,7 @@ Follow `.agents/rules/rtk.md`.
 ### Minimum for sync/offline task:
 ```bash
 git status --short --untracked-files=all
-
+git diff --check
 ```
 
 * plus the related test command.
@@ -234,7 +215,3 @@ Return:
 * Separate confirmed facts, inferences, and recommendations.
 * Do not approve sync change without idempotency assessment.
 * Do not approve rollback change without failure-path test plan.
-
-```
-
-```

@@ -1,6 +1,7 @@
 ---
 name: rebanhosync-verification-gate
 description: Valida um patch concluído do RebanhoSync, inspeciona diff tracked, staged e arquivos untracked, confirma escopo, contratos de domínio e evidências de teste e classifica a entrega antes de PR ou merge. Usar quando a implementação estiver concluída, houver mudanças locais a revisar ou a tarefa tocar domínio crítico, sync, RLS, migrations ou documentação. Não usar durante descoberta, planejamento, implementação em curso ou apenas para escrever o PR.
+role: lifecycle
 ---
 
 # RebanhoSync Verification Gate
@@ -19,7 +20,9 @@ Classificar uma entrega com base no patch real e em validação proporcional:
 2. `.agents/rules/CORE_RULES.md`;
 3. `.agents/rules/CONTEXT_LOADING.md`;
 4. `.agents/rules/rtk.md`;
-5. `AGENTS.md` local e skill de domínio, se o patch tocar caminho crítico.
+5. `AGENTS.md` local e os contratos identificados pela implementação; carregar no máximo uma skill de apoio se uma lacuna crítica de domínio permanecer explícita.
+
+O gate é uma fase lifecycle posterior ao patch e não conta como segunda skill principal da implementação. Ele não corrige o patch durante a revisão.
 
 ## Inspeção obrigatória do patch
 
@@ -124,7 +127,7 @@ Usar quando houver:
 
 - Acionar `reconcile-docs` se houver drift formal.
 - Acionar skill de domínio se um bloqueador exigir implementação.
-- Acionar `prepare-pr` somente após READY ou READY WITH CAVEAT.
+- Acionar `prepare-pr` somente após READY. READY WITH CAVEAT exige resolver ou reclassificar a ressalva antes de usar o contrato automatizado de PR.
 
 ## Saída obrigatória
 

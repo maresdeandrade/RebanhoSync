@@ -1,6 +1,7 @@
 ---
 name: sanitario-catalogo-regulatorio-compliance
-description: Use when a RebanhoSync task touches sanitary regulatory catalog, official rules, state overlays, compliance, feed-ban, suspected clinical cases, notifiable diseases, biosafety, regulatory/documental checklists, regulatory read models, or compliance guards.
+description: Use para catálogo sanitário oficial, regras e fontes regulatórias, overlays, compliance, feed-ban, suspeita notificável, biossegurança, checklists contextuais, read models e guards. Não usar como skill principal para registro rotineiro de aplicação, dose, estoque ou conclusão operacional de agenda.
+role: domain
 ---
 
 # Sanitário Catálogo Regulatório Compliance
@@ -49,6 +50,28 @@ Do not use as primary skill when task is only about:
 - Correção de evento sanitário executado.
 
 Use `sanitario-registro-operacional` for those cases.
+
+---
+
+## Leitura inicial
+
+1. `AGENTS.md`;
+2. `.agents/rules/CORE_RULES.md`;
+3. `.agents/rules/CONTEXT_LOADING.md`;
+4. `.agents/rules/no-broad-context.md`;
+5. `docs/domain/SANITARIO.md`;
+6. arquivos-alvo e testes diretamente relacionados;
+7. `.agents/rules/rtk.md`, se houver comandos ou validação.
+
+Carregar `docs/context/SOURCE_OF_TRUTH.md` para decisões críticas, carência, elegibilidade ou conflito entre fato e read model. Fontes legais ou técnicas específicas devem ser explícitas; guideline isolada não autoriza regra crítica.
+
+## Restrições
+
+- Não alterar schema, migration, RLS, RPC ou seed sem autorização explícita e sem usar `migrations-rls-contracts` como skill principal ou única skill de apoio.
+- Não executar reset de banco, deploy ou operação destrutiva por padrão.
+- Não atualizar Graphify automaticamente; seguir `.agents/rules/GRAPHIFY_USAGE.md`.
+- Não transformar catálogo, overlay ou checklist em fato, pendência ou bloqueio sem runtime e fonte explícitos.
+- Não usar esta skill como fonte superior ao código e aos documentos normativos ativos.
 
 ---
 
@@ -104,7 +127,7 @@ RegulatoryOverlayActionability = "contextual" | "actionable"
 Rules:
 
 * no `overlay_runtime` → `contextual`;
-* runtime conforme → `contextual` or `resolved`;
+* runtime conforme → `contextual`;
 * runtime pendente → `actionable`;
 * runtime `ajuste_necessario` → `actionable`;
 * occurrence/case/notificação real → `actionable`;
@@ -238,31 +261,18 @@ When changing compliance behavior, test:
 
 ## Validation
 
-Minimum:
+Seguir `.agents/rules/rtk.md`.
+
+Mínimo para alteração de governança ou documentação regulatória:
 
 ```bash
-pnpm test
-pnpm run lint
-pnpm run build
-
-```
-
-If touching Supabase schema/RLS/RPC/seed:
-
-```bash
-supabase db reset
-node scripts/codex/validate-supabase-baseline-functional.mjs
-
-```
-
-If touching regulatory/compliance flow:
-
-```bash
-powershell -File scripts/codex/validate.ps1 -TouchedPaths "src/lib/sanitario","src/components/sanitario","src/pages/Registrar","src/pages/Agenda","src/lib/events","src/lib/reports","src/lib/insights","src/features/operationalInsights","supabase/migrations"
-graphify update .
+git status --short --untracked-files=all
 git diff --check
-
 ```
+
+Para patch funcional de compliance, executar testes focados e adicionar lint/build somente quando proporcionais ao risco. Se tocar Supabase, schema, RLS, RPC, migration ou sync-batch, executar a validação funcional indicada em `rtk.md` e coordenar com `migrations-rls-contracts`.
+
+Operações destrutivas exigem autorização explícita, necessidade técnica demonstrada e compatibilidade simultânea com `rtk.md` e `migrations-rls-contracts`. Graphify só pode ser atualizado quando `.agents/rules/GRAPHIFY_USAGE.md` classificar a mudança como estrutural relevante.
 
 ## Output expected
 
@@ -275,9 +285,3 @@ Report:
 * Tests added/updated.
 * Validation commands and results.
 * Risks remaining.
-
----
-
-```
-
-```

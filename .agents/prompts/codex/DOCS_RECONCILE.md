@@ -1,79 +1,56 @@
 # Codex Prompt — Reconciliar Documentação
 
-Atualizado em: 2026-08-03  
-Versão: 1.2.0
+Atualizado em: 2026-08-07
+Versão: 1.3.0
 
-Use para alinhar documentação ativa ao comportamento confirmado no código e nas migrations. Não use para fechar fase; nesse caso, use `.agents/prompts/continuity/UPDATE_FINAL_DE_FASE.md`.
+Use para alinhar documentação ativa ao comportamento confirmado no código e migrations. Não use para fechar fase; nesse caso, use `.agents/prompts/continuity/UPDATE_FINAL_DE_FASE.md`.
 
-## Prompt
+## Modo
 
-Você está reconciliando a documentação do RebanhoSync.
+`MUTACAO_AUTORIZADA` somente para os documentos explicitamente listados.
 
-### Objetivo
+## Entradas obrigatórias
 
-```txt
-[DESCREVER_O_DRIFT_OU_RESULTADO_ESPERADO]
-```
-
-### Documentos-alvo
+### Drift ou resultado esperado
 
 ```txt
-[LISTAR_DOCUMENTOS]
+[DESCREVER_DRIFT]
 ```
 
-### Código, migrations ou testes de referência
+### Documentos permitidos
 
 ```txt
-[LISTAR_AREAS_MINIMAS_DE_REFERENCIA]
+[LISTAR_DOCUMENTOS_EXATOS]
 ```
 
-## Contexto e skill
+### Fontes mínimas de referência
 
-1. Leia `AGENTS.md`.
-2. Aplique `.agents/rules/CORE_RULES.md`, `CONTEXT_LOADING.md` e `no-broad-context.md`.
-3. Use `reconcile-docs` como skill principal.
-4. Para comandos e validações, siga `.agents/rules/rtk.md`.
-5. Expanda o contexto somente se houver conflito ainda não resolvido.
+```txt
+[LISTAR_CODIGO_MIGRATIONS_TESTES_OU_DOCUMENTOS_SUPERIORES]
+```
 
-Em conflito, siga a precedência definida nas rules: código + migrations ativas → `PROJECT_STATUS.md` → documentos normativos ativos → documentos derivados → histórico.
+## Dependências autoritativas
 
-## Restrições
+1. Aplicar `AGENTS.md`, `.agents/rules/CORE_RULES.md` e `.agents/rules/CONTEXT_LOADING.md`.
+2. Usar `reconcile-docs` como skill lifecycle principal desta fase.
+3. Seguir `.agents/rules/rtk.md` para comandos e validação.
 
-- Alterar somente documentação, prompts ou skills explicitamente incluídos no escopo.
+## Escopo proibido
+
 - Não alterar código, testes, migrations, seed, RLS, RPC ou schema.
-- Não usar `docs/archive/**` como fonte operacional.
-- Não duplicar contratos já centralizados em rules ou documentos normativos.
-- Não reabrir fase fechada nem transformar roadmap em backlog técnico.
-- Não mover ou arquivar documento ativo sem confirmar que foi substituído e que suas referências foram atualizadas.
-- Preservar `LAST_PHASE_RESULT.md`, `CURRENT_PHASE_HANDOFF.md`, `ACTIVE_PHASE_PLAN.md`, `OPEN_REVIEW_ITEMS.md` e o plano ativo da fase.
-- Se o escopo exigir mudança funcional, parar e relatar a expansão necessária.
+- Não alterar prompt ou skill que não esteja explicitamente listado.
+- Não usar archive como fonte operacional nem arquivar sem autorização explícita e alvo exato.
+- Não reabrir fase fechada, transformar roadmap em backlog ou criar fonte paralela de verdade.
+- Se a reconciliação exigir mudança funcional, parar e relatar o novo escopo.
 
-## Procedimento
+## Condições de parada
 
-1. Confirmar o drift com evidência no código, migration ativa, teste ou documento de maior precedência.
-2. Separar fato confirmado, inferência e recomendação.
-3. Identificar duplicações, referências quebradas, status obsoletos e documentos ativos apontando para archive.
-4. Propor o patch documental mínimo.
-5. Aplicar somente após o diagnóstico.
-6. Revisar arquivos tracked, staged e untracked.
-7. Validar conforme `.agents/rules/rtk.md`.
+Não aplicar patch se o drift não estiver comprovado por fonte de maior precedência ou se o documento necessário estiver fora da lista autorizada.
 
-## Critérios de aceite
+## Saída obrigatória
 
-- Documentação ativa coerente com as fontes de maior precedência.
-- Nenhum contrato duplicado ou nova fonte paralela de verdade.
-- Nenhuma referência operacional depende de `docs/archive/**`.
-- Pendências fechadas não permanecem como abertas.
-- Nenhum arquivo funcional foi alterado.
-- Cercas Markdown, links e whitespace estão válidos.
-- Validações executadas e não executadas foram relatadas sem invenção.
+Usar o contrato de saída de `reconcile-docs`, acrescentando:
 
-## Entrega
-
-1. **Diagnóstico**
-2. **Fatos confirmados**
-3. **Arquivos alterados/movidos**
-4. **Referências atualizadas**
-5. **Validações executadas**
-6. **Validações não executadas e motivo**
-7. **Riscos/pendências**, no máximo 3
+1. **Drift confirmado**;
+2. **Escopo documental autorizado**;
+3. **Confirmação de ausência de alteração funcional**.

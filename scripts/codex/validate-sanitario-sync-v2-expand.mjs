@@ -1,3 +1,5 @@
+// Historical restricted validator: preserves exclusive Phase 12 sync coverage.
+// Not a default gate; requires an explicitly disposable local database.
 import { execFileSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import pg from "pg";
@@ -222,6 +224,10 @@ async function count(client, table, field, value) {
 async function main() {
   const env = readEnv();
   assertLocalTarget(env);
+  assert(
+    process.env.REBANHOSYNC_DISPOSABLE_LOCAL_DB === "1",
+    "Este validador histórico persiste fatos. Execute somente em banco local explicitamente descartável com REBANHOSYNC_DISPOSABLE_LOCAL_DB=1.",
+  );
   const db = new Client({ connectionString: env.DB_URL });
   const db2 = new Client({ connectionString: env.DB_URL });
   const admin = createClient(env.API_URL, env.SERVICE_ROLE_KEY, {
@@ -603,7 +609,7 @@ async function main() {
       run_id: run,
       farms,
       facts_persisted: true,
-      cleanup: "execute supabase db reset no ambiente local descartavel",
+      cleanup: "descarte externamente o ambiente local explicitamente autorizado; este script nao executa limpeza destrutiva",
     }, null, 2));
   } finally {
     await db.query("reset role").catch(() => undefined);
@@ -617,7 +623,7 @@ async function main() {
       ).catch(() => undefined);
     }
     if (farms.length > 0 || users.length > 0) {
-      console.log(`FIXTURE_MARKER=${JSON.stringify({ run_id: run, client_id: CLIENT_ID, farms, user_ids: users.map((user) => user.id), action: "local_supabase_db_reset" })}`);
+      console.log(`FIXTURE_MARKER=${JSON.stringify({ run_id: run, client_id: CLIENT_ID, farms, user_ids: users.map((user) => user.id), facts_persisted: true, cleanup: "dispose_authorized_local_environment" })}`);
     }
     await db.end();
     await db2.end();

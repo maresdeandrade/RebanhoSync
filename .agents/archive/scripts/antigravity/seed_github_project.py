@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Archived: no active TECH_DEBT source or operational consumer as of 2026-08-07.
 """
 Seed GitHub Issues + Project v2 items from an explicit active TECH_DEBT file.
 

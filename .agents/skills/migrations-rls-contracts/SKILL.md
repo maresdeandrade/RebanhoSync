@@ -1,6 +1,7 @@
 ---
 name: migrations-rls-contracts
-description: Protege contratos de banco do RebanhoSync em migrations Supabase/Postgres, RLS, policies, grants, funções, triggers, RPCs, índices, constraints, FKs compostas, RBAC, membership, `fazenda_id`, sync-batch e baseline. Usar ao criar, alterar, revisar ou consolidar schema ou autorização remota. Não usar para UI/copy, documentação local sem mudança de contrato ou sync exclusivamente local; combinar com a skill de domínio e com `sync-offline-rollback` quando aplicável.
+description: Protege contratos de banco do RebanhoSync em migrations Supabase/Postgres, RLS, policies, grants, funções, triggers, RPCs, índices, constraints, FKs compostas, RBAC, membership, `fazenda_id`, sync-batch e baseline. Usar ao criar, alterar, revisar ou consolidar schema ou autorização remota. Não usar para UI/copy, documentação local sem mudança de contrato ou sync exclusivamente local; durante implementação, usar no máximo uma skill de apoio quando houver interseção concreta.
+role: engineering
 ---
 
 # Migrations RLS Contracts
@@ -29,14 +30,9 @@ Carregar somente quando necessário:
 - `docs/context/SOURCE_OF_TRUTH.md`;
 - skill de domínio afetada.
 
-## Hierarquia em conflito
+## Precedência
 
-1. código + migrations ativas;
-2. `docs/context/PROJECT_STATUS.md`;
-3. docs normativos ativos;
-4. docs derivados;
-5. histórico em `docs/archive/**` e migrations legadas;
-6. esta skill.
+Aplicar as precedências factual e procedimental definidas em `.agents/rules/CORE_RULES.md`. Migrations legadas e esta skill não substituem contratos ativos.
 
 ## Restrições
 
@@ -112,16 +108,6 @@ Aplicar apenas os contratos relevantes:
 - decisão crítica = fonte técnica explícita.
 
 Não converter dedup lógico do core em constraint física sem decisão explícita, auditoria dos dados e plano de migration/sync.
-
-## Cautela com Agenda Sanitária v2
-
-Quando esse fluxo for afetado:
-
-- auditar o legado antes de criar enum, status ou constraint;
-- distinguir execução, execução parcial, cancelamento, descarte e fechamento sem execução antes de exigir `source_evento_id`;
-- comprovar idempotência real antes de persistir intents ou impor unicidade;
-- preservar `fazenda_id`, RLS e compatibilidade com clientes offline;
-- combinar com a skill sanitária aplicável.
 
 ## Testes mínimos por risco
 

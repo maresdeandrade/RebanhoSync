@@ -1,25 +1,29 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Runs the active documentation/governance gates.
-# Default: validates a docs-only reconciliation in the current worktree.
-# --strict: additionally requires a fully clean repository.
+# Runs the explicit active-document gates.
+# Scope and clean-tree checks are opt-in because they inspect the whole worktree.
 
 usage() {
   cat <<'EOF'
-Usage: scripts/antigravity/docs_gates.sh [--strict]
+Usage: scripts/antigravity/docs_gates.sh [--strict] [--check-scope]
 
 Options:
   --strict     Require a completely clean Git working tree first.
+  --check-scope  Require all changes to stay in the active docs allowlist.
   -h, --help  Show this help.
 EOF
 }
 
 strict=0
+check_scope=0
 while [[ "$#" -gt 0 ]]; do
   case "$1" in
     --strict)
       strict=1
+      ;;
+    --check-scope)
+      check_scope=1
       ;;
     -h|--help)
       usage
@@ -43,9 +47,9 @@ cd "$root"
 readonly SCRIPT_DIR="$root/scripts/antigravity"
 readonly REQUIRED_SCRIPTS=(
   "check_clean_tree.sh"
-  "validate_scoped_changes.sh"
-  "validate_rev_d_headers.sh"
-  "validate_derivation_td.sh"
+  "validate_docs_scope.sh"
+  "validate_docs_headers.sh"
+  "validate_docs_continuity.sh"
   "data_contract_audit.sh"
 )
 
@@ -66,14 +70,11 @@ if [[ "$strict" -eq 1 ]]; then
   run_gate check_clean_tree.sh
 fi
 
-run_gate validate_scoped_changes.sh
-run_gate validate_rev_d_headers.sh
-run_gate validate_derivation_td.sh
-
-if [[ -f "$SCRIPT_DIR/validate_derivation_active.sh" ]]; then
-  run_gate validate_derivation_active.sh
+if [[ "$check_scope" -eq 1 ]]; then
+  run_gate validate_docs_scope.sh
 fi
-
+run_gate validate_docs_headers.sh
+run_gate validate_docs_continuity.sh
 run_gate data_contract_audit.sh
 
 echo "OK: Antigravity active-document gates passed."

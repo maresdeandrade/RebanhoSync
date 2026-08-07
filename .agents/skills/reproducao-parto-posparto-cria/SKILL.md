@@ -1,6 +1,7 @@
 ---
 name: reproducao-parto-posparto-cria
-description: Use when a RebanhoSync task touches parto, pós-parto, cria creation, deterministic linking, reproductive event flow, or agenda derived from birth/calf lifecycle.
+description: Use para parto, pós-parto, criação de cria, vínculo determinístico mãe-evento-cria, fluxo reprodutivo factual ou agenda derivada do nascimento. Não usar para cadastro animal genérico, IATF amplo não implementado, sanitário geral ou ajuste visual/copy.
+role: domain
 ---
 
 # Reprodução Parto Pós-parto Cria
@@ -61,15 +62,9 @@ Do not use when:
 
 ---
 
-## Source of truth
+## Precedência
 
-In case of conflict, trust:
-1. Code + active migrations;
-2. `docs/context/PROJECT_STATUS.md`;
-3. Active normative docs;
-4. Derived docs;
-5. Archive/history;
-6. This skill.
+Aplicar as precedências factual e procedimental definidas em `.agents/rules/CORE_RULES.md`. Esta skill não substitui código, migrations ou documentos normativos ativos.
 
 ---
 
@@ -129,7 +124,7 @@ Follow `.agents/rules/rtk.md`.
 ### Minimum check:
 ```bash
 git status --short --untracked-files=all
-
+git diff --check
 ```
 
 * plus the related reproduction tests.
@@ -172,7 +167,3 @@ Return:
 * Do not treat agenda as execution.
 * Do not allow orphan cria.
 * Separate confirmed behavior, inference, and recommendation.
-
-```
-
-```

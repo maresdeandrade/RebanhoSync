@@ -1,3 +1,4 @@
+// Historical restricted evidence gate for Phase 12F5 artifacts.
 import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
