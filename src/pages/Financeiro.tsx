@@ -19,6 +19,7 @@ import {
   validateFinanceTransaction,
   calculateGerencialSummary,
 } from "@/lib/finance/gerencial";
+import { buildCommercialFinanceRows } from "@/lib/finance/commercialReadModel";
 import type {
   FinanceCategoryTipoEnum,
   FinanceCategoryGrupoEnum,
@@ -89,10 +90,16 @@ const Financeiro = () => {
 
   // Search & Filtering
   const [search, setSearch] = useState("");
-  const [tipoFilter, setTipoFilter] = useState<"all" | "entrada" | "saida">("all");
-  const [statusFilter, setStatusFilter] = useState<"all" | "previsto" | "realizado" | "cancelado">("all");
+  const [tipoFilter, setTipoFilter] = useState<"all" | "entrada" | "saida">(
+    "all",
+  );
+  const [statusFilter, setStatusFilter] = useState<
+    "all" | "previsto" | "realizado" | "cancelado"
+  >("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
-  const [costCenterFilter, setCostCenterFilter] = useState<"all" | "fazenda" | "lote" | "pasto" | "animal">("all");
+  const [costCenterFilter, setCostCenterFilter] = useState<
+    "all" | "fazenda" | "lote" | "pasto" | "animal"
+  >("all");
   const [contraparteFilter, setContraparteFilter] = useState("all");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
@@ -104,17 +111,23 @@ const Financeiro = () => {
   const [catErrors, setCatErrors] = useState<string[]>([]);
 
   // Form inputs for Transaction
-  const [formTxDirection, setFormTxDirection] = useState<FinanceTransactionDirectionEnum>("saida");
+  const [formTxDirection, setFormTxDirection] =
+    useState<FinanceTransactionDirectionEnum>("saida");
   const [formTxCategoryId, setFormTxCategoryId] = useState("");
   const [formTxValorTotal, setFormTxValorTotal] = useState("");
-  const [formTxStatus, setFormTxStatus] = useState<FinanceTransactionStatusEnum>("realizado");
-  const [formTxOccurredAt, setFormTxOccurredAt] = useState(() => new Date().toISOString().slice(0, 10));
+  const [formTxStatus, setFormTxStatus] =
+    useState<FinanceTransactionStatusEnum>("realizado");
+  const [formTxOccurredAt, setFormTxOccurredAt] = useState(() =>
+    new Date().toISOString().slice(0, 10),
+  );
   const [formTxCompetenceDate, setFormTxCompetenceDate] = useState("");
   const [formTxDueDate, setFormTxDueDate] = useState("");
   const [formTxContraparteId, setFormTxContraparteId] = useState("");
-  const [formTxCentroCustoTipo, setFormTxCentroCustoTipo] = useState<FinanceTransactionCentroCustoTipoEnum>("fazenda");
+  const [formTxCentroCustoTipo, setFormTxCentroCustoTipo] =
+    useState<FinanceTransactionCentroCustoTipoEnum>("fazenda");
   const [formTxCentroCustoId, setFormTxCentroCustoId] = useState("");
-  const [formTxRateioMetodo, setFormTxRateioMetodo] = useState<FinanceTransactionRateioMetodoEnum>("direto");
+  const [formTxRateioMetodo, setFormTxRateioMetodo] =
+    useState<FinanceTransactionRateioMetodoEnum>("direto");
   const [formTxQuantidade, setFormTxQuantidade] = useState("");
   const [formTxUnidade, setFormTxUnidade] = useState("");
   const [formTxValorUnitario, setFormTxValorUnitario] = useState("");
@@ -122,8 +135,10 @@ const Financeiro = () => {
 
   // Form inputs for Category
   const [formCatNome, setFormCatNome] = useState("");
-  const [formCatTipo, setFormCatTipo] = useState<FinanceCategoryTipoEnum>("custo_variavel");
-  const [formCatGrupo, setFormCatGrupo] = useState<FinanceCategoryGrupoEnum>("outros");
+  const [formCatTipo, setFormCatTipo] =
+    useState<FinanceCategoryTipoEnum>("custo_variavel");
+  const [formCatGrupo, setFormCatGrupo] =
+    useState<FinanceCategoryGrupoEnum>("outros");
   const [formCatObservacoes, setFormCatObservacoes] = useState("");
 
   // Load Offline Data
@@ -138,6 +153,8 @@ const Financeiro = () => {
         pastos: [],
         categories: [],
         transactions: [],
+        commercialEvents: [],
+        commercialDetails: [],
       };
     }
 
@@ -150,6 +167,8 @@ const Financeiro = () => {
       pastos,
       categories,
       transactions,
+      commercialEvents,
+      commercialDetails,
     ] = await Promise.all([
       db.event_eventos.where("fazenda_id").equals(activeFarmId).toArray(),
       db.event_eventos_financeiro
@@ -168,11 +187,16 @@ const Financeiro = () => {
         .where("fazenda_id")
         .equals(activeFarmId)
         .toArray(),
+      db.event_eventos.where("fazenda_id").equals(activeFarmId).toArray(),
+      db.event_eventos_comercial
+        .where("fazenda_id")
+        .equals(activeFarmId)
+        .toArray(),
     ]);
 
     return {
       eventosBase: eventosBase.filter(
-        (e) => e.dominio === "financeiro" && !e.deleted_at
+        (e) => e.dominio === "financeiro" && !e.deleted_at,
       ),
       detalhes: detalhes.filter((d) => !d.deleted_at),
       contrapartes: contrapartes.filter((c) => !c.deleted_at),
@@ -181,6 +205,12 @@ const Financeiro = () => {
       pastos: pastos.filter((p) => !p.deleted_at),
       categories: categories.filter((c) => !c.deleted_at),
       transactions: transactions.filter((t) => !t.deleted_at),
+      commercialEvents: commercialEvents.filter(
+        (event) => event.dominio === "comercial" && !event.deleted_at,
+      ),
+      commercialDetails: commercialDetails.filter(
+        (detail) => !detail.deleted_at,
+      ),
     };
   }, [activeFarmId]);
 
@@ -195,18 +225,78 @@ const Financeiro = () => {
       if (count === 0) {
         console.log("[Financeiro] Semeando categorias gerenciais padrão...");
         const defaults = [
-          { nome: "Venda de Animais", tipo: "receita", grupo: "venda_animais", slug: "venda-animais" },
-          { nome: "Compra de Animais", tipo: "custo_variavel", grupo: "compra_animais", slug: "compra-animais" },
-          { nome: "Sanidade/Medicamentos", tipo: "custo_variavel", grupo: "sanidade", slug: "sanidade-medicamentos" },
-          { nome: "Nutrição/Alimentos", tipo: "custo_variavel", grupo: "nutricao", slug: "nutricao-alimentos" },
-          { nome: "Mão de Obra/Salários", tipo: "custo_fixo", grupo: "mao_obra", slug: "mao-de-obra-salarios" },
-          { nome: "Combustível", tipo: "custo_variavel", grupo: "combustivel", slug: "combustivel" },
-          { nome: "Manutenção", tipo: "custo_fixo", grupo: "manutencao", slug: "manutencao" },
-          { nome: "Arrendamento", tipo: "custo_fixo", grupo: "arrendamento", slug: "arrendamento" },
-          { nome: "Infraestrutura", tipo: "investimento", grupo: "infraestrutura", slug: "infraestrutura" },
-          { nome: "Reprodução/Sêmen", tipo: "custo_variavel", grupo: "reproducao", slug: "reproducao-semen" },
-          { nome: "Administrativo", tipo: "custo_fixo", grupo: "administrativo", slug: "administrativo" },
-          { nome: "Outros", tipo: "custo_variavel", grupo: "outros", slug: "outros" },
+          {
+            nome: "Venda de Animais",
+            tipo: "receita",
+            grupo: "venda_animais",
+            slug: "venda-animais",
+          },
+          {
+            nome: "Compra de Animais",
+            tipo: "custo_variavel",
+            grupo: "compra_animais",
+            slug: "compra-animais",
+          },
+          {
+            nome: "Sanidade/Medicamentos",
+            tipo: "custo_variavel",
+            grupo: "sanidade",
+            slug: "sanidade-medicamentos",
+          },
+          {
+            nome: "Nutrição/Alimentos",
+            tipo: "custo_variavel",
+            grupo: "nutricao",
+            slug: "nutricao-alimentos",
+          },
+          {
+            nome: "Mão de Obra/Salários",
+            tipo: "custo_fixo",
+            grupo: "mao_obra",
+            slug: "mao-de-obra-salarios",
+          },
+          {
+            nome: "Combustível",
+            tipo: "custo_variavel",
+            grupo: "combustivel",
+            slug: "combustivel",
+          },
+          {
+            nome: "Manutenção",
+            tipo: "custo_fixo",
+            grupo: "manutencao",
+            slug: "manutencao",
+          },
+          {
+            nome: "Arrendamento",
+            tipo: "custo_fixo",
+            grupo: "arrendamento",
+            slug: "arrendamento",
+          },
+          {
+            nome: "Infraestrutura",
+            tipo: "investimento",
+            grupo: "infraestrutura",
+            slug: "infraestrutura",
+          },
+          {
+            nome: "Reprodução/Sêmen",
+            tipo: "custo_variavel",
+            grupo: "reproducao",
+            slug: "reproducao-semen",
+          },
+          {
+            nome: "Administrativo",
+            tipo: "custo_fixo",
+            grupo: "administrativo",
+            slug: "administrativo",
+          },
+          {
+            nome: "Outros",
+            tipo: "custo_variavel",
+            grupo: "outros",
+            slug: "outros",
+          },
         ];
 
         const ops = defaults.map((c) => ({
@@ -236,7 +326,9 @@ const Financeiro = () => {
     if (!data) return [];
 
     const categoryMap = new Map(data.categories.map((c) => [c.id, c.nome]));
-    const counterpartMap = new Map(data.contrapartes.map((c) => [c.id, c.nome]));
+    const counterpartMap = new Map(
+      data.contrapartes.map((c) => [c.id, c.nome]),
+    );
     const animalMap = new Map(data.animais.map((a) => [a.id, a.identificacao]));
     const loteMap = new Map(data.lotes.map((l) => [l.id, l.nome]));
     const pastoMap = new Map(data.pastos.map((p) => [p.id, p.nome]));
@@ -317,7 +409,9 @@ const Financeiro = () => {
           contraparteNome: cpNome,
           naturezaLabel,
           categoriaNome:
-            detalhe.tipo === "compra" ? "Compra de Animais" : "Venda de Animais",
+            detalhe.tipo === "compra"
+              ? "Compra de Animais"
+              : "Venda de Animais",
           centroCustoLabel:
             animalNome !== "Sem animal"
               ? `Animal: ${animalNome}`
@@ -412,6 +506,15 @@ const Financeiro = () => {
     return calculateGerencialSummary(data.transactions);
   }, [data]);
 
+  const commercialRows = useMemo(() => {
+    if (!data) return [];
+    return buildCommercialFinanceRows({
+      events: data.commercialEvents,
+      details: data.commercialDetails,
+      lots: data.lotes,
+    });
+  }, [data]);
+
   // Selections mapping
   const activeFarmCategories = useMemo(() => {
     return data?.categories.filter((c) => c.ativo) ?? [];
@@ -434,7 +537,9 @@ const Financeiro = () => {
 
     const valorNum = parseFloat(formTxValorTotal);
     const qtyNum = formTxQuantidade ? parseFloat(formTxQuantidade) : null;
-    const unitPriceNum = formTxValorUnitario ? parseFloat(formTxValorUnitario) : null;
+    const unitPriceNum = formTxValorUnitario
+      ? parseFloat(formTxValorUnitario)
+      : null;
 
     const payload: Partial<FinanceTransaction> = {
       fazenda_id: activeFarmId,
@@ -445,10 +550,17 @@ const Financeiro = () => {
       occurred_at: new Date(formTxOccurredAt).toISOString(),
       competence_date: formTxCompetenceDate || null,
       due_date: formTxDueDate || null,
-      paid_at: formTxStatus === "realizado" ? new Date(formTxOccurredAt).toISOString() : null,
-      contraparte_id: formTxContraparteId === "none_val" ? null : formTxContraparteId || null,
+      paid_at:
+        formTxStatus === "realizado"
+          ? new Date(formTxOccurredAt).toISOString()
+          : null,
+      contraparte_id:
+        formTxContraparteId === "none_val" ? null : formTxContraparteId || null,
       centro_custo_tipo: formTxCentroCustoTipo,
-      centro_custo_id: formTxCentroCustoTipo === "fazenda" ? null : formTxCentroCustoId || null,
+      centro_custo_id:
+        formTxCentroCustoTipo === "fazenda"
+          ? null
+          : formTxCentroCustoId || null,
       rateio_metodo: formTxRateioMetodo,
       quantidade: qtyNum,
       unidade: formTxUnidade || null,
@@ -594,7 +706,9 @@ const Financeiro = () => {
             </p>
             <p
               className={`text-xl font-semibold tracking-tight ${
-                summary.saldoRealizado >= 0 ? "text-emerald-700" : "text-red-700"
+                summary.saldoRealizado >= 0
+                  ? "text-emerald-700"
+                  : "text-red-700"
               }`}
             >
               {money.format(summary.saldoRealizado)}
@@ -627,6 +741,76 @@ const Financeiro = () => {
         </Card>
       </div>
 
+      <section className="space-y-3" aria-label="Operações comerciais">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-semibold">Operações comerciais</h2>
+            <p className="text-sm text-muted-foreground">
+              Fatos comerciais não entram nos saldos sem lançamento financeiro
+              vinculado.
+            </p>
+          </div>
+          <StatusBadge tone="neutral">
+            {commercialRows.length} operação(ões)
+          </StatusBadge>
+        </div>
+        {commercialRows.length === 0 ? (
+          <Card className="border-dashed shadow-none">
+            <CardContent className="p-6 text-sm text-muted-foreground">
+              Nenhuma operação comercial registrada.
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid gap-3 md:grid-cols-2">
+            {commercialRows.map((row) => (
+              <Card key={row.id} className="shadow-none">
+                <CardContent className="space-y-2 p-4">
+                  <div className="flex items-center justify-between">
+                    <Badge variant="outline" className="capitalize">
+                      {row.operationType} · {row.scope}
+                    </Badge>
+                    <span className="text-xs text-muted-foreground">
+                      {toDateTime(row.occurredAt)}
+                    </span>
+                  </div>
+                  <p className="font-medium">
+                    {row.lote} · {row.quantidade} animal(is)
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Contraparte: {row.contraparte}
+                  </p>
+                  <div className="flex justify-between text-sm">
+                    <span>
+                      Valor bruto:{" "}
+                      {row.valorBruto == null
+                        ? "Não informado"
+                        : money.format(row.valorBruto)}
+                    </span>
+                    <span>
+                      Valor líquido:{" "}
+                      {row.valorLiquido == null
+                        ? "Não derivado"
+                        : money.format(row.valorLiquido)}
+                    </span>
+                  </div>
+                  <p
+                    className={
+                      row.financeTransactionId
+                        ? "text-xs text-emerald-700"
+                        : "text-xs text-amber-700"
+                    }
+                  >
+                    {row.financeTransactionId
+                      ? `Lançamento vinculado: ${row.financeTransactionId.slice(0, 8)}`
+                      : "Sem lançamento financeiro vinculado"}
+                  </p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </section>
+
       {/* Advanced Filtering Toolbar */}
       <Toolbar className="bg-muted/20 shadow-none flex-wrap gap-y-3 p-4 rounded-xl border border-border/50">
         <ToolbarGroup className="flex-1 flex-wrap gap-2">
@@ -642,7 +826,9 @@ const Financeiro = () => {
 
           <Select
             value={tipoFilter}
-            onValueChange={(value) => setTipoFilter(value as "all" | "entrada" | "saida")}
+            onValueChange={(value) =>
+              setTipoFilter(value as "all" | "entrada" | "saida")
+            }
           >
             <SelectTrigger className="w-full sm:w-[130px]">
               <SelectValue placeholder="Direção" />
@@ -656,7 +842,11 @@ const Financeiro = () => {
 
           <Select
             value={statusFilter}
-            onValueChange={(value) => setStatusFilter(value as "all" | "previsto" | "realizado" | "cancelado")}
+            onValueChange={(value) =>
+              setStatusFilter(
+                value as "all" | "previsto" | "realizado" | "cancelado",
+              )
+            }
           >
             <SelectTrigger className="w-full sm:w-[130px]">
               <SelectValue placeholder="Status" />
@@ -669,10 +859,7 @@ const Financeiro = () => {
             </SelectContent>
           </Select>
 
-          <Select
-            value={categoryFilter}
-            onValueChange={setCategoryFilter}
-          >
+          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
             <SelectTrigger className="w-full sm:w-[150px]">
               <SelectValue placeholder="Categoria" />
             </SelectTrigger>
@@ -688,7 +875,11 @@ const Financeiro = () => {
 
           <Select
             value={costCenterFilter}
-            onValueChange={(value) => setCostCenterFilter(value as "all" | "fazenda" | "lote" | "pasto" | "animal")}
+            onValueChange={(value) =>
+              setCostCenterFilter(
+                value as "all" | "fazenda" | "lote" | "pasto" | "animal",
+              )
+            }
           >
             <SelectTrigger className="w-full sm:w-[150px]">
               <SelectValue placeholder="Centro Custo" />
@@ -758,8 +949,12 @@ const Financeiro = () => {
         <Card className="shadow-none border-dashed">
           <CardContent className="p-12 text-center text-muted-foreground">
             <Receipt className="mx-auto mb-4 h-12 w-12 text-muted-foreground/60" />
-            <p className="font-medium text-base text-foreground">Sem lançamentos gerenciais no filtro atual</p>
-            <p className="text-sm mt-1">Crie despesas e receitas usando o botão "Novo lançamento" acima.</p>
+            <p className="font-medium text-base text-foreground">
+              Sem lançamentos gerenciais no filtro atual
+            </p>
+            <p className="text-sm mt-1">
+              Crie despesas e receitas usando o botão "Novo lançamento" acima.
+            </p>
           </CardContent>
         </Card>
       ) : (
@@ -789,12 +984,18 @@ const Financeiro = () => {
                     </Badge>
 
                     {row.status === "previsto" && (
-                      <Badge variant="secondary" className="border-blue-200 bg-blue-50 text-blue-700">
+                      <Badge
+                        variant="secondary"
+                        className="border-blue-200 bg-blue-50 text-blue-700"
+                      >
                         Previsto
                       </Badge>
                     )}
                     {row.status === "cancelado" && (
-                      <Badge variant="destructive" className="bg-red-100 text-red-800 line-through">
+                      <Badge
+                        variant="destructive"
+                        className="bg-red-100 text-red-800 line-through"
+                      >
                         Cancelado
                       </Badge>
                     )}
@@ -823,7 +1024,8 @@ const Financeiro = () => {
                           : "text-red-600"
                     }`}
                   >
-                    {row.direction === "entrada" ? "+" : "-"} {money.format(row.valorTotal)}
+                    {row.direction === "entrada" ? "+" : "-"}{" "}
+                    {money.format(row.valorTotal)}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
                     {toDateTime(row.occurredAt)}
@@ -856,10 +1058,14 @@ const Financeiro = () => {
           <div className="grid gap-4 py-2 text-sm">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">Direção *</label>
+                <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">
+                  Direção *
+                </label>
                 <Select
                   value={formTxDirection}
-                  onValueChange={(val) => setFormTxDirection(val as FinanceTransactionDirectionEnum)}
+                  onValueChange={(val) =>
+                    setFormTxDirection(val as FinanceTransactionDirectionEnum)
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -872,10 +1078,14 @@ const Financeiro = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">Status *</label>
+                <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">
+                  Status *
+                </label>
                 <Select
                   value={formTxStatus}
-                  onValueChange={(val) => setFormTxStatus(val as FinanceTransactionStatusEnum)}
+                  onValueChange={(val) =>
+                    setFormTxStatus(val as FinanceTransactionStatusEnum)
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -891,7 +1101,9 @@ const Financeiro = () => {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">Categoria *</label>
+                <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">
+                  Categoria *
+                </label>
                 <Select
                   value={formTxCategoryId}
                   onValueChange={setFormTxCategoryId}
@@ -910,7 +1122,9 @@ const Financeiro = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">Valor Total (R$) *</label>
+                <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">
+                  Valor Total (R$) *
+                </label>
                 <Input
                   type="number"
                   placeholder="0.00"
@@ -923,7 +1137,9 @@ const Financeiro = () => {
 
             <div className="grid grid-cols-3 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">Data Registro *</label>
+                <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">
+                  Data Registro *
+                </label>
                 <Input
                   type="date"
                   value={formTxOccurredAt}
@@ -932,7 +1148,9 @@ const Financeiro = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">Data Competência</label>
+                <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">
+                  Data Competência
+                </label>
                 <Input
                   type="date"
                   value={formTxCompetenceDate}
@@ -941,7 +1159,9 @@ const Financeiro = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">Data Vencimento</label>
+                <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">
+                  Data Vencimento
+                </label>
                 <Input
                   type="date"
                   value={formTxDueDate}
@@ -952,7 +1172,9 @@ const Financeiro = () => {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">Parceiro (Contraparte)</label>
+                <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">
+                  Parceiro (Contraparte)
+                </label>
                 <Select
                   value={formTxContraparteId}
                   onValueChange={setFormTxContraparteId}
@@ -972,19 +1194,31 @@ const Financeiro = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">Método de Rateio</label>
+                <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">
+                  Método de Rateio
+                </label>
                 <Select
                   value={formTxRateioMetodo}
-                  onValueChange={(val) => setFormTxRateioMetodo(val as FinanceTransactionRateioMetodoEnum)}
+                  onValueChange={(val) =>
+                    setFormTxRateioMetodo(
+                      val as FinanceTransactionRateioMetodoEnum,
+                    )
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="direto">Direto (Sem rateio)</SelectItem>
-                    <SelectItem value="por_cabeca">Por Cabeça (Futuro)</SelectItem>
-                    <SelectItem value="por_peso_vivo">Por Peso Vivo (Futuro)</SelectItem>
-                    <SelectItem value="por_dias">Por Dias no Pasto (Futuro)</SelectItem>
+                    <SelectItem value="por_cabeca">
+                      Por Cabeça (Futuro)
+                    </SelectItem>
+                    <SelectItem value="por_peso_vivo">
+                      Por Peso Vivo (Futuro)
+                    </SelectItem>
+                    <SelectItem value="por_dias">
+                      Por Dias no Pasto (Futuro)
+                    </SelectItem>
                     <SelectItem value="por_area">Por Área (Futuro)</SelectItem>
                   </SelectContent>
                 </Select>
@@ -993,11 +1227,15 @@ const Financeiro = () => {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">Centro de Custo Tipo</label>
+                <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">
+                  Centro de Custo Tipo
+                </label>
                 <Select
                   value={formTxCentroCustoTipo}
                   onValueChange={(val) => {
-                    setFormTxCentroCustoTipo(val as FinanceTransactionCentroCustoTipoEnum);
+                    setFormTxCentroCustoTipo(
+                      val as FinanceTransactionCentroCustoTipoEnum,
+                    );
                     setFormTxCentroCustoId("");
                   }}
                 >
@@ -1015,7 +1253,9 @@ const Financeiro = () => {
 
               {formTxCentroCustoTipo !== "fazenda" && (
                 <div>
-                  <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">Especificar Alvo CC</label>
+                  <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">
+                    Especificar Alvo CC
+                  </label>
                   <Select
                     value={formTxCentroCustoId}
                     onValueChange={setFormTxCentroCustoId}
@@ -1050,7 +1290,9 @@ const Financeiro = () => {
 
             <div className="grid grid-cols-3 gap-4 border-t pt-2 mt-2">
               <div>
-                <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">Quantidade</label>
+                <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">
+                  Quantidade
+                </label>
                 <Input
                   type="number"
                   placeholder="ex: 10"
@@ -1060,7 +1302,9 @@ const Financeiro = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">Unidade</label>
+                <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">
+                  Unidade
+                </label>
                 <Input
                   type="text"
                   placeholder="ex: kg, cabeças"
@@ -1070,7 +1314,9 @@ const Financeiro = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">Valor Unitário</label>
+                <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">
+                  Valor Unitário
+                </label>
                 <Input
                   type="number"
                   placeholder="0.0000"
@@ -1082,7 +1328,9 @@ const Financeiro = () => {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">Observações</label>
+              <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">
+                Observações
+              </label>
               <Input
                 type="text"
                 placeholder="Detalhes administrativos..."
@@ -1116,7 +1364,9 @@ const Financeiro = () => {
 
           <div className="grid gap-4 py-2 text-sm">
             <div>
-              <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">Nome da Categoria *</label>
+              <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">
+                Nome da Categoria *
+              </label>
               <Input
                 placeholder="ex: Diesel Trator, Suplementação"
                 value={formCatNome}
@@ -1125,10 +1375,14 @@ const Financeiro = () => {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">Tipo de Categoria *</label>
+              <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">
+                Tipo de Categoria *
+              </label>
               <Select
                 value={formCatTipo}
-                onValueChange={(val) => setFormCatTipo(val as FinanceCategoryTipoEnum)}
+                onValueChange={(val) =>
+                  setFormCatTipo(val as FinanceCategoryTipoEnum)
+                }
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -1143,33 +1397,53 @@ const Financeiro = () => {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">Grupo Contábil *</label>
+              <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">
+                Grupo Contábil *
+              </label>
               <Select
                 value={formCatGrupo}
-                onValueChange={(val) => setFormCatGrupo(val as FinanceCategoryGrupoEnum)}
+                onValueChange={(val) =>
+                  setFormCatGrupo(val as FinanceCategoryGrupoEnum)
+                }
               >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="venda_animais">Venda de Animais</SelectItem>
-                  <SelectItem value="compra_animais">Compra de Animais</SelectItem>
-                  <SelectItem value="sanidade">Sanidade (Medicação/Vacina)</SelectItem>
+                  <SelectItem value="venda_animais">
+                    Venda de Animais
+                  </SelectItem>
+                  <SelectItem value="compra_animais">
+                    Compra de Animais
+                  </SelectItem>
+                  <SelectItem value="sanidade">
+                    Sanidade (Medicação/Vacina)
+                  </SelectItem>
                   <SelectItem value="nutricao">Nutrição (Sal/Ração)</SelectItem>
-                  <SelectItem value="mao_obra">Mão de Obra e Salários</SelectItem>
+                  <SelectItem value="mao_obra">
+                    Mão de Obra e Salários
+                  </SelectItem>
                   <SelectItem value="combustivel">Combustível</SelectItem>
                   <SelectItem value="manutencao">Manutenção e Peças</SelectItem>
-                  <SelectItem value="arrendamento">Arrendamento de Pastagem</SelectItem>
-                  <SelectItem value="infraestrutura">Investimento Infraestrutura</SelectItem>
+                  <SelectItem value="arrendamento">
+                    Arrendamento de Pastagem
+                  </SelectItem>
+                  <SelectItem value="infraestrutura">
+                    Investimento Infraestrutura
+                  </SelectItem>
                   <SelectItem value="reproducao">Reprodução / Sêmen</SelectItem>
-                  <SelectItem value="administrativo">Administrativo Escritório</SelectItem>
+                  <SelectItem value="administrativo">
+                    Administrativo Escritório
+                  </SelectItem>
                   <SelectItem value="outros">Outros Lançamentos</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">Observações</label>
+              <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">
+                Observações
+              </label>
               <Input
                 placeholder="Descrição adicional..."
                 value={formCatObservacoes}

@@ -37,6 +37,10 @@ type RegistrarSelectTargetStepProps<QuickActionKey extends string = string> = {
   animaisNoLoteCount: number;
   requiresAnimalsForQuickAction: boolean;
   quickActionLabel: string | null;
+  commercialOperationType: "compra" | "venda" | null;
+  commercialScope: "animal" | "lote";
+  onCommercialScopeChange: (scope: "animal" | "lote") => void;
+  canAdvanceWithoutTarget: boolean;
   onNext: () => void;
   onBack: () => void;
 };
@@ -50,6 +54,47 @@ export function RegistrarSelectTargetStep<
         <CardTitle className="text-base">Alvo</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4 p-4 sm:p-5">
+        <div className="space-y-3 rounded-xl border border-border/70 bg-muted/20 p-3">
+          <Label>Operação comercial</Label>
+          <div className="grid grid-cols-2 gap-2">
+            {(["compra", "venda"] as const).map((operationType) => (
+              <Button
+                key={operationType}
+                type="button"
+                variant={
+                  props.commercialOperationType === operationType
+                    ? "default"
+                    : "outline"
+                }
+                onClick={() => props.onApplyQuickAction(operationType)}
+                className="capitalize"
+              >
+                {operationType}
+              </Button>
+            ))}
+          </div>
+          {props.commercialOperationType ? (
+            <div className="space-y-2">
+              <Label>Escopo</Label>
+              <div className="grid grid-cols-2 gap-2">
+                {(["animal", "lote"] as const).map((scope) => (
+                  <Button
+                    key={scope}
+                    type="button"
+                    variant={
+                      props.commercialScope === scope ? "secondary" : "outline"
+                    }
+                    onClick={() => props.onCommercialScopeChange(scope)}
+                    className="capitalize"
+                  >
+                    {scope === "animal" ? "Individual" : "Lote"}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          ) : null}
+        </div>
+
         <div className="space-y-2 rounded-xl border border-border/70 bg-muted/20 p-3">
           <div className="flex items-center justify-between gap-3">
             <Label>Lote</Label>
@@ -124,7 +169,8 @@ export function RegistrarSelectTargetStep<
           <Button
             className="min-h-12 flex-1 rounded-xl text-base font-semibold"
             disabled={
-              !props.selectedLoteId || props.requiresAnimalsForQuickAction
+              (!props.selectedLoteId && !props.canAdvanceWithoutTarget) ||
+              props.requiresAnimalsForQuickAction
             }
             onClick={props.onNext}
           >
@@ -138,4 +184,3 @@ export function RegistrarSelectTargetStep<
     </Card>
   );
 }
-

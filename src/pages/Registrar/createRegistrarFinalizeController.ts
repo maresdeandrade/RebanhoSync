@@ -1,6 +1,7 @@
 import type { ReproductionEventData } from "@/components/events/ReproductionForm";
 import type { EventDomain } from "@/lib/events/types";
 import type { FarmLifecycleConfig } from "@/lib/farms/lifecycleConfig";
+import type { CommercialNewAnimalDraft } from "@/lib/comercial/commercialOperationCommand";
 import type { AnimalBreedEnum } from "@/lib/animals/catalogs";
 import type {
   Animal,
@@ -332,6 +333,7 @@ export type RegistrarFinalizeControllerInput = {
   comercial?: {
     operationType: "compra" | "venda" | "sociedade";
     scope: "animal" | "lote";
+    occurredAt?: string;
     quantidadeAnimais: number;
     pesoVivoTotal: number | null;
     valorBruto: number | null;
@@ -348,6 +350,9 @@ export type RegistrarFinalizeControllerInput = {
     snapshot?: Record<string, unknown> | null;
     animalStatusSnapshot?: "ativo" | "vendido" | "morto" | "retirado" | null;
     commercialSignals?: string[];
+    newAnimals?: CommercialNewAnimalDraft[];
+    existingIdentifications?: string[];
+    currentLotAnimalIds?: string[];
   } | null;
   onFinalizeHandled?: () => void;
 };
@@ -358,7 +363,8 @@ export function createRegistrarFinalizeController(
   return async function finalize(
     input: RegistrarFinalizeControllerInput,
   ): Promise<void> {
-    const { context, selection, finance, sanitary, operationData, comercial } = input;
+    const { context, selection, finance, sanitary, operationData, comercial } =
+      input;
     if (!context.tipoManejo) return;
 
     const fazendaId = context.activeFarmId ?? context.fallbackFarmId;
@@ -391,6 +397,7 @@ export function createRegistrarFinalizeController(
       transitChecklistIssues: sanitary.transit.transitChecklistIssues,
       complianceFlowIssues: sanitary.complianceFlowIssues,
       parseUserWeight: context.parseUserWeight,
+      comercial,
     });
     if (preflightIssue) {
       deps.feedback.showError(preflightIssue);
@@ -423,8 +430,9 @@ export function createRegistrarFinalizeController(
         ...buildClinicalProtocolEventPayload(sanitary.clinicalProtocolRef),
       };
 
-      const sanitaryInventoryRequiresOfflineStock =
-        Boolean(input.inventory?.sanitary?.gerarBaixaEstoque);
+      const sanitaryInventoryRequiresOfflineStock = Boolean(
+        input.inventory?.sanitary?.gerarBaixaEstoque,
+      );
       const shouldTrySanitaryRpc =
         !sanitary.caseLink.selectedCaseId &&
         !sanitary.caseLink.createClinicalCase &&
@@ -493,7 +501,8 @@ export function createRegistrarFinalizeController(
       }
 
       if (sanitaryRpc.status === "ambiguous") {
-        const retry = await deps.sanitary.trySanitaryRpcFinalize(sanitaryRpcInput);
+        const retry =
+          await deps.sanitary.trySanitaryRpcFinalize(sanitaryRpcInput);
         if (retry.status === "handled") {
           deps.feedback.showSuccess(
             `Aplicacao sanitaria confirmada no servidor. Evento ${retry.eventoId.slice(0, 8)}.`,
@@ -554,10 +563,17 @@ export function createRegistrarFinalizeController(
         calfIds: string[];
       } | null = null;
 
-      const targetAnimalIds = deps.shared.resolveTargetAnimalIds({
-        hasSelectedAnimals,
-        selectedAnimais: selection.selectedAnimais,
-      });
+      const commercialTargetIds =
+        context.tipoManejo === "comercial" &&
+        comercial?.operationType === "venda"
+          ? (comercial.animalIds ?? [])
+          : null;
+      const targetAnimalIds =
+        commercialTargetIds ??
+        deps.shared.resolveTargetAnimalIds({
+          hasSelectedAnimals,
+          selectedAnimais: selection.selectedAnimais,
+        });
       const distinctAnimalIds =
         deps.shared.resolveDistinctAnimalIds(targetAnimalIds);
       const animalsMap = await deps.shared.loadAnimalsMap({
@@ -659,19 +675,24 @@ export function createRegistrarFinalizeController(
         );
       }
 
-      const isSociedade = context.tipoManejo === "comercial" && comercial?.operationType === "sociedade";
-      const opsIssue = isSociedade ? null : deps.commit.resolveFinalizeOpsIssue(ops.length);
+      const isSociedade =
+        context.tipoManejo === "comercial" &&
+        comercial?.operationType === "sociedade";
+      const opsIssue = isSociedade
+        ? null
+        : deps.commit.resolveFinalizeOpsIssue(ops.length);
       if (opsIssue) {
         deps.feedback.showError(opsIssue);
         return;
       }
 
-      const txId = ops.length > 0 
-        ? await deps.commit.runFinalizeGesture({
-            fazendaId,
-            ops,
-          })
-        : "local-society-only";
+      const txId =
+        ops.length > 0
+          ? await deps.commit.runFinalizeGesture({
+              fazendaId,
+              ops,
+            })
+          : "local-society-only";
       deps.feedback.showSuccess(
         deps.feedback.buildFinalizeSuccessMessage({
           compraGerandoAnimais,

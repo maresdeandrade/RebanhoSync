@@ -31,6 +31,8 @@ vi.mock("@/lib/telemetry/pilotMetrics", () => ({
 }));
 
 import { buildEventGesture } from "@/lib/events/buildEventGesture";
+import { buildCommercialOperationGesture } from "@/lib/comercial/commercialOperationCommand";
+import { DEFAULT_FARM_LIFECYCLE_CONFIG } from "@/lib/farms/lifecycleConfig";
 import { db } from "../db";
 import { createGesture } from "../ops";
 import { processGesture } from "../syncWorker";
@@ -67,6 +69,34 @@ async function createPurchase() {
     },
     ...event.ops,
   ]);
+}
+
+async function createPurchaseV2() {
+  const gesture = buildCommercialOperationGesture({
+    fazendaId: farm,
+    operationType: "compra",
+    scope: "animal",
+    occurredAt: "2026-08-13T12:00:00.000Z",
+    declaredQuantity: 1,
+    loteId: null,
+    selectedAnimalIds: [],
+    animals: [],
+    newAnimals: [
+      {
+        localId: "row-1",
+        id: animalId,
+        identificacao: "COMP-V2",
+        sexo: "F",
+        especie: "bovino",
+        dataNascimento: "2025-01-01",
+        dataEntrada: "2026-08-13",
+      },
+    ],
+    lifecycleConfig: DEFAULT_FARM_LIFECYCLE_CONFIG,
+    operationId: eventId,
+    valorBruto: 1200,
+  });
+  return createGesture(farm, gesture.ops);
 }
 
 async function clear() {
@@ -176,5 +206,38 @@ describe("commercial purchase sync worker", () => {
     expect(await db.state_animais.get(animalId)).toBeDefined();
     expect(await db.event_eventos.get(eventId)).toBeDefined();
     expect(await db.event_eventos_comercial.get(eventId)).toBeDefined();
+  });
+
+  it("sends commercial_operation_v2 as one queue command", async () => {
+    const txId = await createPurchaseV2();
+    const [queued] = await db.queue_ops
+      .where("client_tx_id")
+      .equals(txId)
+      .toArray();
+    vi.mocked(fetch).mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          results: [{ op_id: queued.client_op_id, status: "APPLIED" }],
+        }),
+        { status: 200 },
+      ),
+    );
+    const gesture = await db.queue_gestures.get(txId);
+    if (!gesture) throw new Error("gesture missing");
+    await processGesture(gesture);
+
+    const body = JSON.parse(String(vi.mocked(fetch).mock.calls[0][1]?.body));
+    expect(body.ops).toHaveLength(1);
+    expect(body.ops[0]).toMatchObject({
+      domain: "commercial_operation_v2",
+      command: "apply_commercial_operation",
+      contract_version: 2,
+      animal_ids: [animalId],
+    });
+    expect(mocks.pullDataForFarm).toHaveBeenCalledWith(
+      farm,
+      expect.arrayContaining(["animais", "eventos", "eventos_comercial"]),
+    );
+    expect(await db.queue_gestures.get(txId)).toMatchObject({ status: "DONE" });
   });
 });

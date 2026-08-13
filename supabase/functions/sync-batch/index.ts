@@ -53,6 +53,11 @@ import {
   executeCommercialPurchaseOperation,
   isCommercialPurchaseOperation,
 } from "./commercial-purchase.ts";
+import {
+  type CommercialOperationV2,
+  executeCommercialOperationV2,
+  isCommercialOperationV2,
+} from "./commercial-operation-v2.ts";
 
 const allowedOrigins = [
   "http://localhost:5173",
@@ -186,10 +191,17 @@ Deno.serve(async (req: Request) => {
 
     console.log("[sync-batch] Supabase client created");
 
-    const { client_id, fazenda_id, client_tx_id, ops: rawOps } = await req
-      .json();
+    const {
+      client_id,
+      fazenda_id,
+      client_tx_id,
+      ops: rawOps,
+    } = await req.json();
     const ops: Array<
-      Operation | SanitarioSyncV2Operation | CommercialPurchaseOperation
+      | Operation
+      | SanitarioSyncV2Operation
+      | CommercialPurchaseOperation
+      | CommercialOperationV2
     > = Array.isArray(rawOps) ? rawOps : [];
     console.log(
       `[sync-batch] Processing TX ${client_tx_id} for farm ${fazenda_id}`,
@@ -198,10 +210,10 @@ Deno.serve(async (req: Request) => {
     const hasSanitarioSyncV2Operations = ops.some(isSanitarioSyncV2Operation);
     const sanitarioEnvelopeIssue = hasSanitarioSyncV2Operations
       ? validateSanitarioSyncV2Envelope({
-        fazendaId: fazenda_id,
-        clientId: client_id,
-        clientTxId: client_tx_id,
-      })
+          fazendaId: fazenda_id,
+          clientId: client_id,
+          clientTxId: client_tx_id,
+        })
       : null;
     if (sanitarioEnvelopeIssue) {
       return new Response(
@@ -211,10 +223,10 @@ Deno.serve(async (req: Request) => {
             isSanitarioSyncV2Operation(op)
               ? sanitarioSyncV2EnvelopeRejected(op, sanitarioEnvelopeIssue)
               : {
-                op_id: op.client_op_id,
-                status: "REJECTED",
-                reason_code: sanitarioEnvelopeIssue,
-              }
+                  op_id: op.client_op_id,
+                  status: "REJECTED",
+                  reason_code: sanitarioEnvelopeIssue,
+                },
           ),
         }),
         {
@@ -248,9 +260,11 @@ Deno.serve(async (req: Request) => {
 
     console.log(`[sync-batch] User has role: ${membership.role}`);
 
-    const hasSanitarioInventoryMovements = ops.some((op) =>
-      !isCommercialPurchaseOperation(op) &&
-      isSanitarioInventoryMovementOperation(op)
+    const hasSanitarioInventoryMovements = ops.some(
+      (op) =>
+        !isCommercialPurchaseOperation(op) &&
+        !isCommercialOperationV2(op) &&
+        isSanitarioInventoryMovementOperation(op),
     );
     const serviceRoleKey =
       hasSanitarioSyncV2Operations || hasSanitarioInventoryMovements
@@ -258,11 +272,11 @@ Deno.serve(async (req: Request) => {
         : null;
     const serviceSupabase = serviceRoleKey
       ? createClient(Deno.env.get("SUPABASE_URL") ?? "", serviceRoleKey, {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
-        },
-      })
+          auth: {
+            autoRefreshToken: false,
+            persistSession: false,
+          },
+        })
       : null;
 
     const { data: fazendaConfig, error: fazendaConfigError } = await supabase
@@ -286,7 +300,8 @@ Deno.serve(async (req: Request) => {
     const legacyOps = ops.filter(
       (op): op is Operation =>
         !isSanitarioSyncV2Operation(op) &&
-        !isCommercialPurchaseOperation(op),
+        !isCommercialPurchaseOperation(op) &&
+        !isCommercialOperationV2(op),
     );
     if (featureFlags.strictAntiTeleport) {
       const anti = prevalidateAntiTeleport(legacyOps);
@@ -358,13 +373,21 @@ Deno.serve(async (req: Request) => {
 
     for (const rawOp of ops) {
       try {
+        if (isCommercialOperationV2(rawOp)) {
+          results.push(
+            await executeCommercialOperationV2(supabase, rawOp, {
+              fazendaId: fazenda_id,
+              clientTxId: client_tx_id,
+            }),
+          );
+          continue;
+        }
         if (isCommercialPurchaseOperation(rawOp)) {
           results.push(
-            await executeCommercialPurchaseOperation(
-              supabase,
-              rawOp,
-              { fazendaId: fazenda_id, clientTxId: client_tx_id },
-            ),
+            await executeCommercialPurchaseOperation(supabase, rawOp, {
+              fazendaId: fazenda_id,
+              clientTxId: client_tx_id,
+            }),
           );
           continue;
         }
@@ -418,46 +441,51 @@ Deno.serve(async (req: Request) => {
                 if (operation.payload.event.natureza === "correction") {
                   const correctedEventId = operation.payload.event
                     .corrige_evento_id as string;
-                  const [{ data: sourceEvent, error: sourceEventError }, {
-                    data: sourceDetail,
-                    error: sourceDetailError,
-                  }, { data: sourceAnimals, error: sourceAnimalsError }] =
-                    await Promise.all([
-                      serviceSupabase.from("eventos")
-                        .select("id, animal_id, lote_id, payload")
-                        .eq("fazenda_id", trustedFazendaId)
-                        .eq("id", correctedEventId)
-                        .is("deleted_at", null)
-                        .maybeSingle(),
-                      serviceSupabase.from("eventos_sanitario")
-                        .select(
-                          "tipo, produto_sanitario_v2_id, insumo_id, estoque_lote_id, produto_nome_snapshot, produto_snapshot, estoque_lote_codigo_snapshot, lote_fabricante, validade_produto, dose_quantidade, dose_unidade, via_aplicacao, responsavel_nome, responsavel_tipo, custo_unitario_snapshot, custo_total_snapshot",
-                        )
-                        .eq("fazenda_id", trustedFazendaId)
-                        .eq("evento_id", correctedEventId)
-                        .is("deleted_at", null)
-                        .maybeSingle(),
-                      serviceSupabase.from("eventos_animais")
-                        .select("animal_id")
-                        .eq("fazenda_id", trustedFazendaId)
-                        .eq("evento_id", correctedEventId),
-                    ]);
-                  const sourceError = sourceEventError ?? sourceDetailError ??
-                    sourceAnimalsError;
+                  const [
+                    { data: sourceEvent, error: sourceEventError },
+                    { data: sourceDetail, error: sourceDetailError },
+                    { data: sourceAnimals, error: sourceAnimalsError },
+                  ] = await Promise.all([
+                    serviceSupabase
+                      .from("eventos")
+                      .select("id, animal_id, lote_id, payload")
+                      .eq("fazenda_id", trustedFazendaId)
+                      .eq("id", correctedEventId)
+                      .is("deleted_at", null)
+                      .maybeSingle(),
+                    serviceSupabase
+                      .from("eventos_sanitario")
+                      .select(
+                        "tipo, produto_sanitario_v2_id, insumo_id, estoque_lote_id, produto_nome_snapshot, produto_snapshot, estoque_lote_codigo_snapshot, lote_fabricante, validade_produto, dose_quantidade, dose_unidade, via_aplicacao, responsavel_nome, responsavel_tipo, custo_unitario_snapshot, custo_total_snapshot",
+                      )
+                      .eq("fazenda_id", trustedFazendaId)
+                      .eq("evento_id", correctedEventId)
+                      .is("deleted_at", null)
+                      .maybeSingle(),
+                    serviceSupabase
+                      .from("eventos_animais")
+                      .select("animal_id")
+                      .eq("fazenda_id", trustedFazendaId)
+                      .eq("evento_id", correctedEventId),
+                  ]);
+                  const sourceError =
+                    sourceEventError ?? sourceDetailError ?? sourceAnimalsError;
                   if (sourceError) {
                     return { reasonCode: null, error: sourceError };
                   }
                   const sourceIssue =
                     validateSanitaryCorrectionSourceConsistency({
                       operation,
-                      sourceEvent: sourceEvent as
-                        | Record<string, unknown>
-                        | null,
-                      sourceDetail: sourceDetail as
-                        | Record<string, unknown>
-                        | null,
+                      sourceEvent: sourceEvent as Record<
+                        string,
+                        unknown
+                      > | null,
+                      sourceDetail: sourceDetail as Record<
+                        string,
+                        unknown
+                      > | null,
                       sourceAnimalIds: (sourceAnimals ?? []).map((entry) =>
-                        String((entry as Record<string, unknown>).animal_id)
+                        String((entry as Record<string, unknown>).animal_id),
                       ),
                     });
                   if (sourceIssue) {
@@ -468,7 +496,8 @@ Deno.serve(async (req: Request) => {
                   (operation.payload.event.natureza !== "primary_execution" &&
                     !validatesTechnicalCorrection) ||
                   !operation.payload.detail.produto_sanitario_v2_id
-                ) return { reasonCode: null, error: null };
+                )
+                  return { reasonCode: null, error: null };
 
                 const { data: replay, error: replayError } =
                   await serviceSupabase
@@ -491,67 +520,89 @@ Deno.serve(async (req: Request) => {
                 const evidence = Array.isArray(snapshot.fieldEvidence)
                   ? snapshot.fieldEvidence
                   : [];
-                const covered = evidence.filter((entry) =>
-                  typeof entry === "object" && entry !== null &&
-                  (entry as Record<string, unknown>).coverageStatus === "covers"
+                const covered = evidence.filter(
+                  (entry) =>
+                    typeof entry === "object" &&
+                    entry !== null &&
+                    (entry as Record<string, unknown>).coverageStatus ===
+                      "covers",
                 ) as Record<string, unknown>[];
                 const withdrawalSnapshot = snapshot.withdrawalSnapshot as
                   | Record<string, unknown>
                   | undefined;
-                const withdrawalResults =
-                  Array.isArray(withdrawalSnapshot?.results)
-                    ? withdrawalSnapshot.results.filter((entry) => {
+                const withdrawalResults = Array.isArray(
+                  withdrawalSnapshot?.results,
+                )
+                  ? (withdrawalSnapshot.results.filter((entry) => {
                       const state = (entry as Record<string, unknown>)?.state;
-                      return typeof entry === "object" && entry !== null &&
-                        ["calculated", "explicit_absence", "not_permitted"]
-                          .includes(String(state));
-                    }) as Record<string, unknown>[]
-                    : [];
+                      return (
+                        typeof entry === "object" &&
+                        entry !== null &&
+                        [
+                          "calculated",
+                          "explicit_absence",
+                          "not_permitted",
+                        ].includes(String(state))
+                      );
+                    }) as Record<string, unknown>[])
+                  : [];
                 const sourceIds = [
                   ...new Set(
-                    [...covered, ...withdrawalResults].map((
-                      entry,
-                    ) => ((entry.sourceRef as Record<string, unknown> | null)
-                      ?.id)
-                    ).filter((id): id is string => typeof id === "string"),
+                    [...covered, ...withdrawalResults]
+                      .map(
+                        (entry) =>
+                          (entry.sourceRef as Record<string, unknown> | null)
+                            ?.id,
+                      )
+                      .filter((id): id is string => typeof id === "string"),
                   ),
                 ];
                 const coverageIds = [
                   ...new Set(
-                    [...covered, ...withdrawalResults].map((entry) =>
-                      entry.sourceCoverageId
-                    )
+                    [...covered, ...withdrawalResults]
+                      .map((entry) => entry.sourceCoverageId)
                       .filter((id): id is string => typeof id === "string"),
                   ),
                 ];
                 const doseRuleIds = [
                   ...new Set(
-                    covered.map((
-                      entry,
-                    ) => ((entry.technicalValue as
-                      | Record<string, unknown>
-                      | null)?.doseRuleId)
-                    ).filter((id): id is string => typeof id === "string"),
+                    covered
+                      .map(
+                        (entry) =>
+                          (
+                            entry.technicalValue as Record<
+                              string,
+                              unknown
+                            > | null
+                          )?.doseRuleId,
+                      )
+                      .filter((id): id is string => typeof id === "string"),
                   ),
                 ];
                 const authorizationIds = [
                   ...new Set(
-                    covered.map((
-                      entry,
-                    ) => ((entry.technicalValue as
-                      | Record<string, unknown>
-                      | null)?.authorizationId)
-                    ).filter((id): id is string => typeof id === "string"),
+                    covered
+                      .map(
+                        (entry) =>
+                          (
+                            entry.technicalValue as Record<
+                              string,
+                              unknown
+                            > | null
+                          )?.authorizationId,
+                      )
+                      .filter((id): id is string => typeof id === "string"),
                   ),
                 ];
                 const withdrawalRuleIds = [
                   ...new Set(
-                    withdrawalResults.map((entry) => entry.ruleId)
+                    withdrawalResults
+                      .map((entry) => entry.ruleId)
                       .filter((id): id is string => typeof id === "string"),
                   ),
                 ];
-                const animalIds = operation.payload.event_animals.map((entry) =>
-                  entry.animal_id
+                const animalIds = operation.payload.event_animals.map(
+                  (entry) => entry.animal_id,
                 );
                 const productId =
                   operation.payload.detail.produto_sanitario_v2_id;
@@ -567,50 +618,59 @@ Deno.serve(async (req: Request) => {
                   authorizationsResult,
                   animalsResult,
                 ] = await Promise.all([
-                  serviceSupabase.from("sanitario_produtos_v2").select("*").eq(
-                    "id",
-                    productId,
-                  ).maybeSingle(),
+                  serviceSupabase
+                    .from("sanitario_produtos_v2")
+                    .select("*")
+                    .eq("id", productId)
+                    .maybeSingle(),
                   sourceIds.length
-                    ? serviceSupabase.from("sanitario_fontes_tecnicas_v2")
-                      .select("*").in("id", sourceIds)
+                    ? serviceSupabase
+                        .from("sanitario_fontes_tecnicas_v2")
+                        .select("*")
+                        .in("id", sourceIds)
                     : empty,
                   coverageIds.length
-                    ? serviceSupabase.from(
-                      "sanitario_fonte_cobertura_campos_v2",
-                    ).select("*").in("id", coverageIds)
+                    ? serviceSupabase
+                        .from("sanitario_fonte_cobertura_campos_v2")
+                        .select("*")
+                        .in("id", coverageIds)
                     : empty,
                   sourceIds.length
-                    ? serviceSupabase.from("sanitario_produto_fontes_v2")
-                      .select("*").eq("product_id", productId).in(
-                        "source_id",
-                        sourceIds,
-                      )
+                    ? serviceSupabase
+                        .from("sanitario_produto_fontes_v2")
+                        .select("*")
+                        .eq("product_id", productId)
+                        .in("source_id", sourceIds)
                     : empty,
                   doseRuleIds.length
-                    ? serviceSupabase.from("sanitario_produto_dose_rules_v2")
-                      .select("*").in("id", doseRuleIds)
+                    ? serviceSupabase
+                        .from("sanitario_produto_dose_rules_v2")
+                        .select("*")
+                        .in("id", doseRuleIds)
                     : empty,
                   withdrawalRuleIds.length
-                    ? serviceSupabase.from(
-                      "sanitario_produto_carencia_rules_v2",
-                    )
-                      .select("*").in("id", withdrawalRuleIds)
+                    ? serviceSupabase
+                        .from("sanitario_produto_carencia_rules_v2")
+                        .select("*")
+                        .in("id", withdrawalRuleIds)
                     : empty,
                   withdrawalRuleIds.length
-                    ? serviceSupabase.from(
-                      "sanitario_produto_carencia_fontes_v2",
-                    )
-                      .select("*").in("withdrawal_rule_id", withdrawalRuleIds)
+                    ? serviceSupabase
+                        .from("sanitario_produto_carencia_fontes_v2")
+                        .select("*")
+                        .in("withdrawal_rule_id", withdrawalRuleIds)
                     : empty,
                   authorizationIds.length
-                    ? serviceSupabase.from(
-                      "sanitario_produto_especie_autorizacao_v2",
-                    ).select("*").in("id", authorizationIds)
+                    ? serviceSupabase
+                        .from("sanitario_produto_especie_autorizacao_v2")
+                        .select("*")
+                        .in("id", authorizationIds)
                     : empty,
-                  serviceSupabase.from("animais").select(
-                    "id, fazenda_id, especie",
-                  ).eq("fazenda_id", trustedFazendaId).in("id", animalIds),
+                  serviceSupabase
+                    .from("animais")
+                    .select("id, fazenda_id, especie")
+                    .eq("fazenda_id", trustedFazendaId)
+                    .in("id", animalIds),
                 ]);
                 const lookupError = [
                   productResult,
@@ -623,7 +683,8 @@ Deno.serve(async (req: Request) => {
                   authorizationsResult,
                   animalsResult,
                 ]
-                  .map((result) => result.error).find(Boolean);
+                  .map((result) => result.error)
+                  .find(Boolean);
                 if (lookupError) {
                   return { reasonCode: null, error: lookupError };
                 }
@@ -632,9 +693,10 @@ Deno.serve(async (req: Request) => {
                     snapshot,
                     trustedFazendaId,
                     {
-                      product: productResult.data as
-                        | Record<string, unknown>
-                        | null,
+                      product: productResult.data as Record<
+                        string,
+                        unknown
+                      > | null,
                       sources: (sourcesResult.data ?? []) as Record<
                         string,
                         unknown
@@ -651,21 +713,15 @@ Deno.serve(async (req: Request) => {
                         string,
                         unknown
                       >[],
-                      withdrawalRules:
-                        (withdrawalRulesResult.data ?? []) as Record<
-                          string,
-                          unknown
-                        >[],
+                      withdrawalRules: (withdrawalRulesResult.data ??
+                        []) as Record<string, unknown>[],
                       withdrawalRuleSources:
                         (withdrawalRuleSourcesResult.data ?? []) as Record<
                           string,
                           unknown
                         >[],
-                      speciesAuthorizations:
-                        (authorizationsResult.data ?? []) as Record<
-                          string,
-                          unknown
-                        >[],
+                      speciesAuthorizations: (authorizationsResult.data ??
+                        []) as Record<string, unknown>[],
                       animals: (animalsResult.data ?? []) as Record<
                         string,
                         unknown
@@ -718,9 +774,10 @@ Deno.serve(async (req: Request) => {
           results.push({
             op_id: op.client_op_id,
             client_op_id: op.client_op_id,
-            domain_op_id: typeof op.record?.domain_op_id === "string"
-              ? op.record.domain_op_id
-              : undefined,
+            domain_op_id:
+              typeof op.record?.domain_op_id === "string"
+                ? op.record.domain_op_id
+                : undefined,
             status: "REJECTED",
             reason_code: sanitaryMovementIssue,
             reason_message:
@@ -751,10 +808,11 @@ Deno.serve(async (req: Request) => {
           const dependencyDecision =
             await resolveSanitarioInventoryFactualDependency({
               operations: ops.filter(
-                (candidate): candidate is
-                  | Operation
-                  | SanitarioSyncV2Operation =>
-                  !isCommercialPurchaseOperation(candidate),
+                (
+                  candidate,
+                ): candidate is Operation | SanitarioSyncV2Operation =>
+                  !isCommercialPurchaseOperation(candidate) &&
+                  !isCommercialOperationV2(candidate),
               ),
               processedResults: results,
               fazendaId: fazenda_id,
@@ -795,18 +853,20 @@ Deno.serve(async (req: Request) => {
             continue;
           }
 
-          const [{ data: sourceEvent, error: eventError }, {
-            data: sourceDetail,
-            error: detailError,
-          }] = await Promise.all([
-            supabase.from("eventos")
+          const [
+            { data: sourceEvent, error: eventError },
+            { data: sourceDetail, error: detailError },
+          ] = await Promise.all([
+            supabase
+              .from("eventos")
               .select(
                 "id, fazenda_id, dominio, sanitario_sync_v2_nature, payload, deleted_at",
               )
               .eq("id", sourceEventId)
               .eq("fazenda_id", fazenda_id)
               .maybeSingle(),
-            supabase.from("eventos_sanitario")
+            supabase
+              .from("eventos_sanitario")
               .select(
                 "evento_id, fazenda_id, produto_sanitario_v2_id, insumo_id, estoque_lote_id, deleted_at",
               )
@@ -822,7 +882,9 @@ Deno.serve(async (req: Request) => {
               status: "RETRYABLE",
               retryable: true,
               reason_code: "SANITARIO_INVENTORY_SOURCE_LOOKUP_FAILED",
-              reason_message: eventError?.message ?? detailError?.message ??
+              reason_message:
+                eventError?.message ??
+                detailError?.message ??
                 "Sanitary inventory source lookup failed",
             });
             continue;
@@ -847,19 +909,22 @@ Deno.serve(async (req: Request) => {
 
           const [byClientOp, byDomainOp, byLogicalMovement] = await Promise.all(
             [
-              supabase.from("insumo_movimentacoes")
+              supabase
+                .from("insumo_movimentacoes")
                 .select("*")
                 .eq("fazenda_id", fazenda_id)
                 .eq("client_op_id", op.client_op_id)
                 .is("deleted_at", null)
                 .maybeSingle(),
-              supabase.from("insumo_movimentacoes")
+              supabase
+                .from("insumo_movimentacoes")
                 .select("*")
                 .eq("fazenda_id", fazenda_id)
                 .eq("domain_op_id", String(record.domain_op_id))
                 .is("deleted_at", null)
                 .maybeSingle(),
-              supabase.from("insumo_movimentacoes")
+              supabase
+                .from("insumo_movimentacoes")
                 .select("*")
                 .eq("fazenda_id", fazenda_id)
                 .eq("source_evento_id", sourceEventId)
@@ -869,8 +934,8 @@ Deno.serve(async (req: Request) => {
                 .maybeSingle(),
             ],
           );
-          const existingError = byClientOp.error ?? byDomainOp.error ??
-            byLogicalMovement.error;
+          const existingError =
+            byClientOp.error ?? byDomainOp.error ?? byLogicalMovement.error;
           if (existingError) {
             results.push({
               op_id: op.client_op_id,
@@ -890,7 +955,7 @@ Deno.serve(async (req: Request) => {
           ].filter((entry): entry is Record<string, unknown> => Boolean(entry));
           if (existingMovements.length > 0) {
             const replay = existingMovements.every((existingMovement) =>
-              sameSanitarioInventoryMovement(existingMovement, record)
+              sameSanitarioInventoryMovement(existingMovement, record),
             );
             results.push({
               op_id: op.client_op_id,
@@ -938,10 +1003,8 @@ Deno.serve(async (req: Request) => {
 
         // P1.1: Reproduction Events Hardening (Payload v1 + Episode Linking)
         if (op.table === "eventos_reproducao" && op.action === "INSERT") {
-          const {
-            reproductionPayload,
-            schemaVersion,
-          } = readReproductionPayload(record.payload);
+          const { reproductionPayload, schemaVersion } =
+            readReproductionPayload(record.payload);
 
           // 1. Validate Schema Version (Strict)
           if (schemaVersion !== 1) {
@@ -995,17 +1058,20 @@ Deno.serve(async (req: Request) => {
               continue;
             }
 
-            const episodeId = typeof reproductionPayload.episode_evento_id === "string"
-              ? reproductionPayload.episode_evento_id
-              : "";
+            const episodeId =
+              typeof reproductionPayload.episode_evento_id === "string"
+                ? reproductionPayload.episode_evento_id
+                : "";
             const { data: episode, error: episodeError } = episodeId
               ? await supabase
-                .from("eventos")
-                .select("id, fazenda_id, animal_id, occurred_at, eventos_reproducao(tipo)")
-                .eq("id", episodeId)
-                .eq("fazenda_id", fazenda_id)
-                .eq("animal_id", dependency.event.animal_id)
-                .maybeSingle()
+                  .from("eventos")
+                  .select(
+                    "id, fazenda_id, animal_id, occurred_at, eventos_reproducao(tipo)",
+                  )
+                  .eq("id", episodeId)
+                  .eq("fazenda_id", fazenda_id)
+                  .eq("animal_id", dependency.event.animal_id)
+                  .maybeSingle()
               : { data: null, error: null };
             if (episodeError) {
               results.push({
@@ -1019,53 +1085,56 @@ Deno.serve(async (req: Request) => {
             const episodeType = readLinkedReproductionType(
               episode?.eventos_reproducao,
             );
-            const factualIssue = record.tipo === "diagnostico"
-              ? validatePregnancyDiagnosis({
-                detail: record,
-                event: dependency.event,
-                episode,
-                episodeType,
-                fazendaId: fazenda_id,
-              })
-              : validateOptionalReproductionEpisode({
-                detail: record,
-                event: dependency.event,
-                episode,
-                episodeType,
-                fazendaId: fazenda_id,
-              });
+            const factualIssue =
+              record.tipo === "diagnostico"
+                ? validatePregnancyDiagnosis({
+                    detail: record,
+                    event: dependency.event,
+                    episode,
+                    episodeType,
+                    fazendaId: fazenda_id,
+                  })
+                : validateOptionalReproductionEpisode({
+                    detail: record,
+                    event: dependency.event,
+                    episode,
+                    episodeType,
+                    fazendaId: fazenda_id,
+                  });
             if (factualIssue) {
               results.push({
                 op_id: op.client_op_id,
                 status: "REJECTED",
                 reason_code: factualIssue,
-                reason_message:
-                  "Reproduction detail failed factual validation",
+                reason_message: "Reproduction detail failed factual validation",
               });
               continue;
             }
           }
         }
 
-        const reproductionDetail = op.table === "eventos" &&
-            op.action === "INSERT" &&
-            typeof record.id === "string"
-          ? findSyncedReproductionDetailForEvent(record.id, legacyOps)
-          : null;
+        const reproductionDetail =
+          op.table === "eventos" &&
+          op.action === "INSERT" &&
+          typeof record.id === "string"
+            ? findSyncedReproductionDetailForEvent(record.id, legacyOps)
+            : null;
         if (reproductionDetail && record.corrige_evento_id != null) {
           const correctedId = String(record.corrige_evento_id);
-          const [{ data: correctedEvent, error: correctedError }, {
-            data: correctionChildren,
-            error: childrenError,
-          }] = await Promise.all([
-            supabase.from("eventos")
+          const [
+            { data: correctedEvent, error: correctedError },
+            { data: correctionChildren, error: childrenError },
+          ] = await Promise.all([
+            supabase
+              .from("eventos")
               .select(
                 "id, fazenda_id, dominio, animal_id, occurred_at, eventos_reproducao(tipo)",
               )
               .eq("id", correctedId)
               .eq("fazenda_id", fazenda_id)
               .maybeSingle(),
-            supabase.from("eventos")
+            supabase
+              .from("eventos")
               .select("id")
               .eq("fazenda_id", fazenda_id)
               .eq("corrige_evento_id", correctedId)
@@ -1105,23 +1174,24 @@ Deno.serve(async (req: Request) => {
           if (correctionIssue) {
             results.push({
               op_id: op.client_op_id,
-              status: correctionIssue ===
-                  "REPRODUCTION_CORRECTION_BRANCH_CONFLICT"
-                ? "CONFLICT"
-                : "REJECTED",
+              status:
+                correctionIssue === "REPRODUCTION_CORRECTION_BRANCH_CONFLICT"
+                  ? "CONFLICT"
+                  : "REJECTED",
               reason_code: correctionIssue,
               reason_message:
                 "Reproductive correction failed append-only validation",
             });
             continue;
           }
-          const rewritesBirthChildren = reproductionDetail.record.tipo ===
-              "parto" &&
-            legacyOps.some((candidate) =>
-              (isBirthCalfOperation(candidate) &&
-                readBirthEventId(candidate.record) === record.id) ||
-              (isBirthAgendaOperation(candidate) &&
-                readAgendaBirthEventId(candidate.record) === record.id)
+          const rewritesBirthChildren =
+            reproductionDetail.record.tipo === "parto" &&
+            legacyOps.some(
+              (candidate) =>
+                (isBirthCalfOperation(candidate) &&
+                  readBirthEventId(candidate.record) === record.id) ||
+                (isBirthAgendaOperation(candidate) &&
+                  readAgendaBirthEventId(candidate.record) === record.id),
             );
           if (rewritesBirthChildren) {
             results.push({
@@ -1141,10 +1211,11 @@ Deno.serve(async (req: Request) => {
           const birthEventId = isBirthCalf
             ? readBirthEventId(record)
             : readAgendaBirthEventId(record);
-          const birthEventOp = legacyOps.find((candidate) =>
-            candidate.table === "eventos" &&
-            candidate.action === "INSERT" &&
-            candidate.record?.id === birthEventId
+          const birthEventOp = legacyOps.find(
+            (candidate) =>
+              candidate.table === "eventos" &&
+              candidate.action === "INSERT" &&
+              candidate.record?.id === birthEventId,
           );
           const birthDetailOp = birthEventId
             ? findSyncedReproductionDetailForEvent(birthEventId, legacyOps)
@@ -1172,14 +1243,15 @@ Deno.serve(async (req: Request) => {
             parentEvent = { ...birthEventOp.record, fazenda_id };
             parentType = String(birthDetailOp.record.tipo);
           } else if (birthEventId) {
-            const { data: remoteBirth, error: remoteBirthError } = await supabase
-              .from("eventos")
-              .select(
-                "id, fazenda_id, dominio, animal_id, eventos_reproducao(tipo)",
-              )
-              .eq("id", birthEventId)
-              .eq("fazenda_id", fazenda_id)
-              .maybeSingle();
+            const { data: remoteBirth, error: remoteBirthError } =
+              await supabase
+                .from("eventos")
+                .select(
+                  "id, fazenda_id, dominio, animal_id, eventos_reproducao(tipo)",
+                )
+                .eq("id", birthEventId)
+                .eq("fazenda_id", fazenda_id)
+                .maybeSingle();
             if (remoteBirthError) {
               results.push({
                 op_id: op.client_op_id,
@@ -1221,10 +1293,11 @@ Deno.serve(async (req: Request) => {
           }
           if (isBirthAgenda) {
             const calfId = record.animal_id;
-            const calfOp = legacyOps.find((candidate) =>
-              isBirthCalfOperation(candidate) &&
-              candidate.record.id === calfId &&
-              readBirthEventId(candidate.record) === birthEventId
+            const calfOp = legacyOps.find(
+              (candidate) =>
+                isBirthCalfOperation(candidate) &&
+                candidate.record.id === calfId &&
+                readBirthEventId(candidate.record) === birthEventId,
             );
             if (calfOp && !isAppliedResult(results, calfOp.client_op_id)) {
               results.push({
@@ -1238,12 +1311,13 @@ Deno.serve(async (req: Request) => {
               continue;
             }
             if (!calfOp && typeof calfId === "string") {
-              const { data: remoteCalf, error: remoteCalfError } = await supabase
-                .from("animais")
-                .select("id, fazenda_id, payload")
-                .eq("id", calfId)
-                .eq("fazenda_id", fazenda_id)
-                .maybeSingle();
+              const { data: remoteCalf, error: remoteCalfError } =
+                await supabase
+                  .from("animais")
+                  .select("id, fazenda_id, payload")
+                  .eq("id", calfId)
+                  .eq("fazenda_id", fazenda_id)
+                  .maybeSingle();
               if (remoteCalfError) {
                 results.push({
                   op_id: op.client_op_id,
@@ -1255,7 +1329,8 @@ Deno.serve(async (req: Request) => {
                 continue;
               }
               if (
-                !remoteCalf || readBirthEventId(remoteCalf) !== birthEventId
+                !remoteCalf ||
+                readBirthEventId(remoteCalf) !== birthEventId
               ) {
                 results.push({
                   op_id: op.client_op_id,
@@ -1274,16 +1349,17 @@ Deno.serve(async (req: Request) => {
         const reproductionReplayTable = reproductionDetail
           ? "eventos"
           : isSyncedReproductionDetailOperation({ ...op, record })
-          ? "eventos_reproducao"
-          : isBirthCalf
-          ? "animais"
-          : isBirthAgenda
-          ? "agenda_itens"
-          : null;
+            ? "eventos_reproducao"
+            : isBirthCalf
+              ? "animais"
+              : isBirthAgenda
+                ? "agenda_itens"
+                : null;
         if (reproductionReplayTable) {
-          const keyField = reproductionReplayTable === "eventos_reproducao"
-            ? "evento_id"
-            : "id";
+          const keyField =
+            reproductionReplayTable === "eventos_reproducao"
+              ? "evento_id"
+              : "id";
           const keyValue = record[keyField];
           const { data: existing, error: existingError } = await supabase
             .from(reproductionReplayTable)
@@ -1329,10 +1405,7 @@ Deno.serve(async (req: Request) => {
           }
         }
 
-        if (
-          op.table === "eventos" &&
-          op.action === "INSERT"
-        ) {
+        if (op.table === "eventos" && op.action === "INSERT") {
           const agendaSourceTaskId = inferAgendaSourceTaskIdForEventInsert(
             { ...op, record },
             legacyOps,
@@ -1366,8 +1439,7 @@ Deno.serve(async (req: Request) => {
                 op_id: op.client_op_id,
                 status: "REJECTED",
                 reason_code: "agenda_already_completed_by_event",
-                reason_message:
-                  `Agenda item already completed by event ${agendaItem.source_evento_id}`,
+                reason_message: `Agenda item already completed by event ${agendaItem.source_evento_id}`,
               });
               continue;
             }
@@ -1377,7 +1449,8 @@ Deno.serve(async (req: Request) => {
         // P0: Execute with user client (RLS enforced)
         let query;
         if (op.action === "INSERT") {
-          query = supabase.from(op.table)
+          query = supabase
+            .from(op.table)
             .insert({
               ...record,
               fazenda_id,
@@ -1393,15 +1466,11 @@ Deno.serve(async (req: Request) => {
               op_id: op.client_op_id,
               status: "REJECTED",
               reason_code: "VALIDATION_MISSING_PRIMARY_KEY",
-              reason_message:
-                `Operation UPDATE on ${op.table} missing id/evento_id/user_id`,
+              reason_message: `Operation UPDATE on ${op.table} missing id/evento_id/user_id`,
             });
             continue;
           }
-          query = supabase.from(op.table)
-            .update(record)
-            .match(match)
-            .select(); // Request representation to avoid PGRST204
+          query = supabase.from(op.table).update(record).match(match).select(); // Request representation to avoid PGRST204
         } else if (op.action === "DELETE") {
           const match = buildMutationMatch(op, fazenda_id);
           if (!match) {
@@ -1409,12 +1478,12 @@ Deno.serve(async (req: Request) => {
               op_id: op.client_op_id,
               status: "REJECTED",
               reason_code: "VALIDATION_MISSING_PRIMARY_KEY",
-              reason_message:
-                `Operation DELETE on ${op.table} missing id/evento_id/user_id`,
+              reason_message: `Operation DELETE on ${op.table} missing id/evento_id/user_id`,
             });
             continue;
           }
-          query = supabase.from(op.table)
+          query = supabase
+            .from(op.table)
             .update({ deleted_at: new Date().toISOString() })
             .match(match)
             .select(); // Request representation to avoid PGRST204

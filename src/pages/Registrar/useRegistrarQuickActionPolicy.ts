@@ -51,20 +51,20 @@ export const REGISTRAR_QUICK_ACTIONS: QuickActionConfig[] = [
   {
     key: "compra",
     label: "Compra",
-    helper: "Compra simples por lote, com ou sem novos animais.",
+    helper: "Cria os animais e o fato comercial no mesmo gesto.",
     icon: Handshake,
   },
   {
     key: "venda",
-    label: "Venda manual",
-    helper:
-      "Registra operacao informada pelo usuario; nao valida aptidao comercial.",
-    requiresAnimals: true,
+    label: "Venda",
+    helper: "Escolha o escopo e congele os animais ativos antes de confirmar.",
     icon: Handshake,
   },
 ];
 
-export function isQuickActionKey(value: string | null): value is QuickActionKey {
+export function isQuickActionKey(
+  value: string | null,
+): value is QuickActionKey {
   return REGISTRAR_QUICK_ACTIONS.some((action) => action.key === value);
 }
 
@@ -102,9 +102,9 @@ export function resolveQuickActionDecision(actionKey: QuickActionKey): {
   }
 
   return {
-    tipoManejo: "financeiro",
+    tipoManejo: "comercial",
     sanitaryQuickAction: null,
-    financeiroNatureza: actionKey === "compra" ? "compra" : "venda",
+    financeiroNatureza: null,
   };
 }
 
@@ -121,11 +121,8 @@ export function useRegistrarQuickActionPolicy(input: {
   setTipoManejo: (domain: EventDomain) => void;
   updateFinanceiroNatureza: (natureza: "compra" | "venda") => void;
 }) {
-  const {
-    applySanitaryQuickAction,
-    setTipoManejo,
-    updateFinanceiroNatureza,
-  } = input;
+  const { applySanitaryQuickAction, setTipoManejo, updateFinanceiroNatureza } =
+    input;
   const [quickAction, setQuickAction] = useState<QuickActionKey | null>(null);
 
   const applyQuickAction = useCallback(

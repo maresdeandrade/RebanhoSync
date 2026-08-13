@@ -1,5 +1,10 @@
 import { ReactNode, useEffect, useMemo } from "react";
 import type { Animal, Contraparte } from "@/lib/offline/types";
+import type { AnimalBreedEnum } from "@/lib/animals/catalogs";
+import type { AnimalSpeciesEnum } from "@/lib/animals/species";
+import { ANIMAL_BREED_OPTIONS } from "@/lib/animals/catalogs";
+import { ANIMAL_SPECIES_OPTIONS } from "@/lib/animals/species";
+import type { CommercialNewAnimalDraft } from "@/lib/comercial/commercialOperationCommand";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -51,6 +56,11 @@ export type ComercialFormData = {
   pesosPorAnimal: Record<string, string>;
   /** Valor individual por animal (scope=animal) — chave = animal.id */
   valoresPorAnimal: Record<string, string>;
+  newAnimals: CommercialNewAnimalDraft[];
+  commonSpecies: AnimalSpeciesEnum | "none";
+  commonBreed: AnimalBreedEnum | "none";
+  commonEntryDate: string;
+  saleSnapshotIds: string[];
 };
 
 type AnimalWithLastWeight = {
@@ -94,6 +104,7 @@ type RegistrarComercialSectionProps = {
   weightUnitLabel: string;
   transitChecklistSection?: ReactNode;
   sanitaryMovementBlockSection?: ReactNode;
+  currentLotActiveAnimalIds?: string[];
 };
 
 // ---------------------------------------------------------------------------
@@ -130,10 +141,51 @@ export function RegistrarComercialSection(
     weightUnitLabel,
     transitChecklistSection,
     sanitaryMovementBlockSection,
+    currentLotActiveAnimalIds,
   } = props;
 
   const isAnimalScope = comercialData.scope === "animal";
   const hasAnimals = selectedAnimalIds.length > 0;
+  const purchase = comercialData.operationType === "compra";
+  const newAnimals = comercialData.newAnimals ?? [];
+  const commonSpecies = comercialData.commonSpecies ?? "none";
+  const commonBreed = comercialData.commonBreed ?? "none";
+  const commonEntryDate = comercialData.commonEntryDate ?? "";
+  const saleSnapshotIds = comercialData.saleSnapshotIds ?? [];
+  const lotActiveIds = currentLotActiveAnimalIds ?? [];
+
+  const resizePurchaseGrid = (quantity: number) => {
+    const safe = Math.max(1, Math.min(500, quantity || 1));
+    const next = Array.from(
+      { length: safe },
+      (_, index) =>
+        newAnimals[index] ?? {
+          localId: crypto.randomUUID(),
+          identificacao: "",
+          sexo: "F" as const,
+          especie: commonSpecies === "none" ? null : commonSpecies,
+          raca: commonBreed === "none" ? null : commonBreed,
+          dataNascimento: "",
+          dataEntrada: commonEntryDate || null,
+          pesoKg: null,
+          valorIndividual: null,
+        },
+    );
+    updateComercialData("newAnimals", next);
+    updateComercialData("quantidadeAnimais", String(safe));
+  };
+
+  const updateNewAnimal = (
+    localId: string,
+    patch: Partial<CommercialNewAnimalDraft>,
+  ) => {
+    updateComercialData(
+      "newAnimals",
+      newAnimals.map((item) =>
+        item.localId === localId ? { ...item, ...patch } : item,
+      ),
+    );
+  };
 
   // ---------------------------------------------------------------------------
   // Auto-fill: quando scope muda para "animal" e há animais selecionados,
@@ -280,7 +332,8 @@ export function RegistrarComercialSection(
           ))}
         </div>
         <p className="text-xs text-muted-foreground">
-          Compra e venda sao registros manuais informados pelo usuario; nao validam aptidao comercial.
+          Compra e venda sao registros manuais informados pelo usuario; nao
+          validam aptidao comercial.
         </p>
       </div>
 
@@ -311,488 +364,708 @@ export function RegistrarComercialSection(
             {/* Escopo da Operação */}
             <div className="grid gap-5 md:grid-cols-2">
               <div className="space-y-3">
-              <Label>Escopo da Operação</Label>
-              <div className="flex gap-2">
-                {(
-                  [
-                    { value: "animal", label: "Por Animal" },
-                    { value: "lote", label: "Por Lote" },
-                  ] as const
-                ).map((opt) => (
-                  <Button
-                    key={opt.value}
-                    type="button"
-                    variant={
-                      comercialData.scope === opt.value ? "default" : "outline"
-                    }
-                    onClick={() => updateComercialData("scope", opt.value)}
-                    disabled={opt.value === "animal" && !hasAnimals}
-                    className="rounded-full shadow-none flex-1"
-                  >
-                    {opt.label}
-                  </Button>
-                ))}
+                <Label>Escopo da Operação</Label>
+                <div className="flex gap-2">
+                  {(
+                    [
+                      { value: "animal", label: "Por Animal" },
+                      { value: "lote", label: "Por Lote" },
+                    ] as const
+                  ).map((opt) => (
+                    <Button
+                      key={opt.value}
+                      type="button"
+                      variant={
+                        comercialData.scope === opt.value
+                          ? "default"
+                          : "outline"
+                      }
+                      onClick={() => updateComercialData("scope", opt.value)}
+                      disabled={
+                        opt.value === "animal" && !hasAnimals && !purchase
+                      }
+                      className="rounded-full shadow-none flex-1"
+                    >
+                      {opt.label}
+                    </Button>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {isAnimalScope && hasAnimals
+                    ? `${selectedAnimalIds.length} animal(is) pré-selecionado(s). Pesos e valores individuais abaixo.`
+                    : purchase
+                      ? "A compra cria os animais dentro desta operação."
+                      : !hasAnimals
+                        ? "Sem animais selecionados. Para venda por lote, congele o snapshot abaixo."
+                        : null}
+                </p>
               </div>
-              <p className="text-xs text-muted-foreground">
-                {isAnimalScope && hasAnimals
-                  ? `${selectedAnimalIds.length} animal(is) pré-selecionado(s). Pesos e valores individuais abaixo.`
-                  : !hasAnimals
-                    ? "Sem animais selecionados. Use Por Lote para informar totais."
-                    : null}
-              </p>
             </div>
-              </div>
 
             {/* Data + Quantidade + Peso Total */}
-          <div className="grid gap-5 md:grid-cols-3">
-            {/* Data da Operação */}
-            <div className="space-y-2">
-              <Label>Data da Operação</Label>
-              <Input
-                type="date"
-                value={comercialData.occurredAt}
-                onChange={(e) =>
-                  updateComercialData("occurredAt", e.target.value)
-                }
-                className="bg-background"
-              />
-            </div>
-
-            {/* Quantidade de Animais */}
-            <div className="space-y-2">
-              <Label className="flex items-center gap-1.5">
-                Quantidade de Animais
-                {isAnimalScope && hasAnimals && (
-                  <Lock className="h-3 w-3 text-muted-foreground" />
-                )}
-              </Label>
-              <Input
-                type="number"
-                min="1"
-                value={
-                  isAnimalScope && hasAnimals
-                    ? String(selectedAnimalIds.length)
-                    : comercialData.quantidadeAnimais
-                }
-                disabled={isAnimalScope && hasAnimals}
-                onChange={(e) =>
-                  updateComercialData("quantidadeAnimais", e.target.value)
-                }
-                placeholder="Ex: 10"
-                className={cn(
-                  "bg-background",
-                  isAnimalScope &&
-                    hasAnimals &&
-                    "opacity-70 cursor-not-allowed",
-                )}
-              />
-              {isAnimalScope && hasAnimals && (
-                <p className="text-[11px] text-muted-foreground">
-                  Derivado da seleção de animais
-                </p>
-              )}
-            </div>
-
-            {/* Peso Vivo Total */}
-            <div className="space-y-2">
-              <Label className="flex items-center gap-1.5">
-                Peso Vivo Total ({weightUnitLabel})
-                {isAnimalScope && hasAnimals && (
-                  <Pencil className="h-3 w-3 text-blue-500" />
-                )}
-              </Label>
-              <Input
-                type="number"
-                min="0"
-                step="0.01"
-                value={comercialData.pesoVivoTotal}
-                onChange={(e) =>
-                  updateComercialData("pesoVivoTotal", e.target.value)
-                }
-                placeholder="Ex: 3500.00"
-                className="bg-background"
-              />
-              {isAnimalScope && hasAnimals && (
-                <p className="text-[11px] text-muted-foreground">
-                  Soma dos pesos individuais (editável)
-                </p>
-              )}
-            </div>
-          </div>
-
-          {/* ---------------------------------------------------------------- */}
-          {/* MODO POR ANIMAL: grid individual */}
-          {/* ---------------------------------------------------------------- */}
-          {isAnimalScope && hasAnimals && (
-            <div className="space-y-3 border border-border/60 rounded-xl p-4 bg-background/50">
-              <div className="flex items-center gap-2">
-                <Scale className="h-4 w-4 text-primary" />
-                <p className="text-sm font-semibold">
-                  Peso &amp; Valor por Animal
-                </p>
-                <span className="ml-auto text-xs text-muted-foreground">
-                  {selectedAnimalIds.length} animal(is)
-                </span>
+            <div className="grid gap-5 md:grid-cols-3">
+              {/* Data da Operação */}
+              <div className="space-y-2">
+                <Label>Data da Operação</Label>
+                <Input
+                  type="date"
+                  value={comercialData.occurredAt}
+                  onChange={(e) =>
+                    updateComercialData("occurredAt", e.target.value)
+                  }
+                  className="bg-background"
+                />
               </div>
 
+              {/* Quantidade de Animais */}
               <div className="space-y-2">
-                {/* Header */}
-                <div className="grid grid-cols-[1fr_120px_120px] gap-2 text-[11px] uppercase tracking-wider text-muted-foreground font-semibold px-1">
-                  <span>Animal</span>
-                  <span>Peso ({weightUnitLabel})</span>
-                  <span>Valor (R$)</span>
-                </div>
+                <Label className="flex items-center gap-1.5">
+                  Quantidade de Animais
+                  {isAnimalScope && hasAnimals && (
+                    <Lock className="h-3 w-3 text-muted-foreground" />
+                  )}
+                </Label>
+                <Input
+                  type="number"
+                  min="1"
+                  value={
+                    purchase
+                      ? comercialData.quantidadeAnimais
+                      : isAnimalScope && hasAnimals
+                        ? String(selectedAnimalIds.length)
+                        : comercialData.quantidadeAnimais
+                  }
+                  disabled={!purchase && isAnimalScope && hasAnimals}
+                  onChange={(e) =>
+                    purchase
+                      ? resizePurchaseGrid(parseInt(e.target.value, 10))
+                      : updateComercialData("quantidadeAnimais", e.target.value)
+                  }
+                  placeholder="Ex: 10"
+                  className={cn(
+                    "bg-background",
+                    isAnimalScope &&
+                      hasAnimals &&
+                      "opacity-70 cursor-not-allowed",
+                  )}
+                />
+                {isAnimalScope && hasAnimals && (
+                  <p className="text-[11px] text-muted-foreground">
+                    Derivado da seleção de animais
+                  </p>
+                )}
+              </div>
 
-                {selectedAnimalIds.map((id) => {
-                  const animal = animaisComPeso.find((a) => a.id === id);
-                  const label = animal
-                    ? fmtAnimalLabel(animal)
-                    : id.slice(0, 8);
-                  const hasLastWeight =
-                    animal?.lastWeightKg != null &&
-                    !comercialData.pesosPorAnimal[id];
+              {/* Peso Vivo Total */}
+              <div className="space-y-2">
+                <Label className="flex items-center gap-1.5">
+                  Peso Vivo Total ({weightUnitLabel})
+                  {isAnimalScope && hasAnimals && (
+                    <Pencil className="h-3 w-3 text-blue-500" />
+                  )}
+                </Label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={comercialData.pesoVivoTotal}
+                  onChange={(e) =>
+                    updateComercialData("pesoVivoTotal", e.target.value)
+                  }
+                  placeholder="Ex: 3500.00"
+                  className="bg-background"
+                />
+                {isAnimalScope && hasAnimals && (
+                  <p className="text-[11px] text-muted-foreground">
+                    Soma dos pesos individuais (editável)
+                  </p>
+                )}
+              </div>
+            </div>
 
-                  return (
-                    <div
-                      key={id}
-                      className="grid grid-cols-[1fr_120px_120px] gap-2 items-center"
+            {purchase ? (
+              <div className="space-y-3 rounded-xl border p-4 bg-background/50">
+                <div className="grid gap-3 md:grid-cols-3">
+                  <div className="space-y-2">
+                    <Label>Espécie comum</Label>
+                    <Select
+                      value={commonSpecies}
+                      onValueChange={(value) => {
+                        updateComercialData(
+                          "commonSpecies",
+                          value as ComercialFormData["commonSpecies"],
+                        );
+                        updateComercialData(
+                          "newAnimals",
+                          newAnimals.map((item) => ({
+                            ...item,
+                            especie:
+                              value === "none"
+                                ? null
+                                : (value as AnimalSpeciesEnum),
+                          })),
+                        );
+                      }}
                     >
-                      {/* Nome */}
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium truncate">{label}</p>
-                        {hasLastWeight && (
-                          <p className="text-[10px] text-muted-foreground">
-                            Último: {animal!.lastWeightKg} {weightUnitLabel}
-                          </p>
-                        )}
-                      </div>
-
-                      {/* Peso individual */}
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Não informada</SelectItem>
+                        {ANIMAL_SPECIES_OPTIONS.map((item) => (
+                          <SelectItem key={item.value} value={item.value}>
+                            {item.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Raça comum</Label>
+                    <Select
+                      value={commonBreed}
+                      onValueChange={(value) => {
+                        updateComercialData(
+                          "commonBreed",
+                          value as ComercialFormData["commonBreed"],
+                        );
+                        updateComercialData(
+                          "newAnimals",
+                          newAnimals.map((item) => ({
+                            ...item,
+                            raca:
+                              value === "none"
+                                ? null
+                                : (value as AnimalBreedEnum),
+                          })),
+                        );
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Não informada</SelectItem>
+                        {ANIMAL_BREED_OPTIONS.map((item) => (
+                          <SelectItem key={item.value} value={item.value}>
+                            {item.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Data de entrada comum</Label>
+                    <Input
+                      type="date"
+                      value={commonEntryDate}
+                      onChange={(event) => {
+                        updateComercialData(
+                          "commonEntryDate",
+                          event.target.value,
+                        );
+                        updateComercialData(
+                          "newAnimals",
+                          newAnimals.map((item) => ({
+                            ...item,
+                            dataEntrada: event.target.value || null,
+                          })),
+                        );
+                      }}
+                    />
+                  </div>
+                </div>
+                <div className="max-h-80 space-y-2 overflow-y-auto">
+                  {newAnimals.map((draft, index) => (
+                    <div
+                      key={draft.localId}
+                      className="grid gap-2 rounded border p-2 md:grid-cols-[1.3fr_90px_150px_120px_120px]"
+                    >
                       <Input
-                        type="number"
-                        min="0"
-                        step="0.1"
-                        value={comercialData.pesosPorAnimal[id] ?? ""}
-                        onChange={(e) => {
-                          const next = {
-                            ...comercialData.pesosPorAnimal,
-                            [id]: e.target.value,
-                          };
-                          updateComercialData("pesosPorAnimal", next);
-                        }}
-                        placeholder={
-                          animal?.lastWeightKg != null
-                            ? String(animal.lastWeightKg)
-                            : "0.0"
+                        aria-label={`Identificação animal ${index + 1}`}
+                        value={draft.identificacao}
+                        placeholder={`Identificação ${index + 1}`}
+                        onChange={(event) =>
+                          updateNewAnimal(draft.localId, {
+                            identificacao: event.target.value,
+                          })
                         }
-                        className="bg-background h-9 text-sm"
                       />
-
-                      {/* Valor individual */}
+                      <Select
+                        value={draft.sexo}
+                        onValueChange={(value) =>
+                          updateNewAnimal(draft.localId, {
+                            sexo: value as "M" | "F",
+                          })
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="F">F</SelectItem>
+                          <SelectItem value="M">M</SelectItem>
+                        </SelectContent>
+                      </Select>
                       <Input
+                        aria-label={`Nascimento animal ${index + 1}`}
+                        type="date"
+                        value={draft.dataNascimento ?? ""}
+                        onChange={(event) =>
+                          updateNewAnimal(draft.localId, {
+                            dataNascimento: event.target.value,
+                          })
+                        }
+                      />
+                      <Input
+                        aria-label={`Peso animal ${index + 1}`}
                         type="number"
                         min="0"
-                        step="0.01"
-                        value={comercialData.valoresPorAnimal[id] ?? ""}
-                        onChange={(e) => {
-                          const next = {
-                            ...comercialData.valoresPorAnimal,
-                            [id]: e.target.value,
-                          };
-                          updateComercialData("valoresPorAnimal", next);
-                        }}
-                        placeholder="0.00"
-                        className="bg-background h-9 text-sm"
+                        placeholder="Peso"
+                        value={draft.pesoKg ?? ""}
+                        onChange={(event) =>
+                          updateNewAnimal(draft.localId, {
+                            pesoKg: event.target.value
+                              ? Number(event.target.value)
+                              : null,
+                          })
+                        }
+                      />
+                      <Input
+                        aria-label={`Valor animal ${index + 1}`}
+                        type="number"
+                        min="0"
+                        placeholder="Valor"
+                        value={draft.valorIndividual ?? ""}
+                        onChange={(event) =>
+                          updateNewAnimal(draft.localId, {
+                            valorIndividual: event.target.value
+                              ? Number(event.target.value)
+                              : null,
+                          })
+                        }
                       />
                     </div>
-                  );
-                })}
-              </div>
-
-              {/* Totais derivados no modo animal */}
-              <div className="grid grid-cols-2 gap-3 pt-2 border-t border-border/40">
-                <div className="rounded-lg bg-muted/60 p-3 text-center">
-                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
-                    Peso Total
-                  </p>
-                  <p className="mt-1 text-xl font-bold text-foreground">
-                    {comercialData.pesoVivoTotal
-                      ? `${parseFloat(comercialData.pesoVivoTotal).toFixed(1)} ${weightUnitLabel}`
-                      : "—"}
-                  </p>
-                </div>
-                <div className="rounded-lg bg-muted/60 p-3 text-center">
-                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
-                    Valor Total Individual
-                  </p>
-                  <p className="mt-1 text-xl font-bold text-foreground">
-                    {(() => {
-                      const total = selectedAnimalIds.reduce((acc, id) => {
-                        const v = parseFloat(
-                          comercialData.valoresPorAnimal[id] ?? "",
-                        );
-                        return isNaN(v) ? acc : acc + v;
-                      }, 0);
-                      return total > 0 ? `R$ ${total.toFixed(2)}` : "—";
-                    })()}
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* ---------------------------------------------------------------- */}
-          {/* Valores Financeiros (agregados) */}
-          {/* ---------------------------------------------------------------- */}
-          <div className="grid gap-5 border-t pt-5 md:grid-cols-2 lg:grid-cols-3">
-            {/* Valor Bruto */}
-            <div className="space-y-2">
-              <Label>
-                {isAnimalScope && hasAnimals
-                  ? "Valor Bruto Total (R$)"
-                  : "Valor Bruto (R$)"}
-              </Label>
-              <Input
-                type="number"
-                min="0"
-                step="0.01"
-                value={comercialData.valorBruto}
-                onChange={(e) =>
-                  updateComercialData("valorBruto", e.target.value)
-                }
-                placeholder="0.00"
-                className="bg-background"
-              />
-            </div>
-
-            {/* Frete */}
-            <div className="space-y-2">
-              <Label>Frete (R$)</Label>
-              <Input
-                type="number"
-                min="0"
-                step="0.01"
-                value={comercialData.frete}
-                onChange={(e) => updateComercialData("frete", e.target.value)}
-                placeholder="0.00"
-                className="bg-background"
-              />
-            </div>
-
-            {/* Comissão */}
-            <div className="space-y-2">
-              <Label>Comissão (R$)</Label>
-              <Input
-                type="number"
-                min="0"
-                step="0.01"
-                value={comercialData.comissao}
-                onChange={(e) =>
-                  updateComercialData("comissao", e.target.value)
-                }
-                placeholder="0.00"
-                className="bg-background"
-              />
-            </div>
-
-            {/* Descontos */}
-            <div className="space-y-2">
-              <Label>Descontos (R$)</Label>
-              <Input
-                type="number"
-                min="0"
-                step="0.01"
-                value={comercialData.descontos}
-                onChange={(e) =>
-                  updateComercialData("descontos", e.target.value)
-                }
-                placeholder="0.00"
-                className="bg-background"
-              />
-            </div>
-
-            {/* Taxas/Impostos */}
-            <div className="space-y-2">
-              <Label>Taxas &amp; Impostos (R$)</Label>
-              <Input
-                type="number"
-                min="0"
-                step="0.01"
-                value={comercialData.taxasImpostos}
-                onChange={(e) =>
-                  updateComercialData("taxasImpostos", e.target.value)
-                }
-                placeholder="0.00"
-                className="bg-background"
-              />
-            </div>
-          </div>
-
-          {/* Derivados globais */}
-          <div className="grid gap-4 border-t pt-5 md:grid-cols-2">
-            <div className="rounded-lg border border-border/60 bg-background/50 p-4 text-center">
-              <span className="text-xs uppercase font-semibold text-muted-foreground tracking-wider">
-                Peso Médio Estimado
-              </span>
-              <p className="mt-1 text-2xl font-bold text-primary">
-                {calculationSummary.pesoMedioDerivado !== undefined
-                  ? `${calculationSummary.pesoMedioDerivado.toFixed(2)} ${weightUnitLabel}`
-                  : "—"}
-              </p>
-            </div>
-
-            <div className="rounded-lg border border-border/60 bg-background/50 p-4 text-center">
-              <span className="text-xs uppercase font-semibold text-muted-foreground tracking-wider">
-                Valor Líquido Estimado
-              </span>
-              <p className="mt-1 text-2xl font-bold text-primary">
-                {calculationSummary.valorLiquidoDerivado !== undefined
-                  ? `R$ ${calculationSummary.valorLiquidoDerivado.toFixed(2)}`
-                  : "—"}
-              </p>
-            </div>
-          </div>
-
-          {/* Feedback assistivo + issues */}
-          <div className="space-y-3">
-            <div className="flex items-start gap-2 rounded-lg border border-primary/20 bg-primary/5 p-3 text-xs text-primary/80">
-              <Info className="mt-0.5 h-4 w-4 shrink-0" />
-              <div className="space-y-1">
-                <p className="font-semibold text-primary">
-                  Informações Auxiliares Assistivas
-                </p>
-                <p>• Operação registrada conforme dados informados.</p>
-                <p>• Valor líquido estimado a partir dos campos preenchidos.</p>
-                <p>
-                  • Não representa recomendação comercial ou substitui validação
-                  operacional/financeira.
-                </p>
-              </div>
-            </div>
-
-            {calculationSummary.issues.length > 0 && (
-              <div className="space-y-2">
-                {calculationSummary.issues.map((issue, idx) => (
-                  <Alert
-                    key={idx}
-                    variant={
-                      issue.severity === "blocking" ? "destructive" : "default"
-                    }
-                    className="rounded-xl"
-                  >
-                    {issue.severity === "blocking" ? (
-                      <AlertCircle className="h-4 w-4" />
-                    ) : (
-                      <AlertTriangle className="h-4 w-4" />
-                    )}
-                    <AlertTitle className="text-sm font-semibold capitalize">
-                      {issue.severity === "blocking"
-                        ? "Restrição Impeditiva"
-                        : "Aviso de Cálculo"}
-                    </AlertTitle>
-                    <AlertDescription className="text-xs mt-1">
-                      {issue.message}
-                    </AlertDescription>
-                  </Alert>
-                ))}
-              </div>
-            )}
-
-            {calculationSummary.limitations.length > 0 && (
-              <div className="rounded-xl border border-amber-200 bg-amber-50/50 p-4 text-xs text-amber-900 space-y-1">
-                <p className="font-semibold text-amber-800 uppercase tracking-wider text-[10px]">
-                  Limitações Informativas ({calculationSummary.calculationStatus}
-                  )
-                </p>
-                <ul className="list-disc pl-4 space-y-0.5 text-[11px] text-amber-800/95">
-                  {calculationSummary.limitations.map((lim, idx) => (
-                    <li key={idx}>{lim}</li>
                   ))}
-                </ul>
+                </div>
+              </div>
+            ) : comercialData.scope === "lote" ? (
+              <div className="space-y-2 rounded-xl border p-4 bg-background/50">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label>Snapshot do lote</Label>
+                    <p className="text-xs text-muted-foreground">
+                      {lotActiveIds.length} animais ativos elegíveis agora.
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      updateComercialData(
+                        "saleSnapshotIds",
+                        [...lotActiveIds].sort(),
+                      );
+                      updateComercialData(
+                        "quantidadeAnimais",
+                        String(lotActiveIds.length),
+                      );
+                    }}
+                  >
+                    Atualizar seleção
+                  </Button>
+                </div>
+                <p className="text-xs">
+                  Snapshot congelado: {saleSnapshotIds.length} animais.
+                </p>
+                {JSON.stringify([...lotActiveIds].sort()) !==
+                JSON.stringify(saleSnapshotIds) ? (
+                  <p className="text-xs text-amber-700">
+                    A composição mudou; atualize a seleção antes de confirmar.
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
+
+            {/* ---------------------------------------------------------------- */}
+            {/* MODO POR ANIMAL: grid individual */}
+            {/* ---------------------------------------------------------------- */}
+            {isAnimalScope && hasAnimals && (
+              <div className="space-y-3 border border-border/60 rounded-xl p-4 bg-background/50">
+                <div className="flex items-center gap-2">
+                  <Scale className="h-4 w-4 text-primary" />
+                  <p className="text-sm font-semibold">
+                    Peso &amp; Valor por Animal
+                  </p>
+                  <span className="ml-auto text-xs text-muted-foreground">
+                    {selectedAnimalIds.length} animal(is)
+                  </span>
+                </div>
+
+                <div className="space-y-2">
+                  {/* Header */}
+                  <div className="grid grid-cols-[1fr_120px_120px] gap-2 text-[11px] uppercase tracking-wider text-muted-foreground font-semibold px-1">
+                    <span>Animal</span>
+                    <span>Peso ({weightUnitLabel})</span>
+                    <span>Valor (R$)</span>
+                  </div>
+
+                  {selectedAnimalIds.map((id) => {
+                    const animal = animaisComPeso.find((a) => a.id === id);
+                    const label = animal
+                      ? fmtAnimalLabel(animal)
+                      : id.slice(0, 8);
+                    const hasLastWeight =
+                      animal?.lastWeightKg != null &&
+                      !comercialData.pesosPorAnimal[id];
+
+                    return (
+                      <div
+                        key={id}
+                        className="grid grid-cols-[1fr_120px_120px] gap-2 items-center"
+                      >
+                        {/* Nome */}
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium truncate">
+                            {label}
+                          </p>
+                          {hasLastWeight && (
+                            <p className="text-[10px] text-muted-foreground">
+                              Último: {animal!.lastWeightKg} {weightUnitLabel}
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Peso individual */}
+                        <Input
+                          type="number"
+                          min="0"
+                          step="0.1"
+                          value={comercialData.pesosPorAnimal[id] ?? ""}
+                          onChange={(e) => {
+                            const next = {
+                              ...comercialData.pesosPorAnimal,
+                              [id]: e.target.value,
+                            };
+                            updateComercialData("pesosPorAnimal", next);
+                          }}
+                          placeholder={
+                            animal?.lastWeightKg != null
+                              ? String(animal.lastWeightKg)
+                              : "0.0"
+                          }
+                          className="bg-background h-9 text-sm"
+                        />
+
+                        {/* Valor individual */}
+                        <Input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={comercialData.valoresPorAnimal[id] ?? ""}
+                          onChange={(e) => {
+                            const next = {
+                              ...comercialData.valoresPorAnimal,
+                              [id]: e.target.value,
+                            };
+                            updateComercialData("valoresPorAnimal", next);
+                          }}
+                          placeholder="0.00"
+                          className="bg-background h-9 text-sm"
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Totais derivados no modo animal */}
+                <div className="grid grid-cols-2 gap-3 pt-2 border-t border-border/40">
+                  <div className="rounded-lg bg-muted/60 p-3 text-center">
+                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
+                      Peso Total
+                    </p>
+                    <p className="mt-1 text-xl font-bold text-foreground">
+                      {comercialData.pesoVivoTotal
+                        ? `${parseFloat(comercialData.pesoVivoTotal).toFixed(1)} ${weightUnitLabel}`
+                        : "—"}
+                    </p>
+                  </div>
+                  <div className="rounded-lg bg-muted/60 p-3 text-center">
+                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
+                      Valor Total Individual
+                    </p>
+                    <p className="mt-1 text-xl font-bold text-foreground">
+                      {(() => {
+                        const total = selectedAnimalIds.reduce((acc, id) => {
+                          const v = parseFloat(
+                            comercialData.valoresPorAnimal[id] ?? "",
+                          );
+                          return isNaN(v) ? acc : acc + v;
+                        }, 0);
+                        return total > 0 ? `R$ ${total.toFixed(2)}` : "—";
+                      })()}
+                    </p>
+                  </div>
+                </div>
               </div>
             )}
-          </div>
-        </TabsContent>
 
-        {/* ---------------------------------------------------------------- */}
-        {/* Tab 2: Envolvidos & Vínculos */}
-        {/* ---------------------------------------------------------------- */}
-        <TabsContent
-          value="detalhes"
-          className="space-y-5 focus-visible:outline-none"
-        >
-          <FinanceiroContraparteSection
-            isFinanceiroSociedade={false}
-            financeiroContraparteId={comercialData.contraparteId}
-            contrapartes={contrapartes}
-            onFinanceiroContraparteChange={(val) =>
-              updateComercialData("contraparteId", val)
-            }
-            showNovaContraparte={showNovaContraparte}
-            onToggleNovaContraparte={onToggleNovaContraparte}
-            canManageContraparte={canManageContraparte}
-            onNavigateContrapartes={onNavigateContrapartes}
-            novaContraparte={novaContraparte}
-            onNovaContraparteFieldChange={onNovaContraparteFieldChange}
-            onCreateContraparte={onCreateContraparte}
-            isSavingContraparte={isSavingContraparte}
-          />
+            {/* ---------------------------------------------------------------- */}
+            {/* Valores Financeiros (agregados) */}
+            {/* ---------------------------------------------------------------- */}
+            <div className="grid gap-5 border-t pt-5 md:grid-cols-2 lg:grid-cols-3">
+              {/* Valor Bruto */}
+              <div className="space-y-2">
+                <Label>
+                  {isAnimalScope && hasAnimals
+                    ? "Valor Bruto Total (R$)"
+                    : "Valor Bruto (R$)"}
+                </Label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={comercialData.valorBruto}
+                  onChange={(e) =>
+                    updateComercialData("valorBruto", e.target.value)
+                  }
+                  placeholder="0.00"
+                  className="bg-background"
+                />
+              </div>
 
-          {/* Vínculo Financeiro Opcional */}
-          <div className="space-y-3 border-t pt-5">
-            <div>
-              <Label className="text-sm font-semibold">
-                Vínculo Financeiro Opcional
-              </Label>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Esta operação comercial não gera lançamento financeiro
-                automaticamente. Selecione um lançamento existente se desejar
-                conciliar.
-              </p>
+              {/* Frete */}
+              <div className="space-y-2">
+                <Label>Frete (R$)</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={comercialData.frete}
+                  onChange={(e) => updateComercialData("frete", e.target.value)}
+                  placeholder="0.00"
+                  className="bg-background"
+                />
+              </div>
+
+              {/* Comissão */}
+              <div className="space-y-2">
+                <Label>Comissão (R$)</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={comercialData.comissao}
+                  onChange={(e) =>
+                    updateComercialData("comissao", e.target.value)
+                  }
+                  placeholder="0.00"
+                  className="bg-background"
+                />
+              </div>
+
+              {/* Descontos */}
+              <div className="space-y-2">
+                <Label>Descontos (R$)</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={comercialData.descontos}
+                  onChange={(e) =>
+                    updateComercialData("descontos", e.target.value)
+                  }
+                  placeholder="0.00"
+                  className="bg-background"
+                />
+              </div>
+
+              {/* Taxas/Impostos */}
+              <div className="space-y-2">
+                <Label>Taxas &amp; Impostos (R$)</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={comercialData.taxasImpostos}
+                  onChange={(e) =>
+                    updateComercialData("taxasImpostos", e.target.value)
+                  }
+                  placeholder="0.00"
+                  className="bg-background"
+                />
+              </div>
             </div>
 
-            <Select
-              value={comercialData.financeTransactionId}
-              onValueChange={(val) =>
-                updateComercialData("financeTransactionId", val)
-              }
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Sem vínculo financeiro" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Sem vínculo financeiro</SelectItem>
-                {financeTransactions?.map((tx) => {
-                  const directionLabel =
-                    tx.direction === "in" ? "Receita" : "Despesa";
-                  const dateStr = tx.occurred_at
-                    ? tx.occurred_at.slice(0, 10)
-                    : "";
-                  const desc = tx.description ? ` - ${tx.description}` : "";
-                  return (
-                    <SelectItem key={tx.id} value={tx.id}>
-                      {`[${directionLabel}] R$ ${tx.valor.toFixed(2)} (${dateStr})${desc}`}
-                    </SelectItem>
-                  );
-                })}
-              </SelectContent>
-            </Select>
-          </div>
+            {/* Derivados globais */}
+            <div className="grid gap-4 border-t pt-5 md:grid-cols-2">
+              <div className="rounded-lg border border-border/60 bg-background/50 p-4 text-center">
+                <span className="text-xs uppercase font-semibold text-muted-foreground tracking-wider">
+                  Peso Médio Estimado
+                </span>
+                <p className="mt-1 text-2xl font-bold text-primary">
+                  {calculationSummary.pesoMedioDerivado !== undefined
+                    ? `${calculationSummary.pesoMedioDerivado.toFixed(2)} ${weightUnitLabel}`
+                    : "—"}
+                </p>
+              </div>
 
-          {/* Observações */}
-          <div className="space-y-2 border-t pt-5">
-            <Label>Observações Gerais</Label>
-            <Textarea
-              value={comercialData.observacoes}
-              onChange={(e) =>
-                updateComercialData("observacoes", e.target.value)
+              <div className="rounded-lg border border-border/60 bg-background/50 p-4 text-center">
+                <span className="text-xs uppercase font-semibold text-muted-foreground tracking-wider">
+                  Valor Líquido Estimado
+                </span>
+                <p className="mt-1 text-2xl font-bold text-primary">
+                  {calculationSummary.valorLiquidoDerivado !== undefined
+                    ? `R$ ${calculationSummary.valorLiquidoDerivado.toFixed(2)}`
+                    : "—"}
+                </p>
+              </div>
+            </div>
+
+            {/* Feedback assistivo + issues */}
+            <div className="space-y-3">
+              <div className="flex items-start gap-2 rounded-lg border border-primary/20 bg-primary/5 p-3 text-xs text-primary/80">
+                <Info className="mt-0.5 h-4 w-4 shrink-0" />
+                <div className="space-y-1">
+                  <p className="font-semibold text-primary">
+                    Informações Auxiliares Assistivas
+                  </p>
+                  <p>• Operação registrada conforme dados informados.</p>
+                  <p>
+                    • Valor líquido estimado a partir dos campos preenchidos.
+                  </p>
+                  <p>
+                    • Não representa recomendação comercial ou substitui
+                    validação operacional/financeira.
+                  </p>
+                </div>
+              </div>
+
+              {calculationSummary.issues.length > 0 && (
+                <div className="space-y-2">
+                  {calculationSummary.issues.map((issue, idx) => (
+                    <Alert
+                      key={idx}
+                      variant={
+                        issue.severity === "blocking"
+                          ? "destructive"
+                          : "default"
+                      }
+                      className="rounded-xl"
+                    >
+                      {issue.severity === "blocking" ? (
+                        <AlertCircle className="h-4 w-4" />
+                      ) : (
+                        <AlertTriangle className="h-4 w-4" />
+                      )}
+                      <AlertTitle className="text-sm font-semibold capitalize">
+                        {issue.severity === "blocking"
+                          ? "Restrição Impeditiva"
+                          : "Aviso de Cálculo"}
+                      </AlertTitle>
+                      <AlertDescription className="text-xs mt-1">
+                        {issue.message}
+                      </AlertDescription>
+                    </Alert>
+                  ))}
+                </div>
+              )}
+
+              {calculationSummary.limitations.length > 0 && (
+                <div className="rounded-xl border border-amber-200 bg-amber-50/50 p-4 text-xs text-amber-900 space-y-1">
+                  <p className="font-semibold text-amber-800 uppercase tracking-wider text-[10px]">
+                    Limitações Informativas (
+                    {calculationSummary.calculationStatus})
+                  </p>
+                  <ul className="list-disc pl-4 space-y-0.5 text-[11px] text-amber-800/95">
+                    {calculationSummary.limitations.map((lim, idx) => (
+                      <li key={idx}>{lim}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </TabsContent>
+
+          {/* ---------------------------------------------------------------- */}
+          {/* Tab 2: Envolvidos & Vínculos */}
+          {/* ---------------------------------------------------------------- */}
+          <TabsContent
+            value="detalhes"
+            className="space-y-5 focus-visible:outline-none"
+          >
+            <FinanceiroContraparteSection
+              isFinanceiroSociedade={false}
+              financeiroContraparteId={comercialData.contraparteId}
+              contrapartes={contrapartes}
+              onFinanceiroContraparteChange={(val) =>
+                updateComercialData("contraparteId", val)
               }
-              placeholder="Digite aqui quaisquer detalhes sobre a negociação..."
-              className="bg-background min-h-24 rounded-xl"
+              showNovaContraparte={showNovaContraparte}
+              onToggleNovaContraparte={onToggleNovaContraparte}
+              canManageContraparte={canManageContraparte}
+              onNavigateContrapartes={onNavigateContrapartes}
+              novaContraparte={novaContraparte}
+              onNovaContraparteFieldChange={onNovaContraparteFieldChange}
+              onCreateContraparte={onCreateContraparte}
+              isSavingContraparte={isSavingContraparte}
             />
-          </div>
-        </TabsContent>
-      </Tabs>
+
+            {/* Vínculo Financeiro Opcional */}
+            <div className="space-y-3 border-t pt-5">
+              <div>
+                <Label className="text-sm font-semibold">
+                  Vínculo Financeiro Opcional
+                </Label>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Esta operação comercial não gera lançamento financeiro
+                  automaticamente. Selecione um lançamento existente se desejar
+                  conciliar.
+                </p>
+              </div>
+
+              <Select
+                value={comercialData.financeTransactionId}
+                onValueChange={(val) =>
+                  updateComercialData("financeTransactionId", val)
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Sem vínculo financeiro" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Sem vínculo financeiro</SelectItem>
+                  {financeTransactions?.map((tx) => {
+                    const directionLabel =
+                      tx.direction === "in" ? "Receita" : "Despesa";
+                    const dateStr = tx.occurred_at
+                      ? tx.occurred_at.slice(0, 10)
+                      : "";
+                    const desc = tx.description ? ` - ${tx.description}` : "";
+                    return (
+                      <SelectItem key={tx.id} value={tx.id}>
+                        {`[${directionLabel}] R$ ${tx.valor.toFixed(2)} (${dateStr})${desc}`}
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Observações */}
+            <div className="space-y-2 border-t pt-5">
+              <Label>Observações Gerais</Label>
+              <Textarea
+                value={comercialData.observacoes}
+                onChange={(e) =>
+                  updateComercialData("observacoes", e.target.value)
+                }
+                placeholder="Digite aqui quaisquer detalhes sobre a negociação..."
+                className="bg-background min-h-24 rounded-xl"
+              />
+            </div>
+          </TabsContent>
+        </Tabs>
       )}
 
       {transitChecklistSection}

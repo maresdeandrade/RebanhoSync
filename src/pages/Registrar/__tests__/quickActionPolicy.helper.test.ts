@@ -19,16 +19,16 @@ describe("quick action policy", () => {
     expect(isQuickActionKey("foo")).toBe(false);
   });
 
-  it("mapeia ações sanitárias e financeiras para domínio/efeitos", () => {
+  it("mapeia ações sanitárias e comerciais para domínio/efeitos", () => {
     expect(resolveQuickActionDecision("vacinacao")).toEqual({
       tipoManejo: "sanitario",
       sanitaryQuickAction: "vacinacao",
       financeiroNatureza: null,
     });
     expect(resolveQuickActionDecision("compra")).toEqual({
-      tipoManejo: "financeiro",
+      tipoManejo: "comercial",
       sanitaryQuickAction: null,
-      financeiroNatureza: "compra",
+      financeiroNatureza: null,
     });
   });
 
@@ -38,7 +38,7 @@ describe("quick action policy", () => {
         quickAction: "venda",
         selectedAnimalCount: 0,
       }),
-    ).toBe(true);
+    ).toBe(false);
     expect(
       requiresAnimalsForQuickAction({
         quickAction: "compra",
@@ -47,14 +47,13 @@ describe("quick action policy", () => {
     ).toBe(false);
   });
 
-  it("descreve venda como registro manual sem aptidao comercial", () => {
+  it("descreve venda como operação comercial com snapshot", () => {
     const venda = REGISTRAR_QUICK_ACTIONS.find(
       (action) => action.key === "venda",
     );
 
-    expect(venda?.label).toBe("Venda manual");
-    expect(venda?.helper).toMatch(/Registra operacao informada pelo usuario/i);
-    expect(venda?.helper).toMatch(/nao valida aptidao comercial/i);
+    expect(venda?.label).toBe("Venda");
+    expect(venda?.helper).toMatch(/congele os animais ativos/i);
   });
 
   it("hook executa efeitos corretos ao aplicar quick action", () => {
@@ -79,7 +78,7 @@ describe("quick action policy", () => {
     act(() => {
       result.current.applyQuickAction("venda");
     });
-    expect(setTipoManejo).toHaveBeenCalledWith("financeiro");
-    expect(updateFinanceiroNatureza).toHaveBeenCalledWith("venda");
+    expect(setTipoManejo).toHaveBeenCalledWith("comercial");
+    expect(updateFinanceiroNatureza).not.toHaveBeenCalledWith("venda");
   });
 });

@@ -13,7 +13,7 @@ export const REGISTRATION_STEPS = [
 ] as const;
 
 export const STEP_LABEL: Record<RegistrationStep, string> = {
-  [RegistrationStep.SELECT_ANIMALS]: "Selecionar alvo",
+  [RegistrationStep.SELECT_ANIMALS]: "Operação e alvo",
   [RegistrationStep.CHOOSE_ACTION]: "Escolher ação",
   [RegistrationStep.CONFIRM]: "Registrar",
 };
@@ -21,9 +21,12 @@ export const STEP_LABEL: Record<RegistrationStep, string> = {
 export function canAdvanceFromSelectStep(input: {
   selectedLoteId: string;
   requiresAnimalsForQuickAction: boolean;
+  canAdvanceWithoutTarget?: boolean;
 }) {
   return (
-    input.selectedLoteId.trim().length > 0 && !input.requiresAnimalsForQuickAction
+    (input.canAdvanceWithoutTarget === true ||
+      input.selectedLoteId.trim().length > 0) &&
+    !input.requiresAnimalsForQuickAction
   );
 }
 
@@ -37,6 +40,7 @@ export function canAdvanceFromChooseActionStep(input: {
 export function useRegistrarStepFlow(input: {
   selectedLoteId: string;
   requiresAnimalsForQuickAction: boolean;
+  canAdvanceWithoutTarget?: boolean;
   hasTipoManejo: boolean;
   canAdvanceToConfirm: boolean;
 }) {
@@ -70,13 +74,18 @@ export function useRegistrarStepFlow(input: {
       !canAdvanceFromSelectStep({
         selectedLoteId: input.selectedLoteId,
         requiresAnimalsForQuickAction: input.requiresAnimalsForQuickAction,
+        canAdvanceWithoutTarget: input.canAdvanceWithoutTarget,
       })
     ) {
       return false;
     }
     setStep(RegistrationStep.CHOOSE_ACTION);
     return true;
-  }, [input.requiresAnimalsForQuickAction, input.selectedLoteId]);
+  }, [
+    input.canAdvanceWithoutTarget,
+    input.requiresAnimalsForQuickAction,
+    input.selectedLoteId,
+  ]);
 
   return {
     step,

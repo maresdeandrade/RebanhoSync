@@ -64,6 +64,47 @@ function compoundOp(): Operation {
   };
 }
 
+function compoundV2Op(): Operation {
+  const legacy = compoundOp();
+  const saleAnimal = {
+    ...legacy.record.animal,
+    status: "vendido",
+    lote_id: null,
+    data_saida: "2026-08-13",
+  };
+  const saleEvent = {
+    ...legacy.record.event,
+    id: eventId,
+    payload: { kind: "commercial_operation_v2", source: "local" },
+  };
+  const saleDetail = {
+    ...legacy.record.detail,
+    evento_id: eventId,
+    operation_type: "venda",
+    occurred_at: "2026-08-13T12:00:00.000Z",
+  };
+  return {
+    ...legacy,
+    table: "commercial_operation_v2",
+    record: {
+      domain: "commercial_operation_v2",
+      command: "apply_commercial_operation",
+      contract_version: 2,
+      client_op_id: legacy.client_op_id,
+      client_tx_id: tx,
+      operation_id: eventId,
+      operation_type: "venda",
+      scope: "animal",
+      fazenda_id: farm,
+      occurred_at: "2026-08-13T12:00:00.000Z",
+      animal_ids: [animalId],
+      animals: [saleAnimal],
+      event: saleEvent,
+      detail: saleDetail,
+    },
+  };
+}
+
 async function clear() {
   await db.transaction(
     "rw",
@@ -126,5 +167,35 @@ describe("commercial purchase pull protection", () => {
     expect(await db.state_animais.count()).toBe(1);
     expect(await db.event_eventos.count()).toBe(1);
     expect(await db.event_eventos_comercial.count()).toBe(1);
+  });
+
+  it("protects the sold state and both facts while v2 is pending", async () => {
+    const op = compoundV2Op();
+    const envelope = op.record as Record<string, unknown>;
+    const localAnimal = (envelope.animals as Record<string, unknown>[])[0]!;
+    const localEvent = envelope.event as Record<string, unknown>;
+    const localDetail = envelope.detail as Record<string, unknown>;
+    await db.queue_ops.add(op);
+    await db.state_animais.put(localAnimal);
+    await db.event_eventos.put(localEvent);
+    await db.event_eventos_comercial.put(localDetail);
+    mocks.rows.set("animais", [
+      { ...localAnimal, status: "ativo", lote_id: "remote-lot" },
+    ]);
+    mocks.rows.set("eventos", [
+      { ...localEvent, payload: { source: "remote" } },
+    ]);
+    mocks.rows.set("eventos_comercial", [{ ...localDetail, valor_bruto: 999 }]);
+
+    await pullDataForFarm(farm, ["animais", "eventos", "eventos_comercial"]);
+
+    expect((await db.state_animais.get(animalId))?.status).toBe("vendido");
+    expect((await db.state_animais.get(animalId))?.lote_id).toBeNull();
+    expect((await db.event_eventos.get(eventId))?.payload).toMatchObject({
+      source: "local",
+    });
+    expect((await db.event_eventos_comercial.get(eventId))?.valor_bruto).toBe(
+      10,
+    );
   });
 });

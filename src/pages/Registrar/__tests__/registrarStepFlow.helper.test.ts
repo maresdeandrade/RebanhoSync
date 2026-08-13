@@ -20,6 +20,16 @@ describe("registrar step-flow", () => {
     ).toBe(false);
   });
 
+  it("permite compra individual sem alvo previamente cadastrado", () => {
+    expect(
+      canAdvanceFromSelectStep({
+        selectedLoteId: "",
+        requiresAnimalsForQuickAction: false,
+        canAdvanceWithoutTarget: true,
+      }),
+    ).toBe(true);
+  });
+
   it("bloqueia avanço da etapa de ação sem manejo válido", () => {
     expect(
       canAdvanceFromChooseActionStep({

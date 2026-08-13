@@ -36,6 +36,10 @@ import {
   type RegistrarPostPartoRedirect,
 } from "@/pages/Registrar/effects/reproductionFinalize";
 import { resolveManualSanitaryAgendaCompletionOpsEffect } from "@/pages/Registrar/effects/sanitaryAgendaReconciliation";
+import {
+  buildCommercialOperationGesture,
+  type CommercialNewAnimalDraft,
+} from "@/lib/comercial/commercialOperationCommand";
 
 type RegistrarNonFinancialDomain =
   | "sanitario"
@@ -75,6 +79,7 @@ type NonFinancialFinanceiroData = {
 type NonFinancialComercialData = {
   operationType: "compra" | "venda" | "sociedade";
   scope: "animal" | "lote";
+  occurredAt?: string;
   quantidadeAnimais: number;
   pesoVivoTotal: number | null;
   valorBruto: number | null;
@@ -91,6 +96,9 @@ type NonFinancialComercialData = {
   snapshot?: Record<string, unknown> | null;
   animalStatusSnapshot?: "ativo" | "vendido" | "morto" | "retirado" | null;
   commercialSignals?: string[];
+  newAnimals?: CommercialNewAnimalDraft[];
+  existingIdentifications?: string[];
+  currentLotAnimalIds?: string[];
 };
 
 type ActiveSocietyLinkWithSociety = SociedadeAnimal & {
@@ -152,7 +160,10 @@ export async function resolveRegistrarNonFinancialFinalizePlan(input: {
   reproducaoData: ReproductionEventData;
   farmLifecycleConfig: FarmLifecycleConfig;
   parseUserWeight: (value: string) => number | null;
-  buildGesture?: (input: EventInput) => { eventId: string; ops: OperationInput[] };
+  buildGesture?: (input: EventInput) => {
+    eventId: string;
+    ops: OperationInput[];
+  };
   resolveManualSanitaryAgendaCompletionOps?: (input: {
     fazendaId: string;
     linkedEventId: string;
@@ -184,12 +195,66 @@ export async function resolveRegistrarNonFinancialFinalizePlan(input: {
   const isDryCowTherapy = isDryCowTherapyClinicalRef(input.clinicalProtocolRef);
 
   if (
+    input.tipoManejo === "comercial" &&
+    input.comercialData &&
+    input.comercialData.operationType !== "sociedade"
+  ) {
+    try {
+      const selectedIds = input.comercialData.animalIds ?? [];
+      const selectedAnimals = selectedIds
+        .map((id) => input.animalsMap.get(id))
+        .filter((item): item is Animal => Boolean(item));
+      const built = buildCommercialOperationGesture({
+        fazendaId: input.fazendaId,
+        operationType: input.comercialData.operationType,
+        scope: input.comercialData.scope,
+        occurredAt: input.comercialData.occurredAt ?? input.occurredAt,
+        declaredQuantity: input.comercialData.quantidadeAnimais,
+        loteId: input.comercialData.loteId,
+        selectedAnimalIds: selectedIds,
+        animals: selectedAnimals,
+        currentLotAnimalIds: input.comercialData.currentLotAnimalIds,
+        newAnimals: input.comercialData.newAnimals ?? [],
+        existingIdentifications: input.comercialData.existingIdentifications,
+        pesoVivoTotal: input.comercialData.pesoVivoTotal,
+        valorBruto: input.comercialData.valorBruto,
+        frete: input.comercialData.frete,
+        comissao: input.comercialData.comissao,
+        descontos: input.comercialData.descontos,
+        taxasImpostos: input.comercialData.taxasImpostos,
+        contraparteId: input.comercialData.contraparteId,
+        contraparteNome: input.comercialData.contraparteNome,
+        financeTransactionId: input.comercialData.financeTransactionId,
+        observacoes: input.comercialData.observacoes,
+        lifecycleConfig: input.farmLifecycleConfig,
+      });
+      return {
+        issue: null,
+        linkedEventId: built.eventId,
+        postPartoRedirect: null,
+        ops: built.ops,
+      };
+    } catch (error) {
+      return {
+        issue:
+          error instanceof Error
+            ? error.message
+            : "Operação comercial inválida.",
+        linkedEventId: null,
+        postPartoRedirect: null,
+        ops: [],
+      };
+    }
+  }
+
+  if (
     input.tipoManejo === "sanitario" &&
     input.sanitarioCasoId &&
     input.targetAnimalIds.filter(Boolean).length !== 1
   ) {
     return {
-      issue: "Selecione apenas um animal para vincular um caso clinico existente.",
+      issue:
+        "Selecione apenas um animal para vincular um caso clinico existente.",
       linkedEventId: null,
       postPartoRedirect: null,
       ops: [],
@@ -230,7 +295,8 @@ export async function resolveRegistrarNonFinancialFinalizePlan(input: {
       input.tipoManejo === "movimentacao" ||
       input.tipoManejo === "nutricao" ||
       input.tipoManejo === "financeiro" ||
-      (input.tipoManejo === "comercial" && input.comercialData?.operationType !== "sociedade") ||
+      (input.tipoManejo === "comercial" &&
+        input.comercialData?.operationType !== "sociedade") ||
       input.tipoManejo === "ecc"
     ) {
       eventInput = buildRegistrarEventInput({
@@ -267,7 +333,8 @@ export async function resolveRegistrarNonFinancialFinalizePlan(input: {
                         source: "registrar",
                         sanitario_tipo: input.sanitarioData.tipo,
                         produto: input.sanitaryProductName,
-                        protocol_item_version_id: input.protocoloItem?.id ?? null,
+                        protocol_item_version_id:
+                          input.protocoloItem?.id ?? null,
                         protocol_item_logical_key:
                           input.protocoloItem?.logical_item_key ?? null,
                         protocol_item_version:
@@ -286,10 +353,12 @@ export async function resolveRegistrarNonFinancialFinalizePlan(input: {
                 loteRef: input.sanitaryInventory?.loteRef,
                 dose: input.sanitaryInventory?.dose,
                 doseUnidade: input.sanitaryInventory?.doseUnidade,
-                quantidadeConsumida: input.sanitaryInventory?.quantidadeConsumida,
+                quantidadeConsumida:
+                  input.sanitaryInventory?.quantidadeConsumida,
                 quantidadeUnidade: input.sanitaryInventory?.quantidadeUnidade,
                 viaAplicacao: input.sanitaryInventory?.viaAplicacao,
-                custoUnitarioSnapshot: input.sanitaryInventory?.custoUnitarioSnapshot,
+                custoUnitarioSnapshot:
+                  input.sanitaryInventory?.custoUnitarioSnapshot,
                 responsavelNome: input.sanitaryInventory?.responsavelNome,
                 responsavelTipo: input.sanitaryInventory?.responsavelTipo,
                 gerarBaixaEstoque: input.sanitaryInventory?.gerarBaixaEstoque,
@@ -321,8 +390,8 @@ export async function resolveRegistrarNonFinancialFinalizePlan(input: {
           input.tipoManejo === "ecc" && animalId
             ? {
                 ecc: Number(input.eccData[animalId]),
-                escalaMin: 1.00,
-                escalaMax: 5.00,
+                escalaMin: 1.0,
+                escalaMax: 5.0,
                 escalaPasso: 0.25,
                 observacoes: input.eccObservacoes[animalId] || null,
               }
@@ -337,14 +406,18 @@ export async function resolveRegistrarNonFinancialFinalizePlan(input: {
           input.tipoManejo === "nutricao"
             ? {
                 alimentoNome: input.nutricaoData.alimentoNome,
-                quantidadeKg: parseRegistrarNumeric(input.nutricaoData.quantidadeKg),
+                quantidadeKg: parseRegistrarNumeric(
+                  input.nutricaoData.quantidadeKg,
+                ),
                 insumoId: input.nutricaoInventory?.insumoId,
                 insumoLoteId: input.nutricaoInventory?.insumoLoteId,
                 insumoRef: input.nutricaoInventory?.insumoRef,
                 loteRef: input.nutricaoInventory?.loteRef,
-                quantidadeConsumida: input.nutricaoInventory?.quantidadeConsumida,
+                quantidadeConsumida:
+                  input.nutricaoInventory?.quantidadeConsumida,
                 quantidadeUnidade: input.nutricaoInventory?.quantidadeUnidade,
-                custoUnitarioSnapshot: input.nutricaoInventory?.custoUnitarioSnapshot,
+                custoUnitarioSnapshot:
+                  input.nutricaoInventory?.custoUnitarioSnapshot,
                 gerarBaixaEstoque: input.nutricaoInventory?.gerarBaixaEstoque,
               }
             : undefined,
@@ -353,7 +426,9 @@ export async function resolveRegistrarNonFinancialFinalizePlan(input: {
             ? {
                 natureza: input.financeiroData.natureza,
                 tipo: input.financeiroTipo,
-                valorTotal: parseRegistrarNumeric(input.financeiroData.valorTotal),
+                valorTotal: parseRegistrarNumeric(
+                  input.financeiroData.valorTotal,
+                ),
                 contraparteId:
                   input.financeiroData.contraparteId !== "none"
                     ? input.financeiroData.contraparteId
@@ -420,7 +495,12 @@ export async function resolveRegistrarNonFinancialFinalizePlan(input: {
     }
     ops.push(...built.ops);
 
-    if (input.tipoManejo === "sanitario" && isDryCowTherapy && animalId && animal) {
+    if (
+      input.tipoManejo === "sanitario" &&
+      isDryCowTherapy &&
+      animalId &&
+      animal
+    ) {
       ops.push({
         table: "animais",
         action: "UPDATE",
@@ -447,13 +527,19 @@ export async function resolveRegistrarNonFinancialFinalizePlan(input: {
         })),
       );
     }
-    
-    if (input.tipoManejo === "comercial" && input.comercialData?.operationType === "venda" && animalId) {
+
+    if (
+      input.tipoManejo === "comercial" &&
+      input.comercialData?.operationType === "venda" &&
+      animalId
+    ) {
       const activeLinks = await db.state_sociedade_animais
         .where("animal_id")
         .equals(animalId)
         .toArray();
-      const link = activeLinks.find((l): l is ActiveSocietyLinkWithSociety => l.status === "ativo");
+      const link = activeLinks.find(
+        (l): l is ActiveSocietyLinkWithSociety => l.status === "ativo",
+      );
       if (link) {
         ops.push({
           table: "sociedade_animais",
@@ -467,9 +553,9 @@ export async function resolveRegistrarNonFinancialFinalizePlan(input: {
               ...(link.payload || {}),
               encerradoPor: "venda_comercial",
               eventoComercialId: built.eventId,
-              clientOpId: input.sourceTaskId
-            }
-          }
+              clientOpId: input.sourceTaskId,
+            },
+          },
         });
       }
     }

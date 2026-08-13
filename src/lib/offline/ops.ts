@@ -15,6 +15,7 @@ import {
   readTaxonomyFactsRecord,
 } from "@/lib/animals/taxonomyFactsContract";
 import { buildCommercialPurchaseQueueOperation } from "@/lib/comercial/animalPurchaseSync";
+import { buildCommercialOperationQueueOperation } from "@/lib/comercial/commercialOperationSync";
 
 function getRecordKey(record: Record<string, unknown>): string | null {
   if (typeof record.id === "string") return record.id;
@@ -73,9 +74,7 @@ function assertAllowedOfflinePushSurface(op: OperationInput) {
       closureType === "partially_executed_with_event" ||
       executionEventoId != null
     ) {
-      throw new Error(
-        "SANITARIO_AGENDA_CLOSURE_EXECUTION_BLOCKED_IN_12E4",
-      );
+      throw new Error("SANITARIO_AGENDA_CLOSURE_EXECUTION_BLOCKED_IN_12E4");
     }
   }
 }
@@ -187,12 +186,19 @@ export const createGesture = async (
       return { agenda, animal, queueOp };
     },
   );
-  const commercialPurchaseQueueOp = buildCommercialPurchaseQueueOperation(
+  const commercialOperationQueueOp = buildCommercialOperationQueueOperation(
     ops,
     fazenda_id,
   );
+  const commercialPurchaseQueueOp = commercialOperationQueueOp
+    ? null
+    : buildCommercialPurchaseQueueOperation(ops, fazenda_id);
   const queueOps = [
-    ...(commercialPurchaseQueueOp ? [commercialPurchaseQueueOp] : ops),
+    ...(commercialOperationQueueOp
+      ? [commercialOperationQueueOp]
+      : commercialPurchaseQueueOp
+        ? [commercialPurchaseQueueOp]
+        : ops),
     ...sanitarioAgendaV2.flatMap(({ queueOp }) => (queueOp ? [queueOp] : [])),
   ];
 
