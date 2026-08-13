@@ -21,6 +21,7 @@ import {
   resolveAnimalLifecycleSnapshot,
 } from "@/lib/animals/lifecycle";
 import { buildAnimalTaxonomyFactsPayload } from "@/lib/animals/taxonomy";
+import { calculateCommercialOperation } from "@/lib/comercial/commercialOperation";
 import { buildEventGesture } from "@/lib/events/buildEventGesture";
 import { EventValidationError } from "@/lib/events/validators";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -343,23 +344,45 @@ const AnimalNovo = () => {
       ops.push(opSociedade);
     }
 
-    // 3. Se origem='compra', registrar evento financeiro no mesmo gesto
+    // 3. Se origem='compra', registrar o fato comercial no mesmo gesto
     if (origem === "compra") {
       const valorCompra = parseNumeric(compraValorTotal);
       const occurredAt = dataEntrada
         ? `${dataEntrada}T12:00:00.000Z`
         : now;
+      const contraparteId =
+        compraContraparteId !== "null" ? compraContraparteId : undefined;
+      const observacoes =
+        compraObservacoes || "Compra vinculada ao cadastro do animal";
+      const commercialSummary = calculateCommercialOperation({
+        operationType: "compra",
+        scope: "animal",
+        occurredAt,
+        quantidadeAnimais: 1,
+        valorBruto: valorCompra,
+        contraparteId,
+        animalIds: [animal_id],
+        observacoes,
+      });
       const built = buildEventGesture({
-        dominio: "financeiro",
+        dominio: "comercial",
         fazendaId: fazenda_id,
         occurredAt,
         animalId: animal_id,
         loteId: loteId === "null" ? null : loteId,
-        tipo: "compra",
-        valorTotal: valorCompra,
-        contraparteId:
-          compraContraparteId !== "null" ? compraContraparteId : null,
-        observacoes: compraObservacoes || "Compra vinculada ao cadastro do animal",
+        operationType: "compra",
+        scope: "animal",
+        quantidadeAnimais: 1,
+        valorBruto: valorCompra,
+        valorLiquidoDerivado: commercialSummary.valorLiquidoDerivado,
+        contraparteId,
+        animalIds: [animal_id],
+        animalStatusSnapshot: "ativo",
+        snapshot: commercialSummary.snapshot,
+        calculationStatus: commercialSummary.calculationStatus,
+        issues: commercialSummary.issues,
+        limitations: commercialSummary.limitations,
+        observacoes,
         payload: {
           kind: "compra_animal",
           animal_id,
@@ -375,7 +398,7 @@ const AnimalNovo = () => {
         origem === "sociedade"
           ? "Animal e sociedade cadastrados localmente!"
           : origem === "compra"
-            ? "Animal e compra financeira cadastrados localmente!"
+            ? "Animal e compra cadastrados localmente!"
             : "Animal cadastrado localmente!"
       );
       navigate("/animais");
@@ -1015,6 +1038,5 @@ const AnimalNovo = () => {
 };
 
 export default AnimalNovo;
-
 
 

@@ -17,6 +17,7 @@ vi.mock("../db", () => {
   return {
     db: {
       tables: [{ name: "state_animais" }, { name: "state_lotes" }],
+      queue_ops: { toArray: vi.fn(async () => []) },
       table: vi.fn(),
       transaction: vi.fn(),
     },

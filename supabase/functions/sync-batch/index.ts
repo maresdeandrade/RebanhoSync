@@ -48,6 +48,11 @@ import {
   validatePregnancyDiagnosis,
   validateReproductionCorrection,
 } from "./reproduction-diagnosis.ts";
+import {
+  type CommercialPurchaseOperation,
+  executeCommercialPurchaseOperation,
+  isCommercialPurchaseOperation,
+} from "./commercial-purchase.ts";
 
 const allowedOrigins = [
   "http://localhost:5173",
@@ -183,8 +188,9 @@ Deno.serve(async (req: Request) => {
 
     const { client_id, fazenda_id, client_tx_id, ops: rawOps } = await req
       .json();
-    const ops: Array<Operation | SanitarioSyncV2Operation> =
-      Array.isArray(rawOps) ? rawOps : [];
+    const ops: Array<
+      Operation | SanitarioSyncV2Operation | CommercialPurchaseOperation
+    > = Array.isArray(rawOps) ? rawOps : [];
     console.log(
       `[sync-batch] Processing TX ${client_tx_id} for farm ${fazenda_id}`,
     );
@@ -242,8 +248,9 @@ Deno.serve(async (req: Request) => {
 
     console.log(`[sync-batch] User has role: ${membership.role}`);
 
-    const hasSanitarioInventoryMovements = ops.some(
-      isSanitarioInventoryMovementOperation,
+    const hasSanitarioInventoryMovements = ops.some((op) =>
+      !isCommercialPurchaseOperation(op) &&
+      isSanitarioInventoryMovementOperation(op)
     );
     const serviceRoleKey =
       hasSanitarioSyncV2Operations || hasSanitarioInventoryMovements
@@ -277,7 +284,9 @@ Deno.serve(async (req: Request) => {
     );
 
     const legacyOps = ops.filter(
-      (op): op is Operation => !isSanitarioSyncV2Operation(op),
+      (op): op is Operation =>
+        !isSanitarioSyncV2Operation(op) &&
+        !isCommercialPurchaseOperation(op),
     );
     if (featureFlags.strictAntiTeleport) {
       const anti = prevalidateAntiTeleport(legacyOps);
@@ -349,6 +358,16 @@ Deno.serve(async (req: Request) => {
 
     for (const rawOp of ops) {
       try {
+        if (isCommercialPurchaseOperation(rawOp)) {
+          results.push(
+            await executeCommercialPurchaseOperation(
+              supabase,
+              rawOp,
+              { fazendaId: fazenda_id, clientTxId: client_tx_id },
+            ),
+          );
+          continue;
+        }
         if (isSanitarioSyncV2Operation(rawOp)) {
           if (!serviceSupabase) {
             results.push(sanitarioSyncV2DependencyBlocked(rawOp));
@@ -731,7 +750,12 @@ Deno.serve(async (req: Request) => {
 
           const dependencyDecision =
             await resolveSanitarioInventoryFactualDependency({
-              operations: ops,
+              operations: ops.filter(
+                (candidate): candidate is
+                  | Operation
+                  | SanitarioSyncV2Operation =>
+                  !isCommercialPurchaseOperation(candidate),
+              ),
               processedResults: results,
               fazendaId: fazenda_id,
               sourceEventId,

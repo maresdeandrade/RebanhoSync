@@ -443,17 +443,67 @@ describe("buildEventGesture", () => {
       operation_type: "venda",
       contraparte_id: "cp-1",
       valor_bruto: 4500,
-      titularidade_snapshot: {
-        animal_status: "ativo",
+      snapshot: {
+        titularidade: {
+          animal_status: "ativo",
+          sociedade_ativa: expect.any(Array),
+        },
       },
     });
-    expect(result.ops[1].record.sociedade_snapshot).toHaveLength(1);
+    expect(result.ops[1].record).not.toHaveProperty("titularidade_snapshot");
+    expect(result.ops[1].record).not.toHaveProperty("sociedade_snapshot");
+    expect(result.ops[1].record).not.toHaveProperty("commercial_signals");
     expect(result.ops[2].record).toEqual({
       id: "animal-1",
       status: "vendido",
       data_saida: "2026-02-11",
       lote_id: null,
     });
+  });
+
+  it("builds comercial compra as a fact without overriding the active animal state", () => {
+    const result = buildEventGesture({
+      dominio: "comercial",
+      fazendaId: "farm-1",
+      animalId: "animal-1",
+      loteId: "lote-1",
+      occurredAt: "2026-02-11T12:00:00.000Z",
+      operationType: "compra",
+      scope: "animal",
+      quantidadeAnimais: 1,
+      valorBruto: 3200,
+      valorLiquidoDerivado: 3200,
+      contraparteId: "cp-1",
+      animalIds: ["animal-1"],
+      animalStatusSnapshot: "ativo",
+    });
+
+    expect(result.ops.map((op) => op.table)).toEqual([
+      "eventos",
+      "eventos_comercial",
+    ]);
+    expect(result.ops[0].record).toMatchObject({
+      dominio: "comercial",
+      animal_id: "animal-1",
+      lote_id: "lote-1",
+    });
+    expect(result.ops[1].record).toMatchObject({
+      operation_type: "compra",
+      scope: "animal",
+      quantidade_animais: 1,
+      valor_bruto: 3200,
+      valor_liquido_derivado: 3200,
+      contraparte_id: "cp-1",
+      animal_ids: ["animal-1"],
+      snapshot: {
+        titularidade: {
+          animal_status: "ativo",
+        },
+      },
+    });
+    expect(result.ops[1].record).not.toHaveProperty("titularidade_snapshot");
+    expect(result.ops[1].record).not.toHaveProperty("sociedade_snapshot");
+    expect(result.ops[1].record).not.toHaveProperty("commercial_signals");
   });
 
   it("rejects comercial venda without counterparty and sale value", () => {

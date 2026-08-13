@@ -28,6 +28,10 @@ import {
 } from "@/lib/telemetry/pilotMetrics";
 import { getActiveFarmId } from "@/lib/storage";
 import { pullReproductionDiagnosisState } from "@/lib/reproduction/remoteSync";
+import {
+  buildCommercialPurchaseEnvelope,
+  isCommercialPurchaseEnvelope,
+} from "@/lib/comercial/animalPurchaseSync";
 
 let intervalId: ReturnType<typeof setInterval> | null = null;
 let isTickRunning = false;
@@ -745,6 +749,14 @@ export function mapOperationForSync(
     }
     return { ...op.record };
   }
+  if (isCommercialPurchaseEnvelope(op.record)) {
+    if (
+      op.record.client_op_id !== op.client_op_id ||
+      op.record.client_tx_id !== op.client_tx_id
+    )
+      throw new Error("COMMERCIAL_PURCHASE_QUEUED_IDENTITY_MISMATCH");
+    return { ...op.record };
+  }
   const remoteTable = getRemoteTableName(op.table);
   return {
     client_op_id: op.client_op_id,
@@ -799,9 +811,13 @@ export async function processGesture(gesture: Gesture) {
 
   try {
     const { supabase, session } = await getValidSession();
-    const mappedOps = ops.map((op) =>
-      mapOperationForSync(op, gesture.fazenda_id)
+    const commercialPurchase = buildCommercialPurchaseEnvelope(
+      ops,
+      gesture.fazenda_id,
     );
+    const mappedOps = commercialPurchase
+      ? [{ ...commercialPurchase }]
+      : ops.map((op) => mapOperationForSync(op, gesture.fazenda_id));
 
     if (import.meta.env.DEV) {
       console.debug(
@@ -884,7 +900,12 @@ export async function processGesture(gesture: Gesture) {
       (hasReproductionOperation &&
         (entry.status === "CONFLICT" ||
           entry.status === "BLOCKED_DEPENDENCY"));
-    const hasRejected = result.results.some(isTerminalReproductionResult);
+    const hasCommercialPurchase = commercialPurchase !== null;
+    const isTerminalResult = (entry: SyncOperationResult) =>
+      isTerminalReproductionResult(entry) ||
+      (hasCommercialPurchase &&
+        (entry.status === "REJECTED" || entry.status === "CONFLICT"));
+    const hasRejected = result.results.some(isTerminalResult);
 
     if (allApplied) {
       const completedAt = new Date().toISOString();
@@ -897,6 +918,12 @@ export async function processGesture(gesture: Gesture) {
         ops.map((op) => getRemoteTableName(op.table)),
       );
       const refreshTables = new Set<string>();
+
+      if (hasCommercialPurchase) {
+        refreshTables.add("animais");
+        refreshTables.add("eventos");
+        refreshTables.add("eventos_comercial");
+      }
 
       // Agenda pode ser gerada automaticamente por trigger ao inserir/atualizar animais.
       if (remoteTablesTouched.has("animais")) {
@@ -1002,9 +1029,7 @@ export async function processGesture(gesture: Gesture) {
 
     if (hasRejected) {
       const completedAt = new Date().toISOString();
-      const rejectedResults = result.results.filter(
-        isTerminalReproductionResult,
-      );
+      const rejectedResults = result.results.filter(isTerminalResult);
       const rejectionSummary = rejectedResults
         .map((r) => `${r.reason_code ?? "UNKNOWN"}: ${r.reason_message ?? "-"}`)
         .join(" | ");
@@ -1119,11 +1144,13 @@ export async function processGesture(gesture: Gesture) {
         return;
       }
 
-      await db.transaction("rw", [...getAffectedStores(ops)], async () => {
-        for (const op of [...ops].reverse()) {
-          await rollbackOpLocal(op);
-        }
-      });
+      if (!hasCommercialPurchase) {
+        await db.transaction("rw", [...getAffectedStores(ops)], async () => {
+          for (const op of [...ops].reverse()) {
+            await rollbackOpLocal(op);
+          }
+        });
+      }
 
       if (
         rejectedResults.some(
@@ -1160,7 +1187,7 @@ export async function processGesture(gesture: Gesture) {
       }
 
       console.warn(
-        `[sync-worker] TX ${gesture.client_tx_id} had rejections (rolled back locally)`,
+        `[sync-worker] TX ${gesture.client_tx_id} had rejections (${hasCommercialPurchase ? "local purchase preserved for conflict resolution" : "rolled back locally"})`,
       );
       await trackPilotMetric({
         fazendaId: gesture.fazenda_id,

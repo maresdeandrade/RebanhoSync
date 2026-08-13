@@ -14,6 +14,7 @@ import {
   assertValidAnimalTaxonomyFactsContract,
   readTaxonomyFactsRecord,
 } from "@/lib/animals/taxonomyFactsContract";
+import { buildCommercialPurchaseQueueOperation } from "@/lib/comercial/animalPurchaseSync";
 
 function getRecordKey(record: Record<string, unknown>): string | null {
   if (typeof record.id === "string") return record.id;
@@ -186,8 +187,12 @@ export const createGesture = async (
       return { agenda, animal, queueOp };
     },
   );
+  const commercialPurchaseQueueOp = buildCommercialPurchaseQueueOperation(
+    ops,
+    fazenda_id,
+  );
   const queueOps = [
-    ...ops,
+    ...(commercialPurchaseQueueOp ? [commercialPurchaseQueueOp] : ops),
     ...sanitarioAgendaV2.flatMap(({ queueOp }) => (queueOp ? [queueOp] : [])),
   ];
 
