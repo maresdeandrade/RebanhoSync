@@ -118,11 +118,18 @@ describe("buildReproductionDashboard", () => {
       createAnimal("a-open", "F-104", null),
     ];
     const lotes = [createLote("lote-a", "Matrizes 1"), createLote("lote-b", "Maternidade")];
+    const pregnancyService = createEvent(
+      "a-preg",
+      addDays(now, -60).toISOString(),
+      "IA",
+    );
     const events = [
       createEvent("a-serv", addDays(now, -40).toISOString(), "IA"),
+      pregnancyService,
       createEvent("a-preg", addDays(now, -20).toISOString(), "diagnostico", {
         schema_version: 1,
         resultado: "positivo",
+        episode_evento_id: pregnancyService.id,
         data_prevista_parto: addDays(now, 10).toISOString().slice(0, 10),
       }),
       createEvent("a-post", addDays(now, -20).toISOString(), "parto", {
