@@ -409,11 +409,7 @@ async function processSanitarioCanonicalResults(
       )
       .map((op) => op.client_op_id),
   );
-  const canonicalResults = results.filter(
-    (result) =>
-      sanitarioOpIds.has(String(result.op_id ?? "")) &&
-      isSanitarioCanonicalResult(result),
-  );
+  const canonicalResults = results.filter(isSanitarioCanonicalResult);
   if (canonicalResults.length === 0) return false;
 
   const nowMs = Date.now();
