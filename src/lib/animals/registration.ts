@@ -61,6 +61,7 @@ export function buildAnimalRegistrationRecord(input: {
     | "sociedade"
     | null;
   lifecycleConfig: FarmLifecycleConfig;
+  recordedAt?: string;
 }) {
   const issue = validateAnimalRegistrationDraft(input.draft);
   if (issue) throw new Error(issue);
@@ -102,7 +103,12 @@ export function buildAnimalRegistrationRecord(input: {
   );
   payload = draft.preparedPayload
     ? payload
-    : buildAnimalLifecyclePayload(payload, lifecycle.targetStage, "manual");
+    : buildAnimalLifecyclePayload(
+        payload,
+        lifecycle.targetStage,
+        "manual",
+        input.recordedAt,
+      );
 
   return {
     id: draft.id ?? crypto.randomUUID(),

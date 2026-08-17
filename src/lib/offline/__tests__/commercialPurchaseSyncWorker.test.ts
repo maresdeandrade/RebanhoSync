@@ -33,6 +33,7 @@ vi.mock("@/lib/telemetry/pilotMetrics", () => ({
 import { buildEventGesture } from "@/lib/events/buildEventGesture";
 import { buildCommercialOperationGesture } from "@/lib/comercial/commercialOperationCommand";
 import { DEFAULT_FARM_LIFECYCLE_CONFIG } from "@/lib/farms/lifecycleConfig";
+import type { Animal } from "../types";
 import { db } from "../db";
 import { createGesture } from "../ops";
 import { processGesture } from "../syncWorker";
@@ -71,7 +72,41 @@ async function createPurchase() {
   ]);
 }
 
-async function createPurchaseV2() {
+function activeAnimal(): Animal {
+  return {
+    id: animalId,
+    fazenda_id: farm,
+    identificacao: "SALE-V2",
+    sexo: "F",
+    status: "ativo",
+    lote_id: null,
+    data_nascimento: "2025-01-01",
+    data_entrada: "2026-01-01",
+    data_saida: null,
+    pai_id: null,
+    mae_id: null,
+    nome: null,
+    rfid: null,
+    especie: "bovino",
+    origem: "nascimento",
+    raca: null,
+    papel_macho: null,
+    habilitado_monta: false,
+    observacoes: null,
+    payload: {},
+    client_id: "test-client",
+    client_op_id: "before-op",
+    client_tx_id: "before-tx",
+    client_recorded_at: "2026-01-01T12:00:00.000Z",
+    server_received_at: null,
+    created_at: "2026-01-01T12:00:00.000Z",
+    updated_at: "2026-01-01T12:00:00.000Z",
+    deleted_at: null,
+  };
+}
+
+async function createPurchaseV2(weightUnit: "kg" | "arroba" = "kg") {
+  const commercialWeight = weightUnit === "kg" ? 300 : 20;
   const gesture = buildCommercialOperationGesture({
     fazendaId: farm,
     operationType: "compra",
@@ -90,13 +125,57 @@ async function createPurchaseV2() {
         especie: "bovino",
         dataNascimento: "2025-01-01",
         dataEntrada: "2026-08-13",
+        commercialWeight,
       },
     ],
     lifecycleConfig: DEFAULT_FARM_LIFECYCLE_CONFIG,
     operationId: eventId,
-    valorBruto: 1200,
+    valorBruto: 6000,
+    contraparteId: "40000000-0000-4000-8000-000000000001",
+    contraparteNome: "Comprador",
+    pricing: {
+      pricingMode: "per_arroba",
+      weightUnit,
+      pricePerArroba: 300,
+      arrobaBasis: weightUnit === "kg" ? "carcass_weight" : null,
+      carcassYieldPercent: null,
+      lines: {
+        "row-1": {
+          commercialWeight: { unit: weightUnit, amount: commercialWeight },
+        },
+      },
+    },
   });
   return createGesture(farm, gesture.ops);
+}
+
+function buildSaleV2(animal: Animal) {
+  return buildCommercialOperationGesture({
+    fazendaId: farm,
+    operationType: "venda",
+    scope: "animal",
+    occurredAt: "2026-08-13T12:00:00.000Z",
+    declaredQuantity: 1,
+    loteId: null,
+    selectedAnimalIds: [animal.id],
+    animals: [animal],
+    newAnimals: [],
+    lifecycleConfig: DEFAULT_FARM_LIFECYCLE_CONFIG,
+    operationId: eventId,
+    valorBruto: 6000,
+    contraparteId: "40000000-0000-4000-8000-000000000001",
+    contraparteNome: "Comprador",
+    pricing: {
+      pricingMode: "per_arroba",
+      weightUnit: "arroba",
+      pricePerArroba: 300,
+      lines: {
+        [animal.id]: {
+          commercialWeight: { unit: "arroba", amount: 20 },
+        },
+      },
+    },
+  });
 }
 
 async function clear() {
@@ -239,5 +318,172 @@ describe("commercial purchase sync worker", () => {
       expect.arrayContaining(["animais", "eventos", "eventos_comercial"]),
     );
     expect(await db.queue_gestures.get(txId)).toMatchObject({ status: "DONE" });
+  });
+
+  it.each(["kg", "arroba"] as const)(
+    "persists a %s purchase offline and survives a local reload",
+    async (weightUnit) => {
+      const txId = await createPurchaseV2(weightUnit);
+      await db.close();
+      await db.open();
+
+      const [queued] = await db.queue_ops
+        .where("client_tx_id")
+        .equals(txId)
+        .toArray();
+      expect(queued.record.detail.snapshot.pricing).toMatchObject({
+        weight_unit: weightUnit,
+        commercial_weight_total: weightUnit === "kg" ? 300 : 20,
+      });
+      expect(await db.state_animais.get(animalId)).toBeDefined();
+      expect(await db.event_eventos.get(eventId)).toBeDefined();
+      expect(await db.event_eventos_comercial.get(eventId)).toBeDefined();
+    },
+  );
+
+  it("retries the exact same arroba command after a transient failure", async () => {
+    const txId = await createPurchaseV2("arroba");
+    const [queuedBefore] = await db.queue_ops
+      .where("client_tx_id")
+      .equals(txId)
+      .toArray();
+    const originalRecord = structuredClone(queuedBefore.record);
+    vi.mocked(fetch)
+      .mockRejectedValueOnce(new Error("offline"))
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            results: [{ op_id: queuedBefore.client_op_id, status: "APPLIED" }],
+          }),
+          { status: 200 },
+        ),
+      );
+
+    const firstAttempt = await db.queue_gestures.get(txId);
+    if (!firstAttempt) throw new Error("gesture missing");
+    await processGesture(firstAttempt);
+    expect(await db.queue_gestures.get(txId)).toMatchObject({
+      status: "PENDING",
+      retry_count: 1,
+    });
+    expect((await db.queue_ops.get(queuedBefore.client_op_id))?.record).toEqual(
+      originalRecord,
+    );
+
+    const retry = await db.queue_gestures.get(txId);
+    if (!retry) throw new Error("gesture missing");
+    await processGesture(retry);
+    const requestBodies = vi
+      .mocked(fetch)
+      .mock.calls.map((call) => JSON.parse(String(call[1]?.body)));
+    expect(requestBodies[1].ops[0]).toEqual(requestBodies[0].ops[0]);
+    expect(await db.queue_gestures.get(txId)).toMatchObject({ status: "DONE" });
+    expect(await db.queue_ops.count()).toBe(0);
+  });
+
+  it.each([
+    ["after animal", "event_eventos"],
+    ["after event", "event_eventos_comercial"],
+  ] as const)(
+    "rolls back the whole purchase when failing %s",
+    async (_label, store) => {
+      const gesture = buildCommercialOperationGesture({
+        fazendaId: farm,
+        operationType: "compra",
+        scope: "animal",
+        occurredAt: "2026-08-13T12:00:00.000Z",
+        declaredQuantity: 1,
+        loteId: null,
+        selectedAnimalIds: [],
+        animals: [],
+        newAnimals: [
+          {
+            localId: "row-1",
+            id: animalId,
+            identificacao: "ROLLBACK-V2",
+            sexo: "F",
+            especie: "bovino",
+          },
+        ],
+        lifecycleConfig: DEFAULT_FARM_LIFECYCLE_CONFIG,
+        operationId: eventId,
+        valorBruto: 1000,
+      });
+      const table = db[store];
+      const failCreate = () => {
+        throw new Error("injected");
+      };
+      table.hook("creating", failCreate);
+      try {
+        await expect(createGesture(farm, gesture.ops)).rejects.toThrow(
+          "injected",
+        );
+      } finally {
+        table.hook("creating").unsubscribe(failCreate);
+      }
+      expect(await db.queue_gestures.count()).toBe(0);
+      expect(await db.queue_ops.count()).toBe(0);
+      expect(await db.state_animais.count()).toBe(0);
+      expect(await db.event_eventos.count()).toBe(0);
+      expect(await db.event_eventos_comercial.count()).toBe(0);
+    },
+  );
+
+  it("restores the complete sale state when the local detail write fails", async () => {
+    const animal = activeAnimal();
+    await db.state_animais.put(animal);
+    const gesture = buildSaleV2(animal);
+    const failCreate = () => {
+      throw new Error("injected");
+    };
+    db.event_eventos_comercial.hook("creating", failCreate);
+    try {
+      await expect(createGesture(farm, gesture.ops)).rejects.toThrow(
+        "injected",
+      );
+    } finally {
+      db.event_eventos_comercial.hook("creating").unsubscribe(failCreate);
+    }
+    expect(await db.state_animais.get(animalId)).toEqual(animal);
+    expect(await db.queue_gestures.count()).toBe(0);
+    expect(await db.queue_ops.count()).toBe(0);
+    expect(await db.event_eventos.count()).toBe(0);
+    expect(await db.event_eventos_comercial.count()).toBe(0);
+  });
+});
+
+describe("commercial auxiliary queue", () => {
+  beforeEach(async () => {
+    await clear();
+    await db.state_sociedade_animais.clear();
+  });
+  afterEach(async () => {
+    await clear();
+    await db.state_sociedade_animais.clear();
+  });
+  it("keeps auxiliary society updates alongside the compound commercial queue operation", async () => {
+    const animal = activeAnimal();
+    await db.state_animais.put(animal);
+    const gesture = buildSaleV2(animal);
+    await createGesture(farm, [
+      ...gesture.ops,
+      {
+        table: "sociedade_animais",
+        action: "UPDATE",
+        record: {
+          id: "society-link-1",
+          fazenda_id: farm,
+          animal_id: animalId,
+          status: "encerrado",
+          data_saida: "2026-08-13",
+          motivo_saida: "venda",
+          payload: {},
+        },
+      },
+    ]);
+    const queued = await db.queue_ops.toArray();
+    expect(queued).toHaveLength(2);
+    expect(queued.map((op) => op.table)).toEqual(expect.arrayContaining(["commercial_operation_v2", "sociedade_animais"]));
+    expect(await db.state_sociedade_animais.get("society-link-1")).toMatchObject({ status: "encerrado", animal_id: animalId });
   });
 });

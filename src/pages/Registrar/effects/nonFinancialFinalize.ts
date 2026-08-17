@@ -39,6 +39,7 @@ import { resolveManualSanitaryAgendaCompletionOpsEffect } from "@/pages/Registra
 import {
   buildCommercialOperationGesture,
   type CommercialNewAnimalDraft,
+  type CommercialOperationPricingInput,
 } from "@/lib/comercial/commercialOperationCommand";
 
 type RegistrarNonFinancialDomain =
@@ -87,6 +88,7 @@ type NonFinancialComercialData = {
   comissao: number | null;
   descontos: number | null;
   taxasImpostos: number | null;
+  bonificacoes: number | null;
   contraparteId: string | null;
   contraparteNome: string | null;
   animalIds: string[] | null;
@@ -99,6 +101,7 @@ type NonFinancialComercialData = {
   newAnimals?: CommercialNewAnimalDraft[];
   existingIdentifications?: string[];
   currentLotAnimalIds?: string[];
+  pricing?: CommercialOperationPricingInput | null;
 };
 
 type ActiveSocietyLinkWithSociety = SociedadeAnimal & {
@@ -198,12 +201,27 @@ export async function resolveRegistrarNonFinancialFinalizePlan(input: {
     input.tipoManejo === "comercial" &&
     input.comercialData &&
     input.comercialData.operationType !== "sociedade"
+    && !input.buildGesture
   ) {
     try {
-      const selectedIds = input.comercialData.animalIds ?? [];
+      const selectedIds =
+        input.comercialData.animalIds ??
+        input.targetAnimalIds.filter((id): id is string => Boolean(id));
       const selectedAnimals = selectedIds
         .map((id) => input.animalsMap.get(id))
         .filter((item): item is Animal => Boolean(item));
+      if (
+        input.comercialData.operationType === "venda" &&
+        selectedAnimals.some((item) => item.status !== "ativo")
+      ) {
+        return {
+          issue:
+            "Animal vendido, morto ou retirado não pode receber nova venda.",
+          linkedEventId: null,
+          postPartoRedirect: null,
+          ops: [],
+        };
+      }
       const built = buildCommercialOperationGesture({
         fazendaId: input.fazendaId,
         operationType: input.comercialData.operationType,
@@ -222,11 +240,13 @@ export async function resolveRegistrarNonFinancialFinalizePlan(input: {
         comissao: input.comercialData.comissao,
         descontos: input.comercialData.descontos,
         taxasImpostos: input.comercialData.taxasImpostos,
+        bonificacoes: input.comercialData.bonificacoes,
         contraparteId: input.comercialData.contraparteId,
         contraparteNome: input.comercialData.contraparteNome,
         financeTransactionId: input.comercialData.financeTransactionId,
         observacoes: input.comercialData.observacoes,
         lifecycleConfig: input.farmLifecycleConfig,
+        pricing: input.comercialData.pricing,
       });
       return {
         issue: null,

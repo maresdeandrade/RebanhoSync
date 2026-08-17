@@ -11,11 +11,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { RegistrarAnimalSelectionPanel } from "@/pages/Registrar/components/RegistrarAnimalSelectionPanel";
+import type { RegistrarTargetMode } from "@/pages/Registrar/helpers/commercialForm";
 
-type RegistrarSelectTargetStepProps<QuickActionKey extends string = string> = {
-  quickAction: QuickActionKey | null;
-  onApplyQuickAction: (action: QuickActionKey) => void;
-  onClearQuickAction: () => void;
+type RegistrarSelectTargetStepProps = {
+  targetMode: RegistrarTargetMode | null;
+  onTargetModeChange: (mode: RegistrarTargetMode) => void;
   selectedLoteId: string;
   onSelectedLoteIdChange: (value: string) => void;
   semLoteOption: string;
@@ -35,19 +35,19 @@ type RegistrarSelectTargetStepProps<QuickActionKey extends string = string> = {
   onClearSelection: () => void;
   onToggleAnimalSelection: (animalId: string, checked: boolean) => void;
   animaisNoLoteCount: number;
-  requiresAnimalsForQuickAction: boolean;
-  quickActionLabel: string | null;
-  commercialOperationType: "compra" | "venda" | null;
-  commercialScope: "animal" | "lote";
-  onCommercialScopeChange: (scope: "animal" | "lote") => void;
-  canAdvanceWithoutTarget: boolean;
   onNext: () => void;
   onBack: () => void;
 };
 
-export function RegistrarSelectTargetStep<
-  QuickActionKey extends string = string,
->(props: RegistrarSelectTargetStepProps<QuickActionKey>) {
+export function RegistrarSelectTargetStep(
+  props: RegistrarSelectTargetStepProps,
+) {
+  const hasExistingTarget =
+    props.selectedLoteId.trim().length > 0 || props.selectedAnimaisCount > 0;
+  const canContinue =
+    props.targetMode === "none" ||
+    (props.targetMode === "existing" && hasExistingTarget);
+
   return (
     <Card className="overflow-hidden border-border/70 shadow-sm">
       <CardHeader className="px-4 pb-2 pt-4 sm:px-5">
@@ -55,72 +55,56 @@ export function RegistrarSelectTargetStep<
       </CardHeader>
       <CardContent className="space-y-4 p-4 sm:p-5">
         <div className="space-y-3 rounded-xl border border-border/70 bg-muted/20 p-3">
-          <Label>Operação comercial</Label>
+          <Label>Contexto do registro</Label>
           <div className="grid grid-cols-2 gap-2">
-            {(["compra", "venda"] as const).map((operationType) => (
+            {(
+              [
+                { value: "existing", label: "Com animais ou lote existentes" },
+                { value: "none", label: "Sem animal ou lote existente" },
+              ] as const
+            ).map((option) => (
               <Button
-                key={operationType}
+                key={option.value}
                 type="button"
                 variant={
-                  props.commercialOperationType === operationType
-                    ? "default"
-                    : "outline"
+                  props.targetMode === option.value ? "default" : "outline"
                 }
-                onClick={() => props.onApplyQuickAction(operationType)}
-                className="capitalize"
+                onClick={() => props.onTargetModeChange(option.value)}
               >
-                {operationType}
+                {option.label}
               </Button>
             ))}
           </div>
-          {props.commercialOperationType ? (
-            <div className="space-y-2">
-              <Label>Escopo</Label>
-              <div className="grid grid-cols-2 gap-2">
-                {(["animal", "lote"] as const).map((scope) => (
-                  <Button
-                    key={scope}
-                    type="button"
-                    variant={
-                      props.commercialScope === scope ? "secondary" : "outline"
-                    }
-                    onClick={() => props.onCommercialScopeChange(scope)}
-                    className="capitalize"
-                  >
-                    {scope === "animal" ? "Individual" : "Lote"}
-                  </Button>
-                ))}
-              </div>
+        </div>
+
+        {props.targetMode === "existing" ? (
+          <div className="space-y-2 rounded-xl border border-border/70 bg-muted/20 p-3">
+            <div className="flex items-center justify-between gap-3">
+              <Label>Lote</Label>
+              <span className="text-xs text-muted-foreground">
+                {props.animaisNoLoteCount} animal(is)
+              </span>
             </div>
-          ) : null}
-        </div>
-
-        <div className="space-y-2 rounded-xl border border-border/70 bg-muted/20 p-3">
-          <div className="flex items-center justify-between gap-3">
-            <Label>Lote</Label>
-            <span className="text-xs text-muted-foreground">
-              {props.animaisNoLoteCount} animal(is)
-            </span>
+            <Select
+              onValueChange={props.onSelectedLoteIdChange}
+              value={props.selectedLoteId}
+            >
+              <SelectTrigger className="min-h-11">
+                <SelectValue placeholder="Selecione o lote" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={props.semLoteOption}>Sem lote</SelectItem>
+                {props.lotes.map((lote) => (
+                  <SelectItem key={lote.id} value={lote.id}>
+                    {lote.nome}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-          <Select
-            onValueChange={props.onSelectedLoteIdChange}
-            value={props.selectedLoteId}
-          >
-            <SelectTrigger className="min-h-11">
-              <SelectValue placeholder="Selecione o lote" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={props.semLoteOption}>Sem lote</SelectItem>
-              {props.lotes.map((lote) => (
-                <SelectItem key={lote.id} value={lote.id}>
-                  {lote.nome}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        ) : null}
 
-        {props.selectedLoteId ? (
+        {props.targetMode === "existing" && props.selectedLoteId ? (
           <>
             <RegistrarAnimalSelectionPanel
               selectedAnimaisCount={props.selectedAnimaisCount}
@@ -152,12 +136,6 @@ export function RegistrarSelectTargetStep<
           </>
         ) : null}
 
-        {props.requiresAnimalsForQuickAction ? (
-          <p className="rounded-xl border border-amber-200/70 bg-amber-50/70 p-3 text-sm font-medium text-amber-900 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-200">
-            Esta acao exige ao menos um animal selecionado antes de continuar.
-          </p>
-        ) : null}
-
         <div className="flex flex-col gap-3 sm:flex-row">
           <Button
             variant="outline"
@@ -168,16 +146,10 @@ export function RegistrarSelectTargetStep<
           </Button>
           <Button
             className="min-h-12 flex-1 rounded-xl text-base font-semibold"
-            disabled={
-              (!props.selectedLoteId && !props.canAdvanceWithoutTarget) ||
-              props.requiresAnimalsForQuickAction
-            }
+            disabled={!canContinue}
             onClick={props.onNext}
           >
-            {props.quickActionLabel
-              ? `Continuar para ${props.quickActionLabel}`
-              : "Escolher manejo"}{" "}
-            <ChevronRight className="ml-2 h-4 w-4" />
+            Escolher manejo <ChevronRight className="ml-2 h-4 w-4" />
           </Button>
         </div>
       </CardContent>

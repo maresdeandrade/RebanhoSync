@@ -5,6 +5,7 @@ import {
   COMMERCIAL_OPERATION_MAX_ANIMALS,
   buildCommercialOperationGesture,
   validateCommercialOperationCommand,
+  validateCommercialPricingSnapshotLine,
   type CommercialOperationCommandInput,
 } from "../commercialOperationCommand";
 
@@ -73,6 +74,255 @@ function baseInput(): CommercialOperationCommandInput {
 }
 
 describe("commercial_operation_v2 domain command", () => {
+  it("rejects a divergent direct-arroba snapshot before writing", () => {
+    expect(
+      validateCommercialPricingSnapshotLine("arroba", {
+        pricing_mode: "per_arroba",
+        commercial_weight: 18,
+        commercial_weight_unit: "arroba",
+        weight_source: "direct",
+        weight_considered_kg: null,
+        arrobas: 17.5,
+        arroba_basis: null,
+        carcass_yield_percent: null,
+      }),
+    ).toMatch(/igual às arrobas faturadas/i);
+  });
+
+  it("persists an auditable per-arroba snapshot inside the commercial detail", () => {
+    const input = baseInput();
+    input.valorBruto = 5_400;
+    input.pricing = {
+      pricingMode: "per_arroba",
+      weightUnit: "arroba",
+      pricePerArroba: 300,
+      lines: {
+        "row-1": { commercialWeight: { unit: "arroba", amount: 18 } },
+      },
+    };
+
+    const built = buildCommercialOperationGesture(input);
+    expect(buildCommercialOperationGesture(input)).toEqual(built);
+    const detail = built.ops.find(
+      (op) => op.table === "eventos_comercial",
+    )!.record;
+    expect(detail.snapshot.pricing).toEqual({
+      contract_version: 2,
+      pricing_mode: "per_arroba",
+      weight_unit: "arroba",
+      commercial_weight_total: 18,
+      price_per_arroba: 300,
+      arroba_basis: null,
+      carcass_yield_percent: null,
+      total_arrobas: 18,
+      effective_price_per_arroba_gross: 300,
+      effective_price_per_arroba_net: 300,
+      lines: [
+        {
+          animal_id: "30000000-0000-4000-8000-000000000001",
+          pricing_mode: "per_arroba",
+          price_per_head: null,
+          allocated_gross_value: null,
+          price_per_arroba: 300,
+          arroba_basis: null,
+          carcass_yield_percent: null,
+          commercial_weight: 18,
+          commercial_weight_unit: "arroba",
+          weight_source: "direct",
+          weight_considered_kg: null,
+          arrobas: 18,
+          individual_gross_value: 5400,
+        },
+      ],
+    });
+    expect(detail.snapshot.valor_por_animal).toEqual({
+      "30000000-0000-4000-8000-000000000001": 5400,
+    });
+    expect(detail.snapshot.animals[0].peso_kg).toBeNull();
+    expect(
+      built.ops.find((op) => op.table === "animais")!.record,
+    ).not.toHaveProperty("peso_atual_kg");
+  });
+
+  it("persists total-value allocation and effective arroba prices", () => {
+    const input = baseInput();
+    input.valorBruto = 6_000;
+    input.frete = 100;
+    input.descontos = 50;
+    input.bonificacoes = 150;
+    input.pricing = {
+      pricingMode: "total_value",
+      weightUnit: "arroba",
+      lines: {
+        "row-1": {
+          pricePerHead: 6_000,
+          commercialWeight: { unit: "arroba", amount: 20 },
+        },
+      },
+    };
+
+    const detail = buildCommercialOperationGesture(input).ops.find(
+      (op) => op.table === "eventos_comercial",
+    )!.record;
+    expect(detail.snapshot).toMatchObject({ bonificacoes: 150 });
+    expect(detail.snapshot.pricing).toMatchObject({
+      contract_version: 2,
+      pricing_mode: "total_value",
+      total_arrobas: 20,
+      effective_price_per_arroba_gross: 300,
+      effective_price_per_arroba_net: 295,
+      price_per_arroba: null,
+      lines: [
+        {
+          allocated_gross_value: 6000,
+          individual_gross_value: 6000,
+          arrobas: 20,
+        },
+      ],
+    });
+  });
+
+  it("records arrobas calculated from kg without promoting commercial weight to animal state", () => {
+    const input = baseInput();
+    input.valorBruto = 6_000;
+    input.pricing = {
+      pricingMode: "per_arroba",
+      weightUnit: "kg",
+      pricePerArroba: 300,
+      arrobaBasis: "carcass_weight",
+      lines: {
+        "row-1": { commercialWeight: { unit: "kg", amount: 300 } },
+      },
+    };
+
+    const built = buildCommercialOperationGesture(input);
+    const detail = built.ops.find(
+      (op) => op.table === "eventos_comercial",
+    )!.record;
+    expect(detail.snapshot.pricing.lines[0]).toMatchObject({
+      commercial_weight: 300,
+      commercial_weight_unit: "kg",
+      weight_source: "calculated",
+      weight_considered_kg: 300,
+      arrobas: 20,
+      individual_gross_value: 6000,
+    });
+    expect(detail.snapshot.animals[0].peso_kg).toBeNull();
+  });
+
+  it("keeps the same unit snapshot and command content on identical replay", () => {
+    const input = baseInput();
+    input.pricing = {
+      pricingMode: "per_head",
+      weightUnit: "arroba",
+      lines: {
+        "row-1": {
+          pricePerHead: 2500,
+          commercialWeight: { unit: "arroba", amount: 30 },
+        },
+      },
+    };
+    const first = buildCommercialOperationGesture(input);
+    const replay = buildCommercialOperationGesture(input);
+    expect(replay).toEqual(first);
+    const detail = first.ops.find(
+      (op) => op.table === "eventos_comercial",
+    )!.record;
+    expect(detail.snapshot.pricing).toMatchObject({
+      weight_unit: "arroba",
+      commercial_weight_total: 30,
+      arroba_basis: null,
+      carcass_yield_percent: null,
+    });
+  });
+
+  it("changes factual content instead of reinterpreting weight when the unit changes", () => {
+    const kg = baseInput();
+    kg.valorBruto = 6000;
+    kg.pricing = {
+      pricingMode: "per_arroba",
+      weightUnit: "kg",
+      pricePerArroba: 300,
+      arrobaBasis: "carcass_weight",
+      lines: {
+        "row-1": { commercialWeight: { unit: "kg", amount: 300 } },
+      },
+    };
+    const arroba = baseInput();
+    arroba.valorBruto = 6000;
+    arroba.pricing = {
+      pricingMode: "per_arroba",
+      weightUnit: "arroba",
+      pricePerArroba: 300,
+      lines: {
+        "row-1": { commercialWeight: { unit: "arroba", amount: 20 } },
+      },
+    };
+
+    const kgDetail = buildCommercialOperationGesture(kg).ops.find(
+      (op) => op.table === "eventos_comercial",
+    )!.record;
+    const arrobaDetail = buildCommercialOperationGesture(arroba).ops.find(
+      (op) => op.table === "eventos_comercial",
+    )!.record;
+    expect(kgDetail.snapshot.pricing).not.toEqual(
+      arrobaDetail.snapshot.pricing,
+    );
+    expect(kgDetail.snapshot.pricing.weight_unit).toBe("kg");
+    expect(arrobaDetail.snapshot.pricing.weight_unit).toBe("arroba");
+  });
+
+  it("rejects a pricing snapshot whose line sum differs from gross value", () => {
+    const input = baseInput();
+    input.pricing = {
+      pricingMode: "per_head",
+      weightUnit: "kg",
+      lines: {
+        "row-1": {
+          pricePerHead: 2_000,
+          commercialWeight: { unit: "kg", amount: null },
+        },
+      },
+    };
+    expect(validateCommercialOperationCommand(input)).toMatch(/valor bruto/i);
+  });
+
+  it("rejects a carcass-weight snapshot with residual yield data", () => {
+    const input = baseInput();
+    input.valorBruto = 6_000;
+    input.pricing = {
+      pricingMode: "per_arroba",
+      weightUnit: "kg",
+      pricePerArroba: 300,
+      arrobaBasis: "carcass_weight",
+      carcassYieldPercent: 54,
+      lines: {
+        "row-1": { commercialWeight: { unit: "kg", amount: 300 } },
+      },
+    };
+    expect(validateCommercialOperationCommand(input)).toMatch(
+      /rendimento residual/i,
+    );
+  });
+
+  it("rejects individual purchase with more than one animal", () => {
+    const input = baseInput();
+    input.declaredQuantity = 2;
+    input.newAnimals = [
+      input.newAnimals[0]!,
+      {
+        ...input.newAnimals[0]!,
+        localId: "row-2",
+        id: "30000000-0000-4000-8000-000000000002",
+        identificacao: "BR-002",
+      },
+    ];
+
+    expect(validateCommercialOperationCommand(input)).toBe(
+      "Compra individual exige exatamente um novo animal.",
+    );
+  });
+
   it("creates one active animal plus exactly one commercial event and detail", () => {
     const built = buildCommercialOperationGesture(baseInput());
     expect(built.animalIds).toEqual(["30000000-0000-4000-8000-000000000001"]);
@@ -83,7 +333,11 @@ describe("commercial_operation_v2 domain command", () => {
     ).toHaveLength(1);
     expect(built.ops[0]).toMatchObject({
       action: "INSERT",
-      record: { status: "ativo", origem: "compra" },
+      record: {
+        status: "ativo",
+        origem: "compra",
+        data_nascimento: "2025-01-01",
+      },
     });
     expect(
       built.ops.some(
@@ -137,6 +391,19 @@ describe("commercial_operation_v2 domain command", () => {
       currentLotAnimalIds: animals.map((item) => item.id),
       contraparteId: "50000000-0000-4000-8000-000000000001",
       contraparteNome: "Comprador",
+      pricing: {
+        pricingMode: "per_head",
+        weightUnit: "kg",
+        lines: Object.fromEntries(
+          animals.map((item) => [
+            item.id,
+            {
+              pricePerHead: 1250,
+              commercialWeight: { unit: "kg", amount: 400 },
+            },
+          ]),
+        ),
+      },
     });
     expect(built.ops.filter((op) => op.table === "animais")).toHaveLength(2);
     expect(
@@ -151,6 +418,14 @@ describe("commercial_operation_v2 domain command", () => {
     expect(
       built.ops.filter((op) => op.table === "eventos_comercial"),
     ).toHaveLength(1);
+    const detail = built.ops.find(
+      (op) => op.table === "eventos_comercial",
+    )!.record;
+    expect(detail.snapshot.pricing.lines).toHaveLength(2);
+    expect(detail.snapshot.valor_por_animal).toEqual({
+      "30000000-0000-4000-8000-000000000001": 1250,
+      "30000000-0000-4000-8000-000000000002": 1250,
+    });
   });
 
   it.each([

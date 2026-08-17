@@ -209,12 +209,14 @@ export interface ComercialEventInput extends BaseEventInput {
   comissao?: number | null;
   descontos?: number | null;
   taxasImpostos?: number | null;
+  bonificacoes?: number | null;
   valorLiquidoDerivado?: number | null;
   contraparteId?: string | null;
   contraparteNome?: string | null;
   animalIds?: string[] | null;
   financeTransactionId?: string | null;
   snapshot?: Record<string, unknown> | null;
+  pricing?: unknown;
   calculationStatus?: "complete" | "partial" | "blocked";
   issues?: Array<Record<string, unknown>>;
   limitations?: string[];

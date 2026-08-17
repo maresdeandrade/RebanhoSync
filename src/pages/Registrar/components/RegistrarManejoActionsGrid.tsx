@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 type RegistrarManejoActionsGridProps = {
   tipoManejo: string;
   selectedAnimaisCount: number;
+  hasExistingTarget: boolean;
   onSelectAction: (
     action:
       | "sanitario"
@@ -74,7 +75,8 @@ export function RegistrarManejoActionsGrid(
         const Icon = action.icon;
         const active = props.tipoManejo === action.key;
         const disabled =
-          action.requiresAnimals && props.selectedAnimaisCount === 0;
+          action.requiresAnimals &&
+          (!props.hasExistingTarget || props.selectedAnimaisCount === 0);
 
         return (
           <Button
@@ -98,4 +100,3 @@ export function RegistrarManejoActionsGrid(
     </div>
   );
 }
-

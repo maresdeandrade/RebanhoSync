@@ -131,6 +131,7 @@ type BuildRegistrarEventInputParams = {
     comissao: number | null;
     descontos: number | null;
     taxasImpostos: number | null;
+    bonificacoes: number | null;
     contraparteId: string | null;
     contraparteNome: string | null;
     animalIds: string[] | null;
@@ -138,6 +139,7 @@ type BuildRegistrarEventInputParams = {
     financeTransactionId: string | null;
     observacoes?: string | null;
     snapshot?: Record<string, unknown> | null;
+    pricing?: unknown;
     calculationStatus?: CommercialOperationCalculationStatus;
     issues?: CommercialOperationIssue[];
     limitations?: string[];
@@ -270,6 +272,7 @@ export function buildRegistrarEventInput(
       comissao: params.comercial?.comissao ?? undefined,
       descontos: params.comercial?.descontos ?? undefined,
       taxasImpostos: params.comercial?.taxasImpostos ?? undefined,
+      bonificacoes: params.comercial?.bonificacoes ?? undefined,
       contraparteId: params.comercial?.contraparteId ?? undefined,
       contraparteNome: params.comercial?.contraparteNome ?? undefined,
       animalIds: params.comercial?.animalIds ?? undefined,
@@ -291,15 +294,19 @@ export function buildRegistrarEventInput(
       comissao: params.comercial!.comissao ?? null,
       descontos: params.comercial!.descontos ?? null,
       taxasImpostos: params.comercial!.taxasImpostos ?? null,
+      bonificacoes: params.comercial!.bonificacoes ?? null,
       valorLiquidoDerivado: summary.valorLiquidoDerivado ?? null,
       contraparteId: params.comercial!.contraparteId ?? null,
       contraparteNome: params.comercial!.contraparteNome ?? null,
       animalIds: params.comercial!.animalIds ?? null,
       loteId: params.comercial!.loteId ?? null,
       financeTransactionId: params.comercial!.financeTransactionId ?? null,
-      snapshot: params.comercial!.snapshot ?? summary.snapshot,
+      snapshot: { ...(params.comercial!.snapshot ?? summary.snapshot) },
+      pricing: params.comercial!.pricing ?? null,
       calculationStatus: params.comercial!.calculationStatus ?? summary.calculationStatus,
-      issues: params.comercial!.issues ?? summary.issues,
+      issues: (params.comercial!.issues ?? summary.issues).map((issue) => ({
+        ...issue,
+      })) as Array<Record<string, unknown>>,
       limitations: params.comercial!.limitations ?? summary.limitations,
       animalStatusSnapshot: params.comercial!.animalStatusSnapshot ?? null,
       commercialSignals: params.comercial!.commercialSignals ?? [],

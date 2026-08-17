@@ -402,7 +402,7 @@ const AnimalNovo = () => {
             papelMacho: papel_macho,
             habilitadoMonta: habilitado_monta,
             preparedPayload: true,
-            pesoKg: Number.isFinite(pesoKg) ? pesoKg : null,
+            commercialWeight: Number.isFinite(pesoKg) ? pesoKg : null,
             valorIndividual: valorCompra,
           },
         ],

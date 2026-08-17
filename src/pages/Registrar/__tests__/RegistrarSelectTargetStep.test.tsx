@@ -3,50 +3,82 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { RegistrarSelectTargetStep } from "../components/RegistrarSelectTargetStep";
 
-describe("Registrar commercial operation-first step", () => {
-  it("asks operation and scope before target and lets individual purchase continue without an animal", () => {
-    const apply = vi.fn();
+describe("Registrar target-context step", () => {
+  const baseProps = {
+    selectedLoteId: "",
+    onSelectedLoteIdChange: vi.fn(),
+    semLoteOption: "__sem_lote__",
+    lotes: [] as Array<{ id: string; nome: string }>,
+    selectedAnimaisCount: 0,
+    selectedVisibleCount: 0,
+    filteredAnimaisNoLote: [],
+    visibleAnimalIds: [],
+    selectedAnimais: [],
+    animalSearch: "",
+    onAnimalSearchChange: vi.fn(),
+    onSelectVisible: vi.fn(),
+    onClearSelection: vi.fn(),
+    onToggleAnimalSelection: vi.fn(),
+    animaisNoLoteCount: 0,
+    onBack: vi.fn(),
+  };
+
+  it("pergunta somente o contexto e avança sem alvo", () => {
     const next = vi.fn();
     render(
       <RegistrarSelectTargetStep
-        quickAction="compra"
-        onApplyQuickAction={apply}
-        onClearQuickAction={vi.fn()}
-        selectedLoteId=""
-        onSelectedLoteIdChange={vi.fn()}
-        semLoteOption="__sem_lote__"
-        lotes={[]}
-        selectedAnimaisCount={0}
-        selectedVisibleCount={0}
-        filteredAnimaisNoLote={[]}
-        visibleAnimalIds={[]}
-        selectedAnimais={[]}
-        animalSearch=""
-        onAnimalSearchChange={vi.fn()}
-        onSelectVisible={vi.fn()}
-        onClearSelection={vi.fn()}
-        onToggleAnimalSelection={vi.fn()}
-        animaisNoLoteCount={0}
-        requiresAnimalsForQuickAction={false}
-        quickActionLabel="Compra"
-        commercialOperationType="compra"
-        commercialScope="animal"
-        onCommercialScopeChange={vi.fn()}
-        canAdvanceWithoutTarget
+        {...baseProps}
+        targetMode="none"
+        onTargetModeChange={vi.fn()}
         onNext={next}
-        onBack={vi.fn()}
       />,
     );
 
-    expect(screen.getByText("Operação comercial")).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Individual" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Compra" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Venda" })).toBeNull();
+    expect(screen.queryByText("Escopo da Operação")).toBeNull();
     const continueButton = screen.getByRole("button", {
-      name: /Continuar para Compra/i,
+      name: /Escolher manejo/i,
     });
     expect((continueButton as HTMLButtonElement).disabled).toBe(false);
     fireEvent.click(continueButton);
     expect(next).toHaveBeenCalledOnce();
-    fireEvent.click(screen.getByRole("button", { name: "venda" }));
-    expect(apply).toHaveBeenCalledWith("venda");
+  });
+
+  it("exige alvo quando o contexto usa animais ou lote existentes", () => {
+    const next = vi.fn();
+    const { rerender } = render(
+      <RegistrarSelectTargetStep
+        {...baseProps}
+        targetMode="existing"
+        onTargetModeChange={vi.fn()}
+        onNext={next}
+      />,
+    );
+
+    expect(
+      (
+        screen.getByRole("button", {
+          name: /Escolher manejo/i,
+        }) as HTMLButtonElement
+      ).disabled,
+    ).toBe(true);
+
+    rerender(
+      <RegistrarSelectTargetStep
+        {...baseProps}
+        targetMode="existing"
+        selectedLoteId="lote-1"
+        onTargetModeChange={vi.fn()}
+        onNext={next}
+      />,
+    );
+    expect(
+      (
+        screen.getByRole("button", {
+          name: /Escolher manejo/i,
+        }) as HTMLButtonElement
+      ).disabled,
+    ).toBe(false);
   });
 });

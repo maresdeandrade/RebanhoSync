@@ -82,6 +82,28 @@ function compoundV2Op(): Operation {
     evento_id: eventId,
     operation_type: "venda",
     occurred_at: "2026-08-13T12:00:00.000Z",
+    snapshot: {
+      pricing: {
+        contract_version: 1,
+        pricing_mode: "per_arroba",
+        weight_unit: "arroba",
+        commercial_weight_total: 20,
+        price_per_arroba: 300,
+        arroba_basis: null,
+        carcass_yield_percent: null,
+        lines: [
+          {
+            animal_id: animalId,
+            commercial_weight: 20,
+            commercial_weight_unit: "arroba",
+            weight_source: "direct",
+            weight_considered_kg: null,
+            arrobas: 20,
+            individual_gross_value: 6000,
+          },
+        ],
+      },
+    },
   };
   return {
     ...legacy,
@@ -167,6 +189,40 @@ describe("commercial purchase pull protection", () => {
     expect(await db.state_animais.count()).toBe(1);
     expect(await db.event_eventos.count()).toBe(1);
     expect(await db.event_eventos_comercial.count()).toBe(1);
+  });
+
+  it("preserves the auditable pricing snapshot through the v2 pull", async () => {
+    const op = compoundV2Op();
+    const envelope = op.record as Record<string, unknown>;
+    const detail = envelope.detail as Record<string, unknown>;
+    mocks.rows.set("eventos_comercial", [detail]);
+
+    await pullDataForFarm(farm, ["eventos_comercial"]);
+
+    expect((await db.event_eventos_comercial.get(eventId))?.snapshot).toEqual(
+      detail.snapshot,
+    );
+  });
+
+  it("keeps a legacy pricing snapshot without weight_unit byte-for-byte", async () => {
+    const op = compoundV2Op();
+    const envelope = op.record as Record<string, unknown>;
+    const detail = envelope.detail as Record<string, unknown>;
+    const legacySnapshot = {
+      pricing: {
+        contract_version: 1,
+        pricing_mode: "per_head",
+        lines: [{ animal_id: animalId, individual_gross_value: 2500 }],
+      },
+    };
+    detail.snapshot = legacySnapshot;
+    mocks.rows.set("eventos_comercial", [detail]);
+
+    await pullDataForFarm(farm, ["eventos_comercial"]);
+
+    expect((await db.event_eventos_comercial.get(eventId))?.snapshot).toEqual(
+      legacySnapshot,
+    );
   });
 
   it("protects the sold state and both facts while v2 is pending", async () => {

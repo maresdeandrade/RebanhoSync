@@ -12,6 +12,7 @@ describe("RegistrarManejoActionsGrid", () => {
       <RegistrarManejoActionsGrid
         tipoManejo=""
         selectedAnimaisCount={1}
+        hasExistingTarget={true}
         onSelectAction={vi.fn()}
       />
     );
@@ -29,6 +30,7 @@ describe("RegistrarManejoActionsGrid", () => {
       <RegistrarManejoActionsGrid
         tipoManejo=""
         selectedAnimaisCount={0}
+        hasExistingTarget={false}
         onSelectAction={vi.fn()}
       />
     );
@@ -47,7 +49,7 @@ describe("RegistrarManejoActionsGrid", () => {
   it("deve chamar onSelectAction com o tipo correto ao clicar na opcao", () => {
     const mockSelect = vi.fn();
     render(
-      <RegistrarManejoActionsGrid tipoManejo="" selectedAnimaisCount={1} onSelectAction={mockSelect} />
+      <RegistrarManejoActionsGrid tipoManejo="" selectedAnimaisCount={1} hasExistingTarget={true} onSelectAction={mockSelect} />
     );
 
     fireEvent.click(screen.getByText(/Sanitario/i));

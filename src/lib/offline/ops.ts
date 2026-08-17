@@ -193,12 +193,16 @@ export const createGesture = async (
   const commercialPurchaseQueueOp = commercialOperationQueueOp
     ? null
     : buildCommercialPurchaseQueueOperation(ops, fazenda_id);
+  const commercialQueueOp =
+    commercialOperationQueueOp ?? commercialPurchaseQueueOp;
+  const compoundTables = new Set(["animais", "eventos", "eventos_comercial"]);
+  const auxiliaryCommercialOps = commercialQueueOp
+    ? ops.filter((op) => !compoundTables.has(op.table))
+    : [];
   const queueOps = [
-    ...(commercialOperationQueueOp
-      ? [commercialOperationQueueOp]
-      : commercialPurchaseQueueOp
-        ? [commercialPurchaseQueueOp]
-        : ops),
+    ...(commercialQueueOp
+      ? [commercialQueueOp, ...auxiliaryCommercialOps]
+      : ops),
     ...sanitarioAgendaV2.flatMap(({ queueOp }) => (queueOp ? [queueOp] : [])),
   ];
 

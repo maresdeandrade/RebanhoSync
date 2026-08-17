@@ -341,6 +341,7 @@ export type RegistrarFinalizeControllerInput = {
     comissao: number | null;
     descontos: number | null;
     taxasImpostos: number | null;
+    bonificacoes: number | null;
     contraparteId: string | null;
     contraparteNome: string | null;
     animalIds: string[] | null;
@@ -348,6 +349,7 @@ export type RegistrarFinalizeControllerInput = {
     financeTransactionId: string | null;
     observacoes?: string | null;
     snapshot?: Record<string, unknown> | null;
+    pricing?: unknown;
     animalStatusSnapshot?: "ativo" | "vendido" | "morto" | "retirado" | null;
     commercialSignals?: string[];
     newAnimals?: CommercialNewAnimalDraft[];
