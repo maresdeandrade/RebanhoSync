@@ -1,3 +1,4 @@
+import "@/styles/sincro-field.css";
 import { supabase } from "@/lib/supabase";
 import { Navigate, Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -49,13 +50,13 @@ const Login = () => {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/30 p-4">
-      <Card className="w-full max-w-md">
+    <div className="sincro-login flex min-h-screen items-center justify-center p-4">
+      <Card className="sincro-login-card w-full max-w-md">
         <CardHeader className="text-center">
           <div className="flex justify-center">
             <img src="/logo.png" alt="RebanhoSync" className="h-12 w-auto" />
           </div>
-          <CardTitle className="mt-4 text-2xl font-bold">RebanhoSync</CardTitle>
+          <CardTitle className="sincro-login-title mt-4 text-2xl font-bold">RebanhoSync</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -126,13 +127,13 @@ const Login = () => {
               </div>
             )}
 
-            <Button type="submit" className="w-full" disabled={isLoading}>
+            <Button type="submit" className="sincro-login-submit w-full" disabled={isLoading}>
               {isLoading ? "Entrando..." : "Entrar"}
             </Button>
 
             <div className="text-center text-sm">
               Não tem uma conta?{" "}
-              <Link to="/signup" className="text-primary hover:underline">
+              <Link to="/signup" className="sincro-login-link hover:underline">
                 Cadastre-se aqui
               </Link>
             </div>
@@ -144,4 +145,3 @@ const Login = () => {
 };
 
 export default Login;
-

@@ -1,0 +1,77 @@
+/* Sincro de Campo — page-scoped brand layer.
+ * Operational semantic tokens remain global.
+ */
+.sincro-login,
+.sincro-dashboard {
+  --sincro-primary: 176 76% 18%;
+  --sincro-primary-foreground: 0 0% 100%;
+  --sincro-secondary: 37 27% 79%;
+  --sincro-accent: 168 47% 46%;
+  --sincro-accent-foreground: 176 76% 18%;
+  --sincro-surface: 45 20% 96%;
+  --sincro-card: 45 15% 98%;
+  --sincro-border: 37 20% 78%;
+}
+
+.dark .sincro-login,
+.dark .sincro-dashboard {
+  --sincro-primary: 167 52% 63%;
+  --sincro-primary-foreground: 176 76% 18%;
+  --sincro-secondary: 36 34% 84%;
+  --sincro-accent: 166 58% 61%;
+  --sincro-accent-foreground: 176 76% 18%;
+  --sincro-surface: 200 50% 8%;
+  --sincro-border: 200 30% 25%;
+}
+
+.sincro-login {
+  background:
+    radial-gradient(
+      circle at 50% 0%,
+      hsl(var(--sincro-accent) / 0.12),
+      transparent 38%
+    ),
+    hsl(var(--sincro-surface));
+}
+
+.sincro-login .sincro-login-card {
+  border-color: hsl(var(--sincro-border));
+  background-color: hsl(var(--sincro-card) / 0.96);
+  box-shadow:
+    0 1px 2px rgb(15 23 42 / 0.04),
+    0 20px 45px -28px hsl(var(--sincro-primary) / 0.45);
+}
+
+.sincro-login .sincro-login-title {
+  color: hsl(var(--sincro-primary));
+}
+
+.sincro-login .sincro-login-submit {
+  background-color: hsl(var(--sincro-primary));
+  color: hsl(var(--sincro-primary-foreground));
+}
+
+.sincro-login .sincro-login-submit:hover:not(:disabled) {
+  background-color: hsl(var(--sincro-primary) / 0.9);
+}
+
+.sincro-login .sincro-login-link {
+  color: hsl(var(--sincro-primary));
+}
+
+.sincro-login .sincro-login-link:hover {
+  color: hsl(var(--sincro-accent));
+}
+
+.sincro-dashboard {
+  position: relative;
+}
+
+.sincro-dashboard .sincro-dashboard-card {
+  border-color: hsl(var(--sincro-border) / 0.72);
+  background-color: hsl(var(--sincro-card));
+}
+
+.sincro-dashboard .sincro-chart-accent {
+  color: hsl(var(--sincro-accent));
+}

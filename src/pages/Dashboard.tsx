@@ -1,3 +1,4 @@
+import "@/styles/sincro-field.css";
 import { useEffect, useMemo } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { Link } from "react-router-dom";
@@ -400,7 +401,7 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="space-y-5">
+    <div className="sincro-dashboard space-y-5">
       <PageIntro
         variant="plain"
         eyebrow="Saude operacional"
@@ -443,7 +444,7 @@ const Dashboard = () => {
         }
       />
 
-      <Card className="shadow-none">
+      <Card className="sincro-dashboard-card shadow-none">
         <CardHeader className="px-4 pb-2 pt-4 sm:px-5">
           <CardTitle>Prioridades administrativas</CardTitle>
         </CardHeader>
@@ -487,7 +488,7 @@ const Dashboard = () => {
       {sanitaryAttention.scheduleModes.length > 0 ||
       sanitaryOperationalClasses.length > 0 ? (
         <section className="grid gap-4 xl:grid-cols-3">
-          <Card className="shadow-none">
+          <Card className="sincro-dashboard-card shadow-none">
             <CardHeader className="px-4 pb-2 pt-4 sm:px-5">
               <CardTitle>Agenda sanitaria por calendario</CardTitle>
             </CardHeader>
@@ -532,7 +533,7 @@ const Dashboard = () => {
           </Card>
 
           {sanitaryOperationalClasses.length > 0 ? (
-            <Card className="shadow-none">
+            <Card className="sincro-dashboard-card shadow-none">
               <CardHeader className="px-4 pb-2 pt-4 sm:px-5">
                 <CardTitle>Agenda sanitaria por classe</CardTitle>
               </CardHeader>
@@ -568,7 +569,7 @@ const Dashboard = () => {
           ) : null}
 
           {sanitaryAttention.scheduleAnchors.length > 0 ? (
-            <Card className="shadow-none">
+            <Card className="sincro-dashboard-card shadow-none">
               <CardHeader className="px-4 pb-2 pt-4 sm:px-5">
                 <CardTitle>Agenda sanitaria por ancora</CardTitle>
               </CardHeader>
@@ -617,7 +618,7 @@ const Dashboard = () => {
 
       {regulatoryReadModel.attention.openCount > 0 ? (
         <section className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
-          <Card className="shadow-none">
+          <Card className="sincro-dashboard-card shadow-none">
             <CardHeader className="px-4 pb-2 pt-4 sm:px-5">
               <CardTitle>Pendencias regulatorias por area</CardTitle>
             </CardHeader>
@@ -676,7 +677,7 @@ const Dashboard = () => {
             </CardContent>
           </Card>
 
-          <Card className="shadow-none">
+          <Card className="sincro-dashboard-card shadow-none">
             <CardHeader className="px-4 pb-2 pt-4 sm:px-5">
               <CardTitle>Impacto da conformidade</CardTitle>
             </CardHeader>
@@ -733,7 +734,7 @@ const Dashboard = () => {
       ) : null}
 
       <section className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
-        <Card className="shadow-none">
+        <Card className="sincro-dashboard-card shadow-none">
           <CardHeader className="px-4 pb-2 pt-4 sm:px-5">
             <CardTitle>Envio e revisao</CardTitle>
           </CardHeader>
@@ -795,7 +796,7 @@ const Dashboard = () => {
           </CardContent>
         </Card>
 
-        <Card className="shadow-none">
+        <Card className="sincro-dashboard-card shadow-none">
           <CardHeader className="px-4 pb-2 pt-4 sm:px-5">
             <CardTitle>Rejeicoes por dominio</CardTitle>
           </CardHeader>
@@ -824,7 +825,7 @@ const Dashboard = () => {
       </section>
 
       <section className="grid gap-4 xl:grid-cols-2">
-        <Card className="shadow-none">
+        <Card className="sincro-dashboard-card shadow-none">
           <CardHeader className="px-4 pb-2 pt-4 sm:px-5">
             <CardTitle className="flex items-center gap-2">
               Evolucao de peso
@@ -855,16 +856,16 @@ const Dashboard = () => {
                 <Line
                   type="monotone"
                   dataKey="media"
-                  stroke="hsl(var(--primary))"
+                  stroke="hsl(var(--sincro-accent))"
                   strokeWidth={1.5}
-                  dot={{ r: 2, fill: "hsl(var(--primary))" }}
+                  dot={{ r: 2, fill: "hsl(var(--sincro-accent))" }}
                 />
               </LineChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
 
-        <Card className="shadow-none">
+        <Card className="sincro-dashboard-card shadow-none">
           <CardHeader className="px-4 pb-2 pt-4 sm:px-5">
             <CardTitle>Agenda por categoria</CardTitle>
           </CardHeader>
@@ -892,7 +893,7 @@ const Dashboard = () => {
                 <Tooltip />
                 <Bar
                   dataKey="qtd"
-                  fill="hsl(var(--success))"
+                  fill="hsl(var(--sincro-accent))"
                   radius={[4, 4, 0, 0]}
                 />
               </BarChart>
@@ -901,7 +902,7 @@ const Dashboard = () => {
         </Card>
       </section>
 
-      <Card className="shadow-none">
+      <Card className="sincro-dashboard-card shadow-none">
         <CardContent className="p-0">
           <Accordion type="single" collapsible>
             <AccordionItem value="pilot-metrics" className="border-b-0">
@@ -918,7 +919,7 @@ const Dashboard = () => {
               </AccordionTrigger>
               <AccordionContent className="px-6 pb-6">
                 <section className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
-                  <Card className="shadow-none">
+                  <Card className="sincro-dashboard-card shadow-none">
                     <CardHeader className="px-4 pb-2 pt-4 sm:px-5">
                       <CardTitle>Indicadores do piloto</CardTitle>
                     </CardHeader>
@@ -995,7 +996,7 @@ const Dashboard = () => {
                       )}
                     </CardContent>
                   </Card>
-                  <Card className="shadow-none">
+                  <Card className="sincro-dashboard-card shadow-none">
                     <CardHeader className="px-4 pb-2 pt-4 sm:px-5">
                       <CardTitle>Rotas e alertas</CardTitle>
                     </CardHeader>
@@ -1090,4 +1091,3 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
-
