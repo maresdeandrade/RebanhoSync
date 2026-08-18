@@ -56,6 +56,11 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile --prefer-offline
+      - name: Install ripgrep
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ripgrep
+          rg --version
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v3
         with:
