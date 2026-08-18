@@ -1,6 +1,9 @@
 export type CommercialOperationType = "compra" | "venda";
 export type CommercialOperationScope = "animal" | "lote";
-export type CommercialOperationCalculationStatus = "complete" | "partial" | "blocked";
+export type CommercialOperationCalculationStatus =
+  | "complete"
+  | "partial"
+  | "blocked";
 
 export interface CommercialOperationIssue {
   code: string;
@@ -21,6 +24,7 @@ export interface CommercialOperationInput {
   comissao?: number;
   descontos?: number;
   taxasImpostos?: number;
+  bonificacoes?: number;
 
   contraparteId?: string;
   contraparteNome?: string;
@@ -46,6 +50,7 @@ export interface CommercialOperationSnapshot {
   comissao?: number;
   descontos?: number;
   taxasImpostos?: number;
+  bonificacoes?: number;
 
   contraparteId?: string;
   contraparteNome?: string;
@@ -72,11 +77,13 @@ export interface CommercialOperationSummary {
 
 /**
  * Realiza o cálculo e validação estruturada de uma operação comercial pecuária de forma determinística e pura.
- * 
+ *
  * @param input Dados de entrada da operação comercial.
  * @returns Um sumário contendo o status do cálculo, os valores derivados, issues de validação e limitações informativas.
  */
-export function calculateCommercialOperation(input: CommercialOperationInput): CommercialOperationSummary {
+export function calculateCommercialOperation(
+  input: CommercialOperationInput,
+): CommercialOperationSummary {
   const issues: CommercialOperationIssue[] = [];
   const limitations: string[] = [];
 
@@ -92,6 +99,7 @@ export function calculateCommercialOperation(input: CommercialOperationInput): C
     comissao: input.comissao,
     descontos: input.descontos,
     taxasImpostos: input.taxasImpostos,
+    bonificacoes: input.bonificacoes,
     contraparteId: input.contraparteId,
     contraparteNome: input.contraparteNome,
     animalIds: input.animalIds ? [...input.animalIds] : undefined,
@@ -107,7 +115,10 @@ export function calculateCommercialOperation(input: CommercialOperationInput): C
       severity: "blocking",
       message: "Tipo de operação (compra ou venda) é obrigatório.",
     });
-  } else if (input.operationType !== "compra" && input.operationType !== "venda") {
+  } else if (
+    input.operationType !== "compra" &&
+    input.operationType !== "venda"
+  ) {
     issues.push({
       code: "invalid_operation_type",
       severity: "blocking",
@@ -137,7 +148,10 @@ export function calculateCommercialOperation(input: CommercialOperationInput): C
     });
   }
 
-  if (input.quantidadeAnimais === undefined || input.quantidadeAnimais === null) {
+  if (
+    input.quantidadeAnimais === undefined ||
+    input.quantidadeAnimais === null
+  ) {
     issues.push({
       code: "missing_quantidade_animais",
       severity: "blocking",
@@ -149,10 +163,20 @@ export function calculateCommercialOperation(input: CommercialOperationInput): C
       severity: "blocking",
       message: "Quantidade de animais deve ser maior que zero.",
     });
+  } else if (input.scope === "animal" && input.quantidadeAnimais !== 1) {
+    issues.push({
+      code: "invalid_individual_quantity",
+      severity: "blocking",
+      message: "Operação com animal individual exige quantidade igual a 1.",
+    });
   }
 
   // 2. Validação de valores numéricos não negativos (bloqueantes)
-  if (input.pesoVivoTotal !== undefined && input.pesoVivoTotal !== null && input.pesoVivoTotal < 0) {
+  if (
+    input.pesoVivoTotal !== undefined &&
+    input.pesoVivoTotal !== null &&
+    input.pesoVivoTotal < 0
+  ) {
     issues.push({
       code: "negative_peso_vivo_total",
       severity: "blocking",
@@ -160,7 +184,11 @@ export function calculateCommercialOperation(input: CommercialOperationInput): C
     });
   }
 
-  if (input.valorBruto !== undefined && input.valorBruto !== null && input.valorBruto < 0) {
+  if (
+    input.valorBruto !== undefined &&
+    input.valorBruto !== null &&
+    input.valorBruto < 0
+  ) {
     issues.push({
       code: "negative_valor_bruto",
       severity: "blocking",
@@ -176,7 +204,11 @@ export function calculateCommercialOperation(input: CommercialOperationInput): C
     });
   }
 
-  if (input.comissao !== undefined && input.comissao !== null && input.comissao < 0) {
+  if (
+    input.comissao !== undefined &&
+    input.comissao !== null &&
+    input.comissao < 0
+  ) {
     issues.push({
       code: "negative_comissao",
       severity: "blocking",
@@ -184,7 +216,11 @@ export function calculateCommercialOperation(input: CommercialOperationInput): C
     });
   }
 
-  if (input.descontos !== undefined && input.descontos !== null && input.descontos < 0) {
+  if (
+    input.descontos !== undefined &&
+    input.descontos !== null &&
+    input.descontos < 0
+  ) {
     issues.push({
       code: "negative_descontos",
       severity: "blocking",
@@ -192,7 +228,11 @@ export function calculateCommercialOperation(input: CommercialOperationInput): C
     });
   }
 
-  if (input.taxasImpostos !== undefined && input.taxasImpostos !== null && input.taxasImpostos < 0) {
+  if (
+    input.taxasImpostos !== undefined &&
+    input.taxasImpostos !== null &&
+    input.taxasImpostos < 0
+  ) {
     issues.push({
       code: "negative_taxas_impostos",
       severity: "blocking",
@@ -200,10 +240,28 @@ export function calculateCommercialOperation(input: CommercialOperationInput): C
     });
   }
 
+  if (
+    input.bonificacoes !== undefined &&
+    input.bonificacoes !== null &&
+    input.bonificacoes < 0
+  ) {
+    issues.push({
+      code: "negative_bonificacoes",
+      severity: "blocking",
+      message: "Bonificações não podem ser negativas.",
+    });
+  }
+
   // 3. Cálculos e Limitações
   let pesoMedioDerivado: number | undefined;
-  const isQuantidadeValida = input.quantidadeAnimais !== undefined && input.quantidadeAnimais !== null && input.quantidadeAnimais > 0;
-  const isPesoValido = input.pesoVivoTotal !== undefined && input.pesoVivoTotal !== null && input.pesoVivoTotal >= 0;
+  const isQuantidadeValida =
+    input.quantidadeAnimais !== undefined &&
+    input.quantidadeAnimais !== null &&
+    input.quantidadeAnimais > 0;
+  const isPesoValido =
+    input.pesoVivoTotal !== undefined &&
+    input.pesoVivoTotal !== null &&
+    input.pesoVivoTotal >= 0;
 
   if (isQuantidadeValida && isPesoValido) {
     // Caso o peso vivo total seja zero, calculamos sem quebrar, mas com limitação
@@ -212,19 +270,38 @@ export function calculateCommercialOperation(input: CommercialOperationInput): C
       limitations.push("Peso vivo total informado como zero.");
     }
   } else {
-    limitations.push("Ausência de peso vivo total impossibilita o cálculo do peso médio derivado.");
+    limitations.push(
+      "Ausência de peso vivo total impossibilita o cálculo do peso médio derivado.",
+    );
   }
 
   let valorLiquidoDerivado: number | undefined;
-  const isValorBrutoValido = input.valorBruto !== undefined && input.valorBruto !== null && input.valorBruto >= 0;
+  const isValorBrutoValido =
+    input.valorBruto !== undefined &&
+    input.valorBruto !== null &&
+    input.valorBruto >= 0;
 
   if (isValorBrutoValido) {
     const frete = input.frete ?? 0;
     const comissao = input.comissao ?? 0;
     const descontos = input.descontos ?? 0;
     const taxasImpostos = input.taxasImpostos ?? 0;
+    const bonificacoes = input.bonificacoes ?? 0;
 
-    valorLiquidoDerivado = input.valorBruto! - descontos - taxasImpostos - comissao - frete;
+    valorLiquidoDerivado =
+      input.operationType === "compra"
+        ? input.valorBruto! +
+          frete +
+          comissao +
+          taxasImpostos -
+          descontos -
+          bonificacoes
+        : input.valorBruto! -
+          frete -
+          comissao -
+          taxasImpostos -
+          descontos +
+          bonificacoes;
 
     // Regra: valor líquido derivado negativo é bloqueante
     if (valorLiquidoDerivado < 0) {
@@ -237,19 +314,29 @@ export function calculateCommercialOperation(input: CommercialOperationInput): C
 
     // Registrar tratamentos de valores ausentes considerados zero
     if (input.frete === undefined || input.frete === null) {
-      limitations.push("Frete não informado, considerado como zero no cálculo líquido.");
+      limitations.push(
+        "Frete não informado, considerado como zero no cálculo líquido.",
+      );
     }
     if (input.comissao === undefined || input.comissao === null) {
-      limitations.push("Comissão não informada, considerada como zero no cálculo líquido.");
+      limitations.push(
+        "Comissão não informada, considerada como zero no cálculo líquido.",
+      );
     }
     if (input.descontos === undefined || input.descontos === null) {
-      limitations.push("Descontos não informados, considerados como zero no cálculo líquido.");
+      limitations.push(
+        "Descontos não informados, considerados como zero no cálculo líquido.",
+      );
     }
     if (input.taxasImpostos === undefined || input.taxasImpostos === null) {
-      limitations.push("Taxas/impostos não informados, considerados como zero no cálculo líquido.");
+      limitations.push(
+        "Taxas/impostos não informados, considerados como zero no cálculo líquido.",
+      );
     }
   } else {
-    limitations.push("Ausência de valor bruto impossibilita o cálculo do valor líquido derivado.");
+    limitations.push(
+      "Ausência de valor bruto impossibilita o cálculo do valor líquido derivado.",
+    );
   }
 
   // 4. Limitações de vínculos e metadados opcionais
@@ -272,7 +359,9 @@ export function calculateCommercialOperation(input: CommercialOperationInput): C
   }
 
   // 5. Determinação do calculationStatus
-  const hasBlockingIssues = issues.some((issue) => issue.severity === "blocking");
+  const hasBlockingIssues = issues.some(
+    (issue) => issue.severity === "blocking",
+  );
 
   let calculationStatus: CommercialOperationCalculationStatus = "partial";
 
@@ -281,17 +370,31 @@ export function calculateCommercialOperation(input: CommercialOperationInput): C
   } else {
     // Para ser considerado completo, todos os dados de cálculo e metadados opcionais importantes devem estar presentes
     const hasAllCalculationData =
-      input.occurredAt !== undefined && input.occurredAt !== null && input.occurredAt.trim() !== "" &&
-      input.quantidadeAnimais !== undefined && input.quantidadeAnimais !== null && input.quantidadeAnimais > 0 &&
-      input.pesoVivoTotal !== undefined && input.pesoVivoTotal !== null &&
-      input.valorBruto !== undefined && input.valorBruto !== null;
+      input.occurredAt !== undefined &&
+      input.occurredAt !== null &&
+      input.occurredAt.trim() !== "" &&
+      input.quantidadeAnimais !== undefined &&
+      input.quantidadeAnimais !== null &&
+      input.quantidadeAnimais > 0 &&
+      input.pesoVivoTotal !== undefined &&
+      input.pesoVivoTotal !== null &&
+      input.valorBruto !== undefined &&
+      input.valorBruto !== null;
 
     const hasAllOptionalMetadata =
-      (input.contraparteId !== undefined && input.contraparteId !== null && input.contraparteId.trim() !== "") &&
-      (input.financeTransactionId !== undefined && input.financeTransactionId !== null && input.financeTransactionId.trim() !== "") &&
+      input.contraparteId !== undefined &&
+      input.contraparteId !== null &&
+      input.contraparteId.trim() !== "" &&
+      input.financeTransactionId !== undefined &&
+      input.financeTransactionId !== null &&
+      input.financeTransactionId.trim() !== "" &&
       (input.scope === "animal"
-        ? (input.animalIds !== undefined && input.animalIds !== null && input.animalIds.length > 0)
-        : (input.loteId !== undefined && input.loteId !== null && input.loteId.trim() !== ""));
+        ? input.animalIds !== undefined &&
+          input.animalIds !== null &&
+          input.animalIds.length > 0
+        : input.loteId !== undefined &&
+          input.loteId !== null &&
+          input.loteId.trim() !== "");
 
     if (hasAllCalculationData && hasAllOptionalMetadata) {
       calculationStatus = "complete";

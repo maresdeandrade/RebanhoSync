@@ -1,6 +1,7 @@
 ---
 name: reconcile-docs
 description: Reconcilia a documentação do RebanhoSync com o estado real de código, migrations e testes, atualizando somente snapshots, contratos, documentos derivados, manuais, prompts ou skills realmente afetados. Usar após mudança funcional/arquitetural, diante de drift documental ou para analisar a fase atual pelo repositório. Não usar para ajuste apenas visual, refactor sem delta, microcopy isolada, validação final do patch ou narrativa de PR.
+role: lifecycle
 ---
 
 # Reconcile Docs
@@ -33,13 +34,9 @@ Depois, ler somente os arquivos necessários ao delta.
 
 Não abrir todas as fontes da tabela. Selecionar apenas as que respondem à mudança.
 
-## Hierarquia em conflito
+## Precedência
 
-1. código + migrations ativas;
-2. `docs/context/PROJECT_STATUS.md`;
-3. docs normativos ativos;
-4. docs derivados;
-5. histórico em `docs/archive/**`.
+Aplicar as precedências factual e procedimental definidas em `.agents/rules/CORE_RULES.md`. Esta skill não redefine nem relaxa essa ordem.
 
 ## Restrições
 
@@ -57,7 +54,7 @@ Não abrir todas as fontes da tabela. Selecionar apenas as que respondem à muda
 
 Identificar:
 
-- capability ou trilha `infra.*` afetada;
+- capability ou trilha de infraestrutura afetada, quando esse identificador existir no plano ativo;
 - módulos e arquivos alterados;
 - migrations/RPC/RLS envolvidos;
 - evidências de teste;

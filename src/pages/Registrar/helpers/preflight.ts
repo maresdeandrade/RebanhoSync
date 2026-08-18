@@ -40,6 +40,10 @@ export interface RegistrarPreflightInput {
   transitChecklistIssues: string[];
   complianceFlowIssues: string[];
   parseUserWeight: (value: string) => number | null;
+  comercial?: {
+    operationType: "compra" | "venda" | "sociedade";
+    scope: "animal" | "lote";
+  } | null;
 }
 
 export function resolveRegistrarPreflightIssue(
@@ -69,7 +73,15 @@ export function resolveRegistrarPreflightIssue(
     return "Selecione ou cadastre uma contraparte para evento de sociedade.";
   }
 
-  if (!hasSelectedAnimals && !financeByLoteOnly) {
+  const commercialWithoutPreselectedAnimal =
+    input.tipoManejo === "comercial" &&
+    (input.comercial?.operationType === "compra" ||
+      input.comercial?.scope === "lote");
+  if (
+    !hasSelectedAnimals &&
+    !financeByLoteOnly &&
+    !commercialWithoutPreselectedAnimal
+  ) {
     return "Selecione ao menos um animal para este tipo de registro.";
   }
 

@@ -232,6 +232,10 @@ async function callSyncBatch({ functionsUrl, anonKey, token, body }) {
 async function main() {
   const env = readSupabaseStatusEnv();
   assertLocalTarget(env);
+  assert(
+    process.env.REBANHOSYNC_DISPOSABLE_LOCAL_DB === "1",
+    "Este baseline persiste fatos. Execute somente em banco local explicitamente descartável com REBANHOSYNC_DISPOSABLE_LOCAL_DB=1.",
+  );
   const runId = randomUUID().slice(0, 8);
   const password = `Baseline-${randomUUID()}-Aa1!`;
   const client = new Client({ connectionString: env.DB_URL });
@@ -713,12 +717,12 @@ async function main() {
       sync_batch_real_edge_function: "passou",
       sync_batch_partial_success: "passou",
       facts_persisted: true,
-      cleanup: "execute supabase db reset no ambiente local descartavel",
+      cleanup: "descarte externamente o ambiente local explicitamente autorizado; este script nao executa limpeza destrutiva",
     }, null, 2));
   } finally {
     await client.query("reset role").catch(() => undefined);
     if (createdFarmIds.length > 0 || createdUsers.length > 0) {
-      console.log(`FIXTURE_MARKER=${JSON.stringify({ run_id: runId, client_id: CLIENT_ID, farms: createdFarmIds, user_ids: createdUsers.map((user) => user.id), action: "local_supabase_db_reset" })}`);
+      console.log(`FIXTURE_MARKER=${JSON.stringify({ run_id: runId, client_id: CLIENT_ID, farms: createdFarmIds, user_ids: createdUsers.map((user) => user.id), facts_persisted: true, cleanup: "dispose_authorized_local_environment" })}`);
     }
     await client.end();
   }

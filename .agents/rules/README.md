@@ -2,7 +2,7 @@
 
 Regras compactas para agentes atuarem no RebanhoSync com baixo consumo de contexto.
 
-Esta pasta define **como carregar contexto, executar comandos, responder e evitar leitura ampla**. Não substitui o `AGENTS.md`; complementa o dispatcher principal.
+Esta pasta define **como carregar contexto, executar comandos, responder e evitar leitura ampla**. Não substitui o `AGENTS.md`; complementa o dispatcher principal. A precedência factual e procedimental é definida somente em `CORE_RULES.md`, e o roteamento autoritativo fica somente em `CONTEXT_LOADING.md`.
 
 ---
 
@@ -25,7 +25,7 @@ Esta pasta define **como carregar contexto, executar comandos, responder e evita
 2. Leia `CORE_RULES.md`.
 3. Aplique `CONTEXT_LOADING.md`.
 4. Aplique `no-broad-context.md`.
-5. Escolha no máximo uma skill principal; use uma segunda apenas em interseção real de domínio crítico.
+5. Escolha uma skill principal para a fase; durante implementação, use no máximo uma skill de apoio quando houver interseção técnica concreta.
 6. Use `rtk.md` se houver comandos ou validação.
 7. Use `RESPONSE_FORMATS.md` apenas quando a saída precisar de estrutura específica.
 8. Use `GRAPHIFY_USAGE.md` somente quando Graphify for materialmente necessário e execute seus comandos conforme `rtk.md`.
@@ -45,18 +45,9 @@ Esta pasta define **como carregar contexto, executar comandos, responder e evita
 
 ---
 
-## Fonte de verdade
+## Precedência e roteamento
 
-Em caso de conflito, seguir a ordem de precedência:
-
-1. Código + migrations ativas.
-2. `docs/context/PROJECT_STATUS.md`.
-3. Documentos normativos ativos.
-4. Documentos derivados.
-5. Histórico em `docs/archive/**`.
-6. Definições da skill aplicável.
-
-As rules e skills orientam o procedimento de trabalho; não substituem contratos ativos do produto.
+Consultar `CORE_RULES.md` para precedência factual e procedimental. Consultar `CONTEXT_LOADING.md` para carregamento, escolha de skill e progressão entre fases. Este README é apenas catálogo e não redefine esses contratos.
 
 ---
 

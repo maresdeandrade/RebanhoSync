@@ -5,6 +5,10 @@ Versão: 1.2.0
 
 Use para corrigir um defeito localizado, com alvo conhecido e sem criar funcionalidade nova ou refatoração ampla.
 
+## Modo
+
+`MUTACAO_AUTORIZADA` somente dentro do escopo permitido e da tarefa atual.
+
 ## Prompt
 
 Corrija no RebanhoSync:

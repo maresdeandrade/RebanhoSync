@@ -1,6 +1,7 @@
 ---
 name: sanitario-registro-operacional
-description: Use when a RebanhoSync task touches operational sanitary registration, sanitary agenda completion, veterinary products, doses, stock lot consumption, sanitary event creation, biosecurity occurrence recording, or corrective sanitary pending actions.
+description: Use para registro sanitário operacional, conclusão de agenda, produtos, doses, consumo de estoque, evento sanitário, ocorrência de biossegurança ou correção factual. Não usar como skill principal para catálogo oficial, overlay regulatório ou compliance conceitual.
+role: domain
 ---
 
 # Sanitário Registro Operacional
@@ -52,6 +53,28 @@ Use `sanitario-catalogo-regulatorio-compliance` for those cases.
 
 ---
 
+## Leitura inicial
+
+1. `AGENTS.md`;
+2. `.agents/rules/CORE_RULES.md`;
+3. `.agents/rules/CONTEXT_LOADING.md`;
+4. `.agents/rules/no-broad-context.md`;
+5. `docs/domain/SANITARIO.md`;
+6. arquivos-alvo e testes diretamente relacionados;
+7. `.agents/rules/rtk.md`, se houver comandos ou validação.
+
+Carregar `docs/context/SOURCE_OF_TRUTH.md` quando houver conflito entre fato, estado, intenção ou métrica crítica. Carregar `docs/technical/EVENTS_AGENDA_CONTRACT.md` quando a tarefa tocar `agenda_intent`, `event_execution_intent` ou `agenda_closure_intent`.
+
+## Restrições
+
+- Não alterar schema, migration, RLS, RPC ou seed sem autorização explícita e sem usar `migrations-rls-contracts` como skill principal ou única skill de apoio.
+- Não executar reset de banco, deploy ou operação destrutiva por padrão.
+- Não atualizar Graphify automaticamente; seguir `.agents/rules/GRAPHIFY_USAGE.md`.
+- Não usar esta skill como fonte superior ao código e aos documentos normativos ativos.
+- Não transformar agenda, fechamento administrativo, protocolo, catálogo ou checklist em fato executado.
+
+---
+
 ## Core contract
 
 - Agenda = intenção/tarefa futura.
@@ -60,7 +83,7 @@ Use `sanitario-catalogo-regulatorio-compliance` for those cases.
 - Protocolo = regra/configuração.
 - Produto aplicado = evento sanitário estruturado.
 - Baixa de estoque = movimento vinculado ao evento.
-- Carência = evento sanitário estruturado.
+- Carência operacional = derivação de Evento sanitário estruturado + produto executado + fonte técnica explícita.
 - Ocorrência de biossegurança = evento append-only com payload estruturado.
 - Pendência corretiva = agenda específica vinculada ao evento de ocorrência.
 - Correção = novo evento vinculado, não edição destrutiva.
@@ -191,31 +214,18 @@ Avoid:
 
 ## Validation
 
-Minimum:
+Seguir `.agents/rules/rtk.md`.
+
+Mínimo para alteração de governança ou documentação sanitária:
 
 ```bash
-pnpm test
-pnpm run lint
-pnpm run build
-
-```
-
-If touching Supabase schema/RLS/RPC/seed/sync:
-
-```bash
-supabase db reset
-node scripts/codex/validate-supabase-baseline-functional.mjs
-
-```
-
-If touching operational sanitary flow:
-
-```bash
-powershell -File scripts/codex/validate.ps1 -TouchedPaths "src/lib/sanitario","src/lib/events","src/pages/Registrar","src/pages/Agenda","src/lib/offline","src/lib/reports","src/lib/insights","src/features/operationalInsights"
-graphify update .
+git status --short --untracked-files=all
 git diff --check
-
 ```
+
+Para patch funcional sanitário, executar testes focados e adicionar lint/build somente quando proporcionais ao risco. Se tocar Supabase, schema, RLS, RPC, migration ou sync-batch, executar a validação funcional indicada em `rtk.md` e coordenar com `migrations-rls-contracts`.
+
+Operações destrutivas exigem autorização explícita, necessidade técnica demonstrada e compatibilidade simultânea com `rtk.md` e `migrations-rls-contracts`. Graphify só pode ser atualizado quando `.agents/rules/GRAPHIFY_USAGE.md` classificar a mudança como estrutural relevante.
 
 ## Output expected
 
@@ -228,7 +238,3 @@ Report:
 * Validation commands and results.
 * Risks remaining.
 * Whether agenda/event/protocol/compliance contracts were affected.
-
-```
-
-```

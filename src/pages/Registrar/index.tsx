@@ -1,8 +1,17 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
-import type { ReproTipoEnum, Animal, SanitarioCaso, Insumo, InsumoLote } from "@/lib/offline/types";
+import type {
+  ReproTipoEnum,
+  Animal,
+  SanitarioCaso,
+  Insumo,
+  InsumoLote,
+} from "@/lib/offline/types";
 import { RegistrarInventorySection } from "@/pages/Registrar/components/RegistrarInventorySection";
-import { RegistrarComercialSection, type ComercialFormData } from "@/pages/Registrar/components/RegistrarComercialSection";
+import {
+  RegistrarComercialSection,
+  type ComercialFormData,
+} from "@/pages/Registrar/components/RegistrarComercialSection";
 import { calculateCommercialOperation } from "@/lib/comercial/commercialOperation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,22 +21,14 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { Badge } from "@/components/ui/badge";
 import { showSuccess, showError } from "@/utils/toast";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import {
-  ChevronRight,
-  ChevronLeft,
-  Check,
-  Info,
-  MapPin,
-} from "lucide-react";
+import { ChevronRight, ChevronLeft, Check, Info, MapPin } from "lucide-react";
 import { useLotes } from "@/hooks/useLotes";
 import { useAuth } from "@/hooks/useAuth";
 import { db } from "@/lib/offline/db";
 import { buildEventGesture } from "@/lib/events/buildEventGesture";
 import { parseWeightInput } from "@/lib/format/weight";
 import { cn } from "@/lib/utils";
-import {
-  buildBiosecurityOccurrenceEventInput,
-} from "@/lib/sanitario/compliance/biosecurityOccurrence";
+import { buildBiosecurityOccurrenceEventInput } from "@/lib/sanitario/compliance/biosecurityOccurrence";
 import { buildRegulatoryOperationalReadModel } from "@/lib/sanitario/compliance/regulatoryReadModel";
 import {
   filterRegistrarAnimalsBySearch,
@@ -95,9 +96,19 @@ import {
 } from "@/pages/Registrar/helpers/plan";
 import {
   isQuickActionKey,
-  requiresAnimalsForQuickAction,
   useRegistrarQuickActionPolicy,
 } from "@/pages/Registrar/useRegistrarQuickActionPolicy";
+import {
+  resolveCommercialFormIssue,
+  type RegistrarTargetMode,
+} from "@/pages/Registrar/helpers/commercialForm";
+import { parseOptionalCommercialNumber } from "@/pages/Registrar/helpers/commercialLineDistribution";
+import { resolveAnimalClassificationSnapshot } from "@/lib/animals/classificationSnapshot";
+import {
+  calculateCommercialPricingLine,
+  resolveCommercialWeightUnit,
+  sumCommercialPricingValues,
+} from "@/lib/comercial/commercialPricing";
 import {
   resolveFinanceiroNaturezaLabel,
   supportsDraftAnimalsInFinanceiroNatureza,
@@ -135,25 +146,57 @@ const Registrar = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [isFinalizing, setIsFinalizing] = useState(false);
-  const [isRegisteringBiosecurityOccurrence, setIsRegisteringBiosecurityOccurrence] =
-    useState(false);
+  const [
+    isRegisteringBiosecurityOccurrence,
+    setIsRegisteringBiosecurityOccurrence,
+  ] = useState(false);
   const [comercialData, setComercialData] = useState<ComercialFormData>({
     operationType: "compra",
-    scope: "lote",
+    scope: "animal",
     occurredAt: new Date().toISOString().split("T")[0],
-    quantidadeAnimais: "",
-    pesoVivoTotal: "",
+    quantidadeAnimais: "1",
+    commercialWeightTotal: "",
     valorBruto: "",
     frete: "",
     comissao: "",
     descontos: "",
     taxasImpostos: "",
+    bonificacoes: "",
     contraparteId: "none",
     financeTransactionId: "none",
     observacoes: "",
     pesosPorAnimal: {},
     valoresPorAnimal: {},
+    newAnimals: [
+      {
+        localId: crypto.randomUUID(),
+        identificacao: "",
+        sexo: "F",
+        especie: null,
+        raca: null,
+        dataNascimento: "",
+        dataEntrada: null,
+        commercialWeight: null,
+        valorIndividual: null,
+      },
+    ],
+    commonSpecies: "none",
+    commonBreed: "none",
+    commonEntryDate: new Date().toISOString().split("T")[0],
+    saleSnapshotIds: [],
+    purchaseDestinationLotId: "",
+    pricingMode: "per_head",
+    pricePerArroba: "",
+    arrobaBasis: null,
+    carcassYieldPercent: "",
   });
+  const commercialWeightUnit = resolveCommercialWeightUnit(
+    comercialData.pricingMode,
+    comercialData.arrobaBasis,
+  );
+  const [targetMode, setTargetMode] = useState<RegistrarTargetMode | null>(
+    "existing",
+  );
   const [contextAnimalId, setContextAnimalId] = useState("");
   const [contextLoteId, setContextLoteId] = useState("");
   const [contextPastoId, setContextPastoId] = useState("");
@@ -169,7 +212,9 @@ const Registrar = () => {
   const [selectedInsumoId, setSelectedInsumoId] = useState("");
   const [selectedInsumoLoteId, setSelectedInsumoLoteId] = useState("");
   const [quantidadeConsumida, setQuantidadeConsumida] = useState("");
-  const [doseSanitaria, setDoseSanitaria] = useState(resolveSanitaryDefaultDose);
+  const [doseSanitaria, setDoseSanitaria] = useState(
+    resolveSanitaryDefaultDose,
+  );
   const [doseUnidadeSanitaria, setDoseUnidadeSanitaria] = useState("dose");
   const [viaAplicacaoSanitaria, setViaAplicacaoSanitaria] = useState("");
   const [insumoRef, setInsumoRef] = useState<Insumo | null>(null);
@@ -177,8 +222,13 @@ const Registrar = () => {
 
   // Resetar estados de estoque ao mudar tipoManejo (movido abaixo para evitar TDZ)
 
-  const { user, activeFarmId, role, farmMeasurementConfig, farmLifecycleConfig } =
-    useAuth();
+  const {
+    user,
+    activeFarmId,
+    role,
+    farmMeasurementConfig,
+    farmLifecycleConfig,
+  } = useAuth();
   const shellState = useRegistrarShellState({
     semLoteOption: SEM_LOTE_OPTION,
   });
@@ -285,7 +335,8 @@ const Registrar = () => {
   });
   const isSingleAnimal = selectedAnimais.length === 1;
   const validateLocalEccValue = (valStr: string) => {
-    if (!valStr || valStr.trim() === "") return { isValid: true, isEmpty: true };
+    if (!valStr || valStr.trim() === "")
+      return { isValid: true, isEmpty: true };
     const num = Number(valStr);
     if (isNaN(num) || num < 1.0 || num > 5.0) {
       return { isValid: false, isEmpty: false };
@@ -336,7 +387,11 @@ const Registrar = () => {
     [animaisNoLote, selectedAnimais],
   );
   const activeClinicalCases = useLiveQuery(async () => {
-    if (!activeFarmId || tipoManejo !== "sanitario" || selectedAnimais.length !== 1) {
+    if (
+      !activeFarmId ||
+      tipoManejo !== "sanitario" ||
+      selectedAnimais.length !== 1
+    ) {
       return [] as SanitarioCaso[];
     }
 
@@ -375,7 +430,9 @@ const Registrar = () => {
       .where("animal_id")
       .anyOf(selectedAnimais)
       .toArray();
-    const activeEvents = events.filter((e) => !e.deleted_at && e.dominio === "ecc");
+    const activeEvents = events.filter(
+      (e) => !e.deleted_at && e.dominio === "ecc",
+    );
     if (activeEvents.length === 0) return {} as Record<string, number>;
 
     const eventIds = activeEvents.map((e) => e.id);
@@ -386,7 +443,7 @@ const Registrar = () => {
 
     const eccMap = new Map(eccDetails.map((d) => [d.event_id, d.ecc]));
     const latestEccByAnimal: Record<string, number> = {};
-    const latestEventByAnimal: Record<string, typeof activeEvents[0]> = {};
+    const latestEventByAnimal: Record<string, (typeof activeEvents)[0]> = {};
 
     for (const event of activeEvents) {
       const eccVal = eccMap.get(event.id);
@@ -404,10 +461,16 @@ const Registrar = () => {
     return latestEccByAnimal;
   }, [selectedAnimais, tipoManejo]);
 
-  const [eccInitializedIds, setEccInitializedIds] = useState<Record<string, boolean>>({});
+  const [eccInitializedIds, setEccInitializedIds] = useState<
+    Record<string, boolean>
+  >({});
 
   useEffect(() => {
-    if (tipoManejo === "ecc" && lastEccsForSelected && Object.keys(lastEccsForSelected).length > 0) {
+    if (
+      tipoManejo === "ecc" &&
+      lastEccsForSelected &&
+      Object.keys(lastEccsForSelected).length > 0
+    ) {
       setEccData((prev) => {
         const next = { ...prev };
         let changed = false;
@@ -499,24 +562,23 @@ const Registrar = () => {
 
   const biosecurityContext = useMemo(() => {
     const animalById = new Map(
-      [
-        ...selectedAnimaisDetalhes,
-        registrarContextRecords?.animal ?? null,
-      ]
+      [...selectedAnimaisDetalhes, registrarContextRecords?.animal ?? null]
         .filter((animal): animal is Animal => Boolean(animal))
         .map((animal) => [animal.id, animal]),
     );
     const animalIds = Array.from(
-      new Set([
-        ...selectedAnimais,
-        contextAnimalId || null,
-        registrarContextRecords?.agendaItem?.animal_id ?? null,
-      ].filter((id): id is string => Boolean(id))),
+      new Set(
+        [
+          ...selectedAnimais,
+          contextAnimalId || null,
+          registrarContextRecords?.agendaItem?.animal_id ?? null,
+        ].filter((id): id is string => Boolean(id)),
+      ),
     );
     const loteFromAgenda = registrarContextRecords?.agendaItem?.lote_id
-      ? lotes?.find(
+      ? (lotes?.find(
           (lote) => lote.id === registrarContextRecords.agendaItem?.lote_id,
-        ) ?? null
+        ) ?? null)
       : null;
     const lote =
       selectedLoteForBiosecurity ??
@@ -565,7 +627,15 @@ const Registrar = () => {
   // ---------------------------------------------------------------------------
   const animaisComPesoComercial = useLiveQuery(async () => {
     if (tipoManejo !== "comercial" || selectedAnimais.length === 0) {
-      return [] as Array<{ id: string; identificacao: string; nome: string | null; lastWeightKg: number | null }>;
+      return [] as Array<{
+        id: string;
+        identificacao: string;
+        nome: string | null;
+        lastWeightKg: number | null;
+        categoria: string;
+        sexo: "M" | "F";
+        dataNascimento: string | null;
+      }>;
     }
 
     // Busca todos os eventos de pesagem dos animais selecionados
@@ -589,6 +659,10 @@ const Registrar = () => {
         identificacao: a.identificacao,
         nome: a.nome,
         lastWeightKg: null,
+        categoria:
+          resolveAnimalClassificationSnapshot(a).display.categoriaZootecnica,
+        sexo: a.sexo,
+        dataNascimento: a.data_nascimento,
       }));
     }
 
@@ -602,7 +676,7 @@ const Registrar = () => {
 
     // Para cada animal, encontra o evento de pesagem mais recente
     const latestPesoByAnimal: Record<string, number> = {};
-    const latestEventByAnimal: Record<string, typeof pesagemEventos[0]> = {};
+    const latestEventByAnimal: Record<string, (typeof pesagemEventos)[0]> = {};
 
     for (const evento of pesagemEventos) {
       const pesoKg = pesoMap.get(evento.id);
@@ -629,6 +703,10 @@ const Registrar = () => {
       identificacao: a.identificacao,
       nome: a.nome,
       lastWeightKg: latestPesoByAnimal[a.id] ?? null,
+      categoria:
+        resolveAnimalClassificationSnapshot(a).display.categoriaZootecnica,
+      sexo: a.sexo,
+      dataNascimento: a.data_nascimento,
     }));
   }, [tipoManejo, selectedAnimais]);
 
@@ -639,6 +717,28 @@ const Registrar = () => {
       .equals(activeFarmId)
       .toArray();
   }, [activeFarmId]);
+  const loadedAnimalIdentifications = useLiveQuery(async () => {
+    if (!activeFarmId) return [];
+    const rows = await db.state_animais
+      .where("fazenda_id")
+      .equals(activeFarmId)
+      .toArray();
+    return rows
+      .filter((animal) => !animal.deleted_at)
+      .map((animal) => animal.identificacao);
+  }, [activeFarmId]);
+  const existingAnimalIdentifications = useMemo(
+    () => loadedAnimalIdentifications ?? [],
+    [loadedAnimalIdentifications],
+  );
+  const currentLotActiveAnimalIds = useMemo(
+    () =>
+      (animaisNoLote ?? [])
+        .filter((animal) => animal.status === "ativo" && !animal.deleted_at)
+        .map((animal) => animal.id)
+        .sort(),
+    [animaisNoLote],
+  );
 
   const comercialCalculationSummary = useMemo(() => {
     if (tipoManejo !== "comercial") return null;
@@ -649,47 +749,158 @@ const Registrar = () => {
         issues: [],
         limitations: [],
         snapshot: {},
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any;
     }
 
-    const qty = selectedAnimais.length > 0 && comercialData.scope === "animal"
-      ? selectedAnimais.length
-      : (parseInt(comercialData.quantidadeAnimais, 10) || 0);
+    const qty =
+      comercialData.operationType === "compra"
+        ? comercialData.newAnimals.length
+        : selectedAnimais.length > 0 && comercialData.scope === "animal"
+          ? selectedAnimais.length
+          : parseInt(comercialData.quantidadeAnimais, 10) || 0;
 
-    const peso = parseFloat(comercialData.pesoVivoTotal) || 0;
-    const bruto = parseFloat(comercialData.valorBruto) || 0;
-    const frete = parseFloat(comercialData.frete) || 0;
-    const comissao = parseFloat(comercialData.comissao) || 0;
-    const descontos = parseFloat(comercialData.descontos) || 0;
-    const taxas = parseFloat(comercialData.taxasImpostos) || 0;
+    const peso =
+      parseOptionalCommercialNumber(comercialData.commercialWeightTotal) ?? 0;
+    const bruto = parseOptionalCommercialNumber(comercialData.valorBruto) ?? 0;
+    const frete = parseOptionalCommercialNumber(comercialData.frete) ?? 0;
+    const comissao = parseOptionalCommercialNumber(comercialData.comissao) ?? 0;
+    const descontos =
+      parseOptionalCommercialNumber(comercialData.descontos) ?? 0;
+    const taxas =
+      parseOptionalCommercialNumber(comercialData.taxasImpostos) ?? 0;
+    const bonificacoes =
+      parseOptionalCommercialNumber(comercialData.bonificacoes) ?? 0;
 
-    const contraparte = contrapartes?.find(c => c.id === comercialData.contraparteId);
+    const contraparte = contrapartes?.find(
+      (c) => c.id === comercialData.contraparteId,
+    );
 
     return calculateCommercialOperation({
       operationType: comercialData.operationType,
       scope: comercialData.scope,
       occurredAt: comercialData.occurredAt,
       quantidadeAnimais: qty > 0 ? qty : undefined,
-      pesoVivoTotal: comercialData.pesoVivoTotal !== "" ? peso : undefined,
+      pesoVivoTotal:
+        comercialData.commercialWeightTotal !== "" &&
+        commercialWeightUnit === "kg" &&
+        comercialData.arrobaBasis !== "carcass_weight"
+          ? peso
+          : undefined,
       valorBruto: comercialData.valorBruto !== "" ? bruto : undefined,
       frete: comercialData.frete !== "" ? frete : undefined,
       comissao: comercialData.comissao !== "" ? comissao : undefined,
       descontos: comercialData.descontos !== "" ? descontos : undefined,
       taxasImpostos: comercialData.taxasImpostos !== "" ? taxas : undefined,
-      contraparteId: comercialData.contraparteId !== "none" ? comercialData.contraparteId : undefined,
+      bonificacoes:
+        comercialData.bonificacoes !== "" ? bonificacoes : undefined,
+      contraparteId:
+        comercialData.contraparteId !== "none"
+          ? comercialData.contraparteId
+          : undefined,
       contraparteNome: contraparte?.nome,
-      financeTransactionId: comercialData.financeTransactionId !== "none" ? comercialData.financeTransactionId : undefined,
-      animalIds: comercialData.scope === "animal" ? selectedAnimais : undefined,
+      financeTransactionId:
+        comercialData.financeTransactionId !== "none"
+          ? comercialData.financeTransactionId
+          : undefined,
+      animalIds:
+        comercialData.operationType === "compra"
+          ? comercialData.newAnimals.map((item) => item.localId)
+          : comercialData.scope === "animal"
+            ? selectedAnimais
+            : comercialData.saleSnapshotIds,
+      loteId:
+        comercialData.operationType === "compra"
+          ? comercialData.purchaseDestinationLotId || undefined
+          : (selectedLoteIdNormalized ?? undefined),
     });
-  }, [tipoManejo, comercialData, selectedAnimais, contrapartes]);
+  }, [
+    tipoManejo,
+    comercialData,
+    commercialWeightUnit,
+    selectedAnimais,
+    contrapartes,
+    selectedLoteIdNormalized,
+  ]);
 
   const comercialBlockingIssues = useMemo(() => {
     if (!comercialCalculationSummary) return [];
-    return comercialCalculationSummary.issues
+    const calculationIssues = comercialCalculationSummary.issues
       .filter((i) => i.severity === "blocking")
       .map((i) => i.message);
-  }, [comercialCalculationSummary]);
+    if (comercialData.operationType === "sociedade") {
+      return calculationIssues;
+    }
+    const formIssue = resolveCommercialFormIssue({
+      operationType: comercialData.operationType,
+      scope: comercialData.scope,
+      quantity:
+        comercialData.operationType === "compra"
+          ? comercialData.newAnimals.length
+          : comercialData.scope === "animal"
+            ? selectedAnimais.length
+            : comercialData.saleSnapshotIds.length,
+      newAnimalsCount: comercialData.newAnimals.length,
+      purchaseDestinationLotId: comercialData.purchaseDestinationLotId,
+      selectedAnimalIds: selectedAnimais,
+      targetLotId: selectedLoteIdNormalized,
+      saleSnapshotIds: comercialData.saleSnapshotIds,
+      currentLotActiveAnimalIds,
+    });
+    const pricingLineRefs =
+      comercialData.operationType === "compra"
+        ? comercialData.newAnimals.map((item) => item.localId)
+        : comercialData.scope === "animal"
+          ? selectedAnimais
+          : comercialData.saleSnapshotIds;
+    const pricingCalculations = pricingLineRefs.map((lineRef) => {
+      const draft = comercialData.newAnimals.find(
+        (item) => item.localId === lineRef,
+      );
+      return calculateCommercialPricingLine({
+        pricingMode: comercialData.pricingMode,
+        commercialWeight: {
+          unit: commercialWeightUnit,
+          amount:
+            comercialData.operationType === "compra"
+              ? draft?.commercialWeight
+              : (comercialData.pesosPorAnimal[lineRef] ?? ""),
+        },
+        pricePerHead:
+          comercialData.operationType === "compra"
+            ? draft?.valorIndividual
+            : (comercialData.valoresPorAnimal[lineRef] ?? ""),
+        pricePerArroba: comercialData.pricePerArroba,
+        arrobaBasis: comercialData.arrobaBasis,
+        carcassYieldPercent: comercialData.carcassYieldPercent,
+      });
+    });
+    const pricingIssue = pricingCalculations.find((item) => item.issue)?.issue;
+    const pricingGross = sumCommercialPricingValues(pricingCalculations);
+    const grossMatches =
+      pricingGross !== null &&
+      comercialData.valorBruto !== "" &&
+      Math.round(pricingGross.value * 100) ===
+        Math.round(
+          (parseOptionalCommercialNumber(comercialData.valorBruto) ?? -1) * 100,
+        );
+    return [
+      ...(formIssue ? [formIssue] : []),
+      ...(pricingIssue
+        ? [pricingIssue]
+        : !grossMatches
+          ? ["O valor bruto deve corresponder à soma exata dos animais."]
+          : []),
+      ...calculationIssues,
+    ];
+  }, [
+    comercialCalculationSummary,
+    comercialData,
+    currentLotActiveAnimalIds,
+    commercialWeightUnit,
+    selectedAnimais,
+    selectedLoteIdNormalized,
+  ]);
 
   const financeiroPackage = useRegistrarFinanceiroPackage({
     role,
@@ -798,10 +1009,9 @@ const Registrar = () => {
     updateFinanceiroNatureza: (natureza) =>
       updateFinanceiroData("natureza", natureza),
   });
-  const quickActionRequiresAnimals = requiresAnimalsForQuickAction({
-    quickAction,
-    selectedAnimalCount: selectedAnimais.length,
-  });
+  const hasExistingTarget =
+    targetMode === "existing" &&
+    (selectedAnimais.length > 0 || selectedLoteIdNormalized !== null);
 
   const contraparteSelecionadaNome =
     financeiroData.contraparteId !== "none"
@@ -831,8 +1041,8 @@ const Registrar = () => {
     (tipoManejo === "ecc"
       ? "Escore de Condição Corporal (ECC)"
       : tipoManejo === "comercial"
-      ? "Operação Comercial"
-      : tipoManejo ?? "-");
+        ? "Operação Comercial"
+        : (tipoManejo ?? "-"));
   const showConfirmacaoAlvoLote = selectedAnimais.length === 0;
   const showConfirmacaoDestinoMovimentacao = tipoManejo === "movimentacao";
   const confirmacaoDestinoMovimentacaoLabel =
@@ -1031,10 +1241,10 @@ const Registrar = () => {
   const actionStepIssues = useMemo(
     () =>
       composeRegistrarActionStepIssues({
-        // comercialBlockingIssues are intentionally excluded here:
-        // they should NOT block step 2→3 navigation (the user needs to reach
-        // step 3 to fill in the form). They are checked in handleFinalize instead.
-        baseIssues: baseActionStepIssues,
+        baseIssues:
+          tipoManejo === "comercial"
+            ? [...baseActionStepIssues, ...comercialBlockingIssues]
+            : baseActionStepIssues,
         inventoryIssues: inventoryActionStepIssues,
         protocolEligibilityIssues,
         sanitaryMovementBlockIssues,
@@ -1043,11 +1253,13 @@ const Registrar = () => {
       }),
     [
       baseActionStepIssues,
+      comercialBlockingIssues,
       complianceFlowIssues,
       inventoryActionStepIssues,
       protocolEligibilityIssues,
       sanitaryMovementBlockIssues,
       transitChecklistIssues,
+      tipoManejo,
     ],
   );
   const canAdvanceToConfirm = actionStepIssues.length === 0;
@@ -1075,8 +1287,8 @@ const Registrar = () => {
     goToChooseAction,
     goToConfirm,
   } = useRegistrarStepFlow({
-    selectedLoteId,
-    requiresAnimalsForQuickAction: quickActionRequiresAnimals,
+    targetMode,
+    hasExistingTarget,
     hasTipoManejo: tipoManejo !== null,
     canAdvanceToConfirm,
   });
@@ -1093,6 +1305,7 @@ const Registrar = () => {
     }
     if (parsedQuery.loteId && parsedQuery.loteId !== selectedLoteId) {
       setSelectedLoteId(parsedQuery.loteId);
+      setTargetMode("existing");
     }
     if (parsedQuery.loteId !== contextLoteId) {
       setContextLoteId(parsedQuery.loteId ?? "");
@@ -1101,6 +1314,7 @@ const Registrar = () => {
       setContextPastoId(parsedQuery.pastoId ?? "");
     }
     if (parsedQuery.animalId) {
+      setTargetMode("existing");
       setSelectedAnimais((prev) =>
         prev.length === 1 && prev[0] === parsedQuery.animalId
           ? prev
@@ -1113,12 +1327,20 @@ const Registrar = () => {
     if (parsedQuery.quickAction) {
       applyQuickAction(parsedQuery.quickAction);
     }
-    if (parsedQuery.quickAction === "compra" || parsedQuery.quickAction === "venda") {
+    if (
+      parsedQuery.quickAction === "compra" ||
+      parsedQuery.quickAction === "venda"
+    ) {
       setComercialData((prev) => ({
         ...prev,
         operationType: parsedQuery.quickAction as "compra" | "venda",
-        scope: parsedQuery.animalId ? "animal" : "lote",
+        scope: parsedQuery.animalId ? "animal" : prev.scope,
       }));
+      if (!parsedQuery.animalId && !parsedQuery.loteId) {
+        setTargetMode(
+          parsedQuery.quickAction === "compra" ? "none" : "existing",
+        );
+      }
     }
     if (
       parsedQuery.domain &&
@@ -1335,53 +1557,179 @@ const Registrar = () => {
           nutricaoData,
           reproducaoData,
         },
-        comercial: tipoManejo === "comercial" ? {
-          operationType: comercialData.operationType,
-          scope: comercialData.scope,
-          quantidadeAnimais: comercialData.scope === "animal" && selectedAnimais.length > 0
-            ? selectedAnimais.length
-            : (parseInt(comercialData.quantidadeAnimais, 10) || 0),
-          pesoVivoTotal: comercialData.pesoVivoTotal !== "" ? parseFloat(comercialData.pesoVivoTotal) : null,
-          valorBruto: comercialData.valorBruto !== "" ? parseFloat(comercialData.valorBruto) : null,
-          frete: comercialData.frete !== "" ? parseFloat(comercialData.frete) : null,
-          comissao: comercialData.comissao !== "" ? parseFloat(comercialData.comissao) : null,
-          descontos: comercialData.descontos !== "" ? parseFloat(comercialData.descontos) : null,
-          taxasImpostos: comercialData.taxasImpostos !== "" ? parseFloat(comercialData.taxasImpostos) : null,
-          contraparteId: comercialData.contraparteId !== "none" ? comercialData.contraparteId : null,
-          contraparteNome: comercialData.contraparteId !== "none"
-            ? contrapartes?.find(c => c.id === comercialData.contraparteId)?.nome || null
-            : null,
-          animalIds: comercialData.scope === "animal" ? selectedAnimais : null,
-          loteId: comercialData.scope === "lote" && selectedLoteIdNormalized !== null ? selectedLoteIdNormalized : null,
-          financeTransactionId: comercialData.financeTransactionId !== "none" ? comercialData.financeTransactionId : null,
-          observacoes: comercialData.observacoes || null,
-        } : undefined,
+        comercial:
+          tipoManejo === "comercial"
+            ? {
+                operationType: comercialData.operationType,
+                scope: comercialData.scope,
+                occurredAt: comercialData.occurredAt,
+                quantidadeAnimais:
+                  comercialData.operationType === "compra"
+                    ? comercialData.newAnimals.length
+                    : comercialData.scope === "animal" &&
+                        selectedAnimais.length > 0
+                      ? selectedAnimais.length
+                      : comercialData.saleSnapshotIds.length,
+                pesoVivoTotal:
+                  comercialData.commercialWeightTotal !== "" &&
+                  commercialWeightUnit === "kg" &&
+                  comercialData.arrobaBasis !== "carcass_weight"
+                    ? parseFloat(comercialData.commercialWeightTotal)
+                    : null,
+                valorBruto:
+                  comercialData.valorBruto !== ""
+                    ? parseFloat(comercialData.valorBruto)
+                    : null,
+                frete:
+                  comercialData.frete !== ""
+                    ? parseFloat(comercialData.frete)
+                    : null,
+                comissao:
+                  comercialData.comissao !== ""
+                    ? parseFloat(comercialData.comissao)
+                    : null,
+                descontos:
+                  comercialData.descontos !== ""
+                    ? parseFloat(comercialData.descontos)
+                    : null,
+                taxasImpostos:
+                  comercialData.taxasImpostos !== ""
+                    ? parseFloat(comercialData.taxasImpostos)
+                    : null,
+                bonificacoes:
+                  comercialData.bonificacoes !== ""
+                    ? parseFloat(comercialData.bonificacoes)
+                    : null,
+                contraparteId:
+                  comercialData.contraparteId !== "none"
+                    ? comercialData.contraparteId
+                    : null,
+                contraparteNome:
+                  comercialData.contraparteId !== "none"
+                    ? contrapartes?.find(
+                        (c) => c.id === comercialData.contraparteId,
+                      )?.nome || null
+                    : null,
+                animalIds:
+                  comercialData.operationType === "compra"
+                    ? []
+                    : comercialData.scope === "animal"
+                      ? selectedAnimais
+                      : comercialData.saleSnapshotIds,
+                loteId:
+                  comercialData.operationType === "compra"
+                    ? comercialData.purchaseDestinationLotId || null
+                    : selectedLoteIdNormalized !== null &&
+                        selectedLoteIdNormalized !== SEM_LOTE_OPTION
+                      ? selectedLoteIdNormalized
+                      : null,
+                financeTransactionId:
+                  comercialData.financeTransactionId !== "none"
+                    ? comercialData.financeTransactionId
+                    : null,
+                observacoes: comercialData.observacoes || null,
+                newAnimals:
+                  comercialData.operationType === "compra"
+                    ? comercialData.newAnimals
+                    : [],
+                existingIdentifications: existingAnimalIdentifications,
+                currentLotAnimalIds:
+                  comercialData.scope === "lote" &&
+                  comercialData.operationType === "venda"
+                    ? currentLotActiveAnimalIds
+                    : undefined,
+                pricing: {
+                  pricingMode: comercialData.pricingMode,
+                  weightUnit: commercialWeightUnit,
+                  pricePerArroba:
+                    comercialData.pricePerArroba !== ""
+                      ? parseOptionalCommercialNumber(
+                          comercialData.pricePerArroba,
+                        )
+                      : null,
+                  arrobaBasis:
+                    commercialWeightUnit === "kg"
+                      ? comercialData.arrobaBasis
+                      : null,
+                  carcassYieldPercent:
+                    commercialWeightUnit === "kg" &&
+                    comercialData.carcassYieldPercent !== ""
+                      ? parseOptionalCommercialNumber(
+                          comercialData.carcassYieldPercent,
+                        )
+                      : null,
+                  lines: Object.fromEntries(
+                    (comercialData.operationType === "compra"
+                      ? comercialData.newAnimals.map((item) => ({
+                          lineRef: item.localId,
+                          pricePerHead: item.valorIndividual,
+                          commercialWeight: item.commercialWeight,
+                        }))
+                      : (comercialData.scope === "animal"
+                          ? selectedAnimais
+                          : comercialData.saleSnapshotIds
+                        ).map((animalId) => ({
+                          lineRef: animalId,
+                          pricePerHead: parseOptionalCommercialNumber(
+                            comercialData.valoresPorAnimal[animalId] ?? "",
+                          ),
+                          commercialWeight: parseOptionalCommercialNumber(
+                            comercialData.pesosPorAnimal[animalId] ?? "",
+                          ),
+                        }))
+                    ).map((line) => [
+                      line.lineRef,
+                      {
+                        pricePerHead:
+                          comercialData.pricingMode !== "per_arroba"
+                            ? line.pricePerHead
+                            : null,
+                        commercialWeight: {
+                          unit: commercialWeightUnit,
+                          amount: line.commercialWeight,
+                        },
+                      },
+                    ]),
+                  ),
+                },
+              }
+            : undefined,
         inventory: {
-          sanitary: tipoManejo === "sanitario" ? {
-            insumoId: selectedInsumoId || null,
-            insumoLoteId: selectedInsumoLoteId || null,
-            insumoRef,
-            loteRef,
-            dose: parseFloat(doseSanitaria.replace(",", ".")) || null,
-            doseUnidade: loteRef?.unidade_base || doseUnidadeSanitaria || null,
-            quantidadeConsumida: parseFloat(quantidadeConsumida.replace(",", ".")) || null,
-            quantidadeUnidade: loteRef?.unidade_base || doseUnidadeSanitaria || null,
-            viaAplicacao: viaAplicacaoSanitaria || null,
-            custoUnitarioSnapshot: loteRef?.custo_unitario ?? null,
-            responsavelNome: user?.email ?? null,
-            responsavelTipo: user ? "usuario" : null,
-            gerarBaixaEstoque,
-          } : null,
-          nutricao: tipoManejo === "nutricao" ? {
-            insumoId: selectedInsumoId || null,
-            insumoLoteId: selectedInsumoLoteId || null,
-            insumoRef,
-            loteRef,
-            quantidadeConsumida: parseFloat(quantidadeConsumida.replace(",", ".")) || null,
-            quantidadeUnidade: loteRef?.unidade_base || null,
-            custoUnitarioSnapshot: loteRef?.custo_unitario ?? null,
-            gerarBaixaEstoque,
-          } : null,
+          sanitary:
+            tipoManejo === "sanitario"
+              ? {
+                  insumoId: selectedInsumoId || null,
+                  insumoLoteId: selectedInsumoLoteId || null,
+                  insumoRef,
+                  loteRef,
+                  dose: parseFloat(doseSanitaria.replace(",", ".")) || null,
+                  doseUnidade:
+                    loteRef?.unidade_base || doseUnidadeSanitaria || null,
+                  quantidadeConsumida:
+                    parseFloat(quantidadeConsumida.replace(",", ".")) || null,
+                  quantidadeUnidade:
+                    loteRef?.unidade_base || doseUnidadeSanitaria || null,
+                  viaAplicacao: viaAplicacaoSanitaria || null,
+                  custoUnitarioSnapshot: loteRef?.custo_unitario ?? null,
+                  responsavelNome: user?.email ?? null,
+                  responsavelTipo: user ? "usuario" : null,
+                  gerarBaixaEstoque,
+                }
+              : null,
+          nutricao:
+            tipoManejo === "nutricao"
+              ? {
+                  insumoId: selectedInsumoId || null,
+                  insumoLoteId: selectedInsumoLoteId || null,
+                  insumoRef,
+                  loteRef,
+                  quantidadeConsumida:
+                    parseFloat(quantidadeConsumida.replace(",", ".")) || null,
+                  quantidadeUnidade: loteRef?.unidade_base || null,
+                  custoUnitarioSnapshot: loteRef?.custo_unitario ?? null,
+                  gerarBaixaEstoque,
+                }
+              : null,
         },
       });
     } finally {
@@ -1392,6 +1740,7 @@ const Registrar = () => {
     abrirCasoClinico,
     clinicalProtocolRef,
     compraNovosAnimais,
+    commercialWeightUnit,
     complianceFlowIssues,
     farmLifecycleConfig,
     financeiroData.contraparteId,
@@ -1445,6 +1794,8 @@ const Registrar = () => {
     comercialData,
     comercialBlockingIssues,
     contrapartes,
+    currentLotActiveAnimalIds,
+    existingAnimalIdentifications,
   ]);
 
   if (!activeFarmId) {
@@ -1480,7 +1831,7 @@ const Registrar = () => {
         variant="plain"
         eyebrow="Fluxo operacional"
         title="Registrar manejo"
-        description="Escolha o alvo, informe o manejo e revise antes de registrar."
+        description="Escolha a operação, defina o alvo e revise antes de registrar."
         meta={
           <>
             <StatusBadge tone="info">
@@ -1497,9 +1848,7 @@ const Registrar = () => {
               </StatusBadge>
             ) : null}
             {selectedLoteLabel !== "-" ? (
-              <StatusBadge tone="neutral">
-                {selectedLoteLabel}
-              </StatusBadge>
+              <StatusBadge tone="neutral">{selectedLoteLabel}</StatusBadge>
             ) : null}
             {selectedAnimais.length > 0 ? (
               <StatusBadge tone="neutral">
@@ -1507,9 +1856,7 @@ const Registrar = () => {
               </StatusBadge>
             ) : null}
             {hasRegistrarDisplayContext ? (
-              <StatusBadge tone="neutral">
-                Contexto recebido
-              </StatusBadge>
+              <StatusBadge tone="neutral">Contexto recebido</StatusBadge>
             ) : null}
           </>
         }
@@ -1531,9 +1878,14 @@ const Registrar = () => {
 
       {step === RegistrationStep.SELECT_ANIMALS && (
         <RegistrarSelectTargetStep
-          quickAction={quickAction}
-          onApplyQuickAction={applyQuickAction}
-          onClearQuickAction={clearQuickAction}
+          targetMode={targetMode}
+          onTargetModeChange={(mode) => {
+            setTargetMode(mode);
+            if (mode === "none") {
+              setSelectedLoteId("");
+              clearSelectedAnimais();
+            }
+          }}
           selectedLoteId={selectedLoteId}
           onSelectedLoteIdChange={onSelectedLoteIdChange}
           semLoteOption={SEM_LOTE_OPTION}
@@ -1549,8 +1901,6 @@ const Registrar = () => {
           onClearSelection={clearSelectedAnimais}
           onToggleAnimalSelection={onToggleAnimalSelection}
           animaisNoLoteCount={animaisNoLote?.length ?? 0}
-          requiresAnimalsForQuickAction={quickActionRequiresAnimals}
-          quickActionLabel={quickActionConfig?.label ?? null}
           onNext={advanceFromSelect}
           onBack={handleBackFromStep1}
         />
@@ -1566,6 +1916,7 @@ const Registrar = () => {
               <RegistrarManejoActionsGrid
                 tipoManejo={tipoManejo}
                 selectedAnimaisCount={selectedAnimais.length}
+                hasExistingTarget={hasExistingTarget}
                 onSelectAction={selectRegularAction}
               />
             </div>
@@ -1652,20 +2003,29 @@ const Registrar = () => {
               <RegistrarComercialSection
                 fazendaId={activeFarmId}
                 comercialData={comercialData}
-                updateComercialData={(field, val) => setComercialData(prev => ({ ...prev, [field]: val }))}
+                updateComercialData={(field, val) =>
+                  setComercialData((prev) => ({ ...prev, [field]: val }))
+                }
                 selectedAnimalIds={selectedAnimais}
                 animaisComPeso={animaisComPesoComercial ?? []}
                 contrapartes={contrapartes}
                 canManageContraparte={canManageContraparte}
                 showNovaContraparte={showNovaContraparte}
-                onToggleNovaContraparte={() => setShowNovaContraparte(p => !p)}
+                onToggleNovaContraparte={() =>
+                  setShowNovaContraparte((p) => !p)
+                }
                 novaContraparte={novaContraparte}
-                onNovaContraparteFieldChange={(field, val) => setNovaContraparte(prev => ({ ...prev, [field]: val }))}
+                onNovaContraparteFieldChange={(field, val) =>
+                  setNovaContraparte((prev) => ({ ...prev, [field]: val }))
+                }
                 onCreateContraparte={handleCreateContraparte}
                 isSavingContraparte={isSavingContraparte}
                 onNavigateContrapartes={() => navigate("/contrapartes")}
                 financeTransactions={financeTransactions}
-                weightUnitLabel={farmMeasurementConfig.weight_unit}
+                currentLotActiveAnimalIds={currentLotActiveAnimalIds}
+                targetMode={targetMode}
+                targetLotId={selectedLoteIdNormalized}
+                lotes={lotes ?? []}
               />
             )}
 
@@ -1676,9 +2036,7 @@ const Registrar = () => {
             )}
 
             {tipoManejo === "ecc" && (
-              <RegistrarEccSection
-                {...actionSectionState.eccSectionProps}
-              />
+              <RegistrarEccSection {...actionSectionState.eccSectionProps} />
             )}
 
             <RegistrarStickyActionBar
@@ -1743,49 +2101,79 @@ const Registrar = () => {
                   </p>
                   <div className="grid gap-2 grid-cols-2">
                     <div className="rounded-lg bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 p-3 text-center">
-                      <p className="text-[11px] uppercase tracking-wider text-emerald-800 dark:text-emerald-300 font-medium">Tipo</p>
-                      <p className="text-2xl font-bold text-emerald-900 dark:text-emerald-200 mt-0.5 capitalize">{comercialData.operationType}</p>
+                      <p className="text-[11px] uppercase tracking-wider text-emerald-800 dark:text-emerald-300 font-medium">
+                        Tipo
+                      </p>
+                      <p className="text-2xl font-bold text-emerald-900 dark:text-emerald-200 mt-0.5 capitalize">
+                        {comercialData.operationType}
+                      </p>
                     </div>
                     <div className="rounded-lg bg-blue-50/50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/30 p-3 text-center">
-                      <p className="text-[11px] uppercase tracking-wider text-blue-800 dark:text-blue-300 font-medium">Valor Bruto</p>
+                      <p className="text-[11px] uppercase tracking-wider text-blue-800 dark:text-blue-300 font-medium">
+                        Valor Bruto
+                      </p>
                       <p className="text-2xl font-bold text-blue-900 dark:text-blue-200 mt-0.5">
-                        {comercialData.valorBruto !== "" ? `R$ ${parseFloat(comercialData.valorBruto).toFixed(2)}` : "—"}
+                        {comercialData.valorBruto !== ""
+                          ? `R$ ${parseFloat(comercialData.valorBruto).toFixed(2)}`
+                          : "—"}
                       </p>
                     </div>
                   </div>
                   <div className="space-y-1.5 pt-2 border-t border-border/40 text-sm">
                     <div className="flex justify-between py-1 border-b border-border/20">
                       <span className="text-muted-foreground">Escopo:</span>
-                      <span className="font-semibold capitalize">{comercialData.scope}</span>
-                    </div>
-                    <div className="flex justify-between py-1 border-b border-border/20">
-                      <span className="text-muted-foreground">Quantidade de Animais:</span>
-                      <span className="font-semibold">
-                        {comercialData.scope === "animal" && selectedAnimais.length > 0
-                          ? selectedAnimais.length
-                          : (parseInt(comercialData.quantidadeAnimais, 10) || "—")}
+                      <span className="font-semibold capitalize">
+                        {comercialData.scope}
                       </span>
                     </div>
-                    {comercialData.pesoVivoTotal && (
+                    <div className="flex justify-between py-1 border-b border-border/20">
+                      <span className="text-muted-foreground">
+                        Quantidade de Animais:
+                      </span>
+                      <span className="font-semibold">
+                        {comercialData.scope === "animal" &&
+                        selectedAnimais.length > 0
+                          ? selectedAnimais.length
+                          : parseInt(comercialData.quantidadeAnimais, 10) ||
+                            "—"}
+                      </span>
+                    </div>
+                    {comercialData.commercialWeightTotal && (
                       <div className="flex justify-between py-1 border-b border-border/20">
-                        <span className="text-muted-foreground">Peso Vivo Total:</span>
-                        <span className="font-semibold">{comercialData.pesoVivoTotal} {farmMeasurementConfig.weight_unit}</span>
+                        <span className="text-muted-foreground">
+                          Peso Vivo Total:
+                        </span>
+                        <span className="font-semibold">
+                          {comercialData.commercialWeightTotal}{" "}
+                          {commercialWeightUnit === "arroba" ? "@" : "kg"}
+                        </span>
                       </div>
                     )}
                     <div className="flex justify-between py-1 border-b border-border/20">
-                      <span className="text-muted-foreground">Contraparte:</span>
-                      <span className="font-semibold">{contraparteSelecionadaNome}</span>
+                      <span className="text-muted-foreground">
+                        Contraparte:
+                      </span>
+                      <span className="font-semibold">
+                        {contraparteSelecionadaNome}
+                      </span>
                     </div>
                     {comercialData.financeTransactionId !== "none" && (
                       <div className="flex justify-between py-1 border-b border-border/20">
-                        <span className="text-muted-foreground">Vínculo Financeiro:</span>
-                        <span className="font-semibold text-emerald-600 dark:text-emerald-400">Vinculado</span>
+                        <span className="text-muted-foreground">
+                          Vínculo Financeiro:
+                        </span>
+                        <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                          Vinculado
+                        </span>
                       </div>
                     )}
                   </div>
                   {comercialData.observacoes && (
                     <div className="pt-2 text-xs text-muted-foreground">
-                      <span className="font-semibold text-foreground">Observações:</span> {comercialData.observacoes}
+                      <span className="font-semibold text-foreground">
+                        Observações:
+                      </span>{" "}
+                      {comercialData.observacoes}
                     </div>
                   )}
                 </div>
@@ -1806,25 +2194,56 @@ const Registrar = () => {
                   </p>
                   <div className="grid gap-2 grid-cols-2">
                     <div className="rounded-lg bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 p-3 text-center">
-                      <p className="text-[11px] uppercase tracking-wider text-emerald-800 dark:text-emerald-300 font-medium">Eventos a gerar</p>
-                      <p className="text-2xl font-bold text-emerald-900 dark:text-emerald-200 mt-0.5">{selectedAnimais.filter(id => eccData[id] && eccData[id].trim() !== "").length}</p>
+                      <p className="text-[11px] uppercase tracking-wider text-emerald-800 dark:text-emerald-300 font-medium">
+                        Eventos a gerar
+                      </p>
+                      <p className="text-2xl font-bold text-emerald-900 dark:text-emerald-200 mt-0.5">
+                        {
+                          selectedAnimais.filter(
+                            (id) => eccData[id] && eccData[id].trim() !== "",
+                          ).length
+                        }
+                      </p>
                     </div>
                     <div className="rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/30 p-3 text-center">
-                      <p className="text-[11px] uppercase tracking-wider text-amber-800 dark:text-amber-300 font-medium">Animais sem ECC</p>
-                      <p className="text-2xl font-bold text-amber-900 dark:text-amber-200 mt-0.5">{selectedAnimais.length - selectedAnimais.filter(id => eccData[id] && eccData[id].trim() !== "").length}</p>
+                      <p className="text-[11px] uppercase tracking-wider text-amber-800 dark:text-amber-300 font-medium">
+                        Animais sem ECC
+                      </p>
+                      <p className="text-2xl font-bold text-amber-900 dark:text-amber-200 mt-0.5">
+                        {selectedAnimais.length -
+                          selectedAnimais.filter(
+                            (id) => eccData[id] && eccData[id].trim() !== "",
+                          ).length}
+                      </p>
                     </div>
                   </div>
                   <div className="max-h-40 overflow-y-auto space-y-1.5 pt-1 pr-1 border-t border-border/40">
                     {selectedAnimais.map((animalId) => {
-                      const animalIdent = animaisNoLote?.find(a => a.id === animalId)?.identificacao ?? "Animal";
+                      const animalIdent =
+                        animaisNoLote?.find((a) => a.id === animalId)
+                          ?.identificacao ?? "Animal";
                       const val = eccData[animalId];
                       const obs = eccObservacoes[animalId];
                       const hasValue = val && val.trim() !== "";
                       return (
-                        <div key={animalId} className="flex justify-between items-center text-sm py-1 border-b border-border/20 last:border-b-0">
-                          <span className="text-muted-foreground font-medium">{animalIdent}</span>
-                          <span className={cn("font-semibold", hasValue ? "text-primary" : "text-muted-foreground italic")}>
-                            {hasValue ? `${Number(val).toFixed(2)}` : "Não avaliado"}
+                        <div
+                          key={animalId}
+                          className="flex justify-between items-center text-sm py-1 border-b border-border/20 last:border-b-0"
+                        >
+                          <span className="text-muted-foreground font-medium">
+                            {animalIdent}
+                          </span>
+                          <span
+                            className={cn(
+                              "font-semibold",
+                              hasValue
+                                ? "text-primary"
+                                : "text-muted-foreground italic",
+                            )}
+                          >
+                            {hasValue
+                              ? `${Number(val).toFixed(2)}`
+                              : "Não avaliado"}
                             {hasValue && obs ? ` (${obs})` : ""}
                           </span>
                         </div>

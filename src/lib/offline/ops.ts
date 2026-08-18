@@ -14,6 +14,8 @@ import {
   assertValidAnimalTaxonomyFactsContract,
   readTaxonomyFactsRecord,
 } from "@/lib/animals/taxonomyFactsContract";
+import { buildCommercialPurchaseQueueOperation } from "@/lib/comercial/animalPurchaseSync";
+import { buildCommercialOperationQueueOperation } from "@/lib/comercial/commercialOperationSync";
 
 function getRecordKey(record: Record<string, unknown>): string | null {
   if (typeof record.id === "string") return record.id;
@@ -72,9 +74,7 @@ function assertAllowedOfflinePushSurface(op: OperationInput) {
       closureType === "partially_executed_with_event" ||
       executionEventoId != null
     ) {
-      throw new Error(
-        "SANITARIO_AGENDA_CLOSURE_EXECUTION_BLOCKED_IN_12E4",
-      );
+      throw new Error("SANITARIO_AGENDA_CLOSURE_EXECUTION_BLOCKED_IN_12E4");
     }
   }
 }
@@ -186,8 +186,23 @@ export const createGesture = async (
       return { agenda, animal, queueOp };
     },
   );
+  const commercialOperationQueueOp = buildCommercialOperationQueueOperation(
+    ops,
+    fazenda_id,
+  );
+  const commercialPurchaseQueueOp = commercialOperationQueueOp
+    ? null
+    : buildCommercialPurchaseQueueOperation(ops, fazenda_id);
+  const commercialQueueOp =
+    commercialOperationQueueOp ?? commercialPurchaseQueueOp;
+  const compoundTables = new Set(["animais", "eventos", "eventos_comercial"]);
+  const auxiliaryCommercialOps = commercialQueueOp
+    ? ops.filter((op) => !compoundTables.has(op.table))
+    : [];
   const queueOps = [
-    ...ops,
+    ...(commercialQueueOp
+      ? [commercialQueueOp, ...auxiliaryCommercialOps]
+      : ops),
     ...sanitarioAgendaV2.flatMap(({ queueOp }) => (queueOp ? [queueOp] : [])),
   ];
 

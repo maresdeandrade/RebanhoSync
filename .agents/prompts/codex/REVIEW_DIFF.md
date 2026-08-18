@@ -1,66 +1,39 @@
 # Codex Prompt — Review de Diff
 
-Atualizado em: 2026-08-03  
-Versão: 1.2.0
+Atualizado em: 2026-08-07
+Versão: 1.3.0
 
-Use para revisar alterações já existentes. Este prompt é somente leitura: não autoriza corrigir o patch.
+Use para revisar alterações já existentes e classificar a entrega. Este prompt é wrapper do `rebanhosync-verification-gate` e não duplica seu procedimento.
 
-## Prompt
+## Modo
 
-Revise o estado atual do worktree do RebanhoSync e classifique a entrega.
+`SOMENTE_LEITURA`
+
+## Entrada obrigatória
 
 ### Escopo pretendido
 
 ```txt
-[DESCREVER_PEDIDO_E_LIMITES]
+[DESCREVER_PEDIDO_LIMITES_E_BASE_SE_A_ENTREGA_ESTIVER_COMMITADA]
 ```
 
-## Contexto e skill
+## Dependências autoritativas
 
-1. Leia `AGENTS.md`.
-2. Aplique `.agents/rules/CORE_RULES.md`, `no-broad-context.md` e `RESPONSE_FORMATS.md`.
-3. Use `rebanhosync-verification-gate` como skill principal.
-4. Para comandos e validações, siga `.agents/rules/rtk.md`.
+1. Aplicar `AGENTS.md`, `.agents/rules/CORE_RULES.md` e `.agents/rules/CONTEXT_LOADING.md`.
+2. Usar `rebanhosync-verification-gate` como skill lifecycle principal desta fase.
+3. Seguir `.agents/rules/rtk.md` para comandos e validações.
+4. Usar `.agents/rules/RESPONSE_FORMATS.md` somente como formato geral; o contrato específico do gate prevalece.
 
-## Restrições
+## Escopo proibido
 
 - Não editar arquivos, corrigir achados, criar testes, fazer commit ou preparar PR.
-- Não assumir que `git diff` inclui staged ou untracked.
-- Não classificar como READY se uma validação necessária não foi executada ou se há arquivo relevante não inspecionado.
-- Não tratar warning preexistente como regressão nova sem evidência.
+- Não presumir base Git nem considerar untracked revisado apenas pelo nome.
+- Não classificar como READY quando o gate exigir NOT READY ou quando houver evidência desconhecida.
 
-## Revisão obrigatória
+## Condições de parada
 
-Inspecione:
+Se o escopo pretendido, a base necessária ou algum arquivo relevante não puder ser inspecionado, retornar NOT READY conforme o gate.
 
-- estado completo: tracked, staged, untracked, removidos e renomeados;
-- conteúdo dos diffs unstaged e staged;
-- conteúdo dos arquivos untracked relevantes;
-- aderência entre escopo pretendido e diff real;
-- contratos de domínio aplicáveis;
-- regressão em offline-first, sync, idempotência, rollback, RLS e `fazenda_id`, quando tocados;
-- mudanças indevidas em migrations, RLS, RPC, seed ou testes;
-- regra de negócio na UI ou fonte de verdade paralela;
-- testes alterados apenas para aceitar comportamento incorreto;
-- validações executadas e lacunas.
+## Saída obrigatória
 
-## Classificação
-
-- **READY:** escopo aderente, sem bloqueadores e validação suficiente confirmada.
-- **READY WITH CAVEAT:** entrega utilizável, com risco residual explícito e não bloqueante.
-- **NOT READY:** falha funcional, contrato violado, escopo indevido, evidência insuficiente ou validação bloqueante ausente.
-
-## Entrega
-
-1. **Classificação**
-2. **Achados**, por severidade e com arquivo/trecho
-3. **Diff real**, incluindo staged e untracked
-4. **Escopo confirmado**
-5. **Contratos avaliados**
-6. **Validações executadas**
-7. **Validações não executadas e motivo**
-8. **Bloqueadores**
-9. **Riscos/pendências**, no máximo 3
-10. **Recomendação final**
-
-Se não houver achados, declarar isso explicitamente e ainda registrar riscos residuais e lacunas de validação.
+Retornar exatamente o contrato de saída de `rebanhosync-verification-gate`, acrescentando apenas uma seção inicial **Escopo pretendido**. Se não houver achados, declarar isso sem omitir lacunas ou riscos residuais.

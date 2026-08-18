@@ -5,6 +5,10 @@ Versão: 1.2.0
 
 Use para mapear uma jornada funcional ou fluxo de dados sem alterar a implementação.
 
+## Modo
+
+`SOMENTE_LEITURA`
+
 ## Prompt
 
 Mapeie o fluxo abaixo do início ao resultado observável:
@@ -46,15 +50,17 @@ Graphify é opcional: use apenas quando houver dependência transversal complexa
 4. regra/política de domínio aplicada;
 5. identidade e fonte de verdade de cada dado;
 6. construção de payload, plano e efeitos;
-7. persistência local em Dexie/IndexedDB;
-8. fila, sync, persistência remota e retorno do servidor;
-9. retry, duplicidade, sucesso parcial, rollback e reconcile;
-10. atualização de `state_*` ou read models;
+7. persistência local em Dexie/IndexedDB, quando aplicável;
+8. fila, sync, persistência remota e retorno do servidor, quando aplicável;
+9. retry, duplicidade, sucesso parcial, rollback e reconcile, quando aplicável;
+10. atualização de `state_*` ou read models, quando aplicável;
 11. mensagens, erros e exceções expostos ao usuário;
 12. RLS, papel e fronteira de `fazenda_id`, quando aplicável;
 13. testes existentes e lacunas de cobertura.
 
 Classifique cada conclusão como **fato confirmado**, **inferência** ou **lacuna**.
+
+Para uma camada que realmente não participe do fluxo, registrar `N/A — não aplicável` com evidência curta. Não tratar ausência legítima como lacuna nem inventar etapa técnica.
 
 ## Tabela obrigatória
 

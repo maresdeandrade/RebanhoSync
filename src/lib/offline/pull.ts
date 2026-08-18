@@ -2,6 +2,8 @@ import { supabase } from "@/lib/supabase";
 import { recomputeSanitaryComplianceAfterPullV2 } from "@/lib/sanitario/compliance/sanitaryComplianceV2";
 import { db } from "./db";
 import { getLocalStoreName } from "./tableMap";
+import { getPendingCommercialPurchaseRecords } from "@/lib/comercial/animalPurchaseSync";
+import { getPendingCommercialOperationRecords } from "@/lib/comercial/commercialOperationSync";
 import type { PullCursor, PullCursorScope } from "./types";
 
 export const DEFAULT_REMOTE_TABLES = [
@@ -217,6 +219,16 @@ async function getPendingFactualEventIds() {
   const operations = await db.queue_ops.toArray();
   return new Set(
     operations.flatMap((operation) => {
+      const commercialRecords = [
+        ...getPendingCommercialPurchaseRecords(operation),
+        ...getPendingCommercialOperationRecords(operation),
+      ];
+      const commercialEvent = commercialRecords.find(
+        ({ table }) => table === "eventos",
+      )?.record;
+      if (typeof commercialEvent?.id === "string") {
+        return [commercialEvent.id];
+      }
       if (
         operation.table === "eventos" &&
         typeof operation.record?.id === "string"
@@ -256,8 +268,12 @@ async function getPendingFactualEventIds() {
 
 async function getPendingRecordIds(remoteTables: readonly string[]) {
   const protectedTables = new Set(
-    remoteTables.filter((table) =>
-      table === "animais" || table === "agenda_itens"
+    remoteTables.filter(
+      (table) =>
+        table === "animais" ||
+        table === "eventos" ||
+        table === "eventos_comercial" ||
+        table === "agenda_itens",
     ),
   );
   const pendingIds = new Map<string, Set<string>>();
@@ -265,12 +281,22 @@ async function getPendingRecordIds(remoteTables: readonly string[]) {
 
   const operations = await db.queue_ops.toArray();
   for (const operation of operations) {
-    if (!protectedTables.has(operation.table)) continue;
-    const id = operation.record?.id;
-    if (typeof id !== "string") continue;
-    const ids = pendingIds.get(operation.table) ?? new Set<string>();
-    ids.add(id);
-    pendingIds.set(operation.table, ids);
+    const candidates = [
+      { table: operation.table, record: operation.record },
+      ...getPendingCommercialPurchaseRecords(operation),
+      ...getPendingCommercialOperationRecords(operation),
+    ];
+    for (const candidate of candidates) {
+      if (!protectedTables.has(candidate.table)) continue;
+      const id =
+        candidate.table === "eventos_comercial"
+          ? candidate.record?.evento_id
+          : candidate.record?.id;
+      if (typeof id !== "string") continue;
+      const ids = pendingIds.get(candidate.table) ?? new Set<string>();
+      ids.add(id);
+      pendingIds.set(candidate.table, ids);
+    }
   }
   return pendingIds;
 }
@@ -282,9 +308,10 @@ function protectPendingRecordRows(
 ) {
   const ids = pendingRecordIds.get(remoteTable);
   if (!ids || ids.size === 0) return { rows, skipped: false };
-  const safeRows = rows.filter((row) =>
-    typeof row.id !== "string" || !ids.has(row.id)
-  );
+  const safeRows = rows.filter((row) => {
+    const id = remoteTable === "eventos_comercial" ? row.evento_id : row.id;
+    return typeof id !== "string" || !ids.has(id);
+  });
   return { rows: safeRows, skipped: safeRows.length !== rows.length };
 }
 
@@ -299,6 +326,7 @@ function protectPendingFactualRows(
       "eventos",
       "eventos_sanitario",
       "eventos_reproducao",
+      "eventos_comercial",
       "eventos_animais",
       "insumo_movimentacoes",
     ].includes(remoteTable)
@@ -306,11 +334,12 @@ function protectPendingFactualRows(
     return { rows, skipped: false };
   }
   const safeRows = rows.filter((row) => {
-    const eventId = remoteTable === "eventos"
-      ? row.id
-      : remoteTable === "insumo_movimentacoes"
-      ? row.source_evento_id
-      : row.evento_id;
+    const eventId =
+      remoteTable === "eventos"
+        ? row.id
+        : remoteTable === "insumo_movimentacoes"
+          ? row.source_evento_id
+          : row.evento_id;
     return typeof eventId !== "string" || !pendingEventIds.has(eventId);
   });
   return { rows: safeRows, skipped: safeRows.length !== rows.length };
@@ -431,7 +460,7 @@ export const pullDataForFarm = async (
 
   const storeNames = storesToUpdate.map((s) => s.local);
   const pendingEventIds = remoteTables.some((table) =>
-    ["eventos", "eventos_reproducao"].includes(table)
+    ["eventos", "eventos_reproducao"].includes(table),
   )
     ? await getPendingFactualEventIds()
     : new Set<string>();

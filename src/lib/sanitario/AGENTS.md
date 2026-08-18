@@ -251,10 +251,9 @@ pnpm run build
 
 ```
 
-Se tocar migration, RLS, RPC, seed, sync ou materialização remota:
+Se tocar migration, RLS, RPC, seed, sync ou materialização remota, siga `.agents/rules/rtk.md` e exija autorização explícita para qualquer ambiente descartável ou operação destrutiva. O baseline funcional não executa cleanup genérico.
 
 ```bash
-supabase db reset
 node scripts/codex/validate-supabase-baseline-functional.mjs
 
 ```
@@ -262,8 +261,7 @@ node scripts/codex/validate-supabase-baseline-functional.mjs
 Se tocar áreas sanitárias críticas:
 
 ```bash
-powershell -File scripts/codex/validate.ps1 -TouchedPaths "src/lib/sanitario","src/lib/events","src/pages/Registrar","src/pages/Agenda","src/lib/insights","src/features/operationalInsights","src/lib/reports","src/components/sanitario","supabase/migrations"
-graphify update .
+powershell -File scripts/codex/validate.ps1 -Profile standard -TouchedPaths "src/lib/sanitario","src/lib/events","src/pages/Registrar","src/pages/Agenda","src/lib/insights","src/features/operationalInsights","src/lib/reports","src/components/sanitario","supabase/migrations" -TestPaths "src/lib/sanitario" -LintPaths "src/lib/sanitario" -IncludeBuild
 git diff --check
 
 ```

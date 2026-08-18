@@ -1,6 +1,8 @@
 ---
 name: docs-reconciliation
 description: Use when the task is about migrations SQL, schema, FKs compostas, enums, views, triggers append-only, RLS, RBAC, RPCs SECURITY DEFINER, blocked tables, contratos versionados, catálogo global vs tenant-scoped, ou mudanças estruturais que exigem alinhar banco, sync e docs normativos.
+status: archived
+superseded_by: migrations-rls-contracts
 ---
 
 # Migrations — Schema, RLS e Contratos

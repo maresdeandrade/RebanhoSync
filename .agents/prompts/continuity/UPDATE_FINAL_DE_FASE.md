@@ -5,12 +5,28 @@ Versão: 1.2.0
 
 Use somente após a fase ou subfase estar validada. Atualiza documentação permanente de continuidade; não inicia nova implementação.
 
+## Modo
+
+`MUTACAO_AUTORIZADA` somente para os documentos explicitamente permitidos abaixo.
+
 ## Prompt
 
 Atualize a documentação ativa para registrar o fechamento validado da fase/subfase:
 
 ```txt
 [IDENTIFICAR_FASE_OU_SUBFASE]
+```
+
+### Escopo documental permitido
+
+```txt
+[LISTAR_DOCUMENTOS_QUE_PODEM_SER_ALTERADOS]
+```
+
+### Arquivamento ou movimentação autorizados
+
+```txt
+[NAO | SIM: LISTAR_ALVOS_EXATOS]
 ```
 
 ## Contexto e skill
@@ -30,6 +46,7 @@ Atualize a documentação ativa para registrar o fechamento validado da fase/sub
 - Não transformar roadmap em backlog técnico.
 - Não arquivar documentos ativos de continuidade.
 - Não usar archive como fonte operacional.
+- Não mover nem arquivar qualquer arquivo quando o campo de autorização estiver `NAO`, vazio ou sem alvo exato.
 
 ## Diagnóstico antes de editar
 
@@ -42,7 +59,7 @@ Confirme:
 5. arquivos efetivamente alterados na fase;
 6. pendências abertas e fechadas;
 7. documentos que exigem atualização;
-8. relatórios históricos elegíveis para arquivamento;
+8. relatórios históricos elegíveis para arquivamento e explicitamente autorizados;
 9. documentos que devem permanecer ativos.
 
 Se a conclusão ou as validações não estiverem comprovadas, não fechar a fase.
@@ -63,7 +80,7 @@ Se a conclusão ou as validações não estiverem comprovadas, não fechar a fas
 - `docs/review/OPEN_REVIEW_ITEMS.md`: manter apenas pendências abertas reais.
 - `docs/context/PROJECT_STATUS.md`: somente para mudança consolidada.
 - `docs/product/ROADMAP.md`: somente se a sequência macro de fases mudar.
-- `docs/archive/review/**`: somente relatórios históricos fechados, já resumidos e sem função ativa.
+- `docs/archive/review/**`: somente relatórios históricos fechados, já resumidos, sem função ativa e explicitamente autorizados pelo alvo exato.
 
 Não arquivar:
 

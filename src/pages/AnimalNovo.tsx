@@ -9,7 +9,10 @@ import type {
   StatusReprodutivoMachoEnum,
 } from "@/lib/offline/types";
 import { ANIMAL_BREED_OPTIONS } from "@/lib/animals/catalogs";
-import { ANIMAL_SPECIES_OPTIONS, formatAnimalSpecies } from "@/lib/animals/species";
+import {
+  ANIMAL_SPECIES_OPTIONS,
+  formatAnimalSpecies,
+} from "@/lib/animals/species";
 import type { AnimalSpeciesEnum } from "@/lib/animals/species";
 import {
   buildAnimalClassificationPayload,
@@ -21,7 +24,8 @@ import {
   resolveAnimalLifecycleSnapshot,
 } from "@/lib/animals/lifecycle";
 import { buildAnimalTaxonomyFactsPayload } from "@/lib/animals/taxonomy";
-import { buildEventGesture } from "@/lib/events/buildEventGesture";
+import { buildCommercialOperationGesture } from "@/lib/comercial/commercialOperationCommand";
+import { validateAnimalRegistrationDraft } from "@/lib/animals/registration";
 import { EventValidationError } from "@/lib/events/validators";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageIntro } from "@/components/ui/page-intro";
@@ -88,8 +92,10 @@ const AnimalNovo = () => {
 
   // Vinculo financeiro para origem='compra'
   const [compraValorTotal, setCompraValorTotal] = useState("");
-  const [compraContraparteId, setCompraContraparteId] = useState<string>("null");
+  const [compraContraparteId, setCompraContraparteId] =
+    useState<string>("null");
   const [compraObservacoes, setCompraObservacoes] = useState("");
+  const [compraPesoKg, setCompraPesoKg] = useState("");
 
   // Estados específicos para machos
   const [destinoProdutivo, setDestinoProdutivo] = useState<
@@ -177,8 +183,17 @@ const AnimalNovo = () => {
     destinoProdutivo !== "null" && isMaleBreedingDestination(destinoProdutivo);
 
   const handleSave = async () => {
-    if (!identificacao) {
-      showError("Identificação é obrigatória.");
+    const animalDraftIssue = validateAnimalRegistrationDraft({
+      identificacao,
+      sexo,
+      especie: especie === "null" ? null : especie,
+      raca: raca === "null" ? null : (raca as never),
+      dataNascimento,
+      dataEntrada,
+      loteId: loteId === "null" ? null : loteId,
+    });
+    if (animalDraftIssue) {
+      showError(animalDraftIssue);
       return;
     }
 
@@ -202,12 +217,12 @@ const AnimalNovo = () => {
     }
 
     const parseNumeric = (value: string): number =>
-      Number.parseFloat(value.replace(',', '.'));
+      Number.parseFloat(value.replace(",", "."));
 
-    if (origem === 'compra') {
+    if (origem === "compra") {
       const valor = parseNumeric(compraValorTotal);
       if (!Number.isFinite(valor) || valor <= 0) {
-        showError('Informe um valor de compra maior que zero.');
+        showError("Informe um valor de compra maior que zero.");
         return;
       }
     }
@@ -239,23 +254,25 @@ const AnimalNovo = () => {
       sexo === "M" && statusReprodutivoMacho !== "null"
         ? statusReprodutivoMacho
         : null;
-    let payload = buildAnimalClassificationPayload({}, {
-      sexo,
-      destinoProdutivo: destinoProdutivoValue,
-      statusReprodutivoMacho: statusReprodutivoValue,
-      modoTransicao: null,
-    });
+    let payload = buildAnimalClassificationPayload(
+      {},
+      {
+        sexo,
+        destinoProdutivo: destinoProdutivoValue,
+        statusReprodutivoMacho: statusReprodutivoValue,
+        modoTransicao: null,
+      },
+    );
     const { papel_macho, habilitado_monta } = getLegacyMaleFields({
       sexo,
       destinoProdutivo: destinoProdutivoValue,
       statusReprodutivoMacho: statusReprodutivoValue,
     });
     payload = buildAnimalTaxonomyFactsPayload(payload, {
-      castrado: sexo === "M" && castrado !== "null" ? castrado === "true" : null,
+      castrado:
+        sexo === "M" && castrado !== "null" ? castrado === "true" : null,
       puberdade_confirmada:
-        puberdadeConfirmada !== "null"
-          ? puberdadeConfirmada === "true"
-          : null,
+        puberdadeConfirmada !== "null" ? puberdadeConfirmada === "true" : null,
       em_lactacao:
         sexo === "F" && emLactacao !== "null" ? emLactacao === "true" : null,
       secagem_realizada:
@@ -332,8 +349,13 @@ const AnimalNovo = () => {
           fazenda_id,
           animal_id,
           contraparte_id: sociedadeContraparteId,
-          percentual: percentualSociedade ? parseFloat(percentualSociedade) : null,
-          inicio: inicioSociedade || dataEntrada || new Date().toISOString().split("T")[0],
+          percentual: percentualSociedade
+            ? parseFloat(percentualSociedade)
+            : null,
+          inicio:
+            inicioSociedade ||
+            dataEntrada ||
+            new Date().toISOString().split("T")[0],
           fim: null,
           payload: {},
           created_at: now,
@@ -343,30 +365,54 @@ const AnimalNovo = () => {
       ops.push(opSociedade);
     }
 
-    // 3. Se origem='compra', registrar evento financeiro no mesmo gesto
+    // 3. Compra usa o mesmo caso de uso composto consumido pelo Menu Registrar.
     if (origem === "compra") {
       const valorCompra = parseNumeric(compraValorTotal);
-      const occurredAt = dataEntrada
-        ? `${dataEntrada}T12:00:00.000Z`
-        : now;
-      const built = buildEventGesture({
-        dominio: "financeiro",
+      const occurredAt = dataEntrada ? `${dataEntrada}T12:00:00.000Z` : now;
+      const contraparteId =
+        compraContraparteId !== "null" ? compraContraparteId : undefined;
+      const observacoes =
+        compraObservacoes || "Compra vinculada ao cadastro do animal";
+      const pesoKg = compraPesoKg.trim() ? parseNumeric(compraPesoKg) : null;
+      const built = buildCommercialOperationGesture({
         fazendaId: fazenda_id,
+        operationType: "compra",
+        scope: "animal",
         occurredAt,
-        animalId: animal_id,
+        declaredQuantity: 1,
         loteId: loteId === "null" ? null : loteId,
-        tipo: "compra",
-        valorTotal: valorCompra,
-        contraparteId:
-          compraContraparteId !== "null" ? compraContraparteId : null,
-        observacoes: compraObservacoes || "Compra vinculada ao cadastro do animal",
-        payload: {
-          kind: "compra_animal",
-          animal_id,
-          origem: "cadastro_animal",
-        },
+        selectedAnimalIds: [],
+        animals: [],
+        newAnimals: [
+          {
+            localId: animal_id,
+            id: animal_id,
+            identificacao,
+            sexo,
+            especie: especie === "null" ? null : especie,
+            raca: raca === "null" ? null : (raca as never),
+            dataNascimento: dataNascimento || null,
+            dataEntrada: dataEntrada || null,
+            loteId: loteId === "null" ? null : loteId,
+            nome: nome || null,
+            rfid: rfid || null,
+            paiId: paiId === "null" || paiId === "externo" ? null : paiId,
+            maeId: maeId === "null" || maeId === "externo" ? null : maeId,
+            payload,
+            papelMacho: papel_macho,
+            habilitadoMonta: habilitado_monta,
+            preparedPayload: true,
+            commercialWeight: Number.isFinite(pesoKg) ? pesoKg : null,
+            valorIndividual: valorCompra,
+          },
+        ],
+        pesoVivoTotal: Number.isFinite(pesoKg) ? pesoKg : null,
+        valorBruto: valorCompra,
+        contraparteId,
+        observacoes,
+        lifecycleConfig: farmLifecycleConfig,
       });
-      ops.push(...built.ops);
+      ops.splice(0, ops.length, ...built.ops);
     }
 
     try {
@@ -375,8 +421,8 @@ const AnimalNovo = () => {
         origem === "sociedade"
           ? "Animal e sociedade cadastrados localmente!"
           : origem === "compra"
-            ? "Animal e compra financeira cadastrados localmente!"
-            : "Animal cadastrado localmente!"
+            ? "Animal e compra cadastrados localmente!"
+            : "Animal cadastrado localmente!",
       );
       navigate("/animais");
     } catch (e: unknown) {
@@ -434,9 +480,24 @@ const AnimalNovo = () => {
       />
       <Tabs defaultValue="basic" className="w-full space-y-4">
         <TabsList className="grid w-full grid-cols-3 h-12 rounded-xl mb-6 bg-muted/60 p-1">
-          <TabsTrigger value="basic" className="rounded-lg py-2 text-sm font-semibold">Geral</TabsTrigger>
-          <TabsTrigger value="trace" className="rounded-lg py-2 text-sm font-semibold">Origem</TabsTrigger>
-          <TabsTrigger value="field" className="rounded-lg py-2 text-sm font-semibold">Campo</TabsTrigger>
+          <TabsTrigger
+            value="basic"
+            className="rounded-lg py-2 text-sm font-semibold"
+          >
+            Geral
+          </TabsTrigger>
+          <TabsTrigger
+            value="trace"
+            className="rounded-lg py-2 text-sm font-semibold"
+          >
+            Origem
+          </TabsTrigger>
+          <TabsTrigger
+            value="field"
+            className="rounded-lg py-2 text-sm font-semibold"
+          >
+            Campo
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="basic" className="space-y-5">
@@ -446,9 +507,14 @@ const AnimalNovo = () => {
             </CardHeader>
             <CardContent className="grid gap-3 p-4 pt-0 sm:p-5 sm:pt-0 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="identificacao" className="flex justify-between items-baseline">
+                <Label
+                  htmlFor="identificacao"
+                  className="flex justify-between items-baseline"
+                >
                   <span>Identificação (Brinco/Nome) *</span>
-                  <span className="text-caption text-muted-foreground">obrig.</span>
+                  <span className="text-caption text-muted-foreground">
+                    obrig.
+                  </span>
                 </Label>
                 <div className="flex gap-2">
                   <Input
@@ -502,7 +568,11 @@ const AnimalNovo = () => {
                   id="especie"
                   options={especieOptions}
                   value={especie}
-                  onValueChange={(value) => setEspecie(value ? (value as AnimalSpeciesEnum | "null") : "null")}
+                  onValueChange={(value) =>
+                    setEspecie(
+                      value ? (value as AnimalSpeciesEnum | "null") : "null",
+                    )
+                  }
                   placeholder="Nao informada"
                   searchPlaceholder="Buscar espécie..."
                 />
@@ -566,8 +636,13 @@ const AnimalNovo = () => {
           </Card>
 
           <Accordion type="single" collapsible>
-            <AccordionItem value="advanced" className="rounded-xl border border-border/70 bg-card px-4 shadow-none">
-              <AccordionTrigger>Informações Adicionais (Opcional)</AccordionTrigger>
+            <AccordionItem
+              value="advanced"
+              className="rounded-xl border border-border/70 bg-card px-4 shadow-none"
+            >
+              <AccordionTrigger>
+                Informações Adicionais (Opcional)
+              </AccordionTrigger>
               <AccordionContent className="space-y-4 pt-4">
                 <div className="space-y-2">
                   <Label htmlFor="nome">Nome</Label>
@@ -576,6 +651,22 @@ const AnimalNovo = () => {
                     value={nome}
                     onChange={(e) => setNome(e.target.value)}
                     placeholder="Ex: Estrela"
+                    className="h-12 text-body rounded-xl"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="compra_peso">
+                    Peso na compra (kg, opcional)
+                  </Label>
+                  <Input
+                    id="compra_peso"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={compraPesoKg}
+                    onChange={(e) => setCompraPesoKg(e.target.value)}
+                    placeholder="Ex: 320"
                     className="h-12 text-body rounded-xl"
                   />
                 </div>
@@ -685,7 +776,9 @@ const AnimalNovo = () => {
                 </div>
 
                 {/* Data de entrada apenas para origem externa (sociedade, doação, compra) */}
-                {(origem === "sociedade" || origem === "doacao" || origem === "compra") && (
+                {(origem === "sociedade" ||
+                  origem === "doacao" ||
+                  origem === "compra") && (
                   <div className="space-y-2">
                     <Label htmlFor="data_entrada">Data de Entrada</Label>
                     <Input
@@ -716,14 +809,18 @@ const AnimalNovo = () => {
                     id="sociedade_contraparte"
                     options={contraparteOptions}
                     value={sociedadeContraparteId}
-                    onValueChange={(value) => setSociedadeContraparteId(value || "null")}
+                    onValueChange={(value) =>
+                      setSociedadeContraparteId(value || "null")
+                    }
                     placeholder="Selecione..."
                     searchPlaceholder="Buscar contraparte..."
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="percentual_sociedade">Percentual da Fazenda (%)</Label>
+                  <Label htmlFor="percentual_sociedade">
+                    Percentual da Fazenda (%)
+                  </Label>
                   <Input
                     id="percentual_sociedade"
                     type="number"
@@ -738,7 +835,9 @@ const AnimalNovo = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="inicio_sociedade">Data de Início da Sociedade</Label>
+                  <Label htmlFor="inicio_sociedade">
+                    Data de Início da Sociedade
+                  </Label>
                   <Input
                     id="inicio_sociedade"
                     type="date"
@@ -775,12 +874,16 @@ const AnimalNovo = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="compra_contraparte">Contraparte (Opcional)</Label>
+                  <Label htmlFor="compra_contraparte">
+                    Contraparte (Opcional)
+                  </Label>
                   <FieldCombobox
                     id="compra_contraparte"
                     options={compraContraparteOptions}
                     value={compraContraparteId}
-                    onValueChange={(value) => setCompraContraparteId(value || "null")}
+                    onValueChange={(value) =>
+                      setCompraContraparteId(value || "null")
+                    }
                     placeholder="Sem contraparte"
                     searchPlaceholder="Buscar contraparte..."
                   />
@@ -812,7 +915,9 @@ const AnimalNovo = () => {
                 <div className="grid grid-cols-3 gap-2">
                   <Button
                     type="button"
-                    variant={puberdadeConfirmada === "true" ? "default" : "outline"}
+                    variant={
+                      puberdadeConfirmada === "true" ? "default" : "outline"
+                    }
                     className="h-12 text-base rounded-xl border-2"
                     onClick={() => setPuberdadeConfirmada("true")}
                   >
@@ -820,7 +925,9 @@ const AnimalNovo = () => {
                   </Button>
                   <Button
                     type="button"
-                    variant={puberdadeConfirmada === "false" ? "default" : "outline"}
+                    variant={
+                      puberdadeConfirmada === "false" ? "default" : "outline"
+                    }
                     className="h-12 text-base rounded-xl border-2"
                     onClick={() => setPuberdadeConfirmada("false")}
                   >
@@ -828,7 +935,9 @@ const AnimalNovo = () => {
                   </Button>
                   <Button
                     type="button"
-                    variant={puberdadeConfirmada === "null" ? "default" : "outline"}
+                    variant={
+                      puberdadeConfirmada === "null" ? "default" : "outline"
+                    }
                     className="h-12 text-base rounded-xl border-2"
                     onClick={() => setPuberdadeConfirmada("null")}
                   >
@@ -906,7 +1015,9 @@ const AnimalNovo = () => {
                     <div className="grid grid-cols-3 gap-2">
                       <Button
                         type="button"
-                        variant={secagemRealizada === "true" ? "default" : "outline"}
+                        variant={
+                          secagemRealizada === "true" ? "default" : "outline"
+                        }
                         className="h-12 text-base rounded-xl border-2"
                         onClick={() => handleSecagemRealizadaChange("true")}
                       >
@@ -914,7 +1025,9 @@ const AnimalNovo = () => {
                       </Button>
                       <Button
                         type="button"
-                        variant={secagemRealizada === "false" ? "default" : "outline"}
+                        variant={
+                          secagemRealizada === "false" ? "default" : "outline"
+                        }
                         className="h-12 text-base rounded-xl border-2"
                         onClick={() => handleSecagemRealizadaChange("false")}
                       >
@@ -922,7 +1035,9 @@ const AnimalNovo = () => {
                       </Button>
                       <Button
                         type="button"
-                        variant={secagemRealizada === "null" ? "default" : "outline"}
+                        variant={
+                          secagemRealizada === "null" ? "default" : "outline"
+                        }
                         className="h-12 text-base rounded-xl border-2"
                         onClick={() => handleSecagemRealizadaChange("null")}
                       >
@@ -946,11 +1061,19 @@ const AnimalNovo = () => {
                   <ToggleGroup
                     type="single"
                     value={destinoProdutivo}
-                    onValueChange={(value) => handleDestinoProdutivoChange((value || "null") as DestinoProdutivoAnimalEnum | "null")}
+                    onValueChange={(value) =>
+                      handleDestinoProdutivoChange(
+                        (value || "null") as
+                          | DestinoProdutivoAnimalEnum
+                          | "null",
+                      )
+                    }
                     className="justify-start flex-wrap"
                   >
                     <ToggleGroupItem value="null">Não definido</ToggleGroupItem>
-                    <ToggleGroupItem value="reprodutor">Reprodutor</ToggleGroupItem>
+                    <ToggleGroupItem value="reprodutor">
+                      Reprodutor
+                    </ToggleGroupItem>
                     <ToggleGroupItem value="rufiao">Rufião</ToggleGroupItem>
                     <ToggleGroupItem value="engorda">Engorda</ToggleGroupItem>
                     <ToggleGroupItem value="abate">Abate</ToggleGroupItem>
@@ -964,12 +1087,20 @@ const AnimalNovo = () => {
                   <ToggleGroup
                     type="single"
                     value={statusReprodutivoMacho}
-                    onValueChange={(value) => setStatusReprodutivoMacho((value || "null") as StatusReprodutivoMachoEnum | "null")}
+                    onValueChange={(value) =>
+                      setStatusReprodutivoMacho(
+                        (value || "null") as
+                          | StatusReprodutivoMachoEnum
+                          | "null",
+                      )
+                    }
                     disabled={!maleBreedingSelected}
                     className="justify-start flex-wrap"
                   >
                     <ToggleGroupItem value="null">Não definido</ToggleGroupItem>
-                    <ToggleGroupItem value="candidato">Candidato</ToggleGroupItem>
+                    <ToggleGroupItem value="candidato">
+                      Candidato
+                    </ToggleGroupItem>
                     <ToggleGroupItem value="apto">Apto</ToggleGroupItem>
                     <ToggleGroupItem value="suspenso">Suspenso</ToggleGroupItem>
                     <ToggleGroupItem value="inativo">Inativo</ToggleGroupItem>
@@ -1009,12 +1140,8 @@ const AnimalNovo = () => {
           {isSaving ? "Salvando..." : "Salvar animal"}
         </Button>
       </div>
-
     </div>
   );
 };
 
 export default AnimalNovo;
-
-
-

@@ -5,6 +5,10 @@ Versão: 1.2.0
 
 Use quando a conversa ficou extensa, mas o trabalho ainda não terminou ou não foi formalmente documentado. Este prompt não fecha fase nem altera o repositório.
 
+## Modo
+
+`SOMENTE_LEITURA`. Skill principal: `N/A`.
+
 ## Prompt
 
 Gere um único bloco enxuto de continuidade da conversa atual.

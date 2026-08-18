@@ -2,7 +2,9 @@
 param(
   [Parameter(Mandatory = $true)]
   [ValidateNotNullOrEmpty()]
-  [string[]]$Paths
+  [string[]]$Paths,
+  [switch]$AllowArchive,
+  [string]$ArchiveConfirmation = ""
 )
 
 Set-StrictMode -Version Latest
@@ -86,8 +88,15 @@ foreach ($path in $Paths) {
     $relativePath = Get-RelativeRepositoryPath -InputPath $path -RepositoryRoot $repoRoot
     $segments = $relativePath.Split("/", [System.StringSplitOptions]::RemoveEmptyEntries)
     $isRepositoryRoot = $relativePath -eq "."
-    $isArchive = $relativePath.Equals("docs/archive", [System.StringComparison]::OrdinalIgnoreCase) -or
-      $relativePath.StartsWith("docs/archive/", [System.StringComparison]::OrdinalIgnoreCase)
+    $archiveRoots = @("docs/archive", ".agents/archive", ".agents/prompts/archive")
+    $isArchive = $false
+    foreach ($archiveRoot in $archiveRoots) {
+      if ($relativePath.Equals($archiveRoot, [System.StringComparison]::OrdinalIgnoreCase) -or
+          $relativePath.StartsWith("$archiveRoot/", [System.StringComparison]::OrdinalIgnoreCase)) {
+        $isArchive = $true
+        break
+      }
+    }
     $hasGeneratedDirectory = $segments | Where-Object {
       $_.Equals("dist", [System.StringComparison]::OrdinalIgnoreCase) -or
       $_.Equals("coverage", [System.StringComparison]::OrdinalIgnoreCase) -or
@@ -99,7 +108,10 @@ foreach ($path in $Paths) {
     }
     $isBuildInfo = $relativePath.EndsWith(".tsbuildinfo", [System.StringComparison]::OrdinalIgnoreCase)
 
-    if ($isRepositoryRoot -or $isArchive -or $hasGeneratedDirectory -or $isBuildInfo) {
+    $archiveBlocked = $isArchive -and
+      (-not $AllowArchive -or $ArchiveConfirmation -ne "ALLOW_ARCHIVE_SCOPE")
+
+    if ($isRepositoryRoot -or $archiveBlocked -or $hasGeneratedDirectory -or $isBuildInfo) {
       $violations += "$path -> $relativePath"
     } else {
       Write-Host "OK   $relativePath"

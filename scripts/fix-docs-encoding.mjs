@@ -78,6 +78,7 @@ Opções:
   --check            Retorna código 1 se houver arquivos a corrigir ou suspeitas
   --apply            Grava correções inequívocas de forma atômica
   --confirm <texto>  Confirmação obrigatória para --apply
+  --include-archive  Inclui docs/archive e .agents/archive explicitamente
   --verbose          Lista também arquivos sem alteração
   --help             Mostra esta ajuda
 
@@ -89,6 +90,7 @@ function parseArgs(argv) {
     apply: false,
     check: false,
     confirmation: "",
+    includeArchive: false,
     root: DEFAULT_DIRECTORY,
     verbose: false,
   };
@@ -97,6 +99,7 @@ function parseArgs(argv) {
     const argument = argv[index];
     if (argument === "--apply") options.apply = true;
     else if (argument === "--check") options.check = true;
+    else if (argument === "--include-archive") options.includeArchive = true;
     else if (argument === "--verbose") options.verbose = true;
     else if (argument === "--help" || argument === "-h") {
       usage();
@@ -129,7 +132,15 @@ function parseArgs(argv) {
   return options;
 }
 
-function resolveRoot(rootArgument) {
+function resolveRepositoryRoot() {
+  const gitDirectory = path.join(process.cwd(), ".git");
+  if (!fs.existsSync(gitDirectory)) {
+    throw new Error("Execute este script a partir da raiz do repositório Git.");
+  }
+  return fs.realpathSync(process.cwd());
+}
+
+function resolveRoot(rootArgument, repositoryRoot) {
   const absoluteRoot = path.resolve(process.cwd(), rootArgument);
   let stats;
   try {
@@ -148,10 +159,20 @@ function resolveRoot(rootArgument) {
     throw new Error("A raiz do sistema de arquivos não é permitida.");
   }
 
-  return fs.realpathSync(absoluteRoot);
+  const resolvedRoot = fs.realpathSync(absoluteRoot);
+  const relative = path.relative(repositoryRoot, resolvedRoot);
+  if (
+    relative === "" ||
+    (relative !== ".." &&
+      !relative.startsWith(`..${path.sep}`) &&
+      !path.isAbsolute(relative))
+  ) {
+    return resolvedRoot;
+  }
+  throw new Error("A raiz de processamento deve permanecer dentro do repositório.");
 }
 
-function listMarkdownFiles(root) {
+function listMarkdownFiles(root, repositoryRoot, includeArchive) {
   const files = [];
 
   function visit(directory) {
@@ -159,6 +180,16 @@ function listMarkdownFiles(root) {
       const fullPath = path.join(directory, entry.name);
       if (entry.isSymbolicLink()) continue;
       if (entry.isDirectory()) {
+        const relative = path.relative(repositoryRoot, fullPath).replaceAll("\\", "/");
+        if (
+          !includeArchive &&
+          (relative === "docs/archive" ||
+            relative.startsWith("docs/archive/") ||
+            relative === ".agents/archive" ||
+            relative.startsWith(".agents/archive/"))
+        ) {
+          continue;
+        }
         if (!SKIPPED_DIRECTORIES.has(entry.name)) visit(fullPath);
       } else if (entry.isFile() && entry.name.toLowerCase().endsWith(".md")) {
         files.push(fullPath);
@@ -209,8 +240,19 @@ function atomicWrite(filePath, content, mode) {
 
 function main() {
   const options = parseArgs(process.argv.slice(2));
-  const root = resolveRoot(options.root);
-  const files = listMarkdownFiles(root);
+  const repositoryRoot = resolveRepositoryRoot();
+  const root = resolveRoot(options.root, repositoryRoot);
+  const relativeRoot = path.relative(repositoryRoot, root).replaceAll("\\", "/");
+  if (
+    !options.includeArchive &&
+    (relativeRoot === "docs/archive" ||
+      relativeRoot.startsWith("docs/archive/") ||
+      relativeRoot === ".agents/archive" ||
+      relativeRoot.startsWith(".agents/archive/"))
+  ) {
+    throw new Error("Archive é excluído por padrão. Use --include-archive explicitamente.");
+  }
+  const files = listMarkdownFiles(root, repositoryRoot, options.includeArchive);
   const changed = [];
   const unresolved = [];
 

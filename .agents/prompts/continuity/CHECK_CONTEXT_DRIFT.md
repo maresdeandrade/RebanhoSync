@@ -5,6 +5,10 @@ Versão: 1.2.0
 
 Use para diagnosticar incoerência entre documentos ativos antes de iniciar ou continuar uma fase. Não autoriza patch documental.
 
+## Modo
+
+`SOMENTE_LEITURA`. Skill principal: `N/A`; se houver drift comprovado, `reconcile-docs` ocorre em fase separada e autorizada.
+
 ## Prompt
 
 Verifique se a documentação ativa do RebanhoSync permite continuar o trabalho sem reabrir fase concluída, perder pendência real ou seguir baseline incorreto.

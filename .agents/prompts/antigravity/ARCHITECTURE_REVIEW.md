@@ -5,6 +5,10 @@ Versão: 1.2.0
 
 Use para revisar a arquitetura de uma área ou fluxo sem alterar arquivos.
 
+## Modo
+
+`SOMENTE_LEITURA`
+
 ## Prompt
 
 Realize uma revisão arquitetural somente leitura da área abaixo:

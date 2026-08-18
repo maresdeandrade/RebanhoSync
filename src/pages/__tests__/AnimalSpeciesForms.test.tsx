@@ -1,6 +1,7 @@
 /** @vitest-environment jsdom */
 import "@testing-library/jest-dom";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { useLiveQuery } from "dexie-react-hooks";
@@ -202,6 +203,55 @@ describe("animal species in create/edit forms", () => {
     });
   });
 
+  it("registra compra factual no mesmo gesto que incorpora o animal ativo", async () => {
+    const user = userEvent.setup();
+
+    render(
+      <MemoryRouter>
+        <AnimalNovo />
+      </MemoryRouter>,
+    );
+
+    fireEvent.change(screen.getByLabelText(/Identificação/i), {
+      target: { value: "BR-COMPRA-01" },
+    });
+    await user.click(screen.getByRole("tab", { name: /Origem/i }));
+    await user.click(screen.getByRole("button", { name: /^Compra$/i }));
+    fireEvent.change(screen.getByLabelText(/Valor Total/i), {
+      target: { value: "3200" },
+    });
+    fireEvent.click(screen.getAllByRole("button", { name: /Salvar animal/i })[0]);
+
+    await waitFor(() => expect(mockedCreateGesture).toHaveBeenCalled());
+    const ops = mockedCreateGesture.mock.calls[0]?.[1] ?? [];
+    const animalOp = ops.find((op) => op.table === "animais");
+    const eventOp = ops.find((op) => op.table === "eventos");
+    const commercialOp = ops.find((op) => op.table === "eventos_comercial");
+
+    expect(ops.map((op) => op.table)).toEqual([
+      "animais",
+      "eventos",
+      "eventos_comercial",
+    ]);
+    expect(animalOp?.record).toMatchObject({
+      identificacao: "BR-COMPRA-01",
+      origem: "compra",
+      status: "ativo",
+    });
+    expect(eventOp?.record).toMatchObject({
+      dominio: "comercial",
+      animal_id: animalOp?.record.id,
+    });
+    expect(commercialOp?.record).toMatchObject({
+      operation_type: "compra",
+      scope: "animal",
+      quantidade_animais: 1,
+      valor_bruto: 3200,
+      animal_ids: [animalOp?.record.id],
+    });
+    expect(ops.some((op) => op.table === "eventos_financeiro")).toBe(false);
+  });
+
   it("preserva especie existente na edicao quando o campo nao muda", async () => {
     const existingAnimal = makeAnimal({ especie: "bovino" });
     mockedUseLiveQuery.mockImplementation(((query) => {
@@ -265,4 +315,3 @@ describe("animal species in create/edit forms", () => {
     expect(ops[0]?.record.especie).toBe("bubalino");
   });
 });
-

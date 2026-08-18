@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { TABLE_MAP, getLocalStoreName, getRemoteTableName } from "@/lib/offline/tableMap";
+import {
+  TABLE_MAP,
+  getLocalStoreName,
+  getRemoteTableName,
+} from "@/lib/offline/tableMap";
 import { db } from "@/lib/offline/db";
 import { calculateCommercialOperation } from "../commercialOperation";
 import type { EventoComercial } from "@/lib/offline/types";
@@ -13,8 +17,8 @@ describe("Commercial Operation Persistence & Sync Integration (Fase 9.2)", () =>
     operationType: "compra" as const,
     scope: "animal" as const,
     occurredAt: "2026-05-29",
-    quantidadeAnimais: 10,
-    pesoVivoTotal: 3000,
+    quantidadeAnimais: 1,
+    pesoVivoTotal: 300,
     valorBruto: 25000,
     frete: 1000,
     comissao: 500,
@@ -22,15 +26,19 @@ describe("Commercial Operation Persistence & Sync Integration (Fase 9.2)", () =>
     taxasImpostos: 300,
     contraparteId: "cp-part-1",
     contraparteNome: "Parceiro C",
-    animalIds: ["ani-a1", "ani-a2"],
+    animalIds: ["ani-a1"],
     financeTransactionId: "fin-tx-888",
     observacoes: "Persistência teste",
   };
 
   it("1. tableMap must correctly include the new table eventos_comercial", () => {
     expect(TABLE_MAP.eventos_comercial).toBe("event_eventos_comercial");
-    expect(getLocalStoreName("eventos_comercial")).toBe("event_eventos_comercial");
-    expect(getRemoteTableName("event_eventos_comercial")).toBe("eventos_comercial");
+    expect(getLocalStoreName("eventos_comercial")).toBe(
+      "event_eventos_comercial",
+    );
+    expect(getRemoteTableName("event_eventos_comercial")).toBe(
+      "eventos_comercial",
+    );
   });
 
   it("2. Dexie database should declare event_eventos_comercial store", () => {
@@ -80,11 +88,15 @@ describe("Commercial Operation Persistence & Sync Integration (Fase 9.2)", () =>
 
     // Assert that we don't automatically spawn any "finance_transactions" or "eventos_financeiro" rows inside the commercial operation payload itself
     const generatedOps: Array<{ table: string }> = []; // Mimic any automatic operation triggers
-    
+
     // In our phase, commercial operations are zootecnico facts stored in eventos_comercial and events, with NO automatic ledger side effects
-    expect(generatedOps.filter(op => op.table === "finance_transactions")).toHaveLength(0);
-    expect(generatedOps.filter(op => op.table === "eventos_financeiro")).toHaveLength(0);
-    
+    expect(
+      generatedOps.filter((op) => op.table === "finance_transactions"),
+    ).toHaveLength(0);
+    expect(
+      generatedOps.filter((op) => op.table === "eventos_financeiro"),
+    ).toHaveLength(0);
+
     // Check that we successfully mapped and preserved finance_transaction_id as an optional link
     expect(detailRecord.finance_transaction_id).toBe("fin-tx-888");
   });
@@ -96,12 +108,14 @@ describe("Commercial Operation Persistence & Sync Integration (Fase 9.2)", () =>
     const summary = calculateCommercialOperation(inputWithoutFin);
     expect(summary.calculationStatus).toBe("partial"); // generates partial because optional financeTransactionId link is missing, which is expected
     expect(summary.issues).toHaveLength(0);
-    expect(summary.limitations).toContain("Ausência de vínculo financeiro (financeTransactionId).");
+    expect(summary.limitations).toContain(
+      "Ausência de vínculo financeiro (financeTransactionId).",
+    );
   });
 
   it("5. pure domain calculated data is persisted exactly without divergence", () => {
     const summary = calculateCommercialOperation(validInput);
-    
+
     // Mock mapping for Dexie event store
     const persistedRecord: EventoComercial = {
       evento_id: mockEventId,
@@ -138,7 +152,7 @@ describe("Commercial Operation Persistence & Sync Integration (Fase 9.2)", () =>
     };
 
     expect(persistedRecord.peso_medio_derivado).toBe(300);
-    expect(persistedRecord.valor_liquido_derivado).toBe(23000); // 25000 - 200 - 300 - 500 - 1000
+    expect(persistedRecord.valor_liquido_derivado).toBe(26600); // 25000 + 1000 + 500 + 300 - 200
     expect(persistedRecord.calculation_status).toBe("complete");
     expect(persistedRecord.issues).toEqual([]);
     expect(persistedRecord.limitations).toEqual([]);
@@ -150,13 +164,23 @@ describe("Commercial Operation Persistence & Sync Integration (Fase 9.2)", () =>
     const dummyRecord: Partial<EventoComercial> = {};
     const keys = Object.keys(dummyRecord);
     const prohibitedKeys = [
-      "lucro", "margem", "roi", "custo_cabeca", "custo_arroba",
-      "pronto_venda", "pronto_abate", "apto", "liberado", "autorizado"
+      "lucro",
+      "margem",
+      "roi",
+      "custo_cabeca",
+      "custo_arroba",
+      "pronto_venda",
+      "pronto_abate",
+      "apto",
+      "liberado",
+      "autorizado",
     ];
 
     prohibitedKeys.forEach((key) => {
       expect(keys).not.toContain(key);
-      expect((dummyRecord as unknown as Record<string, unknown>)[key]).toBeUndefined();
+      expect(
+        (dummyRecord as unknown as Record<string, unknown>)[key],
+      ).toBeUndefined();
     });
   });
 });

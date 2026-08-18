@@ -1,6 +1,6 @@
 # Context Loading — RebanhoSync
 
-Carregue apenas o contexto necessário para decidir e executar a tarefa.
+Carregue apenas o contexto necessário para decidir e executar a tarefa. Este arquivo é o roteador autoritativo de contexto, seleção de skill e progressão entre fases; READMEs e prompts são catálogos ou wrappers e não criam roteamento concorrente.
 
 Este arquivo define **o que carregar**. Para limitar expansão, use `.agents/rules/no-broad-context.md`. Para comandos e validações, siga `.agents/rules/rtk.md`.
 
@@ -15,30 +15,43 @@ Antes de escolher uma skill:
 3. Aplicar este arquivo.
 4. Ler `.agents/rules/no-broad-context.md`.
 5. Classificar o tipo real da tarefa.
-6. Escolher no máximo uma skill principal.
+6. Escolher no máximo uma skill principal para a fase atual.
 
-Uma segunda skill só é permitida quando houver interseção real de domínio crítico. Não abrir todos os `SKILL.md` para decidir.
+Durante implementação, uma skill de apoio só é permitida quando houver interseção técnica concreta, deve ser justificada e não pode ampliar o escopo. Não abrir todos os `SKILL.md` para decidir.
 
 ### Precedência em conflito
 
-1. Código + migrations ativas.
-2. `docs/context/PROJECT_STATUS.md`.
-3. Documentos normativos ativos.
-4. Documentos derivados.
-5. Histórico em `docs/archive/**`.
-6. Definições da skill.
+Aplicar as precedências factual e procedimental definidas exclusivamente em `.agents/rules/CORE_RULES.md`. Rules de segurança não podem ser relaxadas por skill, prompt ou template.
 
 ---
 
 ## Roteamento de skill
 
+### Papéis lógicos
+
+* **Lifecycle:** `repository-context-retrieval`, `rebanhosync-verification-gate`, `reconcile-docs` e `prepare-pr`.
+* **Engineering:** `harden-module`, `sync-offline-rollback` e `migrations-rls-contracts`.
+* **Domain:** `animal-cadastro-origem-destino`, `movimentacao-transito-conformidade`, `reproducao-parto-posparto-cria`, `sanitario-registro-operacional` e `sanitario-catalogo-regulatorio-compliance`.
+
+### Progressão entre fases
+
+```txt
+descoberta, se necessária → encerra descoberta
+implementação → 1 skill principal + até 1 apoio → encerra patch
+verification gate → fase separada
+reconcile docs, se necessário → fase separada
+prepare PR → fase separada
+```
+
+Skills de lifecycle executadas depois do patch não contam como skill de apoio da implementação. Não carregar quatro ou mais skills simultaneamente por estarem listadas como possíveis coordenações.
+
 * Ponto de intervenção desconhecido: `repository-context-retrieval`.
-* Hotspot conhecido com risco arquitetural: `harden-module` ou a skill do domínio principal.
+* Hotspot conhecido com risco arquitetural: `harden-module` ou a skill do domínio principal, conforme o risco dominante.
 * Patch concluído aguardando validação: `rebanhosync-verification-gate`.
 * PR após gate aprovado: `prepare-pr`.
 * Drift formal entre documentação e implementação: `reconcile-docs`.
 
-Sync/offline, migrations/RLS e regras de domínio não devem ser carregados como segunda skill apenas por menção incidental. O risco principal da tarefa deve justificar o roteamento.
+Sync/offline, migrations/RLS e regras de domínio não devem ser carregados como apoio apenas por menção incidental. A interseção concreta e o risco dominante devem justificar a composição.
 
 ---
 

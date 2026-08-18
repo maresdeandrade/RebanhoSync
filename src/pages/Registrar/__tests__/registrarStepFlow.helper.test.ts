@@ -11,13 +11,22 @@ import {
 } from "@/pages/Registrar/useRegistrarStepFlow";
 
 describe("registrar step-flow", () => {
-  it("bloqueia avanço da etapa de seleção sem lote", () => {
+  it("bloqueia avanço no modo existente sem alvo", () => {
     expect(
       canAdvanceFromSelectStep({
-        selectedLoteId: "",
-        requiresAnimalsForQuickAction: false,
+        targetMode: "existing",
+        hasExistingTarget: false,
       }),
     ).toBe(false);
+  });
+
+  it("permite avançar no modo sem alvo", () => {
+    expect(
+      canAdvanceFromSelectStep({
+        targetMode: "none",
+        hasExistingTarget: false,
+      }),
+    ).toBe(true);
   });
 
   it("bloqueia avanço da etapa de ação sem manejo válido", () => {
@@ -32,8 +41,8 @@ describe("registrar step-flow", () => {
   it("não avança para confirmação quando guard de etapa falha", () => {
     const { result } = renderHook(() =>
       useRegistrarStepFlow({
-        selectedLoteId: "lote-1",
-        requiresAnimalsForQuickAction: false,
+        targetMode: "existing",
+        hasExistingTarget: true,
         hasTipoManejo: false,
         canAdvanceToConfirm: true,
       }),

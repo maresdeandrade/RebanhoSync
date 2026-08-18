@@ -56,6 +56,45 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile --prefer-offline
+      - name: Install ripgrep
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ripgrep
+          rg --version
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v3
+        with:
+          version: 2.72.7
+
+      - name: Start disposable Supabase
+        run: |
+          set -euo pipefail
+          cli_state="$RUNNER_TEMP/rebanhosync-supabase-cli-latest"
+          if [[ -f supabase/.temp/cli-latest ]]; then
+            cp supabase/.temp/cli-latest "$cli_state"
+          else
+            rm -f "$cli_state"
+          fi
+          supabase init --force
+          supabase start
+          supabase db reset --yes
+
+      - name: Export local Supabase test environment
+        run: |
+          set -euo pipefail
+          env_file="$RUNNER_TEMP/rebanhosync-supabase.env"
+          supabase status -o env > "$env_file"
+          set -a
+          source "$env_file"
+          set +a
+          {
+            echo "REBANHOSYNC_TEST_DB_URL=$DB_URL"
+            echo "REBANHOSYNC_TEST_API_URL=$API_URL"
+            echo "REBANHOSYNC_TEST_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY"
+          } >> "$GITHUB_ENV"
+
+      - name: Prepare commercial concurrency fixture
+        run: node scripts/ci/prepare-commercial-concurrency-fixture.mjs
 
       - name: Lint
         run: pnpm run lint
@@ -66,6 +105,17 @@ jobs:
 
       - name: Build
         run: pnpm run build
+      - name: Stop disposable Supabase
+        if: always()
+        run: |
+          set +e
+          supabase stop --no-backup
+          rm -f supabase/config.toml supabase/.gitignore "$RUNNER_TEMP/rebanhosync-supabase.env"
+          cli_state="$RUNNER_TEMP/rebanhosync-supabase-cli-latest"
+          if [[ -f "$cli_state" ]]; then
+            cp "$cli_state" supabase/.temp/cli-latest
+          fi
+          rm -f "$cli_state"
 
       - name: Detect changed files
         run: |
@@ -83,118 +133,8 @@ jobs:
           echo "Changed files:"
           sed 's/^/changed: /' /tmp/changed-files.txt
 
-      - name: Header baseline consistency in derived docs
-        run: |
-          set -euo pipefail
-
-          files=(
-            "docs/IMPLEMENTATION_STATUS.md"
-            "docs/TECH_DEBT.md"
-            "docs/ROADMAP.md"
-            "docs/review/RECONCILIACAO_REPORT.md"
-          )
-
-          any_changed=false
-
-          for file in "${files[@]}"; do
-            if grep -Fxq -- "$file" /tmp/changed-files.txt; then
-              any_changed=true
-              break
-            fi
-          done
-
-          if [[ "$any_changed" == "false" ]]; then
-            echo "No derived docs changed; skipping baseline header checks."
-            exit 0
-          fi
-
-          extract_baseline() {
-            local file="$1"
-            local line=""
-            local hash=""
-
-            line="$(grep -Em1 '^(> )?\*\*Baseline:\*\* `[^`]+`$|^Baseline: .+$' "$file" || true)"
-
-            if [[ -z "$line" ]]; then
-              echo "Missing Baseline header in $file" >&2
-              return 1
-            fi
-
-            hash="$(sed -nE 's/.*`([^`]+)`.*/\1/p' <<< "$line")"
-
-            if [[ -z "$hash" ]]; then
-              hash="$(sed -E 's/^>[[:space:]]*//; s/^\*\*Baseline:\*\*[[:space:]]*//; s/^Baseline:[[:space:]]*//; s/[[:space:]]+$//' <<< "$line")"
-            fi
-
-            if [[ -z "$hash" ]]; then
-              echo "Could not extract Baseline value from $file" >&2
-              return 1
-            fi
-
-            printf '%s\n' "$hash"
-          }
-
-          expected_baseline=""
-
-          for file in "${files[@]}"; do
-            if ! grep -Fxq -- "$file" /tmp/changed-files.txt; then
-              continue
-            fi
-
-            baseline="$(extract_baseline "$file")"
-            echo "$file baseline=$baseline"
-
-            if [[ -z "$expected_baseline" ]]; then
-              expected_baseline="$baseline"
-            fi
-
-            if [[ "$baseline" != "$expected_baseline" ]]; then
-              echo "Baseline mismatch: expected=$expected_baseline got=$baseline in $file" >&2
-              exit 1
-            fi
-          done
-
-      - name: Derivation sanity in derived docs
-        run: |
-          set -euo pipefail
-
-          require_contains() {
-            local file="$1"
-            local pattern="$2"
-
-            if [[ ! -f "$file" ]]; then
-              echo "Missing required derived doc: $file" >&2
-              exit 1
-            fi
-
-            if ! grep -Enq "$pattern" "$file"; then
-              echo "Missing required pattern '$pattern' in $file" >&2
-              exit 1
-            fi
-
-            echo "OK: $file contains '$pattern'"
-          }
-
-          advisory_contains() {
-            local file="$1"
-            local pattern="$2"
-
-            if [[ ! -f "$file" ]]; then
-              echo "Advisory skipped; file not found: $file"
-              return 0
-            fi
-
-            echo "Advisory check: $file / $pattern"
-            grep -En "$pattern" "$file" || true
-          }
-
-          require_contains "docs/IMPLEMENTATION_STATUS.md" "capability_id"
-          require_contains "docs/TECH_DEBT.md" "capability_id"
-          require_contains "docs/ROADMAP.md" "capability_id"
-
-          advisory_contains "docs/IMPLEMENTATION_STATUS.md" "gap_set|gap\.capability_id"
-          advisory_contains "docs/review/RECONCILIACAO_REPORT.md" "Match: ✅"
-
+      - name: Active document gates
+        run: pnpm run gates:docs
       - name: Repository must remain clean
         run: |
           set -euo pipefail

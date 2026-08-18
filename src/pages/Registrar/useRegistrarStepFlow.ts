@@ -1,4 +1,5 @@
 import { useCallback, useState } from "react";
+import type { RegistrarTargetMode } from "@/pages/Registrar/helpers/commercialForm";
 
 export enum RegistrationStep {
   SELECT_ANIMALS = 1,
@@ -13,17 +14,18 @@ export const REGISTRATION_STEPS = [
 ] as const;
 
 export const STEP_LABEL: Record<RegistrationStep, string> = {
-  [RegistrationStep.SELECT_ANIMALS]: "Selecionar alvo",
+  [RegistrationStep.SELECT_ANIMALS]: "Definir contexto",
   [RegistrationStep.CHOOSE_ACTION]: "Escolher ação",
   [RegistrationStep.CONFIRM]: "Registrar",
 };
 
 export function canAdvanceFromSelectStep(input: {
-  selectedLoteId: string;
-  requiresAnimalsForQuickAction: boolean;
+  targetMode: RegistrarTargetMode | null;
+  hasExistingTarget: boolean;
 }) {
   return (
-    input.selectedLoteId.trim().length > 0 && !input.requiresAnimalsForQuickAction
+    input.targetMode === "none" ||
+    (input.targetMode === "existing" && input.hasExistingTarget)
   );
 }
 
@@ -35,8 +37,8 @@ export function canAdvanceFromChooseActionStep(input: {
 }
 
 export function useRegistrarStepFlow(input: {
-  selectedLoteId: string;
-  requiresAnimalsForQuickAction: boolean;
+  targetMode: RegistrarTargetMode | null;
+  hasExistingTarget: boolean;
   hasTipoManejo: boolean;
   canAdvanceToConfirm: boolean;
 }) {
@@ -68,15 +70,15 @@ export function useRegistrarStepFlow(input: {
   const advanceFromSelect = useCallback(() => {
     if (
       !canAdvanceFromSelectStep({
-        selectedLoteId: input.selectedLoteId,
-        requiresAnimalsForQuickAction: input.requiresAnimalsForQuickAction,
+        targetMode: input.targetMode,
+        hasExistingTarget: input.hasExistingTarget,
       })
     ) {
       return false;
     }
     setStep(RegistrationStep.CHOOSE_ACTION);
     return true;
-  }, [input.requiresAnimalsForQuickAction, input.selectedLoteId]);
+  }, [input.hasExistingTarget, input.targetMode]);
 
   return {
     step,

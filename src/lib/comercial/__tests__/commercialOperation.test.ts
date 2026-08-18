@@ -7,8 +7,8 @@ describe("Commercial Operation Core Domain", () => {
     operationType: "compra",
     scope: "animal",
     occurredAt: "2026-05-29",
-    quantidadeAnimais: 5,
-    pesoVivoTotal: 1500,
+    quantidadeAnimais: 1,
+    pesoVivoTotal: 300,
     valorBruto: 12000,
     frete: 500,
     comissao: 200,
@@ -16,7 +16,7 @@ describe("Commercial Operation Core Domain", () => {
     taxasImpostos: 300,
     contraparteId: "cp-1",
     contraparteNome: "Parceiro A",
-    animalIds: ["ani-1", "ani-2", "ani-3", "ani-4", "ani-5"],
+    animalIds: ["ani-1"],
     financeTransactionId: "fin-123",
     observacoes: "Mock compra",
   };
@@ -45,11 +45,11 @@ describe("Commercial Operation Core Domain", () => {
     expect(summary.calculationStatus).toBe("complete");
     expect(summary.issues).toHaveLength(0);
     expect(summary.limitations).toHaveLength(0);
-    expect(summary.pesoMedioDerivado).toBe(300); // 1500 / 5
-    expect(summary.valorLiquidoDerivado).toBe(10900); // 12000 - 100 - 300 - 200 - 500
+    expect(summary.pesoMedioDerivado).toBe(300);
+    expect(summary.valorLiquidoDerivado).toBe(12900); // 12000 + 500 + 200 + 300 - 100
     expect(summary.snapshot.operationType).toBe("compra");
     expect(summary.snapshot.scope).toBe("animal");
-    expect(summary.snapshot.animalIds).toEqual(["ani-1", "ani-2", "ani-3", "ani-4", "ani-5"]);
+    expect(summary.snapshot.animalIds).toEqual(["ani-1"]);
   });
 
   it("should successfully calculate a valid venda with scope = 'lote'", () => {
@@ -68,14 +68,14 @@ describe("Commercial Operation Core Domain", () => {
   it("should calculate pesoMedioDerivado correctly", () => {
     const input: CommercialOperationInput = {
       ...validCompraAnimalBase,
-      quantidadeAnimais: 4,
-      pesoVivoTotal: 1000,
+      quantidadeAnimais: 1,
+      pesoVivoTotal: 250,
     };
     const summary = calculateCommercialOperation(input);
     expect(summary.pesoMedioDerivado).toBe(250);
   });
 
-  it("should calculate valorLiquidoDerivado correctly", () => {
+  it("calculates acquisition total for purchase", () => {
     const input: CommercialOperationInput = {
       ...validCompraAnimalBase,
       valorBruto: 10000,
@@ -85,7 +85,44 @@ describe("Commercial Operation Core Domain", () => {
       frete: 1000,
     };
     const summary = calculateCommercialOperation(input);
-    expect(summary.valorLiquidoDerivado).toBe(8000); // 10000 - 500 - 200 - 300 - 1000
+    expect(summary.valorLiquidoDerivado).toBe(11000); // 10000 + 1000 + 300 + 200 - 500
+  });
+
+  it("calculates net revenue for sale", () => {
+    const summary = calculateCommercialOperation({
+      ...validVendaLoteBase,
+      valorBruto: 10000,
+      frete: 1000,
+      comissao: 300,
+      taxasImpostos: 200,
+      descontos: 500,
+    });
+    expect(summary.valorLiquidoDerivado).toBe(8000);
+  });
+
+  it("includes explicit bonuses in purchase cost and sale net revenue", () => {
+    expect(
+      calculateCommercialOperation({
+        ...validCompraAnimalBase,
+        valorBruto: 10_000,
+        frete: 500,
+        comissao: 0,
+        taxasImpostos: 0,
+        descontos: 0,
+        bonificacoes: 200,
+      }).valorLiquidoDerivado,
+    ).toBe(10_300);
+    const sale = calculateCommercialOperation({
+      ...validVendaLoteBase,
+      valorBruto: 10_000,
+      frete: 500,
+      comissao: 0,
+      taxasImpostos: 0,
+      descontos: 0,
+      bonificacoes: 200,
+    });
+    expect(sale.valorLiquidoDerivado).toBe(9_700);
+    expect(sale.snapshot.bonificacoes).toBe(200);
   });
 
   it("should block calculation if quantidadeAnimais <= 0", () => {
@@ -102,10 +139,16 @@ describe("Commercial Operation Core Domain", () => {
     const summaryNegative = calculateCommercialOperation(inputNegative);
 
     expect(summaryZero.calculationStatus).toBe("blocked");
-    expect(summaryZero.issues.some(i => i.code === "invalid_quantidade_animais")).toBe(true);
+    expect(
+      summaryZero.issues.some((i) => i.code === "invalid_quantidade_animais"),
+    ).toBe(true);
 
     expect(summaryNegative.calculationStatus).toBe("blocked");
-    expect(summaryNegative.issues.some(i => i.code === "invalid_quantidade_animais")).toBe(true);
+    expect(
+      summaryNegative.issues.some(
+        (i) => i.code === "invalid_quantidade_animais",
+      ),
+    ).toBe(true);
   });
 
   it("should block calculation if any monetary value is negative", () => {
@@ -124,7 +167,9 @@ describe("Commercial Operation Core Domain", () => {
       };
       const summary = calculateCommercialOperation(input);
       expect(summary.calculationStatus).toBe("blocked");
-      expect(summary.issues.some(i => i.code.startsWith("negative_"))).toBe(true);
+      expect(summary.issues.some((i) => i.code.startsWith("negative_"))).toBe(
+        true,
+      );
     });
   });
 
@@ -136,19 +181,23 @@ describe("Commercial Operation Core Domain", () => {
     const summary = calculateCommercialOperation(input);
 
     expect(summary.calculationStatus).toBe("blocked");
-    expect(summary.issues.some(i => i.code === "negative_peso_vivo_total")).toBe(true);
+    expect(
+      summary.issues.some((i) => i.code === "negative_peso_vivo_total"),
+    ).toBe(true);
   });
 
   it("should block calculation if valorLiquidoDerivado < 0", () => {
     const input: CommercialOperationInput = {
       ...validCompraAnimalBase,
       valorBruto: 100,
-      frete: 500, // costs > valorBruto
+      descontos: 2_000,
     };
     const summary = calculateCommercialOperation(input);
 
     expect(summary.calculationStatus).toBe("blocked");
-    expect(summary.issues.some(i => i.code === "negative_valor_liquido_derivado")).toBe(true);
+    expect(
+      summary.issues.some((i) => i.code === "negative_valor_liquido_derivado"),
+    ).toBe(true);
   });
 
   it("should generate partial status, not blocked, when valorBruto is absent", () => {
@@ -158,9 +207,11 @@ describe("Commercial Operation Core Domain", () => {
     const summary = calculateCommercialOperation(input);
 
     expect(summary.calculationStatus).toBe("partial");
-    expect(summary.issues.some(i => i.severity === "blocking")).toBe(false);
+    expect(summary.issues.some((i) => i.severity === "blocking")).toBe(false);
     expect(summary.valorLiquidoDerivado).toBeUndefined();
-    expect(summary.limitations).toContain("Ausência de valor bruto impossibilita o cálculo do valor líquido derivado.");
+    expect(summary.limitations).toContain(
+      "Ausência de valor bruto impossibilita o cálculo do valor líquido derivado.",
+    );
   });
 
   it("should generate partial status, not blocked, when pesoVivoTotal is absent", () => {
@@ -170,9 +221,11 @@ describe("Commercial Operation Core Domain", () => {
     const summary = calculateCommercialOperation(input);
 
     expect(summary.calculationStatus).toBe("partial");
-    expect(summary.issues.some(i => i.severity === "blocking")).toBe(false);
+    expect(summary.issues.some((i) => i.severity === "blocking")).toBe(false);
     expect(summary.pesoMedioDerivado).toBeUndefined();
-    expect(summary.limitations).toContain("Ausência de peso vivo total impossibilita o cálculo do peso médio derivado.");
+    expect(summary.limitations).toContain(
+      "Ausência de peso vivo total impossibilita o cálculo do peso médio derivado.",
+    );
   });
 
   it("should generate limitation when contraparte is absent", () => {
@@ -183,7 +236,9 @@ describe("Commercial Operation Core Domain", () => {
     const summary = calculateCommercialOperation(input);
 
     expect(summary.calculationStatus).toBe("partial");
-    expect(summary.limitations).toContain("Ausência de contraparte (parceiro comercial).");
+    expect(summary.limitations).toContain(
+      "Ausência de contraparte (parceiro comercial).",
+    );
   });
 
   it("should generate limitation when animal/lote specific link is absent", () => {
@@ -192,27 +247,33 @@ describe("Commercial Operation Core Domain", () => {
 
     const summaryAnimal = calculateCommercialOperation(inputAnimal);
     expect(summaryAnimal.calculationStatus).toBe("partial");
-    expect(summaryAnimal.limitations).toContain("Ausência de vínculo específico com animal(is).");
+    expect(summaryAnimal.limitations).toContain(
+      "Ausência de vínculo específico com animal(is).",
+    );
 
     const inputLote = { ...validVendaLoteBase };
     delete inputLote.loteId;
 
     const summaryLote = calculateCommercialOperation(inputLote);
     expect(summaryLote.calculationStatus).toBe("partial");
-    expect(summaryLote.limitations).toContain("Ausência de vínculo específico com lote.");
+    expect(summaryLote.limitations).toContain(
+      "Ausência de vínculo específico com lote.",
+    );
   });
 
   it("should block calculation with negative liquid value if valorBruto = 0 and costs > 0", () => {
     const input: CommercialOperationInput = {
       ...validCompraAnimalBase,
       valorBruto: 0,
-      frete: 10,
+      descontos: 2_000,
     };
 
     const summary = calculateCommercialOperation(input);
 
     expect(summary.calculationStatus).toBe("blocked");
-    expect(summary.issues.some(i => i.code === "negative_valor_liquido_derivado")).toBe(true);
+    expect(
+      summary.issues.some((i) => i.code === "negative_valor_liquido_derivado"),
+    ).toBe(true);
   });
 
   it("should not break calculation when pesoVivoTotal = 0, but generate an informative limitation", () => {
@@ -226,7 +287,9 @@ describe("Commercial Operation Core Domain", () => {
     expect(summary.calculationStatus).toBe("complete");
     expect(summary.issues).toHaveLength(0);
     expect(summary.pesoMedioDerivado).toBe(0);
-    expect(summary.limitations).toContain("Peso vivo total informado como zero.");
+    expect(summary.limitations).toContain(
+      "Peso vivo total informado como zero.",
+    );
   });
 
   it("should not block when financeTransactionId is absent, but should report partial status and a limitation", () => {
@@ -236,8 +299,10 @@ describe("Commercial Operation Core Domain", () => {
     const summary = calculateCommercialOperation(input);
 
     expect(summary.calculationStatus).toBe("partial");
-    expect(summary.issues.some(i => i.severity === "blocking")).toBe(false);
-    expect(summary.limitations).toContain("Ausência de vínculo financeiro (financeTransactionId).");
+    expect(summary.issues.some((i) => i.severity === "blocking")).toBe(false);
+    expect(summary.limitations).toContain(
+      "Ausência de vínculo financeiro (financeTransactionId).",
+    );
   });
 
   it("should absolutely not contain any prohibited terms or calculations in the output", () => {
@@ -262,7 +327,9 @@ describe("Commercial Operation Core Domain", () => {
 
     prohibitedKeys.forEach((key) => {
       expect(keys).not.toContain(key);
-      expect((summary as unknown as Record<string, unknown>)[key]).toBeUndefined();
+      expect(
+        (summary as unknown as Record<string, unknown>)[key],
+      ).toBeUndefined();
     });
 
     // Check that issues and limitations don't have prohibited terms

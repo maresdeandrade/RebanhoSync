@@ -1,15 +1,29 @@
-import { spawn } from "node:child_process";
+import { execFileSync, spawn } from "node:child_process";
 import crypto from "node:crypto";
 import fs from "node:fs";
 import net from "node:net";
-import os from "node:os";
 import path from "node:path";
 
+const REPOSITORY_ROOT = process.cwd();
+const MANIFEST_ARGUMENT = process.env.UI_SMOKE_FIXTURE_MANIFEST;
+if (!MANIFEST_ARGUMENT) {
+  throw new Error("Defina UI_SMOKE_FIXTURE_MANIFEST com o manifesto gerado pelo preparador.");
+}
+const MANIFEST_PATH = path.resolve(REPOSITORY_ROOT, MANIFEST_ARGUMENT);
+const TMP_ROOT = path.join(REPOSITORY_ROOT, "tmp") + path.sep;
+if (!MANIFEST_PATH.startsWith(TMP_ROOT)) {
+  throw new Error("UI_SMOKE_FIXTURE_MANIFEST deve permanecer em tmp/ dentro do repositorio.");
+}
+const FIXTURE = JSON.parse(fs.readFileSync(MANIFEST_PATH, "utf8"));
+if (FIXTURE.clientId !== "dry-cow-ui-smoke") {
+  throw new Error("Manifesto nao pertence ao smoke de Vaca Seca.");
+}
+
 const APP_URL = process.env.APP_URL ?? "http://127.0.0.1:8080";
-const EMAIL = process.env.UI_SMOKE_EMAIL;
+const EMAIL = process.env.UI_SMOKE_EMAIL ?? FIXTURE.email;
 const PASSWORD = process.env.UI_SMOKE_PASSWORD;
-const FARM_NAME = process.env.UI_SMOKE_FARM_NAME ?? "Fazenda Smoke Vaca Seca";
-const FARM_ID = process.env.UI_SMOKE_FARM_ID;
+const FARM_NAME = process.env.UI_SMOKE_FARM_NAME ?? FIXTURE.farmName;
+const FARM_ID = process.env.UI_SMOKE_FARM_ID ?? FIXTURE.fazendaId;
 const CDP_PORT = Number(process.env.CDP_PORT ?? "9223");
 const LOCAL_HOSTS = new Set(["127.0.0.1", "localhost", "::1"]);
 const COMMAND_TIMEOUT_MS = 15_000;
@@ -335,25 +349,30 @@ async function waitFor(cdp, body, timeoutMs = 30_000) {
 }
 
 async function main() {
-  await assertPortAvailable(CDP_PORT);
-  const profile = fs.mkdtempSync(path.join(os.tmpdir(), "dry-cow-ui-smoke-"));
-  const chrome = spawn(
-    findChrome(),
-    [
-      "--headless=new",
-      "--disable-gpu",
-      "--no-first-run",
-      "--no-default-browser-check",
-      `--remote-debugging-port=${CDP_PORT}`,
-      `--user-data-dir=${profile}`,
-      "about:blank",
-    ],
-    { detached: false, stdio: "ignore" },
-  );
-
+  let profile = null;
+  let chrome = null;
   let cdp = null;
   let activationMayBeActive = false;
+  let screenshotPath = null;
   try {
+    await assertPortAvailable(CDP_PORT);
+    fs.mkdirSync(path.join(REPOSITORY_ROOT, "tmp"), { recursive: true });
+    profile = fs.mkdtempSync(
+      path.join(REPOSITORY_ROOT, "tmp", "dry-cow-ui-profile-"),
+    );
+    chrome = spawn(
+      findChrome(),
+      [
+        "--headless=new",
+        "--disable-gpu",
+        "--no-first-run",
+        "--no-default-browser-check",
+        `--remote-debugging-port=${CDP_PORT}`,
+        `--user-data-dir=${profile}`,
+        "about:blank",
+      ],
+      { detached: false, stdio: "ignore" },
+    );
     await waitForCdp(CDP_PORT);
     const target = await fetchJson(
       `http://127.0.0.1:${CDP_PORT}/json/new?${encodeURIComponent(appPath("/login"))}`,
@@ -503,10 +522,10 @@ async function main() {
       captureBeyondViewport: true,
     });
     if (!screenshot.data) throw new Error("CDP nao retornou dados da captura de tela");
-    const screenshotPath = path.join(
+    screenshotPath = path.join(
       process.cwd(),
       "tmp",
-      "dry-cow-ui-smoke.png",
+      `dry-cow-ui-smoke-${FIXTURE.runId}.png`,
     );
     fs.mkdirSync(path.dirname(screenshotPath), { recursive: true });
     fs.writeFileSync(screenshotPath, Buffer.from(screenshot.data, "base64"));
@@ -554,7 +573,16 @@ async function main() {
     if (cdp.pageErrors.length > 0) {
       throw new Error(`Erros JavaScript durante o smoke: ${JSON.stringify(cdp.pageErrors)}`);
     }
-    console.log(JSON.stringify({ result: "PASS", activeFarm, before, after, restored, screenshotPath }, null, 2));
+    console.log(JSON.stringify({
+      result: "PASS",
+      activeFarm,
+      before,
+      after,
+      restored,
+      screenshotPath,
+      screenshotDisposition: process.env.UI_SMOKE_KEEP_SCREENSHOT === "1" ? "preserved_explicitly" : "deleted_after_validation",
+      fixtureCleanup: "automatic_directed_cleanup",
+    }, null, 2));
   } finally {
     if (cdp && activationMayBeActive) {
       try {
@@ -576,20 +604,36 @@ async function main() {
       }
     }
     cdp?.close();
-    chrome.kill();
-    await new Promise((resolve) => {
-      if (chrome.exitCode !== null) return resolve();
-      const timer = setTimeout(resolve, 3000);
-      chrome.once("exit", () => {
-        clearTimeout(timer);
-        resolve();
+    if (chrome) {
+      chrome.kill();
+      await new Promise((resolve) => {
+        if (chrome.exitCode !== null) return resolve();
+        const timer = setTimeout(resolve, 3000);
+        chrome.once("exit", () => {
+          clearTimeout(timer);
+          resolve();
+        });
       });
-    });
-    try {
-      fs.rmSync(profile, { recursive: true, force: true });
-    } catch {
-      // Chrome can keep Crashpad files locked briefly after process shutdown.
     }
+    if (profile) {
+      try {
+        fs.rmSync(profile, { recursive: true, force: true });
+      } catch {
+        // Chrome can keep Crashpad files locked briefly after process shutdown.
+      }
+    }
+    if (screenshotPath && process.env.UI_SMOKE_KEEP_SCREENSHOT !== "1") {
+      fs.rmSync(screenshotPath, { force: true });
+    }
+    execFileSync(
+      process.execPath,
+      [
+        path.join(REPOSITORY_ROOT, "scripts", "codex", "prepare-dry-cow-ui-smoke.mjs"),
+        "--cleanup",
+        path.relative(REPOSITORY_ROOT, MANIFEST_PATH),
+      ],
+      { cwd: REPOSITORY_ROOT, stdio: "inherit" },
+    );
   }
 }
 

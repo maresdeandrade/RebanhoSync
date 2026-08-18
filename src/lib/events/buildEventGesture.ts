@@ -273,9 +273,6 @@ export const buildEventGesture = (input: EventInput): EventGestureBuildResult =>
         animal_ids: input.animalIds ?? null,
         lote_id: input.loteId ?? null,
         finance_transaction_id: input.financeTransactionId ?? null,
-        titularidade_snapshot: titularidadeSnapshot,
-        sociedade_snapshot: input.sociedadeSnapshot ?? null,
-        commercial_signals: input.commercialSignals ?? [],
         snapshot: {
           ...(input.snapshot ?? {}),
           titularidade: titularidadeSnapshot,
