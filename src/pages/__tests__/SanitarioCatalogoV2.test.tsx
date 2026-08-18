@@ -716,7 +716,7 @@ describe("SanitarioCatalogoV2", () => {
   it("filtra e seleciona protocolo sem usar Supabase direto", async () => {
     render(<SanitarioCatalogoV2 />);
 
-    await screen.findByText("Catálogo sanitário v2");
+    await screen.findByLabelText("Filtrar protocolos");
     fireEvent.change(screen.getByLabelText("Filtrar protocolos"), {
       target: { value: "ibr" },
     });
