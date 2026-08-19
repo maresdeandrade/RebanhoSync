@@ -869,6 +869,13 @@ function isCommercialOperationV2(evento: Evento): boolean {
   return payload?.kind === "commercial_operation_v2";
 }
 
+const COMMERCIAL_SIMULATION_KINDS = new Set([
+  "simulation",
+  "commercial_simulation",
+  "simulacao",
+  "simulacao_comercial",
+]);
+
 function isCommercialSimulation(
   evento: Evento,
   detalhe: EventoComercial | undefined,
@@ -881,23 +888,18 @@ function isCommercialSimulation(
     snapshot?.simulation,
     snapshot?.is_simulation,
   ].some((value) => value === true);
-  if (explicitBoolean) return true;
-
-  const explicitKind = [
+  const hasSimulationKind = [
     payload?.kind,
     payload?.operation_kind,
     snapshot?.kind,
     snapshot?.operation_kind,
-  ].find((value): value is string => typeof value === "string");
-  return Boolean(
-    explicitKind &&
-    [
-      "simulation",
-      "commercial_simulation",
-      "simulacao",
-      "simulacao_comercial",
-    ].includes(explicitKind.trim().toLowerCase()),
+  ].some(
+    (value) =>
+      typeof value === "string" &&
+      COMMERCIAL_SIMULATION_KINDS.has(value.trim().toLowerCase()),
   );
+
+  return explicitBoolean || hasSimulationKind;
 }
 
 function getReproductiveBirthCount(detail: EventoReproducao): number | null {
@@ -2016,7 +2018,7 @@ export function buildOperationalSummary(
       commercialArrobas > 0
         ? Number((commercialNetValue / commercialArrobas).toFixed(2))
         : null,
-    operations: commercialEventCount,
+    operations: commercialEvents.length,
     byOperation: toSortedTraceabilityRows(commercialOperation),
     byCounterparty: toSortedTraceabilityRows(commercialCounterparty),
     byAnimal: toSortedTraceabilityRows(commercialAnimal),
@@ -2323,9 +2325,7 @@ export function buildOperationalSummary(
       period: historicalPeriod,
     }),
     comercial_operacoes: makeMetric({
-      value: commercialDetailsComplete
-        ? comercial.operations
-        : commercialEvents.length,
+      value: comercial.operations,
       status: commercialDetailsComplete ? "complete" : "partial",
       sources: [
         { name: "event_eventos", role: "primary" },
@@ -2333,7 +2333,9 @@ export function buildOperationalSummary(
       ],
       limitations: commercialDetailsComplete
         ? []
-        : ["Existem Eventos comerciais sem snapshot comercial carregado."],
+        : [
+            "Existem Eventos comerciais factuais v2 sem detalhe comercial utilizavel carregado; a contagem representa somente operacoes agregadas.",
+          ],
       period: historicalPeriod,
     }),
     comercial_cabecas: makeMetric({

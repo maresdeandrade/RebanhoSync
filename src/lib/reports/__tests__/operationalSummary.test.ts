@@ -1766,22 +1766,60 @@ describe("Fase 15.2 — fechamento semantico", () => {
       occurred_at: "2026-03-28T12:00:00.000Z",
       payload: {},
     };
+    const conflictingFlagEvent: Evento = {
+      ...baseEvento,
+      id: "evt-v2-flag-conflitante",
+      dominio: "comercial",
+      occurred_at: "2026-03-28T13:00:00.000Z",
+      payload: { kind: "commercial_operation_v2", is_simulation: true },
+    };
+    const conflictingSnapshotEvent: Evento = {
+      ...baseEvento,
+      id: "evt-v2-snapshot-conflitante",
+      dominio: "comercial",
+      occurred_at: "2026-03-28T14:00:00.000Z",
+      payload: { kind: "commercial_operation_v2" },
+    };
+    const missingDetailEvent: Evento = {
+      ...baseEvento,
+      id: "evt-v2-sem-detalhe",
+      dominio: "comercial",
+      occurred_at: "2026-03-28T15:00:00.000Z",
+      payload: { kind: "commercial_operation_v2" },
+    };
     const report = buildSemanticReport({
       eventos: [
         purchaseEvent,
         saleEvent,
         simulationEvent,
         legacyEventWithDetail,
+        conflictingFlagEvent,
+        conflictingSnapshotEvent,
+        missingDetailEvent,
       ],
       eventosComercial: [
         makeCommercialDetail("evt-compra-factual", "compra", ["animal-1"]),
         makeCommercialDetail("evt-venda-factual", "venda", ["animal-2"]),
         makeCommercialDetail("evt-simulacao", "venda", ["animal-3"]),
         makeCommercialDetail("evt-comercial-legado", "venda", ["animal-4"]),
+        makeCommercialDetail("evt-v2-flag-conflitante", "venda", ["animal-5"]),
+        makeCommercialDetail(
+          "evt-v2-snapshot-conflitante",
+          "venda",
+          ["animal-6"],
+          { operation_kind: "commercial_simulation" },
+        ),
       ],
     });
 
     expect(report.comercial.operations).toBe(2);
+    expect(report.metrics.comercial_operacoes).toMatchObject({
+      value: 2,
+      status: "partial",
+    });
+    expect(report.metrics.comercial_operacoes.limitations).toContain(
+      "Existem Eventos comerciais factuais v2 sem detalhe comercial utilizavel carregado; a contagem representa somente operacoes agregadas.",
+    );
     expect(report.metrics.rebanho_entradas).toMatchObject({
       value: 1,
       status: "partial",
