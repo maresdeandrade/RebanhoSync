@@ -6,7 +6,7 @@ Baseline de entrada do fechamento: `main@209913b3d6061f2dc5b2bf0cbfc1b83a012169f
 Commit da implementação: `7bebe60e8c866ba36aca512996044701c354ceab`
 PR de revisão: [#93](https://github.com/maresdeandrade/RebanhoSync/pull/93)
 Status: **Fase 15 fechada tecnicamente; PR aberta, sem merge**
-Próxima fase: **Fase 16 — não iniciar**
+Próxima fase: **Fase 15 — concluir integração da PR #93; Fase 16 não iniciar**
 
 ## Fechamento da Fase 15
 
