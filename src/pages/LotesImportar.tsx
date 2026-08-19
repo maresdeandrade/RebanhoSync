@@ -19,18 +19,17 @@ import { PageIntro } from "@/components/ui/page-intro";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/useAuth";
-import { normalizeLookupValue } from "@/lib/import/animaisCsv";
-import { parseLoteImportCsv } from "@/lib/import/estruturasCsv";
+import { previewLotesImportV2 } from "@/lib/import/importV2";
+import { persistImportV2Preview } from "@/lib/import/importV2Persistence";
 import { db } from "@/lib/offline/db";
-import { createGesture } from "@/lib/offline/ops";
-import type { OperationInput } from "@/lib/offline/types";
+import type { Animal, Pasto } from "@/lib/offline/types";
 import { trackPilotMetric } from "@/lib/telemetry/pilotMetrics";
 import { showError, showSuccess } from "@/utils/toast";
 
 const TEMPLATE_CSV = [
-  "nome;status;pasto;observacoes",
-  "Matrizes;ativo;Piquete 1;Lote principal da estacao",
-  "Recria;ativo;Reserva;Animais jovens",
+  "nome;status;pasto;observacoes;touro;schema_version;template_version",
+  "Matrizes;ativo;Piquete 1;Lote principal da estacao;T-001;2;import-v2",
+  "Recria;ativo;Reserva;Animais jovens;;2;import-v2",
 ].join("\n");
 
 const LotesImportar = () => {
@@ -50,58 +49,61 @@ const LotesImportar = () => {
       .toArray();
   }, [activeFarmId]);
 
-  const pastosDisponiveis = useLiveQuery(async () => {
-    if (!activeFarmId) return [];
-    return db.state_pastos
-      .where("fazenda_id")
-      .equals(activeFarmId)
-      .filter((pasto) => !pasto.deleted_at)
-      .toArray();
-  }, [activeFarmId]);
+  const references = useLiveQuery(async () => {
+    if (!activeFarmId) return { pastos: [], animais: [] };
+    const [pastos, animais] = await Promise.all([
+      db.state_pastos
+        .where("fazenda_id")
+        .equals(activeFarmId)
+        .filter((pasto) => !pasto.deleted_at)
+        .toArray(),
+      db.state_animais
+        .where("fazenda_id")
+        .equals(activeFarmId)
+        .filter((animal) => !animal.deleted_at)
+        .toArray(),
+    ]);
+    return { pastos, animais };
+  }, [activeFarmId]) as
+    | { pastos: Pasto[]; animais: Animal[] }
+    | Array<Record<string, unknown>>
+    | undefined;
 
-  const parsed = useMemo(() => parseLoteImportCsv(csvText), [csvText]);
-
-  const validation = useMemo(() => {
-    const issues = [...parsed.issues];
-    const existingNames = new Set(
-      (lotesExistentes ?? []).map((lote) => normalizeLookupValue(lote.nome)),
-    );
-    const pastoMap = new Map(
-      (pastosDisponiveis ?? []).map((pasto) => [
-        normalizeLookupValue(pasto.nome),
-        pasto.id,
-      ]),
-    );
-
-    parsed.rows.forEach((row) => {
-      if (existingNames.has(normalizeLookupValue(row.nome))) {
-        issues.push({
-          lineNumber: row.lineNumber,
-          field: "nome",
-          message: `Lote "${row.nome}" ja existe na fazenda ativa.`,
-        });
-      }
-
-      if (row.pastoNome && !pastoMap.has(normalizeLookupValue(row.pastoNome))) {
-        issues.push({
-          lineNumber: row.lineNumber,
-          field: "pasto",
-          message: `Pasto "${row.pastoNome}" nao encontrado na fazenda ativa.`,
-        });
-      }
-    });
-
-    return {
-      issues,
-      pastoMap,
-    };
-  }, [lotesExistentes, parsed, pastosDisponiveis]);
-
+  const pastosDisponiveis = Array.isArray(references)
+    ? (references.filter(
+        (record) => !("identificacao" in record),
+      ) as Pasto[])
+    : (references?.pastos ?? []);
+  const animaisDisponiveis = Array.isArray(references)
+    ? (references.filter(
+        (record) => "identificacao" in record,
+      ) as Animal[])
+    : (references?.animais ?? []);
+  const preview = useMemo(
+    () =>
+      previewLotesImportV2({
+        entity: "lotes",
+        fazendaId: activeFarmId ?? "",
+        rawText: csvText,
+        fileName,
+        existing: {
+          lotes: lotesExistentes ?? [],
+          pastos: pastosDisponiveis ?? [],
+          animais: animaisDisponiveis ?? [],
+        },
+      }),
+    [
+      activeFarmId,
+      animaisDisponiveis,
+      csvText,
+      fileName,
+      lotesExistentes,
+      pastosDisponiveis,
+    ],
+  );
   const canImport =
-    Boolean(activeFarmId) &&
-    parsed.rows.length > 0 &&
-    validation.issues.length === 0 &&
-    !isImporting;
+    Boolean(activeFarmId) && preview.summary.valid > 0 && !isImporting;
+
 
   const handleFileUpload = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -121,64 +123,48 @@ const LotesImportar = () => {
     URL.revokeObjectURL(url);
   };
 
-  const handleImport = async () => {
+    const handleImport = async () => {
     if (!activeFarmId) {
       showError("Fazenda ativa nao encontrada.");
       return;
     }
-
-    if (validation.issues.length > 0) {
-      showError("Corrija a planilha antes de importar.");
+    if (preview.summary.valid === 0) {
+      showError("Nenhuma linha válida para importar.");
       return;
     }
-
     setIsImporting(true);
-
     try {
-      const now = new Date().toISOString();
-      const ops: OperationInput[] = parsed.rows.map((row) => ({
-        table: "lotes",
-        action: "INSERT",
-        record: {
-          id: crypto.randomUUID(),
-          fazenda_id: activeFarmId,
-          nome: row.nome,
-          status: row.status,
-          pasto_id: row.pastoNome
-            ? (validation.pastoMap.get(normalizeLookupValue(row.pastoNome)) ??
-              null)
-            : null,
-          touro_id: null,
-          observacoes: row.observacoes,
-          payload: {
-            import_source: fileName ?? "csv",
-            import_line: row.lineNumber,
-          },
-          created_at: now,
-          updated_at: now,
-          deleted_at: null,
-        },
-      }));
-
-      await createGesture(activeFarmId, ops);
+      const result = await persistImportV2Preview(preview);
       await trackPilotMetric({
         fazendaId: activeFarmId,
         eventName: "import_completed",
-        status: "success",
+        status: result.summary.retryable > 0 ? "error" : "success",
         entity: "lotes",
-        quantity: parsed.rows.length,
+        quantity: result.summary.imported,
         payload: {
           file_name: fileName ?? "csv",
+          import_id: result.importId,
+          rejected: result.summary.rejected,
+          conflicts: result.summary.conflicts,
+          retryable: result.summary.retryable,
         },
       });
-      showSuccess(`${parsed.rows.length} lote(s) importado(s) localmente.`);
+      if (result.summary.retryable > 0) {
+        showError(`${result.summary.retryable} linha(s) aguardam retry.`);
+        return;
+      }
+      showSuccess(
+        `${result.summary.imported} lote(s) importado(s); ${result.summary.rejected + result.summary.conflicts} linha(s) rejeitada(s) ou em conflito.`,
+      );
       navigate("/lotes");
     } catch (error) {
       console.error("[LotesImportar] failed to import lots", error);
       showError("Nao foi possivel importar os lotes.");
+    } finally {
       setIsImporting(false);
     }
   };
+
 
   return (
     <div className="mx-auto max-w-6xl space-y-5">
@@ -188,15 +174,15 @@ const LotesImportar = () => {
         title="Importar lotes por planilha"
         meta={
           <>
-            <StatusBadge tone={parsed.rows.length > 0 ? "info" : "neutral"}>
-              {parsed.rows.length} linha(s) valida(s)
+            <StatusBadge tone={preview.summary.valid > 0 ? "info" : "neutral"}>
+              {preview.summary.valid} linha(s) pronta(s)
             </StatusBadge>
             <StatusBadge
-              tone={validation.issues.length === 0 ? "success" : "warning"}
+              tone={preview.summary.rejected + preview.summary.conflicts === 0 ? "success" : "warning"}
             >
-              {validation.issues.length === 0
-                ? "Planilha pronta para importar"
-                : `${validation.issues.length} alerta(s) para revisar`}
+              {preview.summary.rejected + preview.summary.conflicts === 0
+                ? "Preview sem rejeições"
+                : `${preview.summary.rejected + preview.summary.conflicts} rejeição(ões)/conflito(s)`}
             </StatusBadge>
           </>
         }
@@ -256,40 +242,43 @@ const LotesImportar = () => {
             <div className="flex flex-wrap items-center justify-between gap-2">
               <CardTitle>Preview</CardTitle>
               <Badge variant="secondary">
-                {parsed.rows.length} linha(s) valida(s)
+                {preview.summary.valid} linha(s) válida(s)
               </Badge>
             </div>
           </CardHeader>
           <CardContent>
-            {parsed.rows.length === 0 ? (
+            {preview.totalLines === 0 ? (
               <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
-                Nenhuma linha valida encontrada.
+                Nenhuma linha encontrada.
               </div>
             ) : (
               <div className="grid gap-3">
-                {parsed.rows.slice(0, 12).map((row) => (
-                  <div
-                    key={`${row.lineNumber}-${row.nome}`}
-                    className="rounded-xl border border-border/70 bg-background p-3"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <p className="font-medium text-foreground">
-                          {row.nome}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          Linha {row.lineNumber}
-                        </p>
+                {preview.lineResults
+                  .filter((line) => line.status === "valid")
+                  .slice(0, 12)
+                  .map((line) => (
+                    <div
+                      key={`${line.lineNumber}-${line.identity}`}
+                      className="rounded-xl border border-border/70 bg-background p-3"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="font-medium text-foreground">
+                            {line.identity ?? "Identidade não informada"}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Linha {line.lineNumber} · operação pronta
+                          </p>
+                        </div>
+                        <Badge variant="outline">valid</Badge>
                       </div>
-                      <Badge variant="outline">{row.status}</Badge>
+                      {line.warnings.length > 0 ? (
+                        <p className="mt-2 text-xs text-amber-700">
+                          {line.warnings.length} warning(s) não bloqueante(s)
+                        </p>
+                      ) : null}
                     </div>
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      <Badge variant="secondary">
-                        {row.pastoNome ?? "Sem pasto"}
-                      </Badge>
-                    </div>
-                  </div>
-                ))}
+                  ))}
               </div>
             )}
           </CardContent>
@@ -303,19 +292,21 @@ const LotesImportar = () => {
             <div className="flex flex-wrap gap-2">
               <Badge
                 variant={
-                  validation.issues.length === 0 ? "secondary" : "destructive"
+                  preview.summary.rejected + preview.summary.conflicts === 0
+                    ? "secondary"
+                    : "destructive"
                 }
               >
-                {validation.issues.length === 0
+                {preview.summary.rejected + preview.summary.conflicts === 0
                   ? "Sem erros"
-                  : `${validation.issues.length} erro(s)`}
+                  : `${preview.summary.rejected + preview.summary.conflicts} erro(s)/conflito(s)`}
               </Badge>
               <Badge variant="outline">
                 {pastosDisponiveis?.length ?? 0} pasto(s) disponivel(is)
               </Badge>
             </div>
 
-            {validation.issues.length === 0 ? (
+            {preview.summary.rejected + preview.summary.conflicts === 0 ? (
               <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
                 <div className="flex items-center gap-2 font-medium">
                   <CheckCircle2 className="h-4 w-4" />
@@ -327,22 +318,26 @@ const LotesImportar = () => {
               </div>
             ) : (
               <div className="space-y-2">
-                {validation.issues.slice(0, 8).map((issue) => (
-                  <div
-                    key={`${issue.lineNumber}-${issue.field}-${issue.message}`}
-                    className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950"
-                  >
-                    <div className="flex items-center gap-2 font-medium">
-                      <AlertTriangle className="h-4 w-4" />
-                      Linha {issue.lineNumber} - {issue.field}
+                {preview.lineResults
+                  .flatMap((line) =>
+                    line.issues.map((issue) => ({ ...issue, status: line.status })),
+                  )
+                  .slice(0, 8)
+                  .map((issue) => (
+                    <div
+                      key={`${issue.lineNumber}-${issue.field}-${issue.code}`}
+                      className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950"
+                    >
+                      <div className="flex items-center gap-2 font-medium">
+                        <AlertTriangle className="h-4 w-4" />
+                        Linha {issue.lineNumber} - {issue.field} - {issue.code}
+                      </div>
+                      <p className="mt-1">{issue.message}</p>
                     </div>
-                    <p className="mt-1">{issue.message}</p>
-                  </div>
-                ))}
-                {validation.issues.length > 8 ? (
+                  ))}
+                {preview.summary.rejected + preview.summary.conflicts > 8 ? (
                   <p className="text-sm text-muted-foreground">
-                    Mais {validation.issues.length - 8} erro(s) oculto(s) no
-                    preview.
+                    Mais {preview.summary.rejected + preview.summary.conflicts - 8} erro(s) oculto(s) no preview.
                   </p>
                 ) : null}
               </div>
@@ -361,7 +356,7 @@ const LotesImportar = () => {
               ) : (
                 <>
                   <Upload className="h-4 w-4" />
-                  Importar {parsed.rows.length} lote(s)
+                  Importar {preview.totalLines} lote(s)
                 </>
               )}
             </Button>
